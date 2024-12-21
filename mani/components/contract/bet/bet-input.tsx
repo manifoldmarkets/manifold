@@ -1,19 +1,13 @@
 import { Col } from 'components/layout/col'
 import { Row } from 'components/layout/row'
 import { NumberText } from 'components/number-text'
+import { Token } from 'components/token/token'
 import { Rounded } from 'constants/border-radius'
 import { Colors } from 'constants/colors'
 import { useColor } from 'hooks/use-color'
 import { useTokenMode } from 'hooks/use-token-mode'
 import { useState } from 'react'
-import {
-  Image,
-  View,
-  StyleSheet,
-  Pressable,
-  TextInput,
-  Keyboard,
-} from 'react-native'
+import { View, StyleSheet, Pressable, TextInput, Keyboard } from 'react-native'
 
 export function BetAmountInput({
   minAmount = 0,
@@ -68,7 +62,7 @@ export function BetAmountInput({
         style={{
           alignItems: 'center',
           borderWidth: 1,
-          borderColor: color.borderSecondary,
+          borderColor: color.border,
           padding: 8,
           borderRadius: Rounded.md,
           gap: 8,
@@ -77,16 +71,11 @@ export function BetAmountInput({
         }}
       >
         <Row style={{ alignItems: 'center', gap: 8, flex: 1 }}>
-          <Image
+          <Token
             style={{
               width: 48,
               height: 48,
             }}
-            source={
-              token === 'MANA'
-                ? require('../../../assets/images/masses_mana.png')
-                : require('../../../assets/images/masses_sweeps.png')
-            }
           />
           <TextInput
             style={{

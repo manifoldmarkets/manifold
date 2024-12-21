@@ -1,6 +1,6 @@
 import { createContext, useContext, useState } from 'react'
 
-type TokenMode = 'MANA' | 'CASH'
+export type TokenMode = 'MANA' | 'CASH'
 
 type TokenModeContextType = {
   token: TokenMode

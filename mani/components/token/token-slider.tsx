@@ -1,9 +1,11 @@
 import React from 'react'
 import { Animated, Image, TouchableOpacity } from 'react-native'
-import { Row } from './layout/row'
+import { Row } from '../layout/row'
 import { useColor } from 'hooks/use-color'
 import { useTokenMode } from 'hooks/use-token-mode'
 import { Rounded } from 'constants/border-radius'
+import ManaFlatImage from 'assets/images/masses_mana_flat.png'
+import SweepsFlatImage from 'assets/images/masses_sweeps_flat.png'
 
 export function TokenSlider() {
   const color = useColor()
@@ -60,7 +62,7 @@ export function TokenSlider() {
             height: 20,
             opacity: token === 'CASH' ? 0 : 1,
           }}
-          source={require('../assets/images/masses_mana_flat.png')}
+          source={ManaFlatImage}
         />
         <Image
           style={{
@@ -68,7 +70,7 @@ export function TokenSlider() {
             height: 20,
             opacity: token === 'MANA' ? 0 : 1,
           }}
-          source={require('../assets/images/masses_sweeps_flat.png')}
+          source={SweepsFlatImage}
         />
       </Row>
     </TouchableOpacity>
