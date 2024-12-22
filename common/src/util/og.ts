@@ -16,12 +16,11 @@ export function buildOgUrl<P extends Record<string, string | string[]>>(
       )
     ).toString()
 
-  // Change to localhost:3000 for local testing
-  const url =
-    // `http://localhost:3000/api/og/${endpoint}?` + generateUrlParams(props)
-    `https://${domain ?? DOMAIN}/api/og/${endpoint}?` + generateUrlParams(props)
+  let domainWithProtocol = domain ?? DOMAIN
+  if (!domainWithProtocol.includes('://'))
+    domainWithProtocol = 'https://' + domainWithProtocol
 
-  return url
+  return `${domainWithProtocol}/api/og/${endpoint}?${generateUrlParams(props)}`
 }
 
 // nodejs only
