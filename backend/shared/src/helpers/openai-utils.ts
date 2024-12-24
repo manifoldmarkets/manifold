@@ -3,6 +3,7 @@ import * as dayjs from 'dayjs'
 import { log } from 'shared/utils'
 import * as utc from 'dayjs/plugin/utc'
 dayjs.extend(utc)
+export type MODELS = 'gpt-4o' | 'o1-mini' | 'o1-preview'
 
 export const generateEmbeddings = async (question: string) => {
   const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY })
@@ -97,24 +98,26 @@ export const promptGPT4 = async (prompt: string) => {
   if (!result) return undefined
 
   const message = result.choices[0].message.content
-  console.log('GPT4 returned message:', message)
+  log('GPT4 returned message:', message)
   return message
 }
 
-export const promptGPT3 = async (prompt: string) => {
+export const promptOpenAI = async (prompt: string, model: MODELS) => {
   const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY })
 
   const result = await openai.chat.completions
     .create({
-      model: 'gpt-3.5-turbo',
-      messages: [{ role: 'system', content: prompt }],
-      max_tokens: 4096,
+      model,
+      messages: [
+        // o1-* models don't support system messages
+        { role: model === 'gpt-4o' ? 'system' : 'user', content: prompt },
+      ],
     })
     .catch((err) => (console.log(err), undefined))
 
   if (!result) return undefined
 
   const message = result.choices[0].message.content
-  console.log('GPT3 returned message:', message)
+  log('GPT4 returned message:', message)
   return message
 }
