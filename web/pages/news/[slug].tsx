@@ -49,7 +49,7 @@ export default function NewsPage(
           slug: initialDashboard.slug,
           title: initialDashboard.title,
         }}
-        className="items-center !col-span-7"
+        className="!col-span-7 items-center"
       >
         <DashboardPage
           {...props}
