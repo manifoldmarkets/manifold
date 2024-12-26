@@ -260,7 +260,7 @@ function MarketsList(
 
 export default function MarketsPage() {
   return (
-    <Page trackPageView="/markets">
+    <Page trackPageView="/markets" className='!col-span-7'>
       <SEO title="Markets" description="Explore markets" url="/markets" />
       <MarketsContent />
     </Page>
