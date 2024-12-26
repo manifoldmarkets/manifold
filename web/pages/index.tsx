@@ -4,10 +4,7 @@ import { useState } from 'react'
 
 import { Contract } from 'common/contract'
 import { HIDE_FROM_NEW_USER_SLUGS, TRADE_TERM } from 'common/envs/constants'
-import {
-  contractFields,
-  convertContract,
-} from 'common/supabase/contracts'
+import { contractFields, convertContract } from 'common/supabase/contracts'
 import { removeEmojis } from 'common/util/string'
 import { some } from 'd3-array'
 import { capitalize } from 'lodash'
