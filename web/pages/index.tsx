@@ -7,9 +7,7 @@ import { HIDE_FROM_NEW_USER_SLUGS, TRADE_TERM } from 'common/envs/constants'
 import {
   contractFields,
   convertContract,
-  getContract,
 } from 'common/supabase/contracts'
-import { filterDefined } from 'common/util/array'
 import { removeEmojis } from 'common/util/string'
 import { some } from 'd3-array'
 import { capitalize } from 'lodash'
@@ -48,8 +46,6 @@ export const getServerSideProps = redirectIfLoggedIn('/home', async (_) => {
 
   const contracts = (data ?? []).map(convertContract)
 
-  const prezContract = await getContract(db, 'icotel6eaq')
-
   const filteredContracts = contracts.filter(
     (c) =>
       !c.groupSlugs?.some((slug) =>
@@ -61,7 +57,8 @@ export const getServerSideProps = redirectIfLoggedIn('/home', async (_) => {
     some(contract.groupSlugs ?? [], (slug) => groupSlugsSet.includes(slug))
 
   const addedGroupSlugs: string[] = ['us-politics']
-  const uniqueContracts: Contract[] = filterDefined([prezContract])
+  const uniqueContracts: Contract[] = []
+
   filteredContracts.forEach((contract) => {
     if (!hasCommonGroupSlug(contract, addedGroupSlugs)) {
       uniqueContracts.push(contract)
@@ -130,15 +127,6 @@ export default function LandingPage(props: {
                   className="hidden whitespace-nowrap lg:flex"
                 >
                   Browse
-                </Button>
-              </Link>
-              <Link href="/election" className="hidden lg:flex">
-                <Button
-                  color="gray-white"
-                  size="xs"
-                  className="whitespace-nowrap"
-                >
-                  US Election
                 </Button>
               </Link>
               <Button
