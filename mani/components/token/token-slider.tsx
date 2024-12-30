@@ -4,8 +4,8 @@ import { Row } from '../layout/row'
 import { useColor } from 'hooks/use-color'
 import { useTokenMode } from 'hooks/use-token-mode'
 import { Rounded } from 'constants/border-radius'
-import ManaFlatImage from 'assets/images/masses_mana_flat.png'
-import SweepsFlatImage from 'assets/images/masses_sweeps_flat.png'
+import ManaFlatImage from '../../assets/images/masses_mana_flat.png'
+import SweepsFlatImage from '../../assets/images/masses_sweeps_flat.png'
 
 export function TokenSlider() {
   const color = useColor()
