@@ -326,9 +326,14 @@ const OrganizableMarketsPage = (props: { user: User | null; tabs: Tab[] }) => {
   )
 
   // Reorder tabs based on saved order
-  const PARENT_TABS = tabOrder
-    .map((title) => baseTabs.find((tab) => tab.title === title))
-    .filter((tab): tab is Tab => !!tab)
+  const PARENT_TABS = [
+    // First include all tabs in the saved order
+    ...tabOrder
+      .map((title) => baseTabs.find((tab) => tab.title === title))
+      .filter((tab): tab is Tab => !!tab),
+    // Then add any new tabs that weren't in the saved order
+    ...baseTabs.filter((tab) => !tabOrder.includes(tab.title))
+  ]
 
   return (
     <Col className="relative w-full p-1">
