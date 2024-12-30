@@ -11,6 +11,7 @@ import {
   QuestionMarkCircleIcon,
   SearchIcon,
   UserCircleIcon,
+  GlobeAltIcon,
 } from '@heroicons/react/outline'
 import { MenuAlt3Icon, XIcon } from '@heroicons/react/solid'
 import clsx from 'clsx'
@@ -30,7 +31,6 @@ import { Avatar } from '../widgets/avatar'
 import { CoinNumber } from '../widgets/coin-number'
 import Sidebar from './sidebar'
 import { NavItem } from './sidebar-item'
-import { PiSquaresFour } from 'react-icons/pi'
 
 export const BOTTOM_NAV_BAR_HEIGHT = 58
 
@@ -47,9 +47,9 @@ function getNavigation(user: User) {
       icon: SearchIcon,
     },
     {
-      name: 'Markets',
-      href: '/markets',
-      icon: PiSquaresFour,
+      name: 'Explore',
+      href: '/explore',
+      icon: GlobeAltIcon,
     },
     {
       name: 'Profile',
@@ -66,9 +66,9 @@ function getNavigation(user: User) {
 const signedOutNavigation = () => [
   { name: 'Browse', href: '/browse', icon: SearchIcon, alwaysShowName: true },
   {
-    name: 'Markets',
-    href: '/markets',
-    icon: PiSquaresFour,
+    name: 'Explore',
+    href: '/explore',
+    icon: GlobeAltIcon,
     alwaysShowName: true,
     // prefetch: false, // should we not prefetch this?
   },

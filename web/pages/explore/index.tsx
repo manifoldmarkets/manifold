@@ -260,8 +260,8 @@ function MarketsList(
 
 export default function MarketsPage() {
   return (
-    <Page trackPageView="/markets" className="!col-span-7">
-      <SEO title="Markets" description="Explore markets" url="/markets" />
+    <Page trackPageView="/explore" className="!col-span-7">
+      <SEO title="Explore" description="Explore" url="/explore" />
       <MarketsContent />
     </Page>
   )
@@ -294,7 +294,7 @@ function MarketsContent() {
       content: <SportsTabs />,
     },
     user && {
-      title: 'Explore',
+      title: 'Feed',
       content: (
         <Col className="pt-1">
           <LiveGeneratedFeed userId={user.id} />

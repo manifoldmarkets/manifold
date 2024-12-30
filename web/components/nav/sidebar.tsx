@@ -8,6 +8,7 @@ import {
   NewspaperIcon,
   LoginIcon,
   SearchIcon,
+  GlobeAltIcon
 } from '@heroicons/react/outline'
 import TrophyIcon from 'web/lib/icons/trophy-icon.svg'
 import clsx from 'clsx'
@@ -35,7 +36,6 @@ import { ReportsIcon } from '../reports-icon'
 import { AddFundsButton } from '../profile/add-funds-button'
 import { Col } from '../layout/col'
 import { TbPigMoney } from 'react-icons/tb'
-import { PiSquaresFourLight } from 'react-icons/pi'
 // import { PiRobotBold } from 'react-icons/pi'
 
 export default function Sidebar(props: {
@@ -139,9 +139,9 @@ const getDesktopNav = (
     return buildArray(
       { name: 'Browse', href: '/home', icon: SearchIcon },
       {
-        name: 'Markets',
-        href: '/markets',
-        icon: PiSquaresFourLight,
+        name: 'Explore',
+        href: '/explore',
+        icon: GlobeAltIcon,
       },
       {
         name: 'Notifications',
