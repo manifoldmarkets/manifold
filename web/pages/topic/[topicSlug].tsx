@@ -122,34 +122,6 @@ export default function TopicPage(props: {
           <QueryUncontrolledTabs
             className="mb-4"
             tabs={buildArray(
-              showAbout && {
-                title: 'About',
-                content: (
-                  <Col className="w-full">
-                    <AboutEditor
-                      initialContent={topic.about}
-                      onSave={(content) => {
-                        updateGroup({
-                          id: topic.id,
-                          about: content,
-                        })
-                      }}
-                      editing={addingAbout}
-                      setEditing={setAddingAbout}
-                      canEdit={canEdit}
-                    />
-                    {isMobile && (
-                      <TopicsSidebar
-                        key={`${topic.id}-mobile`}
-                        topicId={topic.id}
-                        above={above}
-                        below={below}
-                        className="mt-6"
-                      />
-                    )}
-                  </Col>
-                ),
-              },
               {
                 title: 'Questions',
                 content: (
@@ -178,6 +150,34 @@ export default function TopicPage(props: {
               {
                 title: 'Leaderboard',
                 content: <TopicLeaderboard topicId={topic.id} />,
+              },
+              showAbout && {
+                title: 'About',
+                content: (
+                  <Col className="w-full">
+                    <AboutEditor
+                      initialContent={topic.about}
+                      onSave={(content) => {
+                        updateGroup({
+                          id: topic.id,
+                          about: content,
+                        })
+                      }}
+                      editing={addingAbout}
+                      setEditing={setAddingAbout}
+                      canEdit={canEdit}
+                    />
+                    {isMobile && (
+                      <TopicsSidebar
+                        key={`${topic.id}-mobile`}
+                        topicId={topic.id}
+                        above={above}
+                        below={below}
+                        className="mt-6"
+                      />
+                    )}
+                  </Col>
+                ),
               }
             )}
           />
