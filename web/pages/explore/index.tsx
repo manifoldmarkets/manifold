@@ -326,7 +326,7 @@ const OrganizableMarketsPage = (props: { user: User | null; tabs: Tab[] }) => {
   )
 
   // Reorder tabs based on saved order
-  const PARENT_TABS = [
+  const tabs = [
     // First include all tabs in the saved order
     ...tabOrder
       .map((title) => baseTabs.find((tab) => tab.title === title))
@@ -341,7 +341,7 @@ const OrganizableMarketsPage = (props: { user: User | null; tabs: Tab[] }) => {
         onDragEnd={(result) => {
           if (!result.destination) return
 
-          const newOrder = Array.from(tabOrder)
+          const newOrder = Array.from(tabs.map((tab) => tab.title))
           const [removed] = newOrder.splice(result.source.index, 1)
           newOrder.splice(result.destination.index, 0, removed)
           setTabOrder(newOrder)
@@ -353,7 +353,7 @@ const OrganizableMarketsPage = (props: { user: User | null; tabs: Tab[] }) => {
               <QueryUncontrolledTabs
                 className="bg-canvas-50 sticky top-0 z-10"
                 tabInUrlKey="top-tab"
-                tabs={PARENT_TABS.map((tab, index) => ({
+                tabs={tabs.map((tab, index) => ({
                   ...tab,
                   title: tab.title,
                   titleElement: (
