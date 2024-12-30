@@ -8,7 +8,7 @@ import {
   NewspaperIcon,
   LoginIcon,
   SearchIcon,
-  GlobeAltIcon
+  GlobeAltIcon,
 } from '@heroicons/react/outline'
 import TrophyIcon from 'web/lib/icons/trophy-icon.svg'
 import clsx from 'clsx'
