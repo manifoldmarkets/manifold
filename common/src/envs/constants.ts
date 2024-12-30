@@ -11,7 +11,6 @@ export const CONFIGS: { [env: string]: EnvConfig } = {
   DEV: DEV_CONFIG,
 }
 
-export const CASH_BETS_ENABLED = true
 export const TWOMBA_CASHOUT_ENABLED = true
 export const SPICE_PRODUCTION_ENABLED = false
 export const SPICE_TO_MANA_CONVERSION_RATE = 1
@@ -177,7 +176,7 @@ export const BOT_USERNAMES = [
   'AriZernerBot',
   'PV_bot',
   'draaglom_bot',
-  'SiriusBOT'
+  'SiriusBOT',
 ]
 
 export const MOD_IDS = [

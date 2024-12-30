@@ -1,4 +1,4 @@
-import { first, isEqual, maxBy, sumBy } from 'lodash'
+import { first, isEqual, maxBy, sum, sumBy } from 'lodash'
 import { APIError, AuthedUser, type APIHandler } from './helpers/endpoint'
 import { CPMM_MIN_POOL_QTY, MarketContract } from 'common/contract'
 import { User } from 'common/user'
@@ -16,7 +16,7 @@ import { Answer } from 'common/answer'
 import { CpmmState, getCpmmProbability } from 'common/calculate-cpmm'
 import { ValidatedAPIParams } from 'common/api/schema'
 import { onCreateBets } from 'api/on-create-bet'
-import { CASH_BETS_ENABLED } from 'common/envs/constants'
+import { isAdminId } from 'common/envs/constants'
 import {
   createSupabaseDirectClient,
   SupabaseTransaction,
@@ -341,10 +341,6 @@ export const executeNewBetResult = async (
   deterministic?: boolean,
   firstBetInMultiBet?: boolean
 ) => {
-  if (contract.token === 'CASH' && !CASH_BETS_ENABLED) {
-    throw new APIError(403, 'Cannot bet with CASH token atm.')
-  }
-
   const {
     newBet,
     otherBetResults,
@@ -576,6 +572,12 @@ export const executeNewBetResult = async (
     )
     return !existingMetric || !isEqual(existingMetric, m)
   })
+  assertAdminAccumulatesNoMoreThanTenShares(
+    user,
+    contract,
+    newMetrics,
+    newBet.answerId
+  )
   const metricsQuery = bulkUpdateContractMetricsQuery(newMetrics)
   const streakIncrementedQuery = incrementStreakQuery(user, newBet.createdTime)
   const contractUpdateQuery = updateDataQuery('contracts', 'id', contractUpdate)
@@ -630,5 +632,31 @@ export const executeNewBetResult = async (
     answerUpdates,
     contractUpdate,
     userUpdates,
+  }
+}
+
+const assertAdminAccumulatesNoMoreThanTenShares = (
+  user: User,
+  contract: MarketContract,
+  contractMetrics: ContractMetric[],
+  answerId: string | undefined
+) => {
+  if (!isAdminId(user.id) || contract.token !== 'CASH') return
+  const myMetrics = contractMetrics.find(
+    (m) =>
+      m.userId === user.id &&
+      (answerId &&
+      contract.mechanism === 'cpmm-multi-1' &&
+      !contract.shouldAnswersSumToOne
+        ? m.answerId === answerId
+        : m.answerId === null)
+  )
+  if (myMetrics) {
+    if (sum(Object.values(myMetrics.totalShares)) > 10) {
+      throw new APIError(
+        403,
+        `Admins cannot accumulate more than 10 shares per answer per question.`
+      )
+    }
   }
 }
