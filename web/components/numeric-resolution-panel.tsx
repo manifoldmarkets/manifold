@@ -119,6 +119,7 @@ export function NumericResolutionPanel(props: {
           </Button>
         ) : (
           <ResolveConfirmationButton
+            size="xl"
             onResolve={resolve}
             isSubmitting={isSubmitting}
             color={getNumericResolveButtonColor(outcomeMode)}

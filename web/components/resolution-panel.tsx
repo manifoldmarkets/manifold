@@ -13,11 +13,10 @@ import {
 import { BETTORS } from 'common/user'
 import { Row } from 'web/components/layout/row'
 import { ProbabilityInput } from './widgets/probability-input'
-import { Button, IconButton } from './buttons/button'
+import { Button } from './buttons/button'
 import { Answer } from 'common/answer'
 import { Col } from './layout/col'
 import { removeUndefinedProps } from 'common/util/object'
-import { XIcon } from '@heroicons/react/solid'
 import { useUser } from 'web/hooks/use-user'
 import { EditCloseTimeModal } from 'web/components/contract/contract-details'
 import clsx from 'clsx'
@@ -134,6 +133,7 @@ export function ResolutionPanel(props: {
         </div>
         {!inModal && (
           <ResolveConfirmationButton
+            size="xl"
             color={getResolveButtonColor(outcome)}
             label={getResolveButtonLabel(outcome, prob)}
             marketTitle={contract.question}
@@ -189,9 +189,6 @@ export function ResolveHeader(props: {
         ) : (
           <div />
         )}
-        <IconButton size={'2xs'} onClick={onClose}>
-          <XIcon className="h-5 w-5" />
-        </IconButton>
       </Row>
       <div className="mb-2 text-lg">
         {!isCreator && (
@@ -307,6 +304,7 @@ export function MiniResolutionPanel(props: {
         )}
       </Col>
       <ResolveConfirmationButton
+        size="sm"
         color={getResolveButtonColor(outcome)}
         label={getResolveButtonLabel(outcome, prob)}
         marketTitle={`${contract.question} - ${answer.text}`}

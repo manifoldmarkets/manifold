@@ -76,6 +76,7 @@ import { CancelLabel } from '../outcome-label'
 import { PollPanel } from '../poll/poll-panel'
 import { AlertBox } from '../widgets/alert-box'
 import { LoadingIndicator } from '../widgets/loading-indicator'
+import { GradientContainer } from '../widgets/gradient-container'
 
 export const ContractOverview = memo(
   (props: {
@@ -466,15 +467,19 @@ const ChoiceOverview = (props: {
         !shouldAnswersSumToOne &&
         contract.mechanism === 'cpmm-multi-1' &&
         contract.outcomeType !== 'NUMBER' ? (
-          <IndependentAnswersResolvePanel
-            contract={contract}
-            onClose={() => setShowResolver(false)}
-          />
+          <GradientContainer>
+            <IndependentAnswersResolvePanel
+              contract={contract}
+              onClose={() => setShowResolver(false)}
+            />
+          </GradientContainer>
         ) : (
-          <AnswersResolvePanel
-            contract={contract as CPMMMultiContract}
-            onClose={() => setShowResolver(false)}
-          />
+          <GradientContainer>
+            <AnswersResolvePanel
+              contract={contract as CPMMMultiContract}
+              onClose={() => setShowResolver(false)}
+            />
+          </GradientContainer>
         )
       ) : (
         <>
@@ -627,10 +632,12 @@ const MultiNumericOverview = (props: {
         />
       ) : null}
       {showResolver ? (
-        <AnswersResolvePanel
-          contract={contract}
-          onClose={() => setShowResolver(false)}
-        />
+        <GradientContainer>
+          <AnswersResolvePanel
+            contract={contract}
+            onClose={() => setShowResolver(false)}
+          />
+        </GradientContainer>
       ) : (
         <>
           {resolutionRating}
@@ -752,10 +759,12 @@ const BinaryChoiceOverview = (props: {
         />
       ) : null}
       {showResolver ? (
-        <AnswersResolvePanel
-          contract={contract}
-          onClose={() => setShowResolver(false)}
-        />
+        <GradientContainer>
+          <AnswersResolvePanel
+            contract={contract}
+            onClose={() => setShowResolver(false)}
+          />
+        </GradientContainer>
       ) : (
         <>
           {resolutionRating}
