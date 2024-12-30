@@ -171,7 +171,7 @@ export function Welcome(props: { setFeedKey?: (key: string) => void }) {
   if (!shouldShowWelcomeModal) return <></>
 
   return (
-    <Modal open={open} size={'lg'} position={'bottom'}>
+    <Modal open={open} size={'lg'}>
       <Col className="bg-canvas-0 text-md rounded-md px-4 py-6 md:w-full md:text-lg lg:px-8">
         {availablePages[page]}
         <Col>
