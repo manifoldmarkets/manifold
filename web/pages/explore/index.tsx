@@ -332,7 +332,7 @@ const OrganizableMarketsPage = (props: { user: User | null; tabs: Tab[] }) => {
       .map((title) => baseTabs.find((tab) => tab.title === title))
       .filter((tab): tab is Tab => !!tab),
     // Then add any new tabs that weren't in the saved order
-    ...baseTabs.filter((tab) => !tabOrder.includes(tab.title))
+    ...baseTabs.filter((tab) => !tabOrder.includes(tab.title)),
   ]
 
   return (
