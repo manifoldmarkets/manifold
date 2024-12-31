@@ -204,8 +204,6 @@ export function UserBetsTable(props: { user: User }) {
           else return c.token === 'MANA' || !c.token
         })
     : []
-
-  console.log(contracts, metricsByContract)
   return (
     <Col>
       <div className="flex flex-wrap justify-between gap-4 max-sm:flex-col">
