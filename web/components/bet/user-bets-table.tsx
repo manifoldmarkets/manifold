@@ -109,6 +109,7 @@ export function UserBetsTable(props: { user: User }) {
       )
     })
   )
+
   useEffect(() => {
     if (isAuth !== undefined) {
       getMetrics()
@@ -204,6 +205,7 @@ export function UserBetsTable(props: { user: User }) {
         })
     : []
 
+  console.log(contracts, metricsByContract)
   return (
     <Col>
       <div className="flex flex-wrap justify-between gap-4 max-sm:flex-col">
