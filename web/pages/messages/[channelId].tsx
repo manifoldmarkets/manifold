@@ -278,7 +278,7 @@ export const PrivateChat = (props: {
           )}
         />
         {showUsers && (
-          <Modal open={showUsers} setOpen={setShowUsers}>
+          <Modal open={showUsers} setOpen={setShowUsers} position="top">
             <Col className={clsx(MODAL_CLASS)}>
               {members?.map((user) => (
                 <Row

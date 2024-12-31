@@ -3,8 +3,8 @@ import { XIcon } from '@heroicons/react/outline'
 import clsx from 'clsx'
 import { ReactNode, useEffect, useRef } from 'react'
 
-export const MODAL_CLASS =
-  'items-center gap-4 max-w-full rounded-md bg-canvas-0 sm:px-8 px-4 py-6 text-ink-1000'
+export const MODAL_CLASS = // card color and spacing
+  'items-center gap-4 rounded-md bg-canvas-0 sm:px-8 px-4 py-6 text-ink-1000'
 export const SCROLLABLE_MODAL_CLASS =
   'max-h-[70vh] min-h-[20rem] !overflow-auto'
 
@@ -29,16 +29,16 @@ export function Modal(props: {
   } = props
 
   const sizeClass = {
-    sm: 'sm:max-w-sm',
-    md: 'sm:max-w-md',
-    lg: 'max-w-2xl',
-    xl: 'max-w-5xl',
+    sm: 'w-full sm:max-w-sm',
+    md: 'w-full sm:max-w-md',
+    lg: 'w-full max-w-2xl',
+    xl: 'w-full max-w-5xl',
   }[size]
 
   const positionClass = {
-    center: 'sm:items-center',
-    top: 'sm:items-start',
-    bottom: '',
+    center: 'self-end sm:self-center',
+    top: 'self-end sm:self-start sm:mt-8',
+    bottom: 'self-end sm:mb-8',
   }[position]
 
   const wasOpenRef = useRef(open)
@@ -64,18 +64,14 @@ export function Modal(props: {
       />
 
       <div className="fixed inset-0 z-10 w-screen overflow-y-auto pt-20 sm:p-0">
-        <div
-          className={clsx(
-            'flex min-h-full items-end justify-center overflow-hidden',
-            positionClass
-          )}
-        >
+        <div className="flex min-h-full justify-center overflow-hidden">
           <DialogPanel
             transition
             className={clsx(
               'transition-opacity data-[closed]:opacity-0 data-[enter]:duration-300 data-[leave]:duration-200 data-[enter]:ease-out data-[leave]:ease-in',
-              'relative lg:mx-6 lg:my-8',
+              'relative',
               sizeClass,
+              positionClass,
               className
             )}
           >
