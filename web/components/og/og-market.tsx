@@ -106,14 +106,14 @@ export function OgMarket(props: OgCardProps) {
               <>
                 <div
                   className={
-                    'mr-4 flex h-12 grow items-center justify-center rounded-lg bg-teal-500'
+                    'mr-4 flex h-12 w-1/2 items-center justify-center rounded-lg bg-teal-500'
                   }
                 >
                   Yes {probabilityAsFloat.toFixed(0)}%
                 </div>
                 <div
                   className={
-                    'flex h-12 grow items-center justify-center rounded-lg bg-red-500 dark:bg-red-400'
+                    'flex h-12 w-1/2 items-center justify-center rounded-lg bg-red-500'
                   }
                 >
                   No {(100 - probabilityAsFloat).toFixed(0)}%
