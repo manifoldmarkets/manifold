@@ -26,6 +26,7 @@ import { getGroupFromSlug } from 'web/lib/supabase/group'
 import { useIsMobile } from 'web/hooks/use-is-mobile'
 import { AboutEditor } from 'web/components/topics/about-editor'
 import { ActivityLog } from 'web/components/activity-log'
+import { removeEmojis } from 'common/util/string'
 
 export async function getStaticProps(ctx: { params: { topicSlug: string } }) {
   const { topicSlug } = ctx.params
@@ -87,7 +88,7 @@ export default function TopicPage(props: {
     >
       <SEO
         title={topic.name}
-        description={`${topic.name} odds on Manifold`}
+        description={`${removeEmojis(topic.name)} odds on Manifold`}
         url={groupPath(topic.slug)}
         ogProps={{
           props: {
