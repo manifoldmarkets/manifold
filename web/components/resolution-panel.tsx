@@ -22,6 +22,7 @@ import { EditCloseTimeModal } from 'web/components/contract/contract-details'
 import clsx from 'clsx'
 import { linkClass } from 'web/components/widgets/site-link'
 import Link from 'next/link'
+import { XIcon } from '@heroicons/react/solid'
 
 function getResolveButtonColor(outcome: resolution | undefined) {
   return outcome === 'YES'
@@ -171,6 +172,12 @@ export function ResolveHeader(props: {
   }
   return (
     <Col>
+      <Row className="justify-end">
+        <Button onClick={onClose} color="gray-white">
+          <XIcon className="mr-2 h-4 w-4" />
+          Close
+        </Button>
+      </Row>
       <Row className="mb-6 items-start justify-between">
         {closeTime && closeTime < Date.now() ? (
           <Col>
