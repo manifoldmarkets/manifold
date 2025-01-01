@@ -7,21 +7,14 @@ export async function distributeKycBonus(pg: SupabaseDirectClient, user: User) {
   const userId = user.id
   await pg.tx(async (tx) => {
     const data = await tx.oneOrNone<{
-      reward_amount: number
       claimed: boolean
-    }>(
-      'select reward_amount, claimed from kyc_bonus_rewards where user_id = $1',
-      [userId]
-    )
+    }>('select claimed from kyc_bonus_rewards where user_id = $1', [userId])
 
     if (data?.claimed) {
       return
     }
 
-    const reward = Math.max(
-      data?.reward_amount ?? 0,
-      KYC_VERIFICATION_BONUS_CASH
-    )
+    const reward = KYC_VERIFICATION_BONUS_CASH
 
     await runTxnFromBank(tx, {
       category: 'KYC_BONUS',
