@@ -28,7 +28,6 @@ const defaultValue: APIResponse<'get-feed'> & { offset: number } = {
   idsToReason: {},
   bets: [],
   reposts: [],
-  ads: [],
   offset: 0,
 }
 
@@ -75,14 +74,13 @@ export function LiveGeneratedFeed(props: { userId: string; hidden?: boolean }) {
       idsToReason: { ...feedData.idsToReason, ...data.idsToReason },
       bets: uniqBy(feedData.bets.concat(data.bets), 'id'),
       reposts: uniqBy(feedData.reposts.concat(data.reposts), 'id'),
-      ads: uniqBy(feedData.ads.concat(data.ads), (a) => a.contract.id),
       offset: feedData.offset + limit,
     })
     setTimeout(() => {
       setLoading(false)
     }, 50)
   }, [data])
-  const { contracts, reposts, ads, comments, bets, idsToReason } = feedData
+  const { contracts, reposts, comments, bets, idsToReason } = feedData
 
   if (hidden) return null
 
@@ -94,34 +92,21 @@ export function LiveGeneratedFeed(props: { userId: string; hidden?: boolean }) {
 
   return (
     <Col className={clsx('relative w-full gap-4')}>
-      {contracts.map((contract, i) => {
+      {contracts.map((contract) => {
         const repost = reposts.find((r) => r.contract_id === contract.id)
         const comment = comments.find((c) => c.contractId === contract.id)
         const bet = bets.find((b) => b.contractId === contract.id)
-        const adIndex = i / AD_PERIOD - 1
-        const ad = ads[adIndex]
+
         return (
-          <Fragment key={contract.id + comment?.id}>
-            {i % AD_PERIOD === 0 && i !== 0 && ad && (
-              <FeedCard
-                contract={ad.contract}
-                repost={undefined}
-                comment={undefined}
-                bet={undefined}
-                user={user}
-                reason={'ad'}
-                adId={ad.adId}
-              />
-            )}
-            <FeedCard
-              contract={contract}
-              repost={repost}
-              comment={comment}
-              bet={bet}
-              user={user}
-              reason={idsToReason[contract.id]}
-            />
-          </Fragment>
+          <FeedCard
+            key={contract.id + comment?.id}
+            contract={contract}
+            repost={repost}
+            comment={comment}
+            bet={bet}
+            user={user}
+            reason={idsToReason[contract.id]}
+          />
         )
       })}
       <div className="relative">
@@ -161,9 +146,8 @@ const FeedCard = (props: {
   bet: Bet | undefined
   user: User | undefined | null
   reason: string
-  adId?: string
 }) => {
-  const { contract, adId, reason, user, repost, comment, bet } = props
+  const { contract, reason, user, repost, comment, bet } = props
   const [hidden, setHidden] = useState(false)
   return hidden ? (
     <Col
@@ -192,7 +176,6 @@ const FeedCard = (props: {
       key={contract.id}
       hide={() => setHidden(true)}
       feedReason={reason}
-      promotedData={adId ? { adId, reward: AD_REDEEM_REWARD } : undefined}
     />
   )
 }

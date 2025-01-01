@@ -18,7 +18,6 @@ import { useIsVisible } from 'web/hooks/use-is-visible'
 import { useSavedContractMetrics } from 'web/hooks/use-saved-contract-metrics'
 import { useUser } from 'web/hooks/use-user'
 import { track } from 'web/lib/service/analytics'
-import { getAdCanPayFunds } from 'web/lib/supabase/ads'
 import { getMarketMovementInfo } from 'web/lib/supabase/feed-timeline/feed-market-movement-display'
 import { ClickFrame } from 'web/components/widgets/click-frame'
 import { Col } from 'web/components/layout/col'
@@ -70,7 +69,6 @@ export function WhichPartyCard(props: {
         contractId: contract.id,
         creatorId: contract.creatorId,
         slug: contract.slug,
-        isPromoted: !!promotedData,
       } as ContractCardView)
       setVisible(true)
     },
@@ -81,19 +79,6 @@ export function WhichPartyCard(props: {
     }
   )
 
-  const adSecondsLeft =
-    // eslint-disable-next-line react-hooks/rules-of-hooks
-    promotedData && useAdTimer(contract.id, AD_WAIT_SECONDS, visible)
-  const [canAdPay, setCanAdPay] = useState(true)
-  const adId = promotedData?.adId
-  useEffect(() => {
-    if (adId) {
-      getAdCanPayFunds(adId).then((canPay) => {
-        setCanAdPay(canPay)
-      })
-    }
-  }, [adId])
-
   const { startTime, ignore } = getMarketMovementInfo(contract)
 
   const trackClick = () =>
@@ -101,7 +86,6 @@ export function WhichPartyCard(props: {
       contractId: contract.id,
       creatorId: contract.creatorId,
       slug: contract.slug,
-      isPromoted: !!promotedData,
     })
 
   const isCashContract = contract.token === 'CASH'
@@ -168,16 +152,6 @@ export function WhichPartyCard(props: {
             className="my-4"
             startDate={startTime ? startTime : contract.createdTime}
           />
-        )}
-        {promotedData && canAdPay && (
-          <Col className={clsx('w-full items-center')}>
-            <ClaimButton
-              {...promotedData}
-              onClaim={() => Router.push(path)}
-              disabled={adSecondsLeft !== 0}
-              className={'z-10 my-2 whitespace-nowrap'}
-            />
-          </Col>
         )}
 
         {isBinaryCpmm && metrics && metrics.hasShares && (
