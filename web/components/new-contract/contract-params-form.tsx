@@ -208,7 +208,10 @@ export function ContractParamsForm(props: {
   }, [addAnswersMode, answers.length])
 
   const questionKey = 'new-question' + paramsKey
-  const [question, setQuestion] = usePersistentLocalState('', questionKey)
+  const [question, setQuestion] = usePersistentLocalState(
+    params?.q ?? '',
+    questionKey
+  )
 
   const categorizedQuestionKey = 'last-categorized-question' + paramsKey
   const [categorizedQuestion, setCategorizedQuestion] = usePersistentLocalState(
