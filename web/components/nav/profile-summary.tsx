@@ -36,7 +36,6 @@ export function ProfileSummary(props: { user: User; className?: string }) {
             numberType="animated"
             className="mr-1 text-violet-600 dark:text-violet-400"
           />
-          <span>🎁</span>
         </div>
         <CoinNumber
           className="text-sm text-amber-600 dark:text-amber-400"
