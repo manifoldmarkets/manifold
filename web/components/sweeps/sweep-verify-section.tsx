@@ -6,14 +6,12 @@ import {
   getVerificationStatus,
   PROMPT_USER_VERIFICATION_MESSAGES,
 } from 'common/gidx/user'
-import { type User } from 'common/user'
 import { capitalize } from 'lodash'
 import Link from 'next/link'
-import { ReactNode, useEffect, useState } from 'react'
+import { ReactNode } from 'react'
 import { usePersistentLocalState } from 'web/hooks/use-persistent-local-state'
 import { usePrivateUser, useUser } from 'web/hooks/use-user'
 import { firebaseLogin } from 'web/lib/firebase/users'
-import { db } from 'web/lib/supabase/db'
 import { Button, buttonClass, ColorType } from '../buttons/button'
 import { Col } from '../layout/col'
 import { Row } from '../layout/row'
