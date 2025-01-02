@@ -161,6 +161,17 @@ function MyApp({ Component, pageProps }: AppProps<ManifoldPageProps>) {
           content="width=device-width, initial-scale=1,maximum-scale=1, user-scalable=no"
         />
         <meta name="apple-itunes-app" content="app-id=6444136749" />
+        {/* set safari overscroll/address bar to canvas-0. TODO: change based on site theme preference */}
+        <meta
+          name="theme-color"
+          content="#1e293b"
+          media="(prefers-color-scheme: dark)"
+        />
+        <meta
+          name="theme-color"
+          content="#fdfeff"
+          media="(prefers-color-scheme: light)"
+        />
         <link
           rel="search"
           type="application/opensearchdescription+xml"
