@@ -331,6 +331,7 @@ export const PARTNER_USER_IDS: string[] = [
   'EJQOCF3MfLTFYbhiKncrNefQDBz1', // chrisjbillington
   '7HhTMy4xECaVKvl5MmEAfVUkRCS2', // KevinBurke
   'oPxjIzlvC5fRbGCaVgkvAiyoXBB2', // mattyb
+  'OdBj5DW6PbYtnImvybpyZzfhb133', //jim
 ]
 
 export const NEW_USER_HERLPER_IDS = [
