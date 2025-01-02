@@ -23,7 +23,7 @@ PARTICIPANTS IN ANY OF MANIFOLD’S SWEEPSTAKES PREDICTION GAMES MUST CREATE AND
    
 1.5. Winning a prize is contingent upon fulfilling all requirements set out in these Sweepstakes Rules.  
    
-1.6. Current Employees of Manaplay LLC ., any of its affiliates, subsidiaries, holding companies, advertising agencies, or any other company or individual who has direct control or involvement with the design, production, execution, settlement, or distribution of the Sweepstakes prediction games are not eligible to participate.  Please refer to the Terms and Conditions for further information about other Manifold product offering eligibility.    
+1.6. Current Employees of Manaplay LLC, any of its affiliates, subsidiaries, holding companies, advertising agencies, or any other company or individual who has direct control or involvement with the design, production, execution, settlement, or distribution of the Sweepstakes prediction games may only participate in trades up to a maximum of 10 sweepcash per event.  Please refer to the Terms and Conditions for further information about other Manifold product offering eligibility.    
    
 1.7. The Sweepstakes is open to Participants who do not have access to material, confidential, information that might impact the outcome of a Sweepstakes Prediction game. If a Participant is, in Manifold’s best judgment determined to have access to material, confidential, non-public information, or is using systematic methods to manipulate the Sweepstakes to obtain prizes, Manifold reserves the right to limit entries or exclude the Participant from the Sweepstakes.  
    
@@ -236,4 +236,4 @@ Participants must adhere to the following process to receive Sweepcash by post:
 12\. PARTICIPANT’S PERSONAL INFORMATION  
 12.1. Information collected from Participants is subject to Manifold's Privacy Policy which is available on the Platform and at manifold.markets.  
    
-These Sweepstakes Rules were last updated on October 3rd, 2024\.  
+These Sweepstakes Rules were last updated on January 2nd, 2025\.  
