@@ -14,14 +14,12 @@ fi
 
 # Set working directory and other environment-specific variables
 if [[ "$ENV" == mani:* ]]; then
-    WORKING_DIR="mani"
     # Try to get local IP address from WiFi interface first, then ethernet
     LOCAL_IP=$(ipconfig getifaddr en0)
     if [ -z "$LOCAL_IP" ]; then
         LOCAL_IP=$(ipconfig getifaddr en1)
     fi
 else
-    WORKING_DIR="web"
     LOCAL_IP="localhost"
 fi
 
@@ -52,7 +50,7 @@ if [[ "$ENV" == mani:* ]]; then
     tmux new-session -d -s $SESSION_NAME "NEXT_PUBLIC_FIREBASE_ENV=${NEXT_ENV} yarn --cwd=backend/api $API_COMMAND"
     
     # Split window horizontally and start Expo
-    tmux split-window -h "NEXT_PUBLIC_API_URL=${LOCAL_IP}:8088 NEXT_PUBLIC_FIREBASE_ENV=${NEXT_ENV} yarn --cwd=${WORKING_DIR} start:${FIREBASE_PROJECT}"
+    tmux split-window -h "NEXT_PUBLIC_API_URL=${LOCAL_IP}:8088 NEXT_PUBLIC_FIREBASE_ENV=${NEXT_ENV} yarn --cwd=mani start:${FIREBASE_PROJECT}"
     
     # Select the Expo pane (for input)
     tmux select-pane -t 1
@@ -60,11 +58,13 @@ if [[ "$ENV" == mani:* ]]; then
     # Attach to the session
     tmux attach-session -t $SESSION_NAME
 else
-    # For web environments, use concurrently
-    npx concurrently \
-        -n "API,NEXT,TS" \
-        -c "white,magenta,cyan" \
-        "NEXT_PUBLIC_FIREBASE_ENV=${NEXT_ENV} yarn --cwd=backend/api $API_COMMAND" \
-        "NEXT_PUBLIC_API_URL=${LOCAL_IP}:8088 NEXT_PUBLIC_FIREBASE_ENV=${NEXT_ENV} yarn --cwd=${WORKING_DIR} serve" \
-        "yarn --cwd=${WORKING_DIR} ts-watch"
+npx concurrently \
+    -n API,NEXT,TS \
+    -c white,magenta,cyan \
+    "cross-env NEXT_PUBLIC_FIREBASE_ENV=${NEXT_ENV} \
+                      yarn --cwd=backend/api $API_COMMAND" \
+    "cross-env NEXT_PUBLIC_API_URL=${LOCAL_IP}:8088 \
+              NEXT_PUBLIC_FIREBASE_ENV=${NEXT_ENV} \
+              yarn --cwd=web serve" \
+    "cross-env yarn --cwd=web ts-watch"
 fi
