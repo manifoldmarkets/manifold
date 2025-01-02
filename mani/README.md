@@ -36,10 +36,7 @@ We're using Expo to help with android and ios builds. You can find more informat
 
 ## Building
 
-- You'll need to get Android signing credentials from Ian (located [here](https://drive.google.com/drive/folders/155gaiY97oY0IkQvHGKHqKbXEeO4LaVCe?usp=sharing)) to properly sign android builds for the google play store. You'll probably need to be added to the Apple Business developer team when we get that to build ios apps.
-- After changing anything in the `app.config.js` or `app.json` you'll want to run `npx expo prebuild` to clear the android and ios folders
-- Before every build we clean and reset the git tree so you'll want to make sure any changes are committed. The dialog will ask you to confirm this.
-- After every build your git tree may be dirty with build artifacts. I tried removing these and ended up down in a git-sponsored nightmare, so I wouldn't advise trying to edit these files out of the git history unless you really know what you're doing.
+- You'll need to get Android signing credentials from Ian (located [here](https://drive.google.com/drive/folders/155gaiY97oY0IkQvHGKHqKbXEeO4LaVCe?usp=sharing)) to properly sign android builds for the google play store. You'll also need to be added to the Apple Business developer team to build ios apps.
 - The following commands build the binaries locally by default. If you remove the `--local` flag it will build in the EAS/Expo cloud, (this tends to be much slower, though).
 - Before every submission to the app store you'll want to bump the following fields in `app.json`:
   - `expo.version`
@@ -52,13 +49,13 @@ We're using Expo to help with android and ios builds. You can find more informat
 - Builds an Android APK for previewing on a device
 - `adb install build_name_here.apk` after it's built to install
 
-`yarn build:ios:prod`
+`yarn build:ios:prod` or `yarn build:ios:dev`
 
 - Builds an iOS IPA that you can upload to TestFlight via the [Transporter](https://apps.apple.com/us/app/transporter/id1450874784?mt=12) app
 
 `yarn build:ios:preview`
 
-- Builds an iOS IPA for previewing on a device
+- Builds an iOS IPA for previewing on a device without the need for an expo server running on your machine
 - Drag and drop onto your plugged in iPhone Finder window to install
 
 **External**  

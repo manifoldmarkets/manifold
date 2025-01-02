@@ -93,8 +93,8 @@ android {
         applicationId 'com.manifold.mani'
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
-        versionCode 62
-        versionName "2.0.54"
+        versionCode 65
+        versionName "2.0.57"
     }
     signingConfigs {
         debug {
