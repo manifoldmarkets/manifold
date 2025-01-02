@@ -210,6 +210,7 @@ export const MOD_IDS = [
   'oPxjIzlvC5fRbGCaVgkvAiyoXBB2', // mattyb
   'Iua2KQvL6KYcfGLGNI6PVeGkseo1', // Ziddletwix
   'Gg7t9vPD4WPD1iPgj9RUFLYTxgH2', // nikki
+  'XNrWcIrA22hpv20fHn4ApoTPsh63', // bagelfan
 ]
 
 export const SWEEPSTAKES_MOD_IDS = [
