@@ -22,11 +22,8 @@ We're using Expo to help with android and ios builds. You can find more informat
 3. **Android**:
    - `yarn android:dev` or `yarn android:prod` builds and installs the dev client on your device automatically
    - Scan the QR code with the app (it opens automatically after installing)
-4. **Locally hosted manifold**:
-   - Set the `NEXT_PUBLIC_API_URL` in dev.sh to your local ip address
-   - Run `dev.sh prod` or `dev.sh dev` to start the local server
-   - Change the `baseUri` in `App.tsx` to your local ip address
-   - Follow one of the Android or iOS steps to start the app on your device
+4. **Local server**:
+   - In the workspace root directory you can run: `./dev.sh mani:dev` or `./dev.sh mani:prod` - you have to install tmux first via `brew install tmux`
 
 - **Note:** when switching between dev and prod you'll have to run `yarn clear` & Ctrl+C to clear the env variable.
 - Want to see console logs? (Only works on android):
@@ -57,7 +54,7 @@ We're using Expo to help with android and ios builds. You can find more informat
 
 `yarn build:ios:prod`
 
-- Builds an iOS IPA that you can upload to TestFlight
+- Builds an iOS IPA that you can upload to TestFlight via the [Transporter](https://apps.apple.com/us/app/transporter/id1450874784?mt=12) app
 
 `yarn build:ios:preview`
 
