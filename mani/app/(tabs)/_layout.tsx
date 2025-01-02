@@ -28,7 +28,7 @@ export default function TabLayout() {
     marginBottom: 4,
   }
 
-  const { user } = useUser()
+  const user = useUser()
   return (
     <Tabs
       screenOptions={{
@@ -71,7 +71,7 @@ export default function TabLayout() {
       <Tabs.Screen
         name={'profile'}
         options={{
-          title: user?.displayName || 'Profile',
+          title: user?.name || 'Profile',
           tabBarIcon: ({ color }) => (
             <View
               style={{

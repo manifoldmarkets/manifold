@@ -9,13 +9,25 @@ import { Rounded } from 'constants/border-radius'
 import { useColor } from 'hooks/use-color'
 import { useUser } from 'hooks/use-user'
 import { Image, View } from 'react-native'
+import { auth } from 'lib/init'
+import { clearData } from 'lib/auth-storage'
+import { Button } from 'components/buttons/button'
 
 export default function Profile() {
   // TODO: actually grab this data. Do sorting in backend
   // TODO: this view only works for binary contracts. There needs to be a way to make this work for multi choice contracts as well
 
   const color = useColor()
-  const { user } = useUser()
+  const user = useUser()
+
+  const signOut = async () => {
+    try {
+      await auth.signOut()
+      await clearData('user')
+    } catch (err) {
+      console.error('Error signing out:', err)
+    }
+  }
 
   return (
     <Page>
@@ -57,12 +69,19 @@ export default function Profile() {
           </View>
           <Col>
             <ThemedText size="md" weight="semibold">
-              {user?.displayName}
+              {user?.name}
             </ThemedText>
             <ThemedText size="md" color={color.textTertiary}>
-              {user?.displayName}
+              {user?.name}
             </ThemedText>
           </Col>
+          <Button
+            onPress={signOut}
+            variant="gray"
+            size="sm"
+            title="Sign out"
+            style={{ marginTop: 20 }}
+          />
         </Row>
         <Row>
           <Col style={{ width: '50%' }}>

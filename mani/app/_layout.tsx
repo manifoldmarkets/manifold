@@ -1,21 +1,17 @@
 /* eslint-disable @typescript-eslint/no-require-imports */
 import 'expo-dev-client'
 import * as Notifications from 'expo-notifications'
-import { User as FirebaseUser } from 'firebase/auth'
 import { useEffect, useRef, useState } from 'react'
 import { Dimensions, Linking, Platform, SafeAreaView } from 'react-native'
-import { app, auth, ENV } from 'lib/init'
-import { setFirebaseUserViaJson } from 'common/firebase-auth'
+import { ENV } from 'lib/init'
 import { Notification } from 'common/notification'
 import { IosIapListener } from 'components/ios-iap-listener'
-import { Subscription } from 'expo-modules-core'
 import { StatusBar } from 'expo-status-bar'
 import { withIAPContext } from 'react-native-iap'
 import * as Sentry from '@sentry/react-native'
 import { log } from 'components/logger'
 import { SplashAuth } from 'components/splash-auth'
 import { useFonts } from '@expo-google-fonts/readex-pro'
-import { getData } from 'lib/auth-storage'
 import { useIsConnected } from 'lib/use-is-connected'
 import { TokenModeProvider } from 'hooks/use-token-mode'
 import { Stack } from 'expo-router'
@@ -29,15 +25,14 @@ import Toast from 'react-native-toast-message'
 const HEADER_HEIGHT = 250
 
 // Initialize Sentry
-// Initialize Sentry
 Sentry.init({
   dsn: 'https://2353d2023dad4bc192d293c8ce13b9a1@o4504040581496832.ingest.us.sentry.io/4504040585494528',
   debug: ENV === 'DEV',
 })
 
 function RootLayout() {
-  // Your existing App.tsx logic here
-  const notificationResponseListener = useRef<Subscription>()
+  const notificationResponseListener =
+    useRef<Notifications.EventSubscription>(undefined)
   const [loaded] = useFonts({
     JetBrainsMono: require('../assets/fonts/JetBrainsMono[wght].ttf'),
     JetBrainsMonoItalic: require('../assets/fonts/JetBrainsMono-Italic[wght].ttf'),
@@ -45,29 +40,7 @@ function RootLayout() {
     FigtreeItalic: require('../assets/fonts/Figtree-Italic-VariableFont_wght.ttf'),
   })
 
-  // const [fbUser, setFbUser] = useState<FirebaseUser | null>(auth.currentUser)
-  const { user, setUser } = useUser() // Add this
-  // auth.onAuthStateChanged((user) => (user ? setFbUser(user) : null))
-
-  auth.onAuthStateChanged((user) => {
-    if (user) {
-      setUser(user) // Add this
-    } else {
-      setUser(null) // Add this
-    }
-  })
-  const signInUserFromStorage = async () => {
-    const user = await getData<FirebaseUser>('user')
-    if (!user) return
-    log('Got user from storage:', user.email)
-    // setFbUser(user)
-    setUser(user)
-    await setFirebaseUserViaJson(user, app)
-  }
-
-  useEffect(() => {
-    signInUserFromStorage()
-  }, [])
+  const user = useUser()
 
   // IAP
   const [checkoutAmount, setCheckoutAmount] = useState<number | null>(null)
@@ -131,7 +104,6 @@ function RootLayout() {
   }
 
   const isConnected = useIsConnected()
-  // const fullyLoaded = fbUser && isConnected
   const fullyLoaded = user && isConnected
   const width = Dimensions.get('window').width //full width
   const height = Dimensions.get('window').height //full height
@@ -161,7 +133,7 @@ function RootLayout() {
 
         <SplashAuth
           source={require('../assets/images/splash.png')}
-          fbUser={user}
+          user={user}
           isConnected={isConnected}
           height={height}
           width={width}

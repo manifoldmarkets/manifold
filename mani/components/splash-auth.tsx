@@ -1,17 +1,17 @@
 import { ImageSourcePropType } from 'react-native'
 import { useEffect } from 'react'
-import { User as FirebaseUser } from '@firebase/auth'
 import { Splash } from 'components/splash'
 import { AuthPage } from 'components/auth-page'
+import { User } from 'common/user'
 
 export const SplashAuth = (props: {
   height: number
   width: number
   source: ImageSourcePropType
-  fbUser: FirebaseUser | null
+  user: User | null | undefined
   isConnected: boolean
 }) => {
-  const { isConnected, fbUser, width, height, source } = props
+  const { isConnected, user, width, height, source } = props
 
   useEffect(() => {
     if (!isConnected) {
@@ -23,6 +23,6 @@ export const SplashAuth = (props: {
     return <Splash height={height} width={width} source={source} />
   }
 
-  if (!fbUser) return <AuthPage height={height} width={width} />
+  if (user === null) return <AuthPage height={height} width={width} />
   else return <></>
 }
