@@ -23,7 +23,7 @@ We're using Expo to help with android and ios builds. You can find more informat
    - `yarn android:dev` or `yarn android:prod` builds and installs the dev client on your device automatically
    - Scan the QR code with the app (it opens automatically after installing)
 4. **Local server**:
-   - In the workspace root directory you can run: `./dev.sh mani:dev` or `./dev.sh mani:prod` - you have to install tmux first via `brew install tmux`
+   - In the workspace root directory you can run: `./dev.sh mani:dev` or `./dev.sh mani:prod` - you have to install tmux first via `brew install tmux` and you have to be on the same wifi network as your phone.
 
 - **Note:** when switching between dev and prod you'll have to run `yarn clear` & Ctrl+C to clear the env variable.
 - Want to see console logs? (Only works on android):
