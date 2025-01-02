@@ -1,18 +1,14 @@
 import clsx from 'clsx'
 import Link from 'next/link'
 import Router from 'next/router'
-import { useEffect, useState } from 'react'
-
-import { AD_WAIT_SECONDS } from 'common/boost'
+import { useState } from 'react'
 import { Contract, contractPath } from 'common/contract'
 import { ContractCardView } from 'common/events'
-import { ClaimButton } from 'web/components/ad/claim-ad-button'
 import {
   ContractStatusLabel,
   VisibilityIcon,
 } from 'web/components/contract/contracts-table'
 import { YourMetricsFooter } from 'web/components/contract/feed-contract-card'
-import { useAdTimer } from 'web/hooks/use-ad-timer'
 import { useLiveContract } from 'web/hooks/use-contract'
 import { useIsVisible } from 'web/hooks/use-is-visible'
 import { useSavedContractMetrics } from 'web/hooks/use-saved-contract-metrics'
