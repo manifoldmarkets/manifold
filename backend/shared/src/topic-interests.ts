@@ -56,7 +56,7 @@ export const buildUserInterestsCache = async (userIds: string[]) => {
         const results = await pg.multi(
           `
         select group_id from group_members where member_id = $1;
-        
+
         with user_blocked_slugs as (
           select pu.id,jsonb_array_elements_text(pu.data->'blockedGroupSlugs') as slug
           from private_users pu
@@ -121,14 +121,14 @@ export const buildUserInterestsCache = async (userIds: string[]) => {
   log('built user topic interests cache')
 }
 
-export const minimumContractsQualityBarWhereClauses = (adQuery: boolean) =>
+export const minimumContractsQualityBarWhereClauses = () =>
   buildArray(
     where(`contracts.close_time > now()`),
     where(`contracts.outcome_type != 'STONK'`),
     where(`contracts.outcome_type != 'BOUNTIED_QUESTION'`),
-    !adQuery && where(`contracts.tier != 'play'`), // filtering by liquidity takes too long
+    where(`contracts.tier != 'play'`), // filtering by liquidity takes too long
     where(`contracts.visibility = 'public'`),
-    !adQuery && where(`contracts.unique_bettor_count > 1`)
+    where(`contracts.unique_bettor_count > 1`)
   )
 
 const contractsMeetingMinimumBar = renderSql(
@@ -136,7 +136,7 @@ const contractsMeetingMinimumBar = renderSql(
   from('contracts'),
   where('group_contracts.contract_id = contracts.id'),
   where(`coalesce(contracts.data->'isRanked', 'true')::boolean = true`),
-  ...minimumContractsQualityBarWhereClauses(false)
+  ...minimumContractsQualityBarWhereClauses()
 )
 
 export const minimumTopicsQualityBarClauses = [

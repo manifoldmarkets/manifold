@@ -1,9 +1,6 @@
 import clsx from 'clsx'
 import Link from 'next/link'
 import Router from 'next/router'
-import { useEffect, useState } from 'react'
-
-import { AD_WAIT_SECONDS } from 'common/boost'
 import { Contract, contractPath, isBinaryMulti } from 'common/contract'
 import { ContractMetric } from 'common/contract-metric'
 import { ENV_CONFIG, SWEEPIES_NAME } from 'common/envs/constants'
@@ -13,7 +10,6 @@ import { formatWithToken, shortFormatNumber } from 'common/util/format'
 import { removeUndefinedProps } from 'common/util/object'
 import { removeEmojis } from 'common/util/string'
 import { TbDropletHeart, TbMoneybag } from 'react-icons/tb'
-import { ClaimButton } from 'web/components/ad/claim-ad-button'
 import { BinaryMultiAnswersPanel } from 'web/components/answers/binary-multi-answers-panel'
 import { NumericBetButton } from 'web/components/bet/numeric-bet-button'
 import { Button } from 'web/components/buttons/button'
@@ -26,14 +22,12 @@ import { TopicTag } from 'web/components/topics/topic-tag'
 import { Avatar } from 'web/components/widgets/avatar'
 import { Tooltip } from 'web/components/widgets/tooltip'
 import { UserLink } from 'web/components/widgets/user-link'
-import { useAdTimer } from 'web/hooks/use-ad-timer'
 import { useAPIGetter } from 'web/hooks/use-api-getter'
 import { useLiveContract } from 'web/hooks/use-contract'
 import { useIsVisible } from 'web/hooks/use-is-visible'
 import { useSavedContractMetrics } from 'web/hooks/use-saved-contract-metrics'
 import { useUser } from 'web/hooks/use-user'
 import { track } from 'web/lib/service/analytics'
-import { getAdCanPayFunds } from 'web/lib/supabase/ads'
 import { getMarketMovementInfo } from 'web/lib/supabase/feed-timeline/feed-market-movement-display'
 import { SpiceCoin } from 'web/public/custom-components/spiceCoin'
 import { SimpleAnswerBars } from '../answers/answers-panel'
@@ -61,7 +55,6 @@ const DEBUG_FEED_CARDS =
 export function FeedContractCard(props: {
   contract: Contract
   children?: React.ReactNode
-  promotedData?: { adId: string; reward: number }
   /** location of the card, to disambiguate card click events */
   trackingPostfix?: string
   className?: string
@@ -74,7 +67,6 @@ export function FeedContractCard(props: {
   feedReason?: string
 }) {
   const {
-    promotedData,
     trackingPostfix,
     className,
     children,
@@ -110,7 +102,6 @@ export function FeedContractCard(props: {
 
   // Note: if we ever make cards taller than viewport, we'll need to pass a lower threshold to the useIsVisible hook
 
-  const [visible, setVisible] = useState(false)
   const { ref } = useIsVisible(
     () => {
       if (!DEBUG_FEED_CARDS)
@@ -118,34 +109,15 @@ export function FeedContractCard(props: {
           contractId: contract.id,
           creatorId: contract.creatorId,
           slug: contract.slug,
-          isPromoted: !!promotedData,
         } as ContractCardView)
-
-      setVisible(true)
     },
     false,
-    true,
-    () => {
-      setVisible(false)
-    }
+    true
   )
 
   const topics = useAPIGetter('market/:contractId/groups', {
     contractId: contract.id,
   })
-
-  const adSecondsLeft =
-    // eslint-disable-next-line react-hooks/rules-of-hooks
-    promotedData && useAdTimer(contract.id, AD_WAIT_SECONDS, visible)
-  const [canAdPay, setCanAdPay] = useState(true)
-  const adId = promotedData?.adId
-  useEffect(() => {
-    if (adId) {
-      getAdCanPayFunds(adId).then((canPay) => {
-        setCanAdPay(canPay)
-      })
-    }
-  }, [adId])
 
   const { probChange, startTime, ignore } = getMarketMovementInfo(contract)
 
@@ -156,7 +128,6 @@ export function FeedContractCard(props: {
         contractId: contract.id,
         creatorId: contract.creatorId,
         slug: contract.slug,
-        isPromoted: !!promotedData,
         feedReason: feedReason,
       })
     )
@@ -223,22 +194,15 @@ export function FeedContractCard(props: {
             </Row>
           </UserHovercard>
           <Row className="gap-2">
-            {isCashContract ? (
+            {isCashContract && (
               <span
                 className={clsx(
-                  ' bg-amber-200 text-amber-700',
+                  'bg-amber-200 text-amber-700',
                   'rounded-full px-2 pt-1 text-xs font-semibold'
                 )}
               >
                 <SweepiesCoin className="-mt-0.5" /> {capitalize(SWEEPIES_NAME)}{' '}
               </span>
-            ) : (
-              promotedData &&
-              canAdPay && (
-                <div className="text-ink-400 w-12 text-sm">
-                  Ad {adSecondsLeft ? adSecondsLeft + 's' : ''}
-                </div>
-              )
             )}
             {marketTier ? (
               <TierTooltip tier={marketTier} contract={contract} />
@@ -334,16 +298,6 @@ export function FeedContractCard(props: {
             className="my-4"
             startDate={startTime ? startTime : contract.createdTime}
           />
-        )}
-        {promotedData && canAdPay && (
-          <Col className={clsx('w-full items-center')}>
-            <ClaimButton
-              {...promotedData}
-              onClaim={() => Router.push(path)}
-              disabled={adSecondsLeft !== undefined && adSecondsLeft > 0}
-              className={'z-10 my-2 whitespace-nowrap'}
-            />
-          </Col>
         )}
 
         {isBinaryCpmm && metrics && metrics.hasShares && (

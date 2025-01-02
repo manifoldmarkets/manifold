@@ -1,22 +1,16 @@
 import clsx from 'clsx'
 import Link from 'next/link'
 import Router from 'next/router'
-import { useEffect, useState } from 'react'
-
-import { AD_WAIT_SECONDS } from 'common/boost'
 import { Contract, contractPath, isBinaryMulti } from 'common/contract'
 import { ContractCardView } from 'common/events'
-import { ClaimButton } from 'web/components/ad/claim-ad-button'
 import { BinaryMultiAnswersPanel } from 'web/components/answers/binary-multi-answers-panel'
 import {
   ContractStatusLabel,
   VisibilityIcon,
 } from 'web/components/contract/contracts-table'
-import { useAdTimer } from 'web/hooks/use-ad-timer'
 import { useLiveContract } from 'web/hooks/use-contract'
 import { useIsVisible } from 'web/hooks/use-is-visible'
 import { track } from 'web/lib/service/analytics'
-import { getAdCanPayFunds } from 'web/lib/supabase/ads'
 import { getMarketMovementInfo } from 'web/lib/supabase/feed-timeline/feed-market-movement-display'
 import { FeedBinaryChart } from '../feed/feed-chart'
 import { Col } from '../layout/col'
@@ -62,7 +56,6 @@ export function HorizontalDashboardCard(props: {
 
   // Note: if we ever make cards taller than viewport, we'll need to pass a lower threshold to the useIsVisible hook
 
-  const [visible, setVisible] = useState(false)
   const { ref } = useIsVisible(
     () => {
       track('view market card', {
@@ -71,27 +64,10 @@ export function HorizontalDashboardCard(props: {
         slug: contract.slug,
         isPromoted: !!promotedData,
       } as ContractCardView)
-      setVisible(true)
     },
     false,
-    true,
-    () => {
-      setVisible(false)
-    }
+    true
   )
-
-  const adSecondsLeft =
-    // eslint-disable-next-line react-hooks/rules-of-hooks
-    promotedData && useAdTimer(contract.id, AD_WAIT_SECONDS, visible)
-  const [canAdPay, setCanAdPay] = useState(true)
-  const adId = promotedData?.adId
-  useEffect(() => {
-    if (adId) {
-      getAdCanPayFunds(adId).then((canPay) => {
-        setCanAdPay(canPay)
-      })
-    }
-  }, [adId])
 
   const { startTime, ignore } = getMarketMovementInfo(contract)
 
@@ -188,16 +164,6 @@ export function HorizontalDashboardCard(props: {
               className="mb-8 mt-2"
               startDate={startTime ? startTime : contract.createdTime}
             />
-          )}
-          {promotedData && canAdPay && (
-            <Col className={clsx('w-full items-center')}>
-              <ClaimButton
-                {...promotedData}
-                onClaim={() => Router.push(path)}
-                disabled={adSecondsLeft !== undefined && adSecondsLeft > 0}
-                className={'z-10 my-2 whitespace-nowrap'}
-              />
-            </Col>
           )}
         </div>
       </Col>

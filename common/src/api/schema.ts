@@ -39,7 +39,6 @@ import { ChatMessage, PrivateChatMessage } from 'common/chat-message'
 import { PrivateUser, User } from 'common/user'
 import { ManaSupply } from 'common/stats'
 import { Repost } from 'common/repost'
-import { adContract } from 'common/boost'
 import { PERIODS } from 'common/period'
 import { SWEEPS_MIN_BET } from 'common/economy'
 import {
@@ -1518,7 +1517,6 @@ export const API = (_apiTypeCheck = {
     returns: {} as {
       contracts: Contract[]
       comments: ContractComment[]
-      ads: adContract[]
       bets: Bet[]
       reposts: Repost[]
       idsToReason: { [id: string]: string }

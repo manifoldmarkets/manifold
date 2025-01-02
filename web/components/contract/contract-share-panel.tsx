@@ -1,9 +1,6 @@
 import { Contract } from 'common/contract'
 import { Spacer } from '../layout/spacer'
-import {
-  CreatorShareBoostPanel,
-  NonCreatorSharePanel,
-} from './creator-share-panel'
+import { CreatorSharePanel, NonCreatorSharePanel } from './creator-share-panel'
 
 export default function ContractSharePanel(props: {
   isClosed: boolean
@@ -21,7 +18,7 @@ export default function ContractSharePanel(props: {
         (isCreator ? (
           <>
             {showResolver && <Spacer h={4} />}
-            <CreatorShareBoostPanel contract={contract} />
+            <CreatorSharePanel contract={contract} />
           </>
         ) : (
           <NonCreatorSharePanel contract={contract} />
