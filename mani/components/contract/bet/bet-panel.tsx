@@ -2,7 +2,7 @@ import { Contract, isBinaryMulti } from 'common/contract'
 import { Col } from 'components/layout/col'
 import { ThemedText } from 'components/themed-text'
 import { useColor } from 'hooks/use-color'
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { KeyboardAvoidingView, Platform } from 'react-native'
 import { BetAmountInput } from './bet-input'
 import { Row } from 'components/layout/row'
@@ -15,6 +15,9 @@ import { TokenNumber } from 'components/token/token-number'
 import { NumberText } from 'components/number-text'
 import { useUser } from 'hooks/use-user'
 import Slider from '@react-native-community/slider'
+import { useTokenMode } from 'hooks/use-token-mode'
+import { MANA_MIN_BET, SWEEPS_MIN_BET } from 'common/economy'
+import { formatMoneyNumber } from 'common/util/format'
 
 export type BinaryOutcomes = 'YES' | 'NO'
 
@@ -36,6 +39,7 @@ export function BetPanel({
 }) {
   const color = useColor()
   const [amount, setAmount] = useState(0)
+  const { token } = useTokenMode()
 
   const answer =
     answerId && 'answers' in contract
@@ -44,7 +48,32 @@ export function BetPanel({
 
   const isBinaryMC = isBinaryMulti(contract)
   const [loading, setLoading] = useState(false)
+  const [error, setError] = useState<string | null>(null)
   const user = useUser()
+
+  // Check for errors.
+  useEffect(() => {
+    if (
+      user &&
+      ((token === 'MANA' &&
+        (user.balance < (amount ?? 0) || user.balance < MANA_MIN_BET)) ||
+        (token === 'CASH' &&
+          (user.cashBalance < (amount ?? 0) ||
+            user.cashBalance < SWEEPS_MIN_BET)))
+    ) {
+      setError('Insufficient balance')
+    } else if (amount !== undefined) {
+      if (token === 'CASH' && amount < SWEEPS_MIN_BET) {
+        setError(
+          'Minimum amount: ' + formatMoneyNumber(SWEEPS_MIN_BET) + ' Sweeps'
+        )
+      } else {
+        setError(null)
+      }
+    } else {
+      setError(null)
+    }
+  }, [amount, user, token])
 
   // TODO: add bet logic
   const onPress = async () => {
@@ -94,7 +123,7 @@ export function BetPanel({
               {!!answer && !isBinaryMC && answer.text}
             </ThemedText>
           </Col>
-          <Col style={{ gap: 16 }}>
+          <Col style={{ gap: 12 }}>
             <BetAmountInput amount={amount} setAmount={setAmount} />
             <Slider
               style={{ width: '100%', height: 40 }}
@@ -111,6 +140,7 @@ export function BetPanel({
               maximumTrackTintColor={color.border}
               thumbTintColor={color.primary}
             />
+            {error && <ThemedText color={color.error}>{error}</ThemedText>}
           </Col>
           <Col style={{ gap: 8 }}>
             <Row style={{ justifyContent: 'space-between', width: '100%' }}>
@@ -119,15 +149,12 @@ export function BetPanel({
               </ThemedText>
 
               {/* TODO: get real payout */}
-              {/* <NumberText size="lg" weight="semibold">
-                ${(amount * 2).toFixed(2)}{' '} */}
               <Row style={{ alignItems: 'center', gap: 4 }}>
                 <TokenNumber amount={amount * 2} size="lg" />
                 <NumberText size="lg" color={color.profitText}>
                   (+200%)
                 </NumberText>
               </Row>
-              {/* </NumberText> */}
             </Row>
             {isBinaryMC ? (
               <Button size="lg" onPress={onPress} disabled={loading}>
