@@ -39,31 +39,22 @@ export default function Profile() {
               width: 48,
               height: 48,
               borderRadius: Rounded.full,
-              backgroundColor:
-                // user?.avatarUrl ? 'transparent' :
-                color.blue,
+              backgroundColor: user?.avatarUrl ? 'transparent' : color.blue,
               justifyContent: 'center',
               alignItems: 'center',
             }}
           >
             <Image
               style={{
-                width:
-                  // user?.avatarUrl ? 28 :
-                  40,
-                height:
-                  // user?.avatarUrl ? 28 :
-                  40,
-                borderRadius:
-                  // user?.avatarUrl ? Rounded.full, :
-                  0,
+                width: user?.avatarUrl ? 48 : 40,
+                height: user?.avatarUrl ? 48 : 40,
+                borderRadius: user?.avatarUrl ? Rounded.full : 0,
               }}
               source={
-                // user?.avatarUrl
-                //   ? { uri: user.avatarUrl }
-                //   :
-                // eslint-disable-next-line @typescript-eslint/no-require-imports
-                require('../../assets/images/origami-icons/turtle.png')
+                user?.avatarUrl
+                  ? { uri: user.avatarUrl }
+                  : // eslint-disable-next-line @typescript-eslint/no-require-imports
+                    require('../../assets/images/origami-icons/turtle.png')
               }
             />
           </View>
@@ -72,7 +63,7 @@ export default function Profile() {
               {user?.name}
             </ThemedText>
             <ThemedText size="md" color={color.textTertiary}>
-              {user?.name}
+              @{user?.username}
             </ThemedText>
           </Col>
           <Button

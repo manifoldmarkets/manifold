@@ -7,15 +7,23 @@ import { usePathname, useRouter } from 'expo-router'
 import { IconSymbol } from 'components/ui/icon-symbol'
 import { TouchableOpacity } from 'react-native'
 import { isTabPath } from 'components/page'
+import { useUser } from 'hooks/use-user'
+import { formatMoneyNumber } from 'common/util/format'
 
 export function SliderHeader() {
   const color = useColor()
   const { token } = useTokenMode()
   const pathname = usePathname()
   const router = useRouter()
+  const user = useUser()
 
   // Check if we're in a tab route - should match paths like /(tabs)/live, /(tabs)/profile, etc.
   const isInTabs = isTabPath(pathname)
+  const userBalance = !user
+    ? 0
+    : token === 'MANA'
+    ? user.balance
+    : user.cashBalance
 
   return (
     <Row
@@ -44,9 +52,9 @@ export function SliderHeader() {
       >
         <ThemedText color={color.primary} family={'JetBrainsMono'} size="md">
           <ThemedText weight={'bold'} color={color.primary}>
-            0{' '}
+            {formatMoneyNumber(userBalance)}
           </ThemedText>
-          {token === 'MANA' ? 'Mana' : 'Sweep'}
+          {token === 'MANA' ? ' Mana' : ' Sweep'}
         </ThemedText>
         <TokenSlider />
       </Row>
