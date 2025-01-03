@@ -14,7 +14,11 @@ import { Modal } from 'components/layout/modal'
 import { TokenNumber } from 'components/token/token-number'
 import { NumberText } from 'components/number-text'
 import { useUser } from 'hooks/use-user'
+import Slider from '@react-native-community/slider'
+
 export type BinaryOutcomes = 'YES' | 'NO'
+
+const AMOUNT_STEPS = [1, 2, 5, 7, 10, 15, 20, 25, 30, 40, 50, 75, 100]
 
 export function BetPanel({
   contract,
@@ -90,7 +94,24 @@ export function BetPanel({
               {!!answer && !isBinaryMC && answer.text}
             </ThemedText>
           </Col>
-          <BetAmountInput amount={amount} setAmount={setAmount} />
+          <Col style={{ gap: 16 }}>
+            <BetAmountInput amount={amount} setAmount={setAmount} />
+            <Slider
+              style={{ width: '100%', height: 40 }}
+              minimumValue={AMOUNT_STEPS[0]}
+              maximumValue={AMOUNT_STEPS[AMOUNT_STEPS.length - 1]}
+              value={amount}
+              onValueChange={(value) => {
+                const closestStep = AMOUNT_STEPS.reduce((prev, curr) =>
+                  Math.abs(curr - value) < Math.abs(prev - value) ? curr : prev
+                )
+                setAmount(closestStep)
+              }}
+              minimumTrackTintColor={color.primaryButton}
+              maximumTrackTintColor={color.border}
+              thumbTintColor={color.primary}
+            />
+          </Col>
           <Col style={{ gap: 8 }}>
             <Row style={{ justifyContent: 'space-between', width: '100%' }}>
               <ThemedText color={color.textTertiary} size="lg">
