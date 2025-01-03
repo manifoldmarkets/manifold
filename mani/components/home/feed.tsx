@@ -1,54 +1,39 @@
 import { APIParams } from 'common/api/schema'
 import { FeedCard } from 'components/contract/feed-card'
 import { Col } from 'components/layout/col'
-import { api } from 'lib/api'
-import { useEffect, useState } from 'react'
-import { usePersistentInMemoryState } from 'client-common/hooks/use-persistent-in-memory-state'
-import { uniqBy } from 'lodash'
+import { useEffect, useMemo, useState } from 'react'
 import { Text } from 'components/text'
 import { View } from 'react-native'
-import { Contract } from 'common/contract'
-import { useTokenMode } from 'hooks/use-token-mode'
+import { useAPIGetter } from 'hooks/use-api-getter'
+import { getDefinedContract, pairContracts } from 'lib/contracts'
 
 function MarketsList(props: { fetchProps: APIParams<'search-markets-full'> }) {
   const { fetchProps } = props
   const limit = 10
-  const [loading, setLoading] = useState(false)
-  const { token } = useTokenMode()
-
-  const [data, setData] = usePersistentInMemoryState<Contract[] | undefined>(
-    undefined,
-    `markets-list-${JSON.stringify(fetchProps)}`
+  const [offset, setOffset] = useState(0)
+  const { data, loading } = useAPIGetter(
+    'search-markets-full',
+    {
+      ...fetchProps,
+      limit,
+      token: 'CASH_AND_MANA',
+      contractType: 'BINARY',
+      offset,
+    },
+    ['offset']
   )
-  // We could also find all the sweeps markets, then when we run out, show mana markets
-  const loadMore = async () => {
-    if (loading) return
-    setLoading(true)
-    try {
-      const markets = await api('search-markets-full', {
-        ...fetchProps,
-        limit,
-        token: 'CASH_AND_MANA',
-        contractType: 'BINARY',
-        offset: data?.length ?? 0,
-      })
-
-      setData(uniqBy([...(data ?? []), ...markets], 'id'))
-    } finally {
-      setTimeout(() => setLoading(false), 50)
-    }
-  }
-
+  const pairs = useMemo(() => pairContracts(data ?? []), [data])
   useEffect(() => {
-    if (!data) {
-      loadMore()
-    }
-  }, [])
+    if (data?.length) setOffset(data.length)
+  }, [data])
 
   return (
     <Col>
-      {data?.map((contract) => (
-        <FeedCard key={contract.id} contract={contract} />
+      {pairs?.map((contractPair) => (
+        <FeedCard
+          key={getDefinedContract(contractPair).id}
+          contractPair={contractPair}
+        />
       ))}
       <View className="relative">{loading && <Text>Loading...</Text>}</View>
     </Col>

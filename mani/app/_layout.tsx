@@ -26,8 +26,10 @@ const HEADER_HEIGHT = 250
 
 // Initialize Sentry
 Sentry.init({
-  dsn: 'https://2353d2023dad4bc192d293c8ce13b9a1@o4504040581496832.ingest.us.sentry.io/4504040585494528',
-  debug: ENV === 'DEV',
+  dsn:
+    ENV === 'DEV'
+      ? ''
+      : 'https://2353d2023dad4bc192d293c8ce13b9a1@o4504040581496832.ingest.us.sentry.io/4504040585494528',
 })
 
 function RootLayout() {

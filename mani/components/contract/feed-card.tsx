@@ -1,6 +1,5 @@
 import {
   BinaryContract,
-  Contract,
   CPMMMultiContract,
   MultiContract,
 } from 'common/contract'
@@ -18,18 +17,21 @@ import { MultiBinaryBetButtons } from './bet/multi-binary-bet-buttons'
 import { useContract } from 'hooks/use-contract'
 import { useTokenMode } from 'hooks/use-token-mode'
 import { filterDefined } from 'common/util/array'
+import { ContractPair, getDefinedContract } from 'lib/contracts'
 
-export function FeedCard(props: { contract: Contract }) {
+export function FeedCard(props: { contractPair: ContractPair }) {
   const { token } = useTokenMode()
+  const { contractPair } = props
+  const definedContract = getDefinedContract(contractPair)
 
-  const liveContract = useContract(props.contract)
+  const liveContract = useContract(definedContract)
   const liveSiblingContract = useContract({
-    id: props.contract.siblingContractId!,
+    id: definedContract.siblingContractId!,
   })
   const contract =
     filterDefined([liveContract, liveSiblingContract]).find(
       (c) => c.token === token
-    ) ?? props.contract
+    ) ?? definedContract
   const router = useRouter()
   const isBinaryMc = isBinaryMulti(contract)
   const isMultipleChoice =
