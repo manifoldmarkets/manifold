@@ -62,10 +62,10 @@ function MarketsList(props: { fetchProps: APIParams<'search-markets-full'> }) {
 export function Feed({ tab }: { tab: string }) {
   // TODO: Grab appropriate contracts for each tab
   const content = [
-    // {
-    //   title: 'Live Soon',
-    //   Component: LiveSoonContent,
-    // },
+    {
+      title: 'Live Soon',
+      Component: LiveSoonContent,
+    },
     {
       title: 'Forecasts',
       Component: ForecastsContent,

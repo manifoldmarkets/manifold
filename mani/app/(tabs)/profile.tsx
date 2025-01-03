@@ -33,7 +33,6 @@ export default function Profile() {
     <Page>
       <Col style={{ gap: 12 }}>
         <Row style={{ gap: 12 }}>
-          {/* TODO: make actual user info */}
           <View
             style={{
               width: 48,

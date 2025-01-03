@@ -41,7 +41,6 @@ export function BetPanel({
   const isBinaryMC = isBinaryMulti(contract)
   const [loading, setLoading] = useState(false)
   const user = useUser()
-  console.log(user)
 
   // TODO: add bet logic
   const onPress = async () => {
