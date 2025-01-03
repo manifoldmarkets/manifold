@@ -17,6 +17,7 @@ import { useRouter } from 'expo-router'
 import { MultiBinaryBetButtons } from './bet/multi-binary-bet-buttons'
 import { useContract } from 'hooks/use-contract'
 import { useTokenMode } from 'hooks/use-token-mode'
+import { filterDefined } from 'common/util/array'
 
 export function FeedCard(props: { contract: Contract }) {
   const { token } = useTokenMode()
@@ -26,8 +27,9 @@ export function FeedCard(props: { contract: Contract }) {
     id: props.contract.siblingContractId!,
   })
   const contract =
-    [liveContract, liveSiblingContract].find((c) => c.token === token) ??
-    props.contract
+    filterDefined([liveContract, liveSiblingContract]).find(
+      (c) => c.token === token
+    ) ?? props.contract
   const router = useRouter()
   const isBinaryMc = isBinaryMulti(contract)
   const isMultipleChoice =
