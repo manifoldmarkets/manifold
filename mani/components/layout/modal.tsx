@@ -28,7 +28,7 @@ export function Modal({
       isVisible={isOpen}
       onBackdropPress={onClose}
       animationIn={mode == 'close' ? 'slideInUp' : 'slideInRight'}
-      animationOut={mode == 'close' ? 'slideOutUp' : 'slideOutRight'}
+      animationOut={mode == 'close' ? 'slideOutDown' : 'slideOutRight'}
       style={{ margin: 0 }}
     >
       <View style={{ flex: 1, backgroundColor: color.background }}>

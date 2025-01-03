@@ -33,17 +33,28 @@ export function BetAmountInput({
     // First, just update what's displayed
     const cleanedText = text
       .replace(/[^0-9.]/g, '')
-      .replace(/(\..*)\./g, '$1')
-      .replace(/^0+(?=\d)/, '')
+      .replace(/(\..*)\./g, '$1') // Keep only first decimal point
+      .replace(/^0+(?=\d)/, '') // Remove leading zeros
+      .replace(/(\.\d{2})\d+$/, '$1') // Limit to 2 decimal places
 
-    setDisplayValue(cleanedText) // Update display immediately for smooth typing
+    setDisplayValue(cleanedText) // Show intermediate typing states
 
-    // Then update the numeric value if it's a valid number
+    // Handle empty or just decimal point cases
     if (cleanedText === '' || cleanedText === '.') {
-      setAmount(0)
-    } else {
-      const numberValue = Math.min(parseFloat(cleanedText) || 0, maxAmount)
-      const roundedValue = Math.round(numberValue * 100) / 100
+      setAmount(minAmount)
+      return
+    }
+
+    const parsedValue = parseFloat(cleanedText)
+    // Only clamp and update if we have a valid number
+    if (!isNaN(parsedValue)) {
+      // If the number exceeds maxAmount, update display value to show the limit
+      if (parsedValue > maxAmount) {
+        setDisplayValue(maxAmount.toString())
+      }
+      // Clamp the value between minAmount and maxAmount
+      const clampedValue = Math.min(Math.max(parsedValue, minAmount), maxAmount)
+      const roundedValue = Math.round(clampedValue * 100) / 100
       setAmount(roundedValue)
     }
   }

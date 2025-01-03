@@ -1,4 +1,9 @@
-import { FontSize, ThemedText, ThemedTextProps } from 'components/themed-text'
+import {
+  FontSize,
+  fontSizes,
+  ThemedText,
+  ThemedTextProps,
+} from 'components/themed-text'
 import { useColor } from 'hooks/use-color'
 import {
   StyleProp,
@@ -6,6 +11,7 @@ import {
   TouchableOpacityProps,
   ViewStyle,
   Platform,
+  ActivityIndicator,
 } from 'react-native'
 import * as Haptics from 'expo-haptics'
 import { Rounded } from 'constants/border-radius'
@@ -21,6 +27,8 @@ export interface ButtonProps extends TouchableOpacityProps {
   textProps?: ThemedTextProps
   style?: StyleProp<ViewStyle>
   isHaptic?: boolean
+  loading?: boolean
+  disabled?: boolean
 }
 
 const sizeStyles: Record<
@@ -49,6 +57,13 @@ const sizeStyles: Record<
   },
 }
 
+const spinnerSizes: Record<ButtonSize, number> = {
+  xs: fontSizes.xs.lineHeight, // 16
+  sm: fontSizes.sm.lineHeight, // 20
+  md: fontSizes.md.lineHeight, // 24
+  lg: fontSizes.lg.lineHeight, // 28
+}
+
 export function Button({
   title,
   children,
@@ -58,6 +73,8 @@ export function Button({
   textProps,
   isHaptic,
   onPressIn,
+  loading,
+  disabled,
   ...props
 }: ButtonProps) {
   const color = useColor()
@@ -81,8 +98,8 @@ export function Button({
         }
       case 'danger':
         return {
-          background: color.dangerButtonBackground,
-          text: color.dangerButtonText,
+          background: color.errorBackground,
+          text: color.error,
         }
       case 'primary':
       default:
@@ -94,34 +111,45 @@ export function Button({
   }
 
   const buttonColors = getButtonColors(variant)
+  const isDisabled = disabled || loading
 
   return (
     <TouchableOpacity
       style={[
         style,
         {
-          backgroundColor: buttonColors.background,
+          backgroundColor: disabled
+            ? color.backgroundSecondary
+            : buttonColors.background,
           padding: sizeStyles[size].padding,
           borderRadius: sizeStyles[size].borderRadius,
           alignItems: 'center',
         },
       ]}
+      disabled={isDisabled}
       onPressIn={(ev) => {
-        if (isHaptic && Platform.OS === 'ios') {
+        if (isHaptic && Platform.OS === 'ios' && !isDisabled) {
           Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light)
         }
         onPressIn?.(ev)
       }}
       {...props}
     >
-      <ThemedText
-        color={buttonColors.text}
-        weight="semibold"
-        size={sizeStyles[size].fontSize}
-        {...textProps}
-      >
-        {title ? title : children}
-      </ThemedText>
+      {loading ? (
+        <ActivityIndicator
+          color={buttonColors.text}
+          size={spinnerSizes[size]}
+        />
+      ) : (
+        <ThemedText
+          color={disabled ? color.textTertiary : buttonColors.text}
+          weight="semibold"
+          size={sizeStyles[size].fontSize}
+          {...textProps}
+        >
+          {title ? title : children}
+        </ThemedText>
+      )}
     </TouchableOpacity>
   )
 }
