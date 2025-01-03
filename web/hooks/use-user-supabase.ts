@@ -11,7 +11,9 @@ import {
   getFullUserById,
 } from 'web/lib/supabase/users'
 import { FullUser } from 'common/api/user-types'
-import { useBatchedGetter } from './use-batched-getter'
+
+import { useBatchedGetter } from 'client-common/hooks/use-batched-getter'
+import { queryHandlers } from 'web/lib/supabase/batch-query-handlers'
 
 export function useUserById(userId: string | undefined) {
   const [user, setUser] = usePersistentInMemoryState<
@@ -29,6 +31,7 @@ export function useUserById(userId: string | undefined) {
 
 export function useDisplayUserById(userId: string | undefined) {
   const [user] = useBatchedGetter<DisplayUser | undefined>(
+    queryHandlers,
     'user',
     userId ?? '_',
     undefined,
@@ -39,6 +42,7 @@ export function useDisplayUserById(userId: string | undefined) {
 
 export function useUsers(userIds: string[]) {
   const [users] = useBatchedGetter<(DisplayUser | null)[] | undefined>(
+    queryHandlers,
     'users',
     userIds.join(','),
     undefined,

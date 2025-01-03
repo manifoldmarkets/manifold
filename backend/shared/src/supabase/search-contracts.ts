@@ -28,7 +28,7 @@ import { MarketTierType, TierParamsType, tiers } from 'common/tier'
 
 const DEFAULT_THRESHOLD = 1000
 const DEBUG = false
-type TokenInputType = 'CASH' | 'MANA' | 'ALL'
+type TokenInputType = 'CASH' | 'MANA' | 'ALL' | 'CASH_AND_MANA'
 let importanceScoreThreshold: number | undefined = undefined
 let freshnessScoreThreshold: number | undefined = undefined
 
@@ -350,6 +350,8 @@ function getSearchContractWhereSQL(args: {
       ? `token = 'CASH'`
       : token === 'MANA'
       ? `token = 'MANA'`
+      : token === 'CASH_AND_MANA'
+      ? `data->>'siblingContractId' is not null`
       : ''
 
   const tierFilters = tiers

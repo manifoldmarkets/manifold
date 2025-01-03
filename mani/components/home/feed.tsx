@@ -9,17 +9,15 @@ import { Text } from 'components/text'
 import { View } from 'react-native'
 import { Contract } from 'common/contract'
 import { useTokenMode } from 'hooks/use-token-mode'
+
 function MarketsList(props: { fetchProps: APIParams<'search-markets-full'> }) {
   const { fetchProps } = props
   const limit = 10
   const [loading, setLoading] = useState(false)
   const { token } = useTokenMode()
 
-  const [data, setData] = usePersistentInMemoryState<{
-    markets: Contract[]
-    cashOffset: number
-  }>(
-    { markets: [], cashOffset: 0 },
+  const [data, setData] = usePersistentInMemoryState<Contract[] | undefined>(
+    undefined,
     `markets-list-${JSON.stringify(fetchProps)}`
   )
   // We could also find all the sweeps markets, then when we run out, show mana markets
@@ -27,31 +25,29 @@ function MarketsList(props: { fetchProps: APIParams<'search-markets-full'> }) {
     if (loading) return
     setLoading(true)
     try {
-      const cashMarkets = await api('search-markets-full', {
+      const markets = await api('search-markets-full', {
         ...fetchProps,
-        token,
         limit,
+        token: 'CASH_AND_MANA',
         contractType: 'BINARY',
-        offset: data.cashOffset,
+        offset: data?.length ?? 0,
       })
 
-      setData({
-        markets: uniqBy([...data.markets, ...cashMarkets], 'id'),
-        cashOffset: data.cashOffset + cashMarkets.length,
-      })
+      setData(uniqBy([...(data ?? []), ...markets], 'id'))
     } finally {
       setTimeout(() => setLoading(false), 50)
     }
   }
 
   useEffect(() => {
-    if (data.markets.length === 0) {
+    if (!data) {
       loadMore()
     }
   }, [])
+
   return (
     <Col>
-      {data.markets.map((contract) => (
+      {data?.map((contract) => (
         <FeedCard key={contract.id} contract={contract} />
       ))}
       <View className="relative">{loading && <Text>Loading...</Text>}</View>

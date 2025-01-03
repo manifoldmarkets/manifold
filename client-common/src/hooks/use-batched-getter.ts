@@ -1,25 +1,21 @@
-import { run } from 'common/supabase/utils'
-import { debounce } from 'lodash'
-import { db } from 'web/lib/supabase/db'
-import { useEffect } from 'react'
-import { api } from 'web/lib/api/api'
 import { usePersistentInMemoryState } from 'client-common/hooks/use-persistent-in-memory-state'
-import { Reaction } from 'common/reaction'
+import { useEffect } from 'react'
 import { Contract } from 'common/contract'
-import { getContractIdsWithMetrics } from 'common/supabase/contract-metrics'
+import { Reaction } from 'common/reaction'
 import { DisplayUser } from 'common/api/user-types'
-import { getDisplayUsers } from 'web/lib/supabase/users'
+import { debounce } from 'lodash'
 
-const pendingRequests: {
+export const pendingRequests: {
   queryType: string
   ids: Set<string>
   userId?: string
 }[] = []
-const pendingCallbacks: Map<string, ((data: any) => void)[]> = new Map()
+
+export const pendingCallbacks: Map<string, ((data: any) => void)[]> = new Map()
 
 type FilterCallback<T> = (data: T[], id: string) => T | undefined
 
-const executeBatchQuery = debounce(async () => {
+export const executeBatchQuery = debounce(async (handlers: QueryHandlers) => {
   const requestsToProcess = pendingRequests.splice(0, pendingRequests.length)
   const key = (queryType: string, id: string) => `${queryType}-${id}`
 
@@ -28,39 +24,13 @@ const executeBatchQuery = debounce(async () => {
       if (!ids.size) return
 
       try {
-        let data: Contract[] | Reaction[] | string[] | DisplayUser[]
-
-        switch (queryType) {
-          case 'markets':
-            data = await api('markets-by-ids', { ids: Array.from(ids) })
-            break
-          case 'comment-reactions':
-          case 'contract-reactions':
-            const contentType = queryType.split('-')[0]
-            const { data: reactionsData } = await run(
-              db
-                .from('user_reactions')
-                .select()
-                .eq('content_type', contentType)
-                .in('content_id', Array.from(ids))
-            )
-            data = reactionsData
-            break
-          case 'contract-metrics':
-            if (!userId) {
-              data = []
-              break
-            }
-            data = await getContractIdsWithMetrics(db, userId, Array.from(ids))
-            break
-          case 'user':
-            data = await getDisplayUsers(Array.from(ids))
-            break
-          case 'users':
-            const userIds = Array.from(ids).flatMap((id) => id.split(','))
-            data = await getDisplayUsers(userIds)
-            break
+        const handler = handlers[queryType as keyof QueryHandlers]
+        if (!handler) {
+          console.error(`No handler found for query type: ${queryType}`)
+          return
         }
+
+        const data = await handler({ ids, userId })
 
         ids.forEach((id) => {
           const callbacks = pendingCallbacks.get(key(queryType, id)) || []
@@ -78,11 +48,11 @@ const executeBatchQuery = debounce(async () => {
 
   // If there are new pending requests, trigger another batch
   if (pendingRequests.length > 0) {
-    executeBatchQuery()
+    executeBatchQuery(handlers)
   }
 }, 10)
 
-const filtersByQueryType: Record<string, FilterCallback<any>> = {
+export const filtersByQueryType: Record<string, FilterCallback<any>> = {
   markets: (data: Contract[], id: string) =>
     data.find((item) => item.id === id),
   'comment-reactions': (data: Reaction[], id: string) =>
@@ -96,7 +66,16 @@ const filtersByQueryType: Record<string, FilterCallback<any>> = {
     id.split(',').map((userId) => data.find((u) => u.id === userId) ?? null),
 }
 
+export type BatchQueryParams = { ids: Set<string>; userId?: string }
+export type QueryHandler<T> = (params: BatchQueryParams) => Promise<T>
+export type QueryHandlers = {
+  [queryType: string]: QueryHandler<
+    Contract[] | Reaction[] | string[] | DisplayUser[]
+  >
+}
+
 export const useBatchedGetter = <T>(
+  handlers: QueryHandlers,
   queryType:
     | 'markets'
     | 'comment-reactions'
@@ -139,7 +118,7 @@ export const useBatchedGetter = <T>(
     }
     pendingCallbacks.get(key)!.push(setState)
 
-    executeBatchQuery()
+    executeBatchQuery(handlers)
 
     return () => {
       const callbacks = pendingCallbacks.get(key)

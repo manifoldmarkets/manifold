@@ -8,8 +8,9 @@ import { useApiSubscription } from 'client-common/hooks/use-api-subscription'
 import { useIsPageVisible } from './use-page-visible'
 import { api } from 'web/lib/api/api'
 import { db } from 'web/lib/supabase/db'
-import { useBatchedGetter } from './use-batched-getter'
-import { Answer } from 'common/answer'
+import { useBatchedGetter } from 'client-common/hooks/use-batched-getter'
+import { queryHandlers } from 'web/lib/supabase/batch-query-handlers'
+import { useContractUpdates } from 'client-common/hooks/use-contract-updates'
 
 export const usePublicContracts = (
   contractIds: string[] | undefined,
@@ -97,60 +98,13 @@ export function useLiveContract<C extends Contract = Contract>(initial: C) {
   const isPageVisible = useIsPageVisible()
   // ian: Batching is helpful on pages like /browse
   const [contract, setContract] = useBatchedGetter<C>(
+    queryHandlers,
     'markets',
     initial.id,
     initial,
     isPageVisible
   )
 
-  useApiSubscription({
-    topics: [`contract/${initial.id}/new-answer`],
-    enabled: initial.mechanism === 'cpmm-multi-1',
-    onBroadcast: ({ data }) => {
-      setContract((contract) => {
-        return {
-          ...contract,
-          answers: [
-            ...('answers' in contract ? contract.answers : []),
-            data.answer as Answer,
-          ],
-        }
-      })
-    },
-  })
-
-  useApiSubscription({
-    topics: [`contract/${initial.id}/updated-answers`],
-    enabled: initial.mechanism === 'cpmm-multi-1',
-    onBroadcast: ({ data }) => {
-      const newAnswerUpdates = data.answers as (Partial<Answer> & {
-        id: string
-      })[]
-      setContract((contract) => {
-        return {
-          ...contract,
-          answers: ('answers' in contract ? contract.answers : []).map(
-            (answer) => {
-              const update = newAnswerUpdates.find(
-                (newAnswer) => newAnswer.id === answer.id
-              )
-              if (!update) return answer
-              return { ...answer, ...update }
-            }
-          ),
-        }
-      })
-    },
-  })
-
-  useApiSubscription({
-    topics: [`contract/${initial.id}`],
-    onBroadcast: ({ data }) => {
-      setContract((contract) => {
-        return { ...contract, ...(data.contract as C) }
-      })
-    },
-  })
-
+  useContractUpdates(initial, setContract)
   return contract ?? initial
 }

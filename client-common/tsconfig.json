@@ -9,7 +9,7 @@
     "tsBuildInfoFile": "lib/tsconfig.tsbuildinfo",
     "sourceMap": true,
     "strict": true,
-    "target": "es2022",
+    "target": "es2023",
     "incremental": true,
     "isolatedModules": true,
     "paths": {
