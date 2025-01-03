@@ -428,7 +428,7 @@ export const Stats = (props: {
             <td>
               🏆 Ranked{' '}
               <InfoTooltip
-                text={'Profit and creator bonuses count towards leagues'}
+                text={'Profit from this market count towards leagues'}
               />
             </td>
             <td>
