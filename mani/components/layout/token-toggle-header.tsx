@@ -2,7 +2,7 @@ import { useColor } from 'hooks/use-color'
 import { useTokenMode } from 'hooks/use-token-mode'
 import { Row } from './row'
 import { ThemedText } from 'components/themed-text'
-import { TokenSlider } from 'components/token/token-slider'
+import { TokenToggle } from 'components/token/token-toggle'
 import { usePathname, useRouter } from 'expo-router'
 import { IconSymbol } from 'components/ui/icon-symbol'
 import { TouchableOpacity } from 'react-native'
@@ -10,13 +10,12 @@ import { isTabPath } from 'components/page'
 import { useUser } from 'hooks/use-user'
 import { formatMoneyNumber } from 'common/util/format'
 
-export function SliderHeader() {
+export function TokenToggleHeader() {
   const color = useColor()
   const { token } = useTokenMode()
   const pathname = usePathname()
   const router = useRouter()
   const user = useUser()
-
   // Check if we're in a tab route - should match paths like /(tabs)/live, /(tabs)/profile, etc.
   const isInTabs = isTabPath(pathname)
   const userBalance = !user
@@ -56,7 +55,7 @@ export function SliderHeader() {
           </ThemedText>
           {token === 'MANA' ? ' Mana' : ' Sweep'}
         </ThemedText>
-        <TokenSlider />
+        <TokenToggle />
       </Row>
     </Row>
   )

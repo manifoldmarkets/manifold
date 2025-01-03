@@ -1,7 +1,7 @@
 import type { PropsWithChildren } from 'react'
 import { StyleSheet, View } from 'react-native'
 import Animated, { useAnimatedRef } from 'react-native-reanimated'
-import { SliderHeader } from './layout/slider-header'
+import { TokenToggleHeader } from './layout/token-toggle-header'
 import { useBottomTabOverflow } from './ui/tab-bar-background.ios'
 import { ThemedView } from './themed-view'
 import { Colors } from 'constants/colors'
@@ -22,13 +22,12 @@ export default function Page({ children }: PropsWithChildren) {
 
   return (
     <View style={styles.container}>
-      <SliderHeader />
+      <TokenToggleHeader />
       <Animated.ScrollView
         ref={scrollRef}
         scrollEventThrottle={16}
         scrollIndicatorInsets={{ bottom }}
         contentContainerStyle={{ paddingBottom: bottom }}
-        
       >
         <ThemedView style={styles.content}>
           <View style={styles.contentPadding}>{children}</View>
