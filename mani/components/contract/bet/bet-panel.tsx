@@ -67,6 +67,8 @@ export function BetPanel({
         setError(
           'Minimum amount: ' + formatMoneyNumber(SWEEPS_MIN_BET) + ' Sweeps'
         )
+      } else if (token === 'MANA' && amount < MANA_MIN_BET) {
+        setError('Minimum amount: ' + formatMoneyNumber(MANA_MIN_BET) + ' Mana')
       } else {
         setError(null)
       }
@@ -157,14 +159,20 @@ export function BetPanel({
               </Row>
             </Row>
             {isBinaryMC ? (
-              <Button size="lg" onPress={onPress} disabled={loading}>
+              <Button
+                size="lg"
+                onPress={onPress}
+                disabled={loading || error !== null}
+                loading={loading}
+              >
                 <ThemedText weight="normal">
                   Buy <ThemedText weight="semibold">{answer.text}</ThemedText>
                 </ThemedText>
               </Button>
             ) : (
               <YesNoButton
-                disabled={loading}
+                disabled={loading || error !== null}
+                loading={loading}
                 variant={outcome === 'YES' ? 'yes' : 'no'}
                 size="lg"
                 title={`Buy ${outcome === 'YES' ? 'Yes' : 'No'}`}
