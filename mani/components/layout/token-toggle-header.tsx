@@ -10,6 +10,8 @@ import { isTabPath } from 'components/page'
 import { useUser } from 'hooks/use-user'
 import { formatMoneyNumber } from 'common/util/format'
 
+export const HEADER_HEIGHT = 47
+
 export function TokenToggleHeader() {
   const color = useColor()
   const { token } = useTokenMode()

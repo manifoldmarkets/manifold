@@ -38,7 +38,7 @@ export function BetPanel({
   isBinaryMulti?: boolean
 }) {
   const color = useColor()
-  const [amount, setAmount] = useState(0)
+  const [amount, setAmount] = useState(1)
   const { token } = useTokenMode()
 
   const answer =
@@ -105,7 +105,7 @@ export function BetPanel({
 
   // TODO: figure out keyboard clicking behavior
   return (
-    <Modal isOpen={open} onClose={() => setOpen(false)} mode="close">
+    <Modal isOpen={open} onClose={() => setOpen(false)} mode="close" showHeader>
       <KeyboardAvoidingView
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
         keyboardVerticalOffset={Platform.OS === 'ios' ? 108 : 0}
