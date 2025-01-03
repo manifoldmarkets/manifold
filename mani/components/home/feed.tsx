@@ -17,7 +17,6 @@ function MarketsList(props: { fetchProps: APIParams<'search-markets-full'> }) {
       ...fetchProps,
       limit,
       token: 'CASH_AND_MANA',
-      contractType: 'BINARY',
       offset,
     },
     ['offset']
