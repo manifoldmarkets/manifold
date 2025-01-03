@@ -161,9 +161,7 @@ export function ClearInputButton(props: {
   )
 }
 
-export function 
-
-BuyAmountInput(props: {
+export function BuyAmountInput(props: {
   amount: number | undefined
   onChange: (newAmount: number | undefined) => void
   error: string | undefined
