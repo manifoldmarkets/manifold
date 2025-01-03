@@ -119,6 +119,8 @@ export async function createMarketHelper(body: Body, auth: AuthedUser) {
     sportsStartTimestamp,
     sportsEventId,
     sportsLeague,
+    answerShortTexts,
+    answerImageUrls,
   } = validateMarketBody(body)
 
   const userId = auth.uid
@@ -198,6 +200,8 @@ export async function createMarketHelper(body: Body, auth: AuthedUser) {
         max: max ?? 0,
         isLogScale: isLogScale ?? false,
         answers: answers ?? [],
+        answerShortTexts,
+        answerImageUrls,
         addAnswersMode,
         shouldAnswersSumToOne,
         isAutoBounty,
@@ -327,6 +331,8 @@ function validateMarketBody(body: Body) {
     initialProb: number | undefined,
     isLogScale: boolean | undefined,
     answers: string[] | undefined,
+    answerShortTexts: string[] | undefined,
+    answerImageUrls: string[] | undefined,
     addAnswersMode: add_answers_mode | undefined,
     shouldAnswersSumToOne: boolean | undefined,
     totalBounty: number | undefined,
@@ -390,8 +396,14 @@ function validateMarketBody(body: Body) {
   }
 
   if (outcomeType === 'MULTIPLE_CHOICE') {
-    ;({ answers, addAnswersMode, shouldAnswersSumToOne, extraLiquidity } =
-      validateMarketType(outcomeType, createMultiSchema, body))
+    ;({
+      answers,
+      answerShortTexts,
+      answerImageUrls,
+      addAnswersMode,
+      shouldAnswersSumToOne,
+      extraLiquidity,
+    } = validateMarketType(outcomeType, createMultiSchema, body))
     if (answers.length < 2 && addAnswersMode === 'DISABLED')
       throw new APIError(
         400,
@@ -438,6 +450,8 @@ function validateMarketBody(body: Body) {
     sportsStartTimestamp,
     sportsEventId,
     sportsLeague,
+    answerShortTexts,
+    answerImageUrls,
   }
 }
 

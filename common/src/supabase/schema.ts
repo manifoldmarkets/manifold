@@ -32,6 +32,8 @@ export type Database = {
           text_fts: unknown | null
           total_liquidity: number | null
           user_id: string | null
+          image_url: string | null
+          short_text: string | null
         }
         Insert: {
           color?: string | null
@@ -55,6 +57,8 @@ export type Database = {
           text_fts?: unknown | null
           total_liquidity?: number | null
           user_id?: string | null
+          image_url?: string | null
+          short_text?: string | null
         }
         Update: {
           color?: string | null
@@ -78,6 +82,8 @@ export type Database = {
           text_fts?: unknown | null
           total_liquidity?: number | null
           user_id?: string | null
+          image_url?: string | null
+          short_text?: string | null
         }
         Relationships: []
       }

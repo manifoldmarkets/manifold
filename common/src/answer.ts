@@ -32,6 +32,8 @@ export type Answer = {
   }
 
   loverUserId?: string
+  imageUrl?: string
+  shortText?: string
 }
 
 export const MAX_ANSWER_LENGTH = 240

@@ -278,6 +278,14 @@ export const createNumericSchema = z.object({
 export const createMultiSchema = z.object({
   outcomeType: z.enum(['MULTIPLE_CHOICE']),
   answers: z.array(z.string().trim().min(1)).max(MAX_ANSWERS),
+  answerShortTexts: z
+    .array(z.string().trim().min(1))
+    .max(MAX_ANSWERS)
+    .optional(),
+  answerImageUrls: z
+    .array(z.string().trim().min(1))
+    .max(MAX_ANSWERS)
+    .optional(),
   addAnswersMode: z
     .enum(['DISABLED', 'ONLY_CREATOR', 'ANYONE'])
     .default('DISABLED'),
