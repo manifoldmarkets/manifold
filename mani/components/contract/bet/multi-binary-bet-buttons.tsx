@@ -6,7 +6,8 @@ import { Button, ButtonProps } from 'components/buttons/button'
 import { AnswerProbability } from '../probability'
 import { ThemedText } from 'components/themed-text'
 import { useColor } from 'hooks/use-color'
-
+import { Image } from 'react-native'
+import { Col } from 'components/layout/col'
 export function MultiBinaryBetButtons({
   contract,
   ...rest
@@ -26,19 +27,31 @@ export function MultiBinaryBetButtons({
     <>
       <Row style={{ gap: 12, alignItems: 'center' }}>
         {contract.answers.map((answer, i) => (
-          <Button
+          <Col
             key={answer.id}
-            onPress={() => handleBetClick(i === 0 ? 'YES' : 'NO')}
-            style={{ flex: 1 }}
-            variant="gray"
-            textProps={{
-              weight: 'normal',
-            }}
-            {...rest}
+            style={{ alignItems: 'center', gap: 8, width: '50%' }}
           >
-            <ThemedText color={color.textSecondary}>{answer.text}</ThemedText>{' '}
-            <AnswerProbability contract={contract} answerId={answer.id} />
-          </Button>
+            {answer.imageUrl && (
+              <Image
+                source={{ uri: answer.imageUrl }}
+                style={{ width: 40, height: 40 }}
+              />
+            )}
+            <Button
+              onPress={() => handleBetClick(i === 0 ? 'YES' : 'NO')}
+              style={{ flex: 1, width: '100%' }}
+              variant="gray"
+              textProps={{
+                weight: 'normal',
+              }}
+              {...rest}
+            >
+              <ThemedText color={color.textSecondary}>
+                {answer.shortText ?? answer.text}
+              </ThemedText>{' '}
+              <AnswerProbability contract={contract} answerId={answer.id} />
+            </Button>
+          </Col>
         ))}
       </Row>
       <BetPanel

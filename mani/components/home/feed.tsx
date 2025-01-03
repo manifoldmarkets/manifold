@@ -102,7 +102,7 @@ function ForecastsContent() {
       fetchProps={{
         term: '',
         filter: 'open',
-        sort: 'score',
+        sort: 'newest',
         // gids: ALL_IDS,
       }}
     />
