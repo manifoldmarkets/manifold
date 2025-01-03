@@ -13,6 +13,7 @@ import Toast from 'react-native-toast-message'
 import { Modal } from 'components/layout/modal'
 import { TokenNumber } from 'components/token/token-number'
 import { NumberText } from 'components/number-text'
+import { useUser } from 'hooks/use-user'
 export type BinaryOutcomes = 'YES' | 'NO'
 
 export function BetPanel({
@@ -39,6 +40,7 @@ export function BetPanel({
 
   const isBinaryMC = isBinaryMulti(contract)
   const [loading, setLoading] = useState(false)
+  const user = useUser()
 
   // TODO: add bet logic
   const onPress = async () => {

@@ -87,22 +87,15 @@ export default function TabLayout() {
             >
               <Image
                 style={{
-                  width:
-                    // user?.avatarUrl ? 28 :
-                    20,
-                  height:
-                    // user?.avatarUrl ? 28 :
-                    20,
-                  borderRadius:
-                    // user?.avatarUrl ? Rounded.full, :
-                    0,
+                  width: user?.avatarUrl ? 28 : 20,
+                  height: user?.avatarUrl ? 28 : 20,
+                  borderRadius: user?.avatarUrl ? Rounded.full : 0,
                 }}
                 source={
-                  // user?.avatarUrl
-                  //   ? { uri: user.avatarUrl }
-                  //   :
-                  // eslint-disable-next-line @typescript-eslint/no-require-imports
-                  require('../../assets/images/origami-icons/turtle.png')
+                  user?.avatarUrl
+                    ? { uri: user.avatarUrl }
+                    : // eslint-disable-next-line @typescript-eslint/no-require-imports
+                      require('../../assets/images/origami-icons/turtle.png')
                 }
               />
             </View>

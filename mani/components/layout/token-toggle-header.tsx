@@ -8,7 +8,7 @@ import { IconSymbol } from 'components/ui/icon-symbol'
 import { TouchableOpacity } from 'react-native'
 import { isTabPath } from 'components/page'
 import { useUser } from 'hooks/use-user'
-import { formatMoney } from 'common/util/format'
+import { formatMoneyNumber } from 'common/util/format'
 
 export function TokenToggleHeader() {
   const color = useColor()
@@ -18,6 +18,11 @@ export function TokenToggleHeader() {
   const user = useUser()
   // Check if we're in a tab route - should match paths like /(tabs)/live, /(tabs)/profile, etc.
   const isInTabs = isTabPath(pathname)
+  const userBalance = !user
+    ? 0
+    : token === 'MANA'
+    ? user.balance
+    : user.cashBalance
 
   return (
     <Row
@@ -46,11 +51,9 @@ export function TokenToggleHeader() {
       >
         <ThemedText color={color.primary} family={'JetBrainsMono'} size="md">
           <ThemedText weight={'bold'} color={color.primary}>
-            {formatMoney(
-              (token === 'MANA' ? user?.balance : user?.cashBalance) ?? 0,
-              token
-            )}{' '}
+            {formatMoneyNumber(userBalance)}
           </ThemedText>
+          {token === 'MANA' ? ' Mana' : ' Sweep'}
         </ThemedText>
         <TokenToggle />
       </Row>
