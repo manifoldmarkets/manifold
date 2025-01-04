@@ -299,6 +299,7 @@ export const BANNED_TRADING_USER_IDS = [
   'wo2LRCvgaNSllK3q0Wnv8hlusTa2', // BTE alt
   'os2ilMb1d8WDeXxiQAo6btlig1Z2', // BTE alt
   'zRMxfUt51RcEIcZkuw6ySiNJYBE3', // BTE alt
+  'fnuHBW8dHwZp2TbEt2MKJY9d28V2', //Klob (Caleb)
 ]
 
 export const PARTNER_USER_IDS: string[] = [
