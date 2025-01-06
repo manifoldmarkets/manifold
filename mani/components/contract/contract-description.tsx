@@ -1,9 +1,9 @@
 import { Contract } from 'common/contract'
-import { ContentRenderer } from 'components/content/ContentRenderer'
+import { ContentRenderer } from 'components/content/content-renderer'
 import {
   extractTextFromContent,
   isEmptyDescription,
-} from 'components/content/contentUtils'
+} from 'components/content/content-utils'
 import { Col } from 'components/layout/col'
 import { ExpandableContent } from 'components/layout/expandable-content'
 import { ThemedText } from 'components/themed-text'

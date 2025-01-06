@@ -24,6 +24,7 @@ import { Bet } from 'common/bet'
 import { useTokenMode } from 'hooks/use-token-mode'
 import { ContractPageLoading } from 'components/contract/loading-contract'
 import { useContract } from 'hooks/use-contract'
+import { ContentEditor } from 'components/content/content-editor'
 export const LARGE_QUESTION_LENGTH = 95
 
 type ContractPageContentProps = {
@@ -72,7 +73,7 @@ function ContractPageContent({ contractId }: ContractPageContentProps) {
 
   return (
     <Page>
-      <Col style={{ gap: 16 }}>
+      <Col style={{ gap: 16, position: 'relative' }}>
         <ThemedText
           size={contract.question.length > LARGE_QUESTION_LENGTH ? 'xl' : '2xl'}
           weight="semibold"
@@ -102,6 +103,15 @@ function ContractPageContent({ contractId }: ContractPageContentProps) {
         <ContractDescription contract={contract} />
         <CommentsSection contract={contract} />
       </Col>
+      {/* <View
+        // behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        style={{
+          position: 'fixed',
+          bottom: 0,
+        }}
+      > */}
+      <ContentEditor onChange={() => {}} />
+      {/* </View> */}
     </Page>
   )
 }

@@ -1,5 +1,5 @@
 import { ContractComment } from 'common/comment'
-import { ContentRenderer } from 'components/content/ContentRenderer'
+import { ContentRenderer } from 'components/content/content-renderer'
 import { Col } from 'components/layout/col'
 import { Row } from 'components/layout/row'
 import { ThemedText } from 'components/themed-text'
