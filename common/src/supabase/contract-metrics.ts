@@ -1,6 +1,5 @@
-import { chunk, Dictionary, flatMap, groupBy, uniqBy } from 'lodash'
+import { chunk, flatMap, groupBy, uniqBy } from 'lodash'
 import { Row, run, SupabaseClient } from './utils'
-import { Contract } from '../contract'
 import { ContractMetric } from 'common/contract-metric'
 
 export async function getTopContractMetrics(
@@ -75,26 +74,6 @@ export async function getCPMMContractUserContractMetrics(
     console.error('Error fetching user contract metrics:', error)
     return { YES: [], NO: [] }
   }
-}
-
-export async function getUserContractMetricsWithContracts(
-  userId: string,
-  db: SupabaseClient,
-  count = 1000,
-  start = 0
-) {
-  const { data } = await db.rpc('get_contract_metrics_with_contracts', {
-    count,
-    uid: userId,
-    start,
-  })
-  const metricsByContract = {} as Dictionary<ContractMetric>
-  const contracts = [] as Contract[]
-  flatMap(data).forEach((d) => {
-    metricsByContract[d.contract_id] = d.metrics as ContractMetric
-    contracts.push(d.contract as Contract)
-  })
-  return { metricsByContract, contracts }
 }
 
 export async function getUsersContractMetricsOrderedByProfit(

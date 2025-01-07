@@ -3366,30 +3366,6 @@ export type Database = {
         Args: Record<PropertyKey, never>
         Returns: Database['public']['CompositeTypes']['love_question_with_count_type'][]
       }
-      get_contract_metrics_with_contracts:
-        | {
-            Args: {
-              uid: string
-              count: number
-            }
-            Returns: {
-              contract_id: string
-              metrics: Json
-              contract: Json
-            }[]
-          }
-        | {
-            Args: {
-              uid: string
-              count: number
-              start: number
-            }
-            Returns: {
-              contract_id: string
-              metrics: Json
-              contract: Json
-            }[]
-          }
       get_contract_voters: {
         Args: {
           this_contract_id: string

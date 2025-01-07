@@ -202,28 +202,6 @@ END;
 $function$;
 
 create
-or replace function public.get_contract_metrics_with_contracts (uid text, count integer) returns table (contract_id text, metrics jsonb, contract jsonb) language sql immutable parallel SAFE as $function$
-select ucm.contract_id, ucm.data as metrics, c.data as contract
-from user_contract_metrics as ucm
-join contracts as c on c.id = ucm.contract_id
-where ucm.user_id = uid
-order by ((ucm.data)->'lastBetTime')::bigint desc
-limit count
-$function$;
-
-create
-or replace function public.get_contract_metrics_with_contracts (uid text, count integer, start integer) returns table (contract_id text, metrics jsonb, contract jsonb) language sql stable as $function$select ucm.contract_id,
-       ucm.data as metrics,
-       c.data as contract
-from user_contract_metrics as ucm
-         join contracts as c on c.id = ucm.contract_id
-where ucm.user_id = uid
-  and ucm.data->'lastBetTime' is not null
-  and ucm.answer_id is null
-order by ((ucm.data)->'lastBetTime')::bigint desc offset start
-    limit count$function$;
-
-create
 or replace function public.get_contract_voters (this_contract_id text) returns table (data json) language sql parallel SAFE as $function$
   SELECT users.data from users join votes on votes.user_id = users.id where votes.contract_id = this_contract_id;
 $function$;
