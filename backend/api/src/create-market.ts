@@ -32,7 +32,6 @@ import {
 } from 'shared/supabase/contracts'
 import {
   SupabaseDirectClient,
-  SupabaseTransaction,
   createSupabaseDirectClient,
   pgp,
 } from 'shared/supabase/init'
@@ -42,7 +41,7 @@ import {
   addGroupToContract,
   canUserAddGroupToMarket,
 } from 'shared/update-group-contracts-internal'
-import { getUser, htmlToRichText, log } from 'shared/utils'
+import { htmlToRichText, log } from 'shared/utils'
 import {
   broadcastNewAnswer,
   broadcastNewContract,
@@ -54,12 +53,15 @@ import { z } from 'zod'
 import { answerToRow } from 'shared/supabase/answers'
 import { convertAnswer } from 'common/supabase/contracts'
 import { generateAntes } from 'shared/create-contract-helpers'
+import { betsQueue } from 'shared/helpers/fn-queue'
+import { convertUser } from 'common/supabase/users'
+import { first } from 'lodash'
 
 type Body = ValidatedAPIParams<'market'>
 
 export const createMarket: APIHandler<'market'> = async (body, auth) => {
   const { contract: market, user } = await createMarketHelper(body, auth)
-
+  // TODO upload answer images to GCP if provided
   const pg = createSupabaseDirectClient()
   const { groupIds } = body
   const groups = groupIds
@@ -164,99 +166,108 @@ export async function createMarketHelper(body: Body, auth: AuthedUser) {
     )
   }
 
-  return await pg.tx(async (tx) => {
-    const user = await getUser(userId, tx)
-    if (!user) throw new APIError(401, 'Your account was not found')
-    if (user.isBannedFromPosting) throw new APIError(403, 'You are banned')
+  return await betsQueue.enqueueFn(async () => {
+    return pg.tx(async (tx) => {
+      const proposedSlug = slugify(question)
 
-    if (totalMarketCost > user.balance)
-      throw new APIError(403, `Balance must be at least ${totalMarketCost}.`)
+      const userAndSlugResult = await tx.multi(
+        `select * from users where id = $1 limit 1;
+        select 1 from contracts where slug = $2 limit 1;`,
+        [userId, proposedSlug]
+      )
+      const user = first(userAndSlugResult[0].map(convertUser))
+      if (!user) throw new APIError(401, 'Your account was not found')
+      if (user.isBannedFromPosting) throw new APIError(403, 'You are banned')
 
-    const slug = await getSlug(tx, question)
+      if (totalMarketCost > user.balance)
+        throw new APIError(403, `Balance must be at least ${totalMarketCost}.`)
 
-    const contract = getNewContract(
-      removeUndefinedProps({
-        id: idempotencyKey ?? randomString(),
-        slug,
-        creator: user,
-        question,
-        outcomeType,
-        description:
-          typeof description !== 'string' && description
-            ? description
-            : anythingToRichText({
-                raw: description,
-                html: descriptionHtml,
-                markdown: descriptionMarkdown,
-                jsonString: descriptionJson,
-                // default: use a single empty space as the description
-              }) ?? htmlToRichText(`<p> </p>`),
-        initialProb: initialProb ?? 50,
-        ante,
-        closeTime,
-        visibility,
-        isTwitchContract,
-        min: min ?? 0,
-        max: max ?? 0,
-        isLogScale: isLogScale ?? false,
-        answers: answers ?? [],
-        answerShortTexts,
-        answerImageUrls,
-        addAnswersMode,
-        shouldAnswersSumToOne,
-        isAutoBounty,
-        marketTier,
-        token: 'MANA',
-        sportsStartTimestamp,
-        sportsEventId,
-        sportsLeague,
-      })
-    )
+      const slug = getSlug(!!first(userAndSlugResult[1]), proposedSlug)
 
-    const insertAnswersQuery =
-      contract.mechanism === 'cpmm-multi-1'
-        ? bulkInsertQuery('answers', contract.answers.map(answerToRow), true)
-        : 'select 1 where false'
-    const contractQuery = pgp.as.format(
-      `insert into contracts (id, data, token) values ($1, $2, $3);`,
-      [contract.id, JSON.stringify(contract), contract.token]
-    )
-    const result = await tx.multi(
-      `${contractQuery};
+      const contract = getNewContract(
+        removeUndefinedProps({
+          id: idempotencyKey ?? randomString(),
+          slug,
+          creator: user,
+          question,
+          outcomeType,
+          description:
+            typeof description !== 'string' && description
+              ? description
+              : anythingToRichText({
+                  raw: description,
+                  html: descriptionHtml,
+                  markdown: descriptionMarkdown,
+                  jsonString: descriptionJson,
+                  // default: use a single empty space as the description
+                }) ?? htmlToRichText(`<p> </p>`),
+          initialProb: initialProb ?? 50,
+          ante,
+          closeTime,
+          visibility,
+          isTwitchContract,
+          min: min ?? 0,
+          max: max ?? 0,
+          isLogScale: isLogScale ?? false,
+          answers: answers ?? [],
+          answerShortTexts,
+          answerImageUrls,
+          addAnswersMode,
+          shouldAnswersSumToOne,
+          isAutoBounty,
+          marketTier,
+          token: 'MANA',
+          sportsStartTimestamp,
+          sportsEventId,
+          sportsLeague,
+        })
+      )
+
+      const insertAnswersQuery =
+        contract.mechanism === 'cpmm-multi-1'
+          ? bulkInsertQuery('answers', contract.answers.map(answerToRow), true)
+          : 'select 1 where false'
+      const contractQuery = pgp.as.format(
+        `insert into contracts (id, data, token) values ($1, $2, $3);`,
+        [contract.id, JSON.stringify(contract), contract.token]
+      )
+      const result = await tx.multi(
+        `${contractQuery};
        ${insertAnswersQuery};`
-    )
+      )
 
-    if (result[1].length > 0 && contract.mechanism === 'cpmm-multi-1') {
-      contract.answers = result[1].map(convertAnswer)
-    }
-    await runTxnOutsideBetQueue(tx, {
-      fromId: userId,
-      fromType: 'USER',
-      toId: contract.id,
-      toType: 'CONTRACT',
-      amount: ante,
-      token: 'M$',
-      category: 'CREATE_CONTRACT_ANTE',
+      if (result[1].length > 0 && contract.mechanism === 'cpmm-multi-1') {
+        contract.answers = result[1].map(convertAnswer)
+      }
+      await runTxnOutsideBetQueue(tx, {
+        fromId: userId,
+        fromType: 'USER',
+        toId: contract.id,
+        toType: 'CONTRACT',
+        amount: ante,
+        token: 'M$',
+        category: 'CREATE_CONTRACT_ANTE',
+      })
+
+      log('created contract ', {
+        userUserName: user.username,
+        userId: user.id,
+        question,
+        ante: ante || 0,
+      })
+
+      await generateAntes(
+        tx,
+        userId,
+        contract,
+        outcomeType,
+        ante,
+        totalMarketCost
+      )
+
+      return { contract, user }
     })
-
-    log('created contract ', {
-      userUserName: user.username,
-      userId: user.id,
-      question,
-      ante: ante || 0,
-    })
-
-    await generateAntes(
-      tx,
-      userId,
-      contract,
-      outcomeType,
-      ante,
-      totalMarketCost
-    )
-
-    return { contract, user }
-  })
+  }, [userId])
 }
 
 async function getDuplicateSubmissionUrl(
@@ -287,14 +298,7 @@ async function getCloseTimestamp(
       Date.now() + 7 * 24 * 60 * 60 * 1000
 }
 
-const getSlug = async (pg: SupabaseTransaction, question: string) => {
-  const proposedSlug = slugify(question)
-
-  const preexistingContract = await pg.oneOrNone(
-    `select 1 from contracts where slug = $1 limit 1`,
-    [proposedSlug]
-  )
-
+const getSlug = (preexistingContract: boolean, proposedSlug: string) => {
   return preexistingContract
     ? proposedSlug + '-' + randomString()
     : proposedSlug
