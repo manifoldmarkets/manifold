@@ -60,18 +60,18 @@ import { first } from 'lodash'
 type Body = ValidatedAPIParams<'market'>
 
 export const createMarket: APIHandler<'market'> = async (body, auth) => {
-  const { contract: market, user } = await createMarketHelper(body, auth)
-  // TODO upload answer images to GCP if provided
   const pg = createSupabaseDirectClient()
   const { groupIds } = body
   const groups = groupIds
     ? await Promise.all(
-        groupIds.map(async (gId) => getGroupCheckPermissions(pg, gId, user.id))
+        groupIds.map(async (gId) => getGroupCheckPermissions(pg, gId, auth.uid))
       )
     : null
 
+  const { contract: market, user } = await createMarketHelper(body, auth)
+  // TODO upload answer images to GCP if provided
   if (groups) {
-    await Promise.all(
+    await Promise.allSettled(
       groups.map(async (g) => {
         await addGroupToContract(pg, market, g)
       })
@@ -478,7 +478,9 @@ async function getGroupCheckPermissions(
   groupId: string,
   userId: string
 ) {
-  const result = await pg.one<Row<'groups'> & { member_role: string | null }>(
+  const result = await pg.oneOrNone<
+    Row<'groups'> & { member_role: string | null }
+  >(
     `
     select g.*, gm.role as member_role
     from groups g
