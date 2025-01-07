@@ -388,7 +388,7 @@ export const BinaryMultiSellRow = (props: {
         }}
       >
         <Row className={'gap-1'}>
-          Sell
+          Sell {Math.floor(sharesSum)}
           <OutcomeLabel
             outcome={sharesOutcome}
             contract={contract}
@@ -404,6 +404,7 @@ export const BinaryMultiSellRow = (props: {
               },
             }}
           />
+          shares
         </Row>
       </Button>
     </Row>
