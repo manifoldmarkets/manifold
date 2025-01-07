@@ -1,4 +1,4 @@
-import { JSONContent } from './ContentRenderer'
+import { JSONContent } from './content-renderer'
 
 export function isEmptyDescription(description: any): boolean {
   const text = extractTextFromContent(description)

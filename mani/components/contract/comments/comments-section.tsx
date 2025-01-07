@@ -4,9 +4,11 @@ import { MINUTE_MS } from 'common/util/time'
 import { Col } from 'components/layout/col'
 import { ThemedText } from 'components/themed-text'
 import { EXAMPLE_COMMENTS } from 'constants/examples/example-comments'
-import { groupBy, keyBy, sortBy } from 'lodash'
+import { groupBy, sortBy } from 'lodash'
 import { useState } from 'react'
 import { ParentComment } from './parent-comment'
+import { ContentEditor } from 'components/content/content-editor'
+import { useColor } from 'hooks/use-color'
 
 // TODO: pinned comments
 // TODO: jump to comments
@@ -22,6 +24,7 @@ export function CommentsSection({ contract }: { contract: Contract }) {
   const [sortIndex, setSortIndex] = useState(0)
 
   const sort = sorts[sortIndex]
+  const color = useColor()
 
   const sortedComments = sortBy(comments, [
     sort === 'Best'
@@ -50,8 +53,6 @@ export function CommentsSection({ contract }: { contract: Contract }) {
     (c) => c.replyToCommentId ?? '_'
   )
 
-  const commentById = keyBy(comments, 'id')
-
   const parentComments = sortedComments.filter(
     (c) => c.replyToCommentId === undefined
   )
@@ -71,6 +72,7 @@ export function CommentsSection({ contract }: { contract: Contract }) {
           }
         />
       ))}
+   
     </Col>
   )
 }
