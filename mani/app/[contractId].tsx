@@ -72,7 +72,7 @@ function ContractPageContent({ contractId }: ContractPageContentProps) {
   const isBinary = !isBinaryMc && !isMultipleChoice
 
   return (
-    <Page>
+    <Page nonScrollableChildren={<ContentEditor onChange={() => {}} />}>
       <Col style={{ gap: 16, position: 'relative' }}>
         <ThemedText
           size={contract.question.length > LARGE_QUESTION_LENGTH ? 'xl' : '2xl'}
@@ -103,15 +103,6 @@ function ContractPageContent({ contractId }: ContractPageContentProps) {
         <ContractDescription contract={contract} />
         <CommentsSection contract={contract} />
       </Col>
-      {/* <View
-        // behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-        style={{
-          position: 'fixed',
-          bottom: 0,
-        }}
-      > */}
-      <ContentEditor onChange={() => {}} />
-      {/* </View> */}
     </Page>
   )
 }

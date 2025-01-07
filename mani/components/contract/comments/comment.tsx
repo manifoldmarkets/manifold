@@ -4,12 +4,12 @@ import { Col } from 'components/layout/col'
 import { Row } from 'components/layout/row'
 import { ThemedText } from 'components/themed-text'
 import { ReactNode } from 'react'
-import { Image, TouchableOpacity } from 'react-native'
+import { TouchableOpacity } from 'react-native'
 
 import { fromNow } from 'util/time'
 import { IconSymbol } from 'components/ui/icon-symbol'
 import { useColor } from 'hooks/use-color'
-import { Rounded } from 'constants/border-radius'
+import { AvatarCircle } from 'components/user/avatar-circle'
 
 export function Comment({
   comment,
@@ -40,15 +40,7 @@ export function Comment({
               }}
             />
           )}
-          <Image
-            style={{
-              width: 24,
-              height: 24,
-              borderRadius: Rounded.full,
-            }}
-            src={userAvatarUrl}
-            alt={`${userUsername} avatar`}
-          />
+          <AvatarCircle avatarUrl={userAvatarUrl} username={userUsername} />
         </Col>
         <Col style={{ flexShrink: 1, flex: 1, gap: 4 }}>
           <Row

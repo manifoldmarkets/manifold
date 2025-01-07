@@ -3,24 +3,32 @@ import {
   View,
   StyleSheet,
   TouchableOpacity,
-  Button,
   KeyboardAvoidingView,
   Platform,
+  TouchableWithoutFeedback,
 } from 'react-native'
 import { useState } from 'react'
 import { JSONContent } from './content-renderer'
-import { ThemedText } from 'components/themed-text'
+import { fontSizes, ThemedText } from 'components/themed-text'
 import { Row } from 'components/layout/row'
 import { useColor } from 'hooks/use-color'
+import { AvatarCircle } from 'components/user/avatar-circle'
+import { useUser } from 'hooks/use-user'
+import { PAGE_PADDING } from 'components/page'
+import { Rounded } from 'constants/border-radius'
+import { IconSymbol } from 'components/ui/icon-symbol'
 
 type EditorProps = {
   onChange: (content: JSONContent) => void
   initialContent?: JSONContent
 }
 
+const HORIZONTAL_PADDING = 16
+
 export function ContentEditor({ onChange, initialContent }: EditorProps) {
   const [text, setText] = useState('')
   const [isExpanded, setIsExpanded] = useState(false)
+  const user = useUser()
   const color = useColor()
 
   const handleTextChange = (newText: string) => {
@@ -44,85 +52,104 @@ export function ContentEditor({ onChange, initialContent }: EditorProps) {
 
     onChange(content)
   }
+  if (!user) return null
+
+  const { avatarUrl, username } = user
 
   return (
-    // <View style={styles.container}>
-    //   <TextInput
-    //     multiline
-    //     value={text}
-    //     onChangeText={handleTextChange}
-    //     style={styles.input}
-    //   />
-    //   {/* Add formatting buttons here */}
-    // </View>
-    <KeyboardAvoidingView
-      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-      style={{
-        position: 'fixed', // or 'absolute' depending on your needs
-        bottom: 0,
-        left: 0,
-        right: 0,
-        backgroundColor: 'white',
-        borderTopWidth: 1,
-        borderTopColor: '#e5e5e5',
-        padding: 12,
-        // Add shadow if desired
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: -2 },
-        shadowOpacity: 0.1,
-        shadowRadius: 4,
-        elevation: 5,
-      }}
-    >
-      {!isExpanded ? (
-        // Collapsed state - show single line input
-        <TouchableOpacity
-          onPress={() => setIsExpanded(true)}
-          style={{
-            height: 40,
-            backgroundColor: '#f0f0f0',
-            borderRadius: 20,
-            paddingHorizontal: 16,
-            justifyContent: 'center',
-          }}
-        >
-          <ThemedText size="sm" color={color.textSecondary}>
-            Add a comment...
-          </ThemedText>
-        </TouchableOpacity>
-      ) : (
-        // Expanded state - show full textarea and buttons
-        <View style={{ gap: 8 }}>
-          <TextInput
-            multiline
-            autoFocus
-            placeholder="Add a comment..."
-            style={{
-              height: 100,
-              backgroundColor: '#f0f0f0',
-              borderRadius: 12,
-              padding: 12,
-            }}
-            value={text}
-            onChangeText={handleTextChange}
-          />
-          <Row style={{ justifyContent: 'flex-end', gap: 8 }}>
-            <Button
-              onPress={() => setIsExpanded(false)}
-              title="Cancel"
-              color="gray"
-            />
-            <Button
-              onPress={() => {
-                // Handle submit
-                setIsExpanded(false)
-              }}
-              title="Reply"
-            />
-          </Row>
-        </View>
+    <>
+      {isExpanded && (
+        <TouchableWithoutFeedback onPress={() => setIsExpanded(false)}>
+          <View style={StyleSheet.absoluteFill} />
+        </TouchableWithoutFeedback>
       )}
-    </KeyboardAvoidingView>
+      <KeyboardAvoidingView
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        style={{
+          position: 'fixed', // or 'absolute' depending on your needs
+          bottom: 0,
+          left: 0,
+          right: 0,
+          backgroundColor: color.background,
+          paddingVertical: 12,
+          paddingHorizontal: PAGE_PADDING,
+        }}
+        keyboardVerticalOffset={Platform.OS === 'ios' ? 72 : 0}
+      >
+        {!isExpanded ? (
+          // Collapsed state - show single line input
+          <Row
+            style={{
+              width: '100%',
+              gap: 8,
+              alignItems: 'center',
+            }}
+          >
+            <AvatarCircle avatarUrl={avatarUrl} username={username} />
+            <TouchableOpacity
+              onPress={() => setIsExpanded(true)}
+              style={{
+                flex: 1,
+                height: 40,
+                backgroundColor: color.backgroundSecondary,
+                borderRadius: Rounded['2xl'],
+                justifyContent: 'center',
+                paddingHorizontal: HORIZONTAL_PADDING,
+              }}
+            >
+              <ThemedText size="sm" color={color.textTertiary}>
+                Add a comment...
+              </ThemedText>
+            </TouchableOpacity>
+          </Row>
+        ) : (
+          // Expanded state - show full textarea and buttons
+          <View style={{ gap: 8, width: '100%' }}>
+            <Row style={{ gap: 8 }}>
+              <AvatarCircle
+                avatarUrl={avatarUrl}
+                username={username}
+                style={{ paddingTop: 8 }}
+              />
+              <TextInput
+                multiline
+                autoFocus
+                placeholder="Add a comment..."
+                placeholderTextColor={color.textTertiary}
+                style={{
+                  minHeight: 40,
+                  maxHeight: 80,
+                  flex: 1,
+                  backgroundColor: color.backgroundSecondary,
+                  borderRadius: Rounded['2xl'],
+                  paddingHorizontal: HORIZONTAL_PADDING,
+                  color: color.text,
+                  textAlignVertical: 'center',
+                  fontSize: fontSizes.sm.fontSize,
+                  lineHeight: fontSizes.sm.lineHeight,
+                }}
+                value={text}
+                onChangeText={handleTextChange}
+              />
+            </Row>
+            <Row style={{ justifyContent: 'flex-end', gap: 8 }}>
+              {/* TODO: ability to add tags and pictures */}
+              <TouchableOpacity
+                onPress={() =>
+                  // TODO: Add comment logic here
+                  setIsExpanded(false)
+                }
+              >
+                <IconSymbol
+                  name="paperplane.fill"
+                  color={color.primaryButton}
+                />
+              </TouchableOpacity>
+            </Row>
+          </View>
+        )}
+      </KeyboardAvoidingView>
+    </>
   )
 }
 
