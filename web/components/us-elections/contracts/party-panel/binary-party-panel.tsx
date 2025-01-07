@@ -29,15 +29,16 @@ import { firebaseLogin } from 'web/lib/firebase/users'
 import { BubblePercentChange } from '../candidates-panel/candidate-bar'
 import { BinaryUserPosition } from '../candidates-panel/candidates-user-position'
 import { ELECTIONS_PARTY_QUESTION_PSEUDONYM } from 'web/components/elections-page'
+import { sliderColors } from 'web/components/widgets/slider'
 
 const politicsBinaryPseudonym = {
   YES: {
     pseudonymName: 'TRUMP',
-    pseudonymColor: 'sienna',
+    pseudonymColor: 'sienna' as keyof typeof sliderColors,
   },
   NO: {
     pseudonymName: 'HARRIS',
-    pseudonymColor: 'azure',
+    pseudonymColor: 'azure' as keyof typeof sliderColors,
   },
 }
 
@@ -360,11 +361,11 @@ export function BinaryBetButton(props: {
   binaryPseudonym?: {
     YES: {
       pseudonymName: string
-      pseudonymColor: string
+      pseudonymColor: keyof typeof sliderColors
     }
     NO: {
       pseudonymName: string
-      pseudonymColor: string
+      pseudonymColor: keyof typeof sliderColors
     }
   }
 }) {
