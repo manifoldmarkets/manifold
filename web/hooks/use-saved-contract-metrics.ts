@@ -61,7 +61,7 @@ export const useAllSavedContractMetrics = (
 
   useEffect(() => {
     refreshMyMetrics()
-  }, [user?.id, contract.id, answerId])
+  }, [user?.id, contract.id, answerId, contract.resolution])
 
   useApiSubscription({
     topics: [`contract/${contract.id}/user-metrics/${user?.id}`],

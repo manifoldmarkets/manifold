@@ -28,8 +28,8 @@ export function ContractLeaderboard(props: {
     .map((m) => m.userId)
   const userIsAlreadyRanked =
     currentUser && topRankedUserIds.includes(currentUser.id)
+  // TODO: refactor all this to just work when this leaderboard is rendered (when market resolves)
   const [yourRank, setYourRank] = useState<number | undefined>(undefined)
-
   useEffect(() => {
     if (currentUserMetrics?.profit && !yourRank && !userIsAlreadyRanked) {
       getRanking(contractId, currentUserMetrics.profit, db).then((rank) =>
