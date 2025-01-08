@@ -357,6 +357,8 @@ export const isBinaryMulti = (contract: Contract) =>
   contract.shouldAnswersSumToOne
 // contract.createdTime > 1708574059795 // In case we don't want to convert pre-commit contracts
 
+export const isSportsContract = (contract: Contract) => contract.sportsEventId
+
 export const getMainBinaryMCAnswer = (contract: Contract) =>
   isBinaryMulti(contract) && contract.mechanism === 'cpmm-multi-1'
     ? contract.answers[0]

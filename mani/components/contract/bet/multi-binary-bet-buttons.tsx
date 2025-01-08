@@ -1,7 +1,11 @@
 import { Row } from 'components/layout/row'
 import { useState } from 'react'
 import { BetPanel, BinaryOutcomes } from './bet-panel'
-import { CPMMMultiContract, getMainBinaryMCAnswer } from 'common/contract'
+import {
+  CPMMMultiContract,
+  getMainBinaryMCAnswer,
+  isSportsContract,
+} from 'common/contract'
 import { Button, ButtonProps } from 'components/buttons/button'
 import { AnswerProbability } from '../probability'
 import { ThemedText } from 'components/themed-text'
@@ -27,6 +31,7 @@ export function MultiBinaryBetButtons({
   }
 
   const selectedAnswer = contract.answers[selectedAnswerIndex]
+  const isSports = isSportsContract(contract)
 
   return (
     <>
@@ -41,6 +46,11 @@ export function MultiBinaryBetButtons({
                 source={{ uri: answer.imageUrl }}
                 style={{ width: 40, height: 40 }}
               />
+            )}
+            {isSports && (
+              <ThemedText size="md" color={color.text} weight="semibold">
+                {answer.text}
+              </ThemedText>
             )}
             <Button
               onPress={() => handleBetClick(i === 0 ? 'YES' : 'NO', i)}

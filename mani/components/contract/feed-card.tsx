@@ -1,6 +1,7 @@
 import {
   BinaryContract,
   CPMMMultiContract,
+  isSportsContract,
   MultiContract,
 } from 'common/contract'
 import { ThemedText } from 'components/themed-text'
@@ -37,6 +38,8 @@ export function FeedCard(props: { contractPair: ContractPair }) {
   const isMultipleChoice =
     contract.outcomeType == 'MULTIPLE_CHOICE' && !isBinaryMc
   const isBinary = !isBinaryMc && !isMultipleChoice
+  const isSports = isSportsContract(contract)
+
   const [betPanelOpen, setBetPanelOpen] = useState(false)
   const color = useColor()
 
@@ -62,14 +65,16 @@ export function FeedCard(props: { contractPair: ContractPair }) {
           width: '100%',
         }}
       >
-        <ThemedText
-          size={'lg'}
-          weight="semibold"
-          numberOfLines={3}
-          style={{ flex: 1 }}
-        >
-          {contract.question}
-        </ThemedText>
+        {!isSports && !isBinaryMc && (
+          <ThemedText
+            size={'lg'}
+            weight="semibold"
+            numberOfLines={3}
+            style={{ flex: 1 }}
+          >
+            {contract.question}
+          </ThemedText>
+        )}
         {isBinary && (
           <Row
             style={{
