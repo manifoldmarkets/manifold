@@ -187,7 +187,7 @@ export const ReadChartAnnotationModal = (props: {
         <Row className={'w-full'}>
           {comment_id ? (
             comment ? (
-              <Content content={comment.content} />
+              <Content size="sm" content={comment.content} />
             ) : (
               <LoadingIndicator />
             )

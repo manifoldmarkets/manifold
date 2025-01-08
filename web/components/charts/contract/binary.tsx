@@ -107,7 +107,7 @@ export const BinaryContractChart = (props: {
     zoomY,
   } = props
 
-  const start = first(betPoints)?.x ?? contract.createdTime
+  const start = Math.min(first(betPoints)?.x ?? Infinity, contract.createdTime)
   const end = getEndDate(contract)
   const endP = getProbability(contract as BinaryContract)
 

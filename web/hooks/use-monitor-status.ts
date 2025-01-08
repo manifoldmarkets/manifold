@@ -3,8 +3,8 @@ import { api } from 'web/lib/api/api'
 import { GPSData } from 'common/gidx/gidx'
 import { MINUTE_MS } from 'common/util/time'
 import { User } from 'common/user'
-import { usePersistentInMemoryState } from 'web/hooks/use-persistent-in-memory-state'
-import { useEvent } from 'web/hooks/use-event'
+import { usePersistentInMemoryState } from 'client-common/hooks/use-persistent-in-memory-state'
+import { useEvent } from 'client-common/hooks/use-event'
 import { useLocation } from './use-location'
 
 export const useMonitorStatus = (

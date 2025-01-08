@@ -3,6 +3,8 @@ create table if not exists
   answers (
     color text,
     contract_id text,
+    image_url text,
+    short_text text,
     created_time timestamp with time zone default now(),
     id text primary key default random_alphanumeric (12) not null,
     index integer,

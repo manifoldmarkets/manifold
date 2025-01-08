@@ -2,7 +2,7 @@ import { ChevronDownIcon, ChevronUpIcon } from '@heroicons/react/solid'
 import { JSONContent } from '@tiptap/react'
 import clsx from 'clsx'
 import { MouseEventHandler, useEffect, useRef, useState } from 'react'
-import { useSafeLayoutEffect } from 'web/hooks/use-safe-layout-effect'
+import { useSafeLayoutEffect } from 'client-common/hooks/use-safe-layout-effect'
 import { Row } from '../layout/row'
 import { Content } from './editor'
 import { usePersistentLocalState } from 'web/hooks/use-persistent-local-state'
@@ -48,7 +48,7 @@ export function CollapsibleContent(props: {
   stateKey: string
   defaultCollapse?: boolean
   hideCollapse?: boolean
-  mediaSize?: 'sm' | 'md' | 'lg'
+  mediaSize: 'sm' | 'md' | 'lg'
   collapseLines?: number
   showMorePlacement?: 'top' | 'bottom'
 }) {
@@ -94,7 +94,7 @@ function ActuallyCollapsibleContent(props: {
   content: JSONContent | string
   stateKey: string
   showMorePlacement: 'top' | 'bottom'
-  mediaSize?: 'sm' | 'md' | 'lg'
+  mediaSize: 'sm' | 'md' | 'lg'
   defaultCollapse?: boolean
 }) {
   const { content, mediaSize, stateKey, defaultCollapse, showMorePlacement } =

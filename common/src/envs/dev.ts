@@ -28,6 +28,8 @@ export const DEV_CONFIG: EnvConfig = {
   expoConfig: {
     iosClientId:
       '134303100058-lioqb7auc8minvqt9iamuit2pg10pubt.apps.googleusercontent.com',
+    iosClientId2:
+      '134303100058-9464q86hhfloaij15dl9ekn6l39e3cv8.apps.googleusercontent.com',
     expoClientId:
       '134303100058-2uvio555s8mnhde20b4old97ptjnji3u.apps.googleusercontent.com',
     androidClientId:

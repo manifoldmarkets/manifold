@@ -1,5 +1,9 @@
 import clsx from 'clsx'
-import { MIN_CASHOUT_AMOUNT, SWEEPIES_CASHOUT_FEE } from 'common/economy'
+import {
+  KYC_VERIFICATION_BONUS_CASH,
+  MIN_CASHOUT_AMOUNT,
+  SWEEPIES_CASHOUT_FEE,
+} from 'common/economy'
 import { SWEEPIES_NAME } from 'common/envs/constants'
 import { CheckoutSession, GPSData } from 'common/gidx/gidx'
 import { formatSweepies, formatSweepsToUSD } from 'common/util/format'
@@ -26,7 +30,7 @@ import { InfoTooltip } from 'web/components/widgets/info-tooltip'
 import { Input } from 'web/components/widgets/input'
 import { LoadingIndicator } from 'web/components/widgets/loading-indicator'
 import { useAPIGetter } from 'web/hooks/use-api-getter'
-import { useApiSubscription } from 'web/hooks/use-api-subscription'
+import { useApiSubscription } from 'client-common/hooks/use-api-subscription'
 import { usePrivateUser, useUser } from 'web/hooks/use-user'
 import { api, APIError } from 'web/lib/api/api'
 import { LocationBlockedIcon } from 'web/public/custom-components/locationBlockedIcon'
@@ -36,13 +40,12 @@ import { Col } from '../components/layout/col'
 import { Page } from '../components/layout/page'
 import { Row } from '../components/layout/row'
 import { capitalize } from 'lodash'
-import { useKYCGiftAmount } from 'web/components/sweeps/sweep-verify-section'
 import {
   Divider,
   InputTitle,
 } from 'web/components/gidx/register-component-helpers'
 import { UsOnlyDisclaimer } from 'web/components/sweeps/us-only-disclaimer'
-import { useEvent } from 'web/hooks/use-event'
+import { useEvent } from 'client-common/hooks/use-event'
 import {
   ageBlocked,
   fraudSession,
@@ -90,7 +93,6 @@ export default function CashoutPage() {
   const [state, setState] = useState('')
   const [zipCode, setZipCode] = useState('')
   const [sessionStatus, setSessionStatus] = useState<string>()
-  const kycAmount = useKYCGiftAmount(user)
   const [deviceGPS, setDeviceGPS] = useState<GPSData>()
 
   const { data: documentData } = useAPIGetter(
@@ -300,16 +302,12 @@ export default function CashoutPage() {
                 >
                   Verify and get
                   <span className="ml-1">
-                    {kycAmount == undefined ? (
-                      ' a sweepcash gift!'
-                    ) : (
-                      <CoinNumber
-                        amount={kycAmount}
-                        className={'font-bold'}
-                        isInline
-                        coinType={'CASH'}
-                      />
-                    )}
+                    <CoinNumber
+                      amount={KYC_VERIFICATION_BONUS_CASH}
+                      className={'font-bold'}
+                      isInline
+                      coinType={'CASH'}
+                    />
                   </span>
                 </Link>
                 <div className="text-ink-500 mt-1 text-center text-sm">

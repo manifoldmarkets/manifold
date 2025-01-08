@@ -11,7 +11,6 @@ export const CONFIGS: { [env: string]: EnvConfig } = {
   DEV: DEV_CONFIG,
 }
 
-export const CASH_BETS_ENABLED = true
 export const TWOMBA_CASHOUT_ENABLED = true
 export const SPICE_PRODUCTION_ENABLED = false
 export const SPICE_TO_MANA_CONVERSION_RATE = 1
@@ -176,6 +175,8 @@ export const BOT_USERNAMES = [
   'spacedroplet',
   'AriZernerBot',
   'PV_bot',
+  'draaglom_bot',
+  'SiriusBOT',
 ]
 
 export const MOD_IDS = [
@@ -207,10 +208,18 @@ export const MOD_IDS = [
   'hUM4SO8a8qhfqT1gEZ7ElTCGSEz2', // Stralor
   'tO4DwIsujySUwtSnrr2hnU1WJtJ3', // WieDan
   'oPxjIzlvC5fRbGCaVgkvAiyoXBB2', // mattyb
+  'Iua2KQvL6KYcfGLGNI6PVeGkseo1', // Ziddletwix
+  'Gg7t9vPD4WPD1iPgj9RUFLYTxgH2', // nikki
+  'XNrWcIrA22hpv20fHn4ApoTPsh63', // bagelfan
 ]
 
 export const SWEEPSTAKES_MOD_IDS = [
   'uglwf3YKOZNGjjEXKc5HampOFRE2', //SirSalty
+  'KHX2ThSFtLQlau58hrjtCX7OL2h2', // shankypanky (stefanie)
+  '2VhlvfTaRqZbFn2jqxk2Am9jgsE2', // Gabrielle
+  'HTbxWFlzWGeHUTiwZvvF0qm8W433', // Conflux
+  'YGZdZUSFQyM8j2YzPaBqki8NBz23', // jack
+  'JlVpsgzLsbOUT4pajswVMr0ZzmM2', // Joshua
 ]
 
 export const MVP = ['Eliza', 'Gabrielle', 'jacksonpolack']
@@ -285,6 +294,12 @@ export const BANNED_TRADING_USER_IDS = [
   'LIBAoi7tpqeNLYM1xxJ1QJBQqW32', //lastuserhere
   'p3ADzwIUS3fk0ka80XYEE3OM3S32', //PC
   '4JuXgDx47xPagH5mcLDqLzUSN5g2', // BTE
+  'iD1ObV4sInhkBXs3Ten96j4Co6O2', // BTE alt
+  'zRMxfUt51RcEIcZkuw6ySiNJYBE3', // BTE alt
+  'wo2LRCvgaNSllK3q0Wnv8hlusTa2', // BTE alt
+  'os2ilMb1d8WDeXxiQAo6btlig1Z2', // BTE alt
+  'zRMxfUt51RcEIcZkuw6ySiNJYBE3', // BTE alt
+  'fnuHBW8dHwZp2TbEt2MKJY9d28V2', //Klob (Caleb)
 ]
 
 export const PARTNER_USER_IDS: string[] = [
@@ -308,18 +323,15 @@ export const PARTNER_USER_IDS: string[] = [
   'GRaWlYn2fNah0bvr6OW28l28nFn1', // cash
   'ZKkL3lFRFaYfiaT9ZOdiv2iUJBM2', // mint
   'hRbPwezgxnat6GpJQxoFxq1xgUZ2', // AmmonLam
-  'iPQVGUbwOfT3MmWIZs3JaruVzhV2', // Mugiwaraplus
-  'k9gKj9BgTLN5tkqYztHeNoSpwyl1', // OnePieceExplained
   'foOeshHZOET3yMvRTMPINpnb8Bj2', // PunishedFurry
   'EBGhoFSxRtVBu4617SLZUe1FeJt1', // FranklinBaldo
-  'GPlNcdBrcfZ3PiAfhnI9mQfHZbm1', // RemNi
   '4xOTMCIOkGesdJft50wVFZFb5IB3', // Tripping
-  'hUM4SO8a8qhfqT1gEZ7ElTCGSEz2', // Stralor aka Pat Scott
   'srFlJRuVlGa7SEJDM4cY9B5k4Lj2', // Bayesian
   'H6b5PWELWfRV6HhyHAlCGq7yJJu2', // AndrewG
   'EJQOCF3MfLTFYbhiKncrNefQDBz1', // chrisjbillington
   '7HhTMy4xECaVKvl5MmEAfVUkRCS2', // KevinBurke
   'oPxjIzlvC5fRbGCaVgkvAiyoXBB2', // mattyb
+  'OdBj5DW6PbYtnImvybpyZzfhb133', //jim
 ]
 
 export const NEW_USER_HERLPER_IDS = [
@@ -328,7 +340,6 @@ export const NEW_USER_HERLPER_IDS = [
   '4juQfJkFnwX9nws3dFOpz4gc1mi2', // jacksonpolack
   'BgCeVUcOzkexeJpSPRNomWQaQaD3', // SemioticRivalry
   'rQPOELuW5zaapaNPnBYQBMoonk92', // Tumbles
-  'igi2zGXsfxYPgB0DJTXVJVmwCOr2', // Austin
   'tlmGNz9kjXc2EteizMORes4qvWl2', // Stephen
   '0k1suGSJKVUnHbCPEhHNpgZPkUP2', // Sinclair
   'AJwLWoo3xue32XIiAVrL5SyR1WB2', // Ian

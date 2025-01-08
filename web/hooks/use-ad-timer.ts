@@ -1,5 +1,5 @@
 import { useEffect } from 'react'
-import { usePersistentInMemoryState } from './use-persistent-in-memory-state'
+import { usePersistentInMemoryState } from 'client-common/hooks/use-persistent-in-memory-state'
 
 export const useAdTimer = (
   contractId: string,

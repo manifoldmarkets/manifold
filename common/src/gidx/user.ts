@@ -73,7 +73,6 @@ export const getVerificationStatus = (
 }
 
 const USER_IS_UNDEFINED_MESSAGE = 'Please sign in or sign up'
-const GIDX_DISABLED_MESSAGE = 'GIDX registration is disabled'
 const PHONE_NOT_VERIFIED_MESSAGE = 'User must verify phone'
 const IDENTIFICATION_FAILED_MESSAGE = 'User identification failed'
 const LOCATION_BLOCKED_MESSAGE = 'User location is blocked'
@@ -84,7 +83,7 @@ const USER_BLOCKED_MESSAGE =
 const USER_UNDERAGE_MESSAGE = 'User is underage'
 const USER_IDENTITY_BLOCKED_MESSAGE = 'User identity is blocked'
 const USER_FRAUD_MESSAGE =
-  'Current user session is marked as possible fraud, please turn off VPN if using'
+  'Your current activity was marked as suspicious, please turn off VPN if using. You may have to wait for a few hours for your account to be unblocked.'
 const USER_NOT_REGISTERED_MESSAGE = 'User must register'
 const USER_VERIFIED_MESSSAGE = 'User is verified'
 const USER_PENDING_VERIFICATION_MESSAGE = 'User is pending verification'

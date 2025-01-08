@@ -16,7 +16,7 @@ export function updateSupabaseAuth(token?: string) {
   if (currentToken != token) {
     currentToken = token
     if (token == null) {
-      db['rest'].headers['Authorization']
+      delete db['rest'].headers['Authorization']
       db['realtime'].setAuth(null)
     } else {
       db['rest'].headers['Authorization'] = `Bearer ${token}`

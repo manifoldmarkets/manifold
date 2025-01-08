@@ -14,11 +14,12 @@ import { getDefaultSort, MultiSort } from 'common/answer'
 import Link from 'next/link'
 import { linkClass } from 'web/components/widgets/site-link'
 import { AnswersPanel } from 'web/components/answers/answers-panel'
-import { usePersistentInMemoryState } from 'web/hooks/use-persistent-in-memory-state'
+import { usePersistentInMemoryState } from 'client-common/hooks/use-persistent-in-memory-state'
 import { BinaryMultiAnswersPanel } from 'web/components/answers/binary-multi-answers-panel'
 import { NumericBetPanel } from 'web/components/answers/numeric-bet-panel'
 import { Row } from 'web/components/layout/row'
 import { MultiNumericResolutionOrExpectation } from 'web/components/contract/contract-price'
+import { sliderColors } from '../widgets/slider'
 
 export function BetDialog(props: {
   contract: BinaryContract
@@ -29,11 +30,11 @@ export function BetDialog(props: {
   binaryPseudonym?: {
     YES: {
       pseudonymName: string
-      pseudonymColor: string
+      pseudonymColor: keyof typeof sliderColors
     }
     NO: {
       pseudonymName: string
-      pseudonymColor: string
+      pseudonymColor: keyof typeof sliderColors
     }
   }
   questionPseudonym?: string

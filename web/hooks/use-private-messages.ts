@@ -13,8 +13,8 @@ import { usePathname } from 'next/navigation'
 import { api } from 'web/lib/api/api'
 import { PrivateMessageChannel } from 'common/supabase/private-messages'
 import { useAPIGetter } from 'web/hooks/use-api-getter'
-import { useApiSubscription } from 'web/hooks/use-api-subscription'
-import { usePersistentInMemoryState } from 'web/hooks/use-persistent-in-memory-state'
+import { useApiSubscription } from 'client-common/hooks/use-api-subscription'
+import { usePersistentInMemoryState } from 'client-common/hooks/use-persistent-in-memory-state'
 
 export function usePrivateMessages(
   channelId: number,
@@ -55,13 +55,12 @@ export function usePrivateMessages(
 }
 
 export const useUnseenPrivateMessageChannels = (
-  userId: string,
   ignorePageSeenTime: boolean
 ) => {
   const pathName = usePathname()
   const lastSeenMessagesPageTime = useLastSeenMessagesPageTime()
   const [lastSeenChatTimeByChannelId, setLastSeenChatTimeByChannelId] =
-    useState<Record<number, string> | undefined>(undefined)
+    useState<Record<number, number> | undefined>(undefined)
 
   const { data, refresh } = useAPIGetter('get-channel-memberships', {
     lastUpdatedTime: ignorePageSeenTime
@@ -85,7 +84,7 @@ export const useUnseenPrivateMessageChannels = (
     })
     const newState = lastSeenChatTimeByChannelId ?? {}
     seenTimes.forEach(([channelId, time]) => {
-      newState[channelId] = time
+      newState[channelId] = tsToMillis(time)
     })
     setLastSeenChatTimeByChannelId(newState)
   }
@@ -117,19 +116,19 @@ export const useUnseenPrivateMessageChannels = (
     return { unseenChannels: [], lastSeenChatTimeByChannelId: {} }
   const unseenChannels = channels.filter((channel) => {
     const channelId = channel.channel_id
-    const notifyAfterTime =
+    const notifyAfterTime = tsToMillis(
       channels?.find((m) => m.channel_id === channelId)?.notify_after_time ??
-      '0'
+        '0'
+    )
 
     const lastSeenTime = lastSeenChatTimeByChannelId[channelId] ?? 0
-    const lastSeenChatTime =
-      notifyAfterTime > lastSeenTime ? notifyAfterTime : lastSeenTime ?? 0
-    return (
-      channel.last_updated_time > lastSeenChatTime &&
+    const lastSeenChatTime = Math.max(notifyAfterTime, lastSeenTime)
+    const unseen =
+      tsToMillis(channel.last_updated_time) > lastSeenChatTime &&
       (ignorePageSeenTime ||
         tsToMillis(channel.last_updated_time) > lastSeenMessagesPageTime) &&
       !pathName?.endsWith(`/messages/${channelId}`)
-    )
+    return unseen
   })
   return { unseenChannels, lastSeenChatTimeByChannelId }
 }

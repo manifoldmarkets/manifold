@@ -52,6 +52,11 @@ export function getNewContract(props: {
   isAutoBounty?: boolean | undefined
   marketTier?: MarketTierType
   token: 'MANA' | 'CASH'
+  sportsStartTimestamp?: string
+  sportsEventId?: string
+  sportsLeague?: string
+  answerShortTexts?: string[]
+  answerImageUrls?: string[]
 }) {
   const {
     id,
@@ -75,6 +80,11 @@ export function getNewContract(props: {
     isAutoBounty,
     marketTier,
     token,
+    sportsStartTimestamp,
+    sportsEventId,
+    sportsLeague,
+    answerShortTexts,
+    answerImageUrls,
   } = props
   const createdTime = Date.now()
 
@@ -89,7 +99,9 @@ export function getNewContract(props: {
         answers,
         addAnswersMode ?? 'DISABLED',
         shouldAnswersSumToOne ?? true,
-        ante
+        ante,
+        answerShortTexts,
+        answerImageUrls
       ),
     STONK: () => getStonkCpmmProps(initialProb, ante),
     BOUNTIED_QUESTION: () => getBountiedQuestionProps(ante, isAutoBounty),
@@ -143,6 +155,10 @@ export function getNewContract(props: {
     isTwitchContract,
     marketTier,
     token,
+
+    sportsStartTimestamp,
+    sportsEventId,
+    sportsLeague,
   })
   if (visibility === 'unlisted') {
     contract.unlistedById = creator.id
@@ -224,7 +240,9 @@ const getMultipleChoiceProps = (
   answers: string[],
   addAnswersMode: add_answers_mode,
   shouldAnswersSumToOne: boolean,
-  ante: number
+  ante: number,
+  shortTexts?: string[],
+  imageUrls?: string[]
 ) => {
   const isBinaryMulti =
     addAnswersMode === 'DISABLED' &&
@@ -241,7 +259,9 @@ const getMultipleChoiceProps = (
     shouldAnswersSumToOne,
     ante,
     answersWithOther,
-    isBinaryMulti ? VERSUS_COLORS : undefined
+    isBinaryMulti ? VERSUS_COLORS : undefined,
+    shortTexts,
+    imageUrls
   )
   const system: CPMMMulti = {
     mechanism: 'cpmm-multi-1',
@@ -294,7 +314,9 @@ function createAnswers(
   shouldAnswersSumToOne: boolean,
   ante: number,
   answers: string[],
-  colors?: string[]
+  colors?: string[],
+  shortTexts?: string[],
+  imageUrls?: string[]
 ) {
   const ids = answers.map(() => randomString())
 
@@ -332,6 +354,8 @@ function createAnswers(
       text,
       createdTime: now,
       color: colors?.[i],
+      shortText: shortTexts?.[i],
+      imageUrl: imageUrls?.[i],
 
       poolYes,
       poolNo,

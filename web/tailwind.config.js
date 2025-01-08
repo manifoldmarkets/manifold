@@ -485,17 +485,38 @@ module.exports = {
           950: 'rgb(var(--color-yes-950) / <alpha-value>)',
         },
       },
+      // https://github.com/tailwindlabs/tailwindcss-typography?tab=readme-ov-file#customizing-the-css
       typography: (theme) => ({
         DEFAULT: {
           css: {
+            h1: {
+              fontWeight: 600,
+              fontSize: '2em',
+              marginTop: '1.25em',
+              marginBottom: '0.5em',
+            },
+            h2: {
+              fontWeight: 600,
+              marginTop: '1.5em',
+              marginBottom: '0.5em',
+            },
+            h3: {
+              marginTop: '1.5em',
+              marginBottom: '0.5em',
+            },
+            code: {
+              fontWeight: 500,
+            },
             'blockquote p:first-of-type::before': false,
             'blockquote p:last-of-type::after': false,
             'code::before': false,
             'code::after': false,
             '--tw-prose-bold': 'inherit',
             '--tw-prose-invert-bold': 'inherit',
-            '--tw-prose-quote-borders': theme('colors.teal.600'),
-            '--tw-prose-invert-quote-borders': theme('colors.teal.300'),
+            '--tw-prose-quote-borders': 'inherit',
+            '--tw-prose-invert-quote-borders': 'inherit',
+            '--tw-prose-code': theme('colors.red.700'),
+            '--tw-prose-invert-code': theme('colors.red.400'),
           },
         },
       }),

@@ -39,7 +39,7 @@ export const FeedBet = memo(function FeedBet(props: {
   className?: string
   onReply?: (bet: Bet) => void
 }) {
-  const { contract, bet, avatarSize, className, onReply } = props
+  const { contract, bet, avatarSize, className } = props
   const { createdTime, userId } = bet
   const user = useDisplayUserById(userId)
   const showUser = dayjs(createdTime).isAfter('2022-06-01')
@@ -66,7 +66,6 @@ export const FeedBet = memo(function FeedBet(props: {
             className="flex-1"
           />
         </Row>
-        <BetActions onReply={onReply} bet={bet} contract={contract} />
       </Row>
     </Col>
   )
@@ -80,7 +79,6 @@ export const FeedReplyBet = memo(function FeedReplyBet(props: {
 }) {
   const { contract, bets, avatarSize, className } = props
   const showUser = bets.every((b) => dayjs(b.createdTime).isAfter('2022-06-01'))
-  useDisplayUserById
 
   const users = useUsers(bets.map((b) => b.userId))
 

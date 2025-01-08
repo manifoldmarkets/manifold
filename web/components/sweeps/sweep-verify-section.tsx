@@ -6,14 +6,12 @@ import {
   getVerificationStatus,
   PROMPT_USER_VERIFICATION_MESSAGES,
 } from 'common/gidx/user'
-import { type User } from 'common/user'
 import { capitalize } from 'lodash'
 import Link from 'next/link'
-import { ReactNode, useEffect, useState } from 'react'
+import { ReactNode } from 'react'
 import { usePersistentLocalState } from 'web/hooks/use-persistent-local-state'
 import { usePrivateUser, useUser } from 'web/hooks/use-user'
 import { firebaseLogin } from 'web/lib/firebase/users'
-import { db } from 'web/lib/supabase/db'
 import { Button, buttonClass, ColorType } from '../buttons/button'
 import { Col } from '../layout/col'
 import { Row } from '../layout/row'
@@ -193,8 +191,6 @@ export function VerifyButton(props: {
 }) {
   const { className, content, color, redirectHereAfterVerify } = props
   const router = useRouter()
-  const user = useUser()
-  const amount = useKYCGiftAmount(user)
 
   return (
     <Link
@@ -214,40 +210,13 @@ export function VerifyButton(props: {
       ) : (
         <>
           Verify and claim
-          {amount == undefined ? (
-            <CoinNumber
-              amount={KYC_VERIFICATION_BONUS_CASH}
-              coinType="CASH"
-              className="ml-1"
-            />
-          ) : (
-            <CoinNumber amount={amount} coinType="CASH" className="ml-1" />
-          )}
+          <CoinNumber
+            amount={KYC_VERIFICATION_BONUS_CASH}
+            coinType="CASH"
+            className="ml-1"
+          />
         </>
       )}
     </Link>
   )
-}
-
-export function useKYCGiftAmount(user: User | undefined | null) {
-  const [amount, setAmount] = useState<number>()
-  useEffect(() => {
-    if (!user) return
-    db.from('kyc_bonus_rewards')
-      .select('reward_amount')
-      .eq('user_id', user.id)
-      .then(({ data, error }) => {
-        if (error) {
-          console.error(error)
-          return
-        }
-        if (data && data.length > 0) {
-          setAmount(
-            Math.max(KYC_VERIFICATION_BONUS_CASH, data[0].reward_amount)
-          )
-        }
-      })
-  }, [user?.id])
-
-  return amount
 }

@@ -11,6 +11,7 @@ export const searchProps = z
         z.literal('closing-90-days'),
         z.literal('closing-week'),
         z.literal('closing-month'),
+        z.literal('closing-day'),
         z.literal('closed'),
         z.literal('resolved'),
         z.literal('all'),
@@ -66,7 +67,12 @@ export const searchProps = z
       .regex(/^[01]{5}$/)
       .default('00000'),
     token: z
-      .union([z.literal('MANA'), z.literal('CASH'), z.literal('ALL')])
+      .union([
+        z.literal('MANA'),
+        z.literal('CASH'),
+        z.literal('ALL'),
+        z.literal('CASH_AND_MANA'),
+      ])
       .default('ALL'),
     gids: z.string().optional(),
   })

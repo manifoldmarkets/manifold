@@ -35,7 +35,15 @@ export const getChannelMemberships: APIHandler<
   } else {
     channels = await pg.map(
       `with latest_channels as (
-         select distinct on (pumc.id) pumc.id as channel_id, notify_after_time, pumc.created_time, pumc.last_updated_time
+         select distinct on (pumc.id) pumc.id as channel_id, notify_after_time, pumc.created_time, 
+           (select created_time 
+            from private_user_messages 
+            where channel_id = pumc.id 
+            and visibility != 'system_status'
+            and user_id != $1
+            order by created_time desc 
+            limit 1) as last_updated_time, -- last_updated_time is the last possible unseen message time
+            pumc.last_updated_time as last_updated_channel_time -- last_updated_channel_time is the last time the channel was updated
          from private_user_message_channels pumc
          join private_user_message_channel_members pumcm on pumcm.channel_id = pumc.id
          inner join private_user_messages pum on pumc.id = pum.channel_id
@@ -47,7 +55,7 @@ export const getChannelMemberships: APIHandler<
          order by pumc.id, pumc.last_updated_time desc
        )
        select * from latest_channels
-       order by last_updated_time desc
+       order by last_updated_channel_time desc
        limit $3
        `,
       [auth.uid, createdTime ?? null, limit, lastUpdatedTime ?? null],

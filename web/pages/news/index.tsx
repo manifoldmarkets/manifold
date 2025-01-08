@@ -75,7 +75,7 @@ export default function News(props: NewsDashboardPageProps) {
   }
 
   return (
-    <Page trackPageView={'news main'} className="items-center">
+    <Page trackPageView={'news main'} className="!col-span-7 items-center">
       <DashboardPage {...props} editByDefault={false} endpoint={'news'} />
     </Page>
   )

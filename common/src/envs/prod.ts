@@ -29,6 +29,7 @@ export type EnvConfig = {
   newQuestionPlaceholders: string[]
   expoConfig: {
     iosClientId?: string
+    iosClientId2?: string
     expoClientId?: string
     androidClientId?: string
   }
@@ -103,6 +104,8 @@ export const PROD_CONFIG: EnvConfig = {
   expoConfig: {
     iosClientId:
       '128925704902-n0ic4j1s5tk51t2vu8anu8glh3t5jimo.apps.googleusercontent.com',
+    iosClientId2:
+      '128925704902-k6d8219pss8nubk1bb1n5kisn5l8fv1a.apps.googleusercontent.com',
     expoClientId:
       '128925704902-bpcbnlp2gt73au3rrjjtnup6cskr89p0.apps.googleusercontent.com',
     androidClientId:

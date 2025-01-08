@@ -2,7 +2,9 @@ import { removeUndefinedProps } from 'common/util/object'
 import { buildOgUrl } from 'common/util/og'
 import Head from 'next/head'
 
-export function SEO<P extends Record<string, string | undefined>>(props: {
+export function SEO<
+  P extends Record<string, string | string[] | undefined>
+>(props: {
   title: string
   description: string
   url?: string

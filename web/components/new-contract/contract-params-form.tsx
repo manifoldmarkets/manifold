@@ -38,7 +38,10 @@ import { STONK_NO, STONK_YES } from 'common/stonk'
 import { User } from 'common/user'
 import { removeUndefinedProps } from 'common/util/object'
 import { extensions } from 'common/util/parse'
-import { usePersistentLocalState } from 'web/hooks/use-persistent-local-state'
+import {
+  setPersistentLocalState,
+  usePersistentLocalState,
+} from 'web/hooks/use-persistent-local-state'
 import {
   api,
   getSimilarGroupsToContract,
@@ -52,7 +55,10 @@ import { BuyAmountInput } from '../widgets/amount-input'
 import { getContractTypeFromValue } from './create-contract-types'
 import { NewQuestionParams } from './new-contract-panel'
 import { filterDefined } from 'common/util/array'
-import { usePersistentInMemoryState } from 'web/hooks/use-persistent-in-memory-state'
+import {
+  removePersistentInMemoryState,
+  usePersistentInMemoryState,
+} from 'client-common/hooks/use-persistent-in-memory-state'
 import { compareTwoStrings } from 'string-similarity'
 import { CostSection } from 'web/components/new-contract/cost-section'
 import { CloseTimeSection } from 'web/components/new-contract/close-time-section'
@@ -78,6 +84,7 @@ export function ContractParamsForm(props: {
     ? undefined
     : 'plus'
 
+  // TODO: why doesn't this use localstorage state (on in memory state) like everything else?
   const [marketTier, setMarketTier] = useState<MarketTierType | undefined>(
     DEFAULT_TIER
   )
@@ -86,30 +93,41 @@ export function ContractParamsForm(props: {
     (params?.q ?? '') +
     (params?.groupSlugs?.join('') ?? '') +
     (params?.groupIds?.join('') ?? '')
+
+  const minStringKey = 'min' + paramsKey
   const [minString, setMinString] = usePersistentLocalState(
     params?.min?.toString() ?? '',
-    'min' + paramsKey
-  )
-  const [maxString, setMaxString] = usePersistentLocalState(
-    params?.max?.toString() ?? '',
-    'max' + paramsKey
-  )
-  const [precision, setPrecision] = usePersistentLocalState<number | undefined>(
-    params?.precision ?? 1,
-    'numeric-precision' + paramsKey
-  )
-  const [isLogScale, setIsLogScale] = usePersistentLocalState<boolean>(
-    !!params?.isLogScale,
-    'new-is-log-scale' + paramsKey
-  )
-  const [visibility, setVisibility] = usePersistentLocalState<Visibility>(
-    (params?.visibility ?? 'public') as Visibility,
-    `new-visibility` + paramsKey
+    minStringKey
   )
 
+  const maxStringKey = 'max' + paramsKey
+  const [maxString, setMaxString] = usePersistentLocalState(
+    params?.max?.toString() ?? '',
+    maxStringKey
+  )
+
+  const precisionKey = 'numeric-precision' + paramsKey
+  const [precision, setPrecision] = usePersistentLocalState<number | undefined>(
+    params?.precision ?? 1,
+    precisionKey
+  )
+
+  const isLogScaleKey = 'new-is-log-scale' + paramsKey
+  const [isLogScale, setIsLogScale] = usePersistentLocalState<boolean>(
+    !!params?.isLogScale,
+    isLogScaleKey
+  )
+
+  const visibilityKey = 'new-visibility' + paramsKey
+  const [visibility, setVisibility] = usePersistentLocalState<Visibility>(
+    (params?.visibility ?? 'public') as Visibility,
+    visibilityKey
+  )
+
+  const initValueKey = 'new-init-value' + paramsKey
   const [initialValueString, setInitialValueString] = usePersistentLocalState(
     params?.initValue?.toString(),
-    'new-init-value' + paramsKey
+    initValueKey
   )
 
   // Don't use the usePersistentLocalState hook for this, because there's too high a risk that it will survive in local storage
@@ -120,19 +138,22 @@ export function ContractParamsForm(props: {
   const defaultAnswers =
     outcomeType === 'MULTIPLE_CHOICE' || outcomeType == 'POLL' ? ['', ''] : []
 
+  const answersKey = 'new-answers-with-other' + paramsKey
   const [answers, setAnswers] = usePersistentLocalState(
     !!params?.answers ? params.answers : defaultAnswers,
-    'new-answers-with-other' + paramsKey
+    answersKey
   )
 
+  const addAnswersModeKey = 'new-add-answers-mode' + paramsKey
   const [addAnswersMode, setAddAnswersMode] =
     usePersistentLocalState<add_answers_mode>(
       params?.addAnswersMode ?? 'DISABLED',
-      'new-add-answers-mode' + paramsKey
+      addAnswersModeKey
     )
   const shouldAnswersSumToOne =
     params?.shouldAnswersSumToOne ?? outcomeType === 'NUMBER'
-  // NOTE: if you add another user-controlled state variable here, you should also add it to the duplication parameters
+
+  // NOTE: if you add another user-controlled state variable, you should also add it to the duplication parameters and resetProperties()
 
   const hasOtherAnswer =
     addAnswersMode !== 'DISABLED' &&
@@ -182,28 +203,36 @@ export function ContractParamsForm(props: {
   useEffect(() => {
     if (addAnswersMode === 'DISABLED' && answers.length < 2) {
       if (answers.length === 0) setAnswers(defaultAnswers)
-      else setAnswers(answers.concat(['']))
+      else setAnswers((a) => [...a, ''])
     }
-  })
+  }, [addAnswersMode, answers.length])
 
+  const questionKey = 'new-question' + paramsKey
   const [question, setQuestion] = usePersistentLocalState(
-    '',
-    'new-question' + paramsKey
+    params?.q ?? '',
+    questionKey
   )
+
+  const categorizedQuestionKey = 'last-categorized-question' + paramsKey
   const [categorizedQuestion, setCategorizedQuestion] = usePersistentLocalState(
     '',
-    'last-categorized-question' + paramsKey
+    categorizedQuestionKey
   )
+
+  const hasChosenCategoryKey = 'has-chosen-category' + paramsKey
   const [hasChosenCategory, setHasChosenCategory] = usePersistentLocalState(
     (params?.groupIds?.length ?? 0) > 0,
-    'has-chosen-category' + paramsKey
+    hasChosenCategoryKey
   )
+
+  const similarContractsKey = 'similar-contracts' + paramsKey
   const [similarContracts, setSimilarContracts] = usePersistentInMemoryState<
     Contract[]
-  >([], 'similar-contracts' + paramsKey)
+  >([], similarContractsKey)
 
+  const dismissedSimilarContractsKey = 'dismissed-similar-contracts'
   const [dismissedSimilarContractTitles, setDismissedSimilarContractTitles] =
-    usePersistentInMemoryState<string[]>([], 'dismissed-similar-contracts')
+    usePersistentInMemoryState<string[]>([], dismissedSimilarContractsKey)
 
   const ante = getAnte(outcomeType, numAnswers)
 
@@ -213,27 +242,33 @@ export function ContractParamsForm(props: {
   )
   const initTime = timeInMs ? dayjs(timeInMs).format('HH:mm') : '23:59'
 
+  const closeDateKey = 'now-close-date' + paramsKey
   const [closeDate, setCloseDate] = usePersistentLocalState<undefined | string>(
     initDate,
-    'now-close-date' + paramsKey
+    closeDateKey
   )
 
+  const closeHoursMinutesKey = 'now-close-time' + paramsKey
   const [closeHoursMinutes, setCloseHoursMinutes] = usePersistentLocalState<
     string | undefined
-  >(initTime, 'now-close-time' + paramsKey)
+  >(initTime, closeHoursMinutesKey)
 
+  const selectedGroupsKey = 'new-selected-groups' + paramsKey
   const [selectedGroups, setSelectedGroups] = usePersistentLocalState<Group[]>(
     [],
-    'new-selected-groups' + paramsKey
+    selectedGroupsKey
   )
 
   const defaultBountyAmount = 1000
+  const bountyKey = 'new-bounty' + paramsKey
   const [bountyAmount, setBountyAmount] = usePersistentLocalState<
     number | undefined
-  >(defaultBountyAmount, 'new-bounty' + paramsKey)
+  >(defaultBountyAmount, bountyKey)
+
+  const isAutoBountyKey = 'is-auto-bounty' + paramsKey
   const [isAutoBounty, setIsAutoBounty] = usePersistentLocalState(
     false,
-    `is-auto-bounty` + paramsKey
+    isAutoBountyKey
   )
 
   const { balance } = creator
@@ -356,6 +391,7 @@ export function ContractParamsForm(props: {
   const editorKey = 'create market' + paramsKey
   const editor = useTextEditor({
     key: editorKey,
+    size: 'md',
     max: MAX_DESCRIPTION_LENGTH,
     placeholder: 'Optional. Provide background info and details.',
     defaultValue: params?.description
@@ -363,27 +399,31 @@ export function ContractParamsForm(props: {
       : undefined,
   })
   const resetProperties = () => {
-    // We would call this:
+    // This has to work when you navigate away so we can't do:
     // editor?.commands.clearContent(true)
-    // except it doesn't work after you've navigated away. So we do this instead:
-    safeLocalStorage?.removeItem(getEditorLocalStorageKey(editorKey))
+    // setQuestion('')
+    // because react hooks have unmounted
 
-    safeLocalStorage?.removeItem(`text create market`)
-    setQuestion('')
-    setCloseDate(undefined)
-    setCloseHoursMinutes(undefined)
-    setSelectedGroups([])
-    setAnswers(defaultAnswers)
-    setMinString('')
-    setMaxString('')
-    setInitialValueString('')
-    setIsLogScale(false)
-    setBountyAmount(defaultBountyAmount)
-    setHasChosenCategory(false)
-    setSimilarContracts([])
-    setDismissedSimilarContractTitles([])
-    setPrecision(1)
-    setMarketTier(DEFAULT_TIER)
+    safeLocalStorage?.removeItem(getEditorLocalStorageKey(editorKey))
+    safeLocalStorage?.removeItem(`text create market`) // TODO: why is this here?
+
+    setPersistentLocalState(questionKey, '')
+    safeLocalStorage?.removeItem(closeDateKey)
+    safeLocalStorage?.removeItem(closeHoursMinutesKey)
+    setPersistentLocalState(selectedGroupsKey, [])
+    setPersistentLocalState(answersKey, defaultAnswers)
+    setPersistentLocalState(minStringKey, '')
+    setPersistentLocalState(maxStringKey, '')
+    setPersistentLocalState(initValueKey, '')
+    setPersistentLocalState(isLogScaleKey, false)
+    setPersistentLocalState(bountyKey, defaultBountyAmount)
+    setPersistentLocalState(hasChosenCategoryKey, false)
+
+    removePersistentInMemoryState(similarContractsKey)
+    removePersistentInMemoryState(dismissedSimilarContractsKey)
+
+    setPersistentLocalState(precisionKey, 1)
+    // market tier is ordinary react state and gets reset automatically
   }
 
   const [submitState, setSubmitState] = useState<
@@ -416,6 +456,9 @@ export function ContractParamsForm(props: {
         precision,
         marketTier,
         idempotencyKey,
+        sportsStartTimestamp: params?.sportsStartTimestamp,
+        sportsEventId: params?.sportsEventId,
+        sportsLeague: params?.sportsLeague,
       })
 
       const newContract = await api('market', createProps as any)
@@ -426,20 +469,11 @@ export function ContractParamsForm(props: {
         outcomeType,
       })
 
-      // Clear form data from localstorage on navigate, since market is created.
+      // Await to clear form data from localstorage after navigate, since market is created.
       // Don't clear before navigate, because looks like a bug.
-      const clearFormOnNavigate = () => {
-        resetProperties()
-        router.events.off('routeChangeComplete', clearFormOnNavigate)
-      }
-      router.events.on('routeChangeComplete', clearFormOnNavigate)
-
-      try {
-        const path = twombaContractPath(newContract)
-        await router.push(path)
-      } catch (error) {
-        console.error(error)
-      }
+      const path = twombaContractPath(newContract)
+      await router.push(path)
+      resetProperties()
     } catch (e) {
       console.error('error creating contract', e)
       setErrorText((e as any).message || 'Error creating contract')

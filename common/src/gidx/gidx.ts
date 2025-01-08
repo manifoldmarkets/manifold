@@ -295,8 +295,7 @@ export type CheckoutSessionResponse = {
   ReasonCodes: string[]
 } & CheckoutSession
 
-export const ID_ERROR_MSG =
-  'Confidence in identity too low. Double check your information or upload documents to verify your identity.'
+export const ID_ERROR_MSG = `Please double check your information. If everything looks correct, you'll need to upload additional documents to continue with verification.`
 
 export const IDENTITY_THRESHOLD = 80
 export const FRAUD_THRESHOLD = 60

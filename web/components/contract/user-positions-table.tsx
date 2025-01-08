@@ -114,19 +114,23 @@ export const UserPositionsTable = memo(
         answerId,
         sortBy
       )
-      sortBy === 'profit'
-        ? setContractMetricsOrderedByProfit((prev) =>
-            uniqBy(
-              convertContractMetricRows(rows).concat(prev ?? []),
-              (cm) => cm.userId + cm.answerId + cm.contractId
-            )
+
+      if (sortBy === 'profit') {
+        setContractMetricsOrderedByProfit((prev) =>
+          uniqBy(
+            convertContractMetricRows(rows).concat(prev ?? []),
+            (cm) => cm.userId + cm.answerId + cm.contractId
           )
-        : setContractMetricsOrderedByShares((prev) =>
-            uniqBy(
-              convertContractMetricRows(rows).concat(prev ?? []),
-              (cm) => cm.userId + cm.answerId + cm.contractId
-            )
+        )
+      } else {
+        setContractMetricsOrderedByShares((prev) =>
+          uniqBy(
+            convertContractMetricRows(rows).concat(prev ?? []),
+            (cm) => cm.userId + cm.answerId + cm.contractId
           )
+        )
+      }
+
       setLoading(false)
     }
 

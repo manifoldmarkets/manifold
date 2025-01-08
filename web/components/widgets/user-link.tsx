@@ -14,7 +14,7 @@ import { SparklesIcon } from '@heroicons/react/solid'
 import { Tooltip } from './tooltip'
 import { BadgeCheckIcon, ShieldCheckIcon } from '@heroicons/react/outline'
 import { Row } from '../layout/row'
-import { Avatar } from './avatar'
+import { Avatar, AvatarSizeType } from './avatar'
 import { DAY_MS } from 'common/util/time'
 import ScalesIcon from 'web/lib/icons/scales-icon.svg'
 import { linkClass } from './site-link'
@@ -26,6 +26,7 @@ import { UserHovercard } from '../user/user-hovercard'
 import { useDisplayUserById } from 'web/hooks/use-user-supabase'
 import { GiBurningSkull } from 'react-icons/gi'
 import { HiOutlineBuildingLibrary } from 'react-icons/hi2'
+import { User } from 'common/user'
 export const isFresh = (createdTime: number) =>
   createdTime > Date.now() - DAY_MS * 14
 
@@ -62,6 +63,28 @@ export function UserAvatarAndBadge(props: {
           noLink={noLink}
         />
         <UserLink short={short} user={user} noLink={noLink} />
+      </Row>
+    </UserHovercard>
+  )
+}
+export function UserAvatar(props: {
+  user: { id: string; name?: string; username?: string; avatarUrl?: string }
+  noLink?: boolean
+  className?: string
+  size?: AvatarSizeType
+}) {
+  const { noLink, className, size } = props
+  const user = useDisplayUserById(props.user.id) ?? props.user
+  const { username, avatarUrl } = user
+  return (
+    <UserHovercard userId={user.id}>
+      <Row className={clsx('items-center gap-2', className)}>
+        <Avatar
+          avatarUrl={avatarUrl}
+          username={username}
+          size={size}
+          noLink={noLink}
+        />
       </Row>
     </UserHovercard>
   )
@@ -283,13 +306,7 @@ function MarketCreatorBadge() {
 }
 
 export const StackedUserNames = (props: {
-  user: {
-    id: string
-    name: string
-    username: string
-    createdTime: number
-    isBannedFromPosting?: boolean
-  }
+  user: User
   followsYou?: boolean
   className?: string
   usernameClassName?: string
@@ -306,7 +323,13 @@ export const StackedUserNames = (props: {
             fresh={isFresh(user.createdTime)}
           />
         }
-        {user.isBannedFromPosting && <BannedBadge />}
+        {user.userDeleted ? (
+          <span className="ml-1.5 rounded-full bg-yellow-100 px-2.5 py-0.5 text-center text-xs font-medium text-yellow-800 dark:bg-yellow-700 dark:text-yellow-100">
+            Deleted account
+          </span>
+        ) : user.isBannedFromPosting ? (
+          <BannedBadge />
+        ) : null}
       </div>
       <Row className={'flex-shrink flex-wrap gap-x-2'}>
         <span className={clsx('text-ink-400 text-sm', usernameClassName)}>

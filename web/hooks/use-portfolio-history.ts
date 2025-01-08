@@ -3,7 +3,7 @@ import { PortfolioSnapshot } from 'web/lib/supabase/portfolio-history'
 import { useEffect } from 'react'
 import { getCurrentPortfolio } from 'common/supabase/portfolio-metrics'
 import { db } from 'web/lib/supabase/db'
-import { usePersistentInMemoryState } from './use-persistent-in-memory-state'
+import { usePersistentInMemoryState } from 'client-common/hooks/use-persistent-in-memory-state'
 import { api } from 'web/lib/api/api'
 
 export type PeriodToSnapshots = {

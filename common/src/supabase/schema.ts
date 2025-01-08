@@ -32,6 +32,8 @@ export type Database = {
           text_fts: unknown | null
           total_liquidity: number | null
           user_id: string | null
+          image_url: string | null
+          short_text: string | null
         }
         Insert: {
           color?: string | null
@@ -55,6 +57,8 @@ export type Database = {
           text_fts?: unknown | null
           total_liquidity?: number | null
           user_id?: string | null
+          image_url?: string | null
+          short_text?: string | null
         }
         Update: {
           color?: string | null
@@ -78,6 +82,8 @@ export type Database = {
           text_fts?: unknown | null
           total_liquidity?: number | null
           user_id?: string | null
+          image_url?: string | null
+          short_text?: string | null
         }
         Relationships: []
       }
@@ -3360,30 +3366,6 @@ export type Database = {
         Args: Record<PropertyKey, never>
         Returns: Database['public']['CompositeTypes']['love_question_with_count_type'][]
       }
-      get_contract_metrics_with_contracts:
-        | {
-            Args: {
-              uid: string
-              count: number
-            }
-            Returns: {
-              contract_id: string
-              metrics: Json
-              contract: Json
-            }[]
-          }
-        | {
-            Args: {
-              uid: string
-              count: number
-              start: number
-            }
-            Returns: {
-              contract_id: string
-              metrics: Json
-              contract: Json
-            }[]
-          }
       get_contract_voters: {
         Args: {
           this_contract_id: string

@@ -3,7 +3,7 @@ import { useEffect, useState } from 'react'
 import { Button } from '../buttons/button'
 import { User } from 'common/user'
 import { Spacer } from '../layout/spacer'
-import { usePersistentInMemoryState } from 'web/hooks/use-persistent-in-memory-state'
+import { usePersistentInMemoryState } from 'client-common/hooks/use-persistent-in-memory-state'
 import { api } from 'web/lib/api/api'
 import { APIResponse } from 'common/api/schema'
 

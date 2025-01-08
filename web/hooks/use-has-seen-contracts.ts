@@ -1,7 +1,7 @@
 import { useEffect } from 'react'
 import { getSeenContractIds } from 'web/lib/supabase/user-events'
 import { DAY_MS } from 'common/util/time'
-import { usePersistentInMemoryState } from 'web/hooks/use-persistent-in-memory-state'
+import { usePersistentInMemoryState } from 'client-common/hooks/use-persistent-in-memory-state'
 import { orderBy, uniq } from 'lodash'
 
 export const useHasSeenContracts = (

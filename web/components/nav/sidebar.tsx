@@ -7,8 +7,8 @@ import {
   QuestionMarkCircleIcon,
   NewspaperIcon,
   LoginIcon,
-  GlobeAltIcon,
   SearchIcon,
+  GlobeAltIcon,
 } from '@heroicons/react/outline'
 import TrophyIcon from 'web/lib/icons/trophy-icon.svg'
 import clsx from 'clsx'

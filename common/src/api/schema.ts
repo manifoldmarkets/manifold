@@ -39,7 +39,6 @@ import { ChatMessage, PrivateChatMessage } from 'common/chat-message'
 import { PrivateUser, User } from 'common/user'
 import { ManaSupply } from 'common/stats'
 import { Repost } from 'common/repost'
-import { adContract } from 'common/boost'
 import { PERIODS } from 'common/period'
 import { SWEEPS_MIN_BET } from 'common/economy'
 import {
@@ -67,6 +66,9 @@ import { NON_POINTS_BETS_LIMIT } from 'common/supabase/bets'
 import { ContractMetric } from 'common/contract-metric'
 
 import { JSONContent } from '@tiptap/core'
+import { Task, TaskCategory } from 'common/todo'
+import { ChartAnnotation } from 'common/supabase/chart-annotations'
+import { Dictionary } from 'lodash'
 // mqp: very unscientific, just balancing our willingness to accept load
 // with user willingness to put up with stale data
 export const DEFAULT_CACHE_STRATEGY =
@@ -236,6 +238,7 @@ export const API = (_apiTypeCheck = {
         deviceToken: z.string().optional(),
         adminToken: z.string().optional(),
         visitedContractIds: z.array(z.string()).optional(),
+        origin: z.enum(['mani']).optional(),
       })
       .strict(),
   },
@@ -1516,7 +1519,6 @@ export const API = (_apiTypeCheck = {
     returns: {} as {
       contracts: Contract[]
       comments: ContractComment[]
-      ads: adContract[]
       bets: Bet[]
       reposts: Repost[]
       idsToReason: { [id: string]: string }
@@ -1911,6 +1913,155 @@ export const API = (_apiTypeCheck = {
     returns: {} as { amount: number },
     props: z.object({
       userId: z.string(),
+    }),
+  },
+  'create-task': {
+    method: 'POST',
+    visibility: 'public',
+    authed: true,
+    returns: {} as Task,
+    props: z
+      .object({
+        text: z.string(),
+        category_id: z.number().optional(),
+        priority: z.number().default(0),
+        assignee_id: z.string().optional(),
+      })
+      .strict(),
+  },
+  'update-task': {
+    method: 'POST',
+    visibility: 'public',
+    authed: true,
+    returns: {} as { success: boolean },
+    props: z
+      .object({
+        id: z.number(),
+        text: z.string().optional(),
+        completed: z.boolean().optional(),
+        priority: z.number().optional(),
+        category_id: z.number().optional(),
+        archived: z.boolean().optional(),
+        assignee_id: z.string().optional(),
+      })
+      .strict(),
+  },
+  'create-category': {
+    method: 'POST',
+    visibility: 'public',
+    authed: true,
+    returns: {} as { id: number },
+    props: z
+      .object({
+        name: z.string(),
+        color: z.string().optional(),
+        displayOrder: z.number().optional(),
+      })
+      .strict(),
+  },
+  'get-categories': {
+    method: 'GET',
+    visibility: 'public',
+    authed: true,
+    returns: {} as { categories: TaskCategory[] },
+    props: z.object({}).strict(),
+  },
+  'update-category': {
+    method: 'POST',
+    visibility: 'public',
+    authed: true,
+    returns: {} as { success: boolean },
+    props: z
+      .object({
+        categoryId: z.number(),
+        name: z.string().optional(),
+        color: z.string().optional(),
+        displayOrder: z.number().optional(),
+        archived: z.boolean().optional(),
+      })
+      .strict(),
+  },
+  'get-tasks': {
+    method: 'GET',
+    visibility: 'public',
+    authed: true,
+    returns: {} as { tasks: Task[] },
+    props: z.object({}).strict(),
+  },
+  'is-sports-interested': {
+    method: 'GET',
+    visibility: 'public',
+    authed: true,
+    returns: {} as { isSportsInterested: boolean },
+    props: z.object({}).strict(),
+  },
+  'get-site-activity': {
+    method: 'GET',
+    visibility: 'public',
+    authed: false,
+    returns: {} as {
+      bets: Bet[]
+      comments: ContractComment[]
+      newContracts: Contract[]
+      relatedContracts: Contract[]
+    },
+    props: z
+      .object({
+        limit: z.coerce.number().default(10),
+        offset: z.coerce.number().default(0),
+        blockedUserIds: z.array(z.string()).optional(),
+        blockedGroupSlugs: z.array(z.string()).optional(),
+        blockedContractIds: z.array(z.string()).optional(),
+      })
+      .strict(),
+  },
+  'get-sports-games': {
+    method: 'GET',
+    visibility: 'public',
+    authed: true,
+    returns: {} as { schedule: any[] },
+    props: z.object({}).strict(),
+  },
+  'get-market-props': {
+    method: 'GET',
+    visibility: 'public',
+    cache: DEFAULT_CACHE_STRATEGY,
+    // Could set authed false and preferAuth with an api secret if we want it to replace static props
+    authed: true,
+    returns: {} as {
+      contract: Contract
+      chartAnnotations: ChartAnnotation[]
+      topics: Topic[]
+      comments: ContractComment[]
+      pinnedComments: ContractComment[]
+      userPositionsByOutcome: {
+        YES: ContractMetric[]
+        NO: ContractMetric[]
+      }
+      topContractMetrics: ContractMetric[]
+      totalPositions: number
+      dashboards: Dashboard[]
+      siblingContract: Contract | undefined
+    },
+    props: z.object({
+      slug: z.string().optional(),
+      id: z.string().optional(),
+    }),
+  },
+  'get-user-contract-metrics-with-contracts': {
+    method: 'GET',
+    visibility: 'public',
+    preferAuth: true,
+    authed: false,
+    returns: {} as {
+      metricsByContract: Dictionary<ContractMetric[]>
+      contracts: Contract[]
+    },
+    props: z.object({
+      userId: z.string(),
+      limit: z.coerce.number(),
+      offset: z.coerce.number().gte(0).optional(),
+      perAnswer: coerceBoolean.optional(),
     }),
   },
 } as const)

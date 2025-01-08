@@ -62,7 +62,7 @@ export type User = {
   purchasedMana?: boolean
   purchasedSweepcash?: boolean
   verifiedPhone?: boolean
-
+  origin?: 'mani'
   // KYC related fields:
   kycLastAttemptTime?: number
   kycDocumentStatus?: 'fail' | 'pending' | 'await-documents' | 'verified'

@@ -80,16 +80,22 @@ export function binAvg<P extends HistoryPoint>(sorted: P[], limit = 100) {
   const binWidth = Math.ceil((max - min) / limit)
 
   const newPoints = []
-  let lastAvgY = sorted[0].y
+
+  let lastY: number | undefined = sorted[0].y
 
   for (let i = 0; i < limit; i++) {
     const binStart = min + i * binWidth
     const binEnd = binStart + binWidth
     const binPoints = sorted.filter((p) => p.x >= binStart && p.x < binEnd)
+
     if (binPoints.length > 0) {
-      lastAvgY = meanBy(binPoints, 'y')
+      const avg = meanBy(binPoints, 'y')
+      lastY = last(binPoints)!.y
+      newPoints.push({ x: binEnd, y: avg })
+    } else if (lastY != undefined) {
+      newPoints.push({ x: binEnd, y: lastY })
+      lastY = undefined
     }
-    newPoints.push({ x: binEnd, y: lastAvgY })
   }
 
   return newPoints

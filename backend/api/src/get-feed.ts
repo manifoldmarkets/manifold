@@ -15,7 +15,6 @@ import {
 } from 'shared/supabase/sql-builder'
 import { buildArray, filterDefined } from 'common/util/array'
 import { log } from 'shared/utils'
-import { adContract } from 'common/boost'
 import {
   activeTopics,
   buildUserInterestsCache,
@@ -69,7 +68,7 @@ export const getFeed: APIHandler<'get-feed'> = async (props) => {
     )
     return {
       contracts: defaultContracts,
-      ads: [],
+      ads: [], // TODO: remove
       idsToReason: Object.fromEntries(
         defaultContracts.map((c) => [c.id, 'importance'])
       ),
@@ -79,26 +78,6 @@ export const getFeed: APIHandler<'get-feed'> = async (props) => {
     }
   }
 
-  const claimedAdsQuery = renderSql(
-    select('1'),
-    from(`txns`),
-    where(`category = 'MARKET_BOOST_REDEEM'`),
-    where(`to_id = $1`, [userId]),
-    where(`from_id = market_ads.id`)
-  )
-
-  const adsJoin = renderSql(
-    select(`market_ads.id, market_id, funds, cost_per_view`),
-    from(`market_ads`),
-    join(`contracts on market_ads.market_id = contracts.id`),
-    where(`funds >= cost_per_view`),
-    where(`market_ads.user_id != $1`, [userId]),
-    where(`contracts.close_time > now()`),
-    where(`contracts.visibility = 'public'`),
-    where(`not exists (${claimedAdsQuery})`),
-    order(`cost_per_view desc`),
-    lim(50)
-  )
   const userInterestTopicIds = Object.keys(
     userIdsToAverageTopicConversionScores[userId]
   )
@@ -131,12 +110,10 @@ export const getFeed: APIHandler<'get-feed'> = async (props) => {
         )
       : userInterestTopicWeights.length
 
-  const baseQueryArray = (adQuery = false) =>
+  const baseQueryArray = () =>
     buildArray(
       select('contracts.*'),
-      !adQuery
-        ? select(`avg(uti.topic_score) as topic_conversion_score`)
-        : select(`uti.topic_score as topic_conversion_score, ma.id as ad_id`),
+      select(`avg(uti.topic_score) as topic_conversion_score`),
       from(
         `(select
                unnest(array[$1]) as group_id,
@@ -149,12 +126,11 @@ export const getFeed: APIHandler<'get-feed'> = async (props) => {
       ),
       join(`group_contracts on group_contracts.group_id = uti.group_id`),
       join(`contracts on contracts.id = group_contracts.contract_id`),
-      !adQuery &&
-        where(
-          'not exists (select 1 from user_contract_views where user_id = $1 and contract_id = contracts.id)',
-          [userId]
-        ),
-      ...minimumContractsQualityBarWhereClauses(adQuery),
+      where(
+        'not exists (select 1 from user_contract_views where user_id = $1 and contract_id = contracts.id)',
+        [userId]
+      ),
+      ...minimumContractsQualityBarWhereClauses(),
       where(
         `contracts.id not in (select contract_id from user_disinterests where user_id = $1 and contract_id = contracts.id)`,
         [userId]
@@ -163,16 +139,8 @@ export const getFeed: APIHandler<'get-feed'> = async (props) => {
         where(`contracts.id <> all(array[$1])`, [ignoreContractIds]),
       privateUserBlocksSql(privateUser),
       lim(limit, offset),
-      !adQuery && groupBy(`contracts.id`)
+      groupBy(`contracts.id`)
     )
-
-  const adsQuery = renderSql(
-    ...baseQueryArray(true),
-    join(`(${adsJoin}) ma on ma.market_id = contracts.id`),
-    order(
-      `uti.topic_score  * contracts.conversion_score * ma.cost_per_view desc`
-    )
-  )
 
   const followedQuery = renderSql(
     ...baseQueryArray(),
@@ -199,7 +167,6 @@ export const getFeed: APIHandler<'get-feed'> = async (props) => {
     convertingContracts,
     freshContracts,
     followedContracts,
-    adContracts,
     followedRepostData,
     topicRepostData,
   ] = await Promise.all([
@@ -219,16 +186,6 @@ export const getFeed: APIHandler<'get-feed'> = async (props) => {
       [],
       (r) =>
         ({
-          contract: convertContract(r),
-          topicConversionScore: r.topic_conversion_score as number,
-        } as FeedContract)
-    ),
-    pg.map(
-      adsQuery,
-      [],
-      (r) =>
-        ({
-          adId: r.ad_id as string,
           contract: convertContract(r),
           topicConversionScore: r.topic_conversion_score as number,
         } as FeedContract)
@@ -280,12 +237,10 @@ export const getFeed: APIHandler<'get-feed'> = async (props) => {
         : '',
     ])
   )
-  const ads = (adContracts as adContract[]).filter(
-    (c) => !contracts.map((c) => c.id).includes(c.contract.id)
-  )
+
   return {
     contracts,
-    ads,
+    ads: [], // TODO: remove
     idsToReason,
     comments: filterDefined(allReposts.map((c) => c.comment)),
     bets: filterDefined(allReposts.map((c) => c.bet)),

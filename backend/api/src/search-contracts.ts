@@ -71,6 +71,7 @@ const search = async (
     (sort === 'score' || sort === 'freshness-score') &&
     !topicSlug &&
     token !== 'CASH' &&
+    token !== 'CASH_AND_MANA' &&
     (!groupIds || groupIds.length === 0)
   ) {
     const forYouSql = await getForYouSQL({

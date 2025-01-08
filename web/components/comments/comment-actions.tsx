@@ -43,7 +43,8 @@ export function CommentActions(props: {
     (comment.betReplyAmountsByOutcome?.YES ?? 0) -
     (comment.betReplyAmountsByOutcome?.NO ?? 0)
 
-  const isCashContract = liveContract.token === 'CASH'
+  const [now] = useState(Date.now())
+  const isClosed = !!liveContract.closeTime && liveContract.closeTime < now
 
   return (
     <Row className="grow items-center justify-end">
@@ -75,6 +76,7 @@ export function CommentActions(props: {
           }}
           size={'xs'}
           className={'min-w-[60px]'}
+          disabled={isClosed}
         >
           <Tooltip text={`Reply with a ${TRADE_TERM}`} placement="bottom">
             <Row className="gap-1">
@@ -86,7 +88,9 @@ export function CommentActions(props: {
                 <FaArrowTrendUp className={'h-5 w-5'} />
               )}
               {diff != 0 && (
-                <span className="">{Math.round(Math.abs(diff))}</span>
+                <span className="text-ink-600">
+                  {Math.round(Math.abs(diff))}
+                </span>
               )}
             </Row>
           </Tooltip>

@@ -32,7 +32,7 @@ import { BinaryOutcomeLabel, PseudoNumericOutcomeLabel } from '../outcome-label'
 import { BuyAmountInput } from '../widgets/amount-input'
 import { ProbabilityOrNumericInput } from '../widgets/probability-input'
 import { getPseudoProbability } from 'common/pseudo-numeric'
-import { usePersistentInMemoryState } from 'web/hooks/use-persistent-in-memory-state'
+import { usePersistentInMemoryState } from 'client-common/hooks/use-persistent-in-memory-state'
 import { MultiBetProps } from 'web/components/bet/bet-panel'
 import { track, withTracking } from 'web/lib/service/analytics'
 import { APIError } from 'common/api/utils'
@@ -46,6 +46,7 @@ import { TRADE_TERM } from 'common/envs/constants'
 import { capitalize } from 'lodash'
 import { LocationMonitor } from '../gidx/location-monitor'
 import { VerifyButton } from '../sweeps/sweep-verify-section'
+import { sliderColors } from '../widgets/slider'
 
 export default function LimitOrderPanel(props: {
   contract:
@@ -66,11 +67,11 @@ export default function LimitOrderPanel(props: {
   pseudonym?: {
     YES: {
       pseudonymName: string
-      pseudonymColor: string
+      pseudonymColor: keyof typeof sliderColors
     }
     NO: {
       pseudonymName: string
-      pseudonymColor: string
+      pseudonymColor: keyof typeof sliderColors
     }
   }
 }) {

@@ -159,7 +159,7 @@ export const TOPICS_TO_SUBTOPICS: { [key: string]: TopicInfo[] } = {
       groupIds: ['3syjPCC7PxE5KurTiTT3', 'j3ZE8fkeqiKmRGumy3O1'],
     },
   ],
-  '🎲 Random': [
+  '🎲 Fun': [
     {
       name: '🤠 Fun',
       groupIds: ['bBwafyeaiuwWwobwm2c4'],

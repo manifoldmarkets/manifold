@@ -7,7 +7,7 @@ export const getNextLoanAmount: APIHandler<'get-next-loan-amount'> = async ({
   try {
     const { result } = await getNextLoanAmountResults(userId)
     return { amount: result.payout }
-  } catch (e) {
+  } catch {
     return { amount: 0 }
   }
 }

@@ -4,7 +4,9 @@ const API_DOCS_URL = 'https://docs.manifold.markets/api'
 module.exports = {
   productionBrowserSourceMaps: true,
   reactStrictMode: true,
-  optimizeFonts: false,
+  eslint: {
+    ignoreDuringBuilds: true, // we lint in CI
+  },
   modularizeImports: {
     '@heroicons/react/solid/?(((\\w*)?/?)*)': {
       transform: '@heroicons/react/solid/{{ matches.[1] }}/{{member}}',
@@ -124,12 +126,7 @@ module.exports = {
       },
       {
         source: '/this-month',
-        destination: '/markets?f=closing-this-month&s=most-popular',
-        permanent: true,
-      },
-      {
-        source: '/markets',
-        destination: '/browse',
+        destination: '/browse?f=closing-this-month&s=most-popular',
         permanent: true,
       },
       {
@@ -158,8 +155,8 @@ module.exports = {
         permanent: true,
       },
       {
-        source: '/browse/:slug*',
-        destination: '/topic/:slug*',
+        source: '/browse/:slug+',
+        destination: '/topic/:slug+',
         permanent: false,
       },
       {

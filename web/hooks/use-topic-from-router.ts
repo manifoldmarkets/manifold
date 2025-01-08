@@ -1,6 +1,6 @@
 import { useEffect } from 'react'
 import { getGroupFromSlug } from 'web/lib/supabase/group'
-import { usePersistentInMemoryState } from 'web/hooks/use-persistent-in-memory-state'
+import { usePersistentInMemoryState } from 'client-common/hooks/use-persistent-in-memory-state'
 import { Group } from 'common/group'
 
 export const useTopicFromRouter = (topicSlug: string | undefined) => {

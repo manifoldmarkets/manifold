@@ -178,10 +178,11 @@ export async function updateUserMetricPeriods(
                 freshMetric.answerId === m.answerId
             )
             if (!currentMetric) {
-              !isEmptyMetric(freshMetric) &&
+              if (!isEmptyMetric(freshMetric)) {
                 log.error(
                   `Current metric not found for user ${userId}, contract ${freshMetric.contractId}, answer ${freshMetric.answerId}`
                 )
+              }
               return undefined
             }
             if (

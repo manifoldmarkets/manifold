@@ -20,7 +20,6 @@ import {
   BANNED_TRADING_USER_IDS,
   BOT_USERNAMES,
   INSTITUTIONAL_PARTNER_USER_IDS,
-  isAdminId,
   PARTNER_USER_IDS,
 } from 'common/envs/constants'
 import { Answer } from 'common/answer'
@@ -32,7 +31,7 @@ import { removeUndefinedProps } from 'common/util/object'
 import { UniqueBettorBonusTxn } from 'common/txn'
 import { getInsertQuery } from 'shared/supabase/utils'
 import { txnToRow } from 'shared/txn/run-txn'
-import { contractColumnsToSelect, isProd } from 'shared/utils'
+import { contractColumnsToSelect } from 'shared/utils'
 import { convertUser } from 'common/supabase/users'
 import { convertAnswer, convertContract } from 'common/supabase/contracts'
 import { NewBetResult } from 'api/place-bet'
@@ -172,9 +171,7 @@ export const fetchContractBetDataAndValidate = async (
       'You must be kyc verified to trade on sweepstakes markets.'
     )
   }
-  if (isAdminId(user.id) && contract.token === 'CASH' && isProd()) {
-    throw new APIError(403, 'Admins cannot trade on sweepstakes markets.')
-  }
+
   if (BANNED_TRADING_USER_IDS.includes(user.id) || user.userDeleted) {
     throw new APIError(403, 'You are banned or deleted. And not #blessed.')
   }

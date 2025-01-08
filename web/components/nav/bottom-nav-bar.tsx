@@ -7,11 +7,11 @@ import {
   TransitionChild,
 } from '@headlessui/react'
 import {
-  GlobeAltIcon,
   NewspaperIcon,
   QuestionMarkCircleIcon,
   SearchIcon,
   UserCircleIcon,
+  GlobeAltIcon,
 } from '@heroicons/react/outline'
 import { MenuAlt3Icon, XIcon } from '@heroicons/react/solid'
 import clsx from 'clsx'
@@ -19,7 +19,6 @@ import { User } from 'common/user'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { Fragment, useState } from 'react'
-import { GiCapitol } from 'react-icons/gi'
 import { UnseenMessagesBubble } from 'web/components/messaging/messages-icon'
 import { NotificationsIcon } from 'web/components/notifications-icon'
 import { useIsIframe } from 'web/hooks/use-is-iframe'
@@ -67,9 +66,9 @@ function getNavigation(user: User) {
 const signedOutNavigation = () => [
   { name: 'Browse', href: '/browse', icon: SearchIcon, alwaysShowName: true },
   {
-    name: 'Election',
-    href: '/election',
-    icon: GiCapitol,
+    name: 'Explore',
+    href: '/explore',
+    icon: GlobeAltIcon,
     alwaysShowName: true,
     // prefetch: false, // should we not prefetch this?
   },

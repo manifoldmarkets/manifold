@@ -28,7 +28,7 @@ import { MarketTierType, TierParamsType, tiers } from 'common/tier'
 
 const DEFAULT_THRESHOLD = 1000
 const DEBUG = false
-type TokenInputType = 'CASH' | 'MANA' | 'ALL'
+type TokenInputType = 'CASH' | 'MANA' | 'ALL' | 'CASH_AND_MANA'
 let importanceScoreThreshold: number | undefined = undefined
 let freshnessScoreThreshold: number | undefined = undefined
 
@@ -316,6 +316,7 @@ function getSearchContractWhereSQL(args: {
   const filterSQL: FilterSQL = {
     open: 'resolution_time IS NULL AND (close_time > NOW() or close_time is null)',
     closed: 'close_time < NOW() AND resolution_time IS NULL',
+    'closing-day': `close_time > now() AND close_time < (now() + interval '1 day' + interval '7 hours') AND resolution_time IS NULL`,
     'closing-week': `close_time > now() AND close_time < (now() + interval '7 days' + interval '7 hours') AND resolution_time IS NULL`,
     'closing-month': `close_time > now() AND close_time < (now() + interval '30 days' + interval '7 hours') AND resolution_time IS NULL`,
     'closing-90-days': `close_time > now() AND close_time < (now() + interval '90 days' + interval '7 hours') AND resolution_time IS NULL`,
@@ -349,6 +350,8 @@ function getSearchContractWhereSQL(args: {
       ? `token = 'CASH'`
       : token === 'MANA'
       ? `token = 'MANA'`
+      : token === 'CASH_AND_MANA'
+      ? `data->>'siblingContractId' is not null`
       : ''
 
   const tierFilters = tiers

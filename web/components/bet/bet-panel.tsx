@@ -63,6 +63,7 @@ import LimitOrderPanel from './limit-order-panel'
 import { MoneyDisplay } from './money-display'
 import { OrderBookPanel, YourOrders } from './order-book'
 import { YesNoSelector } from './yes-no-selector'
+import { sliderColors } from '../widgets/slider'
 
 export type BinaryOutcomes = 'YES' | 'NO' | undefined
 
@@ -91,11 +92,11 @@ export function BuyPanel(props: {
   pseudonym?: {
     YES: {
       pseudonymName: string
-      pseudonymColor: string
+      pseudonymColor: keyof typeof sliderColors
     }
     NO: {
       pseudonymName: string
-      pseudonymColor: string
+      pseudonymColor: keyof typeof sliderColors
     }
   }
 }) {
@@ -210,11 +211,11 @@ export const BuyPanelBody = (props: {
   pseudonym?: {
     YES: {
       pseudonymName: string
-      pseudonymColor: string
+      pseudonymColor: keyof typeof sliderColors
     }
     NO: {
       pseudonymName: string
-      pseudonymColor: string
+      pseudonymColor: keyof typeof sliderColors
     }
   }
 }) => {

@@ -1,5 +1,5 @@
 import { API, APIParams, APIPath, APIResponse } from 'common/api/schema'
-import { APIError, getApiUrl } from 'common/api/utils'
+import { APIError, ErrorCode, getApiUrl } from 'common/api/utils'
 import { forEach } from 'lodash'
 import { removeUndefinedProps } from 'common/util/object'
 import { User } from 'firebase/auth'
@@ -64,7 +64,7 @@ export async function baseApiCall(
   return fetch(req).then(async (resp) => {
     const json = (await resp.json()) as { [k: string]: any }
     if (!resp.ok) {
-      throw new APIError(resp.status as any, json?.message, json?.details)
+      throw new APIError(resp.status as ErrorCode, json?.message, json?.details)
     }
     return json
   })
