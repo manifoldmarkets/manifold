@@ -3,6 +3,7 @@ import {
   Contract,
   CPMMMultiContract,
   isBinaryMulti,
+  isSportsContract,
   MultiContract,
 } from 'common/contract'
 import { BinaryBetButtons } from 'components/contract/bet/binary-bet-buttons'
@@ -71,16 +72,22 @@ function ContractPageContent({ contractId }: ContractPageContentProps) {
     contract.outcomeType == 'MULTIPLE_CHOICE' && !isBinaryMc
   const isBinary = !isBinaryMc && !isMultipleChoice
 
+  const isSports = isSportsContract(contract)
+  
   return (
     <Page nonScrollableChildren={<ContentEditor onChange={() => {}} />}>
       <Col style={{ gap: 16, position: 'relative' }}>
-        <ThemedText
-          size={contract.question.length > LARGE_QUESTION_LENGTH ? 'xl' : '2xl'}
-          weight="semibold"
-          style={{ paddingTop: 16 }}
-        >
-          {contract.question}
-        </ThemedText>
+        {!isSports && !isBinaryMc && (
+          <ThemedText
+            size={
+              contract.question.length > LARGE_QUESTION_LENGTH ? 'xl' : '2xl'
+            }
+            weight="semibold"
+            style={{ paddingTop: 16 }}
+          >
+            {contract.question}
+          </ThemedText>
+        )}
 
         {isBinary && (
           <BinaryOverview
