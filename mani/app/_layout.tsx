@@ -3,7 +3,7 @@ import 'expo-dev-client'
 import * as Notifications from 'expo-notifications'
 import { useEffect, useRef, useState } from 'react'
 import { Dimensions, Linking, Platform, SafeAreaView } from 'react-native'
-import { ENV } from 'lib/init'
+import { ENV } from 'lib/firebase/init'
 import { Notification } from 'common/notification'
 import { IosIapListener } from 'components/ios-iap-listener'
 import { StatusBar } from 'expo-status-bar'
@@ -126,6 +126,13 @@ function RootLayout() {
           <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
           <Stack.Screen
             name="[contractId]"
+            options={{
+              headerShown: false,
+              animation: 'slide_from_right',
+            }}
+          />
+          <Stack.Screen
+            name="registration"
             options={{
               headerShown: false,
               animation: 'slide_from_right',

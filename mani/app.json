@@ -29,6 +29,7 @@
     "plugins": [
       "./plugins/withAndroidVerifiedLinksWorkaround",
       "expo-font",
+      "expo-location",
       [
         "expo-notifications",
         {
@@ -81,7 +82,10 @@
     },
     "ios": {
       "infoPlist": {
-        "NSCameraUsageDescription": "Pictures can be attached to the content you create."
+        "NSCameraUsageDescription": "Pictures can be attached to the content you create.",
+        "NSLocationAlwaysAndWhenInUseUsageDescription": "Your location is required to verify your identity and ensure compliance with state regulations for sweepstakes participation.",
+        "NSLocationAlwaysUsageDescription": "Your location is required to verify your identity and ensure compliance with state regulations for sweepstakes participation.",
+        "NSLocationWhenInUseUsageDescription": "Your location is required to verify your identity and ensure compliance with state regulations for sweepstakes participation."
       },
       "supportsTablet": true,
       "usesAppleSignIn": true,

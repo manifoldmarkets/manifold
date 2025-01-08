@@ -1,7 +1,7 @@
 import { APIPath } from 'common/api/schema'
 import { APIParams } from 'common/api/schema'
 import { callWithAuth, apiWithAuth } from 'client-common/lib/api'
-import { auth } from 'lib/init'
+import { auth } from 'lib/firebase/init'
 
 export async function call(
   url: string,

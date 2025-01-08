@@ -1,5 +1,5 @@
 'use client'
-import { PrivateUser, User } from 'common/user'
+import { PrivateUser } from 'common/user'
 import { useContext, useEffect, useState } from 'react'
 import { AuthContext } from 'web/components/auth-context'
 import { db } from 'web/lib/supabase/db'
@@ -7,8 +7,10 @@ import { getShouldBlockDestiny } from 'web/lib/supabase/groups'
 import { useLiveUpdates } from './use-persistent-supabase-polling'
 import { run } from 'common/supabase/utils'
 import { useApiSubscription } from 'client-common/hooks/use-api-subscription'
-import { getFullUserById, getPrivateUserSafe } from 'web/lib/supabase/users'
+import { getPrivateUserSafe } from 'web/lib/supabase/users'
 import { useIsPageVisible } from './use-page-visible'
+import { useWebsocketUser as useWebsocketUserCommon } from 'client-common/hooks/use-websocket-user'
+import { api } from 'web/lib/api/api'
 
 export const useUser = () => {
   const authUser = useContext(AuthContext)
@@ -26,44 +28,10 @@ export const useIsAuthorized = () => {
 }
 
 export const useWebsocketUser = (userId: string | undefined) => {
-  const [user, setUser] = useState<User | null | undefined>()
-
   const isPageVisible = useIsPageVisible()
-
-  useApiSubscription({
-    topics: [`user/${userId ?? '_'}`],
-    onBroadcast: ({ data }) => {
-      const { user } = data
-      console.log('ws update', user)
-      setUser((prevUser) => {
-        if (!prevUser) {
-          return prevUser
-        } else {
-          return {
-            ...prevUser,
-            ...(user as Partial<User>),
-          }
-        }
-      })
-    },
-  })
-
-  const refreshUser = async (id: string) => {
-    const result = await getFullUserById(id)
-    setUser(result)
-  }
-
-  useEffect(() => {
-    if (!isPageVisible) return
-
-    if (userId) {
-      refreshUser(userId)
-    } else {
-      setUser(null)
-    }
-  }, [userId, isPageVisible])
-
-  return user
+  return useWebsocketUserCommon(userId, isPageVisible, () =>
+    api('user/by-id/:id', { id: userId ?? '_' })
+  )
 }
 
 export const usePollUserBalances = (userIds: string[]) => {

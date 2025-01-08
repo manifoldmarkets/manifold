@@ -1,6 +1,6 @@
 import { createContext, useContext, useEffect, useState } from 'react'
 import { User as FirebaseUser, onIdTokenChanged } from 'firebase/auth'
-import { auth } from 'lib/init'
+import { auth } from 'lib/firebase/init'
 import {
   type PrivateUser,
   type User,
@@ -9,7 +9,9 @@ import {
 import { api } from 'lib/api'
 import { APIError } from 'common/api/utils'
 import { getData } from 'lib/auth-storage'
-
+import { useWebsocketUser as useWebsocketUserCommon } from 'client-common/hooks/use-websocket-user'
+import { useIsPageVisible } from './use-is-page-visibile'
+import Toast from 'react-native-toast-message'
 // Either we haven't looked up the logged in user yet (undefined), or we know
 // the user is not logged in (null), or we know the user is logged in.
 export type AuthUser = undefined | null | UserAndPrivateUser
@@ -20,6 +22,27 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
   const [privateUser, setPrivateUser] = useState<PrivateUser | undefined>(
     undefined
   )
+  const listenUser = useWebsocketUser(user?.id)
+  useEffect(() => {
+    if (listenUser) {
+      if (user) {
+        const balanceChange = listenUser.balance - user.balance
+        const cashBalanceChange = listenUser.cashBalance - user.cashBalance
+
+        if (balanceChange > 0 || cashBalanceChange > 0) {
+          Toast.show({
+            type: 'success',
+            text1: '🎉  Cha-ching!',
+            // TODO: format with coins
+            text2: `${balanceChange > 0 ? `+${balanceChange}` : ''} ${
+              cashBalanceChange > 0 ? `+${cashBalanceChange}` : ''
+            }`,
+          })
+        }
+      }
+      setUser(listenUser)
+    }
+  }, [JSON.stringify(listenUser)])
 
   const onAuthLoad = (
     fbUser: FirebaseUser,
@@ -97,6 +120,11 @@ export function useUser() {
   return context ? context.user : context
 }
 
+export function usePrivateUser() {
+  const context = useContext(UserContext)
+  return context ? context.privateUser : context
+}
+
 async function getUserSafe(userId: string) {
   try {
     return await api('user/by-id/:id', { id: userId })
@@ -114,4 +142,11 @@ async function getPrivateUserSafe() {
   } catch (e) {
     return null
   }
+}
+
+export const useWebsocketUser = (userId: string | undefined) => {
+  const isPageVisible = useIsPageVisible()
+  return useWebsocketUserCommon(userId, isPageVisible, () =>
+    api('user/by-id/:id', { id: userId ?? '_' })
+  )
 }

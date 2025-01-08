@@ -9,7 +9,7 @@ import { Rounded } from 'constants/border-radius'
 import { useColor } from 'hooks/use-color'
 import { useUser } from 'hooks/use-user'
 import { Image, View } from 'react-native'
-import { auth } from 'lib/init'
+import { auth } from 'lib/firebase/init'
 import { clearData } from 'lib/auth-storage'
 import { Button } from 'components/buttons/button'
 
