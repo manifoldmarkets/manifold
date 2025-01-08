@@ -1,4 +1,11 @@
-import { Combobox } from '@headlessui/react'
+import {
+  Combobox,
+  ComboboxButton,
+  ComboboxInput,
+  ComboboxOption,
+  ComboboxOptions,
+  Label,
+} from '@headlessui/react'
 import { PlusCircleIcon, SelectorIcon } from '@heroicons/react/outline'
 import clsx from 'clsx'
 import { Group, LiteGroup, MAX_GROUPS_PER_MARKET } from 'common/group'
@@ -58,34 +65,32 @@ export function TopicSelector(props: {
         as="div"
         value={null}
         onChange={handleSelectGroup}
-        nullable={true}
         className={'w-full text-sm'}
         disabled={atMax}
+        immediate
       >
         {label && (
-          <Combobox.Label className="justify-start gap-2 px-1 py-2 text-base">
+          <Label className="justify-start gap-2 px-1 py-2 text-base">
             {label}{' '}
             <InfoTooltip text="Question will be displayed alongside the other questions in the category." />
-          </Combobox.Label>
+          </Label>
         )}
         <div className="relative w-full">
-          <Combobox.Button as="div">
-            <Combobox.Input
-              className="border-ink-300 disabled:border-ink-100 bg-canvas-0 focus:border-primary-500 focus:ring-primary-500 w-full rounded-md border p-3 pl-4  text-sm shadow-sm focus:outline-none focus:ring-1"
-              onChange={(e) => setQuery(e.target.value)}
-              displayValue={(group: Group) => group && group.name}
-              placeholder={
-                atMax
-                  ? `You're at ${MAX_GROUPS_PER_MARKET} tags. Remove tags to add more.`
-                  : placeholder ?? 'Search topics'
-              }
-            />
-          </Combobox.Button>
-          <Combobox.Button className="absolute inset-y-0 right-0 flex items-center rounded-r-md px-2 focus:outline-none">
+          <ComboboxInput
+            className="border-ink-300 disabled:border-ink-100 bg-canvas-0 focus:border-primary-500 focus:ring-primary-500 w-full rounded-md border p-3 pl-4  text-sm shadow-sm focus:outline-none focus:ring-1"
+            onChange={(e) => setQuery(e.target.value)}
+            displayValue={(group: Group) => group && group.name}
+            placeholder={
+              atMax
+                ? `You're at ${MAX_GROUPS_PER_MARKET} tags. Remove tags to add more.`
+                : placeholder ?? 'Search topics'
+            }
+          />
+          <ComboboxButton className="absolute inset-y-0 right-0 flex items-center rounded-r-md px-2 focus:outline-none">
             <SelectorIcon className="text-ink-400 h-5 w-5" aria-hidden="true" />
-          </Combobox.Button>
+          </ComboboxButton>
 
-          <Combobox.Options
+          <ComboboxOptions
             static={isCreatingNewGroup}
             className="bg-canvas-0 ring-ink-1000 absolute z-10 mt-1 max-h-60 w-full overflow-x-hidden rounded-md py-1 shadow-lg ring-1 ring-opacity-5 focus:outline-none"
           >
@@ -99,7 +104,7 @@ export function TopicSelector(props: {
               searchedGroups
                 .filter((group) => !selectedIds?.some((id) => id == group.id))
                 .map((group: LiteGroup) => (
-                  <Combobox.Option
+                  <ComboboxOption
                     key={group.id}
                     value={group}
                     className={({ active }) =>
@@ -117,28 +122,26 @@ export function TopicSelector(props: {
                         {PRIVACY_STATUS_ITEMS[group.privacyStatus].icon}
                       </Row>
                     )}
-                  </Combobox.Option>
+                  </ComboboxOption>
                 ))
             )}
 
             {user && !loading && (
-              <Combobox.Option
+              <ComboboxOption
                 value={'new'}
-                className={({ active }) =>
-                  clsx(
-                    'relative flex h-12 cursor-pointer select-none items-center justify-between px-6 py-2 transition-colors',
-                    active ? 'bg-primary-200 text-ink-1000' : 'text-ink-900',
-                    loading ? 'animate-pulse' : ''
-                  )
-                }
+                className={clsx(
+                  'relative flex h-12 cursor-pointer select-none items-center justify-between px-6 py-2 transition-colors',
+                  'data-[focus]:bg-primary-200 data-[focus]:text-ink-1000 text-ink-900',
+                  loading ? 'animate-pulse' : ''
+                )}
               >
                 <Row className={'items-center gap-1 truncate'}>
                   <PlusCircleIcon className="mr-2 h-5 w-5 text-teal-500" />
                   Create a new topic
                 </Row>
-              </Combobox.Option>
+              </ComboboxOption>
             )}
-          </Combobox.Options>
+          </ComboboxOptions>
         </div>
       </Combobox>
       {isCreatingNewGroup && (
