@@ -56,6 +56,7 @@ const styles = StyleSheet.create({
     flex: 1,
     gap: 16,
     overflow: 'hidden',
+    paddingBottom: 60,
   },
   contentPadding: {
     paddingHorizontal: PAGE_PADDING,

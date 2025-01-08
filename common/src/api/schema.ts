@@ -68,6 +68,7 @@ import { ContractMetric } from 'common/contract-metric'
 import { JSONContent } from '@tiptap/core'
 import { Task, TaskCategory } from 'common/todo'
 import { ChartAnnotation } from 'common/supabase/chart-annotations'
+import { Dictionary } from 'lodash'
 // mqp: very unscientific, just balancing our willingness to accept load
 // with user willingness to put up with stale data
 export const DEFAULT_CACHE_STRATEGY =
@@ -2044,6 +2045,22 @@ export const API = (_apiTypeCheck = {
     props: z.object({
       slug: z.string().optional(),
       id: z.string().optional(),
+    }),
+  },
+  'get-user-contract-metrics-with-contracts': {
+    method: 'GET',
+    visibility: 'public',
+    preferAuth: true,
+    authed: false,
+    returns: {} as {
+      metricsByContract: Dictionary<ContractMetric[]>
+      contracts: Contract[]
+    },
+    props: z.object({
+      userId: z.string(),
+      limit: z.coerce.number(),
+      offset: z.coerce.number().gte(0).optional(),
+      perAnswer: coerceBoolean.optional(),
     }),
   },
 } as const)
