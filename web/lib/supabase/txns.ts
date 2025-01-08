@@ -25,7 +25,7 @@ export function getDonationsPageQuery(charityId: string) {
       removeUndefinedProps({
         category: 'CHARITY',
         toId: charityId,
-        after: p.after?.ts,
+        before: p.after?.ts, // we're descending. we want txns earlier than the last list item
         limit: p.limit,
       })
     )
