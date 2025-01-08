@@ -1,13 +1,14 @@
 import { Row } from 'components/layout/row'
 import { useState } from 'react'
 import { BetPanel, BinaryOutcomes } from './bet-panel'
-import { CPMMMultiContract } from 'common/contract'
+import { CPMMMultiContract, getMainBinaryMCAnswer } from 'common/contract'
 import { Button, ButtonProps } from 'components/buttons/button'
 import { AnswerProbability } from '../probability'
 import { ThemedText } from 'components/themed-text'
 import { useColor } from 'hooks/use-color'
 import { Image } from 'react-native'
 import { Col } from 'components/layout/col'
+
 export function MultiBinaryBetButtons({
   contract,
   ...rest
@@ -16,12 +17,16 @@ export function MultiBinaryBetButtons({
 } & ButtonProps) {
   const [openBetPanel, setOpenBetPanel] = useState(false)
   const [outcome, setOutcome] = useState<BinaryOutcomes>('YES')
+  const [selectedAnswerIndex, setSelectedAnswerIndex] = useState<number>(0)
   const color = useColor()
 
-  const handleBetClick = (selectedOutcome: BinaryOutcomes) => {
+  const handleBetClick = (selectedOutcome: BinaryOutcomes, index: number) => {
     setOutcome(selectedOutcome)
+    setSelectedAnswerIndex(index)
     setOpenBetPanel(true)
   }
+
+  const selectedAnswer = contract.answers[selectedAnswerIndex]
 
   return (
     <>
@@ -38,7 +43,7 @@ export function MultiBinaryBetButtons({
               />
             )}
             <Button
-              onPress={() => handleBetClick(i === 0 ? 'YES' : 'NO')}
+              onPress={() => handleBetClick(i === 0 ? 'YES' : 'NO', i)}
               style={{ flex: 1, width: '100%' }}
               variant="gray"
               textProps={{
@@ -57,11 +62,13 @@ export function MultiBinaryBetButtons({
       <BetPanel
         contract={contract}
         open={openBetPanel}
-        answerId={
-          outcome === 'YES' ? contract.answers[0].id : contract.answers[1].id
-        }
         setOpen={setOpenBetPanel}
         outcome={outcome}
+        multiProps={{
+          answers: contract.answers,
+          answerToBuy: getMainBinaryMCAnswer(contract)!,
+          answerToDisplay: selectedAnswer,
+        }}
       />
     </>
   )

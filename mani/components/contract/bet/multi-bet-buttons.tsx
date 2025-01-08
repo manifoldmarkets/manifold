@@ -1,4 +1,4 @@
-import { Contract } from 'common/contract'
+import { CPMMMultiContract } from 'common/contract'
 import { YesNoButton } from 'components/buttons/yes-no-buttons'
 import { Row } from 'components/layout/row'
 import { useState } from 'react'
@@ -11,7 +11,7 @@ export function MultiBetButtons({
   gap = 8,
   ...rest
 }: {
-  contract: Contract
+  contract: CPMMMultiContract
   answerId: string
   gap?: number
 } & ButtonProps) {
@@ -42,7 +42,10 @@ export function MultiBetButtons({
         open={openBetPanel}
         setOpen={setOpenBetPanel}
         outcome={outcome}
-        answerId={answerId}
+        multiProps={{
+          answers: contract.answers,
+          answerToBuy: contract.answers.find((a) => a.id === answerId)!,
+        }}
       />
     </>
   )
