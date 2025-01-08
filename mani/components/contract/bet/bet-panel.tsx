@@ -1,4 +1,5 @@
 import { Contract, isBinaryMulti } from 'common/contract'
+import { Answer } from 'common/answer'
 import { Col } from 'components/layout/col'
 import { ThemedText } from 'components/themed-text'
 import { useColor } from 'hooks/use-color'
@@ -18,33 +19,38 @@ import Slider from '@react-native-community/slider'
 import { useTokenMode } from 'hooks/use-token-mode'
 import { MANA_MIN_BET, SWEEPS_MIN_BET } from 'common/economy'
 import { formatMoneyNumber } from 'common/util/format'
+import { removeUndefinedProps } from 'common/util/object'
 
 export type BinaryOutcomes = 'YES' | 'NO'
 
 const AMOUNT_STEPS = [1, 2, 5, 7, 10, 15, 20, 25, 30, 40, 50, 75, 100]
+
+export type MultiBetProps = {
+  answers: Answer[]
+  answerToBuy: Answer
+  answerToDisplay?: Answer
+}
 
 export function BetPanel({
   contract,
   open,
   setOpen,
   outcome,
-  answerId,
+  multiProps,
 }: {
   contract: Contract
   open: boolean
   setOpen: (open: boolean) => void
   outcome: BinaryOutcomes
-  answerId?: string
-  isBinaryMulti?: boolean
+  multiProps?: MultiBetProps
 }) {
   const color = useColor()
   const [amount, setAmount] = useState(1)
   const { token } = useTokenMode()
 
-  const answer =
-    answerId && 'answers' in contract
-      ? contract.answers.find((a) => a.id === answerId)
-      : null
+  const answer = multiProps?.answerToBuy
+    ? multiProps.answers.find((a) => a.id === multiProps.answerToBuy.id)
+    : null
 
   const isBinaryMC = isBinaryMulti(contract)
   const [loading, setLoading] = useState(false)
@@ -81,22 +87,26 @@ export function BetPanel({
   const onPress = async () => {
     try {
       setLoading(true)
-      await api('bet', {
-        contractId: contract.id,
-        outcome,
-        amount,
-      })
+      await api(
+        'bet',
+        removeUndefinedProps({
+          contractId: contract.id,
+          outcome,
+          amount,
+          answerId: multiProps?.answerToBuy?.id,
+        })
+      )
       Toast.show({
         type: 'success',
         text1: '🎉  Bet placed successfully',
       })
       setOpen(false)
-    } catch (e) {
-      console.error(e)
+    } catch (error: any) {
+      console.error(error)
       Toast.show({
         type: 'error',
         text1: '💥  Failed to place bet',
-        text2: e.message ?? 'Please try again',
+        text2: error.message ?? 'Please try again',
       })
     } finally {
       setLoading(false)
@@ -166,7 +176,11 @@ export function BetPanel({
                 loading={loading}
               >
                 <ThemedText weight="normal">
-                  Buy <ThemedText weight="semibold">{answer.text}</ThemedText>
+                  Buy{' '}
+                  <ThemedText weight="semibold">
+                    {multiProps?.answerToDisplay?.text ??
+                      multiProps?.answerToBuy?.text}
+                  </ThemedText>
                 </ThemedText>
               </Button>
             ) : (

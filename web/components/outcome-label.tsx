@@ -44,8 +44,15 @@ export function OutcomeLabel(props: {
             ? 'text-azure-600 dark:text-azure-400'
             : pseudonymColor == 'sienna'
             ? 'text-sienna-600 dark:text-sienna-400'
-            : 'text-primary-600'
+            : ''
         )}
+        style={
+          pseudonymColor !== 'azure' && pseudonymColor !== 'sienna'
+            ? {
+                color: pseudonymColor,
+              }
+            : {}
+        }
       >
         {pseudonymName}
       </span>

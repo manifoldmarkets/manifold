@@ -1,3 +1,4 @@
+import { Answer } from 'common/answer'
 import { Contract } from 'common/contract'
 import { ContractMetric } from 'common/contract-metric'
 import { Col } from 'components/layout/col'
@@ -9,23 +10,20 @@ import { useColor } from 'hooks/use-color'
 export function PositionRow({
   contract,
   metric,
+  answer,
 }: {
   contract: Contract
   metric: ContractMetric
+  answer?: Answer
 }) {
-  if (contract.outcomeType !== 'BINARY') {
-    // TODO: implement multi choice
-    return null
-  }
-
-  const hasYesShares = metric.hasYesShares
+  const { hasYesShares } = metric
   const totalSpent = hasYesShares
     ? metric.totalSpent?.YES ?? 0
     : metric.totalSpent?.NO ?? 0
 
   const totalShares = hasYesShares
-    ? metric.totalShares.YES ?? 0
-    : metric.totalShares.NO ?? 0
+    ? metric.totalShares?.YES ?? 0
+    : metric.totalShares?.NO ?? 0
 
   const color = useColor()
   return (
@@ -38,6 +36,7 @@ export function PositionRow({
       }}
     >
       <ThemedText size="md">{contract.question}</ThemedText>
+      {answer && <ThemedText size="md">{answer.text}</ThemedText>}
       <Row style={{ justifyContent: 'space-between', width: '100%' }}>
         <Row>
           <TokenNumber amount={totalSpent} size="md" />

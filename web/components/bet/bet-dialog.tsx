@@ -19,6 +19,7 @@ import { BinaryMultiAnswersPanel } from 'web/components/answers/binary-multi-ans
 import { NumericBetPanel } from 'web/components/answers/numeric-bet-panel'
 import { Row } from 'web/components/layout/row'
 import { MultiNumericResolutionOrExpectation } from 'web/components/contract/contract-price'
+import { sliderColors } from '../widgets/slider'
 
 export function BetDialog(props: {
   contract: BinaryContract
@@ -29,11 +30,11 @@ export function BetDialog(props: {
   binaryPseudonym?: {
     YES: {
       pseudonymName: string
-      pseudonymColor: string
+      pseudonymColor: keyof typeof sliderColors
     }
     NO: {
       pseudonymName: string
-      pseudonymColor: string
+      pseudonymColor: keyof typeof sliderColors
     }
   }
   questionPseudonym?: string

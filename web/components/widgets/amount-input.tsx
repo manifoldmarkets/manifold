@@ -27,6 +27,7 @@ import { Col } from '../layout/col'
 import { Row } from '../layout/row'
 import { IncrementDecrementAmountButton } from './increment-button'
 import { Input } from './input'
+import { sliderColors } from './slider'
 
 export function AmountInput(
   props: {
@@ -182,7 +183,7 @@ export function BuyAmountInput(props: {
   disableQuickButtons?: boolean
   token?: InputTokenType
   marketTier?: MarketTierType | undefined
-  sliderColor?: string
+  sliderColor?: keyof typeof sliderColors
 }) {
   const {
     amount,

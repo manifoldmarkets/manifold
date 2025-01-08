@@ -1,12 +1,12 @@
 import { Row } from 'components/layout/row'
 import { ThemedText } from 'components/themed-text'
-import { MultiContract } from 'common/contract'
+import { CPMMMultiContract } from 'common/contract'
 import { Col } from 'components/layout/col'
 import { AnswerProbability } from 'components/contract/probability'
 import { useColor } from 'hooks/use-color'
 import { MultiBetButtons } from 'components/contract/bet/multi-bet-buttons'
 
-export function MultiOverview({ contract }: { contract: MultiContract }) {
+export function MultiOverview({ contract }: { contract: CPMMMultiContract }) {
   const color = useColor()
 
   return (

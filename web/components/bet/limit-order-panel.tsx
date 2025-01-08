@@ -46,6 +46,7 @@ import { TRADE_TERM } from 'common/envs/constants'
 import { capitalize } from 'lodash'
 import { LocationMonitor } from '../gidx/location-monitor'
 import { VerifyButton } from '../sweeps/sweep-verify-section'
+import { sliderColors } from '../widgets/slider'
 
 export default function LimitOrderPanel(props: {
   contract:
@@ -66,11 +67,11 @@ export default function LimitOrderPanel(props: {
   pseudonym?: {
     YES: {
       pseudonymName: string
-      pseudonymColor: string
+      pseudonymColor: keyof typeof sliderColors
     }
     NO: {
       pseudonymName: string
-      pseudonymColor: string
+      pseudonymColor: keyof typeof sliderColors
     }
   }
 }) {

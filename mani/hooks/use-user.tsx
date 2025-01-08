@@ -8,6 +8,7 @@ import {
 } from 'common/user'
 import { api } from 'lib/api'
 import { APIError } from 'common/api/utils'
+import { getData } from 'lib/auth-storage'
 
 // Either we haven't looked up the logged in user yet (undefined), or we know
 // the user is not logged in (null), or we know the user is logged in.
@@ -31,6 +32,12 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
     fbUser.getIdToken()
   }
 
+  const getAdminToken = async () => {
+    const key = 'admin-token'
+    const localStorageToken = await getData<string>(key)
+    return localStorageToken ?? ''
+  }
+
   useEffect(() => {
     return onIdTokenChanged(
       auth,
@@ -49,12 +56,12 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
 
           if (!user || !privateUser) {
             // const deviceToken = ensureDeviceToken()
-            // const adminToken = getAdminToken()
-
+            const adminToken = await getAdminToken()
             const newUser = (await api('createuser', {
               // deviceToken,
-              // adminToken,
+              adminToken,
               // visitedContractIds: getSavedContractVisitsLocally(),
+              origin: 'mani',
             })) as UserAndPrivateUser
 
             onAuthLoad(fbUser, newUser.user, newUser.privateUser)

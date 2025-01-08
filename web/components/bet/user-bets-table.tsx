@@ -20,7 +20,7 @@ import {
   SWEEPIES_MONIKER,
 } from 'common/util/format'
 import { searchInAny } from 'common/util/parse'
-import { Dictionary, max, sortBy, sum, uniqBy } from 'lodash'
+import { Dictionary, max, sortBy, sum, uniqBy, mapValues } from 'lodash'
 import Link from 'next/link'
 import { ReactNode, useEffect, useMemo, useState } from 'react'
 import { BiCaretDown, BiCaretUp } from 'react-icons/bi'
@@ -45,7 +45,7 @@ import { usePersistentInMemoryState } from 'client-common/hooks/use-persistent-i
 import { usePersistentLocalState } from 'web/hooks/use-persistent-local-state'
 import { usePersistentQueryState } from 'web/hooks/use-persistent-query-state'
 import { useIsAuthorized, useUser } from 'web/hooks/use-user'
-import { getUserContractsMetricsWithContracts } from 'web/lib/api/api'
+import { api } from 'web/lib/api/api'
 import { User } from 'web/lib/firebase/users'
 import { SweepiesCoin } from 'web/public/custom-components/sweepiesCoin'
 import DropdownMenu from '../widgets/dropdown-menu'
@@ -97,13 +97,15 @@ export function UserBetsTable(props: { user: User }) {
     )
 
   const getMetrics = useEvent(() =>
-    getUserContractsMetricsWithContracts({
+    api('get-user-contract-metrics-with-contracts', {
       userId: user.id,
       offset: 0,
       limit: 5000,
     }).then((res) => {
       const { contracts, metricsByContract } = res
-      setMetricsByContract(metricsByContract)
+      setMetricsByContract(
+        mapValues(metricsByContract, (metrics) => metrics[0])
+      )
       setContracts((c) =>
         uniqBy(buildArray([...(c ?? []), ...contracts]), 'id')
       )
