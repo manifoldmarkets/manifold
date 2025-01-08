@@ -29,7 +29,7 @@ export function MultiBinaryBetButtons({
         {contract.answers.map((answer, i) => (
           <Col
             key={answer.id}
-            style={{ alignItems: 'center', gap: 8, width: '50%' }}
+            style={{ alignItems: 'center', gap: 8, flex: 1 }}
           >
             {answer.imageUrl && (
               <Image
@@ -47,7 +47,7 @@ export function MultiBinaryBetButtons({
               {...rest}
             >
               <ThemedText color={color.textSecondary}>
-                {answer.shortText ?? answer.text}
+                {answer.shortText || answer.text}
               </ThemedText>{' '}
               <AnswerProbability contract={contract} answerId={answer.id} />
             </Button>
