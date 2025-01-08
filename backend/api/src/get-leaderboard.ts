@@ -41,6 +41,20 @@ export const getLeaderboard: APIHandler<'leaderboard'> = async ({
     }))
   }
 
+  const whereInGroup =
+    groupId &&
+    (token === 'MANA'
+      ? where(
+          `c.id in (select contract_id from group_contracts where group_id = $<groupId>)`,
+          { groupId }
+        )
+      : token === 'CASH'
+      ? where(
+          `c.data->>'siblingContractId' in (select contract_id from group_contracts where group_id = $<groupId>)`,
+          { groupId }
+        )
+      : assertUnreachable(token))
+
   if ((kind == 'profit' || kind == 'loss') && !groupId) {
     const query = renderSql(
       from('user_portfolio_history_latest uph'),
@@ -78,6 +92,7 @@ export const getLeaderboard: APIHandler<'leaderboard'> = async ({
       where('c.token = ${token}', { token }),
       where('c.outcome_type != ${outcomeType}', { outcomeType: 'POLL' }),
       where('c.outcome_type != ${outcomeType}', { outcomeType: 'BOUNTY' }),
+      whereInGroup,
       orderBy('score desc nulls last'),
       limit(limitValue)
     )
@@ -113,18 +128,8 @@ export const getLeaderboard: APIHandler<'leaderboard'> = async ({
 
     where('c.token = ${token}', { token }),
 
-    groupId &&
-      (token === 'MANA'
-        ? where(
-            `c.id in (select contract_id from group_contracts where group_id = $<groupId>)`,
-            { groupId }
-          )
-        : token === 'CASH'
-        ? where(
-            `c.data->>'siblingContractId' in (select contract_id from group_contracts where group_id = $<groupId>)`,
-            { groupId }
-          )
-        : assertUnreachable(token)),
+    whereInGroup,
+
     orderBy(kind === 'loss' ? 'score asc' : 'score desc nulls last'),
     limit(limitValue)
   )
