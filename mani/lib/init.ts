@@ -1,3 +1,4 @@
+import 'react-native-get-random-values'
 import * as Notifications from 'expo-notifications'
 import { log } from 'components/logger'
 import { getApps, getApp, initializeApp, FirebaseApp } from 'firebase/app'
@@ -9,6 +10,7 @@ import ReactNativeAsyncStorage from '@react-native-async-storage/async-storage'
 export const ENV =
   Constants.expoConfig?.extra?.eas.NEXT_PUBLIC_FIREBASE_ENV ?? 'PROD'
 export const ENV_CONFIG = CONFIGS[ENV]
+export const isProd = ENV === 'PROD'
 export const app = getApps().length
   ? getApp()
   : initializeApp(ENV_CONFIG.firebaseConfig)

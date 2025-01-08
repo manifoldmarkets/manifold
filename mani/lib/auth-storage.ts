@@ -1,8 +1,8 @@
 import AsyncStorage from '@react-native-async-storage/async-storage'
 import { log } from 'components/logger'
 
-export type keys = 'user'
-export const storeData = async (key: keys, value: object) => {
+export type keys = 'user' | 'admin-token'
+export const storeData = async <T>(key: keys, value: T) => {
   try {
     const jsonValue = JSON.stringify(value)
     await AsyncStorage.setItem(key, jsonValue)
@@ -10,6 +10,7 @@ export const storeData = async (key: keys, value: object) => {
     log('error saving value', e)
   }
 }
+
 export const clearData = async (key: keys) => {
   await AsyncStorage.setItem(key, '')
 }
