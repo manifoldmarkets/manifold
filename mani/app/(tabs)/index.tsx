@@ -10,16 +10,16 @@ export default function HomeScreen() {
       <TopTabs
         tabs={[
           {
-            title: 'Home',
-            content: <Feed tab="home" />,
-          },
-          {
-            title: 'News',
-            content: <Feed tab="news" />,
+            title: 'Live',
+            content: <Feed tab="live" />,
           },
           {
             title: 'Sports',
             content: <Feed tab="sports" />,
+          },
+          {
+            title: 'News',
+            content: <Feed tab="news" />,
           },
           {
             title: 'Entertainment',
