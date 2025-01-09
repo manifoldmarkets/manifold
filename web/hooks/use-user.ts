@@ -6,10 +6,12 @@ import { db } from 'web/lib/supabase/db'
 import { getShouldBlockDestiny } from 'web/lib/supabase/groups'
 import { useLiveUpdates } from './use-persistent-supabase-polling'
 import { run } from 'common/supabase/utils'
-import { useApiSubscription } from 'client-common/hooks/use-api-subscription'
 import { getPrivateUserSafe } from 'web/lib/supabase/users'
 import { useIsPageVisible } from './use-page-visible'
-import { useWebsocketUser as useWebsocketUserCommon } from 'client-common/hooks/use-websocket-user'
+import {
+  useWebsocketUser as useWebsocketUserCommon,
+  useWebsocketPrivateUser as useWebsocketPrivateUserCommon,
+} from 'client-common/hooks/use-websocket-user'
 import { api } from 'web/lib/api/api'
 
 export const useUser = () => {
@@ -45,29 +47,12 @@ export const usePollUserBalances = (userIds: string[]) => {
 }
 
 export const useWebsocketPrivateUser = (userId: string | undefined) => {
-  const [privateUser, setPrivateUser] = useState<
-    PrivateUser | null | undefined
-  >()
-
-  useApiSubscription({
-    topics: [`private-user/${userId ?? '_'}`],
-    onBroadcast: () => {
-      getPrivateUserSafe().then((result) => {
-        if (result) {
-          setPrivateUser(result)
-        }
-      })
-    },
-  })
-
-  useEffect(() => {
-    if (userId) {
-      getPrivateUserSafe().then((result) => setPrivateUser(result))
-    } else {
-      setPrivateUser(null)
-    }
-  }, [userId])
-  return privateUser
+  const isPageVisible = useIsPageVisible()
+  return useWebsocketPrivateUserCommon(
+    userId,
+    isPageVisible,
+    getPrivateUserSafe
+  )
 }
 
 export const isBlocked = (

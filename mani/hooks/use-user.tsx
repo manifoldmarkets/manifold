@@ -9,7 +9,10 @@ import {
 import { api } from 'lib/api'
 import { APIError } from 'common/api/utils'
 import { getData } from 'lib/auth-storage'
-import { useWebsocketUser as useWebsocketUserCommon } from 'client-common/hooks/use-websocket-user'
+import {
+  useWebsocketUser as useWebsocketUserCommon,
+  useWebsocketPrivateUser as useWebsocketPrivateUserCommon,
+} from 'client-common/hooks/use-websocket-user'
 import { useIsPageVisible } from './use-is-page-visibile'
 import Toast from 'react-native-toast-message'
 // Either we haven't looked up the logged in user yet (undefined), or we know
@@ -23,6 +26,8 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
     undefined
   )
   const listenUser = useWebsocketUser(user?.id)
+  const listenPrivateUser = useWebsocketPrivateUser(user?.id)
+
   useEffect(() => {
     if (listenUser) {
       if (user) {
@@ -43,6 +48,12 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
       setUser(listenUser)
     }
   }, [JSON.stringify(listenUser)])
+
+  useEffect(() => {
+    if (listenPrivateUser) {
+      setPrivateUser(listenPrivateUser)
+    }
+  }, [listenPrivateUser])
 
   const onAuthLoad = (
     fbUser: FirebaseUser,
@@ -148,5 +159,14 @@ export const useWebsocketUser = (userId: string | undefined) => {
   const isPageVisible = useIsPageVisible()
   return useWebsocketUserCommon(userId, isPageVisible, () =>
     api('user/by-id/:id', { id: userId ?? '_' })
+  )
+}
+
+export const useWebsocketPrivateUser = (userId: string | undefined) => {
+  const isPageVisible = useIsPageVisible()
+  return useWebsocketPrivateUserCommon(
+    userId,
+    isPageVisible,
+    getPrivateUserSafe
   )
 }
