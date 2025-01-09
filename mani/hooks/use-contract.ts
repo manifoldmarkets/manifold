@@ -5,7 +5,9 @@ import { useContractUpdates } from 'client-common/hooks/use-contract-updates'
 import { useIsPageVisible } from './use-is-page-visibile'
 
 type ContractOrId = Pick<Contract, 'id'> | Contract
-export function useContract(initial: ContractOrId) {
+export function useContract(initial: ContractOrId | undefined) {
+  if (!initial) return undefined
+
   const isPageVisible = useIsPageVisible()
 
   const [contract, setContract] = useBatchedGetter<ContractOrId>(
@@ -16,6 +18,5 @@ export function useContract(initial: ContractOrId) {
     isPageVisible && initial !== null
   )
   useContractUpdates(contract ?? initial, setContract)
-
   return 'mechanism' in contract ? contract : undefined
 }

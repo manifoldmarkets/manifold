@@ -9,7 +9,7 @@ export default function Shop() {
   const user = useUser()
   const router = useRouter()
 
-  if (!user?.idVerified) {
+  if (!user?.idVerified || !user?.sweepstakesVerified) {
     return (
       <Page>
         <View style={styles.container}>
