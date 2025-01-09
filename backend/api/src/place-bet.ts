@@ -667,14 +667,8 @@ const checkIfTakerOrderAllowed = (
   bet: CandidateBet<Bet>,
   isApi: boolean
 ) => {
-  const { limitProb, fills } = bet
-  if (
-    contract.takerAPIOrdersDisabled &&
-    limitProb &&
-    fills &&
-    fills.length > 0 &&
-    isApi
-  ) {
+  const { fills } = bet
+  if (contract.takerAPIOrdersDisabled && fills && fills.length > 0 && isApi) {
     throw new APIError(
       403,
       'Experimental: taker API orders are disabled for this contract.'
