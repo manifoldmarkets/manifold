@@ -21,7 +21,7 @@ import { Button, ColorType } from 'web/components/buttons/button'
 import { UserHovercard } from '../user/user-hovercard'
 import { useBountyAwardCount } from 'web/hooks/use-bounties'
 import { FaUser } from 'react-icons/fa6'
-import { shortenNumber } from 'web/lib/util/formatNumber'
+import { shortenNumber } from 'common/util/formatNumber'
 
 export function TradesButton(props: {
   contract: Contract
