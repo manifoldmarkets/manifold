@@ -40,7 +40,10 @@ export const UploadDocuments = (props: {
       const result = await ImagePicker.launchImageLibraryAsync({
         mediaTypes: ImagePicker.MediaTypeOptions.Images,
         allowsEditing: true,
-        quality: 1,
+        quality: 0.8,
+        exif: false,
+        base64: false,
+        selectionLimit: 1,
       })
 
       if (!result.canceled) {
