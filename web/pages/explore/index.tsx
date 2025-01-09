@@ -28,6 +28,7 @@ import { api } from 'web/lib/api/api'
 import { LoadingIndicator } from 'web/components/widgets/loading-indicator'
 import { User } from 'common/user'
 import { FaBaseballBall } from 'react-icons/fa'
+import { AiContent } from 'web/components/ai-content'
 
 const NFL_ID = 'TNQwmbE5p6dnKx2e6Qlp'
 const NBA_ID = 'i0v3cXwuxmO9fpcInVYb'
@@ -306,6 +307,14 @@ function MarketsContent() {
       content: (
         <Col className="pt-1">
           <SiteActivity />
+        </Col>
+      ),
+    },
+    {
+      title: 'AI',
+      content: (
+        <Col className="pt-4">
+          <AiContent />
         </Col>
       ),
     },
