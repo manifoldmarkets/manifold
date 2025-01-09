@@ -54,12 +54,14 @@ On the server we use a simplified version that converts rich content to plain te
 ## Adding a New Component
 
 1. Web (Editor):
+
    - Create extension file in `web/components/editor/`
    - Add React component for interactive view
    - Implement `renderHTML` and `renderReact`
    - Add to `editorExtensions` in editor.tsx
 
 2. Common (Server/Types):
+
    - Add extension to parse.ts and parse.native.ts
    - Add `renderText` implementation
 
