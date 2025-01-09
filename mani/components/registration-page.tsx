@@ -15,11 +15,10 @@ import { CheckBox } from './checkbox'
 import { Input } from './widgets/input'
 import {
   fraudSession,
-  locationBlocked,
   identityBlocked,
-  documentPending,
   ageBlocked,
   documentsFailed,
+  locationBlocked,
 } from 'common/gidx/user'
 import { PrivateUser, User } from 'common/user'
 import { usePersistentInMemoryState } from 'client-common/hooks/use-persistent-in-memory-state'
@@ -33,9 +32,9 @@ export const RegistrationPage = (props: {
 
   const router = useRouter()
   const [page, setPage] = useState(() => {
-    if (user?.idVerified) return 'final'
-    if (user?.kycDocumentStatus === 'pending') return 'final'
-    if (user?.kycDocumentStatus === 'fail') return 'documents'
+    if (user.idVerified) return 'final'
+    if (user.kycDocumentStatus === 'pending') return 'final'
+    if (user.kycDocumentStatus === 'fail') return 'documents'
     return 'intro'
   })
 
@@ -58,10 +57,10 @@ export const RegistrationPage = (props: {
     ReferralCode?: string
   }>(
     {
-      FirstName: user?.name.split(' ')[0],
-      LastName: user?.name.split(' ')[1],
+      FirstName: user.name.split(' ')[0],
+      LastName: user.name.split(' ')[1],
       DateOfBirth: undefined,
-      EmailAddress: privateUser?.email,
+      EmailAddress: privateUser.email,
     },
     'user-registration-info'
   )
@@ -80,6 +79,10 @@ export const RegistrationPage = (props: {
   const unfilled = requiredKeys.filter((key) => !userInfo[key])
 
   const register = async () => {
+    if (!user || !privateUser) {
+      setError('Please sign in to continue.')
+      return
+    }
     setError(null)
     setLoading(true)
     if (!userInfo.DeviceGPS) {
@@ -93,7 +96,7 @@ export const RegistrationPage = (props: {
       return
     }
     const res = await api('register-gidx', {
-      MerchantCustomerID: user?.id,
+      MerchantCustomerID: user.id,
       ...userInfo,
     } as any).catch((e) => {
       setError(e.message)
@@ -107,64 +110,17 @@ export const RegistrationPage = (props: {
 
     // Handle specific error cases
     if (message && status === 'error') {
-      if (!user || !privateUser) {
-        setError('Please sign in to continue.')
-        return
-      }
       if (!idVerified && identityErrors >= 2 && page !== 'documents') {
         setPage('documents')
+        return
       }
       if (!idVerified) {
         setIdentityErrors(identityErrors + 1)
-      }
-
-      if (fraudSession(user, privateUser)) {
-        setError(
-          'Your current activity was marked as suspicious. Please turn off VPN if using. You may have to wait for a few hours for your account to be unblocked.'
-        )
+        setError(message)
         return
       }
-
-      if (locationBlocked(user, privateUser)) {
-        setError(
-          'Your location is not eligible for sweepstakes participation. This could be due to state regulations or rapid location changes.'
-        )
-        return
-      }
-
-      if (identityBlocked(user, privateUser)) {
-        setError(
-          'We were unable to verify your identity. Please ensure all information is accurate.'
-        )
-        return
-      }
-
-      if (documentPending(user, privateUser)) {
-        setError(
-          'Your document verification is pending. Please check back later.'
-        )
-        setPage('final')
-        return
-      }
-
-      if (ageBlocked(user, privateUser)) {
-        setError('You must be 18 or older to participate in sweepstakes.')
-        return
-      }
-
-      if (documentsFailed(user, privateUser)) {
-        setError(
-          'Document verification failed. Please try uploading your documents again.'
-        )
-        return
-      }
-
-      // Generic error case
-      setError(message)
-      return
+      console.error('Registration error', message)
     }
-
-    // Identity verification succeeded
     setPage('final')
   }
 
@@ -203,11 +159,7 @@ export const RegistrationPage = (props: {
             />
           </View>
           <View style={styles.buttonRow}>
-            <Button
-              onPress={() => router.push('/home')}
-              title="Cancel"
-              variant="gray"
-            />
+            <Button onPress={router.back} title="Cancel" variant="gray" />
             <Button
               onPress={() => setPage('phone')}
               title="Start verification"
@@ -242,7 +194,7 @@ export const RegistrationPage = (props: {
         setLoading={setLoading}
         loading={loading}
         locationError={locationError}
-        back={() => (user?.verifiedPhone ? setPage('intro') : setPage('phone'))}
+        back={() => (user.verifiedPhone ? setPage('intro') : setPage('phone'))}
       />
     )
   }
@@ -412,7 +364,7 @@ export const RegistrationPage = (props: {
     )
   }
   if (page === 'final') {
-    if (user?.idVerified) {
+    if (user.idVerified && user.sweepstakesVerified) {
       return (
         <View style={styles.container}>
           <View style={styles.content}>
@@ -433,7 +385,92 @@ export const RegistrationPage = (props: {
       )
     }
 
-    if (user?.kycDocumentStatus === 'pending') {
+    if (identityBlocked(user, privateUser)) {
+      return (
+        <View style={styles.container}>
+          <View style={styles.content}>
+            <Text style={styles.emoji}>⚠️</Text>
+            <Text style={styles.title}>Identity Verification Failed</Text>
+            <Text style={styles.message}>
+              We were unable to verify your identity. Unfortunately, this means
+              you can't use our sweepstakes markets.
+            </Text>
+            <Button onPress={() => router.replace('/')} title="Return Home" />
+          </View>
+        </View>
+      )
+    }
+
+    if (locationBlocked(user, privateUser)) {
+      return (
+        <View style={styles.container}>
+          <View style={styles.content}>
+            <Text style={styles.emoji}>📍</Text>
+            <Text style={styles.title}>Location Blocked</Text>
+            <Text style={styles.message}>
+              Your current location is not eligible for sweepstakes
+              participation. This could be due to state regulations or rapid
+              location changes. Please try again later (more than 3 hrs) in an
+              allowed location.
+            </Text>
+            <Button onPress={() => router.replace('/')} title="Return Home" />
+          </View>
+        </View>
+      )
+    }
+
+    if (fraudSession(user, privateUser)) {
+      return (
+        <View style={styles.container}>
+          <View style={styles.content}>
+            <Text style={styles.emoji}>🚫</Text>
+            <Text style={styles.title}>Suspicious Activity Detected</Text>
+            <Text style={styles.message}>
+              Your current activity was marked as suspicious. Please turn off
+              VPN if using. You may have to wait for a few hours for your
+              account to be unblocked.
+            </Text>
+            <Button onPress={() => router.replace('/')} title="Return Home" />
+          </View>
+        </View>
+      )
+    }
+
+    if (ageBlocked(user, privateUser)) {
+      return (
+        <View style={styles.container}>
+          <View style={styles.content}>
+            <Text style={styles.emoji}>⚠️</Text>
+            <Text style={styles.title}>Age Verification Failed</Text>
+            <Text style={styles.message}>
+              You must be 18 or older to participate in sweepstakes markets.
+            </Text>
+            <Button onPress={() => router.replace('/')} title="Return Home" />
+          </View>
+        </View>
+      )
+    }
+
+    if (documentsFailed(user, privateUser)) {
+      return (
+        <View style={styles.container}>
+          <View style={styles.content}>
+            <Text style={styles.emoji}>📄</Text>
+            <Text style={styles.title}>Document Verification Failed</Text>
+            <Text style={styles.message}>
+              There were errors with your documents. Please upload your
+              documents again.
+            </Text>
+            <Button
+              onPress={() => setPage('documents')}
+              title="Upload Documents"
+            />
+          </View>
+        </View>
+      )
+    }
+
+    if (user.kycDocumentStatus === 'pending') {
       return (
         <View style={styles.container}>
           <View style={styles.content}>
@@ -443,7 +480,7 @@ export const RegistrationPage = (props: {
               We're reviewing your documents. This usually takes a few minutes,
               but may take up to 24 hours. Please check back later.
             </Text>
-            <Button onPress={() => router.push('/home')} title="Return Home" />
+            <Button onPress={() => router.replace('/')} title="Return Home" />
           </View>
         </View>
       )
