@@ -22,6 +22,7 @@ import {
   documentsFailed,
 } from 'common/gidx/user'
 import { PrivateUser, User } from 'common/user'
+import { usePersistentInMemoryState } from 'client-common/hooks/use-persistent-in-memory-state'
 
 export const RegistrationPage = (props: {
   user: User
@@ -29,21 +30,21 @@ export const RegistrationPage = (props: {
 }) => {
   const user = useUser() ?? props.user
   const privateUser = usePrivateUser() ?? props.privateUser
+
   const router = useRouter()
-  const [page, setPage] = useState(
-    user?.idVerified ||
-      user?.kycDocumentStatus === 'pending' ||
-      user?.kycDocumentStatus === 'fail'
-      ? 'final'
-      : 'intro'
-  )
+  const [page, setPage] = useState(() => {
+    if (user?.idVerified) return 'final'
+    if (user?.kycDocumentStatus === 'pending') return 'final'
+    if (user?.kycDocumentStatus === 'fail') return 'documents'
+    return 'intro'
+  })
 
   const [loading, setLoading] = useState(false)
   const [locationError, setLocationError] = useState<string | undefined>()
   const [error, setError] = useState<string | null>(null)
   const [identityErrors, setIdentityErrors] = useState(0)
 
-  const [userInfo, setUserInfo] = useState<{
+  const [userInfo, setUserInfo] = usePersistentInMemoryState<{
     FirstName?: string
     LastName?: string
     DateOfBirth?: string
@@ -55,12 +56,15 @@ export const RegistrationPage = (props: {
     DeviceGPS?: GPSData
     EmailAddress?: string
     ReferralCode?: string
-  }>({
-    FirstName: user?.name.split(' ')[0],
-    LastName: user?.name.split(' ')[1],
-    DateOfBirth: undefined,
-    EmailAddress: privateUser?.email,
-  })
+  }>(
+    {
+      FirstName: user?.name.split(' ')[0],
+      LastName: user?.name.split(' ')[1],
+      DateOfBirth: undefined,
+      EmailAddress: privateUser?.email,
+    },
+    'user-registration-info'
+  )
 
   const requiredKeys = [
     'FirstName',
@@ -107,6 +111,12 @@ export const RegistrationPage = (props: {
         setError('Please sign in to continue.')
         return
       }
+      if (!idVerified && identityErrors >= 2 && page !== 'documents') {
+        setPage('documents')
+      }
+      if (!idVerified) {
+        setIdentityErrors(identityErrors + 1)
+      }
 
       if (fraudSession(user, privateUser)) {
         setError(
@@ -143,10 +153,6 @@ export const RegistrationPage = (props: {
       }
 
       if (documentsFailed(user, privateUser)) {
-        if (identityErrors >= 2 && page !== 'documents') {
-          setPage('documents')
-        }
-        setIdentityErrors(identityErrors + 1)
         setError(
           'Document verification failed. Please try uploading your documents again.'
         )
@@ -405,25 +411,43 @@ export const RegistrationPage = (props: {
       />
     )
   }
-  if (page === 'final' && user?.idVerified) {
-    return (
-      <View style={styles.container}>
-        <View style={styles.content}>
-          <Text style={styles.emoji}>🎉</Text>
-          <Text style={styles.title}>Identity Verification Complete!</Text>
-          <Text style={styles.message}>
-            Hooray! Now you can participate in sweepstakes markets. We sent you
-            ${KYC_VERIFICATION_BONUS_CASH / 100} to get started.
-          </Text>
-          <View style={styles.loadingRow}>
-            <ActivityIndicator size="small" color={Colors.blue} />
-            <Text style={styles.loadingText}>
-              Exiting through the gift shop...
+  if (page === 'final') {
+    if (user?.idVerified) {
+      return (
+        <View style={styles.container}>
+          <View style={styles.content}>
+            <Text style={styles.emoji}>🎉</Text>
+            <Text style={styles.title}>Identity Verification Complete!</Text>
+            <Text style={styles.message}>
+              Hooray! Now you can participate in sweepstakes markets. We sent
+              you ${KYC_VERIFICATION_BONUS_CASH / 100} to get started.
             </Text>
+            <View style={styles.loadingRow}>
+              <ActivityIndicator size="small" color={Colors.blue} />
+              <Text style={styles.loadingText}>
+                Exiting through the gift shop...
+              </Text>
+            </View>
           </View>
         </View>
-      </View>
-    )
+      )
+    }
+
+    if (user?.kycDocumentStatus === 'pending') {
+      return (
+        <View style={styles.container}>
+          <View style={styles.content}>
+            <Text style={styles.emoji}>📋</Text>
+            <Text style={styles.title}>Document Verification Pending</Text>
+            <Text style={styles.message}>
+              We're reviewing your documents. This usually takes a few minutes,
+              but may take up to 24 hours. Please check back later.
+            </Text>
+            <Button onPress={() => router.push('/home')} title="Return Home" />
+          </View>
+        </View>
+      )
+    }
   }
 
   return null
