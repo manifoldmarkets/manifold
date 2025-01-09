@@ -7,7 +7,6 @@ import { Repost } from 'common/repost'
 import { PrivateUser, User } from 'common/user'
 import { formatWithToken, shortFormatNumber } from 'common/util/format'
 import { removeUndefinedProps } from 'common/util/object'
-import { richTextToString } from 'common/util/parse'
 import router from 'next/router'
 import { memo, useState } from 'react'
 import { TbDropletHeart, TbMoneybag } from 'react-icons/tb'
@@ -280,7 +279,6 @@ export const BottomActionRow = (props: {
           user={user}
           contentType={'comment'}
           size={'xs'}
-          contentText={richTextToString(comment.content)}
           disabled={isBlocked(privateUser, comment.userId)}
           trackingLocation={'feed'}
           contractId={contract.id}

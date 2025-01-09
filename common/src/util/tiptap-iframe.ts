@@ -109,7 +109,7 @@ export default Node.create<IframeOptions>({
           const node = this.type.create(options)
 
           if (dispatch) {
-            tr.replaceRangeWith(selection.from, selection.to, node)
+            tr.replaceRangeWith(selection.from, selection.to, node as any)
           }
 
           return true

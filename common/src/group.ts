@@ -1,5 +1,5 @@
 import { Row } from './supabase/utils'
-import { JSONContent } from '@tiptap/core'
+import { type JSONContent } from '@tiptap/core'
 import { z, ZodRawShape } from 'zod'
 import { contentSchema, coerceBoolean } from './api/zod-types'
 import { pick } from 'lodash'

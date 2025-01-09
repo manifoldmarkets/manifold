@@ -20,7 +20,7 @@ import { getAnswer } from 'shared/supabase/answers'
 import { anythingToRichText } from 'shared/tiptap'
 import { getCommentsDirect } from 'shared/supabase/contract-comments'
 import { updateMarketContinuation } from './update-market'
-import { JSONContent } from '@tiptap/core'
+import { type JSONContent } from '@tiptap/core'
 import { cloneDeep } from 'lodash'
 import { track } from 'shared/analytics'
 import { DEV_HOUSE_LIQUIDITY_PROVIDER_ID } from 'common/antes'
@@ -238,7 +238,7 @@ ${richTextToString(comment.content)}
 
 SYSTEM: Please analyze if the creator's latest comment ${
     commentsContext ? '(in context of the comment thread)' : ''
-  } is clarifying or adding important details about how the market will be resolved, that is not already covered by the market's description/question title. 
+  } is clarifying or adding important details about how the market will be resolved, that is not already covered by the market's description/question title.
 Only choose to issue a clarification if the creator's comment is unambiguously changing the resolution criteria as outlined in the description/question.
 If the creator says that they're going to update the description themselves, or they indicate their comment ${
     commentsContext ? '(or their comments in the thread)' : ''

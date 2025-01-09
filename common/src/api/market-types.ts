@@ -1,4 +1,4 @@
-import { JSONContent } from '@tiptap/core'
+import { type JSONContent } from '@tiptap/core'
 import { Answer, MAX_ANSWERS } from 'common/answer'
 import { getAnswerProbability, getProbability } from 'common/calculate'
 import {

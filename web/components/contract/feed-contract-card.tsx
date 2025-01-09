@@ -414,7 +414,6 @@ const BottomActionRow = (props: {
           contentCreatorId={contract.creatorId}
           user={user}
           contentType={'contract'}
-          contentText={question}
           size={'xs'}
           trackingLocation={'contract card (feed)'}
           placement="top"

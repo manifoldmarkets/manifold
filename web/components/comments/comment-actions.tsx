@@ -159,7 +159,6 @@ export function LikeAndDislikeComment(props: {
         user={user}
         contentType={'comment'}
         size={'xs'}
-        contentText={richTextToString(comment.content)}
         disabled={isBlocked(privateUser, comment.userId)}
         trackingLocation={trackingLocation}
         iconType={'thumb'}
@@ -175,7 +174,6 @@ export function LikeAndDislikeComment(props: {
         user={user}
         contentType={'comment'}
         size={'xs'}
-        contentText={richTextToString(comment.content)}
         disabled={isBlocked(privateUser, comment.userId)}
         trackingLocation={trackingLocation}
         iconType={'thumb'}

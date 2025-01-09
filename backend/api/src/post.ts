@@ -5,7 +5,7 @@ import { createCommentOnContractInternal } from 'api/create-comment'
 import { ContractComment } from 'common/comment'
 import { removeUndefinedProps } from 'common/util/object'
 import { trackPublicEvent } from 'shared/analytics'
-import { JSONContent } from '@tiptap/core'
+import { type JSONContent } from '@tiptap/core'
 import { createSupabaseDirectClient } from 'shared/supabase/init'
 
 export const post: APIHandler<'post'> = async (props, auth) => {

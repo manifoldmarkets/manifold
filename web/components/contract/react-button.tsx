@@ -33,7 +33,6 @@ export const ReactButton = memo(function ReactButton(props: {
   contentCreatorId: string
   user: User | null | undefined
   contentType: ReactionContentTypes
-  contentText: string
   trackingLocation: string
   className?: string
   placement?: 'top' | 'bottom'
@@ -55,7 +54,6 @@ export const ReactButton = memo(function ReactButton(props: {
     contentType,
     contentCreatorId,
     contentId,
-    contentText,
     className,
     trackingLocation,
     placement = 'bottom',
@@ -278,7 +276,6 @@ export const ReactButton = memo(function ReactButton(props: {
           user={user}
           userReacted={reacted}
           setOpen={setModalOpen}
-          titleName={contentText}
           reactionType={reactionType}
         />
       )}

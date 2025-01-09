@@ -48,7 +48,6 @@ export function ContractSummaryStats(props: {
               contentId={contractId}
               contentType="contract"
               contentCreatorId={creatorId}
-              contentText={question}
               trackingLocation={'contract page'}
             />
           )}

@@ -1,4 +1,4 @@
-import { JSONContent } from '@tiptap/core'
+import { type JSONContent } from '@tiptap/core'
 import { Row, convertSQLtoTS, tsToMillis } from './supabase/utils'
 
 export const MAX_DASHBOARD_TITLE_LENGTH = 40

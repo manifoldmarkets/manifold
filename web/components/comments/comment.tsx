@@ -1,6 +1,5 @@
 import clsx from 'clsx'
 import { memo, ReactNode, useEffect, useMemo, useRef, useState } from 'react'
-
 import { Bet } from 'common/bet'
 import { ContractComment } from 'common/comment'
 import { Contract } from 'common/contract'

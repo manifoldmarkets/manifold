@@ -11,7 +11,7 @@ import { isAdminId } from 'common/envs/constants'
 import { createSupabaseDirectClient } from 'shared/supabase/init'
 import { updateContract } from 'shared/supabase/contracts'
 import { Contract } from 'common/contract'
-import { JSONContent } from '@tiptap/core'
+import { type JSONContent } from '@tiptap/core'
 
 export const updateMarket: APIHandler<'market/:contractId/update'> = async (
   body,

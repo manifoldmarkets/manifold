@@ -1,4 +1,4 @@
-import { JSONContent } from '@tiptap/core'
+import { type JSONContent } from '@tiptap/core'
 import { Answer } from './answer'
 import { getMultiCpmmLiquidity } from './calculate-cpmm'
 import { computeBinaryCpmmElasticityFromAnte } from './calculate-metrics'

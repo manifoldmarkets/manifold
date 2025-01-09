@@ -5,7 +5,7 @@ import {
   Node,
   JSONContent,
 } from '@tiptap/core'
-import { Node as ProseMirrorNode } from 'prosemirror-model'
+import { Node as ProseMirrorNode } from '@tiptap/pm/model'
 import { StarterKit } from '@tiptap/starter-kit'
 import { Image } from '@tiptap/extension-image'
 import { Link } from '@tiptap/extension-link'
@@ -77,6 +77,7 @@ export const extensions = [
 const extensionSchema = getSchema(extensions)
 const extensionSerializers = getTextSerializersFromSchema(extensionSchema)
 
+// see https://github.com/ueberdosis/tiptap/blob/4d28af43dc816e6255bf46abf0fcbaf4468db923/packages/core/src/helpers/generateText.ts
 export function richTextToString(text?: JSONContent) {
   if (!text) return ''
   try {
