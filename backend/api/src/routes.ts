@@ -152,7 +152,6 @@ import { isSportsInterested } from './is-sports-bettor'
 import { getSportsGames } from './get-sports-games'
 import { getMarketProps } from './get-market-props'
 import { getUserContractMetricsWithContracts } from './get-user-contract-metrics-with-contracts'
-import { getLiveScores } from './get-completed-sports-games'
 
 // we define the handlers in this object in order to typecheck that every API has a handler
 export const handlers: { [k in APIPath]: APIHandler<k> } = {
@@ -320,7 +319,6 @@ export const handlers: { [k in APIPath]: APIHandler<k> } = {
   'get-site-activity': getSiteActivity,
   'is-sports-interested': isSportsInterested,
   'get-sports-games': getSportsGames,
-  'get-live-scores': getLiveScores,
   'get-market-props': getMarketProps,
   'get-user-contract-metrics-with-contracts':
     getUserContractMetricsWithContracts,

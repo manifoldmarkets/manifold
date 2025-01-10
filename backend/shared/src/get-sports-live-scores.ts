@@ -1,8 +1,7 @@
-import { type APIHandler } from './helpers/endpoint'
 import { SportsGames } from 'common/sports-info'
 import { log } from 'shared/utils'
 
-export const getLiveScores: APIHandler<'get-live-scores'> = async () => {
+export async function getLiveScores(): Promise<SportsGames[]> {
   const API_URL = 'https://www.thesportsdb.com/api/v2/json/livescore/all'
   const apiKey = process.env.SPORTSDB_KEY
 
@@ -24,17 +23,12 @@ export const getLiveScores: APIHandler<'get-live-scores'> = async () => {
     }
 
     const data = await response.json()
-    const schedule: SportsGames[] = data?.schedule
+    const schedule: SportsGames[] = data?.schedule || []
 
-    if (schedule?.length) {
-      log(`Fetched ${schedule.length} games from the endpoint.`)
-      return { schedule }
-    } else {
-      log('No games found in the API response.')
-      return { schedule: [] }
-    }
+    log(`Fetched ${schedule.length} games from the endpoint.`)
+    return schedule
   } catch (error) {
     log(`Error fetching live and recently completed games: ${error}`)
-    return { schedule: [] }
+    return []
   }
 }

@@ -3,15 +3,13 @@ import { log } from 'shared/utils'
 import { Contract, CPMMMultiContract } from 'common/contract'
 import { HOUSE_LIQUIDITY_PROVIDER_ID } from 'common/antes'
 import { resolveMarketHelper } from 'shared/resolve-market-helpers'
-import { SportsGames } from 'common/sports-info'
-import { api } from 'web/lib/api/api'
+import { getLiveScores } from 'shared/get-sports-live-scores'
 
 export async function resolveSportsMarkets() {
   const pg = createSupabaseDirectClient()
 
   try {
-    const data = await api('get-live-scores', {})
-    const liveGames = (data.schedule || []) as SportsGames[]
+    const liveGames = await getLiveScores()
 
     const completedGames = liveGames.filter((game) => game.strStatus === 'FT')
     log(`Processing ${completedGames.length} completed games.`)
