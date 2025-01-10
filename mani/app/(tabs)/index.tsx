@@ -33,37 +33,44 @@ const TOP_LEVEL_TABS = [
   },
 ]
 
-const SPORTS_TABS = [
-  {
-    title: 'NFL',
-    content: <Feed tab="NFL" />,
-    iconName: 'football',
-  },
-  {
-    title: 'NBA',
-    content: <Feed tab="NBA" />,
-    iconName: 'basketball',
-  },
-  {
-    title: 'EPL',
-    content: <Feed tab="EPL" />,
-    iconName: 'soccerball',
-  },
-  {
-    title: 'MLB',
-    content: <Feed tab="MLB" />,
-    iconName: 'baseball',
-  },
-  {
-    title: 'NHL',
-    content: <Feed tab="NHL" />,
-    iconName: 'hockey.puck',
-  },
-]
-
 export default function HomeScreen() {
   const [activeIndex, setActiveIndex] = useState(0)
   const [activeSportsIndex, setActiveSportsIndex] = useState(0)
+
+  const SPORTS_TABS = [
+    {
+      title: 'Back',
+      content: null,
+      iconName: 'chevron.left',
+      isBackButton: true,
+      onPress: () => setActiveIndex(0),
+    },
+    {
+      title: 'NFL',
+      content: <Feed tab="NFL" />,
+      iconName: 'football',
+    },
+    {
+      title: 'NBA',
+      content: <Feed tab="NBA" />,
+      iconName: 'basketball',
+    },
+    {
+      title: 'EPL',
+      content: <Feed tab="EPL" />,
+      iconName: 'soccerball',
+    },
+    {
+      title: 'MLB',
+      content: <Feed tab="MLB" />,
+      iconName: 'baseball',
+    },
+    {
+      title: 'NHL',
+      content: <Feed tab="NHL" />,
+      iconName: 'hockey.puck',
+    },
+  ]
 
   const sportsIndex = TOP_LEVEL_TABS.findIndex((tab) => tab.title === 'Sports')
   const isSports = activeIndex === sportsIndex

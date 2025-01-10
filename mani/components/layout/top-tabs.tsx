@@ -15,10 +15,10 @@ export type TopTab = {
   title: string
   titleElement?: ReactNode
   queryString?: string
-  iconName?: string // Optional icon
+  iconName?: string
   iconClassName?: string
   onPress?: () => void
-  content: ReactNode
+  content: ReactNode | null
   prerender?: boolean
 }
 
@@ -63,6 +63,9 @@ export function ControlledTopTabs(props: ControlledTopTabsProps) {
     }
   }, [activeIndex, tabPositions])
 
+  const isButton = (tab: TopTab) =>
+    tab.content === null && tab.onPress !== undefined
+
   return (
     <Col>
       <ScrollView
@@ -79,21 +82,28 @@ export function ControlledTopTabs(props: ControlledTopTabsProps) {
           <Pressable
             key={tab.queryString ?? tab.title}
             onPress={() => {
-              onActiveIndexChange(i)
-              tab.onPress?.()
+              if (isButton(tab)) {
+                tab.onPress?.()
+              } else {
+                onActiveIndexChange(i)
+                tab.onPress?.()
+              }
             }}
             onLayout={(e: LayoutChangeEvent) => {
-              const { width, x } = e.nativeEvent.layout
-              setTabWidths((prev) => {
-                const newWidths = [...prev]
-                newWidths[i] = width
-                return newWidths
-              })
-              setTabPositions((prev) => {
-                const newPositions = [...prev]
-                newPositions[i] = x
-                return newPositions
-              })
+              // Only measure non-button tabs for the indicator
+              if (!isButton(tab)) {
+                const { width, x } = e.nativeEvent.layout
+                setTabWidths((prev) => {
+                  const newWidths = [...prev]
+                  newWidths[i] = width
+                  return newWidths
+                })
+                setTabPositions((prev) => {
+                  const newPositions = [...prev]
+                  newPositions[i] = x
+                  return newPositions
+                })
+              }
             }}
             style={{
               paddingVertical: 8,
@@ -104,13 +114,25 @@ export function ControlledTopTabs(props: ControlledTopTabsProps) {
               {tab.iconName && (
                 <IconSymbol
                   name={tab.iconName as IconSymbolName}
-                  color={activeIndex === i ? color.primary : color.textTertiary}
+                  color={
+                    isButton(tab)
+                      ? color.textTertiary
+                      : activeIndex === i
+                      ? color.primary
+                      : color.textTertiary
+                  }
                 />
               )}
               <ThemedText
                 size="md"
                 weight="medium"
-                color={activeIndex === i ? color.primary : color.textTertiary}
+                color={
+                  isButton(tab)
+                    ? color.textTertiary
+                    : activeIndex === i
+                    ? color.primary
+                    : color.textTertiary
+                }
               >
                 {tab.titleElement ?? tab.title}
               </ThemedText>
@@ -118,7 +140,7 @@ export function ControlledTopTabs(props: ControlledTopTabsProps) {
           </Pressable>
         ))}
 
-        {/* Single animated indicator */}
+        {/* Single animated indicator - only show for non-button tabs */}
         <Animated.View
           style={{
             position: 'absolute',
@@ -127,6 +149,7 @@ export function ControlledTopTabs(props: ControlledTopTabsProps) {
             backgroundColor: color.primary,
             width: tabWidths[activeIndex] || 0,
             transform: [{ translateX }],
+            opacity: tabs[activeIndex]?.content === null ? 0 : 1,
           }}
         />
       </ScrollView>
