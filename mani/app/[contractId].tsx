@@ -77,7 +77,7 @@ function ContractPageContent({ contractId }: ContractPageContentProps) {
   return (
     <Page nonScrollableChildren={<ContentEditor onChange={() => {}} />}>
       <Col style={{ gap: 16, position: 'relative' }}>
-        {!isSports && !isBinaryMc && (
+        {!(isSports && isBinaryMc) && (
           <ThemedText
             size={
               contract.question.length > LARGE_QUESTION_LENGTH ? 'xl' : '2xl'

@@ -41,20 +41,29 @@ export function MultiBinaryBetButtons({
             key={answer.id}
             style={{ alignItems: 'center', gap: 8, flex: 1 }}
           >
-            {answer.imageUrl && (
-              <Image
-                source={{ uri: answer.imageUrl }}
-                style={{ width: 40, height: 40 }}
-              />
-            )}
-            {isSports && (
-              <ThemedText size="md" color={color.text} weight="semibold">
-                {answer.text}
-              </ThemedText>
-            )}
+            <Col style={{ alignItems: 'center', flex: 1, gap: 8 }}>
+              {answer.imageUrl && (
+                <Image
+                  source={{ uri: answer.imageUrl }}
+                  style={{ width: 40, height: 40 }}
+                />
+              )}
+              <Col style={{ flex: 1, justifyContent: 'center' }}>
+                {isSports && (
+                  <ThemedText
+                    size="md"
+                    color={color.text}
+                    weight="semibold"
+                    style={{ textAlign: 'center' }}
+                  >
+                    {answer.text}
+                  </ThemedText>
+                )}
+              </Col>
+            </Col>
             <Button
               onPress={() => handleBetClick(i === 0 ? 'YES' : 'NO', i)}
-              style={{ flex: 1, width: '100%' }}
+              style={{ width: '100%' }}
               variant="gray"
               textProps={{
                 weight: 'normal',
