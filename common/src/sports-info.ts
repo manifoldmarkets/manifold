@@ -9,6 +9,8 @@ export interface SportsGames {
   strEvent: string
   strHomeTeam: string
   strAwayTeam: string
+  homeScore: string
+  awayScore: string
   dateEvent: string
   strTime: string
   strTimestamp: string

@@ -69,6 +69,7 @@ import { JSONContent } from '@tiptap/core'
 import { Task, TaskCategory } from 'common/todo'
 import { ChartAnnotation } from 'common/supabase/chart-annotations'
 import { Dictionary } from 'lodash'
+import { SportsGames } from 'common/sports-info'
 // mqp: very unscientific, just balancing our willingness to accept load
 // with user willingness to put up with stale data
 export const DEFAULT_CACHE_STRATEGY =
@@ -2020,6 +2021,13 @@ export const API = (_apiTypeCheck = {
     visibility: 'public',
     authed: true,
     returns: {} as { schedule: any[] },
+    props: z.object({}).strict(),
+  },
+  'get-completed-sports-games': {
+    method: 'GET',
+    visibility: 'public',
+    authed: false,
+    returns: {} as { schedule: SportsGames[] },
     props: z.object({}).strict(),
   },
   'get-market-props': {
