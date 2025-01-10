@@ -24,6 +24,7 @@ export const shortAiBenchmarkContractIds = [
   'BcJbQTDX1rdmaLYGKUOz',
   'osbD00CDUgcQGPHhH0mn',
   '7yaoogxozx',
+  'INyzgSlIAq',
 ]
 
 export const longAiBenchmarkContractIds = [
@@ -64,6 +65,7 @@ export const aiCompaniesContractIds = [
   'RB1446KxI8aNMAiaIEDl',
   'a9QwFRF9xYWbjhGi4dde',
   '1m08c366fh',
+  'cnowgnMl9y1YEhE32NUG',
 ]
 
 export async function getAiContracts(): Promise<{
