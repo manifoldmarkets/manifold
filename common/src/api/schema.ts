@@ -2023,7 +2023,7 @@ export const API = (_apiTypeCheck = {
     returns: {} as { schedule: any[] },
     props: z.object({}).strict(),
   },
-  'get-completed-sports-games': {
+  'get-live-scores': {
     method: 'GET',
     visibility: 'public',
     authed: false,

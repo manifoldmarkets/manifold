@@ -10,7 +10,7 @@ export async function resolveSportsMarkets() {
   const pg = createSupabaseDirectClient()
 
   try {
-    const data = await api('get-completed-sports-games', {})
+    const data = await api('get-live-scores', {})
     const completedGames = (data.schedule || []) as SportsGames[]
     log(`Processing ${completedGames.length} completed games.`)
 
