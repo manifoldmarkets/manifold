@@ -1,20 +1,26 @@
-import type { PropsWithChildren } from 'react'
 import { StyleSheet, View } from 'react-native'
 import Animated, { useAnimatedRef } from 'react-native-reanimated'
-import { SliderHeader } from './layout/slider-header'
+import { TokenToggleHeader } from './layout/token-toggle-header'
 import { useBottomTabOverflow } from './ui/tab-bar-background.ios'
 import { ThemedView } from './themed-view'
 import { Colors } from 'constants/colors'
 import { usePathname } from 'expo-router'
 
 const HEADER_HEIGHT = 250
+export const PAGE_PADDING = 20
 
 export const TabPaths = ['/', '/live', '/notifications', '/shop', 'profile']
 export function isTabPath(pathname: string) {
   return TabPaths.includes(pathname)
 }
 
-export default function Page({ children }: PropsWithChildren) {
+export default function Page({
+  children,
+  nonScrollableChildren,
+}: {
+  children: React.ReactNode
+  nonScrollableChildren?: React.ReactNode
+}) {
   const scrollRef = useAnimatedRef<Animated.ScrollView>()
   const pathname = usePathname()
   const isInTabs = isTabPath(pathname)
@@ -22,18 +28,18 @@ export default function Page({ children }: PropsWithChildren) {
 
   return (
     <View style={styles.container}>
-      <SliderHeader />
+      <TokenToggleHeader />
       <Animated.ScrollView
         ref={scrollRef}
         scrollEventThrottle={16}
         scrollIndicatorInsets={{ bottom }}
         contentContainerStyle={{ paddingBottom: bottom }}
-        
       >
         <ThemedView style={styles.content}>
           <View style={styles.contentPadding}>{children}</View>
         </ThemedView>
       </Animated.ScrollView>
+      {nonScrollableChildren}
     </View>
   )
 }
@@ -50,8 +56,9 @@ const styles = StyleSheet.create({
     flex: 1,
     gap: 16,
     overflow: 'hidden',
+    paddingBottom: 60,
   },
   contentPadding: {
-    paddingHorizontal: 20,
+    paddingHorizontal: PAGE_PADDING,
   },
 })

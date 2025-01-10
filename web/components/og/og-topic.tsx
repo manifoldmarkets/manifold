@@ -11,8 +11,7 @@ export type OgTopicProps = {
 
 export function OgTopic(props: OgTopicProps) {
   const { name, totalMembers } = props
-  const topQuestions =
-    props.topQuestions?.split(',').map((q) => decodeURIComponent(q)) ?? []
+  const topQuestions = props.topQuestions?.split(',') ?? []
 
   return (
     <div
@@ -25,15 +24,15 @@ export function OgTopic(props: OgTopicProps) {
         {name} {topQuestions.length > 0 ? 'odds on' : ''}
       </div>
 
-      <div className="mt-2 flex flex-col">
+      <div className="mt-2 flex max-h-[150px] flex-col overflow-hidden">
         {topQuestions.map((question, i) => (
-          <div key={i} className="mt-1 flex text-xl text-gray-50">
+          <div key={i} className="mb-2 flex text-xl leading-tight text-gray-50">
             {question}
           </div>
         ))}
       </div>
       {topQuestions.length > 0 && (
-        <div className="mt-2 flex text-sm text-gray-300">and more!</div>
+        <div className="mt-1 flex text-sm text-gray-300">and more!</div>
       )}
 
       <div className="mt-auto flex w-full flex-row items-center justify-between text-lg">

@@ -6,6 +6,8 @@ import { IconSymbol } from 'components/ui/icon-symbol'
 import { ThemedText } from 'components/themed-text'
 import { Col } from './col'
 import RNModal from 'react-native-modal'
+import { TokenToggleHeader } from './token-toggle-header'
+import { Spacer } from './spacer'
 
 type ModalProps = {
   isOpen: boolean
@@ -13,6 +15,7 @@ type ModalProps = {
   children: ReactNode
   mode?: 'back' | 'close'
   title?: string
+  showHeader?: boolean
 }
 
 export function Modal({
@@ -21,6 +24,7 @@ export function Modal({
   children,
   mode = 'close',
   title,
+  showHeader = false,
 }: ModalProps) {
   const color = useColor()
   return (
@@ -28,11 +32,18 @@ export function Modal({
       isVisible={isOpen}
       onBackdropPress={onClose}
       animationIn={mode == 'close' ? 'slideInUp' : 'slideInRight'}
-      animationOut={mode == 'close' ? 'slideOutUp' : 'slideOutRight'}
+      animationOut={mode == 'close' ? 'slideOutDown' : 'slideOutRight'}
       style={{ margin: 0 }}
     >
       <View style={{ flex: 1, backgroundColor: color.background }}>
         <SafeAreaView style={{ flex: 1 }}>
+          {/* TODO: LOW PRIORITY - make modal either actually be or appear to be under the modal */}
+          {showHeader && (
+            <Col>
+              <TokenToggleHeader />
+              <Spacer h={4} />
+            </Col>
+          )}
           <View
             style={{
               flex: 1,

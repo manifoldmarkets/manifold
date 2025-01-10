@@ -1,5 +1,9 @@
 import { Answer } from 'common/answer'
-import { CPMMMultiContract, MultiContract } from 'common/contract'
+import {
+  CPMMMultiContract,
+  getMainBinaryMCAnswer,
+  MultiContract,
+} from 'common/contract'
 import { Button, SizeType } from 'web/components/buttons/button'
 import { useState } from 'react'
 import { formatPercent } from 'common/util/format'
@@ -112,7 +116,8 @@ function BinaryMultiChoiceBetPanel(props: {
   const color = getAnswerColor(answer)
   const user = useUser()
   const canEdit = canEditAnswer(answer, contract, user)
-
+  const mainAnswer = getMainBinaryMCAnswer(contract)!
+  const otherAnswer = contract.answers.find((a) => a.id !== mainAnswer.id)!
   return (
     <BuyPanelBody
       contract={contract}
@@ -120,6 +125,16 @@ function BinaryMultiChoiceBetPanel(props: {
         answers: contract.answers,
         answerToBuy: contract.answers[0],
         answerText: answer.text,
+      }}
+      pseudonym={{
+        YES: {
+          pseudonymName: mainAnswer.text,
+          pseudonymColor: 'azure',
+        },
+        NO: {
+          pseudonymName: otherAnswer.text,
+          pseudonymColor: 'sienna',
+        },
       }}
       outcome={outcome}
       setOutcome={setOutcome}

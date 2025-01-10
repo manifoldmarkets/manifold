@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 import { APIParams, APIPath, APIResponse } from 'common/api/schema'
 import { usePersistentInMemoryState } from './use-persistent-in-memory-state'
 import { useEvent } from './use-event'
-import { apiWithAuth, apiWithoutAuth } from '../lib/api'
+import { apiWithoutAuth } from '../lib/api'
 import { APIError } from 'common/api/utils'
 const promiseCache: Record<string, Promise<any> | undefined> = {}
 
@@ -20,7 +20,7 @@ export function prepopulateCache<P extends APIPath>(
 export const useAPIGetterWithCall = <P extends APIPath>(
   path: P,
   props: APIParams<P> | undefined,
-  apiCall: apiWithoutAuth<P>,
+  apiCall: apiWithoutAuth<P>, // we pass the auth from web or mani in the call so it doesn't have to be referenced in this hook
   ignoreDependencies?: string[],
   overrideKey?: string
 ) => {

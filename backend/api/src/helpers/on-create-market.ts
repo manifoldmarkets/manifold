@@ -103,9 +103,9 @@ const uploadAndSetCoverImage = async (
   log('generated dalle image: ' + dalleImage)
 
   // Upload to firestore bucket. if we succeed, update the url. we do this because openAI deletes images after a month
-  const coverImageUrl = await uploadToStorage(
+  const coverImageUrl = await uploadImageToStorage(
     dalleImage,
-    creatorUsername
+    `contract-images/${creatorUsername}`
   ).catch((err) => {
     log.error('Failed to load image', err)
     return null
@@ -115,7 +115,7 @@ const uploadAndSetCoverImage = async (
   await updateContract(pg, contractId, { coverImageUrl })
 }
 
-export const uploadToStorage = async (imgUrl: string, username: string) => {
+export const uploadImageToStorage = async (imgUrl: string, prefix: string) => {
   const response = await fetch(imgUrl)
 
   const arrayBuffer = await response.arrayBuffer()
@@ -128,7 +128,7 @@ export const uploadToStorage = async (imgUrl: string, username: string) => {
   const bucket = admin.storage().bucket()
   await bucket.makePublic()
 
-  const file = bucket.file(`contract-images/${username}/${randomString()}.jpg`)
+  const file = bucket.file(`${prefix}/${randomString()}.jpg`)
 
   return new Promise<string>((resolve, reject) => {
     const stream = file.createWriteStream({

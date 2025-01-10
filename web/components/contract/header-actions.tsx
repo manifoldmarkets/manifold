@@ -10,7 +10,7 @@ import { toast } from 'react-hot-toast'
 import { BiRepost } from 'react-icons/bi'
 import { CgBlock, CgUnblock } from 'react-icons/cg'
 import { FaDroplet } from 'react-icons/fa6'
-import { IoDuplicate, IoRocket } from 'react-icons/io5'
+import { IoDuplicate } from 'react-icons/io5'
 import { MdOutlineReport } from 'react-icons/md'
 import { TiVolumeMute } from 'react-icons/ti'
 import { MenuSeparator } from '@headlessui/react'
@@ -27,7 +27,6 @@ import DropdownMenu from '../widgets/dropdown-menu'
 import { Row } from '../layout/row'
 import { SweepsToggle } from '../sweeps/sweeps-toggle'
 import { getLinkTarget } from '../widgets/linkify'
-import { BoostDialog } from './boost-button'
 import { AddLiquidityModal } from './liquidity-modal'
 import { ContractInfoDialog } from './contract-info-dialog'
 import { WatchMarketModal } from './watch-market-modal'
@@ -54,7 +53,6 @@ export function HeaderActions(props: {
 
   const [detailsOpen, setDetailsOpen] = useState(false)
   const [repostOpen, setRepostOpen] = useState(false)
-  const [boostOpen, setBoostOpen] = useState(false)
   const [reportOpen, setReportOpen] = useState(false)
   const [liquidityOpen, setLiquidityOpen] = useState(false)
 
@@ -152,17 +150,6 @@ export function HeaderActions(props: {
               setRepostOpen(true)
             },
             icon: <BiRepost className="h-5 w-5" />,
-          },
-        ]
-      : []),
-    ...(user && contractOpenAndPublic
-      ? [
-          {
-            name: 'Boost',
-            onClick: () => {
-              setBoostOpen(true)
-            },
-            icon: <IoRocket className="h-5 w-5" />,
           },
         ]
       : []),
@@ -294,11 +281,6 @@ export function HeaderActions(props: {
           setOpen={setRepostOpen}
         />
       )}
-      <BoostDialog
-        contract={currentContract}
-        isOpen={boostOpen}
-        setOpen={setBoostOpen}
-      />
       {addLiquidityEnabled && (
         <AddLiquidityModal
           contract={currentContract}

@@ -102,6 +102,8 @@ export type Contract<T extends AnyContractType = AnyContractType> = {
   sportsEventId?: string
   sportsLeague?: string
 
+  takerAPIOrdersDisabled?: boolean
+
   // Manifold.love
   loverUserId1?: string // The user id's of the pair of lovers referenced in the question.
   loverUserId2?: string // The user id's of the pair of lovers referenced in the question.
@@ -356,6 +358,8 @@ export const isBinaryMulti = (contract: Contract) =>
   contract.addAnswersMode === 'DISABLED' &&
   contract.shouldAnswersSumToOne
 // contract.createdTime > 1708574059795 // In case we don't want to convert pre-commit contracts
+
+export const isSportsContract = (contract: Contract) => contract.sportsEventId
 
 export const getMainBinaryMCAnswer = (contract: Contract) =>
   isBinaryMulti(contract) && contract.mechanism === 'cpmm-multi-1'

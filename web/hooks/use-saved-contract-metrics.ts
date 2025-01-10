@@ -11,7 +11,9 @@ import { useEvent } from 'client-common/hooks/use-event'
 import { useApiSubscription } from 'client-common/hooks/use-api-subscription'
 import { calculateUpdatedMetricsForContracts } from 'common/calculate-metrics'
 import { useUser } from './use-user'
-import { useBatchedGetter } from './use-batched-getter'
+
+import { useBatchedGetter } from 'client-common/hooks/use-batched-getter'
+import { queryHandlers } from 'web/lib/supabase/batch-query-handlers'
 
 export const useSavedContractMetrics = (
   contract: Contract,
@@ -59,7 +61,7 @@ export const useAllSavedContractMetrics = (
 
   useEffect(() => {
     refreshMyMetrics()
-  }, [user?.id, contract.id, answerId])
+  }, [user?.id, contract.id, answerId, contract.resolution])
 
   useApiSubscription({
     topics: [`contract/${contract.id}/user-metrics/${user?.id}`],
@@ -125,6 +127,7 @@ export const useTopContractMetrics = (props: {
 export const useHasContractMetrics = (contractId: string) => {
   const user = useUser()
   const [hasMetric] = useBatchedGetter<boolean>(
+    queryHandlers,
     'contract-metrics',
     contractId,
     false,

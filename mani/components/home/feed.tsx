@@ -1,58 +1,38 @@
 import { APIParams } from 'common/api/schema'
 import { FeedCard } from 'components/contract/feed-card'
 import { Col } from 'components/layout/col'
-import { api } from 'lib/api'
-import { useEffect, useState } from 'react'
-import { usePersistentInMemoryState } from 'client-common/hooks/use-persistent-in-memory-state'
-import { uniqBy } from 'lodash'
+import { useEffect, useMemo, useState } from 'react'
 import { Text } from 'components/text'
 import { View } from 'react-native'
-import { Contract } from 'common/contract'
-import { useTokenMode } from 'hooks/use-token-mode'
+import { useAPIGetter } from 'hooks/use-api-getter'
+import { getDefinedContract, pairContracts } from 'lib/contracts'
+
 function MarketsList(props: { fetchProps: APIParams<'search-markets-full'> }) {
   const { fetchProps } = props
   const limit = 10
-  const [loading, setLoading] = useState(false)
-  const { token } = useTokenMode()
-
-  const [data, setData] = usePersistentInMemoryState<{
-    markets: Contract[]
-    cashOffset: number
-  }>(
-    { markets: [], cashOffset: 0 },
-    `markets-list-${JSON.stringify(fetchProps)}`
+  const [offset, setOffset] = useState(0)
+  const { data, loading } = useAPIGetter(
+    'search-markets-full',
+    {
+      ...fetchProps,
+      limit,
+      token: 'CASH_AND_MANA',
+      offset,
+    },
+    ['offset']
   )
-  // We could also find all the sweeps markets, then when we run out, show mana markets
-  const loadMore = async () => {
-    if (loading) return
-    setLoading(true)
-    try {
-      const cashMarkets = await api('search-markets-full', {
-        ...fetchProps,
-        token,
-        limit,
-        contractType: 'BINARY',
-        offset: data.cashOffset,
-      })
-
-      setData({
-        markets: uniqBy([...data.markets, ...cashMarkets], 'id'),
-        cashOffset: data.cashOffset + cashMarkets.length,
-      })
-    } finally {
-      setTimeout(() => setLoading(false), 50)
-    }
-  }
-
+  const pairs = useMemo(() => pairContracts(data ?? []), [data])
   useEffect(() => {
-    if (data.markets.length === 0) {
-      loadMore()
-    }
-  }, [])
+    if (data?.length) setOffset(data.length)
+  }, [data])
+
   return (
     <Col>
-      {data.markets.map((contract) => (
-        <FeedCard key={contract.id} contract={contract} />
+      {pairs?.map((contractPair) => (
+        <FeedCard
+          key={getDefinedContract(contractPair).id}
+          contractPair={contractPair}
+        />
       ))}
       <View className="relative">{loading && <Text>Loading...</Text>}</View>
     </Col>
@@ -60,45 +40,24 @@ function MarketsList(props: { fetchProps: APIParams<'search-markets-full'> }) {
 }
 
 export function Feed({ tab }: { tab: string }) {
-  // TODO: Grab appropriate contracts for each tab
-  const content = [
-    {
-      title: 'Live Soon',
-      Component: LiveSoonContent,
-    },
-    {
-      title: 'Forecasts',
-      Component: ForecastsContent,
-    },
-    {
-      title: 'NFL',
-      Component: NFLContent,
-    },
-    {
-      title: 'NBA',
-      Component: NBAContent,
-    },
-    {
-      title: 'EPL',
-      Component: EPLContent,
-    },
-    {
-      title: 'MLB',
-      Component: MLBContent,
-    },
-    {
-      title: 'NHL',
-      Component: NHLContent,
-    },
-  ]
+  // TODO: obviously flush this out
   return (
     <Col>
-      {content.map((c) => (
-        <Col key={c.title}>
-          <Text>{c.title}</Text>
-          <c.Component />
-        </Col>
-      ))}
+      {tab == 'live' ? (
+        <LiveSoonContent />
+      ) : tab == 'NFL' ? (
+        <NFLContent />
+      ) : tab == 'NBA' ? (
+        <NBAContent />
+      ) : tab == 'EPL' ? (
+        <EPLContent />
+      ) : tab == 'MLB' ? (
+        <MLBContent />
+      ) : tab == 'NHL' ? (
+        <NHLContent />
+      ) : (
+        <ForecastsContent />
+      )}
     </Col>
   )
 }
@@ -122,7 +81,7 @@ function ForecastsContent() {
       fetchProps={{
         term: '',
         filter: 'open',
-        sort: 'score',
+        sort: 'newest',
         // gids: ALL_IDS,
       }}
     />

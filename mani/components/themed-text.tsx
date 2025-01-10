@@ -93,7 +93,7 @@ const fontWeights = StyleSheet.create({
   },
 })
 
-const fontSizes = StyleSheet.create({
+export const fontSizes = StyleSheet.create({
   xs: {
     fontSize: 12,
     lineHeight: 16,

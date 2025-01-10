@@ -125,6 +125,8 @@ export const convertAnswer = (row: Row<'answers'>): Answer =>
       week: row.prob_change_week ?? 0,
       month: row.prob_change_month ?? 0,
     },
+    imageUrl: row.image_url ?? undefined,
+    shortText: row.short_text ?? undefined,
   })
 
 export const convertContract = <T extends Contract>(c: {

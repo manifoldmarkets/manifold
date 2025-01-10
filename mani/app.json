@@ -22,13 +22,14 @@
     "slug": "mani",
     "owner": "manifold-markets",
     "jsEngine": "hermes",
-    "version": "2.0.54",
+    "version": "2.0.57",
     "orientation": "portrait",
     "icon": "./assets/images/logo.png",
     "userInterfaceStyle": "light",
     "plugins": [
       "./plugins/withAndroidVerifiedLinksWorkaround",
       "expo-font",
+      "expo-location",
       [
         "expo-notifications",
         {
@@ -77,11 +78,14 @@
         "backgroundColor": "#4337C9"
       },
       "package": "com.manifold.mani",
-      "versionCode": 62
+      "versionCode": 65
     },
     "ios": {
       "infoPlist": {
-        "NSCameraUsageDescription": "Pictures can be attached to the content you create."
+        "NSCameraUsageDescription": "Pictures can be attached to the content you create.",
+        "NSLocationAlwaysAndWhenInUseUsageDescription": "Your location is required to verify your identity and ensure compliance with state regulations for sweepstakes participation.",
+        "NSLocationAlwaysUsageDescription": "Your location is required to verify your identity and ensure compliance with state regulations for sweepstakes participation.",
+        "NSLocationWhenInUseUsageDescription": "Your location is required to verify your identity and ensure compliance with state regulations for sweepstakes participation."
       },
       "supportsTablet": true,
       "usesAppleSignIn": true,
@@ -90,7 +94,7 @@
         "applinks:manifold.markets",
         "webcredentials:manifold.markets"
       ],
-      "buildNumber": "1.0.49"
+      "buildNumber": "1.0.52"
     },
     "experiments": {
       "tsconfigPaths": true,

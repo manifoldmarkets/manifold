@@ -52,7 +52,7 @@ import { Linkify } from 'web/components/widgets/linkify'
 import { linkClass } from 'web/components/widgets/site-link'
 import { Title } from 'web/components/widgets/title'
 import { StackedUserNames, UserLink } from 'web/components/widgets/user-link'
-import { useAdmin } from 'web/hooks/use-admin'
+import { useAdminOrMod } from 'web/hooks/use-admin'
 import { useFollowers, useFollows } from 'web/hooks/use-follows'
 import { useHeaderIsStuck } from 'web/hooks/use-header-is-stuck'
 import { useIsMobile } from 'web/hooks/use-is-mobile'
@@ -110,13 +110,13 @@ export default function UserPage(props: {
   shouldIgnoreUser: boolean
   hasCreatedQuestion: boolean
 }) {
-  const isAdmin = useAdmin()
+  const isAdminOrMod = useAdminOrMod()
   const { user, ...profileProps } = props
   const privateUser = usePrivateUser()
   const blockedByCurrentUser =
     privateUser?.blockedUserIds.includes(user?.id ?? '_') ?? false
   if (!user) return <Custom404 />
-  else if (user.userDeleted && !isAdmin) return <DeletedUser />
+  else if (user.userDeleted && !isAdminOrMod) return <DeletedUser />
 
   return privateUser && blockedByCurrentUser ? (
     <BlockedUser user={user} privateUser={privateUser} />

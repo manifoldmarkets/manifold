@@ -14,7 +14,7 @@ import {
   FeedContractCard,
   LoadingCards,
 } from 'web/components/contract/feed-contract-card'
-import { uniqBy, orderBy } from 'lodash'
+import { uniqBy, sortBy } from 'lodash'
 import { APIParams } from 'common/api/schema'
 import { FaFire, FaGripLinesVertical, FaHockeyPuck } from 'react-icons/fa6'
 import { DragDropContext, Droppable, Draggable } from '@hello-pangea/dnd'
@@ -28,6 +28,8 @@ import { api } from 'web/lib/api/api'
 import { LoadingIndicator } from 'web/components/widgets/loading-indicator'
 import { User } from 'common/user'
 import { FaBaseballBall } from 'react-icons/fa'
+import { Contract } from 'common/contract'
+import { tsToMillis } from 'common/supabase/utils'
 
 const NFL_ID = 'TNQwmbE5p6dnKx2e6Qlp'
 const NBA_ID = 'i0v3cXwuxmO9fpcInVYb'
@@ -41,12 +43,18 @@ const ALL_IDS = [NFL_ID, SPORTS_ID, EPL_ID, NBA_ID, MLB_ID].join(',')
 function LiveSoonContent() {
   return (
     <MarketsList
+      sweepScoreBoost={0}
       fetchProps={{
         term: '',
-        filter: 'closing-day',
-        sort: 'close-date',
+        filter: 'closing-week',
+        sort: 'start-time',
         gids: ALL_IDS,
       }}
+      sortCallback={(c: Contract) =>
+        c.sportsStartTimestamp
+          ? tsToMillis(c.sportsStartTimestamp)
+          : c.closeTime ?? Infinity
+      }
     />
   )
 }
@@ -184,9 +192,12 @@ function SportsTabs() {
 function MarketsList(
   props: {
     fetchProps: APIParams<'search-markets-full'>
-  } & { sweepScoreBoost?: number }
+  } & {
+    sweepScoreBoost?: number
+    sortCallback?: (c: Contract) => number
+  }
 ) {
-  const { sweepScoreBoost, fetchProps } = props
+  const { sweepScoreBoost, fetchProps, sortCallback } = props
   const limit = 10
   const [loading, setLoading] = useState(false)
   const [data, setData] = usePersistentInMemoryState<{
@@ -222,10 +233,9 @@ function MarketsList(
         importanceScore: m.importanceScore + (sweepScoreBoost ?? 0.25),
       }))
 
-      const newMarkets = orderBy(
+      const newMarkets = sortBy(
         uniqBy([...cashMarketsAdjusted, ...manaMarkets], 'id'),
-        (m) => m.importanceScore,
-        'desc'
+        (m) => sortCallback?.(m) ?? m.importanceScore
       )
 
       setData({
@@ -233,9 +243,9 @@ function MarketsList(
         manaOffset: data.manaOffset + manaMarkets.length,
         cashOffset: data.cashOffset + cashMarkets.length,
       })
-      return true
+      return newMarkets.length > 0
     } finally {
-      setTimeout(() => setLoading(false), 50)
+      setLoading(false)
     }
   }
 

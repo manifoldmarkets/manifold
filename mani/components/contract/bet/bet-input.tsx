@@ -5,8 +5,7 @@ import { Token } from 'components/token/token'
 import { Rounded } from 'constants/border-radius'
 import { Colors } from 'constants/colors'
 import { useColor } from 'hooks/use-color'
-import { useTokenMode } from 'hooks/use-token-mode'
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { View, StyleSheet, Pressable, TextInput, Keyboard } from 'react-native'
 
 export function BetAmountInput({
@@ -22,34 +21,44 @@ export function BetAmountInput({
 }) {
   const [displayValue, setDisplayValue] = useState<string>(amount.toString())
 
-  const handleAmountChange = (newAmount: number) => {
-    const validAmount = Math.min(Math.max(newAmount, minAmount), maxAmount)
-    setAmount(validAmount)
-    setDisplayValue(validAmount.toString())
-  }
+  // Update displayValue when amount changes from external sources (like slider)
+  useEffect(() => {
+    // Only update if the numeric values are different to avoid text input disruption
+    if (parseFloat(displayValue) !== amount) {
+      setDisplayValue(amount.toString())
+    }
+  }, [amount])
 
   const handleTextInput = (text: string) => {
     // First, just update what's displayed
     const cleanedText = text
-      .replace(/[^0-9.]/g, '') // Allow only numbers and decimal point
-      .replace(/(\..*)\./g, '$1') // Allow only one decimal point
-      .replace(/^0+(?=\d)/, '')
+      .replace(/[^0-9.]/g, '')
+      .replace(/(\..*)\./g, '$1') // Keep only first decimal point
+      .replace(/^0+(?=\d)/, '') // Remove leading zeros
+      .replace(/(\.\d{2})\d+$/, '$1') // Limit to 2 decimal places
 
-    const numberValue = Math.min(parseFloat(cleanedText) || 0, maxAmount)
-    const roundedValue = Math.round(numberValue * 100) / 100
+    setDisplayValue(cleanedText) // Show intermediate typing states
 
-    if (roundedValue == maxAmount) {
-      setDisplayValue(maxAmount.toString())
-    } else if (cleanedText.split('.')[1]?.length > 2) {
-      // If there are more than 2 decimal places, show the rounded value
-      setDisplayValue(roundedValue.toString())
-    } else {
-      setDisplayValue(cleanedText)
+    // Handle empty or just decimal point cases
+    if (cleanedText === '' || cleanedText === '.') {
+      setAmount(minAmount)
+      return
     }
-    setAmount(roundedValue)
+
+    const parsedValue = parseFloat(cleanedText)
+    // Only clamp and update if we have a valid number
+    if (!isNaN(parsedValue)) {
+      // If the number exceeds maxAmount, update display value to show the limit
+      if (parsedValue > maxAmount) {
+        setDisplayValue(maxAmount.toString())
+      }
+      // Clamp the value between minAmount and maxAmount
+      const clampedValue = Math.min(Math.max(parsedValue, minAmount), maxAmount)
+      const roundedValue = Math.round(clampedValue * 100) / 100
+      setAmount(roundedValue)
+    }
   }
 
-  const { token } = useTokenMode()
   const color = useColor()
 
   return (
@@ -88,7 +97,6 @@ export function BetAmountInput({
             value={displayValue}
             onChangeText={handleTextInput}
             keyboardType="decimal-pad"
-            autoFocus={true}
             returnKeyType="done"
             onSubmitEditing={() => {
               // Handle what happens when enter/done is pressed
@@ -105,7 +113,7 @@ export function BetAmountInput({
             ]}
             onPress={(e) => {
               e.stopPropagation()
-              handleAmountChange(amount + 10)
+              setAmount(amount + 10)
             }}
             disabled={amount + 10 > maxAmount}
           >
@@ -118,7 +126,7 @@ export function BetAmountInput({
             ]}
             onPress={(e) => {
               e.stopPropagation()
-              handleAmountChange(amount + 50)
+              setAmount(amount + 50)
             }}
             disabled={amount + 50 > maxAmount}
           >

@@ -1,7 +1,7 @@
 import {
   BinaryContract,
-  Contract,
   CPMMMultiContract,
+  isSportsContract,
   MultiContract,
 } from 'common/contract'
 import { ThemedText } from 'components/themed-text'
@@ -15,13 +15,31 @@ import { BinaryBetButtons } from './bet/binary-bet-buttons'
 import { MultiBetButtons } from './bet/multi-bet-buttons'
 import { useRouter } from 'expo-router'
 import { MultiBinaryBetButtons } from './bet/multi-binary-bet-buttons'
+import { useContract } from 'hooks/use-contract'
+import { useTokenMode } from 'hooks/use-token-mode'
+import { filterDefined } from 'common/util/array'
+import { ContractPair, getDefinedContract } from 'lib/contracts'
 
-export function FeedCard({ contract }: { contract: Contract }) {
+export function FeedCard(props: { contractPair: ContractPair }) {
+  const { token } = useTokenMode()
+  const { contractPair } = props
+  const definedContract = getDefinedContract(contractPair)
+
+  const liveContract = useContract(definedContract)
+  const liveSiblingContract = useContract({
+    id: definedContract.siblingContractId!,
+  })
+  const contract =
+    filterDefined([liveContract, liveSiblingContract]).find(
+      (c) => c.token === token
+    ) ?? definedContract
   const router = useRouter()
   const isBinaryMc = isBinaryMulti(contract)
   const isMultipleChoice =
     contract.outcomeType == 'MULTIPLE_CHOICE' && !isBinaryMc
   const isBinary = !isBinaryMc && !isMultipleChoice
+  const isSports = isSportsContract(contract)
+
   const [betPanelOpen, setBetPanelOpen] = useState(false)
   const color = useColor()
 
@@ -47,14 +65,16 @@ export function FeedCard({ contract }: { contract: Contract }) {
           width: '100%',
         }}
       >
-        <ThemedText
-          size={'lg'}
-          weight="semibold"
-          numberOfLines={3}
-          style={{ flex: 1 }}
-        >
-          {contract.question}
-        </ThemedText>
+        {!(isSports && isBinaryMc) && (
+          <ThemedText
+            size={'lg'}
+            weight="semibold"
+            numberOfLines={3}
+            style={{ flex: 1 }}
+          >
+            {contract.question}
+          </ThemedText>
+        )}
         {isBinary && (
           <Row
             style={{

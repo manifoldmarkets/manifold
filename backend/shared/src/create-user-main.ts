@@ -42,7 +42,12 @@ export const createUserMain = async (
   ip: string,
   host: string | undefined
 ) => {
-  const { deviceToken: preDeviceToken, adminToken, visitedContractIds } = props
+  const {
+    deviceToken: preDeviceToken,
+    adminToken,
+    visitedContractIds,
+    origin,
+  } = props
   const firebaseUser = await admin.auth().getUser(userId)
 
   const testUserAKAEmailPasswordUser =
@@ -129,6 +134,7 @@ export const createUserMain = async (
       fromLove,
       signupBonusPaid: 0,
       verifiedPhone: false,
+      origin,
     })
 
     const privateUser: PrivateUser = {

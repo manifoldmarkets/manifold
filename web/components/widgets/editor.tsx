@@ -1,22 +1,15 @@
 import CharacterCount from '@tiptap/extension-character-count'
-import { Link } from '@tiptap/extension-link'
 import Placeholder from '@tiptap/extension-placeholder'
 import type { Content, JSONContent } from '@tiptap/react'
-import {
-  Editor,
-  EditorContent,
-  Extensions,
-  mergeAttributes,
-  useEditor,
-} from '@tiptap/react'
+import { Editor, EditorContent, Extensions, useEditor } from '@tiptap/react'
 import StarterKit from '@tiptap/starter-kit'
 import clsx from 'clsx'
 import { ReactNode, useCallback, useEffect, useMemo, useRef } from 'react'
 import { DisplayContractMention } from '../editor/contract-mention/contract-mention-extension'
+import { DisplayLink } from '../editor/link-extension'
 import { DisplayMention } from '../editor/user-mention/mention-extension'
 import GridComponent from '../editor/tiptap-grid-cards'
 import { Linkify } from './linkify'
-import { linkClass } from './site-link'
 import Iframe from 'common/util/tiptap-iframe'
 import { TiptapSpoiler } from 'common/util/tiptap-spoiler'
 import { debounce, noop } from 'lodash'
@@ -41,26 +34,6 @@ import {
 import { usePersistentLocalState } from 'web/hooks/use-persistent-local-state'
 import { richTextToString } from 'common/util/parse'
 import { safeLocalStorage } from 'web/lib/util/local'
-
-const DisplayLink = Link.extend({
-  renderHTML({ HTMLAttributes }) {
-    HTMLAttributes.target = HTMLAttributes.href.includes('manifold.markets')
-      ? '_self'
-      : '_blank'
-    delete HTMLAttributes.class // only use our classes (don't duplicate on paste)
-    return [
-      'a',
-      mergeAttributes(this.options.HTMLAttributes, HTMLAttributes),
-      0,
-    ]
-  },
-}).configure({
-  openOnClick: false, // stop link opening twice (browser still opens)
-  HTMLAttributes: {
-    rel: 'noopener ugc',
-    class: linkClass,
-  },
-})
 
 const editorExtensions = (simple = false): Extensions =>
   nodeViewMiddleware([

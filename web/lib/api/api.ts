@@ -2,7 +2,6 @@ import { auth } from '../firebase/users'
 import { getApiUrl } from 'common/api/utils'
 import { JSONContent } from '@tiptap/core'
 import { Group } from 'common/group'
-import { AD_RATE_LIMIT } from 'common/boost'
 import { ContractComment } from 'common/comment'
 import { ReportProps } from 'common/report'
 import { BaseDashboard, DashboardItem } from 'common/dashboard'
@@ -49,18 +48,6 @@ export function updateGroup(params: { id: string } & Partial<Group>) {
 
 export function boostMarket(params: any) {
   return call(getApiUrl('boost-market'), 'POST', params)
-}
-
-let nonce = 0
-export function redeemBoost(params: any) {
-  const now = Date.now()
-  if (now - nonce < AD_RATE_LIMIT - 500) {
-    throw Error(
-      `Please wait ${AD_RATE_LIMIT / 1000} seconds between redeeming boosts.`
-    )
-  }
-  nonce = now
-  return call(getApiUrl('redeem-boost'), 'POST', params)
 }
 
 export function validateIapReceipt(params: any) {
@@ -151,17 +138,6 @@ export function tweetFromManaChan(params: { tweet: string }) {
 
 export function leaveReview(params: any) {
   return call(getApiUrl('leave-review'), 'POST', params)
-}
-export function getUserContractsMetricsWithContracts(params: {
-  userId: string
-  offset: number
-  limit: number
-}) {
-  return call(
-    getApiUrl('get-user-contract-metrics-with-contracts'),
-    'POST',
-    params
-  )
 }
 
 export function castPollVote(params: { contractId: string; voteId: string }) {

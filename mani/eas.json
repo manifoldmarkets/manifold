@@ -69,6 +69,26 @@
       },
       "ios": {}
     },
+    "testflight-dev": {
+      "channel": "preview",
+      "env": {
+        "NEXT_PUBLIC_FIREBASE_ENV": "DEV"
+      },
+      "android": {
+        "credentialsSource": "local"
+      },
+      "ios": {}
+    },
+    "testflight-prod": {
+      "channel": "preview",
+      "env": {
+        "NEXT_PUBLIC_FIREBASE_ENV": "PROD"
+      },
+      "android": {
+        "credentialsSource": "local"
+      },
+      "ios": {}
+    },
     "production": {
       "channel": "default",
       "env": {

@@ -175,6 +175,8 @@ const checkForClarification = async (
   comment: ContractComment
 ) => {
   let commentsContext = ''
+  let answerContext = ''
+
   if (comment.replyToCommentId) {
     const originalComment = await getCommentsDirect(pg, {
       contractId: contract.id,
@@ -184,6 +186,22 @@ const checkForClarification = async (
       contractId: contract.id,
       replyToCommentId: comment.replyToCommentId,
     })
+
+    const replyToAnswerId =
+      comment.answerOutcome ||
+      originalComment.find((c) => c.answerOutcome)?.answerOutcome
+    // Get answer context if this is a reply to an answer
+    if (replyToAnswerId) {
+      const answer = await getAnswer(pg, replyToAnswerId)
+      if (answer) {
+        const isCreatorAnswer = answer.userId === contract.creatorId
+        answerContext = `ANSWER (submitted by ${
+          isCreatorAnswer ? 'creator' : 'user'
+        }) BEING DISCUSSED:
+${answer.text}`
+      }
+    }
+
     commentsContext = [...originalComment, ...relatedComments]
       .filter((c) => c.id !== comment.id)
       .map((c) => {
@@ -195,18 +213,24 @@ const checkForClarification = async (
       .join('\n')
   }
 
+  const closeTimeDetail = contract.closeTime
+    ? `Market is set to close on ${new Date(contract.closeTime).toISOString()}`
+    : ''
+
   const prompt = `SYSTEM: You are analyzing a ${
     commentsContext ? 'comment thread' : 'comment'
   } on a prediction market (that is managed by a creator) to determine if the creator's latest comment clarifies the resolution criteria.
 
 CONTEXT:
 Market question: ${contract.question}
+${closeTimeDetail}
 Market description: ${
     typeof contract.description === 'string'
       ? contract.description
       : richTextToString(contract.description)
   }
 
+${answerContext}
 ${commentsContext ? `COMMENT THREAD:\n${commentsContext}` : ''}
 
 CREATOR'S LATEST COMMENT:
@@ -214,7 +238,7 @@ ${richTextToString(comment.content)}
 
 SYSTEM: Please analyze if the creator's latest comment ${
     commentsContext ? '(in context of the comment thread)' : ''
-  } appears to be clarifying or adding important details about how the market will be resolved, that is not already covered by the market's description/question title. 
+  } is clarifying or adding important details about how the market will be resolved, that is not already covered by the market's description/question title. 
 Only choose to issue a clarification if the creator's comment is unambiguously changing the resolution criteria as outlined in the description/question.
 If the creator says that they're going to update the description themselves, or they indicate their comment ${
     commentsContext ? '(or their comments in the thread)' : ''

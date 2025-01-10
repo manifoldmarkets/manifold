@@ -28,9 +28,10 @@ export default function TabLayout() {
     marginBottom: 4,
   }
 
-  const { user } = useUser()
+  const user = useUser()
   return (
     <Tabs
+      initialRouteName="index"
       screenOptions={{
         tabBarActiveTintColor: maniColor.primary,
         headerShown: false,
@@ -71,7 +72,7 @@ export default function TabLayout() {
       <Tabs.Screen
         name={'profile'}
         options={{
-          title: user?.displayName || 'Profile',
+          title: user?.name || 'Profile',
           tabBarIcon: ({ color }) => (
             <View
               style={{
@@ -87,22 +88,15 @@ export default function TabLayout() {
             >
               <Image
                 style={{
-                  width:
-                    // user?.avatarUrl ? 28 :
-                    20,
-                  height:
-                    // user?.avatarUrl ? 28 :
-                    20,
-                  borderRadius:
-                    // user?.avatarUrl ? Rounded.full, :
-                    0,
+                  width: user?.avatarUrl ? 28 : 20,
+                  height: user?.avatarUrl ? 28 : 20,
+                  borderRadius: user?.avatarUrl ? Rounded.full : 0,
                 }}
                 source={
-                  // user?.avatarUrl
-                  //   ? { uri: user.avatarUrl }
-                  //   :
-                  // eslint-disable-next-line @typescript-eslint/no-require-imports
-                  require('../../assets/images/origami-icons/turtle.png')
+                  user?.avatarUrl
+                    ? { uri: user.avatarUrl }
+                    : // eslint-disable-next-line @typescript-eslint/no-require-imports
+                      require('../../assets/images/origami-icons/turtle.png')
                 }
               />
             </View>

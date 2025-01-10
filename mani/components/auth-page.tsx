@@ -9,6 +9,7 @@ import {
   TouchableOpacity,
   Modal,
   TouchableWithoutFeedback,
+  TextInput,
 } from 'react-native'
 import {
   AppleAuthenticationButton,
@@ -24,14 +25,18 @@ import {
   OAuthProvider,
   updateEmail,
   updateProfile,
+  createUserWithEmailAndPassword,
 } from 'firebase/auth'
 import { signInWithCredential } from '@firebase/auth'
-import { ENV_CONFIG, auth } from 'lib/init'
+import { ENV_CONFIG, auth, isProd } from 'lib/firebase/init'
 import WebView from 'react-native-webview'
 import * as Google from 'expo-auth-session/providers/google'
 import { Text } from 'components/text'
 import { log } from 'components/logger'
 import { Rounded } from 'constants/border-radius'
+import { randomString } from 'common/util/random'
+import { getData, storeData } from 'lib/auth-storage'
+import { Button } from './buttons/button'
 
 export const AuthPage = (props: { height: number; width: number }) => {
   const { height, width } = props
@@ -42,6 +47,45 @@ export const AuthPage = (props: { height: number; width: number }) => {
   }
   const [_, response, promptAsync] = Google.useIdTokenAuthRequest(fixedConfig)
   const appleAuthAvailable = useAppleAuthentication()
+  const [email, setEmail] = useState('')
+  const [password, setPassword] = useState('')
+  const [submitting, setSubmitting] = useState(false)
+  useEffect(() => {
+    setEmail('manifoldTestNewUser+' + randomString() + '@gmail.com')
+    setPassword(randomString())
+    const setAdminToken = async () => {
+      const key = await getData<string>('admin-token')
+      if (key) setCreateUserKey(key)
+    }
+    setAdminToken()
+  }, [])
+
+  const [createUserKey, setCreateUserKey] = useState('')
+  useEffect(() => {
+    if (createUserKey) {
+      storeData('admin-token', createUserKey)
+    }
+  }, [createUserKey])
+
+  const createTestUser = () => {
+    if (!createUserKey) {
+      console.error('No admin token')
+      return
+    }
+    setSubmitting(true)
+
+    createUserWithEmailAndPassword(auth, email, password)
+      .then((userCredential) => {
+        setSubmitting(false)
+        console.log('SUCCESS creating firebase user', userCredential)
+      })
+      .catch((error) => {
+        setSubmitting(false)
+        const errorCode = error.code
+        const errorMessage = error.message
+        console.log('ERROR creating firebase user', errorCode, errorMessage)
+      })
+  }
 
   // We can't just log in to google within the webview: see https://developers.googleblog.com/2021/06/upcoming-security-changes-to-googles-oauth-2.0-authorization-endpoint.html#instructions-ios
   useEffect(() => {
@@ -49,9 +93,7 @@ export const AuthPage = (props: { height: number; width: number }) => {
       if (response?.type === 'success') {
         const { id_token } = response.params
         const credential = GoogleAuthProvider.credential(id_token)
-        signInWithCredential(auth, credential).then((result) => {
-          const fbUser = result.user.toJSON()
-        })
+        signInWithCredential(auth, credential)
       }
     } catch (err) {
       log('[google sign in] Error : ', err)
@@ -73,7 +115,6 @@ export const AuthPage = (props: { height: number; width: number }) => {
       if (data?.displayName && !user.displayName) {
         await updateProfile(user, { displayName: data.displayName })
       }
-      const fbUser = user.toJSON()
     } catch (error) {
       log('login with apple error:', error)
     }
@@ -183,6 +224,29 @@ export const AuthPage = (props: { height: number; width: number }) => {
               />
             )}
             <Eula />
+          </View>
+        )}
+        {!isProd && (
+          <View style={styles.authContent}>
+            <TextInput
+              style={{
+                backgroundColor: 'white',
+                borderRadius: Rounded.sm,
+                width: 200,
+                height: 48,
+              }}
+              secureTextEntry
+              value={createUserKey}
+              onChangeText={setCreateUserKey}
+            />
+            <Button
+              size="lg"
+              loading={submitting}
+              title="Create test user"
+              onPress={createTestUser}
+            >
+              <Text>Create test user</Text>
+            </Button>
           </View>
         )}
       </View>

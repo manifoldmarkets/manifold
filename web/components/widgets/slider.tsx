@@ -2,7 +2,7 @@ import clsx from 'clsx'
 import * as RxSlider from '@radix-ui/react-slider'
 import { ReactNode } from 'react'
 
-const colors = {
+export const sliderColors = {
   green: ['bg-teal-400', 'focus:outline-teal-600/30 bg-teal-600'],
   'light-green': [
     'bg-emerald-200/50 dark:bg-emerald-800/50',
@@ -24,7 +24,7 @@ export function Slider(props: {
   max?: number
   step?: number
   marks?: Mark[]
-  color?: keyof typeof colors
+  color?: keyof typeof sliderColors
   className?: string
   disabled?: boolean
   inverted?: boolean
@@ -42,7 +42,7 @@ export function Slider(props: {
     inverted,
   } = props
 
-  const [trackClasses, thumbClasses] = colors[color]
+  const [trackClasses, thumbClasses] = sliderColors[color]
 
   return (
     <RxSlider.Root
@@ -93,7 +93,7 @@ export function RangeSlider(props: {
   max?: number
   disabled?: boolean
   step?: number
-  color?: keyof typeof colors
+  color?: keyof typeof sliderColors
   handleSize?: number
   className?: string
   marks?: Mark[]
@@ -111,7 +111,7 @@ export function RangeSlider(props: {
     marks,
   } = props
 
-  const [trackClasses, thumbClasses] = colors[color]
+  const [trackClasses, thumbClasses] = sliderColors[color]
 
   return (
     <RxSlider.Root

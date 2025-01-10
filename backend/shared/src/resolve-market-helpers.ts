@@ -450,7 +450,8 @@ export const getPayUsersQueries = (
     id: string
     balance?: number
     spiceBalance?: number
-    totalDeposits: number
+    totalDeposits?: number
+    totalCashDeposits?: number
   }[] = []
   const txns: TxnData[] = []
 
@@ -458,7 +459,7 @@ export const getPayUsersQueries = (
     balanceUpdates.push({
       id: userId,
       [payoutCash ? 'cashBalance' : 'balance']: payout,
-      totalDeposits: deposit ?? 0,
+      [payoutCash ? 'totalCashDeposits' : 'totalDeposits']: deposit ?? 0,
     })
 
     txns.push({

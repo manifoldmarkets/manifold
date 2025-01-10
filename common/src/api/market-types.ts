@@ -17,7 +17,7 @@ import { MarketTierType, tiers } from 'common/tier'
 import { removeUndefinedProps } from 'common/util/object'
 import { richTextToString } from 'common/util/parse'
 import { z } from 'zod'
-import { contentSchema } from './zod-types'
+import { coerceBoolean, contentSchema } from './zod-types'
 import { randomStringRegex } from 'common/util/random'
 
 export type LiteMarket = {
@@ -278,6 +278,14 @@ export const createNumericSchema = z.object({
 export const createMultiSchema = z.object({
   outcomeType: z.enum(['MULTIPLE_CHOICE']),
   answers: z.array(z.string().trim().min(1)).max(MAX_ANSWERS),
+  answerShortTexts: z
+    .array(z.string().trim().min(1))
+    .max(MAX_ANSWERS)
+    .optional(),
+  answerImageUrls: z
+    .array(z.string().trim().min(1))
+    .max(MAX_ANSWERS)
+    .optional(),
   addAnswersMode: z
     .enum(['DISABLED', 'ONLY_CREATOR', 'ANYONE'])
     .default('DISABLED'),
@@ -327,6 +335,7 @@ export const createMarketProps = z
     sportsStartTimestamp: z.string().optional(),
     sportsEventId: z.string().optional(),
     sportsLeague: z.string().optional(),
+    takerAPIOrdersDisabled: coerceBoolean.optional(),
   })
   .and(
     z.union([

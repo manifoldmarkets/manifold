@@ -3,6 +3,7 @@ import {
   Contract,
   CPMMMultiContract,
   isBinaryMulti,
+  isSportsContract,
   MultiContract,
 } from 'common/contract'
 import { BinaryBetButtons } from 'components/contract/bet/binary-bet-buttons'
@@ -17,43 +18,15 @@ import { useEffect, useState } from 'react'
 import { ContractDescription } from 'components/contract/contract-description'
 import { CommentsSection } from 'components/contract/comments/comments-section'
 
-import { api } from 'lib/api'
-import { useApiSubscription } from 'client-common/hooks/use-api-subscription'
 import { useAPIGetter } from 'hooks/use-api-getter'
 import { getBetPoints } from 'common/bets'
 import { HistoryPoint } from 'common/chart'
 import { Bet } from 'common/bet'
 import { useTokenMode } from 'hooks/use-token-mode'
 import { ContractPageLoading } from 'components/contract/loading-contract'
+import { useContract } from 'hooks/use-contract'
+import { ContentEditor } from 'components/content/content-editor'
 export const LARGE_QUESTION_LENGTH = 95
-
-// TODO: this is just a placeholder, let's share the contract listener with web
-export const useContract = (contractId: string | undefined) => {
-  const [contract, setContract] = useState<Contract | undefined | null>(
-    undefined
-  )
-
-  useApiSubscription({
-    topics: [`contract/${contractId}`],
-    onBroadcast: ({ data }) => {
-      console.log('data', data)
-      setContract((prevContract) => {
-        if (!data.contract) return prevContract
-        return { ...prevContract, ...data.contract } as Contract
-      })
-    },
-  })
-
-  useEffect(() => {
-    if (contractId) {
-      api('market/:id', { id: contractId }).then((result) => {
-        setContract(result as any)
-      })
-    }
-  }, [contractId])
-
-  return contract
-}
 
 type ContractPageContentProps = {
   contractId: string
@@ -73,8 +46,7 @@ function ContractPageContent({ contractId }: ContractPageContentProps) {
       : siblingContract
       ? (siblingContract as Contract)
       : undefined
-  //   TODO: Fetch contract data using contractId
-  const contract = useContract(contractToShow?.id) ?? contractToShow
+  const contract = useContract(contractToShow)
   useEffect(() => {
     if (contractToShow) {
       getBetPoints(contractToShow?.id as string).then((betPoints) => {
@@ -100,16 +72,22 @@ function ContractPageContent({ contractId }: ContractPageContentProps) {
     contract.outcomeType == 'MULTIPLE_CHOICE' && !isBinaryMc
   const isBinary = !isBinaryMc && !isMultipleChoice
 
+  const isSports = isSportsContract(contract)
+
   return (
-    <Page>
-      <Col style={{ gap: 16 }}>
-        <ThemedText
-          size={contract.question.length > LARGE_QUESTION_LENGTH ? 'xl' : '2xl'}
-          weight="semibold"
-          style={{ paddingTop: 16 }}
-        >
-          {contract.question}
-        </ThemedText>
+    <Page nonScrollableChildren={<ContentEditor onChange={() => {}} />}>
+      <Col style={{ gap: 16, position: 'relative' }}>
+        {!(isSports && isBinaryMc) && (
+          <ThemedText
+            size={
+              contract.question.length > LARGE_QUESTION_LENGTH ? 'xl' : '2xl'
+            }
+            weight="semibold"
+            style={{ paddingTop: 16 }}
+          >
+            {contract.question}
+          </ThemedText>
+        )}
 
         {isBinary && (
           <BinaryOverview
