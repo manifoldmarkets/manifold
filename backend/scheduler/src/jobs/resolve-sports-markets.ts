@@ -38,10 +38,6 @@ export async function resolveSportsMarkets() {
       const resolver = await pg.one('SELECT * FROM users WHERE id = $1', [
         HOUSE_LIQUIDITY_PROVIDER_ID,
       ])
-      if (!resolver) {
-        log('House account not found. Skipping these contracts.')
-        continue
-      }
 
       const homeScore = game.homeScore
       const awayScore = game.awayScore
