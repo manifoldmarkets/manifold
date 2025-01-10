@@ -18,5 +18,5 @@
     }
   },
   "references": [{ "path": "../../common" }],
-  "include": ["src/**/*.ts", "../scheduler/src/jobs/resolve-sports-markets.ts"]
+  "include": ["src/**/*.ts"]
 }
