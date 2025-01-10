@@ -25,6 +25,7 @@ import { log } from 'shared/utils'
 import { PrivateUser } from 'common/user'
 import { GROUP_SCORE_PRIOR } from 'common/feed'
 import { MarketTierType, TierParamsType, tiers } from 'common/tier'
+import { tsToMillis } from 'common/supabase/utils'
 
 const DEFAULT_THRESHOLD = 1000
 const DEBUG = false
@@ -447,6 +448,15 @@ export const sortFields: SortFields = {
   'close-date': {
     sql: 'close_time',
     sortCallback: (c: Contract) => c.closeTime ?? Infinity,
+    order: 'ASC',
+  },
+  'start-time': {
+    // sql: `close_time`,
+    sql: `coalesce((data->>'sportsStartTimestamp')::timestamp with time zone, close_time)`,
+    sortCallback: (c: Contract) =>
+      c.sportsStartTimestamp
+        ? tsToMillis(c.sportsStartTimestamp)
+        : c.closeTime ?? Infinity,
     order: 'ASC',
   },
   random: {

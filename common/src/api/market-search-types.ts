@@ -29,6 +29,7 @@ export const searchProps = z
         z.literal('subsidy'),
         z.literal('last-updated'),
         z.literal('close-date'),
+        z.literal('start-time'),
         z.literal('resolve-date'),
         z.literal('random'),
         z.literal('bounty-amount'),
