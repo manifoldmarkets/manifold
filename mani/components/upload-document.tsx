@@ -1,11 +1,10 @@
 import { useEffect, useState } from 'react'
-import { View, StyleSheet, Image, Platform } from 'react-native'
+import { View, StyleSheet, Image, Platform, Pressable } from 'react-native'
 import { Text } from 'components/text'
 import { Button } from 'components/buttons/button'
 import { Colors } from 'constants/colors'
 import { GIDXDocument, idNameToCategoryType } from 'common/gidx/gidx'
 import { api } from 'lib/api'
-import { Picker } from '@react-native-picker/picker'
 import * as ImagePicker from 'expo-image-picker'
 import { uploadPrivateImage } from 'lib/firebase/storage'
 import { useUser } from 'hooks/use-user'
@@ -28,6 +27,7 @@ export const UploadDocuments = (props: {
   const [selectedImage, setSelectedImage] = useState<string | null>(null)
   const [CategoryType, setCategoryType] = useState(2)
   const [currentStep, setCurrentStep] = useState<'id' | 'utility'>('id')
+  const [showDropdown, setShowDropdown] = useState(false)
 
   const pickImage = async () => {
     const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync()
@@ -36,14 +36,23 @@ export const UploadDocuments = (props: {
       return
     }
 
-    const result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ImagePicker.MediaTypeOptions.Images,
-      allowsEditing: true,
-      quality: 1,
-    })
+    try {
+      const result = await ImagePicker.launchImageLibraryAsync({
+        mediaTypes: ImagePicker.MediaTypeOptions.Images,
+        allowsEditing: true,
+        quality: 0.8,
+        exif: false,
+        base64: false,
+        selectionLimit: 1,
+      })
 
-    if (!result.canceled) {
-      setSelectedImage(result.assets[0].uri)
+      if (!result.canceled) {
+        setSelectedImage(result.assets[0].uri)
+        setError(null)
+      }
+    } catch (e) {
+      console.error('Error picking image:', e)
+      setError('Failed to select image. Please try again.')
     }
   }
 
@@ -56,18 +65,20 @@ export const UploadDocuments = (props: {
 
     const getFileExtension = (uri: string) => {
       const match = /\.(\w+)$/.exec(uri)
-      return match ? match[1] : 'jpg'
+      return match ? match[1].toLowerCase() : 'jpg'
     }
-
-    const fileName = `id-document-${
-      getKeyFromValue(idNameToCategoryType, CategoryType) ?? ''
-    }.${getFileExtension(selectedImage)}`
 
     setLoading(true)
     setError(null)
 
     try {
+      const extension = getFileExtension(selectedImage)
+      const fileName = `id-document-${Date.now()}-${
+        getKeyFromValue(idNameToCategoryType, CategoryType) ?? ''
+      }.${extension}`
+
       const fileUrl = await uploadPrivateImage(user.id, selectedImage, fileName)
+
       const { status } = await api('upload-document-gidx', {
         fileUrl,
         fileName,
@@ -76,10 +87,12 @@ export const UploadDocuments = (props: {
 
       if (status === 'success') {
         await getAndSetDocuments()
+      } else {
+        throw new Error('Failed to upload document')
       }
     } catch (e: any) {
-      console.error(e)
-      setError(e.message)
+      console.error('Error uploading document:', e)
+      setError(e.message || 'Failed to upload document. Please try again.')
     } finally {
       setLoading(false)
     }
@@ -127,26 +140,53 @@ export const UploadDocuments = (props: {
   const hasRejectedIdDoc = (docs?.rejectedDocuments ?? []).some(
     (doc) => doc.CategoryType !== 7 && doc.CategoryType !== 1
   )
-  const documentsToAccept = Object.entries(idNameToCategoryType).filter(
+
+  const documentOptions = Object.entries(idNameToCategoryType).filter(
     ([_, value]) =>
       currentStep === 'id'
         ? value !== 7 && value !== 1
         : value === 7 || value === 1
   )
 
+  const selectedDocumentName =
+    getKeyFromValue(idNameToCategoryType, CategoryType) ??
+    'Select document type'
+
   return (
     <View style={styles.container}>
       <Text style={styles.title}>Please upload one of the following:</Text>
-      <View style={styles.pickerContainer}>
-        <Picker
-          selectedValue={CategoryType}
-          onValueChange={(value) => setCategoryType(value)}
-          style={styles.picker}
+
+      <View style={styles.dropdownContainer}>
+        <Pressable
+          style={styles.dropdownButton}
+          onPress={() => setShowDropdown(!showDropdown)}
         >
-          {documentsToAccept.map(([type, number]) => (
-            <Picker.Item key={type} label={type} value={number} />
-          ))}
-        </Picker>
+          <Text style={styles.dropdownButtonText}>{selectedDocumentName}</Text>
+        </Pressable>
+
+        {showDropdown && (
+          <View style={styles.dropdownList}>
+            {documentOptions.map(([name, value]) => (
+              <Pressable
+                key={name}
+                style={styles.dropdownItem}
+                onPress={() => {
+                  setCategoryType(value)
+                  setShowDropdown(false)
+                }}
+              >
+                <Text
+                  style={[
+                    styles.dropdownItemText,
+                    value === CategoryType && styles.dropdownItemTextSelected,
+                  ]}
+                >
+                  {name}
+                </Text>
+              </Pressable>
+            ))}
+          </View>
+        )}
       </View>
 
       {selectedImage && (
@@ -200,20 +240,56 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     marginBottom: 16,
   },
-  pickerContainer: {
+  dropdownContainer: {
+    position: 'relative',
+    zIndex: 1,
+    marginBottom: 16,
+  },
+  dropdownButton: {
     backgroundColor: Colors.backgroundSecondary,
     borderRadius: 8,
-    marginBottom: 16,
+    padding: 12,
+    borderWidth: 1,
+    borderColor: Colors.border,
+  },
+  dropdownButtonText: {
+    fontSize: 16,
+    color: Colors.text,
+  },
+  dropdownList: {
+    position: 'absolute',
+    top: '100%',
+    left: 0,
+    right: 0,
+    backgroundColor: Colors.backgroundSecondary,
+    borderRadius: 8,
+    marginTop: 4,
+    borderWidth: 1,
+    borderColor: Colors.border,
     ...Platform.select({
       ios: {
-        borderWidth: 1,
-        borderColor: Colors.border,
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.25,
+        shadowRadius: 3.84,
+      },
+      android: {
+        elevation: 5,
       },
     }),
   },
-  picker: {
-    height: 50,
+  dropdownItem: {
+    padding: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: Colors.border,
+  },
+  dropdownItemText: {
+    fontSize: 16,
     color: Colors.text,
+  },
+  dropdownItemTextSelected: {
+    color: Colors.blue,
+    fontWeight: 'bold',
   },
   preview: {
     width: '100%',

@@ -17,7 +17,7 @@ import { MarketTierType, tiers } from 'common/tier'
 import { removeUndefinedProps } from 'common/util/object'
 import { richTextToString } from 'common/util/parse'
 import { z } from 'zod'
-import { contentSchema } from './zod-types'
+import { coerceBoolean, contentSchema } from './zod-types'
 import { randomStringRegex } from 'common/util/random'
 
 export type LiteMarket = {
@@ -335,6 +335,7 @@ export const createMarketProps = z
     sportsStartTimestamp: z.string().optional(),
     sportsEventId: z.string().optional(),
     sportsLeague: z.string().optional(),
+    takerAPIOrdersDisabled: coerceBoolean.optional(),
   })
   .and(
     z.union([

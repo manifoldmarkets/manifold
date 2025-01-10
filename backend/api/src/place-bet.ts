@@ -147,6 +147,7 @@ export const placeBetMain = async (
     unfilledBets,
     balanceByUserId
   )
+  checkIfTakerOrderAllowed(contract, simulatedResult.newBet, isApi)
   const simulatedMakerIds = getMakerIdsFromBetResult(simulatedResult)
 
   const result = await runTransactionWithRetries(async (pgTrans) => {
@@ -658,5 +659,19 @@ const assertAdminAccumulatesNoMoreThanTenShares = (
         `Admins cannot accumulate more than 10 shares per answer per question.`
       )
     }
+  }
+}
+
+const checkIfTakerOrderAllowed = (
+  contract: MarketContract,
+  bet: CandidateBet<Bet>,
+  isApi: boolean
+) => {
+  const { fills } = bet
+  if (contract.takerAPIOrdersDisabled && fills && fills.length > 0 && isApi) {
+    throw new APIError(
+      403,
+      'Experimental: taker API orders are disabled for this contract.'
+    )
   }
 }

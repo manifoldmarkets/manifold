@@ -65,7 +65,7 @@ export function FeedCard(props: { contractPair: ContractPair }) {
           width: '100%',
         }}
       >
-        {!isSports && !isBinaryMc && (
+        {!(isSports && isBinaryMc) && (
           <ThemedText
             size={'lg'}
             weight="semibold"

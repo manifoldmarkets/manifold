@@ -46,7 +46,7 @@ function ContractPageContent({ contractId }: ContractPageContentProps) {
       : siblingContract
       ? (siblingContract as Contract)
       : undefined
-  const contract = useContract(contractToShow ?? { id: '_' })
+  const contract = useContract(contractToShow)
   useEffect(() => {
     if (contractToShow) {
       getBetPoints(contractToShow?.id as string).then((betPoints) => {
@@ -73,11 +73,11 @@ function ContractPageContent({ contractId }: ContractPageContentProps) {
   const isBinary = !isBinaryMc && !isMultipleChoice
 
   const isSports = isSportsContract(contract)
-  
+
   return (
     <Page nonScrollableChildren={<ContentEditor onChange={() => {}} />}>
       <Col style={{ gap: 16, position: 'relative' }}>
-        {!isSports && !isBinaryMc && (
+        {!(isSports && isBinaryMc) && (
           <ThemedText
             size={
               contract.question.length > LARGE_QUESTION_LENGTH ? 'xl' : '2xl'

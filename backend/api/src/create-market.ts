@@ -123,6 +123,7 @@ export async function createMarketHelper(body: Body, auth: AuthedUser) {
     sportsLeague,
     answerShortTexts,
     answerImageUrls,
+    takerAPIOrdersDisabled,
   } = validateMarketBody(body)
 
   const userId = auth.uid
@@ -220,6 +221,7 @@ export async function createMarketHelper(body: Body, auth: AuthedUser) {
           sportsStartTimestamp,
           sportsEventId,
           sportsLeague,
+          takerAPIOrdersDisabled,
         })
       )
 
@@ -322,6 +324,7 @@ function validateMarketBody(body: Body) {
     sportsStartTimestamp,
     sportsEventId,
     sportsLeague,
+    takerAPIOrdersDisabled,
   } = body
 
   if (groupIds && groupIds.length > MAX_GROUPS_PER_MARKET)
@@ -456,6 +459,7 @@ function validateMarketBody(body: Body) {
     sportsLeague,
     answerShortTexts,
     answerImageUrls,
+    takerAPIOrdersDisabled,
   }
 }
 

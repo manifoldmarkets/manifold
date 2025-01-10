@@ -30,7 +30,7 @@
     "@react-native-clipboard/clipboard": "^1.14.1",
     "@react-native-community/netinfo": "11.4.1",
     "@react-native-community/slider": "4.5.5",
-    "@react-native-picker/picker": "2.9.0",
+    "@react-native-picker/picker": "2.11.0",
     "@sentry/react-native": "~6.3.0",
     "@supabase/supabase-js": "2.43.5",
     "dayjs": "1.11.13",

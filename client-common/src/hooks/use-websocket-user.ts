@@ -3,6 +3,7 @@ import { useApiSubscription } from './use-api-subscription'
 import { User } from 'common/user'
 import { useState } from 'react'
 import { FullUser } from 'common/api/user-types'
+import { PrivateUser } from 'common/user'
 
 export const useWebsocketUser = (
   userId: string | undefined,
@@ -45,4 +46,37 @@ export const useWebsocketUser = (
   }, [userId, isPageVisible])
 
   return user
+}
+
+export const useWebsocketPrivateUser = (
+  userId: string | undefined,
+  isPageVisible: boolean,
+  getPrivateUser: () => Promise<PrivateUser | null>
+) => {
+  const [privateUser, setPrivateUser] = useState<
+    PrivateUser | null | undefined
+  >()
+
+  useApiSubscription({
+    topics: [`private-user/${userId ?? '_'}`],
+    onBroadcast: () => {
+      getPrivateUser().then((result) => {
+        if (result) {
+          setPrivateUser(result)
+        }
+      })
+    },
+  })
+
+  useEffect(() => {
+    if (!isPageVisible) return
+
+    if (userId) {
+      getPrivateUser().then((result) => setPrivateUser(result))
+    } else {
+      setPrivateUser(null)
+    }
+  }, [userId, isPageVisible])
+
+  return privateUser
 }

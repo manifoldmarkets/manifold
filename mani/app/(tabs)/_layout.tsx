@@ -31,6 +31,7 @@ export default function TabLayout() {
   const user = useUser()
   return (
     <Tabs
+      initialRouteName="index"
       screenOptions={{
         tabBarActiveTintColor: maniColor.primary,
         headerShown: false,

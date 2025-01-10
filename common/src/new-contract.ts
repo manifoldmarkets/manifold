@@ -57,6 +57,7 @@ export function getNewContract(props: {
   sportsLeague?: string
   answerShortTexts?: string[]
   answerImageUrls?: string[]
+  takerAPIOrdersDisabled?: boolean
 }) {
   const {
     id,
@@ -85,6 +86,7 @@ export function getNewContract(props: {
     sportsLeague,
     answerShortTexts,
     answerImageUrls,
+    takerAPIOrdersDisabled,
   } = props
   const createdTime = Date.now()
 
@@ -159,6 +161,8 @@ export function getNewContract(props: {
     sportsStartTimestamp,
     sportsEventId,
     sportsLeague,
+
+    takerAPIOrdersDisabled,
   })
   if (visibility === 'unlisted') {
     contract.unlistedById = creator.id

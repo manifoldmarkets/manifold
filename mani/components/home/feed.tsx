@@ -40,45 +40,24 @@ function MarketsList(props: { fetchProps: APIParams<'search-markets-full'> }) {
 }
 
 export function Feed({ tab }: { tab: string }) {
-  // TODO: Grab appropriate contracts for each tab
-  const content = [
-    {
-      title: 'Live Soon',
-      Component: LiveSoonContent,
-    },
-    {
-      title: 'Forecasts',
-      Component: ForecastsContent,
-    },
-    {
-      title: 'NFL',
-      Component: NFLContent,
-    },
-    {
-      title: 'NBA',
-      Component: NBAContent,
-    },
-    {
-      title: 'EPL',
-      Component: EPLContent,
-    },
-    {
-      title: 'MLB',
-      Component: MLBContent,
-    },
-    {
-      title: 'NHL',
-      Component: NHLContent,
-    },
-  ]
+  // TODO: obviously flush this out
   return (
     <Col>
-      {content.map((c) => (
-        <Col key={c.title}>
-          <Text>{c.title}</Text>
-          <c.Component />
-        </Col>
-      ))}
+      {tab == 'live' ? (
+        <LiveSoonContent />
+      ) : tab == 'NFL' ? (
+        <NFLContent />
+      ) : tab == 'NBA' ? (
+        <NBAContent />
+      ) : tab == 'EPL' ? (
+        <EPLContent />
+      ) : tab == 'MLB' ? (
+        <MLBContent />
+      ) : tab == 'NHL' ? (
+        <NHLContent />
+      ) : (
+        <ForecastsContent />
+      )}
     </Col>
   )
 }

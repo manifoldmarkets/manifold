@@ -1,11 +1,12 @@
 import { useEffect, useState } from 'react'
-import { View, StyleSheet, TextInput } from 'react-native'
+import { View, StyleSheet } from 'react-native'
 import { Text } from 'components/text'
 import { Button } from 'components/buttons/button'
 import { useUser } from 'hooks/use-user'
 import { api } from 'lib/api'
 import { Colors } from 'constants/colors'
 import { PhoneInput } from 'components/phone-input'
+import { Input } from './widgets/input'
 
 export function RegistrationVerifyPhone(props: {
   cancel: () => void
@@ -74,7 +75,7 @@ export function RegistrationVerifyPhone(props: {
       {page === 1 && (
         <View style={styles.content}>
           <Text style={styles.title}>Enter verification code</Text>
-          <TextInput
+          <Input
             style={styles.otpInput}
             value={otp}
             onChangeText={setOtp}
