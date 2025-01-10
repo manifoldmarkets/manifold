@@ -21,7 +21,7 @@ import { sendStreakExpirationNotification } from './streak-expiration-notice'
 import { expireLimitOrders } from 'shared/expire-limit-orders'
 import { denormalizeAnswers } from './denormalize-answers'
 import { incrementStreakForgiveness } from './increment-streak-forgiveness'
-import { resolveSportsMarkets } from '../../../shared/src/resolve-sports-markets'
+import { resolveSportsMarkets } from 'shared/src/resolve-sports-markets'
 import { sendMarketCloseEmails } from './send-market-close-emails'
 import { pollPollResolutions } from './poll-poll-resolutions'
 import { IMPORTANCE_MINUTE_INTERVAL } from 'shared/importance-score'
@@ -109,6 +109,11 @@ export function createJobs() {
       '0 */1 * * * *', // every minute
       pollPollResolutions
     ),
+    createJob(
+      'resolve-sports-markets',
+      '*/10 * * * * *', // Every 10 seconds
+      resolveSportsMarkets
+    ),
     // Daily jobs:
     createJob(
       'clean-old-notifications',
@@ -187,11 +192,6 @@ export function createJobs() {
       'increment-streak-forgiveness',
       '0 0 3 1 * *', // 3am PST on the 1st day of the month
       incrementStreakForgiveness
-    ),
-    createJob(
-      'resolve-sports-markets',
-      '*/10 * * * * *', // Every 10 seconds
-      resolveSportsMarkets
     ),
   ]
 }
