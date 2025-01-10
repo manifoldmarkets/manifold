@@ -45,14 +45,16 @@ export function Feed({ tab }: { tab: string }) {
     <Col>
       {tab == 'live' ? (
         <LiveSoonContent />
-      ) : tab == 'sports' ? (
-        <Col>
-          <NFLContent />
-          <NBAContent />
-          <EPLContent />
-          <MLBContent />
-          <NHLContent />
-        </Col>
+      ) : tab == 'NFL' ? (
+        <NFLContent />
+      ) : tab == 'NBA' ? (
+        <NBAContent />
+      ) : tab == 'EPL' ? (
+        <EPLContent />
+      ) : tab == 'MLB' ? (
+        <MLBContent />
+      ) : tab == 'NHL' ? (
+        <NHLContent />
       ) : (
         <ForecastsContent />
       )}

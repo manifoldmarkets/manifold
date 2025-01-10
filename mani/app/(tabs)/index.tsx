@@ -39,13 +39,6 @@ export default function HomeScreen() {
 
   const SPORTS_TABS = [
     {
-      title: 'Back',
-      content: null,
-      iconName: 'chevron.left',
-      isBackButton: true,
-      onPress: () => setActiveIndex(0),
-    },
-    {
       title: 'NFL',
       content: <Feed tab="NFL" />,
       iconName: 'football',
@@ -80,6 +73,7 @@ export default function HomeScreen() {
         activeIndex={isSports ? activeSportsIndex : activeIndex}
         onActiveIndexChange={isSports ? setActiveSportsIndex : setActiveIndex}
         tabs={isSports ? SPORTS_TABS : TOP_LEVEL_TABS}
+        onBackButtonPress={isSports ? () => setActiveIndex(0) : undefined}
       />
     </Page>
   )
