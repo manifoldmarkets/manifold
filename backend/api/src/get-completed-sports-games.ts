@@ -52,7 +52,6 @@ async function fetchCompletedSportsGamesForLeague(
   }
 }
 
-// Add export keyword here
 export const getCompletedSportsGames: APIHandler<'get-completed-sports-games'> = async () => {
   log('Fetching completed sports games from multiple leagues...')
 
