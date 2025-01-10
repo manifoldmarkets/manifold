@@ -43,8 +43,13 @@ export async function resolveSportsMarkets() {
         continue
       }
 
-      const homeScore = parseInt(game.homeScore ?? game.homeScore ?? '0')
-      const awayScore = parseInt(game.awayScore ?? game.awayScore ?? '0')
+      const homeScore = game.homeScore
+      const awayScore = game.awayScore
+
+      if (homeScore == null || awayScore == null) {
+        log(`Skipping game ${game.idEvent}: Missing scores.`)
+        continue
+      }
 
       for (const contract of matchingContracts) {
         try {
@@ -63,8 +68,7 @@ export async function resolveSportsMarkets() {
               outcome: 'CHOOSE_ONE',
               answerId: homeAnswer.id,
             })
-          }
-          else if (awayScore > homeScore) {
+          } else if (awayScore > homeScore) {
             const awayAnswer = answers[1]
             if (!awayAnswer) {
               log(`Contract ${contract.id}: Missing away answer. Skipping.`)
@@ -75,8 +79,7 @@ export async function resolveSportsMarkets() {
               outcome: 'CHOOSE_ONE',
               answerId: awayAnswer.id,
             })
-          }
-          else {
+          } else {
             if (isEPL) {
               const drawAnswer = answers[2]
               if (!drawAnswer) {
