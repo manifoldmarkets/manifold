@@ -11,36 +11,55 @@ export async function resolveSportsMarkets() {
 
   try {
     const data = await api('get-live-scores', {})
-    const completedGames = (data.schedule || []) as SportsGames[]
+    const liveGames = (data.schedule || []) as SportsGames[]
+
+    const completedGames = liveGames.filter((game) => game.strStatus === 'FT')
     log(`Processing ${completedGames.length} completed games.`)
+
+    if (completedGames.length === 0) {
+      log('No completed games to process.')
+      return
+    }
+
+    const completedGameIds = completedGames.map((game) => game.idEvent)
 
     const unresolvedContracts = await pg.map<Contract>(
       `
       SELECT *
       FROM contracts
       WHERE resolution IS NULL
-        AND data->>'sportsEventId' IS NOT NULL
+        AND data->>'sportsEventId' IN (${completedGameIds
+          .map((_, i) => `$${i + 1}`)
+          .join(', ')})
       `,
-      [],
+      completedGameIds,
       (row) => row as Contract
     )
+
+    log(`Found ${unresolvedContracts.length} unresolved contracts.`)
+
+    if (unresolvedContracts.length === 0) {
+      log('No matching contracts to resolve.')
+      return
+    }
+
+    const resolver = await pg.one('SELECT * FROM users WHERE id = $1', [
+      HOUSE_LIQUIDITY_PROVIDER_ID,
+    ])
 
     for (const game of completedGames) {
       const matchingContracts = unresolvedContracts.filter(
         (c) => c.sportsEventId === game.idEvent
       )
+
       if (matchingContracts.length === 0) continue
 
       log(
         `Found ${matchingContracts.length} contracts for game ${game.idEvent}`
       )
 
-      const resolver = await pg.one('SELECT * FROM users WHERE id = $1', [
-        HOUSE_LIQUIDITY_PROVIDER_ID,
-      ])
-
-      const homeScore = game.homeScore
-      const awayScore = game.awayScore
+      const homeScore = game.intHomeScore
+      const awayScore = game.intAwayScore
 
       if (homeScore == null || awayScore == null) {
         log(`Skipping game ${game.idEvent}: Missing scores.`)

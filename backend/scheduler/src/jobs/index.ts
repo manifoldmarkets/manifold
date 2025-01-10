@@ -21,7 +21,7 @@ import { sendStreakExpirationNotification } from './streak-expiration-notice'
 import { expireLimitOrders } from 'shared/expire-limit-orders'
 import { denormalizeAnswers } from './denormalize-answers'
 import { incrementStreakForgiveness } from './increment-streak-forgiveness'
-import { resolveSportsMarkets } from './resolve-sports-markets'
+import { resolveSportsMarkets } from '../../../shared/src/resolve-sports-markets'
 import { sendMarketCloseEmails } from './send-market-close-emails'
 import { pollPollResolutions } from './poll-poll-resolutions'
 import { IMPORTANCE_MINUTE_INTERVAL } from 'shared/importance-score'
@@ -190,7 +190,7 @@ export function createJobs() {
     ),
     createJob(
       'resolve-sports-markets',
-      '*/5 * * * *', // Every 5 minutes
+      '*/10 * * * * *', // Every 10 seconds
       resolveSportsMarkets
     ),
   ]

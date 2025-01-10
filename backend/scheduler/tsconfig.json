@@ -18,7 +18,7 @@
   },
   "references": [{ "path": "../../common" }, { "path": "../shared" }],
   "compileOnSave": true,
-  "include": ["src/**/*.ts"],
+  "include": ["src/**/*.ts", "../shared/src/resolve-sports-markets.ts"],
   "ts-node": {
     "require": ["tsconfig-paths/register"]
   }

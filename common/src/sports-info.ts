@@ -9,8 +9,8 @@ export interface SportsGames {
   strEvent: string
   strHomeTeam: string
   strAwayTeam: string
-  homeScore: string
-  awayScore: string
+  intHomeScore: string
+  intAwayScore: string
   dateEvent: string
   strTime: string
   strTimestamp: string
@@ -20,4 +20,5 @@ export interface SportsGames {
   strAwayTeamBadge: string
   homeTeamMetadata: TeamMetadata
   awayTeamMetadata: TeamMetadata
+  strStatus: string
 }
