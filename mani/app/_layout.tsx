@@ -21,6 +21,7 @@ import { Colors } from 'constants/colors'
 import { UserProvider, useUser } from 'hooks/use-user'
 import { Splash } from 'components/splash'
 import Toast from 'react-native-toast-message'
+import { TutorialProvider } from 'components/onboarding/onboaring-context'
 
 const HEADER_HEIGHT = 250
 
@@ -121,16 +122,33 @@ function RootLayout() {
 
   return (
     <TokenModeProvider>
-      <SafeAreaView style={styles.container}>
-        <Stack>
-          <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-          <Stack.Screen
-            name="[contractId]"
-            options={{
-              headerShown: false,
-              animation: 'slide_from_right',
-            }}
+      <TutorialProvider>
+        <SafeAreaView style={styles.container}>
+          <Stack>
+            <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+            <Stack.Screen
+              name="[contractId]"
+              options={{
+                headerShown: false,
+                animation: 'slide_from_right',
+              }}
+            />
+          </Stack>
+
+          <SplashAuth
+            source={require('../assets/images/splash.png')}
+            fbUser={user}
+            isConnected={isConnected}
+            height={height}
+            width={width}
           />
+
+          {Platform.OS === 'ios' && fullyLoaded && (
+            <IosIapListener
+              checkoutAmount={checkoutAmount}
+              setCheckoutAmount={setCheckoutAmount}
+            />
+          )}
           <Stack.Screen
             name="registration"
             options={{
@@ -138,26 +156,19 @@ function RootLayout() {
               animation: 'slide_from_right',
             }}
           />
-        </Stack>
 
-        <SplashAuth
-          source={require('../assets/images/splash.png')}
-          user={user}
-          isConnected={isConnected}
-          height={height}
-          width={width}
-        />
-
-        {Platform.OS === 'ios' && fullyLoaded && (
-          <IosIapListener
-            checkoutAmount={checkoutAmount}
-            setCheckoutAmount={setCheckoutAmount}
+          <SplashAuth
+            source={require('../assets/images/splash.png')}
+            user={user}
+            isConnected={isConnected}
+            height={height}
+            width={width}
           />
-        )}
 
-        <StatusBar style="dark" />
-        <Toast />
-      </SafeAreaView>
+          <StatusBar style="dark" />
+          <Toast />
+        </SafeAreaView>
+      </TutorialProvider>
     </TokenModeProvider>
   )
 }
