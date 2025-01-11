@@ -65,7 +65,7 @@
     "react-native-gesture-handler": "~2.20.2",
     "react-native-get-random-values": "1.11.0",
     "react-native-gradle-plugin": "0.71.19",
-    "react-native-iap": "12.15.2",
+    "react-native-iap": "12.16.0",
     "react-native-logs": "^5.1.0",
     "react-native-modal": "13.0.1",
     "react-native-phone-input": "1.3.7",
