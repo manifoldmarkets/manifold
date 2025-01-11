@@ -4,7 +4,6 @@ import {
   CPMMMultiContract,
   isBinaryMulti,
   isSportsContract,
-  MultiContract,
 } from 'common/contract'
 import { BinaryBetButtons } from 'components/contract/bet/binary-bet-buttons'
 import { MultiBinaryBetButtons } from 'components/contract/bet/multi-binary-bet-buttons'
@@ -102,7 +101,7 @@ function ContractPageContent({ contractId }: ContractPageContentProps) {
             size="lg"
           />
         ) : isMultipleChoice ? (
-          <MultiOverview contract={contract as MultiContract} />
+          <MultiOverview contract={contract as CPMMMultiContract} />
         ) : (
           <BinaryBetButtons contract={contract} size="lg" />
         )}
