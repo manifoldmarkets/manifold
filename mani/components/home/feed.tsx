@@ -6,6 +6,9 @@ import { Text } from 'components/text'
 import { View } from 'react-native'
 import { useAPIGetter } from 'hooks/use-api-getter'
 import { getDefinedContract, pairContracts } from 'lib/contracts'
+import { isProd } from 'lib/firebase/init'
+
+const SPORTS_ID = isProd ? '2hGlgVhIyvVaFyQAREPi' : 'IOffGO7C9c0dfDura9Yn'
 
 function MarketsList(props: { fetchProps: APIParams<'search-markets-full'> }) {
   const { fetchProps } = props
@@ -67,9 +70,9 @@ function LiveSoonContent() {
     <MarketsList
       fetchProps={{
         term: '',
-        filter: 'closing-day',
-        sort: 'close-date',
-        // gids: ALL_IDS,
+        filter: 'closing-week',
+        sort: 'start-time',
+        gids: SPORTS_ID,
       }}
     />
   )

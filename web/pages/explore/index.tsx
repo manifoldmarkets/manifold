@@ -31,11 +31,13 @@ import { FaBaseballBall } from 'react-icons/fa'
 import { AiContent } from 'web/components/ai-content'
 import { Contract } from 'common/contract'
 import { tsToMillis } from 'common/supabase/utils'
+import { ENV } from 'common/envs/constants'
 
+const isProd = ENV === 'PROD'
 const NFL_ID = 'TNQwmbE5p6dnKx2e6Qlp'
 const NBA_ID = 'i0v3cXwuxmO9fpcInVYb'
 const EPL_ID = '5gsW3dPR3ySBRZCodrgm'
-const SPORTS_ID = '2hGlgVhIyvVaFyQAREPi'
+const SPORTS_ID = isProd ? '2hGlgVhIyvVaFyQAREPi' : 'IOffGO7C9c0dfDura9Yn'
 const MLB_ID = 'RFwfANk54JSXOwj4qwsW,786nRQzgVyUnuUtaLTGW' // MLB, Baseball
 const NHL_ID = 'lccgApXa1l7O5ZH3XfhH,tYP9jmPPjoX29KfzE4l5' // NHL, Hockey
 const colClass = 'gap-4 p-1'

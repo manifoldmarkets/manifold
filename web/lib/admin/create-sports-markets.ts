@@ -48,7 +48,7 @@ export const handleCreateSportsMarkets = async (
 
       const groupIds =
         ENV === 'DEV'
-          ? []
+          ? ['IOffGO7C9c0dfDura9Yn']
           : isEPL
           ? [
               '2hGlgVhIyvVaFyQAREPi', // sports_default
