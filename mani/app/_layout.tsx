@@ -21,6 +21,10 @@ import { Colors } from 'constants/colors'
 import { UserProvider, useUser } from 'hooks/use-user'
 import { Splash } from 'components/splash'
 import Toast from 'react-native-toast-message'
+import {
+  SafeAreaProvider,
+  useSafeAreaInsets,
+} from 'react-native-safe-area-context'
 
 const HEADER_HEIGHT = 250
 
@@ -109,11 +113,12 @@ function RootLayout() {
   const fullyLoaded = user && isConnected
   const width = Dimensions.get('window').width //full width
   const height = Dimensions.get('window').height //full height
+  const insets = useSafeAreaInsets()
 
   if (!loaded)
     return (
       <Splash
-        height={height}
+        height={height + insets.bottom}
         width={width}
         source={require('../assets/images/splash.png')}
       />
@@ -121,7 +126,16 @@ function RootLayout() {
 
   return (
     <TokenModeProvider>
-      <SafeAreaView style={styles.container}>
+      <SafeAreaView
+        style={[
+          styles.container,
+          // Add padding for Android
+          Platform.OS === 'android' && {
+            paddingTop: insets.bottom + insets.top,
+            paddingBottom: insets.bottom,
+          },
+        ]}
+      >
         <Stack>
           <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
           <Stack.Screen
@@ -144,7 +158,7 @@ function RootLayout() {
           source={require('../assets/images/splash.png')}
           user={user}
           isConnected={isConnected}
-          height={height}
+          height={height + insets.bottom + insets.top}
           width={width}
         />
 
@@ -166,7 +180,7 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: Colors.background,
-    paddingHorizontal: 20,
+    paddingHorizontal: Platform.OS === 'ios' ? 20 : 0,
   },
   header: {
     height: HEADER_HEIGHT,
@@ -184,8 +198,10 @@ export default function App() {
   const WrappedRoot = Sentry.wrap(withIAPContext(RootLayout))
 
   return (
-    <UserProvider>
-      <WrappedRoot />
-    </UserProvider>
+    <SafeAreaProvider>
+      <UserProvider>
+        <WrappedRoot />
+      </UserProvider>
+    </SafeAreaProvider>
   )
 }
