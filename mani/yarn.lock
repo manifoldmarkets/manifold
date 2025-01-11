@@ -7311,10 +7311,10 @@ react-native-helmet-async@2.0.4:
     react-fast-compare "^3.2.2"
     shallowequal "^1.1.0"
 
-react-native-iap@12.15.2:
-  version "12.15.2"
-  resolved "https://registry.yarnpkg.com/react-native-iap/-/react-native-iap-12.15.2.tgz#328b84d39cb15a9c0d6cec2482cdcca39a838fa6"
-  integrity sha512-P5gIepfzXLOfpbdntMgGHu53tpMDoJlnYh0rX4qRygyYp+L7U7aFYON0cqf+lK4RKBpZmYHA4NRlBojMwz9pCQ==
+react-native-iap@12.16.0:
+  version "12.16.0"
+  resolved "https://registry.yarnpkg.com/react-native-iap/-/react-native-iap-12.16.0.tgz#c2e3fe3f1991afb72e36e41bb5fbdeca0238ac7a"
+  integrity sha512-jOcZRIdXlmqXBx4dkcGqfSMGz8yxa99wt+0N7EDzX1aLCKUzMmeMPVBV2DjwcT1gDzOVfXSXIw1liJkHSNb0Aw==
 
 react-native-is-edge-to-edge@^1.1.6:
   version "1.1.6"
