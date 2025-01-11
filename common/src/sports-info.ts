@@ -21,4 +21,5 @@ export interface SportsGames {
   homeTeamMetadata: TeamMetadata
   awayTeamMetadata: TeamMetadata
   strStatus: string
+  idLeague: string
 }

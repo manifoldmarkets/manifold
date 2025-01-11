@@ -23,10 +23,23 @@ export async function getLiveScores(): Promise<SportsGames[]> {
     }
 
     const data = await response.json()
-    const schedule: SportsGames[] = data?.schedule || []
+    const schedule: SportsGames[] = data?.livescore || []
 
-    log(`Fetched ${schedule.length} games from the endpoint.`)
-    return schedule
+    const relevantLeagues = [
+      '4387', // NBA
+      '4328', // EPL
+      '4391', // NFL
+      '4380', // NHL
+      '5109', // Mexican Pacific League for testing
+    ]
+
+    const filteredGames = schedule.filter((game) =>
+      relevantLeagues.includes(game.idLeague)
+    )
+
+    log(`Filtered games for relevant leagues: ${filteredGames.length}`)
+
+    return filteredGames
   } catch (error) {
     log(`Error fetching live and recently completed games: ${error}`)
     return []
