@@ -75,7 +75,9 @@ export const CHOICE_OTHER_COLOR = '#C2C3DB'
 export const nthColor = (index: number) =>
   CHOICE_ANSWER_COLORS[index % CHOICE_ANSWER_COLORS.length]
 
-export function getAnswerColor(answer: Answer) {
+export function getAnswerColor(answer: Answer | undefined) {
+  if (!answer) return CHOICE_OTHER_COLOR
+
   const index = answer.index
 
   if (answer.text === 'Democratic Party') return '#adc4e3'

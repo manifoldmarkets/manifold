@@ -3,6 +3,7 @@ import {
   Contract,
   CPMMNumericContract,
   getBinaryMCProb,
+  getMainBinaryMCAnswer,
   isBinaryMulti,
 } from 'common/contract'
 import { TRADE_TERM } from 'common/envs/constants'
@@ -26,6 +27,7 @@ import { formatTimeShort } from 'web/lib/util/time'
 import { Pagination } from '../widgets/pagination'
 import { MoneyDisplay } from './money-display'
 import { ContractMetric } from 'common/contract-metric'
+import { getAnswerColor } from '../charts/contract/choice'
 
 export function ContractBetsTable(props: {
   contract: Contract
@@ -218,7 +220,11 @@ function BetRow(props: { bet: Bet; contract: Contract }) {
 
   const isCashContract = contract.token === 'CASH'
   const sharesOrShortSellShares = Math.abs(shares)
-
+  const mainBinaryMCAnswer = getMainBinaryMCAnswer(contract)
+  const otherBinaryMCAnswer =
+    'answers' in contract
+      ? contract.answers.find((a) => a.id !== mainBinaryMCAnswer?.id)
+      : undefined
   return (
     <tr>
       {(isCPMM || isCpmmMulti) && <td>{shares >= 0 ? 'BUY' : 'SELL'}</td>}
@@ -232,6 +238,20 @@ function BetRow(props: { bet: Bet; contract: Contract }) {
           <BinaryOutcomeLabel outcome={outcome as any} />
         ) : (
           <OutcomeLabel
+            pseudonym={
+              isBinaryMC
+                ? {
+                    YES: {
+                      pseudonymName: mainBinaryMCAnswer?.text ?? '',
+                      pseudonymColor: getAnswerColor(mainBinaryMCAnswer),
+                    },
+                    NO: {
+                      pseudonymName: otherBinaryMCAnswer?.text ?? '',
+                      pseudonymColor: getAnswerColor(otherBinaryMCAnswer),
+                    },
+                  }
+                : undefined
+            }
             outcome={outcome}
             contract={contract}
             truncate="short"
