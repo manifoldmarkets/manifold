@@ -55,7 +55,7 @@ export function TokenToggleHeader() {
           <ThemedText weight={'bold'} color={color.primary}>
             {formatMoneyNumber(userBalance)}
           </ThemedText>
-          {token === 'MANA' ? ' Mana' : ' Sweep'}
+          {token === 'MANA' ? ' Mana' : ' sCash'}
         </ThemedText>
         <TokenToggle />
       </Row>
