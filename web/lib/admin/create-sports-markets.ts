@@ -95,7 +95,7 @@ export const handleCreateSportsMarkets = async (
         sportsEventId: sportsGames.idEvent,
         sportsLeague: sportsGames.strLeague,
         groupIds,
-        takerAPIOrdersDisabled: Math.random() < 0.5,
+        takerAPIOrdersDisabled: true,
       }
 
       const result = await api('market', createProps)
