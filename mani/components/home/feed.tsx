@@ -12,7 +12,7 @@ const SPORTS_ID = isProd ? '2hGlgVhIyvVaFyQAREPi' : 'IOffGO7C9c0dfDura9Yn'
 
 function MarketsList(props: { fetchProps: APIParams<'search-markets-full'> }) {
   const { fetchProps } = props
-  const limit = 10
+  const limit = 20
   const [offset, setOffset] = useState(0)
   const { data, loading } = useAPIGetter(
     'search-markets-full',

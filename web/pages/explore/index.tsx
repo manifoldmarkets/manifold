@@ -51,7 +51,7 @@ function LiveSoonContent() {
         term: '',
         filter: 'closing-week',
         sort: 'start-time',
-        gids: ALL_IDS,
+        gids: isProd ? ALL_IDS : SPORTS_ID,
       }}
       sortCallback={(c: Contract) =>
         c.sportsStartTimestamp

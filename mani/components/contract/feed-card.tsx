@@ -10,7 +10,6 @@ import { isBinaryMulti } from 'common/contract'
 import { Row } from 'components/layout/row'
 import { useColor } from 'hooks/use-color'
 import { AnswerProbability, BinaryProbability } from './probability'
-import { useState } from 'react'
 import { BinaryBetButtons } from './bet/binary-bet-buttons'
 import { MultiBetButtons } from './bet/multi-bet-buttons'
 import { useRouter } from 'expo-router'
@@ -19,6 +18,45 @@ import { useContract } from 'hooks/use-contract'
 import { useTokenMode } from 'hooks/use-token-mode'
 import { filterDefined } from 'common/util/array'
 import { ContractPair, getDefinedContract } from 'lib/contracts'
+import { Animated } from 'react-native'
+import { useEffect, useRef } from 'react'
+import { getIsLive } from 'common/sports-info'
+
+function LiveDot() {
+  const pulseAnim = useRef(new Animated.Value(0.4)).current
+
+  useEffect(() => {
+    Animated.loop(
+      Animated.sequence([
+        Animated.timing(pulseAnim, {
+          toValue: 1,
+          duration: 1000,
+          useNativeDriver: true,
+        }),
+        Animated.timing(pulseAnim, {
+          toValue: 0.4,
+          duration: 1000,
+          useNativeDriver: true,
+        }),
+      ])
+    ).start()
+  }, [])
+
+  return (
+    <Row style={{ alignItems: 'center', gap: 4, paddingLeft: 4 }}>
+      <Animated.View
+        style={{
+          width: 8,
+          height: 8,
+          borderRadius: 4,
+          backgroundColor: 'red',
+          opacity: pulseAnim,
+        }}
+      />
+      <ThemedText color={'red'}>Live</ThemedText>
+    </Row>
+  )
+}
 
 export function FeedCard(props: { contractPair: ContractPair }) {
   const { token } = useTokenMode()
@@ -33,14 +71,13 @@ export function FeedCard(props: { contractPair: ContractPair }) {
     filterDefined([liveContract, liveSiblingContract]).find(
       (c) => c.token === token
     ) ?? definedContract
+  const { outcomeType } = contract
   const router = useRouter()
   const isBinaryMc = isBinaryMulti(contract)
-  const isMultipleChoice =
-    contract.outcomeType == 'MULTIPLE_CHOICE' && !isBinaryMc
+  const isMultipleChoice = outcomeType == 'MULTIPLE_CHOICE' && !isBinaryMc
   const isBinary = !isBinaryMc && !isMultipleChoice
   const isSports = isSportsContract(contract)
 
-  const [betPanelOpen, setBetPanelOpen] = useState(false)
   const color = useColor()
 
   const handlePress = () => {
@@ -90,7 +127,7 @@ export function FeedCard(props: { contractPair: ContractPair }) {
           </Row>
         )}
       </Row>
-
+      {getIsLive(contract) && <LiveDot />}
       {isMultipleChoice ? (
         //   !isBinaryMc &&
         <>
