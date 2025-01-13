@@ -13,13 +13,14 @@ import { getNewContract } from 'common/new-contract'
 import { convertAnswer, convertContract } from 'common/supabase/contracts'
 import { clamp } from 'lodash'
 import { runTransactionWithRetries } from './transact-with-retries'
-import { answerToRow, getAnswersForContract } from './supabase/answers'
+import { answerToRow } from './supabase/answers'
 import { Answer } from 'common/answer'
 import { bulkInsertQuery } from './supabase/utils'
 import { pgp } from './supabase/init'
 import { generateAntes } from 'shared/create-contract-helpers'
 import { getTierFromLiquidity } from 'common/tier'
 import { MarketContract } from 'common/contract'
+import { filterDefined } from 'common/util/array'
 
 // cribbed from backend/api/src/create-market.ts
 
@@ -74,8 +75,8 @@ export async function createCashContractMain(
             400,
             `Cannot add answers to multi sweepstakes question`
           )
-
-        answers = await getAnswersForContract(tx, manaContractId)
+        // Other gets recreated
+        answers = manaContract.answers.filter((a) => !a.isOther)
       }
 
       const initialProb =
@@ -89,6 +90,7 @@ export async function createCashContractMain(
         'isLogScale' in manaContract ? manaContract.isLogScale : false
 
       const contract = getNewContract({
+        ...manaContract,
         id: randomString(),
         ante: subsidyAmount,
         token: 'CASH',
@@ -96,24 +98,13 @@ export async function createCashContractMain(
         initialProb,
         creator,
         slug: manaContract.slug + '--cash',
-        question: manaContract.question,
-        outcomeType: manaContract.outcomeType,
-        closeTime: manaContract.closeTime,
-        visibility: manaContract.visibility,
-        isTwitchContract: manaContract.isTwitchContract,
-
         min,
         max,
         isLogScale,
-
-        answers: answers.filter((a) => !a.isOther).map((a) => a.text), // Other gets recreated
-
-        ...(manaContract.outcomeType === 'MULTIPLE_CHOICE'
-          ? {
-              addAnswersMode: manaContract.addAnswersMode,
-              shouldAnswersSumToOne: manaContract.shouldAnswersSumToOne,
-            }
-          : {}),
+        answers: answers.map((a) => a.text),
+        answerImageUrls: filterDefined(answers.map((a) => a.imageUrl)),
+        answerShortTexts: filterDefined(answers.map((a) => a.shortText)),
+        siblingContractId: manaContract.id,
       })
 
       // copy answer colors and set userId to subsidizer
@@ -149,9 +140,6 @@ export async function createCashContractMain(
       // Set sibling contract IDs
       await updateContract(tx, manaContractId, {
         siblingContractId: cashContract.id,
-      })
-      await updateContract(tx, cashContract.id, {
-        siblingContractId: manaContractId,
       })
 
       // Add initial liquidity
