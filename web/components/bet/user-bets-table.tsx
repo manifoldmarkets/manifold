@@ -71,8 +71,6 @@ type BetSort =
 
 type BetFilter = 'open' | 'limit_bet' | 'sold' | 'closed' | 'resolved' | 'all'
 
-type BetTokenFilter = 'CASH' | 'MANA' | 'ALL'
-
 const JUNE_1_2022 = new Date('2022-06-01T00:00:00.000Z').valueOf()
 export function UserBetsTable(props: { user: User }) {
   const { user } = props
@@ -100,7 +98,8 @@ export function UserBetsTable(props: { user: User }) {
     api('get-user-contract-metrics-with-contracts', {
       userId: user.id,
       offset: 0,
-      limit: 5000,
+      // Hack for Ziddletwix
+      limit: user.id === 'Iua2KQvL6KYcfGLGNI6PVeGkseo1' ? 10000 : 5000,
     }).then((res) => {
       const { contracts, metricsByContract } = res
       setMetricsByContract(
