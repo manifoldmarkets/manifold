@@ -1,6 +1,7 @@
 import { Col } from 'components/layout/col'
 import { Row } from 'components/layout/row'
 import { NumberText } from 'components/number-text'
+import { ThemedText } from 'components/themed-text'
 import { Token } from 'components/token/token'
 import { Rounded } from 'constants/border-radius'
 import { Colors } from 'constants/colors'
@@ -77,8 +78,22 @@ export function BetAmountInput({
           gap: 8,
           justifyContent: 'space-between',
           width: '100%',
+          position: 'relative',
         }}
       >
+        <ThemedText
+          size="xs"
+          color={color.textQuaternary}
+          style={{
+            position: 'absolute',
+            top: -9,
+            left: 4,
+            backgroundColor: color.background,
+            paddingHorizontal: 4,
+          }}
+        >
+          Amount
+        </ThemedText>
         <Row style={{ alignItems: 'center', gap: 8, flex: 1 }}>
           <Token
             style={{
