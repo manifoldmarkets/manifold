@@ -72,6 +72,7 @@ export default function Shop() {
 
   const onSelectPriceInDollars = (dollarAmount: PaymentAmount) => {
     if (!user || !privateUser) return
+    setError(null)
     const { status, message } = getVerificationStatus(user, privateUser)
     if (status !== 'error') {
       setCheckoutAmount(dollarAmount)
