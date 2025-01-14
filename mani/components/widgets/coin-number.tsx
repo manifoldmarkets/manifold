@@ -16,15 +16,15 @@ export type NumberDisplayType = 'short' | 'animated' | 'toDecimal'
 
 export function CoinNumber(props: {
   amount?: number
-  coinType?: ContractToken
+  token?: ContractToken
   numberType?: NumberDisplayType
   hideAmount?: boolean
   style?: any
 }) {
-  const { hideAmount, amount, coinType = 'MANA', numberType, style } = props
+  const { hideAmount, amount, token = 'MANA', numberType, style } = props
 
-  const { token } = useTokenMode()
-  const isCash = !coinType ? token === 'CASH' : coinType === 'CASH'
+  const { token: tokenSetting } = useTokenMode()
+  const isCash = !token ? tokenSetting === 'CASH' : token === 'CASH'
 
   const textStyle = { color: Colors.text }
 

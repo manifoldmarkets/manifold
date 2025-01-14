@@ -539,7 +539,7 @@ function SweepiesStats(props: {
         <CoinNumber
           amount={redeemableCash}
           style={styles.statsAmount}
-          coinType="CASH"
+          token="CASH"
         />
       </Row>
       <View style={styles.statsSeparator} />
@@ -548,7 +548,7 @@ function SweepiesStats(props: {
         <CoinNumber
           amount={cashBalance}
           style={styles.statsAmount}
-          coinType="CASH"
+          token="CASH"
         />
       </Row>
     </Col>
@@ -619,7 +619,7 @@ function SelectCashoutOptions(props: {
                     color: purple[400],
                   },
                 ]}
-                coinType="MANA"
+                token="MANA"
               />
               <Text style={styles.valueLabel}>mana value</Text>
             </Row>
@@ -664,7 +664,7 @@ function SelectCashoutOptions(props: {
                   <Text style={styles.errorText}>You need at least </Text>
                   <CoinNumber
                     amount={MIN_CASHOUT_AMOUNT}
-                    coinType="CASH"
+                    token="CASH"
                     style={[
                       styles.valueText,
                       {
