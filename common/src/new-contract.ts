@@ -34,9 +34,6 @@ export function getNewContract(
     | 'isTwitchContract'
     | 'marketTier'
     | 'token'
-    | 'sportsStartTimestamp'
-    | 'sportsEventId'
-    | 'sportsLeague'
     | 'takerAPIOrdersDisabled'
     | 'siblingContractId'
     | 'coverImageUrl'
@@ -60,6 +57,11 @@ export function getNewContract(
 
     // Bountied
     isAutoBounty?: boolean | undefined
+
+    // Sports
+    sportsStartTimestamp?: string
+    sportsEventId?: string
+    sportsLeague?: string
   }
 ) {
   const {

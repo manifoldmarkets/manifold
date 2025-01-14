@@ -1,4 +1,4 @@
-import { Contract } from 'common/contract'
+import { Contract, isSportsContract } from 'common/contract'
 import { createSupabaseDirectClient } from 'shared/supabase/init'
 import {
   from,
@@ -454,7 +454,7 @@ export const sortFields: SortFields = {
     // sql: `close_time`,
     sql: `coalesce((data->>'sportsStartTimestamp')::timestamp with time zone, close_time)`,
     sortCallback: (c: Contract) =>
-      c.sportsStartTimestamp
+      isSportsContract(c)
         ? tsToMillis(c.sportsStartTimestamp)
         : c.closeTime ?? Infinity,
     order: 'ASC',

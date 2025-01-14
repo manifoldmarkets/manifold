@@ -29,7 +29,7 @@ import { LoadingIndicator } from 'web/components/widgets/loading-indicator'
 import { User } from 'common/user'
 import { FaBaseballBall } from 'react-icons/fa'
 import { AiContent } from 'web/components/ai-content'
-import { Contract } from 'common/contract'
+import { Contract, isSportsContract } from 'common/contract'
 import { tsToMillis } from 'common/supabase/utils'
 import { ENV } from 'common/envs/constants'
 
@@ -54,7 +54,7 @@ function LiveSoonContent() {
         gids: isProd ? ALL_IDS : SPORTS_ID,
       }}
       sortCallback={(c: Contract) =>
-        c.sportsStartTimestamp
+        isSportsContract(c)
           ? tsToMillis(c.sportsStartTimestamp)
           : c.closeTime ?? Infinity
       }
