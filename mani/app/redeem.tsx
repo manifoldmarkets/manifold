@@ -49,6 +49,7 @@ import { Row } from 'components/layout/row'
 import { Col } from 'components/layout/col'
 import Page from 'components/page'
 import { Button } from 'components/buttons/button'
+import { ContractToken } from 'common/contract'
 
 export type CashoutPagesType =
   | 'select-cashout-method'
@@ -538,7 +539,7 @@ function SweepiesStats(props: {
         <CoinNumber
           amount={redeemableCash}
           style={styles.statsAmount}
-          coinType="sweepies"
+          coinType="CASH"
         />
       </Row>
       <View style={styles.statsSeparator} />
@@ -547,7 +548,7 @@ function SweepiesStats(props: {
         <CoinNumber
           amount={cashBalance}
           style={styles.statsAmount}
-          coinType="sweepies"
+          coinType="CASH"
         />
       </Row>
     </Col>
@@ -618,7 +619,7 @@ function SelectCashoutOptions(props: {
                     color: purple[400],
                   },
                 ]}
-                coinType="mana"
+                coinType="MANA"
               />
               <Text style={styles.valueLabel}>mana value</Text>
             </Row>
@@ -663,7 +664,7 @@ function SelectCashoutOptions(props: {
                   <Text style={styles.errorText}>You need at least </Text>
                   <CoinNumber
                     amount={MIN_CASHOUT_AMOUNT}
-                    coinType="sweepies"
+                    coinType="CASH"
                     style={[
                       styles.valueText,
                       {
@@ -714,9 +715,9 @@ function CashToManaForm(props: { onBack: () => void; redeemableCash: number }) {
 
   const updateAmounts = (
     newAmount: number | undefined,
-    type: 'sweepies' | 'mana'
+    type: ContractToken
   ) => {
-    if (type === 'sweepies') {
+    if (type === 'CASH') {
       setSweepiesAmount(newAmount)
       setManaAmount(
         newAmount ? newAmount * CASH_TO_MANA_CONVERSION_RATE : undefined
@@ -735,7 +736,7 @@ function CashToManaForm(props: { onBack: () => void; redeemableCash: number }) {
     try {
       await api('convert-cash-to-mana', { amount: sweepiesAmount })
       setLoading(false)
-      updateAmounts(sweepiesAmount, 'sweepies')
+      updateAmounts(sweepiesAmount, 'CASH')
       setError(null)
       onBack()
     } catch (e) {
@@ -760,9 +761,9 @@ function CashToManaForm(props: { onBack: () => void; redeemableCash: number }) {
           min={0}
           onChangeAmount={(newAmount) => {
             if (newAmount && newAmount > roundedRedeemableCash) {
-              updateAmounts(roundedRedeemableCash, 'sweepies')
+              updateAmounts(roundedRedeemableCash, 'CASH')
             } else {
-              updateAmounts(newAmount, 'sweepies')
+              updateAmounts(newAmount, 'CASH')
             }
           }}
         />
@@ -774,7 +775,7 @@ function CashToManaForm(props: { onBack: () => void; redeemableCash: number }) {
           placeholder="Mana Amount"
           amount={manaAmount}
           min={0}
-          onChangeAmount={(newAmount) => updateAmounts(newAmount, 'mana')}
+          onChangeAmount={(newAmount) => updateAmounts(newAmount, 'MANA')}
         />
       </Col>
 

@@ -16,7 +16,7 @@ export type NumberDisplayType = 'short' | 'animated' | 'toDecimal'
 
 export function CoinNumber(props: {
   amount?: number
-  coinType?: 'mana' | 'spice' | 'sweepies' | ContractToken
+  coinType?: ContractToken
   numberType?: NumberDisplayType
   hideAmount?: boolean
   style?: any
@@ -24,8 +24,7 @@ export function CoinNumber(props: {
   const { hideAmount, amount, coinType = 'MANA', numberType, style } = props
 
   const { token } = useTokenMode()
-  const isSweeps =
-    coinType === 'sweepies' || coinType === 'CASH' || token === 'CASH'
+  const isCash = !coinType ? token === 'CASH' : coinType === 'CASH'
 
   const textStyle = { color: Colors.text }
 
@@ -33,14 +32,14 @@ export function CoinNumber(props: {
     <Row style={[{ alignItems: 'center', gap: 4 }, style]}>
       {amount !== undefined && amount <= -1 && <Text style={textStyle}>-</Text>}
       <Image
-        source={isSweeps ? SweepsFlatImage : ManaFlatImage}
+        source={isCash ? SweepsFlatImage : ManaFlatImage}
         style={{ width: 20, height: 20 }}
       />
       {hideAmount ? (
         <Text style={textStyle} />
       ) : amount == undefined ? (
         <Text style={textStyle}>---</Text>
-      ) : coinType === 'sweepies' || coinType === 'CASH' ? (
+      ) : isCash ? (
         <Text style={[textStyle, style]}>
           {formatSweepiesNumber(Math.abs(amount ?? 0), {
             toDecimal: numberType == 'toDecimal' ? 2 : undefined,
