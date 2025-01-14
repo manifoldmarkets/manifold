@@ -1,7 +1,7 @@
 import { Button, ButtonProps } from './button'
 
 const getWidth = (size?: ButtonProps['size']) => {
-  return size === 'xs' ? 44 : undefined
+  return size === 'xs' ? 46 : undefined
 }
 
 export function YesNoButton(props: ButtonProps) {
