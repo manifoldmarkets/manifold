@@ -12,11 +12,9 @@ import { Image, View } from 'react-native'
 import { auth } from 'lib/firebase/init'
 import { clearData } from 'lib/auth-storage'
 import { Button } from 'components/buttons/button'
+import { router } from 'expo-router'
 
 export default function Profile() {
-  // TODO: actually grab this data. Do sorting in backend
-  // TODO: this view only works for binary contracts. There needs to be a way to make this work for multi choice contracts as well
-
   const color = useColor()
   const user = useUser()
 
@@ -86,6 +84,13 @@ export default function Profile() {
             </ThemedText>
             <TokenNumber amount={604} size="2xl" />
           </Col>
+        </Row>
+        <Row>
+          <Button
+            onPress={() => router.push('/redeem')}
+            title="Redeem"
+            variant="gray"
+          />
         </Row>
         <TopTabs
           tabs={[

@@ -24,7 +24,7 @@ export const withOpacity = (hexColor: string, opacity: number) => {
   )
 }
 
-const gray = {
+export const gray = {
   50: '#fafafa',
   100: '#f4f4f5',
   200: '#e4e4e7',
@@ -39,7 +39,7 @@ const gray = {
 } as const
 
 // Tailwind emerald colors
-const emerald = {
+export const emerald = {
   50: '#ECFDF5',
   100: '#D1FAE5',
   200: '#A7F3D0',
@@ -52,7 +52,7 @@ const emerald = {
   900: '#064E3B',
 } as const
 
-const blue = {
+export const blue = {
   50: '#eff6ff',
   100: '#dbeafe',
   200: '#bfdbfe',
@@ -65,7 +65,7 @@ const blue = {
   900: '#1e3a8a',
 }
 
-const pink = {
+export const pink = {
   50: '#fdf2f8',
   100: '#fce7f3',
   200: '#fbcfe8',
@@ -78,7 +78,7 @@ const pink = {
   900: '#831843',
 }
 
-const purple = {
+export const purple = {
   50: '#FAF6FE',
   100: '#F3EAFD',
   200: '#E7D9FB',
@@ -92,11 +92,33 @@ const purple = {
   950: '#36115A',
 } as const
 
-const red = {
-  500: '#FF0000',
+export const red = {
+  50: '#ffebee',
+  100: '#ffcdd2',
+  200: '#ef9a9a',
+  300: '#e57373',
+  400: '#ef5350',
+  500: '#f44336',
+  600: '#e53935',
+  700: '#d32f2f',
+  800: '#c62828',
+  900: '#b71c1c',
 }
 
-const white = '#FFFFFF'
+export const amber = {
+  50: '#fff8e1',
+  100: '#ffecb3',
+  200: '#ffe082',
+  300: '#ffd54f',
+  400: '#ffca28',
+  500: '#ffc107',
+  600: '#ffb300',
+  700: '#ffa000',
+  800: '#ff8f00',
+  900: '#ff6f00',
+}
+
+export const white = '#FFFFFF'
 
 // Mode-specific colors
 export const modes = {

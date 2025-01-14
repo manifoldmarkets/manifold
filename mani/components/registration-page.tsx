@@ -395,7 +395,7 @@ export const RegistrationPage = (props: {
               We were unable to verify your identity. Unfortunately, this means
               you can't use our sweepstakes markets.
             </Text>
-            <Button onPress={() => router.replace('/')} title="Return Home" />
+            <Button onPress={router.back} title="Return Home" />
           </View>
         </View>
       )
@@ -413,7 +413,7 @@ export const RegistrationPage = (props: {
               location changes. Please try again later (more than 3 hrs) in an
               allowed location.
             </Text>
-            <Button onPress={() => router.replace('/')} title="Return Home" />
+            <Button onPress={router.back} title="Return Home" />
           </View>
         </View>
       )
@@ -430,7 +430,7 @@ export const RegistrationPage = (props: {
               VPN if using. You may have to wait for a few hours for your
               account to be unblocked.
             </Text>
-            <Button onPress={() => router.replace('/')} title="Return Home" />
+            <Button onPress={router.back} title="Return Home" />
           </View>
         </View>
       )
@@ -445,7 +445,7 @@ export const RegistrationPage = (props: {
             <Text style={styles.message}>
               You must be 18 or older to participate in sweepstakes markets.
             </Text>
-            <Button onPress={() => router.replace('/')} title="Return Home" />
+            <Button onPress={router.back} title="Return Home" />
           </View>
         </View>
       )
@@ -480,7 +480,7 @@ export const RegistrationPage = (props: {
               We're reviewing your documents. This usually takes a few minutes,
               but may take up to 24 hours. Please check back later.
             </Text>
-            <Button onPress={() => router.replace('/')} title="Return Home" />
+            <Button onPress={router.back} title="Return Home" />
           </View>
         </View>
       )
