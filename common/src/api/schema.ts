@@ -2064,6 +2064,15 @@ export const API = (_apiTypeCheck = {
       perAnswer: coerceBoolean.optional(),
     }),
   },
+  validateIap: {
+    method: 'POST',
+    visibility: 'undocumented',
+    authed: true,
+    returns: {} as { success: boolean },
+    props: z.object({
+      receipt: z.string(),
+    }),
+  },
 } as const)
 
 export type APIPath = keyof typeof API

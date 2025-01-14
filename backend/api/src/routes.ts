@@ -152,6 +152,7 @@ import { isSportsInterested } from './is-sports-bettor'
 import { getSportsGames } from './get-sports-games'
 import { getMarketProps } from './get-market-props'
 import { getUserContractMetricsWithContracts } from './get-user-contract-metrics-with-contracts'
+import { validateiap } from './validate-iap'
 
 // we define the handlers in this object in order to typecheck that every API has a handler
 export const handlers: { [k in APIPath]: APIHandler<k> } = {
@@ -322,4 +323,5 @@ export const handlers: { [k in APIPath]: APIHandler<k> } = {
   'get-market-props': getMarketProps,
   'get-user-contract-metrics-with-contracts':
     getUserContractMetricsWithContracts,
+  validateIap: validateiap,
 }

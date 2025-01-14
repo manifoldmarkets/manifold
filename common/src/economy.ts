@@ -151,7 +151,9 @@ const PaymentAmounts = [
     newUsersOnly: true,
   },
 ]
-export type PaymentAmount = (typeof PaymentAmounts)[number]
+export type PaymentAmount = (typeof PaymentAmounts)[number] & {
+  sku?: string
+}
 
 export const WEB_PRICES = PaymentAmounts
 
@@ -177,7 +179,30 @@ export const IOS_PRICES = [
     bonusInDollars: 100,
     sku: 'mana_10000',
   },
-]
+] as PaymentAmount[]
+export const MANI_IOS_PRICES = [
+  {
+    mana: 1000,
+    priceInDollars: 10,
+    bonusInDollars: 10,
+    newUsersOnly: false,
+    sku: 'S10',
+  },
+  {
+    mana: 2500,
+    priceInDollars: 25,
+    bonusInDollars: 25,
+    newUsersOnly: false,
+    sku: 'S25',
+  },
+  {
+    mana: 10000,
+    priceInDollars: 100,
+    bonusInDollars: 100,
+    newUsersOnly: false,
+    sku: 'S100',
+  },
+] as PaymentAmount[]
 
 export const SWEEPIES_CASHOUT_FEE = 0.05
 export const MIN_CASHOUT_AMOUNT = 25

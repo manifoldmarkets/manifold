@@ -1,11 +1,10 @@
 /* eslint-disable @typescript-eslint/no-require-imports */
 import 'expo-dev-client'
 import * as Notifications from 'expo-notifications'
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useRef } from 'react'
 import { Dimensions, Linking, Platform, SafeAreaView } from 'react-native'
 import { ENV } from 'lib/firebase/init'
 import { Notification } from 'common/notification'
-import { IosIapListener } from 'components/ios-iap-listener'
 import { StatusBar } from 'expo-status-bar'
 import { withIAPContext } from 'react-native-iap'
 import * as Sentry from '@sentry/react-native'
@@ -48,9 +47,6 @@ function RootLayout() {
 
   const user = useUser()
 
-  // IAP
-  const [checkoutAmount, setCheckoutAmount] = useState<number | null>(null)
-
   const handlePushNotification = async (
     response: Notifications.NotificationResponse
   ) => {
@@ -79,7 +75,7 @@ function RootLayout() {
 
   useEffect(() => {
     Linking.getInitialURL().then((url) => {
-      log('Initial url:', url, '- has loaded webview:')
+      log('Initial url:', url)
     })
   }, [])
 
@@ -168,13 +164,6 @@ function RootLayout() {
           height={height + insets.bottom + insets.top}
           width={width}
         />
-
-        {Platform.OS === 'ios' && fullyLoaded && (
-          <IosIapListener
-            checkoutAmount={checkoutAmount}
-            setCheckoutAmount={setCheckoutAmount}
-          />
-        )}
 
         <StatusBar style="dark" />
         <Toast />

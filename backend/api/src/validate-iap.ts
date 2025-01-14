@@ -1,5 +1,4 @@
-import { APIError, authEndpoint, validate } from './helpers/endpoint'
-import { z } from 'zod'
+import { APIError, APIHandler } from './helpers/endpoint'
 import { getPrivateUser, getUser, isProd, log } from 'shared/utils'
 import { trackPublicEvent } from 'shared/analytics'
 import * as admin from 'firebase-admin'
@@ -8,20 +7,14 @@ import { ManaPurchaseTxn } from 'common/txn'
 import { sendThankYouEmail } from 'shared/emails'
 import { runTxnInBetQueue } from 'shared/txn/run-txn'
 import { createSupabaseDirectClient } from 'shared/supabase/init'
-import { IOS_PRICES } from 'common/economy'
-
-const bodySchema = z
-  .object({
-    receipt: z.string(),
-  })
-  .strict()
+import { IOS_PRICES, MANI_IOS_PRICES } from 'common/economy'
 
 const IAP_TYPES_PROCESSED = 'apple'
 
-export const validateiap = authEndpoint(async (req, auth) => {
+export const validateiap: APIHandler<'validateIap'> = async (props, auth) => {
   // eslint-disable-next-line @typescript-eslint/no-require-imports
   const iap = require('@flat/in-app-purchase')
-  const { receipt } = validate(bodySchema, req.body)
+  const { receipt } = props
   const userId = auth.uid
 
   iap.config({
@@ -57,6 +50,7 @@ export const validateiap = authEndpoint(async (req, auth) => {
   log('purchase data:', purchaseData)
 
   const { transactionId, productId, purchaseDateMs, quantity } = purchaseData[0]
+  const firestore = admin.firestore()
 
   const query = await firestore
     .collection('iaps')
@@ -67,7 +61,8 @@ export const validateiap = authEndpoint(async (req, auth) => {
     log('transactionId', transactionId, 'already processed')
     throw new APIError(403, 'iap transaction already processed')
   }
-  const priceData = IOS_PRICES.find((p) => p.sku === productId)
+  const allPrices = IOS_PRICES.concat(isProd() ? [] : MANI_IOS_PRICES)
+  const priceData = allPrices.find((p) => p.sku === productId)
   if (!priceData) {
     log('productId', productId, 'not found in price data')
     throw new APIError(400, 'productId not found in price data')
@@ -165,6 +160,4 @@ export const validateiap = authEndpoint(async (req, auth) => {
     { revenue }
   )
   return { success: true }
-})
-
-const firestore = admin.firestore()
+}

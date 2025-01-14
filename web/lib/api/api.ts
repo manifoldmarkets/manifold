@@ -50,10 +50,6 @@ export function boostMarket(params: any) {
   return call(getApiUrl('boost-market'), 'POST', params)
 }
 
-export function validateIapReceipt(params: any) {
-  return call(getApiUrl('validateiap'), 'POST', params)
-}
-
 export function markAllNotifications(params: any) {
   return call(getApiUrl('markallnotifications'), 'POST', params)
 }
