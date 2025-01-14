@@ -100,13 +100,15 @@ export function Button({
     switch (variant) {
       case 'yes':
         return {
-          background: color.yesButtonBackground,
-          text: color.yesButtonText,
+          background:
+            size === 'lg' ? color.yesButtonText : color.yesButtonBackground,
+          text: size === 'lg' ? color.background : color.yesButtonText,
         }
       case 'no':
         return {
-          background: color.noButtonBackground,
-          text: color.noButtonText,
+          background:
+            size === 'lg' ? color.noButtonText : color.noButtonBackground,
+          text: size === 'lg' ? color.background : color.noButtonText,
         }
       case 'gray':
         return {
