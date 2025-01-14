@@ -1,6 +1,5 @@
 import {
   BinaryContract,
-  Contract,
   CPMMMultiContract,
   isBinaryMulti,
   isSportsContract,
@@ -25,6 +24,7 @@ import { useTokenMode } from 'hooks/use-token-mode'
 import { ContractPageLoading } from 'components/contract/loading-contract'
 import { useContract } from 'hooks/use-contract'
 import { ContentEditor } from 'components/content/content-editor'
+import { UserBetsSummary } from 'components/bet/bet-summary'
 export const LARGE_QUESTION_LENGTH = 95
 
 type ContractPageContentProps = {
@@ -39,20 +39,25 @@ function ContractPageContent({ contractId }: ContractPageContentProps) {
   const { token } = useTokenMode()
   // TODO: proof of concept, we may want the bet points in the market props or sth else.
   const [betPoints, setBetPoints] = useState<HistoryPoint<Partial<Bet>>[]>([])
-  const contractToShow =
-    contractProps?.contract.token === token
+  const manaContractProp =
+    contractProps?.contract.token === 'MANA'
       ? contractProps?.contract
       : siblingContract
-      ? (siblingContract as Contract)
-      : undefined
-  const contract = useContract(contractToShow)
+  const cashContractProp =
+    contractProps?.contract.token === 'CASH'
+      ? contractProps?.contract
+      : siblingContract
+  const manaContract = useContract(manaContractProp)
+  const cashContract = useContract(cashContractProp)
+  const contract = token === 'MANA' ? manaContract : cashContract
+
   useEffect(() => {
-    if (contractToShow) {
-      getBetPoints(contractToShow?.id as string).then((betPoints) => {
+    if (contract) {
+      getBetPoints(contract?.id as string).then((betPoints) => {
         setBetPoints(betPoints)
       })
     }
-  }, [contractToShow?.id])
+  }, [contract?.id])
 
   if (contract === null) {
     return (
@@ -70,7 +75,6 @@ function ContractPageContent({ contractId }: ContractPageContentProps) {
   const isMultipleChoice =
     contract.outcomeType == 'MULTIPLE_CHOICE' && !isBinaryMc
   const isBinary = !isBinaryMc && !isMultipleChoice
-
   const isSports = isSportsContract(contract)
 
   return (
@@ -105,9 +109,13 @@ function ContractPageContent({ contractId }: ContractPageContentProps) {
         ) : (
           <BinaryBetButtons contract={contract} size="lg" />
         )}
-
-        <ContractDescription contract={contract} />
-        <CommentsSection contract={contract} />
+        <UserBetsSummary contract={contract} />
+        {manaContract && (
+          <>
+            <ContractDescription contract={manaContract} />
+            <CommentsSection contract={manaContract} />
+          </>
+        )}
       </Col>
     </Page>
   )
