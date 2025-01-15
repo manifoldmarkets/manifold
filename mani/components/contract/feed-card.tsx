@@ -21,6 +21,7 @@ import { ContractPair, getDefinedContract } from 'lib/contracts'
 import { Animated } from 'react-native'
 import { useEffect, useRef } from 'react'
 import { getIsLive } from 'common/sports-info'
+import { TokenNumber } from 'components/token/token-number'
 
 function LiveDot() {
   const pulseAnim = useRef(new Animated.Value(0.4)).current
@@ -127,7 +128,7 @@ export function FeedCard(props: { contractPair: ContractPair }) {
           </Row>
         )}
       </Row>
-      {getIsLive(contract) && <LiveDot />}
+
       {isMultipleChoice ? (
         //   !isBinaryMc &&
         <>
@@ -184,6 +185,20 @@ export function FeedCard(props: { contractPair: ContractPair }) {
       ) : (
         <MultiBinaryBetButtons contract={contract as CPMMMultiContract} />
       )}
+      <Row style={{ justifyContent: 'space-between' }}>
+        <Row style={{ gap: 4 }}>
+          <TokenNumber
+            amount={contract.volume}
+            size="sm"
+            color={color.textTertiary}
+            shortened
+          />
+          <ThemedText color={color.textQuaternary} size="sm">
+            volume
+          </ThemedText>
+        </Row>
+        {getIsLive(contract) && <LiveDot />}
+      </Row>
     </TouchableOpacity>
   )
 }
