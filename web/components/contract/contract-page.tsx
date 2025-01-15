@@ -23,7 +23,7 @@ import { DAY_MS } from 'common/util/time'
 import { UserBetsSummary } from 'web/components/bet/bet-summary'
 import { ScrollToTopButton } from 'web/components/buttons/scroll-to-top-button'
 import { SidebarSignUpButton } from 'web/components/buttons/sign-up-button'
-import { getMultiBetPoints } from 'web/components/charts/contract/choice'
+import { getMultiBetPointsFromBets } from 'client-common/lib/choice'
 import { BackButton } from 'web/components/contract/back-button'
 import { ChangeBannerButton } from 'web/components/contract/change-banner-button'
 import { ContractDescription } from 'web/components/contract/contract-description'
@@ -55,7 +55,7 @@ import { Rating, ReviewPanel } from 'web/components/reviews/stars'
 import { GradientContainer } from 'web/components/widgets/gradient-container'
 import { Tooltip } from 'web/components/widgets/tooltip'
 import { useAdmin, useTrusted } from 'web/hooks/use-admin'
-import { useContractBets } from 'web/hooks/use-bets'
+import { useContractBets } from 'client-common/hooks/use-bets'
 import { useLiveContract } from 'web/hooks/use-contract'
 import { useHeaderIsStuck } from 'web/hooks/use-header-is-stuck'
 import { useRelatedMarkets } from 'web/hooks/use-related-contracts'
@@ -75,6 +75,8 @@ import { YourTrades } from 'web/pages/[username]/[contractSlug]'
 import { useSweepstakes } from '../sweepstakes-provider'
 import { useRouter } from 'next/router'
 import { precacheAnswers } from 'web/hooks/use-answers'
+import { useIsPageVisible } from 'web/hooks/use-page-visible'
+import { api } from 'web/lib/api/api'
 
 export function ContractPageContent(props: ContractParams) {
   const {
@@ -611,11 +613,16 @@ const useBetData = (props: {
 
   const isNumber = outcomeType === 'NUMBER'
 
-  const newBets = useContractBets(contractId, {
-    afterTime: lastBetTime ?? 0,
-    includeZeroShareRedemptions: true,
-    filterRedemptions: !isNumber,
-  })
+  const newBets = useContractBets(
+    contractId,
+    {
+      afterTime: lastBetTime ?? 0,
+      includeZeroShareRedemptions: true,
+      filterRedemptions: !isNumber,
+    },
+    useIsPageVisible,
+    (params) => api('bets', params)
+  )
 
   const newBetsWithoutRedemptions = newBets.filter((bet) => !bet.isRedemption)
   const totalBets =
@@ -634,7 +641,7 @@ const useBetData = (props: {
       const data = multiPointsString
         ? unserializeBase64Multi(multiPointsString)
         : {}
-      const newData = getMultiBetPoints(newBets)
+      const newData = getMultiBetPointsFromBets(newBets)
 
       return mergeWith(data, newData, (array1, array2) =>
         [...(array1 ?? []), ...(array2 ?? [])].sort((a, b) => a.x - b.x)

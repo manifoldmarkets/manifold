@@ -14,7 +14,8 @@ import {
   uniqBy,
 } from 'lodash'
 import { ReactNode, memo, useEffect, useState } from 'react'
-import { useBetsOnce, useSubscribeGlobalBets } from 'web/hooks/use-bets'
+import { useBetsOnce } from 'web/hooks/use-bets'
+import { useSubscribeGlobalBets } from 'client-common/hooks/use-bets'
 import {
   useGlobalComments,
   useSubscribeGlobalComments,

@@ -1,5 +1,6 @@
 import {
   BinaryContract,
+  Contract,
   CPMMMultiContract,
   isBinaryMulti,
   isSportsContract,
@@ -12,70 +13,80 @@ import { Col } from 'components/layout/col'
 import Page from 'components/page'
 import { ThemedText } from 'components/themed-text'
 import { useLocalSearchParams } from 'expo-router'
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { ContractDescription } from 'components/contract/contract-description'
 import { CommentsSection } from 'components/contract/comments/comments-section'
 
 import { useAPIGetter } from 'hooks/use-api-getter'
 import { getBetPoints } from 'common/bets'
-import { HistoryPoint } from 'common/chart'
+import { HistoryPoint, MultiPoints } from 'common/chart'
 import { Bet } from 'common/bet'
 import { useTokenMode } from 'hooks/use-token-mode'
 import { ContractPageLoading } from 'components/contract/loading-contract'
 import { useContract } from 'hooks/use-contract'
 import { ContentEditor } from 'components/content/content-editor'
 import { UserBetsSummary } from 'components/bet/bet-summary'
+import { Bets } from 'components/contract/bets'
+import { api } from 'lib/api'
+import { useIsPageVisible } from 'hooks/use-is-page-visibile'
+import { useContractBets } from 'client-common/hooks/use-bets'
+import { mergeWith } from 'lodash'
+import { getMultiBetPointsFromBets } from 'client-common/lib/choice'
+import { useUser } from 'hooks/use-user'
+import { getMultiBetPoints } from 'common/contract-params'
+import { APIResponse } from 'common/api/schema'
+
 export const LARGE_QUESTION_LENGTH = 95
 
 type ContractPageContentProps = {
   contractId: string
 }
 
-function ContractPageContent({ contractId }: ContractPageContentProps) {
-  const { data: contractProps } = useAPIGetter('get-market-props', {
+function ContractPageLoadingContent({ contractId }: ContractPageContentProps) {
+  const { data } = useAPIGetter('get-market-props', {
     id: contractId,
   })
-  const siblingContract = contractProps?.siblingContract
-  const { token } = useTokenMode()
-  // TODO: proof of concept, we may want the bet points in the market props or sth else.
-  const [betPoints, setBetPoints] = useState<HistoryPoint<Partial<Bet>>[]>([])
-  const manaContractProp =
-    contractProps?.contract.token === 'MANA'
-      ? contractProps?.contract
-      : siblingContract
-  const cashContractProp =
-    contractProps?.contract.token === 'CASH'
-      ? contractProps?.contract
-      : siblingContract
-  const manaContract = useContract(manaContractProp)
-  const cashContract = useContract(cashContractProp)
-  const contract = token === 'MANA' ? manaContract : cashContract
-
-  useEffect(() => {
-    if (contract) {
-      getBetPoints(contract?.id as string).then((betPoints) => {
-        setBetPoints(betPoints)
-      })
-    }
-  }, [contract?.id])
-
-  if (contract === null) {
-    return (
-      <Page>
-        <ThemedText>Contract not found</ThemedText>
-      </Page>
-    )
-  }
-
-  if (contract === undefined) {
+  const { manaContract, cashContract } = data ?? {}
+  if (!data || ![manaContract?.id, cashContract?.id].includes(contractId))
     return <ContractPageLoading />
-  }
+
+  return <ContractPageContent contractProps={data} />
+}
+
+function ContractPageContent(props: {
+  contractProps: APIResponse<'get-market-props'>
+}) {
+  const { contractProps } = props
+  const { totalManaBets, totalCashBets } = contractProps
+  const manaContractProp = contractProps.manaContract
+  const cashContractProp = contractProps.cashContract
+  const { token } = useTokenMode()
+
+  const manaContract = useContract(manaContractProp) ?? manaContractProp
+  const cashContract = useContract(cashContractProp) ?? cashContractProp
+  const contract = token === 'MANA' ? manaContract : cashContract
 
   const isBinaryMc = isBinaryMulti(contract)
   const isMultipleChoice =
     contract.outcomeType == 'MULTIPLE_CHOICE' && !isBinaryMc
   const isBinary = !isBinaryMc && !isMultipleChoice
   const isSports = isSportsContract(contract)
+  const user = useUser()
+
+  const playBetData = useBetData({
+    contract: manaContract,
+    userId: user?.id,
+    totalBets: totalManaBets,
+  })
+
+  const cashBetData = useBetData({
+    contract: cashContract,
+    userId: user?.id,
+    totalBets: totalCashBets,
+  })
+
+  const { bets, totalBets, yourNewBets, betPoints } =
+    token === 'CASH' ? cashBetData : playBetData
 
   return (
     <Page nonScrollableChildren={<ContentEditor onChange={() => {}} />}>
@@ -95,7 +106,7 @@ function ContractPageContent({ contractId }: ContractPageContentProps) {
         {isBinary && (
           <BinaryOverview
             contract={contract as BinaryContract}
-            betPoints={betPoints}
+            betPoints={betPoints as HistoryPoint<Partial<Bet>>[]}
           />
         )}
 
@@ -110,12 +121,9 @@ function ContractPageContent({ contractId }: ContractPageContentProps) {
           <BinaryBetButtons contract={contract} size="lg" />
         )}
         <UserBetsSummary contract={contract} />
-        {manaContract && (
-          <>
-            <ContractDescription contract={manaContract} />
-            <CommentsSection contract={manaContract} />
-          </>
-        )}
+        <ContractDescription contract={manaContract} />
+        <Bets contract={contract} bets={bets} totalBets={totalBets} />
+        <CommentsSection contract={manaContract} />
       </Col>
     </Page>
   )
@@ -129,9 +137,70 @@ export default function ContractPage() {
   }
 
   return (
-    <ContractPageContent
+    <ContractPageLoadingContent
       key={contractId as string}
       contractId={contractId as string}
     />
   )
+}
+
+const useBetData = (props: {
+  contract: Contract
+  userId: string | undefined
+  totalBets: number | undefined
+}) => {
+  const { userId, contract } = props
+  const contractId = contract.id
+  const mechanism = contract.mechanism
+  const outcomeType = contract.outcomeType
+  const isMulti = outcomeType === 'MULTIPLE_CHOICE'
+  const newBets = useContractBets(
+    contractId,
+    {
+      includeZeroShareRedemptions: isMulti,
+      filterRedemptions: true,
+      enabled: true,
+    },
+    useIsPageVisible,
+    (params) => api('bets', params)
+  )
+
+  const [points, setPoints] = useState<
+    { x: number; y: number; answerId: string | undefined }[]
+  >([])
+  useEffect(() => {
+    getBetPoints(contractId, {
+      filterRedemptions: mechanism !== 'cpmm-multi-1',
+    }).then(setPoints)
+  }, [contractId, mechanism])
+
+  const newBetsWithoutRedemptions = newBets.filter((bet) => !bet.isRedemption)
+  const totalBets = (props.totalBets ?? 0) + newBetsWithoutRedemptions.length
+  const bets = newBetsWithoutRedemptions
+
+  const yourNewBets = newBets.filter((bet) => userId && bet.userId === userId)
+
+  const betPoints = useMemo(() => {
+    if (isMulti) {
+      const data = getMultiBetPoints(points, contract)
+      const newData = getMultiBetPointsFromBets(newBets)
+
+      return mergeWith(data, newData, (array1, array2) =>
+        [...(array1 ?? []), ...(array2 ?? [])].sort((a, b) => a.x - b.x)
+      ) as MultiPoints
+    } else {
+      const newPoints = newBetsWithoutRedemptions.map((bet) => ({
+        x: bet.createdTime,
+        y: bet.probAfter,
+      }))
+      return [...points, ...newPoints] as HistoryPoint<Partial<Bet>>[]
+    }
+  }, [points.length, newBets.length])
+
+  return {
+    bets,
+    totalBets,
+    yourNewBets,
+    betPoints,
+  }
 }

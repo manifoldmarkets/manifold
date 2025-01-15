@@ -15,6 +15,9 @@ import {
 } from 'client-common/hooks/use-websocket-user'
 import { useIsPageVisible } from './use-is-page-visibile'
 import Toast from 'react-native-toast-message'
+import { queryHandlers } from 'lib/batch-query-handlers'
+import { useBatchedGetter } from 'client-common/hooks/use-batched-getter'
+import { DisplayUser } from 'common/api/user-types'
 // Either we haven't looked up the logged in user yet (undefined), or we know
 // the user is not logged in (null), or we know the user is logged in.
 export type AuthUser = undefined | null | UserAndPrivateUser
@@ -169,4 +172,15 @@ export const useWebsocketPrivateUser = (userId: string | undefined) => {
     isPageVisible,
     getPrivateUserSafe
   )
+}
+
+export function useDisplayUserById(userId: string | undefined) {
+  const [user] = useBatchedGetter<DisplayUser | undefined>(
+    queryHandlers,
+    'user',
+    userId ?? '_',
+    undefined,
+    !!userId
+  )
+  return user
 }

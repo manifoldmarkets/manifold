@@ -38,7 +38,7 @@ import { Avatar } from 'web/components/widgets/avatar'
 import { Carousel } from 'web/components/widgets/carousel'
 import { Input } from 'web/components/widgets/input'
 import { Pagination } from 'web/components/widgets/pagination'
-import { useContractBets } from 'web/hooks/use-bets'
+import { useContractBets } from 'client-common/hooks/use-bets'
 import { useEvent } from 'client-common/hooks/use-event'
 import { useIsMobile } from 'web/hooks/use-is-mobile'
 import { usePersistentInMemoryState } from 'client-common/hooks/use-persistent-in-memory-state'
@@ -58,6 +58,7 @@ import { Tooltip } from '../widgets/tooltip'
 import { floatingEqual } from 'common/util/math'
 import { Col } from '../layout/col'
 import { Row } from '../layout/row'
+import { useIsPageVisible } from 'web/hooks/use-page-visible'
 type BetSort =
   | 'newest'
   | 'profit'
@@ -814,10 +815,15 @@ const ExpandedBetRow = (props: {
 }) => {
   const { contract, user, signedInUser, contractMetric, areYourBets } = props
   const hideBetsBefore = areYourBets ? 0 : JUNE_1_2022
-  const bets = useContractBets(contract.id, {
-    userId: user.id,
-    afterTime: hideBetsBefore,
-  })
+  const bets = useContractBets(
+    contract.id,
+    {
+      userId: user.id,
+      afterTime: hideBetsBefore,
+    },
+    useIsPageVisible,
+    (params) => api('bets', params)
+  )
   const limitBets = bets?.filter(
     (bet) => bet.limitProb !== undefined && !bet.isCancelled && !bet.isFilled
   ) as LimitBet[]

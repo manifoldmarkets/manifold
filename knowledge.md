@@ -498,7 +498,7 @@ export const getContractIdFromSlug = async (
 We have many useful hooks that should be reused rather than rewriting them again. For example, to get the live global bets, you should use
 
 ```ts
-import { useSubscribeGlobalBets } from 'web/hooks/use-bets'
+import { useSubscribeGlobalBets } from 'client-common/hooks/use-bets'
 
 ...
 
