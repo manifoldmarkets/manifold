@@ -9,13 +9,23 @@ import { Col } from 'components/layout/col'
 import { ThemedText } from 'components/themed-text'
 import { useDisplayUserById, useUser } from 'hooks/use-user'
 import { CoinNumber } from 'components/widgets/coin-number'
+import { useContractBets } from 'client-common/hooks/use-bets'
+import { api } from 'lib/api'
+import { useIsPageVisible } from 'hooks/use-is-page-visibile'
 
-export function Bets(props: {
-  contract: Contract
-  bets: Bet[]
-  totalBets: number
-}) {
-  const { contract, bets } = props
+export function Bets(props: { contract: Contract; totalBets: number }) {
+  const { contract } = props
+  // TODO: add pagination and fetching older bets
+  const bets = useContractBets(
+    contract.id,
+    {
+      includeZeroShareRedemptions: contract.mechanism === 'cpmm-multi-1',
+      filterRedemptions: true,
+    },
+    useIsPageVisible,
+    (params) => api('bets', params)
+  )
+
   return (
     <Col style={styles.container}>
       {bets.map((bet) => (

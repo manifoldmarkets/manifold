@@ -77,12 +77,14 @@ function ContractPageContent(props: {
     contract: manaContract,
     userId: user?.id,
     totalBets: totalManaBets,
+    afterTime: manaContractProp.lastBetTime,
   })
 
   const cashBetData = useBetData({
     contract: cashContract,
     userId: user?.id,
     totalBets: totalCashBets,
+    afterTime: cashContractProp.lastBetTime,
   })
 
   const { bets, totalBets, yourNewBets, betPoints } =
@@ -122,7 +124,7 @@ function ContractPageContent(props: {
         )}
         <UserBetsSummary contract={contract} />
         <ContractDescription contract={manaContract} />
-        <Bets contract={contract} bets={bets} totalBets={totalBets} />
+        <Bets contract={contract} totalBets={totalBets} />
         <CommentsSection contract={manaContract} />
       </Col>
     </Page>
@@ -148,8 +150,9 @@ const useBetData = (props: {
   contract: Contract
   userId: string | undefined
   totalBets: number | undefined
+  afterTime: number | undefined
 }) => {
-  const { userId, contract } = props
+  const { userId, contract, afterTime } = props
   const contractId = contract.id
   const mechanism = contract.mechanism
   const outcomeType = contract.outcomeType
@@ -159,7 +162,7 @@ const useBetData = (props: {
     {
       includeZeroShareRedemptions: isMulti,
       filterRedemptions: true,
-      enabled: true,
+      afterTime,
     },
     useIsPageVisible,
     (params) => api('bets', params)
