@@ -1,3 +1,4 @@
+import { formatShortened } from 'lib/shorten-number'
 import { Row } from '../layout/row'
 import { ThemedText, ThemedTextProps } from '../themed-text'
 import { FontSize } from '../themed-text'
@@ -5,8 +6,14 @@ import { Token } from './token'
 
 export function TokenNumber({
   amount,
+  showDecimals = false,
+  shortened = false,
   ...rest
-}: { amount: number } & ThemedTextProps) {
+}: {
+  amount: number
+  showDecimals?: boolean
+  shortened?: boolean
+} & ThemedTextProps) {
   const getTokenSize = (size?: FontSize): number => {
     switch (size) {
       case 'xs':
@@ -43,7 +50,7 @@ export function TokenNumber({
   const getGapSize = (size?: FontSize): number => {
     switch (size) {
       case 'xs':
-        return 0.5
+        return 1
       case 'sm':
         return 1
       case 'md':
@@ -69,6 +76,12 @@ export function TokenNumber({
     }
   }
 
+  const formattedNumber = shortened
+    ? formatShortened(amount)
+    : showDecimals
+    ? amount.toFixed(2)
+    : Math.round(amount).toString()
+
   return (
     <Row style={{ alignItems: 'center', gap: getGapSize(rest.size) }}>
       <Token
@@ -79,7 +92,7 @@ export function TokenNumber({
         }}
       />
       <ThemedText family={'JetBrainsMono'} {...rest}>
-        {Number.isInteger(amount) ? amount : Number(amount.toFixed(2))}
+        {formattedNumber}
       </ThemedText>
     </Row>
   )
