@@ -6,9 +6,9 @@ import { useSavedContractMetrics } from 'hooks/use-saved-contract-metrics'
 import { Col } from 'components/layout/col'
 import { Row } from 'components/layout/row'
 import { ThemedText } from 'components/themed-text'
-import { CoinNumber } from 'components/widgets/coin-number'
 import { useColor } from 'hooks/use-color'
 import { IconSymbol } from 'components/ui/icon-symbol'
+import { TokenNumber } from 'components/token/token-number'
 
 export function UserBetsSummary(props: {
   contract: Contract
@@ -50,8 +50,6 @@ export function BetsSummary(props: {
 
   if (metrics.invested === 0 && metrics.profit === 0) return null
 
-  const isCashContract = contract.token === 'CASH'
-
   return (
     <Col style={styles.container}>
       <Row style={styles.statsRow}>
@@ -61,10 +59,7 @@ export function BetsSummary(props: {
               Payout
             </ThemedText>
             <Row style={{ alignItems: 'center', gap: 4 }}>
-              <CoinNumber
-                amount={payout}
-                token={isCashContract ? 'CASH' : 'MANA'}
-              />
+              <TokenNumber size="lg" amount={payout} />
               <ThemedText
                 color={
                   profitPercent >= 0 ? color.profitText : color.textSecondary
@@ -88,10 +83,7 @@ export function BetsSummary(props: {
               />
             </ThemedText>
             <Row style={{ alignItems: 'center', gap: 4 }}>
-              <CoinNumber
-                amount={Math.abs(position)}
-                token={isCashContract ? 'CASH' : 'MANA'}
-              />
+              <TokenNumber size="lg" amount={Math.abs(position)} />
               <ThemedText size="sm" color={color.textSecondary}>
                 on {exampleOutcome}
               </ThemedText>
@@ -109,10 +101,7 @@ export function BetsSummary(props: {
               style={{ marginLeft: 4 }}
             />
           </ThemedText>
-          <CoinNumber
-            amount={invested}
-            token={isCashContract ? 'CASH' : 'MANA'}
-          />
+          <TokenNumber size="lg" amount={invested} />
         </Col>
 
         <Col>
@@ -126,10 +115,7 @@ export function BetsSummary(props: {
             />
           </ThemedText>
           <Row style={{ alignItems: 'center', gap: 4 }}>
-            <CoinNumber
-              amount={profit}
-              token={isCashContract ? 'CASH' : 'MANA'}
-            />
+            <TokenNumber size="lg" amount={profit} />
             <ThemedText
               color={
                 profitPercent >= 0 ? color.profitText : color.textSecondary
