@@ -21,7 +21,7 @@ import { usePersistentInMemoryState } from 'client-common/hooks/use-persistent-i
 import { useUser } from 'web/hooks/use-user'
 import { useDisplayUserById, useUsers } from 'web/hooks/use-user-supabase'
 import { api } from 'web/lib/api/api'
-import { getCountdownString } from 'web/lib/util/time'
+import { getCountdownString } from 'client-common/lib/time'
 import { Button } from '../buttons/button'
 import { DepthChart } from '../charts/contract/depth-chart'
 import { Col } from '../layout/col'

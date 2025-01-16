@@ -4,7 +4,7 @@ import { TRADED_TERM } from 'common/envs/constants'
 import { formatWithToken } from 'common/util/format'
 import Link from 'next/link'
 import { useIsClient } from 'web/hooks/use-is-client'
-import { fromNow } from 'web/lib/util/time'
+import { fromNow } from 'client-common/lib/time'
 import { ContractStatusLabel } from './contracts-table'
 import { getTextColor } from './text-color'
 

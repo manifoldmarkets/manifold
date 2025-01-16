@@ -31,7 +31,7 @@ import {
 } from 'common/envs/constants'
 import { capitalize, partition } from 'lodash'
 import { KYCStats } from 'web/components/stats/kyc-stats'
-import { formatTimeShort } from 'web/lib/util/time'
+import { formatTimeShort } from 'client-common/lib/time'
 import { InfoTooltip } from 'web/components/widgets/info-tooltip'
 import { TopicDauSummary } from 'web/components/stats/topic-dau-summary'
 

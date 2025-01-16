@@ -19,7 +19,6 @@ import { introductoryTimeWindow, User } from 'common/user'
 import { formatMoneyUSD } from 'common/util/format'
 import { getVerificationStatus } from 'common/gidx/user'
 import { Rounded } from 'constants/border-radius'
-import { CoinNumber } from 'components/widgets/coin-number'
 import { usePrices } from 'hooks/use-prices'
 import { shortenNumber } from 'common/util/formatNumber'
 import { Image } from 'react-native'
@@ -28,6 +27,7 @@ import buyMana25k from '../../assets/images/buy-mana-graphics/25k.png'
 import buyMana100k from '../../assets/images/buy-mana-graphics/100k.png'
 import buyMana1M from '../../assets/images/buy-mana-graphics/1M.png'
 import { IosIapListener } from 'components/ios-iap-listener'
+import { TokenNumber } from 'components/token/token-number'
 
 export default function Shop() {
   const user = useUser()
@@ -180,11 +180,11 @@ function PriceTile(props: {
           style={{ width: 120, height: 120 }}
         />
         <Row style={styles.priceTileHeader}>
-          <CoinNumber amount={amounts.mana} token="MANA" />
+          <TokenNumber amount={amounts.mana} token="MANA" />
           {amounts.bonusInDollars > 0 && (
             <>
               <ThemedText style={styles.plus}> + </ThemedText>
-              <CoinNumber amount={amounts.bonusInDollars} token="CASH" />
+              <TokenNumber amount={amounts.bonusInDollars} token="CASH" />
             </>
           )}
         </Row>

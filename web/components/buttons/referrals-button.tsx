@@ -8,7 +8,7 @@ import { useEffect, useState } from 'react'
 import { CopyLinkRow } from 'web/components/buttons/copy-link-button'
 import { Row } from 'web/components/layout/row'
 import { Avatar } from 'web/components/widgets/avatar'
-import { CoinNumber } from 'web/components/widgets/coin-number'
+import { TokenNumber } from 'web/components/widgets/token-number'
 import { LoadingIndicator } from 'web/components/widgets/loading-indicator'
 import { UserLink } from 'web/components/widgets/user-link'
 import { useUser } from 'web/hooks/use-user'
@@ -51,7 +51,7 @@ export function Referrals(props: { user: User }) {
           <span className={'text-primary-700 pb-2 text-xl'}>
             Refer a friend for{' '}
             <span className={'text-teal-500'}>
-              <CoinNumber
+              <TokenNumber
                 coinType={'MANA'}
                 amount={REFERRAL_AMOUNT}
                 style={{

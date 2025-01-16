@@ -16,7 +16,7 @@ import {
   PlusTier,
   PremiumTier,
 } from 'web/public/custom-components/tiers'
-import { CoinNumber } from '../widgets/coin-number'
+import { TokenNumber } from '../widgets/token-number'
 import { MarketTierType } from 'common/tier'
 import { getPresentedTierName } from '../tiers/tier-tooltip'
 import { ManaCoin } from 'web/public/custom-components/manaCoin'
@@ -108,7 +108,7 @@ function PriceSection(props: {
   const { baseCost, outcomeType, currentTier, setMarketTier } = props
 
   if (!currentTier) {
-    return <CoinNumber amount={getTieredCost(baseCost, 'plus', outcomeType)} />
+    return <TokenNumber amount={getTieredCost(baseCost, 'plus', outcomeType)} />
   }
   return (
     <Col className="w-full gap-2">
@@ -215,7 +215,7 @@ function Tier(props: {
       <div className="text-5xl sm:text-4xl">{icon}</div>
       <Col className="sm:items-center">
         <div className="text-ink-600">{getPresentedTierName(tier)}</div>
-        <CoinNumber
+        <TokenNumber
           className="text-xl font-semibold"
           amount={getTieredCost(baseCost, tier, outcomeType)}
           numberType="short"

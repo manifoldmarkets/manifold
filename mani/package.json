@@ -18,7 +18,7 @@
     "build:ios:dev": "yarn build:dev -p ios --profile testflight-dev",
     "build:ios:prod": "yarn build:prod -p ios --profile production",
     "clear": "npx expo start --clear",
-    "start": "NEXT_PUBLIC_FIREBASE_ENV=PROD npx expo start --dev-client --reset-cache",
+    "start:prod": "NEXT_PUBLIC_FIREBASE_ENV=PROD npx expo start --dev-client --reset-cache",
     "start:dev": "NEXT_PUBLIC_FIREBASE_ENV=DEV npx expo start --dev-client --reset-cache",
     "android": "npx expo run:android",
     "ios": "npx expo run:ios"

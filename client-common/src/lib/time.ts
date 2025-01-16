@@ -1,5 +1,6 @@
 import dayjs from 'dayjs'
 import relativeTime from 'dayjs/plugin/relativeTime'
+import { DAY_MS } from 'common/util/time'
 
 dayjs.extend(relativeTime)
 
@@ -56,4 +57,10 @@ export const getCountdownStringHoursMinutes = (endDate: Date) => {
   const minutesStr = `${minutes % 60}m`
 
   return `${isPast ? '-' : ''} ${hoursStr} ${minutesStr}`
+}
+export const customFormatTime = (time: number) => {
+  if (time > Date.now() - DAY_MS) {
+    return formatJustTime(time)
+  }
+  return formatTimeShort(time)
 }

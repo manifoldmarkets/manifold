@@ -36,7 +36,6 @@ import {
   PROMPT_USER_VERIFICATION_MESSAGES,
 } from 'common/gidx/user'
 import { capitalize } from 'lodash'
-import { CoinNumber } from 'components/widgets/coin-number'
 import { Input } from 'components/widgets/input'
 import { api } from 'lib/api'
 import { useAPIGetter } from 'hooks/use-api-getter'
@@ -50,6 +49,7 @@ import { Col } from 'components/layout/col'
 import Page from 'components/page'
 import { Button } from 'components/buttons/button'
 import { ContractToken } from 'common/contract'
+import { TokenNumber } from 'components/token/token-number'
 
 export type CashoutPagesType =
   | 'select-cashout-method'
@@ -65,7 +65,7 @@ type MoneyCashoutPagesType =
 
 type ManaCashoutPagesType = 'custom-mana'
 
-const CASHOUTS_PER_PAGE = 10
+// const CASHOUTS_PER_PAGE = 10
 
 export default function CashoutPage() {
   const user = useUser()
@@ -536,7 +536,7 @@ function SweepiesStats(props: {
     <Col style={[styles.stats, props.style]}>
       <Row style={styles.statsRow}>
         <Text style={styles.statsLabel}>Redeemable</Text>
-        <CoinNumber
+        <TokenNumber
           amount={redeemableCash}
           style={styles.statsAmount}
           token="CASH"
@@ -545,7 +545,7 @@ function SweepiesStats(props: {
       <View style={styles.statsSeparator} />
       <Row style={styles.statsRow}>
         <Text style={styles.statsLabel}>Total</Text>
-        <CoinNumber
+        <TokenNumber
           amount={cashBalance}
           style={styles.statsAmount}
           token="CASH"
@@ -574,13 +574,13 @@ function SelectCashoutOptions(props: {
   allDisabled?: boolean
 }) {
   const { setPage, allDisabled, redeemableCash, redeemForUSDPageName } = props
-  const [cashoutPage, setCashoutPage] = useState(0)
-
-  const { data: cashouts } = useAPIGetter('get-cashouts', {
-    limit: CASHOUTS_PER_PAGE,
-    offset: cashoutPage * CASHOUTS_PER_PAGE,
-    userId: props.user.id,
-  })
+  // const [cashoutPage, setCashoutPage] = useState(0)
+  //
+  // const { data: cashouts } = useAPIGetter('get-cashouts', {
+  //   limit: CASHOUTS_PER_PAGE,
+  //   offset: cashoutPage * CASHOUTS_PER_PAGE,
+  //   userId: props.user.id,
+  // })
 
   const noHasMinRedeemableCash = redeemableCash < MIN_CASHOUT_AMOUNT
   const hasNoRedeemableCash = redeemableCash === 0
@@ -611,7 +611,7 @@ function SelectCashoutOptions(props: {
               <Text>Redeem for mana</Text>
             </Button>
             <Row style={styles.valueRow}>
-              <CoinNumber
+              <TokenNumber
                 amount={redeemableCash * CASH_TO_MANA_CONVERSION_RATE}
                 style={[
                   styles.valueText,
@@ -662,7 +662,7 @@ function SelectCashoutOptions(props: {
               {noHasMinRedeemableCash && !allDisabled ? (
                 <Row style={{ alignItems: 'center' }}>
                   <Text style={styles.errorText}>You need at least </Text>
-                  <CoinNumber
+                  <TokenNumber
                     amount={MIN_CASHOUT_AMOUNT}
                     token="CASH"
                     style={[

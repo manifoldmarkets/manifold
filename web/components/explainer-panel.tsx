@@ -14,7 +14,7 @@ import { Card } from './widgets/card'
 
 import { GiTakeMyMoney } from 'react-icons/gi'
 import { ManaCoin } from 'web/public/custom-components/manaCoin'
-import { CoinNumber } from './widgets/coin-number'
+import { TokenNumber } from './widgets/token-number'
 
 export const ExplainerPanel = (props: {
   className?: string
@@ -150,7 +150,7 @@ const Sweepstakes = ({
     <div className="pb-2">
       Redeem your {SWEEPIES_NAME} won from markets at{' '}
       <b>
-        <CoinNumber amount={1} coinType="sweepies" isInline={true} /> {'→'}{' '}
+        <TokenNumber amount={1} coinType="sweepies" isInline={true} /> {'→'}{' '}
         $1.00
       </b>
       , minus a {CHARITY_FEE * 100}% fee.

@@ -17,12 +17,11 @@ import { Col } from 'web/components/layout/col'
 import { Row } from 'web/components/layout/row'
 import { CashoutPagesType } from 'web/pages/redeem'
 import { ManaCoin } from 'web/public/custom-components/manaCoin'
-import { CoinNumber } from '../widgets/coin-number'
+import { TokenNumber } from '../widgets/token-number'
 import { formatMoney, formatMoneyUSD, formatSweepies } from 'common/util/format'
 import { ReactNode, useState } from 'react'
 import { useAPIGetter } from 'web/hooks/use-api-getter'
 import { UncontrolledTabs } from '../layout/tabs'
-import { LoadingIndicator } from '../widgets/loading-indicator'
 import { PendingCashoutStatusData } from 'common/gidx/gidx'
 import { PaginationNextPrev } from '../widgets/pagination'
 import { DateTimeTooltip } from '../widgets/datetime-tooltip'
@@ -96,46 +95,35 @@ export function SelectCashoutOptions(props: {
                     </tr>
                   </thead>
                   <tbody>
-                    {cashouts === undefined ? (
-                      <tr>
-                        <td colSpan={3} className="p-4 text-center">
-                          <LoadingIndicator />
-                        </td>
-                      </tr>
-                    ) : (
-                      cashouts?.map((cashout: PendingCashoutStatusData) => {
-                        const createdDate = new Date(
-                          cashout.txn.createdTime
-                        ).getTime()
-                        return (
-                          <tr
-                            key={cashout.txn.id}
-                            className="border-canvas-50 border-b"
-                          >
-                            <td className="px-3 py-2 ">
-                              {formatMoneyUSD(
-                                cashout.txn.payoutInDollars,
-                                true
-                              )}
-                            </td>
-                            <td className="whitespace-nowrap px-3 py-2">
-                              <span
-                                className={`rounded-full px-2 py-1 text-xs ${getStatusColor(
-                                  cashout.txn.gidxStatus
-                                )}`}
-                              >
-                                {cashout.txn.gidxStatus}
-                              </span>
-                            </td>
-                            <td className="text-ink-500 whitespace-nowrap px-3 py-2">
-                              <DateTimeTooltip time={createdDate}>
-                                {shortenedFromNow(createdDate)}
-                              </DateTimeTooltip>
-                            </td>
-                          </tr>
-                        )
-                      })
-                    )}
+                    {cashouts?.map((cashout: PendingCashoutStatusData) => {
+                      const createdDate = new Date(
+                        cashout.txn.createdTime
+                      ).getTime()
+                      return (
+                        <tr
+                          key={cashout.txn.id}
+                          className="border-canvas-50 border-b"
+                        >
+                          <td className="px-3 py-2 ">
+                            {formatMoneyUSD(cashout.txn.payoutInDollars, true)}
+                          </td>
+                          <td className="whitespace-nowrap px-3 py-2">
+                            <span
+                              className={`rounded-full px-2 py-1 text-xs ${getStatusColor(
+                                cashout.txn.gidxStatus
+                              )}`}
+                            >
+                              {cashout.txn.gidxStatus}
+                            </span>
+                          </td>
+                          <td className="text-ink-500 whitespace-nowrap px-3 py-2">
+                            <DateTimeTooltip time={createdDate}>
+                              {shortenedFromNow(createdDate)}
+                            </DateTimeTooltip>
+                          </td>
+                        </tr>
+                      )
+                    })}
                   </tbody>
                 </table>
                 <Spacer h={4} />
@@ -188,7 +176,7 @@ function CashoutOptionsContent(props: {
             Redeem for mana
           </Button>
           <Row className="text-ink-500 w-full justify-end gap-1 whitespace-nowrap text-xs sm:text-sm ">
-            <CoinNumber
+            <TokenNumber
               amount={redeemableCash * CASH_TO_MANA_CONVERSION_RATE}
               className={clsx(
                 'font-semibold',
@@ -223,7 +211,7 @@ function CashoutOptionsContent(props: {
                 {noHasMinRedeemableCash && !allDisabled ? (
                   <span className="text-red-600 dark:text-red-400">
                     You need at least{' '}
-                    <CoinNumber
+                    <TokenNumber
                       amount={MIN_CASHOUT_AMOUNT}
                       isInline
                       coinType="sweepies"
@@ -273,7 +261,7 @@ function CashoutOptionsContent(props: {
               {noHasMinRedeemableCash && !allDisabled ? (
                 <span className="text-red-600 dark:text-red-400">
                   You need at least{' '}
-                  <CoinNumber
+                  <TokenNumber
                     amount={MIN_CASHOUT_AMOUNT}
                     isInline
                     coinType="sweepies"

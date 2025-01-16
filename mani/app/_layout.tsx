@@ -135,7 +135,7 @@ function RootLayout() {
         <Stack>
           <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
           <Stack.Screen
-            name="[contractId]"
+            name="[contractSlug]"
             options={{
               headerShown: false,
               animation: 'slide_from_right',

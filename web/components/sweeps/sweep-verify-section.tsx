@@ -15,7 +15,7 @@ import { firebaseLogin } from 'web/lib/firebase/users'
 import { Button, buttonClass, ColorType } from '../buttons/button'
 import { Col } from '../layout/col'
 import { Row } from '../layout/row'
-import { CoinNumber } from '../widgets/coin-number'
+import { TokenNumber } from '../widgets/token-number'
 import { Tooltip } from '../widgets/tooltip'
 import { RainingCoins } from '../raining-coins'
 import { SweepiesFlatCoin } from 'web/public/custom-components/sweepiesFlatCoin'
@@ -54,7 +54,7 @@ export function SweepVerifySection(props: { className?: string }) {
           </div>
           <Col className="text-ink-100 dark:text-ink-900 w-full text-sm sm:text-center">
             <div>
-              <CoinNumber
+              <TokenNumber
                 amount={1}
                 coinType="CASH"
                 className="font-semibold text-amber-300"
@@ -94,7 +94,7 @@ export function SweepVerifySection(props: { className?: string }) {
 
         <div className="text-ink-100 dark:text-ink-900 w-full text-sm sm:text-center">
           Winnings on {SWEEPIES_NAME} can be redeemed for USD at a{' '}
-          <CoinNumber
+          <TokenNumber
             amount={1}
             coinType="CASH"
             className="font-semibold text-amber-300"
@@ -210,7 +210,7 @@ export function VerifyButton(props: {
       ) : (
         <>
           Verify and claim
-          <CoinNumber
+          <TokenNumber
             amount={KYC_VERIFICATION_BONUS_CASH}
             coinType="CASH"
             className="ml-1"

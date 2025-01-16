@@ -3,17 +3,17 @@ import { Row } from '../layout/row'
 import { ThemedText, ThemedTextProps } from '../themed-text'
 import { FontSize } from '../themed-text'
 import { Token } from './token'
+import { ContractToken } from 'common/contract'
 
-export function TokenNumber({
-  amount,
-  showDecimals = false,
-  shortened = false,
-  ...rest
-}: {
-  amount: number
-  showDecimals?: boolean
-  shortened?: boolean
-} & ThemedTextProps) {
+export function TokenNumber(
+  props: {
+    amount: number
+    token?: ContractToken
+    showDecimals?: boolean
+    shortened?: boolean
+  } & ThemedTextProps
+) {
+  const { amount, token, showDecimals, shortened, ...rest } = props
   const getTokenSize = (size?: FontSize): number => {
     switch (size) {
       case 'xs':
@@ -85,6 +85,7 @@ export function TokenNumber({
   return (
     <Row style={{ alignItems: 'center', gap: getGapSize(rest.size) }}>
       <Token
+        overrideToken={token}
         style={{
           width: getTokenSize(rest.size),
           height: getTokenSize(rest.size),

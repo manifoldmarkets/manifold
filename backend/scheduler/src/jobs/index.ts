@@ -21,6 +21,7 @@ import { sendStreakExpirationNotification } from './streak-expiration-notice'
 import { expireLimitOrders } from 'shared/expire-limit-orders'
 import { denormalizeAnswers } from './denormalize-answers'
 import { incrementStreakForgiveness } from './increment-streak-forgiveness'
+import { resolveSportsMarkets } from 'shared/resolve-sports-markets'
 import { sendMarketCloseEmails } from './send-market-close-emails'
 import { pollPollResolutions } from './poll-poll-resolutions'
 import { IMPORTANCE_MINUTE_INTERVAL } from 'shared/importance-score'
@@ -34,6 +35,7 @@ import {
   resetWeeklyQuestStatsInternal,
 } from './reset-quests-stats'
 import { updateUserPortfolioHistoriesCore } from 'shared/update-user-portfolio-histories-core'
+import { ENV } from 'common/envs/constants'
 
 export function createJobs() {
   return [
@@ -107,6 +109,11 @@ export function createJobs() {
       'poll-poll-resolutions',
       '0 */1 * * * *', // every minute
       pollPollResolutions
+    ),
+    createJob(
+      'resolve-sports-markets',
+      ENV === 'DEV' ? '*/30 * * * *' : '*/10 * * * * *', // Every 30 minutes on dev, every 10 seconds on prod
+      resolveSportsMarkets
     ),
     // Daily jobs:
     createJob(

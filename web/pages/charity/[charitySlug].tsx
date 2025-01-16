@@ -15,7 +15,7 @@ import { Page } from 'web/components/layout/page'
 import { Row } from 'web/components/layout/row'
 import { Spacer } from 'web/components/layout/spacer'
 import { AmountInput } from 'web/components/widgets/amount-input'
-import { CoinNumber } from 'web/components/widgets/coin-number'
+import { TokenNumber } from 'web/components/widgets/token-number'
 import { CollapsibleContent } from 'web/components/widgets/collapsible-content'
 import { FullscreenConfetti } from 'web/components/widgets/fullscreen-confetti'
 import { Linkify } from 'web/components/widgets/linkify'
@@ -262,7 +262,7 @@ function DonationBox(props: {
       )}
 
       <div className="mt-2 text-xs">
-        <CoinNumber amount={min} isInline coinType={'sweepies'} /> donation
+        <TokenNumber amount={min} isInline coinType={'sweepies'} /> donation
         minimum
       </div>
     </div>

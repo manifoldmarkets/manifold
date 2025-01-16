@@ -22,7 +22,7 @@ import {
   updateMarket,
   updateUserDisinterestEmbedding,
 } from 'web/lib/api/api'
-import { formatTime } from 'web/lib/util/time'
+import { formatTime } from 'client-common/lib/time'
 import { MoneyDisplay } from '../bet/money-display'
 import { Button } from '../buttons/button'
 import { ConfirmationButton } from '../buttons/confirmation-button'

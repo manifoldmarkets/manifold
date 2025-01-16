@@ -1,6 +1,6 @@
 import clsx from 'clsx'
 import { useEffect, useState } from 'react'
-import { getCountdownString } from 'web/lib/util/time'
+import { getCountdownString } from 'client-common/lib/time'
 
 export function Countdown(props: {
   endDate: Date

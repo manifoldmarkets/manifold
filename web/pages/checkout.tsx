@@ -7,7 +7,7 @@ import { Button } from 'web/components/buttons/button'
 import { usePrivateUser, useUser } from 'web/hooks/use-user'
 import { CheckoutSession, GPSData } from 'common/gidx/gidx'
 import { api, APIError } from 'web/lib/api/api'
-import { CoinNumber } from 'web/components/widgets/coin-number'
+import { TokenNumber } from 'web/components/widgets/token-number'
 import { LogoIcon } from 'web/components/icons/logo-icon'
 import { TRADE_TERM } from 'common/envs/constants'
 import { PaymentAmount, WebPriceInDollars } from 'common/economy'
@@ -321,7 +321,7 @@ const PaymentSection = (props: {
         </Row>
         <Row className={'my-2 justify-center text-lg'}>
           <span>
-            <CoinNumber
+            <TokenNumber
               className={'font-semibold'}
               amount={amount.mana}
               isInline
@@ -329,7 +329,7 @@ const PaymentSection = (props: {
             {amount.bonusInDollars ? (
               <>
                 +{' '}
-                <CoinNumber
+                <TokenNumber
                   className={'font-semibold'}
                   coinType={'sweepies'}
                   amount={amount.bonusInDollars}

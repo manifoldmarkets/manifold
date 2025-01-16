@@ -28,7 +28,7 @@ import { trackCallback } from 'web/lib/service/analytics'
 import { Col } from '../layout/col'
 import { Row } from '../layout/row'
 import { Avatar } from '../widgets/avatar'
-import { CoinNumber } from '../widgets/coin-number'
+import { TokenNumber } from '../widgets/token-number'
 import Sidebar from './sidebar'
 import { NavItem } from './sidebar-item'
 
@@ -165,14 +165,14 @@ function NavBarItem(props: {
         <Col className="relative mx-auto h-full w-full items-center">
           <Avatar size="sm" avatarUrl={user.avatarUrl} noLink />
           <Row className="gap-1">
-            <CoinNumber
+            <TokenNumber
               amount={user?.balance}
               className="text-violet-600 dark:text-violet-400"
               numberType="short"
               isInline
               coinClassName="!top-[0.15em]"
             />
-            <CoinNumber
+            <TokenNumber
               amount={user?.cashBalance}
               className="text-amber-600 dark:text-amber-400"
               coinType="sweepies"

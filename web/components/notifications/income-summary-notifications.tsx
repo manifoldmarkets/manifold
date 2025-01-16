@@ -43,7 +43,7 @@ import {
   PARTNER_UNIQUE_TRADER_THRESHOLD,
 } from 'common/partner'
 import { humanish } from 'common/user'
-import { CoinNumber } from 'web/components/widgets/coin-number'
+import { TokenNumber } from 'web/components/widgets/token-number'
 
 // Loop through the contracts and combine the notification items into one
 export function combineAndSumIncomeNotifications(
@@ -338,7 +338,7 @@ export function BettingStreakBonusIncomeNotification(props: {
         noBonus && user && !humanish(user) ? (
           <span>
             Verify your phone number to get up to{' '}
-            <CoinNumber
+            <TokenNumber
               amount={BETTING_STREAK_BONUS_MAX}
               className={'font-bold'}
               isInline
@@ -372,7 +372,7 @@ export function BettingStreakBonusIncomeNotification(props: {
         <span className="line-clamp-3">
           {cashAmount && (
             <>
-              <CoinNumber
+              <TokenNumber
                 className={'text-amber-500'}
                 isInline={true}
                 amount={cashAmount}
@@ -382,7 +382,7 @@ export function BettingStreakBonusIncomeNotification(props: {
             </>
           )}
           {bonusAmount && (
-            <CoinNumber
+            <TokenNumber
               className={'text-teal-600'}
               isInline={true}
               amount={bonusAmount}
@@ -538,7 +538,7 @@ export function ReferralNotification(props: {
       <div className="line-clamp-3">
         {cashAmount > 0 && (
           <>
-            <CoinNumber
+            <TokenNumber
               className={'text-amber-500'}
               amount={cashAmount}
               coinType="CASH"
@@ -547,7 +547,7 @@ export function ReferralNotification(props: {
             {' + '}
           </>
         )}
-        <CoinNumber
+        <TokenNumber
           className={'text-teal-600'}
           amount={manaAmount}
           coinType="MANA"
@@ -632,14 +632,14 @@ function IncomeNotificationLabel(props: {
   const { notification, token = 'M$', className } = props
   const { sourceText } = notification
   return sourceText && token === 'M$' ? (
-    <CoinNumber
+    <TokenNumber
       className={clsx('text-teal-600', className)}
       amount={parseFloat(sourceText)}
       coinType={'mana'}
       isInline
     />
   ) : sourceText && token === 'CASH' ? (
-    <CoinNumber
+    <TokenNumber
       className={clsx('text-amber-500', className)}
       amount={parseFloat(sourceText)}
       coinType={'CASH'}

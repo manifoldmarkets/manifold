@@ -35,7 +35,7 @@ import { filterDefined } from 'common/util/array'
 import { UserHovercard } from 'web/components/user/user-hovercard'
 
 import { ChoicesToggleGroup } from 'web/components/widgets/choices-toggle-group'
-import { CoinNumber } from 'web/components/widgets/coin-number'
+import { TokenNumber } from 'web/components/widgets/token-number'
 
 export default function Payments() {
   const { payments, load } = useAllManaPayments()
@@ -322,7 +322,7 @@ export const PaymentsModal = (props: {
                 allowNegative={isAdmin}
                 onChangeAmount={setAmount}
                 label={
-                  <CoinNumber
+                  <TokenNumber
                     coinType={showCash && isCash ? 'CASH' : 'MANA'}
                     hideAmount
                   />

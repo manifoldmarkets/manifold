@@ -11,7 +11,7 @@ import { IoIosWarning } from 'react-icons/io'
 import { capitalize } from 'lodash'
 import { Col } from '../layout/col'
 import { Modal, MODAL_CLASS } from '../layout/modal'
-import { CoinNumber } from '../widgets/coin-number'
+import { TokenNumber } from '../widgets/token-number'
 
 export function CashoutLimitWarning(props: {
   user: User | null | undefined
@@ -54,7 +54,7 @@ export function CashoutLimitWarning(props: {
               {capitalize(SWEEPIES_NAME)} Redemption
             </div>
             <span>
-              <CoinNumber
+              <TokenNumber
                 amount={1}
                 coinType="CASH"
                 className="font-semibold text-amber-700 dark:text-amber-300"
@@ -63,7 +63,7 @@ export function CashoutLimitWarning(props: {
               → <b>$1</b>, with a <b>{formatPercent(CHARITY_FEE)} fee</b>. To
               receive the full {formatMoneyUSD(NY_FL_CASHOUT_LIMIT)} in cash
               after the fee, you would need to redeem approximately{' '}
-              <CoinNumber
+              <TokenNumber
                 amount={NY_FL_CASHOUT_LIMIT / (1 - CHARITY_FEE)}
                 coinType="CASH"
                 className="font-semibold text-amber-700 dark:text-amber-300"
@@ -76,7 +76,7 @@ export function CashoutLimitWarning(props: {
             <div className="text-ink-600 font-semibold">Redemption Limit</div>
             <span>
               Any Sweepies exceeding this{' '}
-              <CoinNumber
+              <TokenNumber
                 amount={NY_FL_CASHOUT_LIMIT / (1 - CHARITY_FEE)}
                 coinType="CASH"
                 className="font-semibold text-amber-700 dark:text-amber-300"
@@ -94,7 +94,7 @@ export function CashoutLimitWarning(props: {
             <span>
               In multi-choice markets, the redemption limit applies separately
               to each answer. This means you can redeem up to{' '}
-              <CoinNumber
+              <TokenNumber
                 amount={NY_FL_CASHOUT_LIMIT / (1 - CHARITY_FEE)}
                 coinType="CASH"
                 className="font-semibold text-amber-700 dark:text-amber-300"

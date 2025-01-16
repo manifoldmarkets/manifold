@@ -2,7 +2,7 @@ import { Col } from 'web/components/layout/col'
 
 import Image from 'next/image'
 import { formatMoneyUSD } from 'common/util/format'
-import { CoinNumber } from 'web/components/widgets/coin-number'
+import { TokenNumber } from 'web/components/widgets/token-number'
 import { Row } from 'web/components/layout/row'
 import { Button, buttonClass } from 'web/components/buttons/button'
 import clsx from 'clsx'
@@ -53,14 +53,14 @@ export function PromotionalPanel(props: {
           <Row
             className={`md::text-4xl relative mx-auto mt-4 items-center gap-2 rounded-xl border border-indigo-300 p-5 text-2xl `}
           >
-            <CoinNumber
+            <TokenNumber
               amount={5000}
               // isInline
               numberType="short"
               className=" font-bold text-white"
             />
             <div className="text-xl">+</div>
-            <CoinNumber
+            <TokenNumber
               amount={40}
               // isInline
               coinType={'sweepies'}
@@ -73,7 +73,7 @@ export function PromotionalPanel(props: {
             </div>
           </Row>
           <div className="mt-5">
-            <CoinNumber
+            <TokenNumber
               amount={1}
               coinType={'sweepies'}
               isInline

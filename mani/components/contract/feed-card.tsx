@@ -82,7 +82,7 @@ export function FeedCard(props: { contractPair: ContractPair }) {
   const color = useColor()
 
   const handlePress = () => {
-    router.push(`/${contract.id}`)
+    router.push(`/${contract.slug}`)
   }
 
   return (
