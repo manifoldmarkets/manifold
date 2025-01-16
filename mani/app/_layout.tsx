@@ -155,6 +155,7 @@ function RootLayout() {
         />
 
         <StatusBar style="dark" />
+        {/* @ts-expect-error Toast component type definition issue */}
         <Toast />
       </SafeAreaView>
     </TokenModeProvider>
