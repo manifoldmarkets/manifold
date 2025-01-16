@@ -3,19 +3,36 @@ import { Contract } from 'common/contract'
 import { MINUTE_MS } from 'common/util/time'
 import { Col } from 'components/layout/col'
 import { ThemedText } from 'components/themed-text'
-import { EXAMPLE_COMMENTS } from 'constants/examples/example-comments'
-import { groupBy, sortBy } from 'lodash'
+import { groupBy, sortBy, uniqBy } from 'lodash'
 import { useState } from 'react'
 import { ParentComment } from './parent-comment'
-import { ContentEditor } from 'components/content/content-editor'
 import { useColor } from 'hooks/use-color'
-
+import { useAPIGetter } from 'hooks/use-api-getter'
+import { useSubscribeNewComments } from 'client-common/hooks/use-comments'
 // TODO: pinned comments
 // TODO: jump to comments
 // TODO: loadingMore logic
-export function CommentsSection({ contract }: { contract: Contract }) {
-  // TODO: actually grab comments
-  const comments = EXAMPLE_COMMENTS
+export function CommentsSection(props: {
+  contract: Contract
+  comments: ContractComment[]
+  pinnedComments: ContractComment[]
+}) {
+  const { contract } = props
+  const { data: allComments } = useAPIGetter(
+    'comments',
+    {
+      contractId: contract.id,
+    },
+    undefined,
+    'comments-' + contract.id
+  )
+
+  // Listen for new comments
+  const newComments = useSubscribeNewComments(contract.id)
+  const comments = uniqBy(
+    [...(newComments ?? []), ...(props.comments ?? [])],
+    'id'
+  )
 
   const isReply = (c: ContractComment) => c.replyToCommentId !== undefined
 
@@ -71,8 +88,8 @@ export function CommentsSection({ contract }: { contract: Contract }) {
             (commentsByParent[parent.id] as ContractComment[]) ?? []
           }
         />
+        // TODO: render more comments as the user scrolls down
       ))}
-   
     </Col>
   )
 }

@@ -6,7 +6,7 @@ import { TokenToggle } from 'components/token/token-toggle'
 import { usePathname, useRouter } from 'expo-router'
 import { IconSymbol } from 'components/ui/icon-symbol'
 import { TouchableOpacity } from 'react-native'
-import { isTabPath } from 'components/page'
+import { isTabPath } from 'app/(tabs)/_layout'
 import { useUser } from 'hooks/use-user'
 import { formatMoneyNumber } from 'common/util/format'
 

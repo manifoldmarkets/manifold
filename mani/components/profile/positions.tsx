@@ -2,7 +2,6 @@ import { Contract } from 'common/contract'
 import { Col } from 'components/layout/col'
 import { PositionRow } from './position-row'
 import { useAPIGetter } from 'hooks/use-api-getter'
-import { useUser } from 'hooks/use-user'
 import { usePersistentInMemoryState } from 'client-common/hooks/use-persistent-in-memory-state'
 import { TextInput } from 'react-native'
 import { Row } from 'components/layout/row'
@@ -10,9 +9,11 @@ import { useTokenMode } from 'hooks/use-token-mode'
 import { orderBy } from 'lodash'
 import { Pagination } from 'components/widgets/pagination'
 import { PillButton } from 'components/buttons/pill-button'
+import { User } from 'common/user'
 
 type BetFilter = 'open' | 'sold' | 'closed' | 'resolved' | 'all'
-export function Positions() {
+export function Positions(props: { user: User }) {
+  const { user } = props
   const FILTERS: Record<BetFilter, (c: Contract) => boolean> = {
     resolved: (c) => !!c.resolutionTime,
     closed: (c) =>
@@ -22,7 +23,6 @@ export function Positions() {
     sold: () => true,
   }
 
-  const user = useUser()
   const { token } = useTokenMode()
   const { data } = useAPIGetter('get-user-contract-metrics-with-contracts', {
     userId: user?.id ?? '_',

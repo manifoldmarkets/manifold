@@ -7,6 +7,11 @@ import { Platform, View, Image } from 'react-native'
 import { PlatformPressable } from '@react-navigation/elements'
 import { Rounded } from 'constants/border-radius'
 
+export const TabPaths = ['/', '/live', '/notifications', '/shop', '/profile']
+export function isTabPath(pathname: string) {
+  return TabPaths.includes(pathname)
+}
+
 export default function TabLayout() {
   const maniColor = useColor()
 

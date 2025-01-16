@@ -1,10 +1,11 @@
 import { Image, Pressable, StyleSheet, View } from 'react-native'
-import { Linking } from 'react-native'
 // Your existing user link component
+import * as WebBrowser from 'expo-web-browser'
 import { ThemedText } from 'components/themed-text'
 import { useColor } from 'hooks/use-color'
 import React from 'react'
 import { Rounded } from 'constants/border-radius'
+import { useRouter } from 'expo-router'
 
 // Define the base node types
 type NodeType =
@@ -38,8 +39,6 @@ type ContentProps = {
 }
 
 export function ContentRenderer({ content, style }: ContentProps) {
-  const color = useColor()
-
   if (typeof content === 'string') {
     return (
       <ThemedText size="md" style={style}>
@@ -47,6 +46,7 @@ export function ContentRenderer({ content, style }: ContentProps) {
       </ThemedText>
     )
   }
+  if (!content) return null
 
   return <RichContent content={content} style={style} />
 }
@@ -73,6 +73,8 @@ function RichContent({
 
 function renderNode(node: JSONContent, index: string): React.ReactNode {
   const color = useColor()
+  const router = useRouter()
+
   switch (node.type) {
     case 'paragraph':
       return (
@@ -129,6 +131,12 @@ function renderNode(node: JSONContent, index: string): React.ReactNode {
           color={color.primary}
           weight="semibold"
           key={`mention-${node.attrs?.id}-${index}`}
+          onPress={() => {
+            router.push({
+              pathname: '/[username]',
+              params: { username: node.attrs?.label },
+            })
+          }}
         >
           @{node.attrs?.label}
         </ThemedText>
@@ -145,7 +153,7 @@ function renderNode(node: JSONContent, index: string): React.ReactNode {
           if (mark.type === 'link') {
             textProps.color = color.primary
             textProps.onPress = () =>
-              mark.attrs?.href && Linking.openURL(mark.attrs.href)
+              mark.attrs?.href && WebBrowser.openBrowserAsync(mark.attrs.href)
             textProps.style = {
               ...textProps.style,
               textDecorationLine: 'underline',
@@ -177,7 +185,9 @@ function renderNode(node: JSONContent, index: string): React.ReactNode {
       return (
         <Pressable
           key={index}
-          onPress={() => node.attrs?.url && Linking.openURL(node.attrs.url)}
+          onPress={() =>
+            node.attrs?.url && WebBrowser.openBrowserAsync(node.attrs.url)
+          }
           style={{
             marginVertical: 16,
             borderRadius: Rounded.lg,
@@ -211,7 +221,9 @@ function renderNode(node: JSONContent, index: string): React.ReactNode {
           size="md"
           color={color.primary}
           style={{ textDecorationLine: 'underline' }}
-          onPress={() => node.attrs?.src && Linking.openURL(node.attrs.src)}
+          onPress={() =>
+            node.attrs?.src && WebBrowser.openBrowserAsync(node.attrs.src)
+          }
         >
           {node.attrs.src}
         </ThemedText>

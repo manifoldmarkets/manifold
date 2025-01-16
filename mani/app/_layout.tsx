@@ -2,7 +2,7 @@
 import 'expo-dev-client'
 import * as Notifications from 'expo-notifications'
 import { useEffect, useRef } from 'react'
-import { Dimensions, Linking, Platform, SafeAreaView } from 'react-native'
+import { Dimensions, Platform, SafeAreaView } from 'react-native'
 import { ENV } from 'lib/firebase/init'
 import { Notification } from 'common/notification'
 import { StatusBar } from 'expo-status-bar'
@@ -73,11 +73,11 @@ function RootLayout() {
     }
   }, [])
 
-  useEffect(() => {
-    Linking.getInitialURL().then((url) => {
-      log('Initial url:', url)
-    })
-  }, [])
+  // useEffect(() => {
+  //   Linking.getInitialURL().then((url) => {
+  //     log('Initial url:', url)
+  //   })
+  // }, [])
 
   const getExistingPushNotificationStatus = async () => {
     if (Platform.OS === 'android') {
@@ -132,29 +132,18 @@ function RootLayout() {
           },
         ]}
       >
-        <Stack>
-          <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-          <Stack.Screen
-            name="[contractSlug]"
-            options={{
-              headerShown: false,
-              animation: 'slide_from_right',
-            }}
-          />
-          <Stack.Screen
-            name="registration"
-            options={{
-              headerShown: false,
-              animation: 'slide_from_right',
-            }}
-          />
-          <Stack.Screen
-            name="redeem"
-            options={{
-              headerShown: false,
-              animation: 'slide_from_right',
-            }}
-          />
+        <Stack
+          screenOptions={{
+            headerShown: false,
+            animation: 'slide_from_right',
+          }}
+        >
+          <Stack.Screen name="(tabs)" />
+          <Stack.Screen name="[username]" />
+          <Stack.Screen name="[username]/[contractSlug]" />
+          <Stack.Screen name="registration" />
+          <Stack.Screen name="redeem" />
+          <Stack.Screen name="+not-found" />
         </Stack>
 
         <SplashAuth
