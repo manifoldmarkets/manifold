@@ -11,7 +11,7 @@ import { Row } from 'web/components/layout/row'
 import { PHONE_VERIFICATION_BONUS } from 'common/economy'
 import { formatMoney } from 'common/util/format'
 import { track } from 'web/lib/service/analytics'
-import { CoinNumber } from 'web/components/widgets/coin-number'
+import { TokenNumber } from 'web/components/widgets/token-number'
 import clsx from 'clsx'
 
 export const StyledPhoneInput = (props: {
@@ -86,7 +86,7 @@ export function OnboardingVerifyPhone(props: { onClose: () => void }) {
         <Col className="items-center justify-center gap-2">
           <span className={'mb-2 mt-2 text-center text-xl'}>
             Verify your phone number to collect a{' '}
-            <CoinNumber
+            <TokenNumber
               amount={PHONE_VERIFICATION_BONUS}
               className={'font-bold'}
               isInline

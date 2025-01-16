@@ -25,7 +25,7 @@ import {
 import { LocationPanel } from 'web/components/gidx/location-panel'
 import { UploadDocuments } from 'web/components/gidx/upload-document'
 import { AmountInput } from 'web/components/widgets/amount-input'
-import { CoinNumber } from 'web/components/widgets/coin-number'
+import { TokenNumber } from 'web/components/widgets/token-number'
 import { InfoTooltip } from 'web/components/widgets/info-tooltip'
 import { Input } from 'web/components/widgets/input'
 import { LoadingIndicator } from 'web/components/widgets/loading-indicator'
@@ -302,7 +302,7 @@ export default function CashoutPage() {
                 >
                   Verify and get
                   <span className="ml-1">
-                    <CoinNumber
+                    <TokenNumber
                       amount={KYC_VERIFICATION_BONUS_CASH}
                       className={'font-bold'}
                       isInline
@@ -616,7 +616,7 @@ function SweepiesStats(props: {
             />
           </span>
         </div>
-        <CoinNumber
+        <TokenNumber
           amount={redeemableCash}
           className={'font-bold'}
           coinType={'sweepies'}
@@ -625,7 +625,7 @@ function SweepiesStats(props: {
       <div className="bg-ink-300 mb-4 mt-1 w-[1px]" />
       <Col className={clsx('w-1/2 items-start', className)}>
         <div className="text-ink-500 whitespace-nowrap text-sm">Total</div>
-        <CoinNumber
+        <TokenNumber
           amount={cashBalance}
           className={'text-ink-500 font-bold'}
           coinType={'sweepies'}

@@ -9,7 +9,7 @@ import {
   REFERRAL_MIN_PURCHASE_DOLLARS,
 } from 'common/economy'
 import { formatMoney } from 'common/util/format'
-import { CoinNumber } from 'web/components/widgets/coin-number'
+import { TokenNumber } from 'web/components/widgets/token-number'
 import clsx from 'clsx'
 import { getReferralCodeFromUser } from 'common/util/share'
 import { Button, buttonClass } from 'web/components/buttons/button'
@@ -55,13 +55,13 @@ export default function ReferralsPage() {
                 Invite friends to Manifold and you'll both get
               </p>
               <div className="flex items-center justify-center gap-2 text-2xl font-bold">
-                <CoinNumber
+                <TokenNumber
                   coinType={'CASH'}
                   amount={REFERRAL_AMOUNT_CASH}
                   isInline
                 />
                 <span>+</span>
-                <CoinNumber
+                <TokenNumber
                   coinType={'MANA'}
                   amount={REFERRAL_AMOUNT}
                   isInline
@@ -78,7 +78,7 @@ export default function ReferralsPage() {
                 Invite friends to Manifold and earn
               </p>
               <div className="text-2xl font-bold">
-                <CoinNumber amount={REFERRAL_AMOUNT} isInline />
+                <TokenNumber amount={REFERRAL_AMOUNT} isInline />
               </div>
               <p className="mt-2">
                 when they register and purchase ${REFERRAL_MIN_PURCHASE_DOLLARS}{' '}
@@ -108,7 +108,7 @@ export default function ReferralsPage() {
               className={clsx(buttonClass('xl', 'gold'), 'w-full')}
             >
               <span>Register to earn +</span>
-              <CoinNumber
+              <TokenNumber
                 coinType={'CASH'}
                 amount={REFERRAL_AMOUNT_CASH}
                 className="mx-1 font-bold"

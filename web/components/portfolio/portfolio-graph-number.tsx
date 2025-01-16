@@ -1,7 +1,7 @@
 import clsx from 'clsx'
 import { Col } from '../layout/col'
 import { useSweepstakes } from '../sweepstakes-provider'
-import { CoinNumber } from '../widgets/coin-number'
+import { TokenNumber } from '../widgets/token-number'
 import { PortfolioMode } from './portfolio-graph'
 
 export function PortfolioGraphNumber(props: {
@@ -39,7 +39,7 @@ export function PortfolioGraphNumber(props: {
       onClick={onClick}
     >
       <Col>
-        <CoinNumber
+        <TokenNumber
           amount={displayedAmount}
           className={clsx('font-bold transition-all', className)}
           coinType={isSpice ? 'spice' : prefersPlay ? 'mana' : 'sweepies'}

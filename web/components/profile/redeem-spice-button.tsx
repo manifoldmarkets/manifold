@@ -2,7 +2,7 @@ import { useUser } from 'web/hooks/use-user'
 import { useState } from 'react'
 import { Button } from '../buttons/button'
 import { RedeemSpiceModal } from '../redeem-spice-modal'
-import { CoinNumber } from '../widgets/coin-number'
+import { TokenNumber } from '../widgets/token-number'
 import { Row } from '../layout/row'
 import clsx from 'clsx'
 
@@ -27,7 +27,7 @@ export function RedeemSpiceButton(props: {
       >
         <Row className="gap-1">
           Redeem{' '}
-          <CoinNumber
+          <TokenNumber
             amount={spice ?? undefined}
             coinType="spice"
             coinClassName={disabled ? 'grayscale opacity-50' : ''}

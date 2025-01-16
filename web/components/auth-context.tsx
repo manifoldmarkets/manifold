@@ -28,7 +28,7 @@ import { useEffectCheckEquality } from 'web/hooks/use-effect-check-equality'
 import { getPrivateUserSafe, getUserSafe } from 'web/lib/supabase/users'
 import toast from 'react-hot-toast'
 import { Row } from './layout/row'
-import { CoinNumber } from './widgets/coin-number'
+import { TokenNumber } from './widgets/token-number'
 
 // Either we haven't looked up the logged in user yet (undefined), or we know
 // the user is not logged in (null), or we know the user is logged in.
@@ -254,7 +254,7 @@ const showToast = (manaChange: number, cashChange: number) => {
       {manaChange > 0 && (
         <Row className="items-center justify-center">
           +
-          <CoinNumber
+          <TokenNumber
             amount={manaChange}
             className="font-bold"
             coinType="MANA"
@@ -265,7 +265,7 @@ const showToast = (manaChange: number, cashChange: number) => {
       {cashChange > 0 && (
         <Row className="items-center justify-center">
           +
-          <CoinNumber
+          <TokenNumber
             amount={cashChange}
             className="font-bold"
             coinType="CASH"

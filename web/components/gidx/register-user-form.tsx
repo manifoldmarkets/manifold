@@ -21,7 +21,7 @@ import {
 } from 'common/gidx/gidx'
 import { LocationPanel } from 'web/components/gidx/location-panel'
 import { KYC_VERIFICATION_BONUS_CASH } from 'common/economy'
-import { CoinNumber } from 'web/components/widgets/coin-number'
+import { TokenNumber } from 'web/components/widgets/token-number'
 import { RegisterIcon } from 'web/public/custom-components/registerIcon'
 import {
   BottomRow,
@@ -608,7 +608,7 @@ export const RegisterUserForm = (props: {
       </span>
       <span className="text-ink-700">
         Hooray! Now you can participate in sweepstakes markets. We sent you{' '}
-        <CoinNumber
+        <TokenNumber
           amount={KYC_VERIFICATION_BONUS_CASH}
           className={'font-bold'}
           coinType={'CASH'}

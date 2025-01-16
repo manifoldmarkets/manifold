@@ -56,7 +56,7 @@ import { SpiceCoin } from 'web/public/custom-components/spiceCoin'
 import { Button } from '../buttons/button'
 import { Modal } from '../layout/modal'
 import { Rating, ReviewPanel } from '../reviews/stars'
-import { CoinNumber } from '../widgets/coin-number'
+import { TokenNumber } from '../widgets/token-number'
 import { Linkify } from '../widgets/linkify'
 import { linkClass } from '../widgets/site-link'
 import {
@@ -939,7 +939,7 @@ export function MarketResolvedNotification(props: {
               />
 
               <NotificationIcon
-                symbol={<CoinNumber hideAmount={true} coinType={token} />}
+                symbol={<TokenNumber hideAmount={true} coinType={token} />}
                 symbolBackgroundClass={
                   profit < 0
                     ? 'border-ink-300  border-2 ring-4 ring-ink-200'
@@ -1464,7 +1464,7 @@ function ReferralProgramNotification(props: {
     >
       <span>
         Refer friends and get{' '}
-        <CoinNumber
+        <TokenNumber
           coinType={'MANA'}
           amount={REFERRAL_AMOUNT}
           className={clsx('mr-1 font-bold')}

@@ -15,7 +15,7 @@ import { Col } from '../layout/col'
 import { Row } from '../layout/row'
 import { SweepsToggle } from '../sweeps/sweeps-toggle'
 import { ColorType } from '../widgets/choices-toggle-group'
-import { CoinNumber } from '../widgets/coin-number'
+import { TokenNumber } from '../widgets/token-number'
 import { PortfolioGraphNumber } from './portfolio-graph-number'
 import { ProfitWidget } from './profit-widget'
 import { PortfolioGraph, ProfitGraph, PortfolioMode } from './portfolio-graph'
@@ -335,7 +335,7 @@ function TwombaPortfolioValueSkeleton(props: {
               )}
               onClick={() => togglePortfolioFocus('all')}
             >
-              <CoinNumber
+              <TokenNumber
                 amount={displayAmounts(
                   graphValues.net,
                   prefersPlay ? portfolioValues?.net : portfolioValues?.netCash
@@ -410,7 +410,7 @@ function TwombaPortfolioValueSkeleton(props: {
         <Col className="bg-canvas-0 w-full  rounded-lg p-4">
           <Col className="items-start">
             <span>
-              <CoinNumber
+              <TokenNumber
                 amount={displayAmounts(
                   graphValues.profit,
                   prefersPlay

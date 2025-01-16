@@ -19,7 +19,7 @@ import { shortenNumber } from 'common/util/formatNumber'
 import router from 'next/router'
 import { useIosPurchases } from 'web/hooks/use-ios-purchases'
 import { useNativeInfo } from './native-message-provider'
-import { CoinNumber } from './widgets/coin-number'
+import { TokenNumber } from './widgets/token-number'
 import { FundsSelector } from 'web/components/gidx/funds-selector'
 import { getVerificationStatus } from 'common/gidx/user'
 import { firebaseLogin, User } from 'web/lib/firebase/users'
@@ -207,7 +207,7 @@ export function PriceTile(props: {
             )}
           >
             <span>+</span>
-            <CoinNumber
+            <TokenNumber
               coinType="sweepies"
               className="text-lg font-bold"
               amount={bonusInDollars}

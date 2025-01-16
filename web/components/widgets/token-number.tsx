@@ -15,7 +15,7 @@ import { ContractToken } from 'common/contract'
 
 export type NumberDisplayType = 'short' | 'animated' | 'toDecimal'
 
-export function CoinNumber(props: {
+export function TokenNumber(props: {
   amount?: number
   coinType?: 'mana' | 'spice' | 'sweepies' | ContractToken
   numberType?: NumberDisplayType
@@ -80,7 +80,7 @@ export function CoinNumber(props: {
         // TWODO: give sweepies all the variations as well
         formatSweepiesNumber(Math.abs(amount ?? 0), {
           toDecimal: numberType == 'toDecimal' ? 2 : undefined,
-          short: numberType == 'short' ? true : false,
+          short: numberType == 'short',
         })
       ) : numberType == 'short' ? (
         shortenNumber(
