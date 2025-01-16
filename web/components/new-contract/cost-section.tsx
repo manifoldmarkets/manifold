@@ -6,7 +6,6 @@ import { ReactNode, useState } from 'react'
 import { Col } from 'web/components/layout/col'
 
 import clsx from 'clsx'
-import { getTieredCost } from 'common/economy'
 import { ENV_CONFIG } from 'common/envs/constants'
 import { AddFundsModal } from 'web/components/add-funds-modal'
 import { Button } from 'web/components/buttons/button'
@@ -17,7 +16,7 @@ import {
   PremiumTier,
 } from 'web/public/custom-components/tiers'
 import { TokenNumber } from '../widgets/token-number'
-import { MarketTierType } from 'common/tier'
+import { getTieredCost, MarketTierType } from 'common/tier'
 import { getPresentedTierName } from '../tiers/tier-tooltip'
 import { ManaCoin } from 'web/public/custom-components/manaCoin'
 import { getContractTypeFromValue } from './create-contract-types'

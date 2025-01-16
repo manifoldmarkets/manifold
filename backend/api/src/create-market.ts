@@ -16,7 +16,7 @@ import {
   add_answers_mode,
   contractUrl,
 } from 'common/contract'
-import { getAnte, getTieredCost } from 'common/economy'
+import { getAnte } from 'common/economy'
 import { MAX_GROUPS_PER_MARKET } from 'common/group'
 import { getMultiNumericAnswerBucketRangeNames } from 'common/multi-numeric'
 import { getNewContract } from 'common/new-contract'
@@ -56,6 +56,7 @@ import { generateAntes } from 'shared/create-contract-helpers'
 import { betsQueue } from 'shared/helpers/fn-queue'
 import { convertUser } from 'common/supabase/users'
 import { first } from 'lodash'
+import { getTieredCost } from 'common/tier'
 
 type Body = ValidatedAPIParams<'market'>
 

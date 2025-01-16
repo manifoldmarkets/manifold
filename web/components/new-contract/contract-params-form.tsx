@@ -17,7 +17,6 @@ import {
 } from 'common/contract'
 import {
   getAnte,
-  getTieredCost,
   MINIMUM_BOUNTY,
   UNIQUE_ANSWER_BETTOR_BONUS_AMOUNT,
   UNIQUE_BETTOR_BONUS_AMOUNT,
@@ -67,7 +66,7 @@ import { PseudoNumericRangeSection } from 'web/components/new-contract/pseudo-nu
 import { SimilarContractsSection } from 'web/components/new-contract/similar-contracts-section'
 import { MultiNumericRangeSection } from 'web/components/new-contract/multi-numeric-range-section'
 import { getMultiNumericAnswerBucketRangeNames } from 'common/multi-numeric'
-import { MarketTierType } from 'common/tier'
+import { getTieredCost, MarketTierType } from 'common/tier'
 import { randomString } from 'common/util/random'
 import { formatWithToken } from 'common/util/format'
 import { BiUndo } from 'react-icons/bi'

@@ -1,14 +1,10 @@
-import {
-  CREATEABLE_NON_PREDICTIVE_OUTCOME_TYPES,
-  OutcomeType,
-} from 'common/contract'
-import { MarketTierType, tiers } from './tier'
+import { OutcomeType } from 'common/contract'
 
 export const DEFAULT_CASH_ANTE = 50
 
 export const FIXED_ANTE = 1000
-const BASE_ANSWER_COST = FIXED_ANTE / 10
-const MIN_ANSWER_COST = 25
+export const BASE_ANSWER_COST = FIXED_ANTE / 10
+export const MIN_ANSWER_COST = 25
 const ANTES = {
   BINARY: FIXED_ANTE,
   MULTIPLE_CHOICE: BASE_ANSWER_COST, // Amount per answer.
@@ -18,15 +14,6 @@ const ANTES = {
   BOUNTIED_QUESTION: 0,
   POLL: FIXED_ANTE / 10,
   NUMBER: FIXED_ANTE * 10,
-}
-
-export const getTieredAnswerCost = (marketTier: MarketTierType | undefined) => {
-  return marketTier
-    ? Math.max(
-        BASE_ANSWER_COST * 10 ** (tiers.indexOf(marketTier) - 1),
-        MIN_ANSWER_COST
-      )
-    : BASE_ANSWER_COST
 }
 
 export const MINIMUM_BOUNTY = 1000
@@ -43,25 +30,6 @@ export const getAnte = (
   }
 
   return ante
-}
-export const getTieredCost = (
-  baseCost: number,
-  tier: MarketTierType | undefined,
-  outcomeType: OutcomeType
-) => {
-  if (CREATEABLE_NON_PREDICTIVE_OUTCOME_TYPES.includes(outcomeType)) {
-    return baseCost
-  }
-
-  const tieredCost = tier
-    ? baseCost * 10 ** (tiers.indexOf(tier) - 1)
-    : baseCost
-
-  if (outcomeType == 'NUMBER' && tier != 'play') {
-    return tieredCost / 10
-  }
-
-  return tieredCost
 }
 
 /* Sweeps bonuses */
