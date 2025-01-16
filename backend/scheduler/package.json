@@ -18,6 +18,7 @@
     "node": ">=16.0.0"
   },
   "dependencies": {
+    "@amplitude/node": "1.10.2",
     "@google-cloud/monitoring": "4.0.0",
     "@google-cloud/secret-manager": "4.2.1",
     "@stdlib/math-base-special-betaincinv": "0.2.1",

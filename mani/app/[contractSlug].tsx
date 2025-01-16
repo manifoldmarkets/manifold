@@ -38,16 +38,13 @@ import { APIResponse } from 'common/api/schema'
 
 export const LARGE_QUESTION_LENGTH = 95
 
-type ContractPageContentProps = {
-  contractId: string
-}
-
-function ContractPageLoadingContent({ contractId }: ContractPageContentProps) {
+function ContractPageLoadingContent(props: { contractSlug: string }) {
+  const { contractSlug } = props
   const { data } = useAPIGetter('get-market-props', {
-    id: contractId,
+    slug: contractSlug,
   })
   const { manaContract, cashContract } = data ?? {}
-  if (!data || ![manaContract?.id, cashContract?.id].includes(contractId))
+  if (!data || ![manaContract?.slug, cashContract?.slug].includes(contractSlug))
     return <ContractPageLoading />
 
   return <ContractPageContent contractProps={data} />
@@ -132,18 +129,13 @@ function ContractPageContent(props: {
 }
 
 export default function ContractPage() {
-  const { contractId } = useLocalSearchParams()
+  const { contractSlug } = useLocalSearchParams()
 
-  if (!contractId) {
+  if (!contractSlug) {
     return <ContractPageLoading />
   }
 
-  return (
-    <ContractPageLoadingContent
-      key={contractId as string}
-      contractId={contractId as string}
-    />
-  )
+  return <ContractPageLoadingContent contractSlug={contractSlug as string} />
 }
 
 const useBetData = (props: {

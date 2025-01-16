@@ -82,6 +82,8 @@ export const myAuthenticatedEndpoint: APIHandler<
 ## Best Practices
 
 - Use the `createSupabaseDirectClient` function from `shared/supabase/init` for database operations.
+- For environment-specific IDs and constants, check common/antes.ts first as it contains important platform-wide constants like HOUSE_LIQUIDITY_PROVIDER_ID.
+
 
 ## Sports Markets
 
@@ -91,6 +93,7 @@ export const myAuthenticatedEndpoint: APIHandler<
 - Check for duplicate sports markets using the check-sports-event endpoint before attempting market creation
 - For specialized market types (like sports), consider wrapping the main market endpoint handler rather than creating new endpoints
 - Prefer lightweight check endpoints over complex validation in create/update endpoints when the check might be useful in other contexts
+
   This uses the pg promise library, where you pass raw sql strings like so:
 
 ```ts

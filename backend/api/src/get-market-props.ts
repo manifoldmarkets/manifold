@@ -4,13 +4,11 @@ import { convertContract } from 'common/supabase/contracts'
 import { contractColumnsToSelect } from 'shared/utils'
 import { first } from 'lodash'
 import { convertGroup } from 'common/supabase/groups'
-import { Contract } from 'common/contract'
 import { convertContractComment } from 'common/supabase/comments'
 import { ContractMetric } from 'common/contract-metric'
 import { ContractComment } from 'common/comment'
 import { type APIHandler } from './helpers/endpoint'
 
-// This could replace the supabase js calls in getStaticProps
 export const getMarketProps: APIHandler<'get-market-props'> = async (
   props: { id?: string; slug?: string },
   auth
@@ -24,13 +22,12 @@ export const getMarketProps: APIHandler<'get-market-props'> = async (
   if (!contractId && !contractSlug) {
     throw new APIError(400, 'id or slug is required')
   }
-  let contract: Contract | undefined = undefined
   if (!contractId) {
     const result = await pg.oneOrNone(
-      `select id,slug from contracts where slug = $1`,
+      `select id from contracts where slug = $1`,
       [contractSlug]
     )
-    if (!result) throw new APIError(404, 'Contract not found')
+    if (!result) throw new APIError(404, 'Contract slug not found')
     contractId = result.id
   }
   const results = await pg.multi(
@@ -129,7 +126,7 @@ export const getMarketProps: APIHandler<'get-market-props'> = async (
   `,
     [contractId]
   )
-  contract = first(results[0]?.map(convertContract))
+  const contract = first(results[0]?.map(convertContract))
   if (!contract) throw new APIError(404, 'Contract not found')
   const chartAnnotations = results[1]
   const topics = results[2].map(convertGroup)
