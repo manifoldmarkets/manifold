@@ -25,6 +25,7 @@ import { firebaseLogin, firebaseLogout } from 'web/lib/firebase/users'
 import { withTracking } from 'web/lib/service/analytics'
 import { MobileAppsQRCodeDialog } from '../buttons/mobile-apps-qr-code-button'
 import { SidebarSignUpButton } from '../buttons/sign-up-button'
+import { ManifoldLogo } from './manifold-logo'
 import { ProfileSummary } from './profile-summary'
 import { NavItem, SidebarItem } from './sidebar-item'
 import { PrivateMessagesIcon } from 'web/components/messaging/messages-icon'
@@ -35,7 +36,6 @@ import { ReportsIcon } from '../reports-icon'
 import { AddFundsButton } from '../profile/add-funds-button'
 import { Col } from '../layout/col'
 import { TbPigMoney } from 'react-icons/tb'
-import { MemorialLogo } from './manifold-logo'
 // import { PiRobotBold } from 'react-icons/pi'
 
 export default function Sidebar(props: {
@@ -96,7 +96,7 @@ export default function Sidebar(props: {
       aria-label="Sidebar"
       className={clsx('flex h-screen flex-col', className)}
     >
-      <MemorialLogo className="mb-3 mt-6" />
+      <ManifoldLogo className="pb-3 pt-6" />
 
       {user && !isMobile && <ProfileSummary user={user} className="mb-3" />}
 
