@@ -8,10 +8,10 @@ import { Row } from 'components/layout/row'
 import { Col } from 'components/layout/col'
 import { ThemedText } from 'components/themed-text'
 import { useDisplayUserById, useUser } from 'hooks/use-user'
-import { CoinNumber } from 'components/widgets/coin-number'
 import { useContractBets } from 'client-common/hooks/use-bets'
 import { api } from 'lib/api'
 import { useIsPageVisible } from 'hooks/use-is-page-visibile'
+import { TokenNumber } from 'components/token/token-number'
 
 export function Bets(props: { contract: Contract; totalBets: number }) {
   const { contract } = props
@@ -105,10 +105,10 @@ export function BetStatusText(props: {
       : getBinaryMCProb(bet.limitProb, outcome)
   const bought = amount >= 0 ? 'bought' : 'sold'
   const absAmount = Math.abs(amount)
-  const money = <CoinNumber amount={absAmount} token={contract.token} />
+  const money = <TokenNumber amount={absAmount} token={contract.token} />
   const orderAmount =
     bet.limitProb !== undefined && bet.orderAmount !== undefined ? (
-      <CoinNumber amount={bet.orderAmount} token={contract.token} />
+      <TokenNumber amount={bet.orderAmount} token={contract.token} />
     ) : null
   const anyFilled = !floatingLesserEqual(amount, 0)
   const allFilled = floatingEqual(amount, bet.orderAmount ?? amount)
