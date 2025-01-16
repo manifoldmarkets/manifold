@@ -35,6 +35,7 @@ import {
   resetWeeklyQuestStatsInternal,
 } from './reset-quests-stats'
 import { updateUserPortfolioHistoriesCore } from 'shared/update-user-portfolio-histories-core'
+import { ENV } from 'common/envs/constants'
 
 export function createJobs() {
   return [
@@ -111,7 +112,7 @@ export function createJobs() {
     ),
     createJob(
       'resolve-sports-markets',
-      '*/10 * * * * *', // Every 10 seconds
+      ENV === 'DEV' ? '*/30 * * * *' : '*/10 * * * * *', // Every 30 minutes on dev, every 10 seconds on prod
       resolveSportsMarkets
     ),
     // Daily jobs:

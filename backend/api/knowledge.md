@@ -82,6 +82,7 @@ export const myAuthenticatedEndpoint: APIHandler<
 ## Best Practices
 
 - Use the `createSupabaseDirectClient` function from `shared/supabase/init` for database operations.
+- For environment-specific IDs and constants, check common/antes.ts first as it contains important platform-wide constants like HOUSE_LIQUIDITY_PROVIDER_ID.
   This uses the pg promise library, where you pass raw sql strings like so:
 
 ```ts

@@ -1,12 +1,16 @@
 import { createSupabaseDirectClient } from 'shared/supabase/init'
 import { log } from 'shared/utils'
 import { SportsContract } from 'common/contract'
-import { HOUSE_LIQUIDITY_PROVIDER_ID } from 'common/antes'
+import {
+  HOUSE_LIQUIDITY_PROVIDER_ID,
+  DEV_HOUSE_LIQUIDITY_PROVIDER_ID,
+} from 'common/antes'
 import { resolveMarketHelper } from 'shared/resolve-market-helpers'
 import { getLiveScores } from './get-sports-live-scores'
 
 import { convertContract } from 'common/supabase/contracts'
 import { convertUser } from 'common/supabase/users'
+import { ENV } from 'common/envs/constants'
 
 export async function resolveSportsMarkets() {
   const pg = createSupabaseDirectClient()
@@ -45,7 +49,9 @@ export async function resolveSportsMarkets() {
     }
 
     const resolverRow = await pg.one('SELECT * FROM users WHERE id = $1', [
-      HOUSE_LIQUIDITY_PROVIDER_ID,
+      ENV === 'DEV'
+        ? DEV_HOUSE_LIQUIDITY_PROVIDER_ID
+        : HOUSE_LIQUIDITY_PROVIDER_ID,
     ])
     const resolver = convertUser(resolverRow)
 
