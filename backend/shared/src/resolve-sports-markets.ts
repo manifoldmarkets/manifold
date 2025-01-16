@@ -3,7 +3,8 @@ import { log } from 'shared/utils'
 import { SportsContract } from 'common/contract'
 import { HOUSE_LIQUIDITY_PROVIDER_ID } from 'common/antes'
 import { resolveMarketHelper } from 'shared/resolve-market-helpers'
-import { getLiveScores } from 'shared/get-sports-live-scores'
+import { getLiveScores } from './get-sports-live-scores'
+
 import { convertContract } from 'common/supabase/contracts'
 import { convertUser } from 'common/supabase/users'
 
@@ -77,7 +78,7 @@ export async function resolveSportsMarkets() {
 
       for (const contract of matchingContracts) {
         try {
-          if (contract.mechanism!=='cpmm-multi-1') continue
+          if (contract.mechanism !== 'cpmm-multi-1') continue
           const multiContract = contract
           const { answers, sportsLeague } = multiContract
           const isEPL = sportsLeague === 'English Premier League'
@@ -92,6 +93,7 @@ export async function resolveSportsMarkets() {
             await resolveMarketHelper(multiContract, resolver, resolver, {
               outcome: 'CHOOSE_ONE',
               answerId: homeAnswer.id,
+              resolutions: { [homeAnswer.id]: 100 },
             })
           } else if (awayScore > homeScore) {
             const awayAnswer = answers[1]
@@ -103,6 +105,7 @@ export async function resolveSportsMarkets() {
             await resolveMarketHelper(multiContract, resolver, resolver, {
               outcome: 'CHOOSE_ONE',
               answerId: awayAnswer.id,
+              resolutions: { [awayAnswer.id]: 100 },
             })
           } else {
             if (isEPL) {
@@ -115,6 +118,7 @@ export async function resolveSportsMarkets() {
               await resolveMarketHelper(multiContract, resolver, resolver, {
                 outcome: 'CHOOSE_ONE',
                 answerId: drawAnswer.id,
+                resolutions: { [drawAnswer.id]: 100 },
               })
             } else {
               const homeAnswer = answers[0]
