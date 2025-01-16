@@ -1,6 +1,6 @@
 import { createSupabaseDirectClient } from 'shared/supabase/init'
 import { log } from 'shared/utils'
-import { CPMMMultiContract } from 'common/contract'
+import { SportsContract } from 'common/contract'
 import { HOUSE_LIQUIDITY_PROVIDER_ID } from 'common/antes'
 import { resolveMarketHelper } from 'shared/resolve-market-helpers'
 import { getLiveScores } from 'shared/get-sports-live-scores'
@@ -33,7 +33,7 @@ export async function resolveSportsMarkets() {
       .join(', ')})
   `,
       completedGameIds,
-      (row) => convertContract(row)
+      (row) => convertContract<SportsContract>(row)
     )
 
     log(`Found ${unresolvedContracts.length} unresolved contracts.`)
@@ -77,7 +77,8 @@ export async function resolveSportsMarkets() {
 
       for (const contract of matchingContracts) {
         try {
-          const multiContract = contract as CPMMMultiContract
+          if (contract.mechanism!=='cpmm-multi-1') continue
+          const multiContract = contract
           const { answers, sportsLeague } = multiContract
           const isEPL = sportsLeague === 'English Premier League'
 
