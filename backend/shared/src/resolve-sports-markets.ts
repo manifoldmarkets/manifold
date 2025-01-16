@@ -61,9 +61,17 @@ export async function resolveSportsMarkets() {
 
       const homeScore = game.intHomeScore
       const awayScore = game.intAwayScore
+      const isNBA = game.idLeague === '4387'
 
       if (homeScore == null || awayScore == null) {
         log(`Skipping game ${game.idEvent}: Missing scores.`)
+        continue
+      }
+
+      if (isNBA && homeScore === awayScore) {
+        log(
+          `Skipping contract resolution for game ${game.idEvent}: NBA games cannot end in a draw.`
+        )
         continue
       }
 
