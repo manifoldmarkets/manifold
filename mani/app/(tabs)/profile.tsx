@@ -13,6 +13,8 @@ import { auth } from 'lib/firebase/init'
 import { clearData } from 'lib/auth-storage'
 import { Button } from 'components/buttons/button'
 import { router } from 'expo-router'
+import { BalanceChangeTable } from 'components/portfolio/balance-change-table'
+import { buildArray } from 'common/util/array'
 
 export default function Profile() {
   const color = useColor()
@@ -93,16 +95,16 @@ export default function Profile() {
           />
         </Row>
         <TopTabs
-          tabs={[
+          tabs={buildArray(
             {
               title: 'Positions',
               content: <Positions />,
             },
-            {
+            user && {
               title: 'Balance Log',
-              content: <ThemedText>Balance Log</ThemedText>,
-            },
-          ]}
+              content: <BalanceChangeTable user={user} />,
+            }
+          )}
         />
       </Col>
     </Page>

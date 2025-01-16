@@ -33,7 +33,10 @@ import { LeagueFeed } from 'web/components/leagues/league-feed'
 import { QueryUncontrolledTabs } from 'web/components/layout/tabs'
 import { SEO } from 'web/components/SEO'
 import { Countdown } from 'web/components/widgets/countdown'
-import { formatTime, getCountdownStringHoursMinutes } from 'web/lib/util/time'
+import {
+  formatTime,
+  getCountdownStringHoursMinutes,
+} from 'client-common/lib/time'
 import { InfoTooltip } from 'web/components/widgets/info-tooltip'
 import { LoadingIndicator } from 'web/components/widgets/loading-indicator'
 import { useEffectCheckEquality } from 'web/hooks/use-effect-check-equality'
