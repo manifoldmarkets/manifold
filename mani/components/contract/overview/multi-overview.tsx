@@ -5,7 +5,6 @@ import { Col } from 'components/layout/col'
 import { AnswerProbability } from 'components/contract/probability'
 import { useColor } from 'hooks/use-color'
 import { MultiBetButtons } from 'components/contract/bet/multi-bet-buttons'
-import { AnswerPosition } from '../bet/answer-position'
 import { useUser } from 'hooks/use-user'
 
 export function MultiOverview(props: { contract: CPMMMultiContract }) {
@@ -50,9 +49,6 @@ export function MultiOverview(props: { contract: CPMMMultiContract }) {
             answerId={answer.id}
             gap={12}
           />
-          {user && (
-            <AnswerPosition contract={contract} answer={answer} user={user} />
-          )}
         </Col>
       ))}
     </Col>

@@ -46,7 +46,9 @@ function ContractPageLoadingContent({ contractId }: ContractPageContentProps) {
   const { data } = useAPIGetter('get-market-props', {
     id: contractId,
   })
+
   const { manaContract, cashContract } = data ?? {}
+
   if (!data || ![manaContract?.id, cashContract?.id].includes(contractId))
     return <ContractPageLoading />
 

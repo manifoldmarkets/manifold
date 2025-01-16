@@ -1,143 +1,112 @@
-import { Contract } from 'common/contract'
+import { Contract, isBinaryMulti, tradingAllowed } from 'common/contract'
 import { ContractMetric } from 'common/contract-metric'
-import { StyleSheet } from 'react-native'
-import { User } from 'common/user'
 import { useSavedContractMetrics } from 'hooks/use-saved-contract-metrics'
 import { Col } from 'components/layout/col'
 import { Row } from 'components/layout/row'
 import { ThemedText } from 'components/themed-text'
 import { useColor } from 'hooks/use-color'
-import { IconSymbol } from 'components/ui/icon-symbol'
 import { TokenNumber } from 'components/token/token-number'
+import { ExpandableContent } from 'components/layout/expandable-content'
+import { floatingEqual } from 'common/util/math'
 
-export function UserBetsSummary(props: {
-  contract: Contract
-  initialMetrics?: ContractMetric
-  includeSellButton?: User | null | undefined
-}) {
-  const { contract, includeSellButton } = props
-  const metrics = useSavedContractMetrics(contract) ?? props.initialMetrics
+export function UserBetsSummary(props: { contract: Contract }) {
+  const { contract } = props
+  const metrics = useSavedContractMetrics(contract)
 
   if (!metrics) return null
   return (
-    <BetsSummary
-      contract={contract}
-      metrics={metrics}
-      includeSellButton={includeSellButton}
+    <ExpandableContent
+      previewContent={<YourBetsPreview contract={contract} metrics={metrics} />}
+      modalContent={undefined}
     />
   )
 }
 
-export function BetsSummary(props: {
+export function YourBetsPreview(props: {
   contract: Contract
   metrics: ContractMetric
-  includeSellButton?: User | null | undefined
 }) {
   const { contract, metrics } = props
-  const { resolution, outcomeType } = contract
-  const color = useColor()
+  const isBinaryMc = isBinaryMulti(contract)
+  const isMultipleChoice =
+    contract.outcomeType == 'MULTIPLE_CHOICE' && !isBinaryMc
 
-  const { payout, invested, totalShares = {}, profit, profitPercent } = metrics
-
-  const yesWinnings = totalShares.YES ?? 0
-  const noWinnings = totalShares.NO ?? 0
-
-  const position = yesWinnings - noWinnings
-  const exampleOutcome = position < 0 ? 'NO' : 'YES'
-
-  const isBinary = outcomeType === 'BINARY'
-  //  const mainBinaryMCAnswer = getMainBinaryMCAnswer(contract)
-
-  if (metrics.invested === 0 && metrics.profit === 0) return null
+  console.log(metrics)
 
   return (
-    <Col style={styles.container}>
-      <Row style={styles.statsRow}>
-        {resolution ? (
+    <Col style={{ gap: 8 }}>
+      <ThemedText size="md" weight="bold">
+        Your Position
+      </ThemedText>
+      <Col>
+        {isMultipleChoice ? (
           <Col>
-            <ThemedText size="sm" color={color.textSecondary}>
-              Payout
-            </ThemedText>
-            <Row style={{ alignItems: 'center', gap: 4 }}>
-              <TokenNumber size="lg" amount={payout} />
-              <ThemedText
-                color={
-                  profitPercent >= 0 ? color.profitText : color.textSecondary
-                }
-                size="sm"
-              >
-                ({profitPercent >= 0 ? '+' : ''}
-                {Math.round(profitPercent)}%)
-              </ThemedText>
-            </Row>
-          </Col>
-        ) : isBinary ? (
-          <Col>
-            <ThemedText size="sm" color={color.textSecondary}>
-              Payout
-              <IconSymbol
-                name="info"
-                size={12}
-                color={color.textTertiary}
-                style={{ marginLeft: 4 }}
+            {contract.answers?.map((answer) => (
+              <PositionRow
+                key={answer.id}
+                contract={contract}
+                answer={answer}
               />
-            </ThemedText>
-            <Row style={{ alignItems: 'center', gap: 4 }}>
-              <TokenNumber size="lg" amount={Math.abs(position)} />
-              <ThemedText size="sm" color={color.textSecondary}>
-                on {exampleOutcome}
-              </ThemedText>
-            </Row>
+            ))}
           </Col>
-        ) : null}
-
-        <Col>
-          <ThemedText size="sm" color={color.textSecondary}>
-            Spent
-            <IconSymbol
-              name="info"
-              size={12}
-              color={color.textTertiary}
-              style={{ marginLeft: 4 }}
-            />
-          </ThemedText>
-          <TokenNumber size="lg" amount={invested} />
-        </Col>
-
-        <Col>
-          <ThemedText size="sm" color={color.textSecondary}>
-            Profit
-            <IconSymbol
-              name="info"
-              size={12}
-              color={color.textTertiary}
-              style={{ marginLeft: 4 }}
-            />
-          </ThemedText>
-          <Row style={{ alignItems: 'center', gap: 4 }}>
-            <TokenNumber size="lg" amount={profit} />
-            <ThemedText
-              color={
-                profitPercent >= 0 ? color.profitText : color.textSecondary
-              }
-              size="sm"
-            >
-              ({profitPercent >= 0 ? '+' : ''}
-              {Math.round(profitPercent)}%)
-            </ThemedText>
-          </Row>
-        </Col>
-      </Row>
+        ) : (
+          <PositionRow contract={contract} />
+        )}
+      </Col>
     </Col>
   )
 }
 
-const styles = StyleSheet.create({
-  container: {
-    marginBottom: 32,
-  },
-  statsRow: {
-    flexWrap: 'wrap',
-    gap: 24,
-  },
-})
+export function PositionRow(props: { contract: Contract; answer?: Answer }) {
+  const { contract, answer } = props
+  const metric = useSavedContractMetrics(contract, answer.id)
+  const { invested, totalShares } = metric ?? {
+    invested: 0,
+    totalShares: { YES: 0, NO: 0 },
+  }
+  const color = useColor()
+
+  const yesWinnings = totalShares.YES ?? 0
+  const noWinnings = totalShares.NO ?? 0
+  const canSell = tradingAllowed(contract, answer)
+
+  const position = yesWinnings - noWinnings
+  const exampleOutcome = position < 0 ? 'NO' : 'YES'
+  const won =
+    (position > 1e-7 && answer.resolution === 'YES') ||
+    (position < -1e-7 && answer.resolution === 'NO')
+
+  if (
+    !metric ||
+    (floatingEqual(yesWinnings, 0) && floatingEqual(noWinnings, 0))
+  )
+    return null
+
+  return (
+    <Row style={{ alignItems: 'center', justifyContent: 'space-between' }}>
+      <Row>
+        <ThemedText
+          size="md"
+          color={
+            exampleOutcome === 'YES' ? color.yesButtonText : color.noButtonText
+          }
+          weight="medium"
+        >
+          {exampleOutcome}
+        </ThemedText>
+        {answer && (
+          <ThemedText size="md" color={color.textTertiary}>
+            {' '}
+            • {answer.text}
+          </ThemedText>
+        )}
+      </Row>
+      <Row>
+        <TokenNumber size="md" amount={position} color={color.primary} />
+        <ThemedText size="md" color={color.textTertiary}>
+          {canSell ? ' payout' : won ? ' paid out' : ' unrealized'}
+        </ThemedText>
+      </Row>
+    </Row>
+  )
+}

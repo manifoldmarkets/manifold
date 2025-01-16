@@ -3,23 +3,23 @@
 <plist version="1.0">
 <dict>
 	<key>CLIENT_ID</key>
-	<string>134303100058-9464q86hhfloaij15dl9ekn6l39e3cv8.apps.googleusercontent.com</string>
+	<string>128925704902-k6d8219pss8nubk1bb1n5kisn5l8fv1a.apps.googleusercontent.com</string>
 	<key>REVERSED_CLIENT_ID</key>
-	<string>com.googleusercontent.apps.134303100058-9464q86hhfloaij15dl9ekn6l39e3cv8</string>
+	<string>com.googleusercontent.apps.128925704902-k6d8219pss8nubk1bb1n5kisn5l8fv1a</string>
 	<key>ANDROID_CLIENT_ID</key>
-	<string>134303100058-mu6dbubhks8khpqi3dq0fokqnkbputiq.apps.googleusercontent.com</string>
+	<string>128925704902-1prt50kd7uuvfasmrbmflgssd1rakvil.apps.googleusercontent.com</string>
 	<key>API_KEY</key>
-	<string>AIzaSyDUe3lBu-IihYoMIP6cycsFzQ3ur69XfjM</string>
+	<string>AIzaSyAVI_IzxthTmFT8Fnl5Kj6BYPZMb8eOWa4</string>
 	<key>GCM_SENDER_ID</key>
-	<string>134303100058</string>
+	<string>128925704902</string>
 	<key>PLIST_VERSION</key>
 	<string>1</string>
 	<key>BUNDLE_ID</key>
 	<string>com.manifold.mani</string>
 	<key>PROJECT_ID</key>
-	<string>dev-mantic-markets</string>
+	<string>mantic-markets</string>
 	<key>STORAGE_BUCKET</key>
-	<string>dev-mantic-markets.appspot.com</string>
+	<string>mantic-markets.appspot.com</string>
 	<key>IS_ADS_ENABLED</key>
 	<false></false>
 	<key>IS_ANALYTICS_ENABLED</key>
@@ -31,6 +31,6 @@
 	<key>IS_SIGNIN_ENABLED</key>
 	<true></true>
 	<key>GOOGLE_APP_ID</key>
-	<string>1:134303100058:ios:d5f9cb57334d38bcf80323</string>
+	<string>1:128925704902:ios:aaa3b62bb6e850db642dc7</string>
 </dict>
 </plist>
