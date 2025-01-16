@@ -47,6 +47,7 @@ import { ReactButton } from './react-button'
 import { TradesButton } from './trades-button'
 import { SweepiesCoin } from 'web/public/custom-components/sweepiesCoin'
 import { capitalize } from 'lodash'
+import { getIsLive } from 'common/sports-info'
 
 const DEBUG_FEED_CARDS =
   typeof window != 'undefined' &&
@@ -172,6 +173,12 @@ export function FeedContractCard(props: {
         <></>
       )}
       <Col className={clsx('w-full', size === 'xs' ? '' : 'gap-1.5 ', 'pt-4')}>
+        {getIsLive(contract) && (
+          <Row className="items-center gap-2 text-red-500">
+            <div className="ml-2 h-2 w-2 animate-pulse rounded-full bg-red-500" />
+            Live
+          </Row>
+        )}
         <Row className="w-full justify-between">
           <UserHovercard userId={creatorId}>
             <Row className={'text-ink-500 items-center gap-1 text-sm'}>

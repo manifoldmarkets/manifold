@@ -38,7 +38,7 @@ import { Avatar } from 'web/components/widgets/avatar'
 import { Carousel } from 'web/components/widgets/carousel'
 import { Input } from 'web/components/widgets/input'
 import { Pagination } from 'web/components/widgets/pagination'
-import { useContractBets } from 'web/hooks/use-bets'
+import { useContractBets } from 'client-common/hooks/use-bets'
 import { useEvent } from 'client-common/hooks/use-event'
 import { useIsMobile } from 'web/hooks/use-is-mobile'
 import { usePersistentInMemoryState } from 'client-common/hooks/use-persistent-in-memory-state'
@@ -58,6 +58,7 @@ import { Tooltip } from '../widgets/tooltip'
 import { floatingEqual } from 'common/util/math'
 import { Col } from '../layout/col'
 import { Row } from '../layout/row'
+import { useIsPageVisible } from 'web/hooks/use-page-visible'
 type BetSort =
   | 'newest'
   | 'profit'
@@ -70,8 +71,6 @@ type BetSort =
   | 'position'
 
 type BetFilter = 'open' | 'limit_bet' | 'sold' | 'closed' | 'resolved' | 'all'
-
-type BetTokenFilter = 'CASH' | 'MANA' | 'ALL'
 
 const JUNE_1_2022 = new Date('2022-06-01T00:00:00.000Z').valueOf()
 export function UserBetsTable(props: { user: User }) {
@@ -100,7 +99,8 @@ export function UserBetsTable(props: { user: User }) {
     api('get-user-contract-metrics-with-contracts', {
       userId: user.id,
       offset: 0,
-      limit: 5000,
+      // Hack for Ziddletwix
+      limit: user.id === 'Iua2KQvL6KYcfGLGNI6PVeGkseo1' ? 10000 : 5000,
     }).then((res) => {
       const { contracts, metricsByContract } = res
       setMetricsByContract(
@@ -815,10 +815,15 @@ const ExpandedBetRow = (props: {
 }) => {
   const { contract, user, signedInUser, contractMetric, areYourBets } = props
   const hideBetsBefore = areYourBets ? 0 : JUNE_1_2022
-  const bets = useContractBets(contract.id, {
-    userId: user.id,
-    afterTime: hideBetsBefore,
-  })
+  const bets = useContractBets(
+    contract.id,
+    {
+      userId: user.id,
+      afterTime: hideBetsBefore,
+    },
+    useIsPageVisible,
+    (params) => api('bets', params)
+  )
   const limitBets = bets?.filter(
     (bet) => bet.limitProb !== undefined && !bet.isCancelled && !bet.isFilled
   ) as LimitBet[]

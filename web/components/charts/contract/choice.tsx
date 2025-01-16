@@ -1,5 +1,4 @@
 import { Answer } from 'common/answer'
-import { Bet } from 'common/bet'
 import { getAnswerProbability, getContractBetMetrics } from 'common/calculate'
 import { HistoryPoint, MultiPoints } from 'common/chart'
 import { ChartPosition } from 'common/chart-position'
@@ -13,7 +12,7 @@ import { buildArray } from 'common/util/array'
 import { formatWithToken, maybePluralize } from 'common/util/format'
 import { floatingEqual } from 'common/util/math'
 import { scaleLinear, scaleTime } from 'd3-scale'
-import { first, groupBy, last, mapValues, pick, sortBy, uniq } from 'lodash'
+import { first, last, pick, sortBy, uniq } from 'lodash'
 import { useMemo } from 'react'
 import { Row } from 'web/components/layout/row'
 import { MultiValueHistoryChart } from '../generic-charts'
@@ -75,7 +74,9 @@ export const CHOICE_OTHER_COLOR = '#C2C3DB'
 export const nthColor = (index: number) =>
   CHOICE_ANSWER_COLORS[index % CHOICE_ANSWER_COLORS.length]
 
-export function getAnswerColor(answer: Answer) {
+export function getAnswerColor(answer: Answer | undefined) {
+  if (!answer) return CHOICE_OTHER_COLOR
+
   const index = answer.index
 
   if (answer.text === 'Democratic Party') return '#adc4e3'
@@ -90,12 +91,6 @@ const getAnswers = (contract: MultiContract) => {
     (answer) => answer.id !== '0' || outcomeType === 'MULTIPLE_CHOICE'
   )
   return sortBy(validAnswers, (answer) => answer.index)
-}
-
-export const getMultiBetPoints = (bets: Bet[]) => {
-  return mapValues(groupBy(bets, 'answerId'), (bets) =>
-    bets.map((bet) => ({ x: bet.createdTime, y: bet.probAfter }))
-  )
 }
 
 export function useChartAnswers(contract: MultiContract) {

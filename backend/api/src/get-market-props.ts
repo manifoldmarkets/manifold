@@ -122,6 +122,10 @@ export const getMarketProps: APIHandler<'get-market-props'> = async (
     limit 1;
     select ${contractColumnsToSelect} from contracts
     where id = (select data->>'siblingContractId' from contracts where id = $1);
+
+    select count(*) from contract_bets where contract_id = $1 and not is_redemption;
+    select count(*) from contract_bets where contract_id = (select data->>'siblingContractId' from contracts where id = $1) and not is_redemption;
+
   `,
     [contractId]
   )
@@ -138,8 +142,17 @@ export const getMarketProps: APIHandler<'get-market-props'> = async (
   const totalPositions = results[8]?.[0]?.count ?? 0
   const dashboards = results[9]
   const siblingContract = first(results[10]?.map(convertContract))
+  if (!siblingContract) throw new APIError(404, 'Sibiling contract not found')
+  const manaContract = contract.token === 'MANA' ? contract : siblingContract
+  const cashContract = contract.token === 'CASH' ? contract : siblingContract
+  const totalOriginalBets = results[11]?.[0]?.count ?? 0
+  const totalSiblingsBets = results[12]?.[0]?.count ?? 0
+  const totalManaBets =
+    contract.token === 'MANA' ? totalOriginalBets : totalSiblingsBets
+  const totalCashBets =
+    contract.token === 'CASH' ? totalOriginalBets : totalSiblingsBets
   return {
-    contract,
+    manaContract,
     chartAnnotations,
     topics,
     comments,
@@ -151,7 +164,9 @@ export const getMarketProps: APIHandler<'get-market-props'> = async (
     topContractMetrics,
     totalPositions,
     dashboards,
-    siblingContract,
+    cashContract,
+    totalManaBets,
+    totalCashBets,
   }
 }
 

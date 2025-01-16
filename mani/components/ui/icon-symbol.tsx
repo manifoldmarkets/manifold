@@ -8,11 +8,28 @@ import { OpaqueColorValue, StyleProp, TextStyle } from 'react-native'
 // Add your SFSymbol to MaterialIcons mappings here.
 const MAPPING = {
   // See MaterialIcons here: https://icons.expo.fyi
-  // See SF Symbols in the SF Symbols app on Mac.
   'house.fill': 'home',
   'paperplane.fill': 'send',
   'chevron.left.forwardslash.chevron.right': 'code',
   'chevron.right': 'chevron-right',
+  'account.balance': 'account-balance',
+  house: 'home',
+  bell: 'notifications',
+  bag: 'shopping-bag',
+  'chart.line.uptrend.xyaxis': 'trending-up',
+  'arrow.left': 'arrow-back',
+  // Sports icons
+  basketball: 'sports-basketball',
+  football: 'sports-football',
+  soccerball: 'sports-soccer',
+  baseball: 'sports-baseball',
+  'hockey.puck': 'sports-hockey',
+  // Media icons
+  livephoto: 'live-tv',
+  newspaper: 'newspaper',
+  movieclapper: 'movie',
+  globe: 'public',
+  xmark: 'close',
 } as Partial<
   Record<
     import('expo-symbols').SymbolViewProps['name'],

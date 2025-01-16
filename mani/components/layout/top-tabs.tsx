@@ -9,29 +9,43 @@ import { ReactNode, useRef, useState, useEffect } from 'react'
 import { useColor } from 'hooks/use-color'
 import { Col } from './col'
 import { ThemedText } from 'components/themed-text'
+import { IconSymbol, IconSymbolName } from 'components/ui/icon-symbol'
 
 export type TopTab = {
   title: string
   titleElement?: ReactNode
   queryString?: string
-  icon?: ReactNode // Optional icon
+  iconName?: string // Optional icon
+  iconClassName?: string
   onPress?: () => void
   content: ReactNode
   prerender?: boolean
 }
 
-type TopTabsProps = {
+type BaseTopTabsProps = {
   tabs: TopTab[]
-  defaultIndex?: number
-  className?: string
-  labelClassName?: string
   renderAllTabs?: boolean
+  onBackButtonPress?: () => void
 }
 
-export function TopTabs(props: TopTabsProps) {
-  const { tabs, defaultIndex, renderAllTabs } = props
-  const [activeIndex, setActiveIndex] = useState(defaultIndex ?? 0)
+type TopTabsProps = BaseTopTabsProps & {
+  defaultIndex?: number
+}
 
+type ControlledTopTabsProps = BaseTopTabsProps & {
+  activeIndex: number
+  onActiveIndexChange: (index: number) => void
+}
+
+// Controlled version
+export function ControlledTopTabs(props: ControlledTopTabsProps) {
+  const {
+    tabs,
+    activeIndex,
+    onActiveIndexChange,
+    renderAllTabs,
+    onBackButtonPress,
+  } = props
   const hasRenderedIndexRef = useRef(new Set<number>())
   hasRenderedIndexRef.current.add(activeIndex)
   const color = useColor()
@@ -65,11 +79,28 @@ export function TopTabs(props: TopTabsProps) {
           gap: 24,
         }}
       >
+        {!!onBackButtonPress && (
+          <Pressable
+            style={{
+              justifyContent: 'center',
+              paddingRight: 16,
+              borderRightWidth: 1,
+              borderRightColor: color.border,
+            }}
+            onPress={onBackButtonPress}
+          >
+            <IconSymbol
+              name="arrow.left"
+              size={24}
+              color={color.textTertiary}
+            />
+          </Pressable>
+        )}
         {tabs.map((tab, i) => (
           <Pressable
             key={tab.queryString ?? tab.title}
             onPress={() => {
-              setActiveIndex(i)
+              onActiveIndexChange(i)
               tab.onPress?.()
             }}
             onLayout={(e: LayoutChangeEvent) => {
@@ -90,10 +121,13 @@ export function TopTabs(props: TopTabsProps) {
               position: 'relative',
             }}
           >
-            <View
-              style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}
-            >
-              {tab.icon}
+            <Col style={{ alignItems: 'center', gap: 4 }}>
+              {tab.iconName && (
+                <IconSymbol
+                  name={tab.iconName as IconSymbolName}
+                  color={activeIndex === i ? color.primary : color.textTertiary}
+                />
+              )}
               <ThemedText
                 size="md"
                 weight="medium"
@@ -101,7 +135,7 @@ export function TopTabs(props: TopTabsProps) {
               >
                 {tab.titleElement ?? tab.title}
               </ThemedText>
-            </View>
+            </Col>
           </Pressable>
         ))}
 
@@ -134,5 +168,19 @@ export function TopTabs(props: TopTabsProps) {
           </View>
         ))}
     </Col>
+  )
+}
+
+// Uncontrolled wrapper
+export function TopTabs(props: TopTabsProps) {
+  const { defaultIndex = 0, ...rest } = props
+  const [activeIndex, setActiveIndex] = useState(defaultIndex)
+
+  return (
+    <ControlledTopTabs
+      {...rest}
+      activeIndex={activeIndex}
+      onActiveIndexChange={setActiveIndex}
+    />
   )
 }

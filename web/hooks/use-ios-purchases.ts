@@ -1,9 +1,9 @@
 import { useState } from 'react'
 import { useNativeMessages } from 'web/hooks/use-native-messages'
 import { MesageTypeMap, nativeToWebMessageType } from 'common/native-message'
-import { validateIapReceipt } from 'web/lib/api/api'
 import { WebPriceInDollars } from 'common/economy'
 import { postMessageToNative } from 'web/lib/native/post-message'
+import { api } from 'web/lib/api/api'
 
 export function useIosPurchases(
   setError: (error: string | null) => void,
@@ -20,7 +20,7 @@ export function useIosPurchases(
       setLoadingMessage('Validating receipt, hold on...')
       const { receipt } = data as MesageTypeMap['iapReceipt']
       try {
-        await validateIapReceipt({ receipt: receipt })
+        await api('validateIap', { receipt })
         console.log('iap receipt validated')
         setError(null)
         setLoadingMessage(null)

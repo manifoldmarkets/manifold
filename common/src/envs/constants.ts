@@ -252,7 +252,7 @@ export const VERIFIED_USERNAMES = [
   'RazibKhan',
   'JamesMedlock',
   'Writer',
-  'GeorgeHotz',
+  'geohot',
   'ShayneCoplan',
   'SanghyeonSeo',
   'KatjaGrace',

@@ -95,6 +95,7 @@ android {
         targetSdkVersion rootProject.ext.targetSdkVersion
         versionCode 65
         versionName "2.0.57"
+        missingDimensionStrategy 'store', 'play'
     }
     signingConfigs {
         debug {

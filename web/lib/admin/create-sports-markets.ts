@@ -48,7 +48,7 @@ export const handleCreateSportsMarkets = async (
 
       const groupIds =
         ENV === 'DEV'
-          ? []
+          ? ['IOffGO7C9c0dfDura9Yn']
           : isEPL
           ? [
               '2hGlgVhIyvVaFyQAREPi', // sports_default
@@ -95,7 +95,7 @@ export const handleCreateSportsMarkets = async (
         sportsEventId: sportsGames.idEvent,
         sportsLeague: sportsGames.strLeague,
         groupIds,
-        takerAPIOrdersDisabled: Math.random() < 0.5,
+        takerAPIOrdersDisabled: true,
       }
 
       const result = await api('market', createProps)

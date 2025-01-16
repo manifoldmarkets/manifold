@@ -98,10 +98,6 @@ export type Contract<T extends AnyContractType = AnyContractType> = {
   token: ContractToken
   siblingContractId?: string
 
-  sportsStartTimestamp?: string
-  sportsEventId?: string
-  sportsLeague?: string
-
   takerAPIOrdersDisabled?: boolean
 
   // Manifold.love
@@ -145,7 +141,7 @@ export type QuadraticFundingContract = Contract & QuadraticFunding
 export type StonkContract = Contract & Stonk
 export type BountiedQuestionContract = Contract & BountiedQuestion
 export type PollContract = Contract & Poll
-
+export type SportsContract = Contract & Sports
 export type BinaryOrPseudoNumericContract =
   | BinaryContract
   | PseudoNumericContract
@@ -283,6 +279,12 @@ export type Poll = {
   resolutions?: string[]
 }
 
+export type Sports = {
+  sportsStartTimestamp: string
+  sportsEventId: string
+  sportsLeague: string
+}
+
 export type MultiContract = CPMMMultiContract | CPMMNumericContract
 
 type AnyOutcomeType =
@@ -359,7 +361,9 @@ export const isBinaryMulti = (contract: Contract) =>
   contract.shouldAnswersSumToOne
 // contract.createdTime > 1708574059795 // In case we don't want to convert pre-commit contracts
 
-export const isSportsContract = (contract: Contract) => contract.sportsEventId
+export const isSportsContract = (
+  contract: Contract
+): contract is SportsContract => 'sportsEventId' in contract
 
 export const getMainBinaryMCAnswer = (contract: Contract) =>
   isBinaryMulti(contract) && contract.mechanism === 'cpmm-multi-1'

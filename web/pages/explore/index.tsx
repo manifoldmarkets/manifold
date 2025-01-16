@@ -14,7 +14,7 @@ import {
   FeedContractCard,
   LoadingCards,
 } from 'web/components/contract/feed-contract-card'
-import { uniqBy, orderBy } from 'lodash'
+import { uniqBy, sortBy } from 'lodash'
 import { APIParams } from 'common/api/schema'
 import { FaFire, FaGripLinesVertical, FaHockeyPuck } from 'react-icons/fa6'
 import { DragDropContext, Droppable, Draggable } from '@hello-pangea/dnd'
@@ -28,11 +28,16 @@ import { api } from 'web/lib/api/api'
 import { LoadingIndicator } from 'web/components/widgets/loading-indicator'
 import { User } from 'common/user'
 import { FaBaseballBall } from 'react-icons/fa'
+import { AiContent } from 'web/components/ai-content'
+import { Contract, isSportsContract } from 'common/contract'
+import { tsToMillis } from 'common/supabase/utils'
+import { ENV } from 'common/envs/constants'
 
+const isProd = ENV === 'PROD'
 const NFL_ID = 'TNQwmbE5p6dnKx2e6Qlp'
 const NBA_ID = 'i0v3cXwuxmO9fpcInVYb'
 const EPL_ID = '5gsW3dPR3ySBRZCodrgm'
-const SPORTS_ID = '2hGlgVhIyvVaFyQAREPi'
+const SPORTS_ID = isProd ? '2hGlgVhIyvVaFyQAREPi' : 'IOffGO7C9c0dfDura9Yn'
 const MLB_ID = 'RFwfANk54JSXOwj4qwsW,786nRQzgVyUnuUtaLTGW' // MLB, Baseball
 const NHL_ID = 'lccgApXa1l7O5ZH3XfhH,tYP9jmPPjoX29KfzE4l5' // NHL, Hockey
 const colClass = 'gap-4 p-1'
@@ -41,12 +46,18 @@ const ALL_IDS = [NFL_ID, SPORTS_ID, EPL_ID, NBA_ID, MLB_ID].join(',')
 function LiveSoonContent() {
   return (
     <MarketsList
+      sweepScoreBoost={0}
       fetchProps={{
         term: '',
-        filter: 'closing-day',
-        sort: 'close-date',
-        gids: ALL_IDS,
+        filter: 'closing-week',
+        sort: 'start-time',
+        gids: isProd ? ALL_IDS : SPORTS_ID,
       }}
+      sortCallback={(c: Contract) =>
+        isSportsContract(c)
+          ? tsToMillis(c.sportsStartTimestamp)
+          : c.closeTime ?? Infinity
+      }
     />
   )
 }
@@ -184,9 +195,12 @@ function SportsTabs() {
 function MarketsList(
   props: {
     fetchProps: APIParams<'search-markets-full'>
-  } & { sweepScoreBoost?: number }
+  } & {
+    sweepScoreBoost?: number
+    sortCallback?: (c: Contract) => number
+  }
 ) {
-  const { sweepScoreBoost, fetchProps } = props
+  const { sweepScoreBoost, fetchProps, sortCallback } = props
   const limit = 10
   const [loading, setLoading] = useState(false)
   const [data, setData] = usePersistentInMemoryState<{
@@ -222,10 +236,9 @@ function MarketsList(
         importanceScore: m.importanceScore + (sweepScoreBoost ?? 0.25),
       }))
 
-      const newMarkets = orderBy(
+      const newMarkets = sortBy(
         uniqBy([...cashMarketsAdjusted, ...manaMarkets], 'id'),
-        (m) => m.importanceScore,
-        'desc'
+        (m) => sortCallback?.(m) ?? m.importanceScore
       )
 
       setData({
@@ -233,9 +246,9 @@ function MarketsList(
         manaOffset: data.manaOffset + manaMarkets.length,
         cashOffset: data.cashOffset + cashMarkets.length,
       })
-      return true
+      return newMarkets.length > 0
     } finally {
-      setTimeout(() => setLoading(false), 50)
+      setLoading(false)
     }
   }
 
@@ -306,6 +319,14 @@ function MarketsContent() {
       content: (
         <Col className="pt-1">
           <SiteActivity />
+        </Col>
+      ),
+    },
+    {
+      title: 'AI',
+      content: (
+        <Col className="pt-4">
+          <AiContent />
         </Col>
       ),
     },

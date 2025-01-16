@@ -15,9 +15,17 @@ import {
 } from 'react-native'
 import * as Haptics from 'expo-haptics'
 import { Rounded } from 'constants/border-radius'
+import { emerald, modes } from 'constants/colors'
 
 type ButtonSize = 'xs' | 'sm' | 'md' | 'lg'
-type ButtonVariant = 'primary' | 'gray' | 'yes' | 'no' | 'danger' // add more variants as needed
+type ButtonVariant =
+  | 'primary'
+  | 'gray'
+  | 'yes'
+  | 'no'
+  | 'danger'
+  | 'purple'
+  | 'emerald' // add more variants as needed
 
 export interface ButtonProps extends TouchableOpacityProps {
   title?: string
@@ -33,25 +41,34 @@ export interface ButtonProps extends TouchableOpacityProps {
 
 const sizeStyles: Record<
   ButtonSize,
-  { padding: number; borderRadius: number; fontSize: FontSize }
+  {
+    padding: number
+    borderRadius: number
+    fontSize: FontSize
+    paddingHorizontal: number
+  }
 > = {
   xs: {
     padding: 2,
+    paddingHorizontal: 12,
     borderRadius: Rounded.sm,
     fontSize: 'sm',
   },
   sm: {
     padding: 3,
+    paddingHorizontal: 16,
     borderRadius: Rounded.sm,
     fontSize: 'sm',
   },
   md: {
     padding: 4,
+    paddingHorizontal: 18,
     borderRadius: Rounded.sm,
     fontSize: 'md',
   },
   lg: {
     padding: 8,
+    paddingHorizontal: 20,
     borderRadius: Rounded.sm,
     fontSize: 'lg',
   },
@@ -83,13 +100,15 @@ export function Button({
     switch (variant) {
       case 'yes':
         return {
-          background: color.yesButtonBackground,
-          text: color.yesButtonText,
+          background:
+            size === 'lg' ? color.yesButtonText : color.yesButtonBackground,
+          text: size === 'lg' ? color.background : color.yesButtonText,
         }
       case 'no':
         return {
-          background: color.noButtonBackground,
-          text: color.noButtonText,
+          background:
+            size === 'lg' ? color.noButtonText : color.noButtonBackground,
+          text: size === 'lg' ? color.background : color.noButtonText,
         }
       case 'gray':
         return {
@@ -100,6 +119,16 @@ export function Button({
         return {
           background: color.errorBackground,
           text: color.error,
+        }
+      case 'purple':
+        return {
+          background: modes.MANA.primaryButton,
+          text: 'white',
+        }
+      case 'emerald':
+        return {
+          background: emerald[600],
+          text: 'white',
         }
       case 'primary':
       default:
@@ -121,8 +150,7 @@ export function Button({
           backgroundColor: disabled
             ? color.backgroundSecondary
             : buttonColors.background,
-          padding: sizeStyles[size].padding,
-          borderRadius: sizeStyles[size].borderRadius,
+          ...sizeStyles[size],
           alignItems: 'center',
         },
       ]}

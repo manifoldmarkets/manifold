@@ -1,11 +1,10 @@
 /* eslint-disable @typescript-eslint/no-require-imports */
 import 'expo-dev-client'
 import * as Notifications from 'expo-notifications'
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useRef } from 'react'
 import { Dimensions, Linking, Platform, SafeAreaView } from 'react-native'
 import { ENV } from 'lib/firebase/init'
 import { Notification } from 'common/notification'
-import { IosIapListener } from 'components/ios-iap-listener'
 import { StatusBar } from 'expo-status-bar'
 import { withIAPContext } from 'react-native-iap'
 import * as Sentry from '@sentry/react-native'
@@ -21,6 +20,10 @@ import { Colors } from 'constants/colors'
 import { UserProvider, useUser } from 'hooks/use-user'
 import { Splash } from 'components/splash'
 import Toast from 'react-native-toast-message'
+import {
+  SafeAreaProvider,
+  useSafeAreaInsets,
+} from 'react-native-safe-area-context'
 
 const HEADER_HEIGHT = 250
 
@@ -43,9 +46,6 @@ function RootLayout() {
   })
 
   const user = useUser()
-
-  // IAP
-  const [checkoutAmount, setCheckoutAmount] = useState<number | null>(null)
 
   const handlePushNotification = async (
     response: Notifications.NotificationResponse
@@ -75,7 +75,7 @@ function RootLayout() {
 
   useEffect(() => {
     Linking.getInitialURL().then((url) => {
-      log('Initial url:', url, '- has loaded webview:')
+      log('Initial url:', url)
     })
   }, [])
 
@@ -109,11 +109,12 @@ function RootLayout() {
   const fullyLoaded = user && isConnected
   const width = Dimensions.get('window').width //full width
   const height = Dimensions.get('window').height //full height
+  const insets = useSafeAreaInsets()
 
   if (!loaded)
     return (
       <Splash
-        height={height}
+        height={height + insets.bottom}
         width={width}
         source={require('../assets/images/splash.png')}
       />
@@ -121,7 +122,16 @@ function RootLayout() {
 
   return (
     <TokenModeProvider>
-      <SafeAreaView style={styles.container}>
+      <SafeAreaView
+        style={[
+          styles.container,
+          // Add padding for Android
+          Platform.OS === 'android' && {
+            paddingTop: insets.bottom + insets.top,
+            paddingBottom: insets.bottom,
+          },
+        ]}
+      >
         <Stack>
           <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
           <Stack.Screen
@@ -138,22 +148,22 @@ function RootLayout() {
               animation: 'slide_from_right',
             }}
           />
+          <Stack.Screen
+            name="redeem"
+            options={{
+              headerShown: false,
+              animation: 'slide_from_right',
+            }}
+          />
         </Stack>
 
         <SplashAuth
           source={require('../assets/images/splash.png')}
           user={user}
           isConnected={isConnected}
-          height={height}
+          height={height + insets.bottom + insets.top}
           width={width}
         />
-
-        {Platform.OS === 'ios' && fullyLoaded && (
-          <IosIapListener
-            checkoutAmount={checkoutAmount}
-            setCheckoutAmount={setCheckoutAmount}
-          />
-        )}
 
         <StatusBar style="dark" />
         <Toast />
@@ -166,7 +176,7 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: Colors.background,
-    paddingHorizontal: 20,
+    paddingHorizontal: Platform.OS === 'ios' ? 20 : 0,
   },
   header: {
     height: HEADER_HEIGHT,
@@ -184,8 +194,10 @@ export default function App() {
   const WrappedRoot = Sentry.wrap(withIAPContext(RootLayout))
 
   return (
-    <UserProvider>
-      <WrappedRoot />
-    </UserProvider>
+    <SafeAreaProvider>
+      <UserProvider>
+        <WrappedRoot />
+      </UserProvider>
+    </SafeAreaProvider>
   )
 }

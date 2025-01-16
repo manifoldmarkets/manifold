@@ -30,6 +30,7 @@ import { getComments } from './get-comments'
 import { getBets } from './get-bets'
 import { getLiteUser, getUser } from './get-user'
 import { getUsers } from './get-users'
+import { getUsersByIds } from './get-users-by-ids'
 import { getMarket } from './get-market'
 import { getGroup } from './get-group'
 import { getPositions } from './get-positions'
@@ -152,6 +153,7 @@ import { isSportsInterested } from './is-sports-bettor'
 import { getSportsGames } from './get-sports-games'
 import { getMarketProps } from './get-market-props'
 import { getUserContractMetricsWithContracts } from './get-user-contract-metrics-with-contracts'
+import { validateiap } from './validate-iap'
 
 // we define the handlers in this object in order to typecheck that every API has a handler
 export const handlers: { [k in APIPath]: APIHandler<k> } = {
@@ -231,6 +233,7 @@ export const handlers: { [k in APIPath]: APIHandler<k> } = {
   'user/by-id/:id/block': blockUser,
   'user/by-id/:id/unblock': unblockUser,
   users: getUsers,
+  'users/by-id': getUsersByIds,
   'search-users': searchUsers,
   react: addOrRemoveReaction,
   'save-twitch': saveTwitchCredentials,
@@ -322,4 +325,5 @@ export const handlers: { [k in APIPath]: APIHandler<k> } = {
   'get-market-props': getMarketProps,
   'get-user-contract-metrics-with-contracts':
     getUserContractMetricsWithContracts,
+  validateIap: validateiap,
 }

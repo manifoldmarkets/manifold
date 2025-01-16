@@ -1,9 +1,6 @@
 import { ContractMetric } from 'common/contract-metric'
 import { Contract } from 'common/contract'
-import {
-  getTopContractMetrics,
-  getUserContractMetrics,
-} from 'common/supabase/contract-metrics'
+import { getTopContractMetrics } from 'common/supabase/contract-metrics'
 import { db } from 'web/lib/supabase/db'
 import { useEffect, useState } from 'react'
 import { usePersistentLocalState } from './use-persistent-local-state'
@@ -14,6 +11,7 @@ import { useUser } from './use-user'
 
 import { useBatchedGetter } from 'client-common/hooks/use-batched-getter'
 import { queryHandlers } from 'web/lib/supabase/batch-query-handlers'
+import { api } from 'web/lib/api/api'
 
 export const useSavedContractMetrics = (
   contract: Contract,
@@ -45,12 +43,11 @@ export const useAllSavedContractMetrics = (
   const refreshMyMetrics = useEvent(async () => {
     if (!user?.id) return
 
-    const metrics = await getUserContractMetrics(
-      user.id,
-      contract.id,
-      db,
-      answerId
-    )
+    const metrics = await api('market/:id/positions', {
+      id: contract.id,
+      userId: user.id,
+      answerId,
+    })
 
     if (!metrics.length) {
       setSavedMetrics([])
@@ -74,14 +71,6 @@ export const useAllSavedContractMetrics = (
     enabled: !!user?.id,
   })
 
-  return savedMetrics
-}
-
-export const useReadLocalContractMetrics = (contractId: string) => {
-  const [savedMetrics] = usePersistentLocalState<ContractMetric | undefined>(
-    undefined,
-    `contract-metrics-${contractId}`
-  )
   return savedMetrics
 }
 

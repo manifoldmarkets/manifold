@@ -77,6 +77,7 @@ import { PollPanel } from '../poll/poll-panel'
 import { AlertBox } from '../widgets/alert-box'
 import { LoadingIndicator } from '../widgets/loading-indicator'
 import { GradientContainer } from '../widgets/gradient-container'
+import { getIsLive } from 'common/sports-info'
 
 export const ContractOverview = memo(
   (props: {
@@ -705,6 +706,12 @@ const BinaryChoiceOverview = (props: {
             {leadingAnswer.text}
           </span>
           <span>{formatPercent(leadingAnswer.prob)}</span>
+          {getIsLive(contract) && (
+            <Row className="items-center  gap-2 text-base text-red-500">
+              <div className="ml-2 h-2 w-2 animate-pulse rounded-full bg-red-500" />
+              Live
+            </Row>
+          )}
         </Row>
       )}
       <Row className="justify-between gap-2">

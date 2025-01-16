@@ -1,3 +1,6 @@
+import { Contract, isSportsContract } from './contract'
+import { HOUR_MS } from './util/time'
+
 export interface TeamMetadata {
   strTeam: string
   strTeamShort: string
@@ -22,4 +25,14 @@ export interface SportsGames {
   awayTeamMetadata: TeamMetadata
   strStatus: string
   idLeague: string
+}
+
+export const getIsLive = (contract: Contract) => {
+  const now = Date.now()
+  const sportsStartTimestamp = isSportsContract(contract)
+    ? contract.sportsStartTimestamp
+    : undefined
+  if (!sportsStartTimestamp) return false
+  const start = new Date(sportsStartTimestamp + 'Z').getTime()
+  return now >= start && now < (contract.closeTime ?? start + 3 * HOUR_MS)
 }

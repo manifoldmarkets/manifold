@@ -123,6 +123,7 @@ export function BetPanel({
           flex: 1,
           justifyContent: 'flex-start',
           flexDirection: 'column',
+          paddingBottom: 16,
         }}
       >
         <Col style={{ flex: 1, justifyContent: 'space-between' }}>

@@ -4,7 +4,6 @@ import { claimmanalink } from './claim-manalink'
 import { creategroup } from './create-group'
 import { unsubscribe } from './unsubscribe'
 import { stripewebhook, createcheckoutsession } from './stripe-endpoints'
-import { validateiap } from './validate-iap'
 import { markallnotifications } from './mark-all-notifications'
 import { updatememberrole } from './update-group-member-role'
 import { updategroupprivacy } from './update-group-privacy'
@@ -77,7 +76,6 @@ export const addOldRoutes = (app: express.Application) => {
   app.post('/claimmanalink', ...apiRoute(claimmanalink))
   app.post('/creategroup', ...apiRoute(creategroup))
   app.post('/updategroup', ...apiRoute(updategroup))
-  app.post('/validateIap', ...apiRoute(validateiap))
   app.post('/markallnotifications', ...apiRoute(markallnotifications))
   app.post('/updatememberrole', ...apiRoute(updatememberrole))
   app.post('/updategroupprivacy', ...apiRoute(updategroupprivacy))

@@ -20,6 +20,8 @@ export function TokenToggleHeader() {
   const user = useUser()
   // Check if we're in a tab route - should match paths like /(tabs)/live, /(tabs)/profile, etc.
   const isInTabs = isTabPath(pathname)
+  const isHome = pathname === '/'
+  const showStreak = isHome && user
   const userBalance = !user
     ? 0
     : token === 'MANA'
@@ -43,6 +45,23 @@ export function TokenToggleHeader() {
           <IconSymbol name="arrow.left" size={24} color={color.textTertiary} />
         </TouchableOpacity>
       )}
+      {showStreak && (
+        <Row
+          style={{
+            alignItems: 'center',
+            gap: 2,
+          }}
+        >
+          <ThemedText size="md">🔥</ThemedText>
+          <ThemedText
+            color={color.textSecondary}
+            family={'JetBrainsMono'}
+            size="md"
+          >
+            {user.currentBettingStreak}
+          </ThemedText>
+        </Row>
+      )}
 
       <Row
         style={{
@@ -55,7 +74,7 @@ export function TokenToggleHeader() {
           <ThemedText weight={'bold'} color={color.primary}>
             {formatMoneyNumber(userBalance)}
           </ThemedText>
-          {token === 'MANA' ? ' Mana' : ' Sweep'}
+          {token === 'MANA' ? ' Mana' : ' sCash'}
         </ThemedText>
         <TokenToggle />
       </Row>

@@ -1,3 +1,5 @@
+import { PaymentAmount } from 'common/economy'
+import { api } from 'lib/api'
 import { useEffect, useState } from 'react'
 import { View } from 'react-native'
 import {
@@ -8,13 +10,15 @@ import {
   useIAP,
 } from 'react-native-iap'
 
-const SKUS = ['mana_1000', 'mana_2500', 'mana_10000'] // skus created before rate change
+const SKUS = ['S10', 'S25', 'S100']
 
 export const IosIapListener = (props: {
-  checkoutAmount: number | null
-  setCheckoutAmount: (amount: number | null) => void
+  checkoutAmount: PaymentAmount | null
+  setCheckoutAmount: (amount: PaymentAmount | null) => void
+  setLoading: (price: PaymentAmount | null) => void
+  setError: (error: string) => void
 }) => {
-  const { checkoutAmount, setCheckoutAmount } = props
+  const { checkoutAmount, setCheckoutAmount, setLoading, setError } = props
   const [didGetPurchaseError, setDidGetPurchaseError] = useState<string | null>(
     null
   )
@@ -35,13 +39,12 @@ export const IosIapListener = (props: {
       console.error('error with products:', products)
       if (currentPurchaseError) {
         console.error('current purchase error', currentPurchaseError)
-        console.error('currentPurchase:', currentPurchase)
         setDidGetPurchaseError('currentPurchaseError')
       } else if (initConnectionError) {
         console.error('init connection error', initConnectionError)
         setDidGetPurchaseError('initConnectionError')
       }
-
+      setError('Error during purchase! Try again.')
       getAvailablePurchases()
     }
   }, [currentPurchaseError, initConnectionError])
@@ -76,6 +79,10 @@ export const IosIapListener = (props: {
               initConnectionError
             )
           }
+          await api('validateIap', {
+            receipt,
+          })
+          setLoading(null)
         }
       } catch (error) {
         if (error instanceof PurchaseError) {
@@ -83,6 +90,7 @@ export const IosIapListener = (props: {
         } else {
           console.log({ message: 'handleBuyProduct', error })
         }
+        setError('Error during purchase! Contact admin.')
       }
     }
 
@@ -122,16 +130,9 @@ export const IosIapListener = (props: {
 
   useEffect(() => {
     if (!checkoutAmount) return
-    console.log('checkoutAmount', checkoutAmount)
-    const usdAmount = (checkoutAmount / 100).toString()
-    console.log('usdAmount', usdAmount)
-    const sku = products.find((p) => p.price === usdAmount)
-    if (sku) {
-      console.log('found sku', sku)
-      handleBuyProduct(sku.productId)
-    } else {
-      console.error('no sku found for', usdAmount)
-    }
+    const sku = checkoutAmount.sku
+    if (sku) handleBuyProduct(sku)
+    else setError('Error during purchase! Could not find product.')
     setCheckoutAmount(null)
   }, [checkoutAmount])
 
