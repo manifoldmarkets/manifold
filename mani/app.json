@@ -22,11 +22,7 @@
     "slug": "mani",
     "owner": "manifold-markets",
     "jsEngine": "hermes",
-<<<<<<< HEAD
-    "version": "2.0.58",
-=======
     "version": "2.0.59",
->>>>>>> main
     "orientation": "portrait",
     "icon": "./assets/images/logo.png",
     "userInterfaceStyle": "light",
@@ -98,11 +94,7 @@
         "applinks:manifold.markets",
         "webcredentials:manifold.markets"
       ],
-<<<<<<< HEAD
-      "buildNumber": "1.0.53"
-=======
       "buildNumber": "1.0.54"
->>>>>>> main
     },
     "experiments": {
       "tsconfigPaths": true,

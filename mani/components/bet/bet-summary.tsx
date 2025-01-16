@@ -15,6 +15,7 @@ export function UserBetsSummary(props: { contract: Contract }) {
 
   if (!metrics) return null
   return (
+    // TODO: make this a modal
     <ExpandableContent
       previewContent={<YourBetsPreview contract={contract} metrics={metrics} />}
       modalContent={undefined}
