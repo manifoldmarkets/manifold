@@ -2083,6 +2083,15 @@ export const API = (_apiTypeCheck = {
       receipt: z.string(),
     }),
   },
+  'check-sports-event': {
+    method: 'GET',
+    visibility: 'public',
+    authed: false,
+    returns: {} as { exists: boolean; existingMarket?: LiteMarket },
+    props: z.object({
+      sportsEventId: z.string(),
+    }).strict(),
+  },
 } as const)
 
 export type APIPath = keyof typeof API

@@ -25,6 +25,13 @@ export const handleCreateSportsMarkets = async (
     }[] = []
 
     for (const sportsGames of sportsGamesToProcess) {
+      const { exists } = await api('check-sports-event', {
+        sportsEventId: sportsGames.idEvent,
+      })
+      if (exists) {
+        continue
+      }
+
       const closeTime =
         new Date(sportsGames.strTimestamp).getTime() + 2.5 * 60 * 60 * 1000
 

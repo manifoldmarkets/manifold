@@ -82,6 +82,15 @@ export const myAuthenticatedEndpoint: APIHandler<
 ## Best Practices
 
 - Use the `createSupabaseDirectClient` function from `shared/supabase/init` for database operations.
+
+## Sports Markets
+
+- Each sports event can have at most one MANA market and one CASH market
+- If creation of the MANA market fails (e.g., due to duplicate sportsEventId), do not attempt to create the CASH market
+- The MANA market is considered the "source of truth" - the CASH market should only exist if there is a corresponding MANA market
+- Check for duplicate sports markets using the check-sports-event endpoint before attempting market creation
+- For specialized market types (like sports), consider wrapping the main market endpoint handler rather than creating new endpoints
+- Prefer lightweight check endpoints over complex validation in create/update endpoints when the check might be useful in other contexts
   This uses the pg promise library, where you pass raw sql strings like so:
 
 ```ts
