@@ -12,6 +12,8 @@ export interface SportsGames {
   strEvent: string
   strHomeTeam: string
   strAwayTeam: string
+  intHomeScore: string
+  intAwayScore: string
   dateEvent: string
   strTime: string
   strTimestamp: string
@@ -21,6 +23,8 @@ export interface SportsGames {
   strAwayTeamBadge: string
   homeTeamMetadata: TeamMetadata
   awayTeamMetadata: TeamMetadata
+  strStatus: string
+  idLeague: string
 }
 
 export const getIsLive = (contract: Contract) => {
