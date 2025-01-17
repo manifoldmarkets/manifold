@@ -22,7 +22,7 @@ export function ContractDescription({ contract }: { contract: Contract }) {
           <ThemedText size="md" weight="bold">
             Description
           </ThemedText>
-          <ThemedText size="sm" numberOfLines={3} color={color.textSecondary}>
+          <ThemedText size="md" numberOfLines={3} color={color.textTertiary}>
             {extractTextFromContent(contract.description)}
           </ThemedText>
         </>

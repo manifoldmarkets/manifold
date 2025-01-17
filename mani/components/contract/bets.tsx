@@ -14,6 +14,7 @@ import { fromNow } from 'util/time'
 import { useColor } from 'hooks/use-color'
 import { AvatarCircle } from 'components/user/avatar-circle'
 import { UserLink } from 'components/user/user-link'
+import { ScrollView } from 'react-native'
 
 export function Bets(props: { contract: Contract; totalBets: number }) {
   const { contract } = props
@@ -73,11 +74,19 @@ export function BetsPreview(props: { contract: Contract; latestBet: Bet }) {
 export function BetsModal(props: { contract: Contract; bets: Bet[] }) {
   const { contract, bets } = props
   return (
-    <Col style={{ gap: 16 }}>
-      {bets.map((bet) => (
-        <FeedBet key={bet.id} contract={contract} bet={bet} />
-      ))}
-    </Col>
+    <ScrollView>
+      <Col style={{ gap: 16, paddingBottom: 20 }}>
+        {(() => {
+          const elements = []
+          for (let i = bets.length - 1; i >= 0; i--) {
+            elements.push(
+              <FeedBet key={bets[i].id} contract={contract} bet={bets[i]} />
+            )
+          }
+          return elements
+        })()}
+      </Col>
+    </ScrollView>
   )
 }
 
