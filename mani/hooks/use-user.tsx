@@ -18,6 +18,7 @@ import Toast from 'react-native-toast-message'
 import { queryHandlers } from 'lib/batch-query-handlers'
 import { useBatchedGetter } from 'client-common/hooks/use-batched-getter'
 import { DisplayUser } from 'common/api/user-types'
+import { formatMoney } from 'common/util/format'
 // Either we haven't looked up the logged in user yet (undefined), or we know
 // the user is not logged in (null), or we know the user is logged in.
 export type AuthUser = undefined | null | UserAndPrivateUser
@@ -40,10 +41,12 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
         if (balanceChange > 0 || cashBalanceChange > 0) {
           Toast.show({
             type: 'success',
-            text1: '🎉  Cha-ching!',
-            // TODO: format with coins
-            text2: `${balanceChange > 0 ? `+${balanceChange}` : ''} ${
-              cashBalanceChange > 0 ? `+${cashBalanceChange}` : ''
+            text1: `🎉  Cha-ching! ${
+              balanceChange > 0 ? `+${formatMoney(balanceChange)}` : ''
+            } ${
+              cashBalanceChange > 0
+                ? `+${formatMoney(cashBalanceChange, 'CASH')}`
+                : ''
             }`,
           })
         }
