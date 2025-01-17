@@ -73,7 +73,7 @@ export function BetsPreview(props: { contract: Contract; latestBet: Bet }) {
 export function BetsModal(props: { contract: Contract; bets: Bet[] }) {
   const { contract, bets } = props
   return (
-    <Col style={{ gap: 8 }}>
+    <Col style={{ gap: 16 }}>
       {bets.map((bet) => (
         <FeedBet key={bet.id} contract={contract} bet={bet} />
       ))}
