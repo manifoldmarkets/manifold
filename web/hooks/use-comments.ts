@@ -1,6 +1,6 @@
 import { ContractComment } from 'common/comment'
 import { useEffect, useState } from 'react'
-import { sortBy, uniqBy, orderBy } from 'lodash'
+import { sortBy, uniqBy } from 'lodash'
 import {
   getAllCommentRows,
   getComment,
@@ -75,26 +75,6 @@ export const useGlobalComments = (limit: number) => {
       setComments(rows.map(convertContractComment))
     )
   }, [limit])
-
-  return comments
-}
-
-export function useSubscribeNewComments(contractId: string) {
-  const [comments, setComments] = useState<ContractComment[]>([])
-
-  useApiSubscription({
-    topics: [`contract/${contractId}/new-comment`],
-    onBroadcast: (msg) => {
-      const newComment = msg.data.comment as ContractComment
-      setComments((prevComments) =>
-        orderBy(
-          uniqBy([...prevComments, newComment], 'id'),
-          'createdTime',
-          'desc'
-        )
-      )
-    },
-  })
 
   return comments
 }

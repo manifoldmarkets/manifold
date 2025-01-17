@@ -4,7 +4,6 @@ import { User } from 'common/user'
 import { getBetDownToOneMultiBetInfo } from 'common/new-bet'
 import { Answer, getMaximumAnswers } from 'common/answer'
 import { APIError, APIHandler } from './helpers/endpoint'
-import { getTieredAnswerCost } from 'common/economy'
 import { randomString } from 'common/util/random'
 import {
   addCpmmMultiLiquidityAnswersSumToOne,
@@ -37,7 +36,7 @@ import {
   updateAnswer,
   updateAnswers,
 } from 'shared/supabase/answers'
-import { getTierFromLiquidity } from 'common/tier'
+import { getTieredAnswerCost, getTierFromLiquidity } from 'common/tier'
 import { updateContract } from 'shared/supabase/contracts'
 import { FieldVal } from 'shared/supabase/utils'
 import { runTransactionWithRetries } from 'shared/transact-with-retries'

@@ -1,6 +1,11 @@
 import clsx from 'clsx'
 import { CreateableOutcomeType, MarketContract } from 'common/contract'
-import { MarketTierType, getTierFromLiquidity, tiers } from 'common/tier'
+import {
+  MarketTierType,
+  getTierFromLiquidity,
+  tiers,
+  getTieredCost,
+} from 'common/tier'
 import { ReactNode, useState } from 'react'
 import { CrystalTier } from 'web/public/custom-components/tiers'
 import { Button } from '../buttons/button'
@@ -8,7 +13,7 @@ import { Col } from '../layout/col'
 import { Modal } from '../layout/modal'
 import { Title } from '../widgets/title'
 import { AddLiquidityControl } from './liquidity-modal'
-import { getAnte, getTieredCost } from 'common/economy'
+import { getAnte } from 'common/economy'
 import { TokenNumber } from '../widgets/token-number'
 import { TierIcon, getPresentedTierName } from '../tiers/tier-tooltip'
 import { api } from 'web/lib/api/api'

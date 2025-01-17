@@ -5,14 +5,10 @@ import { useBottomTabOverflow } from './ui/tab-bar-background.ios'
 import { ThemedView } from './themed-view'
 import { Colors } from 'constants/colors'
 import { usePathname } from 'expo-router'
+import { isTabPath } from 'app/(tabs)/_layout'
 
 const HEADER_HEIGHT = 250
 export const PAGE_PADDING = 20
-
-export const TabPaths = ['/', '/live', '/notifications', '/shop', 'profile']
-export function isTabPath(pathname: string) {
-  return TabPaths.includes(pathname)
-}
 
 export default function Page({
   children,

@@ -1,5 +1,5 @@
 import { useColor } from 'hooks/use-color'
-import { ReactNode } from 'react'
+import { ReactNode, useEffect } from 'react'
 import { SafeAreaView, TouchableOpacity, View } from 'react-native'
 import { Row } from './row'
 import { IconSymbol } from 'components/ui/icon-symbol'
@@ -8,6 +8,7 @@ import { Col } from './col'
 import RNModal from 'react-native-modal'
 import { TokenToggleHeader } from './token-toggle-header'
 import { Spacer } from './spacer'
+import { useNavigation } from 'expo-router'
 
 type ModalProps = {
   isOpen: boolean
@@ -27,6 +28,19 @@ export function Modal({
   showHeader = false,
 }: ModalProps) {
   const color = useColor()
+  const navigation = useNavigation()
+
+  useEffect(() => {
+    if (isOpen) {
+      // Listen for navigation state changes and close modal
+      const unsubscribe = navigation.addListener('state', () => {
+        onClose()
+      })
+      return () => {
+        unsubscribe()
+      }
+    }
+  }, [isOpen, onClose, navigation])
   return (
     <RNModal
       isVisible={isOpen}

@@ -38,6 +38,16 @@ import { APIResponse } from 'common/api/schema'
 
 export const LARGE_QUESTION_LENGTH = 95
 
+export default function ContractPage() {
+  const { contractSlug } = useLocalSearchParams()
+
+  if (!contractSlug) {
+    return <ContractPageLoading />
+  }
+
+  return <ContractPageLoadingContent contractSlug={contractSlug as string} />
+}
+
 function ContractPageLoadingContent(props: { contractSlug: string }) {
   const { contractSlug } = props
   const { data } = useAPIGetter('get-market-props', {
@@ -55,7 +65,8 @@ function ContractPageContent(props: {
   contractProps: APIResponse<'get-market-props'>
 }) {
   const { contractProps } = props
-  const { totalManaBets, totalCashBets } = contractProps
+  const { totalManaBets, totalCashBets, comments, pinnedComments } =
+    contractProps
   const manaContractProp = contractProps.manaContract
   const cashContractProp = contractProps.cashContract
   const { token } = useTokenMode()
@@ -123,20 +134,14 @@ function ContractPageContent(props: {
         <UserBetsSummary contract={contract} />
         <ContractDescription contract={manaContract} />
         <Bets contract={contract} totalBets={totalBets} />
-        <CommentsSection contract={manaContract} />
+        <CommentsSection
+          contract={manaContract}
+          comments={comments}
+          pinnedComments={pinnedComments}
+        />
       </Col>
     </Page>
   )
-}
-
-export default function ContractPage() {
-  const { contractSlug } = useLocalSearchParams()
-
-  if (!contractSlug) {
-    return <ContractPageLoading />
-  }
-
-  return <ContractPageLoadingContent contractSlug={contractSlug as string} />
 }
 
 const useBetData = (props: {

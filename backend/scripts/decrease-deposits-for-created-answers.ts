@@ -1,6 +1,7 @@
 import { FieldValue } from 'firebase-admin/firestore'
 import { runScript } from './run-script'
-import { getTieredAnswerCost } from 'common/economy'
+
+import { getTieredAnswerCost } from 'common/tier'
 
 if (require.main === module) {
   runScript(async ({ pg, firestore }) => {
