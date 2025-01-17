@@ -1,9 +1,7 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import Page from 'components/page'
 import { ThemedText } from 'components/themed-text'
 import { useUser, usePrivateUser } from 'hooks/use-user'
-import { useRouter } from 'expo-router'
-import { Button } from 'components/buttons/button'
 import {
   View,
   StyleSheet,
@@ -17,7 +15,10 @@ import { Colors } from 'constants/colors'
 import { PaymentAmount } from 'common/economy'
 import { introductoryTimeWindow, User } from 'common/user'
 import { formatMoneyUSD } from 'common/util/format'
-import { getVerificationStatus } from 'common/gidx/user'
+import {
+  getVerificationStatus,
+  PROMPT_USER_VERIFICATION_MESSAGES,
+} from 'common/gidx/user'
 import { Rounded } from 'constants/border-radius'
 import { usePrices } from 'hooks/use-prices'
 import { shortenNumber } from 'common/util/formatNumber'
@@ -28,11 +29,12 @@ import buyMana100k from '../../assets/images/buy-mana-graphics/100k.png'
 import buyMana1M from '../../assets/images/buy-mana-graphics/1M.png'
 import { IosIapListener } from 'components/ios-iap-listener'
 import { TokenNumber } from 'components/token/token-number'
+import { router, useLocalSearchParams } from 'expo-router'
 
 export default function Shop() {
   const user = useUser()
   const privateUser = usePrivateUser()
-  const router = useRouter()
+  const { priceInDollars } = useLocalSearchParams<{ priceInDollars?: string }>()
   const [loadingPrice, setLoadingPrice] = useState<PaymentAmount | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [checkoutAmount, setCheckoutAmount] = useState<PaymentAmount | null>(
@@ -49,26 +51,25 @@ export default function Shop() {
 
   const newUserPrices = basePrices.filter((p: PaymentAmount) => p.newUsersOnly)
   const prices = basePrices.filter((p: PaymentAmount) => !p.newUsersOnly)
+  const [selectedPriceFromParams, setSelectedPriceFromParams] = useState(false)
 
-  if (!user?.idVerified || !user?.sweepstakesVerified) {
-    return (
-      <Page>
-        <View style={styles.container}>
-          <ThemedText style={styles.title}>
-            Identity Verification Required
-          </ThemedText>
-          <ThemedText style={styles.message}>
-            To participate in sweepstakes and access the shop, you need to
-            verify your identity first.
-          </ThemedText>
-          <Button
-            title="Start Verification"
-            onPress={() => router.push('/registration')}
-          />
-        </View>
-      </Page>
+  useEffect(() => {
+    if (!user || !privateUser || !priceInDollars || selectedPriceFromParams)
+      return
+    const priceInDollarsNumber = Number(priceInDollars)
+    const matchingPrice = [...newUserPrices, ...prices].find(
+      (p) => p.priceInDollars === priceInDollarsNumber
     )
-  }
+    if (!matchingPrice) return
+    onSelectPriceInDollars(matchingPrice)
+    setSelectedPriceFromParams(true)
+  }, [
+    priceInDollars,
+    user?.id,
+    privateUser?.id,
+    prices.length,
+    newUserPrices.length,
+  ])
 
   const onSelectPriceInDollars = (dollarAmount: PaymentAmount) => {
     if (!user || !privateUser) return
@@ -76,10 +77,12 @@ export default function Shop() {
     const { status, message } = getVerificationStatus(user, privateUser)
     if (status !== 'error') {
       setCheckoutAmount(dollarAmount)
+      setLoadingPrice(dollarAmount)
+    } else if (PROMPT_USER_VERIFICATION_MESSAGES.includes(message)) {
+      router.push(`/register?priceInDollars=${dollarAmount.priceInDollars}`)
     } else {
       setError(message)
     }
-    setLoadingPrice(dollarAmount)
   }
 
   return (
@@ -95,7 +98,7 @@ export default function Shop() {
           purchase necessary.
         </ThemedText>
 
-        {eligibleForNewUserOffer && (
+        {eligibleForNewUserOffer && newUserPrices.length > 0 && (
           <>
             <ThemedText style={styles.welcomeDeal}>Welcome Deal</ThemedText>
             <View style={styles.priceGrid}>
@@ -159,7 +162,7 @@ const BUY_MANA_GRAPHICS = [buyMana10k, buyMana25k, buyMana100k, buyMana1M]
 function PriceTile(props: {
   amounts: PaymentAmount
   loadingPrice: PaymentAmount | null
-  user: User | null
+  user: User | null | undefined
   index: number
   onPress: () => void
 }) {

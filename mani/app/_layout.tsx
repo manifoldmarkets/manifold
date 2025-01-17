@@ -141,7 +141,7 @@ function RootLayout() {
           <Stack.Screen name="(tabs)" />
           <Stack.Screen name="[username]" />
           <Stack.Screen name="[username]/[contractSlug]" />
-          <Stack.Screen name="registration" />
+          <Stack.Screen name="register" />
           <Stack.Screen name="redeem" />
           <Stack.Screen name="+not-found" />
         </Stack>
