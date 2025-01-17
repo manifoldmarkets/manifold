@@ -15,10 +15,15 @@ import { router } from 'expo-router'
 import { BalanceChangeTable } from 'components/portfolio/balance-change-table'
 import { buildArray } from 'common/util/array'
 import { User } from 'common/user'
+import { useUser } from 'hooks/use-user'
+import { useAPIGetter } from 'hooks/use-api-getter'
+import { useTokenMode } from 'hooks/use-token-mode'
 
 export function ProfileContent(props: { user: User }) {
   const color = useColor()
   const { user } = props
+  const currentUser = useUser()
+  const isCurrentUser = currentUser?.id === user.id
 
   const signOut = async () => {
     try {
@@ -28,6 +33,19 @@ export function ProfileContent(props: { user: User }) {
       console.error('Error signing out:', err)
     }
   }
+
+  const { data } = useAPIGetter('get-daily-changed-metrics-and-contracts', {
+    userId: user.id,
+    limit: 24,
+  })
+  const { token } = useTokenMode()
+
+  const manaProfit = data?.manaProfit ?? 0
+  const cashProfit = data?.cashProfit ?? 0
+  const manaInvestmentValue = data?.manaInvestmentValue ?? 0
+  const cashInvestmentValue = data?.cashInvestmentValue ?? 0
+  const manaNetWorth = manaInvestmentValue + (user?.balance ?? 0)
+  const cashNetWorth = cashInvestmentValue + (user?.cashBalance ?? 0)
 
   return (
     <Page>
@@ -59,41 +77,51 @@ export function ProfileContent(props: { user: User }) {
           </View>
           <Col>
             <ThemedText size="md" weight="semibold">
-              {user?.name}
+              {user.name}
             </ThemedText>
             <ThemedText size="md" color={color.textTertiary}>
-              @{user?.username}
+              @{user.username}
             </ThemedText>
           </Col>
-          <Button
-            onPress={signOut}
-            variant="gray"
-            size="sm"
-            title="Sign out"
-            style={{ marginTop: 20 }}
-          />
+          {isCurrentUser && (
+            <Button
+              onPress={signOut}
+              variant="gray"
+              size="sm"
+              title="Sign out"
+              style={{ marginTop: 20 }}
+            />
+          )}
         </Row>
         <Row>
           <Col style={{ width: '50%' }}>
             <ThemedText size="md" color={color.textTertiary}>
-              Total bet
+              Net worth
             </ThemedText>
-            <TokenNumber amount={302.3} size="2xl" />
+            <TokenNumber
+              amount={token === 'MANA' ? manaNetWorth : cashNetWorth}
+              size="2xl"
+            />
           </Col>
           <Col>
             <ThemedText size="md" color={color.textTertiary}>
-              Potential payout
+              Daily profit
             </ThemedText>
-            <TokenNumber amount={604} size="2xl" />
+            <TokenNumber
+              amount={token === 'MANA' ? manaProfit : cashProfit}
+              size="2xl"
+            />
           </Col>
         </Row>
-        <Row>
-          <Button
-            onPress={() => router.push('/redeem')}
-            title="Redeem"
-            variant="gray"
-          />
-        </Row>
+        {isCurrentUser && (
+          <Row>
+            <Button
+              onPress={() => router.push('/redeem')}
+              title="Redeem"
+              variant="gray"
+            />
+          </Row>
+        )}
         <TopTabs
           tabs={buildArray(
             {
