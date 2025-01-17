@@ -30,6 +30,7 @@
       "./plugins/withAndroidVerifiedLinksWorkaround",
       "expo-font",
       "expo-location",
+      "expo-router",
       [
         "expo-notifications",
         {
