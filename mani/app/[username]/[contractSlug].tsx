@@ -53,6 +53,7 @@ function ContractPageLoadingContent(props: { contractSlug: string }) {
   const { data } = useAPIGetter('get-market-props', {
     slug: contractSlug,
   })
+
   const { manaContract, cashContract } = data ?? {}
   if (!data || ![manaContract?.slug, cashContract?.slug].includes(contractSlug))
     return <ContractPageLoading />

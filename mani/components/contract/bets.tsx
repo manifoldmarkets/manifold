@@ -1,17 +1,20 @@
-import { StyleSheet } from 'react-native'
 import { Bet } from 'common/bet'
 import { Contract, getBinaryMCProb, isBinaryMulti } from 'common/contract'
 import { getFormattedMappedValue } from 'common/pseudo-numeric'
-import { BETTOR } from 'common/user'
-import { floatingEqual, floatingLesserEqual } from 'common/util/math'
 import { Row } from 'components/layout/row'
 import { Col } from 'components/layout/col'
 import { ThemedText } from 'components/themed-text'
-import { useDisplayUserById, useUser } from 'hooks/use-user'
+import { useDisplayUserById } from 'hooks/use-user'
 import { useContractBets } from 'client-common/hooks/use-bets'
 import { api } from 'lib/api'
 import { useIsPageVisible } from 'hooks/use-is-page-visibile'
 import { TokenNumber } from 'components/token/token-number'
+import { ExpandableContent } from 'components/layout/expandable-content'
+import { fromNow } from 'util/time'
+import { useColor } from 'hooks/use-color'
+import { AvatarCircle } from 'components/user/avatar-circle'
+import { UserLink } from 'components/user/user-link'
+import { ScrollView } from 'react-native'
 
 export function Bets(props: { contract: Contract; totalBets: number }) {
   const { contract } = props
@@ -26,25 +29,64 @@ export function Bets(props: { contract: Contract; totalBets: number }) {
     (params) => api('bets', params)
   )
 
+  if (!bets || bets.length === 0) {
+    return null
+  }
+
   return (
-    <Col style={styles.container}>
-      {bets.map((bet) => (
-        <FeedBet key={bet.id} contract={contract} bet={bet} />
-      ))}
+    <ExpandableContent
+      previewContent={
+        <BetsPreview contract={contract} latestBet={bets[bets.length - 1]} />
+      }
+      modalContent={<BetsModal contract={contract} bets={bets} />}
+      modalTitle="Activity"
+    />
+  )
+}
+
+export function BetsPreview(props: { contract: Contract; latestBet: Bet }) {
+  const { contract, latestBet } = props
+  const color = useColor()
+  return (
+    <Col style={{ gap: 8 }}>
+      <Row style={{ justifyContent: 'space-between' }}>
+        <ThemedText size="md" weight="bold">
+          Activity
+        </ThemedText>
+        <Row>
+          <TokenNumber
+            size="md"
+            amount={contract.volume}
+            color={color.primary}
+            shortened
+          />
+          <ThemedText size="md" color={color.textTertiary}>
+            {' '}
+            volume
+          </ThemedText>
+        </Row>
+      </Row>
+      <FeedBet contract={contract} bet={latestBet} />
     </Col>
   )
 }
 
-// Skeleton component for RelativeTimestamp
-export function RelativeTimestamp(props: {
-  time: number
-  shortened?: boolean
-}) {
-  // TODO: Implement proper timestamp formatting
+export function BetsModal(props: { contract: Contract; bets: Bet[] }) {
+  const { contract, bets } = props
   return (
-    <ThemedText size="xs">
-      {new Date(props.time).toLocaleDateString()}
-    </ThemedText>
+    <ScrollView>
+      <Col style={{ gap: 16, paddingBottom: 20 }}>
+        {(() => {
+          const elements = []
+          for (let i = bets.length - 1; i >= 0; i--) {
+            elements.push(
+              <FeedBet key={bets[i].id} contract={contract} bet={bets[i]} />
+            )
+          }
+          return elements
+        })()}
+      </Col>
+    </ScrollView>
   )
 }
 
@@ -56,62 +98,47 @@ export function OutcomeLabel(props: {
   truncate?: 'short'
 }) {
   const { outcome, answer } = props
+  const color = useColor()
   return (
-    <ThemedText size="sm">
-      {answer?.text ?? ''} {outcome}
-    </ThemedText>
-  )
-}
-
-// Skeleton component for UserLink
-export function UserLink(props: {
-  user: { username: string } | null | undefined
-  className?: string
-}) {
-  const { user } = props
-  return <ThemedText size="sm">{user?.username ?? 'Anonymous'}</ThemedText>
-}
-
-export function FeedBet(props: { contract: Contract; bet: Bet }) {
-  const { contract, bet } = props
-  //   const { createdTime, userId } = bet
-  //   const user = useDisplayUserById(userId)
-
-  return (
-    <Row style={styles.row}>
-      <BetStatusText bet={bet} contract={contract} />
+    <Row>
+      <ThemedText
+        size="md"
+        color={outcome === 'YES' ? color.yesButtonText : color.noButtonText}
+        weight="medium"
+      >
+        {outcome}
+      </ThemedText>
+      {answer && (
+        <ThemedText size="md" color={color.text}>
+          {' '}
+          • {answer.text}
+        </ThemedText>
+      )}
     </Row>
   )
 }
 
-export function BetStatusText(props: {
-  contract: Contract
-  bet: Bet
-  hideUser?: boolean
-  className?: string
-}) {
-  const { bet, contract, hideUser } = props
+export function FeedBet(props: { contract: Contract; bet: Bet }) {
+  const color = useColor()
+  const { bet, contract } = props
   const betUser = useDisplayUserById(bet.userId)
-  const self = useUser()
-  const { amount, outcome, createdTime, answerId } = bet
+  const { amount, outcome, answerId } = bet
   const getProb = (prob: number) =>
     !isBinaryMulti(contract) ? prob : getBinaryMCProb(prob, outcome)
 
   const probBefore = getProb(bet.probBefore)
-  const probAfter = getProb(bet.probAfter)
+
   const limitProb =
     bet.limitProb === undefined || !isBinaryMulti(contract)
       ? bet.limitProb
       : getBinaryMCProb(bet.limitProb, outcome)
   const bought = amount >= 0 ? 'bought' : 'sold'
   const absAmount = Math.abs(amount)
-  const money = <TokenNumber amount={absAmount} token={contract.token} />
+
   const orderAmount =
     bet.limitProb !== undefined && bet.orderAmount !== undefined ? (
       <TokenNumber amount={bet.orderAmount} token={contract.token} />
     ) : null
-  const anyFilled = !floatingLesserEqual(amount, 0)
-  const allFilled = floatingEqual(amount, bet.orderAmount ?? amount)
 
   const hadPoolMatch =
     (bet.limitProb === undefined ||
@@ -122,90 +149,75 @@ export function BetStatusText(props: {
     ? getFormattedMappedValue(contract, probBefore)
     : getFormattedMappedValue(contract, limitProb ?? probBefore)
 
-  const toProb = hadPoolMatch
-    ? getFormattedMappedValue(contract, probAfter)
-    : getFormattedMappedValue(contract, limitProb ?? probAfter)
-
   const answer =
     contract.mechanism === 'cpmm-multi-1'
       ? contract.answers?.find((a) => a.id === answerId)
       : undefined
 
+  // ignore limit orders or if user doesn't exist
+  if (orderAmount || !betUser) {
+    return null
+  }
   return (
-    <Row style={styles.betStatusContainer}>
-      {!hideUser ? (
-        <UserLink user={betUser} />
-      ) : (
-        <ThemedText size="sm">
-          {self?.id === bet.userId ? 'You' : `A ${BETTOR}`}
-        </ThemedText>
-      )}
-      {orderAmount ? (
-        <Row style={styles.betStatusRow}>
-          {anyFilled ? (
-            <ThemedText size="sm">
-              filled limit order {money}/{orderAmount}
+    <Row style={{ gap: 8 }}>
+      <AvatarCircle
+        avatarUrl={betUser.avatarUrl}
+        username={betUser.username}
+        style={{ paddingTop: 2 }}
+      />
+      <Col style={{ flex: 1 }}>
+        <Row
+          style={{
+            gap: 4,
+            width: '100%',
+            justifyContent: 'space-between',
+            alignItems: 'center',
+          }}
+        >
+          <Row>
+            <UserLink
+              username={betUser.username}
+              name={betUser.name}
+              size="md"
+              limit={10}
+            />
+
+            <ThemedText size="md" color={color.text}>
+              {' '}
+              {bought}{' '}
             </ThemedText>
-          ) : (
-            <ThemedText size="sm">
-              created limit order for {orderAmount}
-            </ThemedText>
-          )}
-          <OutcomeLabel
-            outcome={outcome}
-            answer={answer}
-            contract={contract}
-            truncate="short"
-          />
-          <ThemedText size="sm">at {toProb}</ThemedText>
-          {bet.isCancelled && !allFilled ? (
-            <ThemedText size="sm">(cancelled)</ThemedText>
-          ) : null}
-        </Row>
-      ) : (
-        <Row style={styles.betStatusRow}>
-          <ThemedText size="sm">
-            {bought} {money}{' '}
-          </ThemedText>
-          <OutcomeLabel
-            outcome={outcome}
-            answer={answer}
-            contract={contract}
-            truncate="short"
-          />
-          <ThemedText size="sm">
-            {fromProb === toProb
-              ? `at ${fromProb}`
-              : `from ${fromProb} to ${toProb}`}
+
+            <OutcomeLabel
+              outcome={outcome}
+              answer={answer}
+              contract={contract}
+              truncate="short"
+            />
+          </Row>
+          <ThemedText size="sm" color={color.textQuaternary}>
+            {fromNow(bet.createdTime, true)}
           </ThemedText>
         </Row>
-      )}
-      <RelativeTimestamp time={createdTime} shortened={true} />
+        <Row>
+          <TokenNumber
+            amount={absAmount}
+            token={contract.token}
+            size="md"
+            color={contract.token === 'MANA' ? color.manaText : color.cashText}
+          />
+          <ThemedText size="md" color={color.textTertiary}>
+            {' '}
+            at{' '}
+          </ThemedText>
+          <ThemedText
+            size="md"
+            family="JetBrainsMono"
+            color={color.textTertiary}
+          >
+            {fromProb}
+          </ThemedText>
+        </Row>
+      </Col>
     </Row>
   )
 }
-
-const styles = StyleSheet.create({
-  container: {
-    gap: 16,
-    marginBottom: 16,
-  },
-  row: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    gap: 8,
-  },
-  betStatusContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    flexWrap: 'wrap',
-    gap: 4,
-  },
-  betStatusRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
-    flexWrap: 'wrap',
-  },
-})
