@@ -78,6 +78,8 @@ export function Feed({ tab }: { tab: string }) {
         <EntertainmentContent />
       ) : tab == 'politics' ? (
         <PoliticsContent />
+      ) : tab == 'test' ? (
+        <NewContent />
       ) : (
         <ForecastsContent />
       )}
@@ -222,6 +224,18 @@ function PoliticsContent() {
         gids: isProd
           ? 'AjxQR8JMpNyDqtiqoA96' // US Politics
           : 'iSWHIw6Xo1RkPq4Zh77m',
+      }}
+    />
+  )
+}
+
+function NewContent() {
+  return (
+    <MarketsList
+      fetchProps={{
+        term: 'test',
+        filter: 'open',
+        sort: 'newest',
       }}
     />
   )

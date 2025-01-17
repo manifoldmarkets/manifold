@@ -1,11 +1,11 @@
 import {
-  TextInput,
   View,
   StyleSheet,
   TouchableOpacity,
   KeyboardAvoidingView,
   Platform,
   TouchableWithoutFeedback,
+  TextInput,
 } from 'react-native'
 import { useState } from 'react'
 import { JSONContent } from './content-renderer'
@@ -17,19 +17,17 @@ import { useUser } from 'hooks/use-user'
 import { PAGE_PADDING } from 'components/page'
 import { Rounded } from 'constants/border-radius'
 import { IconSymbol } from 'components/ui/icon-symbol'
-
-type EditorProps = {
-  onChange: (content: JSONContent) => void
-  initialContent?: JSONContent
-}
+import { api } from 'lib/api'
 
 const HORIZONTAL_PADDING = 16
 
-export function ContentEditor({ onChange, initialContent }: EditorProps) {
+export function ContentEditor(props: { contractId: string }) {
+  const { contractId } = props
   const [text, setText] = useState('')
   const [isExpanded, setIsExpanded] = useState(false)
   const user = useUser()
   const color = useColor()
+  // const editor = useEditorBridge()
 
   const handleTextChange = (newText: string) => {
     setText(newText)
@@ -49,8 +47,6 @@ export function ContentEditor({ onChange, initialContent }: EditorProps) {
         },
       ],
     }
-
-    onChange(content)
   }
   if (!user) return null
 
@@ -131,14 +127,23 @@ export function ContentEditor({ onChange, initialContent }: EditorProps) {
                 value={text}
                 onChangeText={handleTextChange}
               />
+              {/* <RichText editor={editor} /> */}
             </Row>
             <Row style={{ justifyContent: 'flex-end', gap: 8 }}>
               {/* TODO: ability to add tags and pictures */}
               <TouchableOpacity
-                onPress={() =>
-                  // TODO: Add comment logic here
-                  setIsExpanded(false)
-                }
+                onPress={() => {
+                  try {
+                    api('comment', {
+                      markdown: text,
+                      contractId,
+                    })
+                    setIsExpanded(false)
+                    setText('')
+                  } catch (error) {
+                    console.error(error)
+                  }
+                }}
               >
                 <IconSymbol
                   name="paperplane.fill"

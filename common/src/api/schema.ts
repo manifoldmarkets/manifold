@@ -69,6 +69,7 @@ import { JSONContent } from '@tiptap/core'
 import { Task, TaskCategory } from 'common/todo'
 import { ChartAnnotation } from 'common/supabase/chart-annotations'
 import { Dictionary } from 'lodash'
+import { Reaction } from 'common/reaction'
 // mqp: very unscientific, just balancing our willingness to accept load
 // with user willingness to put up with stale data
 export const DEFAULT_CACHE_STRATEGY =
@@ -2088,9 +2089,24 @@ export const API = (_apiTypeCheck = {
     visibility: 'public',
     authed: false,
     returns: {} as { exists: boolean; existingMarket?: LiteMarket },
-    props: z.object({
-      sportsEventId: z.string(),
-    }).strict(),
+    props: z
+      .object({
+        sportsEventId: z.string(),
+      })
+      .strict(),
+  },
+  'comment-reactions': {
+    method: 'GET',
+    visibility: 'public',
+    authed: false,
+    cache: DEFAULT_CACHE_STRATEGY,
+    returns: [] as Reaction[],
+    props: z
+      .object({
+        contentIds: z.array(z.string()),
+        contentType: z.enum(['comment', 'contract']),
+      })
+      .strict(),
   },
 } as const)
 

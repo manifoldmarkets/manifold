@@ -100,7 +100,7 @@ function ContractPageContent(props: {
     token === 'CASH' ? cashBetData : playBetData
 
   return (
-    <Page nonScrollableChildren={<ContentEditor onChange={() => {}} />}>
+    <Page nonScrollableChildren={<ContentEditor contractId={contract.id} />}>
       <Col style={{ gap: 16, position: 'relative' }}>
         {!(isSports && isBinaryMc) && (
           <ThemedText

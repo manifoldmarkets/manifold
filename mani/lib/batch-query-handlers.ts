@@ -8,4 +8,11 @@ export const queryHandlers = {
   user: async ({ ids }: BatchQueryParams) => {
     return await api('users/by-id', { ids: Array.from(ids) })
   },
+  'comment-reactions': async ({ ids }: BatchQueryParams) => {
+    const reactionsData = await api('comment-reactions', {
+      contentIds: Array.from(ids),
+      contentType: 'comment',
+    })
+    return reactionsData
+  },
 }
