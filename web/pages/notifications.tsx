@@ -108,6 +108,7 @@ function NotificationsContent(props: {
     groupedNewMarketNotifications,
     groupedMentionNotifications,
   } = useGroupedNotifications(user)
+
   const [unseenNewMarketNotifs, setNewMarketNotifsAsSeen] = useState(
     groupedNewMarketNotifications?.filter((n) => !n.isSeen).length ?? 0
   )
