@@ -27,7 +27,10 @@ import { formatMoney } from 'common/util/format'
 export const RegisterContent = (props: {
   user: User
   privateUser: PrivateUser
-  redirect: { priceInDollars?: string }
+  redirect: {
+    priceInDollars?: string
+    slug?: string
+  }
 }) => {
   const { redirect } = props
   const user = useUser() ?? props.user
@@ -130,9 +133,11 @@ export const RegisterContent = (props: {
   useEffect(() => {
     if (page === 'final' && user.idVerified && user.sweepstakesVerified) {
       const timer = setTimeout(() => {
-        // TODO: may want to redirect to a contract, too
-        const priceInDollars = redirect.priceInDollars
-        if (priceInDollars) {
+        const { priceInDollars, slug } = redirect
+        // They just came from a contract
+        if (slug) {
+          router.back()
+        } else if (priceInDollars) {
           router.replace(`/(tabs)/shop?priceInDollars=${priceInDollars}`)
         } else {
           router.replace('/(tabs)/shop')

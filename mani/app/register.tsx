@@ -8,7 +8,10 @@ import { Text } from 'react-native'
 export default function Register() {
   const user = useUser()
   const privateUser = usePrivateUser()
-  const params = useLocalSearchParams<{ priceInDollars?: string }>()
+  const params = useLocalSearchParams<{
+    priceInDollars?: string
+    slug?: string
+  }>()
   return (
     <Page>
       {!user || !privateUser ? (
