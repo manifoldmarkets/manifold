@@ -7,7 +7,7 @@ import { Platform, View, Image } from 'react-native'
 import { PlatformPressable } from '@react-navigation/elements'
 import { Rounded } from 'constants/border-radius'
 
-export const TabPaths = ['/', '/live', '/notifications', '/shop', '/profile']
+export const TabPaths = ['/', '/shop', '/profile']
 export function isTabPath(pathname: string) {
   return TabPaths.includes(pathname)
 }
@@ -61,7 +61,7 @@ export default function TabLayout() {
           ),
         }}
       />
-      <Tabs.Screen
+      {/* <Tabs.Screen
         name="live"
         options={{
           title: 'Live',
@@ -73,7 +73,7 @@ export default function TabLayout() {
             />
           ),
         }}
-      />
+      /> */}
       <Tabs.Screen
         name={'profile'}
         options={{
@@ -108,7 +108,7 @@ export default function TabLayout() {
           ),
         }}
       />
-      <Tabs.Screen
+      {/* <Tabs.Screen
         name="notifications"
         options={{
           title: 'Alerts',
@@ -116,7 +116,7 @@ export default function TabLayout() {
             <IconSymbol size={28} name="bell" color={color} />
           ),
         }}
-      />
+      /> */}
       <Tabs.Screen
         name="shop"
         options={{
