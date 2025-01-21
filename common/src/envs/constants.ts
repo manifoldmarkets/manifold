@@ -211,6 +211,7 @@ export const MOD_IDS = [
   'Iua2KQvL6KYcfGLGNI6PVeGkseo1', // Ziddletwix
   'Gg7t9vPD4WPD1iPgj9RUFLYTxgH2', // nikki
   'XNrWcIrA22hpv20fHn4ApoTPsh63', // bagelfan
+  '0k1suGSJKVUnHbCPEhHNpgZPkUP2', // Sinclair
 ]
 
 export const SWEEPSTAKES_MOD_IDS = [
@@ -341,7 +342,6 @@ export const NEW_USER_HERLPER_IDS = [
   'BgCeVUcOzkexeJpSPRNomWQaQaD3', // SemioticRivalry
   'rQPOELuW5zaapaNPnBYQBMoonk92', // Tumbles
   'tlmGNz9kjXc2EteizMORes4qvWl2', // Stephen
-  '0k1suGSJKVUnHbCPEhHNpgZPkUP2', // Sinclair
   'AJwLWoo3xue32XIiAVrL5SyR1WB2', // Ian
   'uglwf3YKOZNGjjEXKc5HampOFRE2', // D4vid
   'GRwzCexe5PM6ThrSsodKZT9ziln2', // Inga
