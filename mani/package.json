@@ -13,7 +13,7 @@
     "build:android:prod": "yarn build:prod -p android --profile production ",
     "build:ios:client:dev": "yarn build:dev -p ios --profile development",
     "build:ios:client:prod": "yarn build:preview -p ios --profile prod-development",
-    "build:ios:dev:sim": "yarn build:preview -p ios --profile prod-development-simulator",
+    "build:ios:prod:sim": "yarn build:preview -p ios --profile prod-development-simulator",
     "build:ios:preview": "yarn build:preview -p ios --profile preview",
     "build:ios:dev": "yarn build:dev -p ios --profile testflight-dev",
     "build:ios:prod": "yarn build:prod -p ios --profile production",
