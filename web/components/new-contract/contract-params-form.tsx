@@ -217,10 +217,11 @@ export function ContractParamsForm(props: {
     '',
     categorizedQuestionKey
   )
-
+  const hasDuplicateCategories =
+    (params?.groupIds?.length ?? 0) > 0 || (params?.groupSlugs?.length ?? 0) > 0
   const hasChosenCategoryKey = 'has-chosen-category' + paramsKey
   const [hasChosenCategory, setHasChosenCategory] = usePersistentLocalState(
-    (params?.groupIds?.length ?? 0) > 0,
+    hasDuplicateCategories,
     hasChosenCategoryKey
   )
 
