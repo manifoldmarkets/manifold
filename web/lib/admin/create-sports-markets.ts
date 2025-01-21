@@ -102,7 +102,6 @@ export const handleCreateSportsMarkets = async (
         sportsEventId: sportsGames.idEvent,
         sportsLeague: sportsGames.strLeague,
         groupIds,
-        takerAPIOrdersDisabled: true,
       }
 
       const result = await api('market', createProps)
