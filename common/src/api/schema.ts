@@ -561,6 +561,16 @@ export const API = (_apiTypeCheck = {
     cache: DEFAULT_CACHE_STRATEGY,
     props: z.object({ id: z.string(), lite: coerceBoolean.optional() }),
   },
+  'market/:id/prob': {
+    method: 'GET',
+    visibility: 'public',
+    authed: false,
+    returns: {} as {
+      prob?: number
+      answerProbs?: { [answerId: string]: number }
+    },
+    props: z.object({ id: z.string() }).strict(),
+  },
   'markets-by-ids': {
     method: 'GET',
     visibility: 'undocumented',

@@ -429,6 +429,43 @@ type FullMarket = LiteMarket & {
 }
 ```
 
+### `GET /v0/market/[marketId]/prob`
+
+Get the current probability (or probabilities for multiple choice markets) for a market without caching.
+
+Parameters:
+
+- `id`: Required. The ID of the market.
+
+Example request:
+
+```bash
+curl "https://api.manifold.markets/v0/market/9t61v9e7x4/prob" -X GET
+```
+
+Example response:
+
+```json
+{
+  "prob": 0.62
+}
+```
+
+For non-binary markets (e.g. multiple choice, set) you get a dictionary of probabilities for each answer id.
+
+Example response:
+
+```json
+{
+  "answerProbs": {
+    "1": 0.25,
+    "2": 0.25,
+    "3": 0.25,
+    "4": 0.25
+  }
+}
+```
+
 ### `GET /v0/market/[marketId]/positions`
 
 Get positions information about a single market.
