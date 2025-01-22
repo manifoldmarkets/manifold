@@ -4,6 +4,7 @@ import { Visibility } from 'common/contract'
 import { QuestType } from 'common/quest'
 import { Answer } from 'common/answer'
 import { AnyTxnCategory, Txn } from './txn'
+import { PROFIT_FEE_FRACTION } from './economy'
 
 export type AnyBalanceChangeType = BetBalanceChange | TxnBalanceChange
 
@@ -163,6 +164,8 @@ export const txnTypeToDescription = (txnCategory: string) => {
       return 'Donation'
     case 'LOAN':
       return ''
+    case 'CONTRACT_RESOLUTION_FEE':
+      return `${PROFIT_FEE_FRACTION * 100}% fee on profits at resolution`
     default:
       return null
   }

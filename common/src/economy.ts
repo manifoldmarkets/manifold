@@ -177,4 +177,4 @@ export const MIN_CASHOUT_AMOUNT = 25
 
 export const SWEEPS_MIN_BET = 1
 export const MANA_MIN_BET = 1
-export const PROFIT_TAX_PERCENTAGE = 0.1
+export const PROFIT_FEE_FRACTION = 0.1

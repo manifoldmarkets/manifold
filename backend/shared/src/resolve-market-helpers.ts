@@ -52,7 +52,7 @@ import {
 } from './websockets/helpers'
 import { ContractMetric } from 'common/contract-metric'
 import { calculateUpdatedMetricsForContracts } from 'common/calculate-metrics'
-import { PROFIT_TAX_PERCENTAGE } from 'common/economy'
+import { PROFIT_FEE_FRACTION } from 'common/economy'
 
 export type ResolutionParams = {
   outcome: string
@@ -98,16 +98,20 @@ export const resolveMarketHelper = async (
       ? Math.min(closeTime, resolutionTime)
       : closeTime
 
-    const { resolutionProbability, payouts, payoutsWithoutLoans, payoutFees } =
-      getPayoutInfo(
-        outcome,
-        unresolvedContract,
-        resolutions,
-        probabilityInt,
-        answerId,
-        contractMetrics,
-        liquidities
-      )
+    const {
+      resolutionProbability,
+      payouts,
+      payoutsWithoutLoans,
+      traderPayouts,
+    } = getPayoutInfo(
+      outcome,
+      unresolvedContract,
+      resolutions,
+      probabilityInt,
+      answerId,
+      contractMetrics,
+      liquidities
+    )
     // Keep MKT resolution prob for consistency's sake
     const probBeforeResolution =
       outcome === 'MKT'
@@ -248,21 +252,6 @@ export const resolveMarketHelper = async (
       )
       await updateAnswers(tx, contractId, answerUpdates)
     }
-    log('processing payouts', { payouts })
-    const { balanceUpdatesQuery, insertTxnsQuery } = getPayUsersQueries(
-      payouts,
-      contractId,
-      answerId,
-      resolvedContract.token,
-      payoutFees
-    )
-
-    log('updating contract', { updatedContractAttrs })
-    const contractUpdateQuery = updateDataQuery(
-      'contracts',
-      'id',
-      updatedContractAttrs
-    )
     const { metricsByContract } = calculateUpdatedMetricsForContracts([
       { contract: resolvedContract, metrics: contractMetrics },
     ])
@@ -270,7 +259,21 @@ export const resolveMarketHelper = async (
     const updateMetricsQuery = bulkUpdateContractMetricsQuery(
       updatedContractMetrics
     )
+    const payoutFees = assessProfitFees(traderPayouts, updatedContractMetrics)
+    const { balanceUpdatesQuery, insertTxnsQuery } = getPayUsersQueries(
+      payouts,
+      contractId,
+      answerId,
+      resolvedContract.token,
+      payoutFees
+    )
+    const contractUpdateQuery = updateDataQuery(
+      'contracts',
+      'id',
+      updatedContractAttrs
+    )
 
+    log('updating contract & processing payouts', { updatedContractAttrs })
     const results = await tx.multi(`
       ${balanceUpdatesQuery}; -- 1
       ${insertTxnsQuery}; -- 2
@@ -367,7 +370,6 @@ export const getPayoutInfo = (
     resolutionProbability,
     answerId
   )
-  const payoutFees = assessProfitFees(traderPayouts, contractMetrics)
 
   const payoutsWithoutLoans = [
     ...liquidityPayouts.map((p) => ({ ...p, deposit: p.payout })),
@@ -394,7 +396,7 @@ export const getPayoutInfo = (
     resolutionProbs,
     resolutionProbability,
     payouts,
-    payoutFees,
+    traderPayouts,
   }
 }
 
@@ -438,15 +440,15 @@ async function undoUniqueBettorRewardsIfCancelResolution(
   log(`Cancel Bonus txn for user: ${contract.creatorId} completed: ${txn.id}`)
 }
 
-// TODO: calculate current contract metrics with resolved contract to get up to date profit metrics
 export const getPayUsersQueries = (
   payouts: Payout[],
   contractId: string,
   answerId: string | undefined,
   token: ContractToken,
-  payoutFees: Payout[]
+  proposedPayoutFees: Payout[]
 ) => {
   const payoutCash = token === 'CASH'
+  const payoutFees = payoutCash ? proposedPayoutFees : []
   const payoutToken = token === 'CASH' ? 'CASH' : 'M$'
   const mergedPayouts = checkAndMergePayouts(payouts)
   const payoutStartTime = Date.now()
@@ -502,7 +504,7 @@ export const getPayUsersQueries = (
       toId: isProd()
         ? HOUSE_LIQUIDITY_PROVIDER_ID
         : DEV_HOUSE_LIQUIDITY_PROVIDER_ID,
-      amount: payout,
+      amount: -payout,
       token: payoutToken,
       data: {
         contractId,
@@ -538,7 +540,7 @@ const checkAndMergePayouts = (payouts: Payout[]) => {
 
 const assessProfitFees = (
   payouts: Payout[],
-  contractMetrics: ContractMetric[]
+  contractMetrics: Omit<ContractMetric, 'id'>[]
 ) => {
   return payouts
     .map((payout) => {
@@ -549,7 +551,7 @@ const assessProfitFees = (
         throw new Error('Contract metric not found for user: ' + payout.userId)
       }
 
-      const tax = contractMetric.profit * PROFIT_TAX_PERCENTAGE
+      const tax = contractMetric.profit * PROFIT_FEE_FRACTION
       return {
         userId: payout.userId,
         payout: contractMetric.profit > 0 ? -tax : 0,
