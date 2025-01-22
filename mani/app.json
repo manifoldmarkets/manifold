@@ -49,7 +49,7 @@
     "splash": {
       "image": "./assets/images/splash.png",
       "resizeMode": "cover",
-      "backgroundColor": "#4337C9"
+      "backgroundColor": "#09090b"
     },
     "web": {
       "favicon": "./assets/images/favicon.png"
