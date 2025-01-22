@@ -463,6 +463,8 @@ const TxnBalanceChangeRow = (props: {
     ADD_SUBSIDY: 'bg-red-100',
     UNIQUE_BETTOR_BONUS: 'bg-sky-400',
     CHARITY: 'bg-gradient-to-br from-pink-300 via-purple-300 to-primary-400',
+    CONTRACT_RESOLUTION_FEE:
+      'bg-gradient-to-br from-pink-300 via-purple-300 to-primary-400',
   }
 
   return (
@@ -500,7 +502,9 @@ const TxnBalanceChangeRow = (props: {
               <FaArrowRightArrowLeft className={'h-4 w-4'} />
             ) : type === 'CHARITY' || type === 'REFERRAL' ? (
               '❤️'
-            ) : type === 'LOAN' || type === 'CASH_OUT' ? (
+            ) : type === 'LOAN' ||
+              type === 'CASH_OUT' ||
+              type === 'CONTRACT_RESOLUTION_FEE' ? (
               '🏦'
             ) : type === 'MANA_PURCHASE' ? (
               '🤑'

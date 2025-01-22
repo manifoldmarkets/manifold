@@ -6,6 +6,7 @@ import {
 import {
   Contract,
   contractPath,
+  ContractToken,
   CPMMMultiContract,
   MarketContract,
 } from 'common/contract'
@@ -26,7 +27,12 @@ import {
   log,
   getContractAndMetricsAndLiquidities,
 } from './utils'
-import { getLoanPayouts, getPayouts, groupPayoutsByUser } from 'common/payouts'
+import {
+  getLoanPayouts,
+  getPayouts,
+  groupPayoutsByUser,
+  Payout,
+} from 'common/payouts'
 import { APIError } from 'common//api/utils'
 import { trackPublicEvent } from 'shared/analytics'
 import { recordContractEdit } from 'shared/record-contract-edit'
@@ -46,6 +52,7 @@ import {
 } from './websockets/helpers'
 import { ContractMetric } from 'common/contract-metric'
 import { calculateUpdatedMetricsForContracts } from 'common/calculate-metrics'
+import { PROFIT_TAX_PERCENTAGE } from 'common/economy'
 
 export type ResolutionParams = {
   outcome: string
@@ -91,7 +98,7 @@ export const resolveMarketHelper = async (
       ? Math.min(closeTime, resolutionTime)
       : closeTime
 
-    const { resolutionProbability, payouts, payoutsWithoutLoans } =
+    const { resolutionProbability, payouts, payoutsWithoutLoans, payoutFees } =
       getPayoutInfo(
         outcome,
         unresolvedContract,
@@ -246,9 +253,8 @@ export const resolveMarketHelper = async (
       payouts,
       contractId,
       answerId,
-      {
-        payoutCash: resolvedContract.token === 'CASH',
-      }
+      resolvedContract.token,
+      payoutFees
     )
 
     log('updating contract', { updatedContractAttrs })
@@ -361,6 +367,7 @@ export const getPayoutInfo = (
     resolutionProbability,
     answerId
   )
+  const payoutFees = assessProfitFees(traderPayouts, contractMetrics)
 
   const payoutsWithoutLoans = [
     ...liquidityPayouts.map((p) => ({ ...p, deposit: p.payout })),
@@ -387,6 +394,7 @@ export const getPayoutInfo = (
     resolutionProbs,
     resolutionProbability,
     payouts,
+    payoutFees,
   }
 }
 
@@ -430,19 +438,16 @@ async function undoUniqueBettorRewardsIfCancelResolution(
   log(`Cancel Bonus txn for user: ${contract.creatorId} completed: ${txn.id}`)
 }
 
+// TODO: calculate current contract metrics with resolved contract to get up to date profit metrics
 export const getPayUsersQueries = (
-  payouts: {
-    userId: string
-    payout: number
-    deposit?: number
-  }[],
+  payouts: Payout[],
   contractId: string,
   answerId: string | undefined,
-  options?: {
-    payoutCash: boolean
-  }
+  token: ContractToken,
+  payoutFees: Payout[]
 ) => {
-  const { payoutCash } = options ?? {}
+  const payoutCash = token === 'CASH'
+  const payoutToken = token === 'CASH' ? 'CASH' : 'M$'
   const mergedPayouts = checkAndMergePayouts(payouts)
   const payoutStartTime = Date.now()
 
@@ -456,9 +461,10 @@ export const getPayUsersQueries = (
   const txns: TxnData[] = []
 
   for (const { userId, payout, deposit } of mergedPayouts) {
+    const payoutFee = payoutFees.find((t) => t.userId === userId)?.payout ?? 0
     balanceUpdates.push({
       id: userId,
-      [payoutCash ? 'cashBalance' : 'balance']: payout,
+      [payoutCash ? 'cashBalance' : 'balance']: payout + payoutFee,
       [payoutCash ? 'totalCashDeposits' : 'totalDeposits']: deposit ?? 0,
     })
 
@@ -469,7 +475,7 @@ export const getPayUsersQueries = (
       toType: 'USER',
       toId: userId,
       amount: payout,
-      token: payoutCash ? 'CASH' : 'M$',
+      token: payoutToken,
       data: removeUndefinedProps({
         deposit: deposit ?? 0,
         payoutStartTime,
@@ -479,19 +485,38 @@ export const getPayUsersQueries = (
     })
   }
 
+  for (const { userId, payout } of payoutFees) {
+    const balanceUpdate = balanceUpdates.find((b) => b.id === userId)
+    if (!balanceUpdate) {
+      balanceUpdates.push({
+        id: userId,
+        [payoutCash ? 'cashBalance' : 'balance']: payout,
+      })
+    }
+
+    txns.push({
+      category: 'CONTRACT_RESOLUTION_FEE',
+      fromType: 'USER',
+      fromId: userId,
+      toType: 'BANK',
+      toId: isProd()
+        ? HOUSE_LIQUIDITY_PROVIDER_ID
+        : DEV_HOUSE_LIQUIDITY_PROVIDER_ID,
+      amount: payout,
+      token: payoutToken,
+      data: {
+        contractId,
+      },
+    })
+  }
+
   const balanceUpdatesQuery = bulkIncrementBalancesQuery(balanceUpdates)
   const insertTxnsQuery = bulkInsertQuery('txns', txns.map(txnToRow), false)
 
   return { balanceUpdatesQuery, insertTxnsQuery }
 }
 
-const checkAndMergePayouts = (
-  payouts: {
-    userId: string
-    payout: number
-    deposit?: number
-  }[]
-) => {
+const checkAndMergePayouts = (payouts: Payout[]) => {
   for (const { payout, deposit } of payouts) {
     if (!isFinite(payout)) {
       throw new Error('Payout is not finite: ' + payout)
@@ -509,4 +534,26 @@ const checkAndMergePayouts = (
       deposit: sumBy(payouts, (p) => p.deposit ?? 0),
     }))
   ).filter((p) => p!.payout !== 0 || p!.deposit !== 0)
+}
+
+const assessProfitFees = (
+  payouts: Payout[],
+  contractMetrics: ContractMetric[]
+) => {
+  return payouts
+    .map((payout) => {
+      const contractMetric = contractMetrics.find(
+        (m) => m.userId === payout.userId
+      )
+      if (!contractMetric) {
+        throw new Error('Contract metric not found for user: ' + payout.userId)
+      }
+
+      const tax = contractMetric.profit * PROFIT_TAX_PERCENTAGE
+      return {
+        userId: payout.userId,
+        payout: contractMetric.profit > 0 ? -tax : 0,
+      }
+    })
+    .filter((p) => p.payout !== 0)
 }

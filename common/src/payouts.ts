@@ -17,6 +17,7 @@ import { ContractMetric } from './contract-metric'
 export type Payout = {
   userId: string
   payout: number
+  deposit?: number
 }
 export const getLoanPayouts = (
   contractMetrics: ContractMetric[],

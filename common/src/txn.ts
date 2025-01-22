@@ -57,6 +57,7 @@ type AnyTxnType =
   | CashBonus
   | CashOutPending
   | KycBonus
+  | ProfitFee
 
 export type AnyTxnCategory = AnyTxnType['category']
 
@@ -552,6 +553,13 @@ type ManifoldTopUp = {
   token: 'M$'
 }
 
+type ProfitFee = {
+  category: 'CONTRACT_RESOLUTION_FEE'
+  fromType: 'USER'
+  toType: 'BANK'
+  token: 'M$' | 'CASH'
+}
+
 export type AddSubsidyTxn = Txn & AddSubsidy
 export type RemoveSubsidyTxn = Txn & RemoveSubsidy
 export type DonationTxn = Txn & Donation
@@ -604,3 +612,4 @@ export type ExtraPurchasedManaTxn = Txn & ExtraPurchasedMana
 export type ManifoldTopUpTxn = Txn & ManifoldTopUp
 export type KycBonusTxn = Txn & KycBonus
 export type CashOutPendingTxn = Txn & CashOutPending
+export type ProfitFeeTxn = Txn & ProfitFee
