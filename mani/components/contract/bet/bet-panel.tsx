@@ -14,12 +14,22 @@ import Toast from 'react-native-toast-message'
 import { Modal } from 'components/layout/modal'
 import { TokenNumber } from 'components/token/token-number'
 import { NumberText } from 'components/number-text'
-import { useUser } from 'hooks/use-user'
+import { usePrivateUser, useUser } from 'hooks/use-user'
 import Slider from '@react-native-community/slider'
 import { useTokenMode } from 'hooks/use-token-mode'
-import { MANA_MIN_BET, SWEEPS_MIN_BET } from 'common/economy'
+import {
+  KYC_VERIFICATION_BONUS_CASH,
+  MANA_MIN_BET,
+  SWEEPS_MIN_BET,
+} from 'common/economy'
 import { formatMoneyNumber } from 'common/util/format'
 import { removeUndefinedProps } from 'common/util/object'
+import {
+  getVerificationStatus,
+  PROMPT_USER_VERIFICATION_MESSAGES,
+} from 'common/gidx/user'
+import { router } from 'expo-router'
+import { SWEEPIES_NAME } from 'common/envs/constants'
 
 export type BinaryOutcomes = 'YES' | 'NO'
 
@@ -56,9 +66,22 @@ export function BetPanel({
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const user = useUser()
-
+  const privateUser = usePrivateUser()
+  const NEEDS_TO_REGISTER =
+    'You need to register to participate in this contest'
   // Check for errors.
   useEffect(() => {
+    if (!user || !privateUser) return
+    if (token === 'CASH') {
+      const { status, message } = getVerificationStatus(user, privateUser)
+      if (PROMPT_USER_VERIFICATION_MESSAGES.includes(message)) {
+        setError(NEEDS_TO_REGISTER)
+        return
+      } else if (status === 'error') {
+        setError(message)
+        return
+      }
+    }
     if (
       user &&
       ((token === 'MANA' &&
@@ -153,7 +176,22 @@ export function BetPanel({
               maximumTrackTintColor={color.border}
               thumbTintColor={color.primary}
             />
-            {error && <ThemedText color={color.error}>{error}</ThemedText>}
+            {error &&
+              (error === NEEDS_TO_REGISTER ? (
+                <Col style={{ gap: 8 }}>
+                  <ThemedText color={color.error}>{error}</ThemedText>
+                  <Button
+                    onPress={() =>
+                      router.push(`/register?slug=${contract.slug}`)
+                    }
+                  >
+                    Register and get {KYC_VERIFICATION_BONUS_CASH}{' '}
+                    {SWEEPIES_NAME} free!
+                  </Button>
+                </Col>
+              ) : (
+                <ThemedText color={color.error}>{error}</ThemedText>
+              ))}
           </Col>
           <Col style={{ gap: 8 }}>
             <Row style={{ justifyContent: 'space-between', width: '100%' }}>

@@ -69,6 +69,12 @@ We're using Expo to help with android and ios builds. You can find more informat
 - Builds an iOS IPA for App Store distribution
 - I think we use Transporter once we have our Apple Business Developer account set up
 
+**Simulators**
+
+`yarn build:ios:prod:sim`
+
+- Builds an iOS IPA for previewing on a simulator. Unzip and drag the .app file onto the simulator to install it.
+
 ### OTA updates
 
 `eas update --branch default` to publish an over-the-air update to production

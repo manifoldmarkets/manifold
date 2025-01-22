@@ -9,7 +9,9 @@ import { useColor } from 'hooks/use-color'
 import { ActivityIndicator } from 'react-native'
 import { EXAMPLE_NOTIFICATIONS } from 'assets/example-data/example-notifications'
 import { useIsPageVisible } from 'hooks/use-is-page-visibile'
-
+import { NotificationItem } from 'components/notification/notification-item'
+import { Notification } from 'common/notification'
+import { NotificationGroupItem } from 'components/notification/notification-group-item'
 export default function Notifications() {
   const user = useUser()
   const privateUser = usePrivateUser()
@@ -44,7 +46,7 @@ export function NotificationContent({
   const isPageVisible = useIsPageVisible()
 
   return (
-    <Col>
+    <Col style={{ width: '100%' }}>
       {EXAMPLE_NOTIFICATIONS === undefined ||
       paginatedGroupedNotifications === undefined ? (
         <ActivityIndicator color={color.textQuaternary} size={'large'} />
@@ -54,21 +56,17 @@ export function NotificationContent({
         <>
           {EXAMPLE_NOTIFICATIONS.map((notification) => (
             <Fragment key={notification.groupedById}>
-              {/* {notification.notifications.length === 1 ? (
-                <>
-                  <NotificationItem
-                    notification={notification.notifications[0]}
-                    key={notification.notifications[0].id}
-                  />
-                </>
+              {notification.notifications.length === 1 ? (
+                <NotificationItem
+                  notification={notification.notifications[0] as Notification}
+                  key={notification.notifications[0].id}
+                />
               ) : (
-                <>
-                  <NotificationGroupItem
-                    notificationGroup={notification}
-                    key={notification.groupedById}
-                  />
-                </>
-              )} */}
+                <NotificationGroupItem
+                  notificationGroup={notification}
+                  key={notification.groupedById}
+                />
+              )}
             </Fragment>
           ))}
         </>

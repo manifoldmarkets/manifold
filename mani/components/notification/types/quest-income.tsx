@@ -4,12 +4,17 @@ import { Notification } from 'common/notification'
 import { IncomeNotificationLabel } from '../income-notification-label'
 import { ThemedText } from 'components/themed-text'
 import { imageSizeMap } from 'components/user/avatar-circle'
+import { QuestRewardTxn } from 'common/txn'
+import { QUEST_DETAILS } from 'common/quest'
 
-export function PushNotificationBonusNotification(props: {
+export function QuestIncomeNotification(props: {
   notification: Notification
   isChildOfGroup?: boolean
 }) {
   const { notification, isChildOfGroup } = props
+  const { data } = notification
+  console.log('data', data)
+  const { questType } = data as QuestRewardTxn['data']
   return (
     <NotificationFrame
       notification={notification}
@@ -22,8 +27,8 @@ export function PushNotificationBonusNotification(props: {
       }
     >
       <ThemedText>
-        <IncomeNotificationLabel notification={notification} /> for enabling
-        push notifications
+        <IncomeNotificationLabel notification={notification} /> bonus for
+        completing the ${QUEST_DETAILS[questType].title} quest
       </ThemedText>
     </NotificationFrame>
   )

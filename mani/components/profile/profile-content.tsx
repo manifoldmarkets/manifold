@@ -18,12 +18,16 @@ import { User } from 'common/user'
 import { useUser } from 'hooks/use-user'
 import { useAPIGetter } from 'hooks/use-api-getter'
 import { useTokenMode } from 'hooks/use-token-mode'
+import { KYC_VERIFICATION_BONUS_CASH } from 'common/economy'
+import { SWEEPIES_NAME } from 'common/envs/constants'
+import { formatMoney } from 'common/util/format'
 
 export function ProfileContent(props: { user: User }) {
   const color = useColor()
   const { user } = props
   const currentUser = useUser()
   const isCurrentUser = currentUser?.id === user.id
+  const { data: redeemable } = useAPIGetter('get-redeemable-prize-cash', {})
 
   const signOut = async () => {
     try {
@@ -46,6 +50,7 @@ export function ProfileContent(props: { user: User }) {
   const cashInvestmentValue = data?.cashInvestmentValue ?? 0
   const manaNetWorth = manaInvestmentValue + (user?.balance ?? 0)
   const cashNetWorth = cashInvestmentValue + (user?.cashBalance ?? 0)
+  const isUserRegistered = user.idVerified
 
   return (
     <Page>
@@ -115,11 +120,22 @@ export function ProfileContent(props: { user: User }) {
         </Row>
         {isCurrentUser && (
           <Row>
-            <Button
-              onPress={() => router.push('/redeem')}
-              title="Redeem"
-              variant="gray"
-            />
+            {isUserRegistered ? (
+              <Button
+                onPress={() => router.push('/redeem')}
+                title={`Redeem ${formatMoney(
+                  redeemable?.redeemablePrizeCash ?? 0,
+                  'CASH'
+                )}`}
+                variant="gray"
+              />
+            ) : (
+              <Button
+                onPress={() => router.push('/register')}
+                title={`Register and get ${KYC_VERIFICATION_BONUS_CASH} free ${SWEEPIES_NAME}`}
+                variant="gray"
+              />
+            )}
           </Row>
         )}
         <TopTabs

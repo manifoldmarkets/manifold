@@ -3,7 +3,7 @@ import { Image, View, ViewProps } from 'react-native'
 
 type AvatarSize = 'xs' | 'sm' | 'md' | 'lg'
 
-const sizeMap = {
+export const imageSizeMap = {
   xs: 20,
   sm: 24,
   md: 32,
@@ -27,8 +27,8 @@ export function AvatarCircle({
     <View style={style}>
       <Image
         style={{
-          width: sizeMap[size],
-          height: sizeMap[size],
+          width: imageSizeMap[size],
+          height: imageSizeMap[size],
           borderRadius: Rounded.full,
         }}
         {...rest}

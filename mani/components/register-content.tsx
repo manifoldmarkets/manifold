@@ -1,5 +1,5 @@
 import { usePrivateUser, useUser } from 'hooks/use-user'
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { View, StyleSheet, ScrollView, ActivityIndicator } from 'react-native'
 import { Text } from 'components/text'
 import { Button } from 'components/buttons/button'
@@ -22,11 +22,17 @@ import {
 } from 'common/gidx/user'
 import { PrivateUser, User } from 'common/user'
 import { usePersistentInMemoryState } from 'client-common/hooks/use-persistent-in-memory-state'
+import { formatMoney } from 'common/util/format'
 
-export const RegistrationPage = (props: {
+export const RegisterContent = (props: {
   user: User
   privateUser: PrivateUser
+  redirect: {
+    priceInDollars?: string
+    slug?: string
+  }
 }) => {
+  const { redirect } = props
   const user = useUser() ?? props.user
   const privateUser = usePrivateUser() ?? props.privateUser
 
@@ -123,6 +129,23 @@ export const RegistrationPage = (props: {
     }
     setPage('final')
   }
+
+  useEffect(() => {
+    if (page === 'final' && user.idVerified && user.sweepstakesVerified) {
+      const timer = setTimeout(() => {
+        const { priceInDollars, slug } = redirect
+        // They just came from a contract
+        if (slug) {
+          router.back()
+        } else if (priceInDollars) {
+          router.replace(`/(tabs)/shop?priceInDollars=${priceInDollars}`)
+        } else {
+          router.replace('/(tabs)/shop')
+        }
+      }, 4000)
+      return () => clearTimeout(timer)
+    }
+  }, [user, privateUser, redirect, page])
 
   const [canContinue, setCanContinue] = useState(false)
 
@@ -229,6 +252,7 @@ export const RegistrationPage = (props: {
           <View style={styles.formField}>
             <Text style={styles.label}>Date of Birth</Text>
             <Input
+              keyboardType="numbers-and-punctuation"
               value={userInfo.DateOfBirth}
               onChangeText={(text) =>
                 setUserInfo({ ...userInfo, DateOfBirth: text })
@@ -372,7 +396,8 @@ export const RegistrationPage = (props: {
             <Text style={styles.title}>Identity Verification Complete!</Text>
             <Text style={styles.message}>
               Hooray! Now you can participate in sweepstakes markets. We sent
-              you ${KYC_VERIFICATION_BONUS_CASH / 100} to get started.
+              you {formatMoney(KYC_VERIFICATION_BONUS_CASH, 'CASH')} to get
+              started.
             </Text>
             <View style={styles.loadingRow}>
               <ActivityIndicator size="small" color={Colors.blue} />

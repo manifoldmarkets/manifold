@@ -1,4 +1,4 @@
-import { StyleSheet, View } from 'react-native'
+import { StyleSheet, View, StatusBar } from 'react-native'
 import Animated, { useAnimatedRef } from 'react-native-reanimated'
 import { TokenToggleHeader } from './layout/token-toggle-header'
 import { useBottomTabOverflow } from './ui/tab-bar-background.ios'
@@ -24,6 +24,7 @@ export default function Page({
 
   return (
     <View style={styles.container}>
+      <StatusBar barStyle="light-content" backgroundColor={Colors.background} />
       <TokenToggleHeader />
       <Animated.ScrollView
         ref={scrollRef}

@@ -1,5 +1,11 @@
 import clsx from 'clsx'
-import { Notification, ReactionNotificationTypes } from 'common/notification'
+import {
+  combineAndSumIncomeNotifications,
+  combineReactionNotifications,
+  Notification,
+  NotificationGroup,
+  ReactionNotificationTypes,
+} from 'common/notification'
 import { PrivateUser, User } from 'common/user'
 import { groupBy, sortBy } from 'lodash'
 import { useRouter } from 'next/router'
@@ -9,9 +15,7 @@ import { Page } from 'web/components/layout/page'
 import { Row } from 'web/components/layout/row'
 import { QueryUncontrolledTabs } from 'web/components/layout/tabs'
 import { NotificationSettings } from 'web/components/notification-settings'
-import { combineAndSumIncomeNotifications } from 'web/components/notifications/income-summary-notifications'
 import {
-  combineReactionNotifications,
   NOTIFICATIONS_PER_PAGE,
   NUM_SUMMARY_LINES,
   ParentNotificationHeader,
@@ -24,10 +28,7 @@ import { SEO } from 'web/components/SEO'
 import { ShowMoreLessButton } from 'web/components/widgets/collapsible-content'
 import { Pagination } from 'web/components/widgets/pagination'
 import { Title } from 'web/components/widgets/title'
-import {
-  NotificationGroup,
-  useGroupedNotifications,
-} from 'web/hooks/use-notifications'
+import { useGroupedNotifications } from 'web/hooks/use-notifications'
 import { useIsPageVisible } from 'web/hooks/use-page-visible'
 import { useRedirectIfSignedOut } from 'web/hooks/use-redirect-if-signed-out'
 import { usePrivateUser, useUser } from 'web/hooks/use-user'

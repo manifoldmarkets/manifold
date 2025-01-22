@@ -6,11 +6,10 @@ import { ReactNode } from 'react'
 import { fromNow } from 'util/time'
 import { Notification } from 'common/notification'
 import { Pressable } from 'react-native'
+import { imageSizeMap } from 'components/user/avatar-circle'
 
 export function NotificationFrame({
   notification,
-  highlighted,
-  setHighlighted,
   children,
   icon,
   link,
@@ -19,8 +18,6 @@ export function NotificationFrame({
   isChildofGroup,
 }: {
   notification: Notification
-  highlighted: boolean
-  setHighlighted: (highlighted: boolean) => void
   children: React.ReactNode
   icon: ReactNode
   link?: string
@@ -30,24 +27,39 @@ export function NotificationFrame({
 }) {
   const color = useColor()
   const frameObject = (
-    <Row>
-      <Row style={{ width: '100%', alignItems: 'flex-start', gap: 4 }}>
+    <Row style={{ width: '100%' }}>
+      <Row
+        style={{
+          width: '100%',
+          alignItems: 'flex-start',
+          gap: 12,
+        }}
+      >
         <Col
           style={{
-            position: 'relative',
-            height: '100%',
-            width: '40px',
-            alignItems: 'center',
+            paddingTop: 4,
+            width: imageSizeMap.md,
+            height: imageSizeMap.md,
           }}
         >
           {icon}
         </Col>
-        <Col style={{ width: '100%' }}>
-          <span>{children}</span>
-          <div className="mt-1 line-clamp-3 text-xs md:text-sm">{subtitle}</div>
+        <Col
+          style={{
+            flex: 1,
+          }}
+        >
+          <ThemedText size="md" weight="semibold">
+            {children}
+          </ThemedText>
+          <ThemedText>{subtitle}</ThemedText>
         </Col>
 
-        <ThemedText size="sm" color={color.textQuaternary}>
+        <ThemedText
+          size="sm"
+          color={color.textQuaternary}
+          style={{ paddingTop: 4 }}
+        >
           {fromNow(notification.createdTime, true)}
         </ThemedText>
       </Row>
@@ -56,34 +68,20 @@ export function NotificationFrame({
   return (
     <Row
       style={{
-        flexDirection: 'row',
-        padding: 8,
+        width: '100%',
       }}
     >
       {link && (
         <Col style={{ flex: 1 }}>
-          <Pressable
-            onPress={() => {
-              if (highlighted) {
-                setHighlighted(false)
-              }
-            }}
-            style={{
-              flex: 1,
-              flexDirection: 'column',
-            }}
-          >
+          <a href={link} style={{ textDecoration: 'none' }}>
             {frameObject}
-          </Pressable>
+          </a>
         </Col>
       )}
       {!link && (
         <Pressable
-          style={{ flex: 1 }}
+          style={{ flex: 1, width: '100%' }}
           onPress={() => {
-            if (highlighted) {
-              setHighlighted(false)
-            }
             if (onClick) {
               onClick()
             }

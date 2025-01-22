@@ -9312,6 +9312,23 @@ export const EXAMPLE_NOTIFICATIONS = [
         sourceUserAvatarUrl: '',
       },
       {
+        id: 'l4K5pfmQ',
+        data: { questType: 'SHARES', questCount: 1 },
+        isSeen: true,
+        reason: 'quest_payout',
+        userId: 'GRwzCexe5PM6ThrSsodKZT9ziln2',
+        sourceId: 'l4K5pfmQ',
+        sourceText: '10',
+        sourceType: 'quest_reward',
+        createdTime: 1716428025283,
+        sourceTitle: 'Quests',
+        sourceUserName: 'Josef Mitchell',
+        sourceUpdateType: 'created',
+        sourceUserUsername: 'JosefMitchell',
+        sourceUserAvatarUrl:
+          'https://lh3.googleusercontent.com/a/ACg8ocLRg4DBYKVKO7463AJGB8eCmiZbW2D763Pj2tsmFSOeIA=s96-c',
+      },
+      {
         id: 'ItDZVWQnCHYyL7tSqTyGWkTWF7X2-Fri Mar 01 2024-follow',
         isSeen: true,
         reason: 'on_new_follow',

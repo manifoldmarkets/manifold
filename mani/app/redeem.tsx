@@ -262,7 +262,7 @@ export default function CashoutPage() {
               </Col>
             </Col>
             <Button
-              onPress={() => router.push('/registration')}
+              onPress={() => router.push('/register')}
               variant="emerald"
               size="lg"
             >
