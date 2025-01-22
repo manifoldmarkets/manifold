@@ -506,9 +506,11 @@ export const getPayUsersQueries = (
         : DEV_HOUSE_LIQUIDITY_PROVIDER_ID,
       amount: -payout,
       token: payoutToken,
-      data: {
+      data: removeUndefinedProps({
         contractId,
-      },
+        payoutStartTime,
+        answerId,
+      }),
     })
   }
 

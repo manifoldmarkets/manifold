@@ -3,6 +3,8 @@ import {
   ContractProduceSpiceTxn,
   ContractUndoOldResolutionPayoutTxn,
   ContractUndoProduceSpiceTxn,
+  ProfitFeeTxn,
+  UndoResolutionFeeTxn,
 } from 'common/txn'
 import {
   SupabaseTransaction,
@@ -172,7 +174,7 @@ const undoResolution = async (
   answerId?: string
 ) => {
   const contractId = contract.id
-  // spice payouts
+  // Spice payouts:
   const maxSpicePayoutStartTime = await pg.oneOrNone(
     `select max((data->'data'->'payoutStartTime')::numeric) as max
       FROM txns WHERE category = 'CONTRACT_RESOLUTION_PAYOUT'
@@ -232,7 +234,19 @@ const undoResolution = async (
     (r) => convertTxn(r) as ContractOldResolutionPayoutTxn
   )
 
+  // Get resolution fee txns to revert
+  const feeTxns = await pg.map(
+    `SELECT * FROM txns WHERE category = 'CONTRACT_RESOLUTION_FEE'
+      AND from_type = 'USER'
+      AND data->'data'->>'contractId' = $1
+      and ($2 is null or (data->'data'->>'payoutStartTime')::numeric = $2)
+      and ($3 is null or data ->'data'->>'answerId' = $3)`,
+    [contractId, maxManaPayoutStartTime, answerId],
+    (r) => convertTxn(r) as ProfitFeeTxn
+  )
+
   log('Reverting mana txns ' + manaTxns.length)
+  log('Reverting fee txns ' + feeTxns.length)
   log('With max payout start time ' + maxManaPayoutStartTime)
   const balanceUpdates: {
     balance?: number
@@ -245,6 +259,13 @@ const undoResolution = async (
 
   for (const txnToRevert of manaTxns) {
     const { balanceUpdate, txn } = getUndoOldContractPayout(txnToRevert)
+    balanceUpdates.push(balanceUpdate as any)
+    txns.push(txn)
+  }
+
+  // Revert fee txns
+  for (const txnToRevert of feeTxns) {
+    const { balanceUpdate, txn } = getUndoResolutionFee(txnToRevert)
     balanceUpdates.push(balanceUpdate as any)
     txns.push(txn)
   }
@@ -367,6 +388,29 @@ export function getUndoOldContractPayout(
     token,
     description: `Undo contract resolution payout from contract ${fromId}`,
     data: { revertsTxnId: id },
+  }
+  return { balanceUpdate, txn }
+}
+
+export function getUndoResolutionFee(txnData: ProfitFeeTxn) {
+  const { amount, fromId, id, token, data } = txnData
+
+  const balanceUpdate = {
+    [token === 'CASH' ? 'cashBalance' : 'balance']: -amount,
+    [token === 'CASH' ? 'totalCashDeposits' : 'totalDeposits']: 0,
+    id: fromId,
+  }
+
+  const txn: Omit<UndoResolutionFeeTxn, 'id' | 'createdTime'> = {
+    amount: amount,
+    toId: fromId,
+    fromType: 'BANK',
+    fromId: txnData.toId,
+    toType: 'USER',
+    category: 'UNDO_CONTRACT_RESOLUTION_FEE',
+    token,
+    description: `Undo contract resolution fee`,
+    data: { revertsTxnId: id, contractId: data.contractId },
   }
   return { balanceUpdate, txn }
 }

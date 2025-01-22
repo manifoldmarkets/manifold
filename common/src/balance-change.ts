@@ -113,6 +113,9 @@ export const txnTitle = (change: TxnBalanceChange) => {
       return 'Sweepcash bonus'
     case 'KYC_BONUS':
       return 'ID verification bonus'
+    case 'CONTRACT_RESOLUTION_FEE':
+    case 'UNDO_CONTRACT_RESOLUTION_FEE':
+      return ''
     default:
       return type
   }
@@ -165,7 +168,9 @@ export const txnTypeToDescription = (txnCategory: string) => {
     case 'LOAN':
       return ''
     case 'CONTRACT_RESOLUTION_FEE':
-      return `${PROFIT_FEE_FRACTION * 100}% fee on profits at resolution`
+      return `${PROFIT_FEE_FRACTION * 100}% fee on profit at resolution`
+    case 'UNDO_CONTRACT_RESOLUTION_FEE':
+      return `Undo ${PROFIT_FEE_FRACTION * 100}% profit fee at resolution`
     default:
       return null
   }

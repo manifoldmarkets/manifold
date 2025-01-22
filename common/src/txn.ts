@@ -58,6 +58,7 @@ type AnyTxnType =
   | CashOutPending
   | KycBonus
   | ProfitFee
+  | UndoResolutionFee
 
 export type AnyTxnCategory = AnyTxnType['category']
 
@@ -558,6 +559,21 @@ type ProfitFee = {
   fromType: 'USER'
   toType: 'BANK'
   token: 'M$' | 'CASH'
+  data: {
+    contractId: string
+    payoutStartTime: number
+    answerId?: string
+  }
+}
+
+type UndoResolutionFee = {
+  category: 'UNDO_CONTRACT_RESOLUTION_FEE'
+  fromType: 'BANK'
+  toType: 'USER'
+  token: 'M$' | 'CASH'
+  data: {
+    revertsTxnId: string
+  }
 }
 
 export type AddSubsidyTxn = Txn & AddSubsidy
@@ -613,3 +629,4 @@ export type ManifoldTopUpTxn = Txn & ManifoldTopUp
 export type KycBonusTxn = Txn & KycBonus
 export type CashOutPendingTxn = Txn & CashOutPending
 export type ProfitFeeTxn = Txn & ProfitFee
+export type UndoResolutionFeeTxn = Txn & UndoResolutionFee
