@@ -25,6 +25,9 @@ export const requestOTP: APIHandler<'request-otp'> = rateLimitByUser(
       const lookup = await client.lookups.v2
         .phoneNumbers(phoneNumber)
         .fetch({ fields: 'line_type_intelligence' })
+      if (!lookup.valid) {
+        throw new APIError(400, 'Invalid phone number')
+      }
       if (
         lookup.lineTypeIntelligence.type !== 'mobile' &&
         lookup.lineTypeIntelligence.type !== null &&
