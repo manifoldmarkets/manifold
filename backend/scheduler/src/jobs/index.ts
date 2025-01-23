@@ -110,11 +110,6 @@ export function createJobs() {
       '0 */1 * * * *', // every minute
       pollPollResolutions
     ),
-    createJob(
-      'resolve-sports-markets',
-      ENV === 'DEV' ? '*/30 * * * *' : '*/10 * * * * *', // Every 30 minutes on dev, every 10 seconds on prod
-      resolveSportsMarkets
-    ),
     // Daily jobs:
     createJob(
       'clean-old-notifications',
