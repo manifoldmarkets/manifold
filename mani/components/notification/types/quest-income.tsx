@@ -13,7 +13,7 @@ export function QuestIncomeNotification(props: {
 }) {
   const { notification, isChildOfGroup } = props
   const { data } = notification
-  console.log('data', data)
+
   const { questType } = data as QuestRewardTxn['data']
   return (
     <NotificationFrame

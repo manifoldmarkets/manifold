@@ -49,6 +49,7 @@ export function GroupNotificationHeader(props: {
 export function NotificationHeader(props: { notification: Notification }) {
   const { notification } = props
   const title = notification.sourceContractTitle || notification.sourceTitle
+  if (!title) return null
   return (
     <ThemedText size="md" weight="normal">
       {title}

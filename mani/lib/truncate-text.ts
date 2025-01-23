@@ -3,13 +3,14 @@ const truncatedLengths = {
   md: 20,
   lg: 50,
   xl: 75,
+  '2xl': 100,
 }
 
 const TRUNCATE_BUFFER = 3
 
 export function truncateText(
   text: string | undefined,
-  truncateLength: 'sm' | 'md' | 'lg' | 'xl' | 'none'
+  truncateLength: 'sm' | 'md' | 'lg' | 'xl' | '2xl' | 'none'
 ) {
   if (truncateLength === 'none' || !text) {
     return text

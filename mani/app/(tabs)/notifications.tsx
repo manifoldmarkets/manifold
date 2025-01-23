@@ -6,7 +6,7 @@ import { Fragment, useMemo, useState } from 'react'
 import { Col } from 'components/layout/col'
 import { ThemedText } from 'components/themed-text'
 import { useColor } from 'hooks/use-color'
-import { ActivityIndicator } from 'react-native'
+import { ActivityIndicator, View } from 'react-native'
 import { EXAMPLE_NOTIFICATIONS } from 'assets/example-data/example-notifications'
 import { useIsPageVisible } from 'hooks/use-is-page-visibile'
 import { NotificationItem } from 'components/notification/notification-item'
@@ -57,15 +57,31 @@ export function NotificationContent({
           {EXAMPLE_NOTIFICATIONS.map((notification) => (
             <Fragment key={notification.groupedById}>
               {notification.notifications.length === 1 ? (
-                <NotificationItem
-                  notification={notification.notifications[0] as Notification}
-                  key={notification.notifications[0].id}
-                />
+                <>
+                  <NotificationItem
+                    notification={notification.notifications[0] as Notification}
+                    key={notification.notifications[0].id}
+                  />
+                  <View
+                    style={{
+                      height: 1,
+                      backgroundColor: color.borderSecondary,
+                    }}
+                  />
+                </>
               ) : (
-                <NotificationGroupItem
-                  notificationGroup={notification}
-                  key={notification.groupedById}
-                />
+                <>
+                  <NotificationGroupItem
+                    notificationGroup={notification}
+                    key={notification.groupedById}
+                  />
+                  <View
+                    style={{
+                      height: 1,
+                      backgroundColor: color.borderSecondary,
+                    }}
+                  />
+                </>
               )}
             </Fragment>
           ))}

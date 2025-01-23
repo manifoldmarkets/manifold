@@ -46,6 +46,175 @@ export const EXAMPLE_NOTIFICATIONS = [
   {
     notifications: [
       {
+        id: 'XFEolPfxGgVwsfoZnKKmtZFAklb2-signup-referral-bonus',
+        isSeen: false,
+        reason: 'you_referred_user',
+        userId: '8EflIfQclyX1F34Y7tolZvgPbAw2',
+        sourceId: 'XFEolPfxGgVwsfoZnKKmtZFAklb2',
+        sourceText: '250',
+        sourceType: 'user',
+        createdTime: 1706343307828,
+        sourceUserName: 'Michael Misiewicz',
+        sourceUpdateType: 'updated',
+        sourceUserUsername: 'MichaelMisiewiczb5f4',
+        sourceUserAvatarUrl:
+          'https://storage.googleapis.com/mantic-markets.appspot.com/user-images/XFEolPfxGgVwsfoZnKKmtZFAklb2.png',
+      },
+    ],
+    groupedById: 'sdfsdf',
+    isSeen: false,
+    latestCreatedTime: 1737062310823,
+  },
+  {
+    notifications: [
+      {
+        id: '898b22b5-4148-4d86-9f52-7a24861a450a',
+        data: {
+          amount: 28.5,
+          userId: '4YslNp0QG9a1uTBd349rECdTNll2',
+          currency: 'USD',
+          paymentAmountType: 'Debit',
+          paymentMethodType: 'ACH',
+        },
+        isSeen: true,
+        reason: 'payment_status',
+        userId: '4YslNp0QG9a1uTBd349rECdTNll2',
+        sourceId: 'b140c2c45bf983a3',
+        sourceText: '',
+        sourceType: 'payment_status',
+        createdTime: 1736193010032,
+        sourceUserName: '',
+        sourceUpdateType: 'created',
+        sourceUserUsername: '',
+        sourceUserAvatarUrl: '',
+      },
+    ],
+    groupedById: 'mememe',
+    isSeen: false,
+    latestCreatedTime: 1737062310823,
+  },
+
+  {
+    notifications: [
+      {
+        id: 'c75d2da0-143e-45e9-89d1-2fd537a63f14',
+        data: {
+          isReply: true,
+        },
+        isSeen: false,
+        reason: 'all_comments_on_my_markets',
+        userId: 'GRwzCexe5PM6ThrSsodKZT9ziln2',
+        sourceId: 'wsgnuejcdij',
+        sourceSlug: 'what-should-we-name-our-simplified',
+        sourceText:
+          "@strutheo we are close to finalising, don't want to leak in case ppl try to snipe domains/socials.",
+        sourceType: 'comment',
+        createdTime: 1737062310823,
+        sourceTitle:
+          'What should we name our simplified, mobile-only app version of Manifold for normies?',
+        sourceUserName: 'David Chee',
+        sourceContractId: 'zuSpzOz28t',
+        sourceUpdateType: 'created',
+        sourceContractSlug: 'what-should-we-name-our-simplified',
+        sourceUserUsername: 'SirSalty',
+        sourceContractTitle:
+          'What should we name our simplified, mobile-only app version of Manifold for normies?',
+        sourceUserAvatarUrl:
+          'https://firebasestorage.googleapis.com/v0/b/mantic-markets.appspot.com/o/user-images%2FDavidChee%2F_b3ccXzGCL.jpg?alt=media&token=720bee22-7237-4454-a36b-b18dac7680bd',
+        sourceContractCreatorUsername: 'IngaWei',
+      },
+    ],
+    groupedById:
+      'Thu Jan 16 2025What should we name our simplified, mobile-only app version of Manifold for normies?zuSpzOz28t',
+    isSeen: false,
+    latestCreatedTime: 1737062310823,
+  },
+
+  {
+    notifications: [
+      {
+        id: 'c75d2da0-143e-45e9-89d1-2fd537a63f14',
+        data: {
+          isReply: true,
+        },
+        isSeen: false,
+        reason: 'all_comments_on_my_markets',
+        userId: 'GRwzCexe5PM6ThrSsodKZT9ziln2',
+        sourceId: 'wsgnuejcdij',
+        sourceSlug: 'what-should-we-name-our-simplified',
+        sourceText:
+          "@strutheo we are close to finalising, don't want to leak in case ppl try to snipe domains/socials.",
+        sourceType: 'comment',
+        createdTime: 1737062310823,
+        sourceTitle:
+          'What should we name our simplified, mobile-only app version of Manifold for normies?',
+        sourceUserName: 'David Chee',
+        sourceContractId: 'zuSpzOz28t',
+        sourceUpdateType: 'created',
+        sourceContractSlug: 'what-should-we-name-our-simplified',
+        sourceUserUsername: 'SirSalty',
+        sourceContractTitle:
+          'What should we name our simplified, mobile-only app version of Manifold for normies?',
+        sourceUserAvatarUrl:
+          'https://firebasestorage.googleapis.com/v0/b/mantic-markets.appspot.com/o/user-images%2FDavidChee%2F_b3ccXzGCL.jpg?alt=media&token=720bee22-7237-4454-a36b-b18dac7680bd',
+        sourceContractCreatorUsername: 'IngaWei',
+      },
+    ],
+    groupedById:
+      'Thu Jan 16 2025What should we name our simplified, mobile-only app version of Manifold for normies?zuSpzOz28t',
+    isSeen: false,
+    latestCreatedTime: 1737062310823,
+  },
+  {
+    notifications: [
+      {
+        id: '730166df-1899-43fd-aa56-3df290a12a5e-0',
+        data: { streak: 1, bonusAmount: 10 },
+        isSeen: true,
+        reason: 'betting_streak_incremented',
+        userId: 'gY3MD6iTiHSDouenQtyLji4xNnl1',
+        sourceId: 'LiqFwiVYEuGsstas5IuJ',
+        viewTime: { _seconds: 1683056575, _nanoseconds: 96000000 },
+        sourceSlug: '/memestiny/kizaru-stock/bets/9acKxR2wyZ0uSZcbt5bJ',
+        sourceText: '10',
+        sourceType: 'betting_streak_bonus',
+        createdTime: 1683056183566,
+        sourceTitle: 'Betting Streak Bonus',
+        sourceUserName: 'Throw Away',
+        sourceContractId: 'GJJKNNWUw5lYK59EGDbT',
+        sourceUpdateType: 'created',
+        sourceContractSlug: 'kizaru-stock',
+        sourceUserUsername: 'ThrowAway',
+        sourceContractTitle: 'Kizaru Stock',
+        sourceUserAvatarUrl:
+          'https://lh3.googleusercontent.com/a/AGNmyxb20Kz1pCQ_ac6cPtliv6V9nrhphGh8n0Yu5t1z=s96-c',
+        sourceContractCreatorUsername: 'memestiny',
+      },
+      {
+        id: 'a94ac118-162b-491d-8cbc-f14520578e05',
+        data: { streak: 1 },
+        isSeen: true,
+        reason: 'betting_streaks',
+        userId: 'eiMxwCKBiod8aSD3Klng6KaLcah2',
+        sourceId: 'a94ac118-162b-491d-8cbc-f14520578e05',
+        sourceText: '1',
+        sourceType: 'betting_streak_expiring',
+        createdTime: 1723167000329,
+        sourceTitle: 'Betting Streak Expiring',
+        sourceUserName: '',
+        sourceUpdateType: 'created',
+        sourceUserUsername: '',
+        sourceUserAvatarUrl: '',
+      },
+    ],
+    groupedById:
+      'Wed Jan 15 2025What should we name our simplified, mobile-only app version of Manifold for normies?zuSpzOz28t',
+    isSeen: false,
+    latestCreatedTime: 1737010565428,
+  },
+  {
+    notifications: [
+      {
         id: '9174bf8a-f575-4cf1-94d8-49e82e9ac15a',
         data: {
           isReply: true,
@@ -3010,6 +3179,7 @@ export const EXAMPLE_NOTIFICATIONS = [
     isSeen: true,
     latestCreatedTime: 1733981937239,
   },
+
   {
     notifications: [
       {

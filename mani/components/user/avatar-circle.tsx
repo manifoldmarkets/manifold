@@ -1,7 +1,7 @@
 import { Rounded } from 'constants/border-radius'
 import { Image, View, ViewProps } from 'react-native'
 
-type AvatarSize = 'xs' | 'sm' | 'md' | 'lg'
+export type AvatarSize = 'xs' | 'sm' | 'md' | 'lg'
 
 export const imageSizeMap = {
   xs: 20,

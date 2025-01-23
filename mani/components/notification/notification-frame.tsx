@@ -7,6 +7,8 @@ import { fromNow } from 'util/time'
 import { Notification } from 'common/notification'
 import { Pressable } from 'react-native'
 import { imageSizeMap } from 'components/user/avatar-circle'
+import { NotificationHeader } from './notification-header'
+import { router } from 'expo-router'
 
 export function NotificationFrame({
   notification,
@@ -15,7 +17,7 @@ export function NotificationFrame({
   link,
   onClick,
   subtitle,
-  isChildofGroup,
+  isChildOfGroup,
 }: {
   notification: Notification
   children: React.ReactNode
@@ -52,7 +54,9 @@ export function NotificationFrame({
           <ThemedText size="md" weight="semibold">
             {children}
           </ThemedText>
-          <ThemedText>{subtitle}</ThemedText>
+          <ThemedText size="sm" color={color.textSecondary}>
+            {subtitle}
+          </ThemedText>
         </Col>
 
         <ThemedText
@@ -66,30 +70,27 @@ export function NotificationFrame({
     </Row>
   )
   return (
-    <Row
+    <Col
       style={{
         width: '100%',
+        paddingVertical: 8,
       }}
     >
-      {link && (
-        <Col style={{ flex: 1 }}>
-          <a href={link} style={{ textDecoration: 'none' }}>
-            {frameObject}
-          </a>
-        </Col>
-      )}
-      {!link && (
-        <Pressable
-          style={{ flex: 1, width: '100%' }}
-          onPress={() => {
-            if (onClick) {
-              onClick()
-            }
-          }}
-        >
-          {frameObject}
-        </Pressable>
-      )}
-    </Row>
+      {!isChildOfGroup && <NotificationHeader notification={notification} />}
+
+      <Pressable
+        style={{ flex: 1, width: '100%' }}
+        onPress={() => {
+          if (link) {
+            router.push(link as any)
+          }
+          if (onClick) {
+            onClick()
+          }
+        }}
+      >
+        {frameObject}
+      </Pressable>
+    </Col>
   )
 }
