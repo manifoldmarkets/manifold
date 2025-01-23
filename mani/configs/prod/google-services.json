@@ -14,6 +14,14 @@
       },
       "oauth_client": [
         {
+          "client_id": "128925704902-r23bsi4ca28sprdh49mprl1ov33pvvau.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.manifold.mani",
+            "certificate_hash": "103e50054624a7b6c02dcdea52674bc3f49f7d6d"
+          }
+        },
+        {
           "client_id": "128925704902-bpcbnlp2gt73au3rrjjtnup6cskr89p0.apps.googleusercontent.com",
           "client_type": 3
         }

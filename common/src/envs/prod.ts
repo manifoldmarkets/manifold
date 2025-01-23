@@ -32,6 +32,7 @@ export type EnvConfig = {
     iosClientId2?: string
     expoClientId?: string
     androidClientId?: string
+    androidClientId2?: string
   }
 }
 
@@ -109,5 +110,7 @@ export const PROD_CONFIG: EnvConfig = {
       '128925704902-bpcbnlp2gt73au3rrjjtnup6cskr89p0.apps.googleusercontent.com',
     androidClientId:
       '128925704902-ur9hevfika2rs0sni6ju236u82hbct3i.apps.googleusercontent.com',
+    androidClientId2:
+      '128925704902-r23bsi4ca28sprdh49mprl1ov33pvvau.apps.googleusercontent.com',
   },
 }

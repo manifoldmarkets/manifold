@@ -5,11 +5,9 @@ import { useEffect, useRef } from 'react'
 import { Dimensions, Platform, SafeAreaView } from 'react-native'
 import { ENV } from 'lib/firebase/init'
 import { Notification } from 'common/notification'
-import { StatusBar } from 'expo-status-bar'
 import { withIAPContext } from 'react-native-iap'
 import * as Sentry from '@sentry/react-native'
 import { log } from 'components/logger'
-import { SplashAuth } from 'components/splash-auth'
 import { useFonts } from '@expo-google-fonts/readex-pro'
 import { useIsConnected } from 'lib/use-is-connected'
 import { TokenModeProvider } from 'hooks/use-token-mode'
@@ -24,6 +22,7 @@ import {
   SafeAreaProvider,
   useSafeAreaInsets,
 } from 'react-native-safe-area-context'
+import { AuthPage } from 'components/auth-page'
 
 const HEADER_HEIGHT = 250
 
@@ -106,20 +105,14 @@ function RootLayout() {
   }
 
   const isConnected = useIsConnected()
-  const fullyLoaded = user && isConnected
+  useEffect(() => {
+    if (!isConnected) {
+      alert("You're offline. Please reconnect to the internet to use Sweeple.")
+    }
+  }, [isConnected])
   const width = Dimensions.get('window').width //full width
   const height = Dimensions.get('window').height //full height
   const insets = useSafeAreaInsets()
-
-  if (!loaded)
-    return (
-      <Splash
-        height={height + insets.bottom}
-        width={width}
-        source={require('../assets/images/splash.png')}
-      />
-    )
-
   return (
     <TokenModeProvider>
       <SafeAreaView
@@ -132,29 +125,29 @@ function RootLayout() {
           },
         ]}
       >
-        <Stack
-          screenOptions={{
-            headerShown: false,
-            animation: 'slide_from_right',
-          }}
-        >
-          <Stack.Screen name="(tabs)" />
-          <Stack.Screen name="[username]" />
-          <Stack.Screen name="[username]/[contractSlug]" />
-          <Stack.Screen name="register" />
-          <Stack.Screen name="redeem" />
-          <Stack.Screen name="+not-found" />
-        </Stack>
-
-        <SplashAuth
-          source={require('../assets/images/splash.png')}
-          user={user}
-          isConnected={isConnected}
-          height={height + insets.bottom + insets.top}
-          width={width}
-        />
-
-        <StatusBar style="dark" />
+        {!loaded ? (
+          <Splash
+            height={height + insets.bottom}
+            width={width}
+            source={require('../assets/images/splash.png')}
+          />
+        ) : user === null ? (
+          <AuthPage height={height} width={width} />
+        ) : (
+          <Stack
+            screenOptions={{
+              headerShown: false,
+              animation: 'slide_from_right',
+            }}
+          >
+            <Stack.Screen name="(tabs)" />
+            <Stack.Screen name="[username]" />
+            <Stack.Screen name="[username]/[contractSlug]" />
+            <Stack.Screen name="register" />
+            <Stack.Screen name="redeem" />
+            <Stack.Screen name="+not-found" />
+          </Stack>
+        )}
         {/* @ts-expect-error Toast component type definition issue */}
         <Toast />
       </SafeAreaView>

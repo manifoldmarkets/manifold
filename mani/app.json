@@ -18,11 +18,11 @@
         "family": "FigtreeItalic"
       }
     ],
-    "name": "Mani",
+    "name": "Sweeple",
     "slug": "mani",
     "owner": "manifold-markets",
     "jsEngine": "hermes",
-    "version": "2.0.69",
+    "version": "2.0.70",
     "orientation": "portrait",
     "icon": "./assets/images/logo.png",
     "userInterfaceStyle": "light",
@@ -74,12 +74,8 @@
         }
       ],
       "googleServicesFile": "./google-services.json",
-      "adaptiveIcon": {
-        "foregroundImage": "./assets/images/adaptive-icon.png",
-        "backgroundColor": "#4337C9"
-      },
       "package": "com.manifold.mani",
-      "versionCode": 69
+      "versionCode": 70
     },
     "ios": {
       "infoPlist": {
@@ -95,7 +91,7 @@
         "applinks:manifold.markets",
         "webcredentials:manifold.markets"
       ],
-      "buildNumber": "1.0.69"
+      "buildNumber": "1.0.70"
     },
     "experiments": {
       "tsconfigPaths": true,
