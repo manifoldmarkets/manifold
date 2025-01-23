@@ -1,6 +1,19 @@
-import { ContractResolutionData, Notification } from 'common/notification'
+import {
+  ContractResolutionData,
+  getSourceUrl,
+  Notification,
+} from 'common/notification'
 import { floatingEqual } from 'common/util/math'
+import { useState } from 'react'
 import { NotificationFrame } from '../notification-frame'
+import { WrittenAmount } from 'components/number/writtenCurrency'
+import {
+  MANIFOLD_AVATAR_URL,
+  MANIFOLD_USER_NAME,
+  MANIFOLD_USER_USERNAME,
+} from 'common/user'
+import { Token } from 'components/token/token'
+import { imageSizeMap } from 'components/user/avatar-circle'
 
 export function MarketResolvedNotification(props: {
   notification: Notification
@@ -30,22 +43,41 @@ export function MarketResolvedNotification(props: {
   const secondaryTitle =
     sourceText === 'CANCEL' && userInvestment > 0 ? (
       <>
-        Your {formatMoney(userInvestment, token)} invested has been returned to
-        you
+        <WrittenAmount
+          amount={userInvestment}
+          token={token === 'MANA' ? 'M$' : 'CASH'}
+        />{' '}
+        invested has has been returned to you
       </>
     ) : sourceText === 'CANCEL' && Math.abs(userPayout) > 0 ? (
-      <>Your {formatMoney(-userPayout, token)} in profit has been removed</>
+      <>
+        <WrittenAmount
+          amount={-userPayout}
+          token={token === 'MANA' ? 'M$' : 'CASH'}
+        />{' '}
+        in profit has been removed
+      </>
     ) : profitable ? (
       <>
-        Your {formatMoney(userInvestment, token)} won{' '}
+        <WrittenAmount
+          amount={userPayout}
+          token={token === 'MANA' ? 'M$' : 'CASH'}
+        />{' '}
+        paid out
+        {/* Your {formatMoney(userInvestment, token)} won{' '}
         <span className="text-teal-600">+{formatMoney(profit, token)}</span> in
-        profit
-        {comparison ? `, and ${comparison}` : ``} 🎉🎉🎉
+        profit */}
+        {/* {comparison ? `, and ${comparison}` : ``} 🎉🎉🎉 */}
       </>
     ) : userInvestment > 0 ? (
       <>
-        You lost {formatMoney(Math.abs(profit), token)}
-        {comparison ? `, but ${comparison}` : ``}
+        You lost{' '}
+        <WrittenAmount
+          amount={profit}
+          token={token === 'MANA' ? 'M$' : 'CASH'}
+        />
+        {/* {' '}
+        {comparison ? `, but ${comparison}` : ``} */}
       </>
     ) : null
 
@@ -139,108 +171,21 @@ export function MarketResolvedNotification(props: {
       </>
     )
 
-  const [justNowReview, setJustNowReview] = useState<null | Rating>(null)
-  const userReview = useReview(notification.sourceId, notification.userId)
-  const showReviewButton = !userReview && !justNowReview
-
   return (
     <>
       <NotificationFrame
         notification={notification}
         isChildOfGroup={isChildOfGroup}
-        highlighted={highlighted}
-        setHighlighted={setHighlighted}
-        subtitle={
-          <>
-            {!resolvedByAdmin &&
-              (showReviewButton ? (
-                <Button
-                  size={'2xs'}
-                  color={'gray'}
-                  onClick={(e) => {
-                    e.stopPropagation()
-                    e.preventDefault()
-                    setOpenRateModal(true)
-                  }}
-                >
-                  <Row className="gap-1">
-                    <StarIcon className="h-4 w-4" />
-                    Rate {notification.sourceUserName}'s resolution
-                  </Row>
-                </Button>
-              ) : (
-                <Row className="text-ink-500 items-center gap-0.5 text-sm italic">
-                  You rated this resolution{' '}
-                  {justNowReview ?? userReview?.rating}{' '}
-                  <StarIcon className="h-4 w-4" />
-                </Row>
-              ))}
-          </>
-        }
         icon={
-          <>
-            <AvatarNotificationIcon
-              notification={{
-                ...notification,
-                sourceUserAvatarUrl: resolverAvatarUrl,
-              }}
-              symbol={sourceText === 'CANCEL' ? '🚫' : profitable ? '💰' : '☑️'}
-            />
-            {!!secondaryTitle && (
-              <div
-                className={clsx(
-                  ' h-full w-[1.5px] grow ',
-                  profit < 0 ? 'bg-ink-300' : 'bg-teal-400'
-                )}
-              />
-            )}
-          </>
+          <Token
+            overrideToken={token}
+            style={{ width: imageSizeMap.md, height: imageSizeMap.md }}
+          />
         }
         link={getSourceUrl(notification)}
       >
         {content}
-        <Modal open={openRateModal} setOpen={setOpenRateModal}>
-          <ReviewPanel
-            marketId={notification.sourceId}
-            author={notification.sourceUserName}
-            className="my-2"
-            onSubmit={(rating: Rating) => {
-              setJustNowReview(rating)
-              setOpenRateModal(false)
-            }}
-          />
-        </Modal>
       </NotificationFrame>
-      {!!secondaryTitle && (
-        <NotificationFrame
-          notification={notification}
-          isChildOfGroup={isChildOfGroup}
-          highlighted={highlighted}
-          setHighlighted={setHighlighted}
-          icon={
-            <>
-              <div
-                className={clsx(
-                  'absolute -top-4 h-4 w-[1.5px]',
-                  profit < 0 ? 'bg-ink-300' : 'bg-teal-400'
-                )}
-              />
-
-              <NotificationIcon
-                symbol={<TokenNumber hideAmount={true} coinType={token} />}
-                symbolBackgroundClass={
-                  profit < 0
-                    ? 'border-ink-300  border-2 ring-4 ring-ink-200'
-                    : 'border-teal-400 border-2 ring-4 ring-teal-200'
-                }
-              />
-            </>
-          }
-          link={getSourceUrl(notification)}
-        >
-          {secondaryTitle}
-        </NotificationFrame>
-      )}
     </>
   )
 }
