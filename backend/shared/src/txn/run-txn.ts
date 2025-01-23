@@ -37,12 +37,28 @@ export async function runTxnOutsideBetQueueIgnoringBalance(
   return await runTxnInternal(pgTransaction, data, affectsProfit, false, false)
 }
 
+export async function runAdminTxnOutsideBetQueue(
+  pgTransaction: SupabaseTransaction,
+  data: TxnData,
+  affectsProfit: boolean
+) {
+  return await runTxnInternal(
+    pgTransaction,
+    data,
+    affectsProfit,
+    false,
+    false,
+    true
+  )
+}
+
 async function runTxnInternal(
   pgTransaction: SupabaseTransaction,
   data: TxnData,
   affectsProfit = false,
   useQueue = true,
-  checkBalance = true
+  checkBalance = true,
+  isAdmin = false
 ) {
   const { amount, fromType, fromId, toId, toType, token } = data
   const deps = buildArray(
@@ -55,7 +71,7 @@ async function runTxnInternal(
       throw new APIError(400, 'Invalid amount')
     }
 
-    if (!isAdminId(fromId) && amount <= 0) {
+    if (!isAdminId(fromId) && amount <= 0 && !isAdmin) {
       throw new APIError(400, 'Amount must be positive')
     }
 
@@ -72,13 +88,14 @@ async function runTxnInternal(
       const balanceField = token === 'CASH' ? 'cash_balance' : 'balance'
       const totalDepositsField =
         token === 'CASH' ? 'total_cash_deposits' : 'total_deposits'
-
+      const totalDepositsLine = `, ${totalDepositsField} = ${totalDepositsField} - $2`
       queries.push(
         pgp.as.format(
           `
           update users 
-          set ${balanceField} = ${balanceField} - $2,
-              ${totalDepositsField} = ${totalDepositsField} - $2
+          set ${balanceField} = ${balanceField} - $2 ${
+            affectsProfit ? '' : totalDepositsLine
+          }
           where id = $1
           returning id, balance, cash_balance, total_deposits, total_cash_deposits;
         `,
