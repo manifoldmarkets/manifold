@@ -162,6 +162,54 @@ function CashoutOptionsContent(props: {
   return (
     <Col className={clsx('gap-4', allDisabled && 'text-ink-700 opacity-80')}>
       <Card className="pb-1">
+        <DollarDescription disabled={allDisabled} />
+        <Col className="gap-0.5">
+          <Button
+            className={clsx('text-xs sm:text-sm')}
+            onClick={() => {
+              setPage(redeemForUSDPageName)
+            }}
+            disabled={
+              !!allDisabled || noHasMinRedeemableCash || !TWOMBA_CASHOUT_ENABLED
+            }
+          >
+            Redeem for USD
+          </Button>
+          {!TWOMBA_CASHOUT_ENABLED && (
+            <div className="text-ink-500 text-xs sm:text-sm">
+              Cashouts should be enabled in less than a week
+            </div>
+          )}
+          <Row className="text-ink-500 w-full justify-between gap-1 whitespace-nowrap text-xs sm:text-sm ">
+            <span>
+              {noHasMinRedeemableCash && !allDisabled ? (
+                <span className="text-red-600 dark:text-red-400">
+                  You need at least{' '}
+                  <TokenNumber
+                    amount={MIN_CASHOUT_AMOUNT}
+                    isInline
+                    coinType="sweepies"
+                    className="font-semibold text-amber-600 dark:text-amber-400"
+                  />{' '}
+                  to redeem
+                </span>
+              ) : null}
+            </span>
+            <span>
+              <span
+                className={clsx(
+                  'font-semibold',
+                  allDisabled ? '' : 'text-green-600 dark:text-green-500'
+                )}
+              >
+                ${((1 - CHARITY_FEE) * redeemableCash).toFixed(2)}
+              </span>{' '}
+              value
+            </span>
+          </Row>
+        </Col>
+      </Card>
+      <Card className="pb-1">
         <ManaDescription disabled={allDisabled} />
         <Col className="gap-0.5">
           <Button
@@ -236,55 +284,6 @@ function CashoutOptionsContent(props: {
           </Col>
         </Card>
       )}
-
-      <Card className="pb-1">
-        <DollarDescription disabled={allDisabled} />
-        <Col className="gap-0.5">
-          <Button
-            className={clsx('text-xs sm:text-sm')}
-            onClick={() => {
-              setPage(redeemForUSDPageName)
-            }}
-            disabled={
-              !!allDisabled || noHasMinRedeemableCash || !TWOMBA_CASHOUT_ENABLED
-            }
-          >
-            Redeem for USD
-          </Button>
-          {!TWOMBA_CASHOUT_ENABLED && (
-            <div className="text-ink-500 text-xs sm:text-sm">
-              Cashouts should be enabled in less than a week
-            </div>
-          )}
-          <Row className="text-ink-500 w-full justify-between gap-1 whitespace-nowrap text-xs sm:text-sm ">
-            <span>
-              {noHasMinRedeemableCash && !allDisabled ? (
-                <span className="text-red-600 dark:text-red-400">
-                  You need at least{' '}
-                  <TokenNumber
-                    amount={MIN_CASHOUT_AMOUNT}
-                    isInline
-                    coinType="sweepies"
-                    className="font-semibold text-amber-600 dark:text-amber-400"
-                  />{' '}
-                  to redeem
-                </span>
-              ) : null}
-            </span>
-            <span>
-              <span
-                className={clsx(
-                  'font-semibold',
-                  allDisabled ? '' : 'text-green-600 dark:text-green-500'
-                )}
-              >
-                ${((1 - CHARITY_FEE) * redeemableCash).toFixed(2)}
-              </span>{' '}
-              value
-            </span>
-          </Row>
-        </Col>
-      </Card>
     </Col>
   )
 }
