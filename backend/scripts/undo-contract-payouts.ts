@@ -1,78 +1,67 @@
 import { runScript } from 'run-script'
-import * as admin from 'firebase-admin'
-import { FieldValue } from 'firebase-admin/firestore'
 import {
-  ContractResolutionPayoutTxn,
-  ContractUndoResolutionPayoutTxn,
+  ContractOldResolutionPayoutTxn,
+  ContractUndoOldResolutionPayoutTxn,
 } from 'common/txn'
-import { chunk, groupBy, maxBy } from 'lodash'
-import { removeUndefinedProps } from 'common/util/object'
+import { convertTxn } from 'common/supabase/txns'
+import { runAdminTxnOutsideBetQueue } from 'shared/txn/run-txn'
 
 if (require.main === module) {
-  runScript(async ({ pg, firestore }) => {
-    const contractId = '1tGci7CKuli7MpdwNDmN'
+  runScript(async ({ pg }) => {
+    // previously fixed: ['hUSAOl5cRP', 'gAcpqS6sAI', 'OOSzuNUgcs']
+    const contractIds = [
+      'Rz8625ARCP',
+      'nPC8NpcNRQ',
+      'Ps2L8gdzRs',
+      'sU9665Zn8y',
+      'ELR0nIE8nt',
+      'OA2UhZpEdZ',
+      'OgSnRRz29A',
+      'l0Sn5ILdd8',
+      'gpc2CNLCtn',
+      'PIcOngSqn0',
+      '26Z9lOgql2',
+      'sU9665Zn8y',
+      'dLQuZIUAny',
+      'AssOq668yA',
+      'nPC8NpcNRQ',
+      'LdPdSpgLSs',
+    ]
+
+    // Get all payout transactions for these contracts
     const txns = await pg.map(
-      `SELECT * FROM txns WHERE data->>'category' = 'CONTRACT_RESOLUTION_PAYOUT'
-                     AND data->>'fromType' = 'CONTRACT' 
-                     AND data->>'fromId' = $1`,
-      [contractId],
-      (r) => r.data as ContractResolutionPayoutTxn
+      `SELECT * FROM txns 
+       WHERE category = 'CONTRACT_RESOLUTION_PAYOUT'
+       AND from_type = 'CONTRACT' 
+       AND from_id = ANY($1)
+       `,
+      [contractIds],
+      (r) => convertTxn(r) as ContractOldResolutionPayoutTxn
     )
-
-    const txnsByStartTime = groupBy(txns, (txn) => txn.data.payoutStartTime)
-    const maxStartTime = maxBy(Object.keys(txnsByStartTime), (key) => +key)!
-
-    console.log('txnsByStartTime', Object.keys(txnsByStartTime))
-    console.log('txns in last start time', txnsByStartTime[maxStartTime].length)
-
-    // Revert all txns except the ones from the most recent resolve.
-    const filteredTxns = txns.filter(
-      (t) => t.data.payoutStartTime !== +maxStartTime
-    )
-
-    console.log('Reverting txns ' + filteredTxns.length, 'of', txns.length)
-
-    const chunkedTxns = chunk(filteredTxns, 250)
-    for (const chunk of chunkedTxns) {
-      await firestore.runTransaction(async (transaction) => {
-        console.log('reverting chunk of', chunk.length)
-        for (const txn of chunk) {
-          undoContractPayoutTxn(firestore, transaction, txn)
-        }
+    console.log('Reverting txns:', txns.length)
+    let count = 0
+    for (const txn of txns) {
+      await pg.tx(async (tx) => {
+        await runAdminTxnOutsideBetQueue(
+          tx,
+          {
+            amount: txn.amount,
+            toId: txn.fromId,
+            fromType: 'USER',
+            fromId: txn.toId,
+            toType: 'CONTRACT',
+            category: 'CONTRACT_UNDO_RESOLUTION_PAYOUT',
+            token: txn.token,
+            description: `Undo contract resolution payout from contract ${txn.fromId}`,
+            data: { revertsTxnId: txn.id },
+          } as ContractUndoOldResolutionPayoutTxn,
+          true
+        )
+        count++
+        console.log('reverted txn', txn.id)
+        console.log('reverted', count, 'txns')
       })
     }
     console.log('reverted txns')
   })
-}
-
-function undoContractPayoutTxn(
-  firestore: admin.firestore.Firestore,
-  fbTransaction: admin.firestore.Transaction,
-  txnData: ContractResolutionPayoutTxn
-) {
-  const { amount, toId, data, fromId, id } = txnData
-  const { deposit } = data ?? {}
-  const toDoc = firestore.doc(`users/${toId}`)
-  fbTransaction.update(toDoc, {
-    balance: FieldValue.increment(-amount),
-    totalDeposits: FieldValue.increment(-(deposit ?? 0)),
-  })
-
-  const newTxnDoc = firestore.collection(`txns/`).doc()
-  const txn = {
-    id: newTxnDoc.id,
-    createdTime: Date.now(),
-    amount: amount,
-    toId: fromId,
-    fromType: 'USER',
-    fromId: toId,
-    toType: 'CONTRACT',
-    category: 'CONTRACT_UNDO_RESOLUTION_PAYOUT',
-    token: 'M$',
-    description: `Undo contract resolution payout from contract ${fromId}`,
-    data: { revertsTxnId: id },
-  } as ContractUndoResolutionPayoutTxn
-  fbTransaction.create(newTxnDoc, removeUndefinedProps(txn))
-
-  return { status: 'success', data: txnData }
 }

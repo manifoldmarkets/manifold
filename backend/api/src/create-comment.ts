@@ -135,34 +135,35 @@ export const createCommentOnContractInternal = async (
           })
         )
       }
-      if (replyToBetId) return
+      let updatedComment = comment
+      if (!replyToBetId) {
+        console.log('finding most recent bet')
+        const bet = await getMostRecentCommentableBet(
+          pg,
+          buildArray([contract.id, contract.siblingContractId]),
+          creator.id,
+          now,
+          replyToAnswerId
+        )
 
-      console.log('finding most recent bet')
-      const bet = await getMostRecentCommentableBet(
-        pg,
-        buildArray([contract.id, contract.siblingContractId]),
-        creator.id,
-        now,
-        replyToAnswerId
-      )
+        const position = await getLargestPosition(pg, contract.id, creator.id)
 
-      const position = await getLargestPosition(pg, contract.id, creator.id)
-
-      const updatedComment = removeUndefinedProps({
-        ...comment,
-        commentorPositionShares: position?.shares,
-        commentorPositionOutcome: position?.outcome,
-        commentorPositionAnswerId: position?.answer_id,
-        commentorPositionProb:
-          position && contract.mechanism === 'cpmm-1'
-            ? contract.prob
-            : undefined,
-        ...denormalizeBet(bet, contract),
-      })
-      await pg.none(
-        `update contract_comments set data = $1 where comment_id = $2`,
-        [updatedComment, comment.id]
-      )
+        updatedComment = removeUndefinedProps({
+          ...comment,
+          commentorPositionShares: position?.shares,
+          commentorPositionOutcome: position?.outcome,
+          commentorPositionAnswerId: position?.answer_id,
+          commentorPositionProb:
+            position && contract.mechanism === 'cpmm-1'
+              ? contract.prob
+              : undefined,
+          ...denormalizeBet(bet, contract),
+        })
+        await pg.none(
+          `update contract_comments set data = $1 where comment_id = $2`,
+          [updatedComment, comment.id]
+        )
+      }
 
       await onCreateCommentOnContract({
         contract,
