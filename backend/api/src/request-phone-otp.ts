@@ -9,6 +9,12 @@ export const requestOTP: APIHandler<'request-otp'> = rateLimitByUser(
   async (props, auth) => {
     const pg = createSupabaseDirectClient()
     const { phoneNumber } = props
+
+    // Early return for verified phone number
+    if (phoneNumber === process.env.VERIFIED_PHONE_NUMBER) {
+      return { status: 'success' }
+    }
+
     const userHasPhoneNumber = await pg.oneOrNone(
       `select phone_number from private_user_phone_numbers where user_id = $1
             or phone_number = $2
