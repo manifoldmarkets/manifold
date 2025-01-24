@@ -174,7 +174,16 @@ export const TOPICS_TO_SUBTOPICS: { [key: string]: TopicInfo[] } = {
   ],
 }
 
-export const TOPICS_TO_HIDE_FROM_WELCOME_FLOW = ['🎲 Random']
+export const TOPICS_TO_HIDE_FROM_WELCOME_FLOW = ['🎲 Fun']
+if (
+  !TOPICS_TO_HIDE_FROM_WELCOME_FLOW.every((topic) =>
+    Object.keys(TOPICS_TO_SUBTOPICS).includes(topic)
+  )
+) {
+  throw new Error(
+    `${TOPICS_TO_HIDE_FROM_WELCOME_FLOW.join(', ')} contains invalid topics`
+  )
+}
 
 export const GROUP_SLUGS_TO_HIDE_FROM_WELCOME_FLOW = [
   'world-default',
