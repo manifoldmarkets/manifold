@@ -3,6 +3,7 @@ import {
   CommentNotificationData,
   Notification,
   notification_source_types,
+  NotificationGroup,
   NotificationReason,
 } from 'common/notification'
 import {
@@ -22,12 +23,6 @@ import { api } from 'web/lib/api/api'
 import { useApiSubscription } from 'client-common/hooks/use-api-subscription'
 import { usePersistentLocalState } from 'web/hooks/use-persistent-local-state'
 
-export type NotificationGroup = {
-  notifications: Notification[]
-  groupedById: string
-  isSeen: boolean
-  latestCreatedTime: number
-}
 
 function useNotifications(
   userId: string,

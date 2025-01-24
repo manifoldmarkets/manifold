@@ -4,6 +4,14 @@ import { PAST_BET } from './user'
 import { notification_preference } from './user-notification-preferences'
 import { Bet } from 'common/bet'
 import { league_user_info } from './leagues'
+import { groupBy } from 'lodash'
+
+export type NotificationGroup = {
+  notifications: Notification[]
+  groupedById: string
+  isSeen: boolean
+  latestCreatedTime: number
+}
 
 export type Notification = {
   id: string
@@ -508,3 +516,80 @@ export const BalanceChangeNotificationTypes: NotificationReason[] = [
 ]
 
 export const DELETE_PUSH_TOKEN = 'delete'
+
+export function combineReactionNotifications(notifications: Notification[]) {
+  const groupedNotificationsBySourceType = groupBy(
+    notifications,
+    (n) =>
+      `${n.sourceType}-${
+        n.sourceTitle ?? n.sourceContractTitle ?? n.sourceContractId
+      }-${n.sourceText}`
+  )
+
+  const newNotifications = Object.values(groupedNotificationsBySourceType).map(
+    (notifications) => {
+      const mostRecentNotification = notifications[0]
+
+      return {
+        ...mostRecentNotification,
+        data: {
+          ...mostRecentNotification.data,
+          relatedNotifications: notifications,
+        },
+      }
+    }
+  )
+
+  return newNotifications as Notification[]
+}
+
+// Loop through the contracts and combine the notification items into one
+export function combineAndSumIncomeNotifications(
+  notifications: Notification[]
+) {
+  const newNotifications: Notification[] = []
+  const groupedNotificationsBySourceType = groupBy(
+    notifications,
+    (n) => n.sourceType
+  )
+  const titleForNotification = (notification: Notification) => {
+    const outcomeType = notification.data?.outcomeType
+    return (
+      (notification.sourceTitle ?? notification.sourceContractTitle) +
+      (outcomeType !== 'NUMBER' ? notification.data?.answerText ?? '' : '') +
+      notification.data?.isPartner
+    )
+  }
+
+  for (const sourceType in groupedNotificationsBySourceType) {
+    // Source title splits by contracts, groups, betting streak bonus
+    const groupedNotificationsBySourceTitle = groupBy(
+      groupedNotificationsBySourceType[sourceType],
+      (notification) => titleForNotification(notification)
+    )
+    for (const sourceTitle in groupedNotificationsBySourceTitle) {
+      const notificationsForSourceTitle =
+        groupedNotificationsBySourceTitle[sourceTitle]
+
+      let sum = 0
+      notificationsForSourceTitle.forEach((notification) => {
+        sum += parseFloat(notification.sourceText ?? '0')
+      })
+
+      const { bet: _, ...otherData } =
+        notificationsForSourceTitle[0]?.data ?? {}
+
+      const newNotification = {
+        ...notificationsForSourceTitle[0],
+        sourceText: sum.toString(),
+        sourceUserUsername: notificationsForSourceTitle[0].sourceUserUsername,
+        data: {
+          relatedNotifications: notificationsForSourceTitle,
+          ...otherData,
+        },
+      }
+      newNotifications.push(newNotification)
+    }
+  }
+  return newNotifications
+}

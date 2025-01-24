@@ -9,7 +9,6 @@ import {
   UniqueBettorData,
 } from 'common/notification'
 import { formatMoney, maybePluralize } from 'common/util/format'
-import { groupBy } from 'lodash'
 import { useState } from 'react'
 import clsx from 'clsx'
 
@@ -44,57 +43,6 @@ import {
 } from 'common/partner'
 import { humanish } from 'common/user'
 import { TokenNumber } from 'web/components/widgets/token-number'
-
-// Loop through the contracts and combine the notification items into one
-export function combineAndSumIncomeNotifications(
-  notifications: Notification[]
-) {
-  const newNotifications: Notification[] = []
-  const groupedNotificationsBySourceType = groupBy(
-    notifications,
-    (n) => n.sourceType
-  )
-  const titleForNotification = (notification: Notification) => {
-    const outcomeType = notification.data?.outcomeType
-    return (
-      (notification.sourceTitle ?? notification.sourceContractTitle) +
-      (outcomeType !== 'NUMBER' ? notification.data?.answerText ?? '' : '') +
-      notification.data?.isPartner
-    )
-  }
-
-  for (const sourceType in groupedNotificationsBySourceType) {
-    // Source title splits by contracts, groups, betting streak bonus
-    const groupedNotificationsBySourceTitle = groupBy(
-      groupedNotificationsBySourceType[sourceType],
-      (notification) => titleForNotification(notification)
-    )
-    for (const sourceTitle in groupedNotificationsBySourceTitle) {
-      const notificationsForSourceTitle =
-        groupedNotificationsBySourceTitle[sourceTitle]
-
-      let sum = 0
-      notificationsForSourceTitle.forEach((notification) => {
-        sum += parseFloat(notification.sourceText ?? '0')
-      })
-
-      const { bet: _, ...otherData } =
-        notificationsForSourceTitle[0]?.data ?? {}
-
-      const newNotification = {
-        ...notificationsForSourceTitle[0],
-        sourceText: sum.toString(),
-        sourceUserUsername: notificationsForSourceTitle[0].sourceUserUsername,
-        data: {
-          relatedNotifications: notificationsForSourceTitle,
-          ...otherData,
-        },
-      }
-      newNotifications.push(newNotification)
-    }
-  }
-  return newNotifications
-}
 
 export function UniqueBettorBonusIncomeNotification(props: {
   notification: Notification
