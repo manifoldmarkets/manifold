@@ -259,12 +259,16 @@ export const resolveMarketHelper = async (
     const updateMetricsQuery = bulkUpdateContractMetricsQuery(
       updatedContractMetrics
     )
-    const payoutFees = assessProfitFees(traderPayouts, updatedContractMetrics)
+    const { token } = resolvedContract
+    const payoutFees =
+      token === 'CASH'
+        ? assessProfitFees(traderPayouts, updatedContractMetrics, answerId)
+        : []
     const { balanceUpdatesQuery, insertTxnsQuery } = getPayUsersQueries(
       payouts,
       contractId,
       answerId,
-      resolvedContract.token,
+      token,
       payoutFees
     )
     const contractUpdateQuery = updateDataQuery(
@@ -445,10 +449,9 @@ export const getPayUsersQueries = (
   contractId: string,
   answerId: string | undefined,
   token: ContractToken,
-  proposedPayoutFees: Payout[]
+  payoutFees: Payout[]
 ) => {
   const payoutCash = token === 'CASH'
-  const payoutFees = payoutCash ? proposedPayoutFees : []
   const payoutToken = token === 'CASH' ? 'CASH' : 'M$'
   const mergedPayouts = checkAndMergePayouts(payouts)
   const payoutStartTime = Date.now()
@@ -542,12 +545,13 @@ const checkAndMergePayouts = (payouts: Payout[]) => {
 
 const assessProfitFees = (
   payouts: Payout[],
-  contractMetrics: Omit<ContractMetric, 'id'>[]
+  contractMetrics: Omit<ContractMetric, 'id'>[],
+  answerId: string | undefined
 ) => {
   return payouts
     .map((payout) => {
       const contractMetric = contractMetrics.find(
-        (m) => m.userId === payout.userId
+        (m) => m.userId === payout.userId && m.answerId === (answerId ?? null)
       )
       if (!contractMetric) {
         throw new Error('Contract metric not found for user: ' + payout.userId)
