@@ -23,7 +23,6 @@ import { api } from 'web/lib/api/api'
 import { useApiSubscription } from 'client-common/hooks/use-api-subscription'
 import { usePersistentLocalState } from 'web/hooks/use-persistent-local-state'
 
-
 function useNotifications(
   userId: string,
   count = 15 * NOTIFICATIONS_PER_PAGE,
