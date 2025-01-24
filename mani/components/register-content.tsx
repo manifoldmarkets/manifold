@@ -206,6 +206,7 @@ export const RegisterContent = (props: {
   if (page === 'location') {
     return (
       <LocationPanel
+        location={userInfo.DeviceGPS}
         setLocation={(data: GPSData) => {
           setUserInfo({
             ...userInfo,

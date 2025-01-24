@@ -78,6 +78,11 @@ export default function Shop() {
     if (status !== 'error') {
       setCheckoutAmount(dollarAmount)
       setLoadingPrice(dollarAmount)
+      if (Platform.OS !== 'ios') {
+        router.push(`/checkout?priceInDollars=${dollarAmount.priceInDollars}`)
+        setLoadingPrice(null)
+        setCheckoutAmount(null)
+      }
     } else if (PROMPT_USER_VERIFICATION_MESSAGES.includes(message)) {
       router.push(`/register?priceInDollars=${dollarAmount.priceInDollars}`)
     } else {

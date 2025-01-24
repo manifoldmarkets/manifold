@@ -5,6 +5,7 @@ export const Input = (props: TextInputProps) => {
   const { style, ...rest } = props
   return (
     <TextInput
+      placeholderTextColor={Colors.textTertiary}
       style={[
         {
           borderWidth: 1,

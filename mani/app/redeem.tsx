@@ -382,6 +382,7 @@ export default function CashoutPage() {
         />
       ) : page === 'location' ? (
         <LocationPanel
+          location={deviceGPS}
           back={() => (mustUploadDocs ? setPage('documents') : router.back())}
           setLocation={handleLocationReceived}
           setLocationError={setLocationError}

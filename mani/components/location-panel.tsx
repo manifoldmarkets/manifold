@@ -7,6 +7,7 @@ import { GPSData } from 'common/gidx/gidx'
 import * as Location from 'expo-location'
 
 export const LocationPanel = (props: {
+  location: GPSData | undefined
   setLocation: (data: GPSData) => void
   setLocationError: (error: string | undefined) => void
   setLoading: (loading: boolean) => void
@@ -15,6 +16,7 @@ export const LocationPanel = (props: {
   back: () => void
 }) => {
   const {
+    location,
     setLocation,
     setLocationError,
     setLoading,
@@ -54,12 +56,14 @@ export const LocationPanel = (props: {
       const { status } = await Location.getForegroundPermissionsAsync()
       if (status === 'granted') {
         requestLocation()
+        return
       }
+      setLoading(false)
     }
     checkLocationPermission()
   }, [])
 
-  if (loading) {
+  if (loading || location) {
     return (
       <View style={styles.container}>
         <ActivityIndicator size="large" color={Colors.blue} />
