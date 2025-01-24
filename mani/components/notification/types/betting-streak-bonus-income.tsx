@@ -1,8 +1,7 @@
 import { useUser } from 'hooks/use-user'
-import { NotificationFrame } from '../notification-frame'
+import { getNotificationColor, NotificationFrame } from '../notification-frame'
 import { BettingStreakData } from 'common/notification'
 import { Notification } from 'common/notification'
-import { ThemedText } from 'components/themed-text'
 
 import { Token } from 'components/token/token'
 import { imageSizeMap } from 'components/user/avatar-circle'
@@ -35,44 +34,54 @@ export function BettingStreakBonusIncomeNotification(props: {
       }
       subtitle={
         noBonus && user && !humanish(user) ? (
-          <ThemedText>
+          <>
             Verify your phone number to get up to{' '}
-            <WrittenAmount amount={BETTING_STREAK_BONUS_MAX} token="M$" /> per
-            streak day!
-          </ThemedText>
+            <WrittenAmount
+              amount={BETTING_STREAK_BONUS_MAX}
+              token="M$"
+              color={getNotificationColor(notification)}
+            />{' '}
+            per streak day!
+          </>
         ) : (
           noBonus &&
           user &&
           humanish(user) && (
-            <ThemedText>
-              Come back and predict again tomorrow for a bonus!
-            </ThemedText>
+            <>Come back and predict again tomorrow for a bonus!</>
           )
         )
       }
     >
       {noBonus ? (
-        <ThemedText>
-          Congrats on your{' '}
-          {sourceText && <ThemedText size="md">{streakInDays} day</ThemedText>}{' '}
-          prediction streak
-        </ThemedText>
+        <>
+          Congrats on your {sourceText && <>{streakInDays} day</>} prediction
+          streak
+        </>
       ) : (
-        <ThemedText>
+        <>
           {cashAmount && (
             <>
-              <WrittenAmount amount={cashAmount} token="CASH" />
+              <WrittenAmount
+                amount={cashAmount}
+                token="CASH"
+                color={getNotificationColor(notification)}
+              />
               {' + '}
             </>
           )}
-          {bonusAmount && <WrittenAmount amount={bonusAmount} token="M$" />}{' '}
+          {bonusAmount && (
+            <WrittenAmount
+              amount={bonusAmount}
+              token="M$"
+              color={getNotificationColor(notification)}
+            />
+          )}{' '}
           {sourceText && +sourceText === BETTING_STREAK_BONUS_MAX && (
-            <ThemedText>(max) </ThemedText>
+            <>(max) </>
           )}
-          bonus for your{' '}
-          {sourceText && <ThemedText>{streakInDays} day</ThemedText>} prediction
+          bonus for your {sourceText && <>{streakInDays} day</>} prediction
           streak
-        </ThemedText>
+        </>
       )}
     </NotificationFrame>
   )

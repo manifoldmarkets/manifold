@@ -1,7 +1,6 @@
 import { getSourceUrl, Notification } from 'common/notification'
 import { NotificationFrame } from '../notification-frame'
 import { AvatarCircle } from 'components/user/avatar-circle'
-import { ThemedText } from 'components/themed-text'
 
 export function TaggedUserNotification(props: {
   notification: Notification
@@ -23,7 +22,7 @@ export function TaggedUserNotification(props: {
       }
       link={getSourceUrl(notification)}
     >
-      <ThemedText>{sourceUserName} tagged you </ThemedText>
+      <>{sourceUserName} tagged you </>
     </NotificationFrame>
   )
 }

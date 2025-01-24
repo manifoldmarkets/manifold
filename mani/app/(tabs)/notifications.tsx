@@ -9,9 +9,12 @@ import { useColor } from 'hooks/use-color'
 import { ActivityIndicator, View } from 'react-native'
 import { EXAMPLE_NOTIFICATIONS } from 'assets/example-data/example-notifications'
 import { useIsPageVisible } from 'hooks/use-is-page-visibile'
-import { NotificationItem } from 'components/notification/notification-item'
-import { Notification } from 'common/notification'
+import {
+  NotificationItem,
+  shouldIgnoreNotification,
+} from 'components/notification/notification-item'
 import { NotificationGroupItem } from 'components/notification/notification-group-item'
+import { NotificationGroup } from 'common/notification'
 export default function Notifications() {
   const user = useUser()
   const privateUser = usePrivateUser()
@@ -56,10 +59,11 @@ export function NotificationContent({
         <>
           {EXAMPLE_NOTIFICATIONS.map((notification) => (
             <Fragment key={notification.groupedById}>
-              {notification.notifications.length === 1 ? (
+              {notification.notifications.length === 1 &&
+              !shouldIgnoreNotification(notification.notifications[0]) ? (
                 <>
                   <NotificationItem
-                    notification={notification.notifications[0] as Notification}
+                    notification={notification.notifications[0]}
                     key={notification.notifications[0].id}
                   />
                   <View
@@ -69,10 +73,12 @@ export function NotificationContent({
                     }}
                   />
                 </>
-              ) : (
+              ) : notification.notifications.every((notif) =>
+                  shouldIgnoreNotification(notif)
+                ) ? null : (
                 <>
                   <NotificationGroupItem
-                    notificationGroup={notification}
+                    notificationGroup={notification as NotificationGroup}
                     key={notification.groupedById}
                   />
                   <View

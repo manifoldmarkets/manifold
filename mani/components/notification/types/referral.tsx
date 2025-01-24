@@ -1,7 +1,6 @@
 import { REFERRAL_AMOUNT } from 'common/economy'
 import { getSourceUrl, ReferralData } from 'common/notification'
-import { NotificationFrame } from '../notification-frame'
-import { ThemedText } from 'components/themed-text'
+import { getNotificationColor, NotificationFrame } from '../notification-frame'
 import { imageSizeMap } from 'components/user/avatar-circle'
 import { Token } from 'components/token/token'
 import { Notification } from 'common/notification'
@@ -31,16 +30,24 @@ export function ReferralNotification(props: {
       subtitle={`@${sourceUserUsername}`}
       link={getSourceUrl(notification)}
     >
-      <ThemedText>
+      <>
         {cashAmount > 0 && (
           <>
-            <WrittenAmount amount={cashAmount} token="CASH" />
+            <WrittenAmount
+              amount={cashAmount}
+              token="CASH"
+              color={getNotificationColor(notification)}
+            />
             {' + '}
           </>
         )}
-        <WrittenAmount amount={manaAmount} token="M$" /> for referring a new
-        user!
-      </ThemedText>
+        <WrittenAmount
+          amount={manaAmount}
+          token="M$"
+          color={getNotificationColor(notification)}
+        />{' '}
+        for referring a new user!
+      </>
     </NotificationFrame>
   )
 }

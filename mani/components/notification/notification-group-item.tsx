@@ -42,8 +42,8 @@ export function NotificationGroupItem({
   ).reverse()
 
   return (
-    <Col>
-      <GroupNotificationHeader notifications={notifications} />
+    <Col style={{ paddingVertical: 12 }}>
+      <GroupNotificationHeader notificationGroup={notificationGroup} />
       <Col>
         {notifications.map((notification) => {
           return (

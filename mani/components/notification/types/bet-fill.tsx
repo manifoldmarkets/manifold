@@ -1,6 +1,5 @@
 import { BetFillData, getSourceUrl } from 'common/notification'
-import { NotificationFrame } from '../notification-frame'
-import { ThemedText } from 'components/themed-text'
+import { getNotificationColor, NotificationFrame } from '../notification-frame'
 import { Notification } from 'common/notification'
 import { Token } from 'components/token/token'
 import { imageSizeMap } from 'components/user/avatar-circle'
@@ -43,23 +42,25 @@ export function BetFillNotification(props: {
 
   const description =
     creatorOutcome && probability ? (
-      <ThemedText>
+      <>
         <WrittenAmount
           amount={amount}
           token={token === 'MANA' ? 'M$' : 'CASH'}
+          color={getNotificationColor(notification)}
         />{' '}
-        of your {outcome} {betAnswer && <ThemedText>• {betAnswer} </ThemedText>}
+        of your {outcome} {betAnswer && <>• {betAnswer} </>}
         limit order at {limitAt} was filled{' '}
-      </ThemedText>
+      </>
     ) : (
-      <ThemedText>
+      <>
         {' '}
         <WrittenAmount
           amount={amount}
           token={token === 'MANA' ? 'M$' : 'CASH'}
+          color={getNotificationColor(notification)}
         />{' '}
         of your limit order was filled
-      </ThemedText>
+      </>
     )
 
   const subtitle = (
@@ -73,7 +74,7 @@ export function BetFillNotification(props: {
               <WrittenAmount
                 amount={limitOrderTotal}
                 token={token === 'MANA' ? 'M$' : 'CASH'}
-                color={color.textSecondary}
+                color={getNotificationColor(notification)}
               />
             </>
           )}{' '}
@@ -83,16 +84,16 @@ export function BetFillNotification(props: {
       {!!limitOrderRemaining && (
         <>
           You have{' '}
-          <NumberText color={color.textSecondary}>
+          <NumberText color={getNotificationColor(notification)}>
             {getMoneyNumber(limitOrderRemaining)}
           </NumberText>
           {limitOrderTotal && (
-            <ThemedText color={color.textSecondary}>
+            <>
               {' of '}
-              <NumberText color={color.textSecondary}>
+              <NumberText color={getNotificationColor(notification)}>
                 {getMoneyNumber(limitOrderTotal)}
               </NumberText>
-            </ThemedText>
+            </>
           )}{' '}
           {token == 'MANA' ? MANA_NAME : CASH_NAME} remaining in your order
         </>
@@ -113,7 +114,7 @@ export function BetFillNotification(props: {
       subtitle={subtitle}
       link={getSourceUrl(notification)}
     >
-      <ThemedText>{description}</ThemedText>
+      <>{description}</>
     </NotificationFrame>
   )
 }

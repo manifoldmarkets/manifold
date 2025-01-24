@@ -1,6 +1,5 @@
 import { NotificationFrame } from '../notification-frame'
 import { Notification } from 'common/notification'
-import { ThemedText } from 'components/themed-text'
 import { LogoAvatar } from 'components/ui/logo-avatar'
 
 export function BettingStreakExpiringNotification(props: {
@@ -18,9 +17,7 @@ export function BettingStreakExpiringNotification(props: {
       icon={<LogoAvatar size="md" />}
       subtitle={'Place a prediction in the next 3 hours to keep it.'}
     >
-      <ThemedText>
-        Don't let your {streakInDays} day prediction streak expire!
-      </ThemedText>
+      <>Don't let your {streakInDays} day prediction streak expire!</>
     </NotificationFrame>
   )
 }

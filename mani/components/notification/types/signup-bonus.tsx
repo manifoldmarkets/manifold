@@ -1,36 +1,41 @@
-import { Token } from 'components/token/token'
 import { getNotificationColor, NotificationFrame } from '../notification-frame'
-import { Notification } from 'common/notification'
-import { IncomeNotificationLabel } from '../income-notification-label'
+import { getSourceUrl, Notification } from 'common/notification'
+import { WrittenAmount } from 'components/number/writtenCurrency'
+import { Token } from 'components/token/token'
 import { imageSizeMap } from 'components/user/avatar-circle'
-import { QuestRewardTxn } from 'common/txn'
-import { QUEST_DETAILS } from 'common/quest'
 
-export function QuestIncomeNotification(props: {
+export function SignupBonusNotification(props: {
   notification: Notification
   isChildOfGroup?: boolean
 }) {
   const { notification, isChildOfGroup } = props
-  const { data } = notification
+  const { sourceText } = notification
 
-  const { questType } = data as QuestRewardTxn['data']
   return (
     <NotificationFrame
       notification={notification}
       isChildOfGroup={isChildOfGroup}
       icon={
         <Token
-          overrideToken={'MANA'}
+          overrideToken="MANA"
           style={{ width: imageSizeMap.md, height: imageSizeMap.md }}
         />
       }
+      link={getSourceUrl(notification)}
+      subtitle={
+        <>
+          Thank you for using Manifold! This is for being a valuable new
+          predictor.
+        </>
+      }
     >
       <>
-        <IncomeNotificationLabel
-          notification={notification}
+        <WrittenAmount
+          amount={parseInt(sourceText ?? '')}
+          token={'M$'}
           color={getNotificationColor(notification)}
         />{' '}
-        bonus for completing the {QUEST_DETAILS[questType].title} quest
+        added
       </>
     </NotificationFrame>
   )

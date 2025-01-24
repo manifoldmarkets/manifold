@@ -1,11 +1,13 @@
-import { ThemedText } from 'components/themed-text'
-import { Notification } from 'common/notification'
+import { ThemedText, ThemedTextProps } from 'components/themed-text'
+import { Notification, NotificationGroup } from 'common/notification'
 import { groupBy } from 'lodash'
+import { getGroupNotificationColor } from './notification-frame'
 
 export function GroupNotificationHeader(props: {
-  notifications: Notification[]
+  notificationGroup: NotificationGroup
 }) {
-  const { notifications } = props
+  const { notificationGroup } = props
+  const { notifications } = notificationGroup
   const uniques = Object.keys(
     groupBy(notifications, (n: Notification) => n.sourceUserUsername)
   ).length
@@ -19,7 +21,7 @@ export function GroupNotificationHeader(props: {
   )
 
   return (
-    <ThemedText size="md">
+    <ThemedText size="md" color={getGroupNotificationColor(notificationGroup)}>
       {notifications.some((n) => n.reason === 'contract_from_followed_user') ? (
         <>
           {notifications.length} new questions from{' '}
@@ -35,7 +37,10 @@ export function GroupNotificationHeader(props: {
       ) : sourceTitle || sourceContractTitle ? (
         <>
           {/* {uniques} user{uniques > 1 ? `s` : ``} on{' '} */}
-          <NotificationHeader notification={notifications[0]} />
+          <NotificationHeader
+            notification={notifications[0]}
+            color={getGroupNotificationColor(notificationGroup)}
+          />
         </>
       ) : (
         <>
@@ -46,12 +51,16 @@ export function GroupNotificationHeader(props: {
   )
 }
 
-export function NotificationHeader(props: { notification: Notification }) {
-  const { notification } = props
+export function NotificationHeader({
+  notification,
+  ...rest
+}: {
+  notification: Notification
+} & ThemedTextProps) {
   const title = notification.sourceContractTitle || notification.sourceTitle
   if (!title) return null
   return (
-    <ThemedText size="md" weight="normal">
+    <ThemedText size="md" weight="normal" {...rest}>
       {title}
     </ThemedText>
   )

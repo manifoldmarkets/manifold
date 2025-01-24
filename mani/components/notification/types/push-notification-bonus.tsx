@@ -1,8 +1,7 @@
 import { Token } from 'components/token/token'
-import { NotificationFrame } from '../notification-frame'
+import { getNotificationColor, NotificationFrame } from '../notification-frame'
 import { Notification } from 'common/notification'
 import { IncomeNotificationLabel } from '../income-notification-label'
-import { ThemedText } from 'components/themed-text'
 import { imageSizeMap } from 'components/user/avatar-circle'
 
 export function PushNotificationBonusNotification(props: {
@@ -10,6 +9,7 @@ export function PushNotificationBonusNotification(props: {
   isChildOfGroup?: boolean
 }) {
   const { notification, isChildOfGroup } = props
+  const { isSeen } = notification
   return (
     <NotificationFrame
       notification={notification}
@@ -21,10 +21,13 @@ export function PushNotificationBonusNotification(props: {
         />
       }
     >
-      <ThemedText>
-        <IncomeNotificationLabel notification={notification} /> for enabling
-        push notifications
-      </ThemedText>
+      <>
+        <IncomeNotificationLabel
+          notification={notification}
+          color={getNotificationColor(notification)}
+        />{' '}
+        for enabling push notifications
+      </>
     </NotificationFrame>
   )
 }
