@@ -22,8 +22,8 @@ const categoryToLabel = {
   investment_value: 'invested',
   loan_total: 'loans',
   amm_liquidity: 'amm liquidity',
-  total_cash_value: 'total prize cash',
-  cash_balance: 'prize cash balance',
+  total_cash_value: 'total sweepcash',
+  cash_balance: 'sweepcash balance',
   cash_investment_value: 'invested',
   amm_cash_liquidity: 'amm liquidity',
 }
@@ -57,7 +57,7 @@ export const ManaSupplySummary = (props: {
     <>
       <Title>Mana supply over time</Title>
       <StackedChart data={manaData} />
-      <Title className="mt-4">Prize cash supply supply over time</Title>
+      <Title className="mt-4">Sweepcash supply supply over time</Title>
       <StackedChart data={cashData} />
     </>
   )

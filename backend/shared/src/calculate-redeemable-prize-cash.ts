@@ -11,7 +11,7 @@ import {
 } from './supabase/sql-builder'
 import { log } from './utils'
 
-// Gets the total amount of prize cash that a user can redeem for usd, before fees
+// Gets the total amount of sweepcash that a user can redeem for usd, before fees
 export async function calculateRedeemablePrizeCash(
   pg: SupabaseDirectClient,
   userId: string

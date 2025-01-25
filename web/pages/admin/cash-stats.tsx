@@ -65,9 +65,9 @@ export function CustomCashAnalytics(props: { stats: Row<'daily_stats'>[] }) {
 
   return (
     <Col className="px-4 sm:pl-6 sm:pr-16">
-      <Title>Active users</Title>
+      <Title>Active traders</Title>
       <p className="text-ink-500">
-        An active user is a user who has traded in, commented on, or created a
+        An active trader is a user who has traded in, commented on, or created a
         sweep cash question.
       </p>
       <div className="text-ink-500 mt-2">
@@ -126,7 +126,7 @@ export function CustomCashAnalytics(props: { stats: Row<'daily_stats'>[] }) {
 
       <Title>Retention</Title>
       <p className="text-ink-500">
-        What fraction of active users are still active after the given time
+        What fraction of active traders are still active after the given time
         period?
       </p>
       <Tabs

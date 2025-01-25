@@ -38,7 +38,7 @@ export const completeCashoutRequest: APIHandler<
   const { redeemable } = await calculateRedeemablePrizeCash(pg, userId)
 
   if (redeemable < manaCashAmount) {
-    throw new APIError(400, 'Insufficient redeemable prize cash')
+    throw new APIError(400, 'Insufficient redeemable sweepcash')
   }
   const dollarsToWithdraw = PaymentAmount.dollars
   const CalculatedPaymentAmount = (1 - SWEEPIES_CASHOUT_FEE) * manaCashAmount
@@ -107,7 +107,7 @@ const debitCoins = async (
     if (redeemablePrizeCash < manaCashAmount) {
       throw new APIError(
         500,
-        'Insufficient redeemable prize cash. Indeterminate state, may need to refund',
+        'Insufficient redeemable sweepcash. Indeterminate state, may need to refund',
         { response: props }
       )
     }

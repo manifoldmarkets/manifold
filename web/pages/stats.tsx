@@ -203,11 +203,11 @@ export function CustomAnalytics(props: {
   return (
     <Col className="px-4 sm:pl-6 sm:pr-16">
       <div className="flex items-start justify-between">
-        <Title>Active users</Title>
+        <Title>Active traders</Title>
         <Button onClick={() => getStats().then(setStats)}>Reload All</Button>
       </div>
       <p className="text-ink-500">
-        An active user is a user who has traded in, commented on, or created a
+        An active trader is a user who has traded in, commented on, or created a
         question.
       </p>
       <div className="text-ink-500 mt-2">
@@ -376,7 +376,7 @@ export function CustomAnalytics(props: {
       <Spacer h={8} />
       <Title>Retention</Title>
       <p className="text-ink-500">
-        What fraction of active users are still active after the given time
+        What fraction of active traders are still active after the given time
         period?
       </p>
       <Tabs
@@ -560,7 +560,7 @@ export function CustomAnalytics(props: {
         ]}
       />
       <Spacer h={8} />
-      <Title>Total prize cash {TRADED_TERM}</Title>
+      <Title>Total sweepcash {TRADED_TERM}</Title>
       <p className="text-ink-500">Sum of cash {TRADE_TERM} amounts.</p>
       <Tabs
         className="mb-4"

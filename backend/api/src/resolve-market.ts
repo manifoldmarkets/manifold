@@ -61,7 +61,7 @@ export const resolveMarketMain: APIHandler<
   ) {
     throw new APIError(
       403,
-      'Only the Manifold account and approved mods can resolve prize cash markets'
+      'Only the Manifold account and approved mods can resolve sweepcash markets'
     )
   }
 

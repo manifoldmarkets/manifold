@@ -243,7 +243,7 @@ function Panel(props: { className?: string; children?: ReactNode; disabled?: boo
     <div className={clsx('bg-canvas-0 dark:border-ink-500 dark:bg-ink-900 relative grow rounded-xl border p-2', className)}>
       {disabled && (
         <div
-          className="text-ink-0 absolute top-0 left-0 z-50 flex h-full w-full items-center justify-center text-2xl opacity-50"
+          className="text-ink-0 absolute left-0 top-0 z-50 flex h-full w-full items-center justify-center text-2xl opacity-50"
           style={{ background: 'repeating-linear-gradient(45deg,#606dbc,#606dbc 10px,#465298 10px,#465298 20px)' }}
         >
           Coming soon
@@ -398,7 +398,7 @@ function MetricsPage() {
               <PanelRaw name="New bots" days={days} propName={'newBots'} />
               <PanelRaw name="Twitch links" days={days} propName={'twitchLinks'} />
               <PanelRaw name="Commands used" days={days} propName={'commandsUsed'} />
-              <PanelRaw name="Active users" days={days} propName={'activeUsers'} />
+              <PanelRaw name="Active traders" days={days} propName={'activeUsers'} />
             </Row>
             <Panel className="relative h-96  overflow-hidden !p-0" disabled>
               <CanvasChart />
