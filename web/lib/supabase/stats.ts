@@ -3,9 +3,13 @@ import { db } from './db'
 
 // export type Stats = { [key in keyof Row<'daily_stats'>]: Row<'daily_stats'>[key][] }
 
-export const getStats = async () => {
+export const getStats = async (startDate?: string) => {
   const { data } = await run(
-    db.from('daily_stats').select().order('start_date')
+    db
+      .from('daily_stats')
+      .select()
+      .order('start_date')
+      .gte('start_date', startDate ?? '2022-01-01')
   )
   return data
 

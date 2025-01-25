@@ -71,6 +71,17 @@ export const updateStatsCore = async (daysAgo: number) => {
   log('Done')
 }
 
+export const updateCashStatsCore = async (daysAgo: number) => {
+  const endDay = dayjs().tz('America/Los_Angeles')
+  const startDay = endDay.subtract(daysAgo, 'day')
+  const end = endDay.format('YYYY-MM-DD')
+  const start = startDay.format('YYYY-MM-DD')
+
+  const pg = createSupabaseDirectClient()
+  await updateCashActivityStats(pg, start, end)
+  await updateDailyCashSales(pg, start, end)
+}
+
 // YYYY-MM-DD
 export const updateStatsBetween = async (
   pg: SupabaseDirectClient,
@@ -85,7 +96,8 @@ export const updateStatsBetween = async (
 async function getDailyBets(
   pg: SupabaseDirectClient,
   start: string,
-  end: string
+  end: string,
+  token?: 'CASH'
 ) {
   const bets = await pg.manyOrNone(
     `select
@@ -102,9 +114,10 @@ async function getDailyBets(
       b.created_time >= date_to_midnight_pt($1)
       and b.created_time < date_to_midnight_pt($2)
       and is_redemption = false
+      and ($3 is null or c.token = $3)
     group by day
     order by day asc`,
-    [start, end]
+    [start, end, token]
   )
 
   return bets as { day: string; values: StatBet[] }[]
@@ -113,23 +126,31 @@ async function getDailyBets(
 async function getDailyComments(
   pg: SupabaseDirectClient,
   start: string,
-  end: string
+  end: string,
+  token?: 'CASH'
 ) {
+  const cashCommentsFilter =
+    token === 'CASH'
+      ? `and c.data->>'siblingContractId' is not null and c.token = 'MANA'`
+      : ''
   const comments = await pg.manyOrNone(
     `select
-      date_trunc('day', created_time at time zone 'america/los_angeles')::date as day,
+      date_trunc('day', cc.created_time at time zone 'america/los_angeles')::date as day,
       json_agg(json_build_object(
-        'ts', ts_to_millis(created_time),
-        'userId', user_id,
+        'ts', ts_to_millis(cc.created_time),
+        'userId', cc.user_id,
         'id', comment_id
       )) as values
-    from contract_comments
+    from contract_comments cc
+    join contracts c on cc.contract_id = c.id
     where
-      created_time >= date_to_midnight_pt($1)
-      and created_time < date_to_midnight_pt($2)
+      cc.created_time >= date_to_midnight_pt($1)
+      and cc.created_time < date_to_midnight_pt($2)
+      ${cashCommentsFilter}
+
     group by day
     order by day asc`,
-    [start, end]
+    [start, end, token]
   )
 
   return comments as { day: string; values: StatEvent[] }[]
@@ -138,7 +159,8 @@ async function getDailyComments(
 async function getDailyContracts(
   pg: SupabaseDirectClient,
   start: string,
-  end: string
+  end: string,
+  token?: 'CASH'
 ) {
   const contracts = await pg.manyOrNone(
     `select
@@ -152,9 +174,10 @@ async function getDailyContracts(
     where
       created_time >= date_to_midnight_pt($1)
       and created_time < date_to_midnight_pt($2)
+      and ($3 is null or token = $3)
     group by day
     order by day asc`,
-    [start, end]
+    [start, end, token]
   )
 
   return contracts as { day: string; values: StatEvent[] }[]
@@ -236,9 +259,6 @@ export const updateActivityStats = async (
         sum(
           bets.values.filter((b) => b.token === 'MANA').map((b) => b.amount)
         ) / 100,
-      cash_bet_amount: sum(
-        bets.values.filter((b) => b.token === 'CASH').map((b) => b.amount)
-      ),
     }))
   )
 
@@ -303,10 +323,15 @@ export const updateActivityStats = async (
   }
 
   const contractBetOrCommentUniqueUsersByDay = mergeWith(
-    contractUsersByDay,
     betUsersByDay,
+    contractUsersByDay,
     commentUsersByDay,
-    (a, b) => uniq(buildArray(a, b))
+    (a, b) => {
+      if (!a && !b) return []
+      if (!a) return b
+      if (!b) return a
+      return uniq([...a, ...b])
+    }
   )
 
   // stats using weird stricter dau calculation that only includes contracts, comments, users
@@ -491,6 +516,33 @@ async function updateDailySales(
   )
 }
 
+async function updateDailyCashSales(
+  pg: SupabaseDirectClient,
+  start: string,
+  end: string
+) {
+  log('fetch daily sales')
+  const sales = await pg.manyOrNone<{ start_date: string; sales: number }>(
+    `select
+      date_trunc('day', created_time at time zone 'america/los_angeles')::date as start_date,
+      sum(amount) as cash_sales
+    from txns
+      where category = 'CASH_BONUS'
+      and created_time >= date_to_midnight_pt($1)
+      and created_time < date_to_midnight_pt($2)
+    group by start_date
+    order by start_date asc`,
+    [start, end]
+  )
+
+  log('upsert daily cash sales')
+  await bulkUpsertStats(pg, sales)
+  await pg.none(
+    `update daily_stats set cash_sales = 0 where cash_sales is null and start_date >= $1 and start_date < $2`,
+    [start, end]
+  )
+}
+
 async function updateConversionScores(
   pg: SupabaseDirectClient,
   start: string,
@@ -521,7 +573,13 @@ const bulkUpsertStats = async (
   pg: SupabaseDirectClient,
   stats: Tables['daily_stats']['Insert'][]
 ) => {
-  await bulkUpsert(pg, 'daily_stats', 'start_date', stats)
+  await bulkUpsert(
+    pg,
+    'daily_stats',
+    'start_date',
+    stats
+    // TODO: no on conflict to fix bad values, if you insert bad values you have to delete them!!
+  )
 }
 
 async function calculateTopicDaus(
@@ -586,5 +644,137 @@ async function calculateTopicDaus(
   // Convert to the expected format
   return Object.fromEntries(
     dailyGroupUsers.map(({ day, group_counts }) => [day, group_counts])
+  )
+}
+
+export const updateCashActivityStats = async (
+  pg: SupabaseDirectClient,
+  start: string,
+  end: string
+) => {
+  const startWithBuffer = dayjs(start)
+    .subtract(bufferDays, 'days')
+    .format('YYYY-MM-DD')
+
+  log(
+    `Fetching data for cash activity stats between ${startWithBuffer} and ${end}`
+  )
+  const [dailyBets, dailyContracts, dailyComments] = await Promise.all([
+    getDailyBets(pg, startWithBuffer, end, 'CASH'),
+    getDailyContracts(pg, startWithBuffer, end, 'CASH'),
+    getDailyComments(pg, startWithBuffer, end, 'CASH'),
+  ])
+  logMemory()
+
+  log('upsert cash bets counts and totals')
+  await bulkUpsertStats(
+    pg,
+    dailyBets.map((bets) => ({
+      start_date: bets.day,
+      cash_bet_count: bets.values.length,
+      cash_bet_amount: sum(bets.values.map((b) => b.amount)),
+    }))
+  )
+
+  log('upsert cash contract counts')
+  await bulkUpsertStats(
+    pg,
+    dailyContracts.map((contracts) => ({
+      start_date: contracts.day,
+      cash_contract_count: contracts.values.length,
+    }))
+  )
+
+  log('upsert comment counts')
+  await bulkUpsertStats(
+    pg,
+    dailyComments.map((comments) => ({
+      start_date: comments.day,
+      cash_comment_count: comments.values.length,
+    }))
+  )
+
+  // unique ids across contract, bet, and comment actions
+  const contractUsersByDay = Object.fromEntries(
+    dailyContracts.map((contracts) => [
+      contracts.day,
+      contracts.values.map((c) => c.userId),
+    ])
+  )
+  const betUsersByDay = Object.fromEntries(
+    dailyBets.map((bets) => [bets.day, bets.values.map((b) => b.userId)])
+  )
+  const commentUsersByDay = Object.fromEntries(
+    dailyComments.map((comments) => [
+      comments.day,
+      comments.values.map((c) => c.userId),
+    ])
+  )
+
+  // average actions
+  {
+    const allIds = mergeWith(
+      contractUsersByDay,
+      betUsersByDay,
+      commentUsersByDay,
+      (a, b) => (a && b ? a.concat(b) : a || b)
+    )
+
+    const medianDailyUserActions = mapValues(allIds, (ids) => {
+      const userIdCounts = countBy(ids, (id) => id)
+      const countsFiltered = Object.values(userIdCounts).filter((c) => c > 1)
+      return countsFiltered.length === 0 ? 0 : median(countsFiltered)
+    })
+
+    log('upsert "average" cash daily user actions')
+    await bulkUpsertStats(
+      pg,
+      Object.entries(medianDailyUserActions).map(([day, median]) => ({
+        start_date: day,
+        cash_avg_user_actions: median,
+      }))
+    )
+  }
+
+  const contractBetOrCommentUniqueUsersByDay = mergeWith(
+    betUsersByDay,
+    contractUsersByDay,
+    commentUsersByDay,
+    (a, b) => {
+      if (!a && !b) return []
+      if (!a) return b
+      if (!b) return a
+      return uniq([...a, ...b])
+    }
+  )
+
+  // stats using weird stricter dau calculation that only includes contracts, comments, users
+
+  const dailyUserIds = Object.entries(contractBetOrCommentUniqueUsersByDay)
+    .map(([day, values]) => ({ day, values }))
+    .sort((a, b) => a.day.localeCompare(b.day))
+
+  log('upsert cash dau, wau, mau, d1, w1, m1')
+
+  await bulkUpsertStats(
+    pg,
+    dailyUserIds
+      .map((today, i) => ({
+        start_date: today.day,
+        cash_dau: today.values.length,
+        cash_wau: uniqBetween(dailyUserIds, i - 6, i + 1).length,
+        cash_mau: uniqBetween(dailyUserIds, i - 29, i + 1).length,
+        cash_d1:
+          i == 0 ? 0 : retention(dailyUserIds[i - 1].values, today.values),
+        cash_w1: retention(
+          uniqBetween(dailyUserIds, i - 13, i - 6), // 2 weeks ago
+          uniqBetween(dailyUserIds, i - 6, i + 1) // last week
+        ),
+        cash_m1: retention(
+          uniqBetween(dailyUserIds, i - 59, i - 29), // 2 months ago
+          uniqBetween(dailyUserIds, i - 29, i + 1) // last month
+        ),
+      }))
+      .slice(bufferDays)
   )
 }

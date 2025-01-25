@@ -8,11 +8,12 @@ create table if not exists
     has_shares boolean,
     has_yes_shares boolean,
     id bigint primary key generated always as identity not null,
+    loan numeric default 0 not null,
     profit numeric,
+    profit_adjustment numeric,
     total_shares_no numeric,
     total_shares_yes numeric,
-    user_id text not null,
-    loan numeric default 0
+    user_id text not null
   );
 
 -- Triggers
@@ -52,11 +53,11 @@ BEGIN
         UPDATE user_contract_metrics
         SET
             data = data || jsonb_build_object(
-              'hasYesShares', sum_has_yes_shares,
-              'hasNoShares', sum_has_no_shares,
-              'hasShares', sum_has_shares,
-              'loan', sum_loan
-            ),
+                    'hasYesShares', sum_has_yes_shares,
+                    'hasNoShares', sum_has_no_shares,
+                    'hasShares', sum_has_shares,
+                    'loan', sum_loan
+                           ),
             has_yes_shares = sum_has_yes_shares,
             has_no_shares = sum_has_no_shares,
             has_shares = sum_has_shares,
@@ -91,12 +92,6 @@ drop index if exists contract_metrics_answer_id;
 
 create index contract_metrics_answer_id on public.user_contract_metrics using btree (contract_id, answer_id);
 
-drop index if exists user_contract_metrics_contract_profit_null;
-
-create index concurrently user_contract_metrics_contract_profit_null on public.user_contract_metrics using btree (contract_id, profit)
-where
-  answer_id is null;
-
 drop index if exists unique_user_contract_answer;
 
 create unique index unique_user_contract_answer on public.user_contract_metrics using btree (
@@ -104,6 +99,12 @@ create unique index unique_user_contract_answer on public.user_contract_metrics 
   contract_id,
   coalesce(answer_id, ''::text)
 );
+
+drop index if exists user_contract_metrics_contract_profit_null;
+
+create index user_contract_metrics_contract_profit_null on public.user_contract_metrics using btree (contract_id, profit)
+where
+  (answer_id is null);
 
 drop index if exists user_contract_metrics_pkey;
 

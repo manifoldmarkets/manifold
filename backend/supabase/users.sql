@@ -13,6 +13,7 @@ create table if not exists
         (name || ' '::text) || username
       )
     ) stored,
+    resolved_profit_adjustment numeric,
     spice_balance numeric default 0 not null,
     total_cash_deposits numeric default 0 not null,
     total_deposits numeric default 0 not null,
