@@ -147,10 +147,9 @@ async function getDailyComments(
       cc.created_time >= date_to_midnight_pt($1)
       and cc.created_time < date_to_midnight_pt($2)
       ${cashCommentsFilter}
-
     group by day
     order by day asc`,
-    [start, end, token]
+    [start, end]
   )
 
   return comments as { day: string; values: StatEvent[] }[]
