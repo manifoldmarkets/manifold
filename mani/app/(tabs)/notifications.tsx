@@ -7,14 +7,13 @@ import { Col } from 'components/layout/col'
 import { ThemedText } from 'components/themed-text'
 import { useColor } from 'hooks/use-color'
 import { ActivityIndicator, View } from 'react-native'
-import { EXAMPLE_NOTIFICATIONS } from 'assets/example-data/example-notifications'
 import { useIsPageVisible } from 'hooks/use-is-page-visibile'
-import {
-  NotificationItem,
-  shouldIgnoreNotification,
-} from 'components/notification/notification-item'
+import { NotificationItem } from 'components/notification/notification-item'
 import { NotificationGroupItem } from 'components/notification/notification-group-item'
 import { NotificationGroup } from 'common/notification'
+import { useGroupedNotifications } from 'client-common/hooks/use-notifications'
+import { api } from 'lib/api'
+import { usePersistentLocalState } from 'hooks/use-persistent-local-state'
 export default function Notifications() {
   const user = useUser()
   const privateUser = usePrivateUser()
@@ -39,28 +38,41 @@ export function NotificationContent({
 }) {
   const [page, setPage] = useState(0)
 
+  const { groupedNotifications } = useGroupedNotifications(
+    user,
+    (params) => api('get-notifications', params),
+    usePersistentLocalState
+  )
+
   const paginatedGroupedNotifications = useMemo(() => {
     const start = page * NOTIFICATIONS_PER_PAGE
     const end = start + NOTIFICATIONS_PER_PAGE
-    return EXAMPLE_NOTIFICATIONS?.slice(start, end)
-  }, [JSON.stringify(EXAMPLE_NOTIFICATIONS), page])
+    return groupedNotifications?.slice(start, end)
+  }, [JSON.stringify(groupedNotifications), page])
 
   const color = useColor()
   const isPageVisible = useIsPageVisible()
 
+  // Mark all notifications as seen. Rerun as new notifications come in.
+  // useEffect(() => {
+  //   if (!privateUser || !isPageVisible) return
+  //   api('markallnotifications', { seen: true })
+  // }, [privateUser?.id, isPageVisible, mostRecentNotification?.id])
+
   return (
     <Col style={{ width: '100%' }}>
-      {EXAMPLE_NOTIFICATIONS === undefined ||
+      {groupedNotifications === undefined ||
       paginatedGroupedNotifications === undefined ? (
         <ActivityIndicator color={color.textQuaternary} size={'large'} />
       ) : paginatedGroupedNotifications.length === 0 ? (
         <ThemedText>You don't have any notifications, yet.</ThemedText>
       ) : (
         <>
-          {EXAMPLE_NOTIFICATIONS.map((notification) => (
+          {groupedNotifications.map((notification) => (
             <Fragment key={notification.groupedById}>
-              {notification.notifications.length === 1 &&
-              !shouldIgnoreNotification(notification.notifications[0]) ? (
+              {notification.notifications.length === 1 ? (
+                // &&
+                // !shouldIgnoreNotification(notification.notifications[0])
                 <>
                   <NotificationItem
                     notification={notification.notifications[0]}
@@ -73,9 +85,10 @@ export function NotificationContent({
                     }}
                   />
                 </>
-              ) : notification.notifications.every((notif) =>
-                  shouldIgnoreNotification(notif)
-                ) ? null : (
+              ) : (
+                // : notification.notifications.every((notif) =>
+                //     shouldIgnoreNotification(notif)
+                //   ) ? null
                 <>
                   <NotificationGroupItem
                     notificationGroup={notification as NotificationGroup}

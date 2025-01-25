@@ -151,6 +151,9 @@ export const createFollowOrMarketSubsidizedNotification = async (
           sourceSlug: sourceContract?.slug,
           sourceTitle: sourceContract?.question,
           data: sourceContract ? { token: sourceContract?.token } : undefined,
+          worksOnSweeple:
+            sourceType === 'follow' ||
+            (sourceContract?.siblingContractId ? true : false),
         }
         const pg = createSupabaseDirectClient()
         await insertNotificationToSupabase(notification, pg)
@@ -243,6 +246,7 @@ export const createCommentOnContractNotification = async (
       data: {
         isReply: !!repliedUsersInfo,
       } as CommentNotificationData,
+      worksOnSweeple: sourceContract.siblingContractId ? true : false,
     }
     return removeUndefinedProps(notification)
   }
@@ -513,14 +517,9 @@ export const createBetFillNotification = async (
   const fromUser = await getUser(bet.userId)
   if (!fromUser) return
 
-  // The limit order fills array has a matchedBetId that does not match this bet id
-  // (even though this bet has a fills array that is matched to the limit order)
-  // This is likely bc this bet is an arbitrage bet. This should be fixed.
-  // This matches based on timestamp because of the above bug.
   const fill =
     limitBet.fills.find((fill) => fill.timestamp === bet.createdTime) ??
     last(orderBy(limitBet.fills, 'timestamp', 'asc'))
-  // const fill = limitBet.fills.find((f) => f.matchedBetId === bet.id)
 
   const fillAmount = fill?.amount ?? 0
   const remainingAmount =
@@ -567,6 +566,7 @@ export const createBetFillNotification = async (
       outcomeType: contract.outcomeType,
       token: contract.token,
     } as BetFillData,
+    worksOnSweeple: contract.siblingContractId ? true : false,
   }
   const pg = createSupabaseDirectClient()
   await insertNotificationToSupabase(notification, pg)
@@ -809,7 +809,6 @@ export const createBettingStreakBonusNotification = async (
     sourceText: amount.toString(),
     sourceSlug: `/${contract.creatorUsername}/${contract.slug}/bets/${bet.id}`,
     sourceTitle: 'Betting Streak Bonus',
-    // Perhaps not necessary, but just in case
     sourceContractSlug: contract.slug,
     sourceContractId: contract.id,
     sourceContractTitle: contract.question,
@@ -819,6 +818,7 @@ export const createBettingStreakBonusNotification = async (
       bonusAmount: amount,
       cashAmount,
     } as BettingStreakData,
+    worksOnSweeple: contract.siblingContractId ? true : false,
   }
   const pg = createSupabaseDirectClient()
   await insertNotificationToSupabase(notification, pg)
@@ -861,6 +861,7 @@ export const createBettingStreakExpiringNotification = async (
       data: {
         streak: streak,
       } as BettingStreakData,
+      worksOnSweeple: true,
     }
     if (sendToMobile) {
       bulkPushNotifications.push([
@@ -977,6 +978,7 @@ export const createLikeNotification = async (reaction: Reaction) => {
     sourceText: text,
     sourceSlug: slug,
     sourceTitle: contract.question,
+    worksOnSweeple: contract.siblingContractId ? true : false,
   }
   return await insertNotificationToSupabase(notification, pg)
 }
@@ -1321,6 +1323,7 @@ export const createContractResolvedNotifications = async (
         profit: userIdToContractMetrics?.[userId]?.profit ?? 0,
         token,
       }) as ContractResolutionData,
+      worksOnSweeple: contract.siblingContractId ? true : false,
     }
   }
 
@@ -1520,6 +1523,7 @@ export const createQuestPayoutNotification = async (
       questType,
       questCount,
     } as QuestRewardTxn['data'],
+    worksOnSweeple: true,
   }
   const pg = createSupabaseDirectClient()
   await insertNotificationToSupabase(notification, pg)
@@ -1996,6 +2000,7 @@ export const createPushNotificationBonusNotification = async (
     sourceUserAvatarUrl: MANIFOLD_AVATAR_URL,
     sourceText: amount.toString(),
     sourceTitle: 'Push Notification Bonus',
+    worksOnSweeple: true,
   }
   const pg = createSupabaseDirectClient()
   await insertNotificationToSupabase(notification, pg)
@@ -2100,6 +2105,7 @@ export const createPaymentSuccessNotification = async (
     sourceUserAvatarUrl: '',
     sourceText: '',
     data: paymentData,
+    worksOnSweeple: true,
   }
 
   const pg = createSupabaseDirectClient()
