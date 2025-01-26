@@ -211,8 +211,8 @@ export function CustomAnalytics(props: {
         question.
       </p>
       <div className="text-ink-500 mt-2">
-        <b>{formatLargeNumber(current.dau ?? 0)} DAUs</b> yesterday;{' '}
-        {formatLargeNumber(avgDAUlastWeek)} avg DAUs last week
+        <b>{formatLargeNumber(current.dau ?? 0)}</b> yesterday;{' '}
+        {formatLargeNumber(avgDAUlastWeek)} avg last week
       </div>
       <Spacer h={4} />
       <Tabs
@@ -239,7 +239,7 @@ export function CustomAnalytics(props: {
           },
         ]}
       />
-      <Spacer h={8} />
+      {/* <Spacer h={8} />
       <Title>Engaged users</Title>
       <p className="text-ink-500">
         An engaged user is a user who has traded in, commented on, or created a
@@ -249,7 +249,7 @@ export function CustomAnalytics(props: {
         <b>{formatLargeNumber(current.engaged_users ?? 0)} </b> engaged users
       </div>
       <Spacer h={4} />
-      <DailyChart values={dataFor('engaged_users')} />
+      <DailyChart values={dataFor('engaged_users')} /> */}
       <Spacer h={8} />
       <Title>Mana supply</Title>
       <div className="text-ink-700 mb-4 grid grid-cols-3 justify-items-end gap-y-1">

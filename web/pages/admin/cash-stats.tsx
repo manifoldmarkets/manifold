@@ -71,8 +71,8 @@ export function CustomCashAnalytics(props: { stats: Row<'daily_stats'>[] }) {
         sweep cash question.
       </p>
       <div className="text-ink-500 mt-2">
-        <b>{formatLargeNumber(current.cash_dau ?? 0)} DAUs</b> yesterday;{' '}
-        {formatLargeNumber(avgDAUlastWeek)} avg DAUs last week
+        <b>{formatLargeNumber(current.cash_dau ?? 0)}</b> yesterday;{' '}
+        {formatLargeNumber(avgDAUlastWeek)} avg last week
       </div>
       <Spacer h={4} />
       <Tabs
@@ -184,8 +184,9 @@ export function CustomCashAnalytics(props: { stats: Row<'daily_stats'>[] }) {
       />
       <Spacer h={8} />
 
-      <Title>Sweepcash sales</Title>
+      <Title>Sweepcash issued</Title>
       <p className="text-ink-500">
+        Sweepcash bonus issued from mana sales
         <br />
       </p>
       <Spacer h={4} />
