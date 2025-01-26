@@ -255,7 +255,7 @@ export function CustomAnalytics(props: {
       <div className="text-ink-700 mb-4 grid grid-cols-3 justify-items-end gap-y-1">
         <div className="text-ink-800 mb-2">Supply Today</div>
         <div className="text-ink-800 mb-2">Mana</div>
-        <div className="text-ink-800 mb-2">Prize Cash</div>
+        <div className="text-ink-800 mb-2">Sweepcash</div>
 
         <div>Balances</div>
         <div className="font-semibold">
