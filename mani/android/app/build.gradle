@@ -93,8 +93,8 @@ android {
         applicationId 'com.manifold.mani'
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
-        versionCode 72
-        versionName "2.0.72"
+        versionCode 73
+        versionName "2.0.73"
         missingDimensionStrategy 'store', 'play'
     }
     signingConfigs {
