@@ -566,6 +566,9 @@ export type Database = {
           signups_real: number | null
           start_date: string
           w1: number | null
+          dav: number | null
+          wav: number | null
+          mav: number | null
           wau: number | null
           topic_daus: Json | null
           cash_bet_count: number | null
@@ -604,6 +607,9 @@ export type Database = {
           signups_real?: number | null
           start_date: string
           w1?: number | null
+          dav?: number | null
+          wav?: number | null
+          mav?: number | null
           wau?: number | null
           topic_daus?: Json | null
           cash_bet_count?: number | null
@@ -633,6 +639,9 @@ export type Database = {
           engaged_users?: number | null
           feed_conversion?: number | null
           m1?: number | null
+          dav?: number | null
+          wav?: number | null
+          mav?: number | null
           mau?: number | null
           nd1?: number | null
           nw1?: number | null

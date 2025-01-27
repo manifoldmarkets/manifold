@@ -123,6 +123,27 @@ async function getDailyBets(
   return bets as { day: string; values: StatBet[] }[]
 }
 
+async function getDailyViewers(
+  pg: SupabaseDirectClient,
+  start: string,
+  end: string
+) {
+  const viewers = await pg.manyOrNone(
+    `select
+    date_trunc('day', ts at time zone 'america/los_angeles')::date as day,
+    count(distinct(data->>'deviceId')) as viewer_count
+    from user_events
+    where
+      ts >= date_to_midnight_pt($1)
+      and ts < date_to_midnight_pt($2)
+    group by day
+    order by day asc`,
+    [start, end]
+  )
+
+  return viewers as { day: string; viewer_count: number }[]
+}
+
 async function getDailyComments(
   pg: SupabaseDirectClient,
   start: string,
@@ -241,12 +262,27 @@ export const updateActivityStats = async (
     .format('YYYY-MM-DD')
 
   log(`Fetching data for activity stats between ${startWithBuffer} and ${end}`)
-  const [dailyBets, dailyContracts, dailyComments] = await Promise.all([
-    getDailyBets(pg, startWithBuffer, end),
-    getDailyContracts(pg, startWithBuffer, end),
-    getDailyComments(pg, startWithBuffer, end),
-  ])
+  const [dailyBets, dailyContracts, dailyComments, dailyViewers] =
+    await Promise.all([
+      getDailyBets(pg, startWithBuffer, end),
+      getDailyContracts(pg, startWithBuffer, end),
+      getDailyComments(pg, startWithBuffer, end),
+      getDailyViewers(pg, startWithBuffer, end),
+    ])
   logMemory()
+
+  log('upsert viewer counts')
+  await bulkUpsertStats(
+    pg,
+    dailyViewers.map((viewers, i) => ({
+      start_date: viewers.day,
+      dav: viewers.viewer_count,
+      wav: average(dailyViewers.slice(i - 6, i + 1).map((v) => v.viewer_count)),
+      mav: average(
+        dailyViewers.slice(i - 29, i + 1).map((v) => v.viewer_count)
+      ),
+    }))
+  )
 
   log('upsert bets counts and totals')
   await bulkUpsertStats(

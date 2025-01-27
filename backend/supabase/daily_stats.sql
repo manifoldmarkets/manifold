@@ -36,7 +36,10 @@ create table if not exists
     start_date date primary key not null,
     topic_daus jsonb,
     w1 numeric,
-    wau numeric
+    wau numeric,
+    dav numeric,
+    mav numeric,
+    wav numeric
   );
 
 -- Row Level Security

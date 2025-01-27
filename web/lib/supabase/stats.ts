@@ -9,7 +9,7 @@ export const getStats = async (startDate?: string) => {
       .from('daily_stats')
       .select()
       .order('start_date')
-      .gte('start_date', startDate ?? '2022-01-01')
+      .gte('start_date', startDate ?? '2024-01-01')
   )
   return data
 

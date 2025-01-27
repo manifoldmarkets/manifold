@@ -196,6 +196,12 @@ export function CustomAnalytics(props: {
       .map((row) => row.dau)
       .filter((val): val is number => val != null)
   )
+  const avgDAVlastWeek = average(
+    stats
+      .slice(-7)
+      .map((row) => row.dav)
+      .filter((val): val is number => val != null)
+  )
   const last30dSales = sum(stats.slice(-30).map((row) => row.sales || 0))
 
   const isAdmin = useAdmin()
@@ -203,8 +209,44 @@ export function CustomAnalytics(props: {
   return (
     <Col className="px-4 sm:pl-6 sm:pr-16">
       <div className="flex items-start justify-between">
-        <Title>Active traders</Title>
+        <Title>Active users</Title>
         <Button onClick={() => getStats().then(setStats)}>Reload All</Button>
+      </div>
+      <p className="text-ink-500">
+        An active user is a user who has taken any action on the site.
+      </p>
+      <div className="text-ink-500 mt-2">
+        <b>{formatLargeNumber(current.dav ?? 0)}</b> yesterday;{' '}
+        {formatLargeNumber(avgDAVlastWeek)} avg last week
+      </div>
+      <Spacer h={4} />
+      <Tabs
+        className="mb-4"
+        defaultIndex={1}
+        tabs={[
+          {
+            title: 'Daily',
+            content: <DailyChart values={dataFor('dav')} />,
+          },
+          {
+            title: 'Daily (7d avg)',
+            content: (
+              <DailyChart values={rollingAvg(dataFor('dav'), 7).map(round)} />
+            ),
+          },
+          {
+            title: 'Weekly',
+            content: <DailyChart values={dataFor('wav')} />,
+          },
+          {
+            title: 'Monthly',
+            content: <DailyChart values={dataFor('mav')} />,
+          },
+        ]}
+      />
+      <Spacer h={8} />
+      <div className="flex items-start justify-between">
+        <Title>Active traders</Title>
       </div>
       <p className="text-ink-500">
         An active trader is a user who has traded in, commented on, or created a
