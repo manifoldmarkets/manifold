@@ -42,7 +42,6 @@ export function UserSettingButton(props: { user: User }) {
 
   useEffect(() => {
     const tab = router.query.tab?.toString().toLowerCase()
-    console.log('tab', tab)
     if (!tab) return
 
     const isYou = currentPrivateUser?.id === userId
