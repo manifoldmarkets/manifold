@@ -424,7 +424,7 @@ export const placeBet: APIHandler<'bet'> = async (props, auth) => {
 }
 ```
 
-And finally, you need to register the handler in `backend/api/src/app.ts`
+And finally, you need to register the handler in `backend/api/src/routes.ts`
 
 ```ts
 import { placeBet } from './place-bet'
