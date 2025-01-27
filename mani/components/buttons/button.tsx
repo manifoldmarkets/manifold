@@ -25,7 +25,8 @@ type ButtonVariant =
   | 'no'
   | 'danger'
   | 'purple'
-  | 'emerald' // add more variants as needed
+  | 'emerald'
+  | 'gray-white'
 
 export interface ButtonProps extends TouchableOpacityProps {
   title?: string
@@ -129,6 +130,11 @@ export function Button({
         return {
           background: emerald[600],
           text: 'white',
+        }
+      case 'gray-white':
+        return {
+          background: 'transparent',
+          text: color.text,
         }
       case 'primary':
       default:

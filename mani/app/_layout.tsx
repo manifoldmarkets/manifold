@@ -145,6 +145,8 @@ function RootLayout() {
             <Stack.Screen name="[username]/[contractSlug]" />
             <Stack.Screen name="register" />
             <Stack.Screen name="redeem" />
+            <Stack.Screen name="edit-profile" />
+            <Stack.Screen name="account-settings" />
             <Stack.Screen name="+not-found" />
           </Stack>
         )}
