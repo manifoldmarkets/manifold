@@ -234,14 +234,14 @@ export function CustomAnalytics(props: {
               <DailyChart values={rollingAvg(dataFor('dav'), 7).map(round)} />
             ),
           },
-          {
-            title: 'Weekly',
-            content: <DailyChart values={dataFor('wav')} />,
-          },
-          {
-            title: 'Monthly',
-            content: <DailyChart values={dataFor('mav')} />,
-          },
+          // {
+          //   title: 'Weekly',
+          //   content: <DailyChart values={dataFor('wav')} />,
+          // },
+          // {
+          //   title: 'Monthly',
+          //   content: <DailyChart values={dataFor('mav')} />,
+          // },
         ]}
       />
       <Spacer h={8} />
