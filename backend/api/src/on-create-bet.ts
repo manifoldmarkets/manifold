@@ -143,32 +143,31 @@ export const onCreateBets = async (result: ExecuteNewBetResult) => {
     : result.updatedMetrics
   broadcastUpdatedMetrics(updatedMetrics)
   debounceRevalidateContractStaticProps(contract)
-  if (updatedMakers.length) {
-    const makerUsers = await getUsers(updatedMakers.map((m) => m.userId))
+  const makersToNotify = updatedMakers.filter((m) => !m.silent)
+  if (makersToNotify.length) {
+    const makerUsers = await getUsers(makersToNotify.map((m) => m.userId))
     await Promise.all(
-      updatedMakers
-        .filter((um) => !um.silent)
-        .map(async (updatedMaker) => {
-          const bet = bets.find((b) =>
-            b.fills?.some((f) => f.matchedBetId === updatedMaker.id)
-          )
-          if (!bet) {
-            log.error(`No bet found for updated maker ${updatedMaker.id}`)
-            return
-          }
-          if (!bet.fills?.length) return
-          const limitOrderer = makerUsers.find(
-            (u) => u.id === updatedMaker.userId
-          )
-          if (!limitOrderer) return
-          await createBetFillNotification(
-            limitOrderer,
-            originalBettor,
-            bet,
-            updatedMaker,
-            contract
-          )
-        })
+      makersToNotify.map(async (updatedMaker) => {
+        const bet = bets.find((b) =>
+          b.fills?.some((f) => f.matchedBetId === updatedMaker.id)
+        )
+        if (!bet) {
+          log.error(`No bet found for updated maker ${updatedMaker.id}`)
+          return
+        }
+        if (!bet.fills?.length) return
+        const limitOrderer = makerUsers.find(
+          (u) => u.id === updatedMaker.userId
+        )
+        if (!limitOrderer) return
+        await createBetFillNotification(
+          limitOrderer,
+          originalBettor,
+          bet,
+          updatedMaker,
+          contract
+        )
+      })
     )
   }
 
