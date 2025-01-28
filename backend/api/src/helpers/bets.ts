@@ -259,13 +259,11 @@ export const getUnfilledBetsAndUserBalances = async (
 }
 
 export const getBulkUpdateLimitOrdersQueryAndValues = (
-  updates: Array<{
-    bet: LimitBet
-    fills?: any[]
-    isFilled?: boolean
-    amount?: number
-    shares?: number
-  }>
+  updates: Array<
+    {
+      bet: LimitBet
+    } & Pick<LimitBet, 'fills' | 'isFilled' | 'amount' | 'shares'>
+  >
 ) => {
   if (updates.length === 0)
     return { query: 'select 1 where false', updatedMakers: [] }
@@ -298,13 +296,11 @@ export const updateMakers = async (
   const allFillsAsNewBets: MarginalBet[] = []
   const allMakerIds: string[] = []
   const allSpentByUser: Record<string, number> = {}
-  const allUpdates: Array<{
-    bet: LimitBet
-    fills: any[]
-    isFilled: boolean
-    amount: number
-    shares: number
-  }> = []
+  const allUpdates: Array<
+    {
+      bet: LimitBet
+    } & Pick<LimitBet, 'fills' | 'isFilled' | 'amount' | 'shares'>
+  > = []
 
   for (const [takerBetId, makers] of Object.entries(makersByTakerBetId)) {
     const makersByBet = groupBy(makers, (maker) => maker.bet.id)
