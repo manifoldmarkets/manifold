@@ -1,7 +1,9 @@
-import { authEndpoint } from './helpers/endpoint'
 import { createSupabaseDirectClient } from 'shared/supabase/init'
+import { type APIHandler } from './helpers/endpoint'
 
-export const markallnotifications = authEndpoint(async (_req, auth) => {
+export const markallnotificationsnew: APIHandler<
+  'mark-all-notifications-new'
+> = async (_req, auth) => {
   const pg = createSupabaseDirectClient()
   await pg.none(
     `update user_notifications
@@ -12,4 +14,4 @@ export const markallnotifications = authEndpoint(async (_req, auth) => {
   )
 
   return { success: true }
-})
+}
