@@ -26,11 +26,6 @@ or
 update on public.contract_bets for each row
 execute function contract_bet_populate_cols ();
 
-create trigger contract_bet_update
-after
-update on public.contract_bets for each row
-execute function contract_bet_set_updated_time ();
-
 -- Functions
 create
 or replace function public.contract_bet_populate_cols () returns trigger language plpgsql as $function$
@@ -38,9 +33,7 @@ begin
     if new.bet_id is not null then
         new.data := new.data || jsonb_build_object('id', new.bet_id);
     end if;
-    if new.updated_time is null and new.created_time is not null then
-        new.updated_time := new.created_time;
-    end if;
+    new.updated_time = now();
     if new.data is not null then
         new.user_id := (new.data) ->> 'userId';
         new.amount := ((new.data) ->> 'amount')::numeric;
@@ -57,14 +50,6 @@ begin
     end if;
     return new;
 end
-$function$;
-
-create
-or replace function public.contract_bet_set_updated_time () returns trigger language plpgsql as $function$
-begin
-    new.updated_time = now();
-    return new;
-end;
 $function$;
 
 -- Row Level Security
