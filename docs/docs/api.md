@@ -19,7 +19,7 @@ Please migrate any code you have to the new domain. The old domain will disappea
 
 Our API is still in alpha — things may change or break at any time!
 
-If you have questions, come chat with us on [Discord](https://discord.com/invite/eHQBNBqXuh). We’d love to hear about what you build!
+If you have questions, come chat with us on [Discord](https://discord.com/invite/eHQBNBqXuh). We'd love to hear about what you build!
 
 If you notice any errors or omissions in this documentation, please let us know on Discord, or fix it yourself by [submitting a pull request](https://github.com/manifoldmarkets/manifold/blob/main/docs/docs/api.md).
 
@@ -344,7 +344,7 @@ Example response:
   "creatorAvatarUrl": "https://firebasestorage.googleapis.com/v0/b/mantic-markets.appspot.com/o/user-images%2FAngela%2F50463444807_edfd4598d6_o.jpeg?alt=media&token=ef44e13b-2e6c-4498-b9c4-8e38bdaf1476",
   "closeTime": 1655265001448,
   "question": "What is good?",
-  "description": "Resolves proportionally to the answer(s) which I find most compelling. (Obviously I’ll refrain from giving my own answers)\n\n(Please have at it with philosophy, ethics, etc etc)\n\n\nContract resolved automatically.",
+  "description": "Resolves proportionally to the answer(s) which I find most compelling. (Obviously I'll refrain from giving my own answers)\n\n(Please have at it with philosophy, ethics, etc etc)\n\n\nContract resolved automatically.",
   "url": "https://manifold.markets/Angela/what-is-good",
   "pool": null,
   "outcomeType": "FREE_RESPONSE",
@@ -1198,6 +1198,136 @@ Example response (truncated):
   },
 }
 ```
+
+## Websockets
+
+Manifold provides a real-time websocket server that allows you to subscribe to updates about markets, bets, and other events. The websocket endpoint is available at `wss://api.manifold.markets/ws` and `wss://api.dev.manifold.markets/ws`.
+
+### Message Format
+
+All messages sent to and from the server must be valid JSON strings. Each client message must include:
+
+- `type`: The type of message ('identify', 'subscribe', 'unsubscribe', or 'ping')
+- `txid`: A unique number identifying this message
+
+The server will respond to each client message with an acknowledgement:
+
+```json
+{
+  "type": "ack",
+  "txid": 123,
+  "success": true
+}
+```
+
+### Subscribing to Topics
+
+To subscribe to updates, send a message with:
+
+```json
+{
+  "type": "subscribe",
+  "txid": 123,
+  "topics": ["global/new-bet", "contract/[marketId]"]
+}
+```
+
+Available topics:
+
+Global topics:
+
+- `global/new-bet` - All new bets across all markets
+- `global/new-contract` - All new markets being created
+- `global/new-comment` - All new comments across all markets
+- `global/new-subsidy` - All new liquidity subsidies
+- `global/updated-contract` - Updates to any public market
+
+Per-contract topics (replace [marketId] with the actual market ID):
+
+- `contract/[marketId]` - General market updates
+- `contract/[marketId]/new-bet` - New bets on this market
+- `contract/[marketId]/new-comment` - New comments on this market
+- `contract/[marketId]/new-subsidy` - New liquidity subsidies on this market
+- `contract/[marketId]/new-answer` - New answers added to this market (for multiple choice markets)
+- `contract/[marketId]/updated-answers` - Updates to answers on this market
+- `contract/[marketId]/orders` - Updates to limit orders on this market
+- `contract/[marketId]/chart-annotation` - New chart annotations on this market
+- `contract/[marketId]/user-metrics/[userId]` - Updates to a user's position in this market
+
+Other topics:
+
+- `user/[userId]` - Updates to a user's public information
+- `answer/[answerId]/update` - Updates to a specific answer
+- `tv_schedule` - Updates to the TV schedule
+
+### Example Usage
+
+Here's an example of how to connect and subscribe to global bet updates using Node.js:
+
+```typescript
+import { APIRealtimeClient } from 'common/api/websocket-client'
+
+const client = new APIRealtimeClient('wss://api.manifold.markets/ws')
+
+// Subscribe to all new bets
+client.subscribe(['global/new-bet'], (msg) => {
+  console.log('New bet:', msg.data)
+})
+
+// Subscribe to a specific market's updates
+client.subscribe(['contract/1234'], (msg) => {
+  console.log('Market update:', msg.data)
+})
+```
+
+Or using plain WebSocket:
+
+```javascript
+const ws = new WebSocket('wss://api.manifold.markets/ws')
+let txid = 0
+
+ws.onopen = () => {
+  // Subscribe to global bets
+  ws.send(
+    JSON.stringify({
+      type: 'subscribe',
+      txid: txid++,
+      topics: ['global/new-bet'],
+    })
+  )
+}
+
+ws.onmessage = (event) => {
+  const msg = JSON.parse(event.data)
+  if (msg.type === 'broadcast') {
+    console.log('Received broadcast:', msg.data)
+  }
+}
+
+// Send periodic pings to keep connection alive
+setInterval(() => {
+  ws.send(
+    JSON.stringify({
+      type: 'ping',
+      txid: txid++,
+    })
+  )
+}, 30000)
+```
+
+The server will send broadcast messages in this format:
+
+```json
+{
+  "type": "broadcast",
+  "topic": "global/new-bet",
+  "data": {
+    // Bet data
+  }
+}
+```
+
+Note: The websocket connection requires periodic pings (every 30-60 seconds) to stay alive. If no ping is received for 60 seconds, the connection will be terminated.
 
 ## Internal API
 
