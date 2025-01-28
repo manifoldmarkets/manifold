@@ -320,7 +320,10 @@ export function CollatedOrderTable(props: {
     }
   }
 }) {
-  const { limitBets, contract, side, pseudonym } = props
+  const { contract, side, pseudonym } = props
+  const limitBets = props.limitBets.filter(
+    (b) => !b.expiresAt || b.expiresAt > Date.now()
+  )
   const isBinaryMC = isBinaryMulti(contract)
   const groupedBets = groupBy(limitBets, (b) => b.limitProb)
 

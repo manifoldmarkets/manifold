@@ -175,6 +175,7 @@ const betToRow = (bet: Bet | Omit<Bet, 'id'>) =>
   removeUndefinedProps({
     contract_id: bet.contractId,
     user_id: bet.userId,
+    expires_at: bet.expiresAt ? millisToTs(bet.expiresAt) : null,
     bet_id: 'id' in bet ? bet.id : undefined,
     created_time: millisToTs(bet.createdTime),
     data: JSON.stringify(removeUndefinedProps(bet)) + '::jsonb',
