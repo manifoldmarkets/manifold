@@ -75,8 +75,7 @@ export type fill = {
   amount: number
   shares: number
   timestamp: number
-  // Note: Old fills might have no fees, and the value would be undefined.
-  fees: Fees
+  fees?: Fees
   // If the fill is a sale, it means the matching bet has shares of the same outcome.
   // I.e. -fill.shares === matchedBet.shares
   isSale?: boolean
