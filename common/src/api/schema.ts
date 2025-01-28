@@ -70,10 +70,12 @@ import { Task, TaskCategory } from 'common/todo'
 import { ChartAnnotation } from 'common/supabase/chart-annotations'
 import { Dictionary } from 'lodash'
 import { Reaction } from 'common/reaction'
+import { YEAR_MS } from 'common/util/time'
 // mqp: very unscientific, just balancing our willingness to accept load
 // with user willingness to put up with stale data
 export const DEFAULT_CACHE_STRATEGY =
   'public, max-age=5, stale-while-revalidate=10'
+const MAX_EXPIRES_AT = 1_000 * YEAR_MS
 
 type APIGenericSchema = {
   // GET is for retrieval, POST is to mutate something, PUT is idempotent mutation (can be repeated safely)
@@ -218,7 +220,7 @@ export const API = (_apiTypeCheck = {
         amount: z.number().gte(SWEEPS_MIN_BET),
         replyToCommentId: z.string().optional(),
         limitProb: z.number().gte(0.01).lte(0.99).optional(),
-        expiresAt: z.number().lt(Number.MAX_SAFE_INTEGER).optional(),
+        expiresAt: z.number().lt(MAX_EXPIRES_AT).optional(),
         // Used for binary and new multiple choice contracts (cpmm-multi-1).
         outcome: z.enum(['YES', 'NO']).default('YES'),
         //Multi
@@ -253,7 +255,7 @@ export const API = (_apiTypeCheck = {
         contractId: z.string(),
         amount: z.number().gte(1),
         limitProb: z.number().gte(0).lte(1).optional(),
-        expiresAt: z.number().lt(Number.MAX_SAFE_INTEGER).optional(),
+        expiresAt: z.number().lt(MAX_EXPIRES_AT).optional(),
         answerIds: z.array(z.string()).min(1),
         deterministic: z.boolean().optional(),
       })
@@ -814,7 +816,7 @@ export const API = (_apiTypeCheck = {
     props: z
       .object({
         amount: z.number().positive().finite().safe(),
-        expiresTime: z.number().lt(Number.MAX_SAFE_INTEGER).optional(),
+        expiresTime: z.number().lt(MAX_EXPIRES_AT).optional(),
         maxUses: z.number().optional(),
         message: z.string().optional(),
       })
