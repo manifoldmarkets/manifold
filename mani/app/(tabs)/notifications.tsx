@@ -2,13 +2,16 @@ import Page from 'components/page'
 
 import { usePrivateUser, useUser } from 'hooks/use-user'
 import { PrivateUser, User } from 'common/user'
-import { Fragment, useMemo, useState } from 'react'
+import { Fragment, useEffect, useMemo, useState } from 'react'
 import { Col } from 'components/layout/col'
 import { ThemedText } from 'components/themed-text'
 import { useColor } from 'hooks/use-color'
 import { ActivityIndicator, View } from 'react-native'
 import { useIsPageVisible } from 'hooks/use-is-page-visibile'
-import { NotificationItem } from 'components/notification/notification-item'
+import {
+  NotificationItem,
+  shouldIgnoreNotification,
+} from 'components/notification/notification-item'
 import { NotificationGroupItem } from 'components/notification/notification-group-item'
 import { NotificationGroup } from 'common/notification'
 import { useGroupedNotifications } from 'client-common/hooks/use-notifications'
@@ -54,10 +57,10 @@ export function NotificationContent({
   const isPageVisible = useIsPageVisible()
 
   // Mark all notifications as seen. Rerun as new notifications come in.
-  // useEffect(() => {
-  //   if (!privateUser || !isPageVisible) return
-  //   api('markallnotifications', { seen: true })
-  // }, [privateUser?.id, isPageVisible, mostRecentNotification?.id])
+  useEffect(() => {
+    if (!privateUser || !isPageVisible) return
+    api('mark-all-notifications-new', {})
+  }, [privateUser?.id, isPageVisible])
 
   return (
     <Col style={{ width: '100%' }}>
@@ -70,9 +73,8 @@ export function NotificationContent({
         <>
           {groupedNotifications.map((notification) => (
             <Fragment key={notification.groupedById}>
-              {notification.notifications.length === 1 ? (
-                // &&
-                // !shouldIgnoreNotification(notification.notifications[0])
+              {notification.notifications.length === 1 &&
+              !shouldIgnoreNotification(notification.notifications[0]) ? (
                 <>
                   <NotificationItem
                     notification={notification.notifications[0]}
@@ -85,10 +87,9 @@ export function NotificationContent({
                     }}
                   />
                 </>
-              ) : (
-                // : notification.notifications.every((notif) =>
-                //     shouldIgnoreNotification(notif)
-                //   ) ? null
+              ) : notification.notifications.every((notif) =>
+                  shouldIgnoreNotification(notif)
+                ) ? null : (
                 <>
                   <NotificationGroupItem
                     notificationGroup={notification as NotificationGroup}
