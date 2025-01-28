@@ -60,7 +60,7 @@ export const fetchContractBetDataAndValidate = async (
   const isSumsToOne = `(select coalesce((data->>'shouldAnswersSumToOne')::boolean, false) from contracts where id = $2)`
   const whereLimitOrderBets = `
     b.contract_id = $2 and not b.is_filled and not b.is_cancelled and
-    ((b.data->'expiresAt') is null or (b.data->'expiresAt')::bigint > ts_to_millis(now())) and
+    (b.expires_at is null or b.expires_at > now()) and
     (
       -- For sums to one markets:
       (${isSumsToOne} and (

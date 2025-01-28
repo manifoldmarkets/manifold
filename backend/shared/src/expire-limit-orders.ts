@@ -7,14 +7,13 @@ import { LimitBet } from 'common/bet'
 
 export async function expireLimitOrders() {
   const pg = createSupabaseDirectClient()
-  // TODO: add expires_at column to contract_bets table
   const unfilteredBets = await pg.map(
     `
     update contract_bets
     set data = data || '{"isCancelled": true}'
     where is_filled = false
     and is_cancelled = false
-    and (data->'expiresAt')::bigint < ts_to_millis(now())
+    and expires_at < now()
     returning *
   `,
     [],
