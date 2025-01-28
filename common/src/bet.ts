@@ -66,7 +66,7 @@ type LimitProps = {
   // Non-limit orders can also be filled by matching with multiple limit orders.
   fills: fill[]
   expiresAt?: number // ms since epoch.
-  silent?: boolean
+  silent?: boolean // New default quick limit order type. API bets cannot be silent.
 }
 
 export type fill = {

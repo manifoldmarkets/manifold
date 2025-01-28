@@ -374,6 +374,7 @@ export const executeNewBetResult = async (
     id: getNewBetId(),
     userId: user.id,
     isApi,
+    silent: isApi ? undefined : newBet.silent, // API bets are never silent
     replyToCommentId,
     betGroupId,
     ...newBet,
