@@ -7,8 +7,7 @@ import { LimitBet } from 'common/bet'
 
 export async function expireLimitOrders() {
   const pg = createSupabaseDirectClient()
-
-  // TODO: add this job to the start of the queue
+  // TODO: add expires_at column to contract_bets table
   const unfilteredBets = await pg.map(
     `
     update contract_bets
