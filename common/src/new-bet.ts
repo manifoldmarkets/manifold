@@ -88,7 +88,8 @@ export const getBinaryCpmmBetInfo = (
   limitProb: number | undefined,
   unfilledBets: LimitBet[],
   balanceByUserId: { [userId: string]: number },
-  expiresAt?: number
+  expiresAt?: number,
+  expiresMillisAfter?: number
 ) => {
   const cpmmState = {
     pool: contract.pool,
@@ -119,6 +120,8 @@ export const getBinaryCpmmBetInfo = (
       ? { max: MAX_STONK_PROB, min: MIN_STONK_PROB }
       : { max: MAX_CPMM_PROB, min: MIN_CPMM_PROB }
   )
+  const now = Date.now()
+  const silent = expiresMillisAfter !== undefined
   const newBet: CandidateBet = removeUndefinedProps({
     orderAmount,
     amount,
@@ -132,11 +135,13 @@ export const getBinaryCpmmBetInfo = (
     probBefore,
     probAfter,
     loanAmount: 0,
-    createdTime: Date.now(),
+    createdTime: now,
     fees,
     isRedemption: false,
     visibility: contract.visibility,
-    expiresAt,
+    expiresAt:
+      expiresAt ?? (expiresMillisAfter ? now + expiresMillisAfter : undefined),
+    silent,
   })
 
   return {
@@ -157,7 +162,8 @@ export const getNewMultiCpmmBetInfo = (
   limitProb: number | undefined,
   unfilledBets: LimitBet[],
   balanceByUserId: { [userId: string]: number },
-  expiresAt?: number
+  expiresAt?: number,
+  expiresMillisAfter?: number
 ) => {
   if (contract.shouldAnswersSumToOne) {
     return getNewMultiCpmmBetsInfoSumsToOne(
@@ -169,7 +175,8 @@ export const getNewMultiCpmmBetInfo = (
       limitProb,
       unfilledBets,
       balanceByUserId,
-      expiresAt
+      expiresAt,
+      expiresMillisAfter
     )[0]
   }
 
@@ -201,7 +208,8 @@ export const getNewMultiCpmmBetInfo = (
     balanceByUserId,
     { max: MAX_CPMM_PROB, min: MIN_CPMM_PROB }
   )
-
+  const now = Date.now()
+  const silent = expiresMillisAfter !== undefined
   const newBet: CandidateBet = removeUndefinedProps({
     contractId: contract.id,
     outcome,
@@ -216,11 +224,13 @@ export const getNewMultiCpmmBetInfo = (
     isFilled,
     probBefore,
     probAfter,
-    createdTime: Date.now(),
+    createdTime: now,
     fees,
     isRedemption: false,
     visibility: contract.visibility,
-    expiresAt,
+    expiresAt:
+      expiresAt ?? (expiresMillisAfter ? now + expiresMillisAfter : undefined),
+    silent,
   })
 
   return { newBet, newPool, makers, ordersToCancel }
@@ -263,7 +273,8 @@ const getNewMultiCpmmBetsInfoSumsToOne = (
   limitProb: number | undefined,
   unfilledBets: LimitBet[],
   balanceByUserId: { [userId: string]: number },
-  expiresAt?: number
+  expiresAt?: number,
+  expiresMillisAfter?: number
 ) => {
   const newBetResults: ArbitrageBetArray = []
   const isMultiBuy = answersToBuy.length > 1
@@ -316,6 +327,7 @@ const getNewMultiCpmmBetsInfoSumsToOne = (
       ? multiBuyTakerAmount
       : takerAmount
 
+    const silent = expiresMillisAfter !== undefined
     const newBet: CandidateBet = removeUndefinedProps({
       orderAmount: betAmount,
       amount: takerAmount,
@@ -336,7 +348,10 @@ const getNewMultiCpmmBetsInfoSumsToOne = (
       fees: totalFees,
       isRedemption: false,
       visibility: contract.visibility,
-      expiresAt,
+      expiresAt:
+        expiresAt ??
+        (expiresMillisAfter ? now + expiresMillisAfter : undefined),
+      silent,
     })
 
     const otherResultsWithBet = otherBetsResults.map((result) => {

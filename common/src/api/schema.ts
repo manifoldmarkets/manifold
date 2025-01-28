@@ -220,6 +220,7 @@ export const API = (_apiTypeCheck = {
         amount: z.number().gte(SWEEPS_MIN_BET),
         replyToCommentId: z.string().optional(),
         limitProb: z.number().gte(0.01).lte(0.99).optional(),
+        expiresMillisAfter: z.number().lt(MAX_EXPIRES_AT).optional(),
         expiresAt: z.number().lt(MAX_EXPIRES_AT).optional(),
         // Used for binary and new multiple choice contracts (cpmm-multi-1).
         outcome: z.enum(['YES', 'NO']).default('YES'),

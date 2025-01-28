@@ -200,7 +200,7 @@ export function BetStatusText(props: {
   const isCashContract = contract.token === 'CASH'
   const betUser = useDisplayUserById(bet.userId)
   const self = useUser()
-  const { amount, outcome, createdTime, answerId, isApi } = bet
+  const { amount, outcome, createdTime, answerId, isApi, silent } = bet
   const getProb = (prob: number) =>
     !isBinaryMulti(contract) ? prob : getBinaryMCProb(prob, outcome)
 
@@ -215,6 +215,8 @@ export function BetStatusText(props: {
   const money = (
     <MoneyDisplay amount={absAmount} isCashContract={isCashContract} />
   )
+  const isNormalLimitOrder =
+    bet.limitProb !== undefined && bet.orderAmount !== undefined && !silent
   const orderAmount =
     bet.limitProb !== undefined && bet.orderAmount !== undefined ? (
       <MoneyDisplay amount={bet.orderAmount} isCashContract={isCashContract} />
@@ -253,7 +255,7 @@ export function BetStatusText(props: {
       ) : (
         <></>
       )}{' '}
-      {orderAmount ? (
+      {isNormalLimitOrder ? (
         <span>
           {anyFilled ? (
             <>
@@ -272,7 +274,9 @@ export function BetStatusText(props: {
         </span>
       ) : (
         <>
-          {bought} {money}{' '}
+          {bought} {money}
+          {orderAmount ? '/' : ''}
+          {orderAmount}{' '}
           <OutcomeLabel
             outcome={outcome}
             answer={answer}
