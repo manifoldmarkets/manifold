@@ -220,6 +220,7 @@ export type Database = {
           shares: number | null
           updated_time: string
           user_id: string
+          expires_at: string | null
         }
         Insert: {
           amount?: number | null
@@ -239,6 +240,7 @@ export type Database = {
           shares?: number | null
           updated_time?: string
           user_id: string
+          expires_at: string | null
         }
         Update: {
           amount?: number | null
@@ -258,6 +260,7 @@ export type Database = {
           shares?: number | null
           updated_time?: string
           user_id?: string
+          expires_at?: string | null
         }
         Relationships: []
       }
