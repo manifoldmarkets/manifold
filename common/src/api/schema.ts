@@ -219,6 +219,7 @@ export const API = (_apiTypeCheck = {
         replyToCommentId: z.string().optional(),
         limitProb: z.number().gte(0.01).lte(0.99).optional(),
         expiresAt: z.number().optional(),
+        expiresMillisAfter: z.number().optional(),
         // Used for binary and new multiple choice contracts (cpmm-multi-1).
         outcome: z.enum(['YES', 'NO']).default('YES'),
         //Multi

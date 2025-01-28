@@ -497,10 +497,10 @@ export const createNewAnswerOnContractNotification = async (
 
 export const createBetFillNotification = async (
   toUser: User,
+  fromUser: User,
   bet: Bet,
   limitBet: LimitBet,
-  contract: Contract,
-  idempotencyKey: string
+  contract: Contract
 ) => {
   const privateUser = await getPrivateUser(toUser.id)
   if (!privateUser) return
@@ -509,9 +509,6 @@ export const createBetFillNotification = async (
     'bet_fill'
   )
   if (!sendToBrowser) return
-
-  const fromUser = await getUser(bet.userId)
-  if (!fromUser) return
 
   // The limit order fills array has a matchedBetId that does not match this bet id
   // (even though this bet has a fills array that is matched to the limit order)
@@ -539,7 +536,7 @@ export const createBetFillNotification = async (
   }
 
   const notification: Notification = {
-    id: idempotencyKey,
+    id: crypto.randomUUID(),
     userId: toUser.id,
     reason: 'bet_fill',
     createdTime: Date.now(),

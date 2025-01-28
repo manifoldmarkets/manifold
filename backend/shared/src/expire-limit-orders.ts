@@ -8,7 +8,8 @@ import { LimitBet } from 'common/bet'
 export async function expireLimitOrders() {
   const pg = createSupabaseDirectClient()
 
-  const bets = await pg.map(
+  // TODO: add this job to the start of the queue
+  const unfilteredBets = await pg.map(
     `
     update contract_bets
     set data = data || '{"isCancelled": true}'
@@ -20,6 +21,7 @@ export async function expireLimitOrders() {
     [],
     convertBet
   )
+  const bets = unfilteredBets.filter((bet) => !bet.silent)
   const uniqueContractIds = uniq(bets.map((bet) => bet.contractId))
   const contracts = await getContractsDirect(uniqueContractIds, pg)
   await Promise.all(
