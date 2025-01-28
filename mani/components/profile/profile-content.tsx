@@ -8,8 +8,6 @@ import { TokenNumber } from 'components/token/token-number'
 import { Rounded } from 'constants/border-radius'
 import { useColor } from 'hooks/use-color'
 import { Image, View } from 'react-native'
-import { auth } from 'lib/firebase/init'
-import { clearData } from 'lib/auth-storage'
 import { Button } from 'components/buttons/button'
 import { router } from 'expo-router'
 import { BalanceChangeTable } from 'components/portfolio/balance-change-table'
@@ -21,6 +19,9 @@ import { useTokenMode } from 'hooks/use-token-mode'
 import { KYC_VERIFICATION_BONUS_CASH } from 'common/economy'
 import { SWEEPIES_NAME } from 'common/envs/constants'
 import { formatMoney } from 'common/util/format'
+import { SettingsModal } from './settings-modal'
+import { useState } from 'react'
+import { IconSymbol } from 'components/ui/icon-symbol'
 
 export function ProfileContent(props: { user: User }) {
   const color = useColor()
@@ -28,15 +29,7 @@ export function ProfileContent(props: { user: User }) {
   const currentUser = useUser()
   const isCurrentUser = currentUser?.id === user.id
   const { data: redeemable } = useAPIGetter('get-redeemable-prize-cash', {})
-
-  const signOut = async () => {
-    try {
-      await auth.signOut()
-      await clearData('user')
-    } catch (err) {
-      console.error('Error signing out:', err)
-    }
-  }
+  const [isSettingsOpen, setIsSettingsOpen] = useState(false)
 
   const { data } = useAPIGetter('get-daily-changed-metrics-and-contracts', {
     userId: user.id,
@@ -51,51 +44,53 @@ export function ProfileContent(props: { user: User }) {
   const manaNetWorth = manaInvestmentValue + (user?.balance ?? 0)
   const cashNetWorth = cashInvestmentValue + (user?.cashBalance ?? 0)
   const isUserRegistered = user.idVerified
-
   return (
     <Page>
       <Col style={{ gap: 12 }}>
-        <Row style={{ gap: 12 }}>
-          <View
-            style={{
-              width: 48,
-              height: 48,
-              borderRadius: Rounded.full,
-              backgroundColor: user?.avatarUrl ? 'transparent' : color.blue,
-              justifyContent: 'center',
-              alignItems: 'center',
-            }}
-          >
-            <Image
+        <Row style={{ gap: 12, justifyContent: 'space-between' }}>
+          <Row style={{ gap: 12 }}>
+            <View
               style={{
-                width: user?.avatarUrl ? 48 : 40,
-                height: user?.avatarUrl ? 48 : 40,
-                borderRadius: user?.avatarUrl ? Rounded.full : 0,
+                width: 48,
+                height: 48,
+                borderRadius: Rounded.full,
+                backgroundColor: user?.avatarUrl ? 'transparent' : color.blue,
+                justifyContent: 'center',
+                alignItems: 'center',
               }}
-              source={
-                user?.avatarUrl
-                  ? { uri: user.avatarUrl }
-                  : // eslint-disable-next-line @typescript-eslint/no-require-imports
-                    require('../../assets/images/origami-icons/turtle.png')
-              }
-            />
-          </View>
-          <Col>
-            <ThemedText size="md" weight="semibold">
-              {user.name}
-            </ThemedText>
-            <ThemedText size="md" color={color.textTertiary}>
-              @{user.username}
-            </ThemedText>
-          </Col>
+            >
+              <Image
+                style={{
+                  width: user?.avatarUrl ? 48 : 40,
+                  height: user?.avatarUrl ? 48 : 40,
+                  borderRadius: user?.avatarUrl ? Rounded.full : 0,
+                }}
+                source={
+                  user?.avatarUrl
+                    ? { uri: user.avatarUrl }
+                    : // eslint-disable-next-line @typescript-eslint/no-require-imports
+                      require('../../assets/images/origami-icons/turtle.png')
+                }
+              />
+            </View>
+            <Col>
+              <ThemedText size="md" weight="semibold">
+                {user.name}
+              </ThemedText>
+              <ThemedText size="md" color={color.textTertiary}>
+                @{user.username}
+              </ThemedText>
+            </Col>
+          </Row>
           {isCurrentUser && (
             <Button
-              onPress={signOut}
-              variant="gray"
-              size="sm"
-              title="Sign out"
-              style={{ marginTop: 20 }}
-            />
+              onPress={() => setIsSettingsOpen(true)}
+              variant="gray-white"
+              size="xs"
+              style={{ justifyContent: 'center' }}
+            >
+              <IconSymbol name="gear" size={20} color={color.text} />
+            </Button>
           )}
         </Row>
         <Row>
@@ -151,6 +146,12 @@ export function ProfileContent(props: { user: User }) {
           )}
         />
       </Col>
+      {isCurrentUser && (
+        <SettingsModal
+          isOpen={isSettingsOpen}
+          onClose={() => setIsSettingsOpen(false)}
+        />
+      )}
     </Page>
   )
 }

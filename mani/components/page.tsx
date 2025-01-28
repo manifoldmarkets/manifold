@@ -6,6 +6,7 @@ import { ThemedView } from './themed-view'
 import { Colors } from 'constants/colors'
 import { usePathname } from 'expo-router'
 import { isTabPath } from 'app/(tabs)/_layout'
+import { Footer } from './footer'
 
 const HEADER_HEIGHT = 250
 export const PAGE_PADDING = 20
@@ -34,6 +35,7 @@ export default function Page({
       >
         <ThemedView style={styles.content}>
           <View style={styles.contentPadding}>{children}</View>
+          <Footer />
         </ThemedView>
       </Animated.ScrollView>
       {nonScrollableChildren}
@@ -53,7 +55,7 @@ const styles = StyleSheet.create({
     flex: 1,
     gap: 16,
     overflow: 'hidden',
-    paddingBottom: 60,
+    paddingBottom: 5,
   },
   contentPadding: {
     paddingHorizontal: PAGE_PADDING,

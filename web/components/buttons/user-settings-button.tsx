@@ -34,17 +34,30 @@ export function UserSettingButton(props: { user: User }) {
   const { id: userId, name } = user
   const currentPrivateUser = usePrivateUser()
   const [isModalOpen, setIsModalOpen] = useState(false)
+  const [tabIndex, setTabIndex] = useState(0)
   const isAdmin = useAdmin()
   const isTrusted = useTrusted()
   const numReferrals = useReferralCount(user)
   const router = useRouter()
 
   useEffect(() => {
-    const tab = router.query.tab
-    if (tab && tab.toString().toLowerCase() === 'edit+profile') {
-      setIsModalOpen(true)
+    const tab = router.query.tab?.toString().toLowerCase()
+    if (!tab) return
+
+    const isYou = currentPrivateUser?.id === userId
+    const tabMapping: Record<string, number> = {
+      'edit profile': 0,
+      'account settings': isYou ? 1 : 0,
+      block: !isYou ? 0 : 0,
+      report: !isYou ? 1 : 0,
     }
-  }, [router.query])
+
+    const index = tabMapping[tab]
+    if (index !== undefined) {
+      setIsModalOpen(true)
+      setTabIndex(index)
+    }
+  }, [router.query, currentPrivateUser, userId])
 
   if (!currentPrivateUser) return <div />
 
@@ -128,6 +141,7 @@ export function UserSettingButton(props: { user: User }) {
             </Row>
             <QueryUncontrolledTabs
               className={'mb-4'}
+              defaultIndex={tabIndex}
               tabs={buildArray([
                 isYou
                   ? [

@@ -197,7 +197,7 @@ function PriceTile(props: {
           )}
         </Row>
         <ThemedText style={styles.price}>
-          {formatMoneyUSD(amounts.priceInDollars)}
+          {formatMoneyUSD(amounts.priceInDollars, true)}
         </ThemedText>
         {isLoading && (
           <ActivityIndicator

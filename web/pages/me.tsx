@@ -11,8 +11,15 @@ export default function MePage() {
   const user = useUser()
 
   useEffect(() => {
-    if (user) router.replace(`/${user.username}`)
-  }, [user])
+    if (user) {
+      const query = { ...router.query }
+      delete query.username // Remove username if it exists
+      router.replace({
+        pathname: `/${user.username}`,
+        query,
+      })
+    }
+  }, [user, router.query])
 
   return <></>
 }
