@@ -121,7 +121,7 @@ export const getBinaryCpmmBetInfo = (
       : { max: MAX_CPMM_PROB, min: MIN_CPMM_PROB }
   )
   const now = Date.now()
-  const silent = expiresMillisAfter !== undefined
+  const silent = expiresMillisAfter !== undefined ? true : undefined
   const newBet: CandidateBet = removeUndefinedProps({
     orderAmount,
     amount,
@@ -209,7 +209,7 @@ export const getNewMultiCpmmBetInfo = (
     { max: MAX_CPMM_PROB, min: MIN_CPMM_PROB }
   )
   const now = Date.now()
-  const silent = expiresMillisAfter !== undefined
+  const silent = expiresMillisAfter !== undefined ? true : undefined
   const newBet: CandidateBet = removeUndefinedProps({
     contractId: contract.id,
     outcome,
@@ -327,7 +327,7 @@ const getNewMultiCpmmBetsInfoSumsToOne = (
       ? multiBuyTakerAmount
       : takerAmount
 
-    const silent = expiresMillisAfter !== undefined
+    const silent = expiresMillisAfter !== undefined ? true : undefined
     const newBet: CandidateBet = removeUndefinedProps({
       orderAmount: betAmount,
       amount: takerAmount,
