@@ -33,6 +33,7 @@ import { getUsers } from './get-users'
 import { getUsersByIds } from './get-users-by-ids'
 import { getMarket } from './get-market'
 import { getMarketProb } from './get-market-prob'
+import { getMarketProbs } from './get-market-probs'
 import { getGroup } from './get-group'
 import { getPositions } from './get-positions'
 import { getLeagues } from './get-leagues'
@@ -197,6 +198,7 @@ export const handlers: { [k in APIPath]: APIHandler<k> } = {
   'market/:id': getMarket,
   'market/:id/lite': ({ id }) => getMarket({ id, lite: true }),
   'market/:id/prob': getMarketProb,
+  'market-probs': getMarketProbs,
   'answer/:answerId': getSingleAnswer,
   'market/:contractId/answers': getContractAnswers,
   'markets-by-ids': getMarketsByIds,

@@ -574,6 +574,22 @@ export const API = (_apiTypeCheck = {
     },
     props: z.object({ id: z.string() }).strict(),
   },
+  'market-probs': {
+    method: 'GET',
+    visibility: 'public',
+    authed: false,
+    returns: {} as {
+      [contractId: string]: {
+        prob?: number
+        answerProbs?: { [answerId: string]: number }
+      }
+    },
+    props: z
+      .object({
+        ids: z.array(z.string()),
+      })
+      .strict(),
+  },
   'markets-by-ids': {
     method: 'GET',
     visibility: 'undocumented',

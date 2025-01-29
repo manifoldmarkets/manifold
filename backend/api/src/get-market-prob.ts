@@ -7,7 +7,7 @@ export const getMarketProb: APIHandler<'market/:id/prob'> = async (props) => {
   const pg = createSupabaseDirectClient()
 
   const results = await pg.multi(
-    `select mechanism, data->>'p' as p, data->>'pool' as pool
+    `select mechanism, data->'p' as p, data->'pool' as pool
      from contracts
      where id = $1;
      select id, prob from answers

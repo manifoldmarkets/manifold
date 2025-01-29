@@ -464,6 +464,36 @@ Example response:
 }
 ```
 
+### `GET /v0/market-probs`
+
+Get the current probabilities for multiple markets in a single request.
+
+Parameters:
+
+- `ids`: Required. An array of market IDs.
+
+Example request:
+
+```bash
+curl "https://api.manifold.markets/v0/market-probs?ids=9t61v9e7x4&ids=ZNlNdzz690" -X GET
+```
+
+Example response:
+
+```json
+{
+  "9t61v9e7x4": {
+    "prob": 0.62
+  },
+  "ZNlNdzz690": {
+    "answerProbs": {
+      "answer1": 0.67,
+      "answer2": 0.33
+    }
+  }
+}
+```
+
 ### `GET /v0/market/[marketId]/positions`
 
 Get positions information about a single market.
@@ -1234,7 +1264,7 @@ To subscribe to updates, send a message with:
 
 Available topics:
 
-Global topics:
+### Global topics:
 
 - `global/new-bet` - All new bets across all markets
 - `global/new-contract` - All new markets being created
@@ -1242,7 +1272,7 @@ Global topics:
 - `global/new-subsidy` - All new liquidity subsidies
 - `global/updated-contract` - Updates to any public market
 
-Per-contract topics (replace [marketId] with the actual market ID):
+### Per-contract topics (replace [marketId] with the actual market ID):
 
 - `contract/[marketId]` - General market updates
 - `contract/[marketId]/new-bet` - New bets on this market
@@ -1254,7 +1284,7 @@ Per-contract topics (replace [marketId] with the actual market ID):
 - `contract/[marketId]/chart-annotation` - New chart annotations on this market
 - `contract/[marketId]/user-metrics/[userId]` - Updates to a user's position in this market
 
-Other topics:
+### Other topics:
 
 - `user/[userId]` - Updates to a user's public information
 - `answer/[answerId]/update` - Updates to a specific answer
