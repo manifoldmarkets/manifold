@@ -47,7 +47,7 @@ import { capitalize } from 'lodash'
 import { LocationMonitor } from '../gidx/location-monitor'
 import { VerifyButton } from '../sweeps/sweep-verify-section'
 import { sliderColors } from '../widgets/slider'
-import { RelativeTimestamp } from '../relative-timestamp'
+import { ChoicesToggleGroup } from '../widgets/choices-toggle-group'
 
 export default function LimitOrderPanel(props: {
   contract:
@@ -118,10 +118,8 @@ export default function LimitOrderPanel(props: {
   const [isSubmitting, setIsSubmitting] = useState(false)
   const betDeps = useRef<LimitBet[]>()
   // Expiring orders
-  const [addExpiration, setAddExpiration] = usePersistentInMemoryState(
-    false,
-    'add-limit-order-expiration'
-  )
+  const [addCustomExpiration, setAddCustomExpiration] =
+    usePersistentInMemoryState(false, 'add-limit-order-expiration')
   const initTimeInMs = Number(Date.now() + 5 * MINUTE_MS)
   const initDate = dayjs(initTimeInMs).format('YYYY-MM-DD')
   const initTime = dayjs(initTimeInMs).format('HH:mm')
@@ -130,9 +128,27 @@ export default function LimitOrderPanel(props: {
   const [expirationHoursMinutes, setExpirationHoursMinutes] =
     usePersistentInMemoryState<string>(initTime, 'limit-order-expiration-time')
 
-  const expiresAt = addExpiration
+  const expirationChoices: { [key: string]: number } = {
+    Never: 0,
+    Now: 1,
+    '1 hr': HOUR_MS,
+    '1 day': DAY_MS,
+    '1 week': WEEK_MS,
+    Custom: -1,
+  }
+
+  const [selectedExpiration, setSelectedExpiration] =
+    usePersistentInMemoryState<string>('Never', 'limit-order-expiration')
+  const expiresAt = addCustomExpiration
     ? dayjs(`${expirationDate}T${expirationHoursMinutes}`).valueOf()
     : undefined
+
+  const expiresMillisAfter =
+    !addCustomExpiration &&
+    selectedExpiration !== 'Custom' &&
+    selectedExpiration !== 'Never'
+      ? expirationChoices[selectedExpiration]
+      : undefined
 
   const initialProb =
     isBinaryMC && outcome === 'YES'
@@ -218,7 +234,8 @@ export default function LimitOrderPanel(props: {
             contractId: contract.id,
             answerId,
             limitProb: limitProb,
-            expiresAt,
+            expiresAt: addCustomExpiration ? expiresAt : undefined,
+            expiresMillisAfter,
             deps: betDeps.current?.map((b) => b.userId),
           })
         ),
@@ -326,26 +343,22 @@ export default function LimitOrderPanel(props: {
         disregardUserBalance={shouldPromptVerification}
       />
 
-      <div className="my-3">
+      <Col className="my-3 gap-2">
+        <span className="text-ink-700">Expiration</span>
         <Row className="items-baseline justify-between gap-2 sm:justify-start sm:gap-4">
-          <span className="text-ink-500">
-            Expires:{' '}
-            {expiresAt ? (
-              <RelativeTimestamp className="text-ink-500" time={expiresAt} />
-            ) : (
-              'Never'
-            )}
-          </span>
-          <Button
-            className={'mt-4'}
-            onClick={() => setAddExpiration(!addExpiration)}
-            color={'indigo-outline'}
-            disabled={isSubmitting}
-          >
-            {addExpiration ? '- expiration' : '+ expiration'}
-          </Button>
+          <ChoicesToggleGroup
+            choicesMap={Object.keys(expirationChoices).reduce((acc, key) => {
+              acc[key] = key
+              return acc
+            }, {} as { [key: string]: string })}
+            currentChoice={addCustomExpiration ? 'Custom' : selectedExpiration}
+            setChoice={(choice) => {
+              setAddCustomExpiration(choice === 'Custom')
+              setSelectedExpiration(choice as string)
+            }}
+          />
         </Row>
-        {addExpiration && (
+        {addCustomExpiration && (
           <Col className="gap-2">
             <Row className="mt-4 gap-2">
               <Input
@@ -427,7 +440,7 @@ export default function LimitOrderPanel(props: {
             </Row>
           </Col>
         )}
-      </div>
+      </Col>
 
       <Col className="mt-2 w-full gap-3">
         {outcome && hasLimitBet && filledAmount > 0 && (

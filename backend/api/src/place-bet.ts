@@ -122,7 +122,7 @@ export const placeBetMain = async (
   isApi: boolean
 ) => {
   const startTime = Date.now()
-  const { contractId, replyToCommentId, deterministic, answerId } = body
+  const { contractId, replyToCommentId, deterministic, answerId, silent } = body
   // Fetch data outside transaction first to avoid locking all limit orderers
   const {
     user,
@@ -206,7 +206,9 @@ export const placeBetMain = async (
       contractMetrics,
       replyToCommentId,
       betGroupId,
-      deterministic
+      deterministic,
+      false,
+      isApi ? undefined : silent
     )
   })
 
@@ -338,7 +340,8 @@ export const executeNewBetResult = async (
   replyToCommentId?: string,
   betGroupId?: string,
   deterministic?: boolean,
-  firstBetInMultiBet?: boolean
+  firstBetInMultiBet?: boolean,
+  silent?: boolean
 ) => {
   const {
     newBet,
@@ -374,7 +377,7 @@ export const executeNewBetResult = async (
     id: getNewBetId(),
     userId: user.id,
     isApi,
-    silent: isApi ? undefined : newBet.silent, // API bets are never silent
+    silent,
     replyToCommentId,
     betGroupId,
     ...newBet,

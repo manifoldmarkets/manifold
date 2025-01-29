@@ -66,6 +66,7 @@ import { useContractBets } from 'client-common/hooks/use-bets'
 import { useIsPageVisible } from 'web/hooks/use-page-visible'
 import { CandidateBet } from 'common/new-bet'
 import { APIParams } from 'common/api/schema'
+import { usePersistentInMemoryState } from 'client-common/hooks/use-persistent-in-memory-state'
 
 export type BinaryOutcomes = 'YES' | 'NO' | undefined
 
@@ -366,7 +367,10 @@ export const BuyPanelBody = (props: {
 
   const isAdvancedTrader = useIsAdvancedTrader()
 
-  const [betType, setBetType] = useState<'Market' | 'Limit'>('Market')
+  const [betType, setBetType] = usePersistentInMemoryState<'Market' | 'Limit'>(
+    'Market',
+    'bet-type'
+  )
 
   useEffect(() => {
     if (!isIOS() && !isAndroid()) {
@@ -431,6 +435,7 @@ export const BuyPanelBody = (props: {
           replyToCommentId,
           deps: uniq(betDeps.map((b) => b.userId)),
           expiresMillisAfter,
+          silent: true,
           limitProb,
         } as APIParams<'bet'>)
       )

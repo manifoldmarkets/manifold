@@ -203,6 +203,9 @@ export function BetStatusText(props: {
   const { amount, outcome, createdTime, answerId, isApi, silent } = bet
   const getProb = (prob: number) =>
     !isBinaryMulti(contract) ? prob : getBinaryMCProb(prob, outcome)
+  const cancelledOrExpired =
+    bet.isCancelled ||
+    (bet.expiresAt && bet.expiresAt < Date.now() && !bet.silent)
 
   const probBefore = getProb(bet.probBefore)
   const probAfter = getProb(bet.probAfter)
@@ -267,7 +270,7 @@ export function BetStatusText(props: {
             contract={contract}
             truncate="short"
           />{' '}
-          at {toProb} {bet.isCancelled && !allFilled ? '(cancelled)' : ''}
+          at {toProb} {cancelledOrExpired && !allFilled ? '(cancelled)' : ''}
         </span>
       ) : (
         <>
