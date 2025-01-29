@@ -1,7 +1,7 @@
 import { APIParams, APIPath, APIResponse } from 'common/api/schema'
 import { usePersistentInMemoryState } from './use-persistent-in-memory-state'
 import { Bet } from 'common/bet'
-import { useEffect } from 'react'
+import { Dispatch, SetStateAction, useEffect } from 'react'
 import { useApiSubscription } from './use-api-subscription'
 import { sortBy, uniqBy } from 'lodash'
 import { LimitBet } from 'common/bet'
@@ -49,27 +49,29 @@ export const useContractBets = (
     enabled,
   })
 
-  // We have to listen to cancels as well, since we don't get them in the `new-bet` topic.
+  listenToOrderUpdates(contractId, setNewBets, enabled)
+
+  return newBets
+}
+
+export const listenToOrderUpdates = (
+  contractId: string,
+  setNewBets: Dispatch<SetStateAction<Bet[]>>,
+  enabled: boolean
+) => {
   useApiSubscription({
     topics: [`contract/${contractId}/orders`],
     onBroadcast: (msg) => {
       const betUpdates = msg.data.bets as LimitBet[]
-      const cancelledBets = betUpdates.filter(
-        (bet: LimitBet) => bet.isCancelled
+      setNewBets((currentBets) =>
+        currentBets.map(
+          (bet) =>
+            betUpdates.find((updatedBet) => updatedBet.id === bet.id) ?? bet
+        )
       )
-      setNewBets((currentBets) => {
-        return currentBets.map((bet) => {
-          const cancelledBet = cancelledBets.find(
-            (cancelledBet) => cancelledBet.id === bet.id
-          )
-          return cancelledBet ? { ...bet, isCancelled: true } : bet
-        })
-      })
     },
     enabled,
   })
-
-  return newBets
 }
 
 export function betShouldBeFiltered(bet: Bet, options?: APIParams<'bets'>) {

@@ -224,10 +224,7 @@ export function BetStatusText(props: {
   const anyFilled = !floatingLesserEqual(amount, 0)
   const allFilled = floatingEqual(amount, bet.orderAmount ?? amount)
 
-  const hadPoolMatch =
-    (bet.limitProb === undefined ||
-      bet.fills?.some((fill) => fill.matchedBetId === null)) ??
-    false
+  const hadPoolMatch = bet.fills?.length ?? false
 
   const fromProb = hadPoolMatch
     ? getFormattedMappedValue(contract, probBefore)

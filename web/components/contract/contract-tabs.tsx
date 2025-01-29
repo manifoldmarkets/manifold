@@ -43,6 +43,7 @@ import generateFilterDropdownItems from '../search/search-dropdown-helpers'
 import { useAPIGetter } from 'web/hooks/use-api-getter'
 import { api } from 'web/lib/api/api'
 import { TRADE_TERM } from 'common/envs/constants'
+import { listenToOrderUpdates } from 'client-common/hooks/use-bets'
 
 export function ContractTabs(props: {
   mainContract: Contract
@@ -515,6 +516,7 @@ export const BetsTabContent = memo(function BetsTabContent(props: {
   const isNumber = outcomeType === 'NUMBER'
   const ITEMS_PER_PAGE = 50 * (isNumber ? contract.answers.length : 1)
   const bets = [...props.bets, ...olderBets]
+  listenToOrderUpdates(contract.id, setOlderBets, true)
 
   const oldestBet = minBy(bets, (b) => b.createdTime)
   const start = page * ITEMS_PER_PAGE
