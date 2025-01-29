@@ -470,7 +470,7 @@ Get the current probabilities for multiple markets in a single request.
 
 Parameters:
 
-- `ids`: Required. An array of market IDs.
+- `ids`: Required. An array of market IDs, up to length 100.
 
 Example request:
 

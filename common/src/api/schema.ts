@@ -586,7 +586,7 @@ export const API = (_apiTypeCheck = {
     },
     props: z
       .object({
-        ids: z.array(z.string()),
+        ids: z.array(z.string()).max(100),
       })
       .strict(),
   },

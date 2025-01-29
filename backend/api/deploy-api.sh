@@ -126,6 +126,7 @@ gcloud compute instance-templates create-with-container ${TEMPLATE_NAME} \
        --tags lb-health-check \
        --address ${STATIC_IP_ADDRESS}
 
+# ian: Uncomment this after you update the url-map config
 # echo "Importing url-map config"
 # gcloud compute url-maps import api-lb \
 #         --source=url-map-config.yaml \
