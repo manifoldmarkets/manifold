@@ -605,7 +605,7 @@ export function Answer(props: {
   const isClient = useIsClient()
 
   const yourUnfilledBets = unfilledBets?.filter(
-    (bet) => bet.userId === user?.id
+    (bet) => bet.userId === user?.id && !bet.silent
   )
   const canEdit = canEditAnswer(answer, contract, user)
 
