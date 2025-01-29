@@ -47,6 +47,7 @@ import { capitalize } from 'lodash'
 import { LocationMonitor } from '../gidx/location-monitor'
 import { VerifyButton } from '../sweeps/sweep-verify-section'
 import { sliderColors } from '../widgets/slider'
+import { RelativeTimestamp } from '../relative-timestamp'
 
 export default function LimitOrderPanel(props: {
   contract:
@@ -293,18 +294,21 @@ export default function LimitOrderPanel(props: {
 
   return (
     <>
-      <Col className="relative my-2 w-full gap-3">
-        <Row className="text-ink-700 w-full items-center gap-3">
+      <Col className="relative my-2 w-full gap-2">
+        <div className="text-ink-700">
           {isPseudoNumeric ? 'Value' : 'Probability'}
-          <ProbabilityOrNumericInput
-            contract={contract}
-            prob={limitProbInt}
-            setProb={setLimitProbInt}
-            error={inputError}
-            onRangeError={setInputError}
-            disabled={isSubmitting}
-          />
-        </Row>
+        </div>
+        <ProbabilityOrNumericInput
+          contract={contract}
+          prob={limitProbInt}
+          setProb={setLimitProbInt}
+          error={inputError}
+          onRangeError={setInputError}
+          disabled={isSubmitting}
+          showSlider
+          sliderColor={pseudonymColor}
+          outcome={outcome}
+        />
       </Col>
 
       <Row className={'text-ink-700 my-2 items-center space-x-3'}>
@@ -323,14 +327,24 @@ export default function LimitOrderPanel(props: {
       />
 
       <div className="my-3">
-        <Button
-          className={'mt-4'}
-          onClick={() => setAddExpiration(!addExpiration)}
-          color={'indigo-outline'}
-          disabled={isSubmitting}
-        >
-          {addExpiration ? 'Remove expiration date' : 'Add expiration date'}
-        </Button>
+        <Row className="items-baseline justify-between gap-2 sm:justify-start sm:gap-4">
+          <span className="text-ink-500">
+            Expires:{' '}
+            {expiresAt ? (
+              <RelativeTimestamp className="text-ink-500" time={expiresAt} />
+            ) : (
+              'Never'
+            )}
+          </span>
+          <Button
+            className={'mt-4'}
+            onClick={() => setAddExpiration(!addExpiration)}
+            color={'indigo-outline'}
+            disabled={isSubmitting}
+          >
+            {addExpiration ? '- expiration' : '+ expiration'}
+          </Button>
+        </Row>
         {addExpiration && (
           <Col className="gap-2">
             <Row className="mt-4 gap-2">
@@ -356,6 +370,7 @@ export default function LimitOrderPanel(props: {
                 onChange={(e) => setExpirationHoursMinutes(e.target.value)}
                 disabled={isSubmitting}
                 value={expirationHoursMinutes}
+                step={60}
               />
             </Row>
             <Row className="gap-2">
