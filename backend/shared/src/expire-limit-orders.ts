@@ -7,19 +7,19 @@ import { LimitBet } from 'common/bet'
 
 export async function expireLimitOrders() {
   const pg = createSupabaseDirectClient()
-
-  const bets = await pg.map(
+  const unfilteredBets = await pg.map(
     `
     update contract_bets
     set data = data || '{"isCancelled": true}'
     where is_filled = false
     and is_cancelled = false
-    and (data->'expiresAt')::bigint < ts_to_millis(now())
+    and expires_at < now()
     returning *
   `,
     [],
     convertBet
   )
+  const bets = unfilteredBets.filter((bet) => !bet.silent)
   const uniqueContractIds = uniq(bets.map((bet) => bet.contractId))
   const contracts = await getContractsDirect(uniqueContractIds, pg)
   await Promise.all(

@@ -8,6 +8,7 @@ type AnyTxnType =
   | Donation
   | Tip
   | LootBoxPurchase
+  | AdminReward
   | Manalink
   | Referral
   | UniqueBettorBonus
@@ -552,6 +553,17 @@ type ManifoldTopUp = {
   token: 'M$'
 }
 
+type AdminReward = {
+  category: 'ADMIN_REWARD'
+  fromType: 'BANK'
+  toType: 'USER'
+  token: 'M$'
+  data: {
+    reportId: number
+    updateType: string
+  }
+}
+
 export type AddSubsidyTxn = Txn & AddSubsidy
 export type RemoveSubsidyTxn = Txn & RemoveSubsidy
 export type DonationTxn = Txn & Donation
@@ -604,3 +616,4 @@ export type ExtraPurchasedManaTxn = Txn & ExtraPurchasedMana
 export type ManifoldTopUpTxn = Txn & ManifoldTopUp
 export type KycBonusTxn = Txn & KycBonus
 export type CashOutPendingTxn = Txn & CashOutPending
+export type AdminRewardTxn = Txn & AdminReward

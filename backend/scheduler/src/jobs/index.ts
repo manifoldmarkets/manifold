@@ -92,7 +92,7 @@ export function createJobs() {
     ),
     createJob(
       'expire-limit-orders',
-      '0 */10 * * * *', // every 10 minutes
+      '0 */1 * * * *', // every minute
       expireLimitOrders
     ),
     createJob(

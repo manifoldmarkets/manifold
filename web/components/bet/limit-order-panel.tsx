@@ -6,7 +6,7 @@ import toast from 'react-hot-toast'
 import { Answer } from 'common/answer'
 import { LimitBet } from 'common/bet'
 import { getProbability } from 'common/calculate'
-import { CpmmState } from 'common/calculate-cpmm'
+import { CpmmState, getCpmmProbability } from 'common/calculate-cpmm'
 import { calculateCpmmMultiArbitrageBet } from 'common/calculate-cpmm-arbitrage'
 import {
   BinaryContract,
@@ -40,13 +40,14 @@ import { addObjects, removeUndefinedProps } from 'common/util/object'
 import { api } from 'web/lib/api/api'
 import clsx from 'clsx'
 import { getAnswerColor } from '../charts/contract/choice'
-import { Fees, noFees } from 'common/fees'
+import { noFees } from 'common/fees'
 import { MoneyDisplay } from './money-display'
 import { TRADE_TERM } from 'common/envs/constants'
 import { capitalize } from 'lodash'
 import { LocationMonitor } from '../gidx/location-monitor'
 import { VerifyButton } from '../sweeps/sweep-verify-section'
 import { sliderColors } from '../widgets/slider'
+import { ChoicesToggleGroup } from '../widgets/choices-toggle-group'
 
 export default function LimitOrderPanel(props: {
   contract:
@@ -117,10 +118,8 @@ export default function LimitOrderPanel(props: {
   const [isSubmitting, setIsSubmitting] = useState(false)
   const betDeps = useRef<LimitBet[]>()
   // Expiring orders
-  const [addExpiration, setAddExpiration] = usePersistentInMemoryState(
-    false,
-    'add-limit-order-expiration'
-  )
+  const [addCustomExpiration, setAddCustomExpiration] =
+    usePersistentInMemoryState(false, 'add-limit-order-expiration')
   const initTimeInMs = Number(Date.now() + 5 * MINUTE_MS)
   const initDate = dayjs(initTimeInMs).format('YYYY-MM-DD')
   const initTime = dayjs(initTimeInMs).format('HH:mm')
@@ -129,9 +128,27 @@ export default function LimitOrderPanel(props: {
   const [expirationHoursMinutes, setExpirationHoursMinutes] =
     usePersistentInMemoryState<string>(initTime, 'limit-order-expiration-time')
 
-  const expiresAt = addExpiration
+  const expirationChoices: { [key: string]: number } = {
+    Never: 0,
+    Now: 1,
+    '1h': HOUR_MS,
+    '1d': DAY_MS,
+    '1w': WEEK_MS,
+    Custom: -1,
+  }
+
+  const [selectedExpiration, setSelectedExpiration] =
+    usePersistentInMemoryState<string>('Never', 'limit-order-expiration')
+  const expiresAt = addCustomExpiration
     ? dayjs(`${expirationDate}T${expirationHoursMinutes}`).valueOf()
     : undefined
+
+  const expiresMillisAfter =
+    !addCustomExpiration &&
+    selectedExpiration !== 'Custom' &&
+    selectedExpiration !== 'Never'
+      ? expirationChoices[selectedExpiration]
+      : undefined
 
   const initialProb =
     isBinaryMC && outcome === 'YES'
@@ -217,7 +234,8 @@ export default function LimitOrderPanel(props: {
             contractId: contract.id,
             answerId,
             limitProb: limitProb,
-            expiresAt,
+            expiresAt: addCustomExpiration ? expiresAt : undefined,
+            expiresMillisAfter,
             deps: betDeps.current?.map((b) => b.userId),
           })
         ),
@@ -264,13 +282,14 @@ export default function LimitOrderPanel(props: {
   let filledAmount = 0
   // let fees = noFees
   try {
-    const result = getBetReturns(
+    const result = getLimitBetReturns(
       cpmmState,
       binaryMCOutcome ?? outcome ?? 'YES',
       amount,
       limitProb ?? initialProb,
       unfilledBets,
       balanceByUserId,
+      setError,
       shouldAnswersSumToOne ? multiProps : undefined
     )
     currentPayout = result.currentPayout
@@ -292,18 +311,21 @@ export default function LimitOrderPanel(props: {
 
   return (
     <>
-      <Col className="relative my-2 w-full gap-3">
-        <Row className="text-ink-700 w-full items-center gap-3">
+      <Col className="relative my-2 w-full gap-2">
+        <div className="text-ink-700">
           {isPseudoNumeric ? 'Value' : 'Probability'}
-          <ProbabilityOrNumericInput
-            contract={contract}
-            prob={limitProbInt}
-            setProb={setLimitProbInt}
-            error={inputError}
-            onRangeError={setInputError}
-            disabled={isSubmitting}
-          />
-        </Row>
+        </div>
+        <ProbabilityOrNumericInput
+          contract={contract}
+          prob={limitProbInt}
+          setProb={setLimitProbInt}
+          error={inputError}
+          onRangeError={setInputError}
+          disabled={isSubmitting}
+          showSlider
+          sliderColor={pseudonymColor}
+          outcome={outcome}
+        />
       </Col>
 
       <Row className={'text-ink-700 my-2 items-center space-x-3'}>
@@ -321,16 +343,22 @@ export default function LimitOrderPanel(props: {
         disregardUserBalance={shouldPromptVerification}
       />
 
-      <div className="my-3">
-        <Button
-          className={'mt-4'}
-          onClick={() => setAddExpiration(!addExpiration)}
-          color={'indigo-outline'}
-          disabled={isSubmitting}
-        >
-          {addExpiration ? 'Remove expiration date' : 'Add expiration date'}
-        </Button>
-        {addExpiration && (
+      <Col className="my-3 gap-2">
+        <span className="text-ink-700">Expiration</span>
+        <Row className="items-baseline justify-between gap-2 sm:justify-start sm:gap-4">
+          <ChoicesToggleGroup
+            choicesMap={Object.keys(expirationChoices).reduce((acc, key) => {
+              acc[key] = key
+              return acc
+            }, {} as { [key: string]: string })}
+            currentChoice={addCustomExpiration ? 'Custom' : selectedExpiration}
+            setChoice={(choice) => {
+              setAddCustomExpiration(choice === 'Custom')
+              setSelectedExpiration(choice as string)
+            }}
+          />
+        </Row>
+        {addCustomExpiration && (
           <Col className="gap-2">
             <Row className="mt-4 gap-2">
               <Input
@@ -355,6 +383,7 @@ export default function LimitOrderPanel(props: {
                 onChange={(e) => setExpirationHoursMinutes(e.target.value)}
                 disabled={isSubmitting}
                 value={expirationHoursMinutes}
+                step={60}
               />
             </Row>
             <Row className="gap-2">
@@ -411,7 +440,7 @@ export default function LimitOrderPanel(props: {
             </Row>
           </Col>
         )}
-      </div>
+      </Col>
 
       <Col className="mt-2 w-full gap-3">
         {outcome && hasLimitBet && filledAmount > 0 && (
@@ -559,65 +588,79 @@ export default function LimitOrderPanel(props: {
   )
 }
 
-const getBetReturns = (
+export const getLimitBetReturns = (
   cpmmState: CpmmState,
   outcome: 'YES' | 'NO',
   betAmount: number,
   limitProb: number | undefined,
   unfilledBets: LimitBet[],
   balanceByUserId: { [userId: string]: number },
+  setError: (error: string) => void,
   arbitrageProps?: {
     answers: Answer[]
     answerToBuy: Answer
   }
 ) => {
   const orderAmount = betAmount
-  let amount: number
-  let shares: number
-  let fees: Fees
-  let betDeps: LimitBet[]
-  if (arbitrageProps) {
-    const { answers, answerToBuy } = arbitrageProps
-    const { newBetResult, otherBetResults } = calculateCpmmMultiArbitrageBet(
-      answers,
-      answerToBuy,
-      outcome,
-      betAmount,
-      limitProb,
-      unfilledBets,
-      balanceByUserId,
-      cpmmState.collectedFees
-    )
-    amount = sumBy(newBetResult.takers, 'amount')
-    shares = sumBy(newBetResult.takers, 'shares')
-    betDeps = newBetResult.makers
-      .map((m) => m.bet)
-      .concat(otherBetResults.flatMap((r) => r.makers.map((m) => m.bet)))
-      .concat(newBetResult.ordersToCancel)
-      .concat(otherBetResults.flatMap((r) => r.ordersToCancel))
-    fees = addObjects(
-      newBetResult.totalFees,
-      otherBetResults.reduce(
-        (feeSum, results) => addObjects(feeSum, results.totalFees),
-        noFees
+  let amount = 0
+  let shares = 0
+  let fees = noFees
+  let betDeps: LimitBet[] = []
+  let probAfter = 0
+  try {
+    if (arbitrageProps) {
+      const { answers, answerToBuy } = arbitrageProps
+      const { newBetResult, otherBetResults } = calculateCpmmMultiArbitrageBet(
+        answers,
+        answerToBuy,
+        outcome,
+        betAmount,
+        limitProb,
+        unfilledBets,
+        balanceByUserId,
+        cpmmState.collectedFees
       )
+      amount = sumBy(newBetResult.takers, 'amount')
+      shares = sumBy(newBetResult.takers, 'shares')
+      betDeps = newBetResult.makers
+        .map((m) => m.bet)
+        .concat(otherBetResults.flatMap((r) => r.makers.map((m) => m.bet)))
+        .concat(newBetResult.ordersToCancel)
+        .concat(otherBetResults.flatMap((r) => r.ordersToCancel))
+      fees = addObjects(
+        newBetResult.totalFees,
+        otherBetResults.reduce(
+          (feeSum, results) => addObjects(feeSum, results.totalFees),
+          noFees
+        )
+      )
+      probAfter = getCpmmProbability(
+        newBetResult.cpmmState.pool,
+        newBetResult.cpmmState.p
+      )
+    } else {
+      const result = computeCpmmBet(
+        cpmmState,
+        outcome,
+        betAmount,
+        limitProb,
+        unfilledBets,
+        balanceByUserId,
+        !arbitrageProps && { max: MAX_CPMM_PROB, min: MIN_CPMM_PROB }
+      )
+      amount = result.amount
+      shares = result.shares
+      fees = result.fees
+      betDeps = result.makers.map((m) => m.bet).concat(result.ordersToCancel)
+      probAfter = result.probAfter
+    }
+  } catch (err: any) {
+    console.error('Error in getLimitBetReturns:', err)
+    setError(
+      err?.message ??
+        `An error occurred during ${TRADE_TERM} calculation, try again.`
     )
-  } else {
-    const result = computeCpmmBet(
-      cpmmState,
-      outcome,
-      betAmount,
-      limitProb,
-      unfilledBets,
-      balanceByUserId,
-      !arbitrageProps && { max: MAX_CPMM_PROB, min: MIN_CPMM_PROB }
-    )
-    amount = result.amount
-    shares = result.shares
-    fees = result.fees
-    betDeps = result.makers.map((m) => m.bet).concat(result.ordersToCancel)
   }
-
   const remainingMatched = limitProb
     ? ((orderAmount ?? 0) - amount) /
       (outcome === 'YES' ? limitProb : 1 - limitProb)
@@ -633,5 +676,6 @@ const getBetReturns = (
     currentReturn,
     fees,
     betDeps,
+    probAfter,
   }
 }

@@ -4,7 +4,7 @@ import { Contract, contractPath, MarketContract } from 'common/contract'
 import { PrivateUser } from 'common/user'
 import { extensions } from 'common/util/parse'
 import * as admin from 'firebase-admin'
-import { first } from 'lodash'
+import { first, uniq } from 'lodash'
 import { BETTING_STREAK_RESET_HOUR } from 'common/economy'
 import { DAY_MS } from 'common/util/time'
 import {
@@ -223,7 +223,7 @@ export const getUsers = async (
 ) => {
   const res = await pg.map(
     `select * from users where id = any($1)`,
-    [userIds],
+    [uniq(userIds)],
     (row) => convertUser(row)
   )
   return res
