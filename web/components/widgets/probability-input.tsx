@@ -10,15 +10,14 @@ import {
 } from 'common/contract'
 import { Col } from '../layout/col'
 import { Input } from './input'
-import { AmountInput } from './amount-input'
 import { Slider, sliderColors } from './slider'
-import { Row } from '../layout/row'
-export const PROBABILITY_SLIDER_VALUES = [
-  1, 5, 10, 15, 20, 25, 30, 35, 40, 45, 50, 55, 60, 65, 70, 75, 80, 85, 90, 95,
-  99,
-]
+import { AmountInput } from 'web/components/widgets/amount-input'
+export const PROBABILITY_SLIDER_VALUES = Array.from(
+  { length: 99 },
+  (_, i) => i + 1
+)
 
-export const PROBABILITY_SLIDER_VALUE_LABELS = [1, 25, 50, 75, 99]
+export const PROBABILITY_SLIDER_VALUE_LABELS = [1, 50, 99]
 
 export function ProbabilitySlider(props: {
   prob: number | undefined
@@ -30,7 +29,7 @@ export function ProbabilitySlider(props: {
 }) {
   const { prob, onProbChange, disabled, className, outcome } = props
   // Default slider color: YES → green, NO → red
-  const color = props.color ?? (outcome === 'NO' ? 'red' : 'green')
+  const color = props.color ?? 'gray'
 
   const marks = PROBABILITY_SLIDER_VALUE_LABELS.map((p) => ({
     value: PROBABILITY_SLIDER_VALUES.findIndex((val) => val === p),
@@ -71,7 +70,6 @@ export function ProbabilityInput(props: {
   inputClassName?: string
   error?: boolean
   limitProbs?: { max: number; min: number }
-  showButtons?: boolean
 }) {
   const {
     prob,
@@ -82,7 +80,6 @@ export function ProbabilityInput(props: {
     inputClassName,
     error,
     limitProbs,
-    showButtons,
   } = props
   const maxBetProbInt = 100 * (limitProbs?.max ?? 0.99)
   const minBetProbInt = 100 * (limitProbs?.min ?? 0.01)
@@ -108,11 +105,7 @@ export function ProbabilityInput(props: {
   return (
     <Col className={clsx(className, 'relative')}>
       <Input
-        className={clsx(
-          'w-full !text-lg',
-          showButtons && 'pr-24',
-          inputClassName
-        )}
+        className={clsx('w-full !text-lg', inputClassName)}
         type="text"
         pattern="[0-9]*"
         inputMode="numeric"
@@ -127,52 +120,9 @@ export function ProbabilityInput(props: {
         }}
         error={error}
       />
-      {showButtons ? (
-        <>
-          <span className="text-ink-400 absolute right-[106px] top-1/2 my-auto -translate-y-1/2">
-            %
-          </span>
-          <div className="bg-ink-300 absolute right-[98px] h-full w-[1px]" />
-          <Row className="divide-ink-300 absolute right-[1px] top-[1px] h-[calc(100%-2px)] divide-x text-sm">
-            <Col className="divide-ink-300 divide-y">
-              <button
-                className="text-ink-400 hover:text-ink-500 active:text-ink-500 flex h-[35px] w-12 items-center justify-center"
-                onClick={() => adjustProb(1)}
-                disabled={disabled}
-              >
-                +1
-              </button>
-              <button
-                className="text-ink-400 hover:text-ink-500 active:text-ink-500 flex h-[35px] w-12 items-center justify-center"
-                onClick={() => adjustProb(-1)}
-                disabled={disabled}
-              >
-                -1
-              </button>
-            </Col>
-            <Col className="divide-ink-300 divide-y">
-              <button
-                className="text-ink-400 hover:text-ink-500 active:text-ink-500 flex h-[35px] w-12 items-center justify-center"
-                onClick={() => adjustProb(5)}
-                disabled={disabled}
-              >
-                +5
-              </button>
-              <button
-                className="text-ink-400 hover:text-ink-500 active:text-ink-500 flex h-[35px] w-12 items-center justify-center"
-                onClick={() => adjustProb(-5)}
-                disabled={disabled}
-              >
-                -5
-              </button>
-            </Col>
-          </Row>
-        </>
-      ) : (
-        <span className="text-ink-400 absolute right-4 top-1/2 my-auto -translate-y-1/2">
-          %
-        </span>
-      )}
+      <span className="text-ink-400 absolute right-4 top-1/2 my-auto -translate-y-1/2">
+        %
+      </span>
     </Col>
   )
 }
@@ -243,7 +193,6 @@ export function ProbabilityOrNumericInput(props: {
                 ? { max: MAX_CPMM_PROB, min: MIN_CPMM_PROB }
                 : undefined
             }
-            showButtons={showSlider}
           />
           {showSlider && !isPseudoNumeric && (
             <ProbabilitySlider

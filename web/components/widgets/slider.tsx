@@ -13,6 +13,10 @@ export const sliderColors = {
   violet: ['bg-violet-300', 'focus:outline-violet-500/30 bg-violet-500'],
   azure: ['bg-azure-300', 'focus:outline-azure-500/30 bg-azure-500'],
   sienna: ['bg-sienna-300', 'focus:outline-sienna-500/30 bg-sienna-500'],
+  gray: [
+    'dark:bg-ink-800 bg-ink-700',
+    'focus:outline-ink-800/30 dark:bg-ink-800 bg-ink-700',
+  ],
   // light: ['primary-200', 'primary-300']
 } as const
 export type Mark = { value: number; label: string }
@@ -73,7 +77,7 @@ export function Slider(props: {
                   'h-2 w-2 rounded-full'
                 )}
               />
-              <span className="text-ink-400 absolute left-1/2 top-4 -translate-x-1/2 text-xs">
+              <span className="text-ink-500 absolute left-1/2 top-4 -translate-x-1/2 text-xs">
                 {label}
               </span>
             </div>

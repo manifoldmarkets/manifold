@@ -572,6 +572,7 @@ export const BuyPanelBody = (props: {
               {isAdvancedTrader && !isStonk && (
                 <ChoicesToggleGroup
                   currentChoice={betType}
+                  color="light"
                   choicesMap={{
                     Quick: 'Market',
                     Limit: 'Limit',
@@ -615,7 +616,6 @@ export const BuyPanelBody = (props: {
                 setError={setError}
                 disabled={isSubmitting}
                 inputRef={inputRef}
-                binaryOutcome={isBinaryMC ? undefined : outcome}
                 showSlider={isAdvancedTrader}
                 marketTier={marketTier}
                 token={isCashContract ? 'CASH' : 'M$'}

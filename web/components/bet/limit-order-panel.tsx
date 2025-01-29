@@ -30,7 +30,6 @@ import { Col } from '../layout/col'
 import { Row } from '../layout/row'
 import { BinaryOutcomeLabel, PseudoNumericOutcomeLabel } from '../outcome-label'
 import { BuyAmountInput } from '../widgets/amount-input'
-import { ProbabilityOrNumericInput } from '../widgets/probability-input'
 import { getPseudoProbability } from 'common/pseudo-numeric'
 import { usePersistentInMemoryState } from 'client-common/hooks/use-persistent-in-memory-state'
 import { MultiBetProps } from 'web/components/bet/bet-panel'
@@ -48,6 +47,7 @@ import { LocationMonitor } from '../gidx/location-monitor'
 import { VerifyButton } from '../sweeps/sweep-verify-section'
 import { sliderColors } from '../widgets/slider'
 import { ChoicesToggleGroup } from '../widgets/choices-toggle-group'
+import { ProbabilitySlider } from '../widgets/probability-input'
 
 export default function LimitOrderPanel(props: {
   contract:
@@ -129,8 +129,8 @@ export default function LimitOrderPanel(props: {
     usePersistentInMemoryState<string>(initTime, 'limit-order-expiration-time')
 
   const expirationChoices: { [key: string]: number } = {
-    Never: 0,
     Now: 1,
+    '1s': 1000,
     '1h': HOUR_MS,
     '1d': DAY_MS,
     '1w': WEEK_MS,
@@ -138,7 +138,7 @@ export default function LimitOrderPanel(props: {
   }
 
   const [selectedExpiration, setSelectedExpiration] =
-    usePersistentInMemoryState<string>('Never', 'limit-order-expiration')
+    usePersistentInMemoryState<string>('1s', 'limit-order-expiration')
   const expiresAt = addCustomExpiration
     ? dayjs(`${expirationDate}T${expirationHoursMinutes}`).valueOf()
     : undefined
@@ -311,27 +311,11 @@ export default function LimitOrderPanel(props: {
 
   return (
     <>
-      <Col className="relative my-2 w-full gap-2">
-        <div className="text-ink-700">
-          {isPseudoNumeric ? 'Value' : 'Probability'}
-        </div>
-        <ProbabilityOrNumericInput
-          contract={contract}
-          prob={limitProbInt}
-          setProb={setLimitProbInt}
-          error={inputError}
-          onRangeError={setInputError}
-          disabled={isSubmitting}
-          showSlider
-          sliderColor={pseudonymColor}
-          outcome={outcome}
-        />
-      </Col>
-
-      <Row className={'text-ink-700 my-2 items-center space-x-3'}>
+      <Row className={'text-ink-700 items-center space-x-3'}>
         {capitalize(TRADE_TERM)} amount
       </Row>
       <BuyAmountInput
+        parentClassName="mt-2 max-w-full"
         amount={betAmount}
         onChange={onBetChange}
         error={error}
@@ -342,11 +326,28 @@ export default function LimitOrderPanel(props: {
         sliderColor={pseudonymColor}
         disregardUserBalance={shouldPromptVerification}
       />
-
+      <Col className="relative my-4 w-full gap-2">
+        <div className="text-ink-700">
+          {isPseudoNumeric ? 'Value' : `Probability: ${limitProbInt}%`}
+        </div>
+        <ProbabilitySlider
+          prob={limitProbInt}
+          onProbChange={setLimitProbInt}
+          disabled={isSubmitting}
+          color={pseudonymColor}
+          outcome={outcome}
+        />
+      </Col>
       <Col className="my-3 gap-2">
-        <span className="text-ink-700">Expiration</span>
-        <Row className="items-baseline justify-between gap-2 sm:justify-start sm:gap-4">
+        <span className="text-ink-700">
+          Expiration{selectedExpiration === 'Never' ? ' (none)' : ''}
+        </span>
+        <Row className="-ml-2 items-baseline justify-between gap-2 sm:justify-start sm:gap-4">
           <ChoicesToggleGroup
+            color="light"
+            onSameChoiceClick={() => {
+              setSelectedExpiration('Never')
+            }}
             choicesMap={Object.keys(expirationChoices).reduce((acc, key) => {
               acc[key] = key
               return acc
@@ -558,7 +559,7 @@ export default function LimitOrderPanel(props: {
                       </span>
                     ) : (
                       <span>
-                        Submit {outcome} order for{' '}
+                        Place {outcome.toLowerCase()} order for{' '}
                         <MoneyDisplay
                           amount={betAmount}
                           isCashContract={isCashContract}

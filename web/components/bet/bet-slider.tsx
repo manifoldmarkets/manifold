@@ -103,7 +103,7 @@ export const BetSlider = (props: {
           ? 'green'
           : binaryOutcome === 'NO'
           ? 'red'
-          : 'violet'
+          : 'gray'
       }
       amount={sliderIndex}
       onChange={(value) => {
