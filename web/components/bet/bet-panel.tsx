@@ -75,6 +75,7 @@ export type MultiBetProps = {
   answerToBuy: Answer
   answerText?: string
 }
+const SLIPPAGE = 0.1
 
 export function BuyPanel(props: {
   contract:
@@ -297,12 +298,11 @@ export const BuyPanelBody = (props: {
         collectedFees: contract.collectedFees,
       }
   const prob = getCpmmProbability(cpmmState.pool, cpmmState.p)
-  const slippage = 0.05
   const floatLimitProb = Math.max(
     MIN_CPMM_PROB,
     Math.min(
       MAX_CPMM_PROB,
-      outcome === 'YES' ? prob + slippage : prob - slippage
+      outcome === 'YES' ? prob + SLIPPAGE : prob - SLIPPAGE
     )
   )
   const limitProb = Math.round(floatLimitProb * 100) / 100
