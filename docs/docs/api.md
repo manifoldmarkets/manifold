@@ -750,7 +750,8 @@ Parameters:
     - A `M$100` bet on `YES` with `limitProb=0.6` would fill partially or completely depending on current unfilled limit bets and the AMM's liquidity. Any remaining portion of the bet not filled would remain to be matched against in the future.
   - An unfilled limit order bet can be cancelled using the cancel API.
 
-- `expiresAt`: When the limit order should be automatically canceled.
+- `expiresAt`: Optional. When the limit order should be automatically canceled.
+- `expiresMillisAfter`: Optional. Miliseconds after creation when the limit order should be automatically canceled.
 - `dryRun`: Optional. If true, the bet will not be placed and the API will return a simulated result.
 
 [Requires Auth](#authentication).
@@ -1264,7 +1265,7 @@ To subscribe to updates, send a message with:
 
 Available topics:
 
-### Global topics:
+#### Global topics
 
 - `global/new-bet` - All new bets across all markets
 - `global/new-contract` - All new markets being created
@@ -1272,7 +1273,7 @@ Available topics:
 - `global/new-subsidy` - All new liquidity subsidies
 - `global/updated-contract` - Updates to any public market
 
-### Per-contract topics (replace [marketId] with the actual market ID):
+#### Per-contract topics (replace [marketId] with the actual market ID)
 
 - `contract/[marketId]` - General market updates
 - `contract/[marketId]/new-bet` - New bets on this market
@@ -1284,7 +1285,7 @@ Available topics:
 - `contract/[marketId]/chart-annotation` - New chart annotations on this market
 - `contract/[marketId]/user-metrics/[userId]` - Updates to a user's position in this market
 
-### Other topics:
+#### Other topics
 
 - `user/[userId]` - Updates to a user's public information
 - `answer/[answerId]/update` - Updates to a specific answer
