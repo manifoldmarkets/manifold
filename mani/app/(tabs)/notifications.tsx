@@ -6,7 +6,7 @@ import { Fragment, useEffect, useMemo, useState } from 'react'
 import { Col } from 'components/layout/col'
 import { ThemedText } from 'components/themed-text'
 import { useColor } from 'hooks/use-color'
-import { ActivityIndicator, View } from 'react-native'
+import { ActivityIndicator } from 'react-native'
 import { useIsPageVisible } from 'hooks/use-is-page-visibile'
 import {
   NotificationItem,
@@ -80,12 +80,6 @@ export function NotificationContent({
                     notification={notification.notifications[0]}
                     key={notification.notifications[0].id}
                   />
-                  <View
-                    style={{
-                      height: 1,
-                      backgroundColor: color.borderSecondary,
-                    }}
-                  />
                 </>
               ) : notification.notifications.every((notif) =>
                   shouldIgnoreNotification(notif)
@@ -94,12 +88,6 @@ export function NotificationContent({
                   <NotificationGroupItem
                     notificationGroup={notification as NotificationGroup}
                     key={notification.groupedById}
-                  />
-                  <View
-                    style={{
-                      height: 1,
-                      backgroundColor: color.borderSecondary,
-                    }}
                   />
                 </>
               )}
