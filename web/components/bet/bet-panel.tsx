@@ -547,14 +547,13 @@ export const BuyPanelBody = (props: {
         {isCashContract && <InBeta className="my-2" />}
         {children}
         {(isAdvancedTrader || alwaysShowOutcomeSwitcher) && (
-          <Row className={'mb-2 mr-8 justify-between'}>
-            <Col
+          <Row className={'mb-2 mt-2 justify-between'}>
+            <Row
               className={clsx(
                 ' gap-1',
                 (isBinaryMC || pseudonymName) && 'hidden'
               )}
             >
-              <div className="text-ink-700">Outcome</div>
               <ChoicesToggleGroup
                 currentChoice={outcome}
                 color={outcome === 'YES' ? 'green' : 'red'}
@@ -563,39 +562,34 @@ export const BuyPanelBody = (props: {
                   setOutcome(outcome as 'YES' | 'NO')
                 }}
               />
-            </Col>
-            {isAdvancedTrader && !isStonk && (
-              <Col className="gap-1">
-                <div className="text-ink-700">
-                  {capitalize(TRADE_TERM)} type
-                </div>
+            </Row>
+            <Row className="items-center justify-end gap-2">
+              {isAdvancedTrader && !isStonk && (
                 <ChoicesToggleGroup
                   currentChoice={betType}
                   choicesMap={{
-                    Market: 'Market',
+                    Quick: 'Market',
                     Limit: 'Limit',
                   }}
                   setChoice={(val) => {
-                    if (val === 'Market' || val === 'Limit') {
-                      handleBetTypeChange(val)
-                    }
+                    handleBetTypeChange(val as 'Market' | 'Limit')
                   }}
                 />
-              </Col>
-            )}
+              )}
+              {onClose && (
+                <Button
+                  color="gray-white"
+                  size="sm"
+                  onClick={onClose}
+                  className="-mr-2"
+                >
+                  <XIcon className="h-5 w-5" />
+                </Button>
+              )}
+            </Row>
           </Row>
         )}
 
-        {onClose && (
-          <Button
-            color="gray-white"
-            size="sm"
-            className="absolute right-1 top-1"
-            onClick={onClose}
-          >
-            <XIcon className="h-5 w-5" />
-          </Button>
-        )}
         {betType === 'Market' ? (
           <>
             <Row className={clsx('text-ink-700 mb-2 items-center space-x-3')}>
