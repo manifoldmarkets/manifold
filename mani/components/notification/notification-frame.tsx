@@ -40,7 +40,11 @@ export function NotificationFrame({
 }) {
   const color = useColor()
   const frameObject = (
-    <Row style={{ width: '100%' }}>
+    <Row
+      style={{
+        width: '100%',
+      }}
+    >
       <Row
         style={{
           width: '100%',
@@ -92,6 +96,10 @@ export function NotificationFrame({
         // paddingVertical: isChildOfGroup ? 8 : 12,
         paddingTop: isChildOfGroup ? 8 : 12,
         paddingBottom: isChildOfGroup ? 0 : 12,
+        borderBottomWidth: isChildOfGroup ? 0 : 1,
+        borderBottomColor: isChildOfGroup
+          ? 'transparent'
+          : color.borderSecondary,
       }}
     >
       {!isChildOfGroup && (

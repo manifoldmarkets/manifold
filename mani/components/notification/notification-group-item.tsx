@@ -9,6 +9,7 @@ import { sortBy } from 'lodash'
 import { Col } from 'components/layout/col'
 import { NotificationItem } from './notification-item'
 import { GroupNotificationHeader } from './notification-header'
+import { useColor } from 'hooks/use-color'
 
 export function NotificationGroupItem({
   notificationGroup,
@@ -40,9 +41,16 @@ export function NotificationGroupItem({
       ),
     'createdTime'
   ).reverse()
+  const color = useColor()
 
   return (
-    <Col style={{ paddingVertical: 12 }}>
+    <Col
+      style={{
+        paddingVertical: 12,
+        borderBottomWidth: 1,
+        borderBottomColor: color.borderSecondary,
+      }}
+    >
       <GroupNotificationHeader notificationGroup={notificationGroup} />
       <Col>
         {notifications.map((notification) => {
