@@ -158,7 +158,7 @@ import { getMarketProps } from './get-market-props'
 import { getUserContractMetricsWithContracts } from './get-user-contract-metrics-with-contracts'
 import { validateiap } from './validate-iap'
 import { getReactions } from './get-reactions'
-
+import { markallnotificationsnew } from './mark-all-notifications-new'
 // we define the handlers in this object in order to typecheck that every API has a handler
 export const handlers: { [k in APIPath]: APIHandler<k> } = {
   'refresh-all-clients': refreshAllClients,
@@ -334,4 +334,5 @@ export const handlers: { [k in APIPath]: APIHandler<k> } = {
     getUserContractMetricsWithContracts,
   validateIap: validateiap,
   'comment-reactions': getReactions,
+  'mark-all-notifications-new': markallnotificationsnew,
 }

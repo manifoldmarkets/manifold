@@ -15,7 +15,7 @@ import { SparklesIcon } from '@heroicons/react/solid'
 import { UserLink } from '../widgets/user-link'
 import { UserHovercard } from '../user/user-hovercard'
 
-export const NOTIFICATIONS_PER_PAGE = 30
+
 
 function getHighlightClass(highlight: boolean) {
   return highlight ? 'text-ink-1000 bg-primary-50' : 'text-ink-700'

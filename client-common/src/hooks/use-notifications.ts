@@ -16,15 +16,22 @@ import {
   uniqBy,
 } from 'lodash'
 import { useEffect, useMemo } from 'react'
-import { NOTIFICATIONS_PER_PAGE } from 'web/components/notifications/notification-helpers'
 import { User } from 'common/user'
 
-import { api } from 'web/lib/api/api'
 import { useApiSubscription } from 'client-common/hooks/use-api-subscription'
-import { usePersistentLocalState } from 'web/hooks/use-persistent-local-state'
+import { APIParams, APIResponse } from 'common/api/schema'
 
-function useNotifications(
+export const NOTIFICATIONS_PER_PAGE = 30
+
+export function useNotifications(
   userId: string,
+  api: (
+    params: APIParams<'get-notifications'>
+  ) => Promise<APIResponse<'get-notifications'>>,
+  usePersistentLocalState: <T>(
+    initialValue: T,
+    key: string
+  ) => readonly [T, (newState: T | ((prevState: T) => T)) => void, boolean],
   count = 15 * NOTIFICATIONS_PER_PAGE,
   newOnly?: boolean
 ) {
@@ -41,7 +48,7 @@ function useNotifications(
         limit: count,
         after: newOnly ? latestCreatedTime : undefined,
       }
-      api('get-notifications', params).then((newData) => {
+      api(params).then((newData) => {
         setNotifications((oldData) => {
           const allNotifications = concat(newData, oldData ?? [])
 
@@ -83,9 +90,20 @@ function useNotifications(
   return notifications
 }
 
-export function useGroupedUnseenNotifications(userId: string) {
+export function useGroupedUnseenNotifications(
+  userId: string,
+  api: (
+    params: APIParams<'get-notifications'>
+  ) => Promise<APIResponse<'get-notifications'>>,
+  usePersistentLocalState: <T>(
+    initialValue: T,
+    key: string
+  ) => readonly [T, (newState: T | ((prevState: T) => T)) => void, boolean]
+) {
   const unseenNotifs = useNotifications(
     userId,
+    api,
+    usePersistentLocalState,
     NOTIFICATIONS_PER_PAGE,
     true
   )?.filter((n) => !n.isSeen)
@@ -97,10 +115,21 @@ export function useGroupedUnseenNotifications(userId: string) {
 
 export function useGroupedNotifications(
   user: User,
+  api: (
+    params: APIParams<'get-notifications'>
+  ) => Promise<APIResponse<'get-notifications'>>,
+  usePersistentLocalState: <T>(
+    initialValue: T,
+    key: string
+  ) => readonly [T, (newState: T | ((prevState: T) => T)) => void, boolean],
   selectTypes?: notification_source_types[],
   selectReasons?: NotificationReason[]
 ) {
-  const notifications = useNotifications(user.id)?.filter(
+  const notifications = useNotifications(
+    user.id,
+    api,
+    usePersistentLocalState
+  )?.filter(
     (n) =>
       (selectTypes?.includes(n.sourceType) ||
         selectReasons?.includes(n.reason)) ??

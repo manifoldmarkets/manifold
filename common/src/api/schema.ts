@@ -2138,6 +2138,13 @@ export const API = (_apiTypeCheck = {
       })
       .strict(),
   },
+  'mark-all-notifications-new': {
+    method: 'POST',
+    visibility: 'public',
+    authed: true,
+    props: z.object({}).strict(),
+    returns: {} as { success: boolean },
+  },
 } as const)
 
 export type APIPath = keyof typeof API
