@@ -43,7 +43,7 @@ function getResolveButtonLabel(
   return outcome === 'CANCEL'
     ? 'N/A'
     : outcome === 'MKT'
-    ? `${prob}%`
+    ? `${prob ?? ''}%`
     : outcome ?? ''
 }
 
@@ -115,14 +115,14 @@ export function ResolutionPanel(props: {
             </>
           ) : outcome === 'MKT' ? (
             <Col className="gap-2">
-              <Row className="flex-wrap items-center gap-2">
+              <Col className=" gap-2">
                 <span>Pay out at this probability:</span>{' '}
                 <ProbabilityInput
                   prob={prob}
                   onChange={setProb}
                   className="!h-11 w-28"
                 />
-              </Row>
+              </Col>
               <div className="text-ink-500">
                 Yes holders get this percent of the winnings and No holders get
                 the rest.

@@ -71,7 +71,7 @@ export function ProbabilityInput(props: {
   inputClassName?: string
   error?: boolean
   limitProbs?: { max: number; min: number }
-  outcome?: 'YES' | 'NO'
+  showButtons?: boolean
 }) {
   const {
     prob,
@@ -82,10 +82,20 @@ export function ProbabilityInput(props: {
     inputClassName,
     error,
     limitProbs,
-    outcome,
+    showButtons,
   } = props
   const maxBetProbInt = 100 * (limitProbs?.max ?? 0.99)
   const minBetProbInt = 100 * (limitProbs?.min ?? 0.01)
+  const onProbChange = (str: string) => {
+    let prob = parseInt(str.replace(/\D/g, ''))
+    const isInvalid = !str || isNaN(prob)
+    if (prob.toString().length > 2) {
+      if (prob > maxBetProbInt) prob = maxBetProbInt
+      else if (prob < minBetProbInt) prob = minBetProbInt
+      else prob = +prob.toString().slice(-2)
+    }
+    onChange(isInvalid ? undefined : prob)
+  }
 
   const adjustProb = (delta: number) => {
     const currentProb = prob ?? 0
@@ -98,7 +108,11 @@ export function ProbabilityInput(props: {
   return (
     <Col className={clsx(className, 'relative')}>
       <Input
-        className={clsx('pr-24 !text-lg', 'w-full', inputClassName)}
+        className={clsx(
+          'w-full !text-lg',
+          showButtons && 'pr-24',
+          inputClassName
+        )}
         type="text"
         pattern="[0-9]*"
         inputMode="numeric"
@@ -106,51 +120,59 @@ export function ProbabilityInput(props: {
         placeholder={placeholder ?? '0'}
         value={prob ?? ''}
         disabled={disabled}
-        onChange={(e) => onChange(parseInt(e.target.value))}
+        onChange={(e) => onProbChange(e.target.value)}
         onKeyDown={(e) => {
           if (e.key === 'ArrowUp') adjustProb(1)
           else if (e.key === 'ArrowDown') adjustProb(-1)
         }}
         error={error}
       />
-      <span className="text-ink-400 absolute right-[106px] top-1/2 my-auto -translate-y-1/2">
-        %
-      </span>
-      <div className="bg-ink-300 absolute right-[98px] h-full w-[1px]" />
-      <Row className="divide-ink-300 absolute right-[1px] top-[1px] h-[calc(100%-2px)] divide-x text-sm">
-        <Col className="divide-ink-300 divide-y">
-          <button
-            className="text-ink-400 hover:text-ink-500 active:text-ink-500 flex h-[35px] w-12 items-center justify-center"
-            onClick={() => adjustProb(1)}
-            disabled={disabled}
-          >
-            +1
-          </button>
-          <button
-            className="text-ink-400 hover:text-ink-500 active:text-ink-500 flex h-[35px] w-12 items-center justify-center"
-            onClick={() => adjustProb(-1)}
-            disabled={disabled}
-          >
-            -1
-          </button>
-        </Col>
-        <Col className="divide-ink-300 divide-y">
-          <button
-            className="text-ink-400 hover:text-ink-500 active:text-ink-500 flex h-[35px] w-12 items-center justify-center"
-            onClick={() => adjustProb(5)}
-            disabled={disabled}
-          >
-            +5
-          </button>
-          <button
-            className="text-ink-400 hover:text-ink-500 active:text-ink-500 flex h-[35px] w-12 items-center justify-center"
-            onClick={() => adjustProb(-5)}
-            disabled={disabled}
-          >
-            -5
-          </button>
-        </Col>
-      </Row>
+      {showButtons ? (
+        <>
+          <span className="text-ink-400 absolute right-[106px] top-1/2 my-auto -translate-y-1/2">
+            %
+          </span>
+          <div className="bg-ink-300 absolute right-[98px] h-full w-[1px]" />
+          <Row className="divide-ink-300 absolute right-[1px] top-[1px] h-[calc(100%-2px)] divide-x text-sm">
+            <Col className="divide-ink-300 divide-y">
+              <button
+                className="text-ink-400 hover:text-ink-500 active:text-ink-500 flex h-[35px] w-12 items-center justify-center"
+                onClick={() => adjustProb(1)}
+                disabled={disabled}
+              >
+                +1
+              </button>
+              <button
+                className="text-ink-400 hover:text-ink-500 active:text-ink-500 flex h-[35px] w-12 items-center justify-center"
+                onClick={() => adjustProb(-1)}
+                disabled={disabled}
+              >
+                -1
+              </button>
+            </Col>
+            <Col className="divide-ink-300 divide-y">
+              <button
+                className="text-ink-400 hover:text-ink-500 active:text-ink-500 flex h-[35px] w-12 items-center justify-center"
+                onClick={() => adjustProb(5)}
+                disabled={disabled}
+              >
+                +5
+              </button>
+              <button
+                className="text-ink-400 hover:text-ink-500 active:text-ink-500 flex h-[35px] w-12 items-center justify-center"
+                onClick={() => adjustProb(-5)}
+                disabled={disabled}
+              >
+                -5
+              </button>
+            </Col>
+          </Row>
+        </>
+      ) : (
+        <span className="text-ink-400 absolute right-4 top-1/2 my-auto -translate-y-1/2">
+          %
+        </span>
+      )}
     </Col>
   )
 }
@@ -221,7 +243,7 @@ export function ProbabilityOrNumericInput(props: {
                 ? { max: MAX_CPMM_PROB, min: MIN_CPMM_PROB }
                 : undefined
             }
-            outcome={outcome}
+            showButtons={showSlider}
           />
           {showSlider && !isPseudoNumeric && (
             <ProbabilitySlider
