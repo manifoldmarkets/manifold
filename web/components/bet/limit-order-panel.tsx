@@ -131,9 +131,9 @@ export default function LimitOrderPanel(props: {
   const expirationChoices: { [key: string]: number } = {
     Never: 0,
     Now: 1,
-    '1 hr': HOUR_MS,
-    '1 day': DAY_MS,
-    '1 week': WEEK_MS,
+    '1h': HOUR_MS,
+    '1d': DAY_MS,
+    '1w': WEEK_MS,
     Custom: -1,
   }
 
