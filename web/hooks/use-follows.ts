@@ -5,7 +5,7 @@ import {
   getUserIsFollowing,
 } from 'web/lib/supabase/follows'
 import { usePersistentLocalState } from './use-persistent-local-state'
-import { db } from 'web/lib/supabase/db'
+import { db } from 'common/supabase/db'
 import { followUser, unfollowUser } from 'web/lib/api/api'
 import toast from 'react-hot-toast'
 

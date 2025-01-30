@@ -1,6 +1,6 @@
 import { run } from 'common/supabase/utils'
 import { User } from '../firebase/users'
-import { db } from './db'
+import { db } from 'common/src/supabase/db'
 import { convertGroup } from 'common/supabase/groups'
 import { GroupRole } from 'common/group'
 

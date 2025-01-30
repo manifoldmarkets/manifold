@@ -1,11 +1,12 @@
 import { useContractBets } from 'client-common/hooks/use-bets'
+import { APIParams, APIResponse } from 'common/api/schema'
 import { removeUndefinedProps } from 'common/util/object'
-import { api } from 'web/lib/api/api'
-import { useIsPageVisible } from './use-page-visible'
 
 export const useUserContractBets = (
   userId: string | undefined,
-  contractId: string
+  contractId: string,
+  api: (params: APIParams<'bets'>) => Promise<APIResponse<'bets'>>,
+  useIsPageVisible: () => boolean
 ) => {
   return useContractBets(
     contractId,
@@ -14,6 +15,6 @@ export const useUserContractBets = (
       enabled: !!userId,
     }),
     useIsPageVisible,
-    (params) => api('bets', params)
+    api
   )
 }

@@ -6,7 +6,7 @@ import { BETTORS, User } from 'common/user'
 import { removeUndefinedProps } from 'common/util/object'
 import { useEffect, useState } from 'react'
 import { Leaderboard } from 'web/components/leaderboard'
-import { db } from 'web/lib/supabase/db'
+import { db } from 'common/supabase/db'
 
 export function ContractLeaderboard(props: {
   topContractMetrics: ContractMetric[]

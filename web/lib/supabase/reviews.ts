@@ -1,5 +1,5 @@
 import { Json } from 'common/supabase/schema'
-import { db } from './db'
+import { db } from 'common/src/supabase/db'
 import { Row, run, tsToMillis } from 'common/supabase/utils'
 
 export const getUserRating = async (userId: string) => {

@@ -1,6 +1,6 @@
 import { getUserFollowsDashboard } from 'common/supabase/dashboard-follows'
 import { useEffect, useState } from 'react'
-import { db } from 'web/lib/supabase/db'
+import { db } from 'common/supabase/db'
 
 export const useUserFollowsDashboard = (
   userId: string | undefined,

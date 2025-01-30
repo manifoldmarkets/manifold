@@ -1,5 +1,5 @@
 import { run } from 'common/supabase/utils'
-import { db } from 'web/lib/supabase/db'
+import { db } from 'common/supabase/db'
 import { api } from 'web/lib/api/api'
 import { getContractIdsWithMetrics } from 'common/supabase/contract-metrics'
 import { getDisplayUsers } from 'web/lib/supabase/users'

@@ -1,4 +1,4 @@
-import { db } from './db'
+import { db } from 'common/src/supabase/db'
 import { run } from 'common/supabase/utils'
 import { type User } from 'common/user'
 import { APIError, api } from '../api/api'

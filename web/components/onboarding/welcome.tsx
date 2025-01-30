@@ -13,7 +13,7 @@ import { Col } from '../layout/col'
 import { Modal } from '../layout/modal'
 import { Row } from '../layout/row'
 import { run } from 'common/supabase/utils'
-import { db } from 'web/lib/supabase/db'
+import { db } from 'common/supabase/db'
 import { Group } from 'common/group'
 import {
   getSubtopics,

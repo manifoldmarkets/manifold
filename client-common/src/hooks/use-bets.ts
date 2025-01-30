@@ -1,10 +1,92 @@
-import { APIParams, APIPath, APIResponse } from 'common/api/schema'
-import { usePersistentInMemoryState } from './use-persistent-in-memory-state'
-import { Bet } from 'common/bet'
+import { APIParams, APIResponse } from 'common/api/schema'
+import { Bet, LimitBet } from 'common/bet'
+import { sortBy, uniq, uniqBy } from 'lodash'
 import { Dispatch, SetStateAction, useEffect } from 'react'
 import { useApiSubscription } from './use-api-subscription'
-import { sortBy, uniqBy } from 'lodash'
-import { LimitBet } from 'common/bet'
+import { usePersistentInMemoryState } from './use-persistent-in-memory-state'
+import { useEffectCheckEquality } from './use-effect-check-equality'
+import { usePollUserBalances } from './use-poll-user-balances'
+
+export function useBetsOnce(
+  api: (params: APIParams<'bets'>) => Promise<APIResponse<'bets'>>,
+  options: APIParams<'bets'>
+) {
+  const [bets, setBets] = usePersistentInMemoryState<Bet[] | undefined>(
+    undefined,
+    `use-bets-${JSON.stringify(options)}`
+  )
+
+  useEffectCheckEquality(() => {
+    api(options ?? {}).then((bets) => setBets(bets))
+  }, [options])
+
+  return bets
+}
+
+export const useUnfilledBets = (
+  contractId: string,
+  useIsPageVisible: () => boolean,
+  api: (params: APIParams<'bets'>) => Promise<APIResponse<'bets'>>,
+  options?: {
+    enabled?: boolean
+  }
+) => {
+  const { enabled = true } = options ?? {}
+
+  const [bets, setBets] = usePersistentInMemoryState<LimitBet[] | undefined>(
+    undefined,
+    `unfilled-bets-${contractId}`
+  )
+
+  const addBets = (newBets: LimitBet[]) => {
+    setBets((bets) => {
+      return sortBy(
+        uniqBy([...newBets, ...(bets ?? [])], 'id'),
+        'createdTime'
+      ).filter(
+        (bet) =>
+          !bet.isFilled &&
+          !bet.isCancelled &&
+          (!bet.expiresAt || bet.expiresAt > Date.now())
+      )
+    })
+  }
+
+  const isPageVisible = useIsPageVisible()
+
+  useEffect(() => {
+    if (enabled)
+      api({ contractId, kinds: 'open-limit', order: 'asc' }).then(
+        // Reset bets instead of adding to existing, since we want to exclude those recently filled/cancelled.
+        (bets) => setBets(bets as LimitBet[])
+      )
+  }, [enabled, contractId, isPageVisible])
+
+  useApiSubscription({
+    enabled,
+    topics: [`contract/${contractId}/orders`],
+    onBroadcast: ({ data }) => {
+      addBets(data.bets as LimitBet[])
+    },
+  })
+
+  return bets
+}
+
+export const useUnfilledBetsAndBalanceByUserId = (
+  contractId: string,
+  useIsPageVisible: () => boolean,
+  api: (params: APIParams<'bets'>) => Promise<APIResponse<'bets'>>
+) => {
+  const unfilledBets = useUnfilledBets(contractId, useIsPageVisible, api) ?? []
+  const userIds = uniq(unfilledBets.map((b) => b.userId))
+  const balances = usePollUserBalances(userIds) ?? []
+
+  const balanceByUserId = Object.fromEntries(
+    balances.map(({ id, balance }) => [id, balance])
+  )
+  return { unfilledBets, balanceByUserId }
+}
 
 export const useContractBets = (
   contractId: string,

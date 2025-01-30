@@ -18,7 +18,7 @@ import { TheEnd } from 'web/components/wrapped/TheEnd'
 import { MaxMinProfit } from 'web/components/wrapped/MaxMinProfit'
 import { SEO } from 'web/components/SEO'
 import { getUserForStaticProps } from 'common/supabase/users'
-import { db } from 'web/lib/supabase/db'
+import { db } from 'common/supabase/db'
 
 export const getStaticProps = async (props: {
   params: {

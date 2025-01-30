@@ -1,4 +1,4 @@
-import { db } from 'web/lib/supabase/db'
+import { db } from 'common/supabase/db'
 import { orderBy, uniqBy } from 'lodash'
 import { usePersistentLocalState } from './use-persistent-local-state'
 import { useEffect } from 'react'

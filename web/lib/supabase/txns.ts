@@ -1,5 +1,5 @@
 import { uniq } from 'lodash'
-import { db } from './db'
+import { db } from 'common/src/supabase/db'
 import { filterDefined } from 'common/util/array'
 import { getDisplayUsers } from './users'
 import { api } from '../api/api'

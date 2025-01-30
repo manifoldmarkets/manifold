@@ -1,7 +1,7 @@
 import { useEffect } from 'react'
 import { usePersistentLocalState } from 'web/hooks/use-persistent-local-state'
 import { run } from 'common/supabase/utils'
-import { db } from 'web/lib/supabase/db'
+import { db } from 'common/supabase/db'
 import { Group } from 'common/group'
 import { convertGroup } from 'common/supabase/groups'
 import { useMemberGroupIdsOnLoad } from 'web/hooks/use-group-supabase'

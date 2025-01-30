@@ -46,7 +46,7 @@ import { Row } from 'web/components/layout/row'
 import { Avatar } from 'web/components/widgets/avatar'
 import { Input } from 'web/components/widgets/input'
 import { LoadingIndicator } from 'web/components/widgets/loading-indicator'
-import { useUnfilledBets } from 'web/hooks/use-bets'
+import { useUnfilledBets } from 'client-common/hooks/use-bets'
 import { useIsAdvancedTrader } from 'web/hooks/use-is-advanced-trader'
 import { useIsClient } from 'web/hooks/use-is-client'
 import { usePersistentLocalState } from 'web/hooks/use-persistent-local-state'
@@ -78,6 +78,7 @@ import { buildArray } from 'common/util/array'
 import { useSavedContractMetrics } from 'web/hooks/use-saved-contract-metrics'
 import { floatingEqual } from 'common/util/math'
 import { getSortedAnswers } from '../contract/contract-overview'
+import { useIsPageVisible } from 'web/hooks/use-page-visible'
 
 export const SHOW_LIMIT_ORDER_CHARTS_KEY = 'SHOW_LIMIT_ORDER_CHARTS_KEY'
 export const MAX_DEFAULT_ANSWERS = 20
@@ -185,9 +186,14 @@ export function AnswersPanel(props: {
   const isAdvancedTrader = useIsAdvancedTrader()
   const [shouldShowLimitOrderChart, setShouldShowLimitOrderChart] =
     usePersistentLocalState<boolean>(true, SHOW_LIMIT_ORDER_CHARTS_KEY)
-  const unfilledBets = useUnfilledBets(contract.id, {
-    enabled: isAdvancedTrader && shouldShowLimitOrderChart,
-  })
+  const unfilledBets = useUnfilledBets(
+    contract.id,
+    useIsPageVisible,
+    (params) => api('bets', params),
+    {
+      enabled: isAdvancedTrader && shouldShowLimitOrderChart,
+    }
+  )
 
   const allResolved = getAllResolved(contract, answers)
 

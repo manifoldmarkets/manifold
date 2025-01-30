@@ -1,7 +1,7 @@
 import { Contract } from 'common/contract'
 import { api } from 'web/lib/api/api'
 import { getContract, getContracts } from '../../common/src/supabase/contracts'
-import { db } from 'web/lib/supabase/db'
+import { db } from 'common/supabase/db'
 
 export const aiSurveyContractIds = [
   '9cy09yhQd2',

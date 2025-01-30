@@ -2103,6 +2103,7 @@ export const API = (_apiTypeCheck = {
       limit: z.coerce.number(),
       offset: z.coerce.number().gte(0).optional(),
       perAnswer: coerceBoolean.optional(),
+      inMani: coerceBoolean.optional(),
     }),
   },
   validateIap: {

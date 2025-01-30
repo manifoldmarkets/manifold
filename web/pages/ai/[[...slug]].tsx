@@ -26,7 +26,7 @@ import clsx from 'clsx'
 import { linkClass } from 'web/components/widgets/site-link'
 import { useLiveContract } from 'web/hooks/use-contract'
 import { getContract } from 'common/supabase/contracts'
-import { db } from 'web/lib/supabase/db'
+import { db } from 'common/supabase/db'
 import { ENV_CONFIG } from 'common/envs/constants'
 import { CopyLinkOrShareButton } from 'web/components/buttons/copy-link-button'
 

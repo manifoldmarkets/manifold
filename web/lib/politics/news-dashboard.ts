@@ -5,7 +5,7 @@ import { removeUndefinedProps } from 'common/util/object'
 import { capitalize, omit } from 'lodash'
 import { DashboardEndpoints } from 'web/components/dashboard/dashboard-page'
 import { getContracts } from 'common/supabase/contracts'
-import { db } from '../supabase/db'
+import { db } from 'common/src/supabase/db'
 
 export const getDashboardProps = async (
   slug: string,

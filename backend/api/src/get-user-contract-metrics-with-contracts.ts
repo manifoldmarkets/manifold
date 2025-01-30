@@ -10,7 +10,7 @@ import { contractColumnsToSelect } from 'shared/utils'
 export const getUserContractMetricsWithContracts: APIHandler<
   'get-user-contract-metrics-with-contracts'
 > = async (props, auth) => {
-  const { userId, limit, offset = 0, perAnswer = false } = props
+  const { userId, limit, offset = 0, perAnswer = false, inMani } = props
   const visibilitySQL = getContractPrivacyWhereSQLFilter(
     auth?.uid,
     undefined,
@@ -30,6 +30,11 @@ export const getUserContractMetricsWithContracts: APIHandler<
         WHERE ${visibilitySQL}
           AND ucm.user_id = $1
           and case when c.mechanism = 'cpmm-multi-1' then ucm.answer_id is not null else true end
+          ${
+            inMani
+              ? "and c.data->>'siblingContractId' is not null and ucm.has_shares = true"
+              : ''
+          }
         GROUP BY c.id, ${columnsWithAlias}
         ORDER BY max((ucm.data->>'lastBetTime')::bigint) DESC NULLS LAST
         OFFSET $2 LIMIT $3

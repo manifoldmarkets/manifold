@@ -1,5 +1,5 @@
 import { run } from 'common/supabase/utils'
-import { db } from './db'
+import { db } from 'common/src/supabase/db'
 import { chunk } from 'lodash'
 import { convertContractComment } from 'common/supabase/comments'
 

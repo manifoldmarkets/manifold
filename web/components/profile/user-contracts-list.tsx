@@ -15,7 +15,7 @@ import {
 } from 'web/components/search'
 import { Tooltip } from 'web/components/widgets/tooltip'
 import { useUser } from 'web/hooks/use-user'
-import { db } from 'web/lib/supabase/db'
+import { db } from 'common/supabase/db'
 import {
   getCreatorRank,
   getTotalPublicContractsCreated,

@@ -18,7 +18,7 @@ import { useAdmin } from 'web/hooks/use-admin'
 import { usePagination } from 'web/hooks/use-pagination'
 import { api } from 'web/lib/api/api'
 import { getComment } from 'web/lib/supabase/comments'
-import { db } from 'web/lib/supabase/db'
+import { db } from 'common/supabase/db'
 import { DisplayUser, getUserById } from 'web/lib/supabase/users'
 
 const PAGE_SIZE = 20

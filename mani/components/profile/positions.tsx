@@ -3,13 +3,13 @@ import { Col } from 'components/layout/col'
 import { PositionRow } from './position-row'
 import { useAPIGetter } from 'hooks/use-api-getter'
 import { usePersistentInMemoryState } from 'client-common/hooks/use-persistent-in-memory-state'
-import { TextInput } from 'react-native'
 import { Row } from 'components/layout/row'
 import { useTokenMode } from 'hooks/use-token-mode'
 import { orderBy } from 'lodash'
 import { Pagination } from 'components/widgets/pagination'
 import { PillButton } from 'components/buttons/pill-button'
 import { User } from 'common/user'
+import { groupBy } from 'lodash'
 
 type BetFilter = 'open' | 'sold' | 'closed' | 'resolved' | 'all'
 export function Positions(props: { user: User }) {
@@ -29,6 +29,7 @@ export function Positions(props: { user: User }) {
     limit: 5000,
     offset: 0,
     perAnswer: true,
+    inMani: true,
   })
   const { metricsByContract, contracts } = data ?? {}
   const [filter, setFilter] = usePersistentInMemoryState<BetFilter>(
@@ -76,24 +77,19 @@ export function Positions(props: { user: User }) {
   const PAGE_SIZE = 50
   const startIndex = currentPage * PAGE_SIZE
   const endIndex = startIndex + PAGE_SIZE
-  const paginatedMetrics = validMetrics.slice(startIndex, endIndex)
+
+  // Group metrics by contract before pagination
+  const groupedMetricsByContract = groupBy(validMetrics, 'contractId')
+
+  // Paginate the grouped contracts instead of individual metrics
+  const paginatedContractIds = Object.keys(groupedMetricsByContract).slice(
+    startIndex,
+    endIndex
+  )
 
   return (
     <Col>
-      <TextInput
-        style={{
-          height: 40,
-          borderColor: 'gray',
-          borderWidth: 2,
-          marginVertical: 8,
-          color: 'white',
-          borderRadius: 8,
-        }}
-        placeholder="Search questions..."
-        value={searchQuery}
-        onChangeText={setSearchQuery}
-      />
-      <Row style={{ gap: 4, marginTop: 8 }}>
+      <Row style={{ gap: 4, marginTop: 12 }}>
         {(['all', 'open', 'sold', 'closed', 'resolved'] as BetFilter[]).map(
           (f) => (
             <PillButton
@@ -117,34 +113,46 @@ export function Positions(props: { user: User }) {
           )
         )}
       </Row>
-      {paginatedMetrics.map((metric) => {
-        const contract = filteredContracts?.find(
-          (c) => c.id === metric.contractId
-        )
-        if (
-          !contract ||
-          (contract.mechanism === 'cpmm-multi-1' && !metric.answerId)
-        ) {
-          return null
-        }
-        const { answerId } = metric
-        const answer =
-          contract?.mechanism === 'cpmm-multi-1' && answerId
-            ? contract.answers.find((a) => a.id === answerId)
-            : undefined
-        return (
-          <PositionRow
-            key={contract.id + answerId}
-            contract={contract as Contract}
-            metric={metric}
-            answer={answer}
-          />
-        )
-      })}
+      {(() => {
+        return paginatedContractIds.map((contractId) => {
+          const contractMetrics = groupedMetricsByContract[contractId]
+          const contract = filteredContracts?.find((c) => c.id === contractId)
+          if (!contract) return null
+
+          return (
+            <Col key={contractId}>
+              {contractMetrics.map((metric) => {
+                if (contract.mechanism === 'cpmm-multi-1' && !metric.answerId) {
+                  return null
+                }
+
+                const { answerId } = metric
+                const answer =
+                  contract?.mechanism === 'cpmm-multi-1' && answerId
+                    ? contract.answers.find((a) => a.id === answerId)
+                    : undefined
+
+                // Show question only for the first metric in each contract group
+                const showQuestion = contractMetrics.indexOf(metric) === 0
+
+                return (
+                  <PositionRow
+                    key={contract.id + answerId}
+                    contract={contract as Contract}
+                    metric={metric}
+                    answer={answer}
+                    showQuestion={showQuestion}
+                  />
+                )
+              })}
+            </Col>
+          )
+        })
+      })()}
       <Pagination
         page={currentPage}
         pageSize={PAGE_SIZE}
-        totalItems={validMetrics.length}
+        totalItems={Object.keys(groupedMetricsByContract).length}
         setPage={setCurrentPage}
       />
     </Col>

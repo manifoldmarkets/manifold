@@ -1,6 +1,6 @@
 import { Comment } from 'common/comment'
 import { run } from 'common/supabase/utils'
-import { db } from 'web/lib/supabase/db'
+import { db } from 'common/supabase/db'
 import { useEffect, useState } from 'react'
 import { Modal } from 'web/components/layout/modal'
 import { Col } from 'web/components/layout/col'

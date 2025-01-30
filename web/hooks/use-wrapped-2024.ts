@@ -1,7 +1,7 @@
 import { Row as rowFor } from 'common/supabase/utils'
 import { useEffect } from 'react'
 import { api } from 'web/lib/api/api'
-import { db } from '../lib/supabase/db'
+import { db } from 'common/src/supabase/db'
 import { usePersistentLocalState } from './use-persistent-local-state'
 import { Contract } from 'common/contract'
 

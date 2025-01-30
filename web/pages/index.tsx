@@ -25,7 +25,7 @@ import { useRedirectIfSignedIn } from 'web/hooks/use-redirect-if-signed-in'
 import { useSaveCampaign } from 'web/hooks/use-save-campaign'
 import { redirectIfLoggedIn } from 'web/lib/firebase/server-auth'
 import { firebaseLogin } from 'web/lib/firebase/users'
-import { db } from 'web/lib/supabase/db'
+import { db } from 'common/supabase/db'
 
 export const getServerSideProps = redirectIfLoggedIn('/home', async (_) => {
   const { data } = await db
