@@ -177,6 +177,7 @@ export const BOT_USERNAMES = [
   'PV_bot',
   'draaglom_bot',
   'SiriusBOT',
+  'bradbot',
 ]
 
 export const MOD_IDS = [
