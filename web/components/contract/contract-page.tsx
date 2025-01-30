@@ -519,7 +519,7 @@ export function ContractPageContent(props: ContractParams) {
 
             <div ref={tabsContainerRef} className="mb-4">
               <ContractTabs
-                mainContract={props.contract}
+                staticContract={props.contract}
                 liveContract={liveContract}
                 bets={bets}
                 totalBets={totalBets}

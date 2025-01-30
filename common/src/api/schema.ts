@@ -202,6 +202,7 @@ export const API = (_apiTypeCheck = {
       .object({
         contractId: z.string().optional(),
         contractSlug: z.string().optional(),
+        afterTime: z.coerce.number().optional(),
         limit: z.coerce.number().gte(0).lte(1000).default(1000),
         page: z.coerce.number().gte(0).default(0),
         userId: z.string().optional(),
