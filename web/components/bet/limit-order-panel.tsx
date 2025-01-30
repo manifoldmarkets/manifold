@@ -31,7 +31,6 @@ import { Row } from '../layout/row'
 import { BinaryOutcomeLabel, PseudoNumericOutcomeLabel } from '../outcome-label'
 import { BuyAmountInput } from '../widgets/amount-input'
 import { getPseudoProbability } from 'common/pseudo-numeric'
-import { usePersistentInMemoryState } from 'client-common/hooks/use-persistent-in-memory-state'
 import { MultiBetProps } from 'web/components/bet/bet-panel'
 import { track, withTracking } from 'web/lib/service/analytics'
 import { APIError } from 'common/api/utils'
@@ -48,6 +47,7 @@ import { VerifyButton } from '../sweeps/sweep-verify-section'
 import { sliderColors } from '../widgets/slider'
 import { ChoicesToggleGroup } from '../widgets/choices-toggle-group'
 import { ProbabilitySlider } from '../widgets/probability-input'
+import { usePersistentLocalState } from 'web/hooks/use-persistent-local-state'
 
 export default function LimitOrderPanel(props: {
   contract:
@@ -117,15 +117,19 @@ export default function LimitOrderPanel(props: {
   const [isSubmitting, setIsSubmitting] = useState(false)
   const betDeps = useRef<LimitBet[]>()
   // Expiring orders
-  const [addCustomExpiration, setAddCustomExpiration] =
-    usePersistentInMemoryState(false, 'add-limit-order-expiration')
+  const [addCustomExpiration, setAddCustomExpiration] = usePersistentLocalState(
+    false,
+    'add-limit-order-expiration'
+  )
   const initTimeInMs = Number(Date.now() + 5 * MINUTE_MS)
   const initDate = dayjs(initTimeInMs).format('YYYY-MM-DD')
   const initTime = dayjs(initTimeInMs).format('HH:mm')
-  const [expirationDate, setExpirationDate] =
-    usePersistentInMemoryState<string>(initDate, 'limit-order-expiration-date')
+  const [expirationDate, setExpirationDate] = usePersistentLocalState<string>(
+    initDate,
+    'limit-order-expiration-date'
+  )
   const [expirationHoursMinutes, setExpirationHoursMinutes] =
-    usePersistentInMemoryState<string>(initTime, 'limit-order-expiration-time')
+    usePersistentLocalState<string>(initTime, 'limit-order-expiration-time')
 
   const expirationChoices: { [key: string]: number } = {
     '0s': 1,
@@ -137,19 +141,15 @@ export default function LimitOrderPanel(props: {
     '+': -1,
   }
 
+  // add to local storage
   const [selectedExpiration, setSelectedExpiration] =
-    usePersistentInMemoryState<string | number>(
-      'Never',
-      'limit-order-expiration'
-    )
+    usePersistentLocalState<number>(0, 'limit-order-expiration')
   const expiresAt = addCustomExpiration
     ? dayjs(`${expirationDate}T${expirationHoursMinutes}`).valueOf()
     : undefined
 
   const expiresMillisAfter =
-    !addCustomExpiration &&
-    selectedExpiration !== -1 &&
-    selectedExpiration !== 'Never'
+    !addCustomExpiration && selectedExpiration > 0
       ? selectedExpiration
       : undefined
 
@@ -356,13 +356,13 @@ export default function LimitOrderPanel(props: {
       </Col>
       <Col className="my-3 gap-2">
         <span className="text-ink-700">
-          Expiration{selectedExpiration === 'Never' ? ' (none)' : ''}
+          Expiration{selectedExpiration === 0 ? ' (none)' : ''}
         </span>
         <Row className="-ml-2 items-baseline justify-between gap-2 sm:justify-start sm:gap-4">
           <ChoicesToggleGroup
             color="light"
             onSameChoiceClick={() => {
-              setSelectedExpiration('Never')
+              setSelectedExpiration(0)
               setAddCustomExpiration(false)
             }}
             choicesMap={expirationChoices}

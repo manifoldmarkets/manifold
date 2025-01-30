@@ -65,8 +65,8 @@ import { useContractBets } from 'client-common/hooks/use-bets'
 import { useIsPageVisible } from 'web/hooks/use-page-visible'
 import { CandidateBet } from 'common/new-bet'
 import { APIParams } from 'common/api/schema'
-import { usePersistentInMemoryState } from 'client-common/hooks/use-persistent-in-memory-state'
 import { Button } from '../buttons/button'
+import { usePersistentLocalState } from 'web/hooks/use-persistent-local-state'
 
 export type BinaryOutcomes = 'YES' | 'NO' | undefined
 
@@ -359,10 +359,16 @@ export const BuyPanelBody = (props: {
 
   const isAdvancedTrader = useIsAdvancedTrader()
 
-  const [betType, setBetType] = usePersistentInMemoryState<'Market' | 'Limit'>(
+  const [betType, setBetType] = usePersistentLocalState<'Market' | 'Limit'>(
     'Market',
     'bet-type'
   )
+
+  useEffect(() => {
+    if (!isAdvancedTrader && betType === 'Limit') {
+      setBetType('Market')
+    }
+  }, [isAdvancedTrader])
 
   useEffect(() => {
     if (!isIOS() && !isAndroid()) {
