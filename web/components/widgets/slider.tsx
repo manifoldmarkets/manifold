@@ -53,7 +53,7 @@ export function Slider(props: {
       className={clsx(
         className,
         'relative flex touch-none select-none items-center',
-        marks ? 'h-[42px]' : 'h-5'
+        marks ? 'h-[43px]' : 'h-5'
       )}
       value={[amount]}
       onValueChange={([val]) => onChange(val)}

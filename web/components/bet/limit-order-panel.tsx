@@ -64,6 +64,7 @@ export default function LimitOrderPanel(props: {
   shouldPromptVerification?: boolean
   onBuySuccess?: () => void
   className?: string
+  betAmount?: number
   outcome: 'YES' | 'NO' | undefined
   pseudonym?: {
     YES: {
@@ -108,13 +109,11 @@ export default function LimitOrderPanel(props: {
   const isPseudoNumeric = contract.outcomeType === 'PSEUDO_NUMERIC'
 
   const isCashContract = contract.token === 'CASH'
-  const defaultBetAmount = isCashContract ? 50 : 1000
 
   const [betAmount, setBetAmount] = useState<number | undefined>(
-    defaultBetAmount
+    props.betAmount
   )
   const [error, setError] = useState<string | undefined>()
-  const [inputError, setInputError] = useState<boolean>(false)
   const [isSubmitting, setIsSubmitting] = useState(false)
   const betDeps = useRef<LimitBet[]>()
   // Expiring orders
@@ -528,7 +527,7 @@ export default function LimitOrderPanel(props: {
                 <Row className="items-center justify-between gap-2">
                   <Button
                     size="xl"
-                    disabled={betDisabled || inputError}
+                    disabled={betDisabled}
                     color={
                       (pseudonymColor as any) ??
                       (hideYesNo ? 'none' : outcome === 'YES' ? 'green' : 'red')
@@ -549,23 +548,22 @@ export default function LimitOrderPanel(props: {
                       'Enter a probability'
                     ) : !betAmount ? (
                       'Enter an amount'
-                    ) : binaryMCOutcome || pseudonymName ? (
-                      <span>
-                        Submit order for{' '}
-                        <MoneyDisplay
-                          amount={betAmount}
-                          isCashContract={isCashContract}
-                        />{' '}
-                        at {formatPercent(preLimitProb ?? 0)}
-                      </span>
                     ) : (
                       <span>
-                        Place {outcome.toLowerCase()} order for{' '}
+                        Place{' '}
                         <MoneyDisplay
                           amount={betAmount}
                           isCashContract={isCashContract}
                         />{' '}
-                        at {formatPercent(limitProb)}
+                        {!binaryMCOutcome && !pseudonymName
+                          ? `${outcome.toLowerCase()} `
+                          : ''}
+                        order at{' '}
+                        {formatPercent(
+                          binaryMCOutcome || pseudonymName
+                            ? preLimitProb ?? 0
+                            : limitProb
+                        )}
                       </span>
                     )}
                   </Button>

@@ -50,11 +50,10 @@ import { useIsAdvancedTrader } from 'web/hooks/use-is-advanced-trader'
 import { usePrivateUser, useUser } from 'web/hooks/use-user'
 import { track, withTracking } from 'web/lib/service/analytics'
 import { isAndroid, isIOS } from 'web/lib/util/device'
-import { Button } from '../buttons/button'
 import { WarningConfirmationButton } from '../buttons/warning-confirmation-button'
 import { getAnswerColor } from '../charts/contract/choice'
 import { LocationMonitor } from '../gidx/location-monitor'
-import { InBeta, VerifyButton } from '../sweeps/sweep-verify-section'
+import { VerifyButton } from '../sweeps/sweep-verify-section'
 import { ChoicesToggleGroup } from '../widgets/choices-toggle-group'
 import { CashoutLimitWarning } from './cashout-limit-warning'
 import LimitOrderPanel, { getLimitBetReturns } from './limit-order-panel'
@@ -67,6 +66,7 @@ import { useIsPageVisible } from 'web/hooks/use-page-visible'
 import { CandidateBet } from 'common/new-bet'
 import { APIParams } from 'common/api/schema'
 import { usePersistentInMemoryState } from 'client-common/hooks/use-persistent-in-memory-state'
+import { Button } from '../buttons/button'
 
 export type BinaryOutcomes = 'YES' | 'NO' | undefined
 
@@ -541,14 +541,13 @@ export const BuyPanelBody = (props: {
   return (
     <>
       <Col className={clsx(panelClassName, 'relative rounded-xl px-4 py-2')}>
-        {isCashContract && <InBeta className="my-2" />}
         {children}
         {(isAdvancedTrader || alwaysShowOutcomeSwitcher) && (
           <Row className={'mb-2 mt-2 justify-between'}>
             <Row
               className={clsx(
                 ' gap-1',
-                (isBinaryMC || pseudonymName) && 'hidden'
+                (isBinaryMC || pseudonymName) && 'invisible'
               )}
             >
               <ChoicesToggleGroup
@@ -602,6 +601,7 @@ export const BuyPanelBody = (props: {
               )}
             >
               <BuyAmountInput
+                parentClassName="max-w-full"
                 amount={betAmount}
                 onChange={onBetChange}
                 error={error}
@@ -676,6 +676,7 @@ export const BuyPanelBody = (props: {
         ) : (
           <>
             <LimitOrderPanel
+              betAmount={betAmount}
               contract={contract}
               multiProps={multiProps}
               user={user}

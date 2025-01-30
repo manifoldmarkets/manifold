@@ -50,7 +50,6 @@ export function BetDialog(props: {
     questionPseudonym,
   } = props
   const { question } = contract
-  const isBinaryMC = isBinaryMulti(contract)
 
   const initialProb = getProbability(contract)
   return (
@@ -63,16 +62,14 @@ export function BetDialog(props: {
       )}
     >
       <Col>
-        <Row className="items-baseline justify-between">
+        <Row className="items-baseline justify-between gap-2">
           <Link
             className="text-primary-700 !mb-4 !mt-0 !text-xl hover:underline"
             href={contractPath(contract)}
           >
             {questionPseudonym ?? question}
           </Link>
-          <span className="text-ink-700 text-xl">
-            {formatPercent(initialProb)}
-          </span>
+          <span className=" text-xl">{formatPercent(initialProb)}</span>
         </Row>
         <BuyPanel
           contract={contract}

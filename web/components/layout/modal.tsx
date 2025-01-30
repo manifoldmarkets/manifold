@@ -30,7 +30,7 @@ export function Modal(props: {
 
   const sizeClass = {
     sm: 'w-full sm:max-w-sm',
-    md: 'w-full sm:max-w-md',
+    md: 'w-full sm:max-w-lg',
     lg: 'w-full max-w-2xl',
     xl: 'w-full max-w-5xl',
   }[size]
