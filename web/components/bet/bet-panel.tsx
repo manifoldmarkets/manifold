@@ -592,6 +592,18 @@ export const BuyPanelBody = (props: {
             </Row>
           </Row>
         )}
+        {!isAdvancedTrader && onClose && (
+          <Row className="justify-end">
+            <Button
+              color="gray-white"
+              size="sm"
+              onClick={onClose}
+              className="-mr-2"
+            >
+              <XIcon className="h-5 w-5" />
+            </Button>
+          </Row>
+        )}
 
         {betType === 'Market' ? (
           <>
