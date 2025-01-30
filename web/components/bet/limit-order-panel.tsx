@@ -150,7 +150,7 @@ export default function LimitOrderPanel(props: {
     !addCustomExpiration &&
     selectedExpiration !== -1 &&
     selectedExpiration !== 'Never'
-      ? expirationChoices[selectedExpiration]
+      ? selectedExpiration
       : undefined
 
   const initialProb =
