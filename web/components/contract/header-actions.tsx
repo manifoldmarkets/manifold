@@ -32,9 +32,11 @@ import { ContractInfoDialog } from './contract-info-dialog'
 import { WatchMarketModal } from './watch-market-modal'
 import { ChangeBannerButton } from './change-banner-button'
 import { GoGraph } from 'react-icons/go'
+import { useSweepstakes } from '../sweepstakes-provider'
 
 export function HeaderActions(props: {
   playContract: Contract
+  setIsPlay: (isPlay: boolean) => void
   currentContract: Contract
   initialHideGraph: boolean
   hideGraph: boolean
@@ -46,6 +48,7 @@ export function HeaderActions(props: {
     initialHideGraph,
     hideGraph,
     setHideGraph,
+    setIsPlay,
   } = props
   const user = useUser()
   const privateUser = usePrivateUser()
@@ -234,7 +237,8 @@ export function HeaderActions(props: {
         ]
       : []),
   ]
-
+  const { prefersPlay, setPrefersPlay } = useSweepstakes()
+  const isPlay = currentContract.token == 'MANA'
   const sweepsEnabled = !!playContract.siblingContractId
 
   const isNonBetPollOrBountiedQuestion =
@@ -247,7 +251,20 @@ export function HeaderActions(props: {
       {!isNonBetPollOrBountiedQuestion && (
         <SweepsToggle
           sweepsEnabled={sweepsEnabled}
-          isPlay={currentContract.token == 'MANA'}
+          isPlay={isPlay}
+          onClick={() => {
+            if (prefersPlay && isPlay) {
+              setPrefersPlay(false)
+              setIsPlay(false)
+            } else if (!prefersPlay && !isPlay) {
+              setPrefersPlay(true)
+              setIsPlay(true)
+            } else if (prefersPlay && !isPlay) {
+              setIsPlay(true)
+            } else if (!prefersPlay && isPlay) {
+              setIsPlay(false)
+            }
+          }}
         />
       )}
 

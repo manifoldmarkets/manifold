@@ -107,14 +107,9 @@ export function ContractPageContent(props: ContractParams) {
     !isPlay && liveCashContract ? liveCashContract : livePlayContract
   const user = useUser()
 
-  // Read and set play state from the query if the user hasn't set their preference
+  // Read and set play state from the query
   useEffect(() => {
-    if (
-      isPlay !== undefined || // user has set their preference
-      prefersPlay !== undefined || // user has set their preference
-      !router.isReady // not ready yet
-    )
-      return
+    if (!router.isReady) return
     const playQuery = router.query.play
     const queryIndicatesSweeps = playQuery === 'false'
     const queryIndicatesPlay =
@@ -122,7 +117,6 @@ export function ContractPageContent(props: ContractParams) {
       (playQuery === undefined &&
         !sweepsIsPossible &&
         prefersPlay === undefined)
-
     if (queryIndicatesSweeps) {
       if (sweepsIsPossible && isPlay) {
         setIsPlay(false)
@@ -134,23 +128,10 @@ export function ContractPageContent(props: ContractParams) {
     }
   }, [isPlay, router.query, prefersPlay])
 
-  // When the user changes their preference, update the play state and set the query
-  useEffect(() => {
-    if (prefersPlay === undefined) return
-    const shouldBePlay =
-      (prefersPlay && !isPlay) || (!sweepsIsPossible && !isPlay)
-    const shouldBeSweeps =
-      !prefersPlay &&
-      (isPlay === undefined || isPlay === true) &&
-      sweepsIsPossible
-    if (shouldBePlay) {
-      setIsPlay(true)
-      setPlayStateInQuery(true)
-    } else if (shouldBeSweeps) {
-      setIsPlay(false)
-      setPlayStateInQuery(false)
-    }
-  }, [prefersPlay])
+  const setIsPlayAndQuery = (isPlay: boolean) => {
+    setIsPlay(isPlay)
+    setPlayStateInQuery(isPlay)
+  }
 
   const setPlayStateInQuery = (play: boolean) => {
     const newQuery = { ...router.query, play: play.toString() }
@@ -357,6 +338,7 @@ export function ContractPageContent(props: ContractParams) {
               </Row>
               {(headerStuck || !coverImageUrl) && (
                 <HeaderActions
+                  setIsPlay={setIsPlayAndQuery}
                   playContract={livePlayContract}
                   currentContract={liveContract}
                   initialHideGraph={initialHideGraph}
@@ -373,6 +355,7 @@ export function ContractPageContent(props: ContractParams) {
                 <BackButton className="pr-8" />
               </div>
               <HeaderActions
+                setIsPlay={setIsPlayAndQuery}
                 playContract={livePlayContract}
                 currentContract={liveContract}
                 initialHideGraph={initialHideGraph}
