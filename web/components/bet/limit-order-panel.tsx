@@ -137,7 +137,7 @@ export default function LimitOrderPanel(props: {
   }
 
   const [selectedExpiration, setSelectedExpiration] =
-    usePersistentInMemoryState<string>('1s', 'limit-order-expiration')
+    usePersistentInMemoryState<string>('Never', 'limit-order-expiration')
   const expiresAt = addCustomExpiration
     ? dayjs(`${expirationDate}T${expirationHoursMinutes}`).valueOf()
     : undefined
@@ -347,6 +347,7 @@ export default function LimitOrderPanel(props: {
             color="light"
             onSameChoiceClick={() => {
               setSelectedExpiration('Never')
+              setAddCustomExpiration(false)
             }}
             choicesMap={Object.keys(expirationChoices).reduce((acc, key) => {
               acc[key] = key
