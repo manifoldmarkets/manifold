@@ -164,15 +164,7 @@ export function BuyPanel(props: {
       {isPanelBodyVisible && (
         <BuyPanelBody
           {...props}
-          panelClassName={
-            !!pseudonym
-              ? 'bg-canvas-50'
-              : outcome === 'NO'
-              ? 'bg-scarlet-50'
-              : outcome === 'YES'
-              ? 'bg-teal-50'
-              : ''
-          }
+          panelClassName={'bg-canvas-50'}
           outcome={outcome}
           setOutcome={setOutcome}
           onClose={

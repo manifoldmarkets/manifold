@@ -326,10 +326,11 @@ export default function LimitOrderPanel(props: {
         sliderColor={pseudonymColor}
         disregardUserBalance={shouldPromptVerification}
       />
-      <Col className="relative my-4 w-full gap-2">
-        <div className="text-ink-700">
-          {isPseudoNumeric ? 'Value' : `Probability: ${limitProbInt}%`}
-        </div>
+      <Col className="relative my-6 w-full gap-2">
+        <span className="text-ink-700">
+          {isPseudoNumeric ? 'Value' : `Probability:`}
+          <span className="text-ink-700 font-semibold"> {limitProbInt}%</span>
+        </span>
         <ProbabilitySlider
           prob={limitProbInt}
           onProbChange={setLimitProbInt}
