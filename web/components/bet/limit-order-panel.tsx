@@ -334,6 +334,18 @@ export default function LimitOrderPanel(props: {
           {isPseudoNumeric ? 'Value' : `Probability:`}
           <span className="text-ink-700 font-semibold"> {limitProbInt}%</span>
         </span>
+        <Row className="gap-2">
+          {[-5, -1, 1, 5].map((increment) => (
+            <Button
+              key={increment}
+              color="gray-white"
+              onClick={() => setLimitProbInt((limitProbInt ?? 0) + increment)}
+              className="bg-canvas-0 h-7 w-24"
+            >
+              {increment > 0 ? `+${increment}` : increment}
+            </Button>
+          ))}
+        </Row>
         <ProbabilitySlider
           prob={limitProbInt}
           onProbChange={setLimitProbInt}
