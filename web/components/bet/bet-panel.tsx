@@ -439,21 +439,43 @@ export const BuyPanelBody = (props: {
           limitProb,
         } as APIParams<'bet'>)
       )
-      toast.loading(`Filling ${TRADE_TERM.toLowerCase()}...`, {
-        duration: expiresMillisAfter + 100,
-        id: toastId,
-      })
+      if (bet.isFilled) {
+        toast.success(
+          `${formatWithToken({
+            amount: bet.amount,
+            token: isCashContract ? 'CASH' : 'M$',
+          })}/${formatWithToken({
+            amount: bet.orderAmount ?? 0,
+            token: isCashContract ? 'CASH' : 'M$',
+          })} filled for ${formatWithToken({
+            amount: bet.shares,
+            token: isCashContract ? 'CASH' : 'M$',
+          })} on payout`,
+          {
+            duration: 5000,
+            id: toastId,
+          }
+        )
+        setSubmittedBet(null)
+        setIsSubmitting(false)
+        onBuySuccess?.()
+      } else {
+        toast.loading(`Filling ${TRADE_TERM.toLowerCase()}...`, {
+          duration: expiresMillisAfter + 100,
+          id: toastId,
+        })
+        setSubmittedBet({
+          ...(bet as CandidateBet<LimitBet>),
+          userId: user.id,
+          id: bet.betId,
+          expired: false,
+          toastId,
+        })
+        setTimeout(() => {
+          setSubmittedBet((prev) => (prev ? { ...prev, expired: true } : null))
+        }, expiresMillisAfter + 100)
+      }
       setBetAmount(undefined)
-      setSubmittedBet({
-        ...(bet as CandidateBet<LimitBet>),
-        userId: user.id,
-        id: bet.betId,
-        expired: false,
-        toastId,
-      })
-      setTimeout(() => {
-        setSubmittedBet((prev) => (prev ? { ...prev, expired: true } : null))
-      }, expiresMillisAfter + 100)
 
       track(
         'bet',
