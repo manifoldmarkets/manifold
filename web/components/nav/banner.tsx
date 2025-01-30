@@ -130,6 +130,29 @@ export const useBanner = (name: string) => {
   return [!bannerSeen, () => setBannerSeen(1)] as const
 }
 
+export const FeeBanner = () => {
+  const [showBanner, hideBanner] = useBanner('fee-change')
+  if (!showBanner) return null
+  return (
+    <Banner
+      className="bg-primary-100 hover:bg-primary-200 dark:text-primary-800 text-primary-700 hover:text-primary-900 items-center py-2 transition-colors"
+      link="https://manifoldmarkets.notion.site/Fee-change-18b54492ea7a80a6b069d488fc3613ee"
+      setShowBanner={hideBanner}
+    >
+      <Row className="items-center gap-2">
+        <LogoIcon
+          className="h-6 w-6 flex-shrink-0 text-black dark:text-white"
+          height={24}
+          width={24}
+          aria-hidden
+          strokeWidth={1}
+        />
+        <div>Sweepstakes fees changing on Feb 3rd. Read more</div>
+      </Row>
+    </Banner>
+  )
+}
+
 export const TwombaBanner = () => {
   const [showBanner, hideBanner] = useBanner('twomba')
   if (!showBanner) return null
