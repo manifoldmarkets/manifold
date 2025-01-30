@@ -335,7 +335,6 @@ export const BuyPanelBody = (props: {
       const amountFilled = updatedBet?.amount ?? submittedBet.amount
       const sharesFilled = updatedBet?.shares ?? submittedBet.shares
       const orderAmount = updatedBet?.orderAmount ?? submittedBet.orderAmount
-      toast.dismiss(submittedBet.toastId)
       toast.success(
         `${formatWithToken({
           amount: amountFilled,
@@ -349,6 +348,7 @@ export const BuyPanelBody = (props: {
         })} on payout`,
         {
           duration: 5000,
+          id: submittedBet.toastId,
         }
       )
       setSubmittedBet(null)
@@ -419,7 +419,9 @@ export const BuyPanelBody = (props: {
     console.log('betDeps', betDeps)
     setError(undefined)
     setIsSubmitting(true)
-    const toastId = toast.loading(`Placing ${TRADE_TERM.toLowerCase()}...`)
+    const toastId = toast.loading(`Placing ${TRADE_TERM.toLowerCase()}...`, {
+      duration: 10000,
+    })
 
     try {
       const expiresMillisAfter = 1000
@@ -437,6 +439,10 @@ export const BuyPanelBody = (props: {
           limitProb,
         } as APIParams<'bet'>)
       )
+      toast.loading(`Filling ${TRADE_TERM.toLowerCase()}...`, {
+        duration: expiresMillisAfter + 100,
+        id: toastId,
+      })
       setBetAmount(undefined)
       setSubmittedBet({
         ...(bet as CandidateBet<LimitBet>),
@@ -473,13 +479,12 @@ export const BuyPanelBody = (props: {
           setError(`Error placing ${TRADE_TERM} (could not serialize access)`)
           console.error(`Error placing ${TRADE_TERM}`, e)
         } else setError(message)
-        toast.error(`Error submitting ${TRADE_TERM}`)
+        toast.error(`Error submitting ${TRADE_TERM}`, { id: toastId })
       } else {
         console.error(e)
         setError(`Error placing ${TRADE_TERM}`)
-        toast.error(`Error submitting ${TRADE_TERM}`)
+        toast.error(`Error submitting ${TRADE_TERM}`, { id: toastId })
       }
-      toast.dismiss(toastId)
       setIsSubmitting(false)
     }
   }
