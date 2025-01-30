@@ -10,8 +10,6 @@ import { runTxnOutsideBetQueue } from 'shared/txn/run-txn'
 import { log } from 'shared/utils'
 import { AdminRewardTxn } from 'common/txn'
 
-const MOD_REWARD_AMOUNT = 25
-
 export const updateModReport: APIHandler<'update-mod-report'> = async (
   props,
   auth
@@ -24,17 +22,6 @@ export const updateModReport: APIHandler<'update-mod-report'> = async (
   const pg = createSupabaseDirectClient()
 
   const updateData = removeUndefinedProps(updates)
-
-  // Check if this update has already been rewarded
-  const existingReward = await pg.oneOrNone(
-    `select 1 from txns where
-     category = $1 and
-     to_id = $2 and 
-     from_id = 'BANK' and
-     (data->'data'->'reportId')::int = $3 and 
-     data->'data'->>'updateType' = $4`,
-    ['ADMIN_REWARD', auth.uid, reportId, updates.status]
-  )
 
   const { data, error } = await db
     .from('mod_reports')
@@ -51,22 +38,34 @@ export const updateModReport: APIHandler<'update-mod-report'> = async (
     throw new APIError(404, 'Report not found')
   }
 
-  if (!existingReward && updates.status !== 'new') {
-    const txn = {
-      fromId: 'BANK',
-      fromType: 'BANK',
-      toId: auth.uid,
-      toType: 'USER',
-      amount: MOD_REWARD_AMOUNT,
-      token: 'M$',
-      category: 'ADMIN_REWARD',
-      data: {
-        reportId,
-        updateType: updates.status ?? '',
-      },
-      description: `Reward for updating mod report ${reportId}`,
-    } as AdminRewardTxn
-    await pg.tx(async (tx) => runTxnOutsideBetQueue(tx, txn))
+  if (updates.status === 'resolved' || updates.status === 'under review') {
+    const existingReward = await pg.oneOrNone(
+      `select 1 from txns where
+     category = $1 and
+     to_id = $2 and 
+     from_id = 'BANK' and
+     (data->'data'->'reportId')::int = $3 and 
+     data->'data'->>'updateType' = $4`,
+      ['ADMIN_REWARD', auth.uid, reportId, updates.status]
+    )
+    if (!existingReward) {
+      const MOD_REWARD_AMOUNT = updates.status === 'under review' ? 10 : 15
+      const txn = {
+        fromId: 'BANK',
+        fromType: 'BANK',
+        toId: auth.uid,
+        toType: 'USER',
+        amount: MOD_REWARD_AMOUNT,
+        token: 'M$',
+        category: 'ADMIN_REWARD',
+        data: {
+          reportId,
+          updateType: updates.status ?? '',
+        },
+        description: `Reward for updating mod report ${reportId}`,
+      } as AdminRewardTxn
+      await pg.tx(async (tx) => runTxnOutsideBetQueue(tx, txn))
+    }
   }
 
   return { status: 'success', report: data[0] as ModReport }
