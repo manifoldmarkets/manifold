@@ -1,17 +1,8 @@
 import clsx from 'clsx'
-import {
-  BinaryContract,
-  CPMMMultiContract,
-  CPMMNumericContract,
-  MAX_CPMM_PROB,
-  MIN_CPMM_PROB,
-  PseudoNumericContract,
-  StonkContract,
-} from 'common/contract'
+
 import { Col } from '../layout/col'
 import { Input } from './input'
 import { Slider, sliderColors } from './slider'
-import { AmountInput } from 'web/components/widgets/amount-input'
 export const PROBABILITY_SLIDER_VALUES = Array.from(
   { length: 99 },
   (_, i) => i + 1
@@ -124,89 +115,6 @@ export function ProbabilityInput(props: {
       <span className="text-ink-400 absolute right-4 top-1/2 my-auto -translate-y-1/2">
         %
       </span>
-    </Col>
-  )
-}
-
-export function ProbabilityOrNumericInput(props: {
-  contract:
-    | BinaryContract
-    | PseudoNumericContract
-    | StonkContract
-    | CPMMMultiContract
-    | CPMMNumericContract
-  prob: number | undefined
-  setProb: (prob: number | undefined) => void
-  disabled?: boolean
-  placeholder?: string
-  error?: boolean
-  onRangeError?: (error: boolean) => void
-  showSlider?: boolean
-  sliderColor?: keyof typeof sliderColors
-  outcome?: 'YES' | 'NO'
-}) {
-  const {
-    contract,
-    prob,
-    setProb,
-    disabled,
-    placeholder,
-    error = false,
-    onRangeError,
-    showSlider,
-    sliderColor,
-    outcome,
-  } = props
-  const isPseudoNumeric = contract.outcomeType === 'PSEUDO_NUMERIC'
-  const isSumsToOne =
-    contract.outcomeType === 'MULTIPLE_CHOICE' && contract.shouldAnswersSumToOne
-
-  return (
-    <Col className="gap-2">
-      {isPseudoNumeric ? (
-        <AmountInput
-          inputClassName="w-24"
-          label=""
-          amount={prob}
-          onChangeAmount={(val) => {
-            onRangeError?.(
-              val !== undefined && (val < contract.min || val > contract.max)
-            )
-            setProb(val)
-          }}
-          allowNegative
-          disabled={disabled}
-          placeholder={placeholder}
-          error={error}
-        />
-      ) : (
-        <>
-          <ProbabilityInput
-            className={'w-44'}
-            inputClassName={'h-14'}
-            prob={prob}
-            onChange={setProb}
-            disabled={disabled}
-            placeholder={placeholder}
-            error={error}
-            limitProbs={
-              !isSumsToOne
-                ? { max: MAX_CPMM_PROB, min: MIN_CPMM_PROB }
-                : undefined
-            }
-          />
-          {showSlider && !isPseudoNumeric && (
-            <ProbabilitySlider
-              className="-mt-2 w-56"
-              prob={prob}
-              onProbChange={setProb}
-              disabled={disabled}
-              color={sliderColor}
-              outcome={outcome}
-            />
-          )}
-        </>
-      )}
     </Col>
   )
 }
