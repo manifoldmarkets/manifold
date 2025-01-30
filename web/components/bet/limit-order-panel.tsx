@@ -22,7 +22,7 @@ import {
 } from 'common/contract'
 import { computeCpmmBet } from 'common/new-bet'
 import { formatPercent } from 'common/util/format'
-import { DAY_MS, HOUR_MS, MINUTE_MS, WEEK_MS } from 'common/util/time'
+import { DAY_MS, HOUR_MS, MINUTE_MS, MONTH_MS, WEEK_MS } from 'common/util/time'
 import { Input } from 'web/components/widgets/input'
 import { firebaseLogin, User } from 'web/lib/firebase/users'
 import { Button } from '../buttons/button'
@@ -128,23 +128,27 @@ export default function LimitOrderPanel(props: {
     usePersistentInMemoryState<string>(initTime, 'limit-order-expiration-time')
 
   const expirationChoices: { [key: string]: number } = {
-    Now: 1,
+    '0s': 1,
     '1s': 1000,
     '1h': HOUR_MS,
     '1d': DAY_MS,
     '1w': WEEK_MS,
-    Custom: -1,
+    '1m': MONTH_MS,
+    '+': -1,
   }
 
   const [selectedExpiration, setSelectedExpiration] =
-    usePersistentInMemoryState<string>('Never', 'limit-order-expiration')
+    usePersistentInMemoryState<string | number>(
+      'Never',
+      'limit-order-expiration'
+    )
   const expiresAt = addCustomExpiration
     ? dayjs(`${expirationDate}T${expirationHoursMinutes}`).valueOf()
     : undefined
 
   const expiresMillisAfter =
     !addCustomExpiration &&
-    selectedExpiration !== 'Custom' &&
+    selectedExpiration !== -1 &&
     selectedExpiration !== 'Never'
       ? expirationChoices[selectedExpiration]
       : undefined
@@ -349,14 +353,11 @@ export default function LimitOrderPanel(props: {
               setSelectedExpiration('Never')
               setAddCustomExpiration(false)
             }}
-            choicesMap={Object.keys(expirationChoices).reduce((acc, key) => {
-              acc[key] = key
-              return acc
-            }, {} as { [key: string]: string })}
-            currentChoice={addCustomExpiration ? 'Custom' : selectedExpiration}
+            choicesMap={expirationChoices}
+            currentChoice={selectedExpiration}
             setChoice={(choice) => {
-              setAddCustomExpiration(choice === 'Custom')
-              setSelectedExpiration(choice as string)
+              setAddCustomExpiration(choice === -1)
+              setSelectedExpiration(choice as number)
             }}
           />
         </Row>
@@ -401,7 +402,7 @@ export default function LimitOrderPanel(props: {
                   setExpirationHoursMinutes(addTime)
                 }}
               >
-                + 1Min
+                + 1m
               </Button>{' '}
               <Button
                 color={'indigo-outline'}
@@ -415,7 +416,7 @@ export default function LimitOrderPanel(props: {
                   setExpirationHoursMinutes(addTime)
                 }}
               >
-                + 1Hr
+                + 1h
               </Button>
               <Button
                 color={'indigo-outline'}
@@ -426,7 +427,7 @@ export default function LimitOrderPanel(props: {
                   setExpirationDate(addDay)
                 }}
               >
-                + 1D
+                + 1d
               </Button>
               <Button
                 color={'indigo-outline'}
@@ -437,7 +438,18 @@ export default function LimitOrderPanel(props: {
                   setExpirationDate(addDay)
                 }}
               >
-                + 1W
+                + 1w
+              </Button>
+              <Button
+                color={'indigo-outline'}
+                size={'sm'}
+                onClick={() => {
+                  const num = dayjs(expirationDate).valueOf() + MONTH_MS
+                  const addDay = dayjs(num).format('YYYY-MM-DD')
+                  setExpirationDate(addDay)
+                }}
+              >
+                + 1m
               </Button>
             </Row>
           </Col>
