@@ -24,13 +24,6 @@ export async function sendWeeklyMarketsEmails() {
     pg
   )
   log(`Found ${privateUsers.length} users to send emails to`)
-  const sweepsUserIds = await pg.map(
-    `select id from users where data->>'sweepstakesVerified' = 'true'
-    and id in ($1:list)`,
-    [privateUsers.map((u) => u.id)],
-    (r) => r.id
-  )
-  log(`Found ${sweepsUserIds.length} sweepstakes verified users`)
   const userIds = privateUsers.map((u) => u.id)
   await pg.none(
     `update private_users set weekly_trending_email_sent = true where id = any($1)`,
@@ -49,8 +42,7 @@ export async function sendWeeklyMarketsEmails() {
           const contractsToSend = await getForYouMarkets(
             privateUser.id,
             6,
-            privateUser,
-            sweepsUserIds.includes(privateUser.id)
+            privateUser
           )
           // TODO: bulkify this
           await sendInterestingMarketsEmail(
@@ -78,17 +70,19 @@ export async function sendWeeklyMarketsEmails() {
   const userIdsNotSent = userIds.filter(
     (uid) => !userIdsSentEmails.includes(uid)
   )
-  await pg.none(
-    `update private_users set weekly_trending_email_sent = false where id = any($1)`,
-    [userIdsNotSent]
-  )
+  if (userIdsNotSent.length > 0) {
+    log(`Resetting ${userIdsNotSent.length} users to not sent`)
+    await pg.none(
+      `update private_users set weekly_trending_email_sent = false where id = any($1)`,
+      [userIdsNotSent]
+    )
+  }
 }
 
 export async function getForYouMarkets(
   userId: string,
   limit: number,
-  privateUser: PrivateUser,
-  sweepstakesVerified: boolean
+  privateUser: PrivateUser
 ) {
   const searchMarketSQL = await getForYouSQL({
     userId,
@@ -100,7 +94,7 @@ export async function getForYouMarkets(
     isPrizeMarket: false,
     marketTier: '00000',
     privateUser,
-    token: sweepstakesVerified ? 'CASH' : 'ALL',
+    token: 'ALL',
     threshold: 200,
   })
 
@@ -108,13 +102,13 @@ export async function getForYouMarkets(
   const contracts = await pg.map(searchMarketSQL, [], (r) => convertContract(r))
 
   // Prefer cash contracts over mana contracts in emails
-  const siblingIds = filterDefined(
+  const manaContractIds = filterDefined(
     contracts.map((contract) =>
       contract.token === 'CASH' ? contract.siblingContractId : null
     )
   )
-  const contractsWithoutSiblings = contracts.filter(
-    (contract) => !siblingIds.includes(contract.id)
+  const contractsWithoutDuplicates = contracts.filter(
+    (contract) => !manaContractIds.includes(contract.id)
   )
-  return contractsWithoutSiblings ?? []
+  return contractsWithoutDuplicates ?? []
 }
