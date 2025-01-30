@@ -126,14 +126,17 @@ export function AmountInput(
             }}
             min={allowFloat ? 0 : 1}
           />
-          {!disableClearButton && amount !== undefined && (
-            <button
-              className="text-ink-400 hover:text-ink-500 active:text-ink-500 absolute right-4 top-1/2 -translate-y-1/2"
-              onClick={() => onChangeAmount(undefined)}
-            >
-              <XIcon className="h-4 w-4" />
-            </button>
-          )}
+          {quickAddMoreButton
+            ? quickAddMoreButton
+            : !disableClearButton &&
+              amount !== undefined && (
+                <button
+                  className="text-ink-400 hover:text-ink-500 active:text-ink-500 absolute right-4 top-1/2 -translate-y-1/2"
+                  onClick={() => onChangeAmount(undefined)}
+                >
+                  <XIcon className="h-4 w-4" />
+                </button>
+              )}
         </Row>
       </label>
     </Col>
