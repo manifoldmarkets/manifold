@@ -1,6 +1,7 @@
 import clsx from 'clsx'
 import * as RxSlider from '@radix-ui/react-slider'
 import { ReactNode } from 'react'
+import { filterDefined } from 'common/util/array'
 
 export const sliderColors = {
   green: ['bg-teal-400', 'focus:outline-teal-600/30 bg-teal-600'],
@@ -32,6 +33,7 @@ export function Slider(props: {
   className?: string
   disabled?: boolean
   inverted?: boolean
+  fillToRight?: boolean
 }) {
   const {
     amount,
@@ -44,6 +46,7 @@ export function Slider(props: {
     disabled,
     color = 'indigo',
     inverted,
+    fillToRight,
   } = props
 
   const [trackClasses, thumbClasses] = sliderColors[color]
@@ -55,7 +58,7 @@ export function Slider(props: {
         'relative flex touch-none select-none items-center',
         marks ? 'h-[43px]' : 'h-5'
       )}
-      value={[amount]}
+      value={filterDefined([amount, fillToRight ? max : undefined])}
       onValueChange={([val]) => onChange(val)}
       min={min}
       max={max}
@@ -73,7 +76,13 @@ export function Slider(props: {
             >
               <div
                 className={clsx(
-                  amount >= value ? trackClasses : 'bg-ink-400',
+                  fillToRight
+                    ? amount <= value
+                      ? trackClasses
+                      : 'bg-ink-400'
+                    : amount >= value
+                    ? trackClasses
+                    : 'bg-ink-400',
                   'h-2 w-2 rounded-full'
                 )}
               />

@@ -57,6 +57,7 @@ export function ProbabilitySlider(props: {
       onChange={(value) => onProbChange(sliderIndexToProb(value))}
       step={1}
       disabled={disabled}
+      fillToRight={outcome === 'NO'}
     />
   )
 }
