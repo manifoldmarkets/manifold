@@ -235,6 +235,10 @@ export function PositionModal({
     }
   }
   const isCashContract = contract.token === 'CASH'
+  console.log(contract.question, answer?.text, saleValue, netProceeds, shares,
+  sellQuantity,
+  soldShares,
+  amount)
   // TODO: figure out keyboard clicking behavior
   return (
     <Modal isOpen={open} onClose={() => setOpen(false)} mode="close" showHeader>
