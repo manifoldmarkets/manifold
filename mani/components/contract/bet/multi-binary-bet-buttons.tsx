@@ -86,7 +86,7 @@ export function MultiBinaryBetButtons({
         multiProps={{
           answers: contract.answers,
           answerToBuy: getMainBinaryMCAnswer(contract)!,
-          answerToDisplay: selectedAnswer,
+          answerText: selectedAnswer.text,
         }}
       />
     </>

@@ -22,7 +22,7 @@ import { useFocus } from 'web/hooks/use-focus'
 import { useUser } from 'web/hooks/use-user'
 import { APIError, api } from 'web/lib/api/api'
 import { isAndroid, isIOS } from 'web/lib/util/device'
-import { BinaryOutcomes, MultiBetProps } from '../bet/bet-panel'
+import { BinaryOutcomes } from '../bet/bet-panel'
 import { Button } from '../buttons/button'
 import { Col } from '../layout/col'
 import { MODAL_CLASS, Modal } from '../layout/modal'
@@ -48,6 +48,7 @@ import {
   REP_LIGHT_HEX,
   hexToRgb,
 } from './state-election-map'
+import { MultiBetProps } from 'client-common/lib/bet'
 
 export const HouseStatus = (props: {
   contract: CPMMMultiContract

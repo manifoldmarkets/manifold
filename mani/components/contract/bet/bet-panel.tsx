@@ -1,5 +1,9 @@
-import { Contract, isBinaryMulti } from 'common/contract'
-import { Answer } from 'common/answer'
+import {
+  isBinaryMulti,
+  MAX_CPMM_PROB,
+  MarketContract,
+  MIN_CPMM_PROB,
+} from 'common/contract'
 import { Col } from 'components/layout/col'
 import { ThemedText } from 'components/themed-text'
 import { useColor } from 'hooks/use-color'
@@ -10,7 +14,6 @@ import { Row } from 'components/layout/row'
 import { YesNoButton } from 'components/buttons/yes-no-buttons'
 import { Button } from 'components/buttons/button'
 import { api } from 'lib/api'
-import Toast from 'react-native-toast-message'
 import { Modal } from 'components/layout/modal'
 import { TokenNumber } from 'components/token/token-number'
 import { NumberText } from 'components/number-text'
@@ -22,7 +25,11 @@ import {
   MANA_MIN_BET,
   SWEEPS_MIN_BET,
 } from 'common/economy'
-import { formatMoneyNumber } from 'common/util/format'
+import {
+  formatMoneyNumber,
+  formatPercent,
+  formatWithToken,
+} from 'common/util/format'
 import { removeUndefinedProps } from 'common/util/object'
 import {
   getVerificationStatus,
@@ -30,16 +37,16 @@ import {
 } from 'common/gidx/user'
 import { router } from 'expo-router'
 import { SWEEPIES_NAME } from 'common/envs/constants'
-
+import { LimitBet } from 'common/bet'
+import { useIsPageVisible } from 'hooks/use-is-page-visibile'
+import { useContractBets } from 'client-common/hooks/use-bets'
+import { CandidateBet } from 'common/new-bet'
+import { useToast } from 'react-native-toast-notifications'
+import { getCpmmProbability } from 'common/calculate-cpmm'
+import { getLimitBetReturns, MultiBetProps } from 'client-common/lib/bet'
 export type BinaryOutcomes = 'YES' | 'NO'
 
 const AMOUNT_STEPS = [1, 2, 5, 7, 10, 15, 20, 25, 30, 40, 50, 75, 100]
-
-export type MultiBetProps = {
-  answers: Answer[]
-  answerToBuy: Answer
-  answerToDisplay?: Answer
-}
 
 export function BetPanel({
   contract,
@@ -48,7 +55,7 @@ export function BetPanel({
   outcome,
   multiProps,
 }: {
-  contract: Contract
+  contract: MarketContract
   open: boolean
   setOpen: (open: boolean) => void
   outcome: BinaryOutcomes
@@ -57,6 +64,7 @@ export function BetPanel({
   const color = useColor()
   const [amount, setAmount] = useState(1)
   const { token } = useTokenMode()
+  const toast = useToast()
 
   const answer = multiProps?.answerToBuy
     ? multiProps.answers.find((a) => a.id === multiProps.answerToBuy.id)
@@ -65,8 +73,55 @@ export function BetPanel({
   const isBinaryMC = isBinaryMulti(contract)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [submittedBet, setSubmittedBet] = useState<
+    | (LimitBet & {
+        expired: boolean
+        toastId: string
+      })
+    | null
+  >(null)
+
+  const isCashContract = contract.token === 'CASH'
   const user = useUser()
   const privateUser = usePrivateUser()
+
+  const limitBets = useContractBets(
+    contract.id,
+    removeUndefinedProps({
+      userId: user?.id,
+      enabled: !!user?.id,
+      afterTime: contract?.lastBetTime ?? user?.lastBetTime,
+    }),
+    useIsPageVisible,
+    (params) => api('bets', params)
+  )
+  const updatedBet = limitBets.find((b) => b.id === submittedBet?.id)
+  useEffect(() => {
+    if (!submittedBet) return
+    if (
+      updatedBet?.isFilled ||
+      updatedBet?.isCancelled ||
+      submittedBet.expired ||
+      (updatedBet?.expiresAt && Date.now() > updatedBet.expiresAt)
+    ) {
+      const amountFilled = updatedBet?.amount ?? submittedBet.amount
+      const sharesFilled = updatedBet?.shares ?? submittedBet.shares
+      const orderAmount = updatedBet?.orderAmount ?? submittedBet.orderAmount
+      const message = `${formatWithToken({
+        amount: amountFilled,
+        token: isCashContract ? 'CASH' : 'M$',
+      })}/${formatWithToken({
+        amount: orderAmount,
+        token: isCashContract ? 'CASH' : 'M$',
+      })} filled for ${formatWithToken({
+        amount: sharesFilled,
+        token: isCashContract ? 'CASH' : 'M$',
+      })} on payout`
+
+      toast.update(submittedBet.toastId, message)
+      setSubmittedBet(null)
+    }
+  }, [updatedBet, submittedBet])
   const NEEDS_TO_REGISTER =
     'You need to register to participate in this contest'
   // Check for errors.
@@ -105,35 +160,120 @@ export function BetPanel({
       setError(null)
     }
   }, [amount, user, token])
+  const isCpmmMulti = contract.mechanism === 'cpmm-multi-1'
+  if (isCpmmMulti && !multiProps) {
+    throw new Error('multiProps must be defined for cpmm-multi-1')
+  }
+  const cpmmState = isCpmmMulti
+    ? {
+        pool: {
+          YES: multiProps!.answerToBuy.poolYes,
+          NO: multiProps!.answerToBuy.poolNo,
+        },
+        p: 0.5,
+        collectedFees: contract.collectedFees,
+      }
+    : {
+        pool: contract.pool,
+        p: contract.p,
+        collectedFees: contract.collectedFees,
+      }
+  const SLIPPAGE = 0.1
+  const prob = getCpmmProbability(cpmmState.pool, cpmmState.p)
+  const floatLimitProb = Math.max(
+    MIN_CPMM_PROB,
+    Math.min(
+      MAX_CPMM_PROB,
+      outcome === 'YES' ? prob + SLIPPAGE : prob - SLIPPAGE
+    )
+  )
+  const binaryMCOutcome =
+    isBinaryMC && multiProps
+      ? multiProps.answerText === multiProps.answerToBuy.text
+        ? 'YES'
+        : 'NO'
+      : undefined
+  const limitProb = Math.round(floatLimitProb * 100) / 100
+  const shouldAnswersSumToOne =
+    'shouldAnswersSumToOne' in contract ? contract.shouldAnswersSumToOne : false
 
-  // TODO: add bet logic
+  const {
+    currentPayout,
+    probAfter: newProbAfter,
+    betDeps,
+  } = getLimitBetReturns(
+    cpmmState,
+    binaryMCOutcome ?? outcome ?? 'YES',
+    amount,
+    limitProb,
+    [],
+    {},
+    setError,
+    shouldAnswersSumToOne ? multiProps : undefined
+  )
+  let probBefore = prob
+  let probAfter = newProbAfter
+  if (
+    multiProps &&
+    multiProps.answerToBuy.text !== multiProps.answerText &&
+    isBinaryMC
+  ) {
+    probBefore = 1 - prob
+    probAfter = 1 - newProbAfter
+  }
+
   const onPress = async () => {
+    if (!user) return
+    let toastId: string
     try {
+      const expiresMillisAfter = 1000
       setLoading(true)
-      await api(
+      const bet = await api(
         'bet',
         removeUndefinedProps({
           contractId: contract.id,
           outcome,
           amount,
           answerId: multiProps?.answerToBuy?.id,
+          expiresMillisAfter,
+          limitProb,
+          deps: betDeps.map((b) => b.id),
         })
       )
-      Toast.show({
-        type: 'success',
-        text1: '🎉  Bet placed successfully',
-      })
-      setOpen(false)
+      if (bet.isFilled) {
+        setSubmittedBet(null)
+        setOpen(false)
+        toastId = toast.show(
+          `${formatWithToken({
+            amount: bet.amount,
+            token: isCashContract ? 'CASH' : 'M$',
+          })}/${formatWithToken({
+            amount: bet.orderAmount ?? 0,
+            token: isCashContract ? 'CASH' : 'M$',
+          })} filled for ${formatWithToken({
+            amount: bet.shares,
+            token: isCashContract ? 'CASH' : 'M$',
+          })} on payout`
+        )
+      } else {
+        toastId = toast.show('Filling orders...')
+        setSubmittedBet({
+          ...(bet as CandidateBet<LimitBet>),
+          userId: user.id,
+          id: bet.betId,
+          expired: false,
+          toastId,
+        })
+        setTimeout(() => {
+          setSubmittedBet((prev) => (prev ? { ...prev, expired: true } : null))
+        }, expiresMillisAfter + 100)
+      }
     } catch (error: any) {
       console.error(error)
-      Toast.show({
-        type: 'error',
-        text1: '💥  Failed to place bet',
-        text2: error.message ?? 'Please try again',
-      })
-    } finally {
-      setLoading(false)
+      toastId = toast.show('Failed to place trade: ' + (error.message ?? ''))
+      setOpen(false)
     }
+    setLoading(false)
   }
 
   // TODO: figure out keyboard clicking behavior
@@ -201,9 +341,9 @@ export function BetPanel({
 
               {/* TODO: get real payout */}
               <Row style={{ alignItems: 'center', gap: 4 }}>
-                <TokenNumber amount={amount * 2} size="lg" />
+                <TokenNumber amount={currentPayout} size="lg" />
                 <NumberText size="lg" color={color.profitText}>
-                  (+200%)
+                  (+{formatPercent(currentPayout / amount)})
                 </NumberText>
               </Row>
             </Row>
@@ -217,8 +357,7 @@ export function BetPanel({
                 <ThemedText weight="normal">
                   Buy{' '}
                   <ThemedText weight="semibold">
-                    {multiProps?.answerToDisplay?.text ??
-                      multiProps?.answerToBuy?.text}
+                    {multiProps?.answerText ?? multiProps?.answerToBuy?.text}
                   </ThemedText>
                 </ThemedText>
               </Button>

@@ -1,6 +1,6 @@
 import { ChevronDownIcon, XIcon } from '@heroicons/react/outline'
 import clsx from 'clsx'
-import { uniq } from 'lodash'
+import { capitalize, uniq } from 'lodash'
 import { useEffect, useState } from 'react'
 import toast from 'react-hot-toast'
 
@@ -28,8 +28,6 @@ import { firebaseLogin } from 'web/lib/firebase/users'
 import { Col } from '../layout/col'
 import { Row } from '../layout/row'
 import { BuyAmountInput } from '../widgets/amount-input'
-
-import { Answer } from 'common/answer'
 import { LimitBet } from 'common/bet'
 import { getCpmmProbability } from 'common/calculate-cpmm'
 import { SWEEPIES_NAME, TRADE_TERM } from 'common/envs/constants'
@@ -42,7 +40,6 @@ import { getStonkDisplayShares, STONK_NO, STONK_YES } from 'common/stonk'
 import { getTierFromLiquidity } from 'common/tier'
 import { floatingEqual } from 'common/util/math'
 import { removeUndefinedProps } from 'common/util/object'
-import { capitalize } from 'lodash'
 import { InfoTooltip } from 'web/components/widgets/info-tooltip'
 import { useUnfilledBetsAndBalanceByUserId } from 'web/hooks/use-bets'
 import { useFocus } from 'web/hooks/use-focus'
@@ -56,7 +53,7 @@ import { LocationMonitor } from '../gidx/location-monitor'
 import { VerifyButton } from '../sweeps/sweep-verify-section'
 import { ChoicesToggleGroup } from '../widgets/choices-toggle-group'
 import { CashoutLimitWarning } from './cashout-limit-warning'
-import LimitOrderPanel, { getLimitBetReturns } from './limit-order-panel'
+import LimitOrderPanel from './limit-order-panel'
 import { MoneyDisplay } from './money-display'
 import { OrderBookPanel, YourOrders } from './order-book'
 import { YesNoSelector } from './yes-no-selector'
@@ -67,14 +64,10 @@ import { CandidateBet } from 'common/new-bet'
 import { APIParams } from 'common/api/schema'
 import { Button } from '../buttons/button'
 import { usePersistentLocalState } from 'web/hooks/use-persistent-local-state'
+import { getLimitBetReturns, MultiBetProps } from 'client-common/lib/bet'
 
 export type BinaryOutcomes = 'YES' | 'NO' | undefined
 
-export type MultiBetProps = {
-  answers: Answer[]
-  answerToBuy: Answer
-  answerText?: string
-}
 const SLIPPAGE = 0.1
 
 export function BuyPanel(props: {

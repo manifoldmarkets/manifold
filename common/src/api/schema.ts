@@ -2069,7 +2069,7 @@ export const API = (_apiTypeCheck = {
     // Could set authed false and preferAuth with an api secret if we want it to replace static props
     authed: true,
     returns: {} as {
-      manaContract: Contract
+      manaContract: MarketContract
       chartAnnotations: ChartAnnotation[]
       topics: Topic[]
       comments: ContractComment[]
@@ -2081,7 +2081,7 @@ export const API = (_apiTypeCheck = {
       topContractMetrics: ContractMetric[]
       totalPositions: number
       dashboards: Dashboard[]
-      cashContract: Contract
+      cashContract: MarketContract
       totalManaBets: number
       totalCashBets: number
     },
