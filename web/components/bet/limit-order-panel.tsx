@@ -48,6 +48,8 @@ import { sliderColors } from '../widgets/slider'
 import { ChoicesToggleGroup } from '../widgets/choices-toggle-group'
 import { ProbabilitySlider } from '../widgets/probability-input'
 import { usePersistentLocalState } from 'web/hooks/use-persistent-local-state'
+import { APIParams } from 'common/api/schema'
+import { RelativeTimestamp } from '../relative-timestamp'
 
 export default function LimitOrderPanel(props: {
   contract:
@@ -116,11 +118,6 @@ export default function LimitOrderPanel(props: {
   const [error, setError] = useState<string | undefined>()
   const [isSubmitting, setIsSubmitting] = useState(false)
   const betDeps = useRef<LimitBet[]>()
-  // Expiring orders
-  const [addCustomExpiration, setAddCustomExpiration] = usePersistentLocalState(
-    false,
-    'add-limit-order-expiration'
-  )
   const initTimeInMs = Number(Date.now() + 5 * MINUTE_MS)
   const initDate = dayjs(initTimeInMs).format('YYYY-MM-DD')
   const initTime = dayjs(initTimeInMs).format('HH:mm')
@@ -144,6 +141,7 @@ export default function LimitOrderPanel(props: {
   // add to local storage
   const [selectedExpiration, setSelectedExpiration] =
     usePersistentLocalState<number>(0, 'limit-order-expiration')
+  const addCustomExpiration = selectedExpiration === -1
   const expiresAt = addCustomExpiration
     ? dayjs(`${expirationDate}T${expirationHoursMinutes}`).valueOf()
     : undefined
@@ -240,7 +238,8 @@ export default function LimitOrderPanel(props: {
             expiresAt: addCustomExpiration ? expiresAt : undefined,
             expiresMillisAfter,
             deps: betDeps.current?.map((b) => b.userId),
-          })
+            silent: expiresMillisAfter && expiresMillisAfter <= 1000,
+          } as APIParams<'bet'>)
         ),
         {
           loading: `Submitting ${TRADE_TERM}...`,
@@ -356,21 +355,29 @@ export default function LimitOrderPanel(props: {
       </Col>
       <Col className="my-3 gap-2">
         <span className="text-ink-700">
-          Expiration{selectedExpiration === 0 ? ' (none)' : ''}
+          Expires:
+          {selectedExpiration === 0 ? (
+            ' never'
+          ) : selectedExpiration === 1 ? (
+            ' now'
+          ) : selectedExpiration === 1000 ? (
+            ' in a second'
+          ) : expiresAt ? (
+            <RelativeTimestamp className="text-ink-700" time={expiresAt} />
+          ) : (
+            <RelativeTimestamp
+              className="text-ink-700"
+              time={Date.now() + selectedExpiration}
+            />
+          )}
         </span>
         <Row className="-ml-2 items-baseline justify-between gap-2 sm:justify-start sm:gap-4">
           <ChoicesToggleGroup
             color="light"
-            onSameChoiceClick={() => {
-              setSelectedExpiration(0)
-              setAddCustomExpiration(false)
-            }}
+            onSameChoiceClick={() => setSelectedExpiration(0)}
             choicesMap={expirationChoices}
             currentChoice={selectedExpiration}
-            setChoice={(choice) => {
-              setAddCustomExpiration(choice === -1)
-              setSelectedExpiration(choice as number)
-            }}
+            setChoice={(choice) => setSelectedExpiration(choice as number)}
           />
         </Row>
         {addCustomExpiration && (
