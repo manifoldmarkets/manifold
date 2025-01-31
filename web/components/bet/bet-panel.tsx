@@ -29,7 +29,6 @@ import { Col } from '../layout/col'
 import { Row } from '../layout/row'
 import { BuyAmountInput } from '../widgets/amount-input'
 import { LimitBet } from 'common/bet'
-import { getCpmmProbability } from 'common/calculate-cpmm'
 import { SWEEPIES_NAME, TRADE_TERM } from 'common/envs/constants'
 import {
   getVerificationStatus,
@@ -67,8 +66,6 @@ import { usePersistentLocalState } from 'web/hooks/use-persistent-local-state'
 import { getLimitBetReturns, MultiBetProps } from 'client-common/lib/bet'
 
 export type BinaryOutcomes = 'YES' | 'NO' | undefined
-
-const SLIPPAGE = 0.1
 
 export function BuyPanel(props: {
   contract:
@@ -268,29 +265,7 @@ export const BuyPanelBody = (props: {
   if (isCpmmMulti && !multiProps) {
     throw new Error('multiProps must be defined for cpmm-multi-1')
   }
-  const cpmmState = isCpmmMulti
-    ? {
-        pool: {
-          YES: multiProps!.answerToBuy.poolYes,
-          NO: multiProps!.answerToBuy.poolNo,
-        },
-        p: 0.5,
-        collectedFees: contract.collectedFees,
-      }
-    : {
-        pool: contract.pool,
-        p: contract.p,
-        collectedFees: contract.collectedFees,
-      }
-  const prob = getCpmmProbability(cpmmState.pool, cpmmState.p)
-  const floatLimitProb = Math.max(
-    MIN_CPMM_PROB,
-    Math.min(
-      MAX_CPMM_PROB,
-      outcome === 'YES' ? prob + SLIPPAGE : prob - SLIPPAGE
-    )
-  )
-  const limitProb = Math.round(floatLimitProb * 100) / 100
+
   const shouldAnswersSumToOne =
     'shouldAnswersSumToOne' in contract ? contract.shouldAnswersSumToOne : false
 
@@ -373,28 +348,21 @@ export const BuyPanelBody = (props: {
     setBetAmount(newAmount)
   }
 
-  const binaryMCOutcome =
-    isBinaryMC && multiProps
-      ? multiProps.answerText === multiProps.answerToBuy.text
-        ? 'YES'
-        : 'NO'
-      : undefined
-  const amount = betAmount ?? 0
-
   const {
     currentPayout,
     probAfter: newProbAfter,
     currentReturn,
     betDeps,
-  } = getLimitBetReturns(
-    cpmmState,
-    binaryMCOutcome ?? outcome ?? 'YES',
-    amount,
     limitProb,
+    prob,
+  } = getLimitBetReturns(
+    outcome ?? 'YES',
+    betAmount ?? 0,
     unfilledBets,
     balanceByUserId,
     setError,
-    shouldAnswersSumToOne ? multiProps : undefined
+    contract,
+    multiProps
   )
   let probBefore = prob
   let probAfter = newProbAfter

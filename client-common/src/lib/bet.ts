@@ -8,20 +8,57 @@ import { addObjects } from 'common/util/object'
 import { computeCpmmBet } from 'common/new-bet'
 import { MAX_CPMM_PROB, MIN_CPMM_PROB } from 'common/contract'
 import { TRADE_TERM } from 'common/envs/constants'
+import { MarketContract } from 'common/contract'
+import { isBinaryMulti } from 'common/contract'
 
 export const getLimitBetReturns = (
-  cpmmState: CpmmState,
-  outcome: 'YES' | 'NO',
+  binaryOutcome: 'YES' | 'NO',
   betAmount: number,
-  limitProb: number | undefined,
   unfilledBets: LimitBet[],
   balanceByUserId: { [userId: string]: number },
   setError: (error: string) => void,
-  arbitrageProps?: {
-    answers: Answer[]
-    answerToBuy: Answer
-  }
+  contract: MarketContract,
+  multiProps?: MultiBetProps,
+  manualLimitProb?: number
 ) => {
+  const shouldAnswersSumToOne =
+    'shouldAnswersSumToOne' in contract ? contract.shouldAnswersSumToOne : false
+  const arbitrageProps = shouldAnswersSumToOne ? multiProps : undefined
+  const isBinaryMC = isBinaryMulti(contract)
+  const outcome =
+    (isBinaryMC && arbitrageProps
+      ? arbitrageProps.answerText === arbitrageProps.answerToBuy.text
+        ? 'YES'
+        : 'NO'
+      : undefined) ?? binaryOutcome
+
+  const isCpmmMulti = contract.mechanism === 'cpmm-multi-1'
+  const cpmmState = isCpmmMulti
+    ? {
+        pool: {
+          YES: arbitrageProps!.answerToBuy.poolYes,
+          NO: arbitrageProps!.answerToBuy.poolNo,
+        },
+        p: 0.5,
+        collectedFees: contract.collectedFees,
+      }
+    : {
+        pool: contract.pool,
+        p: contract.p,
+        collectedFees: contract.collectedFees,
+      }
+  const SLIPPAGE = 0.1
+  const prob = getCpmmProbability(cpmmState.pool, cpmmState.p)
+  const floatLimitProb = Math.max(
+    MIN_CPMM_PROB,
+    Math.min(
+      MAX_CPMM_PROB,
+      outcome === 'YES' ? prob + SLIPPAGE : prob - SLIPPAGE
+    )
+  )
+
+  const limitProb = Math.round((manualLimitProb ?? floatLimitProb) * 100) / 100
+
   const orderAmount = betAmount
   let amount = 0
   let shares = 0
@@ -98,6 +135,8 @@ export const getLimitBetReturns = (
     fees,
     betDeps,
     probAfter,
+    limitProb,
+    prob,
   }
 }
 export type MultiBetProps = {

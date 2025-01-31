@@ -193,21 +193,6 @@ export default function LimitOrderPanel(props: {
     setBetAmount(newAmount)
   }
 
-  const cpmmState = isCpmmMulti
-    ? {
-        pool: {
-          YES: multiProps!.answerToBuy.poolYes,
-          NO: multiProps!.answerToBuy.poolNo,
-        },
-        p: 0.5,
-        collectedFees: contract.collectedFees,
-      }
-    : {
-        pool: contract.pool,
-        p: contract.p,
-        collectedFees: contract.collectedFees,
-      }
-
   async function submitBet() {
     if (!user || betDisabled) return
 
@@ -225,7 +210,7 @@ export default function LimitOrderPanel(props: {
             amount,
             contractId: contract.id,
             answerId,
-            limitProb: limitProb,
+            limitProb,
             expiresAt: addCustomExpiration ? expiresAt : undefined,
             expiresMillisAfter,
             deps: betDeps.current?.map((b) => b.userId),
@@ -266,9 +251,6 @@ export default function LimitOrderPanel(props: {
     }
   }
 
-  const shouldAnswersSumToOne =
-    'shouldAnswersSumToOne' in contract ? contract.shouldAnswersSumToOne : false
-
   let currentPayout = 0
   let currentReturn = 0
   let orderAmount = 0
@@ -276,14 +258,14 @@ export default function LimitOrderPanel(props: {
   // let fees = noFees
   try {
     const result = getLimitBetReturns(
-      cpmmState,
-      binaryMCOutcome ?? outcome ?? 'YES',
+      outcome ?? 'YES',
       amount,
-      limitProb ?? initialProb,
       unfilledBets,
       balanceByUserId,
       setError,
-      shouldAnswersSumToOne ? multiProps : undefined
+      contract,
+      multiProps,
+      limitProb
     )
     currentPayout = result.currentPayout
     currentReturn = result.currentReturn
@@ -341,7 +323,7 @@ export default function LimitOrderPanel(props: {
           onProbChange={setLimitProbInt}
           disabled={isSubmitting}
           color={pseudonymColor}
-          outcome={outcome}
+          outcome={isBinaryMC ? 'YES' : outcome}
         />
       </Col>
       <Col className="my-3 gap-2">
