@@ -289,9 +289,7 @@ export function BuyAmountInput(props: {
                   onClick={() => incrementBy(increment)}
                   className="bg-canvas-0 h-8 w-24"
                 >
-                  {increment > 0
-                    ? `+${formatWithToken({ amount: increment, token })}`
-                    : formatWithToken({ amount: increment, token })}
+                  {increment > 0 ? `+${increment}` : increment}
                 </Button>
               ))}
             </Row>
