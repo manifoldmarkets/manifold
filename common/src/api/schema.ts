@@ -1008,6 +1008,14 @@ export const API = (_apiTypeCheck = {
     returns: [] as DisplayUser[],
     props: z.object({ ids: z.array(z.string()) }).strict(),
   },
+  'users/by-id/balance': {
+    method: 'GET',
+    visibility: 'undocumented',
+    authed: false,
+    cache: DEFAULT_CACHE_STRATEGY,
+    returns: [] as { id: string; balance: number }[],
+    props: z.object({ ids: z.array(z.string()) }).strict(),
+  },
   'user/by-id/:id/block': {
     method: 'POST',
     visibility: 'public',

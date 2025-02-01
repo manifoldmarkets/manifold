@@ -17,7 +17,7 @@ import { ContractPageContent } from 'web/components/contract/contract-page'
 import { Col } from 'web/components/layout/col'
 import { Page } from 'web/components/layout/page'
 import { Title } from 'web/components/widgets/title'
-import { useBetsOnce, useUnfilledBets } from 'web/hooks/use-bets'
+import { useBetsOnce } from 'web/hooks/use-bets'
 import { useIsIframe } from 'web/hooks/use-is-iframe'
 import { useUser } from 'web/hooks/use-user'
 import { initSupabaseAdmin } from 'web/lib/supabase/admin-db'
@@ -25,6 +25,9 @@ import Custom404 from '../404'
 import ContractEmbedPage from '../embed/[username]/[contractSlug]'
 import { useSweepstakes } from 'web/components/sweepstakes-provider'
 import { ContractMetric } from 'common/contract-metric'
+import { useUnfilledBets } from 'client-common/hooks/use-bets'
+import { api } from 'web/lib/api/api'
+import { useIsPageVisible } from 'web/hooks/use-page-visible'
 
 export async function getStaticProps(ctx: {
   params: { username: string; contractSlug: string }
@@ -170,7 +173,12 @@ export function YourTrades(props: {
   const allLimitBets =
     contract.mechanism === 'cpmm-1'
       ? // eslint-disable-next-line react-hooks/rules-of-hooks
-        useUnfilledBets(contract.id, { enabled: true }) ?? []
+        useUnfilledBets(
+          contract.id,
+          (params) => api('bets', params),
+          useIsPageVisible,
+          { enabled: true }
+        ) ?? []
       : []
   const userLimitBets = allLimitBets.filter(
     (bet) => bet.userId === user?.id

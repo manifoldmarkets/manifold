@@ -42,6 +42,8 @@ pathMatchers:
           - pathTemplateMatch: /v0/user/by-id/*/lite
           - pathTemplateMatch: /v0/user/*
           - pathTemplateMatch: /v0/user/*/lite
+          - pathTemplateMatch: /v0/users/by-id
+          - pathTemplateMatch: /users/by-id/balance
           - pathTemplateMatch: /v0/user/*/bets
           - pathTemplateMatch: /get-balance-changes
           - pathTemplateMatch: /get-user-limit-orders-with-contracts

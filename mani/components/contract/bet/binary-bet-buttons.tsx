@@ -33,12 +33,14 @@ export function BinaryBetButtons({
           {...rest}
         />
       </Row>
-      <BetPanel
-        contract={contract}
-        open={openBetPanel}
-        setOpen={setOpenBetPanel}
-        outcome={outcome}
-      />
+      {openBetPanel && (
+        <BetPanel
+          contract={contract}
+          open={openBetPanel}
+          setOpen={setOpenBetPanel}
+          outcome={outcome}
+        />
+      )}
     </>
   )
 }

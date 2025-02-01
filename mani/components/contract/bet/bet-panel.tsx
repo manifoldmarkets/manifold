@@ -34,7 +34,10 @@ import { router } from 'expo-router'
 import { SWEEPIES_NAME } from 'common/envs/constants'
 import { LimitBet } from 'common/bet'
 import { useIsPageVisible } from 'hooks/use-is-page-visibile'
-import { useContractBets } from 'client-common/hooks/use-bets'
+import {
+  useContractBets,
+  useUnfilledBetsAndBalanceByUserId,
+} from 'client-common/hooks/use-bets'
 import { CandidateBet } from 'common/new-bet'
 import { useToast } from 'react-native-toast-notifications'
 import { getLimitBetReturns, MultiBetProps } from 'client-common/lib/bet'
@@ -158,7 +161,12 @@ export function BetPanel({
   if (isCpmmMulti && !multiProps) {
     throw new Error('multiProps must be defined for cpmm-multi-1')
   }
-
+  const { unfilledBets, balanceByUserId } = useUnfilledBetsAndBalanceByUserId(
+    contract.id,
+    (params) => api('bets', params),
+    (params) => api('users/by-id/balance', params),
+    useIsPageVisible
+  )
   const {
     currentPayout,
     probAfter: newProbAfter,
@@ -168,8 +176,8 @@ export function BetPanel({
   } = getLimitBetReturns(
     outcome,
     amount,
-    [],
-    {},
+    unfilledBets,
+    balanceByUserId,
     setError,
     contract,
     multiProps

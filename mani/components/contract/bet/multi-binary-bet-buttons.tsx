@@ -78,17 +78,19 @@ export function MultiBinaryBetButtons({
           </Col>
         ))}
       </Row>
-      <BetPanel
-        contract={contract}
-        open={openBetPanel}
-        setOpen={setOpenBetPanel}
-        outcome={outcome}
-        multiProps={{
-          answers: contract.answers,
-          answerToBuy: getMainBinaryMCAnswer(contract)!,
-          answerText: selectedAnswer.text,
-        }}
-      />
+      {openBetPanel && (
+        <BetPanel
+          contract={contract}
+          open={openBetPanel}
+          setOpen={setOpenBetPanel}
+          outcome={outcome}
+          multiProps={{
+            answers: contract.answers,
+            answerToBuy: getMainBinaryMCAnswer(contract)!,
+            answerText: selectedAnswer.text,
+          }}
+        />
+      )}
     </>
   )
 }

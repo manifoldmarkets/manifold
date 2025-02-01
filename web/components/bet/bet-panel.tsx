@@ -40,7 +40,6 @@ import { getTierFromLiquidity } from 'common/tier'
 import { floatingEqual } from 'common/util/math'
 import { removeUndefinedProps } from 'common/util/object'
 import { InfoTooltip } from 'web/components/widgets/info-tooltip'
-import { useUnfilledBetsAndBalanceByUserId } from 'web/hooks/use-bets'
 import { useFocus } from 'web/hooks/use-focus'
 import { useIsAdvancedTrader } from 'web/hooks/use-is-advanced-trader'
 import { usePrivateUser, useUser } from 'web/hooks/use-user'
@@ -57,7 +56,10 @@ import { MoneyDisplay } from './money-display'
 import { OrderBookPanel, YourOrders } from './order-book'
 import { YesNoSelector } from './yes-no-selector'
 import { sliderColors } from '../widgets/slider'
-import { useContractBets } from 'client-common/hooks/use-bets'
+import {
+  useContractBets,
+  useUnfilledBetsAndBalanceByUserId,
+} from 'client-common/hooks/use-bets'
 import { useIsPageVisible } from 'web/hooks/use-page-visible'
 import { CandidateBet } from 'common/new-bet'
 import { APIParams } from 'common/api/schema'
@@ -227,7 +229,12 @@ export const BuyPanelBody = (props: {
     getTierFromLiquidity(contract, contract.totalLiquidity)
 
   const { unfilledBets: allUnfilledBets, balanceByUserId } =
-    useUnfilledBetsAndBalanceByUserId(contract.id)
+    useUnfilledBetsAndBalanceByUserId(
+      contract.id,
+      (params) => api('bets', params),
+      (params) => api('users/by-id/balance', params),
+      useIsPageVisible
+    )
 
   const unfilledBetsMatchingAnswer = allUnfilledBets.filter(
     (b) => b.answerId === multiProps?.answerToBuy?.id
