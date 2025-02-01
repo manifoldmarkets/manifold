@@ -219,7 +219,6 @@ const useUserBalances = (
       if (!user) return
       const prevUser = users.find((u) => u.id === user.id)
       if (!prevUser) return
-      console.log('user update', user)
       setUsers((prevUsers) => {
         return prevUsers.map((prevU) =>
           prevU.id === user.id ? { ...prevU, ...user } : prevU
