@@ -1,4 +1,4 @@
-import { CpmmState, getCpmmProbability } from 'common/calculate-cpmm'
+import { getCpmmProbability } from 'common/calculate-cpmm'
 import { LimitBet } from 'common/bet'
 import { Answer } from 'common/answer'
 import { noFees } from 'common/fees'
@@ -36,8 +36,8 @@ export const getLimitBetReturns = (
   const cpmmState = isCpmmMulti
     ? {
         pool: {
-          YES: arbitrageProps!.answerToBuy.poolYes,
-          NO: arbitrageProps!.answerToBuy.poolNo,
+          YES: multiProps!.answerToBuy.poolYes,
+          NO: multiProps!.answerToBuy.poolNo,
         },
         p: 0.5,
         collectedFees: contract.collectedFees,
