@@ -8,6 +8,7 @@ import { TokenNumber } from 'components/token/token-number'
 import { useColor } from 'hooks/use-color'
 import { useState } from 'react'
 import { TouchableOpacity } from 'react-native'
+import { getPayoutInfo } from 'common/payouts'
 
 export function PositionRow({
   contract,
@@ -31,6 +32,8 @@ export function PositionRow({
     : metric.totalShares?.NO ?? 0
 
   const color = useColor()
+
+  const { payoutWord } = getPayoutInfo(contract, metric, answer)
 
   return (
     <TouchableOpacity
@@ -67,7 +70,7 @@ export function PositionRow({
           <TokenNumber amount={totalShares} size="md" />
           <ThemedText size="md" color={color.textTertiary}>
             {' '}
-            payout
+            {payoutWord}
           </ThemedText>
         </Row>
       </Row>

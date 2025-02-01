@@ -1,6 +1,11 @@
 import { sumBy, groupBy, mapValues } from 'lodash'
 
-import { Contract, CPMMContract, CPMMMultiContract } from './contract'
+import {
+  Contract,
+  CPMMContract,
+  CPMMMultiContract,
+  tradingAllowed,
+} from './contract'
 import { LiquidityProvision } from './liquidity-provision'
 import {
   getFixedCancelPayouts,
@@ -169,5 +174,25 @@ export const getIndependentMultiFixedPayouts = (
         contractMetrics.filter((metric) => metric.answerId === answer.id),
         filteredLiquidities
       )
+  }
+}
+
+export function getPayoutInfo(
+  contract: Contract,
+  metric: ContractMetric,
+  answer?: Answer
+) {
+  const yesWinnings = metric.totalShares.YES ?? 0
+  const noWinnings = metric.totalShares.NO ?? 0
+  const position = yesWinnings - noWinnings
+  const canSell = tradingAllowed(contract, answer)
+  const won =
+    (position > 1e-7 && (answer ?? contract).resolution === 'YES') ||
+    (position < -1e-7 && (answer ?? contract).resolution === 'NO')
+
+  return {
+    canSell,
+    won,
+    payoutWord: canSell ? 'payout' : won ? 'paid out' : 'held out for',
   }
 }

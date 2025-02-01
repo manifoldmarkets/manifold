@@ -43,6 +43,8 @@ export function UserPosition(props: {
     return <></>
   }
 
+  console.log(contract.question, answer.text, metric)
+
   return (
     <button
       className={clsx(className)}
