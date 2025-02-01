@@ -11,7 +11,7 @@ import { View, StyleSheet, Pressable, TextInput, Keyboard } from 'react-native'
 
 export function BetAmountInput({
   minAmount = 0,
-  maxAmount = 1000,
+  maxAmount = 1000000000,
   setAmount,
   amount,
 }: {

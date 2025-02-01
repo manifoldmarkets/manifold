@@ -30,7 +30,7 @@ import { getComments } from './get-comments'
 import { getBets } from './get-bets'
 import { getLiteUser, getUser } from './get-user'
 import { getUsers } from './get-users'
-import { getUsersByIds } from './get-users-by-ids'
+import { getUserBalancesByIds, getUsersByIds } from './get-users-by-ids'
 import { getMarket } from './get-market'
 import { getMarketProb } from './get-market-prob'
 import { getMarketProbs } from './get-market-probs'
@@ -240,6 +240,7 @@ export const handlers: { [k in APIPath]: APIHandler<k> } = {
   'user/by-id/:id/unblock': unblockUser,
   users: getUsers,
   'users/by-id': getUsersByIds,
+  'users/by-id/balance': getUserBalancesByIds,
   'search-users': searchUsers,
   react: addOrRemoveReaction,
   'save-twitch': saveTwitchCredentials,

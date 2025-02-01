@@ -1,4 +1,4 @@
-import { Contract } from 'common/contract'
+import { MarketContract } from 'common/contract'
 import { YesNoButton } from 'components/buttons/yes-no-buttons'
 import { Row } from 'components/layout/row'
 import { useState } from 'react'
@@ -8,7 +8,7 @@ import { ButtonProps } from 'components/buttons/button'
 export function BinaryBetButtons({
   contract,
   ...rest
-}: { contract: Contract } & ButtonProps) {
+}: { contract: MarketContract } & ButtonProps) {
   const [openBetPanel, setOpenBetPanel] = useState(false)
   const [outcome, setOutcome] = useState<BinaryOutcomes>('YES')
 
@@ -33,12 +33,14 @@ export function BinaryBetButtons({
           {...rest}
         />
       </Row>
-      <BetPanel
-        contract={contract}
-        open={openBetPanel}
-        setOpen={setOpenBetPanel}
-        outcome={outcome}
-      />
+      {openBetPanel && (
+        <BetPanel
+          contract={contract}
+          open={openBetPanel}
+          setOpen={setOpenBetPanel}
+          outcome={outcome}
+        />
+      )}
     </>
   )
 }

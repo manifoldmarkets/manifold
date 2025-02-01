@@ -14,8 +14,8 @@ import { IconSymbol } from 'components/ui/icon-symbol'
 import { capitalize } from 'lodash'
 import { TRADE_TERM } from 'common/envs/constants'
 import { auth } from 'lib/firebase/init'
-import { Toast } from 'react-native-toast-message/lib/src/Toast'
 import Clipboard from 'expo-clipboard'
+import { useToast } from 'react-native-toast-notifications'
 
 function SettingRow(props: { label: string; children: React.ReactNode }) {
   const { label, children } = props
@@ -43,14 +43,12 @@ export default function AccountSettingsPage() {
     setApiKey(newApiKey ?? '')
     setLoading(false)
   }
+  const toast = useToast()
 
   const copyApiKey = async () => {
     if (!apiKey) return
     await Clipboard.setStringAsync(apiKey)
-    Toast.show({
-      type: 'success',
-      text1: 'API key copied to clipboard',
-    })
+    toast.show('API key copied to clipboard')
   }
 
   const confirmApiKeyUpdate = () => {

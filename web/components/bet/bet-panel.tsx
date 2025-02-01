@@ -1,6 +1,6 @@
 import { ChevronDownIcon, XIcon } from '@heroicons/react/outline'
 import clsx from 'clsx'
-import { uniq } from 'lodash'
+import { capitalize, uniq } from 'lodash'
 import { useEffect, useState } from 'react'
 import toast from 'react-hot-toast'
 
@@ -28,10 +28,7 @@ import { firebaseLogin } from 'web/lib/firebase/users'
 import { Col } from '../layout/col'
 import { Row } from '../layout/row'
 import { BuyAmountInput } from '../widgets/amount-input'
-
-import { Answer } from 'common/answer'
 import { LimitBet } from 'common/bet'
-import { getCpmmProbability } from 'common/calculate-cpmm'
 import { SWEEPIES_NAME, TRADE_TERM } from 'common/envs/constants'
 import {
   getVerificationStatus,
@@ -42,9 +39,7 @@ import { getStonkDisplayShares, STONK_NO, STONK_YES } from 'common/stonk'
 import { getTierFromLiquidity } from 'common/tier'
 import { floatingEqual } from 'common/util/math'
 import { removeUndefinedProps } from 'common/util/object'
-import { capitalize } from 'lodash'
 import { InfoTooltip } from 'web/components/widgets/info-tooltip'
-import { useUnfilledBetsAndBalanceByUserId } from 'web/hooks/use-bets'
 import { useFocus } from 'web/hooks/use-focus'
 import { useIsAdvancedTrader } from 'web/hooks/use-is-advanced-trader'
 import { usePrivateUser, useUser } from 'web/hooks/use-user'
@@ -56,26 +51,23 @@ import { LocationMonitor } from '../gidx/location-monitor'
 import { VerifyButton } from '../sweeps/sweep-verify-section'
 import { ChoicesToggleGroup } from '../widgets/choices-toggle-group'
 import { CashoutLimitWarning } from './cashout-limit-warning'
-import LimitOrderPanel, { getLimitBetReturns } from './limit-order-panel'
+import LimitOrderPanel from './limit-order-panel'
 import { MoneyDisplay } from './money-display'
 import { OrderBookPanel, YourOrders } from './order-book'
 import { YesNoSelector } from './yes-no-selector'
 import { sliderColors } from '../widgets/slider'
-import { useContractBets } from 'client-common/hooks/use-bets'
+import {
+  useContractBets,
+  useUnfilledBetsAndBalanceByUserId,
+} from 'client-common/hooks/use-bets'
 import { useIsPageVisible } from 'web/hooks/use-page-visible'
 import { CandidateBet } from 'common/new-bet'
 import { APIParams } from 'common/api/schema'
 import { Button } from '../buttons/button'
 import { usePersistentLocalState } from 'web/hooks/use-persistent-local-state'
+import { getLimitBetReturns, MultiBetProps } from 'client-common/lib/bet'
 
 export type BinaryOutcomes = 'YES' | 'NO' | undefined
-
-export type MultiBetProps = {
-  answers: Answer[]
-  answerToBuy: Answer
-  answerText?: string
-}
-const SLIPPAGE = 0.1
 
 export function BuyPanel(props: {
   contract:
@@ -237,7 +229,12 @@ export const BuyPanelBody = (props: {
     getTierFromLiquidity(contract, contract.totalLiquidity)
 
   const { unfilledBets: allUnfilledBets, balanceByUserId } =
-    useUnfilledBetsAndBalanceByUserId(contract.id)
+    useUnfilledBetsAndBalanceByUserId(
+      contract.id,
+      (params) => api('bets', params),
+      (params) => api('users/by-id/balance', params),
+      useIsPageVisible
+    )
 
   const unfilledBetsMatchingAnswer = allUnfilledBets.filter(
     (b) => b.answerId === multiProps?.answerToBuy?.id
@@ -275,29 +272,7 @@ export const BuyPanelBody = (props: {
   if (isCpmmMulti && !multiProps) {
     throw new Error('multiProps must be defined for cpmm-multi-1')
   }
-  const cpmmState = isCpmmMulti
-    ? {
-        pool: {
-          YES: multiProps!.answerToBuy.poolYes,
-          NO: multiProps!.answerToBuy.poolNo,
-        },
-        p: 0.5,
-        collectedFees: contract.collectedFees,
-      }
-    : {
-        pool: contract.pool,
-        p: contract.p,
-        collectedFees: contract.collectedFees,
-      }
-  const prob = getCpmmProbability(cpmmState.pool, cpmmState.p)
-  const floatLimitProb = Math.max(
-    MIN_CPMM_PROB,
-    Math.min(
-      MAX_CPMM_PROB,
-      outcome === 'YES' ? prob + SLIPPAGE : prob - SLIPPAGE
-    )
-  )
-  const limitProb = Math.round(floatLimitProb * 100) / 100
+
   const shouldAnswersSumToOne =
     'shouldAnswersSumToOne' in contract ? contract.shouldAnswersSumToOne : false
 
@@ -380,28 +355,21 @@ export const BuyPanelBody = (props: {
     setBetAmount(newAmount)
   }
 
-  const binaryMCOutcome =
-    isBinaryMC && multiProps
-      ? multiProps.answerText === multiProps.answerToBuy.text
-        ? 'YES'
-        : 'NO'
-      : undefined
-  const amount = betAmount ?? 0
-
   const {
     currentPayout,
     probAfter: newProbAfter,
     currentReturn,
     betDeps,
-  } = getLimitBetReturns(
-    cpmmState,
-    binaryMCOutcome ?? outcome ?? 'YES',
-    amount,
     limitProb,
+    prob,
+  } = getLimitBetReturns(
+    outcome ?? 'YES',
+    betAmount ?? 0,
     unfilledBets,
     balanceByUserId,
     setError,
-    shouldAnswersSumToOne ? multiProps : undefined
+    contract,
+    multiProps
   )
   let probBefore = prob
   let probAfter = newProbAfter

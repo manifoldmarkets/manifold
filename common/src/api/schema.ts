@@ -1008,6 +1008,14 @@ export const API = (_apiTypeCheck = {
     returns: [] as DisplayUser[],
     props: z.object({ ids: z.array(z.string()) }).strict(),
   },
+  'users/by-id/balance': {
+    method: 'GET',
+    visibility: 'undocumented',
+    authed: false,
+    cache: DEFAULT_CACHE_STRATEGY,
+    returns: [] as { id: string; balance: number }[],
+    props: z.object({ ids: z.array(z.string()) }).strict(),
+  },
   'user/by-id/:id/block': {
     method: 'POST',
     visibility: 'public',
@@ -2069,7 +2077,7 @@ export const API = (_apiTypeCheck = {
     // Could set authed false and preferAuth with an api secret if we want it to replace static props
     authed: true,
     returns: {} as {
-      manaContract: Contract
+      manaContract: MarketContract
       chartAnnotations: ChartAnnotation[]
       topics: Topic[]
       comments: ContractComment[]
@@ -2081,7 +2089,7 @@ export const API = (_apiTypeCheck = {
       topContractMetrics: ContractMetric[]
       totalPositions: number
       dashboards: Dashboard[]
-      cashContract: Contract
+      cashContract: MarketContract
       totalManaBets: number
       totalCashBets: number
     },
