@@ -167,13 +167,7 @@ export function BetPanel({
     (params) => api('users/by-id/balance', params),
     useIsPageVisible
   )
-  const {
-    currentPayout,
-    probAfter: newProbAfter,
-    betDeps,
-    limitProb,
-    prob,
-  } = getLimitBetReturns(
+  const { currentPayout, betDeps, limitProb } = getLimitBetReturns(
     outcome,
     amount,
     unfilledBets,
@@ -182,16 +176,6 @@ export function BetPanel({
     contract,
     multiProps
   )
-  let probBefore = prob
-  let probAfter = newProbAfter
-  if (
-    multiProps &&
-    multiProps.answerToBuy.text !== multiProps.answerText &&
-    isBinaryMC
-  ) {
-    probBefore = 1 - prob
-    probAfter = 1 - newProbAfter
-  }
 
   const onPress = async () => {
     if (!user) return
