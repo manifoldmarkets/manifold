@@ -4,7 +4,7 @@ import { sendEndOfSeasonNotificationsAndBonuses } from 'shared/payout-leagues'
 
 if (require.main === module) {
   runScript(async ({ pg }) => {
-    const prevSeason = 20
+    const prevSeason = 21
     if (prevSeason !== CURRENT_SEASON - 1) {
       console.log(
         'Are you sure you want to send notifications & bonuses for this season?'
