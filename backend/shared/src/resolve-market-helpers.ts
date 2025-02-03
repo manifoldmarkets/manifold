@@ -555,7 +555,10 @@ const assessProfitFees = (
         (m) => m.userId === payout.userId && m.answerId === (answerId ?? null)
       )
       if (!contractMetric) {
-        throw new Error('Contract metric not found for user: ' + payout.userId)
+        throw new APIError(
+          500,
+          'Contract metric not found for user: ' + payout.userId
+        )
       }
 
       const tax = contractMetric.profit * PROFIT_FEE_FRACTION
