@@ -172,7 +172,7 @@ export const MANI_IOS_PRICES = [
   },
 ] as PaymentAmount[]
 
-export const SWEEPIES_CASHOUT_FEE = 0.05
+export const SWEEPIES_CASHOUT_FEE = 5
 export const MIN_CASHOUT_AMOUNT = 25
 
 export const SWEEPS_MIN_BET = 1
