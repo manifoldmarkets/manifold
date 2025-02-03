@@ -15,18 +15,23 @@ import { useColor } from 'hooks/use-color'
 import { AvatarCircle } from 'components/user/avatar-circle'
 import { UserLink } from 'components/user/user-link'
 import { ScrollView } from 'react-native'
-
+import { useState } from 'react'
+import { Pagination } from 'components/widgets/pagination'
+import { orderBy } from 'lodash'
 export function Bets(props: { contract: Contract; totalBets: number }) {
   const { contract } = props
-  // TODO: add pagination and fetching older bets
-  const bets = useContractBets(
-    contract.id,
-    {
-      includeZeroShareRedemptions: contract.mechanism === 'cpmm-multi-1',
-      filterRedemptions: true,
-    },
-    useIsPageVisible,
-    (params) => api('bets', params)
+  const bets = orderBy(
+    useContractBets(
+      contract.id,
+      {
+        includeZeroShareRedemptions: contract.mechanism === 'cpmm-multi-1',
+        filterRedemptions: true,
+      },
+      useIsPageVisible,
+      (params) => api('bets', params)
+    ),
+    'createdTime',
+    'desc'
   )
 
   if (!bets || bets.length === 0) {
@@ -35,9 +40,7 @@ export function Bets(props: { contract: Contract; totalBets: number }) {
 
   return (
     <ExpandableContent
-      previewContent={
-        <BetsPreview contract={contract} latestBet={bets[bets.length - 1]} />
-      }
+      previewContent={<BetsPreview contract={contract} latestBet={bets[0]} />}
       modalContent={<BetsModal contract={contract} bets={bets} />}
       modalTitle="Activity"
     />
@@ -73,18 +76,23 @@ export function BetsPreview(props: { contract: Contract; latestBet: Bet }) {
 
 export function BetsModal(props: { contract: Contract; bets: Bet[] }) {
   const { contract, bets } = props
+  const [page, setPage] = useState(0)
+  const PAGE_SIZE = 50
+  const betsToShow = bets.slice(page * PAGE_SIZE, (page + 1) * PAGE_SIZE)
   return (
     <ScrollView>
       <Col style={{ gap: 16, paddingBottom: 20 }}>
-        {(() => {
-          const elements = []
-          for (let i = bets.length - 1; i >= 0; i--) {
-            elements.push(
-              <FeedBet key={bets[i].id} contract={contract} bet={bets[i]} />
-            )
-          }
-          return elements
-        })()}
+        {betsToShow.map((bet) => (
+          <FeedBet key={bet.id} contract={contract} bet={bet} />
+        ))}
+        {bets.length > PAGE_SIZE && (
+          <Pagination
+            page={page}
+            pageSize={PAGE_SIZE}
+            totalItems={bets.length}
+            setPage={setPage}
+          />
+        )}
       </Col>
     </ScrollView>
   )
@@ -135,11 +143,6 @@ export function FeedBet(props: { contract: Contract; bet: Bet }) {
   const bought = amount >= 0 ? 'bought' : 'sold'
   const absAmount = Math.abs(amount)
 
-  const orderAmount =
-    bet.limitProb !== undefined && bet.orderAmount !== undefined ? (
-      <TokenNumber amount={bet.orderAmount} token={contract.token} />
-    ) : null
-
   const hadPoolMatch =
     (bet.limitProb === undefined ||
       bet.fills?.some((fill) => fill.matchedBetId === null)) ??
@@ -154,8 +157,8 @@ export function FeedBet(props: { contract: Contract; bet: Bet }) {
       ? contract.answers?.find((a) => a.id === answerId)
       : undefined
 
-  // ignore limit orders or if user doesn't exist
-  if (orderAmount || !betUser) {
+  // ignore empty limit orders or if user doesn't exist
+  if (bet.amount <= 0 || !betUser) {
     return null
   }
   return (
