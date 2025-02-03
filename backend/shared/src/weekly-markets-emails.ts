@@ -59,7 +59,7 @@ export async function sendWeeklyMarketsEmails() {
       const failed = results.filter((r) => r.status === 'rejected')
       if (failed.length > 0) {
         log.error(`Failed to send emails to ${failed.length} users`)
-        log.error(`First reason: ${first(failed)?.reason}`)
+        log.error(`First failed: ${first(failed)}`)
       }
 
       i++
