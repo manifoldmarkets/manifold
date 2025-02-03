@@ -38,6 +38,7 @@ import { useAPIGetter } from 'web/hooks/use-api-getter'
 import { Button } from 'web/components/buttons/button'
 import { Modal } from '../layout/modal'
 import { QuestType } from 'common/quest'
+import { PROFIT_FEE_FRACTION } from 'common/economy'
 
 export const BalanceChangeTable = (props: { user: User }) => {
   const { user } = props
@@ -694,6 +695,10 @@ const txnTypeToDescription = (txnCategory: string) => {
     case 'CONVERT_CASH':
     case 'CONVERT_CASH_DONE':
       return ''
+    case 'CONTRACT_RESOLUTION_FEE':
+      return `${PROFIT_FEE_FRACTION * 100}% fee on profit at resolution`
+    case 'UNDO_CONTRACT_RESOLUTION_FEE':
+      return `Undo ${PROFIT_FEE_FRACTION * 100}% profit fee at resolution`
     case 'MANA_PURCHASE':
       return ''
     case 'ADD_SUBSIDY':
