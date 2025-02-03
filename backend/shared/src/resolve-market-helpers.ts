@@ -37,6 +37,7 @@ import { APIError } from 'common//api/utils'
 import { trackPublicEvent } from 'shared/analytics'
 import { recordContractEdit } from 'shared/record-contract-edit'
 import {
+  SERIAL_MODE,
   SupabaseTransaction,
   createSupabaseDirectClient,
 } from './supabase/init'
@@ -76,7 +77,7 @@ export const resolveMarketHelper = async (
     payoutsWithoutLoans,
     updatedContractAttrs,
     userUpdates,
-  } = await pg.tx(async (tx) => {
+  } = await pg.tx({ mode: SERIAL_MODE }, async (tx) => {
     const { closeTime, id: contractId, outcomeType } = unresolvedContract
     const {
       contract: c,

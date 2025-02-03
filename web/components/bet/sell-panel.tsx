@@ -27,7 +27,6 @@ import {
 import { addObjects } from 'common/util/object'
 import { useState, useRef } from 'react'
 import toast from 'react-hot-toast'
-import { useUnfilledBetsAndBalanceByUserId } from 'web/hooks/use-bets'
 import { api } from 'web/lib/api/api'
 import { track } from 'web/lib/service/analytics'
 import { WarningConfirmationButton } from '../buttons/warning-confirmation-button'
@@ -38,6 +37,8 @@ import { AmountInput } from '../widgets/amount-input'
 import { MoneyDisplay } from './money-display'
 import { ContractMetric } from 'common/contract-metric'
 import { uniq } from 'lodash'
+import { useUnfilledBetsAndBalanceByUserId } from 'client-common/hooks/use-bets'
+import { useIsPageVisible } from 'web/hooks/use-page-visible'
 
 export function SellPanel(props: {
   contract: CPMMContract | CPMMMultiContract | CPMMNumericContract
@@ -79,7 +80,12 @@ export function SellPanel(props: {
       : undefined
 
   const { unfilledBets: allUnfilledBets, balanceByUserId } =
-    useUnfilledBetsAndBalanceByUserId(contract.id)
+    useUnfilledBetsAndBalanceByUserId(
+      contract.id,
+      (params) => api('bets', params),
+      (params) => api('users/by-id/balance', params),
+      useIsPageVisible
+    )
 
   const unfilledBets =
     answerId && !isMultiSumsToOne
@@ -496,7 +502,12 @@ export function MultiSellerProfit(props: {
   const sharesOutcome = (metric.maxSharesOutcome ?? 'YES') as 'YES' | 'NO'
 
   const { unfilledBets: allUnfilledBets, balanceByUserId } =
-    useUnfilledBetsAndBalanceByUserId(contract.id)
+    useUnfilledBetsAndBalanceByUserId(
+      contract.id,
+      (params) => api('bets', params),
+      (params) => api('users/by-id/balance', params),
+      useIsPageVisible
+    )
 
   const unfilledBets = allUnfilledBets.filter((b) => b.answerId === answerId)
   const isCashContract = contract.token === 'CASH'

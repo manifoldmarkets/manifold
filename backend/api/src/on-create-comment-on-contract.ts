@@ -255,11 +255,11 @@ Format the description in markdown, sticking to just the following:
 - Use bullet points for lists
 
 I will append the title of 'Update from creator' to the beginning of the description. You do not need to include this in your response.
-NOTE: If the creator explicitly states that their comment is not a clarification, such as saying “these comments are not a clarification,” then you must not treat it as clarifying or changing the resolution criteria. In that case, return {"isClarification": false, "description": ""}.
+NOTE: If the creator explicitly states that their comment is not a clarification, such as saying "these comments are not a clarification," then you must not treat it as clarifying or changing the resolution criteria. In that case, return {"isClarification": false, "description": ""}.
 Only return the raw JSON object without any markdown code blocks, backticks, additional formatting, or anything else.`
 
   try {
-    const response = await promptOpenAI(prompt, 'o1-mini')
+    const response = await promptOpenAI(prompt, 'o3-mini')
     log('Clarification response:', {
       question: contract.question,
       contractId: contract.id,
@@ -273,7 +273,7 @@ Only return the raw JSON object without any markdown code blocks, backticks, add
     const clarification = JSON.parse(response) as ClarificationResponse
 
     if (clarification.isClarification && clarification.description) {
-      const date = new Date()
+      const dateParts = new Date()
         .toLocaleDateString('en-US', {
           timeZone: 'America/Los_Angeles',
           year: 'numeric',
@@ -281,8 +281,7 @@ Only return the raw JSON object without any markdown code blocks, backticks, add
           day: '2-digit',
         })
         .split('/')
-        .reverse()
-        .join('-')
+      const date = `${dateParts[2]}-${dateParts[0]}-${dateParts[1]}`
       const timeZone = new Date()
         .toLocaleDateString('en-US', { timeZoneName: 'short' })
         .includes('PDT')

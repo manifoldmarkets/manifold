@@ -11,12 +11,9 @@ import { Row } from '../layout/row'
 import { RelativeTimestampNoTooltip } from '../relative-timestamp'
 import { truncateText } from '../widgets/truncate'
 import NotificationDropdown from './notification-dropdown'
-import { groupBy } from 'lodash'
 import { SparklesIcon } from '@heroicons/react/solid'
 import { UserLink } from '../widgets/user-link'
 import { UserHovercard } from '../user/user-hovercard'
-
-export const NOTIFICATIONS_PER_PAGE = 30
 
 function getHighlightClass(highlight: boolean) {
   return highlight ? 'text-ink-1000 bg-primary-50' : 'text-ink-700'
@@ -273,29 +270,4 @@ export function ParentNotificationHeader(props: {
       {children}
     </div>
   )
-}
-export function combineReactionNotifications(notifications: Notification[]) {
-  const groupedNotificationsBySourceType = groupBy(
-    notifications,
-    (n) =>
-      `${n.sourceType}-${
-        n.sourceTitle ?? n.sourceContractTitle ?? n.sourceContractId
-      }-${n.sourceText}`
-  )
-
-  const newNotifications = Object.values(groupedNotificationsBySourceType).map(
-    (notifications) => {
-      const mostRecentNotification = notifications[0]
-
-      return {
-        ...mostRecentNotification,
-        data: {
-          ...mostRecentNotification.data,
-          relatedNotifications: notifications,
-        },
-      }
-    }
-  )
-
-  return newNotifications as Notification[]
 }

@@ -62,7 +62,7 @@ export function YourOrders(props: {
   const user = useUser()
 
   const yourBets = sortBy(
-    bets.filter((bet) => bet.userId === user?.id),
+    bets.filter((bet) => bet.userId === user?.id && !bet.silent),
     (bet) => -1 * bet.limitProb,
     (bet) => -1 * bet.createdTime
   )
@@ -208,6 +208,7 @@ function OrderRow(props: {
       ? contract.answers.find((a) => a.id !== mainBinaryMCAnswer?.id)
       : undefined
   const isCashContract = contract.token === 'CASH'
+  const expired = bet.expiresAt && bet.expiresAt < Date.now()
 
   return (
     <tr>
@@ -268,7 +269,9 @@ function OrderRow(props: {
           <Row className={'justify-between gap-1 sm:justify-start'}>
             <Col className={'sm:flex-row sm:gap-1'}>
               <span>
-                {bet.expiresAt ? (
+                {expired ? (
+                  'Expired'
+                ) : bet.expiresAt ? (
                   <Tooltip
                     text={`${new Date(
                       bet.expiresAt
@@ -320,7 +323,10 @@ export function CollatedOrderTable(props: {
     }
   }
 }) {
-  const { limitBets, contract, side, pseudonym } = props
+  const { contract, side, pseudonym } = props
+  const limitBets = props.limitBets.filter(
+    (b) => !b.expiresAt || b.expiresAt > Date.now()
+  )
   const isBinaryMC = isBinaryMulti(contract)
   const groupedBets = groupBy(limitBets, (b) => b.limitProb)
 
@@ -512,7 +518,10 @@ export function OrderBookPanel(props: {
     }
   }
 }) {
-  const { limitBets, contract, answer, showTitle, pseudonym } = props
+  const { contract, answer, showTitle, pseudonym } = props
+  const limitBets = props.limitBets.filter(
+    (b) => (!b.expiresAt || b.expiresAt > Date.now()) && !b.silent
+  )
 
   const yesBets = sortBy(
     limitBets.filter((bet) => bet.outcome === 'YES'),

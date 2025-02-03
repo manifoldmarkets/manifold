@@ -30,9 +30,10 @@ import { getComments } from './get-comments'
 import { getBets } from './get-bets'
 import { getLiteUser, getUser } from './get-user'
 import { getUsers } from './get-users'
-import { getUsersByIds } from './get-users-by-ids'
+import { getUserBalancesByIds, getUsersByIds } from './get-users-by-ids'
 import { getMarket } from './get-market'
 import { getMarketProb } from './get-market-prob'
+import { getMarketProbs } from './get-market-probs'
 import { getGroup } from './get-group'
 import { getPositions } from './get-positions'
 import { getLeagues } from './get-leagues'
@@ -157,7 +158,7 @@ import { getMarketProps } from './get-market-props'
 import { getUserContractMetricsWithContracts } from './get-user-contract-metrics-with-contracts'
 import { validateiap } from './validate-iap'
 import { getReactions } from './get-reactions'
-
+import { markallnotificationsnew } from './mark-all-notifications-new'
 // we define the handlers in this object in order to typecheck that every API has a handler
 export const handlers: { [k in APIPath]: APIHandler<k> } = {
   'refresh-all-clients': refreshAllClients,
@@ -197,6 +198,7 @@ export const handlers: { [k in APIPath]: APIHandler<k> } = {
   'market/:id': getMarket,
   'market/:id/lite': ({ id }) => getMarket({ id, lite: true }),
   'market/:id/prob': getMarketProb,
+  'market-probs': getMarketProbs,
   'answer/:answerId': getSingleAnswer,
   'market/:contractId/answers': getContractAnswers,
   'markets-by-ids': getMarketsByIds,
@@ -238,6 +240,7 @@ export const handlers: { [k in APIPath]: APIHandler<k> } = {
   'user/by-id/:id/unblock': unblockUser,
   users: getUsers,
   'users/by-id': getUsersByIds,
+  'users/by-id/balance': getUserBalancesByIds,
   'search-users': searchUsers,
   react: addOrRemoveReaction,
   'save-twitch': saveTwitchCredentials,
@@ -332,4 +335,5 @@ export const handlers: { [k in APIPath]: APIHandler<k> } = {
     getUserContractMetricsWithContracts,
   validateIap: validateiap,
   'comment-reactions': getReactions,
+  'mark-all-notifications-new': markallnotificationsnew,
 }

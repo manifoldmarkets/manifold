@@ -11,7 +11,7 @@ import { api } from 'web/lib/api/api'
 import { Headline } from 'common/news'
 import { HeadlineTabs } from 'web/components/dashboard/header'
 import { useRedirectIfSignedOut } from 'web/hooks/use-redirect-if-signed-out'
-import { DowntimeBanner } from 'web/components/nav/banner'
+import { DowntimeBanner, FeeBanner } from 'web/components/nav/banner'
 import { Welcome } from 'web/components/onboarding/welcome'
 import { LiveGeneratedFeed } from 'web/components/feed/live-generated-feed'
 
@@ -39,6 +39,7 @@ export default function Home(props: { headlines: Headline[] }) {
       <Welcome />
       <SEO title={`Home`} description={`Browse all questions`} url={`/home`} />
       <DowntimeBanner />
+      <FeeBanner />
       <HeadlineTabs
         endpoint={'news'}
         headlines={headlines}

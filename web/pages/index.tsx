@@ -99,6 +99,7 @@ export default function LandingPage(props: {
 
   const [selectedTopicSlug, setSelectedTopicSlug] = useState<string>()
   const [isModalOpen, setIsModalOpen] = useState(false)
+
   const contracts = selectedTopicSlug
     ? topicSlugToContracts[selectedTopicSlug] ?? []
     : trendingContracts

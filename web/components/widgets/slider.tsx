@@ -1,6 +1,7 @@
 import clsx from 'clsx'
 import * as RxSlider from '@radix-ui/react-slider'
 import { ReactNode } from 'react'
+import { filterDefined } from 'common/util/array'
 
 export const sliderColors = {
   green: ['bg-teal-400', 'focus:outline-teal-600/30 bg-teal-600'],
@@ -13,6 +14,10 @@ export const sliderColors = {
   violet: ['bg-violet-300', 'focus:outline-violet-500/30 bg-violet-500'],
   azure: ['bg-azure-300', 'focus:outline-azure-500/30 bg-azure-500'],
   sienna: ['bg-sienna-300', 'focus:outline-sienna-500/30 bg-sienna-500'],
+  gray: [
+    'dark:bg-ink-800 bg-ink-700',
+    'focus:outline-ink-800/30 dark:bg-ink-800 bg-ink-700',
+  ],
   // light: ['primary-200', 'primary-300']
 } as const
 export type Mark = { value: number; label: string }
@@ -28,6 +33,7 @@ export function Slider(props: {
   className?: string
   disabled?: boolean
   inverted?: boolean
+  fillToRight?: boolean
 }) {
   const {
     amount,
@@ -40,6 +46,7 @@ export function Slider(props: {
     disabled,
     color = 'indigo',
     inverted,
+    fillToRight,
   } = props
 
   const [trackClasses, thumbClasses] = sliderColors[color]
@@ -49,9 +56,9 @@ export function Slider(props: {
       className={clsx(
         className,
         'relative flex touch-none select-none items-center',
-        marks ? 'h-[42px]' : 'h-5'
+        marks ? 'h-[43px]' : 'h-5'
       )}
-      value={[amount]}
+      value={filterDefined([amount, fillToRight ? max : undefined])}
       onValueChange={([val]) => onChange(val)}
       min={min}
       max={max}
@@ -69,11 +76,17 @@ export function Slider(props: {
             >
               <div
                 className={clsx(
-                  amount >= value ? trackClasses : 'bg-ink-400',
+                  fillToRight
+                    ? amount <= value
+                      ? trackClasses
+                      : 'bg-ink-400'
+                    : amount >= value
+                    ? trackClasses
+                    : 'bg-ink-400',
                   'h-2 w-2 rounded-full'
                 )}
               />
-              <span className="text-ink-400 absolute left-1/2 top-4 -translate-x-1/2 text-xs">
+              <span className="text-ink-500 absolute left-1/2 top-4 -translate-x-1/2 text-xs">
                 {label}
               </span>
             </div>

@@ -3,7 +3,7 @@ import { updateContractMetricsCore } from 'shared/update-contract-metrics-core'
 import { sendOnboardingNotificationsInternal } from 'shared/onboarding-helpers'
 import { updateUserMetricPeriods } from 'shared/update-user-metric-periods'
 import { cleanOldNotifications } from './clean-old-notifications'
-import { updateStatsCore } from './update-stats'
+import { updateCashStatsCore, updateStatsCore } from './update-stats'
 import { calculateConversionScore } from 'shared/conversion-score'
 import { autoAwardBounty } from './auto-award-bounty'
 import { resetPgStats } from './reset-pg-stats'
@@ -92,7 +92,7 @@ export function createJobs() {
     ),
     createJob(
       'expire-limit-orders',
-      '0 */10 * * * *', // every 10 minutes
+      '0 */1 * * * *', // every minute
       expireLimitOrders
     ),
     createJob(
@@ -109,11 +109,6 @@ export function createJobs() {
       'poll-poll-resolutions',
       '0 */1 * * * *', // every minute
       pollPollResolutions
-    ),
-    createJob(
-      'resolve-sports-markets',
-      ENV === 'DEV' ? '*/30 * * * *' : '*/10 * * * * *', // Every 30 minutes on dev, every 10 seconds on prod
-      resolveSportsMarkets
     ),
     // Daily jobs:
     createJob(
@@ -142,6 +137,11 @@ export function createJobs() {
       'update-stats',
       '0 20 4 * * *', // on 4:20am daily
       () => updateStatsCore(7)
+    ),
+    createJob(
+      'update-cash-stats',
+      '0 20 4 * * *', // on 4:20am daily
+      () => updateCashStatsCore(7)
     ),
     createJob(
       'onboarding-notification',

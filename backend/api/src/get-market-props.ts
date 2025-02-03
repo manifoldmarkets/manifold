@@ -8,6 +8,7 @@ import { convertContractComment } from 'common/supabase/comments'
 import { ContractMetric } from 'common/contract-metric'
 import { ContractComment } from 'common/comment'
 import { type APIHandler } from './helpers/endpoint'
+import { MarketContract } from 'common/contract'
 
 export const getMarketProps: APIHandler<'get-market-props'> = async (
   props: { id?: string; slug?: string },
@@ -126,7 +127,7 @@ export const getMarketProps: APIHandler<'get-market-props'> = async (
   `,
     [contractId]
   )
-  const contract = first(results[0]?.map(convertContract))
+  const contract = first(results[0]?.map(convertContract<MarketContract>))
   if (!contract) throw new APIError(404, 'Contract not found')
   const chartAnnotations = results[1]
   const topics = results[2].map(convertGroup)
@@ -138,7 +139,9 @@ export const getMarketProps: APIHandler<'get-market-props'> = async (
   const topContractMetrics = results[7].map((r) => r.data as ContractMetric)
   const totalPositions = results[8]?.[0]?.count ?? 0
   const dashboards = results[9]
-  const siblingContract = first(results[10]?.map(convertContract))
+  const siblingContract = first(
+    results[10]?.map(convertContract<MarketContract>)
+  )
   if (!siblingContract) throw new APIError(404, 'Sibiling contract not found')
   const manaContract = contract.token === 'MANA' ? contract : siblingContract
   const cashContract = contract.token === 'CASH' ? contract : siblingContract

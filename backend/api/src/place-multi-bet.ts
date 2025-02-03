@@ -108,6 +108,7 @@ export const placeMultiBetMain = async (
 
   const continuation = async () => {
     const fullBets = results.flatMap((result) => result.fullBets)
+    const updatedMakers = results.flatMap((result) => result.updatedMakers)
     const cancelledLimitOrders = results.flatMap(
       (result) => result.cancelledLimitOrders
     )
@@ -119,6 +120,7 @@ export const placeMultiBetMain = async (
       user,
       cancelledLimitOrders,
       makers,
+      updatedMakers,
       streakIncremented: results.some((r) => r.streakIncremented),
       bonusTxn: results.find((r) => r.bonusTxn)?.bonusTxn,
       reloadMetrics: true,

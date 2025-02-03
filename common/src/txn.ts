@@ -8,6 +8,7 @@ type AnyTxnType =
   | Donation
   | Tip
   | LootBoxPurchase
+  | AdminReward
   | Manalink
   | Referral
   | UniqueBettorBonus
@@ -576,6 +577,17 @@ type UndoResolutionFee = {
   }
 }
 
+type AdminReward = {
+  category: 'ADMIN_REWARD'
+  fromType: 'BANK'
+  toType: 'USER'
+  token: 'M$'
+  data: {
+    reportId: number
+    updateType: string
+  }
+}
+
 export type AddSubsidyTxn = Txn & AddSubsidy
 export type RemoveSubsidyTxn = Txn & RemoveSubsidy
 export type DonationTxn = Txn & Donation
@@ -630,3 +642,4 @@ export type KycBonusTxn = Txn & KycBonus
 export type CashOutPendingTxn = Txn & CashOutPending
 export type ProfitFeeTxn = Txn & ProfitFee
 export type UndoResolutionFeeTxn = Txn & UndoResolutionFee
+export type AdminRewardTxn = Txn & AdminReward

@@ -125,6 +125,7 @@ const multiSellMain: APIHandler<'multi-sell'> = async (props, auth) => {
 
   const continuation = async () => {
     const fullBets = results.flatMap((result) => result.fullBets)
+    const updatedMakers = results.flatMap((result) => result.updatedMakers)
     const cancelledLimitOrders = results.flatMap(
       (result) => result.cancelledLimitOrders
     )
@@ -143,6 +144,7 @@ const multiSellMain: APIHandler<'multi-sell'> = async (props, auth) => {
       userUpdates: undefined,
       contractUpdate: undefined,
       answerUpdates: undefined,
+      updatedMakers,
     })
   }
 

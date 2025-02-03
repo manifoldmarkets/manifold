@@ -20,6 +20,8 @@ import { NumericBetPanel } from 'web/components/answers/numeric-bet-panel'
 import { Row } from 'web/components/layout/row'
 import { MultiNumericResolutionOrExpectation } from 'web/components/contract/contract-price'
 import { sliderColors } from '../widgets/slider'
+import { getProbability } from 'common/calculate'
+import { formatPercent } from 'common/util/format'
 
 export function BetDialog(props: {
   contract: BinaryContract
@@ -49,6 +51,7 @@ export function BetDialog(props: {
   } = props
   const { question } = contract
 
+  const initialProb = getProbability(contract)
   return (
     <Modal
       open={open}
@@ -59,12 +62,15 @@ export function BetDialog(props: {
       )}
     >
       <Col>
-        <Link
-          className="text-primary-700 !mb-4 !mt-0 !text-xl hover:underline"
-          href={contractPath(contract)}
-        >
-          {questionPseudonym ?? question}
-        </Link>
+        <Row className="items-baseline justify-between gap-2">
+          <Link
+            className="text-primary-700 !mb-4 !mt-0 !text-xl hover:underline"
+            href={contractPath(contract)}
+          >
+            {questionPseudonym ?? question}
+          </Link>
+          <span className=" text-xl">{formatPercent(initialProb)}</span>
+        </Row>
         <BuyPanel
           contract={contract}
           onBuySuccess={() => setTimeout(() => setOpen(false), 500)}

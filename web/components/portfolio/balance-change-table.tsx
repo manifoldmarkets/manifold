@@ -16,12 +16,9 @@ import { DAY_MS } from 'common/util/time'
 import {
   AnyBalanceChangeType,
   BetBalanceChange,
-  betChangeToText,
   isBetChange,
   isTxnChange,
   TxnBalanceChange,
-  txnTitle,
-  txnTypeToDescription,
 } from 'common/balance-change'
 import Link from 'next/link'
 import {
@@ -40,6 +37,7 @@ import { AnyTxnCategory } from 'common/txn'
 import { useAPIGetter } from 'web/hooks/use-api-getter'
 import { Button } from 'web/components/buttons/button'
 import { Modal } from '../layout/modal'
+import { QuestType } from 'common/quest'
 
 export const BalanceChangeTable = (props: { user: User }) => {
   const { user } = props
@@ -466,9 +464,8 @@ const TxnBalanceChangeRow = (props: {
     CONTRACT_RESOLUTION_FEE:
       'bg-gradient-to-br from-pink-300 via-purple-300 to-primary-400',
     UNDO_CONTRACT_RESOLUTION_FEE: 'bg-canvas-100',
-  }
-  if (type === 'UNDO_CONTRACT_RESOLUTION_FEE') {
-    console.log(change)
+    ADMIN_REWARD:
+      'bg-gradient-to-br from-pink-300 via-purple-300 to-primary-400',
   }
 
   return (
@@ -505,7 +502,9 @@ const TxnBalanceChangeRow = (props: {
               type === 'CONVERT_CASH' ||
               type === 'CONVERT_CASH_DONE' ? (
               <FaArrowRightArrowLeft className={'h-4 w-4'} />
-            ) : type === 'CHARITY' || type === 'REFERRAL' ? (
+            ) : type === 'CHARITY' ||
+              type === 'REFERRAL' ||
+              type === 'ADMIN_REWARD' ? (
               '❤️'
             ) : type === 'LOAN' ||
               type === 'CASH_OUT' ||
@@ -595,4 +594,134 @@ const TxnBalanceChangeRow = (props: {
       </Col>
     </Row>
   )
+}
+
+const betChangeToText = (change: BetBalanceChange) => {
+  const { type, bet } = change
+  const { outcome } = bet
+  return type === 'redeem_shares'
+    ? `Redeem shares`
+    : type === 'loan_payment'
+    ? `Pay back loan`
+    : type === 'fill_bet'
+    ? `Fill ${outcome} order`
+    : type === 'sell_shares'
+    ? `Sell ${outcome} shares`
+    : `Buy ${outcome}`
+}
+
+const txnTitle = (change: TxnBalanceChange) => {
+  const { type, contract, user, questType, charity } = change
+
+  if (user) {
+    return user.username
+  }
+  if (charity) {
+    return charity.name
+  }
+  if (contract) {
+    return contract.question
+  }
+
+  switch (type) {
+    case 'QUEST_REWARD':
+      return questType ? questTypeToDescription(questType) : ''
+    case 'BETTING_STREAK_BONUS':
+      return 'Prediction streak bonus' // usually the question instead
+    case 'ADMIN_REWARD':
+      return 'Mod task completed'
+    case 'LOAN':
+      return 'Loan'
+    case 'LEAGUE_PRIZE':
+      return 'League prize'
+    case 'MANA_PURCHASE':
+      return 'Mana purchase'
+    case 'MARKET_BOOST_REDEEM':
+      return 'Claim boost'
+    case 'SIGNUP_BONUS':
+      return change.description ?? 'Signup bonus'
+    case 'REFERRAL':
+      return 'Referral bonus'
+    case 'CONSUME_SPICE':
+    case 'CONSUME_SPICE_DONE':
+      return `Redeem prize points for mana`
+    case 'CONVERT_CASH':
+    case 'CONVERT_CASH_DONE':
+      return 'Redeem sweepcash for mana'
+    case 'CASH_OUT':
+      return 'Redemption request'
+    case 'CASH_BONUS':
+      return 'Sweepcash bonus'
+    case 'KYC_BONUS':
+      return 'ID verification bonus'
+    case 'CONTRACT_RESOLUTION_FEE':
+    case 'UNDO_CONTRACT_RESOLUTION_FEE':
+      return ''
+    default:
+      return type
+  }
+}
+
+const txnTypeToDescription = (txnCategory: string) => {
+  switch (txnCategory) {
+    case 'MARKET_BOOST_CREATE':
+      return 'Boost'
+    case 'CANCEL_UNIQUE_BETTOR_BONUS':
+      return 'Cancel unique trader bonus'
+    case 'PRODUCE_SPICE':
+    case 'CONTRACT_RESOLUTION_PAYOUT':
+      return 'Payout'
+    case 'CREATE_CONTRACT_ANTE':
+      return 'Ante'
+    case 'UNIQUE_BETTOR_BONUS':
+      return 'Trader bonus'
+    case 'BETTING_STREAK_BONUS':
+      return 'Quests'
+    case 'SIGNUP_BONUS':
+    case 'KYC_BONUS':
+      return 'New user bonuses'
+    case 'REFERRAL':
+      return 'Quests'
+    case 'ADMIN_REWARD':
+      return 'Thank you!'
+    case 'QUEST_REWARD':
+      return 'Quests'
+    case 'CONTRACT_UNDO_PRODUCE_SPICE':
+    case 'CONTRACT_UNDO_RESOLUTION_PAYOUT':
+      return 'Unresolve'
+    case 'CONSUME_SPICE':
+    case 'CONSUME_SPICE_DONE':
+    case 'CONVERT_CASH':
+    case 'CONVERT_CASH_DONE':
+      return ''
+    case 'MANA_PURCHASE':
+      return ''
+    case 'ADD_SUBSIDY':
+      return 'Subsidy'
+    case 'MARKET_BOOST_REDEEM':
+      return 'Leagues'
+    case 'BOUNTY_POSTED':
+      return 'Ante'
+    case 'BOUNTY_AWARDED':
+      return 'Bounty awarded'
+    case 'MANA_PAYMENT':
+      return 'User payment'
+    case 'CHARITY':
+      return 'Donation'
+    case 'LOAN':
+      return ''
+    default:
+      return null
+  }
+}
+
+const questTypeToDescription = (questType: QuestType) => {
+  switch (questType) {
+    case 'SHARES':
+      return 'Sharing bonus'
+    case 'MARKETS_CREATED':
+      return 'Creation bonus'
+    default:
+      return 'questType'
+  }
 }

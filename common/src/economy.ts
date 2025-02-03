@@ -151,21 +151,21 @@ export const IOS_PRICES = [
 export const MANI_IOS_PRICES = [
   {
     mana: 1000,
-    priceInDollars: 10,
+    priceInDollars: 9.99,
     bonusInDollars: 10,
     newUsersOnly: false,
     sku: 'S10',
   },
   {
     mana: 2500,
-    priceInDollars: 25,
+    priceInDollars: 24.99,
     bonusInDollars: 25,
     newUsersOnly: false,
     sku: 'S25',
   },
   {
     mana: 10000,
-    priceInDollars: 100,
+    priceInDollars: 99.99,
     bonusInDollars: 100,
     newUsersOnly: false,
     sku: 'S100',

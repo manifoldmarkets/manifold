@@ -25,6 +25,7 @@ pathMatchers:
           - pathTemplateMatch: /v0/market/*
           - pathTemplateMatch: /v0/market/*/groups
           - pathTemplateMatch: /v0/market/*/positions
+          - pathTemplateMatch: /v0/market/*/prob
           - pathTemplateMatch: /v0/markets
           - pathTemplateMatch: /v0/search-markets
           - pathTemplateMatch: /search-markets-full
@@ -41,6 +42,8 @@ pathMatchers:
           - pathTemplateMatch: /v0/user/by-id/*/lite
           - pathTemplateMatch: /v0/user/*
           - pathTemplateMatch: /v0/user/*/lite
+          - pathTemplateMatch: /v0/users/by-id
+          - pathTemplateMatch: /users/by-id/balance
           - pathTemplateMatch: /v0/user/*/bets
           - pathTemplateMatch: /get-balance-changes
           - pathTemplateMatch: /get-user-limit-orders-with-contracts
@@ -66,6 +69,7 @@ pathMatchers:
           - pathTemplateMatch: /get-next-loan-amount
           - pathTemplateMatch: /0/generate-ai-answers
           - pathTemplateMatch: /0/generate-ai-description
+          - pathTemplateMatch: /0/market-probs
 # redeploy this by running:
 # gcloud compute url-maps import api-lb --source=url-map-config.yaml --project mantic-markets  --global
 # (or for dev, --project dev-mantic-markets)

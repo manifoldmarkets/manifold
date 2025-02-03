@@ -32,7 +32,7 @@ export function createJob(
   fn: (ctx: JobContext) => Promise<void>
 ) {
   const opts = { name, ...DEFAULT_OPTS }
-  return Cron(schedule ?? new Date(0), opts, async () => {
+  return new Cron(schedule ?? new Date(0), opts, async () => {
     const traceId = crypto.randomUUID()
     const context = { job: name, traceId }
     return await withMonitoringContext(context, async () => {

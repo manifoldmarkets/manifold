@@ -1,28 +1,21 @@
 import dayjs from 'dayjs'
-import { clamp, sumBy } from 'lodash'
+import { capitalize, clamp } from 'lodash'
 import { useRef, useState } from 'react'
 import toast from 'react-hot-toast'
-
-import { Answer } from 'common/answer'
 import { LimitBet } from 'common/bet'
 import { getProbability } from 'common/calculate'
-import { CpmmState } from 'common/calculate-cpmm'
-import { calculateCpmmMultiArbitrageBet } from 'common/calculate-cpmm-arbitrage'
 import {
   BinaryContract,
   CPMMMultiContract,
   CPMMNumericContract,
   getBinaryMCProb,
   isBinaryMulti,
-  MAX_CPMM_PROB,
-  MIN_CPMM_PROB,
   MultiContract,
   PseudoNumericContract,
   StonkContract,
 } from 'common/contract'
-import { computeCpmmBet } from 'common/new-bet'
 import { formatPercent } from 'common/util/format'
-import { DAY_MS, HOUR_MS, MINUTE_MS, WEEK_MS } from 'common/util/time'
+import { DAY_MS, HOUR_MS, MINUTE_MS, MONTH_MS, WEEK_MS } from 'common/util/time'
 import { Input } from 'web/components/widgets/input'
 import { firebaseLogin, User } from 'web/lib/firebase/users'
 import { Button } from '../buttons/button'
@@ -30,23 +23,24 @@ import { Col } from '../layout/col'
 import { Row } from '../layout/row'
 import { BinaryOutcomeLabel, PseudoNumericOutcomeLabel } from '../outcome-label'
 import { BuyAmountInput } from '../widgets/amount-input'
-import { ProbabilityOrNumericInput } from '../widgets/probability-input'
 import { getPseudoProbability } from 'common/pseudo-numeric'
-import { usePersistentInMemoryState } from 'client-common/hooks/use-persistent-in-memory-state'
-import { MultiBetProps } from 'web/components/bet/bet-panel'
 import { track, withTracking } from 'web/lib/service/analytics'
 import { APIError } from 'common/api/utils'
-import { addObjects, removeUndefinedProps } from 'common/util/object'
+import { removeUndefinedProps } from 'common/util/object'
 import { api } from 'web/lib/api/api'
 import clsx from 'clsx'
 import { getAnswerColor } from '../charts/contract/choice'
-import { Fees, noFees } from 'common/fees'
 import { MoneyDisplay } from './money-display'
 import { TRADE_TERM } from 'common/envs/constants'
-import { capitalize } from 'lodash'
 import { LocationMonitor } from '../gidx/location-monitor'
 import { VerifyButton } from '../sweeps/sweep-verify-section'
 import { sliderColors } from '../widgets/slider'
+import { ChoicesToggleGroup } from '../widgets/choices-toggle-group'
+import { ProbabilitySlider } from '../widgets/probability-input'
+import { usePersistentLocalState } from 'web/hooks/use-persistent-local-state'
+import { APIParams } from 'common/api/schema'
+import { RelativeTimestamp } from '../relative-timestamp'
+import { getLimitBetReturns, MultiBetProps } from 'client-common/lib/bet'
 
 export default function LimitOrderPanel(props: {
   contract:
@@ -63,6 +57,7 @@ export default function LimitOrderPanel(props: {
   shouldPromptVerification?: boolean
   onBuySuccess?: () => void
   className?: string
+  betAmount?: number
   outcome: 'YES' | 'NO' | undefined
   pseudonym?: {
     YES: {
@@ -107,31 +102,45 @@ export default function LimitOrderPanel(props: {
   const isPseudoNumeric = contract.outcomeType === 'PSEUDO_NUMERIC'
 
   const isCashContract = contract.token === 'CASH'
-  const defaultBetAmount = isCashContract ? 50 : 1000
 
   const [betAmount, setBetAmount] = useState<number | undefined>(
-    defaultBetAmount
+    props.betAmount
   )
   const [error, setError] = useState<string | undefined>()
-  const [inputError, setInputError] = useState<boolean>(false)
   const [isSubmitting, setIsSubmitting] = useState(false)
   const betDeps = useRef<LimitBet[]>()
-  // Expiring orders
-  const [addExpiration, setAddExpiration] = usePersistentInMemoryState(
-    false,
-    'add-limit-order-expiration'
-  )
   const initTimeInMs = Number(Date.now() + 5 * MINUTE_MS)
   const initDate = dayjs(initTimeInMs).format('YYYY-MM-DD')
   const initTime = dayjs(initTimeInMs).format('HH:mm')
-  const [expirationDate, setExpirationDate] =
-    usePersistentInMemoryState<string>(initDate, 'limit-order-expiration-date')
+  const [expirationDate, setExpirationDate] = usePersistentLocalState<string>(
+    initDate,
+    'limit-order-expiration-date'
+  )
   const [expirationHoursMinutes, setExpirationHoursMinutes] =
-    usePersistentInMemoryState<string>(initTime, 'limit-order-expiration-time')
+    usePersistentLocalState<string>(initTime, 'limit-order-expiration-time')
 
-  const expiresAt = addExpiration
+  const expirationChoices: { [key: string]: number } = {
+    '0s': 1,
+    '1s': 1000,
+    '1h': HOUR_MS,
+    '1d': DAY_MS,
+    '1w': WEEK_MS,
+    '1m': MONTH_MS,
+    '+': -1,
+  }
+
+  // add to local storage
+  const [selectedExpiration, setSelectedExpiration] =
+    usePersistentLocalState<number>(0, 'limit-order-expiration')
+  const addCustomExpiration = selectedExpiration === -1
+  const expiresAt = addCustomExpiration
     ? dayjs(`${expirationDate}T${expirationHoursMinutes}`).valueOf()
     : undefined
+
+  const expiresMillisAfter =
+    !addCustomExpiration && selectedExpiration > 0
+      ? selectedExpiration
+      : undefined
 
   const initialProb =
     isBinaryMC && outcome === 'YES'
@@ -184,21 +193,6 @@ export default function LimitOrderPanel(props: {
     setBetAmount(newAmount)
   }
 
-  const cpmmState = isCpmmMulti
-    ? {
-        pool: {
-          YES: multiProps!.answerToBuy.poolYes,
-          NO: multiProps!.answerToBuy.poolNo,
-        },
-        p: 0.5,
-        collectedFees: contract.collectedFees,
-      }
-    : {
-        pool: contract.pool,
-        p: contract.p,
-        collectedFees: contract.collectedFees,
-      }
-
   async function submitBet() {
     if (!user || betDisabled) return
 
@@ -216,10 +210,12 @@ export default function LimitOrderPanel(props: {
             amount,
             contractId: contract.id,
             answerId,
-            limitProb: limitProb,
-            expiresAt,
+            limitProb,
+            expiresAt: addCustomExpiration ? expiresAt : undefined,
+            expiresMillisAfter,
             deps: betDeps.current?.map((b) => b.userId),
-          })
+            silent: expiresMillisAfter && expiresMillisAfter <= 1000,
+          } as APIParams<'bet'>)
         ),
         {
           loading: `Submitting ${TRADE_TERM}...`,
@@ -255,23 +251,21 @@ export default function LimitOrderPanel(props: {
     }
   }
 
-  const shouldAnswersSumToOne =
-    'shouldAnswersSumToOne' in contract ? contract.shouldAnswersSumToOne : false
-
   let currentPayout = 0
   let currentReturn = 0
   let orderAmount = 0
   let filledAmount = 0
   // let fees = noFees
   try {
-    const result = getBetReturns(
-      cpmmState,
-      binaryMCOutcome ?? outcome ?? 'YES',
+    const result = getLimitBetReturns(
+      outcome ?? 'YES',
       amount,
-      limitProb ?? initialProb,
       unfilledBets,
       balanceByUserId,
-      shouldAnswersSumToOne ? multiProps : undefined
+      setError,
+      contract,
+      multiProps,
+      limitProb
     )
     currentPayout = result.currentPayout
     currentReturn = result.currentReturn
@@ -292,24 +286,11 @@ export default function LimitOrderPanel(props: {
 
   return (
     <>
-      <Col className="relative my-2 w-full gap-3">
-        <Row className="text-ink-700 w-full items-center gap-3">
-          {isPseudoNumeric ? 'Value' : 'Probability'}
-          <ProbabilityOrNumericInput
-            contract={contract}
-            prob={limitProbInt}
-            setProb={setLimitProbInt}
-            error={inputError}
-            onRangeError={setInputError}
-            disabled={isSubmitting}
-          />
-        </Row>
-      </Col>
-
-      <Row className={'text-ink-700 my-2 items-center space-x-3'}>
+      <Row className={'text-ink-700 items-center space-x-3'}>
         {capitalize(TRADE_TERM)} amount
       </Row>
       <BuyAmountInput
+        parentClassName="mt-2 max-w-full"
         amount={betAmount}
         onChange={onBetChange}
         error={error}
@@ -320,17 +301,59 @@ export default function LimitOrderPanel(props: {
         sliderColor={pseudonymColor}
         disregardUserBalance={shouldPromptVerification}
       />
-
-      <div className="my-3">
-        <Button
-          className={'mt-4'}
-          onClick={() => setAddExpiration(!addExpiration)}
-          color={'indigo-outline'}
+      <Col className="relative my-6 w-full gap-2">
+        <span className="text-ink-700">
+          {isPseudoNumeric ? 'Value' : `Probability:`}
+          <span className="text-ink-700 font-semibold"> {limitProbInt}%</span>
+        </span>
+        <Row className="gap-2">
+          {[-5, -1, 1, 5].map((increment) => (
+            <Button
+              key={increment}
+              color="gray-white"
+              onClick={() => setLimitProbInt((limitProbInt ?? 0) + increment)}
+              className="bg-canvas-0 h-7 w-24"
+            >
+              {increment > 0 ? `+${increment}` : increment}
+            </Button>
+          ))}
+        </Row>
+        <ProbabilitySlider
+          prob={limitProbInt}
+          onProbChange={setLimitProbInt}
           disabled={isSubmitting}
-        >
-          {addExpiration ? 'Remove expiration date' : 'Add expiration date'}
-        </Button>
-        {addExpiration && (
+          color={pseudonymColor}
+          outcome={isBinaryMC ? 'YES' : outcome}
+        />
+      </Col>
+      <Col className="my-3 gap-2">
+        <span className="text-ink-700">
+          Expires:
+          {selectedExpiration === 0 ? (
+            ' never'
+          ) : selectedExpiration === 1 ? (
+            ' now'
+          ) : selectedExpiration === 1000 ? (
+            ' in a second'
+          ) : expiresAt ? (
+            <RelativeTimestamp className="text-ink-700" time={expiresAt} />
+          ) : (
+            <RelativeTimestamp
+              className="text-ink-700"
+              time={Date.now() + selectedExpiration}
+            />
+          )}
+        </span>
+        <Row className="-ml-2 items-baseline justify-between gap-2 sm:justify-start sm:gap-4">
+          <ChoicesToggleGroup
+            color="light"
+            onSameChoiceClick={() => setSelectedExpiration(0)}
+            choicesMap={expirationChoices}
+            currentChoice={selectedExpiration}
+            setChoice={(choice) => setSelectedExpiration(choice as number)}
+          />
+        </Row>
+        {addCustomExpiration && (
           <Col className="gap-2">
             <Row className="mt-4 gap-2">
               <Input
@@ -355,6 +378,7 @@ export default function LimitOrderPanel(props: {
                 onChange={(e) => setExpirationHoursMinutes(e.target.value)}
                 disabled={isSubmitting}
                 value={expirationHoursMinutes}
+                step={60}
               />
             </Row>
             <Row className="gap-2">
@@ -370,7 +394,7 @@ export default function LimitOrderPanel(props: {
                   setExpirationHoursMinutes(addTime)
                 }}
               >
-                + 1Min
+                + 1m
               </Button>{' '}
               <Button
                 color={'indigo-outline'}
@@ -384,7 +408,7 @@ export default function LimitOrderPanel(props: {
                   setExpirationHoursMinutes(addTime)
                 }}
               >
-                + 1Hr
+                + 1h
               </Button>
               <Button
                 color={'indigo-outline'}
@@ -395,7 +419,7 @@ export default function LimitOrderPanel(props: {
                   setExpirationDate(addDay)
                 }}
               >
-                + 1D
+                + 1d
               </Button>
               <Button
                 color={'indigo-outline'}
@@ -406,12 +430,23 @@ export default function LimitOrderPanel(props: {
                   setExpirationDate(addDay)
                 }}
               >
-                + 1W
+                + 1w
+              </Button>
+              <Button
+                color={'indigo-outline'}
+                size={'sm'}
+                onClick={() => {
+                  const num = dayjs(expirationDate).valueOf() + MONTH_MS
+                  const addDay = dayjs(num).format('YYYY-MM-DD')
+                  setExpirationDate(addDay)
+                }}
+              >
+                + 1m
               </Button>
             </Row>
           </Col>
         )}
-      </div>
+      </Col>
 
       <Col className="mt-2 w-full gap-3">
         {outcome && hasLimitBet && filledAmount > 0 && (
@@ -497,7 +532,7 @@ export default function LimitOrderPanel(props: {
                 <Row className="items-center justify-between gap-2">
                   <Button
                     size="xl"
-                    disabled={betDisabled || inputError}
+                    disabled={betDisabled}
                     color={
                       (pseudonymColor as any) ??
                       (hideYesNo ? 'none' : outcome === 'YES' ? 'green' : 'red')
@@ -518,23 +553,22 @@ export default function LimitOrderPanel(props: {
                       'Enter a probability'
                     ) : !betAmount ? (
                       'Enter an amount'
-                    ) : binaryMCOutcome || pseudonymName ? (
-                      <span>
-                        Submit order for{' '}
-                        <MoneyDisplay
-                          amount={betAmount}
-                          isCashContract={isCashContract}
-                        />{' '}
-                        at {formatPercent(preLimitProb ?? 0)}
-                      </span>
                     ) : (
                       <span>
-                        Submit {outcome} order for{' '}
+                        Place{' '}
                         <MoneyDisplay
                           amount={betAmount}
                           isCashContract={isCashContract}
                         />{' '}
-                        at {formatPercent(limitProb)}
+                        {!binaryMCOutcome && !pseudonymName
+                          ? `${outcome.toLowerCase()} `
+                          : ''}
+                        order at{' '}
+                        {formatPercent(
+                          binaryMCOutcome || pseudonymName
+                            ? preLimitProb ?? 0
+                            : limitProb
+                        )}
                       </span>
                     )}
                   </Button>
@@ -557,81 +591,4 @@ export default function LimitOrderPanel(props: {
       </Col>
     </>
   )
-}
-
-const getBetReturns = (
-  cpmmState: CpmmState,
-  outcome: 'YES' | 'NO',
-  betAmount: number,
-  limitProb: number | undefined,
-  unfilledBets: LimitBet[],
-  balanceByUserId: { [userId: string]: number },
-  arbitrageProps?: {
-    answers: Answer[]
-    answerToBuy: Answer
-  }
-) => {
-  const orderAmount = betAmount
-  let amount: number
-  let shares: number
-  let fees: Fees
-  let betDeps: LimitBet[]
-  if (arbitrageProps) {
-    const { answers, answerToBuy } = arbitrageProps
-    const { newBetResult, otherBetResults } = calculateCpmmMultiArbitrageBet(
-      answers,
-      answerToBuy,
-      outcome,
-      betAmount,
-      limitProb,
-      unfilledBets,
-      balanceByUserId,
-      cpmmState.collectedFees
-    )
-    amount = sumBy(newBetResult.takers, 'amount')
-    shares = sumBy(newBetResult.takers, 'shares')
-    betDeps = newBetResult.makers
-      .map((m) => m.bet)
-      .concat(otherBetResults.flatMap((r) => r.makers.map((m) => m.bet)))
-      .concat(newBetResult.ordersToCancel)
-      .concat(otherBetResults.flatMap((r) => r.ordersToCancel))
-    fees = addObjects(
-      newBetResult.totalFees,
-      otherBetResults.reduce(
-        (feeSum, results) => addObjects(feeSum, results.totalFees),
-        noFees
-      )
-    )
-  } else {
-    const result = computeCpmmBet(
-      cpmmState,
-      outcome,
-      betAmount,
-      limitProb,
-      unfilledBets,
-      balanceByUserId,
-      !arbitrageProps && { max: MAX_CPMM_PROB, min: MIN_CPMM_PROB }
-    )
-    amount = result.amount
-    shares = result.shares
-    fees = result.fees
-    betDeps = result.makers.map((m) => m.bet).concat(result.ordersToCancel)
-  }
-
-  const remainingMatched = limitProb
-    ? ((orderAmount ?? 0) - amount) /
-      (outcome === 'YES' ? limitProb : 1 - limitProb)
-    : 0
-  const currentPayout = shares + remainingMatched
-  const currentReturn = betAmount ? (currentPayout - betAmount) / betAmount : 0
-
-  return {
-    orderAmount,
-    amount,
-    shares,
-    currentPayout,
-    currentReturn,
-    fees,
-    betDeps,
-  }
 }

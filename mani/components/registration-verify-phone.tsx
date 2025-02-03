@@ -21,8 +21,9 @@ export function RegistrationVerifyPhone(props: {
         phoneNumber,
       })
       setPage(1)
+      setError('')
     } catch (e: any) {
-      console.error(e)
+      setError(e.message)
     } finally {
       setLoading(false)
     }
@@ -35,14 +36,15 @@ export function RegistrationVerifyPhone(props: {
         phoneNumber,
         code: otp,
       })
+      setError('')
       next()
     } catch (e: any) {
-      console.error(e)
+      setError(e.message)
     } finally {
       setLoading(false)
     }
   }
-
+  const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
   const [otp, setOtp] = useState('')
   const [phoneNumber, setPhoneNumber] = useState('')
@@ -94,6 +96,7 @@ export function RegistrationVerifyPhone(props: {
           </View>
         </View>
       )}
+      {error && <Text style={{ color: Colors.error }}>{error}</Text>}
     </View>
   )
 }

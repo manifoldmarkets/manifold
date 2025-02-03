@@ -11,7 +11,7 @@ import {
 import { removeUndefinedProps } from 'common/util/object'
 import { Bet, getNewBetId, LimitBet, maker } from 'common/bet'
 import { floatingEqual } from 'common/util/math'
-import { log, metrics } from 'shared/utils'
+import { isProd, log, metrics } from 'shared/utils'
 import { Answer } from 'common/answer'
 import { CpmmState, getCpmmProbability } from 'common/calculate-cpmm'
 import { ValidatedAPIParams } from 'common/api/schema'
@@ -85,7 +85,7 @@ const queueDependenciesThenBet = async (
   const { dryRun, contractId } = props
   const minimalDeps = [auth.uid, contractId]
   return await ordersQueue.enqueueFn(async () => {
-    const { user, contract, answers, unfilledBets, balanceByUserId } =
+    const { contract, answers, unfilledBets, balanceByUserId } =
       await fetchContractBetDataAndValidate(
         createSupabaseDirectClient(),
         props,
@@ -95,7 +95,6 @@ const queueDependenciesThenBet = async (
     // Simulate bet to see whose limit orders you match.
     const simulatedResult = calculateBetResult(
       props,
-      user,
       contract,
       answers,
       unfilledBets,
@@ -123,7 +122,7 @@ export const placeBetMain = async (
   isApi: boolean
 ) => {
   const startTime = Date.now()
-  const { contractId, replyToCommentId, deterministic, answerId } = body
+  const { contractId, replyToCommentId, deterministic, answerId, silent } = body
   // Fetch data outside transaction first to avoid locking all limit orderers
   const {
     user,
@@ -141,7 +140,6 @@ export const placeBetMain = async (
   // Simulate bet to see whose limit orders you match.
   const simulatedResult = calculateBetResult(
     body,
-    user,
     contract,
     answers,
     unfilledBets,
@@ -172,7 +170,6 @@ export const placeBetMain = async (
     }
     const newBetResult = calculateBetResult(
       body,
-      user,
       contract,
       answers,
       unfilledBets,
@@ -209,7 +206,9 @@ export const placeBetMain = async (
       contractMetrics,
       replyToCommentId,
       betGroupId,
-      deterministic
+      deterministic,
+      false,
+      isApi ? undefined : silent
     )
   })
 
@@ -233,13 +232,12 @@ export const placeBetMain = async (
 
 export const calculateBetResult = (
   body: ValidatedAPIParams<'bet'>,
-  user: User,
   contract: MarketContract,
   answers: Answer[] | undefined,
   unfilledBets: LimitBet[],
   balanceByUserId: Record<string, number>
 ) => {
-  const { amount } = body
+  const { amount, expiresMillisAfter } = body
   const { outcomeType, mechanism } = contract
 
   if (
@@ -274,7 +272,8 @@ export const calculateBetResult = (
       limitProb,
       unfilledBets,
       balanceByUserId,
-      expiresAt
+      expiresAt,
+      expiresMillisAfter
     )
   } else if (
     (outcomeType === 'MULTIPLE_CHOICE' || outcomeType === 'NUMBER') &&
@@ -309,7 +308,8 @@ export const calculateBetResult = (
       roundedLimitProb,
       unfilledBets,
       balanceByUserId,
-      expiresAt
+      expiresAt,
+      expiresMillisAfter
     )
   } else {
     throw new APIError(
@@ -340,7 +340,8 @@ export const executeNewBetResult = async (
   replyToCommentId?: string,
   betGroupId?: string,
   deterministic?: boolean,
-  firstBetInMultiBet?: boolean
+  firstBetInMultiBet?: boolean,
+  silent?: boolean
 ) => {
   const {
     newBet,
@@ -376,6 +377,7 @@ export const executeNewBetResult = async (
     id: getNewBetId(),
     userId: user.id,
     isApi,
+    silent,
     replyToCommentId,
     betGroupId,
     ...newBet,
@@ -400,6 +402,7 @@ export const executeNewBetResult = async (
       userUpdates: undefined,
       contractUpdate: undefined,
       answerUpdates: undefined,
+      updatedMakers: [],
     }
   }
   const isNumberContract = contract.outcomeType === 'NUMBER'
@@ -539,6 +542,7 @@ export const executeNewBetResult = async (
     updatedMetrics: makerRedemptionAndFillUpdatedMetrics,
     balanceUpdates: makerRedemptionAndFillBalanceUpdates,
     bulkUpdateLimitOrdersQuery,
+    updatedMakers,
   } = await updateMakers(makersByTakerBetId, contract, updatedMetrics, pgTrans)
   // Create redemption bets for bettor w/o limit fills if needed:
   const {
@@ -633,6 +637,7 @@ export const executeNewBetResult = async (
     answerUpdates,
     contractUpdate,
     userUpdates,
+    updatedMakers,
   }
 }
 
@@ -653,7 +658,7 @@ const assertAdminAccumulatesNoMoreThanTenShares = (
         : m.answerId === null)
   )
   if (myMetrics) {
-    if (sum(Object.values(myMetrics.totalShares)) > 10) {
+    if (sum(Object.values(myMetrics.totalShares)) > 10 && isProd()) {
       throw new APIError(
         403,
         `Admins cannot accumulate more than 10 shares per answer per question.`

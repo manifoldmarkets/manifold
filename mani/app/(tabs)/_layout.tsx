@@ -108,7 +108,7 @@ export default function TabLayout() {
           ),
         }}
       />
-      {/* <Tabs.Screen
+      <Tabs.Screen
         name="notifications"
         options={{
           title: 'Alerts',
@@ -116,7 +116,7 @@ export default function TabLayout() {
             <IconSymbol size={28} name="bell" color={color} />
           ),
         }}
-      /> */}
+      />
       <Tabs.Screen
         name="shop"
         options={{

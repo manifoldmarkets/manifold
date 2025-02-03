@@ -58,9 +58,9 @@ export function TokenNumber(
       case 'lg':
         return 2
       case 'xl':
-        return 6
+        return 4
       case '2xl':
-        return 7
+        return 4
       case '3xl':
         return 8
       case '4xl':
@@ -76,14 +76,29 @@ export function TokenNumber(
     }
   }
 
-  const formattedNumber = shortened
-    ? formatShortened(amount)
-    : showDecimals
-    ? amount.toFixed(2)
-    : Math.round(amount).toString()
+  const formattedNumber = (() => {
+    const isNegative = amount < 0
+    const absAmount = Math.abs(amount)
+
+    const formatted = shortened
+      ? formatShortened(absAmount)
+      : showDecimals
+      ? new Intl.NumberFormat('en-US', {
+          minimumFractionDigits: 2,
+          maximumFractionDigits: 2,
+        }).format(absAmount)
+      : new Intl.NumberFormat('en-US').format(Math.round(absAmount))
+
+    return isNegative ? '-' + formatted : formatted
+  })()
 
   return (
     <Row style={{ alignItems: 'center', gap: getGapSize(rest.size) }}>
+      {formattedNumber.startsWith('-') ? (
+        <ThemedText family={'JetBrainsMono'} {...rest}>
+          -
+        </ThemedText>
+      ) : null}
       <Token
         overrideToken={token}
         style={{
@@ -93,7 +108,7 @@ export function TokenNumber(
         }}
       />
       <ThemedText family={'JetBrainsMono'} {...rest}>
-        {formattedNumber}
+        {formattedNumber.replace('-', '')}
       </ThemedText>
     </Row>
   )

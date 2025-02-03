@@ -44,6 +44,7 @@ export const AuthPage = (props: { height: number; width: number }) => {
   const fixedConfig = {
     ...ENV_CONFIG.expoConfig,
     iosClientId: ENV_CONFIG.expoConfig.iosClientId2,
+    androidClientId: ENV_CONFIG.expoConfig.androidClientId2,
   }
   const [_, response, promptAsync] = Google.useIdTokenAuthRequest(fixedConfig)
   const appleAuthAvailable = useAppleAuthentication()
@@ -169,7 +170,7 @@ export const AuthPage = (props: { height: number; width: number }) => {
     container: {
       flex: 1,
       justifyContent: 'center',
-      backgroundColor: '#4337C9',
+      backgroundColor: '#09090b',
       height,
       width,
       position: 'absolute',

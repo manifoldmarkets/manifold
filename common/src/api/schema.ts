@@ -70,10 +70,12 @@ import { Task, TaskCategory } from 'common/todo'
 import { ChartAnnotation } from 'common/supabase/chart-annotations'
 import { Dictionary } from 'lodash'
 import { Reaction } from 'common/reaction'
+import { YEAR_MS } from 'common/util/time'
 // mqp: very unscientific, just balancing our willingness to accept load
 // with user willingness to put up with stale data
 export const DEFAULT_CACHE_STRATEGY =
   'public, max-age=5, stale-while-revalidate=10'
+const MAX_EXPIRES_AT = 1_000 * YEAR_MS
 
 type APIGenericSchema = {
   // GET is for retrieval, POST is to mutate something, PUT is idempotent mutation (can be repeated safely)
@@ -200,6 +202,7 @@ export const API = (_apiTypeCheck = {
       .object({
         contractId: z.string().optional(),
         contractSlug: z.string().optional(),
+        afterTime: z.coerce.number().optional(),
         limit: z.coerce.number().gte(0).lte(1000).default(1000),
         page: z.coerce.number().gte(0).default(0),
         userId: z.string().optional(),
@@ -218,7 +221,9 @@ export const API = (_apiTypeCheck = {
         amount: z.number().gte(SWEEPS_MIN_BET),
         replyToCommentId: z.string().optional(),
         limitProb: z.number().gte(0.01).lte(0.99).optional(),
-        expiresAt: z.number().optional(),
+        expiresMillisAfter: z.number().lt(MAX_EXPIRES_AT).optional(),
+        silent: z.boolean().optional(),
+        expiresAt: z.number().lt(MAX_EXPIRES_AT).optional(),
         // Used for binary and new multiple choice contracts (cpmm-multi-1).
         outcome: z.enum(['YES', 'NO']).default('YES'),
         //Multi
@@ -253,7 +258,7 @@ export const API = (_apiTypeCheck = {
         contractId: z.string(),
         amount: z.number().gte(1),
         limitProb: z.number().gte(0).lte(1).optional(),
-        expiresAt: z.number().optional(),
+        expiresAt: z.number().lt(MAX_EXPIRES_AT).optional(),
         answerIds: z.array(z.string()).min(1),
         deterministic: z.boolean().optional(),
       })
@@ -571,6 +576,22 @@ export const API = (_apiTypeCheck = {
     },
     props: z.object({ id: z.string() }).strict(),
   },
+  'market-probs': {
+    method: 'GET',
+    visibility: 'public',
+    authed: false,
+    returns: {} as {
+      [contractId: string]: {
+        prob?: number
+        answerProbs?: { [answerId: string]: number }
+      }
+    },
+    props: z
+      .object({
+        ids: z.array(z.string()).max(100),
+      })
+      .strict(),
+  },
   'markets-by-ids': {
     method: 'GET',
     visibility: 'undocumented',
@@ -814,7 +835,7 @@ export const API = (_apiTypeCheck = {
     props: z
       .object({
         amount: z.number().positive().finite().safe(),
-        expiresTime: z.number().optional(),
+        expiresTime: z.number().lt(MAX_EXPIRES_AT).optional(),
         maxUses: z.number().optional(),
         message: z.string().optional(),
       })
@@ -985,6 +1006,14 @@ export const API = (_apiTypeCheck = {
     authed: false,
     cache: DEFAULT_CACHE_STRATEGY,
     returns: [] as DisplayUser[],
+    props: z.object({ ids: z.array(z.string()) }).strict(),
+  },
+  'users/by-id/balance': {
+    method: 'GET',
+    visibility: 'undocumented',
+    authed: false,
+    cache: DEFAULT_CACHE_STRATEGY,
+    returns: [] as { id: string; balance: number }[],
     props: z.object({ ids: z.array(z.string()) }).strict(),
   },
   'user/by-id/:id/block': {
@@ -2048,7 +2077,7 @@ export const API = (_apiTypeCheck = {
     // Could set authed false and preferAuth with an api secret if we want it to replace static props
     authed: true,
     returns: {} as {
-      manaContract: Contract
+      manaContract: MarketContract
       chartAnnotations: ChartAnnotation[]
       topics: Topic[]
       comments: ContractComment[]
@@ -2060,7 +2089,7 @@ export const API = (_apiTypeCheck = {
       topContractMetrics: ContractMetric[]
       totalPositions: number
       dashboards: Dashboard[]
-      cashContract: Contract
+      cashContract: MarketContract
       totalManaBets: number
       totalCashBets: number
     },
@@ -2117,6 +2146,13 @@ export const API = (_apiTypeCheck = {
         contentType: z.enum(['comment', 'contract']),
       })
       .strict(),
+  },
+  'mark-all-notifications-new': {
+    method: 'POST',
+    visibility: 'public',
+    authed: true,
+    props: z.object({}).strict(),
+    returns: {} as { success: boolean },
   },
 } as const)
 
