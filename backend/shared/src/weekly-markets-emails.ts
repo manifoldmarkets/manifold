@@ -1,4 +1,4 @@
-import { chunk } from 'lodash'
+import { chunk, first } from 'lodash'
 
 import { getPrivateUsersNotSent, isProd, log } from 'shared/utils'
 import { sendInterestingMarketsEmail } from 'shared/emails'
@@ -37,7 +37,7 @@ export async function sendWeeklyMarketsEmails() {
     const chunks = chunk(privateUsers, CHUNK_SIZE)
     await buildUserInterestsCache(privateUsers.map((u) => u.id))
     for (const chunk of chunks) {
-      await Promise.allSettled(
+      const results = await Promise.allSettled(
         chunk.map(async (privateUser) => {
           const contractsToSend = await getForYouMarkets(
             privateUser.id,
@@ -56,6 +56,11 @@ export async function sendWeeklyMarketsEmails() {
           userIdsSentEmails.push(privateUser.id)
         })
       )
+      const failed = results.filter((r) => r.status === 'rejected')
+      if (failed.length > 0) {
+        log.error(`Failed to send emails to ${failed.length} users`)
+        log.error(`First reason: ${first(failed)?.reason}`)
+      }
 
       i++
       log(

@@ -516,7 +516,12 @@ export const sendInterestingMarketsEmail = async (
   privateUser: PrivateUser,
   contractsToSend: Contract[]
 ) => {
-  if (!privateUser || !privateUser.email) return
+  if (!privateUser || !privateUser.email) {
+    log.error('No private user or email to send interesting markets email to', {
+      userName,
+    })
+    return
+  }
 
   const { unsubscribeUrl, sendToEmail } = getNotificationDestinationsForUser(
     privateUser,
