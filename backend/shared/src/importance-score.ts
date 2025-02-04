@@ -373,7 +373,7 @@ export const computeContractScores = (
       ? 4
       : contract.siblingContractId // boost mana markets with attached sweeps
       ? 1
-      : contract.id === 'ikSUiiNS8MwAI75RwEJf' // downrank old election market
+      : contract.id === '8Q6PEygUqp' // downrank old superbowl market
       ? -4
       : 0
 
