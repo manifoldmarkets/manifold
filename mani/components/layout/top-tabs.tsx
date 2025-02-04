@@ -15,7 +15,7 @@ export type TopTab = {
   title: string
   titleElement?: ReactNode
   queryString?: string
-  iconName?: string // Optional icon
+  iconName?: IconSymbolName
   iconClassName?: string
   onPress?: () => void
   content: ReactNode
@@ -124,7 +124,7 @@ export function ControlledTopTabs(props: ControlledTopTabsProps) {
             <Col style={{ alignItems: 'center', gap: 4 }}>
               {tab.iconName && (
                 <IconSymbol
-                  name={tab.iconName as IconSymbolName}
+                  name={tab.iconName}
                   color={activeIndex === i ? color.primary : color.textTertiary}
                 />
               )}

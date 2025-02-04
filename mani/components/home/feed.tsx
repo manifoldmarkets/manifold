@@ -78,6 +78,8 @@ export function Feed({ tab }: { tab: string }) {
         <EntertainmentContent />
       ) : tab == 'politics' ? (
         <PoliticsContent />
+      ) : tab == 'tech' ? (
+        <TechContent />
       ) : tab == 'test' ? (
         <NewContent />
       ) : (
@@ -184,7 +186,7 @@ function NewsContent() {
       fetchProps={{
         term: '',
         filter: 'open',
-        sort: 'score',
+        sort: 'freshness-score',
         // TODO: add an ignoreGids to ignore sports, fun, etc.?
       }}
     />
@@ -236,6 +238,21 @@ function NewContent() {
         term: 'test',
         filter: 'open',
         sort: 'newest',
+      }}
+    />
+  )
+}
+
+function TechContent() {
+  return (
+    <MarketsList
+      fetchProps={{
+        term: '',
+        filter: 'open',
+        sort: 'score',
+        gids: isProd
+          ? 'IlzY3moWwOcpsVZXCVej,XMhZ5LbQoLMZiOpQJRnj,97oNExy8iFftY2EgdkLw,JpUqUqRn9sSWxrk0Sq35,yEWvvwFFIqzf8JklMewp,GbbX9U5pYnDeftX9lxUh,PZJMbrLekgJBy7OOBKGT,S1tbcVt1t5Bd9O5mVCx1'
+          : '',
       }}
     />
   )
