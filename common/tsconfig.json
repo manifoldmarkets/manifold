@@ -16,5 +16,5 @@
       "common/*": ["./src/*", "../lib/*"]
     }
   },
-  "include": ["src/**/*.ts", "../web/lib/supabase/db.ts"]
+  "include": ["src/**/*.ts"]
 }
