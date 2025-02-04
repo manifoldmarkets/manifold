@@ -57,7 +57,11 @@ export const onCreateCommentOnContract = async (props: {
     lastUpdatedTime: Date.now(),
   })
 
-  if (creator.id === contract.creatorId && !contract.isResolved) {
+  if (
+    creator.id === contract.creatorId &&
+    !contract.isResolved &&
+    contract.outcomeType !== 'POLL'
+  ) {
     await checkForClarification(pg, contract, comment)
   }
 
