@@ -1,6 +1,6 @@
 import { run } from 'common/supabase/utils'
 import { useEffect } from 'react'
-import { db } from 'common/supabase/db'
+import { db } from 'web/lib/supabase/db'
 import { usePersistentInMemoryState } from 'client-common/hooks/use-persistent-in-memory-state'
 
 export const useRepostsOnContract = (contractId: string) => {

@@ -10,7 +10,7 @@ import { api } from 'web/lib/api/api'
 import { getShouldBlockDestiny } from 'web/lib/supabase/groups'
 import { getPrivateUserSafe } from 'web/lib/supabase/users'
 import { useIsPageVisible } from './use-page-visible'
-import { db } from 'common/supabase/db'
+import { db } from 'web/lib/supabase/db'
 
 export const useUser = () => {
   const authUser = useContext(AuthContext)

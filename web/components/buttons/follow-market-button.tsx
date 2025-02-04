@@ -9,7 +9,7 @@ import { Row } from 'web/components/layout/row'
 import { Contract } from 'common/contract'
 import { firebaseLogin } from 'web/lib/firebase/users'
 import { track } from 'web/lib/service/analytics'
-import { db } from 'common/supabase/db'
+import { db } from 'web/lib/supabase/db'
 import { api } from 'web/lib/api/api'
 
 export const FollowMarketButton = (props: {

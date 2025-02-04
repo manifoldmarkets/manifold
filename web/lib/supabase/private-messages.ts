@@ -1,4 +1,4 @@
-import { db } from 'common/supabase/db'
+import { db } from 'web/lib/supabase/db'
 import { run } from 'common/supabase/utils'
 import { api } from 'web/lib/api/api'
 

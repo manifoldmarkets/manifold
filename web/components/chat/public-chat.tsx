@@ -25,7 +25,7 @@ import { filterDefined } from 'common/util/array'
 import { Button } from 'web/components/buttons/button'
 import { CommentInputTextArea } from 'web/components/comments/comment-input'
 import { run } from 'common/supabase/utils'
-import { db } from 'common/supabase/db'
+import { db } from 'web/lib/supabase/db'
 
 export const PublicChat = (props: {
   channelId: string

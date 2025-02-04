@@ -21,7 +21,7 @@ import { Row as rowFor } from 'common/supabase/utils'
 import { JSONContent } from '@tiptap/core'
 import { Visibility } from 'common/contract'
 import { DisplayUser, getUserById } from 'web/lib/supabase/users'
-import { db } from 'common/supabase/db'
+import { db } from 'web/lib/supabase/db'
 
 export async function getStaticProps(props: { params: { slug: string } }) {
   const { slug } = props.params

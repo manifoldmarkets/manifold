@@ -5,7 +5,7 @@ import { filterDefined } from 'common/util/array'
 import { sum } from 'lodash'
 import { useEffect, useState } from 'react'
 import { hasCompletedStreakToday } from 'web/components/profile/betting-streak-modal'
-import { db } from 'common/supabase/db'
+import { db } from 'web/lib/supabase/db'
 
 export const useQuestStatus = (user: User | undefined | null) => {
   const [questStatus, setQuestStatus] = useState<

@@ -3,7 +3,7 @@ import { Group, GroupRole, Topic } from 'common/group'
 import { User } from 'common/user'
 import { useEffect, useState } from 'react'
 import { api, getUserIsFollowingTopic } from 'web/lib/api/api'
-import { db } from 'common/supabase/db'
+import { db } from 'web/lib/supabase/db'
 import {
   getGroup,
   getGroupFromSlug,

@@ -1,7 +1,7 @@
 import { ContractMetric } from 'common/contract-metric'
 import { Contract } from 'common/contract'
 import { getTopContractMetrics } from 'common/supabase/contract-metrics'
-import { db } from 'common/supabase/db'
+import { db } from 'web/lib/supabase/db'
 import { useEffect, useState } from 'react'
 import { usePersistentLocalState } from './use-persistent-local-state'
 import { useEvent } from 'client-common/hooks/use-event'

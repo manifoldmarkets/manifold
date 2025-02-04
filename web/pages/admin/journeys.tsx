@@ -1,7 +1,7 @@
 import { NoSEO } from 'web/components/NoSEO'
 import { useEffect, useState } from 'react'
 import { Row as rowfor, run, tsToMillis } from 'common/supabase/utils'
-import { db } from 'common/supabase/db'
+import { db } from 'web/lib/supabase/db'
 import { HOUR_MS } from 'common/util/time'
 import { groupBy, orderBy, uniq } from 'lodash'
 import { Col } from 'web/components/layout/col'

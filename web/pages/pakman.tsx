@@ -9,7 +9,7 @@ import { FeedContractCard } from 'web/components/contract/feed-contract-card'
 import { Contract } from 'common/contract'
 import { contractFields, convertContract } from 'common/supabase/contracts'
 import { Col } from 'web/components/layout/col'
-import { db } from 'common/supabase/db'
+import { db } from 'web/lib/supabase/db'
 
 const revalidate = 60
 

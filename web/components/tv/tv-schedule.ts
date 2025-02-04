@@ -2,7 +2,7 @@ import dayjs from 'dayjs'
 import { useEffect, useState } from 'react'
 import { useApiSubscription } from 'client-common/hooks/use-api-subscription'
 import { Row } from 'common/supabase/utils'
-import { db } from 'common/supabase/db'
+import { db } from 'web/lib/supabase/db'
 
 export type ScheduleItem = Row<'tv_schedule'>
 

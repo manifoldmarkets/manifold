@@ -24,7 +24,7 @@ import { EditablePaymentInfo } from 'web/components/contract/editable-payment-in
 import { useAdmin } from 'web/hooks/use-admin'
 import { LoadingIndicator } from 'web/components/widgets/loading-indicator'
 import { APIResponse } from 'common/api/schema'
-import { db } from 'common/supabase/db'
+import { db } from 'web/lib/supabase/db'
 import { getUserForStaticProps } from 'common/supabase/users'
 
 export const getStaticProps = async (props: {

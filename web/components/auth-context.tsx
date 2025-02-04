@@ -29,7 +29,7 @@ import { getPrivateUserSafe, getUserSafe } from 'web/lib/supabase/users'
 import toast from 'react-hot-toast'
 import { Row } from './layout/row'
 import { TokenNumber } from './widgets/token-number'
-import { updateSupabaseAuth } from 'common/supabase/db'
+import { updateSupabaseAuth } from 'web/lib/supabase/db'
 
 // Either we haven't looked up the logged in user yet (undefined), or we know
 // the user is not logged in (null), or we know the user is logged in.

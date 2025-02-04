@@ -1,5 +1,5 @@
 import { run } from 'common/supabase/utils'
-import { db } from 'common/supabase/db'
+import { db } from 'web/lib/supabase/db'
 import { api } from '../api/api'
 import { ReactionContentTypes, ReactionType } from 'common/reaction'
 
