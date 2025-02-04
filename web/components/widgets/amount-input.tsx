@@ -305,7 +305,7 @@ export function BuyAmountInput(props: {
         )}
         {showSlider && (
           <BetSlider
-            className="mt-2"
+            className="mt-3"
             amount={amount}
             onAmountChange={onChange}
             binaryOutcome={binaryOutcome}
