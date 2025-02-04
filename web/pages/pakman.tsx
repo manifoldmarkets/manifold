@@ -1,13 +1,14 @@
-import { USElectionsPage } from 'web/components/elections-page'
 import { Page } from 'web/components/layout/page'
 import { SEO } from 'web/components/SEO'
-import { getElectionsPageProps } from 'web/lib/politics/home'
-import { ElectionsPageProps } from 'web/public/data/elections-data'
 import Custom404 from './404'
 import { ENV } from 'common/envs/constants'
 import { useTracking } from 'web/hooks/use-tracking'
 import { PromotionalPanel } from 'web/components/promotional-panel'
 import { SweepiesFlatCoin } from 'web/public/custom-components/sweepiesFlatCoin'
+import { FeedContractCard } from 'web/components/contract/feed-contract-card'
+import { Contract } from 'common/contract'
+import { api } from 'web/lib/api/api'
+import { Col } from 'web/components/layout/col'
 
 const revalidate = 60
 
@@ -19,22 +20,38 @@ export async function getStaticProps() {
     }
   }
 
-  const electionsPageProps = await getElectionsPageProps()
+  const [contract, politicsMarkets] = await Promise.all([
+    api('get-contract', { contractId: 'OPl99N5Aun' }),
+    api('search-markets-full', {
+      term: '',
+      filter: 'all',
+      sort: 'score',
+      limit: 10,
+      topicSlug: 'us-politics',
+    }),
+  ])
+
   return {
-    props: electionsPageProps,
+    props: {
+      contract,
+      politicsMarkets,
+    },
     revalidate,
   }
 }
 
-export default function Pakman(props: ElectionsPageProps) {
+export default function Pakman(props: {
+  contract: Contract
+  politicsMarkets: Contract[]
+}) {
   useTracking('pakman page view')
 
-  if (Object.keys(props).length === 0) {
+  if (!props.contract) {
     return <Custom404 />
   }
 
   return (
-    <Page trackPageView="Pakman page">
+    <Page trackPageView="Pakman page" className="!col-span-7">
       <SEO
         title="Pakman Manifold"
         description="The David Pakman Show on Manifold."
@@ -57,7 +74,12 @@ export default function Pakman(props: ElectionsPageProps) {
         loginTrackingText="Sign up from /pakman"
       />
 
-      <USElectionsPage {...props} hideTitle />
+      <Col className="mt-8 gap-4">
+        <FeedContractCard contract={props.contract} key={props.contract.id} />
+        {props.politicsMarkets.map((market) => (
+          <FeedContractCard key={market.id} contract={market} />
+        ))}
+      </Col>
     </Page>
   )
 }
