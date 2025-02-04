@@ -369,12 +369,12 @@ export const computeContractScores = (
   const conversionScore = normalize(contract.conversionScore, 1)
 
   const sweepsScore =
-    contract.token === 'CASH' // boost sweeps
-      ? 4
-      : contract.siblingContractId // boost mana markets with attached sweeps
-      ? 1
-      : contract.id === '8Q6PEygUqp' // downrank old superbowl market
+    contract.id === '8Q6PEygUqp' // downrank old superbowl market
       ? -4
+      : contract.token === 'CASH' // boost sweeps
+      ? 4
+      : contract.siblingContractId && contract.id !== 'OyzrJydfBQT9NFomacEW' // boost mana markets with attached sweeps
+      ? 1
       : 0
 
   // recalibrate all of these numbers as site usage changes
