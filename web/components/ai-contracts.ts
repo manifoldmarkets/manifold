@@ -121,7 +121,7 @@ export async function getAiContracts(): Promise<{
       limit: 7,
       gids: 'yEWvvwFFIqzf8JklMewp',
     }),
-    getContract(db, 'sPsE8AZl06'), // New AI Model releases, update monthly with new contract
+    getContract(db, 'UEc09NU2pU'), // New AI Model releases, update monthly with new contract
   ])
 
   return {
