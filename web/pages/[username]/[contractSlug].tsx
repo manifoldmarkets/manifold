@@ -1,4 +1,4 @@
-import { useUnfilledBets } from 'client-common/hooks/use-bets'
+import { useBetsOnce, useUnfilledBets } from 'client-common/hooks/use-bets'
 import { Bet, LimitBet } from 'common/bet'
 import {
   Contract,
@@ -20,7 +20,6 @@ import { Col } from 'web/components/layout/col'
 import { Page } from 'web/components/layout/page'
 import { useSweepstakes } from 'web/components/sweepstakes-provider'
 import { Title } from 'web/components/widgets/title'
-import { useBetsOnce } from 'web/hooks/use-bets'
 import { useIsIframe } from 'web/hooks/use-is-iframe'
 import { useIsPageVisible } from 'web/hooks/use-page-visible'
 import { useUser } from 'web/hooks/use-user'
