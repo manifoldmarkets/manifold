@@ -39,7 +39,10 @@ export function FundsSelector(props: {
     !user
 
   const newUserPrices = basePrices.filter((p) => p.newUsersOnly)
-  const prices = basePrices.filter((p) => !p.newUsersOnly)
+  const prices = basePrices.filter(
+    (p) =>
+      !p.newUsersOnly && (eligibleForNewUserOffer ? !p.ignoreIfNewUser : true)
+  )
   const totalPurchased = use24hrUsdPurchasesInDollars(user?.id || '')
   const pastLimit = totalPurchased >= DOLLAR_PURCHASE_LIMIT
 
