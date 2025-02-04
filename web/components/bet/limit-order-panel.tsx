@@ -311,21 +311,67 @@ export default function LimitOrderPanel(props: {
         <div className="text-ink-600">
           {isPseudoNumeric ? 'Value' : `Probability (%)`}
         </div>
-        <Input
-          type="number"
-          min={0}
-          max={100}
-          step={1}
-          className="h-[60px] w-full !text-xl"
-          value={limitProbInt ?? ''}
-          onChange={(e) => {
-            const val =
-              e.target.value === '' ? undefined : Number(e.target.value)
-            if (val === undefined || (val >= 0 && val <= 100)) {
-              setLimitProbInt(val)
-            }
-          }}
-        />
+        <Row>
+          <label className="font-sm md:font-lg relative w-full">
+            <Input
+              type="number"
+              min={0}
+              max={100}
+              step={1}
+              className="h-[60px] w-full !text-xl"
+              value={limitProbInt ?? ''}
+              onChange={(e) => {
+                const val =
+                  e.target.value === '' ? undefined : Number(e.target.value)
+                if (val === undefined || (val >= 0 && val <= 100)) {
+                  setLimitProbInt(val)
+                }
+              }}
+            />
+            <Row className="absolute right-2 top-3.5 gap-1.5 sm:gap-2">
+              <button
+                className="hover:bg-ink-200 bg-canvas-100 rounded-md px-2 sm:px-3 py-1.5 text-sm"
+                onClick={() => {
+                  if (limitProbInt !== undefined) {
+                    setLimitProbInt(limitProbInt - 5)
+                  }
+                }}
+              >
+                -5
+              </button>
+              <button
+                className="hover:bg-ink-200 bg-canvas-100 rounded-md px-2 sm:px-3 py-1.5 text-sm"
+                onClick={() => {
+                  if (limitProbInt !== undefined) {
+                    setLimitProbInt(limitProbInt - 1)
+                  }
+                }}
+              >
+                -1
+              </button>
+              <button
+                className="hover:bg-ink-200 bg-canvas-100 rounded-md px-2 sm:px-3 py-1.5 text-sm"
+                onClick={() => {
+                  if (limitProbInt !== undefined) {
+                    setLimitProbInt(limitProbInt + 1)
+                  }
+                }}
+              >
+                +1
+              </button>
+              <button
+                className="hover:bg-ink-200 bg-canvas-100 rounded-md px-2 sm:px-3 py-1.5 text-sm"
+                onClick={() => {
+                  if (limitProbInt !== undefined) {
+                    setLimitProbInt(limitProbInt + 5)
+                  }
+                }}
+              >
+                +5
+              </button>
+            </Row>
+          </label>
+        </Row>
 
         <ProbabilitySlider
           prob={limitProbInt}
