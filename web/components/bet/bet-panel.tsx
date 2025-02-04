@@ -156,7 +156,7 @@ export function BuyPanel(props: {
       {isPanelBodyVisible && (
         <BuyPanelBody
           {...props}
-          panelClassName={'bg-canvas-50'}
+          panelClassName={'bg-canvas-50 -mx-2 sm:mx-0'}
           outcome={outcome}
           setOutcome={setOutcome}
           onClose={
@@ -553,7 +553,7 @@ export const BuyPanelBody = (props: {
             >
               <ChoicesToggleGroup
                 currentChoice={outcome}
-                color={outcome === 'YES' ? 'green' : 'red'}
+                color={outcome === 'YES' ? 'light-green' : 'light-red'}
                 choicesMap={choicesMap}
                 setChoice={(outcome) => {
                   setOutcome(outcome as 'YES' | 'NO')
@@ -627,8 +627,8 @@ export const BuyPanelBody = (props: {
               />
 
               {isAdvancedTrader && (
-                <Col className="gap-1">
-                  <Row className=" items-baseline">
+                <Col className="w-full gap-1">
+                  <Row className="w-full items-baseline justify-between sm:justify-start">
                     <span className="text-ink-600 mr-2 min-w-[120px] whitespace-nowrap">
                       {isPseudoNumeric
                         ? 'Estimated value'
@@ -636,49 +636,52 @@ export const BuyPanelBody = (props: {
                         ? 'New stock price'
                         : 'New probability'}
                     </span>
-                    <span className="text-lg font-semibold">
-                      {getFormattedMappedValue(
-                        contract,
-                        probStayedSame ? probBefore : probAfter
-                      )}
-                    </span>
-                    {!probStayedSame && !isPseudoNumeric && (
-                      <span className={clsx('ml-1', 'text-ink-600')}>
-                        {outcome !== 'NO' || isBinaryMC ? '↑' : '↓'}
+                    <Row className="items-baseline gap-1">
+                      <span className="text-lg font-semibold">
                         {getFormattedMappedValue(
                           contract,
-                          Math.abs(probAfter - probBefore)
+                          probStayedSame ? probBefore : probAfter
                         )}
-                        {floatingEqual(probAfter, maxProb)
-                          ? ' (max)'
-                          : floatingEqual(probAfter, minProb)
-                          ? ' (max)'
-                          : ''}
                       </span>
-                    )}
+                      {!probStayedSame && !isPseudoNumeric && (
+                        <span className={clsx('ml-1', 'text-ink-600')}>
+                          {outcome !== 'NO' || isBinaryMC ? '↑' : '↓'}
+                          {getFormattedMappedValue(
+                            contract,
+                            Math.abs(probAfter - probBefore)
+                          )}
+                          {floatingEqual(probAfter, maxProb)
+                            ? ' (max)'
+                            : floatingEqual(probAfter, minProb)
+                            ? ' (max)'
+                            : ''}
+                        </span>
+                      )}
+                    </Row>
                   </Row>
-                  <Row className="min-w-[128px] items-baseline">
+                  <Row className="min-w-[128px] items-baseline justify-between sm:justify-start">
                     <div className="text-ink-600 mr-2 min-w-[120px] flex-nowrap whitespace-nowrap">
                       {isPseudoNumeric || isStonk ? 'Shares' : <>Max payout</>}
                     </div>
-
-                    <span className="mr-1 whitespace-nowrap text-lg">
-                      {isStonk ? (
-                        getStonkDisplayShares(contract, currentPayout, 2)
-                      ) : isPseudoNumeric ? (
-                        Math.floor(currentPayout)
-                      ) : (
-                        <MoneyDisplay
-                          amount={currentPayout}
-                          isCashContract={isCashContract}
-                        />
-                      )}
-                    </span>
-                    <span className="text-green-500 ">
-                      {isStonk || isPseudoNumeric
-                        ? ''
-                        : ' +' + currentReturnPercent}
-                    </span>
+                    <Row className="items-baseline">
+                      <span className="mr-1 whitespace-nowrap text-lg">
+                        {isStonk ? (
+                          getStonkDisplayShares(contract, currentPayout, 2)
+                        ) : isPseudoNumeric ? (
+                          Math.floor(currentPayout)
+                        ) : (
+                          <MoneyDisplay
+                            amount={currentPayout}
+                            isCashContract={isCashContract}
+                          />
+                        )}
+                      </span>
+                      <span className="text-green-500 ">
+                        {isStonk || isPseudoNumeric
+                          ? ''
+                          : ' +' + currentReturnPercent}
+                      </span>
+                    </Row>
                   </Row>
                 </Col>
               )}

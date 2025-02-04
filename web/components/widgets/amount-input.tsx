@@ -28,6 +28,7 @@ import { Input } from './input'
 import { sliderColors } from './slider'
 import { useCurrentPortfolio } from 'web/hooks/use-portfolio-history'
 import { useIsMobile } from 'web/hooks/use-is-mobile'
+import { buildArray } from 'common/util/array'
 
 export function AmountInput(
   props: {
@@ -97,14 +98,14 @@ export function AmountInput(
     <Col className={clsx('relative', className)}>
       <label className="font-sm md:font-lg relative">
         {label && (
-          <span className="text-ink-400 absolute top-1/2 my-auto ml-2 -translate-y-1/2">
+          <span className="text-ink-400 absolute top-1/2 my-auto -mt-0.5 ml-2 -translate-y-1/2">
             {label}
           </span>
         )}
         <Row>
           <Input
             {...rest}
-            className={clsx(label && 'pl-9', ' !text-lg', inputClassName)}
+            className={clsx(label && 'pl-9', 'text-lg', inputClassName)}
             style={inputStyle}
             ref={inputRef}
             type={allowFloat ? 'number' : 'text'}
@@ -255,15 +256,20 @@ export function BuyAmountInput(props: {
       ? [500, 1000, 5000]
       : quickButtonValues ??
         (isAdvancedTrader ? advancedIncrementValues : defaultIncrementValues)
-  const decrementValues = incrementValues.slice(0, 2).map((v) => -v)
   const isMobile = useIsMobile()
-  const values = !isMobile
-    ? [...decrementValues, ...incrementValues]
-    : incrementValues
-
+  const decrementValues = incrementValues
+    .slice(0, isMobile ? 1 : 2)
+    .map((v) => -v)
+  const values = buildArray(
+    ...decrementValues,
+    incrementValues[0],
+    incrementValues[1]
+  )
+  const incrementButtonsClassName =
+    'hover:bg-ink-200 bg-canvas-100 rounded-md px-2 sm:px-3 py-1.5 text-sm'
   return (
     <>
-      <Col className={clsx('w-full max-w-[350px]', parentClassName)}>
+      <Col className={clsx('relative w-full max-w-[350px]', parentClassName)}>
         <AmountInput
           className={className}
           inputClassName={clsx('w-full !text-xl h-[60px]', inputClassName)}
@@ -282,10 +288,24 @@ export function BuyAmountInput(props: {
           allowFloat={token === 'CASH'}
           disabled={disabled}
           inputRef={inputRef}
-          disableClearButton={!isAdvancedTrader}
+          disableClearButton={!disableQuickButtons}
         />
+        {!disableQuickButtons && (
+          <Row className="absolute right-2 top-3.5 gap-1.5 sm:gap-2">
+            {values.map((v) => (
+              <button
+                className={incrementButtonsClassName}
+                key={v}
+                onClick={() => incrementBy(v)}
+              >
+                {v > 0 ? `+${v}` : v}
+              </button>
+            ))}
+          </Row>
+        )}
         {showSlider && (
           <BetSlider
+            className="mt-2"
             amount={amount}
             onAmountChange={onChange}
             binaryOutcome={binaryOutcome}
