@@ -602,15 +602,14 @@ export const BuyPanelBody = (props: {
 
         {betType === 'Market' ? (
           <>
-            <Row className={clsx('text-ink-700 mb-2 items-center space-x-3')}>
+            <Row className={clsx('text-ink-600 mb-2 items-center space-x-3')}>
               {capitalize(TRADE_TERM)} amount
             </Row>
 
             <Row
               className={clsx(
-                'flex-wrap gap-x-8 gap-y-4',
-                isAdvancedTrader ? 'items-center' : 'items-end',
-                isAdvancedTrader ? 'mb-5' : 'mb-3'
+                'mb-2 flex-wrap gap-x-8 gap-y-4',
+                isAdvancedTrader ? 'items-center' : 'items-end'
               )}
             >
               <BuyAmountInput
@@ -629,9 +628,9 @@ export const BuyPanelBody = (props: {
               />
 
               {isAdvancedTrader && (
-                <Col className="gap-3">
+                <Col className="gap-1">
                   <Row className=" items-baseline">
-                    <span className="text-ink-700 mr-2 min-w-[120px] whitespace-nowrap">
+                    <span className="text-ink-600 mr-2 min-w-[120px] whitespace-nowrap">
                       {isPseudoNumeric
                         ? 'Estimated value'
                         : isStonk
@@ -645,7 +644,7 @@ export const BuyPanelBody = (props: {
                       )}
                     </span>
                     {!probStayedSame && !isPseudoNumeric && (
-                      <span className={clsx('ml-1', 'text-ink-700')}>
+                      <span className={clsx('ml-1', 'text-ink-600')}>
                         {outcome !== 'NO' || isBinaryMC ? '↑' : '↓'}
                         {getFormattedMappedValue(
                           contract,
@@ -660,7 +659,7 @@ export const BuyPanelBody = (props: {
                     )}
                   </Row>
                   <Row className="min-w-[128px] items-baseline">
-                    <div className="text-ink-700 mr-2 min-w-[120px] flex-nowrap whitespace-nowrap">
+                    <div className="text-ink-600 mr-2 min-w-[120px] flex-nowrap whitespace-nowrap">
                       {isPseudoNumeric || isStonk ? 'Shares' : <>Max payout</>}
                     </div>
 
@@ -798,14 +797,14 @@ export const BuyPanelBody = (props: {
             <Row className={''}>
               <span
                 className={clsx(
-                  'text-ink-700 mr-1 whitespace-nowrap ',
+                  'text-ink-600 mr-1 whitespace-nowrap ',
                   isAdvancedTrader ? '' : 'min-w-[110px]'
                 )}
               >
                 Your {isCashContract ? SWEEPIES_NAME : 'mana'}
                 {' balance'}
               </span>
-              <span className="text-ink-700 font-semibold">
+              <span className="text-ink-600 font-semibold">
                 <MoneyDisplay
                   amount={balance}
                   isCashContract={isCashContract}
@@ -818,7 +817,7 @@ export const BuyPanelBody = (props: {
         {!isAdvancedTrader && (
           <Col>
             <Row className="">
-              <span className="text-ink-700 mr-1 min-w-[110px] whitespace-nowrap text-sm">
+              <span className="text-ink-600 mr-1 min-w-[110px] whitespace-nowrap text-sm">
                 {isPseudoNumeric
                   ? 'Estimated value'
                   : isStonk
@@ -826,14 +825,14 @@ export const BuyPanelBody = (props: {
                   : 'New probability'}
               </span>
 
-              <span className="text-ink-700 text-sm font-semibold">
+              <span className="text-ink-600 text-sm font-semibold">
                 {getFormattedMappedValue(
                   contract,
                   probStayedSame ? probBefore : probAfter
                 )}
               </span>
               {!probStayedSame && !isPseudoNumeric && (
-                <span className={clsx('ml-2 text-sm', 'text-ink-700')}>
+                <span className={clsx('ml-2 text-sm', 'text-ink-600')}>
                   {outcome !== 'NO' || isBinaryMC ? '↑' : '↓'}
                   {getFormattedMappedValue(
                     contract,
@@ -894,7 +893,7 @@ export const BuyPanelBody = (props: {
         {user && (
           <div className="absolute bottom-2 right-0">
             <button
-              className="text-ink-700 mr-2 flex items-center text-sm hover:underline"
+              className="text-ink-600 mr-2 flex items-center text-sm hover:underline"
               onClick={() => {
                 if (!isAdvancedTrader) {
                   setBetType('Market')
@@ -941,7 +940,7 @@ export const QuickBetAmountsRow = (props: {
   const QUICK_BET_AMOUNTS = [10, 25, 100]
   return (
     <Row className={clsx('mb-2 items-center space-x-3', className)}>
-      <div className="text-ink-700">Amount</div>
+      <div className="text-ink-600">Amount</div>
       <ChoicesToggleGroup
         currentChoice={
           QUICK_BET_AMOUNTS.includes(betAmount ?? 0) ? betAmount : undefined

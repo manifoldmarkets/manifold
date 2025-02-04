@@ -35,12 +35,21 @@ import { TRADE_TERM } from 'common/envs/constants'
 import { LocationMonitor } from '../gidx/location-monitor'
 import { VerifyButton } from '../sweeps/sweep-verify-section'
 import { sliderColors } from '../widgets/slider'
-import { ChoicesToggleGroup } from '../widgets/choices-toggle-group'
 import { ProbabilitySlider } from '../widgets/probability-input'
 import { usePersistentLocalState } from 'web/hooks/use-persistent-local-state'
 import { APIParams } from 'common/api/schema'
-import { RelativeTimestamp } from '../relative-timestamp'
 import { getLimitBetReturns, MultiBetProps } from 'client-common/lib/bet'
+import DropdownMenu from '../widgets/dropdown-menu'
+import { SelectorIcon } from '@heroicons/react/solid'
+
+const expirationOptions = [
+  { label: 'Never expires', value: 0 },
+  { label: 'Expires in 1 hour', value: HOUR_MS },
+  { label: 'Expires in 1 day', value: DAY_MS },
+  { label: 'Expires in 1 week', value: WEEK_MS },
+  { label: 'Expires in 1 month', value: MONTH_MS },
+  { label: 'Custom time...', value: -1 },
+]
 
 export default function LimitOrderPanel(props: {
   contract:
@@ -118,16 +127,6 @@ export default function LimitOrderPanel(props: {
   )
   const [expirationHoursMinutes, setExpirationHoursMinutes] =
     usePersistentLocalState<string>(initTime, 'limit-order-expiration-time')
-
-  const expirationChoices: { [key: string]: number } = {
-    '0s': 1,
-    '1s': 1000,
-    '1h': HOUR_MS,
-    '1d': DAY_MS,
-    '1w': WEEK_MS,
-    '1m': MONTH_MS,
-    '+': -1,
-  }
 
   // add to local storage
   const [selectedExpiration, setSelectedExpiration] =
@@ -284,40 +283,50 @@ export default function LimitOrderPanel(props: {
   // const totalFees = getFeeTotal(fees)
   const hideYesNo = isBinaryMC || !!pseudonym
 
+  const expirationItems = expirationOptions.map((option) => ({
+    name: option.label,
+    onClick: () => setSelectedExpiration(option.value),
+  }))
+
   return (
     <>
-      <Row className={'text-ink-700 items-center space-x-3'}>
-        {capitalize(TRADE_TERM)} amount
-      </Row>
-      <BuyAmountInput
-        parentClassName="mt-2 max-w-full"
-        amount={betAmount}
-        onChange={onBetChange}
-        error={error}
-        setError={setError}
-        disabled={isSubmitting}
-        showSlider
-        token={isCashContract ? 'CASH' : 'M$'}
-        sliderColor={pseudonymColor}
-        disregardUserBalance={shouldPromptVerification}
-      />
-      <Col className="relative my-6 w-full gap-2">
-        <span className="text-ink-700">
-          {isPseudoNumeric ? 'Value' : `Probability:`}
-          <span className="text-ink-700 font-semibold"> {limitProbInt}%</span>
-        </span>
-        <Row className="gap-2">
-          {[-5, -1, 1, 5].map((increment) => (
-            <Button
-              key={increment}
-              color="gray-white"
-              onClick={() => setLimitProbInt((limitProbInt ?? 0) + increment)}
-              className="bg-canvas-0 h-7 w-24"
-            >
-              {increment > 0 ? `+${increment}` : increment}
-            </Button>
-          ))}
+      <Col className="mt-6 gap-1">
+        <Row className={'text-ink-600 items-center space-x-3'}>
+          {capitalize(TRADE_TERM)} amount
         </Row>
+        <BuyAmountInput
+          parentClassName="max-w-full"
+          amount={betAmount}
+          onChange={onBetChange}
+          error={error}
+          setError={setError}
+          disabled={isSubmitting}
+          showSlider
+          token={isCashContract ? 'CASH' : 'M$'}
+          sliderColor={pseudonymColor}
+          disregardUserBalance={shouldPromptVerification}
+        />
+      </Col>
+      <Col className="relative mt-6 w-full gap-1">
+        <div className="text-ink-600">
+          {isPseudoNumeric ? 'Value' : `Probability (%)`}
+        </div>
+        <Input
+          type="number"
+          min={0}
+          max={100}
+          step={1}
+          className="h-[60px] w-full !text-xl"
+          value={limitProbInt ?? ''}
+          onChange={(e) => {
+            const val =
+              e.target.value === '' ? undefined : Number(e.target.value)
+            if (val === undefined || (val >= 0 && val <= 100)) {
+              setLimitProbInt(val)
+            }
+          }}
+        />
+
         <ProbabilitySlider
           prob={limitProbInt}
           onProbChange={setLimitProbInt}
@@ -326,36 +335,27 @@ export default function LimitOrderPanel(props: {
           outcome={isBinaryMC ? 'YES' : outcome}
         />
       </Col>
-      <Col className="my-3 gap-2">
-        <span className="text-ink-700">
-          Expires:
-          {selectedExpiration === 0 ? (
-            ' never'
-          ) : selectedExpiration === 1 ? (
-            ' now'
-          ) : selectedExpiration === 1000 ? (
-            ' in a second'
-          ) : expiresAt ? (
-            <RelativeTimestamp className="text-ink-700" time={expiresAt} />
-          ) : (
-            <RelativeTimestamp
-              className="text-ink-700"
-              time={Date.now() + selectedExpiration}
-            />
-          )}
-        </span>
-        <Row className="-ml-2 items-baseline justify-between gap-2 sm:justify-start sm:gap-4">
-          <ChoicesToggleGroup
-            color="light"
-            onSameChoiceClick={() => setSelectedExpiration(0)}
-            choicesMap={expirationChoices}
-            currentChoice={selectedExpiration}
-            setChoice={(choice) => setSelectedExpiration(choice as number)}
-          />
-        </Row>
+
+      <Col className="mt-6 gap-2">
+        <DropdownMenu
+          buttonContent={
+            <Row className="items-center gap-1">
+              <span>
+                {expirationOptions.find(
+                  (opt) => opt.value === selectedExpiration
+                )?.label ?? 'Select expiration'}
+              </span>
+              <SelectorIcon className="text-ink-400 h-4 w-4" />
+            </Row>
+          }
+          items={expirationItems}
+          buttonClass="text-ink-600 hover:text-ink-900 p-0 bg-transparent"
+          menuWidth="w-48"
+        />
+
         {addCustomExpiration && (
           <Col className="gap-2">
-            <Row className="mt-4 gap-2">
+            <Row className="gap-2">
               <Input
                 type={'date'}
                 className="dark:date-range-input-white"
@@ -381,77 +381,14 @@ export default function LimitOrderPanel(props: {
                 step={60}
               />
             </Row>
-            <Row className="gap-2">
-              <Button
-                color={'indigo-outline'}
-                size={'sm'}
-                onClick={() => {
-                  const num =
-                    dayjs(
-                      `${expirationDate}T${expirationHoursMinutes}`
-                    ).valueOf() + MINUTE_MS
-                  const addTime = dayjs(num).format('HH:mm')
-                  setExpirationHoursMinutes(addTime)
-                }}
-              >
-                + 1m
-              </Button>{' '}
-              <Button
-                color={'indigo-outline'}
-                size={'sm'}
-                onClick={() => {
-                  const num =
-                    dayjs(
-                      `${expirationDate}T${expirationHoursMinutes}`
-                    ).valueOf() + HOUR_MS
-                  const addTime = dayjs(num).format('HH:mm')
-                  setExpirationHoursMinutes(addTime)
-                }}
-              >
-                + 1h
-              </Button>
-              <Button
-                color={'indigo-outline'}
-                size={'sm'}
-                onClick={() => {
-                  const num = dayjs(expirationDate).valueOf() + DAY_MS
-                  const addDay = dayjs(num).format('YYYY-MM-DD')
-                  setExpirationDate(addDay)
-                }}
-              >
-                + 1d
-              </Button>
-              <Button
-                color={'indigo-outline'}
-                size={'sm'}
-                onClick={() => {
-                  const num = dayjs(expirationDate).valueOf() + WEEK_MS
-                  const addDay = dayjs(num).format('YYYY-MM-DD')
-                  setExpirationDate(addDay)
-                }}
-              >
-                + 1w
-              </Button>
-              <Button
-                color={'indigo-outline'}
-                size={'sm'}
-                onClick={() => {
-                  const num = dayjs(expirationDate).valueOf() + MONTH_MS
-                  const addDay = dayjs(num).format('YYYY-MM-DD')
-                  setExpirationDate(addDay)
-                }}
-              >
-                + 1m
-              </Button>
-            </Row>
           </Col>
         )}
       </Col>
 
-      <Col className="mt-2 w-full gap-3">
+      <Col className="mt-2 w-full gap-2">
         {outcome && hasLimitBet && filledAmount > 0 && (
-          <Row className="items-center justify-between gap-2 text-sm">
-            <div className="text-ink-500 whitespace-nowrap">
+          <Row className="items-center justify-between gap-2 ">
+            <div className="text-ink-600 whitespace-nowrap">
               {isPseudoNumeric ? (
                 <PseudoNumericOutcomeLabel outcome={outcome} />
               ) : (
@@ -459,7 +396,7 @@ export default function LimitOrderPanel(props: {
               )}{' '}
               {hideYesNo ? 'Filled' : 'filled'} now
             </div>
-            <div className="mr-2 whitespace-nowrap">
+            <div className="whitespace-nowrap">
               <MoneyDisplay
                 amount={filledAmount}
                 isCashContract={isCashContract}
@@ -474,8 +411,8 @@ export default function LimitOrderPanel(props: {
         )}
 
         {outcome && hasLimitBet && (
-          <Row className="items-center justify-between gap-2 text-sm">
-            <Row className="text-ink-500 flex-nowrap items-center gap-2 whitespace-nowrap">
+          <Row className="mb-2 items-center justify-between gap-2">
+            <Row className="text-ink-600 flex-nowrap items-center gap-2 whitespace-nowrap">
               <div>
                 {isPseudoNumeric ? (
                   'Shares'
