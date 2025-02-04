@@ -129,16 +129,6 @@ export default function LimitOrderPanel(props: {
   const [expirationHoursMinutes, setExpirationHoursMinutes] =
     usePersistentLocalState<string>(initTime, 'limit-order-expiration-time')
 
-  const expirationChoices: { [key: string]: number } = {
-    '0s': 1,
-    '1s': 1000,
-    '1h': HOUR_MS,
-    '1d': DAY_MS,
-    '1w': WEEK_MS,
-    '1m': MONTH_MS,
-    '+': -1,
-  }
-
   // add to local storage
   const [selectedExpiration, setSelectedExpiration] =
     usePersistentLocalState<number>(0, 'limit-order-expiration')
