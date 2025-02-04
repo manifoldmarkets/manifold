@@ -619,7 +619,7 @@ export const BuyPanelBody = (props: {
                 setError={setError}
                 disabled={isSubmitting}
                 inputRef={inputRef}
-                showSlider={isAdvancedTrader}
+                showSlider={true}
                 marketTier={marketTier}
                 token={isCashContract ? 'CASH' : 'M$'}
                 sliderColor={pseudonymColor}
@@ -759,14 +759,14 @@ export const BuyPanelBody = (props: {
                         </span>
                       ) : (
                         <span>
-                          {capitalize(TRADE_TERM)}{' '}
+                          Buy{' '}
                           {binaryMCOutcomeLabel ??
                             formatOutcomeLabel(
                               contract,
                               outcome,
                               pseudonymName
                             )}{' '}
-                          to win up to{' '}
+                          to win{' '}
                           <MoneyDisplay
                             amount={currentPayout}
                             isCashContract={isCashContract}

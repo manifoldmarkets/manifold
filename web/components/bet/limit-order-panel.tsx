@@ -538,15 +538,12 @@ export default function LimitOrderPanel(props: {
                       'Enter an amount'
                     ) : (
                       <span>
-                        Place{' '}
+                        Buy{' '}
                         <MoneyDisplay
                           amount={betAmount}
                           isCashContract={isCashContract}
                         />{' '}
-                        {!binaryMCOutcome && !pseudonymName
-                          ? `${outcome.toLowerCase()} `
-                          : ''}
-                        order at{' '}
+                        {!binaryMCOutcome && !pseudonymName ? outcome : ''} at{' '}
                         {formatPercent(
                           binaryMCOutcome || pseudonymName
                             ? preLimitProb ?? 0
