@@ -290,12 +290,12 @@ export default function LimitOrderPanel(props: {
 
   return (
     <>
-      <Col className="mt-6 gap-1">
+      <Col className=" gap-1">
         <Row className={'text-ink-600 items-center space-x-3'}>
           {capitalize(TRADE_TERM)} amount
         </Row>
         <BuyAmountInput
-          parentClassName="max-w-full"
+          parentClassName="max-w-full mt-1"
           amount={betAmount}
           onChange={onBetChange}
           error={error}
