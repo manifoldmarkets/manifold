@@ -589,10 +589,10 @@ export const BuyPanelBody = (props: {
         )}
         {betType === 'Market' ? (
           <>
-            <Row className={clsx('text-ink-600 mb-2 items-center justify-between')}>
-              <div className="space-x-3">
-                {capitalize(TRADE_TERM)} amount
-              </div>
+            <Row
+              className={clsx('text-ink-600 mb-2 items-center justify-between')}
+            >
+              <div className="space-x-3">{capitalize(TRADE_TERM)} amount</div>
               {!isAdvancedTrader && onClose && (
                 <Button
                   color="gray-white"
