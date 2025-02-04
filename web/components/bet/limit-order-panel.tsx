@@ -330,7 +330,7 @@ export default function LimitOrderPanel(props: {
             />
             <Row className="absolute right-2 top-3.5 gap-1.5 sm:gap-2">
               <button
-                className="hover:bg-ink-200 bg-canvas-100 rounded-md px-2 sm:px-3 py-1.5 text-sm"
+                className="hover:bg-ink-200 bg-canvas-100 rounded-md px-2 py-1.5 text-sm sm:px-3"
                 onClick={() => {
                   if (limitProbInt !== undefined) {
                     setLimitProbInt(limitProbInt - 5)
@@ -340,7 +340,7 @@ export default function LimitOrderPanel(props: {
                 -5
               </button>
               <button
-                className="hover:bg-ink-200 bg-canvas-100 rounded-md px-2 sm:px-3 py-1.5 text-sm"
+                className="hover:bg-ink-200 bg-canvas-100 rounded-md px-2 py-1.5 text-sm sm:px-3"
                 onClick={() => {
                   if (limitProbInt !== undefined) {
                     setLimitProbInt(limitProbInt - 1)
@@ -350,7 +350,7 @@ export default function LimitOrderPanel(props: {
                 -1
               </button>
               <button
-                className="hover:bg-ink-200 bg-canvas-100 rounded-md px-2 sm:px-3 py-1.5 text-sm"
+                className="hover:bg-ink-200 bg-canvas-100 rounded-md px-2 py-1.5 text-sm sm:px-3"
                 onClick={() => {
                   if (limitProbInt !== undefined) {
                     setLimitProbInt(limitProbInt + 1)
@@ -360,7 +360,7 @@ export default function LimitOrderPanel(props: {
                 +1
               </button>
               <button
-                className="hover:bg-ink-200 bg-canvas-100 rounded-md px-2 sm:px-3 py-1.5 text-sm"
+                className="hover:bg-ink-200 bg-canvas-100 rounded-md px-2 py-1.5 text-sm sm:px-3"
                 onClick={() => {
                   if (limitProbInt !== undefined) {
                     setLimitProbInt(limitProbInt + 5)
