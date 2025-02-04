@@ -21,7 +21,6 @@ import { useIosPurchases } from 'web/hooks/use-ios-purchases'
 import { useNativeInfo } from './native-message-provider'
 import { TokenNumber } from './widgets/token-number'
 import { FundsSelector } from 'web/components/gidx/funds-selector'
-import { getVerificationStatus } from 'common/gidx/user'
 import { firebaseLogin, User } from 'web/lib/firebase/users'
 import { checkoutURL } from 'web/lib/service/stripe'
 
@@ -91,15 +90,10 @@ export function BuyManaTab(props: { onClose: () => void }) {
       <FundsSelector
         onSelectPriceInDollars={(dollarAmount) => {
           if (!user || !privateUser) return firebaseLogin()
-          const { status, message } = getVerificationStatus(user, privateUser)
-          if (status !== 'error') {
-            if (isIOS) {
-              initiatePurchaseInDollars(dollarAmount)
-            } else {
-              router.push(`/checkout?dollarAmount=${dollarAmount}`)
-            }
+          if (isIOS) {
+            initiatePurchaseInDollars(dollarAmount)
           } else {
-            setError(message)
+            router.push(`/checkout?dollarAmount=${dollarAmount}`)
           }
           setLoadingPrice(dollarAmount)
         }}

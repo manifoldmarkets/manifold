@@ -131,9 +131,9 @@ export const TOPICS_TO_SUBTOPICS: { [key: string]: TopicInfo[] } = {
       groupIds: ['uJSql24HUqpEpVU0FrjI'],
     },
   ],
-  '💵 Econ & Finance': [
+  '💵 Business': [
     {
-      name: '💵 Econ',
+      name: '📊 Econ & Finance',
       groupIds: [
         'CgB83AAMkkOHSrTnzani', // Finance
         'p88Ycq6yFd5ECKqq9PFO', // Economics

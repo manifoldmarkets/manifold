@@ -81,11 +81,13 @@ const PaymentAmounts = [
     mana: 1_000,
     priceInDollars: 15,
     bonusInDollars: 10,
+    ignoreIfNewUser: true,
   },
   {
     mana: 2_500,
     priceInDollars: 30,
     bonusInDollars: 25,
+    ignoreIfNewUser: true,
   },
   {
     mana: 5_000,

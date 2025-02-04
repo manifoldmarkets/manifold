@@ -17,6 +17,6 @@
       "common/*": ["../common/src/*", "../common/lib/*"]
     }
   },
-  "include": ["src/**/*.ts", "../web/hooks/use-user.ts"],
+  "include": ["src/**/*.ts"],
   "references": [{ "path": "../common" }]
 }

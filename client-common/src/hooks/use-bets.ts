@@ -6,7 +6,6 @@ import { Dispatch, SetStateAction, useEffect } from 'react'
 import { useApiSubscription } from './use-api-subscription'
 import { useEffectCheckEquality } from './use-effect-check-equality'
 import { usePersistentInMemoryState } from './use-persistent-in-memory-state'
-import { usePollUserBalances } from './use-poll-user-balances'
 
 export function useBetsOnce(
   api: (params: APIParams<'bets'>) => Promise<APIResponse<'bets'>>,
