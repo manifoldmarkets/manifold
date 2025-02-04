@@ -1,6 +1,6 @@
 import { Json } from 'common/supabase/schema'
-import { db } from 'common/src/supabase/db'
 import { Row, run, tsToMillis } from 'common/supabase/utils'
+import { db } from './db'
 
 export const getUserRating = async (userId: string) => {
   const { data } = await db.rpc('get_rating', { user_id: userId }).single()

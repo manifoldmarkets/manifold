@@ -1,4 +1,4 @@
-import { db } from 'common/src/supabase/db'
+import { db } from './db'
 import { convertLiquidity } from 'common/supabase/liquidity'
 import { sortBy } from 'lodash'
 

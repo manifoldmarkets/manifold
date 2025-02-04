@@ -1,5 +1,5 @@
 import { run } from 'common/supabase/utils'
-import { db } from 'common/src/supabase/db'
+import { db } from './db'
 import { User } from 'common/user'
 
 export async function getUserVote(

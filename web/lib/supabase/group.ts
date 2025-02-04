@@ -1,8 +1,8 @@
+import { GroupRole } from 'common/group'
+import { convertGroup } from 'common/supabase/groups'
 import { run } from 'common/supabase/utils'
 import { User } from '../firebase/users'
-import { db } from 'common/src/supabase/db'
-import { convertGroup } from 'common/supabase/groups'
-import { GroupRole } from 'common/group'
+import { db } from './db'
 
 export const MEMBER_LOAD_NUM = 50
 

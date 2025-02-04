@@ -1,11 +1,11 @@
-import { api } from 'web/lib/api/api'
 import { DashboardLinkItem, DashboardQuestionItem } from 'common/dashboard'
 import { fetchLinkPreviews } from 'common/link-preview'
+import { getContracts } from 'common/supabase/contracts'
 import { removeUndefinedProps } from 'common/util/object'
 import { capitalize, omit } from 'lodash'
 import { DashboardEndpoints } from 'web/components/dashboard/dashboard-page'
-import { getContracts } from 'common/supabase/contracts'
-import { db } from 'common/src/supabase/db'
+import { api } from 'web/lib/api/api'
+import { db } from 'web/lib/supabase/db'
 
 export const getDashboardProps = async (
   slug: string,

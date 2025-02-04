@@ -1,7 +1,7 @@
-import { createClient } from 'common/supabase/utils'
 import { ENV } from 'common/envs/constants'
 import { getSecrets, getServiceAccountCredentials } from 'common/secrets'
-import { getSupabaseInstanceId } from 'common/src/supabase/db'
+import { createClient } from 'common/supabase/utils'
+import { getSupabaseInstanceId } from './db'
 
 // the vercel names for these secrets
 let key =

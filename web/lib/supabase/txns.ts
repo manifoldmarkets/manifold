@@ -1,9 +1,9 @@
-import { uniq } from 'lodash'
-import { db } from 'common/src/supabase/db'
 import { filterDefined } from 'common/util/array'
-import { getDisplayUsers } from './users'
-import { api } from '../api/api'
 import { removeUndefinedProps } from 'common/util/object'
+import { uniq } from 'lodash'
+import { api } from '../api/api'
+import { db } from './db'
+import { getDisplayUsers } from './users'
 
 export async function getDonationsByCharity() {
   const { data } = await db.rpc('get_donations_by_charity')
