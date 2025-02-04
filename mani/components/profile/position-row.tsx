@@ -1,22 +1,28 @@
 import { Answer } from 'common/answer'
 import { Contract } from 'common/contract'
 import { ContractMetric } from 'common/contract-metric'
-import { Col } from 'components/layout/col'
+import { PositionModal } from 'components/bet/position-modal'
 import { Row } from 'components/layout/row'
 import { ThemedText } from 'components/themed-text'
 import { TokenNumber } from 'components/token/token-number'
 import { useColor } from 'hooks/use-color'
+import { useState } from 'react'
+import { TouchableOpacity } from 'react-native'
+import { getPayoutInfo } from 'common/payouts'
 
 export function PositionRow({
   contract,
   metric,
   answer,
+  showQuestion,
 }: {
   contract: Contract
   metric: ContractMetric
   answer?: Answer
+  showQuestion?: boolean
 }) {
   const { hasYesShares } = metric
+  const [open, setOpen] = useState(false)
   const totalSpent = hasYesShares
     ? metric.totalSpent?.YES ?? 0
     : metric.totalSpent?.NO ?? 0
@@ -26,17 +32,26 @@ export function PositionRow({
     : metric.totalShares?.NO ?? 0
 
   const color = useColor()
+
+  const { payoutWord } = getPayoutInfo(contract, metric, answer)
+
   return (
-    <Col
+    <TouchableOpacity
+      onPress={() => setOpen(true)}
       style={{
         gap: 12,
         paddingVertical: 16,
         borderBottomWidth: 1,
         borderBottomColor: color.border,
+        flexDirection: 'column',
       }}
     >
-      <ThemedText size="md">{contract.question}</ThemedText>
-      {answer && <ThemedText size="md">{answer.text}</ThemedText>}
+      {showQuestion && <ThemedText size="md">{contract.question}</ThemedText>}
+      {answer && (
+        <ThemedText size="md" color={color.textTertiary}>
+          {answer.text}
+        </ThemedText>
+      )}
       <Row style={{ justifyContent: 'space-between', width: '100%' }}>
         <Row>
           <TokenNumber amount={totalSpent} size="md" />
@@ -55,10 +70,17 @@ export function PositionRow({
           <TokenNumber amount={totalShares} size="md" />
           <ThemedText size="md" color={color.textTertiary}>
             {' '}
-            payout
+            {payoutWord}
           </ThemedText>
         </Row>
       </Row>
-    </Col>
+      <PositionModal
+        contract={contract}
+        metric={metric}
+        answerId={answer?.id}
+        open={open}
+        setOpen={setOpen}
+      />
+    </TouchableOpacity>
   )
 }

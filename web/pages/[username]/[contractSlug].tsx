@@ -1,9 +1,11 @@
+import { useBetsOnce, useUnfilledBets } from 'client-common/hooks/use-bets'
 import { Bet, LimitBet } from 'common/bet'
 import {
   Contract,
   ContractParams,
   MaybeAuthedContractParams,
 } from 'common/contract'
+import { ContractMetric } from 'common/contract-metric'
 import { getContractParams } from 'common/contract-params'
 import { base64toPoints } from 'common/edge/og'
 import { CASH_SUFFIX } from 'common/envs/constants'
@@ -12,22 +14,19 @@ import { removeUndefinedProps } from 'common/util/object'
 import { pick, sortBy, uniqBy } from 'lodash'
 import { ContractBetsTable } from 'web/components/bet/contract-bets-table'
 import { YourOrders } from 'web/components/bet/order-book'
-import { ContractSEO } from 'web/components/contract/contract-seo'
 import { ContractPageContent } from 'web/components/contract/contract-page'
+import { ContractSEO } from 'web/components/contract/contract-seo'
 import { Col } from 'web/components/layout/col'
 import { Page } from 'web/components/layout/page'
+import { useSweepstakes } from 'web/components/sweepstakes-provider'
 import { Title } from 'web/components/widgets/title'
-import { useBetsOnce } from 'web/hooks/use-bets'
 import { useIsIframe } from 'web/hooks/use-is-iframe'
+import { useIsPageVisible } from 'web/hooks/use-page-visible'
 import { useUser } from 'web/hooks/use-user'
+import { api } from 'web/lib/api/api'
 import { initSupabaseAdmin } from 'web/lib/supabase/admin-db'
 import Custom404 from '../404'
 import ContractEmbedPage from '../embed/[username]/[contractSlug]'
-import { useSweepstakes } from 'web/components/sweepstakes-provider'
-import { ContractMetric } from 'common/contract-metric'
-import { useUnfilledBets } from 'client-common/hooks/use-bets'
-import { api } from 'web/lib/api/api'
-import { useIsPageVisible } from 'web/hooks/use-page-visible'
 
 export async function getStaticProps(ctx: {
   params: { username: string; contractSlug: string }
@@ -156,7 +155,7 @@ export function YourTrades(props: {
   const { contract, contractMetric, yourNewBets } = props
   const user = useUser()
 
-  const staticBets = useBetsOnce({
+  const staticBets = useBetsOnce((params) => api('bets', params), {
     contractId: contract.id,
     userId: !user ? 'loading' : user.id,
     order: 'asc',

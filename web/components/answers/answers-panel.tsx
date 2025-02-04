@@ -79,6 +79,7 @@ import { useSavedContractMetrics } from 'web/hooks/use-saved-contract-metrics'
 import { floatingEqual } from 'common/util/math'
 import { getSortedAnswers } from '../contract/contract-overview'
 import { useUnfilledBets } from 'client-common/hooks/use-bets'
+
 export const SHOW_LIMIT_ORDER_CHARTS_KEY = 'SHOW_LIMIT_ORDER_CHARTS_KEY'
 export const MAX_DEFAULT_ANSWERS = 20
 const MAX_DEFAULT_GRAPHED_ANSWERS = 6

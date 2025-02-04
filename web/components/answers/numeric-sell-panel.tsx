@@ -31,7 +31,7 @@ import { SizedContainer } from 'web/components/sized-container'
 import { RangeSlider } from 'web/components/widgets/slider'
 import { api } from 'web/lib/api/api'
 import { MoneyDisplay } from '../bet/money-display'
-import { useUserContractBets } from 'web/hooks/use-user-bets'
+import { useUserContractBets } from 'client-common/hooks/use-user-bets'
 import { useAllSavedContractMetrics } from 'web/hooks/use-saved-contract-metrics'
 import { ContractMetric } from 'common/contract-metric'
 import { useUnfilledBetsAndBalanceByUserId } from 'client-common/hooks/use-bets'
@@ -351,7 +351,12 @@ export const MultiNumericSellPanel = (props: {
   const contractMetrics = useAllSavedContractMetrics(contract)?.filter(
     (m) => m.answerId != null
   )
-  const userBets = useUserContractBets(userId, contract.id)
+  const userBets = useUserContractBets(
+    userId,
+    contract.id,
+    (params) => api('bets', params),
+    useIsPageVisible
+  )
 
   const [showSellPanel, setShowSellPanel] = useState(false)
   const totalShares = sumBy(userBets, (bet) => bet.shares)

@@ -38,8 +38,7 @@ export function ParentComment({
       {/* TODO: add reply input to modal */}
       <Modal
         isOpen={isModalOpen}
-        onClose={onCloseModal}
-        mode="back"
+        onBack={onCloseModal}
         title="Replies"
       >
         <Comment comment={parentComment} line={numReplies > 0} />

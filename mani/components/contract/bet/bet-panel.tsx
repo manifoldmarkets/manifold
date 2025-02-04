@@ -1,4 +1,4 @@
-import { isBinaryMulti, MarketContract } from 'common/contract'
+import { Contract, isBinaryMulti, MarketContract } from 'common/contract'
 import { Col } from 'components/layout/col'
 import { ThemedText } from 'components/themed-text'
 import { useColor } from 'hooks/use-color'
@@ -57,6 +57,30 @@ export function BetPanel({
   setOpen: (open: boolean) => void
   outcome: BinaryOutcomes
   multiProps?: MultiBetProps
+}) {
+  // TODO: figure out keyboard clicking behavior
+  return (
+    <Modal isOpen={open} onClose={() => setOpen(false)} showHeader>
+      <BetPanelContent
+        contract={contract}
+        outcome={outcome}
+        multiProps={multiProps}
+        setOpen={setOpen}
+      />
+    </Modal>
+  )
+}
+
+export function BetPanelContent({
+  contract,
+  outcome,
+  multiProps,
+  setOpen,
+}: {
+  contract: Contract
+  outcome: BinaryOutcomes
+  multiProps?: MultiBetProps
+  setOpen: (open: boolean) => void
 }) {
   const color = useColor()
   const [amount, setAmount] = useState(1)
@@ -230,105 +254,99 @@ export function BetPanel({
     }
     setLoading(false)
   }
-
-  // TODO: figure out keyboard clicking behavior
   return (
-    <Modal isOpen={open} onClose={() => setOpen(false)} mode="close" showHeader>
-      <KeyboardAvoidingView
-        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-        keyboardVerticalOffset={Platform.OS === 'ios' ? 108 : 0}
-        style={{
-          flex: 1,
-          justifyContent: 'flex-start',
-          flexDirection: 'column',
-          paddingBottom: 16,
-        }}
-      >
-        <Col style={{ flex: 1, justifyContent: 'space-between' }}>
-          <Col style={{ gap: 4 }}>
-            <ThemedText size="lg" weight="semibold">
-              {contract.question}
-            </ThemedText>
+    <KeyboardAvoidingView
+      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+      keyboardVerticalOffset={Platform.OS === 'ios' ? 108 : 0}
+      style={{
+        flex: 1,
+        justifyContent: 'flex-start',
+        flexDirection: 'column',
+        paddingBottom: 16,
+      }}
+    >
+      <Col style={{ flex: 1, justifyContent: 'space-between' }}>
+        <Col style={{ gap: 4 }}>
+          <ThemedText size="lg" weight="semibold">
+            {contract.question}
+          </ThemedText>
 
-            <ThemedText size="md" color={color.textSecondary}>
-              {!!answer && !isBinaryMC && answer.text}
-            </ThemedText>
-          </Col>
-          <Col style={{ gap: 12 }}>
-            <BetAmountInput amount={amount} setAmount={setAmount} />
-            <Slider
-              style={{ width: '100%', height: 40 }}
-              minimumValue={AMOUNT_STEPS[0]}
-              maximumValue={AMOUNT_STEPS[AMOUNT_STEPS.length - 1]}
-              value={amount}
-              onValueChange={(value) => {
-                const closestStep = AMOUNT_STEPS.reduce((prev, curr) =>
-                  Math.abs(curr - value) < Math.abs(prev - value) ? curr : prev
-                )
-                setAmount(closestStep)
-              }}
-              minimumTrackTintColor={color.primaryButton}
-              maximumTrackTintColor={color.border}
-              thumbTintColor={color.primary}
-            />
-            {error &&
-              (error === NEEDS_TO_REGISTER ? (
-                <Col style={{ gap: 8 }}>
-                  <ThemedText color={color.error}>{error}</ThemedText>
-                  <Button
-                    onPress={() =>
-                      router.push(`/register?slug=${contract.slug}`)
-                    }
-                  >
-                    Register and get {KYC_VERIFICATION_BONUS_CASH}{' '}
-                    {SWEEPIES_NAME} free!
-                  </Button>
-                </Col>
-              ) : (
-                <ThemedText color={color.error}>{error}</ThemedText>
-              ))}
-          </Col>
-          <Col style={{ gap: 8 }}>
-            <Row style={{ justifyContent: 'space-between', width: '100%' }}>
-              <ThemedText color={color.textTertiary} size="lg">
-                Payout if win
-              </ThemedText>
-
-              {/* TODO: get real payout */}
-              <Row style={{ alignItems: 'center', gap: 4 }}>
-                <TokenNumber amount={currentPayout} size="lg" />
-                <NumberText size="lg" color={color.profitText}>
-                  (+{formatPercent(currentPayout / amount)})
-                </NumberText>
-              </Row>
-            </Row>
-            {isBinaryMC ? (
-              <Button
-                size="lg"
-                onPress={onPress}
-                disabled={loading || error !== null}
-                loading={loading}
-              >
-                <ThemedText weight="normal">
-                  Buy{' '}
-                  <ThemedText weight="semibold">
-                    {multiProps?.answerText ?? multiProps?.answerToBuy?.text}
-                  </ThemedText>
-                </ThemedText>
-              </Button>
-            ) : (
-              <YesNoButton
-                disabled={loading || error !== null}
-                loading={loading}
-                variant={outcome === 'YES' ? 'yes' : 'no'}
-                size="lg"
-                title={`Buy ${outcome === 'YES' ? 'Yes' : 'No'}`}
-                onPress={onPress}
-              />
-            )}
-          </Col>
+          <ThemedText size="md" color={color.textSecondary}>
+            {!!answer && !isBinaryMC && answer.text}
+          </ThemedText>
         </Col>
-      </KeyboardAvoidingView>
-    </Modal>
+        <Col style={{ gap: 12 }}>
+          <BetAmountInput amount={amount} setAmount={setAmount} />
+          <Slider
+            style={{ width: '100%', height: 40 }}
+            minimumValue={AMOUNT_STEPS[0]}
+            maximumValue={AMOUNT_STEPS[AMOUNT_STEPS.length - 1]}
+            value={amount}
+            onValueChange={(value) => {
+              const closestStep = AMOUNT_STEPS.reduce((prev, curr) =>
+                Math.abs(curr - value) < Math.abs(prev - value) ? curr : prev
+              )
+              setAmount(closestStep)
+            }}
+            minimumTrackTintColor={color.primaryButton}
+            maximumTrackTintColor={color.border}
+            thumbTintColor={color.primary}
+          />
+          {error &&
+            (error === NEEDS_TO_REGISTER ? (
+              <Col style={{ gap: 8 }}>
+                <ThemedText color={color.error}>{error}</ThemedText>
+                <Button
+                  onPress={() => router.push(`/register?slug=${contract.slug}`)}
+                >
+                  Register and get {KYC_VERIFICATION_BONUS_CASH} {SWEEPIES_NAME}{' '}
+                  free!
+                </Button>
+              </Col>
+            ) : (
+              <ThemedText color={color.error}>{error}</ThemedText>
+            ))}
+        </Col>
+        <Col style={{ gap: 8 }}>
+          <Row style={{ justifyContent: 'space-between', width: '100%' }}>
+            <ThemedText color={color.textTertiary} size="lg">
+              Payout if win
+            </ThemedText>
+
+            {/* TODO: get real payout */}
+            <Row style={{ alignItems: 'center', gap: 4 }}>
+              <TokenNumber amount={currentPayout} size="lg" />
+              <NumberText size="lg" color={color.profitText}>
+                (+{formatPercent(currentPayout / amount)})
+              </NumberText>
+            </Row>
+          </Row>
+          {isBinaryMC ? (
+            <Button
+              size="lg"
+              onPress={onPress}
+              disabled={loading || error !== null}
+              loading={loading}
+            >
+              <ThemedText weight="normal">
+                Buy{' '}
+                <ThemedText weight="semibold">
+                  {multiProps?.answerText ?? multiProps?.answerToBuy?.text}
+                </ThemedText>
+              </ThemedText>
+            </Button>
+          ) : (
+            <YesNoButton
+              disabled={loading || error !== null}
+              loading={loading}
+              variant={outcome === 'YES' ? 'yes' : 'no'}
+              size="lg"
+              title={`Buy ${outcome === 'YES' ? 'Yes' : 'No'}`}
+              onPress={onPress}
+            />
+          )}
+        </Col>
+      </Col>
+    </KeyboardAvoidingView>
   )
 }

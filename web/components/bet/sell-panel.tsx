@@ -2,19 +2,14 @@ import clsx from 'clsx'
 import { Answer } from 'common/answer'
 import { APIError } from 'common/api/utils'
 import { LimitBet } from 'common/bet'
-import { getAnswerProbability, getProbability } from 'common/calculate'
-import {
-  calculateCpmmMultiSumsToOneSale,
-  calculateCpmmSale,
-  getCpmmProbability,
-} from 'common/calculate-cpmm'
+import { getCpmmProbability } from 'common/calculate-cpmm'
 import {
   CPMMContract,
   CPMMMultiContract,
   CPMMNumericContract,
 } from 'common/contract'
 import { TRADE_TERM } from 'common/envs/constants'
-import { Fees, getFeeTotal, noFees } from 'common/fees'
+import { Fees, getFeeTotal } from 'common/fees'
 import { getFormattedMappedValue, getMappedValue } from 'common/pseudo-numeric'
 import { getSharesFromStonkShares, getStonkDisplayShares } from 'common/stonk'
 import { User } from 'common/user'
@@ -24,7 +19,6 @@ import {
   formatShares,
   formatWithToken,
 } from 'common/util/format'
-import { addObjects } from 'common/util/object'
 import { useState, useRef } from 'react'
 import toast from 'react-hot-toast'
 import { api } from 'web/lib/api/api'
@@ -39,6 +33,7 @@ import { ContractMetric } from 'common/contract-metric'
 import { uniq } from 'lodash'
 import { useUnfilledBetsAndBalanceByUserId } from 'client-common/hooks/use-bets'
 import { useIsPageVisible } from 'web/hooks/use-page-visible'
+import { getSaleResult, getSaleResultMultiSumsToOne } from 'common/sell-bet'
 
 export function SellPanel(props: {
   contract: CPMMContract | CPMMMultiContract | CPMMNumericContract
@@ -371,107 +366,6 @@ export function SellPanel(props: {
       {wasSubmitted && <div className="mt-4">Sell submitted!</div>}
     </>
   )
-}
-
-const getSaleResult = (
-  contract: CPMMContract | CPMMMultiContract | CPMMNumericContract,
-  shares: number,
-  outcome: 'YES' | 'NO',
-  unfilledBets: LimitBet[],
-  balanceByUserId: { [userId: string]: number },
-  answer?: Answer
-) => {
-  if (contract.mechanism === 'cpmm-multi-1' && !answer)
-    throw new Error('getSaleResult: answer must be defined for cpmm-multi-1')
-
-  const initialProb = answer
-    ? answer.prob
-    : getProbability(contract as CPMMContract)
-  const initialCpmmState = answer
-    ? {
-        pool: { YES: answer.poolYes, NO: answer.poolNo },
-        p: 0.5,
-        collectedFees: contract.collectedFees,
-      }
-    : {
-        pool: (contract as CPMMContract).pool,
-        p: (contract as CPMMContract).p,
-        collectedFees: contract.collectedFees,
-      }
-
-  const {
-    cpmmState,
-    saleValue,
-    buyAmount,
-    fees,
-    makers: wholeMakers,
-    ordersToCancel,
-  } = calculateCpmmSale(
-    initialCpmmState,
-    shares,
-    outcome,
-    unfilledBets,
-    balanceByUserId
-  )
-  const resultProb = getCpmmProbability(cpmmState.pool, cpmmState.p)
-  const probChange = Math.abs(resultProb - initialProb)
-  const makers = wholeMakers.map((m) => m.bet).concat(ordersToCancel)
-  return {
-    saleValue,
-    buyAmount,
-    cpmmState,
-    initialProb,
-    resultProb,
-    probChange,
-    fees,
-    makers,
-  }
-}
-
-export const getSaleResultMultiSumsToOne = (
-  contract: CPMMMultiContract | CPMMNumericContract,
-  answerId: string,
-  shares: number,
-  outcome: 'YES' | 'NO',
-  unfilledBets: LimitBet[],
-  balanceByUserId: { [userId: string]: number }
-) => {
-  const initialProb = getAnswerProbability(contract, answerId)
-  const answerToSell = contract.answers.find((a) => a.id === answerId)
-  const { newBetResult, saleValue, buyAmount, otherBetResults } =
-    calculateCpmmMultiSumsToOneSale(
-      contract.answers,
-      answerToSell!,
-      shares,
-      outcome,
-      undefined,
-      unfilledBets,
-      balanceByUserId,
-      contract.collectedFees
-    )
-  const { cpmmState, totalFees } = newBetResult
-  const resultProb = getCpmmProbability(cpmmState.pool, cpmmState.p)
-  const probChange = Math.abs(resultProb - initialProb)
-
-  const fees = addObjects(
-    totalFees,
-    otherBetResults.map((r) => r.totalFees).reduce(addObjects, noFees)
-  )
-  const makers = newBetResult.makers
-    .map((m) => m.bet)
-    .concat(otherBetResults.flatMap((r) => r.makers.map((m) => m.bet)))
-    .concat(newBetResult.ordersToCancel)
-    .concat(otherBetResults.flatMap((r) => r.ordersToCancel))
-  return {
-    saleValue,
-    buyAmount,
-    cpmmState,
-    initialProb,
-    resultProb,
-    probChange,
-    fees,
-    makers,
-  }
 }
 
 export function MultiSellerPosition(props: { metric: ContractMetric }) {

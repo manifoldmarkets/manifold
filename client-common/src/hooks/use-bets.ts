@@ -1,10 +1,27 @@
 import { APIParams, APIResponse } from 'common/api/schema'
-import { usePersistentInMemoryState } from './use-persistent-in-memory-state'
 import { Bet, LimitBet } from 'common/bet'
+import { User } from 'common/user'
+import { sortBy, uniq, uniqBy } from 'lodash'
 import { Dispatch, SetStateAction, useEffect } from 'react'
 import { useApiSubscription } from './use-api-subscription'
-import { sortBy, uniq, uniqBy } from 'lodash'
-import { User } from 'common/user'
+import { useEffectCheckEquality } from './use-effect-check-equality'
+import { usePersistentInMemoryState } from './use-persistent-in-memory-state'
+
+export function useBetsOnce(
+  api: (params: APIParams<'bets'>) => Promise<APIResponse<'bets'>>,
+  options: APIParams<'bets'>
+) {
+  const [bets, setBets] = usePersistentInMemoryState<Bet[] | undefined>(
+    undefined,
+    `use-bets-${JSON.stringify(options)}`
+  )
+
+  useEffectCheckEquality(() => {
+    api(options ?? {}).then((bets) => setBets(bets))
+  }, [options])
+
+  return bets
+}
 
 export const useContractBets = (
   contractId: string,

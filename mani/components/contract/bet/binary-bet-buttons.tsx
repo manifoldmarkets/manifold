@@ -22,13 +22,13 @@ export function BinaryBetButtons({
       <Row style={{ gap: 12, alignItems: 'center' }}>
         <YesNoButton
           onPress={() => handleBetClick('YES')}
-          variant="yes"
+          variant="yes-emphasized"
           style={{ flex: 1 }}
           {...rest}
         />
         <YesNoButton
           onPress={() => handleBetClick('NO')}
-          variant="no"
+          variant="no-emphasized"
           style={{ flex: 1 }}
           {...rest}
         />

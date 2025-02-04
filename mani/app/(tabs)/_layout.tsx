@@ -7,7 +7,7 @@ import { Platform, View, Image } from 'react-native'
 import { PlatformPressable } from '@react-navigation/elements'
 import { Rounded } from 'constants/border-radius'
 
-export const TabPaths = ['/', '/shop', '/profile']
+export const TabPaths = ['/', '/shop', '/profile', '/notifications']
 export function isTabPath(pathname: string) {
   return TabPaths.includes(pathname)
 }

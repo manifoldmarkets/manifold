@@ -19,7 +19,6 @@ import {
   BubblePercentChange,
   PercentChangeToday,
 } from '../candidates-panel/candidate-bar'
-import { useUserContractBets } from 'web/hooks/use-user-bets'
 import { groupBy, sumBy } from 'lodash'
 import { floatingEqual } from 'common/util/math'
 import { UserPosition } from '../candidates-panel/candidates-user-position'
@@ -28,6 +27,9 @@ import { SizedContainer } from 'web/components/sized-container'
 import { Spacer } from 'web/components/layout/spacer'
 import Image from 'next/image'
 import { IoIosPerson } from 'react-icons/io'
+import { useUserContractBets } from 'client-common/hooks/use-user-bets'
+import { api } from 'web/lib/api/api'
+import { useIsPageVisible } from 'web/hooks/use-page-visible'
 
 // just the bars
 export function PartyPanel(props: {
@@ -64,7 +66,12 @@ export function PartyPanel(props: {
   const showNoAnswers =
     answers.length === 0 || (shouldAnswersSumToOne && answers.length === 1)
 
-  const userBets = useUserContractBets(user?.id, contract.id)
+  const userBets = useUserContractBets(
+    user?.id,
+    contract.id,
+    (params) => api('bets', params),
+    useIsPageVisible
+  )
   const userBetsByAnswer = groupBy(userBets, (bet) => bet.answerId)
 
   // Calculate Republican to Democratic ratio
