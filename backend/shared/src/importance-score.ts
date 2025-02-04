@@ -261,7 +261,7 @@ export const getContractVoters = async (
   since: number,
   inContractIds: string[]
 ) => {
-  return Object.fromEntries( 
+  return Object.fromEntries(
     await pg.map(
       `select cb.contract_id, count(distinct cb.user_id)::int as n
        from votes cb
@@ -412,7 +412,8 @@ export const computeContractScores = (
   const rawMarketFreshness =
     (contract.volume24Hours / (contract.volume + 1)) *
       normalize(Math.log10(contract.volume24Hours + 1), 5) +
-    normalize(todayScore, 10)
+    normalize(todayScore, 10) +
+    normalize(0.05 - (now - contract.lastUpdatedTime) / DAY_MS, 0.05)
 
   const todayRatio = todayScore / (thisWeekScore - todayScore + 1)
   const hourRatio = traderHour / (thisWeekScore - traderHour + 1)
@@ -421,7 +422,7 @@ export const computeContractScores = (
   const freshnessScore =
     outcomeType === 'POLL' || outcomeType === 'BOUNTIED_QUESTION'
       ? freshnessFactor * importanceScore
-      : normalize(rawMarketFreshness, 2)
+      : normalize(rawMarketFreshness, 3)
 
   return {
     todayScore,
