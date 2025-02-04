@@ -92,13 +92,14 @@ export const TOPICS_TO_SUBTOPICS: { [key: string]: TopicInfo[] } = {
       name: '🏈 NFL',
       groupIds: ['TNQwmbE5p6dnKx2e6Qlp', 'ky1VPTuxrLXMnHyajZFp'],
     },
-    { name: '⚽ Soccer', groupIds: ['ypd6vR44ZzJyN9xykx6e'] },
-    { name: '♟️ Chess', groupIds: ['ED7Cu6lVPshJkZ7FYePW'] },
     { name: '⚾ Baseball', groupIds: ['786nRQzgVyUnuUtaLTGW'] },
+    { name: '⚽ Soccer', groupIds: ['ypd6vR44ZzJyN9xykx6e'] },
+    { name: '🏒 NHL', groupIds: ['lccgApXa1l7O5ZH3XfhH'] },
     { name: '🏎️ F1', groupIds: ['OyHBKJOz9YaGkDctpwuY'] },
+    { name: '♟️ Chess', groupIds: ['ED7Cu6lVPshJkZ7FYePW'] },
     { name: '🚲 Cycling', groupIds: ['2yisxJryUq9V5sG7P6Gy'] },
     { name: '🎾 Tennis', groupIds: ['1mvN9vIVIopcWiAsXhzp'] },
-    // { name: '🏏 Cricket', groupIds: ['LcPYoqxSRdeQMms4lR3g'] },
+    { name: '🏏 Cricket', groupIds: ['LcPYoqxSRdeQMms4lR3g'] },
   ],
   '🎬 Entertainment': [
     {
@@ -111,7 +112,7 @@ export const TOPICS_TO_SUBTOPICS: { [key: string]: TopicInfo[] } = {
       ],
     },
     {
-      name: '👤 Celebrities',
+      name: '🤩 Celebrities',
       groupIds: ['4QIcUOfCSSha0JZHAg9X'],
     },
     {
