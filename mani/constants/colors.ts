@@ -196,6 +196,8 @@ export const Colors = {
   modalOverlay: withOpacity(gray[950], 0.9),
   manaText: purple[300],
   cashText: emerald[300],
+  warning: amber[500],
+  warningBg: withOpacity(amber[500], 0.2),
 } as const
 
 // Mode-specific colors (used for game modes)

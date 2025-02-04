@@ -7,8 +7,9 @@ import { ContractMetric } from 'common/contract-metric'
 
 import { BetPanelContent } from 'components/contract/bet/bet-panel'
 import { PositionModalContent } from './position-modal-content'
+import { PositionModalConfirmation } from './position-modal-confirmation'
 
-export type PositionModalMode = 'base' | 'buy more' | 'sell'
+export type PositionModalMode = 'base' | 'buy more' | 'sell' | 'confirmation'
 
 export function PositionModal({
   contract,
@@ -24,6 +25,11 @@ export function PositionModal({
   answerId?: string
 }) {
   const [mode, setMode] = useState<PositionModalMode>('base')
+  const [saleDetails, setSaleDetails] = useState<{
+    amount: number
+    saleValue: number
+    profit: number
+  } | null>(null)
   const outcome = (metric.maxSharesOutcome ?? 'YES') as 'YES' | 'NO'
 
   return (
@@ -42,7 +48,13 @@ export function PositionModal({
       }
       showHeader
     >
-      {mode == 'base' || mode == 'sell' ? (
+      {mode === 'confirmation' && saleDetails ? (
+        <PositionModalConfirmation
+          contract={contract}
+          saleDetails={saleDetails}
+          setOpen={setOpen}
+        />
+      ) : mode === 'base' || mode === 'sell' ? (
         <PositionModalContent
           contract={contract}
           metric={metric}
@@ -51,6 +63,10 @@ export function PositionModal({
           setOpen={setOpen}
           mode={mode}
           setMode={setMode}
+          onSaleSuccess={(details) => {
+            setSaleDetails(details)
+            setMode('confirmation')
+          }}
         />
       ) : (
         <BetPanelContent

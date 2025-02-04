@@ -33,6 +33,7 @@ import { TokenNumber } from 'components/token/token-number'
 import { Row } from 'components/layout/row'
 import { Button } from 'components/buttons/button'
 import Slider from '@react-native-community/slider'
+import Animated, { FadeIn, FadeOut } from 'react-native-reanimated'
 
 export function PositionModalContent({
   contract,
@@ -43,6 +44,7 @@ export function PositionModalContent({
   setOpen,
   mode,
   setMode,
+  onSaleSuccess,
 }: {
   contract: Contract
   answerId?: string
@@ -51,6 +53,11 @@ export function PositionModalContent({
   setOpen: (open: boolean) => void
   mode: PositionModalMode
   setMode: (mode: PositionModalMode) => void
+  onSaleSuccess?: (details: {
+    amount: number
+    saleValue: number
+    profit: number
+  }) => void
 }) {
   const user = useUser()
   const color = useColor()
@@ -152,7 +159,13 @@ export function PositionModalContent({
         setIsSubmitting(false)
         setWasSubmitted(true)
         setAmount(undefined)
-        // if (onSellSuccess) onSellSuccess()
+        if (onSaleSuccess) {
+          onSaleSuccess({
+            amount: sellQuantity,
+            saleValue: saleValue,
+            profit: profit,
+          })
+        }
       })
       .catch((e: unknown) => {
         console.error(e)
@@ -294,89 +307,118 @@ export function PositionModalContent({
           </ThemedText>
           <TokenNumber amount={saleValue + totalFees} size="5xl" />
           {mode == 'sell' && (
-            <Slider
-              value={amount ? amount / shares : 1}
-              onValueChange={(value) => {
-                const newAmount = Math.floor(shares * value)
-                setDisplayAmount(newAmount)
-                setAmount(newAmount)
+            <Animated.View
+              entering={FadeIn.duration(200)}
+              exiting={FadeOut.duration(200)}
+              style={{ width: '100%' }}
+            >
+              <Slider
+                value={amount ? amount / shares : 1}
+                onValueChange={(value) => {
+                  const newAmount = Math.floor(shares * value)
+                  setDisplayAmount(newAmount)
+                  setAmount(newAmount)
 
-                // Check for errors
-                if (newAmount !== undefined && newAmount > shares) {
-                  setError(
-                    `Maximum ${formatShares(
-                      Math.floor(shares),
-                      isCashContract
-                    )} shares`
-                  )
-                } else {
-                  setError(undefined)
-                }
-              }}
-              minimumValue={0}
-              maximumValue={1}
-              step={0.01}
-              minimumTrackTintColor={color.primaryButton}
-              maximumTrackTintColor={color.border}
-              thumbTintColor={color.primary}
-              style={{ width: '100%', height: 40 }}
-            />
+                  // Check for errors
+                  if (newAmount !== undefined && newAmount > shares) {
+                    setError(
+                      `Maximum ${formatShares(
+                        Math.floor(shares),
+                        isCashContract
+                      )} shares`
+                    )
+                  } else {
+                    setError(undefined)
+                  }
+                }}
+                minimumValue={0}
+                maximumValue={1}
+                step={0.01}
+                minimumTrackTintColor={color.primaryButton}
+                maximumTrackTintColor={color.border}
+                thumbTintColor={color.primary}
+                style={{ width: '100%', height: 40 }}
+              />
+            </Animated.View>
           )}
         </Col>
         <Col style={{ gap: 8 }}>
-          <Row style={{ justifyContent: 'space-between', width: '100%' }}>
-            <ThemedText color={color.textTertiary} size="lg">
-              {won ? 'Profit' : 'Current profit'}
-            </ThemedText>
+          <Col style={{ gap: 8 }}>
+            {mode === 'sell' && contract.token === 'CASH' && (
+              <Animated.View
+                entering={FadeIn.duration(200)}
+                exiting={FadeOut.duration(200)}
+                style={{
+                  backgroundColor: color.warningBg,
+                  padding: 12,
+                  borderRadius: 8,
+                  gap: 4,
+                }}
+              >
+                <ThemedText color={color.warning} weight="bold">
+                  Quick Tip
+                </ThemedText>
 
-            {/* TODO: get real payout */}
-            <Row style={{ alignItems: 'center', gap: 4 }}>
-              <TokenNumber amount={profit} size="lg" />
+                <ThemedText color={color.warning}>
+                  To redeem your earnings for real cash, wait until the market
+                  result is final. Selling early makes your profits
+                  non-cashable.
+                </ThemedText>
+              </Animated.View>
+            )}
+            <Row style={{ justifyContent: 'space-between', width: '100%' }}>
+              <ThemedText color={color.textTertiary} size="lg">
+                {won ? 'Profit' : 'Current profit'}
+              </ThemedText>
+
+              {/* TODO: get real payout */}
+              <Row style={{ alignItems: 'center', gap: 4 }}>
+                <TokenNumber amount={profit} size="lg" />
+              </Row>
             </Row>
-          </Row>
-        </Col>
-        {canSell && mode !== 'sell' && (
-          <Row style={{ gap: 12, width: '100%' }}>
+          </Col>
+          {canSell && mode !== 'sell' && (
+            <Row style={{ gap: 12, width: '100%' }}>
+              <Button
+                onPress={() => setMode('buy more')}
+                style={{ flex: 1 }}
+                textProps={{
+                  weight: 'normal',
+                }}
+                size="lg"
+                variant={isBinaryMC ? 'gray' : hasYesShares ? 'yes' : 'no'}
+              >
+                <>Buy more {buyingNoun}</>
+              </Button>
+              <Button
+                onPress={() => setMode('sell')}
+                style={{ flex: 1 }}
+                textProps={{
+                  weight: 'normal',
+                }}
+                size="lg"
+                variant={'gray'}
+              >
+                Sell
+              </Button>
+            </Row>
+          )}
+          {mode == 'sell' && (
             <Button
-              onPress={() => setMode('buy more')}
-              style={{ flex: 1 }}
+              onPress={() => {
+                submitSell()
+              }}
+              style={{ width: '100%' }}
               textProps={{
                 weight: 'normal',
               }}
               size="lg"
-              variant={isBinaryMC ? 'gray' : hasYesShares ? 'yes' : 'no'}
-            >
-              <>Buy more {buyingNoun}</>
-            </Button>
-            <Button
-              onPress={() => setMode('sell')}
-              style={{ flex: 1 }}
-              textProps={{
-                weight: 'normal',
-              }}
-              size="lg"
-              variant={'gray'}
+              variant={'primary'}
             >
               Sell
             </Button>
-          </Row>
-        )}
-        {mode == 'sell' && (
-          <Button
-            onPress={() => {
-              submitSell()
-              setOpen(false)
-            }}
-            style={{ width: '100%' }}
-            textProps={{
-              weight: 'normal',
-            }}
-            size="lg"
-            variant={'primary'}
-          >
-            Sell
-          </Button>
-        )}
+          )}
+        </Col>
       </Col>
     </KeyboardAvoidingView>
   )
