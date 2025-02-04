@@ -44,7 +44,6 @@ import { SelectorIcon } from '@heroicons/react/solid'
 
 const expirationOptions = [
   { label: 'Never expires', value: 0 },
-  { label: 'Expires in 1 second', value: 1000 },
   { label: 'Expires in 1 hour', value: HOUR_MS },
   { label: 'Expires in 1 day', value: DAY_MS },
   { label: 'Expires in 1 week', value: WEEK_MS },
