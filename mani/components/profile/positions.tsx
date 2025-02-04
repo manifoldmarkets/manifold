@@ -24,6 +24,8 @@ export function Positions(props: { user: User }) {
   }
 
   const { token } = useTokenMode()
+
+  // TODO; These don't update when selling
   const { data } = useAPIGetter('get-user-contract-metrics-with-contracts', {
     userId: user?.id ?? '_',
     limit: 5000,
