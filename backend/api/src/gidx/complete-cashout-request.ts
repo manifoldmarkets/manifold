@@ -41,7 +41,7 @@ export const completeCashoutRequest: APIHandler<
     throw new APIError(400, 'Insufficient redeemable sweepcash')
   }
   const dollarsToWithdraw = PaymentAmount.dollars
-  const CalculatedPaymentAmount = (1 - SWEEPIES_CASHOUT_FEE) * manaCashAmount
+  const CalculatedPaymentAmount = manaCashAmount - SWEEPIES_CASHOUT_FEE
   if (dollarsToWithdraw !== CalculatedPaymentAmount) {
     throw new APIError(400, 'Payment amount mismatch')
   }

@@ -383,7 +383,7 @@ const DollarDescription = (props: { disabled?: boolean }) => (
           </b>
           ,
         </span>
-        <span>minus a {SWEEPIES_CASHOUT_FEE * 100}% fee.</span>
+        <span>minus a {formatMoneyUSD(SWEEPIES_CASHOUT_FEE)} flat fee.</span>
       </div>
     </Col>
   </div>

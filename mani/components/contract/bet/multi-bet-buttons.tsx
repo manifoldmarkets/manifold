@@ -37,16 +37,18 @@ export function MultiBetButtons({
           {...rest}
         />
       </Row>
-      <BetPanel
-        contract={contract}
-        open={openBetPanel}
-        setOpen={setOpenBetPanel}
-        outcome={outcome}
-        multiProps={{
-          answers: contract.answers,
-          answerToBuy: contract.answers.find((a) => a.id === answerId)!,
-        }}
-      />
+      {openBetPanel && (
+        <BetPanel
+          contract={contract}
+          open={openBetPanel}
+          setOpen={setOpenBetPanel}
+          outcome={outcome}
+          multiProps={{
+            answers: contract.answers,
+            answerToBuy: contract.answers.find((a) => a.id === answerId)!,
+          }}
+        />
+      )}
     </>
   )
 }

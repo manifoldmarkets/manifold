@@ -183,7 +183,7 @@ export default function CashoutPage() {
         },
         SavePaymentMethod,
         PaymentAmount: {
-          dollars: (1 - SWEEPIES_CASHOUT_FEE) * sweepCashAmount,
+          dollars: sweepCashAmount - SWEEPIES_CASHOUT_FEE,
           manaCash: sweepCashAmount,
         },
         MerchantSessionID: checkoutSession.MerchantSessionID,
@@ -572,7 +572,7 @@ export default function CashoutPage() {
                   <Row className={'gap-1'}>
                     Redeem for{' '}
                     {formatSweepsToUSD(
-                      (1 - SWEEPIES_CASHOUT_FEE) * (sweepCashAmount ?? 0)
+                      (sweepCashAmount ?? 0) - SWEEPIES_CASHOUT_FEE
                     )}
                   </Row>
                 </Button>

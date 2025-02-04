@@ -13,9 +13,11 @@ const SweepstakesProvider = createContext<SweepstakesContextType | undefined>(
 export const Sweepstakes: React.FC<{ children: React.ReactNode }> = ({
   children,
 }) => {
-  const [prefersPlay, setPrefersPlay] = usePersistentLocalState<
-    boolean | undefined
-  >(undefined, 'play')
+  const [prefersPlay, setPrefersPlay] = usePersistentLocalState<boolean>(
+    true,
+    'play'
+  )
+
   return (
     <SweepstakesProvider.Provider value={{ prefersPlay, setPrefersPlay }}>
       {children}

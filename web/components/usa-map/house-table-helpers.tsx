@@ -17,12 +17,11 @@ import {
 import { removeUndefinedProps } from 'common/util/object'
 import { useEffect, useState } from 'react'
 import toast from 'react-hot-toast'
-
 import { useFocus } from 'web/hooks/use-focus'
 import { useUser } from 'web/hooks/use-user'
 import { APIError, api } from 'web/lib/api/api'
 import { isAndroid, isIOS } from 'web/lib/util/device'
-import { BinaryOutcomes, MultiBetProps } from '../bet/bet-panel'
+import { BinaryOutcomes } from '../bet/bet-panel'
 import { Button } from '../buttons/button'
 import { Col } from '../layout/col'
 import { MODAL_CLASS, Modal } from '../layout/modal'
@@ -48,6 +47,7 @@ import {
   REP_LIGHT_HEX,
   hexToRgb,
 } from './state-election-map'
+import { MultiBetProps } from 'client-common/lib/bet'
 import { useUnfilledBetsAndBalanceByUserId } from 'client-common/hooks/use-bets'
 import { useIsPageVisible } from 'web/hooks/use-page-visible'
 
@@ -197,8 +197,11 @@ export const BuyPanelBody = (props: {
   const user = useUser()
 
   const { unfilledBets: allUnfilledBets, balanceByUserId } =
-    useUnfilledBetsAndBalanceByUserId(contract.id, useIsPageVisible, (params) =>
-      api('bets', params)
+    useUnfilledBetsAndBalanceByUserId(
+      contract.id,
+      (params) => api('bets', params),
+      (params) => api('users/by-id/balance', params),
+      useIsPageVisible
     )
 
   const unfilledBetsMatchingAnswer = allUnfilledBets.filter(

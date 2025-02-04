@@ -17,12 +17,13 @@ import { StyleSheet } from 'react-native'
 import { Colors } from 'constants/colors'
 import { UserProvider, useUser } from 'hooks/use-user'
 import { Splash } from 'components/splash'
-import Toast from 'react-native-toast-message'
 import {
   SafeAreaProvider,
   useSafeAreaInsets,
 } from 'react-native-safe-area-context'
 import { AuthPage } from 'components/auth-page'
+import { ToastProvider } from 'react-native-toast-notifications'
+import { RootSiblingParent } from 'react-native-root-siblings'
 
 const HEADER_HEIGHT = 250
 
@@ -114,46 +115,42 @@ function RootLayout() {
   const height = Dimensions.get('window').height //full height
   const insets = useSafeAreaInsets()
   return (
-    <TokenModeProvider>
-      <SafeAreaView
-        style={[
-          styles.container,
-          // Add padding for Android
-          Platform.OS === 'android' && {
-            paddingTop: insets.bottom + insets.top,
-            paddingBottom: insets.bottom,
-          },
-        ]}
-      >
-        {!loaded ? (
-          <Splash
-            height={height + insets.bottom}
-            width={width}
-            source={require('../assets/images/splash.png')}
-          />
-        ) : user === null ? (
-          <AuthPage height={height} width={width} />
-        ) : (
-          <Stack
-            screenOptions={{
-              headerShown: false,
-              animation: 'slide_from_right',
-            }}
-          >
-            <Stack.Screen name="(tabs)" />
-            <Stack.Screen name="[username]" />
-            <Stack.Screen name="[username]/[contractSlug]" />
-            <Stack.Screen name="register" />
-            <Stack.Screen name="redeem" />
-            <Stack.Screen name="edit-profile" />
-            <Stack.Screen name="account-settings" />
-            <Stack.Screen name="+not-found" />
-          </Stack>
-        )}
-        {/* @ts-expect-error Toast component type definition issue */}
-        <Toast />
-      </SafeAreaView>
-    </TokenModeProvider>
+    <SafeAreaView
+      style={[
+        styles.container,
+        // Add padding for Android
+        Platform.OS === 'android' && {
+          paddingTop: insets.bottom + insets.top,
+          paddingBottom: insets.bottom,
+        },
+      ]}
+    >
+      {!loaded ? (
+        <Splash
+          height={height + insets.bottom}
+          width={width}
+          source={require('../assets/images/splash.png')}
+        />
+      ) : user === null ? (
+        <AuthPage height={height} width={width} />
+      ) : (
+        <Stack
+          screenOptions={{
+            headerShown: false,
+            animation: 'slide_from_right',
+          }}
+        >
+          <Stack.Screen name="(tabs)" />
+          <Stack.Screen name="[username]" />
+          <Stack.Screen name="[username]/[contractSlug]" />
+          <Stack.Screen name="register" />
+          <Stack.Screen name="redeem" />
+          <Stack.Screen name="edit-profile" />
+          <Stack.Screen name="account-settings" />
+          <Stack.Screen name="+not-found" />
+        </Stack>
+      )}
+    </SafeAreaView>
   )
 }
 
@@ -179,10 +176,21 @@ export default function App() {
   const WrappedRoot = Sentry.wrap(withIAPContext(RootLayout))
 
   return (
-    <SafeAreaProvider>
+    <ToastProvider
+      placement="top"
+      successColor={Colors.background}
+      warningColor={Colors.background}
+      dangerColor={Colors.background}
+    >
       <UserProvider>
-        <WrappedRoot />
+        <TokenModeProvider>
+          <RootSiblingParent>
+            <SafeAreaProvider>
+              <WrappedRoot />
+            </SafeAreaProvider>
+          </RootSiblingParent>
+        </TokenModeProvider>
       </UserProvider>
-    </SafeAreaProvider>
+    </ToastProvider>
   )
 }

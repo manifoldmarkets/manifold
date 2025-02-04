@@ -78,9 +78,7 @@ export const cashoutRequestParams = {
   ...checkoutParams,
   PaymentAmount: z.object({
     manaCash: z.number().gte(MIN_CASHOUT_AMOUNT),
-    dollars: z
-      .number()
-      .gte((1 - SWEEPIES_CASHOUT_FEE) * (MIN_CASHOUT_AMOUNT / 100)),
+    dollars: z.number().gte(MIN_CASHOUT_AMOUNT / 100 - SWEEPIES_CASHOUT_FEE),
   }),
   SavePaymentMethod: z.boolean(),
   PaymentMethod: z.object({

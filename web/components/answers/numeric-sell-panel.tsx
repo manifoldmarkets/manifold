@@ -29,12 +29,12 @@ import { Col } from 'web/components/layout/col'
 import { Row } from 'web/components/layout/row'
 import { SizedContainer } from 'web/components/sized-container'
 import { RangeSlider } from 'web/components/widgets/slider'
-import { useUnfilledBetsAndBalanceByUserId } from 'client-common/hooks/use-bets'
+import { api } from 'web/lib/api/api'
 import { MoneyDisplay } from '../bet/money-display'
 import { useUserContractBets } from 'client-common/hooks/use-user-bets'
 import { useAllSavedContractMetrics } from 'web/hooks/use-saved-contract-metrics'
 import { ContractMetric } from 'common/contract-metric'
-import { api } from 'web/lib/api/api'
+import { useUnfilledBetsAndBalanceByUserId } from 'client-common/hooks/use-bets'
 import { useIsPageVisible } from 'web/hooks/use-page-visible'
 
 export const NumericSellPanel = (props: {
@@ -69,8 +69,9 @@ export const NumericSellPanel = (props: {
   const [isSubmitting, setIsSubmitting] = useState(false)
   const { unfilledBets, balanceByUserId } = useUnfilledBetsAndBalanceByUserId(
     contract.id,
-    useIsPageVisible,
-    (params) => api('bets', params)
+    (params) => api('bets', params),
+    (params) => api('users/by-id/balance', params),
+    useIsPageVisible
   )
   const stringifiedAnswers = JSON.stringify(answers)
 

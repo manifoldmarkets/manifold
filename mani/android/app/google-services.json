@@ -1,40 +1,48 @@
 {
   "project_info": {
-    "project_number": "134303100058",
-    "project_id": "dev-mantic-markets",
-    "storage_bucket": "dev-mantic-markets.appspot.com"
+    "project_number": "128925704902",
+    "project_id": "mantic-markets",
+    "storage_bucket": "mantic-markets.appspot.com"
   },
   "client": [
     {
       "client_info": {
-        "mobilesdk_app_id": "1:134303100058:android:a25f644df416ca36f80323",
+        "mobilesdk_app_id": "1:128925704902:android:e5aa502d5a924350642dc7",
         "android_client_info": {
           "package_name": "com.manifold.mani"
         }
       },
       "oauth_client": [
         {
-          "client_id": "134303100058-2uvio555s8mnhde20b4old97ptjnji3u.apps.googleusercontent.com",
+          "client_id": "128925704902-r23bsi4ca28sprdh49mprl1ov33pvvau.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.manifold.mani",
+            "certificate_hash": "103e50054624a7b6c02dcdea52674bc3f49f7d6d"
+          }
+        },
+        {
+          "client_id": "128925704902-bpcbnlp2gt73au3rrjjtnup6cskr89p0.apps.googleusercontent.com",
           "client_type": 3
         }
       ],
       "api_key": [
         {
-          "current_key": "AIzaSyCt982NE8yMv1t7DG28Zx1-ddNfPZfzoq8"
+          "current_key": "AIzaSyBtBF0n3q4XgHE2DWmAsMcsk0wmB1pcNss"
         }
       ],
       "services": {
         "appinvite_service": {
           "other_platform_oauth_client": [
             {
-              "client_id": "134303100058-2uvio555s8mnhde20b4old97ptjnji3u.apps.googleusercontent.com",
+              "client_id": "128925704902-b9hug0habghrqtr7nbne1k88rs5qpjqp.apps.googleusercontent.com",
               "client_type": 3
             },
             {
-              "client_id": "134303100058-9464q86hhfloaij15dl9ekn6l39e3cv8.apps.googleusercontent.com",
+              "client_id": "128925704902-6ci48vjqud9ddcl436go5ma3m9ceei4k.apps.googleusercontent.com",
               "client_type": 2,
               "ios_info": {
-                "bundle_id": "com.manifold.mani"
+                "bundle_id": "com.markets.manifold"
               }
             }
           ]
@@ -43,42 +51,42 @@
     },
     {
       "client_info": {
-        "mobilesdk_app_id": "1:134303100058:android:e1d339b176437b89f80323",
+        "mobilesdk_app_id": "1:128925704902:android:2f9207f92f6e48cf642dc7",
         "android_client_info": {
           "package_name": "com.markets.manifold"
         }
       },
       "oauth_client": [
         {
-          "client_id": "134303100058-mu6dbubhks8khpqi3dq0fokqnkbputiq.apps.googleusercontent.com",
+          "client_id": "128925704902-ur9hevfika2rs0sni6ju236u82hbct3i.apps.googleusercontent.com",
           "client_type": 1,
           "android_info": {
             "package_name": "com.markets.manifold",
-            "certificate_hash": "3104825dce04154e425833614535a9494de90b34"
+            "certificate_hash": "ed4172e8b4d70a7d7bd58bb4a748574fda7b942d"
           }
         },
         {
-          "client_id": "134303100058-2uvio555s8mnhde20b4old97ptjnji3u.apps.googleusercontent.com",
+          "client_id": "128925704902-bpcbnlp2gt73au3rrjjtnup6cskr89p0.apps.googleusercontent.com",
           "client_type": 3
         }
       ],
       "api_key": [
         {
-          "current_key": "AIzaSyCt982NE8yMv1t7DG28Zx1-ddNfPZfzoq8"
+          "current_key": "AIzaSyBtBF0n3q4XgHE2DWmAsMcsk0wmB1pcNss"
         }
       ],
       "services": {
         "appinvite_service": {
           "other_platform_oauth_client": [
             {
-              "client_id": "134303100058-2uvio555s8mnhde20b4old97ptjnji3u.apps.googleusercontent.com",
+              "client_id": "128925704902-b9hug0habghrqtr7nbne1k88rs5qpjqp.apps.googleusercontent.com",
               "client_type": 3
             },
             {
-              "client_id": "134303100058-9464q86hhfloaij15dl9ekn6l39e3cv8.apps.googleusercontent.com",
+              "client_id": "128925704902-6ci48vjqud9ddcl436go5ma3m9ceei4k.apps.googleusercontent.com",
               "client_type": 2,
               "ios_info": {
-                "bundle_id": "com.manifold.mani"
+                "bundle_id": "com.markets.manifold"
               }
             }
           ]

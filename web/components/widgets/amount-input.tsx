@@ -16,7 +16,6 @@ import {
 import { ReactNode, useEffect, useState } from 'react'
 import { VerifyPhoneModal } from 'web/components/user/verify-phone-number-banner'
 import { useIsAdvancedTrader } from 'web/hooks/use-is-advanced-trader'
-import { useCurrentPortfolio } from 'web/hooks/use-portfolio-history'
 import { useUser } from 'web/hooks/use-user'
 import { ManaCoin } from 'web/public/custom-components/manaCoin'
 import { SpiceCoin } from 'web/public/custom-components/spiceCoin'
@@ -25,9 +24,10 @@ import { AddFundsModal } from '../add-funds-modal'
 import { BetSlider } from '../bet/bet-slider'
 import { Col } from '../layout/col'
 import { Row } from '../layout/row'
-import { IncrementDecrementAmountButton } from './increment-button'
 import { Input } from './input'
 import { sliderColors } from './slider'
+import { useCurrentPortfolio } from 'web/hooks/use-portfolio-history'
+import { useIsMobile } from 'web/hooks/use-is-mobile'
 
 export function AmountInput(
   props: {
@@ -126,39 +126,20 @@ export function AmountInput(
             }}
             min={allowFloat ? 0 : 1}
           />
-          <Row className="divide-ink-300 absolute right-[1px] h-full divide-x">
-            {!disableClearButton && (
-              <ClearInputButton
-                className={clsx(
-                  'w-12 transition-opacity',
-                  amount === undefined && 'opacity-0'
-                )}
-                onClick={() => onChangeAmount(undefined)}
-              />
-            )}
-            {quickAddMoreButton}
-          </Row>
+          {quickAddMoreButton
+            ? quickAddMoreButton
+            : !disableClearButton &&
+              amount !== undefined && (
+                <button
+                  className="text-ink-400 hover:text-ink-500 active:text-ink-500 absolute right-4 top-1/2 -translate-y-1/2"
+                  onClick={() => onChangeAmount(undefined)}
+                >
+                  <XIcon className="h-4 w-4" />
+                </button>
+              )}
         </Row>
       </label>
     </Col>
-  )
-}
-
-export function ClearInputButton(props: {
-  onClick: () => void
-  className?: string
-}) {
-  const { onClick, className } = props
-  return (
-    <button
-      className={clsx(
-        className,
-        'text-ink-400 hover:text-ink-500 active:text-ink-500 flex items-center justify-center'
-      )}
-      onClick={onClick}
-    >
-      <XIcon className="h-4 w-4" />
-    </button>
   )
 }
 
@@ -208,6 +189,7 @@ export function BuyAmountInput(props: {
     sliderColor,
   } = props
   const user = useUser()
+  const isAdvancedTrader = useIsAdvancedTrader()
 
   // Check for errors.
   useEffect(() => {
@@ -261,31 +243,30 @@ export function BuyAmountInput(props: {
     else onChange(newAmount)
   }
 
-  const isAdvancedTrader = useIsAdvancedTrader()
   const advancedIncrementValues = (
-    hasLotsOfMoney ? [50, 250, 1000] : [10, 50, 250]
+    hasLotsOfMoney ? [50, 250, 1000] : [10, 50, 100]
   ).map((v) => (marketTier === 'play' ? v / 10 : v))
-  const defaultIncrementValues = (hasLotsOfMoney ? [50, 250] : [10, 100]).map(
-    (v) => (marketTier === 'play' ? v / 10 : v)
-  )
+  const defaultIncrementValues = (
+    hasLotsOfMoney ? [50, 250, 1000] : [10, 50, 100]
+  ).map((v) => (marketTier === 'play' ? v / 10 : v))
 
   const incrementValues =
     quickButtonValues === 'large'
-      ? [500, 1000]
+      ? [500, 1000, 5000]
       : quickButtonValues ??
         (isAdvancedTrader ? advancedIncrementValues : defaultIncrementValues)
+  const decrementValues = incrementValues.slice(0, 2).map((v) => -v)
+  const isMobile = useIsMobile()
+  const values = !isMobile
+    ? [...decrementValues, ...incrementValues]
+    : incrementValues
 
   return (
     <>
-      <Col className={clsx('w-full max-w-[350px] gap-2', parentClassName)}>
+      <Col className={clsx('w-full max-w-[350px]', parentClassName)}>
         <AmountInput
           className={className}
-          inputClassName={clsx(
-            'w-full !text-xl !h-[72px]',
-            !disableQuickButtons &&
-              (incrementValues.length > 2 ? 'pr-[182px]' : 'pr-[134px]'),
-            inputClassName
-          )}
+          inputClassName={clsx('w-full !text-xl h-[60px]', inputClassName)}
           label={
             token === 'SPICE' ? (
               <SpiceCoin />
@@ -302,24 +283,9 @@ export function BuyAmountInput(props: {
           disabled={disabled}
           inputRef={inputRef}
           disableClearButton={!isAdvancedTrader}
-          quickAddMoreButton={
-            disableQuickButtons ? undefined : (
-              <Row className="divide-ink-300 border-ink-300 divide-x border-l text-sm">
-                {incrementValues.map((increment) => (
-                  <IncrementDecrementAmountButton
-                    key={increment}
-                    amount={increment}
-                    incrementBy={incrementBy}
-                    token={token}
-                  />
-                ))}
-              </Row>
-            )
-          }
         />
         {showSlider && (
           <BetSlider
-            className="-mt-2"
             amount={amount}
             onAmountChange={onChange}
             binaryOutcome={binaryOutcome}

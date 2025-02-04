@@ -1,6 +1,6 @@
 import { ChevronDownIcon, XIcon } from '@heroicons/react/outline'
 import clsx from 'clsx'
-import { uniq } from 'lodash'
+import { capitalize, uniq } from 'lodash'
 import { useEffect, useState } from 'react'
 import toast from 'react-hot-toast'
 
@@ -28,10 +28,7 @@ import { firebaseLogin } from 'web/lib/firebase/users'
 import { Col } from '../layout/col'
 import { Row } from '../layout/row'
 import { BuyAmountInput } from '../widgets/amount-input'
-
-import { Answer } from 'common/answer'
 import { LimitBet } from 'common/bet'
-import { getCpmmProbability } from 'common/calculate-cpmm'
 import { SWEEPIES_NAME, TRADE_TERM } from 'common/envs/constants'
 import {
   getVerificationStatus,
@@ -42,22 +39,19 @@ import { getStonkDisplayShares, STONK_NO, STONK_YES } from 'common/stonk'
 import { getTierFromLiquidity } from 'common/tier'
 import { floatingEqual } from 'common/util/math'
 import { removeUndefinedProps } from 'common/util/object'
-import { capitalize } from 'lodash'
 import { InfoTooltip } from 'web/components/widgets/info-tooltip'
-
 import { useFocus } from 'web/hooks/use-focus'
 import { useIsAdvancedTrader } from 'web/hooks/use-is-advanced-trader'
 import { usePrivateUser, useUser } from 'web/hooks/use-user'
 import { track, withTracking } from 'web/lib/service/analytics'
 import { isAndroid, isIOS } from 'web/lib/util/device'
-import { Button } from '../buttons/button'
 import { WarningConfirmationButton } from '../buttons/warning-confirmation-button'
 import { getAnswerColor } from '../charts/contract/choice'
 import { LocationMonitor } from '../gidx/location-monitor'
-import { InBeta, VerifyButton } from '../sweeps/sweep-verify-section'
+import { VerifyButton } from '../sweeps/sweep-verify-section'
 import { ChoicesToggleGroup } from '../widgets/choices-toggle-group'
 import { CashoutLimitWarning } from './cashout-limit-warning'
-import LimitOrderPanel, { getLimitBetReturns } from './limit-order-panel'
+import LimitOrderPanel from './limit-order-panel'
 import { MoneyDisplay } from './money-display'
 import { OrderBookPanel, YourOrders } from './order-book'
 import { YesNoSelector } from './yes-no-selector'
@@ -69,15 +63,11 @@ import {
 import { useIsPageVisible } from 'web/hooks/use-page-visible'
 import { CandidateBet } from 'common/new-bet'
 import { APIParams } from 'common/api/schema'
-import { usePersistentInMemoryState } from 'client-common/hooks/use-persistent-in-memory-state'
+import { Button } from '../buttons/button'
+import { usePersistentLocalState } from 'web/hooks/use-persistent-local-state'
+import { getLimitBetReturns, MultiBetProps } from 'client-common/lib/bet'
 
 export type BinaryOutcomes = 'YES' | 'NO' | undefined
-
-export type MultiBetProps = {
-  answers: Answer[]
-  answerToBuy: Answer
-  answerText?: string
-}
 
 export function BuyPanel(props: {
   contract:
@@ -166,15 +156,7 @@ export function BuyPanel(props: {
       {isPanelBodyVisible && (
         <BuyPanelBody
           {...props}
-          panelClassName={
-            !!pseudonym
-              ? 'bg-canvas-50'
-              : outcome === 'NO'
-              ? 'bg-scarlet-50'
-              : outcome === 'YES'
-              ? 'bg-teal-50'
-              : ''
-          }
+          panelClassName={'bg-canvas-50'}
           outcome={outcome}
           setOutcome={setOutcome}
           onClose={
@@ -247,8 +229,11 @@ export const BuyPanelBody = (props: {
     getTierFromLiquidity(contract, contract.totalLiquidity)
 
   const { unfilledBets: allUnfilledBets, balanceByUserId } =
-    useUnfilledBetsAndBalanceByUserId(contract.id, useIsPageVisible, (params) =>
-      api('bets', params)
+    useUnfilledBetsAndBalanceByUserId(
+      contract.id,
+      (params) => api('bets', params),
+      (params) => api('users/by-id/balance', params),
+      useIsPageVisible
     )
 
   const unfilledBetsMatchingAnswer = allUnfilledBets.filter(
@@ -287,30 +272,7 @@ export const BuyPanelBody = (props: {
   if (isCpmmMulti && !multiProps) {
     throw new Error('multiProps must be defined for cpmm-multi-1')
   }
-  const cpmmState = isCpmmMulti
-    ? {
-        pool: {
-          YES: multiProps!.answerToBuy.poolYes,
-          NO: multiProps!.answerToBuy.poolNo,
-        },
-        p: 0.5,
-        collectedFees: contract.collectedFees,
-      }
-    : {
-        pool: contract.pool,
-        p: contract.p,
-        collectedFees: contract.collectedFees,
-      }
-  const prob = getCpmmProbability(cpmmState.pool, cpmmState.p)
-  const slippage = 0.05
-  const floatLimitProb = Math.max(
-    MIN_CPMM_PROB,
-    Math.min(
-      MAX_CPMM_PROB,
-      outcome === 'YES' ? prob + slippage : prob - slippage
-    )
-  )
-  const limitProb = Math.round(floatLimitProb * 100) / 100
+
   const shouldAnswersSumToOne =
     'shouldAnswersSumToOne' in contract ? contract.shouldAnswersSumToOne : false
 
@@ -348,7 +310,6 @@ export const BuyPanelBody = (props: {
       const amountFilled = updatedBet?.amount ?? submittedBet.amount
       const sharesFilled = updatedBet?.shares ?? submittedBet.shares
       const orderAmount = updatedBet?.orderAmount ?? submittedBet.orderAmount
-      toast.dismiss(submittedBet.toastId)
       toast.success(
         `${formatWithToken({
           amount: amountFilled,
@@ -362,6 +323,7 @@ export const BuyPanelBody = (props: {
         })} on payout`,
         {
           duration: 5000,
+          id: submittedBet.toastId,
         }
       )
       setSubmittedBet(null)
@@ -372,10 +334,16 @@ export const BuyPanelBody = (props: {
 
   const isAdvancedTrader = useIsAdvancedTrader()
 
-  const [betType, setBetType] = usePersistentInMemoryState<'Market' | 'Limit'>(
+  const [betType, setBetType] = usePersistentLocalState<'Market' | 'Limit'>(
     'Market',
     'bet-type'
   )
+
+  useEffect(() => {
+    if (!isAdvancedTrader && betType === 'Limit') {
+      setBetType('Market')
+    }
+  }, [isAdvancedTrader])
 
   useEffect(() => {
     if (!isIOS() && !isAndroid()) {
@@ -387,28 +355,21 @@ export const BuyPanelBody = (props: {
     setBetAmount(newAmount)
   }
 
-  const binaryMCOutcome =
-    isBinaryMC && multiProps
-      ? multiProps.answerText === multiProps.answerToBuy.text
-        ? 'YES'
-        : 'NO'
-      : undefined
-  const amount = betAmount ?? 0
-
   const {
     currentPayout,
     probAfter: newProbAfter,
     currentReturn,
     betDeps,
-  } = getLimitBetReturns(
-    cpmmState,
-    binaryMCOutcome ?? outcome ?? 'YES',
-    amount,
     limitProb,
+    prob,
+  } = getLimitBetReturns(
+    outcome ?? 'YES',
+    betAmount ?? 0,
     unfilledBets,
     balanceByUserId,
     setError,
-    shouldAnswersSumToOne ? multiProps : undefined
+    contract,
+    multiProps
   )
   let probBefore = prob
   let probAfter = newProbAfter
@@ -426,7 +387,9 @@ export const BuyPanelBody = (props: {
     console.log('betDeps', betDeps)
     setError(undefined)
     setIsSubmitting(true)
-    const toastId = toast.loading(`Placing ${TRADE_TERM.toLowerCase()}...`)
+    const toastId = toast.loading(`Placing ${TRADE_TERM.toLowerCase()}...`, {
+      duration: 10000,
+    })
 
     try {
       const expiresMillisAfter = 1000
@@ -444,17 +407,43 @@ export const BuyPanelBody = (props: {
           limitProb,
         } as APIParams<'bet'>)
       )
+      if (bet.isFilled) {
+        toast.success(
+          `${formatWithToken({
+            amount: bet.amount,
+            token: isCashContract ? 'CASH' : 'M$',
+          })}/${formatWithToken({
+            amount: bet.orderAmount ?? 0,
+            token: isCashContract ? 'CASH' : 'M$',
+          })} filled for ${formatWithToken({
+            amount: bet.shares,
+            token: isCashContract ? 'CASH' : 'M$',
+          })} on payout`,
+          {
+            duration: 5000,
+            id: toastId,
+          }
+        )
+        setSubmittedBet(null)
+        setIsSubmitting(false)
+        onBuySuccess?.()
+      } else {
+        toast.loading(`Filling ${TRADE_TERM.toLowerCase()}...`, {
+          duration: expiresMillisAfter + 100,
+          id: toastId,
+        })
+        setSubmittedBet({
+          ...(bet as CandidateBet<LimitBet>),
+          userId: user.id,
+          id: bet.betId,
+          expired: false,
+          toastId,
+        })
+        setTimeout(() => {
+          setSubmittedBet((prev) => (prev ? { ...prev, expired: true } : null))
+        }, expiresMillisAfter + 100)
+      }
       setBetAmount(undefined)
-      setSubmittedBet({
-        ...(bet as CandidateBet<LimitBet>),
-        userId: user.id,
-        id: bet.betId,
-        expired: false,
-        toastId,
-      })
-      setTimeout(() => {
-        setSubmittedBet((prev) => (prev ? { ...prev, expired: true } : null))
-      }, expiresMillisAfter + 100)
 
       track(
         'bet',
@@ -480,13 +469,12 @@ export const BuyPanelBody = (props: {
           setError(`Error placing ${TRADE_TERM} (could not serialize access)`)
           console.error(`Error placing ${TRADE_TERM}`, e)
         } else setError(message)
-        toast.error(`Error submitting ${TRADE_TERM}`)
+        toast.error(`Error submitting ${TRADE_TERM}`, { id: toastId })
       } else {
         console.error(e)
         setError(`Error placing ${TRADE_TERM}`)
-        toast.error(`Error submitting ${TRADE_TERM}`)
+        toast.error(`Error submitting ${TRADE_TERM}`, { id: toastId })
       }
-      toast.dismiss(toastId)
       setIsSubmitting(false)
     }
   }
@@ -554,14 +542,13 @@ export const BuyPanelBody = (props: {
   return (
     <>
       <Col className={clsx(panelClassName, 'relative rounded-xl px-4 py-2')}>
-        {isCashContract && <InBeta className="my-2" />}
         {children}
         {(isAdvancedTrader || alwaysShowOutcomeSwitcher) && (
           <Row className={'mb-2 mt-2 justify-between'}>
             <Row
               className={clsx(
                 ' gap-1',
-                (isBinaryMC || pseudonymName) && 'hidden'
+                (isBinaryMC || pseudonymName) && 'invisible'
               )}
             >
               <ChoicesToggleGroup
@@ -577,6 +564,7 @@ export const BuyPanelBody = (props: {
               {isAdvancedTrader && !isStonk && (
                 <ChoicesToggleGroup
                   currentChoice={betType}
+                  color="light"
                   choicesMap={{
                     Quick: 'Market',
                     Limit: 'Limit',
@@ -599,28 +587,39 @@ export const BuyPanelBody = (props: {
             </Row>
           </Row>
         )}
+        {!isAdvancedTrader && onClose && (
+          <Row className="justify-end">
+            <Button
+              color="gray-white"
+              size="sm"
+              onClick={onClose}
+              className="-mr-2"
+            >
+              <XIcon className="h-5 w-5" />
+            </Button>
+          </Row>
+        )}
 
         {betType === 'Market' ? (
           <>
-            <Row className={clsx('text-ink-700 mb-2 items-center space-x-3')}>
+            <Row className={clsx('text-ink-600 mb-2 items-center space-x-3')}>
               {capitalize(TRADE_TERM)} amount
             </Row>
 
             <Row
               className={clsx(
-                'flex-wrap gap-x-8 gap-y-4',
-                isAdvancedTrader ? 'items-center' : 'items-end',
-                isAdvancedTrader ? 'mb-5' : 'mb-3'
+                'mb-2 flex-wrap gap-x-8 gap-y-4',
+                isAdvancedTrader ? 'items-center' : 'items-end'
               )}
             >
               <BuyAmountInput
+                parentClassName="max-w-full"
                 amount={betAmount}
                 onChange={onBetChange}
                 error={error}
                 setError={setError}
                 disabled={isSubmitting}
                 inputRef={inputRef}
-                binaryOutcome={isBinaryMC ? undefined : outcome}
                 showSlider={isAdvancedTrader}
                 marketTier={marketTier}
                 token={isCashContract ? 'CASH' : 'M$'}
@@ -629,9 +628,9 @@ export const BuyPanelBody = (props: {
               />
 
               {isAdvancedTrader && (
-                <Col className="gap-3">
+                <Col className="gap-1">
                   <Row className=" items-baseline">
-                    <span className="text-ink-700 mr-2 min-w-[120px] whitespace-nowrap">
+                    <span className="text-ink-600 mr-2 min-w-[120px] whitespace-nowrap">
                       {isPseudoNumeric
                         ? 'Estimated value'
                         : isStonk
@@ -645,7 +644,7 @@ export const BuyPanelBody = (props: {
                       )}
                     </span>
                     {!probStayedSame && !isPseudoNumeric && (
-                      <span className={clsx('ml-1', 'text-ink-700')}>
+                      <span className={clsx('ml-1', 'text-ink-600')}>
                         {outcome !== 'NO' || isBinaryMC ? '↑' : '↓'}
                         {getFormattedMappedValue(
                           contract,
@@ -660,7 +659,7 @@ export const BuyPanelBody = (props: {
                     )}
                   </Row>
                   <Row className="min-w-[128px] items-baseline">
-                    <div className="text-ink-700 mr-2 min-w-[120px] flex-nowrap whitespace-nowrap">
+                    <div className="text-ink-600 mr-2 min-w-[120px] flex-nowrap whitespace-nowrap">
                       {isPseudoNumeric || isStonk ? 'Shares' : <>Max payout</>}
                     </div>
 
@@ -689,6 +688,7 @@ export const BuyPanelBody = (props: {
         ) : (
           <>
             <LimitOrderPanel
+              betAmount={betAmount}
               contract={contract}
               multiProps={multiProps}
               user={user}
@@ -797,14 +797,14 @@ export const BuyPanelBody = (props: {
             <Row className={''}>
               <span
                 className={clsx(
-                  'text-ink-700 mr-1 whitespace-nowrap ',
+                  'text-ink-600 mr-1 whitespace-nowrap ',
                   isAdvancedTrader ? '' : 'min-w-[110px]'
                 )}
               >
                 Your {isCashContract ? SWEEPIES_NAME : 'mana'}
                 {' balance'}
               </span>
-              <span className="text-ink-700 font-semibold">
+              <span className="text-ink-600 font-semibold">
                 <MoneyDisplay
                   amount={balance}
                   isCashContract={isCashContract}
@@ -817,7 +817,7 @@ export const BuyPanelBody = (props: {
         {!isAdvancedTrader && (
           <Col>
             <Row className="">
-              <span className="text-ink-700 mr-1 min-w-[110px] whitespace-nowrap text-sm">
+              <span className="text-ink-600 mr-1 min-w-[110px] whitespace-nowrap text-sm">
                 {isPseudoNumeric
                   ? 'Estimated value'
                   : isStonk
@@ -825,14 +825,14 @@ export const BuyPanelBody = (props: {
                   : 'New probability'}
               </span>
 
-              <span className="text-ink-700 text-sm font-semibold">
+              <span className="text-ink-600 text-sm font-semibold">
                 {getFormattedMappedValue(
                   contract,
                   probStayedSame ? probBefore : probAfter
                 )}
               </span>
               {!probStayedSame && !isPseudoNumeric && (
-                <span className={clsx('ml-2 text-sm', 'text-ink-700')}>
+                <span className={clsx('ml-2 text-sm', 'text-ink-600')}>
                   {outcome !== 'NO' || isBinaryMC ? '↑' : '↓'}
                   {getFormattedMappedValue(
                     contract,
@@ -893,7 +893,7 @@ export const BuyPanelBody = (props: {
         {user && (
           <div className="absolute bottom-2 right-0">
             <button
-              className="text-ink-700 mr-2 flex items-center text-sm hover:underline"
+              className="text-ink-600 mr-2 flex items-center text-sm hover:underline"
               onClick={() => {
                 if (!isAdvancedTrader) {
                   setBetType('Market')
@@ -940,7 +940,7 @@ export const QuickBetAmountsRow = (props: {
   const QUICK_BET_AMOUNTS = [10, 25, 100]
   return (
     <Row className={clsx('mb-2 items-center space-x-3', className)}>
-      <div className="text-ink-700">Amount</div>
+      <div className="text-ink-600">Amount</div>
       <ChoicesToggleGroup
         currentChoice={
           QUICK_BET_AMOUNTS.includes(betAmount ?? 0) ? betAmount : undefined

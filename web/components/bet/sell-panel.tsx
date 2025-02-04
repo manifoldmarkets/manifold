@@ -31,10 +31,9 @@ import { AmountInput } from '../widgets/amount-input'
 import { MoneyDisplay } from './money-display'
 import { ContractMetric } from 'common/contract-metric'
 import { uniq } from 'lodash'
-import { getSaleResult, getSaleResultMultiSumsToOne } from 'common/sell-bet'
-
-import { useIsPageVisible } from 'web/hooks/use-page-visible'
 import { useUnfilledBetsAndBalanceByUserId } from 'client-common/hooks/use-bets'
+import { useIsPageVisible } from 'web/hooks/use-page-visible'
+import { getSaleResult, getSaleResultMultiSumsToOne } from 'common/sell-bet'
 
 export function SellPanel(props: {
   contract: CPMMContract | CPMMMultiContract | CPMMNumericContract
@@ -76,8 +75,11 @@ export function SellPanel(props: {
       : undefined
 
   const { unfilledBets: allUnfilledBets, balanceByUserId } =
-    useUnfilledBetsAndBalanceByUserId(contract.id, useIsPageVisible, (params) =>
-      api('bets', params)
+    useUnfilledBetsAndBalanceByUserId(
+      contract.id,
+      (params) => api('bets', params),
+      (params) => api('users/by-id/balance', params),
+      useIsPageVisible
     )
 
   const unfilledBets =
@@ -404,8 +406,11 @@ export function MultiSellerProfit(props: {
   const sharesOutcome = (metric.maxSharesOutcome ?? 'YES') as 'YES' | 'NO'
 
   const { unfilledBets: allUnfilledBets, balanceByUserId } =
-    useUnfilledBetsAndBalanceByUserId(contract.id, useIsPageVisible, (params) =>
-      api('bets', params)
+    useUnfilledBetsAndBalanceByUserId(
+      contract.id,
+      (params) => api('bets', params),
+      (params) => api('users/by-id/balance', params),
+      useIsPageVisible
     )
 
   const unfilledBets = allUnfilledBets.filter((b) => b.answerId === answerId)

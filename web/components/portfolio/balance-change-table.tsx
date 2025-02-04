@@ -38,6 +38,7 @@ import { useAPIGetter } from 'web/hooks/use-api-getter'
 import { Button } from 'web/components/buttons/button'
 import { Modal } from '../layout/modal'
 import { QuestType } from 'common/quest'
+import { PROFIT_FEE_FRACTION } from 'common/economy'
 
 export const BalanceChangeTable = (props: { user: User }) => {
   const { user } = props
@@ -438,7 +439,7 @@ const TxnBalanceChangeRow = (props: {
     BETTING_STREAK_BONUS: 'bg-red-400',
     CREATE_CONTRACT_ANTE: 'bg-indigo-400',
     CONTRACT_RESOLUTION_PAYOUT: 'bg-yellow-200',
-    CONTRACT_UNDO_RESOLUTION_PAYOUT: 'bg-ink-1000',
+    CONTRACT_UNDO_RESOLUTION_PAYOUT: 'bg-canvas-100',
     PRODUCE_SPICE: 'bg-yellow-200',
     CONTRACT_UNDO_PRODUCE_SPICE: 'bg-ink-1000',
     CONSUME_SPICE: 'bg-indigo-400',
@@ -461,6 +462,9 @@ const TxnBalanceChangeRow = (props: {
     ADD_SUBSIDY: 'bg-red-100',
     UNIQUE_BETTOR_BONUS: 'bg-sky-400',
     CHARITY: 'bg-gradient-to-br from-pink-300 via-purple-300 to-primary-400',
+    CONTRACT_RESOLUTION_FEE:
+      'bg-gradient-to-br from-pink-300 via-purple-300 to-primary-400',
+    UNDO_CONTRACT_RESOLUTION_FEE: 'bg-canvas-100',
     ADMIN_REWARD:
       'bg-gradient-to-br from-pink-300 via-purple-300 to-primary-400',
   }
@@ -489,7 +493,8 @@ const TxnBalanceChangeRow = (props: {
               type === 'PRODUCE_SPICE' ? (
               '🎉'
             ) : type === 'CONTRACT_UNDO_RESOLUTION_PAYOUT' ||
-              type === 'CONTRACT_UNDO_PRODUCE_SPICE' ? (
+              type === 'CONTRACT_UNDO_PRODUCE_SPICE' ||
+              type === 'UNDO_CONTRACT_RESOLUTION_FEE' ? (
               <FaBackward className={'h-5 w-5 text-white'} />
             ) : type === 'CREATE_CONTRACT_ANTE' || type === 'BOUNTY_POSTED' ? (
               <ScaleIcon className={'-ml-[1px] mb-1 h-5 w-5'} />
@@ -502,7 +507,9 @@ const TxnBalanceChangeRow = (props: {
               type === 'REFERRAL' ||
               type === 'ADMIN_REWARD' ? (
               '❤️'
-            ) : type === 'LOAN' || type === 'CASH_OUT' ? (
+            ) : type === 'LOAN' ||
+              type === 'CASH_OUT' ||
+              type === 'CONTRACT_RESOLUTION_FEE' ? (
               '🏦'
             ) : type === 'MANA_PURCHASE' ? (
               '🤑'
@@ -648,6 +655,9 @@ const txnTitle = (change: TxnBalanceChange) => {
       return 'Sweepcash bonus'
     case 'KYC_BONUS':
       return 'ID verification bonus'
+    case 'CONTRACT_RESOLUTION_FEE':
+    case 'UNDO_CONTRACT_RESOLUTION_FEE':
+      return ''
     default:
       return type
   }
@@ -685,6 +695,10 @@ const txnTypeToDescription = (txnCategory: string) => {
     case 'CONVERT_CASH':
     case 'CONVERT_CASH_DONE':
       return ''
+    case 'CONTRACT_RESOLUTION_FEE':
+      return `${PROFIT_FEE_FRACTION * 100}% fee on profit at resolution`
+    case 'UNDO_CONTRACT_RESOLUTION_FEE':
+      return `Undo ${PROFIT_FEE_FRACTION * 100}% profit fee at resolution`
     case 'MANA_PURCHASE':
       return ''
     case 'ADD_SUBSIDY':

@@ -514,10 +514,14 @@ export const sendNewAnswerEmail = async (
 export const sendInterestingMarketsEmail = async (
   userName: string,
   privateUser: PrivateUser,
-  contractsToSend: Contract[],
-  deliveryTime?: string
+  contractsToSend: Contract[]
 ) => {
-  if (!privateUser || !privateUser.email) return
+  if (!privateUser || !privateUser.email) {
+    log.error('No private user or email to send interesting markets email to', {
+      userName,
+    })
+    return
+  }
 
   const { unsubscribeUrl, sendToEmail } = getNotificationDestinationsForUser(
     privateUser,
@@ -558,8 +562,7 @@ export const sendInterestingMarketsEmail = async (
       question6Title: contractsToSend[5].question,
       question6Link: contractUrl(contractsToSend[5]),
       question6ImgSrc: imageSourceUrl(contractsToSend[5]),
-    },
-    deliveryTime ? { 'o:deliverytime': deliveryTime } : undefined
+    }
   )
 }
 

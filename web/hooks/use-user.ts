@@ -1,15 +1,15 @@
 'use client'
+import {
+  useWebsocketPrivateUser as useWebsocketPrivateUserCommon,
+  useWebsocketUser as useWebsocketUserCommon,
+} from 'client-common/hooks/use-websocket-user'
 import { PrivateUser } from 'common/user'
 import { useContext, useEffect, useState } from 'react'
-import {
-  useWebsocketUser as useWebsocketUserCommon,
-  useWebsocketPrivateUser as useWebsocketPrivateUserCommon,
-} from 'client-common/hooks/use-websocket-user'
 import { AuthContext } from 'web/components/auth-context'
-import { useIsPageVisible } from './use-page-visible'
-import { getPrivateUserSafe } from 'web/lib/supabase/users'
-import { getShouldBlockDestiny } from 'web/lib/supabase/groups'
 import { api } from 'web/lib/api/api'
+import { getShouldBlockDestiny } from 'web/lib/supabase/groups'
+import { getPrivateUserSafe } from 'web/lib/supabase/users'
+import { useIsPageVisible } from './use-page-visible'
 import { db } from 'common/supabase/db'
 
 export const useUser = () => {

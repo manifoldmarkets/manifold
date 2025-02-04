@@ -131,7 +131,7 @@ export const CashToManaForm = (props: {
           className="w-full"
         >
           Redeem for &nbsp;
-          <TokenNumber amount={sweepiesAmount} coinType="mana" isInline />
+          <TokenNumber amount={manaAmount} coinType="mana" isInline />
         </Button>
       </Row>
       <Row className="text-error mt-2 text-sm">{error}</Row>
