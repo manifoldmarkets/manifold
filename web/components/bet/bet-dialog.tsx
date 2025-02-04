@@ -58,7 +58,7 @@ export function BetDialog(props: {
       setOpen={setOpen}
       className={clsx(
         MODAL_CLASS,
-        'pointer-events-auto max-h-[32rem] select-none overflow-auto'
+        'pointer-events-auto max-h-[42rem] select-none overflow-auto'
       )}
     >
       <Col>
