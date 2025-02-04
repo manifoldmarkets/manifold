@@ -105,11 +105,14 @@ export const TOPICS_TO_SUBTOPICS: { [key: string]: TopicInfo[] } = {
       name: '🍿 Movies & TV',
       groupIds: [
         'KSeNIu7AWgiBBM5FqVuB', // Movies
-        '4QIcUOfCSSha0JZHAg9X', // Celebrities
         'EUSEngFk1dGGBfaMeAmh', // TV and Film
         'eJZecx6r22G2NriYYXcC', // Culture
         'XU1fOYURSnb58lgsqaly', // Entertainment & Pop culture
       ],
+    },
+    {
+      name: '👤 Celebrities',
+      groupIds: ['4QIcUOfCSSha0JZHAg9X'],
     },
     {
       name: '🎶 Music',
@@ -150,6 +153,10 @@ export const TOPICS_TO_SUBTOPICS: { [key: string]: TopicInfo[] } = {
       name: '🪙 Crypto',
       groupIds: ['YuJw0M1xvUHrpiRRuKso', 'WBeBD6FyMd0NvSL0qjMb'],
     },
+    {
+      name: '🌐 Manifold',
+      groupIds: ['hzyCW27Hf9NzuXZRizeZ'],
+    },
   ],
 
   '🪂 NSFW': [
@@ -160,6 +167,20 @@ export const TOPICS_TO_SUBTOPICS: { [key: string]: TopicInfo[] } = {
     },
   ],
   '🎲 Fun': [
+    {
+      name: '🎲 Chance',
+      groupIds: [
+        '5V0GjAyN99OQpb96fwo8', // whale watching
+        'J8Z1KAZV31icklA4tgJW', // fairly random
+      ],
+    },
+    {
+      name: '🐸 Meme stocks',
+      groupIds: [
+        '524e08a3-3589-4267-9009-818d6c89cfa4', // meme-stocks
+        '2T4mM0N5az2lYcaN5G50', // permanent-markets
+      ],
+    },
     {
       name: '🤠 Fun',
       groupIds: ['bBwafyeaiuwWwobwm2c4'],
