@@ -261,7 +261,7 @@ export function BuyAmountInput(props: {
     .slice(0, isMobile ? 1 : 2)
     .map((v) => -v)
   const values = buildArray(
-    ...decrementValues,
+    ...decrementValues.slice().reverse(),
     incrementValues[0],
     incrementValues[1]
   )
