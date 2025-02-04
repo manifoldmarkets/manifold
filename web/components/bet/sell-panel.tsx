@@ -245,16 +245,6 @@ export function SellPanel(props: {
   }
   const isCashContract = contract.token === 'CASH'
 
-  console.log(
-    contract.question,
-    answer?.text,
-    saleValue,
-    netProceeds,
-    shares,
-    sellQuantity,
-    soldShares,
-    amount
-  )
   return (
     <>
       <AmountInput

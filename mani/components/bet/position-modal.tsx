@@ -27,7 +27,21 @@ export function PositionModal({
   const outcome = (metric.maxSharesOutcome ?? 'YES') as 'YES' | 'NO'
 
   return (
-    <Modal isOpen={open} onClose={() => setOpen(false)} mode="close" showHeader>
+    <Modal
+      isOpen={open}
+      onClose={() => {
+        setMode('base')
+        setOpen(false)
+      }}
+      onBack={
+        mode !== 'base'
+          ? () => {
+              setMode('base')
+            }
+          : undefined
+      }
+      showHeader
+    >
       {mode == 'base' || mode == 'sell' ? (
         <PositionModalContent
           contract={contract}

@@ -60,7 +60,7 @@ export function BetPanel({
 }) {
   // TODO: figure out keyboard clicking behavior
   return (
-    <Modal isOpen={open} onClose={() => setOpen(false)} mode="close" showHeader>
+    <Modal isOpen={open} onClose={() => setOpen(false)} showHeader>
       <BetPanelContent
         contract={contract}
         outcome={outcome}
@@ -346,78 +346,6 @@ export function BetPanelContent({
             />
           )}
         </Col>
-      </Col>
-      <Col style={{ gap: 12 }}>
-        <BetAmountInput amount={amount} setAmount={setAmount} />
-        <Slider
-          style={{ width: '100%', height: 40 }}
-          minimumValue={AMOUNT_STEPS[0]}
-          maximumValue={AMOUNT_STEPS[AMOUNT_STEPS.length - 1]}
-          value={amount}
-          onValueChange={(value) => {
-            const closestStep = AMOUNT_STEPS.reduce((prev, curr) =>
-              Math.abs(curr - value) < Math.abs(prev - value) ? curr : prev
-            )
-            setAmount(closestStep)
-          }}
-          minimumTrackTintColor={color.primaryButton}
-          maximumTrackTintColor={color.border}
-          thumbTintColor={color.primary}
-        />
-        {error &&
-          (error === NEEDS_TO_REGISTER ? (
-            <Col style={{ gap: 8 }}>
-              <ThemedText color={color.error}>{error}</ThemedText>
-              <Button
-                onPress={() => router.push(`/register?slug=${contract.slug}`)}
-              >
-                Register and get {KYC_VERIFICATION_BONUS_CASH} {SWEEPIES_NAME}{' '}
-                free!
-              </Button>
-            </Col>
-          ) : (
-            <ThemedText color={color.error}>{error}</ThemedText>
-          ))}
-      </Col>
-      <Col style={{ gap: 8 }}>
-        <Row style={{ justifyContent: 'space-between', width: '100%' }}>
-          <ThemedText color={color.textTertiary} size="lg">
-            Payout if win
-          </ThemedText>
-
-          {/* TODO: get real payout */}
-          <Row style={{ alignItems: 'center', gap: 4 }}>
-            <TokenNumber amount={amount * 2} size="lg" />
-            <NumberText size="lg" color={color.profitText}>
-              (+200%)
-            </NumberText>
-          </Row>
-        </Row>
-        {isBinaryMC ? (
-          <Button
-            size="lg"
-            onPress={onPress}
-            disabled={loading || error !== null}
-            loading={loading}
-          >
-            <ThemedText weight="normal">
-              Buy{' '}
-              <ThemedText weight="semibold">
-                {multiProps?.answerToDisplay?.text ??
-                  multiProps?.answerToBuy?.text}
-              </ThemedText>
-            </ThemedText>
-          </Button>
-        ) : (
-          <YesNoButton
-            disabled={loading || error !== null}
-            loading={loading}
-            variant={outcome === 'YES' ? 'yes' : 'no'}
-            size="lg"
-            title={`Buy ${outcome === 'YES' ? 'Yes' : 'No'}`}
-            onPress={onPress}
-          />
-        )}
       </Col>
     </KeyboardAvoidingView>
   )

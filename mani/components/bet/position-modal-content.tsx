@@ -22,10 +22,7 @@ import { getMappedValue } from 'common/pseudo-numeric'
 import { useUser } from 'hooks/use-user'
 import { useColor } from 'hooks/use-color'
 import { getPayoutInfo } from 'common/payouts'
-import {
-  BinaryOutcomes,
-  MultiBetProps,
-} from 'components/contract/bet/bet-panel'
+import { BinaryOutcomes } from 'components/contract/bet/bet-panel'
 import { PositionModalMode } from './position-modal'
 import { ContractMetric } from 'common/contract-metric'
 import { KeyboardAvoidingView, Platform, TouchableOpacity } from 'react-native'
@@ -34,12 +31,12 @@ import { router } from 'expo-router'
 import { ThemedText } from 'components/themed-text'
 import { TokenNumber } from 'components/token/token-number'
 import { Row } from 'components/layout/row'
-import { NumberText } from 'components/number-text'
 import { Button } from 'components/buttons/button'
+import Slider from '@react-native-community/slider'
 
 export function PositionModalContent({
   contract,
-  metric
+  metric,
   answerId,
   outcome,
   multiProps,
@@ -72,7 +69,7 @@ export function PositionModalContent({
     totalShares: { YES: 0, NO: 0 },
     maxSharesOutcome: 'YES',
   }
-  const outcome = (maxSharesOutcome ?? 'YES') as 'YES' | 'NO'
+
   const shares = totalShares[outcome] ?? 0
   const sharesOutcome = maxSharesOutcome as 'YES' | 'NO' | undefined
 
@@ -81,8 +78,11 @@ export function PositionModalContent({
     outcomeType === 'NUMBER'
 
   const { unfilledBets: allUnfilledBets, balanceByUserId } =
-    useUnfilledBetsAndBalanceByUserId(contract.id, useIsPageVisible, (params) =>
-      api('bets', params)
+    useUnfilledBetsAndBalanceByUserId(
+      contract.id,
+      (params) => api('bets', params),
+      (params) => api('users/by-id/balance', params),
+      useIsPageVisible
     )
 
   const unfilledBets =
@@ -243,10 +243,15 @@ export function PositionModalContent({
         flex: 1,
         justifyContent: 'flex-start',
         flexDirection: 'column',
-        paddingBottom: 16,
       }}
     >
-      <Col style={{ flex: 1, justifyContent: 'space-between' }}>
+      <Col
+        style={{
+          flex: 1,
+          justifyContent: 'space-between',
+          paddingBottom: 16,
+        }}
+      >
         <Col style={{ gap: 4 }}>
           <TouchableOpacity
             onPress={() => {
@@ -281,9 +286,42 @@ export function PositionModalContent({
         </Col>
         <Col style={{ gap: 12, alignItems: 'center' }}>
           <ThemedText color={color.textTertiary} size="lg">
-            {won ? 'Paid out' : 'Current value'}
+            {mode == 'sell'
+              ? 'Sell amount'
+              : won
+              ? 'Paid out'
+              : 'Current value'}
           </ThemedText>
           <TokenNumber amount={saleValue + totalFees} size="5xl" />
+          {mode == 'sell' && (
+            <Slider
+              value={amount ? amount / shares : 1}
+              onValueChange={(value) => {
+                const newAmount = Math.floor(shares * value)
+                setDisplayAmount(newAmount)
+                setAmount(newAmount)
+
+                // Check for errors
+                if (newAmount !== undefined && newAmount > shares) {
+                  setError(
+                    `Maximum ${formatShares(
+                      Math.floor(shares),
+                      isCashContract
+                    )} shares`
+                  )
+                } else {
+                  setError(undefined)
+                }
+              }}
+              minimumValue={0}
+              maximumValue={1}
+              step={0.01}
+              minimumTrackTintColor={color.primaryButton}
+              maximumTrackTintColor={color.border}
+              thumbTintColor={color.primary}
+              style={{ width: '100%', height: 40 }}
+            />
+          )}
         </Col>
         <Col style={{ gap: 8 }}>
           <Row style={{ justifyContent: 'space-between', width: '100%' }}>
@@ -294,27 +332,10 @@ export function PositionModalContent({
             {/* TODO: get real payout */}
             <Row style={{ alignItems: 'center', gap: 4 }}>
               <TokenNumber amount={profit} size="lg" />
-              <NumberText
-                color={profit <= 0 ? color.textTertiary : color.profitText}
-                size="lg"
-              >
-                ({formatPercent(profit / costBasis)})
-              </NumberText>
             </Row>
           </Row>
-          {!won && (
-            <Row style={{ justifyContent: 'space-between', width: '100%' }}>
-              <ThemedText color={color.textTertiary} size="lg">
-                Max payout
-              </ThemedText>
-
-              <Row style={{ alignItems: 'center', gap: 4 }}>
-                <TokenNumber amount={netProceeds} size="lg" />
-              </Row>
-            </Row>
-          )}
         </Col>
-        {canSell && (
+        {canSell && mode !== 'sell' && (
           <Row style={{ gap: 12, width: '100%' }}>
             <Button
               onPress={() => setMode('buy more')}
@@ -339,6 +360,22 @@ export function PositionModalContent({
               Sell
             </Button>
           </Row>
+        )}
+        {mode == 'sell' && (
+          <Button
+            onPress={() => {
+              submitSell()
+              setOpen(false)
+            }}
+            style={{ width: '100%' }}
+            textProps={{
+              weight: 'normal',
+            }}
+            size="lg"
+            variant={'primary'}
+          >
+            Sell
+          </Button>
         )}
       </Col>
     </KeyboardAvoidingView>

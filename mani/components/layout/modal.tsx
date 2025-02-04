@@ -21,9 +21,9 @@ import { Colors } from 'constants/colors'
 
 type ModalProps = {
   isOpen: boolean
-  onClose: () => void
+  onClose?: () => void
+  onBack?: () => void
   children: ReactNode
-  mode?: 'back' | 'close'
   title?: string
   showHeader?: boolean
 }
@@ -31,8 +31,8 @@ type ModalProps = {
 export function Modal({
   isOpen,
   onClose,
+  onBack,
   children,
-  mode = 'close',
   title,
   showHeader = false,
 }: ModalProps) {
@@ -50,7 +50,8 @@ export function Modal({
       }).start()
 
       const unsubscribe = navigation.addListener('state', () => {
-        onClose()
+        if (onClose) onClose()
+        else if (onBack) onBack()
       })
       return unsubscribe
     } else {
@@ -59,7 +60,7 @@ export function Modal({
         useNativeDriver: true,
       }).start()
     }
-  }, [isOpen, navigation, onClose, slideAnim])
+  }, [isOpen, navigation, onClose, onBack, slideAnim])
 
   if (!isOpen) return null
 
@@ -87,20 +88,21 @@ export function Modal({
           )}
           <View style={styles.innerContent}>
             <Row style={styles.header}>
-              {mode === 'back' && (
-                <TouchableOpacity onPress={onClose}>
+              {onBack ? (
+                <TouchableOpacity onPress={onBack}>
                   <IconSymbol
                     name="arrow.left"
                     size={24}
                     color={color.textTertiary}
                   />
                 </TouchableOpacity>
+              ) : (
+                <View style={{ width: 24 }} />
               )}
-              {mode === 'close' && <View style={{ width: 24 }} />}
 
               {title && <ThemedText style={styles.title}>{title}</ThemedText>}
 
-              {mode === 'close' ? (
+              {onClose ? (
                 <TouchableOpacity onPress={onClose}>
                   <IconSymbol
                     name="xmark"
