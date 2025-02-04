@@ -9,6 +9,7 @@ import {
   LoginIcon,
   SearchIcon,
   GlobeAltIcon,
+  ChatIcon,
 } from '@heroicons/react/outline'
 import TrophyIcon from 'web/lib/icons/trophy-icon.svg'
 import clsx from 'clsx'
@@ -158,11 +159,16 @@ const getDesktopNav = (
       //   href: '/tv',
       //   icon: PiTelevisionSimpleBold,
       // },
-      { name: 'Refer a friend', href: '/referrals', icon: StarIcon }, // remove this and I will beat you — SG
+      // { name: 'Refer a friend', href: '/referrals', icon: StarIcon },
       {
         name: 'Messages',
         href: '/messages',
         icon: PrivateMessagesIcon,
+      },
+      {
+        name: 'Discord',
+        href: 'https://discord.gg/eHQBNBqXuh',
+        icon: ChatIcon,
       },
       options.isAdminOrMod && {
         name: 'Reports',
@@ -178,6 +184,11 @@ const getDesktopNav = (
     { name: 'Browse', href: '/browse', icon: SearchIcon },
     { name: 'News', href: '/news', icon: NewspaperIcon },
     { name: 'About', href: '/about', icon: QuestionMarkCircleIcon },
+    {
+      name: 'Discord',
+      href: 'https://discord.gg/eHQBNBqXuh',
+      icon: ChatIcon,
+    },
     { name: 'App', onClick: openDownloadApp, icon: DeviceMobileIcon },
     {
       name: 'Add funds',

@@ -67,6 +67,9 @@ export function SidebarItem(props: { item: NavItem; currentPage?: string }) {
         aria-current={isCurrentPage ? 'page' : undefined}
         onClick={onClick}
         className={sidebarClass}
+        target={
+          item.external || !item.href.startsWith('/') ? '_blank' : undefined
+        }
       >
         {sidebarItem}
       </Link>
