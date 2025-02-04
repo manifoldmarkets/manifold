@@ -18,7 +18,7 @@ export function ProbabilitySlider(props: {
   color?: keyof typeof sliderColors
   outcome?: 'YES' | 'NO'
 }) {
-  const { prob, onProbChange, disabled, className } = props
+  const { prob, onProbChange, disabled, className, outcome } = props
   // Default slider color: YES → green, NO → red
   const color = props.color ?? 'gray'
 
@@ -42,6 +42,7 @@ export function ProbabilitySlider(props: {
       onChange={(value) => onProbChange(sliderIndexToProb(value))}
       step={1}
       disabled={disabled}
+      fillToRight={outcome === 'NO'}
     />
   )
 }
