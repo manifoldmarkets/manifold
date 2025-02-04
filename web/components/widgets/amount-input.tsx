@@ -27,6 +27,7 @@ import { Row } from '../layout/row'
 import { Input } from './input'
 import { sliderColors } from './slider'
 import { useCurrentPortfolio } from 'web/hooks/use-portfolio-history'
+import { useIsMobile } from 'web/hooks/use-is-mobile'
 
 export function AmountInput(
   props: {
@@ -254,6 +255,11 @@ export function BuyAmountInput(props: {
       ? [500, 1000, 5000]
       : quickButtonValues ??
         (isAdvancedTrader ? advancedIncrementValues : defaultIncrementValues)
+  const decrementValues = incrementValues.slice(0, 2).map((v) => -v)
+  const isMobile = useIsMobile()
+  const values = !isMobile
+    ? [...decrementValues, ...incrementValues]
+    : incrementValues
 
   return (
     <>

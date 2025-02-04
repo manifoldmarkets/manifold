@@ -4,6 +4,7 @@ import {
   CPMMMultiContract,
   isBinaryMulti,
   isSportsContract,
+  MarketContract,
 } from 'common/contract'
 import { BinaryBetButtons } from 'components/contract/bet/binary-bet-buttons'
 import { MultiBinaryBetButtons } from 'components/contract/bet/multi-binary-bet-buttons'
@@ -73,7 +74,9 @@ function ContractPageContent(props: {
 
   const manaContract = useContract(manaContractProp) ?? manaContractProp
   const cashContract = useContract(cashContractProp) ?? cashContractProp
-  const contract = token === 'MANA' ? manaContract : cashContract
+  const contract = (
+    token === 'MANA' ? manaContract : cashContract
+  ) as MarketContract
 
   const isBinaryMc = isBinaryMulti(contract)
   const isMultipleChoice =
