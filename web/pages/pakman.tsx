@@ -7,8 +7,9 @@ import { PromotionalPanel } from 'web/components/promotional-panel'
 import { SweepiesFlatCoin } from 'web/public/custom-components/sweepiesFlatCoin'
 import { FeedContractCard } from 'web/components/contract/feed-contract-card'
 import { Contract } from 'common/contract'
-import { api } from 'web/lib/api/api'
+import { contractFields, convertContract } from 'common/supabase/contracts'
 import { Col } from 'web/components/layout/col'
+import { db } from 'web/lib/supabase/db'
 
 const revalidate = 60
 
@@ -20,16 +21,25 @@ export async function getStaticProps() {
     }
   }
 
-  const [contract, politicsMarkets] = await Promise.all([
-    api('get-contract', { contractId: 'OPl99N5Aun' }),
-    api('search-markets-full', {
-      term: '',
-      filter: 'all',
-      sort: 'score',
-      limit: 10,
-      topicSlug: 'us-politics',
-    }),
+  const [{ data: contractData }, { data: politicsData }] = await Promise.all([
+    db.from('contracts').select(contractFields).eq('id', 'OPl99N5Aun').single(),
+    db
+      .from('contracts')
+      .select(contractFields)
+      .not(
+        'outcome_type',
+        'in',
+        `(${['STONK', 'BOUNTIED_QUESTION', 'POLL'].join(',')})`
+      )
+      .is('resolution', null)
+      .eq('token', 'MANA')
+      .eq('visibility', 'public')
+      .order('importance_score', { ascending: false })
+      .limit(10),
   ])
+
+  const contract = contractData ? convertContract(contractData) : null
+  const politicsMarkets = (politicsData ?? []).map(convertContract)
 
   return {
     props: {
