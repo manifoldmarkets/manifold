@@ -26,7 +26,6 @@ import { Col } from '../layout/col'
 import { Row } from '../layout/row'
 import { Input } from './input'
 import { sliderColors } from './slider'
-import { Button } from '../buttons/button'
 import { useCurrentPortfolio } from 'web/hooks/use-portfolio-history'
 
 export function AmountInput(
@@ -258,43 +257,27 @@ export function BuyAmountInput(props: {
 
   return (
     <>
-      <Col className={clsx('w-full max-w-[350px] gap-2', parentClassName)}>
-        <Col className="gap-2">
-          <AmountInput
-            className={className}
-            inputClassName={clsx('w-full !text-xl h-[60px]', inputClassName)}
-            label={
-              token === 'SPICE' ? (
-                <SpiceCoin />
-              ) : token == 'CASH' ? (
-                <SweepiesCoin />
-              ) : (
-                <ManaCoin />
-              )
-            }
-            amount={amount}
-            onChangeAmount={onChange}
-            error={!!error}
-            allowFloat={token === 'CASH'}
-            disabled={disabled}
-            inputRef={inputRef}
-            disableClearButton={!isAdvancedTrader}
-          />
-          {!disableQuickButtons && (
-            <Row className=" w-full items-center gap-2">
-              {incrementValues.map((increment) => (
-                <Button
-                  key={increment}
-                  color="gray-white"
-                  onClick={() => incrementBy(increment)}
-                  className="bg-canvas-0 h-8 w-24"
-                >
-                  {increment > 0 ? `+${increment}` : increment}
-                </Button>
-              ))}
-            </Row>
-          )}
-        </Col>
+      <Col className={clsx('w-full max-w-[350px]', parentClassName)}>
+        <AmountInput
+          className={className}
+          inputClassName={clsx('w-full !text-xl h-[60px]', inputClassName)}
+          label={
+            token === 'SPICE' ? (
+              <SpiceCoin />
+            ) : token == 'CASH' ? (
+              <SweepiesCoin />
+            ) : (
+              <ManaCoin />
+            )
+          }
+          amount={amount}
+          onChangeAmount={onChange}
+          error={!!error}
+          allowFloat={token === 'CASH'}
+          disabled={disabled}
+          inputRef={inputRef}
+          disableClearButton={!isAdvancedTrader}
+        />
         {showSlider && (
           <BetSlider
             amount={amount}
