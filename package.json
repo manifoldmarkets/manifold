@@ -16,7 +16,18 @@
     "lint": "yarn --cwd=web lint-fix; eslint common --fix ; eslint backend/api --fix ; eslint backend/shared --fix",
     "dev:dev": "cross-env GOOGLE_APPLICATION_CREDENTIALS_DEV=./dev-mantic-markets-firebase-adminsdk.json ./dev.sh dev"
   },
-  "dependencies": {},
+  "dependencies": {
+    "@supabase/supabase-js": "2.48.1",
+    "@tiptap/core": "2.11.5",
+    "@tiptap/extension-image": "2.11.5",
+    "@tiptap/extension-link": "2.11.5",
+    "@tiptap/extension-mention": "2.11.5",
+    "@tiptap/starter-kit": "2.11.5",
+    "abort-controller": "3.0.0",
+    "firebase": "11.2.0",
+    "markdown-it": "14.1.0",
+    "prosemirror-model": "1.24.1"
+  },
   "devDependencies": {
     "@types/node": "18.18.8",
     "@typescript-eslint/eslint-plugin": "8.18.1",
