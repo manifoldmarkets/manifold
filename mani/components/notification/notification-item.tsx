@@ -38,6 +38,7 @@ export const ignoredReasons = [
   'airdrop',
   'manifest_airdrop',
   'extra_purchased_mana',
+  'your_contract_closed',
 ]
 
 export const ignoredSourceTypes = [
