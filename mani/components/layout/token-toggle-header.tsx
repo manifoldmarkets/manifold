@@ -10,6 +10,7 @@ import { isTabPath } from 'app/(tabs)/_layout'
 import { useUser } from 'hooks/use-user'
 import { formatMoneyNumber } from 'common/util/format'
 import { CASH_NAME, MANA_NAME } from 'constants/token-names'
+import { StreakWidget } from 'components/streak/streak-widget'
 
 export const HEADER_HEIGHT = 47
 
@@ -46,23 +47,7 @@ export function TokenToggleHeader() {
           <IconSymbol name="arrow.left" size={24} color={color.textTertiary} />
         </TouchableOpacity>
       )}
-      {showStreak && (
-        <Row
-          style={{
-            alignItems: 'center',
-            gap: 2,
-          }}
-        >
-          <ThemedText size="md">🔥</ThemedText>
-          <ThemedText
-            color={color.textSecondary}
-            family={'JetBrainsMono'}
-            size="md"
-          >
-            {user.currentBettingStreak}
-          </ThemedText>
-        </Row>
-      )}
+      {showStreak && <StreakWidget user={user} />}
 
       <Row
         style={{
