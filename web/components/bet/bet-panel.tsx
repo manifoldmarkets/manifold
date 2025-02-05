@@ -72,6 +72,7 @@ import { Button } from '../buttons/button'
 import { usePersistentLocalState } from 'web/hooks/use-persistent-local-state'
 import { getLimitBetReturns, MultiBetProps } from 'client-common/lib/bet'
 import { Tooltip } from '../widgets/tooltip'
+import { useIsMobile } from 'web/hooks/use-is-mobile'
 
 export type BinaryOutcomes = 'YES' | 'NO' | undefined
 
@@ -553,6 +554,7 @@ export const BuyPanelBody = (props: {
     PROMPT_USER_VERIFICATION_MESSAGES.includes(verificationMessage)
 
   const betType = isStonk ? 'Market' : betTypeSetting
+  const isMobile = useIsMobile()
 
   return (
     <>
@@ -695,7 +697,7 @@ export const BuyPanelBody = (props: {
                             className="self-center"
                           >
                             <Tooltip
-                              className="self-center"
+                              autoHideDuration={isMobile ? 3000 : undefined}
                               text={
                                 slippageProtection
                                   ? `Your trades won't move the question probability more than 10 percentage points from displayed probability.`

@@ -13,7 +13,7 @@ import {
 } from '@floating-ui/react'
 import { Transition } from '@headlessui/react'
 import clsx from 'clsx'
-import { ReactNode, useRef, useState } from 'react'
+import { ReactNode, useRef, useState, useEffect } from 'react'
 
 // See https://floating-ui.com/docs/react-dom
 
@@ -27,6 +27,7 @@ export function Tooltip(props: {
   noFade?: boolean
   hasSafePolygon?: boolean
   suppressHydrationWarning?: boolean
+  autoHideDuration?: number
 }) {
   const {
     text,
@@ -37,11 +38,21 @@ export function Tooltip(props: {
     noFade,
     hasSafePolygon,
     suppressHydrationWarning,
+    autoHideDuration,
   } = props
 
   const arrowRef = useRef(null)
 
   const [open, setOpen] = useState(false)
+
+  useEffect(() => {
+    if (open && autoHideDuration) {
+      const timer = setTimeout(() => {
+        setOpen(false)
+      }, autoHideDuration)
+      return () => clearTimeout(timer)
+    }
+  }, [open, autoHideDuration, text])
 
   const { refs, floatingStyles, middlewareData, context, placement } =
     useFloating({
