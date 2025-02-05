@@ -328,7 +328,10 @@ export const BuyPanelBody = (props: {
     }
   }, [updatedBet, submittedBet])
 
-  const isAdvancedTrader = useIsAdvancedTrader()
+  const [justSetAdvancedTrader, setJustSetAdvancedTrader] = useState<boolean>(
+    user?.isAdvancedTrader ?? false
+  )
+  const isAdvancedTrader = useIsAdvancedTrader() || justSetAdvancedTrader
 
   const [betTypeSetting, setBetTypeSetting] = usePersistentLocalState<
     'Market' | 'Limit'
@@ -898,6 +901,7 @@ export const BuyPanelBody = (props: {
                   setBetTypeSetting('Market')
                 }
                 api('me/update', { isAdvancedTrader: !isAdvancedTrader })
+                setJustSetAdvancedTrader(!isAdvancedTrader)
               }}
             >
               <span className="hover:underline">
