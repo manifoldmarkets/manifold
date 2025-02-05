@@ -16,49 +16,50 @@ import { extractTextFromContent } from 'components/content/content-utils'
 import { truncateText } from 'lib/truncate-text'
 import { LogoAvatar } from 'components/ui/logo-avatar'
 
-export const ignoredReasons = [
-  'unique_bettors_on_your_contract',
-  'loan_income',
-  'mana_payment_received',
-  'bounty_added',
-  'bounty_canceled',
-  'limit_order_cancelled',
-  'contract_from_followed_user',
-  'bounty_awarded',
-  'vote_on_your_contract',
-  'all_votes_on_watched_markets',
-  'poll_close_on_watched_markets',
-  'your_poll_closed',
-  'on_new_follow',
-  'league_changed',
-  'subsidized_your_market',
-  'profit_loss_updates',
-  'onboarding_flow',
-  'review_on_your_market',
-  'airdrop',
-  'manifest_airdrop',
-  'extra_purchased_mana',
-]
+// export const ignoredReasons = [
+//   'unique_bettors_on_your_contract',
+//   'loan_income',
+//   'mana_payment_received',
+//   'bounty_added',
+//   'bounty_canceled',
+//   'limit_order_cancelled',
+//   'contract_from_followed_user',
+//   'bounty_awarded',
+//   'vote_on_your_contract',
+//   'all_votes_on_watched_markets',
+//   'poll_close_on_watched_markets',
+//   'your_poll_closed',
+//   'on_new_follow',
+//   'league_changed',
+//   'subsidized_your_market',
+//   'profit_loss_updates',
+//   'onboarding_flow',
+//   'review_on_your_market',
+//   'airdrop',
+//   'manifest_airdrop',
+//   'extra_purchased_mana',
+//   'your_contract_closed',
+// ]
 
-export const ignoredSourceTypes = [
-  'bet_reply',
-  'answer',
-  'referral_program',
-  'follow_suggestion',
-]
+// export const ignoredSourceTypes = [
+//   'bet_reply',
+//   'answer',
+//   'referral_program',
+//   'follow_suggestion',
+// ]
 
-export function shouldIgnoreNotification(notification: Notification) {
-  const { sourceType, reason, sourceUpdateType } = notification
-  if (
-    ignoredReasons.includes(reason) ||
-    ignoredSourceTypes.includes(sourceType) ||
-    (ReactionNotificationTypes.includes(sourceType) &&
-      sourceType != 'comment_like')
-  ) {
-    return true
-  }
-  return false
-}
+// export function shouldIgnoreNotification(notification: Notification) {
+//   const { sourceType, reason, sourceUpdateType } = notification
+//   if (
+//     ignoredReasons.includes(reason) ||
+//     ignoredSourceTypes.includes(sourceType) ||
+//     (ReactionNotificationTypes.includes(sourceType) &&
+//       sourceType != 'comment_like')
+//   ) {
+//     return true
+//   }
+//   return false
+// }
 
 export function NotificationItem({
   notification,
@@ -71,12 +72,14 @@ export function NotificationItem({
     notification
   const defaultText = sourceText ?? reasonText ?? null
 
-  if (
-    ignoredReasons.includes(reason) ||
-    ignoredSourceTypes.includes(sourceType)
-  ) {
-    return null
-  }
+  // if (
+  //   ignoredReasons.includes(reason) ||
+  //   ignoredSourceTypes.includes(sourceType)
+  // ) {
+  //   return null
+  // }
+
+  // TODO: make this filtering in the backend
 
   if (sourceType == 'push_notification_bonus') {
     return (

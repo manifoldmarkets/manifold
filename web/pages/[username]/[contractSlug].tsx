@@ -78,7 +78,6 @@ export async function getStaticProps(ctx: {
         'lastBetTime',
         'pointsString',
         'multiPointsString',
-        'userPositionsByOutcome',
         'totalPositions',
         'totalBets',
       ])

@@ -8,6 +8,7 @@ import {
   StonkContract,
 } from 'common/contract'
 import { STONK_NO, STONK_YES } from 'common/stonk'
+import { floatingEqual } from './math'
 
 const formatter = new Intl.NumberFormat('en-US', {
   style: 'currency',
@@ -193,6 +194,7 @@ const showPrecision = (x: number, sigfigs: number) =>
 // Eg 1234567.89 => 1.23M; 5678 => 5.68K
 export function formatLargeNumber(num: number, sigfigs = 2): string {
   const absNum = Math.abs(num)
+  if (floatingEqual(absNum, 0)) return '0'
   if (absNum < 0.1) return showPrecision(num, 1)
   if (absNum < 1) return showPrecision(num, sigfigs)
 
@@ -208,6 +210,7 @@ export function formatLargeNumber(num: number, sigfigs = 2): string {
 }
 
 export function shortFormatNumber(num: number): string {
+  if (floatingEqual(num, 0)) return '0'
   if (num < 10 && num > -10) return showPrecision(num, 1)
   if (num < 100 && num > -100) return showPrecision(num, 2)
   if (num < 1000 && num > -1000) return showPrecision(num, 3)

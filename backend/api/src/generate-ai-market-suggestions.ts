@@ -1,5 +1,5 @@
 import { APIError, APIHandler } from './helpers/endpoint'
-import { largePerplexityModel, perplexity } from 'shared/helpers/perplexity'
+import { perplexity } from 'shared/helpers/perplexity'
 import { models, promptClaude } from 'shared/helpers/claude'
 import { AIGeneratedMarket } from 'common/contract'
 import { log } from 'shared/utils'
@@ -29,9 +29,7 @@ export const generateAIMarketSuggestions: APIHandler<'generate-ai-market-suggest
       const promptIncludingUrlContent = await getContentFromPrompt(
         promptIncludingTitlesToIgnore
       )
-      const perplexityResponse = await perplexity(promptIncludingUrlContent, {
-        model: largePerplexityModel,
-      })
+      const perplexityResponse = await perplexity(promptIncludingUrlContent)
 
       const { messages, citations } = perplexityResponse
       log('Perplexity response:', messages.join('\n'))

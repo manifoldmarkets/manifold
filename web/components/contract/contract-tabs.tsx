@@ -30,7 +30,6 @@ import { FeedLiquidity } from '../feed/feed-liquidity'
 import { Col } from '../layout/col'
 import { Row } from '../layout/row'
 import { ControlledTabs } from '../layout/tabs'
-import { ContractMetricsByOutcome } from 'common/contract-metric'
 import { usePersistentInMemoryState } from 'client-common/hooks/use-persistent-in-memory-state'
 import { useSubscribeNewComments } from 'client-common/hooks/use-comments'
 import { ParentFeedComment } from '../comments/comment'
@@ -51,7 +50,6 @@ export function ContractTabs(props: {
   liveContract: Contract
   bets: Bet[]
   comments: ContractComment[]
-  userPositionsByOutcome: ContractMetricsByOutcome
   replyTo?: Answer | Bet
   setReplyTo?: (replyTo?: Answer | Bet) => void
   cancelReplyToAnswer?: () => void
@@ -61,7 +59,6 @@ export function ContractTabs(props: {
   totalBets: number
   totalPositions: number
   pinnedComments: ContractComment[]
-  betReplies: Bet[]
   appRouter?: boolean
 }) {
   const {
@@ -75,10 +72,8 @@ export function ContractTabs(props: {
     activeIndex,
     setActiveIndex,
     totalBets,
-    userPositionsByOutcome,
     pinnedComments,
     appRouter,
-    betReplies,
   } = props
 
   const [totalPositions, setTotalPositions] = useState(props.totalPositions)
@@ -128,7 +123,6 @@ export function ContractTabs(props: {
               replyTo={replyTo}
               clearReply={() => setReplyTo?.(undefined)}
               className="-ml-2 -mr-1"
-              bets={uniqBy(bets.concat(betReplies), (b) => b.id)}
               appRouter={appRouter}
             />
           ),
@@ -140,13 +134,6 @@ export function ContractTabs(props: {
             content: (
               <UserPositionsTable
                 key={liveContract.id}
-                positions={
-                  // If contract is resolved, will have to refetch positions by profit
-                  Object.values(userPositionsByOutcome).length > 0 &&
-                  !liveContract.isResolved
-                    ? userPositionsByOutcome
-                    : undefined
-                }
                 contract={liveContract as BinaryContract}
                 setTotalPositions={setTotalPositions}
               />
@@ -181,7 +168,6 @@ export const CommentsTabContent = memo(function CommentsTabContent(props: {
   replyTo?: Answer | Bet
   clearReply?: () => void
   className?: string
-  bets?: Bet[]
   highlightCommentId?: string
   pinnedComments: ContractComment[]
   appRouter?: boolean
@@ -195,7 +181,6 @@ export const CommentsTabContent = memo(function CommentsTabContent(props: {
     replyTo,
     clearReply,
     className,
-    bets,
     highlightCommentId,
     appRouter,
     scrollToEnd,
@@ -211,6 +196,10 @@ export const CommentsTabContent = memo(function CommentsTabContent(props: {
     undefined,
     'comments-' + staticContract.id
   )
+  const { data: bets } = useAPIGetter('bets', {
+    contractId: staticContract.id,
+    commentRepliesOnly: true,
+  })
 
   const isPageVisible = useIsPageVisible()
   const { data: newFetchedComments } = useAPIGetter(

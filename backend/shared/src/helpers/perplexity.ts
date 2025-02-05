@@ -3,9 +3,8 @@ import {
   guidelinesPrompt,
   perplexitySystemPrompt,
 } from 'common/ai-creation-prompts'
-export const smallPerplexityModel = 'llama-3.1-sonar-small-128k-online'
-export const largePerplexityModel = 'llama-3.1-sonar-large-128k-online'
-export const hugePerplexityModel = 'llama-3.1-sonar-huge-128k-online'
+export const perplexityDefault = 'sonar'
+export const perplexityPro = 'sonar-pro'
 
 export const perplexity = async (
   query: string,
@@ -16,7 +15,7 @@ export const perplexity = async (
 ) => {
   const apiKey = process.env.PERPLEXITY_API_KEY
   const {
-    model = smallPerplexityModel,
+    model = perplexityDefault,
     systemPrompts = [perplexitySystemPrompt, guidelinesPrompt],
   } = options
   const requestOptions = {

@@ -44,6 +44,8 @@ import { SelectorIcon } from '@heroicons/react/solid'
 
 const expirationOptions = [
   { label: 'Never expires', value: 0 },
+  { label: 'Expires immediately', value: 1 },
+  { label: 'Expires in 1 second', value: 1000 },
   { label: 'Expires in 1 hour', value: HOUR_MS },
   { label: 'Expires in 1 day', value: DAY_MS },
   { label: 'Expires in 1 week', value: WEEK_MS },
@@ -128,7 +130,6 @@ export default function LimitOrderPanel(props: {
   const [expirationHoursMinutes, setExpirationHoursMinutes] =
     usePersistentLocalState<string>(initTime, 'limit-order-expiration-time')
 
-  // add to local storage
   const [selectedExpiration, setSelectedExpiration] =
     usePersistentLocalState<number>(0, 'limit-order-expiration')
   const addCustomExpiration = selectedExpiration === -1
@@ -233,7 +234,7 @@ export default function LimitOrderPanel(props: {
         contractId: contract.id,
         amount,
         outcome,
-        limitProb: limitProb,
+        limitProb,
         isLimitOrder: true,
         answerId: multiProps?.answerToBuy.id,
         token: contract.token,
@@ -264,7 +265,8 @@ export default function LimitOrderPanel(props: {
       setError,
       contract,
       multiProps,
-      limitProb
+      limitProb,
+      false
     )
     currentPayout = result.currentPayout
     currentReturn = result.currentReturn
@@ -389,11 +391,12 @@ export default function LimitOrderPanel(props: {
               <span>
                 {expirationOptions.find(
                   (opt) => opt.value === selectedExpiration
-                )?.label ?? 'Select expiration'}
+                )?.label ?? expirationOptions[0].label}
               </span>
               <SelectorIcon className="text-ink-400 h-4 w-4" />
             </Row>
           }
+          closeOnClick
           items={expirationItems}
           buttonClass="text-ink-600 hover:text-ink-900 p-0 bg-transparent"
           menuWidth="w-48"

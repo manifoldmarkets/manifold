@@ -3,13 +3,18 @@ import { Col } from 'web/components/layout/col'
 import {
   BETTING_STREAK_BONUS_AMOUNT,
   BETTING_STREAK_BONUS_MAX,
-  BETTING_STREAK_RESET_HOUR,
 } from 'common/economy'
 import { formatMoney } from 'common/util/format'
 import { humanish, User } from 'common/user'
 import dayjs from 'dayjs'
+import timezone from 'dayjs/plugin/timezone'
+import utc from 'dayjs/plugin/utc'
 import clsx from 'clsx'
 import { VerifyPhoneNumberBanner } from 'web/components/user/verify-phone-number-banner'
+
+// Initialize dayjs plugins
+dayjs.extend(utc)
+dayjs.extend(timezone)
 
 export function BettingStreakModal(props: {
   isOpen: boolean
@@ -88,15 +93,20 @@ export function BettingStreakModal(props: {
 
 export function hasCompletedStreakToday(user: User) {
   if (user.currentBettingStreak === 0) return false
-  const now = dayjs().utc()
-  const utcTodayAtResetHour = now
-    .hour(BETTING_STREAK_RESET_HOUR)
-    .minute(0)
-    .second(0)
-  const utcYesterdayAtResetHour = utcTodayAtResetHour.subtract(1, 'day')
-  let resetTime = utcTodayAtResetHour.valueOf()
-  if (now.isBefore(utcTodayAtResetHour)) {
-    resetTime = utcYesterdayAtResetHour.valueOf()
-  }
-  return (user?.lastBetTime ?? 0) > resetTime
+
+  // Get current time in Pacific
+  const now = dayjs().tz('America/Los_Angeles')
+
+  // Get today's reset time (midnight Pacific)
+  const todayResetTime = now.startOf('day')
+
+  // Get yesterday's reset time
+  const yesterdayResetTime = todayResetTime.subtract(1, 'day')
+
+  // Use yesterday's reset time if we haven't hit today's yet
+  const resetTime = now.isBefore(todayResetTime)
+    ? yesterdayResetTime
+    : todayResetTime
+
+  return (user?.lastBetTime ?? 0) > resetTime.valueOf()
 }

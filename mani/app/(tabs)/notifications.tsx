@@ -8,10 +8,7 @@ import { ThemedText } from 'components/themed-text'
 import { useColor } from 'hooks/use-color'
 import { ActivityIndicator } from 'react-native'
 import { useIsPageVisible } from 'hooks/use-is-page-visibile'
-import {
-  NotificationItem,
-  shouldIgnoreNotification,
-} from 'components/notification/notification-item'
+import { NotificationItem } from 'components/notification/notification-item'
 import { NotificationGroupItem } from 'components/notification/notification-group-item'
 import { NotificationGroup } from 'common/notification'
 import { useGroupedNotifications } from 'client-common/hooks/use-notifications'
@@ -74,15 +71,15 @@ export function NotificationContent({
           {groupedNotifications.map((notification) => (
             <Fragment key={notification.groupedById}>
               {notification.notifications.length === 1 &&
-              !shouldIgnoreNotification(notification.notifications[0]) ? (
+              notification.notifications[0].worksOnSweeple ? (
                 <>
                   <NotificationItem
                     notification={notification.notifications[0]}
                     key={notification.notifications[0].id}
                   />
                 </>
-              ) : notification.notifications.every((notif) =>
-                  shouldIgnoreNotification(notif)
+              ) : notification.notifications.every(
+                  (notif) => !notif.worksOnSweeple
                 ) ? null : (
                 <>
                   <NotificationGroupItem

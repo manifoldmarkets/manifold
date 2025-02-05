@@ -63,7 +63,6 @@ export const SUBSIDY_FEE = 0
 
 export const BETTING_STREAK_BONUS_AMOUNT = 5
 export const BETTING_STREAK_BONUS_MAX = 25
-export const BETTING_STREAK_RESET_HOUR = 7
 
 export const MANACHAN_TWEET_COST = 250
 export const PUSH_NOTIFICATION_BONUS = 1000

@@ -243,6 +243,7 @@ export const createCommentOnContractNotification = async (
       data: {
         isReply: !!repliedUsersInfo,
       } as CommentNotificationData,
+      worksOnSweeple: !!sourceContract.siblingContractId,
     }
     return removeUndefinedProps(notification)
   }
@@ -564,6 +565,7 @@ export const createBetFillNotification = async (
       outcomeType: contract.outcomeType,
       token: contract.token,
     } as BetFillData,
+    worksOnSweeple: !!contract.siblingContractId,
   }
   const pg = createSupabaseDirectClient()
   await insertNotificationToSupabase(notification, pg)
@@ -806,7 +808,6 @@ export const createBettingStreakBonusNotification = async (
     sourceText: amount.toString(),
     sourceSlug: `/${contract.creatorUsername}/${contract.slug}/bets/${bet.id}`,
     sourceTitle: 'Betting Streak Bonus',
-    // Perhaps not necessary, but just in case
     sourceContractSlug: contract.slug,
     sourceContractId: contract.id,
     sourceContractTitle: contract.question,
@@ -816,6 +817,7 @@ export const createBettingStreakBonusNotification = async (
       bonusAmount: amount,
       cashAmount,
     } as BettingStreakData,
+    worksOnSweeple: true,
   }
   const pg = createSupabaseDirectClient()
   await insertNotificationToSupabase(notification, pg)
@@ -858,6 +860,7 @@ export const createBettingStreakExpiringNotification = async (
       data: {
         streak: streak,
       } as BettingStreakData,
+      worksOnSweeple: true,
     }
     if (sendToMobile) {
       bulkPushNotifications.push([
@@ -974,6 +977,7 @@ export const createLikeNotification = async (reaction: Reaction) => {
     sourceText: text,
     sourceSlug: slug,
     sourceTitle: contract.question,
+    worksOnSweeple: !!contract.siblingContractId && content_type !== 'contract',
   }
   return await insertNotificationToSupabase(notification, pg)
 }
@@ -1031,7 +1035,6 @@ export const createNewBettorNotification = async (
       sourceText: txn.amount.toString(),
       sourceSlug: contract.slug,
       sourceTitle: contract.question,
-      // Perhaps not necessary, but just in case
       sourceContractSlug: contract.slug,
       sourceContractId: contract.id,
       sourceContractTitle: contract.question,
@@ -1318,6 +1321,7 @@ export const createContractResolvedNotifications = async (
         profit: userIdToContractMetrics?.[userId]?.profit ?? 0,
         token,
       }) as ContractResolutionData,
+      worksOnSweeple: !!contract.siblingContractId,
     }
   }
 
@@ -1517,6 +1521,7 @@ export const createQuestPayoutNotification = async (
       questType,
       questCount,
     } as QuestRewardTxn['data'],
+    worksOnSweeple: true,
   }
   const pg = createSupabaseDirectClient()
   await insertNotificationToSupabase(notification, pg)
@@ -1993,6 +1998,7 @@ export const createPushNotificationBonusNotification = async (
     sourceUserAvatarUrl: MANIFOLD_AVATAR_URL,
     sourceText: amount.toString(),
     sourceTitle: 'Push Notification Bonus',
+    worksOnSweeple: true,
   }
   const pg = createSupabaseDirectClient()
   await insertNotificationToSupabase(notification, pg)
@@ -2097,6 +2103,7 @@ export const createPaymentSuccessNotification = async (
     sourceUserAvatarUrl: '',
     sourceText: '',
     data: paymentData,
+    worksOnSweeple: true,
   }
 
   const pg = createSupabaseDirectClient()

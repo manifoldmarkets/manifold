@@ -2,7 +2,7 @@ import { APIError, APIHandler } from './helpers/endpoint'
 import { log } from 'shared/utils'
 import { track } from 'shared/analytics'
 import { anythingToRichText } from 'shared/tiptap'
-import { largePerplexityModel, perplexity } from 'shared/helpers/perplexity'
+import { perplexity } from 'shared/helpers/perplexity'
 import { models, promptClaude } from 'shared/helpers/claude'
 import {
   addAnswersModeDescription,
@@ -46,7 +46,6 @@ export const generateAIDescription: APIHandler<'generate-ai-description'> =
         const { messages, citations } = await perplexity(
           userQuestionAndDescription,
           {
-            model: largePerplexityModel,
             systemPrompts: [
               `You are a helpful AI assistant that researches information about the user's prompt`,
             ],

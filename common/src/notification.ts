@@ -42,6 +42,7 @@ export type Notification = {
   sourceTitle?: string
 
   isSeenOnHref?: string
+  worksOnSweeple?: boolean
 }
 
 export type NotificationReason =
