@@ -91,7 +91,7 @@ export const useBatchedGetter = <T>(
   const key = `${queryType}-${id}`
   const [state, setState] = usePersistentInMemoryState<T>(initialValue, key)
 
-  const MAX_BATCH_SIZE = 60
+  const MAX_BATCH_SIZE = 38
 
   useEffect(() => {
     if (!enabled) return

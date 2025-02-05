@@ -20,6 +20,7 @@ import { api } from 'web/lib/api/api'
 import { APIResponse } from 'common/api/schema'
 import { usePersistentInMemoryState } from 'client-common/hooks/use-persistent-in-memory-state'
 import { TokenNumber } from '../widgets/token-number'
+import { floatingEqual } from 'common/util/math'
 
 const DAILY_PROFIT_CLICK_EVENT = 'click daily profit button'
 
@@ -74,7 +75,7 @@ export const DailyProfit = function DailyProfit(props: {
                 isInline
               />
 
-              {manaProfit !== 0 && (
+              {!floatingEqual(manaProfit, 0) && (
                 <span
                   className={clsx(
                     'ml-1 mt-1 text-xs',
@@ -100,7 +101,7 @@ export const DailyProfit = function DailyProfit(props: {
                 isInline
               />
 
-              {cashProfit !== 0 && (
+              {!floatingEqual(cashProfit, 0) && (
                 <span
                   className={clsx(
                     'ml-1 mt-1 text-xs',

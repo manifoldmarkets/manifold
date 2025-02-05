@@ -9,7 +9,7 @@ import {
 } from 'common/ai-creation-prompts'
 import { anythingToRichText } from 'shared/tiptap'
 import { track } from 'shared/analytics'
-import { largePerplexityModel, perplexity } from 'shared/helpers/perplexity'
+import { perplexity, perplexityPro } from 'shared/helpers/perplexity'
 import { getContentFromPrompt } from './generate-ai-market-suggestions'
 import { rateLimitByUser } from './helpers/rate-limit'
 import { HOUR_MS } from 'common/util/time'
@@ -33,7 +33,7 @@ export const generateAIMarketSuggestions2: APIHandler<'generate-ai-market-sugges
       )
 
       const perplexityResponse = await perplexity(promptIncludingUrlContent, {
-        model: largePerplexityModel,
+        model: perplexityPro,
         systemPrompts: [perplexitySystemPrompt],
       })
 

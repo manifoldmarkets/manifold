@@ -1,4 +1,9 @@
-import { ChevronDownIcon, XIcon } from '@heroicons/react/outline'
+import {
+  ChevronDownIcon,
+  LockClosedIcon,
+  LockOpenIcon,
+  XIcon,
+} from '@heroicons/react/outline'
 import clsx from 'clsx'
 import { capitalize, uniq } from 'lodash'
 import { useEffect, useState } from 'react'
@@ -66,6 +71,8 @@ import { APIParams } from 'common/api/schema'
 import { Button } from '../buttons/button'
 import { usePersistentLocalState } from 'web/hooks/use-persistent-local-state'
 import { getLimitBetReturns, MultiBetProps } from 'client-common/lib/bet'
+import { Tooltip } from '../widgets/tooltip'
+import { useIsMobile } from 'web/hooks/use-is-mobile'
 
 export type BinaryOutcomes = 'YES' | 'NO' | undefined
 
@@ -266,6 +273,13 @@ export const BuyPanelBody = (props: {
     | null
   >(null)
 
+  const [manaSlippageProtection, setManaSlippageProtection] =
+    usePersistentLocalState(true, 'mana-slippage-protection')
+  const [cashSlippageProtection, setCashSlippageProtection] =
+    usePersistentLocalState(true, 'cash-slippage-protection')
+  const slippageProtection = isCashContract
+    ? cashSlippageProtection
+    : manaSlippageProtection
   const [inputRef, focusAmountInput] = useFocus()
 
   const isCpmmMulti = contract.mechanism === 'cpmm-multi-1'
@@ -283,10 +297,6 @@ export const BuyPanelBody = (props: {
 
   const isPseudoNumeric = contract.outcomeType === 'PSEUDO_NUMERIC'
   const isStonk = contract.outcomeType === 'STONK'
-
-  const handleBetTypeChange = (type: 'Market' | 'Limit') => {
-    setBetType(type)
-  }
 
   const limitBets = useContractBets(
     contract.id,
@@ -332,16 +342,18 @@ export const BuyPanelBody = (props: {
     }
   }, [updatedBet, submittedBet])
 
-  const isAdvancedTrader = useIsAdvancedTrader()
-
-  const [betType, setBetType] = usePersistentLocalState<'Market' | 'Limit'>(
-    'Market',
-    'bet-type'
+  const [justSetAdvancedTrader, setJustSetAdvancedTrader] = useState<boolean>(
+    user?.isAdvancedTrader ?? false
   )
+  const isAdvancedTrader = useIsAdvancedTrader() || justSetAdvancedTrader
+
+  const [betTypeSetting, setBetTypeSetting] = usePersistentLocalState<
+    'Market' | 'Limit'
+  >('Market', 'bet-type')
 
   useEffect(() => {
-    if (!isAdvancedTrader && betType === 'Limit') {
-      setBetType('Market')
+    if (!isAdvancedTrader && betTypeSetting === 'Limit') {
+      setBetTypeSetting('Market')
     }
   }, [isAdvancedTrader])
 
@@ -369,7 +381,9 @@ export const BuyPanelBody = (props: {
     balanceByUserId,
     setError,
     contract,
-    multiProps
+    multiProps,
+    undefined,
+    slippageProtection
   )
   let probBefore = prob
   let probAfter = newProbAfter
@@ -539,6 +553,9 @@ export const BuyPanelBody = (props: {
     isCashContract &&
     PROMPT_USER_VERIFICATION_MESSAGES.includes(verificationMessage)
 
+  const betType = isStonk ? 'Market' : betTypeSetting
+  const isMobile = useIsMobile()
+
   return (
     <>
       <Col className={clsx(panelClassName, 'relative rounded-xl px-4 py-2')}>
@@ -570,7 +587,7 @@ export const BuyPanelBody = (props: {
                     Limit: 'Limit',
                   }}
                   setChoice={(val) => {
-                    handleBetTypeChange(val as 'Market' | 'Limit')
+                    setBetTypeSetting(val as 'Market' | 'Limit')
                   }}
                 />
               )}
@@ -644,18 +661,59 @@ export const BuyPanelBody = (props: {
                         )}
                       </span>
                       {!probStayedSame && !isPseudoNumeric && (
-                        <span className={clsx('ml-1', 'text-ink-600')}>
-                          {outcome !== 'NO' || isBinaryMC ? '↑' : '↓'}
-                          {getFormattedMappedValue(
-                            contract,
-                            Math.abs(probAfter - probBefore)
-                          )}
-                          {floatingEqual(probAfter, maxProb)
-                            ? ' (max)'
-                            : floatingEqual(probAfter, minProb)
-                            ? ' (max)'
-                            : ''}
-                        </span>
+                        <>
+                          <span className={clsx('ml-1', 'text-ink-600')}>
+                            {outcome !== 'NO' || isBinaryMC ? '↑' : '↓'}
+                            {getFormattedMappedValue(
+                              contract,
+                              Math.abs(probAfter - probBefore)
+                            )}
+                            {floatingEqual(probAfter, maxProb)
+                              ? ' (max)'
+                              : floatingEqual(probAfter, minProb)
+                              ? ' (max)'
+                              : ''}
+                          </span>
+
+                          <button
+                            onClick={() => {
+                              toast.success(
+                                `Slippage protection on ${
+                                  isCashContract ? 'cash' : 'mana'
+                                } questions ${
+                                  !slippageProtection ? 'enabled' : 'disabled'
+                                }!`
+                              )
+                              if (isCashContract) {
+                                setCashSlippageProtection(
+                                  !cashSlippageProtection
+                                )
+                              } else {
+                                setManaSlippageProtection(
+                                  !manaSlippageProtection
+                                )
+                              }
+                            }}
+                            className="self-center"
+                          >
+                            <Tooltip
+                              autoHideDuration={isMobile ? 3000 : undefined}
+                              text={
+                                slippageProtection
+                                  ? `Your trades won't move the question probability more than 10 percentage points from displayed probability.`
+                                  : `Slippage protection on ${
+                                      isCashContract ? 'cash' : 'mana'
+                                    } questions is off.`
+                              }
+                            >
+                              {slippageProtection ? (
+                                <LockClosedIcon className="h-4 w-4 text-indigo-300 hover:text-indigo-400" />
+                              ) : (
+                                <LockOpenIcon className="text-ink-500 hover:text-ink-600 h-4 w-4" />
+                              )}
+                            </Tooltip>
+                          </button>
+                        </>
                       )}
                     </Row>
                   </Row>
@@ -898,9 +956,10 @@ export const BuyPanelBody = (props: {
               className="text-ink-600 mr-2 flex items-center text-sm hover:underline"
               onClick={() => {
                 if (!isAdvancedTrader) {
-                  setBetType('Market')
+                  setBetTypeSetting('Market')
                 }
                 api('me/update', { isAdvancedTrader: !isAdvancedTrader })
+                setJustSetAdvancedTrader(!isAdvancedTrader)
               }}
             >
               <span className="hover:underline">
