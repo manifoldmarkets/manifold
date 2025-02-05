@@ -71,6 +71,7 @@ import { APIParams } from 'common/api/schema'
 import { Button } from '../buttons/button'
 import { usePersistentLocalState } from 'web/hooks/use-persistent-local-state'
 import { getLimitBetReturns, MultiBetProps } from 'client-common/lib/bet'
+import { Tooltip } from '../widgets/tooltip'
 
 export type BinaryOutcomes = 'YES' | 'NO' | undefined
 
@@ -658,42 +659,60 @@ export const BuyPanelBody = (props: {
                         )}
                       </span>
                       {!probStayedSame && !isPseudoNumeric && (
-                        <span className={clsx('ml-1', 'text-ink-600')}>
-                          {outcome !== 'NO' || isBinaryMC ? '↑' : '↓'}
-                          {getFormattedMappedValue(
-                            contract,
-                            Math.abs(probAfter - probBefore)
-                          )}
-                          {floatingEqual(probAfter, maxProb)
-                            ? ' (max)'
-                            : floatingEqual(probAfter, minProb)
-                            ? ' (max)'
-                            : ''}
-                        </span>
+                        <>
+                          <span className={clsx('ml-1', 'text-ink-600')}>
+                            {outcome !== 'NO' || isBinaryMC ? '↑' : '↓'}
+                            {getFormattedMappedValue(
+                              contract,
+                              Math.abs(probAfter - probBefore)
+                            )}
+                            {floatingEqual(probAfter, maxProb)
+                              ? ' (max)'
+                              : floatingEqual(probAfter, minProb)
+                              ? ' (max)'
+                              : ''}
+                          </span>
+
+                          <button
+                            onClick={() => {
+                              toast.success(
+                                `Slippage protection on ${
+                                  isCashContract ? 'cash' : 'mana'
+                                } questions ${
+                                  !slippageProtection ? 'enabled' : 'disabled'
+                                }!`
+                              )
+                              if (isCashContract) {
+                                setCashSlippageProtection(
+                                  !cashSlippageProtection
+                                )
+                              } else {
+                                setManaSlippageProtection(
+                                  !manaSlippageProtection
+                                )
+                              }
+                            }}
+                            className="self-center"
+                          >
+                            <Tooltip
+                              className="self-center"
+                              text={
+                                slippageProtection
+                                  ? `Your trades won't move the question probability more than 10 percentage points from displayed probability.`
+                                  : `Slippage protection on ${
+                                      isCashContract ? 'cash' : 'mana'
+                                    } questions is off.`
+                              }
+                            >
+                              {slippageProtection ? (
+                                <LockClosedIcon className="h-4 w-4 text-green-500 hover:text-green-600" />
+                              ) : (
+                                <LockOpenIcon className="text-ink-400 hover:text-ink-500 h-4 w-4" />
+                              )}
+                            </Tooltip>
+                          </button>
+                        </>
                       )}
-                      <button
-                        onClick={() => {
-                          toast.success(
-                            `Slippage protection on ${
-                              isCashContract ? 'cash' : 'mana'
-                            } questions ${
-                              !slippageProtection ? 'enabled' : 'disabled'
-                            }!`
-                          )
-                          if (isCashContract) {
-                            setCashSlippageProtection(!cashSlippageProtection)
-                          } else {
-                            setManaSlippageProtection(!manaSlippageProtection)
-                          }
-                        }}
-                        className="self-center"
-                      >
-                        {slippageProtection ? (
-                          <LockClosedIcon className="h-4 w-4 text-green-500 hover:text-green-600" />
-                        ) : (
-                          <LockOpenIcon className="text-ink-400 hover:text-ink-500 h-4 w-4" />
-                        )}
-                      </button>
                     </Row>
                   </Row>
                   <Row className="min-w-[128px] items-baseline justify-between sm:justify-start">
