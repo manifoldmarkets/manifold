@@ -284,10 +284,6 @@ export const BuyPanelBody = (props: {
   const isPseudoNumeric = contract.outcomeType === 'PSEUDO_NUMERIC'
   const isStonk = contract.outcomeType === 'STONK'
 
-  const handleBetTypeChange = (type: 'Market' | 'Limit') => {
-    setBetType(type)
-  }
-
   const limitBets = useContractBets(
     contract.id,
     removeUndefinedProps({
@@ -334,14 +330,13 @@ export const BuyPanelBody = (props: {
 
   const isAdvancedTrader = useIsAdvancedTrader()
 
-  const [betType, setBetType] = usePersistentLocalState<'Market' | 'Limit'>(
-    'Market',
-    'bet-type'
-  )
+  const [betTypeSetting, setBetTypeSetting] = usePersistentLocalState<
+    'Market' | 'Limit'
+  >('Market', 'bet-type')
 
   useEffect(() => {
-    if (!isAdvancedTrader && betType === 'Limit') {
-      setBetType('Market')
+    if (!isAdvancedTrader && betTypeSetting === 'Limit') {
+      setBetTypeSetting('Market')
     }
   }, [isAdvancedTrader])
 
@@ -539,6 +534,8 @@ export const BuyPanelBody = (props: {
     isCashContract &&
     PROMPT_USER_VERIFICATION_MESSAGES.includes(verificationMessage)
 
+  const betType = isStonk ? 'Market' : betTypeSetting
+
   return (
     <>
       <Col className={clsx(panelClassName, 'relative rounded-xl px-4 py-2')}>
@@ -570,7 +567,7 @@ export const BuyPanelBody = (props: {
                     Limit: 'Limit',
                   }}
                   setChoice={(val) => {
-                    handleBetTypeChange(val as 'Market' | 'Limit')
+                    setBetTypeSetting(val as 'Market' | 'Limit')
                   }}
                 />
               )}
@@ -898,7 +895,7 @@ export const BuyPanelBody = (props: {
               className="text-ink-600 mr-2 flex items-center text-sm hover:underline"
               onClick={() => {
                 if (!isAdvancedTrader) {
-                  setBetType('Market')
+                  setBetTypeSetting('Market')
                 }
                 api('me/update', { isAdvancedTrader: !isAdvancedTrader })
               }}
