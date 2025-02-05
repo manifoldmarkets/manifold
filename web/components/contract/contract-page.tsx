@@ -88,7 +88,6 @@ export function ContractPageContent(props: ContractParams) {
     topics,
     dashboards,
     pinnedComments,
-    betReplies,
     cash,
   } = props
 
@@ -538,8 +537,6 @@ export function ContractPageContent(props: ContractParams) {
                 activeIndex={activeTabIndex}
                 setActiveIndex={setActiveTabIndex}
                 pinnedComments={pinnedComments}
-                // TODO: cash-bet replies???
-                betReplies={betReplies}
               />
             </div>
             {showExplainerPanel && (

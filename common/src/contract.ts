@@ -4,7 +4,6 @@ import { Topic } from 'common/group'
 import { ChartAnnotation } from 'common/supabase/chart-annotations'
 import { sum } from 'lodash'
 import { Answer } from './answer'
-import { Bet } from './bet'
 import { getLiquidity } from './calculate-cpmm'
 import { ContractComment } from './comment'
 import { ContractMetric, ContractMetricsByOutcome } from './contract-metric'
@@ -453,7 +452,6 @@ export type ContractParams = {
   topics: Topic[]
   dashboards: { slug: string; title: string }[]
   pinnedComments: ContractComment[]
-  betReplies: Bet[]
   cash?: CashType
 }
 

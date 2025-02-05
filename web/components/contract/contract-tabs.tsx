@@ -61,7 +61,6 @@ export function ContractTabs(props: {
   totalBets: number
   totalPositions: number
   pinnedComments: ContractComment[]
-  betReplies: Bet[]
   appRouter?: boolean
 }) {
   const {
@@ -78,7 +77,6 @@ export function ContractTabs(props: {
     userPositionsByOutcome,
     pinnedComments,
     appRouter,
-    betReplies,
   } = props
 
   const [totalPositions, setTotalPositions] = useState(props.totalPositions)
@@ -128,7 +126,6 @@ export function ContractTabs(props: {
               replyTo={replyTo}
               clearReply={() => setReplyTo?.(undefined)}
               className="-ml-2 -mr-1"
-              bets={uniqBy(bets.concat(betReplies), (b) => b.id)}
               appRouter={appRouter}
             />
           ),
@@ -181,7 +178,6 @@ export const CommentsTabContent = memo(function CommentsTabContent(props: {
   replyTo?: Answer | Bet
   clearReply?: () => void
   className?: string
-  bets?: Bet[]
   highlightCommentId?: string
   pinnedComments: ContractComment[]
   appRouter?: boolean
@@ -195,7 +191,6 @@ export const CommentsTabContent = memo(function CommentsTabContent(props: {
     replyTo,
     clearReply,
     className,
-    bets,
     highlightCommentId,
     appRouter,
     scrollToEnd,
@@ -211,6 +206,10 @@ export const CommentsTabContent = memo(function CommentsTabContent(props: {
     undefined,
     'comments-' + staticContract.id
   )
+  const { data: bets } = useAPIGetter('bets', {
+    contractId: staticContract.id,
+    commentRepliesOnly: true,
+  })
 
   const isPageVisible = useIsPageVisible()
   const { data: newFetchedComments } = useAPIGetter(

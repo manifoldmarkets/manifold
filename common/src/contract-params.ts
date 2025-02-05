@@ -54,7 +54,6 @@ export async function getContractParams(
     topContractMetrics,
     totalPositions,
     relatedContracts,
-    betReplies,
     chartAnnotations,
     topics,
     dashboards,
@@ -88,13 +87,6 @@ export async function getContractParams(
       contractId: contract.id,
       limit: 10,
     }),
-    // TODO: Should only send bets that are replies to comments we're sending, and load the rest client side
-    isCpmm1
-      ? unauthedApi('bets', {
-          contractId: contract.id,
-          commentRepliesOnly: true,
-        })
-      : ([] as Bet[]),
     getChartAnnotations(contract.id, db),
     getTopicsOnContract(contract.id, db),
     getDashboardsToDisplayOnContract(contract.slug, contract.creatorId, db),
@@ -129,7 +121,6 @@ export async function getContractParams(
     outcomeType: contract.outcomeType,
     contract,
     lastBetTime,
-    betReplies,
     pointsString,
     multiPointsString,
     comments,
