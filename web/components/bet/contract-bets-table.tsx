@@ -27,7 +27,7 @@ import { formatTimeShort } from 'client-common/lib/time'
 import { Pagination } from '../widgets/pagination'
 import { MoneyDisplay } from './money-display'
 import { ContractMetric } from 'common/contract-metric'
-import { getAnswerColor } from '../charts/contract/choice'
+import { getPseudonym } from '../charts/contract/choice'
 
 export function ContractBetsTable(props: {
   contract: Contract
@@ -238,20 +238,7 @@ function BetRow(props: { bet: Bet; contract: Contract }) {
           <BinaryOutcomeLabel outcome={outcome as any} />
         ) : (
           <OutcomeLabel
-            pseudonym={
-              isBinaryMC
-                ? {
-                    YES: {
-                      pseudonymName: mainBinaryMCAnswer?.text ?? '',
-                      pseudonymColor: getAnswerColor(mainBinaryMCAnswer),
-                    },
-                    NO: {
-                      pseudonymName: otherBinaryMCAnswer?.text ?? '',
-                      pseudonymColor: getAnswerColor(otherBinaryMCAnswer),
-                    },
-                  }
-                : undefined
-            }
+            pseudonym={getPseudonym(contract)}
             outcome={outcome}
             contract={contract}
             truncate="short"

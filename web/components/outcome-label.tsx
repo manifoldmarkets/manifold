@@ -59,18 +59,6 @@ export function OutcomeLabel(props: {
     )
   }
 
-  // TODO: fix
-  // if (mainBinaryMCAnswer && mechanism === 'cpmm-multi-1') {
-  //   return (
-  //     <MultiOutcomeLabel
-  //       contract={contract}
-  //       resolution={answer.id}
-  //       }
-  //       truncate={truncate}
-  //       answerClassName={'font-bold text-base-400 !break-normal'}
-  //     />
-  //   )
-  // }
   if (outcomeType === 'PSEUDO_NUMERIC')
     return <PseudoNumericOutcomeLabel outcome={outcome as any} />
 

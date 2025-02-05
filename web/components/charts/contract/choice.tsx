@@ -3,8 +3,11 @@ import { getAnswerProbability, getContractBetMetrics } from 'common/calculate'
 import { HistoryPoint, MultiPoints } from 'common/chart'
 import { ChartPosition } from 'common/chart-position'
 import {
+  Contract,
   CPMMMultiContract,
   CPMMNumericContract,
+  getMainBinaryMCAnswer,
+  isBinaryMulti,
   MultiContract,
 } from 'common/contract'
 import { ChartAnnotation } from 'common/supabase/chart-annotations'
@@ -83,6 +86,25 @@ export function getAnswerColor(answer: Answer | undefined) {
   if (answer.text === 'Republican Party') return '#ecbab5'
 
   return answer.isOther ? CHOICE_OTHER_COLOR : answer.color ?? nthColor(index)
+}
+
+export const getPseudonym = (contract: Contract) => {
+  if (!isBinaryMulti(contract) || !('answers' in contract)) return undefined
+  const mainBinaryMCAnswer = getMainBinaryMCAnswer(contract)
+  const otherBinaryMCAnswer = contract.answers.find(
+    (a) => a.id !== mainBinaryMCAnswer?.id
+  )
+
+  return {
+    YES: {
+      pseudonymName: mainBinaryMCAnswer?.text ?? '',
+      pseudonymColor: getAnswerColor(mainBinaryMCAnswer),
+    },
+    NO: {
+      pseudonymName: otherBinaryMCAnswer?.text ?? '',
+      pseudonymColor: getAnswerColor(otherBinaryMCAnswer),
+    },
+  }
 }
 
 const getAnswers = (contract: MultiContract) => {

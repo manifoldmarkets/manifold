@@ -7,7 +7,6 @@ import {
   CPMMMultiContract,
   CPMMNumericContract,
   getBinaryMCProb,
-  getMainBinaryMCAnswer,
   isBinaryMulti,
   MultiContract,
   PseudoNumericContract,
@@ -45,7 +44,7 @@ import { MoneyDisplay } from './money-display'
 import { MultipleOrSingleAvatars } from '../multiple-or-single-avatars'
 import { DisplayUser } from 'common/api/user-types'
 import { UserLink } from '../widgets/user-link'
-import { getAnswerColor } from '../charts/contract/choice'
+import { getPseudonym } from '../charts/contract/choice'
 
 export function YourOrders(props: {
   contract:
@@ -202,11 +201,6 @@ function OrderRow(props: {
     await api('bet/cancel/:betId', { betId: bet.id })
     setIsCancelling(false)
   }
-  const mainBinaryMCAnswer = getMainBinaryMCAnswer(contract)
-  const otherBinaryMCAnswer =
-    'answers' in contract
-      ? contract.answers.find((a) => a.id !== mainBinaryMCAnswer?.id)
-      : undefined
   const isCashContract = contract.token === 'CASH'
   const expired = bet.expiresAt && bet.expiresAt < Date.now()
 
@@ -232,16 +226,7 @@ function OrderRow(props: {
             <PseudoNumericOutcomeLabel outcome={outcome as 'YES' | 'NO'} />
           ) : isBinaryMC ? (
             <OutcomeLabel
-              pseudonym={{
-                YES: {
-                  pseudonymName: mainBinaryMCAnswer?.text ?? '',
-                  pseudonymColor: getAnswerColor(mainBinaryMCAnswer),
-                },
-                NO: {
-                  pseudonymName: otherBinaryMCAnswer?.text ?? '',
-                  pseudonymColor: getAnswerColor(otherBinaryMCAnswer),
-                },
-              }}
+              pseudonym={getPseudonym(contract)}
               contract={contract}
               outcome={outcome}
               truncate={'short'}

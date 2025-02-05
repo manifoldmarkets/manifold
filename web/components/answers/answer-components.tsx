@@ -43,7 +43,7 @@ import { AnswerCpmmBetPanel } from './answer-bet-panel'
 import { useSavedContractMetrics } from 'web/hooks/use-saved-contract-metrics'
 import { ContractMetric } from 'common/contract-metric'
 import { floatingEqual } from 'common/util/math'
-import { getAnswerColor } from '../charts/contract/choice'
+import { getAnswerColor, getPseudonym } from '../charts/contract/choice'
 
 export const AnswerBar = (props: {
   color: string // 6 digit hex
@@ -365,16 +365,7 @@ export const BinaryMultiSellRow = (props: {
           sharesOutcome={sharesOutcome}
           setOpen={setOpen}
           answerId={getMainBinaryMCAnswer(contract)?.id}
-          binaryPseudonym={{
-            YES: {
-              pseudonymName: answer.text,
-              pseudonymColor: getAnswerColor(answer),
-            },
-            NO: {
-              pseudonymName: otherAnswer.text,
-              pseudonymColor: getAnswerColor(otherAnswer),
-            },
-          }}
+          binaryPseudonym={getPseudonym(contract)}
         />
       )}
       <Button

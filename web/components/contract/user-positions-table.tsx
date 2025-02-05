@@ -41,6 +41,7 @@ import { db } from 'web/lib/supabase/db'
 import { MoneyDisplay } from '../bet/money-display'
 import { UserHovercard } from '../user/user-hovercard'
 import { Select } from '../widgets/select'
+import { getPseudonym } from '../charts/contract/choice'
 
 export const UserPositionsTable = memo(
   function UserPositionsTableContent(props: {
@@ -352,6 +353,7 @@ const BinaryUserPositionsTable = memo(
               contract={contract}
               outcome={outcome}
               truncate={'short'}
+              pseudonym={getPseudonym(contract)}
             />
           ) : isBinary ? (
             <>
@@ -374,6 +376,7 @@ const BinaryUserPositionsTable = memo(
           {totalNoPositions}{' '}
           {mainBinaryMCAnswer ? (
             <OutcomeLabel
+              pseudonym={getPseudonym(contract)}
               contract={contract}
               outcome={outcome}
               truncate={'short'}

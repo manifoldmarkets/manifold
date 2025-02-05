@@ -31,6 +31,7 @@ import { track } from 'web/lib/service/analytics'
 import { MoneyDisplay } from '../bet/money-display'
 import { UserHovercard } from '../user/user-hovercard'
 import { InfoTooltip } from '../widgets/info-tooltip'
+import { getPseudonym } from '../charts/contract/choice'
 
 export const FeedBet = memo(function FeedBet(props: {
   contract: Contract
@@ -265,6 +266,7 @@ export function BetStatusText(props: {
             <>created limit order for {orderAmount}</>
           )}{' '}
           <OutcomeLabel
+            pseudonym={getPseudonym(contract)}
             outcome={outcome}
             answer={answer}
             contract={contract}
@@ -278,6 +280,7 @@ export function BetStatusText(props: {
           {orderAmount ? '/' : ''}
           {orderAmount}{' '}
           <OutcomeLabel
+            pseudonym={getPseudonym(contract)}
             outcome={outcome}
             answer={answer}
             contract={contract}
