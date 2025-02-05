@@ -1,6 +1,6 @@
 import { APIError, APIHandler } from './helpers/endpoint'
 import { track } from 'shared/analytics'
-import { largePerplexityModel, perplexity } from 'shared/helpers/perplexity'
+import { perplexity } from 'shared/helpers/perplexity'
 import { models, promptClaude } from 'shared/helpers/claude'
 import {
   addAnswersModeDescription,
@@ -32,7 +32,6 @@ export const generateAIAnswers: APIHandler<'generate-ai-answers'> =
       try {
         // First use perplexity to research the topic
         const { messages, citations } = await perplexity(prompt, {
-          model: largePerplexityModel,
           systemPrompts: [
             `You are a helpful AI assistant that researches information to help generate possible answers for a multiple choice question.`,
           ],
