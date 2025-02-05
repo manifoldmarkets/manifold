@@ -34,17 +34,17 @@ export function StreakWidget({ user }: { user: User }) {
         <Col
           style={{
             flex: 1,
-            gap: 24,
             justifyContent: 'space-between',
           }}
         >
           <Col
             style={{
               flex: 1,
-              gap: 24,
+              gap: 18,
               alignItems: 'center',
               justifyContent: 'center',
-              paddingBottom: '40%',
+              paddingBottom: '30%',
+              width: '100%',
             }}
           >
             <ThemedText size="5xl" weight="bold">
@@ -53,7 +53,8 @@ export function StreakWidget({ user }: { user: User }) {
 
             <ThemedText
               color={color.textSecondary}
-              //   style={{ textAlign: 'center' }}
+              size="md"
+              style={{ width: '100%', textAlign: 'center' }}
             >
               Your prediction streak! Make at least one prediction each day to
               keep it going.
