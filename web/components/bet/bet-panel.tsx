@@ -1,4 +1,9 @@
-import { ChevronDownIcon, XIcon } from '@heroicons/react/outline'
+import {
+  ChevronDownIcon,
+  LockClosedIcon,
+  LockOpenIcon,
+  XIcon,
+} from '@heroicons/react/outline'
 import clsx from 'clsx'
 import { capitalize, uniq } from 'lodash'
 import { useEffect, useState } from 'react'
@@ -266,6 +271,13 @@ export const BuyPanelBody = (props: {
     | null
   >(null)
 
+  const [manaSlippageProtection, setManaSlippageProtection] =
+    usePersistentLocalState(true, 'mana-slippage-protection')
+  const [cashSlippageProtection, setCashSlippageProtection] =
+    usePersistentLocalState(true, 'cash-slippage-protection')
+  const slippageProtection = isCashContract
+    ? cashSlippageProtection
+    : manaSlippageProtection
   const [inputRef, focusAmountInput] = useFocus()
 
   const isCpmmMulti = contract.mechanism === 'cpmm-multi-1'
@@ -367,7 +379,9 @@ export const BuyPanelBody = (props: {
     balanceByUserId,
     setError,
     contract,
-    multiProps
+    multiProps,
+    undefined,
+    slippageProtection
   )
   let probBefore = prob
   let probAfter = newProbAfter
@@ -657,6 +671,29 @@ export const BuyPanelBody = (props: {
                             : ''}
                         </span>
                       )}
+                      <button
+                        onClick={() => {
+                          toast.success(
+                            `Slippage protection on ${
+                              isCashContract ? 'cash' : 'mana'
+                            } questions ${
+                              !slippageProtection ? 'enabled' : 'disabled'
+                            }!`
+                          )
+                          if (isCashContract) {
+                            setCashSlippageProtection(!cashSlippageProtection)
+                          } else {
+                            setManaSlippageProtection(!manaSlippageProtection)
+                          }
+                        }}
+                        className="self-center"
+                      >
+                        {slippageProtection ? (
+                          <LockClosedIcon className="h-4 w-4 text-green-500 hover:text-green-600" />
+                        ) : (
+                          <LockOpenIcon className="text-ink-400 hover:text-ink-500 h-4 w-4" />
+                        )}
+                      </button>
                     </Row>
                   </Row>
                   <Row className="min-w-[128px] items-baseline justify-between sm:justify-start">

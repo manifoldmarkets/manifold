@@ -233,7 +233,7 @@ export default function LimitOrderPanel(props: {
         contractId: contract.id,
         amount,
         outcome,
-        limitProb: limitProb,
+        limitProb,
         isLimitOrder: true,
         answerId: multiProps?.answerToBuy.id,
         token: contract.token,
@@ -264,7 +264,8 @@ export default function LimitOrderPanel(props: {
       setError,
       contract,
       multiProps,
-      limitProb
+      limitProb,
+      false
     )
     currentPayout = result.currentPayout
     currentReturn = result.currentReturn

@@ -10,6 +10,7 @@ import { MAX_CPMM_PROB, MIN_CPMM_PROB } from 'common/contract'
 import { TRADE_TERM } from 'common/envs/constants'
 import { MarketContract } from 'common/contract'
 import { isBinaryMulti } from 'common/contract'
+const DEFAULT_SLIPPAGE = 0.1
 
 export const getLimitBetReturns = (
   binaryOutcome: 'YES' | 'NO',
@@ -18,8 +19,9 @@ export const getLimitBetReturns = (
   balanceByUserId: { [userId: string]: number },
   setError: (error: string) => void,
   contract: MarketContract,
-  multiProps?: MultiBetProps,
-  manualLimitProb?: number
+  multiProps: MultiBetProps | undefined,
+  manualLimitProb: number | undefined,
+  slippageProtection: boolean
 ) => {
   const shouldAnswersSumToOne =
     'shouldAnswersSumToOne' in contract ? contract.shouldAnswersSumToOne : false
@@ -47,13 +49,13 @@ export const getLimitBetReturns = (
         p: contract.p,
         collectedFees: contract.collectedFees,
       }
-  const SLIPPAGE = 0.1
   const prob = getCpmmProbability(cpmmState.pool, cpmmState.p)
+  const slippage = slippageProtection ? DEFAULT_SLIPPAGE : 1
   const floatLimitProb = Math.max(
     MIN_CPMM_PROB,
     Math.min(
       MAX_CPMM_PROB,
-      outcome === 'YES' ? prob + SLIPPAGE : prob - SLIPPAGE
+      outcome === 'YES' ? prob + slippage : prob - slippage
     )
   )
 
