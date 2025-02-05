@@ -30,7 +30,6 @@ import { FeedLiquidity } from '../feed/feed-liquidity'
 import { Col } from '../layout/col'
 import { Row } from '../layout/row'
 import { ControlledTabs } from '../layout/tabs'
-import { ContractMetricsByOutcome } from 'common/contract-metric'
 import { usePersistentInMemoryState } from 'client-common/hooks/use-persistent-in-memory-state'
 import { useSubscribeNewComments } from 'client-common/hooks/use-comments'
 import { ParentFeedComment } from '../comments/comment'
@@ -51,7 +50,6 @@ export function ContractTabs(props: {
   liveContract: Contract
   bets: Bet[]
   comments: ContractComment[]
-  userPositionsByOutcome: ContractMetricsByOutcome
   replyTo?: Answer | Bet
   setReplyTo?: (replyTo?: Answer | Bet) => void
   cancelReplyToAnswer?: () => void
@@ -74,7 +72,6 @@ export function ContractTabs(props: {
     activeIndex,
     setActiveIndex,
     totalBets,
-    userPositionsByOutcome,
     pinnedComments,
     appRouter,
   } = props
@@ -137,13 +134,6 @@ export function ContractTabs(props: {
             content: (
               <UserPositionsTable
                 key={liveContract.id}
-                positions={
-                  // If contract is resolved, will have to refetch positions by profit
-                  Object.values(userPositionsByOutcome).length > 0 &&
-                  !liveContract.isResolved
-                    ? userPositionsByOutcome
-                    : undefined
-                }
                 contract={liveContract as BinaryContract}
                 setTotalPositions={setTotalPositions}
               />

@@ -523,11 +523,6 @@ export function ContractPageContent(props: ContractParams) {
                 bets={bets}
                 totalBets={totalBets}
                 comments={comments}
-                userPositionsByOutcome={
-                  !isPlay && cash
-                    ? cash.userPositionsByOutcome
-                    : props.userPositionsByOutcome
-                }
                 totalPositions={
                   !isPlay && cash ? cash.totalPositions : props.totalPositions
                 }

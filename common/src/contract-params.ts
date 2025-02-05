@@ -14,7 +14,6 @@ import {
   getPinnedComments,
 } from 'common/supabase/comments'
 import {
-  getCPMMContractUserContractMetrics,
   getTopContractMetrics,
   getContractMetricsCount,
 } from 'common/supabase/contract-metrics'
@@ -50,7 +49,6 @@ export async function getContractParams(
     allBetPoints,
     comments,
     pinnedComments,
-    userPositionsByOutcome,
     topContractMetrics,
     totalPositions,
     relatedContracts,
@@ -78,9 +76,6 @@ export async function getContractParams(
       : [],
     getRecentTopLevelCommentsAndReplies(db, contract.id, 25),
     getPinnedComments(db, contract.id),
-    isCpmm1
-      ? getCPMMContractUserContractMetrics(contract.id, 100, null, db)
-      : {},
     contract.resolution ? getTopContractMetrics(contract.id, 10, db) : [],
     isCpmm1 || isMulti ? getContractMetricsCount(contract.id, db) : 0,
     unauthedApi('get-related-markets', {
@@ -124,7 +119,6 @@ export async function getContractParams(
     pointsString,
     multiPointsString,
     comments,
-    userPositionsByOutcome,
     totalPositions,
     totalBets,
     topContractMetrics,

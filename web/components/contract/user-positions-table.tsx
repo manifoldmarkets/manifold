@@ -7,10 +7,7 @@ import {
   getMainBinaryMCAnswer,
   isBinaryMulti,
 } from 'common/contract'
-import {
-  ContractMetric,
-  ContractMetricsByOutcome,
-} from 'common/contract-metric'
+import { ContractMetric } from 'common/contract-metric'
 import { getStonkDisplayShares } from 'common/stonk'
 import {
   convertContractMetricRows,
@@ -18,7 +15,7 @@ import {
   getOrderedContractMetricRowsForContractId,
 } from 'common/supabase/contract-metrics'
 import { User } from 'common/user'
-import { countBy, first, orderBy, partition, uniqBy } from 'lodash'
+import { first, orderBy, partition, uniqBy } from 'lodash'
 import { memo, ReactNode, useEffect, useState } from 'react'
 import { PillButton } from 'web/components/buttons/pill-button'
 import { Col } from 'web/components/layout/col'
@@ -48,7 +45,6 @@ import { Select } from '../widgets/select'
 export const UserPositionsTable = memo(
   function UserPositionsTableContent(props: {
     contract: BinaryContract | CPMMMultiContract
-    positions?: ContractMetricsByOutcome
     setTotalPositions?: (totalPositions: number) => void
     answerDetails?: {
       answer: Answer
@@ -60,24 +56,19 @@ export const UserPositionsTable = memo(
     const contractId = contract.id
 
     useEffect(() => {
-      if (!props.positions) updateContractMetrics(sortBy, currentAnswerId)
+      updateContractMetrics(sortBy, currentAnswerId)
     }, [])
 
     const [contractMetricsOrderedByProfit, setContractMetricsOrderedByProfit] =
       useState<ContractMetric[] | undefined>()
     const [contractMetricsOrderedByShares, setContractMetricsOrderedByShares] =
-      useState<ContractMetric[] | undefined>(
-        props.positions ? Object.values(props.positions).flat() : undefined
-      )
+      useState<ContractMetric[] | undefined>(undefined)
     const [metricsCountsByAnswerId, setMetricsCountsByAnswerId] = useState<{
       [key: string]: number
     }>(
       answerDetails
         ? { [answerDetails.answer.id]: answerDetails.totalPositions }
-        : countBy(
-            Object.values(props.positions ?? []).flat(),
-            (position) => position.answerId
-          )
+        : {}
     )
     const answers = answer
       ? [answer]
@@ -92,13 +83,9 @@ export const UserPositionsTable = memo(
         : undefined
     )
     const [page, setPage] = useState(0)
-    const [loading, setLoading] = useState(!props.positions)
-    const [totalYesPositions, setTotalYesPositions] = useState(
-      props.positions?.YES?.length ?? 0
-    )
-    const [totalNoPositions, setTotalNoPositions] = useState(
-      props.positions?.NO?.length ?? 0
-    )
+    const [loading, setLoading] = useState(true)
+    const [totalYesPositions, setTotalYesPositions] = useState(0)
+    const [totalNoPositions, setTotalNoPositions] = useState(0)
     const [sortBy, setSortBy] = useState<'profit' | 'shares'>(
       contract.isResolved ? 'profit' : 'shares'
     )

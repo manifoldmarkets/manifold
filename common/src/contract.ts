@@ -6,7 +6,7 @@ import { sum } from 'lodash'
 import { Answer } from './answer'
 import { getLiquidity } from './calculate-cpmm'
 import { ContractComment } from './comment'
-import { ContractMetric, ContractMetricsByOutcome } from './contract-metric'
+import { ContractMetric } from './contract-metric'
 import { CASH_SUFFIX, ENV_CONFIG } from './envs/constants'
 import { Fees } from './fees'
 import { PollOption } from './poll-option'
@@ -432,7 +432,6 @@ export type CashType = {
   lastBetTime?: number
   pointsString: string
   multiPointsString: { [answerId: string]: string }
-  userPositionsByOutcome: ContractMetricsByOutcome
   totalPositions: number
   totalBets: number
 }
@@ -443,7 +442,6 @@ export type ContractParams = {
   pointsString?: string
   multiPointsString?: { [answerId: string]: string }
   comments: ContractComment[]
-  userPositionsByOutcome: ContractMetricsByOutcome
   totalPositions: number
   totalBets: number
   topContractMetrics: ContractMetric[]
