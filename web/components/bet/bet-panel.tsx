@@ -707,7 +707,7 @@ export const BuyPanelBody = (props: {
                               {slippageProtection ? (
                                 <LockClosedIcon className="h-4 w-4 text-indigo-300 hover:text-indigo-400" />
                               ) : (
-                                <LockOpenIcon className="text-ink-400 hover:text-ink-500 h-4 w-4" />
+                                <LockOpenIcon className="text-ink-500 hover:text-ink-600 h-4 w-4" />
                               )}
                             </Tooltip>
                           </button>
