@@ -39,7 +39,6 @@ export default function Home(props: { headlines: Headline[] }) {
       <Welcome />
       <SEO title={`Home`} description={`Browse all questions`} url={`/home`} />
       <DowntimeBanner />
-      <FeeBanner />
       <HeadlineTabs
         endpoint={'news'}
         headlines={headlines}
