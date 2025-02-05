@@ -12,11 +12,13 @@ import {
 } from './contract'
 import { sumBy } from 'lodash'
 import { Answer } from './answer'
-import { removeUndefinedProps } from './util/object'
+import { addObjects, removeUndefinedProps } from './util/object'
 import {
   ArbitrageBetArray,
   calculateCpmmMultiArbitrageSellYesEqually,
 } from 'common/calculate-cpmm-arbitrage'
+import { getAnswerProbability, getProbability } from './calculate'
+import { noFees } from './fees'
 
 export type CandidateBet<T extends Bet> = Omit<
   T,
@@ -262,5 +264,106 @@ export const getNewSellBetInfo = (
     newPool: cpmmState.pool,
     makers: newBetResult.makers,
     ordersToCancel: newBetResult.ordersToCancel,
+  }
+}
+
+export const getSaleResult = (
+  contract: CPMMContract | CPMMMultiContract | CPMMNumericContract,
+  shares: number,
+  outcome: 'YES' | 'NO',
+  unfilledBets: LimitBet[],
+  balanceByUserId: { [userId: string]: number },
+  answer?: Answer
+) => {
+  if (contract.mechanism === 'cpmm-multi-1' && !answer)
+    throw new Error('getSaleResult: answer must be defined for cpmm-multi-1')
+
+  const initialProb = answer
+    ? answer.prob
+    : getProbability(contract as CPMMContract)
+  const initialCpmmState = answer
+    ? {
+        pool: { YES: answer.poolYes, NO: answer.poolNo },
+        p: 0.5,
+        collectedFees: contract.collectedFees,
+      }
+    : {
+        pool: (contract as CPMMContract).pool,
+        p: (contract as CPMMContract).p,
+        collectedFees: contract.collectedFees,
+      }
+
+  const {
+    cpmmState,
+    saleValue,
+    buyAmount,
+    fees,
+    makers: wholeMakers,
+    ordersToCancel,
+  } = calculateCpmmSale(
+    initialCpmmState,
+    shares,
+    outcome,
+    unfilledBets,
+    balanceByUserId
+  )
+  const resultProb = getCpmmProbability(cpmmState.pool, cpmmState.p)
+  const probChange = Math.abs(resultProb - initialProb)
+  const makers = wholeMakers.map((m) => m.bet).concat(ordersToCancel)
+  return {
+    saleValue,
+    buyAmount,
+    cpmmState,
+    initialProb,
+    resultProb,
+    probChange,
+    fees,
+    makers,
+  }
+}
+
+export const getSaleResultMultiSumsToOne = (
+  contract: CPMMMultiContract | CPMMNumericContract,
+  answerId: string,
+  shares: number,
+  outcome: 'YES' | 'NO',
+  unfilledBets: LimitBet[],
+  balanceByUserId: { [userId: string]: number }
+) => {
+  const initialProb = getAnswerProbability(contract, answerId)
+  const answerToSell = contract.answers.find((a) => a.id === answerId)
+  const { newBetResult, saleValue, buyAmount, otherBetResults } =
+    calculateCpmmMultiSumsToOneSale(
+      contract.answers,
+      answerToSell!,
+      shares,
+      outcome,
+      undefined,
+      unfilledBets,
+      balanceByUserId,
+      contract.collectedFees
+    )
+  const { cpmmState, totalFees } = newBetResult
+  const resultProb = getCpmmProbability(cpmmState.pool, cpmmState.p)
+  const probChange = Math.abs(resultProb - initialProb)
+
+  const fees = addObjects(
+    totalFees,
+    otherBetResults.map((r) => r.totalFees).reduce(addObjects, noFees)
+  )
+  const makers = newBetResult.makers
+    .map((m) => m.bet)
+    .concat(otherBetResults.flatMap((r) => r.makers.map((m) => m.bet)))
+    .concat(newBetResult.ordersToCancel)
+    .concat(otherBetResults.flatMap((r) => r.ordersToCancel))
+  return {
+    saleValue,
+    buyAmount,
+    cpmmState,
+    initialProb,
+    resultProb,
+    probChange,
+    fees,
+    makers,
   }
 }

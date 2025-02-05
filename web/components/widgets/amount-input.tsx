@@ -26,8 +26,9 @@ import { Col } from '../layout/col'
 import { Row } from '../layout/row'
 import { Input } from './input'
 import { sliderColors } from './slider'
-import { Button } from '../buttons/button'
 import { useCurrentPortfolio } from 'web/hooks/use-portfolio-history'
+import { useIsMobile } from 'web/hooks/use-is-mobile'
+import { buildArray } from 'common/util/array'
 
 export function AmountInput(
   props: {
@@ -97,14 +98,14 @@ export function AmountInput(
     <Col className={clsx('relative', className)}>
       <label className="font-sm md:font-lg relative">
         {label && (
-          <span className="text-ink-400 absolute top-1/2 my-auto ml-2 -translate-y-1/2">
+          <span className="text-ink-400 absolute top-1/2 my-auto -mt-0.5 ml-2 -translate-y-1/2">
             {label}
           </span>
         )}
         <Row>
           <Input
             {...rest}
-            className={clsx(label && 'pl-9', ' !text-lg', inputClassName)}
+            className={clsx(label && 'pl-9', 'text-lg', inputClassName)}
             style={inputStyle}
             ref={inputRef}
             type={allowFloat ? 'number' : 'text'}
@@ -126,14 +127,17 @@ export function AmountInput(
             }}
             min={allowFloat ? 0 : 1}
           />
-          {!disableClearButton && amount !== undefined && (
-            <button
-              className="text-ink-400 hover:text-ink-500 active:text-ink-500 absolute right-4 top-1/2 -translate-y-1/2"
-              onClick={() => onChangeAmount(undefined)}
-            >
-              <XIcon className="h-4 w-4" />
-            </button>
-          )}
+          {quickAddMoreButton
+            ? quickAddMoreButton
+            : !disableClearButton &&
+              amount !== undefined && (
+                <button
+                  className="text-ink-400 hover:text-ink-500 active:text-ink-500 absolute right-4 top-1/2 -translate-y-1/2"
+                  onClick={() => onChangeAmount(undefined)}
+                >
+                  <XIcon className="h-4 w-4" />
+                </button>
+              )}
         </Row>
       </label>
     </Col>
@@ -252,50 +256,56 @@ export function BuyAmountInput(props: {
       ? [500, 1000, 5000]
       : quickButtonValues ??
         (isAdvancedTrader ? advancedIncrementValues : defaultIncrementValues)
-
+  const isMobile = useIsMobile()
+  const decrementValues = incrementValues
+    .slice(0, isMobile ? 1 : 2)
+    .map((v) => -v)
+  const values = buildArray(
+    ...decrementValues.slice().reverse(),
+    incrementValues[0],
+    incrementValues[1]
+  )
+  const incrementButtonsClassName =
+    'hover:bg-ink-200 bg-canvas-100 rounded-md px-2 sm:px-3 py-1.5 text-sm'
   return (
     <>
-      <Col className={clsx('w-full max-w-[350px] gap-2', parentClassName)}>
-        <Col className="gap-2">
-          <AmountInput
-            className={className}
-            inputClassName={clsx('w-full !text-xl h-[60px]', inputClassName)}
-            label={
-              token === 'SPICE' ? (
-                <SpiceCoin />
-              ) : token == 'CASH' ? (
-                <SweepiesCoin />
-              ) : (
-                <ManaCoin />
-              )
-            }
-            amount={amount}
-            onChangeAmount={onChange}
-            error={!!error}
-            allowFloat={token === 'CASH'}
-            disabled={disabled}
-            inputRef={inputRef}
-            disableClearButton={!isAdvancedTrader}
-          />
-          {!disableQuickButtons && (
-            <Row className=" w-full items-center gap-2">
-              {incrementValues.map((increment) => (
-                <Button
-                  key={increment}
-                  color="gray-white"
-                  onClick={() => incrementBy(increment)}
-                  className="bg-canvas-0 h-8 w-24"
-                >
-                  {increment > 0
-                    ? `+${formatWithToken({ amount: increment, token })}`
-                    : formatWithToken({ amount: increment, token })}
-                </Button>
-              ))}
-            </Row>
-          )}
-        </Col>
+      <Col className={clsx('relative w-full max-w-[350px]', parentClassName)}>
+        <AmountInput
+          className={className}
+          inputClassName={clsx('w-full !text-xl h-[60px]', inputClassName)}
+          label={
+            token === 'SPICE' ? (
+              <SpiceCoin />
+            ) : token == 'CASH' ? (
+              <SweepiesCoin />
+            ) : (
+              <ManaCoin />
+            )
+          }
+          amount={amount}
+          onChangeAmount={onChange}
+          error={!!error}
+          allowFloat={token === 'CASH'}
+          disabled={disabled}
+          inputRef={inputRef}
+          disableClearButton={!disableQuickButtons}
+        />
+        {!disableQuickButtons && (
+          <Row className="absolute right-2 top-3.5 gap-1.5 sm:gap-2">
+            {values.map((v) => (
+              <button
+                className={incrementButtonsClassName}
+                key={v}
+                onClick={() => incrementBy(v)}
+              >
+                {v > 0 ? `+${v}` : v}
+              </button>
+            ))}
+          </Row>
+        )}
         {showSlider && (
           <BetSlider
+            className="mt-3"
             amount={amount}
             onAmountChange={onChange}
             binaryOutcome={binaryOutcome}

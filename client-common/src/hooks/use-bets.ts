@@ -1,10 +1,27 @@
-import { APIParams, APIPath, APIResponse } from 'common/api/schema'
-import { usePersistentInMemoryState } from './use-persistent-in-memory-state'
-import { Bet } from 'common/bet'
+import { APIParams, APIResponse } from 'common/api/schema'
+import { Bet, LimitBet } from 'common/bet'
+import { User } from 'common/user'
+import { sortBy, uniq, uniqBy } from 'lodash'
 import { Dispatch, SetStateAction, useEffect } from 'react'
 import { useApiSubscription } from './use-api-subscription'
-import { sortBy, uniqBy } from 'lodash'
-import { LimitBet } from 'common/bet'
+import { useEffectCheckEquality } from './use-effect-check-equality'
+import { usePersistentInMemoryState } from './use-persistent-in-memory-state'
+
+export function useBetsOnce(
+  api: (params: APIParams<'bets'>) => Promise<APIResponse<'bets'>>,
+  options: APIParams<'bets'>
+) {
+  const [bets, setBets] = usePersistentInMemoryState<Bet[] | undefined>(
+    undefined,
+    `use-bets-${JSON.stringify(options)}`
+  )
+
+  useEffectCheckEquality(() => {
+    api(options ?? {}).then((bets) => setBets(bets))
+  }, [options])
+
+  return bets
+}
 
 export const useContractBets = (
   contractId: string,
@@ -120,4 +137,113 @@ export const useSubscribeGlobalBets = (options?: APIParams<'bets'>) => {
   })
 
   return newBets
+}
+
+export const useUnfilledBets = (
+  contractId: string,
+  api: (params: APIParams<'bets'>) => Promise<APIResponse<'bets'>>,
+  useIsPageVisible: () => boolean,
+  options?: {
+    enabled?: boolean
+  }
+) => {
+  const { enabled = true } = options ?? {}
+
+  const [bets, setBets] = usePersistentInMemoryState<LimitBet[] | undefined>(
+    undefined,
+    `unfilled-bets-${contractId}`
+  )
+
+  const addBets = (newBets: LimitBet[]) => {
+    setBets((bets) => {
+      return sortBy(
+        uniqBy([...newBets, ...(bets ?? [])], 'id'),
+        'createdTime'
+      ).filter(
+        (bet) =>
+          !bet.isFilled &&
+          !bet.isCancelled &&
+          (!bet.expiresAt || bet.expiresAt > Date.now())
+      )
+    })
+  }
+
+  const isPageVisible = useIsPageVisible()
+
+  useEffect(() => {
+    if (enabled)
+      api({ contractId, kinds: 'open-limit', order: 'asc' }).then(
+        // Reset bets instead of adding to existing, since we want to exclude those recently filled/cancelled.
+        (bets) => setBets(bets as LimitBet[])
+      )
+  }, [enabled, contractId, isPageVisible])
+
+  useApiSubscription({
+    enabled,
+    topics: [`contract/${contractId}/orders`],
+    onBroadcast: ({ data }) => {
+      addBets(data.bets as LimitBet[])
+    },
+  })
+
+  return bets
+}
+
+export const useUnfilledBetsAndBalanceByUserId = (
+  contractId: string,
+  api: (params: APIParams<'bets'>) => Promise<APIResponse<'bets'>>,
+  usersApi: (
+    params: APIParams<'users/by-id/balance'>
+  ) => Promise<APIResponse<'users/by-id/balance'>>,
+  useIsPageVisible: () => boolean
+) => {
+  const unfilledBets =
+    useUnfilledBets(contractId, api, useIsPageVisible, { enabled: true }) ?? []
+  const userIds = uniq(unfilledBets.map((b) => b.userId))
+  const balances = useUserBalances(userIds, usersApi, useIsPageVisible) ?? []
+
+  const balanceByUserId = Object.fromEntries(
+    balances.map(({ id, balance }) => [id, balance])
+  )
+  return { unfilledBets, balanceByUserId }
+}
+
+const useUserBalances = (
+  userIds: string[],
+  api: (
+    params: APIParams<'users/by-id/balance'>
+  ) => Promise<APIResponse<'users/by-id/balance'>>,
+  useIsPageVisible: () => boolean
+) => {
+  const [users, setUsers] = usePersistentInMemoryState<
+    { id: string; balance: number }[]
+  >([], `user-balances-${userIds.join('-')}`)
+  const isPageVisible = useIsPageVisible()
+
+  // Load initial data
+  useEffect(() => {
+    if (!userIds.length || !isPageVisible) return
+    api({ ids: userIds }).then((users) => {
+      setUsers(users)
+    })
+  }, [userIds.join(','), isPageVisible])
+
+  // Subscribe to updates
+  useApiSubscription({
+    topics: userIds.map((id) => `user/${id}`),
+    onBroadcast: ({ data }) => {
+      const { user } = data as { user: Partial<User> }
+      if (!user) return
+      const prevUser = users.find((u) => u.id === user.id)
+      if (!prevUser) return
+      setUsers((prevUsers) => {
+        return prevUsers.map((prevU) =>
+          prevU.id === user.id ? { ...prevU, ...user } : prevU
+        )
+      })
+    },
+    enabled: userIds.length > 0 && isPageVisible,
+  })
+
+  return users
 }

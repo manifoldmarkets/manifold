@@ -7,7 +7,15 @@ export const useAPIGetter = <P extends APIPath>(
   path: P,
   props: APIParams<P> | undefined,
   ignoreDependencies?: string[],
-  overrideKey?: string
+  overrideKey?: string,
+  enabled = true
 ) => {
-  return useAPIGetterWithCall(path, props, api, ignoreDependencies, overrideKey)
+  return useAPIGetterWithCall(
+    path,
+    props,
+    api,
+    ignoreDependencies,
+    overrideKey,
+    enabled
+  )
 }

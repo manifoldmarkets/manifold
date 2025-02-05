@@ -95,7 +95,6 @@ export const BetSlider = (props: {
       className={className}
       min={0}
       max={maxSliderIndex}
-      marks={marks}
       color={
         sliderColor
           ? (sliderColor as any)

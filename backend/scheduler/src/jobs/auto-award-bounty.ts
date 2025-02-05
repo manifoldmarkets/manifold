@@ -3,7 +3,7 @@ import { BountiedQuestionContract } from 'common/contract'
 import { getAutoBountyPayoutPerHour } from 'common/bounty'
 import { createSupabaseDirectClient } from 'shared/supabase/init'
 import { awardBounty } from 'shared/bounty'
-import { promptGPT4 } from 'shared/helpers/openai-utils'
+import { promptOpenAI } from 'shared/helpers/openai-utils'
 import { log, revalidateContractStaticProps } from 'shared/utils'
 import { updateContract } from 'shared/supabase/contracts'
 
@@ -79,7 +79,7 @@ Description: ${JSON.stringify(contract.description)}
 The following comments have been submitted:
 
 ` + sortedComments.map((c) => `${c.likes} likes:\n${c.content}`).join('\n\n')
-    const resultMessage = await promptGPT4(prompt)
+    const resultMessage = await promptOpenAI(prompt, 'o3-mini')
     if (resultMessage) {
       await updateContract(pg, contract.id, {
         gptCommentSummary: resultMessage,

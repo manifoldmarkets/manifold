@@ -15,7 +15,7 @@ export default function AboutPage() {
   getNativePlatform()
 
   return (
-    <Page trackPageView={'about page'}>
+    <Page trackPageView={'about page'} className="!col-span-7">
       <SEO
         title="About"
         description={`Manifold is a prediction market platform. Users place ${TRADE_TERM}s on an upcoming event which creates a probability of how likely it will happen. ${capitalize(

@@ -22,7 +22,7 @@ export function SettingsModal(props: { isOpen: boolean; onClose: () => void }) {
   }
 
   return (
-    <Modal isOpen={isOpen} onClose={onClose} title="Settings" mode="close">
+    <Modal isOpen={isOpen} onClose={onClose} title="Settings">
       <Col style={{ gap: 16, padding: 16 }}>
         <View>
           <Button

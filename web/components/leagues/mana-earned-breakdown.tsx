@@ -16,13 +16,15 @@ import { Bet } from 'common/bet'
 import { calculateUserMetricsWithouLoans } from 'common/calculate-metrics'
 import { ProfitBadge } from '../profit-badge'
 import { ContractMetric } from 'common/contract-metric'
-import { useBetsOnce } from 'web/hooks/use-bets'
+
 import ShortToggle from '../widgets/short-toggle'
 import { useState } from 'react'
 import { ContractBetsTable } from 'web/components/bet/contract-bets-table'
 import { DisplayUser } from 'common/api/user-types'
 import { TRADE_TERM } from 'common/envs/constants'
 import { capitalize } from 'lodash'
+import { useBetsOnce } from 'client-common/hooks/use-bets'
+import { api } from 'web/lib/api/api'
 
 export const ManaEarnedBreakdown = (props: {
   user: DisplayUser
@@ -50,7 +52,7 @@ export const ManaEarnedBreakdown = (props: {
   // } as { [key: string]: number }
 
   const { start, end } = getSeasonDates(season)
-  const loadingBets = useBetsOnce({
+  const loadingBets = useBetsOnce((params) => api('bets', params), {
     userId: user.id,
     afterTime: start.getTime(),
     beforeTime: end.getTime(),

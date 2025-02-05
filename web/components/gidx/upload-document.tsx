@@ -46,36 +46,43 @@ export const UploadDocuments = (props: {
       z.literal('image/png'),
       z.literal('image/webp'),
     ])
-
-    const validationResult = FileTypeSchema.safeParse(file.type)
-    if (!validationResult.success) {
-      setError('Invalid file type. Only PDF, JPEG, WEBP, and PNG are allowed.')
-      return
-    }
-    const ext = last(file.name.split('.'))
-    const fileName = `id-document-${
-      getKeyFromValue(idNameToCategoryType, CategoryType) ?? ''
-    }.${ext}`
-
-    setLoading(true)
-    setError(null)
-    const fileUrl = await uploadPrivateImage(user.id, file, fileName)
-    const { status } = await api('upload-document-gidx', {
-      fileUrl,
-      fileName,
-      CategoryType,
-    }).catch((e) => {
-      console.error(e)
-      if (e instanceof APIError) {
-        setError(e.message)
+    try {
+      const validationResult = FileTypeSchema.safeParse(file.type)
+      if (!validationResult.success) {
+        setError(
+          'Invalid file type. Only PDF, JPEG, WEBP, and PNG are allowed.'
+        )
+        return
       }
-      return { status: 'error' }
-    })
-    if (status !== 'success') {
-      setLoading(false)
-      return
+      const ext = last(file.name.split('.'))
+      const fileName = `id-document-${
+        getKeyFromValue(idNameToCategoryType, CategoryType) ?? ''
+      }.${ext}`
+
+      setLoading(true)
+      setError(null)
+      const fileUrl = await uploadPrivateImage(user.id, file, fileName)
+      const { status } = await api('upload-document-gidx', {
+        fileUrl,
+        fileName,
+        CategoryType,
+      }).catch((e) => {
+        console.error(e)
+        if (e instanceof APIError) {
+          setError(e.message)
+        }
+        return { status: 'error' }
+      })
+      if (status !== 'success') {
+        setLoading(false)
+        return
+      }
+      await getAndSetDocuments()
+    } catch (e) {
+      console.error(e)
+      setError('Error: ' + e)
     }
-    await getAndSetDocuments()
+    setLoading(false)
   }
 
   const getAndSetDocuments = async () => {

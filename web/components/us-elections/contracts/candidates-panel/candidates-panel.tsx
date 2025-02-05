@@ -13,8 +13,10 @@ import { CandidateBar, removeTextInParentheses } from './candidate-bar'
 import { CANDIDATE_DATA } from '../../ candidates/candidate-data'
 import { Carousel } from 'web/components/widgets/carousel'
 import { Row } from 'web/components/layout/row'
-import { useUserContractBets } from 'web/hooks/use-user-bets'
+import { useUserContractBets } from 'client-common/hooks/use-user-bets'
 import { groupBy } from 'lodash'
+import { api } from 'web/lib/api/api'
+import { useIsPageVisible } from 'web/hooks/use-page-visible'
 
 // just the bars
 export function CandidatePanel(props: {
@@ -60,7 +62,12 @@ export function CandidatePanel(props: {
 
   const shownAnswersLength = displayedAnswers.length
 
-  const userBets = useUserContractBets(user?.id, contract.id)
+  const userBets = useUserContractBets(
+    user?.id,
+    contract.id,
+    (params) => api('bets', params),
+    useIsPageVisible
+  )
   const userBetsByAnswer = groupBy(userBets, (bet) => bet.answerId)
 
   return (

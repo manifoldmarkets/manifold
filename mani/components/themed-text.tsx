@@ -128,7 +128,7 @@ export const fontSizes = StyleSheet.create({
   },
   '5xl': {
     fontSize: 48,
-    lineHeight: 100,
+    lineHeight: 56,
   },
   '6xl': {
     fontSize: 60,

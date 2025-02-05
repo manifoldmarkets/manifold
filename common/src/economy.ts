@@ -81,11 +81,13 @@ const PaymentAmounts = [
     mana: 1_000,
     priceInDollars: 15,
     bonusInDollars: 10,
+    ignoreIfNewUser: true,
   },
   {
     mana: 2_500,
     priceInDollars: 30,
     bonusInDollars: 25,
+    ignoreIfNewUser: true,
   },
   {
     mana: 5_000,
@@ -172,8 +174,9 @@ export const MANI_IOS_PRICES = [
   },
 ] as PaymentAmount[]
 
-export const SWEEPIES_CASHOUT_FEE = 0.05
+export const SWEEPIES_CASHOUT_FEE = 5
 export const MIN_CASHOUT_AMOUNT = 25
 
 export const SWEEPS_MIN_BET = 1
 export const MANA_MIN_BET = 1
+export const PROFIT_FEE_FRACTION = 0.1

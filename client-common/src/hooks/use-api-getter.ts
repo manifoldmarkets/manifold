@@ -22,7 +22,8 @@ export const useAPIGetterWithCall = <P extends APIPath>(
   props: APIParams<P> | undefined,
   apiCall: apiWithoutAuth<P>, // we pass the auth from web or mani in the call so it doesn't have to be referenced in this hook
   ignoreDependencies?: string[],
-  overrideKey?: string
+  overrideKey?: string,
+  enabled = true
 ) => {
   const propsString = JSON.stringify(props)
   const propsStringToTriggerRefresh = JSON.stringify(
@@ -42,7 +43,7 @@ export const useAPIGetterWithCall = <P extends APIPath>(
   )
 
   const getAndSetData = useEvent(async () => {
-    if (!props) return
+    if (!props || !enabled) return
     setError(undefined)
 
     let promise = promiseCache[key]
@@ -64,7 +65,7 @@ export const useAPIGetterWithCall = <P extends APIPath>(
     return () => {
       setLoading(false)
     }
-  }, [propsStringToTriggerRefresh])
+  }, [propsStringToTriggerRefresh, enabled])
 
   const refresh = async () => {
     promiseCache[key] = undefined

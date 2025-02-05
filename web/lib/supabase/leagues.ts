@@ -1,6 +1,6 @@
-import { db } from './db'
 import { CURRENT_SEASON, league_user_info } from 'common/leagues'
 import { convertSQLtoTS, tsToMillis } from 'common/supabase/utils'
+import { db } from './db'
 
 export async function getLeagueInfo(userId: string) {
   const { data } = await db

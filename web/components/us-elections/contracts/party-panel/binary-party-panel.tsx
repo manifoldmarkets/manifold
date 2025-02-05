@@ -24,12 +24,14 @@ import { SizedContainer } from 'web/components/sized-container'
 import { ProbabilityNeedle } from 'web/components/us-elections/probability-needle'
 import { useSaveBinaryShares } from 'web/hooks/use-save-binary-shares'
 import { useUser } from 'web/hooks/use-user'
-import { useUserContractBets } from 'web/hooks/use-user-bets'
+import { useUserContractBets } from 'client-common/hooks/use-user-bets'
 import { firebaseLogin } from 'web/lib/firebase/users'
 import { BubblePercentChange } from '../candidates-panel/candidate-bar'
 import { BinaryUserPosition } from '../candidates-panel/candidates-user-position'
 import { ELECTIONS_PARTY_QUESTION_PSEUDONYM } from 'web/components/elections-page'
 import { sliderColors } from 'web/components/widgets/slider'
+import { useIsPageVisible } from 'web/hooks/use-page-visible'
+import { api } from 'web/lib/api/api'
 
 const politicsBinaryPseudonym = {
   YES: {
@@ -47,7 +49,12 @@ export function BinaryPartyPanel(props: { contract: BinaryContract }) {
   const { contract } = props
   const user = useUser()
 
-  const userBets = useUserContractBets(user?.id, contract.id)
+  const userBets = useUserContractBets(
+    user?.id,
+    contract.id,
+    (params) => api('bets', params),
+    useIsPageVisible
+  )
 
   const { sharesOutcome } = useSaveBinaryShares(contract, userBets)
 

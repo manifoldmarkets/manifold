@@ -27,7 +27,6 @@ import {
   getPrecision,
 } from 'common/multi-numeric'
 import { calculateCpmmMultiArbitrageYesBets } from 'common/calculate-cpmm-arbitrage'
-import { useUnfilledBetsAndBalanceByUserId } from 'web/hooks/use-bets'
 import { QuickBetAmountsRow } from 'web/components/bet/bet-panel'
 import { scaleLinear } from 'd3-scale'
 import { DoubleDistributionChart } from 'web/components/charts/generic-charts'
@@ -40,6 +39,8 @@ import { useLiveContract } from 'web/hooks/use-contract'
 import { getTierFromLiquidity } from 'common/tier'
 import { MoneyDisplay } from '../bet/money-display'
 import { TRADE_TERM } from 'common/envs/constants'
+import { useUnfilledBetsAndBalanceByUserId } from 'client-common/hooks/use-bets'
+import { useIsPageVisible } from 'web/hooks/use-page-visible'
 
 export const NumericBetPanel = (props: {
   contract: CPMMNumericContract
@@ -77,7 +78,10 @@ export const NumericBetPanel = (props: {
   const [inputRef, focusAmountInput] = useFocus()
   const [isSubmitting, setIsSubmitting] = useState(false)
   const { unfilledBets, balanceByUserId } = useUnfilledBetsAndBalanceByUserId(
-    contract.id
+    contract.id,
+    (params) => api('bets', params),
+    (params) => api('users/by-id/balance', params),
+    useIsPageVisible
   )
   const stringifiedAnswers = JSON.stringify(answers)
 

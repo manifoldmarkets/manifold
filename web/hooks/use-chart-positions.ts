@@ -4,14 +4,15 @@ import { DAY_MS } from 'common/util/time'
 import { first, groupBy, last, sumBy } from 'lodash'
 import { filterDefined } from 'common/util/array'
 import { getAnswerColor } from 'web/components/charts/contract/choice'
-import { useBetsOnce } from 'web/hooks/use-bets'
 import { DisplayUser } from 'common/api/user-types'
 import { ChartPosition } from 'common/chart-position'
 import { getContractBetMetrics } from 'common/calculate'
+import { useBetsOnce } from 'client-common/hooks/use-bets'
+import { api } from 'web/lib/api/api'
 
 export const useChartPositions = (contract: Contract) => {
   const [displayUser, setDisplayUser] = useState<DisplayUser>()
-  const usersBets = useBetsOnce({
+  const usersBets = useBetsOnce((params) => api('bets', params), {
     contractId: contract.id,
     userId: displayUser?.id,
     filterRedemptions: true,

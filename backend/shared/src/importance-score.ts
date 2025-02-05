@@ -261,7 +261,7 @@ export const getContractVoters = async (
   since: number,
   inContractIds: string[]
 ) => {
-  return Object.fromEntries( 
+  return Object.fromEntries(
     await pg.map(
       `select cb.contract_id, count(distinct cb.user_id)::int as n
        from votes cb
@@ -369,12 +369,12 @@ export const computeContractScores = (
   const conversionScore = normalize(contract.conversionScore, 1)
 
   const sweepsScore =
-    contract.token === 'CASH' // boost sweeps
-      ? 4
-      : contract.siblingContractId // boost mana markets with attached sweeps
-      ? 1
-      : contract.id === 'ikSUiiNS8MwAI75RwEJf' // downrank old election market
+    contract.id === '8Q6PEygUqp' // downrank old superbowl market
       ? -4
+      : contract.token === 'CASH' // boost sweeps
+      ? 4
+      : contract.siblingContractId && contract.id !== 'OyzrJydfBQT9NFomacEW' // boost mana markets with attached sweeps
+      ? 1
       : 0
 
   // recalibrate all of these numbers as site usage changes
@@ -412,7 +412,8 @@ export const computeContractScores = (
   const rawMarketFreshness =
     (contract.volume24Hours / (contract.volume + 1)) *
       normalize(Math.log10(contract.volume24Hours + 1), 5) +
-    normalize(todayScore, 10)
+    normalize(todayScore, 10) +
+    normalize(0.05 - (now - contract.lastUpdatedTime) / DAY_MS, 0.05)
 
   const todayRatio = todayScore / (thisWeekScore - todayScore + 1)
   const hourRatio = traderHour / (thisWeekScore - traderHour + 1)
@@ -421,7 +422,7 @@ export const computeContractScores = (
   const freshnessScore =
     outcomeType === 'POLL' || outcomeType === 'BOUNTIED_QUESTION'
       ? freshnessFactor * importanceScore
-      : normalize(rawMarketFreshness, 2)
+      : normalize(rawMarketFreshness, 3)
 
   return {
     todayScore,

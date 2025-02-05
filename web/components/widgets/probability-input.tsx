@@ -22,11 +22,6 @@ export function ProbabilitySlider(props: {
   // Default slider color: YES → green, NO → red
   const color = props.color ?? 'gray'
 
-  const marks = PROBABILITY_SLIDER_VALUE_LABELS.map((p) => ({
-    value: PROBABILITY_SLIDER_VALUES.findIndex((val) => val === p),
-    label: `${p}%`,
-  }))
-
   const maxSliderIndex = PROBABILITY_SLIDER_VALUES.length - 1
 
   const probToSliderIndex = (p: number) => {
@@ -42,7 +37,6 @@ export function ProbabilitySlider(props: {
       className={className}
       min={0}
       max={maxSliderIndex}
-      marks={marks}
       color={color}
       amount={probToSliderIndex(prob ?? 0)} // position the slider at the real probability
       onChange={(value) => onProbChange(sliderIndexToProb(value))}

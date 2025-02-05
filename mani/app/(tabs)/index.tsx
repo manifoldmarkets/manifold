@@ -34,14 +34,19 @@ export default function HomeScreen() {
       iconName: 'newspaper',
     },
     {
-      title: 'Entertainment',
-      content: <Feed tab="entertainment" />,
-      iconName: 'movieclapper',
-    },
-    {
       title: 'Politics',
       content: <Feed tab="politics" />,
       iconName: 'globe',
+    },
+    {
+      title: 'Tech & Science',
+      content: <Feed tab="tech" />,
+      iconName: 'laptopcomputer',
+    },
+    {
+      title: 'Entertainment',
+      content: <Feed tab="entertainment" />,
+      iconName: 'movieclapper',
     },
     user &&
       isAdminId(user?.id) && {
@@ -51,7 +56,7 @@ export default function HomeScreen() {
       }
   )
 
-  const SPORTS_TABS = [
+  const SPORTS_TABS: Tab[] = [
     {
       title: 'NFL',
       content: <Feed tab="NFL" />,

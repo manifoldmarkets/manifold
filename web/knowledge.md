@@ -1,5 +1,22 @@
 ## Design Principles
 
+### Server-Side Data Fetching
+
+When fetching data in getStaticProps or getServerSideProps:
+
+- Use the Supabase client (db) directly instead of the API client
+- API client won't work because it requires auth which isn't available during static generation
+- Import db from web/lib/supabase/db
+- Use contractFields and convertContract from common/supabase/contracts when querying contracts
+- Example:
+
+```ts
+const { data } = await db
+  .from('contracts')
+  .select(contractFields)
+  .eq('visibility', 'public')
+```
+
 ### Mana/Sweepstakes Market Pairs
 
 Markets can exist in both mana and sweepstakes versions, displayed together on the same page. When building UI components:

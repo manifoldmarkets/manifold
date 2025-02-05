@@ -1,6 +1,7 @@
 import { convertContractComment } from 'common/supabase/comments'
 import { SupabaseDirectClient } from 'shared/supabase/init'
 import { APIError } from 'common/api/utils'
+import { millisToTs } from 'common/supabase/utils'
 
 export async function getCommentSafe(
   pg: SupabaseDirectClient,
@@ -34,6 +35,7 @@ export async function getCommentsDirect(
     page?: number
     replyToCommentId?: string
     commentId?: string
+    afterTime?: number
   }
 ) {
   const {
@@ -43,6 +45,7 @@ export async function getCommentsDirect(
     page = 0,
     replyToCommentId,
     commentId,
+    afterTime,
   } = filters
   return await pg.map(
     `
@@ -53,11 +56,20 @@ export async function getCommentsDirect(
           and ($4 is null or user_id = $4)
           and ($5 is null or cc.data->>'replyToCommentId' = $5)
           and ($6 is null or cc.comment_id = $6)
+          and ($7 is null or cc.created_time > $7)
         order by cc.created_time desc
         limit $1
         offset $2
     `,
-    [limit, page * limit, contractId, userId, replyToCommentId, commentId],
+    [
+      limit,
+      page * limit,
+      contractId,
+      userId,
+      replyToCommentId,
+      commentId,
+      afterTime ? millisToTs(afterTime) : null,
+    ],
     (r) => convertContractComment(r)
   )
 }

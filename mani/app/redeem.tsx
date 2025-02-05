@@ -181,7 +181,7 @@ export default function CashoutPage() {
         },
         SavePaymentMethod,
         PaymentAmount: {
-          dollars: (1 - SWEEPIES_CASHOUT_FEE) * sweepCashAmount,
+          dollars: sweepCashAmount - SWEEPIES_CASHOUT_FEE,
           manaCash: sweepCashAmount,
         },
         MerchantSessionID: checkoutSession.MerchantSessionID,
@@ -503,7 +503,7 @@ export default function CashoutPage() {
                 <Text style={styles.buttonText}>
                   Redeem for{' '}
                   {formatSweepsToUSD(
-                    (1 - SWEEPIES_CASHOUT_FEE) * (sweepCashAmount ?? 0)
+                    (sweepCashAmount ?? 0) - SWEEPIES_CASHOUT_FEE
                   )}
                 </Text>
               </Button>
@@ -641,7 +641,7 @@ function SelectCashoutOptions(props: {
               <Text style={styles.boldText}>
                 {formatSweepies(1)} → {formatMoneyUSD(1)}
               </Text>
-              , minus a {SWEEPIES_CASHOUT_FEE * 100}% fee.
+              , minus a {formatMoneyUSD(SWEEPIES_CASHOUT_FEE)} flat fee.
             </Text>
             <Button
               onPress={() => setPage(redeemForUSDPageName)}
@@ -685,7 +685,7 @@ function SelectCashoutOptions(props: {
                       },
                     ]}
                   >
-                    ${((1 - SWEEPIES_CASHOUT_FEE) * redeemableCash).toFixed(2)}
+                    ${(redeemableCash - SWEEPIES_CASHOUT_FEE).toFixed(2)}
                   </Text>
                   <Text style={styles.valueLabel}>value</Text>
                 </>

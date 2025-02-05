@@ -5,7 +5,7 @@ const getWidth = (size?: ButtonProps['size']) => {
 }
 
 export function YesNoButton(props: ButtonProps) {
-  const isYes = props.variant == 'yes'
+  const isYes = props.variant == 'yes' || props.variant == 'yes-emphasized'
   return (
     <Button
       {...props}

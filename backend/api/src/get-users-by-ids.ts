@@ -12,3 +12,16 @@ export const getUsersByIds: APIHandler<'users/by-id'> = async (props) => {
   )
   return users.map((user) => removeNullOrUndefinedProps(user))
 }
+
+export const getUserBalancesByIds: APIHandler<'users/by-id/balance'> = async (
+  props
+) => {
+  const pg = createSupabaseDirectClient()
+  const users = await pg.manyOrNone(
+    `select id, balance
+     from users
+     where id = any($1)`,
+    [props.ids]
+  )
+  return users.map((user) => removeNullOrUndefinedProps(user))
+}

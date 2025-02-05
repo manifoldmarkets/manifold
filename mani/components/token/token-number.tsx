@@ -89,6 +89,10 @@ export function TokenNumber(
         }).format(absAmount)
       : new Intl.NumberFormat('en-US').format(Math.round(absAmount))
 
+    if (formatted === '0' || formatted === '0.00') {
+      return formatted
+    }
+
     return isNegative ? '-' + formatted : formatted
   })()
 

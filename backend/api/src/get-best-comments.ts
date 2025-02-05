@@ -8,7 +8,7 @@ import { convertContractComment } from 'common/supabase/comments'
 import { parseJsonContentToText } from 'common/util/parse'
 import { getContractsDirect } from 'shared/supabase/contracts'
 import { uniq } from 'lodash'
-import { promptGPT4 } from 'shared/helpers/openai-utils'
+import { promptOpenAI } from 'shared/helpers/openai-utils'
 import { ContractComment } from 'common/comment'
 import { log } from 'shared/utils'
 import { rateLimitByUser } from './helpers/rate-limit'
@@ -186,7 +186,7 @@ export const getBestComments: APIHandler<'get-best-comments'> = rateLimitByUser(
           Only return to me the comment ID, (ie don't say here is my top comment, just give me the ID)
         `
 
-        const batchMsgContent = await promptGPT4(batchContent)
+        const batchMsgContent = await promptOpenAI(batchContent, 'o3-mini')
         const batchCommentIds = batchMsgContent
           ? batchMsgContent
               .split(',')
@@ -230,7 +230,7 @@ export const getBestComments: APIHandler<'get-best-comments'> = rateLimitByUser(
       of descending quality? (ie don't say here are my top comments, just give me the IDs)
     `
 
-    const gpt4Response = await promptGPT4(gpt4Prompt)
+    const gpt4Response = await promptOpenAI(gpt4Prompt, 'o3-mini')
     commentIds = gpt4Response
       ? gpt4Response
           .split(',')

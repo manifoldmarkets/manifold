@@ -12,6 +12,10 @@ const colorClasses = {
   gray: 'text-ink-900 aria-checked:shadow bg-canvas-50 hover:bg-canvas-50 aria-checked:bg-ink-0',
   light:
     'text-ink-900 aria-checked:shadow bg-transparent hover:bg-canvas-50/70 aria-checked:bg-canvas-0 ',
+  'light-green':
+    'text-ink-900 aria-checked:shadow bg-transparent hover:bg-canvas-50/70 aria-checked:bg-teal-500/20 ',
+  'light-red':
+    'text-ink-900 aria-checked:shadow bg-transparent hover:bg-canvas-50/70 aria-checked:bg-scarlet-500/20 ',
 }
 
 export type ColorType = keyof typeof colorClasses
@@ -41,7 +45,11 @@ export function ChoicesToggleGroup(props: {
     toggleClassName,
   } = props
 
-  const isModernStyle = color === 'gray' || color === 'light'
+  const isModernStyle =
+    color === 'gray' ||
+    color === 'light' ||
+    color === 'light-green' ||
+    color === 'light-red'
 
   return (
     <RadioGroup
@@ -49,7 +57,7 @@ export function ChoicesToggleGroup(props: {
         className,
         color === 'gray'
           ? 'bg-canvas-50 inline-flex flex-row rounded-lg p-1 text-sm'
-          : color === 'light'
+          : color.startsWith('light')
           ? 'inline-flex flex-row rounded-lg bg-transparent p-1 text-sm'
           : 'border-ink-300 text-ink-400 bg-canvas-0 inline-flex flex-row gap-2 rounded-md border p-1 text-sm shadow-sm',
         disabled && '!cursor-not-allowed opacity-50'

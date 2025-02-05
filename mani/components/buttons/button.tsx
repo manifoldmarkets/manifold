@@ -22,7 +22,9 @@ type ButtonVariant =
   | 'primary'
   | 'gray'
   | 'yes'
+  | 'yes-emphasized'
   | 'no'
+  | 'no-emphasized'
   | 'danger'
   | 'purple'
   | 'emerald'
@@ -101,15 +103,23 @@ export function Button({
     switch (variant) {
       case 'yes':
         return {
-          background:
-            size === 'lg' ? color.yesButtonText : color.yesButtonBackground,
-          text: size === 'lg' ? color.background : color.yesButtonText,
+          background: color.yesButtonBackground,
+          text: color.yesButtonText,
         }
       case 'no':
         return {
-          background:
-            size === 'lg' ? color.noButtonText : color.noButtonBackground,
-          text: size === 'lg' ? color.background : color.noButtonText,
+          background: color.noButtonBackground,
+          text: color.noButtonText,
+        }
+      case 'yes-emphasized':
+        return {
+          background: color.yesButtonText,
+          text: color.background,
+        }
+      case 'no-emphasized':
+        return {
+          background: color.noButtonText,
+          text: color.background,
         }
       case 'gray':
         return {

@@ -13,8 +13,10 @@ import { Col } from '../../../layout/col'
 import { SmallCandidateBar } from './small-candidate-bar'
 import { getCandidateColor } from './candidates-panel'
 import { removeTextInParentheses } from './candidate-bar'
-import { useUserContractBets } from 'web/hooks/use-user-bets'
+import { useUserContractBets } from 'client-common/hooks/use-user-bets'
 import { groupBy } from 'lodash'
+import { api } from 'web/lib/api/api'
+import { useIsPageVisible } from 'web/hooks/use-page-visible'
 
 // just the bars
 export function SmallCandidatePanel(props: {
@@ -64,7 +66,12 @@ export function SmallCandidatePanel(props: {
   const showNoAnswers =
     answers.length === 0 || (shouldAnswersSumToOne && answers.length === 1)
 
-  const userBets = useUserContractBets(user?.id, contract.id)
+  const userBets = useUserContractBets(
+    user?.id,
+    contract.id,
+    (params) => api('bets', params),
+    useIsPageVisible
+  )
   const userBetsByAnswer = groupBy(userBets, (bet) => bet.answerId)
 
   return (
