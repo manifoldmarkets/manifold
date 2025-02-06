@@ -41,6 +41,7 @@ import { APIParams } from 'common/api/schema'
 import { getLimitBetReturns, MultiBetProps } from 'client-common/lib/bet'
 import DropdownMenu from '../widgets/dropdown-menu'
 import { SelectorIcon } from '@heroicons/react/solid'
+import { InfoTooltip } from '../widgets/info-tooltip'
 
 const expirationOptions = [
   { label: 'Never expires', value: 0 },
@@ -469,6 +470,13 @@ export default function LimitOrderPanel(props: {
                   <>
                     Max {!hideYesNo && <BinaryOutcomeLabel outcome={outcome} />}{' '}
                     payout
+                    {isCashContract && (
+                      <InfoTooltip
+                        text="Manifold takes a 10% cut of profits on sweepstakes markets."
+                        className="text-ink-600 ml-1 mt-0.5"
+                        size="sm"
+                      />
+                    )}
                   </>
                 )}
               </div>

@@ -112,7 +112,7 @@ export const isProd = () => {
     return admin.app().options.projectId === 'mantic-markets'
   }
 }
-export const contractColumnsToSelect = `data, importance_score, conversion_score, view_count, token`
+export const contractColumnsToSelect = `data, importance_score, freshness_score, conversion_score, view_count, token`
 
 export const getContract = async (
   pg: SupabaseDirectClient,

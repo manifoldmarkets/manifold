@@ -164,11 +164,7 @@ const getDesktopNav = (
         href: '/messages',
         icon: PrivateMessagesIcon,
       },
-      {
-        name: 'Discord',
-        href: 'https://discord.gg/eHQBNBqXuh',
-        icon: ChatIcon,
-      },
+
       options.isAdminOrMod && {
         name: 'Reports',
         href: '/reports',
@@ -256,6 +252,11 @@ const bottomNav = (
 ) =>
   buildArray<NavItem>(
     loggedIn && { name: 'About', href: '/about', icon: QuestionMarkCircleIcon },
+    {
+      name: 'Discord',
+      href: 'https://discord.gg/eHQBNBqXuh',
+      icon: ChatIcon,
+    },
     {
       name: theme ?? 'auto',
       children:

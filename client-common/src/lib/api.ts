@@ -26,19 +26,19 @@ export async function apiWithAuth<P extends APIPath>(
 ) {
   const pathProps = API[path]
   const preferAuth = 'preferAuth' in pathProps && pathProps.preferAuth
-  // If the api is authed and the user is not loaded, wait for the user to load.
-  if ((pathProps.authed || preferAuth) && !auth.currentUser) {
-    let i = 0
-    while (!auth.currentUser) {
-      i++
-      await sleep(i * 10)
-      if (i > 30) {
-        console.error('User did not load after 30 iterations')
-        break
-      }
-    }
+  if (!auth.currentUser && (preferAuth || pathProps.authed)) {
+    console.error('calling authy api without auth')
+    // If the api is authed and the user is not loaded, wait for the user to load.
+    //   let i = 0
+    //   while (!auth.currentUser) {
+    //     i++
+    //     await sleep(i * 10)
+    //     if (i > 30) {
+    //       console.error('User did not load after 30 iterations')
+    //       break
+    //     }
+    //   }
   }
-
   return (await callWithAuth(
     formatApiUrlWithParams(path, params),
     pathProps.method,

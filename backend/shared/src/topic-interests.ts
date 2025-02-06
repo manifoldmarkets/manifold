@@ -51,8 +51,6 @@ export const buildUserInterestsCache = async (userIds: string[]) => {
   for (const userIds of chunks) {
     await Promise.all(
       userIds.map(async (userId) => {
-        userIdsToAverageTopicConversionScores[userId] = {}
-
         const results = await pg.multi(
           `
         select group_id from group_members where member_id = $1;
@@ -75,7 +73,7 @@ export const buildUserInterestsCache = async (userIds: string[]) => {
         )
         const followedTopics = results[0].map((row) => row.group_id)
         const blockedTopics = results[1].map((row) => row.blocked_group_ids)
-
+        userIdsToAverageTopicConversionScores[userId] = {}
         results[2].forEach((r) => {
           userIdsToAverageTopicConversionScores[userId][r.group_id] = r.score
         })
@@ -101,14 +99,7 @@ export const buildUserInterestsCache = async (userIds: string[]) => {
           }
         }
         for (const groupId of blockedTopics) {
-          const groupScore =
-            userIdsToAverageTopicConversionScores[userId][groupId]
-          if (groupScore === undefined) {
-            userIdsToAverageTopicConversionScores[userId][groupId] = 0
-          } else {
-            userIdsToAverageTopicConversionScores[userId][groupId] =
-              groupScore ** 2 // assumes score is less than 1
-          }
+          userIdsToAverageTopicConversionScores[userId][groupId] = 0
         }
       })
     )

@@ -21,14 +21,13 @@ import {
   buildUserInterestsCache,
   userIdsToAverageTopicConversionScores,
 } from 'shared/topic-interests'
-import { log } from 'shared/utils'
+import { contractColumnsToSelect, log } from 'shared/utils'
 import { PrivateUser } from 'common/user'
 import { GROUP_SCORE_PRIOR } from 'common/feed'
 import { MarketTierType, TierParamsType, tiers } from 'common/tier'
 import { tsToMillis } from 'common/supabase/utils'
 
 const DEFAULT_THRESHOLD = 1000
-const DEBUG = false
 type TokenInputType = 'CASH' | 'MANA' | 'ALL' | 'CASH_AND_MANA'
 let importanceScoreThreshold: number | undefined = undefined
 let freshnessScoreThreshold: number | undefined = undefined
@@ -59,17 +58,19 @@ export async function getForYouSQL(items: {
     token,
   } = items
 
-  let userId = items.userId
-  // let userId = 'hqdXgp0jK2YMMhPs067eFK4afEH3' // Eliza
+  const userId = items.userId
+  // const userId = 'hqdXgp0jK2YMMhPs067eFK4afEH3' // Eliza
+  // if (process.platform === 'darwin') {
+  //   userId = await loadRandomUser()
+  //   log('Searching for random user id:', userId)
+  // }
+
+  const sortByScore = sort === 'score' ? 'importance_score' : 'freshness_score'
   if (
     importanceScoreThreshold === undefined ||
     freshnessScoreThreshold === undefined
-  )
+  ) {
     await loadScoreThresholds(threshold)
-  const sortByScore = sort === 'score' ? 'importance_score' : 'freshness_score'
-  if (DEBUG && process.platform === 'darwin') {
-    userId = await loadRandomUser()
-    log('Searching for random user id:', userId)
   }
 
   if (
@@ -83,9 +84,7 @@ export async function getForYouSQL(items: {
   ) {
     log('No topic interests found for user', userId)
     return renderSql(
-      select(
-        `data, importance_score, conversion_score, freshness_score, view_count, token`
-      ),
+      select(contractColumnsToSelect),
       from('contracts'),
       orderBy(`${sortByScore} desc`),
       getSearchContractWhereSQL({
@@ -101,7 +100,7 @@ export async function getForYouSQL(items: {
       lim(limit, offset)
     )
   }
-
+  const GROUP_SCORE_POWER = 4
   const forYou = renderSql(
     buildArray(
       select(
@@ -151,7 +150,7 @@ export async function getForYouSQL(items: {
       // If the user has no contract-matching topic score, use only the contract's importance score
       orderBy(`case
       when bool_or(uti.avg_conversion_score is not null)
-      then avg(power(coalesce(uti.avg_conversion_score, ${GROUP_SCORE_PRIOR}), 4) * contracts.${sortByScore})
+      then avg(power(coalesce(uti.avg_conversion_score, ${GROUP_SCORE_PRIOR}), ${GROUP_SCORE_POWER}) * contracts.${sortByScore})
       else avg(contracts.${sortByScore}*${GROUP_SCORE_PRIOR})
       end * (1 + case
       when bool_or(contracts.creator_id = any(select follow_id from user_follows)) then 0.2
