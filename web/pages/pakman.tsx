@@ -97,10 +97,10 @@ export default function Pakman(props: {
       />
 
       <Col className="mt-8 gap-4">
+        <FeedContractCard contract={props.contract} key={props.contract.id} />
         {props.pakmanContracts.map((market) => (
           <FeedContractCard key={market.id} contract={market} />
         ))}
-        <FeedContractCard contract={props.contract} key={props.contract.id} />
         {props.politicsMarkets.map((market) => (
           <FeedContractCard key={market.id} contract={market} />
         ))}
