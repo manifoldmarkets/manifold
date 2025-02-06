@@ -98,6 +98,7 @@ function MyApp({ Component, pageProps }: AppProps<ManifoldPageProps>) {
   useEffect(printBuildInfo, [])
   useHasLoaded()
   useRefreshAllClients()
+
   // ian: Required by GambleId
   const devToolsOpen = false //useDevtoolsDetector()
   const router = useRouter()
