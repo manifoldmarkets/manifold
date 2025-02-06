@@ -34,15 +34,12 @@ export const MobileAppsQRCodeDialog = (props: {
 }) => {
   const { isModalOpen, setIsModalOpen } = props
   return (
-    <Modal open={isModalOpen} setOpen={setIsModalOpen}>
+    <Modal open={isModalOpen} setOpen={setIsModalOpen} size="sm">
       <Col className={'bg-canvas-0 rounded-2xl p-4'}>
         <span className={'text-primary-700 py-2 text-2xl'}>
           Get the Manifold app
         </span>
-        <span className={'py-2 '}>
-          Scan this QR code to download the app. (Or search "Manifold" in the
-          app store.)
-        </span>
+        <span className={'py-2 '}>Scan this QR code to download the app.</span>
         <Tabs
           tabs={[
             {
