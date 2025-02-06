@@ -21,7 +21,7 @@ import {
   buildUserInterestsCache,
   userIdsToAverageTopicConversionScores,
 } from 'shared/topic-interests'
-import { log } from 'shared/utils'
+import { contractColumnsToSelect, log } from 'shared/utils'
 import { PrivateUser } from 'common/user'
 import { GROUP_SCORE_PRIOR } from 'common/feed'
 import { MarketTierType, TierParamsType, tiers } from 'common/tier'
@@ -84,9 +84,7 @@ export async function getForYouSQL(items: {
   ) {
     log('No topic interests found for user', userId)
     return renderSql(
-      select(
-        `data, importance_score, conversion_score, freshness_score, view_count, token`
-      ),
+      select(contractColumnsToSelect),
       from('contracts'),
       orderBy(`${sortByScore} desc`),
       getSearchContractWhereSQL({
