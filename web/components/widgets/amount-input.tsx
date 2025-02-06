@@ -15,7 +15,6 @@ import {
 } from 'common/util/format'
 import { ReactNode, useEffect, useState } from 'react'
 import { VerifyPhoneModal } from 'web/components/user/verify-phone-number-banner'
-import { useIsAdvancedTrader } from 'web/hooks/use-is-advanced-trader'
 import { useUser } from 'web/hooks/use-user'
 import { ManaCoin } from 'web/public/custom-components/manaCoin'
 import { SpiceCoin } from 'web/public/custom-components/spiceCoin'
@@ -27,7 +26,6 @@ import { Row } from '../layout/row'
 import { Input } from './input'
 import { sliderColors } from './slider'
 import { useCurrentPortfolio } from 'web/hooks/use-portfolio-history'
-import { useIsMobile } from 'web/hooks/use-is-mobile'
 import { buildArray } from 'common/util/array'
 
 export function AmountInput(
@@ -161,7 +159,7 @@ export function BuyAmountInput(props: {
   // Needed to focus the amount input
   inputRef?: React.MutableRefObject<any>
   disregardUserBalance?: boolean
-  quickButtonValues?: number[] | 'large'
+  quickButtonAmountSize?: 'large' | 'small'
   disableQuickButtons?: boolean
   token?: InputTokenType
   marketTier?: MarketTierType | undefined
@@ -184,13 +182,12 @@ export function BuyAmountInput(props: {
     inputRef,
     maximumAmount,
     disregardUserBalance,
-    quickButtonValues,
+    quickButtonAmountSize,
     disableQuickButtons,
     token = 'M$',
     sliderColor,
   } = props
   const user = useUser()
-  const isAdvancedTrader = useIsAdvancedTrader()
 
   // Check for errors.
   useEffect(() => {
@@ -243,25 +240,16 @@ export function BuyAmountInput(props: {
     else if (amountWithDefault < increment) onChange(increment)
     else onChange(newAmount)
   }
+  const useSmallIncrements =
+    quickButtonAmountSize === 'small' || !hasLotsOfMoney
+  const useLargeIncrements = quickButtonAmountSize === 'large'
 
-  const advancedIncrementValues = (
-    hasLotsOfMoney ? [50, 250, 1000] : [10, 50, 100]
-  ).map((v) => (marketTier === 'play' ? v / 10 : v))
-  const defaultIncrementValues = (
-    hasLotsOfMoney ? [50, 250, 1000] : [10, 50, 100]
-  ).map((v) => (marketTier === 'play' ? v / 10 : v))
+  const incrementValues = [50, 250, 1000].map((v) =>
+    useSmallIncrements ? v / 5 : useLargeIncrements ? v * 10 : v
+  )
 
-  const incrementValues =
-    quickButtonValues === 'large'
-      ? [500, 1000, 5000]
-      : quickButtonValues ??
-        (isAdvancedTrader ? advancedIncrementValues : defaultIncrementValues)
-  const isMobile = useIsMobile()
-  const decrementValues = incrementValues
-    .slice(0, isMobile ? 1 : 2)
-    .map((v) => -v)
   const values = buildArray(
-    ...decrementValues.slice().reverse(),
+    -incrementValues[0],
     incrementValues[0],
     incrementValues[1]
   )
