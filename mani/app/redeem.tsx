@@ -12,7 +12,6 @@ import {
 import { ReactNode } from 'react'
 import {
   formatSweepies,
-  formatMoney,
   formatMoneyUSD,
   formatSweepsToUSD,
 } from 'common/util/format'
@@ -50,6 +49,7 @@ import Page from 'components/page'
 import { Button } from 'components/buttons/button'
 import { ContractToken } from 'common/contract'
 import { TokenNumber } from 'components/token/token-number'
+import { formatMoneyVerbatim } from 'util/format'
 
 export type CashoutPagesType =
   | 'select-cashout-method'
@@ -600,7 +600,7 @@ function SelectCashoutOptions(props: {
               Redeem {SWEEPIES_NAME} at{' '}
               <Text style={styles.boldText}>
                 {formatSweepies(1)} →{' '}
-                {formatMoney(CASH_TO_MANA_CONVERSION_RATE)}
+                {formatMoneyVerbatim(CASH_TO_MANA_CONVERSION_RATE, 'MANA')}
               </Text>
             </Text>
             <Button
@@ -789,7 +789,7 @@ function CashToManaForm(props: { onBack: () => void; redeemableCash: number }) {
           size="lg"
         >
           <Text style={styles.buttonText}>
-            Redeem for {formatMoney(manaAmount ?? 0)} mana
+            Redeem for {formatMoneyVerbatim(manaAmount ?? 0, 'MANA')}
           </Text>
         </Button>
       </Row>
