@@ -22,7 +22,7 @@ import {
 } from 'common/gidx/user'
 import { PrivateUser, User } from 'common/user'
 import { usePersistentInMemoryState } from 'client-common/hooks/use-persistent-in-memory-state'
-import { formatMoney } from 'common/util/format'
+import { formatMoneyVerbatim } from 'util/format'
 
 export const RegisterContent = (props: {
   user: User
@@ -397,8 +397,8 @@ export const RegisterContent = (props: {
             <Text style={styles.title}>Identity Verification Complete!</Text>
             <Text style={styles.message}>
               Hooray! Now you can participate in sweepstakes markets. We sent
-              you {formatMoney(KYC_VERIFICATION_BONUS_CASH, 'CASH')} to get
-              started.
+              you {formatMoneyVerbatim(KYC_VERIFICATION_BONUS_CASH, 'CASH')} to
+              get started.
             </Text>
             <View style={styles.loadingRow}>
               <ActivityIndicator size="small" color={Colors.blue} />

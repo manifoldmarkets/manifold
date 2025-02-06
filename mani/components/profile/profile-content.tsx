@@ -18,10 +18,10 @@ import { useAPIGetter } from 'hooks/use-api-getter'
 import { useTokenMode } from 'hooks/use-token-mode'
 import { KYC_VERIFICATION_BONUS_CASH } from 'common/economy'
 import { SWEEPIES_NAME } from 'common/envs/constants'
-import { formatMoney } from 'common/util/format'
 import { SettingsModal } from './settings-modal'
 import { useState } from 'react'
 import { IconSymbol } from 'components/ui/icon-symbol'
+import { formatMoneyVerbatim } from 'util/format'
 
 export function ProfileContent(props: { user: User }) {
   const color = useColor()
@@ -118,7 +118,7 @@ export function ProfileContent(props: { user: User }) {
             {isUserRegistered ? (
               <Button
                 onPress={() => router.push('/redeem')}
-                title={`Redeem ${formatMoney(
+                title={`Redeem ${formatMoneyVerbatim(
                   redeemable?.redeemablePrizeCash ?? 0,
                   'CASH'
                 )}`}

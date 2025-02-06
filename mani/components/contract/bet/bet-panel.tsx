@@ -41,6 +41,7 @@ import {
 import { CandidateBet } from 'common/new-bet'
 import { useToast } from 'react-native-toast-notifications'
 import { getLimitBetReturns, MultiBetProps } from 'client-common/lib/bet'
+import { formatMoneyVerbatim } from 'util/format'
 export type BinaryOutcomes = 'YES' | 'NO'
 
 const AMOUNT_STEPS = [1, 2, 5, 7, 10, 15, 20, 25, 30, 40, 50, 75, 100]
@@ -170,10 +171,10 @@ export function BetPanelContent({
     } else if (amount !== undefined) {
       if (token === 'CASH' && amount < SWEEPS_MIN_BET) {
         setError(
-          'Minimum amount: ' + formatMoneyNumber(SWEEPS_MIN_BET) + ' Sweeps'
+          'Minimum amount: ' + formatMoneyVerbatim(SWEEPS_MIN_BET, 'CASH')
         )
       } else if (token === 'MANA' && amount < MANA_MIN_BET) {
-        setError('Minimum amount: ' + formatMoneyNumber(MANA_MIN_BET) + ' Mana')
+        setError('Minimum amount: ' + formatMoneyVerbatim(MANA_MIN_BET, 'MANA'))
       } else {
         setError(null)
       }
@@ -223,16 +224,13 @@ export function BetPanelContent({
         setSubmittedBet(null)
         setOpen(false)
         toastId = toast.show(
-          `${formatWithToken({
-            amount: bet.amount,
-            token: isCashContract ? 'CASH' : 'M$',
-          })}/${formatWithToken({
-            amount: bet.orderAmount ?? 0,
-            token: isCashContract ? 'CASH' : 'M$',
-          })} filled for ${formatWithToken({
-            amount: bet.shares,
-            token: isCashContract ? 'CASH' : 'M$',
-          })} on payout`
+          `${formatMoneyNumber(bet.amount)}/${formatMoneyVerbatim(
+            bet.orderAmount ?? 0,
+            isCashContract ? 'CASH' : 'MANA'
+          )} filled for ${formatMoneyVerbatim(
+            bet.shares,
+            isCashContract ? 'CASH' : 'MANA'
+          )} on payout`
         )
       } else {
         toastId = toast.show('Filling orders...')

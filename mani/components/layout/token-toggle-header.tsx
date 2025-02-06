@@ -8,9 +8,8 @@ import { IconSymbol } from 'components/ui/icon-symbol'
 import { TouchableOpacity } from 'react-native'
 import { isTabPath } from 'app/(tabs)/_layout'
 import { useUser } from 'hooks/use-user'
-import { formatMoneyNumber } from 'common/util/format'
-import { CASH_NAME, MANA_NAME } from 'constants/token-names'
 import { StreakWidget } from 'components/streak/streak-widget'
+import { formatMoneyVerbatim } from 'util/format'
 
 export const HEADER_HEIGHT = 47
 
@@ -58,9 +57,8 @@ export function TokenToggleHeader() {
       >
         <ThemedText color={color.primary} family={'JetBrainsMono'} size="md">
           <ThemedText weight={'bold'} color={color.primary}>
-            {formatMoneyNumber(userBalance)}
+            {formatMoneyVerbatim(userBalance, token)}
           </ThemedText>
-          {token === 'MANA' ? ` ${MANA_NAME}` : ` ${CASH_NAME}`}
         </ThemedText>
         <TokenToggle />
       </Row>
