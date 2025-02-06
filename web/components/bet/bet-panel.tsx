@@ -732,7 +732,20 @@ export const BuyPanelBody = (props: {
                   </Row>
                   <Row className="min-w-[128px] items-baseline justify-between sm:justify-start">
                     <div className="text-ink-600 mr-2 min-w-[120px] flex-nowrap whitespace-nowrap">
-                      {isPseudoNumeric || isStonk ? 'Shares' : <>Max payout</>}
+                      {isPseudoNumeric || isStonk ? (
+                        'Shares'
+                      ) : (
+                        <>
+                          Max payout
+                          {isCashContract && (
+                            <InfoTooltip
+                              text="Manifold takes a 10% cut of profits on sweepstakes markets."
+                              className="text-ink-600 ml-1 mt-0.5"
+                              size="sm"
+                            />
+                          )}
+                        </>
+                      )}
                     </div>
                     <Row className="items-baseline">
                       <span className="mr-1 whitespace-nowrap text-lg">
