@@ -7,7 +7,6 @@ import {
   TransitionChild,
 } from '@headlessui/react'
 import {
-  NewspaperIcon,
   QuestionMarkCircleIcon,
   SearchIcon,
   UserCircleIcon,
@@ -72,7 +71,7 @@ const signedOutNavigation = () => [
     alwaysShowName: true,
     // prefetch: false, // should we not prefetch this?
   },
-  { name: 'News', href: '/news', icon: NewspaperIcon, alwaysShowName: true },
+  // { name: 'News', href: '/news', icon: NewspaperIcon, alwaysShowName: true },
   {
     name: 'About',
     href: '/about',

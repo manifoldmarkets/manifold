@@ -5,7 +5,6 @@ import {
   SunIcon,
   StarIcon,
   QuestionMarkCircleIcon,
-  NewspaperIcon,
   LoginIcon,
   SearchIcon,
   GlobeAltIcon,
@@ -36,7 +35,7 @@ import { useAdminOrMod } from 'web/hooks/use-admin'
 import { ReportsIcon } from '../reports-icon'
 import { AddFundsButton } from '../profile/add-funds-button'
 import { Col } from '../layout/col'
-import { TbPigMoney } from 'react-icons/tb'
+// import { TbPigMoney } from 'react-icons/tb'
 // import { PiRobotBold } from 'react-icons/pi'
 
 export default function Sidebar(props: {
@@ -182,27 +181,27 @@ const getDesktopNav = (
 
   return buildArray(
     { name: 'Browse', href: '/browse', icon: SearchIcon },
-    { name: 'News', href: '/news', icon: NewspaperIcon },
+    // { name: 'News', href: '/news', icon: NewspaperIcon },
     { name: 'About', href: '/about', icon: QuestionMarkCircleIcon },
-    {
-      name: 'Discord',
-      href: 'https://discord.gg/eHQBNBqXuh',
-      icon: ChatIcon,
-    },
-    { name: 'App', onClick: openDownloadApp, icon: DeviceMobileIcon },
-    {
-      name: 'Add funds',
-      href: '/checkout',
-      icon: TbPigMoney,
-      children: (
-        <div className="flex flex-wrap gap-x-2">
-          Add funds
-          <span className="whitespace-nowrap text-sm text-green-500">
-            (Sale 64% off)
-          </span>
-        </div>
-      ),
-    }
+    // {
+    //   name: 'Discord',
+    //   href: 'https://discord.gg/eHQBNBqXuh',
+    //   icon: ChatIcon,
+    // },
+    { name: 'App', onClick: openDownloadApp, icon: DeviceMobileIcon }
+    // {
+    //   name: 'Add funds',
+    //   href: '/checkout',
+    //   icon: TbPigMoney,
+    //   children: (
+    //     <div className="flex flex-wrap gap-x-2">
+    //       Add funds
+    //       <span className="whitespace-nowrap text-sm text-green-500">
+    //         (Sale 64% off)
+    //       </span>
+    //     </div>
+    //   ),
+    // }
   )
 }
 
