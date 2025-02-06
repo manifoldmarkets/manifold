@@ -14,11 +14,18 @@ import {
 import { Search } from 'web/components/search'
 import { useIsMobile } from 'web/hooks/use-is-mobile'
 import { usePrivateUser, useUser } from 'web/hooks/use-user'
+import { ManifoldLogo } from 'web/components/nav/manifold-logo'
 
 export default function BrowsePage() {
+  const user = useUser()
+
   return (
     <Page trackPageView={'questions page'}>
       <SEO title={`Browse`} description={`Browse questions`} url={`/browse`} />
+
+      {/* only show logo on mobile, since there's no sidebar */}
+      {!user && <ManifoldLogo className="m-2 flex lg:hidden" />}
+
       <BrowsePageContent />
     </Page>
   )
