@@ -76,20 +76,26 @@ export function CommentsSection(props: {
   // TODO: add reply input
   return (
     <Col>
-      <ThemedText size="xl" weight="semibold" style={{ paddingVertical: 16 }}>
+      <ThemedText size="xl" weight="semibold" style={{ paddingVertical: 12 }}>
         Comments
       </ThemedText>
 
-      {parentComments.map((parent) => (
-        <ParentComment
-          key={parent.id}
-          parentComment={parent as ContractComment}
-          threadComments={
-            (commentsByParent[parent.id] as ContractComment[]) ?? []
-          }
-        />
-        // TODO: render more comments as the user scrolls down
-      ))}
+      {parentComments.length > 0 ? (
+        parentComments.map((parent) => (
+          <ParentComment
+            key={parent.id}
+            parentComment={parent as ContractComment}
+            threadComments={
+              (commentsByParent[parent.id] as ContractComment[]) ?? []
+            }
+          />
+          // TODO: render more comments as the user scrolls down
+        ))
+      ) : (
+        <ThemedText size="md" color={color.textTertiary}>
+          No comments yet.
+        </ThemedText>
+      )}
     </Col>
   )
 }
