@@ -41,10 +41,10 @@ export default function HomeScreen() {
     {
       title: 'Tech & Science',
       content: <Feed tab="tech" />,
-      iconName: 'laptopcomputer',
+      iconName: 'lightbulb.max',
     },
     {
-      title: 'Entertainment',
+      title: 'Culture',
       content: <Feed tab="entertainment" />,
       iconName: 'movieclapper',
     },

@@ -36,7 +36,6 @@ import { getFeeTotal, noFees } from 'common/fees'
 import { FeeDisplay } from '../bet/fees'
 import { XIcon } from '@heroicons/react/solid'
 import { useLiveContract } from 'web/hooks/use-contract'
-import { getTierFromLiquidity } from 'common/tier'
 import { MoneyDisplay } from '../bet/money-display'
 import { TRADE_TERM } from 'common/envs/constants'
 import { useUnfilledBetsAndBalanceByUserId } from 'client-common/hooks/use-bets'
@@ -378,10 +377,6 @@ export const NumericBetPanel = (props: {
               disabled={isSubmitting}
               inputRef={inputRef}
               showSlider={isAdvancedTrader}
-              marketTier={
-                contract.marketTier ??
-                getTierFromLiquidity(contract, contract.totalLiquidity)
-              }
             />
             <Col className={'mt-0.5'}>
               <Row className={'gap-1'}>

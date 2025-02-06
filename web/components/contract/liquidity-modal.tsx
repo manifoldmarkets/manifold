@@ -250,7 +250,7 @@ export function AddLiquidityControl(props: {
           error={error}
           setError={setError}
           disabled={false}
-          quickButtonValues="large"
+          quickButtonAmountSize="large"
           token={isCashContract ? 'CASH' : 'M$'}
           disregardUserBalance={mode === 'remove'}
           maximumAmount={mode === 'remove' ? maxWithdrawable : undefined}

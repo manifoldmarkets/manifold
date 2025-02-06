@@ -257,7 +257,20 @@ export const BuyPanelBody = (props: {
       ? multiProps.answerText ?? multiProps.answerToBuy.text
       : undefined
   const isCashContract = contract.token === 'CASH'
-  const initialBetAmount = isCashContract ? 1 : marketTier === 'play' ? 5 : 50
+
+  const quickAddButtonSize =
+    marketTier === 'play' ||
+    (contract.mechanism === 'cpmm-multi-1' &&
+      contract.marketTier === 'plus' &&
+      !contract.shouldAnswersSumToOne)
+      ? 'small'
+      : undefined
+
+  const initialBetAmount = isCashContract
+    ? 1
+    : quickAddButtonSize === 'small'
+    ? 10
+    : 50
 
   const [betAmount, setBetAmount] = useState<number | undefined>(
     initialBetAmount
@@ -637,10 +650,10 @@ export const BuyPanelBody = (props: {
                 disabled={isSubmitting}
                 inputRef={inputRef}
                 showSlider={true}
-                marketTier={marketTier}
                 token={isCashContract ? 'CASH' : 'M$'}
                 sliderColor={pseudonymColor}
                 disregardUserBalance={shouldPromptVerification}
+                quickButtonAmountSize={quickAddButtonSize}
               />
 
               {isAdvancedTrader && (

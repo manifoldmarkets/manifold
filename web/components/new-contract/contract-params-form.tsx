@@ -628,7 +628,7 @@ export function ContractParamsForm(props: {
             onChange={(newAmount) => setBountyAmount(newAmount)}
             error={bountyError}
             setError={setBountyError}
-            quickButtonValues="large"
+            quickButtonAmountSize="large"
           />
           <Row className="mt-2 items-center gap-2">
             <span>
