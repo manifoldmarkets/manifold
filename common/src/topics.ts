@@ -191,7 +191,7 @@ export const TOPICS_TO_SUBTOPICS: { [key: string]: TopicInfo[] } = {
   ],
 }
 
-export const TOPICS_TO_HIDE_FROM_WELCOME_FLOW = []
+export const TOPICS_TO_HIDE_FROM_WELCOME_FLOW = [] as string[]
 if (
   !TOPICS_TO_HIDE_FROM_WELCOME_FLOW.every((topic) =>
     Object.keys(TOPICS_TO_SUBTOPICS).includes(topic)
