@@ -11,25 +11,22 @@ export function StreakWidget({ user }: { user: User }) {
   const color = useColor()
   const [open, setOpen] = useState(false)
   return (
-    <>
-      <TouchableOpacity
-        style={{
-          alignItems: 'center',
-          gap: 2,
-          flexDirection: 'row',
-        }}
-        onPress={() => setOpen(true)}
+    <TouchableOpacity
+      style={{
+        alignItems: 'center',
+        gap: 2,
+        flexDirection: 'row',
+      }}
+      onPress={() => setOpen(true)}
+    >
+      <ThemedText size="md">🔥</ThemedText>
+      <ThemedText
+        color={color.textSecondary}
+        family={'JetBrainsMono'}
+        size="md"
       >
-        <ThemedText size="md">🔥</ThemedText>
-        <ThemedText
-          color={color.textSecondary}
-          family={'JetBrainsMono'}
-          size="md"
-        >
-          {user.currentBettingStreak}
-        </ThemedText>
-      </TouchableOpacity>
-
+        {user.currentBettingStreak}
+      </ThemedText>
       <Modal isOpen={open} onClose={() => setOpen(false)}>
         <Col
           style={{
@@ -65,6 +62,6 @@ export function StreakWidget({ user }: { user: User }) {
           </Button>
         </Col>
       </Modal>
-    </>
+    </TouchableOpacity>
   )
 }
