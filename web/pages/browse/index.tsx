@@ -18,7 +18,6 @@ import { usePrivateUser, useUser } from 'web/hooks/use-user'
 export default function BrowsePage() {
   return (
     <Page trackPageView={'questions page'}>
-      <SEO title={`Browse`} description={`Browse questions`} url={`/browse`} />
       <BrowsePageContent />
     </Page>
   )
