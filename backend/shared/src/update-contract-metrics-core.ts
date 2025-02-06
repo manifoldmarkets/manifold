@@ -2,7 +2,7 @@ import {
   createSupabaseDirectClient,
   SupabaseDirectClient,
 } from 'shared/supabase/init'
-import { log } from 'shared/utils'
+import { contractColumnsToSelect, log } from 'shared/utils'
 import { DAY_MS, MONTH_MS, WEEK_MS } from 'common/util/time'
 import { Contract, CPMM } from 'common/contract'
 import { computeElasticity } from 'common/calculate-metrics'
@@ -10,35 +10,38 @@ import { hasChanges } from 'common/util/object'
 import { chunk, groupBy, mapValues } from 'lodash'
 import { LimitBet } from 'common/bet'
 import { bulkUpdateData } from './supabase/utils'
-import { convertAnswer } from 'common/supabase/contracts'
+import { convertAnswer, convertContract } from 'common/supabase/contracts'
 import { bulkUpdateAnswers } from './supabase/answers'
 
 export async function updateContractMetricsCore() {
   const pg = createSupabaseDirectClient()
   log('Loading contract data...')
-  const allContracts = await pg.map(
+  const where = `
+  where (c.resolution_time is null and c.last_bet_time > now() - interval '1 month')
+  or c.resolution_time > now() - interval '1 month'`
+  const results = await pg.multi(
     `
-    select data from contracts
-    where (resolution_time is null and last_bet_time > now() - interval '1 month')
-     or resolution_time > now() - interval '1 month'
+    select ${contractColumnsToSelect} from contracts c
+    ${where};
+    select * from answers a
+    where a.contract_id in (
+      select id from contracts c
+      ${where}
+    );
     `,
-    [],
-    (r) => r.data as Contract
+    []
   )
+  const allContracts = results[0].map(convertContract)
+  const sumToOneContractIds = allContracts
+    .filter((c) => c.mechanism === 'cpmm-multi-1' && c.shouldAnswersSumToOne)
+    .map((c) => c.id)
+  const answers = results[1].map(convertAnswer)
   log(`Loaded ${allContracts.length} contracts.`)
+  log(`Loaded ${answers.length} answers.`)
   const chunks = chunk(allContracts, 1000)
   let i = 0
   for (const contracts of chunks) {
     const contractIds = contracts.map((c) => c.id)
-    const answers = await pg.map(
-      `select *
-       from answers
-       where contract_id = any ($1)`,
-      [contractIds],
-      convertAnswer
-    )
-    log(`Loaded ${answers.length} answers.`)
-
     const now = Date.now()
     const dayAgo = now - DAY_MS
     const weekAgo = now - WEEK_MS
@@ -60,7 +63,9 @@ export async function updateContractMetricsCore() {
 
     log('Loading historic contract probabilities...')
     const [dayAgoProbs, weekAgoProbs, monthAgoProbs] = await Promise.all(
-      [dayAgo, weekAgo, monthAgo].map((t) => getBetProbsAt(pg, t, contractIds))
+      [dayAgo, weekAgo, monthAgo].map((t) =>
+        getBetProbsAt(pg, t, contractIds, sumToOneContractIds)
+      )
     )
 
     log('Loading volume...')
@@ -234,7 +239,8 @@ const getCurrentProbs = async (
 const getBetProbsAt = async (
   pg: SupabaseDirectClient,
   when: number,
-  contractIds: string[]
+  contractIds: string[],
+  sumToOneContractIds: string[]
 ) => {
   return Object.fromEntries(
     await pg.map(
@@ -244,7 +250,7 @@ const getBetProbsAt = async (
         from contract_bets
         where created_time < millis_to_ts($1)
         and contract_id = any($2) 
-        and not is_redemption
+        and (not is_redemption or contract_id = any($3))
         order by contract_id, answer_id, created_time desc
       ), probs_after as (
         select distinct on (contract_id, answer_id)
@@ -252,7 +258,7 @@ const getBetProbsAt = async (
         from contract_bets
         where created_time >= millis_to_ts($1)
         and contract_id = any($2)
-        and not is_redemption
+        and (not is_redemption or contract_id = any($3))
         order by contract_id, answer_id, created_time
       )
       select
@@ -263,7 +269,7 @@ const getBetProbsAt = async (
       full outer join probs_before as pb
         on pa.contract_id = pb.contract_id and pa.answer_id = pb.answer_id
       `,
-      [when, contractIds],
+      [when, contractIds, sumToOneContractIds],
       (r) => [
         `${r.contract_id} ${r.answer_id ?? '_'}`,
         parseFloat(r.prob as string),
