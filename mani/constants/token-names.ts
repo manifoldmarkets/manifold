@@ -1,2 +1,2 @@
 export const MANA_NAME = 'Mana'
-export const CASH_NAME = 'sCash'
+export const CASH_NAME = 'Cash'

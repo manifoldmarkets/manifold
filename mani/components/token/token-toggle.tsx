@@ -15,6 +15,11 @@ export function TokenToggle() {
     new Animated.Value(token === 'MANA' ? 0 : 1)
   ).current
 
+  // Add useEffect to keep animation value in sync with token
+  React.useEffect(() => {
+    slideAnim.setValue(token === 'MANA' ? 0 : 1)
+  }, [token])
+
   const toggleMode = () => {
     const newToken = token === 'MANA' ? 'CASH' : 'MANA'
     setToken(newToken)
