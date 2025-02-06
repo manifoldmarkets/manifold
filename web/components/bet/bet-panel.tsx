@@ -430,8 +430,8 @@ export const BuyPanelBody = (props: {
           replyToCommentId,
           deps: uniq(betDeps.map((b) => b.userId)),
           expiresMillisAfter,
-          silent: true,
-          limitProb,
+          silent: slippageProtection,
+          limitProb: slippageProtection ? limitProb : undefined,
         } as APIParams<'bet'>)
       )
       if (bet.isFilled) {
