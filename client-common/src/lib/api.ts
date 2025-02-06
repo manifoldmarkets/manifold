@@ -27,18 +27,20 @@ export async function apiWithAuth<P extends APIPath>(
   const pathProps = API[path]
   const preferAuth = 'preferAuth' in pathProps && pathProps.preferAuth
   if (!auth.currentUser && (preferAuth || pathProps.authed)) {
-    // console.error('calling authy api without auth')
-    // If the api is authed and the user is not loaded, wait for the user to load.
-    let i = 0
-    while (!auth.currentUser) {
-      i++
-      await sleep(i * 10)
-      if (i > 5) {
-        console.error('User did not load after 5 iterations')
-        break
-      }
+    // For both preferred and required auth, we need to know if we're still loading
+    await new Promise<void>((resolve) => {
+      // We only need to wait for the first auth state change to know if we're logged in or not
+      const unsubscribe = auth.onAuthStateChanged((user) => {
+        unsubscribe()
+        resolve()
+      })
+    })
+
+    if (!auth.currentUser && pathProps.authed) {
+      console.error('Authentication required but user is not signed in')
     }
   }
+
   return (await callWithAuth(
     formatApiUrlWithParams(path, params),
     pathProps.method,
