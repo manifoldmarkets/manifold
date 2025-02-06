@@ -76,7 +76,7 @@ export function CommentsSection(props: {
   // TODO: add reply input
   return (
     <Col>
-      <ThemedText size="xl" weight="semibold" style={{ paddingVertical: 16 }}>
+      <ThemedText size="xl" weight="semibold" style={{ paddingVertical: 12 }}>
         Comments
       </ThemedText>
 
