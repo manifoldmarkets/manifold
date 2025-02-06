@@ -4,7 +4,6 @@ import { buildArray } from 'common/util/array'
 import { removeEmojis } from 'common/util/string'
 import { uniqBy } from 'lodash'
 import { useRouter } from 'next/router'
-import { SEO } from 'web/components/SEO'
 import { Col } from 'web/components/layout/col'
 import { Page } from 'web/components/layout/page'
 import {
@@ -21,8 +20,6 @@ export default function BrowsePage() {
 
   return (
     <Page trackPageView={'questions page'}>
-      <SEO title={`Browse`} description={`Browse questions`} url={`/browse`} />
-
       {/* only show logo on mobile, since there's no sidebar */}
       {!user && <ManifoldLogo className="m-2 flex lg:hidden" />}
 
