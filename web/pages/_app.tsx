@@ -14,7 +14,7 @@ import { postMessageToNative } from 'web/lib/native/post-message'
 import { ENV_CONFIG, TRADE_TERM } from 'common/envs/constants'
 import { Sweepstakes } from 'web/components/sweepstakes-provider'
 import { capitalize } from 'lodash'
-import { useThemeManager } from 'web/hooks/use-theme'
+import { ThemeProvider } from 'web/hooks/use-theme'
 import { DevtoolsDetector, setupDevtoolsDetector } from 'web/lib/util/devtools'
 import { useRouter } from 'next/router'
 // See https://nextjs.org/docs/basic-features/font-optimization#google-fonts
@@ -100,7 +100,6 @@ function MyApp({ Component, pageProps }: AppProps<ManifoldPageProps>) {
   useRefreshAllClients()
   // ian: Required by GambleId
   const devToolsOpen = false //useDevtoolsDetector()
-  useThemeManager()
   const router = useRouter()
 
   useEffect(() => {
@@ -197,13 +196,15 @@ function MyApp({ Component, pageProps }: AppProps<ManifoldPageProps>) {
           refresh.
         </div>
       ) : (
-        <AuthProvider serverUser={pageProps.auth}>
-          <Sweepstakes>
-            <NativeMessageProvider>
-              <Component {...pageProps} />
-            </NativeMessageProvider>
-          </Sweepstakes>
-        </AuthProvider>
+        <ThemeProvider>
+          <AuthProvider serverUser={pageProps.auth}>
+            <Sweepstakes>
+              <NativeMessageProvider>
+                <Component {...pageProps} />
+              </NativeMessageProvider>
+            </Sweepstakes>
+          </AuthProvider>
+        </ThemeProvider>
       )}
 
       <GoogleOneTapSetup />
