@@ -50,6 +50,7 @@ import {
   FilterPill,
   TierDropdownPill,
 } from './filter-pills'
+import { useUser } from 'web/hooks/use-user'
 
 export function ContractFilters(props: {
   className?: string
@@ -59,6 +60,7 @@ export function ContractFilters(props: {
   hideSweepsToggle?: boolean
 }) {
   const { className, params, updateParams, hideSweepsToggle, topicSlug } = props
+  const user = useUser()
 
   const {
     s: sort,
@@ -249,7 +251,7 @@ export function ContractFilters(props: {
           selectFilter={selectFilter}
           currentFilter={filter}
         />
-        {!topicSlug && !hideSweepsToggle && (
+        {!topicSlug && !hideSweepsToggle && !!user && (
           <FilterPill
             selected={forYou}
             onSelect={() => {
