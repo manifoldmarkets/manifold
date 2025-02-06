@@ -80,16 +80,22 @@ export function CommentsSection(props: {
         Comments
       </ThemedText>
 
-      {parentComments.map((parent) => (
-        <ParentComment
-          key={parent.id}
-          parentComment={parent as ContractComment}
-          threadComments={
-            (commentsByParent[parent.id] as ContractComment[]) ?? []
-          }
-        />
-        // TODO: render more comments as the user scrolls down
-      ))}
+      {parentComments.length > 0 ? (
+        parentComments.map((parent) => (
+          <ParentComment
+            key={parent.id}
+            parentComment={parent as ContractComment}
+            threadComments={
+              (commentsByParent[parent.id] as ContractComment[]) ?? []
+            }
+          />
+          // TODO: render more comments as the user scrolls down
+        ))
+      ) : (
+        <ThemedText size="md" color={color.textTertiary}>
+          No comments yet.
+        </ThemedText>
+      )}
     </Col>
   )
 }
