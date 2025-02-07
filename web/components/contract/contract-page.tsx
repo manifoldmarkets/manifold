@@ -267,7 +267,7 @@ export function ContractPageContent(props: ContractParams) {
       <Row className="w-full items-start justify-center gap-8">
         <Col
           className={clsx(
-            'bg-canvas-0 w-full max-w-3xl rounded-b xl:w-[70%]',
+            'bg-canvas-0 xl:w-[70%] lg:border dark:border-canvas-50 w-full max-w-3xl rounded-b-md  lg:border-t-0 ',
             // Keep content in view when scrolling related questions on desktop.
             'sticky bottom-0 min-h-screen self-end',
             // Accommodate scroll to top button at bottom of page.
