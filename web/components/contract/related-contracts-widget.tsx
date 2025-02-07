@@ -26,8 +26,8 @@ export const SidebarRelatedContractsList = memo(function (props: {
   const { contracts, loadMore, className } = props
 
   return (
-    <Col className={clsx(className, 'flex-1')}>
-      <h2 className="text-ink-600 mb-2 text-xl">Related questions</h2>
+    <Col className={clsx('flex-1', className)}>
+      <h2 className="text-ink-600 my-2 ml-4 text-xl">Related questions</h2>
       <Col className="divide-ink-300 divide-y-[0.5px]">
         {contracts.map((contract) => (
           <SidebarRelatedContractCard

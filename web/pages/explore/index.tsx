@@ -182,7 +182,7 @@ function SportsTabs() {
   return (
     <Col className="w-full">
       <QueryUncontrolledTabs
-        className="bg-canvas-50 sticky top-[2.9rem] z-10"
+        className="bg-canvas-0 sticky top-[2.9rem] z-10"
         tabs={SPORTS_TABS}
         defaultIndex={0}
         labelsParentClassName="mr-4"
@@ -372,7 +372,7 @@ const OrganizableMarketsPage = (props: { user: User | null; tabs: Tab[] }) => {
           {(provided) => (
             <div ref={provided.innerRef} {...provided.droppableProps}>
               <QueryUncontrolledTabs
-                className="bg-canvas-50 sticky top-0 z-10"
+                className="bg-canvas-0 sticky top-0 z-10"
                 tabInUrlKey="top-tab"
                 tabs={tabs.map((tab, index) => ({
                   ...tab,
