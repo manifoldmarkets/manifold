@@ -177,10 +177,7 @@ export function FilterDropdownPill(props: {
         }
       })}
       buttonContent={(open) => (
-        <DropdownPill
-          color={'light-gray'}
-          open={open}
-        >
+        <DropdownPill color={'light-gray'} open={open}>
           {currentFilterLabel}
         </DropdownPill>
       )}
