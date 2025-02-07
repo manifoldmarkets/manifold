@@ -184,7 +184,12 @@ export function UserContractsList(props: {
             <ContractsTable
               hideAvatar
               contracts={contracts}
-              columns={[tierColumn, traderColumn, probColumn, actionColumn]}
+              columns={[
+                // tierColumn,
+                traderColumn,
+                probColumn,
+                actionColumn,
+              ]}
             />
             <LoadMoreUntilNotVisible loadMore={loadMoreContracts} />
             {shouldLoadMore && <LoadingContractResults />}
