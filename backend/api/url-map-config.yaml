@@ -67,9 +67,9 @@ pathMatchers:
           - pathTemplateMatch: /v0/get-monthly-bets-2024
           - pathTemplateMatch: /v0/get-max-min-profit-2024
           - pathTemplateMatch: /get-next-loan-amount
-          - pathTemplateMatch: /0/generate-ai-answers
-          - pathTemplateMatch: /0/generate-ai-description
-          - pathTemplateMatch: /0/market-probs
+          - pathTemplateMatch: /v0/generate-ai-answers
+          - pathTemplateMatch: /v0/generate-ai-description
+          - pathTemplateMatch: /v0/market-probs
 # redeploy this by running:
 # gcloud compute url-maps import api-lb --source=url-map-config.yaml --project mantic-markets  --global
 # (or for dev, --project dev-mantic-markets)

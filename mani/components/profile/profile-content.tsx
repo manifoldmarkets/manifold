@@ -44,6 +44,7 @@ export function ProfileContent(props: { user: User }) {
   const manaNetWorth = manaInvestmentValue + (user?.balance ?? 0)
   const cashNetWorth = cashInvestmentValue + (user?.cashBalance ?? 0)
   const isUserRegistered = user.idVerified
+
   return (
     <Page>
       <Col style={{ gap: 12 }}>
@@ -113,7 +114,7 @@ export function ProfileContent(props: { user: User }) {
             />
           </Col>
         </Row>
-        {isCurrentUser && (
+        {isCurrentUser && token === 'CASH' && (
           <Row>
             {isUserRegistered ? (
               <Button

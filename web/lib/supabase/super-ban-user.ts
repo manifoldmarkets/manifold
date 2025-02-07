@@ -15,8 +15,8 @@ async function superBanUser(userId: string) {
 
   const comments = await api('comments', { userId })
 
-  if (comments.length > 15) {
-    commentsStatus = 'not hidden (>15)'
+  if (comments.length > 30) {
+    commentsStatus = 'not hidden (>30)'
   } else {
     if (comments.length > 0) {
       const commentsToHide = comments.filter((comment) => !comment.hidden)

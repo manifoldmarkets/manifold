@@ -21,30 +21,41 @@ export async function getStaticProps() {
     }
   }
 
-  const [{ data: contractData }, { data: politicsData }] = await Promise.all([
-    db.from('contracts').select(contractFields).eq('id', 'OPl99N5Aun').single(),
-    db
-      .from('contracts')
-      .select(contractFields)
-      .not(
-        'outcome_type',
-        'in',
-        `(${['STONK', 'BOUNTIED_QUESTION', 'POLL'].join(',')})`
-      )
-      .is('resolution', null)
-      .eq('token', 'MANA')
-      .eq('visibility', 'public')
-      .order('importance_score', { ascending: false })
-      .limit(10),
-  ])
+  const [{ data: contractData }, { data: politicsData }, { data: PakmanData }] =
+    await Promise.all([
+      db
+        .from('contracts')
+        .select(contractFields)
+        .eq('id', 'OPl99N5Aun')
+        .single(),
+      db
+        .from('contracts')
+        .select(contractFields)
+        .not(
+          'outcome_type',
+          'in',
+          `(${['STONK', 'BOUNTIED_QUESTION', 'POLL'].join(',')})`
+        )
+        .is('resolution', null)
+        .eq('token', 'MANA')
+        .eq('visibility', 'public')
+        .order('importance_score', { ascending: false })
+        .limit(10),
+      db
+        .from('contracts')
+        .select(contractFields)
+        .in('id', ['p6ncQ2CO5O', 'NgNCn6QPZL', 'NZQ05LthSR']),
+    ])
 
   const contract = contractData ? convertContract(contractData) : null
   const politicsMarkets = (politicsData ?? []).map(convertContract)
+  const pakmanContracts = (PakmanData ?? []).map(convertContract)
 
   return {
     props: {
       contract,
       politicsMarkets,
+      pakmanContracts,
     },
     revalidate,
   }
@@ -53,6 +64,7 @@ export async function getStaticProps() {
 export default function Pakman(props: {
   contract: Contract
   politicsMarkets: Contract[]
+  pakmanContracts: Contract[]
 }) {
   useTracking('pakman page view')
 
@@ -86,6 +98,9 @@ export default function Pakman(props: {
 
       <Col className="mt-8 gap-4">
         <FeedContractCard contract={props.contract} key={props.contract.id} />
+        {props.pakmanContracts.map((market) => (
+          <FeedContractCard key={market.id} contract={market} />
+        ))}
         {props.politicsMarkets.map((market) => (
           <FeedContractCard key={market.id} contract={market} />
         ))}
