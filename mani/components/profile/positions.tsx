@@ -136,6 +136,8 @@ export function Positions(props: { user: User }) {
 
                 // Show question only for the first metric in each contract group
                 const showQuestion = contractMetrics.indexOf(metric) === 0
+                const isLastMetric =
+                  contractMetrics.indexOf(metric) === contractMetrics.length - 1
 
                 return (
                   <PositionRow
@@ -144,6 +146,7 @@ export function Positions(props: { user: User }) {
                     metric={metric}
                     answer={answer}
                     showQuestion={showQuestion}
+                    hasBorder={isLastMetric}
                   />
                 )
               })}

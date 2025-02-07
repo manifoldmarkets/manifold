@@ -7,7 +7,7 @@ import { ThemedText } from 'components/themed-text'
 import { TokenNumber } from 'components/token/token-number'
 import { useColor } from 'hooks/use-color'
 import { useState } from 'react'
-import { TouchableOpacity } from 'react-native'
+import { StyleProp, TouchableOpacity, ViewStyle } from 'react-native'
 import { getPayoutInfo } from 'common/payouts'
 
 export function PositionRow({
@@ -15,11 +15,14 @@ export function PositionRow({
   metric,
   answer,
   showQuestion,
+  hasBorder,
 }: {
   contract: Contract
   metric: ContractMetric
   answer?: Answer
   showQuestion?: boolean
+  hasBorder?: boolean
+  style?: StyleProp<ViewStyle>
 }) {
   const { hasYesShares } = metric
   const [open, setOpen] = useState(false)
@@ -40,8 +43,8 @@ export function PositionRow({
       onPress={() => setOpen(true)}
       style={{
         gap: 12,
-        paddingVertical: 16,
-        borderBottomWidth: 1,
+        paddingVertical: 12,
+        borderBottomWidth: hasBorder ? 1 : 0,
         borderBottomColor: color.border,
         flexDirection: 'column',
       }}
