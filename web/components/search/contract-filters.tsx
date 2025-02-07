@@ -154,14 +154,14 @@ export function ContractFilters(props: {
           />
         )}
 
-        <Row className="bg-ink-200 dark:bg-ink-300 items-center rounded-full">
+        <Row className="bg-ink-100 dark:bg-ink-300 items-center rounded-full">
           <button
             key="score"
             className={clsx(
               'flex h-6 cursor-pointer select-none flex-row items-center whitespace-nowrap rounded-full px-2 text-sm outline-none transition-colors',
               sort == 'score'
                 ? 'hover:bg-primary-600 focus-visible:bg-primary-600 bg-primary-500 text-white'
-                : 'bg-ink-200 text-ink-600 dark:bg-ink-300',
+                : 'bg-ink-100 text-ink-600 dark:bg-ink-300',
               className
             )}
             onClick={() => {
@@ -180,7 +180,7 @@ export function ContractFilters(props: {
               'flex h-6 cursor-pointer select-none flex-row items-center whitespace-nowrap rounded-full px-2 text-sm outline-none transition-colors',
               sort == 'freshness-score'
                 ? 'hover:bg-primary-600 focus-visible:bg-primary-600 bg-primary-500 text-white'
-                : 'bg-ink-200 text-ink-600 dark:bg-ink-300',
+                : 'bg-ink-100 text-ink-600 dark:bg-ink-300',
               className
             )}
             onClick={() => {
@@ -199,7 +199,7 @@ export function ContractFilters(props: {
               'flex h-6 cursor-pointer select-none flex-row items-center whitespace-nowrap rounded-full px-2 text-sm outline-none transition-colors',
               sort == 'newest'
                 ? 'hover:bg-primary-600 focus-visible:bg-primary-600 bg-primary-500 text-white'
-                : 'bg-ink-200 text-ink-600 dark:bg-ink-300',
+                : 'bg-ink-100 text-ink-600 dark:bg-ink-300',
               className
             )}
             onClick={() => {
@@ -234,7 +234,7 @@ export function ContractFilters(props: {
             'flex h-6 cursor-pointer select-none flex-row items-center whitespace-nowrap rounded-full px-2 text-sm outline-none transition-colors',
             filter == 'closing-month'
               ? 'hover:bg-primary-600 focus-visible:bg-primary-600 bg-primary-500 text-white'
-              : 'bg-ink-200 text-ink-600 dark:bg-ink-300',
+              : 'bg-ink-100 text-ink-600 dark:bg-ink-300',
             className
           )}
           onClick={() => {
