@@ -621,7 +621,7 @@ function BetsTable(props: {
       <Col className={'w-full'}>
         <div
           className={clsx(
-            'grid-cols-15 bg-canvas-50 sticky z-10 grid w-full py-2 pr-1',
+            'grid-cols-15 bg-canvas- sticky z-10 grid w-full py-2 pr-1',
             isMobile ? 'top-12' : 'top-0' // Sets it below sticky user profile header on mobile
           )}
         >

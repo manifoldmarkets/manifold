@@ -18,7 +18,7 @@ export default function Explore() {
       <Welcome />
       {user && (
         <DailyStats
-          className="bg-canvas-50 z-50 mb-1 w-full px-2 py-2"
+          className="bg-canvas-0 z-50 mb-1 w-full px-2 py-2"
           user={user}
         />
       )}

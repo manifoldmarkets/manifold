@@ -25,7 +25,7 @@ export function HeadlineTabs(props: {
     <div
       className={clsx(
         className,
-        'bg-canvas-50 w-full',
+        'w-full bg-canvas-0',
         !notSticky && 'sticky top-0 z-50'
       )}
     >
