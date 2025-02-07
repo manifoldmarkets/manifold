@@ -1,5 +1,4 @@
 import { XIcon } from '@heroicons/react/outline'
-import { SearchIcon } from '@heroicons/react/solid'
 import clsx from 'clsx'
 import { trackCallback } from 'web/lib/service/analytics'
 import { IconButton } from '../buttons/button'
@@ -18,7 +17,6 @@ export const SearchInput = (props: {
 
   return (
     <div className="relative w-full">
-      <SearchIcon className="text-ink-500 absolute left-3 top-1/2 h-5 w-5 -translate-y-1/2" />
       <Input
         type="text"
         inputMode="search"
@@ -27,7 +25,7 @@ export const SearchInput = (props: {
         onBlur={trackCallback('search', { query: value })}
         placeholder={placeholder ?? 'Search'}
         autoFocus={autoFocus}
-        className={clsx('w-full pl-10', hasQuery && 'pr-10')}
+        className={clsx('w-full', hasQuery && 'pr-10')}
       />
       {hasQuery && (
         <IconButton
