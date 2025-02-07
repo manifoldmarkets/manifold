@@ -3,14 +3,11 @@ import { useSavedContractMetrics } from 'hooks/use-saved-contract-metrics'
 import { Col } from 'components/layout/col'
 import { ThemedText } from 'components/themed-text'
 import { useColor } from 'hooks/use-color'
-import { useState } from 'react'
 import { PositionRow } from 'components/profile/position-row'
 import { Rounded } from 'constants/border-radius'
 
 export function UserBetsSummary(props: { contract: Contract }) {
   const { contract } = props
-  const [open, setOpen] = useState(false)
-
   const color = useColor()
 
   const isBinaryMc = isBinaryMulti(contract)

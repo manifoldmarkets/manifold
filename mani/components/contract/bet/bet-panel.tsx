@@ -11,7 +11,6 @@ import { Button } from 'components/buttons/button'
 import { api } from 'lib/api'
 import { Modal } from 'components/layout/modal'
 import { TokenNumber } from 'components/token/token-number'
-import { NumberText } from 'components/number-text'
 import { usePrivateUser, useUser } from 'hooks/use-user'
 import Slider from '@react-native-community/slider'
 import { useTokenMode } from 'hooks/use-token-mode'
@@ -20,11 +19,7 @@ import {
   MANA_MIN_BET,
   SWEEPS_MIN_BET,
 } from 'common/economy'
-import {
-  formatMoneyNumber,
-  formatPercent,
-  formatWithToken,
-} from 'common/util/format'
+import { formatWithToken } from 'common/util/format'
 import { removeUndefinedProps } from 'common/util/object'
 import {
   getVerificationStatus,
@@ -42,6 +37,8 @@ import { CandidateBet } from 'common/new-bet'
 import { useToast } from 'react-native-toast-notifications'
 import { getLimitBetReturns, MultiBetProps } from 'client-common/lib/bet'
 import { formatMoneyVerbatim } from 'util/format'
+import { BetSuccessPanel } from './bet-success-panel'
+
 export type BinaryOutcomes = 'YES' | 'NO'
 
 const AMOUNT_STEPS = [1, 2, 5, 7, 10, 15, 20, 25, 30, 40, 50, 75, 100]
@@ -87,6 +84,11 @@ export function BetPanelContent({
   const [amount, setAmount] = useState(1)
   const { token } = useTokenMode()
   const toast = useToast()
+  const [placedBet, setPlacedBet] = useState<{
+    amount: number
+    orderAmount: number
+    shares: number
+  } | null>(null)
 
   const answer = multiProps?.answerToBuy
     ? multiProps.answers.find((a) => a.id === multiProps.answerToBuy.id)
@@ -220,18 +222,13 @@ export function BetPanelContent({
           deps: betDeps.map((b) => b.id),
         })
       )
+
       if (bet.isFilled) {
-        setSubmittedBet(null)
-        setOpen(false)
-        toastId = toast.show(
-          `${formatMoneyNumber(bet.amount)}/${formatMoneyVerbatim(
-            bet.orderAmount ?? 0,
-            isCashContract ? 'CASH' : 'MANA'
-          )} filled for ${formatMoneyVerbatim(
-            bet.shares,
-            isCashContract ? 'CASH' : 'MANA'
-          )} on payout`
-        )
+        setPlacedBet({
+          amount: bet.amount,
+          orderAmount: bet.orderAmount ?? 0,
+          shares: bet.shares,
+        })
       } else {
         toastId = toast.show('Filling orders...')
         setSubmittedBet({
@@ -247,11 +244,30 @@ export function BetPanelContent({
       }
     } catch (error: any) {
       console.error(error)
-      toastId = toast.show('Failed to place trade: ' + (error.message ?? ''))
+      toast.show('Failed to place trade: ' + (error.message ?? ''))
       setOpen(false)
     }
     setLoading(false)
   }
+
+  if (placedBet) {
+    return (
+      <BetSuccessPanel
+        amount={placedBet.amount}
+        orderAmount={placedBet.orderAmount}
+        shares={placedBet.shares}
+        outcome={outcome}
+        isBinaryMC={isBinaryMC}
+        multiProps={multiProps}
+        isCashContract={isCashContract}
+        onClose={() => {
+          setOpen(false)
+          setPlacedBet(null)
+        }}
+      />
+    )
+  }
+
   return (
     <KeyboardAvoidingView
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
@@ -314,9 +330,6 @@ export function BetPanelContent({
             {/* TODO: get real payout */}
             <Row style={{ alignItems: 'center', gap: 4 }}>
               <TokenNumber amount={currentPayout} size="lg" />
-              <NumberText size="lg" color={color.profitText}>
-                (+{formatPercent(currentPayout / amount)})
-              </NumberText>
             </Row>
           </Row>
           {isBinaryMC ? (
