@@ -329,7 +329,7 @@ export function BetPanelContent({
 
             {/* TODO: get real payout */}
             <Row style={{ alignItems: 'center', gap: 4 }}>
-              <TokenNumber amount={currentPayout} size="lg" />
+              <TokenNumber amount={currentPayout} size="lg" showDecimals />
             </Row>
           </Row>
           {isBinaryMC ? (
