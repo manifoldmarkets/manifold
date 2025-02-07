@@ -24,7 +24,6 @@ import { CreateQuestionButton } from '../buttons/create-question-button'
 import {
   actionColumn,
   probColumn,
-  tierColumn,
   traderColumn,
 } from '../contract/contract-table-col-formats'
 import { ContractsTable } from '../contract/contracts-table'
