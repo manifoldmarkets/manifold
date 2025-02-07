@@ -488,7 +488,7 @@ export function Search(props: SearchProps) {
             onContractClick={onContractClick}
             highlightContractIds={highlightContractIds}
             columns={buildArray([
-              tierColumn,
+              // tierColumn,
               traderColumn,
               probColumn,
               !hideActions && actionColumn,
