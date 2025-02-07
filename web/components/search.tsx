@@ -367,24 +367,15 @@ export function Search(props: SearchProps) {
             loading={loading}
           />
         )}
-        {!hideContractFilters && (
-          <ContractFilters
-            params={searchParams}
-            updateParams={onChange}
-            topicSlug={topicSlug}
-            className={
-              searchType && searchType !== 'Questions' ? 'invisible' : ''
-            }
-            hideSweepsToggle={hideSweepsToggle}
-          />
-        )}
-        <Col className="mb-2">
+
+        <Col className="mt-2">
           {/* Main topics row */}
           {showTopicsFilterPills && (
             <Carousel fadeEdges labelsParentClassName="gap-1 items-center">
               {ALL_PARENT_TOPICS.map((topic) => (
                 <FilterPill
                   key={topic}
+                  className="h-8 !text-base"
                   selected={selectedTopic === topic}
                   onSelect={() => {
                     if (selectedTopic === topic) {
@@ -407,7 +398,7 @@ export function Search(props: SearchProps) {
 
           {/* Subtopics row */}
           {selectedTopic && (
-            <Carousel fadeEdges labelsParentClassName="gap-1 mt-1">
+            <Carousel fadeEdges labelsParentClassName="gap-1 mt-1 mb-2">
               {TOPICS_TO_SUBTOPICS[selectedTopic].map(({ name, groupIds }) => (
                 <FilterPill
                   key={name}
@@ -432,6 +423,18 @@ export function Search(props: SearchProps) {
             </Carousel>
           )}
         </Col>
+
+        {!hideContractFilters && (
+          <ContractFilters
+            params={searchParams}
+            updateParams={onChange}
+            topicSlug={topicSlug}
+            className={
+              searchType && searchType !== 'Questions' ? 'invisible' : ''
+            }
+            hideSweepsToggle={hideSweepsToggle}
+          />
+        )}
       </Col>
       <Spacer h={2} />
       {showSearchTypes && (
