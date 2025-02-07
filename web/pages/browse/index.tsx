@@ -22,6 +22,7 @@ export default function BrowsePage() {
     <Page trackPageView={'questions page'}>
       {/* only show logo on mobile, since there's no sidebar */}
       {!user && <ManifoldLogo className="m-2 flex lg:hidden" />}
+      <div className="lg:mb-4"></div>
 
       <BrowsePageContent />
     </Page>
