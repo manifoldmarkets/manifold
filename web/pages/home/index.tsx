@@ -7,45 +7,20 @@ import { Page } from 'web/components/layout/page'
 import { useUser } from 'web/hooks/use-user'
 import { track } from 'web/lib/service/analytics'
 import { BrowsePageContent } from '../browse'
-import { api } from 'web/lib/api/api'
-import { Headline } from 'common/news'
-import { HeadlineTabs } from 'web/components/dashboard/header'
 import { useRedirectIfSignedOut } from 'web/hooks/use-redirect-if-signed-out'
 import { DowntimeBanner } from 'web/components/nav/banner'
 import { Welcome } from 'web/components/onboarding/welcome'
 import { LiveGeneratedFeed } from 'web/components/feed/live-generated-feed'
 
-export async function getStaticProps() {
-  try {
-    const headlines = await api('headlines', {})
-    return {
-      props: {
-        headlines,
-        revalidate: 30 * 60, // 30 minutes
-      },
-    }
-  } catch (err) {
-    return { props: { headlines: [] }, revalidate: 60 }
-  }
-}
-
-export default function Home(props: { headlines: Headline[] }) {
+export default function Home() {
   const user = useUser()
   useRedirectIfSignedOut()
-  const { headlines } = props
 
   return (
     <Page trackPageView={'home'} className="!mt-0">
       <Welcome />
       <SEO title={`Home`} description={`Browse all questions`} url={`/home`} />
       <DowntimeBanner />
-      <HeadlineTabs
-        endpoint={'news'}
-        headlines={headlines}
-        currentSlug={'home'}
-        hideEmoji
-        notSticky
-      />
       <DailyStats className="z-50 mb-1 w-full px-2 py-2" user={user} />
       <BrowsePageContent />
       {user && (
