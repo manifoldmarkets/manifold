@@ -10,6 +10,7 @@ import { Pagination } from 'components/widgets/pagination'
 import { PillButton } from 'components/buttons/pill-button'
 import { User } from 'common/user'
 import { groupBy } from 'lodash'
+import { useColor } from 'hooks/use-color'
 
 type BetFilter = 'open' | 'sold' | 'closed' | 'resolved' | 'all'
 export function Positions(props: { user: User }) {
@@ -80,6 +81,8 @@ export function Positions(props: { user: User }) {
   const startIndex = currentPage * PAGE_SIZE
   const endIndex = startIndex + PAGE_SIZE
 
+  const color = useColor()
+
   // Group metrics by contract before pagination
   const groupedMetricsByContract = groupBy(validMetrics, 'contractId')
 
@@ -120,9 +123,14 @@ export function Positions(props: { user: User }) {
           const contractMetrics = groupedMetricsByContract[contractId]
           const contract = filteredContracts?.find((c) => c.id === contractId)
           if (!contract) return null
-
           return (
-            <Col key={contractId}>
+            <Col
+              key={contractId}
+              style={{
+                borderBottomWidth: 1,
+                borderBottomColor: color.border,
+              }}
+            >
               {contractMetrics.map((metric) => {
                 if (contract.mechanism === 'cpmm-multi-1' && !metric.answerId) {
                   return null
@@ -146,7 +154,6 @@ export function Positions(props: { user: User }) {
                     metric={metric}
                     answer={answer}
                     showQuestion={showQuestion}
-                    hasBorder={isLastMetric}
                   />
                 )
               })}
