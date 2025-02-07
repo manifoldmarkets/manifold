@@ -97,7 +97,9 @@ export function SiteActivity(props: {
           return (
             <Col
               key={parentId}
-              className="bg-canvas-0 dark:bg-canvas-50 border-canvas-50 hover:border-primary-300 gap-2 rounded-lg border px-4 py-3 transition-colors"
+              className={clsx(
+                'bg-canvas-0 dark:bg-canvas-50 dark:border-canvas-50 hover:border-primary-300 gap-2 rounded-lg border px-4 py-3 shadow-md transition-colors sm:px-6'
+              )}
             >
               <Row className="gap-2">
                 <Col className="flex-1 gap-2">
