@@ -46,10 +46,7 @@ export default function Home(props: { headlines: Headline[] }) {
         hideEmoji
         notSticky
       />
-      <DailyStats
-        className="z-50 mb-1 w-full px-2 py-2"
-        user={user}
-      />
+      <DailyStats className="z-50 mb-1 w-full px-2 py-2" user={user} />
       <BrowsePageContent />
       {user && (
         <button

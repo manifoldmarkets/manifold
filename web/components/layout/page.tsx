@@ -55,10 +55,7 @@ export function Page(props: {
           <Sidebar className="sticky top-0 hidden self-start px-2 lg:col-span-2 lg:flex" />
         )}
         <main
-          className={clsx(
-            'col-span-7 flex flex-1 flex-col l:px-2',
-            className
-          )}
+          className={clsx('l:px-2 col-span-7 flex flex-1 flex-col', className)}
         >
           {banner}
           {children}
