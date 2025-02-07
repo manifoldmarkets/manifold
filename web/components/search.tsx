@@ -345,7 +345,7 @@ export function Search(props: SearchProps) {
     <Col className="w-full">
       <Col
         className={clsx(
-          'sticky top-0 z-20',
+          'sticky top-0 z-20 bg-canvas-0',
           headerClassName
         )}
       >

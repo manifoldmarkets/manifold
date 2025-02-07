@@ -127,7 +127,6 @@ export default function TopicPage(props: {
                 title: 'Questions',
                 content: (
                   <Search
-                    headerClassName={'bg-canvas-50'}
                     persistPrefix="group-search"
                     additionalFilter={{
                       excludeContractIds: privateUser?.blockedContractIds,
