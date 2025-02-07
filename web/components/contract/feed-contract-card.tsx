@@ -148,7 +148,7 @@ export function FeedContractCard(props: {
         size === 'sm'
           ? 'bg-canvas-50'
           : size === 'md'
-          ? 'bg-canvas-0 shadow-md sm:px-6'
+          ? 'bg-canvas-0 shadow-md dark:bg-canvas-50 sm:px-6'
           : 'bg-canvas-0'
       )}
       onClick={(e) => {

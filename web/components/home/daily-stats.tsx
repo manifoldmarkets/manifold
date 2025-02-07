@@ -7,7 +7,7 @@ import { DailyProfit } from './daily-profit'
 import { DailyLoan } from './daily-loan'
 
 export const dailyStatsClass =
-  'bg-canvas-0 rounded-lg px-2 sm:px-3 py-1 shadow min-w-[60px]'
+  'bg-canvas-0 dark:bg-canvas-50 rounded-lg px-2 sm:px-3 py-1 shadow min-w-[60px]'
 
 export function DailyStats(props: {
   user: User | null | undefined
