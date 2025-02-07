@@ -160,7 +160,7 @@ export function ContractFilters(props: {
             className={clsx(
               'flex h-6 cursor-pointer select-none flex-row items-center whitespace-nowrap rounded-full px-2 text-sm outline-none transition-colors',
               sort == 'score'
-                ? 'hover:bg-primary-600 focus-visible:bg-primary-600 bg-primary-500 text-white'
+                ? 'bg-ink-200 hover:bg-ink-400 text-ink-600 dark:bg-ink-400 dark:hover:bg-ink-500'
                 : 'bg-ink-100 text-ink-600 dark:bg-ink-300',
               className
             )}
@@ -179,7 +179,7 @@ export function ContractFilters(props: {
             className={clsx(
               'flex h-6 cursor-pointer select-none flex-row items-center whitespace-nowrap rounded-full px-2 text-sm outline-none transition-colors',
               sort == 'freshness-score'
-                ? 'hover:bg-primary-600 focus-visible:bg-primary-600 bg-primary-500 text-white'
+                ? 'bg-ink-200 hover:bg-ink-400 text-ink-600 dark:bg-ink-400 dark:hover:bg-ink-500'
                 : 'bg-ink-100 text-ink-600 dark:bg-ink-300',
               className
             )}
@@ -198,7 +198,7 @@ export function ContractFilters(props: {
             className={clsx(
               'flex h-6 cursor-pointer select-none flex-row items-center whitespace-nowrap rounded-full px-2 text-sm outline-none transition-colors',
               sort == 'newest'
-                ? 'hover:bg-primary-600 focus-visible:bg-primary-600 bg-primary-500 text-white'
+                ? 'bg-ink-200 hover:bg-ink-400 text-ink-600 dark:bg-ink-400 dark:hover:bg-ink-500'
                 : 'bg-ink-100 text-ink-600 dark:bg-ink-300',
               className
             )}
@@ -228,12 +228,12 @@ export function ContractFilters(props: {
             {getLabelFromValue(SORTS, sortValue)}
           </FilterPill>
         ))}
-        <button
+        {/* <button
           key="closing"
           className={clsx(
             'flex h-6 cursor-pointer select-none flex-row items-center whitespace-nowrap rounded-full px-2 text-sm outline-none transition-colors',
             filter == 'closing-month'
-              ? 'hover:bg-primary-600 focus-visible:bg-primary-600 bg-primary-500 text-white'
+              ? 'hover:bg-ink-500 focus-visible:bg-ink-500 bg-ink-400 text-white'
               : 'bg-ink-100 text-ink-600 dark:bg-ink-300',
             className
           )}
@@ -246,7 +246,7 @@ export function ContractFilters(props: {
           }}
         >
           Closing
-        </button>
+        </button> */}
         <FilterDropdownPill
           selectFilter={selectFilter}
           currentFilter={filter}
@@ -260,6 +260,7 @@ export function ContractFilters(props: {
                 [GROUP_IDS_KEY]: '', // Clear any topic selection when toggling For You
               })
             }}
+            grayscale
           >
             For you
           </FilterPill>
