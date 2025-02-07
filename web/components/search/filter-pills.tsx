@@ -23,12 +23,13 @@ import { User } from 'common/user'
 
 export function FilterPill(props: {
   selected: boolean
+  grayscale?: boolean
   onSelect: () => void
   className?: string
   children: ReactNode
   type?: 'spice' | 'sweepies'
 }) {
-  const { children, selected, onSelect, className, type } = props
+  const { children, selected, onSelect, className, type, grayscale } = props
 
   return (
     <button
@@ -43,7 +44,9 @@ export function FilterPill(props: {
             ? 'bg-amber-600 text-white hover:bg-amber-600'
             : 'text-ink-600 bg-amber-500/10 hover:bg-amber-500/30 dark:bg-amber-500/20 dark:hover:bg-amber-500/30'
           : selected // Add this condition
-          ? 'hover:bg-primary-600 focus-visible:bg-primary-600 bg-primary-500 text-white'
+          ? grayscale
+            ? 'bg-ink-200 hover:bg-ink-400 text-ink-600 dark:bg-ink-400 dark:hover:bg-ink-500'
+            : 'hover:bg-primary-600 focus-visible:bg-primary-600 bg-primary-500 text-white'
           : 'bg-ink-100 hover:bg-ink-200 text-ink-600 dark:bg-ink-300 dark:hover:bg-ink-400',
         className
       )}
@@ -161,24 +164,21 @@ export function FilterDropdownPill(props: {
   const { selectFilter, currentFilter } = props
   // Remove the closing-month filter from the list while it's in its own button
   const currentFilterLabel =
-    currentFilter === 'closing-month'
-      ? getLabelFromValue(FILTERS, 'open')
-      : getLabelFromValue(FILTERS, currentFilter)
+    // currentFilter === 'closing-month' ? getLabelFromValue(FILTERS, 'open') :
+    getLabelFromValue(FILTERS, currentFilter)
 
   return (
     <DropdownMenu
       withinOverflowContainer
-      items={FILTERS.filter((filter) => filter.value !== 'closing-month').map(
-        (filter) => {
-          return {
-            name: filter.label,
-            onClick: () => selectFilter(filter.value),
-          }
+      items={FILTERS.map((filter) => {
+        return {
+          name: filter.label,
+          onClick: () => selectFilter(filter.value),
         }
-      )}
+      })}
       buttonContent={(open) => (
         <DropdownPill
-          color={currentFilter !== 'closing-month' ? 'indigo' : 'light-gray'}
+          color={'light-gray'}
           open={open}
         >
           {currentFilterLabel}
