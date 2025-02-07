@@ -11,7 +11,7 @@ import {
 import { removeUndefinedProps } from 'common/util/object'
 import { Bet, getNewBetId, LimitBet, maker } from 'common/bet'
 import { floatingEqual } from 'common/util/math'
-import { isProd, log, metrics } from 'shared/utils'
+import { isProd, log } from 'shared/utils'
 import { Answer } from 'common/answer'
 import { CpmmState, getCpmmProbability } from 'common/calculate-cpmm'
 import { ValidatedAPIParams } from 'common/api/schema'
@@ -215,7 +215,7 @@ export const placeBetMain = async (
   const { newBet, betId, betGroupId } = result
 
   log(`Main transaction finished - auth ${uid}.`)
-  metrics.inc('app/bet_count', { contract_id: contractId })
+  // metrics.inc('app/bet_count', { contract_id: contractId })
 
   const continuation = async () => {
     await onCreateBets(result)

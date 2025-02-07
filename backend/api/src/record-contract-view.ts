@@ -1,7 +1,7 @@
 import { APIError, APIHandler } from 'api/helpers/endpoint'
 import { createSupabaseDirectClient } from 'shared/supabase/init'
 import { ValidatedAPIParams } from 'common/api/schema'
-import { log, metrics } from 'shared/utils'
+import { log } from 'shared/utils'
 import { filterDefined } from 'common/util/array'
 
 const VIEW_COLUMNS = {
@@ -26,7 +26,8 @@ export const recordContractView: APIHandler<'record-contract-view'> = async (
   }
   if (!viewsByContract[contractId]) viewsByContract[contractId] = []
   viewsByContract[contractId].push(body)
-  metrics.inc('app/contract_view_count', { contract_id: contractId })
+  // metrics.inc('app/contract_view_count', { contract_id: contractId })
+
   return {
     result: { status: 'success' },
     continue: async () => {

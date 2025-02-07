@@ -147,7 +147,7 @@ export function UserContractsList(props: {
         />
       </Row>
 
-      <Col className="bg-canvas-50 sticky -top-px z-20">
+      <Col className="bg-canvas-0 sticky -top-px z-20">
         <SearchInput
           value={query}
           setValue={setQuery}

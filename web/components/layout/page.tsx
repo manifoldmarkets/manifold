@@ -56,7 +56,7 @@ export function Page(props: {
         )}
         <main
           className={clsx(
-            'col-span-7 flex flex-1 flex-col lg:mt-6 xl:px-2',
+            'col-span-7 flex flex-1 flex-col l:px-2',
             className
           )}
         >

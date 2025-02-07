@@ -142,6 +142,8 @@ export function PositionModalContent({
   const costBasis = invested * saleFrac
   const betDeps = useRef<LimitBet[]>(undefined)
 
+  const [isCustomizing, setIsCustomizing] = useState(false)
+
   async function submitSell() {
     if (!user || !amount) return
 
@@ -243,11 +245,7 @@ export function PositionModalContent({
   }
   const isCashContract = contract.token === 'CASH'
 
-  const buyingNoun = isBinaryMC
-    ? answer?.shortText
-    : hasYesShares
-    ? 'YES'
-    : 'NO'
+  const buyingNoun = hasYesShares ? 'YES' : 'NO'
   return (
     <KeyboardAvoidingView
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
@@ -307,39 +305,52 @@ export function PositionModalContent({
           </ThemedText>
           <TokenNumber amount={saleValue + totalFees} size="5xl" />
           {mode == 'sell' && (
-            <Animated.View
-              entering={FadeIn.duration(200)}
-              exiting={FadeOut.duration(200)}
-              style={{ width: '100%' }}
-            >
-              <Slider
-                value={amount ? amount / shares : 1}
-                onValueChange={(value) => {
-                  const newAmount = Math.floor(shares * value)
-                  setDisplayAmount(newAmount)
-                  setAmount(newAmount)
+            <>
+              {!isCustomizing && (
+                <Button
+                  onPress={() => setIsCustomizing(true)}
+                  size="sm"
+                  variant="gray"
+                >
+                  Partial sell
+                </Button>
+              )}
+              {isCustomizing && (
+                <Animated.View
+                  entering={FadeIn.duration(200)}
+                  exiting={FadeOut.duration(200)}
+                  style={{ width: '100%' }}
+                >
+                  <Slider
+                    value={amount ? amount / shares : 1}
+                    onValueChange={(value) => {
+                      const newAmount = Math.floor(shares * value)
+                      setDisplayAmount(newAmount)
+                      setAmount(newAmount)
 
-                  // Check for errors
-                  if (newAmount !== undefined && newAmount > shares) {
-                    setError(
-                      `Maximum ${formatShares(
-                        Math.floor(shares),
-                        isCashContract
-                      )} shares`
-                    )
-                  } else {
-                    setError(undefined)
-                  }
-                }}
-                minimumValue={0}
-                maximumValue={1}
-                step={0.01}
-                minimumTrackTintColor={color.primaryButton}
-                maximumTrackTintColor={color.border}
-                thumbTintColor={color.primary}
-                style={{ width: '100%', height: 40 }}
-              />
-            </Animated.View>
+                      // Check for errors
+                      if (newAmount !== undefined && newAmount > shares) {
+                        setError(
+                          `Maximum ${formatShares(
+                            Math.floor(shares),
+                            isCashContract
+                          )} shares`
+                        )
+                      } else {
+                        setError(undefined)
+                      }
+                    }}
+                    minimumValue={0}
+                    maximumValue={1}
+                    step={0.01}
+                    minimumTrackTintColor={color.primaryButton}
+                    maximumTrackTintColor={color.border}
+                    thumbTintColor={color.primary}
+                    style={{ width: '100%', height: 40 }}
+                  />
+                </Animated.View>
+              )}
+            </>
           )}
         </Col>
         <Col style={{ gap: 8 }}>
@@ -386,7 +397,7 @@ export function PositionModalContent({
                   weight: 'normal',
                 }}
                 size="lg"
-                variant={isBinaryMC ? 'gray' : hasYesShares ? 'yes' : 'no'}
+                variant={hasYesShares ? 'yes' : 'no'}
               >
                 <>Buy more {buyingNoun}</>
               </Button>

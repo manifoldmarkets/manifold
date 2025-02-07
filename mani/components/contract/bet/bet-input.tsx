@@ -128,7 +128,7 @@ export function BetAmountInput({
             ]}
             onPress={(e) => {
               e.stopPropagation()
-              setAmount(amount + 10)
+              setAmount(amount === 1 ? 10 : amount + 10)
             }}
             disabled={amount + 10 > maxAmount}
           >
@@ -141,7 +141,7 @@ export function BetAmountInput({
             ]}
             onPress={(e) => {
               e.stopPropagation()
-              setAmount(amount + 50)
+              setAmount(amount === 1 ? 50 : amount + 50)
             }}
             disabled={amount + 50 > maxAmount}
           >

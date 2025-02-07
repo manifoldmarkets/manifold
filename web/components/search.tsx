@@ -17,7 +17,7 @@ import { CONTRACTS_PER_SEARCH_PAGE } from 'common/supabase/contracts'
 import { buildArray } from 'common/util/array'
 import { Button } from 'web/components/buttons/button'
 import { usePersistentLocalState } from 'web/hooks/use-persistent-local-state'
-import { searchContracts, searchGroups } from 'web/lib/api/api'
+import { api, searchGroups } from 'web/lib/api/api'
 import { searchUsers } from 'web/lib/supabase/users'
 import {
   actionColumn,
@@ -345,8 +345,7 @@ export function Search(props: SearchProps) {
     <Col className="w-full">
       <Col
         className={clsx(
-          'sticky top-0 z-20',
-          !headerClassName && 'bg-canvas-50',
+          'sticky top-0 z-20 bg-canvas-0',
           headerClassName
         )}
       >
@@ -628,7 +627,7 @@ export const useSearchResults = (props: {
 
         try {
           const searchPromises: Promise<any>[] = [
-            searchContracts({
+            api('search-markets-full', {
               term: query,
               filter,
               sort,
@@ -697,10 +696,21 @@ export const useSearchResults = (props: {
 
   useDebouncedEffect(
     () => {
-      if (isReady) querySearchResults(true)
+      if (isReady && !state.contracts?.length) {
+        querySearchResults(true)
+      }
     },
     50,
-    [isReady, JSON.stringify(searchParams)]
+    [isReady]
+  )
+  useDebouncedEffect(
+    () => {
+      if (isReady) {
+        querySearchResults(true)
+      }
+    },
+    50,
+    [JSON.stringify(searchParams)]
   )
 
   const contracts = state.contracts

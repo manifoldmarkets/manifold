@@ -70,7 +70,7 @@ export function BrowsePageContent() {
         }}
         useUrlParams
         isWholePage
-        headerClassName={'pt-0 px-2 bg-canvas-50'}
+        headerClassName={'pt-0 px-2'}
         defaultFilter="open"
         defaultSort="score"
         defaultForYou="1"

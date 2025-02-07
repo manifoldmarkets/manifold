@@ -180,7 +180,7 @@ export function AiContent() {
         </Col>
       )}
       <QueryUncontrolledTabs
-        className="bg-canvas-50 sticky top-[2.9rem] z-10"
+        className="bg-canvas-0 sticky top-[2.9rem] z-10"
         tabs={AI_TABS}
         defaultIndex={0}
         labelsParentClassName="mr-4"

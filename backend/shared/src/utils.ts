@@ -74,10 +74,10 @@ export const revalidateStaticProps = async (
     )
 
     if (resp.ok) {
-      metrics.inc('vercel/revalidations_succeeded', { path: pathToRevalidate })
+      // metrics.inc('vercel/revalidations_succeeded', { path: pathToRevalidate })
       log('Revalidated', pathToRevalidate)
     } else {
-      metrics.inc('vercel/revalidations_failed', { path: pathToRevalidate })
+      // metrics.inc('vercel/revalidations_failed', { path: pathToRevalidate })
       try {
         const json = await resp.json()
         log.error(

@@ -55,7 +55,8 @@ export const GoodComment = memo(function (props: {
   return (
     <Col
       className={clsx(
-        'bg-canvas-0 ring- ring-primary-200 group rounded-lg py-2',
+        'ring-primary-200 group rounded-lg py-2',
+        'bg-canvas-0 dark:bg-canvas-50 dark:border-canvas-50 hover:border-primary-300 gap-2 rounded-lg border px-4 py-3 shadow-md transition-colors sm:px-6',
         hoveringChildContract ? '' : 'hover:ring-1'
       )}
       ref={ref}
