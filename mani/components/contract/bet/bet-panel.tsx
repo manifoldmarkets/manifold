@@ -19,7 +19,6 @@ import {
   MANA_MIN_BET,
   SWEEPS_MIN_BET,
 } from 'common/economy'
-import { formatWithToken } from 'common/util/format'
 import { removeUndefinedProps } from 'common/util/object'
 import {
   getVerificationStatus,
@@ -27,13 +26,8 @@ import {
 } from 'common/gidx/user'
 import { router } from 'expo-router'
 import { SWEEPIES_NAME } from 'common/envs/constants'
-import { LimitBet } from 'common/bet'
 import { useIsPageVisible } from 'hooks/use-is-page-visibile'
-import {
-  useContractBets,
-  useUnfilledBetsAndBalanceByUserId,
-} from 'client-common/hooks/use-bets'
-import { CandidateBet } from 'common/new-bet'
+import { useUnfilledBetsAndBalanceByUserId } from 'client-common/hooks/use-bets'
 import { useToast } from 'react-native-toast-notifications'
 import { getLimitBetReturns, MultiBetProps } from 'client-common/lib/bet'
 import { formatMoneyVerbatim } from 'util/format'
@@ -97,55 +91,11 @@ export function BetPanelContent({
   const isBinaryMC = isBinaryMulti(contract)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
-  const [submittedBet, setSubmittedBet] = useState<
-    | (LimitBet & {
-        expired: boolean
-        toastId: string
-      })
-    | null
-  >(null)
 
   const isCashContract = contract.token === 'CASH'
   const user = useUser()
   const privateUser = usePrivateUser()
 
-  const limitBets = useContractBets(
-    contract.id,
-    removeUndefinedProps({
-      userId: user?.id,
-      enabled: !!user?.id,
-      afterTime: contract?.lastBetTime ?? user?.lastBetTime,
-    }),
-    useIsPageVisible,
-    (params) => api('bets', params)
-  )
-  const updatedBet = limitBets.find((b) => b.id === submittedBet?.id)
-  useEffect(() => {
-    if (!submittedBet) return
-    if (
-      updatedBet?.isFilled ||
-      updatedBet?.isCancelled ||
-      submittedBet.expired ||
-      (updatedBet?.expiresAt && Date.now() > updatedBet.expiresAt)
-    ) {
-      const amountFilled = updatedBet?.amount ?? submittedBet.amount
-      const sharesFilled = updatedBet?.shares ?? submittedBet.shares
-      const orderAmount = updatedBet?.orderAmount ?? submittedBet.orderAmount
-      const message = `${formatWithToken({
-        amount: amountFilled,
-        token: isCashContract ? 'CASH' : 'M$',
-      })}/${formatWithToken({
-        amount: orderAmount,
-        token: isCashContract ? 'CASH' : 'M$',
-      })} filled for ${formatWithToken({
-        amount: sharesFilled,
-        token: isCashContract ? 'CASH' : 'M$',
-      })} on payout`
-
-      toast.update(submittedBet.toastId, message)
-      setSubmittedBet(null)
-    }
-  }, [updatedBet, submittedBet])
   const NEEDS_TO_REGISTER =
     'You need to register to participate in this contest'
   // Check for errors.
@@ -231,16 +181,6 @@ export function BetPanelContent({
         })
       } else {
         toastId = toast.show('Filling orders...')
-        setSubmittedBet({
-          ...(bet as CandidateBet<LimitBet>),
-          userId: user.id,
-          id: bet.betId,
-          expired: false,
-          toastId,
-        })
-        setTimeout(() => {
-          setSubmittedBet((prev) => (prev ? { ...prev, expired: true } : null))
-        }, expiresMillisAfter + 100)
       }
     } catch (error: any) {
       console.error(error)
