@@ -143,7 +143,7 @@ export function FeedContractCard(props: {
         'ring-primary-200 hover:ring-1',
 
         'relative cursor-pointer rounded-xl transition-all ',
-        'flex w-full flex-col gap-0.5 py-2 px-4',
+        'flex w-full flex-col gap-0.5 px-4 py-2',
 
         size === 'sm'
           ? 'bg-canvas-50'
