@@ -160,7 +160,7 @@ export function ContractFilters(props: {
             className={clsx(
               'flex h-6 cursor-pointer select-none flex-row items-center whitespace-nowrap rounded-full px-2 text-sm outline-none transition-colors',
               sort == 'score'
-                ? 'bg-ink-200 hover:bg-ink-400 text-ink-600 dark:bg-ink-400 dark:hover:bg-ink-500'
+                ? 'bg-ink-300 hover:bg-ink-400 text-ink-600 dark:text-ink-800 dark:bg-ink-500 dark:hover:bg-ink-500'
                 : 'bg-ink-100 text-ink-600 dark:bg-ink-300',
               className
             )}
@@ -179,7 +179,7 @@ export function ContractFilters(props: {
             className={clsx(
               'flex h-6 cursor-pointer select-none flex-row items-center whitespace-nowrap rounded-full px-2 text-sm outline-none transition-colors',
               sort == 'freshness-score'
-                ? 'bg-ink-200 hover:bg-ink-400 text-ink-600 dark:bg-ink-400 dark:hover:bg-ink-500'
+                ? 'bg-ink-300 hover:bg-ink-400 text-ink-600 dark:text-ink-800 dark:bg-ink-500 dark:hover:bg-ink-500'
                 : 'bg-ink-100 text-ink-600 dark:bg-ink-300',
               className
             )}
@@ -198,7 +198,7 @@ export function ContractFilters(props: {
             className={clsx(
               'flex h-6 cursor-pointer select-none flex-row items-center whitespace-nowrap rounded-full px-2 text-sm outline-none transition-colors',
               sort == 'newest'
-                ? 'bg-ink-200 hover:bg-ink-400 text-ink-600 dark:bg-ink-400 dark:hover:bg-ink-500'
+                ? 'bg-ink-300 hover:bg-ink-400 text-ink-600 dark:text-ink-800 dark:bg-ink-500 dark:hover:bg-ink-500'
                 : 'bg-ink-100 text-ink-600 dark:bg-ink-300',
               className
             )}
@@ -228,25 +228,7 @@ export function ContractFilters(props: {
             {getLabelFromValue(SORTS, sortValue)}
           </FilterPill>
         ))}
-        {/* <button
-          key="closing"
-          className={clsx(
-            'flex h-6 cursor-pointer select-none flex-row items-center whitespace-nowrap rounded-full px-2 text-sm outline-none transition-colors',
-            filter == 'closing-month'
-              ? 'hover:bg-ink-500 focus-visible:bg-ink-500 bg-ink-400 text-white'
-              : 'bg-ink-100 text-ink-600 dark:bg-ink-300',
-            className
-          )}
-          onClick={() => {
-            if (filter === 'closing-month') {
-              selectFilter('open')
-            } else {
-              selectFilter('closing-month')
-            }
-          }}
-        >
-          Closing
-        </button> */}
+       
         <FilterDropdownPill
           selectFilter={selectFilter}
           currentFilter={filter}
@@ -354,6 +336,7 @@ export function ContractFilters(props: {
     </Col>
   )
 }
+
 
 function FilterModal(props: {
   open: boolean

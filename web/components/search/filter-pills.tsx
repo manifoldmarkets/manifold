@@ -45,7 +45,7 @@ export function FilterPill(props: {
             : 'text-ink-600 bg-amber-500/10 hover:bg-amber-500/30 dark:bg-amber-500/20 dark:hover:bg-amber-500/30'
           : selected // Add this condition
           ? grayscale
-            ? 'bg-ink-200 hover:bg-ink-400 text-ink-600 dark:bg-ink-400 dark:hover:bg-ink-500'
+            ? 'bg-ink-300 hover:bg-ink-400 text-ink-600 dark:text-ink-800 dark:bg-ink-500 dark:hover:bg-ink-500'
             : 'hover:bg-primary-600 focus-visible:bg-primary-600 bg-primary-500 text-white'
           : 'bg-ink-100 hover:bg-ink-200 text-ink-600 dark:bg-ink-300 dark:hover:bg-ink-400',
         className
