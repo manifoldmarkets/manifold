@@ -19,7 +19,7 @@ export default function BrowsePage() {
   const user = useUser()
 
   return (
-    <Page trackPageView={'questions page'}>
+    <Page trackPageView={'questions page'} className="px-4">
       {/* only show logo on mobile, since there's no sidebar */}
       {!user && <ManifoldLogo className="m-2 flex lg:hidden" />}
       <div className="lg:mb-4"></div>

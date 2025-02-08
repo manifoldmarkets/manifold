@@ -17,7 +17,7 @@ export default function Home() {
   useRedirectIfSignedOut()
 
   return (
-    <Page trackPageView={'home'} className="!mt-0">
+    <Page trackPageView={'home'} className="px-4">
       <Welcome />
       <SEO title={`Home`} description={`Browse all questions`} url={`/home`} />
       <DowntimeBanner />
