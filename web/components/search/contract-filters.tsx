@@ -228,7 +228,7 @@ export function ContractFilters(props: {
             {getLabelFromValue(SORTS, sortValue)}
           </FilterPill>
         ))}
-       
+
         <FilterDropdownPill
           selectFilter={selectFilter}
           currentFilter={filter}
@@ -336,7 +336,6 @@ export function ContractFilters(props: {
     </Col>
   )
 }
-
 
 function FilterModal(props: {
   open: boolean
