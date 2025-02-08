@@ -32,7 +32,7 @@ import { ReactButton } from '../contract/react-button'
 import { Col } from '../layout/col'
 import { UserHovercard } from '../user/user-hovercard'
 
-export const ScoredFeedRepost = memo(function (props: {
+export const RepostFeedCard = memo(function (props: {
   contract: Contract
   comment: ContractComment
   repost: Repost
@@ -63,7 +63,8 @@ export const ScoredFeedRepost = memo(function (props: {
   return (
     <Col
       className={clsx(
-        'bg-canvas-0 ring- ring-primary-200 group rounded-lg p-4',
+        'bg-canvas-0 ring-primary-200 group rounded-lg p-4 ring',
+        'bg-canvas-0 dark:bg-canvas-50 dark:border-canvas-50 hover:border-primary-300 gap-2 rounded-lg border shadow-md transition-colors',
         hoveringChildContract ? '' : 'hover:ring-1'
       )}
     >

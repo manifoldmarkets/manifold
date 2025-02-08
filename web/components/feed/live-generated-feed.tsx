@@ -10,7 +10,7 @@ import { usePersistentInMemoryState } from 'client-common/hooks/use-persistent-i
 import { useEffect, useState } from 'react'
 import { APIResponse } from 'common/api/schema'
 import { uniqBy } from 'lodash'
-import { ScoredFeedRepost } from 'web/components/feed/scored-feed-repost-item'
+import { RepostFeedCard } from 'web/components/feed/repost-feed-card'
 import { useUser } from 'web/hooks/use-user'
 import { Contract } from 'common/contract'
 import { Repost } from 'common/repost'
@@ -159,7 +159,7 @@ const FeedCard = (props: {
       </Row>
     </Col>
   ) : repost && comment ? (
-    <ScoredFeedRepost
+    <RepostFeedCard
       contract={contract}
       comment={comment}
       repost={repost}

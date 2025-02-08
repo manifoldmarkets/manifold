@@ -16,7 +16,7 @@ import { track } from 'web/lib/service/analytics'
 import { removeUndefinedProps } from 'common/util/object'
 import { Content } from 'web/components/widgets/editor'
 import { useIsVisible } from 'web/hooks/use-is-visible'
-import { BottomActionRow } from 'web/components/feed/scored-feed-repost-item'
+import { BottomActionRow } from 'web/components/feed/repost-feed-card'
 const DEBUG_FEED_CARDS =
   typeof window != 'undefined' &&
   window.location.toString().includes('localhost:3000')

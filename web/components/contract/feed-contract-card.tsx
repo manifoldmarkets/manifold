@@ -143,15 +143,13 @@ export function FeedContractCard(props: {
         'ring-primary-200 hover:ring-1',
 
         'relative cursor-pointer rounded-xl transition-all ',
-        'flex w-full flex-col gap-0.5 px-4',
+        'flex w-full flex-col gap-0.5 py-2 px-4',
 
         size === 'sm'
           ? 'bg-canvas-50'
           : size === 'md'
-          ? 'bg-canvas-0 dark:bg-canvas-50 dark:border-canvas-50 hover:border-primary-300 gap-2 rounded-lg border px-4 py-3 shadow-md transition-colors sm:px-6'
+          ? 'bg-canvas-0 dark:bg-canvas-50 dark:border-canvas-50 hover:border-primary-300 gap-2 rounded-lg border shadow-md transition-colors'
           : 'bg-canvas-0',
-        // 'bg-canvas-0 dark:bg-canvas-50 dark:border-canvas-50 hover:border-primary-300 gap-2 rounded-lg border px-4 py-3 transition-colors',
-        // size === 'md' && 'sm:px-6',
         className
       )}
       onClick={(e) => {
