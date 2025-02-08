@@ -235,7 +235,7 @@ function UserProfile(props: {
       <Col className="relative">
         <Row
           className={
-            'bg-canvas-50 sticky top-0 z-10 h-12 w-full justify-between gap-1 sm:static sm:h-auto'
+            'bg-canvas-0 sticky top-0 z-10 h-12 w-full justify-between gap-1 sm:static sm:h-auto'
           }
         >
           {isMobile && (
