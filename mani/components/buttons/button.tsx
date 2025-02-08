@@ -164,7 +164,9 @@ export function Button({
         style,
         {
           backgroundColor: disabled
-            ? color.backgroundSecondary
+            ? variant == 'gray'
+              ? color.backgroundSecondary
+              : color.grayButtonBackground
             : buttonColors.background,
           ...sizeStyles[size],
           alignItems: 'center',
