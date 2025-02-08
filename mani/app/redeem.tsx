@@ -1,4 +1,5 @@
-import { View, Text, StyleSheet, Image, ActivityIndicator } from 'react-native'
+import React from 'react'
+import { View, ActivityIndicator } from 'react-native'
 import {
   KYC_VERIFICATION_BONUS_CASH,
   MIN_CASHOUT_AMOUNT,
@@ -9,14 +10,11 @@ import {
   TWOMBA_CASHOUT_ENABLED,
   CASH_TO_MANA_CONVERSION_RATE,
 } from 'common/envs/constants'
-import { ReactNode } from 'react'
 import {
   formatSweepies,
   formatMoneyUSD,
   formatSweepsToUSD,
 } from 'common/util/format'
-import ManaFlatImage from '../assets/images/masses_mana_flat.png'
-import CashIconImage from '../assets/images/masses_sweeps_flat.png'
 import { UploadDocuments } from 'components/upload-document'
 import { LocationPanel } from 'components/location-panel'
 import { CheckoutSession, GPSData } from 'common/gidx/gidx'
@@ -41,7 +39,7 @@ import { useAPIGetter } from 'hooks/use-api-getter'
 import { useUser } from 'hooks/use-user'
 import { usePrivateUser } from 'hooks/use-user'
 import { useMonitorStatus } from 'hooks/use-monitor-status'
-import { amber, Colors, emerald, purple } from 'constants/colors'
+import { Colors, emerald, purple } from 'constants/colors'
 import { Rounded } from 'constants/border-radius'
 import { Row } from 'components/layout/row'
 import { Col } from 'components/layout/col'
@@ -50,6 +48,9 @@ import { Button } from 'components/buttons/button'
 import { ContractToken } from 'common/contract'
 import { TokenNumber } from 'components/token/token-number'
 import { formatMoneyVerbatim } from 'util/format'
+import { NumberText } from 'components/number-text'
+import { ThemedText } from 'components/themed-text'
+import { useColor } from 'hooks/use-color'
 
 export type CashoutPagesType =
   | 'select-cashout-method'
@@ -213,7 +214,9 @@ export default function CashoutPage() {
   if (!user || !privateUser) {
     return (
       <Page>
-        <Text style={styles.title}>Redeem {SWEEPIES_NAME}</Text>
+        <ThemedText size="3xl" weight="bold" style={{ marginBottom: 8 }}>
+          Redeem {SWEEPIES_NAME}
+        </ThemedText>
         <CashoutOptionsExplainer />
       </Page>
     )
@@ -226,39 +229,71 @@ export default function CashoutPage() {
       <Page>
         {locationBlocked(user, privateUser) ? (
           <Col>
-            <Col style={styles.messageContainer}>
-              <Text style={styles.messageTitle}>Your location is blocked!</Text>
-              <Text style={styles.messageText}>
-                You are unable to redeem at the moment.
-              </Text>
+            <Col style={{ marginBottom: 24 }}>
+              <Col style={{ gap: 4 }}>
+                <ThemedText
+                  size="3xl"
+                  weight="bold"
+                  style={{ marginBottom: 4 }}
+                >
+                  Your location is blocked!
+                </ThemedText>
+                <ThemedText
+                  size="md"
+                  color={Colors.textSecondary}
+                  style={{ marginBottom: 16 }}
+                >
+                  You are unable to redeem at the moment.
+                </ThemedText>
+              </Col>
             </Col>
             <Button
               onPress={() => requestLocationThenFetchMonitorStatus()}
               disabled={loadingMonitorStatus}
             >
-              <Text style={styles.buttonText}>Refresh status</Text>
+              <ThemedText size="md" weight="semibold">
+                Refresh status
+              </ThemedText>
             </Button>
             {monitorStatus === 'error' && (
-              <Text style={styles.errorText}>{monitorStatusMessage}</Text>
+              <ThemedText color={Colors.error} size="sm">
+                {monitorStatusMessage}
+              </ThemedText>
             )}
           </Col>
         ) : ageBlocked(user, privateUser) ? (
-          <Col style={styles.messageContainer}>
-            <Text style={styles.messageTitle}>You must be 18+</Text>
-            <Text style={styles.messageText}>
-              You are unable to redeem at the moment.
-            </Text>
+          <Col style={{ marginBottom: 24 }}>
+            <Col style={{ gap: 4 }}>
+              <ThemedText size="3xl" weight="bold" style={{ marginBottom: 4 }}>
+                You must be 18+
+              </ThemedText>
+              <ThemedText
+                size="md"
+                color={Colors.textSecondary}
+                style={{ marginBottom: 16 }}
+              >
+                You are unable to redeem at the moment.
+              </ThemedText>
+            </Col>
           </Col>
         ) : PROMPT_USER_VERIFICATION_MESSAGES.includes(message) ? (
-          <Col style={styles.verificationContainer}>
-            <Col style={styles.messageContainer}>
-              <Col style={styles.messageContent}>
-                <Text style={styles.messageTitle}>
+          <Col style={{ marginBottom: 16, gap: 16 }}>
+            <Col style={{ marginBottom: 24 }}>
+              <Col style={{ gap: 4 }}>
+                <ThemedText
+                  size="3xl"
+                  weight="bold"
+                  style={{ marginBottom: 4 }}
+                >
                   You're not verified yet...
-                </Text>
-                <Text style={styles.messageText}>
+                </ThemedText>
+                <ThemedText
+                  size="md"
+                  color={Colors.textSecondary}
+                  style={{ marginBottom: 16 }}
+                >
                   Verification is required to redeem {SWEEPIES_NAME}.
-                </Text>
+                </ThemedText>
               </Col>
             </Col>
             <Button
@@ -266,42 +301,60 @@ export default function CashoutPage() {
               variant="emerald"
               size="lg"
             >
-              <Text style={styles.buttonText}>
+              <ThemedText size="md" weight="semibold">
                 Verify and get {KYC_VERIFICATION_BONUS_CASH} {SWEEPIES_NAME}
-              </Text>
+              </ThemedText>
             </Button>
-            <Text style={styles.disclaimerText}>
+            <ThemedText
+              size="md"
+              color={Colors.textSecondary}
+              style={{ marginTop: 4, textAlign: 'center' }}
+            >
               Only for eligible US residents
-            </Text>
+            </ThemedText>
           </Col>
         ) : fraudSession(user, privateUser) ? (
-          <Col style={styles.messageContainer}>
-            <Col style={styles.messageContent}>
-              <Text style={styles.messageTitle}>
+          <Col style={{ marginBottom: 24 }}>
+            <Col style={{ gap: 4 }}>
+              <ThemedText size="3xl" weight="bold" style={{ marginBottom: 4 }}>
                 Suspicious activity detected
-              </Text>
-              <Text style={styles.messageText}>
+              </ThemedText>
+              <ThemedText
+                size="md"
+                color={Colors.textSecondary}
+                style={{ marginBottom: 16 }}
+              >
                 Your session is marked as possible fraud, please turn off VPN if
                 using.
-              </Text>
+              </ThemedText>
               <Button
                 onPress={() => requestLocationThenFetchMonitorStatus()}
                 disabled={loadingMonitorStatus}
               >
-                <Text style={styles.buttonText}>Refresh status</Text>
+                <ThemedText size="md" weight="semibold">
+                  Refresh status
+                </ThemedText>
               </Button>
               {monitorStatus === 'error' && (
-                <Text style={styles.errorText}>{monitorStatusMessage}</Text>
+                <ThemedText color={Colors.error} size="sm">
+                  {monitorStatusMessage}
+                </ThemedText>
               )}
             </Col>
           </Col>
         ) : identityBlocked(user, privateUser) ? (
-          <Col style={styles.messageContainer}>
-            <Col style={styles.messageContent}>
-              <Text style={styles.messageTitle}>Your identity is blocked</Text>
-              <Text style={styles.messageText}>
+          <Col style={{ marginBottom: 24 }}>
+            <Col style={{ gap: 4 }}>
+              <ThemedText size="3xl" weight="bold" style={{ marginBottom: 4 }}>
+                Your identity is blocked
+              </ThemedText>
+              <ThemedText
+                size="md"
+                color={Colors.textSecondary}
+                style={{ marginBottom: 16 }}
+              >
                 You cannot participate in sweepstakes market.
-              </Text>
+              </ThemedText>
             </Col>
           </Col>
         ) : failedDocs && mustUploadDocs ? (
@@ -311,30 +364,39 @@ export default function CashoutPage() {
             requireUtilityDoc={true}
           />
         ) : documentPending(user, privateUser) ? (
-          <Col style={styles.messageContainer}>
-            <Col style={styles.messageContent}>
-              <Text style={styles.messageTitle}>
+          <Col style={{ marginBottom: 24 }}>
+            <Col style={{ gap: 4 }}>
+              <ThemedText size="3xl" weight="bold" style={{ marginBottom: 4 }}>
                 Identity documents pending
-              </Text>
-              <Text style={styles.messageText}>
+              </ThemedText>
+              <ThemedText
+                size="md"
+                color={Colors.textSecondary}
+                style={{ marginBottom: 16 }}
+              >
                 You are unable to redeem at the moment.
-              </Text>
+              </ThemedText>
             </Col>
           </Col>
         ) : (
-          <Col style={styles.messageContainer}>
-            <Col style={styles.messageContent}>
-              <Text style={styles.messageTitle}>Redemptions unavailable</Text>
-              <Text style={styles.messageText}>
+          <Col style={{ marginBottom: 24 }}>
+            <Col style={{ gap: 4 }}>
+              <ThemedText size="3xl" weight="bold" style={{ marginBottom: 4 }}>
+                Redemptions unavailable
+              </ThemedText>
+              <ThemedText
+                size="md"
+                color={Colors.textSecondary}
+                style={{ marginBottom: 16 }}
+              >
                 You are unable to redeem at the moment.
-              </Text>
+              </ThemedText>
             </Col>
           </Col>
         )}
         <SweepiesStats
           redeemableCash={redeemableCash}
           cashBalance={user.cashBalance}
-          style={styles.stats}
         />
         <SelectCashoutOptions
           redeemForUSDPageName={mustUploadDocs ? 'documents' : 'location'}
@@ -352,11 +414,12 @@ export default function CashoutPage() {
 
   return (
     <Page>
-      <Text style={styles.title}>Redeem {SWEEPIES_NAME}</Text>
+      <ThemedText size="3xl" weight="bold" style={{ marginBottom: 8 }}>
+        Redeem {SWEEPIES_NAME}
+      </ThemedText>
       <SweepiesStats
         redeemableCash={redeemableCash}
         cashBalance={user.cashBalance}
-        style={styles.stats}
       />
       {!user || page === 'get-session' ? (
         <ActivityIndicator />
@@ -392,9 +455,11 @@ export default function CashoutPage() {
         />
       ) : (
         page === 'ach-details' && (
-          <Col style={styles.formContainer}>
-            <Col style={styles.formRow}>
-              <Text style={styles.formLabel}>Redeem</Text>
+          <Col style={{ gap: 16, width: '100%' }}>
+            <Col style={{ gap: 8 }}>
+              <ThemedText size="md" weight="semibold">
+                Redeem
+              </ThemedText>
               <AmountInput
                 placeholder="Redeem Amount"
                 amount={sweepCashAmount}
@@ -412,76 +477,125 @@ export default function CashoutPage() {
                 }}
               />
               {lessThanMinRedeemable && (
-                <Text style={styles.errorText}>
+                <ThemedText color={Colors.error} size="sm">
                   The minimum redeemable amount is{' '}
                   {formatSweepies(MIN_CASHOUT_AMOUNT)}
-                </Text>
+                </ThemedText>
               )}
             </Col>
-            <Col style={styles.formRow}>
-              <Text style={styles.formLabel}>Name</Text>
+            <Col style={{ gap: 8 }}>
+              <ThemedText size="md" weight="semibold">
+                Name
+              </ThemedText>
               <Input
                 placeholder="Name associated with account"
                 value={NameOnAccount}
                 onChangeText={setNameOnAccount}
-                style={styles.input}
+                style={{
+                  borderWidth: 1,
+                  borderColor: Colors.border,
+                  borderRadius: Rounded.lg,
+                  padding: 12,
+                }}
               />
             </Col>
-            <Col style={styles.formRow}>
-              <Text style={styles.formLabel}>Account Number</Text>
+            <Col style={{ gap: 8 }}>
+              <ThemedText size="md" weight="semibold">
+                Account Number
+              </ThemedText>
               <Input
                 keyboardType="numeric"
                 placeholder="Your account #"
                 value={AccountNumber}
                 onChangeText={setAccountNumber}
-                style={styles.input}
+                style={{
+                  borderWidth: 1,
+                  borderColor: Colors.border,
+                  borderRadius: Rounded.lg,
+                  padding: 12,
+                }}
               />
             </Col>
-            <Col style={styles.formRow}>
-              <Text style={styles.formLabel}>Routing Number</Text>
+            <Col style={{ gap: 8 }}>
+              <ThemedText size="md" weight="semibold">
+                Routing Number
+              </ThemedText>
               <Input
                 keyboardType="numeric"
                 placeholder="Your bank's routing #"
                 value={RoutingNumber}
                 onChangeText={setRoutingNumber}
-                style={styles.input}
+                style={{
+                  borderWidth: 1,
+                  borderColor: Colors.border,
+                  borderRadius: Rounded.lg,
+                  padding: 12,
+                }}
               />
             </Col>
-            <Col style={styles.formRow}>
-              <Text style={styles.formLabel}>Billing Address</Text>
+            <Col style={{ gap: 8 }}>
+              <ThemedText size="md" weight="semibold">
+                Billing Address
+              </ThemedText>
               <Input
                 placeholder="Billing Address"
                 value={address}
                 onChangeText={setAddress}
-                style={styles.input}
+                style={{
+                  borderWidth: 1,
+                  borderColor: Colors.border,
+                  borderRadius: Rounded.lg,
+                  padding: 12,
+                }}
               />
             </Col>
-            <Col style={styles.formRow}>
-              <Text style={styles.formLabel}>City</Text>
+            <Col style={{ gap: 8 }}>
+              <ThemedText size="md" weight="semibold">
+                City
+              </ThemedText>
               <Input
                 placeholder="Your city"
                 value={city}
                 onChangeText={setCity}
-                style={styles.input}
+                style={{
+                  borderWidth: 1,
+                  borderColor: Colors.border,
+                  borderRadius: Rounded.lg,
+                  padding: 12,
+                }}
               />
             </Col>
-            <Col style={styles.formRow}>
-              <Text style={styles.formLabel}>State</Text>
+            <Col style={{ gap: 8 }}>
+              <ThemedText size="md" weight="semibold">
+                State
+              </ThemedText>
               <Input
                 placeholder="Your state"
                 value={state}
                 onChangeText={setState}
-                style={styles.input}
+                style={{
+                  borderWidth: 1,
+                  borderColor: Colors.border,
+                  borderRadius: Rounded.lg,
+                  padding: 12,
+                }}
               />
             </Col>
-            <Col style={styles.formRow}>
-              <Text style={styles.formLabel}>Postal Code</Text>
+            <Col style={{ gap: 8 }}>
+              <ThemedText size="md" weight="semibold">
+                Postal Code
+              </ThemedText>
               <Input
                 keyboardType="numeric"
                 placeholder="Your postal code"
                 value={zipCode}
                 onChangeText={setZipCode}
-                style={styles.input}
+                style={{
+                  borderWidth: 1,
+                  borderColor: Colors.border,
+                  borderRadius: Rounded.lg,
+                  padding: 12,
+                }}
               />
             </Col>
             <Row>
@@ -498,57 +612,80 @@ export default function CashoutPage() {
                 }
                 loading={loading}
                 size="lg"
-                style={styles.wideButton}
+                style={{ flex: 1 }}
               >
-                <Text style={styles.buttonText}>
+                <ThemedText size="md" weight="semibold">
                   Redeem for{' '}
                   {formatSweepsToUSD(
                     (sweepCashAmount ?? 0) - SWEEPIES_CASHOUT_FEE
                   )}
-                </Text>
+                </ThemedText>
               </Button>
             </Row>
           </Col>
         )
       )}
       {page === 'waiting' && (
-        <Text style={styles.waitingText}>
+        <ThemedText size="md" style={{ textAlign: 'center', marginTop: 16 }}>
           Your redemption request is being processed. We'll notify you in 3-5
           business days once it's approved.
-        </Text>
+        </ThemedText>
       )}
-      {error && <Text style={styles.errorText}>{error}</Text>}
+      {error && (
+        <ThemedText color={Colors.error} size="sm">
+          {error}
+        </ThemedText>
+      )}
       {sessionStatus && sessionStatus.toLowerCase().includes('timeout') && (
-        <Text style={styles.errorText}>
+        <ThemedText color={Colors.error} size="sm">
           {sessionStatus} - refresh to try again
-        </Text>
+        </ThemedText>
       )}
     </Page>
   )
 }
 
-function SweepiesStats(props: {
-  redeemableCash: number
-  cashBalance: number
-  style?: any
-}) {
+function SweepiesStats(props: { redeemableCash: number; cashBalance: number }) {
   const { redeemableCash, cashBalance } = props
   return (
-    <Col style={[styles.stats, props.style]}>
-      <Row style={styles.statsRow}>
-        <Text style={styles.statsLabel}>Redeemable</Text>
+    <Col style={{ marginBottom: 24 }}>
+      <Row
+        style={{
+          alignItems: 'center',
+          marginBottom: 8,
+          justifyContent: 'space-between',
+        }}
+      >
+        <ThemedText size="md" color={Colors.textSecondary} style={{ flex: 1 }}>
+          Redeemable
+        </ThemedText>
         <TokenNumber
           amount={redeemableCash}
-          style={styles.statsAmount}
+          style={{ fontSize: 16, fontWeight: '600' }}
           token="CASH"
         />
       </Row>
-      <View style={styles.statsSeparator} />
-      <Row style={styles.statsRow}>
-        <Text style={styles.statsLabel}>Total</Text>
+      <View
+        style={{
+          width: '100%',
+          height: 1,
+          backgroundColor: Colors.border,
+          marginVertical: 8,
+        }}
+      />
+      <Row
+        style={{
+          alignItems: 'center',
+          marginBottom: 8,
+          justifyContent: 'space-between',
+        }}
+      >
+        <ThemedText size="md" color={Colors.textSecondary} style={{ flex: 1 }}>
+          Total
+        </ThemedText>
         <TokenNumber
           amount={cashBalance}
-          style={styles.statsAmount}
+          style={{ fontSize: 16, fontWeight: '600' }}
           token="CASH"
         />
       </Row>
@@ -559,10 +696,16 @@ function SweepiesStats(props: {
 function CashoutOptionsExplainer() {
   return (
     <View>
-      <Text style={styles.explainerTitle}>
+      <ThemedText size="md" style={{ marginBottom: 8 }}>
         Prizes you can win by playing in our sweepstakes questions!
-      </Text>
-      <Text style={styles.explainerText}>Must be a US Resident. 18+ only.</Text>
+      </ThemedText>
+      <ThemedText
+        size="md"
+        color={Colors.textSecondary}
+        style={{ marginBottom: 8 }}
+      >
+        Must be a US Resident. 18+ only.
+      </ThemedText>
     </View>
   )
 }
@@ -585,64 +728,60 @@ function SelectCashoutOptions(props: {
 
   const noHasMinRedeemableCash = redeemableCash < MIN_CASHOUT_AMOUNT
   const hasNoRedeemableCash = redeemableCash === 0
+  const color = useColor()
 
   return (
-    <Col style={styles.cashoutOptionsContainer}>
-      <Card>
-        <Row style={styles.cardContent}>
-          <Image
-            source={ManaFlatImage}
-            style={[styles.cardIcon, allDisabled && styles.grayscale]}
+    <Col style={{ gap: 16, width: '100%' }}>
+      <Card
+        title={'Redeem for Mana'}
+        description={
+          <>
+            Redeem {SWEEPIES_NAME} at{' '}
+            <NumberText color={color.textSecondary} size="md">
+              1 → {formatMoneyVerbatim(CASH_TO_MANA_CONVERSION_RATE, 'MANA')}
+            </NumberText>
+          </>
+        }
+        button={
+          <Button
+            variant="purple"
+            onPress={() => setPage('custom-mana')}
+            disabled={!!allDisabled || hasNoRedeemableCash}
+            size="lg"
+          >
+            <ThemedText>Redeem for mana</ThemedText>
+          </Button>
+        }
+        subtitle={
+          <TokenNumber
+            amount={redeemableCash * CASH_TO_MANA_CONVERSION_RATE}
+            style={[
+              {
+                color: purple[400],
+              },
+            ]}
+            token="MANA"
           />
-          <Col style={styles.cardDescription}>
-            <Text style={styles.cardTitle}>Get Mana</Text>
-            <Text style={styles.cardText}>
-              Redeem {SWEEPIES_NAME} at{' '}
-              <Text style={styles.boldText}>
-                {formatSweepies(1)} →{' '}
-                {formatMoneyVerbatim(CASH_TO_MANA_CONVERSION_RATE, 'MANA')}
-              </Text>
-            </Text>
-            <Button
-              variant="purple"
-              onPress={() => setPage('custom-mana')}
-              disabled={!!allDisabled || hasNoRedeemableCash}
-              size="lg"
-            >
-              <Text>Redeem for mana</Text>
-            </Button>
-            <Row style={styles.valueRow}>
-              <TokenNumber
-                amount={redeemableCash * CASH_TO_MANA_CONVERSION_RATE}
-                style={[
-                  styles.valueText,
-                  !allDisabled && {
-                    color: purple[400],
-                  },
-                ]}
-                token="MANA"
-              />
-              <Text style={styles.valueLabel}>mana value</Text>
-            </Row>
-          </Col>
-        </Row>
-      </Card>
+        }
+      />
 
-      <Card>
-        <Row style={styles.cardContent}>
-          <Image
-            source={CashIconImage}
-            style={[styles.cardIcon, allDisabled && styles.grayscale]}
-          />
-          <Col style={styles.cardDescription}>
-            <Text style={styles.cardTitle}>Redeem for USD</Text>
-            <Text style={styles.cardText}>
-              Redeem {SWEEPIES_NAME} at{' '}
-              <Text style={styles.boldText}>
-                {formatSweepies(1)} → {formatMoneyUSD(1)}
-              </Text>
-              , minus a {formatMoneyUSD(SWEEPIES_CASHOUT_FEE)} flat fee.
-            </Text>
+      <Card
+        title={'Redeem for USD'}
+        description={
+          <>
+            Redeem {SWEEPIES_NAME} at{' '}
+            <NumberText color={color.textSecondary} size="md">
+              1 → {formatMoneyUSD(1)}
+            </NumberText>
+            , minus a{' '}
+            <NumberText color={color.textSecondary} size="md">
+              {formatMoneyUSD(SWEEPIES_CASHOUT_FEE)}
+            </NumberText>{' '}
+            flat fee.
+          </>
+        }
+        button={
+          <>
             <Button
               onPress={() => setPage(redeemForUSDPageName)}
               disabled={
@@ -652,54 +791,84 @@ function SelectCashoutOptions(props: {
               }
               size="lg"
             >
-              <Text style={styles.buttonText}>Redeem for USD</Text>
+              Redeem for USD
             </Button>
             {!TWOMBA_CASHOUT_ENABLED && (
-              <Text style={styles.disabledText}>
+              <ThemedText style={{ color: color.textSecondary }}>
                 Cashouts should be enabled in less than a week
-              </Text>
+              </ThemedText>
             )}
-            <Row style={styles.valueRow}>
-              {noHasMinRedeemableCash && !allDisabled ? (
-                <Row style={{ alignItems: 'center' }}>
-                  <Text style={styles.errorText}>You need at least </Text>
-                  <TokenNumber
-                    amount={MIN_CASHOUT_AMOUNT}
-                    token="CASH"
-                    style={[
-                      styles.valueText,
-                      {
-                        color: amber[500],
-                      },
-                    ]}
-                  />
-                  <Text style={styles.errorText}> to redeem</Text>
-                </Row>
-              ) : (
-                <>
-                  <Text
-                    style={[
-                      styles.valueText,
-                      !allDisabled && {
-                        color: emerald[400],
-                      },
-                    ]}
-                  >
-                    ${(redeemableCash - SWEEPIES_CASHOUT_FEE).toFixed(2)}
-                  </Text>
-                  <Text style={styles.valueLabel}>value</Text>
-                </>
-              )}
-            </Row>
-          </Col>
-        </Row>
-      </Card>
+          </>
+        }
+        subtitle={
+          <>
+            {noHasMinRedeemableCash && !allDisabled ? (
+              <Row style={{ alignItems: 'center' }}>
+                <ThemedText color={color.error} size="sm">
+                  You need at least{' '}
+                  <NumberText color={color.error} size="sm">
+                    {MIN_CASHOUT_AMOUNT}
+                  </NumberText>{' '}
+                  sweepcash to redeem{' '}
+                </ThemedText>
+              </Row>
+            ) : (
+              <>
+                <ThemedText
+                  style={[
+                    {
+                      color: emerald[400],
+                    },
+                  ]}
+                >
+                  ${(redeemableCash - SWEEPIES_CASHOUT_FEE).toFixed(2)}
+                </ThemedText>
+                <ThemedText style={{ color: color.textSecondary }}>
+                  value
+                </ThemedText>
+              </>
+            )}
+          </>
+        }
+      />
     </Col>
   )
 }
 
-function Card({ children }: { children: ReactNode }) {
-  return <View style={styles.card}>{children}</View>
+function Card({
+  title,
+  description,
+  button,
+  subtitle,
+}: {
+  title: string
+  description: React.ReactNode
+  button: React.ReactNode
+  subtitle?: React.ReactNode
+}) {
+  // return <View style={styles.card}>{children}</View>
+  return (
+    <Col
+      style={{
+        backgroundColor: Colors.backgroundSecondary,
+        borderRadius: Rounded.lg,
+        padding: 16,
+        paddingBottom: subtitle ? 8 : 16,
+        gap: 8,
+      }}
+    >
+      <ThemedText size="lg" weight="semibold">
+        {title}
+      </ThemedText>
+      <ThemedText size="md" color={Colors.textSecondary}>
+        {description}
+      </ThemedText>
+      {button}
+      <Row style={{ justifyContent: 'flex-end', alignItems: 'center', gap: 4 }}>
+        {subtitle}
+      </Row>
+    </Col>
+  )
 }
 
 function CashToManaForm(props: { onBack: () => void; redeemableCash: number }) {
@@ -748,14 +917,16 @@ function CashToManaForm(props: { onBack: () => void; redeemableCash: number }) {
   }
 
   return (
-    <Col style={styles.formContainer}>
-      <Text style={styles.conversionText}>
+    <Col style={{ gap: 16, width: '100%' }}>
+      <ThemedText size="md" style={{ marginBottom: 16 }}>
         Convert at a rate of {CASH_TO_MANA_CONVERSION_RATE} {SWEEPIES_NAME} to 1
         mana.
-      </Text>
+      </ThemedText>
 
-      <Col style={styles.formRow}>
-        <Text style={styles.formLabel}>Redeem</Text>
+      <Col style={{ gap: 8 }}>
+        <ThemedText size="md" weight="semibold">
+          Redeem
+        </ThemedText>
         <AmountInput
           placeholder="Redeem Amount"
           amount={sweepiesAmount}
@@ -770,8 +941,10 @@ function CashToManaForm(props: { onBack: () => void; redeemableCash: number }) {
         />
       </Col>
 
-      <Col style={styles.formRow}>
-        <Text style={styles.formLabel}>For</Text>
+      <Col style={{ gap: 8 }}>
+        <ThemedText size="md" weight="semibold">
+          For
+        </ThemedText>
         <AmountInput
           placeholder="Mana Amount"
           amount={manaAmount}
@@ -785,16 +958,20 @@ function CashToManaForm(props: { onBack: () => void; redeemableCash: number }) {
           onPress={onSubmit}
           disabled={!manaAmount || !sweepiesAmount}
           loading={loading}
-          style={styles.wideButton}
+          style={{ flex: 1 }}
           size="lg"
         >
-          <Text style={styles.buttonText}>
+          <ThemedText size="md" weight="semibold">
             Redeem for {formatMoneyVerbatim(manaAmount ?? 0, 'MANA')}
-          </Text>
+          </ThemedText>
         </Button>
       </Row>
 
-      {error && <Text style={styles.errorText}>{error}</Text>}
+      {error && (
+        <ThemedText color={Colors.error} size="sm">
+          {error}
+        </ThemedText>
+      )}
     </Col>
   )
 }
@@ -814,193 +991,12 @@ function AmountInput(props: {
         props.onChangeAmount(isNaN(num) ? undefined : num)
       }}
       keyboardType="numeric"
-      style={styles.input}
+      style={{
+        borderWidth: 1,
+        borderColor: Colors.border,
+        borderRadius: Rounded.lg,
+        padding: 12,
+      }}
     />
   )
 }
-const baseText = {
-  fontSize: 14,
-  color: Colors.text,
-}
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: Colors.background,
-    padding: 16,
-  },
-  baseText,
-  title: {
-    color: Colors.text,
-    fontSize: 32,
-    fontWeight: 'bold',
-    marginBottom: 8,
-  },
-  messageContainer: {
-    marginBottom: 24,
-  },
-  messageContent: {
-    gap: 4,
-  },
-  messageTitle: {
-    fontSize: 32,
-    fontWeight: 'bold',
-    color: Colors.text,
-    marginBottom: 4,
-  },
-  messageText: {
-    fontSize: 16,
-    color: Colors.textSecondary,
-    marginBottom: 16,
-  },
-  buttonText: {
-    color: Colors.text,
-    textAlign: 'center',
-    fontSize: 16,
-    fontWeight: '600',
-  },
-  errorText: {
-    color: Colors.error,
-    fontSize: 14,
-    lineHeight: 20,
-  },
-  verificationContainer: {
-    marginBottom: 16,
-    gap: 16,
-  },
-  disclaimerText: {
-    ...baseText,
-    marginTop: 4,
-    textAlign: 'center',
-  },
-  stats: {
-    marginBottom: 24,
-  },
-  statsRow: {
-    alignItems: 'center',
-    marginBottom: 8,
-    justifyContent: 'space-between',
-  },
-  statsLabel: {
-    fontSize: 16,
-    color: Colors.textSecondary,
-    flex: 1,
-  },
-  statsAmount: {
-    fontSize: 16,
-    color: Colors.text,
-    fontWeight: '600',
-  },
-  statsSeparator: {
-    width: '100%',
-    height: 1,
-    backgroundColor: Colors.border,
-    marginVertical: 8,
-  },
-  formContainer: {
-    gap: 16,
-    width: '100%',
-  },
-  formRow: {
-    gap: 8,
-  },
-  formLabel: {
-    ...baseText,
-  },
-  input: {
-    borderWidth: 1,
-    borderColor: Colors.border,
-    borderRadius: Rounded.lg,
-    padding: 12,
-  },
-  waitingText: {
-    color: Colors.textSecondary,
-    textAlign: 'center',
-    marginTop: 16,
-  },
-  loadingContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  explainerTitle: {
-    ...baseText,
-    marginBottom: 8,
-  },
-  explainerText: {
-    ...baseText,
-    color: Colors.textSecondary,
-    marginBottom: 8,
-  },
-  cashToManaTitle: {
-    ...baseText,
-    color: Colors.text,
-    marginBottom: 8,
-  },
-  cashoutOptionsContainer: {
-    gap: 16,
-    width: '100%',
-  },
-  card: {
-    backgroundColor: Colors.backgroundSecondary,
-    borderRadius: Rounded.lg,
-    padding: 16,
-    marginBottom: 16,
-  },
-  cardContent: {
-    gap: 16,
-  },
-  cardIcon: {
-    width: 60,
-    height: 60,
-    resizeMode: 'contain',
-  },
-  cardDescription: {
-    flex: 1,
-    gap: 8,
-  },
-  cardTitle: {
-    fontSize: 18,
-    fontWeight: '600',
-    color: Colors.text,
-  },
-  cardText: {
-    ...baseText,
-    color: Colors.textSecondary,
-  },
-  boldText: {
-    fontWeight: '600',
-  },
-  wideButton: {
-    flex: 1,
-  },
-  disabledButton: {
-    opacity: 0.5,
-  },
-  valueRow: {
-    justifyContent: 'flex-end',
-    alignItems: 'center',
-    gap: 4,
-  },
-  valueText: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: Colors.text,
-    textAlignVertical: 'center',
-  },
-  valueLabel: {
-    ...baseText,
-    color: Colors.textSecondary,
-  },
-  disabledText: {
-    ...baseText,
-    color: Colors.textSecondary,
-  },
-  grayscale: {
-    opacity: 0.5,
-  },
-  conversionText: {
-    ...baseText,
-    marginBottom: 16,
-  },
-})
