@@ -64,12 +64,14 @@ export function BetDialog(props: {
       <Col>
         <Row className="items-baseline justify-between gap-2">
           <Link
-            className="text-primary-700 !mb-4 !mt-0 !text-xl hover:underline"
+            className="!text-xl hover:underline"
             href={contractPath(contract)}
           >
             {questionPseudonym ?? question}
           </Link>
-          <span className=" text-xl">{formatPercent(initialProb)}</span>
+          <div className="text-2xl">
+            {formatPercent(initialProb)} <span className="text-sm">chance</span>
+          </div>
         </Row>
         <BuyPanel
           contract={contract}

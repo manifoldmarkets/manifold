@@ -932,7 +932,7 @@ export function BinaryBetPanel(props: {
 
   return (
     <Col className="my-3 w-full">
-      <BuyPanel inModal={false} contract={contract} />
+      <BuyPanel inModal={false} contract={contract} className="bg-canvas-50" />
       <UserBetsSummary
         className="border-ink-200 !mb-2 mt-2 "
         contract={contract}

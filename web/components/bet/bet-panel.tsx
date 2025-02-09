@@ -102,6 +102,7 @@ export function BuyPanel(props: {
       pseudonymColor: keyof typeof sliderColors
     }
   }
+  className?: string
 }) {
   const {
     contract,
@@ -111,6 +112,7 @@ export function BuyPanel(props: {
     alwaysShowOutcomeSwitcher,
     children,
     pseudonym,
+    className,
   } = props
 
   const isPseudoNumeric = contract.outcomeType === 'PSEUDO_NUMERIC'
@@ -163,7 +165,7 @@ export function BuyPanel(props: {
       {isPanelBodyVisible && (
         <BuyPanelBody
           {...props}
-          panelClassName={'bg-canvas-50 -mx-2 sm:mx-0'}
+          panelClassName={clsx('-mx-2 sm:mx-0', className)}
           outcome={outcome}
           setOutcome={setOutcome}
           onClose={
@@ -594,7 +596,7 @@ export const BuyPanelBody = (props: {
               {isAdvancedTrader && !isStonk && (
                 <ChoicesToggleGroup
                   currentChoice={betType}
-                  color="light"
+                  color="gray"
                   choicesMap={{
                     Quick: 'Market',
                     Limit: 'Limit',
