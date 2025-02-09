@@ -61,7 +61,7 @@ export function BetDialog(props: {
         'pointer-events-auto max-h-[42rem] select-none overflow-auto'
       )}
     >
-      <Col>
+      <Col className="px-4">
         <Row className="items-baseline justify-between gap-2">
           <Link
             className="!text-xl hover:underline"
@@ -81,6 +81,7 @@ export function BetDialog(props: {
           initialOutcome={initialOutcome ?? 'YES'}
           alwaysShowOutcomeSwitcher
           pseudonym={props.binaryPseudonym}
+          className="!px-0"
         />
       </Col>
     </Modal>
