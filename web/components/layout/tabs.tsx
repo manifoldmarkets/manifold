@@ -240,6 +240,7 @@ export function QueryUncontrolledTabs(
     scrollToTop?: boolean
     minimalist?: boolean
     saveTabInLocalStorageKey?: string
+    saveTabInMemoryKey?: string
     tabInUrlKey?: string
   }
 ) {
@@ -249,6 +250,7 @@ export function QueryUncontrolledTabs(
     onClick,
     scrollToTop,
     saveTabInLocalStorageKey,
+    saveTabInMemoryKey,
     tabInUrlKey = 'tab',
     ...rest
   } = props
@@ -261,8 +263,11 @@ export function QueryUncontrolledTabs(
   const [savedTabIndex, setSavedTabIndex] = usePersistentLocalState<
     number | undefined
   >(undefined, saveTabInLocalStorageKey ?? '')
+  const [savedTabIndexInMemory, setSavedTabIndexInMemory] = usePersistentInMemoryState<
+    number | undefined
+  >(undefined, saveTabInMemoryKey ?? '')
   const defaultIndex =
-    (saveTabInLocalStorageKey ? savedTabIndex : undefined) ??
+    (saveTabInMemoryKey ? savedTabIndexInMemory : saveTabInLocalStorageKey ? savedTabIndex : undefined) ??
     props.defaultIndex ??
     0
   const activeIndex = selectedIdx !== -1 ? selectedIdx : defaultIndex
@@ -274,7 +279,8 @@ export function QueryUncontrolledTabs(
         activeIndex
       )
     }
-    if (saveTabInLocalStorageKey) setSavedTabIndex(activeIndex)
+    if (saveTabInMemoryKey) setSavedTabIndexInMemory(activeIndex)
+    else if (saveTabInLocalStorageKey) setSavedTabIndex(activeIndex)
   }, [activeIndex])
   if (minimalist) {
     return (
