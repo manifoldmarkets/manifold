@@ -368,11 +368,29 @@ function UserProfile(props: {
             trackingName={'profile tabs'}
             labelsParentClassName={'gap-0 sm:gap-4'}
             labelClassName={'pb-2 pt-2'}
-            defaultIndex={0}
-            saveTabInMemoryKey={
+            saveTabInLocalStorageKey={
               isCurrentUser ? `profile-tabs-${user.id}` : undefined
             }
             tabs={buildArray(
+              isCurrentUser && {
+                title: 'Summary',
+                prerender: true,
+                stackedTabIcon: <PresentationChartLineIcon className="h-5" />,
+                content: (
+                  <>
+                    <Col className="mt-2 gap-2">
+                      {currentUser && privateUser && (
+                        <VerifyMe
+                          user={currentUser}
+                          privateUser={privateUser}
+                        />
+                      )}
+                      <VerifyPhoneNumberBanner user={currentUser} />
+                    </Col>
+                    <PortfolioSummary className="mt-4" user={user} />
+                  </>
+                ),
+              },
               !!user.lastBetTime && {
                 title: 'Trades',
                 prerender: true,
@@ -397,25 +415,6 @@ function UserProfile(props: {
                       </>
                     )}
                     <UserBetsTable user={user} />
-                  </>
-                ),
-              },
-              isCurrentUser && {
-                title: 'Summary',
-                prerender: true,
-                stackedTabIcon: <PresentationChartLineIcon className="h-5" />,
-                content: (
-                  <>
-                    <Col className="mt-2 gap-2">
-                      {currentUser && privateUser && (
-                        <VerifyMe
-                          user={currentUser}
-                          privateUser={privateUser}
-                        />
-                      )}
-                      <VerifyPhoneNumberBanner user={currentUser} />
-                    </Col>
-                    <PortfolioSummary className="mt-4" user={user} />
                   </>
                 ),
               },
