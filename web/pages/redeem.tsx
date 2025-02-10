@@ -55,7 +55,6 @@ import {
   PROMPT_USER_VERIFICATION_MESSAGES,
 } from 'common/gidx/user'
 import { useMonitorStatus } from 'web/hooks/use-monitor-status'
-import { InfoBox } from 'web/components/widgets/info-box'
 
 export type CashoutPagesType =
   | 'select-cashout-method'
@@ -465,10 +464,6 @@ export default function CashoutPage() {
                 </div>
               </Col>
               <Divider />
-              <InfoBox title="US domestic wires only" className="mb-0">
-                For a short time during our introductory period, we're only
-                supporting US domestic wires.
-              </InfoBox>
               <Col className={'w-full gap-0.5'}>
                 <InputTitle>Name</InputTitle>
                 <Input
