@@ -11,7 +11,6 @@ import { Button } from 'components/buttons/button'
 import { api } from 'lib/api'
 import { Modal } from 'components/layout/modal'
 import { TokenNumber } from 'components/token/token-number'
-import { NumberText } from 'components/number-text'
 import { usePrivateUser, useUser } from 'hooks/use-user'
 import Slider from '@react-native-community/slider'
 import { useTokenMode } from 'hooks/use-token-mode'
@@ -20,11 +19,6 @@ import {
   MANA_MIN_BET,
   SWEEPS_MIN_BET,
 } from 'common/economy'
-import {
-  formatMoneyNumber,
-  formatPercent,
-  formatWithToken,
-} from 'common/util/format'
 import { removeUndefinedProps } from 'common/util/object'
 import {
   getVerificationStatus,
@@ -32,16 +26,13 @@ import {
 } from 'common/gidx/user'
 import { router } from 'expo-router'
 import { SWEEPIES_NAME } from 'common/envs/constants'
-import { LimitBet } from 'common/bet'
 import { useIsPageVisible } from 'hooks/use-is-page-visibile'
-import {
-  useContractBets,
-  useUnfilledBetsAndBalanceByUserId,
-} from 'client-common/hooks/use-bets'
-import { CandidateBet } from 'common/new-bet'
+import { useUnfilledBetsAndBalanceByUserId } from 'client-common/hooks/use-bets'
 import { useToast } from 'react-native-toast-notifications'
 import { getLimitBetReturns, MultiBetProps } from 'client-common/lib/bet'
 import { formatMoneyVerbatim } from 'util/format'
+import { BetSuccessPanel } from './bet-success-panel'
+
 export type BinaryOutcomes = 'YES' | 'NO'
 
 const AMOUNT_STEPS = [1, 2, 5, 7, 10, 15, 20, 25, 30, 40, 50, 75, 100]
@@ -87,6 +78,11 @@ export function BetPanelContent({
   const [amount, setAmount] = useState(1)
   const { token } = useTokenMode()
   const toast = useToast()
+  const [placedBet, setPlacedBet] = useState<{
+    amount: number
+    orderAmount: number
+    shares: number
+  } | null>(null)
 
   const answer = multiProps?.answerToBuy
     ? multiProps.answers.find((a) => a.id === multiProps.answerToBuy.id)
@@ -95,55 +91,11 @@ export function BetPanelContent({
   const isBinaryMC = isBinaryMulti(contract)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
-  const [submittedBet, setSubmittedBet] = useState<
-    | (LimitBet & {
-        expired: boolean
-        toastId: string
-      })
-    | null
-  >(null)
 
   const isCashContract = contract.token === 'CASH'
   const user = useUser()
   const privateUser = usePrivateUser()
 
-  const limitBets = useContractBets(
-    contract.id,
-    removeUndefinedProps({
-      userId: user?.id,
-      enabled: !!user?.id,
-      afterTime: contract?.lastBetTime ?? user?.lastBetTime,
-    }),
-    useIsPageVisible,
-    (params) => api('bets', params)
-  )
-  const updatedBet = limitBets.find((b) => b.id === submittedBet?.id)
-  useEffect(() => {
-    if (!submittedBet) return
-    if (
-      updatedBet?.isFilled ||
-      updatedBet?.isCancelled ||
-      submittedBet.expired ||
-      (updatedBet?.expiresAt && Date.now() > updatedBet.expiresAt)
-    ) {
-      const amountFilled = updatedBet?.amount ?? submittedBet.amount
-      const sharesFilled = updatedBet?.shares ?? submittedBet.shares
-      const orderAmount = updatedBet?.orderAmount ?? submittedBet.orderAmount
-      const message = `${formatWithToken({
-        amount: amountFilled,
-        token: isCashContract ? 'CASH' : 'M$',
-      })}/${formatWithToken({
-        amount: orderAmount,
-        token: isCashContract ? 'CASH' : 'M$',
-      })} filled for ${formatWithToken({
-        amount: sharesFilled,
-        token: isCashContract ? 'CASH' : 'M$',
-      })} on payout`
-
-      toast.update(submittedBet.toastId, message)
-      setSubmittedBet(null)
-    }
-  }, [updatedBet, submittedBet])
   const NEEDS_TO_REGISTER =
     'You need to register to participate in this contest'
   // Check for errors.
@@ -220,38 +172,42 @@ export function BetPanelContent({
           deps: betDeps.map((b) => b.id),
         })
       )
+
       if (bet.isFilled) {
-        setSubmittedBet(null)
-        setOpen(false)
-        toastId = toast.show(
-          `${formatMoneyNumber(bet.amount)}/${formatMoneyVerbatim(
-            bet.orderAmount ?? 0,
-            isCashContract ? 'CASH' : 'MANA'
-          )} filled for ${formatMoneyVerbatim(
-            bet.shares,
-            isCashContract ? 'CASH' : 'MANA'
-          )} on payout`
-        )
+        setPlacedBet({
+          amount: bet.amount,
+          orderAmount: bet.orderAmount ?? 0,
+          shares: bet.shares,
+        })
       } else {
         toastId = toast.show('Filling orders...')
-        setSubmittedBet({
-          ...(bet as CandidateBet<LimitBet>),
-          userId: user.id,
-          id: bet.betId,
-          expired: false,
-          toastId,
-        })
-        setTimeout(() => {
-          setSubmittedBet((prev) => (prev ? { ...prev, expired: true } : null))
-        }, expiresMillisAfter + 100)
       }
     } catch (error: any) {
       console.error(error)
-      toastId = toast.show('Failed to place trade: ' + (error.message ?? ''))
+      toast.show('Failed to place trade: ' + (error.message ?? ''))
       setOpen(false)
     }
     setLoading(false)
   }
+
+  if (placedBet) {
+    return (
+      <BetSuccessPanel
+        amount={placedBet.amount}
+        orderAmount={placedBet.orderAmount}
+        shares={placedBet.shares}
+        outcome={outcome}
+        isBinaryMC={isBinaryMC}
+        multiProps={multiProps}
+        isCashContract={isCashContract}
+        onClose={() => {
+          setOpen(false)
+          setPlacedBet(null)
+        }}
+      />
+    )
+  }
+
   return (
     <KeyboardAvoidingView
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
@@ -313,10 +269,7 @@ export function BetPanelContent({
 
             {/* TODO: get real payout */}
             <Row style={{ alignItems: 'center', gap: 4 }}>
-              <TokenNumber amount={currentPayout} size="lg" />
-              <NumberText size="lg" color={color.profitText}>
-                (+{formatPercent(currentPayout / amount)})
-              </NumberText>
+              <TokenNumber amount={currentPayout} size="lg" showDecimals />
             </Row>
           </Row>
           {isBinaryMC ? (
