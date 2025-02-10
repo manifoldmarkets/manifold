@@ -574,6 +574,7 @@ type UndoResolutionFee = {
   token: 'M$' | 'CASH'
   data: {
     revertsTxnId: string
+    contractId: string
   }
 }
 

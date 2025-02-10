@@ -6,7 +6,7 @@ import { generateEmbeddings } from 'shared/helpers/openai-utils'
 import { APIError } from 'common/api/utils'
 import { broadcastUpdatedContract } from 'shared/websockets/helpers'
 import { updateData, DataUpdate } from './utils'
-import { mapValues } from 'lodash'
+import { mapValues, uniq } from 'lodash'
 import { log } from 'shared/utils'
 
 // used for API to allow slug as param
@@ -61,7 +61,7 @@ export const getContractsDirect = async (
 
   return await pg.map(
     `select data, importance_score, conversion_score, freshness_score, view_count, token from contracts where id in ($1:list)`,
-    [contractIds],
+    [uniq(contractIds)],
     (r) => convertContract(r)
   )
 }
