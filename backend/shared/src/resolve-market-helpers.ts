@@ -1,4 +1,4 @@
-import { mapValues, groupBy, sum, sumBy, keyBy } from 'lodash'
+import { mapValues, groupBy, sum, sumBy, keyBy, uniqBy } from 'lodash'
 import {
   HOUSE_LIQUIDITY_PROVIDER_ID,
   DEV_HOUSE_LIQUIDITY_PROVIDER_ID,
@@ -549,7 +549,7 @@ const assessProfitFees = (
   contractMetrics: Omit<ContractMetric, 'id'>[],
   answerId: string | undefined
 ) => {
-  return payouts
+  return uniqBy(payouts, 'userId')
     .map((payout) => {
       const contractMetric = contractMetrics.find(
         (m) => m.userId === payout.userId && m.answerId === (answerId ?? null)
