@@ -467,7 +467,14 @@ export const getPayUsersQueries = (
   const txns: TxnData[] = []
 
   for (const { userId, payout, deposit } of mergedPayouts) {
-    const payoutFee = payoutFees.find((t) => t.userId === userId)?.payout ?? 0
+    const userPayoutFees = payoutFees.filter((t) => t.userId === userId)
+    if (userPayoutFees.length > 1) {
+      throw new APIError(
+        500,
+        `Multiple payout fees for user: ${userId} on contract: ${contractId}`
+      )
+    }
+    const payoutFee = userPayoutFees[0]?.payout ?? 0
     balanceUpdates.push({
       id: userId,
       [payoutCash ? 'cashBalance' : 'balance']: payout + payoutFee,
