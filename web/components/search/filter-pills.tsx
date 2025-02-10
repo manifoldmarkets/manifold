@@ -21,15 +21,20 @@ import { getLabelFromValue } from './search-dropdown-helpers'
 import { LiteGroup } from 'common/group'
 import { User } from 'common/user'
 
+export const minimalistIndigoSelectedClass =
+  'bg-indigo-200 hover:bg-indigo-400 text-ink-600 dark:text-ink-800 dark:bg-indigo-900 dark:hover:bg-indigo-500'
+export const unselectedClass =
+  'bg-ink-100 hover:bg-indigo-300 text-ink-600 dark:bg-ink-300 dark:hover:bg-indigo-800'
+
 export function FilterPill(props: {
   selected: boolean
-  grayscale?: boolean
+  color?: 'gray' | 'minimalist-indigo'
   onSelect: () => void
   className?: string
   children: ReactNode
   type?: 'spice' | 'sweepies'
 }) {
-  const { children, selected, onSelect, className, type, grayscale } = props
+  const { children, selected, onSelect, className, type, color } = props
 
   return (
     <button
@@ -43,11 +48,13 @@ export function FilterPill(props: {
           ? selected
             ? 'bg-amber-600 text-white hover:bg-amber-600'
             : 'text-ink-600 bg-amber-500/10 hover:bg-amber-500/30 dark:bg-amber-500/20 dark:hover:bg-amber-500/30'
-          : selected // Add this condition
-          ? grayscale
-            ? 'bg-ink-300 hover:bg-ink-400 text-ink-600 dark:text-ink-800 dark:bg-ink-500 dark:hover:bg-ink-500'
-            : 'hover:bg-primary-600 focus-visible:bg-primary-600 bg-primary-500 text-white'
-          : 'bg-ink-100 hover:bg-ink-200 text-ink-600 dark:bg-ink-300 dark:hover:bg-ink-400',
+          : color === 'gray' && selected
+          ? 'bg-ink-300 hover:bg-ink-400 text-ink-600 dark:text-ink-800 dark:bg-ink-500 dark:hover:bg-ink-500'
+          : color === 'minimalist-indigo' && selected
+          ? minimalistIndigoSelectedClass
+          : selected
+          ? 'hover:bg-primary-600 focus-visible:bg-primary-600 bg-primary-500 text-white'
+          : unselectedClass,
         className
       )}
       onClick={onSelect}

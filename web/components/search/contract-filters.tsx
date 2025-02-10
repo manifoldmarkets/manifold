@@ -48,7 +48,9 @@ import {
   AdditionalFilterPill,
   FilterDropdownPill,
   FilterPill,
+  minimalistIndigoSelectedClass,
   TierDropdownPill,
+  unselectedClass,
 } from './filter-pills'
 import { useUser } from 'web/hooks/use-user'
 
@@ -142,6 +144,7 @@ export function ContractFilters(props: {
       updateParams({ mt: tiersArray.join('') as TierParamsType })
     }
   }
+
   return (
     <Col className={clsx('mb-1 mt-2 items-stretch gap-1 ', className)}>
       <Carousel fadeEdges labelsParentClassName="gap-1 items-center">
@@ -159,9 +162,7 @@ export function ContractFilters(props: {
             key="score"
             className={clsx(
               'flex h-6 cursor-pointer select-none flex-row items-center whitespace-nowrap rounded-full px-2 text-sm outline-none transition-colors',
-              sort == 'score'
-                ? 'bg-ink-300 hover:bg-ink-400 text-ink-600 dark:text-ink-800 dark:bg-ink-500 dark:hover:bg-ink-500'
-                : 'bg-ink-100 text-ink-600 dark:bg-ink-300',
+              sort == 'score' ? minimalistIndigoSelectedClass : unselectedClass,
               className
             )}
             onClick={() => {
@@ -179,8 +180,8 @@ export function ContractFilters(props: {
             className={clsx(
               'flex h-6 cursor-pointer select-none flex-row items-center whitespace-nowrap rounded-full px-2 text-sm outline-none transition-colors',
               sort == 'freshness-score'
-                ? 'bg-ink-300 hover:bg-ink-400 text-ink-600 dark:text-ink-800 dark:bg-ink-500 dark:hover:bg-ink-500'
-                : 'bg-ink-100 text-ink-600 dark:bg-ink-300',
+                ? minimalistIndigoSelectedClass
+                : unselectedClass,
               className
             )}
             onClick={() => {
@@ -198,8 +199,8 @@ export function ContractFilters(props: {
             className={clsx(
               'flex h-6 cursor-pointer select-none flex-row items-center whitespace-nowrap rounded-full px-2 text-sm outline-none transition-colors',
               sort == 'newest'
-                ? 'bg-ink-300 hover:bg-ink-400 text-ink-600 dark:text-ink-800 dark:bg-ink-500 dark:hover:bg-ink-500'
-                : 'bg-ink-100 text-ink-600 dark:bg-ink-300',
+                ? minimalistIndigoSelectedClass
+                : unselectedClass,
               className
             )}
             onClick={() => {
@@ -242,7 +243,7 @@ export function ContractFilters(props: {
                 [GROUP_IDS_KEY]: '', // Clear any topic selection when toggling For You
               })
             }}
-            grayscale
+            color="minimalist-indigo"
           >
             For you
           </FilterPill>
