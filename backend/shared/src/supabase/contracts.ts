@@ -7,7 +7,7 @@ import { APIError } from 'common/api/utils'
 import { broadcastUpdatedContract } from 'shared/websockets/helpers'
 import { updateData, DataUpdate } from './utils'
 import { mapValues, uniq } from 'lodash'
-import { log } from 'shared/utils'
+import { contractColumnsToSelect, log } from 'shared/utils'
 
 // used for API to allow slug as param
 export const getContractIdFromSlug = async (
@@ -60,7 +60,7 @@ export const getContractsDirect = async (
   if (contractIds.length === 0) return [] as Contract[]
 
   return await pg.map(
-    `select data, importance_score, conversion_score, freshness_score, view_count, token from contracts where id in ($1:list)`,
+    `select ${contractColumnsToSelect} from contracts where id in ($1:list)`,
     [uniq(contractIds)],
     (r) => convertContract(r)
   )
