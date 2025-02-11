@@ -1,4 +1,4 @@
-import { HeartIcon, ThumbDownIcon, ThumbUpIcon } from '@heroicons/react/outline'
+import { HeartIcon } from '@heroicons/react/outline'
 import clsx from 'clsx'
 import { DisplayUser } from 'common/api/user-types'
 import { Reaction, ReactionContentTypes, ReactionType } from 'common/reaction'
@@ -38,7 +38,6 @@ export const ReactButton = memo(function ReactButton(props: {
   className?: string
   placement?: 'top' | 'bottom'
   reactionType?: ReactionType
-  iconType?: 'heart' | 'thumb'
   size?: SizeType
   disabled?: boolean
   feedReason?: string
@@ -61,7 +60,6 @@ export const ReactButton = memo(function ReactButton(props: {
     placement = 'bottom',
     feedReason,
     size,
-    iconType = 'heart',
     contractId,
     commentId,
     heartClassName,
@@ -149,7 +147,6 @@ export const ReactButton = memo(function ReactButton(props: {
 
   const otherLikes = reacted ? totalReactions - 1 : totalReactions
   const showList = otherLikes > 0 && !hideReactList
-  const thumbIcon = iconType == 'thumb' || reactionType == 'dislike'
 
   return (
     <>
@@ -186,31 +183,13 @@ export const ReactButton = memo(function ReactButton(props: {
           >
             <Row className={'text-ink-600 items-center gap-0.5'}>
               <div className="relative">
-                {thumbIcon ? (
-                  reactionType == 'dislike' ? (
-                    <ThumbDownIcon
-                      className={clsx(
-                        'stroke-ink-500 h-4 w-4',
-                        reacted && 'stroke-scarlet-500 fill-scarlet-200'
-                      )}
-                    />
-                  ) : (
-                    <ThumbUpIcon
-                      className={clsx(
-                        'stroke-ink-500 h-4 w-4',
-                        reacted && 'fill-teal-200 stroke-teal-500 '
-                      )}
-                    />
-                  )
-                ) : (
-                  <HeartIcon
-                    className={clsx(
-                      'stroke-ink-500 h-4 w-4',
-                      reacted &&
-                        'fill-scarlet-200 stroke-scarlet-300 dark:stroke-scarlet-600'
-                    )}
-                  />
-                )}
+                <HeartIcon
+                  className={clsx(
+                    'stroke-ink-500 h-4 w-4',
+                    reacted &&
+                      'fill-scarlet-200 stroke-scarlet-300 dark:stroke-scarlet-600'
+                  )}
+                />
               </div>
               {totalReactions > 0 && (
                 <div className=" text-sm disabled:opacity-50">
@@ -233,34 +212,14 @@ export const ReactButton = memo(function ReactButton(props: {
           >
             <Row className={'items-center gap-1.5'}>
               <div className="relative">
-                {thumbIcon ? (
-                  reactionType == 'dislike' ? (
-                    <ThumbDownIcon
-                      className={clsx(
-                        'h-6 w-6',
-                        heartClassName,
-                        reacted && 'fill-scarlet-200 stroke-scarlet-500 '
-                      )}
-                    />
-                  ) : (
-                    <ThumbUpIcon
-                      className={clsx(
-                        'h-6 w-6',
-                        heartClassName,
-                        reacted && 'fill-teal-200 stroke-teal-500 '
-                      )}
-                    />
-                  )
-                ) : (
-                  <HeartIcon
-                    className={clsx(
-                      'h-6 w-6',
-                      heartClassName,
-                      reacted &&
-                        'fill-scarlet-200 stroke-scarlet-300 dark:stroke-scarlet-600'
-                    )}
-                  />
-                )}
+                <HeartIcon
+                  className={clsx(
+                    'h-6 w-6',
+                    heartClassName,
+                    reacted &&
+                      'fill-scarlet-200 stroke-scarlet-300 dark:stroke-scarlet-600'
+                  )}
+                />
               </div>
               {totalReactions > 0 && (
                 <div className="my-auto h-5  text-sm disabled:opacity-50">
