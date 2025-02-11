@@ -17,7 +17,6 @@ import Head from 'next/head'
 import Link from 'next/link'
 import { useRouter } from 'next/router'
 import { useEffect, useState } from 'react'
-import { FaCrown } from 'react-icons/fa6'
 import { UserBetsTable } from 'web/components/bet/user-bets-table'
 import { FollowButton } from 'web/components/buttons/follow-button'
 import { TextButton } from 'web/components/buttons/text-button'
@@ -527,12 +526,12 @@ function ProfilePublicStats(props: {
         </Link>
       )}
 
-      {isCurrentUser && (
+      {/* {isCurrentUser && (
         <Link href={`/${user.username}/partner`} className={linkClass}>
           <FaCrown className="mb-1 mr-1 inline h-4 w-4" />
           Partner
         </Link>
-      )}
+      )} */}
 
       <FollowsDialog
         user={user}

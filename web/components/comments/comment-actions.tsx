@@ -193,23 +193,20 @@ export function LikeAndDislikeComment(props: {
     'none'
   )
   return (
-    <>
-      <ReactButton
-        contentCreatorId={comment.userId}
-        contentId={comment.id}
-        user={user}
-        contentType={'comment'}
-        size={'xs'}
-        contentText={richTextToString(comment.content)}
-        disabled={isBlocked(privateUser, comment.userId)}
-        trackingLocation={trackingLocation}
-        iconType={'thumb'}
-        reactionType={'like'}
-        userReactedWith={userReactedWith}
-        onReact={() => setUserReactedWith('like')}
-        onUnreact={() => setUserReactedWith('none')}
-        className={'min-w-[60px]'}
-      />
-    </>
+    <ReactButton
+      contentCreatorId={comment.userId}
+      contentId={comment.id}
+      user={user}
+      contentType={'comment'}
+      size={'xs'}
+      contentText={richTextToString(comment.content)}
+      disabled={isBlocked(privateUser, comment.userId)}
+      trackingLocation={trackingLocation}
+      reactionType={'like'}
+      userReactedWith={userReactedWith}
+      onReact={() => setUserReactedWith('like')}
+      onUnreact={() => setUserReactedWith('none')}
+      className={'min-w-[60px]'}
+    />
   )
 }
