@@ -42,7 +42,10 @@ import generateFilterDropdownItems from '../search/search-dropdown-helpers'
 import { useAPIGetter } from 'web/hooks/use-api-getter'
 import { api } from 'web/lib/api/api'
 import { TRADE_TERM } from 'common/envs/constants'
-import { listenToOrderUpdates } from 'client-common/hooks/use-bets'
+import {
+  listenToOrderUpdates,
+  useContractBets,
+} from 'client-common/hooks/use-bets'
 import { useIsPageVisible } from 'web/hooks/use-page-visible'
 
 export function ContractTabs(props: {
@@ -196,10 +199,15 @@ export const CommentsTabContent = memo(function CommentsTabContent(props: {
     undefined,
     'comments-' + staticContract.id
   )
-  const { data: bets } = useAPIGetter('bets', {
-    contractId: staticContract.id,
-    commentRepliesOnly: true,
-  })
+
+  const bets = useContractBets(
+    staticContract.id,
+    {
+      commentRepliesOnly: true,
+    },
+    useIsPageVisible,
+    () => api('bets')
+  )
 
   const isPageVisible = useIsPageVisible()
   const { data: newFetchedComments } = useAPIGetter(
