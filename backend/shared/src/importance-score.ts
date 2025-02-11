@@ -451,9 +451,9 @@ const bountiedImportanceScore = (
   const bountyLeftScore = normalize(Math.log10(bountyLeft + 1), 5)
 
   const rawImportance =
-    commentScore + newness + bountyScore + bountyLeftScore
+    3 * commentScore + newness + bountyScore + bountyLeftScore
 
-  return normalize(rawImportance, 6)
+  return 0.1 * normalize(rawImportance, 6)
 }
 
 const sigmoid = (x: number) => 1 / (1 + Math.exp(-x))
