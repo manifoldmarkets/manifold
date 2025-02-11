@@ -224,7 +224,7 @@ export async function calculateImportanceScore(
       '24h volume': breakdown.freshVolume24h?.toFixed(2) || '',
       Today: breakdown.freshTodayScore?.toFixed(2) || '',
       'Last Updated': breakdown.freshLastUpdated?.toFixed(2) || '',
-      'Conversion Score': breakdown.conversionScore?.toFixed(2) || '',
+      'Conversion Score': breakdown.freshConversionScore?.toFixed(2) || '',
       Ranked: breakdown.rankedScore?.toFixed(2) || '',
     }
   })
@@ -461,12 +461,13 @@ export const computeContractScores = (
   const freshTodayScore = normalize(todayScore, 10)
   const freshLastUpdated =
     normalize(0.05 - (now - contract.lastUpdatedTime) / DAY_MS, 0.05) / 2
+  const freshConversionScore = conversionScore / 2
 
   const rawMarketFreshness =
     freshVolume24h +
     freshTodayScore +
     freshLastUpdated +
-    conversionScoreComponent / 2 +
+    freshConversionScore +
     rankedScore
 
   const rawMarketImportanceBreakdown = {
@@ -489,6 +490,7 @@ export const computeContractScores = (
     freshVolume24h,
     freshTodayScore,
     freshLastUpdated,
+    freshConversionScore,
   }
 
   const freshnessScore =
