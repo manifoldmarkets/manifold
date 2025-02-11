@@ -389,7 +389,7 @@ export const computeContractScores = (
       ? bountiedImportanceScore(contract, newness, commentScore)
       : outcomeType === 'POLL'
       ? normalize(rawPollImportance, 5) // increase max as polls catch on
-      : normalize(computedRawMarketImportance, 8)
+      : normalize(computedRawMarketImportance, 5)
 
   // Calculate freshness components
   const todayRatio = todayScore / (thisWeekScore - todayScore + 1)
