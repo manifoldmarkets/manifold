@@ -115,18 +115,6 @@ export const handleCreateSportsMarkets = async (
       })
     }
 
-    for (const { id: marketId, isEPL, isNBA, isNFL, isNHL } of createdMarkets) {
-      if (isNHL) continue
-
-      let subsidyAmount = 50
-      if (isEPL) subsidyAmount = 25
-
-      await api('create-cash-contract', {
-        manaContractId: marketId,
-        subsidyAmount,
-      })
-    }
-
     setIsFinished(true)
   } catch (error) {
     console.error('Error creating sports markets:', error)
