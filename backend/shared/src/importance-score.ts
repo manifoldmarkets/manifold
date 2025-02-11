@@ -166,79 +166,80 @@ export async function calculateImportanceScore(
   )
     log('WARNING: some scores are out of bounds')
 
-  log('')
-  log('Top 30 contracts by score')
+  if (rescoreAll) {
+    log('')
+    log('Top 30 contracts by score')
 
-  const topContracts = contractsWithUpdates.slice(0, 40).map((contract) => {
-    const breakdown =
-      marketComponents.find((mc) => mc.contractId === contract.id) || {}
-    return {
-      Question: contract.question.slice(0, 60),
-      Total: contract.importanceScore.toFixed(2),
-      '24h vol': breakdown.volume24HoursComponent?.toFixed(2) || '',
-      'Trader hourly': breakdown.traderHourComponent?.toFixed(2) || '',
-      Today: breakdown.todayScoreComponent?.toFixed(2) || '',
-      'Poll Newness': breakdown.newness?.toFixed(2) || '',
-      Closing: breakdown.closingSoonnnessComponent?.toFixed(2) || '',
-      Comments: breakdown.commentScore?.toFixed(2) || '',
-      Week: breakdown.thisWeekScoreComponent?.toFixed(2) || '',
-      Ranked: breakdown.rankedScore?.toFixed(2) || '',
-    }
-  })
-
-  console.table(topContracts)
-  log('')
-  log('Bottom 5 contracts by score')
-  contractsWithUpdates
-    .slice()
-    .reverse()
-    .slice(0, 5)
-    .forEach((contract) => {
-      log(
-        contract.importanceScore,
-        contract.question,
-        contract.token === 'CASH' ? '[sweep]' : ''
-      )
+    const topContracts = contractsWithUpdates.slice(0, 40).map((contract) => {
+      const breakdown =
+        marketComponents.find((mc) => mc.contractId === contract.id) || {}
+      return {
+        Question: contract.question.slice(0, 60),
+        Total: contract.importanceScore.toFixed(2),
+        '24h vol': breakdown.volume24HoursComponent?.toFixed(2) || '',
+        'Trader hourly': breakdown.traderHourComponent?.toFixed(2) || '',
+        Today: breakdown.todayScoreComponent?.toFixed(2) || '',
+        'Poll Newness': breakdown.newness?.toFixed(2) || '',
+        Closing: breakdown.closingSoonnnessComponent?.toFixed(2) || '',
+        Comments: breakdown.commentScore?.toFixed(2) || '',
+        Week: breakdown.thisWeekScoreComponent?.toFixed(2) || '',
+        Ranked: breakdown.rankedScore?.toFixed(2) || '',
+      }
     })
 
-  // Sort in descending order by freshness
-  const freshest = sortBy(
-    contractsWithUpdates,
-    (c) => -1 * (c.freshnessScore ?? 0)
-  )
-  log('')
-  log('Top 30 contracts by freshness')
+    console.table(topContracts)
+    log('')
+    log('Bottom 5 contracts by score')
+    contractsWithUpdates
+      .slice()
+      .reverse()
+      .slice(0, 5)
+      .forEach((contract) => {
+        log(
+          contract.importanceScore,
+          contract.question,
+          contract.token === 'CASH' ? '[sweep]' : ''
+        )
+      })
 
-  const freshestContracts = freshest.slice(0, 40).map((contract) => {
-    const breakdown =
-      marketComponents.find((mc) => mc.contractId === contract.id) || {}
-    return {
-      Question: contract.question.slice(0, 60),
-      'Fresh Score': contract.freshnessScore.toFixed(2),
-      '24h volume': breakdown.freshVolume24h?.toFixed(2) || '',
-      Today: breakdown.freshTodayScore?.toFixed(2) || '',
-      'Last Updated': breakdown.freshLastUpdated?.toFixed(2) || '',
-      Ranked: breakdown.rankedScore?.toFixed(2) || '',
-    }
-  })
+    // Sort in descending order by freshness
+    const freshest = sortBy(
+      contractsWithUpdates,
+      (c) => -1 * (c.freshnessScore ?? 0)
+    )
+    log('')
+    log('Top 30 contracts by freshness')
 
-  console.table(freshestContracts)
-  log('')
-  log('Bottom 5 contracts by freshness')
-  freshest
-    .slice()
-    .reverse()
-    .slice(0, 5)
-    .forEach((contract) => {
-      log(
-        contract.freshnessScore,
-        contract.question,
-        contract.token === 'CASH' ? '[sweep]' : ''
-      )
+    const freshestContracts = freshest.slice(0, 40).map((contract) => {
+      const breakdown =
+        marketComponents.find((mc) => mc.contractId === contract.id) || {}
+      return {
+        Question: contract.question.slice(0, 60),
+        'Fresh Score': contract.freshnessScore.toFixed(2),
+        '24h volume': breakdown.freshVolume24h?.toFixed(2) || '',
+        Today: breakdown.freshTodayScore?.toFixed(2) || '',
+        'Last Updated': breakdown.freshLastUpdated?.toFixed(2) || '',
+        Ranked: breakdown.rankedScore?.toFixed(2) || '',
+      }
     })
+
+    console.table(freshestContracts)
+    log('')
+    log('Bottom 5 contracts by freshness')
+    freshest
+      .slice()
+      .reverse()
+      .slice(0, 5)
+      .forEach((contract) => {
+        log(
+          contract.freshnessScore,
+          contract.question,
+          contract.token === 'CASH' ? '[sweep]' : ''
+        )
+      })
+  }
 
   if (!readOnly) {
-    log('')
     log('Updating', contractsWithUpdates.length, 'contracts')
     await bulkUpdate(
       pg,
