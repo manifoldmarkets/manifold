@@ -100,7 +100,7 @@ export function ManifestBanner(props: { hideBanner: () => void }) {
 }
 
 export function DowntimeBanner() {
-  const maintainanceBannerEnabled = true
+  const maintainanceBannerEnabled = false
   if (!maintainanceBannerEnabled) return null
   return (
     <Banner className=" bg-primary-100 hover:bg-primary-200 dark:text-primary-800 text-primary-700  hover:text-primary-900 items-center py-2  transition-colors">
