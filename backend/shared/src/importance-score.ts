@@ -17,7 +17,7 @@ import {
   isMarketRanked,
 } from 'common/contract'
 import { getRecentContractLikes } from 'shared/supabase/likes'
-import { clamp, max, sortBy } from 'lodash'
+import { clamp, sortBy } from 'lodash'
 import { floatingEqual, logit } from 'common/util/math'
 
 import { BOT_USERNAMES } from 'common/envs/constants'
@@ -109,7 +109,7 @@ export async function calculateImportanceScore(
   }
 
   const contractsWithUpdates: Contract[] = []
-  const marketComponents: any[] = []
+  const marketComponents: Record<string, any>[] = []
 
   for (const contract of contracts) {
     const {
@@ -173,21 +173,15 @@ export async function calculateImportanceScore(
     const breakdown =
       marketComponents.find((mc) => mc.contractId === contract.id) || {}
     return {
-      Question: contract.question.slice(0, 40),
+      Question: contract.question.slice(0, 60),
       Total: contract.importanceScore.toFixed(2),
-      '24h v': breakdown.volume24HoursComponent?.toFixed(2) || '',
-      'Trader hr': breakdown.traderHourComponent?.toFixed(2) || '',
+      '24h vol': breakdown.volume24HoursComponent?.toFixed(2) || '',
+      'Trader hourly': breakdown.traderHourComponent?.toFixed(2) || '',
       Today: breakdown.todayScoreComponent?.toFixed(2) || '',
-      Liq: breakdown.liquidityScore?.toFixed(2) || '',
-      Newness: breakdown.newness?.toFixed(2) || '',
-      Mvmt: breakdown.marketMovtComponent?.toFixed(2) || '',
+      'Poll Newness': breakdown.newness?.toFixed(2) || '',
       Closing: breakdown.closingSoonnnessComponent?.toFixed(2) || '',
       Comments: breakdown.commentScore?.toFixed(2) || '',
       Week: breakdown.thisWeekScoreComponent?.toFixed(2) || '',
-      Uniques: breakdown.uniqueBettorComponent?.toFixed(2) || '',
-      Volume: breakdown.volumeComponent?.toFixed(2) || '',
-      Uncertainty: breakdown.uncertainness?.toFixed(2) || '',
-      Conversion: breakdown.conversionScore?.toFixed(2) || '',
       Ranked: breakdown.rankedScore?.toFixed(2) || '',
     }
   })
@@ -219,12 +213,11 @@ export async function calculateImportanceScore(
     const breakdown =
       marketComponents.find((mc) => mc.contractId === contract.id) || {}
     return {
-      Question: contract.question.slice(0, 40),
+      Question: contract.question.slice(0, 60),
       'Fresh Score': contract.freshnessScore.toFixed(2),
       '24h volume': breakdown.freshVolume24h?.toFixed(2) || '',
       Today: breakdown.freshTodayScore?.toFixed(2) || '',
       'Last Updated': breakdown.freshLastUpdated?.toFixed(2) || '',
-      'Conversion Score': breakdown.freshConversionScore?.toFixed(2) || '',
       Ranked: breakdown.rankedScore?.toFixed(2) || '',
     }
   })
@@ -325,9 +318,7 @@ export const computeContractScores = (
   const popularityScore = todayScore + thisWeekScoreWeight
   const wasCreatedToday = contract.createdTime > now - DAY_MS
 
-  const { createdTime, closeTime, isResolved, resolutionTime, outcomeType } =
-    contract
-  const resolvedOverADayAgo = resolutionTime && resolutionTime < now - DAY_MS
+  const { createdTime, closeTime, isResolved, outcomeType } = contract
   const commentScore = commentsToday
     ? normalize(Math.log10(1 + commentsToday), Math.log10(50))
     : 0
@@ -356,35 +347,6 @@ export const computeContractScores = (
         : 0
       : 0
 
-  const liquidityScore = isResolved
-    ? 0
-    : normalize(clamp(1 / contract.elasticity, 0, 100), 100)
-
-  let uncertainness = 0
-
-  if (!isResolved) {
-    if (contract.mechanism === 'cpmm-1') {
-      const { prob } = contract
-      uncertainness = normalize(prob * (1 - prob), 0.25)
-    } else if (contract.mechanism === 'cpmm-multi-1') {
-      const { answers, shouldAnswersSumToOne } = contract
-      const probs = sortBy(answers.map((a) => a.prob)).reverse()
-      if (probs.length === 0) {
-        uncertainness = 0
-      } else if (!shouldAnswersSumToOne) {
-        // for independent binary markets
-        uncertainness = max(probs.map((p) => normalize(p * (1 - p), 0.25))) ?? 0
-      } else if (probs.length < 3) {
-        const prob = probs[0]
-        uncertainness = normalize(prob * (1 - prob), 0.25)
-      } else {
-        const [p1, p2] = probs.slice(0, 2)
-        const product = p1 * p2 * (1 - p1 - p2)
-        uncertainness = normalize(product, 1 / 3 ** 3)
-      }
-    }
-  }
-
   let dailyScore = 0
   let logOddsChange = 0
 
@@ -396,52 +358,31 @@ export const computeContractScores = (
     dailyScore = Math.log(thisWeekScore + 1) * logOddsChange
   }
 
-  const marketMovt =
-    normalize(logOddsChange, 5) * normalize(contract.uniqueBettorCount, 10) // ignore movt on small markets
-
-  const conversionScore = normalize(contract.conversionScore, 1)
-
   const volume24HoursComponent =
-    3 * normalize(Math.log10(contract.volume24Hours + 1), 6)
-  const traderHourComponent = 2 * normalize(traderHour, 20)
+    3 * normalize(Math.log10(contract.volume24Hours + 1), 5)
+  const traderHourComponent = 3 * normalize(traderHour, 25)
   const todayScoreComponent = 2 * normalize(todayScore, 100)
-  const liquidityScoreComponent = liquidityScore
-  const newnessComponent = newness
-  const marketMovtComponent = 3 * marketMovt
-  const closingSoonnnessComponent = 2 * closingSoonnness
-  const commentScoreComponent = commentScore
-  const thisWeekScoreComponent = normalize(thisWeekScore, 100)
-  const uniqueBettorComponent = normalize(contract.uniqueBettorCount, 1000) / 2
-  const volumeComponent = resolvedOverADayAgo
-    ? 0
-    : normalize(Math.log10(contract.volume + 1), 7) * 0.75
-  const uncertainnessComponent = uncertainness / 2
-  const conversionScoreComponent = resolvedOverADayAgo ? 0 : conversionScore
+  const closingSoonnnessComponent = closingSoonnness
+  const commentScoreComponent = commentScore * 2
+  const thisWeekScoreComponent = normalize(thisWeekScore, 1000)
   const rankedScore = isMarketRanked(contract) ? 0 : -1
 
   const computedRawMarketImportance =
     volume24HoursComponent +
     traderHourComponent +
     todayScoreComponent +
-    liquidityScoreComponent +
-    newnessComponent +
-    marketMovtComponent +
     closingSoonnnessComponent +
     commentScoreComponent +
     thisWeekScoreComponent +
-    uniqueBettorComponent +
-    volumeComponent +
-    uncertainnessComponent +
-    conversionScoreComponent +
     rankedScore
 
+  const newnessComponent = newness
   const rawPollImportance =
     2 * normalize(traderHour, 20) +
     2 * normalize(todayScore, 100) +
-    2 * newness +
+    newnessComponent +
     commentScore +
-    normalize(thisWeekScore, 200) +
-    normalize(contract.uniqueBettorCount, 1000)
+    normalize(thisWeekScore, 200)
 
   const importanceScore =
     outcomeType === 'BOUNTIED_QUESTION'
@@ -461,36 +402,25 @@ export const computeContractScores = (
   const freshTodayScore = normalize(todayScore, 10)
   const freshLastUpdated =
     normalize(0.05 - (now - contract.lastUpdatedTime) / DAY_MS, 0.05) / 2
-  const freshConversionScore = conversionScore / 2
 
   const rawMarketFreshness =
-    freshVolume24h +
-    freshTodayScore +
-    freshLastUpdated +
-    freshConversionScore +
-    rankedScore
+    freshVolume24h + freshTodayScore + freshLastUpdated + rankedScore
 
   const rawMarketImportanceBreakdown = {
     contractId: contract.id,
     volume24HoursComponent,
     traderHourComponent,
     todayScoreComponent,
-    liquidityScore: liquidityScoreComponent,
-    newness: newnessComponent,
-    marketMovtComponent,
     closingSoonnnessComponent,
     commentScore: commentScoreComponent,
     thisWeekScoreComponent,
-    uniqueBettorComponent,
-    volumeComponent,
-    uncertainness: uncertainnessComponent,
-    conversionScore: conversionScoreComponent,
     rankedScore,
     // Freshness components
     freshVolume24h,
     freshTodayScore,
     freshLastUpdated,
-    freshConversionScore,
+    // Poll components
+    newness: newnessComponent,
   }
 
   const freshnessScore =
