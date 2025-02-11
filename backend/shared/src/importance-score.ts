@@ -466,7 +466,7 @@ export const computeContractScores = (
     freshVolume24h +
     freshTodayScore +
     freshLastUpdated +
-    conversionScoreComponent +
+    conversionScoreComponent / 2 +
     rankedScore
 
   const rawMarketImportanceBreakdown = {
