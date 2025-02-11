@@ -193,6 +193,7 @@ export const FeedComment = memo(function FeedComment(props: {
           <Row>
             {children}
             <CommentActions
+              playContract={playContract}
               onReplyClick={onReplyClick}
               onAward={(total) => updateComment({ bountyAwarded: total })}
               comment={comment}

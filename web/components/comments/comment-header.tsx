@@ -7,6 +7,7 @@ import {
   PlusCircleIcon,
   XCircleIcon,
 } from '@heroicons/react/solid'
+import { ThumbDownIcon } from '@heroicons/react/outline'
 import clsx from 'clsx'
 import { Bet } from 'common/bet'
 import { ContractComment } from 'common/comment'
@@ -46,7 +47,6 @@ import { commenterAndBettorMatch, roundThreadColor } from './comment'
 import { CommentEditHistoryButton } from './comment-edit-history-button'
 import DropdownMenu from '../widgets/dropdown-menu'
 import { EditCommentModal } from './edit-comment-modal'
-import { RepostModal } from './repost-modal'
 import { type Answer } from 'common/answer'
 import { useAnswer, useLiveAnswer } from 'web/hooks/use-answers'
 
@@ -453,7 +453,6 @@ function DotMenu(props: {
   const isContractCreator = privateUser?.id === playContract.creatorId
   const [editingComment, setEditingComment] = useState(false)
   const [tipping, setTipping] = useState(false)
-  const [reposting, setReposting] = useState(false)
   const [annotating, setAnnotating] = useState(false)
   return (
     <>
@@ -489,16 +488,30 @@ function DotMenu(props: {
               )
             },
           },
-          user && {
-            name: 'Repost',
-            icon: <BiRepost className="h-5 w-5" />,
-            onClick: () => setReposting(true),
-          },
           user &&
             comment.userId !== user.id && {
               name: 'Tip',
               icon: <TipJar size={20} color="currentcolor" />,
               onClick: () => setTipping(true),
+            },
+          user &&
+            comment.userId !== user.id && {
+              name: 'Dislike',
+              icon: <ThumbDownIcon className="h-5 w-5" />,
+              onClick: async () => {
+                toast.promise(
+                  api('react', {
+                    contentId: comment.id,
+                    contentType: 'comment',
+                    reactionType: 'dislike',
+                  }),
+                  {
+                    loading: 'Disliking comment...',
+                    success: 'Comment disliked',
+                    error: 'Failed to dislike comment',
+                  }
+                )
+              },
             },
           user &&
             comment.userId !== user.id && {
@@ -567,25 +580,6 @@ function DotMenu(props: {
           contractId={liveContractId}
           atTime={comment.createdTime}
           comment={comment}
-        />
-      )}
-      {user && reposting && (
-        <RepostModal
-          playContract={playContract}
-          open={reposting}
-          setOpen={setReposting}
-          comment={comment}
-          bet={
-            comment.betId
-              ? ({
-                  amount: comment.betAmount,
-                  outcome: comment.betOutcome,
-                  limitProb: comment.betLimitProb,
-                  orderAmount: comment.betOrderAmount,
-                  id: comment.betId,
-                } as Bet)
-              : undefined
-          }
         />
       )}
       {user && editingComment && (

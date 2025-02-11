@@ -45,7 +45,7 @@ export const ReactButton = memo(function ReactButton(props: {
   contractId?: string
   commentId?: string
   heartClassName?: string
-  userReactedWith?: 'like' | 'dislike' | 'none'
+  userReactedWith?: 'like' | 'none'
   onReact?: () => void
   onUnreact?: () => void
   hideReactList?: boolean
