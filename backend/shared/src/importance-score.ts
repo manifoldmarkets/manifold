@@ -11,7 +11,11 @@ import {
   YEAR_MS,
 } from 'common/util/time'
 import { log } from 'shared/utils'
-import { BountiedQuestionContract, Contract } from 'common/contract'
+import {
+  BountiedQuestionContract,
+  Contract,
+  isMarketRanked,
+} from 'common/contract'
 import { getRecentContractLikes } from 'shared/supabase/likes'
 import { clamp, max, sortBy } from 'lodash'
 import { floatingEqual, logit } from 'common/util/math'
@@ -171,7 +175,6 @@ export async function calculateImportanceScore(
     return {
       Question: contract.question.slice(0, 40),
       Total: contract.importanceScore.toFixed(2),
-      Sweep: breakdown.sweepsScore?.toFixed(2) || '',
       '24h v': breakdown.volume24HoursComponent?.toFixed(2) || '',
       'Trader hr': breakdown.traderHourComponent?.toFixed(2) || '',
       Today: breakdown.todayScoreComponent?.toFixed(2) || '',
@@ -185,6 +188,7 @@ export async function calculateImportanceScore(
       Volume: breakdown.volumeComponent?.toFixed(2) || '',
       Uncertainty: breakdown.uncertainness?.toFixed(2) || '',
       Conversion: breakdown.conversionScore?.toFixed(2) || '',
+      Ranked: breakdown.rankedScore?.toFixed(2) || '',
     }
   })
 
@@ -220,6 +224,8 @@ export async function calculateImportanceScore(
       '24h volume': breakdown.freshVolume24h?.toFixed(2) || '',
       Today: breakdown.freshTodayScore?.toFixed(2) || '',
       'Last Updated': breakdown.freshLastUpdated?.toFixed(2) || '',
+      'Conversion Score': breakdown.conversionScore?.toFixed(2) || '',
+      Ranked: breakdown.rankedScore?.toFixed(2) || '',
     }
   })
 
@@ -395,16 +401,6 @@ export const computeContractScores = (
 
   const conversionScore = normalize(contract.conversionScore, 1)
 
-  const sweepsScore =
-    contract.id === '8Q6PEygUqp' // downrank old superbowl market
-      ? -4
-      : contract.token === 'CASH' // boost sweeps
-      ? 4
-      : contract.siblingContractId && contract.id !== 'OyzrJydfBQT9NFomacEW' // boost mana markets with attached sweeps
-      ? 1
-      : 0
-
-  const sweepsScoreComponent = sweepsScore
   const volume24HoursComponent =
     3 * normalize(Math.log10(contract.volume24Hours + 1), 6)
   const traderHourComponent = 2 * normalize(traderHour, 20)
@@ -418,12 +414,12 @@ export const computeContractScores = (
   const uniqueBettorComponent = normalize(contract.uniqueBettorCount, 1000) / 2
   const volumeComponent = resolvedOverADayAgo
     ? 0
-    : normalize(Math.log10(contract.volume + 1), 7)
+    : normalize(Math.log10(contract.volume + 1), 7) * 0.75
   const uncertainnessComponent = uncertainness / 2
   const conversionScoreComponent = resolvedOverADayAgo ? 0 : conversionScore
+  const rankedScore = isMarketRanked(contract) ? 0 : -1
 
   const computedRawMarketImportance =
-    sweepsScoreComponent +
     volume24HoursComponent +
     traderHourComponent +
     todayScoreComponent +
@@ -436,7 +432,8 @@ export const computeContractScores = (
     uniqueBettorComponent +
     volumeComponent +
     uncertainnessComponent +
-    conversionScoreComponent
+    conversionScoreComponent +
+    rankedScore
 
   const rawPollImportance =
     2 * normalize(traderHour, 20) +
@@ -465,11 +462,15 @@ export const computeContractScores = (
   const freshLastUpdated =
     normalize(0.05 - (now - contract.lastUpdatedTime) / DAY_MS, 0.05) / 2
 
-  const rawMarketFreshness = freshVolume24h + freshTodayScore + freshLastUpdated
+  const rawMarketFreshness =
+    freshVolume24h +
+    freshTodayScore +
+    freshLastUpdated +
+    conversionScoreComponent +
+    rankedScore
 
   const rawMarketImportanceBreakdown = {
     contractId: contract.id,
-    sweepsScore: sweepsScoreComponent,
     volume24HoursComponent,
     traderHourComponent,
     todayScoreComponent,
@@ -483,6 +484,7 @@ export const computeContractScores = (
     volumeComponent,
     uncertainness: uncertainnessComponent,
     conversionScore: conversionScoreComponent,
+    rankedScore,
     // Freshness components
     freshVolume24h,
     freshTodayScore,
