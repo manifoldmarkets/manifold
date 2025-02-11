@@ -82,22 +82,17 @@ export async function getForYouSQL(items: {
   if (
     !Object.keys(userIdsToAverageTopicConversionScores[userId] ?? {}).length
   ) {
-    log('No topic interests found for user', userId)
-    return renderSql(
-      select(contractColumnsToSelect),
-      from('contracts'),
-      orderBy(`${sortByScore} desc`),
-      getSearchContractWhereSQL({
-        filter,
-        contractType,
-        uid: userId,
-        hideStonks: true,
-        isPrizeMarket,
-        marketTier,
-        token,
-      }),
-      privateUserBlocksSql(privateUser),
-      lim(limit, offset)
+    return basicSearchSQL(
+      userId,
+      filter,
+      contractType,
+      limit,
+      offset,
+      sort,
+      isPrizeMarket,
+      marketTier,
+      token,
+      privateUser
     )
   }
   const GROUP_SCORE_POWER = 4
@@ -162,6 +157,37 @@ export async function getForYouSQL(items: {
   return forYou
 }
 
+export const basicSearchSQL = (
+  userId: string | undefined,
+  filter: string,
+  contractType: string,
+  limit: number,
+  offset: number,
+  sort: 'score' | 'freshness-score',
+  isPrizeMarket: boolean,
+  marketTier: TierParamsType,
+  token: TokenInputType,
+  privateUser?: PrivateUser
+) => {
+  const sortByScore = sort === 'score' ? 'importance_score' : 'freshness_score'
+  return renderSql(
+    select(contractColumnsToSelect),
+    from('contracts'),
+    orderBy(`${sortByScore} desc`),
+    getSearchContractWhereSQL({
+      filter,
+      contractType,
+      uid: userId,
+      hideStonks: true,
+      isPrizeMarket,
+      marketTier,
+      token,
+    }),
+    privateUserBlocksSql(privateUser),
+    lim(limit, offset)
+  )
+}
+
 export type SearchTypes =
   | 'without-stopwords'
   | 'with-stopwords'
@@ -205,7 +231,7 @@ export function getSearchContractSQL(args: {
   if (isUrl) {
     const slug = term.split('/').pop()
     return renderSql(
-      select('data, importance_score, view_count, token'),
+      select(contractColumnsToSelect),
       from('contracts'),
       whereSql,
       where('slug = $1', [slug])
@@ -238,7 +264,7 @@ export function getSearchContractSQL(args: {
 
   // Normal full text search
   return renderSql(
-    select('data, importance_score, view_count, token'),
+    select(contractColumnsToSelect),
     from('contracts'),
     groupId && [
       token === 'MANA'

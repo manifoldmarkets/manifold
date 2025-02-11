@@ -4,8 +4,9 @@ import { type APIHandler } from './helpers/endpoint'
 import {
   getSearchContractSQL,
   getForYouSQL,
-  SearchTypes,
   sortFields,
+  basicSearchSQL,
+  SearchTypes,
 } from 'shared/supabase/search-contracts'
 import { getGroupIdFromSlug } from 'shared/supabase/groups'
 import { orderBy, uniqBy } from 'lodash'
@@ -63,34 +64,46 @@ const search = async (
   const groupId = topicSlug
     ? await getGroupIdFromSlug(topicSlug, pg)
     : undefined
-  let contracts
   if (
-    isForYou &&
     !term &&
-    userId &&
     (sort === 'score' || sort === 'freshness-score') &&
     !topicSlug &&
     token !== 'CASH' &&
     token !== 'CASH_AND_MANA' &&
     (!groupIds || groupIds.length === 0)
   ) {
-    const forYouSql = await getForYouSQL({
-      userId,
-      filter,
-      contractType,
-      limit,
-      offset,
-      sort,
-      isPrizeMarket,
-      token,
-      marketTier: marketTier as TierParamsType,
-    })
-
-    const start = Date.now()
-    contracts = await pg.map(forYouSql, [term], (r) => convertContract(r))
-    log('For you search completed in (s):', (Date.now() - start) / 1000)
+    if (!isForYou || !userId) {
+      return await pg.map(
+        basicSearchSQL(
+          userId,
+          filter,
+          contractType,
+          limit,
+          offset,
+          sort,
+          isPrizeMarket,
+          marketTier as TierParamsType,
+          token
+        ),
+        null,
+        convertContract
+      )
+    } else {
+      const forYouSql = await getForYouSQL({
+        userId,
+        filter,
+        contractType,
+        limit,
+        offset,
+        sort,
+        isPrizeMarket,
+        token,
+        marketTier: marketTier as TierParamsType,
+      })
+      return await pg.map(forYouSql, [term], (r) => convertContract(r))
+    }
   } else if (isRecent && !term && userId) {
-    contracts = await pg.map(
+    return await pg.map(
       'select data from get_your_recent_contracts($1, $2, $3)',
       [userId, limit, offset],
       convertContract
@@ -154,7 +167,7 @@ const search = async (
       sortFields[sort].order.includes('DESC') ? 'desc' : 'asc'
     )
 
-    contracts = uniqBy(
+    return uniqBy(
       [
         ...contractsWithStopwords,
         ...contractsOfSimilarRelevance,
@@ -163,6 +176,4 @@ const search = async (
       'id'
     ).slice(0, limit)
   }
-
-  return contracts
 }
