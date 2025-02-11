@@ -451,7 +451,7 @@ const bountiedImportanceScore = (
   const bountyLeftScore = normalize(Math.log10(bountyLeft + 1), 5)
 
   const rawImportance =
-    3 * commentScore + newness + bountyScore + bountyLeftScore
+    commentScore + newness + bountyScore + bountyLeftScore
 
   return normalize(rawImportance, 6)
 }
