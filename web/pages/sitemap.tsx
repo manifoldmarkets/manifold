@@ -166,10 +166,6 @@ export default function AboutPage() {
               href="https://manifoldmarkets.notion.site/Changelog-da5b4fe95872484f8fa4ee5cc71806d8"
               target="_blank"
             />
-            {/* <LabCard
-              title="👑 Creator Partner Program"
-              href="/partner-explainer"
-            /> */}
             <LabCard
               title="📠 API docs"
               href="https://docs.manifold.markets/api"

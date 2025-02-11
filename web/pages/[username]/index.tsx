@@ -527,12 +527,12 @@ function ProfilePublicStats(props: {
         </Link>
       )}
 
-      {isCurrentUser && (
+      {/* {isCurrentUser && (
         <Link href={`/${user.username}/partner`} className={linkClass}>
           <FaCrown className="mb-1 mr-1 inline h-4 w-4" />
           Partner
         </Link>
-      )}
+      )} */}
 
       <FollowsDialog
         user={user}
