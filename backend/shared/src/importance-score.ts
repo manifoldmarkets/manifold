@@ -157,7 +157,7 @@ export async function calculateImportanceScore(
   // sort in descending order by score
   contractsWithUpdates.sort((a, b) => b.importanceScore - a.importanceScore)
 
-  console.log('Found', contractsWithUpdates.length, 'contracts to update')
+  log('Found', contractsWithUpdates.length, 'contracts to update')
 
   if (
     contractsWithUpdates.filter(
