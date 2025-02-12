@@ -116,15 +116,10 @@ const search = async (
       'with-stopwords',
       'description',
     ]
-    const [
-      contractPrefixMatches,
-      contractsWithoutStopwords,
-      contractsWithMatchingAnswers,
-      contractsWithStopwords,
-      contractDescriptionMatches,
-    ] = await Promise.all(
-      searchTypes.map(async (searchType) => {
-        const searchSQL = getSearchContractSQL({
+
+    const multiQuery = searchTypes
+      .map((searchType) =>
+        getSearchContractSQL({
           term: cleanTerm,
           filter,
           sort,
@@ -141,19 +136,28 @@ const search = async (
           groupIds,
           marketTier: marketTier as TierParamsType,
         })
+      )
+      .join(';')
 
-        return pg
-          .map(searchSQL, null, (r) => ({
-            data: convertContract(r),
-            searchType,
-          }))
-          .catch((e) => {
-            // to_tsquery is sensitive to special characters and can throw an error
-            log.error(`Error with type: ${searchType} for term: ${term}`, e)
-            return []
-          })
-      })
+    const results = await pg.multi(multiQuery).catch((e) => {
+      // to_tsquery is sensitive to special characters and can throw an error
+      log.error(`Error executing search query for term: ${term}`, e)
+      return Array(searchTypes.length).fill([])
+    })
+
+    const [
+      contractPrefixMatches,
+      contractsWithoutStopwords,
+      contractsWithMatchingAnswers,
+      contractsWithStopwords,
+      contractDescriptionMatches,
+    ] = results.map((result, i) =>
+      result.map((r: any) => ({
+        data: convertContract(r),
+        searchType: searchTypes[i],
+      }))
     )
+
     const contractsOfSimilarRelevance = orderBy(
       [
         ...contractsWithoutStopwords,
