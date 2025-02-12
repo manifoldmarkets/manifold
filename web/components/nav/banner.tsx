@@ -182,7 +182,7 @@ export const ManaForeverBanner = () => {
   return (
     <Banner
       className="bg-primary-100 hover:bg-primary-200  dark:text-primary-800 text-primary-700 hover:text-primary-900 items-center py-2 transition-colors"
-      link="https://news.manifold.markets/p/mana-forever"
+      link="https://manifoldmarkets.notion.site/Mana-forever-19154492ea7a80c08410ea8c64fac67e?pvs=74"
       setShowBanner={hideBanner}
     >
       <Row className=" items-center gap-2">
