@@ -16,7 +16,7 @@ import {
 import { getContractPrivacyWhereSQLFilter } from 'shared/supabase/contracts'
 import { PROD_MANIFOLD_LOVE_GROUP_SLUG } from 'common/envs/constants'
 import { constructPrefixTsQuery } from 'shared/helpers/search'
-import { buildArray } from 'common/util/array'
+import { buildArray, filterDefined } from 'common/util/array'
 import {
   buildUserInterestsCache,
   userIdsToAverageTopicConversionScores,
@@ -255,9 +255,13 @@ export function getSearchContractSQL(args: {
           ? "gc.contract_id = contracts.data->>'siblingContractId'"
           : 'gc.contract_id = contracts.id'
       }
-      and gc.group_id = any(string_to_array($1, ','))
+      and gc.group_id = any($1)
     )`,
-      [`${groupId},${groupIds}`]
+      [
+        filterDefined([groupId, groupIds || undefined])
+          .join(',')
+          .split(','),
+      ]
     )
 
   // Normal full text search

@@ -66,11 +66,10 @@ const search = async (
     : undefined
   if (
     !term &&
-    (sort === 'score' || sort === 'freshness-score') &&
     !topicSlug &&
-    token !== 'CASH' &&
-    token !== 'CASH_AND_MANA' &&
-    (!groupIds || groupIds.length === 0)
+    !groupIds &&
+    (sort === 'score' || sort === 'freshness-score') &&
+    (token === 'MANA' || token === 'ALL')
   ) {
     if (!isForYou || !userId) {
       return await pg.map(
