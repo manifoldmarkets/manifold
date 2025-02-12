@@ -175,3 +175,28 @@ export const TwombaBanner = () => {
     </Banner>
   )
 }
+
+export const ManaForeverBanner = () => {
+  const [showBanner, hideBanner] = useBanner('mana-forever')
+  if (!showBanner) return null
+  return (
+    <Banner
+      className="bg-primary-100 hover:bg-primary-200  dark:text-primary-800 text-primary-700 hover:text-primary-900 items-center py-2 transition-colors"
+      link="https://news.manifold.markets/p/mana-forever"
+      setShowBanner={hideBanner}
+    >
+      <Row className=" items-center gap-2">
+        <LogoIcon
+          className="h-6 w-6 flex-shrink-0 text-black dark:text-white"
+          height={24}
+          width={24}
+          aria-hidden
+          strokeWidth={1}
+        />
+        <div>
+          We are deprecating sweepstakes to focus on new market types, and more!
+        </div>
+      </Row>
+    </Banner>
+  )
+}
