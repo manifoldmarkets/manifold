@@ -288,7 +288,7 @@ export const BuyPanelBody = (props: {
   >(null)
 
   const [manaSlippageProtection, setManaSlippageProtection] =
-    usePersistentLocalState(true, 'mana-slippage-protection')
+    usePersistentLocalState(false, 'mana-slippage-protection')
   const [cashSlippageProtection, setCashSlippageProtection] =
     usePersistentLocalState(true, 'cash-slippage-protection')
   const slippageProtection = isCashContract
