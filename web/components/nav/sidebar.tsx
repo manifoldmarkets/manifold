@@ -3,7 +3,6 @@ import {
   LogoutIcon,
   MoonIcon,
   SunIcon,
-  StarIcon,
   QuestionMarkCircleIcon,
   LoginIcon,
   SearchIcon,
@@ -221,7 +220,7 @@ const getMobileNav = (
     //   href: '/live',
     //   icon: LightningBoltIcon,
     // },
-    { name: 'Share with friends', href: '/referrals', icon: StarIcon }, // remove this and I will beat you — SG
+    // { name: 'Share with friends', href: '/referrals', icon: StarIcon }, // remove this and I will beat you — SG
     isAdminOrMod && {
       name: 'Reports',
       href: '/reports',
