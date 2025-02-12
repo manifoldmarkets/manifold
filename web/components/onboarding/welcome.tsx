@@ -4,7 +4,7 @@ import { useRouter } from 'next/router'
 import Image from 'next/image'
 
 import { STARTING_BALANCE } from 'common/economy'
-import { humanish, User } from 'common/user'
+import { User } from 'common/user'
 import { buildArray } from 'common/util/array'
 import { formatMoney } from 'common/util/format'
 import { Button } from 'web/components/buttons/button'
@@ -30,13 +30,11 @@ import { api, updateUser, followTopic, followUser } from 'web/lib/api/api'
 import { randomString } from 'common/util/random'
 import { unfollowTopic } from 'web/lib/supabase/groups'
 import { PillButton } from 'web/components/buttons/pill-button'
-import { OnboardingVerifyPhone } from 'web/components/onboarding-verify-phone'
 import { removeEmojis } from 'common/util/string'
 import { unauthedApi } from 'common/util/api'
 import { getSavedContractVisitsLocally } from 'web/hooks/use-save-visits'
 import { capitalize } from 'lodash'
 import { TRADE_TERM } from 'common/envs/constants'
-import { SweepsCoinsPage, SweepsWelcomePage } from './sweeps-welcome'
 import { convertGroup } from 'common/supabase/groups'
 
 const FORCE_SHOW_WELCOME_MODAL = false
@@ -77,8 +75,8 @@ export function Welcome(props: { setFeedKey?: (key: string) => void }) {
   const [trendingTopics, setTrendingTopics] = useState<Group[]>([])
 
   const availablePages = buildArray([
-    <SweepsWelcomePage />,
-    <SweepsCoinsPage />,
+    <WhatIsManifoldPage />,
+    <PredictionMarketPage />,
     <TopicsPage
       trendingTopics={trendingTopics}
       userInterestedTopics={userInterestedTopics}
@@ -88,7 +86,7 @@ export function Welcome(props: { setFeedKey?: (key: string) => void }) {
       user={user}
       goBack={() => handleSetPage(page - 1)}
     />,
-    user && !humanish(user) && <OnboardingVerifyPhone onClose={increasePage} />,
+    // user && !humanish(user) && <OnboardingVerifyPhone onClose={increasePage} />,
   ])
   const showBottomButtons = page < 2
 
