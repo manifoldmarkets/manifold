@@ -33,7 +33,6 @@ import { getAnswerColor } from '../charts/contract/choice'
 import { MoneyDisplay } from './money-display'
 import { TRADE_TERM } from 'common/envs/constants'
 import { LocationMonitor } from '../gidx/location-monitor'
-import { VerifyButton } from '../sweeps/sweep-verify-section'
 import { sliderColors } from '../widgets/slider'
 import { ProbabilitySlider } from '../widgets/probability-input'
 import { usePersistentLocalState } from 'web/hooks/use-persistent-local-state'
@@ -511,10 +510,9 @@ export default function LimitOrderPanel(props: {
         <Col className="gap-2">
           {user ? (
             shouldPromptVerification ? (
-              <VerifyButton
-                redirectHereAfterVerify
-                content={<span>Verify to {TRADE_TERM}</span>}
-              />
+              <span className="text-error">
+                New sweepstakes signups disabled{' '}
+              </span>
             ) : (
               <>
                 <LocationMonitor

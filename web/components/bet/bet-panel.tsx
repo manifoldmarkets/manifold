@@ -53,7 +53,6 @@ import { isAndroid, isIOS } from 'web/lib/util/device'
 import { WarningConfirmationButton } from '../buttons/warning-confirmation-button'
 import { getAnswerColor } from '../charts/contract/choice'
 import { LocationMonitor } from '../gidx/location-monitor'
-import { VerifyButton } from '../sweeps/sweep-verify-section'
 import { ChoicesToggleGroup } from '../widgets/choices-toggle-group'
 import { CashoutLimitWarning } from './cashout-limit-warning'
 import LimitOrderPanel from './limit-order-panel'
@@ -798,10 +797,9 @@ export const BuyPanelBody = (props: {
           <Col className="gap-2">
             {user ? (
               shouldPromptVerification ? (
-                <VerifyButton
-                  redirectHereAfterVerify
-                  content={<span>Verify to {TRADE_TERM}</span>}
-                />
+                <span className="text-error">
+                  New sweepstakes signups disabled{' '}
+                </span>
               ) : (
                 <>
                   <LocationMonitor
