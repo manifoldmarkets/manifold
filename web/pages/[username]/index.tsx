@@ -166,7 +166,6 @@ function UserProfile(props: {
   const isMobile = useIsMobile()
   const router = useRouter()
   const currentUser = useUser()
-  const privateUser = usePrivateUser()
 
   const isCurrentUser = user.id === currentUser?.id
   const [expandProfileInfo, setExpandProfileInfo] = usePersistentLocalState(
@@ -320,7 +319,11 @@ function UserProfile(props: {
                   userId={user.id}
                   className="whitespace-nowra w-full lg:hidden"
                 />
-                <RedeemSweepsButtons user={user} className="shrink-0" />
+                <RedeemSweepsButtons
+                  user={user}
+                  className="shrink-0"
+                  redeemableCash={user.cashBalance}
+                />
               </Row>
             ) : (
               <>
@@ -355,7 +358,11 @@ function UserProfile(props: {
               userId={user.id}
               className="w-1/2 whitespace-nowrap"
             />
-            <RedeemSweepsButtons user={user} className="w-1/2" />
+            <RedeemSweepsButtons
+              user={user}
+              className="w-1/2"
+              redeemableCash={user.cashBalance}
+            />
           </Row>
         )}
 

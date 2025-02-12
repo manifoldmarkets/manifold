@@ -5,7 +5,6 @@ import { PaymentMethod } from 'common/gidx/gidx'
 import { CashOutPendingTxn } from 'common/txn'
 import { floatingEqual } from 'common/util/math'
 import { getIp, track } from 'shared/analytics'
-import { calculateRedeemablePrizeCash } from 'shared/calculate-redeemable-prize-cash'
 import { log } from 'shared/monitoring/log'
 import { createSupabaseDirectClient } from 'shared/supabase/init'
 import { runTxnInBetQueue } from 'shared/txn/run-txn'
@@ -35,9 +34,8 @@ export const completeCashoutRequest: APIHandler<
   })
 
   const manaCashAmount = PaymentAmount.manaCash
-  const { cashBalance } = await calculateRedeemablePrizeCash(pg, userId)
 
-  if (cashBalance < manaCashAmount) {
+  if (user.cashBalance < manaCashAmount) {
     throw new APIError(400, 'Insufficient balance')
   }
   const dollarsToWithdraw = PaymentAmount.dollars
@@ -93,9 +91,12 @@ const debitCoins = async (
     let redeemablePrizeCash: number
     let cash: number
     try {
-      const { cashBalance } = await calculateRedeemablePrizeCash(tx, userId)
-      redeemablePrizeCash = cashBalance
-      cash = cashBalance
+      const user = await getUser(userId, tx)
+      if (!user) {
+        throw new APIError(404, 'User not found')
+      }
+      redeemablePrizeCash = user.cashBalance
+      cash = user.cashBalance
     } catch (e) {
       log.error('Indeterminate state, may need to refund', { response: props })
       throw e
