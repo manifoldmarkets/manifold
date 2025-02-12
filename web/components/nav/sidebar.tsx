@@ -146,6 +146,8 @@ const getDesktopNav = (
         href: `/notifications`,
         icon: NotificationsIcon,
       },
+      { name: 'Leagues', href: '/leagues', icon: TrophyIcon },
+
       // {
       //   name: 'AI',
       //   href: '/ai',
@@ -168,7 +170,6 @@ const getDesktopNav = (
         href: '/reports',
         icon: ReportsIcon,
       }
-      // { name: 'Leagues', href: '/leagues', icon: TrophyIcon }
       // Disable for now.
       // { name: 'Dashboards', href: '/dashboard', icon: TemplateIcon }
     )
