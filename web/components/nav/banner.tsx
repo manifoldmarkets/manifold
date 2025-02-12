@@ -7,6 +7,7 @@ import { LogoIcon } from '../icons/logo-icon'
 import { usePersistentLocalState } from 'web/hooks/use-persistent-local-state'
 import Link from 'next/link'
 import { ArrowRightIcon } from '@heroicons/react/solid'
+import { useUser } from 'web/hooks/use-user'
 
 export function Banner(props: {
   setShowBanner?: (show: boolean) => void
@@ -179,7 +180,9 @@ export const TwombaBanner = () => {
 
 export const ManaForeverBanner = () => {
   const [showBanner, hideBanner] = useBanner('mana-forever')
-  if (!showBanner) return null
+  const user = useUser()
+  if (!showBanner || !user) return null
+  if (user.createdTime > new Date('2025-02-12').getTime()) return null
   return (
     <Banner
       className="bg-primary-100 hover:bg-primary-200  dark:text-primary-800 text-primary-700 hover:text-primary-900 items-center py-2 transition-colors"

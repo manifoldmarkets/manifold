@@ -171,14 +171,16 @@ function NavBarItem(props: {
               isInline
               coinClassName="!top-[0.15em]"
             />
-            <TokenNumber
-              amount={user?.cashBalance}
-              className="text-amber-600 dark:text-amber-400"
-              coinType="sweepies"
-              numberType="short"
-              isInline
-              coinClassName="!top-[0.15em]"
-            />
+            {user?.cashBalance > 0 && (
+              <TokenNumber
+                amount={user?.cashBalance}
+                className="text-amber-600 dark:text-amber-400"
+                coinType="sweepies"
+                numberType="short"
+                isInline
+                coinClassName="!top-[0.15em]"
+              />
+            )}
           </Row>
         </Col>
       </Link>

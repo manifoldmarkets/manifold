@@ -88,32 +88,34 @@ export const DailyProfit = function DailyProfit(props: {
               )}
             </Row>
           </button>
-          <button
-            onClick={withTracking(() => {
-              setOpenCash(true)
-            }, DAILY_PROFIT_CLICK_EVENT)}
-          >
-            <Row>
-              <TokenNumber
-                amount={data ? cashNetWorth : undefined}
-                numberType="short"
-                coinType="sweepies"
-                isInline
-              />
+          {cashNetWorth > 0 && (
+            <button
+              onClick={withTracking(() => {
+                setOpenCash(true)
+              }, DAILY_PROFIT_CLICK_EVENT)}
+            >
+              <Row>
+                <TokenNumber
+                  amount={data ? cashNetWorth : undefined}
+                  numberType="short"
+                  coinType="sweepies"
+                  isInline
+                />
 
-              {!floatingEqual(cashProfit, 0) && (
-                <span
-                  className={clsx(
-                    'ml-1 mt-1 text-xs',
-                    cashProfit >= 0 ? 'text-teal-600' : 'text-scarlet-600'
-                  )}
-                >
-                  {cashProfit >= 0 ? '+' : '-'}
-                  {shortFormatNumber(Math.abs(cashProfit))}
-                </span>
-              )}
-            </Row>
-          </button>
+                {!floatingEqual(cashProfit, 0) && (
+                  <span
+                    className={clsx(
+                      'ml-1 mt-1 text-xs',
+                      cashProfit >= 0 ? 'text-teal-600' : 'text-scarlet-600'
+                    )}
+                  >
+                    {cashProfit >= 0 ? '+' : '-'}
+                    {shortFormatNumber(Math.abs(cashProfit))}
+                  </span>
+                )}
+              </Row>
+            </button>
+          )}
         </Row>
         <div className="text-ink-600 text-center text-xs ">Net worth</div>
       </div>
