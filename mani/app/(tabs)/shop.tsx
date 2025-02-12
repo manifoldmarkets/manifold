@@ -98,9 +98,7 @@ export default function Shop() {
         </Row>
 
         <ThemedText size="xs" style={styles.description}>
-          Buy mana to trade in your favorite questions. Only sweepcash won from
-          sweepstakes questions is redeemable for cash. Always free to play, no
-          purchase necessary.
+          Buy mana to trade in your favorite questions. Not redeemable for cash.
         </ThemedText>
 
         {eligibleForNewUserOffer && newUserPrices.length > 0 && (

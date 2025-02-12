@@ -84,14 +84,14 @@ const PaymentAmounts = [
     prodStripeId: 'price_1QrTRIGdoFKoCJW776dK3ZDo',
   },
   {
-    mana: 10_000,
+    mana: 11_000,
     priceInDollars: 100,
     bonusInDollars: 0,
     devStripeId: 'price_1QrTU0GdoFKoCJW7OLzDtdaM',
     prodStripeId: 'price_1QrTPCGdoFKoCJW7aXHQAGy4',
   },
   {
-    mana: 110_000,
+    mana: 120_000,
     priceInDollars: 1_000,
     bonusInDollars: 0,
     devStripeId: 'price_1QrTT7GdoFKoCJW79y4VgggM',
