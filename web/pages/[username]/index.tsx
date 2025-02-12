@@ -319,7 +319,6 @@ function UserProfile(props: {
                 <AddFundsButton
                   userId={user.id}
                   className="whitespace-nowra w-full lg:hidden"
-                  hideDiscount
                 />
                 <RedeemSweepsButtons user={user} className="shrink-0" />
               </Row>
@@ -355,7 +354,6 @@ function UserProfile(props: {
             <AddFundsButton
               userId={user.id}
               className="w-1/2 whitespace-nowrap"
-              hideDiscount
             />
             <RedeemSweepsButtons user={user} className="w-1/2" />
           </Row>

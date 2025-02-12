@@ -184,19 +184,6 @@ const getDesktopNav = (
     //   icon: ChatIcon,
     // },
     { name: 'App', onClick: openDownloadApp, icon: DeviceMobileIcon }
-    // {
-    //   name: 'Add funds',
-    //   href: '/checkout',
-    //   icon: TbPigMoney,
-    //   children: (
-    //     <div className="flex flex-wrap gap-x-2">
-    //       Add funds
-    //       <span className="whitespace-nowrap text-sm text-green-500">
-    //         (Sale 64% off)
-    //       </span>
-    //     </div>
-    //   ),
-    // }
   )
 }
 
