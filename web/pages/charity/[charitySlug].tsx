@@ -21,7 +21,6 @@ import { FullscreenConfetti } from 'web/components/widgets/fullscreen-confetti'
 import { Linkify } from 'web/components/widgets/linkify'
 import { PaginationNextPrev } from 'web/components/widgets/pagination'
 import { Title } from 'web/components/widgets/title'
-import { useAPIGetter } from 'web/hooks/use-api-getter'
 import { usePagination } from 'web/hooks/use-pagination'
 import { useUser } from 'web/hooks/use-user'
 import { api, APIError } from 'web/lib/api/api'
@@ -183,8 +182,7 @@ function DonationBox(props: {
 }) {
   const { user, charity, onDonated } = props
 
-  const { data, refresh } = useAPIGetter('get-redeemable-prize-cash', {})
-  const redeemableCash = data?.redeemablePrizeCash ?? 0
+  const redeemableCash = user?.cashBalance ?? 0
 
   const [amount, setAmount] = useState<number | undefined>()
   const [isSubmitting, setIsSubmitting] = useState(false)
@@ -219,7 +217,6 @@ function DonationBox(props: {
     setAmount(undefined)
     onDonated?.(user, Date.now(), amount)
     track('donation', { charityId: charity.id, amount })
-    await refresh()
   }
 
   return (
