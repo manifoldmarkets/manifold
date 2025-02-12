@@ -6,6 +6,7 @@ import { Row } from '../layout/row'
 import { LogoIcon } from '../icons/logo-icon'
 import { usePersistentLocalState } from 'web/hooks/use-persistent-local-state'
 import Link from 'next/link'
+import { ArrowRightIcon } from '@heroicons/react/solid'
 
 export function Banner(props: {
   setShowBanner?: (show: boolean) => void
@@ -185,18 +186,10 @@ export const ManaForeverBanner = () => {
       link="https://manifoldmarkets.notion.site/Mana-forever-19154492ea7a80c08410ea8c64fac67e?pvs=74"
       setShowBanner={hideBanner}
     >
-      <Row className=" items-center gap-2">
-        <LogoIcon
-          className="h-6 w-6 flex-shrink-0 text-black dark:text-white"
-          height={24}
-          width={24}
-          aria-hidden
-          strokeWidth={1}
-        />
-        <div>
-          We are deprecating sweepstakes to focus on new market types, and more!
-        </div>
-      </Row>
+      <div>
+        We are shutting down sweepstakes to focus on the manaverse! See more{' '}
+        <ArrowRightIcon className="ml-1 inline-block h-4 w-4" />
+      </div>
     </Banner>
   )
 }
