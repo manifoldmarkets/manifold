@@ -577,12 +577,6 @@ export const executeNewBetResult = async (
     )
     return !existingMetric || !isEqual(existingMetric, m)
   })
-  assertAdminAccumulatesNoMoreThanTenShares(
-    user,
-    contract,
-    newMetrics,
-    newBet.answerId
-  )
   const metricsQuery = bulkUpdateContractMetricsQuery(newMetrics)
   const streakIncrementedQuery = incrementStreakQuery(user, newBet.createdTime)
   const contractUpdateQuery = updateDataQuery('contracts', 'id', contractUpdate)
