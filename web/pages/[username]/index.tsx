@@ -24,7 +24,6 @@ import { UserSettingButton } from 'web/components/buttons/user-settings-button'
 import { UserCommentsList } from 'web/components/comments/profile-comments'
 import { BackButton } from 'web/components/contract/back-button'
 import { FollowList } from 'web/components/follow-list'
-import { VerifyMe } from 'web/components/gidx/verify-me'
 import { ManaCircleIcon } from 'web/components/icons/mana-circle-icon'
 import { Col } from 'web/components/layout/col'
 import { Modal } from 'web/components/layout/modal'
@@ -378,12 +377,6 @@ function UserProfile(props: {
                 content: (
                   <>
                     <Col className="mt-2 gap-2">
-                      {currentUser && privateUser && (
-                        <VerifyMe
-                          user={currentUser}
-                          privateUser={privateUser}
-                        />
-                      )}
                       <VerifyPhoneNumberBanner user={currentUser} />
                     </Col>
                     <PortfolioSummary className="mt-4" user={user} />

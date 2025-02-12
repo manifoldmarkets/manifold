@@ -12,6 +12,7 @@ export const CONFIGS: { [env: string]: EnvConfig } = {
 }
 
 export const TWOMBA_CASHOUT_ENABLED = true
+export const SWEEP_PRODUCTION_ENABLED = false
 export const SPICE_PRODUCTION_ENABLED = false
 export const SPICE_TO_MANA_CONVERSION_RATE = 1
 export const CASH_TO_MANA_CONVERSION_RATE = 100
