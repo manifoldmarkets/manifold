@@ -12,7 +12,6 @@ import { findMinMax } from 'web/lib/util/minMax'
 import { HistoryPoint } from 'common/chart'
 import { PortfolioMetrics } from 'common/portfolio-metrics'
 import { SPICE_TO_MANA_CONVERSION_RATE } from 'common/envs/constants'
-import { useSweepstakes } from '../sweepstakes-provider'
 
 export type GraphMode = 'portfolio' | 'profit'
 export type PortfolioMode = 'balance' | 'investment' | 'all' | 'spice'
@@ -44,6 +43,7 @@ export const PortfolioGraph = (props: {
   updateGraphValues: (newGraphValues: GraphValueType) => void
   portfolioFocus: PortfolioMode
   setPortfolioFocus: (mode: PortfolioMode) => void
+  prefersPlay: boolean
 }) => {
   const {
     duration,
@@ -58,6 +58,7 @@ export const PortfolioGraph = (props: {
     updateGraphValues,
     portfolioFocus,
     setPortfolioFocus,
+    prefersPlay,
   } = props
 
   const {
@@ -72,8 +73,6 @@ export const PortfolioGraph = (props: {
     firstProfit,
     firstCashProfit
   )
-
-  const { prefersPlay } = useSweepstakes()
 
   const { minDate, maxDate, minValue, maxValue } = useMemo(() => {
     const minMaxBalancePoints = prefersPlay ? balancePoints : cashBalancePoints
@@ -205,6 +204,7 @@ export const ProfitGraph = (props: {
   firstProfit: number
   firstCashProfit: number
   updateGraphValues: (newGraphValues: GraphValueType) => void
+  prefersPlay: boolean
 }) => {
   const {
     duration,
@@ -217,9 +217,8 @@ export const ProfitGraph = (props: {
     negativeThreshold = 0,
     hideXAxis,
     updateGraphValues,
+    prefersPlay,
   } = props
-
-  const { prefersPlay } = useSweepstakes()
 
   const { profitPoints, cashProfitPoints } = usePortfolioPointsFromHistory(
     portfolioHistory,
