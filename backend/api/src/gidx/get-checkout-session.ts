@@ -1,6 +1,6 @@
 import { APIError, APIHandler } from 'api/helpers/endpoint'
 import { WEB_PRICES } from 'common/economy'
-import { isAdminId, TWOMBA_CASHOUT_ENABLED } from 'common/envs/constants'
+import { isAdminId, SWEEP_PRODUCTION_ENABLED } from 'common/envs/constants'
 import {
   CheckoutSession,
   CheckoutSessionResponse,
@@ -26,8 +26,8 @@ const ENDPOINT = GIDX_BASE_URL + '/v3.0/api/DirectCashier/CreateSession'
 export const getCheckoutSession: APIHandler<
   'get-checkout-session-gidx'
 > = async (props, auth, req) => {
-  if (!TWOMBA_CASHOUT_ENABLED && props.PayActionCode === 'PAYOUT') {
-    throw new APIError(400, 'Cashouts will be enabled soon!')
+  if (!SWEEP_PRODUCTION_ENABLED && props.PayActionCode !== 'PAYOUT') {
+    throw new APIError(400, 'Sweep purchases are disabled!')
   }
   if (
     (props.userId !== undefined || props.ip !== undefined) &&

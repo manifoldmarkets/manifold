@@ -4,11 +4,12 @@ import {
   REFERRAL_MIN_PURCHASE_DOLLARS,
   WEB_PRICES,
 } from 'common/economy'
+import { SWEEP_PRODUCTION_ENABLED } from 'common/envs/constants'
 import {
   CompleteSessionDirectCashierResponse,
   ProcessSessionCode,
 } from 'common/gidx/gidx'
-import { introductoryTimeWindow, User } from 'common/user'
+import { User } from 'common/user'
 import { getIp, track, trackPublicEvent } from 'shared/analytics'
 import { distributeReferralBonusIfNoneGiven } from 'shared/distribute-referral-bonus'
 import {
@@ -42,7 +43,9 @@ export const completeCheckoutSession: APIHandler<
   const userId = auth.uid
   const user = await getUser(userId)
   if (!user) throw new APIError(500, 'Your account was not found')
-
+  if (!SWEEP_PRODUCTION_ENABLED) {
+    throw new APIError(400, 'Sweep purchases are disabled!')
+  }
   const { phoneNumberWithCode } = await getUserRegistrationRequirements(userId)
   const {
     PaymentMethod,
@@ -53,13 +56,6 @@ export const completeCheckoutSession: APIHandler<
   const paymentAmount = getPaymentAmountForWebPriceDollars(
     PaymentAmount.priceInDollars
   )
-
-  if (paymentAmount.newUsersOnly) {
-    if (Date.now() > introductoryTimeWindow(user))
-      throw new APIError(403, 'New user purchase discount no longer offered.')
-    if (user.purchasedSweepcash)
-      throw new APIError(403, 'New user purchase discount only available once.')
-  }
 
   const { creditCard, Type, BillingAddress, NameOnAccount, SavePaymentMethod } =
     PaymentMethod

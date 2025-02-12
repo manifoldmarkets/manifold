@@ -4,8 +4,7 @@ import { APIError } from 'api/helpers/endpoint'
 import { runTxnInBetQueue } from 'shared/txn/run-txn'
 import { createSupabaseDirectClient } from 'shared/supabase/init'
 import { MIN_CASH_DONATION } from 'common/envs/constants'
-import { calculateRedeemablePrizeCash } from 'shared/calculate-redeemable-prize-cash'
-
+import { getUser } from 'shared/utils'
 export const donate: APIHandler<'donate'> = async ({ amount, to }, auth) => {
   const charity = charities.find((c) => c.id === to)
   if (!charity) throw new APIError(404, 'Charity not found')
@@ -13,20 +12,12 @@ export const donate: APIHandler<'donate'> = async ({ amount, to }, auth) => {
   const pg = createSupabaseDirectClient()
 
   await pg.tx(async (tx) => {
-    const { cashBalance, redeemable } = await calculateRedeemablePrizeCash(
-      tx,
-      auth.uid
-    )
-
-    if (cashBalance < amount) {
-      throw new APIError(403, 'Insufficient prizecash balance')
+    const user = await getUser(auth.uid, tx)
+    if (!user) {
+      throw new APIError(404, 'User not found')
     }
-
-    if (redeemable < amount) {
-      throw new APIError(
-        403,
-        `Insufficent redeemable prizecash. Only ${redeemable} prizecash can be redeemed.`
-      )
+    if (user.cashBalance < amount) {
+      throw new APIError(403, 'Insufficient prizecash balance')
     }
 
     if (amount < MIN_CASH_DONATION) {

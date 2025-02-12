@@ -12,6 +12,7 @@ export const CONFIGS: { [env: string]: EnvConfig } = {
 }
 
 export const TWOMBA_CASHOUT_ENABLED = true
+export const SWEEP_PRODUCTION_ENABLED = false
 export const SPICE_PRODUCTION_ENABLED = false
 export const SPICE_TO_MANA_CONVERSION_RATE = 1
 export const CASH_TO_MANA_CONVERSION_RATE = 100
@@ -29,9 +30,9 @@ export const SPICE_MARKET_TOOLTIP = `Prize market! Earn ${SPICE_NAME}s on resolu
 export const SWEEPIES_MARKET_TOOLTIP = `Sweepstakes market! Win real cash prizes.`
 export const CASH_SUFFIX = '--cash'
 
-export const TRADE_TERM = 'trade'
-export const TRADED_TERM = 'traded'
-export const TRADING_TERM = 'trading'
+export const TRADE_TERM = 'bet'
+export const TRADED_TERM = 'bet'
+export const TRADING_TERM = 'betting'
 export const TRADER_TERM = 'trader'
 
 export const ENV_CONFIG = CONFIGS[ENV]

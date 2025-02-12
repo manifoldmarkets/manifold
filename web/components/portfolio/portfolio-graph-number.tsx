@@ -1,6 +1,5 @@
 import clsx from 'clsx'
 import { Col } from '../layout/col'
-import { useSweepstakes } from '../sweepstakes-provider'
 import { TokenNumber } from '../widgets/token-number'
 import { PortfolioMode } from './portfolio-graph'
 
@@ -12,6 +11,7 @@ export function PortfolioGraphNumber(props: {
   onClick: () => void
   className?: string
   isSpice?: boolean
+  prefersPlay?: boolean
 }) {
   const {
     portfolioFocus,
@@ -21,9 +21,8 @@ export function PortfolioGraphNumber(props: {
     onClick,
     className,
     isSpice,
+    prefersPlay,
   } = props
-
-  const { prefersPlay } = useSweepstakes()
 
   return (
     <div

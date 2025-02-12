@@ -118,8 +118,7 @@ export default function CashoutPage() {
       setSessionStatus(StatusMessage as string)
     },
   })
-  const redeemable = useAPIGetter('get-redeemable-prize-cash', {})
-  const redeemableCash = redeemable?.data?.redeemablePrizeCash
+  const redeemableCash = user?.cashBalance
 
   const roundedRedeemableCash = Math.floor((redeemableCash ?? 0) * 100) / 100
   const {
@@ -193,7 +192,6 @@ export default function CashoutPage() {
         setError(message)
       } else {
         setPage('waiting')
-        redeemable.refresh()
       }
     } catch (err) {
       if (err instanceof APIError) {

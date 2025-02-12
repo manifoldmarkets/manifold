@@ -28,7 +28,6 @@ export function ProfileContent(props: { user: User }) {
   const { user } = props
   const currentUser = useUser()
   const isCurrentUser = currentUser?.id === user.id
-  const { data: redeemable } = useAPIGetter('get-redeemable-prize-cash', {})
   const [isSettingsOpen, setIsSettingsOpen] = useState(false)
 
   const { data } = useAPIGetter('get-daily-changed-metrics-and-contracts', {
@@ -120,7 +119,7 @@ export function ProfileContent(props: { user: User }) {
               <Button
                 onPress={() => router.push('/redeem')}
                 title={`Redeem ${formatMoneyVerbatim(
-                  redeemable?.redeemablePrizeCash ?? 0,
+                  user?.cashBalance ?? 0,
                   'CASH'
                 )}`}
                 variant="gray"

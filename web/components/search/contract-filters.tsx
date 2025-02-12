@@ -148,7 +148,7 @@ export function ContractFilters(props: {
   return (
     <Col className={clsx('mb-1 mt-2 items-stretch gap-1 ', className)}>
       <Carousel fadeEdges labelsParentClassName="gap-1 items-center">
-        {!hideSweepsToggle && (
+        {isSweeps && !hideSweepsToggle && (
           <SweepsToggle
             sweepsEnabled={true}
             isPlay={!isSweeps}

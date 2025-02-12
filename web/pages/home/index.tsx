@@ -8,7 +8,7 @@ import { useUser } from 'web/hooks/use-user'
 import { track } from 'web/lib/service/analytics'
 import { BrowsePageContent } from '../browse'
 import { useRedirectIfSignedOut } from 'web/hooks/use-redirect-if-signed-out'
-import { DowntimeBanner } from 'web/components/nav/banner'
+import { DowntimeBanner, ManaForeverBanner } from 'web/components/nav/banner'
 import { Welcome } from 'web/components/onboarding/welcome'
 import { LiveGeneratedFeed } from 'web/components/feed/live-generated-feed'
 
@@ -21,6 +21,7 @@ export default function Home() {
       <Welcome />
       <SEO title={`Home`} description={`Browse all questions`} url={`/home`} />
       <DowntimeBanner />
+      <ManaForeverBanner />
       <DailyStats className="z-50 mb-1 w-full px-2 py-2" user={user} />
       <BrowsePageContent />
       {user && (

@@ -296,7 +296,7 @@ function MarketsContent() {
       getIsSportsInterested()
     }
   }, [user?.id])
-  const sportsFirst = isSportsInterested || user === null
+  const sportsFirst = isSportsInterested
 
   if (user === undefined || (user && isSportsInterested === undefined)) {
     return <LoadingIndicator />

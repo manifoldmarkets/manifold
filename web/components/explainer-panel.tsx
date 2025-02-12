@@ -20,14 +20,8 @@ export const ExplainerPanel = (props: {
   className?: string
   showWhatIsManifold?: boolean
   showAccuracy?: boolean
-  showSweepstakes?: boolean
 }) => {
-  const {
-    className,
-    showWhatIsManifold = true,
-    showAccuracy = true,
-    showSweepstakes = true,
-  } = props
+  const { className, showWhatIsManifold = true, showAccuracy = true } = props
   const handleSectionClick = (sectionTitle: string) => {
     track('explainer section click', { sectionTitle })
   }
@@ -35,7 +29,7 @@ export const ExplainerPanel = (props: {
     <Col className={clsx(className)}>
       {showWhatIsManifold && <WhatIsManifold onClick={handleSectionClick} />}
       {showAccuracy && <Accuracy onClick={handleSectionClick} />}
-      {showSweepstakes && <Sweepstakes onClick={handleSectionClick} />}
+      {/* TODO: Add a mana section */}
     </Col>
   )
 }

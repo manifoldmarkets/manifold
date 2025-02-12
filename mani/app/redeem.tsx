@@ -115,11 +115,8 @@ export default function CashoutPage() {
       setSessionStatus(StatusMessage as string)
     },
   })
-  const redeemable = useAPIGetter('get-redeemable-prize-cash', {})
-  useEffect(() => {
-    redeemable?.refresh()
-  }, [user?.balance, user?.cashBalance])
-  const redeemableCash = redeemable?.data?.redeemablePrizeCash ?? 0
+
+  const redeemableCash = user?.cashBalance ?? 0
 
   const roundedRedeemableCash = Math.floor(redeemableCash * 100) / 100
   const {

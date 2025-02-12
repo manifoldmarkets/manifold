@@ -3,7 +3,6 @@ import {
   LogoutIcon,
   MoonIcon,
   SunIcon,
-  StarIcon,
   QuestionMarkCircleIcon,
   LoginIcon,
   SearchIcon,
@@ -147,6 +146,8 @@ const getDesktopNav = (
         href: `/notifications`,
         icon: NotificationsIcon,
       },
+      { name: 'Leagues', href: '/leagues', icon: TrophyIcon },
+
       // {
       //   name: 'AI',
       //   href: '/ai',
@@ -169,7 +170,6 @@ const getDesktopNav = (
         href: '/reports',
         icon: ReportsIcon,
       }
-      // { name: 'Leagues', href: '/leagues', icon: TrophyIcon }
       // Disable for now.
       // { name: 'Dashboards', href: '/dashboard', icon: TemplateIcon }
     )
@@ -184,19 +184,6 @@ const getDesktopNav = (
     //   icon: ChatIcon,
     // },
     { name: 'App', onClick: openDownloadApp, icon: DeviceMobileIcon }
-    // {
-    //   name: 'Add funds',
-    //   href: '/checkout',
-    //   icon: TbPigMoney,
-    //   children: (
-    //     <div className="flex flex-wrap gap-x-2">
-    //       Add funds
-    //       <span className="whitespace-nowrap text-sm text-green-500">
-    //         (Sale 64% off)
-    //       </span>
-    //     </div>
-    //   ),
-    // }
   )
 }
 
@@ -234,7 +221,7 @@ const getMobileNav = (
     //   href: '/live',
     //   icon: LightningBoltIcon,
     // },
-    { name: 'Share with friends', href: '/referrals', icon: StarIcon }, // remove this and I will beat you — SG
+    // { name: 'Share with friends', href: '/referrals', icon: StarIcon }, // remove this and I will beat you — SG
     isAdminOrMod && {
       name: 'Reports',
       href: '/reports',
