@@ -1,9 +1,9 @@
 import { useRouter } from 'next/router'
 import { useState } from 'react'
 import { useUser } from 'web/hooks/use-user'
-import { ManaCoin } from 'web/public/custom-components/manaCoin'
 import { AddFundsModal } from '../add-funds-modal'
 import { Button, SizeType } from '../buttons/button'
+import { ManaCoin } from 'web/public/custom-components/manaCoin'
 
 export function AddFundsButton(props: {
   userId?: string
@@ -29,7 +29,7 @@ export function AddFundsButton(props: {
         color="gradient-pink"
         className={className}
       >
-        Get <ManaCoin className="ml-1" />
+        Get mana <ManaCoin className="ml-1" />
       </Button>
 
       <AddFundsModal open={open} setOpen={setOpen} />
