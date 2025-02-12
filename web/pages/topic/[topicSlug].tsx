@@ -52,7 +52,7 @@ export async function getStaticProps(ctx: { params: { topicSlug: string } }) {
       dashboards,
       topQuestions: topQuestions.map((m) => m.question),
     },
-    revalidate: 240,
+    revalidate: 3600 * 12, // 12 hours
   }
 }
 
