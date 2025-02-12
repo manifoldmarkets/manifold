@@ -575,7 +575,7 @@ export default function LimitOrderPanel(props: {
               })}
               className="mb-2 flex-grow"
             >
-              Sign up to predict
+              Sign up to {TRADE_TERM}
             </Button>
           )}
         </Col>

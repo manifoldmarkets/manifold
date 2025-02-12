@@ -29,6 +29,7 @@ export const ExplainerPanel = (props: {
     <Col className={clsx(className)}>
       {showWhatIsManifold && <WhatIsManifold onClick={handleSectionClick} />}
       {showAccuracy && <Accuracy onClick={handleSectionClick} />}
+      {/* TODO: Add a mana section */}
     </Col>
   )
 }

@@ -19,7 +19,7 @@ export const SidebarSignUpButton = (props: { className?: string }) => {
       >
         Sign up
       </Button>
-      <PlayMoneyDisclaimer />
+      <PlayMoneyDisclaimer isLong />
     </Col>
   )
 }
