@@ -22,13 +22,6 @@ export const donate: APIHandler<'donate'> = async ({ amount, to }, auth) => {
       throw new APIError(403, 'Insufficient prizecash balance')
     }
 
-    if (redeemable < amount) {
-      throw new APIError(
-        403,
-        `Insufficent redeemable prizecash. Only ${redeemable} prizecash can be redeemed.`
-      )
-    }
-
     if (amount < MIN_CASH_DONATION) {
       throw new APIError(
         400,

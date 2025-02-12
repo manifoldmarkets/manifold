@@ -6,7 +6,7 @@ export const getRedeemablePrizeCash: APIHandler<
   'get-redeemable-prize-cash'
 > = async (_, auth) => {
   const pg = createSupabaseDirectClient()
-  const { redeemable } = await calculateRedeemablePrizeCash(pg, auth.uid)
+  const { cashBalance } = await calculateRedeemablePrizeCash(pg, auth.uid)
 
-  return { redeemablePrizeCash: Math.max(redeemable, 0) }
+  return { redeemablePrizeCash: cashBalance }
 }

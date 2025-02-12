@@ -35,10 +35,10 @@ export const completeCashoutRequest: APIHandler<
   })
 
   const manaCashAmount = PaymentAmount.manaCash
-  const { redeemable } = await calculateRedeemablePrizeCash(pg, userId)
+  const { cashBalance } = await calculateRedeemablePrizeCash(pg, userId)
 
-  if (redeemable < manaCashAmount) {
-    throw new APIError(400, 'Insufficient redeemable sweepcash')
+  if (cashBalance < manaCashAmount) {
+    throw new APIError(400, 'Insufficient balance')
   }
   const dollarsToWithdraw = PaymentAmount.dollars
   const CalculatedPaymentAmount = manaCashAmount - SWEEPIES_CASHOUT_FEE
@@ -93,11 +93,8 @@ const debitCoins = async (
     let redeemablePrizeCash: number
     let cash: number
     try {
-      const { redeemable, cashBalance } = await calculateRedeemablePrizeCash(
-        tx,
-        userId
-      )
-      redeemablePrizeCash = redeemable
+      const { cashBalance } = await calculateRedeemablePrizeCash(tx, userId)
+      redeemablePrizeCash = cashBalance
       cash = cashBalance
     } catch (e) {
       log.error('Indeterminate state, may need to refund', { response: props })
