@@ -251,11 +251,9 @@ export function getSearchContractSQL(args: {
     exists (
       select 1 from group_contracts gc 
       where ${
-        token === 'MANA'
-          ? 'gc.contract_id = contracts.id'
-          : token === 'CASH'
+        token === 'CASH'
           ? "gc.contract_id = contracts.data->>'siblingContractId'"
-          : "(gc.contract_id = contracts.id or gc.contract_id = contracts.data->>'siblingContractId')"
+          : 'gc.contract_id = contracts.id'
       }
       and gc.group_id = any(string_to_array($1, ','))
     )`,
