@@ -1,13 +1,9 @@
-import { createSupabaseDirectClient } from 'shared/supabase/init'
 import { updateContract } from 'shared/supabase/contracts'
 import { log } from 'shared/utils'
+import { runScript } from 'run-script'
 
 const MARCH_3RD_2025 = new Date('2025-03-03').toISOString()
-
-async function closeCashMarkets() {
-  const pg = createSupabaseDirectClient()
-
-  // Find all cash markets created after March 3rd that aren't already closed
+runScript(async ({ pg }) => {
   const contracts = await pg.map(
     `SELECT id FROM contracts 
      WHERE token = 'CASH' 
@@ -40,7 +36,4 @@ async function closeCashMarkets() {
   // TODO: remove sweeps panel on contract page[done]
   // TODO: remove sweeps offer from sidebar [done]
   // TODO: remove referral notification [done]
-}
-
-// Run the script
-closeCashMarkets().catch(console.error)
+})
