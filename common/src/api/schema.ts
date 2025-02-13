@@ -36,7 +36,7 @@ import { LikeData, ShipData } from './love-types'
 import { AnyBalanceChangeType } from 'common/balance-change'
 import { Dashboard } from 'common/dashboard'
 import { ChatMessage, PrivateChatMessage } from 'common/chat-message'
-import { PrivateUser, User } from 'common/user'
+import { PrivateUser, User } from '../user'
 import { ManaSupply } from 'common/stats'
 import { Repost } from 'common/repost'
 import { PERIODS } from 'common/period'
@@ -2153,6 +2153,24 @@ export const API = (_apiTypeCheck = {
     authed: true,
     props: z.object({}).strict(),
     returns: {} as { success: boolean },
+  },
+  'get-contract-voters': {
+    method: 'GET',
+    visibility: 'public',
+    authed: false,
+    props: z
+      .object({
+        contractId: z.string(),
+      })
+      .strict(),
+    returns: [] as DisplayUser[],
+  },
+  'get-contract-option-voters': {
+    method: 'GET',
+    visibility: 'public',
+    authed: false,
+    props: z.object({ contractId: z.string(), optionId: z.string() }),
+    returns: [] as DisplayUser[],
   },
 } as const)
 

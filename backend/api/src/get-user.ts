@@ -1,5 +1,5 @@
 import { toUserAPIResponse } from 'common/api/user-types'
-import { convertUser } from 'common/supabase/users'
+import { convertUser, displayUserColumns } from 'common/supabase/users'
 import { createSupabaseDirectClient } from 'shared/supabase/init'
 import { APIError } from 'common/api/utils'
 import { removeNullOrUndefinedProps } from 'common/util/object'
@@ -22,7 +22,7 @@ export const getLiteUser = async (
 ) => {
   const pg = createSupabaseDirectClient()
   const liteUser = await pg.oneOrNone(
-    `select id, name, username, data->>'avatarUrl' as "avatarUrl", data->'isBannedFromPosting' as "isBannedFromPosting"
+    `select ${displayUserColumns}
             from users
             where ${'id' in props ? 'id' : 'username'} = $1`,
     ['id' in props ? props.id : props.username]
