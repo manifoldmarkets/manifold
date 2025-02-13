@@ -35,6 +35,7 @@ import { STARTING_BALANCE } from 'common/economy'
 import { ValidatedAPIParams } from 'common/api/schema'
 import { APIError } from 'common/api/utils'
 import { onCreateUser } from 'shared/helpers/on-create-user'
+import { convertPrivateUser, convertUser } from 'common/supabase/users'
 
 export const createUserMain = async (
   props: ValidatedAPIParams<'createuser'>,
@@ -42,12 +43,7 @@ export const createUserMain = async (
   ip: string,
   host: string | undefined
 ) => {
-  const {
-    deviceToken: preDeviceToken,
-    adminToken,
-    visitedContractIds,
-    origin,
-  } = props
+  const { deviceToken: preDeviceToken, adminToken, visitedContractIds } = props
   const firebaseUser = await admin.auth().getUser(userId)
 
   const testUserAKAEmailPasswordUser =
@@ -113,17 +109,9 @@ export const createUserMain = async (
       throw new APIError(403, 'Username already taken', { username })
 
     // Only undefined prop should be fromLove
-    const user: User = removeUndefinedProps({
+    const userData: Partial<User> = removeUndefinedProps({
       id: userId,
-      name,
-      username,
       avatarUrl,
-      balance: 0,
-      cashBalance: 0,
-      spiceBalance: 0,
-      totalDeposits: 0,
-      totalCashDeposits: 0,
-      createdTime: Date.now(),
       streakForgiveness: 1,
       shouldShowWelcome: true,
       creatorTraders: { daily: 0, weekly: 0, monthly: 0, allTime: 0 },
@@ -134,7 +122,6 @@ export const createUserMain = async (
       fromLove,
       signupBonusPaid: 0,
       verifiedPhone: false,
-      origin,
     })
 
     const privateUser: PrivateUser = {
@@ -149,11 +136,11 @@ export const createUserMain = async (
       blockedGroupSlugs: [],
     }
 
-    await insert(tx, 'users', {
-      id: user.id,
-      name: user.name,
-      username: user.username,
-      data: user,
+    const userRow = await insert(tx, 'users', {
+      id: userId,
+      name: name,
+      username: username,
+      data: userData,
     })
 
     const startingBonusTxn: Omit<
@@ -161,7 +148,7 @@ export const createUserMain = async (
       'id' | 'createdTime' | 'fromId'
     > = {
       fromType: 'BANK',
-      toId: user.id,
+      toId: userId,
       toType: 'USER',
       amount: STARTING_BALANCE,
       token: 'M$',
@@ -170,14 +157,14 @@ export const createUserMain = async (
     }
     await runTxnFromBank(tx, startingBonusTxn)
 
-    await insert(tx, 'private_users', {
+    const privateUserRow = await insert(tx, 'private_users', {
       id: privateUser.id,
       data: privateUser,
     })
 
     return {
-      user,
-      privateUser,
+      user: convertUser(userRow),
+      privateUser: convertPrivateUser(privateUserRow),
     }
   })
 
