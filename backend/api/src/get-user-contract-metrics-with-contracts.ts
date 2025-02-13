@@ -5,7 +5,7 @@ import { ContractMetric } from 'common/contract-metric'
 import { calculateUpdatedMetricsForContracts } from 'common/calculate-metrics'
 import { Dictionary, mapValues } from 'lodash'
 import { convertContract } from 'common/supabase/contracts'
-import { contractColumnsToSelect } from 'shared/utils'
+import { prefixedContractColumnsToSelect } from 'shared/utils'
 
 export const getUserContractMetricsWithContracts: APIHandler<
   'get-user-contract-metrics-with-contracts'
@@ -17,13 +17,9 @@ export const getUserContractMetricsWithContracts: APIHandler<
     'c.id'
   )
   const pg = createSupabaseDirectClient()
-  const columnsWithAlias = contractColumnsToSelect
-    .split(', ')
-    .map((col) => `c.${col}`)
-    .join(', ')
   const q = `
         SELECT 
-          (select row_to_json(t) from (select c.${contractColumnsToSelect}) t) as contract,
+          (select row_to_json(t) from (select ${prefixedContractColumnsToSelect}) t) as contract,
           jsonb_agg(ucm.data) as metrics
         FROM contracts c
         JOIN user_contract_metrics ucm ON c.id = ucm.contract_id
@@ -35,7 +31,7 @@ export const getUserContractMetricsWithContracts: APIHandler<
               ? "and c.data->>'siblingContractId' is not null and ucm.has_shares = true"
               : ''
           }
-        GROUP BY c.id, ${columnsWithAlias}
+        GROUP BY c.id, ${prefixedContractColumnsToSelect}
         ORDER BY max((ucm.data->>'lastBetTime')::bigint) DESC NULLS LAST
         OFFSET $2 LIMIT $3
       `
