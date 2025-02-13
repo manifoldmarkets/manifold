@@ -25,7 +25,7 @@ export const onCreateMarket = async (
   contract: Contract,
   embedding: number[]
 ) => {
-  const { creatorId, question, creatorUsername } = contract
+  const { creatorId } = contract
   const eventId = contract.id + '-on-create'
   const contractCreator = await getUser(creatorId)
   if (!contractCreator) throw new Error('Could not find contract creator')
