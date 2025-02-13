@@ -89,7 +89,7 @@ export const onCreateMarket = async (
     )
   }
 
-  await uploadAndSetCoverImage(pg, question, contract.id, creatorUsername)
+  // await uploadAndSetCoverImage(pg, question, contract.id, creatorUsername)
 }
 
 const uploadAndSetCoverImage = async (
