@@ -15,11 +15,11 @@ case $ENV in
       NEXT_PUBLIC_FIREBASE_ENV=DEV
       GCLOUD_PROJECT=dev-mantic-markets
       # MACHINE_TYPE=n2-standard-2 ;;
-      MACHINE_TYPE=e2-small ;;
+      MACHINE_TYPE=e2-small ;;  # If you want to change this, you have to change it in the GCP console
     prod)
       NEXT_PUBLIC_FIREBASE_ENV=PROD
       GCLOUD_PROJECT=mantic-markets
-      MACHINE_TYPE=n2-standard-2 ;;
+      MACHINE_TYPE=n2-highmem-2;;  # If you want to change this, you have to change it in the GCP console
     *)
       echo "Invalid environment; must be dev or prod."
       exit 1
