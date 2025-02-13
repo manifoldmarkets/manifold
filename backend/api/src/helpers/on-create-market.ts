@@ -6,15 +6,11 @@ import { Contract } from 'common/contract'
 import { parseMentions, richTextToString } from 'common/util/parse'
 import { completeCalculatedQuestFromTrigger } from 'shared/complete-quest-internal'
 import { createNewContractNotification } from 'shared/create-notification'
-import {
-  SupabaseDirectClient,
-  createSupabaseDirectClient,
-} from 'shared/supabase/init'
+import { createSupabaseDirectClient } from 'shared/supabase/init'
 import { upsertGroupEmbedding } from 'shared/helpers/embeddings'
 import {
   generateContractEmbeddings,
   isContractNonPredictive,
-  updateContract,
 } from 'shared/supabase/contracts'
 import { addGroupToContract } from 'shared/update-group-contracts-internal'
 import {
@@ -23,7 +19,6 @@ import {
 } from 'common/supabase/groups'
 import { HOUSE_LIQUIDITY_PROVIDER_ID } from 'common/antes'
 import { randomString } from 'common/util/random'
-import { generateImage } from 'shared/helpers/openai-utils'
 import { followContractInternal } from 'api/follow-contract'
 
 export const onCreateMarket = async (
@@ -92,28 +87,28 @@ export const onCreateMarket = async (
   // await uploadAndSetCoverImage(pg, question, contract.id, creatorUsername)
 }
 
-const uploadAndSetCoverImage = async (
-  pg: SupabaseDirectClient,
-  question: string,
-  contractId: string,
-  creatorUsername: string
-) => {
-  const dalleImage = await generateImage(question)
-  if (!dalleImage) return
-  log('generated dalle image: ' + dalleImage)
+// const uploadAndSetCoverImage = async (
+//   pg: SupabaseDirectClient,
+//   question: string,
+//   contractId: string,
+//   creatorUsername: string
+// ) => {
+//   const dalleImage = await generateImage(question)
+//   if (!dalleImage) return
+//   log('generated dalle image: ' + dalleImage)
 
-  // Upload to firestore bucket. if we succeed, update the url. we do this because openAI deletes images after a month
-  const coverImageUrl = await uploadImageToStorage(
-    dalleImage,
-    `contract-images/${creatorUsername}`
-  ).catch((err) => {
-    log.error('Failed to load image', err)
-    return null
-  })
-  if (!coverImageUrl) return
+//   // Upload to firestore bucket. if we succeed, update the url. we do this because openAI deletes images after a month
+//   const coverImageUrl = await uploadImageToStorage(
+//     dalleImage,
+//     `contract-images/${creatorUsername}`
+//   ).catch((err) => {
+//     log.error('Failed to load image', err)
+//     return null
+//   })
+//   if (!coverImageUrl) return
 
-  await updateContract(pg, contractId, { coverImageUrl })
-}
+//   await updateContract(pg, contractId, { coverImageUrl })
+// }
 
 export const uploadImageToStorage = async (imgUrl: string, prefix: string) => {
   const response = await fetch(imgUrl)

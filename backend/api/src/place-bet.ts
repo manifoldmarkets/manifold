@@ -1,4 +1,4 @@
-import { first, isEqual, maxBy, sum, sumBy } from 'lodash'
+import { first, isEqual, maxBy, sumBy } from 'lodash'
 import { APIError, AuthedUser, type APIHandler } from './helpers/endpoint'
 import { CPMM_MIN_POOL_QTY, MarketContract } from 'common/contract'
 import { User } from 'common/user'
@@ -11,12 +11,11 @@ import {
 import { removeUndefinedProps } from 'common/util/object'
 import { Bet, getNewBetId, LimitBet, maker } from 'common/bet'
 import { floatingEqual } from 'common/util/math'
-import { isProd, log } from 'shared/utils'
+import { log } from 'shared/utils'
 import { Answer } from 'common/answer'
 import { CpmmState, getCpmmProbability } from 'common/calculate-cpmm'
 import { ValidatedAPIParams } from 'common/api/schema'
 import { onCreateBets } from 'api/on-create-bet'
-import { isAdminId } from 'common/envs/constants'
 import {
   createSupabaseDirectClient,
   SupabaseTransaction,
@@ -635,31 +634,31 @@ export const executeNewBetResult = async (
   }
 }
 
-const assertAdminAccumulatesNoMoreThanTenShares = (
-  user: User,
-  contract: MarketContract,
-  contractMetrics: ContractMetric[],
-  answerId: string | undefined
-) => {
-  if (!isAdminId(user.id) || contract.token !== 'CASH') return
-  const myMetrics = contractMetrics.find(
-    (m) =>
-      m.userId === user.id &&
-      (answerId &&
-      contract.mechanism === 'cpmm-multi-1' &&
-      !contract.shouldAnswersSumToOne
-        ? m.answerId === answerId
-        : m.answerId === null)
-  )
-  if (myMetrics) {
-    if (sum(Object.values(myMetrics.totalShares)) > 10 && isProd()) {
-      throw new APIError(
-        403,
-        `Admins cannot accumulate more than 10 shares per answer per question.`
-      )
-    }
-  }
-}
+// const assertAdminAccumulatesNoMoreThanTenShares = (
+//   user: User,
+//   contract: MarketContract,
+//   contractMetrics: ContractMetric[],
+//   answerId: string | undefined
+// ) => {
+//   if (!isAdminId(user.id) || contract.token !== 'CASH') return
+//   const myMetrics = contractMetrics.find(
+//     (m) =>
+//       m.userId === user.id &&
+//       (answerId &&
+//       contract.mechanism === 'cpmm-multi-1' &&
+//       !contract.shouldAnswersSumToOne
+//         ? m.answerId === answerId
+//         : m.answerId === null)
+//   )
+//   if (myMetrics) {
+//     if (sum(Object.values(myMetrics.totalShares)) > 10 && isProd()) {
+//       throw new APIError(
+//         403,
+//         `Admins cannot accumulate more than 10 shares per answer per question.`
+//       )
+//     }
+//   }
+// }
 
 const checkIfTakerOrderAllowed = (
   contract: MarketContract,
