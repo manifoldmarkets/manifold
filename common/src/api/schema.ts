@@ -244,7 +244,6 @@ export const API = (_apiTypeCheck = {
         deviceToken: z.string().optional(),
         adminToken: z.string().optional(),
         visitedContractIds: z.array(z.string()).optional(),
-        origin: z.enum(['mani']).optional(),
       })
       .strict(),
   },
