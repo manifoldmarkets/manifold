@@ -167,7 +167,8 @@ export const basicSearchSQL = (
   isPrizeMarket: boolean,
   marketTier: TierParamsType,
   token: TokenInputType,
-  privateUser?: PrivateUser
+  privateUser?: PrivateUser,
+  creatorId?: string
 ) => {
   const sortByScore = sort === 'score' ? 'importance_score' : 'freshness_score'
   return renderSql(
@@ -182,6 +183,7 @@ export const basicSearchSQL = (
       isPrizeMarket,
       marketTier,
       token,
+      creatorId,
     }),
     privateUserBlocksSql(privateUser),
     lim(limit, offset)

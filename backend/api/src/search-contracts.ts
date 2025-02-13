@@ -82,7 +82,9 @@ const search = async (
           sort,
           isPrizeMarket,
           marketTier as TierParamsType,
-          token
+          token,
+          undefined,
+          creatorId
         ),
         null,
         convertContract
