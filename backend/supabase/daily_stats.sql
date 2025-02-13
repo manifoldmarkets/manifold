@@ -7,6 +7,17 @@ create table if not exists
     bet_amount numeric,
     bet_count numeric,
     cash_bet_amount numeric,
+    cash_avg_user_actions numeric,
+    cash_bet_count numeric,
+    cash_comment_count numeric,
+    cash_contract_count numeric,
+    cash_d1 numeric,
+    cash_dau numeric,
+    cash_m1 numeric,
+    cash_mau numeric,
+    cash_w1 numeric,
+    cash_wau numeric,
+    cash_sales numeric,
     comment_count numeric,
     contract_count numeric,
     d1 numeric,
@@ -23,9 +34,12 @@ create table if not exists
     signups numeric,
     signups_real numeric,
     start_date date primary key not null,
+    topic_daus jsonb,
     w1 numeric,
     wau numeric,
-    topic_daus jsonb
+    dav numeric,
+    mav numeric,
+    wav numeric
   );
 
 -- Row Level Security

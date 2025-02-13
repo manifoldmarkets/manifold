@@ -6,7 +6,6 @@ import { ReactNode, useState } from 'react'
 import { Col } from 'web/components/layout/col'
 
 import clsx from 'clsx'
-import { getTieredCost } from 'common/economy'
 import { ENV_CONFIG } from 'common/envs/constants'
 import { AddFundsModal } from 'web/components/add-funds-modal'
 import { Button } from 'web/components/buttons/button'
@@ -16,8 +15,8 @@ import {
   PlusTier,
   PremiumTier,
 } from 'web/public/custom-components/tiers'
-import { CoinNumber } from '../widgets/coin-number'
-import { MarketTierType } from 'common/tier'
+import { TokenNumber } from '../widgets/token-number'
+import { getTieredCost, MarketTierType } from 'common/tier'
 import { getPresentedTierName } from '../tiers/tier-tooltip'
 import { ManaCoin } from 'web/public/custom-components/manaCoin'
 import { getContractTypeFromValue } from './create-contract-types'
@@ -108,7 +107,7 @@ function PriceSection(props: {
   const { baseCost, outcomeType, currentTier, setMarketTier } = props
 
   if (!currentTier) {
-    return <CoinNumber amount={getTieredCost(baseCost, 'plus', outcomeType)} />
+    return <TokenNumber amount={getTieredCost(baseCost, 'plus', outcomeType)} />
   }
   return (
     <Col className="w-full gap-2">
@@ -215,7 +214,7 @@ function Tier(props: {
       <div className="text-5xl sm:text-4xl">{icon}</div>
       <Col className="sm:items-center">
         <div className="text-ink-600">{getPresentedTierName(tier)}</div>
-        <CoinNumber
+        <TokenNumber
           className="text-xl font-semibold"
           amount={getTieredCost(baseCost, tier, outcomeType)}
           numberType="short"

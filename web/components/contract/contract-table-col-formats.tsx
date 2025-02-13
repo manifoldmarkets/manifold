@@ -1,7 +1,7 @@
 import { ChatIcon, UserIcon } from '@heroicons/react/solid'
 import { Contract } from 'common/contract'
 import { useNumContractComments } from 'web/hooks/use-comments'
-import { shortenNumber } from 'web/lib/util/formatNumber'
+import { shortenNumber } from 'common/util/formatNumber'
 import { Row } from '../layout/row'
 import { TierTooltip } from '../tiers/tier-tooltip'
 import { Action } from './contract-table-action'

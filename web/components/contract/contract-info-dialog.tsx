@@ -22,7 +22,7 @@ import {
   updateMarket,
   updateUserDisinterestEmbedding,
 } from 'web/lib/api/api'
-import { formatTime } from 'web/lib/util/time'
+import { formatTime } from 'client-common/lib/time'
 import { MoneyDisplay } from '../bet/money-display'
 import { Button } from '../buttons/button'
 import { ConfirmationButton } from '../buttons/confirmation-button'
@@ -37,6 +37,7 @@ import { InfoTooltip } from '../widgets/info-tooltip'
 import ShortToggle from '../widgets/short-toggle'
 import { Table } from '../widgets/table'
 import { ContractHistoryButton } from './contract-edit-history-button'
+import { DEFAULT_CASH_ANTE } from 'common/economy'
 
 export const Stats = (props: {
   contract: Contract
@@ -427,7 +428,7 @@ export const Stats = (props: {
             <td>
               🏆 Ranked{' '}
               <InfoTooltip
-                text={'Profit and creator bonuses count towards leagues'}
+                text={'Profit from this market count towards leagues'}
               />
             </td>
             <td>
@@ -500,7 +501,7 @@ export function ContractInfoDialog(props: {
     try {
       await api('create-cash-contract', {
         manaContractId: playContract.id,
-        subsidyAmount: 100, // You may want to make this configurable
+        subsidyAmount: DEFAULT_CASH_ANTE, // You may want to make this configurable
       })
       toast.success('Market converted to cash market successfully')
       router.reload()

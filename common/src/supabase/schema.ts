@@ -32,6 +32,8 @@ export type Database = {
           text_fts: unknown | null
           total_liquidity: number | null
           user_id: string | null
+          image_url: string | null
+          short_text: string | null
         }
         Insert: {
           color?: string | null
@@ -55,6 +57,8 @@ export type Database = {
           text_fts?: unknown | null
           total_liquidity?: number | null
           user_id?: string | null
+          image_url?: string | null
+          short_text?: string | null
         }
         Update: {
           color?: string | null
@@ -78,6 +82,8 @@ export type Database = {
           text_fts?: unknown | null
           total_liquidity?: number | null
           user_id?: string | null
+          image_url?: string | null
+          short_text?: string | null
         }
         Relationships: []
       }
@@ -214,6 +220,7 @@ export type Database = {
           shares: number | null
           updated_time: string
           user_id: string
+          expires_at: string | null
         }
         Insert: {
           amount?: number | null
@@ -233,6 +240,7 @@ export type Database = {
           shares?: number | null
           updated_time?: string
           user_id: string
+          expires_at: string | null
         }
         Update: {
           amount?: number | null
@@ -252,6 +260,7 @@ export type Database = {
           shares?: number | null
           updated_time?: string
           user_id?: string
+          expires_at?: string | null
         }
         Relationships: []
       }
@@ -555,12 +564,26 @@ export type Database = {
           nd1: number | null
           nw1: number | null
           sales: number | null
+          cash_sales: number | null
           signups: number | null
           signups_real: number | null
           start_date: string
           w1: number | null
+          dav: number | null
+          wav: number | null
+          mav: number | null
           wau: number | null
           topic_daus: Json | null
+          cash_bet_count: number | null
+          cash_d1: number | null
+          cash_w1: number | null
+          cash_m1: number | null
+          cash_dau: number | null
+          cash_wau: number | null
+          cash_mau: number | null
+          cash_comment_count: number | null
+          cash_contract_count: number | null
+          cash_avg_user_actions: number | null
         }
         Insert: {
           activation?: number | null
@@ -582,12 +605,26 @@ export type Database = {
           nd1?: number | null
           nw1?: number | null
           sales?: number | null
+          cash_sales?: number | null
           signups?: number | null
           signups_real?: number | null
           start_date: string
           w1?: number | null
+          dav?: number | null
+          wav?: number | null
+          mav?: number | null
           wau?: number | null
           topic_daus?: Json | null
+          cash_bet_count?: number | null
+          cash_d1?: number | null
+          cash_w1?: number | null
+          cash_m1?: number | null
+          cash_dau?: number | null
+          cash_wau?: number | null
+          cash_mau?: number | null
+          cash_comment_count?: number | null
+          cash_contract_count?: number | null
+          cash_avg_user_actions?: number | null
         }
         Update: {
           activation?: number | null
@@ -605,16 +642,30 @@ export type Database = {
           engaged_users?: number | null
           feed_conversion?: number | null
           m1?: number | null
+          dav?: number | null
+          wav?: number | null
+          mav?: number | null
           mau?: number | null
           nd1?: number | null
           nw1?: number | null
           sales?: number | null
+          cash_sales?: number | null
           signups?: number | null
           signups_real?: number | null
           start_date?: string
           w1?: number | null
           wau?: number | null
           topic_daus?: Json | null
+          cash_bet_count?: number | null
+          cash_d1?: number | null
+          cash_w1?: number | null
+          cash_m1?: number | null
+          cash_dau?: number | null
+          cash_wau?: number | null
+          cash_mau?: number | null
+          cash_comment_count?: number | null
+          cash_contract_count?: number | null
+          cash_avg_user_actions?: number | null
         }
         Relationships: []
       }
@@ -3360,30 +3411,6 @@ export type Database = {
         Args: Record<PropertyKey, never>
         Returns: Database['public']['CompositeTypes']['love_question_with_count_type'][]
       }
-      get_contract_metrics_with_contracts:
-        | {
-            Args: {
-              uid: string
-              count: number
-            }
-            Returns: {
-              contract_id: string
-              metrics: Json
-              contract: Json
-            }[]
-          }
-        | {
-            Args: {
-              uid: string
-              count: number
-              start: number
-            }
-            Returns: {
-              contract_id: string
-              metrics: Json
-              contract: Json
-            }[]
-          }
       get_contract_voters: {
         Args: {
           this_contract_id: string

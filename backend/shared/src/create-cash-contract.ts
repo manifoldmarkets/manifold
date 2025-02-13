@@ -5,20 +5,29 @@ import {
   log,
   revalidateContractStaticProps,
 } from './utils'
-import { runTxnFromBank } from './txn/run-txn'
+import { runTxnOutsideBetQueue } from './txn/run-txn'
 import { APIError } from 'common/api/utils'
 import { updateContract } from './supabase/contracts'
 import { randomString } from 'common/util/random'
 import { getNewContract } from 'common/new-contract'
-import { convertContract } from 'common/supabase/contracts'
+import { convertAnswer, convertContract } from 'common/supabase/contracts'
 import { clamp } from 'lodash'
 import { runTransactionWithRetries } from './transact-with-retries'
+import { answerToRow } from './supabase/answers'
+import { Answer } from 'common/answer'
+import { bulkInsertQuery } from './supabase/utils'
+import { pgp } from './supabase/init'
+import { generateAntes } from 'shared/create-contract-helpers'
+import { getTierFromLiquidity } from 'common/tier'
+import { MarketContract } from 'common/contract'
+import { filterDefined } from 'common/util/array'
 
 // cribbed from backend/api/src/create-market.ts
 
 export async function createCashContractMain(
   manaContractId: string,
-  subsidyAmount: number
+  subsidyAmount: number,
+  myId: string
 ) {
   const { cashContract, manaContract } = await runTransactionWithRetries(
     async (tx) => {
@@ -40,15 +49,6 @@ export async function createCashContractMain(
         )
       }
 
-      if (manaContract.outcomeType !== 'BINARY') {
-        throw new APIError(
-          400,
-          `Contract ${manaContractId} is not a binary contract`
-        )
-
-        // TODO: Add support for multi
-      }
-
       if (manaContract.siblingContractId) {
         throw new APIError(
           400,
@@ -56,53 +56,121 @@ export async function createCashContractMain(
         )
       }
 
+      if (
+        manaContract.outcomeType !== 'BINARY' &&
+        manaContract.outcomeType !== 'MULTIPLE_CHOICE' &&
+        manaContract.outcomeType !== 'PSEUDO_NUMERIC' &&
+        manaContract.outcomeType !== 'NUMBER'
+      ) {
+        throw new APIError(
+          400,
+          `Cannot make sweepstakes question for ${manaContract.outcomeType} contract ${manaContractId}`
+        )
+      }
+
+      let answers: Answer[] = []
+      if (manaContract.outcomeType === 'MULTIPLE_CHOICE') {
+        if (manaContract.addAnswersMode !== 'DISABLED')
+          throw new APIError(
+            400,
+            `Cannot add answers to multi sweepstakes question`
+          )
+        // Other gets recreated
+        answers = manaContract.answers.filter((a) => !a.isOther)
+      }
+
+      const initialProb =
+        manaContract.mechanism === 'cpmm-1'
+          ? clamp(Math.round(manaContract.prob * 100), 1, 99)
+          : 50
+
+      const min = 'min' in manaContract ? manaContract.min : 0
+      const max = 'max' in manaContract ? manaContract.max : 0
+      const isLogScale =
+        'isLogScale' in manaContract ? manaContract.isLogScale : false
+
       const contract = getNewContract({
+        ...manaContract,
         id: randomString(),
         ante: subsidyAmount,
         token: 'CASH',
         description: htmlToRichText('<p></p>'),
-        initialProb: clamp(Math.round(manaContract.prob * 100), 1, 99),
-
+        initialProb,
         creator,
         slug: manaContract.slug + '--cash',
-        question: manaContract.question,
-        outcomeType: manaContract.outcomeType,
-        closeTime: manaContract.closeTime,
-        visibility: manaContract.visibility,
-        isTwitchContract: manaContract.isTwitchContract,
-
-        min: 0,
-        max: 0,
-        isLogScale: false,
-        answers: [],
+        min,
+        max,
+        isLogScale,
+        answers: answers.map((a) => a.text),
+        answerImageUrls: filterDefined(answers.map((a) => a.imageUrl)),
+        answerShortTexts: filterDefined(answers.map((a) => a.shortText)),
+        siblingContractId: manaContract.id,
       })
 
-      const newRow = await tx.one(
+      // copy answer colors and set userId to subsidizer
+      const answersToInsert =
+        'answers' in contract &&
+        contract.answers?.map((a: Answer) => ({
+          ...a,
+          userId: myId,
+          color: answers.find((b) => b.index === a.index)?.color,
+        }))
+
+      const insertAnswersQuery = answersToInsert
+        ? bulkInsertQuery('answers', answersToInsert.map(answerToRow))
+        : `select 1 where false`
+
+      // TODO: initialize marke tier?
+
+      const contractQuery = pgp.as.format(
         `insert into contracts (id, data, token) values ($1, $2, $3) returning *`,
         [contract.id, JSON.stringify(contract), contract.token]
       )
-      const cashContract = convertContract(newRow)
+
+      const [newContracts, newAnswers] = await tx.multi(
+        `${contractQuery};
+         ${insertAnswersQuery};`
+      )
+
+      const cashContract = convertContract(newContracts[0])
+      if (newAnswers.length > 0 && cashContract.mechanism === 'cpmm-multi-1') {
+        cashContract.answers = newAnswers.map(convertAnswer)
+      }
 
       // Set sibling contract IDs
       await updateContract(tx, manaContractId, {
         siblingContractId: cashContract.id,
       })
-      await updateContract(tx, cashContract.id, {
-        siblingContractId: manaContractId,
-      })
 
       // Add initial liquidity
-      await runTxnFromBank(tx, {
-        amount: subsidyAmount,
-        category: 'CREATE_CONTRACT_ANTE',
+      await runTxnOutsideBetQueue(tx, {
+        fromId: myId,
+        fromType: 'USER',
         toId: cashContract.id,
         toType: 'CONTRACT',
-        fromType: 'BANK',
+        amount: subsidyAmount,
         token: 'CASH',
+        category: 'CREATE_CONTRACT_ANTE',
+      })
+
+      await updateContract(tx, cashContract.id, {
+        marketTier: getTierFromLiquidity(
+          cashContract as MarketContract,
+          subsidyAmount
+        ),
       })
 
       log(
         `Created cash contract ${cashContract.id} for mana contract ${manaContractId}`
+      )
+
+      await generateAntes(
+        tx,
+        myId,
+        cashContract,
+        contract.outcomeType,
+        subsidyAmount,
+        subsidyAmount
       )
 
       return { cashContract, manaContract }

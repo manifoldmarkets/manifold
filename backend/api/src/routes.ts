@@ -30,11 +30,16 @@ import { getComments } from './get-comments'
 import { getBets } from './get-bets'
 import { getLiteUser, getUser } from './get-user'
 import { getUsers } from './get-users'
+import { getUserBalancesByIds, getUsersByIds } from './get-users-by-ids'
 import { getMarket } from './get-market'
+import { getMarketProb } from './get-market-prob'
+import { getMarketProbs } from './get-market-probs'
 import { getGroup } from './get-group'
 import { getPositions } from './get-positions'
 import { getLeagues } from './get-leagues'
 import { getContract } from './get-contract'
+import { getSingleAnswer } from './get-answer'
+import { getContractAnswers } from './get-contract-answers'
 import { addOrRemoveTopicFromContract } from './add-topic-to-market'
 import { addOrRemoveTopicFromTopic } from './add-topic-to-topic'
 import { searchUsers } from './search-users'
@@ -42,7 +47,7 @@ import { searchMarketsLite, searchMarketsFull } from './search-contracts'
 import { post } from 'api/post'
 import { fetchLinkPreview } from './fetch-link-preview'
 import { type APIHandler } from './helpers/endpoint'
-import { requestloan } from 'api/request-loan'
+import { requestLoan } from 'api/request-loan'
 import { removePinnedPhoto } from './love/remove-pinned-photo'
 import { getHeadlines, getPoliticsHeadlines } from './get-headlines'
 import { getadanalytics } from 'api/get-ad-analytics'
@@ -132,7 +137,28 @@ import { getTopicTopics } from './get-topic-topics'
 import { getTopicDashboards } from './get-topic-dashboards'
 import { generateAIMarketSuggestions } from './generate-ai-market-suggestions'
 import { generateAIMarketSuggestions2 } from './generate-ai-market-suggestions-2'
+import { generateAIDescription } from './generate-ai-description'
+import { generateAIAnswers } from './generate-ai-answers'
+import { getmonthlybets2024 } from './get-monthly-bets-2024'
+import { getmaxminprofit2024 } from './get-max-min-profit-2024'
+import { getNextLoanAmount } from './get-next-loan-amount'
+import { checkSportsEvent } from './check-sports-event'
 
+import { createTask } from './create-task'
+import { updateTask } from './update-task'
+import { createCategory } from './create-category'
+import { getCategories } from './get-categories'
+import { updateCategory } from './update-category'
+import { getTasks } from './get-tasks'
+
+import { getSiteActivity } from './get-site-activity'
+import { isSportsInterested } from './is-sports-bettor'
+import { getSportsGames } from './get-sports-games'
+import { getMarketProps } from './get-market-props'
+import { getUserContractMetricsWithContracts } from './get-user-contract-metrics-with-contracts'
+import { validateiap } from './validate-iap'
+import { getReactions } from './get-reactions'
+import { markallnotificationsnew } from './mark-all-notifications-new'
 // we define the handlers in this object in order to typecheck that every API has a handler
 export const handlers: { [k in APIPath]: APIHandler<k> } = {
   'refresh-all-clients': refreshAllClients,
@@ -171,6 +197,10 @@ export const handlers: { [k in APIPath]: APIHandler<k> } = {
   groups: getGroups,
   'market/:id': getMarket,
   'market/:id/lite': ({ id }) => getMarket({ id, lite: true }),
+  'market/:id/prob': getMarketProb,
+  'market-probs': getMarketProbs,
+  'answer/:answerId': getSingleAnswer,
+  'market/:contractId/answers': getContractAnswers,
   'markets-by-ids': getMarketsByIds,
   'slug/:slug': getMarket,
   'market/:contractId/update': updateMarket,
@@ -209,6 +239,8 @@ export const handlers: { [k in APIPath]: APIHandler<k> } = {
   'user/by-id/:id/block': blockUser,
   'user/by-id/:id/unblock': unblockUser,
   users: getUsers,
+  'users/by-id': getUsersByIds,
+  'users/by-id/balance': getUserBalancesByIds,
   'search-users': searchUsers,
   react: addOrRemoveReaction,
   'save-twitch': saveTwitchCredentials,
@@ -219,7 +251,7 @@ export const handlers: { [k in APIPath]: APIHandler<k> } = {
   'compatible-lovers': getCompatibleLovers,
   post: post,
   'fetch-link-preview': fetchLinkPreview,
-  'request-loan': requestloan,
+  'request-loan': requestLoan,
   'remove-pinned-photo': removePinnedPhoto,
   'get-related-markets': getRelatedMarkets,
   'get-related-markets-by-group': getRelatedMarketsByGroup,
@@ -283,4 +315,25 @@ export const handlers: { [k in APIPath]: APIHandler<k> } = {
   'get-daily-changed-metrics-and-contracts': getDailyChangedMetricsAndContracts,
   'generate-ai-market-suggestions': generateAIMarketSuggestions,
   'generate-ai-market-suggestions-2': generateAIMarketSuggestions2,
+  'generate-ai-description': generateAIDescription,
+  'generate-ai-answers': generateAIAnswers,
+  'get-monthly-bets-2024': getmonthlybets2024,
+  'get-max-min-profit-2024': getmaxminprofit2024,
+  'get-next-loan-amount': getNextLoanAmount,
+  'check-sports-event': checkSportsEvent,
+  'create-task': createTask,
+  'update-task': updateTask,
+  'create-category': createCategory,
+  'get-categories': getCategories,
+  'update-category': updateCategory,
+  'get-tasks': getTasks,
+  'get-site-activity': getSiteActivity,
+  'is-sports-interested': isSportsInterested,
+  'get-sports-games': getSportsGames,
+  'get-market-props': getMarketProps,
+  'get-user-contract-metrics-with-contracts':
+    getUserContractMetricsWithContracts,
+  validateIap: validateiap,
+  'comment-reactions': getReactions,
+  'mark-all-notifications-new': markallnotificationsnew,
 }

@@ -1,5 +1,5 @@
 import { formatWithToken } from 'common/util/format'
-import { CoinNumber, NumberDisplayType } from '../widgets/coin-number'
+import { TokenNumber, NumberDisplayType } from '../widgets/token-number'
 
 export function MoneyDisplay(props: {
   amount: number
@@ -12,7 +12,7 @@ export function MoneyDisplay(props: {
 
   if (coloredCoin) {
     return (
-      <CoinNumber
+      <TokenNumber
         amount={amount}
         coinType={isCashContract ? 'sweepies' : 'mana'}
         isInline

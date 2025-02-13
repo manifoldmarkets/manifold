@@ -31,6 +31,13 @@ module.exports = {
         caughtErrorsIgnorePattern: '^_',
       },
     ],
+    '@typescript-eslint/no-unused-expressions': [
+      'error',
+      {
+        // allowTernary: true
+        enforceForJSX: true,
+      },
+    ],
     '@next/next/no-img-element': 'off',
     'linebreak-style': [
       'error',

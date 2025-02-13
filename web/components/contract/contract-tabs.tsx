@@ -19,7 +19,7 @@ import { LoadingIndicator } from 'web/components/widgets/loading-indicator'
 import { Pagination } from 'web/components/widgets/pagination'
 import { Tooltip } from 'web/components/widgets/tooltip'
 import { VisibilityObserver } from 'web/components/widgets/visibility-observer'
-import { useEvent } from 'web/hooks/use-event'
+import { useEvent } from 'client-common/hooks/use-event'
 import { useLiquidity } from 'web/hooks/use-liquidity'
 import { useUser } from 'web/hooks/use-user'
 import { track } from 'web/lib/service/analytics'
@@ -30,26 +30,29 @@ import { FeedLiquidity } from '../feed/feed-liquidity'
 import { Col } from '../layout/col'
 import { Row } from '../layout/row'
 import { ControlledTabs } from '../layout/tabs'
-import { ContractMetricsByOutcome } from 'common/contract-metric'
-import { usePersistentInMemoryState } from 'web/hooks/use-persistent-in-memory-state'
-import { useSubscribeNewComments } from 'web/hooks/use-comments'
+import { usePersistentInMemoryState } from 'client-common/hooks/use-persistent-in-memory-state'
+import { useSubscribeNewComments } from 'client-common/hooks/use-comments'
 import { ParentFeedComment } from '../comments/comment'
 import { useHashInUrlPageRouter } from 'web/hooks/use-hash-in-url-page-router'
 import { useHashInUrl } from 'web/hooks/use-hash-in-url'
 import { MultiNumericBetGroup } from 'web/components/feed/feed-multi-numeric-bet-group'
 import { Button } from '../buttons/button'
-import DropdownMenu from '../comments/dropdown-menu'
+import DropdownMenu from '../widgets/dropdown-menu'
 import generateFilterDropdownItems from '../search/search-dropdown-helpers'
 import { useAPIGetter } from 'web/hooks/use-api-getter'
 import { api } from 'web/lib/api/api'
 import { TRADE_TERM } from 'common/envs/constants'
+import {
+  listenToOrderUpdates,
+  useContractBets,
+} from 'client-common/hooks/use-bets'
+import { useIsPageVisible } from 'web/hooks/use-page-visible'
 
 export function ContractTabs(props: {
-  mainContract: Contract
+  staticContract: Contract
   liveContract: Contract
   bets: Bet[]
   comments: ContractComment[]
-  userPositionsByOutcome: ContractMetricsByOutcome
   replyTo?: Answer | Bet
   setReplyTo?: (replyTo?: Answer | Bet) => void
   cancelReplyToAnswer?: () => void
@@ -59,11 +62,10 @@ export function ContractTabs(props: {
   totalBets: number
   totalPositions: number
   pinnedComments: ContractComment[]
-  betReplies: Bet[]
   appRouter?: boolean
 }) {
   const {
-    mainContract,
+    staticContract,
     liveContract,
     comments,
     bets,
@@ -73,10 +75,8 @@ export function ContractTabs(props: {
     activeIndex,
     setActiveIndex,
     totalBets,
-    userPositionsByOutcome,
     pinnedComments,
     appRouter,
-    betReplies,
   } = props
 
   const [totalPositions, setTotalPositions] = useState(props.totalPositions)
@@ -117,7 +117,7 @@ export function ContractTabs(props: {
           title: commentsTitle,
           content: (
             <CommentsTabContent
-              playContract={mainContract}
+              staticContract={staticContract}
               liveContract={liveContract}
               comments={comments}
               pinnedComments={pinnedComments}
@@ -126,7 +126,6 @@ export function ContractTabs(props: {
               replyTo={replyTo}
               clearReply={() => setReplyTo?.(undefined)}
               className="-ml-2 -mr-1"
-              bets={uniqBy(bets.concat(betReplies), (b) => b.id)}
               appRouter={appRouter}
             />
           ),
@@ -138,13 +137,6 @@ export function ContractTabs(props: {
             content: (
               <UserPositionsTable
                 key={liveContract.id}
-                positions={
-                  // If contract is resolved, will have to refetch positions by profit
-                  Object.values(userPositionsByOutcome).length > 0 &&
-                  !liveContract.isResolved
-                    ? userPositionsByOutcome
-                    : undefined
-                }
                 contract={liveContract as BinaryContract}
                 setTotalPositions={setTotalPositions}
               />
@@ -171,7 +163,7 @@ export function ContractTabs(props: {
 
 const LOAD_MORE = 10
 export const CommentsTabContent = memo(function CommentsTabContent(props: {
-  playContract: Contract // contains the comments
+  staticContract: Contract // contains the comments
   liveContract: Contract // you trade on this
   comments: ContractComment[]
   blockedUserIds: string[]
@@ -179,21 +171,19 @@ export const CommentsTabContent = memo(function CommentsTabContent(props: {
   replyTo?: Answer | Bet
   clearReply?: () => void
   className?: string
-  bets?: Bet[]
   highlightCommentId?: string
   pinnedComments: ContractComment[]
   appRouter?: boolean
   scrollToEnd?: boolean
 }) {
   const {
-    playContract,
+    staticContract,
     liveContract,
     blockedUserIds,
     setCommentsLength,
     replyTo,
     clearReply,
     className,
-    bets,
     highlightCommentId,
     appRouter,
     scrollToEnd,
@@ -204,16 +194,42 @@ export const CommentsTabContent = memo(function CommentsTabContent(props: {
   const { data: fetchedComments } = useAPIGetter(
     'comments',
     {
-      contractId: playContract.id,
+      contractId: staticContract.id,
     },
     undefined,
-    'comments-' + playContract.id
+    'comments-' + staticContract.id
+  )
+
+  const bets = useContractBets(
+    staticContract.id,
+    {
+      commentRepliesOnly: true,
+    },
+    useIsPageVisible,
+    () => api('bets')
+  )
+
+  const isPageVisible = useIsPageVisible()
+  const { data: newFetchedComments } = useAPIGetter(
+    'comments',
+    {
+      contractId: staticContract.id,
+      afterTime: staticContract.lastCommentTime,
+    },
+    undefined,
+    'new-comments-' + staticContract.id,
+    isPageVisible
   )
 
   // Listen for new comments
-  const newComments = useSubscribeNewComments(playContract.id)
+  const newComments = useSubscribeNewComments(staticContract.id)
   const comments = uniqBy(
-    [...(newComments ?? []), ...(fetchedComments ?? []), ...props.comments],
+    [
+      ...(newComments ?? []),
+      ...(newFetchedComments ?? []),
+      ...(fetchedComments ?? []),
+      ...props.comments,
+    ],
     'id'
   ).filter((c) => !blockedUserIds.includes(c.userId))
 
@@ -221,12 +237,12 @@ export const CommentsTabContent = memo(function CommentsTabContent(props: {
     props.comments.filter((c) => !c.replyToCommentId).length
   )
 
-  const isBinary = playContract.outcomeType === 'BINARY'
-  const isBountiedQuestion = playContract.outcomeType == 'BOUNTIED_QUESTION'
+  const isBinary = staticContract.outcomeType === 'BINARY'
+  const isBountiedQuestion = staticContract.outcomeType == 'BOUNTIED_QUESTION'
   const bestFirst =
     isBountiedQuestion &&
-    (!user || user.id !== playContract.creatorId) &&
-    !playContract.isAutoBounty
+    (!user || user.id !== staticContract.creatorId) &&
+    !staticContract.isAutoBounty
 
   const sorts = buildArray(
     bestFirst ? 'Best' : 'Newest',
@@ -237,7 +253,7 @@ export const CommentsTabContent = memo(function CommentsTabContent(props: {
 
   const [sortIndex, setSortIndex] = usePersistentInMemoryState(
     0,
-    `comments-sort-${playContract.id}`
+    `comments-sort-${staticContract.id}`
   )
   const sort = sorts[sortIndex]
 
@@ -358,7 +374,7 @@ export const CommentsTabContent = memo(function CommentsTabContent(props: {
 
   const [expandGptSummary, setExpandGptSummary] = usePersistentInMemoryState(
     false,
-    `expand-gpt-summary-${playContract.id}`
+    `expand-gpt-summary-${staticContract.id}`
   )
 
   function getSortLabel(sort: string) {
@@ -374,14 +390,13 @@ export const CommentsTabContent = memo(function CommentsTabContent(props: {
         autoFocus={false}
         replyTo={replyTo}
         className="mb-4 mr-px mt-px"
-        playContract={playContract}
-        liveContract={liveContract}
+        playContract={staticContract}
         clearReply={clearReply}
         trackingLocation={'contract page'}
         commentTypes={['comment', 'repost']}
       />
 
-      {playContract.gptCommentSummary && (
+      {staticContract.gptCommentSummary && (
         <Button
           className="mb-2 rounded-md bg-teal-100 p-4"
           size="xs"
@@ -403,7 +418,7 @@ export const CommentsTabContent = memo(function CommentsTabContent(props: {
                 !expandGptSummary && 'line-clamp-3'
               )}
             >
-              {playContract.gptCommentSummary}
+              {staticContract.gptCommentSummary}
             </div>
           </Col>
         </Button>
@@ -426,14 +441,14 @@ export const CommentsTabContent = memo(function CommentsTabContent(props: {
                     console.log(i)
                     refreezeIds()
                     track('change-comments-sort', {
-                      contractSlug: playContract.slug,
-                      contractName: playContract.question,
+                      contractSlug: staticContract.slug,
+                      contractName: staticContract.question,
                       totalComments: comments.length,
-                      totalUniqueTraders: playContract.uniqueBettorCount,
+                      totalUniqueTraders: staticContract.uniqueBettorCount,
                     })
                   }
                 )}
-                icon={
+                buttonContent={
                   <Row className="text-ink-600 w-20 items-center text-sm">
                     <span className="whitespace-nowrap">
                       {getSortLabel(sort)}
@@ -454,7 +469,7 @@ export const CommentsTabContent = memo(function CommentsTabContent(props: {
         <div key={comment.id} className={'pt-3'}>
           <ParentFeedComment
             comment={comment}
-            playContract={playContract}
+            playContract={staticContract}
             liveContract={liveContract}
             trackingLocation={'contract page'}
             seeReplies={false}
@@ -467,7 +482,7 @@ export const CommentsTabContent = memo(function CommentsTabContent(props: {
       {parentComments.slice(0, parentCommentsToRender).map((parent) => (
         <FeedCommentThread
           key={parent.id}
-          playContract={playContract}
+          playContract={staticContract}
           liveContract={liveContract}
           parentComment={parent}
           threadComments={commentsByParent[parent.id] ?? []}
@@ -475,10 +490,10 @@ export const CommentsTabContent = memo(function CommentsTabContent(props: {
           idInUrl={idToHighlight}
           showReplies={
             !isBountiedQuestion ||
-            (!!user && user.id === playContract.creatorId)
+            (!!user && user.id === staticContract.creatorId)
           }
           childrenBountyTotal={
-            playContract.outcomeType == 'BOUNTIED_QUESTION'
+            staticContract.outcomeType == 'BOUNTIED_QUESTION'
               ? childrensBounties[parent.id]
               : undefined
           }
@@ -516,6 +531,7 @@ export const BetsTabContent = memo(function BetsTabContent(props: {
   const isNumber = outcomeType === 'NUMBER'
   const ITEMS_PER_PAGE = 50 * (isNumber ? contract.answers.length : 1)
   const bets = [...props.bets, ...olderBets]
+  listenToOrderUpdates(contract.id, setOlderBets, true)
 
   const oldestBet = minBy(bets, (b) => b.createdTime)
   const start = page * ITEMS_PER_PAGE

@@ -1,9 +1,5 @@
 import { Group } from 'common/group'
-import {
-  ArrowLeftIcon,
-  BookmarkIcon,
-  PlusCircleIcon,
-} from '@heroicons/react/outline'
+import { BookmarkIcon, PlusCircleIcon } from '@heroicons/react/outline'
 import { CopyLinkOrShareButton } from 'web/components/buttons/copy-link-button'
 import { Button } from 'web/components/buttons/button'
 import { AddContractToGroupModal } from 'web/components/topics/add-contract-to-group-modal'
@@ -23,8 +19,8 @@ import { useRouter } from 'next/router'
 import { useUser } from 'web/hooks/use-user'
 
 export const QuestionsTopicTitle = forwardRef(
-  (props: { topic: Group }, ref: Ref<HTMLDivElement>) => {
-    const { topic } = props
+  (props: { topic: Group; addAbout: () => void }, ref: Ref<HTMLDivElement>) => {
+    const { topic, addAbout } = props
     const { isFollowing, setIsFollowing } = useIsFollowingTopic(topic.slug)
     const [showAddContract, setShowAddContract] = useState(false)
     const [loading, setLoading] = useState(false)
@@ -39,18 +35,9 @@ export const QuestionsTopicTitle = forwardRef(
         }
         ref={ref}
       >
-        <Row className={'gap-1 truncate'}>
-          <button
-            onClick={router.back}
-            className="text-ink-600 hover:bg-ink-200 disabled:text-ink-300 font-md text-center' my-auto inline-flex items-center justify-center rounded-md p-2 ring-inset transition-colors disabled:cursor-not-allowed disabled:bg-transparent"
-          >
-            <ArrowLeftIcon className="h-5 w-5" aria-hidden />
-            <div className="sr-only">Back</div>
-          </button>
-          <h1 className="text-primary-700 self-center truncate text-2xl">
-            {topic.name}
-          </h1>
-        </Row>
+        <h1 className="text-primary-700 self-center truncate text-2xl">
+          {topic.name}
+        </h1>
         <Row>
           <CopyLinkOrShareButton
             url={getTopicShareUrl(topic.slug)}
@@ -118,6 +105,7 @@ export const QuestionsTopicTitle = forwardRef(
                 setIsFollowing(true)
               )
             }}
+            addAbout={addAbout}
             user={user}
             className={'flex [&_*]:flex [&_button]:pr-2'}
           />

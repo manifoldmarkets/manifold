@@ -20,7 +20,8 @@ case $ENV in
     dev)
         NEXT_PUBLIC_FIREBASE_ENV=DEV
         GCLOUD_PROJECT=dev-mantic-markets
-        MACHINE_TYPE=n2-standard-2 ;;
+        # MACHINE_TYPE=n2-standard-2 ;;
+        MACHINE_TYPE=e2-small ;;
     prod)
         NEXT_PUBLIC_FIREBASE_ENV=PROD
         GCLOUD_PROJECT=mantic-markets
@@ -126,6 +127,7 @@ gcloud compute instance-templates create-with-container ${TEMPLATE_NAME} \
        --tags lb-health-check \
        --address ${STATIC_IP_ADDRESS}
 
+# ian: Uncomment this after you update the url-map config
 # echo "Importing url-map config"
 # gcloud compute url-maps import api-lb \
 #         --source=url-map-config.yaml \

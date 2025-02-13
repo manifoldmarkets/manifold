@@ -50,7 +50,7 @@ export const updatelover = authEndpoint(async (req, auth) => {
   if (!existingLover) {
     throw new APIError(400, 'Lover not found')
   }
-  !parsedBody.last_online_time &&
+  if (!parsedBody.last_online_time)
     log('Updating lover', { userId: auth.uid, parsedBody })
 
   await removePinnedUrlFromPhotoUrls(parsedBody)

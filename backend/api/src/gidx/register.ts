@@ -1,4 +1,5 @@
 import { APIError, APIHandler } from 'api/helpers/endpoint'
+import { SWEEP_PRODUCTION_ENABLED } from 'common/envs/constants'
 import {
   ENABLE_FAKE_CUSTOMER,
   GIDXRegistrationResponse,
@@ -26,6 +27,9 @@ export const register: APIHandler<'register-gidx'> = async (
   auth,
   req
 ) => {
+  if (!SWEEP_PRODUCTION_ENABLED) {
+    throw new APIError(400, 'GIDX registration is disabled')
+  }
   const { privateUser, phoneNumberWithCode } =
     await getUserRegistrationRequirements(auth.uid)
   const EmailAddress = props.EmailAddress ?? privateUser.email

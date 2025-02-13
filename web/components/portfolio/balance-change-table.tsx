@@ -1,3 +1,4 @@
+import dayjs from 'dayjs'
 import { Col } from 'web/components/layout/col'
 import {
   formatMoney,
@@ -15,96 +16,174 @@ import { DAY_MS } from 'common/util/time'
 import {
   AnyBalanceChangeType,
   BetBalanceChange,
-  TxnBalanceChange,
   isBetChange,
   isTxnChange,
+  TxnBalanceChange,
 } from 'common/balance-change'
 import Link from 'next/link'
 import {
-  FaBackward,
   FaArrowRightArrowLeft,
   FaArrowTrendDown,
   FaArrowTrendUp,
+  FaBackward,
 } from 'react-icons/fa6'
 import { contractPathWithoutContract } from 'common/contract'
 import { linkClass } from 'web/components/widgets/site-link'
 import { ScaleIcon } from '@heroicons/react/outline'
-import { QuestType } from 'common/quest'
 import { Input } from 'web/components/widgets/input'
-import { formatJustTime, formatTimeShort } from 'web/lib/util/time'
+import { customFormatTime, formatJustDateShort } from 'client-common/lib/time'
 import { assertUnreachable } from 'common/util/types'
 import { AnyTxnCategory } from 'common/txn'
 import { useAPIGetter } from 'web/hooks/use-api-getter'
 import { Button } from 'web/components/buttons/button'
 import { Modal } from '../layout/modal'
+import { QuestType } from 'common/quest'
+import { PROFIT_FEE_FRACTION } from 'common/economy'
 
-export const BalanceChangeTable = (props: {
-  user: User
-  balanceChanges: AnyBalanceChangeType[]
-  simple?: boolean
-}) => {
-  const { user, simple } = props
+export const BalanceChangeTable = (props: { user: User }) => {
+  const { user } = props
+
+  const [before, setBefore] = useState<number | undefined>(undefined)
+  const [after, setAfter] = useState(
+    dayjs().startOf('day').subtract(14, 'day').valueOf()
+  )
+
+  const { data: allBalanceChanges } = useAPIGetter('get-balance-changes', {
+    userId: user.id,
+    before,
+    after,
+  })
+
   const [query, setQuery] = useState('')
   const { data: cashouts } = useAPIGetter('get-cashouts', {
     userId: user.id,
   })
   const [showCashoutModal, setShowCashoutModal] = useState(false)
-  const balanceChanges = props.balanceChanges
-    .filter((change) => {
-      const { type } = change
-      const contractQuestion =
-        ('contract' in change && change.contract?.question) || ''
-      const changeType = type
-      const userName = 'user' in change ? change.user?.name ?? '' : ''
-      const userUsername = 'user' in change ? change.user?.username ?? '' : ''
-      const answerText = 'answer' in change ? change.answer?.text ?? '' : ''
-      const betText = 'bet' in change ? betChangeToText(change) : ''
-      return (
-        contractQuestion.toLowerCase().includes(query.toLowerCase()) ||
-        changeType.toLowerCase().includes(query.toLowerCase()) ||
-        (txnTypeToDescription(changeType) || '')
-          .toLowerCase()
-          .includes(query.toLowerCase()) ||
-        answerText.toLowerCase().includes(query.toLowerCase()) ||
-        ((isTxnChange(change) && txnTitle(change)) || '')
-          .toLowerCase()
-          .includes(query.toLowerCase()) ||
-        userName.toLowerCase().includes(query.toLowerCase()) ||
-        userUsername.toLowerCase().includes(query.toLowerCase()) ||
-        betText.toLowerCase().includes(query.toLowerCase())
-      )
-    })
-    .slice(0, 1000)
+  const balanceChanges = (allBalanceChanges ?? []).filter((change) => {
+    const { type } = change
+    const contractQuestion =
+      ('contract' in change && change.contract?.question) || ''
+    const changeType = type
+    const userName = 'user' in change ? change.user?.name ?? '' : ''
+    const userUsername = 'user' in change ? change.user?.username ?? '' : ''
+    const answerText = 'answer' in change ? change.answer?.text ?? '' : ''
+    const betText = 'bet' in change ? betChangeToText(change) : ''
+    return (
+      contractQuestion.toLowerCase().includes(query.toLowerCase()) ||
+      changeType.toLowerCase().includes(query.toLowerCase()) ||
+      (txnTypeToDescription(changeType) || '')
+        .toLowerCase()
+        .includes(query.toLowerCase()) ||
+      answerText.toLowerCase().includes(query.toLowerCase()) ||
+      ((isTxnChange(change) && txnTitle(change)) || '')
+        .toLowerCase()
+        .includes(query.toLowerCase()) ||
+      userName.toLowerCase().includes(query.toLowerCase()) ||
+      userUsername.toLowerCase().includes(query.toLowerCase()) ||
+      betText.toLowerCase().includes(query.toLowerCase())
+    )
+  })
   const pendingCashouts =
     cashouts?.filter((c) => c.txn.gidxStatus === 'Pending')?.length ?? 0
   return (
-    <Col className={' w-full justify-center py-1'}>
+    <Col className={'w-full justify-center gap-4 py-1'}>
       <Input
         type={'text'}
         placeholder={'Search your balance changes'}
         value={query}
         onChange={(e) => setQuery(e.target.value)}
       />
-      <Col className={'gap-4 px-2 pt-4'}>
+      <Row className="flex-wrap justify-between gap-2">
+        <Row className="items-center gap-2">
+          <Input
+            type="date"
+            className="dark:date-range-input-white text-ink-700 !h-8 w-[120px] !px-2 !py-1 text-sm"
+            value={dayjs(after).format('YYYY-MM-DD')}
+            max={before ? dayjs(before).format('YYYY-MM-DD') : undefined}
+            onChange={(e) =>
+              setAfter(dayjs(e.target.value).startOf('day').valueOf())
+            }
+          />
+          <span className="text-ink-700 text-sm">to</span>
+          <Input
+            type="date"
+            className="dark:date-range-input-white text-ink-700 !h-8 w-[120px] !px-2 !py-1 text-sm"
+            value={before ? dayjs(before).format('YYYY-MM-DD') : ''}
+            min={dayjs(after).format('YYYY-MM-DD')}
+            onChange={(e) =>
+              setBefore(
+                e.target.value
+                  ? dayjs(e.target.value).endOf('day').valueOf()
+                  : undefined
+              )
+            }
+          />
+        </Row>
         {cashouts && cashouts.length > 0 && (
-          <Row className=" justify-end">
-            <Button
-              color="gray-outline"
-              onClick={() => setShowCashoutModal(true)}
-            >
-              View {maybePluralize('redemption', cashouts?.length ?? 0)}{' '}
-              {pendingCashouts > 0 ? `(${pendingCashouts} pending)` : ''}
-            </Button>
-          </Row>
+          <Button
+            color="gray-outline"
+            size="xs"
+            onClick={() => setShowCashoutModal(true)}
+          >
+            View {maybePluralize('redemption', cashouts?.length ?? 0)}{' '}
+            {pendingCashouts > 0 ? `(${pendingCashouts} pending)` : ''}
+          </Button>
         )}
-        <RenderBalanceChanges
-          avatarSize={'md'}
-          balanceChanges={balanceChanges}
-          user={user}
-          simple={simple}
-          hideBalance={!!query}
-        />
-      </Col>
+      </Row>
+      {!!before && before < Date.now() && (
+        <Row className="text-ink-400 mt-4 items-center justify-center gap-6">
+          <div className="border-ink-400 grow border" />
+          <span>Cutoff: {formatJustDateShort(before)}</span>
+          <span className="flex gap-2">
+            <button
+              className="text-primary-500 hover:underline"
+              onClick={() => setBefore(before + 7 * DAY_MS)}
+            >
+              Load 1W
+            </button>
+            <button
+              className="text-primary-500 hover:underline"
+              onClick={() => setBefore(undefined)}
+            >
+              Clear
+            </button>
+          </span>
+          <div className="border-ink-400 grow border" />
+        </Row>
+      )}
+
+      <RenderBalanceChanges
+        avatarSize={'md'}
+        balanceChanges={balanceChanges}
+        user={user}
+        hideBalance={!!query}
+      />
+      <Row className="text-ink-400 mt-4 items-center justify-center gap-6">
+        <div className="border-ink-400 grow border" />
+        <span>Cutoff: {formatJustDateShort(after)}</span>
+        <span className="flex gap-2">
+          <button
+            className="text-primary-500 hover:underline"
+            onClick={() => setAfter(after - 7 * DAY_MS)}
+          >
+            Load 1W
+          </button>
+          <button
+            className="text-primary-500 hover:underline"
+            onClick={() => setAfter(after - 30 * DAY_MS)}
+          >
+            1M
+          </button>
+          <button
+            className="text-primary-500 hover:underline"
+            onClick={() => setAfter(after - 365 * DAY_MS)}
+          >
+            1Y
+          </button>
+        </span>
+        <div className="border-ink-400 grow border" />
+      </Row>
+
       <Modal open={showCashoutModal} setOpen={setShowCashoutModal}>
         <Col className={'bg-canvas-0 gap-4 rounded-md p-4'}>
           <table className="w-full">
@@ -139,10 +218,9 @@ function RenderBalanceChanges(props: {
   balanceChanges: AnyBalanceChangeType[]
   user: User
   avatarSize: 'sm' | 'md'
-  simple?: boolean
   hideBalance?: boolean
 }) {
-  const { balanceChanges, user, avatarSize, simple, hideBalance } = props
+  const { balanceChanges, user, avatarSize, hideBalance } = props
   let currManaBalance = user.balance
   let currCashBalance = user.cashBalance
   let currSpiceBalance = user.spiceBalance
@@ -178,7 +256,6 @@ function RenderBalanceChanges(props: {
               change={change}
               balance={balanceRunningTotals[i]}
               avatarSize={avatarSize}
-              simple={simple}
               hideBalance={hideBalance}
               token={change.contract.token}
             />
@@ -190,7 +267,6 @@ function RenderBalanceChanges(props: {
               change={change as TxnBalanceChange}
               balance={balanceRunningTotals[i]}
               avatarSize={avatarSize}
-              simple={simple}
               hideBalance={hideBalance}
             />
           )
@@ -244,28 +320,14 @@ export function ChangeIcon(props: {
   )
 }
 
-const betChangeToText = (change: BetBalanceChange) => {
-  const { type, bet } = change
-  const { outcome } = bet
-  return type === 'redeem_shares'
-    ? `Redeem shares`
-    : type === 'loan_payment'
-    ? `Pay back loan`
-    : type === 'fill_bet'
-    ? `Fill ${outcome} order`
-    : type === 'sell_shares'
-    ? `Sell ${outcome} shares`
-    : `Buy ${outcome}`
-}
 const BetBalanceChangeRow = (props: {
   change: BetBalanceChange
   balance: { mana: number; cash: number }
   avatarSize: 'sm' | 'md'
-  simple?: boolean
   hideBalance?: boolean
   token: 'MANA' | 'CASH'
 }) => {
-  const { change, balance, avatarSize, simple, hideBalance, token } = props
+  const { change, balance, avatarSize, hideBalance, token } = props
   const { amount, contract, answer, bet, type } = change
   const { outcome } = bet
   const { slug, question, creatorUsername } = contract
@@ -345,39 +407,29 @@ const BetBalanceChangeRow = (props: {
             {betChangeToText(change)} {answer ? ` on ${answer.text}` : ''}
           </div>
         </Row>
-        {!simple && (
-          <Row className={'text-ink-600'}>
-            {!hideBalance && (
-              <>
-                {token === 'CASH'
-                  ? formatSweepies(balance.cash)
-                  : formatMoney(balance.mana)}
-                {'·'}
-              </>
-            )}{' '}
-            {customFormatTime(change.createdTime)}
-          </Row>
-        )}
+        <Row className={'text-ink-600'}>
+          {!hideBalance && (
+            <>
+              {token === 'CASH'
+                ? formatSweepies(balance.cash)
+                : formatMoney(balance.mana)}
+              {'·'}
+            </>
+          )}{' '}
+          {customFormatTime(change.createdTime)}
+        </Row>
       </Col>
     </Row>
   )
-}
-
-const customFormatTime = (time: number) => {
-  if (time > Date.now() - DAY_MS) {
-    return formatJustTime(time)
-  }
-  return formatTimeShort(time)
 }
 
 const TxnBalanceChangeRow = (props: {
   change: TxnBalanceChange
   balance: { mana: number; cash: number; spice: number }
   avatarSize: 'sm' | 'md'
-  simple?: boolean
   hideBalance?: boolean
 }) => {
-  const { change, balance, avatarSize, simple, hideBalance } = props
+  const { change, balance, avatarSize, hideBalance } = props
   const { contract, amount, type, token, user, charity, description } = change
 
   const reasonToBgClassNameMap: Partial<{
@@ -387,7 +439,7 @@ const TxnBalanceChangeRow = (props: {
     BETTING_STREAK_BONUS: 'bg-red-400',
     CREATE_CONTRACT_ANTE: 'bg-indigo-400',
     CONTRACT_RESOLUTION_PAYOUT: 'bg-yellow-200',
-    CONTRACT_UNDO_RESOLUTION_PAYOUT: 'bg-ink-1000',
+    CONTRACT_UNDO_RESOLUTION_PAYOUT: 'bg-canvas-100',
     PRODUCE_SPICE: 'bg-yellow-200',
     CONTRACT_UNDO_PRODUCE_SPICE: 'bg-ink-1000',
     CONSUME_SPICE: 'bg-indigo-400',
@@ -410,6 +462,11 @@ const TxnBalanceChangeRow = (props: {
     ADD_SUBSIDY: 'bg-red-100',
     UNIQUE_BETTOR_BONUS: 'bg-sky-400',
     CHARITY: 'bg-gradient-to-br from-pink-300 via-purple-300 to-primary-400',
+    CONTRACT_RESOLUTION_FEE:
+      'bg-gradient-to-br from-pink-300 via-purple-300 to-primary-400',
+    UNDO_CONTRACT_RESOLUTION_FEE: 'bg-canvas-100',
+    ADMIN_REWARD:
+      'bg-gradient-to-br from-pink-300 via-purple-300 to-primary-400',
   }
 
   return (
@@ -436,7 +493,8 @@ const TxnBalanceChangeRow = (props: {
               type === 'PRODUCE_SPICE' ? (
               '🎉'
             ) : type === 'CONTRACT_UNDO_RESOLUTION_PAYOUT' ||
-              type === 'CONTRACT_UNDO_PRODUCE_SPICE' ? (
+              type === 'CONTRACT_UNDO_PRODUCE_SPICE' ||
+              type === 'UNDO_CONTRACT_RESOLUTION_FEE' ? (
               <FaBackward className={'h-5 w-5 text-white'} />
             ) : type === 'CREATE_CONTRACT_ANTE' || type === 'BOUNTY_POSTED' ? (
               <ScaleIcon className={'-ml-[1px] mb-1 h-5 w-5'} />
@@ -445,9 +503,13 @@ const TxnBalanceChangeRow = (props: {
               type === 'CONVERT_CASH' ||
               type === 'CONVERT_CASH_DONE' ? (
               <FaArrowRightArrowLeft className={'h-4 w-4'} />
-            ) : type === 'CHARITY' || type === 'REFERRAL' ? (
+            ) : type === 'CHARITY' ||
+              type === 'REFERRAL' ||
+              type === 'ADMIN_REWARD' ? (
               '❤️'
-            ) : type === 'LOAN' || type === 'CASH_OUT' ? (
+            ) : type === 'LOAN' ||
+              type === 'CASH_OUT' ||
+              type === 'CONTRACT_RESOLUTION_FEE' ? (
               '🏦'
             ) : type === 'MANA_PURCHASE' ? (
               '🤑'
@@ -517,24 +579,36 @@ const TxnBalanceChangeRow = (props: {
         <div className={'text-ink-600'}>
           {txnTypeToDescription(type) ?? description ?? type}
         </div>
-        {!simple && (
-          <Row className={'text-ink-600'}>
-            {!hideBalance && (
-              <>
-                {token === 'SPICE'
-                  ? formatSpice(balance.spice)
-                  : token === 'CASH'
-                  ? formatSweepies(balance.cash)
-                  : formatMoney(balance.mana)}
-                {' · '}
-              </>
-            )}
-            {customFormatTime(change.createdTime)}
-          </Row>
-        )}
+        <Row className={'text-ink-600'}>
+          {!hideBalance && (
+            <>
+              {token === 'SPICE'
+                ? formatSpice(balance.spice)
+                : token === 'CASH'
+                ? formatSweepies(balance.cash)
+                : formatMoney(balance.mana)}
+              {' · '}
+            </>
+          )}
+          {customFormatTime(change.createdTime)}
+        </Row>
       </Col>
     </Row>
   )
+}
+
+const betChangeToText = (change: BetBalanceChange) => {
+  const { type, bet } = change
+  const { outcome } = bet
+  return type === 'redeem_shares'
+    ? `Redeem shares`
+    : type === 'loan_payment'
+    ? `Pay back loan`
+    : type === 'fill_bet'
+    ? `Fill ${outcome} order`
+    : type === 'sell_shares'
+    ? `Sell ${outcome} shares`
+    : `Buy ${outcome}`
 }
 
 const txnTitle = (change: TxnBalanceChange) => {
@@ -555,6 +629,8 @@ const txnTitle = (change: TxnBalanceChange) => {
       return questType ? questTypeToDescription(questType) : ''
     case 'BETTING_STREAK_BONUS':
       return 'Prediction streak bonus' // usually the question instead
+    case 'ADMIN_REWARD':
+      return 'Mod task completed'
     case 'LOAN':
       return 'Loan'
     case 'LEAGUE_PRIZE':
@@ -579,6 +655,9 @@ const txnTitle = (change: TxnBalanceChange) => {
       return 'Sweepcash bonus'
     case 'KYC_BONUS':
       return 'ID verification bonus'
+    case 'CONTRACT_RESOLUTION_FEE':
+    case 'UNDO_CONTRACT_RESOLUTION_FEE':
+      return ''
     default:
       return type
   }
@@ -604,6 +683,8 @@ const txnTypeToDescription = (txnCategory: string) => {
       return 'New user bonuses'
     case 'REFERRAL':
       return 'Quests'
+    case 'ADMIN_REWARD':
+      return 'Thank you!'
     case 'QUEST_REWARD':
       return 'Quests'
     case 'CONTRACT_UNDO_PRODUCE_SPICE':
@@ -614,6 +695,10 @@ const txnTypeToDescription = (txnCategory: string) => {
     case 'CONVERT_CASH':
     case 'CONVERT_CASH_DONE':
       return ''
+    case 'CONTRACT_RESOLUTION_FEE':
+      return `${PROFIT_FEE_FRACTION * 100}% fee on profit at resolution`
+    case 'UNDO_CONTRACT_RESOLUTION_FEE':
+      return `Undo ${PROFIT_FEE_FRACTION * 100}% profit fee at resolution`
     case 'MANA_PURCHASE':
       return ''
     case 'ADD_SUBSIDY':
@@ -641,8 +726,6 @@ const questTypeToDescription = (questType: QuestType) => {
       return 'Sharing bonus'
     case 'MARKETS_CREATED':
       return 'Creation bonus'
-    case 'REFERRALS':
-      return 'Referral bonus'
     default:
       return 'questType'
   }

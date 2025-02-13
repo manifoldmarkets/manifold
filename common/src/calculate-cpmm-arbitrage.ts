@@ -3,10 +3,10 @@ import { Answer } from './answer'
 import { Bet, LimitBet, maker } from './bet'
 import {
   calculateAmountToBuySharesFixedP,
+  computeFills,
   getCpmmProbability,
 } from './calculate-cpmm'
 import { binarySearch } from './util/algos'
-import { computeFills } from './new-bet'
 import { floatingEqual } from './util/math'
 import { Fees, getFeesSplit, getTakerFee, noFees, sumAllFees } from './fees'
 import { addObjects } from './util/object'

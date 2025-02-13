@@ -15,6 +15,11 @@ export const createCashContract: APIHandler<'create-cash-contract'> = async (
       'Only Manifold team members can create cash contracts'
     )
 
-  const contract = await createCashContractMain(manaContractId, subsidyAmount)
+  const contract = await createCashContractMain(
+    manaContractId,
+    subsidyAmount,
+    auth.uid
+  )
+
   return toLiteMarket(contract)
 }

@@ -125,9 +125,11 @@ export const convertAnswer = (row: Row<'answers'>): Answer =>
       week: row.prob_change_week ?? 0,
       month: row.prob_change_month ?? 0,
     },
+    imageUrl: row.image_url ?? undefined,
+    shortText: row.short_text ?? undefined,
   })
 
-export const convertContract = (c: {
+export const convertContract = <T extends Contract>(c: {
   data: Json
   importance_score: number | null
   view_count?: number | null
@@ -137,7 +139,7 @@ export const convertContract = (c: {
   token?: string
 }) =>
   removeUndefinedProps({
-    ...(c.data as Contract),
+    ...(c.data as T),
     // Only updated in supabase:
     importanceScore: c.importance_score,
     conversionScore: c.conversion_score,
@@ -145,7 +147,7 @@ export const convertContract = (c: {
     viewCount: Number(c.view_count),
     dailyScore: c.daily_score,
     token: c.token,
-  } as Contract)
+  } as T)
 
 export const followContract = async (
   db: SupabaseClient,

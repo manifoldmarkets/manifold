@@ -1,22 +1,15 @@
 import CharacterCount from '@tiptap/extension-character-count'
-import { Link } from '@tiptap/extension-link'
 import Placeholder from '@tiptap/extension-placeholder'
 import type { Content, JSONContent } from '@tiptap/react'
-import {
-  Editor,
-  EditorContent,
-  Extensions,
-  mergeAttributes,
-  useEditor,
-} from '@tiptap/react'
+import { Editor, EditorContent, Extensions, useEditor } from '@tiptap/react'
 import StarterKit from '@tiptap/starter-kit'
 import clsx from 'clsx'
 import { ReactNode, useCallback, useEffect, useMemo, useRef } from 'react'
 import { DisplayContractMention } from '../editor/contract-mention/contract-mention-extension'
+import { DisplayLink } from '../editor/link-extension'
 import { DisplayMention } from '../editor/user-mention/mention-extension'
 import GridComponent from '../editor/tiptap-grid-cards'
 import { Linkify } from './linkify'
-import { linkClass } from './site-link'
 import Iframe from 'common/util/tiptap-iframe'
 import { TiptapSpoiler } from 'common/util/tiptap-spoiler'
 import { debounce, noop } from 'lodash'
@@ -31,7 +24,7 @@ import { nodeViewMiddleware } from '../editor/nodeview-middleware'
 import { BasicImage, DisplayImage, MediumDisplayImage } from '../editor/image'
 
 import { LinkPreviewExtension } from 'web/components/editor/link-preview-extension'
-import { useEvent } from 'web/hooks/use-event'
+import { useEvent } from 'client-common/hooks/use-event'
 
 import { Row } from 'web/components/layout/row'
 import {
@@ -41,26 +34,6 @@ import {
 import { usePersistentLocalState } from 'web/hooks/use-persistent-local-state'
 import { richTextToString } from 'common/util/parse'
 import { safeLocalStorage } from 'web/lib/util/local'
-
-const DisplayLink = Link.extend({
-  renderHTML({ HTMLAttributes }) {
-    HTMLAttributes.target = HTMLAttributes.href.includes('manifold.markets')
-      ? '_self'
-      : '_blank'
-    delete HTMLAttributes.class // only use our classes (don't duplicate on paste)
-    return [
-      'a',
-      mergeAttributes(this.options.HTMLAttributes, HTMLAttributes),
-      0,
-    ]
-  },
-}).configure({
-  openOnClick: false, // stop link opening twice (browser still opens)
-  HTMLAttributes: {
-    rel: 'noopener ugc',
-    class: linkClass,
-  },
-})
 
 const editorExtensions = (simple = false): Extensions =>
   nodeViewMiddleware([
@@ -81,6 +54,7 @@ const editorExtensions = (simple = false): Extensions =>
     Upload,
   ])
 
+// also see tailwind.config.js
 const proseClass = (size: 'sm' | 'md' | 'lg') =>
   clsx(
     'prose dark:prose-invert max-w-none leading-relaxed',
@@ -98,12 +72,14 @@ export function useTextEditor(props: {
   placeholder?: string
   max?: number
   defaultValue?: Content
-  size?: 'sm' | 'md' | 'lg'
+  size: 'sm' | 'md' | 'lg'
   key?: string // unique key for autosave. If set, plz call `editor.commands.clearContent(true)` on submit to clear autosave
   extensions?: Extensions
+  autofocus?: boolean
   className?: string
 }) {
-  const { placeholder, className, max, defaultValue, size = 'md', key } = props
+  const { placeholder, className, max, defaultValue, size, key, autofocus } =
+    props
   const simple = size === 'sm'
 
   const [content, setContent] = usePersistentLocalState<
@@ -157,6 +133,8 @@ export function useTextEditor(props: {
       ...(props.extensions ?? []),
     ],
     content: defaultValue ?? (key && content ? content : ''),
+    // idk why but `autofocus: undefined` and `autofocus: false` don't work right
+    ...(autofocus ? { autofocus: true } : {}),
   })
 
   useEffect(() => {
@@ -262,9 +240,9 @@ export function TextEditor(props: {
 function RichContent(props: {
   content: JSONContent
   className?: string
-  size?: 'sm' | 'md' | 'lg'
+  size: 'sm' | 'md' | 'lg'
 }) {
-  const { className, content, size = 'md' } = props
+  const { className, content, size } = props
 
   const jsxContent = useMemo(() => {
     try {
@@ -308,10 +286,10 @@ function RichContent(props: {
 export function Content(props: {
   content: JSONContent | string
   /** font/spacing */
-  size?: 'sm' | 'md' | 'lg'
+  size: 'sm' | 'md' | 'lg'
   className?: string
 }) {
-  const { className, size = 'md', content } = props
+  const { className, size, content } = props
   return typeof content === 'string' ? (
     <Linkify
       className={clsx('whitespace-pre-line', proseClass(size), className)}

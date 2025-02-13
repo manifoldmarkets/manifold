@@ -3,12 +3,11 @@ import {
   LogoutIcon,
   MoonIcon,
   SunIcon,
-  StarIcon,
   QuestionMarkCircleIcon,
-  NewspaperIcon,
   LoginIcon,
-  GlobeAltIcon,
   SearchIcon,
+  GlobeAltIcon,
+  ChatIcon,
 } from '@heroicons/react/outline'
 import TrophyIcon from 'web/lib/icons/trophy-icon.svg'
 import clsx from 'clsx'
@@ -35,7 +34,8 @@ import { useAdminOrMod } from 'web/hooks/use-admin'
 import { ReportsIcon } from '../reports-icon'
 import { AddFundsButton } from '../profile/add-funds-button'
 import { Col } from '../layout/col'
-import { TbPigMoney } from 'react-icons/tb'
+// import { TbPigMoney } from 'react-icons/tb'
+// import { PiRobotBold } from 'react-icons/pi'
 
 export default function Sidebar(props: {
   className?: string
@@ -44,7 +44,6 @@ export default function Sidebar(props: {
   const { className, isMobile } = props
   const router = useRouter()
   const currentPage = usePathname() ?? undefined
-
   const user = useUser()
   const isAdminOrMod = useAdminOrMod()
   const [isModalOpen, setIsModalOpen] = useState(false)
@@ -147,45 +146,44 @@ const getDesktopNav = (
         href: `/notifications`,
         icon: NotificationsIcon,
       },
+      { name: 'Leagues', href: '/leagues', icon: TrophyIcon },
+
+      // {
+      //   name: 'AI',
+      //   href: '/ai',
+      //   icon: PiRobotBold,
+      // },
       // {
       //   name: 'TV',
       //   href: '/tv',
       //   icon: PiTelevisionSimpleBold,
       // },
-      { name: 'Refer a friend', href: '/referrals', icon: StarIcon }, // remove this and I will beat you — SG
+      // { name: 'Refer a friend', href: '/referrals', icon: StarIcon },
       {
         name: 'Messages',
         href: '/messages',
         icon: PrivateMessagesIcon,
       },
+
       options.isAdminOrMod && {
         name: 'Reports',
         href: '/reports',
         icon: ReportsIcon,
       }
-      // { name: 'Leagues', href: '/leagues', icon: TrophyIcon }
       // Disable for now.
       // { name: 'Dashboards', href: '/dashboard', icon: TemplateIcon }
     )
 
   return buildArray(
-    { name: 'Browse', href: '/browse', icon: SearchIcon },
-    { name: 'News', href: '/news', icon: NewspaperIcon },
+    { name: 'Browse', href: '/', icon: SearchIcon },
+    // { name: 'News', href: '/news', icon: NewspaperIcon },
     { name: 'About', href: '/about', icon: QuestionMarkCircleIcon },
-    { name: 'App', onClick: openDownloadApp, icon: DeviceMobileIcon },
-    {
-      name: 'Add funds',
-      href: '/checkout',
-      icon: TbPigMoney,
-      children: (
-        <div className="flex flex-wrap gap-x-2">
-          Add funds
-          <span className="whitespace-nowrap text-sm text-green-500">
-            (Sale 64% off)
-          </span>
-        </div>
-      ),
-    }
+    // {
+    //   name: 'Discord',
+    //   href: 'https://discord.gg/eHQBNBqXuh',
+    //   icon: ChatIcon,
+    // },
+    { name: 'App', onClick: openDownloadApp, icon: DeviceMobileIcon }
   )
 }
 
@@ -198,7 +196,11 @@ const getMobileNav = (
 
   return buildArray<NavItem>(
     { name: 'Leagues', href: '/leagues', icon: TrophyIcon },
-
+    // {
+    //   name: 'AI',
+    //   href: '/ai',
+    //   icon: PiRobotBold,
+    // },
     {
       name: 'Messages',
       href: '/messages',
@@ -219,7 +221,7 @@ const getMobileNav = (
     //   href: '/live',
     //   icon: LightningBoltIcon,
     // },
-    { name: 'Share with friends', href: '/referrals', icon: StarIcon }, // remove this and I will beat you — SG
+    // { name: 'Share with friends', href: '/referrals', icon: StarIcon }, // remove this and I will beat you — SG
     isAdminOrMod && {
       name: 'Reports',
       href: '/reports',
@@ -236,6 +238,11 @@ const bottomNav = (
 ) =>
   buildArray<NavItem>(
     loggedIn && { name: 'About', href: '/about', icon: QuestionMarkCircleIcon },
+    {
+      name: 'Discord',
+      href: 'https://discord.gg/eHQBNBqXuh',
+      icon: ChatIcon,
+    },
     {
       name: theme ?? 'auto',
       children:

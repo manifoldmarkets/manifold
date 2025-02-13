@@ -1,9 +1,11 @@
+import { useBetsOnce, useUnfilledBets } from 'client-common/hooks/use-bets'
 import { Bet, LimitBet } from 'common/bet'
 import {
   Contract,
   ContractParams,
   MaybeAuthedContractParams,
 } from 'common/contract'
+import { ContractMetric } from 'common/contract-metric'
 import { getContractParams } from 'common/contract-params'
 import { base64toPoints } from 'common/edge/og'
 import { CASH_SUFFIX } from 'common/envs/constants'
@@ -12,18 +14,19 @@ import { removeUndefinedProps } from 'common/util/object'
 import { pick, sortBy, uniqBy } from 'lodash'
 import { ContractBetsTable } from 'web/components/bet/contract-bets-table'
 import { YourOrders } from 'web/components/bet/order-book'
-import { ContractSEO } from 'web/components/contract/contract-seo'
 import { ContractPageContent } from 'web/components/contract/contract-page'
+import { ContractSEO } from 'web/components/contract/contract-seo'
 import { Col } from 'web/components/layout/col'
 import { Page } from 'web/components/layout/page'
+import { useSweepstakes } from 'web/components/sweepstakes-provider'
 import { Title } from 'web/components/widgets/title'
-import { useBetsOnce, useUnfilledBets } from 'web/hooks/use-bets'
 import { useIsIframe } from 'web/hooks/use-is-iframe'
+import { useIsPageVisible } from 'web/hooks/use-page-visible'
 import { useUser } from 'web/hooks/use-user'
+import { api } from 'web/lib/api/api'
 import { initSupabaseAdmin } from 'web/lib/supabase/admin-db'
 import Custom404 from '../404'
 import ContractEmbedPage from '../embed/[username]/[contractSlug]'
-import { useSweepstakes } from 'web/components/sweepstakes-provider'
 
 export async function getStaticProps(ctx: {
   params: { username: string; contractSlug: string }
@@ -75,7 +78,6 @@ export async function getStaticProps(ctx: {
         'lastBetTime',
         'pointsString',
         'multiPointsString',
-        'userPositionsByOutcome',
         'totalPositions',
         'totalBets',
       ])
@@ -144,11 +146,15 @@ function NonPrivateContractPage(props: { contractParams: ContractParams }) {
   )
 }
 
-export function YourTrades(props: { contract: Contract; yourNewBets: Bet[] }) {
-  const { contract, yourNewBets } = props
+export function YourTrades(props: {
+  contract: Contract
+  contractMetric: ContractMetric | undefined
+  yourNewBets: Bet[]
+}) {
+  const { contract, contractMetric, yourNewBets } = props
   const user = useUser()
 
-  const staticBets = useBetsOnce({
+  const staticBets = useBetsOnce((params) => api('bets', params), {
     contractId: contract.id,
     userId: !user ? 'loading' : user.id,
     order: 'asc',
@@ -165,7 +171,12 @@ export function YourTrades(props: { contract: Contract; yourNewBets: Bet[] }) {
   const allLimitBets =
     contract.mechanism === 'cpmm-1'
       ? // eslint-disable-next-line react-hooks/rules-of-hooks
-        useUnfilledBets(contract.id, { enabled: true }) ?? []
+        useUnfilledBets(
+          contract.id,
+          (params) => api('bets', params),
+          useIsPageVisible,
+          { enabled: true }
+        ) ?? []
       : []
   const userLimitBets = allLimitBets.filter(
     (bet) => bet.userId === user?.id
@@ -188,10 +199,11 @@ export function YourTrades(props: { contract: Contract; yourNewBets: Bet[] }) {
         />
       )}
 
-      {visibleUserBets.length > 0 && (
+      {visibleUserBets.length > 0 && contractMetric && (
         <>
           <div className="pl-2 font-semibold">Your trades</div>
           <ContractBetsTable
+            contractMetric={contractMetric}
             contract={contract}
             bets={userBets}
             isYourBets

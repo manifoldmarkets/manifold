@@ -110,6 +110,7 @@ export function ResolveConfirmationButton(props: {
   marketTitle: string
   label: string
   color: ColorType
+  size: SizeType
   disabled?: boolean
 }) {
   const {
@@ -117,6 +118,7 @@ export function ResolveConfirmationButton(props: {
     isSubmitting,
     openModalButtonClass,
     color,
+    size,
     marketTitle,
     label,
     disabled,
@@ -128,7 +130,7 @@ export function ResolveConfirmationButton(props: {
         label: 'Resolve',
         color: color,
         disabled: isSubmitting || disabled,
-        size: 'xl',
+        size: size,
       }}
       cancelBtn={{
         label: 'Back',

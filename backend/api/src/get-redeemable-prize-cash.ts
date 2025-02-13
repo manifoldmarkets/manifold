@@ -1,12 +1,13 @@
-import { APIHandler } from 'api/helpers/endpoint'
-import { calculateRedeemablePrizeCash } from 'shared/calculate-redeemable-prize-cash'
+import { APIError, APIHandler } from 'api/helpers/endpoint'
 import { createSupabaseDirectClient } from 'shared/supabase/init'
-
+import { getUser } from 'shared/utils'
 export const getRedeemablePrizeCash: APIHandler<
   'get-redeemable-prize-cash'
 > = async (_, auth) => {
   const pg = createSupabaseDirectClient()
-  const { redeemable } = await calculateRedeemablePrizeCash(pg, auth.uid)
-
-  return { redeemablePrizeCash: Math.max(redeemable, 0) }
+  const user = await getUser(auth.uid, pg)
+  if (!user) {
+    throw new APIError(404, 'User not found')
+  }
+  return { redeemablePrizeCash: user.cashBalance }
 }

@@ -4,8 +4,7 @@ import { TRADED_TERM } from 'common/envs/constants'
 import { formatWithToken } from 'common/util/format'
 import Link from 'next/link'
 import { useIsClient } from 'web/hooks/use-is-client'
-import { getIsNative } from 'web/lib/native/is-native'
-import { fromNow } from 'web/lib/util/time'
+import { fromNow } from 'client-common/lib/time'
 import { ContractStatusLabel } from './contracts-table'
 import { getTextColor } from './text-color'
 
@@ -23,19 +22,21 @@ export function ContractMention(props: {
       href={contractPath(contract)}
       className={clsx('group inline whitespace-nowrap rounded-sm', className)}
       title={isClient ? tooltipLabel(contract) : undefined}
-      target={getIsNative() ? '_self' : '_blank'}
+      // target={getIsNative() ? '_self' : '_blank'}
     >
       <span className="break-anywhere text-ink-900 group-hover:text-primary-500 group-focus:text-primary-500 mr-0.5 whitespace-normal font-medium transition-colors">
         {contract.question}
       </span>
-      <span
-        className={clsx(
-          probTextColor,
-          'ring-primary-100 group-hover:ring-primary-200 inline-flex rounded-full px-2 align-bottom font-semibold ring-1 ring-inset transition-colors'
-        )}
-      >
-        <ContractStatusLabel contract={contract} />
-      </span>
+      {contract.outcomeType === 'BINARY' && (
+        <span
+          className={clsx(
+            probTextColor,
+            'ring-primary-100 group-hover:ring-primary-200 inline-flex rounded-full px-2 align-bottom font-semibold ring-1 ring-inset transition-colors'
+          )}
+        >
+          <ContractStatusLabel contract={contract} />
+        </span>
+      )}
       {!contract.resolution && probChange && (
         <span className="text-ink-500 ml-0.5 text-xs">{probChange}</span>
       )}

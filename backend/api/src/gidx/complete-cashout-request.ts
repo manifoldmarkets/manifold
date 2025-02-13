@@ -5,7 +5,6 @@ import { PaymentMethod } from 'common/gidx/gidx'
 import { CashOutPendingTxn } from 'common/txn'
 import { floatingEqual } from 'common/util/math'
 import { getIp, track } from 'shared/analytics'
-import { calculateRedeemablePrizeCash } from 'shared/calculate-redeemable-prize-cash'
 import { log } from 'shared/monitoring/log'
 import { createSupabaseDirectClient } from 'shared/supabase/init'
 import { runTxnInBetQueue } from 'shared/txn/run-txn'
@@ -35,13 +34,12 @@ export const completeCashoutRequest: APIHandler<
   })
 
   const manaCashAmount = PaymentAmount.manaCash
-  const { redeemable } = await calculateRedeemablePrizeCash(pg, userId)
 
-  if (redeemable < manaCashAmount) {
-    throw new APIError(400, 'Insufficient redeemable prize cash')
+  if (user.cashBalance < manaCashAmount) {
+    throw new APIError(400, 'Insufficient balance')
   }
   const dollarsToWithdraw = PaymentAmount.dollars
-  const CalculatedPaymentAmount = (1 - SWEEPIES_CASHOUT_FEE) * manaCashAmount
+  const CalculatedPaymentAmount = manaCashAmount - SWEEPIES_CASHOUT_FEE
   if (dollarsToWithdraw !== CalculatedPaymentAmount) {
     throw new APIError(400, 'Payment amount mismatch')
   }
@@ -93,12 +91,12 @@ const debitCoins = async (
     let redeemablePrizeCash: number
     let cash: number
     try {
-      const { redeemable, cashBalance } = await calculateRedeemablePrizeCash(
-        tx,
-        userId
-      )
-      redeemablePrizeCash = redeemable
-      cash = cashBalance
+      const user = await getUser(userId, tx)
+      if (!user) {
+        throw new APIError(404, 'User not found')
+      }
+      redeemablePrizeCash = user.cashBalance
+      cash = user.cashBalance
     } catch (e) {
       log.error('Indeterminate state, may need to refund', { response: props })
       throw e
@@ -107,7 +105,7 @@ const debitCoins = async (
     if (redeemablePrizeCash < manaCashAmount) {
       throw new APIError(
         500,
-        'Insufficient redeemable prize cash. Indeterminate state, may need to refund',
+        'Insufficient redeemable sweepcash. Indeterminate state, may need to refund',
         { response: props }
       )
     }

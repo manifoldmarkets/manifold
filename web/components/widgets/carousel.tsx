@@ -10,8 +10,10 @@ export function Carousel(props: {
   loadMore?: () => void
   className?: string
   labelsParentClassName?: string
+  fadeEdges?: boolean
 }) {
-  const { children, labelsParentClassName, loadMore, className } = props
+  const { children, labelsParentClassName, loadMore, className, fadeEdges } =
+    props
 
   const ref = useRef<HTMLDivElement>(null)
 
@@ -23,24 +25,35 @@ export function Carousel(props: {
 
   return (
     <div className={clsx('relative', className)}>
-      <Row
+      <div
         className={clsx(
-          'scrollbar-hide w-full snap-x overflow-x-auto scroll-smooth',
-          labelsParentClassName ?? 'gap-4'
+          fadeEdges && {
+            'before:from-canvas-50 before:absolute before:left-0 before:top-0 before:z-10 before:h-full before:w-8 before:bg-gradient-to-r before:to-transparent':
+              !atFront,
+            'after:from-canvas-50 after:absolute after:right-0 after:top-0 after:z-10 after:h-full after:w-8 after:bg-gradient-to-l after:to-transparent':
+              !atBack,
+          }
         )}
-        ref={ref}
-        onScroll={onScroll}
       >
-        {children}
+        <Row
+          className={clsx(
+            'scrollbar-hide w-full snap-x overflow-x-auto scroll-smooth',
+            labelsParentClassName ?? 'gap-4'
+          )}
+          ref={ref}
+          onScroll={onScroll}
+        >
+          {children}
 
-        {loadMore && (
-          <VisibilityObserver
-            className="relative -left-96"
-            onVisibilityUpdated={(visible) => visible && loadMore()}
-          />
-        )}
-      </Row>
-      {!atFront && (
+          {loadMore && (
+            <VisibilityObserver
+              className="relative -left-96"
+              onVisibilityUpdated={(visible) => visible && loadMore()}
+            />
+          )}
+        </Row>
+      </div>
+      {!fadeEdges && !atFront && (
         <div
           className="hover:bg-ink-100/70 group absolute bottom-0 left-0 top-0 z-10 flex w-10 cursor-pointer select-none items-center justify-center transition-colors"
           onMouseDown={scrollLeft}
@@ -48,7 +61,7 @@ export function Carousel(props: {
           <ChevronLeftIcon className="bg-primary-50 text-primary-800 h-7 w-7 rounded-full transition-colors group-hover:bg-transparent" />
         </div>
       )}
-      {!atBack && (
+      {!fadeEdges && !atBack && (
         <div
           className="hover:bg-ink-100/70 group absolute bottom-0 right-0 top-0 z-10 flex w-10 cursor-pointer select-none items-center justify-center transition-colors"
           onMouseDown={scrollRight}
@@ -71,6 +84,7 @@ export const ControlledCarousel = forwardRef(function (
     scrollRight: () => void
     atFront: boolean
     atBack: boolean
+    fadeEdges?: boolean
   },
   current: Ref<HTMLDivElement>
 ) {
@@ -84,28 +98,40 @@ export const ControlledCarousel = forwardRef(function (
     scrollRight,
     atFront,
     atBack,
+    fadeEdges,
   } = props
 
   return (
     <div className={clsx('relative', className)}>
-      <Row
+      <div
         className={clsx(
-          'scrollbar-hide w-full snap-x overflow-x-auto scroll-smooth',
-          labelsParentClassName ?? 'gap-4'
+          fadeEdges && {
+            'before:from-canvas-50 before:absolute before:left-0 before:top-0 before:z-10 before:h-full before:w-8 before:bg-gradient-to-r before:to-transparent':
+              !atFront,
+            'after:from-canvas-50 after:absolute after:right-0 after:top-0 after:z-10 after:h-full after:w-8 after:bg-gradient-to-l after:to-transparent':
+              !atBack,
+          }
         )}
-        ref={current}
-        onScroll={onScroll}
       >
-        {children}
+        <Row
+          className={clsx(
+            'scrollbar-hide w-full snap-x overflow-x-auto scroll-smooth',
+            labelsParentClassName ?? 'gap-4'
+          )}
+          ref={current}
+          onScroll={onScroll}
+        >
+          {children}
 
-        {loadMore && (
-          <VisibilityObserver
-            className="relative -left-96"
-            onVisibilityUpdated={(visible) => visible && loadMore()}
-          />
-        )}
-      </Row>
-      {!atFront && (
+          {loadMore && (
+            <VisibilityObserver
+              className="relative -left-96"
+              onVisibilityUpdated={(visible) => visible && loadMore()}
+            />
+          )}
+        </Row>
+      </div>
+      {!fadeEdges && !atFront && (
         <div
           className="hover:bg-ink-100/70 group absolute bottom-0 left-0 top-0 z-10 flex w-10 cursor-pointer select-none items-center justify-center transition-colors"
           onMouseDown={scrollLeft}
@@ -113,7 +139,7 @@ export const ControlledCarousel = forwardRef(function (
           <ChevronLeftIcon className="bg-primary-50 text-primary-800 h-7 w-7 rounded-full transition-colors group-hover:bg-transparent" />
         </div>
       )}
-      {!atBack && (
+      {!fadeEdges && !atBack && (
         <div
           className="hover:bg-ink-100/70 group absolute bottom-0 right-0 top-0 z-10 flex w-10 cursor-pointer select-none items-center justify-center transition-colors"
           onMouseDown={scrollRight}
@@ -136,13 +162,13 @@ export const useCarousel = (carouselRef: HTMLDivElement | null) => {
 
   const [atFront, setAtFront] = useState(true)
   const [atBack, setAtBack] = useState(true)
-  const onScroll = throttle(() => {
+  const onScroll = () => {
     if (carouselRef) {
       const { scrollLeft, clientWidth, scrollWidth } = carouselRef
-      setAtFront(scrollLeft < 80)
-      setAtBack(scrollWidth - (clientWidth + scrollLeft) < 80)
+      setAtFront(scrollLeft < 60)
+      setAtBack(scrollWidth - (clientWidth + scrollLeft) < 60)
     }
-  }, 500)
+  }
   return {
     scrollLeft,
     scrollRight,

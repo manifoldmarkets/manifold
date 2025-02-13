@@ -29,8 +29,10 @@ export type EnvConfig = {
   newQuestionPlaceholders: string[]
   expoConfig: {
     iosClientId?: string
+    iosClientId2?: string
     expoClientId?: string
     androidClientId?: string
+    androidClientId2?: string
   }
 }
 
@@ -74,7 +76,6 @@ export const PROD_CONFIG: EnvConfig = {
   adminIds: [
     'igi2zGXsfxYPgB0DJTXVJVmwCOr2', // Austin
     'tlmGNz9kjXc2EteizMORes4qvWl2', // Stephen
-    '0k1suGSJKVUnHbCPEhHNpgZPkUP2', // Sinclair
     'IPTOzEqrpkWmEzh6hwvAyY9PqFb2', // Manifold
     'AJwLWoo3xue32XIiAVrL5SyR1WB2', // Ian
     'uglwf3YKOZNGjjEXKc5HampOFRE2', // D4vid
@@ -103,9 +104,13 @@ export const PROD_CONFIG: EnvConfig = {
   expoConfig: {
     iosClientId:
       '128925704902-n0ic4j1s5tk51t2vu8anu8glh3t5jimo.apps.googleusercontent.com',
+    iosClientId2:
+      '128925704902-k6d8219pss8nubk1bb1n5kisn5l8fv1a.apps.googleusercontent.com',
     expoClientId:
       '128925704902-bpcbnlp2gt73au3rrjjtnup6cskr89p0.apps.googleusercontent.com',
     androidClientId:
       '128925704902-ur9hevfika2rs0sni6ju236u82hbct3i.apps.googleusercontent.com',
+    androidClientId2:
+      '128925704902-r23bsi4ca28sprdh49mprl1ov33pvvau.apps.googleusercontent.com',
   },
 }

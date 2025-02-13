@@ -10,19 +10,17 @@ import { Button } from '../buttons/button'
 import { TweetButton } from '../buttons/tweet-button'
 import { Row } from '../layout/row'
 import { GradientContainer } from '../widgets/gradient-container'
-import { BoostButton } from './boost-button'
 import { AddBountyButton, CancelBountyButton } from './bountied-question'
 import { UpgradeTierButton } from './upgrade-tier-button'
 import { useNativeInfo } from 'web/components/native-message-provider'
 import { formatMoney } from 'common/util/format'
 import { UNIQUE_BETTOR_BONUS_AMOUNT } from 'common/economy'
 
-export function CreatorShareBoostPanel(props: { contract: Contract }) {
+export function CreatorSharePanel(props: { contract: Contract }) {
   const { contract } = props
   return (
     <GradientContainer className="mb-8 flex w-full">
       <div className="mb-2 flex flex-wrap gap-2">
-        <BoostButton contract={contract} />
         {contract.outcomeType == 'BOUNTIED_QUESTION' && (
           <AddBountyButton contract={contract} />
         )}

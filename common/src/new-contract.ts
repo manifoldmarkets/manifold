@@ -1,4 +1,3 @@
-import { JSONContent } from '@tiptap/core'
 import { Answer } from './answer'
 import { getMultiCpmmLiquidity } from './calculate-cpmm'
 import { computeBinaryCpmmElasticityFromAnte } from './calculate-metrics'
@@ -14,45 +13,57 @@ import {
   Poll,
   PseudoNumeric,
   Stonk,
-  Visibility,
   add_answers_mode,
 } from './contract'
 import { PollOption } from './poll-option'
 import { User } from './user'
 import { removeUndefinedProps } from './util/object'
 import { randomString } from './util/random'
-import { MarketTierType } from './tier'
 
 export const NEW_MARKET_IMPORTANCE_SCORE = 0.25
 
-export function getNewContract(props: {
-  id: string
-  slug: string
-  creator: User
-  question: string
-  outcomeType: (typeof CREATEABLE_OUTCOME_TYPES)[number]
-  description: JSONContent
-  initialProb: number
-  ante: number
-  closeTime: number | undefined
-  visibility: Visibility
-  coverImageUrl?: string
+export function getNewContract(
+  props: Pick<
+    Contract,
+    | 'id'
+    | 'slug'
+    | 'question'
+    | 'description'
+    | 'closeTime'
+    | 'visibility'
+    | 'isTwitchContract'
+    | 'marketTier'
+    | 'token'
+    | 'takerAPIOrdersDisabled'
+    | 'siblingContractId'
+    | 'coverImageUrl'
+  > & {
+    creator: User
+    outcomeType: (typeof CREATEABLE_OUTCOME_TYPES)[number]
+    initialProb: number
+    ante: number
 
-  // twitch
-  isTwitchContract: boolean | undefined
+    // Numeric
+    min: number
+    max: number
+    isLogScale: boolean
 
-  // used for numeric markets
-  min: number
-  max: number
-  isLogScale: boolean
-  answers: string[]
-  addAnswersMode?: add_answers_mode | undefined
-  shouldAnswersSumToOne?: boolean | undefined
+    // Multi-choice
+    answers: string[]
+    addAnswersMode?: add_answers_mode | undefined
+    shouldAnswersSumToOne?: boolean | undefined
+    answerShortTexts?: string[]
+    answerImageUrls?: string[]
 
-  isAutoBounty?: boolean | undefined
-  marketTier?: MarketTierType
-  token: 'MANA' | 'CASH'
-}) {
+    // Bountied
+    isAutoBounty?: boolean | undefined
+
+    // Sports
+    sportsStartTimestamp?: string
+    sportsEventId?: string
+    sportsLeague?: string
+  }
+) {
   const {
     id,
     slug,
@@ -75,6 +86,13 @@ export function getNewContract(props: {
     isAutoBounty,
     marketTier,
     token,
+    sportsStartTimestamp,
+    sportsEventId,
+    sportsLeague,
+    answerShortTexts,
+    answerImageUrls,
+    takerAPIOrdersDisabled,
+    siblingContractId,
   } = props
   const createdTime = Date.now()
 
@@ -89,7 +107,9 @@ export function getNewContract(props: {
         answers,
         addAnswersMode ?? 'DISABLED',
         shouldAnswersSumToOne ?? true,
-        ante
+        ante,
+        answerShortTexts,
+        answerImageUrls
       ),
     STONK: () => getStonkCpmmProps(initialProb, ante),
     BOUNTIED_QUESTION: () => getBountiedQuestionProps(ante, isAutoBounty),
@@ -143,6 +163,13 @@ export function getNewContract(props: {
     isTwitchContract,
     marketTier,
     token,
+
+    sportsStartTimestamp,
+    sportsEventId,
+    sportsLeague,
+
+    takerAPIOrdersDisabled,
+    siblingContractId,
   })
   if (visibility === 'unlisted') {
     contract.unlistedById = creator.id
@@ -224,7 +251,9 @@ const getMultipleChoiceProps = (
   answers: string[],
   addAnswersMode: add_answers_mode,
   shouldAnswersSumToOne: boolean,
-  ante: number
+  ante: number,
+  shortTexts?: string[],
+  imageUrls?: string[]
 ) => {
   const isBinaryMulti =
     addAnswersMode === 'DISABLED' &&
@@ -241,7 +270,9 @@ const getMultipleChoiceProps = (
     shouldAnswersSumToOne,
     ante,
     answersWithOther,
-    isBinaryMulti ? VERSUS_COLORS : undefined
+    isBinaryMulti ? VERSUS_COLORS : undefined,
+    shortTexts,
+    imageUrls
   )
   const system: CPMMMulti = {
     mechanism: 'cpmm-multi-1',
@@ -294,7 +325,9 @@ function createAnswers(
   shouldAnswersSumToOne: boolean,
   ante: number,
   answers: string[],
-  colors?: string[]
+  colors?: string[],
+  shortTexts?: string[],
+  imageUrls?: string[]
 ) {
   const ids = answers.map(() => randomString())
 
@@ -332,6 +365,8 @@ function createAnswers(
       text,
       createdTime: now,
       color: colors?.[i],
+      shortText: shortTexts?.[i],
+      imageUrl: imageUrls?.[i],
 
       poolYes,
       poolNo,

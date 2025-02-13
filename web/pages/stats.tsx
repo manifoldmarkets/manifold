@@ -31,7 +31,7 @@ import {
 } from 'common/envs/constants'
 import { capitalize, partition } from 'lodash'
 import { KYCStats } from 'web/components/stats/kyc-stats'
-import { formatTimeShort } from 'web/lib/util/time'
+import { formatTimeShort } from 'client-common/lib/time'
 import { InfoTooltip } from 'web/components/widgets/info-tooltip'
 import { TopicDauSummary } from 'web/components/stats/topic-dau-summary'
 
@@ -196,6 +196,12 @@ export function CustomAnalytics(props: {
       .map((row) => row.dau)
       .filter((val): val is number => val != null)
   )
+  const avgDAVlastWeek = average(
+    stats
+      .slice(-7)
+      .map((row) => row.dav)
+      .filter((val): val is number => val != null)
+  )
   const last30dSales = sum(stats.slice(-30).map((row) => row.sales || 0))
 
   const isAdmin = useAdmin()
@@ -207,12 +213,48 @@ export function CustomAnalytics(props: {
         <Button onClick={() => getStats().then(setStats)}>Reload All</Button>
       </div>
       <p className="text-ink-500">
-        An active user is a user who has traded in, commented on, or created a
+        An active user is a user who has taken any action on the site.
+      </p>
+      <div className="text-ink-500 mt-2">
+        <b>{formatLargeNumber(current.dav ?? 0)}</b> yesterday;{' '}
+        {formatLargeNumber(avgDAVlastWeek)} avg last week
+      </div>
+      <Spacer h={4} />
+      <Tabs
+        className="mb-4"
+        defaultIndex={1}
+        tabs={[
+          {
+            title: 'Daily',
+            content: <DailyChart values={dataFor('dav')} />,
+          },
+          {
+            title: 'Daily (7d avg)',
+            content: (
+              <DailyChart values={rollingAvg(dataFor('dav'), 7).map(round)} />
+            ),
+          },
+          // {
+          //   title: 'Weekly',
+          //   content: <DailyChart values={dataFor('wav')} />,
+          // },
+          // {
+          //   title: 'Monthly',
+          //   content: <DailyChart values={dataFor('mav')} />,
+          // },
+        ]}
+      />
+      <Spacer h={8} />
+      <div className="flex items-start justify-between">
+        <Title>Active traders</Title>
+      </div>
+      <p className="text-ink-500">
+        An active trader is a user who has traded in, commented on, or created a
         question.
       </p>
       <div className="text-ink-500 mt-2">
-        <b>{formatLargeNumber(current.dau ?? 0)} DAUs</b> yesterday;{' '}
-        {formatLargeNumber(avgDAUlastWeek)} avg DAUs last week
+        <b>{formatLargeNumber(current.dau ?? 0)}</b> yesterday;{' '}
+        {formatLargeNumber(avgDAUlastWeek)} avg last week
       </div>
       <Spacer h={4} />
       <Tabs
@@ -239,7 +281,7 @@ export function CustomAnalytics(props: {
           },
         ]}
       />
-      <Spacer h={8} />
+      {/* <Spacer h={8} />
       <Title>Engaged users</Title>
       <p className="text-ink-500">
         An engaged user is a user who has traded in, commented on, or created a
@@ -249,13 +291,13 @@ export function CustomAnalytics(props: {
         <b>{formatLargeNumber(current.engaged_users ?? 0)} </b> engaged users
       </div>
       <Spacer h={4} />
-      <DailyChart values={dataFor('engaged_users')} />
+      <DailyChart values={dataFor('engaged_users')} /> */}
       <Spacer h={8} />
       <Title>Mana supply</Title>
       <div className="text-ink-700 mb-4 grid grid-cols-3 justify-items-end gap-y-1">
         <div className="text-ink-800 mb-2">Supply Today</div>
         <div className="text-ink-800 mb-2">Mana</div>
-        <div className="text-ink-800 mb-2">Prize Cash</div>
+        <div className="text-ink-800 mb-2">Sweepcash</div>
 
         <div>Balances</div>
         <div className="font-semibold">
@@ -376,7 +418,7 @@ export function CustomAnalytics(props: {
       <Spacer h={8} />
       <Title>Retention</Title>
       <p className="text-ink-500">
-        What fraction of active users are still active after the given time
+        What fraction of active traders are still active after the given time
         period?
       </p>
       <Tabs
@@ -560,7 +602,7 @@ export function CustomAnalytics(props: {
         ]}
       />
       <Spacer h={8} />
-      <Title>Total prize cash {TRADED_TERM}</Title>
+      <Title>Total sweepcash {TRADED_TERM}</Title>
       <p className="text-ink-500">Sum of cash {TRADE_TERM} amounts.</p>
       <Tabs
         className="mb-4"

@@ -15,6 +15,7 @@ import {
   FullMarket,
   updateMarketProps,
 } from './market-types'
+import { type Answer } from 'common/answer'
 import { MAX_COMMENT_LENGTH, type ContractComment } from 'common/comment'
 import { CandidateBet } from 'common/new-bet'
 import type { Bet, LimitBet } from 'common/bet'
@@ -38,7 +39,6 @@ import { ChatMessage, PrivateChatMessage } from 'common/chat-message'
 import { PrivateUser, User } from 'common/user'
 import { ManaSupply } from 'common/stats'
 import { Repost } from 'common/repost'
-import { adContract } from 'common/boost'
 import { PERIODS } from 'common/period'
 import { SWEEPS_MIN_BET } from 'common/economy'
 import {
@@ -59,16 +59,23 @@ import {
   PendingCashoutStatusData,
   cashoutParams,
 } from 'common/gidx/gidx'
-
 import { notification_preference } from 'common/user-notification-preferences'
 import { PrivateMessageChannel } from 'common/supabase/private-messages'
 import { Notification } from 'common/notification'
 import { NON_POINTS_BETS_LIMIT } from 'common/supabase/bets'
 import { ContractMetric } from 'common/contract-metric'
+
+import { JSONContent } from '@tiptap/core'
+import { Task, TaskCategory } from 'common/todo'
+import { ChartAnnotation } from 'common/supabase/chart-annotations'
+import { Dictionary } from 'lodash'
+import { Reaction } from 'common/reaction'
+import { YEAR_MS } from 'common/util/time'
 // mqp: very unscientific, just balancing our willingness to accept load
 // with user willingness to put up with stale data
 export const DEFAULT_CACHE_STRATEGY =
   'public, max-age=5, stale-while-revalidate=10'
+const MAX_EXPIRES_AT = 1_000 * YEAR_MS
 
 type APIGenericSchema = {
   // GET is for retrieval, POST is to mutate something, PUT is idempotent mutation (can be repeated safely)
@@ -83,6 +90,8 @@ type APIGenericSchema = {
   returns?: Record<string, any>
   // Cache-Control header. like, 'max-age=60'
   cache?: string
+  // whether the endpoint should prefer authentication even if not required
+  preferAuth?: boolean
 }
 
 let _apiTypeCheck: { [x: string]: APIGenericSchema }
@@ -157,6 +166,20 @@ export const API = (_apiTypeCheck = {
       })
       .strict(),
   },
+  'answer/:answerId': {
+    method: 'GET',
+    visibility: 'public',
+    authed: false,
+    returns: {} as Answer,
+    props: z.object({ answerId: z.string() }).strict(),
+  },
+  'market/:contractId/answers': {
+    method: 'GET',
+    visibility: 'public',
+    authed: false,
+    returns: [] as Answer[],
+    props: z.object({ contractId: z.string() }).strict(),
+  },
   'hide-comment': {
     method: 'POST',
     visibility: 'public',
@@ -179,6 +202,7 @@ export const API = (_apiTypeCheck = {
       .object({
         contractId: z.string().optional(),
         contractSlug: z.string().optional(),
+        afterTime: z.coerce.number().optional(),
         limit: z.coerce.number().gte(0).lte(1000).default(1000),
         page: z.coerce.number().gte(0).default(0),
         userId: z.string().optional(),
@@ -197,7 +221,9 @@ export const API = (_apiTypeCheck = {
         amount: z.number().gte(SWEEPS_MIN_BET),
         replyToCommentId: z.string().optional(),
         limitProb: z.number().gte(0.01).lte(0.99).optional(),
-        expiresAt: z.number().optional(),
+        expiresMillisAfter: z.number().lt(MAX_EXPIRES_AT).optional(),
+        silent: z.boolean().optional(),
+        expiresAt: z.number().lt(MAX_EXPIRES_AT).optional(),
         // Used for binary and new multiple choice contracts (cpmm-multi-1).
         outcome: z.enum(['YES', 'NO']).default('YES'),
         //Multi
@@ -218,6 +244,7 @@ export const API = (_apiTypeCheck = {
         deviceToken: z.string().optional(),
         adminToken: z.string().optional(),
         visitedContractIds: z.array(z.string()).optional(),
+        origin: z.enum(['mani']).optional(),
       })
       .strict(),
   },
@@ -231,7 +258,7 @@ export const API = (_apiTypeCheck = {
         contractId: z.string(),
         amount: z.number().gte(1),
         limitProb: z.number().gte(0).lte(1).optional(),
-        expiresAt: z.number().optional(),
+        expiresAt: z.number().lt(MAX_EXPIRES_AT).optional(),
         answerIds: z.array(z.string()).min(1),
         deterministic: z.boolean().optional(),
       })
@@ -539,6 +566,32 @@ export const API = (_apiTypeCheck = {
     cache: DEFAULT_CACHE_STRATEGY,
     props: z.object({ id: z.string(), lite: coerceBoolean.optional() }),
   },
+  'market/:id/prob': {
+    method: 'GET',
+    visibility: 'public',
+    authed: false,
+    returns: {} as {
+      prob?: number
+      answerProbs?: { [answerId: string]: number }
+    },
+    props: z.object({ id: z.string() }).strict(),
+  },
+  'market-probs': {
+    method: 'GET',
+    visibility: 'public',
+    authed: false,
+    returns: {} as {
+      [contractId: string]: {
+        prob?: number
+        answerProbs?: { [answerId: string]: number }
+      }
+    },
+    props: z
+      .object({
+        ids: z.array(z.string()).max(100),
+      })
+      .strict(),
+  },
   'markets-by-ids': {
     method: 'GET',
     visibility: 'undocumented',
@@ -755,6 +808,7 @@ export const API = (_apiTypeCheck = {
     method: 'GET',
     visibility: 'undocumented',
     authed: false,
+    preferAuth: true,
     cache: DEFAULT_CACHE_STRATEGY,
     returns: [] as Contract[],
     props: searchProps,
@@ -781,7 +835,7 @@ export const API = (_apiTypeCheck = {
     props: z
       .object({
         amount: z.number().positive().finite().safe(),
-        expiresTime: z.number().optional(),
+        expiresTime: z.number().lt(MAX_EXPIRES_AT).optional(),
         maxUses: z.number().optional(),
         message: z.string().optional(),
       })
@@ -945,6 +999,22 @@ export const API = (_apiTypeCheck = {
     cache: DEFAULT_CACHE_STRATEGY,
     returns: {} as DisplayUser,
     props: z.object({ id: z.string() }).strict(),
+  },
+  'users/by-id': {
+    method: 'GET',
+    visibility: 'public',
+    authed: false,
+    cache: DEFAULT_CACHE_STRATEGY,
+    returns: [] as DisplayUser[],
+    props: z.object({ ids: z.array(z.string()) }).strict(),
+  },
+  'users/by-id/balance': {
+    method: 'GET',
+    visibility: 'undocumented',
+    authed: false,
+    cache: DEFAULT_CACHE_STRATEGY,
+    returns: [] as { id: string; balance: number }[],
+    props: z.object({ ids: z.array(z.string()) }).strict(),
   },
   'user/by-id/:id/block': {
     method: 'POST',
@@ -1323,7 +1393,8 @@ export const API = (_apiTypeCheck = {
     returns: [] as AnyBalanceChangeType[],
     props: z
       .object({
-        after: z.coerce.number(),
+        before: z.coerce.number().optional(),
+        after: z.coerce.number().default(0),
         userId: z.string(),
       })
       .strict(),
@@ -1496,7 +1567,6 @@ export const API = (_apiTypeCheck = {
     returns: {} as {
       contracts: Contract[]
       comments: ContractComment[]
-      ads: adContract[]
       bets: Bet[]
       reposts: Repost[]
       idsToReason: { [id: string]: string }
@@ -1827,6 +1897,263 @@ export const API = (_apiTypeCheck = {
         existingTitles: z.array(z.string()).optional(),
       })
       .strict(),
+  },
+  'generate-ai-description': {
+    method: 'POST',
+    visibility: 'public',
+    authed: true,
+    returns: {} as { description: JSONContent | undefined },
+    props: z
+      .object({
+        question: z.string(),
+        description: z.string().optional(),
+        answers: z.array(z.string()).optional(),
+        outcomeType: z.string().optional(),
+        shouldAnswersSumToOne: coerceBoolean.optional(),
+        addAnswersMode: z
+          .enum(['DISABLED', 'ONLY_CREATOR', 'ANYONE'])
+          .optional(),
+      })
+      .strict(),
+  },
+  'generate-ai-answers': {
+    method: 'POST',
+    visibility: 'public',
+    authed: true,
+    returns: {} as {
+      answers: string[]
+      addAnswersMode: 'DISABLED' | 'ONLY_CREATOR' | 'ANYONE'
+    },
+    props: z
+      .object({
+        question: z.string(),
+        answers: z.array(z.string()),
+        shouldAnswersSumToOne: coerceBoolean,
+        description: z.string().optional(),
+      })
+      .strict(),
+  },
+  'get-monthly-bets-2024': {
+    method: 'GET',
+    visibility: 'public',
+    authed: true,
+    props: z.object({ userId: z.string() }),
+    returns: [] as { month: string; bet_count: number; total_amount: number }[],
+  },
+  'get-max-min-profit-2024': {
+    method: 'GET',
+    visibility: 'public',
+    authed: true,
+    props: z.object({ userId: z.string() }),
+    returns: [] as {
+      profit: number
+      data: Contract
+      answer_id: string | null
+      has_no_shares: boolean
+      has_yes_shares: boolean
+    }[],
+  },
+  'get-next-loan-amount': {
+    method: 'GET',
+    visibility: 'undocumented',
+    cache: DEFAULT_CACHE_STRATEGY,
+    authed: false,
+    returns: {} as { amount: number },
+    props: z.object({
+      userId: z.string(),
+    }),
+  },
+  'create-task': {
+    method: 'POST',
+    visibility: 'public',
+    authed: true,
+    returns: {} as Task,
+    props: z
+      .object({
+        text: z.string(),
+        category_id: z.number().optional(),
+        priority: z.number().default(0),
+        assignee_id: z.string().optional(),
+      })
+      .strict(),
+  },
+  'update-task': {
+    method: 'POST',
+    visibility: 'public',
+    authed: true,
+    returns: {} as { success: boolean },
+    props: z
+      .object({
+        id: z.number(),
+        text: z.string().optional(),
+        completed: z.boolean().optional(),
+        priority: z.number().optional(),
+        category_id: z.number().optional(),
+        archived: z.boolean().optional(),
+        assignee_id: z.string().optional(),
+      })
+      .strict(),
+  },
+  'create-category': {
+    method: 'POST',
+    visibility: 'public',
+    authed: true,
+    returns: {} as { id: number },
+    props: z
+      .object({
+        name: z.string(),
+        color: z.string().optional(),
+        displayOrder: z.number().optional(),
+      })
+      .strict(),
+  },
+  'get-categories': {
+    method: 'GET',
+    visibility: 'public',
+    authed: true,
+    returns: {} as { categories: TaskCategory[] },
+    props: z.object({}).strict(),
+  },
+  'update-category': {
+    method: 'POST',
+    visibility: 'public',
+    authed: true,
+    returns: {} as { success: boolean },
+    props: z
+      .object({
+        categoryId: z.number(),
+        name: z.string().optional(),
+        color: z.string().optional(),
+        displayOrder: z.number().optional(),
+        archived: z.boolean().optional(),
+      })
+      .strict(),
+  },
+  'get-tasks': {
+    method: 'GET',
+    visibility: 'public',
+    authed: true,
+    returns: {} as { tasks: Task[] },
+    props: z.object({}).strict(),
+  },
+  'is-sports-interested': {
+    method: 'GET',
+    visibility: 'public',
+    authed: true,
+    returns: {} as { isSportsInterested: boolean },
+    props: z.object({}).strict(),
+  },
+  'get-site-activity': {
+    method: 'GET',
+    visibility: 'public',
+    authed: false,
+    returns: {} as {
+      bets: Bet[]
+      comments: ContractComment[]
+      newContracts: Contract[]
+      relatedContracts: Contract[]
+    },
+    props: z
+      .object({
+        limit: z.coerce.number().default(10),
+        offset: z.coerce.number().default(0),
+        blockedUserIds: z.array(z.string()).optional(),
+        blockedGroupSlugs: z.array(z.string()).optional(),
+        blockedContractIds: z.array(z.string()).optional(),
+      })
+      .strict(),
+  },
+  'get-sports-games': {
+    method: 'GET',
+    visibility: 'public',
+    authed: true,
+    returns: {} as { schedule: any[] },
+    props: z.object({}).strict(),
+  },
+  'get-market-props': {
+    method: 'GET',
+    visibility: 'public',
+    cache: DEFAULT_CACHE_STRATEGY,
+    // Could set authed false and preferAuth with an api secret if we want it to replace static props
+    authed: true,
+    returns: {} as {
+      manaContract: MarketContract
+      chartAnnotations: ChartAnnotation[]
+      topics: Topic[]
+      comments: ContractComment[]
+      pinnedComments: ContractComment[]
+      userPositionsByOutcome: {
+        YES: ContractMetric[]
+        NO: ContractMetric[]
+      }
+      topContractMetrics: ContractMetric[]
+      totalPositions: number
+      dashboards: Dashboard[]
+      cashContract: MarketContract
+      totalManaBets: number
+      totalCashBets: number
+    },
+    props: z.object({
+      slug: z.string().optional(),
+      id: z.string().optional(),
+    }),
+  },
+  'get-user-contract-metrics-with-contracts': {
+    method: 'GET',
+    visibility: 'public',
+    preferAuth: true,
+    authed: false,
+    returns: {} as {
+      metricsByContract: Dictionary<ContractMetric[]>
+      contracts: Contract[]
+    },
+    props: z.object({
+      userId: z.string(),
+      limit: z.coerce.number(),
+      offset: z.coerce.number().gte(0).optional(),
+      perAnswer: coerceBoolean.optional(),
+      inMani: coerceBoolean.optional(),
+    }),
+  },
+  validateIap: {
+    method: 'POST',
+    visibility: 'undocumented',
+    authed: true,
+    returns: {} as { success: boolean },
+    props: z.object({
+      receipt: z.string(),
+    }),
+  },
+  'check-sports-event': {
+    method: 'GET',
+    visibility: 'public',
+    authed: false,
+    returns: {} as { exists: boolean; existingMarket?: LiteMarket },
+    props: z
+      .object({
+        sportsEventId: z.string(),
+      })
+      .strict(),
+  },
+  'comment-reactions': {
+    method: 'GET',
+    visibility: 'public',
+    authed: false,
+    cache: DEFAULT_CACHE_STRATEGY,
+    returns: [] as Reaction[],
+    props: z
+      .object({
+        contentIds: z.array(z.string()),
+        contentType: z.enum(['comment', 'contract']),
+      })
+      .strict(),
+  },
+  'mark-all-notifications-new': {
+    method: 'POST',
+    visibility: 'public',
+    authed: true,
+    props: z.object({}).strict(),
+    returns: {} as { success: boolean },
   },
 } as const)
 

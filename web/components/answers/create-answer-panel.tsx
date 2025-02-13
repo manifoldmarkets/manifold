@@ -2,14 +2,13 @@ import { ChevronDownIcon, XCircleIcon } from '@heroicons/react/solid'
 import clsx from 'clsx'
 import { MultiSort } from 'common/answer'
 import { MultiContract, SORTS } from 'common/contract'
-import { getTieredAnswerCost } from 'common/economy'
-import { getTierFromLiquidity } from 'common/tier'
+import { getTieredAnswerCost, getTierFromLiquidity } from 'common/tier'
 import { useLayoutEffect, useRef, useState } from 'react'
 import { FaSearch, FaSearchPlus } from 'react-icons/fa'
 import { api } from 'web/lib/api/api'
 import { withTracking } from 'web/lib/service/analytics'
 import { Button } from '../buttons/button'
-import DropdownMenu from '../comments/dropdown-menu'
+import DropdownMenu from '../widgets/dropdown-menu'
 import { Col } from '../layout/col'
 import { Row } from '../layout/row'
 import generateFilterDropdownItems from '../search/search-dropdown-helpers'
@@ -26,7 +25,7 @@ function MultiSortDropdown(props: {
     <DropdownMenu
       closeOnClick
       items={generateFilterDropdownItems(SORTS, setSort)}
-      icon={
+      buttonContent={
         <Row className="text-ink-500 items-center gap-0.5">
           <span className="whitespace-nowrap text-sm font-medium">
             {SORTS.find((s) => s.value === sort)?.label}

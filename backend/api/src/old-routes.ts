@@ -4,7 +4,6 @@ import { claimmanalink } from './claim-manalink'
 import { creategroup } from './create-group'
 import { unsubscribe } from './unsubscribe'
 import { stripewebhook, createcheckoutsession } from './stripe-endpoints'
-import { validateiap } from './validate-iap'
 import { markallnotifications } from './mark-all-notifications'
 import { updatememberrole } from './update-group-member-role'
 import { updategroupprivacy } from './update-group-privacy'
@@ -26,7 +25,6 @@ import { cancelbounty } from './cancel-bounty'
 import { searchgiphy } from './search-giphy'
 import { manachantweet } from './manachan-tweet'
 import { leavereview } from './leave-review'
-import { getusercontractmetricswithcontracts } from './get-user-contract-metrics-with-contracts'
 import { castpollvote } from './cast-poll-vote'
 import { getsimilargroupstocontract } from 'api/get-similar-groups-to-contract'
 import { followUser } from './follow-user'
@@ -78,7 +76,6 @@ export const addOldRoutes = (app: express.Application) => {
   app.post('/claimmanalink', ...apiRoute(claimmanalink))
   app.post('/creategroup', ...apiRoute(creategroup))
   app.post('/updategroup', ...apiRoute(updategroup))
-  app.post('/validateIap', ...apiRoute(validateiap))
   app.post('/markallnotifications', ...apiRoute(markallnotifications))
   app.post('/updatememberrole', ...apiRoute(updatememberrole))
   app.post('/updategroupprivacy', ...apiRoute(updategroupprivacy))
@@ -113,10 +110,6 @@ export const addOldRoutes = (app: express.Application) => {
   app.post('/searchgiphy', ...apiRoute(searchgiphy))
   app.post('/manachantweet', ...apiRoute(manachantweet))
   app.post('/leave-review', ...apiRoute(leavereview))
-  app.post(
-    '/get-user-contract-metrics-with-contracts',
-    ...apiRoute(getusercontractmetricswithcontracts)
-  )
   app.post('/cast-poll-vote', ...apiRoute(castpollvote))
   app.post(
     '/get-similar-groups-to-contract',

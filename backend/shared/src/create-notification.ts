@@ -1,4 +1,3 @@
-import { getContractBetMetrics } from 'common/calculate'
 import {
   BetFillData,
   BetReplyNotificationData,
@@ -91,6 +90,7 @@ import {
   answerToMidpoint,
 } from 'common/multi-numeric'
 import { floatingEqual } from 'common/util/math'
+import { ContractMetric } from 'common/contract-metric'
 
 type recipients_to_reason_texts = {
   [userId: string]: { reason: notification_reason_types }
@@ -243,6 +243,7 @@ export const createCommentOnContractNotification = async (
       data: {
         isReply: !!repliedUsersInfo,
       } as CommentNotificationData,
+      worksOnSweeple: !!sourceContract.siblingContractId,
     }
     return removeUndefinedProps(notification)
   }
@@ -497,10 +498,10 @@ export const createNewAnswerOnContractNotification = async (
 
 export const createBetFillNotification = async (
   toUser: User,
+  fromUser: User,
   bet: Bet,
   limitBet: LimitBet,
-  contract: Contract,
-  idempotencyKey: string
+  contract: Contract
 ) => {
   const privateUser = await getPrivateUser(toUser.id)
   if (!privateUser) return
@@ -509,9 +510,6 @@ export const createBetFillNotification = async (
     'bet_fill'
   )
   if (!sendToBrowser) return
-
-  const fromUser = await getUser(bet.userId)
-  if (!fromUser) return
 
   // The limit order fills array has a matchedBetId that does not match this bet id
   // (even though this bet has a fills array that is matched to the limit order)
@@ -539,7 +537,7 @@ export const createBetFillNotification = async (
   }
 
   const notification: Notification = {
-    id: idempotencyKey,
+    id: crypto.randomUUID(),
     userId: toUser.id,
     reason: 'bet_fill',
     createdTime: Date.now(),
@@ -567,6 +565,7 @@ export const createBetFillNotification = async (
       outcomeType: contract.outcomeType,
       token: contract.token,
     } as BetFillData,
+    worksOnSweeple: !!contract.siblingContractId,
   }
   const pg = createSupabaseDirectClient()
   await insertNotificationToSupabase(notification, pg)
@@ -783,8 +782,7 @@ export const createBettingStreakBonusNotification = async (
   bet: Bet,
   contract: Contract,
   amount: number,
-  streak: number,
-  cashAmount: number | undefined
+  streak: number
 ) => {
   const privateUser = await getPrivateUser(user.id)
   if (!privateUser) return
@@ -809,7 +807,6 @@ export const createBettingStreakBonusNotification = async (
     sourceText: amount.toString(),
     sourceSlug: `/${contract.creatorUsername}/${contract.slug}/bets/${bet.id}`,
     sourceTitle: 'Betting Streak Bonus',
-    // Perhaps not necessary, but just in case
     sourceContractSlug: contract.slug,
     sourceContractId: contract.id,
     sourceContractTitle: contract.question,
@@ -817,8 +814,9 @@ export const createBettingStreakBonusNotification = async (
     data: {
       streak: streak,
       bonusAmount: amount,
-      cashAmount,
+      cashAmount: 0,
     } as BettingStreakData,
+    worksOnSweeple: true,
   }
   const pg = createSupabaseDirectClient()
   await insertNotificationToSupabase(notification, pg)
@@ -861,6 +859,7 @@ export const createBettingStreakExpiringNotification = async (
       data: {
         streak: streak,
       } as BettingStreakData,
+      worksOnSweeple: true,
     }
     if (sendToMobile) {
       bulkPushNotifications.push([
@@ -977,6 +976,7 @@ export const createLikeNotification = async (reaction: Reaction) => {
     sourceText: text,
     sourceSlug: slug,
     sourceTitle: contract.question,
+    worksOnSweeple: !!contract.siblingContractId && content_type !== 'contract',
   }
   return await insertNotificationToSupabase(notification, pg)
 }
@@ -1034,7 +1034,6 @@ export const createNewBettorNotification = async (
       sourceText: txn.amount.toString(),
       sourceSlug: contract.slug,
       sourceTitle: contract.question,
-      // Perhaps not necessary, but just in case
       sourceContractSlug: contract.slug,
       sourceContractId: contract.id,
       sourceContractTitle: contract.question,
@@ -1213,8 +1212,8 @@ export const createContractResolvedNotifications = async (
   resolutionValue: number | undefined,
   answerId: string | undefined,
   resolutionData: {
-    userIdToContractMetrics: {
-      [userId: string]: ReturnType<typeof getContractBetMetrics>
+    userIdToContractMetric: {
+      [userId: string]: Omit<ContractMetric, 'id'>
     }
     userPayouts: { [userId: string]: number }
     creatorPayout: number
@@ -1261,7 +1260,7 @@ export const createContractResolvedNotifications = async (
   const bulkPushNotifications: [PrivateUser, Notification, string, string][] =
     []
   const {
-    userIdToContractMetrics,
+    userIdToContractMetric: userIdToContractMetrics,
     userPayouts,
     creatorPayout,
     resolutionProbability,
@@ -1321,6 +1320,7 @@ export const createContractResolvedNotifications = async (
         profit: userIdToContractMetrics?.[userId]?.profit ?? 0,
         token,
       }) as ContractResolutionData,
+      worksOnSweeple: !!contract.siblingContractId,
     }
   }
 
@@ -1520,6 +1520,7 @@ export const createQuestPayoutNotification = async (
       questType,
       questCount,
     } as QuestRewardTxn['data'],
+    worksOnSweeple: true,
   }
   const pg = createSupabaseDirectClient()
   await insertNotificationToSupabase(notification, pg)
@@ -1996,6 +1997,7 @@ export const createPushNotificationBonusNotification = async (
     sourceUserAvatarUrl: MANIFOLD_AVATAR_URL,
     sourceText: amount.toString(),
     sourceTitle: 'Push Notification Bonus',
+    worksOnSweeple: true,
   }
   const pg = createSupabaseDirectClient()
   await insertNotificationToSupabase(notification, pg)
@@ -2100,6 +2102,7 @@ export const createPaymentSuccessNotification = async (
     sourceUserAvatarUrl: '',
     sourceText: '',
     data: paymentData,
+    worksOnSweeple: true,
   }
 
   const pg = createSupabaseDirectClient()

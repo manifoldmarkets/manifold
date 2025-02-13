@@ -6,6 +6,7 @@ import { Group, LiteGroup, groupPath } from 'common/group'
 import { buildArray } from 'common/util/array'
 import { removeUndefinedProps } from 'common/util/object'
 import Link from 'next/link'
+import router from 'next/router'
 import { useState } from 'react'
 import { BsPeopleFill } from 'react-icons/bs'
 import { SEO } from 'web/components/SEO'
@@ -16,7 +17,7 @@ import { Col } from 'web/components/layout/col'
 import { Page } from 'web/components/layout/page'
 import { QueryUncontrolledTabs } from 'web/components/layout/tabs'
 import { RelativeTimestamp } from 'web/components/relative-timestamp'
-import { SupabaseSearch } from 'web/components/supabase-search'
+import { Search } from 'web/components/search'
 import { QuestionsTopicTitle } from 'web/components/topics/questions-topic-title'
 import { TopicSelector } from 'web/components/topics/topic-selector'
 import { usePrivateUser, useUser } from 'web/hooks/use-user'
@@ -24,6 +25,8 @@ import { api, updateGroup } from 'web/lib/api/api'
 import { getGroupFromSlug } from 'web/lib/supabase/group'
 import { useIsMobile } from 'web/hooks/use-is-mobile'
 import { AboutEditor } from 'web/components/topics/about-editor'
+import { ActivityLog } from 'web/components/activity-log'
+import { removeEmojis } from 'common/util/string'
 
 export async function getStaticProps(ctx: { params: { topicSlug: string } }) {
   const { topicSlug } = ctx.params
@@ -35,6 +38,11 @@ export async function getStaticProps(ctx: { params: { topicSlug: string } }) {
 
   const { above, below } = await api('group/:slug/groups', { slug: topicSlug })
   const dashboards = await api('group/:slug/dashboards', { slug: topicSlug })
+  const topQuestions = await api('search-markets', {
+    sort: 'score',
+    topicSlug,
+    limit: 3,
+  })
 
   return {
     props: {
@@ -42,8 +50,9 @@ export async function getStaticProps(ctx: { params: { topicSlug: string } }) {
       above,
       below,
       dashboards,
+      topQuestions: topQuestions.map((m) => m.question),
     },
-    revalidate: 240,
+    revalidate: 3600 * 12, // 12 hours
   }
 }
 
@@ -56,8 +65,9 @@ export default function TopicPage(props: {
   above: LiteGroup[]
   below: LiteGroup[]
   dashboards: { id: string; title: string; slug: string; creatorId: string }[]
+  topQuestions: string[]
 }) {
-  const { topic, above, below, dashboards } = props
+  const { topic, above, below, dashboards, topQuestions } = props
 
   const isMobile = useIsMobile()
 
@@ -66,8 +76,9 @@ export default function TopicPage(props: {
 
   // TODO: let members edit
   const canEdit = !!user && (isAdminId(user.id) || isModId(user.id))
+  const [addingAbout, setAddingAbout] = useState(false)
   const showAbout =
-    canEdit || (!!topic.about && !JSONEmpty(topic.about)) || isMobile
+    addingAbout || (!!topic.about && !JSONEmpty(topic.about)) || isMobile
 
   return (
     <Page
@@ -77,9 +88,16 @@ export default function TopicPage(props: {
     >
       <SEO
         title={topic.name}
-        description="hi"
-        // description={topic.about}
+        description={`${removeEmojis(topic.name)} odds on Manifold`}
         url={groupPath(topic.slug)}
+        ogProps={{
+          props: {
+            name: topic.name,
+            totalMembers: String(topic.totalMembers ?? 0),
+            topQuestions,
+          },
+          endpoint: 'topic',
+        }}
       />
       <Col className="col-span-7 px-4">
         {/* {topic.bannerUrl && (
@@ -93,13 +111,46 @@ export default function TopicPage(props: {
               />
             </div>
           )} */}
-        <QuestionsTopicTitle topic={topic} />
+        <QuestionsTopicTitle
+          topic={topic}
+          addAbout={() => {
+            setAddingAbout(true)
+            router.replace(groupPath(topic.slug) + '?tab=about')
+          }}
+        />
         <Details topic={topic} />
         <Col className="w-full">
           <QueryUncontrolledTabs
             className="mb-4"
-            defaultIndex={showAbout && user ? 1 : 0}
             tabs={buildArray(
+              {
+                title: 'Questions',
+                content: (
+                  <Search
+                    persistPrefix="group-search"
+                    additionalFilter={{
+                      excludeContractIds: privateUser?.blockedContractIds,
+                      excludeUserIds: privateUser?.blockedUserIds,
+                    }}
+                    contractsOnly
+                    defaultFilter="all"
+                    defaultSort="score"
+                    topicSlug={topic.slug}
+                  />
+                ),
+              },
+              {
+                title: 'Live',
+                content: <ActivityLog count={20} topicSlugs={[topic.slug]} />,
+              },
+              dashboards.length && {
+                title: 'Dashboards',
+                content: <DashboardCards dashboards={dashboards} />,
+              },
+              {
+                title: 'Leaderboard',
+                content: <TopicLeaderboard topicId={topic.id} />,
+              },
               showAbout && {
                 title: 'About',
                 content: (
@@ -112,6 +163,8 @@ export default function TopicPage(props: {
                           about: content,
                         })
                       }}
+                      editing={addingAbout}
+                      setEditing={setAddingAbout}
                       canEdit={canEdit}
                     />
                     {isMobile && (
@@ -125,31 +178,6 @@ export default function TopicPage(props: {
                     )}
                   </Col>
                 ),
-              },
-              {
-                title: 'Questions',
-                content: (
-                  <SupabaseSearch
-                    headerClassName={'bg-canvas-50'}
-                    persistPrefix="group-search"
-                    additionalFilter={{
-                      excludeContractIds: privateUser?.blockedContractIds,
-                      excludeUserIds: privateUser?.blockedUserIds,
-                    }}
-                    contractsOnly
-                    defaultFilter="all"
-                    defaultSort="score"
-                    topicSlug={topic.slug}
-                  />
-                ),
-              },
-              dashboards.length && {
-                title: 'Dashboards',
-                content: <DashboardCards dashboards={dashboards} />,
-              },
-              {
-                title: 'Leaderboard',
-                content: <TopicLeaderboard topicId={topic.id} />,
               }
             )}
           />

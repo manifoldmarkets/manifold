@@ -6,7 +6,7 @@ import { Col } from '../layout/col'
 import { Row } from '../layout/row'
 import { Avatar } from '../widgets/avatar'
 import { UserLink } from '../widgets/user-link'
-import { LoadMoreUntilNotVisible } from '../widgets/visibility-observer'
+import { LoadMoreUntilNotVisible } from 'web/components/widgets/visibility-observer'
 import { ContractStatusLabel } from './contracts-table'
 import { Contract, contractPath, BinaryContract } from 'common/contract'
 import Masonry from 'react-masonry-css'
@@ -26,8 +26,8 @@ export const SidebarRelatedContractsList = memo(function (props: {
   const { contracts, loadMore, className } = props
 
   return (
-    <Col className={clsx(className, 'flex-1')}>
-      <h2 className="text-ink-600 mb-2 text-xl">Related questions</h2>
+    <Col className={clsx('flex-1', className)}>
+      <h2 className="text-ink-600 my-2 ml-4 text-xl">Related questions</h2>
       <Col className="divide-ink-300 divide-y-[0.5px]">
         {contracts.map((contract) => (
           <SidebarRelatedContractCard

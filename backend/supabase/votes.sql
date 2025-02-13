@@ -8,6 +8,16 @@ create table if not exists
     constraint primary key (id, contract_id, user_id)
   );
 
+-- Row Level Security
+alter table votes enable row level security;
+
+-- Policies
+drop policy if exists "Enable read access for all users" on votes;
+
+create policy "Enable read access for all users" on votes for
+select
+  using (true);
+
 -- Indexes
 drop index if exists votes_pkey;
 

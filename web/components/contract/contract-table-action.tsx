@@ -4,7 +4,6 @@ import { useState } from 'react'
 import { firebaseLogin } from 'web/lib/firebase/users'
 import { BetDialog, MultiBetDialog } from '../bet/bet-dialog'
 import { Button } from '../buttons/button'
-import { Col } from '../layout/col'
 import { MODAL_CLASS, Modal } from '../layout/modal'
 import { Row } from '../layout/row'
 import { NumericResolutionPanel } from '../numeric-resolution-panel'
@@ -12,7 +11,6 @@ import { ResolutionPanel } from '../resolution-panel'
 import { isClosed } from './contracts-table'
 import { AnswersResolvePanel } from '../answers/answer-resolve-panel'
 import { useUser } from 'web/hooks/use-user'
-import clsx from 'clsx'
 import { track } from 'web/lib/service/analytics'
 import { PollPanel } from '../poll/poll-panel'
 import { TRADE_TERM } from 'common/envs/constants'
@@ -159,10 +157,13 @@ export function ResolveButton(props: { contract: Contract }) {
           Resolve
         </Button>
         {open && (
-          <Modal open={open} setOpen={setOpen} size="md">
-            <Col className={clsx(MODAL_CLASS, 'items-stretch !gap-0')}>
-              <SmallResolutionPanel contract={contract} setOpen={setOpen} />
-            </Col>
+          <Modal
+            open={open}
+            setOpen={setOpen}
+            className={MODAL_CLASS}
+            size="md"
+          >
+            <SmallResolutionPanel contract={contract} setOpen={setOpen} />
           </Modal>
         )}
       </>
@@ -190,13 +191,11 @@ export function SmallResolutionPanel(props: {
       inModal
     />
   ) : outcomeType === 'MULTIPLE_CHOICE' ? (
-    <Col className="w-full">
-      <AnswersResolvePanel
-        contract={contract as CPMMMultiContract}
-        onClose={() => setOpen(false)}
-        inModal
-      />
-    </Col>
+    <AnswersResolvePanel
+      contract={contract as CPMMMultiContract}
+      onClose={() => setOpen(false)}
+      inModal
+    />
   ) : (
     <></>
   )

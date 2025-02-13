@@ -1,17 +1,51 @@
 import clsx from 'clsx'
-import {
-  BinaryContract,
-  CPMMMultiContract,
-  CPMMNumericContract,
-  MAX_CPMM_PROB,
-  MIN_CPMM_PROB,
-  PseudoNumericContract,
-  StonkContract,
-} from 'common/contract'
+
 import { Col } from '../layout/col'
 import { Input } from './input'
-import { AmountInput } from './amount-input'
-import { IncrementDecrementButton } from './increment-button'
+import { Slider, sliderColors } from './slider'
+export const PROBABILITY_SLIDER_VALUES = Array.from(
+  { length: 99 },
+  (_, i) => i + 1
+)
+
+export const PROBABILITY_SLIDER_VALUE_LABELS = [1, 50, 99]
+
+export function ProbabilitySlider(props: {
+  prob: number | undefined
+  onProbChange: (newProb: number | undefined) => void
+  disabled?: boolean
+  className?: string
+  color?: keyof typeof sliderColors
+  outcome?: 'YES' | 'NO'
+}) {
+  const { prob, onProbChange, disabled, className, outcome } = props
+  // Default slider color: YES → green, NO → red
+  const color = props.color ?? 'gray'
+
+  const maxSliderIndex = PROBABILITY_SLIDER_VALUES.length - 1
+
+  const probToSliderIndex = (p: number) => {
+    const idx = PROBABILITY_SLIDER_VALUES.findLastIndex((val) => p >= val)
+    return idx === -1 ? 0 : idx
+  }
+
+  // Convert slider index back to the real probability
+  const sliderIndexToProb = (idx: number) => PROBABILITY_SLIDER_VALUES[idx]
+
+  return (
+    <Slider
+      className={className}
+      min={0}
+      max={maxSliderIndex}
+      color={color}
+      amount={probToSliderIndex(prob ?? 0)} // position the slider at the real probability
+      onChange={(value) => onProbChange(sliderIndexToProb(value))}
+      step={1}
+      disabled={disabled}
+      fillToRight={outcome === 'NO'}
+    />
+  )
+}
 
 export function ProbabilityInput(props: {
   prob: number | undefined
@@ -45,19 +79,19 @@ export function ProbabilityInput(props: {
     }
     onChange(isInvalid ? undefined : prob)
   }
-  const incrementProb = () => {
-    onChange(Math.min(maxBetProbInt, (prob ?? 0) + 1))
-  }
-  const decrementProb = () => {
-    if (prob === undefined) return
-    if (prob === minBetProbInt) onChange(undefined)
-    else onChange((prob ?? 0) - 1)
+
+  const adjustProb = (delta: number) => {
+    const currentProb = prob ?? 0
+    let newProb = currentProb + delta
+    if (newProb <= minBetProbInt) newProb = minBetProbInt
+    else if (newProb >= maxBetProbInt) newProb = maxBetProbInt
+    onChange(newProb)
   }
 
   return (
     <Col className={clsx(className, 'relative')}>
       <Input
-        className={clsx('pr-2 !text-lg', 'w-full', inputClassName)}
+        className={clsx('w-full !text-lg', inputClassName)}
         type="text"
         pattern="[0-9]*"
         inputMode="numeric"
@@ -67,80 +101,14 @@ export function ProbabilityInput(props: {
         disabled={disabled}
         onChange={(e) => onProbChange(e.target.value)}
         onKeyDown={(e) => {
-          if (e.key === 'ArrowUp') {
-            incrementProb()
-          } else if (e.key === 'ArrowDown') {
-            decrementProb()
-          }
+          if (e.key === 'ArrowUp') adjustProb(1)
+          else if (e.key === 'ArrowDown') adjustProb(-1)
         }}
         error={error}
       />
-      <span className="text-ink-400 absolute right-12 top-1/2 my-auto -translate-y-1/2">
+      <span className="text-ink-400 absolute right-4 top-1/2 my-auto -translate-y-1/2">
         %
       </span>
-      <IncrementDecrementButton
-        className="absolute right-[1px] top-[1px] h-full"
-        onIncrement={incrementProb}
-        onDecrement={decrementProb}
-      />
     </Col>
-  )
-}
-
-export function ProbabilityOrNumericInput(props: {
-  contract:
-    | BinaryContract
-    | PseudoNumericContract
-    | StonkContract
-    | CPMMMultiContract
-    | CPMMNumericContract
-  prob: number | undefined
-  setProb: (prob: number | undefined) => void
-  disabled?: boolean
-  placeholder?: string
-  error?: boolean
-  onRangeError?: (error: boolean) => void
-}) {
-  const {
-    contract,
-    prob,
-    setProb,
-    disabled,
-    placeholder,
-    error = false,
-    onRangeError,
-  } = props
-  const isPseudoNumeric = contract.outcomeType === 'PSEUDO_NUMERIC'
-  const isSumsToOne =
-    contract.outcomeType === 'MULTIPLE_CHOICE' && contract.shouldAnswersSumToOne
-
-  return isPseudoNumeric ? (
-    <AmountInput
-      inputClassName="w-24"
-      label=""
-      amount={prob}
-      onChangeAmount={(val) => {
-        onRangeError?.(
-          val !== undefined && (val < contract.min || val > contract.max)
-        )
-        setProb(val)
-      }}
-      allowNegative
-      disabled={disabled}
-      placeholder={placeholder}
-      error={error}
-    />
-  ) : (
-    <ProbabilityInput
-      className={'w-28'}
-      prob={prob}
-      onChange={setProb}
-      disabled={disabled}
-      placeholder={placeholder}
-      error={error}
-      limitProbs={
-        !isSumsToOne ? { max: MAX_CPMM_PROB, min: MIN_CPMM_PROB } : undefined
-      }
-    />
   )
 }

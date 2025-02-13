@@ -78,7 +78,7 @@ function CommentsDialog(props: {
     <Modal
       open={open}
       setOpen={setOpen}
-      className={clsx('bg-canvas-0 rounded-lg pl-2 pr-4 pt-4')}
+      className={'bg-canvas-0 w-full rounded-lg pl-2 pr-4 pt-4'}
       size={'lg'}
     >
       <div className="mb-2 ml-2">
@@ -87,7 +87,7 @@ function CommentsDialog(props: {
       <Col className={clsx(SCROLLABLE_MODAL_CLASS, 'scrollbar-hide')}>
         <CommentsTabContent
           // TODO: fix
-          playContract={contract}
+          staticContract={contract}
           liveContract={contract}
           comments={comments}
           blockedUserIds={blockedUserIds}

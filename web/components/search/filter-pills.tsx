@@ -15,20 +15,26 @@ import {
   Filter,
   SearchParams,
   TOPIC_FILTER_KEY,
-} from '../supabase-search'
-import DropdownMenu from '../comments/dropdown-menu'
+} from '../search'
+import DropdownMenu from '../widgets/dropdown-menu'
 import { getLabelFromValue } from './search-dropdown-helpers'
 import { LiteGroup } from 'common/group'
 import { User } from 'common/user'
 
+export const minimalistIndigoSelectedClass =
+  'bg-indigo-200 hover:bg-indigo-400 text-ink-600 dark:text-ink-800 dark:bg-indigo-900 dark:hover:bg-indigo-500'
+export const unselectedClass =
+  'bg-ink-100 hover:bg-indigo-300 text-ink-600 dark:bg-ink-300 dark:hover:bg-indigo-800'
+
 export function FilterPill(props: {
   selected: boolean
+  color?: 'gray' | 'minimalist-indigo'
   onSelect: () => void
   className?: string
   children: ReactNode
   type?: 'spice' | 'sweepies'
 }) {
-  const { children, selected, onSelect, className, type } = props
+  const { children, selected, onSelect, className, type, color } = props
 
   return (
     <button
@@ -42,9 +48,13 @@ export function FilterPill(props: {
           ? selected
             ? 'bg-amber-600 text-white hover:bg-amber-600'
             : 'text-ink-600 bg-amber-500/10 hover:bg-amber-500/30 dark:bg-amber-500/20 dark:hover:bg-amber-500/30'
-          : selected // Add this condition
+          : color === 'gray' && selected
+          ? 'bg-ink-300 hover:bg-ink-400 text-ink-600 dark:text-ink-800 dark:bg-ink-500 dark:hover:bg-ink-500'
+          : color === 'minimalist-indigo' && selected
+          ? minimalistIndigoSelectedClass
+          : selected
           ? 'hover:bg-primary-600 focus-visible:bg-primary-600 bg-primary-500 text-white'
-          : 'bg-ink-100 hover:bg-ink-200 text-ink-600 dark:bg-ink-300 dark:hover:bg-ink-400',
+          : unselectedClass,
         className
       )}
       onClick={onSelect}
@@ -159,7 +169,11 @@ export function FilterDropdownPill(props: {
   currentFilter: Filter
 }) {
   const { selectFilter, currentFilter } = props
-  const currentFilterLabel = getLabelFromValue(FILTERS, currentFilter)
+  // Remove the closing-month filter from the list while it's in its own button
+  const currentFilterLabel =
+    // currentFilter === 'closing-month' ? getLabelFromValue(FILTERS, 'open') :
+    getLabelFromValue(FILTERS, currentFilter)
+
   return (
     <DropdownMenu
       withinOverflowContainer
@@ -169,9 +183,10 @@ export function FilterDropdownPill(props: {
           onClick: () => selectFilter(filter.value),
         }
       })}
-      menuItemsClass={clsx()}
       buttonContent={(open) => (
-        <DropdownPill open={open}>{currentFilterLabel}</DropdownPill>
+        <DropdownPill color={'light-gray'} open={open}>
+          {currentFilterLabel}
+        </DropdownPill>
       )}
       selectedItemName={currentFilterLabel}
       closeOnClick
@@ -213,6 +228,7 @@ export function TopicDropdownPill(props: {
         onClick: () =>
           updateParams({
             [FOR_YOU_KEY]: '1',
+            [TOPIC_FILTER_KEY]: '',
           }),
       }
     : null
@@ -238,7 +254,9 @@ export function TopicDropdownPill(props: {
       withinOverflowContainer
       items={items}
       buttonContent={(open) => (
-        <DropdownPill open={open}>{currentTopicLabel}</DropdownPill>
+        <DropdownPill color={'indigo'} open={open}>
+          {currentTopicLabel}
+        </DropdownPill>
       )}
       selectedItemName={currentTopicLabel}
       closeOnClick

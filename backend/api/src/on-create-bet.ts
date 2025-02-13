@@ -1,8 +1,13 @@
-import { log, getUsers, revalidateContractStaticProps } from 'shared/utils'
+import {
+  log,
+  revalidateContractStaticProps,
+  getContract,
+  getUsers,
+} from 'shared/utils'
 import { Bet, LimitBet } from 'common/bet'
 import { Contract } from 'common/contract'
 import { humanish, User } from 'common/user'
-import { groupBy, keyBy, sortBy, sumBy, uniq } from 'lodash'
+import { groupBy, sortBy, sumBy } from 'lodash'
 import { filterDefined } from 'common/util/array'
 import {
   createBetFillNotification,
@@ -16,16 +21,13 @@ import {
   createSupabaseDirectClient,
   SupabaseDirectClient,
 } from 'shared/supabase/init'
-import { convertBet } from 'common/supabase/bets'
 import { addToLeagueIfNotInOne } from 'shared/generate-leagues'
 import { getCommentSafe } from 'shared/supabase/contract-comments'
-import { getBetsDirect, getBetsRepliedToComment } from 'shared/supabase/bets'
+import { getBetsRepliedToComment } from 'shared/supabase/bets'
 import { updateData } from 'shared/supabase/utils'
 import {
   BETTING_STREAK_BONUS_AMOUNT,
   BETTING_STREAK_BONUS_MAX,
-  BETTING_STREAK_SWEEPS_BONUS_AMOUNT,
-  BETTING_STREAK_SWEEPS_BONUS_MAX,
   MAX_TRADERS_FOR_BIG_BONUS,
   SMALL_UNIQUE_BETTOR_LIQUIDITY,
   UNIQUE_BETTOR_LIQUIDITY,
@@ -66,6 +68,7 @@ export const onCreateBets = async (result: ExecuteNewBetResult) => {
     user: originalBettor,
     cancelledLimitOrders,
     makers,
+    updatedMakers,
     streakIncremented,
     bonusTxn: creatorBonusTxn,
     reloadMetrics,
@@ -87,6 +90,9 @@ export const onCreateBets = async (result: ExecuteNewBetResult) => {
       lastBetTime: bets[0].createdTime,
     })
   )
+  if (updatedMakers.length) {
+    broadcastOrders(updatedMakers as LimitBet[])
+  }
   if (userUpdates) {
     const startUserUpdates = Date.now()
     broadcastUserUpdates(userUpdates)
@@ -112,15 +118,17 @@ export const onCreateBets = async (result: ExecuteNewBetResult) => {
     )
     const startNotifications = Date.now()
     await Promise.all(
-      cancelledLimitOrders.map((order) => {
-        createLimitBetCanceledNotification(
-          originalBettor,
-          order.userId,
-          order,
-          makers?.find((m) => m.bet.id === order.id)?.amount ?? 0,
-          contract
-        )
-      })
+      cancelledLimitOrders
+        .filter((order) => !order.silent)
+        .map((order) => {
+          createLimitBetCanceledNotification(
+            originalBettor,
+            order.userId,
+            order,
+            makers?.find((m) => m.bet.id === order.id)?.amount ?? 0,
+            contract
+          )
+        })
     )
     log(
       `Creating limit order cancel notifications took ${
@@ -133,22 +141,33 @@ export const onCreateBets = async (result: ExecuteNewBetResult) => {
     : result.updatedMetrics
   broadcastUpdatedMetrics(updatedMetrics)
   debounceRevalidateContractStaticProps(contract)
-  const matchedBetIds = uniq(
-    filterDefined(
-      bets.flatMap((b) => b.fills?.map((f) => f.matchedBetId) ?? [])
+  const makersToNotify = updatedMakers.filter((m) => !m.silent)
+  if (makersToNotify.length) {
+    const makerUsers = await getUsers(makersToNotify.map((m) => m.userId))
+    await Promise.all(
+      makersToNotify.map(async (updatedMaker) => {
+        const bet = bets.find((b) =>
+          b.fills?.some((f) => f.matchedBetId === updatedMaker.id)
+        )
+        if (!bet) {
+          log.error(`No bet found for updated maker ${updatedMaker.id}`)
+          return
+        }
+        if (!bet.fills?.length) return
+        const limitOrderer = makerUsers.find(
+          (u) => u.id === updatedMaker.userId
+        )
+        if (!limitOrderer) return
+        await createBetFillNotification(
+          limitOrderer,
+          originalBettor,
+          bet,
+          updatedMaker,
+          contract
+        )
+      })
     )
-  )
-  if (matchedBetIds.length > 0) {
-    const updatedLimitBets = await getBetsDirect(pg, matchedBetIds)
-    broadcastOrders(updatedLimitBets as LimitBet[])
   }
-
-  await Promise.all(
-    bets.map(async (bet) => {
-      const idempotentId = bet.id + bet.contractId + '-limit-fill'
-      await notifyUsersOfLimitFills(bet, contract, idempotentId)
-    })
-  )
 
   const replyBet = bets.find((bet) => bet.replyToCommentId)
 
@@ -199,52 +218,6 @@ const debounceRevalidateContractStaticProps = (contract: Contract) => {
   )
 }
 
-const notifyUsersOfLimitFills = async (
-  bet: Bet,
-  contract: Contract,
-  eventId: string
-) => {
-  if (!bet.fills || !bet.fills.length) return
-  const pg = createSupabaseDirectClient()
-
-  const matchingLimitBetIds = filterDefined(
-    bet.fills.map((fill) => fill.matchedBetId)
-  )
-  if (!matchingLimitBetIds.length) return
-
-  const matchingLimitBets = filterDefined(
-    await pg.map(
-      `select * from contract_bets where bet_id in ($1:list)`,
-      [matchingLimitBetIds],
-      (r) => convertBet(r) as LimitBet
-    )
-  ).flat()
-
-  const matchingLimitBetUsers = await getUsers(
-    matchingLimitBets.map((bet) => bet.userId)
-  )
-
-  const limitBetUsersById = keyBy(filterDefined(matchingLimitBetUsers), 'id')
-
-  return filterDefined(
-    await Promise.all(
-      matchingLimitBets.map(async (matchedBet) => {
-        const matchedUser = limitBetUsersById[matchedBet.userId]
-        if (!matchedUser) return undefined
-
-        await createBetFillNotification(
-          matchedUser,
-          bet,
-          matchedBet,
-          contract,
-          eventId
-        )
-        return matchedUser
-      })
-    )
-  )
-}
-
 const handleBetReplyToComment = async (
   bet: Bet,
   contract: Contract,
@@ -257,7 +230,20 @@ const handleBetReplyToComment = async (
 
   if (!comment) return
 
-  const allBetReplies = await getBetsRepliedToComment(pg, comment, contract.id)
+  const manaContract =
+    contract.token === 'CASH'
+      ? await getContract(pg, contract.siblingContractId!)
+      : contract
+
+  if (!manaContract) return
+
+  const allBetReplies = await getBetsRepliedToComment(
+    pg,
+    comment,
+    contract.id,
+    contract.siblingContractId
+  )
+
   const bets = filterDefined(allBetReplies)
   // This could potentially miss some bets if they're not replicated in time
   if (!bets.some((b) => b.id === bet.id)) bets.push(bet)
@@ -328,31 +314,7 @@ const payBettingStreak = async (
 
     const txn = await runTxnFromBank(tx, bonusTxn)
 
-    let sweepsTxn = null
-    let sweepsBonusAmount = 0
-    if (oldUser.sweepstakesVerified) {
-      sweepsBonusAmount = Math.min(
-        BETTING_STREAK_SWEEPS_BONUS_AMOUNT * newBettingStreak,
-        BETTING_STREAK_SWEEPS_BONUS_MAX
-      )
-
-      const sweepsBonusTxn: Omit<
-        BettingStreakBonusTxn,
-        'id' | 'createdTime' | 'fromId'
-      > = {
-        fromType: 'BANK',
-        toId: oldUser.id,
-        toType: 'USER',
-        amount: sweepsBonusAmount,
-        token: 'CASH',
-        category: 'BETTING_STREAK_BONUS',
-        data: bonusTxnDetails,
-      }
-
-      sweepsTxn = await runTxnFromBank(tx, sweepsBonusTxn)
-    }
-
-    return { txn, sweepsTxn, bonusAmount, sweepsBonusAmount, newBettingStreak }
+    return { txn, bonusAmount, newBettingStreak }
   })
 
   await createBettingStreakBonusNotification(
@@ -361,8 +323,7 @@ const payBettingStreak = async (
     bet,
     contract,
     result.bonusAmount,
-    result.newBettingStreak,
-    result.sweepsTxn ? result.sweepsBonusAmount : undefined
+    result.newBettingStreak
   )
 }
 

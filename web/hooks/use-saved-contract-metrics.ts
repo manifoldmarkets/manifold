@@ -1,23 +1,29 @@
 import { ContractMetric } from 'common/contract-metric'
 import { Contract } from 'common/contract'
-import {
-  getTopContractMetrics,
-  getUserContractMetrics,
-} from 'common/supabase/contract-metrics'
+import { getTopContractMetrics } from 'common/supabase/contract-metrics'
 import { db } from 'web/lib/supabase/db'
 import { useEffect, useState } from 'react'
 import { usePersistentLocalState } from './use-persistent-local-state'
-import { useEvent } from 'web/hooks/use-event'
-import { useApiSubscription } from 'web/hooks/use-api-subscription'
-import {
-  calculateProfitMetricsWithProb,
-  getDefaultMetric,
-  applyMetricToSummary,
-} from 'common/calculate-metrics'
+import { useEvent } from 'client-common/hooks/use-event'
+import { useApiSubscription } from 'client-common/hooks/use-api-subscription'
+import { calculateUpdatedMetricsForContracts } from 'common/calculate-metrics'
 import { useUser } from './use-user'
-import { useBatchedGetter } from './use-batched-getter'
+
+import { useBatchedGetter } from 'client-common/hooks/use-batched-getter'
+import { queryHandlers } from 'web/lib/supabase/batch-query-handlers'
+import { api } from 'web/lib/api/api'
 
 export const useSavedContractMetrics = (
+  contract: Contract,
+  answerId?: string
+) => {
+  const allMetrics = useAllSavedContractMetrics(contract, answerId)
+  return allMetrics?.find((m) =>
+    answerId ? m.answerId === answerId : m.answerId == null
+  )
+}
+
+export const useAllSavedContractMetrics = (
   contract: Contract,
   answerId?: string
 ) => {
@@ -28,40 +34,20 @@ export const useSavedContractMetrics = (
 
   const updateMetricsWithNewProbs = (metrics: ContractMetric[]) => {
     if (!user) return metrics
-    if (contract.mechanism === 'cpmm-1') {
-      return [calculateProfitMetricsWithProb(contract.prob, metrics[0])]
-    }
-    if (contract.mechanism === 'cpmm-multi-1') {
-      const updatedMetrics = metrics.map((metric) => {
-        const answer = contract.answers.find((a) => a.id === metric.answerId)
-        return answer
-          ? calculateProfitMetricsWithProb(
-              answer.resolution === 'YES'
-                ? 1
-                : answer.resolution === 'NO'
-                ? 0
-                : answer.prob,
-              metric
-            )
-          : metric
-      })
-      const nonNullMetrics = updatedMetrics.filter((m) => m.answerId != null)
-      const nullMetric = getDefaultMetric(user.id, contract.id, null)
-      nonNullMetrics.forEach((m) => applyMetricToSummary(m, nullMetric, true))
-      return [...nonNullMetrics, nullMetric] as ContractMetric[]
-    }
-    return metrics
+    const { metricsByContract } = calculateUpdatedMetricsForContracts([
+      { contract, metrics },
+    ])
+    return metricsByContract[contract.id] as ContractMetric[]
   }
 
   const refreshMyMetrics = useEvent(async () => {
     if (!user?.id) return
 
-    const metrics = await getUserContractMetrics(
-      user.id,
-      contract.id,
-      db,
-      answerId
-    )
+    const metrics = await api('market/:id/positions', {
+      id: contract.id,
+      userId: user.id,
+      answerId,
+    })
 
     if (!metrics.length) {
       setSavedMetrics([])
@@ -72,29 +58,19 @@ export const useSavedContractMetrics = (
 
   useEffect(() => {
     refreshMyMetrics()
-  }, [user?.id, contract.id, answerId])
+  }, [user?.id, contract.id, answerId, contract.resolution])
 
   useApiSubscription({
     topics: [`contract/${contract.id}/user-metrics/${user?.id}`],
     onBroadcast: (msg) => {
-      const metrics = (msg.data.metrics as ContractMetric[]).filter((m) =>
-        answerId ? m.answerId === answerId : true
+      const metrics = (msg.data.metrics as Omit<ContractMetric, 'id'>[]).filter(
+        (m) => (answerId ? m.answerId === answerId : true)
       )
-      if (metrics.length > 0) setSavedMetrics(metrics)
+      if (metrics.length > 0) setSavedMetrics(metrics as ContractMetric[])
     },
     enabled: !!user?.id,
   })
 
-  return savedMetrics?.find((m) =>
-    answerId ? m.answerId === answerId : m.answerId == null
-  )
-}
-
-export const useReadLocalContractMetrics = (contractId: string) => {
-  const [savedMetrics] = usePersistentLocalState<ContractMetric | undefined>(
-    undefined,
-    `contract-metrics-${contractId}`
-  )
   return savedMetrics
 }
 
@@ -140,6 +116,7 @@ export const useTopContractMetrics = (props: {
 export const useHasContractMetrics = (contractId: string) => {
   const user = useUser()
   const [hasMetric] = useBatchedGetter<boolean>(
+    queryHandlers,
     'contract-metrics',
     contractId,
     false,

@@ -16,11 +16,11 @@ import { getFormattedMappedValue } from 'common/pseudo-numeric'
 import { formatPercent } from 'common/util/format'
 import { groupBy, keyBy, sortBy, sumBy } from 'lodash'
 import { useState } from 'react'
-import { usePersistentInMemoryState } from 'web/hooks/use-persistent-in-memory-state'
+import { usePersistentInMemoryState } from 'client-common/hooks/use-persistent-in-memory-state'
 import { useUser } from 'web/hooks/use-user'
 import { useDisplayUserById, useUsers } from 'web/hooks/use-user-supabase'
 import { api } from 'web/lib/api/api'
-import { getCountdownString } from 'web/lib/util/time'
+import { getCountdownString } from 'client-common/lib/time'
 import { Button } from '../buttons/button'
 import { DepthChart } from '../charts/contract/depth-chart'
 import { Col } from '../layout/col'
@@ -44,6 +44,7 @@ import { MoneyDisplay } from './money-display'
 import { MultipleOrSingleAvatars } from '../multiple-or-single-avatars'
 import { DisplayUser } from 'common/api/user-types'
 import { UserLink } from '../widgets/user-link'
+import { getPseudonym } from '../charts/contract/choice'
 
 export function YourOrders(props: {
   contract:
@@ -60,7 +61,7 @@ export function YourOrders(props: {
   const user = useUser()
 
   const yourBets = sortBy(
-    bets.filter((bet) => bet.userId === user?.id),
+    bets.filter((bet) => bet.userId === user?.id && !bet.silent),
     (bet) => -1 * bet.limitProb,
     (bet) => -1 * bet.createdTime
   )
@@ -123,9 +124,8 @@ export function OrderTable(props: {
     | CPMMMultiContract
     | MultiContract
   isYou?: boolean
-  side?: 'YES' | 'NO'
 }) {
-  const { limitBets, contract, isYou, side } = props
+  const { limitBets, contract, isYou } = props
   const isPseudoNumeric = contract.outcomeType === 'PSEUDO_NUMERIC'
   const [isCancelling, setIsCancelling] = useState(false)
   const isBinaryMC = isBinaryMulti(contract)
@@ -138,48 +138,30 @@ export function OrderTable(props: {
   }
   return (
     <Col>
-      {side && (
-        <Row className="ml-2">
-          <span className="mr-2">Buy</span>{' '}
-          {isBinaryMC ? (
-            <OutcomeLabel
-              contract={contract}
-              outcome={side}
-              truncate={'short'}
-            />
-          ) : side === 'YES' ? (
-            <YesLabel />
-          ) : (
-            <NoLabel />
-          )}
-        </Row>
-      )}
       <Table className="rounded">
         <thead>
-          {!side && (
-            <tr>
-              {!isYou && <th></th>}
-              <th>Outcome</th>
-              <th>{isPseudoNumeric ? 'Value' : 'Prob'}</th>
-              <th>Amount</th>
-              <th>
-                <Row className={'mt-1 justify-between gap-1 sm:justify-start'}>
-                  Expires
-                  {isYou && limitBets.length > 1 && (
-                    <Button
-                      loading={isCancelling}
-                      size={'2xs'}
-                      color={'gray-outline'}
-                      onClick={onCancel}
-                      className={'ml-1 whitespace-normal'}
-                    >
-                      Cancel all
-                    </Button>
-                  )}
-                </Row>
-              </th>
-            </tr>
-          )}
+          <tr>
+            {!isYou && <th></th>}
+            <th>Outcome</th>
+            <th>{isPseudoNumeric ? 'Value' : 'Prob'}</th>
+            <th>Amount</th>
+            <th>
+              <Row className={'mt-1 justify-between gap-1 sm:justify-start'}>
+                Expires
+                {isYou && limitBets.length > 1 && (
+                  <Button
+                    loading={isCancelling}
+                    size={'2xs'}
+                    color={'gray-outline'}
+                    onClick={onCancel}
+                    className={'ml-1 whitespace-normal'}
+                  >
+                    Cancel all
+                  </Button>
+                )}
+              </Row>
+            </th>
+          </tr>
         </thead>
         <tbody>
           {limitBets.map((bet) => (
@@ -188,7 +170,6 @@ export function OrderTable(props: {
               bet={bet}
               contract={contract}
               isYou={!!isYou}
-              showOutcome={!side}
             />
           ))}
         </tbody>
@@ -206,9 +187,8 @@ function OrderRow(props: {
     | MultiContract
   bet: LimitBet
   isYou: boolean
-  showOutcome?: boolean
 }) {
-  const { contract, bet, isYou, showOutcome } = props
+  const { contract, bet, isYou } = props
   const { orderAmount, amount, limitProb, outcome } = bet
   const isPseudoNumeric = contract.outcomeType === 'PSEUDO_NUMERIC'
   const isBinaryMC = isBinaryMulti(contract)
@@ -221,8 +201,8 @@ function OrderRow(props: {
     await api('bet/cancel/:betId', { betId: bet.id })
     setIsCancelling(false)
   }
-
   const isCashContract = contract.token === 'CASH'
+  const expired = bet.expiresAt && bet.expiresAt < Date.now()
 
   return (
     <tr>
@@ -240,23 +220,22 @@ function OrderRow(props: {
           </a>
         </td>
       )}
-      {showOutcome && (
-        <td>
-          <div className="pl-2">
-            {isPseudoNumeric ? (
-              <PseudoNumericOutcomeLabel outcome={outcome as 'YES' | 'NO'} />
-            ) : isBinaryMC ? (
-              <OutcomeLabel
-                contract={contract}
-                outcome={outcome}
-                truncate={'short'}
-              />
-            ) : (
-              <BinaryOutcomeLabel outcome={outcome as 'YES' | 'NO'} />
-            )}
-          </div>
-        </td>
-      )}
+      <td>
+        <div className="pl-2">
+          {isPseudoNumeric ? (
+            <PseudoNumericOutcomeLabel outcome={outcome as 'YES' | 'NO'} />
+          ) : isBinaryMC ? (
+            <OutcomeLabel
+              pseudonym={getPseudonym(contract)}
+              contract={contract}
+              outcome={outcome}
+              truncate={'short'}
+            />
+          ) : (
+            <BinaryOutcomeLabel outcome={outcome as 'YES' | 'NO'} />
+          )}
+        </div>
+      </td>
       <td>
         {isPseudoNumeric
           ? getFormattedMappedValue(contract, limitProb)
@@ -275,7 +254,9 @@ function OrderRow(props: {
           <Row className={'justify-between gap-1 sm:justify-start'}>
             <Col className={'sm:flex-row sm:gap-1'}>
               <span>
-                {bet.expiresAt ? (
+                {expired ? (
+                  'Expired'
+                ) : bet.expiresAt ? (
                   <Tooltip
                     text={`${new Date(
                       bet.expiresAt
@@ -327,7 +308,10 @@ export function CollatedOrderTable(props: {
     }
   }
 }) {
-  const { limitBets, contract, side, pseudonym } = props
+  const { contract, side, pseudonym } = props
+  const limitBets = props.limitBets.filter(
+    (b) => !b.expiresAt || b.expiresAt > Date.now()
+  )
   const isBinaryMC = isBinaryMulti(contract)
   const groupedBets = groupBy(limitBets, (b) => b.limitProb)
 
@@ -519,7 +503,10 @@ export function OrderBookPanel(props: {
     }
   }
 }) {
-  const { limitBets, contract, answer, showTitle, pseudonym } = props
+  const { contract, answer, showTitle, pseudonym } = props
+  const limitBets = props.limitBets.filter(
+    (b) => (!b.expiresAt || b.expiresAt > Date.now()) && !b.silent
+  )
 
   const yesBets = sortBy(
     limitBets.filter((bet) => bet.outcome === 'YES'),

@@ -1,6 +1,4 @@
 import { onCreateMarket } from 'api/helpers/on-create-market'
-import { getNewLiquidityProvision } from 'common/add-liquidity'
-import { getCpmmInitialLiquidity } from 'common/antes'
 import {
   createBinarySchema,
   createBountySchema,
@@ -12,16 +10,13 @@ import {
 } from 'common/api/market-types'
 import { ValidatedAPIParams } from 'common/api/schema'
 import {
-  BinaryContract,
-  CPMMMultiContract,
-  Contract,
   MULTI_NUMERIC_CREATION_ENABLED,
   NO_CLOSE_TIME_TYPES,
   OutcomeType,
   add_answers_mode,
   contractUrl,
 } from 'common/contract'
-import { getAnte, getTieredCost } from 'common/economy'
+import { getAnte } from 'common/economy'
 import { MAX_GROUPS_PER_MARKET } from 'common/group'
 import { getMultiNumericAnswerBucketRangeNames } from 'common/multi-numeric'
 import { getNewContract } from 'common/new-contract'
@@ -34,48 +29,50 @@ import { getCloseDate } from 'shared/helpers/openai-utils'
 import {
   generateContractEmbeddings,
   getContractsDirect,
-  updateContract,
 } from 'shared/supabase/contracts'
 import {
   SupabaseDirectClient,
-  SupabaseTransaction,
   createSupabaseDirectClient,
   pgp,
 } from 'shared/supabase/init'
-import { insertLiquidity } from 'shared/supabase/liquidity'
 import { anythingToRichText } from 'shared/tiptap'
 import { runTxnOutsideBetQueue } from 'shared/txn/run-txn'
 import {
   addGroupToContract,
   canUserAddGroupToMarket,
 } from 'shared/update-group-contracts-internal'
-import { getUser, htmlToRichText, log } from 'shared/utils'
+import { htmlToRichText, log } from 'shared/utils'
 import {
   broadcastNewAnswer,
   broadcastNewContract,
 } from 'shared/websockets/helpers'
 import { APIError, AuthedUser, type APIHandler } from './helpers/endpoint'
 import { Row } from 'common/supabase/utils'
-import { bulkInsertQuery, FieldVal } from 'shared/supabase/utils'
+import { bulkInsertQuery } from 'shared/supabase/utils'
 import { z } from 'zod'
 import { answerToRow } from 'shared/supabase/answers'
 import { convertAnswer } from 'common/supabase/contracts'
+import { generateAntes } from 'shared/create-contract-helpers'
+import { betsQueue } from 'shared/helpers/fn-queue'
+import { convertUser } from 'common/supabase/users'
+import { first } from 'lodash'
+import { getTieredCost } from 'common/tier'
 
 type Body = ValidatedAPIParams<'market'>
 
 export const createMarket: APIHandler<'market'> = async (body, auth) => {
-  const { contract: market, user } = await createMarketHelper(body, auth)
-
   const pg = createSupabaseDirectClient()
   const { groupIds } = body
   const groups = groupIds
     ? await Promise.all(
-        groupIds.map(async (gId) => getGroupCheckPermissions(pg, gId, user.id))
+        groupIds.map(async (gId) => getGroupCheckPermissions(pg, gId, auth.uid))
       )
     : null
 
+  const { contract: market, user } = await createMarketHelper(body, auth)
+  // TODO upload answer images to GCP if provided
   if (groups) {
-    await Promise.all(
+    await Promise.allSettled(
       groups.map(async (g) => {
         await addGroupToContract(pg, market, g)
       })
@@ -122,6 +119,12 @@ export async function createMarketHelper(body: Body, auth: AuthedUser) {
     visibility,
     marketTier,
     idempotencyKey,
+    sportsStartTimestamp,
+    sportsEventId,
+    sportsLeague,
+    answerShortTexts,
+    answerImageUrls,
+    takerAPIOrdersDisabled,
   } = validateMarketBody(body)
 
   const userId = auth.uid
@@ -149,7 +152,10 @@ export async function createMarketHelper(body: Body, auth: AuthedUser) {
   const totalMarketCost = marketTier
     ? getTieredCost(unmodifiedAnte, marketTier, outcomeType)
     : unmodifiedAnte
-  const ante = Math.min(unmodifiedAnte, totalMarketCost)
+  const ante =
+    outcomeType === 'MULTIPLE_CHOICE' && !shouldAnswersSumToOne
+      ? totalMarketCost
+      : Math.min(unmodifiedAnte, totalMarketCost)
 
   const duplicateSubmissionUrl = await getDuplicateSubmissionUrl(
     idempotencyKey,
@@ -162,92 +168,109 @@ export async function createMarketHelper(body: Body, auth: AuthedUser) {
     )
   }
 
-  return await pg.tx(async (tx) => {
-    const user = await getUser(userId, tx)
-    if (!user) throw new APIError(401, 'Your account was not found')
-    if (user.isBannedFromPosting) throw new APIError(403, 'You are banned')
+  return await betsQueue.enqueueFn(async () => {
+    return pg.tx(async (tx) => {
+      const proposedSlug = slugify(question)
 
-    if (totalMarketCost > user.balance)
-      throw new APIError(403, `Balance must be at least ${totalMarketCost}.`)
+      const userAndSlugResult = await tx.multi(
+        `select * from users where id = $1 limit 1;
+        select 1 from contracts where slug = $2 limit 1;`,
+        [userId, proposedSlug]
+      )
+      const user = first(userAndSlugResult[0].map(convertUser))
+      if (!user) throw new APIError(401, 'Your account was not found')
+      if (user.isBannedFromPosting) throw new APIError(403, 'You are banned')
 
-    const slug = await getSlug(tx, question)
+      if (totalMarketCost > user.balance)
+        throw new APIError(403, `Balance must be at least ${totalMarketCost}.`)
 
-    const contract = getNewContract(
-      removeUndefinedProps({
-        id: idempotencyKey ?? randomString(),
-        slug,
-        creator: user,
-        question,
-        outcomeType,
-        description:
-          typeof description !== 'string' && description
-            ? description
-            : anythingToRichText({
-                raw: description,
-                html: descriptionHtml,
-                markdown: descriptionMarkdown,
-                jsonString: descriptionJson,
-                // default: use a single empty space as the description
-              }) ?? htmlToRichText(`<p> </p>`),
-        initialProb: initialProb ?? 50,
-        ante,
-        closeTime,
-        visibility,
-        isTwitchContract,
-        min: min ?? 0,
-        max: max ?? 0,
-        isLogScale: isLogScale ?? false,
-        answers: answers ?? [],
-        addAnswersMode,
-        shouldAnswersSumToOne,
-        isAutoBounty,
-        marketTier,
-        token: 'MANA',
-      })
-    )
-    const insertAnswersQuery =
-      contract.mechanism === 'cpmm-multi-1'
-        ? bulkInsertQuery('answers', contract.answers.map(answerToRow), true)
-        : 'select 1 where false'
-    const contractQuery = pgp.as.format(
-      `insert into contracts (id, data, token) values ($1, $2, $3);`,
-      [contract.id, JSON.stringify(contract), contract.token]
-    )
-    const result = await tx.multi(
-      `${contractQuery};
+      const slug = getSlug(!!first(userAndSlugResult[1]), proposedSlug)
+
+      const contract = getNewContract(
+        removeUndefinedProps({
+          id: idempotencyKey ?? randomString(),
+          slug,
+          creator: user,
+          question,
+          outcomeType,
+          description:
+            typeof description !== 'string' && description
+              ? description
+              : anythingToRichText({
+                  raw: description,
+                  html: descriptionHtml,
+                  markdown: descriptionMarkdown,
+                  jsonString: descriptionJson,
+                  // default: use a single empty space as the description
+                }) ?? htmlToRichText(`<p> </p>`),
+          initialProb: initialProb ?? 50,
+          ante,
+          closeTime,
+          visibility,
+          isTwitchContract,
+          min: min ?? 0,
+          max: max ?? 0,
+          isLogScale: isLogScale ?? false,
+          answers: answers ?? [],
+          answerShortTexts,
+          answerImageUrls,
+          addAnswersMode,
+          shouldAnswersSumToOne,
+          isAutoBounty,
+          marketTier,
+          token: 'MANA',
+          sportsStartTimestamp,
+          sportsEventId,
+          sportsLeague,
+          takerAPIOrdersDisabled,
+        })
+      )
+
+      const insertAnswersQuery =
+        contract.mechanism === 'cpmm-multi-1'
+          ? bulkInsertQuery('answers', contract.answers.map(answerToRow), true)
+          : 'select 1 where false'
+      const contractQuery = pgp.as.format(
+        `insert into contracts (id, data, token) values ($1, $2, $3);`,
+        [contract.id, JSON.stringify(contract), contract.token]
+      )
+      const result = await tx.multi(
+        `${contractQuery};
        ${insertAnswersQuery};`
-    )
-    if (result[1].length > 0 && contract.mechanism === 'cpmm-multi-1') {
-      contract.answers = result[1].map(convertAnswer)
-    }
-    await runTxnOutsideBetQueue(tx, {
-      fromId: userId,
-      fromType: 'USER',
-      toId: contract.id,
-      toType: 'CONTRACT',
-      amount: ante,
-      token: 'M$',
-      category: 'CREATE_CONTRACT_ANTE',
+      )
+
+      if (result[1].length > 0 && contract.mechanism === 'cpmm-multi-1') {
+        contract.answers = result[1].map(convertAnswer)
+      }
+      await runTxnOutsideBetQueue(tx, {
+        fromId: userId,
+        fromType: 'USER',
+        toId: contract.id,
+        toType: 'CONTRACT',
+        amount: ante,
+        token: 'M$',
+        category: 'CREATE_CONTRACT_ANTE',
+      })
+
+      log('created contract ', {
+        userUserName: user.username,
+        userId: user.id,
+        question,
+        ante: ante || 0,
+      })
+
+      await generateAntes(
+        tx,
+        userId,
+        contract,
+        outcomeType,
+        ante,
+        totalMarketCost
+      )
+
+      return { contract, user }
     })
-
-    log('created contract ', {
-      userUserName: user.username,
-      userId: user.id,
-      question,
-      ante: ante || 0,
-    })
-
-    await generateAntes(
-      tx,
-      userId,
-      contract,
-      outcomeType,
-      ante,
-      totalMarketCost
-    )
-
-    return { contract, user }
-  })
+  }, [userId])
 }
 
 async function getDuplicateSubmissionUrl(
@@ -278,14 +301,7 @@ async function getCloseTimestamp(
       Date.now() + 7 * 24 * 60 * 60 * 1000
 }
 
-const getSlug = async (pg: SupabaseTransaction, question: string) => {
-  const proposedSlug = slugify(question)
-
-  const preexistingContract = await pg.oneOrNone(
-    `select 1 from contracts where slug = $1 limit 1`,
-    [proposedSlug]
-  )
-
+const getSlug = (preexistingContract: boolean, proposedSlug: string) => {
   return preexistingContract
     ? proposedSlug + '-' + randomString()
     : proposedSlug
@@ -306,6 +322,10 @@ function validateMarketBody(body: Body) {
     utcOffset,
     marketTier,
     idempotencyKey,
+    sportsStartTimestamp,
+    sportsEventId,
+    sportsLeague,
+    takerAPIOrdersDisabled,
   } = body
 
   if (groupIds && groupIds.length > MAX_GROUPS_PER_MARKET)
@@ -319,6 +339,8 @@ function validateMarketBody(body: Body) {
     initialProb: number | undefined,
     isLogScale: boolean | undefined,
     answers: string[] | undefined,
+    answerShortTexts: string[] | undefined,
+    answerImageUrls: string[] | undefined,
     addAnswersMode: add_answers_mode | undefined,
     shouldAnswersSumToOne: boolean | undefined,
     totalBounty: number | undefined,
@@ -382,8 +404,14 @@ function validateMarketBody(body: Body) {
   }
 
   if (outcomeType === 'MULTIPLE_CHOICE') {
-    ;({ answers, addAnswersMode, shouldAnswersSumToOne, extraLiquidity } =
-      validateMarketType(outcomeType, createMultiSchema, body))
+    ;({
+      answers,
+      answerShortTexts,
+      answerImageUrls,
+      addAnswersMode,
+      shouldAnswersSumToOne,
+      extraLiquidity,
+    } = validateMarketType(outcomeType, createMultiSchema, body))
     if (answers.length < 2 && addAnswersMode === 'DISABLED')
       throw new APIError(
         400,
@@ -427,6 +455,12 @@ function validateMarketBody(body: Body) {
     isAutoBounty,
     marketTier,
     idempotencyKey,
+    sportsStartTimestamp,
+    sportsEventId,
+    sportsLeague,
+    answerShortTexts,
+    answerImageUrls,
+    takerAPIOrdersDisabled,
   }
 }
 
@@ -449,7 +483,9 @@ async function getGroupCheckPermissions(
   groupId: string,
   userId: string
 ) {
-  const result = await pg.one<Row<'groups'> & { member_role: string | null }>(
+  const result = await pg.oneOrNone<
+    Row<'groups'> & { member_role: string | null }
+  >(
     `
     select g.*, gm.role as member_role
     from groups g
@@ -487,78 +523,4 @@ async function getGroupCheckPermissions(
   }
 
   return group
-}
-
-export async function generateAntes(
-  pg: SupabaseDirectClient,
-  providerId: string,
-  contract: Contract,
-  outcomeType: OutcomeType,
-  ante: number,
-  totalMarketCost: number
-) {
-  if (
-    contract.outcomeType === 'MULTIPLE_CHOICE' &&
-    contract.mechanism === 'cpmm-multi-1' &&
-    !contract.shouldAnswersSumToOne
-  ) {
-    const { answers } = contract
-    for (const answer of answers) {
-      const ante = Math.sqrt(answer.poolYes * answer.poolNo)
-
-      const lp = getCpmmInitialLiquidity(
-        providerId,
-        contract,
-        ante,
-        contract.createdTime,
-        answer.id
-      )
-
-      await insertLiquidity(pg, lp)
-    }
-  } else if (
-    outcomeType === 'BINARY' ||
-    outcomeType === 'PSEUDO_NUMERIC' ||
-    outcomeType === 'STONK' ||
-    outcomeType === 'MULTIPLE_CHOICE' ||
-    outcomeType === 'NUMBER'
-  ) {
-    const lp = getCpmmInitialLiquidity(
-      providerId,
-      contract as BinaryContract | CPMMMultiContract,
-      ante,
-      contract.createdTime
-    )
-
-    await insertLiquidity(pg, lp)
-  }
-  const drizzledAmount = totalMarketCost - ante
-  if (
-    drizzledAmount > 0 &&
-    (contract.mechanism === 'cpmm-1' || contract.mechanism === 'cpmm-multi-1')
-  ) {
-    return await pg.txIf(async (tx) => {
-      await runTxnOutsideBetQueue(tx, {
-        fromId: providerId,
-        amount: drizzledAmount,
-        toId: contract.id,
-        toType: 'CONTRACT',
-        category: 'ADD_SUBSIDY',
-        token: 'M$',
-        fromType: 'USER',
-      })
-      const newLiquidityProvision = getNewLiquidityProvision(
-        providerId,
-        drizzledAmount,
-        contract
-      )
-
-      await insertLiquidity(tx, newLiquidityProvision)
-
-      await updateContract(tx, contract.id, {
-        subsidyPool: FieldVal.increment(drizzledAmount),
-        totalLiquidity: FieldVal.increment(drizzledAmount),
-      })
-    })
-  }
 }

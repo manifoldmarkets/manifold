@@ -1,5 +1,5 @@
-import { useState } from 'react'
-import { Contract, MAX_DESCRIPTION_LENGTH } from 'common/contract'
+import { useState, useEffect } from 'react'
+import { MAX_DESCRIPTION_LENGTH } from 'common/contract'
 import { useAdmin } from 'web/hooks/use-admin'
 import { useUser } from 'web/hooks/use-user'
 import { Row } from '../layout/row'
@@ -11,38 +11,40 @@ import { JSONContent } from '@tiptap/core'
 import { updateMarket } from 'web/lib/api/api'
 import { toast } from 'react-hot-toast'
 import { LogoIcon } from '../icons/logo-icon'
-import { SweepVerifySection } from '../sweeps/sweep-verify-section'
 import clsx from 'clsx'
 
 export function ContractDescription(props: {
-  contract: Contract
+  contractId: string // the description is stored on this contract
+  creatorId: string
+  isSweeps: boolean
   description: string | JSONContent
 }) {
-  const { contract, description } = props
+  const { contractId, creatorId, isSweeps, description } = props
 
   const isAdmin = useAdmin()
   const user = useUser()
-  const isCreator = user?.id === contract.creatorId
+  const isCreator = user?.id === creatorId
 
   return (
     <>
       <div className="mt-6">
-        {contract.token === 'CASH' && !user?.sweepstakesVerified && (
-          <SweepVerifySection className="mb-4" />
-        )}
         {isCreator || isAdmin ? (
-          <EditableDescription contract={contract} description={description} />
+          <EditableDescription
+            contractId={contractId}
+            description={description}
+          />
         ) : (
           <CollapsibleContent
+            mediaSize="md"
             content={description}
-            stateKey={`isCollapsed-contract-${contract.id}`}
+            stateKey={`isCollapsed-contract-${contractId}`}
             hideCollapse={!user}
           />
         )}
 
         <div
           className={clsx(
-            contract.token !== 'CASH' && 'invisible',
+            !isSweeps && 'invisible',
             'text-ink-600 bg-canvas-50 flex items-center justify-center space-x-2 rounded-md px-4 py-2 italic'
           )}
         >
@@ -56,16 +58,29 @@ export function ContractDescription(props: {
 }
 
 function EditableDescription(props: {
-  contract: Contract
+  contractId: string
   description: string | JSONContent
 }) {
-  const { contract, description } = props
+  const { contractId, description } = props
   const [editing, setEditing] = useState(false)
 
   const editor = useTextEditor({
+    size: 'md',
     max: MAX_DESCRIPTION_LENGTH,
     defaultValue: description,
   })
+
+  useEffect(() => {
+    if (!editor || editing) return
+
+    const currentContent = editor.getJSON()
+    const newContent =
+      typeof description === 'string' ? description : description
+
+    if (JSON.stringify(currentContent) !== JSON.stringify(newContent)) {
+      editor.commands.setContent(newContent)
+    }
+  }, [description, editor, editing])
 
   const isDescriptionEmpty = JSONEmpty(description)
   const [saving, setSaving] = useState(false)
@@ -74,7 +89,7 @@ function EditableDescription(props: {
     if (!editor) return
     setSaving(true)
     await updateMarket({
-      contractId: contract.id,
+      contractId: contractId,
       descriptionJson: JSON.stringify(editor.getJSON()),
     })
       .catch((e) => {
@@ -108,7 +123,8 @@ function EditableDescription(props: {
       {!isDescriptionEmpty && (
         <CollapsibleContent
           content={description}
-          stateKey={`isCollapsed-contract-${contract.id}`}
+          mediaSize="md"
+          stateKey={`isCollapsed-contract-${contractId}`}
         />
       )}
       <Row className="justify-end">
@@ -143,7 +159,7 @@ export function JSONEmpty(text: string | JSONContent) {
     return !(
       text.content &&
       text.content.length > 0 &&
-      (text.content[0].content || text.content[0].attrs)
+      text.content.some((node) => node.content || node.attrs)
     )
   }
   return true

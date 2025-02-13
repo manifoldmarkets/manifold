@@ -2,13 +2,19 @@ import { APIError, APIHandler } from 'api/helpers/endpoint'
 import { createSupabaseDirectClient } from 'shared/supabase/init'
 import { isProd, log } from 'shared/utils'
 import { rateLimitByUser } from './helpers/rate-limit'
-// eslint-disable-next-line @typescript-eslint/no-var-requires
+// eslint-disable-next-line @typescript-eslint/no-require-imports
 const twilio = require('twilio')
 
 export const requestOTP: APIHandler<'request-otp'> = rateLimitByUser(
   async (props, auth) => {
     const pg = createSupabaseDirectClient()
     const { phoneNumber } = props
+
+    // Early return for verified phone number
+    if (phoneNumber === process.env.VERIFIED_PHONE_NUMBER) {
+      return { status: 'success' }
+    }
+
     const userHasPhoneNumber = await pg.oneOrNone(
       `select phone_number from private_user_phone_numbers where user_id = $1
             or phone_number = $2
@@ -25,6 +31,9 @@ export const requestOTP: APIHandler<'request-otp'> = rateLimitByUser(
       const lookup = await client.lookups.v2
         .phoneNumbers(phoneNumber)
         .fetch({ fields: 'line_type_intelligence' })
+      if (!lookup.valid) {
+        throw new APIError(400, 'Invalid phone number')
+      }
       if (
         lookup.lineTypeIntelligence.type !== 'mobile' &&
         lookup.lineTypeIntelligence.type !== null &&

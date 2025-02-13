@@ -32,7 +32,7 @@ export function Page(props: {
   } = props
 
   // eslint-disable-next-line react-hooks/rules-of-hooks
-  trackPageView && useTracking(`view ${trackPageView}`, trackPageProps)
+  if (trackPageView) useTracking(`view ${trackPageView}`, trackPageProps)
   const isMobile = useIsMobile()
 
   return (
@@ -55,10 +55,7 @@ export function Page(props: {
           <Sidebar className="sticky top-0 hidden self-start px-2 lg:col-span-2 lg:flex" />
         )}
         <main
-          className={clsx(
-            'col-span-8 flex flex-1 flex-col lg:mt-6 xl:px-2',
-            className
-          )}
+          className={clsx('l:px-2 col-span-7 flex flex-1 flex-col', className)}
         >
           {banner}
           {children}

@@ -1,10 +1,10 @@
-import { db } from './db'
 import { run } from 'common/supabase/utils'
 import { type User } from 'common/user'
 import { APIError, api } from '../api/api'
 import { DAY_MS, WEEK_MS } from 'common/util/time'
 import { HIDE_FROM_LEADERBOARD_USER_IDS } from 'common/envs/constants'
 import type { DisplayUser } from 'common/api/user-types'
+import { db } from './db'
 export type { DisplayUser }
 
 export async function getUserById(id: string) {
@@ -50,9 +50,7 @@ export async function getDisplayUsers(userIds: string[]) {
   const { data } = await run(
     db
       .from('users')
-      .select(
-        `id, name, username, data->'avatarUrl', data->'isBannedFromPosting'`
-      )
+      .select(`id, name, username, data->avatarUrl, data->isBannedFromPosting`)
       .in('id', userIds)
   )
 

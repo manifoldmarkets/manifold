@@ -3,14 +3,12 @@ import { track } from 'web/lib/service/analytics'
 import { Col } from '../layout/col'
 import { getLabelFromValue } from './search-dropdown-helpers'
 
-import { LiteGroup } from 'common/group'
 import { MarketTierType, TierParamsType, tiers } from 'common/tier'
 import { useState } from 'react'
 import { FaSortAmountDownAlt } from 'react-icons/fa'
 import { FaFileContract, FaFilter, FaSliders } from 'react-icons/fa6'
 import { IconButton } from 'web/components/buttons/button'
 import { Carousel } from 'web/components/widgets/carousel'
-import { useUser } from 'web/hooks/use-user'
 import { SweepiesCoin } from 'web/public/custom-components/sweepiesCoin'
 import {
   CrystalTier,
@@ -34,6 +32,7 @@ import {
   FILTERS,
   FOR_YOU_KEY,
   Filter,
+  GROUP_IDS_KEY,
   POLL_SORTS,
   PREDICTION_MARKET_PROB_SORTS,
   PREDICTION_MARKET_SORTS,
@@ -42,32 +41,34 @@ import {
   Sort,
   bountySorts,
   predictionMarketSorts,
-} from '../supabase-search'
+} from '../search'
 import { SweepsToggle } from '../sweeps/sweeps-toggle'
 import { useSweepstakes } from '../sweepstakes-provider'
 import {
   AdditionalFilterPill,
   FilterDropdownPill,
   FilterPill,
+  minimalistIndigoSelectedClass,
   TierDropdownPill,
-  TopicDropdownPill,
+  unselectedClass,
 } from './filter-pills'
+import { useUser } from 'web/hooks/use-user'
 
 export function ContractFilters(props: {
   className?: string
   params: SearchParams
   updateParams: (params: Partial<SearchParams>) => void
   topicSlug?: string
-  initialTopics?: LiteGroup[]
+  hideSweepsToggle?: boolean
 }) {
-  const { className, params, updateParams, topicSlug, initialTopics } = props
+  const { className, params, updateParams, hideSweepsToggle, topicSlug } = props
+  const user = useUser()
 
   const {
     s: sort,
     f: filter,
     ct: contractType,
     mt: currentTiers,
-    tf: topicFilter,
     sw: isSweepiesString,
   } = params
   const isSweeps = isSweepiesString === '1'
@@ -133,8 +134,7 @@ export function ContractFilters(props: {
     !DEFAULT_CONTRACT_TYPES.some((ct) => ct == contractType) &&
     contractType !== DEFAULT_CONTRACT_TYPE
 
-  const forYou = params[FOR_YOU_KEY] === '1'
-  const user = useUser()
+  const forYou = params[FOR_YOU_KEY] === '1' && !params[GROUP_IDS_KEY]
 
   const toggleTier = (tier: MarketTierType) => {
     const tierIndex = tiers.indexOf(tier)
@@ -144,24 +144,25 @@ export function ContractFilters(props: {
       updateParams({ mt: tiersArray.join('') as TierParamsType })
     }
   }
+
   return (
     <Col className={clsx('mb-1 mt-2 items-stretch gap-1 ', className)}>
-      <Carousel labelsParentClassName="gap-1 items-center">
-        <SweepsToggle
-          sweepsEnabled={true}
-          isPlay={!isSweeps}
-          onClick={toggleSweepies}
-          isSmall
-        />
+      <Carousel fadeEdges labelsParentClassName="gap-1 items-center">
+        {isSweeps && !hideSweepsToggle && (
+          <SweepsToggle
+            sweepsEnabled={true}
+            isPlay={!isSweeps}
+            onClick={toggleSweepies}
+            isSmall
+          />
+        )}
 
-        <Row className="bg-ink-200 dark:bg-ink-300 items-center rounded-full">
+        <Row className="bg-ink-100 dark:bg-ink-300 items-center rounded-full">
           <button
             key="score"
             className={clsx(
               'flex h-6 cursor-pointer select-none flex-row items-center whitespace-nowrap rounded-full px-2 text-sm outline-none transition-colors',
-              sort == 'score'
-                ? 'hover:bg-primary-600 focus-visible:bg-primary-600 bg-primary-500 text-white'
-                : 'bg-ink-200 text-ink-600 dark:bg-ink-300',
+              sort == 'score' ? minimalistIndigoSelectedClass : unselectedClass,
               className
             )}
             onClick={() => {
@@ -179,8 +180,8 @@ export function ContractFilters(props: {
             className={clsx(
               'flex h-6 cursor-pointer select-none flex-row items-center whitespace-nowrap rounded-full px-2 text-sm outline-none transition-colors',
               sort == 'freshness-score'
-                ? 'hover:bg-primary-600 focus-visible:bg-primary-600 bg-primary-500 text-white'
-                : 'bg-ink-200 text-ink-600 dark:bg-ink-300',
+                ? minimalistIndigoSelectedClass
+                : unselectedClass,
               className
             )}
             onClick={() => {
@@ -198,8 +199,8 @@ export function ContractFilters(props: {
             className={clsx(
               'flex h-6 cursor-pointer select-none flex-row items-center whitespace-nowrap rounded-full px-2 text-sm outline-none transition-colors',
               sort == 'newest'
-                ? 'hover:bg-primary-600 focus-visible:bg-primary-600 bg-primary-500 text-white'
-                : 'bg-ink-200 text-ink-600 dark:bg-ink-300',
+                ? minimalistIndigoSelectedClass
+                : unselectedClass,
               className
             )}
             onClick={() => {
@@ -228,38 +229,25 @@ export function ContractFilters(props: {
             {getLabelFromValue(SORTS, sortValue)}
           </FilterPill>
         ))}
-        <button
-          key="closing"
-          className={clsx(
-            'flex h-6 cursor-pointer select-none flex-row items-center whitespace-nowrap rounded-full px-2 text-sm outline-none transition-colors',
-            filter == 'closing-month'
-              ? 'hover:bg-primary-600 focus-visible:bg-primary-600 bg-primary-500 text-white'
-              : 'bg-ink-200 text-ink-600 dark:bg-ink-300',
-            className
-          )}
-          onClick={() => {
-            if (filter === 'closing-month') {
-              selectFilter('open')
-            } else {
-              selectFilter('closing-month')
-            }
-          }}
-        >
-          Closing
-        </button>
-        {initialTopics && !topicSlug && (
-          <TopicDropdownPill
-            initialTopics={initialTopics}
-            currentTopicFilter={topicFilter}
-            user={user}
-            forYou={forYou}
-            updateParams={updateParams}
-          />
-        )}
+
         <FilterDropdownPill
           selectFilter={selectFilter}
           currentFilter={filter}
         />
+        {!topicSlug && !hideSweepsToggle && !!user && (
+          <FilterPill
+            selected={forYou}
+            onSelect={() => {
+              updateParams({
+                [FOR_YOU_KEY]: forYou ? '0' : '1',
+                [GROUP_IDS_KEY]: '', // Clear any topic selection when toggling For You
+              })
+            }}
+            color="minimalist-indigo"
+          >
+            For you
+          </FilterPill>
+        )}
         {!hideFilter && currentTiers !== DEFAULT_TIER && (
           <AdditionalFilterPill
             type="filter"

@@ -14,7 +14,6 @@ import {
   getPinnedComments,
 } from 'common/supabase/comments'
 import {
-  getCPMMContractUserContractMetrics,
   getTopContractMetrics,
   getContractMetricsCount,
 } from 'common/supabase/contract-metrics'
@@ -29,7 +28,7 @@ import { getChartAnnotations } from 'common/supabase/chart-annotations'
 import { unauthedApi } from './util/api'
 import { MAX_ANSWERS, sortAnswers } from './answer'
 import { getDashboardsToDisplayOnContract } from './supabase/dashboards'
-import { getBetPoints, getTotalBetCount } from 'web/lib/supabase/bets'
+import { getTotalBetCount, getBetPoints } from './bets'
 
 export async function getContractParams(
   contract: Contract,
@@ -50,11 +49,9 @@ export async function getContractParams(
     allBetPoints,
     comments,
     pinnedComments,
-    userPositionsByOutcome,
     topContractMetrics,
     totalPositions,
     relatedContracts,
-    betReplies,
     chartAnnotations,
     topics,
     dashboards,
@@ -79,22 +76,12 @@ export async function getContractParams(
       : [],
     getRecentTopLevelCommentsAndReplies(db, contract.id, 25),
     getPinnedComments(db, contract.id),
-    isCpmm1
-      ? getCPMMContractUserContractMetrics(contract.id, 100, null, db)
-      : {},
     contract.resolution ? getTopContractMetrics(contract.id, 10, db) : [],
     isCpmm1 || isMulti ? getContractMetricsCount(contract.id, db) : 0,
     unauthedApi('get-related-markets', {
       contractId: contract.id,
       limit: 10,
     }),
-    // TODO: Should only send bets that are replies to comments we're sending, and load the rest client side
-    isCpmm1
-      ? unauthedApi('bets', {
-          contractId: contract.id,
-          commentRepliesOnly: true,
-        })
-      : ([] as Bet[]),
     getChartAnnotations(contract.id, db),
     getTopicsOnContract(contract.id, db),
     getDashboardsToDisplayOnContract(contract.slug, contract.creatorId, db),
@@ -129,11 +116,9 @@ export async function getContractParams(
     outcomeType: contract.outcomeType,
     contract,
     lastBetTime,
-    betReplies,
     pointsString,
     multiPointsString,
     comments,
-    userPositionsByOutcome,
     totalPositions,
     totalBets,
     topContractMetrics,

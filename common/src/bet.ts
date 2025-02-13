@@ -66,6 +66,7 @@ type LimitProps = {
   // Non-limit orders can also be filled by matching with multiple limit orders.
   fills: fill[]
   expiresAt?: number // ms since epoch.
+  silent?: boolean // New default quick limit order type. API bets cannot be silent.
 }
 
 export type fill = {
@@ -74,8 +75,7 @@ export type fill = {
   amount: number
   shares: number
   timestamp: number
-  // Note: Old fills might have no fees, and the value would be undefined.
-  fees: Fees
+  fees?: Fees
   // If the fill is a sale, it means the matching bet has shares of the same outcome.
   // I.e. -fill.shares === matchedBet.shares
   isSale?: boolean

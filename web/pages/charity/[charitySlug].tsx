@@ -15,13 +15,12 @@ import { Page } from 'web/components/layout/page'
 import { Row } from 'web/components/layout/row'
 import { Spacer } from 'web/components/layout/spacer'
 import { AmountInput } from 'web/components/widgets/amount-input'
-import { CoinNumber } from 'web/components/widgets/coin-number'
+import { TokenNumber } from 'web/components/widgets/token-number'
 import { CollapsibleContent } from 'web/components/widgets/collapsible-content'
 import { FullscreenConfetti } from 'web/components/widgets/fullscreen-confetti'
 import { Linkify } from 'web/components/widgets/linkify'
 import { PaginationNextPrev } from 'web/components/widgets/pagination'
 import { Title } from 'web/components/widgets/title'
-import { useAPIGetter } from 'web/hooks/use-api-getter'
 import { usePagination } from 'web/hooks/use-pagination'
 import { useUser } from 'web/hooks/use-user'
 import { api, APIError } from 'web/lib/api/api'
@@ -142,6 +141,7 @@ function CharityPage(props: {
           />
           <CollapsibleContent
             content={description}
+            mediaSize="md"
             stateKey={`isCollapsed-charity-${charity.id}`}
           />
           <Spacer h={8} />
@@ -182,8 +182,7 @@ function DonationBox(props: {
 }) {
   const { user, charity, onDonated } = props
 
-  const { data, refresh } = useAPIGetter('get-redeemable-prize-cash', {})
-  const redeemableCash = data?.redeemablePrizeCash ?? 0
+  const redeemableCash = user?.cashBalance ?? 0
 
   const [amount, setAmount] = useState<number | undefined>()
   const [isSubmitting, setIsSubmitting] = useState(false)
@@ -218,7 +217,6 @@ function DonationBox(props: {
     setAmount(undefined)
     onDonated?.(user, Date.now(), amount)
     track('donation', { charityId: charity.id, amount })
-    await refresh()
   }
 
   return (
@@ -261,7 +259,7 @@ function DonationBox(props: {
       )}
 
       <div className="mt-2 text-xs">
-        <CoinNumber amount={min} isInline coinType={'sweepies'} /> donation
+        <TokenNumber amount={min} isInline coinType={'sweepies'} /> donation
         minimum
       </div>
     </div>

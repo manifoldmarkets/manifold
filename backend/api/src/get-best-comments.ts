@@ -8,43 +8,42 @@ import { convertContractComment } from 'common/supabase/comments'
 import { parseJsonContentToText } from 'common/util/parse'
 import { getContractsDirect } from 'shared/supabase/contracts'
 import { uniq } from 'lodash'
-import { promptGPT3, promptGPT4 } from 'shared/helpers/openai-utils'
+import { promptOpenAI } from 'shared/helpers/openai-utils'
 import { ContractComment } from 'common/comment'
 import { log } from 'shared/utils'
+import { rateLimitByUser } from './helpers/rate-limit'
 
-export const getBestComments: APIHandler<'get-best-comments'> = async (
-  props,
-  auth
-) => {
-  const { limit, offset, ignoreContractIds, justLikes } = props
-  const userId = auth.uid
-  const pg = createSupabaseDirectClient()
-  const followedOnly = await pg.one(
-    `
+export const getBestComments: APIHandler<'get-best-comments'> = rateLimitByUser(
+  async (props, auth) => {
+    const { limit, offset, ignoreContractIds, justLikes } = props
+    const userId = auth.uid
+    const pg = createSupabaseDirectClient()
+    const followedOnly = await pg.one(
+      `
   select count(*) > 5 as followed_only
   from user_follows
   where user_id = $1`,
-    [userId],
-    (r) => r.followed_only
-  )
-  log('followedOnly', followedOnly)
-  if (
-    !Object.keys(userIdsToAverageTopicConversionScores[userId] ?? {}).length
-  ) {
-    await buildUserInterestsCache([userId])
-  }
+      [userId],
+      (r) => r.followed_only
+    )
+    log('followedOnly', followedOnly)
+    if (
+      !Object.keys(userIdsToAverageTopicConversionScores[userId] ?? {}).length
+    ) {
+      await buildUserInterestsCache([userId])
+    }
 
-  let allComments: { comment: ContractComment; question: string }[]
-  let commentIds: string[]
-  let gpt4Comments: { comment: ContractComment; question: string }[] = []
+    let allComments: { comment: ContractComment; question: string }[]
+    let commentIds: string[]
+    let gpt4Comments: { comment: ContractComment; question: string }[] = []
 
-  const introText = `
+    const introText = `
       I am a user of Manifold. Manifold is a prediction market platform where
       users place bets on current events, politics, tech, sports, AI, and more.
       I have some comments that I would like you to rank in order of descending quality.
       Evaluate quality based on their informativeness relevant to the question, cogent analysis, and optionally humor. 
     `
-  const ignoreText = `
+    const ignoreText = `
       Please ignore short, meme-y comments like:
       "Buy low, sell high", "Buy my bags", "what were y'all thinking?", just a link without any commentary, etc. 
       Also ignore housekeeping comments that are remotely similar, or along the same vein as lines like:
@@ -59,10 +58,10 @@ export const getBestComments: APIHandler<'get-best-comments'> = async (
       "How do you plan to [resolve/judge/etc.] this?",
       and any solo web links without additional commentary, etc.
     `
-  if (followedOnly) {
-    // Assuming getFollowedRecentComments is defined elsewhere
-    gpt4Comments = await pg.map(
-      `
+    if (followedOnly) {
+      // Assuming getFollowedRecentComments is defined elsewhere
+      gpt4Comments = await pg.map(
+        `
             select distinct on (cc.created_time) cc.data, c.question
             from contract_comments cc
                      join contracts c on cc.contract_id = c.id
@@ -82,19 +81,20 @@ export const getBestComments: APIHandler<'get-best-comments'> = async (
             order by cc.created_time desc
             limit $3;
         `,
-      [userId, ignoreContractIds?.length ? ignoreContractIds : null, 100],
-      (row) => ({
-        comment: convertContractComment(row.data),
-        question: row.question,
-      })
-    )
-    allComments = gpt4Comments
-  } else if (
-    !Object.keys(userIdsToAverageTopicConversionScores[userId] ?? {}).length ||
-    justLikes
-  ) {
-    allComments = await pg.map(
-      `
+        [userId, ignoreContractIds?.length ? ignoreContractIds : null, 100],
+        (row) => ({
+          comment: convertContractComment(row.data),
+          question: row.question,
+        })
+      )
+      allComments = gpt4Comments
+    } else if (
+      !Object.keys(userIdsToAverageTopicConversionScores[userId] ?? {})
+        .length ||
+      justLikes
+    ) {
+      allComments = await pg.map(
+        `
     select distinct on (cc.likes, cc.comment_id) cc.data, c.question
     from contract_comments cc
     join contracts c on cc.contract_id = c.id
@@ -113,23 +113,23 @@ export const getBestComments: APIHandler<'get-best-comments'> = async (
     offset $2
     limit $3;
     `,
-      [userId, offset * limit, limit],
-      (row) => ({
-        comment: convertContractComment(row.data),
-        question: row.question,
-      })
-    )
-    commentIds = allComments.map((c) => c.comment.id)
-  } else {
-    const reviewLimit = 1000
-    const interestedTopics = Object.entries(
-      userIdsToAverageTopicConversionScores[userId]
-    )
-      .filter(([_, score]) => score > 0.5)
-      .map(([groupId, _]) => groupId)
+        [userId, offset * limit, limit],
+        (row) => ({
+          comment: convertContractComment(row.data),
+          question: row.question,
+        })
+      )
+      commentIds = allComments.map((c) => c.comment.id)
+    } else {
+      const reviewLimit = 1000
+      const interestedTopics = Object.entries(
+        userIdsToAverageTopicConversionScores[userId]
+      )
+        .filter(([_, score]) => score > 0.5)
+        .map(([groupId, _]) => groupId)
 
-    allComments = await pg.map(
-      `
+      allComments = await pg.map(
+        `
             select distinct on (cc.created_time) cc.data, c.question
             from contract_comments cc
                      join contracts c on cc.contract_id = c.id
@@ -148,23 +148,23 @@ export const getBestComments: APIHandler<'get-best-comments'> = async (
             order by cc.created_time desc
             limit $4;
         `,
-      [
-        interestedTopics,
-        userId,
-        ignoreContractIds?.length ? ignoreContractIds : null,
-        reviewLimit,
-      ],
-      (row) => ({
-        comment: convertContractComment(row.data),
-        question: row.question,
-      })
-    )
+        [
+          interestedTopics,
+          userId,
+          ignoreContractIds?.length ? ignoreContractIds : null,
+          reviewLimit,
+        ],
+        (row) => ({
+          comment: convertContractComment(row.data),
+          question: row.question,
+        })
+      )
 
-    const batchSize = 25
-    const totalBatches = Math.ceil(allComments.length / batchSize)
+      const batchSize = 25
+      const totalBatches = Math.ceil(allComments.length / batchSize)
 
-    const processBatch = async (batch: typeof allComments) => {
-      const batchContent = `
+      const processBatch = async (batch: typeof allComments) => {
+        const batchContent = `
           ${introText}
           ${ignoreText}
           \n
@@ -186,28 +186,28 @@ export const getBestComments: APIHandler<'get-best-comments'> = async (
           Only return to me the comment ID, (ie don't say here is my top comment, just give me the ID)
         `
 
-      const batchMsgContent = await promptGPT3(batchContent)
-      const batchCommentIds = batchMsgContent
-        ? batchMsgContent
-            .split(',')
-            .map((s: string) => s.trim())
-            .map((s: string) => s.replace(',', ''))
-        : []
+        const batchMsgContent = await promptOpenAI(batchContent, 'o3-mini')
+        const batchCommentIds = batchMsgContent
+          ? batchMsgContent
+              .split(',')
+              .map((s: string) => s.trim())
+              .map((s: string) => s.replace(',', ''))
+          : []
 
-      return batch.filter((c) => batchCommentIds.includes(c.comment.id))
+        return batch.filter((c) => batchCommentIds.includes(c.comment.id))
+      }
+
+      const batchPromises = []
+      for (let i = 0; i < totalBatches; i++) {
+        const batch = allComments.slice(i * batchSize, (i + 1) * batchSize)
+        batchPromises.push(processBatch(batch))
+      }
+
+      const batchResults = await Promise.all(batchPromises)
+      gpt4Comments = batchResults.flat().slice(0, 100)
     }
 
-    const batchPromises = []
-    for (let i = 0; i < totalBatches; i++) {
-      const batch = allComments.slice(i * batchSize, (i + 1) * batchSize)
-      batchPromises.push(processBatch(batch))
-    }
-
-    const batchResults = await Promise.all(batchPromises)
-    gpt4Comments = batchResults.flat().slice(0, 100)
-  }
-
-  const gpt4Prompt = `
+    const gpt4Prompt = `
       ${introText}
       ${ignoreText}
       \n
@@ -230,25 +230,26 @@ export const getBestComments: APIHandler<'get-best-comments'> = async (
       of descending quality? (ie don't say here are my top comments, just give me the IDs)
     `
 
-  const gpt4Response = await promptGPT4(gpt4Prompt)
-  commentIds = gpt4Response
-    ? gpt4Response
-        .split(',')
-        .map((s: string) => s.trim())
-        .map((s: string) => s.replace(',', ''))
-    : []
+    const gpt4Response = await promptOpenAI(gpt4Prompt, 'o3-mini')
+    commentIds = gpt4Response
+      ? gpt4Response
+          .split(',')
+          .map((s: string) => s.trim())
+          .map((s: string) => s.replace(',', ''))
+      : []
 
-  const comments = allComments
-    .filter((c) => commentIds.includes(c.comment.id))
-    .map((c) => c.comment)
-    .slice(0, limit)
-  const contracts = await getContractsDirect(
-    uniq(comments.map((c) => c.contractId)),
-    pg
-  )
+    const comments = allComments
+      .filter((c) => commentIds.includes(c.comment.id))
+      .map((c) => c.comment)
+      .slice(0, limit)
+    const contracts = await getContractsDirect(
+      uniq(comments.map((c) => c.contractId)),
+      pg
+    )
 
-  return {
-    comments,
-    contracts,
+    return {
+      comments,
+      contracts,
+    }
   }
-}
+)

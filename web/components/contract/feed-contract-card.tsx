@@ -1,9 +1,6 @@
 import clsx from 'clsx'
 import Link from 'next/link'
 import Router from 'next/router'
-import { useEffect, useState } from 'react'
-
-import { AD_WAIT_SECONDS } from 'common/boost'
 import { Contract, contractPath, isBinaryMulti } from 'common/contract'
 import { ContractMetric } from 'common/contract-metric'
 import { ENV_CONFIG, SWEEPIES_NAME } from 'common/envs/constants'
@@ -12,9 +9,7 @@ import { User } from 'common/user'
 import { formatWithToken, shortFormatNumber } from 'common/util/format'
 import { removeUndefinedProps } from 'common/util/object'
 import { removeEmojis } from 'common/util/string'
-import { capitalize } from 'lodash'
 import { TbDropletHeart, TbMoneybag } from 'react-icons/tb'
-import { ClaimButton } from 'web/components/ad/claim-ad-button'
 import { BinaryMultiAnswersPanel } from 'web/components/answers/binary-multi-answers-panel'
 import { NumericBetButton } from 'web/components/bet/numeric-bet-button'
 import { Button } from 'web/components/buttons/button'
@@ -27,17 +22,14 @@ import { TopicTag } from 'web/components/topics/topic-tag'
 import { Avatar } from 'web/components/widgets/avatar'
 import { Tooltip } from 'web/components/widgets/tooltip'
 import { UserLink } from 'web/components/widgets/user-link'
-import { useAdTimer } from 'web/hooks/use-ad-timer'
 import { useAPIGetter } from 'web/hooks/use-api-getter'
 import { useLiveContract } from 'web/hooks/use-contract'
 import { useIsVisible } from 'web/hooks/use-is-visible'
 import { useSavedContractMetrics } from 'web/hooks/use-saved-contract-metrics'
 import { useUser } from 'web/hooks/use-user'
 import { track } from 'web/lib/service/analytics'
-import { getAdCanPayFunds } from 'web/lib/supabase/ads'
 import { getMarketMovementInfo } from 'web/lib/supabase/feed-timeline/feed-market-movement-display'
 import { SpiceCoin } from 'web/public/custom-components/spiceCoin'
-import { SweepiesCoin } from 'web/public/custom-components/sweepiesCoin'
 import { SimpleAnswerBars } from '../answers/answers-panel'
 import { BetButton } from '../bet/feed-bet-button'
 import { CommentsButton } from '../comments/comments-button'
@@ -53,6 +45,9 @@ import { UserHovercard } from '../user/user-hovercard'
 import { ClickFrame } from '../widgets/click-frame'
 import { ReactButton } from './react-button'
 import { TradesButton } from './trades-button'
+import { SweepiesCoin } from 'web/public/custom-components/sweepiesCoin'
+import { capitalize } from 'lodash'
+import { getIsLive } from 'common/sports-info'
 
 const DEBUG_FEED_CARDS =
   typeof window != 'undefined' &&
@@ -61,7 +56,6 @@ const DEBUG_FEED_CARDS =
 export function FeedContractCard(props: {
   contract: Contract
   children?: React.ReactNode
-  promotedData?: { adId: string; reward: number }
   /** location of the card, to disambiguate card click events */
   trackingPostfix?: string
   className?: string
@@ -74,7 +68,6 @@ export function FeedContractCard(props: {
   feedReason?: string
 }) {
   const {
-    promotedData,
     trackingPostfix,
     className,
     children,
@@ -110,41 +103,22 @@ export function FeedContractCard(props: {
 
   // Note: if we ever make cards taller than viewport, we'll need to pass a lower threshold to the useIsVisible hook
 
-  const [visible, setVisible] = useState(false)
   const { ref } = useIsVisible(
     () => {
-      !DEBUG_FEED_CARDS &&
+      if (!DEBUG_FEED_CARDS)
         track('view market card', {
           contractId: contract.id,
           creatorId: contract.creatorId,
           slug: contract.slug,
-          isPromoted: !!promotedData,
         } as ContractCardView)
-      setVisible(true)
     },
     false,
-    true,
-    () => {
-      setVisible(false)
-    }
+    true
   )
 
   const topics = useAPIGetter('market/:contractId/groups', {
     contractId: contract.id,
   })
-
-  const adSecondsLeft =
-    // eslint-disable-next-line react-hooks/rules-of-hooks
-    promotedData && useAdTimer(contract.id, AD_WAIT_SECONDS, visible)
-  const [canAdPay, setCanAdPay] = useState(true)
-  const adId = promotedData?.adId
-  useEffect(() => {
-    if (adId) {
-      getAdCanPayFunds(adId).then((canPay) => {
-        setCanAdPay(canPay)
-      })
-    }
-  }, [adId])
 
   const { probChange, startTime, ignore } = getMarketMovementInfo(contract)
 
@@ -155,7 +129,6 @@ export function FeedContractCard(props: {
         contractId: contract.id,
         creatorId: contract.creatorId,
         slug: contract.slug,
-        isPromoted: !!promotedData,
         feedReason: feedReason,
       })
     )
@@ -167,18 +140,17 @@ export function FeedContractCard(props: {
   return (
     <ClickFrame
       className={clsx(
-        isPrizeMarket || isCashContract
-          ? 'mt-2 ring-1 ring-amber-200 hover:ring-amber-400 dark:ring-amber-400 hover:dark:ring-amber-200'
-          : 'ring-primary-200 hover:ring-1',
+        'ring-primary-200 hover:ring-1',
 
         'relative cursor-pointer rounded-xl transition-all ',
-        'flex w-full flex-col gap-0.5 px-4',
-        className,
+        'flex w-full flex-col gap-0.5 px-4 py-2',
+
         size === 'sm'
           ? 'bg-canvas-50'
           : size === 'md'
-          ? 'bg-canvas-0 shadow-md sm:px-6'
-          : 'bg-canvas-0'
+          ? 'bg-canvas-0 dark:bg-canvas-50 dark:border-canvas-50 hover:border-primary-300 gap-2 rounded-lg border shadow-md transition-colors'
+          : 'bg-canvas-0',
+        className
       )}
       onClick={(e) => {
         trackClick()
@@ -198,22 +170,16 @@ export function FeedContractCard(props: {
             <SpiceCoin className="-mt-0.5" /> Prize Market
           </span>
         </div>
-      ) : isCashContract ? (
-        <div
-          className={clsx(
-            'absolute right-4 top-0 z-40 -translate-y-1/2 transform bg-amber-200 text-amber-700',
-            'rounded-full px-2 py-0.5 text-xs font-semibold'
-          )}
-        >
-          <span>
-            <SweepiesCoin className="-mt-0.5" /> {capitalize(SWEEPIES_NAME)}{' '}
-            Market
-          </span>
-        </div>
       ) : (
         <></>
       )}
       <Col className={clsx('w-full', size === 'xs' ? '' : 'gap-1.5 ', 'pt-4')}>
+        {getIsLive(contract) && (
+          <Row className="items-center gap-2 text-red-500">
+            <div className="ml-2 h-2 w-2 animate-pulse rounded-full bg-red-500" />
+            Live
+          </Row>
+        )}
         <Row className="w-full justify-between">
           <UserHovercard userId={creatorId}>
             <Row className={'text-ink-500 items-center gap-1 text-sm'}>
@@ -236,10 +202,15 @@ export function FeedContractCard(props: {
             </Row>
           </UserHovercard>
           <Row className="gap-2">
-            {promotedData && canAdPay && (
-              <div className="text-ink-400 w-12 text-sm">
-                Ad {adSecondsLeft ? adSecondsLeft + 's' : ''}
-              </div>
+            {isCashContract && (
+              <span
+                className={clsx(
+                  'bg-amber-200 text-amber-700',
+                  'rounded-full px-2 pt-1 text-xs font-semibold'
+                )}
+              >
+                <SweepiesCoin className="-mt-0.5" /> {capitalize(SWEEPIES_NAME)}{' '}
+              </span>
             )}
             {marketTier ? (
               <TierTooltip tier={marketTier} contract={contract} />
@@ -335,16 +306,6 @@ export function FeedContractCard(props: {
             className="my-4"
             startDate={startTime ? startTime : contract.createdTime}
           />
-        )}
-        {promotedData && canAdPay && (
-          <Col className={clsx('w-full items-center')}>
-            <ClaimButton
-              {...promotedData}
-              onClaim={() => Router.push(path)}
-              disabled={adSecondsLeft !== undefined && adSecondsLeft > 0}
-              className={'z-10 my-2 whitespace-nowrap'}
-            />
-          </Col>
         )}
 
         {isBinaryCpmm && metrics && metrics.hasShares && (
@@ -532,9 +493,9 @@ export const LoadingCards = (props: { rows?: number }) => {
   const { rows = 3 } = props
   return (
     <Col className="w-full">
-      {[...Array(rows)].map((r) => (
+      {[...Array(rows)].map((r, i) => (
         <Col
-          key={'loading-' + r}
+          key={'loading-' + i}
           className="bg-canvas-0 border-canvas-0 mb-4 gap-2 rounded-xl border p-4 drop-shadow-md"
         >
           <Row className="mb-2 items-center gap-2">

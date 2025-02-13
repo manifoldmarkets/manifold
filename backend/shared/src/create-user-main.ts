@@ -43,7 +43,12 @@ export const createUserMain = async (
   ip: string,
   host: string | undefined
 ) => {
-  const { deviceToken: preDeviceToken, adminToken, visitedContractIds } = props
+  const {
+    deviceToken: preDeviceToken,
+    adminToken,
+    visitedContractIds,
+    origin,
+  } = props
   const firebaseUser = await admin.auth().getUser(userId)
 
   const testUserAKAEmailPasswordUser =
@@ -112,7 +117,6 @@ export const createUserMain = async (
     const userData: Partial<User> = removeUndefinedProps({
       id: userId,
       avatarUrl,
-      nextLoanCached: 0,
       streakForgiveness: 1,
       shouldShowWelcome: true,
       creatorTraders: { daily: 0, weekly: 0, monthly: 0, allTime: 0 },
@@ -123,6 +127,7 @@ export const createUserMain = async (
       fromLove,
       signupBonusPaid: 0,
       verifiedPhone: false,
+      origin,
     })
 
     const privateUser: PrivateUser = {

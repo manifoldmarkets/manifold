@@ -15,13 +15,12 @@ import { Button } from './buttons/button'
 import { Modal } from './layout/modal'
 import { AmountInput } from './widgets/amount-input'
 import { Col } from './layout/col'
-import { shortenNumber } from 'web/lib/util/formatNumber'
+import { shortenNumber } from 'common/util/formatNumber'
 import router from 'next/router'
 import { useIosPurchases } from 'web/hooks/use-ios-purchases'
 import { useNativeInfo } from './native-message-provider'
-import { CoinNumber } from './widgets/coin-number'
+import { TokenNumber } from './widgets/token-number'
 import { FundsSelector } from 'web/components/gidx/funds-selector'
-import { getVerificationStatus } from 'common/gidx/user'
 import { firebaseLogin, User } from 'web/lib/firebase/users'
 import { checkoutURL } from 'web/lib/service/stripe'
 
@@ -91,15 +90,10 @@ export function BuyManaTab(props: { onClose: () => void }) {
       <FundsSelector
         onSelectPriceInDollars={(dollarAmount) => {
           if (!user || !privateUser) return firebaseLogin()
-          const { status, message } = getVerificationStatus(user, privateUser)
-          if (status !== 'error') {
-            if (isIOS) {
-              initiatePurchaseInDollars(dollarAmount)
-            } else {
-              router.push(`/checkout?dollarAmount=${dollarAmount}`)
-            }
+          if (isIOS) {
+            initiatePurchaseInDollars(dollarAmount)
           } else {
-            setError(message)
+            router.push(`/checkout?dollarAmount=${dollarAmount}`)
           }
           setLoadingPrice(dollarAmount)
         }}
@@ -120,13 +114,7 @@ export function PriceTile(props: {
   onClick?: () => void
 }) {
   const { loadingPrice, onClick, amounts, index, user } = props
-  const {
-    newUsersOnly,
-    mana,
-    priceInDollars,
-    bonusInDollars,
-    originalPriceInDollars,
-  } = amounts
+  const { mana, priceInDollars, bonusInDollars } = amounts
   const { isIOS } = useNativeInfo()
 
   const isCurrentlyLoading = loadingPrice === priceInDollars
@@ -155,31 +143,12 @@ export function PriceTile(props: {
         disabled
           ? 'pointer-events-none cursor-not-allowed opacity-50'
           : 'opacity-90 ring-2 ring-opacity-0 hover:opacity-100 hover:ring-opacity-100',
-        newUsersOnly ? ' ring-green-600 ' : 'ring-indigo-600',
+        'ring-indigo-600',
         isCurrentlyLoading && 'pointer-events-none animate-pulse cursor-wait'
       )}
       type={useStripe ? 'submit' : 'button'}
       onClick={onClickHandler}
     >
-      {originalPriceInDollars && originalPriceInDollars !== priceInDollars && (
-        <Col
-          className={clsx(
-            'absolute -right-2 -top-2 z-10',
-            'rounded-md bg-green-600 px-2 py-1',
-            'text-center text-white'
-          )}
-        >
-          <div className="font-semibold">
-            {Math.round(
-              ((originalPriceInDollars - priceInDollars) /
-                originalPriceInDollars) *
-                100
-            )}
-            % off
-          </div>
-          <div className="text-xs">Limited time</div>
-        </Col>
-      )}
       <Col className={' w-full items-center rounded-t px-4 pb-2 pt-4'}>
         <Image
           src={imgSrc}
@@ -207,7 +176,7 @@ export function PriceTile(props: {
             )}
           >
             <span>+</span>
-            <CoinNumber
+            <TokenNumber
               coinType="sweepies"
               className="text-lg font-bold"
               amount={bonusInDollars}
@@ -221,16 +190,10 @@ export function PriceTile(props: {
       <div
         className={clsx(
           'w-full rounded-b px-4 py-1 text-lg font-semibold text-white sm:text-xl',
-          newUsersOnly ? ' bg-green-600 ' : 'bg-indigo-600'
+          'bg-indigo-600'
         )}
       >
-        Buy{' '}
-        {originalPriceInDollars && (
-          <span className="font-normal text-neutral-300 line-through">
-            -${originalPriceInDollars}-
-          </span>
-        )}{' '}
-        ${priceInDollars}
+        Buy ${priceInDollars}
       </div>
     </button>
   )

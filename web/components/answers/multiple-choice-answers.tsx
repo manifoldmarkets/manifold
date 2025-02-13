@@ -6,6 +6,7 @@ import { ExpandingInput } from '../widgets/expanding-input'
 import { InfoTooltip } from '../widgets/info-tooltip'
 import { OutcomeType } from 'common/contract'
 import { ChoicesToggleGroup } from '../widgets/choices-toggle-group'
+import { Button } from '../buttons/button'
 
 export function MultipleChoiceAnswers(props: {
   answers: string[]
@@ -15,6 +16,9 @@ export function MultipleChoiceAnswers(props: {
   shouldAnswersSumToOne: boolean
   outcomeType: OutcomeType
   placeholder?: string
+  question: string
+  generateAnswers: () => void
+  isGeneratingAnswers: boolean
 }) {
   const {
     answers,
@@ -24,6 +28,9 @@ export function MultipleChoiceAnswers(props: {
     shouldAnswersSumToOne,
     outcomeType,
     placeholder,
+    question,
+    generateAnswers,
+    isGeneratingAnswers,
   } = props
 
   const setAnswer = (i: number, answer: string) => {
@@ -105,7 +112,18 @@ export function MultipleChoiceAnswers(props: {
         </Row>
       )}
       {numAnswers < MAX_ANSWERS && (
-        <Row className="justify-end">
+        <Row className="justify-end gap-2">
+          {question && outcomeType === 'MULTIPLE_CHOICE' && (
+            <Button
+              color="indigo-outline"
+              size="xs"
+              loading={isGeneratingAnswers}
+              onClick={generateAnswers}
+              disabled={!question || isGeneratingAnswers}
+            >
+              Generate with AI
+            </Button>
+          )}
           <button
             type="button"
             onClick={addAnswer}

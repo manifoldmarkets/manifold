@@ -3,7 +3,7 @@ import { Contract } from 'common/contract'
 import { useEffect, useRef, useState } from 'react'
 import { usePrivateUser } from './use-user'
 import { isContractBlocked } from 'web/lib/firebase/users'
-import { useEvent } from './use-event'
+import { useEvent } from 'client-common/hooks/use-event'
 import { api } from 'web/lib/api/api'
 
 const LIMIT = 10

@@ -3,9 +3,8 @@ import { APIError, type APIHandler } from './helpers/endpoint'
 import { onCreateBets } from 'api/on-create-bet'
 import { executeNewBetResult } from 'api/place-bet'
 import { getContract, getUser, log } from 'shared/utils'
-import { groupBy, mapValues, sum, sumBy } from 'lodash'
+import { groupBy, keyBy, mapValues, sumBy } from 'lodash'
 import { getCpmmMultiSellSharesInfo } from 'common/sell-bet'
-import { incrementBalance } from 'shared/supabase/users'
 import { runTransactionWithRetries } from 'shared/transact-with-retries'
 import { convertBet } from 'common/supabase/bets'
 import { betsQueue } from 'shared/helpers/fn-queue'
@@ -72,9 +71,13 @@ const multiSellMain: APIHandler<'multi-sell'> = async (props, auth) => {
     )
 
     const loanAmountByAnswerId = mapValues(
-      groupBy(userBets, 'answerId'),
-      (bets) => sumBy(bets, (bet) => bet.loanAmount ?? 0)
+      keyBy(
+        allMyMetrics.filter((m) => m.answerId !== null),
+        'answerId'
+      ),
+      (m) => m.loan ?? 0
     )
+
     const nonRedemptionBetsByAnswerId = groupBy(
       userBets.filter((bet) => bet.shares !== 0),
       (bet) => bet.answerId
@@ -115,13 +118,6 @@ const multiSellMain: APIHandler<'multi-sell'> = async (props, auth) => {
       )
       results.push(result)
     }
-    const bets = results.flatMap((r) => r.fullBets)
-    const loanPaid = sum(Object.values(loanAmountByAnswerId))
-    if (loanPaid > 0 && bets.length > 0) {
-      await incrementBalance(pgTrans, uid, {
-        balance: -loanPaid,
-      })
-    }
     return results
   })
 
@@ -129,6 +125,7 @@ const multiSellMain: APIHandler<'multi-sell'> = async (props, auth) => {
 
   const continuation = async () => {
     const fullBets = results.flatMap((result) => result.fullBets)
+    const updatedMakers = results.flatMap((result) => result.updatedMakers)
     const cancelledLimitOrders = results.flatMap(
       (result) => result.cancelledLimitOrders
     )
@@ -147,6 +144,7 @@ const multiSellMain: APIHandler<'multi-sell'> = async (props, auth) => {
       userUpdates: undefined,
       contractUpdate: undefined,
       answerUpdates: undefined,
+      updatedMakers,
     })
   }
 

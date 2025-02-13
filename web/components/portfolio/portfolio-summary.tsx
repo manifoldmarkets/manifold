@@ -5,7 +5,7 @@ import { useAPIGetter } from 'web/hooks/use-api-getter'
 import { useIsAuthorized, usePrivateUser, useUser } from 'web/hooks/use-user'
 import { LoadingContractRow } from '../contract/contracts-table'
 import { Col } from '../layout/col'
-import { SupabaseSearch } from '../supabase-search'
+import { Search } from '../search'
 import { PortfolioValueSection } from './portfolio-value-section'
 
 export const PortfolioSummary = (props: { user: User; className?: string }) => {
@@ -48,7 +48,7 @@ export const PortfolioSummary = (props: { user: User; className?: string }) => {
             </Col>
           )}
           {isAuthed && (
-            <SupabaseSearch
+            <Search
               persistPrefix="recent"
               additionalFilter={{
                 excludeContractIds: privateUser?.blockedContractIds,

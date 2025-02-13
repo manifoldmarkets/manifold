@@ -13,16 +13,18 @@ import { LoadingIndicator } from '../widgets/loading-indicator'
 import { UserAvatarAndBadge } from '../widgets/user-link'
 import { Contract, contractPath } from 'common/contract'
 import { Bet } from 'common/bet'
-import { calculateUserMetrics } from 'common/calculate-metrics'
+import { calculateUserMetricsWithouLoans } from 'common/calculate-metrics'
 import { ProfitBadge } from '../profit-badge'
 import { ContractMetric } from 'common/contract-metric'
-import { useBetsOnce } from 'web/hooks/use-bets'
+
 import ShortToggle from '../widgets/short-toggle'
 import { useState } from 'react'
 import { ContractBetsTable } from 'web/components/bet/contract-bets-table'
 import { DisplayUser } from 'common/api/user-types'
 import { TRADE_TERM } from 'common/envs/constants'
 import { capitalize } from 'lodash'
+import { useBetsOnce } from 'client-common/hooks/use-bets'
+import { api } from 'web/lib/api/api'
 
 export const ManaEarnedBreakdown = (props: {
   user: DisplayUser
@@ -50,7 +52,7 @@ export const ManaEarnedBreakdown = (props: {
   // } as { [key: string]: number }
 
   const { start, end } = getSeasonDates(season)
-  const loadingBets = useBetsOnce({
+  const loadingBets = useBetsOnce((params) => api('bets', params), {
     userId: user.id,
     afterTime: start.getTime(),
     beforeTime: end.getTime(),
@@ -62,7 +64,7 @@ export const ManaEarnedBreakdown = (props: {
     ? uniq(loadingBets.map((b) => b.contractId))
     : undefined
   const contracts = usePublicContracts(contractIds)?.filter(
-    (c) => c.isRanked !== false
+    (c) => c.isRanked !== false && c.token === 'MANA'
   )
 
   const contractsById = keyBy(contracts, 'id')
@@ -73,7 +75,7 @@ export const ManaEarnedBreakdown = (props: {
     mapValues(betsByContract, (bets, contractId) => {
       const contract = contractsById[contractId]
       return contract
-        ? calculateUserMetrics(contract, bets, user.id).find(
+        ? calculateUserMetricsWithouLoans(contract, bets, user.id).find(
             (cm) => !cm.answerId
           )
         : undefined
@@ -131,7 +133,7 @@ export const ManaEarnedBreakdown = (props: {
                   </td>
                 </tr>
               )
-            )} 
+            )}
             <tr className="font-semibold">
               <td className={clsx('pl-2')}>Total</td>
               <td className={clsx('pr-2 text-right')}>
@@ -231,6 +233,7 @@ const ContractBetsEntry = (props: {
           contract={contract}
           bets={bets}
           isYourBets={false}
+          contractMetric={metrics}
           hideRedemptionAndLoanMessages
         />
       )}

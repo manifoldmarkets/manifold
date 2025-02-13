@@ -3,7 +3,7 @@ import { updateContractMetricsCore } from 'shared/update-contract-metrics-core'
 import { sendOnboardingNotificationsInternal } from 'shared/onboarding-helpers'
 import { updateUserMetricPeriods } from 'shared/update-user-metric-periods'
 import { cleanOldNotifications } from './clean-old-notifications'
-import { updateStatsCore } from './update-stats'
+import { updateCashStatsCore, updateStatsCore } from './update-stats'
 import { calculateConversionScore } from 'shared/conversion-score'
 import { autoAwardBounty } from './auto-award-bounty'
 import { resetPgStats } from './reset-pg-stats'
@@ -21,6 +21,7 @@ import { sendStreakExpirationNotification } from './streak-expiration-notice'
 import { expireLimitOrders } from 'shared/expire-limit-orders'
 import { denormalizeAnswers } from './denormalize-answers'
 import { incrementStreakForgiveness } from './increment-streak-forgiveness'
+import { resolveSportsMarkets } from 'shared/resolve-sports-markets'
 import { sendMarketCloseEmails } from './send-market-close-emails'
 import { pollPollResolutions } from './poll-poll-resolutions'
 import { IMPORTANCE_MINUTE_INTERVAL } from 'shared/importance-score'
@@ -34,6 +35,7 @@ import {
   resetWeeklyQuestStatsInternal,
 } from './reset-quests-stats'
 import { updateUserPortfolioHistoriesCore } from 'shared/update-user-portfolio-histories-core'
+import { ENV } from 'common/envs/constants'
 
 export function createJobs() {
   return [
@@ -50,7 +52,7 @@ export function createJobs() {
     ),
     createJob(
       'update-creator-metrics',
-      `0 */${CREATOR_UPDATE_FREQUENCY} * * * *`, // every 13 minutes - (on the 5th minute of every hour)
+      `0 */${CREATOR_UPDATE_FREQUENCY} * * * *`, // every 57 minutes - (on the 57th minute of every hour)
       updateCreatorMetricsCore
     ),
     createJob(
@@ -90,7 +92,7 @@ export function createJobs() {
     ),
     createJob(
       'expire-limit-orders',
-      '0 */10 * * * *', // every 10 minutes
+      '0 */1 * * * *', // every minute
       expireLimitOrders
     ),
     createJob(
@@ -135,6 +137,11 @@ export function createJobs() {
       'update-stats',
       '0 20 4 * * *', // on 4:20am daily
       () => updateStatsCore(7)
+    ),
+    createJob(
+      'update-cash-stats',
+      '0 20 4 * * *', // on 4:20am daily
+      () => updateCashStatsCore(7)
     ),
     createJob(
       'onboarding-notification',

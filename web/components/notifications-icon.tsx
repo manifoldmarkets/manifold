@@ -3,12 +3,15 @@ import { BellIcon } from '@heroicons/react/outline'
 import { Row } from 'web/components/layout/row'
 import { useEffect } from 'react'
 import { usePrivateUser } from 'web/hooks/use-user'
-import { useGroupedUnseenNotifications } from 'web/hooks/use-notifications'
 import { PrivateUser } from 'common/user'
-import { NOTIFICATIONS_PER_PAGE } from './notifications/notification-helpers'
 
 import { usePathname } from 'next/navigation'
 import { usePersistentLocalState } from 'web/hooks/use-persistent-local-state'
+import {
+  NOTIFICATIONS_PER_PAGE,
+  useGroupedUnseenNotifications,
+} from 'client-common/hooks/use-notifications'
+import { api } from 'web/lib/api/api'
 
 export function NotificationsIcon(props: { className?: string }) {
   const privateUser = usePrivateUser()
@@ -30,7 +33,11 @@ function UnseenNotificationsBubble(props: { privateUser: PrivateUser }) {
     'notifications-seen-time'
   )
   const unseenNotificationGroups =
-    useGroupedUnseenNotifications(privateUser.id) ?? []
+    useGroupedUnseenNotifications(
+      privateUser.id,
+      (params) => api('get-notifications', params),
+      usePersistentLocalState
+    ) ?? []
 
   const unseenNotifs = unseenNotificationGroups.filter(
     (ng) => ng.latestCreatedTime > lastSeenTime

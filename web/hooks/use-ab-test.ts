@@ -2,7 +2,7 @@ import { createRNG } from 'common/util/random'
 import { ensureDeviceToken } from 'web/components/auth-context'
 import { track } from 'web/lib/service/analytics'
 import { useEffectCheckEquality } from './use-effect-check-equality'
-import { usePersistentInMemoryState } from './use-persistent-in-memory-state'
+import { usePersistentInMemoryState } from 'client-common/hooks/use-persistent-in-memory-state'
 
 const AB_TEST_CACHE: Record<string, boolean> = {}
 

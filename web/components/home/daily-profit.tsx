@@ -18,8 +18,9 @@ import { Table } from '../widgets/table'
 import { TRADE_TERM } from 'common/envs/constants'
 import { api } from 'web/lib/api/api'
 import { APIResponse } from 'common/api/schema'
-import { usePersistentInMemoryState } from 'web/hooks/use-persistent-in-memory-state'
-import { CoinNumber } from '../widgets/coin-number'
+import { usePersistentInMemoryState } from 'client-common/hooks/use-persistent-in-memory-state'
+import { TokenNumber } from '../widgets/token-number'
+import { floatingEqual } from 'common/util/math'
 
 const DAILY_PROFIT_CLICK_EVENT = 'click daily profit button'
 
@@ -68,13 +69,13 @@ export const DailyProfit = function DailyProfit(props: {
             }, DAILY_PROFIT_CLICK_EVENT)}
           >
             <Row>
-              <CoinNumber
+              <TokenNumber
                 amount={data ? manaNetWorth : undefined}
                 numberType="short"
                 isInline
               />
 
-              {manaProfit !== 0 && (
+              {!floatingEqual(manaProfit, 0) && (
                 <span
                   className={clsx(
                     'ml-1 mt-1 text-xs',
@@ -87,32 +88,34 @@ export const DailyProfit = function DailyProfit(props: {
               )}
             </Row>
           </button>
-          <button
-            onClick={withTracking(() => {
-              setOpenCash(true)
-            }, DAILY_PROFIT_CLICK_EVENT)}
-          >
-            <Row>
-              <CoinNumber
-                amount={data ? cashNetWorth : undefined}
-                numberType="short"
-                coinType="sweepies"
-                isInline
-              />
+          {cashNetWorth > 0 && (
+            <button
+              onClick={withTracking(() => {
+                setOpenCash(true)
+              }, DAILY_PROFIT_CLICK_EVENT)}
+            >
+              <Row>
+                <TokenNumber
+                  amount={data ? cashNetWorth : undefined}
+                  numberType="short"
+                  coinType="sweepies"
+                  isInline
+                />
 
-              {cashProfit !== 0 && (
-                <span
-                  className={clsx(
-                    'ml-1 mt-1 text-xs',
-                    cashProfit >= 0 ? 'text-teal-600' : 'text-scarlet-600'
-                  )}
-                >
-                  {cashProfit >= 0 ? '+' : '-'}
-                  {shortFormatNumber(Math.abs(cashProfit))}
-                </span>
-              )}
-            </Row>
-          </button>
+                {!floatingEqual(cashProfit, 0) && (
+                  <span
+                    className={clsx(
+                      'ml-1 mt-1 text-xs',
+                      cashProfit >= 0 ? 'text-teal-600' : 'text-scarlet-600'
+                    )}
+                  >
+                    {cashProfit >= 0 ? '+' : '-'}
+                    {shortFormatNumber(Math.abs(cashProfit))}
+                  </span>
+                )}
+              </Row>
+            </button>
+          )}
         </Row>
         <div className="text-ink-600 text-center text-xs ">Net worth</div>
       </div>

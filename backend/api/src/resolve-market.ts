@@ -19,6 +19,8 @@ import {
 import { resolveLoveMarketOtherAnswers } from 'shared/love/love-markets'
 import { betsQueue } from 'shared/helpers/fn-queue'
 import { createSupabaseDirectClient } from 'shared/supabase/init'
+import { broadcastUserUpdates } from 'shared/supabase/users'
+import { SWEEPSTAKES_MOD_IDS } from 'common/envs/constants'
 
 export const resolveMarket: APIHandler<'market/:contractId/resolve'> = async (
   props,
@@ -44,20 +46,22 @@ export const resolveMarketMain: APIHandler<
   if (outcomeType === 'STONK') {
     throw new APIError(403, 'STONK contracts cannot be resolved')
   }
+
   const caller = await getUser(auth.uid)
   if (!caller) throw new APIError(400, 'Caller not found')
   if (caller.isBannedFromPosting || caller.userDeleted)
     throw new APIError(403, 'Deleted or banned user cannot resolve markets')
-  if (creatorId !== auth.uid) await throwErrorIfNotMod(auth.uid)
+  if (creatorId !== auth.uid) throwErrorIfNotMod(auth.uid)
 
   if (
     isProd() &&
     contract.token === 'CASH' &&
-    auth.uid !== HOUSE_LIQUIDITY_PROVIDER_ID
+    auth.uid !== HOUSE_LIQUIDITY_PROVIDER_ID &&
+    !SWEEPSTAKES_MOD_IDS.includes(auth.uid)
   ) {
     throw new APIError(
       403,
-      'Only the Manifold account can resolve prize cash markets'
+      'Only the Manifold account and approved mods can resolve sweepcash markets'
     )
   }
 
@@ -98,13 +102,18 @@ export const resolveMarketMain: APIHandler<
     )
   }
 
-  await resolveMarketHelper(
+  const { userUpdates } = await resolveMarketHelper(
     contract as MarketContract,
     caller,
     creator,
     resolutionParams
   )
-  return { message: 'success' }
+  return {
+    result: { message: 'success' },
+    continue: async () => {
+      broadcastUserUpdates(userUpdates)
+    },
+  }
 }
 
 function getResolutionParams(

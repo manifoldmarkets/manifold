@@ -3,7 +3,7 @@ import { buildArray } from 'common/util/array'
 import { debounce } from 'lodash'
 import { useCallback, useEffect, useLayoutEffect, useState } from 'react'
 import { ScaleTime } from 'd3-scale'
-import { getBetPoints } from 'web/lib/supabase/bets'
+import { getBetPoints } from 'common/bets'
 
 export async function getPointsBetween(
   contractId: string,
@@ -38,9 +38,9 @@ export const useDataZoomFetcher = <T>(props: {
 
         setData(
           buildArray(
-            props.points.filter((p, i) => i == 0 || p.x < min),
+            props.points.filter((p) => p.x <= min),
             points,
-            props.points.filter((p) => p.x > max)
+            props.points.filter((p) => p.x >= max)
           ).sort((a, b) => a.x - b.x)
         )
 

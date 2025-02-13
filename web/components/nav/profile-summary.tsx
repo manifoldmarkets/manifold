@@ -4,7 +4,7 @@ import { usePathname } from 'next/navigation'
 import { User } from 'web/lib/firebase/users'
 import { trackCallback } from 'web/lib/service/analytics'
 import { Avatar } from '../widgets/avatar'
-import { CoinNumber } from '../widgets/coin-number'
+import { TokenNumber } from '../widgets/token-number'
 
 export function ProfileSummary(props: { user: User; className?: string }) {
   const { user, className } = props
@@ -31,13 +31,13 @@ export function ProfileSummary(props: { user: User; className?: string }) {
       <div className="mr-1 w-2 shrink-[2]" />
       <div className="shrink-0 grow">
         <div className="flex items-center text-sm">
-          <CoinNumber
+          <TokenNumber
             amount={user?.balance}
             numberType="animated"
-            className="mr-2 text-violet-600 dark:text-violet-400"
+            className="mr-1 text-violet-600 dark:text-violet-400"
           />
         </div>
-        <CoinNumber
+        <TokenNumber
           className="text-sm text-amber-600 dark:text-amber-400"
           amount={user.cashBalance}
           coinType="sweepies"

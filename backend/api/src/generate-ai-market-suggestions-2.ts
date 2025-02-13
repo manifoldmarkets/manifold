@@ -9,39 +9,40 @@ import {
 } from 'common/ai-creation-prompts'
 import { anythingToRichText } from 'shared/tiptap'
 import { track } from 'shared/analytics'
-import {
-  largePerplexityModel,
-  smallPerplexityModel,
-} from 'shared/helpers/perplexity'
+import { perplexity, perplexityPro } from 'shared/helpers/perplexity'
 import { getContentFromPrompt } from './generate-ai-market-suggestions'
+import { rateLimitByUser } from './helpers/rate-limit'
+import { HOUR_MS } from 'common/util/time'
 
+const perplexitySystemPrompt = `You are a helpful assistant that uses the internet to research all relevant information to a user's prompt and supplies the user with as much information as possible.`
 // In this version, we use Perplexity to generate context for the prompt, and then Claude to generate market suggestions
-export const generateAIMarketSuggestions2: APIHandler<
-  'generate-ai-market-suggestions-2'
-> = async (props, auth) => {
-  const { prompt, existingTitles } = props
-  log('Prompt:', prompt)
+export const generateAIMarketSuggestions2: APIHandler<'generate-ai-market-suggestions-2'> =
+  rateLimitByUser(
+    async (props, auth) => {
+      const { prompt, existingTitles } = props
+      log('Prompt:', prompt)
 
-  const promptIncludingTitlesToIgnore = existingTitles?.length
-    ? `${prompt}\n\nPlease suggest new market ideas that are different from these ones:\n${existingTitles
-        .map((t) => `- ${t}`)
-        .join('\n')}`
-    : prompt
+      const promptIncludingTitlesToIgnore = existingTitles?.length
+        ? `${prompt}\n\nPlease suggest new market ideas that are different from these ones:\n${existingTitles
+            .map((t) => `- ${t}`)
+            .join('\n')}`
+        : prompt
 
-  const promptIncludingUrlContent = await getContentFromPrompt(
-    promptIncludingTitlesToIgnore
-  )
+      const promptIncludingUrlContent = await getContentFromPrompt(
+        promptIncludingTitlesToIgnore
+      )
 
-  const perplexityResponse = await perplexity(promptIncludingUrlContent, {
-    model: largePerplexityModel,
-  })
+      const perplexityResponse = await perplexity(promptIncludingUrlContent, {
+        model: perplexityPro,
+        systemPrompts: [perplexitySystemPrompt],
+      })
 
-  const { messages, citations } = perplexityResponse
-  log('Perplexity response:', messages.join('\n'))
-  log('Sources:', citations.join('\n'))
+      const { messages, citations } = perplexityResponse
+      log('Perplexity response:', messages.join('\n'))
+      log('Sources:', citations.join('\n'))
 
-  // Format the perplexity suggestions for Claude
-  const claudePrompt = `  
+      // Format the perplexity suggestions for Claude
+      const claudePrompt = `  
     You are a helpful assistant that suggests ideas for engaging prediction markets on Manifold Markets.
     Your role is to take in relevant current information from the internet and transform a user's prompt into approximately 6 well-structured prediction markets that encourage participation and meaningful forecasting.
     ${guidelinesPrompt}
@@ -65,89 +66,39 @@ export const generateAIMarketSuggestions2: APIHandler<
     ONLY return a valid JSON array of market objects and do NOT include any other text.
   `
 
-  const claudeResponse = await promptClaude(claudePrompt, {
-    model: models.sonnet,
-    system: claudeSystemPrompt,
-  })
-
-  // Parse the JSON response
-  let parsedMarkets: AIGeneratedMarket[] = []
-  try {
-    parsedMarkets = JSON.parse(claudeResponse).map(
-      (market: AIGeneratedMarket) => ({
-        ...market,
-        description: anythingToRichText({
-          markdown: market.descriptionMarkdown,
-        }),
-        promptVersion: 2,
+      const claudeResponse = await promptClaude(claudePrompt, {
+        model: models.sonnet,
+        system: claudeSystemPrompt,
       })
-    )
-  } catch (e) {
-    console.error('Failed to parse Claude response:', e)
-    throw new APIError(
-      500,
-      'Failed to parse market suggestions from Claude. Please try again.'
-    )
-  }
-  track(auth.uid, 'generate-ai-market-suggestions', {
-    marketTitles: parsedMarkets.map((m) => m.question),
-    prompt,
-    regenerate: !!existingTitles,
-    hasScrapedContent:
-      promptIncludingUrlContent !== promptIncludingTitlesToIgnore,
-  })
 
-  return parsedMarkets
-}
+      // Parse the JSON response
+      let parsedMarkets: AIGeneratedMarket[] = []
+      try {
+        parsedMarkets = JSON.parse(claudeResponse).map(
+          (market: AIGeneratedMarket) => ({
+            ...market,
+            description: anythingToRichText({
+              markdown: market.descriptionMarkdown,
+            }),
+            promptVersion: 2,
+          })
+        )
+      } catch (e) {
+        console.error('Failed to parse Claude response:', e)
+        throw new APIError(
+          500,
+          'Failed to parse market suggestions from Claude. Please try again.'
+        )
+      }
+      track(auth.uid, 'generate-ai-market-suggestions', {
+        marketTitles: parsedMarkets.map((m) => m.question),
+        prompt,
+        regenerate: !!existingTitles,
+        hasScrapedContent:
+          promptIncludingUrlContent !== promptIncludingTitlesToIgnore,
+      })
 
-const perplexitySystemPrompt = `You are a helpful assistant that uses the internet to research all relevant information to a user's prompt and supplies the user with as much information as possible.`
-export const perplexity = async (
-  query: string,
-  options: { model?: string } = {}
-) => {
-  const apiKey = process.env.PERPLEXITY_API_KEY
-  const { model = smallPerplexityModel } = options
-  const requestOptions = {
-    method: 'POST',
-    headers: {
-      Authorization: `Bearer ${apiKey}`,
-      'Content-Type': 'application/json',
+      return parsedMarkets
     },
-    body: JSON.stringify({
-      model,
-      messages: [
-        {
-          role: 'system',
-          content: perplexitySystemPrompt,
-        },
-        {
-          role: 'user',
-          content: query,
-        },
-      ],
-      temperature: 0.2,
-      return_citations: true,
-    }),
-  }
-
-  try {
-    const response = await fetch(
-      'https://api.perplexity.ai/chat/completions',
-      requestOptions
-    )
-    const data = await response.json()
-
-    // Extract citations if they exist
-    const citations = data.citations || []
-
-    // Map the choices and attach only referenced citations
-    const messages = data.choices.map(
-      (choice: any) => choice.message.content
-    ) as string[]
-
-    return { messages, citations }
-  } catch (err) {
-    console.error(err)
-    throw new APIError(500, 'Failed to generate markets')
-  }
-}
+    { maxCalls: 60, windowMs: HOUR_MS }
+  )

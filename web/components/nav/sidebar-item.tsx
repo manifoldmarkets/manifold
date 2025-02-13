@@ -26,7 +26,8 @@ export function SidebarItem(props: { item: NavItem; currentPage?: string }) {
     queryCleanedHref.split('/').length > 2
       ? '/' + queryCleanedHref.split('/')[1]
       : queryCleanedHref
-  const isCurrentPage = currentBasePath === segmentCleanedHref
+  const isCurrentPage =
+    currentBasePath === segmentCleanedHref && !item.href?.startsWith('https://')
 
   const onClick = () => {
     track('sidebar: ' + item.name)
@@ -67,6 +68,9 @@ export function SidebarItem(props: { item: NavItem; currentPage?: string }) {
         aria-current={isCurrentPage ? 'page' : undefined}
         onClick={onClick}
         className={sidebarClass}
+        target={
+          item.external || !item.href.startsWith('/') ? '_blank' : undefined
+        }
       >
         {sidebarItem}
       </Link>

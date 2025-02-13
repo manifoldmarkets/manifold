@@ -21,7 +21,7 @@ import { ReactNode, useState } from 'react'
 import { useAnimatedNumber } from 'web/hooks/use-animated-number'
 import { useUser } from 'web/hooks/use-user'
 import { track } from 'web/lib/service/analytics'
-import { formatTimeShort } from 'web/lib/util/time'
+import { formatTimeShort } from 'client-common/lib/time'
 import { MoneyDisplay } from '../bet/money-display'
 import { SellSharesModal } from '../bet/sell-row'
 import { Button } from '../buttons/button'
@@ -43,6 +43,7 @@ import { AnswerCpmmBetPanel } from './answer-bet-panel'
 import { useSavedContractMetrics } from 'web/hooks/use-saved-contract-metrics'
 import { ContractMetric } from 'common/contract-metric'
 import { floatingEqual } from 'common/util/math'
+import { getAnswerColor, getPseudonym } from '../charts/contract/choice'
 
 export const AnswerBar = (props: {
   color: string // 6 digit hex
@@ -344,7 +345,7 @@ export const BinaryMultiSellRow = (props: {
   const user = useUser()
   const metric = useSavedContractMetrics(contract, answer.id)
   const [open, setOpen] = useState(false)
-
+  const otherAnswer = contract.answers.find((a) => a.id !== answer.id)!
   const { totalShares, maxSharesOutcome } = metric ?? {
     totalShares: { YES: 0, NO: 0 },
     maxSharesOutcome: 'YES',
@@ -364,6 +365,7 @@ export const BinaryMultiSellRow = (props: {
           sharesOutcome={sharesOutcome}
           setOpen={setOpen}
           answerId={getMainBinaryMCAnswer(contract)?.id}
+          binaryPseudonym={getPseudonym(contract)}
         />
       )}
       <Button
@@ -377,12 +379,23 @@ export const BinaryMultiSellRow = (props: {
         }}
       >
         <Row className={'gap-1'}>
-          Sell
+          Sell {Math.floor(sharesSum)}
           <OutcomeLabel
             outcome={sharesOutcome}
             contract={contract}
             truncate={'short'}
+            pseudonym={{
+              YES: {
+                pseudonymName: answer.text,
+                pseudonymColor: getAnswerColor(answer),
+              },
+              NO: {
+                pseudonymName: otherAnswer.text,
+                pseudonymColor: getAnswerColor(otherAnswer),
+              },
+            }}
           />
+          shares
         </Row>
       </Button>
     </Row>

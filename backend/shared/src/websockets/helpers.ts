@@ -39,7 +39,7 @@ export function broadcastOrders(bets: LimitBet[]) {
   broadcast(`contract/${contractId}/orders`, { bets })
 }
 
-export function broadcastUpdatedMetrics(metrics: ContractMetric[]) {
+export function broadcastUpdatedMetrics(metrics: Omit<ContractMetric, 'id'>[]) {
   if (metrics.length === 0) return
   const { contractId } = metrics[0]
   const metricsByUser = groupBy(metrics, (m) => m.userId)
@@ -109,10 +109,10 @@ export function broadcastUpdatedAnswers(
 ) {
   if (answers.length === 0) return
 
-  const payload = { answers }
-  const topics = [`contract/${contractId}/updated-answers`]
-  // TODO: broadcast to global
-  broadcastMulti(topics, payload)
+  broadcast(`contract/${contractId}/updated-answers`, { answers })
+  for (const a of answers) {
+    broadcast(`answer/${a.id}/update`, { answer: a })
+  }
 }
 
 export function broadcastTVScheduleUpdate() {

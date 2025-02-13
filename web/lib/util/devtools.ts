@@ -28,23 +28,8 @@ export const setupDevtoolsDetector = (): DevtoolsDetector => {
 
   Object.seal(config)
 
-  const heart = new Worker(
-    URL.createObjectURL(
-      new Blob(
-        [
-          `"use strict";
-        onmessage = (ev) => { postMessage({ isOpenBeat: true });
-            debugger;
-            for (let i = 0; i < ev.data.moreDebugs; i++) {
-                debugger;
-            }
-            postMessage({ isOpenBeat: false });
-        };`,
-        ],
-        { type: 'text/javascript' }
-      )
-    )
-  )
+  // Create worker from separate file
+  const heart = new Worker(new URL('./devtools.worker.ts', import.meta.url))
 
   let _isDevtoolsOpen = false
   let _isDetectorPaused = true

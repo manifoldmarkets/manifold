@@ -3,7 +3,7 @@ import { Bet } from 'common/bet'
 import { ContractComment } from 'common/comment'
 import { Contract } from 'common/contract'
 import { useState } from 'react'
-import { useEvent } from 'web/hooks/use-event'
+import { useEvent } from 'client-common/hooks/use-event'
 import { Button } from '../buttons/button'
 import { Col } from '../layout/col'
 import { Row } from '../layout/row'
@@ -131,7 +131,6 @@ export function FeedCommentThread(props: {
         {replyToUserInfo && (
           <ContractCommentInput
             playContract={playContract}
-            liveContract={liveContract}
             parentCommentId={parentComment.id}
             replyToUserInfo={replyToUserInfo}
             clearReply={clearReply}

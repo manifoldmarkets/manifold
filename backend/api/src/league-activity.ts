@@ -83,8 +83,9 @@ export const getLeagueActivity = async (
     `select
       data from contracts
     where
-      contracts.id = any($1)
-      and contracts.visibility = 'public'
+      id = any($1)
+      and visibility = 'public'
+      and token = 'MANA'
       `,
     [contractIds],
     (row) => row.data

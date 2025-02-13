@@ -20,7 +20,6 @@ import {
   BANNED_TRADING_USER_IDS,
   BOT_USERNAMES,
   INSTITUTIONAL_PARTNER_USER_IDS,
-  isAdminId,
   PARTNER_USER_IDS,
 } from 'common/envs/constants'
 import { Answer } from 'common/answer'
@@ -32,7 +31,7 @@ import { removeUndefinedProps } from 'common/util/object'
 import { UniqueBettorBonusTxn } from 'common/txn'
 import { getInsertQuery } from 'shared/supabase/utils'
 import { txnToRow } from 'shared/txn/run-txn'
-import { contractColumnsToSelect, isProd } from 'shared/utils'
+import { contractColumnsToSelect } from 'shared/utils'
 import { convertUser } from 'common/supabase/users'
 import { convertAnswer, convertContract } from 'common/supabase/contracts'
 import { NewBetResult } from 'api/place-bet'
@@ -60,7 +59,9 @@ export const fetchContractBetDataAndValidate = async (
 
   const isSumsToOne = `(select coalesce((data->>'shouldAnswersSumToOne')::boolean, false) from contracts where id = $2)`
   const whereLimitOrderBets = `
-    b.contract_id = $2 and not b.is_filled and not b.is_cancelled and (
+    b.contract_id = $2 and not b.is_filled and not b.is_cancelled and
+    (b.expires_at is null or b.expires_at > now()) and
+    (
       -- For sums to one markets:
       (${isSumsToOne} and (
         -- Get opposite outcome bets for selected answers
@@ -81,7 +82,7 @@ export const fetchContractBetDataAndValidate = async (
     select * from answers
       where contract_id = $2 and (
         $3 is null or id in ($3:list) or ${isSumsToOne}
-      );
+      ) order by index;
     select b.*, u.balance, u.cash_balance from contract_bets b join users u on b.user_id = u.id
       where ${whereLimitOrderBets};
     -- My contract metrics
@@ -172,9 +173,7 @@ export const fetchContractBetDataAndValidate = async (
       'You must be kyc verified to trade on sweepstakes markets.'
     )
   }
-  if (isAdminId(user.id) && contract.token === 'CASH' && isProd()) {
-    throw new APIError(403, 'Admins cannot trade on sweepstakes markets.')
-  }
+
   if (BANNED_TRADING_USER_IDS.includes(user.id) || user.userDeleted) {
     throw new APIError(403, 'You are banned or deleted. And not #blessed.')
   }
@@ -259,32 +258,33 @@ export const getUnfilledBetsAndUserBalances = async (
   return { unfilledBets, balanceByUserId, contractMetrics }
 }
 
-export const getBulkUpdateLimitOrdersQuery = (
-  updates: Array<{
-    id: string
-    fills?: any[]
-    isFilled?: boolean
-    amount?: number
-    shares?: number
-  }>
+export const getBulkUpdateLimitOrdersQueryAndValues = (
+  updates: Array<
+    {
+      bet: LimitBet
+    } & Pick<LimitBet, 'fills' | 'isFilled' | 'amount' | 'shares'>
+  >
 ) => {
-  if (updates.length === 0) return 'select 1 where false'
-  const values = updates
-    .map((update) => {
-      const updateData = {
-        fills: update.fills,
-        isFilled: update.isFilled,
-        amount: update.amount,
-        shares: update.shares,
-      }
-      return `('${update.id}', '${JSON.stringify(updateData)}'::jsonb)`
-    })
-    .join(',\n')
+  if (updates.length === 0)
+    return { query: 'select 1 where false', updatedMakers: [] }
+  const results = updates.map((update) => {
+    const { bet, ...updateData } = update
+    const updatedBet = {
+      ...bet,
+      ...updateData,
+    }
+    const updateQ = `('${bet.id}', '${JSON.stringify(updateData)}'::jsonb)`
+    return { updatedBet, updateQ }
+  })
 
-  return `UPDATE contract_bets AS c
+  const values = results.map(({ updateQ }) => updateQ).join(',\n')
+  const updatedMakers = results.map(({ updatedBet }) => updatedBet)
+
+  const query = `UPDATE contract_bets AS c
        SET data = data || v.update
        FROM (VALUES ${values}) AS v(id, update)
        WHERE c.bet_id = v.id`
+  return { query, updatedMakers }
 }
 
 export const updateMakers = async (
@@ -296,13 +296,11 @@ export const updateMakers = async (
   const allFillsAsNewBets: MarginalBet[] = []
   const allMakerIds: string[] = []
   const allSpentByUser: Record<string, number> = {}
-  const allUpdates: Array<{
-    id: string
-    fills: any[]
-    isFilled: boolean
-    amount: number
-    shares: number
-  }> = []
+  const allUpdates: Array<
+    {
+      bet: LimitBet
+    } & Pick<LimitBet, 'fills' | 'isFilled' | 'amount' | 'shares'>
+  > = []
 
   for (const [takerBetId, makers] of Object.entries(makersByTakerBetId)) {
     const makersByBet = groupBy(makers, (maker) => maker.bet.id)
@@ -326,7 +324,7 @@ export const updateMakers = async (
         isRedemption: false,
       })
       allUpdates.push({
-        id: limitOrderBet.id,
+        bet: limitOrderBet,
         fills,
         isFilled,
         amount: totalAmount,
@@ -352,6 +350,7 @@ export const updateMakers = async (
       updatedMetrics: contractMetrics,
       balanceUpdates: [],
       bulkUpdateLimitOrdersQuery: 'select 1 where false',
+      updatedMakers: [],
     }
   }
 
@@ -382,14 +381,16 @@ export const updateMakers = async (
     allFillsAsNewBets,
     allUpdatedMetrics
   )
-
+  const { query: bulkUpdateLimitOrdersQuery, updatedMakers } =
+    getBulkUpdateLimitOrdersQueryAndValues(allUpdates)
   return {
     betsToInsert: redemptionBets,
     updatedMetrics: redemptionUpdatedMetrics,
     balanceUpdates: redemptionBalanceUpdates.concat(
       bulkLimitOrderBalanceUpdates
     ),
-    bulkUpdateLimitOrdersQuery: getBulkUpdateLimitOrdersQuery(allUpdates),
+    bulkUpdateLimitOrdersQuery,
+    updatedMakers,
   }
 }
 

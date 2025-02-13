@@ -214,12 +214,7 @@ const createSignupBonusNotification = async (
     return
   }
 
-  const contractsToSend = await getForYouMarkets(
-    privateUser.id,
-    6,
-    privateUser,
-    !!user.sweepstakesVerified
-  )
+  const contractsToSend = await getForYouMarkets(privateUser.id, 6, privateUser)
 
   await sendBonusWithInterestingMarketsEmail(
     user,

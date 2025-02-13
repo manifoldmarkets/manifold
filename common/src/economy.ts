@@ -1,12 +1,10 @@
-import {
-  CREATEABLE_NON_PREDICTIVE_OUTCOME_TYPES,
-  OutcomeType,
-} from 'common/contract'
-import { MarketTierType, tiers } from './tier'
+import { OutcomeType } from 'common/contract'
+
+export const DEFAULT_CASH_ANTE = 50
 
 export const FIXED_ANTE = 1000
-const BASE_ANSWER_COST = FIXED_ANTE / 10
-const MIN_ANSWER_COST = 25
+export const BASE_ANSWER_COST = FIXED_ANTE / 10
+export const MIN_ANSWER_COST = 25
 const ANTES = {
   BINARY: FIXED_ANTE,
   MULTIPLE_CHOICE: BASE_ANSWER_COST, // Amount per answer.
@@ -16,15 +14,6 @@ const ANTES = {
   BOUNTIED_QUESTION: 0,
   POLL: FIXED_ANTE / 10,
   NUMBER: FIXED_ANTE * 10,
-}
-
-export const getTieredAnswerCost = (marketTier: MarketTierType | undefined) => {
-  return marketTier
-    ? Math.max(
-        BASE_ANSWER_COST * 10 ** (tiers.indexOf(marketTier) - 1),
-        MIN_ANSWER_COST
-      )
-    : BASE_ANSWER_COST
 }
 
 export const MINIMUM_BOUNTY = 1000
@@ -42,25 +31,6 @@ export const getAnte = (
 
   return ante
 }
-export const getTieredCost = (
-  baseCost: number,
-  tier: MarketTierType | undefined,
-  outcomeType: OutcomeType
-) => {
-  if (CREATEABLE_NON_PREDICTIVE_OUTCOME_TYPES.includes(outcomeType)) {
-    return baseCost
-  }
-
-  const tieredCost = tier
-    ? baseCost * 10 ** (tiers.indexOf(tier) - 1)
-    : baseCost
-
-  if (outcomeType == 'NUMBER' && tier != 'play') {
-    return tieredCost / 10
-  }
-
-  return tieredCost
-}
 
 /* Sweeps bonuses */
 export const KYC_VERIFICATION_BONUS_CASH = 3
@@ -68,7 +38,7 @@ export const BETTING_STREAK_SWEEPS_BONUS_AMOUNT = 0.05
 export const BETTING_STREAK_SWEEPS_BONUS_MAX = 0.25
 
 /* Mana bonuses */
-export const STARTING_BALANCE = 100
+export const STARTING_BALANCE = 1000
 // for sus users, i.e. multiple sign ups for same person
 export const SUS_STARTING_BALANCE = 10
 export const PHONE_VERIFICATION_BONUS = 1000
@@ -93,7 +63,6 @@ export const SUBSIDY_FEE = 0
 
 export const BETTING_STREAK_BONUS_AMOUNT = 5
 export const BETTING_STREAK_BONUS_MAX = 25
-export const BETTING_STREAK_RESET_HOUR = 7
 
 export const MANACHAN_TWEET_COST = 250
 export const PUSH_NOTIFICATION_BONUS = 1000
@@ -102,54 +71,36 @@ export const BURN_MANA_USER_ID = 'SlYWAUtOzGPIYyQfXfvmHPt8eu22'
 const PaymentAmounts = [
   {
     mana: 500,
-    priceInDollars: 7,
+    priceInDollars: 5,
     bonusInDollars: 0,
-    devStripeId: 'price_1Q5vRAGdoFKoCJW7zk9OTWBK',
-    prodStripeId: 'price_1Q5vLGGdoFKoCJW7Q9w7cK1u',
-  },
-  {
-    mana: 1_000,
-    priceInDollars: 15,
-    bonusInDollars: 10,
+    devStripeId: 'price_1QrTemGdoFKoCJW7meXJDJLt',
+    prodStripeId: 'price_1QrTeRGdoFKoCJW7I0AZVVIm',
   },
   {
     mana: 2_500,
-    priceInDollars: 30,
-    bonusInDollars: 25,
-  },
-  {
-    mana: 5_000,
-    priceInDollars: 55,
+    priceInDollars: 25,
     bonusInDollars: 0,
-    devStripeId: 'price_1Q5vaXGdoFKoCJW71l2OL31r',
-    prodStripeId: 'price_1Q5vJjGdoFKoCJW7Ws09fJ4j',
+    devStripeId: 'price_1QrTUhGdoFKoCJW7VIWwpLD8',
+    prodStripeId: 'price_1QrTRIGdoFKoCJW776dK3ZDo',
   },
   {
-    mana: 10_000,
-    priceInDollars: 110,
-    bonusInDollars: 100,
+    mana: 11_000,
+    priceInDollars: 100,
+    bonusInDollars: 0,
+    devStripeId: 'price_1QrTU0GdoFKoCJW7OLzDtdaM',
+    prodStripeId: 'price_1QrTPCGdoFKoCJW7aXHQAGy4',
   },
   {
-    mana: 100_000,
+    mana: 120_000,
     priceInDollars: 1_000,
-    bonusInDollars: 1000,
-  },
-  {
-    mana: 1_000,
-    originalPriceInDollars: 15,
-    priceInDollars: 7,
-    bonusInDollars: 10,
-    newUsersOnly: true,
-  },
-  {
-    mana: 5_000,
-    originalPriceInDollars: 55,
-    priceInDollars: 20,
-    bonusInDollars: 40,
-    newUsersOnly: true,
+    bonusInDollars: 0,
+    devStripeId: 'price_1QrTT7GdoFKoCJW79y4VgggM',
+    prodStripeId: 'price_1N0TeXGdoFKoCJW7htfCrFd7',
   },
 ]
-export type PaymentAmount = (typeof PaymentAmounts)[number]
+export type PaymentAmount = (typeof PaymentAmounts)[number] & {
+  sku?: string
+}
 
 export const WEB_PRICES = PaymentAmounts
 
@@ -160,25 +111,46 @@ export const IOS_PRICES = [
   {
     mana: 1_000,
     priceInDollars: 14.99,
-    bonusInDollars: 10,
+    bonusInDollars: 0,
     sku: 'mana_1000',
   },
   {
     mana: 2_500,
     priceInDollars: 35.99,
-    bonusInDollars: 25,
+    bonusInDollars: 0,
     sku: 'mana_2500',
   },
   {
     mana: 10_000,
     priceInDollars: 142.99,
-    bonusInDollars: 100,
+    bonusInDollars: 0,
     sku: 'mana_10000',
   },
-]
+] as PaymentAmount[]
+export const MANI_IOS_PRICES = [
+  {
+    mana: 1000,
+    priceInDollars: 9.99,
+    bonusInDollars: 0,
+    sku: 'S10',
+  },
+  {
+    mana: 2500,
+    priceInDollars: 24.99,
+    bonusInDollars: 0,
+    sku: 'S25',
+  },
+  {
+    mana: 10000,
+    priceInDollars: 99.99,
+    bonusInDollars: 0,
+    sku: 'S100',
+  },
+] as PaymentAmount[]
 
-export const SWEEPIES_CASHOUT_FEE = 0.05
+export const SWEEPIES_CASHOUT_FEE = 5
 export const MIN_CASHOUT_AMOUNT = 25
 
 export const SWEEPS_MIN_BET = 1
 export const MANA_MIN_BET = 1
+export const PROFIT_FEE_FRACTION = 0.1

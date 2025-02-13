@@ -3,7 +3,7 @@ import { Input } from 'web/components/widgets/input'
 import { Button, buttonClass } from 'web/components/buttons/button'
 import { PrivateUser, User } from 'common/user'
 import { Row } from 'web/components/layout/row'
-import { usePersistentInMemoryState } from 'web/hooks/use-persistent-in-memory-state'
+import { usePersistentInMemoryState } from 'client-common/hooks/use-persistent-in-memory-state'
 import { useEffect, useState } from 'react'
 import { api, APIError } from 'web/lib/api/api'
 import { RegistrationVerifyPhone } from 'web/components/registration-verify-phone'
@@ -21,7 +21,7 @@ import {
 } from 'common/gidx/gidx'
 import { LocationPanel } from 'web/components/gidx/location-panel'
 import { KYC_VERIFICATION_BONUS_CASH } from 'common/economy'
-import { CoinNumber } from 'web/components/widgets/coin-number'
+import { TokenNumber } from 'web/components/widgets/token-number'
 import { RegisterIcon } from 'web/public/custom-components/registerIcon'
 import {
   BottomRow,
@@ -50,7 +50,6 @@ export const RegisterUserForm = (props: {
   const user = useUser() ?? props.user
   const privateUser = usePrivateUser() ?? props.privateUser
   const router = useRouter()
-  const { redirect } = router.query
   const [page, setPage] = useState(
     user.idVerified ||
       user.kycDocumentStatus === 'pending' ||
@@ -96,7 +95,11 @@ export const RegisterUserForm = (props: {
   useEffect(() => {
     if (userSuccesfullyVerified) {
       setTimeout(() => {
-        router.push('/checkout')
+        const { redirect } = router.query
+
+        // Get the redirect URL from query params, defaulting to /checkout
+        const redirectTo = redirect ?? '/checkout'
+        router.push(redirectTo as string)
       }, TIME_TO_REDIRECT)
     }
   }, [userSuccesfullyVerified, router])
@@ -605,8 +608,8 @@ export const RegisterUserForm = (props: {
       </span>
       <span className="text-ink-700">
         Hooray! Now you can participate in sweepstakes markets. We sent you{' '}
-        <CoinNumber
-          amount={Math.max(user.cashBalance, KYC_VERIFICATION_BONUS_CASH)}
+        <TokenNumber
+          amount={KYC_VERIFICATION_BONUS_CASH}
           className={'font-bold'}
           coinType={'CASH'}
           isInline={true}

@@ -29,6 +29,7 @@ const straightThreadColor = 'bg-ink-100 dark:bg-ink-300'
 
 export const FeedComment = memo(function FeedComment(props: {
   playContract: Contract
+  cashContract?: Contract
   liveContract: Contract
   comment: ContractComment
   trackingLocation: string
@@ -44,6 +45,7 @@ export const FeedComment = memo(function FeedComment(props: {
 }) {
   const {
     playContract,
+    cashContract,
     liveContract,
     highlighted,
     onReplyClick,
@@ -120,7 +122,7 @@ export const FeedComment = memo(function FeedComment(props: {
       <CommentReplyHeader
         hideBetHeader={commenterAndBettorMatch(comment)}
         comment={comment}
-        liveContract={liveContract}
+        contract={playContract}
       />
       <Row ref={ref} className={clsx(isParent ? 'gap-2' : 'gap-1')}>
         <Row className="relative">
@@ -177,9 +179,11 @@ export const FeedComment = memo(function FeedComment(props: {
         >
           <FeedCommentHeader
             comment={comment}
-            updateComment={updateComment}
+            menuProps={{
+              liveContractId: liveContract.id,
+              updateComment: updateComment,
+            }}
             playContract={playContract}
-            liveContract={liveContract}
             inTimeline={inTimeline}
             isParent={isParent}
             isPinned={isPinned}
@@ -189,6 +193,7 @@ export const FeedComment = memo(function FeedComment(props: {
           <Row>
             {children}
             <CommentActions
+              playContract={playContract}
               onReplyClick={onReplyClick}
               onAward={(total) => updateComment({ bountyAwarded: total })}
               comment={comment}

@@ -238,7 +238,7 @@ export const getNotificationDestinationsForUser = (
       urlToManageThisNotification: `${DOMAIN}/notifications?tab=settings&section=${notificationPreference}`,
       notificationPreference,
     }
-  } catch (e) {
+  } catch {
     // Fail safely
     console.log(
       `couldn't get notification destinations for type ${reason} for user ${privateUser.id}`

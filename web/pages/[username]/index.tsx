@@ -7,19 +7,16 @@ import {
   ViewListIcon,
 } from '@heroicons/react/outline'
 import clsx from 'clsx'
-import { isBetChange } from 'common/balance-change'
 import { DIVISION_NAMES, getLeaguePath } from 'common/leagues'
 import { getUserForStaticProps } from 'common/supabase/users'
 import { isUserLikelySpammer } from 'common/user'
 import { unauthedApi } from 'common/util/api'
 import { buildArray } from 'common/util/array'
 import { removeUndefinedProps } from 'common/util/object'
-import dayjs from 'dayjs'
 import Head from 'next/head'
 import Link from 'next/link'
 import { useRouter } from 'next/router'
 import { useEffect, useState } from 'react'
-import { FaCrown } from 'react-icons/fa6'
 import { UserBetsTable } from 'web/components/bet/user-bets-table'
 import { FollowButton } from 'web/components/buttons/follow-button'
 import { TextButton } from 'web/components/buttons/text-button'
@@ -27,7 +24,6 @@ import { UserSettingButton } from 'web/components/buttons/user-settings-button'
 import { UserCommentsList } from 'web/components/comments/profile-comments'
 import { BackButton } from 'web/components/contract/back-button'
 import { FollowList } from 'web/components/follow-list'
-import { VerifyMe } from 'web/components/gidx/verify-me'
 import { ManaCircleIcon } from 'web/components/icons/mana-circle-icon'
 import { Col } from 'web/components/layout/col'
 import { Modal } from 'web/components/layout/modal'
@@ -46,7 +42,6 @@ import { UserContractsList } from 'web/components/profile/user-contracts-list'
 import { UserLikedContractsButton } from 'web/components/profile/user-liked-contracts-button'
 import { SEO } from 'web/components/SEO'
 import { UserHandles } from 'web/components/user/user-handles'
-import { VerifyPhoneNumberBanner } from 'web/components/user/verify-phone-number-banner'
 import { Avatar } from 'web/components/widgets/avatar'
 import { FullscreenConfetti } from 'web/components/widgets/fullscreen-confetti'
 import ImageWithBlurredShadow from 'web/components/widgets/image-with-blurred-shadow'
@@ -54,8 +49,7 @@ import { Linkify } from 'web/components/widgets/linkify'
 import { linkClass } from 'web/components/widgets/site-link'
 import { Title } from 'web/components/widgets/title'
 import { StackedUserNames, UserLink } from 'web/components/widgets/user-link'
-import { useAdmin } from 'web/hooks/use-admin'
-import { useAPIGetter } from 'web/hooks/use-api-getter'
+import { useAdminOrMod } from 'web/hooks/use-admin'
 import { useFollowers, useFollows } from 'web/hooks/use-follows'
 import { useHeaderIsStuck } from 'web/hooks/use-header-is-stuck'
 import { useIsMobile } from 'web/hooks/use-is-mobile'
@@ -77,6 +71,7 @@ export const getStaticProps = async (props: {
   const { username } = props.params
 
   const user = await getUserForStaticProps(db, username)
+
   const { data } = user
     ? await db.from('contracts').select('id').eq('creator_id', user.id).limit(1)
     : { data: null }
@@ -112,13 +107,13 @@ export default function UserPage(props: {
   shouldIgnoreUser: boolean
   hasCreatedQuestion: boolean
 }) {
-  const isAdmin = useAdmin()
+  const isAdminOrMod = useAdminOrMod()
   const { user, ...profileProps } = props
   const privateUser = usePrivateUser()
   const blockedByCurrentUser =
     privateUser?.blockedUserIds.includes(user?.id ?? '_') ?? false
   if (!user) return <Custom404 />
-  else if (user.userDeleted && !isAdmin) return <DeletedUser />
+  else if (user.userDeleted && !isAdminOrMod) return <DeletedUser />
 
   return privateUser && blockedByCurrentUser ? (
     <BlockedUser user={user} privateUser={privateUser} />
@@ -170,7 +165,6 @@ function UserProfile(props: {
   const isMobile = useIsMobile()
   const router = useRouter()
   const currentUser = useUser()
-  const privateUser = usePrivateUser()
 
   const isCurrentUser = user.id === currentUser?.id
   const [expandProfileInfo, setExpandProfileInfo] = usePersistentLocalState(
@@ -213,14 +207,8 @@ function UserProfile(props: {
     }
   }, [currentUser?.id, user?.id])
 
-  const { data: newBalanceChanges } = useAPIGetter('get-balance-changes', {
-    userId: user.id,
-    after: dayjs().startOf('day').subtract(14, 'day').valueOf(),
-  })
-
-  const balanceChanges = newBalanceChanges ?? []
-  const hasBetBalanceChanges = balanceChanges.some((b) => isBetChange(b))
   const balanceChangesKey = 'balance-changes'
+
   return (
     <Page
       key={user.id}
@@ -243,7 +231,7 @@ function UserProfile(props: {
       <Col className="relative">
         <Row
           className={
-            'bg-canvas-50 sticky top-0 z-10 h-12 w-full justify-between gap-1 sm:static sm:h-auto'
+            'bg-canvas-0 sticky top-0 z-10 h-12 w-full justify-between gap-1 sm:static sm:h-auto'
           }
         >
           {isMobile && (
@@ -329,9 +317,12 @@ function UserProfile(props: {
                 <AddFundsButton
                   userId={user.id}
                   className="whitespace-nowra w-full lg:hidden"
-                  hideDiscount
                 />
-                <RedeemSweepsButtons user={user} className="shrink-0" />
+                <RedeemSweepsButtons
+                  user={user}
+                  className="shrink-0"
+                  redeemableCash={user.cashBalance}
+                />
               </Row>
             ) : (
               <>
@@ -365,9 +356,12 @@ function UserProfile(props: {
             <AddFundsButton
               userId={user.id}
               className="w-1/2 whitespace-nowrap"
-              hideDiscount
             />
-            <RedeemSweepsButtons user={user} className="w-1/2" />
+            <RedeemSweepsButtons
+              user={user}
+              className="w-1/2"
+              redeemableCash={user.cashBalance}
+            />
           </Row>
         )}
 
@@ -386,20 +380,14 @@ function UserProfile(props: {
                 stackedTabIcon: <PresentationChartLineIcon className="h-5" />,
                 content: (
                   <>
-                    <Col className="mt-2 gap-2">
-                      {currentUser && privateUser && (
-                        <VerifyMe
-                          user={currentUser}
-                          privateUser={privateUser}
-                        />
-                      )}
-                      <VerifyPhoneNumberBanner user={currentUser} />
-                    </Col>
+                    {/* <Col className="mt-2 gap-2"> */}
+                    {/* <VerifyPhoneNumberBanner user={currentUser} /> */}
+                    {/* </Col> */}
                     <PortfolioSummary className="mt-4" user={user} />
                   </>
                 ),
               },
-              (!!user.lastBetTime || hasBetBalanceChanges) && {
+              !!user.lastBetTime && {
                 title: 'Trades',
                 prerender: true,
                 stackedTabIcon: <ManaCircleIcon className="h-5 w-5" />,
@@ -454,12 +442,7 @@ function UserProfile(props: {
               {
                 title: 'Balance log',
                 stackedTabIcon: <ViewListIcon className="h-5" />,
-                content: (
-                  <BalanceChangeTable
-                    user={user}
-                    balanceChanges={balanceChanges}
-                  />
-                ),
+                content: <BalanceChangeTable user={user} />,
                 queryString: balanceChangesKey,
               },
               {
@@ -540,12 +523,12 @@ function ProfilePublicStats(props: {
         </Link>
       )}
 
-      {isCurrentUser && (
+      {/* {isCurrentUser && (
         <Link href={`/${user.username}/partner`} className={linkClass}>
           <FaCrown className="mb-1 mr-1 inline h-4 w-4" />
           Partner
         </Link>
-      )}
+      )} */}
 
       <FollowsDialog
         user={user}

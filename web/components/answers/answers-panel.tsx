@@ -46,9 +46,9 @@ import { Row } from 'web/components/layout/row'
 import { Avatar } from 'web/components/widgets/avatar'
 import { Input } from 'web/components/widgets/input'
 import { LoadingIndicator } from 'web/components/widgets/loading-indicator'
-import { useUnfilledBets } from 'web/hooks/use-bets'
 import { useIsAdvancedTrader } from 'web/hooks/use-is-advanced-trader'
 import { useIsClient } from 'web/hooks/use-is-client'
+import { useIsPageVisible } from 'web/hooks/use-page-visible'
 import { usePersistentLocalState } from 'web/hooks/use-persistent-local-state'
 import { usePrivateUser, useUser } from 'web/hooks/use-user'
 import { useDisplayUserByIdOrAnswer } from 'web/hooks/use-user-supabase'
@@ -59,7 +59,7 @@ import {
   getOrderBookButtonLabel,
 } from '../bet/order-book'
 import { getAnswerColor } from '../charts/contract/choice'
-import DropdownMenu from '../comments/dropdown-menu'
+import DropdownMenu from '../widgets/dropdown-menu'
 import { Col } from '../layout/col'
 import { UserHovercard } from '../user/user-hovercard'
 import { CustomizeableDropdown } from '../widgets/customizeable-dropdown'
@@ -78,6 +78,7 @@ import { buildArray } from 'common/util/array'
 import { useSavedContractMetrics } from 'web/hooks/use-saved-contract-metrics'
 import { floatingEqual } from 'common/util/math'
 import { getSortedAnswers } from '../contract/contract-overview'
+import { useUnfilledBets } from 'client-common/hooks/use-bets'
 
 export const SHOW_LIMIT_ORDER_CHARTS_KEY = 'SHOW_LIMIT_ORDER_CHARTS_KEY'
 export const MAX_DEFAULT_ANSWERS = 20
@@ -185,9 +186,15 @@ export function AnswersPanel(props: {
   const isAdvancedTrader = useIsAdvancedTrader()
   const [shouldShowLimitOrderChart, setShouldShowLimitOrderChart] =
     usePersistentLocalState<boolean>(true, SHOW_LIMIT_ORDER_CHARTS_KEY)
-  const unfilledBets = useUnfilledBets(contract.id, {
-    enabled: isAdvancedTrader && shouldShowLimitOrderChart,
-  })
+
+  const unfilledBets = useUnfilledBets(
+    contract.id,
+    (params) => api('bets', params),
+    useIsPageVisible,
+    {
+      enabled: isAdvancedTrader && shouldShowLimitOrderChart,
+    }
+  )
 
   const allResolved = getAllResolved(contract, answers)
 
@@ -254,7 +261,7 @@ export function AnswersPanel(props: {
         text={query}
         setText={setQuery}
         className={clsx(
-          'bg-canvas-0 sticky z-[30]',
+          'bg-canvas-0 sticky z-10',
           floatingSearchClassName ?? 'top-[48px]'
         )}
         sort={sort}
@@ -605,7 +612,7 @@ export function Answer(props: {
   const isClient = useIsClient()
 
   const yourUnfilledBets = unfilledBets?.filter(
-    (bet) => bet.userId === user?.id
+    (bet) => bet.userId === user?.id && !bet.silent
   )
   const canEdit = canEditAnswer(answer, contract, user)
 
@@ -700,11 +707,7 @@ export function Answer(props: {
         resolvedProb={resolvedProb}
         onHover={onHover}
         onClick={onClick}
-        className={clsx(
-          'group cursor-pointer',
-          answer.isOther ? 'z-30' : 'z-20',
-          className
-        )}
+        className={clsx('group cursor-pointer', className)}
         barColor={barColor}
         label={
           <Row className={'items-center gap-2'}>
@@ -742,7 +745,9 @@ export function Answer(props: {
               feedReason={feedReason}
             />
             <DropdownMenu
-              icon={<DotsVerticalIcon className="h-5 w-5" aria-hidden />}
+              buttonContent={
+                <DotsVerticalIcon className="h-5 w-5" aria-hidden />
+              }
               items={dropdownItems}
               withinOverflowContainer
             />

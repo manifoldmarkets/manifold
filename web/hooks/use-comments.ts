@@ -1,6 +1,6 @@
 import { ContractComment } from 'common/comment'
 import { useEffect, useState } from 'react'
-import { sortBy, uniqBy, orderBy } from 'lodash'
+import { sortBy, uniqBy } from 'lodash'
 import {
   getAllCommentRows,
   getComment,
@@ -8,8 +8,8 @@ import {
 } from 'web/lib/supabase/comments'
 import { convertContractComment } from 'common/supabase/comments'
 import { api } from 'web/lib/api/api'
-import { usePersistentInMemoryState } from './use-persistent-in-memory-state'
-import { useApiSubscription } from './use-api-subscription'
+import { usePersistentInMemoryState } from 'client-common/hooks/use-persistent-in-memory-state'
+import { useApiSubscription } from 'client-common/hooks/use-api-subscription'
 
 export function useNumContractComments(contractId: string) {
   const [numComments, setNumComments] = useState<number>(0)
@@ -75,26 +75,6 @@ export const useGlobalComments = (limit: number) => {
       setComments(rows.map(convertContractComment))
     )
   }, [limit])
-
-  return comments
-}
-
-export function useSubscribeNewComments(contractId: string) {
-  const [comments, setComments] = useState<ContractComment[]>([])
-
-  useApiSubscription({
-    topics: [`contract/${contractId}/new-comment`],
-    onBroadcast: (msg) => {
-      const newComment = msg.data.comment as ContractComment
-      setComments((prevComments) =>
-        orderBy(
-          uniqBy([...prevComments, newComment], 'id'),
-          'createdTime',
-          'desc'
-        )
-      )
-    },
-  })
 
   return comments
 }

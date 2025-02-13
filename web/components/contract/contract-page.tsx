@@ -23,7 +23,7 @@ import { DAY_MS } from 'common/util/time'
 import { UserBetsSummary } from 'web/components/bet/bet-summary'
 import { ScrollToTopButton } from 'web/components/buttons/scroll-to-top-button'
 import { SidebarSignUpButton } from 'web/components/buttons/sign-up-button'
-import { getMultiBetPoints } from 'web/components/charts/contract/choice'
+import { getMultiBetPointsFromBets } from 'client-common/lib/choice'
 import { BackButton } from 'web/components/contract/back-button'
 import { ChangeBannerButton } from 'web/components/contract/change-banner-button'
 import { ContractDescription } from 'web/components/contract/contract-description'
@@ -55,7 +55,7 @@ import { Rating, ReviewPanel } from 'web/components/reviews/stars'
 import { GradientContainer } from 'web/components/widgets/gradient-container'
 import { Tooltip } from 'web/components/widgets/tooltip'
 import { useAdmin, useTrusted } from 'web/hooks/use-admin'
-import { useContractBets } from 'web/hooks/use-bets'
+import { useContractBets } from 'client-common/hooks/use-bets'
 import { useLiveContract } from 'web/hooks/use-contract'
 import { useHeaderIsStuck } from 'web/hooks/use-header-is-stuck'
 import { useRelatedMarkets } from 'web/hooks/use-related-contracts'
@@ -74,6 +74,9 @@ import { SpiceCoin } from 'web/public/custom-components/spiceCoin'
 import { YourTrades } from 'web/pages/[username]/[contractSlug]'
 import { useSweepstakes } from '../sweepstakes-provider'
 import { useRouter } from 'next/router'
+import { precacheAnswers } from 'web/hooks/use-answers'
+import { useIsPageVisible } from 'web/hooks/use-page-visible'
+import { api } from 'web/lib/api/api'
 
 export function ContractPageContent(props: ContractParams) {
   const {
@@ -85,7 +88,6 @@ export function ContractPageContent(props: ContractParams) {
     topics,
     dashboards,
     pinnedComments,
-    betReplies,
     cash,
   } = props
 
@@ -104,14 +106,9 @@ export function ContractPageContent(props: ContractParams) {
     !isPlay && liveCashContract ? liveCashContract : livePlayContract
   const user = useUser()
 
-  // Read and set play state from the query if the user hasn't set their preference
+  // Read and set play state from the query
   useEffect(() => {
-    if (
-      isPlay !== undefined || // user has set their preference
-      prefersPlay !== undefined || // user has set their preference
-      !router.isReady // not ready yet
-    )
-      return
+    if (!router.isReady) return
     const playQuery = router.query.play
     const queryIndicatesSweeps = playQuery === 'false'
     const queryIndicatesPlay =
@@ -119,7 +116,6 @@ export function ContractPageContent(props: ContractParams) {
       (playQuery === undefined &&
         !sweepsIsPossible &&
         prefersPlay === undefined)
-
     if (queryIndicatesSweeps) {
       if (sweepsIsPossible && isPlay) {
         setIsPlay(false)
@@ -131,23 +127,10 @@ export function ContractPageContent(props: ContractParams) {
     }
   }, [isPlay, router.query, prefersPlay])
 
-  // When the user changes their preference, update the play state and set the query
-  useEffect(() => {
-    if (prefersPlay === undefined) return
-    const shouldBePlay =
-      (prefersPlay && !isPlay) || (!sweepsIsPossible && !isPlay)
-    const shouldBeSweeps =
-      !prefersPlay &&
-      (isPlay === undefined || isPlay === true) &&
-      sweepsIsPossible
-    if (shouldBePlay) {
-      setIsPlay(true)
-      setPlayStateInQuery(true)
-    } else if (shouldBeSweeps) {
-      setIsPlay(false)
-      setPlayStateInQuery(false)
-    }
-  }, [prefersPlay])
+  const setIsPlayAndQuery = (isPlay: boolean) => {
+    setIsPlay(isPlay)
+    setPlayStateInQuery(isPlay)
+  }
 
   const setPlayStateInQuery = (play: boolean) => {
     const newQuery = { ...router.query, play: play.toString() }
@@ -189,6 +172,15 @@ export function ContractPageContent(props: ContractParams) {
     [user?.id] // track user view market event if they sign up/sign in on this page
   )
   useSaveContractVisitsLocally(user === null, props.contract.id)
+
+  useEffect(() => {
+    if ('answers' in props.contract) {
+      precacheAnswers(props.contract.answers)
+    }
+    if (props.cash?.contract && 'answers' in props.cash.contract) {
+      precacheAnswers(props.cash.contract.answers)
+    }
+  }, [])
 
   const playBetData = useBetData({
     contractId: props.contract.id,
@@ -275,7 +267,7 @@ export function ContractPageContent(props: ContractParams) {
       <Row className="w-full items-start justify-center gap-8">
         <Col
           className={clsx(
-            'bg-canvas-0 w-full max-w-3xl rounded-b xl:w-[70%]',
+            'bg-canvas-0 dark:border-canvas-50 w-full max-w-3xl rounded-b-md lg:border lg:border-t-0  xl:w-[70%] ',
             // Keep content in view when scrolling related questions on desktop.
             'sticky bottom-0 min-h-screen self-end',
             // Accommodate scroll to top button at bottom of page.
@@ -284,7 +276,7 @@ export function ContractPageContent(props: ContractParams) {
         >
           <div
             className={clsx(
-              'sticky z-50 flex items-end',
+              'sticky z-20 flex items-end',
               !coverImageUrl
                 ? 'bg-canvas-0 top-0 w-full'
                 : 'top-[-92px] h-[140px]'
@@ -345,6 +337,7 @@ export function ContractPageContent(props: ContractParams) {
               </Row>
               {(headerStuck || !coverImageUrl) && (
                 <HeaderActions
+                  setIsPlay={setIsPlayAndQuery}
                   playContract={livePlayContract}
                   currentContract={liveContract}
                   initialHideGraph={initialHideGraph}
@@ -361,6 +354,7 @@ export function ContractPageContent(props: ContractParams) {
                 <BackButton className="pr-8" />
               </div>
               <HeaderActions
+                setIsPlay={setIsPlayAndQuery}
                 playContract={livePlayContract}
                 currentContract={liveContract}
                 initialHideGraph={initialHideGraph}
@@ -387,7 +381,11 @@ export function ContractPageContent(props: ContractParams) {
               </Col>
               <Row className="text-ink-600 flex-wrap items-center justify-between gap-y-1 text-sm">
                 <AuthorInfo
-                  contract={props.contract}
+                  creatorId={props.contract.creatorId}
+                  creatorName={props.contract.creatorName}
+                  creatorUsername={props.contract.creatorUsername}
+                  creatorAvatarUrl={props.contract.creatorAvatarUrl}
+                  token={liveContract.token}
                   resolverId={liveContract.resolverId}
                 />
                 <ContractSummaryStats
@@ -425,7 +423,11 @@ export function ContractPageContent(props: ContractParams) {
                   contract={liveContract}
                 />
               )}
-              <YourTrades contract={liveContract} yourNewBets={yourNewBets} />
+              <YourTrades
+                contract={liveContract}
+                yourNewBets={yourNewBets}
+                contractMetric={myContractMetrics}
+              />
             </Col>
             {showReview && user && (
               <div className="relative my-2">
@@ -473,7 +475,9 @@ export function ContractPageContent(props: ContractParams) {
               hasReviewed={!!userHasReviewed}
             />
             <ContractDescription
-              contract={liveContract}
+              contractId={props.contract.id}
+              creatorId={props.contract.creatorId}
+              isSweeps={isCashContract}
               description={description}
             />
             <Row className="items-center gap-2">
@@ -514,16 +518,11 @@ export function ContractPageContent(props: ContractParams) {
 
             <div ref={tabsContainerRef} className="mb-4">
               <ContractTabs
-                mainContract={props.contract}
+                staticContract={props.contract}
                 liveContract={liveContract}
                 bets={bets}
                 totalBets={totalBets}
                 comments={comments}
-                userPositionsByOutcome={
-                  !isPlay && cash
-                    ? cash.userPositionsByOutcome
-                    : props.userPositionsByOutcome
-                }
                 totalPositions={
                   !isPlay && cash ? cash.totalPositions : props.totalPositions
                 }
@@ -533,8 +532,6 @@ export function ContractPageContent(props: ContractParams) {
                 activeIndex={activeTabIndex}
                 setActiveIndex={setActiveTabIndex}
                 pinnedComments={pinnedComments}
-                // TODO: cash-bet replies???
-                betReplies={betReplies}
               />
             </div>
             {showExplainerPanel && (
@@ -591,11 +588,16 @@ const useBetData = (props: {
 
   const isNumber = outcomeType === 'NUMBER'
 
-  const newBets = useContractBets(contractId, {
-    afterTime: lastBetTime ?? 0,
-    includeZeroShareRedemptions: true,
-    filterRedemptions: !isNumber,
-  })
+  const newBets = useContractBets(
+    contractId,
+    {
+      afterTime: lastBetTime ?? 0,
+      includeZeroShareRedemptions: true,
+      filterRedemptions: !isNumber,
+    },
+    useIsPageVisible,
+    (params) => api('bets', params)
+  )
 
   const newBetsWithoutRedemptions = newBets.filter((bet) => !bet.isRedemption)
   const totalBets =
@@ -614,7 +616,7 @@ const useBetData = (props: {
       const data = multiPointsString
         ? unserializeBase64Multi(multiPointsString)
         : {}
-      const newData = getMultiBetPoints(newBets)
+      const newData = getMultiBetPointsFromBets(newBets)
 
       return mergeWith(data, newData, (array1, array2) =>
         [...(array1 ?? []), ...(array2 ?? [])].sort((a, b) => a.x - b.x)

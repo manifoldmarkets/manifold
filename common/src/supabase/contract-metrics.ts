@@ -1,6 +1,5 @@
-import { chunk, Dictionary, flatMap, groupBy, uniqBy } from 'lodash'
+import { chunk, flatMap, groupBy, uniqBy } from 'lodash'
 import { Row, run, SupabaseClient } from './utils'
-import { Contract } from '../contract'
 import { ContractMetric } from 'common/contract-metric'
 
 export async function getTopContractMetrics(
@@ -77,26 +76,6 @@ export async function getCPMMContractUserContractMetrics(
   }
 }
 
-export async function getUserContractMetricsWithContracts(
-  userId: string,
-  db: SupabaseClient,
-  count = 1000,
-  start = 0
-) {
-  const { data } = await db.rpc('get_contract_metrics_with_contracts', {
-    count,
-    uid: userId,
-    start,
-  })
-  const metricsByContract = {} as Dictionary<ContractMetric>
-  const contracts = [] as Contract[]
-  flatMap(data).forEach((d) => {
-    metricsByContract[d.contract_id] = d.metrics as ContractMetric
-    contracts.push(d.contract as Contract)
-  })
-  return { metricsByContract, contracts }
-}
-
 export async function getUsersContractMetricsOrderedByProfit(
   userIds: string[],
   db: SupabaseClient,
@@ -163,6 +142,7 @@ export async function getContractMetricsCount(
 
   return count
 }
+
 export const convertContractMetricRows = (
   docs: Row<'user_contract_metrics'>[]
 ) =>
@@ -209,27 +189,6 @@ export async function getOrderedContractMetricRowsForContractId(
   const { data: q1Data } = await run(q1)
   const { data: q2Data } = await run(q2)
   return q1Data.concat(q2Data)
-}
-
-export async function getUserContractMetrics(
-  userId: string,
-  contractId: string,
-  db: SupabaseClient,
-  answerId: string | undefined | null // undefined means any answer id goes
-) {
-  const q = db
-    .from('user_contract_metrics')
-    .select('data')
-    .eq('user_id', userId)
-    .eq('contract_id', contractId)
-  if (answerId === null) {
-    q.is('answer_id', null)
-  } else if (answerId) {
-    q.eq('answer_id', answerId)
-  }
-
-  const { data } = await run(q)
-  return data.map((r) => r.data) as ContractMetric[]
 }
 
 export async function getContractIdsWithMetrics(

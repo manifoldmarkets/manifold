@@ -4,9 +4,7 @@ import { Contract, contractPath, MarketContract } from 'common/contract'
 import { PrivateUser } from 'common/user'
 import { extensions } from 'common/util/parse'
 import * as admin from 'firebase-admin'
-import { first } from 'lodash'
-import { BETTING_STREAK_RESET_HOUR } from 'common/economy'
-import { DAY_MS } from 'common/util/time'
+import { first, uniq } from 'lodash'
 import {
   createSupabaseDirectClient,
   SupabaseDirectClient,
@@ -21,11 +19,15 @@ import { convertAnswer, convertContract } from 'common/supabase/contracts'
 import { Row, tsToMillis } from 'common/supabase/utils'
 import { log } from 'shared/monitoring/log'
 import { metrics } from 'shared/monitoring/metrics'
-import { convertBet } from 'common/supabase/bets'
 import { convertLiquidity } from 'common/supabase/liquidity'
-
+import { ContractMetric } from 'common/contract-metric'
 export { metrics }
 export { log }
+import * as dayjs from 'dayjs'
+import * as utc from 'dayjs/plugin/utc'
+import * as timezone from 'dayjs/plugin/timezone'
+dayjs.extend(utc)
+dayjs.extend(timezone)
 
 export const logMemory = () => {
   const used = process.memoryUsage()
@@ -72,10 +74,10 @@ export const revalidateStaticProps = async (
     )
 
     if (resp.ok) {
-      metrics.inc('vercel/revalidations_succeeded', { path: pathToRevalidate })
+      // metrics.inc('vercel/revalidations_succeeded', { path: pathToRevalidate })
       log('Revalidated', pathToRevalidate)
     } else {
-      metrics.inc('vercel/revalidations_failed', { path: pathToRevalidate })
+      // metrics.inc('vercel/revalidations_failed', { path: pathToRevalidate })
       try {
         const json = await resp.json()
         log.error(
@@ -110,7 +112,11 @@ export const isProd = () => {
     return admin.app().options.projectId === 'mantic-markets'
   }
 }
-export const contractColumnsToSelect = `data, importance_score, conversion_score, view_count, token`
+export const contractColumnsToSelect = `data,importance_score,freshness_score,conversion_score,view_count,token`
+export const prefixedContractColumnsToSelect = contractColumnsToSelect
+  .split(',')
+  .map((col) => `c.${col}`)
+  .join(',')
 
 export const getContract = async (
   pg: SupabaseDirectClient,
@@ -129,24 +135,27 @@ export const getContract = async (
   return contract
 }
 
-export const getContractAndBetsAndLiquidities = async (
+export const getContractAndMetricsAndLiquidities = async (
   pg: SupabaseTransaction,
   unresolvedContract: MarketContract,
   answerId: string | undefined
 ) => {
   const { id: contractId, mechanism, outcomeType } = unresolvedContract
+  const isMulti = mechanism === 'cpmm-multi-1'
   // Filter out initial liquidity if set up with special liquidity per answer.
   const filterAnte =
-    mechanism === 'cpmm-multi-1' &&
+    isMulti &&
     outcomeType !== 'NUMBER' &&
     unresolvedContract.specialLiquidityPerAnswer
   const results = await pg.multi(
     `select ${contractColumnsToSelect} from contracts where id = $1;
      select * from answers where contract_id = $1 order by index;
-     select * from contract_bets
-      where contract_id = $1
-      and (shares != 0 or loan_amount != 0)
-      ${answerId ? `and data->>'answerId' = $2` : ''};
+     select data from user_contract_metrics 
+     where contract_id = $1 and
+     ${isMulti ? 'answer_id is not null and' : ''}
+     ($2 is null or exists (select 1 from user_contract_metrics ucm
+      where ucm.contract_id = $1
+      and ucm.answer_id = $2));
      select * from contract_liquidity where contract_id = $1 ${
        filterAnte ? `and data->>'answerId' = $2` : ''
      };`,
@@ -154,15 +163,16 @@ export const getContractAndBetsAndLiquidities = async (
   )
 
   const contract = first(results[0].map(convertContract)) as MarketContract
-  if (!contract) throw new APIError(500, 'Contract not found')
+  if (!contract) throw new APIError(404, 'Contract not found')
   const answers = results[1].map(convertAnswer)
   if ('answers' in contract) {
     contract.answers = answers
   }
-  const bets = results[2].map(convertBet)
+  // We don't get the summary metric, we recreate them from all the answer metrics
+  const contractMetrics = results[2].map((row) => row.data as ContractMetric)
   const liquidities = results[3].map(convertLiquidity)
 
-  return { contract, bets, liquidities }
+  return { contract, contractMetrics, liquidities }
 }
 
 export const getContractSupabase = async (contractId: string) => {
@@ -219,7 +229,7 @@ export const getUsers = async (
 ) => {
   const res = await pg.map(
     `select * from users where id = any($1)`,
-    [userIds],
+    [uniq(userIds)],
     (row) => convertUser(row)
   )
   return res
@@ -320,14 +330,19 @@ export async function getTrendingContractsToEmail() {
 }
 
 export const getBettingStreakResetTimeBeforeNow = () => {
-  const now = Date.now()
-  const currentDateResetTime = new Date().setUTCHours(
-    BETTING_STREAK_RESET_HOUR,
-    0,
-    0,
-    0
-  )
-  // if now is before reset time, use yesterday's reset time
-  const lastDateResetTime = currentDateResetTime - DAY_MS
-  return now < currentDateResetTime ? lastDateResetTime : currentDateResetTime
+  // Get current time in Pacific
+  const now = dayjs().tz('America/Los_Angeles')
+
+  // Get today's reset time (midnight Pacific)
+  const todayResetTime = now.startOf('day')
+
+  // Get yesterday's reset time
+  const yesterdayResetTime = todayResetTime.subtract(1, 'day')
+
+  // Use yesterday's reset time if we haven't hit today's yet
+  const resetTime = (
+    now.isBefore(todayResetTime) ? yesterdayResetTime : todayResetTime
+  ).valueOf()
+  log('betting streak reset time', resetTime)
+  return resetTime
 }

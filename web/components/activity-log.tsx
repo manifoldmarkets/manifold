@@ -14,7 +14,10 @@ import {
   uniqBy,
 } from 'lodash'
 import { ReactNode, memo, useEffect, useState } from 'react'
-import { useBetsOnce, useSubscribeGlobalBets } from 'web/hooks/use-bets'
+import {
+  useBetsOnce,
+  useSubscribeGlobalBets,
+} from 'client-common/hooks/use-bets'
 import {
   useGlobalComments,
   useSubscribeGlobalComments,
@@ -101,7 +104,7 @@ export function ActivityLog(props: {
     if (topicSlugs) getRecentTopicalContent(topicSlugs)
   }, [topicSlugs])
 
-  const recentBets = useBetsOnce({
+  const recentBets = useBetsOnce((params) => api('bets', params), {
     limit: count * 3,
     filterRedemptions: true,
     order: 'desc',

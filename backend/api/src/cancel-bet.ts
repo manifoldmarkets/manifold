@@ -4,7 +4,7 @@ import { type LimitBet } from 'common/bet'
 import { broadcastOrders } from 'shared/websockets/helpers'
 import { convertBet } from 'common/supabase/bets'
 import { cancelLimitOrdersQuery } from 'shared/supabase/bets'
-import { runTransactionWithRetries } from 'shared/transact-with-retries'
+import { betsQueue } from 'shared/helpers/fn-queue'
 
 export const cancelBet: APIHandler<'bet/cancel/:betId'> = async (
   { betId },
@@ -22,12 +22,8 @@ export const cancelBet: APIHandler<'bet/cancel/:betId'> = async (
   if (bet.limitProb === undefined)
     throw new APIError(403, 'Not a limit order. Cannot cancel.')
   if (bet.isCancelled) throw new APIError(403, 'Bet already cancelled')
-  const bets = await runTransactionWithRetries(async (tx) => {
-    const { query, bets } = cancelLimitOrdersQuery([bet as LimitBet])
-    await tx.none(query)
-    return bets
-  })
+  const { query, bets } = cancelLimitOrdersQuery([bet as LimitBet])
+  await betsQueue.enqueueFnFirst(async () => pg.none(query), [betId, auth.uid])
   broadcastOrders(bets)
-
   return bets[0]
 }

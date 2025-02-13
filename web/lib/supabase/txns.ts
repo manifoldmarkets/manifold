@@ -1,9 +1,9 @@
-import { uniq } from 'lodash'
-import { db } from './db'
 import { filterDefined } from 'common/util/array'
-import { getDisplayUsers } from './users'
-import { api } from '../api/api'
 import { removeUndefinedProps } from 'common/util/object'
+import { uniq } from 'lodash'
+import { api } from '../api/api'
+import { db } from './db'
+import { getDisplayUsers } from './users'
 
 export async function getDonationsByCharity() {
   const { data } = await db.rpc('get_donations_by_charity')
@@ -25,7 +25,7 @@ export function getDonationsPageQuery(charityId: string) {
       removeUndefinedProps({
         category: 'CHARITY',
         toId: charityId,
-        after: p.after?.ts,
+        before: p.after?.ts, // we're descending. we want txns earlier than the last list item
         limit: p.limit,
       })
     )

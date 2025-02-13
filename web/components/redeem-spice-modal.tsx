@@ -18,7 +18,7 @@ import { Row } from 'web/components/layout/row'
 import { APIError, api } from 'web/lib/api/api'
 import { ManaCoin } from 'web/public/custom-components/manaCoin'
 import { SpiceToManaForm } from './add-funds-modal'
-import { CoinNumber } from './widgets/coin-number'
+import { TokenNumber } from './widgets/token-number'
 
 export type RedeemSpicePageType = 'main' | 'customMana'
 
@@ -34,7 +34,7 @@ export function RedeemSpiceModal(props: {
     <Modal open={open} setOpen={setOpen} className={clsx(MODAL_CLASS)}>
       <Row className="mb-4">
         <span className={clsx('cursor-pointer select-none transition-opacity')}>
-          <CoinNumber
+          <TokenNumber
             amount={spiceBalance}
             className={clsx('text-ink-1000 text-4xl font-bold transition-all')}
             isInline
@@ -182,7 +182,7 @@ function AllSpiceToManaButton(props: {
       </Button>
       {!error && (
         <Row className="text-ink-500 w-full justify-end gap-1 whitespace-nowrap text-xs sm:text-sm ">
-          <CoinNumber
+          <TokenNumber
             amount={user.spiceBalance * SPICE_TO_MANA_CONVERSION_RATE}
             className="font-semibold text-violet-600 dark:text-violet-400"
           />

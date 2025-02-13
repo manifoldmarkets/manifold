@@ -5,22 +5,33 @@ import { shortFormatNumber } from 'common/util/format'
 import { ReactNode, useEffect, useState } from 'react'
 import { Col } from 'web/components/layout/col'
 import { Row } from 'web/components/layout/row'
+import {
+  FILTER_KEY,
+  LoadingContractResults,
+  NoMoreResults,
+  QUERY_KEY,
+  useSearchQueryState,
+  useSearchResults,
+} from 'web/components/search'
 import { Tooltip } from 'web/components/widgets/tooltip'
+import { useUser } from 'web/hooks/use-user'
+import { db } from 'web/lib/supabase/db'
 import {
   getCreatorRank,
   getTotalPublicContractsCreated,
 } from 'web/lib/supabase/users'
-import { db } from 'web/lib/supabase/db'
-import {
-  searchLocalKey,
-  FILTER_KEY,
-  SupabaseSearch,
-} from 'web/components/supabase-search'
-import { useUser } from 'web/hooks/use-user'
 import { CreateQuestionButton } from '../buttons/create-question-button'
+import {
+  actionColumn,
+  probColumn,
+  traderColumn,
+} from '../contract/contract-table-col-formats'
+import { ContractsTable } from '../contract/contracts-table'
 import { UserReviews } from '../reviews/user-reviews'
+import { SearchInput } from '../search/search-input'
 import { InfoTooltip } from '../widgets/info-tooltip'
-import { setPersistentLocalState } from 'web/hooks/use-persistent-local-state'
+import { LoadMoreUntilNotVisible } from 'web/components/widgets/visibility-observer'
+import { ContractFilters } from '../search/contract-filters'
 
 export function UserContractsList(props: {
   creator: User
@@ -47,16 +58,32 @@ export function UserContractsList(props: {
 
   const persistPrefix = `user-contracts-list-${creator.id}`
 
-  const seeClosed = () => {
-    setPersistentLocalState(searchLocalKey(persistPrefix), (state: any) => ({
-      ...state,
-      [FILTER_KEY]: 'closed',
-    }))
-  }
+  // Hoist search state up to this component so we can set filter to closed from red dot
+
+  const [params, updateParams, isReady] = useSearchQueryState({
+    defaultFilter: 'all',
+    defaultSort: 'newest',
+    persistPrefix,
+    defaultSweepies: '2',
+  })
+
+  const { contracts, loading, shouldLoadMore, loadMoreContracts } =
+    useSearchResults({
+      persistPrefix,
+      searchParams: params,
+      includeUsersAndTopics: false,
+      isReady,
+      additionalFilter: { creatorId: creator.id },
+    })
+
+  const query = params[QUERY_KEY]
+  const setQuery = (query: string) => updateParams({ [QUERY_KEY]: query })
+
+  const seeClosed = () => updateParams({ [FILTER_KEY]: 'closed' })
 
   return (
     <Col className={'w-full'}>
-      <Row className={'gap-8 pb-4'}>
+      <Row className={'mb-4 gap-8'}>
         {rating && !!reviewCount && reviewCount > 0 && averageRating && (
           <Col>
             <Row className="text-ink-600 gap-0.5 text-xs sm:text-sm">
@@ -118,14 +145,29 @@ export function UserContractsList(props: {
           }
         />
       </Row>
-      <SupabaseSearch
-        defaultFilter="all"
-        defaultSort="newest"
-        additionalFilter={{
-          creatorId: creator.id,
-        }}
-        persistPrefix={persistPrefix}
-        emptyState={
+
+      <Col className="bg-canvas-0 sticky -top-px z-20">
+        <SearchInput
+          value={query}
+          setValue={setQuery}
+          placeholder={
+            creator.id === user?.id
+              ? 'Search your questions'
+              : `Search questions by ${creator.name}`
+          }
+          autoFocus={true}
+          loading={loading}
+        />
+        <ContractFilters
+          params={params}
+          updateParams={updateParams}
+          hideSweepsToggle
+        />
+      </Col>
+      <Col className="w-full">
+        {!contracts ? (
+          <LoadingContractResults />
+        ) : contracts.length === 0 ? (
           <>
             <div className="text-ink-700 mx-2 mt-3 text-center">
               No questions found
@@ -136,9 +178,26 @@ export function UserContractsList(props: {
               </Row>
             )}
           </>
-        }
-        contractsOnly
-      />
+        ) : (
+          <>
+            <ContractsTable
+              hideAvatar
+              contracts={contracts}
+              columns={[
+                // tierColumn,
+                traderColumn,
+                probColumn,
+                actionColumn,
+              ]}
+            />
+            <LoadMoreUntilNotVisible loadMore={loadMoreContracts} />
+            {shouldLoadMore && <LoadingContractResults />}
+            {!shouldLoadMore && (
+              <NoMoreResults params={params} onChange={updateParams} />
+            )}
+          </>
+        )}
+      </Col>
     </Col>
   )
 }

@@ -5,7 +5,7 @@ import { Button } from 'web/components/buttons/button'
 import { Col } from 'web/components/layout/col'
 import { Modal } from 'web/components/layout/modal'
 import { OnboardingVerifyPhone } from 'web/components/onboarding-verify-phone'
-import { CoinNumber } from 'web/components/widgets/coin-number'
+import { TokenNumber } from 'web/components/widgets/token-number'
 import { useUser } from 'web/hooks/use-user'
 
 export const VerifyPhoneNumberBanner = (props: {
@@ -28,7 +28,7 @@ export const VerifyPhoneNumberBanner = (props: {
         color="violet"
       >
         Verify and claim&nbsp;
-        <CoinNumber
+        <TokenNumber
           amount={PHONE_VERIFICATION_BONUS}
           className={'font-bold'}
           isInline

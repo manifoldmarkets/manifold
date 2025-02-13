@@ -110,36 +110,110 @@ export type MetricStoreEntry = {
 /** Records metric values by type and labels for later export. */
 export class MetricStore {
   // { name: [...entries of that metric with different label values] }
-  data: Map<MetricType, MetricStoreEntry[]>
+  data: Map<MetricType, MetricStoreEntry[]> = new Map()
+  private counters: Map<string, number> = new Map()
+  private distributions: Map<string, number[]> = new Map()
+  private gauges: Map<string, number> = new Map()
+  private cumulativeValues: Map<string, { total: number; startTime: number }> =
+    new Map() // Track cumulative totals and start times
 
-  constructor() {
-    this.data = new Map()
+  private getInstanceLabels(): MetricLabels {
+    return {
+      instance_type: process.env.READ_ONLY ? 'read' : 'write',
+      port: process.env.PORT ?? 'unknown',
+    }
+  }
+
+  private getKey(type: MetricType, labels?: MetricLabels) {
+    // Combine provided labels with instance labels
+    const combinedLabels = { ...this.getInstanceLabels(), ...labels }
+    return JSON.stringify({ type, labels: combinedLabels })
+  }
+
+  inc(type: MetricType, labels?: MetricLabels) {
+    const key = this.getKey(type, labels)
+    const current = this.counters.get(key) || 0
+    this.counters.set(key, current + 1)
+
+    // For cumulative metrics, maintain the total and start time
+    const metric = CUSTOM_METRICS[type as keyof typeof CUSTOM_METRICS]
+    if (metric.metricKind === 'CUMULATIVE') {
+      const existing = this.cumulativeValues.get(key)
+      if (!existing) {
+        this.cumulativeValues.set(key, { total: 1, startTime: Date.now() })
+      } else {
+        this.cumulativeValues.set(key, {
+          ...existing,
+          total: existing.total + 1,
+        })
+      }
+    }
+  }
+
+  push(type: MetricType, val: number, labels?: MetricLabels) {
+    const key = this.getKey(type, labels)
+    let points = this.distributions.get(key)
+    if (!points) {
+      points = []
+      this.distributions.set(key, points)
+    }
+    points.push(val)
+  }
+
+  set(type: MetricType, val: number, labels?: MetricLabels) {
+    const key = this.getKey(type, labels)
+    this.gauges.set(key, val)
   }
 
   clear() {
     this.data.clear()
+    this.counters.clear()
+    this.distributions.clear()
+    this.gauges.clear()
+    this.cumulativeValues.clear()
   }
 
-  push(type: MetricType, val: number, labels?: MetricLabels) {
-    const entry = this.getOrCreate(type, labels)
-    let points = entry.points
-    if (points == null) {
-      points = entry.points = []
+  /** Write accumulated metrics to the underlying store */
+  flush() {
+    // Write counters (use cumulative values for CUMULATIVE metrics)
+    for (const [key, value] of this.counters.entries()) {
+      const { type, labels } = JSON.parse(key)
+      const metric = CUSTOM_METRICS[type as keyof typeof CUSTOM_METRICS]
+      if (metric.metricKind === 'CUMULATIVE') {
+        const cumulative = this.cumulativeValues.get(key)
+        if (cumulative) {
+          const entry = this.getOrCreate(type, labels)
+          entry.startTime = cumulative.startTime // Preserve the original start time
+          entry.value = cumulative.total
+          entry.fresh = true
+        }
+      } else {
+        const entry = this.getOrCreate(type, labels)
+        entry.value = value
+        entry.fresh = true
+      }
     }
-    points.push(val)
-    entry.fresh = true
-  }
+    this.counters.clear()
 
-  set(type: MetricType, val: number, labels?: MetricLabels) {
-    const entry = this.getOrCreate(type, labels)
-    entry.value = val
-    entry.fresh = true
-  }
+    // Write distributions (as averages)
+    for (const [key, points] of this.distributions.entries()) {
+      const { type, labels } = JSON.parse(key)
+      if (points.length > 0) {
+        const entry = this.getOrCreate(type, labels)
+        entry.points = points
+        entry.fresh = true
+      }
+    }
+    this.distributions.clear()
 
-  inc(type: MetricType, labels?: MetricLabels) {
-    const entry = this.getOrCreate(type, labels)
-    entry.value += 1
-    entry.fresh = true
+    // Write latest gauge values
+    for (const [key, value] of this.gauges.entries()) {
+      const { type, labels } = JSON.parse(key)
+      const entry = this.getOrCreate(type, labels)
+      entry.value = value
+      entry.fresh = true
+    }
+    this.gauges.clear()
   }
 
   freshEntries() {
@@ -159,20 +233,32 @@ export class MetricStore {
     }
   }
 
-  getOrCreate(type: MetricType, labels?: MetricLabels) {
+  private getOrCreate(
+    type: MetricType,
+    labels?: MetricLabels
+  ): MetricStoreEntry {
+    // Combine provided labels with instance labels
+    const combinedLabels = { ...this.getInstanceLabels(), ...labels }
+
     let entries = this.data.get(type)
     if (entries == null) {
       this.data.set(type, (entries = []))
     }
     for (const entry of entries) {
-      if (isEqual(labels ?? {}, entry.labels ?? {})) {
+      if (isEqual(combinedLabels ?? {}, entry.labels ?? {})) {
         return entry
       }
     }
     // none exists, so create it
-    const entry = { type, labels, startTime: Date.now(), fresh: true, value: 0 }
+    const entry: MetricStoreEntry = {
+      type,
+      labels: combinedLabels,
+      startTime: Date.now(),
+      fresh: true,
+      value: 0,
+    }
     entries.push(entry)
-    return entry as MetricStoreEntry
+    return entry
   }
 }
 

@@ -36,8 +36,12 @@ const uploadImage = async (
     return Promise.reject('File is over 20 MB')
   }
 
+  if (file.type === 'application/pdf' && file.size > 2 * 1024 ** 2) {
+    return Promise.reject('PDF file is over 2MB, please submit a smaller file.')
+  }
+
   // if  >1MB compress
-  if (file.size > 1024 ** 2) {
+  if (file.type.startsWith('image/') && file.size > 1024 ** 2) {
     file = await new Promise((resolve, reject) => {
       new Compressor(file, {
         quality: 0.6,

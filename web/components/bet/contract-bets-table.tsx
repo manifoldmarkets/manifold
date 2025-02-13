@@ -3,6 +3,7 @@ import {
   Contract,
   CPMMNumericContract,
   getBinaryMCProb,
+  getMainBinaryMCAnswer,
   isBinaryMulti,
 } from 'common/contract'
 import { TRADE_TERM } from 'common/envs/constants'
@@ -22,19 +23,27 @@ import { useState } from 'react'
 import { Row } from 'web/components/layout/row'
 import { BinaryOutcomeLabel, OutcomeLabel } from 'web/components/outcome-label'
 import { Table } from 'web/components/widgets/table'
-import { formatTimeShort } from 'web/lib/util/time'
+import { formatTimeShort } from 'client-common/lib/time'
 import { Pagination } from '../widgets/pagination'
 import { MoneyDisplay } from './money-display'
+import { ContractMetric } from 'common/contract-metric'
+import { getPseudonym } from '../charts/contract/choice'
 
 export function ContractBetsTable(props: {
   contract: Contract
   bets: Bet[]
   isYourBets: boolean
+  contractMetric: ContractMetric
   hideRedemptionAndLoanMessages?: boolean
   paginate?: boolean
 }) {
-  const { contract, isYourBets, hideRedemptionAndLoanMessages, paginate } =
-    props
+  const {
+    contract,
+    isYourBets,
+    hideRedemptionAndLoanMessages,
+    paginate,
+    contractMetric,
+  } = props
   const { isResolved, mechanism, outcomeType } = contract
 
   const bets = sortBy(
@@ -51,7 +60,7 @@ export function ContractBetsTable(props: {
     )
   )
 
-  const amountLoaned = sumBy(bets, (bet) => bet.loanAmount ?? 0)
+  const amountLoaned = contractMetric.loan
 
   const isCPMM = mechanism === 'cpmm-1'
   const isCpmmMulti = mechanism === 'cpmm-multi-1'
@@ -211,7 +220,11 @@ function BetRow(props: { bet: Bet; contract: Contract }) {
 
   const isCashContract = contract.token === 'CASH'
   const sharesOrShortSellShares = Math.abs(shares)
-
+  const mainBinaryMCAnswer = getMainBinaryMCAnswer(contract)
+  const otherBinaryMCAnswer =
+    'answers' in contract
+      ? contract.answers.find((a) => a.id !== mainBinaryMCAnswer?.id)
+      : undefined
   return (
     <tr>
       {(isCPMM || isCpmmMulti) && <td>{shares >= 0 ? 'BUY' : 'SELL'}</td>}
@@ -225,6 +238,7 @@ function BetRow(props: { bet: Bet; contract: Contract }) {
           <BinaryOutcomeLabel outcome={outcome as any} />
         ) : (
           <OutcomeLabel
+            pseudonym={getPseudonym(contract)}
             outcome={outcome}
             contract={contract}
             truncate="short"

@@ -1,5 +1,5 @@
 import { useCallback, useRef, useState } from 'react'
-import { useSafeLayoutEffect } from './use-safe-layout-effect'
+import { useSafeLayoutEffect } from 'client-common/hooks/use-safe-layout-effect'
 
 const getSize = (elem: HTMLElement | null) =>
   elem

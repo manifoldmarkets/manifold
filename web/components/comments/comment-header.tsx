@@ -7,6 +7,7 @@ import {
   PlusCircleIcon,
   XCircleIcon,
 } from '@heroicons/react/solid'
+import { ThumbDownIcon } from '@heroicons/react/outline'
 import clsx from 'clsx'
 import { Bet } from 'common/bet'
 import { ContractComment } from 'common/comment'
@@ -44,29 +45,26 @@ import { Tooltip } from '../widgets/tooltip'
 import { UserLink } from '../widgets/user-link'
 import { commenterAndBettorMatch, roundThreadColor } from './comment'
 import { CommentEditHistoryButton } from './comment-edit-history-button'
-import DropdownMenu from './dropdown-menu'
+import DropdownMenu from '../widgets/dropdown-menu'
 import { EditCommentModal } from './edit-comment-modal'
-import { RepostModal } from './repost-modal'
+import { type Answer } from 'common/answer'
+import { useAnswer, useLiveAnswer } from 'web/hooks/use-answers'
 
 export function FeedCommentHeader(props: {
   comment: ContractComment
   playContract: Contract
-  liveContract: Contract
-  updateComment?: (comment: Partial<ContractComment>) => void
+  menuProps?: {
+    liveContractId: string
+    updateComment: (comment: Partial<ContractComment>) => void
+  }
   inTimeline?: boolean
   isParent?: boolean
   isPinned?: boolean
   className?: string
 }) {
-  const {
-    comment,
-    updateComment,
-    playContract,
-    liveContract,
-    inTimeline,
-    isPinned,
-    className,
-  } = props
+  const { comment, playContract, menuProps, inTimeline, isPinned, className } =
+    props
+
   const {
     userUsername,
     userName,
@@ -89,6 +87,8 @@ export function FeedCommentHeader(props: {
   const marketCreator = playContract.creatorId === userId
   const { bought, money } = getBoughtMoney(betAmount, betOnCashContract)
   const shouldDisplayOutcome = betOutcome && !answerOutcome
+  const answer = useLiveAnswer(betAnswerId)
+
   const isReplyToBet = betAmount !== undefined
   const commenterIsBettor = commenterAndBettorMatch(comment)
   const isLimitBet = betOrderAmount !== undefined && betLimitProb !== undefined
@@ -118,9 +118,9 @@ export function FeedCommentHeader(props: {
                 />
               </span>{' '}
               <OutcomeLabel
-                outcome={betOutcome ? betOutcome : ''}
-                answerId={betAnswerId}
-                contract={liveContract}
+                outcome={betOutcome || ''}
+                answer={answer}
+                contract={playContract}
                 truncate="short"
               />{' '}
               at {formatPercent(betLimitProb)} order
@@ -129,9 +129,9 @@ export function FeedCommentHeader(props: {
             <span>
               {bought} <span className="text-ink-1000">{money}</span>{' '}
               <OutcomeLabel
-                outcome={betOutcome ? betOutcome : ''}
-                answerId={betAnswerId}
-                contract={liveContract}
+                outcome={betOutcome || ''}
+                answer={answer}
+                contract={playContract}
                 truncate="short"
               />
             </span>
@@ -147,16 +147,16 @@ export function FeedCommentHeader(props: {
           {/* Hide my status if replying to a bet, it's too much clutter*/}
           {!isReplyToBet && !inTimeline && (
             <span className="text-ink-500">
-              <CommentStatus contract={liveContract} comment={comment} />
+              <CommentStatus contract={playContract} comment={comment} />
               {bought} {money}
               {shouldDisplayOutcome && (
                 <>
                   {' '}
                   of{' '}
                   <OutcomeLabel
-                    outcome={betOutcome ? betOutcome : ''}
-                    answerId={betAnswerId}
-                    contract={liveContract}
+                    outcome={betOutcome || ''}
+                    answer={answer}
+                    contract={playContract}
                     truncate="short"
                   />
                 </>
@@ -178,12 +178,12 @@ export function FeedCommentHeader(props: {
           {!inTimeline && isApi && (
             <InfoTooltip text="Placed via API">🤖</InfoTooltip>
           )}
-          {!inTimeline && updateComment && (
+          {!inTimeline && menuProps && (
             <DotMenu
-              updateComment={updateComment}
               comment={comment}
               playContract={playContract}
-              liveContract={liveContract}
+              updateComment={menuProps.updateComment}
+              liveContractId={menuProps.liveContractId}
             />
           )}
         </Row>
@@ -191,10 +191,7 @@ export function FeedCommentHeader(props: {
           {bountyAwarded && bountyAwarded > 0 && (
             <span className="select-none text-teal-600">
               +
-              <MoneyDisplay
-                amount={bountyAwarded}
-                isCashContract={liveContract.token === 'CASH'}
-              />
+              <MoneyDisplay amount={bountyAwarded} isCashContract={false} />
             </span>
           )}
           {isPinned && <TiPin className="text-primary-500 inline h-4 w-4" />}
@@ -222,10 +219,10 @@ const getBoughtMoney = (
 
 export function CommentReplyHeaderWithBet(props: {
   comment: ContractComment
+  contract: Pick<Contract, 'outcomeType' | 'mechanism'>
   bet: Bet
-  liveContract: Contract
 }) {
-  const { comment, bet, liveContract } = props
+  const { comment, contract, bet } = props
   const { outcome, answerId, amount, orderAmount, limitProb } = bet
   return (
     <CommentReplyHeader
@@ -237,17 +234,17 @@ export function CommentReplyHeaderWithBet(props: {
         betLimitProb: limitProb,
         answerOutcome: answerId,
       }}
-      liveContract={liveContract}
+      contract={contract}
     />
   )
 }
 
 export function CommentReplyHeader(props: {
   comment: ContractComment
-  liveContract: Contract
+  contract: Pick<Contract, 'outcomeType' | 'mechanism'>
   hideBetHeader?: boolean
 }) {
-  const { comment, liveContract, hideBetHeader } = props
+  const { comment, contract, hideBetHeader } = props
   const {
     bettorName,
     bettorId,
@@ -259,6 +256,10 @@ export function CommentReplyHeader(props: {
     betOrderAmount,
     betLimitProb,
   } = comment
+
+  const { answer: betAnswer } = useAnswer(betAnswerId)
+  const { answer: answerToReply } = useAnswer(answerOutcome)
+
   if (
     (bettorId || (bettorUsername && bettorName)) &&
     betOutcome &&
@@ -268,28 +269,27 @@ export function CommentReplyHeader(props: {
     return (
       <ReplyToBetRow
         bettorId={bettorId}
+        contract={contract}
         commenterIsBettor={commenterAndBettorMatch(comment)}
         betOutcome={betOutcome}
         bettorName={bettorName}
         bettorUsername={bettorUsername}
-        betAnswerId={betAnswerId}
+        betAnswer={betAnswer}
         betAmount={betAmount}
         betOrderAmount={betOrderAmount}
         betLimitProb={betLimitProb}
-        liveContract={liveContract}
       />
     )
   }
-  if (answerOutcome && 'answers' in liveContract) {
-    const answer = liveContract.answers.find((a) => a.id === answerOutcome)
-    if (answer) return <CommentOnAnswer answer={answer} />
+  if (answerToReply) {
+    return <CommentOnAnswer answer={answerToReply} />
   }
 
   return null
 }
 
 export function ReplyToBetRow(props: {
-  liveContract: Contract
+  contract: Pick<Contract, 'outcomeType' | 'mechanism'>
   commenterIsBettor: boolean
   betOutcome: string
   betAmount: number
@@ -298,7 +298,7 @@ export function ReplyToBetRow(props: {
   bettorUsername?: string
   betOrderAmount?: number
   betLimitProb?: number
-  betAnswerId?: string
+  betAnswer?: Answer
   clearReply?: () => void
 }) {
   const {
@@ -308,8 +308,8 @@ export function ReplyToBetRow(props: {
     bettorUsername,
     bettorName,
     bettorId,
-    betAnswerId,
-    liveContract: contract,
+    betAnswer,
+    contract,
     clearReply,
     betLimitProb,
     betOrderAmount,
@@ -337,14 +337,14 @@ export function ReplyToBetRow(props: {
         {!commenterIsBettor && bettorId && (
           <UserHovercard userId={bettorId}>
             <UserLink
-              short={(isLimitBet || betAnswerId !== undefined) && isMobile}
+              short={(isLimitBet || betAnswer) && isMobile}
               user={user}
             />
           </UserHovercard>
         )}
         {!commenterIsBettor && !bettorId && bettorName && bettorUsername && (
           <UserLink
-            short={(isLimitBet || betAnswerId !== undefined) && isMobile}
+            short={(isLimitBet || betAnswer) && isMobile}
             user={{
               id: bettorId ?? bettorName + bettorUsername,
               name: bettorName,
@@ -369,8 +369,8 @@ export function ReplyToBetRow(props: {
               />
             </span>
             <OutcomeLabel
-              outcome={betOutcome ? betOutcome : ''}
-              answerId={betAnswerId}
+              outcome={betOutcome || ''}
+              answer={betAnswer}
               contract={contract}
               truncate="short"
             />{' '}
@@ -381,8 +381,8 @@ export function ReplyToBetRow(props: {
             {bought}
             <span className="text-ink-1000">{money}</span>
             <OutcomeLabel
-              outcome={betOutcome ? betOutcome : ''}
-              answerId={betAnswerId}
+              outcome={betOutcome || ''}
+              answer={betAnswer}
               contract={contract}
               truncate="short"
             />
@@ -404,17 +404,18 @@ export function ReplyToBetRow(props: {
 }
 
 function CommentStatus(props: {
-  contract: Contract
+  contract: Pick<Contract, 'outcomeType' | 'mechanism'>
   comment: ContractComment
 }) {
   const { contract, comment } = props
-  const { resolution } = contract
   const {
     commenterPositionProb,
     commenterPositionOutcome,
     commenterPositionAnswerId,
     commenterPositionShares,
   } = comment
+
+  const { answer } = useAnswer(commenterPositionAnswerId)
 
   if (
     comment.betId == null &&
@@ -425,10 +426,10 @@ function CommentStatus(props: {
   )
     return (
       <>
-        {resolution ? 'predicted ' : `predicts `}
+        predicted
         <OutcomeLabel
           outcome={commenterPositionOutcome}
-          answerId={commenterPositionAnswerId}
+          answer={answer}
           contract={contract}
           truncate="short"
         />
@@ -438,13 +439,13 @@ function CommentStatus(props: {
   return <span />
 }
 
-export function DotMenu(props: {
+function DotMenu(props: {
   comment: ContractComment
   updateComment: (update: Partial<ContractComment>) => void
   playContract: Contract
-  liveContract: Contract
+  liveContractId: string
 }) {
-  const { comment, updateComment, playContract, liveContract } = props
+  const { comment, updateComment, playContract, liveContractId } = props
   const [isModalOpen, setIsModalOpen] = useState(false)
   const user = useUser()
   const privateUser = usePrivateUser()
@@ -452,7 +453,6 @@ export function DotMenu(props: {
   const isContractCreator = privateUser?.id === playContract.creatorId
   const [editingComment, setEditingComment] = useState(false)
   const [tipping, setTipping] = useState(false)
-  const [reposting, setReposting] = useState(false)
   const [annotating, setAnnotating] = useState(false)
   return (
     <>
@@ -470,7 +470,7 @@ export function DotMenu(props: {
       />
       <DropdownMenu
         menuWidth={'w-36'}
-        icon={
+        buttonContent={
           <DotsHorizontalIcon
             className="mt-[0.12rem] h-4 w-4"
             aria-hidden="true"
@@ -488,16 +488,30 @@ export function DotMenu(props: {
               )
             },
           },
-          user && {
-            name: 'Repost',
-            icon: <BiRepost className="h-5 w-5" />,
-            onClick: () => setReposting(true),
-          },
           user &&
             comment.userId !== user.id && {
               name: 'Tip',
               icon: <TipJar size={20} color="currentcolor" />,
               onClick: () => setTipping(true),
+            },
+          user &&
+            comment.userId !== user.id && {
+              name: 'Dislike',
+              icon: <ThumbDownIcon className="h-5 w-5" />,
+              onClick: async () => {
+                toast.promise(
+                  api('react', {
+                    contentId: comment.id,
+                    contentType: 'comment',
+                    reactionType: 'dislike',
+                  }),
+                  {
+                    loading: 'Disliking comment...',
+                    success: 'Comment disliked',
+                    error: 'Failed to dislike comment',
+                  }
+                )
+              },
             },
           user &&
             comment.userId !== user.id && {
@@ -563,29 +577,9 @@ export function DotMenu(props: {
         <AnnotateChartModal
           open={annotating}
           setOpen={setAnnotating}
-          contractId={liveContract.id}
+          contractId={liveContractId}
           atTime={comment.createdTime}
           comment={comment}
-        />
-      )}
-      {user && reposting && (
-        <RepostModal
-          playContract={playContract}
-          liveContract={liveContract}
-          open={reposting}
-          setOpen={setReposting}
-          comment={comment}
-          bet={
-            comment.betId
-              ? ({
-                  amount: comment.betAmount,
-                  outcome: comment.betOutcome,
-                  limitProb: comment.betLimitProb,
-                  orderAmount: comment.betOrderAmount,
-                  id: comment.betId,
-                } as Bet)
-              : undefined
-          }
         />
       )}
       {user && editingComment && (

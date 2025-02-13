@@ -11,7 +11,7 @@ import { Notification } from 'common/notification'
 import { getNotificationPreference } from 'common/user-notification-preferences'
 import { usePrivateUser, useUser } from 'web/hooks/use-user'
 import { followMarket, unfollowMarket } from '../buttons/follow-market-button'
-import DropdownMenu, { DropdownItem } from '../comments/dropdown-menu'
+import DropdownMenu, { DropdownItem } from '../widgets/dropdown-menu'
 import { Spacer } from '../layout/spacer'
 import {
   changeSetting,
@@ -29,7 +29,7 @@ export default function NotificationDropdown(props: {
     return (
       <DropdownMenu
         items={notificationDropdownItems}
-        icon={
+        buttonContent={
           <DotsVerticalIcon
             className={clsx('my-1 h-4 w-4 md:invisible md:group-hover:visible')}
           />

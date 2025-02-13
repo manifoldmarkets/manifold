@@ -1,5 +1,9 @@
 import { Answer } from 'common/answer'
-import { CPMMMultiContract, MultiContract } from 'common/contract'
+import {
+  CPMMMultiContract,
+  getMainBinaryMCAnswer,
+  MultiContract,
+} from 'common/contract'
 import { Button, SizeType } from 'web/components/buttons/button'
 import { useState } from 'react'
 import { formatPercent } from 'common/util/format'
@@ -13,6 +17,7 @@ import { BuyPanelBody } from 'web/components/bet/bet-panel'
 import { getAnswerColor } from '../charts/contract/choice'
 import { useUser } from 'web/hooks/use-user'
 import { PencilIcon } from '@heroicons/react/solid'
+import { Row } from '../layout/row'
 
 export function BinaryMultiAnswersPanel(props: {
   contract: CPMMMultiContract
@@ -112,7 +117,8 @@ function BinaryMultiChoiceBetPanel(props: {
   const color = getAnswerColor(answer)
   const user = useUser()
   const canEdit = canEditAnswer(answer, contract, user)
-
+  const mainAnswer = getMainBinaryMCAnswer(contract)!
+  const otherAnswer = contract.answers.find((a) => a.id !== mainAnswer.id)!
   return (
     <BuyPanelBody
       contract={contract}
@@ -121,36 +127,49 @@ function BinaryMultiChoiceBetPanel(props: {
         answerToBuy: contract.answers[0],
         answerText: answer.text,
       }}
+      pseudonym={{
+        YES: {
+          pseudonymName: mainAnswer.text,
+          pseudonymColor: 'azure',
+        },
+        NO: {
+          pseudonymName: otherAnswer.text,
+          pseudonymColor: 'sienna',
+        },
+      }}
       outcome={outcome}
       setOutcome={setOutcome}
       onBuySuccess={() => setTimeout(closePanel, 500)}
       onClose={closePanel}
       location={'contract page answer'}
-      panelClassName="!bg-canvas-50 gap-2"
+      panelClassName="bg-canvas-50"
     >
-      <div className={'group mr-6 text-2xl'}>
-        {answer.text}
-        {canEdit && user && (
-          <>
-            <Button
-              color="gray-white"
-              className="visible group-hover:visible sm:invisible"
-              size="xs"
-              onClick={() => setEditing(true)}
-            >
-              <PencilIcon className="text-primary-700 h-4 w-4" />
-            </Button>
-            <EditAnswerModal
-              open={editing}
-              setOpen={setEditing}
-              contract={contract}
-              answer={answer}
-              color={color}
-              user={user}
-            />
-          </>
-        )}
-      </div>
+      <Row className="items-baseline justify-between">
+        <div className={'group mr-6 text-2xl'}>
+          {answer.text}
+          {canEdit && user && (
+            <div>
+              <Button
+                color="gray-white"
+                className="visible group-hover:visible sm:invisible"
+                size="xs"
+                onClick={() => setEditing(true)}
+              >
+                <PencilIcon className="text-primary-700 h-4 w-4" />
+              </Button>
+              <EditAnswerModal
+                open={editing}
+                setOpen={setEditing}
+                contract={contract}
+                answer={answer}
+                color={color}
+                user={user}
+              />
+            </div>
+          )}
+        </div>
+        <span className="text-2xl">{formatPercent(answer.prob)}</span>
+      </Row>
     </BuyPanelBody>
   )
 }

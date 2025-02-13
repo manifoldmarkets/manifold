@@ -16,7 +16,7 @@ import { track } from 'web/lib/service/analytics'
 import { removeUndefinedProps } from 'common/util/object'
 import { Content } from 'web/components/widgets/editor'
 import { useIsVisible } from 'web/hooks/use-is-visible'
-import { BottomActionRow } from 'web/components/feed/scored-feed-repost-item'
+import { BottomActionRow } from 'web/components/feed/repost-feed-card'
 const DEBUG_FEED_CARDS =
   typeof window != 'undefined' &&
   window.location.toString().includes('localhost:3000')
@@ -32,7 +32,7 @@ export const GoodComment = memo(function (props: {
   const [hoveringChildContract, setHoveringChildContract] = useState(false)
   const { ref } = useIsVisible(
     () => {
-      !DEBUG_FEED_CARDS &&
+      if (!DEBUG_FEED_CARDS)
         track('view good comment', {
           contractId: contract.id,
           commentId: comment.id,
@@ -55,7 +55,8 @@ export const GoodComment = memo(function (props: {
   return (
     <Col
       className={clsx(
-        'bg-canvas-0 ring- ring-primary-200 group rounded-lg py-2',
+        'ring-primary-200 group rounded-lg py-2',
+        'bg-canvas-0 dark:bg-canvas-50 dark:border-canvas-50 hover:border-primary-300 gap-2 rounded-lg border px-4 py-3 shadow-md transition-colors sm:px-6',
         hoveringChildContract ? '' : 'hover:ring-1'
       )}
       ref={ref}
@@ -80,9 +81,7 @@ export const GoodComment = memo(function (props: {
                 <Col>
                   <FeedCommentHeader
                     comment={comment}
-                    // TODO: fix
                     playContract={contract}
-                    liveContract={contract}
                     inTimeline={true}
                   />
                   <Content size={'md'} content={comment.content} />

@@ -1,7 +1,7 @@
 import { Contract } from 'common/contract'
 import { Col } from '../layout/col'
 import { LoadingIndicator } from '../widgets/loading-indicator'
-import { LoadMoreUntilNotVisible } from '../widgets/visibility-observer'
+import { LoadMoreUntilNotVisible } from 'web/components/widgets/visibility-observer'
 import { FeedContractCard } from './feed-contract-card'
 
 export function ContractsGrid(props: {

@@ -4,9 +4,9 @@ import { Col } from 'web/components/layout/col'
 import { Row } from 'web/components/layout/row'
 import { Checkbox } from 'web/components/widgets/checkbox'
 import { Button } from 'web/components/buttons/button'
-import Textarea from 'react-expanding-textarea'
 import { toast } from 'react-hot-toast'
 import { report } from 'web/lib/api/api'
+import { ExpandingInput } from 'web/components/widgets/expanding-input'
 
 export const ReportUser = (props: { user: User; closeModal: () => void }) => {
   const { user, closeModal } = props
@@ -84,7 +84,7 @@ export const ReportUser = (props: { user: User; closeModal: () => void }) => {
               />
             ))}
 
-            <Textarea
+            <ExpandingInput
               placeholder={
                 'Add more context and/or provide a link to the content'
               }

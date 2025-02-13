@@ -31,6 +31,7 @@ import { track } from 'web/lib/service/analytics'
 import { MoneyDisplay } from '../bet/money-display'
 import { UserHovercard } from '../user/user-hovercard'
 import { InfoTooltip } from '../widgets/info-tooltip'
+import { getPseudonym } from '../charts/contract/choice'
 
 export const FeedBet = memo(function FeedBet(props: {
   contract: Contract
@@ -80,7 +81,6 @@ export const FeedReplyBet = memo(function FeedReplyBet(props: {
 }) {
   const { contract, bets, avatarSize, className } = props
   const showUser = bets.every((b) => dayjs(b.createdTime).isAfter('2022-06-01'))
-  useDisplayUserById
 
   const users = useUsers(bets.map((b) => b.userId))
 
@@ -176,7 +176,11 @@ export function BetStatusesText(props: {
         {bought} {money}{' '}
         <OutcomeLabel
           outcome={outcome}
-          answerId={answerId}
+          answer={
+            contract.mechanism === 'cpmm-multi-1'
+              ? contract.answers?.find((a) => a.id === answerId)
+              : undefined
+          }
           contract={contract}
           truncate="short"
         />{' '}
@@ -197,9 +201,12 @@ export function BetStatusText(props: {
   const isCashContract = contract.token === 'CASH'
   const betUser = useDisplayUserById(bet.userId)
   const self = useUser()
-  const { amount, outcome, createdTime, answerId, isApi } = bet
+  const { amount, outcome, createdTime, answerId, isApi, silent } = bet
   const getProb = (prob: number) =>
     !isBinaryMulti(contract) ? prob : getBinaryMCProb(prob, outcome)
+  const cancelledOrExpired =
+    bet.isCancelled ||
+    (bet.expiresAt && bet.expiresAt < Date.now() && !bet.silent)
 
   const probBefore = getProb(bet.probBefore)
   const probAfter = getProb(bet.probAfter)
@@ -212,6 +219,8 @@ export function BetStatusText(props: {
   const money = (
     <MoneyDisplay amount={absAmount} isCashContract={isCashContract} />
   )
+  const isNormalLimitOrder =
+    bet.limitProb !== undefined && bet.orderAmount !== undefined && !silent
   const orderAmount =
     bet.limitProb !== undefined && bet.orderAmount !== undefined ? (
       <MoneyDisplay amount={bet.orderAmount} isCashContract={isCashContract} />
@@ -219,10 +228,7 @@ export function BetStatusText(props: {
   const anyFilled = !floatingLesserEqual(amount, 0)
   const allFilled = floatingEqual(amount, bet.orderAmount ?? amount)
 
-  const hadPoolMatch =
-    (bet.limitProb === undefined ||
-      bet.fills?.some((fill) => fill.matchedBetId === null)) ??
-    false
+  const hadPoolMatch = bet.fills?.length ?? false
 
   const fromProb = hadPoolMatch
     ? getFormattedMappedValue(contract, probBefore)
@@ -231,6 +237,11 @@ export function BetStatusText(props: {
   const toProb = hadPoolMatch
     ? getFormattedMappedValue(contract, probAfter)
     : getFormattedMappedValue(contract, limitProb ?? probAfter)
+
+  const answer =
+    contract.mechanism === 'cpmm-multi-1'
+      ? contract.answers?.find((a) => a.id === answerId)
+      : undefined
 
   return (
     <div className={clsx('text-ink-1000 text-sm', className)}>
@@ -245,7 +256,7 @@ export function BetStatusText(props: {
       ) : (
         <></>
       )}{' '}
-      {orderAmount ? (
+      {isNormalLimitOrder ? (
         <span>
           {anyFilled ? (
             <>
@@ -255,19 +266,23 @@ export function BetStatusText(props: {
             <>created limit order for {orderAmount}</>
           )}{' '}
           <OutcomeLabel
+            pseudonym={getPseudonym(contract)}
             outcome={outcome}
-            answerId={answerId}
+            answer={answer}
             contract={contract}
             truncate="short"
           />{' '}
-          at {toProb} {bet.isCancelled && !allFilled ? '(cancelled)' : ''}
+          at {toProb} {cancelledOrExpired && !allFilled ? '(cancelled)' : ''}
         </span>
       ) : (
         <>
-          {bought} {money}{' '}
+          {bought} {money}
+          {orderAmount ? '/' : ''}
+          {orderAmount}{' '}
           <OutcomeLabel
+            pseudonym={getPseudonym(contract)}
             outcome={outcome}
-            answerId={answerId}
+            answer={answer}
             contract={contract}
             truncate="short"
           />{' '}
@@ -296,7 +311,6 @@ function BetActions(props: {
         bet={bet}
         size={'2xs'}
         className={'!p-1'}
-        liveContract={contract}
         playContract={contract}
       />
       {onReply && (

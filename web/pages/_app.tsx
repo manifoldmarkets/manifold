@@ -7,25 +7,18 @@ import { NativeMessageProvider } from 'web/components/native-message-provider'
 import { useHasLoaded } from 'web/hooks/use-has-loaded'
 import '../styles/globals.css'
 import { getIsNative } from 'web/lib/native/is-native'
-import { Major_Mono_Display, Figtree } from 'next/font/google'
+import { Figtree } from 'next/font/google'
 import { GoogleOneTapSetup } from 'web/lib/firebase/google-onetap-login'
-import clsx from 'clsx'
 import { useRefreshAllClients } from 'web/hooks/use-refresh-all-clients'
 import { postMessageToNative } from 'web/lib/native/post-message'
 import { ENV_CONFIG, TRADE_TERM } from 'common/envs/constants'
 import { Sweepstakes } from 'web/components/sweepstakes-provider'
 import { capitalize } from 'lodash'
-import { useThemeManager } from 'web/hooks/use-theme'
+import { ThemeProvider } from 'web/hooks/use-theme'
 import { DevtoolsDetector, setupDevtoolsDetector } from 'web/lib/util/devtools'
 import { useRouter } from 'next/router'
 // See https://nextjs.org/docs/basic-features/font-optimization#google-fonts
 // and if you add a font, you must add it to tailwind config as well for it to work.
-
-const logoFont = Major_Mono_Display({
-  weight: ['400'],
-  variable: '--font-logo',
-  subsets: ['latin'],
-})
 
 const mainFont = Figtree({
   weight: ['300', '400', '500', '600', '700'],
@@ -105,9 +98,9 @@ function MyApp({ Component, pageProps }: AppProps<ManifoldPageProps>) {
   useEffect(printBuildInfo, [])
   useHasLoaded()
   useRefreshAllClients()
+
   // ian: Required by GambleId
   const devToolsOpen = false //useDevtoolsDetector()
-  useThemeManager()
   const router = useRouter()
 
   useEffect(() => {
@@ -168,6 +161,17 @@ function MyApp({ Component, pageProps }: AppProps<ManifoldPageProps>) {
           content="width=device-width, initial-scale=1,maximum-scale=1, user-scalable=no"
         />
         <meta name="apple-itunes-app" content="app-id=6444136749" />
+        {/* set safari overscroll/address bar to canvas-0. TODO: change based on site theme preference */}
+        <meta
+          name="theme-color"
+          content="#1e293b"
+          media="(prefers-color-scheme: dark)"
+        />
+        <meta
+          name="theme-color"
+          content="#fdfeff"
+          media="(prefers-color-scheme: light)"
+        />
         <link
           rel="search"
           type="application/opensearchdescription+xml"
@@ -175,25 +179,25 @@ function MyApp({ Component, pageProps }: AppProps<ManifoldPageProps>) {
           title="Manifold"
         />
       </Head>
-      <div
-        className={clsx(
-          'font-figtree contents font-normal',
-          logoFont.variable,
-          mainFont.variable
-        )}
-      >
-        {/*
+      <style>
+        {`html {
+          --font-main: ${mainFont.style.fontFamily};
+        }`}
+      </style>
+
+      {/*
         ian: It would be nice to find a way to let people take screenshots of a crash + console log.
         One idea: just disable them for !user.sweepstakesVerified users.
         */}
-        {devToolsOpen ? (
-          <div
-            className={'flex h-screen flex-col items-center justify-center p-4'}
-          >
-            You cannot use developer tools with manifold. Please close them and
-            refresh.
-          </div>
-        ) : (
+      {devToolsOpen ? (
+        <div
+          className={'flex h-screen flex-col items-center justify-center p-4'}
+        >
+          You cannot use developer tools with manifold. Please close them and
+          refresh.
+        </div>
+      ) : (
+        <ThemeProvider>
           <AuthProvider serverUser={pageProps.auth}>
             <Sweepstakes>
               <NativeMessageProvider>
@@ -201,12 +205,8 @@ function MyApp({ Component, pageProps }: AppProps<ManifoldPageProps>) {
               </NativeMessageProvider>
             </Sweepstakes>
           </AuthProvider>
-        )}
-        {/* Workaround for https://github.com/tailwindlabs/headlessui/discussions/666, to allow font CSS variable */}
-        <div id="headlessui-portal-root">
-          <div />
-        </div>
-      </div>
+        </ThemeProvider>
+      )}
 
       <GoogleOneTapSetup />
 

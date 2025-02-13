@@ -1,5 +1,5 @@
 import { DateTimeTooltip } from './widgets/datetime-tooltip'
-import { fromNow } from 'web/lib/util/time'
+import { fromNow } from 'client-common/lib/time'
 import { useIsClient } from 'web/hooks/use-is-client'
 import { Placement } from '@floating-ui/react'
 

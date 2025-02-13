@@ -6,21 +6,20 @@ import {
   getVerificationStatus,
   PROMPT_USER_VERIFICATION_MESSAGES,
 } from 'common/gidx/user'
-import { type User } from 'common/user'
 import { capitalize } from 'lodash'
 import Link from 'next/link'
-import { ReactNode, useEffect, useState } from 'react'
+import { ReactNode } from 'react'
 import { usePersistentLocalState } from 'web/hooks/use-persistent-local-state'
 import { usePrivateUser, useUser } from 'web/hooks/use-user'
 import { firebaseLogin } from 'web/lib/firebase/users'
-import { db } from 'web/lib/supabase/db'
 import { Button, buttonClass, ColorType } from '../buttons/button'
 import { Col } from '../layout/col'
 import { Row } from '../layout/row'
-import { CoinNumber } from '../widgets/coin-number'
+import { TokenNumber } from '../widgets/token-number'
 import { Tooltip } from '../widgets/tooltip'
 import { RainingCoins } from '../raining-coins'
 import { SweepiesFlatCoin } from 'web/public/custom-components/sweepiesFlatCoin'
+import { useRouter } from 'next/router'
 
 export function SweepVerifySection(props: { className?: string }) {
   const { className } = props
@@ -55,7 +54,7 @@ export function SweepVerifySection(props: { className?: string }) {
           </div>
           <Col className="text-ink-100 dark:text-ink-900 w-full text-sm sm:text-center">
             <div>
-              <CoinNumber
+              <TokenNumber
                 amount={1}
                 coinType="CASH"
                 className="font-semibold text-amber-300"
@@ -95,7 +94,7 @@ export function SweepVerifySection(props: { className?: string }) {
 
         <div className="text-ink-100 dark:text-ink-900 w-full text-sm sm:text-center">
           Winnings on {SWEEPIES_NAME} can be redeemed for USD at a{' '}
-          <CoinNumber
+          <TokenNumber
             amount={1}
             coinType="CASH"
             className="font-semibold text-amber-300"
@@ -105,7 +104,10 @@ export function SweepVerifySection(props: { className?: string }) {
         </div>
 
         <Col className="gap-2">
-          <VerifyButton className=" !hover:from-amber-800 !hover:via-amber-700 !hover:to-amber-800 !mx-auto !w-fit !bg-gradient-to-r !from-amber-700 !via-amber-600 !to-amber-700 !text-white drop-shadow-lg" />
+          <VerifyButton
+            redirectHereAfterVerify
+            className=" !hover:from-amber-800 !hover:via-amber-700 !hover:to-amber-800 !mx-auto !w-fit !bg-gradient-to-r !from-amber-700 !via-amber-600 !to-amber-700 !text-white drop-shadow-lg"
+          />
 
           <Row className=" w-full">
             <button
@@ -185,15 +187,18 @@ export function VerifyButton(props: {
   className?: string
   content?: ReactNode
   color?: ColorType
+  redirectHereAfterVerify?: boolean
 }) {
-  const { className, content, color } = props
-
-  const user = useUser()
-  const amount = useKYCGiftAmount(user)
+  const { className, content, color, redirectHereAfterVerify } = props
+  const router = useRouter()
 
   return (
     <Link
-      href={'/gidx/register'}
+      href={`/gidx/register${
+        redirectHereAfterVerify
+          ? `?redirect=${encodeURIComponent(router.asPath)}`
+          : ''
+      }`}
       className={clsx(
         buttonClass('xl', color ?? 'gradient-pink'),
         'w-full font-semibold',
@@ -205,40 +210,13 @@ export function VerifyButton(props: {
       ) : (
         <>
           Verify and claim
-          {amount == undefined ? (
-            <CoinNumber
-              amount={KYC_VERIFICATION_BONUS_CASH}
-              coinType="CASH"
-              className="ml-1"
-            />
-          ) : (
-            <CoinNumber amount={amount} coinType="CASH" className="ml-1" />
-          )}
+          <TokenNumber
+            amount={KYC_VERIFICATION_BONUS_CASH}
+            coinType="CASH"
+            className="ml-1"
+          />
         </>
       )}
     </Link>
   )
-}
-
-export function useKYCGiftAmount(user: User | undefined | null) {
-  const [amount, setAmount] = useState<number>()
-  useEffect(() => {
-    if (!user) return
-    db.from('kyc_bonus_rewards')
-      .select('reward_amount')
-      .eq('user_id', user.id)
-      .then(({ data, error }) => {
-        if (error) {
-          console.error(error)
-          return
-        }
-        if (data && data.length > 0) {
-          setAmount(
-            Math.max(KYC_VERIFICATION_BONUS_CASH, data[0].reward_amount)
-          )
-        }
-      })
-  }, [user?.id])
-
-  return amount
 }

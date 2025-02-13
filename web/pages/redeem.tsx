@@ -1,5 +1,9 @@
 import clsx from 'clsx'
-import { MIN_CASHOUT_AMOUNT, SWEEPIES_CASHOUT_FEE } from 'common/economy'
+import {
+  KYC_VERIFICATION_BONUS_CASH,
+  MIN_CASHOUT_AMOUNT,
+  SWEEPIES_CASHOUT_FEE,
+} from 'common/economy'
 import { SWEEPIES_NAME } from 'common/envs/constants'
 import { CheckoutSession, GPSData } from 'common/gidx/gidx'
 import { formatSweepies, formatSweepsToUSD } from 'common/util/format'
@@ -21,12 +25,11 @@ import {
 import { LocationPanel } from 'web/components/gidx/location-panel'
 import { UploadDocuments } from 'web/components/gidx/upload-document'
 import { AmountInput } from 'web/components/widgets/amount-input'
-import { CoinNumber } from 'web/components/widgets/coin-number'
-import { InfoTooltip } from 'web/components/widgets/info-tooltip'
+import { TokenNumber } from 'web/components/widgets/token-number'
 import { Input } from 'web/components/widgets/input'
 import { LoadingIndicator } from 'web/components/widgets/loading-indicator'
 import { useAPIGetter } from 'web/hooks/use-api-getter'
-import { useApiSubscription } from 'web/hooks/use-api-subscription'
+import { useApiSubscription } from 'client-common/hooks/use-api-subscription'
 import { usePrivateUser, useUser } from 'web/hooks/use-user'
 import { api, APIError } from 'web/lib/api/api'
 import { LocationBlockedIcon } from 'web/public/custom-components/locationBlockedIcon'
@@ -36,13 +39,12 @@ import { Col } from '../components/layout/col'
 import { Page } from '../components/layout/page'
 import { Row } from '../components/layout/row'
 import { capitalize } from 'lodash'
-import { useKYCGiftAmount } from 'web/components/sweeps/sweep-verify-section'
 import {
   Divider,
   InputTitle,
 } from 'web/components/gidx/register-component-helpers'
 import { UsOnlyDisclaimer } from 'web/components/sweeps/us-only-disclaimer'
-import { useEvent } from 'web/hooks/use-event'
+import { useEvent } from 'client-common/hooks/use-event'
 import {
   ageBlocked,
   fraudSession,
@@ -52,7 +54,6 @@ import {
   PROMPT_USER_VERIFICATION_MESSAGES,
 } from 'common/gidx/user'
 import { useMonitorStatus } from 'web/hooks/use-monitor-status'
-import { InfoBox } from 'web/components/widgets/info-box'
 
 export type CashoutPagesType =
   | 'select-cashout-method'
@@ -90,7 +91,6 @@ export default function CashoutPage() {
   const [state, setState] = useState('')
   const [zipCode, setZipCode] = useState('')
   const [sessionStatus, setSessionStatus] = useState<string>()
-  const kycAmount = useKYCGiftAmount(user)
   const [deviceGPS, setDeviceGPS] = useState<GPSData>()
 
   const { data: documentData } = useAPIGetter(
@@ -117,8 +117,7 @@ export default function CashoutPage() {
       setSessionStatus(StatusMessage as string)
     },
   })
-  const redeemable = useAPIGetter('get-redeemable-prize-cash', {})
-  const redeemableCash = redeemable?.data?.redeemablePrizeCash
+  const redeemableCash = user?.cashBalance
 
   const roundedRedeemableCash = Math.floor((redeemableCash ?? 0) * 100) / 100
   const {
@@ -181,7 +180,7 @@ export default function CashoutPage() {
         },
         SavePaymentMethod,
         PaymentAmount: {
-          dollars: (1 - SWEEPIES_CASHOUT_FEE) * sweepCashAmount,
+          dollars: sweepCashAmount - SWEEPIES_CASHOUT_FEE,
           manaCash: sweepCashAmount,
         },
         MerchantSessionID: checkoutSession.MerchantSessionID,
@@ -192,7 +191,6 @@ export default function CashoutPage() {
         setError(message)
       } else {
         setPage('waiting')
-        redeemable.refresh()
       }
     } catch (err) {
       if (err instanceof APIError) {
@@ -300,16 +298,12 @@ export default function CashoutPage() {
                 >
                   Verify and get
                   <span className="ml-1">
-                    {kycAmount == undefined ? (
-                      ' a sweepcash gift!'
-                    ) : (
-                      <CoinNumber
-                        amount={kycAmount}
-                        className={'font-bold'}
-                        isInline
-                        coinType={'CASH'}
-                      />
-                    )}
+                    <TokenNumber
+                      amount={KYC_VERIFICATION_BONUS_CASH}
+                      className={'font-bold'}
+                      isInline
+                      coinType={'CASH'}
+                    />
                   </span>
                 </Link>
                 <div className="text-ink-500 mt-1 text-center text-sm">
@@ -467,10 +461,6 @@ export default function CashoutPage() {
                 </div>
               </Col>
               <Divider />
-              <InfoBox title="US domestic wires only" className="mb-0">
-                For a short time during our introductory period, we're only
-                supporting US domestic wires.
-              </InfoBox>
               <Col className={'w-full gap-0.5'}>
                 <InputTitle>Name</InputTitle>
                 <Input
@@ -574,7 +564,7 @@ export default function CashoutPage() {
                   <Row className={'gap-1'}>
                     Redeem for{' '}
                     {formatSweepsToUSD(
-                      (1 - SWEEPIES_CASHOUT_FEE) * (sweepCashAmount ?? 0)
+                      (sweepCashAmount ?? 0) - SWEEPIES_CASHOUT_FEE
                     )}
                   </Row>
                 </Button>
@@ -608,17 +598,8 @@ function SweepiesStats(props: {
   return (
     <Row className="w-full max-w-lg gap-4 text-2xl md:text-3xl">
       <Col className={clsx('w-1/2 items-start', className)}>
-        <div className="text-ink-500 whitespace-nowrap text-sm">
-          Redeemable
-          <span>
-            <InfoTooltip
-              text={`Only ${SWEEPIES_NAME} that you won from sweepstakes questions resolving`}
-              size={'sm'}
-              className=" ml-0.5"
-            />
-          </span>
-        </div>
-        <CoinNumber
+        <div className="text-ink-500 whitespace-nowrap text-sm">Redeemable</div>
+        <TokenNumber
           amount={redeemableCash}
           className={'font-bold'}
           coinType={'sweepies'}
@@ -627,7 +608,7 @@ function SweepiesStats(props: {
       <div className="bg-ink-300 mb-4 mt-1 w-[1px]" />
       <Col className={clsx('w-1/2 items-start', className)}>
         <div className="text-ink-500 whitespace-nowrap text-sm">Total</div>
-        <CoinNumber
+        <TokenNumber
           amount={cashBalance}
           className={'text-ink-500 font-bold'}
           coinType={'sweepies'}

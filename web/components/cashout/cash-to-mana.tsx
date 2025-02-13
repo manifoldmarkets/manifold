@@ -11,9 +11,8 @@ import { Col } from '../layout/col'
 import { SweepiesCoin } from 'web/public/custom-components/sweepiesCoin'
 import { ManaCoin } from 'web/public/custom-components/manaCoin'
 import clsx from 'clsx'
-import { CoinNumber } from 'web/components/widgets/coin-number'
+import { TokenNumber } from 'web/components/widgets/token-number'
 import toast from 'react-hot-toast'
-import { useUser } from 'web/hooks/use-user'
 
 export const CashToManaForm = (props: {
   onBack: () => void
@@ -35,8 +34,6 @@ export const CashToManaForm = (props: {
   )
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
-
-  const user = useUser()
 
   const updateAmounts = (
     newAmount: number | undefined,
@@ -134,7 +131,7 @@ export const CashToManaForm = (props: {
           className="w-full"
         >
           Redeem for &nbsp;
-          <CoinNumber amount={sweepiesAmount} coinType="mana" isInline />
+          <TokenNumber amount={manaAmount} coinType="mana" isInline />
         </Button>
       </Row>
       <Row className="text-error mt-2 text-sm">{error}</Row>

@@ -8,8 +8,6 @@ import { Col } from 'web/components/layout/col'
 import { CgPoll } from 'react-icons/cg'
 import { GoNumber } from 'react-icons/go'
 import { CreateableOutcomeType, OutcomeType } from 'common/contract'
-import { GiReceiveMoney } from 'react-icons/gi'
-import { formatMoney } from 'common/util/format'
 
 export const PREDICTIVE_CONTRACT_TYPES = {
   BINARY: {
@@ -67,21 +65,21 @@ export const PREDICTIVE_CONTRACT_TYPES = {
 } as const
 
 export const NON_PREDICTIVE_CONTRACT_TYPES = {
-  BOUNTIED_QUESTION: {
-    label: 'Bounty',
-    value: 'BOUNTIED_QUESTION',
-    name: 'bounty',
-    descriptor: `A question that anyone can answer for a bounty. The bounty you put up can be distributed however you'd like.`,
-    example: `Recommend me sci-fi books, ${formatMoney(
-      100
-    )} for each good submission.`,
-    visual: (
-      <Col className="relative my-auto h-12 w-12 text-teal-400">
-        <GiReceiveMoney className="h-12 w-12" />
-      </Col>
-    ),
-    className: 'hover:ring-teal-500/50',
-  },
+  // BOUNTIED_QUESTION: {
+  //   label: 'Bounty',
+  //   value: 'BOUNTIED_QUESTION',
+  //   name: 'bounty',
+  //   descriptor: `A question that anyone can answer for a bounty. The bounty you put up can be distributed however you'd like.`,
+  //   example: `Recommend me sci-fi books, ${formatMoney(
+  //     100
+  //   )} for each good submission.`,
+  //   visual: (
+  //     <Col className="relative my-auto h-12 w-12 text-teal-400">
+  //       <GiReceiveMoney className="h-12 w-12" />
+  //     </Col>
+  //   ),
+  //   className: 'hover:ring-teal-500/50',
+  // },
   POLL: {
     label: 'Poll',
     value: 'POLL',

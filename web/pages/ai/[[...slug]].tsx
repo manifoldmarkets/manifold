@@ -15,8 +15,6 @@ import { MultiDashboardHeadlineTabs } from 'web/components/dashboard/multi-dashb
 import { api } from 'web/lib/api/api'
 import { Headline } from 'common/news'
 import { DashboardPage } from 'web/components/dashboard/dashboard-page'
-import { CopyLinkOrShareButton } from 'web/components/buttons/copy-link-button'
-import { ENV_CONFIG } from 'common/envs/constants'
 import { Row } from 'web/components/layout/row'
 import { HorizontalDashboard } from 'web/components/dashboard/horizontal-dashboard'
 import { contractPath, CPMMNumericContract } from 'common/contract'
@@ -29,6 +27,8 @@ import { linkClass } from 'web/components/widgets/site-link'
 import { useLiveContract } from 'web/hooks/use-contract'
 import { getContract } from 'common/supabase/contracts'
 import { db } from 'web/lib/supabase/db'
+import { ENV_CONFIG } from 'common/envs/constants'
+import { CopyLinkOrShareButton } from 'web/components/buttons/copy-link-button'
 
 // In order to duplicate:
 // - duplicate this directory (endpoint/[[...slug]].tsx)
@@ -144,31 +144,21 @@ function MultiDashboard(props: MultiDashboardProps) {
       />
 
       <Col className="mb-8 gap-6 px-2 sm:gap-8 sm:px-4">
-        <Col className={'gap-2'}>
-          <div
-            ref={headlineSlugsToRefs.current[TOP_SLUG]}
-            className="text-primary-700 mt-4 text-2xl font-normal sm:mt-0 sm:text-3xl"
-          >
-            Manifold AI Forecasts
+        <Col className={'mb-4 w-full justify-center'}>
+          <Row className={'items-center gap-2'}>
+            <Link
+              href={contractPath(whenAgi)}
+              className={clsx(linkClass, 'text-primary-700 mb-2 text-xl')}
+            >
+              Countdown to AGI
+            </Link>
             <CopyLinkOrShareButton
               url={`https://${ENV_CONFIG.domain}/${ENDPOINT}`}
               eventTrackingName="copy ai share link"
               tooltip="Share"
               className="hidden sm:inline"
             />
-          </div>
-          <div className="text-canvas-500 text-md -mb-4 mt-2 flex font-normal">
-            Live prediction market odds on all things AI
-          </div>
-        </Col>
-
-        <Col className={'my-4 w-full justify-center'}>
-          <Link
-            href={contractPath(whenAgi)}
-            className={clsx(linkClass, 'text-primary-700 mb-2 text-xl')}
-          >
-            Countdown to AGI
-          </Link>
+          </Row>
           <span className={'mb-4'}>
             The market expects we achieve artificial general intelligence by{' '}
             {expectedYear.getFullYear()}... What do you think?

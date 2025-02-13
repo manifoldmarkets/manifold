@@ -5,6 +5,7 @@ import { ENV_CONFIG, TRADE_TERM } from 'common/envs/constants'
 import { LOAN_DAILY_RATE, overLeveraged } from 'common/loans'
 import { useHasReceivedLoanToday } from 'web/hooks/use-has-received-loan'
 import { useIsEligibleForLoans } from 'web/hooks/use-is-eligible-for-loans'
+import { useAPIGetter } from 'web/hooks/use-api-getter'
 
 export function LoansModal(props: {
   user: User
@@ -13,8 +14,9 @@ export function LoansModal(props: {
 }) {
   const { isOpen, user, setOpen } = props
   const { receivedLoanToday } = useHasReceivedLoanToday(user)
-  const { latestPortfolio, isEligible } = useIsEligibleForLoans(user?.id)
-
+  const { latestPortfolio, isEligible } = useIsEligibleForLoans(user.id)
+  const { data } = useAPIGetter('get-next-loan-amount', { userId: user.id })
+  const nextLoanAmount = data?.amount ?? 0
   return (
     <Modal open={isOpen} setOpen={setOpen}>
       <Col className="bg-canvas-0 text-ink-1000 items-center gap-4 rounded-md px-8 py-6">
@@ -23,10 +25,10 @@ export function LoansModal(props: {
         {receivedLoanToday ? (
           <span className={'text-ink-600 text-sm italic'}>
             You have already received your loan today. Come back tomorrow for
-            {user.nextLoanCached > 0 &&
-              ` ${ENV_CONFIG.moneyMoniker}${Math.floor(user.nextLoanCached)}!`}
+            {nextLoanAmount > 0 &&
+              ` ${ENV_CONFIG.moneyMoniker}${Math.floor(nextLoanAmount)}!`}
           </span>
-        ) : !isEligible || user.nextLoanCached < 1 ? (
+        ) : !isEligible || nextLoanAmount < 1 ? (
           <span className={'text-ink-600 text-sm italic'}>
             You're not eligible for a loan right now.{' '}
             {!user?.lastBetTime || !latestPortfolio
@@ -38,7 +40,7 @@ export function LoansModal(props: {
                   latestPortfolio.investmentValue
                 )
               ? `You are over-leveraged. Sell some of your positions or place some good ${TRADE_TERM}s to become eligible.`
-              : latestPortfolio.loanTotal && user.nextLoanCached < 1
+              : latestPortfolio.loanTotal && nextLoanAmount < 1
               ? `We've already loaned you up to the current value of your ${TRADE_TERM}s. Place some more ${TRADE_TERM}s to become eligible again.`
               : ''}
           </span>

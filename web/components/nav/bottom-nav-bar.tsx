@@ -1,10 +1,16 @@
-import { Dialog, Transition } from '@headlessui/react'
 import {
-  GlobeAltIcon,
-  NewspaperIcon,
+  CloseButton,
+  Dialog,
+  DialogBackdrop,
+  DialogPanel,
+  Transition,
+  TransitionChild,
+} from '@headlessui/react'
+import {
   QuestionMarkCircleIcon,
   SearchIcon,
   UserCircleIcon,
+  GlobeAltIcon,
 } from '@heroicons/react/outline'
 import { MenuAlt3Icon, XIcon } from '@heroicons/react/solid'
 import clsx from 'clsx'
@@ -12,7 +18,6 @@ import { User } from 'common/user'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { Fragment, useState } from 'react'
-import { GiCapitol } from 'react-icons/gi'
 import { UnseenMessagesBubble } from 'web/components/messaging/messages-icon'
 import { NotificationsIcon } from 'web/components/notifications-icon'
 import { useIsIframe } from 'web/hooks/use-is-iframe'
@@ -22,7 +27,7 @@ import { trackCallback } from 'web/lib/service/analytics'
 import { Col } from '../layout/col'
 import { Row } from '../layout/row'
 import { Avatar } from '../widgets/avatar'
-import { CoinNumber } from '../widgets/coin-number'
+import { TokenNumber } from '../widgets/token-number'
 import Sidebar from './sidebar'
 import { NavItem } from './sidebar-item'
 
@@ -60,13 +65,13 @@ function getNavigation(user: User) {
 const signedOutNavigation = () => [
   { name: 'Browse', href: '/browse', icon: SearchIcon, alwaysShowName: true },
   {
-    name: 'Election',
-    href: '/election',
-    icon: GiCapitol,
+    name: 'Explore',
+    href: '/explore',
+    icon: GlobeAltIcon,
     alwaysShowName: true,
     // prefetch: false, // should we not prefetch this?
   },
-  { name: 'News', href: '/news', icon: NewspaperIcon, alwaysShowName: true },
+  // { name: 'News', href: '/news', icon: NewspaperIcon, alwaysShowName: true },
   {
     name: 'About',
     href: '/about',
@@ -159,21 +164,23 @@ function NavBarItem(props: {
         <Col className="relative mx-auto h-full w-full items-center">
           <Avatar size="sm" avatarUrl={user.avatarUrl} noLink />
           <Row className="gap-1">
-            <CoinNumber
+            <TokenNumber
               amount={user?.balance}
               className="text-violet-600 dark:text-violet-400"
               numberType="short"
               isInline
               coinClassName="!top-[0.15em]"
             />
-            <CoinNumber
-              amount={user?.cashBalance}
-              className="text-amber-600 dark:text-amber-400"
-              coinType="sweepies"
-              numberType="short"
-              isInline
-              coinClassName="!top-[0.15em]"
-            />
+            {user?.cashBalance > 0 && (
+              <TokenNumber
+                amount={user?.cashBalance}
+                className="text-amber-600 dark:text-amber-400"
+                coinType="sweepies"
+                numberType="short"
+                isInline
+                coinClassName="!top-[0.15em]"
+              />
+            )}
           </Row>
         </Col>
       </Link>
@@ -229,13 +236,13 @@ export function MobileSidebar(props: {
   const { sidebarOpen, setSidebarOpen } = props
   return (
     <div>
-      <Transition.Root show={sidebarOpen} as={Fragment}>
+      <Transition show={sidebarOpen} as={Fragment}>
         <Dialog
           as="div"
           className="fixed inset-0 z-50 flex justify-end"
           onClose={setSidebarOpen}
         >
-          <Transition.Child
+          <TransitionChild
             as={Fragment}
             enter="transition-opacity ease-linear duration-300"
             enterFrom="opacity-0"
@@ -245,9 +252,9 @@ export function MobileSidebar(props: {
             leaveTo="opacity-0"
           >
             {/* background cover */}
-            <Dialog.Overlay className="bg-canvas-100/75 fixed inset-0" />
-          </Transition.Child>
-          <Transition.Child
+            <DialogBackdrop className="bg-canvas-100/75 fixed inset-0" />
+          </TransitionChild>
+          <TransitionChild
             as={Fragment}
             enter="transition ease-in-out duration-300 transform"
             enterFrom="translate-x-full"
@@ -256,18 +263,15 @@ export function MobileSidebar(props: {
             leaveFrom="translate-x-0"
             leaveTo="translate-x-full"
           >
-            <div className="bg-canvas-0 relative w-full max-w-xs">
+            <DialogPanel className="bg-canvas-0 relative w-full max-w-xs">
               <Sidebar className="mx-2 overflow-y-auto" isMobile />
-              <button
-                className="hover:text-primary-600 focus:text-primary-600 text-ink-500 absolute left-0 top-0 z-50 -translate-x-full outline-none"
-                onClick={() => setSidebarOpen(false)}
-              >
+              <CloseButton className="hover:text-primary-600 focus:text-primary-600 text-ink-500 absolute left-0 top-0 z-50 -translate-x-full outline-none">
                 <XIcon className="m-2 h-8 w-8" />
-              </button>
-            </div>
-          </Transition.Child>
+              </CloseButton>
+            </DialogPanel>
+          </TransitionChild>
         </Dialog>
-      </Transition.Root>
+      </Transition>
     </div>
   )
 }

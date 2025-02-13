@@ -8,7 +8,7 @@ import { Col } from 'web/components/layout/col'
 import { Title } from 'web/components/widgets/title'
 import { CloseDate } from 'web/components/contract/contract-details'
 import { isEqual, uniqBy } from 'lodash'
-import { formatTimeShort } from 'web/lib/util/time'
+import { formatTimeShort } from 'client-common/lib/time'
 import { Row } from '../layout/row'
 import { UserFromId } from 'web/components/user-from-id'
 import { CollapsibleContent } from '../widgets/collapsible-content'
@@ -17,6 +17,7 @@ import { filterDefined } from 'common/util/array'
 
 type ContractEdit = {
   id: string
+  rowId: number
   question?: string
   description?: string | JSONContent
   closeTime?: number
@@ -59,6 +60,7 @@ export const ContractHistoryButton = (props: {
       data.map((edit) => {
         const contract = edit.data as Contract
         return {
+          rowId: edit.id,
           ...contract,
           editCreated: new Date(edit.created_time).valueOf(),
           idempotencyKey: edit.idempotency_key
@@ -74,6 +76,7 @@ export const ContractHistoryButton = (props: {
     // throwaway
     rawEdits.unshift({
       ...contract,
+      rowId: -1,
       editCreated: Date.now(),
       idempotencyKey: Math.random().toString(),
       updatedKeys: null,
@@ -101,6 +104,7 @@ export const ContractHistoryButton = (props: {
           : undefined
       if (prev) {
         edits.push({
+          rowId: edit.rowId,
           id: edit.id,
           question: edit.question != prev.question ? edit.question : undefined,
           description: !isEqual(edit.description, prev.description)
@@ -120,6 +124,7 @@ export const ContractHistoryButton = (props: {
       } else {
         // market created
         edits.push({
+          rowId: edit.rowId,
           id: edit.id,
           question: edit.question,
           description: edit.description,
@@ -157,7 +162,7 @@ export const ContractHistoryButton = (props: {
           <Col className="gap-4 px-2">
             {edits?.map((edit, i) => {
               return (
-                <div key={edit.id}>
+                <div key={edit.rowId}>
                   <Row className={'items-center gap-1 text-sm'}>
                     <UserFromId userId={edit.editorId} />
 
@@ -177,6 +182,7 @@ export const ContractHistoryButton = (props: {
                       <div className="bg-canvas-0 rounded-lg p-2">
                         <CollapsibleContent
                           content={edit.description}
+                          mediaSize="md"
                           stateKey={`isCollapsed-contract-${edit.id}`}
                           defaultCollapse
                         />

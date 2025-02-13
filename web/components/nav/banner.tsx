@@ -6,6 +6,8 @@ import { Row } from '../layout/row'
 import { LogoIcon } from '../icons/logo-icon'
 import { usePersistentLocalState } from 'web/hooks/use-persistent-local-state'
 import Link from 'next/link'
+import { ArrowRightIcon } from '@heroicons/react/solid'
+import { useUser } from 'web/hooks/use-user'
 
 export function Banner(props: {
   setShowBanner?: (show: boolean) => void
@@ -104,7 +106,7 @@ export function DowntimeBanner() {
   if (!maintainanceBannerEnabled) return null
   return (
     <Banner className=" bg-primary-100 hover:bg-primary-200 dark:text-primary-800 text-primary-700  hover:text-primary-900 items-center py-2  transition-colors">
-      ⚠️ Manifold will be down at 9PM PT for about 1 hour, as we upgrade our
+      ⚠️ Manifold will be down at 9PM PT for about 2 hours, as we upgrade our
       financial infrastructure.
     </Banner>
   )
@@ -130,6 +132,29 @@ export const useBanner = (name: string) => {
   return [!bannerSeen, () => setBannerSeen(1)] as const
 }
 
+export const FeeBanner = () => {
+  const [showBanner, hideBanner] = useBanner('fee-change')
+  if (!showBanner) return null
+  return (
+    <Banner
+      className="bg-primary-100 hover:bg-primary-200 dark:text-primary-800 text-primary-700 hover:text-primary-900 items-center py-2 transition-colors"
+      link="https://manifoldmarkets.notion.site/Fee-change-18b54492ea7a80a6b069d488fc3613ee"
+      setShowBanner={hideBanner}
+    >
+      <Row className="items-center gap-2">
+        <LogoIcon
+          className="h-6 w-6 flex-shrink-0 text-black dark:text-white"
+          height={24}
+          width={24}
+          aria-hidden
+          strokeWidth={1}
+        />
+        <div>Sweepstakes fees changing on Feb 3rd. Read more</div>
+      </Row>
+    </Banner>
+  )
+}
+
 export const TwombaBanner = () => {
   const [showBanner, hideBanner] = useBanner('twomba')
   if (!showBanner) return null
@@ -149,6 +174,25 @@ export const TwombaBanner = () => {
         />
         <div>Sweepstakes cash prizes are here! Read more</div>
       </Row>
+    </Banner>
+  )
+}
+
+export const ManaForeverBanner = () => {
+  const [showBanner, hideBanner] = useBanner('mana-forever')
+  const user = useUser()
+  if (!showBanner || !user) return null
+  if (user.createdTime > new Date('2025-02-12').getTime()) return null
+  return (
+    <Banner
+      className="bg-primary-100 hover:bg-primary-200  dark:text-primary-800 text-primary-700 hover:text-primary-900 items-center py-2 transition-colors"
+      link="https://manifoldmarkets.notion.site/Mana-forever-19154492ea7a80c08410ea8c64fac67e?pvs=74"
+      setShowBanner={hideBanner}
+    >
+      <div>
+        We are shutting down sweepstakes to focus on the manaverse! See more{' '}
+        <ArrowRightIcon className="ml-1 inline-block h-4 w-4" />
+      </div>
     </Banner>
   )
 }

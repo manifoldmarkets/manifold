@@ -20,7 +20,7 @@ import { getCreatorRank, getProfitRank } from 'web/lib/supabase/users'
 import { type LiteGroup, TOPIC_KEY } from 'common/group'
 import { Row } from 'web/components/layout/row'
 import { TopicPillSelector } from 'web/components/topics/topic-selector'
-import DropdownMenu from 'web/components/comments/dropdown-menu'
+import DropdownMenu from 'web/components/widgets/dropdown-menu'
 import { DropdownPill } from 'web/components/search/filter-pills'
 import { usePersistentQueryState } from 'web/hooks/use-persistent-query-state'
 import { useTopicFromRouter } from 'web/hooks/use-topic-from-router'
@@ -240,7 +240,10 @@ const LEADERBOARD_TYPES = [
 
 type LeaderboardType = (typeof LEADERBOARD_TYPES)[number]['value']
 
-type Entry = LeaderboardEntry & { totalReferredProfit?: number }
+type Entry = LeaderboardEntry & {
+  totalReferredProfit?: number
+  isBannedFromPosting?: boolean
+}
 type MyEntry = Omit<Entry, 'userId'>
 type MyScores = {
   [key in LeaderboardType]?: { mana: MyEntry; cash: MyEntry }

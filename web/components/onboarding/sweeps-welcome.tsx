@@ -51,14 +51,14 @@ export function SweepsWelcomePage() {
 
   return (
     <>
-      <Row className=" text-primary-700 mb-6 mt-2 h-10 gap-2 text-center text-2xl font-normal">
+      <Row className=" text-primary-700 mb-6 mt-2 h-10 w-full gap-2 text-center text-2xl font-normal">
         <div className="mt-1">Welcome,</div>
         <input
           type="text"
           placeholder="Name"
           value={name}
           className={clsx(
-            'decoration-ink-500 border-none bg-transparent px-0 text-2xl font-semibold underline decoration-dotted underline-offset-[6px] outline-none hover:decoration-solid focus:underline focus:decoration-solid focus:underline-offset-[6px] focus:outline-none focus:ring-0 focus-visible:outline-none'
+            'decoration-ink-500 min-w-0 max-w-[180px] border-none bg-transparent px-0 text-2xl font-semibold underline decoration-dotted underline-offset-[6px] outline-none hover:decoration-solid focus:underline focus:decoration-solid focus:underline-offset-[6px] focus:outline-none focus:ring-0 focus-visible:outline-none sm:max-w-[250px]'
           )}
           maxLength={30}
           onChange={(e) => {
@@ -79,7 +79,7 @@ export function SweepsWelcomePage() {
       </div>
       <Image
         src="/welcome/manifold-example.gif"
-        className="my-4 h-full w-full max-w-xl self-center object-contain"
+        className="my-4 w-full max-w-xl self-center object-contain"
         alt={'Manifold example animation'}
         width={200}
         height={100}
@@ -106,14 +106,13 @@ export function SweepsCoinsPage() {
         </span>
         is play money
       </span>
-      <span className="coin-offset relative ml-[1.1em] mt-4 inline-flex items-center md:mt-6">
-        <SweepiesCoin className="absolute -left-[var(--coin-offset)] top-[var(--coin-top-offset)] min-h-[1em] min-w-[1em]" />
-        <span className="mr-1.5 font-semibold text-amber-700 dark:text-amber-300">
-          {' '}
-          {SWEEPIES_NAME} ({SWEEPIES_MONIKER})
-        </span>
-        can be redeemed for <b className="ml-1">real money</b>
-      </span>
+      <div className="mt-4 md:mt-6">
+        <SweepiesCoin className="mr-1 inline-block h-[1em] w-[1em] translate-y-[-0.1em] align-middle" />
+        <span className="font-semibold text-amber-700 dark:text-amber-300">
+          {capitalize(SWEEPIES_NAME)} ({SWEEPIES_MONIKER})
+        </span>{' '}
+        winnings can be redeemed for <b>real money</b>
+      </div>
 
       <div className="mt-4 md:mt-6">
         Not all questions allow for {TRADING_TERM} in {SWEEPIES_NAME}. Look for

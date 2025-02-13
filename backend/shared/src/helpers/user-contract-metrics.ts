@@ -1,9 +1,6 @@
-import { groupBy, uniq, uniqBy } from 'lodash'
-import { Contract } from 'common/contract'
-import { Bet } from 'common/bet'
+import { uniq, uniqBy } from 'lodash'
 import {
   calculateAnswerMetricsWithNewBetsOnly,
-  calculateUserMetrics,
   MarginalBet,
 } from 'common/calculate-metrics'
 import { bulkUpsert, bulkUpsertQuery } from 'shared/supabase/utils'
@@ -15,21 +12,6 @@ import { ContractMetric } from 'common/contract-metric'
 import { Tables } from 'common/supabase/utils'
 import { log } from 'shared/utils'
 import { filterDefined } from 'common/util/array'
-
-export async function updateContractMetricsForUsers(
-  contract: Contract,
-  allContractBets: Bet[]
-) {
-  const betsByUser = groupBy(allContractBets, 'userId')
-  const metrics: ContractMetric[] = []
-
-  for (const userId in betsByUser) {
-    const userBets = betsByUser[userId]
-    metrics.push(...calculateUserMetrics(contract, userBets, userId))
-  }
-
-  await bulkUpdateContractMetrics(metrics)
-}
 
 const getColumnsFromMetrics = (metrics: Omit<ContractMetric, 'id'>[]) =>
   metrics.map(
@@ -45,6 +27,7 @@ const getColumnsFromMetrics = (metrics: Omit<ContractMetric, 'id'>[]) =>
         total_shares_no: m.totalShares['NO'] ?? null,
         total_shares_yes: m.totalShares['YES'] ?? null,
         answer_id: m.answerId,
+        loan: m.loan,
       } as Tables['user_contract_metrics']['Insert'])
   )
 
@@ -63,6 +46,9 @@ export async function bulkUpdateContractMetrics(
 export function bulkUpdateContractMetricsQuery(
   metrics: Omit<ContractMetric, 'id'>[]
 ) {
+  if (metrics.length === 0) {
+    return 'select 1 where false'
+  }
   return bulkUpsertQuery(
     'user_contract_metrics',
     [],

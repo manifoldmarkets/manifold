@@ -2,7 +2,7 @@ import { UserIcon } from '@heroicons/react/outline'
 import clsx from 'clsx'
 import { Contract, BinaryContract } from 'common/contract'
 import { useState } from 'react'
-import { useBetsOnce } from 'web/hooks/use-bets'
+
 import { MODAL_CLASS, Modal, SCROLLABLE_MODAL_CLASS } from '../layout/modal'
 import { Row } from '../layout/row'
 import { LoadingIndicator } from '../widgets/loading-indicator'
@@ -21,7 +21,9 @@ import { Button, ColorType } from 'web/components/buttons/button'
 import { UserHovercard } from '../user/user-hovercard'
 import { useBountyAwardCount } from 'web/hooks/use-bounties'
 import { FaUser } from 'react-icons/fa6'
-import { shortenNumber } from 'web/lib/util/formatNumber'
+import { shortenNumber } from 'common/util/formatNumber'
+import { useBetsOnce } from 'client-common/hooks/use-bets'
+import { api } from 'web/lib/api/api'
 
 export function TradesButton(props: {
   contract: Contract
@@ -205,7 +207,7 @@ function BetsModalContent(props: {
 }) {
   const { contract, answerDetails } = props
   const answer = answerDetails?.answer
-  const bets = useBetsOnce({
+  const bets = useBetsOnce((params) => api('bets', params), {
     contractId: contract.id,
     answerId: answer?.id,
     filterRedemptions: true,

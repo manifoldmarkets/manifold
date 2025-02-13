@@ -8,6 +8,7 @@ type AnyTxnType =
   | Donation
   | Tip
   | LootBoxPurchase
+  | AdminReward
   | Manalink
   | Referral
   | UniqueBettorBonus
@@ -57,6 +58,8 @@ type AnyTxnType =
   | CashBonus
   | CashOutPending
   | KycBonus
+  | ProfitFee
+  | UndoResolutionFee
 
 export type AnyTxnCategory = AnyTxnType['category']
 
@@ -552,6 +555,40 @@ type ManifoldTopUp = {
   token: 'M$'
 }
 
+type ProfitFee = {
+  category: 'CONTRACT_RESOLUTION_FEE'
+  fromType: 'USER'
+  toType: 'BANK'
+  token: 'M$' | 'CASH'
+  data: {
+    contractId: string
+    payoutStartTime: number
+    answerId?: string
+  }
+}
+
+type UndoResolutionFee = {
+  category: 'UNDO_CONTRACT_RESOLUTION_FEE'
+  fromType: 'BANK'
+  toType: 'USER'
+  token: 'M$' | 'CASH'
+  data: {
+    revertsTxnId: string
+    contractId: string
+  }
+}
+
+type AdminReward = {
+  category: 'ADMIN_REWARD'
+  fromType: 'BANK'
+  toType: 'USER'
+  token: 'M$'
+  data: {
+    reportId: number
+    updateType: string
+  }
+}
+
 export type AddSubsidyTxn = Txn & AddSubsidy
 export type RemoveSubsidyTxn = Txn & RemoveSubsidy
 export type DonationTxn = Txn & Donation
@@ -604,3 +641,6 @@ export type ExtraPurchasedManaTxn = Txn & ExtraPurchasedMana
 export type ManifoldTopUpTxn = Txn & ManifoldTopUp
 export type KycBonusTxn = Txn & KycBonus
 export type CashOutPendingTxn = Txn & CashOutPending
+export type ProfitFeeTxn = Txn & ProfitFee
+export type UndoResolutionFeeTxn = Txn & UndoResolutionFee
+export type AdminRewardTxn = Txn & AdminReward

@@ -13,7 +13,7 @@ import {
 import { useNativeMessages } from 'web/hooks/use-native-messages'
 import { createContext, useContext, useEffect } from 'react'
 import { usePrivateUser } from 'web/hooks/use-user'
-import { useEvent } from 'web/hooks/use-event'
+import { useEvent } from 'client-common/hooks/use-event'
 import { auth } from 'web/lib/firebase/users'
 import { User as FirebaseUser } from 'firebase/auth'
 import { postMessageToNative } from 'web/lib/native/post-message'

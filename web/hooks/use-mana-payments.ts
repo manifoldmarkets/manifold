@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { ManaPayTxn } from 'common/txn'
 import { sortBy, uniqBy } from 'lodash'
-import { useEvent } from 'web/hooks/use-event'
+import { useEvent } from 'client-common/hooks/use-event'
 import { buildArray } from 'common/util/array'
 import { api } from 'web/lib/api/api'
 

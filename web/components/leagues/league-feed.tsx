@@ -11,7 +11,7 @@ import { FeedBet } from '../feed/feed-bets'
 import { FeedComment } from '../comments/comment'
 import { useIsAuthorized } from 'web/hooks/use-user'
 import { ContractMention } from '../contract/contract-mention'
-import { LoadMoreUntilNotVisible } from '../widgets/visibility-observer'
+import { LoadMoreUntilNotVisible } from 'web/components/widgets/visibility-observer'
 import { LoadingIndicator } from '../widgets/loading-indicator'
 
 export function LeagueFeed(props: { season: number; cohort: string }) {

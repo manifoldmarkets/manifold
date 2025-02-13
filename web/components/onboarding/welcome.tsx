@@ -4,7 +4,7 @@ import { useRouter } from 'next/router'
 import Image from 'next/image'
 
 import { STARTING_BALANCE } from 'common/economy'
-import { humanish, User } from 'common/user'
+import { User } from 'common/user'
 import { buildArray } from 'common/util/array'
 import { formatMoney } from 'common/util/format'
 import { Button } from 'web/components/buttons/button'
@@ -18,6 +18,7 @@ import { Group } from 'common/group'
 import {
   getSubtopics,
   GROUP_SLUGS_TO_HIDE_FROM_WELCOME_FLOW,
+  TOPICS_TO_HIDE_FROM_WELCOME_FLOW,
   TOPICS_TO_SUBTOPICS,
 } from 'common/topics'
 import { intersection, orderBy, uniq, uniqBy } from 'lodash'
@@ -29,13 +30,11 @@ import { api, updateUser, followTopic, followUser } from 'web/lib/api/api'
 import { randomString } from 'common/util/random'
 import { unfollowTopic } from 'web/lib/supabase/groups'
 import { PillButton } from 'web/components/buttons/pill-button'
-import { OnboardingVerifyPhone } from 'web/components/onboarding-verify-phone'
 import { removeEmojis } from 'common/util/string'
 import { unauthedApi } from 'common/util/api'
 import { getSavedContractVisitsLocally } from 'web/hooks/use-save-visits'
 import { capitalize } from 'lodash'
 import { TRADE_TERM } from 'common/envs/constants'
-import { SweepsCoinsPage, SweepsWelcomePage } from './sweeps-welcome'
 import { convertGroup } from 'common/supabase/groups'
 
 const FORCE_SHOW_WELCOME_MODAL = false
@@ -76,8 +75,8 @@ export function Welcome(props: { setFeedKey?: (key: string) => void }) {
   const [trendingTopics, setTrendingTopics] = useState<Group[]>([])
 
   const availablePages = buildArray([
-    <SweepsWelcomePage />,
-    <SweepsCoinsPage />,
+    <WhatIsManifoldPage />,
+    <PredictionMarketPage />,
     <TopicsPage
       trendingTopics={trendingTopics}
       userInterestedTopics={userInterestedTopics}
@@ -87,7 +86,7 @@ export function Welcome(props: { setFeedKey?: (key: string) => void }) {
       user={user}
       goBack={() => handleSetPage(page - 1)}
     />,
-    user && !humanish(user) && <OnboardingVerifyPhone onClose={increasePage} />,
+    // user && !humanish(user) && <OnboardingVerifyPhone onClose={increasePage} />,
   ])
   const showBottomButtons = page < 2
 
@@ -170,7 +169,7 @@ export function Welcome(props: { setFeedKey?: (key: string) => void }) {
   if (!shouldShowWelcomeModal) return <></>
 
   return (
-    <Modal open={open} size={'lg'} position={'bottom'}>
+    <Modal open={open} size={'lg'}>
       <Col className="bg-canvas-0 text-md rounded-md px-4 py-6 md:w-full md:text-lg lg:px-8">
         {availablePages[page]}
         <Col>
@@ -338,7 +337,9 @@ function TopicsPage(props: {
     string[] | undefined
   >()
 
-  const topics = Object.keys(TOPICS_TO_SUBTOPICS)
+  const topics = Object.keys(TOPICS_TO_SUBTOPICS).filter(
+    (topic) => !TOPICS_TO_HIDE_FROM_WELCOME_FLOW.includes(topic)
+  )
 
   useEffect(() => {
     if (userBetInTopics.length > 0) {

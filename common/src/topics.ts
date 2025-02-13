@@ -13,22 +13,7 @@ export const TOPICS_TO_SUBTOPICS: { [key: string]: TopicInfo[] } = {
       name: '🇺🇸 USA',
       groupIds: ['AjxQR8JMpNyDqtiqoA96', 'rr3rBJMwh9PW8hwrgR4J'],
     },
-    { name: '🇬🇧 UK', groupIds: ['aavkiDd6uZggfL3geuV2'] },
-    {
-      // Geopolitics, Europe, China, India, Russia, Latam, Middle East, Africa, Asia
-      name: '🌍 World',
-      groupIds: [
-        '2wNGnksxJzypXZtiTLNL',
-        'ue52QI4BQgJgAJJNjLHr',
-        'oWTzfoeemQGkSoPFn2T7',
-        'Y2J00UcVhr3wKq2lAOAy',
-        'xg8wCPeM9JP6gD0igBrA',
-        'dFsZaGwyohGDVkJi1C3E',
-        '5mzNYaPKc4qXC5J0npKe',
-        'bPTxMZhUYsIUXsWT969d',
-        'DX94A1LQmpckcVdz5Hb3',
-      ],
-    },
+    { name: '🇨🇳 China', groupIds: ['oWTzfoeemQGkSoPFn2T7'] },
     {
       // Ukraine-Russia War, Russia, Ukraine
       name: '🇷🇺🇺🇦 Russia & Ukraine',
@@ -45,6 +30,13 @@ export const TOPICS_TO_SUBTOPICS: { [key: string]: TopicInfo[] } = {
         'ECjphikMbmosJsDAAJoU', // Israel
       ],
     },
+    { name: '🇬🇧 UK', groupIds: ['aavkiDd6uZggfL3geuV2'] },
+    { name: '🇪🇺 Europe', groupIds: ['ue52QI4BQgJgAJJNjLHr'] },
+    { name: '🇮🇳 India', groupIds: ['Y2J00UcVhr3wKq2lAOAy'] },
+    { name: '🌎 LatAm', groupIds: ['DX94A1LQmpckcVdz5Hb3'] },
+    { name: '🌏 Africa', groupIds: ['dFsZaGwyohGDVkJi1C3E'] },
+    { name: '🌏 Middle East', groupIds: ['xg8wCPeM9JP6gD0igBrA'] },
+    { name: '🌎 Asia', groupIds: ['bPTxMZhUYsIUXsWT969d'] },
   ],
   '💻 Tech': [
     {
@@ -59,8 +51,11 @@ export const TOPICS_TO_SUBTOPICS: { [key: string]: TopicInfo[] } = {
       groupIds: [
         'XMhZ5LbQoLMZiOpQJRnj', // Science
         '97oNExy8iFftY2EgdkLw', // Climate
-        'JpUqUqRn9sSWxrk0Sq35', // Health
       ],
+    },
+    {
+      name: '🏥 Health',
+      groupIds: ['JpUqUqRn9sSWxrk0Sq35'],
     },
     {
       // AI, Technical AI Timelines
@@ -76,27 +71,6 @@ export const TOPICS_TO_SUBTOPICS: { [key: string]: TopicInfo[] } = {
       groupIds: ['S1tbcVt1t5Bd9O5mVCx1'],
     },
   ],
-  '💼 Business': [
-    {
-      // Finance, Economics
-      name: '💵 Econ',
-      groupIds: ['CgB83AAMkkOHSrTnzani', 'p88Ycq6yFd5ECKqq9PFO'],
-    },
-    {
-      name: '🦄 Startups',
-      groupIds: ['19c319ca-033c-474f-b417-5f07efe88ec0'],
-    },
-    {
-      // Stocks, Tech Stocks
-      name: '📈 Stocks',
-      groupIds: ['QDQfgsFiQrNNlZhsRGf5', 'pK06hNX8MsNw8zaBsX2N'],
-    },
-    {
-      // Crypto, Bitcoin
-      name: '🪙 Crypto',
-      groupIds: ['YuJw0M1xvUHrpiRRuKso', 'WBeBD6FyMd0NvSL0qjMb'],
-    },
-  ],
   '🏟️ Sports': [
     {
       name: '🏀 Basketball',
@@ -106,7 +80,6 @@ export const TOPICS_TO_SUBTOPICS: { [key: string]: TopicInfo[] } = {
         '9a003f6b-9fd1-46ab-871d-2904953c4d5b', // March Madness 2024
         'beeb69e0-b36f-451a-80e1-e059df456bb1', // College Basketball
         'i0v3cXwuxmO9fpcInVYb', // NBA
-        // TODO: merge these groups
       ],
     },
     {
@@ -114,26 +87,42 @@ export const TOPICS_TO_SUBTOPICS: { [key: string]: TopicInfo[] } = {
       name: '🏈 NFL',
       groupIds: ['TNQwmbE5p6dnKx2e6Qlp', 'ky1VPTuxrLXMnHyajZFp'],
     },
-    { name: '⚽ Soccer', groupIds: ['ypd6vR44ZzJyN9xykx6e'] },
-    { name: '♟️ Chess', groupIds: ['ED7Cu6lVPshJkZ7FYePW'] },
     { name: '⚾ Baseball', groupIds: ['786nRQzgVyUnuUtaLTGW'] },
+    { name: '⚽ Soccer', groupIds: ['ypd6vR44ZzJyN9xykx6e'] },
+    { name: '🏒 NHL', groupIds: ['lccgApXa1l7O5ZH3XfhH'] },
     { name: '🏎️ F1', groupIds: ['OyHBKJOz9YaGkDctpwuY'] },
+    { name: '♟️ Chess', groupIds: ['ED7Cu6lVPshJkZ7FYePW'] },
     { name: '🚲 Cycling', groupIds: ['2yisxJryUq9V5sG7P6Gy'] },
-    // { name: '🎾 Tennis', groupIds: ['1mvN9vIVIopcWiAsXhzp'] },
-    // { name: '🏏 Cricket', groupIds: ['LcPYoqxSRdeQMms4lR3g'] },
+    { name: '🎾 Tennis', groupIds: ['1mvN9vIVIopcWiAsXhzp'] },
+    { name: '🏏 Cricket', groupIds: ['LcPYoqxSRdeQMms4lR3g'] },
   ],
-  '🍿 Media': [
-    // Movies, TV Shows, Music, Celebrities
+  '🎬 Entertainment': [
     {
-      name: '🍿 Media',
+      name: '🤩 Pop culture',
       groupIds: [
-        'KSeNIu7AWgiBBM5FqVuB',
-        'Xuc2UY8gGfjQqFXwxq5d',
-        '4QIcUOfCSSha0JZHAg9X',
-        'EUSEngFk1dGGBfaMeAmh',
+        'eJZecx6r22G2NriYYXcC', // Culture
+        'XU1fOYURSnb58lgsqaly', // Entertainment & Pop culture
+        '4QIcUOfCSSha0JZHAg9X', // celebrities
       ],
     },
-    { name: '🎮 Gaming', groupIds: ['5FaFmmaNNFTSA5r0vTAi'] },
+    {
+      name: '🍿 Movies & TV',
+      groupIds: [
+        'KSeNIu7AWgiBBM5FqVuB', // Movies
+        'EUSEngFk1dGGBfaMeAmh', // TV and Film
+      ],
+    },
+    {
+      name: '🎶 Music',
+      groupIds: ['Xuc2UY8gGfjQqFXwxq5d'],
+    },
+    {
+      name: '🎮 Gaming',
+      groupIds: [
+        '5FaFmmaNNFTSA5r0vTAi', // Gaming
+        '9FaZmHrfS8IcDJyu6pUD', // Video Games
+      ],
+    },
     {
       name: '🎮️ Destiny.gg',
       groupIds: ['W2ES30fRo6CCbPNwMTTj'],
@@ -143,14 +132,74 @@ export const TOPICS_TO_SUBTOPICS: { [key: string]: TopicInfo[] } = {
       groupIds: ['uJSql24HUqpEpVU0FrjI'],
     },
   ],
+  '💵 Business': [
+    {
+      name: '📈 Finance & Stocks',
+      groupIds: [
+        'pmK8sntWL1SDkMm53UBR', // Business
+        'CgB83AAMkkOHSrTnzani', // Finance
+        'QDQfgsFiQrNNlZhsRGf5', // Stocks
+        'pK06hNX8MsNw8zaBsX2N', // Tech Stocks
+        '1a9ef4d5-dcc6-468f-a9b7-feccdaa92733', // Big Tech
+      ],
+    },
+    {
+      name: '📊 Econ',
+      groupIds: [
+        'p88Ycq6yFd5ECKqq9PFO', // Economics
+      ],
+    },
+    {
+      // Crypto, Bitcoin
+      name: '🪙 Crypto',
+      groupIds: ['YuJw0M1xvUHrpiRRuKso', 'WBeBD6FyMd0NvSL0qjMb'],
+    },
+  ],
 
-  '🪂 NSFW': [
+  '🤪 Fun': [
+    {
+      name: '🎲 Fun & games',
+      groupIds: [
+        '5V0GjAyN99OQpb96fwo8', // whale watching
+        'J8Z1KAZV31icklA4tgJW', // fairly random
+        'bBwafyeaiuwWwobwm2c4', // fun
+      ],
+    },
+    {
+      name: '🌐 Manifold',
+      groupIds: ['hzyCW27Hf9NzuXZRizeZ'],
+    },
+    {
+      name: '💪 Personal Goals',
+      groupIds: [
+        'izQp87CKagOVJp9Olm1p', // Personal goals
+        'wxAGTtNee5f2PTzjqSI2', // Personal
+      ],
+    },
     {
       // Sex and love, Dating
       name: '❤️‍🔥 Sex and love',
       groupIds: ['3syjPCC7PxE5KurTiTT3', 'j3ZE8fkeqiKmRGumy3O1'],
     },
+    {
+      name: '🐸 Meme stocks',
+      groupIds: [
+        '524e08a3-3589-4267-9009-818d6c89cfa4', // meme-stocks
+        '2T4mM0N5az2lYcaN5G50', // permanent-markets
+      ],
+    },
   ],
+}
+
+export const TOPICS_TO_HIDE_FROM_WELCOME_FLOW = [] as string[]
+if (
+  !TOPICS_TO_HIDE_FROM_WELCOME_FLOW.every((topic) =>
+    Object.keys(TOPICS_TO_SUBTOPICS).includes(topic)
+  )
+) {
+  throw new Error(
+    `${TOPICS_TO_HIDE_FROM_WELCOME_FLOW.join(', ')} contains invalid topics`
+  )
 }
 
 export const GROUP_SLUGS_TO_HIDE_FROM_WELCOME_FLOW = [
@@ -194,3 +243,7 @@ export const getSubtopics = (topic: string) =>
 export const ALL_TOPICS = Object.keys(TOPICS_TO_SUBTOPICS)
   .map((topic) => getSubtopics(topic).map(([_, subtopic]) => subtopic))
   .flat()
+
+export const ALL_PARENT_TOPICS = Object.keys(TOPICS_TO_SUBTOPICS).filter(
+  (topic) => topic !== '🪂 NSFW'
+)

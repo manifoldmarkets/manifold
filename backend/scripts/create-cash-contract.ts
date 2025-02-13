@@ -1,5 +1,6 @@
 import { runScript } from './run-script'
 import { createCashContractMain } from '../shared/src/create-cash-contract'
+import { HOUSE_LIQUIDITY_PROVIDER_ID } from 'common/antes'
 
 runScript(async () => {
   const manaContractId = process.argv[2]
@@ -15,7 +16,8 @@ runScript(async () => {
   try {
     const cashContract = await createCashContractMain(
       manaContractId,
-      subsidyAmount
+      subsidyAmount,
+      HOUSE_LIQUIDITY_PROVIDER_ID
     )
     console.log('Success ' + cashContract.id)
   } catch (error) {

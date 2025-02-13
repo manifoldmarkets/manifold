@@ -41,6 +41,9 @@ export type NewQuestionParams = {
   addAnswersMode?: add_answers_mode
   shouldAnswersSumToOne?: boolean
   precision?: number
+  sportsStartTimestamp?: string
+  sportsEventId?: string
+  sportsLeague?: string
 }
 
 export type CreateContractStateType =

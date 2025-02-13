@@ -19,6 +19,7 @@ export function SweepsToggle(props: {
     className,
   } = props
   const { prefersPlay, setPrefersPlay } = useSweepstakes()
+  if (!sweepsEnabled) return null
   const isPlay =
     isPlayProp !== undefined ? isPlayProp : sweepsEnabled ? prefersPlay : true
 

@@ -1,6 +1,5 @@
 import { GiftIcon, StarIcon } from '@heroicons/react/solid'
 import clsx from 'clsx'
-import { REFERRAL_AMOUNT } from 'common/economy'
 import { TRADED_TERM } from 'common/envs/constants'
 import {
   AirdropData,
@@ -26,7 +25,6 @@ import { sortBy } from 'lodash'
 import Link from 'next/link'
 import { useState } from 'react'
 import { BsBank } from 'react-icons/bs'
-import { Referrals } from 'web/components/buttons/referrals-button'
 import { Col } from 'web/components/layout/col'
 import { Row } from 'web/components/layout/row'
 import { MultiUserReactionModal } from 'web/components/multi-user-reaction-link'
@@ -48,15 +46,14 @@ import {
   NumericValueLabel,
   ProbPercentLabel,
 } from 'web/components/outcome-label'
-import { SEARCH_TYPE_KEY } from 'web/components/supabase-search'
+import { SEARCH_TYPE_KEY } from 'web/components/search'
 import { Avatar } from 'web/components/widgets/avatar'
 import { useReview } from 'web/hooks/use-review'
-import { useUser } from 'web/hooks/use-user'
 import { SpiceCoin } from 'web/public/custom-components/spiceCoin'
 import { Button } from '../buttons/button'
 import { Modal } from '../layout/modal'
 import { Rating, ReviewPanel } from '../reviews/stars'
-import { CoinNumber } from '../widgets/coin-number'
+import { TokenNumber } from '../widgets/token-number'
 import { Linkify } from '../widgets/linkify'
 import { linkClass } from '../widgets/site-link'
 import {
@@ -798,13 +795,27 @@ export function MarketResolvedNotification(props: {
 
   const resolvedByAdmin = sourceUserUsername != sourceContractCreatorUsername
 
+  const showManifoldAsResolver = token === 'CASH'
+
+  const resolverName = showManifoldAsResolver
+    ? MANIFOLD_USER_NAME
+    : resolvedByAdmin
+    ? 'A mod'
+    : sourceUserName
+  const resolverUsername = showManifoldAsResolver
+    ? MANIFOLD_USER_USERNAME
+    : sourceUserUsername
+  const resolverAvatarUrl = showManifoldAsResolver
+    ? MANIFOLD_AVATAR_URL
+    : notification.sourceUserAvatarUrl
+
   const content =
     sourceText === 'CANCEL' ? (
       <>
         <NotificationUserLink
           userId={sourceId}
-          name={resolvedByAdmin ? 'A mod' : sourceUserName}
-          username={sourceUserUsername}
+          name={resolverName}
+          username={resolverUsername}
         />{' '}
         cancelled {isChildOfGroup && <span>the question</span>}
         {!isChildOfGroup && (
@@ -821,8 +832,8 @@ export function MarketResolvedNotification(props: {
       <>
         <NotificationUserLink
           userId={sourceId}
-          name={resolvedByAdmin ? 'A mod' : sourceUserName}
-          username={sourceUserUsername}
+          name={resolverName}
+          username={resolverUsername}
         />{' '}
         resolved {isChildOfGroup && <span>the question</span>}
         {!isChildOfGroup && (
@@ -878,7 +889,10 @@ export function MarketResolvedNotification(props: {
         icon={
           <>
             <AvatarNotificationIcon
-              notification={notification}
+              notification={{
+                ...notification,
+                sourceUserAvatarUrl: resolverAvatarUrl,
+              }}
               symbol={sourceText === 'CANCEL' ? '🚫' : profitable ? '💰' : '☑️'}
             />
             {!!secondaryTitle && (
@@ -922,7 +936,7 @@ export function MarketResolvedNotification(props: {
               />
 
               <NotificationIcon
-                symbol={<CoinNumber hideAmount={true} coinType={token} />}
+                symbol={<TokenNumber hideAmount={true} coinType={token} />}
                 symbolBackgroundClass={
                   profit < 0
                     ? 'border-ink-300  border-2 ring-4 ring-ink-200'
@@ -1420,48 +1434,48 @@ function ReferralProgramNotification(props: {
   setHighlighted: (highlighted: boolean) => void
   isChildOfGroup?: boolean
 }) {
-  const { notification, highlighted, setHighlighted } = props
-  const [showModal, setShowModal] = useState(false)
-  const user = useUser()
-
-  return (
-    <NotificationFrame
-      notification={notification}
-      isChildOfGroup={false}
-      highlighted={highlighted}
-      setHighlighted={setHighlighted}
-      onClick={() => setShowModal(true)}
-      icon={
-        <AvatarNotificationIcon
-          notification={
-            {
-              sourceUserName: MANIFOLD_USER_NAME,
-              sourceUserUsername: MANIFOLD_USER_USERNAME,
-              sourceUserAvatarUrl: MANIFOLD_AVATAR_URL,
-            } as Notification
-          }
-          symbol={'💸'}
-        />
-      }
-      subtitle={<span>Tap here to see your referral code.</span>}
-    >
-      <span>
-        Refer friends and get{' '}
-        <CoinNumber
-          coinType={'MANA'}
-          amount={REFERRAL_AMOUNT}
-          className={clsx('mr-1 font-bold')}
-          isInline
-        />
-        on every sign up!
-      </span>
-      {user && showModal && (
-        <Modal open={showModal} setOpen={setShowModal}>
-          <Referrals user={user} />
-        </Modal>
-      )}
-    </NotificationFrame>
-  )
+  // const { notification, highlighted, setHighlighted } = props
+  // const [showModal, setShowModal] = useState(false)
+  // const user = useUser()
+  return null
+  // return (
+  //   <NotificationFrame
+  //     notification={notification}
+  //     isChildOfGroup={false}
+  //     highlighted={highlighted}
+  //     setHighlighted={setHighlighted}
+  //     onClick={() => setShowModal(true)}
+  //     icon={
+  //       <AvatarNotificationIcon
+  //         notification={
+  //           {
+  //             sourceUserName: MANIFOLD_USER_NAME,
+  //             sourceUserUsername: MANIFOLD_USER_USERNAME,
+  //             sourceUserAvatarUrl: MANIFOLD_AVATAR_URL,
+  //           } as Notification
+  //         }
+  //         symbol={'💸'}
+  //       />
+  //     }
+  //     subtitle={<span>Tap here to see your referral code.</span>}
+  //   >
+  //     <span>
+  //       Refer friends and get{' '}
+  //       <TokenNumber
+  //         coinType={'MANA'}
+  //         amount={REFERRAL_AMOUNT}
+  //         className={clsx('mr-1 font-bold')}
+  //         isInline
+  //       />
+  //       on every sign up!
+  //     </span>
+  //     {user && showModal && (
+  //       <Modal open={showModal} setOpen={setShowModal}>
+  //         <Referrals user={user} />
+  //       </Modal>
+  //     )}
+  //   </NotificationFrame>
+  // )
 }
 
 function FollowFromReferralNotification(props: {

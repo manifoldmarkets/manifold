@@ -14,7 +14,7 @@ import { UserLink } from 'web/components/widgets/user-link'
 import { useAdmin } from 'web/hooks/use-admin'
 import { useAPIGetter } from 'web/hooks/use-api-getter'
 import { useDisplayUserById } from 'web/hooks/use-user-supabase'
-import { formatTime } from 'web/lib/util/time'
+import { formatTime } from 'client-common/lib/time'
 import { uniq } from 'lodash'
 
 export default function CashTxnsPage() {

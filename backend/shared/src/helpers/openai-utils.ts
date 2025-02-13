@@ -2,7 +2,9 @@ import OpenAI from 'openai'
 import * as dayjs from 'dayjs'
 import { log } from 'shared/utils'
 import * as utc from 'dayjs/plugin/utc'
+import { APIError } from 'common/api/utils'
 dayjs.extend(utc)
+export type MODELS = 'o3-mini'
 
 export const generateEmbeddings = async (question: string) => {
   const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY })
@@ -83,38 +85,20 @@ export const generateImage = async (q: string) => {
     .catch((err) => (console.log(err), undefined))
 }
 
-export const promptGPT4 = async (prompt: string) => {
+export const promptOpenAI = async (prompt: string, model: MODELS) => {
   const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY })
 
   const result = await openai.chat.completions
     .create({
-      model: 'gpt-4o',
+      model,
       messages: [{ role: 'system', content: prompt }],
-      max_tokens: 4096,
     })
     .catch((err) => (console.log(err), undefined))
 
-  if (!result) return undefined
+  if (!result) throw new APIError(500, 'No result from OpenAI')
 
   const message = result.choices[0].message.content
-  console.log('GPT4 returned message:', message)
-  return message
-}
-
-export const promptGPT3 = async (prompt: string) => {
-  const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY })
-
-  const result = await openai.chat.completions
-    .create({
-      model: 'gpt-3.5-turbo',
-      messages: [{ role: 'system', content: prompt }],
-      max_tokens: 4096,
-    })
-    .catch((err) => (console.log(err), undefined))
-
-  if (!result) return undefined
-
-  const message = result.choices[0].message.content
-  console.log('GPT3 returned message:', message)
+  log('GPT4 returned message:', message)
+  if (!message) throw new APIError(500, 'No result from OpenAI')
   return message
 }

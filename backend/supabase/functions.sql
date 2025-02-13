@@ -166,7 +166,7 @@ FROM
 $function$;
 
 create
-or replace function public.firebase_uid () returns text language sql stable parallel SAFE as $function$
+or replace function public.firebase_uid () returns text language sql stable parallel SAFE leakproof as $function$
   select nullif(current_setting('request.jwt.claims', true)::json->>'sub', '')::text;
 $function$;
 
@@ -200,28 +200,6 @@ BEGIN
         answer_count DESC;
 END;
 $function$;
-
-create
-or replace function public.get_contract_metrics_with_contracts (uid text, count integer) returns table (contract_id text, metrics jsonb, contract jsonb) language sql immutable parallel SAFE as $function$
-select ucm.contract_id, ucm.data as metrics, c.data as contract
-from user_contract_metrics as ucm
-join contracts as c on c.id = ucm.contract_id
-where ucm.user_id = uid
-order by ((ucm.data)->'lastBetTime')::bigint desc
-limit count
-$function$;
-
-create
-or replace function public.get_contract_metrics_with_contracts (uid text, count integer, start integer) returns table (contract_id text, metrics jsonb, contract jsonb) language sql stable as $function$select ucm.contract_id,
-       ucm.data as metrics,
-       c.data as contract
-from user_contract_metrics as ucm
-         join contracts as c on c.id = ucm.contract_id
-where ucm.user_id = uid
-  and ucm.data->'lastBetTime' is not null
-  and ucm.answer_id is null
-order by ((ucm.data)->'lastBetTime')::bigint desc offset start
-    limit count$function$;
 
 create
 or replace function public.get_contract_voters (this_contract_id text) returns table (data json) language sql parallel SAFE as $function$
@@ -628,13 +606,12 @@ DECLARE
 -- @Austin, @JamesGrugett, @SG, @DavidChee, @Alice, @ian, @IngaWei, @mqp, @Sinclair, @ManifoldPolitics, @baraki
     strings TEXT[] := ARRAY[
         'igi2zGXsfxYPgB0DJTXVJVmwCOr2',
-        '5LZ4LgYuySdL1huCWe7bti02ghx2', 
-        'tlmGNz9kjXc2EteizMORes4qvWl2', 
-        'uglwf3YKOZNGjjEXKc5HampOFRE2', 
-        'qJHrvvGfGsYiHZkGY6XjVfIMj233', 
+        'tlmGNz9kjXc2EteizMORes4qvWl2',
+        'uglwf3YKOZNGjjEXKc5HampOFRE2',
+        'qJHrvvGfGsYiHZkGY6XjVfIMj233',
         'AJwLWoo3xue32XIiAVrL5SyR1WB2', -- ian
         'GRwzCexe5PM6ThrSsodKZT9ziln2',
-        '62TNqzdBx7X2q621HltsJm8UFht2', 
+        '62TNqzdBx7X2q621HltsJm8UFht2',
         '0k1suGSJKVUnHbCPEhHNpgZPkUP2',
         'vuI5upWB8yU00rP7yxj95J2zd952',
         'vUks7InCtYhBFrdLQhqXFUBHD4D2',

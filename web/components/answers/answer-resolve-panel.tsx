@@ -32,7 +32,6 @@ import {
   OpenProb,
 } from './answer-components'
 import { useAdmin } from 'web/hooks/use-admin'
-import { GradientContainer } from '../widgets/gradient-container'
 import { AmountInput } from '../widgets/amount-input'
 import { getAnswerColor } from '../charts/contract/choice'
 
@@ -150,6 +149,7 @@ function AnswersResolveOptions(props: {
         <Row className="justify-end gap-1">
           {!isInModal && (
             <ResolveConfirmationButton
+              size="xl"
               color={getAnswerResolveButtonColor(
                 resolveOption,
                 answerIds,
@@ -271,38 +271,44 @@ export const AnswersResolvePanel = (props: {
     answers.some((a) => a.userId !== contract.creatorId)
 
   return (
-    <GradientContainer>
-      <Col className="gap-3">
-        <ResolveHeader
-          contract={contract}
-          isCreator={user?.id === contract.creatorId}
-          onClose={onClose}
-          fullTitle={!inModal}
-        />
-        <AnswersResolveOptions
-          contract={contract}
-          resolveOption={resolveOption}
-          setResolveOption={setResolveOption}
-          chosenAnswers={chosenAnswers}
-        />
-        <Col className="gap-2">
-          {answers.map((answer) => (
-            <ResolutionAnswerItem
-              key={answer.id}
-              answer={answer}
-              contract={contract}
-              showChoice={showChoice}
-              chosenProb={chosenAnswers[answer.id]}
-              totalChosenProb={chosenTotal}
-              onChoose={onChoose}
-              onDeselect={onDeselect}
-              showAvatar={showAvatars}
-            />
-          ))}
-        </Col>
-        <ResolutionExplainer />
-      </Col>
-    </GradientContainer>
+    <Col className="gap-3">
+      <ResolveHeader
+        contract={contract}
+        isCreator={user?.id === contract.creatorId}
+        onClose={onClose}
+        fullTitle={!inModal}
+      />
+      {!contract.shouldAnswersSumToOne ? (
+        <div className="text-scarlet-500">
+          Independent multiple choice markets cannot currently be resolved.
+        </div>
+      ) : (
+        <>
+          <AnswersResolveOptions
+            contract={contract}
+            resolveOption={resolveOption}
+            setResolveOption={setResolveOption}
+            chosenAnswers={chosenAnswers}
+          />
+          <Col className="gap-2">
+            {answers.map((answer) => (
+              <ResolutionAnswerItem
+                key={answer.id}
+                answer={answer}
+                contract={contract}
+                showChoice={showChoice}
+                chosenProb={chosenAnswers[answer.id]}
+                totalChosenProb={chosenTotal}
+                onChoose={onChoose}
+                onDeselect={onDeselect}
+                showAvatar={showAvatars}
+              />
+            ))}
+          </Col>
+        </>
+      )}
+      <ResolutionExplainer />
+    </Col>
   )
 }
 
@@ -419,27 +425,25 @@ export const IndependentAnswersResolvePanel = (props: {
   )
 
   return (
-    <GradientContainer>
-      <Col className="gap-3">
-        <ResolveHeader
-          contract={contract}
-          isCreator={user?.id === contract.creatorId}
-          onClose={onClose}
-        />
-        <Col className="gap-2">
-          {sortedAnswers.map((answer) => (
-            <IndependentResolutionAnswerItem
-              key={answer.id}
-              contract={contract}
-              answer={answer}
-              color={getAnswerColor(answer)}
-              isAdmin={isAdmin}
-            />
-          ))}
-        </Col>
-        <ResolutionExplainer independentMulti />
+    <Col className="gap-3">
+      <ResolveHeader
+        contract={contract}
+        isCreator={user?.id === contract.creatorId}
+        onClose={onClose}
+      />
+      <Col className="gap-2">
+        {sortedAnswers.map((answer) => (
+          <IndependentResolutionAnswerItem
+            key={answer.id}
+            contract={contract}
+            answer={answer}
+            color={getAnswerColor(answer)}
+            isAdmin={isAdmin}
+          />
+        ))}
       </Col>
-    </GradientContainer>
+      <ResolutionExplainer independentMulti />
+    </Col>
   )
 }
 
@@ -448,7 +452,6 @@ function IndependentResolutionAnswerItem(props: {
   answer: Answer
   color: string
   isAdmin: boolean
-  isInModal?: boolean
 }) {
   const { contract, answer, color, isAdmin } = props
   const answerCreator = useDisplayUserByIdOrAnswer(answer)
@@ -460,49 +463,50 @@ function IndependentResolutionAnswerItem(props: {
   const addAnswersMode = contract.addAnswersMode ?? 'DISABLED'
 
   return (
-    <GradientContainer className={' shadow-none'}>
-      <Col>
-        <AnswerBar
-          color={color}
-          prob={prob}
-          label={
-            <Row className={'items-center gap-1'}>
-              <AnswerStatus contract={contract} answer={answer} />
-              {answer.isOther ? (
-                <span>
-                  Other{' '}
-                  <InfoTooltip
-                    className="!text-ink-600"
-                    text={OTHER_TOOLTIP_TEXT}
-                  />
-                </span>
-              ) : (
-                <CreatorAndAnswerLabel
-                  text={answer.text}
-                  createdTime={answer.createdTime}
-                  creator={
-                    addAnswersMode === 'ANYONE'
-                      ? answerCreator ?? false
-                      : undefined
-                  }
-                  className={clsx(
-                    'items-center text-sm !leading-none sm:text-base'
-                  )}
+    <Col>
+      <AnswerBar
+        color={color}
+        prob={prob}
+        label={
+          <Row className={'items-center gap-1'}>
+            <AnswerStatus contract={contract} answer={answer} />
+            {answer.isOther ? (
+              <span>
+                Other{' '}
+                <InfoTooltip
+                  className="!text-ink-600"
+                  text={OTHER_TOOLTIP_TEXT}
                 />
-              )}
-            </Row>
-          }
-          end={null}
-        />
-        {!answer.resolution && (
+              </span>
+            ) : (
+              <CreatorAndAnswerLabel
+                text={answer.text}
+                createdTime={answer.createdTime}
+                creator={
+                  addAnswersMode === 'ANYONE'
+                    ? answerCreator ?? false
+                    : undefined
+                }
+                className={clsx(
+                  'items-center text-sm !leading-none sm:text-base'
+                )}
+              />
+            )}
+          </Row>
+        }
+        end={null}
+      />
+      {!answer.resolution && (
+        <>
           <MiniResolutionPanel
             contract={contract}
             answer={answer}
             isAdmin={isAdmin}
             isCreator={isCreator}
           />
-        )}
-      </Col>
-    </GradientContainer>
+          <hr className="border-ink-300 mb-2 mt-4" />
+        </>
+      )}
+    </Col>
   )
 }

@@ -36,6 +36,8 @@ export const secrets = (
     'ANTHROPIC_API_KEY',
     'PERPLEXITY_API_KEY',
     'FIRECRAWL_API_KEY',
+    'SPORTSDB_KEY',
+    'VERIFIED_PHONE_NUMBER',
     // Some typescript voodoo to keep the string literal types while being not readonly.
   ] as const
 ).concat()
@@ -112,7 +114,7 @@ export const getServiceAccountCredentials = (env: 'PROD' | 'DEV') => {
 
   try {
     return JSON.parse(readFileSync(keyPath, { encoding: 'utf8' }))
-  } catch (e) {
+  } catch {
     throw new Error(`Failed to load service account key from ${keyPath}.`)
   }
 }

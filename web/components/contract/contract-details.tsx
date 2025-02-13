@@ -4,7 +4,7 @@ import dayjs from 'dayjs'
 import { Row } from '../layout/row'
 import { Contract } from 'common/contract'
 import { DateTimeTooltip } from '../widgets/datetime-tooltip'
-import { fromNow } from 'web/lib/util/time'
+import { fromNow } from 'client-common/lib/time'
 import { useState } from 'react'
 import { Button } from 'web/components/buttons/button'
 import { Modal } from 'web/components/layout/modal'
@@ -22,11 +22,21 @@ import { UserHovercard } from '../user/user-hovercard'
 import { useDisplayUserById } from 'web/hooks/use-user-supabase'
 
 export function AuthorInfo(props: {
-  contract: Contract
-  resolverId?: string // live updated
+  creatorId: string
+  creatorName: string
+  creatorUsername: string
+  creatorAvatarUrl?: string
+  token: string
+  resolverId?: string
 }) {
-  const { contract, resolverId } = props
-  const { creatorId, creatorName, creatorUsername, creatorAvatarUrl } = contract
+  const {
+    creatorId,
+    creatorName,
+    creatorUsername,
+    creatorAvatarUrl,
+    token,
+    resolverId,
+  } = props
   const resolver = useDisplayUserById(resolverId)
   return (
     <Row className="grow flex-wrap items-center gap-4">
@@ -46,7 +56,8 @@ export function AuthorInfo(props: {
           className={'mr-1'}
         />
       </UserHovercard>
-      {resolver && resolver.id !== contract.creatorId && (
+
+      {resolver && resolver.id !== creatorId && token !== 'CASH' && (
         <span>
           resolved by{' '}
           <UserHovercard userId={resolver.id}>

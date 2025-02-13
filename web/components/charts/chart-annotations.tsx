@@ -9,7 +9,7 @@ import {
   useCarousel,
 } from 'web/components/widgets/carousel'
 import { ReadChartAnnotationModal } from 'web/components/annotate-chart'
-import { useEvent } from 'web/hooks/use-event'
+import { useEvent } from 'client-common/hooks/use-event'
 import { Avatar } from 'web/components/widgets/avatar'
 import { UserHovercard } from '../user/user-hovercard'
 import { useIsClient } from 'web/hooks/use-is-client'

@@ -1,9 +1,9 @@
-import { Dialog, Transition } from '@headlessui/react'
+import { Dialog, DialogBackdrop, DialogPanel } from '@headlessui/react'
 import { XIcon } from '@heroicons/react/outline'
 import clsx from 'clsx'
-import { Fragment, ReactNode, useEffect, useRef } from 'react'
+import { ReactNode, useEffect, useRef } from 'react'
 
-export const MODAL_CLASS =
+export const MODAL_CLASS = // card color and spacing
   'items-center gap-4 rounded-md bg-canvas-0 sm:px-8 px-4 py-6 text-ink-1000'
 export const SCROLLABLE_MODAL_CLASS =
   'max-h-[70vh] min-h-[20rem] !overflow-auto'
@@ -29,16 +29,16 @@ export function Modal(props: {
   } = props
 
   const sizeClass = {
-    sm: 'sm:max-w-sm',
-    md: 'sm:max-w-md',
-    lg: 'max-w-2xl',
-    xl: 'max-w-5xl',
+    sm: 'w-full sm:max-w-sm',
+    md: 'w-full sm:max-w-lg',
+    lg: 'w-full max-w-2xl',
+    xl: 'w-full max-w-5xl',
   }[size]
 
   const positionClass = {
-    center: 'sm:items-center',
-    top: 'sm:items-start',
-    bottom: '',
+    center: 'self-end sm:self-center',
+    top: 'self-end sm:self-start sm:mt-8',
+    bottom: 'self-end sm:mb-8',
   }[position]
 
   const wasOpenRef = useRef(open)
@@ -51,72 +51,48 @@ export function Modal(props: {
   }, [open, onClose])
 
   return (
-    <Transition.Root show={open} as={Fragment}>
-      <Dialog
-        className="text-ink-1000 relative z-50"
-        onClose={setOpen ?? (() => {})}
-        // prevent modal from re-opening from bubbled event if Modal is child of the open button
-        onClick={(e: any) => e.stopPropagation()}
-      >
-        <Transition.Child
-          as={Fragment}
-          enter="ease-linear duration-150"
-          enterFrom="opacity-0"
-          enterTo="opacity-100"
-          leave="ease-linear duration-75"
-          leaveFrom="opacity-100"
-          leaveTo="opacity-0"
-        >
-          {/* background cover */}
-          <div className="bg-canvas-100/75 fixed inset-0" />
-        </Transition.Child>
+    <Dialog
+      className="text-ink-1000 relative z-50 focus:outline-none"
+      open={open}
+      onClose={setOpen ?? (() => {})}
+      // prevent modal from re-opening from bubbled event if Modal is child of the open button
+      onClick={(e: any) => e.stopPropagation()}
+    >
+      <DialogBackdrop
+        transition
+        className="bg-canvas-100/75 fixed inset-0 transition-opacity data-[closed]:opacity-0 data-[enter]:duration-300 data-[leave]:duration-200 data-[enter]:ease-out data-[leave]:ease-in"
+      />
 
-        <Transition.Child
-          as={Fragment}
-          enter="ease-in sm:ease-out duration-150"
-          enterFrom="opacity-0 sm:scale-95"
-          enterTo="opacity-100 sm:scale-100"
-          leave="ease-out sm:ease-in duration-75"
-          leaveFrom="opacity-100 sm:scale-100"
-          leaveTo="opacity-0 sm:scale-95"
-        >
-          <div className="fixed inset-0 overflow-y-auto pt-20 sm:p-0">
-            <div
-              className={clsx(
-                'flex min-h-full items-end justify-center overflow-hidden',
-                positionClass
-              )}
-            >
-              <div
+      <div className="fixed inset-0 z-10 w-screen overflow-y-auto pt-20 sm:p-0">
+        <div className="flex min-h-full justify-center overflow-hidden">
+          <DialogPanel
+            transition
+            className={clsx(
+              'transition-opacity data-[closed]:opacity-0 data-[enter]:duration-300 data-[leave]:duration-200 data-[enter]:ease-out data-[leave]:ease-in',
+              'relative',
+              sizeClass,
+              positionClass,
+              className
+            )}
+          >
+            {children}
+
+            {setOpen && (
+              <button
+                onClick={() => setOpen(false)}
                 className={clsx(
-                  'relative w-full transform transition-all',
-                  'lg:mx-6 lg:my-8',
-                  sizeClass,
-                  className
+                  'text-ink-700 bottom-50 hover:text-primary-400 focus:text-primary-400 absolute -top-4 right-4 -translate-y-full cursor-pointer outline-none sm:right-0',
+                  position === 'top' &&
+                    'sm:-bottom-4 sm:top-auto sm:translate-y-full'
                 )}
               >
-                <div className="sr-only" tabIndex={0}>
-                  focus trap
-                </div>
-                <Dialog.Panel>{children}</Dialog.Panel>
-                {setOpen && (
-                  <button
-                    onClick={() => setOpen(false)}
-                    className={clsx(
-                      'text-ink-700 bottom-50 hover:text-primary-400 focus:text-primary-400 absolute -top-4 right-4 -translate-y-full cursor-pointer outline-none sm:right-0',
-                      position === 'top' &&
-                        'sm:-bottom-4 sm:top-auto sm:translate-y-full'
-                    )}
-                  >
-                    <XIcon className="h-8 w-8" />
-                    <div className="sr-only">Close</div>
-                  </button>
-                )}
-              </div>
-            </div>
-          </div>
-        </Transition.Child>
-      </Dialog>
-    </Transition.Root>
+                <XIcon className="h-8 w-8" />
+                <div className="sr-only">Close</div>
+              </button>
+            )}
+          </DialogPanel>
+        </div>
+      </div>
+    </Dialog>
   )
 }

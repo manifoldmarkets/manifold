@@ -3,16 +3,21 @@ import {
   guidelinesPrompt,
   perplexitySystemPrompt,
 } from 'common/ai-creation-prompts'
-export const smallPerplexityModel = 'llama-3.1-sonar-small-128k-online'
-export const largePerplexityModel = 'llama-3.1-sonar-large-128k-online'
-export const hugePerplexityModel = 'llama-3.1-sonar-huge-128k-online'
+export const perplexityDefault = 'sonar'
+export const perplexityPro = 'sonar-pro'
 
 export const perplexity = async (
   query: string,
-  options: { model?: string } = {}
+  options: {
+    model?: string
+    systemPrompts?: string[]
+  } = {}
 ) => {
   const apiKey = process.env.PERPLEXITY_API_KEY
-  const { model = smallPerplexityModel } = options
+  const {
+    model = perplexityDefault,
+    systemPrompts = [perplexitySystemPrompt, guidelinesPrompt],
+  } = options
   const requestOptions = {
     method: 'POST',
     headers: {
@@ -22,14 +27,10 @@ export const perplexity = async (
     body: JSON.stringify({
       model,
       messages: [
-        {
+        ...systemPrompts.map((prompt) => ({
           role: 'system',
-          content: perplexitySystemPrompt,
-        },
-        {
-          role: 'system',
-          content: guidelinesPrompt,
-        },
+          content: prompt,
+        })),
         {
           role: 'user',
           content: query,
@@ -48,7 +49,7 @@ export const perplexity = async (
     const data = await response.json()
 
     // Extract citations if they exist
-    const citations = data.citations || []
+    const citations = (data.citations || []) as string[]
 
     // Map the choices and attach only referenced citations
     const messages = data.choices.map(

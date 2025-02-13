@@ -2,7 +2,7 @@ import { APIError, APIHandler } from './helpers/endpoint'
 import { type TxnData, runTxnInBetQueue } from 'shared/txn/run-txn'
 import { createSupabaseDirectClient } from 'shared/supabase/init'
 import { CASH_TO_MANA_CONVERSION_RATE } from 'common/envs/constants'
-import { calculateRedeemablePrizeCash } from 'shared/calculate-redeemable-prize-cash'
+import { getUser } from 'shared/utils'
 
 export const convertCashToMana: APIHandler<'convert-cash-to-mana'> = async (
   { amount },
@@ -11,10 +11,14 @@ export const convertCashToMana: APIHandler<'convert-cash-to-mana'> = async (
   const pg = createSupabaseDirectClient()
 
   await pg.tx(async (tx) => {
-    const { redeemable } = await calculateRedeemablePrizeCash(tx, auth.uid)
+    const user = await getUser(auth.uid, tx)
+    if (!user) {
+      throw new APIError(404, 'User not found')
+    }
+    const cashBalance = user.cashBalance
 
-    if (redeemable < amount) {
-      throw new APIError(403, 'Not enough redeemable balance')
+    if (cashBalance < amount) {
+      throw new APIError(403, 'Not enough balance')
     }
 
     // key for equivalence

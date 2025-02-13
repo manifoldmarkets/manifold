@@ -9,7 +9,6 @@ import {
   UniqueBettorData,
 } from 'common/notification'
 import { formatMoney, maybePluralize } from 'common/util/format'
-import { groupBy } from 'lodash'
 import { useState } from 'react'
 import clsx from 'clsx'
 
@@ -43,58 +42,7 @@ import {
   PARTNER_UNIQUE_TRADER_THRESHOLD,
 } from 'common/partner'
 import { humanish } from 'common/user'
-import { CoinNumber } from 'web/components/widgets/coin-number'
-
-// Loop through the contracts and combine the notification items into one
-export function combineAndSumIncomeNotifications(
-  notifications: Notification[]
-) {
-  const newNotifications: Notification[] = []
-  const groupedNotificationsBySourceType = groupBy(
-    notifications,
-    (n) => n.sourceType
-  )
-  const titleForNotification = (notification: Notification) => {
-    const outcomeType = notification.data?.outcomeType
-    return (
-      (notification.sourceTitle ?? notification.sourceContractTitle) +
-      (outcomeType !== 'NUMBER' ? notification.data?.answerText ?? '' : '') +
-      notification.data?.isPartner
-    )
-  }
-
-  for (const sourceType in groupedNotificationsBySourceType) {
-    // Source title splits by contracts, groups, betting streak bonus
-    const groupedNotificationsBySourceTitle = groupBy(
-      groupedNotificationsBySourceType[sourceType],
-      (notification) => titleForNotification(notification)
-    )
-    for (const sourceTitle in groupedNotificationsBySourceTitle) {
-      const notificationsForSourceTitle =
-        groupedNotificationsBySourceTitle[sourceTitle]
-
-      let sum = 0
-      notificationsForSourceTitle.forEach((notification) => {
-        sum += parseFloat(notification.sourceText ?? '0')
-      })
-
-      const { bet: _, ...otherData } =
-        notificationsForSourceTitle[0]?.data ?? {}
-
-      const newNotification = {
-        ...notificationsForSourceTitle[0],
-        sourceText: sum.toString(),
-        sourceUserUsername: notificationsForSourceTitle[0].sourceUserUsername,
-        data: {
-          relatedNotifications: notificationsForSourceTitle,
-          ...otherData,
-        },
-      }
-      newNotifications.push(newNotification)
-    }
-  }
-  return newNotifications
-}
+import { TokenNumber } from 'web/components/widgets/token-number'
 
 export function UniqueBettorBonusIncomeNotification(props: {
   notification: Notification
@@ -338,7 +286,7 @@ export function BettingStreakBonusIncomeNotification(props: {
         noBonus && user && !humanish(user) ? (
           <span>
             Verify your phone number to get up to{' '}
-            <CoinNumber
+            <TokenNumber
               amount={BETTING_STREAK_BONUS_MAX}
               className={'font-bold'}
               isInline
@@ -372,7 +320,7 @@ export function BettingStreakBonusIncomeNotification(props: {
         <span className="line-clamp-3">
           {cashAmount && (
             <>
-              <CoinNumber
+              <TokenNumber
                 className={'text-amber-500'}
                 isInline={true}
                 amount={cashAmount}
@@ -382,7 +330,7 @@ export function BettingStreakBonusIncomeNotification(props: {
             </>
           )}
           {bonusAmount && (
-            <CoinNumber
+            <TokenNumber
               className={'text-teal-600'}
               isInline={true}
               amount={bonusAmount}
@@ -538,7 +486,7 @@ export function ReferralNotification(props: {
       <div className="line-clamp-3">
         {cashAmount > 0 && (
           <>
-            <CoinNumber
+            <TokenNumber
               className={'text-amber-500'}
               amount={cashAmount}
               coinType="CASH"
@@ -547,7 +495,7 @@ export function ReferralNotification(props: {
             {' + '}
           </>
         )}
-        <CoinNumber
+        <TokenNumber
           className={'text-teal-600'}
           amount={manaAmount}
           coinType="MANA"
@@ -632,14 +580,14 @@ function IncomeNotificationLabel(props: {
   const { notification, token = 'M$', className } = props
   const { sourceText } = notification
   return sourceText && token === 'M$' ? (
-    <CoinNumber
+    <TokenNumber
       className={clsx('text-teal-600', className)}
       amount={parseFloat(sourceText)}
       coinType={'mana'}
       isInline
     />
   ) : sourceText && token === 'CASH' ? (
-    <CoinNumber
+    <TokenNumber
       className={clsx('text-amber-500', className)}
       amount={parseFloat(sourceText)}
       coinType={'CASH'}

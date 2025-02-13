@@ -1,13 +1,15 @@
-import { USElectionsPage } from 'web/components/elections-page'
 import { Page } from 'web/components/layout/page'
 import { SEO } from 'web/components/SEO'
-import { getElectionsPageProps } from 'web/lib/politics/home'
-import { ElectionsPageProps } from 'web/public/data/elections-data'
 import Custom404 from './404'
 import { ENV } from 'common/envs/constants'
 import { useTracking } from 'web/hooks/use-tracking'
 import { PromotionalPanel } from 'web/components/promotional-panel'
 import { SweepiesFlatCoin } from 'web/public/custom-components/sweepiesFlatCoin'
+import { FeedContractCard } from 'web/components/contract/feed-contract-card'
+import { Contract } from 'common/contract'
+import { contractFields, convertContract } from 'common/supabase/contracts'
+import { Col } from 'web/components/layout/col'
+import { db } from 'web/lib/supabase/db'
 
 const revalidate = 60
 
@@ -19,22 +21,59 @@ export async function getStaticProps() {
     }
   }
 
-  const electionsPageProps = await getElectionsPageProps()
+  const [{ data: contractData }, { data: politicsData }, { data: PakmanData }] =
+    await Promise.all([
+      db
+        .from('contracts')
+        .select(contractFields)
+        .eq('id', 'OPl99N5Aun')
+        .single(),
+      db
+        .from('contracts')
+        .select(contractFields)
+        .not(
+          'outcome_type',
+          'in',
+          `(${['STONK', 'BOUNTIED_QUESTION', 'POLL'].join(',')})`
+        )
+        .is('resolution', null)
+        .eq('token', 'MANA')
+        .eq('visibility', 'public')
+        .order('importance_score', { ascending: false })
+        .limit(10),
+      db
+        .from('contracts')
+        .select(contractFields)
+        .in('id', ['p6ncQ2CO5O', 'NgNCn6QPZL', 'NZQ05LthSR']),
+    ])
+
+  const contract = contractData ? convertContract(contractData) : null
+  const politicsMarkets = (politicsData ?? []).map(convertContract)
+  const pakmanContracts = (PakmanData ?? []).map(convertContract)
+
   return {
-    props: electionsPageProps,
+    props: {
+      contract,
+      politicsMarkets,
+      pakmanContracts,
+    },
     revalidate,
   }
 }
 
-export default function Pakman(props: ElectionsPageProps) {
+export default function Pakman(props: {
+  contract: Contract
+  politicsMarkets: Contract[]
+  pakmanContracts: Contract[]
+}) {
   useTracking('pakman page view')
 
-  if (Object.keys(props).length === 0) {
+  if (!props.contract) {
     return <Custom404 />
   }
 
   return (
-    <Page trackPageView="Pakman page">
+    <Page trackPageView="Pakman page" className="!col-span-7">
       <SEO
         title="Pakman Manifold"
         description="The David Pakman Show on Manifold."
@@ -57,7 +96,15 @@ export default function Pakman(props: ElectionsPageProps) {
         loginTrackingText="Sign up from /pakman"
       />
 
-      <USElectionsPage {...props} hideTitle />
+      <Col className="mt-8 gap-4">
+        <FeedContractCard contract={props.contract} key={props.contract.id} />
+        {props.pakmanContracts.map((market) => (
+          <FeedContractCard key={market.id} contract={market} />
+        ))}
+        {props.politicsMarkets.map((market) => (
+          <FeedContractCard key={market.id} contract={market} />
+        ))}
+      </Col>
     </Page>
   )
 }

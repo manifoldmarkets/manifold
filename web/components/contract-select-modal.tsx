@@ -4,10 +4,7 @@ import { useState } from 'react'
 import { usePrivateUser } from 'web/hooks/use-user'
 import { Button } from './buttons/button'
 import { Row } from './layout/row'
-import {
-  SupabaseAdditionalFilter,
-  SupabaseSearch,
-} from 'web/components/supabase-search'
+import { SupabaseAdditionalFilter, Search } from 'web/components/search'
 
 export function SelectMarkets(props: {
   submitLabel: (length: number) => string
@@ -36,7 +33,7 @@ export function SelectMarkets(props: {
 
   return (
     <div className={clsx('px-1', className)}>
-      <SupabaseSearch
+      <Search
         persistPrefix="contract-select-modal"
         onContractClick={toggleContract}
         hideActions

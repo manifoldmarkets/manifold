@@ -1,6 +1,6 @@
 import { formatWithToken, InputTokenType } from 'common/util/format'
 import { BinaryOutcomes } from 'web/components/bet/bet-panel'
-import { Slider } from 'web/components/widgets/slider'
+import { Slider, sliderColors } from 'web/components/widgets/slider'
 
 export const LARGE_SLIDER_VALUES = [
   1, 25, 50, 75, 100, 150, 250, 350, 500, 750, 1000, 1250, 1500, 2000, 2500,
@@ -39,7 +39,7 @@ export const BetSlider = (props: {
   disabled?: boolean
   className?: string
   token?: InputTokenType
-  sliderColor?: string
+  sliderColor?: keyof typeof sliderColors
 }) => {
   const {
     amount,
@@ -95,7 +95,6 @@ export const BetSlider = (props: {
       className={className}
       min={0}
       max={maxSliderIndex}
-      marks={marks}
       color={
         sliderColor
           ? (sliderColor as any)
@@ -103,7 +102,7 @@ export const BetSlider = (props: {
           ? 'green'
           : binaryOutcome === 'NO'
           ? 'red'
-          : 'violet'
+          : 'gray'
       }
       amount={sliderIndex}
       onChange={(value) => {

@@ -4,10 +4,9 @@ import { Topic } from 'common/group'
 import { ChartAnnotation } from 'common/supabase/chart-annotations'
 import { sum } from 'lodash'
 import { Answer } from './answer'
-import { Bet } from './bet'
 import { getLiquidity } from './calculate-cpmm'
 import { ContractComment } from './comment'
-import { ContractMetric, ContractMetricsByOutcome } from './contract-metric'
+import { ContractMetric } from './contract-metric'
 import { CASH_SUFFIX, ENV_CONFIG } from './envs/constants'
 import { Fees } from './fees'
 import { PollOption } from './poll-option'
@@ -98,6 +97,8 @@ export type Contract<T extends AnyContractType = AnyContractType> = {
   token: ContractToken
   siblingContractId?: string
 
+  takerAPIOrdersDisabled?: boolean
+
   // Manifold.love
   loverUserId1?: string // The user id's of the pair of lovers referenced in the question.
   loverUserId2?: string // The user id's of the pair of lovers referenced in the question.
@@ -139,7 +140,7 @@ export type QuadraticFundingContract = Contract & QuadraticFunding
 export type StonkContract = Contract & Stonk
 export type BountiedQuestionContract = Contract & BountiedQuestion
 export type PollContract = Contract & Poll
-
+export type SportsContract = Contract & Sports
 export type BinaryOrPseudoNumericContract =
   | BinaryContract
   | PseudoNumericContract
@@ -277,6 +278,12 @@ export type Poll = {
   resolutions?: string[]
 }
 
+export type Sports = {
+  sportsStartTimestamp: string
+  sportsEventId: string
+  sportsLeague: string
+}
+
 export type MultiContract = CPMMMultiContract | CPMMNumericContract
 
 type AnyOutcomeType =
@@ -353,6 +360,10 @@ export const isBinaryMulti = (contract: Contract) =>
   contract.shouldAnswersSumToOne
 // contract.createdTime > 1708574059795 // In case we don't want to convert pre-commit contracts
 
+export const isSportsContract = (
+  contract: Contract
+): contract is SportsContract => 'sportsEventId' in contract
+
 export const getMainBinaryMCAnswer = (contract: Contract) =>
   isBinaryMulti(contract) && contract.mechanism === 'cpmm-multi-1'
     ? contract.answers[0]
@@ -421,7 +432,6 @@ export type CashType = {
   lastBetTime?: number
   pointsString: string
   multiPointsString: { [answerId: string]: string }
-  userPositionsByOutcome: ContractMetricsByOutcome
   totalPositions: number
   totalBets: number
 }
@@ -432,7 +442,6 @@ export type ContractParams = {
   pointsString?: string
   multiPointsString?: { [answerId: string]: string }
   comments: ContractComment[]
-  userPositionsByOutcome: ContractMetricsByOutcome
   totalPositions: number
   totalBets: number
   topContractMetrics: ContractMetric[]
@@ -441,7 +450,6 @@ export type ContractParams = {
   topics: Topic[]
   dashboards: { slug: string; title: string }[]
   pinnedComments: ContractComment[]
-  betReplies: Bet[]
   cash?: CashType
 }
 
