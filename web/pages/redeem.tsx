@@ -26,7 +26,6 @@ import { LocationPanel } from 'web/components/gidx/location-panel'
 import { UploadDocuments } from 'web/components/gidx/upload-document'
 import { AmountInput } from 'web/components/widgets/amount-input'
 import { TokenNumber } from 'web/components/widgets/token-number'
-import { InfoTooltip } from 'web/components/widgets/info-tooltip'
 import { Input } from 'web/components/widgets/input'
 import { LoadingIndicator } from 'web/components/widgets/loading-indicator'
 import { useAPIGetter } from 'web/hooks/use-api-getter'
@@ -599,16 +598,7 @@ function SweepiesStats(props: {
   return (
     <Row className="w-full max-w-lg gap-4 text-2xl md:text-3xl">
       <Col className={clsx('w-1/2 items-start', className)}>
-        <div className="text-ink-500 whitespace-nowrap text-sm">
-          Redeemable
-          <span>
-            <InfoTooltip
-              text={`Only ${SWEEPIES_NAME} that you won from sweepstakes questions resolving`}
-              size={'sm'}
-              className=" ml-0.5"
-            />
-          </span>
-        </div>
+        <div className="text-ink-500 whitespace-nowrap text-sm">Redeemable</div>
         <TokenNumber
           amount={redeemableCash}
           className={'font-bold'}
