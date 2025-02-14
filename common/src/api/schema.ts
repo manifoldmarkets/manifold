@@ -113,18 +113,6 @@ export const API = (_apiTypeCheck = {
       .strict(),
     returns: {} as { status: boolean },
   },
-  'create-cash-contract': {
-    method: 'POST',
-    visibility: 'public',
-    authed: true,
-    returns: {} as LiteMarket,
-    props: z
-      .object({
-        manaContractId: z.string(),
-        subsidyAmount: z.number().positive(),
-      })
-      .strict(),
-  },
   comment: {
     method: 'POST',
     visibility: 'public',

@@ -13,16 +13,7 @@ export const handleCreateSportsMarkets = async (
   try {
     console.log('Fetching sportsGames...')
     const data = await api('get-sports-games', {})
-    const sportsGames = (data.schedule || []) as SportsGames[]
-    const sportsGamesToProcess = sportsGames
-
-    const createdMarkets: {
-      id: string
-      isEPL: boolean
-      isNBA: boolean
-      isNFL: boolean
-      isNHL: boolean
-    }[] = []
+    const sportsGamesToProcess = (data.schedule || []) as SportsGames[]
 
     for (const sportsGames of sportsGamesToProcess) {
       const { exists } = await api('check-sports-event', {
@@ -36,9 +27,6 @@ export const handleCreateSportsMarkets = async (
         new Date(sportsGames.strTimestamp).getTime() + 2.5 * 60 * 60 * 1000
 
       const isEPL = sportsGames.strLeague === 'English Premier League'
-      const isNBA = sportsGames.strLeague === 'NBA'
-      const isNFL = sportsGames.strLeague === 'NFL'
-      const isNHL = sportsGames.strLeague === 'NHL'
       const answers = buildArray(
         sportsGames.strHomeTeam,
         sportsGames.strAwayTeam,
@@ -104,27 +92,7 @@ export const handleCreateSportsMarkets = async (
         groupIds,
       }
 
-      const result = await api('market', createProps)
-
-      createdMarkets.push({
-        id: result.id,
-        isEPL,
-        isNBA,
-        isNFL,
-        isNHL,
-      })
-    }
-
-    for (const { id: marketId, isEPL, isNBA, isNFL, isNHL } of createdMarkets) {
-      if (isNHL) continue
-
-      let subsidyAmount = 50
-      if (isEPL) subsidyAmount = 25
-
-      await api('create-cash-contract', {
-        manaContractId: marketId,
-        subsidyAmount,
-      })
+      await api('market', createProps)
     }
 
     setIsFinished(true)

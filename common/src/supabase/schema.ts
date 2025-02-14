@@ -209,6 +209,7 @@ export type Database = {
           contract_id: string
           created_time: string
           data: Json
+          expires_at: string | null
           is_api: boolean | null
           is_cancelled: boolean | null
           is_filled: boolean | null
@@ -220,7 +221,6 @@ export type Database = {
           shares: number | null
           updated_time: string
           user_id: string
-          expires_at: string | null
         }
         Insert: {
           amount?: number | null
@@ -229,6 +229,7 @@ export type Database = {
           contract_id: string
           created_time?: string
           data: Json
+          expires_at?: string | null
           is_api?: boolean | null
           is_cancelled?: boolean | null
           is_filled?: boolean | null
@@ -240,7 +241,6 @@ export type Database = {
           shares?: number | null
           updated_time?: string
           user_id: string
-          expires_at: string | null
         }
         Update: {
           amount?: number | null
@@ -249,6 +249,7 @@ export type Database = {
           contract_id?: string
           created_time?: string
           data?: Json
+          expires_at?: string | null
           is_api?: boolean | null
           is_cancelled?: boolean | null
           is_filled?: boolean | null
@@ -260,7 +261,6 @@ export type Database = {
           shares?: number | null
           updated_time?: string
           user_id?: string
-          expires_at?: string | null
         }
         Relationships: []
       }

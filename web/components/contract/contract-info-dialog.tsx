@@ -1,5 +1,4 @@
 import clsx from 'clsx'
-import { APIError } from 'common/api/utils'
 import { ELASTICITY_BET_AMOUNT } from 'common/calculate-metrics'
 import { Contract, contractPool } from 'common/contract'
 import {
@@ -13,19 +12,11 @@ import { UNRANKED_GROUP_ID } from 'common/supabase/groups'
 import { BETTORS, User } from 'common/user'
 import dayjs from 'dayjs'
 import { capitalize, sumBy } from 'lodash'
-import router from 'next/router'
 import { toast } from 'react-hot-toast'
-import { TiVolumeMute } from 'react-icons/ti'
 import { useAdmin, useDev, useTrusted } from 'web/hooks/use-admin'
-import {
-  api,
-  updateMarket,
-  updateUserDisinterestEmbedding,
-} from 'web/lib/api/api'
+import { api, updateMarket } from 'web/lib/api/api'
 import { formatTime } from 'client-common/lib/time'
 import { MoneyDisplay } from '../bet/money-display'
-import { Button } from '../buttons/button'
-import { ConfirmationButton } from '../buttons/confirmation-button'
 import { CopyLinkOrShareButton } from '../buttons/copy-link-button'
 import { ShareEmbedButton, ShareIRLButton } from '../buttons/share-embed-button'
 import { ShareQRButton } from '../buttons/share-qr-button'
@@ -37,7 +28,6 @@ import { InfoTooltip } from '../widgets/info-tooltip'
 import ShortToggle from '../widgets/short-toggle'
 import { Table } from '../widgets/table'
 import { ContractHistoryButton } from './contract-edit-history-button'
-import { DEFAULT_CASH_ANTE } from 'common/economy'
 
 export const Stats = (props: {
   contract: Contract
@@ -497,25 +487,6 @@ export function ContractInfoDialog(props: {
   const isAdmin = useAdmin()
   const isTrusted = useTrusted()
 
-  const convertToCashMarket = async () => {
-    try {
-      await api('create-cash-contract', {
-        manaContractId: playContract.id,
-        subsidyAmount: DEFAULT_CASH_ANTE, // You may want to make this configurable
-      })
-      toast.success('Market converted to cash market successfully')
-      router.reload()
-    } catch (error) {
-      if (error instanceof APIError) {
-        toast.error(error.message)
-        console.error(error.details)
-      } else {
-        toast.error('Failed to convert market to cash market')
-        console.error(error)
-      }
-    }
-  }
-
   return (
     <Modal
       open={open}
@@ -536,47 +507,9 @@ export function ContractInfoDialog(props: {
             {isAdmin || isTrusted ? (
               <SuperBanControl userId={playContract.creatorId} />
             ) : null}
-            {isAdmin && !playContract.siblingContractId && (
-              <ConfirmationButton
-                openModalBtn={{
-                  label: 'Make sweepcash',
-                  color: 'yellow-outline',
-                }}
-                submitBtn={{ label: 'Sweepify!', color: 'yellow' }}
-                onSubmit={() => convertToCashMarket()}
-              >
-                Are you sure you want to convert this market to a sweepcash
-                market?
-              </ConfirmationButton>
-            )}
           </Row>
         </>
       )}
     </Modal>
-  )
-}
-
-const DisinterestedButton = (props: {
-  contract: Contract
-  user: User | null | undefined
-}) => {
-  const { contract, user } = props
-  if (!user) return null
-  const markUninteresting = async () => {
-    await updateUserDisinterestEmbedding({
-      contractId: contract.id,
-      creatorId: contract.creatorId,
-    })
-    toast(`We won't show you content like that again`, {
-      icon: <TiVolumeMute className={'h-5 w-5 text-teal-500'} />,
-    })
-  }
-  return (
-    <Button size="xs" color="yellow-outline" onClick={markUninteresting}>
-      <Row className={'items-center text-sm'}>
-        <TiVolumeMute className="h-5 w-5" />
-        Uninterested
-      </Row>
-    </Button>
   )
 }

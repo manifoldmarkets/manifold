@@ -101,7 +101,6 @@ import { getCurrentPrivateUser } from './get-current-private-user'
 import { updatePrivateUser } from './update-private-user'
 import { setPushToken } from './push-token'
 import { updateNotifSettings } from './update-notif-settings'
-import { createCashContract } from './create-cash-contract'
 import { getVerificationDocuments } from 'api/gidx/get-verification-documents'
 import { getRedeemablePrizeCash } from './get-redeemable-prize-cash'
 import { getTotalRedeemablePrizeCash } from './get-total-redeemable-prize-cash'
@@ -166,7 +165,6 @@ import {
 // we define the handlers in this object in order to typecheck that every API has a handler
 export const handlers: { [k in APIPath]: APIHandler<k> } = {
   'refresh-all-clients': refreshAllClients,
-  'create-cash-contract': createCashContract,
   bet: placeBet,
   'multi-bet': placeMultiBet,
   'follow-contract': followContract,
