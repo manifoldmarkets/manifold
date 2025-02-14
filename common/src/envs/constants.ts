@@ -291,6 +291,7 @@ export const VERIFIED_USERNAMES = [
   'Cremieux',
   'tracewoodgrains',
   'LuigiMangione',
+  'LeahLibresco',
 ]
 
 export const BANNED_TRADING_USER_IDS = [
