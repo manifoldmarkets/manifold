@@ -1,6 +1,11 @@
 import { generateJSON } from '@tiptap/html'
 import { APIError, getCloudRunServiceUrl } from 'common/api/utils'
-import { Contract, contractPath, MarketContract } from 'common/contract'
+import {
+  Contract,
+  contractPath,
+  isSpecialLoveContract,
+  MarketContract,
+} from 'common/contract'
 import { PrivateUser } from 'common/user'
 import { extensions } from 'common/util/parse'
 import * as admin from 'firebase-admin'
@@ -140,13 +145,10 @@ export const getContractAndMetricsAndLiquidities = async (
   unresolvedContract: MarketContract,
   answerId: string | undefined
 ) => {
-  const { id: contractId, mechanism, outcomeType } = unresolvedContract
+  const { id: contractId, mechanism } = unresolvedContract
   const isMulti = mechanism === 'cpmm-multi-1'
   // Filter out initial liquidity if set up with special liquidity per answer.
-  const filterAnte =
-    isMulti &&
-    outcomeType !== 'NUMBER' &&
-    unresolvedContract.specialLiquidityPerAnswer
+  const filterAnte = isMulti && isSpecialLoveContract(unresolvedContract)
   const results = await pg.multi(
     `select ${contractColumnsToSelect} from contracts where id = $1;
      select * from answers where contract_id = $1 order by index;

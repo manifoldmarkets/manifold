@@ -222,8 +222,7 @@ export function AnswersPanel(props: {
           user.id === contract.creatorId)) &&
       tradingAllowed(contract) &&
       !privateUser?.blockedByUserIds.includes(contract.creatorId) &&
-      unresolvedAnswers.length < getMaximumAnswers(shouldAnswersSumToOne) &&
-      contract.outcomeType !== 'NUMBER'
+      unresolvedAnswers.length < getMaximumAnswers(shouldAnswersSumToOne)
   )
 
   const answersContainerRef = useRef<HTMLDivElement>(null)

@@ -193,6 +193,11 @@ export type CPMMMulti = {
   sort?: SortType
 }
 
+export const isSpecialLoveContract = (contract: Contract) =>
+  contract.mechanism === 'cpmm-multi-1' &&
+  contract.outcomeType !== 'NUMBER' &&
+  contract.specialLiquidityPerAnswer
+
 export type CPMMMultiNumeric = {
   mechanism: 'cpmm-multi-1'
   outcomeType: 'NUMBER'

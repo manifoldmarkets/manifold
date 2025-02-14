@@ -465,9 +465,7 @@ const ChoiceOverview = (props: {
         />
       ) : null}
       {showResolver ? (
-        !shouldAnswersSumToOne &&
-        contract.mechanism === 'cpmm-multi-1' &&
-        contract.outcomeType !== 'NUMBER' ? (
+        !shouldAnswersSumToOne && contract.outcomeType === 'MULTIPLE_CHOICE' ? (
           <GradientContainer>
             <IndependentAnswersResolvePanel
               contract={contract}
