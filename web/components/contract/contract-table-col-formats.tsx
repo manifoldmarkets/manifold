@@ -102,7 +102,7 @@ export const boostedColumn = {
       />
     )
   },
-  width: 'w-8',
+  width: 'w-6',
 }
 
 export const actionColumn = {
