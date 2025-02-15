@@ -36,6 +36,7 @@ import {
 } from './reset-quests-stats'
 import { updateUserPortfolioHistoriesCore } from 'shared/update-user-portfolio-histories-core'
 import { ENV } from 'common/envs/constants'
+import { isProd } from 'shared/utils'
 
 export function createJobs() {
   return [
@@ -97,7 +98,7 @@ export function createJobs() {
     ),
     createJob(
       'score-contracts',
-      `0 */${IMPORTANCE_MINUTE_INTERVAL} * * * *`, // every 2 minutes
+      `0 */${isProd() ? IMPORTANCE_MINUTE_INTERVAL : 100} * * * *`, // every 2 minutes
       scoreContracts
     ),
     createJob(
