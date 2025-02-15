@@ -167,6 +167,7 @@ export function ContractPageContent(props: ContractParams) {
       slug: props.contract.slug,
       contractId: props.contract.id,
       creatorId: props.contract.creatorId,
+      isPromoted: liveContract.boosted,
     },
     true,
     [user?.id] // track user view market event if they sign up/sign in on this page
