@@ -39,7 +39,7 @@ export async function calculateImportanceScore(
   const dayAgo = now - DAY_MS
   const weekAgo = now - 7 * DAY_MS
   const select = (whereClause: string) => `
-    select ${prefixedContractColumnsToSelect}
+    select ${prefixedContractColumnsToSelect},
            case when count(a.prob) > 0 then json_agg(a.prob) end as answer_probs
     from contracts c
     left join answers a on c.id = a.contract_id
@@ -378,7 +378,7 @@ export const computeContractScores = (
   const commentScoreComponent = commentScore * 2
   const thisWeekScoreComponent = normalize(thisWeekScore, 1000)
   const rankedScore = isMarketRanked(contract) ? 0 : -1
-  const boostScore = isBoosted ? 0.25 : 0
+  const boostScore = isBoosted ? 3 : 0
   const computedRawMarketImportance =
     volume24HoursComponent +
     traderHourComponent +
@@ -402,7 +402,7 @@ export const computeContractScores = (
       ? bountiedImportanceScore(contract, newness, commentScore)
       : outcomeType === 'POLL'
       ? normalize(rawPollImportance, 5) // increase max as polls catch on
-      : normalize(computedRawMarketImportance, 5)
+      : Math.max(normalize(computedRawMarketImportance, 5), isBoosted ? 0.9 : 0)
 
   // Calculate freshness components
   const todayRatio = todayScore / (thisWeekScore - todayScore + 1)
