@@ -70,7 +70,7 @@ export const CostSection = (props: {
         <span>
           {CREATEABLE_NON_PREDICTIVE_OUTCOME_TYPES.includes(outcomeType)
             ? 'Cost'
-            : 'Tier'}
+            : 'Liquidity'}
         </span>
       </label>
 
@@ -107,13 +107,12 @@ function PriceSection(props: {
   const { baseCost, outcomeType, currentTier, setMarketTier } = props
 
   if (!currentTier) {
-    return <TokenNumber amount={getTieredCost(baseCost, 'plus', outcomeType)} />
+    return <TokenNumber amount={getTieredCost(baseCost, 'play', outcomeType)} />
   }
   return (
     <Col className="w-full gap-2">
       <div className="text-ink-600 text-sm">
-        Choose a tier to determine how much initial liquidity to inject into the
-        market. More liquidity attracts more traders but has a higher cost.
+        More liquidity attracts more traders but has a higher cost.
       </div>
       <div className="grid w-full grid-cols-2 gap-2 sm:grid-cols-4">
         {TIERS.map((tier: TIER_TYPE) => {
@@ -121,7 +120,6 @@ function PriceSection(props: {
             <Tier
               key={tier.name}
               baseCost={baseCost}
-              icon={tier.icon}
               tier={tier.name}
               outcomeType={outcomeType}
               currentTier={currentTier}
@@ -137,7 +135,6 @@ function PriceSection(props: {
 
 function Tier(props: {
   baseCost: number
-  icon: ReactNode
   tier: MarketTierType
   outcomeType: CreateableOutcomeType
   currentTier: MarketTierType
@@ -146,7 +143,6 @@ function Tier(props: {
 }) {
   const {
     baseCost,
-    icon,
     tier,
     outcomeType,
     currentTier,
@@ -211,9 +207,7 @@ function Tier(props: {
         }
       }}
     >
-      <div className="text-5xl sm:text-4xl">{icon}</div>
       <Col className="sm:items-center">
-        <div className="text-ink-600">{getPresentedTierName(tier)}</div>
         <TokenNumber
           className="text-xl font-semibold"
           amount={getTieredCost(baseCost, tier, outcomeType)}
