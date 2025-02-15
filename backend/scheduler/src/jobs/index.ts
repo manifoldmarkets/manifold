@@ -98,7 +98,7 @@ export function createJobs() {
     ),
     createJob(
       'score-contracts',
-      `0 */${isProd() ? IMPORTANCE_MINUTE_INTERVAL : 100} * * * *`, // every 2 minutes
+      `0 */${isProd() ? IMPORTANCE_MINUTE_INTERVAL : 60} * * * *`, // every 2 minutes
       scoreContracts
     ),
     createJob(
