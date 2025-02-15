@@ -11,6 +11,7 @@ import { ContractBoostPurchaseTxn } from 'common/txn'
 import { Row } from 'common/supabase/utils'
 import { BOOST_COST_MANA } from 'common/economy'
 import { updateContractNativeColumns } from 'shared/supabase/contracts'
+import { trackPublicEvent } from 'shared/analytics'
 
 const MAX_ACTIVE_BOOSTS = 5
 
@@ -76,10 +77,17 @@ export const purchaseContractBoost: APIHandler<
   return {
     result: { success: true },
     continue: async () => {
+      trackPublicEvent(auth.uid, 'contract boost purchased', {
+        contractId,
+        slug: contract.slug,
+      })
       if (startTime <= Date.now()) {
         await updateContractNativeColumns(pg, contractId, {
           boosted: true,
-          importance_score: contract.importanceScore + 0.25,
+          importance_score: Math.min(
+            Math.max(contract.importanceScore + 0.5, 0.9),
+            1
+          ),
         })
       }
     },

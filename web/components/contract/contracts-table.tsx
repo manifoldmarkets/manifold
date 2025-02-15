@@ -91,6 +91,7 @@ function ContractRow(props: {
           track('click browse contract', {
             slug: contract.slug,
             contractId: contract.id,
+            boosted: contract.boosted,
           })
           return
         }

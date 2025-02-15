@@ -133,7 +133,12 @@ export function BuyPanel(props: {
       setOutcome(undefined)
       setIsPanelBodyVisible(false)
     } else {
-      track('bet intent', { location, option: outcome, token: contract.token })
+      track('bet intent', {
+        location,
+        option: outcome,
+        token: contract.token,
+        boosted: contract.boosted,
+      })
 
       setOutcome(choice)
       setIsPanelBodyVisible(true)
@@ -488,6 +493,7 @@ export const BuyPanelBody = (props: {
           isLimitOrder: false,
           answerId: multiProps?.answerToBuy.id,
           feedReason,
+          boosted: contract.boosted,
         })
       )
     } catch (e) {
