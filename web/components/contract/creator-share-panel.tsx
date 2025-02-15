@@ -15,32 +15,39 @@ import { useNativeInfo } from 'web/components/native-message-provider'
 import { formatMoney } from 'common/util/format'
 import { UNIQUE_BETTOR_BONUS_AMOUNT } from 'common/economy'
 import { AddBoostButton } from './add-boost-button'
+import { BoostAnalytics } from './boost-analytics'
+import { Col } from '../layout/col'
 
 export function CreatorSharePanel(props: { contract: Contract }) {
   const { contract } = props
   return (
     <GradientContainer className="mb-8 flex w-full">
-      <div className="mb-2 flex flex-wrap gap-2">
-        {contract.outcomeType == 'BOUNTIED_QUESTION' && (
-          <AddBountyButton contract={contract} />
-        )}
-        <AddBoostButton contract={contract} />
-        <ShareLinkButton contract={contract} />
-        <TweetButton
-          tweetText={'I created a question. ' + getShareUrl(contract)}
-          className="hidden sm:flex"
-        />
-        {contract.outcomeType == 'BOUNTIED_QUESTION' && (
-          <CancelBountyButton contract={contract} />
-        )}
-      </div>
+      <Col className="w-full gap-4">
+        <Row className="flex-wrap gap-2">
+          {contract.outcomeType == 'BOUNTIED_QUESTION' && (
+            <AddBountyButton contract={contract} />
+          )}
+          <AddBoostButton contract={contract} />
+          <ShareLinkButton contract={contract} />
+          <TweetButton
+            tweetText={'I created a question. ' + getShareUrl(contract)}
+            className="hidden sm:flex"
+          />
+          {contract.outcomeType == 'BOUNTIED_QUESTION' && (
+            <CancelBountyButton contract={contract} />
+          )}
+        </Row>
 
-      {contract.outcomeType !== 'POLL' &&
-        contract.outcomeType !== 'BOUNTIED_QUESTION' && (
-          <div className="text-ink-500 text-base">
-            Earn {formatMoney(UNIQUE_BETTOR_BONUS_AMOUNT)} for each new trader.
-          </div>
-        )}
+        {contract.outcomeType !== 'POLL' &&
+          contract.outcomeType !== 'BOUNTIED_QUESTION' && (
+            <div className="text-ink-500 text-base">
+              Earn {formatMoney(UNIQUE_BETTOR_BONUS_AMOUNT)} for each new
+              trader.
+            </div>
+          )}
+
+        <BoostAnalytics contract={contract} />
+      </Col>
     </GradientContainer>
   )
 }

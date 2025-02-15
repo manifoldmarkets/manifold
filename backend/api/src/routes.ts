@@ -50,7 +50,7 @@ import { type APIHandler } from './helpers/endpoint'
 import { requestLoan } from 'api/request-loan'
 import { removePinnedPhoto } from './love/remove-pinned-photo'
 import { getHeadlines, getPoliticsHeadlines } from './get-headlines'
-import { getadanalytics } from 'api/get-ad-analytics'
+import { getBoostAnalytics } from 'api/get-boost-analytics'
 import { getCompatibilityQuestions } from './love/get-compatibililty-questions'
 import { addOrRemoveReaction } from './reaction'
 import { likeLover } from './love/like-lover'
@@ -259,7 +259,7 @@ export const handlers: { [k in APIPath]: APIHandler<k> } = {
   'get-related-markets': getRelatedMarkets,
   'get-related-markets-by-group': getRelatedMarketsByGroup,
   'unlist-and-cancel-user-contracts': unlistAndCancelUserContracts,
-  'get-ad-analytics': getadanalytics,
+  'get-boost-analytics': getBoostAnalytics,
   'get-compatibility-questions': getCompatibilityQuestions,
   'like-lover': likeLover,
   'ship-lovers': shipLovers,

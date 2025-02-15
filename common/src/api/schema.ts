@@ -1217,7 +1217,7 @@ export const API = (_apiTypeCheck = {
       })
       .strict(),
   },
-  'get-ad-analytics': {
+  'get-boost-analytics': {
     method: 'POST',
     visibility: 'undocumented',
     authed: false,
@@ -1231,10 +1231,10 @@ export const API = (_apiTypeCheck = {
       totalViews: number
       uniquePromotedViewers: number
       totalPromotedViews: number
-      redeemCount: number
-      isBoosted: boolean
-      totalFunds: number
-      adCreatedTime: string
+      boostPeriods: {
+        startTime: string
+        endTime: string
+      }[]
     },
   },
   'get-seen-market-ids': {
