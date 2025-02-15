@@ -75,15 +75,17 @@ export function BoostAnalytics(props: { contract: Contract }) {
           </div>
         </Col>
       </Row>
-      <Row className="text-ink-500 flex-wrap gap-1 text-xs">
-        <div>Boost periods:</div>
-        {boostPeriods.map((period, i) => (
-          <div key={i}>
-            {formatBoostPeriod(period)}
-            {i !== boostPeriods.length - 1 && ', '}
-          </div>
-        ))}
-      </Row>
+      {boostPeriods.length > 0 && (
+        <Row className="text-ink-500 flex-wrap gap-1 text-xs">
+          <div>Boost periods:</div>
+          {boostPeriods.map((period, i) => (
+            <div key={i}>
+              {formatBoostPeriod(period)}
+              {i !== boostPeriods.length - 1 && ', '}
+            </div>
+          ))}
+        </Row>
+      )}
     </Col>
   )
 }
