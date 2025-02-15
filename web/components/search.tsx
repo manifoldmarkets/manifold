@@ -21,6 +21,7 @@ import { api, searchGroups } from 'web/lib/api/api'
 import { searchUsers } from 'web/lib/supabase/users'
 import {
   actionColumn,
+  boostedColumn,
   probColumn,
   traderColumn,
 } from './contract/contract-table-col-formats'
@@ -484,7 +485,7 @@ export function Search(props: SearchProps) {
             onContractClick={onContractClick}
             highlightContractIds={highlightContractIds}
             columns={buildArray([
-              // tierColumn,
+              boostedColumn,
               traderColumn,
               probColumn,
               !hideActions && actionColumn,

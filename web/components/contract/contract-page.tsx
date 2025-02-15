@@ -33,7 +33,6 @@ import {
   ContractOverview,
   getShouldHideGraph,
 } from 'web/components/contract/contract-overview'
-import ContractSharePanel from 'web/components/contract/contract-share-panel'
 import { ContractTabs } from 'web/components/contract/contract-tabs'
 import { VisibilityIcon } from 'web/components/contract/contracts-table'
 import { DangerZone } from 'web/components/contract/danger-zone'
@@ -77,6 +76,7 @@ import { useRouter } from 'next/router'
 import { precacheAnswers } from 'web/hooks/use-answers'
 import { useIsPageVisible } from 'web/hooks/use-page-visible'
 import { api } from 'web/lib/api/api'
+import ContractSharePanel from './contract-share-panel'
 
 export function ContractPageContent(props: ContractParams) {
   const {
@@ -417,6 +417,7 @@ export function ContractPageContent(props: ContractParams) {
                 hideGraph={hideGraph}
                 setHideGraph={setHideGraph}
               />
+
               {!tradingAllowed(liveContract) && (
                 <UserBetsSummary
                   className="border-ink-200 !mb-2 "
@@ -474,12 +475,28 @@ export function ContractPageContent(props: ContractParams) {
               userHasBet={!!myContractMetrics}
               hasReviewed={!!userHasReviewed}
             />
+            {!!user && isCreator && (
+              <ContractSharePanel
+                isClosed={isClosed}
+                isCreator={isCreator}
+                showResolver={showResolver}
+                contract={liveContract}
+              />
+            )}
             <ContractDescription
               contractId={props.contract.id}
               creatorId={props.contract.creatorId}
               isSweeps={isCashContract}
               description={description}
             />
+            {!!user && !isCreator && (
+              <ContractSharePanel
+                isClosed={isClosed}
+                isCreator={isCreator}
+                showResolver={showResolver}
+                contract={liveContract}
+              />
+            )}
             <Row className="items-center gap-2">
               <MarketTopics
                 contract={props.contract}
@@ -491,15 +508,6 @@ export function ContractPageContent(props: ContractParams) {
 
             <Row className="my-2 flex-wrap items-center justify-between gap-y-2"></Row>
             {!user && <SidebarSignUpButton className="mb-4 flex md:hidden" />}
-            {!!user && (
-              <ContractSharePanel
-                isClosed={isClosed}
-                isCreator={isCreator}
-                showResolver={showResolver}
-                // TODO: upgrade tier
-                contract={liveContract}
-              />
-            )}
 
             {isResolved && resolution !== 'CANCEL' && (
               <>

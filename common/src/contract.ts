@@ -97,6 +97,7 @@ export type Contract<T extends AnyContractType = AnyContractType> = {
   token: ContractToken
   siblingContractId?: string
 
+  /** @deprecated - no longer used */
   takerAPIOrdersDisabled?: boolean
 
   // Manifold.love
@@ -121,6 +122,8 @@ export type Contract<T extends AnyContractType = AnyContractType> = {
   conversionScore: number
   /** @deprecated - not deprecated, only updated in native column though*/
   viewCount: number
+  /** @deprecated - not deprecated, only updated in native column though*/
+  boosted: boolean
   /** @deprecated - not up-to-date */
   likedByUserCount?: number
 } & T
@@ -537,3 +540,15 @@ export type AIGeneratedMarket = Pick<
   addAnswersMode?: add_answers_mode
   promptVersion: number
 }
+
+export const nativeContractColumnsArray = [
+  'data',
+  'importance_score',
+  'freshness_score',
+  'conversion_score',
+  'view_count',
+  'token',
+  'boosted',
+  'daily_score',
+  'popularity_score',
+]

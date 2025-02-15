@@ -1,14 +1,14 @@
 import { SupabaseDirectClient } from 'shared/supabase/init'
-import { Contract } from 'common/contract'
+import { Contract, nativeContractColumnsArray } from 'common/contract'
 import { isAdminId } from 'common/envs/constants'
 import { convertContract } from 'common/supabase/contracts'
 import { generateEmbeddings } from 'shared/helpers/openai-utils'
 import { APIError } from 'common/api/utils'
 import { broadcastUpdatedContract } from 'shared/websockets/helpers'
-import { updateData, DataUpdate } from './utils'
-import { mapValues, uniq } from 'lodash'
+import { updateData, DataUpdate, update } from './utils'
+import { camelCase, mapValues, uniq } from 'lodash'
 import { contractColumnsToSelect, log } from 'shared/utils'
-
+import { Tables } from 'common/supabase/utils'
 // used for API to allow slug as param
 export const getContractIdFromSlug = async (
   pg: SupabaseDirectClient,
@@ -192,8 +192,12 @@ export const generateContractEmbeddings = async (
 export const updateContract = async (
   pg: SupabaseDirectClient,
   contractId: string,
+  // TODO: can't figure out how to exclude native columns from DataUpdate
   update: DataUpdate<'contracts'>
 ) => {
+  if (Object.keys(update).some((k) => nativeContractColumnsArray.includes(k))) {
+    throw new APIError(500, 'Cannot update native columns via data update')
+  }
   const fullUpdate = { ...update, id: contractId }
   const newContract = convertContract(
     await updateData(pg, 'contracts', 'id', fullUpdate)
@@ -203,6 +207,23 @@ export const updateContract = async (
     fullUpdate,
     (_, k) => newContract[k as keyof Contract] ?? null
   ) as any
+  broadcastUpdatedContract(newContract.visibility, updatedValues)
+  return newContract
+}
+
+export const updateContractNativeColumns = async (
+  pg: SupabaseDirectClient,
+  contractId: string,
+  updated: Tables['contracts']['Update']
+) => {
+  const fullUpdate = { ...updated, id: contractId }
+  const newContract = convertContract(
+    await update(pg, 'contracts', 'id', fullUpdate)
+  )
+  log('updated contract native columns', updated)
+  const updatedValues = Object.fromEntries(
+    Object.entries(fullUpdate).map(([k, v]) => [camelCase(k), v])
+  ) as Partial<Contract> & { id: string }
   broadcastUpdatedContract(newContract.visibility, updatedValues)
   return newContract
 }

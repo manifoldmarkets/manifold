@@ -2160,6 +2160,18 @@ export const API = (_apiTypeCheck = {
     props: z.object({ contractId: z.string(), optionId: z.string() }),
     returns: [] as DisplayUser[],
   },
+  'purchase-contract-boost': {
+    method: 'POST',
+    visibility: 'public',
+    authed: true,
+    props: z
+      .object({
+        contractId: z.string(),
+        startTime: z.number().positive().finite().safe(),
+      })
+      .strict(),
+    returns: {} as { success: boolean },
+  },
 } as const)
 
 export type APIPath = keyof typeof API

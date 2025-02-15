@@ -17,7 +17,7 @@ import {
 } from 'web/public/custom-components/tiers'
 import { TokenNumber } from '../widgets/token-number'
 import { getTieredCost, MarketTierType } from 'common/tier'
-import { getPresentedTierName } from '../tiers/tier-tooltip'
+import { getPresentedTierName } from '../tiers/liquidity-tooltip'
 import { ManaCoin } from 'web/public/custom-components/manaCoin'
 import { getContractTypeFromValue } from './create-contract-types'
 import { InfoTooltip } from '../widgets/info-tooltip'

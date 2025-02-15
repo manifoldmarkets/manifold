@@ -1,6 +1,11 @@
 import { generateJSON } from '@tiptap/html'
 import { APIError, getCloudRunServiceUrl } from 'common/api/utils'
-import { Contract, contractPath, MarketContract } from 'common/contract'
+import {
+  Contract,
+  nativeContractColumnsArray,
+  contractPath,
+  MarketContract,
+} from 'common/contract'
 import { PrivateUser } from 'common/user'
 import { extensions } from 'common/util/parse'
 import * as admin from 'firebase-admin'
@@ -112,9 +117,9 @@ export const isProd = () => {
     return admin.app().options.projectId === 'mantic-markets'
   }
 }
-export const contractColumnsToSelect = `data,importance_score,freshness_score,conversion_score,view_count,token`
-export const prefixedContractColumnsToSelect = contractColumnsToSelect
-  .split(',')
+
+export const contractColumnsToSelect = nativeContractColumnsArray.join(',')
+export const prefixedContractColumnsToSelect = nativeContractColumnsArray
   .map((col) => `c.${col}`)
   .join(',')
 

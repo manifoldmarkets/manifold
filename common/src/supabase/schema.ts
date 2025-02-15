@@ -264,6 +264,52 @@ export type Database = {
         }
         Relationships: []
       }
+      contract_boosts: {
+        Row: {
+          contract_id: string
+          end_time: string
+          id: number
+          start_time: string
+          user_id: string
+        }
+        Insert: {
+          contract_id: string
+          end_time: string
+          id?: never
+          start_time: string
+          user_id: string
+        }
+        Update: {
+          contract_id?: string
+          end_time?: string
+          id?: never
+          start_time?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'contract_boosts_contract_id_fkey'
+            columns: ['contract_id']
+            isOneToOne: false
+            referencedRelation: 'contracts'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'contract_boosts_user_id_fkey'
+            columns: ['user_id']
+            isOneToOne: false
+            referencedRelation: 'user_referrals_profit'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'contract_boosts_user_id_fkey'
+            columns: ['user_id']
+            isOneToOne: false
+            referencedRelation: 'users'
+            referencedColumns: ['id']
+          }
+        ]
+      }
       contract_comment_edits: {
         Row: {
           comment_id: string
@@ -444,6 +490,7 @@ export type Database = {
           unique_bettor_count: number
           view_count: number
           visibility: string | null
+          boosted: boolean | null
         }
         Insert: {
           close_time?: string | null
@@ -477,6 +524,7 @@ export type Database = {
           unique_bettor_count?: number
           view_count?: number
           visibility?: string | null
+          boosted?: boolean | null
         }
         Update: {
           close_time?: string | null
@@ -510,6 +558,7 @@ export type Database = {
           unique_bettor_count?: number
           view_count?: number
           visibility?: string | null
+          boosted?: boolean | null
         }
         Relationships: []
       }

@@ -11,10 +11,10 @@ import { TweetButton } from '../buttons/tweet-button'
 import { Row } from '../layout/row'
 import { GradientContainer } from '../widgets/gradient-container'
 import { AddBountyButton, CancelBountyButton } from './bountied-question'
-import { UpgradeTierButton } from './upgrade-tier-button'
 import { useNativeInfo } from 'web/components/native-message-provider'
 import { formatMoney } from 'common/util/format'
 import { UNIQUE_BETTOR_BONUS_AMOUNT } from 'common/economy'
+import { AddBoostButton } from './add-boost-button'
 
 export function CreatorSharePanel(props: { contract: Contract }) {
   const { contract } = props
@@ -24,10 +24,7 @@ export function CreatorSharePanel(props: { contract: Contract }) {
         {contract.outcomeType == 'BOUNTIED_QUESTION' && (
           <AddBountyButton contract={contract} />
         )}
-        {(contract.mechanism == 'cpmm-1' ||
-          contract.mechanism == 'cpmm-multi-1') && (
-          <UpgradeTierButton contract={contract} />
-        )}
+        <AddBoostButton contract={contract} />
         <ShareLinkButton contract={contract} />
         <TweetButton
           tweetText={'I created a question. ' + getShareUrl(contract)}
@@ -41,7 +38,7 @@ export function CreatorSharePanel(props: { contract: Contract }) {
       {contract.outcomeType !== 'POLL' &&
         contract.outcomeType !== 'BOUNTIED_QUESTION' && (
           <div className="text-ink-500 text-base">
-            Earn {formatMoney(UNIQUE_BETTOR_BONUS_AMOUNT)} for each trader.
+            Earn {formatMoney(UNIQUE_BETTOR_BONUS_AMOUNT)} for each new trader.
           </div>
         )}
     </GradientContainer>
@@ -56,6 +53,7 @@ export function NonCreatorSharePanel(props: { contract: Contract }) {
       {contract.outcomeType == 'BOUNTIED_QUESTION' && (
         <AddBountyButton contract={contract} />
       )}
+      <AddBoostButton contract={contract} />
       <ShareLinkButton contract={contract} />
       <TweetButton
         tweetText={getShareUrl(contract)}
