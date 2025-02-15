@@ -114,13 +114,7 @@ export function PriceTile(props: {
   onClick?: () => void
 }) {
   const { loadingPrice, onClick, amounts, index, user } = props
-  const {
-    newUsersOnly,
-    mana,
-    priceInDollars,
-    bonusInDollars,
-    originalPriceInDollars,
-  } = amounts
+  const { mana, priceInDollars, bonusInDollars } = amounts
   const { isIOS } = useNativeInfo()
 
   const isCurrentlyLoading = loadingPrice === priceInDollars
@@ -149,31 +143,12 @@ export function PriceTile(props: {
         disabled
           ? 'pointer-events-none cursor-not-allowed opacity-50'
           : 'opacity-90 ring-2 ring-opacity-0 hover:opacity-100 hover:ring-opacity-100',
-        newUsersOnly ? ' ring-green-600 ' : 'ring-indigo-600',
+        'ring-indigo-600',
         isCurrentlyLoading && 'pointer-events-none animate-pulse cursor-wait'
       )}
       type={useStripe ? 'submit' : 'button'}
       onClick={onClickHandler}
     >
-      {originalPriceInDollars && originalPriceInDollars !== priceInDollars && (
-        <Col
-          className={clsx(
-            'absolute -right-2 -top-2 z-10',
-            'rounded-md bg-green-600 px-2 py-1',
-            'text-center text-white'
-          )}
-        >
-          <div className="font-semibold">
-            {Math.round(
-              ((originalPriceInDollars - priceInDollars) /
-                originalPriceInDollars) *
-                100
-            )}
-            % off
-          </div>
-          <div className="text-xs">Limited time</div>
-        </Col>
-      )}
       <Col className={' w-full items-center rounded-t px-4 pb-2 pt-4'}>
         <Image
           src={imgSrc}
@@ -215,16 +190,10 @@ export function PriceTile(props: {
       <div
         className={clsx(
           'w-full rounded-b px-4 py-1 text-lg font-semibold text-white sm:text-xl',
-          newUsersOnly ? ' bg-green-600 ' : 'bg-indigo-600'
+          'bg-indigo-600'
         )}
       >
-        Buy{' '}
-        {originalPriceInDollars && (
-          <span className="font-normal text-neutral-300 line-through">
-            -${originalPriceInDollars}-
-          </span>
-        )}{' '}
-        ${priceInDollars}
+        Buy ${priceInDollars}
       </div>
     </button>
   )

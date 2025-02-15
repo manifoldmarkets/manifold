@@ -782,8 +782,7 @@ export const createBettingStreakBonusNotification = async (
   bet: Bet,
   contract: Contract,
   amount: number,
-  streak: number,
-  cashAmount: number | undefined
+  streak: number
 ) => {
   const privateUser = await getPrivateUser(user.id)
   if (!privateUser) return
@@ -815,7 +814,7 @@ export const createBettingStreakBonusNotification = async (
     data: {
       streak: streak,
       bonusAmount: amount,
-      cashAmount,
+      cashAmount: 0,
     } as BettingStreakData,
     worksOnSweeple: true,
   }

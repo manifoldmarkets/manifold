@@ -119,6 +119,7 @@ export const PortfolioValueSection = memo(
       setPortfolioFocus(mode)
       updateGraphValues(emptyGraphValues)
     }
+    const sweepsState = useSweepstakes()
 
     function noHistoryGraphElement(_width: number, height: number) {
       if (portfolioHistory) {
@@ -147,6 +148,7 @@ export const PortfolioValueSection = memo(
         <TwombaPortfolioValueSkeleton
           userId={user.id}
           hideSwitcher={true}
+          hideSweepsToggle={true}
           currentTimePeriod={currentTimePeriod}
           setCurrentTimePeriod={setCurrentTimePeriod}
           className={clsx(
@@ -229,16 +231,21 @@ export const PortfolioValueSection = memo(
     const updatedPortfolioHistory = portfolio
       ? [...portfolioHistory, portfolio]
       : portfolioHistory
-
+    const hideSweepsToggle =
+      user.createdTime > new Date('2025-02-12').getTime() ||
+      portfolioValues.netCash <= 0
+    const prefersPlay = hideSweepsToggle ? true : sweepsState.prefersPlay
     return (
       <TwombaPortfolioValueSkeleton
         userId={user.id}
+        hideSweepsToggle={hideSweepsToggle}
         currentTimePeriod={currentTimePeriod}
         setCurrentTimePeriod={setTimePeriod}
         portfolioFocus={portfolioFocus}
         setPortfolioFocus={onSetPortfolioFocus}
         portfolioGraphElement={(width, height) => (
           <PortfolioGraph
+            prefersPlay={!!prefersPlay}
             duration={currentTimePeriod}
             portfolioHistory={updatedPortfolioHistory}
             width={width}
@@ -254,6 +261,7 @@ export const PortfolioValueSection = memo(
         )}
         profitGraphElement={(width, height) => (
           <ProfitGraph
+            prefersPlay={!!prefersPlay}
             duration={currentTimePeriod}
             portfolioHistory={updatedPortfolioHistory}
             width={width}
@@ -292,6 +300,7 @@ function TwombaPortfolioValueSkeleton(props: {
   portfolioFocus: PortfolioMode
   setPortfolioFocus: (mode: PortfolioMode) => void
   user: User
+  hideSweepsToggle?: boolean
 }) {
   const {
     currentTimePeriod,
@@ -307,20 +316,24 @@ function TwombaPortfolioValueSkeleton(props: {
     portfolioFocus,
     setPortfolioFocus,
     user,
+    hideSweepsToggle,
   } = props
 
   function togglePortfolioFocus(toggleTo: PortfolioMode) {
     setPortfolioFocus(portfolioFocus === toggleTo ? 'all' : toggleTo)
   }
   const currentUser = useUser()
-  const { prefersPlay } = useSweepstakes()
+  const sweepsState = useSweepstakes()
+  const prefersPlay = hideSweepsToggle ? true : sweepsState.prefersPlay
 
   return (
     <Col>
       <Col className={clsx('gap-2')}>
         <Row className="text-ink-800 w-full items-center justify-between text-xl font-semibold">
           Portfolio
-          <SweepsToggle sweepsEnabled={true} isPlay={prefersPlay} />
+          {!hideSweepsToggle && (
+            <SweepsToggle sweepsEnabled={true} isPlay={prefersPlay} />
+          )}
         </Row>
         <Col className="bg-canvas-0 w-full rounded-lg p-4">
           <Col>
@@ -357,6 +370,7 @@ function TwombaPortfolioValueSkeleton(props: {
             </span>
             <Row className="mt-2 gap-2">
               <PortfolioGraphNumber
+                prefersPlay={prefersPlay}
                 numberType={'balance'}
                 descriptor="balance"
                 portfolioFocus={portfolioFocus}
@@ -376,6 +390,7 @@ function TwombaPortfolioValueSkeleton(props: {
                 onClick={() => togglePortfolioFocus('balance')}
               />
               <PortfolioGraphNumber
+                prefersPlay={prefersPlay}
                 numberType={'investment'}
                 descriptor="invested"
                 portfolioFocus={portfolioFocus}

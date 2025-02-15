@@ -2,8 +2,13 @@ import {
   createSupabaseDirectClient,
   SupabaseDirectClient,
 } from 'shared/supabase/init'
-import { contractColumnsToSelect, getUsers, isProd, log } from 'shared/utils'
-import { Dictionary, groupBy, sumBy, uniq } from 'lodash'
+import {
+  getUsers,
+  isProd,
+  log,
+  prefixedContractColumnsToSelect,
+} from 'shared/utils'
+import { Dictionary, groupBy, sortBy, sumBy } from 'lodash'
 import {
   Contract,
   ContractToken,
@@ -14,7 +19,7 @@ import {
   calculateProfitMetricsAtProbOrCancel,
   calculateUpdatedMetricsForContracts,
 } from 'common/calculate-metrics'
-import { buildArray, filterDefined } from 'common/util/array'
+import { buildArray } from 'common/util/array'
 
 import { convertPortfolioHistory } from 'common/supabase/portfolio-metrics'
 import { PortfolioMetrics } from 'common/portfolio-metrics'
@@ -25,6 +30,14 @@ import { bulkInsert } from 'shared/supabase/utils'
 import { type User } from 'common/user'
 import { convertAnswer, convertContract } from 'common/supabase/contracts'
 import { Answer } from 'common/answer'
+import {
+  renderSql,
+  select,
+  from,
+  join,
+  leftJoin,
+  where,
+} from './supabase/sql-builder'
 
 const userToPortfolioMetrics: {
   [userId: string]: {
@@ -114,9 +127,11 @@ export async function updateUserPortfolioHistoriesCore(userIds?: string[]) {
   const contractsById = Object.fromEntries(contracts.map((c) => [c.id, c]))
   const answersByContractId = groupBy(answers, (a) => a.contractId)
   for (const [contractId, answers] of Object.entries(answersByContractId)) {
-    // Denormalize answers onto the contract.
     // eslint-disable-next-line no-extra-semi
-    ;(contractsById[contractId] as CPMMMultiContract).answers = answers
+    ;(contractsById[contractId] as CPMMMultiContract).answers = sortBy(
+      answers,
+      (a) => a.index
+    )
   }
 
   const currentMetricsByUserId = groupBy(metrics, (m) => m.userId)
@@ -142,7 +157,6 @@ export async function updateUserPortfolioHistoriesCore(userIds?: string[]) {
       userMetrics.filter((m) => !m.isRanked),
       contractsById
     )
-    // TODO: cash profits
     const newPortfolio = {
       ...calculateNewPortfolioMetricsWithContractMetrics(
         user,
@@ -217,21 +231,51 @@ export const getUnresolvedContractMetricsContractsAnswers = async (
   answers: Answer[]
   metricsByContract: Dictionary<Omit<ContractMetric, 'id'>[]>
 }> => {
-  const metrics = await pg.map(
+  const sharedClauses = [
+    where('ucm.user_id in ($1:list)'),
+    where('c.resolution_time is null'),
+    where('(a is null or a.resolution_time is null)'),
+    where(
+      `case when c.mechanism = 'cpmm-multi-1' then ucm.answer_id is not null else true end`
+    ),
+  ]
+  const metricsSql = renderSql(
+    select(
+      `ucm.data, coalesce((c.data->'isRanked')::boolean, true) as is_ranked`
+    ),
+    from('user_contract_metrics ucm'),
+    join('contracts as c on ucm.contract_id = c.id'),
+    leftJoin('answers as a on ucm.answer_id = a.id'),
+    ...sharedClauses
+  )
+  const contractsSql = renderSql(
+    select(`distinct on (c.id) ${prefixedContractColumnsToSelect}`),
+    from('contracts as c'),
+    join('user_contract_metrics ucm on ucm.contract_id = c.id'),
+    leftJoin('answers as a on ucm.answer_id = a.id'),
+    ...sharedClauses
+  )
+  const answersSql = renderSql(
+    select('distinct on (a.id) a.*'),
+    from('answers as a'),
+    join('user_contract_metrics ucm on ucm.answer_id = a.id'),
+    join('contracts as c on ucm.contract_id = c.id'),
+    ...sharedClauses
+  )
+
+  const results = await pg.multi(
     `
-    select ucm.data, coalesce((c.data->'isRanked')::boolean, true) as is_ranked
-    from user_contract_metrics ucm
-    join contracts as c on ucm.contract_id = c.id
-    left join answers as a on ucm.answer_id = a.id
-    where
-      ucm.user_id in ($1:list)
-      and c.resolution_time is null
-      and (a is null or a.resolution_time is null)
-      and case when c.mechanism = 'cpmm-multi-1' then ucm.answer_id is not null else true end;
+    ${metricsSql};
+    ${contractsSql};
+    ${answersSql};
     `,
-    [userIds],
+    [userIds]
+  )
+  const metrics = results[0].map(
     (r) => ({ ...r.data, isRanked: r.is_ranked } as RankedContractMetric)
   )
+  const contracts = results[1].map<MarketContract>(convertContract)
+  const answers = results[2].map(convertAnswer)
   if (metrics.length === 0) {
     return {
       metrics: [],
@@ -240,44 +284,13 @@ export const getUnresolvedContractMetricsContractsAnswers = async (
       metricsByContract: {},
     }
   }
+  const contractsWithMetrics = contracts.map((c) => ({
+    contract: c,
+    metrics: metrics.filter((m) => m.contractId === c.id),
+  }))
+  const { metricsByContract } =
+    calculateUpdatedMetricsForContracts(contractsWithMetrics)
 
-  const contractIds = uniq(metrics.map((m) => m.contractId))
-  const answerIds = filterDefined(uniq(metrics.map((m) => m.answerId)))
-  const selectContracts = `select ${contractColumnsToSelect} from contracts where id in ($1:list);`
-  if (answerIds.length === 0) {
-    const contracts = await pg.map<MarketContract>(
-      selectContracts,
-      [contractIds],
-      convertContract
-    )
-    const contractsWithMetrics = contracts.map((c) => ({
-      contract: c,
-      metrics: metrics.filter((m) => m.contractId === c.id),
-    }))
-    const { metricsByContract } =
-      calculateUpdatedMetricsForContracts(contractsWithMetrics)
-    return {
-      metrics,
-      contracts,
-      answers: [],
-      metricsByContract: metricsByContract,
-    }
-  }
-  const results = await pg.multi(
-    `
-    ${selectContracts}
-    select * from answers where id in ($2:list);
-    `,
-    [contractIds, answerIds]
-  )
-  const contracts = results[0].map(convertContract) as MarketContract[]
-  const answers = results[1].map(convertAnswer)
-  const { metricsByContract } = calculateUpdatedMetricsForContracts(
-    contracts.map((c) => ({
-      contract: c,
-      metrics: metrics.filter((m) => m.contractId === c.id),
-    }))
-  )
   return {
     metrics,
     contracts,

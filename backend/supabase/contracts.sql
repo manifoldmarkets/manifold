@@ -49,7 +49,8 @@ create table if not exists
     ),
     unique_bettor_count bigint default 0 not null,
     view_count bigint default 0 not null,
-    visibility text
+    visibility text,
+    boosted boolean default false not null
   );
 
 -- Triggers
@@ -91,7 +92,6 @@ begin
   new.resolution_probability := ((new.data) ->> 'resolutionProbability')::numeric;
   new.resolution := (new.data) ->> 'resolution';
   new.is_spice_payout := coalesce(((new.data) ->> 'isSpicePayout')::boolean, false);
-  new.popularity_score := coalesce(((new.data) ->> 'popularityScore')::numeric, 0);
   new.deleted := coalesce(((new.data) ->> 'deleted')::boolean, false);
   new.group_slugs := case
       when new.data ? 'groupSlugs' then jsonb_array_to_text_array((new.data) -> 'groupSlugs')

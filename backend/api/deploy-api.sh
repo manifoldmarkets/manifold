@@ -20,7 +20,8 @@ case $ENV in
     dev)
         NEXT_PUBLIC_FIREBASE_ENV=DEV
         GCLOUD_PROJECT=dev-mantic-markets
-        MACHINE_TYPE=n2-standard-2 ;;
+        # MACHINE_TYPE=n2-standard-2 ;;
+        MACHINE_TYPE=e2-small ;;
     prod)
         NEXT_PUBLIC_FIREBASE_ENV=PROD
         GCLOUD_PROJECT=mantic-markets

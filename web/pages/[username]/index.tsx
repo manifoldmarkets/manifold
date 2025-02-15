@@ -24,7 +24,6 @@ import { UserSettingButton } from 'web/components/buttons/user-settings-button'
 import { UserCommentsList } from 'web/components/comments/profile-comments'
 import { BackButton } from 'web/components/contract/back-button'
 import { FollowList } from 'web/components/follow-list'
-import { VerifyMe } from 'web/components/gidx/verify-me'
 import { ManaCircleIcon } from 'web/components/icons/mana-circle-icon'
 import { Col } from 'web/components/layout/col'
 import { Modal } from 'web/components/layout/modal'
@@ -43,7 +42,6 @@ import { UserContractsList } from 'web/components/profile/user-contracts-list'
 import { UserLikedContractsButton } from 'web/components/profile/user-liked-contracts-button'
 import { SEO } from 'web/components/SEO'
 import { UserHandles } from 'web/components/user/user-handles'
-import { VerifyPhoneNumberBanner } from 'web/components/user/verify-phone-number-banner'
 import { Avatar } from 'web/components/widgets/avatar'
 import { FullscreenConfetti } from 'web/components/widgets/fullscreen-confetti'
 import ImageWithBlurredShadow from 'web/components/widgets/image-with-blurred-shadow'
@@ -167,7 +165,6 @@ function UserProfile(props: {
   const isMobile = useIsMobile()
   const router = useRouter()
   const currentUser = useUser()
-  const privateUser = usePrivateUser()
 
   const isCurrentUser = user.id === currentUser?.id
   const [expandProfileInfo, setExpandProfileInfo] = usePersistentLocalState(
@@ -320,9 +317,12 @@ function UserProfile(props: {
                 <AddFundsButton
                   userId={user.id}
                   className="whitespace-nowra w-full lg:hidden"
-                  hideDiscount
                 />
-                <RedeemSweepsButtons user={user} className="shrink-0" />
+                <RedeemSweepsButtons
+                  user={user}
+                  className="shrink-0"
+                  redeemableCash={user.cashBalance}
+                />
               </Row>
             ) : (
               <>
@@ -356,9 +356,12 @@ function UserProfile(props: {
             <AddFundsButton
               userId={user.id}
               className="w-1/2 whitespace-nowrap"
-              hideDiscount
             />
-            <RedeemSweepsButtons user={user} className="w-1/2" />
+            <RedeemSweepsButtons
+              user={user}
+              className="w-1/2"
+              redeemableCash={user.cashBalance}
+            />
           </Row>
         )}
 
@@ -377,15 +380,9 @@ function UserProfile(props: {
                 stackedTabIcon: <PresentationChartLineIcon className="h-5" />,
                 content: (
                   <>
-                    <Col className="mt-2 gap-2">
-                      {currentUser && privateUser && (
-                        <VerifyMe
-                          user={currentUser}
-                          privateUser={privateUser}
-                        />
-                      )}
-                      <VerifyPhoneNumberBanner user={currentUser} />
-                    </Col>
+                    {/* <Col className="mt-2 gap-2"> */}
+                    {/* <VerifyPhoneNumberBanner user={currentUser} /> */}
+                    {/* </Col> */}
                     <PortfolioSummary className="mt-4" user={user} />
                   </>
                 ),

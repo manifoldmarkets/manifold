@@ -10,11 +10,13 @@ import {
 } from 'common/api/market-types'
 import { ValidatedAPIParams } from 'common/api/schema'
 import {
+  Contract,
   MULTI_NUMERIC_CREATION_ENABLED,
   NO_CLOSE_TIME_TYPES,
   OutcomeType,
   add_answers_mode,
   contractUrl,
+  nativeContractColumnsArray,
 } from 'common/contract'
 import { getAnte } from 'common/economy'
 import { MAX_GROUPS_PER_MARKET } from 'common/group'
@@ -41,7 +43,7 @@ import {
   addGroupToContract,
   canUserAddGroupToMarket,
 } from 'shared/update-group-contracts-internal'
-import { htmlToRichText, log } from 'shared/utils'
+import { contractColumnsToSelect, htmlToRichText, log } from 'shared/utils'
 import {
   broadcastNewAnswer,
   broadcastNewContract,
@@ -55,7 +57,7 @@ import { convertAnswer } from 'common/supabase/contracts'
 import { generateAntes } from 'shared/create-contract-helpers'
 import { betsQueue } from 'shared/helpers/fn-queue'
 import { convertUser } from 'common/supabase/users'
-import { first } from 'lodash'
+import { camelCase, first } from 'lodash'
 import { getTieredCost } from 'common/tier'
 
 type Body = ValidatedAPIParams<'market'>
@@ -225,14 +227,23 @@ export async function createMarketHelper(body: Body, auth: AuthedUser) {
           takerAPIOrdersDisabled,
         })
       )
+      const nativeKeys = nativeContractColumnsArray.map(camelCase)
+      const nativeValues = nativeKeys
+        .filter((col) => col in contract)
+        .map((col) => contract[col as keyof Contract])
 
+      const contractDataToInsert = Object.fromEntries(
+        Object.entries(contract).filter(([key]) => !nativeKeys.includes(key))
+      )
       const insertAnswersQuery =
         contract.mechanism === 'cpmm-multi-1'
           ? bulkInsertQuery('answers', contract.answers.map(answerToRow), true)
           : 'select 1 where false'
       const contractQuery = pgp.as.format(
-        `insert into contracts (id, data, token) values ($1, $2, $3);`,
-        [contract.id, JSON.stringify(contract), contract.token]
+        `insert into contracts 
+        (id, ${contractColumnsToSelect})
+         values ($1, $2, ${nativeValues.map((_, i) => `$${i + 3}`)});`,
+        [contract.id, JSON.stringify(contractDataToInsert), ...nativeValues]
       )
       const result = await tx.multi(
         `${contractQuery};

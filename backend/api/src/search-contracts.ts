@@ -4,8 +4,9 @@ import { type APIHandler } from './helpers/endpoint'
 import {
   getSearchContractSQL,
   getForYouSQL,
-  SearchTypes,
   sortFields,
+  basicSearchSQL,
+  SearchTypes,
 } from 'shared/supabase/search-contracts'
 import { getGroupIdFromSlug } from 'shared/supabase/groups'
 import { orderBy, uniqBy } from 'lodash'
@@ -63,34 +64,47 @@ const search = async (
   const groupId = topicSlug
     ? await getGroupIdFromSlug(topicSlug, pg)
     : undefined
-  let contracts
   if (
-    isForYou &&
     !term &&
-    userId &&
-    (sort === 'score' || sort === 'freshness-score') &&
     !topicSlug &&
-    token !== 'CASH' &&
-    token !== 'CASH_AND_MANA' &&
-    (!groupIds || groupIds.length === 0)
+    !groupIds &&
+    (sort === 'score' || sort === 'freshness-score') &&
+    (token === 'MANA' || token === 'ALL')
   ) {
-    const forYouSql = await getForYouSQL({
-      userId,
-      filter,
-      contractType,
-      limit,
-      offset,
-      sort,
-      isPrizeMarket,
-      token,
-      marketTier: marketTier as TierParamsType,
-    })
-
-    const start = Date.now()
-    contracts = await pg.map(forYouSql, [term], (r) => convertContract(r))
-    log('For you search completed in (s):', (Date.now() - start) / 1000)
+    if (!isForYou || !userId) {
+      return await pg.map(
+        basicSearchSQL(
+          userId,
+          filter,
+          contractType,
+          limit,
+          offset,
+          sort,
+          isPrizeMarket,
+          marketTier as TierParamsType,
+          token,
+          undefined,
+          creatorId
+        ),
+        null,
+        convertContract
+      )
+    } else {
+      const forYouSql = await getForYouSQL({
+        userId,
+        filter,
+        contractType,
+        limit,
+        offset,
+        sort,
+        isPrizeMarket,
+        token,
+        marketTier: marketTier as TierParamsType,
+      })
+      return await pg.map(forYouSql, [term], (r) => convertContract(r))
+    }
   } else if (isRecent && !term && userId) {
-    contracts = await pg.map(
+    return await pg.map(
       'select data from get_your_recent_contracts($1, $2, $3)',
       [userId, limit, offset],
       convertContract
@@ -104,15 +118,10 @@ const search = async (
       'with-stopwords',
       'description',
     ]
-    const [
-      contractPrefixMatches,
-      contractsWithoutStopwords,
-      contractsWithMatchingAnswers,
-      contractsWithStopwords,
-      contractDescriptionMatches,
-    ] = await Promise.all(
-      searchTypes.map(async (searchType) => {
-        const searchSQL = getSearchContractSQL({
+
+    const multiQuery = searchTypes
+      .map((searchType) =>
+        getSearchContractSQL({
           term: cleanTerm,
           filter,
           sort,
@@ -129,19 +138,28 @@ const search = async (
           groupIds,
           marketTier: marketTier as TierParamsType,
         })
+      )
+      .join(';')
 
-        return pg
-          .map(searchSQL, null, (r) => ({
-            data: convertContract(r),
-            searchType,
-          }))
-          .catch((e) => {
-            // to_tsquery is sensitive to special characters and can throw an error
-            log.error(`Error with type: ${searchType} for term: ${term}`, e)
-            return []
-          })
-      })
+    const results = await pg.multi(multiQuery).catch((e) => {
+      // to_tsquery is sensitive to special characters and can throw an error
+      log.error(`Error executing search query for term: ${term}`, e)
+      return Array(searchTypes.length).fill([])
+    })
+
+    const [
+      contractPrefixMatches,
+      contractsWithoutStopwords,
+      contractsWithMatchingAnswers,
+      contractsWithStopwords,
+      contractDescriptionMatches,
+    ] = results.map((result, i) =>
+      result.map((r: any) => ({
+        data: convertContract(r),
+        searchType: searchTypes[i],
+      }))
     )
+
     const contractsOfSimilarRelevance = orderBy(
       [
         ...contractsWithoutStopwords,
@@ -154,7 +172,7 @@ const search = async (
       sortFields[sort].order.includes('DESC') ? 'desc' : 'asc'
     )
 
-    contracts = uniqBy(
+    return uniqBy(
       [
         ...contractsWithStopwords,
         ...contractsOfSimilarRelevance,
@@ -163,6 +181,4 @@ const search = async (
       'id'
     ).slice(0, limit)
   }
-
-  return contracts
 }

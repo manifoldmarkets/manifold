@@ -11,7 +11,6 @@ import { JSONContent } from '@tiptap/core'
 import { updateMarket } from 'web/lib/api/api'
 import { toast } from 'react-hot-toast'
 import { LogoIcon } from '../icons/logo-icon'
-import { SweepVerifySection } from '../sweeps/sweep-verify-section'
 import clsx from 'clsx'
 
 export function ContractDescription(props: {
@@ -29,9 +28,6 @@ export function ContractDescription(props: {
   return (
     <>
       <div className="mt-6">
-        {isSweeps && !user?.sweepstakesVerified && (
-          <SweepVerifySection className="mb-4" />
-        )}
         {isCreator || isAdmin ? (
           <EditableDescription
             contractId={contractId}

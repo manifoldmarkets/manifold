@@ -79,7 +79,7 @@ export async function updateUserMetricPeriods(
   const metricsByUser: Record<string, ContractMetric[]> = {}
   const contractsById: Record<string, Contract> = {}
   for (const activeUserIds of chunks) {
-    log('Loading bets for', activeUserIds)
+    log(`Loading bets for ${activeUserIds.length} users`)
     const metricRelevantBets = await getUnresolvedOrRecentlyResolvedBets(
       pg,
       activeUserIds,

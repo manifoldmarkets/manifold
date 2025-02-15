@@ -6,6 +6,8 @@ import { Row } from '../layout/row'
 import { LogoIcon } from '../icons/logo-icon'
 import { usePersistentLocalState } from 'web/hooks/use-persistent-local-state'
 import Link from 'next/link'
+import { ArrowRightIcon } from '@heroicons/react/solid'
+import { useUser } from 'web/hooks/use-user'
 
 export function Banner(props: {
   setShowBanner?: (show: boolean) => void
@@ -172,6 +174,25 @@ export const TwombaBanner = () => {
         />
         <div>Sweepstakes cash prizes are here! Read more</div>
       </Row>
+    </Banner>
+  )
+}
+
+export const ManaForeverBanner = () => {
+  const [showBanner, hideBanner] = useBanner('mana-forever')
+  const user = useUser()
+  if (!showBanner || !user) return null
+  if (user.createdTime > new Date('2025-02-12').getTime()) return null
+  return (
+    <Banner
+      className="bg-primary-100 hover:bg-primary-200  dark:text-primary-800 text-primary-700 hover:text-primary-900 items-center py-2 transition-colors"
+      link="https://manifoldmarkets.notion.site/Mana-forever-19154492ea7a80c08410ea8c64fac67e?pvs=74"
+      setShowBanner={hideBanner}
+    >
+      <div>
+        We are shutting down sweepstakes to focus on the manaverse! See more{' '}
+        <ArrowRightIcon className="ml-1 inline-block h-4 w-4" />
+      </div>
     </Banner>
   )
 }

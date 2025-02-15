@@ -81,12 +81,11 @@ export function ContractParamsForm(props: {
     outcomeType
   )
     ? undefined
-    : 'plus'
+    : 'play'
 
-  // TODO: why doesn't this use localstorage state (on in memory state) like everything else?
-  const [marketTier, setMarketTier] = useState<MarketTierType | undefined>(
-    DEFAULT_TIER
-  )
+  const [marketTier, setMarketTier] = usePersistentLocalState<
+    MarketTierType | undefined
+  >(DEFAULT_TIER, 'market-tier')
 
   const paramsKey =
     (params?.q ?? '') +

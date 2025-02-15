@@ -202,11 +202,6 @@ END;
 $function$;
 
 create
-or replace function public.get_contract_voters (this_contract_id text) returns table (data json) language sql parallel SAFE as $function$
-  SELECT users.data from users join votes on votes.user_id = users.id where votes.contract_id = this_contract_id;
-$function$;
-
-create
 or replace function public.get_contracts_in_group_slugs_1 (
   contract_ids text[],
   p_group_slugs text[],
@@ -350,11 +345,6 @@ or replace function public.get_noob_questions () returns setof contracts languag
   where creator_id in (select * from newbs)
   and visibility = 'public'
   order by created_time desc$function$;
-
-create
-or replace function public.get_option_voters (this_contract_id text, this_option_id text) returns table (data json) language sql parallel SAFE as $function$
-  SELECT users.data from users join votes on votes.user_id = users.id where votes.contract_id = this_contract_id and votes.id = this_option_id;
-$function$;
 
 create
 or replace function public.get_rating (user_id text) returns table (count bigint, rating numeric) language sql immutable parallel SAFE as $function$

@@ -101,7 +101,6 @@ import { getCurrentPrivateUser } from './get-current-private-user'
 import { updatePrivateUser } from './update-private-user'
 import { setPushToken } from './push-token'
 import { updateNotifSettings } from './update-notif-settings'
-import { createCashContract } from './create-cash-contract'
 import { getVerificationDocuments } from 'api/gidx/get-verification-documents'
 import { getRedeemablePrizeCash } from './get-redeemable-prize-cash'
 import { getTotalRedeemablePrizeCash } from './get-total-redeemable-prize-cash'
@@ -159,10 +158,14 @@ import { getUserContractMetricsWithContracts } from './get-user-contract-metrics
 import { validateiap } from './validate-iap'
 import { getReactions } from './get-reactions'
 import { markallnotificationsnew } from './mark-all-notifications-new'
+import {
+  getContractOptionVoters,
+  getContractVoters,
+} from './get-contract-voters'
+import { purchaseContractBoost } from './purchase-contract-boost'
 // we define the handlers in this object in order to typecheck that every API has a handler
 export const handlers: { [k in APIPath]: APIHandler<k> } = {
   'refresh-all-clients': refreshAllClients,
-  'create-cash-contract': createCashContract,
   bet: placeBet,
   'multi-bet': placeMultiBet,
   'follow-contract': followContract,
@@ -336,4 +339,7 @@ export const handlers: { [k in APIPath]: APIHandler<k> } = {
   validateIap: validateiap,
   'comment-reactions': getReactions,
   'mark-all-notifications-new': markallnotificationsnew,
+  'get-contract-voters': getContractVoters,
+  'get-contract-option-voters': getContractOptionVoters,
+  'purchase-contract-boost': purchaseContractBoost,
 }

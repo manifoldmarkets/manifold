@@ -12,7 +12,6 @@ import Link from 'next/link'
 import { ArrowRightIcon, StarIcon } from '@heroicons/react/solid'
 import { MODAL_CLASS, Modal, SCROLLABLE_MODAL_CLASS } from '../layout/modal'
 import clsx from 'clsx'
-import { useOptionVoters } from 'web/hooks/use-votes'
 import { LoadingIndicator } from '../widgets/loading-indicator'
 import { Row } from '../layout/row'
 import { Avatar } from '../widgets/avatar'
@@ -21,6 +20,7 @@ import { getUserVote } from 'web/lib/supabase/polls'
 import { Tooltip } from '../widgets/tooltip'
 import { UserHovercard } from '../user/user-hovercard'
 import { maybePluralize } from 'common/util/format'
+import { useAPIGetter } from 'web/hooks/use-api-getter'
 
 export function PollPanel(props: {
   contract: PollContract
@@ -165,7 +165,10 @@ export function SeeVotesModalContent(props: {
   contractId: string
 }) {
   const { option, contractId } = props
-  const voters = useOptionVoters(contractId, option.id)
+  const { data: voters } = useAPIGetter('get-contract-option-voters', {
+    contractId,
+    optionId: option.id,
+  })
   return (
     <Col className={clsx(MODAL_CLASS)}>
       <div className="line-clamp-2 w-full">

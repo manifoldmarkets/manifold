@@ -16,7 +16,7 @@ import {
 import { getContractPrivacyWhereSQLFilter } from 'shared/supabase/contracts'
 import { PROD_MANIFOLD_LOVE_GROUP_SLUG } from 'common/envs/constants'
 import { constructPrefixTsQuery } from 'shared/helpers/search'
-import { buildArray } from 'common/util/array'
+import { buildArray, filterDefined } from 'common/util/array'
 import {
   buildUserInterestsCache,
   userIdsToAverageTopicConversionScores,
@@ -82,22 +82,17 @@ export async function getForYouSQL(items: {
   if (
     !Object.keys(userIdsToAverageTopicConversionScores[userId] ?? {}).length
   ) {
-    log('No topic interests found for user', userId)
-    return renderSql(
-      select(contractColumnsToSelect),
-      from('contracts'),
-      orderBy(`${sortByScore} desc`),
-      getSearchContractWhereSQL({
-        filter,
-        contractType,
-        uid: userId,
-        hideStonks: true,
-        isPrizeMarket,
-        marketTier,
-        token,
-      }),
-      privateUserBlocksSql(privateUser),
-      lim(limit, offset)
+    return basicSearchSQL(
+      userId,
+      filter,
+      contractType,
+      limit,
+      offset,
+      sort,
+      isPrizeMarket,
+      marketTier,
+      token,
+      privateUser
     )
   }
   const GROUP_SCORE_POWER = 4
@@ -162,6 +157,39 @@ export async function getForYouSQL(items: {
   return forYou
 }
 
+export const basicSearchSQL = (
+  userId: string | undefined,
+  filter: string,
+  contractType: string,
+  limit: number,
+  offset: number,
+  sort: 'score' | 'freshness-score',
+  isPrizeMarket: boolean,
+  marketTier: TierParamsType,
+  token: TokenInputType,
+  privateUser?: PrivateUser,
+  creatorId?: string
+) => {
+  const sortByScore = sort === 'score' ? 'importance_score' : 'freshness_score'
+  return renderSql(
+    select(contractColumnsToSelect),
+    from('contracts'),
+    orderBy(`${sortByScore} desc`),
+    getSearchContractWhereSQL({
+      filter,
+      contractType,
+      uid: userId,
+      hideStonks: true,
+      isPrizeMarket,
+      marketTier,
+      token,
+      creatorId,
+    }),
+    privateUserBlocksSql(privateUser),
+    lim(limit, offset)
+  )
+}
+
 export type SearchTypes =
   | 'without-stopwords'
   | 'with-stopwords'
@@ -205,7 +233,7 @@ export function getSearchContractSQL(args: {
   if (isUrl) {
     const slug = term.split('/').pop()
     return renderSql(
-      select('data, importance_score, view_count, token'),
+      select(contractColumnsToSelect),
       from('contracts'),
       whereSql,
       where('slug = $1', [slug])
@@ -218,42 +246,31 @@ export function getSearchContractSQL(args: {
     where(`a.text_fts @@ websearch_to_tsquery('english_extended', $1)`, [term])
   )
 
-  const groupIdsFilter =
-    groupIds &&
+  const groupsFilter =
+    (groupIds || groupId) &&
     where(
       `
     exists (
       select 1 from group_contracts gc 
       where ${
-        token === 'MANA'
-          ? 'gc.contract_id = contracts.id'
-          : token === 'CASH'
+        token === 'CASH'
           ? "gc.contract_id = contracts.data->>'siblingContractId'"
-          : "(gc.contract_id = contracts.id or gc.contract_id = contracts.data->>'siblingContractId')"
+          : 'gc.contract_id = contracts.id'
       }
-      and gc.group_id = any(string_to_array($1, ','))
+      and gc.group_id = any($1)
     )`,
-      [groupIds]
+      [
+        filterDefined([groupId, groupIds || undefined])
+          .join(',')
+          .split(','),
+      ]
     )
 
   // Normal full text search
-  return renderSql(
-    select('data, importance_score, view_count, token'),
+  const sql = renderSql(
+    select(contractColumnsToSelect),
     from('contracts'),
-    groupId && [
-      token === 'MANA'
-        ? join(`group_contracts gc on gc.contract_id = contracts.id`)
-        : token === 'CASH'
-        ? // TODO: improve performance of joining on siblingContractId
-          join(
-            `group_contracts gc on gc.contract_id = contracts.data->>'siblingContractId'`
-          )
-        : join(
-            `group_contracts gc on (gc.contract_id = contracts.id or gc.contract_id = contracts.data->>'siblingContractId')`
-          ),
-      where('gc.group_id = $1', [groupId]),
-    ],
-    groupIdsFilter,
+    groupsFilter,
     searchType === 'answer' &&
       join(
         `(${answersSubQuery}) as matched_answers on matched_answers.contract_id = contracts.id`
@@ -286,6 +303,7 @@ export function getSearchContractSQL(args: {
     orderBy(getSearchContractSortSQL(sort)),
     sqlLimit(limit, offset)
   )
+  return sql
 }
 
 function getSearchContractWhereSQL(args: {

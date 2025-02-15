@@ -60,6 +60,7 @@ type AnyTxnType =
   | KycBonus
   | ProfitFee
   | UndoResolutionFee
+  | ContractBoostPurchase
 
 export type AnyTxnCategory = AnyTxnType['category']
 
@@ -589,6 +590,17 @@ type AdminReward = {
   }
 }
 
+type ContractBoostPurchase = {
+  category: 'CONTRACT_BOOST_PURCHASE'
+  fromType: 'USER'
+  toType: 'BANK'
+  token: 'M$'
+  data: {
+    contractId: string
+    boostId: string
+  }
+}
+
 export type AddSubsidyTxn = Txn & AddSubsidy
 export type RemoveSubsidyTxn = Txn & RemoveSubsidy
 export type DonationTxn = Txn & Donation
@@ -644,3 +656,4 @@ export type CashOutPendingTxn = Txn & CashOutPending
 export type ProfitFeeTxn = Txn & ProfitFee
 export type UndoResolutionFeeTxn = Txn & UndoResolutionFee
 export type AdminRewardTxn = Txn & AdminReward
+export type ContractBoostPurchaseTxn = Txn & ContractBoostPurchase

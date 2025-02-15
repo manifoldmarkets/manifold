@@ -11,7 +11,6 @@ import { BetsTabContent } from './contract-tabs'
 import { UserPositionsTable } from 'web/components/contract/user-positions-table'
 import { UncontrolledTabs } from 'web/components/layout/tabs'
 import { Col } from 'web/components/layout/col'
-import { useContractVoters } from 'web/hooks/use-votes'
 import { Avatar } from '../widgets/avatar'
 import { UserLink } from '../widgets/user-link'
 import { track } from 'web/lib/service/analytics'
@@ -24,6 +23,7 @@ import { FaUser } from 'react-icons/fa6'
 import { shortenNumber } from 'common/util/formatNumber'
 import { useBetsOnce } from 'client-common/hooks/use-bets'
 import { api } from 'web/lib/api/api'
+import { useAPIGetter } from 'web/hooks/use-api-getter'
 
 export function TradesButton(props: {
   contract: Contract
@@ -170,7 +170,9 @@ export function TradesModal(props: {
 
 function VotesModalContent(props: { contract: Contract }) {
   const { contract } = props
-  const voters = useContractVoters(contract.id)
+  const { data: voters } = useAPIGetter('get-contract-voters', {
+    contractId: contract.id,
+  })
 
   return (
     <Col className="mt-4 gap-3">

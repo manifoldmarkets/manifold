@@ -36,7 +36,7 @@ import { LikeData, ShipData } from './love-types'
 import { AnyBalanceChangeType } from 'common/balance-change'
 import { Dashboard } from 'common/dashboard'
 import { ChatMessage, PrivateChatMessage } from 'common/chat-message'
-import { PrivateUser, User } from 'common/user'
+import { PrivateUser, User } from '../user'
 import { ManaSupply } from 'common/stats'
 import { Repost } from 'common/repost'
 import { PERIODS } from 'common/period'
@@ -112,18 +112,6 @@ export const API = (_apiTypeCheck = {
       })
       .strict(),
     returns: {} as { status: boolean },
-  },
-  'create-cash-contract': {
-    method: 'POST',
-    visibility: 'public',
-    authed: true,
-    returns: {} as LiteMarket,
-    props: z
-      .object({
-        manaContractId: z.string(),
-        subsidyAmount: z.number().positive(),
-      })
-      .strict(),
   },
   comment: {
     method: 'POST',
@@ -244,7 +232,6 @@ export const API = (_apiTypeCheck = {
         deviceToken: z.string().optional(),
         adminToken: z.string().optional(),
         visitedContractIds: z.array(z.string()).optional(),
-        origin: z.enum(['mani']).optional(),
       })
       .strict(),
   },
@@ -2153,6 +2140,36 @@ export const API = (_apiTypeCheck = {
     visibility: 'public',
     authed: true,
     props: z.object({}).strict(),
+    returns: {} as { success: boolean },
+  },
+  'get-contract-voters': {
+    method: 'GET',
+    visibility: 'public',
+    authed: false,
+    props: z
+      .object({
+        contractId: z.string(),
+      })
+      .strict(),
+    returns: [] as DisplayUser[],
+  },
+  'get-contract-option-voters': {
+    method: 'GET',
+    visibility: 'public',
+    authed: false,
+    props: z.object({ contractId: z.string(), optionId: z.string() }),
+    returns: [] as DisplayUser[],
+  },
+  'purchase-contract-boost': {
+    method: 'POST',
+    visibility: 'public',
+    authed: true,
+    props: z
+      .object({
+        contractId: z.string(),
+        startTime: z.number().positive().finite().safe(),
+      })
+      .strict(),
     returns: {} as { success: boolean },
   },
 } as const)

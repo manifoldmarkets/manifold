@@ -28,8 +28,6 @@ import { updateData } from 'shared/supabase/utils'
 import {
   BETTING_STREAK_BONUS_AMOUNT,
   BETTING_STREAK_BONUS_MAX,
-  BETTING_STREAK_SWEEPS_BONUS_AMOUNT,
-  BETTING_STREAK_SWEEPS_BONUS_MAX,
   MAX_TRADERS_FOR_BIG_BONUS,
   SMALL_UNIQUE_BETTOR_LIQUIDITY,
   UNIQUE_BETTOR_LIQUIDITY,
@@ -316,31 +314,7 @@ const payBettingStreak = async (
 
     const txn = await runTxnFromBank(tx, bonusTxn)
 
-    let sweepsTxn = null
-    let sweepsBonusAmount = 0
-    if (oldUser.sweepstakesVerified) {
-      sweepsBonusAmount = Math.min(
-        BETTING_STREAK_SWEEPS_BONUS_AMOUNT * newBettingStreak,
-        BETTING_STREAK_SWEEPS_BONUS_MAX
-      )
-
-      const sweepsBonusTxn: Omit<
-        BettingStreakBonusTxn,
-        'id' | 'createdTime' | 'fromId'
-      > = {
-        fromType: 'BANK',
-        toId: oldUser.id,
-        toType: 'USER',
-        amount: sweepsBonusAmount,
-        token: 'CASH',
-        category: 'BETTING_STREAK_BONUS',
-        data: bonusTxnDetails,
-      }
-
-      sweepsTxn = await runTxnFromBank(tx, sweepsBonusTxn)
-    }
-
-    return { txn, sweepsTxn, bonusAmount, sweepsBonusAmount, newBettingStreak }
+    return { txn, bonusAmount, newBettingStreak }
   })
 
   await createBettingStreakBonusNotification(
@@ -349,8 +323,7 @@ const payBettingStreak = async (
     bet,
     contract,
     result.bonusAmount,
-    result.newBettingStreak,
-    result.sweepsTxn ? result.sweepsBonusAmount : undefined
+    result.newBettingStreak
   )
 }
 

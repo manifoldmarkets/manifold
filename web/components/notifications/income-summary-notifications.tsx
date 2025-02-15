@@ -318,17 +318,6 @@ export function BettingStreakBonusIncomeNotification(props: {
         </span>
       ) : (
         <span className="line-clamp-3">
-          {cashAmount && (
-            <>
-              <TokenNumber
-                className={'text-amber-500'}
-                isInline={true}
-                amount={cashAmount}
-                coinType={'sweepies'}
-              />
-              {' + '}
-            </>
-          )}
           {bonusAmount && (
             <TokenNumber
               className={'text-teal-600'}
