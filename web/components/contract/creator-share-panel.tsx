@@ -21,7 +21,7 @@ import { Col } from '../layout/col'
 export function CreatorSharePanel(props: { contract: Contract }) {
   const { contract } = props
   return (
-    <GradientContainer className="mb-8 flex w-full">
+    <GradientContainer className="mt-4 flex w-full">
       <Col className="w-full gap-4">
         <Row className="flex-wrap gap-2">
           {contract.outcomeType == 'BOUNTIED_QUESTION' && (
