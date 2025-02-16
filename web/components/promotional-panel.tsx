@@ -1,12 +1,8 @@
 import { Col } from 'web/components/layout/col'
 
 import Image from 'next/image'
-import { formatMoneyUSD } from 'common/util/format'
-import { TokenNumber } from 'web/components/widgets/token-number'
-import { Row } from 'web/components/layout/row'
 import { Button, buttonClass } from 'web/components/buttons/button'
 import clsx from 'clsx'
-import Link from 'next/link'
 import SquiggleVertical from 'web/lib/icons/squiggle-vertical.svg'
 import { useIsMobile } from 'web/hooks/use-is-mobile'
 import { useUser } from 'web/hooks/use-user'
