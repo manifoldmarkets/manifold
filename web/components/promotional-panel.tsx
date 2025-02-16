@@ -50,7 +50,7 @@ export function PromotionalPanel(props: {
         <div className="text-2xl">{header}</div>
         <Col className="w-full items-center text-lg text-indigo-300">
           <div className="mx-auto mt-2">{description}</div>
-          <Row
+          {/* <Row
             className={`md::text-4xl relative mx-auto mt-4 items-center gap-2 rounded-xl border border-indigo-300 p-5 text-2xl `}
           >
             <TokenNumber
@@ -80,7 +80,7 @@ export function PromotionalPanel(props: {
               numberType="short"
             />{' '}
             → {formatMoneyUSD(1)} USD
-          </div>
+          </div> */}
 
           <div className="group relative z-30 mt-8">
             {!user ? (
@@ -105,32 +105,32 @@ export function PromotionalPanel(props: {
                 </div>
               </>
             ) : (
-              <>
-                <Link
-                  className={clsx(
-                    buttonClass('2xl', 'gradient-pink'),
-                    'absolute -left-1.5 bottom-1.5 z-10 mt-8 transition-all ease-in-out focus:-left-0.5 focus:bottom-0.5 group-hover:-left-2 group-hover:bottom-2 focus:group-hover:-left-0.5 focus:group-hover:bottom-0.5'
-                  )}
-                  href="/gidx/register"
-                  color="gradient-pink"
-                >
-                  Verify!
-                </Link>
-                <div
-                  className={clsx(
-                    `text-ink-900 rounded-md bg-teal-300 dark:bg-teal-700`,
-                    'px-6 py-3 text-xl font-semibold'
-                  )}
-                >
-                  Verify!
-                </div>
-              </>
+              // <>
+              //   <Link
+              //     className={clsx(
+              //       buttonClass('2xl', 'gradient-pink'),
+              //       'absolute -left-1.5 bottom-1.5 z-10 mt-8 transition-all ease-in-out focus:-left-0.5 focus:bottom-0.5 group-hover:-left-2 group-hover:bottom-2 focus:group-hover:-left-0.5 focus:group-hover:bottom-0.5'
+              //     )}
+              //     href="/gidx/register"
+              //     color="gradient-pink"
+              //   >
+              //     Verify!
+              //   </Link>
+              //   <div
+              //     className={clsx(
+              //       `text-ink-900 rounded-md bg-teal-300 dark:bg-teal-700`,
+              //       'px-6 py-3 text-xl font-semibold'
+              //     )}
+              //   >
+              //     Verify!
+              //   </div>
+              // </>
+              <></>
             )}
           </div>
           {user && (
             <div className="mx-auto mt-2 text-center text-green-300">
               <div>Successfully signed up!</div>
-              <div> Please verify for welcome offer.</div>
             </div>
           )}
         </Col>
