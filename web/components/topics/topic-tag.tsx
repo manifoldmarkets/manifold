@@ -26,7 +26,7 @@ export function TopicTag(props: {
     <Row
       className={clsx(
         'group flex items-center gap-1.5 rounded-full px-2.5 py-1 text-sm font-medium',
-        'bg-canvas-50 text-ink-600 transition-colors hover:bg-canvas-100 hover:text-ink-800',
+        'bg-canvas-50 text-ink-600 hover:bg-canvas-100 hover:text-ink-800 transition-colors',
         className
       )}
     >

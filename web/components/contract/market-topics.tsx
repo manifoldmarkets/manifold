@@ -120,7 +120,7 @@ export function MarketTopics(props: TopicRowProps) {
             )}
           >
             {topics.length ? (
-              <PencilIcon className="h-4 w-4 " /> 
+              <PencilIcon className="h-4 w-4 " />
             ) : (
               <>
                 <PlusIcon className="mr-1 h-3 " /> Topics
