@@ -490,6 +490,14 @@ export function ContractPageContent(props: ContractParams) {
               isSweeps={isCashContract}
               description={description}
             />
+            <Row className="mb-4 items-center gap-2">
+              <MarketTopics
+                contract={props.contract}
+                dashboards={dashboards}
+                topics={topics}
+                isSpiceMarket={isSpiceMarket}
+              />
+            </Row>
             {!!user && !isCreator && (
               <ContractSharePanel
                 isClosed={isClosed}
@@ -498,14 +506,6 @@ export function ContractPageContent(props: ContractParams) {
                 contract={liveContract}
               />
             )}
-            <Row className="items-center gap-2">
-              <MarketTopics
-                contract={props.contract}
-                dashboards={dashboards}
-                topics={topics}
-                isSpiceMarket={isSpiceMarket}
-              />
-            </Row>
 
             <Row className="my-2 flex-wrap items-center justify-between gap-y-2"></Row>
             {!user && <SidebarSignUpButton className="mb-4 flex md:hidden" />}
