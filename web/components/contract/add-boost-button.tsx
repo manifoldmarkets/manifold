@@ -104,18 +104,6 @@ function BoostPurchaseModal(props: {
           </div>
 
           <Row className="items-center gap-2">
-            <Button
-              color="indigo"
-              onClick={purchaseBoost}
-              loading={loading}
-              disabled={notEnoughFunds}
-              className="w-full"
-            >
-              Purchase boost for{' '}
-              <TokenNumber className="mx-1" amount={BOOST_COST_MANA} />
-            </Button>
-          </Row>
-          <Row className="items-center gap-2">
             <div className="text-ink-600">Start time:</div>
             <Input
               type={'date'}
@@ -136,6 +124,18 @@ function BoostPurchaseModal(props: {
             />
           </Row>
 
+          <Row className="items-center gap-2">
+            <Button
+              color="indigo"
+              onClick={purchaseBoost}
+              loading={loading}
+              disabled={notEnoughFunds}
+              className="w-full"
+            >
+              Purchase boost for{' '}
+              <TokenNumber className="mx-1" amount={BOOST_COST_MANA} />
+            </Button>
+          </Row>
           {notEnoughFunds && (
             <div className="text-ink-600 flex items-center gap-2 text-sm">
               <span className="text-error">Insufficient balance</span>
