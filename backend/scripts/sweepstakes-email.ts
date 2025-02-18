@@ -65,7 +65,10 @@ async function sendBulkEmails(users: SweepstakesUser[]) {
   const emailParams = new URLSearchParams()
   emailParams.append('from', 'Manifold <info@manifold.markets>')
   emailParams.append('to', users.map((u) => u.email).join(','))
-  emailParams.append('subject', 'Sweepstakes is ending') // Update to change email subject
+  emailParams.append(
+    'subject',
+    '[ACTION REQ] Redeem your sweepcash by March 28th'
+  ) // Update to change email subject
   emailParams.append('template', 'manifold announcement template') // Create template in mailgun and update here to send
   emailParams.append('h:X-Mailgun-Variables2', JSON.stringify(recipientData))
 
