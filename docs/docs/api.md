@@ -787,6 +787,7 @@ Parameters:
 - `closeTime`: Optional. When the market will close. Defaults to 7 days from now.
 - `visibility`: Optional. `public` (default) or `unlisted`. Controls whether the market can be shown on homepage and in search results.
 - `groupIds`: Optional. An array of topics to tag this market with.
+- `marketTier`: Optional. `play`, `plus` (default), `premium`, or `crystal`.
 - `extraLiquidity`: Optional.
 
 For binary markets, you must also provide:
