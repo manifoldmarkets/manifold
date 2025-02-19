@@ -94,7 +94,7 @@ function BoostPurchaseModal(props: {
 
   return (
     <>
-      <Modal open={open} setOpen={setOpen} size='sm'>
+      <Modal open={open} setOpen={setOpen} size="sm">
         <Col className="bg-canvas-0 gap-4 rounded-lg p-6">
           <Row className="items-center gap-2 text-xl font-semibold">
             <BsRocketTakeoff className="h-6 w-6" />
@@ -109,7 +109,6 @@ function BoostPurchaseModal(props: {
                   .add(24, 'hours')
                   .format('MMM D')}`}
           </div>
-
 
           <Row className="items-center gap-2">
             <div className="text-ink-600">Start time:</div>
