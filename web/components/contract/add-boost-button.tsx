@@ -94,7 +94,7 @@ function BoostPurchaseModal(props: {
 
   return (
     <>
-      <Modal open={open} setOpen={setOpen}>
+      <Modal open={open} setOpen={setOpen} size='sm'>
         <Col className="bg-canvas-0 gap-4 rounded-lg p-6">
           <Row className="items-center gap-2 text-xl font-semibold">
             <BsRocketTakeoff className="h-6 w-6" />
@@ -110,7 +110,6 @@ function BoostPurchaseModal(props: {
                   .format('MMM D')}`}
           </div>
 
-          <div className="mb-2 text-center text-3xl font-semibold">$99.99</div>
 
           <Row className="items-center gap-2">
             <div className="text-ink-600">Start time:</div>
@@ -135,23 +134,23 @@ function BoostPurchaseModal(props: {
 
           <Row className="gap-2">
             <Button
+              color="gray-outline"
+              onClick={() => purchaseBoost('mana')}
+              loading={loading === 'mana'}
+              disabled={!!loading || notEnoughFunds}
+              className="flex-1"
+            >
+              Pay <TokenNumber className="mx-1" amount={BOOST_COST_MANA} />
+            </Button>
+
+            <Button
               color="indigo"
               onClick={() => purchaseBoost('cash')}
               loading={loading === 'cash'}
               className="flex-1"
               disabled={!!loading}
             >
-              Pay $99.99 in USD
-            </Button>
-
-            <Button
-              color="gray-white"
-              onClick={() => purchaseBoost('mana')}
-              loading={loading === 'mana'}
-              disabled={!!loading || notEnoughFunds}
-              className="flex-1"
-            >
-              Pay with <TokenNumber className="mx-1" amount={BOOST_COST_MANA} />
+              Pay $100
             </Button>
           </Row>
 

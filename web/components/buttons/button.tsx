@@ -47,7 +47,7 @@ export const baseButtonClasses =
 
 const solid = 'disabled:bg-ink-300 text-white'
 export const outline =
-  'ring-2 ring-current hover:ring-transparent disabled:ring-ink-300 disabled:text-ink-300 hover:text-ink-0 disabled:bg-inherit'
+  'ring-1 ring-current hover:ring-transparent disabled:ring-ink-300 disabled:text-ink-300 hover:text-ink-0 disabled:bg-inherit'
 const gradient = [solid, 'bg-gradient-to-r hover:saturate-150 disabled:bg-none']
 
 export function buttonClass(size: SizeType, color: ColorType) {
