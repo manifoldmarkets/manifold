@@ -14,6 +14,7 @@ import { BOOST_COST_MANA } from 'common/economy'
 import dayjs from 'dayjs'
 import { Input } from '../widgets/input'
 import { HOUR_MS } from 'common/util/time'
+import { formatMoney } from 'common/util/format'
 
 export function AddBoostButton(props: {
   contract: Contract
@@ -94,7 +95,7 @@ function BoostPurchaseModal(props: {
 
   return (
     <>
-      <Modal open={open} setOpen={setOpen} size='sm'>
+      <Modal open={open} setOpen={setOpen} size="sm">
         <Col className="bg-canvas-0 gap-4 rounded-lg p-6">
           <Row className="items-center gap-2 text-xl font-semibold">
             <BsRocketTakeoff className="h-6 w-6" />
@@ -109,7 +110,6 @@ function BoostPurchaseModal(props: {
                   .add(24, 'hours')
                   .format('MMM D')}`}
           </div>
-
 
           <Row className="items-center gap-2">
             <div className="text-ink-600">Start time:</div>
@@ -140,7 +140,7 @@ function BoostPurchaseModal(props: {
               disabled={!!loading || notEnoughFunds}
               className="flex-1"
             >
-              Pay <TokenNumber className="mx-1" amount={BOOST_COST_MANA} />
+              Pay {formatMoney(BOOST_COST_MANA)}
             </Button>
 
             <Button
