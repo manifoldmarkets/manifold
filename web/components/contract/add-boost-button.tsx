@@ -57,7 +57,7 @@ function BoostPurchaseModal(props: {
   contract: Contract
 }) {
   const { open, setOpen, contract } = props
-  const [loading, setLoading] = useState(false)
+  const [loading, setLoading] = useState<string>()
   const [fundsModalOpen, setFundsModalOpen] = useState(false)
   const now = Date.now()
   const [startTime, setStartTime] = useState(now)
@@ -67,13 +67,20 @@ function BoostPurchaseModal(props: {
 
   const notEnoughFunds = (user.balance ?? 0) < BOOST_COST_MANA
 
-  const purchaseBoost = async () => {
-    setLoading(true)
+  const purchaseBoost = async (paymentMethod: 'mana' | 'cash') => {
+    setLoading(paymentMethod)
     try {
-      await api('purchase-contract-boost', {
+      const result = (await api('purchase-contract-boost', {
         contractId: contract.id,
         startTime,
-      })
+        method: paymentMethod,
+      })) as { success: boolean; checkoutUrl?: string }
+
+      if (result.checkoutUrl) {
+        window.location.href = result.checkoutUrl
+        return
+      }
+
       toast.success(
         'Market boosted! It will be featured on the homepage for 24 hours.'
       )
@@ -82,12 +89,12 @@ function BoostPurchaseModal(props: {
       console.error(e)
       toast.error(e instanceof Error ? e.message : 'Error purchasing boost')
     }
-    setLoading(false)
+    setLoading(undefined)
   }
 
   return (
     <>
-      <Modal open={open} setOpen={setOpen} size="sm">
+      <Modal open={open} setOpen={setOpen}>
         <Col className="bg-canvas-0 gap-4 rounded-lg p-6">
           <Row className="items-center gap-2 text-xl font-semibold">
             <BsRocketTakeoff className="h-6 w-6" />
@@ -102,6 +109,8 @@ function BoostPurchaseModal(props: {
                   .add(24, 'hours')
                   .format('MMM D')}`}
           </div>
+
+          <div className="mb-2 text-center text-3xl font-semibold">$99.99</div>
 
           <Row className="items-center gap-2">
             <div className="text-ink-600">Start time:</div>
@@ -119,23 +128,33 @@ function BoostPurchaseModal(props: {
               }}
               min={dayjs().format('YYYY-MM-DD')}
               max="3000-12-31"
-              disabled={loading}
+              disabled={!!loading}
               value={dayjs(startTime).format('YYYY-MM-DD')}
             />
           </Row>
 
-          <Row className="items-center gap-2">
+          <Row className="gap-2">
             <Button
               color="indigo"
-              onClick={purchaseBoost}
-              loading={loading}
-              disabled={notEnoughFunds}
-              className="w-full"
+              onClick={() => purchaseBoost('cash')}
+              loading={loading === 'cash'}
+              className="flex-1"
+              disabled={!!loading}
             >
-              Purchase boost for{' '}
-              <TokenNumber className="mx-1" amount={BOOST_COST_MANA} />
+              Pay $99.99 in USD
+            </Button>
+
+            <Button
+              color="gray-white"
+              onClick={() => purchaseBoost('mana')}
+              loading={loading === 'mana'}
+              disabled={!!loading || notEnoughFunds}
+              className="flex-1"
+            >
+              Pay with <TokenNumber className="mx-1" amount={BOOST_COST_MANA} />
             </Button>
           </Row>
+
           {notEnoughFunds && (
             <div className="text-ink-600 flex items-center gap-2 text-sm">
               <span className="text-error">Insufficient balance</span>

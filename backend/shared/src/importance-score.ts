@@ -104,7 +104,7 @@ export async function calculateImportanceScore(
     ...(await getContractVoters(pg, weekAgo, contractIds)),
   }
   const activeBoosts = await pg.manyOrNone<Row<'contract_boosts'>>(
-    `select * from contract_boosts where start_time <= now() and end_time > now()`
+    `select * from contract_boosts where start_time <= now() and end_time > now() and funded`
   )
 
   const contractsWithUpdates: Contract[] = []

@@ -227,3 +227,16 @@ export const updateContractNativeColumns = async (
   broadcastUpdatedContract(newContract.visibility, updatedValues)
   return newContract
 }
+
+export const boostContractImmediately = async (
+  pg: SupabaseDirectClient,
+  contract: Contract
+) => {
+  await updateContractNativeColumns(pg, contract.id, {
+    boosted: true,
+    importance_score: Math.min(
+      Math.max(contract.importanceScore + 0.5, 0.9),
+      1
+    ),
+  })
+}

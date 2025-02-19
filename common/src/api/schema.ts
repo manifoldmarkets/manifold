@@ -2168,9 +2168,10 @@ export const API = (_apiTypeCheck = {
       .object({
         contractId: z.string(),
         startTime: z.number().positive().finite().safe(),
+        method: z.enum(['mana', 'cash']),
       })
       .strict(),
-    returns: {} as { success: boolean },
+    returns: {} as { success: boolean; checkoutUrl?: string },
   },
 } as const)
 

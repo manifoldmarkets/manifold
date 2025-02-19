@@ -4,7 +4,9 @@ create table if not exists
     contract_id text not null references contracts (id),
     user_id text not null references users (id),
     start_time timestamptz not null,
-    end_time timestamptz not null
+    end_time timestamptz not null,
+    created_time timestamptz not null default now(),
+    funded boolean not null default true
   );
 
 -- Indexes
