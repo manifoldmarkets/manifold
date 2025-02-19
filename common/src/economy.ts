@@ -154,3 +154,6 @@ export const MIN_CASHOUT_AMOUNT = 25
 export const SWEEPS_MIN_BET = 1
 export const MANA_MIN_BET = 1
 export const PROFIT_FEE_FRACTION = 0.1
+export const BOOST_COST_MANA = 10000
+export const DEV_BOOST_STRIPE_PRICE_ID = 'price_1QuI5BGdoFKoCJW7lMjCIuKW'
+export const PROD_BOOST_STRIPE_PRICE_ID = 'price_1QuItEGdoFKoCJW7t9qtiGoD'

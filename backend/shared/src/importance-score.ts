@@ -10,7 +10,7 @@ import {
   WEEK_MS,
   YEAR_MS,
 } from 'common/util/time'
-import { log } from 'shared/utils'
+import { log, prefixedContractColumnsToSelect } from 'shared/utils'
 import {
   BountiedQuestionContract,
   Contract,
@@ -23,6 +23,7 @@ import { floatingEqual, logit } from 'common/util/math'
 import { BOT_USERNAMES } from 'common/envs/constants'
 import { bulkUpdate } from 'shared/supabase/utils'
 import { convertContract } from 'common/supabase/contracts'
+import { Row } from 'common/supabase/utils'
 
 export const IMPORTANCE_MINUTE_INTERVAL = 2
 export const MIN_IMPORTANCE_SCORE = 0.1
@@ -38,15 +39,10 @@ export async function calculateImportanceScore(
   const dayAgo = now - DAY_MS
   const weekAgo = now - 7 * DAY_MS
   const select = (whereClause: string) => `
-    select c.data,
-           conversion_score,
-           importance_score,
-           freshness_score,
-           view_count,
-           daily_score,
+    select ${prefixedContractColumnsToSelect},
            case when count(a.prob) > 0 then json_agg(a.prob) end as answer_probs
     from contracts c
-           left join answers a on c.id = a.contract_id
+    left join answers a on c.id = a.contract_id
     ${whereClause}
     group by c.id
        `
@@ -107,11 +103,15 @@ export async function calculateImportanceScore(
     ...(await getContractTraders(pg, weekAgo, contractIds)),
     ...(await getContractVoters(pg, weekAgo, contractIds)),
   }
+  const activeBoosts = await pg.manyOrNone<Row<'contract_boosts'>>(
+    `select * from contract_boosts where start_time <= now() and end_time > now() and funded`
+  )
 
   const contractsWithUpdates: Contract[] = []
   const marketComponents: Record<string, any>[] = []
 
   for (const contract of contracts) {
+    const boosted = activeBoosts.some((b) => b.contract_id === contract.id)
     const {
       importanceScore,
       freshnessScore,
@@ -125,7 +125,8 @@ export async function calculateImportanceScore(
       thisWeekLikesByContract[contract.id] ?? 0,
       todayTradersByContract[contract.id] ?? 0,
       hourAgoTradersByContract[contract.id] ?? 0,
-      thisWeekTradersByContract[contract.id] ?? 0
+      thisWeekTradersByContract[contract.id] ?? 0,
+      boosted
     )
 
     if (isNaN(dailyScore)) {
@@ -144,11 +145,13 @@ export async function calculateImportanceScore(
       rescoreAll ||
       !floatingEqual(importanceScore, contract.importanceScore, epsilon) ||
       !floatingEqual(freshnessScore, contract.freshnessScore, epsilon) ||
-      !floatingEqual(dailyScore, contract.dailyScore, epsilon)
+      !floatingEqual(dailyScore, contract.dailyScore, epsilon) ||
+      boosted !== contract.boosted
     ) {
       contract.importanceScore = importanceScore
       contract.freshnessScore = freshnessScore
       contract.dailyScore = dailyScore
+      contract.boosted = boosted
       contractsWithUpdates.push(contract)
       marketComponents.push(rawMarketImportanceBreakdown)
     }
@@ -184,6 +187,7 @@ export async function calculateImportanceScore(
         Comments: breakdown.commentScore?.toFixed(2) || '',
         Week: breakdown.thisWeekScoreComponent?.toFixed(2) || '',
         Ranked: breakdown.rankedScore?.toFixed(2) || '',
+        Boost: breakdown.boostScore?.toFixed(2) || '',
       }
     })
 
@@ -245,12 +249,20 @@ export async function calculateImportanceScore(
       pg,
       'contracts',
       ['id'],
-      contractsWithUpdates.map((contract) => ({
-        id: contract.id,
-        importance_score: contract.importanceScore,
-        freshness_score: contract.freshnessScore,
-        daily_score: contract.dailyScore,
-      }))
+      contractsWithUpdates
+        .filter(
+          (c) =>
+            !isNaN(c.importanceScore) &&
+            !isNaN(c.freshnessScore) &&
+            !isNaN(c.dailyScore)
+        )
+        .map((contract) => ({
+          id: contract.id,
+          boosted: contract.boosted,
+          importance_score: contract.importanceScore,
+          freshness_score: contract.freshnessScore,
+          daily_score: contract.dailyScore,
+        }))
     )
   }
 }
@@ -311,12 +323,11 @@ export const computeContractScores = (
   likesWeek: number,
   tradersToday: number,
   traderHour: number,
-  tradersWeek: number
+  tradersWeek: number,
+  isBoosted: boolean
 ) => {
   const todayScore = likesToday + tradersToday
   const thisWeekScore = likesWeek + tradersWeek
-  const thisWeekScoreWeight = thisWeekScore / 10
-  const popularityScore = todayScore + thisWeekScoreWeight
   const wasCreatedToday = contract.createdTime > now - DAY_MS
 
   const { createdTime, closeTime, isResolved, outcomeType } = contract
@@ -367,7 +378,7 @@ export const computeContractScores = (
   const commentScoreComponent = commentScore * 2
   const thisWeekScoreComponent = normalize(thisWeekScore, 1000)
   const rankedScore = isMarketRanked(contract) ? 0 : -1
-
+  const boostScore = isBoosted ? 3 : 0
   const computedRawMarketImportance =
     volume24HoursComponent +
     traderHourComponent +
@@ -375,7 +386,8 @@ export const computeContractScores = (
     closingSoonnnessComponent +
     commentScoreComponent +
     thisWeekScoreComponent +
-    rankedScore
+    rankedScore +
+    boostScore
 
   const newnessComponent = newness
   const rawPollImportance =
@@ -390,7 +402,7 @@ export const computeContractScores = (
       ? bountiedImportanceScore(contract, newness, commentScore)
       : outcomeType === 'POLL'
       ? normalize(rawPollImportance, 5) // increase max as polls catch on
-      : normalize(computedRawMarketImportance, 5)
+      : Math.max(normalize(computedRawMarketImportance, 5), isBoosted ? 0.9 : 0)
 
   // Calculate freshness components
   const todayRatio = todayScore / (thisWeekScore - todayScore + 1)
@@ -416,6 +428,7 @@ export const computeContractScores = (
     commentScore: commentScoreComponent,
     thisWeekScoreComponent,
     rankedScore,
+    boostScore,
     // Freshness components
     freshVolume24h,
     freshTodayScore,
@@ -432,7 +445,6 @@ export const computeContractScores = (
   return {
     todayScore,
     thisWeekScore,
-    popularityScore: popularityScore >= 1 ? popularityScore : 0,
     freshnessScore,
     dailyScore,
     importanceScore,

@@ -25,8 +25,8 @@ export function TopicTag(props: {
   return (
     <Row
       className={clsx(
-        'text-ink-500 hover:text-ink-700 hover:bg-primary-100 group items-center gap-1' +
-          'whitespace-nowrap rounded px-1 py-0.5 text-sm transition-colors',
+        'group flex items-center gap-1.5 rounded-full px-2.5 py-1 text-sm font-medium',
+        'bg-canvas-50 text-ink-600 hover:bg-canvas-100 hover:text-ink-800 transition-colors',
         className
       )}
     >
@@ -44,11 +44,8 @@ export function TopicTag(props: {
             })
           }
         }}
-        className={'max-w-[200px] truncate sm:max-w-[250px]'}
+        className="max-w-[200px] truncate sm:max-w-[250px]"
       >
-        <span className="mr-px opacity-50 transition-opacity group-hover:opacity-100">
-          #
-        </span>
         {noEmojis || topic.name}
       </Link>
       {children}

@@ -113,18 +113,6 @@ export const API = (_apiTypeCheck = {
       .strict(),
     returns: {} as { status: boolean },
   },
-  'create-cash-contract': {
-    method: 'POST',
-    visibility: 'public',
-    authed: true,
-    returns: {} as LiteMarket,
-    props: z
-      .object({
-        manaContractId: z.string(),
-        subsidyAmount: z.number().positive(),
-      })
-      .strict(),
-  },
   comment: {
     method: 'POST',
     visibility: 'public',
@@ -1229,7 +1217,7 @@ export const API = (_apiTypeCheck = {
       })
       .strict(),
   },
-  'get-ad-analytics': {
+  'get-boost-analytics': {
     method: 'POST',
     visibility: 'undocumented',
     authed: false,
@@ -1243,10 +1231,10 @@ export const API = (_apiTypeCheck = {
       totalViews: number
       uniquePromotedViewers: number
       totalPromotedViews: number
-      redeemCount: number
-      isBoosted: boolean
-      totalFunds: number
-      adCreatedTime: string
+      boostPeriods: {
+        startTime: string
+        endTime: string
+      }[]
     },
   },
   'get-seen-market-ids': {
@@ -2171,6 +2159,19 @@ export const API = (_apiTypeCheck = {
     authed: false,
     props: z.object({ contractId: z.string(), optionId: z.string() }),
     returns: [] as DisplayUser[],
+  },
+  'purchase-contract-boost': {
+    method: 'POST',
+    visibility: 'public',
+    authed: true,
+    props: z
+      .object({
+        contractId: z.string(),
+        startTime: z.number().positive().finite().safe(),
+        method: z.enum(['mana', 'cash']),
+      })
+      .strict(),
+    returns: {} as { success: boolean; checkoutUrl?: string },
   },
 } as const)
 

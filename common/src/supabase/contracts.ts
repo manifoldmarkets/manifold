@@ -136,6 +136,7 @@ export const convertContract = <T extends Contract>(c: {
   conversion_score?: number | null
   freshness_score?: number | null
   daily_score?: number | null
+  boosted?: boolean | null
   token?: string
 }) =>
   removeUndefinedProps({
@@ -147,6 +148,7 @@ export const convertContract = <T extends Contract>(c: {
     viewCount: Number(c.view_count),
     dailyScore: c.daily_score,
     token: c.token,
+    boosted: c.boosted ?? false,
   } as T)
 
 export const followContract = async (

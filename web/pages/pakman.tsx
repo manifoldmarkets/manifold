@@ -4,7 +4,6 @@ import Custom404 from './404'
 import { ENV } from 'common/envs/constants'
 import { useTracking } from 'web/hooks/use-tracking'
 import { PromotionalPanel } from 'web/components/promotional-panel'
-import { SweepiesFlatCoin } from 'web/public/custom-components/sweepiesFlatCoin'
 import { FeedContractCard } from 'web/components/contract/feed-contract-card'
 import { Contract } from 'common/contract'
 import { contractFields, convertContract } from 'common/supabase/contracts'
@@ -21,41 +20,30 @@ export async function getStaticProps() {
     }
   }
 
-  const [{ data: contractData }, { data: politicsData }, { data: PakmanData }] =
-    await Promise.all([
-      db
-        .from('contracts')
-        .select(contractFields)
-        .eq('id', 'OPl99N5Aun')
-        .single(),
-      db
-        .from('contracts')
-        .select(contractFields)
-        .not(
-          'outcome_type',
-          'in',
-          `(${['STONK', 'BOUNTIED_QUESTION', 'POLL'].join(',')})`
-        )
-        .is('resolution', null)
-        .eq('token', 'MANA')
-        .eq('visibility', 'public')
-        .order('importance_score', { ascending: false })
-        .limit(10),
-      db
-        .from('contracts')
-        .select(contractFields)
-        .in('id', ['p6ncQ2CO5O', 'NgNCn6QPZL', 'NZQ05LthSR']),
-    ])
+  const [{ data: contractData }, { data: politicsData }] = await Promise.all([
+    db.from('contracts').select(contractFields).eq('id', 'Z8R0SPSdIy').single(),
+    db
+      .from('contracts')
+      .select(contractFields)
+      .not(
+        'outcome_type',
+        'in',
+        `(${['STONK', 'BOUNTIED_QUESTION', 'POLL'].join(',')})`
+      )
+      .is('resolution', null)
+      .eq('token', 'MANA')
+      .eq('visibility', 'public')
+      .order('importance_score', { ascending: false })
+      .limit(10),
+  ])
 
   const contract = contractData ? convertContract(contractData) : null
   const politicsMarkets = (politicsData ?? []).map(convertContract)
-  const pakmanContracts = (PakmanData ?? []).map(convertContract)
 
   return {
     props: {
       contract,
       politicsMarkets,
-      pakmanContracts,
     },
     revalidate,
   }
@@ -64,7 +52,6 @@ export async function getStaticProps() {
 export default function Pakman(props: {
   contract: Contract
   politicsMarkets: Contract[]
-  pakmanContracts: Contract[]
 }) {
   useTracking('pakman page view')
 
@@ -87,20 +74,12 @@ export default function Pakman(props: {
             Welcome, from <b>David Pakman</b>
           </>
         }
-        description={
-          <>
-            Referral bonus has been applied. Register today to claim free 3{' '}
-            <SweepiesFlatCoin /> and unlock this purchase offer!
-          </>
-        }
+        description={<></>}
         loginTrackingText="Sign up from /pakman"
       />
 
       <Col className="mt-8 gap-4">
         <FeedContractCard contract={props.contract} key={props.contract.id} />
-        {props.pakmanContracts.map((market) => (
-          <FeedContractCard key={market.id} contract={market} />
-        ))}
         {props.politicsMarkets.map((market) => (
           <FeedContractCard key={market.id} contract={market} />
         ))}

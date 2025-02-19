@@ -209,6 +209,7 @@ export type Database = {
           contract_id: string
           created_time: string
           data: Json
+          expires_at: string | null
           is_api: boolean | null
           is_cancelled: boolean | null
           is_filled: boolean | null
@@ -220,7 +221,6 @@ export type Database = {
           shares: number | null
           updated_time: string
           user_id: string
-          expires_at: string | null
         }
         Insert: {
           amount?: number | null
@@ -229,6 +229,7 @@ export type Database = {
           contract_id: string
           created_time?: string
           data: Json
+          expires_at?: string | null
           is_api?: boolean | null
           is_cancelled?: boolean | null
           is_filled?: boolean | null
@@ -240,7 +241,6 @@ export type Database = {
           shares?: number | null
           updated_time?: string
           user_id: string
-          expires_at: string | null
         }
         Update: {
           amount?: number | null
@@ -249,6 +249,7 @@ export type Database = {
           contract_id?: string
           created_time?: string
           data?: Json
+          expires_at?: string | null
           is_api?: boolean | null
           is_cancelled?: boolean | null
           is_filled?: boolean | null
@@ -260,9 +261,54 @@ export type Database = {
           shares?: number | null
           updated_time?: string
           user_id?: string
-          expires_at?: string | null
         }
         Relationships: []
+      }
+      contract_boosts: {
+        Row: {
+          contract_id: string
+          end_time: string
+          id: number
+          start_time: string
+          user_id: string
+        }
+        Insert: {
+          contract_id: string
+          end_time: string
+          id?: never
+          start_time: string
+          user_id: string
+        }
+        Update: {
+          contract_id?: string
+          end_time?: string
+          id?: never
+          start_time?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'contract_boosts_contract_id_fkey'
+            columns: ['contract_id']
+            isOneToOne: false
+            referencedRelation: 'contracts'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'contract_boosts_user_id_fkey'
+            columns: ['user_id']
+            isOneToOne: false
+            referencedRelation: 'user_referrals_profit'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'contract_boosts_user_id_fkey'
+            columns: ['user_id']
+            isOneToOne: false
+            referencedRelation: 'users'
+            referencedColumns: ['id']
+          }
+        ]
       }
       contract_comment_edits: {
         Row: {
@@ -444,6 +490,7 @@ export type Database = {
           unique_bettor_count: number
           view_count: number
           visibility: string | null
+          boosted: boolean | null
         }
         Insert: {
           close_time?: string | null
@@ -477,6 +524,7 @@ export type Database = {
           unique_bettor_count?: number
           view_count?: number
           visibility?: string | null
+          boosted?: boolean | null
         }
         Update: {
           close_time?: string | null
@@ -510,6 +558,7 @@ export type Database = {
           unique_bettor_count?: number
           view_count?: number
           visibility?: string | null
+          boosted?: boolean | null
         }
         Relationships: []
       }

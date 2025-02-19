@@ -27,7 +27,7 @@ export function ContractDescription(props: {
 
   return (
     <>
-      <div className="mt-6">
+      <div className="mb-2 mt-6">
         {isCreator || isAdmin ? (
           <EditableDescription
             contractId={contractId}
@@ -44,7 +44,7 @@ export function ContractDescription(props: {
 
         <div
           className={clsx(
-            !isSweeps && 'invisible',
+            !isSweeps && 'hidden',
             'text-ink-600 bg-canvas-50 flex items-center justify-center space-x-2 rounded-md px-4 py-2 italic'
           )}
         >

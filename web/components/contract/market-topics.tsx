@@ -115,12 +115,12 @@ export function MarketTopics(props: TopicRowProps) {
               setOpen(true)
             }}
             className={clsx(
-              'hover:bg-ink-400/20 text-ink-500 -ml-2 flex items-center rounded-md text-xs sm:text-sm',
+              'hover:bg-ink-400/20 text-ink-500 flex items-center rounded-md text-xs sm:text-sm',
               topics.length ? 'px-1' : 'px-2'
             )}
           >
             {topics.length ? (
-              <PencilIcon className="h-4 w-4" />
+              <PencilIcon className="h-4 w-4 " />
             ) : (
               <>
                 <PlusIcon className="mr-1 h-3 " /> Topics

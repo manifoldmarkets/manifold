@@ -4,6 +4,7 @@ import {
   Contract,
   contractPath,
   isSpecialLoveContract,
+  nativeContractColumnsArray,
   MarketContract,
 } from 'common/contract'
 import { PrivateUser } from 'common/user'
@@ -117,9 +118,9 @@ export const isProd = () => {
     return admin.app().options.projectId === 'mantic-markets'
   }
 }
-export const contractColumnsToSelect = `data,importance_score,freshness_score,conversion_score,view_count,token`
-export const prefixedContractColumnsToSelect = contractColumnsToSelect
-  .split(',')
+
+export const contractColumnsToSelect = nativeContractColumnsArray.join(',')
+export const prefixedContractColumnsToSelect = nativeContractColumnsArray
   .map((col) => `c.${col}`)
   .join(',')
 

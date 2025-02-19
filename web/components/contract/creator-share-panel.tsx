@@ -11,39 +11,43 @@ import { TweetButton } from '../buttons/tweet-button'
 import { Row } from '../layout/row'
 import { GradientContainer } from '../widgets/gradient-container'
 import { AddBountyButton, CancelBountyButton } from './bountied-question'
-import { UpgradeTierButton } from './upgrade-tier-button'
 import { useNativeInfo } from 'web/components/native-message-provider'
 import { formatMoney } from 'common/util/format'
 import { UNIQUE_BETTOR_BONUS_AMOUNT } from 'common/economy'
+import { AddBoostButton } from './add-boost-button'
+import { BoostAnalytics } from './boost-analytics'
+import { Col } from '../layout/col'
 
 export function CreatorSharePanel(props: { contract: Contract }) {
   const { contract } = props
   return (
-    <GradientContainer className="mb-8 flex w-full">
-      <div className="mb-2 flex flex-wrap gap-2">
-        {contract.outcomeType == 'BOUNTIED_QUESTION' && (
-          <AddBountyButton contract={contract} />
-        )}
-        {(contract.mechanism == 'cpmm-1' ||
-          contract.mechanism == 'cpmm-multi-1') && (
-          <UpgradeTierButton contract={contract} />
-        )}
-        <ShareLinkButton contract={contract} />
-        <TweetButton
-          tweetText={'I created a question. ' + getShareUrl(contract)}
-          className="hidden sm:flex"
-        />
-        {contract.outcomeType == 'BOUNTIED_QUESTION' && (
-          <CancelBountyButton contract={contract} />
-        )}
-      </div>
+    <GradientContainer className="mt-4 flex w-full">
+      <Col className="w-full gap-4">
+        <Row className="flex-wrap gap-2">
+          {contract.outcomeType == 'BOUNTIED_QUESTION' && (
+            <AddBountyButton contract={contract} />
+          )}
+          <AddBoostButton contract={contract} />
+          <ShareLinkButton contract={contract} />
+          <TweetButton
+            tweetText={'I created a question. ' + getShareUrl(contract)}
+            className="hidden sm:flex"
+          />
+          {contract.outcomeType == 'BOUNTIED_QUESTION' && (
+            <CancelBountyButton contract={contract} />
+          )}
+        </Row>
 
-      {contract.outcomeType !== 'POLL' &&
-        contract.outcomeType !== 'BOUNTIED_QUESTION' && (
-          <div className="text-ink-500 text-base">
-            Earn {formatMoney(UNIQUE_BETTOR_BONUS_AMOUNT)} for each trader.
-          </div>
-        )}
+        {contract.outcomeType !== 'POLL' &&
+          contract.outcomeType !== 'BOUNTIED_QUESTION' && (
+            <div className="text-ink-500 text-base">
+              Earn {formatMoney(UNIQUE_BETTOR_BONUS_AMOUNT)} for each new
+              trader.
+            </div>
+          )}
+
+        <BoostAnalytics contract={contract} />
+      </Col>
     </GradientContainer>
   )
 }
@@ -56,6 +60,7 @@ export function NonCreatorSharePanel(props: { contract: Contract }) {
       {contract.outcomeType == 'BOUNTIED_QUESTION' && (
         <AddBountyButton contract={contract} />
       )}
+      <AddBoostButton contract={contract} />
       <ShareLinkButton contract={contract} />
       <TweetButton
         tweetText={getShareUrl(contract)}

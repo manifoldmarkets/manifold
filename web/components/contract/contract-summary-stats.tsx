@@ -4,7 +4,7 @@ import { formatWithToken, shortFormatNumber } from 'common/util/format'
 import { Row } from 'web/components/layout/row'
 import { isBlocked, usePrivateUser, useUser } from 'web/hooks/use-user'
 import { MoneyDisplay } from '../bet/money-display'
-import { TierTooltip } from '../tiers/tier-tooltip'
+import { LiquidityTooltip } from '../tiers/liquidity-tooltip'
 import { Tooltip } from '../widgets/tooltip'
 import { BountyLeft } from './bountied-question'
 import { CloseOrResolveTime } from './contract-details'
@@ -26,7 +26,7 @@ export function ContractSummaryStats(props: {
     editable,
     isCashContract,
   } = props
-  const { outcomeType, marketTier } = contract
+  const { outcomeType } = contract
   const privateUser = usePrivateUser()
   const user = useUser()
 
@@ -40,7 +40,6 @@ export function ContractSummaryStats(props: {
         />
       ) : (
         <Row className="ml-auto gap-4">
-          {marketTier && <TierTooltip tier={marketTier} contract={contract} />}
           {!isBlocked(privateUser, contract.creatorId) && (
             <ReactButton
               user={user}
@@ -62,7 +61,7 @@ export function ContractSummaryStats(props: {
             <UserIcon className="text-ink-500 h-4 w-4" />
             <div>{shortFormatNumber(contract.uniqueBettorCount ?? 0)}</div>
           </Tooltip>
-
+          <LiquidityTooltip contract={contract} iconClassName="text-ink-500" />
           {!!contract.volume && (
             <Tooltip
               text={`Trading volume: ${formatWithToken({

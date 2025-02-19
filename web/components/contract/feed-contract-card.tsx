@@ -40,7 +40,7 @@ import FeedContractCardDescription from '../feed/feed-contract-card-description'
 import { Col } from '../layout/col'
 import { Row } from '../layout/row'
 import { PollPanel } from '../poll/poll-panel'
-import { TierTooltip } from '../tiers/tier-tooltip'
+import { LiquidityTooltip } from '../tiers/liquidity-tooltip'
 import { UserHovercard } from '../user/user-hovercard'
 import { ClickFrame } from '../widgets/click-frame'
 import { ReactButton } from './react-button'
@@ -90,7 +90,6 @@ export function FeedContractCard(props: {
     creatorAvatarUrl,
     outcomeType,
     mechanism,
-    marketTier,
   } = contract
 
   const isBinaryMc = isBinaryMulti(contract)
@@ -212,16 +211,14 @@ export function FeedContractCard(props: {
                 <SweepiesCoin className="-mt-0.5" /> {capitalize(SWEEPIES_NAME)}{' '}
               </span>
             )}
-            {marketTier ? (
-              <TierTooltip tier={marketTier} contract={contract} />
-            ) : feedReason ? (
+            {feedReason ? (
               <CardReason
                 reason={feedReason as any}
                 probChange={probChange}
                 since={startTime}
               />
             ) : (
-              <></>
+              <LiquidityTooltip contract={contract} />
             )}
             {hide && (
               <FeedDropdown

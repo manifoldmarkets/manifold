@@ -3,11 +3,11 @@ import { Contract } from 'common/contract'
 import { useNumContractComments } from 'web/hooks/use-comments'
 import { shortenNumber } from 'common/util/formatNumber'
 import { Row } from '../layout/row'
-import { TierTooltip } from '../tiers/tier-tooltip'
 import { Action } from './contract-table-action'
 import { ContractStatusLabel } from './contracts-table'
 import { useHasContractMetrics } from 'web/hooks/use-saved-contract-metrics'
 import { Tooltip } from '../widgets/tooltip'
+import { BoostedTooltip } from './boost-column'
 
 export type ColumnFormat = {
   header: string
@@ -69,23 +69,40 @@ export const probColumn = {
   width: 'w-[80px]',
 }
 
-export const tierColumn = {
-  header: 'Tier',
+// export const tierColumn = {
+//   header: 'Tier',
+//   content: (props: { contract: Contract }) => {
+//     const { contract } = props
+//     const marketTier = contract.marketTier
+//     return (
+//       <TierTooltip
+//         placement={'top'}
+//         tier={marketTier!}
+//         contract={contract}
+//         noTitle
+//         className="relative mr-0.5 inline-flex h-[1em] w-[1.1em] items-baseline"
+//         iconClassName="absolute inset-0 top-[0.2em]"
+//       />
+//     )
+//   },
+//   width: 'w-8',
+// }
+
+export const boostedColumn = {
+  header: 'Boosted',
   content: (props: { contract: Contract }) => {
     const { contract } = props
-    const marketTier = contract.marketTier
     return (
-      <TierTooltip
+      <BoostedTooltip
+        boosted={contract.boosted}
         placement={'top'}
-        tier={marketTier!}
-        contract={contract}
-        noTitle
+        // noTitle
         className="relative mr-0.5 inline-flex h-[1em] w-[1.1em] items-baseline"
         iconClassName="absolute inset-0 top-[0.2em]"
       />
     )
   },
-  width: 'w-8',
+  width: 'w-6',
 }
 
 export const actionColumn = {

@@ -10,12 +10,16 @@ import { runTxnInBetQueue } from 'shared/txn/run-txn'
 import { createSupabaseDirectClient } from 'shared/supabase/init'
 import { updateUser } from 'shared/supabase/users'
 import { WEB_PRICES } from 'common/economy'
+import { getContract } from 'shared/utils'
+import { boostContractImmediately } from 'shared/supabase/contracts'
 
 export type StripeSession = Stripe.Event.Data.Object & {
   id: string
   metadata: {
     userId: string
-    priceInDollars: string
+    priceInDollars?: string
+    boostId?: string
+    contractId?: string
   }
 }
 
@@ -98,7 +102,11 @@ export const stripewebhook = async (req: Request, res: Response) => {
 
   if (event.type === 'checkout.session.completed') {
     const session = event.data.object as StripeSession
-    await issueMoneys(session)
+    if (session.metadata.boostId && session.metadata.contractId) {
+      await handleBoostPayment(session)
+    } else {
+      await issueMoneys(session)
+    }
   }
 
   res.status(200).send('success')
@@ -199,6 +207,38 @@ const issueMoneys = async (session: StripeSession) => {
       { revenue: price }
     )
   }
+}
+
+const handleBoostPayment = async (session: StripeSession) => {
+  const { boostId, contractId, userId } = session.metadata
+  if (!boostId || !contractId || !userId) {
+    log.error('Invalid boost payment metadata', session.metadata)
+    throw new APIError(400, 'Invalid boost payment metadata')
+  }
+
+  const pg = createSupabaseDirectClient()
+
+  const boost = await pg.tx(async (tx) =>
+    tx.one(
+      `update contract_boosts 
+         set funded = true 
+         where id = $1 and contract_id = $2 and user_id = $3
+         returning *`,
+      [boostId, contractId, userId]
+    )
+  )
+
+  if (new Date(boost.start_time) <= new Date()) {
+    const contract = await getContract(pg, contractId)
+    if (!contract) throw new APIError(404, 'Contract not found')
+    await boostContractImmediately(pg, contract)
+  }
+
+  await trackPublicEvent(userId, 'contract boost purchased', {
+    contractId,
+    boostId,
+    paymentMethod: 'cash',
+  })
 }
 
 const firestore = admin.firestore()

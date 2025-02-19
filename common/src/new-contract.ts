@@ -170,6 +170,7 @@ export function getNewContract(
 
     takerAPIOrdersDisabled,
     siblingContractId,
+    boosted: false,
   })
   if (visibility === 'unlisted') {
     contract.unlistedById = creator.id

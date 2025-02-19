@@ -23,7 +23,7 @@ import {
   probColumn,
   traderColumn,
   ColumnFormat,
-  tierColumn,
+  boostedColumn,
 } from './contract-table-col-formats'
 import { UserHovercard } from '../user/user-hovercard'
 import { getFormattedExpectedValue } from 'common/multi-numeric'
@@ -44,7 +44,7 @@ export function ContractsTable(props: {
     contracts,
     onContractClick,
     highlightContractIds,
-    columns = [traderColumn, tierColumn, probColumn, actionColumn],
+    columns = [boostedColumn, traderColumn, probColumn, actionColumn],
     hideAvatar,
   } = props
 
@@ -91,6 +91,7 @@ function ContractRow(props: {
           track('click browse contract', {
             slug: contract.slug,
             contractId: contract.id,
+            boosted: contract.boosted,
           })
           return
         }
