@@ -22,12 +22,68 @@ export const recalculateAllUserPortfolios = async (
     [],
     (r) => r.id as string
   )
-  const chunks = chunk(allUserIdsWithInvestments, 1000)
+  const chunks = chunk(allUserIdsWithInvestments, 500)
   let processed = 0
-  for (const userIds of chunks) {
-    await updateUserPortfolioHistoriesCore(userIds)
-    processed += userIds.length
-    log(`Processed ${processed} of ${allUserIdsWithInvestments.length} users`)
+  const attemptsPerChunk: number[] = new Array(chunks.length).fill(0)
+  const skippedChunks: number[] = []
+
+  for (let i = 0; i < chunks.length; i++) {
+    const userIds = chunks[i]
+    let success = false
+    let attempts = 0
+    const maxAttemptsPerChunk = 3
+
+    while (!success && attempts < maxAttemptsPerChunk) {
+      try {
+        await updateUserPortfolioHistoriesCore(userIds)
+        success = true
+        processed += userIds.length
+        attemptsPerChunk[i] = attempts + 1
+        log(
+          `Processed chunk ${i + 1}/${chunks.length} (${processed} of ${
+            allUserIdsWithInvestments.length
+          } users) in ${attempts + 1} attempts`
+        )
+      } catch (error: any) {
+        attempts++
+        if (attempts === maxAttemptsPerChunk) {
+          attemptsPerChunk[i] = attempts
+          skippedChunks.push(i)
+          log(
+            `Skipping chunk ${i + 1}/${
+              chunks.length
+            } after ${maxAttemptsPerChunk} failed attempts. Error: ${
+              error.message
+            }`
+          )
+          break // Skip to next chunk
+        }
+        log(
+          `Chunk ${i + 1}/${
+            chunks.length
+          }: Attempt ${attempts} failed, retrying... Error: ${error.message}`
+        )
+        await new Promise((resolve) => setTimeout(resolve, 1000 * attempts))
+      }
+    }
+  }
+
+  const totalAttempts = attemptsPerChunk.reduce(
+    (sum, attempts) => sum + attempts,
+    0
+  )
+  const avgAttempts = totalAttempts / chunks.length
+  log(
+    `Completed processing. Results:\n` +
+      `- Processed ${processed} of ${allUserIdsWithInvestments.length} users\n` +
+      `- Average attempts per chunk: ${avgAttempts.toFixed(2)}\n` +
+      `- Skipped chunks: ${skippedChunks.length} (${(
+        (skippedChunks.length / chunks.length) *
+        100
+      ).toFixed(1)}%)`
+  )
+  if (skippedChunks.length > 0) {
+    log(`Skipped chunk numbers: ${skippedChunks.map((i) => i + 1).join(', ')}`)
   }
 }
 
