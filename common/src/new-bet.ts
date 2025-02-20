@@ -10,6 +10,7 @@ import {
   MAX_STONK_PROB,
   MIN_CPMM_PROB,
   MIN_STONK_PROB,
+  MultiContract,
   PseudoNumericContract,
   StonkContract,
 } from './contract'
@@ -233,7 +234,7 @@ export const getNewMultiCpmmBetInfo = (
 }
 
 export const getNewMultiCpmmBetsInfo = (
-  contract: CPMMMultiContract | CPMMNumericContract,
+  contract: MultiContract,
   answers: Answer[],
   answersToBuy: Answer[],
   outcome: 'YES',
@@ -261,7 +262,7 @@ export const getNewMultiCpmmBetsInfo = (
 }
 
 const getNewMultiCpmmBetsInfoSumsToOne = (
-  contract: CPMMMultiContract | CPMMNumericContract,
+  contract: MultiContract,
   answers: Answer[],
   answersToBuy: Answer[],
   outcome: 'YES' | 'NO',

@@ -11,7 +11,7 @@ import {
 import { ValidatedAPIParams } from 'common/api/schema'
 import {
   Contract,
-  MULTI_NUMERIC_CREATION_ENABLED,
+  NUMBER_CREATION_ENABLED,
   NO_CLOSE_TIME_TYPES,
   OutcomeType,
   add_answers_mode,
@@ -389,7 +389,7 @@ function validateMarketBody(body: Body) {
     ;({ initialProb, extraLiquidity } = parsed)
   }
   if (outcomeType === 'NUMBER') {
-    if (!MULTI_NUMERIC_CREATION_ENABLED)
+    if (!NUMBER_CREATION_ENABLED)
       throw new APIError(
         400,
         'Creating numeric markets is not currently enabled.'
