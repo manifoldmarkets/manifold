@@ -69,7 +69,8 @@ const search = async (
     !topicSlug &&
     !groupIds &&
     (sort === 'score' || sort === 'freshness-score') &&
-    (token === 'MANA' || token === 'ALL')
+    (token === 'MANA' || token === 'ALL') &&
+    !isRecent
   ) {
     if (!isForYou || !userId) {
       return await pg.map(
