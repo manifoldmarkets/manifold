@@ -85,6 +85,8 @@ export default function CashoutPage() {
   const [locationError, setLocationError] = useState<string>()
   const [loading, setloading] = useState(false)
   const [error, setError] = useState<string>()
+  const [accountNumberError, setAccountNumberError] = useState<boolean>(false)
+  const [routingNumberError, setRoutingNumberError] = useState<boolean>(false)
 
   const [address, setAddress] = useState('')
   const [city, setCity] = useState('')
@@ -208,6 +210,23 @@ export default function CashoutPage() {
     getCashoutSession(data)
     setDeviceGPS(data)
   })
+
+  const validateNumericOnly = (value: string) => {
+    return /^\d+$/.test(value)
+  }
+
+  const handleBankNumberChange = (
+    value: string,
+    type: 'account' | 'routing'
+  ) => {
+    if (type === 'account') {
+      setAccountNumber(value)
+      setAccountNumberError(!validateNumericOnly(value))
+    } else {
+      setRoutingNumber(value)
+      setRoutingNumberError(!validateNumericOnly(value))
+    }
+  }
 
   if (!user || !privateUser) {
     return (
@@ -474,19 +493,37 @@ export default function CashoutPage() {
                 <InputTitle>Account Number</InputTitle>
                 <Input
                   type="text"
+                  inputMode="numeric"
+                  pattern="[0-9]*"
                   placeholder="Your account #"
                   value={AccountNumber}
-                  onChange={(e) => setAccountNumber(e.target.value)}
+                  onChange={(e) =>
+                    handleBankNumberChange(e.target.value, 'account')
+                  }
                 />
+                {accountNumberError && (
+                  <div className="text-sm text-red-600 dark:text-red-400">
+                    Account number must contain only digits (0-9)
+                  </div>
+                )}
               </Col>
               <Col className={'w-full gap-0.5'}>
                 <InputTitle>Routing Number</InputTitle>
                 <Input
                   type="text"
+                  inputMode="numeric"
+                  pattern="[0-9]*"
                   placeholder="Your bank's routing #"
                   value={RoutingNumber}
-                  onChange={(e) => setRoutingNumber(e.target.value)}
+                  onChange={(e) =>
+                    handleBankNumberChange(e.target.value, 'routing')
+                  }
                 />
+                {routingNumberError && (
+                  <div className="text-sm text-red-600 dark:text-red-400">
+                    Routing number must contain only digits (0-9)
+                  </div>
+                )}
               </Col>
               <Divider />
               <Col className={'w-full gap-0.5'}>
@@ -557,7 +594,9 @@ export default function CashoutPage() {
                     !RoutingNumber ||
                     !sweepCashAmount ||
                     lessThanMinRedeemable ||
-                    !deviceGPS
+                    !deviceGPS ||
+                    accountNumberError ||
+                    routingNumberError
                   }
                   className="flex-1"
                 >
