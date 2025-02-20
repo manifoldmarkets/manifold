@@ -21,6 +21,7 @@ import {
   CPMMMultiContract,
   Contract,
   MultiContract,
+  MultiNumericContract,
   contractPath,
   tradingAllowed,
 } from 'common/contract'
@@ -105,7 +106,7 @@ export function getAllResolved(contract: MultiContract, answers: Answer[]) {
 
 // full resorting, hover, clickiness, search and add
 export function AnswersPanel(props: {
-  contract: MultiContract
+  contract: CPMMMultiContract | MultiNumericContract
   selectedAnswerIds: string[]
   sort: MultiSort
   setSort: (sort: MultiSort) => void
@@ -569,7 +570,7 @@ export function SimpleAnswerBars(props: {
 }
 
 export function Answer(props: {
-  contract: MultiContract
+  contract: CPMMMultiContract | MultiNumericContract
   answer: Answer
   unfilledBets?: Array<LimitBet>
   color: string

@@ -9,6 +9,7 @@ import {
   CPMMContract,
   CPMMMultiContract,
   CPMMNumericContract,
+  MultiContract,
 } from './contract'
 import { sumBy } from 'lodash'
 import { Answer } from './answer'
@@ -188,7 +189,7 @@ export const getCpmmMultiSellBetInfo = (
   }
 }
 export const getCpmmMultiSellSharesInfo = (
-  contract: CPMMMultiContract | CPMMNumericContract,
+  contract: MultiContract,
   userBetsByAnswerIdToSell: { [answerId: string]: Bet[] },
   unfilledBets: LimitBet[],
   balanceByUserId: { [userId: string]: number },
@@ -268,7 +269,7 @@ export const getNewSellBetInfo = (
 }
 
 export const getSaleResult = (
-  contract: CPMMContract | CPMMMultiContract | CPMMNumericContract,
+  contract: CPMMContract | MultiContract,
   shares: number,
   outcome: 'YES' | 'NO',
   unfilledBets: LimitBet[],
@@ -323,7 +324,7 @@ export const getSaleResult = (
 }
 
 export const getSaleResultMultiSumsToOne = (
-  contract: CPMMMultiContract | CPMMNumericContract,
+  contract: MultiContract,
   answerId: string,
   shares: number,
   outcome: 'YES' | 'NO',

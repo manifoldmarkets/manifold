@@ -22,9 +22,10 @@ import {
   BinaryContract,
   Contract,
   CPMMContract,
-  CPMMMultiContract,
   CPMMNumericContract,
+  MarketContract,
   MultiContract,
+  MultiNumeric,
   PseudoNumericContract,
   StonkContract,
 } from './contract'
@@ -89,7 +90,7 @@ export function getAnswerProbability(
 }
 
 export function getInitialAnswerProbability(
-  contract: MultiContract | CPMMNumericContract,
+  contract: MultiContract | CPMMNumericContract | MultiNumeric,
   answer: Answer
 ) {
   if (!contract.shouldAnswersSumToOne) {
@@ -447,7 +448,7 @@ export const getContractBetMetricsPerAnswerWithoutLoans = (
 }
 
 const calculatePeriodProfit = (
-  contract: CPMMContract | CPMMMultiContract | CPMMNumericContract,
+  contract: MarketContract,
   bets: Bet[],
   period: 'day' | 'week' | 'month',
   answer?: Answer

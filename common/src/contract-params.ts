@@ -7,6 +7,7 @@ import {
   Contract,
   CPMMNumericContract,
   ContractParams,
+  MultiNumeric,
 } from 'common/contract'
 import { binAvg, maxMinBin, serializeMultiPoints } from 'common/chart'
 import {
@@ -150,7 +151,7 @@ export const getSingleBetPoints = (
 
 export const getMultiBetPoints = (
   betPoints: { x: number; y: number; answerId: string | undefined }[],
-  contract: CPMMMultiContract
+  contract: CPMMMultiContract | MultiNumeric
 ) => {
   const { answers } = contract
 

@@ -5,7 +5,6 @@ import { LimitBet } from 'common/bet'
 import {
   BinaryContract,
   CPMMMultiContract,
-  CPMMNumericContract,
   getBinaryMCProb,
   isBinaryMulti,
   MultiContract,
@@ -51,8 +50,7 @@ export function YourOrders(props: {
     | BinaryContract
     | PseudoNumericContract
     | StonkContract
-    | CPMMMultiContract
-    | CPMMNumericContract
+    | MultiContract
   bets: LimitBet[]
   deemphasizedHeader?: boolean
   className?: string
@@ -121,14 +119,12 @@ export function OrderTable(props: {
     | BinaryContract
     | PseudoNumericContract
     | StonkContract
-    | CPMMMultiContract
     | MultiContract
   isYou?: boolean
 }) {
   const { limitBets, contract, isYou } = props
   const isPseudoNumeric = contract.outcomeType === 'PSEUDO_NUMERIC'
   const [isCancelling, setIsCancelling] = useState(false)
-  const isBinaryMC = isBinaryMulti(contract)
   const onCancel = async () => {
     setIsCancelling(true)
     await Promise.all(

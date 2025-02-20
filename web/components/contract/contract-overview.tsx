@@ -293,7 +293,7 @@ export const getShouldHideGraph = (contract: Contract) => {
 
 const ChoiceOverview = (props: {
   points: MultiPoints
-  contract: MultiContract
+  contract: CPMMMultiContract
   showResolver: boolean
   resolutionRating?: ReactNode
   setShowResolver: (show: boolean) => void
@@ -465,7 +465,7 @@ const ChoiceOverview = (props: {
         />
       ) : null}
       {showResolver ? (
-        !shouldAnswersSumToOne && contract.outcomeType === 'MULTIPLE_CHOICE' ? (
+        !shouldAnswersSumToOne && contract.mechanism === 'cpmm-multi-1' ? (
           <GradientContainer>
             <IndependentAnswersResolvePanel
               contract={contract}

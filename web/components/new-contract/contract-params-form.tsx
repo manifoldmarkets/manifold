@@ -515,7 +515,7 @@ export function ContractParamsForm(props: {
   }
 
   const isMulti = outcomeType === 'MULTIPLE_CHOICE'
-  const isNumericMulti = outcomeType === 'NUMBER'
+  const isNumber = outcomeType === 'NUMBER'
 
   const [isGeneratingDescription, setIsGeneratingDescription] = useState(false)
   const [preGenerateContent, setPreGenerateContent] = useState<
@@ -601,7 +601,7 @@ export function ContractParamsForm(props: {
           question={question}
         />
       ) : null}
-      {(isMulti || outcomeType == 'POLL') && !isNumericMulti && (
+      {(isMulti || outcomeType == 'POLL') && !isNumber && (
         <MultipleChoiceAnswers
           answers={answers}
           setAnswers={setAnswers}
@@ -668,7 +668,7 @@ export function ContractParamsForm(props: {
           max={max}
         />
       )}{' '}
-      {isNumericMulti && (
+      {isNumber && (
         <MultiNumericRangeSection
           minString={minString}
           setMinString={setMinString}
