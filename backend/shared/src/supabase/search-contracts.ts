@@ -144,6 +144,7 @@ export async function getForYouSQL(items: {
       // If user has contract-topic scores, use ONLY the defined topic scores when ranking
       // If the user has no contract-matching topic score, use only the contract's importance score
       orderBy(`case
+      when bool_or(contracts.boosted) then avg(contracts.${sortByScore})
       when bool_or(uti.avg_conversion_score is not null)
       then avg(power(coalesce(uti.avg_conversion_score, ${GROUP_SCORE_PRIOR}), ${GROUP_SCORE_POWER}) * contracts.${sortByScore})
       else avg(contracts.${sortByScore}*${GROUP_SCORE_PRIOR})
