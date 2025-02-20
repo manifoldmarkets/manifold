@@ -2,7 +2,6 @@ import clsx from 'clsx'
 import { MIN_CASHOUT_AMOUNT, SWEEPIES_CASHOUT_FEE } from 'common/economy'
 import {
   CASH_TO_MANA_CONVERSION_RATE,
-  CHARITY_FEE,
   SWEEPIES_NAME,
   TWOMBA_CASHOUT_ENABLED,
 } from 'common/envs/constants'
@@ -202,7 +201,7 @@ function CashoutOptionsContent(props: {
                   allDisabled ? '' : 'text-green-600 dark:text-green-500'
                 )}
               >
-                ${((1 - CHARITY_FEE) * redeemableCash).toFixed(2)}
+                ${Math.max(0, redeemableCash - SWEEPIES_CASHOUT_FEE).toFixed(2)}
               </span>{' '}
               value
             </span>
