@@ -64,7 +64,8 @@ import { CloseTimeSection } from 'web/components/new-contract/close-time-section
 import { TopicSelectorSection } from 'web/components/new-contract/topic-selector-section'
 import { PseudoNumericRangeSection } from 'web/components/new-contract/pseudo-numeric-range-section'
 import { SimilarContractsSection } from 'web/components/new-contract/similar-contracts-section'
-import { MultiNumericRangeSection } from 'web/components/new-contract/multi-numeric-range-section'
+import { MultiNumericRangeSection } from './multi-numeric-range-section'
+import { NumberRangeSection } from './number-range-section'
 import { getMultiNumericAnswerBucketRangeNames } from 'common/multi-numeric'
 import { getTieredCost, MarketTierType } from 'common/tier'
 import { randomString } from 'common/util/random'
@@ -142,6 +143,20 @@ export function ContractParamsForm(props: {
     answersKey
   )
 
+  const [midpoints, setMidpoints] = usePersistentLocalState<number[]>(
+    [],
+    'new-numeric-midpoints' + paramsKey
+  )
+  const [multiNumericSumsToOne, setMultiNumericSumsToOne] =
+    usePersistentLocalState<boolean>(
+      params?.shouldAnswersSumToOne ?? false,
+      'new-multi-numeric-sums-to-one' + paramsKey
+    )
+
+  const [unit, setUnit] = usePersistentLocalState<string>(
+    params?.unit ?? '',
+    'new-multi-numeric-unit' + paramsKey
+  )
   const addAnswersModeKey = 'new-add-answers-mode' + paramsKey
   const [addAnswersMode, setAddAnswersMode] =
     usePersistentLocalState<add_answers_mode>(
@@ -149,7 +164,9 @@ export function ContractParamsForm(props: {
       addAnswersModeKey
     )
   const shouldAnswersSumToOne =
-    params?.shouldAnswersSumToOne ?? outcomeType === 'NUMBER'
+    outcomeType === 'MULTI_NUMERIC'
+      ? multiNumericSumsToOne
+      : params?.shouldAnswersSumToOne ?? outcomeType === 'NUMBER'
 
   // NOTE: if you add another user-controlled state variable, you should also add it to the duplication parameters and resetProperties()
 
@@ -429,7 +446,7 @@ export function ContractParamsForm(props: {
     'EDITING' | 'LOADING' | 'DONE'
   >('EDITING')
 
-  async function submit() {
+  const submit = async () => {
     if (!isValid) return
     setSubmitState('LOADING')
     try {
@@ -445,6 +462,7 @@ export function ContractParamsForm(props: {
         isLogScale,
         groupIds: selectedGroups.map((g) => g.id),
         answers,
+        midpoints,
         addAnswersMode,
         shouldAnswersSumToOne,
         visibility,
@@ -458,6 +476,7 @@ export function ContractParamsForm(props: {
         sportsStartTimestamp: params?.sportsStartTimestamp,
         sportsEventId: params?.sportsEventId,
         sportsLeague: params?.sportsLeague,
+        unit: unit.trim(),
       })
 
       const newContract = await api('market', createProps as any)
@@ -516,6 +535,7 @@ export function ContractParamsForm(props: {
 
   const isMulti = outcomeType === 'MULTIPLE_CHOICE'
   const isNumber = outcomeType === 'NUMBER'
+  const isMultiNumeric = outcomeType === 'MULTI_NUMERIC'
 
   const [isGeneratingDescription, setIsGeneratingDescription] = useState(false)
   const [preGenerateContent, setPreGenerateContent] = useState<
@@ -652,6 +672,28 @@ export function ContractParamsForm(props: {
           Predict the value of a number.
         </div>
       )}
+      {isMultiNumeric && (
+        <MultiNumericRangeSection
+          paramsKey={paramsKey}
+          submitState={submitState}
+          question={question}
+          description={editor?.getHTML()}
+          answers={answers}
+          setAnswers={setAnswers}
+          midpoints={midpoints}
+          setMidpoints={setMidpoints}
+          minString={minString}
+          setMinString={setMinString}
+          maxString={maxString}
+          setMaxString={setMaxString}
+          min={min}
+          max={max}
+          shouldAnswersSumToOne={shouldAnswersSumToOne}
+          setShouldAnswersSumToOne={setMultiNumericSumsToOne}
+          unit={unit}
+          setUnit={setUnit}
+        />
+      )}
       {outcomeType === 'PSEUDO_NUMERIC' && (
         <PseudoNumericRangeSection
           minString={minString}
@@ -669,7 +711,7 @@ export function ContractParamsForm(props: {
         />
       )}{' '}
       {isNumber && (
-        <MultiNumericRangeSection
+        <NumberRangeSection
           minString={minString}
           setMinString={setMinString}
           maxString={maxString}

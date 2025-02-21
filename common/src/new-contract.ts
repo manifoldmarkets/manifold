@@ -63,6 +63,9 @@ export function getNewContract(
     sportsStartTimestamp?: string
     sportsEventId?: string
     sportsLeague?: string
+
+    // Multi-numeric
+    unit: string | undefined
   }
 ) {
   const {
@@ -94,6 +97,7 @@ export function getNewContract(
     answerImageUrls,
     takerAPIOrdersDisabled,
     siblingContractId,
+    unit,
   } = props
   const createdTime = Date.now()
 
@@ -116,7 +120,8 @@ export function getNewContract(
     BOUNTIED_QUESTION: () => getBountiedQuestionProps(ante, isAutoBounty),
     POLL: () => getPollProps(answers),
     NUMBER: () => getNumberProps(id, creator.id, min, max, answers, ante),
-    MULTI_NUMERIC: () => getMultiNumericProps(id, creator.id, answers, ante),
+    MULTI_NUMERIC: () =>
+      getMultiNumericProps(id, creator.id, answers, ante, min, max, unit ?? ''),
   }[outcomeType]()
 
   const contract: Contract = removeUndefinedProps({
@@ -324,7 +329,10 @@ const getMultiNumericProps = (
   contractId: string,
   userId: string,
   answers: string[],
-  ante: number
+  ante: number,
+  min: number,
+  max: number,
+  unit: string
 ) => {
   const answerObjects = createAnswers(
     contractId,
@@ -342,6 +350,9 @@ const getMultiNumericProps = (
     answers: answerObjects,
     totalLiquidity: ante,
     subsidyPool: 0,
+    min,
+    max,
+    unit,
   }
 
   return system

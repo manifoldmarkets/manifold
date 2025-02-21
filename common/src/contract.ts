@@ -271,6 +271,9 @@ export type Number = {
 export type MultiNumeric = {
   mechanism: 'cpmm-multi-1'
   outcomeType: 'MULTI_NUMERIC'
+  min: number
+  max: number
+  unit: string
   answers: Answer[]
   shouldAnswersSumToOne: boolean
   addAnswersMode: 'DISABLED'
