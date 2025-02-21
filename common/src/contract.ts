@@ -43,7 +43,8 @@ type AnyContractType =
   | CPMMMulti
   | (NonBet & BountiedQuestion)
   | (NonBet & Poll)
-  | CPMMMultiNumeric
+  | CPMMNumber
+  | MultiNumeric
 
 export type Contract<T extends AnyContractType = AnyContractType> = {
   id: string
@@ -131,11 +132,13 @@ export type Contract<T extends AnyContractType = AnyContractType> = {
 export type ContractToken = 'MANA' | 'CASH'
 export type CPMMContract = Contract & CPMM
 export type CPMMMultiContract = Contract & CPMMMulti
-export type CPMMNumericContract = Contract & CPMMMultiNumeric
+export type CPMMNumericContract = Contract & CPMMNumber
+export type MultiNumericContract = Contract & MultiNumeric
 export type MarketContract =
   | CPMMContract
   | CPMMMultiContract
   | CPMMNumericContract
+  | MultiNumericContract
 
 export type BinaryContract = Contract & Binary
 export type PseudoNumericContract = Contract & PseudoNumeric
@@ -196,7 +199,13 @@ export type CPMMMulti = {
   sort?: SortType
 }
 
-export type CPMMMultiNumeric = {
+export const isSpecialLoveContract = (contract: Contract) =>
+  contract.mechanism === 'cpmm-multi-1' &&
+  contract.outcomeType !== 'NUMBER' &&
+  contract.outcomeType !== 'MULTI_NUMERIC' &&
+  contract.specialLiquidityPerAnswer
+
+export type CPMMNumber = {
   mechanism: 'cpmm-multi-1'
   outcomeType: 'NUMBER'
   shouldAnswersSumToOne: true
@@ -250,13 +259,28 @@ export type PseudoNumeric = {
   resolutionProbability?: number
 }
 
-export type MultipleNumeric = {
+export type Number = {
   outcomeType: 'NUMBER'
   answers: Answer[]
   min: number
   max: number
   resolution?: string | 'MKT' | 'CANCEL'
   resolutions?: { [outcome: string]: number } // Used for MKT resolution.
+}
+
+export type MultiNumeric = {
+  mechanism: 'cpmm-multi-1'
+  outcomeType: 'MULTI_NUMERIC'
+  min: number
+  max: number
+  unit: string
+  answers: Answer[]
+  shouldAnswersSumToOne: boolean
+  addAnswersMode: 'DISABLED'
+  totalLiquidity: number
+  subsidyPool: number
+  resolutions?: { [answerId: string]: number }
+  sort?: SortType
 }
 
 export type Stonk = {
@@ -287,7 +311,10 @@ export type Sports = {
   sportsLeague: string
 }
 
-export type MultiContract = CPMMMultiContract | CPMMNumericContract
+export type MultiContract =
+  | CPMMMultiContract
+  | CPMMNumericContract
+  | MultiNumericContract
 
 type AnyOutcomeType =
   | Binary
@@ -295,10 +322,10 @@ type AnyOutcomeType =
   | Stonk
   | BountiedQuestion
   | Poll
-  | MultipleNumeric
+  | Number
   | CPMMMulti
   | PseudoNumeric
-
+  | MultiNumeric
 export type OutcomeType = AnyOutcomeType['outcomeType']
 export type resolution = 'YES' | 'NO' | 'MKT' | 'CANCEL'
 export const RESOLUTIONS = ['YES', 'NO', 'MKT', 'CANCEL'] as const
@@ -310,6 +337,7 @@ export const CREATEABLE_OUTCOME_TYPES = [
   'BOUNTIED_QUESTION',
   'POLL',
   'NUMBER',
+  'MULTI_NUMERIC',
 ] as const
 
 export const CREATEABLE_NON_PREDICTIVE_OUTCOME_TYPES = [
@@ -358,6 +386,7 @@ export function contractPool(contract: Contract) {
 export const isBinaryMulti = (contract: Contract) =>
   contract.mechanism === 'cpmm-multi-1' &&
   contract.outcomeType !== 'NUMBER' &&
+  contract.outcomeType !== 'MULTI_NUMERIC' &&
   contract.answers.length === 2 &&
   contract.addAnswersMode === 'DISABLED' &&
   contract.shouldAnswersSumToOne
@@ -393,7 +422,7 @@ export const MAX_DESCRIPTION_LENGTH = 16000
 
 export const CPMM_MIN_POOL_QTY = 0.01
 export const MULTI_NUMERIC_BUCKETS_MAX = 50
-export const MULTI_NUMERIC_CREATION_ENABLED = false
+export const NUMBER_CREATION_ENABLED = false
 
 export type Visibility = 'public' | 'unlisted'
 export const VISIBILITIES = ['public', 'unlisted'] as const

@@ -7,8 +7,8 @@ import {
 import {
   Contract,
   CPMMContract,
-  CPMMMultiContract,
-  CPMMNumericContract,
+  MarketContract,
+  MultiContract,
 } from './contract'
 import { sumBy } from 'lodash'
 import { Answer } from './answer'
@@ -28,7 +28,7 @@ export type CandidateBet<T extends Bet> = Omit<
 export const getCpmmSellBetInfo = (
   shares: number,
   outcome: 'YES' | 'NO',
-  contract: CPMMContract | CPMMMultiContract,
+  contract: MarketContract,
   unfilledBets: LimitBet[],
   balanceByUserId: { [userId: string]: number },
   loanPaid: number,
@@ -102,7 +102,7 @@ export const getCpmmSellBetInfo = (
 }
 
 export const getCpmmMultiSellBetInfo = (
-  contract: CPMMMultiContract | CPMMNumericContract,
+  contract: MultiContract,
   answers: Answer[],
   answerToSell: Answer,
   shares: number,
@@ -188,7 +188,7 @@ export const getCpmmMultiSellBetInfo = (
   }
 }
 export const getCpmmMultiSellSharesInfo = (
-  contract: CPMMMultiContract | CPMMNumericContract,
+  contract: MultiContract,
   userBetsByAnswerIdToSell: { [answerId: string]: Bet[] },
   unfilledBets: LimitBet[],
   balanceByUserId: { [userId: string]: number },
@@ -268,7 +268,7 @@ export const getNewSellBetInfo = (
 }
 
 export const getSaleResult = (
-  contract: CPMMContract | CPMMMultiContract | CPMMNumericContract,
+  contract: CPMMContract | MultiContract,
   shares: number,
   outcome: 'YES' | 'NO',
   unfilledBets: LimitBet[],
@@ -323,7 +323,7 @@ export const getSaleResult = (
 }
 
 export const getSaleResultMultiSumsToOne = (
-  contract: CPMMMultiContract | CPMMNumericContract,
+  contract: MultiContract,
   answerId: string,
   shares: number,
   outcome: 'YES' | 'NO',

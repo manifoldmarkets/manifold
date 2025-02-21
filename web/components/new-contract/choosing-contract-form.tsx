@@ -1,8 +1,5 @@
 import clsx from 'clsx'
-import {
-  CreateableOutcomeType,
-  MULTI_NUMERIC_CREATION_ENABLED,
-} from 'common/contract'
+import { CreateableOutcomeType, NUMBER_CREATION_ENABLED } from 'common/contract'
 import { ReactNode, useState } from 'react'
 import { Col } from '../layout/col'
 import { Row } from '../layout/row'
@@ -35,7 +32,7 @@ export function ChoosingContractForm(props: {
       <Col className="gap-2">
         {[
           ...Object.values(ALL_CONTRACT_TYPES).filter(({ value }) =>
-            MULTI_NUMERIC_CREATION_ENABLED ? true : value !== 'NUMBER'
+            NUMBER_CREATION_ENABLED ? true : value !== 'NUMBER'
           ),
         ].map(({ label, name, descriptor, example, value, visual }) => {
           return (

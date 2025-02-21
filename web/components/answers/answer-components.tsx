@@ -6,7 +6,6 @@ import { Answer } from 'common/answer'
 import { getAnswerProbability } from 'common/calculate'
 import {
   CPMMMultiContract,
-  CPMMNumericContract,
   getMainBinaryMCAnswer,
   MultiContract,
   resolution,
@@ -300,7 +299,7 @@ const YesNoBetButtons = (props: {
 
 export const MultiSeller = (props: {
   answer: Answer
-  contract: CPMMMultiContract | CPMMNumericContract
+  contract: MultiContract
   metric: ContractMetric
   user: User
   className?: string
@@ -532,7 +531,7 @@ export const BetButtons = (props: {
 }
 
 export function AnswerPosition(props: {
-  contract: CPMMMultiContract | CPMMNumericContract
+  contract: MultiContract
   answer: Answer
   user: User
   className?: string

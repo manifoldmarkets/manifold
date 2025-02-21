@@ -7,6 +7,7 @@ import {
   CPMMContract,
   CPMMMultiContract,
   CPMMNumericContract,
+  MultiContract,
 } from 'common/contract'
 import { TRADE_TERM } from 'common/envs/constants'
 import { Fees, getFeeTotal } from 'common/fees'
@@ -36,7 +37,7 @@ import { useIsPageVisible } from 'web/hooks/use-page-visible'
 import { getSaleResult, getSaleResultMultiSumsToOne } from 'common/sell-bet'
 
 export function SellPanel(props: {
-  contract: CPMMContract | CPMMMultiContract | CPMMNumericContract
+  contract: CPMMContract | MultiContract
   metric: ContractMetric | undefined
   shares: number
   sharesOutcome: 'YES' | 'NO'
@@ -67,8 +68,7 @@ export function SellPanel(props: {
   const isPseudoNumeric = outcomeType === 'PSEUDO_NUMERIC'
   const isStonk = outcomeType === 'STONK'
   const isMultiSumsToOne =
-    (outcomeType === 'MULTIPLE_CHOICE' && contract.shouldAnswersSumToOne) ||
-    outcomeType === 'NUMBER'
+    contract.mechanism === 'cpmm-multi-1' && contract.shouldAnswersSumToOne
   const answer =
     answerId && 'answers' in contract
       ? contract.answers.find((a) => a.id === answerId)

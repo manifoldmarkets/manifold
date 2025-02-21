@@ -14,7 +14,12 @@ import {
   getContractBetMetricsPerAnswerWithoutLoans,
 } from './calculate'
 import { Bet, LimitBet } from './bet'
-import { Contract, CPMMMultiContract, CPMMMultiNumeric } from './contract'
+import {
+  Contract,
+  CPMMMultiContract,
+  CPMMNumber,
+  MultiNumeric,
+} from './contract'
 import { computeFills, CpmmState, getCpmmProbability } from './calculate-cpmm'
 import { removeUndefinedProps } from './util/object'
 import { floatingEqual, logit } from './util/math'
@@ -143,7 +148,7 @@ export const computeBinaryCpmmElasticityFromAnte = (
 
 const computeMultiCpmmElasticity = (
   unfilledBets: LimitBet[],
-  contract: CPMMMultiContract | CPMMMultiNumeric,
+  contract: CPMMMultiContract | CPMMNumber | MultiNumeric,
   betAmount: number
 ) => {
   const elasticities = contract.answers.map((a) => {

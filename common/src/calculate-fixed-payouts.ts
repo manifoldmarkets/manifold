@@ -5,6 +5,7 @@ import {
   CPMMContract,
   CPMMMultiContract,
   CPMMNumericContract,
+  MultiNumeric,
 } from './contract'
 
 export function calculateFixedPayout(
@@ -42,7 +43,7 @@ function calculateFixedMktPayout(contract: CPMMContract, bet: Bet) {
 }
 
 function calculateBetPayoutMulti(
-  contract: CPMMMultiContract | CPMMNumericContract,
+  contract: CPMMMultiContract | CPMMNumericContract | MultiNumeric,
   bet: Bet
 ) {
   let prob = 0
@@ -68,7 +69,7 @@ function calculateBetPayoutMulti(
 }
 
 export function calculateFixedPayoutMulti(
-  contract: CPMMMultiContract | CPMMNumericContract,
+  contract: CPMMMultiContract | CPMMNumericContract | MultiNumeric,
   bet: Bet,
   outcome: string
 ) {

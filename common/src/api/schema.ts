@@ -2173,6 +2173,40 @@ export const API = (_apiTypeCheck = {
       .strict(),
     returns: {} as { success: boolean; checkoutUrl?: string },
   },
+  'generate-ai-numeric-ranges': {
+    method: 'POST',
+    visibility: 'public',
+    authed: true,
+    returns: {} as {
+      thresholds: { answers: string[]; midpoints: number[] }
+      buckets: { answers: string[]; midpoints: number[] }
+    },
+    props: z
+      .object({
+        question: z.string(),
+        min: z.number(),
+        max: z.number(),
+        description: z.string().optional(),
+        includeOuterRanges: z.boolean().optional(),
+        unit: z.string().optional(),
+      })
+      .strict(),
+  },
+  'regenerate-numeric-midpoints': {
+    method: 'POST',
+    visibility: 'public',
+    authed: true,
+    returns: {} as { midpoints: number[] },
+    props: z
+      .object({
+        description: z.string().optional(),
+        question: z.string(),
+        answers: z.array(z.string()),
+        min: z.number(),
+        max: z.number(),
+      })
+      .strict(),
+  },
 } as const)
 
 export type APIPath = keyof typeof API

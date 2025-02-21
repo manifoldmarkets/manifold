@@ -163,6 +163,10 @@ import {
   getContractVoters,
 } from './get-contract-voters'
 import { purchaseContractBoost } from './purchase-contract-boost'
+import {
+  generateAINumericRanges,
+  regenerateNumericMidpoints,
+} from './generate-ai-numeric-ranges'
 // we define the handlers in this object in order to typecheck that every API has a handler
 export const handlers: { [k in APIPath]: APIHandler<k> } = {
   'refresh-all-clients': refreshAllClients,
@@ -342,4 +346,6 @@ export const handlers: { [k in APIPath]: APIHandler<k> } = {
   'get-contract-voters': getContractVoters,
   'get-contract-option-voters': getContractOptionVoters,
   'purchase-contract-boost': purchaseContractBoost,
+  'generate-ai-numeric-ranges': generateAINumericRanges,
+  'regenerate-numeric-midpoints': regenerateNumericMidpoints,
 }

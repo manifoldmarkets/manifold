@@ -6,9 +6,10 @@ import {
   BountiedQuestion,
   CPMM,
   CPMMMulti,
-  CPMMMultiNumeric,
+  CPMMNumber,
   CREATEABLE_OUTCOME_TYPES,
   Contract,
+  MultiNumeric,
   NonBet,
   Poll,
   PseudoNumeric,
@@ -62,6 +63,9 @@ export function getNewContract(
     sportsStartTimestamp?: string
     sportsEventId?: string
     sportsLeague?: string
+
+    // Multi-numeric
+    unit: string | undefined
   }
 ) {
   const {
@@ -93,6 +97,7 @@ export function getNewContract(
     answerImageUrls,
     takerAPIOrdersDisabled,
     siblingContractId,
+    unit,
   } = props
   const createdTime = Date.now()
 
@@ -115,6 +120,8 @@ export function getNewContract(
     BOUNTIED_QUESTION: () => getBountiedQuestionProps(ante, isAutoBounty),
     POLL: () => getPollProps(answers),
     NUMBER: () => getNumberProps(id, creator.id, min, max, answers, ante),
+    MULTI_NUMERIC: () =>
+      getMultiNumericProps(id, creator.id, answers, ante, min, max, unit ?? ''),
   }[outcomeType]()
 
   const contract: Contract = removeUndefinedProps({
@@ -304,7 +311,7 @@ const getNumberProps = (
     ante,
     answers
   )
-  const system: CPMMMultiNumeric = {
+  const system: CPMMNumber = {
     mechanism: 'cpmm-multi-1',
     outcomeType: 'NUMBER',
     addAnswersMode: 'DISABLED',
@@ -314,6 +321,38 @@ const getNumberProps = (
     subsidyPool: 0,
     max,
     min,
+  }
+
+  return system
+}
+const getMultiNumericProps = (
+  contractId: string,
+  userId: string,
+  answers: string[],
+  ante: number,
+  min: number,
+  max: number,
+  unit: string
+) => {
+  const answerObjects = createAnswers(
+    contractId,
+    userId,
+    'DISABLED',
+    true,
+    ante,
+    answers
+  )
+  const system: MultiNumeric = {
+    mechanism: 'cpmm-multi-1',
+    outcomeType: 'MULTI_NUMERIC',
+    shouldAnswersSumToOne: true,
+    addAnswersMode: 'DISABLED',
+    answers: answerObjects,
+    totalLiquidity: ante,
+    subsidyPool: 0,
+    min,
+    max,
+    unit,
   }
 
   return system

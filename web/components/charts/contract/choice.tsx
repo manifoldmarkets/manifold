@@ -5,7 +5,6 @@ import { ChartPosition } from 'common/chart-position'
 import {
   Contract,
   CPMMMultiContract,
-  CPMMNumericContract,
   getMainBinaryMCAnswer,
   isBinaryMulti,
   MultiContract,
@@ -120,7 +119,7 @@ export function useChartAnswers(contract: MultiContract) {
 }
 
 export const ChoiceContractChart = (props: {
-  contract: CPMMMultiContract | CPMMNumericContract
+  contract: CPMMMultiContract
   multiPoints: MultiPoints
   width: number
   height: number

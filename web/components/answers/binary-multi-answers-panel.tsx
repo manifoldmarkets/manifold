@@ -1,9 +1,5 @@
 import { Answer } from 'common/answer'
-import {
-  CPMMMultiContract,
-  getMainBinaryMCAnswer,
-  MultiContract,
-} from 'common/contract'
+import { CPMMMultiContract, getMainBinaryMCAnswer } from 'common/contract'
 import { Button, SizeType } from 'web/components/buttons/button'
 import { useState } from 'react'
 import { formatPercent } from 'common/util/format'
@@ -37,7 +33,7 @@ export function BinaryMultiAnswersPanel(props: {
             key={answer.id}
             user={null}
             answer={answer}
-            contract={contract as MultiContract}
+            contract={contract}
             color={getAnswerColor(answer)}
             feedReason={feedReason}
           />
