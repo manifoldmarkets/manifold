@@ -65,9 +65,9 @@ export default function NotificationsPage() {
   return (
     <Page trackPageView={'notifications page'}>
       <div className="w-full">
+        {shouldShowBanner && <NotificationsAppBanner />}
         <Title className="hidden lg:block">Notifications</Title>
         <SEO title="Notifications" description="Manifold user notifications" />
-        {shouldShowBanner && <NotificationsAppBanner />}
         {privateUser && user && router.isReady ? (
           <NotificationsContent
             user={user}
