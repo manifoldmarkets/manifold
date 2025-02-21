@@ -4,7 +4,6 @@ import { Row } from 'web/components/layout/row'
 import { useEffect } from 'react'
 import { usePrivateUser } from 'web/hooks/use-user'
 import { PrivateUser } from 'common/user'
-
 import { usePathname } from 'next/navigation'
 import { usePersistentLocalState } from 'web/hooks/use-persistent-local-state'
 import {
@@ -12,6 +11,7 @@ import {
   useGroupedUnseenNotifications,
 } from 'client-common/hooks/use-notifications'
 import { api } from 'web/lib/api/api'
+import { useUnseenPrivateMessageChannels } from 'web/hooks/use-private-messages'
 
 export function NotificationsIcon(props: { className?: string }) {
   const privateUser = usePrivateUser()
@@ -39,9 +39,11 @@ function UnseenNotificationsBubble(props: { privateUser: PrivateUser }) {
       usePersistentLocalState
     ) ?? []
 
+  const { unseenChannels } = useUnseenPrivateMessageChannels(false)
+  
   const unseenNotifs = unseenNotificationGroups.filter(
     (ng) => ng.latestCreatedTime > lastSeenTime
-  ).length
+  ).length + unseenChannels.length
 
   useEffect(() => {
     if (pathname?.endsWith('notifications')) {

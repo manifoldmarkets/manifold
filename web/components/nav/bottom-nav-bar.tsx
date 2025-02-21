@@ -30,6 +30,9 @@ import { Avatar } from '../widgets/avatar'
 import { TokenNumber } from '../widgets/token-number'
 import Sidebar from './sidebar'
 import { NavItem } from './sidebar-item'
+import { buildArray } from 'common/util/array'
+import TrophyIcon from 'web/lib/icons/trophy-icon.svg'
+import { ReportsIcon } from '../reports-icon'
 
 export const BOTTOM_NAV_BAR_HEIGHT = 58
 
@@ -273,5 +276,22 @@ export function MobileSidebar(props: {
         </Dialog>
       </Transition>
     </div>
+  )
+}
+
+const getMobileNav = (
+  toggleModal: () => void,
+  options: { isNewUser: boolean; isLiveTV?: boolean; isAdminOrMod: boolean }
+) => {
+  const { isAdminOrMod } = options
+
+  return buildArray<NavItem>(
+    { name: 'Leagues', href: '/leagues', icon: TrophyIcon },
+    // Remove Messages item
+    isAdminOrMod && {
+      name: 'Reports',
+      href: '/reports',
+      icon: ReportsIcon,
+    }
   )
 }
