@@ -11,10 +11,10 @@ export const AboutManifold = ({ className = '' }: AboutManifoldProps) => {
       <div className="mb-2">
         Get accurate real-time odds on politics, tech, sports, and more.
       </div>
-      {/* TODO: Add this back in */}
-      {/* <div className="mb-2">
-        Win mana for your correct predictions on our markets!
-      </div> */}
+      <div className="mb-2">
+        Or create your own play-money betting market on any question you care
+        about.
+      </div>
     </div>
   )
 }
