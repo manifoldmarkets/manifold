@@ -30,6 +30,7 @@ export function ProfileSummary(props: { user: User; className?: string }) {
       />
       <div className="mr-1 w-2 shrink-[2]" />
       <div className="shrink-0 grow">
+        {user.cashBalance < 1 && <div className="text-sm">{user.name}</div>}
         <div className="flex items-center text-sm">
           <TokenNumber
             amount={user?.balance}
@@ -37,6 +38,7 @@ export function ProfileSummary(props: { user: User; className?: string }) {
             className="mr-1 text-violet-600 dark:text-violet-400"
           />
         </div>
+        {/* remove this after deprecating sweeps */}
         {user.cashBalance >= 1 && (
           <TokenNumber
             className="text-sm text-amber-600 dark:text-amber-400"
