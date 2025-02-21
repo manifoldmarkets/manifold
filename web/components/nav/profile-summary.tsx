@@ -37,11 +37,13 @@ export function ProfileSummary(props: { user: User; className?: string }) {
             className="mr-1 text-violet-600 dark:text-violet-400"
           />
         </div>
-        <TokenNumber
-          className="text-sm text-amber-600 dark:text-amber-400"
-          amount={user.cashBalance}
-          coinType="sweepies"
-        />
+        {user.cashBalance < 1 && (
+          <TokenNumber
+            className="text-sm text-amber-600 dark:text-amber-400"
+            amount={user.cashBalance}
+            coinType="sweepies"
+          />
+        )}
       </div>
       <div className="w-2 shrink" />
     </Link>
