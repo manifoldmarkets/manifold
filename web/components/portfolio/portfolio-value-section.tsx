@@ -270,7 +270,9 @@ export const PortfolioValueSection = memo(
 function TwombaPortfolioValueSkeleton(props: {
   currentTimePeriod: Period
   setCurrentTimePeriod: (timePeriod: Period) => void
-  portfolioGraphElement: ((width: number, height: number) => ReactNode) | undefined
+  portfolioGraphElement:
+    | ((width: number, height: number) => ReactNode)
+    | undefined
   hideSwitcher?: boolean
   className?: string
   switcherColor?: ColorType
@@ -336,7 +338,9 @@ function TwombaPortfolioValueSkeleton(props: {
                   graphValues.net,
                   prefersPlay ? portfolioValues?.net : portfolioValues?.netCash
                 )}
-                className={clsx('text-3xl font-bold transition-all sm:text-4xl')}
+                className={clsx(
+                  'text-3xl font-bold transition-all sm:text-4xl'
+                )}
                 isInline
                 coinClassName="top-[0.25rem] sm:top-[0.1rem]"
                 coinType={prefersPlay ? 'mana' : 'sweepies'}
@@ -357,7 +361,9 @@ function TwombaPortfolioValueSkeleton(props: {
                 portfolioFocus={portfolioFocus}
                 displayedAmount={displayAmounts(
                   graphValues.balance,
-                  prefersPlay ? portfolioValues?.balance : portfolioValues?.cashBalance
+                  prefersPlay
+                    ? portfolioValues?.balance
+                    : portfolioValues?.cashBalance
                 )}
                 className={clsx(
                   portfolioFocus == 'balance'
@@ -375,7 +381,9 @@ function TwombaPortfolioValueSkeleton(props: {
                 portfolioFocus={portfolioFocus}
                 displayedAmount={displayAmounts(
                   graphValues.invested,
-                  prefersPlay ? portfolioValues?.invested : portfolioValues?.cashInvested
+                  prefersPlay
+                    ? portfolioValues?.invested
+                    : portfolioValues?.cashInvested
                 )}
                 className={clsx(
                   portfolioFocus == 'investment'
@@ -393,7 +401,9 @@ function TwombaPortfolioValueSkeleton(props: {
                 portfolioFocus={portfolioFocus}
                 displayedAmount={displayAmounts(
                   graphValues.profit,
-                  prefersPlay ? portfolioValues?.profit : portfolioValues?.cashProfit
+                  prefersPlay
+                    ? portfolioValues?.profit
+                    : portfolioValues?.cashProfit
                 )}
                 className={clsx(
                   portfolioFocus == 'profit'

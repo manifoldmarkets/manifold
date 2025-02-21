@@ -14,7 +14,12 @@ import { PortfolioMetrics } from 'common/portfolio-metrics'
 import { SPICE_TO_MANA_CONVERSION_RATE } from 'common/envs/constants'
 
 export type GraphMode = 'portfolio' | 'profit'
-export type PortfolioMode = 'balance' | 'investment' | 'all' | 'spice' | 'profit'
+export type PortfolioMode =
+  | 'balance'
+  | 'investment'
+  | 'all'
+  | 'spice'
+  | 'profit'
 export const MANA_COLOR = '#7c3aed'
 export const CASH_COLOR = '#f59e0b'
 
@@ -91,9 +96,11 @@ export const PortfolioGraph = (props: {
     const { min: balanceYMin, max: balanceYMax } = findMinMax(balanceYPoints)
 
     const investmentXPoints = minMaxInvestmentPoints.map((d) => d.x)!
-    const { min: investmentXMin, max: investmentXMax } = findMinMax(investmentXPoints)
+    const { min: investmentXMin, max: investmentXMax } =
+      findMinMax(investmentXPoints)
     const investmentYPoints = minMaxInvestmentPoints.map((d) => d.y)!
-    const { min: investmentYMin, max: investmentYMax } = findMinMax(investmentYPoints)
+    const { min: investmentYMin, max: investmentYMax } =
+      findMinMax(investmentYPoints)
 
     const networthXPoints = minMaxNetworthPoints.map((d) => d.x)!
     const { min: networthXMin, max: networthXMax } = findMinMax(networthXPoints)
@@ -106,7 +113,10 @@ export const PortfolioGraph = (props: {
     const profitYPoints = minMaxProfitPoints.map((d) => d.y)!
     const { min: profitYMin, max: profitYMax } = findMinMax(profitYPoints)
 
-    let minDate = 0, maxDate = Date.now(), minValue = 0, maxValue = 0
+    let minDate = 0,
+      maxDate = Date.now(),
+      minValue = 0,
+      maxValue = 0
     if (portfolioFocus === 'all') {
       minDate = networthXMin ?? 0
       maxDate = networthXMax ?? Date.now()
@@ -176,9 +186,7 @@ export const PortfolioGraph = (props: {
           : cashProfitPoints
       }
       color={prefersPlay ? MANA_COLOR : CASH_COLOR}
-      Tooltip={(props) => (
-        <PortfolioTooltip date={xScale.invert(props.x)} />
-      )}
+      Tooltip={(props) => <PortfolioTooltip date={xScale.invert(props.x)} />}
       onMouseOver={(p) => {
         if (portfolioFocus == 'all') {
           updateGraphValues({ net: p ? p.y : null })
