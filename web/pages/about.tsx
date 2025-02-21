@@ -1,6 +1,5 @@
 import { TRADE_TERM } from 'common/envs/constants'
 import { capitalize } from 'lodash'
-import { TbBrandDiscord } from 'react-icons/tb'
 import { AboutManifold } from 'web/components/about-manifold'
 import { ExplainerPanel } from 'web/components/explainer-panel'
 import { Col } from 'web/components/layout/col'
@@ -8,12 +7,10 @@ import { Page } from 'web/components/layout/page'
 import { ManifoldLogo } from 'web/components/nav/manifold-logo'
 import { SEO } from 'web/components/SEO'
 import { Title } from 'web/components/widgets/title'
-import { getNativePlatform } from 'web/lib/native/is-native'
 import { LabCard } from './lab'
+import { Socials } from 'web/components/socials'
 
 export default function AboutPage() {
-  getNativePlatform()
-
   return (
     <Page trackPageView={'about page'} className="!col-span-7">
       <SEO
@@ -34,6 +31,18 @@ export default function AboutPage() {
           <ExplainerPanel className={'max-w-full'} showWhatIsManifold={false} />
 
           <div>
+            <h2 className={'text-ink-600 mb-2 text-xl'}>Intro video</h2>
+            <div className="mb-1 text-lg">
+              Everything you need to know in 7 minutes presented by an animated
+              corgi:
+            </div>
+            <iframe
+              src="https://www.youtube.com/embed/DB5TfX7eaVY?start=9"
+              className="mb-4 h-80 w-full max-w-2xl"
+            ></iframe>
+          </div>
+
+          <div>
             <h2 className={'text-ink-600 mb-2 text-xl'}>Our mission</h2>
             <div className="mb-1 text-lg">
               <li>
@@ -49,17 +58,9 @@ export default function AboutPage() {
               </li>
             </div>
           </div>
-          <div>
-            <h2 className={'text-ink-600 mb-2 text-xl'}>Intro video</h2>
-            <div className="mb-1 text-lg">
-              Everything you need to know in 7 minutes presented by an animated
-              corgi:
-            </div>
-            <iframe
-              src="https://www.youtube.com/embed/DB5TfX7eaVY?start=9"
-              className="mb-4 h-80 w-full max-w-2xl"
-            ></iframe>
-          </div>
+
+          <Socials className="mb-2" />
+
           <div>
             <h2 className={'text-ink-600 mb-2 text-xl'}>
               Still have questions?
@@ -70,7 +71,7 @@ export default function AboutPage() {
                 title="FAQ"
                 href="https://docs.manifold.markets/faq"
                 target="_blank"
-                description="For a more comprehensive overview"
+                description="Answers to common questions"
               />
 
               <LabCard
@@ -79,19 +80,7 @@ export default function AboutPage() {
                 target="_blank"
                 description="Rules, norms, and expectations"
               />
-              <LabCard
-                title="Join our Discord"
-                href="https://discord.com/invite/eHQBNBqXuh"
-                target="_blank"
-                icon={<TbBrandDiscord className="h-6 w-6" />}
-                description="For the fastest help"
-              />
-              <LabCard
-                title="Email us"
-                href="mailto:info@manifold.markets"
-                target="_blank"
-                description="info@manifold.markets"
-              />
+
               <LabCard
                 title="Sitemap"
                 href="/sitemap"
