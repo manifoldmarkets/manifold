@@ -88,7 +88,7 @@ export const DailyProfit = function DailyProfit(props: {
               )}
             </Row>
           </button>
-          {cashNetWorth > 0 && (
+          {cashNetWorth >= 1 && (
             <button
               onClick={withTracking(() => {
                 setOpenCash(true)
