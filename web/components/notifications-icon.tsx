@@ -40,10 +40,10 @@ function UnseenNotificationsBubble(props: { privateUser: PrivateUser }) {
     ) ?? []
 
   const { unseenChannels } = useUnseenPrivateMessageChannels(false)
-  
-  const unseenNotifs = unseenNotificationGroups.filter(
-    (ng) => ng.latestCreatedTime > lastSeenTime
-  ).length + unseenChannels.length
+
+  const unseenNotifs =
+    unseenNotificationGroups.filter((ng) => ng.latestCreatedTime > lastSeenTime)
+      .length + unseenChannels.length
 
   useEffect(() => {
     if (pathname?.endsWith('notifications')) {
