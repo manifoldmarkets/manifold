@@ -163,7 +163,7 @@ function NotificationsContent(props: {
                 <NotificationsList
                   groupedNotifications={groupedNewMarketNotifications}
                   emptyTitle={
-                    'You don\'t have any new question notifications from followed users, yet. Try following some users to see more.'
+                    "You don't have any new question notifications from followed users, yet. Try following some users to see more."
                   }
                 />
               ),
