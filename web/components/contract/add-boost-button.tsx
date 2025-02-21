@@ -133,7 +133,7 @@ function BoostPurchaseModal(props: {
 
           <Row className="gap-2">
             <Button
-              color="gray-outline"
+              color="indigo"
               onClick={() => purchaseBoost('mana')}
               loading={loading === 'mana'}
               disabled={!!loading || notEnoughFunds}
