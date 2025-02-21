@@ -1,6 +1,6 @@
 import { ChevronDoubleDownIcon } from '@heroicons/react/solid'
 import clsx from 'clsx'
-import { CHARITY_FEE, SWEEPIES_NAME, TRADING_TERM } from 'common/envs/constants'
+import { SWEEPIES_NAME, TRADING_TERM } from 'common/envs/constants'
 import Link from 'next/link'
 import React from 'react'
 import { GoGraph } from 'react-icons/go'
@@ -15,6 +15,8 @@ import { Card } from './widgets/card'
 import { GiTakeMyMoney } from 'react-icons/gi'
 import { ManaCoin } from 'web/public/custom-components/manaCoin'
 import { TokenNumber } from './widgets/token-number'
+import { SWEEPIES_CASHOUT_FEE } from 'common/economy'
+import { formatMoneyUSD } from 'common/util/format'
 
 export const ExplainerPanel = (props: {
   className?: string
@@ -147,7 +149,7 @@ const Sweepstakes = ({
         <TokenNumber amount={1} coinType="sweepies" isInline={true} /> {'→'}{' '}
         $1.00
       </b>
-      , minus a {CHARITY_FEE * 100}% fee.
+      , minus a {formatMoneyUSD(SWEEPIES_CASHOUT_FEE)} fee.
     </div>
 
     <Link
