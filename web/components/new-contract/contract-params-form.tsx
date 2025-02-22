@@ -315,7 +315,7 @@ export function ContractParamsForm(props: {
     !shouldHaveCloseDate || (closeTime ?? Infinity) > Date.now()
 
   const isValidTopics = selectedGroups.length <= MAX_GROUPS_PER_MARKET
-
+  const ante = getAnte(outcomeType, numAnswers, liquidityTier)
   const numberOfBuckets = getMultiNumericAnswerBucketRangeNames(
     min ?? 0,
     max ?? 0,
@@ -323,8 +323,7 @@ export function ContractParamsForm(props: {
   ).length
   const isValid =
     isValidQuestion &&
-    // Disabled while it doesn't account for play tier (ante is 10x actual play cost)
-    // ante <= balance &&
+    ante <= balance &&
     isValidDate &&
     isValidTopics &&
     (outcomeType !== 'PSEUDO_NUMERIC' ||
@@ -759,7 +758,7 @@ export function ContractParamsForm(props: {
       >
         {submitState === 'EDITING'
           ? `Create question for ${formatWithToken({
-              amount: getAnte(outcomeType, numAnswers, liquidityTier),
+              amount: ante,
               short: true,
               token: 'M$',
             })}`

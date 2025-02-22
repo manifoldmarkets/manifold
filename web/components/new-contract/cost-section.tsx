@@ -12,10 +12,6 @@ import { Button } from 'web/components/buttons/button'
 
 import { TokenNumber } from '../widgets/token-number'
 import { liquidityTiers } from 'common/tier'
-import { ManaCoin } from 'web/public/custom-components/manaCoin'
-import { getContractTypeFromValue } from './create-contract-types'
-import { InfoTooltip } from '../widgets/info-tooltip'
-import { capitalize } from 'lodash'
 import { getAnte } from 'common/economy'
 
 export const CostSection = (props: {
@@ -41,8 +37,6 @@ export const CostSection = (props: {
       </label>
 
       <PriceSection
-        ante={ante}
-        outcomeType={outcomeType}
         liquidityTier={liquidityTier}
         setLiquidityTier={setLiquidityTier}
       />
@@ -65,12 +59,10 @@ export const CostSection = (props: {
 }
 
 function PriceSection(props: {
-  ante: number
-  outcomeType: CreateableOutcomeType
   liquidityTier: number
   setLiquidityTier: (tier: number) => void
 }) {
-  const { ante, outcomeType, liquidityTier, setLiquidityTier } = props
+  const { liquidityTier, setLiquidityTier } = props
 
   return (
     <Col className="w-full gap-2">
@@ -81,9 +73,7 @@ function PriceSection(props: {
         {liquidityTiers.map((tier) => (
           <Tier
             key={tier}
-            cost={ante}
             currentTier={liquidityTier}
-            outcomeType={outcomeType}
             liquidityTier={tier}
             setLiquidityTier={setLiquidityTier}
           />
@@ -94,50 +84,14 @@ function PriceSection(props: {
 }
 
 function Tier(props: {
-  cost: number
   currentTier: number
-  outcomeType: CreateableOutcomeType
   liquidityTier: number
   setLiquidityTier: (tier: number) => void
   isTierDisabled?: boolean
 }) {
-  const {
-    cost,
-    currentTier,
-    outcomeType,
-    liquidityTier,
-    setLiquidityTier,
-    isTierDisabled,
-  } = props
+  const { currentTier, liquidityTier, setLiquidityTier, isTierDisabled } = props
 
-  const questionType = capitalize(getContractTypeFromValue(outcomeType, 'name'))
   const tierIndex = liquidityTiers.findIndex((tier) => tier === liquidityTier)
-
-  if (isTierDisabled) {
-    return (
-      <div
-        className={clsx(
-          'bg-canvas-50 w-full select-none items-baseline rounded py-2 pl-2 pr-4 transition-colors',
-          'flex flex-row justify-start gap-3 sm:flex-col sm:items-center sm:justify-between sm:gap-0'
-        )}
-      >
-        <div className="text-ink-500 flex flex-col items-center gap-1 text-sm font-bold sm:flex-row sm:items-start">
-          <div>Disabled</div>
-          <InfoTooltip
-            text={`The ${questionType} question type does not work with the this tier because it requires more liquidity.`}
-          />
-        </div>
-        <Col className="sm:items-center">
-          <div
-            className="text-xl opacity-50"
-            style={{ filter: 'saturate(0%)' }}
-          >
-            <ManaCoin />
-          </div>
-        </Col>
-      </div>
-    )
-  }
 
   return (
     <div
