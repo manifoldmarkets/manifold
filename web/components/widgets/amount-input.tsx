@@ -6,7 +6,6 @@ import {
   SWEEPS_MIN_BET,
 } from 'common/economy'
 import { ENV_CONFIG } from 'common/envs/constants'
-import { MarketTierType } from 'common/tier'
 import { humanish, User } from 'common/user'
 import {
   formatMoney,
@@ -162,7 +161,7 @@ export function BuyAmountInput(props: {
   quickButtonAmountSize?: 'large' | 'small'
   disableQuickButtons?: boolean
   token?: InputTokenType
-  marketTier?: MarketTierType | undefined
+  liquidityTier?: number | undefined
   sliderColor?: keyof typeof sliderColors
 }) {
   const {
@@ -170,7 +169,7 @@ export function BuyAmountInput(props: {
     onChange,
     error,
     setError,
-    marketTier,
+    liquidityTier,
     disabled,
     binaryOutcome,
     showBalance,
@@ -298,7 +297,7 @@ export function BuyAmountInput(props: {
             onAmountChange={onChange}
             binaryOutcome={binaryOutcome}
             disabled={disabled}
-            smallAmounts={!hasLotsOfMoney || marketTier === 'play'}
+            smallAmounts={!hasLotsOfMoney || liquidityTier === 0}
             token={token}
             sliderColor={sliderColor}
           />

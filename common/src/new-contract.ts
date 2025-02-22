@@ -32,7 +32,6 @@ export function getNewContract(
     | 'closeTime'
     | 'visibility'
     | 'isTwitchContract'
-    | 'marketTier'
     | 'token'
     | 'takerAPIOrdersDisabled'
     | 'siblingContractId'
@@ -84,7 +83,6 @@ export function getNewContract(
     shouldAnswersSumToOne,
     coverImageUrl,
     isAutoBounty,
-    marketTier,
     token,
     sportsStartTimestamp,
     sportsEventId,
@@ -161,7 +159,6 @@ export function getNewContract(
     },
 
     isTwitchContract,
-    marketTier,
     token,
 
     sportsStartTimestamp,

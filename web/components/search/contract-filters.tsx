@@ -3,18 +3,13 @@ import { track } from 'web/lib/service/analytics'
 import { Col } from '../layout/col'
 import { getLabelFromValue } from './search-dropdown-helpers'
 
-import { MarketTierType, TierParamsType, tiers } from 'common/tier'
 import { useState } from 'react'
 import { FaSortAmountDownAlt } from 'react-icons/fa'
 import { FaFileContract, FaFilter, FaSliders } from 'react-icons/fa6'
 import { IconButton } from 'web/components/buttons/button'
 import { Carousel } from 'web/components/widgets/carousel'
 import { SweepiesCoin } from 'web/public/custom-components/sweepiesCoin'
-import {
-  CrystalTier,
-  PlusTier,
-  PremiumTier,
-} from 'web/public/custom-components/tiers'
+
 import { MODAL_CLASS, Modal } from '../layout/modal'
 import { Row } from '../layout/row'
 import {
@@ -28,7 +23,6 @@ import {
   DEFAULT_FILTERS,
   DEFAULT_SORT,
   DEFAULT_SORTS,
-  DEFAULT_TIER,
   FILTERS,
   FOR_YOU_KEY,
   Filter,
@@ -49,7 +43,6 @@ import {
   FilterDropdownPill,
   FilterPill,
   minimalistIndigoSelectedClass,
-  TierDropdownPill,
   unselectedClass,
 } from './filter-pills'
 import { useUser } from 'web/hooks/use-user'
@@ -64,13 +57,7 @@ export function ContractFilters(props: {
   const { className, params, updateParams, hideSweepsToggle, topicSlug } = props
   const user = useUser()
 
-  const {
-    s: sort,
-    f: filter,
-    ct: contractType,
-    mt: currentTiers,
-    sw: isSweepiesString,
-  } = params
+  const { s: sort, f: filter, ct: contractType, sw: isSweepiesString } = params
   const isSweeps = isSweepiesString === '1'
   const { setPrefersPlay } = useSweepstakes()
 
@@ -135,15 +122,6 @@ export function ContractFilters(props: {
     contractType !== DEFAULT_CONTRACT_TYPE
 
   const forYou = params[FOR_YOU_KEY] === '1' && !params[GROUP_IDS_KEY]
-
-  const toggleTier = (tier: MarketTierType) => {
-    const tierIndex = tiers.indexOf(tier)
-    if (tierIndex >= 0 && tierIndex < currentTiers.length) {
-      const tiersArray = currentTiers.split('')
-      tiersArray[tierIndex] = tiersArray[tierIndex] === '0' ? '1' : '0'
-      updateParams({ mt: tiersArray.join('') as TierParamsType })
-    }
-  }
 
   return (
     <Col className={clsx('mb-1 mt-2 items-stretch gap-1 ', className)}>
@@ -248,30 +226,6 @@ export function ContractFilters(props: {
             For you
           </FilterPill>
         )}
-        {!hideFilter && currentTiers !== DEFAULT_TIER && (
-          <AdditionalFilterPill
-            type="filter"
-            onXClick={() =>
-              updateParams({ mt: DEFAULT_TIER as TierParamsType })
-            }
-          >
-            <Row className="items-center py-[3px]">
-              {currentTiers.split('').map((tier, index) => {
-                if (tier === '1') {
-                  if (tiers[index] == 'plus') {
-                    return <PlusTier key={index} />
-                  }
-                  if (tiers[index] == 'premium') {
-                    return <PremiumTier key={index} />
-                  }
-                  if (tiers[index] == 'crystal') {
-                    return <CrystalTier key={index} />
-                  }
-                }
-              })}
-            </Row>
-          </AdditionalFilterPill>
-        )}
         {nonDefaultSort && (
           <AdditionalFilterPill
             type="sort"
@@ -331,7 +285,6 @@ export function ContractFilters(props: {
         selectSort={selectSort}
         selectContractType={selectContractType}
         toggleSweepies={toggleSweepies}
-        toggleTier={toggleTier}
         hideFilter={hideFilter}
       />
     </Col>
@@ -346,7 +299,6 @@ function FilterModal(props: {
   selectSort: (selection: Sort) => void
   selectContractType: (selection: ContractTypeType) => void
   toggleSweepies: () => void
-  toggleTier: (tier: MarketTierType) => void
   hideFilter: boolean
 }) {
   const {
@@ -357,16 +309,9 @@ function FilterModal(props: {
     selectContractType,
     selectSort,
     toggleSweepies,
-    toggleTier,
     hideFilter,
   } = props
-  const {
-    s: sort,
-    f: filter,
-    ct: contractType,
-    sw: isSweepiesString,
-    mt: currentTiers,
-  } = params
+  const { s: sort, f: filter, ct: contractType, sw: isSweepiesString } = params
 
   const sortItems =
     contractType == 'BOUNTIED_QUESTION'
@@ -399,10 +344,6 @@ function FilterModal(props: {
                   Sweepstakes
                 </Row>
               </FilterPill>
-              <TierDropdownPill
-                toggleTier={toggleTier}
-                currentTiers={currentTiers}
-              />
               {!hideFilter &&
                 FILTERS.map(({ label: filterLabel, value: filterValue }) => (
                   <FilterPill

@@ -1,5 +1,4 @@
 import { removeCpmmLiquidity } from 'common/calculate-cpmm'
-import { getTierFromLiquidity } from 'common/tier'
 import { formatMoneyWithDecimals } from 'common/util/format'
 import { runTransactionWithRetries } from 'shared/transact-with-retries'
 import { updateContract } from 'shared/supabase/contracts'
@@ -67,10 +66,6 @@ export const removeLiquidity: APIHandler<
     await updateContract(pgTrans, contractId, {
       subsidyPool: FieldVal.increment(-takeFromPending),
       totalLiquidity: FieldVal.increment(-totalAmount),
-      marketTier: getTierFromLiquidity(
-        contract,
-        contract.totalLiquidity - totalAmount
-      ),
     })
 
     await runTxnInBetQueue(pgTrans, {

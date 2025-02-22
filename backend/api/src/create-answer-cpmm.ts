@@ -36,7 +36,7 @@ import {
   updateAnswer,
   updateAnswers,
 } from 'shared/supabase/answers'
-import { getTieredAnswerCost, getTierFromLiquidity } from 'common/tier'
+import { getAnswerCostFromLiquidity } from 'common/tier'
 import { updateContract } from 'shared/supabase/contracts'
 import { FieldVal } from 'shared/supabase/utils'
 import { runTransactionWithRetries } from 'shared/transact-with-retries'
@@ -105,8 +105,9 @@ const createAnswerCpmmMain = async (
 ) => {
   const { shouldAnswersSumToOne } = contract
 
-  const answerCost = getTieredAnswerCost(
-    getTierFromLiquidity(contract, contract.totalLiquidity)
+  const answerCost = getAnswerCostFromLiquidity(
+    contract.totalLiquidity,
+    contract.answers.length
   )
 
   const { newAnswer, user } = await runTransactionWithRetries(

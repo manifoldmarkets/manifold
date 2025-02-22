@@ -3,6 +3,7 @@ import { SportsGames } from 'common/sports-info'
 import { buildArray } from 'common/util/array'
 import { APIParams } from 'common/api/schema'
 import { ENV } from 'common/envs/constants'
+import { liquidityTiers } from 'common/tier'
 
 export const handleCreateSportsMarkets = async (
   setIsLoading: (loading: boolean) => void,
@@ -84,6 +85,7 @@ export const handleCreateSportsMarkets = async (
         answerShortTexts,
         answerImageUrls,
         visibility: 'public',
+        liquidityTier: liquidityTiers[1],
         addAnswersMode: 'DISABLED',
         shouldAnswersSumToOne: true,
         sportsStartTimestamp: sportsGames.strTimestamp,
