@@ -419,7 +419,6 @@ export function ContractParamsForm(props: {
     if (!isValid) return
     setSubmitState('LOADING')
     try {
-      console.log('liquidityTier', liquidityTier)
       const createProps = removeUndefinedProps({
         question,
         outcomeType,
