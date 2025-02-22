@@ -2,13 +2,7 @@ import { OutcomeType } from 'common/contract'
 import { answerCostTiers, liquidityTiers } from './tier'
 
 export const DEFAULT_CASH_ANTE = 50
-
-export const FIXED_ANTE = 1000
-export const BASE_ANSWER_COST = 100
-export const MIN_ANSWER_COST = 25
-
 export const MINIMUM_BOUNTY = 1000
-export const MULTIPLE_CHOICE_MINIMUM_COST = 1000
 
 export const getAnte = (
   outcomeType: OutcomeType,
