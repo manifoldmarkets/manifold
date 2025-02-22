@@ -68,6 +68,7 @@ import { getMultiNumericAnswerBucketRangeNames } from 'common/multi-numeric'
 import { randomString } from 'common/util/random'
 import { formatWithToken } from 'common/util/format'
 import { BiUndo } from 'react-icons/bi'
+import { liquidityTiers } from 'common/tier'
 
 export function ContractParamsForm(props: {
   creator: User
@@ -77,7 +78,7 @@ export function ContractParamsForm(props: {
   const { creator, params, outcomeType } = props
 
   const [liquidityTier, setLiquidityTier] = usePersistentLocalState<number>(
-    100,
+    liquidityTiers[0],
     'liquidity-tier'
   )
 
