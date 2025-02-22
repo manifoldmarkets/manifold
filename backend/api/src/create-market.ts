@@ -58,7 +58,6 @@ import { generateAntes } from 'shared/create-contract-helpers'
 import { betsQueue } from 'shared/helpers/fn-queue'
 import { convertUser } from 'common/supabase/users'
 import { camelCase, first } from 'lodash'
-import { getTieredCost } from 'common/tier'
 
 type Body = ValidatedAPIParams<'market'>
 
@@ -119,7 +118,6 @@ export async function createMarketHelper(body: Body, auth: AuthedUser) {
     totalBounty,
     isAutoBounty,
     visibility,
-    marketTier,
     idempotencyKey,
     sportsStartTimestamp,
     sportsEventId,
@@ -127,6 +125,7 @@ export async function createMarketHelper(body: Body, auth: AuthedUser) {
     answerShortTexts,
     answerImageUrls,
     takerAPIOrdersDisabled,
+    liquidityTier,
   } = validateMarketBody(body)
 
   const userId = auth.uid
@@ -136,10 +135,12 @@ export async function createMarketHelper(body: Body, auth: AuthedUser) {
   const hasOtherAnswer = addAnswersMode !== 'DISABLED' && shouldAnswersSumToOne
   const numAnswers = (answers?.length ?? 0) + (hasOtherAnswer ? 1 : 0)
 
-  const unmodifiedAnte =
-    (totalBounty ?? getAnte(outcomeType, numAnswers)) + (extraLiquidity ?? 0)
-
-  if (unmodifiedAnte < 1) throw new APIError(400, 'Ante must be at least 1')
+  const ante =
+    outcomeType === 'BOUNTIED_QUESTION' && totalBounty
+      ? totalBounty
+      : getAnte(outcomeType, numAnswers, liquidityTier)
+  const totalMarketCost = ante + (extraLiquidity ?? 0)
+  if (ante < 1) throw new APIError(400, 'Ante must be at least 1')
 
   const closeTime = await getCloseTimestamp(
     closeTimeRaw,
@@ -150,14 +151,6 @@ export async function createMarketHelper(body: Body, auth: AuthedUser) {
 
   if (closeTime && closeTime < Date.now())
     throw new APIError(400, 'Question must close in the future')
-
-  const totalMarketCost = marketTier
-    ? getTieredCost(unmodifiedAnte, marketTier, outcomeType)
-    : unmodifiedAnte
-  const ante =
-    outcomeType === 'MULTIPLE_CHOICE' && !shouldAnswersSumToOne
-      ? totalMarketCost
-      : Math.min(unmodifiedAnte, totalMarketCost)
 
   const duplicateSubmissionUrl = await getDuplicateSubmissionUrl(
     idempotencyKey,
@@ -219,7 +212,6 @@ export async function createMarketHelper(body: Body, auth: AuthedUser) {
           addAnswersMode,
           shouldAnswersSumToOne,
           isAutoBounty,
-          marketTier,
           token: 'MANA',
           sportsStartTimestamp,
           sportsEventId,
@@ -331,7 +323,8 @@ function validateMarketBody(body: Body) {
     visibility = 'public',
     isTwitchContract,
     utcOffset,
-    marketTier,
+    extraLiquidity,
+    liquidityTier,
     idempotencyKey,
     sportsStartTimestamp,
     sportsEventId,
@@ -355,13 +348,12 @@ function validateMarketBody(body: Body) {
     addAnswersMode: add_answers_mode | undefined,
     shouldAnswersSumToOne: boolean | undefined,
     totalBounty: number | undefined,
-    isAutoBounty: boolean | undefined,
-    extraLiquidity: number | undefined
+    isAutoBounty: boolean | undefined
 
   if (outcomeType === 'PSEUDO_NUMERIC') {
     const parsed = validateMarketType(outcomeType, createNumericSchema, body)
 
-    ;({ min, max, isLogScale, extraLiquidity } = parsed)
+    ;({ min, max, isLogScale } = parsed)
     const { initialValue } = parsed
 
     if (max - min <= 0.01)
@@ -386,7 +378,7 @@ function validateMarketBody(body: Body) {
   if (outcomeType === 'BINARY') {
     const parsed = validateMarketType(outcomeType, createBinarySchema, body)
 
-    ;({ initialProb, extraLiquidity } = parsed)
+    ;({ initialProb } = parsed)
   }
   if (outcomeType === 'NUMBER') {
     if (!MULTI_NUMERIC_CREATION_ENABLED)
@@ -421,7 +413,6 @@ function validateMarketBody(body: Body) {
       answerImageUrls,
       addAnswersMode,
       shouldAnswersSumToOne,
-      extraLiquidity,
     } = validateMarketType(outcomeType, createMultiSchema, body))
     if (answers.length < 2 && addAnswersMode === 'DISABLED')
       throw new APIError(
@@ -464,7 +455,7 @@ function validateMarketBody(body: Body) {
     shouldAnswersSumToOne,
     totalBounty,
     isAutoBounty,
-    marketTier,
+    liquidityTier,
     idempotencyKey,
     sportsStartTimestamp,
     sportsEventId,

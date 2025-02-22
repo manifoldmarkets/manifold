@@ -1,14 +1,8 @@
 import { ChevronDownIcon, XCircleIcon } from '@heroicons/react/solid'
 import clsx from 'clsx'
-import { MarketTierType, TierParamsType, tiers } from 'common/tier'
 import { ReactNode } from 'react'
-import {
-  CrystalTier,
-  PlusTier,
-  PremiumTier,
-} from 'web/public/custom-components/tiers'
+
 import { Row } from '../layout/row'
-import CheckedDropdownMenu from '../widgets/checked-dropdown'
 import {
   FILTERS,
   FOR_YOU_KEY,
@@ -88,79 +82,6 @@ export function AdditionalFilterPill(props: {
         <XCircleIcon className="h-4 w-4 " />
       </button>
     </Row>
-  )
-}
-
-export function TierDropdownPill(props: {
-  toggleTier: (tier: MarketTierType) => void
-  currentTiers: TierParamsType
-}) {
-  const { toggleTier, currentTiers } = props
-  return (
-    <CheckedDropdownMenu
-      withinOverflowContainer
-      items={[
-        {
-          name: 'Crystal',
-          content: (
-            <Row className="items-center text-sm">
-              <CrystalTier />
-              <div className="bg-gradient-to-r from-pink-700 to-pink-500 bg-clip-text text-transparent dark:from-pink-400 dark:to-pink-300">
-                Crystal
-              </div>
-            </Row>
-          ),
-          onToggle: () => toggleTier('crystal'),
-          checked: currentTiers[tiers.indexOf('crystal')] == '1',
-        },
-        {
-          name: 'Premium',
-          content: (
-            <Row className="items-center text-sm text-purple-600 dark:text-purple-400">
-              <PremiumTier />
-              Premium
-            </Row>
-          ),
-          onToggle: () => toggleTier('premium'),
-          checked: currentTiers[tiers.indexOf('premium')] == '1',
-        },
-        {
-          name: 'Plus',
-          content: (
-            <Row className="items-center text-sm font-semibold text-blue-600 dark:text-blue-500">
-              <PlusTier />
-              Plus
-            </Row>
-          ),
-          onToggle: () => toggleTier('plus'),
-          checked: currentTiers[tiers.indexOf('plus')] == '1',
-        },
-      ]}
-      buttonContent={(open) => (
-        <DropdownPill
-          open={open}
-          color={currentTiers.includes('1') ? 'indigo' : 'light-gray'}
-        >
-          <Row className="h-5 items-center">
-            {currentTiers === '00000'
-              ? 'Tiers'
-              : currentTiers.split('').map((tier, index) => {
-                  if (tier === '1') {
-                    if (tiers[index] == 'plus') {
-                      return <PlusTier key={index} />
-                    }
-                    if (tiers[index] == 'premium') {
-                      return <PremiumTier key={index} />
-                    }
-                    if (tiers[index] == 'crystal') {
-                      return <CrystalTier key={index} />
-                    }
-                  }
-                })}
-          </Row>
-        </DropdownPill>
-      )}
-    />
   )
 }
 

@@ -2,7 +2,7 @@ import { ChevronDownIcon, XCircleIcon } from '@heroicons/react/solid'
 import clsx from 'clsx'
 import { MultiSort } from 'common/answer'
 import { MultiContract, SORTS } from 'common/contract'
-import { getTieredAnswerCost, getTierFromLiquidity } from 'common/tier'
+import { getAnswerCostFromLiquidity } from 'common/tier'
 import { useLayoutEffect, useRef, useState } from 'react'
 import { FaSearch, FaSearchPlus } from 'react-icons/fa'
 import { api } from 'web/lib/api/api'
@@ -143,12 +143,9 @@ export function SearchCreateAnswerPanel(props: {
                   <span className="font-semibold">Add</span>
                   <span className="text-ink-200 dark:text-ink-800 ml-1">
                     <MoneyDisplay
-                      amount={getTieredAnswerCost(
-                        contract.marketTier ??
-                          getTierFromLiquidity(
-                            contract,
-                            contract.totalLiquidity
-                          )
+                      amount={getAnswerCostFromLiquidity(
+                        contract.totalLiquidity,
+                        contract.answers.length
                       )}
                       isCashContract={isCashContract}
                     />
