@@ -44,7 +44,6 @@ const search = async (
     topicSlug: possibleTopicSlug,
     forYou,
     creatorId,
-    marketTier,
     token,
     gids: groupIds,
   } = props
