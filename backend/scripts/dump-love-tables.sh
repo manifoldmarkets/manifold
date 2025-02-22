@@ -1,6 +1,12 @@
 #!/bin/bash
 
-pg_dump -U postgres -d manifold \
+local PGPASSWORD=$SUPABASE_PASSWORD
+local DB_NAME = "db.$SUPABASE_INSTANCE_ID.supabase.co"
+
+# Connect to the database and initialize tables
+psql -U postgres -d $DB_NAME -p 5432 -w -f ./dump-lovers-temp.sql
+
+pg_dump -U postgres -d $DB_NAME -p 5432 -w -f ./gen-love-dump.sql \
   -t lovers \
   -t love_answers \
   -t love_compatability_answers \
@@ -10,6 +16,8 @@ pg_dump -U postgres -d manifold \
   -t love_waitlist \
   -t private_user_channels \
   -t private_user_seen_message_channels \
+  -t temp_users \
+  -t temp_love_messages \
   --function firebase_uid \
   --function get_average_rating \
   --function get_compatibility_questions_with_answer_count \
