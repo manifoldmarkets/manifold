@@ -39,14 +39,7 @@ async function fetchUpcomingSportsGamesForLeague(
     const data = await response.json()
     const schedule = data?.schedule
     if (schedule && Array.isArray(schedule)) {
-      const today = new Date()
-      const oneWeekLater = new Date()
-      oneWeekLater.setDate(today.getDate() + 7)
-
-      return schedule.filter((sportsGame: SportsGames) => {
-        const sportsGameDate = new Date(sportsGame.dateEvent)
-        return sportsGameDate >= today && sportsGameDate <= oneWeekLater
-      })
+      return schedule
     } else {
       console.log(`No sports games found for league ${leagueId}.`)
       return []
@@ -80,7 +73,7 @@ async function fetchUpcomingSportsGames() {
 
     const flattenedSportsGames = allSportsGames.flat()
     if (flattenedSportsGames.length === 0) {
-      console.log('No sports games found for the next week across all leagues.')
+      console.log('No sports games found across all leagues.')
       return
     }
 
