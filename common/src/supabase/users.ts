@@ -1,5 +1,5 @@
 import { removeUndefinedProps } from 'common/util/object'
-import { Row, run, SupabaseClient } from './utils'
+import { Row, run, SupabaseClient, tsToMillis } from './utils'
 import { PrivateUser, User } from 'common/user'
 
 export async function getUserForStaticProps(
@@ -34,6 +34,7 @@ export function convertUser(row: Row<'users'> | null): User | null {
     isBannedFromPosting:
       'isBannedFromPosting' in row ? row.isBannedFromPosting : undefined,
     ...(row.data as any),
+    createdTime: tsToMillis(row.created_time),
     id: row.id,
     username: row.username,
     name: row.name,
