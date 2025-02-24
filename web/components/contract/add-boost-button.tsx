@@ -141,7 +141,6 @@ function BoostPurchaseModal(props: {
             >
               Pay {formatMoney(BOOST_COST_MANA)}
             </Button>
-
             <Button
               color="indigo"
               onClick={() => purchaseBoost('cash')}
@@ -152,7 +151,6 @@ function BoostPurchaseModal(props: {
               Pay {formatMoney(BOOST_COST_CASH)}
             </Button>
           </Row>
-
           {notEnoughFunds && (
             <div className="text-ink-600 flex items-center gap-2 text-sm">
               <span className="text-error">Insufficient balance</span>
