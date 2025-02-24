@@ -36,7 +36,6 @@ create table if not exists
     resolution_probability numeric,
     resolution_time timestamp with time zone,
     slug text,
-    tier text,
     token text default 'MANA'::character varying not null constraint contracts_token_check check (
       (
         token = any (
@@ -76,7 +75,6 @@ begin
   new.mechanism := (new.data) ->> 'mechanism';
   new.outcome_type := (new.data) ->> 'outcomeType';
   new.unique_bettor_count := ((new.data) -> 'uniqueBettorCount')::bigint;
-  new.tier := (new.data) ->> 'marketTier';
   new.created_time := case
       when new.data ? 'createdTime' then millis_to_ts(((new.data) ->> 'createdTime')::bigint)
       else null
@@ -229,10 +227,6 @@ create index contracts_volume_24_hours on public.contracts using btree (
 drop index if exists description_fts;
 
 create index description_fts on public.contracts using gin (description_fts);
-
-drop index if exists market_token_tier_idx;
-
-create index market_token_tier_idx on public.contracts using btree (token, tier);
 
 drop index if exists question_fts;
 
