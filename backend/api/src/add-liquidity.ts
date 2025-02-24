@@ -7,7 +7,6 @@ import { getContract, getUser } from 'shared/utils'
 import { onCreateLiquidityProvision } from './on-update-liquidity-provision'
 import { insertLiquidity } from 'shared/supabase/liquidity'
 import { convertLiquidity } from 'common/supabase/liquidity'
-import { getTierFromLiquidity } from 'common/tier'
 import { FieldVal } from 'shared/supabase/utils'
 import { updateContract } from 'shared/supabase/contracts'
 
@@ -68,10 +67,6 @@ export const addContractLiquidity = async (
     await updateContract(tx, contractId, {
       subsidyPool: FieldVal.increment(subsidyAmount),
       totalLiquidity: FieldVal.increment(subsidyAmount),
-      marketTier: getTierFromLiquidity(
-        contract,
-        contract.totalLiquidity + subsidyAmount
-      ),
     })
 
     return {

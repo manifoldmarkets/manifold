@@ -46,7 +46,7 @@ If a market doesn't exist... [Create a market yourself!](https://manifold.market
 
 ### What is mana (M)?
 
-Mana (M) is the play-money currency used to bet on Manifold Markets. It **cannot be converted to cash**. All users start with M200 for free.
+Mana (M) is the play-money currency used to bet on Manifold Markets. It **cannot be converted to cash**. All users start with M1000 for free.
 
 Mana can be used to create, subsidise, and promote markets on your own questions.
 
@@ -63,7 +63,7 @@ Mana can be earned by making correct predictions, successful trades, creating po
   Quests provide specific incentives to engage with Manifold Markets in different ways.
 
 **Daily prediction streaks** -
-There is a daily quest to bet, which gives a reward of M10. For each consecutive day you bet, this is increased in increments of M5 up to a maximum of M25 per day. Your daily betting streak can be viewed at the top right of your profile page.
+There is a daily quest to bet, which gives a reward of M5. For each consecutive day you bet, this is increased in increments of M5 up to a maximum of M25 per day. Your daily betting streak can be viewed at the top right of your profile page.
 
 You can find all other available quests by navigating to your profile page and clicking on the streak button.
 
@@ -283,9 +283,9 @@ The liquidity in a market is the amount of capital available for traders to trad
 
 ### What are loans?
 
-Loans are deprecated. Here's how it used to work:
+Here's how they work:
 
-Every day at midnight PT, you'd get 4% of your total bet amount back as a loan. If your bet has depreciated in value, you will get 4% of the lower value. You can see how much your last loan was by navigating to your Notifications and then Balance changes tab.
+Every day at midnight PT, you'd get 1.5% of your total bet amount back as a loan. If your bet has depreciated in value, you will get 1.5% of the lower value. You can see how much your last loan was by navigating to your Notifications and then Balance changes tab.
 
 - **Do I have to pay back a loan?**
   Yes, but don't worry! You will automatically pay back loans when the market resolves or you sell your bet. If this causes your balance to go negative then you will have to free up some mana before you can start trading again.
@@ -298,8 +298,8 @@ Every day at midnight PT, you'd get 4% of your total bet amount back as a loan. 
   It's possible, but very rare.
 
 - **What is an example?**
-  If you bet M1000 today, you will get M40 back tomorrow.
-  Previous loans count against your total bet amount. So on the next day, you would get back 4% of M(1000 - 40) = M38.4.
+  If you bet M1000 today, you will get M15 back tomorrow.
+  Previous loans count against your total bet amount. So on the next day, you would get back 1.5% of M(1000 - 15) = M14.775.
 
 ## Misc
 

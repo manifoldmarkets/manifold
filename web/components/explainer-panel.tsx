@@ -1,20 +1,17 @@
 import { ChevronDoubleDownIcon } from '@heroicons/react/solid'
 import clsx from 'clsx'
-import { CHARITY_FEE, SWEEPIES_NAME, TRADING_TERM } from 'common/envs/constants'
-import Link from 'next/link'
+import { ENV_CONFIG, TRADING_TERM } from 'common/envs/constants'
 import React from 'react'
 import { GoGraph } from 'react-icons/go'
 import { TbTargetArrow } from 'react-icons/tb'
 import { track } from 'web/lib/service/analytics'
-import { SweepiesCoin } from 'web/public/custom-components/sweepiesCoin'
 import { AboutManifold } from './about-manifold'
 import { Col } from './layout/col'
 import { Row } from './layout/row'
 import { Card } from './widgets/card'
 
-import { GiTakeMyMoney } from 'react-icons/gi'
 import { ManaCoin } from 'web/public/custom-components/manaCoin'
-import { TokenNumber } from './widgets/token-number'
+import { formatMoney } from 'common/util/format'
 
 export const ExplainerPanel = (props: {
   className?: string
@@ -26,10 +23,10 @@ export const ExplainerPanel = (props: {
     track('explainer section click', { sectionTitle })
   }
   return (
-    <Col className={clsx(className)}>
+    <Col className={clsx('max-w-xl', className)}>
       {showWhatIsManifold && <WhatIsManifold onClick={handleSectionClick} />}
       {showAccuracy && <Accuracy onClick={handleSectionClick} />}
-      {/* TODO: Add a mana section */}
+      <PlayMoney onClick={handleSectionClick} />
     </Col>
   )
 }
@@ -115,7 +112,7 @@ const Accuracy = ({ onClick }: { onClick: (sectionTitle: string) => void }) => (
   </ExpandSection>
 )
 
-const Sweepstakes = ({
+const PlayMoney = ({
   onClick,
 }: {
   onClick: (sectionTitle: string) => void
@@ -123,38 +120,21 @@ const Sweepstakes = ({
   <ExpandSection
     title={
       <>
-        <GiTakeMyMoney className="mr-2" /> How do I win cash prizes?
+        <ManaCoin className="!mr-2 h-4 w-4 grayscale" />
+        Why use play money?
       </>
     }
-    onClick={() => onClick('Are our forecasts accurate?')}
+    onClick={() => onClick('Why play money?')}
   >
     <div className="pb-2">
-      Manifold offers two market types: play money and sweepstakes.
+      Mana ({ENV_CONFIG.moneyMoniker}) is the play-money currency used to bet on
+      Manifold. It cannot be converted to cash. All users start with{' '}
+      {formatMoney(1000)} for free.
     </div>
     <div className="pb-2">
-      All questions include a play money market which uses mana <ManaCoin /> and
-      can't be cashed out.
+      Play money means it's much easier for anyone anywhere in the world to get
+      started and try out forecasting without any risk. It also means there's
+      more freedom to create and bet on any type of question.
     </div>
-    <div className="pb-2">
-      Selected markets will have a sweepstakes toggle. These require sweepcash{' '}
-      <SweepiesCoin />
-      &nbsp;to participate and winners can withdraw sweepcash as a cash prize.
-      You can filter for sweepstakes markets on the browse page.
-    </div>
-    <div className="pb-2">
-      Redeem your {SWEEPIES_NAME} won from markets at{' '}
-      <b>
-        <TokenNumber amount={1} coinType="sweepies" isInline={true} /> {'→'}{' '}
-        $1.00
-      </b>
-      , minus a {CHARITY_FEE * 100}% fee.
-    </div>
-
-    <Link
-      href="https://docs.manifold.markets/sweepstakes"
-      className="hover:text-primary-700 text-primary-600 hover:underline"
-    >
-      Learn more.
-    </Link>
   </ExpandSection>
 )

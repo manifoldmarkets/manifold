@@ -1,36 +1,28 @@
 import { OutcomeType } from 'common/contract'
+import { answerCostTiers, liquidityTiers } from './tier'
 
 export const DEFAULT_CASH_ANTE = 50
-
-export const FIXED_ANTE = 1000
-export const BASE_ANSWER_COST = FIXED_ANTE / 10
-export const MIN_ANSWER_COST = 25
-const ANTES = {
-  BINARY: FIXED_ANTE,
-  MULTIPLE_CHOICE: BASE_ANSWER_COST, // Amount per answer.
-  FREE_RESPONSE: BASE_ANSWER_COST, // Amount per answer.
-  PSEUDO_NUMERIC: FIXED_ANTE * 2.5,
-  STONK: FIXED_ANTE,
-  BOUNTIED_QUESTION: 0,
-  POLL: FIXED_ANTE / 10,
-  NUMBER: FIXED_ANTE * 10,
-  MULTI_NUMERIC: BASE_ANSWER_COST,
-}
-
 export const MINIMUM_BOUNTY = 1000
-export const MULTIPLE_CHOICE_MINIMUM_COST = 1000
 
 export const getAnte = (
   outcomeType: OutcomeType,
-  numAnswers: number | undefined
+  numAnswers: number | undefined,
+  liquidityTier: number // this could be 100, 1000, 10000, 100000 (aka tiers)
 ) => {
-  const ante = ANTES[outcomeType as keyof typeof ANTES] ?? FIXED_ANTE
-
-  if (outcomeType === 'MULTIPLE_CHOICE') {
-    return Math.max(ante * (numAnswers ?? 0), MULTIPLE_CHOICE_MINIMUM_COST)
+  if (outcomeType === 'POLL') {
+    return 10
   }
 
-  return ante
+  if (outcomeType === 'MULTIPLE_CHOICE') {
+    const tierIndex =
+      liquidityTiers.findIndex((tier) => tier >= liquidityTier) ??
+      liquidityTiers[liquidityTiers.length - 1]
+    return numAnswers
+      ? Math.max(numAnswers * answerCostTiers[tierIndex], liquidityTier)
+      : liquidityTiers[tierIndex]
+  }
+
+  return liquidityTier
 }
 
 /* Sweeps bonuses */

@@ -97,7 +97,6 @@ export async function getForYouMarkets(
     offset: 0,
     sort: 'score',
     isPrizeMarket: false,
-    marketTier: '00000',
     privateUser,
     token: 'ALL',
     threshold: 200,

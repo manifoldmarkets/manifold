@@ -1,17 +1,14 @@
 import clsx from 'clsx'
-import {
-  CHARITY_FEE,
-  NY_FL_CASHOUT_LIMIT,
-  SWEEPIES_NAME,
-} from 'common/envs/constants'
+import { NY_FL_CASHOUT_LIMIT, SWEEPIES_NAME } from 'common/envs/constants'
 import { User } from 'common/user'
-import { formatMoneyUSD, formatPercent } from 'common/util/format'
+import { formatMoneyUSD } from 'common/util/format'
 import { useState } from 'react'
 import { IoIosWarning } from 'react-icons/io'
 import { capitalize } from 'lodash'
 import { Col } from '../layout/col'
 import { Modal, MODAL_CLASS } from '../layout/modal'
 import { TokenNumber } from '../widgets/token-number'
+import { SWEEPIES_CASHOUT_FEE } from 'common/economy'
 
 export function CashoutLimitWarning(props: {
   user: User | null | undefined
@@ -60,11 +57,12 @@ export function CashoutLimitWarning(props: {
                 className="font-semibold text-amber-700 dark:text-amber-300"
                 isInline
               />{' '}
-              → <b>$1</b>, with a <b>{formatPercent(CHARITY_FEE)} fee</b>. To
-              receive the full {formatMoneyUSD(NY_FL_CASHOUT_LIMIT)} in cash
-              after the fee, you would need to redeem approximately{' '}
+              → <b>$1</b>, with a{' '}
+              <b>{formatMoneyUSD(SWEEPIES_CASHOUT_FEE)} fee</b>. To receive the
+              full {formatMoneyUSD(NY_FL_CASHOUT_LIMIT)} in cash after the fee,
+              you would need to redeem approximately{' '}
               <TokenNumber
-                amount={NY_FL_CASHOUT_LIMIT / (1 - CHARITY_FEE)}
+                amount={NY_FL_CASHOUT_LIMIT - SWEEPIES_CASHOUT_FEE}
                 coinType="CASH"
                 className="font-semibold text-amber-700 dark:text-amber-300"
                 isInline
@@ -77,7 +75,7 @@ export function CashoutLimitWarning(props: {
             <span>
               Any Sweepies exceeding this{' '}
               <TokenNumber
-                amount={NY_FL_CASHOUT_LIMIT / (1 - CHARITY_FEE)}
+                amount={NY_FL_CASHOUT_LIMIT - SWEEPIES_CASHOUT_FEE}
                 coinType="CASH"
                 className="font-semibold text-amber-700 dark:text-amber-300"
                 isInline
@@ -95,7 +93,7 @@ export function CashoutLimitWarning(props: {
               In multi-choice markets, the redemption limit applies separately
               to each answer. This means you can redeem up to{' '}
               <TokenNumber
-                amount={NY_FL_CASHOUT_LIMIT / (1 - CHARITY_FEE)}
+                amount={NY_FL_CASHOUT_LIMIT - SWEEPIES_CASHOUT_FEE}
                 coinType="CASH"
                 className="font-semibold text-amber-700 dark:text-amber-300"
                 isInline

@@ -17,8 +17,7 @@ import { SweepsToggle } from '../sweeps/sweeps-toggle'
 import { ColorType } from '../widgets/choices-toggle-group'
 import { TokenNumber } from '../widgets/token-number'
 import { PortfolioGraphNumber } from './portfolio-graph-number'
-import { ProfitWidget } from './profit-widget'
-import { PortfolioGraph, ProfitGraph, PortfolioMode } from './portfolio-graph'
+import { PortfolioGraph, PortfolioMode } from './portfolio-graph'
 import { getPortfolioValues } from '../portfolio-helpers'
 import { useSweepstakes } from '../sweepstakes-provider'
 import { SPICE_TO_MANA_CONVERSION_RATE } from 'common/envs/constants'
@@ -156,7 +155,6 @@ export const PortfolioValueSection = memo(
             graphContainerClassName
           )}
           portfolioGraphElement={noHistoryGraphElement}
-          profitGraphElement={noHistoryGraphElement}
           disabled={true}
           size={size}
           user={user}
@@ -227,7 +225,6 @@ export const PortfolioValueSection = memo(
       netCash: totalCashValue,
     }
 
-    // Add the latest portfolio data as the final point
     const updatedPortfolioHistory = portfolio
       ? [...portfolioHistory, portfolio]
       : portfolioHistory
@@ -259,20 +256,6 @@ export const PortfolioValueSection = memo(
             setPortfolioFocus={onSetPortfolioFocus}
           />
         )}
-        profitGraphElement={(width, height) => (
-          <ProfitGraph
-            prefersPlay={!!prefersPlay}
-            duration={currentTimePeriod}
-            portfolioHistory={updatedPortfolioHistory}
-            width={width}
-            height={height}
-            zoomParams={zoomParams}
-            hideXAxis={currentTimePeriod !== 'allTime' && isMobile}
-            firstProfit={firstProfit}
-            firstCashProfit={firstCashProfit}
-            updateGraphValues={updateGraphValues}
-          />
-        )}
         className={clsx(graphContainerClassName, !isMobile && 'mb-4')}
         size={size}
         portfolioValues={portfolioValues}
@@ -282,13 +265,13 @@ export const PortfolioValueSection = memo(
     )
   }
 )
+
 function TwombaPortfolioValueSkeleton(props: {
   currentTimePeriod: Period
   setCurrentTimePeriod: (timePeriod: Period) => void
   portfolioGraphElement:
     | ((width: number, height: number) => ReactNode)
     | undefined
-  profitGraphElement: ((width: number, height: number) => ReactNode) | undefined
   hideSwitcher?: boolean
   className?: string
   switcherColor?: ColorType
@@ -306,7 +289,6 @@ function TwombaPortfolioValueSkeleton(props: {
     currentTimePeriod,
     setCurrentTimePeriod,
     portfolioGraphElement,
-    profitGraphElement,
     hideSwitcher,
     switcherColor,
     disabled,
@@ -321,7 +303,9 @@ function TwombaPortfolioValueSkeleton(props: {
 
   function togglePortfolioFocus(toggleTo: PortfolioMode) {
     setPortfolioFocus(portfolioFocus === toggleTo ? 'all' : toggleTo)
+    setPortfolioFocus(portfolioFocus === toggleTo ? 'all' : toggleTo)
   }
+
   const currentUser = useUser()
   const sweepsState = useSweepstakes()
   const prefersPlay = hideSweepsToggle ? true : sweepsState.prefersPlay
@@ -409,6 +393,26 @@ function TwombaPortfolioValueSkeleton(props: {
                 )}
                 onClick={() => togglePortfolioFocus('investment')}
               />
+              <PortfolioGraphNumber
+                prefersPlay={prefersPlay}
+                numberType={'profit'}
+                descriptor="profit"
+                portfolioFocus={portfolioFocus}
+                displayedAmount={displayAmounts(
+                  graphValues.profit,
+                  prefersPlay
+                    ? portfolioValues?.profit
+                    : portfolioValues?.cashProfit
+                )}
+                className={clsx(
+                  portfolioFocus == 'profit'
+                    ? prefersPlay
+                      ? 'bg-violet-700 text-white'
+                      : 'bg-amber-700 text-white'
+                    : 'bg-canvas-50 text-ink-1000'
+                )}
+                onClick={() => togglePortfolioFocus('profit')}
+              />
             </Row>
           </Col>
           {portfolioGraphElement && (
@@ -422,57 +426,7 @@ function TwombaPortfolioValueSkeleton(props: {
             </SizedContainer>
           )}
         </Col>
-        <Col className="bg-canvas-0 w-full  rounded-lg p-4">
-          <Col className="items-start">
-            <span>
-              <TokenNumber
-                amount={displayAmounts(
-                  graphValues.profit,
-                  prefersPlay
-                    ? portfolioValues?.profit
-                    : portfolioValues?.cashProfit
-                )}
-                className={clsx(
-                  'text-ink-1000 text-3xl font-bold transition-all sm:text-4xl',
-                  (displayAmounts(
-                    graphValues.profit,
-                    prefersPlay
-                      ? portfolioValues?.profit
-                      : portfolioValues?.cashProfit
-                  ) ?? 0) < 0
-                    ? 'text-scarlet-500'
-                    : 'text-teal-500'
-                )}
-                isInline
-                coinClassName="top-[0.25rem] sm:top-[0.1rem]"
-                coinType={prefersPlay ? 'mana' : 'sweepies'}
-              />
-              <span
-                className={clsx(
-                  'text-ink-600 ml-1 whitespace-nowrap text-sm transition-all sm:ml-1.5 sm:text-base'
-                )}
-              >
-                profit
-              </span>
-            </span>
-            {/* TODO: make work for sweeps */}
-            {prefersPlay && currentUser?.id === user.id && (
-              <ProfitWidget user={user} />
-            )}
-          </Col>
-          {profitGraphElement && (
-            <SizedContainer
-              className={clsx(className, 'mt-2 h-[70px] sm:h-[80px]')}
-              style={{
-                paddingRight: Y_AXIS_MARGIN,
-              }}
-            >
-              {profitGraphElement}
-            </SizedContainer>
-          )}
-        </Col>
-
-        {!hideSwitcher && !!portfolioGraphElement && (
+        {!hideSwitcher && (
           <TimeRangePicker
             currentTimePeriod={currentTimePeriod}
             setCurrentTimePeriod={setCurrentTimePeriod}

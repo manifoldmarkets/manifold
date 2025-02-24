@@ -12,7 +12,6 @@ import { MINIMUM_BOUNTY } from 'common/economy'
 import { DOMAIN } from 'common/envs/constants'
 import { MAX_ID_LENGTH } from 'common/group'
 import { getMappedValue } from 'common/pseudo-numeric'
-import { MarketTierType, tiers } from 'common/tier'
 import { removeUndefinedProps } from 'common/util/object'
 import { richTextToString } from 'common/util/parse'
 import { z } from 'zod'
@@ -58,7 +57,6 @@ export type LiteMarket = {
   uniqueBettorCount: number
   lastUpdatedTime?: number
   lastBetTime?: number
-  marketTier?: MarketTierType
   sportsStartTimestamp?: string
   sportsEventId?: string
   sportsLeague?: string
@@ -120,7 +118,6 @@ export function toLiteMarket(contract: Contract): LiteMarket {
     loverUserId2,
     matchCreatorId,
     isLove,
-    marketTier,
     token,
     siblingContractId,
   } = contract
@@ -171,7 +168,6 @@ export function toLiteMarket(contract: Contract): LiteMarket {
     lastBetTime,
     lastCommentTime,
     ...numericValues,
-    marketTier,
     token,
     siblingContractId,
 
@@ -262,7 +258,6 @@ function augmentAnswerWithProbability(
 export const createBinarySchema = z.object({
   outcomeType: z.enum(['BINARY', 'STONK']),
   initialProb: z.number().min(1).max(99).optional(),
-  extraLiquidity: z.number().min(1).optional(),
 })
 
 export const createNumericSchema = z.object({
@@ -271,7 +266,6 @@ export const createNumericSchema = z.object({
   max: z.number().safe(),
   initialValue: z.number().safe(),
   isLogScale: z.boolean().optional(),
-  extraLiquidity: z.number().min(1).optional(),
 })
 
 export const createMultiSchema = z.object({
@@ -289,7 +283,6 @@ export const createMultiSchema = z.object({
     .enum(['DISABLED', 'ONLY_CREATOR', 'ANYONE'])
     .default('DISABLED'),
   shouldAnswersSumToOne: z.boolean().optional(),
-  extraLiquidity: z.number().min(1).optional(),
 })
 
 export const createNumberSchema = z.object({
@@ -340,7 +333,8 @@ export const createMarketProps = z
     visibility: z.enum(VISIBILITIES).default('public').optional(),
     isTwitchContract: z.boolean().optional(),
     utcOffset: z.number().optional(),
-    marketTier: z.enum(tiers).optional(),
+    extraLiquidity: z.number().min(1).optional(),
+    liquidityTier: z.number().min(0),
     idempotencyKey: z.string().regex(randomStringRegex).length(10).optional(),
     sportsStartTimestamp: z.string().optional(),
     sportsEventId: z.string().optional(),

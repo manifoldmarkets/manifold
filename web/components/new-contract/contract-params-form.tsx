@@ -6,7 +6,6 @@ import { generateJSON, JSONContent } from '@tiptap/core'
 import {
   add_answers_mode,
   Contract,
-  CREATEABLE_NON_PREDICTIVE_OUTCOME_TYPES,
   CreateableOutcomeType,
   MAX_DESCRIPTION_LENGTH,
   MAX_QUESTION_LENGTH,
@@ -67,10 +66,10 @@ import { SimilarContractsSection } from 'web/components/new-contract/similar-con
 import { MultiNumericRangeSection } from './multi-numeric-range-section'
 import { NumberRangeSection } from './number-range-section'
 import { getMultiNumericAnswerBucketRangeNames } from 'common/multi-numeric'
-import { getTieredCost, MarketTierType } from 'common/tier'
 import { randomString } from 'common/util/random'
 import { formatWithToken } from 'common/util/format'
 import { BiUndo } from 'react-icons/bi'
+import { liquidityTiers } from 'common/tier'
 
 export function ContractParamsForm(props: {
   creator: User
@@ -78,15 +77,11 @@ export function ContractParamsForm(props: {
   params?: Partial<NewQuestionParams>
 }) {
   const { creator, params, outcomeType } = props
-  const DEFAULT_TIER = CREATEABLE_NON_PREDICTIVE_OUTCOME_TYPES.includes(
-    outcomeType
-  )
-    ? undefined
-    : 'play'
 
-  const [marketTier, setMarketTier] = usePersistentLocalState<
-    MarketTierType | undefined
-  >(DEFAULT_TIER, 'market-tier')
+  const [liquidityTier, setLiquidityTier] = usePersistentLocalState<number>(
+    liquidityTiers[0],
+    'liquidity-tier'
+  )
 
   const paramsKey =
     (params?.q ?? '') +
@@ -250,8 +245,6 @@ export function ContractParamsForm(props: {
   const [dismissedSimilarContractTitles, setDismissedSimilarContractTitles] =
     usePersistentInMemoryState<string[]>([], dismissedSimilarContractsKey)
 
-  const ante = getAnte(outcomeType, numAnswers)
-
   const timeInMs = params?.closeTime ? Number(params.closeTime) : undefined
   const initDate = (timeInMs ? dayjs(timeInMs) : dayjs().add(7, 'day')).format(
     'YYYY-MM-DD'
@@ -288,11 +281,6 @@ export function ContractParamsForm(props: {
   )
 
   const { balance } = creator
-
-  const anteOrBounty =
-    outcomeType === 'BOUNTIED_QUESTION'
-      ? bountyAmount ?? defaultBountyAmount
-      : ante
 
   const closeTime = closeDate
     ? dayjs(`${closeDate}T${closeHoursMinutes}`).valueOf()
@@ -344,7 +332,7 @@ export function ContractParamsForm(props: {
     !shouldHaveCloseDate || (closeTime ?? Infinity) > Date.now()
 
   const isValidTopics = selectedGroups.length <= MAX_GROUPS_PER_MARKET
-
+  const ante = getAnte(outcomeType, numAnswers, liquidityTier)
   const numberOfBuckets = getMultiNumericAnswerBucketRangeNames(
     min ?? 0,
     max ?? 0,
@@ -352,10 +340,7 @@ export function ContractParamsForm(props: {
   ).length
   const isValid =
     isValidQuestion &&
-    ante !== undefined &&
-    ante !== null &&
-    // Disabled while it doesn't account for play tier (ante is 10x actual play cost)
-    // ante <= balance &&
+    ante <= balance &&
     isValidDate &&
     isValidTopics &&
     (outcomeType !== 'PSEUDO_NUMERIC' ||
@@ -471,7 +456,7 @@ export function ContractParamsForm(props: {
         isAutoBounty:
           outcomeType === 'BOUNTIED_QUESTION' ? isAutoBounty : undefined,
         precision,
-        marketTier,
+        liquidityTier,
         idempotencyKey,
         sportsStartTimestamp: params?.sportsStartTimestamp,
         sportsEventId: params?.sportsEventId,
@@ -791,10 +776,10 @@ export function ContractParamsForm(props: {
       </Row>
       <CostSection
         balance={balance}
-        baseCost={anteOrBounty}
+        numAnswers={numAnswers}
         outcomeType={outcomeType}
-        marketTier={marketTier}
-        setMarketTier={setMarketTier}
+        liquidityTier={liquidityTier}
+        setLiquidityTier={setLiquidityTier}
       />
       {errorText && <span className={'text-error'}>{errorText}</span>}
       <Button
@@ -815,7 +800,7 @@ export function ContractParamsForm(props: {
       >
         {submitState === 'EDITING'
           ? `Create question for ${formatWithToken({
-              amount: getTieredCost(anteOrBounty, marketTier, outcomeType),
+              amount: ante,
               short: true,
               token: 'M$',
             })}`

@@ -27,15 +27,12 @@ import { SidebarSignUpButton } from '../buttons/sign-up-button'
 import { ManifoldLogo } from './manifold-logo'
 import { ProfileSummary } from './profile-summary'
 import { NavItem, SidebarItem } from './sidebar-item'
-import { PrivateMessagesIcon } from 'web/components/messaging/messages-icon'
-import { AppRouterInstance } from 'next/dist/shared/lib/app-router-context.shared-runtime'
-import { DAY_MS } from 'common/util/time'
-import { useAdminOrMod } from 'web/hooks/use-admin'
 import { ReportsIcon } from '../reports-icon'
 import { AddFundsButton } from '../profile/add-funds-button'
 import { Col } from '../layout/col'
-// import { TbPigMoney } from 'react-icons/tb'
-// import { PiRobotBold } from 'react-icons/pi'
+import { DAY_MS } from 'common/util/time'
+import { useAdminOrMod } from 'web/hooks/use-admin'
+import { AppRouterInstance } from 'next/dist/shared/lib/app-router-context.shared-runtime'
 
 export default function Sidebar(props: {
   className?: string
@@ -147,47 +144,20 @@ const getDesktopNav = (
         icon: NotificationsIcon,
       },
       { name: 'Leagues', href: '/leagues', icon: TrophyIcon },
-
-      // {
-      //   name: 'AI',
-      //   href: '/ai',
-      //   icon: PiRobotBold,
-      // },
-      // {
-      //   name: 'TV',
-      //   href: '/tv',
-      //   icon: PiTelevisionSimpleBold,
-      // },
-      // { name: 'Refer a friend', href: '/referrals', icon: StarIcon },
-      {
-        name: 'Messages',
-        href: '/messages',
-        icon: PrivateMessagesIcon,
-      },
-
       options.isAdminOrMod && {
         name: 'Reports',
         href: '/reports',
         icon: ReportsIcon,
       }
-      // Disable for now.
-      // { name: 'Dashboards', href: '/dashboard', icon: TemplateIcon }
     )
 
   return buildArray(
     { name: 'Browse', href: '/', icon: SearchIcon },
-    // { name: 'News', href: '/news', icon: NewspaperIcon },
     { name: 'About', href: '/about', icon: QuestionMarkCircleIcon },
-    // {
-    //   name: 'Discord',
-    //   href: 'https://discord.gg/eHQBNBqXuh',
-    //   icon: ChatIcon,
-    // },
     { name: 'App', onClick: openDownloadApp, icon: DeviceMobileIcon }
   )
 }
 
-// No sidebar when signed out
 const getMobileNav = (
   toggleModal: () => void,
   options: { isNewUser: boolean; isLiveTV?: boolean; isAdminOrMod: boolean }
@@ -196,32 +166,6 @@ const getMobileNav = (
 
   return buildArray<NavItem>(
     { name: 'Leagues', href: '/leagues', icon: TrophyIcon },
-    // {
-    //   name: 'AI',
-    //   href: '/ai',
-    //   icon: PiRobotBold,
-    // },
-    {
-      name: 'Messages',
-      href: '/messages',
-      icon: PrivateMessagesIcon,
-    },
-    // {
-    //   name: 'TV',
-    //   href: '/tv',
-    //   icon: isLiveTV ? LiveTVIcon : PiTelevisionSimpleBold,
-    // },
-    // !isNewUser && {
-    //   name: 'Dashboards',
-    //   href: '/dashboard',
-    //   icon: TemplateIcon,
-    // },
-    // !isNewUser && {
-    //   name: 'Site activity',
-    //   href: '/live',
-    //   icon: LightningBoltIcon,
-    // },
-    // { name: 'Share with friends', href: '/referrals', icon: StarIcon }, // remove this and I will beat you — SG
     isAdminOrMod && {
       name: 'Reports',
       href: '/reports',

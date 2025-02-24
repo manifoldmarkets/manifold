@@ -40,6 +40,8 @@ import {
   useGroupedNotifications,
 } from 'client-common/hooks/use-notifications'
 import { usePersistentLocalState } from 'web/hooks/use-persistent-local-state'
+import { useUnseenPrivateMessageChannels } from 'web/hooks/use-private-messages'
+import { PrivateMessagesList } from '../components/messaging/private-messages-list'
 
 export default function NotificationsPage() {
   const privateUser = usePrivateUser()
@@ -63,9 +65,9 @@ export default function NotificationsPage() {
   return (
     <Page trackPageView={'notifications page'}>
       <div className="w-full">
+        {shouldShowBanner && <NotificationsAppBanner />}
         <Title className="hidden lg:block">Notifications</Title>
         <SEO title="Notifications" description="Manifold user notifications" />
-        {shouldShowBanner && <NotificationsAppBanner />}
         {privateUser && user && router.isReady ? (
           <NotificationsContent
             user={user}
@@ -121,6 +123,8 @@ function NotificationsContent(props: {
     groupedNewMarketNotifications?.filter((n) => !n.isSeen).length ?? 0
   )
 
+  const { unseenChannels } = useUnseenPrivateMessageChannels(false)
+
   return (
     <div className="relative mt-2 h-full w-full">
       {privateUser && (
@@ -128,9 +132,9 @@ function NotificationsContent(props: {
           trackingName={'notification tabs'}
           labelClassName={'relative pb-2 pt-1 '}
           className={'mb-0 sm:mb-2'}
-          onClick={(title) =>
-            title === 'Following' ? setNewMarketNotifsAsSeen(0) : null
-          }
+          onClick={(title) => {
+            if (title === 'Following') setNewMarketNotifsAsSeen(0)
+          }}
           labelsParentClassName={'gap-3'}
           tabs={[
             {
@@ -159,10 +163,24 @@ function NotificationsContent(props: {
                 <NotificationsList
                   groupedNotifications={groupedNewMarketNotifications}
                   emptyTitle={
-                    'You don’t have any new question notifications from followed users, yet. Try following some users to see more.'
+                    "You don't have any new question notifications from followed users, yet. Try following some users to see more."
                   }
                 />
               ),
+            },
+            {
+              title: 'Messages',
+              inlineTabIcon:
+                unseenChannels.length > 0 ? (
+                  <div
+                    className={
+                      'text-ink-0 bg-primary-400 ml-2 min-w-[15px] rounded-full px-2 text-xs'
+                    }
+                  >
+                    {unseenChannels.length}
+                  </div>
+                ) : undefined,
+              content: <PrivateMessagesList />,
             },
             {
               title: 'Mentions',
@@ -266,7 +284,6 @@ export function NotificationsList(props: {
   const isPageVisible = useIsPageVisible()
   const { isNative } = useNativeInfo()
 
-  // Mark all notifications as seen. Rerun as new notifications come in.
   useEffect(() => {
     if (!privateUser || !isPageVisible) return
     markAllNotifications({ seen: true })

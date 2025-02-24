@@ -237,9 +237,7 @@ export const BuyPanelBody = (props: {
 
   const user = useUser()
   const privateUser = usePrivateUser()
-  const marketTier =
-    contract.marketTier ??
-    getTierFromLiquidity(contract, contract.totalLiquidity)
+  const liquidityTier = getTierFromLiquidity(contract.totalLiquidity)
 
   const { unfilledBets: allUnfilledBets, balanceByUserId } =
     useUnfilledBetsAndBalanceByUserId(
@@ -265,9 +263,9 @@ export const BuyPanelBody = (props: {
   const isCashContract = contract.token === 'CASH'
 
   const quickAddButtonSize =
-    marketTier === 'play' ||
+    liquidityTier === 0 ||
     (contract.mechanism === 'cpmm-multi-1' &&
-      contract.marketTier === 'plus' &&
+      liquidityTier === 1 &&
       !contract.shouldAnswersSumToOne)
       ? 'small'
       : undefined

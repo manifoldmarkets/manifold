@@ -1,47 +1,17 @@
-import { useState } from 'react'
-import Link from 'next/link'
-import { MailIcon, NewspaperIcon } from '@heroicons/react/outline'
-import {
-  TbBrandAndroid,
-  TbBrandApple,
-  TbBrandDiscord,
-  TbBrandTwitter,
-} from 'react-icons/tb'
-
-import {
-  APPLE_APP_URL,
-  GOOGLE_PLAY_APP_URL,
-  TRADE_TERM,
-} from 'common/envs/constants'
-import { MobileAppsQRCodeDialog } from 'web/components/buttons/mobile-apps-qr-code-button'
+import { capitalize } from 'lodash'
+import { TRADE_TERM } from 'common/envs/constants'
 import { Col } from 'web/components/layout/col'
 import { Page } from 'web/components/layout/page'
 import { ManifoldLogo } from 'web/components/nav/manifold-logo'
 import { SEO } from 'web/components/SEO'
 import { Title } from 'web/components/widgets/title'
-import { useIsMobile } from 'web/hooks/use-is-mobile'
 import { useUser } from 'web/hooks/use-user'
 import { getNativePlatform } from 'web/lib/native/is-native'
-import { isIOS } from 'web/lib/util/device'
 import { LabCard } from './lab'
-import { capitalize } from 'lodash'
+import { Socials } from 'web/components/socials'
 
 export default function AboutPage() {
   const { isNative, platform } = getNativePlatform()
-
-  const isMobile = useIsMobile()
-  const [isModalOpen, setIsModalOpen] = useState(false)
-
-  const appCallback = isMobile
-    ? { href: isIOS() ? APPLE_APP_URL : GOOGLE_PLAY_APP_URL }
-    : ({
-        href: '#',
-        onClick: (e: any) => {
-          e.preventDefault()
-          setIsModalOpen(true)
-        },
-      } as { href: string }) // typechecker is dumb
-
   const user = useUser()
 
   return (
@@ -57,51 +27,7 @@ export default function AboutPage() {
         <Title className="hidden sm:flex">Sitemap</Title>
         <ManifoldLogo className="mb-4 flex sm:hidden" />
         <div className="mb-5">
-          <h2 className={'text-ink-600 text-xl'}>Socials</h2>
-
-          <MobileAppsQRCodeDialog
-            isModalOpen={isModalOpen}
-            setIsModalOpen={setIsModalOpen}
-          />
-
-          <div className="  mt-3 grid grid-cols-2  gap-2 sm:grid-cols-3 lg:grid-cols-6">
-            <SocialLink
-              Icon={TbBrandDiscord}
-              href="https://discord.com/invite/eHQBNBqXuh"
-              target="_blank"
-            >
-              Discord
-            </SocialLink>
-            <SocialLink
-              Icon={NewspaperIcon}
-              href="https://news.manifold.markets"
-              target="_blank"
-            >
-              Newsletter
-            </SocialLink>
-            <SocialLink
-              Icon={TbBrandTwitter}
-              href="https://twitter.com/ManifoldMarkets"
-              target="_blank"
-            >
-              Twitter
-            </SocialLink>
-            <SocialLink
-              Icon={MailIcon}
-              href="mailto:info@manifold.markets"
-              target="_blank"
-            >
-              Email
-            </SocialLink>
-            {!isNative && (
-              <SocialLink
-                Icon={!isMobile || isIOS() ? TbBrandApple : TbBrandAndroid}
-                {...appCallback}
-              >
-                Mobile App
-              </SocialLink>
-            )}
-          </div>
+          <Socials />
         </div>
 
         <div className="mb-3">
@@ -211,26 +137,5 @@ export default function AboutPage() {
         </div>
       </Col>
     </Page>
-  )
-}
-
-const SocialLink = (props: {
-  href: string
-  onClick?: () => void
-  Icon: any
-  children: React.ReactNode
-  target?: string
-}) => {
-  const { href, onClick, Icon, children, target } = props
-  return (
-    <Link
-      href={href}
-      onClick={onClick}
-      target={target}
-      className="bg-canvas-0 text-ink-800 hover:text-primary-800 hover:bg-primary-100 flex items-center justify-center gap-1.5 whitespace-nowrap rounded p-2 font-semibold transition-colors"
-    >
-      <Icon className="h-6 w-6" />
-      {children}
-    </Link>
   )
 }

@@ -3,8 +3,8 @@ import { Col } from '../layout/col'
 import { TokenNumber } from '../widgets/token-number'
 import { PortfolioMode } from './portfolio-graph'
 
-export function PortfolioGraphNumber(props: {
-  numberType: 'balance' | 'investment' | 'spice'
+export const PortfolioGraphNumber = (props: {
+  numberType: 'balance' | 'investment' | 'spice' | 'profit'
   descriptor: string
   portfolioFocus: PortfolioMode
   displayedAmount: number | undefined
@@ -12,7 +12,7 @@ export function PortfolioGraphNumber(props: {
   className?: string
   isSpice?: boolean
   prefersPlay?: boolean
-}) {
+}) => {
   const {
     portfolioFocus,
     numberType,

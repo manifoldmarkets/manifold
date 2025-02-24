@@ -6,6 +6,7 @@ export type PrivateMessageChannel = {
   notify_after_time: string
   created_time: string
   last_updated_time: string
+  last_message?: string
 }
 
 export const convertChatMessage = (row: Row<'private_user_messages'>) =>
