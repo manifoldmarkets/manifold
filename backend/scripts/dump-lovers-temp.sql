@@ -1,4 +1,6 @@
-create temporary table temp_users as
+drop table if exists temp_users;
+
+create table temp_users as
 SELECT 
   u.id,
   u.username,
@@ -28,7 +30,9 @@ FROM lovers l
 JOIN users u ON u.id = l.user_id
 LEFT JOIN private_users pu ON u.id = pu.id;
 
-create temporary table temp_love_messages as
+drop table if exists temp_love_messages;
+
+create table temp_love_messages as
 with love_channels as (
   select mc.*
   from private_user_message_channels mc
