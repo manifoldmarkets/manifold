@@ -1,15 +1,8 @@
 import { Placement } from '@floating-ui/react'
 import clsx from 'clsx'
 import { Contract } from 'common/contract'
-import { MarketTierType } from 'common/tier'
 import { formatWithToken, shortFormatNumber } from 'common/util/format'
-import { capitalize } from 'lodash'
-import {
-  CrystalTier,
-  PlayTier,
-  PlusTier,
-  PremiumTier,
-} from 'web/public/custom-components/tiers'
+
 import { Tooltip } from '../widgets/tooltip'
 import { GiWaterDrop } from 'react-icons/gi'
 
@@ -41,30 +34,4 @@ export function LiquidityTooltip(props: {
       {shortFormatNumber(amount)}
     </Tooltip>
   )
-}
-
-export function getPresentedTierName(tier: MarketTierType) {
-  if (tier == 'play') {
-    return 'Basic'
-  }
-
-  return capitalize(tier)
-}
-
-export function TierIcon(props: { tier: MarketTierType; className?: string }) {
-  const { tier, className } = props
-  if (tier == 'play') {
-    return <PlayTier className={className} />
-  }
-
-  if (tier == 'plus') {
-    return <PlusTier className={className} />
-  }
-  if (tier == 'premium') {
-    return <PremiumTier className={className} />
-  }
-  if (tier == 'crystal') {
-    return <CrystalTier className={className} />
-  }
-  return <></>
 }

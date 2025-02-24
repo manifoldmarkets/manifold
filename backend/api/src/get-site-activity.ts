@@ -11,7 +11,12 @@ import { convertContractComment } from 'common/supabase/comments'
 export const getSiteActivity: APIHandler<'get-site-activity'> = async (
   props
 ) => {
-  const { limit, offset = 0, blockedGroupSlugs = [], blockedContractIds = [] } = props
+  const {
+    limit,
+    offset = 0,
+    blockedGroupSlugs = [],
+    blockedContractIds = [],
+  } = props
   log('getSiteActivity called', { limit })
 
   const blockedUserIds = [
@@ -68,7 +73,6 @@ export const getSiteActivity: APIHandler<'get-site-activity'> = async (
       pg.manyOrNone(
         `select * from contracts
        where visibility = 'public'
-       and tier != 'play'
        and creator_id != all($1)
        and id != all($2)
        and not exists (

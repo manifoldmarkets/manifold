@@ -14,7 +14,6 @@ import { convertContract } from 'common/supabase/contracts'
 import { log } from 'shared/utils'
 import { toLiteMarket } from 'common/api/market-types'
 import { searchProps } from 'common/api/market-search-types'
-import { TierParamsType } from 'common/tier'
 
 export const searchMarketsLite: APIHandler<'search-markets'> = async (
   props,
@@ -45,7 +44,6 @@ const search = async (
     topicSlug: possibleTopicSlug,
     forYou,
     creatorId,
-    marketTier,
     token,
     gids: groupIds,
   } = props
@@ -82,7 +80,6 @@ const search = async (
           offset,
           sort,
           isPrizeMarket,
-          marketTier as TierParamsType,
           token,
           undefined,
           creatorId
@@ -100,7 +97,6 @@ const search = async (
         sort,
         isPrizeMarket,
         token,
-        marketTier: marketTier as TierParamsType,
       })
       return await pg.map(forYouSql, [term], (r) => convertContract(r))
     }
@@ -137,7 +133,6 @@ const search = async (
           isPrizeMarket,
           token,
           groupIds,
-          marketTier: marketTier as TierParamsType,
         })
       )
       .join(';')

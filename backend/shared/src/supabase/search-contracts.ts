@@ -24,7 +24,6 @@ import {
 import { contractColumnsToSelect, log } from 'shared/utils'
 import { PrivateUser } from 'common/user'
 import { GROUP_SCORE_PRIOR } from 'common/feed'
-import { MarketTierType, TierParamsType, tiers } from 'common/tier'
 import { tsToMillis } from 'common/supabase/utils'
 
 const DEFAULT_THRESHOLD = 1000
@@ -41,7 +40,6 @@ export async function getForYouSQL(items: {
   sort: 'score' | 'freshness-score'
   isPrizeMarket: boolean
   token: TokenInputType
-  marketTier: TierParamsType
   privateUser?: PrivateUser
   threshold?: number
 }) {
@@ -52,7 +50,6 @@ export async function getForYouSQL(items: {
     offset,
     sort,
     isPrizeMarket,
-    marketTier,
     privateUser,
     threshold = DEFAULT_THRESHOLD,
     token,
@@ -90,7 +87,6 @@ export async function getForYouSQL(items: {
       offset,
       sort,
       isPrizeMarket,
-      marketTier,
       token,
       privateUser
     )
@@ -128,7 +124,6 @@ export async function getForYouSQL(items: {
         uid: userId,
         hideStonks: true,
         isPrizeMarket,
-        marketTier,
         token,
       }),
       offset <= threshold / 2 &&
@@ -166,7 +161,6 @@ export const basicSearchSQL = (
   offset: number,
   sort: 'score' | 'freshness-score',
   isPrizeMarket: boolean,
-  marketTier: TierParamsType,
   token: TokenInputType,
   privateUser?: PrivateUser,
   creatorId?: string
@@ -182,7 +176,6 @@ export const basicSearchSQL = (
       uid: userId,
       hideStonks: true,
       isPrizeMarket,
-      marketTier,
       token,
       creatorId,
     }),
@@ -211,7 +204,6 @@ export function getSearchContractSQL(args: {
   isForYou?: boolean
   searchType: SearchTypes
   isPrizeMarket?: boolean
-  marketTier: TierParamsType
   token: TokenInputType
   groupIds?: string
 }) {
@@ -317,7 +309,6 @@ function getSearchContractWhereSQL(args: {
   hideLove?: boolean
   isPrizeMarket?: boolean
   token: TokenInputType
-  marketTier: TierParamsType
 }) {
   const {
     filter,
@@ -328,7 +319,6 @@ function getSearchContractWhereSQL(args: {
     hideStonks,
     hideLove,
     isPrizeMarket,
-    marketTier,
     token,
   } = args
   type FilterSQL = Record<string, string>
@@ -373,17 +363,6 @@ function getSearchContractWhereSQL(args: {
       ? `data->>'siblingContractId' is not null`
       : ''
 
-  const tierFilters = tiers
-    .map((tier: MarketTierType, index) =>
-      marketTier[index] === '1' ? `tier = '${tier}'` : ''
-    )
-    .filter(Boolean)
-
-  const combinedTierFilter =
-    tierFilters.length > 1
-      ? `(${tierFilters.join(' OR ')})`
-      : tierFilters[0] ?? ''
-
   return [
     where(filterSQL[filter]),
     where(stonkFilter),
@@ -395,7 +374,6 @@ function getSearchContractWhereSQL(args: {
     where(deletedFilter),
     where(isPrizeMarketFilter),
     where(tokenFilter),
-    where(combinedTierFilter),
   ]
 }
 

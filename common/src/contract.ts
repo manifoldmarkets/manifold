@@ -11,7 +11,6 @@ import { CASH_SUFFIX, ENV_CONFIG } from './envs/constants'
 import { Fees } from './fees'
 import { PollOption } from './poll-option'
 import { formatMoney, formatPercent } from './util/format'
-import { MarketTierType } from './tier'
 
 /************************************************
 
@@ -91,8 +90,6 @@ export type Contract<T extends AnyContractType = AnyContractType> = {
   isRanked?: boolean
 
   gptCommentSummary?: string
-
-  marketTier?: MarketTierType
 
   token: ContractToken
   siblingContractId?: string

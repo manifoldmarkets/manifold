@@ -30,7 +30,7 @@ import { ContractFilters } from './search/contract-filters'
 import { UserResults } from './search/user-results'
 import { BrowseTopicPills } from './topics/browse-topic-pills'
 import { LoadMoreUntilNotVisible } from 'web/components/widgets/visibility-observer'
-import { BinaryDigit, TierParamsType } from 'common/tier'
+import { BinaryDigit } from 'common/tier'
 import { useIsMobile } from 'web/hooks/use-is-mobile'
 import { Spacer } from './layout/spacer'
 import { useSweepstakes } from './sweepstakes-provider'
@@ -141,7 +141,6 @@ export type SearchParams = {
   [SEARCH_TYPE_KEY]: SearchType
   [PRIZE_MARKET_KEY]: BinaryDigit
   [FOR_YOU_KEY]: BinaryDigit
-  [MARKET_TIER_KEY]: TierParamsType
   [TOPIC_FILTER_KEY]: string
   [SWEEPIES_KEY]: '0' | '1' | '2'
   [GROUP_IDS_KEY]: string
@@ -600,7 +599,6 @@ export const useSearchResults = (props: {
         ct: contractType,
         p: isPrizeMarketString,
         fy: forYou,
-        mt: marketTier,
         tf: topicSlug,
         sw: sweepState,
         gids,
@@ -632,7 +630,6 @@ export const useSearchResults = (props: {
               topicSlug: topicSlug !== '' ? topicSlug : undefined,
               creatorId: additionalFilter?.creatorId,
               isPrizeMarket: isPrizeMarketString,
-              marketTier,
               forYou,
               token:
                 sweepState === '2'
@@ -743,7 +740,6 @@ export const useSearchQueryState = (props: {
   defaultSweepies?: '2' | '1' | '0'
   defaultForYou?: '1' | '0'
   useUrlParams?: boolean
-  defaultMarketTier?: TierParamsType
   defaultTopicFilter?: string
 }) => {
   const {
@@ -755,7 +751,6 @@ export const useSearchQueryState = (props: {
     useUrlParams,
     defaultPrizeMarket,
     defaultForYou,
-    defaultMarketTier,
     defaultTopicFilter,
     defaultSweepies,
   } = props
@@ -768,7 +763,6 @@ export const useSearchQueryState = (props: {
     [SEARCH_TYPE_KEY]: defaultSearchType,
     [PRIZE_MARKET_KEY]: defaultPrizeMarket ?? '0',
     [FOR_YOU_KEY]: defaultForYou ?? '0',
-    [MARKET_TIER_KEY]: defaultMarketTier ?? DEFAULT_TIER,
     [TOPIC_FILTER_KEY]: defaultTopicFilter ?? '',
     [SWEEPIES_KEY]: defaultSweepies ?? '0',
     [GROUP_IDS_KEY]: '',
