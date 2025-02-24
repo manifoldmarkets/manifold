@@ -30,6 +30,8 @@ FROM lovers l
 JOIN users u ON u.id = l.user_id
 LEFT JOIN private_users pu ON u.id = pu.id;
 
+alter table temp_users enable row level security;
+
 drop table if exists temp_love_messages;
 
 create table temp_love_messages as
@@ -48,4 +50,6 @@ select
   pum.*
 from love_channels lc
 left join private_user_messages pum
-on pum.channel_id = lc.id
+on pum.channel_id = lc.id;
+
+alter table temp_love_messages enable row level security;
