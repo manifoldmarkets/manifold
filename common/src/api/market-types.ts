@@ -294,8 +294,6 @@ export const createNumberSchema = z.object({
 
 export const createMultiNumericSchema = z.object({
   outcomeType: z.enum(['MULTI_NUMERIC']),
-  min: z.number().safe(),
-  max: z.number().safe(),
   answers: z.array(z.string().trim().min(1)).max(MAX_ANSWERS),
   midpoints: z.array(z.number().safe()).max(MAX_ANSWERS),
   shouldAnswersSumToOne: z.boolean().default(true),

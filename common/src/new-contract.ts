@@ -119,7 +119,7 @@ export function getNewContract(
     POLL: () => getPollProps(answers),
     NUMBER: () => getNumberProps(id, creator.id, min, max, answers, ante),
     MULTI_NUMERIC: () =>
-      getMultiNumericProps(id, creator.id, answers, ante, min, max, unit ?? ''),
+      getMultiNumericProps(id, creator.id, answers, ante, unit ?? ''),
   }[outcomeType]()
 
   const contract: Contract = removeUndefinedProps({
@@ -327,8 +327,6 @@ const getMultiNumericProps = (
   userId: string,
   answers: string[],
   ante: number,
-  min: number,
-  max: number,
   unit: string
 ) => {
   const answerObjects = createAnswers(
@@ -347,8 +345,6 @@ const getMultiNumericProps = (
     answers: answerObjects,
     totalLiquidity: ante,
     subsidyPool: 0,
-    min,
-    max,
     unit,
   }
 

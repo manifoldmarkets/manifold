@@ -406,14 +406,10 @@ function validateMarketBody(body: Body) {
   }
   if (outcomeType === 'MULTI_NUMERIC') {
     const {
-      min: minInput,
-      max: maxInput,
       answers: numericAnswers,
       midpoints,
       unit: unitInput,
     } = validateMarketType(outcomeType, createMultiNumericSchema, body)
-    if (minInput >= maxInput)
-      throw new APIError(400, 'Numeric markets must have min < max.')
     if (numericAnswers.length < 2)
       throw new APIError(
         400,
@@ -425,8 +421,6 @@ function validateMarketBody(body: Body) {
         'Number of answers must match number of midpoints.'
       )
     answers = numericAnswers
-    min = minInput
-    max = maxInput
     unit = unitInput
   }
 
