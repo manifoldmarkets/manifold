@@ -190,11 +190,15 @@ export const getFilledInNumberBetPoints = (
   const allUniqueCreatedTimes = new Set(
     Object.values(pointsByAnswerId).flatMap((a) => a.map((p) => p.x))
   )
+  const earliestCreatedTime = minBy(
+    Object.values(pointsByAnswerId).flatMap((a) => a.map((p) => p.x))
+  )
   const pointsByAns = {} as { [answerId: string]: { x: number; y: number }[] }
   subsetOfAnswers.forEach((ans) => {
     const startY = getInitialAnswerProbability(contract, ans)
-
-    const rawPoints = pointsByAnswerId[ans.id] ?? []
+    const rawPoints = pointsByAnswerId[ans.id] ?? [
+      { x: earliestCreatedTime, y: startY },
+    ]
     const uniqueAnswerCreatedTimes = new Set(rawPoints.map((a) => a.x))
     // Bc we sometimes don't create low prob bets, we need to fill in the gaps
     const missingTimes = Array.from(allUniqueCreatedTimes).filter(
