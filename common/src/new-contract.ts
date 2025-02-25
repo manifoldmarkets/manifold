@@ -345,7 +345,7 @@ const getMultiNumericProps = (
     contractId,
     userId,
     'DISABLED',
-    true,
+    shouldAnswersSumToOne,
     ante,
     answers,
     undefined,

@@ -33,7 +33,7 @@ import {
   AnnotateChartModal,
   ReadChartAnnotationModal,
 } from 'web/components/annotate-chart'
-import { DistributionChartTooltip } from 'web/components/charts/contract/multi-numeric'
+import { DistributionChartTooltip } from 'web/components/charts/contract/number'
 import { useEvent } from 'client-common/hooks/use-event'
 import { roundToNearestFive } from 'web/lib/util/roundToNearestFive'
 import {

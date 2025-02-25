@@ -5,9 +5,9 @@ import {
 import {
   CPMMMultiContract,
   Contract,
-  CPMMNumericContract,
   ContractParams,
   MultiNumeric,
+  MultiContract,
 } from 'common/contract'
 import { binAvg, maxMinBin, serializeMultiPoints } from 'common/chart'
 import {
@@ -89,11 +89,8 @@ export async function getContractParams(
   ])
 
   const multiPoints = isMulti
-    ? isNumber
-      ? getFilledInMultiNumericBetPoints(
-          groupBy(allBetPoints, 'answerId'),
-          contract
-        )
+    ? isNumber || contract.outcomeType === 'MULTI_NUMERIC'
+      ? getFilledInNumberBetPoints(groupBy(allBetPoints, 'answerId'), contract)
       : getMultiBetPoints(allBetPoints, contract)
     : {}
   const multiPointsString = mapValues(multiPoints, (v) => pointsToBase64(v))
@@ -178,9 +175,9 @@ export const getMultiBetPoints = (
 
   return serializeMultiPoints(pointsByAns)
 }
-export const getFilledInMultiNumericBetPoints = (
+export const getFilledInNumberBetPoints = (
   pointsByAnswerId: { [answerId: string]: { x: number; y: number }[] },
-  contract: CPMMNumericContract
+  contract: MultiContract
 ) => {
   const { answers } = contract
 

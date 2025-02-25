@@ -275,7 +275,9 @@ export const calculateBetResult = (
       expiresMillisAfter
     )
   } else if (
-    (outcomeType === 'MULTIPLE_CHOICE' || outcomeType === 'NUMBER') &&
+    (outcomeType === 'MULTIPLE_CHOICE' ||
+      outcomeType === 'NUMBER' ||
+      outcomeType === 'MULTI_NUMERIC') &&
     mechanism == 'cpmm-multi-1'
   ) {
     const { shouldAnswersSumToOne } = contract

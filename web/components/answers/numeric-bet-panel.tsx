@@ -294,7 +294,7 @@ export const NumericBetPanel = (props: {
               className={clsx('h-[150px] w-full pb-3 pr-6 sm:h-[200px]')}
             >
               {(w, h) => (
-                <MultiNumericDistributionChart
+                <NumberDistributionChart
                   newColor={NEW_GRAPH_COLOR}
                   contract={contract}
                   updatedContract={potentialContractState}
@@ -429,7 +429,7 @@ export const NumericBetPanel = (props: {
   )
 }
 
-export const MultiNumericDistributionChart = (props: {
+export const NumberDistributionChart = (props: {
   contract: CPMMNumericContract
   updatedContract?: CPMMNumericContract
   width: number

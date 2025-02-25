@@ -21,7 +21,7 @@ import { removeUndefinedProps } from 'common/util/object'
 import { debounce, find, groupBy, mapValues, sum, sumBy } from 'lodash'
 import { useMemo, useState } from 'react'
 import { toast } from 'react-hot-toast'
-import { MultiNumericDistributionChart } from 'web/components/answers/numeric-bet-panel'
+import { NumberDistributionChart } from 'web/components/answers/numeric-bet-panel'
 import { FeeDisplay } from 'web/components/bet/fees'
 import { Button, IconButton } from 'web/components/buttons/button'
 import { DiagonalPattern } from 'web/components/charts/generic-charts'
@@ -264,7 +264,7 @@ export const NumericSellPanel = (props: {
           className={clsx('h-[150px] w-full pb-3 pr-6 sm:h-[200px]')}
         >
           {(w, h) => (
-            <MultiNumericDistributionChart
+            <NumberDistributionChart
               newColor={NEW_GRAPH_COLOR}
               contract={contract}
               updatedContract={potentialContractState}

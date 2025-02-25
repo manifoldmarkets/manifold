@@ -621,7 +621,11 @@ const useBetData = (props: {
   const yourNewBets = newBets.filter((bet) => userId && bet.userId === userId)
 
   const betPoints = useMemo(() => {
-    if (outcomeType === 'MULTIPLE_CHOICE' || outcomeType === 'NUMBER') {
+    if (
+      outcomeType === 'MULTIPLE_CHOICE' ||
+      outcomeType === 'NUMBER' ||
+      outcomeType === 'MULTI_NUMERIC'
+    ) {
       const data = multiPointsString
         ? unserializeBase64Multi(multiPointsString)
         : {}
@@ -639,7 +643,6 @@ const useBetData = (props: {
       return [...points, ...newPoints] as HistoryPoint<Partial<Bet>>[]
     }
   }, [pointsString, newBets.length])
-
   return {
     bets,
     totalBets,

@@ -32,10 +32,10 @@ import { orderBy } from 'lodash'
 import { FaChartArea } from 'react-icons/fa'
 import { BinaryMultiAnswersPanel } from 'web/components/answers/binary-multi-answers-panel'
 import {
-  MultiNumericDistributionChart,
+  NumberDistributionChart,
   NumericBetPanel,
 } from 'web/components/answers/numeric-bet-panel'
-import { MultiNumericContractChart } from 'web/components/charts/contract/multi-numeric'
+import { NumberContractChart } from 'web/components/charts/contract/number'
 import { UserPositionSearchButton } from 'web/components/charts/user-position-search-button'
 import {
   BinaryResolutionOrChance,
@@ -80,6 +80,7 @@ import { AlertBox } from '../widgets/alert-box'
 import { LoadingIndicator } from '../widgets/loading-indicator'
 import { GradientContainer } from '../widgets/gradient-container'
 import { getIsLive } from 'common/sports-info'
+import { MultiNumericContractChart } from '../charts/contract/multi-numeric'
 
 export const ContractOverview = memo(
   (props: {
@@ -144,7 +145,7 @@ export const ContractOverview = memo(
         return (
           <ChoiceOverview
             contract={contract}
-            points={betPoints as any}
+            points={betPoints as MultiPoints}
             showResolver={showResolver}
             setShowResolver={setShowResolver}
             resolutionRating={resolutionRating}
@@ -159,7 +160,7 @@ export const ContractOverview = memo(
         return (
           <MultiNumericOverview
             contract={contract}
-            points={betPoints as any}
+            points={betPoints as MultiPoints}
             showResolver={showResolver}
             setShowResolver={setShowResolver}
             resolutionRating={resolutionRating}
@@ -172,7 +173,7 @@ export const ContractOverview = memo(
         return (
           <NumberOverview
             contract={contract}
-            points={betPoints as any}
+            points={betPoints as MultiPoints}
             showResolver={showResolver}
             setShowResolver={setShowResolver}
             resolutionRating={resolutionRating}
@@ -615,7 +616,7 @@ const NumberOverview = (props: {
           {(w, h) => (
             <>
               <div className={clsx(!showDistribution ? 'hidden' : 'block')}>
-                <MultiNumericDistributionChart
+                <NumberDistributionChart
                   newColor={NEW_GRAPH_COLOR}
                   contract={contract}
                   width={w}
@@ -625,7 +626,7 @@ const NumberOverview = (props: {
               </div>
               {/*// The chart component must be instantiated for useZoom to work*/}
               <div className={clsx(showDistribution ? 'hidden' : 'block')}>
-                <MultiNumericContractChart
+                <NumberContractChart
                   width={w}
                   height={h}
                   multiPoints={points}
@@ -710,18 +711,6 @@ const MultiNumericOverview = (props: {
     defaultSort,
     'answer-sort' + contract.id
   )
-  const [showSetDefaultSort, setShowSetDefaultSort] = useState(false)
-  useEffect(() => {
-    if (
-      ((contract.sort && sort !== contract.sort) ||
-        (!contract.sort && sort !== defaultSort)) &&
-      currentUserId &&
-      (isModId(currentUserId) ||
-        isAdminId(currentUserId) ||
-        contract.creatorId === currentUserId)
-    )
-      setShowSetDefaultSort(true)
-  }, [sort, contract.sort])
 
   const {
     pointerMode,
@@ -767,7 +756,20 @@ const MultiNumericOverview = (props: {
           </Row>
         </>
       </Row>
-
+      <SizedContainer
+        className={clsx('mb-12 h-[150px] w-full pb-4 pr-10 sm:h-[200px]')}
+      >
+        {(w, h) => (
+          <MultiNumericContractChart
+            width={w}
+            height={h}
+            multiPoints={points}
+            zoomParams={zoomParams}
+            contract={contract}
+            showZoomer={showZoomer}
+          />
+        )}
+      </SizedContainer>
       {chartAnnotations?.length ? (
         <ChartAnnotations
           annotations={chartAnnotations}
@@ -795,6 +797,7 @@ const MultiNumericOverview = (props: {
         <>
           {resolutionRating}
           <AnswersPanel
+            hideSearch
             selectedAnswerIds={[]}
             contract={contract}
             onAnswerCommentClick={onAnswerCommentClick}
@@ -802,7 +805,6 @@ const MultiNumericOverview = (props: {
             setSort={setSort}
             query={query}
             setQuery={setQuery}
-            showSetDefaultSort={showSetDefaultSort}
           />
           {tradingAllowed(contract) && (
             <UserBetsSummary

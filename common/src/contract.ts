@@ -574,5 +574,4 @@ export const nativeContractColumnsArray = [
   'token',
   'boosted',
   'daily_score',
-  'popularity_score',
 ]
