@@ -18,14 +18,14 @@ import { toast } from 'react-hot-toast'
 import { isAndroid, isIOS } from 'web/lib/util/device'
 import {
   getRangeContainingValue,
-  formatExpectedValue,
-  getExpectedValue,
+  formatNumberExpectedValue,
+  getNumberExpectedValue,
   answerTextToRange,
   getExpectedValuesArray,
   NEW_GRAPH_COLOR,
   answerToRange,
   getPrecision,
-} from 'common/multi-numeric'
+} from 'common/src/number'
 import { calculateCpmmMultiArbitrageYesBets } from 'common/calculate-cpmm-arbitrage'
 import { QuickBetAmountsRow } from 'web/components/bet/bet-panel'
 import { scaleLinear } from 'd3-scale'
@@ -57,7 +57,9 @@ export const NumericBetPanel = (props: {
   } = props
   const contract = useLiveContract(props.contract)
   const { answers, min: minimum, max: maximum } = contract
-  const [expectedValue, setExpectedValue] = useState(getExpectedValue(contract))
+  const [expectedValue, setExpectedValue] = useState(
+    getNumberExpectedValue(contract)
+  )
   const [betAmount, setBetAmount] = useState<number | undefined>(10)
   const [range, setRange] = useState<[number, number]>([minimum, maximum])
   const [debouncedRange, setDebouncedRange] = useState<[number, number]>([
@@ -88,9 +90,9 @@ export const NumericBetPanel = (props: {
     ? `${range[0]} ≤ val < ${range[1]}`
     : mode === 'less than'
     ? `${capitalize(labels.lower)} than ` +
-      formatExpectedValue(range[1], contract)
+      formatNumberExpectedValue(range[1], contract)
     : mode === 'more than'
-    ? formatExpectedValue(range[0], contract) + ` or ${labels.higher}`
+    ? formatNumberExpectedValue(range[0], contract) + ` or ${labels.higher}`
     : `${range[0]} ≤ val < ${range[1]}`
 
   const modeColor =
@@ -168,7 +170,7 @@ export const NumericBetPanel = (props: {
   }
 
   const changeMode = (newMode: 'less than' | 'more than') => {
-    const newExpectedValue = getExpectedValue(contract)
+    const newExpectedValue = getNumberExpectedValue(contract)
     setExpectedValue(newExpectedValue)
     const midPointBucket = getRangeContainingValue(newExpectedValue, contract)
     if (newMode === 'less than') {
@@ -224,7 +226,9 @@ export const NumericBetPanel = (props: {
         (a) => find(updatedAnswers, (update) => update.id === a.id) ?? a
       ),
     }
-    const potentialExpectedValue = getExpectedValue(potentialContractState)
+    const potentialExpectedValue = getNumberExpectedValue(
+      potentialContractState
+    )
     // console.log('potentialPayout', potentialPayout)
 
     return {
@@ -391,7 +395,7 @@ export const NumericBetPanel = (props: {
               </Row>
               <Row className={'gap-1'}>
                 <span className={'text-ink-700'}>New expected value:</span>
-                {formatExpectedValue(potentialExpectedValue, contract)}
+                {formatNumberExpectedValue(potentialExpectedValue, contract)}
               </Row>
             </Col>
           </Row>

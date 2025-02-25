@@ -2,7 +2,7 @@ import clsx from 'clsx'
 import { DistributionPoint, HistoryPoint, Point, ValueKind } from 'common/chart'
 import { ChartPosition } from 'common/chart-position'
 import { CPMMNumericContract } from 'common/contract'
-import { getAnswerContainingValue, getPrecision } from 'common/multi-numeric'
+import { getAnswerContainingValue, getPrecision } from 'common/src/number'
 import { ChartAnnotation } from 'common/supabase/chart-annotations'
 import {
   formatMoneyNumber,

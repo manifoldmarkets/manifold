@@ -6,8 +6,8 @@ import { APIError, api } from 'web/lib/api/api'
 import { getAnswerProbability, getProbability } from 'common/calculate'
 import {
   BinaryContract,
-  CPMMMultiContract,
   Contract,
+  MultiContract,
   resolution,
 } from 'common/contract'
 import { BETTORS } from 'common/user'
@@ -221,7 +221,7 @@ export function ResolveHeader(props: {
 }
 
 export function MiniResolutionPanel(props: {
-  contract: CPMMMultiContract
+  contract: MultiContract
   answer: Answer
   isAdmin: boolean
   isCreator: boolean

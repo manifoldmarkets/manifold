@@ -6,7 +6,7 @@ import { useEffect, useState } from 'react'
 import {
   getMultiNumericAnswerBucketRangeNames,
   getMultiNumericAnswerBucketRanges,
-} from 'common/multi-numeric'
+} from 'common/src/number'
 import { usePersistentLocalState } from 'web/hooks/use-persistent-local-state'
 import { MULTI_NUMERIC_BUCKETS_MAX } from 'common/contract'
 import ShortToggle from 'web/components/widgets/short-toggle'

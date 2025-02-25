@@ -113,7 +113,7 @@ export function AnswersPanel(props: {
   query: string
   setQuery: (query: string) => void
   onAnswerCommentClick?: (answer: Answer) => void
-  onAnswerHover: (answer: Answer | undefined) => void
+  onAnswerHover?: (answer: Answer | undefined) => void
   onAnswerClick?: (answer: Answer) => void
   showSetDefaultSort?: boolean
   setDefaultAnswerIdsToGraph?: (ids: string[]) => void
@@ -140,7 +140,8 @@ export function AnswersPanel(props: {
   const addAnswersMode =
     'addAnswersMode' in contract ? contract.addAnswersMode : 'DISABLED'
 
-  const isMultipleChoice = outcomeType === 'MULTIPLE_CHOICE'
+  const isMultipleChoice =
+    outcomeType === 'MULTIPLE_CHOICE' || outcomeType === 'MULTI_NUMERIC'
 
   const answers = !isMultipleChoice
     ? []

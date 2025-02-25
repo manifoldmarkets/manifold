@@ -8,10 +8,10 @@ import { SingleValueHistoryChart } from '../generic-charts'
 import { SingleContractChartTooltip } from './single-value'
 import { map, zip } from 'd3-array'
 import {
-  formatExpectedValue,
-  getExpectedValue,
+  formatNumberExpectedValue,
+  getNumberExpectedValue,
   answerTextToMidpoint,
-} from 'common/multi-numeric'
+} from 'common/src/number'
 import { MultiPoints } from 'common/chart'
 import { getFilledInMultiNumericBetPoints } from 'common/contract-params'
 import { Row } from 'web/components/layout/row'
@@ -61,8 +61,8 @@ export const MultiNumericContractChart = (props: {
   const { min, max } = contract
   const start = contract.createdTime
   const end = getEndDate(contract)
-  const startP = getExpectedValue(contract, true)
-  const endP = getExpectedValue(contract)
+  const startP = getNumberExpectedValue(contract, true)
+  const endP = getNumberExpectedValue(contract)
   const stringifiedMultiPoints = JSON.stringify(multiPoints)
   const betPoints = useMemo(
     () => getBetPoints(contract, multiPoints),
@@ -93,7 +93,7 @@ export const MultiNumericContractChart = (props: {
         <SingleContractChartTooltip
           ttProps={props}
           xScale={zoomParams?.viewXScale ?? xScale}
-          formatY={(y) => formatExpectedValue(y, contract)}
+          formatY={(y) => formatNumberExpectedValue(y, contract)}
         />
       )}
       color={NUMERIC_GRAPH_COLOR}

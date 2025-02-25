@@ -14,6 +14,7 @@ import {
   CPMMNumericContract,
   Contract,
   MultiContract,
+  MultiNumericContract,
   PseudoNumericContract,
   StonkContract,
   getMainBinaryMCAnswer,
@@ -21,7 +22,7 @@ import {
   tradingAllowed,
 } from 'common/contract'
 import { isAdminId, isModId } from 'common/envs/constants'
-import { NEW_GRAPH_COLOR } from 'common/multi-numeric'
+import { NEW_GRAPH_COLOR } from 'common/src/number'
 import { Period, periodDurations } from 'common/period'
 import { type ChartAnnotation } from 'common/supabase/chart-annotations'
 import { User } from 'common/user'
@@ -39,6 +40,7 @@ import { UserPositionSearchButton } from 'web/components/charts/user-position-se
 import {
   BinaryResolutionOrChance,
   MultiNumericResolutionOrExpectation,
+  NumberResolutionOrExpectation,
   PseudoNumericResolutionOrExpectation,
   StonkPrice,
 } from 'web/components/contract/contract-price'
@@ -153,9 +155,22 @@ export const ContractOverview = memo(
             zoomY
           />
         )
-      case 'NUMBER':
+      case 'MULTI_NUMERIC':
         return (
           <MultiNumericOverview
+            contract={contract}
+            points={betPoints as any}
+            showResolver={showResolver}
+            setShowResolver={setShowResolver}
+            resolutionRating={resolutionRating}
+            onAnswerCommentClick={onAnswerCommentClick}
+            chartAnnotations={chartAnnotations}
+            zoomY
+          />
+        )
+      case 'NUMBER':
+        return (
+          <NumberOverview
             contract={contract}
             points={betPoints as any}
             showResolver={showResolver}
@@ -515,7 +530,7 @@ const ChoiceOverview = (props: {
     </>
   )
 }
-const MultiNumericOverview = (props: {
+const NumberOverview = (props: {
   points: MultiPoints
   contract: CPMMNumericContract
   showResolver: boolean
@@ -548,7 +563,7 @@ const MultiNumericOverview = (props: {
   return (
     <>
       <Row className="justify-between gap-2">
-        <MultiNumericResolutionOrExpectation contract={contract} />
+        <NumberResolutionOrExpectation contract={contract} />
         {resolutionRating}
         <Row className={'gap-1'}>
           {enableAdd && !showDistribution && (
@@ -649,6 +664,151 @@ const MultiNumericOverview = (props: {
                 includeSellButton={user}
               />
             </>
+          )}
+        </>
+      )}
+    </>
+  )
+}
+
+const MultiNumericOverview = (props: {
+  points: MultiPoints
+  contract: MultiNumericContract
+  showResolver: boolean
+  resolutionRating?: ReactNode
+  setShowResolver: (show: boolean) => void
+  onAnswerCommentClick: (answer: Answer) => void
+  chartAnnotations: ChartAnnotation[]
+  zoomY?: boolean
+}) => {
+  const {
+    points,
+    contract,
+    showResolver,
+    resolutionRating,
+    setShowResolver,
+    onAnswerCommentClick,
+    zoomY,
+  } = props
+
+  const currentUser = useUser()
+  const currentUserId = currentUser?.id
+  const [showZoomer, setShowZoomer] = useState(false)
+  const { currentTimePeriod, setTimePeriod, maxRange, zoomParams } =
+    useTimePicker(contract, () => setShowZoomer(true))
+
+  const shouldAnswersSumToOne =
+    'shouldAnswersSumToOne' in contract ? contract.shouldAnswersSumToOne : true
+
+  const [query, setQuery] = usePersistentInMemoryState(
+    '',
+    'create-answer-text' + contract.id
+  )
+
+  const defaultSort = getDefaultSort(contract)
+  const [sort, setSort] = usePersistentInMemoryState<MultiSort>(
+    defaultSort,
+    'answer-sort' + contract.id
+  )
+  const [showSetDefaultSort, setShowSetDefaultSort] = useState(false)
+  useEffect(() => {
+    if (
+      ((contract.sort && sort !== contract.sort) ||
+        (!contract.sort && sort !== defaultSort)) &&
+      currentUserId &&
+      (isModId(currentUserId) ||
+        isAdminId(currentUserId) ||
+        contract.creatorId === currentUserId)
+    )
+      setShowSetDefaultSort(true)
+  }, [sort, contract.sort])
+
+  const {
+    pointerMode,
+    setPointerMode,
+    hoveredAnnotation,
+    setHoveredAnnotation,
+    chartAnnotations,
+    enableAdd,
+  } = useAnnotateChartTools(contract, props.chartAnnotations)
+  const {
+    chartPositions,
+    setHoveredChartPosition,
+    hoveredChartPosition,
+    displayUser,
+    setDisplayUser,
+  } = useChartPositions(contract)
+  const contractPositionAnswerIds = chartPositions.map((cp) => cp.answerId)
+
+  return (
+    <>
+      <Row className="relative justify-between gap-2">
+        <MultiNumericResolutionOrExpectation contract={contract} />
+        <>
+          <Row className={'relative gap-1'}>
+            <UserPositionSearchButton
+              currentUser={currentUser}
+              displayUser={displayUser}
+              contract={contract}
+              setDisplayUser={setDisplayUser}
+            />
+            {enableAdd && (
+              <EditChartAnnotationsButton
+                pointerMode={pointerMode}
+                setPointerMode={setPointerMode}
+              />
+            )}
+            <TimeRangePicker
+              currentTimePeriod={currentTimePeriod}
+              setCurrentTimePeriod={setTimePeriod}
+              maxRange={maxRange}
+              color="indigo"
+            />
+          </Row>
+        </>
+      </Row>
+
+      {chartAnnotations?.length ? (
+        <ChartAnnotations
+          annotations={chartAnnotations}
+          hoveredAnnotation={hoveredAnnotation}
+          setHoveredAnnotation={setHoveredAnnotation}
+        />
+      ) : null}
+      {showResolver ? (
+        !shouldAnswersSumToOne && contract.mechanism === 'cpmm-multi-1' ? (
+          <GradientContainer>
+            <IndependentAnswersResolvePanel
+              contract={contract}
+              onClose={() => setShowResolver(false)}
+            />
+          </GradientContainer>
+        ) : (
+          <GradientContainer>
+            <AnswersResolvePanel
+              contract={contract}
+              onClose={() => setShowResolver(false)}
+            />
+          </GradientContainer>
+        )
+      ) : (
+        <>
+          {resolutionRating}
+          <AnswersPanel
+            selectedAnswerIds={[]}
+            contract={contract}
+            onAnswerCommentClick={onAnswerCommentClick}
+            sort={sort}
+            setSort={setSort}
+            query={query}
+            setQuery={setQuery}
+            showSetDefaultSort={showSetDefaultSort}
+          />
+          {tradingAllowed(contract) && (
+            <UserBetsSummary
+              className="border-ink-200 !mb-2 mt-2 "
+              contract={contract}
+            />
           )}
         </>
       )}

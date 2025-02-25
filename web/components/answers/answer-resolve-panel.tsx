@@ -1,11 +1,7 @@
 import { sortBy, sum } from 'lodash'
 import { useEffect, useState } from 'react'
 import clsx from 'clsx'
-import {
-  CPMMMultiContract,
-  CPMMNumericContract,
-  MultiContract,
-} from 'common/contract'
+import { MultiContract } from 'common/contract'
 import { Col } from '../layout/col'
 import { APIError, api } from 'web/lib/api/api'
 import { Row } from '../layout/row'
@@ -77,7 +73,7 @@ function getAnswerResolveButtonLabel(
 }
 
 function AnswersResolveOptions(props: {
-  contract: CPMMMultiContract | CPMMNumericContract
+  contract: MultiContract
   resolveOption: 'CHOOSE_ONE' | 'CHOOSE_MULTIPLE' | 'CANCEL'
   setResolveOption: (
     option: 'CHOOSE_ONE' | 'CHOOSE_MULTIPLE' | 'CANCEL'
@@ -211,7 +207,7 @@ function AnswersResolveOptions(props: {
 }
 
 export const AnswersResolvePanel = (props: {
-  contract: CPMMMultiContract | CPMMNumericContract
+  contract: MultiContract
   onClose: () => void
   inModal?: boolean
 }) => {
@@ -409,7 +405,7 @@ export function ResolutionAnswerItem(props: {
 }
 
 export const IndependentAnswersResolvePanel = (props: {
-  contract: CPMMMultiContract
+  contract: MultiContract
   onClose: () => void
 }) => {
   const { contract, onClose } = props
@@ -448,7 +444,7 @@ export const IndependentAnswersResolvePanel = (props: {
 }
 
 function IndependentResolutionAnswerItem(props: {
-  contract: CPMMMultiContract
+  contract: MultiContract
   answer: Answer
   color: string
   isAdmin: boolean

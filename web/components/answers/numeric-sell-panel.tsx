@@ -9,11 +9,11 @@ import {
   answerTextToRange,
   answerToMidpoint,
   answerToRange,
-  formatExpectedValue,
-  getExpectedValue,
+  formatNumberExpectedValue,
+  getNumberExpectedValue,
   getRangeContainingValues,
   NEW_GRAPH_COLOR,
-} from 'common/multi-numeric'
+} from 'common/src/number'
 import { NUMERIC_GRAPH_COLOR } from 'common/numeric-constants'
 import { filterDefined } from 'common/util/array'
 import { floatingEqual, floatingGreater } from 'common/util/math'
@@ -46,7 +46,7 @@ export const NumericSellPanel = (props: {
   const { contract, userBets, contractMetrics, cancel } = props
   const { answers, min: minimum, max: maximum } = contract
   const isCashContract = contract.token === 'CASH'
-  const expectedValue = getExpectedValue(contract)
+  const expectedValue = getNumberExpectedValue(contract)
   const userNonRedemptionBetsByAnswer = groupBy(
     userBets.filter((bet) => bet.shares !== 0),
     (bet) => bet.answerId
@@ -186,7 +186,9 @@ export const NumericSellPanel = (props: {
         (a) => find(updatedAnswers, (update) => update.id === a.id) ?? a
       ),
     }
-    const potentialExpectedValue = getExpectedValue(potentialContractState)
+    const potentialExpectedValue = getNumberExpectedValue(
+      potentialContractState
+    )
 
     return {
       loanPaid,
@@ -314,9 +316,9 @@ export const NumericSellPanel = (props: {
             <MoneyDisplay amount={profit} isCashContract={isCashContract} />
           </span>
           <div>
-            {formatExpectedValue(expectedValue, contract)}
+            {formatNumberExpectedValue(expectedValue, contract)}
             <span className="mx-2">→</span>
-            {formatExpectedValue(
+            {formatNumberExpectedValue(
               potentialExpectedValue,
               potentialContractState
             )}

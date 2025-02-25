@@ -26,7 +26,7 @@ import {
   boostedColumn,
 } from './contract-table-col-formats'
 import { UserHovercard } from '../user/user-hovercard'
-import { getFormattedExpectedValue } from 'common/multi-numeric'
+import { getFormattedExpectedValue } from 'common/src/number'
 import { removeEmojis } from 'common/util/string'
 import { track } from 'web/lib/service/analytics'
 import { Tooltip } from '../widgets/tooltip'

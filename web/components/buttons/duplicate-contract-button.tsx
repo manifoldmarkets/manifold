@@ -6,7 +6,7 @@ import { buttonClass } from './button'
 import Link from 'next/link'
 import { NewQuestionParams } from 'web/components/new-contract/new-contract-panel'
 import { getLinkTarget } from 'web/components/widgets/linkify'
-import { getPrecision } from 'common/multi-numeric'
+import { getPrecision } from 'common/src/number'
 
 export function DuplicateContractButton(props: { contract: Contract }) {
   const { contract } = props

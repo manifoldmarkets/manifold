@@ -58,7 +58,7 @@ import { generateAntes } from 'shared/create-contract-helpers'
 import { betsQueue } from 'shared/helpers/fn-queue'
 import { convertUser } from 'common/supabase/users'
 import { camelCase, first } from 'lodash'
-import { getMultiNumericAnswerBucketRangeNames } from 'common/multi-numeric'
+import { getMultiNumericAnswerBucketRangeNames } from 'common/number'
 type Body = ValidatedAPIParams<'market'>
 
 export const createMarket: APIHandler<'market'> = async (body, auth) => {
@@ -408,24 +408,21 @@ function validateMarketBody(body: Body) {
       )
   }
   if (outcomeType === 'MULTI_NUMERIC') {
-    const {
-      answers: numericAnswers,
-      midpoints: midpointsInput,
-      unit: unitInput,
-    } = validateMarketType(outcomeType, createMultiNumericSchema, body)
-    if (numericAnswers.length < 2)
+    ;({ answers, midpoints, unit, shouldAnswersSumToOne } = validateMarketType(
+      outcomeType,
+      createMultiNumericSchema,
+      body
+    ))
+    if (answers.length < 2)
       throw new APIError(
         400,
         'Numeric markets must have at least 2 answer buckets.'
       )
-    if (numericAnswers.length !== midpointsInput.length)
+    if (answers.length !== midpoints.length)
       throw new APIError(
         400,
         'Number of answers must match number of midpoints.'
       )
-    answers = numericAnswers
-    unit = unitInput
-    midpoints = midpointsInput
   }
 
   if (outcomeType === 'MULTIPLE_CHOICE') {

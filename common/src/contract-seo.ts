@@ -3,7 +3,7 @@ import { getFormattedMappedValue } from './pseudo-numeric'
 import { getAnswerProbability, getDisplayProbability } from './calculate'
 import { richTextToString } from './util/parse'
 import { formatMoneyNumber, formatPercent } from './util/format'
-import { getFormattedExpectedValue } from 'common/multi-numeric'
+import { getFormattedExpectedValue } from 'common/number'
 import { sortAnswers } from './answer'
 
 export const getContractOGProps = (

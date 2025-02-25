@@ -127,7 +127,8 @@ export function getNewContract(
         answers,
         midpoints ?? [],
         ante,
-        unit ?? ''
+        unit ?? '',
+        shouldAnswersSumToOne ?? true
       ),
   }[outcomeType]()
 
@@ -337,7 +338,8 @@ const getMultiNumericProps = (
   answers: string[],
   midpoints: number[],
   ante: number,
-  unit: string
+  unit: string,
+  shouldAnswersSumToOne: boolean
 ) => {
   const answerObjects = createAnswers(
     contractId,
@@ -354,7 +356,7 @@ const getMultiNumericProps = (
   const system: MultiNumeric = {
     mechanism: 'cpmm-multi-1',
     outcomeType: 'MULTI_NUMERIC',
-    shouldAnswersSumToOne: true,
+    shouldAnswersSumToOne,
     addAnswersMode: 'DISABLED',
     answers: answerObjects,
     totalLiquidity: ante,

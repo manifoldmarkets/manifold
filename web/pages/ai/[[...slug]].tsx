@@ -18,7 +18,7 @@ import { DashboardPage } from 'web/components/dashboard/dashboard-page'
 import { Row } from 'web/components/layout/row'
 import { HorizontalDashboard } from 'web/components/dashboard/horizontal-dashboard'
 import { contractPath, CPMMNumericContract } from 'common/contract'
-import { getExpectedValue } from 'common/multi-numeric'
+import { getNumberExpectedValue } from 'common/src/number'
 import { Clock } from 'web/components/clock/clock'
 import { NumericBetPanel } from 'web/components/answers/numeric-bet-panel'
 import Link from 'next/link'
@@ -123,7 +123,7 @@ function MultiDashboard(props: MultiDashboardProps) {
   )
   const whenAgi = useLiveContract(props.whenAgi)
 
-  const expectedValueAGI = getExpectedValue(whenAgi)
+  const expectedValueAGI = getNumberExpectedValue(whenAgi)
   const eventYear = Math.floor(expectedValueAGI)
   const eventMonth = Math.round((expectedValueAGI - eventYear) * 12)
   const expectedYear = new Date(eventYear, eventMonth, 1)

@@ -65,7 +65,7 @@ import { PseudoNumericRangeSection } from 'web/components/new-contract/pseudo-nu
 import { SimilarContractsSection } from 'web/components/new-contract/similar-contracts-section'
 import { MultiNumericRangeSection } from './multi-numeric-range-section'
 import { NumberRangeSection } from './number-range-section'
-import { getMultiNumericAnswerBucketRangeNames } from 'common/multi-numeric'
+import { getMultiNumericAnswerBucketRangeNames } from 'common/src/number'
 import { randomString } from 'common/util/random'
 import { formatWithToken } from 'common/util/format'
 import { BiUndo } from 'react-icons/bi'
