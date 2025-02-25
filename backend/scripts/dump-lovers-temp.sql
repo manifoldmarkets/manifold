@@ -16,7 +16,7 @@ SELECT
     - 'twitterHandle'
     - 'discordHandle'
     - 'fromLove'
-    - 'sweestakesVerified'
+    - 'sweepstakesVerified'
     - 'verifiedPhone'
     - 'idVerified'
   )) as user_data,
