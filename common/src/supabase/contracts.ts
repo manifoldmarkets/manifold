@@ -127,6 +127,7 @@ export const convertAnswer = (row: Row<'answers'>): Answer =>
     },
     imageUrl: row.image_url ?? undefined,
     shortText: row.short_text ?? undefined,
+    midpoint: row.midpoint ?? undefined,
   })
 
 export const convertContract = <T extends Contract>(c: {
