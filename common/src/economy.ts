@@ -13,7 +13,7 @@ export const getAnte = (
     return 10
   }
 
-  if (outcomeType === 'MULTIPLE_CHOICE') {
+  if (outcomeType === 'MULTIPLE_CHOICE' || outcomeType === 'MULTI_NUMERIC') {
     const tierIndex =
       liquidityTiers.findIndex((tier) => tier >= liquidityTier) ??
       liquidityTiers[liquidityTiers.length - 1]

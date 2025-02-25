@@ -115,6 +115,7 @@ export const answerToRow = (answer: Omit<Answer, 'id'> & { id?: string }) => ({
   prob_change_month: answer.probChanges?.month,
   image_url: answer.imageUrl,
   short_text: answer.shortText,
+  midpoint: answer.midpoint,
 })
 
 // does not convert isOther, loverUserId

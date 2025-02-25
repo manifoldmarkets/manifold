@@ -127,6 +127,7 @@ export async function createMarketHelper(body: Body, auth: AuthedUser) {
     takerAPIOrdersDisabled,
     liquidityTier,
     unit,
+    midpoints,
   } = validateMarketBody(body)
 
   const userId = auth.uid
@@ -219,6 +220,7 @@ export async function createMarketHelper(body: Body, auth: AuthedUser) {
           sportsLeague,
           takerAPIOrdersDisabled,
           unit: unit ?? '',
+          midpoints: midpoints,
         })
       )
       const nativeKeys = nativeContractColumnsArray.map(camelCase)
@@ -351,7 +353,8 @@ function validateMarketBody(body: Body) {
     shouldAnswersSumToOne: boolean | undefined,
     totalBounty: number | undefined,
     isAutoBounty: boolean | undefined,
-    unit: string | undefined
+    unit: string | undefined,
+    midpoints: number[] | undefined
 
   if (outcomeType === 'PSEUDO_NUMERIC') {
     const parsed = validateMarketType(outcomeType, createNumericSchema, body)
@@ -407,7 +410,7 @@ function validateMarketBody(body: Body) {
   if (outcomeType === 'MULTI_NUMERIC') {
     const {
       answers: numericAnswers,
-      midpoints,
+      midpoints: midpointsInput,
       unit: unitInput,
     } = validateMarketType(outcomeType, createMultiNumericSchema, body)
     if (numericAnswers.length < 2)
@@ -415,13 +418,14 @@ function validateMarketBody(body: Body) {
         400,
         'Numeric markets must have at least 2 answer buckets.'
       )
-    if (numericAnswers.length !== midpoints.length)
+    if (numericAnswers.length !== midpointsInput.length)
       throw new APIError(
         400,
         'Number of answers must match number of midpoints.'
       )
     answers = numericAnswers
     unit = unitInput
+    midpoints = midpointsInput
   }
 
   if (outcomeType === 'MULTIPLE_CHOICE') {
@@ -482,6 +486,7 @@ function validateMarketBody(body: Body) {
     answerImageUrls,
     takerAPIOrdersDisabled,
     unit,
+    midpoints,
   }
 }
 

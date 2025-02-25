@@ -65,6 +65,7 @@ export function getNewContract(
 
     // Multi-numeric
     unit: string | undefined
+    midpoints: number[] | undefined
   }
 ) {
   const {
@@ -96,6 +97,7 @@ export function getNewContract(
     takerAPIOrdersDisabled,
     siblingContractId,
     unit,
+    midpoints,
   } = props
   const createdTime = Date.now()
 
@@ -119,7 +121,14 @@ export function getNewContract(
     POLL: () => getPollProps(answers),
     NUMBER: () => getNumberProps(id, creator.id, min, max, answers, ante),
     MULTI_NUMERIC: () =>
-      getMultiNumericProps(id, creator.id, answers, ante, unit ?? ''),
+      getMultiNumericProps(
+        id,
+        creator.id,
+        answers,
+        midpoints ?? [],
+        ante,
+        unit ?? ''
+      ),
   }[outcomeType]()
 
   const contract: Contract = removeUndefinedProps({
@@ -326,6 +335,7 @@ const getMultiNumericProps = (
   contractId: string,
   userId: string,
   answers: string[],
+  midpoints: number[],
   ante: number,
   unit: string
 ) => {
@@ -335,7 +345,11 @@ const getMultiNumericProps = (
     'DISABLED',
     true,
     ante,
-    answers
+    answers,
+    undefined,
+    undefined,
+    undefined,
+    midpoints
   )
   const system: MultiNumeric = {
     mechanism: 'cpmm-multi-1',
@@ -360,7 +374,8 @@ function createAnswers(
   answers: string[],
   colors?: string[],
   shortTexts?: string[],
-  imageUrls?: string[]
+  imageUrls?: string[],
+  midpoints?: number[]
 ) {
   const ids = answers.map(() => randomString())
 
@@ -411,6 +426,7 @@ function createAnswers(
         addAnswersMode !== 'DISABLED' &&
         i === answers.length - 1,
       probChanges: { day: 0, week: 0, month: 0 },
+      midpoint: midpoints?.[i],
     })
     return answer
   })
