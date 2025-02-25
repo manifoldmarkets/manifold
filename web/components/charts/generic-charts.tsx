@@ -48,6 +48,7 @@ import {
   ZoomParams,
 } from './helpers'
 import { ZoomSlider } from './zoom-slider'
+import { NUMERIC_GRAPH_COLOR } from 'common/numeric-constants'
 
 const interpolateY = (
   curve: CurveFactory,
@@ -908,7 +909,7 @@ export const SingleValueHistoryChart = <P extends HistoryPoint>(props: {
       {showZoomer && zoomParams && (
         <ZoomSlider
           zoomParams={zoomParams}
-          color="light-green"
+          color={color === NUMERIC_GRAPH_COLOR ? 'indigo' : 'light-green'}
           className="relative top-4"
         />
       )}
