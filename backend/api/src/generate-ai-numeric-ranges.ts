@@ -14,6 +14,7 @@ const sharedGuidelines = `
       * Decimal precision when appropriate
       * Smaller ranges for more precision when values are likely to be close
     - Each range should have a midpoint value for expected value calculations
+    - Return the ranges and associated midpoints in ascending order
     - For log scale ranges (i.e. ranges like 1-100, 100-1000, 1000-10000, or above 10, above 100, above 1000, etc.), use the geometric mean for the midpoints.
     - ONLY return a single JSON object without any other text or formatting:{
       answers: array of range strings,
@@ -53,19 +54,13 @@ EXAMPLES:
   }
   Question: How many h5n1 bird flu cases will be confirmed in the US in 2025? (min 0, max 100,000)
   {
-  {
     "answers": ["Above 0", "Above 100", "Above 1,000", "Above 10,000", "Above 100,000"],
     "midpoints": [31.6, 316, 3162, 31623, 316228]
   }
   Question: How many goals will be scored in the World Cup final? (min 0, max 10)
   {
-    "answers": ["Above 0", "Above 2", "Above 5", "Above 7", "Above 9"],
-    "midpoints": [1, 3, 6, 8, 10]
-  }
-  Question: When will Trump serve time? (min: 2024, max: 2028)
-  {
-    "answers": ["After 2024", "After 2025", "After 2026", "After 2027", "After 2028"],
-    "midpoints": [2024.5, 2025.5, 2026.5, 2027.5, 2028.5]
+    "answers": ["Above 0", "Above 2", "Above 4", "Above 6", "Above 8"],
+    "midpoints": [1.5, 3.5, 5.5, 7.5, 9.5]
   }
     Question: How many Americans will die as a result of commercial air travel accidents in 2025? (0, 10000)
   {
@@ -84,8 +79,8 @@ export const bucketExamples = `
 EXAMPLES:
   Question: The Joker rotten tomatoes score (min 45, max 100): 
   {
-    "answers": ["50-59", "60-69", "70-79", "80-89", "90-100"],
-    "midpoints": [55, 65, 75, 85, 95]
+    "answers": ["45-54", "55-64", "65-74", "75-84", "85-94", "95-100"],
+    "midpoints": [50, 60, 70, 80, 90, 95]
   }
   Question: Snow in NYC this month (inches) (min 0, max 20): 
   {
@@ -100,12 +95,12 @@ EXAMPLES:
   Question: How many h5n1 bird flu cases will be confirmed in the US in 2025? (min 0, max 100,000)
   {
     "answers": ["0-99", "100-999", "1,000-9,999", "10,000-99,999", "100,000+"],
-    "midpoints": [0, 316, 3162, 31623, 316228]
+    "midpoints": [31.6, 316, 3162, 31623, 316228]
   }
   Question: How many goals will be scored in the World Cup final? (min 0, max 11)
   {
-    "answers": ["0-2", "3-5", "6-8", "9-11", "12+"],
-    "midpoints": [1, 4, 7, 10, 13]
+    "answers": ["0-2", "3-5", "6-8", "9-11"],
+    "midpoints": [1, 4, 7, 10]
   }
   Question: When will Trump serve time? (min: 2024, max: 2028)
   {
@@ -134,39 +129,40 @@ export const generateAINumericRanges: APIHandler<'generate-ai-numeric-ranges'> =
           : ''
       }\nMin: ${min}\nMax: ${max}`
 
-      try {
-        const thresholdSystemPrompt = baseSystemPrompt('threshold-style')
+      const thresholdSystemPrompt = baseSystemPrompt('threshold-style')
 
-        const bucketSystemPrompt = baseSystemPrompt('bucket-style')
+      const bucketSystemPrompt = baseSystemPrompt('bucket-style')
 
-        const [thresholdResponse, bucketResponse] = await Promise.all([
-          promptClaude(prompt, {
-            model: models.sonnet,
-            system: thresholdSystemPrompt + thresholdExamples,
-          }),
-          promptClaude(prompt, {
-            model: models.sonnet,
-            system: bucketSystemPrompt + bucketExamples,
-          }),
-        ])
+      const [thresholdResponse, bucketResponse] = await Promise.all([
+        promptClaude(prompt, {
+          model: models.sonnet,
+          system: thresholdSystemPrompt + thresholdExamples,
+        }),
+        promptClaude(prompt, {
+          model: models.sonnet,
+          system: bucketSystemPrompt + bucketExamples,
+        }),
+      ])
 
-        log('thresholdResponse', thresholdResponse)
-        log('bucketResponse', bucketResponse)
+      log('thresholdResponse', thresholdResponse)
+      log('bucketResponse', bucketResponse)
 
-        const thresholds = JSON.parse(thresholdResponse)
-        const buckets = JSON.parse(bucketResponse)
+      const thresholds = JSON.parse(thresholdResponse)
+      const buckets = JSON.parse(bucketResponse)
 
-        track(auth.uid, 'generate-ai-numeric-ranges', {
-          question,
-        })
+      assertMidpointsAreUnique(thresholds.midpoints)
+      assertMidpointsAreAscending(thresholds.midpoints)
 
-        return {
-          thresholds,
-          buckets,
-        }
-      } catch (e) {
-        console.error('Failed to generate numeric ranges:', e)
-        throw new APIError(500, 'Failed to generate ranges. Please try again.')
+      assertMidpointsAreUnique(buckets.midpoints)
+      assertMidpointsAreAscending(buckets.midpoints)
+
+      track(auth.uid, 'generate-ai-numeric-ranges', {
+        question,
+      })
+
+      return {
+        thresholds,
+        buckets,
       }
     },
     { maxCalls: 60, windowMs: HOUR_MS }
@@ -193,26 +189,39 @@ export const regenerateNumericMidpoints: APIHandler<'regenerate-numeric-midpoint
 
       Return ONLY a JSON array of midpoint numbers, one for each range.`
 
-      try {
-        const claudeResponse = await promptClaude(prompt, {
-          model: models.sonnet,
-        })
-        log('claudeResponse', claudeResponse)
+      const claudeResponse = await promptClaude(prompt, {
+        model: models.sonnet,
+      })
+      log('claudeResponse', claudeResponse)
 
-        const result = JSON.parse(claudeResponse)
+      const result = JSON.parse(claudeResponse)
 
-        track(auth.uid, 'regenerate-numeric-midpoints', {
-          answers,
-        })
+      track(auth.uid, 'regenerate-numeric-midpoints', {
+        answers,
+      })
 
-        return { midpoints: result }
-      } catch (e) {
-        console.error('Failed to regenerate midpoints:', e)
-        throw new APIError(
-          500,
-          'Failed to generate midpoints. Please try again.'
-        )
-      }
+      assertMidpointsAreUnique(result)
+      assertMidpointsAreAscending(result)
+
+      return { midpoints: result }
     },
     { maxCalls: 60, windowMs: HOUR_MS }
   )
+
+const assertMidpointsAreUnique = (midpoints: number[]) => {
+  const unique = new Set(midpoints).size === midpoints.length
+  if (!unique) {
+    throw new APIError(500, 'AI-generated midpoints are not unique. Try again.')
+  }
+}
+
+const assertMidpointsAreAscending = (midpoints: number[]) => {
+  for (let i = 1; i < midpoints.length; i++) {
+    if (midpoints[i] <= midpoints[i - 1]) {
+      throw new APIError(
+        500,
+        'AI-generated midpoints are not in ascending order. Try again.'
+      )
+    }
+  }
+}

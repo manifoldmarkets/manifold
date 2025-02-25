@@ -2,11 +2,10 @@ import { Col } from 'web/components/layout/col'
 import { InfoTooltip } from 'web/components/widgets/info-tooltip'
 import { Row } from 'web/components/layout/row'
 import { Input } from 'web/components/widgets/input'
-import { useState, useCallback } from 'react'
+import { useState, useCallback, useEffect } from 'react'
 import { Button } from '../buttons/button'
 import { api } from 'web/lib/api/api'
-import { RefreshIcon, XIcon } from '@heroicons/react/solid'
-import { LoadingIndicator } from '../widgets/loading-indicator'
+import { XIcon } from '@heroicons/react/solid'
 import { usePersistentLocalState } from 'web/hooks/use-persistent-local-state'
 import { ControlledTabs } from '../layout/tabs'
 import { debounce } from 'lodash'
@@ -84,13 +83,6 @@ export const MultiNumericRangeSection = (props: {
       setThresholdMidpoints(result.thresholds.midpoints)
       setBucketAnswers(result.buckets.answers)
       setBucketMidpoints(result.buckets.midpoints)
-      if (selectedTab === 'thresholds') {
-        setAnswers(result.thresholds.answers)
-        setMidpoints(result.thresholds.midpoints)
-      } else {
-        setAnswers(result.buckets.answers)
-        setMidpoints(result.buckets.midpoints)
-      }
     } catch (e) {
       console.error('Error generating ranges:', e)
     }
@@ -134,11 +126,19 @@ export const MultiNumericRangeSection = (props: {
     }
   }
 
+  useEffect(() => {
+    handleTabChange(selectedTab)
+  }, [
+    JSON.stringify(thresholdAnswers),
+    JSON.stringify(bucketAnswers),
+    JSON.stringify(thresholdMidpoints),
+    JSON.stringify(bucketMidpoints),
+  ])
+
   const handleAnswerChanged = async (
     answers: string[],
     min: number | undefined,
     max: number | undefined,
-    setMidpoints: (midpoints: number[]) => void,
     tab: 'thresholds' | 'buckets'
   ) => {
     // Only regenerate midpoints if we have min and max
@@ -169,7 +169,7 @@ export const MultiNumericRangeSection = (props: {
   const debouncedHandleAnswerChanged = useCallback(
     debounce(
       (answers: string[], tab: 'thresholds' | 'buckets') =>
-        handleAnswerChanged(answers, min, max, setMidpoints, tab),
+        handleAnswerChanged(answers, min, max, tab),
       1000
     ),
     [min, max, setMidpoints]
@@ -196,7 +196,7 @@ export const MultiNumericRangeSection = (props: {
             <Input
               type="number"
               error={minMaxError}
-              className="w-32"
+              className="w-24"
               placeholder="Low"
               onClick={(e) => e.stopPropagation()}
               onChange={(e) => setMinString(e.target.value)}
@@ -208,7 +208,7 @@ export const MultiNumericRangeSection = (props: {
             <Input
               type="number"
               error={minMaxError}
-              className="w-32"
+              className="w-28"
               placeholder="High"
               onClick={(e) => e.stopPropagation()}
               onChange={(e) => setMaxString(e.target.value)}
@@ -218,29 +218,27 @@ export const MultiNumericRangeSection = (props: {
             />
             <Input
               type="text"
-              className="w-32"
+              className="w-[7.25rem]"
               placeholder="Unit"
               onClick={(e) => e.stopPropagation()}
               onChange={(e) => setUnit(e.target.value)}
               disabled={submitState === 'LOADING'}
               value={unit}
             />
-
-            {min !== undefined && max !== undefined && !minMaxError && (
-              <Button
-                color="indigo-outline"
-                onClick={generateRanges}
-                disabled={!question || isGeneratingRanges}
-              >
-                {isGeneratingRanges ? (
-                  <LoadingIndicator size="sm" />
-                ) : (
-                  <RefreshIcon className="h-5 w-5" aria-hidden="true" />
-                )}
-              </Button>
-            )}
           </Row>
         </Col>
+      </Row>
+      <Row className=" w-full justify-end gap-2">
+        {min !== undefined && max !== undefined && !minMaxError && (
+          <Button
+            color="indigo-outline"
+            onClick={generateRanges}
+            loading={isGeneratingRanges}
+            disabled={!question || isGeneratingRanges}
+          >
+            Generate ranges
+          </Button>
+        )}
       </Row>
 
       {minMaxError && (
@@ -283,7 +281,7 @@ export const MultiNumericRangeSection = (props: {
                 ))}
                 <Row className="justify-end gap-2">
                   <Button
-                    color="indigo-outline"
+                    color="none"
                     onClick={addAnswer}
                     className="hover:bg-canvas-50 border-ink-300 text-ink-700 bg-canvas-0 focus:ring-primary-500 inline-flex items-center rounded border px-2.5 py-1.5 text-xs font-medium shadow-sm focus:outline-none focus:ring-2 focus:ring-offset-2"
                   >
@@ -321,7 +319,7 @@ export const MultiNumericRangeSection = (props: {
                 ))}
                 <Row className="justify-end gap-2">
                   <Button
-                    color="indigo-outline"
+                    color="none"
                     onClick={addAnswer}
                     className="hover:bg-canvas-50 border-ink-300 text-ink-700 bg-canvas-0 focus:ring-primary-500 inline-flex items-center rounded border px-2.5 py-1.5 text-xs font-medium shadow-sm focus:outline-none focus:ring-2 focus:ring-offset-2"
                   >
