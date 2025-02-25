@@ -41,7 +41,10 @@ import {
 } from 'common/gidx/user'
 import { getFormattedMappedValue } from 'common/pseudo-numeric'
 import { getStonkDisplayShares, STONK_NO, STONK_YES } from 'common/stonk'
-import { getTierFromLiquidity } from 'common/tier'
+import {
+  getTierFromLiquidity,
+  getTierFromLiquidityAndAnswers,
+} from 'common/tier'
 import { floatingEqual } from 'common/util/math'
 import { removeUndefinedProps } from 'common/util/object'
 import { InfoTooltip } from 'web/components/widgets/info-tooltip'
@@ -237,7 +240,13 @@ export const BuyPanelBody = (props: {
 
   const user = useUser()
   const privateUser = usePrivateUser()
-  const liquidityTier = getTierFromLiquidity(contract.totalLiquidity)
+  const liquidityTier =
+    'answers' in contract
+      ? getTierFromLiquidityAndAnswers(
+          contract.totalLiquidity,
+          contract.answers.length
+        )
+      : getTierFromLiquidity(contract.totalLiquidity)
 
   const { unfilledBets: allUnfilledBets, balanceByUserId } =
     useUnfilledBetsAndBalanceByUserId(

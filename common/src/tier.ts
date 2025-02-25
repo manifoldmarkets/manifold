@@ -15,3 +15,10 @@ export function getAnswerCostFromLiquidity(
     liquidityTiers.findIndex((tier) => tier >= liquidity / numAnswers)
   ]
 }
+
+export function getTierFromLiquidityAndAnswers(
+  liquidity: number,
+  numAnswers: number
+): number {
+  return liquidityTiers.findIndex((tier) => tier >= liquidity / numAnswers)
+}
