@@ -36,10 +36,12 @@ export const CostSection = (props: {
         </span>
       </label>
 
-      <PriceSection
-        liquidityTier={liquidityTier}
-        setLiquidityTier={setLiquidityTier}
-      />
+      {!CREATEABLE_NON_PREDICTIVE_OUTCOME_TYPES.includes(outcomeType) && (
+        <PriceSection
+          liquidityTier={liquidityTier}
+          setLiquidityTier={setLiquidityTier}
+        />
+      )}
 
       {ante > balance && (
         <div className="mb-2 mr-auto mt-2 self-center whitespace-nowrap text-xs font-medium tracking-wide">

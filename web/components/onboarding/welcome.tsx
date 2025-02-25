@@ -244,8 +244,8 @@ function WhatIsManifoldPage() {
       <div className="to-ink-0mt-3 text-primary-700 mb-6 text-center text-2xl font-normal">
         Welcome to Manifold!
       </div>
-      <div className="mb-4 flex h-10 flex-row gap-2 text-xl">
-        <div className="mt-2">Welcome,</div>
+      <Col className="mb-4 gap-2 text-xl sm:flex-row">
+        <div className="">Welcome,</div>
         {isEditingUsername || showOnHover ? (
           <div>
             <Input
@@ -269,7 +269,7 @@ function WhatIsManifoldPage() {
             />
           </div>
         ) : (
-          <div className="mt-2">
+          <div className="">
             <span
               className="hover:cursor-pointer hover:border"
               onClick={() => setIsEditingUsername(true)}
@@ -280,7 +280,7 @@ function WhatIsManifoldPage() {
             </span>
           </div>
         )}
-      </div>
+      </Col>
       <div className="mb-4 text-lg">
         {capitalize(TRADE_TERM)} with play money on politics, tech, sports, and
         more. Your {TRADE_TERM}s contribute to the wisdom of the crowd.

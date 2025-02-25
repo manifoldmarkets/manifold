@@ -18,7 +18,6 @@ import { User } from 'common/user'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { Fragment, useState } from 'react'
-import { UnseenMessagesBubble } from 'web/components/messaging/messages-icon'
 import { NotificationsIcon } from 'web/components/notifications-icon'
 import { useIsIframe } from 'web/hooks/use-is-iframe'
 import { useUser } from 'web/hooks/use-user'
@@ -125,7 +124,6 @@ export function BottomNavBar() {
             )}
             onClick={() => setSidebarOpen(true)}
           >
-            <UnseenMessagesBubble />
             <MenuAlt3Icon className="mx-auto my-2 h-8 w-8" aria-hidden="true" />
           </div>
           <MobileSidebar

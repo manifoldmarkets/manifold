@@ -9,7 +9,7 @@ import { api } from 'web/lib/api/api'
 import { AddFundsModal } from '../add-funds-modal'
 import toast from 'react-hot-toast'
 import { BsRocketTakeoff } from 'react-icons/bs'
-import { BOOST_COST_MANA } from 'common/economy'
+import { BOOST_COST_CASH, BOOST_COST_MANA } from 'common/economy'
 import dayjs from 'dayjs'
 import { Input } from '../widgets/input'
 import { HOUR_MS } from 'common/util/time'
@@ -141,7 +141,6 @@ function BoostPurchaseModal(props: {
             >
               Pay {formatMoney(BOOST_COST_MANA)}
             </Button>
-
             <Button
               color="indigo"
               onClick={() => purchaseBoost('cash')}
@@ -149,10 +148,9 @@ function BoostPurchaseModal(props: {
               className="flex-1"
               disabled={!!loading}
             >
-              Pay $100
+              Pay {formatMoney(BOOST_COST_CASH)}
             </Button>
           </Row>
-
           {notEnoughFunds && (
             <div className="text-ink-600 flex items-center gap-2 text-sm">
               <span className="text-error">Insufficient balance</span>

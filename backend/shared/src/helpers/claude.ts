@@ -3,8 +3,7 @@ import Anthropic from '@anthropic-ai/sdk'
 import { removeUndefinedProps } from 'common/util/object'
 
 export const models = {
-  sonnet: 'claude-3-5-sonnet-20241022' as const,
-  haiku: 'claude-3-5-haiku-20241022' as const,
+  sonnet: 'claude-3-7-sonnet-20250219' as const,
 }
 
 export type model_types = (typeof models)[keyof typeof models]
