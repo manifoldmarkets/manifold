@@ -2,13 +2,7 @@ import {
   getInitialAnswerProbability,
   getInitialProbability,
 } from 'common/calculate'
-import {
-  CPMMMultiContract,
-  Contract,
-  ContractParams,
-  MultiNumeric,
-  MultiContract,
-} from 'common/contract'
+import { Contract, ContractParams, MultiContract } from 'common/contract'
 import { binAvg, maxMinBin, serializeMultiPoints } from 'common/chart'
 import {
   getRecentTopLevelCommentsAndReplies,
@@ -89,11 +83,7 @@ export async function getContractParams(
     getTopicsOnContract(contract.id, db),
     getDashboardsToDisplayOnContract(contract.slug, contract.creatorId, db),
   ])
-  const multiPoints = isMulti
-    ? isNumber || contract.outcomeType === 'MULTI_NUMERIC'
-      ? getFilledInNumberBetPoints(groupBy(allBetPoints, 'answerId'), contract)
-      : getMultiBetPoints(allBetPoints, contract)
-    : {}
+  const multiPoints = isMulti ? getMultiBetPoints(allBetPoints, contract) : {}
   const multiPointsString = mapValues(multiPoints, (v) => pointsToBase64(v))
 
   const ogPoints = !isMulti ? binAvg(allBetPoints) : []
@@ -149,7 +139,7 @@ export const getSingleBetPoints = (
 
 export const getMultiBetPoints = (
   betPoints: { x: number; y: number; answerId: string | undefined }[],
-  contract: CPMMMultiContract | MultiNumeric
+  contract: MultiContract
 ) => {
   const { answers } = contract
 
@@ -176,12 +166,13 @@ export const getMultiBetPoints = (
 
   return serializeMultiPoints(pointsByAns)
 }
-export const getFilledInNumberBetPoints = (
+
+export const getAnswerProbAtEveryBetTime = (
   pointsByAnswerId: { [answerId: string]: { x: number; y: number }[] },
   contract: MultiContract
 ) => {
   const { answers, createdTime } = contract
-  const allUniqueCreatedTimes = new Set([
+  const allUniqueProbChangeTimes = new Set([
     ...Object.values(pointsByAnswerId).flatMap((a) => a.map((p) => p.x)),
     createdTime,
   ])
@@ -192,10 +183,10 @@ export const getFilledInNumberBetPoints = (
       { x: createdTime, y: startingProb, answerId: ans.id },
       ...(pointsByAnswerId[ans.id] ?? []),
     ]
-    const uniqueAnswerCreatedTimes = new Set(rawPoints.map((a) => a.x))
+    const uniqueAnswerProbTimes = new Set(rawPoints.map((a) => a.x))
     // Bc we sometimes don't create low prob bets, we need to fill in the gaps
-    const missingTimes = Array.from(allUniqueCreatedTimes).filter(
-      (time) => !uniqueAnswerCreatedTimes.has(time)
+    const missingTimes = Array.from(allUniqueProbChangeTimes).filter(
+      (time) => !uniqueAnswerProbTimes.has(time)
     )
 
     const missingPoints = missingTimes.map((time) => ({
@@ -208,5 +199,5 @@ export const getFilledInNumberBetPoints = (
     pointsByAns[ans.id] = orderBy(allPoints, (p) => p.x)
   })
 
-  return serializeMultiPoints(pointsByAns)
+  return pointsByAns
 }

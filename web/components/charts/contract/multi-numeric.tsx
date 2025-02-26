@@ -13,19 +13,19 @@ import {
   getExpectedValue,
   getMinMax,
 } from 'common/src/multi-numeric'
-import { getFilledInNumberBetPoints } from 'common/contract-params'
+import { getAnswerProbAtEveryBetTime } from 'common/contract-params'
 
 const getBetPoints = (contract: MultiNumericContract, bets: MultiPoints) => {
   const { answers, shouldAnswersSumToOne } = contract
   const answersById = keyBy(answers, 'id')
-  const filledInBetPoints = getFilledInNumberBetPoints(bets, contract)
+  const filledInBetPoints = getAnswerProbAtEveryBetTime(bets, contract)
   if (shouldAnswersSumToOne) {
     // multiply the prob value by the value of the bucket
     const expectedValues = Object.entries(filledInBetPoints).map(
       ([answerId, pts]) =>
         pts.map((pt) => ({
-          x: pt[0],
-          y: pt[1] * answersById[answerId].midpoint!,
+          x: pt.x,
+          y: pt.y * answersById[answerId].midpoint!,
         }))
     )
     return map(
@@ -43,11 +43,11 @@ const getBetPoints = (contract: MultiNumericContract, bets: MultiPoints) => {
     // Group all probabilities by timestamp
     Object.entries(filledInBetPoints).forEach(([answerId, pts]) => {
       pts.forEach((pt) => {
-        const timestamp = pt[0]
+        const timestamp = pt.x
         if (!pointsByTimestamp[timestamp]) {
           pointsByTimestamp[timestamp] = {}
         }
-        pointsByTimestamp[timestamp][answerId] = pt[1]
+        pointsByTimestamp[timestamp][answerId] = pt.y
       })
     })
 
@@ -97,10 +97,12 @@ export const MultiNumericContractChart = (props: {
   const end = getEndDate(contract)
   const endP = getExpectedValue(contract)
   const stringifiedMultiPoints = JSON.stringify(multiPoints)
+  console.log('multiPoints', multiPoints)
   const betPoints = useMemo(
     () => getBetPoints(contract, multiPoints),
     [stringifiedMultiPoints]
   )
+  console.log('betPoints', betPoints)
   const now = useMemo(() => Date.now(), [stringifiedMultiPoints])
 
   const singlePointData = useMemo(

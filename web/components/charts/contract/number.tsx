@@ -13,18 +13,18 @@ import {
   answerTextToMidpoint,
 } from 'common/src/number'
 import { MultiPoints } from 'common/chart'
-import { getFilledInNumberBetPoints } from 'common/contract-params'
+import { getAnswerProbAtEveryBetTime } from 'common/contract-params'
 import { Row } from 'web/components/layout/row'
 
 const getBetPoints = (contract: CPMMNumericContract, bets: MultiPoints) => {
-  const filledInBetPoints = getFilledInNumberBetPoints(bets, contract)
+  const filledInBetPoints = getAnswerProbAtEveryBetTime(bets, contract)
   const answerTexts = keyBy(contract.answers, 'id')
   // multiply the prob value by the value of the bucket
   const expectedValues = Object.entries(filledInBetPoints).map(
     ([answerId, pts]) =>
       pts.map((pt) => ({
-        x: pt[0],
-        y: pt[1] * answerTextToMidpoint(answerTexts[answerId].text),
+        x: pt.x,
+        y: pt.y * answerTextToMidpoint(answerTexts[answerId].text),
       }))
   )
   return map(zip(...expectedValues), (group) => ({
