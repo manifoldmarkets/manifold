@@ -249,7 +249,7 @@ export const MultiNumericRangeSection = (props: {
                   debouncedHandleAnswerChanged(newAnswers, 'buckets')
                 }}
               />
-              {i > 1 && (
+              {bucketAnswers.length > 2 && (
                 <button
                   onClick={() => removeAnswer(i, 'buckets')}
                   type="button"
@@ -289,7 +289,7 @@ export const MultiNumericRangeSection = (props: {
                   debouncedHandleAnswerChanged(newAnswers, 'thresholds')
                 }}
               />
-              {i > 1 && (
+              {thresholdAnswers.length > 2 && (
                 <button
                   onClick={() => removeAnswer(i, 'thresholds')}
                   type="button"
