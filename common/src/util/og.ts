@@ -28,3 +28,8 @@ export function pointsToBase64(points: SerializedPoint[]) {
   const floats = new Float64Array(points.flatMap((p) => [p[0], p[1]]))
   return Buffer.from(floats.buffer).toString('base64url')
 }
+
+export function pointsToBase64Float32(points: SerializedPoint[]) {
+  const floats = new Float32Array(points.flatMap((p) => [p[0], p[1]]))
+  return Buffer.from(floats.buffer).toString('base64url')
+}

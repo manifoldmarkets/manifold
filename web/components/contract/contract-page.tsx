@@ -17,7 +17,7 @@ import {
   MultiPoints,
   unserializeBase64Multi,
 } from 'common/chart'
-import { base64toPoints } from 'common/edge/og'
+import { base64toFloat32Points } from 'common/edge/og'
 import { HOUSE_BOT_USERNAME, SPICE_MARKET_TOOLTIP } from 'common/envs/constants'
 import { DAY_MS } from 'common/util/time'
 import { UserBetsSummary } from 'web/components/bet/bet-summary'
@@ -640,7 +640,7 @@ const useBetData = (props: {
         [...(array1 ?? []), ...(array2 ?? [])].sort((a, b) => a.x - b.x)
       ) as MultiPoints
     } else {
-      const points = pointsString ? base64toPoints(pointsString) : []
+      const points = pointsString ? base64toFloat32Points(pointsString) : []
       const newPoints = newBetsWithoutRedemptions.map((bet) => ({
         x: bet.createdTime,
         y: bet.probAfter,

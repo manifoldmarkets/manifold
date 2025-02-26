@@ -14,7 +14,7 @@ import {
 } from 'common/supabase/contract-metrics'
 import { getTopicsOnContract } from 'common/supabase/groups'
 import { removeUndefinedProps } from 'common/util/object'
-import { pointsToBase64 } from 'common/util/og'
+import { pointsToBase64Float32, pointsToBase64 } from 'common/util/og'
 import { SupabaseClient } from 'common/supabase/utils'
 import { buildArray } from 'common/util/array'
 import { groupBy, mapValues, minBy, omit, orderBy, sortBy } from 'lodash'
@@ -84,12 +84,16 @@ export async function getContractParams(
     getDashboardsToDisplayOnContract(contract.slug, contract.creatorId, db),
   ])
 
-  // TODO: getMultiBetPoints breaks NUMBER market time charts and I think MULTI_NUMERIC as well when they get enough bets
+  // TODO: getMultiBetPoints breaks NUMBER market time series charts and I think MULTI_NUMERIC as well when they get enough bets
+  // TODO: remove multiPointsString for markets with more than x answers as it's not displayed by default anyways
   const multiPoints = isMulti ? getMultiBetPoints(allBetPoints, contract) : {}
   const multiPointsString = mapValues(multiPoints, (v) => pointsToBase64(v))
 
   const ogPoints = !isMulti ? binAvg(allBetPoints) : []
-  const pointsString = pointsToBase64(ogPoints.map((p) => [p.x, p.y] as const))
+  // Non-numeric markets don't need as much precision
+  const pointsString = pointsToBase64Float32(
+    ogPoints.map((p) => [p.x, p.y] as const)
+  )
 
   if (
     contract.outcomeType === 'MULTIPLE_CHOICE' &&
@@ -103,7 +107,8 @@ export async function getContractParams(
   const lastBet: Bet | undefined = lastBetArray[0]
   const lastBetTime = lastBet?.createdTime
 
-  return removeUndefinedProps({
+  // Calculate size of each component for debugging
+  const returnObj = {
     outcomeType: contract.outcomeType,
     contract,
     lastBetTime,
@@ -122,7 +127,33 @@ export async function getContractParams(
       'desc'
     ).map(removeUndefinedProps),
     dashboards,
+  }
+
+  // Helper function to calculate approximate size in KB
+  const calculateSize = (obj: any): number => {
+    const jsonString = JSON.stringify(obj)
+    // Each character in a string is 2 bytes in JavaScript
+    return (jsonString.length * 2) / 1024
+  }
+
+  // Log the size of each component
+  console.log('ContractParams component sizes (KB):')
+  const componentSizes = Object.entries(returnObj).map(([key, value]) => {
+    const size = calculateSize(value)
+    return { key, size }
   })
+
+  // Sort by size (largest first) and log
+  componentSizes.sort((a, b) => b.size - a.size)
+  componentSizes.forEach(({ key, size }) => {
+    console.log(`  - ${key}: ${size.toFixed(2)} KB`)
+  })
+
+  // Log total size
+  const totalSize = componentSizes.reduce((sum, { size }) => sum + size, 0)
+  console.log(`Total size: ${totalSize.toFixed(2)} KB`)
+
+  return removeUndefinedProps(returnObj)
 }
 
 export const getSingleBetPoints = (
