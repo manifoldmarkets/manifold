@@ -16,7 +16,7 @@ const baseSystemPrompt = (style: 'threshold' | 'bucket') => {
     
     GUIDLINES:
     - Generate 2-12 ranges that cover the entire span from min to max
-    - Err on the side of fewer (3-5) ranges when possible
+    - Err on the side of fewer (4-6) ranges when possible
     - Favor human-friendly ranges like:
       * Round numbers
       * Decimal precision when appropriate
@@ -73,6 +73,10 @@ export const generateAINumericRanges: APIHandler<'generate-ai-numeric-ranges'> =
 
       assertMidpointsAreUnique(buckets.midpoints)
       assertMidpointsAreAscending(buckets.midpoints)
+
+      // Format bucket answers to add spaces around the dash
+      buckets.answers = formatBucketAnswers(buckets.answers)
+
       track(auth.uid, 'generate-ai-numeric-ranges', {
         question,
       })
@@ -248,4 +252,13 @@ export const assertMidpointsAreAscending = (midpoints: number[]) => {
 export type RangeResponse = {
   answers: string[]
   midpoints: number[]
+}
+
+const formatBucketAnswers = (answers: string[]): string[] => {
+  return answers.map((answer) => {
+    if (answer.includes('-')) {
+      return answer.replace(/-/g, ' - ')
+    }
+    return answer
+  })
 }
