@@ -23,7 +23,6 @@ import {
 } from 'common/topics'
 import { intersection, orderBy, uniq, uniqBy } from 'lodash'
 import { track } from 'web/lib/service/analytics'
-import { PencilIcon } from '@heroicons/react/outline'
 import { Input } from '../widgets/input'
 import { cleanDisplayName, cleanUsername } from 'common/util/clean-username'
 import { api, updateUser, followTopic, followUser } from 'web/lib/api/api'
@@ -56,9 +55,11 @@ export function Welcome(props: { setFeedKey?: (key: string) => void }) {
     if (page === 0) {
       track('welcome screen: what is manifold')
     } else if (page === 1) {
-      track('welcome screen: how it works')
+      track('welcome screen: name input')
     } else if (page === 2) {
-      track('welcome screen: thank you')
+      track('welcome screen: how it works')
+    } else if (page === 3) {
+      track('welcome screen: topic selection')
     }
     setPage(page)
   }
@@ -76,6 +77,7 @@ export function Welcome(props: { setFeedKey?: (key: string) => void }) {
 
   const availablePages = buildArray([
     <WhatIsManifoldPage />,
+    <NameInputPage />,
     <PredictionMarketPage />,
     <TopicsPage
       trendingTopics={trendingTopics}
@@ -88,7 +90,7 @@ export function Welcome(props: { setFeedKey?: (key: string) => void }) {
     />,
     // user && !humanish(user) && <OnboardingVerifyPhone onClose={increasePage} />,
   ])
-  const showBottomButtons = page < 2
+  const showBottomButtons = page < 3
 
   const getTrendingAndUserCategories = async (userId: string) => {
     const hardCodedTopicIds = Object.keys(TOPICS_TO_SUBTOPICS)
@@ -169,7 +171,7 @@ export function Welcome(props: { setFeedKey?: (key: string) => void }) {
   if (!shouldShowWelcomeModal) return <></>
 
   return (
-    <Modal open={open} size={'lg'}>
+    <Modal open={open} size={'md'}>
       <Col className="bg-canvas-0 text-md rounded-md px-4 py-6 md:w-full md:text-lg lg:px-8">
         {availablePages[page]}
         <Col>
@@ -205,6 +207,30 @@ const useIsTwitch = (user: User | null | undefined) => {
 }
 
 function WhatIsManifoldPage() {
+  return (
+    <>
+      <Image
+        className="h-1/3 w-1/3 place-self-center object-contain"
+        src="/logo.svg"
+        alt="Manifold Logo"
+        height={256}
+        width={256}
+      />
+      <div className="to-ink-0mt-3 text-primary-700 mb-6 text-center text-2xl font-normal">
+        Welcome to Manifold!
+      </div>
+      <div className="mb-4 text-lg">
+        Manifold is a play money prediction market platform.
+      </div>
+      <div className="mb-4 text-lg">
+        Bet on politics, tech, sports, and more. Your {TRADE_TERM}s contribute
+        to the wisdom of the crowd.
+      </div>
+    </>
+  )
+}
+
+function NameInputPage() {
   const user = useUser()
 
   const [name, setName] = useState<string>(user?.name ?? 'friend')
@@ -229,61 +255,30 @@ function WhatIsManifoldPage() {
     }
   }
 
-  const [showOnHover, setShowOnHover] = useState(false)
-  const [isEditingUsername, setIsEditingUsername] = useState(false)
-
   return (
     <>
-      <Image
-        className="h-1/3 w-1/3 place-self-center object-contain"
-        src="/logo.svg"
-        alt="Manifold Logo"
-        height={256}
-        width={256}
-      />
       <div className="to-ink-0mt-3 text-primary-700 mb-6 text-center text-2xl font-normal">
-        Welcome to Manifold!
+        About You
       </div>
-      <Col className="mb-4 gap-2 text-xl sm:flex-row">
-        <div className="">Welcome,</div>
-        {isEditingUsername || showOnHover ? (
-          <div>
-            <Input
-              type="text"
-              placeholder="Name"
-              value={name}
-              className="text-lg font-semibold"
-              maxLength={30}
-              onChange={(e) => {
-                setName(e.target.value)
-              }}
-              onBlur={() => {
-                setIsEditingUsername(false)
-                saveName()
-              }}
-              onFocus={() => {
-                setIsEditingUsername(true)
-                setShowOnHover(false)
-              }}
-              onMouseLeave={() => setShowOnHover(false)}
-            />
-          </div>
-        ) : (
-          <div className="">
-            <span
-              className="hover:cursor-pointer hover:border"
-              onClick={() => setIsEditingUsername(true)}
-              onMouseEnter={() => setShowOnHover(true)}
-            >
-              <span className="font-semibold">{name}</span>{' '}
-              <PencilIcon className="mb-1 inline h-4 w-4" />
-            </span>
-          </div>
-        )}
-      </Col>
+      <div className="mb-4 flex flex-col gap-2">
+        <p className="text-lg">What should we call you?</p>
+        <div className="w-full max-w-xs">
+          <Input
+            id="display-name"
+            type="text"
+            placeholder="Enter your name"
+            value={name}
+            className="w-full text-lg font-semibold"
+            maxLength={30}
+            onChange={(e) => setName(e.target.value)}
+            onBlur={saveName}
+            data-cy="onboarding-name-input"
+          />
+        </div>
+      </div>
       <div className="mb-4 text-lg">
-        {capitalize(TRADE_TERM)} with play money on politics, tech, sports, and
-        more. Your {TRADE_TERM}s contribute to the wisdom of the crowd.
+        Your display name will be shown to other users when you place bets or
+        leave comments.
       </div>
     </>
   )
@@ -460,7 +455,7 @@ function TopicsPage(props: {
           disabled={(userSelectedTopics ?? []).length <= 2}
           loading={isLoading}
         >
-          Next
+          Finish
         </Button>
       </Row>
     </Col>
