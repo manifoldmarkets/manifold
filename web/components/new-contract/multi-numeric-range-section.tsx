@@ -52,17 +52,21 @@ export const MultiNumericRangeSection = (props: {
     unit,
     setUnit,
   } = props
+  const defaultAnswers = ['', '']
   const [isGeneratingRanges, setIsGeneratingRanges] = useState(false)
   // thresholds
   const [thresholdAnswers, setThresholdAnswers] = usePersistentLocalState<
     string[]
-  >(shouldAnswersSumToOne ? [] : answers, 'threshold-answers' + paramsKey)
+  >(
+    shouldAnswersSumToOne ? defaultAnswers : answers,
+    'threshold-answers' + paramsKey
+  )
   const [thresholdMidpoints, setThresholdMidpoints] = usePersistentLocalState<
     number[]
   >(shouldAnswersSumToOne ? [] : midpoints, 'threshold-midpoints' + paramsKey)
   // buckets
   const [bucketAnswers, setBucketAnswers] = usePersistentLocalState<string[]>(
-    !shouldAnswersSumToOne ? [] : answers,
+    !shouldAnswersSumToOne ? defaultAnswers : answers,
     'bucket-answers' + paramsKey
   )
   const [bucketMidpoints, setBucketMidpoints] = usePersistentLocalState<
@@ -245,13 +249,15 @@ export const MultiNumericRangeSection = (props: {
                   debouncedHandleAnswerChanged(newAnswers, 'buckets')
                 }}
               />
-              <button
-                onClick={() => removeAnswer(i, 'buckets')}
-                type="button"
-                className="hover:bg-canvas-50 border-ink-300 text-ink-700 bg-canvas-0 focus:ring-primary-500 inline-flex items-center rounded-full border p-1 text-xs font-medium shadow-sm focus:outline-none focus:ring-2 focus:ring-offset-2"
-              >
-                <XIcon className="h-5 w-5" aria-hidden="true" />
-              </button>
+              {i > 1 && (
+                <button
+                  onClick={() => removeAnswer(i, 'buckets')}
+                  type="button"
+                  className="hover:bg-canvas-50 border-ink-300 text-ink-700 bg-canvas-0 focus:ring-primary-500 inline-flex items-center rounded-full border p-1 text-xs font-medium shadow-sm focus:outline-none focus:ring-2 focus:ring-offset-2"
+                >
+                  <XIcon className="h-5 w-5" aria-hidden="true" />
+                </button>
+              )}
             </Row>
           ))}
           <Row className="justify-end gap-2">
@@ -283,13 +289,15 @@ export const MultiNumericRangeSection = (props: {
                   debouncedHandleAnswerChanged(newAnswers, 'thresholds')
                 }}
               />
-              <button
-                onClick={() => removeAnswer(i, 'thresholds')}
-                type="button"
-                className="hover:bg-canvas-50 border-ink-300 text-ink-700 bg-canvas-0 focus:ring-primary-500 inline-flex items-center rounded-full border p-1 text-xs font-medium shadow-sm focus:outline-none focus:ring-2 focus:ring-offset-2"
-              >
-                <XIcon className="h-5 w-5" aria-hidden="true" />
-              </button>
+              {i > 1 && (
+                <button
+                  onClick={() => removeAnswer(i, 'thresholds')}
+                  type="button"
+                  className="hover:bg-canvas-50 border-ink-300 text-ink-700 bg-canvas-0 focus:ring-primary-500 inline-flex items-center rounded-full border p-1 text-xs font-medium shadow-sm focus:outline-none focus:ring-2 focus:ring-offset-2"
+                >
+                  <XIcon className="h-5 w-5" aria-hidden="true" />
+                </button>
+              )}
             </Row>
           ))}
           <Row className="justify-end gap-2">

@@ -131,7 +131,11 @@ export function ContractParamsForm(props: {
 
   // For multiple choice, init to 2 empty answers
   const defaultAnswers =
-    outcomeType === 'MULTIPLE_CHOICE' || outcomeType == 'POLL' ? ['', ''] : []
+    outcomeType === 'MULTIPLE_CHOICE' ||
+    outcomeType == 'POLL' ||
+    outcomeType == 'MULTI_NUMERIC'
+      ? ['', '']
+      : []
 
   const answersKey = 'new-answers-with-other' + paramsKey
   const [answers, setAnswers] = usePersistentLocalState(
@@ -144,8 +148,8 @@ export function ContractParamsForm(props: {
   )
   const [multiNumericSumsToOne, setMultiNumericSumsToOne] =
     usePersistentLocalState<boolean>(
-      params?.shouldAnswersSumToOne ?? false,
-      'new-multi-numeric-sums-to-one' + paramsKey
+      params?.shouldAnswersSumToOne ?? true,
+      'multi-numeric-sums-to-one' + paramsKey
     )
   const unitKey = 'multi-numeric-unit' + paramsKey
   const [unit, setUnit] = usePersistentLocalState<string>(
@@ -161,7 +165,7 @@ export function ContractParamsForm(props: {
   const shouldAnswersSumToOne =
     outcomeType === 'MULTI_NUMERIC'
       ? multiNumericSumsToOne
-      : params?.shouldAnswersSumToOne ?? outcomeType === 'NUMBER'
+      : params?.shouldAnswersSumToOne ?? false
 
   // NOTE: if you add another user-controlled state variable, you should also add it to the duplication parameters and resetProperties()
 

@@ -12,7 +12,7 @@ import { Row } from '../layout/row'
 import { ChoosingContractForm } from './choosing-contract-form'
 import { ContractParamsForm } from './contract-params-form'
 import {
-  determineOutcomeType,
+  getOutcomeTypeAndSumsToOne,
   getContractTypeFromValue,
 } from './create-contract-types'
 import { capitalize } from 'lodash'
@@ -83,7 +83,9 @@ export function NewContractPanel(props: {
 
   // Add function to handle AI suggestions
   const handleAISuggestion = (m: AIGeneratedMarket) => {
-    const { outcomeType, shouldSumToOne } = determineOutcomeType(m.outcomeType)
+    const { outcomeType, shouldSumToOne } = getOutcomeTypeAndSumsToOne(
+      m.outcomeType
+    )
     setParams({
       q: m.question,
       outcomeType,

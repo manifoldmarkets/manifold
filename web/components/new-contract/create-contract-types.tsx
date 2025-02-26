@@ -22,6 +22,7 @@ export const PREDICTIVE_CONTRACT_TYPES = {
         <BsFillXCircleFill className=" absolute bottom-0 right-0 ml-4 h-6 w-8" />
       </Col>
     ),
+    outcomeType: 'BINARY',
   },
   DEPENDENT_MULTIPLE_CHOICE: {
     label: 'Multiple Choice',
@@ -35,6 +36,8 @@ export const PREDICTIVE_CONTRACT_TYPES = {
         <BsUiChecksGrid className="h-12 w-12" />
       </Col>
     ),
+    shouldSumToOne: true,
+    outcomeType: 'MULTIPLE_CHOICE',
   },
   INDEPENDENT_MULTIPLE_CHOICE: {
     label: 'Set',
@@ -48,6 +51,8 @@ export const PREDICTIVE_CONTRACT_TYPES = {
         <BsUiChecks className="h-12 w-12" />
       </Col>
     ),
+    shouldSumToOne: false,
+    outcomeType: 'MULTIPLE_CHOICE',
   },
   NUMBER: {
     label: 'Numeric (experimental)',
@@ -61,6 +66,7 @@ export const PREDICTIVE_CONTRACT_TYPES = {
         <GoNumber className="h-12 w-12" />
       </Col>
     ),
+    outcomeType: 'NUMBER',
   },
   MULTI_NUMERIC: {
     label: 'Numeric (experimental)',
@@ -74,6 +80,8 @@ export const PREDICTIVE_CONTRACT_TYPES = {
         <GoNumber className="h-12 w-12" />
       </Col>
     ),
+    shouldSumToOne: true,
+    outcomeType: 'MULTI_NUMERIC',
   },
 } as const
 
@@ -105,6 +113,7 @@ export const NON_PREDICTIVE_CONTRACT_TYPES = {
       </Col>
     ),
     className: 'hover:!ring-orange-500/50',
+    outcomeType: 'POLL',
   },
 } as const
 
@@ -122,20 +131,17 @@ export function getContractTypeFromValue(
     : undefined
 }
 
-export const determineOutcomeType = (
+export const getOutcomeTypeAndSumsToOne = (
   value: keyof typeof ALL_CONTRACT_TYPES
 ): {
   outcomeType: CreateableOutcomeType
   shouldSumToOne: boolean
 } => {
-  if (value === 'INDEPENDENT_MULTIPLE_CHOICE') {
-    return { outcomeType: 'MULTIPLE_CHOICE', shouldSumToOne: false }
-  } else if (value === 'DEPENDENT_MULTIPLE_CHOICE') {
-    return { outcomeType: 'MULTIPLE_CHOICE', shouldSumToOne: true }
-  } else {
-    return {
-      outcomeType: value,
-      shouldSumToOne: false,
-    }
+  const contractType =
+    ALL_CONTRACT_TYPES[value as keyof typeof ALL_CONTRACT_TYPES]
+  return {
+    outcomeType: contractType.outcomeType,
+    shouldSumToOne:
+      'shouldSumToOne' in contractType ? contractType.shouldSumToOne : false,
   }
 }

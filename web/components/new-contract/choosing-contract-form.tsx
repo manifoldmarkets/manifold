@@ -6,7 +6,7 @@ import { Row } from '../layout/row'
 import { Spacer } from '../layout/spacer'
 import {
   ALL_CONTRACT_TYPES,
-  determineOutcomeType,
+  getOutcomeTypeAndSumsToOne,
 } from './create-contract-types'
 import { CreateContractStateType } from './new-contract-panel'
 
@@ -47,7 +47,7 @@ export function ChoosingContractForm(props: {
               shouldAnswersSumToOne={shouldAnswersSumToOne}
               onClick={() => {
                 const { outcomeType, shouldSumToOne } =
-                  determineOutcomeType(value)
+                  getOutcomeTypeAndSumsToOne(value)
                 setShouldAnswersSumToOne(shouldSumToOne)
                 setOutcomeType(outcomeType)
                 setState('filling contract params')
