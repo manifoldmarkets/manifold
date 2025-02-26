@@ -26,11 +26,7 @@ import {
   getNumberExpectedValue,
   answerTextToRange,
 } from 'common/src/number'
-import {
-  formatExpectedValue,
-  getExpectedValue,
-  getFormattedExpectedValue,
-} from 'common/multi-numeric'
+import { formatExpectedValue, getExpectedValue } from 'common/multi-numeric'
 
 export function BinaryResolutionOrChance(props: {
   contract: BinaryContract
@@ -200,9 +196,7 @@ export function MultiNumericResolutionOrExpectation(props: {
             <>
               <Tooltip text={formattedValue} placement="bottom">
                 <MultiNumericValueLabel
-                  formattedValue={
-                    resolvedAnswer?.text ?? getFormattedExpectedValue(contract)
-                  }
+                  formattedValue={resolvedAnswer?.text ?? formattedValue}
                 />
               </Tooltip>
             </>
