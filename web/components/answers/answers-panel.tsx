@@ -303,9 +303,7 @@ export function AnswersPanel(props: {
                 onHover={(hovering) =>
                   onAnswerHover?.(hovering ? answer : undefined)
                 }
-                onClick={() => {
-                  onAnswerClick?.(answer)
-                }}
+                onClick={onAnswerClick}
                 unfilledBets={unfilledBets?.filter(
                   (b) => b.answerId === answer.id
                 )}
@@ -583,7 +581,7 @@ export function Answer(props: {
   user: User | undefined | null
   onCommentClick?: () => void
   onHover?: (hovering: boolean) => void
-  onClick?: () => void
+  onClick?: (answer: Answer) => void
   barColor?: string
   shouldShowLimitOrderChart: boolean
   feedReason?: string
@@ -714,8 +712,8 @@ export function Answer(props: {
         prob={prob}
         resolvedProb={resolvedProb}
         onHover={onHover}
-        onClick={onClick}
-        className={clsx('group cursor-pointer', className)}
+        onClick={() => onClick?.(answer)}
+        className={clsx('group', onClick && 'cursor-pointer', className)}
         barColor={barColor}
         label={
           <Row className={'items-center gap-2'}>
