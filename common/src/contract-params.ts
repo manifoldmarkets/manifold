@@ -107,8 +107,7 @@ export async function getContractParams(
   const lastBet: Bet | undefined = lastBetArray[0]
   const lastBetTime = lastBet?.createdTime
 
-  // Calculate size of each component for debugging
-  const returnObj = {
+  return removeUndefinedProps({
     outcomeType: contract.outcomeType,
     contract,
     lastBetTime,
@@ -127,33 +126,7 @@ export async function getContractParams(
       'desc'
     ).map(removeUndefinedProps),
     dashboards,
-  }
-
-  // Helper function to calculate approximate size in KB
-  const calculateSize = (obj: any): number => {
-    const jsonString = JSON.stringify(obj)
-    // Each character in a string is 2 bytes in JavaScript
-    return (jsonString.length * 2) / 1024
-  }
-
-  // Log the size of each component
-  console.log('ContractParams component sizes (KB):')
-  const componentSizes = Object.entries(returnObj).map(([key, value]) => {
-    const size = calculateSize(value)
-    return { key, size }
   })
-
-  // Sort by size (largest first) and log
-  componentSizes.sort((a, b) => b.size - a.size)
-  componentSizes.forEach(({ key, size }) => {
-    console.log(`  - ${key}: ${size.toFixed(2)} KB`)
-  })
-
-  // Log total size
-  const totalSize = componentSizes.reduce((sum, { size }) => sum + size, 0)
-  console.log(`Total size: ${totalSize.toFixed(2)} KB`)
-
-  return removeUndefinedProps(returnObj)
 }
 
 export const getSingleBetPoints = (
