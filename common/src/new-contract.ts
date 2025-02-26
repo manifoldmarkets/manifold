@@ -285,9 +285,11 @@ const getMultipleChoiceProps = (
     shouldAnswersSumToOne,
     ante,
     answersWithOther,
-    isBinaryMulti ? VERSUS_COLORS : undefined,
-    shortTexts,
-    imageUrls
+    removeUndefinedProps({
+      colors: isBinaryMulti ? VERSUS_COLORS : undefined,
+      shortTexts,
+      imageUrls,
+    })
   )
   const system: CPMMMulti = {
     mechanism: 'cpmm-multi-1',
@@ -348,10 +350,7 @@ const getMultiNumericProps = (
     shouldAnswersSumToOne,
     ante,
     answers,
-    undefined,
-    undefined,
-    undefined,
-    midpoints
+    { midpoints }
   )
   const system: MultiNumeric = {
     mechanism: 'cpmm-multi-1',
@@ -374,11 +373,14 @@ function createAnswers(
   shouldAnswersSumToOne: boolean,
   ante: number,
   answers: string[],
-  colors?: string[],
-  shortTexts?: string[],
-  imageUrls?: string[],
-  midpoints?: number[]
+  options: {
+    colors?: string[]
+    shortTexts?: string[]
+    imageUrls?: string[]
+    midpoints?: number[]
+  } = {}
 ) {
+  const { colors, shortTexts, imageUrls, midpoints } = options
   const ids = answers.map(() => randomString())
 
   let prob = 0.5
