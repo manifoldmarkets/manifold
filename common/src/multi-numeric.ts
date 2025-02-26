@@ -39,7 +39,8 @@ export const getMinMax = (contract: MultiNumericContract) => {
 
 export function formatExpectedValue(
   value: number,
-  contract: MultiNumericContract
+  contract: MultiNumericContract,
+  includeUnit = true
 ) {
   const { answers, unit } = contract
   const { min, max } = getMinMax(contract)
@@ -52,5 +53,15 @@ export function formatExpectedValue(
     currency: 'USD',
     maximumFractionDigits: max - min < 10 ? 2 : max - min < 100 ? 1 : 0,
   })
-  return formatter.format(value).replace('$', '') + ' ' + (unit ?? '')
+  return (
+    formatter.format(value).replace('$', '') +
+    (includeUnit ? ' ' + (unit ?? '') : '')
+  )
+}
+
+export function getFormattedExpectedValue(
+  contract: MultiNumericContract,
+  includeUnit = true
+) {
+  return formatExpectedValue(getExpectedValue(contract), contract, includeUnit)
 }

@@ -26,12 +26,13 @@ import {
   boostedColumn,
 } from './contract-table-col-formats'
 import { UserHovercard } from '../user/user-hovercard'
-import { getFormattedExpectedValue } from 'common/src/number'
+import { getFormattedNumberExpectedValue } from 'common/src/number'
 import { removeEmojis } from 'common/util/string'
 import { track } from 'web/lib/service/analytics'
 import { Tooltip } from '../widgets/tooltip'
 import { SpiceCoin } from 'web/public/custom-components/spiceCoin'
 import { SweepiesCoin } from 'web/public/custom-components/sweepiesCoin'
+import { getFormattedExpectedValue } from 'common/multi-numeric'
 
 export function ContractsTable(props: {
   contracts: Contract[]
@@ -161,6 +162,7 @@ export function ContractStatusLabel(props: {
   const { contract, showProbChange, chanceLabel, className, width } = props
   const probTextColor = getTextColor(contract)
   const { outcomeType } = contract
+  console.log('outcomeType', contract)
 
   switch (outcomeType) {
     case 'BINARY': {
@@ -211,7 +213,11 @@ export function ContractStatusLabel(props: {
       )
     }
     case 'NUMBER': {
-      const val = getFormattedExpectedValue(contract)
+      const val = getFormattedNumberExpectedValue(contract)
+      return <span className={clsx(probTextColor, className)}>{val}</span>
+    }
+    case 'MULTI_NUMERIC': {
+      const val = getFormattedExpectedValue(contract, false)
       return <span className={clsx(probTextColor, className)}>{val}</span>
     }
     case 'MULTIPLE_CHOICE': {

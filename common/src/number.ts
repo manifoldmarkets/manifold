@@ -100,7 +100,7 @@ export function getNumberExpectedValue(
   return sum(answerProbabilities.map((p, i) => p * answerValues[i]))
 }
 
-export function getFormattedExpectedValue(contract: CPMMNumericContract) {
+export function getFormattedNumberExpectedValue(contract: CPMMNumericContract) {
   return formatNumberExpectedValue(getNumberExpectedValue(contract), contract)
 }
 

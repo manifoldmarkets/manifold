@@ -1,12 +1,16 @@
 import { SupabaseDirectClient } from 'shared/supabase/init'
-import { Contract, nativeContractColumnsArray } from 'common/contract'
+import {
+  Contract,
+  CPMMMultiContract,
+  nativeContractColumnsArray,
+} from 'common/contract'
 import { isAdminId } from 'common/envs/constants'
-import { convertContract } from 'common/supabase/contracts'
+import { convertAnswer, convertContract } from 'common/supabase/contracts'
 import { generateEmbeddings } from 'shared/helpers/openai-utils'
 import { APIError } from 'common/api/utils'
 import { broadcastUpdatedContract } from 'shared/websockets/helpers'
 import { updateData, DataUpdate, update } from './utils'
-import { camelCase, mapValues, uniq } from 'lodash'
+import { camelCase, mapValues, sortBy } from 'lodash'
 import { contractColumnsToSelect, log } from 'shared/utils'
 import { Tables } from 'common/supabase/utils'
 // used for API to allow slug as param
@@ -59,11 +63,24 @@ export const getContractsDirect = async (
 ) => {
   if (contractIds.length === 0) return [] as Contract[]
 
-  return await pg.map(
-    `select ${contractColumnsToSelect} from contracts where id in ($1:list)`,
-    [uniq(contractIds)],
-    (r) => convertContract(r)
+  const results = await pg.multi(
+    `select ${contractColumnsToSelect} from contracts
+            where id in ($1:list);
+            select * from answers where contract_id in ($1:list);
+            `,
+    [contractIds]
   )
+  const contracts = results[0].map(convertContract)
+  const answers = results[1].map(convertAnswer)
+  const multiContracts = contracts.filter((c) => c.mechanism === 'cpmm-multi-1')
+  for (const contract of multiContracts) {
+    // eslint-disable-next-line no-extra-semi
+    ;(contract as CPMMMultiContract).answers = sortBy(
+      answers.filter((a) => a.contractId === contract.id),
+      (a) => a.index
+    )
+  }
+  return contracts
 }
 
 export const getUniqueBettorIdsForAnswer = async (
