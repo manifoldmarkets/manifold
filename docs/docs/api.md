@@ -884,30 +884,61 @@ Parameters:
 
 [Requires Auth](#authentication). Must be admin/moderator/creator of topic if curated/private. Must be market creator or site moderator if topic is public.
 
+
 ### `POST /v0/market/[marketId]/resolve`
 
-Resolve a market.
+Resolve a market. The required payload format depends on the market type.
 
-Parameters:
+#### For Binary Markets
 
-For binary markets:
+- **outcome**: One of `YES`, `NO`, `MKT`, or `CANCEL`.
+- **probabilityInt** (optional): The probability to use for a `MKT` resolution.
 
-- `outcome`: One of `YES`, `NO`, `MKT`, or `CANCEL`.
-- `probabilityInt`: Optional. The probability to use for `MKT` resolution.
+#### For Free Response or Multiple Choice Markets
 
-For free response or multiple choice markets:
+The resolution payload format depends on the market’s `shouldAnswersSumToOne` setting:
 
-- `outcome`: One of `MKT`, `CANCEL`, or a `number` indicating the answer index.
-- `resolutions`: An array of `{ answer, pct }` objects to use as the weights for resolving in favor of multiple free response options. Can only be set with `MKT` outcome. Note that the total weights must add to 100.
+**1. When `shouldAnswersSumToOne` is true (the default for dpm-2 free response and multiple choice):**
 
-For numeric markets:
+Use the weighted resolution format:
 
-- `outcome`: One of `CANCEL`, or a `number` indicating the selected numeric bucket ID.
-- `value`: The value that the market resolves to.
-- `probabilityInt`: Required if `value` is present. Should be equal to
+```json
+{
+  "outcome": "MKT",  // or CANCEL, or a number indicating the selected answer index
+  "resolutions": [
+    { "answer": <number>, "pct": <number> }
+  ]
+}
+```
 
-  - If log scale: `log10(value - min + 1) / log10(max - min + 1)`
+- Each object in the `resolutions` array assigns a weight (`pct`) to an answer (indicated by its index). The weights must add up to 100.
+
+**2. When `shouldAnswersSumToOne` is false:**
+
+Resolve each answer individually, as you would for a binary market. For each answer, issue a separate resolve request with a payload that includes:
+  
+- **outcome**: Either `"YES"` (if the answer is resolved as a win) or `"NO"` (if resolved as a loss).
+- **answerId**: The unique identifier for the answer (as returned in the full market’s `answers` array).
+
+For example, to resolve an individual answer:
+
+```json
+{
+  "outcome": "YES",  // or "NO"
+  "answerId": "<answerId>"
+}
+```
+
+This approach treats each answer as an independent binary resolution, ensuring that the actual answer identifier is included in the payload.
+
+#### For Numeric Markets
+
+- **outcome**: Either `CANCEL` or a number indicating the selected numeric bucket ID.
+- **value**: The value that the market resolves to.
+- **probabilityInt**: Required if `value` is provided. It should equal:
+  - For log scale: `log10(value - min + 1) / log10(max - min + 1)`
   - Otherwise: `(value - min) / (max - min)`
+
 
 [Requires Auth](#authentication).
 
