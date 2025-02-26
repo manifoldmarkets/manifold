@@ -361,7 +361,8 @@ export function ContractParamsForm(props: {
     (outcomeType === 'NUMBER'
       ? numberOfBuckets <= MULTI_NUMERIC_BUCKETS_MAX && numberOfBuckets >= 2
       : true) &&
-    (outcomeType !== 'MULTI_NUMERIC' || (minMaxValid && unit !== ''))
+    (outcomeType !== 'MULTI_NUMERIC' ||
+      ((minMaxValid || isValidMultipleChoice) && unit !== ''))
 
   const [errorText, setErrorText] = useState<string>('')
   useEffect(() => {

@@ -26,7 +26,11 @@ import {
   getNumberExpectedValue,
   answerTextToRange,
 } from 'common/src/number'
-import { formatExpectedValue, getExpectedValue } from 'common/multi-numeric'
+import {
+  formatExpectedValue,
+  getExpectedValue,
+  getFormattedExpectedValue,
+} from 'common/multi-numeric'
 
 export function BinaryResolutionOrChance(props: {
   contract: BinaryContract
@@ -179,9 +183,8 @@ export function MultiNumericResolutionOrExpectation(props: {
   className?: string
 }) {
   const { contract, className } = props
-  // TODO: display numeric resolutions
-  const { resolution } = contract
-
+  const { answers, resolution } = contract
+  const resolvedAnswer = answers.find((a) => a.id === resolution)
   const value = getExpectedValue(contract)
   const formattedValue = formatExpectedValue(value, contract)
   const spring = useAnimatedNumber(value)
@@ -196,7 +199,11 @@ export function MultiNumericResolutionOrExpectation(props: {
           ) : (
             <>
               <Tooltip text={formattedValue} placement="bottom">
-                <MultiNumericValueLabel formattedValue={resolution} />
+                <MultiNumericValueLabel
+                  formattedValue={
+                    resolvedAnswer?.text ?? getFormattedExpectedValue(contract)
+                  }
+                />
               </Tooltip>
             </>
           )}

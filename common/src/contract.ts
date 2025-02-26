@@ -275,6 +275,7 @@ export type MultiNumeric = {
   totalLiquidity: number
   subsidyPool: number
   resolutions?: { [answerId: string]: number }
+  resolution?: string | 'CHOOSE_MULTIPLE' | 'CANCEL'
   sort?: SortType
 }
 

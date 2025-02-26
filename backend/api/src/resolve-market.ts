@@ -1,11 +1,6 @@
 import { sumBy } from 'lodash'
 import { HOUSE_LIQUIDITY_PROVIDER_ID } from 'common/antes'
-import {
-  Contract,
-  CPMMMultiContract,
-  CPMMNumericContract,
-  MarketContract,
-} from 'common/contract'
+import { Contract, MarketContract, MultiContract } from 'common/contract'
 import { getContract, getUser, isProd, log } from 'shared/utils'
 import { APIError, type APIHandler, validate } from './helpers/endpoint'
 import { resolveMarketHelper } from 'shared/resolve-market-helpers'
@@ -153,7 +148,9 @@ function getResolutionParams(
       resolutions: undefined,
     }
   } else if (
-    (outcomeType === 'MULTIPLE_CHOICE' || outcomeType === 'NUMBER') &&
+    (outcomeType === 'MULTIPLE_CHOICE' ||
+      outcomeType === 'NUMBER' ||
+      outcomeType === 'MULTI_NUMERIC') &&
     contract.mechanism === 'cpmm-multi-1'
   ) {
     const cpmmMultiParams = validate(resolveMultiSchema, props)
@@ -196,10 +193,7 @@ function getResolutionParams(
   throw new APIError(400, `Invalid outcome type: ${outcomeType}`)
 }
 
-function validateAnswerCpmm(
-  contract: CPMMMultiContract | CPMMNumericContract,
-  answerId: string
-) {
+function validateAnswerCpmm(contract: MultiContract, answerId: string) {
   const validIds = contract.answers.map((a) => a.id)
   if (!validIds.includes(answerId)) {
     throw new APIError(403, `${answerId} is not a valid answer ID`)
