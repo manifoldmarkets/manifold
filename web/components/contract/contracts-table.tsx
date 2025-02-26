@@ -162,7 +162,6 @@ export function ContractStatusLabel(props: {
   const { contract, showProbChange, chanceLabel, className, width } = props
   const probTextColor = getTextColor(contract)
   const { outcomeType } = contract
-  console.log('outcomeType', contract)
 
   switch (outcomeType) {
     case 'BINARY': {

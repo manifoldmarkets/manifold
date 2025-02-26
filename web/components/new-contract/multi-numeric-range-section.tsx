@@ -381,7 +381,6 @@ export const MultiNumericRangeSection = (props: {
       <ControlledTabs
         activeIndex={titles.indexOf(selectedTab)}
         onClick={(title) => {
-          console.log('title', title)
           handleTabChange(title.toLowerCase() as 'thresholds' | 'buckets')
         }}
         tabs={tabs}
