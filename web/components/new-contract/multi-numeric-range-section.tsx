@@ -4,11 +4,12 @@ import { Row } from 'web/components/layout/row'
 import { Input } from 'web/components/widgets/input'
 import { useState, useCallback, useEffect } from 'react'
 import { Button } from '../buttons/button'
-import { api } from 'web/lib/api/api'
+import { api, APIError } from 'web/lib/api/api'
 import { XIcon } from '@heroicons/react/solid'
 import { usePersistentLocalState } from 'web/hooks/use-persistent-local-state'
 import { ControlledTabs } from '../layout/tabs'
 import { debounce } from 'lodash'
+import { isTimeUnit } from 'common/multi-numeric'
 
 export const MultiNumericRangeSection = (props: {
   submitState: 'EDITING' | 'LOADING' | 'DONE'
@@ -67,12 +68,15 @@ export const MultiNumericRangeSection = (props: {
     number[]
   >(!shouldAnswersSumToOne ? [] : midpoints, 'bucket-midpoints' + paramsKey)
   const minMaxError = min !== undefined && max !== undefined && min >= max
+  const [error, setError] = useState<string>('')
+  const [regenerateError, setRegenerateError] = useState<string>('')
 
   const selectedTab = shouldAnswersSumToOne ? 'buckets' : 'thresholds'
 
   const generateRanges = async () => {
-    console.log('generateRanges', question, min, max)
-    if (!question || min === undefined || max === undefined) return
+    setError('')
+    setRegenerateError('')
+    if (!question || min === undefined || max === undefined || !unit) return
     setIsGeneratingRanges(true)
     try {
       const result = await api('generate-ai-numeric-ranges', {
@@ -80,6 +84,7 @@ export const MultiNumericRangeSection = (props: {
         description,
         min,
         max,
+        unit,
       })
 
       setThresholdAnswers(result.thresholds.answers)
@@ -88,6 +93,11 @@ export const MultiNumericRangeSection = (props: {
       setBucketMidpoints(result.buckets.midpoints)
     } catch (e) {
       console.error('Error generating ranges:', e)
+      if (e instanceof APIError) {
+        setError(e.message)
+      } else {
+        setError('An error occurred while generating ranges.')
+      }
     }
     setIsGeneratingRanges(false)
   }
@@ -111,8 +121,9 @@ export const MultiNumericRangeSection = (props: {
   }
 
   const handleRangeBlur = () => {
-    console.log('handleRangeBlur', min, max, minMaxError, question)
-    if (min !== undefined && max !== undefined && !minMaxError && question) {
+    setError('')
+    setRegenerateError('')
+    if (!minMaxError && question && unit) {
       generateRanges()
     }
   }
@@ -144,6 +155,7 @@ export const MultiNumericRangeSection = (props: {
     max: number | undefined,
     tab: 'thresholds' | 'buckets'
   ) => {
+    setRegenerateError('')
     // Only regenerate midpoints if we have min and max
     if (min === undefined || max === undefined) return
 
@@ -154,6 +166,8 @@ export const MultiNumericRangeSection = (props: {
         min,
         max,
         description,
+        unit,
+        tab: selectedTab,
       })
       setMidpoints(result.midpoints)
 
@@ -165,6 +179,11 @@ export const MultiNumericRangeSection = (props: {
       }
     } catch (e) {
       console.error('Error regenerating midpoints:', e)
+      if (e instanceof APIError) {
+        setRegenerateError(e.message)
+      } else {
+        setRegenerateError('An error occurred while regenerating midpoints.')
+      }
     }
   }
 
@@ -185,14 +204,108 @@ export const MultiNumericRangeSection = (props: {
       setBucketAnswers([...bucketAnswers, ''])
     }
   }
+  useEffect(() => {
+    if (isTimeUnit(unit)) {
+      setError(
+        'Time units are not supported for numeric ranges. Date ranges are coming soon!'
+      )
+    } else {
+      setError('')
+    }
+  }, [unit])
+
+  const tabs = [
+    {
+      title: 'Buckets',
+      content: (
+        <Col className="mt-2 gap-2">
+          {bucketAnswers.map((answer, i) => (
+            <Row key={i} className="items-center gap-2">
+              {i + 1}.{' '}
+              <Input
+                className="w-full"
+                value={answer}
+                onChange={(e) => {
+                  const newAnswers = [...bucketAnswers]
+                  newAnswers[i] = e.target.value
+                  setBucketAnswers(newAnswers)
+                  debouncedHandleAnswerChanged(newAnswers, 'buckets')
+                }}
+              />
+              <button
+                onClick={() => removeAnswer(i, 'buckets')}
+                type="button"
+                className="hover:bg-canvas-50 border-ink-300 text-ink-700 bg-canvas-0 focus:ring-primary-500 inline-flex items-center rounded-full border p-1 text-xs font-medium shadow-sm focus:outline-none focus:ring-2 focus:ring-offset-2"
+              >
+                <XIcon className="h-5 w-5" aria-hidden="true" />
+              </button>
+            </Row>
+          ))}
+          <Row className="justify-end gap-2">
+            <Button
+              color="none"
+              onClick={addAnswer}
+              className="hover:bg-canvas-50 border-ink-300 text-ink-700 bg-canvas-0 focus:ring-primary-500 inline-flex items-center rounded border px-2.5 py-1.5 text-xs font-medium shadow-sm focus:outline-none focus:ring-2 focus:ring-offset-2"
+            >
+              Add bucket
+            </Button>
+          </Row>
+        </Col>
+      ),
+    },
+    {
+      title: 'Thresholds',
+      content: (
+        <Col className="mt-2 gap-2">
+          {thresholdAnswers.map((answer, i) => (
+            <Row key={i} className="items-center gap-2">
+              {i + 1}.{' '}
+              <Input
+                className="w-full"
+                value={answer}
+                onChange={(e) => {
+                  const newAnswers = [...thresholdAnswers]
+                  newAnswers[i] = e.target.value
+                  setThresholdAnswers(newAnswers)
+                  debouncedHandleAnswerChanged(newAnswers, 'thresholds')
+                }}
+              />
+              <button
+                onClick={() => removeAnswer(i, 'thresholds')}
+                type="button"
+                className="hover:bg-canvas-50 border-ink-300 text-ink-700 bg-canvas-0 focus:ring-primary-500 inline-flex items-center rounded-full border p-1 text-xs font-medium shadow-sm focus:outline-none focus:ring-2 focus:ring-offset-2"
+              >
+                <XIcon className="h-5 w-5" aria-hidden="true" />
+              </button>
+            </Row>
+          ))}
+          <Row className="justify-end gap-2">
+            <Button
+              color="none"
+              onClick={addAnswer}
+              className="hover:bg-canvas-50 border-ink-300 text-ink-700 bg-canvas-0 focus:ring-primary-500 inline-flex items-center rounded border px-2.5 py-1.5 text-xs font-medium shadow-sm focus:outline-none focus:ring-2 focus:ring-offset-2"
+            >
+              Add threshold
+            </Button>
+          </Row>
+        </Col>
+      ),
+    },
+  ]
+  const titles = tabs.map((tab) => tab.title.toLowerCase())
 
   return (
     <Col>
       <Row className={'flex-wrap gap-x-4'}>
         <Col className="mb-2 items-start">
-          <Row className=" gap-1 px-1 py-2">
+          <Row className=" items-baseline gap-1 px-1 py-2">
             <span className="">Range & unit</span>
             <InfoTooltip text="The lower and higher bounds of the numeric range. Choose bounds the value could reasonably be expected to hit." />
+            {minMaxError && (
+              <span className="text-scarlet-500 text-sm">
+                Max must be greater than min
+              </span>
+            )}
           </Row>
           <Row className={'gap-2'}>
             <Input
@@ -224,13 +337,14 @@ export const MultiNumericRangeSection = (props: {
               placeholder="Unit"
               onClick={(e) => e.stopPropagation()}
               onChange={(e) => setUnit(e.target.value)}
+              onBlur={handleRangeBlur}
               disabled={submitState === 'LOADING'}
               value={unit}
             />
           </Row>
         </Col>
       </Row>
-      <Row className=" w-full justify-end gap-2">
+      <Row className="mb-2 w-full gap-2">
         <Button
           color="indigo-outline"
           onClick={generateRanges}
@@ -240,103 +354,30 @@ export const MultiNumericRangeSection = (props: {
             isGeneratingRanges ||
             min === undefined ||
             max === undefined ||
-            minMaxError
+            minMaxError ||
+            !unit
           }
         >
-          Generate ranges
+          {answers.length > 0 ? 'Regenerate ranges' : 'Generate ranges'}
         </Button>
       </Row>
-
-      {minMaxError && (
-        <div className="text-scarlet-500 mb-2 mt-2 text-sm">
-          The maximum value must be greater than the minimum.
-        </div>
+      {error && (
+        <div className="text-scarlet-500 mb-2 mt-2 text-sm">{error}</div>
       )}
 
       <ControlledTabs
-        activeIndex={selectedTab === 'thresholds' ? 0 : 1}
-        onClick={(_, index) =>
-          handleTabChange(index === 0 ? 'thresholds' : 'buckets')
-        }
-        tabs={[
-          {
-            title: 'Thresholds',
-            content: (
-              <Col className="mt-2 gap-2">
-                {thresholdAnswers.map((answer, i) => (
-                  <Row key={i} className="items-center gap-2">
-                    {i + 1}.{' '}
-                    <Input
-                      className="w-full"
-                      value={answer}
-                      onChange={(e) => {
-                        const newAnswers = [...thresholdAnswers]
-                        newAnswers[i] = e.target.value
-                        setThresholdAnswers(newAnswers)
-                        debouncedHandleAnswerChanged(newAnswers, 'thresholds')
-                      }}
-                    />
-                    <button
-                      onClick={() => removeAnswer(i, 'thresholds')}
-                      type="button"
-                      className="hover:bg-canvas-50 border-ink-300 text-ink-700 bg-canvas-0 focus:ring-primary-500 inline-flex items-center rounded-full border p-1 text-xs font-medium shadow-sm focus:outline-none focus:ring-2 focus:ring-offset-2"
-                    >
-                      <XIcon className="h-5 w-5" aria-hidden="true" />
-                    </button>
-                  </Row>
-                ))}
-                <Row className="justify-end gap-2">
-                  <Button
-                    color="none"
-                    onClick={addAnswer}
-                    className="hover:bg-canvas-50 border-ink-300 text-ink-700 bg-canvas-0 focus:ring-primary-500 inline-flex items-center rounded border px-2.5 py-1.5 text-xs font-medium shadow-sm focus:outline-none focus:ring-2 focus:ring-offset-2"
-                  >
-                    Add threshold
-                  </Button>
-                </Row>
-              </Col>
-            ),
-          },
-          {
-            title: 'Buckets',
-            content: (
-              <Col className="mt-2 gap-2">
-                {bucketAnswers.map((answer, i) => (
-                  <Row key={i} className="items-center gap-2">
-                    {i + 1}.{' '}
-                    <Input
-                      className="w-full"
-                      value={answer}
-                      onChange={(e) => {
-                        const newAnswers = [...bucketAnswers]
-                        newAnswers[i] = e.target.value
-                        setBucketAnswers(newAnswers)
-                        debouncedHandleAnswerChanged(newAnswers, 'buckets')
-                      }}
-                    />
-                    <button
-                      onClick={() => removeAnswer(i, 'buckets')}
-                      type="button"
-                      className="hover:bg-canvas-50 border-ink-300 text-ink-700 bg-canvas-0 focus:ring-primary-500 inline-flex items-center rounded-full border p-1 text-xs font-medium shadow-sm focus:outline-none focus:ring-2 focus:ring-offset-2"
-                    >
-                      <XIcon className="h-5 w-5" aria-hidden="true" />
-                    </button>
-                  </Row>
-                ))}
-                <Row className="justify-end gap-2">
-                  <Button
-                    color="none"
-                    onClick={addAnswer}
-                    className="hover:bg-canvas-50 border-ink-300 text-ink-700 bg-canvas-0 focus:ring-primary-500 inline-flex items-center rounded border px-2.5 py-1.5 text-xs font-medium shadow-sm focus:outline-none focus:ring-2 focus:ring-offset-2"
-                  >
-                    Add bucket
-                  </Button>
-                </Row>
-              </Col>
-            ),
-          },
-        ]}
+        activeIndex={titles.indexOf(selectedTab)}
+        onClick={(title) => {
+          console.log('title', title)
+          handleTabChange(title.toLowerCase() as 'thresholds' | 'buckets')
+        }}
+        tabs={tabs}
       />
+      {regenerateError && (
+        <div className="text-scarlet-500 mb-2 mt-2 text-sm">
+          {regenerateError}
+        </div>
+      )}
     </Col>
   )
 }

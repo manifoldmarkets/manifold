@@ -1,14 +1,22 @@
 import { APIError, APIHandler } from './helpers/endpoint'
 import { track } from 'shared/analytics'
-import { models, promptClaude } from 'shared/helpers/claude'
+import {
+  models,
+  promptClaude,
+  parseClaudeResponseAsJson,
+} from 'shared/helpers/claude'
 import { log } from 'shared/utils'
 import { rateLimitByUser } from './helpers/rate-limit'
 import { HOUR_MS } from 'common/util/time'
+import { isTimeUnit } from 'common/multi-numeric'
 
-// Shared guidelines for both threshold and bucket ranges
-const sharedGuidelines = `
-    Guidelines:
+const baseSystemPrompt = (style: 'threshold' | 'bucket') => {
+  return `
+    You are a helpful AI assistant that generates ${style} numeric ranges for prediction market questions.
+    
+    GUIDLINES:
     - Generate 2-12 ranges that cover the entire span from min to max
+    - Err on the side of fewer (3-5) ranges when possible
     - Favor human-friendly ranges like:
       * Round numbers
       * Decimal precision when appropriate
@@ -16,26 +24,113 @@ const sharedGuidelines = `
     - Each range should have a midpoint value for expected value calculations
     - Return the ranges and associated midpoints in ascending order
     - For log scale ranges (i.e. ranges like 1-100, 100-1000, 1000-10000, or above 10, above 100, above 1000, etc.), use the geometric mean for the midpoints.
-    - ONLY return a single JSON object without any other text or formatting:{
+    - ONLY return a single JSON object without any other text or formatting:
+    {
       answers: array of range strings,
       midpoints: array of corresponding midpoint numbers
     }
-`
-
-// Base system prompt template that both threshold and bucket prompts will use
-const baseSystemPrompt = (style: string) => {
-  const formatExample =
-    style === 'threshold'
-      ? '"Above X" format (e.g., "Above 100", "Above 200")'
-      : '"X-Y" format (e.g., "100-199", "200-299")'
-  return `
-    You are a helpful AI assistant that generates ${style} numeric ranges for prediction market questions.
-    ${sharedGuidelines}
-    Format your ranges using ${formatExample}
+    ${style === 'threshold' ? thresholdExamples : bucketExamples}
 `
 }
 
-export const thresholdExamples = `
+export const generateAINumericRanges: APIHandler<'generate-ai-numeric-ranges'> =
+  rateLimitByUser(
+    async (props, auth) => {
+      const { question, min, max, description, unit } = props
+      if (isTimeUnit(unit)) {
+        throw new APIError(
+          400,
+          'Time unit is not supported for numeric ranges. Date ranges are coming soon!'
+        )
+      }
+      const prompt = userPrompt(question, min, max, unit, description)
+
+      const thresholdSystemPrompt = baseSystemPrompt('threshold')
+
+      const bucketSystemPrompt = baseSystemPrompt('bucket')
+
+      const [thresholdResponse, bucketResponse] = await Promise.all([
+        promptClaude(prompt, {
+          model: models.sonnet,
+          system: thresholdSystemPrompt,
+        }),
+        promptClaude(prompt, {
+          model: models.sonnet,
+          system: bucketSystemPrompt,
+        }),
+      ])
+
+      log('thresholdResponse', thresholdResponse)
+      log('bucketResponse', bucketResponse)
+
+      const thresholds = parseClaudeResponseAsJson(
+        thresholdResponse
+      ) as RangeResponse
+      const buckets = parseClaudeResponseAsJson(bucketResponse) as RangeResponse
+
+      assertMidpointsAreUnique(thresholds.midpoints)
+      assertMidpointsAreAscending(thresholds.midpoints)
+
+      assertMidpointsAreUnique(buckets.midpoints)
+      assertMidpointsAreAscending(buckets.midpoints)
+      track(auth.uid, 'generate-ai-numeric-ranges', {
+        question,
+      })
+
+      return {
+        thresholds,
+        buckets,
+      }
+    },
+    { maxCalls: 60, windowMs: HOUR_MS }
+  )
+
+export const regenerateNumericMidpoints: APIHandler<'regenerate-numeric-midpoints'> =
+  rateLimitByUser(
+    async (props, auth) => {
+      const { question, description, answers, min, max, unit, tab } = props
+      if (isTimeUnit(unit)) {
+        throw new APIError(
+          400,
+          'Time unit is not supported for numeric ranges. Date ranges are coming soon!'
+        )
+      }
+      const prompt = `${userPrompt(
+        question,
+        min,
+        max,
+        unit,
+        description
+      )}\nRanges: ${answers.join(', ')}.
+      Generate appropriate midpoints for each range. 
+      RULES:
+      - The midpoints should be numbers that represent the expected value for each range.
+      - If the range is a log scale, use the geometric mean for the midpoint.
+
+      ${tab === 'thresholds' ? thresholdExamples : bucketExamples}
+
+      Return ONLY an array of midpoint numbers, one for each range, in the same order as the ranges, without any other text or formatting.`
+
+      const claudeResponse = await promptClaude(prompt, {
+        model: models.sonnet,
+      })
+      log('claudeResponse', claudeResponse)
+
+      const result = parseClaudeResponseAsJson(claudeResponse)
+
+      track(auth.uid, 'regenerate-numeric-midpoints', {
+        answers,
+      })
+
+      assertMidpointsAreUnique(result)
+      assertMidpointsAreAscending(result)
+
+      return { midpoints: result }
+    },
+    { maxCalls: 60, windowMs: HOUR_MS }
+  )
+
+const thresholdExamples = `
 EXAMPLES:
   Question: The Joker rotten tomatoes score (min 50, max 100): 
   {
@@ -72,10 +167,9 @@ EXAMPLES:
     "answers": ["Above 0%", "Above 10%", "Above 20%", "Above 30%", "Above 40%", "Above 50%"],
     "midpoints": [5, 15, 25, 35, 45, 55]
   }
-
 `
 
-export const bucketExamples = `
+const bucketExamples = `
 EXAMPLES:
   Question: The Joker rotten tomatoes score (min 45, max 100): 
   {
@@ -102,10 +196,10 @@ EXAMPLES:
     "answers": ["0-2", "3-5", "6-8", "9-11"],
     "midpoints": [1, 4, 7, 10]
   }
-  Question: When will Trump serve time? (min: 2024, max: 2028)
+  Question: If convicted, when will SBF serve time? (min: 2025, max: 2028)
   {
-    "answers": ["2024", "2025", "2026", "2027", "2028"],
-    "midpoints": [2024.5, 2025.5, 2026.5, 2027.5, 2028.5]
+    "answers": ["2025", "2026", "2027", "2028"],
+    "midpoints": [2025.5, 2026.5, 2027.5, 2028.5]
   }
   Question: How many Americans will die as a result of commercial air travel accidents in 2025? (0, 10000)
   {
@@ -119,109 +213,39 @@ EXAMPLES:
   }
 `
 
-export const generateAINumericRanges: APIHandler<'generate-ai-numeric-ranges'> =
-  rateLimitByUser(
-    async (props, auth) => {
-      const { question, min, max, description } = props
-      const prompt = `Question: ${question} ${
-        description && description !== '<p></p>'
-          ? `\nDescription: ${description}`
-          : ''
-      }\nMin: ${min}\nMax: ${max}`
+const userPrompt = (
+  question: string,
+  min: number,
+  max: number,
+  unit: string,
+  description?: string
+) => {
+  return `Question: ${question} ${
+    description && description !== '<p></p>'
+      ? `\nDescription: ${description}`
+      : ''
+  }\nMin: ${min} Max: ${max} Unit: ${unit}`
+}
 
-      const thresholdSystemPrompt = baseSystemPrompt('threshold-style')
-
-      const bucketSystemPrompt = baseSystemPrompt('bucket-style')
-
-      const [thresholdResponse, bucketResponse] = await Promise.all([
-        promptClaude(prompt, {
-          model: models.sonnet,
-          system: thresholdSystemPrompt + thresholdExamples,
-        }),
-        promptClaude(prompt, {
-          model: models.sonnet,
-          system: bucketSystemPrompt + bucketExamples,
-        }),
-      ])
-
-      log('thresholdResponse', thresholdResponse)
-      log('bucketResponse', bucketResponse)
-
-      const thresholds = JSON.parse(thresholdResponse)
-      const buckets = JSON.parse(bucketResponse)
-
-      assertMidpointsAreUnique(thresholds.midpoints)
-      assertMidpointsAreAscending(thresholds.midpoints)
-
-      assertMidpointsAreUnique(buckets.midpoints)
-      assertMidpointsAreAscending(buckets.midpoints)
-
-      track(auth.uid, 'generate-ai-numeric-ranges', {
-        question,
-      })
-
-      return {
-        thresholds,
-        buckets,
-      }
-    },
-    { maxCalls: 60, windowMs: HOUR_MS }
-  )
-
-export const regenerateNumericMidpoints: APIHandler<'regenerate-numeric-midpoints'> =
-  rateLimitByUser(
-    async (props, auth) => {
-      const { question, description, answers, min, max } = props
-
-      const prompt = `Question: ${question} ${
-        description && description !== '<p></p>'
-          ? `\nDescription: ${description}`
-          : ''
-      }\nGiven these numeric ranges: ${answers.join(
-        ', '
-      )} with min: ${min} and max: ${max}, generate appropriate midpoints for each range.
-
-      RULES:
-      - The midpoints should be numbers that represent the expected value for each range.
-      - If the range is a log scale, use the geometric mean for the midpoint.
-
-      ${thresholdExamples}
-
-      Return ONLY a JSON array of midpoint numbers, one for each range.`
-
-      const claudeResponse = await promptClaude(prompt, {
-        model: models.sonnet,
-      })
-      log('claudeResponse', claudeResponse)
-
-      const result = JSON.parse(claudeResponse)
-
-      track(auth.uid, 'regenerate-numeric-midpoints', {
-        answers,
-      })
-
-      assertMidpointsAreUnique(result)
-      assertMidpointsAreAscending(result)
-
-      return { midpoints: result }
-    },
-    { maxCalls: 60, windowMs: HOUR_MS }
-  )
-
-const assertMidpointsAreUnique = (midpoints: number[]) => {
+export const assertMidpointsAreUnique = (midpoints: number[]) => {
   const unique = new Set(midpoints).size === midpoints.length
   if (!unique) {
-    throw new APIError(500, 'AI-generated midpoints are not unique. Try again.')
+    throw new APIError(500, 'Answer ranges are not unique. Try again.')
   }
 }
 
-const assertMidpointsAreAscending = (midpoints: number[]) => {
+export const assertMidpointsAreAscending = (midpoints: number[]) => {
   for (let i = 1; i < midpoints.length; i++) {
     if (midpoints[i] <= midpoints[i - 1]) {
       throw new APIError(
         500,
-        'AI-generated midpoints are not in ascending order. Try again.'
+        'Answer ranges are not in ascending order. Try again.'
       )
     }
   }
+}
+
+export type RangeResponse = {
+  answers: string[]
+  midpoints: number[]
 }

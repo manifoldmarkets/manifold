@@ -37,6 +37,12 @@ export const getMinMax = (contract: MultiNumericContract) => {
   return { min, max }
 }
 
+export const isTimeUnit = (unit: string) => {
+  const units = ['year', 'month', 'day', 'week', 'hour', 'minute', 'second']
+  const plurals = units.map((u) => u + 's')
+  return units.includes(unit) || plurals.includes(unit)
+}
+
 export function formatExpectedValue(
   value: number,
   contract: MultiNumericContract,
@@ -48,6 +54,14 @@ export function formatExpectedValue(
   if (isNaN(value) || min === undefined || max === undefined || max === min)
     return 'N/A'
   if (answers.length == 0) return '' // probably from static props
+  if (isTimeUnit(unit)) {
+    const now = Date.now()
+    return new Date(now + value).toLocaleDateString('en-US', {
+      year: 'numeric',
+      month: 'short',
+      day: 'numeric',
+    })
+  }
   const formatter = new Intl.NumberFormat('en-US', {
     style: 'currency',
     currency: 'USD',

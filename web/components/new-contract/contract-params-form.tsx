@@ -147,10 +147,10 @@ export function ContractParamsForm(props: {
       params?.shouldAnswersSumToOne ?? false,
       'new-multi-numeric-sums-to-one' + paramsKey
     )
-
+  const unitKey = 'multi-numeric-unit' + paramsKey
   const [unit, setUnit] = usePersistentLocalState<string>(
     params?.unit ?? '',
-    'new-multi-numeric-unit' + paramsKey
+    unitKey
   )
   const addAnswersModeKey = 'new-add-answers-mode' + paramsKey
   const [addAnswersMode, setAddAnswersMode] =
@@ -338,26 +338,30 @@ export function ContractParamsForm(props: {
     max ?? 0,
     precision && precision > 0 ? precision : 1
   ).length
+  const minMaxValid =
+    min !== undefined &&
+    max !== undefined &&
+    isFinite(min) &&
+    isFinite(max) &&
+    min < max
+
   const isValid =
     isValidQuestion &&
     ante <= balance &&
     isValidDate &&
     isValidTopics &&
     (outcomeType !== 'PSEUDO_NUMERIC' ||
-      (min !== undefined &&
-        max !== undefined &&
-        initialValue !== undefined &&
-        isFinite(min) &&
-        isFinite(max) &&
-        min < max &&
-        max - min > 0.01 &&
+      (initialValue !== undefined &&
+        minMaxValid &&
         min < initialValue &&
+        max - min > 0.01 &&
         initialValue < max)) &&
     isValidMultipleChoice &&
     (outcomeType !== 'BOUNTIED_QUESTION' || bountyAmount !== undefined) &&
     (outcomeType === 'NUMBER'
       ? numberOfBuckets <= MULTI_NUMERIC_BUCKETS_MAX && numberOfBuckets >= 2
-      : true)
+      : true) &&
+    (outcomeType !== 'MULTI_NUMERIC' || (minMaxValid && unit !== ''))
 
   const [errorText, setErrorText] = useState<string>('')
   useEffect(() => {
@@ -412,6 +416,11 @@ export function ContractParamsForm(props: {
     safeLocalStorage?.removeItem(closeDateKey)
     safeLocalStorage?.removeItem(closeHoursMinutesKey)
     setPersistentLocalState(selectedGroupsKey, [])
+    setPersistentLocalState('threshold-answers' + paramsKey, [])
+    setPersistentLocalState('threshold-midpoints' + paramsKey, [])
+    setPersistentLocalState('bucket-answers' + paramsKey, [])
+    setPersistentLocalState('bucket-midpoints' + paramsKey, [])
+    setPersistentLocalState(unitKey, '')
     setPersistentLocalState(answersKey, defaultAnswers)
     setPersistentLocalState(minStringKey, '')
     setPersistentLocalState(maxStringKey, '')

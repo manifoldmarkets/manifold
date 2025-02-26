@@ -167,6 +167,10 @@ import {
   generateAINumericRanges,
   regenerateNumericMidpoints,
 } from './generate-ai-numeric-ranges'
+import {
+  generateAIDateRanges,
+  regenerateDateMidpoints,
+} from './generate-ai-date-ranges'
 // we define the handlers in this object in order to typecheck that every API has a handler
 export const handlers: { [k in APIPath]: APIHandler<k> } = {
   'refresh-all-clients': refreshAllClients,
@@ -348,4 +352,6 @@ export const handlers: { [k in APIPath]: APIHandler<k> } = {
   'purchase-contract-boost': purchaseContractBoost,
   'generate-ai-numeric-ranges': generateAINumericRanges,
   'regenerate-numeric-midpoints': regenerateNumericMidpoints,
+  'generate-ai-date-ranges': generateAIDateRanges,
+  'regenerate-date-midpoints': regenerateDateMidpoints,
 }
