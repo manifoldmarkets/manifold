@@ -83,6 +83,8 @@ export async function getContractParams(
     getTopicsOnContract(contract.id, db),
     getDashboardsToDisplayOnContract(contract.slug, contract.creatorId, db),
   ])
+
+  // TODO: getMultiBetPoints breaks NUMBER market time charts and I think MULTI_NUMERIC as well when they get enough bets
   const multiPoints = isMulti ? getMultiBetPoints(allBetPoints, contract) : {}
   const multiPointsString = mapValues(multiPoints, (v) => pointsToBase64(v))
 
