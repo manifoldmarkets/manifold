@@ -596,13 +596,14 @@ const useBetData = (props: {
   } = props
 
   const isNumber = outcomeType === 'NUMBER'
+  const isMultiNumeric = outcomeType === 'MULTI_NUMERIC'
 
   const newBets = useContractBets(
     contractId,
     {
       afterTime: lastBetTime ?? 0,
       includeZeroShareRedemptions: true,
-      filterRedemptions: !isNumber,
+      filterRedemptions: !isNumber && !isMultiNumeric,
     },
     useIsPageVisible,
     (params) => api('bets', params)
@@ -615,7 +616,11 @@ const useBetData = (props: {
       ? uniqBy(newBetsWithoutRedemptions, 'betGroupId').length
       : newBetsWithoutRedemptions.length)
   const bets = useMemo(
-    () => uniqBy(isNumber ? newBets : newBetsWithoutRedemptions, 'id'),
+    () =>
+      uniqBy(
+        isNumber || isMultiNumeric ? newBets : newBetsWithoutRedemptions,
+        'id'
+      ),
     [newBets.length]
   )
   const yourNewBets = newBets.filter((bet) => userId && bet.userId === userId)

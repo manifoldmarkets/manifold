@@ -43,7 +43,8 @@ export async function getContractParams(
     unauthedApi('unique-bet-group-count', {
       contractId: contract.id,
     }).then((res) => res.count)
-
+  const includeRedemptions =
+    contract.mechanism === 'cpmm-multi-1' && contract.shouldAnswersSumToOne
   const [
     totalBets,
     lastBetArray,
@@ -72,7 +73,8 @@ export async function getContractParams(
       : ([] as Bet[]),
     hasMechanism
       ? getBetPoints(contract.id, {
-          filterRedemptions: contract.mechanism !== 'cpmm-multi-1',
+          filterRedemptions: !includeRedemptions,
+          includeZeroShareRedemptions: includeRedemptions,
         })
       : [],
     getRecentTopLevelCommentsAndReplies(db, contract.id, 25),
@@ -87,7 +89,6 @@ export async function getContractParams(
     getTopicsOnContract(contract.id, db),
     getDashboardsToDisplayOnContract(contract.slug, contract.creatorId, db),
   ])
-
   const multiPoints = isMulti
     ? isNumber || contract.outcomeType === 'MULTI_NUMERIC'
       ? getFilledInNumberBetPoints(groupBy(allBetPoints, 'answerId'), contract)
@@ -179,41 +180,32 @@ export const getFilledInNumberBetPoints = (
   pointsByAnswerId: { [answerId: string]: { x: number; y: number }[] },
   contract: MultiContract
 ) => {
-  const { answers } = contract
-
-  const subsetOfAnswers = sortBy(
-    answers,
-    (a) => (a.resolution ? 1 : 0),
-    (a) => -a.totalLiquidity
-  ).slice(0, MAX_ANSWERS)
-
-  const allUniqueCreatedTimes = new Set(
-    Object.values(pointsByAnswerId).flatMap((a) => a.map((p) => p.x))
-  )
-  const earliestCreatedTime = minBy(
-    Object.values(pointsByAnswerId).flatMap((a) => a.map((p) => p.x))
-  )
+  const { answers, createdTime } = contract
+  const allUniqueCreatedTimes = new Set([
+    ...Object.values(pointsByAnswerId).flatMap((a) => a.map((p) => p.x)),
+    createdTime,
+  ])
   const pointsByAns = {} as { [answerId: string]: { x: number; y: number }[] }
-  subsetOfAnswers.forEach((ans) => {
-    const startY = getInitialAnswerProbability(contract, ans)
-    const rawPoints = pointsByAnswerId[ans.id] ?? [
-      { x: earliestCreatedTime, y: startY },
+  answers.forEach((ans) => {
+    const startingProb = getInitialAnswerProbability(contract, ans) ?? 0
+    const rawPoints = [
+      { x: createdTime, y: startingProb, answerId: ans.id },
+      ...(pointsByAnswerId[ans.id] ?? []),
     ]
     const uniqueAnswerCreatedTimes = new Set(rawPoints.map((a) => a.x))
     // Bc we sometimes don't create low prob bets, we need to fill in the gaps
     const missingTimes = Array.from(allUniqueCreatedTimes).filter(
       (time) => !uniqueAnswerCreatedTimes.has(time)
     )
+
     const missingPoints = missingTimes.map((time) => ({
       x: time,
-      y: minBy(rawPoints, (p) => Math.abs(p.x - time))?.y ?? 0,
+      y: minBy(rawPoints, (p) => Math.abs(p.x - time))?.y ?? startingProb,
       answerId: ans.id,
     }))
-    const points = orderBy([...rawPoints, ...missingPoints], (p) => p.x)
-    pointsByAns[ans.id] = buildArray<{ x: number; y: number }>(
-      startY != undefined && { x: ans.createdTime, y: startY },
-      points
-    )
+
+    const allPoints = [...rawPoints, ...missingPoints]
+    pointsByAns[ans.id] = orderBy(allPoints, (p) => p.x)
   })
 
   return serializeMultiPoints(pointsByAns)

@@ -86,7 +86,8 @@ export function ContractParamsForm(props: {
   const paramsKey =
     (params?.q ?? '') +
     (params?.groupSlugs?.join('') ?? '') +
-    (params?.groupIds?.join('') ?? '')
+    (params?.groupIds?.join('') ?? '') +
+    (params?.rand ?? '')
 
   const minStringKey = 'min' + paramsKey
   const [minString, setMinString] = usePersistentLocalState(
@@ -134,12 +135,11 @@ export function ContractParamsForm(props: {
 
   const answersKey = 'new-answers-with-other' + paramsKey
   const [answers, setAnswers] = usePersistentLocalState(
-    !!params?.answers ? params.answers : defaultAnswers,
+    params?.answers ?? defaultAnswers,
     answersKey
   )
-
   const [midpoints, setMidpoints] = usePersistentLocalState<number[]>(
-    [],
+    params?.midpoints ?? [],
     'new-numeric-midpoints' + paramsKey
   )
   const [multiNumericSumsToOne, setMultiNumericSumsToOne] =

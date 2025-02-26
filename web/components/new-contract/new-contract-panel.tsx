@@ -45,6 +45,8 @@ export type NewQuestionParams = {
   sportsEventId?: string
   sportsLeague?: string
   unit?: string
+  midpoints?: number[]
+  rand?: string
 }
 
 export type CreateContractStateType =

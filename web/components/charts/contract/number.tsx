@@ -72,7 +72,7 @@ export const NumberContractChart = (props: {
   const now = useMemo(() => Date.now(), [stringifiedMultiPoints])
 
   const singlePointData = useMemo(
-    () => [{ x: start, y: startP }, ...betPoints, { x: end ?? now, y: endP }],
+    () => [...betPoints, { x: end ?? now, y: endP }],
     [JSON.stringify(betPoints), start, startP, end, endP]
   )
   const rightmostDate = getRightmostVisibleDate(end, last(betPoints)?.x, now)

@@ -36,6 +36,7 @@ export const MultiNumericRangeSection = (props: {
     question,
     description,
     answers,
+    midpoints,
     setAnswers,
     setMidpoints,
     min,
@@ -50,19 +51,21 @@ export const MultiNumericRangeSection = (props: {
     setUnit,
   } = props
   const [isGeneratingRanges, setIsGeneratingRanges] = useState(false)
+  // thresholds
   const [thresholdAnswers, setThresholdAnswers] = usePersistentLocalState<
     string[]
-  >([], 'threshold-answers' + paramsKey)
+  >(shouldAnswersSumToOne ? [] : answers, 'threshold-answers' + paramsKey)
   const [thresholdMidpoints, setThresholdMidpoints] = usePersistentLocalState<
     number[]
-  >([], 'threshold-midpoints' + paramsKey)
+  >(shouldAnswersSumToOne ? [] : midpoints, 'threshold-midpoints' + paramsKey)
+  // buckets
   const [bucketAnswers, setBucketAnswers] = usePersistentLocalState<string[]>(
-    [],
+    !shouldAnswersSumToOne ? [] : answers,
     'bucket-answers' + paramsKey
   )
   const [bucketMidpoints, setBucketMidpoints] = usePersistentLocalState<
     number[]
-  >([], 'bucket-midpoints' + paramsKey)
+  >(!shouldAnswersSumToOne ? [] : midpoints, 'bucket-midpoints' + paramsKey)
   const minMaxError = min !== undefined && max !== undefined && min >= max
 
   const selectedTab = shouldAnswersSumToOne ? 'buckets' : 'thresholds'
@@ -189,7 +192,6 @@ export const MultiNumericRangeSection = (props: {
         <Col className="mb-2 items-start">
           <Row className=" gap-1 px-1 py-2">
             <span className="">Range & unit</span>
-            <span className={'text-scarlet-500'}>*</span>
             <InfoTooltip text="The lower and higher bounds of the numeric range. Choose bounds the value could reasonably be expected to hit." />
           </Row>
           <Row className={'gap-2'}>
@@ -229,16 +231,20 @@ export const MultiNumericRangeSection = (props: {
         </Col>
       </Row>
       <Row className=" w-full justify-end gap-2">
-        {min !== undefined && max !== undefined && !minMaxError && (
-          <Button
-            color="indigo-outline"
-            onClick={generateRanges}
-            loading={isGeneratingRanges}
-            disabled={!question || isGeneratingRanges}
-          >
-            Generate ranges
-          </Button>
-        )}
+        <Button
+          color="indigo-outline"
+          onClick={generateRanges}
+          loading={isGeneratingRanges}
+          disabled={
+            !question ||
+            isGeneratingRanges ||
+            min === undefined ||
+            max === undefined ||
+            minMaxError
+          }
+        >
+          Generate ranges
+        </Button>
       </Row>
 
       {minMaxError && (
