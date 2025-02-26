@@ -17,6 +17,7 @@ import { richTextToString } from 'common/util/parse'
 import { z } from 'zod'
 import { coerceBoolean, contentSchema } from './zod-types'
 import { randomStringRegex } from 'common/util/random'
+import { MAX_MULTI_NUMERIC_ANSWERS } from 'common/multi-numeric'
 
 export type LiteMarket = {
   // Unique identifier for this market
@@ -294,8 +295,8 @@ export const createNumberSchema = z.object({
 
 export const createMultiNumericSchema = z.object({
   outcomeType: z.enum(['MULTI_NUMERIC']),
-  answers: z.array(z.string().trim().min(1)).max(MAX_ANSWERS),
-  midpoints: z.array(z.number().safe()).max(MAX_ANSWERS),
+  answers: z.array(z.string().trim().min(1)).max(MAX_MULTI_NUMERIC_ANSWERS),
+  midpoints: z.array(z.number().safe()).max(MAX_MULTI_NUMERIC_ANSWERS),
   shouldAnswersSumToOne: z.boolean(),
   addAnswersMode: z.enum(['DISABLED']).default('DISABLED'),
   unit: z.string(),

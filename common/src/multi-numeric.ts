@@ -3,6 +3,7 @@ import { getAnswerProbability } from './calculate'
 import { filterDefined } from './util/array'
 import { getInitialAnswerProbability } from './calculate'
 import { MultiNumericContract } from './contract'
+export const MAX_MULTI_NUMERIC_ANSWERS = 12
 
 export function getExpectedValue(
   contract: MultiNumericContract,

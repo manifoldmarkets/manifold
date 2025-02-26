@@ -10,6 +10,7 @@ import { usePersistentLocalState } from 'web/hooks/use-persistent-local-state'
 import { ControlledTabs } from '../layout/tabs'
 import { debounce } from 'lodash'
 import { isTimeUnit } from 'common/multi-numeric'
+import { MAX_MULTI_NUMERIC_ANSWERS } from 'common/multi-numeric'
 
 export const MultiNumericRangeSection = (props: {
   submitState: 'EDITING' | 'LOADING' | 'DONE'
@@ -70,8 +71,16 @@ export const MultiNumericRangeSection = (props: {
   const minMaxError = min !== undefined && max !== undefined && min >= max
   const [error, setError] = useState<string>('')
   const [regenerateError, setRegenerateError] = useState<string>('')
+  const [maxAnswersReached, setMaxAnswersReached] = useState<boolean>(false)
 
   const selectedTab = shouldAnswersSumToOne ? 'buckets' : 'thresholds'
+
+  // Check if max answers limit is reached
+  useEffect(() => {
+    const currentAnswers =
+      selectedTab === 'buckets' ? bucketAnswers : thresholdAnswers
+    setMaxAnswersReached(currentAnswers.length > MAX_MULTI_NUMERIC_ANSWERS)
+  }, [selectedTab, bucketAnswers.length, thresholdAnswers.length])
 
   const generateRanges = async () => {
     setError('')
@@ -199,9 +208,13 @@ export const MultiNumericRangeSection = (props: {
 
   const addAnswer = () => {
     if (selectedTab === 'thresholds') {
-      setThresholdAnswers([...thresholdAnswers, ''])
+      if (thresholdAnswers.length < MAX_MULTI_NUMERIC_ANSWERS) {
+        setThresholdAnswers([...thresholdAnswers, ''])
+      }
     } else {
-      setBucketAnswers([...bucketAnswers, ''])
+      if (bucketAnswers.length < MAX_MULTI_NUMERIC_ANSWERS) {
+        setBucketAnswers([...bucketAnswers, ''])
+      }
     }
   }
   useEffect(() => {
@@ -376,6 +389,11 @@ export const MultiNumericRangeSection = (props: {
       {regenerateError && (
         <div className="text-scarlet-500 mb-2 mt-2 text-sm">
           {regenerateError}
+        </div>
+      )}
+      {maxAnswersReached && (
+        <div className="mb-2 mt-2 text-sm text-amber-500">
+          Maximum of {MAX_MULTI_NUMERIC_ANSWERS} answers reached.
         </div>
       )}
     </Col>
