@@ -22,10 +22,8 @@ import {
   BinaryContract,
   Contract,
   CPMMContract,
-  CPMMNumericContract,
   MarketContract,
   MultiContract,
-  MultiNumeric,
   PseudoNumericContract,
   StonkContract,
 } from './contract'
@@ -90,7 +88,7 @@ export function getAnswerProbability(
 }
 
 export function getInitialAnswerProbability(
-  contract: MultiContract | CPMMNumericContract | MultiNumeric,
+  contract: MultiContract,
   answer: Answer
 ) {
   if (!contract.shouldAnswersSumToOne) {
