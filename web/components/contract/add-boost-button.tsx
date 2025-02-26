@@ -13,7 +13,7 @@ import { BOOST_COST_CASH, BOOST_COST_MANA } from 'common/economy'
 import dayjs from 'dayjs'
 import { Input } from '../widgets/input'
 import { HOUR_MS } from 'common/util/time'
-import { formatMoney } from 'common/util/format'
+import { formatMoney, formatMoneyUSD } from 'common/util/format'
 
 export function AddBoostButton(props: {
   contract: Contract
@@ -148,7 +148,7 @@ function BoostPurchaseModal(props: {
               className="flex-1"
               disabled={!!loading}
             >
-              Pay {formatMoney(BOOST_COST_CASH)}
+              Pay {formatMoneyUSD(BOOST_COST_CASH)}
             </Button>
           </Row>
           {notEnoughFunds && (
