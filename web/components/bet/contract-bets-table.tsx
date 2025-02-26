@@ -10,7 +10,7 @@ import { TRADE_TERM } from 'common/envs/constants'
 import {
   answerToRange,
   getMultiNumericAnswerMidpoints,
-} from 'common/multi-numeric'
+} from 'common/src/number'
 import { getFormattedMappedValue } from 'common/pseudo-numeric'
 import { getStonkDisplayShares } from 'common/stonk'
 import {

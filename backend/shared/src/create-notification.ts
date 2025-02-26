@@ -85,10 +85,7 @@ import {
 import { getCommentSafe } from './supabase/contract-comments'
 import { convertPrivateUser, convertUser } from 'common/supabase/users'
 import { convertBet } from 'common/supabase/bets'
-import {
-  getRangeContainingValues,
-  answerToMidpoint,
-} from 'common/multi-numeric'
+import { getRangeContainingValues, answerToMidpoint } from 'common/number'
 import { floatingEqual } from 'common/util/math'
 import { ContractMetric } from 'common/contract-metric'
 

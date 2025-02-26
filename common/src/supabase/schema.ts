@@ -34,6 +34,7 @@ export type Database = {
           user_id: string | null
           image_url: string | null
           short_text: string | null
+          midpoint: number | null
         }
         Insert: {
           color?: string | null
@@ -59,6 +60,7 @@ export type Database = {
           user_id?: string | null
           image_url?: string | null
           short_text?: string | null
+          midpoint?: number | null
         }
         Update: {
           color?: string | null
@@ -84,6 +86,7 @@ export type Database = {
           user_id?: string | null
           image_url?: string | null
           short_text?: string | null
+          midpoint?: number | null
         }
         Relationships: []
       }

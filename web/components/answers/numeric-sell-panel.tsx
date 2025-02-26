@@ -9,11 +9,11 @@ import {
   answerTextToRange,
   answerToMidpoint,
   answerToRange,
-  formatExpectedValue,
-  getExpectedValue,
+  formatNumberExpectedValue,
+  getNumberExpectedValue,
   getRangeContainingValues,
   NEW_GRAPH_COLOR,
-} from 'common/multi-numeric'
+} from 'common/src/number'
 import { NUMERIC_GRAPH_COLOR } from 'common/numeric-constants'
 import { filterDefined } from 'common/util/array'
 import { floatingEqual, floatingGreater } from 'common/util/math'
@@ -21,7 +21,7 @@ import { removeUndefinedProps } from 'common/util/object'
 import { debounce, find, groupBy, mapValues, sum, sumBy } from 'lodash'
 import { useMemo, useState } from 'react'
 import { toast } from 'react-hot-toast'
-import { MultiNumericDistributionChart } from 'web/components/answers/numeric-bet-panel'
+import { NumberDistributionChart } from 'web/components/answers/numeric-bet-panel'
 import { FeeDisplay } from 'web/components/bet/fees'
 import { Button, IconButton } from 'web/components/buttons/button'
 import { DiagonalPattern } from 'web/components/charts/generic-charts'
@@ -46,7 +46,7 @@ export const NumericSellPanel = (props: {
   const { contract, userBets, contractMetrics, cancel } = props
   const { answers, min: minimum, max: maximum } = contract
   const isCashContract = contract.token === 'CASH'
-  const expectedValue = getExpectedValue(contract)
+  const expectedValue = getNumberExpectedValue(contract)
   const userNonRedemptionBetsByAnswer = groupBy(
     userBets.filter((bet) => bet.shares !== 0),
     (bet) => bet.answerId
@@ -186,7 +186,9 @@ export const NumericSellPanel = (props: {
         (a) => find(updatedAnswers, (update) => update.id === a.id) ?? a
       ),
     }
-    const potentialExpectedValue = getExpectedValue(potentialContractState)
+    const potentialExpectedValue = getNumberExpectedValue(
+      potentialContractState
+    )
 
     return {
       loanPaid,
@@ -262,7 +264,7 @@ export const NumericSellPanel = (props: {
           className={clsx('h-[150px] w-full pb-3 pr-6 sm:h-[200px]')}
         >
           {(w, h) => (
-            <MultiNumericDistributionChart
+            <NumberDistributionChart
               newColor={NEW_GRAPH_COLOR}
               contract={contract}
               updatedContract={potentialContractState}
@@ -314,9 +316,9 @@ export const NumericSellPanel = (props: {
             <MoneyDisplay amount={profit} isCashContract={isCashContract} />
           </span>
           <div>
-            {formatExpectedValue(expectedValue, contract)}
+            {formatNumberExpectedValue(expectedValue, contract)}
             <span className="mx-2">→</span>
-            {formatExpectedValue(
+            {formatNumberExpectedValue(
               potentialExpectedValue,
               potentialContractState
             )}

@@ -7,7 +7,7 @@ import {
 } from 'common/contract'
 import { ContractMetric } from 'common/contract-metric'
 import { getContractParams } from 'common/contract-params'
-import { base64toPoints } from 'common/edge/og'
+import { base64toFloat32Points } from 'common/edge/og'
 import { CASH_SUFFIX } from 'common/envs/constants'
 import { getContract, getContractFromSlug } from 'common/supabase/contracts'
 import { removeUndefinedProps } from 'common/util/object'
@@ -113,10 +113,10 @@ function NonPrivateContractPage(props: { contractParams: ContractParams }) {
   const { contract, pointsString, cash } = props.contractParams
   const { prefersPlay } = useSweepstakes()
 
-  const points = pointsString ? base64toPoints(pointsString) : []
+  const points = pointsString ? base64toFloat32Points(pointsString) : []
   const cashPoints = cash
     ? cash.pointsString
-      ? base64toPoints(cash.pointsString)
+      ? base64toFloat32Points(cash.pointsString)
       : []
     : null
 

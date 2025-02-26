@@ -21,6 +21,7 @@ import {
   CPMMMultiContract,
   Contract,
   MultiContract,
+  MultiNumericContract,
   contractPath,
   tradingAllowed,
 } from 'common/contract'
@@ -105,20 +106,21 @@ export function getAllResolved(contract: MultiContract, answers: Answer[]) {
 
 // full resorting, hover, clickiness, search and add
 export function AnswersPanel(props: {
-  contract: MultiContract
+  contract: CPMMMultiContract | MultiNumericContract
   selectedAnswerIds: string[]
   sort: MultiSort
   setSort: (sort: MultiSort) => void
   query: string
   setQuery: (query: string) => void
   onAnswerCommentClick?: (answer: Answer) => void
-  onAnswerHover: (answer: Answer | undefined) => void
+  onAnswerHover?: (answer: Answer | undefined) => void
   onAnswerClick?: (answer: Answer) => void
   showSetDefaultSort?: boolean
   setDefaultAnswerIdsToGraph?: (ids: string[]) => void
   defaultAddAnswer?: boolean
   floatingSearchClassName?: string
   className?: string
+  hideSearch?: boolean
 }) {
   const {
     contract,
@@ -134,12 +136,14 @@ export function AnswersPanel(props: {
     setDefaultAnswerIdsToGraph,
     floatingSearchClassName,
     className,
+    hideSearch,
   } = props
   const { outcomeType, resolutions } = contract
   const addAnswersMode =
     'addAnswersMode' in contract ? contract.addAnswersMode : 'DISABLED'
 
-  const isMultipleChoice = outcomeType === 'MULTIPLE_CHOICE'
+  const isMultipleChoice =
+    outcomeType === 'MULTIPLE_CHOICE' || outcomeType === 'MULTI_NUMERIC'
 
   const answers = !isMultipleChoice
     ? []
@@ -222,8 +226,7 @@ export function AnswersPanel(props: {
           user.id === contract.creatorId)) &&
       tradingAllowed(contract) &&
       !privateUser?.blockedByUserIds.includes(contract.creatorId) &&
-      unresolvedAnswers.length < getMaximumAnswers(shouldAnswersSumToOne) &&
-      contract.outcomeType !== 'NUMBER'
+      unresolvedAnswers.length < getMaximumAnswers(shouldAnswersSumToOne)
   )
 
   const answersContainerRef = useRef<HTMLDivElement>(null)
@@ -255,20 +258,22 @@ export function AnswersPanel(props: {
 
   return (
     <Col className={className}>
-      <SearchCreateAnswerPanel
-        contract={contract}
-        canAddAnswer={canAddAnswer}
-        text={query}
-        setText={setQuery}
-        className={clsx(
-          'bg-canvas-0 sticky z-10',
-          floatingSearchClassName ?? 'top-[48px]'
-        )}
-        sort={sort}
-        setSort={setSort}
-        showDefaultSort={showSetDefaultSort && contract.sort !== sort}
-        setDefaultSort={setDefaultSort}
-      />
+      {!hideSearch && (
+        <SearchCreateAnswerPanel
+          contract={contract}
+          canAddAnswer={canAddAnswer}
+          text={query}
+          setText={setQuery}
+          className={clsx(
+            'bg-canvas-0 sticky z-10',
+            floatingSearchClassName ?? 'top-[48px]'
+          )}
+          sort={sort}
+          setSort={setSort}
+          showDefaultSort={showSetDefaultSort && contract.sort !== sort}
+          setDefaultSort={setDefaultSort}
+        />
+      )}
       <Col ref={answersContainerRef}>
         {showNoAnswers ? (
           <div className="text-ink-500 p-4 pt-20 text-center">
@@ -278,6 +283,7 @@ export function AnswersPanel(props: {
           <Col className="mx-[2px] mt-1 gap-2">
             {answersToShow.map((answer) => (
               <Answer
+                shouldShowPositions={shouldShowPositions}
                 className={
                   selectedAnswerIds.length &&
                   !selectedAnswerIds.includes(answer.id) &&
@@ -297,9 +303,7 @@ export function AnswersPanel(props: {
                 onHover={(hovering) =>
                   onAnswerHover?.(hovering ? answer : undefined)
                 }
-                onClick={() => {
-                  onAnswerClick?.(answer)
-                }}
+                onClick={onAnswerClick}
                 unfilledBets={unfilledBets?.filter(
                   (b) => b.answerId === answer.id
                 )}
@@ -570,18 +574,19 @@ export function SimpleAnswerBars(props: {
 }
 
 export function Answer(props: {
-  contract: MultiContract
+  contract: CPMMMultiContract | MultiNumericContract
   answer: Answer
   unfilledBets?: Array<LimitBet>
   color: string
   user: User | undefined | null
   onCommentClick?: () => void
   onHover?: (hovering: boolean) => void
-  onClick?: () => void
+  onClick?: (answer: Answer) => void
   barColor?: string
   shouldShowLimitOrderChart: boolean
   feedReason?: string
   className?: string
+  shouldShowPositions?: boolean
 }) {
   const {
     answer,
@@ -596,6 +601,7 @@ export function Answer(props: {
     feedReason,
     shouldShowLimitOrderChart,
     className,
+    shouldShowPositions = true,
   } = props
 
   const prob = getAnswerProbability(contract, answer.id)
@@ -706,8 +712,8 @@ export function Answer(props: {
         prob={prob}
         resolvedProb={resolvedProb}
         onHover={onHover}
-        onClick={onClick}
-        className={clsx('group cursor-pointer', className)}
+        onClick={() => onClick?.(answer)}
+        className={clsx('group', onClick && 'cursor-pointer', className)}
         barColor={barColor}
         label={
           <Row className={'items-center gap-2'}>
@@ -772,7 +778,7 @@ export function Answer(props: {
           }
         >
           <Row className="text-ink-500 gap-1.5">
-            {user && (
+            {user && shouldShowPositions && (
               <AnswerPosition
                 contract={contract}
                 answer={answer}

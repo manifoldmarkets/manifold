@@ -18,7 +18,7 @@ import { usePersistentInMemoryState } from 'client-common/hooks/use-persistent-i
 import { BinaryMultiAnswersPanel } from 'web/components/answers/binary-multi-answers-panel'
 import { NumericBetPanel } from 'web/components/answers/numeric-bet-panel'
 import { Row } from 'web/components/layout/row'
-import { MultiNumericResolutionOrExpectation } from 'web/components/contract/contract-price'
+import { NumberResolutionOrExpectation } from 'web/components/contract/contract-price'
 import { sliderColors } from '../widgets/slider'
 import { getProbability } from 'common/calculate'
 import { formatPercent } from 'common/util/format'
@@ -165,7 +165,7 @@ const NumericBetDialog = (props: { contract: CPMMNumericContract }) => {
         >
           {question}
         </Link>
-        <MultiNumericResolutionOrExpectation contract={contract} />
+        <NumberResolutionOrExpectation contract={contract} />
       </Row>
       <NumericBetPanel contract={contract} />
     </Col>

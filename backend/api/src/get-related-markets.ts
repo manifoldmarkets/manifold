@@ -61,7 +61,7 @@ export const cleanContractForStaticProps = (c: Contract) =>
   ({
     ...c,
     description: '',
-    answers: [],
+    answers: c.outcomeType === 'MULTI_NUMERIC' ? c.answers : [],
     groupSlugs: [],
   } as Contract)
 

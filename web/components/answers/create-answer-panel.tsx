@@ -64,7 +64,7 @@ export function SearchCreateAnswerPanel(props: {
     setDefaultSort,
   } = props
 
-  const canAddAnswer = props.canAddAnswer && contract.outcomeType !== 'NUMBER'
+  const canAddAnswer = props.canAddAnswer
 
   const [isSubmitting, setIsSubmitting] = useState(false)
 

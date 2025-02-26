@@ -9,6 +9,7 @@ import {
   ContractToken,
   CPMMMultiContract,
   MarketContract,
+  isSpecialLoveContract,
 } from 'common/contract'
 import { LiquidityProvision } from 'common/liquidity-provision'
 import { Txn, CancelUniqueBettorBonusTxn } from 'common/txn'
@@ -154,9 +155,8 @@ export const resolveMarketHelper = async (
       const finalResolution = marketCancelled ? 'CANCEL' : 'MKT'
       if (
         allAnswersResolved &&
-        outcomeType !== 'NUMBER' &&
         // If the contract has special liquidity per answer, only resolve if an answer is resolved YES.
-        (!unresolvedContract.specialLiquidityPerAnswer || hasAnswerResolvedYes)
+        (!isSpecialLoveContract(unresolvedContract) || hasAnswerResolvedYes)
       ) {
         updatedContractAttrs = {
           ...updatedContractAttrs,

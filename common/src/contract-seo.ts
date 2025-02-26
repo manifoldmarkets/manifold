@@ -3,7 +3,7 @@ import { getFormattedMappedValue } from './pseudo-numeric'
 import { getAnswerProbability, getDisplayProbability } from './calculate'
 import { richTextToString } from './util/parse'
 import { formatMoneyNumber, formatPercent } from './util/format'
-import { getFormattedExpectedValue } from 'common/multi-numeric'
+import { getFormattedNumberExpectedValue } from 'common/number'
 import { sortAnswers } from './answer'
 
 export const getContractOGProps = (
@@ -37,7 +37,7 @@ export const getContractOGProps = (
 
   const numericValue =
     outcomeType === 'NUMBER'
-      ? getFormattedExpectedValue(contract)
+      ? getFormattedNumberExpectedValue(contract)
       : outcomeType === 'PSEUDO_NUMERIC' || outcomeType === 'STONK'
       ? getFormattedMappedValue(contract, getDisplayProbability(contract))
       : undefined

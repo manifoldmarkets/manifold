@@ -2173,6 +2173,74 @@ export const API = (_apiTypeCheck = {
       .strict(),
     returns: {} as { success: boolean; checkoutUrl?: string },
   },
+  'generate-ai-numeric-ranges': {
+    method: 'POST',
+    visibility: 'public',
+    authed: true,
+    returns: {} as {
+      thresholds: { answers: string[]; midpoints: number[] }
+      buckets: { answers: string[]; midpoints: number[] }
+    },
+    props: z
+      .object({
+        question: z.string(),
+        min: z.number(),
+        max: z.number(),
+        description: z.string().optional(),
+        unit: z.string(),
+      })
+      .strict(),
+  },
+  'generate-ai-date-ranges': {
+    method: 'POST',
+    visibility: 'public',
+    authed: true,
+    returns: {} as {
+      buckets: { answers: string[]; midpoints: number[] }
+    },
+    props: z
+      .object({
+        question: z.string(),
+        min: z.string(),
+        max: z.string(),
+        description: z.string().optional(),
+        unit: z.string(),
+      })
+      .strict(),
+  },
+  'regenerate-numeric-midpoints': {
+    method: 'POST',
+    visibility: 'public',
+    authed: true,
+    returns: {} as { midpoints: number[] },
+    props: z
+      .object({
+        description: z.string().optional(),
+        question: z.string(),
+        answers: z.array(z.string()),
+        min: z.number(),
+        max: z.number(),
+        unit: z.string(),
+        tab: z.enum(['thresholds', 'buckets']),
+      })
+      .strict(),
+  },
+  'regenerate-date-midpoints': {
+    method: 'POST',
+    visibility: 'public',
+    authed: true,
+    returns: {} as { midpoints: number[] },
+    props: z
+      .object({
+        description: z.string().optional(),
+        question: z.string(),
+        answers: z.array(z.string()),
+        min: z.string(),
+        max: z.string(),
+        unit: z.string(),
+      })
+      .strict(),
+  },
 } as const)
 
 export type APIPath = keyof typeof API

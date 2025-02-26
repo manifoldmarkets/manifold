@@ -1,9 +1,5 @@
 import clsx from 'clsx'
-import {
-  CPMMContract,
-  CPMMMultiContract,
-  CPMMNumericContract,
-} from 'common/contract'
+import { CPMMContract, MultiContract } from 'common/contract'
 import { getStonkDisplayShares } from 'common/stonk'
 import { User } from 'common/user'
 import { formatShares } from 'common/util/format'
@@ -114,7 +110,7 @@ export function SellRow(props: {
 
 export function SellSharesModal(props: {
   className?: string
-  contract: CPMMContract | CPMMMultiContract | CPMMNumericContract
+  contract: CPMMContract | MultiContract
   metric: ContractMetric | undefined
   shares: number
   sharesOutcome: 'YES' | 'NO'

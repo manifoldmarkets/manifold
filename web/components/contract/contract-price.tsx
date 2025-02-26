@@ -1,6 +1,7 @@
 import {
   BinaryContract,
   CPMMNumericContract,
+  MultiNumericContract,
   PseudoNumericContract,
   StonkContract,
 } from 'common/contract'
@@ -21,10 +22,11 @@ import { getTextColor } from 'web/components/contract/text-color'
 import { formatLargeNumber, formatPercent } from 'common/util/format'
 import { Tooltip } from 'web/components/widgets/tooltip'
 import {
-  formatExpectedValue,
-  getExpectedValue,
+  formatNumberExpectedValue,
+  getNumberExpectedValue,
   answerTextToRange,
-} from 'common/multi-numeric'
+} from 'common/src/number'
+import { formatExpectedValue, getExpectedValue } from 'common/multi-numeric'
 
 export function BinaryResolutionOrChance(props: {
   contract: BinaryContract
@@ -120,7 +122,7 @@ export function PseudoNumericResolutionOrExpectation(props: {
   )
 }
 
-export function MultiNumericResolutionOrExpectation(props: {
+export function NumberResolutionOrExpectation(props: {
   contract: CPMMNumericContract
   className?: string
 }) {
@@ -128,8 +130,8 @@ export function MultiNumericResolutionOrExpectation(props: {
   // TODO: display numeric resolutions
   const { resolution, resolutions } = contract
 
-  const value = getExpectedValue(contract)
-  const formattedValue = formatExpectedValue(value, contract)
+  const value = getNumberExpectedValue(contract)
+  const formattedValue = formatNumberExpectedValue(value, contract)
   const spring = useAnimatedNumber(value)
   const resolutionBuckets = contract.answers
     .filter((a) => resolutions && resolutions[a.id])
@@ -149,10 +151,52 @@ export function MultiNumericResolutionOrExpectation(props: {
               <Tooltip text={formattedValue} placement="bottom">
                 <MultiNumericValueLabel
                   formattedValue={
-                    formatExpectedValue(smallestBucket, contract) +
+                    formatNumberExpectedValue(smallestBucket, contract) +
                     '-' +
-                    formatExpectedValue(largestBucket, contract)
+                    formatNumberExpectedValue(largestBucket, contract)
                   }
+                />
+              </Tooltip>
+            </>
+          )}
+        </>
+      ) : (
+        <>
+          <Tooltip text={formattedValue} placement="bottom">
+            <animated.div>
+              {spring.to((val) => formatNumberExpectedValue(val, contract))}
+            </animated.div>
+          </Tooltip>
+          <div className="text-base">expected</div>
+        </>
+      )}
+    </Row>
+  )
+}
+
+export function MultiNumericResolutionOrExpectation(props: {
+  contract: MultiNumericContract
+  className?: string
+}) {
+  const { contract, className } = props
+  const { answers, resolution } = contract
+  const resolvedAnswer = answers.find((a) => a.id === resolution)
+  const value = getExpectedValue(contract)
+  const formattedValue = formatExpectedValue(value, contract)
+  const spring = useAnimatedNumber(value)
+
+  return (
+    <Row className={clsx('items-baseline gap-2 text-3xl', className)}>
+      {resolution ? (
+        <>
+          <div className="text-base">Resolved</div>
+          {resolution === 'CANCEL' ? (
+            <CancelLabel />
+          ) : (
+            <>
+              <Tooltip text={formattedValue} placement="bottom">
+                <MultiNumericValueLabel
+                  formattedValue={resolvedAnswer?.text ?? formattedValue}
                 />
               </Tooltip>
             </>

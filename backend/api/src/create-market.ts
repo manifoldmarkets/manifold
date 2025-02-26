@@ -2,25 +2,25 @@ import { onCreateMarket } from 'api/helpers/on-create-market'
 import {
   createBinarySchema,
   createBountySchema,
-  createMultiNumericSchema,
+  createNumberSchema,
   createMultiSchema,
   createNumericSchema,
   createPollSchema,
   toLiteMarket,
+  createMultiNumericSchema,
 } from 'common/api/market-types'
 import { ValidatedAPIParams } from 'common/api/schema'
 import {
   Contract,
-  MULTI_NUMERIC_CREATION_ENABLED,
   NO_CLOSE_TIME_TYPES,
   OutcomeType,
   add_answers_mode,
   contractUrl,
   nativeContractColumnsArray,
+  NUMBER_CREATION_ENABLED,
 } from 'common/contract'
 import { getAnte } from 'common/economy'
 import { MAX_GROUPS_PER_MARKET } from 'common/group'
-import { getMultiNumericAnswerBucketRangeNames } from 'common/multi-numeric'
 import { getNewContract } from 'common/new-contract'
 import { getPseudoProbability } from 'common/pseudo-numeric'
 import { STONK_INITIAL_PROB } from 'common/stonk'
@@ -58,7 +58,7 @@ import { generateAntes } from 'shared/create-contract-helpers'
 import { betsQueue } from 'shared/helpers/fn-queue'
 import { convertUser } from 'common/supabase/users'
 import { camelCase, first } from 'lodash'
-
+import { getMultiNumericAnswerBucketRangeNames } from 'common/number'
 type Body = ValidatedAPIParams<'market'>
 
 export const createMarket: APIHandler<'market'> = async (body, auth) => {
@@ -126,6 +126,8 @@ export async function createMarketHelper(body: Body, auth: AuthedUser) {
     answerImageUrls,
     takerAPIOrdersDisabled,
     liquidityTier,
+    unit,
+    midpoints,
   } = validateMarketBody(body)
 
   const userId = auth.uid
@@ -217,6 +219,8 @@ export async function createMarketHelper(body: Body, auth: AuthedUser) {
           sportsEventId,
           sportsLeague,
           takerAPIOrdersDisabled,
+          unit: unit ?? '',
+          midpoints: midpoints,
         })
       )
       const nativeKeys = nativeContractColumnsArray.map(camelCase)
@@ -348,7 +352,9 @@ function validateMarketBody(body: Body) {
     addAnswersMode: add_answers_mode | undefined,
     shouldAnswersSumToOne: boolean | undefined,
     totalBounty: number | undefined,
-    isAutoBounty: boolean | undefined
+    isAutoBounty: boolean | undefined,
+    unit: string | undefined,
+    midpoints: number[] | undefined
 
   if (outcomeType === 'PSEUDO_NUMERIC') {
     const parsed = validateMarketType(outcomeType, createNumericSchema, body)
@@ -381,21 +387,17 @@ function validateMarketBody(body: Body) {
     ;({ initialProb } = parsed)
   }
   if (outcomeType === 'NUMBER') {
-    if (!MULTI_NUMERIC_CREATION_ENABLED)
+    if (!NUMBER_CREATION_ENABLED)
       throw new APIError(
         400,
         'Creating numeric markets is not currently enabled.'
       )
-    ;({ min, max } = validateMarketType(
-      outcomeType,
-      createMultiNumericSchema,
-      body
-    ))
+    ;({ min, max } = validateMarketType(outcomeType, createNumberSchema, body))
     if (min >= max)
       throw new APIError(400, 'Numeric markets must have min < max.')
     const { precision } = validateMarketType(
       outcomeType,
-      createMultiNumericSchema,
+      createNumberSchema,
       body
     )
     answers = getMultiNumericAnswerBucketRangeNames(min, max, precision)
@@ -403,6 +405,23 @@ function validateMarketBody(body: Body) {
       throw new APIError(
         400,
         'Numeric markets must have at least 2 answer buckets.'
+      )
+  }
+  if (outcomeType === 'MULTI_NUMERIC') {
+    ;({ answers, midpoints, unit, shouldAnswersSumToOne } = validateMarketType(
+      outcomeType,
+      createMultiNumericSchema,
+      body
+    ))
+    if (answers.length < 2)
+      throw new APIError(
+        400,
+        'Numeric markets must have at least 2 answer buckets.'
+      )
+    if (answers.length !== midpoints.length)
+      throw new APIError(
+        400,
+        'Number of answers must match number of midpoints.'
       )
   }
 
@@ -463,6 +482,8 @@ function validateMarketBody(body: Body) {
     answerShortTexts,
     answerImageUrls,
     takerAPIOrdersDisabled,
+    unit,
+    midpoints,
   }
 }
 

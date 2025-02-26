@@ -1,15 +1,11 @@
-import {
-  CPMMContract,
-  CPMMMultiContract,
-  CPMMNumericContract,
-} from './contract'
+import { CPMMContract, MultiContract } from './contract'
 import { LiquidityProvision } from './liquidity-provision'
 import { removeUndefinedProps } from './util/object'
 
 export const getNewLiquidityProvision = (
   userId: string,
   amount: number,
-  contract: CPMMContract | CPMMMultiContract | CPMMNumericContract,
+  contract: CPMMContract | MultiContract,
   answerId?: string
 ) => {
   let pool: { [outcome: string]: number } | undefined

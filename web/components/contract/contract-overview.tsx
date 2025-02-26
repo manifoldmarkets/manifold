@@ -14,6 +14,7 @@ import {
   CPMMNumericContract,
   Contract,
   MultiContract,
+  MultiNumericContract,
   PseudoNumericContract,
   StonkContract,
   getMainBinaryMCAnswer,
@@ -21,7 +22,7 @@ import {
   tradingAllowed,
 } from 'common/contract'
 import { isAdminId, isModId } from 'common/envs/constants'
-import { NEW_GRAPH_COLOR } from 'common/multi-numeric'
+import { NEW_GRAPH_COLOR } from 'common/src/number'
 import { Period, periodDurations } from 'common/period'
 import { type ChartAnnotation } from 'common/supabase/chart-annotations'
 import { User } from 'common/user'
@@ -31,14 +32,15 @@ import { orderBy } from 'lodash'
 import { FaChartArea } from 'react-icons/fa'
 import { BinaryMultiAnswersPanel } from 'web/components/answers/binary-multi-answers-panel'
 import {
-  MultiNumericDistributionChart,
+  NumberDistributionChart,
   NumericBetPanel,
 } from 'web/components/answers/numeric-bet-panel'
-import { MultiNumericContractChart } from 'web/components/charts/contract/multi-numeric'
+import { NumberContractChart } from 'web/components/charts/contract/number'
 import { UserPositionSearchButton } from 'web/components/charts/user-position-search-button'
 import {
   BinaryResolutionOrChance,
   MultiNumericResolutionOrExpectation,
+  NumberResolutionOrExpectation,
   PseudoNumericResolutionOrExpectation,
   StonkPrice,
 } from 'web/components/contract/contract-price'
@@ -78,6 +80,7 @@ import { AlertBox } from '../widgets/alert-box'
 import { LoadingIndicator } from '../widgets/loading-indicator'
 import { GradientContainer } from '../widgets/gradient-container'
 import { getIsLive } from 'common/sports-info'
+import { MultiNumericContractChart } from '../charts/contract/multi-numeric'
 
 export const ContractOverview = memo(
   (props: {
@@ -142,7 +145,7 @@ export const ContractOverview = memo(
         return (
           <ChoiceOverview
             contract={contract}
-            points={betPoints as any}
+            points={betPoints as MultiPoints}
             showResolver={showResolver}
             setShowResolver={setShowResolver}
             resolutionRating={resolutionRating}
@@ -153,11 +156,24 @@ export const ContractOverview = memo(
             zoomY
           />
         )
-      case 'NUMBER':
+      case 'MULTI_NUMERIC':
         return (
           <MultiNumericOverview
             contract={contract}
-            points={betPoints as any}
+            points={betPoints as MultiPoints}
+            showResolver={showResolver}
+            setShowResolver={setShowResolver}
+            resolutionRating={resolutionRating}
+            onAnswerCommentClick={onAnswerCommentClick}
+            chartAnnotations={chartAnnotations}
+            zoomY
+          />
+        )
+      case 'NUMBER':
+        return (
+          <NumberOverview
+            contract={contract}
+            points={betPoints as MultiPoints}
             showResolver={showResolver}
             setShowResolver={setShowResolver}
             resolutionRating={resolutionRating}
@@ -293,7 +309,7 @@ export const getShouldHideGraph = (contract: Contract) => {
 
 const ChoiceOverview = (props: {
   points: MultiPoints
-  contract: MultiContract
+  contract: CPMMMultiContract
   showResolver: boolean
   resolutionRating?: ReactNode
   setShowResolver: (show: boolean) => void
@@ -465,9 +481,7 @@ const ChoiceOverview = (props: {
         />
       ) : null}
       {showResolver ? (
-        !shouldAnswersSumToOne &&
-        contract.mechanism === 'cpmm-multi-1' &&
-        contract.outcomeType !== 'NUMBER' ? (
+        !shouldAnswersSumToOne && contract.mechanism === 'cpmm-multi-1' ? (
           <GradientContainer>
             <IndependentAnswersResolvePanel
               contract={contract}
@@ -517,7 +531,7 @@ const ChoiceOverview = (props: {
     </>
   )
 }
-const MultiNumericOverview = (props: {
+const NumberOverview = (props: {
   points: MultiPoints
   contract: CPMMNumericContract
   showResolver: boolean
@@ -550,7 +564,7 @@ const MultiNumericOverview = (props: {
   return (
     <>
       <Row className="justify-between gap-2">
-        <MultiNumericResolutionOrExpectation contract={contract} />
+        <NumberResolutionOrExpectation contract={contract} />
         {resolutionRating}
         <Row className={'gap-1'}>
           {enableAdd && !showDistribution && (
@@ -602,7 +616,7 @@ const MultiNumericOverview = (props: {
           {(w, h) => (
             <>
               <div className={clsx(!showDistribution ? 'hidden' : 'block')}>
-                <MultiNumericDistributionChart
+                <NumberDistributionChart
                   newColor={NEW_GRAPH_COLOR}
                   contract={contract}
                   width={w}
@@ -612,7 +626,7 @@ const MultiNumericOverview = (props: {
               </div>
               {/*// The chart component must be instantiated for useZoom to work*/}
               <div className={clsx(showDistribution ? 'hidden' : 'block')}>
-                <MultiNumericContractChart
+                <NumberContractChart
                   width={w}
                   height={h}
                   multiPoints={points}
@@ -651,6 +665,152 @@ const MultiNumericOverview = (props: {
                 includeSellButton={user}
               />
             </>
+          )}
+        </>
+      )}
+    </>
+  )
+}
+
+const MultiNumericOverview = (props: {
+  points: MultiPoints
+  contract: MultiNumericContract
+  showResolver: boolean
+  resolutionRating?: ReactNode
+  setShowResolver: (show: boolean) => void
+  onAnswerCommentClick: (answer: Answer) => void
+  chartAnnotations: ChartAnnotation[]
+  zoomY?: boolean
+}) => {
+  const {
+    points,
+    contract,
+    showResolver,
+    resolutionRating,
+    setShowResolver,
+    onAnswerCommentClick,
+    zoomY,
+  } = props
+
+  const currentUser = useUser()
+  const currentUserId = currentUser?.id
+  const [showZoomer, setShowZoomer] = useState(false)
+  const { currentTimePeriod, setTimePeriod, maxRange, zoomParams } =
+    useTimePicker(contract, () => setShowZoomer(true))
+
+  const shouldAnswersSumToOne =
+    'shouldAnswersSumToOne' in contract ? contract.shouldAnswersSumToOne : true
+
+  const [query, setQuery] = usePersistentInMemoryState(
+    '',
+    'create-answer-text' + contract.id
+  )
+
+  const defaultSort = getDefaultSort(contract)
+  const [sort, setSort] = usePersistentInMemoryState<MultiSort>(
+    defaultSort,
+    'answer-sort' + contract.id
+  )
+
+  const {
+    pointerMode,
+    setPointerMode,
+    hoveredAnnotation,
+    setHoveredAnnotation,
+    chartAnnotations,
+    enableAdd,
+  } = useAnnotateChartTools(contract, props.chartAnnotations)
+  const {
+    chartPositions,
+    setHoveredChartPosition,
+    hoveredChartPosition,
+    displayUser,
+    setDisplayUser,
+  } = useChartPositions(contract)
+  const contractPositionAnswerIds = chartPositions.map((cp) => cp.answerId)
+
+  return (
+    <>
+      <Row className="relative justify-between gap-2">
+        <MultiNumericResolutionOrExpectation contract={contract} />
+        <>
+          <Row className={'relative gap-1'}>
+            <UserPositionSearchButton
+              currentUser={currentUser}
+              displayUser={displayUser}
+              contract={contract}
+              setDisplayUser={setDisplayUser}
+            />
+            {enableAdd && (
+              <EditChartAnnotationsButton
+                pointerMode={pointerMode}
+                setPointerMode={setPointerMode}
+              />
+            )}
+            <TimeRangePicker
+              currentTimePeriod={currentTimePeriod}
+              setCurrentTimePeriod={setTimePeriod}
+              maxRange={maxRange}
+              color="indigo"
+            />
+          </Row>
+        </>
+      </Row>
+      <SizedContainer
+        className={clsx('mb-12 h-[150px] w-full pb-4 pr-10 sm:h-[200px]')}
+      >
+        {(w, h) => (
+          <MultiNumericContractChart
+            width={w}
+            height={h}
+            multiPoints={points}
+            zoomParams={zoomParams}
+            contract={contract}
+            showZoomer={showZoomer}
+          />
+        )}
+      </SizedContainer>
+      {chartAnnotations?.length ? (
+        <ChartAnnotations
+          annotations={chartAnnotations}
+          hoveredAnnotation={hoveredAnnotation}
+          setHoveredAnnotation={setHoveredAnnotation}
+        />
+      ) : null}
+      {showResolver ? (
+        !shouldAnswersSumToOne && contract.mechanism === 'cpmm-multi-1' ? (
+          <GradientContainer>
+            <IndependentAnswersResolvePanel
+              contract={contract}
+              onClose={() => setShowResolver(false)}
+            />
+          </GradientContainer>
+        ) : (
+          <GradientContainer>
+            <AnswersResolvePanel
+              contract={contract}
+              onClose={() => setShowResolver(false)}
+            />
+          </GradientContainer>
+        )
+      ) : (
+        <>
+          {resolutionRating}
+          <AnswersPanel
+            hideSearch
+            selectedAnswerIds={[]}
+            contract={contract}
+            onAnswerCommentClick={onAnswerCommentClick}
+            sort={sort}
+            setSort={setSort}
+            query={query}
+            setQuery={setQuery}
+          />
+          {tradingAllowed(contract) && (
+            <UserBetsSummary
+              className="border-ink-200 !mb-2 mt-2 "
+              contract={contract}
+            />
           )}
         </>
       )}

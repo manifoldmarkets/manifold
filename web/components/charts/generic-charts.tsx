@@ -2,7 +2,7 @@ import clsx from 'clsx'
 import { DistributionPoint, HistoryPoint, Point, ValueKind } from 'common/chart'
 import { ChartPosition } from 'common/chart-position'
 import { CPMMNumericContract } from 'common/contract'
-import { getAnswerContainingValue, getPrecision } from 'common/multi-numeric'
+import { getAnswerContainingValue, getPrecision } from 'common/src/number'
 import { ChartAnnotation } from 'common/supabase/chart-annotations'
 import {
   formatMoneyNumber,
@@ -33,7 +33,7 @@ import {
   AnnotateChartModal,
   ReadChartAnnotationModal,
 } from 'web/components/annotate-chart'
-import { DistributionChartTooltip } from 'web/components/charts/contract/multi-numeric'
+import { DistributionChartTooltip } from 'web/components/charts/contract/number'
 import { useEvent } from 'client-common/hooks/use-event'
 import { roundToNearestFive } from 'web/lib/util/roundToNearestFive'
 import {
@@ -48,6 +48,7 @@ import {
   ZoomParams,
 } from './helpers'
 import { ZoomSlider } from './zoom-slider'
+import { NUMERIC_GRAPH_COLOR } from 'common/numeric-constants'
 
 const interpolateY = (
   curve: CurveFactory,
@@ -908,7 +909,7 @@ export const SingleValueHistoryChart = <P extends HistoryPoint>(props: {
       {showZoomer && zoomParams && (
         <ZoomSlider
           zoomParams={zoomParams}
-          color="light-green"
+          color={color === NUMERIC_GRAPH_COLOR ? 'indigo' : 'light-green'}
           className="relative top-4"
         />
       )}

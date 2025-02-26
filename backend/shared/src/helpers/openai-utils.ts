@@ -3,6 +3,7 @@ import * as dayjs from 'dayjs'
 import { log } from 'shared/utils'
 import * as utc from 'dayjs/plugin/utc'
 import { APIError } from 'common/api/utils'
+import { buildArray } from 'common/util/array'
 dayjs.extend(utc)
 export type MODELS = 'o3-mini'
 
@@ -85,13 +86,24 @@ export const generateImage = async (q: string) => {
     .catch((err) => (console.log(err), undefined))
 }
 
-export const promptOpenAI = async (prompt: string, model: MODELS) => {
+export const promptOpenAI = async (
+  prompt: string,
+  model: MODELS,
+  options: { system?: string } = {}
+) => {
+  const { system } = options
   const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY })
 
   const result = await openai.chat.completions
     .create({
       model,
-      messages: [{ role: 'system', content: prompt }],
+      messages: buildArray(
+        system && {
+          role: 'system',
+          content: system,
+        },
+        { role: 'user', content: prompt }
+      ),
     })
     .catch((err) => (console.log(err), undefined))
 

@@ -63,8 +63,9 @@ import { CloseTimeSection } from 'web/components/new-contract/close-time-section
 import { TopicSelectorSection } from 'web/components/new-contract/topic-selector-section'
 import { PseudoNumericRangeSection } from 'web/components/new-contract/pseudo-numeric-range-section'
 import { SimilarContractsSection } from 'web/components/new-contract/similar-contracts-section'
-import { MultiNumericRangeSection } from 'web/components/new-contract/multi-numeric-range-section'
-import { getMultiNumericAnswerBucketRangeNames } from 'common/multi-numeric'
+import { MultiNumericRangeSection } from './multi-numeric-range-section'
+import { NumberRangeSection } from './number-range-section'
+import { getMultiNumericAnswerBucketRangeNames } from 'common/src/number'
 import { randomString } from 'common/util/random'
 import { formatWithToken } from 'common/util/format'
 import { BiUndo } from 'react-icons/bi'
@@ -85,7 +86,8 @@ export function ContractParamsForm(props: {
   const paramsKey =
     (params?.q ?? '') +
     (params?.groupSlugs?.join('') ?? '') +
-    (params?.groupIds?.join('') ?? '')
+    (params?.groupIds?.join('') ?? '') +
+    (params?.rand ?? '')
 
   const minStringKey = 'min' + paramsKey
   const [minString, setMinString] = usePersistentLocalState(
@@ -133,10 +135,23 @@ export function ContractParamsForm(props: {
 
   const answersKey = 'new-answers-with-other' + paramsKey
   const [answers, setAnswers] = usePersistentLocalState(
-    !!params?.answers ? params.answers : defaultAnswers,
+    params?.answers ?? defaultAnswers,
     answersKey
   )
-
+  const [midpoints, setMidpoints] = usePersistentLocalState<number[]>(
+    params?.midpoints ?? [],
+    'new-numeric-midpoints' + paramsKey
+  )
+  const [multiNumericSumsToOne, setMultiNumericSumsToOne] =
+    usePersistentLocalState<boolean>(
+      params?.shouldAnswersSumToOne ?? false,
+      'new-multi-numeric-sums-to-one' + paramsKey
+    )
+  const unitKey = 'multi-numeric-unit' + paramsKey
+  const [unit, setUnit] = usePersistentLocalState<string>(
+    params?.unit ?? '',
+    unitKey
+  )
   const addAnswersModeKey = 'new-add-answers-mode' + paramsKey
   const [addAnswersMode, setAddAnswersMode] =
     usePersistentLocalState<add_answers_mode>(
@@ -144,7 +159,9 @@ export function ContractParamsForm(props: {
       addAnswersModeKey
     )
   const shouldAnswersSumToOne =
-    params?.shouldAnswersSumToOne ?? outcomeType === 'NUMBER'
+    outcomeType === 'MULTI_NUMERIC'
+      ? multiNumericSumsToOne
+      : params?.shouldAnswersSumToOne ?? outcomeType === 'NUMBER'
 
   // NOTE: if you add another user-controlled state variable, you should also add it to the duplication parameters and resetProperties()
 
@@ -321,26 +338,31 @@ export function ContractParamsForm(props: {
     max ?? 0,
     precision && precision > 0 ? precision : 1
   ).length
+  const minMaxValid =
+    min !== undefined &&
+    max !== undefined &&
+    isFinite(min) &&
+    isFinite(max) &&
+    min < max
+
   const isValid =
     isValidQuestion &&
     ante <= balance &&
     isValidDate &&
     isValidTopics &&
     (outcomeType !== 'PSEUDO_NUMERIC' ||
-      (min !== undefined &&
-        max !== undefined &&
-        initialValue !== undefined &&
-        isFinite(min) &&
-        isFinite(max) &&
-        min < max &&
-        max - min > 0.01 &&
+      (initialValue !== undefined &&
+        minMaxValid &&
         min < initialValue &&
+        max - min > 0.01 &&
         initialValue < max)) &&
     isValidMultipleChoice &&
     (outcomeType !== 'BOUNTIED_QUESTION' || bountyAmount !== undefined) &&
     (outcomeType === 'NUMBER'
       ? numberOfBuckets <= MULTI_NUMERIC_BUCKETS_MAX && numberOfBuckets >= 2
-      : true)
+      : true) &&
+    (outcomeType !== 'MULTI_NUMERIC' ||
+      ((minMaxValid || isValidMultipleChoice) && unit !== ''))
 
   const [errorText, setErrorText] = useState<string>('')
   useEffect(() => {
@@ -395,6 +417,11 @@ export function ContractParamsForm(props: {
     safeLocalStorage?.removeItem(closeDateKey)
     safeLocalStorage?.removeItem(closeHoursMinutesKey)
     setPersistentLocalState(selectedGroupsKey, [])
+    setPersistentLocalState('threshold-answers' + paramsKey, [])
+    setPersistentLocalState('threshold-midpoints' + paramsKey, [])
+    setPersistentLocalState('bucket-answers' + paramsKey, [])
+    setPersistentLocalState('bucket-midpoints' + paramsKey, [])
+    setPersistentLocalState(unitKey, '')
     setPersistentLocalState(answersKey, defaultAnswers)
     setPersistentLocalState(minStringKey, '')
     setPersistentLocalState(maxStringKey, '')
@@ -414,7 +441,7 @@ export function ContractParamsForm(props: {
     'EDITING' | 'LOADING' | 'DONE'
   >('EDITING')
 
-  async function submit() {
+  const submit = async () => {
     if (!isValid) return
     setSubmitState('LOADING')
     try {
@@ -430,6 +457,7 @@ export function ContractParamsForm(props: {
         isLogScale,
         groupIds: selectedGroups.map((g) => g.id),
         answers,
+        midpoints,
         addAnswersMode,
         shouldAnswersSumToOne,
         visibility,
@@ -443,6 +471,7 @@ export function ContractParamsForm(props: {
         sportsStartTimestamp: params?.sportsStartTimestamp,
         sportsEventId: params?.sportsEventId,
         sportsLeague: params?.sportsLeague,
+        unit: unit.trim(),
       })
 
       const newContract = await api('market', createProps as any)
@@ -500,7 +529,8 @@ export function ContractParamsForm(props: {
   }
 
   const isMulti = outcomeType === 'MULTIPLE_CHOICE'
-  const isNumericMulti = outcomeType === 'NUMBER'
+  const isNumber = outcomeType === 'NUMBER'
+  const isMultiNumeric = outcomeType === 'MULTI_NUMERIC'
 
   const [isGeneratingDescription, setIsGeneratingDescription] = useState(false)
   const [preGenerateContent, setPreGenerateContent] = useState<
@@ -586,7 +616,7 @@ export function ContractParamsForm(props: {
           question={question}
         />
       ) : null}
-      {(isMulti || outcomeType == 'POLL') && !isNumericMulti && (
+      {(isMulti || outcomeType == 'POLL') && !isNumber && (
         <MultipleChoiceAnswers
           answers={answers}
           setAnswers={setAnswers}
@@ -637,6 +667,28 @@ export function ContractParamsForm(props: {
           Predict the value of a number.
         </div>
       )}
+      {isMultiNumeric && (
+        <MultiNumericRangeSection
+          paramsKey={paramsKey}
+          submitState={submitState}
+          question={question}
+          description={editor?.getHTML()}
+          answers={answers}
+          setAnswers={setAnswers}
+          midpoints={midpoints}
+          setMidpoints={setMidpoints}
+          minString={minString}
+          setMinString={setMinString}
+          maxString={maxString}
+          setMaxString={setMaxString}
+          min={min}
+          max={max}
+          shouldAnswersSumToOne={shouldAnswersSumToOne}
+          setShouldAnswersSumToOne={setMultiNumericSumsToOne}
+          unit={unit}
+          setUnit={setUnit}
+        />
+      )}
       {outcomeType === 'PSEUDO_NUMERIC' && (
         <PseudoNumericRangeSection
           minString={minString}
@@ -653,8 +705,8 @@ export function ContractParamsForm(props: {
           max={max}
         />
       )}{' '}
-      {isNumericMulti && (
-        <MultiNumericRangeSection
+      {isNumber && (
+        <NumberRangeSection
           minString={minString}
           setMinString={setMinString}
           maxString={maxString}

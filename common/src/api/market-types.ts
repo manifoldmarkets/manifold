@@ -2,7 +2,6 @@ import { JSONContent } from '@tiptap/core'
 import { Answer, MAX_ANSWERS } from 'common/answer'
 import { getAnswerProbability, getProbability } from 'common/calculate'
 import {
-  CREATEABLE_OUTCOME_TYPES,
   Contract,
   MAX_QUESTION_LENGTH,
   MultiContract,
@@ -18,6 +17,7 @@ import { richTextToString } from 'common/util/parse'
 import { z } from 'zod'
 import { coerceBoolean, contentSchema } from './zod-types'
 import { randomStringRegex } from 'common/util/random'
+import { MAX_MULTI_NUMERIC_ANSWERS } from 'common/multi-numeric'
 
 export type LiteMarket = {
   // Unique identifier for this market
@@ -285,11 +285,21 @@ export const createMultiSchema = z.object({
     .default('DISABLED'),
   shouldAnswersSumToOne: z.boolean().optional(),
 })
-export const createMultiNumericSchema = z.object({
+
+export const createNumberSchema = z.object({
   outcomeType: z.enum(['NUMBER']),
   min: z.number().safe(),
   max: z.number().safe(),
   precision: z.number().gt(0),
+})
+
+export const createMultiNumericSchema = z.object({
+  outcomeType: z.enum(['MULTI_NUMERIC']),
+  answers: z.array(z.string().trim().min(1)).max(MAX_MULTI_NUMERIC_ANSWERS),
+  midpoints: z.array(z.number().safe()).max(MAX_MULTI_NUMERIC_ANSWERS),
+  shouldAnswersSumToOne: z.boolean(),
+  addAnswersMode: z.enum(['DISABLED']).default('DISABLED'),
+  unit: z.string(),
 })
 
 export const createBountySchema = z.object({
@@ -318,7 +328,6 @@ export const createMarketProps = z
         'Close time must be in the future.'
       )
       .optional(),
-    outcomeType: z.enum(CREATEABLE_OUTCOME_TYPES),
     groupIds: z.array(z.string().min(1).max(MAX_ID_LENGTH)).optional(),
     visibility: z.enum(VISIBILITIES).default('public').optional(),
     isTwitchContract: z.boolean().optional(),
@@ -338,6 +347,7 @@ export const createMarketProps = z
       createBountySchema,
       createPollSchema,
       createBinarySchema,
+      createNumberSchema,
       createMultiNumericSchema,
     ])
   )

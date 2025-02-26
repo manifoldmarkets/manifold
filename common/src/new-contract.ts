@@ -6,9 +6,10 @@ import {
   BountiedQuestion,
   CPMM,
   CPMMMulti,
-  CPMMMultiNumeric,
+  CPMMNumber,
   CREATEABLE_OUTCOME_TYPES,
   Contract,
+  MultiNumeric,
   NonBet,
   Poll,
   PseudoNumeric,
@@ -61,6 +62,10 @@ export function getNewContract(
     sportsStartTimestamp?: string
     sportsEventId?: string
     sportsLeague?: string
+
+    // Multi-numeric
+    unit: string | undefined
+    midpoints: number[] | undefined
   }
 ) {
   const {
@@ -91,6 +96,8 @@ export function getNewContract(
     answerImageUrls,
     takerAPIOrdersDisabled,
     siblingContractId,
+    unit,
+    midpoints,
   } = props
   const createdTime = Date.now()
 
@@ -113,6 +120,16 @@ export function getNewContract(
     BOUNTIED_QUESTION: () => getBountiedQuestionProps(ante, isAutoBounty),
     POLL: () => getPollProps(answers),
     NUMBER: () => getNumberProps(id, creator.id, min, max, answers, ante),
+    MULTI_NUMERIC: () =>
+      getMultiNumericProps(
+        id,
+        creator.id,
+        answers,
+        midpoints ?? [],
+        ante,
+        unit ?? '',
+        shouldAnswersSumToOne ?? true
+      ),
   }[outcomeType]()
 
   const contract: Contract = removeUndefinedProps({
@@ -268,9 +285,11 @@ const getMultipleChoiceProps = (
     shouldAnswersSumToOne,
     ante,
     answersWithOther,
-    isBinaryMulti ? VERSUS_COLORS : undefined,
-    shortTexts,
-    imageUrls
+    removeUndefinedProps({
+      colors: isBinaryMulti ? VERSUS_COLORS : undefined,
+      shortTexts,
+      imageUrls,
+    })
   )
   const system: CPMMMulti = {
     mechanism: 'cpmm-multi-1',
@@ -301,7 +320,7 @@ const getNumberProps = (
     ante,
     answers
   )
-  const system: CPMMMultiNumeric = {
+  const system: CPMMNumber = {
     mechanism: 'cpmm-multi-1',
     outcomeType: 'NUMBER',
     addAnswersMode: 'DISABLED',
@@ -315,6 +334,37 @@ const getNumberProps = (
 
   return system
 }
+const getMultiNumericProps = (
+  contractId: string,
+  userId: string,
+  answers: string[],
+  midpoints: number[],
+  ante: number,
+  unit: string,
+  shouldAnswersSumToOne: boolean
+) => {
+  const answerObjects = createAnswers(
+    contractId,
+    userId,
+    'DISABLED',
+    shouldAnswersSumToOne,
+    ante,
+    answers,
+    { midpoints }
+  )
+  const system: MultiNumeric = {
+    mechanism: 'cpmm-multi-1',
+    outcomeType: 'MULTI_NUMERIC',
+    shouldAnswersSumToOne,
+    addAnswersMode: 'DISABLED',
+    answers: answerObjects,
+    totalLiquidity: ante,
+    subsidyPool: 0,
+    unit,
+  }
+
+  return system
+}
 
 function createAnswers(
   contractId: string,
@@ -323,10 +373,14 @@ function createAnswers(
   shouldAnswersSumToOne: boolean,
   ante: number,
   answers: string[],
-  colors?: string[],
-  shortTexts?: string[],
-  imageUrls?: string[]
+  options: {
+    colors?: string[]
+    shortTexts?: string[]
+    imageUrls?: string[]
+    midpoints?: number[]
+  } = {}
 ) {
+  const { colors, shortTexts, imageUrls, midpoints } = options
   const ids = answers.map(() => randomString())
 
   let prob = 0.5
@@ -376,6 +430,7 @@ function createAnswers(
         addAnswersMode !== 'DISABLED' &&
         i === answers.length - 1,
       probChanges: { day: 0, week: 0, month: 0 },
+      midpoint: midpoints?.[i],
     })
     return answer
   })

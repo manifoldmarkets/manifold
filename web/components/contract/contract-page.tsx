@@ -17,7 +17,7 @@ import {
   MultiPoints,
   unserializeBase64Multi,
 } from 'common/chart'
-import { base64toPoints } from 'common/edge/og'
+import { base64toFloat32Points } from 'common/edge/og'
 import { HOUSE_BOT_USERNAME, SPICE_MARKET_TOOLTIP } from 'common/envs/constants'
 import { DAY_MS } from 'common/util/time'
 import { UserBetsSummary } from 'web/components/bet/bet-summary'
@@ -596,13 +596,14 @@ const useBetData = (props: {
   } = props
 
   const isNumber = outcomeType === 'NUMBER'
+  const isMultiNumeric = outcomeType === 'MULTI_NUMERIC'
 
   const newBets = useContractBets(
     contractId,
     {
       afterTime: lastBetTime ?? 0,
       includeZeroShareRedemptions: true,
-      filterRedemptions: !isNumber,
+      filterRedemptions: !isNumber && !isMultiNumeric,
     },
     useIsPageVisible,
     (params) => api('bets', params)
@@ -615,13 +616,21 @@ const useBetData = (props: {
       ? uniqBy(newBetsWithoutRedemptions, 'betGroupId').length
       : newBetsWithoutRedemptions.length)
   const bets = useMemo(
-    () => uniqBy(isNumber ? newBets : newBetsWithoutRedemptions, 'id'),
+    () =>
+      uniqBy(
+        isNumber || isMultiNumeric ? newBets : newBetsWithoutRedemptions,
+        'id'
+      ),
     [newBets.length]
   )
   const yourNewBets = newBets.filter((bet) => userId && bet.userId === userId)
 
   const betPoints = useMemo(() => {
-    if (outcomeType === 'MULTIPLE_CHOICE' || outcomeType === 'NUMBER') {
+    if (
+      outcomeType === 'MULTIPLE_CHOICE' ||
+      outcomeType === 'NUMBER' ||
+      outcomeType === 'MULTI_NUMERIC'
+    ) {
       const data = multiPointsString
         ? unserializeBase64Multi(multiPointsString)
         : {}
@@ -631,7 +640,7 @@ const useBetData = (props: {
         [...(array1 ?? []), ...(array2 ?? [])].sort((a, b) => a.x - b.x)
       ) as MultiPoints
     } else {
-      const points = pointsString ? base64toPoints(pointsString) : []
+      const points = pointsString ? base64toFloat32Points(pointsString) : []
       const newPoints = newBetsWithoutRedemptions.map((bet) => ({
         x: bet.createdTime,
         y: bet.probAfter,
@@ -639,7 +648,6 @@ const useBetData = (props: {
       return [...points, ...newPoints] as HistoryPoint<Partial<Bet>>[]
     }
   }, [pointsString, newBets.length])
-
   return {
     bets,
     totalBets,

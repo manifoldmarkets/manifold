@@ -46,8 +46,9 @@ export const getContracts = async (
   return results.flatMap((result) => result.data.map((r) => convertContract(r)))
 }
 
+// NOTE: this should be nativeContractColumnsArray.join(',') but throwing type errors
 export const contractFields =
-  'data, importance_score, view_count, conversion_score, freshness_score, daily_score, token'
+  'data, importance_score, view_count, conversion_score, freshness_score, daily_score, token, boosted'
 
 export const getUnresolvedContractsCount = async (
   creatorId: string,
@@ -127,6 +128,7 @@ export const convertAnswer = (row: Row<'answers'>): Answer =>
     },
     imageUrl: row.image_url ?? undefined,
     shortText: row.short_text ?? undefined,
+    midpoint: row.midpoint ?? undefined,
   })
 
 export const convertContract = <T extends Contract>(c: {

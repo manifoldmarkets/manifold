@@ -5,11 +5,11 @@ import { computeFills, CpmmState, getCpmmProbability } from './calculate-cpmm'
 import {
   BinaryContract,
   CPMMMultiContract,
-  CPMMNumericContract,
   MAX_CPMM_PROB,
   MAX_STONK_PROB,
   MIN_CPMM_PROB,
   MIN_STONK_PROB,
+  MultiContract,
   PseudoNumericContract,
   StonkContract,
 } from './contract'
@@ -152,7 +152,7 @@ export const getBinaryCpmmBetInfo = (
 }
 
 export const getNewMultiCpmmBetInfo = (
-  contract: CPMMMultiContract | CPMMNumericContract,
+  contract: MultiContract,
   answers: Answer[],
   answer: Answer,
   outcome: 'YES' | 'NO',
@@ -233,7 +233,7 @@ export const getNewMultiCpmmBetInfo = (
 }
 
 export const getNewMultiCpmmBetsInfo = (
-  contract: CPMMMultiContract | CPMMNumericContract,
+  contract: MultiContract,
   answers: Answer[],
   answersToBuy: Answer[],
   outcome: 'YES',
@@ -261,7 +261,7 @@ export const getNewMultiCpmmBetsInfo = (
 }
 
 const getNewMultiCpmmBetsInfoSumsToOne = (
-  contract: CPMMMultiContract | CPMMNumericContract,
+  contract: MultiContract,
   answers: Answer[],
   answersToBuy: Answer[],
   outcome: 'YES' | 'NO',

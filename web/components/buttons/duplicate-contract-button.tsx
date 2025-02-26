@@ -6,7 +6,8 @@ import { buttonClass } from './button'
 import Link from 'next/link'
 import { NewQuestionParams } from 'web/components/new-contract/new-contract-panel'
 import { getLinkTarget } from 'web/components/widgets/linkify'
-import { getPrecision } from 'common/multi-numeric'
+import { getPrecision } from 'common/src/number'
+import { randomString } from 'common/util/random'
 
 export function DuplicateContractButton(props: { contract: Contract }) {
   const { contract } = props
@@ -56,10 +57,17 @@ export function duplicateContractHref(contract: Contract) {
     )
   }
 
-  if (contract.outcomeType === 'MULTIPLE_CHOICE') {
+  if (
+    contract.outcomeType === 'MULTIPLE_CHOICE' ||
+    contract.outcomeType === 'MULTI_NUMERIC'
+  ) {
     params.answers = contract.answers
       .filter((a) => !a.isOther)
       .map((a) => a.text)
+  }
+  if (contract.outcomeType === 'MULTI_NUMERIC') {
+    params.unit = contract.unit
+    params.midpoints = contract.answers.map((a) => a.midpoint!)
   }
 
   if (contract.mechanism === 'cpmm-multi-1') {
@@ -70,6 +78,9 @@ export function duplicateContractHref(contract: Contract) {
   if (contract.groupSlugs && contract.groupSlugs.length > 0) {
     params.groupSlugs = contract.groupSlugs
   }
+
+  // lets you duplicate a contract multiple times
+  params.rand = randomString(6)
 
   return `/create?params=` + encodeURIComponent(JSON.stringify(params))
 }
