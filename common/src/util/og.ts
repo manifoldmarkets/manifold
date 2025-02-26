@@ -25,6 +25,16 @@ export function buildOgUrl<P extends Record<string, string | string[]>>(
 
 // nodejs only
 export function pointsToBase64(points: SerializedPoint[]) {
-  const floats = new Float64Array(points.flatMap((p) => [p[0], p[1]]))
+  // Split timestamps into seconds and milliseconds to maintain precision
+  // Each point becomes [seconds, milliseconds, y]
+  const floats = new Float32Array(
+    points.flatMap((p) => {
+      const x = p[0]
+      const seconds = Math.floor(x / 1000)
+      const milliseconds = x % 1000
+      return [seconds, milliseconds, p[1]]
+    })
+  )
+
   return Buffer.from(floats.buffer).toString('base64url')
 }
