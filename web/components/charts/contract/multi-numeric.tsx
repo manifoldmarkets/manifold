@@ -97,12 +97,10 @@ export const MultiNumericContractChart = (props: {
   const end = getEndDate(contract)
   const endP = getExpectedValue(contract)
   const stringifiedMultiPoints = JSON.stringify(multiPoints)
-  console.log('multiPoints', multiPoints)
   const betPoints = useMemo(
     () => getBetPoints(contract, multiPoints),
     [stringifiedMultiPoints]
   )
-  console.log('betPoints', betPoints)
   const now = useMemo(() => Date.now(), [stringifiedMultiPoints])
 
   const singlePointData = useMemo(
@@ -113,7 +111,7 @@ export const MultiNumericContractChart = (props: {
         y: endP,
       },
     ],
-    [JSON.stringify(betPoints), end, endP]
+    [betPoints, end, endP, now]
   )
   const rightmostDate = getRightmostVisibleDate(end, last(betPoints)?.x, now)
   const xScale = scaleTime([start, rightmostDate], [0, width])
