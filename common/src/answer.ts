@@ -101,3 +101,47 @@ export const sortAnswers = <T extends Answer>(
     },
   ])
 }
+export const ANSWERS_TO_HIDE_GRAPH = 3
+
+export function getSortedAnswers(
+  contract: MultiContract,
+  sortedAnswers: Answer[],
+  sort: MultiSort,
+  selectedAnswerIds?: string[]
+) {
+  const answers = contract.answers
+  const allResolved = getAllResolved(contract, answers)
+  return sortedAnswers
+    .filter((answer) => {
+      if (selectedAnswerIds?.includes(answer.id)) {
+        return true
+      }
+
+      if (allResolved) return true
+      if (sort === 'prob-asc') {
+        return answer.prob < 0.99
+      } else if (sort === 'prob-desc') {
+        return answer.prob > 0.01
+      } else if (sort === 'liquidity' || sort === 'new' || sort === 'old') {
+        return !answer.resolution
+      }
+      return true
+    })
+    .slice(0, MAX_DEFAULT_ANSWERS)
+}
+
+export function getAllResolved(contract: MultiContract, answers: Answer[]) {
+  const shouldAnswersSumToOne = getShouldAnswersSumToOne(contract)
+  return (
+    (shouldAnswersSumToOne && !!contract.resolutions) ||
+    answers.every((a) => a.resolution)
+  )
+}
+
+export function getShouldAnswersSumToOne(contract: MultiContract) {
+  return 'shouldAnswersSumToOne' in contract
+    ? contract.shouldAnswersSumToOne
+    : true
+}
+
+export const MAX_DEFAULT_ANSWERS = 20

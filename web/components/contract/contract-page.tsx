@@ -29,10 +29,7 @@ import { ChangeBannerButton } from 'web/components/contract/change-banner-button
 import { ContractDescription } from 'web/components/contract/contract-description'
 import { AuthorInfo } from 'web/components/contract/contract-details'
 import { ContractLeaderboard } from 'web/components/contract/contract-leaderboard'
-import {
-  ContractOverview,
-  getShouldHideGraph,
-} from 'web/components/contract/contract-overview'
+import { ContractOverview } from 'web/components/contract/contract-overview'
 import { ContractTabs } from 'web/components/contract/contract-tabs'
 import { VisibilityIcon } from 'web/components/contract/contracts-table'
 import { DangerZone } from 'web/components/contract/danger-zone'
@@ -77,6 +74,7 @@ import { precacheAnswers } from 'web/hooks/use-answers'
 import { useIsPageVisible } from 'web/hooks/use-page-visible'
 import { api } from 'web/lib/api/api'
 import ContractSharePanel from './contract-share-panel'
+import { getShouldHideGraph } from 'common/contract-params'
 
 export function ContractPageContent(props: ContractParams) {
   const {

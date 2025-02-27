@@ -5,25 +5,31 @@ import {
 import { Contract, ContractParams, MultiContract } from 'common/contract'
 import { binAvg, maxMinBin, serializeMultiPoints } from 'common/chart'
 import {
-  getRecentTopLevelCommentsAndReplies,
   getPinnedComments,
+  getRecentTopLevelCommentsAndReplies,
 } from 'common/supabase/comments'
 import {
-  getTopContractMetrics,
   getContractMetricsCount,
+  getTopContractMetrics,
 } from 'common/supabase/contract-metrics'
 import { getTopicsOnContract } from 'common/supabase/groups'
 import { removeUndefinedProps } from 'common/util/object'
-import { pointsToBase64Float32, pointsToBase64 } from 'common/util/og'
+import { pointsToBase64, pointsToBase64Float32 } from 'common/util/og'
 import { SupabaseClient } from 'common/supabase/utils'
 import { buildArray } from 'common/util/array'
 import { groupBy, mapValues, minBy, omit, orderBy, sortBy } from 'lodash'
 import { Bet } from 'common/bet'
 import { getChartAnnotations } from 'common/supabase/chart-annotations'
 import { unauthedApi } from './util/api'
-import { MAX_ANSWERS, sortAnswers } from './answer'
+import {
+  ANSWERS_TO_HIDE_GRAPH,
+  getDefaultSort,
+  getSortedAnswers,
+  MAX_ANSWERS,
+  sortAnswers,
+} from './answer'
 import { getDashboardsToDisplayOnContract } from './supabase/dashboards'
-import { getTotalBetCount, getBetPoints } from './bets'
+import { getBetPoints, getTotalBetCount } from './bets'
 
 export async function getContractParams(
   contract: Contract,
@@ -86,7 +92,10 @@ export async function getContractParams(
 
   // TODO: getMultiBetPoints breaks NUMBER market time series charts and I think MULTI_NUMERIC as well when they get enough bets
   // TODO: remove multiPointsString for markets with more than x answers as it's not displayed by default anyways
-  const multiPoints = isMulti ? getMultiBetPoints(allBetPoints, contract) : {}
+  const multiPoints =
+    isMulti && !getShouldHideGraph(contract)
+      ? getMultiBetPoints(allBetPoints, contract)
+      : {}
   const multiPointsString = mapValues(multiPoints, (v) => pointsToBase64(v))
 
   const ogPoints = !isMulti ? binAvg(allBetPoints) : []
@@ -206,4 +215,13 @@ export const getAnswerProbAtEveryBetTime = (
   })
 
   return pointsByAns
+}
+
+export const getShouldHideGraph = (contract: Contract) => {
+  if (contract.mechanism !== 'cpmm-multi-1') return false
+  const defaultSort = getDefaultSort(contract)
+  const sortedAnswers = sortAnswers(contract, contract.answers, defaultSort)
+  const initialAnswers = getSortedAnswers(contract, sortedAnswers, defaultSort)
+
+  return initialAnswers.length > ANSWERS_TO_HIDE_GRAPH
 }

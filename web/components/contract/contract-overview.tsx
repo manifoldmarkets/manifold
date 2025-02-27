@@ -1,7 +1,7 @@
 import clsx from 'clsx'
 import { ReactNode, memo, useEffect, useState } from 'react'
 
-import { Answer, MultiSort, getDefaultSort, sortAnswers } from 'common/answer'
+import { Answer, MultiSort, getDefaultSort } from 'common/answer'
 import { Bet } from 'common/bet'
 import { getAutoBountyPayoutPerHour } from 'common/bounty'
 import { getAnswerProbability } from 'common/calculate'
@@ -13,7 +13,6 @@ import {
   CPMMMultiContract,
   CPMMNumericContract,
   Contract,
-  MultiContract,
   MultiNumericContract,
   PseudoNumericContract,
   StonkContract,
@@ -54,11 +53,7 @@ import {
   AnswersResolvePanel,
   IndependentAnswersResolvePanel,
 } from '../answers/answer-resolve-panel'
-import {
-  AnswersPanel,
-  MAX_DEFAULT_ANSWERS,
-  getAllResolved,
-} from '../answers/answers-panel'
+import { AnswersPanel } from '../answers/answers-panel'
 import { BuyPanel } from '../bet/bet-panel'
 import { UserBetsSummary } from '../bet/bet-summary'
 import {
@@ -69,7 +64,10 @@ import { MultiBinaryChart, SizedBinaryChart } from '../charts/contract/binary'
 import { ChoiceContractChart, getAnswerColor } from '../charts/contract/choice'
 import { PseudoNumericContractChart } from '../charts/contract/pseudo-numeric'
 import { StonkContractChart } from '../charts/contract/stonk'
-import { useDataZoomFetcher } from '../charts/contract/zoom-utils'
+import {
+  useDataZoomFetcher,
+  useMultiChoiceDataZoomFetcher,
+} from '../charts/contract/zoom-utils'
 import { getEndDate, useZoom } from '../charts/helpers'
 import { TimeRangePicker } from '../charts/time-range-picker'
 import { Col } from '../layout/col'
@@ -267,44 +265,6 @@ export const BinaryOverview = (props: {
   )
 }
 
-const ANSWERS_TO_HIDE_GRAPH = 3
-
-export function getSortedAnswers(
-  contract: MultiContract,
-  sortedAnswers: Answer[],
-  sort: MultiSort,
-  selectedAnswerIds?: string[]
-) {
-  const answers = contract.answers
-  const allResolved = getAllResolved(contract, answers)
-  return sortedAnswers
-    .filter((answer) => {
-      if (selectedAnswerIds?.includes(answer.id)) {
-        return true
-      }
-
-      if (allResolved) return true
-      if (sort === 'prob-asc') {
-        return answer.prob < 0.99
-      } else if (sort === 'prob-desc') {
-        return answer.prob > 0.01
-      } else if (sort === 'liquidity' || sort === 'new' || sort === 'old') {
-        return !answer.resolution
-      }
-      return true
-    })
-    .slice(0, MAX_DEFAULT_ANSWERS)
-}
-
-export const getShouldHideGraph = (contract: Contract) => {
-  if (contract.mechanism !== 'cpmm-multi-1') return false
-  const defaultSort = getDefaultSort(contract)
-  const sortedAnswers = sortAnswers(contract, contract.answers, defaultSort)
-  const initialAnswers = getSortedAnswers(contract, sortedAnswers, defaultSort)
-
-  return initialAnswers.length > ANSWERS_TO_HIDE_GRAPH
-}
-
 const ChoiceOverview = (props: {
   points: MultiPoints
   contract: CPMMMultiContract
@@ -318,7 +278,6 @@ const ChoiceOverview = (props: {
   setHideGraph: (hide: boolean) => void
 }) => {
   const {
-    points,
     contract,
     showResolver,
     resolutionRating,
@@ -393,7 +352,11 @@ const ChoiceOverview = (props: {
         : [...answers, answer.id]
     )
   }
-
+  const { points, loading } = useMultiChoiceDataZoomFetcher({
+    contract,
+    viewXScale: zoomParams?.viewXScale,
+    points: props.points,
+  })
   return (
     <>
       <Row className="relative justify-between gap-2">
@@ -408,6 +371,9 @@ const ChoiceOverview = (props: {
         {!hideGraph && (
           <>
             <Row className={'relative gap-1'}>
+              {loading && (
+                <LoadingIndicator spinnerColor="border-ink-400" size="sm" />
+              )}
               <UserPositionSearchButton
                 currentUser={currentUser}
                 displayUser={displayUser}
@@ -431,46 +397,44 @@ const ChoiceOverview = (props: {
         )}
       </Row>
 
-      {!!Object.keys(points).length &&
-        contract.mechanism == 'cpmm-multi-1' &&
-        !hideGraph && (
-          <SizedContainer
-            className={clsx(
-              'h-[150px] w-full pb-4 pr-10 sm:h-[250px]',
-              showZoomer && 'mb-12'
-            )}
-          >
-            {(w, h) => (
-              <ChoiceContractChart
-                showZoomer={showZoomer}
-                zoomParams={zoomParams}
-                width={w}
-                height={h}
-                multiPoints={points}
-                contract={contract}
-                highlightAnswerId={hoverAnswerId}
-                selectedAnswerIds={
-                  selectedAnswerIds.length
-                    ? selectedAnswerIds
-                    : defaultAnswerIdsToGraph
-                }
-                pointerMode={pointerMode}
-                setHoveredAnnotation={setHoveredAnnotation}
-                hoveredAnnotation={hoveredAnnotation}
-                chartAnnotations={chartAnnotations}
-                chartPositions={chartPositions?.filter((cp) =>
-                  hoverAnswerId
-                    ? cp.answerId === hoverAnswerId
-                    : selectedAnswerIds.length === 0 ||
-                      (cp.answerId && selectedAnswerIds.includes(cp.answerId))
-                )}
-                hoveredChartPosition={hoveredChartPosition}
-                setHoveredChartPosition={setHoveredChartPosition}
-                zoomY={zoomY}
-              />
-            )}
-          </SizedContainer>
-        )}
+      {contract.mechanism == 'cpmm-multi-1' && !hideGraph && (
+        <SizedContainer
+          className={clsx(
+            'h-[150px] w-full pb-4 pr-10 sm:h-[250px]',
+            showZoomer && 'mb-12'
+          )}
+        >
+          {(w, h) => (
+            <ChoiceContractChart
+              showZoomer={showZoomer}
+              zoomParams={zoomParams}
+              width={w}
+              height={h}
+              multiPoints={points}
+              contract={contract}
+              highlightAnswerId={hoverAnswerId}
+              selectedAnswerIds={
+                selectedAnswerIds.length
+                  ? selectedAnswerIds
+                  : defaultAnswerIdsToGraph
+              }
+              pointerMode={pointerMode}
+              setHoveredAnnotation={setHoveredAnnotation}
+              hoveredAnnotation={hoveredAnnotation}
+              chartAnnotations={chartAnnotations}
+              chartPositions={chartPositions?.filter((cp) =>
+                hoverAnswerId
+                  ? cp.answerId === hoverAnswerId
+                  : selectedAnswerIds.length === 0 ||
+                    (cp.answerId && selectedAnswerIds.includes(cp.answerId))
+              )}
+              hoveredChartPosition={hoveredChartPosition}
+              setHoveredChartPosition={setHoveredChartPosition}
+              zoomY={zoomY}
+            />
+          )}
+        </SizedContainer>
+      )}
       {chartAnnotations?.length && !hideGraph ? (
         <ChartAnnotations
           annotations={chartAnnotations}

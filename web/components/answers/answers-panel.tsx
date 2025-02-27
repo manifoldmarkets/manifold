@@ -14,6 +14,9 @@ import {
   sortAnswers,
   type Answer,
   type MultiSort,
+  getAllResolved,
+  getSortedAnswers,
+  getShouldAnswersSumToOne,
 } from 'common/answer'
 import { LimitBet } from 'common/bet'
 import { getAnswerProbability } from 'common/calculate'
@@ -78,31 +81,15 @@ import { RelativeTimestamp } from '../relative-timestamp'
 import { buildArray } from 'common/util/array'
 import { useSavedContractMetrics } from 'web/hooks/use-saved-contract-metrics'
 import { floatingEqual } from 'common/util/math'
-import { getSortedAnswers } from '../contract/contract-overview'
 import { useUnfilledBets } from 'client-common/hooks/use-bets'
 
 export const SHOW_LIMIT_ORDER_CHARTS_KEY = 'SHOW_LIMIT_ORDER_CHARTS_KEY'
-export const MAX_DEFAULT_ANSWERS = 20
 const MAX_DEFAULT_GRAPHED_ANSWERS = 6
 
 // the offset in which the top of answers is visible
 const SCROLL_OFFSET = 100
 // debounce when typing a query to ensure smoother autoscrolling
 const DEBOUNCE_DELAY = 100
-
-function getShouldAnswersSumToOne(contract: MultiContract) {
-  return 'shouldAnswersSumToOne' in contract
-    ? contract.shouldAnswersSumToOne
-    : true
-}
-
-export function getAllResolved(contract: MultiContract, answers: Answer[]) {
-  const shouldAnswersSumToOne = getShouldAnswersSumToOne(contract)
-  return (
-    (shouldAnswersSumToOne && !!contract.resolutions) ||
-    answers.every((a) => a.resolution)
-  )
-}
 
 // full resorting, hover, clickiness, search and add
 export function AnswersPanel(props: {
