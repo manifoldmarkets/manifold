@@ -12,7 +12,10 @@ dayjs.extend(timezone)
 import { LoanTxn } from 'common/txn'
 import { txnToRow } from 'shared/txn/run-txn'
 import { filterDefined } from 'common/util/array'
-import { getUnresolvedContractMetricsContractsAnswers } from 'shared/update-user-portfolio-histories-core'
+import {
+  getUnresolvedContractMetricsContractsAnswers,
+  getUnresolvedStatsForToken,
+} from 'shared/update-user-portfolio-histories-core'
 import { keyBy } from 'lodash'
 import { convertPortfolioHistory } from 'common/supabase/portfolio-metrics'
 import { getInsertQuery } from 'shared/supabase/utils'
@@ -25,16 +28,15 @@ import { betsQueue } from 'shared/helpers/fn-queue'
 
 export const requestLoan: APIHandler<'request-loan'> = async (_, auth) => {
   const pg = createSupabaseDirectClient()
-  const { result, metricsByContract, user } = await getNextLoanAmountResults(
-    auth.uid
-  )
+  const { result, updatedMetricsByContract, user } =
+    await getNextLoanAmountResults(auth.uid)
   const { updates, payout } = result
   if (payout < 1) {
     throw new APIError(400, `User ${auth.uid} is not eligible for a loan`)
   }
   const updatedMetrics = filterDefined(
     updates.map((update) => {
-      const metric = metricsByContract[update.contractId]?.find(
+      const metric = updatedMetricsByContract[update.contractId]?.find(
         (m) => m.answerId == update.answerId
       )
       if (!metric) return undefined
@@ -121,7 +123,6 @@ export const getNextLoanAmountResults = async (userId: string) => {
   if (!portfolioMetric) {
     throw new APIError(404, `No portfolio found for user ${userId}`)
   }
-  log(`Loaded portfolio.`)
 
   if (!isUserEligibleForLoan(portfolioMetric)) {
     throw new APIError(400, `User ${userId} is not eligible for a loan`)
@@ -131,14 +132,16 @@ export const getNextLoanAmountResults = async (userId: string) => {
   if (!user) {
     throw new APIError(404, `User ${userId} not found`)
   }
-  log(`Loaded user ${user.id}`)
 
-  const { contracts, metricsByContract } =
+  const { contracts, updatedMetricsByContract, metrics } =
     await getUnresolvedContractMetricsContractsAnswers(pg, [user.id])
-  log(`Loaded ${contracts.length} contracts.`)
-
   const contractsById = keyBy(contracts, 'id')
-
-  const result = getUserLoanUpdates(metricsByContract, contractsById)
-  return { result, user, metricsByContract }
+  const { value } = getUnresolvedStatsForToken('MANA', metrics, contractsById)
+  const netWorth = user.balance + value
+  const result = getUserLoanUpdates(
+    updatedMetricsByContract,
+    contractsById,
+    netWorth
+  )
+  return { result, user, updatedMetricsByContract }
 }

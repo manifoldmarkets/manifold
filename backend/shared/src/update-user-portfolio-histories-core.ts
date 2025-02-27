@@ -229,7 +229,7 @@ export const getUnresolvedContractMetricsContractsAnswers = async (
   metrics: RankedContractMetric[]
   contracts: MarketContract[]
   answers: Answer[]
-  metricsByContract: Dictionary<Omit<ContractMetric, 'id'>[]>
+  updatedMetricsByContract: Dictionary<Omit<ContractMetric, 'id'>[]>
 }> => {
   const sharedClauses = [
     where('ucm.user_id in ($1:list)'),
@@ -281,7 +281,7 @@ export const getUnresolvedContractMetricsContractsAnswers = async (
       metrics: [],
       contracts: [],
       answers: [],
-      metricsByContract: {},
+      updatedMetricsByContract: {},
     }
   }
   const contractsWithMetrics = contracts.map((c) => ({
@@ -295,7 +295,7 @@ export const getUnresolvedContractMetricsContractsAnswers = async (
     metrics,
     contracts,
     answers,
-    metricsByContract: metricsByContract,
+    updatedMetricsByContract: metricsByContract,
   }
 }
 
