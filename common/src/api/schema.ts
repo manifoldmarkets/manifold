@@ -2191,6 +2191,20 @@ export const API = (_apiTypeCheck = {
       })
       .strict(),
   },
+  'infer-numeric-unit': {
+    method: 'POST',
+    visibility: 'public',
+    authed: true,
+    returns: {} as {
+      unit: string
+    },
+    props: z
+      .object({
+        question: z.string(),
+        description: z.string().optional(),
+      })
+      .strict(),
+  },
   'generate-ai-date-ranges': {
     method: 'POST',
     visibility: 'public',

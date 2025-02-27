@@ -224,7 +224,7 @@ export const MultiNumericRangeSection = (props: {
   useEffect(() => {
     if (isTimeUnit(unit)) {
       setError(
-        'Time units are not supported for numeric ranges. Date ranges are coming soon!'
+        'Time metrics are not supported for numeric ranges. Date ranges are coming soon!'
       )
     } else {
       setError('')
@@ -320,7 +320,7 @@ export const MultiNumericRangeSection = (props: {
       <Row className={'flex-wrap gap-x-4'}>
         <Col className="mb-2 items-start">
           <Row className=" items-baseline gap-1 px-1 py-2">
-            <span className="">Range & unit</span>
+            <span className="">Range & metric</span>
             <InfoTooltip text="The lower and higher bounds of the numeric range. Choose bounds the value could reasonably be expected to hit." />
             {minMaxError && (
               <span className="text-scarlet-500 text-sm">
@@ -355,7 +355,7 @@ export const MultiNumericRangeSection = (props: {
             <Input
               type="text"
               className="w-[7.25rem]"
-              placeholder="Unit"
+              placeholder="Metric"
               onClick={(e) => e.stopPropagation()}
               onChange={(e) => setUnit(e.target.value)}
               onBlur={handleRangeBlur}

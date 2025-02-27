@@ -595,6 +595,21 @@ export function ContractParamsForm(props: {
     }
   }
 
+  const inferUnit = async () => {
+    if (!question || unit !== '') return
+    try {
+      const result = await api('infer-numeric-unit', {
+        question,
+        description: editor?.getHTML(),
+      })
+      if (result.unit) {
+        setUnit(result.unit)
+      }
+    } catch (e) {
+      console.error('Error inferring unit:', e)
+    }
+  }
+
   return (
     <Col className="gap-6">
       <Col>
@@ -608,7 +623,10 @@ export function ContractParamsForm(props: {
           maxLength={MAX_QUESTION_LENGTH}
           value={question}
           onChange={(e) => setQuestion(e.target.value || '')}
-          onBlur={(e) => findTopicsAndSimilarQuestions(e.target.value || '')}
+          onBlur={(e) => {
+            if (outcomeType === 'MULTI_NUMERIC') inferUnit()
+            findTopicsAndSimilarQuestions(e.target.value || '')
+          }}
         />
       </Col>
       {similarContracts.length ? (

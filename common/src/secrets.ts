@@ -38,6 +38,7 @@ export const secrets = (
     'FIRECRAWL_API_KEY',
     'SPORTSDB_KEY',
     'VERIFIED_PHONE_NUMBER',
+    'GEMINI_API_KEY',
     // Some typescript voodoo to keep the string literal types while being not readonly.
   ] as const
 ).concat()
