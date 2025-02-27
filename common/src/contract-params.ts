@@ -71,7 +71,7 @@ export async function getContractParams(
           filterRedemptions: true,
         })
       : ([] as Bet[]),
-    hasMechanism
+    hasMechanism && !shouldHideGraph(contract)
       ? getBetPoints(contract.id, {
           filterRedemptions: !includeRedemptions,
           includeZeroShareRedemptions: includeRedemptions,
@@ -92,10 +92,7 @@ export async function getContractParams(
 
   // TODO: getMultiBetPoints breaks NUMBER market time series charts and I think MULTI_NUMERIC as well when they get enough bets
   // TODO: remove multiPointsString for markets with more than x answers as it's not displayed by default anyways
-  const multiPoints =
-    isMulti && !getShouldHideGraph(contract)
-      ? getMultiBetPoints(allBetPoints, contract)
-      : {}
+  const multiPoints = isMulti ? getMultiBetPoints(allBetPoints, contract) : {}
   const multiPointsString = mapValues(multiPoints, (v) => pointsToBase64(v))
 
   const ogPoints = !isMulti ? binAvg(allBetPoints) : []
@@ -217,7 +214,7 @@ export const getAnswerProbAtEveryBetTime = (
   return pointsByAns
 }
 
-export const getShouldHideGraph = (contract: Contract) => {
+export const shouldHideGraph = (contract: Contract) => {
   if (contract.mechanism !== 'cpmm-multi-1') return false
   const defaultSort = getDefaultSort(contract)
   const sortedAnswers = sortAnswers(contract, contract.answers, defaultSort)

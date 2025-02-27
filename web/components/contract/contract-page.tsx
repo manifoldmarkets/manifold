@@ -74,7 +74,7 @@ import { precacheAnswers } from 'web/hooks/use-answers'
 import { useIsPageVisible } from 'web/hooks/use-page-visible'
 import { api } from 'web/lib/api/api'
 import ContractSharePanel from './contract-share-panel'
-import { getShouldHideGraph } from 'common/contract-params'
+import { shouldHideGraph } from 'common/contract-params'
 
 export function ContractPageContent(props: ContractParams) {
   const {
@@ -223,7 +223,7 @@ export function ContractPageContent(props: ContractParams) {
   const tabsContainerRef = useRef<null | HTMLDivElement>(null)
   const [activeTabIndex, setActiveTabIndex] = useState<number>(0)
 
-  const initialHideGraph = getShouldHideGraph(liveContract)
+  const initialHideGraph = shouldHideGraph(liveContract)
   const [hideGraph, setHideGraph] = useState(initialHideGraph)
 
   useEffect(() => {
