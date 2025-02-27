@@ -362,10 +362,26 @@ export const MultiNumericRangeSection = (props: {
               disabled={submitState === 'LOADING'}
               value={unit}
             />
+            <Button
+              className="hidden sm:inline-flex"
+              color="indigo-outline"
+              onClick={generateRanges}
+              loading={isGeneratingRanges}
+              disabled={
+                !question ||
+                isGeneratingRanges ||
+                min === undefined ||
+                max === undefined ||
+                minMaxError ||
+                !unit
+              }
+            >
+              {answers.length > 0 ? 'Regenerate ranges' : 'Generate ranges'}
+            </Button>
           </Row>
         </Col>
       </Row>
-      <Row className="mb-2 w-full gap-2">
+      <Row className="mb-2 w-full gap-2 sm:hidden">
         <Button
           color="indigo-outline"
           onClick={generateRanges}
