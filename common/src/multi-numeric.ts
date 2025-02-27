@@ -3,6 +3,7 @@ import { getAnswerProbability } from './calculate'
 import { filterDefined } from './util/array'
 import { getInitialAnswerProbability } from './calculate'
 import { MultiNumericContract } from './contract'
+import { formatLargeNumber } from './util/format'
 export const MAX_MULTI_NUMERIC_ANSWERS = 12
 
 export function getExpectedValue(
@@ -49,6 +50,16 @@ export function formatExpectedValue(
   if (isNaN(value) || min === undefined || max === undefined || max === min)
     return 'N/A'
   if (answers.length == 0) return '' // probably from static props
+
+  // For contract table display, show a smaller number of digits
+  if (value > 100_000 && !includeUnit) {
+    return formatLargeNumber(value)
+  }
+  // we might want to show the extra precision on desktop
+  if (value > 1_000_000) {
+    return formatLargeNumber(value)
+  }
+
   const formatter = new Intl.NumberFormat('en-US', {
     style: 'currency',
     currency: 'USD',
