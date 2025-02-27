@@ -2239,6 +2239,20 @@ export const API = (_apiTypeCheck = {
       })
       .strict(),
   },
+  'convert-market-to-numeric': {
+    method: 'POST',
+    visibility: 'undocumented',
+    authed: true,
+    props: z
+      .object({
+        contractId: z.string(),
+        unit: z.string(),
+        min: z.number().optional(),
+        max: z.number().optional(),
+      })
+      .strict(),
+    returns: {} as { success: boolean; contract: Contract },
+  },
   'regenerate-date-midpoints': {
     method: 'POST',
     visibility: 'public',
