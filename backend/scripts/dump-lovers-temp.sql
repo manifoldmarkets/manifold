@@ -9,6 +9,7 @@ SELECT
 
   -- select some keys from user data
   u.data - array(select jsonb_object_keys(u.data
+    - 'avatarUrl'
     - 'isBannedFromPosting'
     - 'userDeleted'
     - 'bio'
@@ -24,7 +25,11 @@ SELECT
   -- select some keys from private user data
   pu.data - array(select jsonb_object_keys(pu.data
     - 'email'
+    - 'initialDeviceToken'
+    - 'initialIpAddress'
     - 'notificationPreferences'
+    - 'blockedUserIds'
+    - 'blockedByUserIds'
   )) as private_user_data
 FROM lovers l
 JOIN users u ON u.id = l.user_id

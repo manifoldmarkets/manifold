@@ -9,6 +9,7 @@ DB_NAME="db.mfodonznyfxllcezufgr.supabase.co" # dev
 psql -U postgres -d postgres -h $DB_NAME -p 5432 -w -f ./dump-lovers-temp.sql
 
 pg_dump -U postgres -d postgres -h $DB_NAME -n public -w \
+  -t lover_comments \
   -t lovers \
   -t love_answers \
   -t love_compatibility_answers \
@@ -17,6 +18,7 @@ pg_dump -U postgres -d postgres -h $DB_NAME -n public -w \
   -t love_ships \
   -t love_waitlist \
   -t private_user_message_channels \
+  -t private_user_message_channel_members \
   -t private_user_seen_message_channels \
   -t temp_users \
   -t temp_love_messages \
@@ -33,4 +35,4 @@ pg_dump -U postgres -d postgres -h $DB_NAME -n public -w \
   # --function to_jsonb \
   # --function ts_to_millis \
 
-# psql -U postgres -d postgres -h $DB_NAME -p 5432 -w -f ./dump-lovers-cleanup.sql
+psql -U postgres -d postgres -h $DB_NAME -p 5432 -w -f ./dump-lovers-cleanup.sql
