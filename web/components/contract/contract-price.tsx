@@ -186,7 +186,9 @@ export function MultiNumericResolutionOrExpectation(props: {
   const spring = useAnimatedNumber(value)
 
   return (
-    <Row className={clsx('items-baseline gap-2 text-3xl', className)}>
+    <Row
+      className={clsx('items-baseline gap-2 text-2xl sm:text-3xl', className)}
+    >
       {resolution ? (
         <>
           <div className="text-base">Resolved</div>
@@ -209,7 +211,7 @@ export function MultiNumericResolutionOrExpectation(props: {
               {spring.to((val) => formatExpectedValue(val, contract))}
             </animated.div>
           </Tooltip>
-          <div className="text-base">expected</div>
+          <span className="text-base">expected</span>
         </>
       )}
     </Row>
