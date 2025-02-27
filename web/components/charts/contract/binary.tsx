@@ -110,8 +110,9 @@ export const BinaryContractChart = (props: {
   const start = Math.min(first(betPoints)?.x ?? Infinity, contract.createdTime)
   const end = getEndDate(contract)
   const endP = getProbability(contract as BinaryContract)
+  const stringifiedBetPoints = JSON.stringify(betPoints)
 
-  const now = useMemo(() => Date.now(), [betPoints])
+  const now = useMemo(() => Date.now(), [stringifiedBetPoints, endP])
 
   const data = useMemo(() => {
     return [
@@ -140,6 +141,7 @@ export const BinaryContractChart = (props: {
       h={height}
       xScale={xScale}
       yScale={yScale}
+      rightmostDate={rightmostDate}
       zoomParams={zoomParams}
       showZoomer={showZoomer}
       yKind="percent"
@@ -253,8 +255,8 @@ export const MultiBinaryChart = (props: {
   )
 
   const [bottom, top] = contract.answers.map(getAnswerColor)
-
-  const now = useMemo(() => Date.now(), [betPoints])
+  const stringifiedBetPoints = JSON.stringify(betPoints)
+  const now = useMemo(() => Date.now(), [stringifiedBetPoints, endP])
 
   const data = useMemo(() => {
     return [{ x: start, y: 0.5 }, ...betPoints, { x: end ?? now, y: endP }]
@@ -280,6 +282,7 @@ export const MultiBinaryChart = (props: {
       h={height}
       xScale={xScale}
       yScale={yScale}
+      rightmostDate={rightmostDate}
       zoomParams={zoomParams}
       showZoomer={showZoomer}
       data={data}

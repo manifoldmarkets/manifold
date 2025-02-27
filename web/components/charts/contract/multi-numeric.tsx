@@ -101,7 +101,7 @@ export const MultiNumericContractChart = (props: {
     () => getBetPoints(contract, multiPoints),
     [stringifiedMultiPoints]
   )
-  const now = useMemo(() => Date.now(), [stringifiedMultiPoints])
+  const now = useMemo(() => Date.now(), [stringifiedMultiPoints, endP])
 
   const singlePointData = useMemo(
     () => [
@@ -124,6 +124,7 @@ export const MultiNumericContractChart = (props: {
       h={height}
       xScale={xScale}
       yScale={yScale}
+      rightmostDate={rightmostDate}
       negativeThreshold={min}
       zoomParams={zoomParams}
       showZoomer={showZoomer}

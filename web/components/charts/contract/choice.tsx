@@ -158,8 +158,14 @@ export const ChoiceContractChart = (props: {
   const start = contract.createdTime
   const end = getEndDate(contract)
   const answers = useChartAnswers(contract)
-
-  const now = useMemo(() => Date.now(), [multiPoints])
+  const stringifiedMultiPoints = JSON.stringify(multiPoints)
+  const rightestPointX = Math.max(
+    ...Object.values(multiPoints).map((p) => last(p)?.x ?? 0)
+  )
+  const now = useMemo(
+    () => Date.now(),
+    [stringifiedMultiPoints, rightestPointX]
+  )
 
   const data = useMemo(() => {
     const ret = {} as Record<
@@ -195,9 +201,6 @@ export const ChoiceContractChart = (props: {
     return ret
   }, [answers.length, multiPoints, start, end, now])
 
-  const rightestPointX = Math.max(
-    ...Object.values(multiPoints).map((p) => last(p)?.x ?? 0)
-  )
   const rightmostDate = getRightmostVisibleDate(end, rightestPointX, now)
   const chosenAnswerIds = buildArray(selectedAnswerIds, highlightAnswerId)
 
@@ -273,6 +276,7 @@ export const ChoiceContractChart = (props: {
       xScale={xScale}
       yScale={yScale}
       zoomParams={zoomParams}
+      rightmostDate={rightmostDate}
       showZoomer={showZoomer}
       data={graphedData}
       hoveringId={highlightAnswerId}

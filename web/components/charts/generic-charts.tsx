@@ -400,6 +400,7 @@ export const MultiValueHistoryChart = <P extends HistoryPoint>(props: {
   chartPositions?: ChartPosition[]
   hoveredChartPosition?: ChartPosition | null
   setHoveredChartPosition?: (position: ChartPosition | null) => void
+  rightmostDate?: number
 }) => {
   const {
     data,
@@ -418,13 +419,14 @@ export const MultiValueHistoryChart = <P extends HistoryPoint>(props: {
     setHoveredChartPosition,
     hoveredChartPosition,
     yKind = 'percent',
+    rightmostDate,
   } = props
 
   useLayoutEffect(() => {
     if (props.xScale) {
       zoomParams?.setXScale(props.xScale)
     }
-  }, [w])
+  }, [w, rightmostDate])
 
   const xScale = zoomParams?.viewXScale ?? props.xScale
 
@@ -734,6 +736,7 @@ export const SingleValueHistoryChart = <P extends HistoryPoint>(props: {
   areaClassName?: string
   noWatermark?: boolean
   className?: string
+  rightmostDate?: number
 }) => {
   const {
     contractId,
@@ -755,13 +758,14 @@ export const SingleValueHistoryChart = <P extends HistoryPoint>(props: {
     onGraphClick,
     areaClassName,
     noWatermark,
+    rightmostDate,
   } = props
 
   useLayoutEffect(() => {
     if (props.xScale) {
       zoomParams?.setXScale(props.xScale)
     }
-  }, [w])
+  }, [w, rightmostDate])
 
   const xScale = zoomParams?.viewXScale ?? props.xScale
 
@@ -992,6 +996,7 @@ export const SingleValueStackedHistoryChart = <P extends HistoryPoint>(props: {
   bottomColor: string
   xScale: ScaleTime<number, number>
   yScale: ScaleContinuousNumeric<number, number>
+  rightmostDate?: number
   zoomParams?: ZoomParams
   showZoomer?: boolean
   curve?: CurveFactory
@@ -1010,13 +1015,14 @@ export const SingleValueStackedHistoryChart = <P extends HistoryPoint>(props: {
     curve = curveStepAfter,
     yScale,
     zoomParams,
+    rightmostDate,
   } = props
 
   useLayoutEffect(() => {
     if (props.xScale) {
       zoomParams?.setXScale(props.xScale)
     }
-  }, [w])
+  }, [w, rightmostDate])
 
   const xScale = zoomParams?.viewXScale ?? props.xScale
 
