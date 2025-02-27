@@ -216,6 +216,11 @@ export const getAnswerProbAtEveryBetTime = (
 
 export const shouldHideGraph = (contract: Contract) => {
   if (contract.mechanism !== 'cpmm-multi-1') return false
+  if (
+    contract.outcomeType == 'NUMBER' ||
+    contract.outcomeType == 'MULTI_NUMERIC'
+  )
+    return false
   const defaultSort = getDefaultSort(contract)
   const sortedAnswers = sortAnswers(contract, contract.answers, defaultSort)
   const initialAnswers = getSortedAnswers(contract, sortedAnswers, defaultSort)
