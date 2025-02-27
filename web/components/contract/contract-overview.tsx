@@ -165,8 +165,6 @@ export const ContractOverview = memo(
             setShowResolver={setShowResolver}
             resolutionRating={resolutionRating}
             onAnswerCommentClick={onAnswerCommentClick}
-            chartAnnotations={chartAnnotations}
-            zoomY
           />
         )
       case 'NUMBER':
@@ -679,8 +677,6 @@ const MultiNumericOverview = (props: {
   resolutionRating?: ReactNode
   setShowResolver: (show: boolean) => void
   onAnswerCommentClick: (answer: Answer) => void
-  chartAnnotations: ChartAnnotation[]
-  zoomY?: boolean
 }) => {
   const {
     points,
@@ -689,11 +685,8 @@ const MultiNumericOverview = (props: {
     resolutionRating,
     setShowResolver,
     onAnswerCommentClick,
-    zoomY,
   } = props
 
-  const currentUser = useUser()
-  const currentUserId = currentUser?.id
   const [showZoomer, setShowZoomer] = useState(false)
   const { currentTimePeriod, setTimePeriod, maxRange, zoomParams } =
     useTimePicker(contract, () => setShowZoomer(true))
@@ -712,49 +705,18 @@ const MultiNumericOverview = (props: {
     'answer-sort' + contract.id
   )
 
-  const {
-    pointerMode,
-    setPointerMode,
-    hoveredAnnotation,
-    setHoveredAnnotation,
-    chartAnnotations,
-    enableAdd,
-  } = useAnnotateChartTools(contract, props.chartAnnotations)
-  const {
-    chartPositions,
-    setHoveredChartPosition,
-    hoveredChartPosition,
-    displayUser,
-    setDisplayUser,
-  } = useChartPositions(contract)
-  const contractPositionAnswerIds = chartPositions.map((cp) => cp.answerId)
-
   return (
     <>
       <Row className="relative justify-between gap-2">
         <MultiNumericResolutionOrExpectation contract={contract} />
-        <>
-          <Row className={'relative gap-1'}>
-            <UserPositionSearchButton
-              currentUser={currentUser}
-              displayUser={displayUser}
-              contract={contract}
-              setDisplayUser={setDisplayUser}
-            />
-            {enableAdd && (
-              <EditChartAnnotationsButton
-                pointerMode={pointerMode}
-                setPointerMode={setPointerMode}
-              />
-            )}
-            <TimeRangePicker
-              currentTimePeriod={currentTimePeriod}
-              setCurrentTimePeriod={setTimePeriod}
-              maxRange={maxRange}
-              color="indigo"
-            />
-          </Row>
-        </>
+        <Row className={'relative gap-1'}>
+          <TimeRangePicker
+            currentTimePeriod={currentTimePeriod}
+            setCurrentTimePeriod={setTimePeriod}
+            maxRange={maxRange}
+            color="indigo"
+          />
+        </Row>
       </Row>
       <SizedContainer
         className={clsx('mb-12 h-[150px] w-full pb-4 pr-10 sm:h-[200px]')}
@@ -770,13 +732,6 @@ const MultiNumericOverview = (props: {
           />
         )}
       </SizedContainer>
-      {chartAnnotations?.length ? (
-        <ChartAnnotations
-          annotations={chartAnnotations}
-          hoveredAnnotation={hoveredAnnotation}
-          setHoveredAnnotation={setHoveredAnnotation}
-        />
-      ) : null}
       {showResolver ? (
         !shouldAnswersSumToOne && contract.mechanism === 'cpmm-multi-1' ? (
           <GradientContainer>
