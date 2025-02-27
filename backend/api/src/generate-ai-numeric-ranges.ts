@@ -23,6 +23,7 @@ const baseSystemPrompt = (style: 'threshold' | 'bucket') => {
     - Each range should have a midpoint value for expected value calculations
     - Return the ranges and associated midpoints in ascending order
     - For log scale ranges (i.e. ranges like 1-100, 100-1000, 1000-10000, or above 10, above 100, above 1000, etc.), use the geometric mean for the midpoints.
+    - When it makes sense, include "Below min" (for thresholds) or "Below min-min" (for buckets) and "Above max" ranges in the initial answers array
     - ONLY return a single JSON object without any other text or formatting:
     {
       answers: array of range strings,
@@ -123,81 +124,86 @@ export const regenerateNumericMidpoints: APIHandler<'regenerate-numeric-midpoint
 
 const thresholdExamples = `
 EXAMPLES:
-  Question: The Joker rotten tomatoes score (min 50, max 100): 
+  Question: The Joker rotten tomatoes score (min: 50, max: 100): 
   {
-    "answers": ["Above 50", "Above 60", "Above 70", "Above 75", "Above 80", "Above 85", "Above 90", "Above 95"],
-    "midpoints": [55, 65, 72.5, 77.5, 82.5, 87.5, 92.5, 97.5]
+    "answers": ["Below 50", "Above 50", "Above 60", "Above 70", "Above 75", "Above 80", "Above 85", "Above 90", "Above 95"],
+    "midpoints": [45, 55, 65, 72.5, 77.5, 82.5, 87.5, 92.5, 97.5]
   }
-  Question: Snow in NYC this month (inches) (min 0, max 20): 
+  Question: Snow in NYC this month (inches) (min: 0, max: 20): 
   {
     "answers": ["Above 0", "Above 2", "Above 4", "Above 6", "Above 8", "Above 10", "Above 12", "Above 14", "Above 16", "Above 18"],
     "midpoints": [1, 3, 5, 7, 9, 11, 13, 15, 17, 19]
   }
-  Question: How many times will Elon post on X this week? (min 300, max 800)
+  Question: How many times will Elon post on X this week? (min: 300, max: 800)
   {
-    "answers": ["Above 300", "Above 400", "Above 500", "Above 600", "Above 700"],
-    "midpoints": [350, 450, 550, 650, 750]
+    "answers": ["Below 300", "Above 300", "Above 400", "Above 500", "Above 600", "Above 700"],
+    "midpoints": [250, 350, 450, 550, 650, 750]
   }
-  Question: How many h5n1 bird flu cases will be confirmed in the US in 2025? (min 0, max 100,000)
+  Question: How many h5n1 bird flu cases will be confirmed in the US in 2025? (min: 0, max: 100,000)
   {
     "answers": ["Above 0", "Above 100", "Above 1,000", "Above 10,000", "Above 100,000"],
     "midpoints": [31.6, 316, 3162, 31623, 316228]
   }
-  Question: How many goals will be scored in the World Cup final? (min 0, max 10)
+  Question: How many goals will be scored in the World Cup final? (min: 0, max: 10)
   {
     "answers": ["Above 0", "Above 2", "Above 4", "Above 6", "Above 8"],
     "midpoints": [1.5, 3.5, 5.5, 7.5, 9.5]
   }
-    Question: How many Americans will die as a result of commercial air travel accidents in 2025? (0, 10000)
+  Question: How many Americans will die as a result of commercial air travel accidents in 2025? (min: 0, max: 10000)
   {
     "answers": ["Above 0", "Above 100", "Above 1,000", "Above 10,000"],
     "midpoints": [31.6, 316, 3162, 31623]
   }   
-    Question: How large will Trump's EU tariffs be? (0, 50)
+  Question: How large will Trump's EU tariffs be? (min: 0, max: 50)
   {
     "answers": ["Above 0%", "Above 10%", "Above 20%", "Above 30%", "Above 40%", "Above 50%"],
-    "midpoints": [5, 15, 25, 35, 45, 55]
+    "midpoints": [ 5, 15, 25, 35, 45, 55]
+  }
+  Question: What will the S&P 500 price to earnings ratio be at the end of 2024? (min: 15, max: 30)
+  {
+    "answers": ["Below 15", "Above 15", "Above 18", "Above 21", "Above 24", "Above 27", "Above 30"],
+    "midpoints": [12, 16.5, 19.5, 22.5, 25.5, 28.5, 32.5]
   }
 `
 
 const bucketExamples = `
 EXAMPLES:
-  Question: The Joker rotten tomatoes score (min 45, max 100): 
+  Question: The Joker rotten tomatoes score (min: 45, max: 100): 
   {
-    "answers": ["45-54", "55-64", "65-74", "75-84", "85-94", "95-100"],
-    "midpoints": [50, 60, 70, 80, 90, 95]
+    "answers": ["Below 45", "45-54", "55-64", "65-74", "75-84", "85-94", "95-100", "Above 100"],
+    "midpoints": [40, 50, 60, 70, 80, 90, 97.5, 105]
   }
-  Question: Snow in NYC this month (inches) (min 0, max 20): 
+  Question: Snow in NYC this month (inches) (min: 0, max: 20): 
   {
-    "answers": ["0-1.9", "2-3.9", "4-5.9", "6-7.9", "8-9.9", "10-11.9", "12-13.9", "14-15.9", "16-17.9", "18-20"],
-    "midpoints": [1, 3, 5, 7, 9, 11, 13, 15, 17, 19]
+    "answers": ["0-1.9", "2-3.9", "4-5.9", "6-7.9", "8-9.9", "10-11.9", "12-13.9", "14-15.9", "16-17.9", "18-20", "Above 20"],
+    "midpoints": [1, 3, 5, 7, 9, 11, 13, 15, 17, 19, 25]
   }
-  Question: How many times will Elon post on X this week? (min 300, max 800)
+  Question: How many times will Elon post on X this week? (min: 300, max: 800)
   {
-    "answers": ["300-399", "400-499", "500-599", "600-699", "700-800"],
-    "midpoints": [350, 450, 550, 650, 750]
+    "answers": ["Below 300", "300-399", "400-499", "500-599", "600-699", "700-800", "Above 800"],
+    "midpoints": [250, 350, 450, 550, 650, 750, 900]
   }
-  Question: How many h5n1 bird flu cases will be confirmed in the US in 2025? (min 0, max 100,000)
+  Question: How many h5n1 bird flu cases will be confirmed in the US in 2025? (min: 0, max: 100,000)
   {
     "answers": ["0-99", "100-999", "1,000-9,999", "10,000-99,999", "100,000+"],
     "midpoints": [31.6, 316, 3162, 31623, 316228]
   }
-  Question: How many goals will be scored in the World Cup final? (min 0, max 11)
+  Question: How many goals will be scored in the World Cup final? (min: 0, max: 11)
   {
-    "answers": ["0-2", "3-5", "6-8", "9-11"],
-    "midpoints": [1, 4, 7, 10]
+    "answers": ["0-2", "3-5", "6-8", "9-11", "Above 11"],
+    "midpoints": [1, 4, 7, 10, 13]
   }
   Question: If convicted, when will SBF serve time? (min: 2025, max: 2028)
   {
-    "answers": ["2025", "2026", "2027", "2028"],
-    "midpoints": [2025.5, 2026.5, 2027.5, 2028.5]
+    "answers": ["Before 2025", "2025", "2026", "2027", "2028", "After 2028"],
+    "midpoints": [2024.5, 2025.5, 2026.5, 2027.5, 2028.5, 2029.5]
   }
-  Question: How many Americans will die as a result of commercial air travel accidents in 2025? (0, 10000)
+  Question: How many Americans will die as a result of commercial air travel accidents in 2025? (min: 0, max: 10000)
   {
     "answers": ["0-100", "100-499", "500-999", "1000-4999", "5000-9999", "10000+"],
     "midpoints": [31.6, 299, 749, 2999, 7499, 15000]
   }
-  Question: How large will Trump's EU tariffs be? (0, 50)
+  Question: How large will Trump's EU tariffs be? (min: 0, max: 50)
   {
     "answers": ["0-9.99%", "10-19.99%", "20-29.99%", "30-39.99%", "40-49.99%", "Above 50%"],
     "midpoints": [5, 15, 25, 35, 45, 55]
