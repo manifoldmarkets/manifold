@@ -420,6 +420,7 @@ export function ContractParamsForm(props: {
     setPersistentLocalState(questionKey, '')
     safeLocalStorage?.removeItem(closeDateKey)
     safeLocalStorage?.removeItem(closeHoursMinutesKey)
+    setPersistentLocalState(visibilityKey, 'public')
     setPersistentLocalState(selectedGroupsKey, [])
     setPersistentLocalState('threshold-answers' + paramsKey, defaultAnswers)
     setPersistentLocalState('threshold-midpoints' + paramsKey, [])
