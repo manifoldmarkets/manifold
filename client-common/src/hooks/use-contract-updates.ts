@@ -2,7 +2,7 @@ import { SetStateAction } from 'react'
 import { useApiSubscription } from './use-api-subscription'
 import { Contract } from 'common/contract'
 import { Answer } from 'common/answer'
-
+import { uniqBy } from 'lodash'
 export const useContractUpdates = <C extends Contract | Pick<Contract, 'id'>>(
   initial: C,
   setContract: (value: SetStateAction<C>) => void
@@ -14,10 +14,13 @@ export const useContractUpdates = <C extends Contract | Pick<Contract, 'id'>>(
       setContract((contract) => {
         return {
           ...contract,
-          answers: [
-            ...('answers' in contract ? contract.answers : []),
-            data.answer as Answer,
-          ],
+          answers: uniqBy(
+            [
+              ...('answers' in contract ? contract.answers : []),
+              data.answer as Answer,
+            ],
+            'id'
+          ),
         }
       })
     },

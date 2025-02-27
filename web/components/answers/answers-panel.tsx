@@ -138,19 +138,14 @@ export function AnswersPanel(props: {
     className,
     hideSearch,
   } = props
-  const { outcomeType, resolutions } = contract
+  const { resolutions } = contract
   const addAnswersMode =
     'addAnswersMode' in contract ? contract.addAnswersMode : 'DISABLED'
 
-  const isMultipleChoice =
-    outcomeType === 'MULTIPLE_CHOICE' || outcomeType === 'MULTI_NUMERIC'
-
-  const answers = !isMultipleChoice
-    ? []
-    : contract.answers.map((a) => ({
-        ...a,
-        prob: getAnswerProbability(contract, a.id),
-      }))
+  const answers = contract.answers.map((a) => ({
+    ...a,
+    prob: getAnswerProbability(contract, a.id),
+  }))
   const [showAll, setShowAll] = useState(
     (addAnswersMode === 'DISABLED' && answers.length <= 10) ||
       answers.length <= 5
