@@ -9,7 +9,6 @@ import { XIcon } from '@heroicons/react/solid'
 import { usePersistentLocalState } from 'web/hooks/use-persistent-local-state'
 import { ControlledTabs } from '../layout/tabs'
 import { debounce } from 'lodash'
-import { isTimeUnit } from 'common/multi-numeric'
 import { MAX_MULTI_NUMERIC_ANSWERS } from 'common/multi-numeric'
 
 export const MultiNumericRangeSection = (props: {
@@ -74,6 +73,7 @@ export const MultiNumericRangeSection = (props: {
   >(!shouldAnswersSumToOne ? [] : midpoints, 'bucket-midpoints' + paramsKey)
   const minMaxError = min !== undefined && max !== undefined && min >= max
   const [error, setError] = useState<string>('')
+  const [dateError, setDateError] = useState<string>('')
   const [regenerateError, setRegenerateError] = useState<string>('')
   const [maxAnswersReached, setMaxAnswersReached] = useState<boolean>(false)
 
@@ -222,14 +222,14 @@ export const MultiNumericRangeSection = (props: {
     }
   }
   useEffect(() => {
-    if (isTimeUnit(unit)) {
-      setError(
-        'Time metrics are not supported for numeric ranges. Date ranges are coming soon!'
+    if (question.toLowerCase().includes('when')) {
+      setDateError(
+        'Exact dates are not yet supported, you can try "how many days/weeks/months/years" etc.'
       )
     } else {
-      setError('')
+      setDateError('')
     }
-  }, [unit])
+  }, [question])
 
   const tabs = [
     {
@@ -318,6 +318,9 @@ export const MultiNumericRangeSection = (props: {
   return (
     <Col>
       <Row className={'flex-wrap gap-x-4'}>
+        {dateError && (
+          <div className="text-scarlet-500 text-sm">{dateError}</div>
+        )}
         <Col className="mb-2 items-start">
           <Row className=" items-baseline gap-1 px-1 py-2">
             <span className="">Range & metric</span>

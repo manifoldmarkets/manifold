@@ -4,7 +4,6 @@ import { models, promptClaude } from 'shared/helpers/claude'
 import { log } from 'shared/utils'
 import { rateLimitByUser } from './helpers/rate-limit'
 import { HOUR_MS } from 'common/util/time'
-import { isTimeUnit } from 'common/multi-numeric'
 import {
   assertMidpointsAreAscending,
   assertMidpointsAreUnique,
@@ -45,16 +44,12 @@ EXAMPLES:
   }
 `
 
-const giveTimeExample = (unit: string) => {
-  if (isTimeUnit(unit)) {
-    return `The current time is ${new Date().toLocaleDateString('en-US', {
-      year: 'numeric',
-      month: 'long',
-      day: 'numeric',
-    })}`
-  }
-  return ''
-}
+const giveTimeExample = () =>
+  `The current time is ${new Date().toLocaleDateString('en-US', {
+    year: 'numeric',
+    month: 'long',
+    day: 'numeric',
+  })}`
 
 const userPrompt = (
   question: string,
@@ -67,7 +62,7 @@ const userPrompt = (
     description && description !== '<p></p>'
       ? `\nDescription: ${description}`
       : ''
-  }\nStart: ${min} End: ${max} Unit: ${unit} ${giveTimeExample(unit)}`
+  }\nStart: ${min} End: ${max} Unit: ${unit} ${giveTimeExample()}`
 }
 
 export const generateAIDateRanges: APIHandler<'generate-ai-date-ranges'> =
@@ -144,55 +139,50 @@ export const regenerateDateMidpoints: APIHandler<'regenerate-date-midpoints'> =
   )
 
 const convertTimeMidpointsToDates = (unit: string, midpoints: number[]) => {
-  if (isTimeUnit(unit.trim().toLowerCase())) {
-    const now = new Date()
-    const currentYear = now.getFullYear()
-    const currentMonth = now.getMonth()
-    const currentDay = now.getDate()
+  const now = new Date()
+  const currentYear = now.getFullYear()
+  const currentMonth = now.getMonth()
+  const currentDay = now.getDate()
 
-    return midpoints.map((midpoint) => {
-      if (unit.trim().toLowerCase() === 'year') {
-        // For years, calculate milliseconds from now to the target year point
-        const targetYear = Math.floor(midpoint)
-        const fraction = midpoint - targetYear
+  return midpoints.map((midpoint) => {
+    if (unit.trim().toLowerCase() === 'year') {
+      // For years, calculate milliseconds from now to the target year point
+      const targetYear = Math.floor(midpoint)
+      const fraction = midpoint - targetYear
 
-        // Create date for the target year (same month/day as today)
-        const targetDate = new Date(targetYear, currentMonth, currentDay)
+      // Create date for the target year (same month/day as today)
+      const targetDate = new Date(targetYear, currentMonth, currentDay)
 
-        // Add the fraction of the year in milliseconds if there is one
-        if (fraction > 0) {
-          const millisecondsInYear = 365.25 * 24 * 60 * 60 * 1000
-          const additionalMilliseconds = Math.floor(
-            fraction * millisecondsInYear
-          )
-          targetDate.setTime(targetDate.getTime() + additionalMilliseconds)
-        }
-
-        // Return milliseconds from now to target date
-        // If target is in the past, we'll return a small positive value (1 day)
-        const msDiff = targetDate.getTime() - now.getTime()
-        return msDiff > 0 ? msDiff : 24 * 60 * 60 * 1000 // Return at least 1 day if in past
-      } else if (unit.trim().toLowerCase() === 'month') {
-        // For months, add the number of months to current date
-        const targetDate = new Date(
-          currentYear,
-          currentMonth + midpoint,
-          currentDay
-        )
-        const msDiff = targetDate.getTime() - now.getTime()
-        return msDiff > 0 ? msDiff : 24 * 60 * 60 * 1000
-      } else if (unit.trim().toLowerCase() === 'day') {
-        // For days, add the number of days to current date
-        const targetDate = new Date(
-          now.getTime() + midpoint * 24 * 60 * 60 * 1000
-        )
-        const msDiff = targetDate.getTime() - now.getTime()
-        return msDiff > 0 ? msDiff : 24 * 60 * 60 * 1000
-      } else {
-        // Fallback for any other time unit
-        return midpoint
+      // Add the fraction of the year in milliseconds if there is one
+      if (fraction > 0) {
+        const millisecondsInYear = 365.25 * 24 * 60 * 60 * 1000
+        const additionalMilliseconds = Math.floor(fraction * millisecondsInYear)
+        targetDate.setTime(targetDate.getTime() + additionalMilliseconds)
       }
-    })
-  }
-  return midpoints
+
+      // Return milliseconds from now to target date
+      // If target is in the past, we'll return a small positive value (1 day)
+      const msDiff = targetDate.getTime() - now.getTime()
+      return msDiff > 0 ? msDiff : 24 * 60 * 60 * 1000 // Return at least 1 day if in past
+    } else if (unit.trim().toLowerCase() === 'month') {
+      // For months, add the number of months to current date
+      const targetDate = new Date(
+        currentYear,
+        currentMonth + midpoint,
+        currentDay
+      )
+      const msDiff = targetDate.getTime() - now.getTime()
+      return msDiff > 0 ? msDiff : 24 * 60 * 60 * 1000
+    } else if (unit.trim().toLowerCase() === 'day') {
+      // For days, add the number of days to current date
+      const targetDate = new Date(
+        now.getTime() + midpoint * 24 * 60 * 60 * 1000
+      )
+      const msDiff = targetDate.getTime() - now.getTime()
+      return msDiff > 0 ? msDiff : 24 * 60 * 60 * 1000
+    } else {
+      // Fallback for any other time unit
+      return midpoint
+    }
+  })
 }

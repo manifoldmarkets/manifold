@@ -8,7 +8,6 @@ import {
 import { log } from 'shared/utils'
 import { rateLimitByUser } from './helpers/rate-limit'
 import { HOUR_MS } from 'common/util/time'
-import { isTimeUnit } from 'common/multi-numeric'
 
 const baseSystemPrompt = (style: 'threshold' | 'bucket') => {
   return `
@@ -37,12 +36,6 @@ export const generateAINumericRanges: APIHandler<'generate-ai-numeric-ranges'> =
   rateLimitByUser(
     async (props, auth) => {
       const { question, min, max, description, unit } = props
-      if (isTimeUnit(unit)) {
-        throw new APIError(
-          400,
-          'Time unit is not supported for numeric ranges. Date ranges are coming soon!'
-        )
-      }
       const prompt = userPrompt(question, min, max, unit, description)
 
       const thresholdSystemPrompt = baseSystemPrompt('threshold')
@@ -93,12 +86,6 @@ export const regenerateNumericMidpoints: APIHandler<'regenerate-numeric-midpoint
   rateLimitByUser(
     async (props, auth) => {
       const { question, description, answers, min, max, unit, tab } = props
-      if (isTimeUnit(unit)) {
-        throw new APIError(
-          400,
-          'Time unit is not supported for numeric ranges. Date ranges are coming soon!'
-        )
-      }
       const prompt = `${userPrompt(
         question,
         min,
