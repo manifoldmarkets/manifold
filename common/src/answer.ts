@@ -101,7 +101,7 @@ export const sortAnswers = <T extends Answer>(
     },
   ])
 }
-export const ANSWERS_TO_HIDE_GRAPH = 3
+export const ANSWERS_TO_HIDE_GRAPH = 4
 
 export function getSortedAnswers(
   contract: MultiContract,
