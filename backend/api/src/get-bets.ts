@@ -23,6 +23,7 @@ export const getBets: APIHandler<'bets'> = async (props) => {
     kinds,
     filterRedemptions,
     includeZeroShareRedemptions,
+    commentRepliesOnly,
     count,
     points,
     id,
@@ -83,6 +84,7 @@ export const getBets: APIHandler<'bets'> = async (props) => {
     includeZeroShareRedemptions,
     count,
     points,
+    commentRepliesOnly,
   }
 
   return await getBetsWithFilter(pg, opts)
