@@ -14,13 +14,15 @@ import dayjs from 'dayjs'
 import { Input } from '../widgets/input'
 import { HOUR_MS } from 'common/util/time'
 import { formatMoney, formatMoneyUSD } from 'common/util/format'
+import { BoostAnalytics } from './boost-analytics'
 
 export function AddBoostButton(props: {
   contract: Contract
   className?: string
 }) {
   const { contract, className } = props
-  const [open, setOpen] = useState(false)
+  const [showPurchase, setShowPurchase] = useState(false)
+  const [showAnalytics, setShowAnalytics] = useState(false)
   const user = useUser()
 
   if (!user) return null
@@ -32,21 +34,44 @@ export function AddBoostButton(props: {
 
   if (disabled) return null
 
+  const handleButtonClick = () => {
+    if (contract.boosted) {
+      setShowAnalytics(true)
+    } else {
+      setShowPurchase(true)
+    }
+  }
+
   return (
     <>
       <Button
-        onClick={() => setOpen(true)}
-        color="gradient-pink"
+        onClick={handleButtonClick}
+        color={'gradient-pink'}
         size="sm"
         className={className}
         data-boost-button
-        disabled={contract.boosted}
       >
         <BsRocketTakeoff className="mr-1 h-5 w-5" />
         {contract.boosted ? 'Market boosted' : 'Boost market'}
       </Button>
 
-      <BoostPurchaseModal open={open} setOpen={setOpen} contract={contract} />
+      <BoostPurchaseModal
+        open={showPurchase}
+        setOpen={setShowPurchase}
+        contract={contract}
+      />
+
+      {showAnalytics && (
+        <Modal open={showAnalytics} setOpen={setShowAnalytics} size="md">
+          <Col className="bg-canvas-0 gap-4 rounded-lg p-6">
+            <Row className="items-center gap-2 text-xl font-semibold">
+              <BsRocketTakeoff className="h-6 w-6" />
+              Boost Analytics
+            </Row>
+            <BoostAnalytics contract={contract} />
+          </Col>
+        </Modal>
+      )}
     </>
   )
 }
