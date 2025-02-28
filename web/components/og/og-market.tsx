@@ -169,7 +169,7 @@ function Answer(props: OgCardProps) {
 
 function EndValue(props: { value: string; label: string }) {
   return (
-    <div className="z-20 flex flex-col items-center justify-center">
+    <div className="flex flex-col items-center justify-center text-black">
       <span className="text-3xl">{props.value}</span>
       <span className="text-xl">{props.label}</span>
     </div>

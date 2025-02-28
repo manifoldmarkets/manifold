@@ -5,6 +5,7 @@ import { richTextToString } from './util/parse'
 import { formatMoneyNumber, formatPercent } from './util/format'
 import { getFormattedNumberExpectedValue } from 'common/number'
 import { sortAnswers } from './answer'
+import { getFormattedExpectedValue } from './multi-numeric'
 
 export const getContractOGProps = (
   contract: Contract
@@ -38,6 +39,8 @@ export const getContractOGProps = (
   const numericValue =
     outcomeType === 'NUMBER'
       ? getFormattedNumberExpectedValue(contract)
+      : outcomeType === 'MULTI_NUMERIC'
+      ? getFormattedExpectedValue(contract)
       : outcomeType === 'PSEUDO_NUMERIC' || outcomeType === 'STONK'
       ? getFormattedMappedValue(contract, getDisplayProbability(contract))
       : undefined
