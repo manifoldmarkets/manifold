@@ -675,6 +675,7 @@ const MultiNumericOverview = (props: {
         <MultiNumericResolutionOrExpectation contract={contract} />
         <Row className={'relative gap-1'}>
           <TimeRangePicker
+            className="h-[2.4rem]"
             currentTimePeriod={currentTimePeriod}
             setCurrentTimePeriod={setTimePeriod}
             maxRange={maxRange}

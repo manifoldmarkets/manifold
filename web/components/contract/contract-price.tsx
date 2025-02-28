@@ -186,35 +186,32 @@ export function MultiNumericResolutionOrExpectation(props: {
   const spring = useAnimatedNumber(value)
 
   return (
-    <Row
-      className={clsx('items-baseline gap-2 text-2xl sm:text-3xl', className)}
+    <span
+      className={clsx(
+        'items-baseline text-2xl sm:inline-flex sm:text-3xl',
+        className
+      )}
     >
       {resolution ? (
         <>
-          <div className="text-base">Resolved</div>
+          <div className="mr-2 text-base">Resolved</div>
           {resolution === 'CANCEL' ? (
             <CancelLabel />
           ) : (
-            <>
-              <Tooltip text={formattedValue} placement="bottom">
-                <MultiNumericValueLabel
-                  formattedValue={resolvedAnswer?.text ?? formattedValue}
-                />
-              </Tooltip>
-            </>
+            <MultiNumericValueLabel
+              formattedValue={resolvedAnswer?.text ?? formattedValue}
+            />
           )}
         </>
       ) : (
         <>
-          <Tooltip text={formattedValue} placement="bottom">
-            <animated.div>
-              {spring.to((val) => formatExpectedValue(val, contract))}
-            </animated.div>
-          </Tooltip>
+          <animated.div className={'mr-2 inline-block'}>
+            {spring.to((val) => formatExpectedValue(val, contract))}
+          </animated.div>
           <span className="text-base">expected</span>
         </>
       )}
-    </Row>
+    </span>
   )
 }
 
