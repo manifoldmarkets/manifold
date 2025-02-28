@@ -10,6 +10,10 @@ import { rateLimitByUser } from './helpers/rate-limit'
 import { HOUR_MS } from 'common/util/time'
 
 const baseSystemPrompt = (style: 'threshold' | 'bucket') => {
+  const belowAbovePrompt =
+    style === 'bucket'
+      ? `- When it makes sense, include "Below min" and "Above max" ranges (with appropriate midpoints) in the answers array`
+      : ''
   return `
     You are a helpful AI assistant that generates ${style} numeric ranges for prediction market questions.
     
@@ -23,7 +27,7 @@ const baseSystemPrompt = (style: 'threshold' | 'bucket') => {
     - Each range should have a midpoint value for expected value calculations
     - Return the ranges and associated midpoints in ascending order
     - For log scale ranges (i.e. ranges like 1-100, 100-1000, 1000-10000, or above 10, above 100, above 1000, etc.), use the geometric mean for the midpoints.
-    - When it makes sense, include "Below min" (for thresholds) or "Below min-min" (for buckets) and "Above max" ranges in the initial answers array
+    ${belowAbovePrompt}
     - ONLY return a single JSON object without any other text or formatting:
     {
       answers: array of range strings,
@@ -126,8 +130,8 @@ const thresholdExamples = `
 EXAMPLES:
   Question: The Joker rotten tomatoes score (min: 50, max: 100): 
   {
-    "answers": ["Below 50", "Above 50", "Above 60", "Above 70", "Above 75", "Above 80", "Above 85", "Above 90", "Above 95"],
-    "midpoints": [45, 55, 65, 72.5, 77.5, 82.5, 87.5, 92.5, 97.5]
+    "answers": ["Above 50", "Above 60", "Above 70", "Above 75", "Above 80", "Above 85", "Above 90", "Above 95"],
+    "midpoints": [55, 65, 72.5, 77.5, 82.5, 87.5, 92.5, 97.5]
   }
   Question: Snow in NYC this month (inches) (min: 0, max: 20): 
   {
@@ -136,8 +140,8 @@ EXAMPLES:
   }
   Question: How many times will Elon post on X this week? (min: 300, max: 800)
   {
-    "answers": ["Below 300", "Above 300", "Above 400", "Above 500", "Above 600", "Above 700"],
-    "midpoints": [250, 350, 450, 550, 650, 750]
+    "answers": ["Above 300", "Above 400", "Above 500", "Above 600", "Above 700"],
+    "midpoints": [350, 450, 550, 650, 750]
   }
   Question: How many h5n1 bird flu cases will be confirmed in the US in 2025? (min: 0, max: 100,000)
   {
@@ -159,19 +163,14 @@ EXAMPLES:
     "answers": ["Above 0%", "Above 10%", "Above 20%", "Above 30%", "Above 40%", "Above 50%"],
     "midpoints": [ 5, 15, 25, 35, 45, 55]
   }
-  Question: What will the S&P 500 price to earnings ratio be at the end of 2024? (min: 15, max: 30)
-  {
-    "answers": ["Below 15", "Above 15", "Above 18", "Above 21", "Above 24", "Above 27", "Above 30"],
-    "midpoints": [12, 16.5, 19.5, 22.5, 25.5, 28.5, 32.5]
-  }
 `
 
 const bucketExamples = `
 EXAMPLES:
   Question: The Joker rotten tomatoes score (min: 45, max: 100): 
   {
-    "answers": ["Below 45", "45-54", "55-64", "65-74", "75-84", "85-94", "95-100", "Above 100"],
-    "midpoints": [40, 50, 60, 70, 80, 90, 97.5, 105]
+    "answers": ["Below 45", "45-54", "55-64", "65-74", "75-84", "85-94", "95-100"],
+    "midpoints": [40, 50, 60, 70, 80, 90, 97.5]
   }
   Question: Snow in NYC this month (inches) (min: 0, max: 20): 
   {
@@ -180,7 +179,7 @@ EXAMPLES:
   }
   Question: How many times will Elon post on X this week? (min: 300, max: 800)
   {
-    "answers": ["Below 300", "300-399", "400-499", "500-599", "600-699", "700-800", "Above 800"],
+    "answers": ["Below 300", "300-399", "400-499", "500-599", "600-699", "700-799", "800+"],
     "midpoints": [250, 350, 450, 550, 650, 750, 900]
   }
   Question: How many h5n1 bird flu cases will be confirmed in the US in 2025? (min: 0, max: 100,000)
