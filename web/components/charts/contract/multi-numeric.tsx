@@ -1,5 +1,5 @@
 import { useMemo } from 'react'
-import { last, map, sum, zip, keyBy } from 'lodash'
+import { last, map, sum, zip, keyBy, max, min } from 'lodash'
 import { scaleLinear, scaleTime } from 'd3-scale'
 import { MultiNumericContract } from 'common/contract'
 import { NUMERIC_GRAPH_COLOR } from 'common/numeric-constants'
@@ -92,7 +92,6 @@ export const MultiNumericContractChart = (props: {
   showZoomer?: boolean
 }) => {
   const { contract, width, multiPoints, height, zoomParams, showZoomer } = props
-  const { min, max } = getMinMax(contract)
   const start = contract.createdTime
   const end = getEndDate(contract)
   const endP = getExpectedValue(contract)
@@ -113,11 +112,15 @@ export const MultiNumericContractChart = (props: {
     ],
     [betPoints, end, endP, now]
   )
+  const { min: answerMin, max: answerMax } = getMinMax(contract)
+  const allYs = singlePointData.map((p) => p.y)
+  const minY = min([...allYs, answerMin])!
+  const maxY = max([...allYs, answerMax])!
   const rightmostDate = getRightmostVisibleDate(end, last(betPoints)?.x, now)
   const xScale = scaleTime([start, rightmostDate], [0, width])
 
   // clamp log scale to make sure zeroes go to the bottom
-  const yScale = scaleLinear([min, max], [height, 0])
+  const yScale = scaleLinear([minY, maxY], [height, 0])
   return (
     <SingleValueHistoryChart
       w={width}
@@ -125,7 +128,7 @@ export const MultiNumericContractChart = (props: {
       xScale={xScale}
       yScale={yScale}
       rightmostDate={rightmostDate}
-      negativeThreshold={min}
+      negativeThreshold={minY}
       zoomParams={zoomParams}
       showZoomer={showZoomer}
       data={singlePointData}
