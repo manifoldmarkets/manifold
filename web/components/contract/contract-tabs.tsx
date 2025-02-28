@@ -206,7 +206,7 @@ export const CommentsTabContent = memo(function CommentsTabContent(props: {
       commentRepliesOnly: true,
     },
     useIsPageVisible,
-    () => api('bets')
+    (params) => api('bets', params)
   )
 
   const isPageVisible = useIsPageVisible()
