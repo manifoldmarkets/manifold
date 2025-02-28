@@ -646,6 +646,7 @@ const useBetData = (props: {
       return [...points, ...newPoints] as HistoryPoint<Partial<Bet>>[]
     }
   }, [pointsString, newBets.length])
+
   return {
     bets,
     totalBets,
