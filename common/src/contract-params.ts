@@ -76,7 +76,7 @@ export async function getContractParams(
           contractId: contract.id,
           filterRedemptions: !includeRedemptions,
           includeZeroShareRedemptions: includeRedemptions,
-          beforeTime: contract.lastBetTime ?? contract.createdTime,
+          beforeTime: (contract.lastBetTime ?? contract.createdTime) + 1,
           afterTime: contract.createdTime,
         })
       : [],

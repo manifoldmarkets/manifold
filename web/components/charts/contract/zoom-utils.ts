@@ -70,7 +70,7 @@ export const useDataZoomFetcher = <T>(props: {
       const min = viewXScale.invert(minX - 20).valueOf()
       const max = viewXScale.invert(maxX + 20).valueOf()
       const fixedMin = Math.max(min, createdTime)
-      const fixedMax = Math.min(max, lastBetTime)
+      const fixedMax = Math.min(max, lastBetTime) + 1
 
       onZoomData(fixedMin, fixedMax)
     } else {
@@ -173,7 +173,7 @@ export const useMultiChoiceDataZoomFetcher = <T>(props: {
       const min = viewXScale.invert(minX - 20).valueOf()
       const max = viewXScale.invert(maxX + 20).valueOf()
       const fixedMin = Math.max(min, createdTime)
-      const fixedMax = Math.min(max, lastBetTime)
+      const fixedMax = Math.min(max, lastBetTime) + 1
 
       onZoomData(fixedMin, fixedMax)
     } else {
