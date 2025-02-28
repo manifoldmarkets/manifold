@@ -17,7 +17,7 @@ import { removeUndefinedProps } from 'common/util/object'
 import { pointsToBase64, pointsToBase64Float32 } from 'common/util/og'
 import { SupabaseClient } from 'common/supabase/utils'
 import { buildArray } from 'common/util/array'
-import { groupBy, mapValues, minBy, omit, orderBy, sortBy } from 'lodash'
+import { groupBy, mapValues, omit, orderBy, sortBy } from 'lodash'
 import { Bet } from 'common/bet'
 import { getChartAnnotations } from 'common/supabase/chart-annotations'
 import { unauthedApi } from './util/api'
@@ -184,10 +184,15 @@ export const getAnswerProbAtEveryBetTime = (
   contract: MultiContract
 ) => {
   const { answers, createdTime } = contract
-  const allUniqueProbChangeTimes = new Set([
+  const allUniqueProbChangeTimes = new Set<number>([
     ...Object.values(pointsByAnswerId).flatMap((a) => a.map((p) => p.x)),
     createdTime,
   ])
+
+  const sortedTimestamps = Array.from(allUniqueProbChangeTimes).sort(
+    (a, b) => a - b
+  )
+
   const pointsByAns = {} as { [answerId: string]: { x: number; y: number }[] }
   answers.forEach((ans) => {
     const startingProb = getInitialAnswerProbability(contract, ans) ?? 0
@@ -195,20 +200,32 @@ export const getAnswerProbAtEveryBetTime = (
       { x: createdTime, y: startingProb, answerId: ans.id },
       ...(pointsByAnswerId[ans.id] ?? []),
     ]
-    const uniqueAnswerProbTimes = new Set(rawPoints.map((a) => a.x))
-    // Bc we sometimes don't create low prob bets, we need to fill in the gaps
-    const missingTimes = Array.from(allUniqueProbChangeTimes).filter(
-      (time) => !uniqueAnswerProbTimes.has(time)
-    )
 
-    const missingPoints = missingTimes.map((time) => ({
-      x: time,
-      y: minBy(rawPoints, (p) => Math.abs(p.x - time))?.y ?? startingProb,
-      answerId: ans.id,
-    }))
+    const pointsByTime = new Map(rawPoints.map((p) => [p.x, p]))
 
-    const allPoints = [...rawPoints, ...missingPoints]
-    pointsByAns[ans.id] = orderBy(allPoints, (p) => p.x)
+    const normalizedPoints = sortedTimestamps.map((timestamp) => {
+      // If we have a point at this exact timestamp, use it
+      if (pointsByTime.has(timestamp)) {
+        return {
+          x: timestamp,
+          y: pointsByTime.get(timestamp)!.y,
+        }
+      }
+
+      // Otherwise find the closest previous point
+      const prevPoints = rawPoints
+        .filter((p) => p.x <= timestamp)
+        .sort((a, b) => b.x - a.x)
+
+      const closestPoint = prevPoints[0]
+
+      return {
+        x: timestamp,
+        y: closestPoint ? closestPoint.y : startingProb,
+      }
+    })
+
+    pointsByAns[ans.id] = normalizedPoints
   })
 
   return pointsByAns
