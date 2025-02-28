@@ -18,7 +18,7 @@ export const inferNumericUnit: APIHandler<'infer-numeric-unit'> =
       
       Guidelines:
       - If no specific unit is mentioned, infer the most logical unit based on the context
-      - Common units include: people, dollars, percent, points, votes, etc.
+      - Common units include: people, $, $bn, $m, $k, %, points, votes, etc.
       - If the question is about a count of items, use the plural form (e.g., "people" not "person")
       - If no unit can be reasonably inferred, return an empty json object
       `
