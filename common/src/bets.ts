@@ -44,3 +44,28 @@ export const getBetPoints = async (
     }))
   )
 }
+
+// gets random bets - 50,000 by default
+export const getBetPointsBetween = async (options: APIParams<'bet-points'>) => {
+  const data = await unauthedApi('bet-points', options)
+
+  const sorted = sortBy(data, 'createdTime')
+
+  if (sorted.length === 0) return []
+
+  // we need to include previous prob for binary in case the prob shifted from something
+  const includePrevProb = !sorted[0].answerId
+
+  return buildArray(
+    includePrevProb && {
+      x: sorted[0].createdTime - 1,
+      y: sorted[0].probBefore,
+      answerId: sorted[0].answerId,
+    },
+    sorted.map((r) => ({
+      x: r.createdTime,
+      y: r.probAfter,
+      answerId: r.answerId,
+    }))
+  )
+}

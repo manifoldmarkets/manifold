@@ -29,7 +29,7 @@ import {
   sortAnswers,
 } from './answer'
 import { getDashboardsToDisplayOnContract } from './supabase/dashboards'
-import { getBetPoints, getTotalBetCount } from './bets'
+import { getBetPointsBetween, getTotalBetCount } from './bets'
 
 export async function getContractParams(
   contract: Contract,
@@ -72,9 +72,12 @@ export async function getContractParams(
         })
       : ([] as Bet[]),
     hasMechanism && !shouldHideGraph(contract)
-      ? getBetPoints(contract.id, {
+      ? getBetPointsBetween({
+          contractId: contract.id,
           filterRedemptions: !includeRedemptions,
           includeZeroShareRedemptions: includeRedemptions,
+          beforeTime: contract.lastBetTime ?? contract.createdTime,
+          afterTime: contract.createdTime,
         })
       : [],
     getRecentTopLevelCommentsAndReplies(db, contract.id, 25),

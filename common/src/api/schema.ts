@@ -388,6 +388,24 @@ export const API = (_apiTypeCheck = {
       })
       .strict(),
   },
+  'bet-points': {
+    method: 'GET',
+    visibility: 'public',
+    authed: false,
+    cache: 'public, max-age=600, stale-while-revalidate=60',
+    returns: [] as Bet[],
+    props: z
+      .object({
+        contractId: z.string(),
+        answerId: z.string().optional(),
+        limit: z.coerce.number().gte(0).lte(50000).default(50000),
+        beforeTime: z.coerce.number(),
+        afterTime: z.coerce.number(),
+        filterRedemptions: coerceBoolean.optional(),
+        includeZeroShareRedemptions: coerceBoolean.optional(),
+      })
+      .strict(),
+  },
   'unique-bet-group-count': {
     method: 'GET',
     visibility: 'undocumented',

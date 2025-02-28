@@ -207,6 +207,8 @@ export const BinaryOverview = (props: {
 
   const { points, loading } = useDataZoomFetcher({
     contractId: contract.id,
+    createdTime: contract.createdTime,
+    lastBetTime: contract.lastBetTime ?? contract.createdTime,
     viewXScale: zoomParams?.viewXScale,
     points: props.betPoints,
   })
@@ -356,6 +358,8 @@ const ChoiceOverview = (props: {
     contract,
     viewXScale: zoomParams?.viewXScale,
     points: props.points,
+    createdTime: contract.createdTime,
+    lastBetTime: contract.lastBetTime ?? contract.createdTime,
   })
   return (
     <>

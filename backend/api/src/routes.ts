@@ -27,7 +27,7 @@ import { pinComment } from './pin-comment'
 import { getManagrams } from './get-managrams'
 import { getGroups } from './get-groups'
 import { getComments } from './get-comments'
-import { getBets } from './get-bets'
+import { getBetPointsBetween, getBets } from './get-bets'
 import { getLiteUser, getUser } from './get-user'
 import { getUsers } from './get-users'
 import { getUserBalancesByIds, getUsersByIds } from './get-users-by-ids'
@@ -181,6 +181,7 @@ export const handlers: { [k in APIPath]: APIHandler<k> } = {
   'bet/cancel/:betId': cancelBet,
   'market/:contractId/sell': sellShares,
   bets: getBets,
+  'bet-points': getBetPointsBetween,
   'get-notifications': getNotifications,
   'get-channel-memberships': getChannelMemberships,
   'get-channel-messages': getChannelMessages,

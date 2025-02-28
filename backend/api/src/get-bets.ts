@@ -8,8 +8,9 @@ import { getUserIdFromUsername } from 'shared/supabase/users'
 import { getBetsWithFilter } from 'shared/supabase/bets'
 import { convertBet, NON_POINTS_BETS_LIMIT } from 'common/supabase/bets'
 import { filterDefined } from 'common/util/array'
+import { ValidatedAPIParams } from 'common/api/schema'
 
-export const getBets: APIHandler<'bets'> = async (props) => {
+export const getBetsInternal = async (props: ValidatedAPIParams<'bets'>) => {
   const {
     limit,
     username,
@@ -89,6 +90,15 @@ export const getBets: APIHandler<'bets'> = async (props) => {
 
   return await getBetsWithFilter(pg, opts)
 }
+
+export const getBets: APIHandler<'bets'> = async (props) =>
+  getBetsInternal(props)
+
+export const getBetPointsBetween: APIHandler<'bet-points'> = async (props) =>
+  getBetsInternal({
+    ...props,
+    points: true,
+  })
 
 async function getBetTime(pg: SupabaseDirectClient, id: string) {
   const created = await pg.oneOrNone(
