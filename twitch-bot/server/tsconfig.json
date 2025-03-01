@@ -1,0 +1,18 @@
+{
+  "compilerOptions": {
+    "baseUrl": "./",
+    "lib": ["ES6"],
+    "module": "CommonJS",
+    "moduleResolution": "Node",
+    "target": "ES2017",
+    "esModuleInterop": true,
+    "paths": {
+      "@common/*": ["../common/*"],
+      "@manifold_common/*": ["../../common/*"]
+    },
+    "noEmit": true,
+    "skipLibCheck": true
+  },
+  "include": ["src/**/*"],
+  "exclude": ["node_modules", "dist"]
+}

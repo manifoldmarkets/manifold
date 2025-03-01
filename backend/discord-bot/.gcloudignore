@@ -1,0 +1,4 @@
+*.log
+.gitignore
+node_modules/
+secrets.sh

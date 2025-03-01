@@ -1,0 +1,304 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Rock Paper Scissors Poker Calculator</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f0f0f0;
+            color: #333;
+        }
+
+        h1,
+        h2,
+        h3 {
+            color: #2c3e50;
+        }
+
+        .container {
+            background-color: #ffffff;
+            border-radius: 8px;
+            padding: 20px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+
+        .input-group {
+            display: flex;
+            align-items: center;
+            margin-bottom: 15px;
+        }
+
+        label {
+            margin-right: 10px;
+            font-weight: bold;
+        }
+
+        input[type="number"] {
+            width: 60px;
+            padding: 8px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 16px;
+        }
+
+        .button-group {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin-bottom: 15px;
+        }
+
+        .button-group button {
+            flex-grow: 1;
+            min-width: 60px;
+            padding: 12px;
+            font-size: 16px;
+            border: none;
+            background-color: #3498db;
+            color: white;
+            cursor: pointer;
+            border-radius: 4px;
+            transition: background-color 0.3s;
+        }
+
+        .button-group button:hover {
+            background-color: #2980b9;
+        }
+
+        .button-group button.selected {
+            background-color: #2ecc71;
+        }
+
+        .action-button {
+            display: inline-block;
+            padding: 12px 24px;
+            font-size: 16px;
+            border: none;
+            background-color: #3498db;
+            color: white;
+            cursor: pointer;
+            border-radius: 4px;
+            transition: background-color 0.3s;
+            margin-right: 10px;
+        }
+
+        .action-button:hover {
+            background-color: #2980b9;
+        }
+
+        .action-button:disabled {
+            background-color: #95a5a6;
+            cursor: not-allowed;
+        }
+
+        .action-button.reset {
+            background-color: #e74c3c;
+        }
+
+        .action-button.reset:hover {
+            background-color: #c0392b;
+        }
+
+        #results {
+            margin-top: 20px;
+            background-color: #ecf0f1;
+            padding: 15px;
+            border-radius: 4px;
+        }
+
+        .result-round {
+            background-color: #fff;
+            border-radius: 4px;
+            padding: 10px;
+            margin-bottom: 10px;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+        }
+
+        .result-round h3 {
+            margin-top: 0;
+            color: #2c3e50;
+        }
+
+        .result-item {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 5px;
+        }
+
+        .result-label {
+            font-weight: bold;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <h1>Rock Paper Scissors Poker Calculator</h1>
+        <div class="input-group">
+            <label for="players">Number of players:</label>
+            <input type="number" id="players" min="2" value="4">
+        </div>
+        <div class="input-group">
+            <label for="ante">Ante amount:</label>
+            <input type="number" id="ante" min="1" value="1">
+        </div>
+        <h2>Rounds</h2>
+        <div id="rounds">
+            <div>
+                <h3>Pre-flop</h3>
+                <label>Rocks:</label>
+                <div class="button-group" id="rocks0"></div>
+                <label>Players in next round:</label>
+                <div class="button-group" id="players0"></div>
+            </div>
+        </div>
+        <button onclick="nextRound()" id="nextRoundButton" class="action-button">Next Round</button>
+        <button onclick="resetGame()" class="action-button reset">Reset Game</button>
+        <div id="results"></div>
+    </div>
+
+    <script>
+        let rounds = [{ rocks: 0, players: 4 }];
+        let initialPot = 0;
+
+        function updateResults() {
+            const initialPlayers = parseInt(document.getElementById('players').value);
+            const ante = parseInt(document.getElementById('ante').value);
+            initialPot = initialPlayers * ante;
+            let pot = initialPot;
+            let results = `<h2>Results</h2>`;
+
+            let roundResults = [];
+
+            rounds.forEach((round, index) => {
+                const betSize = Math.floor(pot / 2);
+                let roundResult = `<div class="result-round">`;
+                roundResult += `<h3>${index === 0 ? 'Pre-flop' : index === 1 ? 'Flop' : index === 2 ? 'Turn' : 'River'}</h3>`;
+                roundResult += `<div class="result-item"><span class="result-label">Initial pot:</span> <span>$${pot}</span></div>`;
+                roundResult += `<div class="result-item"><span class="result-label">Bet size:</span> <span>$${betSize}</span></div>`;
+                roundResult += `<div class="result-item"><span class="result-label">Rocks:</span> <span>${round.rocks}</span></div>`;
+                roundResult += `<div class="result-item"><span class="result-label">Players in this round:</span> <span>${index === 0 ? initialPlayers : rounds[index - 1].players}</span></div>`;
+                pot += round.players * round.rocks * betSize;
+                roundResult += `<div class="result-item"><span class="result-label">Final pot:</span> <span>$${pot}</span></div>`;
+                if (index < rounds.length - 1) {
+                    roundResult += `<div class="result-item"><span class="result-label">Players in next round:</span> <span>${round.players}</span></div>`;
+                }
+                roundResult += `</div>`;
+                roundResults.push(roundResult);
+            });
+
+            roundResults.reverse().forEach(result => {
+                results += result;
+            });
+
+            document.getElementById('results').innerHTML = results;
+        }
+
+        function updateRocks(index, value) {
+            rounds[index].rocks = value;
+            updateButtonStyles('rocks' + index, value);
+            updateResults();
+        }
+
+        function updatePlayers(index, value) {
+            rounds[index].players = value;
+            updateButtonStyles('players' + index, value);
+            updateRocksButtons(index, value);
+            updateResults();
+        }
+
+        function updateButtonStyles(groupId, selectedValue) {
+            const buttons = document.querySelectorAll(`#${groupId} button`);
+            buttons.forEach(button => {
+                if (parseInt(button.textContent) === selectedValue) {
+                    button.classList.add('selected');
+                } else {
+                    button.classList.remove('selected');
+                }
+            });
+        }
+
+        function createButtonGroup(containerId, maxValue, updateFunction, initialValue) {
+            const container = document.getElementById(containerId);
+            container.innerHTML = '';
+            for (let i = 0; i <= maxValue; i++) {
+                const button = document.createElement('button');
+                button.textContent = i;
+                button.onclick = () => updateFunction(parseInt(containerId.slice(-1)), i);
+                container.appendChild(button);
+            }
+            updateButtonStyles(containerId, initialValue);
+        }
+
+        function updateRocksButtons(index, maxRocks) {
+            createButtonGroup(`rocks${index}`, maxRocks, updateRocks, Math.min(rounds[index].rocks, maxRocks));
+        }
+
+        function nextRound() {
+            if (rounds.length < 4) {
+                const index = rounds.length;
+                const prevPlayers = rounds[index - 1].players;
+                rounds.push({ rocks: 0, players: prevPlayers });
+                const roundNames = ['Flop', 'Turn', 'River'];
+                const roundDiv = document.createElement('div');
+                roundDiv.innerHTML = `
+                    <h3>${roundNames[index - 1]}</h3>
+                    <label>Rocks:</label>
+                    <div class="button-group" id="rocks${index}"></div>
+                    <label>Players in next round:</label>
+                    <div class="button-group" id="players${index}"></div>
+                `;
+                document.getElementById('rounds').appendChild(roundDiv);
+                createButtonGroup(`rocks${index}`, prevPlayers, updateRocks, 0);
+                createButtonGroup(`players${index}`, parseInt(document.getElementById('players').value), updatePlayers, prevPlayers);
+                updateResults();
+
+                if (rounds.length === 4) {
+                    document.getElementById('nextRoundButton').disabled = true;
+                }
+            }
+        }
+
+        function resetGame() {
+            const currentPlayers = parseInt(document.getElementById('players').value);
+
+            rounds = [{ rocks: 0, players: currentPlayers }];
+
+            const roundDivs = document.querySelectorAll('#rounds > div');
+            for (let i = 1; i < roundDivs.length; i++) {
+                roundDivs[i].remove();
+            }
+
+            createButtonGroup('rocks0', currentPlayers, updateRocks, 0);
+            createButtonGroup('players0', currentPlayers, updatePlayers, currentPlayers);
+
+            document.getElementById('nextRoundButton').disabled = false;
+
+            updateResults();
+        }
+
+        document.getElementById('players').addEventListener('change', function () {
+            const newValue = parseInt(this.value);
+            rounds.forEach((round, index) => {
+                round.players = Math.min(round.players, newValue);
+                createButtonGroup(`players${index}`, newValue, updatePlayers, round.players);
+                updateRocksButtons(index, round.players);
+            });
+            updateResults();
+        });
+        document.getElementById('ante').addEventListener('change', updateResults);
+
+        const initialPlayers = parseInt(document.getElementById('players').value);
+        createButtonGroup('rocks0', initialPlayers, updateRocks, 0);
+        createButtonGroup('players0', initialPlayers, updatePlayers, initialPlayers);
+        updateResults();
+    </script>
+</body>
+
+</html>

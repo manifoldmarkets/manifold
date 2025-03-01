@@ -1,0 +1,502 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Manifold Pairs Trader</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script
+        src="https://cdn.jsdelivr.net/npm/chartjs-adapter-date-fns@2.0.0/dist/chartjs-adapter-date-fns.bundle.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/mathjs@11.8.0/lib/browser/math.min.js"></script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            padding: 20px;
+            max-width: 800px;
+            margin: 0 auto;
+            line-height: 1.6;
+            color: #333;
+        }
+
+        h1,
+        h2 {
+            color: #2c3e50;
+        }
+
+        input,
+        button {
+            margin-bottom: 10px;
+            padding: 8px;
+            width: 100%;
+            box-sizing: border-box;
+        }
+
+        button {
+            background-color: #3498db;
+            color: white;
+            border: none;
+            padding: 10px;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+
+        button:hover {
+            background-color: #2980b9;
+        }
+
+        .chart-container {
+            height: 300px;
+            margin-bottom: 20px;
+        }
+
+        #adfResult,
+        #betForm,
+        #shareCalculations,
+        #betResult {
+            margin-top: 20px;
+            padding: 15px;
+            background-color: #f8f9fa;
+            border-radius: 5px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+
+        .stat-label {
+            font-weight: bold;
+            color: #34495e;
+        }
+
+        .stat-value {
+            font-family: monospace;
+            background-color: #ecf0f1;
+            padding: 2px 4px;
+            border-radius: 3px;
+        }
+
+        .market-info {
+            margin-bottom: 10px;
+            padding: 10px;
+            background-color: #e8f4fd;
+            border-radius: 5px;
+        }
+    </style>
+</head>
+
+<body>
+    <h1>Manifold Pairs Trader</h1>
+    <input type="text" id="apiKey" placeholder="API Key" value="">
+    <input type="text" id="slug1" placeholder="Market 1 Slug" value="">
+    <input type="text" id="slug2" placeholder="Market 2 Slug" value="">
+    <button onclick="updateGraphs()">Update</button>
+    <div class="chart-container">
+        <canvas id="priceChart"></canvas>
+    </div>
+    <div class="chart-container">
+        <canvas id="spreadChart"></canvas>
+    </div>
+    <div id="adfResult"></div>
+    <div id="betForm">
+        <h2>Bet Sizing</h2>
+        <label for="betAmount">Bet Amount:</label>
+        <input type="number" id="betAmount" min="1" step="1" value="25" oninput="updateShareCalculations()">
+        <label for="hedgeRatio">Hedge Ratio:</label>
+        <input type="number" id="hedgeRatio" step="0.0001" value="1" oninput="updateShareCalculations()">
+    </div>
+    <div id="shareCalculations"></div>
+    <button onclick="placeBets()">Place bets</button>
+    <div id="betResult"></div>
+
+    <script>
+        const API_URL = "https://api.manifold.markets/v0";
+        let priceChart, spreadChart;
+        let market1, market2;
+
+        function gammaFunction(z) {
+            if (z === 1) return 1;
+            if (z === 0.5) return Math.sqrt(Math.PI);
+            return (z - 1) * gammaFunction(z - 1);
+        }
+
+        function betaFunction(x, y) {
+            return (gammaFunction(x) * gammaFunction(y)) / gammaFunction(x + y);
+        }
+
+        function incBetaFunction(x, a, b) {
+            const EPSILON = 1e-8;
+            let sum = 0;
+            let term = x ** a * (1 - x) ** b / betaFunction(a, b);
+            let n = 0;
+
+            while (Math.abs(term) > EPSILON) {
+                sum += term;
+                n++;
+                term *= (a + n - 1) * x / n;
+                term *= (1 - x);
+            }
+
+            return sum;
+        }
+
+        function studentTCDF(t, df) {
+            const x = df / (t * t + df);
+            const probability = 1 - 0.5 * incBetaFunction(x, df / 2, 0.5);
+            return t > 0 ? 1 - probability : probability;
+        }
+
+        async function fetchMarketData(slug) {
+            const response = await fetch(`${API_URL}/slug/${slug}`);
+            const market = await response.json();
+            const betsResponse = await fetch(`${API_URL}/bets?contractSlug=${slug}&limit=1000`);
+            const bets = await betsResponse.json();
+
+            return bets.map(bet => ({
+                timestamp: new Date(bet.createdTime).getTime(),
+                probability: bet.probAfter
+            })).reverse();
+        }
+
+        function mergeMarketData(data1, data2) {
+            const startTime = Math.max(data1[0].timestamp, data2[0].timestamp);
+            const endTime = Math.min(data1[data1.length - 1].timestamp, data2[data2.length - 1].timestamp);
+
+            const filteredData1 = data1.filter(item => item.timestamp >= startTime && item.timestamp <= endTime);
+            const filteredData2 = data2.filter(item => item.timestamp >= startTime && item.timestamp <= endTime);
+
+            const mergedData = [...filteredData1.map(item => ({ ...item, market: 1 })),
+            ...filteredData2.map(item => ({ ...item, market: 2 }))]
+                .sort((a, b) => a.timestamp - b.timestamp);
+
+            let lastProb1 = filteredData1[0].probability;
+            let lastProb2 = filteredData2[0].probability;
+
+            return mergedData.map(item => {
+                if (item.market === 1) {
+                    lastProb1 = item.probability;
+                } else {
+                    lastProb2 = item.probability;
+                }
+
+                return {
+                    timestamp: item.timestamp,
+                    probability1: lastProb1,
+                    probability2: lastProb2,
+                    spread: lastProb1 - lastProb2
+                };
+            });
+        }
+
+        function calculateHedgeRatio(probabilities1, probabilities2) {
+            const X = math.matrix(probabilities2.map(p => [1, p]));
+            const y = math.matrix(probabilities1);
+            const XtX = math.multiply(math.transpose(X), X);
+            const Xty = math.multiply(math.transpose(X), y);
+            const beta = math.multiply(math.inv(XtX), Xty);
+            return beta.get([1]);
+        }
+
+        function adfTest(data, lag = 1) {
+            const n = data.length;
+            const y = data.slice(1);
+            const x = data.slice(0, -1);
+
+            // Compute differences
+            const dy = y.map((v, i) => v - x[i]);
+
+            // Create lag matrix
+            const lagMatrix = [];
+            for (let i = 0; i < n - 1; i++) {
+                lagMatrix.push([1, x[i]]);
+                for (let j = 0; j < lag; j++) {
+                    lagMatrix[i].push(i - j > 0 ? dy[i - j - 1] : 0);
+                }
+            }
+
+            // Convert to math.js matrices
+            const X = math.matrix(lagMatrix);
+            const Y = math.matrix(dy);
+
+            // Compute OLS estimates
+            const XtX = math.multiply(math.transpose(X), X);
+            const XtY = math.multiply(math.transpose(X), Y);
+            const beta = math.multiply(math.inv(XtX), XtY);
+
+            // Compute residuals
+            const residuals = math.subtract(Y, math.multiply(X, beta));
+
+            // Compute standard error of beta[1] (the coefficient we're interested in)
+            const df = n - lag - 2;
+            const sigma2 = math.sum(math.dotPow(residuals, 2)) / df;
+            const se = math.sqrt(sigma2 * math.inv(XtX).get([1, 1]));
+
+            // Compute ADF statistic
+            const adf = beta.get([1]) / se;
+
+            // Compute p-value (one-sided test)
+            const pValue = studentTCDF(adf, df);
+
+            return { adf, pValue };
+        }
+
+        async function updateGraphs() {
+            const apiKey = document.getElementById('apiKey').value;
+            const slug1 = document.getElementById('slug1').value;
+            const slug2 = document.getElementById('slug2').value;
+
+            const data1 = await fetchMarketData(slug1);
+            const data2 = await fetchMarketData(slug2);
+
+            market1 = await getMarketBySlug(slug1);
+            market2 = await getMarketBySlug(slug2);
+
+            const mergedData = mergeMarketData(data1, data2);
+
+            const timestamps = mergedData.map(item => item.timestamp);
+            const probabilities1 = mergedData.map(item => item.probability1);
+            const probabilities2 = mergedData.map(item => item.probability2);
+            const spreads = mergedData.map(item => item.spread);
+
+            const calculatedHedgeRatio = calculateHedgeRatio(probabilities1, probabilities2);
+            const adjustedSpreads = probabilities1.map((p1, i) => p1 - calculatedHedgeRatio * probabilities2[i]);
+            const meanAdjustedSpread = math.mean(adjustedSpreads);
+            const centeredAdjustedSpreads = adjustedSpreads.map(s => s - meanAdjustedSpread);
+
+            if (priceChart) priceChart.destroy();
+            if (spreadChart) spreadChart.destroy();
+
+            const chartOptions = {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                    x: {
+                        type: 'time',
+                        time: {
+                            unit: 'day',
+                            displayFormats: {
+                                day: 'MMM d'
+                            }
+                        },
+                        title: {
+                            display: true,
+                            text: 'Date'
+                        }
+                    },
+                    y: {
+                        beginAtZero: true,
+                        max: 1,
+                        title: {
+                            display: true,
+                            text: 'Probability'
+                        }
+                    }
+                }
+            };
+
+            const priceCtx = document.getElementById('priceChart').getContext('2d');
+            priceChart = new Chart(priceCtx, {
+                type: 'line',
+                data: {
+                    labels: timestamps,
+                    datasets: [
+                        {
+                            label: slug1,
+                            data: probabilities1.map((p, i) => ({ x: timestamps[i], y: p })),
+                            borderColor: 'rgb(75, 192, 192)',
+                            tension: 0.1
+                        },
+                        {
+                            label: slug2,
+                            data: probabilities2.map((p, i) => ({ x: timestamps[i], y: p })),
+                            borderColor: 'rgb(255, 99, 132)',
+                            tension: 0.1
+                        }
+                    ]
+                },
+                options: chartOptions
+            });
+
+            const spreadCtx = document.getElementById('spreadChart').getContext('2d');
+            spreadChart = new Chart(spreadCtx, {
+                type: 'line',
+                data: {
+                    labels: timestamps,
+                    datasets: [
+                        {
+                            label: 'Original Spread',
+                            data: spreads.map((s, i) => ({ x: timestamps[i], y: s })),
+                            borderColor: 'rgb(153, 102, 255)',
+                            tension: 0.1
+                        },
+                        {
+                            label: 'Centered Adjusted Spread',
+                            data: centeredAdjustedSpreads.map((s, i) => ({ x: timestamps[i], y: s })),
+                            borderColor: 'rgb(255, 159, 64)',
+                            tension: 0.1
+                        }
+                    ]
+                },
+                options: {
+                    ...chartOptions,
+                    scales: {
+                        ...chartOptions.scales,
+                        y: {
+                            beginAtZero: false,
+                            title: {
+                                display: true,
+                                text: 'Spread'
+                            }
+                        }
+                    }
+                }
+            });
+
+            // Perform ADF tests
+            const originalADF = adfTest(spreads);
+            const adjustedADF = adfTest(centeredAdjustedSpreads);
+            const adfResultElement = document.getElementById('adfResult');
+            adfResultElement.innerHTML = `
+                <h2>ADF Test Results</h2>
+                <div class="stat-label">Original Spread:</div>
+                <div>ADF Statistic: <span class="stat-value">${originalADF.adf.toFixed(4)}</span></div>
+                <div>p-value: <span class="stat-value">${originalADF.pValue.toFixed(4)}</span></div>
+                <div>The original spread is <span class="stat-value">${originalADF.pValue < 0.05 ? 'cointegrated' : 'not cointegrated'}</span>.</div>
+                <br>
+                <div class="stat-label">Centered Adjusted Spread:</div>
+                <div>ADF Statistic: <span class="stat-value">${adjustedADF.adf.toFixed(4)}</span></div>
+                <div>p-value: <span class="stat-value">${adjustedADF.pValue.toFixed(4)}</span></div>
+                <div>The centered adjusted spread is <span class="stat-value">${adjustedADF.pValue < 0.05 ? 'cointegrated' : 'not cointegrated'}</span>.</div>
+                <br>
+    <div class="stat-label">Calculated Hedge Ratio: <span class="stat-value">${calculatedHedgeRatio.toFixed(4)}</span></div>
+            `;
+
+            // Update hedge ratio in the form
+            document.getElementById('hedgeRatio').value = calculatedHedgeRatio.toFixed(4);
+
+            // Update share calculations
+            updateShareCalculations();
+        }
+
+        function updateShareCalculations() {
+            const betAmount = parseFloat(document.getElementById('betAmount').value);
+            const hedgeRatio = parseFloat(document.getElementById('hedgeRatio').value);
+            const p1 = market1.probability;
+            const p2 = market2.probability;
+            const spread = p1 - p2;
+            const adjustedSpread = p1 - Math.abs(hedgeRatio) * p2;
+            const meanAdjustedSpread = (p1 + p2) / 2;
+            const centeredAdjustedSpread = adjustedSpread - meanAdjustedSpread;
+
+            let sharesMarket1, sharesMarket2, costMarket2;
+            let outcome1, outcome2;
+
+            if (centeredAdjustedSpread > 0) {
+                outcome1 = "NO";
+                outcome2 = hedgeRatio > 0 ? "YES" : "NO";
+                sharesMarket1 = betAmount / (1 - p1);
+                sharesMarket2 = Math.abs(hedgeRatio) * sharesMarket1;
+                costMarket2 = sharesMarket2 * (outcome2 === "YES" ? p2 : (1 - p2));
+            } else {
+                outcome1 = "YES";
+                outcome2 = hedgeRatio > 0 ? "NO" : "YES";
+                sharesMarket1 = betAmount / p1;
+                sharesMarket2 = Math.abs(hedgeRatio) * sharesMarket1;
+                costMarket2 = sharesMarket2 * (outcome2 === "YES" ? p2 : (1 - p2));
+            }
+
+            const shareCalculationsElement = document.getElementById('shareCalculations');
+            shareCalculationsElement.innerHTML = `
+                <h2>Share Calculations</h2>
+                <div class="stat-label">Current Spread: <span class="stat-value">${spread.toFixed(4)}</span></div>
+                <div class="stat-label">Adjusted Spread: <span class="stat-value">${adjustedSpread.toFixed(4)}</span></div>
+                <div class="stat-label">Centered Adjusted Spread: <span class="stat-value">${centeredAdjustedSpread.toFixed(4)}</span></div>
+                <br>
+                <div class="market-info">
+                    <div class="stat-label">Market 1: ${market1.question}</div>
+                    <div>Current Probability: <span class="stat-value">${p1.toFixed(4)}</span></div>
+                    <div>${outcome1} Shares: <span class="stat-value">${sharesMarket1.toFixed(2)}</span></div>
+                    <div>Cost: <span class="stat-value">M${betAmount.toFixed(2)}</span></div>
+                </div>
+                <div class="market-info">
+                    <div class="stat-label">Market 2: ${market2.question}</div>
+                    <div>Current Probability: <span class="stat-value">${p2.toFixed(4)}</span></div>
+                    <div>${outcome2} Shares: <span class="stat-value">${sharesMarket2.toFixed(2)}</span></div>
+                    <div>Cost: <span class="stat-value">M${costMarket2.toFixed(2)}</span></div>
+                </div>
+                <div class="stat-label">Total Cost: <span class="stat-value">M${(betAmount + costMarket2).toFixed(2)}</span></div>
+            `;
+
+            // Store the calculated values for use in placeBets function
+            shareCalculationsElement.dataset.outcome1 = outcome1;
+            shareCalculationsElement.dataset.outcome2 = outcome2;
+            shareCalculationsElement.dataset.cost1 = betAmount.toFixed(2);
+            shareCalculationsElement.dataset.cost2 = costMarket2.toFixed(2);
+        }
+
+        async function placeBets() {
+            const apiKey = document.getElementById('apiKey').value;
+            const shareCalculationsElement = document.getElementById('shareCalculations');
+            const outcome1 = shareCalculationsElement.dataset.outcome1;
+            const outcome2 = shareCalculationsElement.dataset.outcome2;
+            const cost1 = parseFloat(shareCalculationsElement.dataset.cost1);
+            const cost2 = parseFloat(shareCalculationsElement.dataset.cost2);
+
+            try {
+                const bet1 = await placeBet({
+                    contractId: market1.id,
+                    outcome: outcome1,
+                    amount: cost1,
+                    apiKey: apiKey
+                });
+
+                const bet2 = await placeBet({
+                    contractId: market2.id,
+                    outcome: outcome2,
+                    amount: cost2,
+                    apiKey: apiKey
+                });
+
+                document.getElementById('betResult').innerHTML = `
+                    <h2>Bets Placed Successfully</h2>
+                    <div class="market-info">
+                        <div class="stat-label">Market 1:</div>
+                        <div>${outcome1} bet placed, amount: <span class="stat-value">M${cost1.toFixed(2)}</span></div>
+                    </div>
+                    <div class="market-info">
+                        <div class="stat-label">Market 2:</div>
+                        <div>${outcome2} bet placed, amount: <span class="stat-value">M${cost2.toFixed(2)}</span></div>
+                    </div>
+                `;
+            } catch (error) {
+                document.getElementById('betResult').innerHTML = `
+                    <h2>Error</h2>
+                    <div class="stat-label">Failed to place bets: <span class="stat-value">${error.message}</span></div>
+                `;
+            }
+        }
+
+        async function getMarketBySlug(slug) {
+            const response = await fetch(`${API_URL}/slug/${slug}`);
+            return await response.json();
+        }
+
+        async function placeBet({ contractId, outcome, amount, apiKey }) {
+            const response = await fetch(`${API_URL}/bet`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Key ${apiKey}`
+                },
+                body: JSON.stringify({ contractId, outcome, amount })
+            });
+            const result = await response.json();
+            if (!response.ok) {
+                throw new Error(result.message || 'Failed to place bet');
+            }
+            return result;
+        }
+
+        // Initial graph update
+        updateGraphs();
+    </script>
+</body>
+
+</html>

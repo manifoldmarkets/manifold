@@ -1,0 +1,35 @@
+{
+    "compilerOptions": {
+        "rootDir": "src",
+        "composite": true,
+        "target": "es2022",
+        "module": "commonjs",
+        "noImplicitReturns": true,
+        "moduleResolution": "node",
+        "outDir": "./lib",
+        "tsBuildInfoFile": "lib/tsconfig.tsbuildinfo",
+        "strict": true,
+        "paths": {
+            "common/*": ["../../common/src/*", "../../../common/lib/*"],
+            "shared/*": ["../shared/src/*", "../../shared/lib/*"],
+            "discord-bot/*": ["./src/*"]
+        }
+         },
+    "ts-node": {
+        "require": ["tsconfig-paths/register"],
+        "esm": true
+    },
+    "references": [
+        {
+            "path": "../../common"
+        },
+        {
+            "path": "../shared"
+        }
+    ],
+    "tsc-alias": {
+        "resolveFullPaths": true
+    },
+    "compileOnSave": true,
+    "include": ["src/**/*.ts"]
+}

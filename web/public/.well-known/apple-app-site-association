@@ -1,0 +1,23 @@
+{
+  "applinks": {
+    "apps": [],
+    "details": [
+      {
+      "appIDs": ["RPU7UVLP3Z.com.markets.manifold"],
+      "components": [
+        {
+          "/": "/*",
+          "comment": "Matches any URL whose path starts with /"
+        }
+      ]
+    },
+      {
+      "appID": "RPU7UVLP3Z.com.markets.manifold",
+      "paths": ["*"]
+      }
+    ]
+  },
+  "webcredentials": {
+    "apps": [ "RPU7UVLP3Z.com.markets.manifold"]
+  }
+}

@@ -1,0 +1,9 @@
+.git
+.vscode
+docs
+**/node_modules
+scripts
+npm-debug.log
+.cache
+*.md
+Dockerfile

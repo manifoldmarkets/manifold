@@ -1,0 +1,48 @@
+name: Reformat web
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'web/**'
+      - 'common/**'
+
+env:
+  FORCE_COLOR: 3
+  NEXT_TELEMETRY_DISABLED: 1
+
+# mqp - i generated a personal token to use for these writes -- it's unclear
+# why, but the default token didn't work, even when i gave it max permissions
+
+jobs:
+  prettify-main:
+    name: Auto-prettify
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+        with:
+          token: ${{ secrets.FORMATTER_ACCESS_TOKEN }}
+      - name: Install Node 20
+        uses: actions/setup-node@v4
+        env:
+          FORCE_COLOR: 0 # https://github.com/actions/setup-node/issues/317
+        with:
+          node-version: 20
+          cache: 'yarn'
+      - name: Install dependencies
+        run: yarn install --prefer-offline --frozen-lockfile
+      - name: Run Prettier on web client
+        working-directory: web
+        run: yarn format
+      - name: Commit any Prettier changes
+        uses: stefanzweifel/git-auto-commit-action@v4
+        with:
+          commit_message: Auto-prettification
+          branch: ${{ github.head_ref }}

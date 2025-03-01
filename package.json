@@ -1,0 +1,35 @@
+{
+  "name": "mantic",
+  "private": true,
+  "workspaces": [
+    "common",
+    "backend/api",
+    "backend/discord-bot",
+    "backend/scheduler",
+    "backend/scripts",
+    "backend/shared",
+    "web",
+    "client-common"
+  ],
+  "scripts": {
+    "verify": "yarn --cwd=common verify:dir; yarn --cwd=web verify:dir; yarn --cwd=backend/shared verify:dir",
+    "lint": "yarn --cwd=web lint-fix; eslint common --fix ; eslint backend/api --fix ; eslint backend/shared --fix",
+    "dev:dev": "cross-env GOOGLE_APPLICATION_CREDENTIALS_DEV=./dev-mantic-markets-firebase-adminsdk.json ./dev.sh dev"
+  },
+  "dependencies": {},
+  "devDependencies": {
+    "@types/node": "18.18.8",
+    "@typescript-eslint/eslint-plugin": "8.18.1",
+    "@typescript-eslint/parser": "8.18.1",
+    "concurrently": "8.2.2",
+    "eslint": "8.57.0",
+    "eslint-plugin-lodash": "^7.4.0",
+    "eslint-plugin-unused-imports": "4.1.4",
+    "nodemon": "2.0.20",
+    "prettier": "2.8.4",
+    "ts-node": "10.9.1",
+    "tsc-alias": "1.8.2",
+    "tsconfig-paths": "4.1.2",
+    "typescript": "5.5.4"
+  }
+}

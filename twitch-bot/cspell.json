@@ -1,0 +1,9 @@
+{
+  "version": "0.2",
+  "ignorePaths": [],
+  "dictionaryDefinitions": [],
+  "dictionaries": [],
+  "words": ["allin", "Bladen", "cpmm", "featureable", "Firestore", "linebreak", "manifoldbot", "Readex", "signup", "twitch", "unfeature", "unfeatured", "unregisterchanneltwitch", "userstate"],
+  "ignoreWords": ["clsx", "headlessui", "heroicons", "philbladen", "registerchanneltwitch", "tailwindcss", "unregisterchannel"],
+  "import": []
+}

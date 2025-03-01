@@ -1,0 +1,37 @@
+{
+  "name": "web",
+  "version": "1.0.0",
+  "main": "main.js",
+  "private": true,
+  "scripts": {
+    "serve": "next dev -p 1000",
+    "ts-watch": "tsc --watch --noEmit --incremental --preserveWatchOutput --pretty",
+    "dev": "concurrently -n NEXT,TS -c magenta,cyan \"yarn serve\" \"yarn ts-watch\"",
+    "build": "next build && next export"
+  },
+  "dependencies": {
+    "@headlessui/react": "^1.6.6",
+    "@heroicons/react": "1.0.5",
+    "clsx": "1.1.1",
+    "daisyui": "1.16.4",
+    "next": "12.2.2",
+    "react": "17.0.2",
+    "react-dom": "17.0.2",
+    "react-expanding-textarea": "2.3.5",
+    "socket.io-client": "4.5.2"
+  },
+  "devDependencies": {
+    "@tailwindcss/forms": "0.4.0",
+    "@tailwindcss/line-clamp": "^0.3.1",
+    "@tailwindcss/typography": "^0.5.1",
+    "@types/lodash": "4.14.178",
+    "@types/node": "16.11.11",
+    "@types/react": "^18.0.26",
+    "@types/react-dom": "^18.0.9",
+    "@types/tmi.js": "^1.8.1",
+    "autoprefixer": "10.2.6",
+    "postcss": "8.4.31",
+    "sass": "^1.53.0",
+    "tailwindcss": "3.1.6"
+  }
+}

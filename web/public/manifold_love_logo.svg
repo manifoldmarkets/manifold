@@ -1,0 +1,33 @@
+<svg
+  id="Layer_3"
+  xmlns="http://www.w3.org/2000/svg"
+  viewBox="0 0 70.12 70"
+  fill="none"
+  stroke="#9d174d"
+  stroke-width="3px"
+>
+  <defs>
+    <style>
+      .cls-1 {
+        stroke-miterlimit: 10;
+      }
+      .cls-1,
+      .cls-2 {
+        stroke-linejoin: bevel;
+      }
+    </style>
+  </defs>
+  <polygon
+    class="cls-1"
+    points="64.14 26.9 47.51 43.69 37.77 26.9 35.06 22.24 40 13.73 53.17 13.73 54.95 15.87 64.14 26.9"
+  />
+  <polygon
+    class="cls-1"
+    points="47.51 43.69 35.06 56.27 22.6 43.69 5.98 26.9 16.95 13.73 30.12 13.73 35.06 22.24 37.77 26.9 47.51 43.69"
+  />
+  <polygon
+    class="cls-2"
+    points="64.14 26.9 47.51 43.69 37.77 26.9 64.14 26.9"
+  />
+  <line class="cls-1" x1="16.95" y1="13.73" x2="35.06" y2="56.27" />
+</svg>

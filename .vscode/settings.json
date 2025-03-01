@@ -1,0 +1,40 @@
+{
+  "javascript.preferences.importModuleSpecifier": "shortest",
+  "typescript.preferences.importModuleSpecifier": "shortest",
+  "files.eol": "\n",
+  "search.exclude": {
+    "**/node_modules": true,
+    "**/package-lock.json": true,
+    "**/yarn.lock": true
+  },
+  "editor.formatOnSave": true,
+  "editor.formatOnPaste": true,
+  "editor.defaultFormatter": "esbenp.prettier-vscode",
+  "files.associations": {
+    "*.svg": "html"
+  },
+  "sqltools.connections": [
+    {
+      "previewLimit": 50,
+      "server": "db.pxidrgkatumlvfqaxcll.supabase.co",
+      "port": 5432,
+      "driver": "PostgreSQL",
+      "name": "Manifold Prod",
+      "database": "postgres",
+      "username": "postgres"
+    },
+    {
+      "previewLimit": 50,
+      "server": "db.mfodonznyfxllcezufgr.supabase.co",
+      "port": 5432,
+      "driver": "PostgreSQL",
+      "name": "Manifold Dev",
+      "database": "postgres",
+      "username": "postgres"
+    }
+  ],
+  "prettier.ignorePath": "web/.prettierignore",
+  "editor.codeActionsOnSave": {
+    "source.fixAll.eslint": "explicit"
+  }
+}
