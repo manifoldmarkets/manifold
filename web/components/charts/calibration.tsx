@@ -44,7 +44,7 @@ export function CalibrationChart(props: {
         strokeWidth={1.5}
         strokeDasharray="4 8"
       />
-      
+
       {/* points */}
       {noPoints.map((p, i) => (
         // triangle pointing down (red points)
@@ -59,7 +59,7 @@ export function CalibrationChart(props: {
           strokeWidth={0.5}
         />
       ))}
-      
+
       {yesPoints.map((p, i) => (
         // triangle pointing up (green points)
         <polygon
