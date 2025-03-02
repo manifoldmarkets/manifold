@@ -21,8 +21,8 @@ export const AI_CATEGORIES = [
     description: 'Key achievements and breakthroughs in AI development',
     contractIds: [
       'LsZPyLPI82', // Best company by end of April
-      'LNdOg08SsU', // Frontier Math score by end of 2025
       'OS06sL6OgU', // Grammarly replacement
+      'LNdOg08SsU', // Frontier Math score by end of 2025
     ],
   },
   {
