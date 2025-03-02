@@ -16,6 +16,7 @@ import { Clock } from 'web/components/clock/clock'
 import { NumericBetPanel } from 'web/components/answers/numeric-bet-panel'
 import { FeedContractCard } from 'web/components/contract/feed-contract-card'
 import { Contract } from 'common/contract'
+import { ClickFrame } from 'web/components/widgets/click-frame'
 
 const ENDPOINT = 'ai'
 
@@ -144,104 +145,79 @@ export default function AIDashboard({ whenAgi, contracts = [] }: AIDashboardProp
   return (
     <Page trackPageView="ai dashboard">
       <SEO
-        title="AI Dashboard | Manifold Markets"
-        description="A curated dashboard of AI-related prediction markets - track progress, capabilities, and forecasts"
+        title="Manifold AI Forecast"
+        description="Live prediction market odds on artificial intelligence progress"
         image="/ai.png"
       />
       
-      {/* Hero Section with AGI Clock */}
-      <div className="relative w-full overflow-hidden bg-gradient-to-br from-blue-900 via-indigo-900 to-purple-900 py-16 text-white">
-        {/* Abstract AI-themed background patterns */}
-        <div className="absolute inset-0 opacity-10">
-          <div className="absolute left-1/4 top-1/4 h-64 w-64 rounded-full bg-blue-400 blur-3xl"></div>
-          <div className="absolute bottom-1/4 right-1/3 h-48 w-48 rounded-full bg-purple-400 blur-3xl"></div>
-          <div className="absolute right-1/4 top-1/2 h-40 w-40 rounded-full bg-indigo-400 blur-3xl"></div>
-        </div>
-        
-        <Col className="mx-auto max-w-6xl px-4">
-          <Row className="mb-8 items-center justify-between">
-            <h1 className="bg-gradient-to-r from-blue-200 to-indigo-100 bg-clip-text text-4xl font-extrabold text-transparent sm:text-5xl">
-              AI Progress Dashboard
-            </h1>
-            <CopyLinkOrShareButton
-              url={`https://${ENV_CONFIG.domain}/${ENDPOINT}`}
-              eventTrackingName="copy ai share link"
-              tooltip="Share"
-              className="hidden sm:flex"
-            />
-          </Row>
-          
-          {liveWhenAgi ? (
-            <Col className="mb-8 items-center">
-              <Row className="mb-4 items-center gap-2">
-                <Link
-                  href={contractPath(liveWhenAgi)}
-                  className={clsx('text-3xl font-bold text-white transition hover:text-blue-200')}
-                >
-                  Countdown to AGI
-                </Link>
-              </Row>
-              <p className="mb-8 max-w-3xl text-center text-xl">
-                Manifold forecasters predict artificial general intelligence by{' '}
-                <span className="font-bold text-blue-200">{expectedYear.getFullYear()}</span>.
-                What's your prediction?
-              </p>
-              <div className="rounded-2xl bg-white/10 p-6 backdrop-blur-sm">
-                <Row className="w-full justify-center">
-                  <Col className="w-fit gap-6">
-                    <Clock year={expectedValueAGI} />
-                    <NumericBetPanel
-                      contract={liveWhenAgi}
-                      labels={{
-                        lower: 'sooner',
-                        higher: 'later',
-                      }}
-                    />
-                  </Col>
-                </Row>
-              </div>
-            </Col>
-          ) : (
-            <Col className="mb-8 items-center text-center">
-              <h2 className="mb-4 text-3xl font-bold text-blue-200">
-                The Future of Intelligence
-              </h2>
-              <p className="mb-8 max-w-3xl text-xl leading-relaxed">
-                Track AI progress through prediction markets &mdash; from forecasting AGI timelines
-                to assessing current capabilities and potential impacts on society.
-              </p>
-              <Link 
-                href="/create" 
-                className="inline-block rounded-md bg-white px-8 py-3 text-lg font-medium text-indigo-900 shadow-md transition hover:bg-blue-50"
-              >
-                Create an AI market
-              </Link>
-            </Col>
-          )}
+      <Col className="mb-8 gap-6 px-1 sm:gap-8 sm:px-2">
+        <Col>
+          <div className="text-primary-700 mt-4 text-2xl font-normal sm:mt-0 sm:text-3xl">
+            Manifold AI Forecast
+          </div>
+          <div className="text-ink-500 text-md mt-2 flex font-normal">
+            Live prediction market odds on artificial intelligence progress
+          </div>
         </Col>
-      </div>
-      
-      {/* Main Dashboard Content */}
-      <Col className="mx-auto max-w-6xl px-4 py-12">
-        <Row className="mb-8 items-center justify-between">
-          <h2 className="bg-gradient-to-r from-blue-700 to-indigo-700 bg-clip-text text-3xl font-bold text-transparent">
-            AI Prediction Markets
-          </h2>
-          <Link 
-            href="/create" 
-            className="rounded-full bg-gradient-to-r from-indigo-600 to-blue-600 px-6 py-2.5 text-white shadow-md transition hover:from-indigo-700 hover:to-blue-700"
+        
+        {/* AGI Clock Card */}
+        {liveWhenAgi && (
+          <ClickFrame
+            className="fade-in bg-canvas-0 group relative cursor-pointer rounded-lg p-4 shadow-sm"
+            onClick={() => window.location.href = contractPath(liveWhenAgi)}
           >
-            Create a market
-          </Link>
+            <Row className="justify-between">
+              <Link
+                href={contractPath(liveWhenAgi)}
+                className="hover:text-primary-700 grow items-start font-semibold transition-colors hover:underline sm:text-lg"
+              >
+                When will we achieve artificial general intelligence?
+              </Link>
+              <CopyLinkOrShareButton
+                url={`https://${ENV_CONFIG.domain}/${ENDPOINT}`}
+                eventTrackingName="copy ai share link"
+                tooltip="Share"
+              />
+            </Row>
+            
+            <Row className="mt-4 justify-between flex-wrap md:flex-nowrap">
+              <Col className="mb-4 md:mb-0 md:max-w-lg">
+                <p className="text-lg">
+                  The market expects AGI by{' '}
+                  <span className="font-semibold">{expectedYear.getFullYear()}</span>
+                </p>
+                <p className="mt-2 text-sm text-ink-500">
+                  Based on thousands of predictions from Manifold forecasters
+                </p>
+              </Col>
+              
+              <Col className="w-full md:w-fit gap-4">
+                <Clock year={expectedValueAGI} />
+                <NumericBetPanel
+                  contract={liveWhenAgi}
+                  labels={{
+                    lower: 'sooner',
+                    higher: 'later',
+                  }}
+                />
+              </Col>
+            </Row>
+          </ClickFrame>
+        )}
+        
+        {/* Trending Markets Section */}
+        <Row className="items-center gap-1 font-semibold sm:text-lg">
+          <div className="relative">
+            <div className="h-4 w-4 animate-pulse rounded-full bg-indigo-500/40" />
+            <div className="absolute left-1 top-1 h-2 w-2 rounded-full bg-indigo-500" />
+          </div>
+          <span>AI Prediction Markets</span>
         </Row>
         
-        <div className="mb-12 rounded-xl bg-gradient-to-r from-blue-50 to-indigo-50 p-6">
-          <p className="text-lg leading-relaxed text-gray-700">
-            This dashboard showcases prediction markets related to artificial intelligence &mdash; tracking AI progress
-            from major milestones to current capabilities and potential societal impacts. Each probability 
-            represents the collective wisdom of thousands of forecasters on Manifold Markets.
-          </p>
-        </div>
+        <p className="text-ink-500 -mt-2">
+          Track the future of AI through prediction markets - from major milestones to capabilities,
+          economic impact, and safety concerns
+        </p>
         
         {/* Categories of AI Markets */}
         {CATEGORIES.map((category) => {
@@ -249,16 +225,16 @@ export default function AIDashboard({ whenAgi, contracts = [] }: AIDashboardProp
           const categoryContracts = getContractsByCategory(category.id);
           
           return (
-            <Col key={category.id} className="mb-16">
-              <div className="mb-6 border-l-4 border-indigo-500 pl-4">
+            <Col key={category.id} className="mb-10">
+              <div className="mb-4">
                 <Row className="items-center justify-between">
                   <div>
-                    <h3 id={category.id} className="text-2xl font-bold text-indigo-900">{category.title}</h3>
-                    <p className="text-gray-600">{category.description}</p>
+                    <h3 id={category.id} className="text-lg font-semibold text-primary-700">{category.title}</h3>
+                    <p className="text-ink-500 text-sm">{category.description}</p>
                   </div>
                   <Link 
                     href={`#${category.id}`} 
-                    className="flex h-8 w-8 items-center justify-center rounded-full bg-indigo-100 text-indigo-600 transition hover:bg-indigo-200"
+                    className="text-primary-500 hover:text-primary-700"
                     scroll={false}
                     aria-label={`Link to ${category.title} section`}
                   >
@@ -267,29 +243,22 @@ export default function AIDashboard({ whenAgi, contracts = [] }: AIDashboardProp
                 </Row>
               </div>
               
-              <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
+              <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
                 {categoryContracts.length > 0 ? (
                   categoryContracts.map((contract) => (
-                    <div key={contract.id} className="transform transition duration-200 hover:scale-[1.02] hover:shadow-lg">
-                      <FeedContractCard 
-                        contract={contract} 
-                        size="md"
-                        trackingPostfix="ai dashboard"
-                      />
-                    </div>
+                    <FeedContractCard 
+                      key={contract.id} 
+                      contract={contract} 
+                      size="md"
+                      trackingPostfix="ai dashboard"
+                    />
                   ))
                 ) : (
-                  <div className="col-span-full rounded-xl border-2 border-dashed border-indigo-200 bg-indigo-50 p-8 text-center">
-                    <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-indigo-100">
-                      <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8 text-indigo-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v3m0 0v3m0-3h3m-3 0H9m12 0a9 9 0 11-18 0 9 9 0 0118 0z" />
-                      </svg>
-                    </div>
-                    <p className="mb-4 text-lg font-medium text-gray-700">Markets in this category will appear here</p>
-                    <p className="mb-6 text-gray-500">Create a market to contribute to our collective intelligence on AI</p>
+                  <div className="col-span-full rounded-lg border border-ink-200 p-5 text-center bg-canvas-50">
+                    <p className="text-ink-600">Markets in this category will appear here</p>
                     <Link 
                       href="/create" 
-                      className="inline-block rounded-full bg-gradient-to-r from-indigo-600 to-blue-600 px-6 py-2.5 text-white shadow-md transition hover:from-indigo-700 hover:to-blue-700"
+                      className="mt-3 inline-block rounded-md bg-primary-500 px-4 py-2 text-white hover:bg-primary-600"
                     >
                       Create an AI market
                     </Link>
@@ -301,86 +270,54 @@ export default function AIDashboard({ whenAgi, contracts = [] }: AIDashboardProp
         })}
         
         {/* Resources Section */}
-        <div className="mt-16 overflow-hidden rounded-2xl bg-gradient-to-r from-blue-900 to-indigo-900 shadow-xl">
-          <div className="relative p-8">
-            {/* Background decorative elements */}
-            <div className="absolute -right-20 -top-20 h-64 w-64 rounded-full bg-blue-600 opacity-10 blur-3xl"></div>
-            <div className="absolute -bottom-32 -left-16 h-64 w-64 rounded-full bg-indigo-400 opacity-10 blur-3xl"></div>
+        <Col className="mt-8 rounded-lg border border-ink-200 bg-canvas-50 p-6">
+          <h3 className="mb-4 text-lg font-semibold text-primary-700">AI Resources</h3>
+          <p className="mb-4 text-ink-500">
+            Expand your knowledge on AI progress with these resources:
+          </p>
+          
+          <div className="grid gap-4 md:grid-cols-2">
+            <ResourceCard 
+              title="AI Timeline"
+              description="Major milestones in AI history"
+              link="https://aimultiple.com/ai-timeline"
+            />
             
-            <h3 className="mb-6 text-2xl font-bold text-white">AI Resources</h3>
-            <p className="mb-8 text-lg text-blue-100">
-              Expand your knowledge on AI progress and possibilities with these curated resources:
-            </p>
+            <ResourceCard 
+              title="LessWrong AI Capabilities"
+              description="Community discussions on AI progress"
+              link="https://www.lesswrong.com/tag/ai-capabilities"
+            />
             
-            <div className="grid gap-6 md:grid-cols-2">
-              <ResourceCard 
-                title="AI Timeline"
-                description="Major milestones in artificial intelligence history"
-                link="https://aimultiple.com/ai-timeline"
-                icon={
-                  <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-indigo-200" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
-                  </svg>
-                }
-              />
-              
-              <ResourceCard 
-                title="LessWrong AI Capabilities"
-                description="Community discussions on AI progress and potential"
-                link="https://www.lesswrong.com/tag/ai-capabilities"
-                icon={
-                  <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-indigo-200" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
-                  </svg>
-                }
-              />
-              
-              <ResourceCard 
-                title="Alignment Forum"
-                description="Research discussions on AI safety and alignment"
-                link="https://www.alignmentforum.org/"
-                icon={
-                  <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-indigo-200" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
-                  </svg>
-                }
-              />
-              
-              <ResourceCard 
-                title="Future of Life Institute"
-                description="AI policy, governance, and safety research"
-                link="https://futureoflife.org/ai/"
-                icon={
-                  <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-indigo-200" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 12a9 9 0 01-9 9m9-9a9 9 0 00-9-9m9 9H3m9 9a9 9 0 01-9-9m9 9c1.657 0 3-4.03 3-9s-1.343-9-3-9m0 18c-1.657 0-3-4.03-3-9s1.343-9 3-9m-9 9a9 9 0 019-9" />
-                  </svg>
-                }
-              />
-            </div>
+            <ResourceCard 
+              title="Alignment Forum"
+              description="Research on AI safety and alignment"
+              link="https://www.alignmentforum.org/"
+            />
+            
+            <ResourceCard 
+              title="Future of Life Institute"
+              description="AI policy and governance research"
+              link="https://futureoflife.org/ai/"
+            />
           </div>
-        </div>
+        </Col>
       </Col>
     </Page>
   )
 }
 
 // Helper component for resource cards
-function ResourceCard({ title, description, link, icon }: { 
+function ResourceCard({ title, description, link }: { 
   title: string, 
   description: string, 
   link: string,
-  icon: React.ReactNode
 }) {
   return (
     <Link href={link} target="_blank" rel="noopener noreferrer" className="group">
-      <div className="rounded-xl bg-white/10 p-6 transition duration-200 hover:bg-white/20">
-        <Row className="mb-3 items-center gap-3">
-          <div className="rounded-full bg-indigo-800 p-2">
-            {icon}
-          </div>
-          <h4 className="text-lg font-bold text-white group-hover:text-blue-200">{title}</h4>
-        </Row>
-        <p className="text-indigo-100">{description}</p>
+      <div className="rounded-md border border-ink-200 bg-canvas-0 p-4 transition hover:bg-canvas-50">
+        <h4 className="text-primary-600 font-medium group-hover:underline">{title}</h4>
+        <p className="text-sm text-ink-500">{description}</p>
       </div>
     </Link>
   )
