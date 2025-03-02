@@ -91,7 +91,7 @@ export default function CalibrationPage(props: {
       />
       <Col className="mx-auto max-w-4xl px-4 py-6">
         <div className="mb-8">
-          <Title>Track Record and Accuracy</Title>
+          <Title>Calibration</Title>
           <p className="text-ink-600 max-w-2xl">
             See how Manifold's predictions compare to real-world outcomes and
             explore our track record of accuracy.
