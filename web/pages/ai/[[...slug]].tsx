@@ -82,7 +82,7 @@ export async function getStaticProps() {
       category.contractIds.filter(id => id && !id.startsWith('placeholder-'))
     )
     
-    let contracts = []
+    let contracts: Contract[] = []
     if (allContractIds.length > 0) {
       try {
         contracts = await getContracts(db, allContractIds) || []
