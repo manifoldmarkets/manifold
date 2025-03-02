@@ -37,8 +37,8 @@ const CATEGORIES = [
     title: 'Current Capabilities',
     description: 'What can AI do right now?',
     contractIds: [
-      'placeholder-1', // Claude 3 Opus (placeholder ID)
-      'placeholder-2', // Stable Diffusion 3 (placeholder ID)
+      'LsZPyLPI82', // Best company by end of April
+      'LNdOg08SsU', // Frontier Math score by end of 2025
       'placeholder-3', // Gemini Ultra performance (placeholder ID)
     ],
   },
@@ -77,7 +77,7 @@ export async function getStaticProps() {
     // Fetch the "When AGI" contract for the hero section
     const whenAgi = await getContract(db, 'Gtv5mhjKaiLD6Bkvfhcv')
     
-    // Fetch all contracts for each category - only try to fetch valid IDs
+    // Fetch all contracts for each category
     const allContractIds = CATEGORIES.flatMap(category => 
       category.contractIds.filter(id => id && !id.startsWith('placeholder-'))
     )
@@ -117,7 +117,6 @@ interface AIDashboardProps {
 }
 
 export default function AIDashboard({ whenAgi, contracts = [] }: AIDashboardProps) {
-  // Only use useLiveContract if whenAgi exists and has an id
   const liveWhenAgi = whenAgi && whenAgi.id ? useLiveContract(whenAgi) : null
   const expectedValueAGI = liveWhenAgi ? getNumberExpectedValue(liveWhenAgi) : 2030
   const eventYear = Math.floor(expectedValueAGI)
@@ -156,54 +155,9 @@ export default function AIDashboard({ whenAgi, contracts = [] }: AIDashboardProp
             Manifold AI Forecast
           </div>
           <div className="text-ink-500 text-md mt-2 flex font-normal">
-            Live prediction market odds on artificial intelligence progress
+            Live prediction market odds on AI progress
           </div>
         </Col>
-        
-        {/* AGI Clock Card */}
-        {liveWhenAgi && (
-          <ClickFrame
-            className="fade-in bg-canvas-0 group relative cursor-pointer rounded-lg p-4 shadow-sm"
-            onClick={() => window.location.href = contractPath(liveWhenAgi)}
-          >
-            <Row className="justify-between">
-              <Link
-                href={contractPath(liveWhenAgi)}
-                className="hover:text-primary-700 grow items-start font-semibold transition-colors hover:underline sm:text-lg"
-              >
-                When will we achieve artificial general intelligence?
-              </Link>
-              <CopyLinkOrShareButton
-                url={`https://${ENV_CONFIG.domain}/${ENDPOINT}`}
-                eventTrackingName="copy ai share link"
-                tooltip="Share"
-              />
-            </Row>
-            
-            <Row className="mt-4 justify-between flex-wrap md:flex-nowrap">
-              <Col className="mb-4 md:mb-0 md:max-w-lg">
-                <p className="text-lg">
-                  The market expects AGI by{' '}
-                  <span className="font-semibold">{expectedYear.getFullYear()}</span>
-                </p>
-                <p className="mt-2 text-sm text-ink-500">
-                  Based on thousands of predictions from Manifold forecasters
-                </p>
-              </Col>
-              
-              <Col className="w-full md:w-fit gap-4">
-                <Clock year={expectedValueAGI} />
-                <NumericBetPanel
-                  contract={liveWhenAgi}
-                  labels={{
-                    lower: 'sooner',
-                    higher: 'later',
-                  }}
-                />
-              </Col>
-            </Row>
-          </ClickFrame>
-        )}
         
         {/* Trending Markets Section */}
         <Row className="items-center gap-1 font-semibold sm:text-lg">
@@ -268,6 +222,51 @@ export default function AIDashboard({ whenAgi, contracts = [] }: AIDashboardProp
             </Col>
           );
         })}
+        
+        {/* AGI Clock Card */}
+        {liveWhenAgi && (
+          <ClickFrame
+            className="fade-in bg-canvas-0 group relative cursor-pointer rounded-lg p-4 shadow-sm"
+            onClick={() => window.location.href = contractPath(liveWhenAgi)}
+          >
+            <Row className="justify-between">
+              <Link
+                href={contractPath(liveWhenAgi)}
+                className="hover:text-primary-700 grow items-start font-semibold transition-colors hover:underline sm:text-lg"
+              >
+                When will we achieve artificial general intelligence?
+              </Link>
+              <CopyLinkOrShareButton
+                url={`https://${ENV_CONFIG.domain}/${ENDPOINT}`}
+                eventTrackingName="copy ai share link"
+                tooltip="Share"
+              />
+            </Row>
+            
+            <Row className="mt-4 justify-between flex-wrap md:flex-nowrap">
+              <Col className="mb-4 md:mb-0 md:max-w-lg">
+                <p className="text-lg">
+                  The market expects AGI by{' '}
+                  <span className="font-semibold">{expectedYear.getFullYear()}</span>
+                </p>
+                <p className="mt-2 text-sm text-ink-500">
+                  Based on thousands of predictions from Manifold forecasters
+                </p>
+              </Col>
+              
+              <Col className="w-full md:w-fit gap-4">
+                <Clock year={expectedValueAGI} />
+                <NumericBetPanel
+                  contract={liveWhenAgi}
+                  labels={{
+                    lower: 'sooner',
+                    higher: 'later',
+                  }}
+                />
+              </Col>
+            </Row>
+          </ClickFrame>
+        )}
         
         {/* Resources Section */}
         <Col className="mt-8 rounded-lg border border-ink-200 bg-canvas-50 p-6">
