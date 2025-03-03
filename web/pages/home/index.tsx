@@ -8,7 +8,11 @@ import { useUser } from 'web/hooks/use-user'
 import { track } from 'web/lib/service/analytics'
 import { BrowsePageContent } from '../browse'
 import { useRedirectIfSignedOut } from 'web/hooks/use-redirect-if-signed-out'
-import { DowntimeBanner, ManaForeverBanner, StateOfTheUnionBanner } from 'web/components/nav/banner'
+import {
+  DowntimeBanner,
+  ManaForeverBanner,
+  StateOfTheUnionBanner,
+} from 'web/components/nav/banner'
 import { Welcome } from 'web/components/onboarding/welcome'
 import { LiveGeneratedFeed } from 'web/components/feed/live-generated-feed'
 

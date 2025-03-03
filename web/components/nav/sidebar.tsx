@@ -9,7 +9,7 @@ import {
   GlobeAltIcon,
   ChatIcon,
 } from '@heroicons/react/outline'
-import { PiTelevisionSimple  } from 'react-icons/pi'
+import { PiTelevisionSimple } from 'react-icons/pi'
 import TrophyIcon from 'web/lib/icons/trophy-icon.svg'
 import clsx from 'clsx'
 import { useState } from 'react'
