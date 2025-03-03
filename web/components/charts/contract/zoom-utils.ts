@@ -40,12 +40,12 @@ export const useDataZoomFetcher = <T>(props: {
     debounce(async (min: number, max: number) => {
       if (min && max) {
         setLoading(true)
-        const points = await getPointsBetween(contractId, min, max)
+        const zoomedPoints = await getPointsBetween(contractId, min, max)
 
         setData(
           buildArray(
             points.filter((p) => p.x <= min),
-            points,
+            zoomedPoints,
             points.filter((p) => p.x >= max)
           ).sort((a, b) => a.x - b.x)
         )
