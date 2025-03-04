@@ -534,13 +534,13 @@ export function AnswerPosition(props: {
   contract: MultiContract
   answer: Answer
   user: User
+  myMetric: ContractMetric
   className?: string
   addDot?: boolean
 }) {
-  const { contract, user, answer, className, addDot } = props
+  const { contract, user, answer, className, addDot, myMetric } = props
 
-  const metric = useSavedContractMetrics(contract, answer.id)
-  const { invested, totalShares } = metric ?? {
+  const { invested, totalShares } = myMetric ?? {
     invested: 0,
     totalShares: { YES: 0, NO: 0 },
   }
@@ -554,11 +554,7 @@ export function AnswerPosition(props: {
     (position > 1e-7 && answer.resolution === 'YES') ||
     (position < -1e-7 && answer.resolution === 'NO')
 
-  if (
-    !metric ||
-    (floatingEqual(yesWinnings, 0) && floatingEqual(noWinnings, 0))
-  )
-    return null
+  if (floatingEqual(yesWinnings, 0) && floatingEqual(noWinnings, 0)) return null
 
   return (
     <>
@@ -610,7 +606,7 @@ export function AnswerPosition(props: {
             <MultiSeller
               answer={answer}
               contract={contract}
-              metric={metric}
+              metric={myMetric}
               user={user}
             />
           </>

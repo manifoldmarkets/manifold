@@ -12,6 +12,8 @@ import { Row } from '../layout/row'
 import { InfoTooltip } from '../widgets/info-tooltip'
 import { AnswerPosition, AnswerStatus, MultiBettor } from './answer-components'
 import { Linkify } from '../widgets/linkify'
+import { ContractMetric } from 'common/contract-metric'
+import { useAllSavedContractMetrics } from 'web/hooks/use-saved-contract-metrics'
 
 // just the bars
 export function SmallAnswerBars(props: {
@@ -33,7 +35,7 @@ export function SmallAnswerBars(props: {
   const displayedAnswers = sortAnswers(contract, answers).slice(0, maxAnswers)
 
   const moreCount = answers.length - displayedAnswers.length
-
+  const allMetrics = useAllSavedContractMetrics(contract)
   // Note: Hide answers if there is just one "Other" answer.
   const showNoAnswers =
     answers.length === 0 || (shouldAnswersSumToOne && answers.length === 1)
@@ -52,6 +54,7 @@ export function SmallAnswerBars(props: {
               contract={contract}
               color={getAnswerColor(answer)}
               barColor={barColor}
+              myMetric={allMetrics?.find((m) => m.answerId === answer.id)}
             />
           ))}
           {moreCount > 0 && (
@@ -78,8 +81,9 @@ export function SmallAnswer(props: {
   user: User | undefined | null
   onCommentClick?: () => void
   barColor?: string
+  myMetric?: ContractMetric
 }) {
-  const { answer, contract, color, user, barColor } = props
+  const { answer, contract, color, user, barColor, myMetric } = props
 
   const prob = getAnswerProbability(contract, answer.id)
 
@@ -104,12 +108,13 @@ export function SmallAnswer(props: {
         contract={contract}
         answer={answer}
       />
-      {!resolution && isCpmm && user && (
+      {!resolution && isCpmm && user && myMetric && (
         <AnswerPosition
           contract={contract}
           answer={answer}
           className="mt-0.5 self-end sm:mx-3 sm:mt-0"
           user={user}
+          myMetric={myMetric}
         />
       )}
     </Col>

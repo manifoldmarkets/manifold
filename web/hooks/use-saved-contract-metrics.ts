@@ -8,7 +8,7 @@ import { useEvent } from 'client-common/hooks/use-event'
 import { useApiSubscription } from 'client-common/hooks/use-api-subscription'
 import { calculateUpdatedMetricsForContracts } from 'common/calculate-metrics'
 import { useUser } from './use-user'
-
+import { uniqBy } from 'lodash'
 import { useBatchedGetter } from 'client-common/hooks/use-batched-getter'
 import { queryHandlers } from 'web/lib/supabase/batch-query-handlers'
 import { api } from 'web/lib/api/api'
@@ -39,6 +39,13 @@ export const useAllSavedContractMetrics = (
     ])
     return metricsByContract[contract.id] as ContractMetric[]
   }
+  useEffect(() => {
+    setSavedMetrics(updateMetricsWithNewProbs(savedMetrics ?? []))
+  }, [
+    'answers' in contract
+      ? JSON.stringify(contract.answers)
+      : contract.lastBetTime,
+  ])
 
   const refreshMyMetrics = useEvent(async () => {
     if (!user?.id) return
@@ -65,8 +72,14 @@ export const useAllSavedContractMetrics = (
     onBroadcast: (msg) => {
       const metrics = (msg.data.metrics as Omit<ContractMetric, 'id'>[]).filter(
         (m) => (answerId ? m.answerId === answerId : true)
-      )
-      if (metrics.length > 0) setSavedMetrics(metrics as ContractMetric[])
+      ) as ContractMetric[]
+      if (metrics.length > 0)
+        setSavedMetrics(
+          uniqBy(
+            [...metrics, ...(savedMetrics ?? [])],
+            (m) => m.answerId + m.userId + m.contractId
+          )
+        )
     },
     enabled: !!user?.id,
   })

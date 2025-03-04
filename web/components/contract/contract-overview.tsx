@@ -902,6 +902,7 @@ export const SimpleMultiOverview = (props: { contract: CPMMMultiContract }) => {
       </Row>
 
       <AnswersPanel
+        showAll
         contract={contract}
         selectedAnswerIds={[]}
         sort={sort}
