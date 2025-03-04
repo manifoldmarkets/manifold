@@ -124,7 +124,7 @@ function getResolutionParams(
     (isMultiChoice && !contract.shouldAnswersSumToOne)
   ) {
     const binaryParams = validate(resolveBinarySchema, props)
-    if (binaryParams.answerId && outcomeType !== 'MULTIPLE_CHOICE') {
+    if (binaryParams.answerId && !isMultiChoice) {
       throw new APIError(
         400,
         'answerId field is only allowed for multiple choice markets'
