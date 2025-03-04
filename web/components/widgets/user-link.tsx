@@ -10,7 +10,6 @@ import {
   INSTITUTIONAL_PARTNER_USER_IDS,
   BEING_DEAD_HEADS,
 } from 'common/envs/constants'
-import { SparklesIcon } from '@heroicons/react/solid'
 import { Tooltip } from './tooltip'
 import { BadgeCheckIcon, ShieldCheckIcon } from '@heroicons/react/outline'
 import { Row } from '../layout/row'
@@ -27,6 +26,7 @@ import { useDisplayUserById } from 'web/hooks/use-user-supabase'
 import { GiBurningSkull } from 'react-icons/gi'
 import { HiOutlineBuildingLibrary } from 'react-icons/hi2'
 import { User } from 'common/user'
+import { LuSprout } from 'react-icons/lu'
 export const isFresh = (createdTime: number) =>
   createdTime > Date.now() - DAY_MS * 14
 
@@ -286,7 +286,7 @@ function BeingDeadHead() {
 function FreshBadge() {
   return (
     <Tooltip text="I'm new here!" placement="right">
-      <SparklesIcon className="h-4 w-4 text-green-500" aria-hidden="true" />
+      <LuSprout className="h-4 w-4 text-green-500" aria-hidden="true" />
     </Tooltip>
   )
 }
