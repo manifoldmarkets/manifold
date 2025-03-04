@@ -26,6 +26,7 @@ export function AuthorInfo(props: {
   creatorName: string
   creatorUsername: string
   creatorAvatarUrl?: string
+  creatorCreatedTime?: number
   token: string
   resolverId?: string
 }) {
@@ -34,6 +35,7 @@ export function AuthorInfo(props: {
     creatorName,
     creatorUsername,
     creatorAvatarUrl,
+    creatorCreatedTime,
     token,
     resolverId,
   } = props
@@ -52,6 +54,7 @@ export function AuthorInfo(props: {
             id: creatorId,
             name: creatorName,
             username: creatorUsername,
+            createdTime: creatorCreatedTime,
           }}
           className={'mr-1'}
         />

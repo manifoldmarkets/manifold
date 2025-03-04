@@ -167,9 +167,9 @@ const SidebarRelatedContractCard = memo(function (props: {
                 id: contract.creatorId,
                 name: contract.creatorName,
                 username: contract.creatorUsername,
+                createdTime: creatorCreatedTime,
               }}
               className="text-ink-500 text-sm"
-              createdTime={creatorCreatedTime}
               noLink
             />
           </Row>
@@ -241,9 +241,9 @@ const RelatedContractCard = memo(function (props: {
                 id: contract.creatorId,
                 name: contract.creatorName,
                 username: contract.creatorUsername,
+                createdTime: creatorCreatedTime,
               }}
               className="text-ink-500 text-sm"
-              createdTime={creatorCreatedTime}
               noLink
             />
           </Row>

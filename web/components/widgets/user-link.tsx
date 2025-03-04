@@ -91,23 +91,17 @@ export function UserAvatar(props: {
 }
 
 export function UserLink(props: {
-  user?: { id: string; name?: string; username?: string } | undefined | null
+  user?:
+    | { id: string; name?: string; username?: string; createdTime?: number }
+    | undefined
+    | null
   className?: string
   short?: boolean
   noLink?: boolean
-  createdTime?: number
   hideBadge?: boolean
   marketCreator?: boolean
 }) {
-  const {
-    user,
-    className,
-    short,
-    noLink,
-    createdTime,
-    hideBadge,
-    marketCreator,
-  } = props
+  const { user, className, short, noLink, hideBadge, marketCreator } = props
 
   if (!user || !user.name || !user.username) {
     // skeleton
@@ -116,7 +110,7 @@ export function UserLink(props: {
     )
   }
 
-  const { id, name, username } = user
+  const { id, name, username, createdTime } = user
   const fresh = createdTime ? isFresh(createdTime) : false
   const shortName = short ? shortenName(name) : name
   const children = (
