@@ -74,6 +74,7 @@ pathMatchers:
           - pathTemplateMatch: /get-channel-seen-time
           - pathTemplateMatch: /v0/get-user-portfolio
           - pathTemplateMatch: /v0/get-user-portfolio-history
+          - pathTemplateMatch: /v0/bet-points
 # redeploy this by running:
 # gcloud compute url-maps import api-lb --source=url-map-config.yaml --project mantic-markets  --global
 # (or for dev, --project dev-mantic-markets)
