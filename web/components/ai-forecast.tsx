@@ -1,4 +1,4 @@
-import { CPMMNumericContract, Contract, contractPath } from 'common/contract'
+import { BinaryContract, CPMMNumericContract, Contract, contractPath } from 'common/contract'
 import { Col } from 'web/components/layout/col'
 import { Row } from 'web/components/layout/row'
 import { ENV_CONFIG } from 'common/envs/constants'
@@ -10,8 +10,83 @@ import { NumericBetPanel } from 'web/components/answers/numeric-bet-panel'
 import { ClickFrame } from 'web/components/widgets/click-frame'
 import { HorizontalContractsCarousel } from './horizontal-contracts-carousel'
 import Link from 'next/link'
+import { formatPercent } from 'common/util/format'
+import { getDisplayProbability } from 'common/calculate'
 
 const ENDPOINT = 'ai'
+
+// AI capability cards with static titles and market IDs
+export const AI_CAPABILITY_CARDS = [
+  // Monthly markets
+  {
+    title: 'Claude 4 release date',
+    description: 'When will Claude 4 be released?',
+    marketId: 'LsZPyLPI82', // Replace with actual ID
+    type: 'monthly',
+  },
+  {
+    title: 'GPT-5 release date',
+    description: 'When will OpenAI release GPT-5?',
+    marketId: 'OS06sL6OgU', // Replace with actual ID
+    type: 'monthly',
+  },
+  
+  // Benchmarks
+  {
+    title: 'MMLU Benchmark',
+    description: 'Top AI model score on MMLU by end of 2025',
+    marketId: 'LNdOg08SsU', // Replace with actual ID
+    type: 'benchmark',
+  },
+  {
+    title: 'Math Problem Solving',
+    description: 'Will an AI solve IMO gold medal problems by 2026?',
+    marketId: 'placeholder-1', // Replace with actual ID
+    type: 'benchmark',
+  },
+  
+  // Prizes
+  {
+    title: 'Turing Test Success',
+    description: 'Will an AI pass a formal Turing test by 2027?',
+    marketId: 'placeholder-2', // Replace with actual ID
+    type: 'prize',
+  },
+  {
+    title: 'Nobel Prize Contribution',
+    description: 'AI contribution to Nobel Prize-winning research by 2028',
+    marketId: 'placeholder-3', // Replace with actual ID
+    type: 'prize',
+  },
+  
+  // AI misuse
+  {
+    title: 'Generated Misinformation',
+    description: 'Major news story based on AI-generated fake content in 2025',
+    marketId: 'placeholder-4', // Replace with actual ID
+    type: 'misuse',
+  },
+  {
+    title: 'AI-Enabled Cyberattack',
+    description: 'Major security breach using AI capabilities by end of 2025',
+    marketId: 'placeholder-5', // Replace with actual ID
+    type: 'misuse',
+  },
+  
+  // Comparisons to humans
+  {
+    title: 'Creative Writing',
+    description: 'AI-written novel wins major literary prize by 2027',
+    marketId: 'placeholder-6', // Replace with actual ID
+    type: 'human-comparison',
+  },
+  {
+    title: 'Medical Diagnosis',
+    description: 'AI outperforms average doctor in general diagnosis by 2026',
+    marketId: 'placeholder-7', // Replace with actual ID
+    type: 'human-comparison',
+  }
+]
 
 // Categories for AI markets
 export const AI_CATEGORIES = [
@@ -23,16 +98,6 @@ export const AI_CATEGORIES = [
       'LsZPyLPI82', // Best company by end of April
       'OS06sL6OgU', // Grammarly replacement
       'LNdOg08SsU', // Frontier Math score by end of 2025
-    ],
-  },
-  {
-    id: 'capabilities',
-    title: 'Current Capabilities',
-    description: 'What can AI do right now?',
-    contractIds: [
-      'placeholder-1', // Claude 3 Opus (placeholder ID)
-      'placeholder-2', // Stable Diffusion 3 (placeholder ID)
-      'placeholder-3', // Gemini Ultra performance (placeholder ID)
     ],
   },
   {
@@ -63,6 +128,76 @@ export interface AIForecastProps {
   hideTitle?: boolean
 }
 
+// Capability Card Component for the static cards with market data
+function CapabilityCard({ 
+  title, 
+  description, 
+  marketId, 
+  type, 
+  contracts 
+}: { 
+  title: string
+  description: string
+  marketId: string
+  type: string
+  contracts: Contract[]
+}) {
+  // Find the actual contract by ID
+  const contract = contracts.find(c => c.id === marketId)
+  const liveContract = contract ? useLiveContract(contract) : null
+  
+  // Get the probability if it's a binary contract
+  const probability = liveContract && 'prob' in liveContract 
+    ? getDisplayProbability(liveContract as BinaryContract) 
+    : null
+  
+  // Get the expected value if it's a numeric contract
+  const numericValue = liveContract && liveContract.outcomeType === 'NUMBER' 
+    ? getNumberExpectedValue(liveContract as CPMMNumericContract) 
+    : null
+  
+  // Determine the value to display
+  const displayValue = probability !== null 
+    ? formatPercent(probability) 
+    : numericValue !== null 
+      ? numericValue.toFixed(1) 
+      : '—'
+  
+  // Determine the accent color based on type (works in both light/dark modes)
+  const getAccentColor = () => {
+    switch(type) {
+      case 'monthly': return 'text-primary-600'
+      case 'benchmark': return 'text-teal-600'
+      case 'prize': return 'text-amber-600'
+      case 'misuse': return 'text-rose-600'
+      case 'human-comparison': return 'text-purple-600'
+      default: return 'text-primary-600'
+    }
+  }
+  
+  // Use site's standard border/bg classes for light/dark mode compatibility
+  return (
+    <ClickFrame
+      className="group cursor-pointer rounded-lg p-4 border border-ink-200 bg-canvas-0 transition-all hover:bg-canvas-50"
+      onClick={() => liveContract && window.open(contractPath(liveContract), '_blank')}
+    >
+      <Col className="justify-between h-full">
+        <div>
+          <h3 className={`font-semibold ${getAccentColor()} text-lg mb-1`}>{title}</h3>
+          <p className="text-ink-600 text-sm mb-4">{description}</p>
+        </div>
+        
+        <div className="mt-auto">
+          <div className="text-lg font-bold text-ink-900">{displayValue}</div>
+          <div className={`text-xs ${getAccentColor()} mt-1`}>
+            {liveContract ? 'Current forecast' : 'Market data unavailable'}
+          </div>
+        </div>
+      </Col>
+    </ClickFrame>
+  )
+}
+
 export function AIForecast({ whenAgi, contracts = [], hideTitle }: AIForecastProps) {
   const liveWhenAgi = whenAgi && whenAgi.id ? useLiveContract(whenAgi) : null
   const expectedValueAGI = liveWhenAgi ? getNumberExpectedValue(liveWhenAgi) : 2030
@@ -86,6 +221,24 @@ export function AIForecast({ whenAgi, contracts = [], hideTitle }: AIForecastPro
         contract.id === id
       ))
       .filter(contract => contract !== undefined && contract !== null) as Contract[]
+  }
+  
+  // Group capability cards by type
+  const capabilityCardsByType = AI_CAPABILITY_CARDS.reduce((grouped, card) => {
+    if (!grouped[card.type]) {
+      grouped[card.type] = []
+    }
+    grouped[card.type].push(card)
+    return grouped
+  }, {} as Record<string, typeof AI_CAPABILITY_CARDS>)
+  
+  // Type labels for UI
+  const typeLabels = {
+    'monthly': 'Monthly Markets',
+    'benchmark': 'Benchmarks',
+    'prize': 'Prizes',
+    'misuse': 'AI Misuse',
+    'human-comparison': 'Comparisons to Humans'
   }
 
   return (
@@ -112,6 +265,45 @@ export function AIForecast({ whenAgi, contracts = [], hideTitle }: AIForecastPro
         Track the future of AI through prediction markets - from major milestones to capabilities,
         economic impact, and safety concerns
       </p>
+      
+      {/* Capabilities Section */}
+      <Col className="mb-10" id="capabilities">
+        <div className="mb-4">
+          <Row className="items-center justify-between">
+            <div>
+              <h3 className="text-lg font-semibold text-primary-700">Capabilities</h3>
+              <p className="text-ink-500 text-sm">Current forecasts on AI capabilities and potential</p>
+            </div>
+            <Link 
+              href="#capabilities" 
+              className="text-primary-500 hover:text-primary-700"
+              scroll={false}
+              aria-label="Link to Capabilities section"
+            >
+              #
+            </Link>
+          </Row>
+        </div>
+        
+        {/* Capability Cards by Type */}
+        {Object.entries(typeLabels).map(([type, label]) => (
+          <Col key={type} className="mb-8">
+            <h4 className="text-md font-medium text-ink-700 mb-3">{label}</h4>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              {capabilityCardsByType[type]?.map((card, idx) => (
+                <CapabilityCard 
+                  key={idx}
+                  title={card.title}
+                  description={card.description}
+                  marketId={card.marketId}
+                  type={card.type}
+                  contracts={contracts}
+                />
+              ))}
+            </div>
+          </Col>
+        ))}
+      </Col>
       
       {/* Categories of AI Markets */}
       {AI_CATEGORIES.map((category) => {
