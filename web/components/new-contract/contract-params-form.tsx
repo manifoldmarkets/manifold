@@ -349,6 +349,11 @@ export function ContractParamsForm(props: {
     isFinite(max) &&
     min < max
 
+  const midpointsError =
+    outcomeType === 'MULTI_NUMERIC'
+      ? midpoints.length !== answers.length
+      : false
+
   const isValid =
     isValidQuestion &&
     ante <= balance &&
@@ -361,6 +366,7 @@ export function ContractParamsForm(props: {
         max - min > 0.01 &&
         initialValue < max)) &&
     isValidMultipleChoice &&
+    !midpointsError &&
     (outcomeType !== 'BOUNTIED_QUESTION' || bountyAmount !== undefined) &&
     (outcomeType === 'NUMBER'
       ? numberOfBuckets <= MULTI_NUMERIC_BUCKETS_MAX && numberOfBuckets >= 2
