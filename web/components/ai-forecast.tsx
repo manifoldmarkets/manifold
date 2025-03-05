@@ -15,60 +15,83 @@ import { getDisplayProbability } from 'common/calculate'
 
 const ENDPOINT = 'ai'
 
-// AI capability cards with static titles and market IDs
 export const AI_CAPABILITY_CARDS = [
   // Monthly markets
   {
-    title: 'Claude 4 release date',
-    description: 'When will Claude 4 be released?',
+    title: 'lmsys',
+    description: 'Highest ranked model on lmsys',
     marketId: 'LsZPyLPI82', // Replace with actual ID
     type: 'monthly',
   },
   {
-    title: 'GPT-5 release date',
-    description: 'When will OpenAI release GPT-5?',
+    title: 'AiderBench',
+    description: 'Highest ranked model on AiderBench',
     marketId: 'OS06sL6OgU', // Replace with actual ID
+    type: 'monthly',
+  },
+  {
+    title: '??',
+    description: 'Highest ranked model on ??',
+    marketId: 'LNdOg08SsU', // Replace with actual ID
     type: 'monthly',
   },
   
   // Benchmarks
   {
-    title: 'MMLU Benchmark',
-    description: 'Top AI model score on MMLU by end of 2025',
+    title: 'IMO',
+    description: 'AI gets gold on IMO by EOY',
+    marketId: 'placeholder-0', // Replace with actual ID
+    type: 'benchmark',
+  },
+  {
+    title: 'Frontier Math',
+    description: '>80% on Frontier Math by EOY',
     marketId: 'LNdOg08SsU', // Replace with actual ID
     type: 'benchmark',
   },
   {
-    title: 'Math Problem Solving',
-    description: 'Will an AI solve IMO gold medal problems by 2026?',
-    marketId: 'placeholder-1', // Replace with actual ID
+    title: 'SWE Bench',
+    description: 'Top SWE Bench score by EOY',
+    marketId: 'placeholder-2', // Replace with actual ID
+    type: 'benchmark',
+  },
+  {
+    title: 'Highest Humanity\'s last exam',
+    description:'Highest score on Humanity\'s last exam by EOY',
+    marketId: 'placeholder-3', // Replace with actual ID
     type: 'benchmark',
   },
   
   // Prizes
   {
-    title: 'Turing Test Success',
-    description: 'Will an AI pass a formal Turing test by 2027?',
+    title: 'Millennium Prize',
+    description: 'AI Solve Millennium Problem by EOY',
     marketId: 'placeholder-2', // Replace with actual ID
     type: 'prize',
   },
   {
-    title: 'Nobel Prize Contribution',
-    description: 'AI contribution to Nobel Prize-winning research by 2028',
+    title: 'Arc AGI',
+    description: 'Arc AGI prize by EOY',
+    marketId: 'placeholder-3', // Replace with actual ID
+    type: 'prize',
+  },
+  {
+    title: 'Turing Test (Long Bets)',
+    description: 'Will AI pass long bets Turing Test by EOY?',
     marketId: 'placeholder-3', // Replace with actual ID
     type: 'prize',
   },
   
   // AI misuse
   {
-    title: 'Generated Misinformation',
-    description: 'Major news story based on AI-generated fake content in 2025',
+    title: 'Blackmail',
+    description: 'AI Blackmails someone for >$1000',
     marketId: 'placeholder-4', // Replace with actual ID
     type: 'misuse',
   },
   {
-    title: 'AI-Enabled Cyberattack',
-    description: 'Major security breach using AI capabilities by end of 2025',
+    title: 'Hacking',
+    description: 'AI independently hacks a system',
     marketId: 'placeholder-5', // Replace with actual ID
     type: 'misuse',
   },
@@ -184,14 +207,14 @@ function CapabilityCard({
       <Col className="justify-between h-full">
         <div>
           <h3 className={`font-semibold ${getAccentColor()} text-lg mb-1`}>{title}</h3>
-          <p className="text-ink-600 text-sm mb-4">{description}</p>
+          <p className="text-ink-600 text-sm mb-4 line-clamp-3">{description}</p>
         </div>
         
         <div className="mt-auto">
           <div className="text-lg font-bold text-ink-900">{displayValue}</div>
-          <div className={`text-xs ${getAccentColor()} mt-1`}>
+          {/* <div className={`text-xs ${getAccentColor()} mt-1`}>
             {liveContract ? 'Current forecast' : 'Market data unavailable'}
-          </div>
+          </div> */}
         </div>
       </Col>
     </ClickFrame>
@@ -289,7 +312,7 @@ export function AIForecast({ whenAgi, contracts = [], hideTitle }: AIForecastPro
         {Object.entries(typeLabels).map(([type, label]) => (
           <Col key={type} className="mb-8">
             <h4 className="text-md font-medium text-ink-700 mb-3">{label}</h4>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
               {capabilityCardsByType[type]?.map((card, idx) => (
                 <CapabilityCard 
                   key={idx}
