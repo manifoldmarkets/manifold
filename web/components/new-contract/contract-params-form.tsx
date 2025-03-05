@@ -463,7 +463,7 @@ export function ContractParamsForm(props: {
         groupIds: selectedGroups.map((g) => g.id),
         answers,
         midpoints,
-        addAnswersMode,
+        addAnswersMode: isMultiNumeric ? 'DISABLED' : addAnswersMode,
         shouldAnswersSumToOne,
         visibility,
         utcOffset: new Date().getTimezoneOffset(),
