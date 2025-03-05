@@ -243,7 +243,7 @@ export default function AdminCashouts() {
         </Col>
         <PaginationNextPrev
           isStart={page === 0}
-          isEnd={page === 10}
+          isEnd={page === 50}
           isLoading={false}
           isComplete={true}
           getPrev={() => setPage(page - 1)}

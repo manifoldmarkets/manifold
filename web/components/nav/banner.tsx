@@ -14,8 +14,9 @@ export function Banner(props: {
   className?: string
   children: React.ReactNode
   link?: string
+  target?: '_blank' | '_self'
 }) {
-  const { setShowBanner, className, children, link } = props
+  const { setShowBanner, className, children, link, target = '_blank' } = props
   return (
     <Row
       className={clsx(
@@ -25,7 +26,7 @@ export function Banner(props: {
     >
       {link ? (
         <Link
-          target="_blank"
+          target={target}
           href={link}
           className="pl-4"
           rel="noopener noreferrer"
@@ -119,6 +120,23 @@ export function WatchPartyBanner() {
       link="/tv"
     >
       🇺🇸 Join the presidential debate watch party on Manifold TV! 🇺🇸
+    </Banner>
+  )
+}
+
+export function StateOfTheUnionBanner() {
+  return (
+    <Banner
+      className="border-primary-300 from-primary-100 to-primary-200 my-2 border bg-gradient-to-b py-2"
+      link="https://manifold.markets/tv/86"
+      target="_self"
+    >
+      🇺🇸 Join our State of the Union watch party{' '}
+      {new Date('2024-03-05T21:00:00-05:00').toLocaleString(undefined, {
+        weekday: 'long',
+        hour: 'numeric',
+      })}
+      ! 🇺🇸
     </Banner>
   )
 }

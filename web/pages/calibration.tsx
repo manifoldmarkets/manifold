@@ -91,7 +91,7 @@ export default function CalibrationPage(props: {
       />
       <Col className="mx-auto max-w-4xl px-4 py-6">
         <div className="mb-8">
-          <Title>Track Record and Accuracy</Title>
+          <Title>Calibration</Title>
           <p className="text-ink-600 max-w-2xl">
             See how Manifold's predictions compare to real-world outcomes and
             explore our track record of accuracy.
@@ -331,7 +331,7 @@ export default function CalibrationPage(props: {
 }
 
 function CalibrationChart(props: {
-  points: Point[]
+  points: { x: number; y: number }[]
   width: number
   height: number
 }) {
@@ -353,10 +353,10 @@ function CalibrationChart(props: {
     .tickFormat(format)
     .tickValues(tickVals)
 
-  const px = (p: Point) => xScale(p.x)
-  const py = (p: Point) => yScale(p.y)
+  const px = (p: { x: number; y: number }) => xScale(p.x)
+  const py = (p: { x: number; y: number }) => yScale(p.y)
 
-  const [point, setPoint] = useState<Point | null>(null)
+  const [point, setPoint] = useState<{ x: number; y: number } | null>(null)
 
   return (
     <SVGChart

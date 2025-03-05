@@ -384,6 +384,7 @@ export function ContractPageContent(props: ContractParams) {
                   creatorName={props.contract.creatorName}
                   creatorUsername={props.contract.creatorUsername}
                   creatorAvatarUrl={props.contract.creatorAvatarUrl}
+                  creatorCreatedTime={props.contract.creatorCreatedTime}
                   token={liveContract.token}
                   resolverId={liveContract.resolverId}
                 />

@@ -79,9 +79,10 @@ import { SearchCreateAnswerPanel } from './create-answer-panel'
 import { debounce } from 'lodash'
 import { RelativeTimestamp } from '../relative-timestamp'
 import { buildArray } from 'common/util/array'
-import { useSavedContractMetrics } from 'web/hooks/use-saved-contract-metrics'
+import { useAllSavedContractMetrics } from 'web/hooks/use-saved-contract-metrics'
 import { floatingEqual } from 'common/util/math'
 import { useUnfilledBets } from 'client-common/hooks/use-bets'
+import { ContractMetric } from 'common/contract-metric'
 
 export const SHOW_LIMIT_ORDER_CHARTS_KEY = 'SHOW_LIMIT_ORDER_CHARTS_KEY'
 const MAX_DEFAULT_GRAPHED_ANSWERS = 6
@@ -108,6 +109,7 @@ export function AnswersPanel(props: {
   floatingSearchClassName?: string
   className?: string
   hideSearch?: boolean
+  showAll?: boolean
 }) {
   const {
     contract,
@@ -134,8 +136,9 @@ export function AnswersPanel(props: {
     prob: getAnswerProbability(contract, a.id),
   }))
   const [showAll, setShowAll] = useState(
-    (addAnswersMode === 'DISABLED' && answers.length <= 10) ||
-      answers.length <= 5
+    props.showAll ??
+      ((addAnswersMode === 'DISABLED' && answers.length <= 10) ||
+        answers.length <= 5)
   )
 
   const shouldAnswersSumToOne = getShouldAnswersSumToOne(contract)
@@ -167,7 +170,10 @@ export function AnswersPanel(props: {
   }, [selectedAnswerIds.length, answersToShow.length])
 
   const user = useUser()
-  const metrics = useSavedContractMetrics(contract) ?? { invested: 0 }
+  const allMetrics = useAllSavedContractMetrics(contract)
+  const metrics = allMetrics?.find((m) => m.answerId === null) ?? {
+    invested: 0,
+  }
 
   const isAdvancedTrader = useIsAdvancedTrader()
   const [shouldShowLimitOrderChart, setShouldShowLimitOrderChart] =
@@ -265,6 +271,7 @@ export function AnswersPanel(props: {
           <Col className="mx-[2px] mt-1 gap-2">
             {answersToShow.map((answer) => (
               <Answer
+                myMetric={allMetrics?.find((m) => m.answerId === answer.id)}
                 shouldShowPositions={shouldShowPositions}
                 className={
                   selectedAnswerIds.length &&
@@ -569,6 +576,7 @@ export function Answer(props: {
   feedReason?: string
   className?: string
   shouldShowPositions?: boolean
+  myMetric?: ContractMetric
 }) {
   const {
     answer,
@@ -584,6 +592,7 @@ export function Answer(props: {
     shouldShowLimitOrderChart,
     className,
     shouldShowPositions = true,
+    myMetric,
   } = props
 
   const prob = getAnswerProbability(contract, answer.id)
@@ -760,13 +769,14 @@ export function Answer(props: {
           }
         >
           <Row className="text-ink-500 gap-1.5">
-            {user && shouldShowPositions && (
+            {user && shouldShowPositions && myMetric && (
               <AnswerPosition
                 contract={contract}
                 answer={answer}
                 className="self-end"
                 user={user}
                 addDot={userHasLimitOrders}
+                myMetric={myMetric}
               />
             )}
             {userHasLimitOrders && (

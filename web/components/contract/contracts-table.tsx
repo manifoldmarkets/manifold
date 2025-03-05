@@ -270,6 +270,7 @@ function ContractQuestion(props: {
           <Avatar
             username={contract.creatorUsername}
             avatarUrl={contract.creatorAvatarUrl}
+            createdTime={contract.creatorCreatedTime}
             size="xs"
             preventDefault={true}
             className="mt-0.5"

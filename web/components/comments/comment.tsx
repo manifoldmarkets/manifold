@@ -29,7 +29,6 @@ const straightThreadColor = 'bg-ink-100 dark:bg-ink-300'
 
 export const FeedComment = memo(function FeedComment(props: {
   playContract: Contract
-  cashContract?: Contract
   liveContract: Contract
   comment: ContractComment
   trackingLocation: string
@@ -45,7 +44,6 @@ export const FeedComment = memo(function FeedComment(props: {
 }) {
   const {
     playContract,
-    cashContract,
     liveContract,
     highlighted,
     onReplyClick,

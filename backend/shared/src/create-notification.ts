@@ -1220,11 +1220,10 @@ export const createContractResolvedNotifications = async (
 ) => {
   let resolutionText = outcome ?? contract.question
   const { token } = contract
-
-  const isIndependentMulti =
-    contract.outcomeType === 'MULTIPLE_CHOICE' &&
-    contract.mechanism === 'cpmm-multi-1' &&
-    !contract.shouldAnswersSumToOne
+  const isMultiChoice =
+    contract.outcomeType === 'MULTIPLE_CHOICE' ||
+    contract.outcomeType === 'MULTI_NUMERIC'
+  const isIndependentMulti = isMultiChoice && !contract.shouldAnswersSumToOne
 
   if (isIndependentMulti) {
     const answer = contract.answers.find((answer) => answer.id === answerId)
@@ -1232,7 +1231,7 @@ export const createContractResolvedNotifications = async (
       outcome,
       probabilityInt !== undefined ? probabilityInt / 100 : answer?.prob
     )}`
-  } else if (contract.outcomeType === 'MULTIPLE_CHOICE') {
+  } else if (isMultiChoice) {
     const answerText = contract.answers.find(
       (answer) => answer.id === outcome
     )?.text

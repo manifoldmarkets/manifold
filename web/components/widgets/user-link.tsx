@@ -10,7 +10,6 @@ import {
   INSTITUTIONAL_PARTNER_USER_IDS,
   BEING_DEAD_HEADS,
 } from 'common/envs/constants'
-import { SparklesIcon } from '@heroicons/react/solid'
 import { Tooltip } from './tooltip'
 import { BadgeCheckIcon, ShieldCheckIcon } from '@heroicons/react/outline'
 import { Row } from '../layout/row'
@@ -27,6 +26,7 @@ import { useDisplayUserById } from 'web/hooks/use-user-supabase'
 import { GiBurningSkull } from 'react-icons/gi'
 import { HiOutlineBuildingLibrary } from 'react-icons/hi2'
 import { User } from 'common/user'
+import { LuSprout } from 'react-icons/lu'
 export const isFresh = (createdTime: number) =>
   createdTime > Date.now() - DAY_MS * 14
 
@@ -91,23 +91,17 @@ export function UserAvatar(props: {
 }
 
 export function UserLink(props: {
-  user?: { id: string; name?: string; username?: string } | undefined | null
+  user?:
+    | { id: string; name?: string; username?: string; createdTime?: number }
+    | undefined
+    | null
   className?: string
   short?: boolean
   noLink?: boolean
-  createdTime?: number
   hideBadge?: boolean
   marketCreator?: boolean
 }) {
-  const {
-    user,
-    className,
-    short,
-    noLink,
-    createdTime,
-    hideBadge,
-    marketCreator,
-  } = props
+  const { user, className, short, noLink, hideBadge, marketCreator } = props
 
   if (!user || !user.name || !user.username) {
     // skeleton
@@ -116,7 +110,7 @@ export function UserLink(props: {
     )
   }
 
-  const { id, name, username } = user
+  const { id, name, username, createdTime } = user
   const fresh = createdTime ? isFresh(createdTime) : false
   const shortName = short ? shortenName(name) : name
   const children = (
@@ -292,7 +286,7 @@ function BeingDeadHead() {
 function FreshBadge() {
   return (
     <Tooltip text="I'm new here!" placement="right">
-      <SparklesIcon className="h-4 w-4 text-green-500" aria-hidden="true" />
+      <LuSprout className="h-4 w-4 text-green-500" aria-hidden="true" />
     </Tooltip>
   )
 }

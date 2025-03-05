@@ -116,26 +116,27 @@ function getResolutionParams(
   props: ValidatedAPIParams<'market/:contractId/resolve'>
 ) {
   const { outcomeType } = contract
+  const isMultiChoice =
+    outcomeType === 'MULTIPLE_CHOICE' || outcomeType === 'MULTI_NUMERIC'
+
   if (
     outcomeType === 'BINARY' ||
-    (outcomeType === 'MULTIPLE_CHOICE' &&
-      contract.mechanism === 'cpmm-multi-1' &&
-      !contract.shouldAnswersSumToOne)
+    (isMultiChoice && !contract.shouldAnswersSumToOne)
   ) {
     const binaryParams = validate(resolveBinarySchema, props)
-    if (binaryParams.answerId && outcomeType !== 'MULTIPLE_CHOICE') {
+    if (binaryParams.answerId && !isMultiChoice) {
       throw new APIError(
         400,
         'answerId field is only allowed for multiple choice markets'
       )
     }
-    if (outcomeType === 'MULTIPLE_CHOICE' && !binaryParams.answerId) {
+    if (isMultiChoice && !binaryParams.answerId) {
       throw new APIError(
         400,
         'answerId field is required for multiple choice markets'
       )
     }
-    if (binaryParams.answerId && outcomeType === 'MULTIPLE_CHOICE')
+    if (binaryParams.answerId && isMultiChoice)
       validateAnswerCpmm(contract, binaryParams.answerId)
     return {
       ...binaryParams,
@@ -147,12 +148,7 @@ function getResolutionParams(
       ...validate(resolvePseudoNumericSchema, props),
       resolutions: undefined,
     }
-  } else if (
-    (outcomeType === 'MULTIPLE_CHOICE' ||
-      outcomeType === 'NUMBER' ||
-      outcomeType === 'MULTI_NUMERIC') &&
-    contract.mechanism === 'cpmm-multi-1'
-  ) {
+  } else if (isMultiChoice || outcomeType === 'NUMBER') {
     const cpmmMultiParams = validate(resolveMultiSchema, props)
     const { outcome } = cpmmMultiParams
     if (outcome === 'CANCEL') {
