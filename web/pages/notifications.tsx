@@ -42,6 +42,7 @@ import {
 import { usePersistentLocalState } from 'web/hooks/use-persistent-local-state'
 import { useUnseenPrivateMessageChannels } from 'web/hooks/use-private-messages'
 import { PrivateMessagesList } from '../components/messaging/private-messages-list'
+import { maybePluralize } from 'common/util/format'
 
 export default function NotificationsPage() {
   const privateUser = usePrivateUser()
@@ -224,11 +225,13 @@ function RenderNotificationGroups(props: {
   const { notificationGroups, page, setPage, totalItems } = props
 
   const grayLine = <div className="bg-ink-300 mx-2 box-border h-[1.5px]" />
+  const alwaysGroupTypes = ['market_movements']
   return (
     <>
       {notificationGroups.map((notification) => (
         <Fragment key={notification.groupedById}>
-          {notification.notifications.length === 1 ? (
+          {notification.notifications.length === 1 &&
+          !alwaysGroupTypes.includes(notification.notifications[0].reason) ? (
             <>
               <NotificationItem
                 notification={notification.notifications[0]}
@@ -376,12 +379,17 @@ function NotificationGroupItem(props: {
             <>Welcome to Manifold!</>
           ) : questNotifs ? (
             <>
-              {notifications.length} quest
-              {notifications.length > 1 ? 's' : ''} completed
+              {notifications.length}{' '}
+              {maybePluralize('quest', notifications.length)} completed
+            </>
+          ) : notifications[0].reason === 'market_movements' ? (
+            <>
+              {notifications.length} recent notable market{' '}
+              {maybePluralize('movement', notifications.length)}
             </>
           ) : sourceTitle || sourceContractTitle ? (
             <>
-              {uniques} user{uniques > 1 ? `s` : ``} on{' '}
+              {uniques} {maybePluralize('user', uniques)} on{' '}
               <QuestionOrGroupLink
                 notification={notifications[0]}
                 truncatedLength={'xl'}
@@ -389,7 +397,7 @@ function NotificationGroupItem(props: {
             </>
           ) : (
             <>
-              Other activity from {uniques} user{uniques > 1 ? 's' : ''}
+              Other activity from {uniques} {maybePluralize('user', uniques)}
             </>
           )}
         </ParentNotificationHeader>

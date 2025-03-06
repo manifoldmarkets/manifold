@@ -35,9 +35,8 @@ import {
   resetWeeklyQuestStatsInternal,
 } from './reset-quests-stats'
 import { updateUserPortfolioHistoriesCore } from 'shared/update-user-portfolio-histories-core'
-import { ENV } from 'common/envs/constants'
 import { isProd } from 'shared/utils'
-
+import { sendContractMovementNotifications } from 'shared/send-contract-movement-notifications'
 export function createJobs() {
   return [
     // Hourly jobs:
@@ -70,6 +69,11 @@ export function createJobs() {
       'check-push-receipts',
       '0 15 * * * *', // on the 15th minute of every hour
       checkPushNotificationReceipts
+    ),
+    createJob(
+      'send-contract-movement-notifications',
+      '0 12 * * * *', // on the 12th minute of every hour
+      () => sendContractMovementNotifications(false)
     ),
     createJob(
       'calculate-conversion-scores',

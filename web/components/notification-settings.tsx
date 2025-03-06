@@ -67,6 +67,7 @@ const emailsEnabled: Array<notification_preference> = [
   'new_endorsement',
   'new_match',
   'new_message',
+  'market_movements',
   // TODO: add these
 
   // 'referral_bonuses',
@@ -91,7 +92,7 @@ const mobilePushEnabled: Array<notification_preference> = [
   'all_answers_on_my_markets',
   'tagged_user',
   'betting_streaks',
-
+  'market_movements',
   // TODO: add these
   // 'limit_order_fills',
   // 'contract_from_followed_user',
@@ -124,6 +125,7 @@ const updates: NotificationSectionData = {
   subscriptionTypes: [
     'resolutions_on_watched_markets',
     'resolutions_on_watched_markets_with_shares_in',
+    'market_movements',
     'all_votes_on_watched_markets',
     'poll_close_on_watched_markets',
     'bounty_canceled',

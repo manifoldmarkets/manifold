@@ -90,12 +90,12 @@ export async function updateContractMetricsCore() {
     for (const contract of contracts) {
       let cpmmFields: Partial<CPMM> = {}
       if (contract.mechanism === 'cpmm-1') {
-        const { poolProb, resProb, resTime } = currentContractProbs[contract.id]
+        const { id } = contract
+        const { poolProb, resProb, resTime } = currentContractProbs[id]
         const prob = resProb ?? poolProb
-        const key = `${contract.id} _`
-        const dayAgoProb = dayAgoProbs[key] ?? poolProb
-        const weekAgoProb = weekAgoProbs[key] ?? poolProb
-        const monthAgoProb = monthAgoProbs[key] ?? poolProb
+        const dayAgoProb = dayAgoProbs[id] ?? poolProb
+        const weekAgoProb = weekAgoProbs[id] ?? poolProb
+        const monthAgoProb = monthAgoProbs[id] ?? poolProb
         cpmmFields = {
           prob,
           probChanges: {
@@ -118,7 +118,7 @@ export async function updateContractMetricsCore() {
                 }
               : currentAnswerProbs[answer.id]
           const prob = resProb ?? poolProb
-          const key = `${contract.id} ${answer.id}`
+          const key = contract.id + answer.id
           const dayAgoProb = dayAgoProbs[key] ?? poolProb
           const weekAgoProb = weekAgoProbs[key] ?? poolProb
           const monthAgoProb = monthAgoProbs[key] ?? poolProb
@@ -270,10 +270,7 @@ const getBetProbsAt = async (
         on pa.contract_id = pb.contract_id and pa.answer_id = pb.answer_id
       `,
       [when, contractIds, sumToOneContractIds],
-      (r) => [
-        `${r.contract_id} ${r.answer_id ?? '_'}`,
-        parseFloat(r.prob as string),
-      ]
+      (r) => [r.contract_id + (r.answer_id ?? ''), parseFloat(r.prob as string)]
     )
   )
 }
