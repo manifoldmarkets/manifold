@@ -21,19 +21,15 @@ export type AICapabilityCard = {
   description: string
   marketId: string
   type: string
-  /** 
-   * Controls how the card displays data:
-   * - 'answer-string' shows the name of the highest probability answer instead of the probability
-   */
   displayType?: 'answer-string'
 }
 
 export const AI_CAPABILITY_CARDS: AICapabilityCard[] = [
   // Monthly markets
   {
-    title: 'lmsys',
+    title: 'Top LMSYS Model',
     description: 'Highest ranked model on lmsys',
-    marketId: 'LsZPyLPI82', // Replace with actual ID
+    marketId: 'LsZPyLPI82',
     type: 'monthly',
     displayType: 'answer-string',
   },
@@ -42,35 +38,56 @@ export const AI_CAPABILITY_CARDS: AICapabilityCard[] = [
     description: 'Highest ranked model on AiderBench',
     marketId: 'OS06sL6OgU', // Replace with actual ID
     type: 'monthly',
-  },
-  {
-    title: '??',
-    description: 'Highest ranked model on ??',
-    marketId: 'LNdOg08SsU', // Replace with actual ID
-    type: 'monthly',
+    displayType: 'answer-string',
   },
   
+  // Releases
+  {
+    title: 'GPT-5',
+    description: 'GPT-4 model released by EOY',
+    marketId: 'placeholder-1', // Replace with actual ID
+    type: 'releases',
+  },
+  {
+    title: 'Claude 3.7 Opus',
+    description: '',
+    marketId: 'placeholder-2', // Replace with actual ID
+    type: 'releases',
+  },
+  {
+    title: 'Gemini 3',
+    description: '',
+    marketId: 'placeholder-3', // Replace with actual ID
+    type: 'releases',
+  },
+  {
+    title: 'Grok 4',
+    description: '',
+    marketId: 'placeholder-3', // Replace with actual ID
+    type: 'releases',
+  },
+
   // Benchmarks
   {
-    title: 'IMO',
+    title: 'IMO Gold',
     description: 'AI gets gold on IMO by EOY',
     marketId: 'placeholder-0', // Replace with actual ID
     type: 'benchmark',
   },
   {
-    title: 'Frontier Math',
+    title: 'Frontier Math Passed',
     description: '>80% on Frontier Math by EOY',
     marketId: 'LNdOg08SsU', // Replace with actual ID
     type: 'benchmark',
   },
   {
-    title: 'SWE Bench',
+    title: 'SWE Bench Top Score',
     description: 'Top SWE Bench score by EOY',
     marketId: 'placeholder-2', // Replace with actual ID
     type: 'benchmark',
   },
   {
-    title: 'Highest Humanity\'s last exam',
+    title: 'Highest Humanity\'s Last Exam Top Score',
     description:'Highest score on Humanity\'s last exam by EOY',
     marketId: 'placeholder-3', // Replace with actual ID
     type: 'benchmark',
@@ -78,19 +95,19 @@ export const AI_CAPABILITY_CARDS: AICapabilityCard[] = [
   
   // Prizes
   {
-    title: 'Millennium Prize',
+    title: 'Millennium Prize Claimed',
     description: 'AI Solve Millennium Problem by EOY',
     marketId: 'placeholder-2', // Replace with actual ID
     type: 'prize',
   },
   {
-    title: 'Arc AGI',
+    title: 'Arc AGI Claimed',
     description: 'Arc AGI prize by EOY',
     marketId: 'placeholder-3', // Replace with actual ID
     type: 'prize',
   },
   {
-    title: 'Turing Test (Long Bets)',
+    title: 'Turing Test (Long Bets) Passed',
     description: 'Will AI pass long bets Turing Test by EOY?',
     marketId: 'placeholder-3', // Replace with actual ID
     type: 'prize',
@@ -98,9 +115,9 @@ export const AI_CAPABILITY_CARDS: AICapabilityCard[] = [
   
   // AI misuse
   {
-    title: 'Blackmail',
+    title: 'AI Blackmail',
     description: 'AI Blackmails someone for >$1000',
-    marketId: 'placeholder-4', // Replace with actual ID
+    marketId: 's82955uAnR',
     type: 'misuse',
   },
   {
@@ -167,26 +184,26 @@ export interface AIForecastProps {
 
 // Capability Card Component for the static cards with market data
 function CapabilityCard({ 
-  title, 
-  description, 
+  title,
   marketId, 
   type, 
   displayType,
-  contracts 
+  contracts,
+  className = ""
 }: { 
   title: string
-  description: string
   marketId: string
   type: string
   displayType?: 'answer-string' | undefined
   contracts: Contract[]
+  className?: string
 }) {
   // Find the actual contract by ID
   const contract = contracts.find(c => c.id === marketId)
   const liveContract = contract ? useLiveContract(contract) : null
   
   // Get the probability if it's a binary contract
-  const probability = liveContract && 'prob' in liveContract 
+  const probability = liveContract && liveContract.outcomeType === 'BINARY'
     ? getDisplayProbability(liveContract as BinaryContract) 
     : null
   
@@ -195,24 +212,42 @@ function CapabilityCard({
     ? getNumberExpectedValue(liveContract as CPMMNumericContract) 
     : null
   
+  // Get top two companies and their probabilities for "answer-string" display type
+  const getTopTwoOdds = () => {
+    if (!liveContract || liveContract.outcomeType !== 'MULTIPLE_CHOICE') {
+      return [{ text: '—', probability: 0 }, { text: '—', probability: 0 }]
+    }
+    
+    const answers = liveContract.answers || []
+    if (answers.length < 2) {
+      return [{ text: '—', probability: 0 }, { text: '—', probability: 0 }]
+    }
+    
+    // Sort answers by probability in descending order
+    const sortedAnswers = [...answers].sort((a, b) => {
+      const aProb = a.prob ?? 0
+      const bProb = b.prob ?? 0
+      return bProb - aProb
+    })
+    
+    return [
+      { 
+        text: sortedAnswers[0].text || '—', 
+        probability: sortedAnswers[0].prob ?? 0 
+      },
+      { 
+        text: sortedAnswers[1].text || '—', 
+        probability: sortedAnswers[1].prob ?? 0 
+      }
+    ]
+  }
+  
   // Determine the value to display
   let displayValue = '—'
+  let topCompanies = [{ text: '—', probability: 0 }, { text: '—', probability: 0 }]
   
-  // For "answer-string" display type, show the highest-ranked company
   if (displayType === 'answer-string' && liveContract && liveContract.outcomeType === 'MULTIPLE_CHOICE') {
-    // Find the answer with the highest probability
-    const answers = liveContract.answers || []
-    if (answers.length > 0) {
-      let highestProbAnswer = answers[0]
-      
-      for (const answer of answers) {
-        if ((answer.prob || 0) > (highestProbAnswer.prob || 0)) {
-          highestProbAnswer = answer
-        }
-      }
-      
-      displayValue = highestProbAnswer.text || '—'
-    }
+    topCompanies = getTopTwoOdds()
   } else {
     // Default display behavior
     displayValue = probability !== null 
@@ -220,6 +255,11 @@ function CapabilityCard({
       : numericValue !== null 
         ? numericValue.toFixed(1) 
         : '—'
+    
+    // For binary contracts, use the probability we calculated above
+    if (liveContract && liveContract.outcomeType === 'BINARY' && probability !== null) {
+      displayValue = formatPercent(probability)
+    }
   }
   
   // Determine the accent color based on type (works in both light/dark modes)
@@ -235,15 +275,71 @@ function CapabilityCard({
   }
   
   // Use site's standard border/bg classes for light/dark mode compatibility
+  if (displayType === 'answer-string') {
+    return (
+      <ClickFrame
+        className={`group cursor-pointer rounded-lg p-4 border border-ink-200 bg-canvas-0 transition-all hover:bg-canvas-50 min-h-[240px] ${className}`}
+        onClick={() => liveContract && window.open(contractPath(liveContract), '_blank')}
+      >
+        <Col className="h-full space-y-2">
+          <div>
+            <h3 className={`font-semibold ${getAccentColor()} text-lg mb-1`}>{title}</h3>
+          </div>
+          
+          {/* VS Match Layout */}
+          <div className="rounded-md p-3 flex-1 flex flex-col justify-center">
+            <div className="flex items-center justify-between px-1">
+              {/* Left Company */}
+              <div className="text-center w-[38%]">
+                <div className="text-xl font-bold text-ink-900 truncate">
+                  {topCompanies[0].text}
+                </div>
+                <div className="text-base text-ink-600 mt-1 font-medium">
+                  {formatPercent(topCompanies[0].probability)}
+                </div>
+              </div>
+              
+              {/* VS Badge with more padding on both sides */}
+              <div className="bg-primary-600 text-white text-sm font-bold rounded-full px-3 py-1.5 shadow-sm mx-4">
+                VS
+              </div>
+              
+              {/* Right Company */}
+              <div className="text-center w-[38%]">
+                <div className="text-xl font-bold text-ink-900 truncate">
+                  {topCompanies[1].text}
+                </div>
+                <div className="text-base text-ink-600 mt-1 font-medium">
+                  {formatPercent(topCompanies[1].probability)}
+                </div>
+              </div>
+            </div>
+            
+            {/* Probability Bar */}
+            <div className="mt-4 h-2.5 w-full rounded-full bg-ink-200 overflow-hidden">
+              {/* Calculate the width percentage based on probabilities */}
+              <div 
+                className="h-full bg-primary-600" 
+                style={{ 
+                  width: `${(topCompanies[0].probability / (topCompanies[0].probability + topCompanies[1].probability)) * 100}%` 
+                }}
+              />
+            </div>
+          </div>
+        </Col>
+      </ClickFrame>
+    )
+  }
+  
+  // Standard card layout for other display types
   return (
     <ClickFrame
-      className="group cursor-pointer rounded-lg p-4 border bg-canvas-0 transition-all hover:bg-canvas-50"
+      className={`group cursor-pointer rounded-lg p-4 border border-ink-200 bg-canvas-0 transition-all hover:bg-canvas-50 min-h-[240px] ${className}`}
       onClick={() => liveContract && window.open(contractPath(liveContract), '_blank')}
     >
       <Col className="justify-between h-full">
         <div>
           <h3 className={`font-semibold ${getAccentColor()} text-lg mb-1`}>{title}</h3>
-          <p className="text-ink-600 text-sm mb-4 line-clamp-3">{description}</p>
         </div>
         
         <div className="mt-auto">
@@ -293,7 +389,8 @@ export function AIForecast({ whenAgi, contracts = [], hideTitle }: AIForecastPro
   
   // Type labels for UI
   const typeLabels = {
-    'monthly': 'Monthly Markets',
+    'monthly': 'March Rankings',
+    'releases': 'Model Release Dates',
     'benchmark': 'Benchmarks',
     'prize': 'Prizes',
     'misuse': 'AI Misuse',
@@ -324,45 +421,59 @@ export function AIForecast({ whenAgi, contracts = [], hideTitle }: AIForecastPro
         Current odds about the future of artificial intelligence
       </p>
       
-      {/* Capabilities Section */}
-      <Col className="mb-10" id="capabilities">
-        <div className="mb-4">
-          <Row className="items-center justify-between">
-            <div>
-              <h3 className="text-lg font-semibold text-primary-700">Capabilities</h3>
-              <p className="text-ink-500 text-sm">How good will LLMs be?</p>
-            </div>
-            <Link 
-              href="#capabilities" 
-              className="text-primary-500 hover:text-primary-700"
-              scroll={false}
-              aria-label="Link to Capabilities section"
-            >
-              #
-            </Link>
-          </Row>
-        </div>
-        
-        {/* Capability Cards by Type */}
-        {Object.entries(typeLabels).map(([type, label]) => (
-          <Col key={type} className="mb-8">
-            <h4 className="text-md font-medium text-ink-700 mb-3">{label}</h4>
-            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
-              {capabilityCardsByType[type]?.map((card, idx) => (
+      {/* Card Categories */}
+      {Object.entries(typeLabels).map(([type, label]) => (
+        <Col key={type} className="mb-10" id={type}>
+          <div className="mb-4">
+            <Row className="items-center justify-between">
+              <div>
+                <h3 className="text-lg font-semibold text-primary-700">{label}</h3>
+                <p className="text-ink-500 text-sm">
+                  {type === 'monthly' ? 'Current rankings of AI models' : 
+                   type === 'benchmark' ? 'EOY LLM Performance' :
+                   type === 'prize' ? 'Major AI Advancements' :
+                   type === 'misuse' ? 'AI Misuse Odds' :
+                   'How does AI compare to human performance?'}
+                </p>
+              </div>
+              <Link 
+                href={`#${type}`} 
+                className="text-primary-500 hover:text-primary-700"
+                scroll={false}
+                aria-label={`Link to ${label} section`}
+              >
+                #
+              </Link>
+            </Row>
+          </div>
+          
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
+            {capabilityCardsByType[type]?.map((card, idx) => {
+              // Add special sizing for "monthly" type cards
+              let cardClassName = "";
+              
+              // For "monthly" cards - make LMSYS card 2/3 width and AiderBench 1/3 width
+              if (type === "monthly" && idx === 0) {
+                cardClassName = "md:col-span-2"; // LMSYS takes 2/3 width on desktop
+              } else if (type === "monthly" && idx === 1) {
+                cardClassName = ""; // AiderBench takes 1/3 width (default)
+              }
+              
+              return (
                 <CapabilityCard 
                   key={idx}
                   title={card.title}
-                  description={card.description}
                   marketId={card.marketId}
                   type={card.type}
                   displayType={card.displayType}
                   contracts={contracts}
+                  className={cardClassName}
                 />
-              ))}
-            </div>
-          </Col>
-        ))}
-      </Col>
+              );
+            })}
+          </div>
+        </Col>
+      ))}
       
       {/* Categories of AI Markets */}
       {AI_CATEGORIES.map((category) => {
@@ -375,7 +486,6 @@ export function AIForecast({ whenAgi, contracts = [], hideTitle }: AIForecastPro
               <Row className="items-center justify-between">
                 <div>
                   <h3 id={category.id} className="text-lg font-semibold text-primary-700">{category.title}</h3>
-                  <p className="text-ink-500 text-sm">{category.description}</p>
                 </div>
                 <Link 
                   href={`#${category.id}`} 
@@ -408,7 +518,7 @@ export function AIForecast({ whenAgi, contracts = [], hideTitle }: AIForecastPro
       {/* AGI Clock Card */}
       {liveWhenAgi && (
         <ClickFrame
-          className="fade-in bg-canvas-0 group relative cursor-pointer rounded-lg p-4 shadow-sm"
+          className="fade-in bg-canvas-0 group relative cursor-pointer rounded-lg p-4 border border-ink-200 shadow-sm"
           onClick={() => window.location.href = contractPath(liveWhenAgi)}
         >
           <Row className="justify-between">
