@@ -36,7 +36,7 @@ export const maxMinBin = <P extends HistoryPoint>(
   points: P[],
   bins: number
 ) => {
-  if (points.length < 2 || bins <= 0) return points
+  if (points.length < bins || bins <= 0) return points
 
   const min = points[0].x
   const max = points[points.length - 1].x
