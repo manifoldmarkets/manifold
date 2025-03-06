@@ -187,20 +187,16 @@ async function createMarketMovementNotifications(
   const allInterestedUsers = (
     await pg.map(
       `
-        SELECT DISTINCT on (u.id, coalesce(cf.contract_id, ucm.contract_id, c.id))
-        pu.data, u.name, coalesce(cf.contract_id, ucm.contract_id, c.id) as contract_id
+        SELECT DISTINCT on (u.id, cf.contract_id)
+        pu.data, u.name, cf.contract_id as contract_id
         from private_users pu
          join users u on pu.id = u.id
-         LEFT JOIN contract_follows cf ON cf.follow_id = u.id AND cf.contract_id = ANY($1)
-         LEFT JOIN user_contract_metrics ucm ON ucm.user_id = u.id AND ucm.contract_id = ANY($1)
-         left join contracts c on c.creator_id = u.id and c.id = ANY($1)
+         JOIN contract_follows cf ON cf.follow_id = u.id AND cf.contract_id = ANY($1)
         where (pu.data->'notificationPreferences'->>'market_movements')::jsonb ?| array['email', 'browser', 'mobile']
         and NOT ((pu.data->'notificationPreferences'->>'opt_out_all')::jsonb @> '["email"]'
               AND (pu.data->'notificationPreferences'->>'opt_out_all')::jsonb @> '["browser"]'
               AND (pu.data->'notificationPreferences'->>'opt_out_all')::jsonb @> '["mobile"]')
-        and pu.data->>'email' is not null
-        and (cf.contract_id IS NOT NULL OR (ucm.contract_id is not null and ucm.has_shares)
-        or c.creator_id = u.id);
+        and pu.data->>'email' is not null;
       `,
       [contractIds],
       (r) =>
