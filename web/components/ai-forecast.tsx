@@ -27,7 +27,7 @@ export type AICapabilityCard = {
 export const AI_CAPABILITY_CARDS: AICapabilityCard[] = [
   // Monthly markets
   {
-    title: 'Top LMSYS Model',
+    title: 'LMSYS Model',
     description: 'Highest ranked model on lmsys',
     marketId: 'LsZPyLPI82',
     type: 'monthly',
@@ -291,7 +291,7 @@ function CapabilityCard({
             <div className="flex items-center justify-between px-1">
               {/* Left Company */}
               <div className="text-center w-[38%]">
-                <div className="text-xl font-bold text-ink-900 truncate">
+                <div className="text-6xl font-bold text-ink-900 truncate">
                   {topCompanies[0].text}
                 </div>
                 <div className="text-base text-ink-600 mt-1 font-medium">
@@ -299,14 +299,14 @@ function CapabilityCard({
                 </div>
               </div>
               
-              {/* VS Badge with more padding on both sides */}
+              {/* VS Badge */}
               <div className="bg-primary-600 text-white text-sm font-bold rounded-full px-3 py-1.5 shadow-sm mx-4">
                 VS
               </div>
               
               {/* Right Company */}
               <div className="text-center w-[38%]">
-                <div className="text-xl font-bold text-ink-900 truncate">
+                <div className="text-2xl font-bold text-ink-900 truncate">
                   {topCompanies[1].text}
                 </div>
                 <div className="text-base text-ink-600 mt-1 font-medium">
@@ -389,7 +389,7 @@ export function AIForecast({ whenAgi, contracts = [], hideTitle }: AIForecastPro
   
   // Type labels for UI
   const typeLabels = {
-    'monthly': 'March Rankings',
+    'monthly': 'Best Model in March',
     'releases': 'Model Release Dates',
     'benchmark': 'Benchmarks',
     'prize': 'Prizes',
@@ -408,28 +408,16 @@ export function AIForecast({ whenAgi, contracts = [], hideTitle }: AIForecastPro
         </div>
       </Col>
       
-      {/* Trending Markets Section */}
-      <Row className="items-center gap-1 font-semibold sm:text-lg">
-        <div className="relative">
-          <div className="h-4 w-4 animate-pulse rounded-full bg-indigo-500/40" />
-          <div className="absolute left-1 top-1 h-2 w-2 rounded-full bg-indigo-500" />
-        </div>
-        <span>AI Prediction Markets</span>
-      </Row>
-      
-      <p className="text-ink-500 -mt-2">
-        Current odds about the future of artificial intelligence
-      </p>
-      
       {/* Card Categories */}
       {Object.entries(typeLabels).map(([type, label]) => (
         <Col key={type} className="mb-10" id={type}>
           <div className="mb-4">
             <Row className="items-center justify-between">
               <div>
-                <h3 className="text-lg font-semibold text-primary-700">{label}</h3>
+                <h3 className="items-center gap-1 font-semibold sm:text-lg">{label}</h3>
                 <p className="text-ink-500 text-sm">
-                  {type === 'monthly' ? 'Current rankings of AI models' : 
+                  {type === 'monthly'? '': 
+                   type === 'releases' ? 'Predicted Model Release' :
                    type === 'benchmark' ? 'EOY LLM Performance' :
                    type === 'prize' ? 'Major AI Advancements' :
                    type === 'misuse' ? 'AI Misuse Odds' :
