@@ -103,7 +103,7 @@ export const AI_CAPABILITY_CARDS: AICapabilityCard[] = [
   {
     title: 'AI Blackmail',
     description: 'AI Blackmails someone for >$1000',
-    marketId: 'placeholder-4', // Replace with actual ID
+    marketId: 's82955uAnR',
     type: 'misuse',
   },
   {
@@ -170,15 +170,13 @@ export interface AIForecastProps {
 
 // Capability Card Component for the static cards with market data
 function CapabilityCard({ 
-  title, 
-  // description, 
+  title,
   marketId, 
   type, 
   displayType,
   contracts 
 }: { 
   title: string
-  // description: string
   marketId: string
   type: string
   displayType?: 'answer-string' | undefined
@@ -232,20 +230,6 @@ function CapabilityCard({
   
   if (displayType === 'answer-string' && liveContract && liveContract.outcomeType === 'MULTIPLE_CHOICE') {
     topCompanies = getTopTwoCompanies()
-  } else if (displayType === 'answer-string' && liveContract && liveContract.outcomeType === 'MULTIPLE_CHOICE') {
-    // Find the answer with the highest probability
-    const answers = liveContract.answers || []
-    if (answers.length > 0) {
-      let highestProbAnswer = answers[0]
-      
-      for (const answer of answers) {
-        if ((answer.prob || 0) > (highestProbAnswer.prob || 0)) {
-          highestProbAnswer = answer
-        }
-      }
-      
-      displayValue = highestProbAnswer.text || '—'
-    }
   } else {
     // Default display behavior
     displayValue = probability !== null 
@@ -253,6 +237,11 @@ function CapabilityCard({
       : numericValue !== null 
         ? numericValue.toFixed(1) 
         : '—'
+    
+    // For binary contracts, directly use the contract probability
+    if (liveContract && liveContract.outcomeType === 'BINARY' && 'probability' in liveContract) {
+      displayValue = formatPercent(liveContract.prob)
+    }
   }
   
   // Determine the accent color based on type (works in both light/dark modes)
@@ -413,44 +402,46 @@ export function AIForecast({ whenAgi, contracts = [], hideTitle }: AIForecastPro
         Current odds about the future of artificial intelligence
       </p>
       
-      {/* Capabilities Section */}
-      <Col className="mb-10" id="capabilities">
-        <div className="mb-4">
-          <Row className="items-center justify-between">
-            <div>
-              <h3 className="text-lg font-semibold text-primary-700">Capabilities</h3>
-              <p className="text-ink-500 text-sm">How good will LLMs be?</p>
-            </div>
-            <Link 
-              href="#capabilities" 
-              className="text-primary-500 hover:text-primary-700"
-              scroll={false}
-              aria-label="Link to Capabilities section"
-            >
-              #
-            </Link>
-          </Row>
-        </div>
-        
-        {/* Capability Cards by Type */}
-        {Object.entries(typeLabels).map(([type, label]) => (
-          <Col key={type} className="mb-8">
-            <h4 className="text-md font-medium text-ink-700 mb-3">{label}</h4>
-            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
-              {capabilityCardsByType[type]?.map((card, idx) => (
-                <CapabilityCard 
-                  key={idx}
-                  title={card.title}
-                  marketId={card.marketId}
-                  type={card.type}
-                  displayType={card.displayType}
-                  contracts={contracts}
-                />
-              ))}
-            </div>
-          </Col>
-        ))}
-      </Col>
+      {/* Card Categories */}
+      {Object.entries(typeLabels).map(([type, label]) => (
+        <Col key={type} className="mb-10" id={type}>
+          <div className="mb-4">
+            <Row className="items-center justify-between">
+              <div>
+                <h3 className="text-lg font-semibold text-primary-700">{label}</h3>
+                <p className="text-ink-500 text-sm">
+                  {type === 'monthly' ? 'Current rankings of AI models' : 
+                   type === 'benchmark' ? 'EOY LLM Performance' :
+                   type === 'prize' ? 'Major AI Advancements' :
+                   type === 'misuse' ? 'AI Misuse Odds' :
+                   'How does AI compare to human performance?'}
+                </p>
+              </div>
+              <Link 
+                href={`#${type}`} 
+                className="text-primary-500 hover:text-primary-700"
+                scroll={false}
+                aria-label={`Link to ${label} section`}
+              >
+                #
+              </Link>
+            </Row>
+          </div>
+          
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
+            {capabilityCardsByType[type]?.map((card, idx) => (
+              <CapabilityCard 
+                key={idx}
+                title={card.title}
+                marketId={card.marketId}
+                type={card.type}
+                displayType={card.displayType}
+                contracts={contracts}
+              />
+            ))}
+          </div>
+        </Col>
+      ))}
       
       {/* Categories of AI Markets */}
       {AI_CATEGORIES.map((category) => {
