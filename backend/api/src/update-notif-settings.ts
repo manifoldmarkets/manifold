@@ -12,17 +12,15 @@ export const updateNotifSettings: APIHandler<'update-notif-settings'> = async (
     await updatePrivateUser(pg, auth.uid, {
       interestedInPushNotifications: !enabled,
     })
-  } else {
-    // deep update array at data.notificationPreferences[type]
-    await pg.none(
-      `update private_users
+  }
+  await pg.none(
+    `update private_users
       set data = jsonb_set(data, '{notificationPreferences, $1:raw}',
         coalesce(data->'notificationPreferences'->$1, '[]'::jsonb)
         ${enabled ? `|| '[$2:name]'::jsonb` : `- $2`}
       )
       where id = $3`,
-      [type, medium, auth.uid]
-    )
-    broadcastUpdatedPrivateUser(auth.uid)
-  }
+    [type, medium, auth.uid]
+  )
+  broadcastUpdatedPrivateUser(auth.uid)
 }

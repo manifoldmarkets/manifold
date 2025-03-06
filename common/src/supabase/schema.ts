@@ -460,6 +460,67 @@ export type Database = {
         }
         Relationships: []
       }
+      contract_movement_notifications: {
+        Row: {
+          answer_id: string | null
+          contract_id: string
+          created_time: string
+          destination: string
+          id: number
+          user_id: string
+          val_end: number
+          val_end_time: string
+          val_start: number
+          val_start_time: string
+        }
+        Insert: {
+          answer_id?: string | null
+          contract_id: string
+          created_time?: string
+          destination: string
+          id?: never
+          user_id: string
+          val_end: number
+          val_end_time?: string
+          val_start: number
+          val_start_time?: string
+        }
+        Update: {
+          answer_id?: string | null
+          contract_id?: string
+          created_time?: string
+          destination?: string
+          id?: never
+          user_id?: string
+          val_end?: number
+          val_end_time?: string
+          val_start?: number
+          val_start_time?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'fk_contract_id'
+            columns: ['contract_id']
+            isOneToOne: false
+            referencedRelation: 'contracts'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'fk_user_id'
+            columns: ['user_id']
+            isOneToOne: false
+            referencedRelation: 'user_referrals_profit'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'fk_user_id'
+            columns: ['user_id']
+            isOneToOne: false
+            referencedRelation: 'users'
+            referencedColumns: ['id']
+          }
+        ]
+      }
       contracts: {
         Row: {
           close_time: string | null

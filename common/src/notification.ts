@@ -342,6 +342,11 @@ export const NOTIFICATION_DESCRIPTIONS: notification_descriptions = {
     simple: 'Payment updates',
     detailed: 'Updates on your payment statuses',
   },
+  market_movements: {
+    simple: 'Market movements',
+    detailed:
+      'When the probability of a market that you follow changes by a large amount',
+  },
 }
 
 export type BettingStreakData = {

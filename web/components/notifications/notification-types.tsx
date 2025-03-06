@@ -66,6 +66,7 @@ import {
   PrimaryNotificationLink,
   QuestionOrGroupLink,
 } from './notification-helpers'
+import { FaArrowTrendUp, FaArrowTrendDown } from 'react-icons/fa6'
 
 export function NotificationItem(props: {
   notification: Notification
@@ -423,6 +424,15 @@ export function NotificationItem(props: {
   } else if (reason === 'extra_purchased_mana') {
     return (
       <ExtraPurchasedManaNotification
+        notification={notification}
+        isChildOfGroup={isChildOfGroup}
+        highlighted={highlighted}
+        setHighlighted={setHighlighted}
+      />
+    )
+  } else if (reason === 'market_movements') {
+    return (
+      <MarketMovementNotification
         notification={notification}
         isChildOfGroup={isChildOfGroup}
         highlighted={highlighted}
@@ -1964,6 +1974,83 @@ export function PaymentSuccessNotification(props: {
         Your {paymentMethodType} payment for {formatMoneyUSD(amount)} {currency}{' '}
         was approved!
       </span>
+    </NotificationFrame>
+  )
+}
+
+function MarketMovementNotification(props: {
+  notification: Notification
+  highlighted: boolean
+  setHighlighted: (highlighted: boolean) => void
+  isChildOfGroup?: boolean
+}) {
+  const { notification, isChildOfGroup, highlighted, setHighlighted } = props
+  const { sourceContractTitle, data } = notification
+
+  const startProb = data?.val_start ?? 0
+  const endProb = data?.val_end ?? 0
+  const answerText = data?.answerText
+
+  // Calculate the difference and determine if it's an increase or decrease
+  const probDiff = endProb - startProb
+  const isIncrease = probDiff > 0
+
+  // Format the probabilities as percentages
+  const startProbText = `${Math.round(startProb * 100)}%`
+  const endProbText = `${Math.round(endProb * 100)}%`
+
+  // Colors and direction text based on movement
+  // const changeColor = isIncrease ? 'text-teal-600' : 'text-scarlet-600'
+  const newProbClass = 'text-ink-900 font-semibold'
+
+  // Font Awesome trend icons based on direction
+  const TrendIcon = isIncrease ? FaArrowTrendUp : FaArrowTrendDown
+  const iconColor = isIncrease ? 'text-teal-500' : 'text-scarlet-500'
+
+  // Content to display for different market types
+  const content = (
+    <div className="flex items-center gap-2">
+      <div className="flex-grow">
+        {answerText ? (
+          <>
+            <PrimaryNotificationLink text={sourceContractTitle} />
+            <br />
+            <span className="font-semibold">{answerText}</span> moved{' '}
+            <span className={newProbClass}>
+              {startProbText} → <span>{endProbText}</span>
+            </span>{' '}
+          </>
+        ) : (
+          <>
+            <PrimaryNotificationLink
+              text={sourceContractTitle}
+              truncatedLength="lg"
+            />
+            <br />
+            Probability moved{' '}
+            <span className={newProbClass}>
+              {startProbText} →<span>{endProbText}</span>
+            </span>
+          </>
+        )}
+      </div>
+    </div>
+  )
+
+  return (
+    <NotificationFrame
+      notification={notification}
+      isChildOfGroup={isChildOfGroup}
+      highlighted={highlighted}
+      setHighlighted={setHighlighted}
+      icon={
+        <div className="flex h-full w-full items-center justify-center">
+          <TrendIcon className={`${iconColor} h-6 w-6`} />
+        </div>
+      }
+      link={getSourceUrl(notification)}
+    >
+      {content}
     </NotificationFrame>
   )
 }
