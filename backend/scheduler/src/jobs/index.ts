@@ -36,7 +36,7 @@ import {
 } from './reset-quests-stats'
 import { updateUserPortfolioHistoriesCore } from 'shared/update-user-portfolio-histories-core'
 import { isProd } from 'shared/utils'
-import { sendContractMovementNotifications } from 'shared/send-contract-movement-notifications'
+import { sendMarketMovementNotifications } from 'shared/send-contract-movement-notifications'
 export function createJobs() {
   return [
     // Hourly jobs:
@@ -73,7 +73,7 @@ export function createJobs() {
     createJob(
       'send-contract-movement-notifications',
       '0 12 * * * *', // on the 12th minute of every hour
-      () => sendContractMovementNotifications(false)
+      () => sendMarketMovementNotifications(false)
     ),
     createJob(
       'calculate-conversion-scores',

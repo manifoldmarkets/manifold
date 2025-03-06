@@ -18,7 +18,7 @@ const nowPeriodHoursAgoStart = 2
 const TEST_USER_ID = 'AJwLWoo3xue32XIiAVrL5SyR1WB2'
 const TEST_CONTRACT_IDS = `'Ll8LclSZ8C', 'Z8CqLOzRAq', '6A9gSqIzld', 'D5o5fIGpQnjANdl2DxdU'`
 
-export async function sendContractMovementNotifications(debug = false) {
+export async function sendMarketMovementNotifications(debug = false) {
   const pg = createSupabaseDirectClient()
   const now = Date.now()
   const nowStart = now - nowPeriodHoursAgoStart * HOUR_MS
