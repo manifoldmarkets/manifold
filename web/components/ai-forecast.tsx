@@ -271,7 +271,7 @@ function CapabilityCard({
   if (displayType === 'answer-string') {
     return (
       <ClickFrame
-        className="group cursor-pointer rounded-lg p-4 border bg-canvas-0 transition-all hover:bg-canvas-50 min-h-[240px]"
+        className="group cursor-pointer rounded-lg p-4 border border-ink-200 bg-canvas-0 transition-all hover:bg-canvas-50 min-h-[240px]"
         onClick={() => liveContract && window.open(contractPath(liveContract), '_blank')}
       >
         <Col className="h-full space-y-2">
@@ -309,7 +309,7 @@ function CapabilityCard({
             </div>
             
             {/* Probability Bar */}
-            <div className="mt-4 h-2.5 w-full rounded-full bg-gray-200 overflow-hidden">
+            <div className="mt-4 h-2.5 w-full rounded-full bg-ink-200 overflow-hidden">
               {/* Calculate the width percentage based on probabilities */}
               <div 
                 className="h-full bg-primary-600" 
@@ -327,7 +327,7 @@ function CapabilityCard({
   // Standard card layout for other display types
   return (
     <ClickFrame
-      className="group cursor-pointer rounded-lg p-4 border bg-canvas-0 transition-all hover:bg-canvas-50 min-h-[240px]"
+      className="group cursor-pointer rounded-lg p-4 border border-ink-200 bg-canvas-0 transition-all hover:bg-canvas-50 min-h-[240px]"
       onClick={() => liveContract && window.open(contractPath(liveContract), '_blank')}
     >
       <Col className="justify-between h-full">
@@ -463,7 +463,6 @@ export function AIForecast({ whenAgi, contracts = [], hideTitle }: AIForecastPro
               <Row className="items-center justify-between">
                 <div>
                   <h3 id={category.id} className="text-lg font-semibold text-primary-700">{category.title}</h3>
-                  <p className="text-ink-500 text-sm">{category.description}</p>
                 </div>
                 <Link 
                   href={`#${category.id}`} 
@@ -496,7 +495,7 @@ export function AIForecast({ whenAgi, contracts = [], hideTitle }: AIForecastPro
       {/* AGI Clock Card */}
       {liveWhenAgi && (
         <ClickFrame
-          className="fade-in bg-canvas-0 group relative cursor-pointer rounded-lg p-4 shadow-sm"
+          className="fade-in bg-canvas-0 group relative cursor-pointer rounded-lg p-4 border border-ink-200 shadow-sm"
           onClick={() => window.location.href = contractPath(liveWhenAgi)}
         >
           <Row className="justify-between">
