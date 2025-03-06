@@ -2013,7 +2013,10 @@ function MarketMovementNotification(props: {
       <div className="flex-grow">
         {answerText ? (
           <>
-            <PrimaryNotificationLink text={sourceContractTitle} />
+            <PrimaryNotificationLink
+              truncatedLength="xl"
+              text={sourceContractTitle}
+            />
             <br />
             <span className="font-semibold">{answerText}</span> moved{' '}
             <span className={newProbClass}>
@@ -2024,7 +2027,7 @@ function MarketMovementNotification(props: {
           <>
             <PrimaryNotificationLink
               text={sourceContractTitle}
-              truncatedLength="lg"
+              truncatedLength="xl"
             />
             <br />
             Probability moved{' '}
