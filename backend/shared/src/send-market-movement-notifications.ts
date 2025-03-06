@@ -264,6 +264,7 @@ async function createMarketMovementNotifications(
   }> = []
 
   for (const { contract, answer, before, after } of probChanges) {
+    const { mechanism } = contract
     // Get users who are watching this market or have shares in it
     const usersInterestedInContract = allInterestedUsers
       .filter((u) => u.contractId === contract.id)
@@ -287,20 +288,23 @@ async function createMarketMovementNotifications(
 
       if (!sendToBrowser) continue
 
+      const sumsToOne =
+        mechanism === 'cpmm-multi-1' && contract.shouldAnswersSumToOne
       // Check if a similar notification has already been sent
       const existingNotifications = recentMovementNotifications.filter(
         (notification) =>
           notification.user_id === user.id &&
           notification.contract_id === contract.id &&
-          notification.answer_id == (answer?.id ?? null)
+          (sumsToOne ? true : notification.answer_id == (answer?.id ?? null))
       )
-
       // Skip if we have a similar notification already
       // We consider a notification similar if:
       // 1. It's for the same user, contract, and answer
       // 2. The probability movement is in the same direction (both increasing or both decreasing)
       // 3. The probability movement is of similar magnitude (within 0.1)
       const skipNotification = existingNotifications.some((notification) => {
+        // Only one notification per sumsToOne contract per day
+        if (sumsToOne) return true
         const existingDirection = notification.new_val > notification.prev_val
         const newDirection = after > before
         const similarDirection = existingDirection === newDirection
