@@ -55,25 +55,25 @@ export const AI_CAPABILITY_CARDS: AICapabilityCard[] = [
   
   // Benchmarks
   {
-    title: 'IMO',
+    title: 'IMO Gold',
     description: 'AI gets gold on IMO by EOY',
     marketId: 'placeholder-0', // Replace with actual ID
     type: 'benchmark',
   },
   {
-    title: 'Frontier Math',
+    title: 'Frontier Math Passed',
     description: '>80% on Frontier Math by EOY',
     marketId: 'LNdOg08SsU', // Replace with actual ID
     type: 'benchmark',
   },
   {
-    title: 'SWE Bench',
+    title: 'SWE Bench Top Score',
     description: 'Top SWE Bench score by EOY',
     marketId: 'placeholder-2', // Replace with actual ID
     type: 'benchmark',
   },
   {
-    title: 'Highest Humanity\'s last exam',
+    title: 'Highest Humanity\'s Last Exam Top Score',
     description:'Highest score on Humanity\'s last exam by EOY',
     marketId: 'placeholder-3', // Replace with actual ID
     type: 'benchmark',
@@ -81,19 +81,19 @@ export const AI_CAPABILITY_CARDS: AICapabilityCard[] = [
   
   // Prizes
   {
-    title: 'Millennium Prize',
+    title: 'Millennium Prize Claimed',
     description: 'AI Solve Millennium Problem by EOY',
     marketId: 'placeholder-2', // Replace with actual ID
     type: 'prize',
   },
   {
-    title: 'Arc AGI',
+    title: 'Arc AGI Claimed',
     description: 'Arc AGI prize by EOY',
     marketId: 'placeholder-3', // Replace with actual ID
     type: 'prize',
   },
   {
-    title: 'Turing Test (Long Bets)',
+    title: 'Turing Test (Long Bets) Passed',
     description: 'Will AI pass long bets Turing Test by EOY?',
     marketId: 'placeholder-3', // Replace with actual ID
     type: 'prize',
@@ -101,7 +101,7 @@ export const AI_CAPABILITY_CARDS: AICapabilityCard[] = [
   
   // AI misuse
   {
-    title: 'Blackmail',
+    title: 'AI Blackmail',
     description: 'AI Blackmails someone for >$1000',
     marketId: 'placeholder-4', // Replace with actual ID
     type: 'misuse',
