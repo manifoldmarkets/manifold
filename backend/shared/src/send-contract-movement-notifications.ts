@@ -166,8 +166,8 @@ async function createMarketMovementNotifications(
     before: number
     after: number
   }[],
-  now: number,
-  timeAgo: number,
+  currentPeriodStart: number,
+  previousPeriodStart: number,
   debug = false
 ) {
   if (probChanges.length === 0) return
@@ -300,12 +300,12 @@ async function createMarketMovementNotifications(
       // 2. The probability movement is in the same direction (both increasing or both decreasing)
       // 3. The probability movement is of similar magnitude (within 0.1)
       const skipNotification = existingNotifications.some((notification) => {
-        const existingDirection = notification.val_end > notification.val_start
+        const existingDirection = notification.new_val > notification.prev_val
         const newDirection = after > before
         const similarDirection = existingDirection === newDirection
 
         const existingMagnitude = Math.abs(
-          notification.val_end - notification.val_start
+          notification.new_val - notification.prev_val
         )
         const newMagnitude = Math.abs(after - before)
         const similarMagnitude =
@@ -329,10 +329,10 @@ async function createMarketMovementNotifications(
             contract_id: contract.id,
             answer_id: answer?.id ?? null,
             user_id: user.id,
-            val_start: before,
-            val_end: after,
-            val_start_time: new Date(timeAgo).toISOString(),
-            val_end_time: new Date(now).toISOString(),
+            new_val: after,
+            new_val_start_time: new Date(currentPeriodStart).toISOString(),
+            prev_val: before,
+            prev_val_start_time: new Date(previousPeriodStart).toISOString(),
             destination,
           }
           movementRecords.push(record)
@@ -348,8 +348,8 @@ async function createMarketMovementNotifications(
             privateUser: user,
             beforeProb: before,
             afterProb: after,
-            beforeTime: new Date(timeAgo),
-            afterTime: new Date(now),
+            beforeTime: new Date(previousPeriodStart),
+            afterTime: new Date(currentPeriodStart),
             answer,
           })
         }

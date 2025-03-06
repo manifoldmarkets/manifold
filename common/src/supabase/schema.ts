@@ -468,10 +468,10 @@ export type Database = {
           destination: string
           id: number
           user_id: string
-          val_end: number
-          val_end_time: string
-          val_start: number
-          val_start_time: string
+          new_val: number
+          new_val_start_time: string
+          prev_val: number
+          prev_val_start_time: string
         }
         Insert: {
           answer_id?: string | null
@@ -480,10 +480,10 @@ export type Database = {
           destination: string
           id?: never
           user_id: string
-          val_end: number
-          val_end_time?: string
-          val_start: number
-          val_start_time?: string
+          new_val: number
+          new_val_start_time?: string
+          prev_val: number
+          prev_val_start_time?: string
         }
         Update: {
           answer_id?: string | null
@@ -492,10 +492,10 @@ export type Database = {
           destination?: string
           id?: never
           user_id?: string
-          val_end?: number
-          val_end_time?: string
-          val_start?: number
-          val_start_time?: string
+          new_val?: number
+          new_val_start_time?: string
+          prev_val?: number
+          prev_val_start_time?: string
         }
         Relationships: [
           {

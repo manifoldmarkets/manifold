@@ -5,12 +5,11 @@ create table if not exists
     answer_id text,
     created_time timestamp with time zone default now() not null,
     user_id text not null,
-    val_start numeric not null,
-    val_end numeric not null,
-    val_start_time timestamp with time zone default now() not null,
-    val_end_time timestamp with time zone default now() not null,
+    prev_val numeric not null,
+    new_val numeric not null,
+    prev_val_start_time timestamp with time zone default now() not null,
+    new_val_start_time timestamp with time zone default now() not null,
     destination text not null, -- push, email, app
-    -- TODO: add the imporance score of the market?
     constraint fk_contract_id foreign key (contract_id) references contracts (id),
     constraint fk_user_id foreign key (user_id) references users (id)
   );
