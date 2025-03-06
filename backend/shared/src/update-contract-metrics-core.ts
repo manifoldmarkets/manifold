@@ -236,7 +236,7 @@ const getCurrentProbs = async (
   )
 }
 
-export const getBetProbsAt = async (
+const getBetProbsAt = async (
   pg: SupabaseDirectClient,
   when: number,
   contractIds: string[],
