@@ -17,7 +17,13 @@ const pastPeriodHoursAgoStart = 24
 const nowPeriodHoursAgoStart = 2
 const TEST_USER_ID = 'AJwLWoo3xue32XIiAVrL5SyR1WB2'
 const TEST_CONTRACT_IDS = `'Ll8LclSZ8C', 'Z8CqLOzRAq', '6A9gSqIzld', 'D5o5fIGpQnjANdl2DxdU'`
-
+type ProbChange = {
+  contract: Contract
+  answer?: Answer
+  avgBefore: number
+  avgAfter: number
+  currentProb: number
+}
 // Currently ignores indie MC contract answer probability movements
 export async function sendMarketMovementNotifications(debug = false) {
   const pg = createSupabaseDirectClient()
@@ -56,7 +62,7 @@ export async function sendMarketMovementNotifications(debug = false) {
   const pastEnd = now - HOUR_MS * nowPeriodHoursAgoStart
 
   // Get probabilities for both current and historical windows in parallel
-  const [currentTimeProbs, timeAgoProbs] = await Promise.all([
+  const [currentAvgProbs, pastAvgProbs] = await Promise.all([
     getAverageBetProbs(
       pg,
       nowStart,
@@ -75,26 +81,22 @@ export async function sendMarketMovementNotifications(debug = false) {
     ),
   ])
 
-  const probChanges: {
-    contract: Contract
-    answer?: Answer
-    before: number
-    after: number
-  }[] = []
+  const probChanges: ProbChange[] = []
 
   for (const contract of allContracts) {
     if (contract.mechanism === 'cpmm-1') {
       const { id, prob } = contract
-      const timeAgoProb = timeAgoProbs[id]
-      if (!timeAgoProb) continue
-      const currentProb = currentTimeProbs[id] ?? prob
-      const probChange = Math.abs(currentProb - timeAgoProb)
+      const pastAvgProb = pastAvgProbs[id]
+      if (!pastAvgProb) continue
+      const currentAvgProb = currentAvgProbs[id] ?? prob
+      const probChange = Math.abs(currentAvgProb - pastAvgProb)
 
       if (probChange >= probThreshold) {
         probChanges.push({
           contract,
-          before: timeAgoProb,
-          after: currentProb,
+          avgBefore: pastAvgProb,
+          avgAfter: currentAvgProb,
+          currentProb: prob,
         })
       }
     } else if (
@@ -104,22 +106,23 @@ export async function sendMarketMovementNotifications(debug = false) {
       const { answers: contractAnswers } = contract
       let maxChange = probThreshold
       let maxChangedAnswer = null
-      let before = 0
-      let after = 0
-
+      let avgBefore = 0
+      let avgAfter = 0
+      let currentProb = 0
       for (const answer of contractAnswers) {
         const { prob, resolutionTime } = answer
         if (resolutionTime) continue
         const key = contract.id + answer.id
-        const timeAgoProb = timeAgoProbs[key]
-        if (!timeAgoProb) continue
-        const currentProb = currentTimeProbs[key] ?? prob
-        const probChange = Math.abs(currentProb - timeAgoProb)
+        const pastAvgProb = pastAvgProbs[key]
+        if (!pastAvgProb) continue
+        const currentAvgProb = currentAvgProbs[key] ?? prob
+        const probChange = Math.abs(currentAvgProb - pastAvgProb)
         if (probChange >= maxChange) {
           maxChange = probChange
           maxChangedAnswer = answer
-          before = timeAgoProb
-          after = currentProb
+          avgBefore = pastAvgProb
+          avgAfter = currentAvgProb
+          currentProb = prob
         }
       }
 
@@ -127,8 +130,9 @@ export async function sendMarketMovementNotifications(debug = false) {
         probChanges.push({
           contract,
           answer: maxChangedAnswer,
-          before,
-          after,
+          avgBefore,
+          avgAfter,
+          currentProb,
         })
       }
     }
@@ -139,14 +143,14 @@ export async function sendMarketMovementNotifications(debug = false) {
     (pc) => pc.contract.importanceScore,
     'desc'
   )
-  console.log(`There are ${orderedProbChanges.length} prob changes`)
+  log(`There are ${orderedProbChanges.length} prob changes`)
   const topProbChanges = orderedProbChanges.slice(0, 100)
   for (const pc of topProbChanges) {
-    const { contract, answer, before, after } = pc
-    console.log(
-      `${contract.slug} ${answer?.text ?? ''} has moved ${before.toFixed(
+    const { contract, answer, avgBefore, avgAfter } = pc
+    log(
+      `${contract.slug} ${answer?.text ?? ''} has moved ${avgBefore.toFixed(
         2
-      )} -> ${after.toFixed(2)}`
+      )} -> ${avgAfter.toFixed(2)}`
     )
   }
 
@@ -171,12 +175,7 @@ type MovementRecord = Omit<
 
 async function createMarketMovementNotifications(
   pg: ReturnType<typeof createSupabaseDirectClient>,
-  probChanges: {
-    contract: Contract
-    answer?: Answer
-    before: number
-    after: number
-  }[],
+  probChanges: ProbChange[],
   currentPeriodStart: number,
   previousPeriodStart: number,
   debug = false
@@ -255,6 +254,7 @@ async function createMarketMovementNotifications(
     userId: r.user_id,
     probAfter: r.prob_after,
   }))
+  console.log(recentContractBets)
 
   // Collection of notification parameters for bulk processing
   const notificationParams: Array<{
@@ -267,7 +267,13 @@ async function createMarketMovementNotifications(
     answer?: Answer
   }> = []
 
-  for (const { contract, answer, before, after } of probChanges) {
+  for (const {
+    contract,
+    answer,
+    avgBefore,
+    avgAfter,
+    currentProb,
+  } of probChanges) {
     const { mechanism } = contract
     // Get users who are watching this market or have shares in it
     const usersInterestedInContract = allInterestedUsers
@@ -281,7 +287,8 @@ async function createMarketMovementNotifications(
             (rb) =>
               rb.contractId === contract.id &&
               rb.userId === u.id &&
-              Math.abs(rb.probAfter - after) < probThreshold
+              Math.abs(rb.probAfter - avgAfter) < probThreshold &&
+              Math.abs(rb.probAfter - currentProb) < probThreshold
           )
       )
 
@@ -313,13 +320,13 @@ async function createMarketMovementNotifications(
         // Only one notification per sumsToOne contract per day
         if (sumsToOne) return true
         const existingDirection = notification.new_val > notification.prev_val
-        const newDirection = after > before
+        const newDirection = avgAfter > avgBefore
         const similarDirection = existingDirection === newDirection
 
         const existingMagnitude = Math.abs(
           notification.new_val - notification.prev_val
         )
-        const newMagnitude = Math.abs(after - before)
+        const newMagnitude = Math.abs(avgAfter - avgBefore)
         const similarMagnitude =
           Math.abs(existingMagnitude - newMagnitude) < 0.1
 
@@ -338,9 +345,9 @@ async function createMarketMovementNotifications(
           contract_id: contract.id,
           answer_id: answer?.id ?? null,
           user_id: user.id,
-          new_val: after,
+          new_val: avgAfter,
           new_val_start_time: new Date(currentPeriodStart).toISOString(),
-          prev_val: before,
+          prev_val: avgBefore,
           prev_val_start_time: new Date(previousPeriodStart).toISOString(),
           destination,
         }
@@ -351,8 +358,8 @@ async function createMarketMovementNotifications(
         notificationParams.push({
           contract,
           privateUser: user,
-          beforeProb: before,
-          afterProb: after,
+          beforeProb: avgBefore,
+          afterProb: avgAfter,
           beforeTime: new Date(previousPeriodStart),
           afterTime: new Date(currentPeriodStart),
           answer,
@@ -538,7 +545,7 @@ const getAverageBetProbs = async (
       TEST_CONTRACT_IDS.includes(r.contract_id)
     )
     if (debugDurations.length > 0) {
-      console.log(
+      log(
         'Detailed time-weighted calculations:',
         JSON.stringify(debugDurations, null, 2)
       )
@@ -555,14 +562,14 @@ const getAverageBetProbs = async (
 
       const manualWeightedAvg =
         totalDuration > 0 ? weightedSum / totalDuration : null
-      console.log(
+      log(
         `Manual weighted average calculation: ${manualWeightedAvg?.toFixed(4)}`
       )
-      console.log(`Total duration: ${totalDuration} seconds`)
+      log(`Total duration: ${totalDuration} seconds`)
 
       // Debug specific contract IDs
       const contractIds = [...new Set(debugDurations.map((d) => d.contract_id))]
-      console.log(`Contract IDs in debug data: ${contractIds.join(', ')}`)
+      log(`Contract IDs in debug data: ${contractIds.join(', ')}`)
     }
   }
   const contractKeysToProbsMap: Record<string, number | null> = {}
@@ -706,7 +713,7 @@ const getAverageBetProbs = async (
       const contractKey = r.contract_id + (r.answer_id ?? '')
       const weightedAvg = r.prob !== null ? parseFloat(r.prob) : null
       if (debug && TEST_CONTRACT_IDS.includes(r.contract_id)) {
-        console.log(
+        log(
           `DEBUG: ${contractKey} weighted avg: ${weightedAvg}, fallback: ${r.fallback_prob}`
         )
       }
