@@ -1,3 +1,4 @@
+import React from 'react'
 import { BinaryContract, CPMMNumericContract, Contract, contractPath } from 'common/contract'
 import { Col } from 'web/components/layout/col'
 import { Row } from 'web/components/layout/row'
@@ -12,6 +13,8 @@ import { HorizontalContractsCarousel } from './horizontal-contracts-carousel'
 import Link from 'next/link'
 import { formatPercent } from 'common/util/format'
 import { getDisplayProbability } from 'common/calculate'
+import { SiOpenai, SiGooglegemini, SiAnthropic} from 'react-icons/si'
+import { RiTwitterXLine } from 'react-icons/ri'
 
 const ENDPOINT = 'ai'
 
@@ -291,9 +294,22 @@ function CapabilityCard({
             <div className="flex items-center justify-between px-1">
               {/* Left Company */}
               <div className="text-center w-[38%]">
-                <div className="text-6xl font-bold text-ink-900 truncate">
-                  {topCompanies[0].text}
-                </div>
+                {getCompanyLogo(topCompanies[0].text) ? (
+                  <div className="flex flex-col items-center">
+                    <div className="h-12 w-12 mb-2 flex items-center justify-center text-primary-600">
+                      {React.createElement(getCompanyLogo(topCompanies[0].text) as React.FC<{className?: string}>, { 
+                        className: "w-10 h-10" 
+                      })}
+                    </div>
+                    <div className="text-lg font-bold text-ink-900">
+                      {topCompanies[0].text}
+                    </div>
+                  </div>
+                ) : (
+                  <div className="text-xl font-bold text-ink-900 truncate">
+                    {topCompanies[0].text}
+                  </div>
+                )}
                 <div className="text-base text-ink-600 mt-1 font-medium">
                   {formatPercent(topCompanies[0].probability)}
                 </div>
@@ -306,9 +322,22 @@ function CapabilityCard({
               
               {/* Right Company */}
               <div className="text-center w-[38%]">
-                <div className="text-2xl font-bold text-ink-900 truncate">
-                  {topCompanies[1].text}
-                </div>
+                {getCompanyLogo(topCompanies[1].text) ? (
+                  <div className="flex flex-col items-center">
+                    <div className="h-10 w-10 mb-1 flex items-center justify-center text-primary-600">
+                      {React.createElement(getCompanyLogo(topCompanies[1].text) as React.FC<{className?: string}>, { 
+                        className: "w-8 h-8" 
+                      })}
+                    </div>
+                    <div className="text-base font-bold text-ink-900">
+                      {topCompanies[1].text}
+                    </div>
+                  </div>
+                ) : (
+                  <div className="text-lg font-bold text-ink-900 truncate">
+                    {topCompanies[1].text}
+                  </div>
+                )}
                 <div className="text-base text-ink-600 mt-1 font-medium">
                   {formatPercent(topCompanies[1].probability)}
                 </div>
@@ -316,11 +345,11 @@ function CapabilityCard({
             </div>
             
             {/* Probability Bar */}
-            <div className="mt-4 h-2.5 w-full rounded-full bg-ink-200 overflow-hidden">
+            <div className="mt-4 h-1.5 w-full rounded-full bg-ink-200 overflow-hidden">
               {/* Calculate the width percentage based on probabilities */}
               <div 
                 className="h-full bg-primary-600" 
-                style={{ 
+                style={{
                   width: `${(topCompanies[0].probability / (topCompanies[0].probability + topCompanies[1].probability)) * 100}%` 
                 }}
               />
@@ -583,6 +612,27 @@ export function AIForecast({ whenAgi, contracts = [], hideTitle }: AIForecastPro
       </Col>
     </Col>
   )
+}
+
+// Get company logo component based on company name
+function getCompanyLogo(companyName: string): React.ComponentType | null {
+  // Strip any trailing whitespace or periods that might be in the company name
+  const normalizedName = companyName.trim().replace(/\.$/, '');
+  
+  switch (normalizedName.toLowerCase()) {
+    case 'openai':
+      return SiOpenai;
+    case 'anthropic':
+      return SiAnthropic; // Using Anthropic icon
+    case 'google deepmind':
+    case 'googledeepmind':
+    case 'deepmind':
+      return SiGooglegemini; // Using Google Gemini icon
+    case 'xai':
+      return RiTwitterXLine; // Using a generic AI icon for xAI
+    default:
+      return null; // No specific icon for other companies
+  }
 }
 
 // Helper component for resource cards
