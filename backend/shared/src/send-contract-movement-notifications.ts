@@ -172,10 +172,8 @@ async function createMarketMovementNotifications(
 ) {
   if (probChanges.length === 0) return
 
-  // Store contract_movement_notifications records for bulk insert
   const movementRecords: MovementRecord[] = []
   const contractIds = probChanges.map((pc) => pc.contract.id)
-  // TODO: fix this query, only checks for email notification preferences
   const allInterestedUsers = (
     await pg.map(
       `
@@ -318,11 +316,9 @@ async function createMarketMovementNotifications(
         continue
       }
 
-      // Create notifications directly while also creating the records for tracking
       try {
-        // Create the records to track which notifications have been sent
         const destinations = []
-        if (sendToBrowser) destinations.push('app')
+        if (sendToBrowser) destinations.push('browser')
 
         for (const destination of destinations) {
           const record: MovementRecord = {
