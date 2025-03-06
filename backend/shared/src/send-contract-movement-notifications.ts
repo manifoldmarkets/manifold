@@ -323,41 +323,33 @@ async function createMarketMovementNotifications(
         continue
       }
 
-      try {
-        const destinations = []
-        if (sendToBrowser) destinations.push('browser')
+      const destinations = []
+      if (sendToBrowser) destinations.push('browser')
 
-        for (const destination of destinations) {
-          const record: MovementRecord = {
-            contract_id: contract.id,
-            answer_id: answer?.id ?? null,
-            user_id: user.id,
-            new_val: after,
-            new_val_start_time: new Date(currentPeriodStart).toISOString(),
-            prev_val: before,
-            prev_val_start_time: new Date(previousPeriodStart).toISOString(),
-            destination,
-          }
-          movementRecords.push(record)
+      for (const destination of destinations) {
+        const record: MovementRecord = {
+          contract_id: contract.id,
+          answer_id: answer?.id ?? null,
+          user_id: user.id,
+          new_val: after,
+          new_val_start_time: new Date(currentPeriodStart).toISOString(),
+          prev_val: before,
+          prev_val_start_time: new Date(previousPeriodStart).toISOString(),
+          destination,
         }
-        log(
-          `Created ${destinations.length} movement records for contract ${contract.slug} and user ${user.id}`
-        )
+        movementRecords.push(record)
+      }
 
-        // If browser notifications are enabled, collect the notification parameters for bulk processing
-        if (sendToBrowser) {
-          notificationParams.push({
-            contract,
-            privateUser: user,
-            beforeProb: before,
-            afterProb: after,
-            beforeTime: new Date(previousPeriodStart),
-            afterTime: new Date(currentPeriodStart),
-            answer,
-          })
-        }
-      } catch (e) {
-        log.error(`Error creating notification for user ${user.id}: ${e}`)
+      if (sendToBrowser) {
+        notificationParams.push({
+          contract,
+          privateUser: user,
+          beforeProb: before,
+          afterProb: after,
+          beforeTime: new Date(previousPeriodStart),
+          afterTime: new Date(currentPeriodStart),
+          answer,
+        })
       }
     }
   }
