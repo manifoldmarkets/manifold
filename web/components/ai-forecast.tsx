@@ -15,13 +15,27 @@ import { getDisplayProbability } from 'common/calculate'
 
 const ENDPOINT = 'ai'
 
-export const AI_CAPABILITY_CARDS = [
+// Define type for capability cards
+export type AICapabilityCard = {
+  title: string
+  description: string
+  marketId: string
+  type: string
+  /** 
+   * Controls how the card displays data:
+   * - 'answer-string' shows the name of the highest probability answer instead of the probability
+   */
+  displayType?: 'answer-string'
+}
+
+export const AI_CAPABILITY_CARDS: AICapabilityCard[] = [
   // Monthly markets
   {
     title: 'lmsys',
     description: 'Highest ranked model on lmsys',
     marketId: 'LsZPyLPI82', // Replace with actual ID
     type: 'monthly',
+    displayType: 'answer-string',
   },
   {
     title: 'AiderBench',
@@ -157,12 +171,14 @@ function CapabilityCard({
   description, 
   marketId, 
   type, 
+  displayType,
   contracts 
 }: { 
   title: string
   description: string
   marketId: string
   type: string
+  displayType?: 'answer-string' | undefined
   contracts: Contract[]
 }) {
   // Find the actual contract by ID
@@ -180,11 +196,31 @@ function CapabilityCard({
     : null
   
   // Determine the value to display
-  const displayValue = probability !== null 
-    ? formatPercent(probability) 
-    : numericValue !== null 
-      ? numericValue.toFixed(1) 
-      : '—'
+  let displayValue = '—'
+  
+  // For "answer-string" display type, show the highest-ranked company
+  if (displayType === 'answer-string' && liveContract && liveContract.outcomeType === 'MULTIPLE_CHOICE') {
+    // Find the answer with the highest probability
+    const answers = liveContract.answers || []
+    if (answers.length > 0) {
+      let highestProbAnswer = answers[0]
+      
+      for (const answer of answers) {
+        if ((answer.prob || 0) > (highestProbAnswer.prob || 0)) {
+          highestProbAnswer = answer
+        }
+      }
+      
+      displayValue = highestProbAnswer.text || '—'
+    }
+  } else {
+    // Default display behavior
+    displayValue = probability !== null 
+      ? formatPercent(probability) 
+      : numericValue !== null 
+        ? numericValue.toFixed(1) 
+        : '—'
+  }
   
   // Determine the accent color based on type (works in both light/dark modes)
   const getAccentColor = () => {
@@ -201,7 +237,7 @@ function CapabilityCard({
   // Use site's standard border/bg classes for light/dark mode compatibility
   return (
     <ClickFrame
-      className="group cursor-pointer rounded-lg p-4 border border-ink-200 bg-canvas-0 transition-all hover:bg-canvas-50"
+      className="group cursor-pointer rounded-lg p-4 border bg-canvas-0 transition-all hover:bg-canvas-50"
       onClick={() => liveContract && window.open(contractPath(liveContract), '_blank')}
     >
       <Col className="justify-between h-full">
@@ -285,8 +321,7 @@ export function AIForecast({ whenAgi, contracts = [], hideTitle }: AIForecastPro
       </Row>
       
       <p className="text-ink-500 -mt-2">
-        Track the future of AI through prediction markets - from major milestones to capabilities,
-        economic impact, and safety concerns
+        Current odds about the future of artificial intelligence
       </p>
       
       {/* Capabilities Section */}
@@ -295,7 +330,7 @@ export function AIForecast({ whenAgi, contracts = [], hideTitle }: AIForecastPro
           <Row className="items-center justify-between">
             <div>
               <h3 className="text-lg font-semibold text-primary-700">Capabilities</h3>
-              <p className="text-ink-500 text-sm">Current forecasts on AI capabilities and potential</p>
+              <p className="text-ink-500 text-sm">How good will LLMs be?</p>
             </div>
             <Link 
               href="#capabilities" 
@@ -320,6 +355,7 @@ export function AIForecast({ whenAgi, contracts = [], hideTitle }: AIForecastPro
                   description={card.description}
                   marketId={card.marketId}
                   type={card.type}
+                  displayType={card.displayType}
                   contracts={contracts}
                 />
               ))}
