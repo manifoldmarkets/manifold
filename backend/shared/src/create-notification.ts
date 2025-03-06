@@ -2104,3 +2104,134 @@ export const createPaymentSuccessNotification = async (
   const pg = createSupabaseDirectClient()
   await insertNotificationToSupabase(notification, pg)
 }
+
+export const createMarketMovementNotification = async (
+  params: Array<{
+    contract: Contract
+    privateUser: PrivateUser
+    beforeProb: number
+    afterProb: number
+    beforeTime: Date
+    afterTime: Date
+    answer?: Answer
+  }>
+) => {
+  const pg = createSupabaseDirectClient()
+
+  // Arrays to collect bulk notifications
+  const bulkNotifications: Notification[] = []
+  // const bulkEmails: [PrivateUser, Notification, string, string][] = []
+  // const bulkPushNotifications: [PrivateUser, Notification, string, string][] =
+  //   []
+
+  // Process each notification parameter set
+  for (const {
+    contract,
+    privateUser,
+    beforeProb,
+    afterProb,
+    beforeTime,
+    afterTime,
+    answer,
+  } of params) {
+    // Skip if user blocked the creator
+    if (userIsBlocked(privateUser, contract.creatorId)) continue
+
+    // Check notification preferences
+    const { sendToBrowser } = getNotificationDestinationsForUser(
+      privateUser,
+      'market_movements'
+    )
+
+    if (!sendToBrowser) continue
+
+    // Create the notification data
+    const notificationData = {
+      val_start: beforeProb,
+      val_end: afterProb,
+      val_start_time: beforeTime.toISOString(),
+      val_end_time: afterTime.toISOString(),
+      answerText: answer?.text,
+    }
+
+    // Create the notification
+    const notification: Notification = {
+      id: crypto.randomUUID(),
+      userId: privateUser.id,
+      reason: 'market_movements',
+      createdTime: Date.now(),
+      isSeen: false,
+      sourceId: contract.id,
+      sourceType: 'contract',
+      sourceContractId: contract.id,
+      sourceUserName: contract.creatorName,
+      sourceUserUsername: contract.creatorUsername,
+      sourceUserAvatarUrl: contract.creatorAvatarUrl ?? '',
+      sourceText: answer?.text ?? contract.question,
+      sourceContractCreatorUsername: contract.creatorUsername,
+      sourceContractTitle: contract.question,
+      sourceContractSlug: contract.slug,
+      sourceSlug: contract.slug,
+      sourceTitle: contract.question,
+      data: notificationData,
+    }
+
+    if (sendToBrowser) {
+      bulkNotifications.push(notification)
+    }
+
+    // if (sendToEmail) {
+    //   const subject = `Market Update: ${contract.question}`
+    //   const probChange = Math.abs(afterProb - beforeProb) * 100
+    //   const direction = afterProb > beforeProb ? 'rose' : 'fell'
+    //   const body = answer?.text
+    //     ? `The answer "${answer.text}" ${direction} from ${Math.round(
+    //         beforeProb * 100
+    //       )}% to ${Math.round(afterProb * 100)}% (a ${Math.round(
+    //         probChange
+    //       )}% change)`
+    //     : `The probability ${direction} from ${Math.round(
+    //         beforeProb * 100
+    //       )}% to ${Math.round(afterProb * 100)}% (a ${Math.round(
+    //         probChange
+    //       )}% change)`
+
+    //   bulkEmails.push([privateUser, notification, subject, body])
+    // }
+
+    // if (sendToMobile) {
+    //   const title = `${contract.question.substring(0, 50)}${
+    //     contract.question.length > 50 ? '...' : ''
+    //   }`
+    //   const probChange = Math.abs(afterProb - beforeProb) * 100
+    //   const direction = afterProb > beforeProb ? 'rose' : 'fell'
+    //   const body = answer?.text
+    //     ? `The answer "${answer.text}" ${direction} to ${Math.round(
+    //         afterProb * 100
+    //       )}% (${Math.round(probChange)}% change)`
+    //     : `The probability ${direction} to ${Math.round(
+    //         afterProb * 100
+    //       )}% (${Math.round(probChange)}% change)`
+
+    //   bulkPushNotifications.push([privateUser, notification, title, body])
+    // }
+  }
+
+  // Send the notifications in bulk
+  if (bulkNotifications.length > 0) {
+    await bulkInsertNotifications(bulkNotifications, pg)
+  }
+
+  // Handle bulk emails (commented out in original code)
+  // if (bulkEmails.length > 0) {
+  //   // Would need to be updated to handle bulk emails
+  //   // await sendMarketMovementEmails(bulkEmails)
+  // }
+
+  // Handle bulk push notifications (commented out in original code)
+  // if (bulkPushNotifications.length > 0) {
+  //   await createPushNotifications(bulkPushNotifications)
+  // }
+
+  return bulkNotifications
+}

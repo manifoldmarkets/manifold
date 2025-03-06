@@ -194,7 +194,8 @@ function groupNotificationsForIcon(notifications: Notification[]) {
   const notificationGroupsByDayOrDayAndContract = groupBy(
     sortedNotifications,
     (notification) =>
-      notification.reason === 'contract_from_followed_user'
+      notification.reason === 'contract_from_followed_user' ||
+      notification.reason === 'market_movements'
         ? new Date(notification.createdTime).toDateString()
         : new Date(notification.createdTime).toDateString() +
           notification.sourceContractId +
@@ -222,6 +223,8 @@ function groupGeneralNotifications(
         ? 'love_ship'
         : n.data?.isPartner
         ? 'isPartner'
+        : n.reason === 'market_movements'
+        ? 'market_movements'
         : `${n.sourceTitle}${n.sourceContractId}`)
   )
   const mostRecentNotification = first(sortedNotifications)

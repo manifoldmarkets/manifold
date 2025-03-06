@@ -34,6 +34,7 @@ export type notification_preferences = {
   bounty_awarded: notification_destination_types[]
   bounty_added: notification_destination_types[]
   bounty_canceled: notification_destination_types[]
+  market_movements: notification_destination_types[]
 
   // Balance Changes
   loan_income: notification_destination_types[]
@@ -130,6 +131,7 @@ export const getDefaultNotificationPreferences = (isDev?: boolean) => {
     bounty_added: constructPref(true, false, false),
     bounty_canceled: constructPref(true, false, false),
     poll_close_on_watched_markets: constructPref(true, false, false),
+    market_movements: constructPref(true, true, true),
 
     // Balance Changes
     loan_income: constructPref(true, false, false),
