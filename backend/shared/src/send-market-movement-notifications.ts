@@ -254,7 +254,6 @@ async function createMarketMovementNotifications(
     userId: r.user_id,
     probAfter: r.prob_after,
   }))
-  console.log(recentContractBets)
 
   // Collection of notification parameters for bulk processing
   const notificationParams: Array<{
