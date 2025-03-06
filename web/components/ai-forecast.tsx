@@ -24,6 +24,7 @@ export type AICapabilityCard = {
   /** 
    * Controls how the card displays data:
    * - 'answer-string' shows the name of the highest probability answer instead of the probability
+   * - 'answer-string' shows the top two companies in a versus match format
    */
   displayType?: 'answer-string'
 }
@@ -42,12 +43,14 @@ export const AI_CAPABILITY_CARDS: AICapabilityCard[] = [
     description: 'Highest ranked model on AiderBench',
     marketId: 'OS06sL6OgU', // Replace with actual ID
     type: 'monthly',
+    displayType: 'answer-string',
   },
   {
     title: '??',
     description: 'Highest ranked model on ??',
     marketId: 'LNdOg08SsU', // Replace with actual ID
     type: 'monthly',
+    displayType: 'answer-string',
   },
   
   // Benchmarks
@@ -195,11 +198,41 @@ function CapabilityCard({
     ? getNumberExpectedValue(liveContract as CPMMNumericContract) 
     : null
   
+  // Get top two companies and their probabilities for "answer-string" display type
+  const getTopTwoCompanies = () => {
+    if (!liveContract || liveContract.outcomeType !== 'MULTIPLE_CHOICE') {
+      return [{ text: '—', probability: 0 }, { text: '—', probability: 0 }]
+    }
+    
+    const answers = liveContract.answers || []
+    if (answers.length < 2) {
+      return [{ text: '—', probability: 0 }, { text: '—', probability: 0 }]
+    }
+    
+    // Sort answers by probability in descending order
+    const sortedAnswers = [...answers].sort((a, b) => 
+      ((b.prob || 0) - (a.prob || 0))
+    )
+    
+    return [
+      { 
+        text: sortedAnswers[0].text || '—', 
+        probability: sortedAnswers[0].prob || 0 
+      },
+      { 
+        text: sortedAnswers[1].text || '—', 
+        probability: sortedAnswers[1].prob || 0 
+      }
+    ]
+  }
+  
   // Determine the value to display
   let displayValue = '—'
+  let topCompanies = [{ text: '—', probability: 0 }, { text: '—', probability: 0 }]
   
-  // For "answer-string" display type, show the highest-ranked company
   if (displayType === 'answer-string' && liveContract && liveContract.outcomeType === 'MULTIPLE_CHOICE') {
+    topCompanies = getTopTwoCompanies()
+  } else if (displayType === 'answer-string' && liveContract && liveContract.outcomeType === 'MULTIPLE_CHOICE') {
     // Find the answer with the highest probability
     const answers = liveContract.answers || []
     if (answers.length > 0) {
@@ -235,9 +268,67 @@ function CapabilityCard({
   }
   
   // Use site's standard border/bg classes for light/dark mode compatibility
+  if (displayType === 'answer-string') {
+    return (
+      <ClickFrame
+        className="group cursor-pointer rounded-lg p-4 border bg-canvas-0 transition-all hover:bg-canvas-50 min-h-[240px]"
+        onClick={() => liveContract && window.open(contractPath(liveContract), '_blank')}
+      >
+        <Col className="justify-between h-full">
+          <div>
+            <h3 className={`font-semibold ${getAccentColor()} text-lg mb-1`}>{title}</h3>
+            <p className="text-ink-600 text-sm mb-2 line-clamp-2">{description}</p>
+          </div>
+          
+          {/* VS Match Layout */}
+          <div className="mt-auto rounded-md p-4">
+            <div className="flex items-center justify-between">
+              {/* Left Company */}
+              <div className="text-center w-[40%]">
+                <div className="text-lg font-bold text-ink-900 truncate">
+                  {topCompanies[0].text}
+                </div>
+                <div className="text-xs text-ink-600 mt-1">
+                  {formatPercent(topCompanies[0].probability)}
+                </div>
+              </div>
+              
+              {/* VS Badge */}
+              <div className="bg-primary-600 text-white text-xs font-bold rounded-full px-2 py-1 shadow-sm">
+                VS
+              </div>
+              
+              {/* Right Company */}
+              <div className="text-center w-[40%]">
+                <div className="text-lg font-bold text-ink-900 truncate">
+                  {topCompanies[1].text}
+                </div>
+                <div className="text-xs text-ink-600 mt-1">
+                  {formatPercent(topCompanies[1].probability)}
+                </div>
+              </div>
+            </div>
+            
+            {/* Probability Bar */}
+            <div className="mt-3 h-2 w-full rounded-full bg-gray-200 overflow-hidden">
+              {/* Calculate the width percentage based on probabilities */}
+              <div 
+                className="h-full bg-primary-600" 
+                style={{ 
+                  width: `${(topCompanies[0].probability / (topCompanies[0].probability + topCompanies[1].probability)) * 100}%` 
+                }}
+              />
+            </div>
+          </div>
+        </Col>
+      </ClickFrame>
+    )
+  }
+  
+  // Standard card layout for other display types
   return (
     <ClickFrame
-      className="group cursor-pointer rounded-lg p-4 border bg-canvas-0 transition-all hover:bg-canvas-50"
+      className="group cursor-pointer rounded-lg p-4 border bg-canvas-0 transition-all hover:bg-canvas-50 min-h-[240px]"
       onClick={() => liveContract && window.open(contractPath(liveContract), '_blank')}
     >
       <Col className="justify-between h-full">
