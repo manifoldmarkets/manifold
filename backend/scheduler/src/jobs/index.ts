@@ -36,7 +36,7 @@ import {
 } from './reset-quests-stats'
 import { updateUserPortfolioHistoriesCore } from 'shared/update-user-portfolio-histories-core'
 import { isProd } from 'shared/utils'
-import { sendMarketMovementNotifications } from 'shared/send-contract-movement-notifications'
+import { sendMarketMovementNotifications } from 'shared/send-market-movement-notifications'
 export function createJobs() {
   return [
     // Hourly jobs:
