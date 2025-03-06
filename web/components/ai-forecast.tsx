@@ -32,7 +32,7 @@ export type AICapabilityCard = {
 export const AI_CAPABILITY_CARDS: AICapabilityCard[] = [
   // Monthly markets
   {
-    title: 'lmsys',
+    title: 'Top LMSYS Model',
     description: 'Highest ranked model on lmsys',
     marketId: 'LsZPyLPI82', // Replace with actual ID
     type: 'monthly',
@@ -171,14 +171,14 @@ export interface AIForecastProps {
 // Capability Card Component for the static cards with market data
 function CapabilityCard({ 
   title, 
-  description, 
+  // description, 
   marketId, 
   type, 
   displayType,
   contracts 
 }: { 
   title: string
-  description: string
+  // description: string
   marketId: string
   type: string
   displayType?: 'answer-string' | undefined
@@ -274,43 +274,42 @@ function CapabilityCard({
         className="group cursor-pointer rounded-lg p-4 border bg-canvas-0 transition-all hover:bg-canvas-50 min-h-[240px]"
         onClick={() => liveContract && window.open(contractPath(liveContract), '_blank')}
       >
-        <Col className="justify-between h-full">
+        <Col className="h-full space-y-2">
           <div>
             <h3 className={`font-semibold ${getAccentColor()} text-lg mb-1`}>{title}</h3>
-            <p className="text-ink-600 text-sm mb-2 line-clamp-2">{description}</p>
           </div>
           
           {/* VS Match Layout */}
-          <div className="mt-auto rounded-md p-4">
-            <div className="flex items-center justify-between">
+          <div className="rounded-md p-3 flex-1 flex flex-col justify-center">
+            <div className="flex items-center justify-between px-1">
               {/* Left Company */}
-              <div className="text-center w-[40%]">
-                <div className="text-lg font-bold text-ink-900 truncate">
+              <div className="text-center w-[38%]">
+                <div className="text-xl font-bold text-ink-900 truncate">
                   {topCompanies[0].text}
                 </div>
-                <div className="text-xs text-ink-600 mt-1">
+                <div className="text-base text-ink-600 mt-1 font-medium">
                   {formatPercent(topCompanies[0].probability)}
                 </div>
               </div>
               
-              {/* VS Badge */}
-              <div className="bg-primary-600 text-white text-xs font-bold rounded-full px-2 py-1 shadow-sm">
+              {/* VS Badge with more padding on both sides */}
+              <div className="bg-primary-600 text-white text-sm font-bold rounded-full px-3 py-1.5 shadow-sm mx-4">
                 VS
               </div>
               
               {/* Right Company */}
-              <div className="text-center w-[40%]">
-                <div className="text-lg font-bold text-ink-900 truncate">
+              <div className="text-center w-[38%]">
+                <div className="text-xl font-bold text-ink-900 truncate">
                   {topCompanies[1].text}
                 </div>
-                <div className="text-xs text-ink-600 mt-1">
+                <div className="text-base text-ink-600 mt-1 font-medium">
                   {formatPercent(topCompanies[1].probability)}
                 </div>
               </div>
             </div>
             
             {/* Probability Bar */}
-            <div className="mt-3 h-2 w-full rounded-full bg-gray-200 overflow-hidden">
+            <div className="mt-4 h-2.5 w-full rounded-full bg-gray-200 overflow-hidden">
               {/* Calculate the width percentage based on probabilities */}
               <div 
                 className="h-full bg-primary-600" 
@@ -334,7 +333,6 @@ function CapabilityCard({
       <Col className="justify-between h-full">
         <div>
           <h3 className={`font-semibold ${getAccentColor()} text-lg mb-1`}>{title}</h3>
-          <p className="text-ink-600 text-sm mb-4 line-clamp-3">{description}</p>
         </div>
         
         <div className="mt-auto">
@@ -384,7 +382,7 @@ export function AIForecast({ whenAgi, contracts = [], hideTitle }: AIForecastPro
   
   // Type labels for UI
   const typeLabels = {
-    'monthly': 'Monthly Markets',
+    'monthly': 'March Rankings',
     'benchmark': 'Benchmarks',
     'prize': 'Prizes',
     'misuse': 'AI Misuse',
@@ -443,7 +441,6 @@ export function AIForecast({ whenAgi, contracts = [], hideTitle }: AIForecastPro
                 <CapabilityCard 
                   key={idx}
                   title={card.title}
-                  description={card.description}
                   marketId={card.marketId}
                   type={card.type}
                   displayType={card.displayType}
