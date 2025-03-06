@@ -40,14 +40,33 @@ export const AI_CAPABILITY_CARDS: AICapabilityCard[] = [
     type: 'monthly',
     displayType: 'answer-string',
   },
-  {
-    title: '??',
-    description: 'Highest ranked model on ??',
-    marketId: 'placeholder-1', // Replace with actual ID
-    type: 'monthly',
-    displayType: 'answer-string',
-  },
   
+  // Releases
+  {
+    title: 'GPT-5',
+    description: 'GPT-4 model released by EOY',
+    marketId: 'placeholder-1', // Replace with actual ID
+    type: 'releases',
+  },
+  {
+    title: 'Claude 3.7 Opus',
+    description: '',
+    marketId: 'placeholder-2', // Replace with actual ID
+    type: 'releases',
+  },
+  {
+    title: 'Gemini 3',
+    description: '',
+    marketId: 'placeholder-3', // Replace with actual ID
+    type: 'releases',
+  },
+  {
+    title: 'Grok 4',
+    description: '',
+    marketId: 'placeholder-3', // Replace with actual ID
+    type: 'releases',
+  },
+
   // Benchmarks
   {
     title: 'IMO Gold',
@@ -169,13 +188,15 @@ function CapabilityCard({
   marketId, 
   type, 
   displayType,
-  contracts 
+  contracts,
+  className = ""
 }: { 
   title: string
   marketId: string
   type: string
   displayType?: 'answer-string' | undefined
   contracts: Contract[]
+  className?: string
 }) {
   // Find the actual contract by ID
   const contract = contracts.find(c => c.id === marketId)
@@ -257,7 +278,7 @@ function CapabilityCard({
   if (displayType === 'answer-string') {
     return (
       <ClickFrame
-        className="group cursor-pointer rounded-lg p-4 border border-ink-200 bg-canvas-0 transition-all hover:bg-canvas-50 min-h-[240px]"
+        className={`group cursor-pointer rounded-lg p-4 border border-ink-200 bg-canvas-0 transition-all hover:bg-canvas-50 min-h-[240px] ${className}`}
         onClick={() => liveContract && window.open(contractPath(liveContract), '_blank')}
       >
         <Col className="h-full space-y-2">
@@ -313,7 +334,7 @@ function CapabilityCard({
   // Standard card layout for other display types
   return (
     <ClickFrame
-      className="group cursor-pointer rounded-lg p-4 border border-ink-200 bg-canvas-0 transition-all hover:bg-canvas-50 min-h-[240px]"
+      className={`group cursor-pointer rounded-lg p-4 border border-ink-200 bg-canvas-0 transition-all hover:bg-canvas-50 min-h-[240px] ${className}`}
       onClick={() => liveContract && window.open(contractPath(liveContract), '_blank')}
     >
       <Col className="justify-between h-full">
@@ -369,6 +390,7 @@ export function AIForecast({ whenAgi, contracts = [], hideTitle }: AIForecastPro
   // Type labels for UI
   const typeLabels = {
     'monthly': 'March Rankings',
+    'releases': 'Model Release Dates',
     'benchmark': 'Benchmarks',
     'prize': 'Prizes',
     'misuse': 'AI Misuse',
@@ -426,16 +448,29 @@ export function AIForecast({ whenAgi, contracts = [], hideTitle }: AIForecastPro
           </div>
           
           <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
-            {capabilityCardsByType[type]?.map((card, idx) => (
-              <CapabilityCard 
-                key={idx}
-                title={card.title}
-                marketId={card.marketId}
-                type={card.type}
-                displayType={card.displayType}
-                contracts={contracts}
-              />
-            ))}
+            {capabilityCardsByType[type]?.map((card, idx) => {
+              // Add special sizing for "monthly" type cards
+              let cardClassName = "";
+              
+              // For "monthly" cards - make LMSYS card 2/3 width and AiderBench 1/3 width
+              if (type === "monthly" && idx === 0) {
+                cardClassName = "md:col-span-2"; // LMSYS takes 2/3 width on desktop
+              } else if (type === "monthly" && idx === 1) {
+                cardClassName = ""; // AiderBench takes 1/3 width (default)
+              }
+              
+              return (
+                <CapabilityCard 
+                  key={idx}
+                  title={card.title}
+                  marketId={card.marketId}
+                  type={card.type}
+                  displayType={card.displayType}
+                  contracts={contracts}
+                  className={cardClassName}
+                />
+              );
+            })}
           </div>
         </Col>
       ))}
