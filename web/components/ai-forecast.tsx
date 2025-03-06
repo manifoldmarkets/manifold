@@ -21,11 +21,6 @@ export type AICapabilityCard = {
   description: string
   marketId: string
   type: string
-  /** 
-   * Controls how the card displays data:
-   * - 'answer-string' shows the name of the highest probability answer instead of the probability
-   * - 'answer-string' shows the top two companies in a versus match format
-   */
   displayType?: 'answer-string'
 }
 
@@ -34,7 +29,7 @@ export const AI_CAPABILITY_CARDS: AICapabilityCard[] = [
   {
     title: 'Top LMSYS Model',
     description: 'Highest ranked model on lmsys',
-    marketId: 'LsZPyLPI82', // Replace with actual ID
+    marketId: 'LsZPyLPI82',
     type: 'monthly',
     displayType: 'answer-string',
   },
@@ -48,7 +43,7 @@ export const AI_CAPABILITY_CARDS: AICapabilityCard[] = [
   {
     title: '??',
     description: 'Highest ranked model on ??',
-    marketId: 'LNdOg08SsU', // Replace with actual ID
+    marketId: 'placeholder-1', // Replace with actual ID
     type: 'monthly',
     displayType: 'answer-string',
   },
@@ -187,7 +182,7 @@ function CapabilityCard({
   const liveContract = contract ? useLiveContract(contract) : null
   
   // Get the probability if it's a binary contract
-  const probability = liveContract && 'prob' in liveContract 
+  const probability = liveContract && liveContract.outcomeType === 'BINARY'
     ? getDisplayProbability(liveContract as BinaryContract) 
     : null
   
@@ -197,7 +192,7 @@ function CapabilityCard({
     : null
   
   // Get top two companies and their probabilities for "answer-string" display type
-  const getTopTwoCompanies = () => {
+  const getTopTwoOdds = () => {
     if (!liveContract || liveContract.outcomeType !== 'MULTIPLE_CHOICE') {
       return [{ text: '—', probability: 0 }, { text: '—', probability: 0 }]
     }
@@ -208,18 +203,20 @@ function CapabilityCard({
     }
     
     // Sort answers by probability in descending order
-    const sortedAnswers = [...answers].sort((a, b) => 
-      ((b.prob || 0) - (a.prob || 0))
-    )
+    const sortedAnswers = [...answers].sort((a, b) => {
+      const aProb = a.prob ?? 0
+      const bProb = b.prob ?? 0
+      return bProb - aProb
+    })
     
     return [
       { 
         text: sortedAnswers[0].text || '—', 
-        probability: sortedAnswers[0].prob || 0 
+        probability: sortedAnswers[0].prob ?? 0 
       },
       { 
         text: sortedAnswers[1].text || '—', 
-        probability: sortedAnswers[1].prob || 0 
+        probability: sortedAnswers[1].prob ?? 0 
       }
     ]
   }
@@ -229,7 +226,7 @@ function CapabilityCard({
   let topCompanies = [{ text: '—', probability: 0 }, { text: '—', probability: 0 }]
   
   if (displayType === 'answer-string' && liveContract && liveContract.outcomeType === 'MULTIPLE_CHOICE') {
-    topCompanies = getTopTwoCompanies()
+    topCompanies = getTopTwoOdds()
   } else {
     // Default display behavior
     displayValue = probability !== null 
@@ -238,9 +235,9 @@ function CapabilityCard({
         ? numericValue.toFixed(1) 
         : '—'
     
-    // For binary contracts, directly use the contract probability
-    if (liveContract && liveContract.outcomeType === 'BINARY' && 'probability' in liveContract) {
-      displayValue = formatPercent(liveContract.prob)
+    // For binary contracts, use the probability we calculated above
+    if (liveContract && liveContract.outcomeType === 'BINARY' && probability !== null) {
+      displayValue = formatPercent(probability)
     }
   }
   
