@@ -18,6 +18,7 @@ const nowPeriodHoursAgoStart = 2
 const TEST_USER_ID = 'AJwLWoo3xue32XIiAVrL5SyR1WB2'
 const TEST_CONTRACT_IDS = `'Ll8LclSZ8C', 'Z8CqLOzRAq', '6A9gSqIzld', 'D5o5fIGpQnjANdl2DxdU'`
 
+// Currently ignores indie MC contract answer probability movements
 export async function sendMarketMovementNotifications(debug = false) {
   const pg = createSupabaseDirectClient()
   const now = Date.now()
@@ -230,14 +231,16 @@ async function createMarketMovementNotifications(
       AND user_id = ANY($2)
       AND last_page_view_ts > now() - interval '${nowPeriodHoursAgoStart} hours';
     
-    SELECT distinct
+    SELECT distinct on (contract_id, user_id)
       contract_id,
-      user_id
+      user_id,
+      prob_after
     FROM contract_bets
     WHERE 
       contract_id = ANY($1) 
       AND user_id = ANY($2)
-      AND created_time > now() - interval '${nowPeriodHoursAgoStart} hours';
+      AND created_time > now() - interval '${pastPeriodHoursAgoStart} hours'
+      order by contract_id, user_id, created_time desc;
     `,
     [contractIds, userIds]
   )
@@ -250,6 +253,7 @@ async function createMarketMovementNotifications(
   const recentContractBets = results[2].map((r) => ({
     contractId: r.contract_id,
     userId: r.user_id,
+    probAfter: r.prob_after,
   }))
 
   // Collection of notification parameters for bulk processing
@@ -274,7 +278,10 @@ async function createMarketMovementNotifications(
             (rpv) => rpv.contractId === contract.id && rpv.userId === u.id
           ) &&
           !recentContractBets.find(
-            (rb) => rb.contractId === contract.id && rb.userId === u.id
+            (rb) =>
+              rb.contractId === contract.id &&
+              rb.userId === u.id &&
+              Math.abs(rb.probAfter - after) < probThreshold
           )
       )
 
