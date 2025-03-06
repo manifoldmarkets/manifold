@@ -40,6 +40,11 @@ export async function sendContractMovementNotifications(debug = false) {
     .filter((c) => c.mechanism === 'cpmm-multi-1' && c.shouldAnswersSumToOne)
     .map((c) => c.id)
   const answers = results[1].map(convertAnswer)
+  for (const contract of allContracts) {
+    if ('answers' in contract) {
+      contract.answers = answers.filter((a) => a.contractId === contract.id)
+    }
+  }
   log(`Loaded ${allContracts.length} contracts.`)
   log(`Loaded ${answers.length} answers.`)
   const contractIds = allContracts.map((c) => c.id)
@@ -68,7 +73,6 @@ export async function sendContractMovementNotifications(debug = false) {
 
   for (const contract of allContracts) {
     if (contract.mechanism === 'cpmm-1') {
-      // For binary contracts, just push as before
       const { id, prob } = contract
       const timeAgoProb = timeAgoProbs[id]
       if (!timeAgoProb) continue
@@ -85,11 +89,7 @@ export async function sendContractMovementNotifications(debug = false) {
       contract.mechanism === 'cpmm-multi-1' &&
       contract.shouldAnswersSumToOne
     ) {
-      // For multi-choice contracts, find the answer with the largest change
-      const contractAnswers = answers.filter(
-        (a) => a.contractId === contract.id
-      )
-
+      const { answers: contractAnswers } = contract
       let maxChange = probThreshold
       let maxChangedAnswer = null
       let before = 0
