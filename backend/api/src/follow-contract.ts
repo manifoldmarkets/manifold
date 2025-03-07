@@ -3,6 +3,7 @@ import {
   SupabaseDirectClient,
 } from 'shared/supabase/init'
 import { APIHandler } from './helpers/endpoint'
+import { broadcast } from 'shared/websockets/server'
 
 export const followContract: APIHandler<'follow-contract'> = async (
   { contractId, follow },
@@ -10,6 +11,10 @@ export const followContract: APIHandler<'follow-contract'> = async (
 ) => {
   const pg = createSupabaseDirectClient()
   await followContractInternal(pg, contractId, follow, auth.uid)
+  broadcast(`contract-follow/${contractId}`, {
+    follow,
+    followerId: auth.uid,
+  })
   return { success: true }
 }
 export const followContractInternal = async (

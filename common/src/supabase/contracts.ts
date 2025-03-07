@@ -152,14 +152,3 @@ export const convertContract = <T extends Contract>(c: {
     token: c.token,
     boosted: c.boosted ?? false,
   } as T)
-
-export const followContract = async (
-  db: SupabaseClient,
-  contractId: string,
-  userId: string
-) => {
-  return db.from('contract_follows').upsert({
-    contract_id: contractId,
-    follow_id: userId,
-  })
-}

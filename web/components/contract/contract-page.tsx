@@ -73,8 +73,9 @@ import { useRouter } from 'next/router'
 import { precacheAnswers } from 'web/hooks/use-answers'
 import { useIsPageVisible } from 'web/hooks/use-page-visible'
 import { api } from 'web/lib/api/api'
-import ContractSharePanel from './contract-share-panel'
 import { shouldHideGraph } from 'common/contract-params'
+import { CreatorSharePanel, NonCreatorSharePanel } from './creator-share-panel'
+import { FollowMarketButton } from '../buttons/follow-market-button'
 
 export function ContractPageContent(props: ContractParams) {
   const {
@@ -475,13 +476,11 @@ export function ContractPageContent(props: ContractParams) {
               userHasBet={!!myContractMetrics}
               hasReviewed={!!userHasReviewed}
             />
-            {!!user && isCreator && (
-              <ContractSharePanel
-                isClosed={isClosed}
-                isCreator={isCreator}
-                showResolver={showResolver}
-                contract={liveContract}
-              />
+            {!isResolved && !isClosed && isCreator && (
+              <>
+                {showResolver && <Spacer h={4} />}
+                <CreatorSharePanel contract={liveContract} />
+              </>
             )}
             <ContractDescription
               contractId={props.contract.id}
@@ -497,14 +496,15 @@ export function ContractPageContent(props: ContractParams) {
                 isSpiceMarket={isSpiceMarket}
               />
             </Row>
-            {!!user && !isCreator && (
-              <ContractSharePanel
-                isClosed={isClosed}
-                isCreator={isCreator}
-                showResolver={showResolver}
-                contract={liveContract}
-              />
-            )}
+            <Row className="flex-wrap">
+              {!isResolved && !isClosed && !isCreator && !!user ? (
+                <NonCreatorSharePanel contract={liveContract}>
+                  <FollowMarketButton contract={liveContract} user={user} />
+                </NonCreatorSharePanel>
+              ) : !isResolved && !isCreator ? (
+                <FollowMarketButton contract={liveContract} user={user} />
+              ) : null}
+            </Row>
 
             <Row className="my-2 flex-wrap items-center justify-between gap-y-2"></Row>
             {!user && <SidebarSignUpButton className="mb-4 flex md:hidden" />}
