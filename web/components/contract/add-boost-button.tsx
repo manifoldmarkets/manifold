@@ -9,11 +9,11 @@ import { api } from 'web/lib/api/api'
 import { AddFundsModal } from '../add-funds-modal'
 import toast from 'react-hot-toast'
 import { BsRocketTakeoff } from 'react-icons/bs'
-import { BOOST_COST_CASH, BOOST_COST_MANA } from 'common/economy'
+import { BOOST_COST_MANA } from 'common/economy'
 import dayjs from 'dayjs'
 import { Input } from '../widgets/input'
 import { HOUR_MS } from 'common/util/time'
-import { formatMoney, formatMoneyUSD } from 'common/util/format'
+import { formatMoney } from 'common/util/format'
 import { BoostAnalytics } from './boost-analytics'
 
 export function AddBoostButton(props: {
@@ -173,7 +173,7 @@ function BoostPurchaseModal(props: {
               className="flex-1"
               disabled={!!loading}
             >
-              Pay {formatMoneyUSD(BOOST_COST_CASH)}
+              Pay $100
             </Button>
           </Row>
           {notEnoughFunds && (

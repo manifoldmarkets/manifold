@@ -9,7 +9,7 @@ import {
   GlobeAltIcon,
   ChatIcon,
 } from '@heroicons/react/outline'
-import { PiTelevisionSimple } from 'react-icons/pi'
+// import { PiTelevisionSimple } from 'react-icons/pi'
 import TrophyIcon from 'web/lib/icons/trophy-icon.svg'
 import clsx from 'clsx'
 import { useState } from 'react'
@@ -139,11 +139,11 @@ const getDesktopNav = (
         href: '/explore',
         icon: GlobeAltIcon,
       },
-      {
-        name: 'TV',
-        href: '/tv',
-        icon: PiTelevisionSimple,
-      },
+      // {
+      //   name: 'TV',
+      //   href: '/tv',
+      //   icon: PiTelevisionSimple,
+      // },
       {
         name: 'Notifications',
         href: `/notifications`,
@@ -172,7 +172,7 @@ const getMobileNav = (
 
   return buildArray<NavItem>(
     { name: 'Leagues', href: '/leagues', icon: TrophyIcon },
-    { name: 'TV', href: '/tv', icon: PiTelevisionSimple },
+    // { name: 'TV', href: '/tv', icon: PiTelevisionSimple },
     isAdminOrMod && {
       name: 'Reports',
       href: '/reports',

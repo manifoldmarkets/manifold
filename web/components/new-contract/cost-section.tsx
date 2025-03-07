@@ -100,21 +100,21 @@ function Tier(props: {
       className={clsx(
         currentTier == liquidityTier
           ? tierIndex == 0
-            ? 'outline-ink-500'
+            ? 'ring-ink-500 ring-2'
             : tierIndex == 1
-            ? 'outline-blue-500'
+            ? 'ring-2 ring-blue-500'
             : tierIndex == 2
-            ? 'outline-purple-400'
-            : 'outline-pink-500'
+            ? 'ring-2 ring-purple-400'
+            : 'ring-2 ring-pink-500'
           : tierIndex == 0
-          ? 'hover:outline-ink-500/50 opacity-50 outline-transparent'
+          ? 'hover:ring-ink-500/50 opacity-90 ring-transparent'
           : tierIndex == 1
-          ? 'opacity-50 outline-transparent hover:outline-purple-500/50'
+          ? 'opacity-90 ring-transparent hover:ring-blue-500/50'
           : tierIndex == 2
-          ? 'opacity-50 outline-transparent hover:outline-fuchsia-400/50'
-          : 'opacity-50 outline-transparent hover:outline-pink-500/50',
+          ? 'opacity-90 ring-transparent hover:ring-fuchsia-400/50'
+          : 'opacity-90 ring-transparent hover:ring-pink-500/50',
         'bg-canvas-50 cursor-pointer ',
-        'flex w-full select-none flex-row items-center gap-2 rounded px-4 py-2 outline transition-colors sm:flex-col sm:gap-0'
+        'flex w-full select-none flex-row items-center gap-2 rounded px-4 py-2 ring transition-colors sm:flex-col sm:gap-0'
       )}
       onClick={() => {
         if (!isTierDisabled) {

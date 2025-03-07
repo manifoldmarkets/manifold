@@ -1,6 +1,6 @@
 import { runScript } from 'run-script'
-import { sendContractMovementNotifications } from 'shared/send-contract-movement-notifications'
+import { sendMarketMovementNotifications } from 'shared/send-market-movement-notifications'
 
 runScript(async () => {
-  await sendContractMovementNotifications(true)
+  await sendMarketMovementNotifications(true)
 })

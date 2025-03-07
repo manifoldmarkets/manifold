@@ -1,7 +1,7 @@
 import { Dictionary, sumBy, first } from 'lodash'
 import { MarketContract } from './contract'
 import { PortfolioMetrics } from './portfolio-metrics'
-import { ContractMetric } from './contract-metric'
+import { ContractMetric, isSummary } from './contract-metric'
 import { filterDefined } from './util/array'
 
 export const LOAN_DAILY_RATE = 0.015
@@ -50,7 +50,7 @@ const calculateLoanMetricUpdates = (
         return metrics
           .filter(
             (m) =>
-              m.answerId !== null &&
+              !isSummary(m) &&
               !c.answers.find((a) => a.id === m.answerId)?.resolutionTime
           )
           .map((m) => getCpmmContractLoanUpdate(c, [m], netWorth))

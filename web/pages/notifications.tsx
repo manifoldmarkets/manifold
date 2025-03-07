@@ -384,7 +384,7 @@ function NotificationGroupItem(props: {
             </>
           ) : notifications[0].reason === 'market_movements' ? (
             <>
-              {notifications.length} recent notable market{' '}
+              {notifications.length} notable 24-hour market{' '}
               {maybePluralize('movement', notifications.length)}
             </>
           ) : sourceTitle || sourceContractTitle ? (

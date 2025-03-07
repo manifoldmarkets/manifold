@@ -1,6 +1,9 @@
 import { APIHandler } from './helpers/endpoint'
 import { track } from 'shared/analytics'
-import { models, promptClaude } from 'shared/helpers/claude'
+import {
+  models,
+  promptClaudeParsingJson,
+} from 'shared/helpers/claude'
 import { log } from 'shared/utils'
 import { rateLimitByUser } from './helpers/rate-limit'
 import { HOUR_MS } from 'common/util/time'
@@ -74,14 +77,10 @@ export const generateAIDateRanges: APIHandler<'generate-ai-date-ranges'> =
 
       const bucketSystemPrompt = baseDateSystemPrompt()
 
-      const bucketResponse = await promptClaude(prompt, {
+      const buckets = await promptClaudeParsingJson<RangeResponse>(prompt, {
         model: models.sonnet,
         system: bucketSystemPrompt,
       })
-
-      log('bucketResponse', bucketResponse)
-
-      const buckets = JSON.parse(bucketResponse) as RangeResponse
 
       assertMidpointsAreUnique(buckets.midpoints)
       assertMidpointsAreAscending(buckets.midpoints)
@@ -119,12 +118,10 @@ export const regenerateDateMidpoints: APIHandler<'regenerate-date-midpoints'> =
 
       Return ONLY an array of midpoint numbers, one for each range, without any other text or formatting.`
 
-      const claudeResponse = await promptClaude(prompt, {
+      const result = await promptClaudeParsingJson<number[]>(prompt, {
         model: models.sonnet,
       })
-      log('claudeResponse', claudeResponse)
-
-      const result = JSON.parse(claudeResponse)
+      log('claudeResponse', result)
 
       track(auth.uid, 'regenerate-numeric-midpoints', {
         answers,

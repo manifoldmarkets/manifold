@@ -16,7 +16,7 @@ import { convertBet } from 'common/supabase/bets'
 import { Bet, getNewBetId } from 'common/bet'
 import { Contract } from 'common/contract'
 import { MarginalBet } from 'common/calculate-metrics'
-import { ContractMetric } from 'common/contract-metric'
+import { ContractMetric, isSummary } from 'common/contract-metric'
 import { bulkUpdateUserMetricsWithNewBetsOnly } from 'shared/helpers/user-contract-metrics'
 export const redeemShares = async (
   pgTrans: SupabaseDirectClient,
@@ -69,7 +69,7 @@ export const redeemShares = async (
       if (minShares > 0 && allShares.length === contract.answers.length) {
         const loanAmountByAnswerId = mapValues(
           groupBy(
-            myMetrics.filter((m) => m.answerId !== null),
+            myMetrics.filter((m) => !isSummary(m)),
             'answerId'
           ),
           (metrics) => sumBy(metrics, (m) => m.loan ?? 0)

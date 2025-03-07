@@ -201,7 +201,7 @@ export const ManaForeverBanner = () => {
   const user = useUser()
   if (!showBanner || !user) return null
   if (user.createdTime > new Date('2025-02-12').getTime()) return null
-  if (user.cashBalance < 1) return null
+  if (user.cashBalance < 25) return null
   return (
     <Banner
       className="bg-primary-100 hover:bg-primary-200  dark:text-primary-800 text-primary-700 hover:text-primary-900 items-center py-2 transition-colors"

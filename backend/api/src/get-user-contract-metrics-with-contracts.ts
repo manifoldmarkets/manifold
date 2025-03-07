@@ -1,7 +1,7 @@
 import { APIHandler } from './helpers/endpoint'
 import { getContractPrivacyWhereSQLFilter } from 'shared/supabase/contracts'
 import { createSupabaseDirectClient } from 'shared/supabase/init'
-import { ContractMetric } from 'common/contract-metric'
+import { ContractMetric, isSummary } from 'common/contract-metric'
 import { calculateUpdatedMetricsForContracts } from 'common/calculate-metrics'
 import { Dictionary, mapValues } from 'lodash'
 import { convertContract } from 'common/supabase/contracts'
@@ -43,7 +43,7 @@ export const getUserContractMetricsWithContracts: APIHandler<
   const { metricsByContract: allMetrics } =
     calculateUpdatedMetricsForContracts(results)
   const metricsByContract = mapValues(allMetrics, (metrics) =>
-    perAnswer ? metrics : metrics.filter((m) => m.answerId === null)
+    perAnswer ? metrics : metrics.filter((m) => isSummary(m))
   ) as Dictionary<ContractMetric[]>
 
   return {

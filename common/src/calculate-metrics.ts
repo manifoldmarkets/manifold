@@ -18,7 +18,7 @@ import { Contract, MultiContract } from './contract'
 import { computeFills, CpmmState, getCpmmProbability } from './calculate-cpmm'
 import { removeUndefinedProps } from './util/object'
 import { floatingEqual, logit } from './util/math'
-import { ContractMetric } from 'common/contract-metric'
+import { ContractMetric, isSummary } from 'common/contract-metric'
 import { noFees } from './fees'
 
 export const computeInvestmentValueCustomProb = (
@@ -372,9 +372,7 @@ export const calculateAnswerMetricsWithNewBetsOnly = (
     const oldSummary = cloneDeep(
       userMetrics.find(
         (m) =>
-          m.answerId === null &&
-          m.userId === userId &&
-          m.contractId === contractId
+          isSummary(m) && m.userId === userId && m.contractId === contractId
       )
     )
     const userBetsByAnswer = groupBy(bets, 'answerId')
@@ -523,7 +521,7 @@ export const calculateUpdatedMetricsForContracts = (
             : []
         } else if (contract.mechanism === 'cpmm-multi-1') {
           // For multiple choice markets, update each answer's metrics and compute summary per user
-          const answerMetrics = userMetrics.filter((m) => m.answerId !== null)
+          const answerMetrics = userMetrics.filter((m) => !isSummary(m))
 
           const updatedAnswerMetrics = answerMetrics.map((m) => {
             const answer = contract.answers.find((a) => a.id === m.answerId)

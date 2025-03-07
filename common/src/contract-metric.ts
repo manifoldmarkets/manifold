@@ -44,3 +44,7 @@ export type ContractMetric = {
 }
 
 export type ContractMetricsByOutcome = Record<string, ContractMetric[]>
+
+export const isSummary = (
+  metric: ContractMetric | Omit<ContractMetric, 'id'>
+) => metric.answerId === null
