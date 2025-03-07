@@ -347,6 +347,11 @@ export const NOTIFICATION_DESCRIPTIONS: notification_descriptions = {
     detailed:
       'When the probability of a market that you follow changes by a large amount',
   },
+  market_follows: {
+    simple: 'Someone followed your market',
+    detailed: 'Get notified when someone follows one of your markets',
+    verb: 'followed your market',
+  },
 }
 
 export type BettingStreakData = {
@@ -465,9 +470,12 @@ export function getSourceUrl(notification: Notification) {
     sourceContractCreatorUsername,
     sourceContractSlug,
     sourceSlug,
+    reason,
   } = notification
   if (sourceType === 'weekly_portfolio_update')
     return `/week/${sourceUserUsername}/${sourceSlug}`
+  if (reason === 'market_follows')
+    return `/${sourceContractCreatorUsername}/${sourceContractSlug}`
   if (sourceType === 'follow') return `/${sourceUserUsername}`
   if (sourceType === 'group' && sourceSlug) return `${groupPath(sourceSlug)}`
   // User referral via contract:
