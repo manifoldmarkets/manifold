@@ -58,6 +58,14 @@ export const promptClaude = async (
   return fullResponse
 }
 
+export const promptClaudeParsingJson = async <T>(
+  prompt: string,
+  options: { system?: string; model?: model_types } = {}
+): Promise<T> => {
+  const response = await promptClaude(prompt, options)
+  return parseClaudeResponseAsJson(response)
+}
+
 // Helper function to clean Claude responses from markdown formatting
 const removeJsonTicksFromClaudeResponse = (response: string): string => {
   // Remove markdown code block formatting if present

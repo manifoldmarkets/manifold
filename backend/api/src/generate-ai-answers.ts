@@ -1,7 +1,7 @@
 import { APIError, APIHandler } from './helpers/endpoint'
 import { track } from 'shared/analytics'
 import { perplexity } from 'shared/helpers/perplexity'
-import { models, promptClaude } from 'shared/helpers/claude'
+import { models, promptClaudeParsingJson } from 'shared/helpers/claude'
 import {
   addAnswersModeDescription,
   multiChoiceOutcomeTypeDescriptions,
@@ -24,11 +24,10 @@ export const generateAIAnswers: APIHandler<'generate-ai-answers'> =
           ? `\nHere are my suggested answers: ${answersString}`
           : ''
       }`
-      log('generateAIAnswers prompt', prompt)
+      log('generateAIAnswers prompt question', question)
       const outcomeKey = shouldAnswersSumToOne
         ? 'DEPENDENT_MULTIPLE_CHOICE'
         : 'INDEPENDENT_MULTIPLE_CHOICE'
-      log('generateAIAnswers', { props })
       try {
         // First use perplexity to research the topic
         const { messages, citations } = await perplexity(prompt, {
@@ -68,13 +67,14 @@ export const generateAIAnswers: APIHandler<'generate-ai-answers'> =
 
         const claudePrompt = `${prompt}\n\nReturn ONLY a JSON object containing "answers" string array and "addAnswersMode" string.`
 
-        const claudeResponse = await promptClaude(claudePrompt, {
+        const result = await promptClaudeParsingJson<{
+          answers: string[]
+          addAnswersMode: 'DISABLED' | 'ONLY_CREATOR' | 'ANYONE'
+        }>(claudePrompt, {
           model: models.sonnet,
           system: systemPrompt,
         })
-        log('claudeResponse', claudeResponse)
-
-        const result = JSON.parse(claudeResponse)
+        log('claudeResponse', result)
 
         track(auth.uid, 'generate-ai-answers', {
           question,

@@ -1,5 +1,5 @@
 import { APIError, APIHandler } from './helpers/endpoint'
-import { models, promptClaude } from 'shared/helpers/claude'
+import { models, promptClaudeParsingJson } from 'shared/helpers/claude'
 import { AIGeneratedMarket } from 'common/contract'
 import { log } from 'shared/utils'
 import {
@@ -38,8 +38,6 @@ export const generateAIMarketSuggestions2: APIHandler<'generate-ai-market-sugges
       })
 
       const { messages, citations } = perplexityResponse
-      log('Perplexity response:', messages.join('\n'))
-      log('Sources:', citations.join('\n'))
 
       // Format the perplexity suggestions for Claude
       const claudePrompt = `  
@@ -66,25 +64,27 @@ export const generateAIMarketSuggestions2: APIHandler<'generate-ai-market-sugges
     ONLY return a valid JSON array of market objects and do NOT include any other text.
   `
 
-      const claudeResponse = await promptClaude(claudePrompt, {
-        model: models.sonnet,
-        system: claudeSystemPrompt,
-      })
+      const claudeResponse = await promptClaudeParsingJson<AIGeneratedMarket[]>(
+        claudePrompt,
+        {
+          model: models.sonnet,
+          system: claudeSystemPrompt,
+        }
+      )
 
       // Parse the JSON response
       let parsedMarkets: AIGeneratedMarket[] = []
       try {
-        parsedMarkets = JSON.parse(claudeResponse).map(
-          (market: AIGeneratedMarket) => ({
-            ...market,
-            description: anythingToRichText({
+        parsedMarkets = claudeResponse.map((market: AIGeneratedMarket) => ({
+          ...market,
+          description:
+            anythingToRichText({
               markdown: market.descriptionMarkdown,
-            }),
-            promptVersion: 2,
-          })
-        )
+            }) ?? '',
+          promptVersion: 2,
+        }))
       } catch (e) {
-        console.error('Failed to parse Claude response:', e)
+        log.error('Failed to parse Claude response:', { e })
         throw new APIError(
           500,
           'Failed to parse market suggestions from Claude. Please try again.'
