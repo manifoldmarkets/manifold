@@ -24,7 +24,7 @@ export type AICapabilityCard = {
   description: string
   marketId: string
   type: string
-  displayType?: 'answer-string'
+  displayType?: 'answer-string' | 'top-model'
 }
 
 export const AI_CAPABILITY_CARDS: AICapabilityCard[] = [
@@ -41,7 +41,7 @@ export const AI_CAPABILITY_CARDS: AICapabilityCard[] = [
     description: 'Highest ranked model on AiderBench',
     marketId: 'OS06sL6OgU', // Replace with actual ID
     type: 'monthly',
-    displayType: 'answer-string',
+    displayType: 'top-model',
   },
   
   // Releases
@@ -197,7 +197,7 @@ function CapabilityCard({
   title: string
   marketId: string
   type: string
-  displayType?: 'answer-string' | undefined
+  displayType?: 'answer-string' | 'top-model' | undefined
   contracts: Contract[]
   className?: string
 }) {
@@ -245,12 +245,39 @@ function CapabilityCard({
     ]
   }
   
+  // Get top one model for "top-model" display type
+  const getTopOneOdds = () => {
+    if (!liveContract || liveContract.outcomeType !== 'MULTIPLE_CHOICE') {
+      return { text: '—', probability: 0 }
+    }
+    
+    const answers = liveContract.answers || []
+    if (answers.length < 1) {
+      return { text: '—', probability: 0 }
+    }
+    
+    // Sort answers by probability in descending order and get top one
+    const sortedAnswers = [...answers].sort((a, b) => {
+      const aProb = a.prob ?? 0
+      const bProb = b.prob ?? 0
+      return bProb - aProb
+    })
+    
+    return { 
+      text: sortedAnswers[0].text || '—', 
+      probability: sortedAnswers[0].prob ?? 0 
+    }
+  }
+  
   // Determine the value to display
   let displayValue = '—'
   let topCompanies = [{ text: '—', probability: 0 }, { text: '—', probability: 0 }]
+  let topModel = { text: '—', probability: 0 }
   
   if (displayType === 'answer-string' && liveContract && liveContract.outcomeType === 'MULTIPLE_CHOICE') {
     topCompanies = getTopTwoOdds()
+  } else if (displayType === 'top-model' && liveContract && liveContract.outcomeType === 'MULTIPLE_CHOICE') {
+    topModel = getTopOneOdds()
   } else {
     // Default display behavior
     displayValue = probability !== null 
@@ -296,17 +323,17 @@ function CapabilityCard({
               <div className="text-center w-[38%]">
                 {getCompanyLogo(topCompanies[0].text) ? (
                   <div className="flex flex-col items-center">
-                    <div className="h-12 w-12 mb-2 flex items-center justify-center text-primary-600">
+                    <div className="h-16 w-16 mb-2 flex items-center justify-center text-primary-600">
                       {React.createElement(getCompanyLogo(topCompanies[0].text) as React.FC<{className?: string}>, { 
-                        className: "w-10 h-10" 
+                        className: "w-14 h-14" 
                       })}
                     </div>
-                    <div className="text-lg font-bold text-ink-900">
+                    <div className="text-xl font-bold text-ink-900">
                       {topCompanies[0].text}
                     </div>
                   </div>
                 ) : (
-                  <div className="text-xl font-bold text-ink-900 truncate">
+                  <div className="text-3xl font-bold text-ink-900 truncate">
                     {topCompanies[0].text}
                   </div>
                 )}
@@ -315,8 +342,8 @@ function CapabilityCard({
                 </div>
               </div>
               
-              {/* VS Badge */}
-              <div className="bg-primary-600 text-white text-sm font-bold rounded-full px-3 py-1.5 shadow-sm mx-4">
+              {/* VS Badge - theme colored text without background */}
+              <div className="text-primary-600 text-med font-bold mx-4">
                 VS
               </div>
               
@@ -324,12 +351,12 @@ function CapabilityCard({
               <div className="text-center w-[38%]">
                 {getCompanyLogo(topCompanies[1].text) ? (
                   <div className="flex flex-col items-center">
-                    <div className="h-10 w-10 mb-1 flex items-center justify-center text-primary-600">
+                    <div className="h-14 w-14 mb-1 flex items-center justify-center text-primary-600">
                       {React.createElement(getCompanyLogo(topCompanies[1].text) as React.FC<{className?: string}>, { 
-                        className: "w-8 h-8" 
+                        className: "w-12 h-12" 
                       })}
                     </div>
-                    <div className="text-base font-bold text-ink-900">
+                    <div className="text-lg font-bold text-ink-900">
                       {topCompanies[1].text}
                     </div>
                   </div>
@@ -366,13 +393,13 @@ function CapabilityCard({
       className={`group cursor-pointer rounded-lg p-4 border border-ink-200 bg-canvas-0 transition-all hover:bg-canvas-50 min-h-[240px] ${className}`}
       onClick={() => liveContract && window.open(contractPath(liveContract), '_blank')}
     >
-      <Col className="justify-between h-full">
+      <Col className="h-full">
         <div>
-          <h3 className={`font-semibold ${getAccentColor()} text-lg mb-1`}>{title}</h3>
+          <h3 className={`font-semibold ${getAccentColor()} text-xl mb-1`}>{title}</h3>
         </div>
         
-        <div className="mt-auto">
-          <div className="text-lg font-bold text-ink-900">{displayValue}</div>
+        <div className="flex items-center justify-center flex-grow h-[160px]">
+          <div className="text-4xl font-bold text-ink-900 text-center">{displayValue}</div>
           {/* <div className={`text-xs ${getAccentColor()} mt-1`}>
             {liveContract ? 'Current forecast' : 'Market data unavailable'}
           </div> */}
