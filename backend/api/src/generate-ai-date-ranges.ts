@@ -2,7 +2,6 @@ import { APIHandler } from './helpers/endpoint'
 import { track } from 'shared/analytics'
 import {
   models,
-  promptClaude,
   promptClaudeParsingJson,
 } from 'shared/helpers/claude'
 import { log } from 'shared/utils'
