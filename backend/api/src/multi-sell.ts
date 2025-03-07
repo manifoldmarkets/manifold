@@ -10,6 +10,7 @@ import { convertBet } from 'common/supabase/bets'
 import { betsQueue } from 'shared/helpers/fn-queue'
 import { getContractMetrics } from 'shared/helpers/user-contract-metrics'
 import { getUnfilledBetsAndUserBalances } from 'api/helpers/bets'
+import { isSummary } from 'common/contract-metric'
 
 export const multiSell: APIHandler<'multi-sell'> = async (props, auth, req) => {
   return await betsQueue.enqueueFn(
@@ -72,7 +73,7 @@ const multiSellMain: APIHandler<'multi-sell'> = async (props, auth) => {
 
     const loanAmountByAnswerId = mapValues(
       keyBy(
-        allMyMetrics.filter((m) => m.answerId !== null),
+        allMyMetrics.filter((m) => !isSummary(m)),
         'answerId'
       ),
       (m) => m.loan ?? 0

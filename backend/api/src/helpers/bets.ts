@@ -6,7 +6,7 @@ import {
 import { Contract, MarketContract } from 'common/contract'
 import { groupBy, mapValues, orderBy, sumBy, uniq, uniqBy } from 'lodash'
 import { LimitBet, maker } from 'common/bet'
-import { ContractMetric } from 'common/contract-metric'
+import { ContractMetric, isSummary } from 'common/contract-metric'
 import { MarginalBet } from 'common/calculate-metrics'
 import { floatingEqual } from 'common/util/math'
 import { bulkUpdateUserMetricsWithNewBetsOnly } from 'shared/helpers/user-contract-metrics'
@@ -126,8 +126,7 @@ export const fetchContractBetDataAndValidate = async (
     .filter((m) =>
       unfilledBets.some(
         (b) =>
-          b.userId === m.userId &&
-          (b.answerId === m.answerId || m.answerId === null)
+          b.userId === m.userId && (b.answerId === m.answerId || isSummary(m))
       )
     )
   const contractMetrics = uniqBy(

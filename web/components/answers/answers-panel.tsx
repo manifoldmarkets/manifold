@@ -82,7 +82,7 @@ import { buildArray } from 'common/util/array'
 import { useAllSavedContractMetrics } from 'web/hooks/use-saved-contract-metrics'
 import { floatingEqual } from 'common/util/math'
 import { useUnfilledBets } from 'client-common/hooks/use-bets'
-import { ContractMetric } from 'common/contract-metric'
+import { ContractMetric, isSummary } from 'common/contract-metric'
 
 export const SHOW_LIMIT_ORDER_CHARTS_KEY = 'SHOW_LIMIT_ORDER_CHARTS_KEY'
 const MAX_DEFAULT_GRAPHED_ANSWERS = 6
@@ -171,7 +171,7 @@ export function AnswersPanel(props: {
 
   const user = useUser()
   const allMetrics = useAllSavedContractMetrics(contract)
-  const metrics = allMetrics?.find((m) => m.answerId === null) ?? {
+  const metrics = allMetrics?.find((m) => isSummary(m)) ?? {
     invested: 0,
   }
 
