@@ -446,13 +446,11 @@ const ChoiceOverview = (props: {
         />
       ) : null}
       {!shouldAnswersSumToOne && contract.mechanism === 'cpmm-multi-1' ? (
-        <GradientContainer>
-          <IndependentAnswersResolvePanel
-            contract={contract}
-            onClose={() => setShowResolver(false)}
-            show={showResolver}
-          />
-        </GradientContainer>
+        <IndependentAnswersResolvePanel
+          contract={contract}
+          onClose={() => setShowResolver(false)}
+          show={showResolver}
+        />
       ) : showResolver ? (
         <GradientContainer>
           <AnswersResolvePanel
@@ -701,13 +699,11 @@ const MultiNumericOverview = (props: {
         )}
       </SizedContainer>
       {!shouldAnswersSumToOne && contract.mechanism === 'cpmm-multi-1' ? (
-        <GradientContainer>
-          <IndependentAnswersResolvePanel
-            show={showResolver}
-            contract={contract}
-            onClose={() => setShowResolver(false)}
-          />
-        </GradientContainer>
+        <IndependentAnswersResolvePanel
+          show={showResolver}
+          contract={contract}
+          onClose={() => setShowResolver(false)}
+        />
       ) : showResolver ? (
         <GradientContainer>
           <AnswersResolvePanel

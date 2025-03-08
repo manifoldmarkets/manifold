@@ -29,6 +29,7 @@ import { getAnswerColor } from '../charts/contract/choice'
 import { YesNoCancelSelector } from '../bet/yes-no-selector'
 import { resolution } from 'common/contract'
 import { usePersistentInMemoryState } from 'client-common/hooks/use-persistent-in-memory-state'
+import { GradientContainer } from '../widgets/gradient-container'
 
 function getAnswerResolveButtonColor(
   resolveOption: string | undefined,
@@ -554,154 +555,161 @@ export const IndependentAnswersResolvePanel = (props: {
       completedResolutions.length > 0 && remainingAnswers.length > 0
 
     return (
-      <Col className="gap-3">
-        <div className="text-lg font-semibold">
-          {!isProcessing && !hasCompletedAll && !hasPartiallyCompleted
-            ? 'Confirm Resolution'
-            : !isProcessing && hasPartiallyCompleted
-            ? 'Continue Resolution'
-            : isProcessing
-            ? 'Processing Resolutions...'
-            : 'Resolutions Complete'}
-        </div>
+      <GradientContainer>
+        <Col className="gap-3">
+          <div className="text-lg font-semibold">
+            {!isProcessing && !hasCompletedAll && !hasPartiallyCompleted
+              ? 'Confirm Resolution'
+              : !isProcessing && hasPartiallyCompleted
+              ? 'Continue Resolution'
+              : isProcessing
+              ? 'Processing Resolutions...'
+              : 'Resolutions Complete'}
+          </div>
 
-        <div>
-          {!isProcessing && !hasCompletedAll && !hasPartiallyCompleted
-            ? 'You are about to resolve the following answers:'
-            : !isProcessing && hasPartiallyCompleted
-            ? `${completedResolutions.length} answer(s) resolved. Continue with remaining ${remainingAnswers.length}`
-            : isProcessing
-            ? 'Processing your selected resolutions:'
-            : 'All resolutions have been processed successfully:'}
-        </div>
+          <div>
+            {!isProcessing && !hasCompletedAll && !hasPartiallyCompleted
+              ? 'You are about to resolve the following answers:'
+              : !isProcessing && hasPartiallyCompleted
+              ? `${completedResolutions.length} answer(s) resolved. Continue with remaining ${remainingAnswers.length}`
+              : isProcessing
+              ? 'Processing your selected resolutions:'
+              : 'All resolutions have been processed successfully:'}
+          </div>
 
-        <div className="border-ink-200 max-h-60 overflow-y-auto rounded border p-2">
-          {Object.entries(selectedResolutions).map(([answerId, resolution]) => {
-            const answer = answers.find((a) => a.id === answerId)
-            if (!answer) return null
+          <div className="border-ink-200 max-h-60 overflow-y-auto rounded border p-2">
+            {Object.entries(selectedResolutions).map(
+              ([answerId, resolution]) => {
+                const answer = answers.find((a) => a.id === answerId)
+                if (!answer) return null
 
-            const isCompleted = completedResolutions.includes(answerId)
-            const isCurrentlyProcessing =
-              isSubmitting &&
-              !isCompleted &&
-              completedResolutions.length === allResolutionIds.indexOf(answerId)
+                const isCompleted = completedResolutions.includes(answerId)
+                const isCurrentlyProcessing =
+                  isSubmitting &&
+                  !isCompleted &&
+                  completedResolutions.length ===
+                    allResolutionIds.indexOf(answerId)
 
-            return (
-              <div
-                key={answerId}
-                className="border-ink-100 flex items-center justify-between border-b py-2 last:border-0"
-              >
-                <div className="font-medium">{answer.text}</div>
-                <Row className="items-center gap-2">
+                return (
                   <div
-                    className={clsx(
-                      'font-semibold',
-                      resolution === 'YES'
-                        ? 'text-green-500'
-                        : resolution === 'NO'
-                        ? 'text-red-500'
-                        : resolution === 'CANCEL'
-                        ? 'text-yellow-500'
-                        : 'text-blue-500'
-                    )}
+                    key={answerId}
+                    className="border-ink-100 flex items-center justify-between border-b py-2 last:border-0"
                   >
-                    {resolution}
-                    {resolution === 'MKT' &&
-                      resolutionProbs[answerId] &&
-                      ` ${resolutionProbs[answerId]}%`}
+                    <div className="font-medium">{answer.text}</div>
+                    <Row className="items-center gap-2">
+                      <div
+                        className={clsx(
+                          'font-semibold',
+                          resolution === 'YES'
+                            ? 'text-green-500'
+                            : resolution === 'NO'
+                            ? 'text-red-500'
+                            : resolution === 'CANCEL'
+                            ? 'text-yellow-500'
+                            : 'text-blue-500'
+                        )}
+                      >
+                        {resolution}
+                        {resolution === 'MKT' &&
+                          resolutionProbs[answerId] &&
+                          ` ${resolutionProbs[answerId]}%`}
+                      </div>
+
+                      {isCompleted && (
+                        <div className="ml-2 text-sm font-medium text-green-500">
+                          ✓ Completed
+                        </div>
+                      )}
+
+                      {isCurrentlyProcessing && (
+                        <div className="text-ink-500 ml-2 animate-pulse text-sm font-medium">
+                          Processing...
+                        </div>
+                      )}
+                    </Row>
                   </div>
+                )
+              }
+            )}
+          </div>
+          {error && <div className="text-scarlet-500 p-3">{error}</div>}
+          <Row className="justify-end gap-3">
+            {!isSubmitting && !hasCompletedAll && (
+              <Button
+                color="gray"
+                onClick={() => setIsShowingConfirmation(false)}
+              >
+                Back
+              </Button>
+            )}
 
-                  {isCompleted && (
-                    <div className="ml-2 text-sm font-medium text-green-500">
-                      ✓ Completed
-                    </div>
-                  )}
+            {!isSubmitting && !hasCompletedAll && (
+              <Button color="indigo" onClick={submitBatchResolutions}>
+                {hasPartiallyCompleted
+                  ? 'Continue Resolving'
+                  : 'Submit All Resolutions'}
+              </Button>
+            )}
 
-                  {isCurrentlyProcessing && (
-                    <div className="text-ink-500 ml-2 animate-pulse text-sm font-medium">
-                      Processing...
-                    </div>
-                  )}
-                </Row>
-              </div>
-            )
-          })}
-        </div>
-        {error && <div className="text-scarlet-500 p-3">{error}</div>}
-        <Row className="justify-end gap-3">
-          {!isSubmitting && !hasCompletedAll && (
-            <Button
-              color="gray"
-              onClick={() => setIsShowingConfirmation(false)}
-            >
-              Back
-            </Button>
-          )}
+            {hasCompletedAll && (
+              <Button color="green" onClick={handleDone}>
+                Done
+              </Button>
+            )}
 
-          {!isSubmitting && !hasCompletedAll && (
-            <Button color="indigo" onClick={submitBatchResolutions}>
-              {hasPartiallyCompleted
-                ? 'Continue Resolving'
-                : 'Submit All Resolutions'}
-            </Button>
-          )}
-
-          {hasCompletedAll && (
-            <Button color="green" onClick={handleDone}>
-              Done
-            </Button>
-          )}
-
-          {isProcessing && (
-            <Button color="indigo" disabled loading>
-              Processing...
-            </Button>
-          )}
-        </Row>
-      </Col>
+            {isProcessing && (
+              <Button color="indigo" disabled loading>
+                Processing...
+              </Button>
+            )}
+          </Row>
+        </Col>
+      </GradientContainer>
     )
   }
 
   return (
-    <Col className="gap-3">
-      <ResolveHeader
-        contract={contract}
-        isCreator={user?.id === contract.creatorId}
-        onClose={onClose}
-      />
+    <GradientContainer>
+      <Col className="gap-3">
+        <ResolveHeader
+          contract={contract}
+          isCreator={user?.id === contract.creatorId}
+          onClose={onClose}
+        />
 
-      <Row className="bg-primary-50 items-center justify-between rounded p-3">
-        <div>
-          <span className="font-medium">{selectedCount}</span> answer
-          {selectedCount !== 1 ? 's' : ''} selected for resolution
-        </div>
-        <Button
-          color="indigo"
-          disabled={selectedCount === 0}
-          onClick={() => setIsShowingConfirmation(true)}
-        >
-          Review & Submit
-        </Button>
-      </Row>
+        <Row className="bg-primary-50 items-center justify-between rounded p-3">
+          <div>
+            <span className="font-medium">{selectedCount}</span> answer
+            {selectedCount !== 1 ? 's' : ''} selected for resolution
+          </div>
+          <Button
+            color="indigo"
+            disabled={selectedCount === 0}
+            onClick={() => setIsShowingConfirmation(true)}
+          >
+            Review & Submit
+          </Button>
+        </Row>
 
-      <Col className="gap-2">
-        {sortedAnswers.map((answer) => (
-          <IndependentResolutionAnswerItem
-            key={answer.id}
-            contract={contract}
-            answer={answer}
-            color={getAnswerColor(answer)}
-            isAdmin={isAdmin}
-            selectedResolution={selectedResolutions[answer.id]}
-            resolutionProb={resolutionProbs[answer.id]}
-            onSelectResolution={handleSelectResolution}
-            onRemoveResolution={handleRemoveResolution}
-            onSetResolutionProb={handleSetResolutionProb}
-          />
-        ))}
+        <Col className="gap-2">
+          {sortedAnswers.map((answer) => (
+            <IndependentResolutionAnswerItem
+              key={answer.id}
+              contract={contract}
+              answer={answer}
+              color={getAnswerColor(answer)}
+              isAdmin={isAdmin}
+              selectedResolution={selectedResolutions[answer.id]}
+              resolutionProb={resolutionProbs[answer.id]}
+              onSelectResolution={handleSelectResolution}
+              onRemoveResolution={handleRemoveResolution}
+              onSetResolutionProb={handleSetResolutionProb}
+            />
+          ))}
+        </Col>
+        <ResolutionExplainer independentMulti />
       </Col>
-      <ResolutionExplainer independentMulti />
-    </Col>
+    </GradientContainer>
   )
 }
 
