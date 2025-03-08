@@ -3,6 +3,7 @@ import { sendBulkEmails } from 'shared/emails'
 
 const TEST_SEND_TO_SELF = process.argv.includes('--test-self')
 const TEST_ONLY_FETCH = process.argv.includes('--test-fetch')
+const TEST_ARRAY = process.argv.includes('--test-array')
 
 const MY_USER_ID = 'uglwf3YKOZNGjjEXKc5HampOFRE2'
 
@@ -60,6 +61,24 @@ runScript(async ({ pg }) => {
       '[ACTION REQ] Redeem your sweepcash by March 28th',
       'manifold announcement template',
       [[myUser.email, { name: myUser.name }]]
+    )
+    return
+  }
+
+  if (TEST_ARRAY) {
+    const testRecipients: [string, { name: string }][] = [
+      ['', { name: 'testname1' }], //add userid and filler name
+      ['', { name: 'testname2' }],
+      ['', { name: 'testname3' }],
+    ]
+    console.log(
+      'Test mode: Sending bulk email to simulated recipients:',
+      testRecipients
+    )
+    await sendBulkEmails(
+      '[ACTION REQ] Redeem your sweepcash by March 28th',
+      'manifold announcement template',
+      testRecipients
     )
     return
   }
