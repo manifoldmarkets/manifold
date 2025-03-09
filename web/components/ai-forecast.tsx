@@ -24,38 +24,40 @@ export type AICapabilityCard = {
   description: string
   marketId: string
   type: string
-  displayType?: 'answer-string' | 'top-model'
+  displayType?: 'top-two-mcq' | 'top-one-mcq' | 'binary-odds' | 'date-numeric'
 }
 
 export const AI_CAPABILITY_CARDS: AICapabilityCard[] = [
   // Monthly markets
   {
-    title: 'LMSYS Model',
+    title: 'LMSYS',
     description: 'Highest ranked model on lmsys',
     marketId: 'LsZPyLPI82',
     type: 'monthly',
-    displayType: 'answer-string',
+    displayType: 'top-two-mcq',
   },
   {
     title: 'AiderBench',
-    description: 'Highest ranked model on AiderBench',
-    marketId: 'OS06sL6OgU', // Replace with actual ID
+    description: 'Highest ranked model on Aider',
+    marketId: '0t8A5ZA0zQ', // Top March
     type: 'monthly',
-    displayType: 'top-model',
+    displayType: 'top-one-mcq',
   },
   
   // Releases
   {
     title: 'GPT-5',
     description: 'GPT-4 model released by EOY',
-    marketId: 'placeholder-1', // Replace with actual ID
+    marketId: 'fSGBkooZ6BY6UQoCrGUo', // GPT-5 numeric market
     type: 'releases',
+    displayType: 'date-numeric'
   },
   {
-    title: 'Claude 3.7 Opus',
+    title: 'Claude 4',
     description: '',
-    marketId: 'placeholder-2', // Replace with actual ID
+    marketId: 'dyttOfuYp7ZUefFiymcx', // multiple-choice quarter
     type: 'releases',
+    displayType: 'top-one-mcq',
   },
   {
     title: 'Gemini 3',
@@ -74,14 +76,22 @@ export const AI_CAPABILITY_CARDS: AICapabilityCard[] = [
   {
     title: 'IMO Gold',
     description: 'AI gets gold on IMO by EOY',
-    marketId: 'placeholder-0', // Replace with actual ID
+    marketId: 'tu2ouer9zq',
     type: 'benchmark',
+    displayType: 'binary-odds'
   },
   {
     title: 'Frontier Math Passed',
     description: '>80% on Frontier Math by EOY',
     marketId: 'LNdOg08SsU', // Replace with actual ID
     type: 'benchmark',
+  },
+    {
+    title: 'Frontier Math Performance',
+    description: 'top performance on frontier math',
+    marketId: 'Uu5q0usuQg', // Replace with actual ID
+    type: 'benchmark',
+    displayType: 'top-one-mcq'
   },
   {
     title: 'SWE Bench Top Score',
@@ -197,7 +207,7 @@ function CapabilityCard({
   title: string
   marketId: string
   type: string
-  displayType?: 'answer-string' | 'top-model' | undefined
+  displayType?: 'top-two-mcq' | 'top-one-mcq' | 'binary-odds' | 'date-numeric' | undefined
   contracts: Contract[]
   className?: string
 }) {
@@ -207,7 +217,9 @@ function CapabilityCard({
   
   // Get the probability if it's a binary contract
   const probability = liveContract && liveContract.outcomeType === 'BINARY'
-    ? getDisplayProbability(liveContract as BinaryContract) 
+    ? (liveContract as BinaryContract).prob !== undefined 
+      ? (liveContract as BinaryContract).prob 
+      : getDisplayProbability(liveContract as BinaryContract)
     : null
   
   // Get the expected value if it's a numeric contract
@@ -215,7 +227,7 @@ function CapabilityCard({
     ? getNumberExpectedValue(liveContract as CPMMNumericContract) 
     : null
   
-  // Get top two companies and their probabilities for "answer-string" display type
+  // Get top two companies and their probabilities for "top-two-mcq" display type
   const getTopTwoOdds = () => {
     if (!liveContract || liveContract.outcomeType !== 'MULTIPLE_CHOICE') {
       return [{ text: '—', probability: 0 }, { text: '—', probability: 0 }]
@@ -228,24 +240,24 @@ function CapabilityCard({
     
     // Sort answers by probability in descending order
     const sortedAnswers = [...answers].sort((a, b) => {
-      const aProb = a.prob ?? 0
-      const bProb = b.prob ?? 0
+      const aProb = a.prob ?? a.prob ?? 0
+      const bProb = b.prob ?? b.prob ?? 0
       return bProb - aProb
     })
     
     return [
       { 
         text: sortedAnswers[0].text || '—', 
-        probability: sortedAnswers[0].prob ?? 0 
+        probability: sortedAnswers[0].prob ?? sortedAnswers[0].prob ?? 0 
       },
       { 
         text: sortedAnswers[1].text || '—', 
-        probability: sortedAnswers[1].prob ?? 0 
+        probability: sortedAnswers[1].prob ?? sortedAnswers[1].prob ?? 0 
       }
     ]
   }
   
-  // Get top one model for "top-model" display type
+  // Get top one model for "top-one-mcq" display type
   const getTopOneOdds = () => {
     if (!liveContract || liveContract.outcomeType !== 'MULTIPLE_CHOICE') {
       return { text: '—', probability: 0 }
@@ -258,14 +270,14 @@ function CapabilityCard({
     
     // Sort answers by probability in descending order and get top one
     const sortedAnswers = [...answers].sort((a, b) => {
-      const aProb = a.prob ?? 0
-      const bProb = b.prob ?? 0
+      const aProb = a.prob ?? a.prob ?? 0
+      const bProb = b.prob ?? b.prob ?? 0
       return bProb - aProb
     })
     
     return { 
       text: sortedAnswers[0].text || '—', 
-      probability: sortedAnswers[0].prob ?? 0 
+      probability: sortedAnswers[0].prob ?? sortedAnswers[0].prob ?? 0 
     }
   }
   
@@ -274,10 +286,22 @@ function CapabilityCard({
   let topCompanies = [{ text: '—', probability: 0 }, { text: '—', probability: 0 }]
   let topModel = { text: '—', probability: 0 }
   
-  if (displayType === 'answer-string' && liveContract && liveContract.outcomeType === 'MULTIPLE_CHOICE') {
+  if (displayType === 'top-two-mcq' && liveContract && liveContract.outcomeType === 'MULTIPLE_CHOICE') {
     topCompanies = getTopTwoOdds()
-  } else if (displayType === 'top-model' && liveContract && liveContract.outcomeType === 'MULTIPLE_CHOICE') {
+  } else if (displayType === 'top-one-mcq' && liveContract && liveContract.outcomeType === 'MULTIPLE_CHOICE') {
     topModel = getTopOneOdds()
+  } else if (displayType === 'binary-odds' && liveContract && liveContract.outcomeType === 'BINARY') {
+    // For binary-odds, use the contract's direct probability property
+    // Try each possible property where probability might be stored
+    if (liveContract.prob !== undefined) {
+      displayValue = formatPercent(liveContract.prob)
+    } else if (probability !== null) {
+      displayValue = formatPercent(probability)
+    } else if ((liveContract as any).prob !== undefined) {
+      displayValue = formatPercent((liveContract as any).prob)
+    } else if ((liveContract as any).p !== undefined) {
+      displayValue = formatPercent((liveContract as any).p)
+    }
   } else {
     // Default display behavior
     displayValue = probability !== null 
@@ -285,11 +309,6 @@ function CapabilityCard({
       : numericValue !== null 
         ? numericValue.toFixed(1) 
         : '—'
-    
-    // For binary contracts, use the probability we calculated above
-    if (liveContract && liveContract.outcomeType === 'BINARY' && probability !== null) {
-      displayValue = formatPercent(probability)
-    }
   }
   
   // Determine the accent color based on type (works in both light/dark modes)
@@ -305,7 +324,7 @@ function CapabilityCard({
   }
   
   // Use site's standard border/bg classes for light/dark mode compatibility
-  if (displayType === 'answer-string') {
+  if (displayType === 'top-two-mcq') {
     return (
       <ClickFrame
         className={`group cursor-pointer rounded-lg p-4 border border-ink-200 bg-canvas-0 transition-all hover:bg-canvas-50 min-h-[240px] ${className}`}
@@ -343,7 +362,7 @@ function CapabilityCard({
               </div>
               
               {/* VS Badge - theme colored text without background */}
-              <div className="text-primary-600 text-med font-bold mx-4">
+              <div className="text-primary-800 text-med font-black mx-4">
                 VS
               </div>
               
@@ -387,6 +406,31 @@ function CapabilityCard({
     )
   }
   
+  // For top-one-mcq display type
+  if (displayType === 'top-one-mcq') {
+    return (
+      <ClickFrame
+        className={`group cursor-pointer rounded-lg p-4 border border-ink-200 bg-canvas-0 transition-all hover:bg-canvas-50 min-h-[240px] ${className}`}
+        onClick={() => liveContract && window.open(contractPath(liveContract), '_blank')}
+      >
+        <Col className="h-full space-y-2">
+          <div>
+            <h3 className={`font-semibold ${getAccentColor()} text-xl mb-1`}>{title}</h3>
+          </div>
+          
+          <div className="rounded-md p-3 flex-1 flex flex-col items-center justify-center">
+            <div className="text-3xl font-bold text-ink-900 text-center">
+              {topModel.text}
+            </div>
+            <div className="text-lg text-ink-600 mt-4 font-medium">
+              {formatPercent(topModel.probability)}
+            </div>
+          </div>
+        </Col>
+      </ClickFrame>
+    )
+  }
+
   // Standard card layout for other display types
   return (
     <ClickFrame
@@ -399,10 +443,18 @@ function CapabilityCard({
         </div>
         
         <div className="flex items-center justify-center flex-grow h-[160px]">
-          <div className="text-4xl font-bold text-ink-900 text-center">{displayValue}</div>
-          {/* <div className={`text-xs ${getAccentColor()} mt-1`}>
-            {liveContract ? 'Current forecast' : 'Market data unavailable'}
-          </div> */}
+          {displayType === 'binary-odds' ? (
+            <div className="flex flex-col items-center">
+              <div className="text-5xl font-bold text-ink-900 text-center">
+                {displayValue}
+              </div>
+              <div className="text-ink-500 text-base mt-2">
+                Probability
+              </div>
+            </div>
+          ) : (
+            <div className="text-4xl font-bold text-ink-900 text-center">{displayValue}</div>
+          )}
         </div>
       </Col>
     </ClickFrame>
@@ -493,14 +545,14 @@ export function AIForecast({ whenAgi, contracts = [], hideTitle }: AIForecastPro
           
           <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
             {capabilityCardsByType[type]?.map((card, idx) => {
-              // Add special sizing for "monthly" type cards
+              // Special sizing for "monthly" type cards
               let cardClassName = "";
               
-              // For "monthly" cards - make LMSYS card 2/3 width and AiderBench 1/3 width
+              // For "monthly" cards - make first card 2/3 width and second 1/3 width
               if (type === "monthly" && idx === 0) {
-                cardClassName = "md:col-span-2"; // LMSYS takes 2/3 width on desktop
+                cardClassName = "md:col-span-2"; // first card takes 2/3 width on desktop
               } else if (type === "monthly" && idx === 1) {
-                cardClassName = ""; // AiderBench takes 1/3 width (default)
+                cardClassName = ""; // Second card takes 1/3 width (default)
               }
               
               return (
@@ -521,7 +573,6 @@ export function AIForecast({ whenAgi, contracts = [], hideTitle }: AIForecastPro
       
       {/* Categories of AI Markets */}
       {AI_CATEGORIES.map((category) => {
-        // Cache the result to avoid calculating it twice
         const categoryContracts = getContractsByCategory(category.id);
         
         return (
