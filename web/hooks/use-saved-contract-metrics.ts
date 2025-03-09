@@ -1,4 +1,4 @@
-import { ContractMetric } from 'common/contract-metric'
+import { ContractMetric, isSummary } from 'common/contract-metric'
 import { Contract } from 'common/contract'
 import { getTopContractMetrics } from 'common/supabase/contract-metrics'
 import { db } from 'web/lib/supabase/db'
@@ -19,7 +19,7 @@ export const useSavedContractMetrics = (
 ) => {
   const allMetrics = useAllSavedContractMetrics(contract, answerId)
   return allMetrics?.find((m) =>
-    answerId ? m.answerId === answerId : m.answerId == null
+    answerId ? m.answerId === answerId : isSummary(m)
   )
 }
 

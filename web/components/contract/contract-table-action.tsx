@@ -9,7 +9,10 @@ import { Row } from '../layout/row'
 import { NumericResolutionPanel } from '../numeric-resolution-panel'
 import { ResolutionPanel } from '../resolution-panel'
 import { isClosed } from './contracts-table'
-import { AnswersResolvePanel } from '../answers/answer-resolve-panel'
+import {
+  AnswersResolvePanel,
+  IndependentAnswersResolvePanel,
+} from '../answers/answer-resolve-panel'
 import { useUser } from 'web/hooks/use-user'
 import { track } from 'web/lib/service/analytics'
 import { PollPanel } from '../poll/poll-panel'
@@ -189,6 +192,12 @@ export function SmallResolutionPanel(props: {
       contract={contract}
       onClose={() => setOpen(false)}
       inModal
+    />
+  ) : outcomeType === 'MULTIPLE_CHOICE' && !contract.shouldAnswersSumToOne ? (
+    <IndependentAnswersResolvePanel
+      contract={contract as CPMMMultiContract}
+      onClose={() => setOpen(false)}
+      show={true}
     />
   ) : outcomeType === 'MULTIPLE_CHOICE' ? (
     <AnswersResolvePanel

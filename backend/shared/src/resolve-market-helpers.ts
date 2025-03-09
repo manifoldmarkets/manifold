@@ -72,6 +72,7 @@ export const resolveMarketHelper = async (
 ) => {
   const pg = createSupabaseDirectClient()
 
+  // TODO: Why not add this to front of bet queue?
   const {
     resolvedContract,
     updatedContractMetrics,
@@ -79,7 +80,7 @@ export const resolveMarketHelper = async (
     updatedContractAttrs,
     userUpdates,
   } = await pg.tx({ mode: SERIAL_MODE }, async (tx) => {
-    const { closeTime, id: contractId, outcomeType } = unresolvedContract
+    const { closeTime, id: contractId } = unresolvedContract
     const {
       contract: c,
       liquidities,
@@ -89,6 +90,7 @@ export const resolveMarketHelper = async (
       unresolvedContract,
       answerId
     )
+    const isIndieMC = c.mechanism === 'cpmm-multi-1' && !c.shouldAnswersSumToOne
 
     unresolvedContract = c as MarketContract
     if (unresolvedContract.isResolved) {
@@ -253,9 +255,10 @@ export const resolveMarketHelper = async (
       )
       await updateAnswers(tx, contractId, answerUpdates)
     }
-    const { metricsByContract } = calculateUpdatedMetricsForContracts([
-      { contract: resolvedContract, metrics: contractMetrics },
-    ])
+    const { metricsByContract } = calculateUpdatedMetricsForContracts(
+      [{ contract: resolvedContract, metrics: contractMetrics }],
+      isIndieMC
+    )
     const updatedContractMetrics = metricsByContract[resolvedContract.id] ?? []
     const updateMetricsQuery = bulkUpdateContractMetricsQuery(
       updatedContractMetrics

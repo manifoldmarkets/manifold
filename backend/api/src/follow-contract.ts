@@ -3,6 +3,9 @@ import {
   SupabaseDirectClient,
 } from 'shared/supabase/init'
 import { APIHandler } from './helpers/endpoint'
+import { broadcast } from 'shared/websockets/server'
+import { createFollowsOnYourMarketNotification } from 'shared/create-notification'
+import { getUser, log } from 'shared/utils'
 
 export const followContract: APIHandler<'follow-contract'> = async (
   { contractId, follow },
@@ -10,7 +13,25 @@ export const followContract: APIHandler<'follow-contract'> = async (
 ) => {
   const pg = createSupabaseDirectClient()
   await followContractInternal(pg, contractId, follow, auth.uid)
-  return { success: true }
+  broadcast(`contract-follow/${contractId}`, {
+    follow,
+    followerId: auth.uid,
+  })
+
+  return {
+    result: { success: true },
+    continue: async () => {
+      if (!follow) return
+      try {
+        const follower = await getUser(auth.uid)
+        if (follower) {
+          await createFollowsOnYourMarketNotification(contractId, follower, pg)
+        }
+      } catch (error) {
+        log.error('Failed to create follow notification:', { error })
+      }
+    },
+  }
 }
 export const followContractInternal = async (
   pg: SupabaseDirectClient,
