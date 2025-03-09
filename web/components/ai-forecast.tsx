@@ -213,12 +213,14 @@ function CapabilityCard({
 }) {
   // Find the actual contract by ID
   const contract = contracts.find(c => c.id === marketId)
+  console.log(`[${displayType}] ${title} - contract found:`, !!contract, 'id:', marketId)
   const liveContract = contract ? useLiveContract(contract) : null
+  console.log(`[${displayType}] ${title} - liveContract:`, !!liveContract, 'path:', liveContract ? contractPath(liveContract) : 'N/A')
   
   // Get the probability if it's a binary contract
   const probability = liveContract && liveContract.outcomeType === 'BINARY'
-    ? (liveContract as BinaryContract).prob !== undefined 
-      ? (liveContract as BinaryContract).prob 
+    ? liveContract.prob !== undefined 
+      ? liveContract.prob
       : getDisplayProbability(liveContract as BinaryContract)
     : null
   
@@ -238,47 +240,64 @@ function CapabilityCard({
       return [{ text: '—', probability: 0 }, { text: '—', probability: 0 }]
     }
     
+    console.log("Raw answers for top-two-mcq:", answers)
+    
     // Sort answers by probability in descending order
     const sortedAnswers = [...answers].sort((a, b) => {
+      // Check both probability and prob fields
       const aProb = a.prob ?? a.prob ?? 0
       const bProb = b.prob ?? b.prob ?? 0
       return bProb - aProb
     })
     
-    return [
+    const result = [
       { 
         text: sortedAnswers[0].text || '—', 
-        probability: sortedAnswers[0].prob ?? sortedAnswers[0].prob ?? 0 
+        probability: sortedAnswers[0].prob ?? sortedAnswers[0].prob ?? 0
       },
       { 
         text: sortedAnswers[1].text || '—', 
         probability: sortedAnswers[1].prob ?? sortedAnswers[1].prob ?? 0 
       }
     ]
+    
+    console.log("Final top-two-mcq results:", result)
+    return result
   }
   
   // Get top one model for "top-one-mcq" display type
   const getTopOneOdds = () => {
     if (!liveContract || liveContract.outcomeType !== 'MULTIPLE_CHOICE') {
+      console.log("Contract not valid for top-one-mcq:", liveContract?.outcomeType)
       return { text: '—', probability: 0 }
     }
     
     const answers = liveContract.answers || []
     if (answers.length < 1) {
+      console.log("No answers found for top-one-mcq")
       return { text: '—', probability: 0 }
     }
     
+    console.log("Raw answers for top-one-mcq:", answers)
+    
     // Sort answers by probability in descending order and get top one
     const sortedAnswers = [...answers].sort((a, b) => {
+      // Try multiple possible property names for probability
       const aProb = a.prob ?? a.prob ?? 0
       const bProb = b.prob ?? b.prob ?? 0
       return bProb - aProb
     })
     
-    return { 
+    console.log("Sorted top answer for top-one-mcq:", sortedAnswers[0])
+    
+    // First try probability field, then fallback to prob
+    const result = { 
       text: sortedAnswers[0].text || '—', 
-      probability: sortedAnswers[0].prob ?? sortedAnswers[0].prob ?? 0 
+      probability: sortedAnswers[0].prob ?? sortedAnswers[0].prob ?? 0
     }
+    
+    console.log("Final result for top-one-mcq:", result)
+    return result
   }
   
   // Determine the value to display
@@ -290,17 +309,34 @@ function CapabilityCard({
     topCompanies = getTopTwoOdds()
   } else if (displayType === 'top-one-mcq' && liveContract && liveContract.outcomeType === 'MULTIPLE_CHOICE') {
     topModel = getTopOneOdds()
+    console.log(`[top-one-mcq] ${title}:`, topModel)
   } else if (displayType === 'binary-odds' && liveContract && liveContract.outcomeType === 'BINARY') {
-    // For binary-odds, use the contract's direct probability property
-    // Try each possible property where probability might be stored
+    // Try all possible ways to get the probability
+    console.log(`[binary-odds] ${title} - examining all probability fields:`, { 
+      probability: liveContract.prob,
+      prob: (liveContract as any).prob,
+      calculatedProb: probability,
+      // Show all available fields for debugging
+      fields: Object.keys(liveContract)
+    })
+    
+    // First try direct probability field
     if (liveContract.prob !== undefined) {
       displayValue = formatPercent(liveContract.prob)
-    } else if (probability !== null) {
-      displayValue = formatPercent(probability)
-    } else if ((liveContract as any).prob !== undefined) {
+      console.log(`[binary-odds] ${title} - using liveContract.probability:`, liveContract.prob)
+    } 
+    // Then try prob field
+    else if ((liveContract as any).prob !== undefined) {
       displayValue = formatPercent((liveContract as any).prob)
-    } else if ((liveContract as any).p !== undefined) {
-      displayValue = formatPercent((liveContract as any).p)
+      console.log(`[binary-odds] ${title} - using liveContract.prob:`, (liveContract as any).prob)
+    }
+    // Fall back to our calculated probability
+    else if (probability !== null) {
+      displayValue = formatPercent(probability)
+      console.log(`[binary-odds] ${title} - using calculated probability:`, probability)
+    } 
+    else {
+      console.log(`[binary-odds] ${title} - could not find any probability value`)
     }
   } else {
     // Default display behavior
@@ -325,10 +361,37 @@ function CapabilityCard({
   
   // Use site's standard border/bg classes for light/dark mode compatibility
   if (displayType === 'top-two-mcq') {
+    // Create handler function with debug
+    const handleClick = () => {
+      console.log(`[top-two-mcq] ${title} - Click handler called, marketId:`, marketId)
+      console.log(`Contract found:`, !!contract, 'liveContract:', !!liveContract)
+      
+      if (liveContract) {
+        try {
+          // Try to get the path directly from liveContract
+          const path = contractPath(liveContract)
+          console.log(`[top-two-mcq] ${title} - Opening path from liveContract:`, path)
+          window.open(path, '_blank')
+        } catch (e) {
+          console.error("Error opening contract path:", e)
+          // If we have the original contract, try using that
+          if (contract) {
+            try {
+              const path = contractPath(contract)
+              console.log(`[top-two-mcq] ${title} - Opening fallback path from contract:`, path)
+              window.open(path, '_blank')
+            } catch (e2) {
+              console.error("Error with fallback path too:", e2)
+            }
+          }
+        }
+      }
+    }
+    
     return (
       <ClickFrame
         className={`group cursor-pointer rounded-lg p-4 border border-ink-200 bg-canvas-0 transition-all hover:bg-canvas-50 min-h-[240px] ${className}`}
-        onClick={() => liveContract && window.open(contractPath(liveContract), '_blank')}
+        onClick={handleClick}
       >
         <Col className="h-full space-y-2">
           <div>
@@ -408,10 +471,37 @@ function CapabilityCard({
   
   // For top-one-mcq display type
   if (displayType === 'top-one-mcq') {
+    // Create handler function with debug
+    const handleClick = () => {
+      console.log(`[top-one-mcq] ${title} - Click handler called, marketId:`, marketId)
+      console.log(`Contract found:`, !!contract, 'liveContract:', !!liveContract)
+      
+      if (liveContract) {
+        try {
+          // Try to get the path directly from liveContract
+          const path = contractPath(liveContract)
+          console.log(`[top-one-mcq] ${title} - Opening path from liveContract:`, path)
+          window.open(path, '_blank')
+        } catch (e) {
+          console.error("Error opening contract path:", e)
+          // If we have the original contract, try using that
+          if (contract) {
+            try {
+              const path = contractPath(contract)
+              console.log(`[top-one-mcq] ${title} - Opening fallback path from contract:`, path)
+              window.open(path, '_blank')
+            } catch (e2) {
+              console.error("Error with fallback path too:", e2)
+            }
+          }
+        }
+      }
+    }
+    
     return (
       <ClickFrame
         className={`group cursor-pointer rounded-lg p-4 border border-ink-200 bg-canvas-0 transition-all hover:bg-canvas-50 min-h-[240px] ${className}`}
-        onClick={() => liveContract && window.open(contractPath(liveContract), '_blank')}
+        onClick={handleClick}
       >
         <Col className="h-full space-y-2">
           <div>
@@ -432,10 +522,37 @@ function CapabilityCard({
   }
 
   // Standard card layout for other display types
+  // Create handler function with debug
+  const handleClick = () => {
+    console.log(`[${displayType || 'standard'}] ${title} - Click handler called, marketId:`, marketId)
+    console.log(`Contract found:`, !!contract, 'liveContract:', !!liveContract)
+    
+    if (liveContract) {
+      try {
+        // Try to get the path directly from liveContract
+        const path = contractPath(liveContract)
+        console.log(`[${displayType || 'standard'}] ${title} - Opening path from liveContract:`, path)
+        window.open(path, '_blank')
+      } catch (e) {
+        console.error("Error opening contract path:", e)
+        // If we have the original contract, try using that
+        if (contract) {
+          try {
+            const path = contractPath(contract)
+            console.log(`[${displayType || 'standard'}] ${title} - Opening fallback path from contract:`, path)
+            window.open(path, '_blank')
+          } catch (e2) {
+            console.error("Error with fallback path too:", e2)
+          }
+        }
+      }
+    }
+  }
+  
   return (
     <ClickFrame
       className={`group cursor-pointer rounded-lg p-4 border border-ink-200 bg-canvas-0 transition-all hover:bg-canvas-50 min-h-[240px] ${className}`}
-      onClick={() => liveContract && window.open(contractPath(liveContract), '_blank')}
+      onClick={handleClick}
     >
       <Col className="h-full">
         <div>
