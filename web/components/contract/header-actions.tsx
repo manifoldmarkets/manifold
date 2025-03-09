@@ -21,7 +21,11 @@ import { api, updateUserDisinterestEmbedding } from 'web/lib/api/api'
 import { trackCallback, withTracking } from 'web/lib/service/analytics'
 import { db } from 'web/lib/supabase/db'
 import { duplicateContractHref } from '../buttons/duplicate-contract-button'
-import { followMarket, unfollowMarket } from '../buttons/follow-market-button'
+import {
+  followMarket,
+  FollowMarketIconButton,
+  unfollowMarket,
+} from '../buttons/follow-market-button'
 import { ReportModal } from '../buttons/report-button'
 import DropdownMenu from '../widgets/dropdown-menu'
 import { Row } from '../layout/row'
@@ -267,13 +271,13 @@ export function HeaderActions(props: {
           }}
         />
       )}
-
       {!playContract.coverImageUrl && isCreator && (
         <ChangeBannerButton
           contract={playContract}
           className="ml-3 first:ml-0"
         />
       )}
+      <FollowMarketIconButton contract={currentContract} user={user} />
       <CopyLinkOrShareButton
         url={getShareUrl(currentContract)}
         tooltip="Copy question share link"
@@ -282,7 +286,6 @@ export function HeaderActions(props: {
         eventTrackingName="copy market link"
         trackingInfo={{ contractId: currentContract.id }}
       />
-
       <DropdownMenu items={dropdownItems} />
       <ContractInfoDialog
         playContract={playContract}

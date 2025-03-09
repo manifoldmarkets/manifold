@@ -332,6 +332,15 @@ export function NotificationItem(props: {
         setHighlighted={setHighlighted}
       />
     )
+  } else if (reason === 'market_follows') {
+    return (
+      <FollowsOnYourMarketNotification
+        notification={notification}
+        isChildOfGroup={isChildOfGroup}
+        highlighted={highlighted}
+        setHighlighted={setHighlighted}
+      />
+    )
   } else if (reason === 'league_changed') {
     return (
       <LeagueChangedNotification
@@ -1386,6 +1395,45 @@ function FollowNotification(props: {
           username={sourceUserUsername}
         />{' '}
         followed you
+      </>
+    </NotificationFrame>
+  )
+}
+
+function FollowsOnYourMarketNotification(props: {
+  notification: Notification
+  highlighted: boolean
+  setHighlighted: (highlighted: boolean) => void
+  isChildOfGroup?: boolean
+}) {
+  const { notification, isChildOfGroup, highlighted, setHighlighted } = props
+  const { sourceId, sourceUserName, sourceUserUsername } = notification
+
+  return (
+    <NotificationFrame
+      notification={notification}
+      isChildOfGroup={isChildOfGroup}
+      highlighted={highlighted}
+      setHighlighted={setHighlighted}
+      icon={
+        <AvatarNotificationIcon
+          notification={notification}
+          symbol={
+            <Col className="from-ink-400 to-ink-200 h-5 w-5 items-center rounded-lg bg-gradient-to-br text-sm">
+              👀
+            </Col>
+          }
+        />
+      }
+      link={`/${sourceUserUsername}`}
+    >
+      <>
+        <NotificationUserLink
+          userId={sourceId}
+          name={sourceUserName}
+          username={sourceUserUsername}
+        />{' '}
+        followed your market <QuestionOrGroupLink notification={notification} />
       </>
     </NotificationFrame>
   )

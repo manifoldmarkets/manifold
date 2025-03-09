@@ -19,8 +19,9 @@ export const WatchMarketModal = (props: {
           <span className={'text-primary-700'}>• What is watching?</span>
           <span className={'ml-2'}>
             Watching a question means you'll receive a notification when it
-            resolves. You automatically start watching a question if you comment
-            on it, {TRADE_TERM} on it, or click the watch button.
+            moves by more than 10% or resolves. You automatically start watching
+            a question if you comment on it, {TRADE_TERM} on it, or click the
+            watch button.
           </span>
         </Col>
       </Col>

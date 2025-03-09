@@ -52,15 +52,19 @@ export function CreatorSharePanel(props: { contract: Contract }) {
   )
 }
 
-export function NonCreatorSharePanel(props: { contract: Contract }) {
-  const { contract } = props
+export function NonCreatorSharePanel(props: {
+  contract: Contract
+  children?: React.ReactNode
+}) {
+  const { contract, children } = props
 
   return (
-    <Row className="my-4 flex-wrap gap-4">
+    <Row className="my-4 flex-wrap gap-3 sm:gap-4">
       {contract.outcomeType == 'BOUNTIED_QUESTION' && (
         <AddBountyButton contract={contract} />
       )}
       <AddBoostButton contract={contract} />
+      {children}
       <ShareLinkButton contract={contract} />
       <TweetButton
         tweetText={getShareUrl(contract)}

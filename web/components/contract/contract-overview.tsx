@@ -400,7 +400,6 @@ const ChoiceOverview = (props: {
           </>
         )}
       </Row>
-
       {contract.mechanism == 'cpmm-multi-1' && !hideGraph && (
         <SizedContainer
           className={clsx(
@@ -446,23 +445,21 @@ const ChoiceOverview = (props: {
           setHoveredAnnotation={setHoveredAnnotation}
         />
       ) : null}
-      {showResolver ? (
-        !shouldAnswersSumToOne && contract.mechanism === 'cpmm-multi-1' ? (
-          <GradientContainer>
-            <IndependentAnswersResolvePanel
-              contract={contract}
-              onClose={() => setShowResolver(false)}
-            />
-          </GradientContainer>
-        ) : (
-          <GradientContainer>
-            <AnswersResolvePanel
-              contract={contract as CPMMMultiContract}
-              onClose={() => setShowResolver(false)}
-            />
-          </GradientContainer>
-        )
-      ) : (
+      {!shouldAnswersSumToOne && contract.mechanism === 'cpmm-multi-1' ? (
+        <IndependentAnswersResolvePanel
+          contract={contract}
+          onClose={() => setShowResolver(false)}
+          show={showResolver}
+        />
+      ) : showResolver ? (
+        <GradientContainer>
+          <AnswersResolvePanel
+            contract={contract as CPMMMultiContract}
+            onClose={() => setShowResolver(false)}
+          />
+        </GradientContainer>
+      ) : null}
+      {!showResolver && (
         <>
           {resolutionRating}
           <AnswersPanel
@@ -701,23 +698,21 @@ const MultiNumericOverview = (props: {
           />
         )}
       </SizedContainer>
-      {showResolver ? (
-        !shouldAnswersSumToOne && contract.mechanism === 'cpmm-multi-1' ? (
-          <GradientContainer>
-            <IndependentAnswersResolvePanel
-              contract={contract}
-              onClose={() => setShowResolver(false)}
-            />
-          </GradientContainer>
-        ) : (
-          <GradientContainer>
-            <AnswersResolvePanel
-              contract={contract}
-              onClose={() => setShowResolver(false)}
-            />
-          </GradientContainer>
-        )
-      ) : (
+      {!shouldAnswersSumToOne && contract.mechanism === 'cpmm-multi-1' ? (
+        <IndependentAnswersResolvePanel
+          show={showResolver}
+          contract={contract}
+          onClose={() => setShowResolver(false)}
+        />
+      ) : showResolver ? (
+        <GradientContainer>
+          <AnswersResolvePanel
+            contract={contract}
+            onClose={() => setShowResolver(false)}
+          />
+        </GradientContainer>
+      ) : null}
+      {!showResolver && (
         <>
           {resolutionRating}
           <AnswersPanel

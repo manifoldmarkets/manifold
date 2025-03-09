@@ -95,7 +95,7 @@ export function AmountInput(
     <Col className={clsx('relative', className)}>
       <label className="font-sm md:font-lg relative">
         {label && (
-          <span className="text-ink-400 absolute top-1/2 my-auto -mt-0.5 ml-2 -translate-y-1/2">
+          <span className="text-ink-400 absolute top-1/2 my-auto ml-2 -translate-y-1/2">
             {label}
           </span>
         )}

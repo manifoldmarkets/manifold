@@ -2235,3 +2235,50 @@ export const createMarketMovementNotification = async (
 
   return bulkNotifications
 }
+
+export const createFollowsOnYourMarketNotification = async (
+  contractId: string,
+  followerUser: User,
+  pg: SupabaseDirectClient
+) => {
+  const contract = await getContract(pg, contractId)
+  if (!contract) return
+
+  // Don't notify if follower is the creator
+  if (followerUser.id === contract.creatorId) return
+
+  const creatorId = contract.creatorId
+  const privateUser = await getPrivateUser(creatorId)
+  if (!privateUser) return
+  if (userIsBlocked(privateUser, followerUser.id)) return
+
+  const { sendToBrowser } = getNotificationDestinationsForUser(
+    privateUser,
+    'market_follows'
+  )
+
+  if (sendToBrowser) {
+    const notification: Notification = {
+      id: `${followerUser.id}-follows-${contractId}}`,
+      userId: creatorId,
+      reason: 'market_follows',
+      createdTime: Date.now(),
+      isSeen: false,
+      sourceId: followerUser.id,
+      sourceType: 'follow',
+      sourceUpdateType: 'created',
+      sourceContractId: contractId,
+      sourceUserName: followerUser.name,
+      sourceUserUsername: followerUser.username,
+      sourceUserAvatarUrl: followerUser.avatarUrl,
+      sourceText: '',
+      sourceContractCreatorUsername: contract.creatorUsername,
+      sourceContractTitle: contract.question,
+      sourceContractSlug: contract.slug,
+      sourceSlug: contract.slug,
+      sourceTitle: contract.question,
+    }
+
+    await insertNotificationToSupabase(notification, pg)
+  }
+}

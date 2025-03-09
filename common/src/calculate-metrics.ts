@@ -497,7 +497,8 @@ export const calculateUpdatedMetricsForContracts = (
   contractsWithMetrics: {
     contract: Contract
     metrics: ContractMetric[]
-  }[]
+  }[],
+  useIncludedSummaryMetric = false
 ) => {
   const metricsByContract: Dictionary<Omit<ContractMetric, 'id'>[]> = {}
 
@@ -520,6 +521,9 @@ export const calculateUpdatedMetricsForContracts = (
             ? [calculateProfitMetricsAtProbOrCancel(state, metric)]
             : []
         } else if (contract.mechanism === 'cpmm-multi-1') {
+          const oldSummary = useIncludedSummaryMetric
+            ? userMetrics.find(isSummary)
+            : undefined
           // For multiple choice markets, update each answer's metrics and compute summary per user
           const answerMetrics = userMetrics.filter((m) => !isSummary(m))
 
@@ -535,13 +539,22 @@ export const calculateUpdatedMetricsForContracts = (
                   : answer.resolution === 'NO'
                   ? 0
                   : answer.prob
+
+              if (oldSummary) {
+                // Subtract the old stats from the old summary metric
+                applyMetricToSummary(m, oldSummary, false)
+              }
               return calculateProfitMetricsAtProbOrCancel(state, m)
             }
             return m
           })
 
-          // Calculate summary metrics for this user
-          const summaryMetric = getDefaultMetric(userId, contractId, null)
+          const defaultMetric = getDefaultMetric(userId, contractId, null)
+          const summaryMetric =
+            (useIncludedSummaryMetric
+              ? userMetrics.find(isSummary)
+              : defaultMetric) ?? defaultMetric
+
           updatedAnswerMetrics.forEach((m) =>
             applyMetricToSummary(m, summaryMetric, true)
           )
