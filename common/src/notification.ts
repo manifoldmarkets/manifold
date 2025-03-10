@@ -111,7 +111,6 @@ export type notification_reason_types =
   | 'contract_from_followed_user'
   | 'you_referred_user'
   | 'user_joined_to_bet_on_your_market'
-  | 'unique_bettors_on_your_contract'
   | 'bet_fill'
   | 'limit_order_cancelled'
   | 'user_joined_from_your_group_invite'
