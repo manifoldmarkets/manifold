@@ -9,7 +9,7 @@ const colorClasses = {
   green:
     'text-ink-500 hover:bg-ink-50 aria-checked:bg-teal-500 aria-checked:text-ink-0',
   red: 'text-ink-500 hover:bg-ink-50 aria-checked:bg-scarlet-500 aria-checked:text-ink-0',
-  gray: 'text-ink-900 aria-checked:shadow bg-canvas-50 hover:bg-canvas-50 aria-checked:bg-ink-0',
+  gray: 'text-ink-900 aria-checked:shadow bg-canvas-50 hover:bg-canvas-50 aria-checked:bg-canvas-0',
   light:
     'text-ink-900 aria-checked:shadow bg-transparent hover:bg-canvas-50/70 aria-checked:bg-canvas-0 ',
   'light-green':

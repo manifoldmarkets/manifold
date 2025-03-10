@@ -373,9 +373,9 @@ export const BuyPanelBody = (props: {
   )
   const isAdvancedTrader = useIsAdvancedTrader() || justSetAdvancedTrader
 
-  const [betTypeSetting, setBetTypeSetting] = usePersistentLocalState<
-    'Market' | 'Limit'
-  >('Market', 'bet-type')
+  const [betTypeSetting, setBetTypeSetting] = useState<'Market' | 'Limit'>(
+    'Market'
+  )
 
   useEffect(() => {
     if (!isAdvancedTrader && betTypeSetting === 'Limit') {
