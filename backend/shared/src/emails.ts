@@ -689,7 +689,7 @@ export const sendNewPrivateMarketEmail = async (
   )
 }
 export const sendNewUniqueBettorsEmail = async (
-  reason: notification_reason_types,
+  reason: NotificationReason,
   privateUser: PrivateUser,
   contract: Contract,
   totalPredictors: number,
