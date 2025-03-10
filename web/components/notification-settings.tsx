@@ -93,8 +93,8 @@ const mobilePushEnabled: Array<notification_preference> = [
   'tagged_user',
   'betting_streaks',
   'market_movements',
+  'limit_order_fills',
   // TODO: add these
-  // 'limit_order_fills',
   // 'contract_from_followed_user',
   // 'probability_updates_on_watched_markets',
 ]

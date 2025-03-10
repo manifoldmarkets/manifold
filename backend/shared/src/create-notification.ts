@@ -502,11 +502,11 @@ export const createBetFillNotification = async (
 ) => {
   const privateUser = await getPrivateUser(toUser.id)
   if (!privateUser) return
-  const { sendToBrowser } = getNotificationDestinationsForUser(
+  const { sendToBrowser, sendToMobile } = getNotificationDestinationsForUser(
     privateUser,
     'bet_fill'
   )
-  if (!sendToBrowser) return
+  if (!sendToBrowser && !sendToMobile) return
 
   // The limit order fills array has a matchedBetId that does not match this bet id
   // (even though this bet has a fills array that is matched to the limit order)
@@ -564,8 +564,24 @@ export const createBetFillNotification = async (
     } as BetFillData,
     worksOnSweeple: !!contract.siblingContractId,
   }
-  const pg = createSupabaseDirectClient()
-  await insertNotificationToSupabase(notification, pg)
+  if (sendToBrowser) {
+    const pg = createSupabaseDirectClient()
+    await insertNotificationToSupabase(notification, pg)
+  }
+  if (sendToMobile) {
+    await createPushNotifications([
+      [
+        privateUser,
+        notification,
+        `Fill on ${limitBet.outcome} order at ${limitAt}: ${contract.question}`,
+        `${formatMoneyEmail(fillAmount)} filled by ${fromUser.name}: ${
+          floatingEqual(remainingAmount, 0)
+            ? 'Order complete.'
+            : `${formatMoneyEmail(remainingAmount)} remaining.`
+        }`,
+      ],
+    ])
+  }
 }
 
 export const createLimitBetCanceledNotification = async (
