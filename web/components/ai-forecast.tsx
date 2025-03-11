@@ -65,12 +65,14 @@ export const AI_CAPABILITY_CARDS: AICapabilityCard[] = [
     description: '',
     marketId: 'placeholder-3', // Replace with actual ID
     type: 'releases',
+    displayType: 'date-numeric'
   },
   {
     title: 'Grok 4',
     description: '',
-    marketId: 'placeholder-3', // Replace with actual ID
+    marketId: 'placeholder-4', // Replace with actual ID
     type: 'releases',
+    displayType: 'date-numeric'
   },
 
   // Benchmarks
@@ -86,6 +88,7 @@ export const AI_CAPABILITY_CARDS: AICapabilityCard[] = [
     description: '>80% on Frontier Math by EOY',
     marketId: 'LNdOg08SsU', // Replace with actual ID
     type: 'benchmark',
+    displayType: 'binary-odds'
   },
     {
     title: 'Frontier Math Performance',
@@ -99,12 +102,14 @@ export const AI_CAPABILITY_CARDS: AICapabilityCard[] = [
     description: 'Top SWE Bench score by EOY',
     marketId: 'placeholder-2', // Replace with actual ID
     type: 'benchmark',
+    displayType: 'binary-odds'
   },
   {
     title: 'Highest Humanity\'s Last Exam Top Score',
     description:'Highest score on Humanity\'s last exam by EOY',
     marketId: 'placeholder-3', // Replace with actual ID
     type: 'benchmark',
+    displayType: 'top-one-mcq'
   },
   
   // Prizes
@@ -113,18 +118,21 @@ export const AI_CAPABILITY_CARDS: AICapabilityCard[] = [
     description: 'AI Solve Millennium Problem by EOY',
     marketId: 'placeholder-2', // Replace with actual ID
     type: 'prize',
+    displayType: 'binary-odds'
   },
   {
     title: 'Arc AGI Claimed',
     description: 'Arc AGI prize by EOY',
     marketId: 'placeholder-3', // Replace with actual ID
     type: 'prize',
+    displayType: 'binary-odds'
   },
   {
     title: 'Turing Test (Long Bets) Passed',
     description: 'Will AI pass long bets Turing Test by EOY?',
     marketId: 'placeholder-3', // Replace with actual ID
     type: 'prize',
+    displayType: 'binary-odds'
   },
   
   // AI misuse
@@ -133,12 +141,14 @@ export const AI_CAPABILITY_CARDS: AICapabilityCard[] = [
     description: 'AI Blackmails someone for >$1000',
     marketId: 's82955uAnR',
     type: 'misuse',
+    displayType: 'binary-odds'
   },
   {
     title: 'Hacking',
     description: 'AI independently hacks a system',
     marketId: 'placeholder-5', // Replace with actual ID
     type: 'misuse',
+    displayType: 'binary-odds'
   },
   
   // Comparisons to humans
@@ -147,12 +157,14 @@ export const AI_CAPABILITY_CARDS: AICapabilityCard[] = [
     description: 'AI-written novel wins major literary prize by 2027',
     marketId: 'placeholder-6', // Replace with actual ID
     type: 'human-comparison',
+    displayType: 'binary-odds'
   },
   {
     title: 'Medical Diagnosis',
     description: 'AI outperforms average doctor in general diagnosis by 2026',
     marketId: 'placeholder-7', // Replace with actual ID
     type: 'human-comparison',
+    displayType: 'binary-odds'
   }
 ]
 
@@ -273,6 +285,12 @@ function CapabilityCard({
         return { text: 'Claude 4', probability: 0.75 }
       } else if (title.includes('Frontier')) {
         return { text: 'Claude Ultra', probability: 0.62 }
+      } else if (title.includes('AiderBench')) {
+        return { text: 'GPT-4o', probability: 0.68 }
+      } else if (title.includes('SWE Bench')) {
+        return { text: 'DeepSeek Coder', probability: 0.58 }
+      } else if (title.includes('Humanity')) {
+        return { text: 'Claude Opus', probability: 0.71 }
       } else {
         return { text: 'Anthropic', probability: 0.58 }
       }
@@ -320,36 +338,55 @@ function CapabilityCard({
   } else if (displayType === 'top-one-mcq' && liveContract && liveContract.outcomeType === 'MULTIPLE_CHOICE') {
     topModel = getTopOneOdds()
   } else if (displayType === 'binary-odds') {
-    if (marketId !== 'LsZPyLPI82') {
-      // Return dummy probabilities based on the card title
-      if (title.includes('IMO Gold')) {
-        displayValue = formatPercent(0.37)
-      } else if (title.includes('Millennium Prize')) {
-        displayValue = formatPercent(0.12)
-      } else if (title.includes('SWE Bench')) {
-        displayValue = formatPercent (0.3)
-      } else {
-        displayValue = formatPercent(0.25)
-      }
-    }
-    // Otherwise try to use the contract's direct probability property if it exists
-    else if (liveContract && liveContract.outcomeType === 'BINARY') {
-      // Try each possible property where probability might be stored
+    // Return dummy probabilities based on the card title
+    if (title.includes('IMO Gold')) {
+      displayValue = formatPercent(0.37)
+    } else if (title.includes('Millennium Prize')) {
+      displayValue = formatPercent(0.12)
+    } else if (title.includes('Arc AGI')) {
+      displayValue = formatPercent(0.21)
+    } else if (title.includes('Turing Test')) {
+      displayValue = formatPercent(0.43)
+    } else if (title.includes('Blackmail')) {
+      displayValue = formatPercent(0.09)
+    } else if (title.includes('Hacking')) {
+      displayValue = formatPercent(0.16)
+    } else if (title.includes('Creative Writing')) {
+      displayValue = formatPercent(0.65)
+    } else if (title.includes('Medical Diagnosis')) {
+      displayValue = formatPercent(0.79)
+    } else if (title.includes('SWE Bench')) {
+      displayValue = formatPercent(0.30)
+    } else {
+      displayValue = formatPercent(0.25)
     }
   } else if (displayType === 'date-numeric') {
     // Use dummy data for date-numeric
     if (title.includes('GPT-5')) {
       displayValue = 'Q3 2025'
+    } else if (title.includes('Claude 4')) {
+      displayValue = 'Q2 2024'
+    } else if (title.includes('Gemini 3')) {
+      displayValue = 'Q1 2025'
+    } else if (title.includes('Grok 4')) {
+      displayValue = 'Q4 2024'
     } else {
       displayValue = 'Q2 2026'
     }
   } else {
-    // Default display behavior
-    displayValue = probability !== null 
-      ? formatPercent(probability) 
-      : numericValue !== null 
-        ? numericValue.toFixed(1) 
-        : '—'
+    // Set dummy values for other cards based on card title
+    if (title.includes('Frontier Math Passed')) {
+      displayValue = formatPercent(0.72)
+    } else if (title.includes('Highest Humanity')) {
+      displayValue = '85%'
+    } else {
+      // Default display behavior
+      displayValue = probability !== null 
+        ? formatPercent(probability) 
+        : numericValue !== null 
+          ? numericValue.toFixed(1) 
+          : '—'
+    }
   }
   
   // Determine the accent color based on type (works in both light/dark modes)
