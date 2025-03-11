@@ -165,10 +165,8 @@ export const handleCommentNotifications = async (
     commentCreator,
     richTextToString(comment.content),
     contract,
-    {
-      repliedUsersInfo: repliedUsers,
-      taggedUserIds: mentionedUsers,
-    }
+    repliedUsers,
+    mentionedUsers
   )
   return [...mentionedUsers, ...Object.keys(repliedUsers)]
 }

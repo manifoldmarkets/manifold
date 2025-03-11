@@ -199,12 +199,9 @@ export const createCommentOnContractNotification = async (
   sourceUser: User,
   sourceText: string,
   sourceContract: Contract,
-  miscData?: {
-    repliedUsersInfo: replied_users_info
-    taggedUserIds: string[]
-  }
+  repliedUsersInfo: replied_users_info,
+  taggedUserIds: string[]
 ) => {
-  const { repliedUsersInfo, taggedUserIds } = miscData ?? {}
   const pg = createSupabaseDirectClient()
 
   const usersToReceivedNotifications: Record<
@@ -217,6 +214,7 @@ export const createCommentOnContractNotification = async (
     [sourceContract.id],
     (r) => r.follow_id
   )
+  const isReply = Object.keys(repliedUsersInfo).length > 0
   const buildNotification = (userId: string, reason: NotificationReason) => {
     const notification: Notification = {
       id: crypto.randomUUID(),
@@ -238,7 +236,7 @@ export const createCommentOnContractNotification = async (
       sourceSlug: sourceContract.slug,
       sourceTitle: sourceContract.question,
       data: {
-        isReply: !!repliedUsersInfo,
+        isReply,
       } as CommentNotificationData,
       worksOnSweeple: !!sourceContract.siblingContractId,
     }
