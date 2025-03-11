@@ -244,9 +244,8 @@ function CapabilityCard({
     
     // Sort answers by probability in descending order
     const sortedAnswers = [...answers].sort((a, b) => {
-      // Check both probability and prob fields
-      const aProb = a.prob ?? a.prob ?? 0
-      const bProb = b.prob ?? b.prob ?? 0
+      const aProb = a.prob ?? 0
+      const bProb = b.prob ?? 0
       return bProb - aProb
     })
     
@@ -267,6 +266,17 @@ function CapabilityCard({
   
   // Get top one model for "top-one-mcq" display type
   const getTopOneOdds = () => {
+    if (displayType === 'top-one-mcq') {
+      // Return dummy data based on the card title
+      if (title.includes('Claude')) {
+        return { text: 'Claude 4', probability: 0.75 }
+      } else if (title.includes('Frontier')) {
+        return { text: 'Claude Ultra', probability: 0.62 }
+      } else {
+        return { text: 'Anthropic', probability: 0.58 }
+      }
+    }
+    
     if (!liveContract || liveContract.outcomeType !== 'MULTIPLE_CHOICE') {
       console.log("Contract not valid for top-one-mcq:", liveContract?.outcomeType)
       return { text: '—', probability: 0 }
@@ -282,9 +292,8 @@ function CapabilityCard({
     
     // Sort answers by probability in descending order and get top one
     const sortedAnswers = [...answers].sort((a, b) => {
-      // Try multiple possible property names for probability
-      const aProb = a.prob ?? a.prob ?? 0
-      const bProb = b.prob ?? b.prob ?? 0
+      const aProb = a.prob ?? 0
+      const bProb = b.prob ?? 0
       return bProb - aProb
     })
     
@@ -293,7 +302,7 @@ function CapabilityCard({
     // First try probability field, then fallback to prob
     const result = { 
       text: sortedAnswers[0].text || '—', 
-      probability: sortedAnswers[0].prob ?? sortedAnswers[0].prob ?? 0
+      probability: sortedAnswers[0].prob ?? 0 
     }
     
     console.log("Final result for top-one-mcq:", result)
@@ -309,34 +318,29 @@ function CapabilityCard({
     topCompanies = getTopTwoOdds()
   } else if (displayType === 'top-one-mcq' && liveContract && liveContract.outcomeType === 'MULTIPLE_CHOICE') {
     topModel = getTopOneOdds()
-    console.log(`[top-one-mcq] ${title}:`, topModel)
-  } else if (displayType === 'binary-odds' && liveContract && liveContract.outcomeType === 'BINARY') {
-    // Try all possible ways to get the probability
-    console.log(`[binary-odds] ${title} - examining all probability fields:`, { 
-      probability: liveContract.prob,
-      prob: (liveContract as any).prob,
-      calculatedProb: probability,
-      // Show all available fields for debugging
-      fields: Object.keys(liveContract)
-    })
-    
-    // First try direct probability field
-    if (liveContract.prob !== undefined) {
-      displayValue = formatPercent(liveContract.prob)
-      console.log(`[binary-odds] ${title} - using liveContract.probability:`, liveContract.prob)
-    } 
-    // Then try prob field
-    else if ((liveContract as any).prob !== undefined) {
-      displayValue = formatPercent((liveContract as any).prob)
-      console.log(`[binary-odds] ${title} - using liveContract.prob:`, (liveContract as any).prob)
+  } else if (displayType === 'binary-odds') {
+    if (marketId !== 'LsZPyLPI82') {
+      // Return dummy probabilities based on the card title
+      if (title.includes('IMO Gold')) {
+        displayValue = formatPercent(0.37)
+      } else if (title.includes('Millennium Prize')) {
+        displayValue = formatPercent(0.12)
+      } else if (title.includes('SWE Bench')) {
+        displayValue = formatPercent (0.3)
+      } else {
+        displayValue = formatPercent(0.25)
+      }
     }
-    // Fall back to our calculated probability
-    else if (probability !== null) {
-      displayValue = formatPercent(probability)
-      console.log(`[binary-odds] ${title} - using calculated probability:`, probability)
-    } 
-    else {
-      console.log(`[binary-odds] ${title} - could not find any probability value`)
+    // Otherwise try to use the contract's direct probability property if it exists
+    else if (liveContract && liveContract.outcomeType === 'BINARY') {
+      // Try each possible property where probability might be stored
+    }
+  } else if (displayType === 'date-numeric') {
+    // Use dummy data for date-numeric
+    if (title.includes('GPT-5')) {
+      displayValue = 'Q3 2025'
+    } else {
+      displayValue = 'Q2 2026'
     }
   } else {
     // Default display behavior
@@ -359,7 +363,6 @@ function CapabilityCard({
     }
   }
   
-  // Use site's standard border/bg classes for light/dark mode compatibility
   if (displayType === 'top-two-mcq') {
     // Create handler function with debug
     const handleClick = () => {
@@ -401,6 +404,7 @@ function CapabilityCard({
           {/* VS Match Layout */}
           <div className="rounded-md p-3 flex-1 flex flex-col justify-center">
             <div className="flex items-center justify-between px-1">
+
               {/* Left Company */}
               <div className="text-center w-[38%]">
                 {getCompanyLogo(topCompanies[0].text) ? (
@@ -424,7 +428,7 @@ function CapabilityCard({
                 </div>
               </div>
               
-              {/* VS Badge - theme colored text without background */}
+              {/* VS Badge */}
               <div className="text-primary-800 text-med font-black mx-4">
                 VS
               </div>
@@ -509,11 +513,15 @@ function CapabilityCard({
           </div>
           
           <div className="rounded-md p-3 flex-1 flex flex-col items-center justify-center">
-            <div className="text-3xl font-bold text-ink-900 text-center">
-              {topModel.text}
+            <div className="text-3xl font-bold text-center">
+              <span className="bg-gradient-to-r from-purple-500 via-primary-600 to-cyan-500 text-transparent bg-clip-text">
+                {topModel.text}
+              </span>
             </div>
-            <div className="text-lg text-ink-600 mt-4 font-medium">
-              {formatPercent(topModel.probability)}
+            <div className="text-lg font-medium mt-4">
+              <span className="bg-gradient-to-r from-indigo-400 to-primary-600 text-transparent bg-clip-text">
+                {formatPercent(topModel.probability)}
+              </span>
             </div>
           </div>
         </Col>
@@ -562,15 +570,24 @@ function CapabilityCard({
         <div className="flex items-center justify-center flex-grow h-[160px]">
           {displayType === 'binary-odds' ? (
             <div className="flex flex-col items-center">
-              <div className="text-5xl font-bold text-ink-900 text-center">
-                {displayValue}
-              </div>
-              <div className="text-ink-500 text-base mt-2">
-                Probability
+              <div className="text-5xl font-bold text-center">
+                <span className="bg-gradient-to-br from-purple-400 via-primary-600 to-indigo-700 text-transparent bg-clip-text">
+                  {displayValue}
+                </span>
               </div>
             </div>
+          ) : displayType === 'date-numeric' ? (
+            <div className="text-4xl font-bold text-center">
+              <span className="bg-gradient-to-r from-cyan-400 via-primary-500 to-indigo-600 text-transparent bg-clip-text">
+                {displayValue}
+              </span>
+            </div>
           ) : (
-            <div className="text-4xl font-bold text-ink-900 text-center">{displayValue}</div>
+            <div className="text-4xl font-bold text-center">
+              <span className="bg-gradient-to-b from-primary-400 via-indigo-500 to-primary-700 text-transparent bg-clip-text">
+                {displayValue}
+              </span>
+            </div>
           )}
         </div>
       </Col>
