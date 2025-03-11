@@ -114,6 +114,7 @@ function NotificationsContent(props: {
     groupedBalanceChangeNotifications,
     groupedNewMarketNotifications,
     groupedMentionNotifications,
+    markAllAsSeen,
   } = useGroupedNotifications(
     user,
     (params) => api('get-notifications', params),
@@ -145,6 +146,7 @@ function NotificationsContent(props: {
                   privateUser={privateUser}
                   groupedNotifications={groupedNotifications}
                   mostRecentNotification={mostRecentNotification}
+                  markAllAsSeen={markAllAsSeen}
                 />
               ),
             },
@@ -166,6 +168,7 @@ function NotificationsContent(props: {
                   emptyTitle={
                     "You don't have any new question notifications from followed users, yet. Try following some users to see more."
                   }
+                  markAllAsSeen={markAllAsSeen}
                 />
               ),
             },
@@ -188,6 +191,7 @@ function NotificationsContent(props: {
               content: (
                 <NotificationsList
                   groupedNotifications={groupedMentionNotifications}
+                  markAllAsSeen={markAllAsSeen}
                 />
               ),
             },
@@ -196,6 +200,7 @@ function NotificationsContent(props: {
               content: (
                 <NotificationsList
                   groupedNotifications={groupedBalanceChangeNotifications}
+                  markAllAsSeen={markAllAsSeen}
                 />
               ),
             },
@@ -268,12 +273,14 @@ export function NotificationsList(props: {
   privateUser?: PrivateUser
   mostRecentNotification?: Notification
   emptyTitle?: string
+  markAllAsSeen?: () => void
 }) {
   const {
     privateUser,
     emptyTitle,
     groupedNotifications,
     mostRecentNotification,
+    markAllAsSeen,
   } = props
   const [page, setPage] = useState(0)
   const user = useUser()
@@ -290,7 +297,13 @@ export function NotificationsList(props: {
   useEffect(() => {
     if (!privateUser || !isPageVisible) return
     markAllNotifications({ seen: true })
-  }, [privateUser?.id, isPageVisible, mostRecentNotification?.id])
+    markAllAsSeen?.()
+  }, [
+    privateUser?.id,
+    isPageVisible,
+    mostRecentNotification?.id,
+    markAllAsSeen,
+  ])
 
   return (
     <Col className={'min-h-[100vh] gap-0 text-sm'}>
