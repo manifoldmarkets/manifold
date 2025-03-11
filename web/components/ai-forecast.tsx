@@ -15,6 +15,7 @@ import { formatPercent } from 'common/util/format'
 import { getDisplayProbability } from 'common/calculate'
 import { SiOpenai, SiGooglegemini, SiAnthropic} from 'react-icons/si'
 import { RiTwitterXLine } from 'react-icons/ri'
+import  { LuLink } from "react-icons/lu"
 
 const ENDPOINT = 'ai'
 
@@ -691,11 +692,11 @@ export function AIForecast({ whenAgi, contracts = [], hideTitle }: AIForecastPro
                 }`}>{label}</h3>
                 <p className="text-ink-500 text-sm">
                   {type === 'monthly'? '': 
-                   type === 'releases' ? 'Predicted Model Release' :
-                   type === 'benchmark' ? 'EOY LLM Performance' :
-                   type === 'prize' ? 'Major AI Advancements' :
-                   type === 'misuse' ? 'AI Misuse Odds' :
-                   'How does AI compare to human performance?'}
+                   type === 'releases' ? '' :
+                   type === 'benchmark' ? '' :
+                   type === 'prize' ? '' :
+                   type === 'misuse' ? '' :
+                   ''}
                 </p>
               </div>
               <Link 
@@ -704,7 +705,7 @@ export function AIForecast({ whenAgi, contracts = [], hideTitle }: AIForecastPro
                 scroll={false}
                 aria-label={`Link to ${label} section`}
               >
-                #
+                <LuLink />
               </Link>
             </Row>
           </div>
