@@ -355,6 +355,7 @@ function CapabilityCard({
   const getAccentColor = () => {
     switch(type) {
       case 'monthly': return 'text-primary-600'
+      case 'releases': return 'text-amber-600'
       case 'benchmark': return 'text-teal-600'
       case 'prize': return 'text-amber-600'
       case 'misuse': return 'text-rose-600'
@@ -514,12 +515,24 @@ function CapabilityCard({
           
           <div className="rounded-md p-3 flex-1 flex flex-col items-center justify-center">
             <div className="text-3xl font-bold text-center">
-              <span className="bg-gradient-to-r from-purple-500 via-primary-600 to-cyan-500 text-transparent bg-clip-text">
+              <span className={`text-transparent bg-clip-text ${
+                type === 'releases' 
+                ? 'bg-gradient-to-r from-amber-400 via-amber-500 to-amber-600'
+                : type === 'benchmark'
+                  ? 'bg-gradient-to-r from-teal-400 via-teal-500 to-teal-600'
+                : 'bg-gradient-to-r from-primary-400 via-primary-600 to-primary-700'
+              }`}>
                 {topModel.text}
               </span>
             </div>
             <div className="text-lg font-medium mt-4">
-              <span className="bg-gradient-to-r from-indigo-400 to-primary-600 text-transparent bg-clip-text">
+              <span className={`text-transparent bg-clip-text ${
+                type === 'releases' 
+                ? 'bg-gradient-to-br from-amber-400 to-amber-600'
+                : type === 'benchmark'
+                  ? 'bg-gradient-to-br from-teal-400 to-teal-600'
+                : 'bg-gradient-to-br from-primary-400 to-primary-600'
+              }`}>
                 {formatPercent(topModel.probability)}
               </span>
             </div>
@@ -571,20 +584,32 @@ function CapabilityCard({
           {displayType === 'binary-odds' ? (
             <div className="flex flex-col items-center">
               <div className="text-5xl font-bold text-center">
-                <span className="bg-gradient-to-br from-purple-400 via-primary-600 to-indigo-700 text-transparent bg-clip-text">
+                <span className="bg-gradient-to-br from-teal-400 via-teal-500 to-primary-600 text-transparent bg-clip-text">
                   {displayValue}
                 </span>
               </div>
             </div>
           ) : displayType === 'date-numeric' ? (
             <div className="text-4xl font-bold text-center">
-              <span className="bg-gradient-to-r from-cyan-400 via-primary-500 to-indigo-600 text-transparent bg-clip-text">
+              <span className={`text-transparent bg-clip-text ${
+                type === 'releases' 
+                ? 'bg-gradient-to-r from-amber-400 via-amber-500 to-amber-600' 
+                : 'bg-gradient-to-r from-primary-400 via-primary-500 to-primary-600'
+              }`}>
                 {displayValue}
               </span>
             </div>
           ) : (
             <div className="text-4xl font-bold text-center">
-              <span className="bg-gradient-to-b from-primary-400 via-indigo-500 to-primary-700 text-transparent bg-clip-text">
+              <span className={`text-transparent bg-clip-text ${
+                type === 'prize' 
+                ? 'bg-gradient-to-b from-amber-400 via-amber-500 to-amber-600'
+                : type === 'misuse' 
+                  ? 'bg-gradient-to-b from-rose-400 via-rose-500 to-rose-600'
+                  : type === 'human-comparison'
+                    ? 'bg-gradient-to-b from-purple-400 via-purple-500 to-purple-600'
+                    : 'bg-gradient-to-b from-primary-400 via-primary-500 to-primary-700'
+              }`}>
                 {displayValue}
               </span>
             </div>
@@ -656,7 +681,14 @@ export function AIForecast({ whenAgi, contracts = [], hideTitle }: AIForecastPro
           <div className="mb-4">
             <Row className="items-center justify-between">
               <div>
-                <h3 className="items-center gap-1 font-semibold sm:text-lg">{label}</h3>
+                <h3 className={`items-center gap-1 font-semibold sm:text-lg ${
+                  type === 'releases' ? 'text-amber-600' :
+                  type === 'benchmark' ? 'text-teal-600' :
+                  type === 'prize' ? 'text-amber-600' :
+                  type === 'misuse' ? 'text-rose-600' :
+                  type === 'human-comparison' ? 'text-purple-600' :
+                  'text-primary-600'
+                }`}>{label}</h3>
                 <p className="text-ink-500 text-sm">
                   {type === 'monthly'? '': 
                    type === 'releases' ? 'Predicted Model Release' :
