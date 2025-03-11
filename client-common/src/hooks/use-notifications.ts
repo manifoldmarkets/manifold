@@ -161,10 +161,6 @@ export function useGroupedNotifications(
       'contract_from_followed_user',
     ])
 
-  const groupedBalanceChangeNotifications = groupSpecificNotifications(
-    sortedNotifications,
-    (n) => BalanceChangeNotificationTypes.includes(n.reason)
-  )
   const groupedNewMarketNotifications = groupSpecificNotifications(
     sortedNotifications,
     (n) => n.reason === 'contract_from_followed_user',
@@ -186,7 +182,6 @@ export function useGroupedNotifications(
     () => ({
       mostRecentNotification,
       groupedNotifications,
-      groupedBalanceChangeNotifications,
       groupedNewMarketNotifications,
       groupedMentionNotifications,
       markAllAsSeen,

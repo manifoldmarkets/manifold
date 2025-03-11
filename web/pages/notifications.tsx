@@ -111,7 +111,6 @@ function NotificationsContent(props: {
   const {
     groupedNotifications,
     mostRecentNotification,
-    groupedBalanceChangeNotifications,
     groupedNewMarketNotifications,
     groupedMentionNotifications,
     markAllAsSeen,
@@ -191,15 +190,6 @@ function NotificationsContent(props: {
               content: (
                 <NotificationsList
                   groupedNotifications={groupedMentionNotifications}
-                  markAllAsSeen={markAllAsSeen}
-                />
-              ),
-            },
-            {
-              title: 'Mana',
-              content: (
-                <NotificationsList
-                  groupedNotifications={groupedBalanceChangeNotifications}
                   markAllAsSeen={markAllAsSeen}
                 />
               ),
