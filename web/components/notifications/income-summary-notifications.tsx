@@ -43,33 +43,37 @@ import {
 } from 'common/partner'
 import { humanish } from 'common/user'
 import { TokenNumber } from 'web/components/widgets/token-number'
-
+import { first } from 'lodash'
+import { truncateText } from '../widgets/truncate'
 export function UniqueBettorBonusIncomeNotification(props: {
   notification: Notification
   highlighted: boolean
   setHighlighted: (highlighted: boolean) => void
+  isChildOfGroup?: boolean
 }) {
-  const { notification, highlighted, setHighlighted } = props
+  const { notification, highlighted, setHighlighted, isChildOfGroup } = props
   const { sourceText } = notification
   const [open, setOpen] = useState(false)
-  const data = (notification.data ?? {}) as UniqueBettorData
-  const { outcomeType, isPartner, totalUniqueBettors } = data
+  const myData = (notification.data ?? {}) as UniqueBettorData
   const relatedNotifications =
-    data && 'relatedNotifications' in data
-      ? (data as any).relatedNotifications
+    myData && 'relatedNotifications' in myData
+      ? ((myData as any).relatedNotifications as Notification[])
       : []
+  const singleGroupedNotif = relatedNotifications.length === 1
+  const data = (
+    singleGroupedNotif ? first(relatedNotifications)?.data : myData
+  ) as UniqueBettorData
+  const { outcomeType, isPartner, totalUniqueBettors } = data
   const numNewTraders =
     relatedNotifications.length > 0 ? relatedNotifications.length : 1
-  const answerText =
-    relatedNotifications.length > 0
-      ? relatedNotifications[0].data?.answerText
-      : undefined
+  const answerText = truncateText(data.answerText, 'lg')
 
   const partnerBonusPerTrader =
     outcomeType === 'MULTIPLE_CHOICE'
       ? PARTNER_UNIQUE_TRADER_BONUS_MULTI
       : PARTNER_UNIQUE_TRADER_BONUS
   const partnerBonusAmount = numNewTraders * partnerBonusPerTrader
+  const showBet = data?.bet && data?.outcomeType
   return (
     <NotificationFrame
       notification={notification}
@@ -82,14 +86,6 @@ export function UniqueBettorBonusIncomeNotification(props: {
           symbol={'🎁'}
           setOpen={setOpen}
         />
-      }
-      subtitle={
-        notification.data?.bet &&
-        notification.data?.outcomeType && (
-          <div className={'ml-0.5'}>
-            <BettorStatusLabel uniqueBettorData={data} />
-          </div>
-        )
       }
       link={getSourceUrl(notification)}
     >
@@ -105,8 +101,26 @@ export function UniqueBettorBonusIncomeNotification(props: {
               : 'new traders'
           }
         />{' '}
-        on <QuestionOrGroupLink notification={notification} />{' '}
-        {answerText && outcomeType !== 'NUMBER' ? ` (${answerText})` : ''}
+        {showBet ? (
+          <BettorStatusLabel
+            className="mr-1"
+            uniqueBettorData={data}
+            answerText={answerText}
+          />
+        ) : answerText && outcomeType !== 'NUMBER' ? (
+          <span className="mr-1">
+            on <span className="text-primary-700">{answerText}</span>
+          </span>
+        ) : null}
+        {!isChildOfGroup && (
+          <>
+            {' on '}
+            <QuestionOrGroupLink
+              truncatedLength="lg"
+              notification={notification}
+            />{' '}
+          </>
+        )}
       </span>
       {isPartner && totalUniqueBettors && (
         <div>
@@ -138,6 +152,7 @@ export function UniqueBettorBonusIncomeNotification(props: {
     </NotificationFrame>
   )
 }
+// Note: not used atm
 export function UniqueBettorNotification(props: {
   notification: Notification
   highlighted: boolean
@@ -175,7 +190,10 @@ export function UniqueBettorNotification(props: {
         notification.data?.bet &&
         notification.data?.outcomeType && (
           <div className={'ml-0.5'}>
-            <BettorStatusLabel uniqueBettorData={data} />
+            <BettorStatusLabel
+              uniqueBettorData={data}
+              className="line-clamp-1 gap-1"
+            />
           </div>
         )
       }
@@ -587,9 +605,14 @@ function IncomeNotificationLabel(props: {
   )
 }
 
-const BettorStatusLabel = (props: { uniqueBettorData: UniqueBettorData }) => {
-  const { bet, outcomeType, answerText, totalAmountBet, token } =
-    props.uniqueBettorData
+const BettorStatusLabel = (props: {
+  uniqueBettorData: UniqueBettorData
+  className?: string
+  answerText?: string
+}) => {
+  const { uniqueBettorData, className } = props
+  const { bet, outcomeType, totalAmountBet, token } = uniqueBettorData
+  const answerText = props.answerText ?? uniqueBettorData.answerText
   const { amount, outcome } = bet
   const showProb =
     (outcomeType === 'PSEUDO_NUMERIC' &&
@@ -597,7 +620,7 @@ const BettorStatusLabel = (props: { uniqueBettorData: UniqueBettorData }) => {
     (outcomeType !== 'PSEUDO_NUMERIC' && outcomeType !== 'NUMBER')
   const showOutcome = outcomeType === 'MULTIPLE_CHOICE'
   return (
-    <span className={'line-clamp-1 gap-1'}>
+    <span className={className}>
       <span className="text-ink-600">
         {formatMoney(totalAmountBet ?? amount, token)}
       </span>{' '}
@@ -660,6 +683,7 @@ function MultiUserNotificationModal(props: {
                 />
                 {notif.data?.bet && notif.data?.outcomeType && (
                   <BettorStatusLabel
+                    className="line-clamp-1 gap-1"
                     uniqueBettorData={notif.data as UniqueBettorData}
                   />
                 )}

@@ -139,7 +139,7 @@ export const getDefaultNotificationPreferences = (isDev?: boolean) => {
     betting_streaks: constructPref(true, false, true),
     referral_bonuses: constructPref(true, true, false),
     unique_bettors_on_your_contract: constructPref(true, true, false),
-    limit_order_fills: constructPref(true, false, false),
+    limit_order_fills: constructPref(true, false, true),
     quest_payout: constructPref(true, false, false),
     airdrop: constructPref(true, false, false),
     manifest_airdrop: constructPref(true, false, false),

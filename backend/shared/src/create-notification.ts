@@ -199,12 +199,9 @@ export const createCommentOnContractNotification = async (
   sourceUser: User,
   sourceText: string,
   sourceContract: Contract,
-  miscData?: {
-    repliedUsersInfo: replied_users_info
-    taggedUserIds: string[]
-  }
+  repliedUsersInfo: replied_users_info,
+  taggedUserIds: string[]
 ) => {
-  const { repliedUsersInfo, taggedUserIds } = miscData ?? {}
   const pg = createSupabaseDirectClient()
 
   const usersToReceivedNotifications: Record<
@@ -217,6 +214,7 @@ export const createCommentOnContractNotification = async (
     [sourceContract.id],
     (r) => r.follow_id
   )
+  const isReply = Object.keys(repliedUsersInfo).length > 0
   const buildNotification = (userId: string, reason: NotificationReason) => {
     const notification: Notification = {
       id: crypto.randomUUID(),
@@ -238,7 +236,7 @@ export const createCommentOnContractNotification = async (
       sourceSlug: sourceContract.slug,
       sourceTitle: sourceContract.question,
       data: {
-        isReply: !!repliedUsersInfo,
+        isReply,
       } as CommentNotificationData,
       worksOnSweeple: !!sourceContract.siblingContractId,
     }
@@ -502,11 +500,11 @@ export const createBetFillNotification = async (
 ) => {
   const privateUser = await getPrivateUser(toUser.id)
   if (!privateUser) return
-  const { sendToBrowser } = getNotificationDestinationsForUser(
+  const { sendToBrowser, sendToMobile } = getNotificationDestinationsForUser(
     privateUser,
     'bet_fill'
   )
-  if (!sendToBrowser) return
+  if (!sendToBrowser && !sendToMobile) return
 
   // The limit order fills array has a matchedBetId that does not match this bet id
   // (even though this bet has a fills array that is matched to the limit order)
@@ -564,8 +562,24 @@ export const createBetFillNotification = async (
     } as BetFillData,
     worksOnSweeple: !!contract.siblingContractId,
   }
-  const pg = createSupabaseDirectClient()
-  await insertNotificationToSupabase(notification, pg)
+  if (sendToBrowser) {
+    const pg = createSupabaseDirectClient()
+    await insertNotificationToSupabase(notification, pg)
+  }
+  if (sendToMobile) {
+    await createPushNotifications([
+      [
+        privateUser,
+        notification,
+        `Fill on ${limitBet.outcome} order at ${limitAt}: ${contract.question}`,
+        `${formatMoneyEmail(fillAmount)} filled by ${fromUser.name}: ${
+          floatingEqual(remainingAmount, 0)
+            ? 'Order complete.'
+            : `${formatMoneyEmail(remainingAmount)} remaining.`
+        }`,
+      ],
+    ])
+  }
 }
 
 export const createLimitBetCanceledNotification = async (

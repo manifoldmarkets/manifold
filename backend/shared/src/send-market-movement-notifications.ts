@@ -310,26 +310,13 @@ async function createMarketMovementNotifications(
           notification.contract_id === contract.id &&
           (sumsToOne ? true : notification.answer_id == (answer?.id ?? null))
       )
-      // Skip if we have a similar notification already
-      // We consider a notification similar if:
-      // 1. It's for the same user, contract, and answer
-      // 2. The probability movement is in the same direction (both increasing or both decreasing)
-      // 3. The probability movement is of similar magnitude (within 0.1)
+
       const skipNotification = existingNotifications.some((notification) => {
         // Only one notification per sumsToOne contract per day
         if (sumsToOne) return true
         const existingDirection = notification.new_val > notification.prev_val
         const newDirection = avgAfter > avgBefore
-        const similarDirection = existingDirection === newDirection
-
-        const existingMagnitude = Math.abs(
-          notification.new_val - notification.prev_val
-        )
-        const newMagnitude = Math.abs(avgAfter - avgBefore)
-        const similarMagnitude =
-          Math.abs(existingMagnitude - newMagnitude) < 0.1
-
-        return similarDirection && similarMagnitude
+        return existingDirection === newDirection
       })
 
       if (skipNotification) {

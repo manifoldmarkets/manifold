@@ -42,6 +42,18 @@ export function useNotifications(
     number | undefined
   >(undefined, 'latest-notification-time-' + userId)
 
+  const markAllAsSeen = () => {
+    if (!notifications) return
+
+    setNotifications((oldData) => {
+      if (!oldData) return oldData
+      return oldData.map((n) => ({
+        ...n,
+        isSeen: true,
+      }))
+    })
+  }
+
   useEffect(() => {
     if (userId) {
       const params = {
@@ -87,7 +99,7 @@ export function useNotifications(
       })
     },
   })
-  return notifications
+  return { notifications, markAllAsSeen }
 }
 
 export function useGroupedUnseenNotifications(
@@ -100,17 +112,20 @@ export function useGroupedUnseenNotifications(
     key: string
   ) => readonly [T, (newState: T | ((prevState: T) => T)) => void, boolean]
 ) {
-  const unseenNotifs = useNotifications(
+  const { notifications: unseenNotifs } = useNotifications(
     userId,
     api,
     usePersistentLocalState,
     NOTIFICATIONS_PER_PAGE,
     true
-  )?.filter((n) => !n.isSeen)
+  )
+  const filteredUnseenNotifs = unseenNotifs?.filter((n) => !n.isSeen)
 
   return useMemo(() => {
-    return unseenNotifs ? groupNotificationsForIcon(unseenNotifs) : undefined
-  }, [unseenNotifs?.length])
+    return filteredUnseenNotifs
+      ? groupNotificationsForIcon(filteredUnseenNotifs)
+      : undefined
+  }, [filteredUnseenNotifs?.length])
 }
 
 export function useGroupedNotifications(
@@ -125,18 +140,19 @@ export function useGroupedNotifications(
   selectTypes?: notification_source_types[],
   selectReasons?: NotificationReason[]
 ) {
-  const notifications = useNotifications(
+  const { notifications, markAllAsSeen } = useNotifications(
     user.id,
     api,
     usePersistentLocalState
-  )?.filter(
+  )
+  const filteredNotifications = notifications?.filter(
     (n) =>
       (selectTypes?.includes(n.sourceType) ||
         selectReasons?.includes(n.reason)) ??
       true
   )
-  const sortedNotifications = notifications
-    ? sortBy(notifications, (n) => -n.createdTime)
+  const sortedNotifications = filteredNotifications
+    ? sortBy(filteredNotifications, (n) => -n.createdTime)
     : undefined
 
   const [groupedNotifications, mostRecentNotification] =
@@ -145,10 +161,6 @@ export function useGroupedNotifications(
       'contract_from_followed_user',
     ])
 
-  const groupedBalanceChangeNotifications = groupSpecificNotifications(
-    sortedNotifications,
-    (n) => BalanceChangeNotificationTypes.includes(n.reason)
-  )
   const groupedNewMarketNotifications = groupSpecificNotifications(
     sortedNotifications,
     (n) => n.reason === 'contract_from_followed_user',
@@ -170,9 +182,9 @@ export function useGroupedNotifications(
     () => ({
       mostRecentNotification,
       groupedNotifications,
-      groupedBalanceChangeNotifications,
       groupedNewMarketNotifications,
       groupedMentionNotifications,
+      markAllAsSeen,
     }),
     [JSON.stringify(notifications)]
   )

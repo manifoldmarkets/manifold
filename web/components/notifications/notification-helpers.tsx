@@ -186,6 +186,12 @@ export function NotificationFrame(props: {
   } = props
   const isMobile = useIsMobile()
 
+  const markAsSeen = () => {
+    if (highlighted) {
+      setHighlighted(false)
+    }
+  }
+
   const frameObject = (
     <Row className="cursor-pointer text-sm md:text-base">
       <Row className="w-full items-start gap-3">
@@ -226,9 +232,8 @@ export function NotificationFrame(props: {
             href={link}
             className={clsx('flex w-full flex-col')}
             onClick={() => {
-              if (highlighted) {
-                setHighlighted(false)
-              }
+              markAsSeen()
+              onClick?.()
             }}
           >
             {frameObject}
@@ -239,12 +244,8 @@ export function NotificationFrame(props: {
         <Col
           className={'w-full'}
           onClick={() => {
-            if (highlighted) {
-              setHighlighted(false)
-            }
-            if (onClick) {
-              onClick()
-            }
+            markAsSeen()
+            onClick?.()
           }}
         >
           {frameObject}

@@ -59,7 +59,10 @@ export type OverallPerformanceData = {
   league_rank: string
 }
 
-export const formatMoneyEmail = (amount: number, token: ContractToken) => {
+export const formatMoneyEmail = (
+  amount: number,
+  token: ContractToken = 'MANA'
+) => {
   if (token === 'CASH') {
     return formatSweepies(amount).replace(SWEEPIES_MONIKER, 'S')
   }
@@ -689,7 +692,7 @@ export const sendNewPrivateMarketEmail = async (
   )
 }
 export const sendNewUniqueBettorsEmail = async (
-  reason: notification_reason_types,
+  reason: NotificationReason,
   privateUser: PrivateUser,
   contract: Contract,
   totalPredictors: number,

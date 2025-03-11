@@ -59,6 +59,9 @@ export function formatExpectedValue(
   if (value > 1_000_000) {
     return formatLargeNumber(value)
   }
+  if (unit === 'year') {
+    return value.toFixed(includeUnit ? 1 : 0)
+  }
 
   const formatter = new Intl.NumberFormat('en-US', {
     style: 'currency',
