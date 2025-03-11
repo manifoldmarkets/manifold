@@ -95,7 +95,7 @@ export const AI_CAPABILITY_CARDS: AICapabilityCard[] = [
     description: 'top performance on frontier math',
     marketId: 'Uu5q0usuQg', // Replace with actual ID
     type: 'benchmark',
-    displayType: 'date-numeric'
+    displayType: 'top-one-mcq'
   },
   {
     title: 'SWE Bench Top Score',
@@ -282,7 +282,7 @@ function CapabilityCard({
     if (displayType === 'top-one-mcq') {
       // Return dummy data based on the card title
       if (title.includes('Frontier')) {
-        return { text: 'Claude Ultra', probability: 0.62 }
+        return { text: 'Claude Sonnet', probability: 0.62 }
       } else if (title.includes('AiderBench')) {
         return { text: 'GPT-4o', probability: 0.68 }
       } else if (title.includes('SWE Bench')) {
