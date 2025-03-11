@@ -58,7 +58,7 @@ export const AI_CAPABILITY_CARDS: AICapabilityCard[] = [
     description: '',
     marketId: 'dyttOfuYp7ZUefFiymcx', // multiple-choice quarter
     type: 'releases',
-    displayType: 'top-one-mcq',
+    displayType: 'date-numeric',
   },
   {
     title: 'Gemini 3',
@@ -95,7 +95,7 @@ export const AI_CAPABILITY_CARDS: AICapabilityCard[] = [
     description: 'top performance on frontier math',
     marketId: 'Uu5q0usuQg', // Replace with actual ID
     type: 'benchmark',
-    displayType: 'top-one-mcq'
+    displayType: 'date-numeric'
   },
   {
     title: 'SWE Bench Top Score',
@@ -281,9 +281,7 @@ function CapabilityCard({
   const getTopOneOdds = () => {
     if (displayType === 'top-one-mcq') {
       // Return dummy data based on the card title
-      if (title.includes('Claude')) {
-        return { text: 'Claude 4', probability: 0.75 }
-      } else if (title.includes('Frontier')) {
+      if (title.includes('Frontier')) {
         return { text: 'Claude Ultra', probability: 0.62 }
       } else if (title.includes('AiderBench')) {
         return { text: 'GPT-4o', probability: 0.68 }
@@ -335,8 +333,9 @@ function CapabilityCard({
   
   if (displayType === 'top-two-mcq' && liveContract && liveContract.outcomeType === 'MULTIPLE_CHOICE') {
     topCompanies = getTopTwoOdds()
-  } else if (displayType === 'top-one-mcq' && liveContract && liveContract.outcomeType === 'MULTIPLE_CHOICE') {
+  } else if (displayType === 'top-one-mcq') {
     topModel = getTopOneOdds()
+    console.log(`[${title}] topModel set to:`, topModel)
   } else if (displayType === 'binary-odds') {
     // Return dummy probabilities based on the card title
     if (title.includes('IMO Gold')) {
@@ -355,6 +354,8 @@ function CapabilityCard({
       displayValue = formatPercent(0.65)
     } else if (title.includes('Medical Diagnosis')) {
       displayValue = formatPercent(0.79)
+    } if (title.includes('Claude')) {
+        displayValue = formatPercent(0.75)
     } else if (title.includes('SWE Bench')) {
       displayValue = formatPercent(0.30)
     } else {
@@ -365,13 +366,13 @@ function CapabilityCard({
     if (title.includes('GPT-5')) {
       displayValue = 'Q3 2025'
     } else if (title.includes('Claude 4')) {
-      displayValue = 'Q2 2024'
+      displayValue = 'Q2 2025'
     } else if (title.includes('Gemini 3')) {
       displayValue = 'Q1 2025'
     } else if (title.includes('Grok 4')) {
-      displayValue = 'Q4 2024'
+      displayValue = 'Q4 2025'
     } else {
-      displayValue = 'Q2 2026'
+      displayValue = '50%'
     }
   } else {
     // Set dummy values for other cards based on card title
@@ -622,7 +623,17 @@ function CapabilityCard({
           {displayType === 'binary-odds' ? (
             <div className="flex flex-col items-center">
               <div className="text-5xl font-bold text-center">
-                <span className="bg-gradient-to-br from-teal-400 via-teal-500 to-primary-600 text-transparent bg-clip-text">
+                <span className={`text-transparent bg-clip-text ${
+                  type === 'benchmark'
+                  ? 'bg-gradient-to-br from-teal-400 via-teal-500 to-teal-600'
+                  : type === 'prize'
+                    ? 'bg-gradient-to-br from-amber-400 via-amber-500 to-amber-600'
+                    : type === 'misuse'
+                      ? 'bg-gradient-to-br from-rose-400 via-rose-500 to-rose-600'
+                      : type === 'human-comparison'
+                        ? 'bg-gradient-to-br from-purple-400 via-purple-500 to-purple-600'
+                        : 'bg-gradient-to-br from-primary-400 via-primary-600 to-primary-700'
+                }`}>
                   {displayValue}
                 </span>
               </div>
