@@ -261,7 +261,7 @@ export function LimitOrdersTable(props: {
 
   return (
     <Col className={clsx(className, 'w-full')}>
-      <div className="bg-canvas-0 grid-cols-16 sticky top-10 z-10 grid gap-2 text-sm font-semibold">
+      <div className="bg-canvas-0 grid-cols-16 sticky top-10 z-10 grid gap-2 text-sm font-semibold sm:top-0">
         <div className="col-span-4 sm:col-span-3">Market</div>
         <div
           className="col-span-2 flex cursor-pointer items-center justify-end "
