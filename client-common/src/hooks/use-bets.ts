@@ -90,6 +90,27 @@ export const listenToOrderUpdates = (
     enabled,
   })
 }
+export const listenToUserOrders = (
+  userId: string,
+  setNewBets: Dispatch<SetStateAction<LimitBet[]>>,
+  enabled: boolean
+) => {
+  useApiSubscription({
+    topics: [`user/${userId}/orders`],
+    onBroadcast: (msg) => {
+      const betUpdates = msg.data.bets as LimitBet[]
+      console.log('betUpdates', betUpdates)
+      setNewBets((currentBets) => {
+        const currentBetsMap = new Map(currentBets.map((bet) => [bet.id, bet]))
+        betUpdates.forEach((updatedBet) => {
+          currentBetsMap.set(updatedBet.id, updatedBet)
+        })
+        return Array.from(currentBetsMap.values())
+      })
+    },
+    enabled,
+  })
+}
 
 export function betShouldBeFiltered(bet: Bet, options?: APIParams<'bets'>) {
   if (!options) {

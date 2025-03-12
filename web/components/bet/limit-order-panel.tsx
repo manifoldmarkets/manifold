@@ -5,14 +5,10 @@ import toast from 'react-hot-toast'
 import { LimitBet } from 'common/bet'
 import { getProbability } from 'common/calculate'
 import {
-  BinaryContract,
-  CPMMMultiContract,
-  CPMMNumericContract,
   getBinaryMCProb,
   isBinaryMulti,
+  MarketContract,
   MultiContract,
-  PseudoNumericContract,
-  StonkContract,
 } from 'common/contract'
 import { formatPercent } from 'common/util/format'
 import { DAY_MS, HOUR_MS, MINUTE_MS, MONTH_MS, WEEK_MS } from 'common/util/time'
@@ -32,7 +28,6 @@ import clsx from 'clsx'
 import { getAnswerColor } from '../charts/contract/choice'
 import { MoneyDisplay } from './money-display'
 import { TRADE_TERM } from 'common/envs/constants'
-import { LocationMonitor } from '../gidx/location-monitor'
 import { sliderColors } from '../widgets/slider'
 import { ProbabilitySlider } from '../widgets/probability-input'
 import { usePersistentLocalState } from 'web/hooks/use-persistent-local-state'
@@ -54,18 +49,11 @@ const expirationOptions = [
 ]
 
 export default function LimitOrderPanel(props: {
-  contract:
-    | BinaryContract
-    | PseudoNumericContract
-    | StonkContract
-    | CPMMMultiContract
-    | CPMMNumericContract
+  contract: MarketContract
   multiProps?: MultiBetProps
   user: User | null | undefined
   unfilledBets: LimitBet[]
   balanceByUserId: { [userId: string]: number }
-  kycError: string | undefined
-  shouldPromptVerification?: boolean
   onBuySuccess?: () => void
   className?: string
   betAmount?: number
@@ -80,6 +68,7 @@ export default function LimitOrderPanel(props: {
       pseudonymColor: keyof typeof sliderColors
     }
   }
+  initialProb?: number
 }) {
   const {
     contract,
@@ -87,11 +76,9 @@ export default function LimitOrderPanel(props: {
     unfilledBets,
     balanceByUserId,
     user,
-    kycError,
     outcome,
     onBuySuccess,
     pseudonym,
-    shouldPromptVerification,
   } = props
   const { pseudonymName, pseudonymColor } =
     pseudonym?.[outcome as 'YES' | 'NO'] ?? {}
@@ -143,13 +130,14 @@ export default function LimitOrderPanel(props: {
       : undefined
 
   const initialProb =
-    isBinaryMC && outcome === 'YES'
+    props.initialProb ??
+    (isBinaryMC && outcome === 'YES'
       ? multiProps!.answerToBuy.prob
       : isBinaryMC && outcome === 'NO'
       ? 1 - multiProps!.answerToBuy.prob
       : isCpmmMulti
       ? multiProps!.answerToBuy.prob
-      : getProbability(contract)
+      : getProbability(contract))
 
   const [limitProbInt, setLimitProbInt] = useState<number | undefined>(
     Math.round(initialProb * 100)
@@ -164,8 +152,7 @@ export default function LimitOrderPanel(props: {
     !betAmount ||
     !hasLimitBet ||
     error === 'Insufficient balance' ||
-    showLocationMonitor ||
-    !!kycError
+    showLocationMonitor
 
   const preLimitProb =
     limitProbInt === undefined
@@ -306,7 +293,6 @@ export default function LimitOrderPanel(props: {
           showSlider
           token={isCashContract ? 'CASH' : 'M$'}
           sliderColor={pseudonymColor}
-          disregardUserBalance={shouldPromptVerification}
         />
       </Col>
       <Col className="relative mt-6 w-full gap-1">
@@ -503,67 +489,50 @@ export default function LimitOrderPanel(props: {
           />
         </Row> */}
 
-        {kycError && !shouldPromptVerification && user && (
-          <div className="text-red-500">{kycError}</div>
-        )}
-
         <Col className="gap-2">
           {user ? (
-            shouldPromptVerification ? (
-              <span className="text-error">
-                New sweepstakes signups disabled{' '}
-              </span>
-            ) : (
-              <>
-                <LocationMonitor
-                  contract={contract}
-                  user={user}
-                  setShowPanel={setShowLocationMonitor}
-                  showPanel={showLocationMonitor}
-                />
-                <Row className="items-center justify-between gap-2">
-                  <Button
-                    size="xl"
-                    disabled={betDisabled}
-                    color={
-                      (pseudonymColor as any) ??
-                      (hideYesNo ? 'none' : outcome === 'YES' ? 'green' : 'red')
-                    }
-                    loading={isSubmitting}
-                    className={clsx('flex-1 text-white')}
-                    style={{
-                      backgroundColor:
-                        binaryMCColors?.[outcome == 'YES' ? 0 : 1],
-                    }}
-                    onClick={submitBet}
-                  >
-                    {isSubmitting ? (
-                      'Submitting...'
-                    ) : !outcome ? (
-                      'Choose YES or NO'
-                    ) : !limitProb ? (
-                      'Enter a probability'
-                    ) : !betAmount ? (
-                      'Enter an amount'
-                    ) : (
-                      <span>
-                        Buy{' '}
-                        <MoneyDisplay
-                          amount={betAmount}
-                          isCashContract={isCashContract}
-                        />{' '}
-                        {!binaryMCOutcome && !pseudonymName ? outcome : ''} at{' '}
-                        {formatPercent(
-                          binaryMCOutcome || pseudonymName
-                            ? preLimitProb ?? 0
-                            : limitProb
-                        )}
-                      </span>
-                    )}
-                  </Button>
-                </Row>
-              </>
-            )
+            <>
+              <Row className="items-center justify-between gap-2">
+                <Button
+                  size="xl"
+                  disabled={betDisabled}
+                  color={
+                    (pseudonymColor as any) ??
+                    (hideYesNo ? 'none' : outcome === 'YES' ? 'green' : 'red')
+                  }
+                  loading={isSubmitting}
+                  className={clsx('flex-1 text-white')}
+                  style={{
+                    backgroundColor: binaryMCColors?.[outcome == 'YES' ? 0 : 1],
+                  }}
+                  onClick={submitBet}
+                >
+                  {isSubmitting ? (
+                    'Submitting...'
+                  ) : !outcome ? (
+                    'Choose YES or NO'
+                  ) : !limitProb ? (
+                    'Enter a probability'
+                  ) : !betAmount ? (
+                    'Enter an amount'
+                  ) : (
+                    <span>
+                      Buy{' '}
+                      <MoneyDisplay
+                        amount={betAmount}
+                        isCashContract={isCashContract}
+                      />{' '}
+                      {!binaryMCOutcome && !pseudonymName ? outcome : ''} at{' '}
+                      {formatPercent(
+                        binaryMCOutcome || pseudonymName
+                          ? preLimitProb ?? 0
+                          : limitProb
+                      )}
+                    </span>
+                  )}
+                </Button>
+              </Row>
+            </>
           ) : (
             <Button
               color={outcome === 'NO' ? 'red' : 'green'}

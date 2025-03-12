@@ -796,12 +796,6 @@ export const BuyPanelBody = (props: {
               balanceByUserId={balanceByUserId}
               outcome={outcome}
               pseudonym={props.pseudonym}
-              kycError={
-                isCashContract && verificationStatus !== 'success'
-                  ? verificationMessage
-                  : undefined
-              }
-              shouldPromptVerification={shouldPromptVerification}
             />
           </>
         )}
