@@ -1,4 +1,4 @@
-import React from 'react'
+import React, { useState } from 'react'
 import { BinaryContract, CPMMNumericContract, Contract, contractPath } from 'common/contract'
 import { Col } from 'web/components/layout/col'
 import { Row } from 'web/components/layout/row'
@@ -15,9 +15,46 @@ import { formatPercent } from 'common/util/format'
 import { getDisplayProbability } from 'common/calculate'
 import { SiOpenai, SiGooglegemini, SiAnthropic} from 'react-icons/si'
 import { RiTwitterXLine } from 'react-icons/ri'
-import  { LuLink } from "react-icons/lu"
+import { LuLink, LuHelpCircle, LuInfo } from 'react-icons/lu'
 
 const ENDPOINT = 'ai'
+
+// Tooltip Component for benchmark terms
+function Tooltip({ title, description }: { title: string, description: string }) {
+  const [isVisible, setIsVisible] = useState(false)
+  
+  return (
+    <div className="relative inline-flex items-center ml-1">
+      <button
+        onMouseEnter={() => setIsVisible(true)}
+        onMouseLeave={() => setIsVisible(false)}
+        onClick={() => setIsVisible(!isVisible)}
+        className="text-ink-500 hover:text-primary-600 transition-colors focus:outline-none"
+        aria-label={`Info about ${title}`}
+      >
+        <LuInfo size={16} />
+      </button>
+      
+      {isVisible && (
+        <div className="absolute left-full ml-2 top-0 z-50 w-64 bg-canvas-0 shadow-lg rounded-md border border-ink-200 p-3 text-sm text-ink-700">
+          <h4 className="font-medium mb-1">{title}</h4>
+          <p>{description}</p>
+        </div>
+      )}
+    </div>
+  )
+}
+
+// Benchmark descriptions for tooltips
+const benchmarkDescriptions: Record<string, string> = {
+  'IMO Gold': 'The International Mathematical Olympiad (IMO) is the world championship mathematics competition for high school students. Getting a gold medal requires a high score on extremely challenging math problems.',
+  'Frontier Math Passed': 'Frontier Math refers to advanced mathematical problems at the cutting edge of research that have traditionally been very difficult for AI systems to solve.',
+  'SWE Bench Top Score': 'Software Engineering Benchmark - a test of AI coding capabilities across real-world software engineering tasks from GitHub issues.',
+  'Humanity\'s Last Exam Top Score': 'A collection of extremely difficult problems across various domains, designed to test the limits of AI capabilities compared to human experts.',
+  'Millennium Prize Claimed': 'The Millennium Prize Problems are seven of the most difficult unsolved problems in mathematics, each with a $1 million prize for solution.',
+  'Arc AGI Claimed': 'Anthropic\'s Rubric for AI Capability Evaluation - a comprehensive benchmark designed to evaluate artificial general intelligence capabilities.',
+  'Turing Test (Long Bets) Passed': 'The classic test of a machine\'s ability to exhibit intelligent behavior indistinguishable from that of a human, proposed by Alan Turing.'
+}
 
 // Define type for capability cards
 export type AICapabilityCard = {
@@ -615,52 +652,79 @@ function CapabilityCard({
       onClick={handleClick}
     >
       <Col className="h-full">
-        <div>
+        <div className="flex items-center">
           <h3 className={`font-semibold ${getAccentColor()} text-xl mb-1`}>{title}</h3>
+          {/* Add tooltip for benchmark terms */}
+          {(type === 'benchmark' || type === 'prize') && (
+            <Tooltip 
+              title={title} 
+              description={benchmarkDescriptions[title] || `Oh yay you must Google for more information about this ${title} benchmark.`} 
+            />
+          )}
         </div>
         
-        <div className="flex items-center justify-center flex-grow h-[160px]">
+        <div className="flex flex-col items-center justify-center flex-grow mt-2">
           {displayType === 'binary-odds' ? (
-            <div className="flex flex-col items-center">
-              <div className="text-5xl font-bold text-center">
+            <div className="flex flex-col justify-between h-full w-full">
+              <div className="flex-1 flex items-center justify-center">
+                <div className="text-6xl font-bold text-center">
+                  <span className={`text-transparent bg-clip-text ${
+                    type === 'benchmark'
+                    ? 'bg-gradient-to-br from-teal-400 via-teal-500 to-teal-600'
+                    : type === 'prize'
+                      ? 'bg-gradient-to-br from-amber-400 via-amber-500 to-amber-600'
+                      : type === 'misuse'
+                        ? 'bg-gradient-to-br from-rose-400 via-rose-500 to-rose-600'
+                        : type === 'human-comparison'
+                          ? 'bg-gradient-to-br from-purple-400 via-purple-500 to-purple-600'
+                          : 'bg-gradient-to-br from-primary-400 via-primary-600 to-primary-700'
+                  }`}>
+                    {displayValue}
+                  </span>
+                </div>
+              </div>
+              {/* Brief descriptive text under percentages */}
+              {(type === 'benchmark' || type === 'prize' || type === 'misuse' || type === 'human-comparison') && (
+                <p className="text-ink-600 text-sm mt-3 text-left w-full px-1">
+                  {type === 'benchmark' && title.includes('IMO Gold') && 'LLM gets a IMO gold medal'}
+                  {type === 'benchmark' && title.includes('Frontier Math') && 'An LLM gets 80%+ on this test  '}
+                  {type === 'benchmark' && title.includes('SWE Bench') && 'Likelihood of achieving top coding benchmark score'}
+                  {type === 'prize' && title.includes('Millennium') && 'Chance of solving a million-dollar math problem'}
+                  {type === 'prize' && title.includes('Arc AGI') && 'Probability of meeting AGI criteria by 2025'}
+                  {type === 'prize' && title.includes('Turing Test') && 'Odds of passing rigorous human-indistinguishability test'}
+                  {type === 'misuse' && title.includes('Blackmail') && 'Risk of AI being used for automated blackmail'}
+                  {type === 'misuse' && title.includes('Hacking') && 'Probability of AI independently compromising systems'}
+                  {type === 'human-comparison' && 'Likelihood of surpassing human-level performance'}
+                </p>
+              )}
+            </div>
+          ) : displayType === 'date-numeric' ? (
+            <div className="h-full flex-1 flex items-center justify-center">
+              <div className="text-4xl font-bold text-center">
                 <span className={`text-transparent bg-clip-text ${
-                  type === 'benchmark'
-                  ? 'bg-gradient-to-br from-teal-400 via-teal-500 to-teal-600'
-                  : type === 'prize'
-                    ? 'bg-gradient-to-br from-amber-400 via-amber-500 to-amber-600'
-                    : type === 'misuse'
-                      ? 'bg-gradient-to-br from-rose-400 via-rose-500 to-rose-600'
-                      : type === 'human-comparison'
-                        ? 'bg-gradient-to-br from-purple-400 via-purple-500 to-purple-600'
-                        : 'bg-gradient-to-br from-primary-400 via-primary-600 to-primary-700'
+                  type === 'releases' 
+                  ? 'bg-gradient-to-r from-amber-400 via-amber-500 to-amber-600' 
+                  : 'bg-gradient-to-r from-primary-400 via-primary-500 to-primary-600'
                 }`}>
                   {displayValue}
                 </span>
               </div>
             </div>
-          ) : displayType === 'date-numeric' ? (
-            <div className="text-4xl font-bold text-center">
-              <span className={`text-transparent bg-clip-text ${
-                type === 'releases' 
-                ? 'bg-gradient-to-r from-amber-400 via-amber-500 to-amber-600' 
-                : 'bg-gradient-to-r from-primary-400 via-primary-500 to-primary-600'
-              }`}>
-                {displayValue}
-              </span>
-            </div>
           ) : (
-            <div className="text-4xl font-bold text-center">
-              <span className={`text-transparent bg-clip-text ${
-                type === 'prize' 
-                ? 'bg-gradient-to-b from-amber-400 via-amber-500 to-amber-600'
-                : type === 'misuse' 
-                  ? 'bg-gradient-to-b from-rose-400 via-rose-500 to-rose-600'
-                  : type === 'human-comparison'
-                    ? 'bg-gradient-to-b from-purple-400 via-purple-500 to-purple-600'
-                    : 'bg-gradient-to-b from-primary-400 via-primary-500 to-primary-700'
-              }`}>
-                {displayValue}
-              </span>
+            <div className="h-full flex-1 flex items-center justify-center">
+              <div className="text-4xl font-bold text-center">
+                <span className={`text-transparent bg-clip-text ${
+                  type === 'prize' 
+                  ? 'bg-gradient-to-b from-amber-400 via-amber-500 to-amber-600'
+                  : type === 'misuse' 
+                    ? 'bg-gradient-to-b from-rose-400 via-rose-500 to-rose-600'
+                    : type === 'human-comparison'
+                      ? 'bg-gradient-to-b from-purple-400 via-purple-500 to-purple-600'
+                      : 'bg-gradient-to-b from-primary-400 via-primary-500 to-primary-700'
+                }`}>
+                  {displayValue}
+                </span>
+              </div>
             </div>
           )}
         </div>
@@ -714,7 +778,7 @@ export function AIForecast({ whenAgi, contracts = [], hideTitle }: AIForecastPro
   }
 
   return (
-    <Col className="mb-8 gap-6 px-1 sm:gap-8 sm:px-2">
+    <Col className="mb-8 gap-4 px-1 sm:gap-6 sm:px-2">
       <Col className={hideTitle ? 'hidden' : ''}>
         <div className="text-primary-700 mt-4 text-2xl font-normal sm:mt-0 sm:text-3xl">
           Manifold AI Forecast
@@ -725,12 +789,12 @@ export function AIForecast({ whenAgi, contracts = [], hideTitle }: AIForecastPro
       </Col>
       
       {/* Card Categories */}
-      {Object.entries(typeLabels).map(([type, label]) => (
-        <Col key={type} className="mb-10" id={type}>
-          <div className="mb-4">
+      {Object.entries(typeLabels).map(([type, label], index) => (
+        <Col key={type} className={`${index > 0 ? 'mt-12 pt-8 border-t border-ink-100' : 'mt-6'}`} id={type}>
+          <div className="mb-3">
             <Row className="items-center justify-between">
               <div>
-                <h3 className={`items-center gap-1 font-semibold sm:text-lg ${
+                <h3 className={`items-center gap-1 font-semibold text-xl ${
                   type === 'releases' ? 'text-amber-600' :
                   type === 'benchmark' ? 'text-teal-600' :
                   type === 'prize' ? 'text-amber-600' :
@@ -738,27 +802,27 @@ export function AIForecast({ whenAgi, contracts = [], hideTitle }: AIForecastPro
                   type === 'human-comparison' ? 'text-purple-600' :
                   'text-primary-600'
                 }`}>{label}</h3>
-                <p className="text-ink-500 text-sm">
-                  {type === 'monthly'? '': 
-                   type === 'releases' ? '' :
-                   type === 'benchmark' ? '' :
-                   type === 'prize' ? '' :
-                   type === 'misuse' ? '' :
-                   ''}
+                <p className="text-ink-500 text-sm mt-1">
+                  {type === 'monthly'? 'Current model rankings across benchmark leaderboards': 
+                   type === 'releases' ? 'Predicted release timeframes for next-generation AI models' :
+                   type === 'benchmark' ? 'Expected performance on standardized AI testing benchmarks' :
+                   type === 'prize' ? 'Likelihood of achieving major scientific breakthroughs' :
+                   type === 'misuse' ? 'Probability of concerning AI applications emerging' :
+                   'Comparing AI capabilities to human expert performance'}
                 </p>
               </div>
               <Link 
                 href={`#${type}`} 
-                className="text-primary-500 hover:text-primary-700"
+                className="flex items-center justify-center p-2 text-primary-500 hover:text-primary-700 hover:bg-primary-50 rounded-full transition-all duration-200"
                 scroll={false}
                 aria-label={`Link to ${label} section`}
               >
-                <LuLink />
+                <LuLink size={18} />
               </Link>
             </Row>
           </div>
           
-          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3 mt-2">
             {capabilityCardsByType[type]?.map((card, idx) => {
               // Special sizing for "monthly" type cards
               let cardClassName = "";
@@ -799,11 +863,11 @@ export function AIForecast({ whenAgi, contracts = [], hideTitle }: AIForecastPro
                 </div>
                 <Link 
                   href={`#${category.id}`} 
-                  className="text-primary-500 hover:text-primary-700"
+                  className="flex items-center justify-center p-2 text-primary-500 hover:text-primary-700 hover:bg-primary-50 rounded-full transition-all duration-200"
                   scroll={false}
                   aria-label={`Link to ${category.title} section`}
                 >
-                  #
+                  <LuLink size={18} />
                 </Link>
               </Row>
             </div>
@@ -838,11 +902,13 @@ export function AIForecast({ whenAgi, contracts = [], hideTitle }: AIForecastPro
             >
               When will we achieve artificial general intelligence?
             </Link>
-            <CopyLinkOrShareButton
-              url={`https://${ENV_CONFIG.domain}/${ENDPOINT}`}
-              eventTrackingName="copy ai share link"
-              tooltip="Share"
-            />
+            <div className="p-1 rounded-full hover:bg-primary-50 transition-colors duration-200">
+              <CopyLinkOrShareButton
+                url={`https://${ENV_CONFIG.domain}/${ENDPOINT}`}
+                eventTrackingName="copy ai share link"
+                tooltip="Share"
+              />
+            </div>
           </Row>
           
           <Row className="mt-4 justify-between flex-wrap md:flex-nowrap">
