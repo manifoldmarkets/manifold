@@ -333,7 +333,6 @@ function CapabilityCard({
   // Get top one model for "top-one-mcq" display type
   const getTopOneOdds = () => {
     if (displayType === 'top-one-mcq') {
-      // Return dummy data based on the card title
       if (title.includes('Frontier')) {
         return { text: 'Claude Sonnet', probability: 0.62 }
       } else if (title.includes('AiderBench')) {
@@ -426,6 +425,8 @@ function CapabilityCard({
       displayValue = 'Q4 2025'
     } else if (title.includes('Qwen')) {
       displayValue = 'Q4 2025'
+    } else if (title.includes('Deepseek')){
+      displayValue = 'July 2025'
     } else {
       displayValue = '50%'
     }
@@ -799,24 +800,6 @@ export function AIForecast({ whenAgi, contracts = [], hideTitle }: AIForecastPro
   const eventMonth = Math.round((expectedValueAGI - eventYear) * 12)
   const expectedYear = new Date(eventYear, eventMonth, 1)
   
-  // Get contracts by category
-  const getContractsByCategory = (categoryId: string) => {
-    const category = AI_CATEGORIES.find(c => c.id === categoryId)
-    if (!category) return []
-    
-    // Make sure we have contracts
-    if (!contracts || !Array.isArray(contracts)) return []
-    
-    // Only return contracts that exist and have valid IDs
-    return category.contractIds
-      .map(id => contracts.find(contract => 
-        contract !== null && 
-        contract !== undefined && 
-        contract.id === id
-      ))
-      .filter(contract => contract !== undefined && contract !== null) as Contract[]
-  }
-  
   // Group capability cards by type
   const capabilityCardsByType = AI_CAPABILITY_CARDS.reduce((grouped, card) => {
     if (!grouped[card.type]) {
@@ -843,7 +826,7 @@ export function AIForecast({ whenAgi, contracts = [], hideTitle }: AIForecastPro
           Manifold AI Forecast
         </div>
         <div className="text-ink-500 text-md mt-2 flex font-normal">
-          Live prediction market odds on artificial intelligence progress
+          Manifold market odds on AI progress
         </div>
       </Col>
       
@@ -908,45 +891,6 @@ export function AIForecast({ whenAgi, contracts = [], hideTitle }: AIForecastPro
           </div>
         </Col>
       ))}
-      
-      {/* Categories of AI Markets */}
-      {AI_CATEGORIES.map((category) => {
-        const categoryContracts = getContractsByCategory(category.id);
-        
-        return (
-          <Col key={category.id} className="mb-10">
-            <div className="mb-4">
-              <Row className="items-center justify-between">
-                <div>
-                  <h3 id={category.id} className="text-lg font-semibold text-primary-700">{category.title}</h3>
-                </div>
-                <Link 
-                  href={`#${category.id}`} 
-                  className="flex items-center justify-center p-2 text-primary-500 hover:text-primary-700 hover:bg-primary-50 rounded-full transition-all duration-200"
-                  scroll={false}
-                  aria-label={`Link to ${category.title} section`}
-                >
-                  <LuLink size={18} />
-                </Link>
-              </Row>
-            </div>
-            
-            {categoryContracts.length > 0 ? (
-              <HorizontalContractsCarousel contracts={categoryContracts} />
-            ) : (
-              <div className="rounded-lg border border-ink-200 p-5 text-center bg-canvas-50">
-                <p className="text-ink-600">Markets in this category will appear here</p>
-                <Link 
-                  href="/create" 
-                  className="mt-3 inline-block rounded-md bg-primary-500 px-4 py-2 text-white hover:bg-primary-600"
-                >
-                  Create an AI market
-                </Link>
-              </div>
-            )}
-          </Col>
-        );
-      })}
       
       {/* AGI Clock Card */}
       {liveWhenAgi && (
