@@ -769,7 +769,7 @@ export const createManaPaymentNotification = async (
     userId: toUserId,
     reason: 'mana_payment_received',
     createdTime: Date.now(),
-    isSeen: true,
+    isSeen: false,
     sourceId: fromUser.id,
     sourceType: 'mana_payment',
     sourceUpdateType: 'created',
