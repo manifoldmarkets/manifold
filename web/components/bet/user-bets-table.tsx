@@ -217,7 +217,9 @@ export function UserBetsTable(props: { user: User }) {
             onChange={(e) => setQuery(e.target.value)}
           />
           <Carousel labelsParentClassName={'gap-1'}>
-            <SweepsToggle sweepsEnabled isSmall onClick={toggleTokenFilter} />
+            {!prefersPlay && (
+              <SweepsToggle sweepsEnabled isSmall onClick={toggleTokenFilter} />
+            )}
             {(
               [
                 'all',
@@ -246,6 +248,9 @@ export function UserBetsTable(props: { user: User }) {
                   : 'Open'}
               </PillButton>
             ))}
+            {prefersPlay && (
+              <SweepsToggle sweepsEnabled isSmall onClick={toggleTokenFilter} />
+            )}
           </Carousel>
         </Col>
       </div>
