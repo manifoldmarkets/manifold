@@ -317,7 +317,7 @@ export function LimitOrdersTable(props: {
           <div
             key={bet.id}
             className={clsx(
-              'border-ink-200 grid-cols-16 grid items-center gap-2 border-b py-3',
+              'border-ink-200  grid-cols-16 grid items-center gap-2 border-b pb-3 pt-4',
               (isFilledOrCancelled || isExpired) && 'bg-canvas-50'
             )}
           >
