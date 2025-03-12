@@ -10,6 +10,8 @@ const colorClasses = {
     'text-ink-500 hover:bg-ink-50 aria-checked:bg-teal-500 aria-checked:text-ink-0',
   red: 'text-ink-500 hover:bg-ink-50 aria-checked:bg-scarlet-500 aria-checked:text-ink-0',
   gray: 'text-ink-900 aria-checked:shadow bg-canvas-50 hover:bg-canvas-50 aria-checked:bg-canvas-0',
+  'light-gray':
+    'text-ink-900 aria-checked:shadow bg-canvas-50 hover:bg-canvas-50 aria-checked:bg-canvas-0',
   light:
     'text-ink-900 aria-checked:shadow bg-transparent hover:bg-canvas-50/70 aria-checked:bg-canvas-0 ',
   'light-green':
@@ -49,7 +51,8 @@ export function ChoicesToggleGroup(props: {
     color === 'gray' ||
     color === 'light' ||
     color === 'light-green' ||
-    color === 'light-red'
+    color === 'light-red' ||
+    color === 'light-gray'
 
   return (
     <RadioGroup

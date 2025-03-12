@@ -37,6 +37,10 @@ export function broadcastOrders(bets: LimitBet[]) {
   if (bets.length === 0) return
   const { contractId } = bets[0]
   broadcast(`contract/${contractId}/orders`, { bets })
+  const betsByUser = groupBy(bets, (b) => b.userId)
+  for (const userBets of Object.values(betsByUser)) {
+    broadcast(`user/${userBets[0].userId}/orders`, { bets: userBets })
+  }
 }
 
 export function broadcastUpdatedMetrics(metrics: Omit<ContractMetric, 'id'>[]) {

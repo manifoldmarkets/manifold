@@ -17,7 +17,8 @@ create table if not exists
     prob_before numeric,
     shares numeric,
     updated_time timestamp with time zone default now() not null,
-    user_id text not null
+    user_id text not null,
+    expires_at timestamp with time zone
   );
 
 -- Triggers

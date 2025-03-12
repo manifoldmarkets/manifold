@@ -128,7 +128,9 @@ export function OrderTable(props: {
   const onCancel = async () => {
     setIsCancelling(true)
     await Promise.all(
-      limitBets.map((bet) => api('bet/cancel/:betId', { betId: bet.id }))
+      limitBets
+        .filter((b) => !b.isCancelled)
+        .map((bet) => api('bet/cancel/:betId', { betId: bet.id }))
     )
     setIsCancelling(false)
   }
@@ -144,17 +146,21 @@ export function OrderTable(props: {
             <th>
               <Row className={'mt-1 justify-between gap-1 sm:justify-start'}>
                 Expires
-                {isYou && limitBets.length > 1 && (
-                  <Button
-                    loading={isCancelling}
-                    size={'2xs'}
-                    color={'gray-outline'}
-                    onClick={onCancel}
-                    className={'ml-1 whitespace-normal'}
-                  >
-                    Cancel all
-                  </Button>
-                )}
+                {isYou &&
+                  limitBets.length > 1 &&
+                  limitBets.some(
+                    (b) => !b.isCancelled && b.amount < b.orderAmount
+                  ) && (
+                    <Button
+                      loading={isCancelling}
+                      size={'2xs'}
+                      color={'gray-outline'}
+                      onClick={onCancel}
+                      className={'ml-1 whitespace-normal'}
+                    >
+                      Cancel all
+                    </Button>
+                  )}
               </Row>
             </th>
           </tr>
@@ -199,6 +205,8 @@ function OrderRow(props: {
   }
   const isCashContract = contract.token === 'CASH'
   const expired = bet.expiresAt && bet.expiresAt < Date.now()
+  const filled = bet.amount >= bet.orderAmount
+  const cancelled = bet.isCancelled
 
   return (
     <tr>
@@ -252,6 +260,10 @@ function OrderRow(props: {
               <span>
                 {expired ? (
                   'Expired'
+                ) : filled ? (
+                  'Filled'
+                ) : cancelled ? (
+                  'Cancelled'
                 ) : bet.expiresAt ? (
                   <Tooltip
                     text={`${new Date(
@@ -268,14 +280,16 @@ function OrderRow(props: {
               </span>
             </Col>
             <div>
-              <Button
-                loading={isCancelling}
-                size="2xs"
-                color="gray-outline"
-                onClick={onCancel}
-              >
-                Cancel
-              </Button>
+              {filled || cancelled ? null : (
+                <Button
+                  loading={isCancelling}
+                  size="2xs"
+                  color="gray-outline"
+                  onClick={onCancel}
+                >
+                  Cancel
+                </Button>
+              )}
             </div>
           </Row>
         </td>

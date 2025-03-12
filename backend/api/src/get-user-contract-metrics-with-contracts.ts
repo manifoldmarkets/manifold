@@ -6,6 +6,7 @@ import { calculateUpdatedMetricsForContracts } from 'common/calculate-metrics'
 import { Dictionary, mapValues } from 'lodash'
 import { convertContract } from 'common/supabase/contracts'
 import { prefixedContractColumnsToSelect } from 'shared/utils'
+import { MarketContract } from 'common/contract'
 
 export const getUserContractMetricsWithContracts: APIHandler<
   'get-user-contract-metrics-with-contracts'
@@ -36,7 +37,7 @@ export const getUserContractMetricsWithContracts: APIHandler<
         OFFSET $2 LIMIT $3
       `
   const results = await pg.map(q, [userId, offset, limit], (row) => ({
-    contract: convertContract(row.contract),
+    contract: convertContract<MarketContract>(row.contract),
     metrics: row.metrics as ContractMetric[],
   }))
 

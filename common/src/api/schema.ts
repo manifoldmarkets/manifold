@@ -331,13 +331,16 @@ export const API = (_apiTypeCheck = {
     visibility: 'undocumented',
     authed: false,
     returns: {} as {
-      betsByContract: { [contractId: string]: LimitBet[] }
-      contracts: Contract[]
+      bets: LimitBet[]
+      contracts: MarketContract[]
     },
     props: z
       .object({
         userId: z.string(),
         count: z.coerce.number().lte(5000),
+        includeExpired: coerceBoolean.optional().default(false),
+        includeCancelled: coerceBoolean.optional().default(false),
+        includeFilled: coerceBoolean.optional().default(false),
       })
       .strict(),
   },
@@ -2110,7 +2113,7 @@ export const API = (_apiTypeCheck = {
     authed: false,
     returns: {} as {
       metricsByContract: Dictionary<ContractMetric[]>
-      contracts: Contract[]
+      contracts: MarketContract[]
     },
     props: z.object({
       userId: z.string(),

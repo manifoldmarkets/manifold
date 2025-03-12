@@ -3,14 +3,18 @@ import { ChevronUpIcon } from '@heroicons/react/solid'
 import clsx from 'clsx'
 import { LimitBet } from 'common/bet'
 import { getContractBetNullMetrics } from 'common/calculate'
-import { Contract, contractPath, CPMMContract } from 'common/contract'
+import {
+  Contract,
+  contractPath,
+  CPMMContract,
+  MarketContract,
+} from 'common/contract'
 import { ContractMetric } from 'common/contract-metric'
 import {
   ENV_CONFIG,
   SWEEPIES_MARKET_TOOLTIP,
   TRADE_TERM,
 } from 'common/envs/constants'
-import { unauthedApi } from 'common/util/api'
 import { buildArray } from 'common/util/array'
 import {
   formatMoney,
@@ -20,7 +24,7 @@ import {
   SWEEPIES_MONIKER,
 } from 'common/util/format'
 import { searchInAny } from 'common/util/parse'
-import { Dictionary, max, sortBy, sum, uniqBy, mapValues } from 'lodash'
+import { Dictionary, sortBy, sum, uniqBy, mapValues } from 'lodash'
 import Link from 'next/link'
 import { ReactNode, useEffect, useMemo, useState } from 'react'
 import { BiCaretDown, BiCaretUp } from 'react-icons/bi'
@@ -50,7 +54,6 @@ import { User } from 'web/lib/firebase/users'
 import { SweepiesCoin } from 'web/public/custom-components/sweepiesCoin'
 import DropdownMenu from '../widgets/dropdown-menu'
 import { Modal, MODAL_CLASS } from '../layout/modal'
-import { SweepsToggle } from '../sweeps/sweeps-toggle'
 import { useSweepstakes } from '../sweepstakes-provider'
 import { LoadingIndicator } from '../widgets/loading-indicator'
 import { linkClass } from '../widgets/site-link'
@@ -59,6 +62,7 @@ import { floatingEqual } from 'common/util/math'
 import { Col } from '../layout/col'
 import { Row } from '../layout/row'
 import { useIsPageVisible } from 'web/hooks/use-page-visible'
+import { LimitOrdersTable, LimitOrdersToggle } from './limit-orders-table'
 type BetSort =
   | 'newest'
   | 'profit'
@@ -70,7 +74,7 @@ type BetSort =
   | 'profitPercent'
   | 'position'
 
-type BetFilter = 'open' | 'limit_bet' | 'sold' | 'closed' | 'resolved' | 'all'
+export type BetFilter = 'open' | 'sold' | 'closed' | 'resolved' | 'all'
 
 const JUNE_1_2022 = new Date('2022-06-01T00:00:00.000Z').valueOf()
 export function UserBetsTable(props: { user: User }) {
@@ -86,14 +90,26 @@ export function UserBetsTable(props: { user: User }) {
   >(undefined, `user-contract-metrics-${user.id}`)
 
   const [contracts, setContracts] = usePersistentInMemoryState<
-    Contract[] | undefined
+    MarketContract[] | undefined
   >(undefined, `user-contract-metrics-contracts-${user.id}`)
 
-  const [openLimitBetsByContract, setOpenLimitBetsByContract] =
-    usePersistentInMemoryState<Dictionary<LimitBet[]> | undefined>(
-      undefined,
-      `user-open-limit-bets-${user.id}`
-    )
+  const [showLimitOrders, setShowLimitOrders] = usePersistentLocalState(
+    false,
+    'show-limit-orders-view'
+  )
+  // Add state for showing expired orders
+  const [includeExpired, setIncludeExpired] = usePersistentInMemoryState(
+    false,
+    'limit-orders-show-expired'
+  )
+  const [includeFilled, setIncludeFilled] = usePersistentInMemoryState(
+    false,
+    'limit-orders-show-filled'
+  )
+  const [includeCancelled, setIncludeCancelled] = usePersistentInMemoryState(
+    false,
+    'limit-orders-show-cancelled'
+  )
 
   const getMetrics = useEvent(() =>
     api('get-user-contract-metrics-with-contracts', {
@@ -117,19 +133,6 @@ export function UserBetsTable(props: { user: User }) {
       getMetrics()
     }
   }, [getMetrics, user.id, isAuth])
-
-  useEffect(() => {
-    unauthedApi('get-user-limit-orders-with-contracts', {
-      userId: user.id,
-      count: 5000,
-    }).then((betsWithContracts) => {
-      const { contracts, betsByContract } = betsWithContracts
-      setOpenLimitBetsByContract(betsByContract)
-      setContracts((c) =>
-        uniqBy(buildArray([...(c ?? []), ...contracts]), 'id')
-      )
-    })
-  }, [setContracts, setOpenLimitBetsByContract, user.id, isAuth])
 
   const [filter, setFilter] = usePersistentLocalState<BetFilter>(
     'open',
@@ -181,10 +184,8 @@ export function UserBetsTable(props: { user: User }) {
     open: (c) => !(FILTERS.closed(c) || FILTERS.resolved(c)),
     all: () => true,
     sold: () => true,
-    limit_bet: (c) => FILTERS.open(c),
   }
-  const loaded =
-    nullableMetricsByContract && openLimitBetsByContract && contracts
+  const loaded = nullableMetricsByContract && contracts
 
   const filteredContracts = loaded
     ? queriedContracts
@@ -197,8 +198,6 @@ export function UserBetsTable(props: { user: User }) {
             (s) => !floatingEqual(s, 0)
           )
           if (filter === 'sold') return !hasShares
-          if (filter === 'limit_bet')
-            return openLimitBetsByContract[c.id]?.length > 0
           return hasShares
         })
         .filter((c) => {
@@ -206,50 +205,77 @@ export function UserBetsTable(props: { user: User }) {
           else return c.token === 'MANA' || !c.token
         })
     : []
+
+  const hasSweeps = contracts?.some((c) => c.token === 'CASH')
   return (
     <Col>
       <div className="flex flex-wrap justify-between gap-4 max-sm:flex-col">
         <Col className="w-full gap-2">
-          <Input
-            placeholder={isYou ? 'Search your trades' : 'Search trades'}
-            className={'w-full min-w-[30px]'}
-            value={query}
-            onChange={(e) => setQuery(e.target.value)}
-          />
-          <Carousel labelsParentClassName={'gap-1'}>
-            {!prefersPlay && (
-              <SweepsToggle sweepsEnabled isSmall onClick={toggleTokenFilter} />
+          <Row className="items-center gap-1 sm:gap-2">
+            <Input
+              placeholder={isYou ? 'Search your bets' : 'Search bets'}
+              className={'w-full min-w-[30px]'}
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+            />
+            {isYou && (
+              <LimitOrdersToggle
+                showLimitOrders={showLimitOrders}
+                setShowLimitOrders={setShowLimitOrders}
+              />
             )}
-            {(
-              [
-                'all',
-                'open',
-                'limit_bet',
-                'sold',
-                'closed',
-                'resolved',
-              ] as BetFilter[]
-            ).map((f) => (
+          </Row>
+          <Carousel labelsParentClassName={'gap-1'}>
+            {showLimitOrders && isYou && (
               <PillButton
-                key={f}
-                selected={filter === f}
-                onSelect={() => onSetFilter(f)}
+                selected={includeExpired}
+                onSelect={() => setIncludeExpired(!includeExpired)}
               >
-                {f === 'limit_bet'
-                  ? 'Limit orders'
-                  : f === 'all'
-                  ? 'All'
-                  : f === 'sold'
-                  ? 'Sold'
-                  : f === 'closed'
-                  ? 'Closed'
-                  : f === 'resolved'
-                  ? 'Resolved'
-                  : 'Open'}
+                Expired
               </PillButton>
-            ))}
-            {prefersPlay && (
-              <SweepsToggle sweepsEnabled isSmall onClick={toggleTokenFilter} />
+            )}
+            {showLimitOrders && isYou && (
+              <PillButton
+                selected={includeFilled}
+                onSelect={() => setIncludeFilled(!includeFilled)}
+              >
+                Filled
+              </PillButton>
+            )}
+            {showLimitOrders && isYou && (
+              <PillButton
+                selected={includeCancelled}
+                onSelect={() => setIncludeCancelled(!includeCancelled)}
+              >
+                Cancelled
+              </PillButton>
+            )}
+            {(['all', 'open', 'sold', 'closed', 'resolved'] as BetFilter[]).map(
+              (f) => (
+                <PillButton
+                  key={f}
+                  selected={filter === f}
+                  onSelect={() => onSetFilter(f)}
+                >
+                  {f === 'all'
+                    ? 'All'
+                    : f === 'sold'
+                    ? 'Sold'
+                    : f === 'closed'
+                    ? 'Closed'
+                    : f === 'resolved'
+                    ? 'Resolved'
+                    : 'Open'}
+                </PillButton>
+              )
+            )}
+            {hasSweeps && (
+              <PillButton
+                selected={!(prefersPlay ?? false)}
+                onSelect={toggleTokenFilter}
+              >
+                Sweepcash
+              </PillButton>
             )}
           </Carousel>
         </Col>
@@ -263,11 +289,21 @@ export function UserBetsTable(props: { user: User }) {
         </Col>
       ) : Object.keys(nullableMetricsByContract).length === 0 ? (
         <NoBets user={user} />
+      ) : showLimitOrders && isYou ? (
+        <LimitOrdersTable
+          query={query}
+          user={user}
+          isYourBets={isYou}
+          includeExpired={includeExpired}
+          includeFilled={includeFilled}
+          includeCancelled={includeCancelled}
+          filter={filter}
+          className="mt-2"
+        />
       ) : (
         <BetsTable
           contracts={filteredContracts as CPMMContract[]}
           metricsByContractId={nullableMetricsByContract}
-          openLimitBetsByContract={openLimitBetsByContract}
           page={page}
           user={user}
           setPage={setPage}
@@ -300,22 +336,14 @@ const NoMatchingBets = () => (
 function BetsTable(props: {
   contracts: CPMMContract[]
   metricsByContractId: { [key: string]: ContractMetric }
-  openLimitBetsByContract: { [key: string]: LimitBet[] }
   page: number
   setPage: (page: number) => void
   filter: BetFilter
   user: User
   signedInUser: User | null | undefined
 }) {
-  const {
-    metricsByContractId,
-    page,
-    setPage,
-    filter,
-    openLimitBetsByContract,
-    user,
-    signedInUser,
-  } = props
+  const { metricsByContractId, page, setPage, filter, user, signedInUser } =
+    props
   const areYourBets = user.id === signedInUser?.id
   const [sort, setSort] = usePersistentInMemoryState<{
     field: BetSort
@@ -371,19 +399,8 @@ function BetsTable(props: {
     position: (c) => -sum(Object.values(metricsByContractId[c.id].totalShares)),
     profit: (c) => -metricsByContractId[c.id].profit,
     profitPercent: (c) => -metricsByContractId[c.id].profitPercent,
-    value: (c) =>
-      -(
-        metricsByContractId[c.id].payout +
-        (filter === 'limit_bet'
-          ? sum(openLimitBetsByContract[c.id].map((b) => b.orderAmount))
-          : 0)
-      ),
-    newest: (c) =>
-      -(
-        metricsByContractId[c.id].lastBetTime ??
-        max(openLimitBetsByContract[c.id]?.map((b) => b.createdTime)) ??
-        0
-      ),
+    value: (c) => -metricsByContractId[c.id].payout,
+    newest: (c) => -(metricsByContractId[c.id].lastBetTime ?? 0),
     probChangeDay: (c) => {
       if (c.mechanism === 'cpmm-1') {
         return -(c as CPMMContract).probChanges.day
@@ -632,7 +649,7 @@ function BetsTable(props: {
         >
           {columnsToDisplay.map((col) =>
             col.header.placeholder ? (
-              <span key={col.header.label} />
+              <span key={col.header.label} className="text-sm" />
             ) : (
               <span
                 key={col.header.sort}
@@ -655,6 +672,7 @@ function BetsTable(props: {
                       ? sort.direction === 'asc'
                       : undefined
                   }
+                  className="text-sm font-semibold"
                 >
                   {col.header.label}
                 </Header>
@@ -705,7 +723,7 @@ function BetsTable(props: {
                           className={''}
                         />
                       </span>
-                      <span>
+                      <span className="text-ink-500 line-clamp-1">
                         {contract.token == 'CASH' && (
                           <span>
                             <Tooltip
@@ -718,9 +736,11 @@ function BetsTable(props: {
                         )}
                         {contract.question}
                       </span>
-                      <span className={'ml-2 flex min-w-[40px] items-center'}>
+                      <span className={' ml-1 flex min-w-[40px] justify-end'}>
                         <ContractStatusLabel
-                          className={'font-semibold'}
+                          className={
+                            '!text-ink-500 whitespace-nowrap font-semibold'
+                          }
                           contract={contract}
                         />
                       </span>
@@ -861,14 +881,16 @@ const ExpandedBetRow = (props: {
       />
       {contract.mechanism === 'cpmm-1' && limitBets.length > 0 && (
         <div className="max-w-md">
-          <div className="bg-canvas-50 mt-4 p-2">Limit orders</div>
+          <div className=" font-semibold">Limit orders</div>
           <OrderTable
             contract={contract}
             limitBets={limitBets}
             isYou={areYourBets}
           />
+          <div className="font-semibold">Bets</div>
         </div>
       )}
+
       <ContractBetsTable
         key={contract.id + 'bets-table'}
         contract={contract}
@@ -921,19 +943,17 @@ const Header = (props: {
 }) => {
   const { onClick, up, className, children } = props
   return (
-    <Row className={clsx(className, 'cursor-pointer')} onClick={onClick}>
+    <Row
+      className={clsx(className, 'cursor-pointer items-center')}
+      onClick={onClick}
+    >
       {up != undefined ? (
         up ? (
           <BiCaretUp className=" h-4" />
         ) : (
-          <BiCaretDown className="mt-1.5 h-4" />
+          <BiCaretDown className=" h-4" />
         )
-      ) : (
-        <Col className={'items-center justify-center'}>
-          <BiCaretUp className="text-ink-300 -mb-2 h-4" />
-          <BiCaretDown className="text-ink-300 h-4" />
-        </Col>
-      )}
+      ) : null}
       <span>{children}</span>
     </Row>
   )
