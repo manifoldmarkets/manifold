@@ -446,13 +446,13 @@ function CapabilityCard({
   // Determine the accent color based on type (works in both light/dark modes)
   const getAccentColor = () => {
     switch(type) {
-      case 'monthly': return 'text-primary-600'
-      case 'releases': return 'text-amber-600'
-      case 'benchmark': return 'text-teal-600'
-      case 'prize': return 'text-amber-600'
-      case 'misuse': return 'text-rose-600'
-      case 'human-comparison': return 'text-purple-600'
-      default: return 'text-primary-600'
+      case 'monthly': return 'text-primary-600 dark:text-primary-500'
+      case 'releases': return 'text-amber-700 dark:text-amber-500'
+      case 'benchmark': return 'text-teal-700 dark:text-teal-500'
+      case 'prize': return 'text-amber-700 dark:text-amber-500'
+      case 'misuse': return 'text-rose-700 dark:text-rose-500'
+      case 'human-comparison': return 'text-purple-700 dark:text-purple-500'
+      default: return 'text-primary-600 dark:text-primary-500'
     }
   }
   
@@ -486,7 +486,7 @@ function CapabilityCard({
     
     return (
       <ClickFrame
-        className={`group cursor-pointer rounded-lg p-4 border border-ink-200 bg-canvas-0 transition-all hover:bg-canvas-50 min-h-[240px] ${className}`}
+        className={`group cursor-pointer rounded-lg p-4 border border-ink-200 bg-canvas-0 transition-all hover:bg-canvas-50 dark:hover:bg-canvas-50 min-h-[240px] shadow-[2px_2px_4px_rgba(0,0,0,0.05)] dark:shadow-[2px_2px_4px_rgba(0,0,0,0.15)] relative ${className}`}
         onClick={handleClick}
       >
         <Col className="h-full space-y-2">
@@ -551,10 +551,10 @@ function CapabilityCard({
             </div>
             
             {/* Probability Bar */}
-            <div className="mt-4 h-1.5 w-full rounded-full bg-ink-200 overflow-hidden">
+            <div className="mt-4 h-1.5 w-full rounded-full bg-ink-200 dark:bg-ink-700 overflow-hidden">
               {/* Calculate the width percentage based on probabilities */}
               <div 
-                className="h-full bg-primary-600" 
+                className="h-full bg-primary-600 dark:bg-primary-500" 
                 style={{
                   width: `${(topCompanies[0].probability / (topCompanies[0].probability + topCompanies[1].probability)) * 100}%` 
                 }}
@@ -597,7 +597,7 @@ function CapabilityCard({
     
     return (
       <ClickFrame
-        className={`group cursor-pointer rounded-lg p-4 border border-ink-200 bg-canvas-0 transition-all hover:bg-canvas-50 min-h-[240px] ${className}`}
+        className={`group cursor-pointer rounded-lg p-4 border border-ink-200 bg-canvas-0 transition-all hover:bg-canvas-50 dark:hover:bg-canvas-50 min-h-[240px] shadow-[2px_2px_4px_rgba(0,0,0,0.05)] dark:shadow-[2px_2px_4px_rgba(0,0,0,0.15)] relative ${className}`}
         onClick={handleClick}
       >
         <Col className="h-full space-y-2">
@@ -609,10 +609,10 @@ function CapabilityCard({
             <div className="text-3xl font-bold text-center">
               <span className={`text-transparent bg-clip-text ${
                 type === 'releases' 
-                ? 'bg-gradient-to-r from-amber-400 via-amber-500 to-amber-600'
+                ? 'bg-gradient-to-r from-amber-500 via-amber-600 to-amber-700 dark:from-amber-400 dark:via-amber-500 dark:to-amber-600'
                 : type === 'benchmark'
-                  ? 'bg-gradient-to-r from-teal-400 via-teal-500 to-teal-600'
-                : 'bg-gradient-to-r from-primary-400 via-primary-600 to-primary-700'
+                  ? 'bg-gradient-to-r from-teal-500 via-teal-600 to-teal-700 dark:from-teal-400 dark:via-teal-500 dark:to-teal-600'
+                : 'bg-gradient-to-r from-primary-500 via-primary-600 to-primary-700 dark:from-primary-400 dark:via-primary-500 dark:to-primary-600'
               }`}>
                 {topModel.text}
               </span>
@@ -620,10 +620,10 @@ function CapabilityCard({
             <div className="text-lg font-medium mt-4">
               <span className={`text-transparent bg-clip-text ${
                 type === 'releases' 
-                ? 'bg-gradient-to-br from-amber-400 to-amber-600'
+                ? 'bg-gradient-to-br from-amber-500 to-amber-700 dark:from-amber-400 dark:to-amber-600'
                 : type === 'benchmark'
-                  ? 'bg-gradient-to-br from-teal-400 to-teal-600'
-                : 'bg-gradient-to-br from-primary-400 to-primary-600'
+                  ? 'bg-gradient-to-br from-teal-500 to-teal-700 dark:from-teal-400 dark:to-teal-600'
+                : 'bg-gradient-to-br from-primary-500 to-primary-700 dark:from-primary-400 dark:to-primary-600'
               }`}>
                 {formatPercent(topModel.probability)}
               </span>
@@ -664,7 +664,7 @@ function CapabilityCard({
   
   return (
     <ClickFrame
-      className={`group cursor-pointer rounded-lg p-4 border border-ink-200 bg-canvas-0 transition-all hover:bg-canvas-50 min-h-[240px] ${className}`}
+      className={`group cursor-pointer rounded-lg p-4 border border-ink-200 bg-canvas-0 transition-all hover:bg-canvas-50 dark:hover:bg-canvas-50 min-h-[240px] shadow-[2px_2px_4px_rgba(0,0,0,0.05)] dark:shadow-[2px_2px_4px_rgba(0,0,0,0.15)] relative ${className}`}
       onClick={handleClick}
     >
       <Col className="h-full">
@@ -688,14 +688,14 @@ function CapabilityCard({
                 <div className="text-6xl font-bold text-center">
                   <span className={`text-transparent bg-clip-text ${
                     type === 'benchmark'
-                    ? 'bg-gradient-to-br from-teal-400 via-teal-500 to-teal-600'
+                    ? 'bg-gradient-to-br from-teal-500 via-teal-600 to-teal-700 dark:from-teal-400 dark:via-teal-500 dark:to-teal-600'
                     : type === 'prize'
-                      ? 'bg-gradient-to-br from-amber-400 via-amber-500 to-amber-600'
+                      ? 'bg-gradient-to-br from-amber-500 via-amber-600 to-amber-700 dark:from-amber-400 dark:via-amber-500 dark:to-amber-600'
                       : type === 'misuse'
-                        ? 'bg-gradient-to-br from-rose-400 via-rose-500 to-rose-600'
+                        ? 'bg-gradient-to-br from-rose-500 via-rose-600 to-rose-700 dark:from-rose-400 dark:via-rose-500 dark:to-rose-600'
                         : type === 'human-comparison'
-                          ? 'bg-gradient-to-br from-purple-400 via-purple-500 to-purple-600'
-                          : 'bg-gradient-to-br from-primary-400 via-primary-600 to-primary-700'
+                          ? 'bg-gradient-to-br from-purple-500 via-purple-600 to-purple-700 dark:from-purple-400 dark:via-purple-500 dark:to-purple-600'
+                          : 'bg-gradient-to-br from-primary-500 via-primary-600 to-primary-700 dark:from-primary-400 dark:via-primary-500 dark:to-primary-600'
                   }`}>
                     {displayValue}
                   </span>
@@ -721,8 +721,8 @@ function CapabilityCard({
               <div className="text-4xl font-bold text-center">
                 <span className={`text-transparent bg-clip-text ${
                   type === 'releases' 
-                  ? 'bg-gradient-to-r from-amber-400 via-amber-500 to-amber-600' 
-                  : 'bg-gradient-to-r from-primary-400 via-primary-500 to-primary-600'
+                  ? 'bg-gradient-to-r from-amber-500 via-amber-600 to-amber-700 dark:from-amber-400 dark:via-amber-500 dark:to-amber-600' 
+                  : 'bg-gradient-to-r from-primary-500 via-primary-600 to-primary-700 dark:from-primary-400 dark:via-primary-500 dark:to-primary-600'
                 }`}>
                   {displayValue}
                 </span>
@@ -808,7 +808,7 @@ export function AIForecast({ whenAgi, contracts = [], hideTitle }: AIForecastPro
       
       {/* Card Categories */}
       {Object.entries(typeLabels).map(([type, label], index) => (
-        <Col key={type} className={`${index > 0 ? 'mt-12 pt-8 border-t border-ink-100' : 'mt-6'}`} id={type}>
+        <Col key={type} className={`${index > 0 ? 'mt-12 pt-8 border-t border-ink-200 dark:border-ink-800/50' : 'mt-6'}`} id={type}>
           <div className="mb-3">
             <Row className="items-center justify-between">
               <div>
@@ -840,7 +840,7 @@ export function AIForecast({ whenAgi, contracts = [], hideTitle }: AIForecastPro
             </Row>
           </div>
           
-          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3 mt-2">
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3 mt-2 relative [&>*:not(:last-child)]:after:hidden md:[&>*:not(:last-child)]:after:block md:[&>*:not(:last-child)]:after:absolute md:[&>*:not(:last-child)]:after:top-1/2 md:[&>*:not(:last-child)]:after:-translate-y-1/2 md:[&>*:not(:last-child)]:after:right-[-1.5px] md:[&>*:not(:last-child)]:after:h-4/5 md:[&>*:not(:last-child)]:after:w-[1px] md:[&>*:not(:last-child)]:after:bg-ink-200/10 dark:md:[&>*:not(:last-child)]:after:bg-ink-700/5">
             {capabilityCardsByType[type]?.map((card, idx) => {
               // Special sizing for "monthly" type cards
               let cardClassName = "";
