@@ -111,6 +111,20 @@ export const AI_CAPABILITY_CARDS: AICapabilityCard[] = [
     type: 'releases',
     displayType: 'date-numeric'
   },
+  {
+    title: 'Deepseek R2',
+    description: '',
+    marketId: 'placeholder-4', // Replace with actual ID
+    type: 'releases',
+    displayType: 'date-numeric'
+  },
+  {
+    title: 'Qwen 3',
+    description: '',
+    marketId: 'placeholder-4', // Replace with actual ID
+    type: 'releases',
+    displayType: 'date-numeric'
+  },
 
   // Benchmarks
   {
@@ -128,7 +142,7 @@ export const AI_CAPABILITY_CARDS: AICapabilityCard[] = [
     displayType: 'binary-odds'
   },
     {
-    title: 'Frontier Math Performance',
+    title: 'Frontier Math Top Score',
     description: 'top performance on frontier math',
     marketId: 'Uu5q0usuQg', // Replace with actual ID
     type: 'benchmark',
@@ -402,11 +416,13 @@ function CapabilityCard({
     // Use dummy data for date-numeric
     if (title.includes('GPT-5')) {
       displayValue = 'Q3 2025'
-    } else if (title.includes('Claude 4')) {
+    } else if (title.includes('Claude')) {
       displayValue = 'Q2 2025'
-    } else if (title.includes('Gemini 3')) {
+    } else if (title.includes('Gemini')) {
       displayValue = 'Q1 2025'
-    } else if (title.includes('Grok 4')) {
+    } else if (title.includes('Grok')) {
+      displayValue = 'Q4 2025'
+    } else if (title.includes('Qwen')) {
       displayValue = 'Q4 2025'
     } else {
       displayValue = '50%'
@@ -805,12 +821,12 @@ export function AIForecast({ whenAgi, contracts = [], hideTitle }: AIForecastPro
                   'text-primary-600'
                 }`}>{label}</h3>
                 <p className="text-ink-500 text-sm mt-1">
-                  {type === 'monthly'? 'Current model rankings across benchmark leaderboards': 
-                   type === 'releases' ? 'Predicted release timeframes for next-generation AI models' :
-                   type === 'benchmark' ? 'Expected performance on standardized AI testing benchmarks' :
-                   type === 'prize' ? 'Likelihood of achieving major scientific breakthroughs' :
-                   type === 'misuse' ? 'Probability of concerning AI applications emerging' :
-                   'Comparing AI capabilities to human expert performance'}
+                  {type === 'monthly'? 'What\'s the best model this month?': 
+                   type === 'releases' ? 'When will [insert lab here] release the next model?' :
+                   type === 'benchmark' ? 'How smart will the LLMs be?' :
+                   type === 'prize' ? 'Will any model claim this prize?' :
+                   type === 'misuse' ? 'How misaligned are these models?' :
+                   'Do we still have a comparative advantage?'}
                 </p>
               </div>
               <Link 
