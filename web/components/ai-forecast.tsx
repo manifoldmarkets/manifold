@@ -15,7 +15,9 @@ import { formatPercent } from 'common/util/format'
 import { getDisplayProbability } from 'common/calculate'
 import { SiOpenai, SiGooglegemini, SiAnthropic} from 'react-icons/si'
 import { RiTwitterXLine } from 'react-icons/ri'
-import { LuLink, LuHelpCircle, LuInfo } from 'react-icons/lu'
+import { LuLink, LuInfo } from 'react-icons/lu'
+import { GiSpermWhale } from "react-icons/gi"
+import { PiBirdBold } from "react-icons/pi"
 
 const ENDPOINT = 'ai'
 
@@ -491,7 +493,20 @@ function CapabilityCard({
       >
         <Col className="h-full space-y-2">
           <div>
-            <h3 className={`font-semibold ${getAccentColor()} text-lg mb-1`}>{title}</h3>
+            <div className="flex items-center mb-1">
+              {/* Show AI provider icon next to title for releases */}
+              {type === 'releases' && (
+                <div className="mr-2 text-ink-600">
+                  {title.includes('GPT') && <SiOpenai className="h-5 w-5" />}
+                  {title.includes('Claude') && <SiAnthropic className="h-5 w-5" />}
+                  {title.includes('Gemini') && <SiGooglegemini className="h-5 w-5" />}
+                  {title.includes('Grok') && <RiTwitterXLine className="h-5 w-5" />}
+                  {title.includes('Deepseek') && <GiSpermWhale className="h-5 w-5" />}
+                  {title.includes('Qwen') && <PiBirdBold className="h-5 w-5" />}
+                </div>
+              )}
+              <h3 className={`font-semibold ${getAccentColor()} text-lg`}>{title}</h3>
+            </div>
           </div>
           
           {/* VS Match Layout */}
@@ -602,7 +617,20 @@ function CapabilityCard({
       >
         <Col className="h-full space-y-2">
           <div>
-            <h3 className={`font-semibold ${getAccentColor()} text-xl mb-1`}>{title}</h3>
+            <div className="flex items-center mb-1">
+              {/* Show AI provider icon next to title for releases */}
+              {type === 'releases' && (
+                <div className="mr-2 text-ink-600">
+                  {title.includes('GPT') && <SiOpenai className="h-5 w-5" />}
+                  {title.includes('Claude') && <SiAnthropic className="h-5 w-5" />}
+                  {title.includes('Gemini') && <SiGooglegemini className="h-5 w-5" />}
+                  {title.includes('Grok') && <RiTwitterXLine className="h-5 w-5" />}
+                  {title.includes('Deepseek') && <SiOpenai className="h-5 w-5 opacity-60" />}
+                  {title.includes('Qwen') && <SiOpenai className="h-5 w-5 opacity-60" />}
+                </div>
+              )}
+              <h3 className={`font-semibold ${getAccentColor()} text-xl`}>{title}</h3>
+            </div>
           </div>
           
           <div className="rounded-md p-3 flex-1 flex flex-col items-center justify-center">
@@ -669,7 +697,20 @@ function CapabilityCard({
     >
       <Col className="h-full">
         <div className="relative w-full mb-1">
-          <h3 className={`font-semibold ${getAccentColor()} text-xl`}>{title}</h3>
+          <div className="flex items-center">
+            {/* Show AI provider icon next to title for releases */}
+            {type === 'releases' && (
+              <div className="mr-2 text-ink-600">
+                {title.includes('GPT') && <SiOpenai className="h-5 w-5" />}
+                {title.includes('Claude') && <SiAnthropic className="h-5 w-5" />}
+                {title.includes('Gemini') && <SiGooglegemini className="h-5 w-5" />}
+                {title.includes('Grok') && <RiTwitterXLine className="h-5 w-5" />}
+                {title.includes('Deepseek') && <GiSpermWhale className="h-5 w-5 opacity-60" />}
+                {title.includes('Qwen') && <PiBirdBold className="h-5 w-5 opacity-60" />}
+              </div>
+            )}
+            <h3 className={`font-semibold ${getAccentColor()} text-xl`}>{title}</h3>
+          </div>
           {/* Add tooltip for benchmark terms */}
           {(type === 'benchmark' || type === 'prize') && (
             <div className="absolute top-0 right-0">
