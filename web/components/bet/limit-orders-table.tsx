@@ -105,6 +105,7 @@ export function LimitOrdersTable(props: {
     open: (c) => !(FILTERS.closed(c) || FILTERS.resolved(c)),
     all: () => true,
     sold: () => true,
+    limit_bet: () => true,
   }
 
   // Removed dismissedOrders state and cleanup logic
@@ -320,7 +321,7 @@ export function LimitOrdersTable(props: {
               (isFilledOrCancelled || isExpired) && 'bg-canvas-50'
             )}
           >
-            <div className="col-span-4 min-w-0 sm:col-span-3">
+            <Col className="col-span-4 min-w-0 gap-1 sm:col-span-3">
               <Link
                 href={contractPath(contract)}
                 className="flex items-center gap-2 truncate hover:underline"
@@ -343,7 +344,7 @@ export function LimitOrdersTable(props: {
                 />{' '}
                 {formatPercent(bet.limitProb)}
               </div>
-            </div>
+            </Col>
 
             <div className="col-span-2 text-right text-sm">
               <Tooltip text={new Date(bet.createdTime).toLocaleString()}>

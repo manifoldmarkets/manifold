@@ -534,7 +534,7 @@ function BetsTable(props: {
           >
             <span
               className={clsx(
-                'hover:bg-ink-100 rounded-md border px-1',
+                'hover:bg-ink-100 rounded-md px-1',
                 sort.field === 'profit' ? ' text-ink-1000  ' : ''
               )}
             >
@@ -543,7 +543,7 @@ function BetsTable(props: {
 
             <span
               className={clsx(
-                'hover:bg-ink-100 rounded-md border px-1',
+                'hover:bg-ink-100 rounded-md  px-1',
                 sort.field === 'profitPercent'
                   ? ' text-ink-1000 font-semibold '
                   : ''
@@ -565,16 +565,18 @@ function BetsTable(props: {
       span: 1,
       renderCell: (c: Contract) => {
         const cm = metricsByContractId[c.id]
-        return (
-          <span className={'flex-inline flex justify-end '}>
-            <ProfitBadge
-              className={'!px-1'}
-              profitPercent={cm.profitPercent}
-              round={true}
-              grayColor={formatMoney(cm.profit ?? 0) === formatMoney(0)}
-            />
-          </span>
-        )
+        if (sort.field === 'profitPercent') {
+          return (
+            <span className={'flex-inline flex justify-end '}>
+              <ProfitBadge
+                className={'!px-1'}
+                profitPercent={cm.profitPercent}
+                round={true}
+                grayColor={formatMoney(cm.profit ?? 0) === formatMoney(0)}
+              />
+            </span>
+          )
+        }
       },
     },
     {
