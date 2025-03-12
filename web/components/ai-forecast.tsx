@@ -24,7 +24,7 @@ function Tooltip({ title, description }: { title: string, description: string })
   const [isVisible, setIsVisible] = useState(false)
   
   return (
-    <div className="relative inline-flex items-center ml-1">
+    <div className="inline-flex items-center">
       <button
         onMouseEnter={() => setIsVisible(true)}
         onMouseLeave={() => setIsVisible(false)}
@@ -36,7 +36,7 @@ function Tooltip({ title, description }: { title: string, description: string })
       </button>
       
       {isVisible && (
-        <div className="absolute left-full ml-2 top-0 z-50 w-64 bg-canvas-0 shadow-lg rounded-md border border-ink-200 p-3 text-sm text-ink-700">
+        <div className="absolute right-0 top-6 z-50 w-64 bg-canvas-0 shadow-lg rounded-md border border-ink-200 p-3 text-sm text-ink-700">
           <h4 className="font-medium mb-1">{title}</h4>
           <p>{description}</p>
         </div>
@@ -51,7 +51,7 @@ const benchmarkDescriptions: Record<string, string> = {
   'Frontier Math Passed': 'Frontier Math refers to advanced mathematical problems at the cutting edge of research that have traditionally been very difficult for AI systems to solve.',
   'SWE Bench Top Score': 'Software Engineering Benchmark - a test of AI coding capabilities across real-world software engineering tasks from GitHub issues.',
   'Humanity\'s Last Exam Top Score': 'A collection of extremely difficult problems across various domains, designed to test the limits of AI capabilities compared to human experts.',
-  'Millennium Prize Claimed': 'The Millennium Prize Problems are seven of the most difficult unsolved problems in mathematics, each with a $1 million prize for solution.',
+  'Millennium Prize': 'The Millennium Prize Problems are seven of the most difficult unsolved problems in mathematics, each with a $1 million prize for solution.',
   'Arc AGI Claimed': 'Anthropic\'s Rubric for AI Capability Evaluation - a comprehensive benchmark designed to evaluate artificial general intelligence capabilities.',
   'Turing Test (Long Bets) Passed': 'The classic test of a machine\'s ability to exhibit intelligent behavior indistinguishable from that of a human, proposed by Alan Turing.'
 }
@@ -151,7 +151,7 @@ export const AI_CAPABILITY_CARDS: AICapabilityCard[] = [
   
   // Prizes
   {
-    title: 'Millennium Prize Claimed',
+    title: 'Millennium Prize',
     description: 'AI Solve Millennium Problem by EOY',
     marketId: 'placeholder-2', // Replace with actual ID
     type: 'prize',
@@ -652,14 +652,16 @@ function CapabilityCard({
       onClick={handleClick}
     >
       <Col className="h-full">
-        <div className="flex items-center">
-          <h3 className={`font-semibold ${getAccentColor()} text-xl mb-1`}>{title}</h3>
+        <div className="relative w-full mb-1">
+          <h3 className={`font-semibold ${getAccentColor()} text-xl`}>{title}</h3>
           {/* Add tooltip for benchmark terms */}
           {(type === 'benchmark' || type === 'prize') && (
-            <Tooltip 
-              title={title} 
-              description={benchmarkDescriptions[title] || `Oh yay you must Google for more information about this ${title} benchmark.`} 
-            />
+            <div className="absolute top-0 right-0">
+              <Tooltip 
+                title={title} 
+                description={benchmarkDescriptions[title] || `Oh yay you must Google for more information about this ${title} benchmark.`} 
+              />
+            </div>
           )}
         </div>
         
@@ -686,8 +688,8 @@ function CapabilityCard({
               {/* Brief descriptive text under percentages */}
               {(type === 'benchmark' || type === 'prize' || type === 'misuse' || type === 'human-comparison') && (
                 <p className="text-ink-600 text-sm mt-3 text-left w-full px-1">
-                  {type === 'benchmark' && title.includes('IMO Gold') && 'LLM gets a IMO gold medal'}
-                  {type === 'benchmark' && title.includes('Frontier Math') && 'An LLM gets 80%+ on this test  '}
+                  {type === 'benchmark' && title.includes('IMO Gold') && 'An LLM gets a IMO gold medal'}
+                  {type === 'benchmark' && title.includes('Frontier Math') && 'An LLM gets 80%+'}
                   {type === 'benchmark' && title.includes('SWE Bench') && 'Likelihood of achieving top coding benchmark score'}
                   {type === 'prize' && title.includes('Millennium') && 'Chance of solving a million-dollar math problem'}
                   {type === 'prize' && title.includes('Arc AGI') && 'Probability of meeting AGI criteria by 2025'}
