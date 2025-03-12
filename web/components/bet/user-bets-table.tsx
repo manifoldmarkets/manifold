@@ -74,7 +74,13 @@ type BetSort =
   | 'profitPercent'
   | 'position'
 
-export type BetFilter = 'open' | 'sold' | 'closed' | 'resolved' | 'all'
+export type BetFilter =
+  | 'open'
+  | 'sold'
+  | 'closed'
+  | 'resolved'
+  | 'all'
+  | 'limit_bet'
 
 const JUNE_1_2022 = new Date('2022-06-01T00:00:00.000Z').valueOf()
 export function UserBetsTable(props: { user: User }) {
@@ -184,6 +190,7 @@ export function UserBetsTable(props: { user: User }) {
     open: (c) => !(FILTERS.closed(c) || FILTERS.resolved(c)),
     all: () => true,
     sold: () => true,
+    limit_bet: () => true,
   }
   const loaded = nullableMetricsByContract && contracts
 
@@ -220,7 +227,7 @@ export function UserBetsTable(props: { user: User }) {
             />
             {isYou && (
               <LimitOrdersToggle
-                showLimitOrders={showLimitOrders}
+                showLimitOrders={showLimitOrders || filter === 'limit_bet'}
                 setShowLimitOrders={setShowLimitOrders}
               />
             )}
