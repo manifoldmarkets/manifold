@@ -317,7 +317,7 @@ export function LimitOrdersTable(props: {
         const isExpired = bet.isExpired
 
         return (
-          <Col key={bet.id} className="border-ink-200 border-b pb-2 pt-2">
+          <Col key={bet.id} className="border-ink-200 border-b pb-2 pt-3">
             {/* Contract title*/}
             <Row
               className={clsx(
