@@ -1,5 +1,4 @@
 import type { APIHandler } from 'api/helpers/endpoint'
-import { Dictionary } from 'lodash'
 import { LimitBet } from 'common/bet'
 import { MarketContract } from 'common/contract'
 import { createSupabaseDirectClient } from 'shared/supabase/init'
