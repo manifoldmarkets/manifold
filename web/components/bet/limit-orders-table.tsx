@@ -415,7 +415,7 @@ export function LimitOrdersTable(props: {
                     </span>
                   </Tooltip>
                 ) : (
-                  <span className="text-ink-800">-</span>
+                  <span className="text-ink-500">-</span>
                 )}
               </div>
               <div className="col-span-2 text-right">
@@ -431,7 +431,7 @@ export function LimitOrdersTable(props: {
                     </span>
                   </Tooltip>
                 ) : (
-                  <span className="text-ink-800">-</span>
+                  <span className="text-ink-500">-</span>
                 )}
               </div>
 
