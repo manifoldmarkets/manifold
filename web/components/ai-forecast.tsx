@@ -43,7 +43,7 @@ function Tooltip({ title, description }: { title: string, description: string })
       </button>
       
       {isVisible && (
-        <div className="absolute right-0 top-6 z-50 w-64 bg-canvas-0 shadow-lg rounded-md border border-ink-200 p-3 text-sm text-ink-700">
+        <div className="absolute left-full -top-2 transform -translate-x-8 -translate-y-full z-50 w-64 bg-canvas-0 shadow-lg rounded-md border border-ink-200 p-3 text-sm text-ink-700">
           <h4 className="font-medium mb-1">{title}</h4>
           <p>{description}</p>
         </div>
