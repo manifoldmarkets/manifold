@@ -52,15 +52,28 @@ function Tooltip({ title, description }: { title: string, description: string })
   )
 }
 
-// Benchmark descriptions for tooltips
-const benchmarkDescriptions: Record<string, string> = {
-  'IMO Gold': 'The International Mathematical Olympiad (IMO) is the world championship mathematics competition for high school students. Getting a gold medal requires a high score on extremely challenging math problems.',
-  'Frontier Math Passed': 'Frontier Math refers to advanced mathematical problems at the cutting edge of research that have traditionally been very difficult for AI systems to solve.',
-  'SWE Bench Top Score': 'Software Engineering Benchmark - a test of AI coding capabilities across real-world software engineering tasks from GitHub issues.',
-  'Humanity\'s Last Exam Top Score': 'A collection of extremely difficult problems across various domains, designed to test the limits of AI capabilities compared to human experts.',
-  'Millennium Prize': 'The Millennium Prize Problems are seven of the most difficult unsolved problems in mathematics, each with a $1 million prize for solution.',
-  'Arc AGI Claimed': 'Anthropic\'s Rubric for AI Capability Evaluation - a comprehensive benchmark designed to evaluate artificial general intelligence capabilities.',
-  'Turing Test (Long Bets) Passed': 'Each of the three human judges will conduct two hour long text-based interviews with each of the four candidates. The computer would have passed the Turing test if it fooled two of the three judges.'
+// Function to get the appropriate description for tooltip based on card title
+function getTooltipDescription(cardTitle: string): string {
+  const keyTerms: Record<string, string> = {
+    'IMO Gold': 'The International Mathematical Olympiad (IMO) is the world championship mathematics competition for high school students. Getting a gold medal requires a high score on extremely challenging math problems.',
+    'Frontier Math': 'Advanced mathematical problems at the cutting edge of research that have traditionally been very difficult for AI systems to solve.',
+    'SWE Bench': 'A test of AI coding capabilities across real-world software engineering tasks from GitHub issues.',
+    'Humanity\'s Last Exam': 'A collection of extremely difficult problems across various domains, designed to test the limits of AI capabilities compared to human experts.',
+    'Millennium Prize': 'The Millennium Prize Problems are seven of the most difficult unsolved problems in mathematics, each with a $1 million prize for solution.',
+    'Arc AGI': 'Anthropic\'s Rubric for AI Capability Evaluation - a comprehensive benchmark designed to evaluate artificial general intelligence capabilities.',
+    'Turing Test': 'Each of the three human judges will conduct two hour long text-based interviews with each of the four candidates. The computer would have passed the Turing test if it fooled two of the three judges.',
+    'CodeForces': 'CodeForces is a competitive programming platform with challenging algorithmic problems that test reasoning, efficiency, and mathematical thinking.'
+  }
+  
+  // Find the first matching key term in the title
+  for (const [term, description] of Object.entries(keyTerms)) {
+    if (cardTitle.includes(term)) {
+      return description
+    }
+  }
+  
+  // Default description if no match is found
+  return `Please Google for more information about "${cardTitle}" benchmark.`
 }
 
 // Define type for capability cards
@@ -258,23 +271,35 @@ function CardBase({
 }
 
 // Component for card title with optional icon
+// Component for card title with tooltip for benchmarks and prizes
 function CardTitle({ 
   title, 
   type, 
-  showModelIcon = false 
+  showModelIcon = false,
+  showTooltip = false
 }: { 
   title: string, 
   type: string, 
-  showModelIcon?: boolean 
+  showModelIcon?: boolean,
+  showTooltip?: boolean 
 }) {
   return (
-    <div className="flex items-center mb-1">
-      {showModelIcon && (
-        <div className="mr-2 text-ink-600">
-          <AIModelIcon title={title} />
+    <div className="flex items-center justify-between w-full mb-1">
+      <div className="flex items-center">
+        {showModelIcon && (
+          <div className="mr-2 text-ink-600">
+            <AIModelIcon title={title} />
+          </div>
+        )}
+        <h3 className={`font-semibold ${getAccentColor(type)} text-lg`}>{title}</h3>
+      </div>
+      
+      {/* Conditionally show tooltip for benchmark and prize cards */}
+      {showTooltip && (
+        <div className="ml-2">
+          <Tooltip title={title} description={getTooltipDescription(title)} />
         </div>
       )}
-      <h3 className={`font-semibold ${getAccentColor(type)} text-lg`}>{title}</h3>
     </div>
   );
 }
@@ -488,11 +513,12 @@ function CapabilityCard({
     return (
       <CardBase onClick={clickHandler} className={className}>
         <Col className="h-full space-y-2">
-          <div>
+          <div className="w-full">
             <CardTitle 
               title={title} 
               type={type} 
               showModelIcon={type === 'releases'} 
+              showTooltip={type === 'benchmark' || type === 'prize'}
             />
           </div>
           
@@ -575,11 +601,12 @@ function CapabilityCard({
       return (
         <CardBase onClick={clickHandler} className={className}>
           <Col className="h-full space-y-2">
-            <div>
+            <div className="w-full">
               <CardTitle 
                 title={title} 
                 type={type} 
                 showModelIcon
+                showTooltip
               />
             </div>
             
@@ -618,11 +645,12 @@ function CapabilityCard({
     return (
       <CardBase onClick={clickHandler} className={className}>
         <Col className="h-full space-y-2">
-          <div>
+          <div className="w-full">
             <CardTitle 
               title={title} 
               type={type} 
               showModelIcon={type === 'releases'} 
+              showTooltip={type === 'benchmark' || type === 'prize'}
             />
           </div>
           
@@ -646,25 +674,17 @@ function CapabilityCard({
     )
   }
 
-  // Standard card layout for other display types
+  // Standard card layout for remaining display types
   return (
     <CardBase onClick={clickHandler} className={className}>
       <Col className="h-full">
-        <div className="relative w-full mb-1">
+        <div className="w-full mb-1">
           <CardTitle 
             title={title} 
             type={type} 
             showModelIcon={type === 'releases'} 
+            showTooltip={type === 'benchmark' || type === 'prize'}
           />
-          {/* Add tooltip for benchmark terms */}
-          {(type === 'benchmark' || type === 'prize') && (
-            <div className="absolute top-0 right-0">
-              <Tooltip 
-                title={title} 
-                description={benchmarkDescriptions[title] || `Oh yay you must Google for more information about ${title}.`} 
-              />
-            </div>
-          )}
         </div>
         
         <div className="flex flex-col items-center justify-center flex-grow mt-2">
