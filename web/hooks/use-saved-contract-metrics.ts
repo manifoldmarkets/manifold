@@ -67,11 +67,10 @@ export const useAllSavedContractMetrics = (
     refreshMyMetrics()
   }, [user?.id, contract.id, answerId, contract.resolution])
 
-  useApiSubscription({
-    topics: [`contract/${contract.id}/user-metrics/${user?.id}`],
-    onBroadcast: (msg) => {
-      const metrics = (msg.data.metrics as Omit<ContractMetric, 'id'>[]).filter(
-        (m) => (answerId ? m.answerId === answerId : true)
+  const applyUpdate = useEvent(
+    async (newMetrics: Omit<ContractMetric, 'id'>[]) => {
+      const metrics = newMetrics.filter((m) =>
+        answerId ? m.answerId === answerId : true
       ) as ContractMetric[]
       if (metrics.length > 0)
         setSavedMetrics(
@@ -80,7 +79,13 @@ export const useAllSavedContractMetrics = (
             (m) => m.answerId + m.userId + m.contractId
           )
         )
-    },
+    }
+  )
+
+  useApiSubscription({
+    topics: [`contract/${contract.id}/user-metrics/${user?.id}`],
+    onBroadcast: (msg) =>
+      applyUpdate(msg.data.metrics as Omit<ContractMetric, 'id'>[]),
     enabled: !!user?.id,
   })
 
