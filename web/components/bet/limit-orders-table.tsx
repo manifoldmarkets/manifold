@@ -185,7 +185,7 @@ export function LimitOrdersTable(props: {
   }, [allLimitBets, contractsById])
 
   const lastFillTime = (bet: LimitBet) => {
-    return maxBy(bet.fills, 'timestamp')?.timestamp ?? bet.updatedTime
+    return maxBy(bet.fills, 'timestamp')?.timestamp
   }
 
   // Filter bets by search query and expired status
@@ -222,11 +222,11 @@ export function LimitOrdersTable(props: {
     const sortFn = (bet: DetailedBet) => {
       switch (sort.field) {
         case 'createTime':
-          return bet.createdTime
+          return -bet.createdTime
         case 'expiryTime':
           return bet.expiresAt ?? Infinity
         case 'updateTime':
-          return lastFillTime(bet) ?? Infinity
+          return lastFillTime(bet) ? -lastFillTime(bet)! : Infinity
         case 'remainingAmount':
           return bet.remainingAmount
         case 'priceDiff':
