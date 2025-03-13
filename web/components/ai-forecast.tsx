@@ -179,14 +179,14 @@ export const AI_CAPABILITY_CARDS: AICapabilityCard[] = [
     displayType: 'binary-odds'
   },
   {
-    title: 'Arc AGI Claimed',
+    title: 'Arc AGI',
     description: 'Arc AGI prize by EOY',
     marketId: 'W1KGdImLB5cb1p75M88e',
     type: 'prize',
     displayType: 'binary-odds'
   },
   {
-    title: 'Turing Test (Long Bets) Passed',
+    title: 'Turing Test (Long Bets)',
     description: 'Will AI pass long bets Turing Test by EOY?',
     marketId: 'nKyHon3IPOqJYzaWTHJB',
     type: 'prize',
