@@ -43,7 +43,7 @@ function Tooltip({ title, description }: { title: string, description: string })
       </button>
       
       {isVisible && (
-        <div className="absolute right-0 top-6 z-50 w-64 bg-canvas-0 shadow-lg rounded-md border border-ink-200 p-3 text-sm text-ink-700">
+        <div className="absolute left-full -top-2 transform -translate-x-8 -translate-y-full z-50 w-64 bg-canvas-0 shadow-lg rounded-md border border-ink-200 p-3 text-sm text-ink-700">
           <h4 className="font-medium mb-1">{title}</h4>
           <p>{description}</p>
         </div>
@@ -52,15 +52,28 @@ function Tooltip({ title, description }: { title: string, description: string })
   )
 }
 
-// Benchmark descriptions for tooltips
-const benchmarkDescriptions: Record<string, string> = {
-  'IMO Gold': 'The International Mathematical Olympiad (IMO) is the world championship mathematics competition for high school students. Getting a gold medal requires a high score on extremely challenging math problems.',
-  'Frontier Math Passed': 'Frontier Math refers to advanced mathematical problems at the cutting edge of research that have traditionally been very difficult for AI systems to solve.',
-  'SWE Bench Top Score': 'Software Engineering Benchmark - a test of AI coding capabilities across real-world software engineering tasks from GitHub issues.',
-  'Humanity\'s Last Exam Top Score': 'A collection of extremely difficult problems across various domains, designed to test the limits of AI capabilities compared to human experts.',
-  'Millennium Prize': 'The Millennium Prize Problems are seven of the most difficult unsolved problems in mathematics, each with a $1 million prize for solution.',
-  'Arc AGI Claimed': 'Anthropic\'s Rubric for AI Capability Evaluation - a comprehensive benchmark designed to evaluate artificial general intelligence capabilities.',
-  'Turing Test (Long Bets) Passed': 'Each of the three human judges will conduct two hour long text-based interviews with each of the four candidates. The computer would have passed the Turing test if it fooled two of the three judges.'
+// Function to get the appropriate description for tooltip based on card title
+function getTooltipDescription(cardTitle: string): string {
+  const keyTerms: Record<string, string> = {
+    'IMO Gold': 'The International Mathematical Olympiad (IMO) is the world championship mathematics competition for high school students. Getting a gold medal requires a high score on extremely challenging math problems.',
+    'Frontier Math': 'Advanced mathematical problems at the cutting edge of research that have traditionally been very difficult for AI systems to solve.',
+    'SWE Bench': 'A test of AI coding capabilities across real-world software engineering tasks from GitHub issues.',
+    'Humanity\'s Last Exam': 'A collection of extremely difficult problems across various domains, designed to test the limits of AI capabilities compared to human experts.',
+    'Millennium Prize': 'The Millennium Prize Problems are seven of the most difficult unsolved problems in mathematics, each with a $1 million prize for solution.',
+    'Arc AGI': 'Anthropic\'s Rubric for AI Capability Evaluation - a comprehensive benchmark designed to evaluate artificial general intelligence capabilities.',
+    'Turing Test': 'Each of the three human judges will conduct two hour long text-based interviews with each of the four candidates. The computer would have passed the Turing test if it fooled two of the three judges.',
+    'CodeForces': 'CodeForces is a competitive programming platform with challenging algorithmic problems that test reasoning, efficiency, and mathematical thinking.'
+  }
+  
+  // Find the first matching key term in the title
+  for (const [term, description] of Object.entries(keyTerms)) {
+    if (cardTitle.includes(term)) {
+      return description
+    }
+  }
+  
+  // Default description if no match is found
+  return `Please Google for more information about "${cardTitle}" benchmark.`
 }
 
 // Define type for capability cards
@@ -126,11 +139,11 @@ export const AI_CAPABILITY_CARDS: AICapabilityCard[] = [
     displayType: 'top-one-mcq'
   },
   {
-    title: 'Qwen 3',
+    title: 'Deepseek V4',
     description: '',
-    marketId: 'placeholder-4',
+    marketId: 'yLnQQZsc2E',
     type: 'releases',
-    displayType: 'date-numeric'
+    displayType: 'top-one-mcq'
   },
 
   // Benchmarks
@@ -179,14 +192,14 @@ export const AI_CAPABILITY_CARDS: AICapabilityCard[] = [
     displayType: 'binary-odds'
   },
   {
-    title: 'Arc AGI Claimed',
+    title: 'Arc AGI',
     description: 'Arc AGI prize by EOY',
     marketId: 'W1KGdImLB5cb1p75M88e',
     type: 'prize',
     displayType: 'binary-odds'
   },
   {
-    title: 'Turing Test (Long Bets) Passed',
+    title: 'Turing Test (Long Bets)',
     description: 'Will AI pass long bets Turing Test by EOY?',
     marketId: 'nKyHon3IPOqJYzaWTHJB',
     type: 'prize',
@@ -258,23 +271,35 @@ function CardBase({
 }
 
 // Component for card title with optional icon
+// Component for card title with tooltip for benchmarks and prizes
 function CardTitle({ 
   title, 
   type, 
-  showModelIcon = false 
+  showModelIcon = false,
+  showTooltip = false
 }: { 
   title: string, 
   type: string, 
-  showModelIcon?: boolean 
+  showModelIcon?: boolean,
+  showTooltip?: boolean 
 }) {
   return (
-    <div className="flex items-center mb-1">
-      {showModelIcon && (
-        <div className="mr-2 text-ink-600">
-          <AIModelIcon title={title} />
+    <div className="flex items-center justify-between w-full mb-1">
+      <div className="flex items-center">
+        {showModelIcon && (
+          <div className="mr-2 text-ink-600">
+            <AIModelIcon title={title} />
+          </div>
+        )}
+        <h3 className={`font-semibold ${getAccentColor(type)} text-lg`}>{title}</h3>
+      </div>
+      
+      {/* Conditionally show tooltip for benchmark and prize cards */}
+      {showTooltip && (
+        <div className="ml-2">
+          <Tooltip title={title} description={getTooltipDescription(title)} />
         </div>
       )}
-      <h3 className={`font-semibold ${getAccentColor(type)} text-lg`}>{title}</h3>
     </div>
   );
 }
@@ -294,11 +319,11 @@ function AIModelIcon({ title, className = "h-5 w-5" }: { title: string, classNam
 function getAccentColor(type: string) {
   switch(type) {
     case 'monthly': return 'text-primary-600 dark:text-primary-500';
-    case 'releases': return 'text-amber-700 dark:text-amber-500';
+    case 'releases': return 'text-fuchsia-700 dark:text-fuchsia-500';
     case 'benchmark': return 'text-teal-700 dark:text-teal-500';
     case 'prize': return 'text-amber-700 dark:text-amber-500';
     case 'misuse': return 'text-rose-700 dark:text-rose-500';
-    case 'human-comparison': return 'text-purple-700 dark:text-purple-500';
+    case 'human-comparison': return 'text-cyan-700 dark:text-cyan-500';
     default: return 'text-primary-600 dark:text-primary-500';
   }
 }
@@ -309,7 +334,7 @@ function getGradient(type: string, isText = true) {
   
   switch(type) {
     case 'releases':
-      return `${textPrefix}bg-gradient-to-r from-amber-500 via-amber-600 to-amber-700 dark:from-amber-400 dark:via-amber-500 dark:to-amber-600`;
+      return `${textPrefix}bg-gradient-to-r from-fuchsia-500 via-fuchsia-600 to-fuchsia-700 dark:from-fuchsia-400 dark:via-fuchsia-500 dark:to-fuchsia-600`;
     case 'benchmark':
       return `${textPrefix}bg-gradient-to-r from-teal-500 via-teal-600 to-teal-700 dark:from-teal-400 dark:via-teal-500 dark:to-teal-600`;
     case 'prize':
@@ -317,7 +342,7 @@ function getGradient(type: string, isText = true) {
     case 'misuse':
       return `${textPrefix}bg-gradient-to-br from-rose-500 via-rose-600 to-rose-700 dark:from-rose-400 dark:via-rose-500 dark:to-rose-600`;
     case 'human-comparison':
-      return `${textPrefix}bg-gradient-to-br from-purple-500 via-purple-600 to-purple-700 dark:from-purple-400 dark:via-purple-500 dark:to-purple-600`;
+      return `${textPrefix}bg-gradient-to-br from-cyan-500 via-cyan-600 to-cyan-700 dark:from-cyan-400 dark:via-cyan-500 dark:to-cyan-600`;
     default:
       return `${textPrefix}bg-gradient-to-br from-primary-500 via-primary-600 to-primary-700 dark:from-primary-400 dark:via-primary-500 dark:to-primary-600`;
   }
@@ -488,11 +513,12 @@ function CapabilityCard({
     return (
       <CardBase onClick={clickHandler} className={className}>
         <Col className="h-full space-y-2">
-          <div>
+          <div className="w-full">
             <CardTitle 
               title={title} 
               type={type} 
               showModelIcon={type === 'releases'} 
+              showTooltip={type === 'benchmark' || type === 'prize'}
             />
           </div>
           
@@ -575,11 +601,12 @@ function CapabilityCard({
       return (
         <CardBase onClick={clickHandler} className={className}>
           <Col className="h-full space-y-2">
-            <div>
+            <div className="w-full">
               <CardTitle 
                 title={title} 
                 type={type} 
                 showModelIcon
+                showTooltip
               />
             </div>
             
@@ -618,18 +645,19 @@ function CapabilityCard({
     return (
       <CardBase onClick={clickHandler} className={className}>
         <Col className="h-full space-y-2">
-          <div>
+          <div className="w-full">
             <CardTitle 
               title={title} 
               type={type} 
               showModelIcon={type === 'releases'} 
+              showTooltip={type === 'benchmark' || type === 'prize'}
             />
           </div>
           
           <div className="flex flex-col h-full justify-between">
             {/* Main content - centered model name */}
             <div className="rounded-md p-3 flex-1 flex items-center justify-center">
-              <div className="text-3xl font-bold text-center">
+              <div className={`font-bold text-center ${topModel.text.length > 15 ? 'text-2xl' : topModel.text.length > 10 ? 'text-3xl' : 'text-4xl'}`}>
                 <span className={getGradient(type)}>
                   {topModel.text}
                 </span>
@@ -646,32 +674,24 @@ function CapabilityCard({
     )
   }
 
-  // Standard card layout for other display types
+  // Standard card layout for remaining display types
   return (
     <CardBase onClick={clickHandler} className={className}>
       <Col className="h-full">
-        <div className="relative w-full mb-1">
+        <div className="w-full mb-1">
           <CardTitle 
             title={title} 
             type={type} 
             showModelIcon={type === 'releases'} 
+            showTooltip={type === 'benchmark' || type === 'prize'}
           />
-          {/* Add tooltip for benchmark terms */}
-          {(type === 'benchmark' || type === 'prize') && (
-            <div className="absolute top-0 right-0">
-              <Tooltip 
-                title={title} 
-                description={benchmarkDescriptions[title] || `Oh yay you must Google for more information about ${title}.`} 
-              />
-            </div>
-          )}
         </div>
         
         <div className="flex flex-col items-center justify-center flex-grow mt-2">
           {displayType === 'binary-odds' ? (
             <div className="flex flex-col justify-between h-full w-full">
               <div className="flex-1 flex items-center justify-center">
-                <div className="text-6xl font-bold text-center">
+                <div className={`font-bold text-center ${displayValue.length > 5 ? 'text-5xl' : 'text-6xl'}`}>
                   <span className={getGradient(type)}>
                     {displayValue}
                   </span>
@@ -682,7 +702,8 @@ function CapabilityCard({
                 <p className="text-ink-600 text-sm mt-3 text-left w-full px-1">
                   {type === 'benchmark' && title.includes('IMO Gold') && 'An LLM gets a IMO gold medal'}
                   {type === 'benchmark' && title.includes('Frontier Math') && 'An LLM gets 80%+'}
-                  {type === 'benchmark' && title.includes('SWE Bench') && 'Likelihood of achieving top coding benchmark score'}
+                  {type === 'benchmark' && title.includes('SWE Bench') && 'LLM Top Sscore'}
+                  {type === 'benchmark' && title.includes('Last Exam') && 'LLM > Human'}
                   {type === 'prize' && title.includes('Millennium') && 'Chance of solving a million-dollar math problem'}
                   {type === 'prize' && title.includes('Arc AGI') && 'Probability of meeting AGI criteria by 2025'}
                   {type === 'prize' && title.includes('Turing Test') && 'Odds of passing rigorous human-indistinguishability test'}
@@ -694,7 +715,7 @@ function CapabilityCard({
             </div>
           ) : displayType === 'date-numeric' ? (
             <div className="h-full flex-1 flex items-center justify-center">
-              <div className="text-4xl font-bold text-center">
+              <div className={`font-bold text-center ${displayValue.length > 5 ? 'text-3xl' : displayValue.length > 3 ? 'text-4xl' : 'text-5xl'}`}>
                 <span className={getGradient(type)}>
                   {displayValue}
                 </span>
@@ -702,7 +723,7 @@ function CapabilityCard({
             </div>
           ) : (
             <div className="h-full flex-1 flex items-center justify-center">
-              <div className="text-4xl font-bold text-center">
+              <div className={`font-bold text-center ${displayValue.length > 5 ? 'text-3xl' : displayValue.length > 3 ? 'text-4xl' : 'text-5xl'}`}>
                 <span className={getGradient(type)}>
                   {displayValue}
                 </span>
@@ -751,14 +772,14 @@ export function AIForecast({ whenAgi, contracts = [], hideTitle }: AIForecastPro
     return grouped
   }, {} as Record<string, typeof AI_CAPABILITY_CARDS>)
   
-  const typeInfo = {
-    'releases': {
-      label: 'Model Releases',
-      description: 'When will [insert lab here] release the next model?'
-    },
+  const typeInfo = { // controls sorting
     'monthly': {
       label: 'Best Model in March',
       description: 'What\'s the best model this month?'
+    },
+    'releases': {
+      label: 'Model Releases',
+      description: 'When will [insert lab here] release the next model?'
     },
     'benchmark': {
       label: 'Benchmarks',
