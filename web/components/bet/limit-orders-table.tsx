@@ -117,7 +117,7 @@ export function LimitOrdersTable(props: {
   const [sort, setSort] = usePersistentInMemoryState<{
     field: LimitOrderSort
     direction: 'asc' | 'desc'
-  }>({ field: 'createTime', direction: 'desc' }, 'limit-orders-sort')
+  }>({ field: 'createTime', direction: 'asc' }, 'limit-orders-sort')
 
   const onSetSort = (field: LimitOrderSort) => {
     if (sort.field === field) {
@@ -126,7 +126,7 @@ export function LimitOrdersTable(props: {
         direction: prevSort.direction === 'asc' ? 'desc' : 'asc',
       }))
     } else {
-      setSort({ field, direction: 'desc' })
+      setSort({ field, direction: 'asc' })
     }
   }
 
@@ -249,7 +249,7 @@ export function LimitOrdersTable(props: {
   if (betWithDetails.length === 0) {
     return (
       <Col className={clsx(className, 'items-center justify-center p-4')}>
-        <p className="text-ink-600">No limit orders found</p>
+        <p className="text-ink-800">No limit orders found</p>
       </Col>
     )
   }
@@ -257,7 +257,7 @@ export function LimitOrdersTable(props: {
   if (filteredByQueryAndExpiredBets.length === 0) {
     return (
       <Col className={clsx(className, 'items-center justify-center p-4')}>
-        <p className="text-ink-600">No limit orders match your criteria</p>
+        <p className="text-ink-800">No limit orders match your criteria</p>
       </Col>
     )
   }
@@ -335,7 +335,7 @@ export function LimitOrdersTable(props: {
               >
                 <span className={'flex min-w-[40px] justify-start'}>
                   <ContractStatusLabel
-                    className={'!text-ink-500 whitespace-nowrap font-semibold'}
+                    className={'!text-ink-600 whitespace-nowrap font-semibold'}
                     contract={contract}
                   />
                 </span>
@@ -346,7 +346,7 @@ export function LimitOrdersTable(props: {
                     className={''}
                   />
                 </span>
-                <span className="text-ink-500 line-clamp-1">
+                <span className="text-ink-600 line-clamp-1">
                   {contract.token == 'CASH' && (
                     <SweepiesCoin className="absolute inset-0 top-[0.2em]" />
                   )}
@@ -361,7 +361,7 @@ export function LimitOrdersTable(props: {
               )}
             >
               <Col className="col-span-3 min-w-0 gap-1 ">
-                <div className=" text-sm sm:text-base">
+                <div className=" text-ink-800 text-sm sm:text-base">
                   {formatPercent(bet.limitProb)}{' '}
                   <OutcomeLabel
                     contract={contract}
@@ -383,13 +383,13 @@ export function LimitOrdersTable(props: {
                       time: bet.createdTime,
                       shortened: true,
                       useUseClient: false,
-                      className: 'text-ink-500',
+                      className: 'text-ink-800',
                     })}
                   </span>
                 </Tooltip>
               </div>
 
-              <div className="text-ink-500 col-span-2 text-right ">
+              <div className="col-span-2 text-right ">
                 {bet.expiresAt ? (
                   <Tooltip text={new Date(bet.expiresAt).toLocaleString()}>
                     <span>
@@ -399,12 +399,12 @@ export function LimitOrdersTable(props: {
                             time: bet.expiresAt,
                             shortened: true,
                             useUseClient: false,
-                            className: 'text-ink-500',
+                            className: 'text-ink-800',
                           })}
                     </span>
                   </Tooltip>
                 ) : (
-                  <span className="">Never</span>
+                  <span className="text-ink-800">-</span>
                 )}
               </div>
               <div className="col-span-2 text-right">
@@ -415,19 +415,19 @@ export function LimitOrdersTable(props: {
                         time: lastFillTime(bet)!,
                         shortened: true,
                         useUseClient: false,
-                        className: 'text-ink-500',
+                        className: 'text-ink-800',
                       })}
                     </span>
                   </Tooltip>
                 ) : (
-                  <span className="text-ink-500">Never</span>
+                  <span className="text-ink-800">-</span>
                 )}
               </div>
 
-              <div className="col-span-4 text-right sm:col-span-2">
+              <div className="text-ink-800 col-span-4 text-right sm:col-span-2">
                 <div
                   className={clsx(
-                    isFilledOrCancelled && 'text-ink-500',
+                    isFilledOrCancelled && 'text-ink-600',
                     bet.isCancelled && 'line-through'
                   )}
                 >
@@ -435,7 +435,7 @@ export function LimitOrdersTable(props: {
                   {Math.floor(bet.orderAmount)}
                 </div>
                 {/* {isFilledOrCancelled && (
-                  <div className="text-ink-500 text-xs">
+                  <div className="text-ink-800 text-xs">
                     {bet.isFilled ? 'Filled' : 'Cancelled'}
                   </div>
                 )} */}
@@ -452,7 +452,7 @@ export function LimitOrdersTable(props: {
                       : (bet.outcome === 'YES' && bet.priceDiff < 0) ||
                         (bet.outcome === 'NO' && bet.priceDiff > 0)
                       ? 'text-scarlet-500'
-                      : 'text-ink-500'
+                      : 'text-ink-800'
                   )}
                 >
                   {bet.priceDiff > 0 ? '+' : ''}
