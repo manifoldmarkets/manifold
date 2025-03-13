@@ -19,7 +19,7 @@ import { OrderTable } from './order-book'
 import { OutcomeLabel } from '../outcome-label'
 import { RelativeTimestamp } from '../relative-timestamp'
 import { useAPIGetter } from 'web/hooks/use-api-getter'
-import { BetFilter } from './user-bets-table'
+import { BetFilter, LoadingMetricRow } from './user-bets-table'
 import LimitOrderPanel from './limit-order-panel'
 import {
   listenToUserOrders,
@@ -73,13 +73,16 @@ export function LimitOrdersTable(props: {
     filter,
   } = props
 
-  const { data } = useAPIGetter('get-user-limit-orders-with-contracts', {
-    userId: user.id,
-    count: 5000,
-    includeExpired,
-    includeFilled,
-    includeCancelled,
-  })
+  const { data, loading } = useAPIGetter(
+    'get-user-limit-orders-with-contracts',
+    {
+      userId: user.id,
+      count: 5000,
+      includeExpired,
+      includeFilled,
+      includeCancelled,
+    }
+  )
   const [limitUpdates, setLimitUpdates] = useState<LimitBet[]>([])
   listenToUserOrders(user.id, setLimitUpdates, true)
   const allLimitBets = uniqBy([...limitUpdates, ...(data?.bets ?? [])], 'id')
@@ -245,7 +248,15 @@ export function LimitOrdersTable(props: {
   const openContractModal = (contractId: string) =>
     setContractModalId(contractId)
   const closeContractModal = () => setContractModalId(null)
-
+  if (loading) {
+    return (
+      <Col className="divide-ink-300 mt-6 divide-y">
+        <LoadingMetricRow />
+        <LoadingMetricRow />
+        <LoadingMetricRow />
+      </Col>
+    )
+  }
   if (betWithDetails.length === 0) {
     return (
       <Col className={clsx(className, 'items-center justify-center p-4')}>
@@ -267,7 +278,7 @@ export function LimitOrdersTable(props: {
       <div className="bg-canvas-0 grid-cols-16 sticky top-10 z-10 mb-1 grid gap-2 text-sm font-semibold sm:top-0">
         <div className="col-span-3">Price</div>
         <div
-          className="col-span-2 flex cursor-pointer items-center justify-end "
+          className="col-span-2 mr-1 flex cursor-pointer items-center justify-end sm:mr-0 "
           onClick={() => onSetSort('createTime')}
         >
           Created
@@ -278,7 +289,7 @@ export function LimitOrdersTable(props: {
           className="col-span-2 flex cursor-pointer items-center justify-end"
           onClick={() => onSetSort('expiryTime')}
         >
-          Expiry
+          Expires
           {sort.field === 'expiryTime' &&
             (sort.direction === 'asc' ? <BiCaretUp /> : <BiCaretDown />)}
         </div>
@@ -306,7 +317,7 @@ export function LimitOrdersTable(props: {
           {sort.field === 'priceDiff' &&
             (sort.direction === 'asc' ? <BiCaretUp /> : <BiCaretDown />)}
         </div>
-        <div className="col-span-3 flex justify-end sm:col-span-2">Edit</div>
+        <div className="col-span-3 flex justify-end sm:col-span-2"></div>
       </div>
 
       {sortedBets.map((bet) => {
@@ -383,7 +394,7 @@ export function LimitOrdersTable(props: {
                       time: bet.createdTime,
                       shortened: true,
                       useUseClient: false,
-                      className: 'text-ink-800',
+                      className: 'text-ink-500',
                     })}
                   </span>
                 </Tooltip>
@@ -462,15 +473,15 @@ export function LimitOrdersTable(props: {
 
               <div className="col-span-3 flex justify-end sm:col-span-2 sm:gap-1">
                 {isYourBets && (isFilledOrCancelled || isExpired) && isOpen && (
-                  <IconButton size="xs" onClick={() => setShowLimitModal(bet)}>
+                  <IconButton size="2xs" onClick={() => setShowLimitModal(bet)}>
                     <Tooltip text="Reload order with same parameters">
-                      <BiRefresh />
+                      <BiRefresh className="h-4 w-4" />
                     </Tooltip>
                   </IconButton>
                 )}
 
                 <IconButton
-                  size="xs"
+                  size="2xs"
                   onClick={() => openContractModal(contract.id)}
                 >
                   <Tooltip text="Edit orders for this market">

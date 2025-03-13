@@ -440,7 +440,7 @@ function BetsTable(props: {
           <RelativeTimestamp
             time={metricsByContractId[c.id].lastBetTime}
             shortened
-            className="text-ink-800 -ml-1"
+            className="text-ink-500 -ml-1"
           />
         </Row>
       ),
@@ -903,7 +903,7 @@ const Header = (props: {
   )
 }
 
-function LoadingMetricRow() {
+export function LoadingMetricRow() {
   return (
     <div className="animate-pulse py-4">
       <Row className="mb-2 items-center gap-2">
