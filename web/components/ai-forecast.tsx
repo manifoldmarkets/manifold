@@ -657,7 +657,7 @@ function CapabilityCard({
           <div className="flex flex-col h-full justify-between">
             {/* Main content - centered model name */}
             <div className="rounded-md p-3 flex-1 flex items-center justify-center">
-              <div className={`font-bold text-center ${topModel.text.length > 15 ? 'text-2xl' : topModel.text.length > 10 ? 'text-3xl' : 'text-4xl'}`}>
+              <div className={`font-medium text-center ${topModel.text.length > 15 ? 'text-3xl' : topModel.text.length > 10 ? 'text-4xl' : 'text-5xl'}`}>
                 <span className={getGradient(type)}>
                   {topModel.text}
                 </span>
@@ -691,7 +691,7 @@ function CapabilityCard({
           {displayType === 'binary-odds' ? (
             <div className="flex flex-col justify-between h-full w-full">
               <div className="flex-1 flex items-center justify-center">
-                <div className={`font-bold text-center ${displayValue.length > 5 ? 'text-5xl' : 'text-6xl'}`}>
+                <div className={`font-medium text-center ${displayValue.length > 5 ? 'text-6xl' : 'text-7xl'}`}>
                   <span className={getGradient(type)}>
                     {displayValue}
                   </span>
@@ -715,7 +715,7 @@ function CapabilityCard({
             </div>
           ) : displayType === 'date-numeric' ? (
             <div className="h-full flex-1 flex items-center justify-center">
-              <div className={`font-bold text-center ${displayValue.length > 5 ? 'text-3xl' : displayValue.length > 3 ? 'text-4xl' : 'text-5xl'}`}>
+              <div className={`font-medium text-center ${displayValue.length > 5 ? 'text-4xl' : displayValue.length > 3 ? 'text-5xl' : 'text-6xl'}`}>
                 <span className={getGradient(type)}>
                   {displayValue}
                 </span>
@@ -723,7 +723,7 @@ function CapabilityCard({
             </div>
           ) : (
             <div className="h-full flex-1 flex items-center justify-center">
-              <div className={`font-bold text-center ${displayValue.length > 5 ? 'text-3xl' : displayValue.length > 3 ? 'text-4xl' : 'text-5xl'}`}>
+              <div className={`font-medium text-center ${displayValue.length > 5 ? 'text-4xl' : displayValue.length > 3 ? 'text-5xl' : 'text-6xl'}`}>
                 <span className={getGradient(type)}>
                   {displayValue}
                 </span>
@@ -864,10 +864,11 @@ export function AIForecast({ whenAgi, contracts = [], hideTitle }: AIForecastPro
       
       {/* AGI Clock Card */}
       {liveWhenAgi && (
-        <CardBase
-          onClick={() => window.location.href = contractPath(liveWhenAgi)}
-          className="fade-in group relative bg-canvas-50"
-          minHeight=""
+        <div className="mt-12 pt-8 border-t border-ink-200 dark:border-ink-800/50">
+          <CardBase
+            onClick={() => window.location.href = contractPath(liveWhenAgi)}
+            className="fade-in group relative mx-auto"
+            minHeight=""
         >
           <Row className="justify-between">
             <Link
@@ -909,6 +910,7 @@ export function AIForecast({ whenAgi, contracts = [], hideTitle }: AIForecastPro
             </Col>
           </Row>
         </CardBase>
+        </div>
       )}
     </Col>
   )
