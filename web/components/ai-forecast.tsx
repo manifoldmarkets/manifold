@@ -296,9 +296,9 @@ function getAccentColor(type: string) {
     case 'monthly': return 'text-primary-600 dark:text-primary-500';
     case 'releases': return 'text-amber-700 dark:text-amber-500';
     case 'benchmark': return 'text-teal-700 dark:text-teal-500';
-    case 'prize': return 'text-amber-700 dark:text-amber-500';
+    case 'prize': return 'text-fuchsia-700 dark:text-fuchsia-500';
     case 'misuse': return 'text-rose-700 dark:text-rose-500';
-    case 'human-comparison': return 'text-purple-700 dark:text-purple-500';
+    case 'human-comparison': return 'text-cyan-700 dark:text-cyan-500';
     default: return 'text-primary-600 dark:text-primary-500';
   }
 }
@@ -313,11 +313,11 @@ function getGradient(type: string, isText = true) {
     case 'benchmark':
       return `${textPrefix}bg-gradient-to-r from-teal-500 via-teal-600 to-teal-700 dark:from-teal-400 dark:via-teal-500 dark:to-teal-600`;
     case 'prize':
-      return `${textPrefix}bg-gradient-to-br from-amber-500 via-amber-600 to-amber-700 dark:from-amber-400 dark:via-amber-500 dark:to-amber-600`;
+      return `${textPrefix}bg-gradient-to-br from-fuchsia-500 via-fuchsia-600 to-fuchsia-700 dark:from-fuchsia-400 dark:via-fuchsia-500 dark:to-fuchsia-600`;
     case 'misuse':
       return `${textPrefix}bg-gradient-to-br from-rose-500 via-rose-600 to-rose-700 dark:from-rose-400 dark:via-rose-500 dark:to-rose-600`;
     case 'human-comparison':
-      return `${textPrefix}bg-gradient-to-br from-purple-500 via-purple-600 to-purple-700 dark:from-purple-400 dark:via-purple-500 dark:to-purple-600`;
+      return `${textPrefix}bg-gradient-to-br from-cyan-500 via-cyan-600 to-cyan-700 dark:from-cyan-400 dark:via-cyan-500 dark:to-cyan-600`;
     default:
       return `${textPrefix}bg-gradient-to-br from-primary-500 via-primary-600 to-primary-700 dark:from-primary-400 dark:via-primary-500 dark:to-primary-600`;
   }
