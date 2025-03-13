@@ -126,11 +126,11 @@ export const AI_CAPABILITY_CARDS: AICapabilityCard[] = [
     displayType: 'top-one-mcq'
   },
   {
-    title: 'Qwen 3',
+    title: 'Deepseek V4',
     description: '',
-    marketId: 'placeholder-4',
+    marketId: 'yLnQQZsc2E',
     type: 'releases',
-    displayType: 'date-numeric'
+    displayType: 'top-one-mcq'
   },
 
   // Benchmarks
@@ -294,9 +294,9 @@ function AIModelIcon({ title, className = "h-5 w-5" }: { title: string, classNam
 function getAccentColor(type: string) {
   switch(type) {
     case 'monthly': return 'text-primary-600 dark:text-primary-500';
-    case 'releases': return 'text-amber-700 dark:text-amber-500';
+    case 'releases': return 'text-fuchsia-700 dark:text-fuchsia-500';
     case 'benchmark': return 'text-teal-700 dark:text-teal-500';
-    case 'prize': return 'text-fuchsia-700 dark:text-fuchsia-500';
+    case 'prize': return 'text-amber-700 dark:text-amber-500';
     case 'misuse': return 'text-rose-700 dark:text-rose-500';
     case 'human-comparison': return 'text-cyan-700 dark:text-cyan-500';
     default: return 'text-primary-600 dark:text-primary-500';
@@ -309,11 +309,11 @@ function getGradient(type: string, isText = true) {
   
   switch(type) {
     case 'releases':
-      return `${textPrefix}bg-gradient-to-r from-amber-500 via-amber-600 to-amber-700 dark:from-amber-400 dark:via-amber-500 dark:to-amber-600`;
+      return `${textPrefix}bg-gradient-to-r from-fuchsia-500 via-fuchsia-600 to-fuchsia-700 dark:from-fuchsia-400 dark:via-fuchsia-500 dark:to-fuchsia-600`;
     case 'benchmark':
       return `${textPrefix}bg-gradient-to-r from-teal-500 via-teal-600 to-teal-700 dark:from-teal-400 dark:via-teal-500 dark:to-teal-600`;
     case 'prize':
-      return `${textPrefix}bg-gradient-to-br from-fuchsia-500 via-fuchsia-600 to-fuchsia-700 dark:from-fuchsia-400 dark:via-fuchsia-500 dark:to-fuchsia-600`;
+      return `${textPrefix}bg-gradient-to-br from-amber-500 via-amber-600 to-amber-700 dark:from-amber-400 dark:via-amber-500 dark:to-amber-600`;
     case 'misuse':
       return `${textPrefix}bg-gradient-to-br from-rose-500 via-rose-600 to-rose-700 dark:from-rose-400 dark:via-rose-500 dark:to-rose-600`;
     case 'human-comparison':
@@ -629,7 +629,7 @@ function CapabilityCard({
           <div className="flex flex-col h-full justify-between">
             {/* Main content - centered model name */}
             <div className="rounded-md p-3 flex-1 flex items-center justify-center">
-              <div className="text-3xl font-bold text-center">
+              <div className={`font-bold text-center ${topModel.text.length > 15 ? 'text-2xl' : topModel.text.length > 10 ? 'text-3xl' : 'text-4xl'}`}>
                 <span className={getGradient(type)}>
                   {topModel.text}
                 </span>
@@ -671,7 +671,7 @@ function CapabilityCard({
           {displayType === 'binary-odds' ? (
             <div className="flex flex-col justify-between h-full w-full">
               <div className="flex-1 flex items-center justify-center">
-                <div className="text-6xl font-bold text-center">
+                <div className={`font-bold text-center ${displayValue.length > 5 ? 'text-5xl' : 'text-6xl'}`}>
                   <span className={getGradient(type)}>
                     {displayValue}
                   </span>
@@ -682,7 +682,8 @@ function CapabilityCard({
                 <p className="text-ink-600 text-sm mt-3 text-left w-full px-1">
                   {type === 'benchmark' && title.includes('IMO Gold') && 'An LLM gets a IMO gold medal'}
                   {type === 'benchmark' && title.includes('Frontier Math') && 'An LLM gets 80%+'}
-                  {type === 'benchmark' && title.includes('SWE Bench') && 'Likelihood of achieving top coding benchmark score'}
+                  {type === 'benchmark' && title.includes('SWE Bench') && 'LLM Top Sscore'}
+                  {type === 'benchmark' && title.includes('Last Exam') && 'LLM > Human'}
                   {type === 'prize' && title.includes('Millennium') && 'Chance of solving a million-dollar math problem'}
                   {type === 'prize' && title.includes('Arc AGI') && 'Probability of meeting AGI criteria by 2025'}
                   {type === 'prize' && title.includes('Turing Test') && 'Odds of passing rigorous human-indistinguishability test'}
@@ -694,7 +695,7 @@ function CapabilityCard({
             </div>
           ) : displayType === 'date-numeric' ? (
             <div className="h-full flex-1 flex items-center justify-center">
-              <div className="text-4xl font-bold text-center">
+              <div className={`font-bold text-center ${displayValue.length > 5 ? 'text-3xl' : displayValue.length > 3 ? 'text-4xl' : 'text-5xl'}`}>
                 <span className={getGradient(type)}>
                   {displayValue}
                 </span>
@@ -702,7 +703,7 @@ function CapabilityCard({
             </div>
           ) : (
             <div className="h-full flex-1 flex items-center justify-center">
-              <div className="text-4xl font-bold text-center">
+              <div className={`font-bold text-center ${displayValue.length > 5 ? 'text-3xl' : displayValue.length > 3 ? 'text-4xl' : 'text-5xl'}`}>
                 <span className={getGradient(type)}>
                   {displayValue}
                 </span>
@@ -751,14 +752,14 @@ export function AIForecast({ whenAgi, contracts = [], hideTitle }: AIForecastPro
     return grouped
   }, {} as Record<string, typeof AI_CAPABILITY_CARDS>)
   
-  const typeInfo = {
-    'releases': {
-      label: 'Model Releases',
-      description: 'When will [insert lab here] release the next model?'
-    },
+  const typeInfo = { // controls sorting
     'monthly': {
       label: 'Best Model in March',
       description: 'What\'s the best model this month?'
+    },
+    'releases': {
+      label: 'Model Releases',
+      description: 'When will [insert lab here] release the next model?'
     },
     'benchmark': {
       label: 'Benchmarks',
