@@ -121,8 +121,15 @@ export function OrderTable(props: {
     | StonkContract
     | MultiContract
   isYou?: boolean
+  showAnswers?: boolean
 }) {
-  const { limitBets, contract, isYou } = props
+  const { limitBets, contract, isYou, showAnswers } = props
+  const answers =
+    showAnswers && contract.mechanism === 'cpmm-multi-1'
+      ? contract.answers.filter((a) =>
+          limitBets.map((b) => b.answerId).includes(a.id)
+        )
+      : undefined
   const isPseudoNumeric = contract.outcomeType === 'PSEUDO_NUMERIC'
   const [isCancelling, setIsCancelling] = useState(false)
   const onCancel = async () => {
@@ -134,6 +141,73 @@ export function OrderTable(props: {
     )
     setIsCancelling(false)
   }
+
+  // If showAnswers is true and we have answers, group bets by answerId
+  if (showAnswers && answers && answers.length > 0) {
+    // Group bets by answerId
+    const betsByAnswerId = groupBy(limitBets, 'answerId')
+
+    return (
+      <Col className="gap-4">
+        {answers.map((answer) => {
+          const answerBets = betsByAnswerId[answer.id] || []
+          if (answerBets.length === 0) return null
+
+          return (
+            <Col key={answer.id} className="">
+              <span className="font-bold">{answer.text}</span>
+              <Table className="rounded">
+                <thead>
+                  <tr>
+                    {!isYou && <th></th>}
+                    <th>Outcome</th>
+                    <th>{isPseudoNumeric ? 'Value' : 'Prob'}</th>
+                    <th>Amount</th>
+                    <th>
+                      <Row
+                        className={
+                          'mt-1 justify-between gap-1 sm:justify-start'
+                        }
+                      >
+                        Expires
+                        {isYou &&
+                          answerBets.length > 1 &&
+                          answerBets.some(
+                            (b) => !b.isCancelled && b.amount < b.orderAmount
+                          ) && (
+                            <Button
+                              loading={isCancelling}
+                              size={'2xs'}
+                              color={'gray-outline'}
+                              onClick={onCancel}
+                              className={'ml-1 whitespace-normal'}
+                            >
+                              Cancel all
+                            </Button>
+                          )}
+                      </Row>
+                    </th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {answerBets.map((bet) => (
+                    <OrderRow
+                      key={bet.id}
+                      bet={bet}
+                      contract={contract}
+                      isYou={!!isYou}
+                    />
+                  ))}
+                </tbody>
+              </Table>
+            </Col>
+          )
+        })}
+      </Col>
+    )
+  }
+
+  // Original behavior when showAnswers is false or no answers found
   return (
     <Col>
       <Table className="rounded">

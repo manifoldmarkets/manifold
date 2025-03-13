@@ -504,6 +504,7 @@ export function LimitOrdersTable(props: {
                 contract={contractsById[contractModalId]}
                 limitBets={betsByContract[contractModalId] || []}
                 isYou={isYourBets}
+                showAnswers={true}
               />
             )}
             <Button className="mt-4" onClick={closeContractModal}>
