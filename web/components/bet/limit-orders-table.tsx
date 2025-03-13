@@ -570,9 +570,7 @@ const RefreshLimitOrderModal = (props: {
           balanceByUserId={balanceByUserId}
           betAmount={bet.orderAmount}
           outcome={bet.outcome as 'YES' | 'NO'}
-          expiration={
-            bet.expiresAt ? bet.expiresAt - bet.createdTime : undefined
-          }
+          expiration={bet.expiresAt ? bet.expiresAt - bet.createdTime : 0}
         />
       </div>
     </Modal>
