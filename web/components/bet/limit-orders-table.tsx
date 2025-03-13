@@ -33,7 +33,6 @@ import { useLiveContract } from 'web/hooks/use-contract'
 import { getContracts } from 'common/supabase/contracts'
 import { db } from 'web/lib/supabase/db'
 import { SweepiesCoin } from 'web/public/custom-components/sweepiesCoin'
-import { ContractStatusLabel } from '../contract/contracts-table'
 import { linkClass } from '../widgets/site-link'
 
 type LimitOrderSort =
