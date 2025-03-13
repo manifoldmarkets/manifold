@@ -232,7 +232,7 @@ export function LimitOrdersTable(props: {
         case 'remainingAmount':
           return bet.remainingAmount
         case 'priceDiff':
-          return bet.priceDiff
+          return Math.abs(bet.priceDiff)
         default:
           return bet.createdTime
       }
