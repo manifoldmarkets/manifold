@@ -124,7 +124,9 @@ export default function LimitOrderPanel(props: {
 
   // Find matching expiration option if available
   useEffect(() => {
-    if (expiration) {
+    if (expiration === 0) {
+      setSelectedExpiration(0)
+    } else if (expiration) {
       const matchingOption = expirationOptions.find(
         (option) => option.value === expiration && option.value !== -1
       )
@@ -157,7 +159,6 @@ export default function LimitOrderPanel(props: {
   const [limitProbInt, setLimitProbInt] = useState<number | undefined>(
     Math.round(initialProb * 100)
   )
-  const [showLocationMonitor, setShowLocationMonitor] = useState(false)
 
   const hasLimitBet = !!limitProbInt && !!betAmount
 
@@ -166,8 +167,7 @@ export default function LimitOrderPanel(props: {
     !outcome ||
     !betAmount ||
     !hasLimitBet ||
-    error === 'Insufficient balance' ||
-    showLocationMonitor
+    error === 'Insufficient balance'
 
   const preLimitProb =
     limitProbInt === undefined
