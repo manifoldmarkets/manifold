@@ -62,7 +62,7 @@ export const Clock = (props: { year: number }) => {
       <Row
         style={{ color: 'red' }}
         className={
-          'justify-center gap-1.5 rounded-lg bg-gray-900 p-4 ring-8 ring-gray-300 sm:gap-3 sm:pl-10 sm:pr-6'
+          'w-full justify-center gap-1.5 rounded-lg bg-gray-900 p-4 ring-8 ring-gray-300 sm:gap-3 sm:pl-10 sm:pr-6'
         }
       >
         <TimeUnit value={timeUntil.years.toString()} unit={'years'} />

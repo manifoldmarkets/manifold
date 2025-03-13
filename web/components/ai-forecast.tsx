@@ -865,18 +865,19 @@ export function AIForecast({ whenAgi, contracts = [], hideTitle }: AIForecastPro
           </Row>
           
           <Row className="mt-4 justify-between flex-wrap md:flex-nowrap">
-            <Col className="mb-4 md:mb-0 md:max-w-lg">
-              <p className="text-lg">
-                The market expects AGI by{' '}
-                <span className="font-semibold">{expectedYear.getFullYear()}</span>
-              </p>
-              <p className="mt-2 text-sm text-ink-500">
-                Based on thousands of predictions from Manifold forecasters
-              </p>
-            </Col>
-            
-            <Col className="w-full md:w-fit gap-4">
-              <Clock year={expectedValueAGI} />
+            <Col className="w-full gap-3">
+              <div className="text-left mb-2">
+                <p className="text-lg">
+                  The market expects AGI by{' '}
+                  <span className="font-semibold">{expectedYear.getFullYear()}</span>
+                  {' '}. What do you think?
+                </p>
+              </div>
+              <div className="w-full flex justify-center">
+                <div className="w-full">
+                  <Clock year={expectedValueAGI} />
+                </div>
+              </div>
               <NumericBetPanel
                 contract={liveWhenAgi}
                 labels={{
