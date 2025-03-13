@@ -32,6 +32,9 @@ import { PencilIcon } from '@heroicons/react/solid'
 import { useLiveContract } from 'web/hooks/use-contract'
 import { getContracts } from 'common/supabase/contracts'
 import { db } from 'web/lib/supabase/db'
+import { SweepiesCoin } from 'web/public/custom-components/sweepiesCoin'
+import { ContractStatusLabel } from '../contract/contracts-table'
+import { linkClass } from '../widgets/site-link'
 
 type LimitOrderSort =
   | 'createTime'
@@ -261,8 +264,8 @@ export function LimitOrdersTable(props: {
 
   return (
     <Col className={clsx(className, 'w-full')}>
-      <div className="bg-canvas-0 grid-cols-16 sticky top-10 z-10 grid gap-2 text-sm font-semibold sm:top-0">
-        <div className="col-span-4 sm:col-span-3">Market</div>
+      <div className="bg-canvas-0 grid-cols-16 sticky top-10 z-10 mb-1 grid gap-2 text-sm font-semibold sm:top-0">
+        <div className="col-span-3">Price</div>
         <div
           className="col-span-2 flex cursor-pointer items-center justify-end "
           onClick={() => onSetSort('createTime')}
@@ -303,7 +306,7 @@ export function LimitOrdersTable(props: {
           {sort.field === 'priceDiff' &&
             (sort.direction === 'asc' ? <BiCaretUp /> : <BiCaretDown />)}
         </div>
-        <div className="col-span-2 flex justify-end sm:col-span-2">Edit</div>
+        <div className="col-span-3 flex justify-end sm:col-span-2">Edit</div>
       </div>
 
       {sortedBets.map((bet) => {
@@ -314,149 +317,179 @@ export function LimitOrdersTable(props: {
         const isExpired = bet.isExpired
 
         return (
-          <div
-            key={bet.id}
-            className={clsx(
-              'border-ink-200  grid-cols-16 grid items-center gap-2 border-b pb-3 pt-4',
-              (isFilledOrCancelled || isExpired) && 'bg-canvas-50'
-            )}
-          >
-            <Col className="col-span-4 min-w-0 gap-1 sm:col-span-3">
+          <Col key={bet.id} className="border-ink-200 border-b pb-2 pt-3">
+            {/* Contract title*/}
+            <Row
+              className={clsx(
+                'justify-between',
+                (isFilledOrCancelled || isExpired) && 'bg-canvas-50'
+              )}
+            >
               <Link
                 href={contractPath(contract)}
-                className="flex items-center gap-2 truncate hover:underline"
+                className={clsx(
+                  linkClass,
+                  'line-clamp-2 flex items-center pr-2 sm:pr-1'
+                )}
+                onClick={(e) => e.stopPropagation()}
               >
-                <Avatar avatarUrl={contract.creatorAvatarUrl} size="2xs" />
-                <span className="text-ink-500 truncate">
+                <span className={'flex min-w-[40px] justify-start'}>
+                  <ContractStatusLabel
+                    className={'!text-ink-500 whitespace-nowrap font-semibold'}
+                    contract={contract}
+                  />
+                </span>
+                <span className="mr-2 inline-flex items-center">
+                  <Avatar
+                    avatarUrl={contract.creatorAvatarUrl}
+                    size={'2xs'}
+                    className={''}
+                  />
+                </span>
+                <span className="text-ink-500 line-clamp-1">
+                  {contract.token == 'CASH' && (
+                    <SweepiesCoin className="absolute inset-0 top-[0.2em]" />
+                  )}
                   {contract.question}
                 </span>
               </Link>
-              <div className=" text-xs">
-                <OutcomeLabel
-                  contract={contract}
-                  outcome={bet.outcome}
-                  truncate="short"
-                  answer={
-                    'answers' in contract
-                      ? contract.answers.find((a) => a.id === bet.answerId)
-                      : undefined
-                  }
-                />{' '}
-                {formatPercent(bet.limitProb)}
-              </div>
-            </Col>
-
-            <div className="col-span-2 text-right text-sm">
-              <Tooltip text={new Date(bet.createdTime).toLocaleString()}>
-                <span>
-                  {RelativeTimestamp({
-                    time: bet.createdTime,
-                    shortened: true,
-                    useUseClient: false,
-                    className: 'text-ink-500',
-                  })}
-                </span>
-              </Tooltip>
-            </div>
-
-            <div className="text-ink-500 col-span-2 text-right text-sm ">
-              {bet.expiresAt ? (
-                <Tooltip text={new Date(bet.expiresAt).toLocaleString()}>
-                  <span>
-                    {bet.timeToExpiry <= 0
-                      ? 'Expired'
-                      : RelativeTimestamp({
-                          time: bet.expiresAt,
-                          shortened: true,
-                          useUseClient: false,
-                          className: 'text-ink-500',
-                        })}
-                  </span>
-                </Tooltip>
-              ) : (
-                <span className="">Never</span>
+            </Row>
+            <div
+              className={clsx(
+                ' grid-cols-16 grid items-center gap-2 pt-2',
+                (isFilledOrCancelled || isExpired) && 'bg-canvas-50'
               )}
-            </div>
-            <div className="col-span-2 text-right text-sm">
-              {lastFillTime(bet) ? (
-                <Tooltip text={new Date(lastFillTime(bet)!).toLocaleString()}>
+            >
+              <Col className="col-span-3 min-w-0 gap-1 ">
+                <div className=" text-sm sm:text-base">
+                  {formatPercent(bet.limitProb)}{' '}
+                  <OutcomeLabel
+                    contract={contract}
+                    outcome={bet.outcome}
+                    truncate="short"
+                    answer={
+                      'answers' in contract
+                        ? contract.answers.find((a) => a.id === bet.answerId)
+                        : undefined
+                    }
+                  />
+                </div>
+              </Col>
+
+              <div className="col-span-2 text-right">
+                <Tooltip text={new Date(bet.createdTime).toLocaleString()}>
                   <span>
                     {RelativeTimestamp({
-                      time: lastFillTime(bet)!,
+                      time: bet.createdTime,
                       shortened: true,
                       useUseClient: false,
                       className: 'text-ink-500',
                     })}
                   </span>
                 </Tooltip>
-              ) : (
-                <span className="text-ink-500">Never</span>
-              )}
-            </div>
-
-            <div className="col-span-4 text-right sm:col-span-2">
-              <div className={clsx(isFilledOrCancelled ? 'text-ink-500' : '')}>
-                {Math.floor(bet.remainingAmount)}/{Math.floor(bet.orderAmount)}
               </div>
-              {isFilledOrCancelled && (
-                <div className="text-ink-500 text-xs">
-                  {bet.isFilled ? 'Filled' : 'Cancelled'}
-                </div>
-              )}
-            </div>
 
-            <div className="col-span-2 hidden text-right sm:block">
-              <div
-                className={clsx(
-                  'text-sm',
-                  // For YES bets, profit when price goes up; for NO bets, profit when price goes down
-                  (bet.outcome === 'YES' && bet.priceDiff > 0) ||
-                    (bet.outcome === 'NO' && bet.priceDiff < 0)
-                    ? 'text-teal-500'
-                    : (bet.outcome === 'YES' && bet.priceDiff < 0) ||
-                      (bet.outcome === 'NO' && bet.priceDiff > 0)
-                    ? 'text-scarlet-500'
-                    : 'text-ink-500'
+              <div className="text-ink-500 col-span-2 text-right ">
+                {bet.expiresAt ? (
+                  <Tooltip text={new Date(bet.expiresAt).toLocaleString()}>
+                    <span>
+                      {bet.timeToExpiry <= 0
+                        ? 'Expired'
+                        : RelativeTimestamp({
+                            time: bet.expiresAt,
+                            shortened: true,
+                            useUseClient: false,
+                            className: 'text-ink-500',
+                          })}
+                    </span>
+                  </Tooltip>
+                ) : (
+                  <span className="">Never</span>
                 )}
-              >
-                {bet.priceDiff > 0 ? '+' : ''}
-                {Math.round(bet.priceDiff * 100)}
               </div>
-              <span className="text-ink-500 text-xs">
-                {formatPercent(bet.limitProb)} →{' '}
-                {formatPercent(currentProb(bet))}
-              </span>
-            </div>
+              <div className="col-span-2 text-right">
+                {lastFillTime(bet) ? (
+                  <Tooltip text={new Date(lastFillTime(bet)!).toLocaleString()}>
+                    <span>
+                      {RelativeTimestamp({
+                        time: lastFillTime(bet)!,
+                        shortened: true,
+                        useUseClient: false,
+                        className: 'text-ink-500',
+                      })}
+                    </span>
+                  </Tooltip>
+                ) : (
+                  <span className="text-ink-500">Never</span>
+                )}
+              </div>
 
-            <div className="col-span-2 flex justify-end gap-1">
-              {isYourBets && (isFilledOrCancelled || isExpired) && isOpen && (
-                <IconButton size="xs" onClick={() => setShowLimitModal(bet)}>
-                  <Tooltip text="Reload order with same parameters">
-                    <BiRefresh />
+              <div className="col-span-4 text-right sm:col-span-2">
+                <div
+                  className={clsx(
+                    isFilledOrCancelled && 'text-ink-500',
+                    bet.isCancelled && 'line-through'
+                  )}
+                >
+                  {Math.floor(bet.remainingAmount)}/
+                  {Math.floor(bet.orderAmount)}
+                </div>
+                {/* {isFilledOrCancelled && (
+                  <div className="text-ink-500 text-xs">
+                    {bet.isFilled ? 'Filled' : 'Cancelled'}
+                  </div>
+                )} */}
+              </div>
+
+              <div className="col-span-2 hidden text-right sm:block">
+                <div
+                  className={clsx(
+                    'text-sm',
+                    // For YES bets, profit when price goes up; for NO bets, profit when price goes down
+                    (bet.outcome === 'YES' && bet.priceDiff > 0) ||
+                      (bet.outcome === 'NO' && bet.priceDiff < 0)
+                      ? 'text-teal-500'
+                      : (bet.outcome === 'YES' && bet.priceDiff < 0) ||
+                        (bet.outcome === 'NO' && bet.priceDiff > 0)
+                      ? 'text-scarlet-500'
+                      : 'text-ink-500'
+                  )}
+                >
+                  {bet.priceDiff > 0 ? '+' : ''}
+                  {Math.round(bet.priceDiff * 100)}
+                </div>
+              </div>
+
+              <div className="col-span-3 flex justify-end sm:col-span-2 sm:gap-1">
+                {isYourBets && (isFilledOrCancelled || isExpired) && isOpen && (
+                  <IconButton size="xs" onClick={() => setShowLimitModal(bet)}>
+                    <Tooltip text="Reload order with same parameters">
+                      <BiRefresh />
+                    </Tooltip>
+                  </IconButton>
+                )}
+
+                <IconButton
+                  size="xs"
+                  onClick={() => openContractModal(contract.id)}
+                >
+                  <Tooltip text="Edit orders for this market">
+                    <span className="text-xs">
+                      <PencilIcon className="h-4 w-4" />
+                    </span>
                   </Tooltip>
                 </IconButton>
+              </div>
+              {showLimitModal?.id === bet.id && (
+                <RefreshLimitOrderModal
+                  bet={showLimitModal}
+                  contract={contract}
+                  user={user}
+                  onClose={() => setShowLimitModal(null)}
+                />
               )}
-
-              <IconButton
-                size="xs"
-                onClick={() => openContractModal(contract.id)}
-              >
-                <Tooltip text="Edit orders for this market">
-                  <span className="text-xs">
-                    <PencilIcon className="h-4 w-4" />
-                  </span>
-                </Tooltip>
-              </IconButton>
             </div>
-            {showLimitModal?.id === bet.id && (
-              <RefreshLimitOrderModal
-                bet={showLimitModal}
-                contract={contract}
-                user={user}
-                onClose={() => setShowLimitModal(null)}
-              />
-            )}
-          </div>
+          </Col>
         )
       })}
 

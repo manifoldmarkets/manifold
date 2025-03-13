@@ -145,6 +145,14 @@ export function UserBetsTable(props: { user: User }) {
     'bets-list-filter'
   )
 
+  // Remove limit_bet filter
+  useEffect(() => {
+    if (filter === 'limit_bet') {
+      setFilter('open')
+      setShowLimitOrders(true)
+    }
+  }, [filter])
+
   const { prefersPlay, setPrefersPlay } = useSweepstakes()
 
   const [page, setPage] = usePersistentInMemoryState(0, 'portfolio-page')
@@ -227,7 +235,7 @@ export function UserBetsTable(props: { user: User }) {
             />
             {isYou && (
               <LimitOrdersToggle
-                showLimitOrders={showLimitOrders || filter === 'limit_bet'}
+                showLimitOrders={showLimitOrders}
                 setShowLimitOrders={setShowLimitOrders}
               />
             )}
