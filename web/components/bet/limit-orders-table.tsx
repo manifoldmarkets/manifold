@@ -117,7 +117,7 @@ export function LimitOrdersTable(props: {
   const [sort, setSort] = usePersistentInMemoryState<{
     field: LimitOrderSort
     direction: 'asc' | 'desc'
-  }>({ field: 'createTime', direction: 'desc' }, 'limit-orders-sort')
+  }>({ field: 'createTime', direction: 'asc' }, 'limit-orders-sort')
 
   const onSetSort = (field: LimitOrderSort) => {
     if (sort.field === field) {
@@ -126,7 +126,7 @@ export function LimitOrdersTable(props: {
         direction: prevSort.direction === 'asc' ? 'desc' : 'asc',
       }))
     } else {
-      setSort({ field, direction: 'desc' })
+      setSort({ field, direction: 'asc' })
     }
   }
 
