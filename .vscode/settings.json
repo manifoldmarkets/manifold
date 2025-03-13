@@ -5,7 +5,8 @@
   "search.exclude": {
     "**/node_modules": true,
     "**/package-lock.json": true,
-    "**/yarn.lock": true
+    "**/yarn.lock": true,
+    "**/mani": true
   },
   "editor.formatOnSave": true,
   "editor.formatOnPaste": true,

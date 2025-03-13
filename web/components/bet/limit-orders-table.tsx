@@ -33,7 +33,6 @@ import { useLiveContract } from 'web/hooks/use-contract'
 import { getContracts } from 'common/supabase/contracts'
 import { db } from 'web/lib/supabase/db'
 import { SweepiesCoin } from 'web/public/custom-components/sweepiesCoin'
-import { ContractStatusLabel } from '../contract/contracts-table'
 import { linkClass } from '../widgets/site-link'
 
 type LimitOrderSort =
@@ -326,6 +325,7 @@ export function LimitOrdersTable(props: {
           !contract.isResolved && (contract.closeTime ?? Infinity) > Date.now()
         const isFilledOrCancelled = bet.isFilled || bet.isCancelled
         const isExpired = bet.isExpired
+        const prob = getProb(bet, contract)
 
         return (
           <Col key={bet.id} className="border-ink-200 border-b pb-2 pt-3">
@@ -344,11 +344,10 @@ export function LimitOrdersTable(props: {
                 )}
                 onClick={(e) => e.stopPropagation()}
               >
-                <span className={'flex min-w-[40px] justify-start'}>
-                  <ContractStatusLabel
-                    className={'!text-ink-600 whitespace-nowrap font-semibold'}
-                    contract={contract}
-                  />
+                <span
+                  className={'text-ink-600 flex min-w-[40px] justify-start'}
+                >
+                  {formatPercent(prob)}
                 </span>
                 <span className="mr-2 inline-flex items-center">
                   <Avatar
@@ -403,7 +402,7 @@ export function LimitOrdersTable(props: {
               <div className="col-span-2 text-right ">
                 {bet.expiresAt ? (
                   <Tooltip text={new Date(bet.expiresAt).toLocaleString()}>
-                    <span>
+                    <span className="text-ink-500">
                       {bet.timeToExpiry <= 0
                         ? 'Expired'
                         : RelativeTimestamp({
@@ -445,27 +444,10 @@ export function LimitOrdersTable(props: {
                   {Math.floor(bet.remainingAmount)}/
                   {Math.floor(bet.orderAmount)}
                 </div>
-                {/* {isFilledOrCancelled && (
-                  <div className="text-ink-800 text-xs">
-                    {bet.isFilled ? 'Filled' : 'Cancelled'}
-                  </div>
-                )} */}
               </div>
 
               <div className="col-span-2 hidden text-right sm:block">
-                <div
-                  className={clsx(
-                    'text-sm',
-                    // For YES bets, profit when price goes up; for NO bets, profit when price goes down
-                    (bet.outcome === 'YES' && bet.priceDiff > 0) ||
-                      (bet.outcome === 'NO' && bet.priceDiff < 0)
-                      ? 'text-teal-500'
-                      : (bet.outcome === 'YES' && bet.priceDiff < 0) ||
-                        (bet.outcome === 'NO' && bet.priceDiff > 0)
-                      ? 'text-scarlet-500'
-                      : 'text-ink-800'
-                  )}
-                >
+                <div className={clsx('text-ink-800 text-sm')}>
                   {bet.priceDiff > 0 ? '+' : ''}
                   {Math.round(bet.priceDiff * 100)}
                 </div>
@@ -475,7 +457,16 @@ export function LimitOrdersTable(props: {
                 {isYourBets && (isFilledOrCancelled || isExpired) && isOpen && (
                   <IconButton size="2xs" onClick={() => setShowLimitModal(bet)}>
                     <Tooltip text="Reload order with same parameters">
-                      <BiRefresh className="h-4 w-4" />
+                      <span className="text-ink-500">
+                        <BiRefresh className="h-4 w-4" />
+                      </span>
+                    </Tooltip>
+                  </IconButton>
+                )}
+                {isYourBets && !isFilledOrCancelled && !isExpired && isOpen && (
+                  <IconButton size="2xs" onClick={() => setShowLimitModal(bet)}>
+                    <Tooltip text="Place a new order with same parameters">
+                      <span className="text-ink-500">+</span>
                     </Tooltip>
                   </IconButton>
                 )}
@@ -485,7 +476,7 @@ export function LimitOrdersTable(props: {
                   onClick={() => openContractModal(contract.id)}
                 >
                   <Tooltip text="Edit orders for this market">
-                    <span className="text-xs">
+                    <span className="text-ink-500">
                       <PencilIcon className="h-4 w-4" />
                     </span>
                   </Tooltip>
@@ -513,6 +504,7 @@ export function LimitOrdersTable(props: {
                 contract={contractsById[contractModalId]}
                 limitBets={betsByContract[contractModalId] || []}
                 isYou={isYourBets}
+                showAnswers={true}
               />
             )}
             <Button className="mt-4" onClick={closeContractModal}>
@@ -523,6 +515,13 @@ export function LimitOrdersTable(props: {
       )}
     </Col>
   )
+}
+const getProb = (bet: LimitBet, contract: MarketContract) => {
+  const prob =
+    contract.mechanism === 'cpmm-multi-1'
+      ? contract.answers.find((a) => a.id === bet.answerId)?.prob ?? 0
+      : contract.prob
+  return prob
 }
 
 const RefreshLimitOrderModal = (props: {
@@ -535,10 +534,7 @@ const RefreshLimitOrderModal = (props: {
   const { limitProb } = bet
   const contract = useLiveContract(props.contract)
   const answerId = bet.answerId
-  const prob =
-    contract.mechanism === 'cpmm-multi-1'
-      ? contract.answers.find((a) => a.id === answerId)?.prob ?? 0
-      : contract.prob
+  const prob = getProb(bet, contract)
   const { unfilledBets: allUnfilledBets, balanceByUserId } =
     useUnfilledBetsAndBalanceByUserId(
       contract.id,
@@ -574,6 +570,9 @@ const RefreshLimitOrderModal = (props: {
           balanceByUserId={balanceByUserId}
           betAmount={bet.orderAmount}
           outcome={bet.outcome as 'YES' | 'NO'}
+          expiration={
+            bet.expiresAt ? bet.expiresAt - bet.createdTime : undefined
+          }
         />
       </div>
     </Modal>

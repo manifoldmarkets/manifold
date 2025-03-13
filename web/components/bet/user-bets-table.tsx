@@ -97,19 +97,15 @@ export function UserBetsTable(props: { user: User }) {
     false,
     'show-limit-orders-view'
   )
-  // Add state for showing expired orders
-  const [includeExpired, setIncludeExpired] = usePersistentInMemoryState(
-    false,
-    'limit-orders-show-expired'
-  )
-  const [includeFilled, setIncludeFilled] = usePersistentInMemoryState(
-    false,
-    'limit-orders-show-filled'
-  )
-  const [includeCancelled, setIncludeCancelled] = usePersistentInMemoryState(
-    false,
-    'limit-orders-show-cancelled'
-  )
+  // Add state for showing different order types
+  const [orderFilter, setOrderFilter] = usePersistentInMemoryState<
+    'active' | 'filled' | 'expired' | 'cancelled'
+  >('active', 'limit-orders-filter')
+  const updateOrderFilter = (
+    newFilter: 'active' | 'filled' | 'expired' | 'cancelled'
+  ) => {
+    setOrderFilter(orderFilter === newFilter ? 'active' : newFilter)
+  }
 
   const getMetrics = useEvent(() =>
     api('get-user-contract-metrics-with-contracts', {
@@ -237,27 +233,30 @@ export function UserBetsTable(props: { user: User }) {
           <Carousel labelsParentClassName={'gap-1'}>
             {showLimitOrders && isYou && (
               <PillButton
-                selected={includeExpired}
-                onSelect={() => setIncludeExpired(!includeExpired)}
+                selected={orderFilter === 'expired'}
+                onSelect={() => updateOrderFilter('expired')}
               >
                 Expired
               </PillButton>
             )}
             {showLimitOrders && isYou && (
               <PillButton
-                selected={includeFilled}
-                onSelect={() => setIncludeFilled(!includeFilled)}
+                selected={orderFilter === 'filled'}
+                onSelect={() => updateOrderFilter('filled')}
               >
                 Filled
               </PillButton>
             )}
             {showLimitOrders && isYou && (
               <PillButton
-                selected={includeCancelled}
-                onSelect={() => setIncludeCancelled(!includeCancelled)}
+                selected={orderFilter === 'cancelled'}
+                onSelect={() => updateOrderFilter('cancelled')}
               >
                 Cancelled
               </PillButton>
+            )}
+            {showLimitOrders && isYou && (
+              <span className="text-ink-500 ">|</span>
             )}
             {(['all', 'open', 'sold', 'closed', 'resolved'] as BetFilter[]).map(
               (f) => (
@@ -303,9 +302,9 @@ export function UserBetsTable(props: { user: User }) {
           query={query}
           user={user}
           isYourBets={isYou}
-          includeExpired={includeExpired}
-          includeFilled={includeFilled}
-          includeCancelled={includeCancelled}
+          includeExpired={orderFilter === 'expired'}
+          includeFilled={orderFilter === 'filled'}
+          includeCancelled={orderFilter === 'cancelled'}
           filter={filter}
           className="mt-2"
         />
@@ -461,10 +460,14 @@ function BetsTable(props: {
               />
             )}
             <Col className={'sm:min-w-[50px]'}>
-              <NumberCell
-                num={metricsByContractId[c.id].payout}
-                isCashContract={c.token === 'CASH'}
-              />
+              {Math.floor(metricsByContractId[c.id].payout) <= 0 ? (
+                <span className="text-ink-500 text-right">-</span>
+              ) : (
+                <NumberCell
+                  num={metricsByContractId[c.id].payout}
+                  isCashContract={c.token === 'CASH'}
+                />
+              )}
             </Col>
           </Row>
         )
@@ -477,6 +480,9 @@ function BetsTable(props: {
       renderCell: (c: Contract) => {
         const maxOutcome = metricsByContractId[c.id].maxSharesOutcome
         const showOutcome = maxOutcome && c.outcomeType === 'BINARY'
+        const totalShares = sum(
+          Object.values(metricsByContractId[c.id].totalShares)
+        )
         return (
           <Row className={clsx('justify-end gap-1')}>
             {showOutcome &&
@@ -488,10 +494,14 @@ function BetsTable(props: {
                 />
               )}
             <Col className={'sm:min-w-[50px]'}>
-              <NumberCell
-                num={sum(Object.values(metricsByContractId[c.id].totalShares))}
-                isCashContract={c.token === 'CASH'}
-              />
+              {Math.floor(totalShares) <= 0 ? (
+                <span className="text-ink-500 text-right">-</span>
+              ) : (
+                <NumberCell
+                  num={totalShares}
+                  isCashContract={c.token === 'CASH'}
+                />
+              )}
             </Col>
           </Row>
         )
@@ -505,11 +515,15 @@ function BetsTable(props: {
         const cm = metricsByContractId[c.id]
         return (
           <Row className={'justify-end gap-1'}>
-            <NumberCell
-              num={cm.profit}
-              change={true}
-              isCashContract={c.token === 'CASH'}
-            />
+            {Math.floor(cm.profit) === 0 ? (
+              <span className="text-ink-500 text-right">-</span>
+            ) : (
+              <NumberCell
+                num={cm.profit}
+                change={true}
+                isCashContract={c.token === 'CASH'}
+              />
+            )}
           </Row>
         )
       },
@@ -517,24 +531,42 @@ function BetsTable(props: {
     {
       header: columns[4],
       span: isMobile ? 3 : 2,
-      renderCell: (c: Contract) => (
-        <NumberCell
-          num={metricsByContractId[c.id].from?.day.profit ?? 0}
-          change={true}
-          isCashContract={c.token === 'CASH'}
-        />
-      ),
+      renderCell: (c: Contract) => {
+        const cm = metricsByContractId[c.id]
+        return (
+          <Row className={'justify-end gap-1'}>
+            {Math.floor(cm.from?.day.profit ?? 0) === 0 ? (
+              <span className="text-ink-500 text-right">-</span>
+            ) : (
+              <NumberCell
+                num={cm.from?.day.profit ?? 0}
+                change={true}
+                isCashContract={c.token === 'CASH'}
+              />
+            )}
+          </Row>
+        )
+      },
     },
     {
       header: columns[5],
       span: isMobile ? 3 : 2,
-      renderCell: (c: Contract) => (
-        <NumberCell
-          num={metricsByContractId[c.id].from?.week.profit ?? 0}
-          change={true}
-          isCashContract={c.token === 'CASH'}
-        />
-      ),
+      renderCell: (c: Contract) => {
+        const cm = metricsByContractId[c.id]
+        return (
+          <Row className={'justify-end gap-1'}>
+            {Math.floor(cm.from?.week.profit ?? 0) === 0 ? (
+              <span className="text-ink-500 text-right">-</span>
+            ) : (
+              <NumberCell
+                num={cm.from?.week.profit ?? 0}
+                change={true}
+                isCashContract={c.token === 'CASH'}
+              />
+            )}
+          </Row>
+        )
+      },
     },
     {
       header: columns[6],
@@ -870,7 +902,7 @@ const NumberCell = (props: {
         num > 0 ? (
           <span className="text-teal-500">{formattedNum}</span>
         ) : (
-          <span className="text-scarlet-500">{formattedNum}</span>
+          <span className="text-ink-500">{formattedNum}</span>
         )
       ) : (
         <span className="text-ink-800">{formattedNum}</span>

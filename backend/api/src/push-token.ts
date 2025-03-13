@@ -1,13 +1,16 @@
 import { PUSH_NOTIFICATION_BONUS } from 'common/economy'
 import { PushNotificationBonusTxn } from 'common/txn'
 import { createPushNotificationBonusNotification } from 'shared/create-notification'
-import { createSupabaseDirectClient } from 'shared/supabase/init'
+import {
+  createSupabaseDirectClient,
+  SERIAL_MODE,
+  SupabaseTransaction,
+} from 'shared/supabase/init'
 import { runTxnFromBank } from 'shared/txn/run-txn'
 import { broadcastUpdatedPrivateUser } from 'shared/websockets/helpers'
 import { APIError, APIHandler } from './helpers/endpoint'
 import { convertPrivateUser } from 'common/supabase/users'
 import { getPrivateUser, getUser } from 'shared/utils'
-import { humanish } from 'common/user'
 
 // for mobile or something?
 export const setPushToken: APIHandler<'set-push-token'> = async (
@@ -17,17 +20,17 @@ export const setPushToken: APIHandler<'set-push-token'> = async (
   const { pushToken } = props
   const db = createSupabaseDirectClient()
 
-  const oldPrivateUser = await getPrivateUser(auth.uid, db)
-  if (!oldPrivateUser) {
-    throw new APIError(401, 'Account not found')
-  }
   const user = await getUser(auth.uid)
   if (!user) {
-    throw new APIError(401, 'Account not found')
+    throw new APIError(404, 'Account not found')
   }
-
-  const updatedRow = await db.one(
-    `update private_users set data = 
+  const result = await db.tx({ mode: SERIAL_MODE }, async (tx) => {
+    const oldPrivateUser = await getPrivateUser(auth.uid, tx)
+    if (!oldPrivateUser) {
+      throw new APIError(404, 'Account not found')
+    }
+    const updatedRow = await tx.one(
+      `update private_users set data = 
       jsonb_set(
         data, 
         '{notificationPreferences,opt_out_all}', 
@@ -38,19 +41,24 @@ export const setPushToken: APIHandler<'set-push-token'> = async (
       || jsonb_build_object('pushToken', $1)
     where id = $2
     returning *`,
-    [pushToken, auth.uid]
-  )
-  broadcastUpdatedPrivateUser(auth.uid)
-  const newPrivateUser = convertPrivateUser(updatedRow)
-
-  if (oldPrivateUser.pushToken != newPrivateUser.pushToken && humanish(user)) {
-    const txn = await payUserPushNotificationsBonus(
-      auth.uid,
-      PUSH_NOTIFICATION_BONUS
+      [pushToken, auth.uid]
     )
+    const newPrivateUser = convertPrivateUser(updatedRow)
+    if (oldPrivateUser.pushToken != newPrivateUser.pushToken) {
+      const txn = await payUserPushNotificationsBonus(
+        auth.uid,
+        PUSH_NOTIFICATION_BONUS,
+        tx
+      )
+      return { newPrivateUser, txn }
+    }
+    return { newPrivateUser: null, txn: null }
+  })
+  broadcastUpdatedPrivateUser(auth.uid)
+  if (result.newPrivateUser && result.txn) {
     await createPushNotificationBonusNotification(
-      newPrivateUser,
-      txn.id,
+      result.newPrivateUser,
+      result.txn.id,
       PUSH_NOTIFICATION_BONUS,
       'push_notification_bonus_' +
         new Date().toLocaleDateString('en-US', {
@@ -64,31 +72,28 @@ export const setPushToken: APIHandler<'set-push-token'> = async (
 
 const payUserPushNotificationsBonus = async (
   userId: string,
-  payout: number
+  payout: number,
+  tx: SupabaseTransaction
 ) => {
-  const pg = createSupabaseDirectClient()
+  // make sure we don't already have a txn for this user/questType
+  const previousTxn = await tx.oneOrNone(
+    `select * from txns where to_id = $1 and category = 'PUSH_NOTIFICATION_BONUS' limit 1`,
+    [userId]
+  )
+  if (previousTxn) {
+    throw new APIError(400, 'Already awarded PUSH_NOTIFICATION_BONUS')
+  }
 
-  return await pg.tx(async (tx) => {
-    // make sure we don't already have a txn for this user/questType
-    const previousTxn = await tx.oneOrNone(
-      `select * from txns where to_id = $1 and category = 'PUSH_NOTIFICATION_BONUS' limit 1`,
-      [userId]
-    )
-    if (previousTxn) {
-      throw new APIError(400, 'Already awarded PUSH_NOTIFICATION_BONUS')
-    }
-
-    const loanTxn: Omit<
-      PushNotificationBonusTxn,
-      'fromId' | 'id' | 'createdTime'
-    > = {
-      fromType: 'BANK',
-      toId: userId,
-      toType: 'USER',
-      amount: payout,
-      token: 'M$',
-      category: 'PUSH_NOTIFICATION_BONUS',
-    }
-    return await runTxnFromBank(tx, loanTxn)
-  })
+  const bonusTxn: Omit<
+    PushNotificationBonusTxn,
+    'fromId' | 'id' | 'createdTime'
+  > = {
+    fromType: 'BANK',
+    toId: userId,
+    toType: 'USER',
+    amount: payout,
+    token: 'M$',
+    category: 'PUSH_NOTIFICATION_BONUS',
+  }
+  return await runTxnFromBank(tx, bonusTxn)
 }

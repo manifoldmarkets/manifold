@@ -459,8 +459,10 @@ const TxnBalanceChangeRow = (props: {
     MANA_PAYMENT: 'bg-teal-400',
     LOAN: 'bg-amber-500',
     CASH_OUT: 'bg-amber-500',
+    CONTRACT_BOOST_PURCHASE: 'bg-scarlet-400',
     ADD_SUBSIDY: 'bg-red-100',
     UNIQUE_BETTOR_BONUS: 'bg-sky-400',
+    PUSH_NOTIFICATION_BONUS: 'bg-pink-400',
     CHARITY: 'bg-gradient-to-br from-pink-300 via-purple-300 to-primary-400',
     CONTRACT_RESOLUTION_FEE:
       'bg-gradient-to-br from-pink-300 via-purple-300 to-primary-400',
@@ -485,7 +487,8 @@ const TxnBalanceChangeRow = (props: {
           symbol={
             type === 'MANA_PAYMENT' ? (
               '💸'
-            ) : type === 'MARKET_BOOST_CREATE' ? (
+            ) : type === 'MARKET_BOOST_CREATE' ||
+              type === 'CONTRACT_BOOST_PURCHASE' ? (
               '🚀'
             ) : type === 'ADD_SUBSIDY' ? (
               '💧'
@@ -523,6 +526,7 @@ const TxnBalanceChangeRow = (props: {
                 'MARKET_BOOST_REDEEM',
                 'LEAGUE_PRIZE',
                 'BOUNTY_AWARDED',
+                'PUSH_NOTIFICATION_BONUS',
               ].includes(type) ? (
               '🎁'
             ) : (
