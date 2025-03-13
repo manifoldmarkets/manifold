@@ -326,6 +326,7 @@ export function LimitOrdersTable(props: {
           !contract.isResolved && (contract.closeTime ?? Infinity) > Date.now()
         const isFilledOrCancelled = bet.isFilled || bet.isCancelled
         const isExpired = bet.isExpired
+        const prob = getProb(bet, contract)
 
         return (
           <Col key={bet.id} className="border-ink-200 border-b pb-2 pt-3">
@@ -344,11 +345,10 @@ export function LimitOrdersTable(props: {
                 )}
                 onClick={(e) => e.stopPropagation()}
               >
-                <span className={'flex min-w-[40px] justify-start'}>
-                  <ContractStatusLabel
-                    className={'!text-ink-600 whitespace-nowrap font-semibold'}
-                    contract={contract}
-                  />
+                <span
+                  className={'text-ink-600 flex min-w-[40px] justify-start'}
+                >
+                  {formatPercent(prob)}
                 </span>
                 <span className="mr-2 inline-flex items-center">
                   <Avatar
@@ -516,6 +516,13 @@ export function LimitOrdersTable(props: {
     </Col>
   )
 }
+const getProb = (bet: LimitBet, contract: MarketContract) => {
+  const prob =
+    contract.mechanism === 'cpmm-multi-1'
+      ? contract.answers.find((a) => a.id === bet.answerId)?.prob ?? 0
+      : contract.prob
+  return prob
+}
 
 const RefreshLimitOrderModal = (props: {
   bet: LimitBet
@@ -527,10 +534,7 @@ const RefreshLimitOrderModal = (props: {
   const { limitProb } = bet
   const contract = useLiveContract(props.contract)
   const answerId = bet.answerId
-  const prob =
-    contract.mechanism === 'cpmm-multi-1'
-      ? contract.answers.find((a) => a.id === answerId)?.prob ?? 0
-      : contract.prob
+  const prob = getProb(bet, contract)
   const { unfilledBets: allUnfilledBets, balanceByUserId } =
     useUnfilledBetsAndBalanceByUserId(
       contract.id,
