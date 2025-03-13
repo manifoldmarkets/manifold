@@ -78,6 +78,7 @@ export function DangerZone(props: {
 
   const canUnresolve =
     isResolved &&
+    (mechanism === 'cpmm-multi-1' ? contract.shouldAnswersSumToOne : true) &&
     (token === 'CASH'
       ? isAdmin
       : isAdmin || isMod || (isCreator && creatorCanUnresolve))
