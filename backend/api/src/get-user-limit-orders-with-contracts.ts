@@ -23,9 +23,18 @@ export const getUserLimitOrdersWithContracts: APIHandler<
       ) as data
     from contract_bets
     where user_id = $1
-      and ($3 or (contract_bets.expires_at > now() or contract_bets.expires_at is null))
-      and ($4 or contract_bets.is_filled = false)
-      and ($5 or contract_bets.is_cancelled = false)
+      and ( 
+             ($3 and contract_bets.expires_at < now()) or 
+             (not $3 and (contract_bets.expires_at > now() or contract_bets.expires_at is null)) 
+      )
+      and ( 
+            ($4 and contract_bets.is_filled = true)
+            or (not $4 and contract_bets.is_filled = false)
+      )
+      and (
+            (($5 or $3) and contract_bets.is_cancelled = true)
+            or (not $5 and contract_bets.is_cancelled = false)
+      )
       and not is_redemption
       and data->>'limitProb' is not null
       and (data->>'silent' = 'false' or data->>'silent' is null)

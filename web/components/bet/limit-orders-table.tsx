@@ -403,7 +403,7 @@ export function LimitOrdersTable(props: {
               <div className="col-span-2 text-right ">
                 {bet.expiresAt ? (
                   <Tooltip text={new Date(bet.expiresAt).toLocaleString()}>
-                    <span>
+                    <span className="text-ink-500">
                       {bet.timeToExpiry <= 0
                         ? 'Expired'
                         : RelativeTimestamp({
@@ -445,11 +445,6 @@ export function LimitOrdersTable(props: {
                   {Math.floor(bet.remainingAmount)}/
                   {Math.floor(bet.orderAmount)}
                 </div>
-                {/* {isFilledOrCancelled && (
-                  <div className="text-ink-800 text-xs">
-                    {bet.isFilled ? 'Filled' : 'Cancelled'}
-                  </div>
-                )} */}
               </div>
 
               <div className="col-span-2 hidden text-right sm:block">
@@ -463,7 +458,16 @@ export function LimitOrdersTable(props: {
                 {isYourBets && (isFilledOrCancelled || isExpired) && isOpen && (
                   <IconButton size="2xs" onClick={() => setShowLimitModal(bet)}>
                     <Tooltip text="Reload order with same parameters">
-                      <BiRefresh className="h-4 w-4" />
+                      <span className="text-ink-500">
+                        <BiRefresh className="h-4 w-4" />
+                      </span>
+                    </Tooltip>
+                  </IconButton>
+                )}
+                {isYourBets && !isFilledOrCancelled && !isExpired && isOpen && (
+                  <IconButton size="2xs" onClick={() => setShowLimitModal(bet)}>
+                    <Tooltip text="Place a new order with same parameters">
+                      <span className="text-ink-500">+</span>
                     </Tooltip>
                   </IconButton>
                 )}
@@ -473,7 +477,7 @@ export function LimitOrdersTable(props: {
                   onClick={() => openContractModal(contract.id)}
                 >
                   <Tooltip text="Edit orders for this market">
-                    <span className="text-xs">
+                    <span className="text-ink-500">
                       <PencilIcon className="h-4 w-4" />
                     </span>
                   </Tooltip>
@@ -562,6 +566,9 @@ const RefreshLimitOrderModal = (props: {
           balanceByUserId={balanceByUserId}
           betAmount={bet.orderAmount}
           outcome={bet.outcome as 'YES' | 'NO'}
+          expiration={
+            bet.expiresAt ? bet.expiresAt - bet.createdTime : undefined
+          }
         />
       </div>
     </Modal>

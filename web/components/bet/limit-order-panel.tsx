@@ -1,6 +1,6 @@
 import dayjs from 'dayjs'
 import { capitalize, clamp } from 'lodash'
-import { useRef, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import toast from 'react-hot-toast'
 import { LimitBet } from 'common/bet'
 import { getProbability } from 'common/calculate'
@@ -69,6 +69,7 @@ export default function LimitOrderPanel(props: {
     }
   }
   initialProb?: number
+  expiration?: number
 }) {
   const {
     contract,
@@ -79,6 +80,7 @@ export default function LimitOrderPanel(props: {
     outcome,
     onBuySuccess,
     pseudonym,
+    expiration,
   } = props
   const { pseudonymName, pseudonymColor } =
     pseudonym?.[outcome as 'YES' | 'NO'] ?? {}
@@ -107,7 +109,7 @@ export default function LimitOrderPanel(props: {
   const [error, setError] = useState<string | undefined>()
   const [isSubmitting, setIsSubmitting] = useState(false)
   const betDeps = useRef<LimitBet[]>()
-  const initTimeInMs = Number(Date.now() + 5 * MINUTE_MS)
+  const initTimeInMs = Number(Date.now() + (expiration ?? 5 * MINUTE_MS))
   const initDate = dayjs(initTimeInMs).format('YYYY-MM-DD')
   const initTime = dayjs(initTimeInMs).format('HH:mm')
   const [expirationDate, setExpirationDate] = usePersistentLocalState<string>(
@@ -119,6 +121,19 @@ export default function LimitOrderPanel(props: {
 
   const [selectedExpiration, setSelectedExpiration] =
     usePersistentLocalState<number>(0, 'limit-order-expiration')
+
+  // Find matching expiration option if available
+  useEffect(() => {
+    if (expiration) {
+      const matchingOption = expirationOptions.find(
+        (option) => option.value === expiration && option.value !== -1
+      )
+      if (matchingOption) {
+        setSelectedExpiration(matchingOption.value)
+      }
+    }
+  }, [expiration, setSelectedExpiration])
+
   const addCustomExpiration = selectedExpiration === -1
   const expiresAt = addCustomExpiration
     ? dayjs(`${expirationDate}T${expirationHoursMinutes}`).valueOf()

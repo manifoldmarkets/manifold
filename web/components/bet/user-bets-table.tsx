@@ -97,19 +97,15 @@ export function UserBetsTable(props: { user: User }) {
     false,
     'show-limit-orders-view'
   )
-  // Add state for showing expired orders
-  const [includeExpired, setIncludeExpired] = usePersistentInMemoryState(
-    false,
-    'limit-orders-show-expired'
-  )
-  const [includeFilled, setIncludeFilled] = usePersistentInMemoryState(
-    false,
-    'limit-orders-show-filled'
-  )
-  const [includeCancelled, setIncludeCancelled] = usePersistentInMemoryState(
-    false,
-    'limit-orders-show-cancelled'
-  )
+  // Add state for showing different order types
+  const [orderFilter, setOrderFilter] = usePersistentInMemoryState<
+    'active' | 'filled' | 'expired' | 'cancelled'
+  >('active', 'limit-orders-filter')
+  const updateOrderFilter = (
+    newFilter: 'active' | 'filled' | 'expired' | 'cancelled'
+  ) => {
+    setOrderFilter(orderFilter === newFilter ? 'active' : newFilter)
+  }
 
   const getMetrics = useEvent(() =>
     api('get-user-contract-metrics-with-contracts', {
@@ -237,24 +233,24 @@ export function UserBetsTable(props: { user: User }) {
           <Carousel labelsParentClassName={'gap-1'}>
             {showLimitOrders && isYou && (
               <PillButton
-                selected={includeExpired}
-                onSelect={() => setIncludeExpired(!includeExpired)}
+                selected={orderFilter === 'expired'}
+                onSelect={() => updateOrderFilter('expired')}
               >
                 Expired
               </PillButton>
             )}
             {showLimitOrders && isYou && (
               <PillButton
-                selected={includeFilled}
-                onSelect={() => setIncludeFilled(!includeFilled)}
+                selected={orderFilter === 'filled'}
+                onSelect={() => updateOrderFilter('filled')}
               >
                 Filled
               </PillButton>
             )}
             {showLimitOrders && isYou && (
               <PillButton
-                selected={includeCancelled}
-                onSelect={() => setIncludeCancelled(!includeCancelled)}
+                selected={orderFilter === 'cancelled'}
+                onSelect={() => updateOrderFilter('cancelled')}
               >
                 Cancelled
               </PillButton>
@@ -306,9 +302,9 @@ export function UserBetsTable(props: { user: User }) {
           query={query}
           user={user}
           isYourBets={isYou}
-          includeExpired={includeExpired}
-          includeFilled={includeFilled}
-          includeCancelled={includeCancelled}
+          includeExpired={orderFilter === 'expired'}
+          includeFilled={orderFilter === 'filled'}
+          includeCancelled={orderFilter === 'cancelled'}
           filter={filter}
           className="mt-2"
         />
