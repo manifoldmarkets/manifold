@@ -10,14 +10,9 @@ import {
   MarketContract,
 } from 'common/contract'
 import { ContractMetric } from 'common/contract-metric'
-import {
-  ENV_CONFIG,
-  SWEEPIES_MARKET_TOOLTIP,
-  TRADE_TERM,
-} from 'common/envs/constants'
+import { ENV_CONFIG, SWEEPIES_MARKET_TOOLTIP } from 'common/envs/constants'
 import { buildArray } from 'common/util/array'
 import {
-  formatMoney,
   formatWithToken,
   maybePluralize,
   shortFormatNumber,
@@ -36,7 +31,6 @@ import { Button, IconButton } from 'web/components/buttons/button'
 import { PillButton } from 'web/components/buttons/pill-button'
 import { ContractStatusLabel } from 'web/components/contract/contracts-table'
 import { OutcomeLabel } from 'web/components/outcome-label'
-import { ProfitBadge } from 'web/components/profit-badge'
 import { RelativeTimestamp } from 'web/components/relative-timestamp'
 import { Avatar } from 'web/components/widgets/avatar'
 import { Carousel } from 'web/components/widgets/carousel'
@@ -342,11 +336,6 @@ const NoBets = ({ user }: { user: User }) => {
     </>
   )
 }
-const NoMatchingBets = () => (
-  <div className="text-ink-700 py-4 text-center">
-    No {TRADE_TERM}s match the current filter
-  </div>
-)
 
 function BetsTable(props: {
   contracts: CPMMContract[]
@@ -413,7 +402,7 @@ function BetsTable(props: {
   const SORTS: Record<BetSort, (c: Contract) => number> = {
     position: (c) => -sum(Object.values(metricsByContractId[c.id].totalShares)),
     profit: (c) => -metricsByContractId[c.id].profit,
-    profitPercent: (c) => -metricsByContractId[c.id].profitPercent,
+    profitPercent: (c) => -metricsByContractId[c.id].profit,
     value: (c) => -metricsByContractId[c.id].payout,
     newest: (c) => -(metricsByContractId[c.id].lastBetTime ?? 0),
     probChangeDay: (c) => {
@@ -451,7 +440,7 @@ function BetsTable(props: {
           <RelativeTimestamp
             time={metricsByContractId[c.id].lastBetTime}
             shortened
-            className="text-ink-500 -ml-1"
+            className="text-ink-800 -ml-1"
           />
         </Row>
       ),
@@ -510,7 +499,7 @@ function BetsTable(props: {
       headerBuddy: isMobile && <div className="-mr-2" />,
     },
     {
-      header: { ...columns[3], altSort: 'profitPercent' },
+      header: { ...columns[3] },
       span: isMobile ? 3 : 2,
       renderCell: (c: Contract) => {
         const cm = metricsByContractId[c.id]
@@ -523,68 +512,6 @@ function BetsTable(props: {
             />
           </Row>
         )
-      },
-      headerBuddy: (
-        <button
-          className={'z-10'}
-          onClick={() => {
-            if (sort.field === 'profitPercent') {
-              onSetSort('profit')
-            } else {
-              onSetSort('profitPercent')
-            }
-          }}
-        >
-          <div
-            className={
-              'text-ink-400 absolute -right-14 top-0 ml-1 hidden sm:inline-block'
-            }
-          >
-            <span
-              className={clsx(
-                'hover:bg-ink-100 rounded-md px-1',
-                sort.field === 'profit' ? ' text-ink-1000  ' : ''
-              )}
-            >
-              {ENV_CONFIG.moneyMoniker}
-            </span>
-
-            <span
-              className={clsx(
-                'hover:bg-ink-100 rounded-md  px-1',
-                sort.field === 'profitPercent'
-                  ? ' text-ink-1000 font-semibold '
-                  : ''
-              )}
-            >
-              %
-            </span>
-          </div>
-        </button>
-      ),
-    },
-    {
-      header: {
-        sort: 'profitPercent',
-        label: '',
-        placeholder: true,
-        enabled: true,
-      },
-      span: 1,
-      renderCell: (c: Contract) => {
-        const cm = metricsByContractId[c.id]
-        if (sort.field === 'profitPercent') {
-          return (
-            <span className={'flex-inline flex justify-end '}>
-              <ProfitBadge
-                className={'!px-1'}
-                profitPercent={cm.profitPercent}
-                round={true}
-                grayColor={formatMoney(cm.profit ?? 0) === formatMoney(0)}
-              />
-            </span>
-          )
-        }
       },
     },
     {
@@ -623,7 +550,7 @@ function BetsTable(props: {
         })
         return (
           <Row className={'justify-end'}>
-            <span className={'text-ink-500'}>
+            <span className={'text-ink-800'}>
               {closeTime ? dateString : 'N/A'}
             </span>
           </Row>
@@ -740,7 +667,7 @@ function BetsTable(props: {
                           className={''}
                         />
                       </span>
-                      <span className="text-ink-500 line-clamp-1">
+                      <span className="text-ink-600 line-clamp-1">
                         {contract.token == 'CASH' && (
                           <span>
                             <Tooltip
@@ -756,7 +683,7 @@ function BetsTable(props: {
                       <span className={' ml-1 flex min-w-[40px] justify-end'}>
                         <ContractStatusLabel
                           className={
-                            '!text-ink-500 whitespace-nowrap font-semibold'
+                            '!text-ink-600 whitespace-nowrap font-semibold'
                           }
                           contract={contract}
                         />
@@ -946,7 +873,7 @@ const NumberCell = (props: {
           <span className="text-scarlet-500">{formattedNum}</span>
         )
       ) : (
-        <span>{formattedNum}</span>
+        <span className="text-ink-800">{formattedNum}</span>
       )}
     </Row>
   )
