@@ -453,19 +453,7 @@ export function LimitOrdersTable(props: {
               </div>
 
               <div className="col-span-2 hidden text-right sm:block">
-                <div
-                  className={clsx(
-                    'text-sm',
-                    // For YES bets, profit when price goes up; for NO bets, profit when price goes down
-                    (bet.outcome === 'YES' && bet.priceDiff > 0) ||
-                      (bet.outcome === 'NO' && bet.priceDiff < 0)
-                      ? 'text-teal-500'
-                      : (bet.outcome === 'YES' && bet.priceDiff < 0) ||
-                        (bet.outcome === 'NO' && bet.priceDiff > 0)
-                      ? 'text-scarlet-500'
-                      : 'text-ink-800'
-                  )}
-                >
+                <div className={clsx('text-ink-800 text-sm')}>
                   {bet.priceDiff > 0 ? '+' : ''}
                   {Math.round(bet.priceDiff * 100)}
                 </div>
