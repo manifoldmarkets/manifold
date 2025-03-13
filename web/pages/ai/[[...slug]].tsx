@@ -3,7 +3,7 @@ import { SEO } from 'web/components/SEO'
 import { db } from 'web/lib/supabase/db'
 import { getContract, getContracts } from 'common/supabase/contracts'
 import { CPMMNumericContract, Contract } from 'common/contract'
-import { AIForecast, AI_CATEGORIES } from 'web/components/ai-forecast'
+import { AIForecast, AI_CAPABILITY_CARDS } from 'web/components/ai-forecast'
 
 const ENDPOINT = 'ai'
 
@@ -20,10 +20,10 @@ export async function getStaticProps() {
     // Fetch the "When AGI" contract for the hero section
     const whenAgi = await getContract(db, 'Gtv5mhjKaiLD6Bkvfhcv')
     
-    // Fetch all contracts for each category - only try to fetch valid IDs
-    const allContractIds = AI_CATEGORIES.flatMap(category => 
-      category.contractIds.filter(id => id && !id.startsWith('placeholder-'))
-    )
+    // Fetch all contracts from AI_CAPABILITY_CARDS - only try to fetch valid IDs
+    const allContractIds = AI_CAPABILITY_CARDS
+      .map(card => card.marketId)
+      .filter(id => id && !id.startsWith('placeholder-'))
     
     let contracts: Contract[] = []
     if (allContractIds.length > 0) {
