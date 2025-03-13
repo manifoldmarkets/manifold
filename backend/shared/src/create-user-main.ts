@@ -121,7 +121,6 @@ export const createUserMain = async (
       ),
       fromLove,
       signupBonusPaid: 0,
-      verifiedPhone: false,
     })
 
     const privateUser: PrivateUser = {
