@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+import React, { useState, useMemo } from 'react'
 import { BinaryContract, CPMMNumericContract, Contract, contractPath } from 'common/contract'
 import { Col } from 'web/components/layout/col'
 import { Row } from 'web/components/layout/row'
@@ -11,6 +11,7 @@ import { NumericBetPanel } from 'web/components/answers/numeric-bet-panel'
 import { ClickFrame } from 'web/components/widgets/click-frame'
 import Link from 'next/link'
 import { formatPercent } from 'common/util/format'
+import { format as formatDateFn } from 'date-fns'
 import { getDisplayProbability } from 'common/calculate'
 import { SiOpenai, SiGooglegemini, SiAnthropic} from 'react-icons/si'
 import { RiTwitterXLine } from 'react-icons/ri'
@@ -18,6 +19,7 @@ import { LuLink, LuInfo } from 'react-icons/lu'
 import { GiSpermWhale } from "react-icons/gi"
 import { PiBirdBold } from "react-icons/pi"
 import { LiaKiwiBirdSolid } from "react-icons/lia"
+import { MdChevronRight, MdChevronLeft } from "react-icons/md"
 
 // Shared background pattern for all cards
 const BG_PATTERN_LIGHT = "bg-[url(\"data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='%23000000' fill-opacity='0.02' fill-rule='evenodd'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/svg%3E\")]"
@@ -328,6 +330,22 @@ function getAccentColor(type: string) {
   }
 }
 
+// Helper function to get a color for each company
+function getCompanyColor(corp: string) {
+  const colorMap: Record<string, string> = {
+    ANTHROPIC: 'bg-blue-500',
+    OPENAI: 'bg-green-500',
+    GOOGLE: 'bg-red-400',
+    META: 'bg-indigo-500',
+    MISTRAL: 'bg-purple-500',
+    COHERE: 'bg-yellow-500',
+    DEEPMIND: 'bg-teal-500',
+    default: 'bg-primary-600'
+  }
+  
+  return colorMap[corp] || colorMap.default
+}
+
 // Get gradient based on card type
 function getGradient(type: string, isText = true) {
   const textPrefix = isText ? 'text-transparent bg-clip-text ' : '';
@@ -394,17 +412,12 @@ function CapabilityCard({
   className?: string
 }) {
   // Find the actual contract by ID
-  const contract = contracts.find(c => c.id === marketId)
+  const contract = useMemo(() => contracts.find(c => c.id === marketId), [contracts, marketId])
   console.log(`[${displayType}] ${title} - contract found:`, !!contract, 'id:', marketId)
+  
+  // Always call hooks unconditionally
   const liveContract = contract ? useLiveContract(contract) : null
   console.log(`[${displayType}] ${title} - liveContract:`, !!liveContract, 'path:', liveContract ? contractPath(liveContract) : 'N/A')
-  
-  // Get the probability if it's a binary contract
-  const probability = liveContract && liveContract.outcomeType === 'BINARY'
-    ? liveContract.prob !== undefined 
-      ? liveContract.prob
-      : getDisplayProbability(liveContract as BinaryContract)
-    : null
   
   // Get the expected value if it's a numeric contract
   const numericValue = liveContract && liveContract.outcomeType === 'NUMBER' 
@@ -498,12 +511,10 @@ function CapabilityCard({
     displayValue = formatPercent(prob)
   } 
 } else {
-  const probability = 0.25
-  displayValue = probability !== null 
-    ? formatPercent(probability) 
-    : numericValue !== null 
-      ? numericValue.toFixed(1)
-      : '—'
+  // Default fallback
+  displayValue = numericValue !== null 
+    ? numericValue.toFixed(1)
+    : formatPercent(0.25)
   }
   
   // Create click handler for the card
@@ -739,22 +750,275 @@ function CapabilityCard({
 // Get company logo component based on company name
 function getCompanyLogo(companyName: string): React.ComponentType | null {
   // Strip any trailing whitespace or periods that might be in the company name
-  const normalizedName = companyName.trim().replace(/\.$/, '');
+  const normalizedName = companyName.trim().replace(/\.$/, '')
   
   switch (normalizedName.toLowerCase()) {
     case 'openai':
-      return SiOpenai;
+    case 'gpt-5':
+      return SiOpenai
     case 'anthropic':
-      return SiAnthropic;
-    case 'google deepmind':
-    case 'googledeepmind':
+    case 'claude':
+      return SiAnthropic
+    case 'gemini':
     case 'deepmind':
-      return SiGooglegemini;
+      return SiGooglegemini
     case 'xai':
-      return RiTwitterXLine; // Using X icon for xAI
+    case 'grok':
+      return RiTwitterXLine // Using X icon for xAI
     default:
-      return LiaKiwiBirdSolid; // No specific icon for other companies
+      return LiaKiwiBirdSolid // No specific icon for other companies
   }
+}
+
+// For model releases: Displays model releases on a timeline
+interface ModelReleasesTimelineProps {
+  cards: AICapabilityCard[]
+  contracts: Contract[]
+}
+
+// Helper function for model release timeline (dummy data)
+function getEstimatedReleaseDate(title: string, index: number): Date {
+  // Hardcoded dates for specific model releases
+  if (title.includes('GPT-5')) return new Date(2025, 5, 15)         // June 15, 2025
+  if (title.includes('Claude 3.7')) return new Date(2025, 7, 1)      // August 1, 2025
+  if (title.includes('Gemini 3')) return new Date(2025, 4, 1)        // May 1, 2025
+  if (title.includes('Grok 4')) return new Date(2025, 10, 10)        // November 10, 2025
+  if (title.includes('Deepseek R2')) return new Date(2025, 6, 5)     // July 5, 2025
+  if (title.includes('Deepseek V4')) return new Date(2026, 0, 15)    // January 15, 2026
+  
+  // Default fallback with evenly spaced dates
+  return new Date(2025, 3 + (index % 10), 15)
+}
+
+// Model data structure used throughout timeline components
+
+// Timeline
+function ModelReleasesTimeline({ cards, contracts }: ModelReleasesTimelineProps) {
+  // Prepare model data with release dates and company info
+  const modelData = useMemo(() => {
+    return cards.map((card, index) => {
+      // Find the contract
+      const contract = contracts.find(c => c.id === card.marketId) || null
+      const releaseDate = getEstimatedReleaseDate(card.title, index)
+      
+      return {
+        title: card.title,
+        marketId: card.marketId,
+        contract,
+        releaseDate
+      }
+    }).sort((a, b) => a.releaseDate.getTime() - b.releaseDate.getTime())
+  }, [cards, contracts])
+  
+  if (modelData.length === 0) {
+    return <div className="text-ink-500 text-center py-4">No model releases to display</div>
+  }
+
+ // Only show 6 months at a time
+  const currentDate = new Date()
+  const startDate = new Date(currentDate)
+  startDate.setMonth(currentDate.getMonth()) // Start with this month
+  startDate.setDate(1) // Set to first of month
+  
+  const endDate = new Date(startDate)
+  endDate.setMonth(startDate.getMonth() + 5) // 6 months total
+    
+  const latestModelDate = modelData.length ? 
+    modelData.reduce((latest, model) => 
+      model.releaseDate > latest ? model.releaseDate : latest, 
+      modelData[0].releaseDate
+    ) : endDate
+  
+  // Track scroll position with state
+  const [timelineScrollPosition, setTimelineScrollPosition] = useState(0);
+  
+  // Function to handle scrolling forward in time
+  const scrollForward = () => {
+    // Calculate the new start date based on the current view end date
+    // This ensures we don't miss any models that were at the end of the previous page
+    const newStartDate = new Date(viewEndDate);
+    
+    if (newStartDate <= latestModelDate) {
+      setTimelineScrollPosition(timelineScrollPosition + 5)
+    }
+  }
+  
+  // Function to handle scrolling backward in time
+  const scrollBackward = () => {
+    if (timelineScrollPosition > 0) {
+      setTimelineScrollPosition(timelineScrollPosition - 5)
+    }
+  }
+  
+  const viewStartDate = new Date(startDate);
+  viewStartDate.setMonth(startDate.getMonth() + timelineScrollPosition);
+  
+  const viewEndDate = new Date(viewStartDate);
+  viewEndDate.setMonth(viewStartDate.getMonth() + 5); // 6 months total
+  
+  // Generate evenly spaced month markers for the visible timeline
+  const generateMonthMarkers = () => {
+    const months = []
+    const monthStart = new Date(viewStartDate)
+    
+    const lastDate = new Date(viewEndDate)
+    
+    // Go to the start of the month for earliest date
+    while (monthStart <= lastDate) {
+      months.push(new Date(monthStart))
+      monthStart.setMonth(monthStart.getMonth() + 1)
+    }
+    
+    return months
+  }
+  
+  const monthMarkers = generateMonthMarkers()
+  
+  // Calculate position on timeline (0-100%) based on visible range
+  const getTimelinePosition = (date: Date) => {
+    const timeRange = viewEndDate.getTime() - viewStartDate.getTime()
+    if (timeRange === 0) return 0
+    
+    // Calculate raw position as percentage
+    const position = ((date.getTime() - viewStartDate.getTime()) / timeRange) * 100
+    
+    // Check if we're on the second page and need to handle models
+    // that would have been hidden from the first page (appearing at 95-100%)
+    if (timelineScrollPosition > 0) {
+      // Calculate where this date would have been on the previous page
+      const prevPageStartDate = new Date(startDate);
+      prevPageStartDate.setMonth(prevPageStartDate.getMonth() + (timelineScrollPosition - 5));
+      
+      const prevPageEndDate = new Date(prevPageStartDate);
+      prevPageEndDate.setMonth(prevPageEndDate.getMonth() + 5);
+      
+      const prevPageTimeRange = prevPageEndDate.getTime() - prevPageStartDate.getTime();
+      const prevPagePosition = ((date.getTime() - prevPageStartDate.getTime()) / prevPageTimeRange) * 100;
+      
+      // If this model would have been in the last 10% of the previous page (95-100%),
+      // and it's before the current page's normal range, move it to the beginning of this page
+      if (prevPagePosition > 95 && prevPagePosition <= 100 && position < 0) {
+        return 5; // Position at beginning of current page
+      }
+    }
+    
+    // Return position if it's within the visible range (0-100), otherwise return -1
+    if (position >= 0 && position <= 100) {
+      return position
+    } else {
+      return -1 // Indicates the date is outside the visible timeline
+    }
+  }
+
+  return (
+    <div className="rounded-lg p-4 mx-2 md:mx-4">
+      <div className="relative mb-10 mt-12">
+        {/* Main container for timeline and model icons */}
+        <div className="relative w-full px-8">
+          {timelineScrollPosition > 0 && (
+            <button 
+              onClick={scrollBackward}
+              className="absolute -left-6 top-[-20px] p-2 rounded-full text-primary-600 z-10"
+              aria-label="Scroll backward in time"
+            >
+              <MdChevronLeft className="h-6 w-6" />
+            </button>
+          )}
+          
+          {viewEndDate < latestModelDate && (
+            <button 
+              onClick={scrollForward}
+              className="absolute -right-6 top-[-20px] p-2 rounded-full text-primary-600 z-10"
+              aria-label="Scroll forward in time"
+            >
+              <MdChevronRight className="h-6 w-6" />
+            </button>
+          )}
+        
+          {/* Model icons */}
+          <div className="absolute left-0 right-0 top-[-50px] w-full">
+            {modelData.map((model) => {
+              const position = getTimelinePosition(model.releaseDate)
+
+              // Don't show models that are in the last 10% of any page
+              // They'll show up at the beginning of the next page instead
+              const isNearEndOfPage = position > 95 && position <= 100;
+              
+              if (position < 0 || position > 100 || isNearEndOfPage) return null;
+              
+              return (
+                <Link
+                  key={model.marketId}
+                  href={model.contract ? contractPath(model.contract) : `#${model.marketId}`}
+                  className="absolute"
+                  style={{
+                    left: `${position}%`,
+                    transform: 'translateX(-50%)'
+                  }}
+                >
+                  {/* Model icon with tooltip */}
+                  <div className="hover:scale-110 transition-transform group relative">
+                    <AIModelIcon title={model.title} className="w-10 h-10" />
+                    
+                    {/* Simple tooltip showing model name on hover */}
+                    <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 -translate-y-2 
+                                  bg-gray-800 text-white text-xs rounded px-2 py-1 mb-1 opacity-0 
+                                  group-hover:opacity-100 transition-opacity duration-200 whitespace-nowrap z-50">
+                      {model.title}
+                    </div>
+                  </div>
+                </Link>
+              )
+            })}
+          </div>
+          
+          {/* Timeline content */}
+          <div className="relative w-full">
+            {/* Month markers and labels */}
+            <div className="absolute left-0 right-0 top-[15px]">
+              {monthMarkers.map((date, index) => {
+                const position = (index / (monthMarkers.length - 1)) * 100
+                
+                return (
+                  <div 
+                    key={formatDateFn(date, 'yyyy-MM')} 
+                    className="absolute"
+                    style={{ left: `${position}%`, transform: 'translateX(-50%)' }}
+                  >
+                    {/* Month label positioned above the timeline */}
+                    <div className="text-xs text-gray-600 dark:text-gray-400 text-center whitespace-nowrap mb-2">
+                      {formatDateFn(date, 'MMM yyyy')}
+                    </div>
+                  </div>
+                )
+              })}
+            </div>
+            
+            {/* Timeline line */}
+            <div className="absolute left-0 right-0 h-1 bg-fuchsia-700 dark:bg-fuchsia-500 top-0"></div>
+            
+            {/* Tick marks */}
+            <div className="absolute left-0 right-0 top-0">
+              {monthMarkers.map((date, index) => {
+                const position = (index / (monthMarkers.length - 1)) * 100
+                
+                return (
+                  <div 
+                    key={`tick-${formatDateFn(date, 'yyyy-MM')}`} 
+                    className="absolute"
+                    style={{ left: `${position}%`, transform: 'translateX(-50%)' }}
+                  >
+                    {/* Tick marks */}
+                    <div className="h-3 w-0.5 bg-fuchsia-700 dark:bg-fuchsia-500 -mt-1"></div>
+                  </div>
+                )
+              })}
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  )
 }
 
 export function AIForecast({ whenAgi, contracts = [], hideTitle }: AIForecastProps) {
@@ -834,31 +1098,40 @@ export function AIForecast({ whenAgi, contracts = [], hideTitle }: AIForecastPro
             </Row>
           </div>
           
-          <div className={`grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3 mt-2 relative rounded-lg ${CARD_BG_PATTERN}`}>
-            {capabilityCardsByType[type]?.map((card, idx) => {
-              // Special sizing for "monthly" type cards
-              let cardClassName = "";
-              
-              // For "monthly" cards - make first card 2/3 width and second 1/3 width
-              if (type === "monthly" && idx === 0) {
-                cardClassName = "md:col-span-2"; // first card takes 2/3 width on desktop
-              } else if (type === "monthly" && idx === 1) {
-                cardClassName = ""; // Second card takes 1/3 width (default)
-              }
-              
-              return (
-                <CapabilityCard 
-                  key={idx}
-                  title={card.title}
-                  marketId={card.marketId}
-                  type={card.type}
-                  displayType={card.displayType}
-                  contracts={contracts}
-                  className={cardClassName}
-                />
-              );
-            })}
-          </div>
+          {type === 'releases' ? (
+            // Display releases on a timeline
+            <ModelReleasesTimeline 
+              cards={capabilityCardsByType[type] || []}
+              contracts={contracts}
+            />
+          ) : (
+            // Display other card types in a grid
+            <div className={`grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3 mt-2 relative rounded-lg ${CARD_BG_PATTERN}`}>
+              {capabilityCardsByType[type]?.map((card, idx) => {
+                // Special sizing for "monthly" type cards
+                let cardClassName = "";
+                
+                // For "monthly" cards - make first card 2/3 width and second 1/3 width
+                if (type === "monthly" && idx === 0) {
+                  cardClassName = "md:col-span-2"; // first card takes 2/3 width on desktop
+                } else if (type === "monthly" && idx === 1) {
+                  cardClassName = ""; // Second card takes 1/3 width (default)
+                }
+                
+                return (
+                  <CapabilityCard 
+                    key={idx}
+                    title={card.title}
+                    marketId={card.marketId}
+                    type={card.type}
+                    displayType={card.displayType}
+                    contracts={contracts}
+                    className={cardClassName}
+                  />
+                );
+              })}
+            </div>
+          )}
         </Col>
       ))}
       
