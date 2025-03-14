@@ -2,7 +2,7 @@
 import { useState, useMemo, useEffect } from 'react'
 import clsx from 'clsx'
 import { groupBy, maxBy, sortBy, uniqBy } from 'lodash'
-import { BiCaretDown, BiCaretUp, BiRefresh } from 'react-icons/bi'
+import { BiCaretDown, BiCaretUp } from 'react-icons/bi'
 import { contractPath, MarketContract } from 'common/contract'
 import { LimitBet } from 'common/bet'
 import { formatPercent } from 'common/util/format'
