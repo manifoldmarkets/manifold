@@ -2,7 +2,7 @@
 import { useState, useMemo, useEffect } from 'react'
 import clsx from 'clsx'
 import { groupBy, maxBy, sortBy, uniqBy } from 'lodash'
-import { BiCaretDown, BiCaretUp, BiRefresh } from 'react-icons/bi'
+import { BiCaretDown, BiCaretUp } from 'react-icons/bi'
 import { contractPath, MarketContract } from 'common/contract'
 import { LimitBet } from 'common/bet'
 import { formatPercent } from 'common/util/format'
@@ -34,6 +34,7 @@ import { getContracts } from 'common/supabase/contracts'
 import { db } from 'web/lib/supabase/db'
 import { SweepiesCoin } from 'web/public/custom-components/sweepiesCoin'
 import { linkClass } from '../widgets/site-link'
+import { DocumentDuplicateIcon } from '@heroicons/react/outline'
 
 type LimitOrderSort =
   | 'createTime'
@@ -458,7 +459,7 @@ export function LimitOrdersTable(props: {
                   <IconButton size="2xs" onClick={() => setShowLimitModal(bet)}>
                     <Tooltip text="Reload order with same parameters">
                       <span className="text-ink-500">
-                        <BiRefresh className="h-4 w-4" />
+                        <DocumentDuplicateIcon className="h-4 w-4" />
                       </span>
                     </Tooltip>
                   </IconButton>
@@ -466,7 +467,9 @@ export function LimitOrdersTable(props: {
                 {isYourBets && !isFilledOrCancelled && !isExpired && isOpen && (
                   <IconButton size="2xs" onClick={() => setShowLimitModal(bet)}>
                     <Tooltip text="Place a new order with same parameters">
-                      <span className="text-ink-500">+</span>
+                      <span className="text-ink-500">
+                        <DocumentDuplicateIcon className="h-4 w-4" />
+                      </span>
                     </Tooltip>
                   </IconButton>
                 )}
