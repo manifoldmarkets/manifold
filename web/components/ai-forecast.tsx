@@ -976,7 +976,7 @@ function ModelReleasesTimeline({ cards, contracts }: ModelReleasesTimelineProps)
                     transition: 'transform 0.2s ease-out'
                   }}
                 >
-                  {/* Model icon with name on the right - Manifold styled */}
+                  {/* Model icon with name on the right */}
                   <div className="flex items-center rounded-full py-1 px-2.5 hover:shadow-md transition-all">
                     <AIModelIcon title={model.title} className="w-6 h-6 mr-1.5 text-primary-600 dark:text-primary-500" />
                     <span className="text-sm font-medium whitespace-nowrap text-gray-900 dark:text-gray-100">{model.title}</span>
