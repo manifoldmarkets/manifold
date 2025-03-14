@@ -935,41 +935,55 @@ function ModelReleasesTimeline({ cards, contracts }: ModelReleasesTimelineProps)
             </button>
           )}
         
-          {/* Model icons */}
+          {/* Model icons with collision detection */}
           <div className="absolute left-0 right-0 top-[-50px] w-full">
-            {modelData.map((model) => {
-              const position = getTimelinePosition(model.releaseDate)
-
-              // Don't show models that are in the last 10% of any page
-              // They'll show up at the beginning of the next page instead
-              const isNearEndOfPage = position > 95 && position <= 100;
+            {(() => {
+              // First, get all models that would be visible
+              const visibleModels = modelData
+                .map(model => {
+                  const position = getTimelinePosition(model.releaseDate);
+                  
+                  // Don't show models that are in the last 5% of any page
+                  const isNearEndOfPage = position > 95 && position <= 100;
+                  if (position < 0 || position > 100 || isNearEndOfPage) return null;
+                  
+                  return { model, position, verticalOffset: 0 };
+                })
+                .filter(item => item !== null)
+                .sort((a, b) => a.position - b.position); // Sort by position
               
-              if (position < 0 || position > 100 || isNearEndOfPage) return null;
+              // Detect and resolve collisions
+              for (let i = 0; i < visibleModels.length - 1; i++) {
+                const current = visibleModels[i];
+                const next = visibleModels[i + 1];
+                
+                // If models are too close (less than 15% apart)
+                if (next.position - current.position < 15) {
+                  // Alternate vertical positions
+                  next.verticalOffset = i % 2 === 0 ? 40 : -40;
+                }
+              }
               
-              return (
+              // Now render the models with their adjusted positions
+              return visibleModels.map(({ model, position, verticalOffset }) => (
                 <Link
                   key={model.marketId}
                   href={model.contract ? contractPath(model.contract) : `#${model.marketId}`}
                   className="absolute"
                   style={{
                     left: `${position}%`,
-                    transform: 'translateX(-50%)'
+                    transform: `translateX(-50%) translateY(${verticalOffset}px)`,
+                    transition: 'transform 0.2s ease-out'
                   }}
                 >
-                  {/* Model icon with tooltip */}
-                  <div className="hover:scale-110 transition-transform group relative">
-                    <AIModelIcon title={model.title} className="w-10 h-10" />
-                    
-                    {/* Simple tooltip showing model name on hover */}
-                    <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 -translate-y-2 
-                                  bg-gray-800 text-white text-xs rounded px-2 py-1 mb-1 opacity-0 
-                                  group-hover:opacity-100 transition-opacity duration-200 whitespace-nowrap z-50">
-                      {model.title}
-                    </div>
+                  {/* Model icon with name on the right - Manifold styled */}
+                  <div className="flex items-center rounded-full py-1 px-2.5 hover:shadow-md transition-all">
+                    <AIModelIcon title={model.title} className="w-6 h-6 mr-1.5 text-primary-600 dark:text-primary-500" />
+                    <span className="text-sm font-medium whitespace-nowrap text-gray-900 dark:text-gray-100">{model.title}</span>
                   </div>
                 </Link>
-              )
-            })}
+              ));
+            })()}
           </div>
           
           {/* Timeline content */}
