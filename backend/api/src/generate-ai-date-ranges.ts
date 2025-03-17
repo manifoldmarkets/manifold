@@ -177,7 +177,6 @@ export const regenerateDateMidpoints: APIHandler<'regenerate-date-midpoints'> =
       Generate appropriate midpoint dates for each range.
       RULES:
       - The midpoints should be the exact middle date of the range.
-      - If the range is a log scale, use the geometric mean for the midpoint.
 
       ${tab === 'buckets' ? bucketExamples : thresholdExamples}
 
