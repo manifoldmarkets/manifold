@@ -44,7 +44,7 @@ type AnyContractType =
   | (NonBet & Poll)
   | CPMMNumber
   | MultiNumeric
-
+  | MultiDate
 export type Contract<T extends AnyContractType = AnyContractType> = {
   id: string
   slug: string // auto-generated; must be unique
@@ -131,12 +131,13 @@ export type CPMMContract = Contract & CPMM
 export type CPMMMultiContract = Contract & CPMMMulti
 export type CPMMNumericContract = Contract & CPMMNumber
 export type MultiNumericContract = Contract & MultiNumeric
+export type MultiDateContract = Contract & MultiDate
 export type MarketContract =
   | CPMMContract
   | CPMMMultiContract
   | CPMMNumericContract
   | MultiNumericContract
-
+  | MultiDateContract
 export type BinaryContract = Contract & Binary
 export type PseudoNumericContract = Contract & PseudoNumeric
 export type QuadraticFundingContract = Contract & QuadraticFunding
@@ -200,6 +201,7 @@ export const isSpecialLoveContract = (contract: Contract) =>
   contract.mechanism === 'cpmm-multi-1' &&
   contract.outcomeType !== 'NUMBER' &&
   contract.outcomeType !== 'MULTI_NUMERIC' &&
+  contract.outcomeType !== 'DATE' &&
   contract.specialLiquidityPerAnswer
 
 export type CPMMNumber = {
@@ -279,6 +281,10 @@ export type MultiNumeric = {
   sort?: SortType
 }
 
+export type MultiDate = Omit<MultiNumeric, 'outcomeType'> & {
+  outcomeType: 'DATE'
+}
+
 export type Stonk = {
   outcomeType: 'STONK'
   initialProbability: number
@@ -311,6 +317,7 @@ export type MultiContract =
   | CPMMMultiContract
   | CPMMNumericContract
   | MultiNumericContract
+  | MultiDateContract
 
 type AnyOutcomeType =
   | Binary
@@ -322,6 +329,8 @@ type AnyOutcomeType =
   | CPMMMulti
   | PseudoNumeric
   | MultiNumeric
+  | MultiDate
+
 export type OutcomeType = AnyOutcomeType['outcomeType']
 export type resolution = 'YES' | 'NO' | 'MKT' | 'CANCEL'
 export const RESOLUTIONS = ['YES', 'NO', 'MKT', 'CANCEL'] as const
@@ -334,6 +343,7 @@ export const CREATEABLE_OUTCOME_TYPES = [
   'POLL',
   'NUMBER',
   'MULTI_NUMERIC',
+  'DATE',
 ] as const
 
 export const CREATEABLE_NON_PREDICTIVE_OUTCOME_TYPES = [
@@ -417,7 +427,7 @@ export const MAX_QUESTION_LENGTH = 120
 export const MAX_DESCRIPTION_LENGTH = 16000
 
 export const CPMM_MIN_POOL_QTY = 0.01
-export const MULTI_NUMERIC_BUCKETS_MAX = 50
+export const NUMBER_BUCKETS_MAX = 50
 export const NUMBER_CREATION_ENABLED = false
 
 export type Visibility = 'public' | 'unlisted'

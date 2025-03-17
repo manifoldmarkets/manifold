@@ -211,7 +211,7 @@ export const resolveMarketHelper = async (
     const resolvedContract = {
       ...unresolvedContract,
       ...updatedContractAttrs,
-    } as Contract
+    } as MarketContract
 
     // handle exploit where users can get negative payouts
     const negPayoutThreshold =

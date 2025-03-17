@@ -239,12 +239,7 @@ export const calculateBetResult = (
   const { amount, expiresMillisAfter } = body
   const { outcomeType, mechanism } = contract
 
-  if (
-    (outcomeType == 'BINARY' ||
-      outcomeType === 'PSEUDO_NUMERIC' ||
-      outcomeType === 'STONK') &&
-    mechanism == 'cpmm-1'
-  ) {
+  if (mechanism == 'cpmm-1') {
     // eslint-disable-next-line prefer-const
     let { outcome, limitProb, expiresAt } = body
     if (expiresAt && expiresAt < Date.now())
@@ -274,12 +269,7 @@ export const calculateBetResult = (
       expiresAt,
       expiresMillisAfter
     )
-  } else if (
-    (outcomeType === 'MULTIPLE_CHOICE' ||
-      outcomeType === 'NUMBER' ||
-      outcomeType === 'MULTI_NUMERIC') &&
-    mechanism == 'cpmm-multi-1'
-  ) {
+  } else if (mechanism == 'cpmm-multi-1') {
     const { shouldAnswersSumToOne } = contract
     if (!body.answerId || !answers) {
       throw new APIError(400, 'answerId must be specified for multi bets')

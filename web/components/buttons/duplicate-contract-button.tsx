@@ -59,13 +59,17 @@ export function duplicateContractHref(contract: Contract) {
 
   if (
     contract.outcomeType === 'MULTIPLE_CHOICE' ||
-    contract.outcomeType === 'MULTI_NUMERIC'
+    contract.outcomeType === 'MULTI_NUMERIC' ||
+    contract.outcomeType === 'DATE'
   ) {
     params.answers = contract.answers
       .filter((a) => !a.isOther)
       .map((a) => a.text)
   }
-  if (contract.outcomeType === 'MULTI_NUMERIC') {
+  if (
+    contract.outcomeType === 'MULTI_NUMERIC' ||
+    contract.outcomeType === 'DATE'
+  ) {
     params.unit = contract.unit
     params.midpoints = contract.answers.map((a) => a.midpoint!)
   }

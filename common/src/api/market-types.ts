@@ -294,7 +294,7 @@ export const createNumberSchema = z.object({
 })
 
 export const createMultiNumericSchema = z.object({
-  outcomeType: z.enum(['MULTI_NUMERIC']),
+  outcomeType: z.enum(['MULTI_NUMERIC', 'DATE']),
   answers: z.array(z.string().trim().min(1)).max(MAX_MULTI_NUMERIC_ANSWERS),
   midpoints: z.array(z.number().safe()).max(MAX_MULTI_NUMERIC_ANSWERS),
   shouldAnswersSumToOne: z.boolean(),

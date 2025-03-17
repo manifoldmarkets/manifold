@@ -407,7 +407,7 @@ function validateMarketBody(body: Body) {
         'Numeric markets must have at least 2 answer buckets.'
       )
   }
-  if (outcomeType === 'MULTI_NUMERIC') {
+  if (outcomeType === 'MULTI_NUMERIC' || outcomeType === 'DATE') {
     ;({ answers, midpoints, unit, shouldAnswersSumToOne } = validateMarketType(
       outcomeType,
       createMultiNumericSchema,

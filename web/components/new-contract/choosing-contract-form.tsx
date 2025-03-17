@@ -68,6 +68,7 @@ function OutcomeButton(props: {
     | CreateableOutcomeType
     | 'INDEPENDENT_MULTIPLE_CHOICE'
     | 'DEPENDENT_MULTIPLE_CHOICE'
+    | 'DATE'
   visual: ReactNode
   className?: string
   backgroundColor?: string

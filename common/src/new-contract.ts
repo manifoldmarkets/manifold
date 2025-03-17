@@ -9,7 +9,6 @@ import {
   CPMMNumber,
   CREATEABLE_OUTCOME_TYPES,
   Contract,
-  MultiNumeric,
   NonBet,
   Poll,
   PseudoNumeric,
@@ -128,7 +127,19 @@ export function getNewContract(
         midpoints ?? [],
         ante,
         unit ?? '',
-        shouldAnswersSumToOne ?? true
+        shouldAnswersSumToOne ?? true,
+        outcomeType as 'MULTI_NUMERIC'
+      ),
+    DATE: () =>
+      getMultiNumericProps(
+        id,
+        creator.id,
+        answers,
+        midpoints ?? [],
+        ante,
+        unit ?? '',
+        shouldAnswersSumToOne ?? true,
+        outcomeType as 'DATE'
       ),
   }[outcomeType]()
 
@@ -341,7 +352,8 @@ const getMultiNumericProps = (
   midpoints: number[],
   ante: number,
   unit: string,
-  shouldAnswersSumToOne: boolean
+  shouldAnswersSumToOne: boolean,
+  outcomeType: 'MULTI_NUMERIC' | 'DATE'
 ) => {
   const answerObjects = createAnswers(
     contractId,
@@ -352,16 +364,16 @@ const getMultiNumericProps = (
     answers,
     { midpoints }
   )
-  const system: MultiNumeric = {
+  const system = {
     mechanism: 'cpmm-multi-1',
-    outcomeType: 'MULTI_NUMERIC',
+    outcomeType,
     shouldAnswersSumToOne,
     addAnswersMode: 'DISABLED',
     answers: answerObjects,
     totalLiquidity: ante,
     subsidyPool: 0,
     unit,
-  }
+  } as const
 
   return system
 }

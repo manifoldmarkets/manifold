@@ -21,7 +21,7 @@ import {
   PrivateUser,
   User,
 } from 'common/user'
-import { Contract, renderResolution } from 'common/contract'
+import { Contract, MarketContract, renderResolution } from 'common/contract'
 import { getContract, getPrivateUser, getUser, isProd, log } from 'shared/utils'
 import { ContractComment } from 'common/comment'
 import {
@@ -1215,7 +1215,7 @@ export const createNewContractNotification = async (
 }
 
 export const createContractResolvedNotifications = async (
-  contract: Contract,
+  contract: MarketContract,
   resolver: User,
   creator: User,
   outcome: string,
@@ -1236,7 +1236,8 @@ export const createContractResolvedNotifications = async (
   const { token } = contract
   const isMultiChoice =
     contract.outcomeType === 'MULTIPLE_CHOICE' ||
-    contract.outcomeType === 'MULTI_NUMERIC'
+    contract.outcomeType === 'MULTI_NUMERIC' ||
+    contract.outcomeType === 'DATE'
   const isIndependentMulti = isMultiChoice && !contract.shouldAnswersSumToOne
 
   if (isIndependentMulti) {
