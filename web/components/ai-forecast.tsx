@@ -261,10 +261,10 @@ function CardBase({
 }) {
   return (
     <ClickFrame
-      className={`group cursor-pointer rounded-lg p-4 border border-ink-200 dark:border-ink-300 bg-canvas-0 
-      transition-all hover:bg-canvas-50 dark:hover:bg-canvas-50 ${minHeight}
+      className={`group cursor-pointer rounded-lg p-4 border border-ink-200 dark:border-ink-300
+      transition-all hover:shadow-md hover:translate-y-[-2px] ${minHeight}
       shadow-[2px_2px_4px_rgba(0,0,0,0.05)] dark:shadow-[2px_2px_4px_rgba(0,0,0,0.15)] 
-      relative ${CARD_BG_PATTERN} ${className}`}
+      relative ${getCardBgColor(className)} ${className}`}
       onClick={onClick}
     >
       {children}
@@ -363,6 +363,42 @@ function getGradient(type: string, isText = true) {
       return `${textPrefix}bg-gradient-to-br from-cyan-500 via-cyan-600 to-cyan-700 dark:from-cyan-400 dark:via-cyan-500 dark:to-cyan-600`;
     default:
       return `${textPrefix}bg-gradient-to-br from-primary-500 via-primary-600 to-primary-700 dark:from-primary-400 dark:via-primary-500 dark:to-primary-600`;
+  }
+}
+
+// Get card background color based on card class or type
+function getCardBgColor(className: string) {
+  // Extract card type from className if it exists
+  let cardType = '';
+  if (className.includes('md:col-span-2')) {
+    cardType = 'monthly'; // Special case for the large monthly card
+  } else if (className.includes('monthly')) {
+    cardType = 'monthly';
+  }
+  
+  // Card backgrounds with subtle gradients
+  switch(cardType) {
+    case 'monthly':
+      return 'bg-gradient-to-br from-primary-50 to-primary-100 dark:from-primary-900/25 dark:to-primary-800/30';
+    default:
+      // If we don't know the type from className, use the card type patterns
+      if (className.includes('prize')) {
+        return 'bg-gradient-to-br from-amber-50 to-amber-100 dark:from-amber-800/40 dark:to-amber-700/50';
+      }
+      if (className.includes('benchmark')) {
+        return 'bg-gradient-to-br from-teal-50 to-teal-100 dark:from-teal-900/25 dark:to-teal-800/30';
+      }
+      if (className.includes('releases')) {
+        return 'bg-gradient-to-br from-fuchsia-50 to-fuchsia-100 dark:from-fuchsia-800/40 dark:to-fuchsia-700/50';
+      }
+      if (className.includes('misuse')) {
+        return 'bg-gradient-to-br from-rose-50 to-rose-100 dark:from-rose-800/40 dark:to-rose-700/50';
+      }
+      if (className.includes('human-comparison')) {
+        return 'bg-gradient-to-br from-cyan-50 to-cyan-100 dark:from-cyan-800/40 dark:to-cyan-700/50';
+      }
+      // Default background for unknown card types
+      return 'bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-700/60 dark:to-gray-600/70';
   }
 }
 
@@ -960,7 +996,7 @@ function ModelReleasesTimeline({ cards, contracts }: ModelReleasesTimelineProps)
                 // If models are too close (less than 15% apart)
                 if (next.position - current.position < 15) {
                   // Alternate vertical positions
-                  next.verticalOffset = i % 2 === 0 ? 40 : -40;
+                  next.verticalOffset = i % 2 === 0 ? 30 : -30;
                 }
               }
               
@@ -1140,7 +1176,7 @@ export function AIForecast({ whenAgi, contracts = [], hideTitle }: AIForecastPro
                     type={card.type}
                     displayType={card.displayType}
                     contracts={contracts}
-                    className={cardClassName}
+                    className={`${card.type} ${cardClassName}`}
                   />
                 );
               })}
