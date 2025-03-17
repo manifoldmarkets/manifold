@@ -70,8 +70,10 @@ export function duplicateContractHref(contract: Contract) {
     contract.outcomeType === 'MULTI_NUMERIC' ||
     contract.outcomeType === 'DATE'
   ) {
-    params.unit = contract.unit
     params.midpoints = contract.answers.map((a) => a.midpoint!)
+  }
+  if (contract.outcomeType === 'MULTI_NUMERIC') {
+    params.unit = contract.unit
   }
 
   if (contract.mechanism === 'cpmm-multi-1') {

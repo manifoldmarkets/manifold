@@ -281,7 +281,7 @@ export type MultiNumeric = {
   sort?: SortType
 }
 
-export type MultiDate = Omit<MultiNumeric, 'outcomeType'> & {
+export type MultiDate = Omit<MultiNumeric, 'outcomeType' | 'unit'> & {
   outcomeType: 'DATE'
 }
 

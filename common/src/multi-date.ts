@@ -65,26 +65,39 @@ export function getExpectedDate(
 export function formatExpectedDate(
   value: number,
   contract: MultiDateContract,
-  includeUnit = true
+  contractPageView = true
 ) {
-  const { answers, unit } = contract
+  const { answers } = contract
   const { min, max } = getMinMax(contract)
   // There are a few NaN & undefined values on dev
   if (isNaN(value) || min === undefined || max === undefined || max === min)
     return 'N/A'
   if (answers.length == 0) return '' // probably from static props
 
-  const formatter = new Intl.DateTimeFormat('en-US', {
-    year: 'numeric',
-    month: 'long',
-    day: 'numeric',
-  })
-  return formatter.format(value) + (includeUnit ? ' ' + (unit ?? '') : '')
+  const formatter = new Intl.DateTimeFormat(
+    'en-US',
+    contractPageView
+      ? {
+          year: 'numeric',
+          month: 'long',
+          day: 'numeric',
+        }
+      : {
+          month: 'numeric',
+          day: 'numeric',
+          year: '2-digit',
+        }
+  )
+  return formatter.format(value)
 }
 
 export function getFormattedExpectedDate(
   contract: MultiDateContract,
-  includeUnit = true
+  contractPageView = true
 ) {
-  return formatExpectedDate(getExpectedDate(contract), contract, includeUnit)
+  return formatExpectedDate(
+    getExpectedDate(contract),
+    contract,
+    contractPageView
+  )
 }

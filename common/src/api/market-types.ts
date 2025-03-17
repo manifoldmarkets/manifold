@@ -294,12 +294,20 @@ export const createNumberSchema = z.object({
 })
 
 export const createMultiNumericSchema = z.object({
-  outcomeType: z.enum(['MULTI_NUMERIC', 'DATE']),
+  outcomeType: z.enum(['MULTI_NUMERIC']),
   answers: z.array(z.string().trim().min(1)).max(MAX_MULTI_NUMERIC_ANSWERS),
   midpoints: z.array(z.number().safe()).max(MAX_MULTI_NUMERIC_ANSWERS),
   shouldAnswersSumToOne: z.boolean(),
   addAnswersMode: z.enum(['DISABLED']).default('DISABLED'),
   unit: z.string(),
+})
+
+export const createMultiDateSchema = z.object({
+  outcomeType: z.enum(['DATE']),
+  answers: z.array(z.string().trim().min(1)).max(MAX_MULTI_NUMERIC_ANSWERS),
+  midpoints: z.array(z.number().safe()).max(MAX_MULTI_NUMERIC_ANSWERS),
+  shouldAnswersSumToOne: z.boolean(),
+  addAnswersMode: z.enum(['DISABLED']).default('DISABLED'),
 })
 
 export const createBountySchema = z.object({
@@ -349,6 +357,7 @@ export const createMarketProps = z
       createBinarySchema,
       createNumberSchema,
       createMultiNumericSchema,
+      createMultiDateSchema,
     ])
   )
 

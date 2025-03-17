@@ -8,6 +8,7 @@ import {
   createPollSchema,
   toLiteMarket,
   createMultiNumericSchema,
+  createMultiDateSchema,
 } from 'common/api/market-types'
 import { ValidatedAPIParams } from 'common/api/schema'
 import {
@@ -407,10 +408,27 @@ function validateMarketBody(body: Body) {
         'Numeric markets must have at least 2 answer buckets.'
       )
   }
-  if (outcomeType === 'MULTI_NUMERIC' || outcomeType === 'DATE') {
+  if (outcomeType === 'MULTI_NUMERIC') {
     ;({ answers, midpoints, unit, shouldAnswersSumToOne } = validateMarketType(
       outcomeType,
       createMultiNumericSchema,
+      body
+    ))
+    if (answers.length < 2)
+      throw new APIError(
+        400,
+        'Numeric markets must have at least 2 answer buckets.'
+      )
+    if (answers.length !== midpoints.length)
+      throw new APIError(
+        400,
+        'Number of answers must match number of midpoints.'
+      )
+  }
+  if (outcomeType === 'DATE') {
+    ;({ answers, midpoints, shouldAnswersSumToOne } = validateMarketType(
+      outcomeType,
+      createMultiDateSchema,
       body
     ))
     if (answers.length < 2)

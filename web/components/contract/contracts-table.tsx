@@ -33,6 +33,7 @@ import { Tooltip } from '../widgets/tooltip'
 import { SpiceCoin } from 'web/public/custom-components/spiceCoin'
 import { SweepiesCoin } from 'web/public/custom-components/sweepiesCoin'
 import { getFormattedExpectedValue } from 'common/multi-numeric'
+import { getFormattedExpectedDate } from 'common/multi-date'
 
 export function ContractsTable(props: {
   contracts: Contract[]
@@ -217,6 +218,10 @@ export function ContractStatusLabel(props: {
     }
     case 'MULTI_NUMERIC': {
       const val = getFormattedExpectedValue(contract, false)
+      return <span className={clsx(probTextColor, className)}>{val}</span>
+    }
+    case 'DATE': {
+      const val = getFormattedExpectedDate(contract, false)
       return <span className={clsx(probTextColor, className)}>{val}</span>
     }
     case 'MULTIPLE_CHOICE': {
