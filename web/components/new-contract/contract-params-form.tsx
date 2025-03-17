@@ -376,7 +376,9 @@ export function ContractParamsForm(props: {
     (outcomeType !== 'MULTI_NUMERIC' ||
       ((minMaxValid || isValidMultipleChoice) && unit !== '')) &&
     (outcomeType === 'DATE'
-      ? min !== undefined && max !== undefined && isValidMultipleChoice
+      ? minString !== undefined &&
+        maxString !== undefined &&
+        isValidMultipleChoice
       : true)
 
   const [errorText, setErrorText] = useState<string>('')
