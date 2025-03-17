@@ -114,38 +114,39 @@ export const generateAIDateRanges: APIHandler<'generate-ai-date-ranges'> =
 
       const prompt = userPrompt(question, min, max, description)
 
-      // Generate bucket ranges
+      // Prepare system prompts
       const bucketSystemPrompt = baseDateSystemPrompt()
-      const buckets = await promptClaudeParsingJson<DateRangeResponse>(prompt, {
-        model: models.sonnet,
-        system: bucketSystemPrompt,
-      })
-      const convertedBuckets = {
-        ...buckets,
-        midpoints: convertDateMidpointsToTimes(buckets.midpoints),
-      }
-
-      assertMidpointsAreUnique(convertedBuckets.midpoints)
-      assertMidpointsAreAscending(convertedBuckets.midpoints)
-      log('buckets', convertedBuckets)
-
-      // Generate threshold ranges
       const thresholdSystemPrompt = baseDateSystemPrompt().replace(
         bucketExamples,
         thresholdExamples
       )
-      const thresholds = await promptClaudeParsingJson<DateRangeResponse>(
-        prompt,
-        {
+
+      // Generate both bucket and threshold ranges in parallel
+      const [buckets, thresholds] = await Promise.all([
+        promptClaudeParsingJson<DateRangeResponse>(prompt, {
+          model: models.sonnet,
+          system: bucketSystemPrompt,
+        }),
+        promptClaudeParsingJson<DateRangeResponse>(prompt, {
           model: models.sonnet,
           system: thresholdSystemPrompt,
-        }
-      )
+        }),
+      ])
+
+      // Process bucket results
+      const convertedBuckets = {
+        ...buckets,
+        midpoints: convertDateMidpointsToTimes(buckets.midpoints),
+      }
+      assertMidpointsAreUnique(convertedBuckets.midpoints)
+      assertMidpointsAreAscending(convertedBuckets.midpoints)
+      log('buckets', convertedBuckets)
+
+      // Process threshold results
       const convertedThresholds = {
         ...thresholds,
         midpoints: convertDateMidpointsToTimes(thresholds.midpoints),
       }
-
       assertMidpointsAreUnique(convertedThresholds.midpoints)
       assertMidpointsAreAscending(convertedThresholds.midpoints)
       log('thresholds', convertedThresholds)
