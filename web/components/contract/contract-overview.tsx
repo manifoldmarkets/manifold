@@ -673,17 +673,6 @@ const MultiNumericOverview = (props: {
   const shouldAnswersSumToOne =
     'shouldAnswersSumToOne' in contract ? contract.shouldAnswersSumToOne : true
 
-  const [query, setQuery] = usePersistentInMemoryState(
-    '',
-    'create-answer-text' + contract.id
-  )
-
-  const defaultSort = getDefaultSort(contract)
-  const [sort, setSort] = usePersistentInMemoryState<MultiSort>(
-    defaultSort,
-    'answer-sort' + contract.id
-  )
-
   return (
     <>
       <Row className="relative justify-between gap-2">
@@ -734,10 +723,10 @@ const MultiNumericOverview = (props: {
             selectedAnswerIds={[]}
             contract={contract}
             onAnswerCommentClick={onAnswerCommentClick}
-            sort={sort}
-            setSort={setSort}
-            query={query}
-            setQuery={setQuery}
+            sort={getDefaultSort(contract)}
+            setSort={() => {}}
+            query={''}
+            setQuery={() => {}}
           />
           {tradingAllowed(contract) && (
             <UserBetsSummary
@@ -773,17 +762,6 @@ const MultiDateOverview = (props: {
 
   const shouldAnswersSumToOne =
     'shouldAnswersSumToOne' in contract ? contract.shouldAnswersSumToOne : true
-
-  const [query, setQuery] = usePersistentInMemoryState(
-    '',
-    'create-answer-text' + contract.id
-  )
-
-  const defaultSort = getDefaultSort(contract)
-  const [sort, setSort] = usePersistentInMemoryState<MultiSort>(
-    defaultSort,
-    'answer-sort' + contract.id
-  )
 
   return (
     <>
@@ -835,10 +813,10 @@ const MultiDateOverview = (props: {
             selectedAnswerIds={[]}
             contract={contract}
             onAnswerCommentClick={onAnswerCommentClick}
-            sort={sort}
-            setSort={setSort}
-            query={query}
-            setQuery={setQuery}
+            sort={getDefaultSort(contract)}
+            setSort={() => {}}
+            query={''}
+            setQuery={() => {}}
           />
           {tradingAllowed(contract) && (
             <UserBetsSummary
