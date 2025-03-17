@@ -63,9 +63,8 @@ export const MultiNumericDateSection = (props: {
   const [bucketMidpoints, setBucketMidpoints] = usePersistentLocalState<
     number[]
   >(!shouldAnswersSumToOne ? [] : midpoints, 'bucket-midpoints' + paramsKey)
-  const minMaxError = minString === undefined || maxString === undefined
+  const minMaxError = minString === '' || maxString === ''
   const [error, setError] = useState<string>('')
-  const [dateError, setDateError] = useState<string>('')
   const [regenerateError, setRegenerateError] = useState<string>('')
   const [maxAnswersReached, setMaxAnswersReached] = useState<boolean>(false)
 
@@ -81,7 +80,7 @@ export const MultiNumericDateSection = (props: {
   const generateRanges = async () => {
     setError('')
     setRegenerateError('')
-    if (!question || minString === undefined || maxString === undefined) return
+    if (!question || minString === '' || maxString === '') return
     setIsGeneratingRanges(true)
     try {
       const result = await api('generate-ai-date-ranges', {
@@ -98,7 +97,7 @@ export const MultiNumericDateSection = (props: {
     } catch (e) {
       console.error('Error generating date ranges:', e)
       if (e instanceof APIError) {
-        setError(e.message)
+        setError(e.message.slice(0, 100))
       } else {
         setError('An error occurred while generating date ranges.')
       }
@@ -155,21 +154,21 @@ export const MultiNumericDateSection = (props: {
 
   const handleAnswerChanged = async (
     answers: string[],
-    min: string | undefined,
-    max: string | undefined,
+    min: string,
+    max: string,
     tab: 'thresholds' | 'buckets'
   ) => {
     setRegenerateError('')
     // Only regenerate midpoints if we have min and max
-    if (minString === undefined || maxString === undefined) return
+    if (min === '' || max === '') return
 
     try {
       // Call regenerate-date-midpoints without tab parameter
       const result = await api('regenerate-date-midpoints', {
         question,
         answers,
-        min: minString,
-        max: maxString,
+        min,
+        max,
         description,
         tab,
       })
@@ -186,7 +185,7 @@ export const MultiNumericDateSection = (props: {
     } catch (e) {
       console.error('Error regenerating date midpoints:', e)
       if (e instanceof APIError) {
-        setRegenerateError(e.message)
+        setRegenerateError(e.message.slice(0, 100))
       } else {
         setRegenerateError(
           'An error occurred while regenerating date midpoints.'
@@ -216,10 +215,6 @@ export const MultiNumericDateSection = (props: {
       }
     }
   }
-
-  useEffect(() => {
-    setDateError('')
-  }, [question])
 
   const tabs = [
     {
@@ -310,35 +305,27 @@ export const MultiNumericDateSection = (props: {
   return (
     <Col>
       <Row className={' flex-wrap'}>
-        {dateError && (
-          <div className="text-scarlet-500 text-sm">{dateError}</div>
-        )}
         <Col className="mb-2 w-full items-start">
           <Row className="items-baseline gap-1 px-1 py-2">
             <span className="">Date range</span>
             <InfoTooltip text="The start and end dates for your question. Choose dates the value could reasonably be expected to fall between." />
-            {minMaxError && (
-              <span className="text-scarlet-500 text-sm">
-                End date must be later than start date
-              </span>
-            )}
           </Row>
           <Row className={'w-full gap-2'}>
             <Input
               type="text"
-              error={minMaxError}
+              error={!!error}
               className="w-full"
               placeholder="Start"
               onClick={(e) => e.stopPropagation()}
               onChange={(e) => setMinString(e.target.value)}
               onBlur={handleRangeBlur}
               disabled={submitState === 'LOADING'}
-              value={minString ?? ''}
+              value={minString}
             />
 
             <Input
               type="text"
-              error={minMaxError}
+              error={!!error}
               className="w-full"
               placeholder="End"
               onClick={(e) => e.stopPropagation()}
@@ -355,8 +342,8 @@ export const MultiNumericDateSection = (props: {
               disabled={
                 !question ||
                 isGeneratingRanges ||
-                minString === undefined ||
-                maxString === undefined ||
+                minString === '' ||
+                maxString === '' ||
                 minMaxError
               }
             >
@@ -375,8 +362,8 @@ export const MultiNumericDateSection = (props: {
           disabled={
             !question ||
             isGeneratingRanges ||
-            minString === undefined ||
-            maxString === undefined ||
+            minString === '' ||
+            maxString === '' ||
             minMaxError
           }
         >
