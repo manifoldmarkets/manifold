@@ -670,9 +670,6 @@ const MultiNumericOverview = (props: {
   const { currentTimePeriod, setTimePeriod, maxRange, zoomParams } =
     useTimePicker(contract, () => setShowZoomer(true))
 
-  const shouldAnswersSumToOne =
-    'shouldAnswersSumToOne' in contract ? contract.shouldAnswersSumToOne : true
-
   return (
     <>
       <Row className="relative justify-between gap-2">
@@ -701,7 +698,7 @@ const MultiNumericOverview = (props: {
           />
         )}
       </SizedContainer>
-      {!shouldAnswersSumToOne && contract.mechanism === 'cpmm-multi-1' ? (
+      {!contract.shouldAnswersSumToOne ? (
         <IndependentAnswersResolvePanel
           show={showResolver}
           contract={contract}
@@ -760,9 +757,6 @@ const MultiDateOverview = (props: {
   const { currentTimePeriod, setTimePeriod, maxRange, zoomParams } =
     useTimePicker(contract, () => setShowZoomer(true))
 
-  const shouldAnswersSumToOne =
-    'shouldAnswersSumToOne' in contract ? contract.shouldAnswersSumToOne : true
-
   return (
     <>
       <Row className="relative justify-between gap-2">
@@ -791,7 +785,7 @@ const MultiDateOverview = (props: {
           />
         )}
       </SizedContainer>
-      {!shouldAnswersSumToOne && contract.mechanism === 'cpmm-multi-1' ? (
+      {!contract.shouldAnswersSumToOne ? (
         <IndependentAnswersResolvePanel
           show={showResolver}
           contract={contract}
