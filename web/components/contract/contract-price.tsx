@@ -1,6 +1,7 @@
 import {
   BinaryContract,
   CPMMNumericContract,
+  MultiDateContract,
   MultiNumericContract,
   PseudoNumericContract,
   StonkContract,
@@ -27,6 +28,8 @@ import {
   answerTextToRange,
 } from 'common/src/number'
 import { formatExpectedValue, getExpectedValue } from 'common/multi-numeric'
+import { formatExpectedDate } from 'common/multi-date'
+import { getExpectedDate } from 'common/multi-date'
 
 export function BinaryResolutionOrChance(props: {
   contract: BinaryContract
@@ -207,6 +210,46 @@ export function MultiNumericResolutionOrExpectation(props: {
         <>
           <animated.div className={'mr-2 inline-block'}>
             {spring.to((val) => formatExpectedValue(val, contract))}
+          </animated.div>
+          <span className="text-base">expected</span>
+        </>
+      )}
+    </span>
+  )
+}
+export function MultiDateResolutionOrExpectation(props: {
+  contract: MultiDateContract
+  className?: string
+}) {
+  const { contract, className } = props
+  const { answers, resolution } = contract
+  const resolvedAnswer = answers.find((a) => a.id === resolution)
+  const value = getExpectedDate(contract)
+  const formattedValue = formatExpectedDate(value, contract)
+  const spring = useAnimatedNumber(value)
+
+  return (
+    <span
+      className={clsx(
+        'items-baseline text-2xl sm:inline-flex sm:text-3xl',
+        className
+      )}
+    >
+      {resolution ? (
+        <>
+          <div className="mr-2 text-base">Resolved</div>
+          {resolution === 'CANCEL' ? (
+            <CancelLabel />
+          ) : (
+            <MultiNumericValueLabel
+              formattedValue={resolvedAnswer?.text ?? formattedValue}
+            />
+          )}
+        </>
+      ) : (
+        <>
+          <animated.div className={'mr-2 inline-block'}>
+            {spring.to((val) => formatExpectedDate(val, contract))}
           </animated.div>
           <span className="text-base">expected</span>
         </>

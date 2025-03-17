@@ -49,6 +49,7 @@ import {
 } from './helpers'
 import { ZoomSlider } from './zoom-slider'
 import { NUMERIC_GRAPH_COLOR } from 'common/numeric-constants'
+import { timeFormat } from 'd3-time-format'
 
 const interpolateY = (
   curve: CurveFactory,
@@ -811,6 +812,20 @@ export const SingleValueHistoryChart = <P extends HistoryPoint>(props: {
         ? (n) => formatMoneyNumber(n)
         : yKind === 'sweepies'
         ? (n) => formatSweepiesNumber(n)
+        : yKind === 'date'
+        ? (n) => {
+            const date = new Date(n)
+            const timeSpan = max - min
+            if (timeSpan > 3 * 365 * 24 * 60 * 60 * 1000) {
+              // > 3 years
+              return timeFormat('%Y')(date) // Years only
+            } else if (timeSpan > 60 * 24 * 60 * 60 * 1000) {
+              // > 60 days
+              return timeFormat('%b %Y')(date) // Month and year
+            } else {
+              return timeFormat('%b %d')(date) // Month, day
+            }
+          }
         : (n) => formatWithCommas(n)
     )
 

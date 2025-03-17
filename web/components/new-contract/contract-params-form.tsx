@@ -373,8 +373,11 @@ export function ContractParamsForm(props: {
     (outcomeType === 'NUMBER'
       ? numberOfBuckets <= NUMBER_BUCKETS_MAX && numberOfBuckets >= 2
       : true) &&
-    ((outcomeType !== 'MULTI_NUMERIC' && outcomeType !== 'DATE') ||
-      ((minMaxValid || isValidMultipleChoice) && unit !== ''))
+    (outcomeType !== 'MULTI_NUMERIC' ||
+      ((minMaxValid || isValidMultipleChoice) && unit !== '')) &&
+    (outcomeType === 'DATE'
+      ? min !== undefined && max !== undefined && isValidMultipleChoice
+      : true)
 
   const [errorText, setErrorText] = useState<string>('')
   useEffect(() => {
@@ -637,8 +640,7 @@ export function ContractParamsForm(props: {
           value={question}
           onChange={(e) => setQuestion(e.target.value || '')}
           onBlur={(e) => {
-            if (outcomeType === 'MULTI_NUMERIC' || outcomeType === 'DATE')
-              inferUnit()
+            if (outcomeType === 'MULTI_NUMERIC') inferUnit()
             findTopicsAndSimilarQuestions(e.target.value || '')
           }}
         />
@@ -743,8 +745,6 @@ export function ContractParamsForm(props: {
           max={max}
           shouldAnswersSumToOne={shouldAnswersSumToOne}
           setShouldAnswersSumToOne={setMultiNumericSumsToOne}
-          unit={unit}
-          setUnit={setUnit}
         />
       )}
       {outcomeType === 'PSEUDO_NUMERIC' && (
