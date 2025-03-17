@@ -18,8 +18,6 @@ export const MultiNumericDateSection = (props: {
   setMinString: (value: string) => void
   maxString: string
   setMaxString: (value: string) => void
-  min: number | undefined
-  max: number | undefined
   description?: string
   answers: string[]
   paramsKey: string
@@ -38,8 +36,6 @@ export const MultiNumericDateSection = (props: {
     midpoints,
     setAnswers,
     setMidpoints,
-    min,
-    max,
     minString,
     setMinString,
     maxString,
@@ -67,7 +63,7 @@ export const MultiNumericDateSection = (props: {
   const [bucketMidpoints, setBucketMidpoints] = usePersistentLocalState<
     number[]
   >(!shouldAnswersSumToOne ? [] : midpoints, 'bucket-midpoints' + paramsKey)
-  const minMaxError = min !== undefined && max !== undefined && min >= max
+  const minMaxError = minString === undefined || maxString === undefined
   const [error, setError] = useState<string>('')
   const [dateError, setDateError] = useState<string>('')
   const [regenerateError, setRegenerateError] = useState<string>('')
@@ -85,7 +81,7 @@ export const MultiNumericDateSection = (props: {
   const generateRanges = async () => {
     setError('')
     setRegenerateError('')
-    if (!question || min === undefined || max === undefined) return
+    if (!question || minString === undefined || maxString === undefined) return
     setIsGeneratingRanges(true)
     try {
       const result = await api('generate-ai-date-ranges', {
@@ -159,13 +155,13 @@ export const MultiNumericDateSection = (props: {
 
   const handleAnswerChanged = async (
     answers: string[],
-    min: number | undefined,
-    max: number | undefined,
+    min: string | undefined,
+    max: string | undefined,
     tab: 'thresholds' | 'buckets'
   ) => {
     setRegenerateError('')
     // Only regenerate midpoints if we have min and max
-    if (min === undefined || max === undefined) return
+    if (minString === undefined || maxString === undefined) return
 
     try {
       // Call regenerate-date-midpoints without tab parameter
@@ -203,10 +199,10 @@ export const MultiNumericDateSection = (props: {
   const debouncedHandleAnswerChanged = useCallback(
     debounce(
       (answers: string[], tab: 'thresholds' | 'buckets') =>
-        handleAnswerChanged(answers, min, max, tab),
-      1000
+        handleAnswerChanged(answers, minString, maxString, tab),
+      1500
     ),
-    [min, max, setMidpoints]
+    [minString, maxString, setMidpoints]
   )
 
   const addAnswer = () => {
@@ -359,8 +355,8 @@ export const MultiNumericDateSection = (props: {
               disabled={
                 !question ||
                 isGeneratingRanges ||
-                min === undefined ||
-                max === undefined ||
+                minString === undefined ||
+                maxString === undefined ||
                 minMaxError
               }
             >
@@ -379,8 +375,8 @@ export const MultiNumericDateSection = (props: {
           disabled={
             !question ||
             isGeneratingRanges ||
-            min === undefined ||
-            max === undefined ||
+            minString === undefined ||
+            maxString === undefined ||
             minMaxError
           }
         >

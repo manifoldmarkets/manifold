@@ -741,8 +741,6 @@ export function ContractParamsForm(props: {
           setMinString={setMinString}
           maxString={maxString}
           setMaxString={setMaxString}
-          min={min}
-          max={max}
           shouldAnswersSumToOne={shouldAnswersSumToOne}
           setShouldAnswersSumToOne={setMultiNumericSumsToOne}
         />
