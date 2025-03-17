@@ -2272,6 +2272,7 @@ export const API = (_apiTypeCheck = {
         answers: z.array(z.string()),
         min: z.string(),
         max: z.string(),
+        tab: z.enum(['thresholds', 'buckets']),
       })
       .strict(),
   },

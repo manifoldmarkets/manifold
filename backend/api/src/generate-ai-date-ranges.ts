@@ -23,11 +23,12 @@ const baseDateSystemPrompt = () => {
     GUIDLINES:
     - Generate 2-12 ranges that cover the entire span from start to end
     - Err on the side of fewer (3-5) ranges when possible
+    - Do NOT generate more than 12 ranges
     - Today's date is ${new Date().toISOString()}
     - Each range should have a midpoint value for expected value calculations
     - The midpoints should be dates that represent the exact middle date of the range.
     - Return the ranges and associated midpoints in ascending order
-    - If the unit is a year/month/day and the max-min < 10 just use single years/months/days as buckets.
+    - If the min/max is a year/month/day and the max-min < 10 just use single years/months/days as buckets.
     - ONLY return a single JSON object without any other text or formatting:
     {
       answers: array of range strings,
@@ -119,7 +120,6 @@ export const generateAIDateRanges: APIHandler<'generate-ai-date-ranges'> =
         model: models.sonnet,
         system: bucketSystemPrompt,
       })
-      log('buckets response', buckets)
       const convertedBuckets = {
         ...buckets,
         midpoints: convertDateMidpointsToTimes(buckets.midpoints),
@@ -141,7 +141,6 @@ export const generateAIDateRanges: APIHandler<'generate-ai-date-ranges'> =
           system: thresholdSystemPrompt,
         }
       )
-      log('thresholds response', thresholds)
       const convertedThresholds = {
         ...thresholds,
         midpoints: convertDateMidpointsToTimes(thresholds.midpoints),
@@ -166,7 +165,7 @@ export const generateAIDateRanges: APIHandler<'generate-ai-date-ranges'> =
 export const regenerateDateMidpoints: APIHandler<'regenerate-date-midpoints'> =
   rateLimitByUser(
     async (props, auth) => {
-      const { question, description, answers, min, max } = props
+      const { question, description, answers, min, max, tab } = props
 
       const prompt = `${userPrompt(
         question,
@@ -176,10 +175,10 @@ export const regenerateDateMidpoints: APIHandler<'regenerate-date-midpoints'> =
       )}\nRanges: ${answers.join(', ')}.
       Generate appropriate midpoint dates for each range.
       RULES:
-      - The midpoints should be dates that represent the expected value for each range.
+      - The midpoints should be the exact middle date of the range.
       - If the range is a log scale, use the geometric mean for the midpoint.
 
-      ${bucketExamples}
+      ${tab === 'buckets' ? bucketExamples : thresholdExamples}
 
       Return ONLY an array of midpoint dates, one for each range, without any other text or formatting.`
 

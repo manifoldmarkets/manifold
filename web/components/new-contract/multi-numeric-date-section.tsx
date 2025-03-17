@@ -175,6 +175,7 @@ export const MultiNumericDateSection = (props: {
         min: minString,
         max: maxString,
         description,
+        tab,
       })
 
       // Update midpoints state
@@ -256,6 +257,7 @@ export const MultiNumericDateSection = (props: {
           <Row className="justify-end gap-2">
             <Button
               color="none"
+              disabled={bucketAnswers.length >= MAX_MULTI_NUMERIC_ANSWERS}
               onClick={addAnswer}
               className="hover:bg-canvas-50 border-ink-300 text-ink-700 bg-canvas-0 focus:ring-primary-500 inline-flex items-center rounded border px-2.5 py-1.5 text-xs font-medium shadow-sm focus:outline-none focus:ring-2 focus:ring-offset-2"
             >
@@ -296,6 +298,7 @@ export const MultiNumericDateSection = (props: {
           <Row className="justify-end gap-2">
             <Button
               color="none"
+              disabled={thresholdAnswers.length >= MAX_MULTI_NUMERIC_ANSWERS}
               onClick={addAnswer}
               className="hover:bg-canvas-50 border-ink-300 text-ink-700 bg-canvas-0 focus:ring-primary-500 inline-flex items-center rounded border px-2.5 py-1.5 text-xs font-medium shadow-sm focus:outline-none focus:ring-2 focus:ring-offset-2"
             >
@@ -349,7 +352,7 @@ export const MultiNumericDateSection = (props: {
               value={maxString}
             />
             <Button
-              className="hidden whitespace-nowrap sm:inline-block"
+              className="hidden whitespace-nowrap sm:inline-flex"
               color="indigo-outline"
               onClick={generateRanges}
               loading={isGeneratingRanges}
