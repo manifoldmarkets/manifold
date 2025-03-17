@@ -247,12 +247,9 @@ export function MultiDateResolutionOrExpectation(props: {
           )}
         </>
       ) : (
-        <>
-          <animated.div className={'mr-2 inline-block'}>
-            {spring.to((val) => formatExpectedDate(val, contract))}
-          </animated.div>
-          <span className="text-base">expected</span>
-        </>
+        <animated.div className={'mr-2 inline-block'}>
+          {spring.to((val) => formatExpectedDate(val, contract))}
+        </animated.div>
       )}
     </span>
   )
