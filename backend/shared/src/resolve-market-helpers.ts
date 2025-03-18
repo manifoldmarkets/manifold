@@ -144,19 +144,20 @@ export const resolveMarketHelper = async (
 
     if (unresolvedContract.mechanism === 'cpmm-multi-1' && answerId) {
       // Only resolve the contract if all other answers are resolved.
-      const allAnswersResolved = unresolvedContract.answers
-        .filter((a) => a.id !== answerId)
-        .every((a) => a.resolution)
+      const allOtherAnswers = unresolvedContract.answers.filter(
+        (a) => a.id !== answerId
+      )
+      const allOtherAnswersResolved = allOtherAnswers.every((a) => a.resolution)
 
       const hasAnswerResolvedYes =
         unresolvedContract.answers.some((a) => a.resolution === 'YES') ||
         outcome === 'YES'
-      const marketCancelled = unresolvedContract.answers.every(
-        (a) => a.resolution === 'CANCEL'
-      )
+      const marketCancelled =
+        allOtherAnswers.every((a) => a.resolution === 'CANCEL') &&
+        outcome === 'CANCEL'
       const finalResolution = marketCancelled ? 'CANCEL' : 'MKT'
       if (
-        allAnswersResolved &&
+        allOtherAnswersResolved &&
         // If the contract has special liquidity per answer, only resolve if an answer is resolved YES.
         (!isSpecialLoveContract(unresolvedContract) || hasAnswerResolvedYes)
       ) {
