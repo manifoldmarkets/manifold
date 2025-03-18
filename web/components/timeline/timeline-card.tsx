@@ -14,7 +14,7 @@ export function TimelineCard({
   path,
   className = '',
   lineColor,
-  backgroundColor = 'bg-gradient-to-br from-fuchsia-50 to-fuchsia-100 dark:from-fuchsia-800/40 dark:to-fuchsia-700/50'
+  backgroundColor = 'bg-fuchsia-50 dark:bg-fuchsia-800/45'
 }: TimelineCardProps) {
   const cardContent = (
     <>

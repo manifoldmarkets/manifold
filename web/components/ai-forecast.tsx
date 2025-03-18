@@ -156,20 +156,6 @@ export const AI_CAPABILITY_CARDS: AICapabilityCard[] = [
     displayType: 'binary-odds'
   },
   {
-    title: 'CodeForces Top Score',
-    description: '>80% on Frontier Math by EOY',
-    marketId: 'RSAcZtOZyl',
-    type: 'benchmark',
-    displayType: 'top-one-mcq'
-  },
-    {
-    title: 'Frontier Math Top Score',
-    description: 'top performance on frontier math',
-    marketId: 'Uu5q0usuQg',
-    type: 'benchmark',
-    displayType: 'top-one-mcq'
-  },
-  {
     title: 'SWE Bench Top Score',
     description: 'Top SWE Bench score by EOY',
     marketId: 'placeholder-2',
@@ -182,6 +168,20 @@ export const AI_CAPABILITY_CARDS: AICapabilityCard[] = [
     marketId: 'tzsZCn85RQ',
     type: 'benchmark',
     displayType: 'binary-odds'
+  },
+  {
+    title: 'CodeForces Top Score',
+    description: '>80% on Frontier Math by EOY',
+    marketId: 'RSAcZtOZyl',
+    type: 'benchmark',
+    displayType: 'top-one-mcq'
+  },
+    {
+    title: 'Frontier Math Top Score',
+    description: 'top performance on frontier math',
+    marketId: 'Uu5q0usuQg',
+    type: 'benchmark',
+    displayType: 'top-one-mcq'
   },
   
   // Prizes
@@ -305,7 +305,7 @@ function CardTitle({
             <AIModelIcon title={title} />
           </div>
         )}
-        <h3 className="font-semibold text-gray-900 dark:text-gray-50 text-lg">{title}</h3>
+        <h3 className="font-semibold text-gray-900 dark:text-gray-100 text-lg">{title}</h3>
       </div>
       
       {showTooltip && (
@@ -336,7 +336,7 @@ function getAccentColor(type: string) {
     case 'benchmark': return 'text-teal-700 dark:text-teal-500';
     case 'prize': return 'text-amber-700 dark:text-amber-500';
     case 'misuse': return 'text-rose-700 dark:text-rose-500';
-    case '2028-forecast': return 'text-cyan-700 dark:text-cyan-500';
+    case '2028-forecast': return 'text-sky-700 dark:text-sky-500';
     default: return 'text-primary-600 dark:text-primary-500';
   }
 }
@@ -371,29 +371,29 @@ function getCardBgColor(className: string) {
     cardType = 'monthly';
   }
   
-  // Card backgrounds with subtle gradients
+  // Card background colors
   switch(cardType) {
     case 'monthly':
-      return 'bg-gradient-to-br from-primary-50 to-primary-100 dark:from-primary-900/25 dark:to-primary-800/30';
+      return 'bg-primary-50 dark:bg-primary-800/20';
     default:
       // If we don't know the type from className, use the card type patterns
       if (className.includes('prize')) {
-        return 'bg-gradient-to-br from-amber-50 to-amber-100 dark:from-amber-800/40 dark:to-amber-700/50';
+        return 'bg-amber-50 dark:bg-amber-800/30';
       }
       if (className.includes('benchmark')) {
-        return 'bg-gradient-to-br from-teal-50 to-teal-100 dark:from-teal-900/25 dark:to-teal-800/30';
+        return 'bg-teal-50 dark:bg-teal-800/38';
       }
       if (className.includes('releases')) {
-        return 'bg-gradient-to-br from-fuchsia-50 to-fuchsia-100 dark:from-fuchsia-800/40 dark:to-fuchsia-700/50';
+        return 'bg-fuchsia-50 dark:bg-fuchsia-800/30';
       }
       if (className.includes('misuse')) {
-        return 'bg-gradient-to-br from-rose-50 to-rose-100 dark:from-rose-800/40 dark:to-rose-700/50';
+        return 'bg-rose-50 dark:bg-rose-800/30';
       }
       if (className.includes('2028-forecast')) {
-        return 'bg-gradient-to-br from-cyan-50 to-cyan-100 dark:from-cyan-800/40 dark:to-cyan-700/50';
+        return 'bg-cyan-50 dark:bg-cyan-800/30';
       }
-      // Default background for unknown card types
-      return 'bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-700/60 dark:to-gray-600/70';
+      // Default background
+      return 'bg-gray-50 dark:bg-gray-700/20';
   }
 }
 
@@ -733,7 +733,7 @@ function CapabilityCard({
           {displayType === 'binary-odds' ? (
             <div className="flex flex-col justify-between h-full w-full">
               <div className="flex-1 flex items-center justify-center">
-                <div className={`font-medium text-center ${displayValue.length > 5 ? 'text-6xl' : 'text-7xl'}`}>
+                <div className={`font-medium text-center ${displayValue.length > 5 ? 'text-6xl' : 'text-6xl'}`}>
                   <span className={getGradient(type)}>
                     {displayValue}
                   </span>
@@ -746,10 +746,10 @@ function CapabilityCard({
                   {type === 'benchmark' && title.includes('Frontier Math') && 'An LLM gets 80%+'}
                   {type === 'benchmark' && title.includes('SWE Bench') && 'LLM Top Sscore'}
                   {type === 'benchmark' && title.includes('Last Exam') && 'LLM > Human'}
-                  {type === 'prize' && title.includes('Millennium') && 'Chance of solving a million-dollar math problem'}
-                  {type === 'prize' && title.includes('Arc AGI') && 'Probability of meeting AGI criteria by 2025'}
-                  {type === 'prize' && title.includes('Turing Test') && 'Odds of passing rigorous human-indistinguishability test'}
-                  {type === 'misuse' && title.includes('Hacking') && 'Probability of AI independently compromising systems'}
+                  {type === 'prize' && title.includes('Millennium') && 'Chance of solving a million-dollar math problem by June 2025'}
+                  {type === 'prize' && title.includes('Arc AGI') && 'Probability of claiming Arc-AGI prize by end of 2025'}
+                  {type === 'prize' && title.includes('Turing Test') && 'Probability of passing this variation of the Turing Test by 2029'}
+                  {type === 'misuse' && title.includes('Hacking') && 'Probability of AI independently compromising systems by end of 2025'}
                   {type === '2028-forecast' && title.includes('Romantic') && 'At least 1/1000 Americans talks weekly with one'}
                   {type === '2028-forecast' && title.includes('Blackmail') && 'Risk of AI being used for automated blackmail'}
                   {type === '2028-forecast' && title.includes('Economic') && 'Break in trend for GDP growth, GDP per capita, productivity, or unemployment'}
@@ -795,6 +795,7 @@ function getCompanyLogo(companyName: string): React.ComponentType | null {
       return SiAnthropic
     case 'gemini':
     case 'deepmind':
+    case 'google':
       return SiGooglegemini
     case 'xai':
     case 'grok':
@@ -849,7 +850,7 @@ function ModelReleasesTimeline({ cards, contracts }: ModelReleasesTimelineProps)
     <TimelineCard
       items={timelineItems}
       lineColor="bg-fuchsia-700 dark:bg-fuchsia-500"
-      backgroundColor="bg-gradient-to-br from-fuchsia-50 to-fuchsia-100 dark:from-fuchsia-800/40 dark:to-fuchsia-700/50"
+      backgroundColor="bg-fuchsia-50 dark:bg-fuchsia-800/20"
     />
   )
 }
@@ -880,7 +881,7 @@ export function AIForecast({ whenAgi, contracts = [], hideTitle }: AIForecastPro
     },
     'benchmark': {
       label: 'Benchmarks',
-      description: 'How smart will the LLMs be?'
+      description: 'How smart will the LLMs be by the end of this year?'
     },
     'prize': {
       label: 'Prizes',
@@ -892,7 +893,7 @@ export function AIForecast({ whenAgi, contracts = [], hideTitle }: AIForecastPro
     },
     '2028-forecast': {
       label: 'Predictions for 2028',
-      description: 'What happens by 2028'
+      description: 'What happens by 2028?'
     }
   }
 
@@ -983,13 +984,6 @@ export function AIForecast({ whenAgi, contracts = [], hideTitle }: AIForecastPro
             >
               When will we achieve artificial general intelligence?
             </Link>
-            <div className="p-1 rounded-full hover:bg-primary-50 transition-colors duration-200">
-              <CopyLinkOrShareButton
-                url={`https://${ENV_CONFIG.domain}/${ENDPOINT}`}
-                eventTrackingName="copy ai share link"
-                tooltip="Share"
-              />
-            </div>
           </Row>
           
           <Row className="mt-4 justify-between flex-wrap md:flex-nowrap">

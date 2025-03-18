@@ -49,7 +49,7 @@ export const Clock = (props: { year: number }) => {
   }, [year])
   const dotClass = ' h-1 w-1 sm:h-1.5 sm:w-1.5 rounded-sm'
   const colon = (
-    <Col className={'h-full justify-center  gap-2.5 sm:gap-4'}>
+    <Col className={'h-full justify-center gap-2.5 sm:gap-4'}>
       <div style={{ backgroundColor: 'red' }} className={dotClass} />
       <div
         style={{ backgroundColor: 'red' }}
@@ -58,11 +58,11 @@ export const Clock = (props: { year: number }) => {
     </Col>
   )
   return (
-    <Row className={'gap-1 text-xl sm:text-7xl'}>
+    <Row className={'gap-1 text-xl sm:text-7xl relative'}>
       <Row
         style={{ color: 'red' }}
         className={
-          'w-full justify-center gap-1.5 rounded-lg bg-gray-900 p-4 ring-8 ring-gray-300 sm:gap-3 sm:pl-10 sm:pr-6'
+          'w-full justify-center gap-1.5 rounded-lg bg-gray-900 p-4 ring-2 ring-gray-300 sm:gap-3 sm:pl-10 sm:pr-6'
         }
       >
         <TimeUnit value={timeUntil.years.toString()} unit={'years'} />
