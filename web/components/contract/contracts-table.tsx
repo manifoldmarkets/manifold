@@ -218,11 +218,21 @@ export function ContractStatusLabel(props: {
     }
     case 'MULTI_NUMERIC': {
       const val = getFormattedExpectedValue(contract, false)
-      return <span className={clsx(probTextColor, className)}>{val}</span>
+      const longVal = getFormattedExpectedValue(contract)
+      return (
+        <Tooltip text={longVal}>
+          <span className={clsx(probTextColor, className)}>{val}</span>
+        </Tooltip>
+      )
     }
     case 'DATE': {
       const val = getFormattedExpectedDate(contract, false)
-      return <span className={clsx(probTextColor, className)}>{val}</span>
+      const longVal = getFormattedExpectedDate(contract)
+      return (
+        <Tooltip text={longVal}>
+          <span className={clsx(probTextColor, className)}>{val}</span>
+        </Tooltip>
+      )
     }
     case 'MULTIPLE_CHOICE': {
       return <ContractMinibar width={width} contract={contract} />
