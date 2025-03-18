@@ -94,11 +94,10 @@ export async function getContractParams(
   ])
 
   // TODO: getMultiBetPoints breaks NUMBER market time series charts and I think MULTI_NUMERIC as well when they get enough bets
-  // TODO: remove multiPointsString for markets with more than x answers as it's not displayed by default anyways
   const multiPoints = isMulti ? getMultiBetPoints(allBetPoints, contract) : {}
   const multiPointsString = mapValues(multiPoints, (v) => pointsToBase64(v))
 
-  const ogPoints = !isMulti ? binAvg(allBetPoints) : []
+  const ogPoints = isMulti ? [] : binAvg(allBetPoints)
   // Non-numeric markets don't need as much precision
   const pointsString = pointsToBase64Float32(
     ogPoints.map((p) => [p.x, p.y] as const)
@@ -195,7 +194,6 @@ export const getAnswerProbAtEveryBetTime = (
   const sortedTimestamps = Array.from(allUniqueProbChangeTimes).sort(
     (a, b) => a - b
   )
-
   const pointsByAns = {} as { [answerId: string]: { x: number; y: number }[] }
   answers.forEach((ans) => {
     const startingProb = getInitialAnswerProbability(contract, ans) ?? 0

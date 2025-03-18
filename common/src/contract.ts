@@ -11,6 +11,7 @@ import { CASH_SUFFIX, ENV_CONFIG } from './envs/constants'
 import { Fees } from './fees'
 import { PollOption } from './poll-option'
 import { formatMoney, formatPercent } from './util/format'
+import { MultiBase64Points } from './chart'
 
 /************************************************
 
@@ -471,7 +472,7 @@ export type CashType = {
   contract: Contract
   lastBetTime?: number
   pointsString: string
-  multiPointsString: { [answerId: string]: string }
+  multiPointsString: MultiBase64Points
   totalPositions: number
   totalBets: number
 }
@@ -480,7 +481,7 @@ export type ContractParams = {
   contract: Contract
   lastBetTime?: number
   pointsString?: string
-  multiPointsString?: { [answerId: string]: string }
+  multiPointsString?: MultiBase64Points
   comments: ContractComment[]
   totalPositions: number
   totalBets: number
