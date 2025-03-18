@@ -329,7 +329,11 @@ export function ContractParamsForm(props: {
 
   const isValidQuestion =
     question.length > 0 && question.length <= MAX_QUESTION_LENGTH
-  const hasAnswers = outcomeType === 'MULTIPLE_CHOICE' || outcomeType === 'POLL'
+  const hasAnswers =
+    outcomeType === 'MULTIPLE_CHOICE' ||
+    outcomeType === 'POLL' ||
+    outcomeType === 'MULTI_NUMERIC' ||
+    outcomeType === 'DATE'
   const isValidMultipleChoice =
     !hasAnswers || answers.every((answer) => answer.trim().length > 0)
 
@@ -373,11 +377,7 @@ export function ContractParamsForm(props: {
     (outcomeType === 'NUMBER'
       ? numberOfBuckets <= NUMBER_BUCKETS_MAX && numberOfBuckets >= 2
       : true) &&
-    (outcomeType !== 'MULTI_NUMERIC' ||
-      ((minMaxValid || isValidMultipleChoice) && unit !== '')) &&
-    (outcomeType === 'DATE'
-      ? minString !== '' && maxString !== '' && isValidMultipleChoice
-      : true)
+    (outcomeType !== 'MULTI_NUMERIC' || (minMaxValid && unit !== ''))
 
   const [errorText, setErrorText] = useState<string>('')
   useEffect(() => {
