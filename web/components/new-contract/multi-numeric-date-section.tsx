@@ -159,9 +159,6 @@ export const MultiNumericDateSection = (props: {
     tab: 'thresholds' | 'buckets'
   ) => {
     setRegenerateError('')
-    // Only regenerate midpoints if we have min and max
-    if (min === '' || max === '') return
-
     try {
       // Call regenerate-date-midpoints without tab parameter
       const result = await api('regenerate-date-midpoints', {
