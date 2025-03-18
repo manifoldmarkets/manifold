@@ -248,7 +248,9 @@ export function MultiDateResolutionOrExpectation(props: {
           )}
         </>
       ) : display === 'clock' ? (
-        <Clock ms={value} size="sm" />
+        <Tooltip text={`tz: ${timezone}`} placement="bottom">
+          <Clock ms={value} size="sm" />
+        </Tooltip>
       ) : (
         <Tooltip text={`tz: ${timezone}`} placement="bottom">
           <animated.div className={'mr-2 inline-block'}>
