@@ -997,7 +997,7 @@ export function AIForecast({ whenAgi, contracts = [], hideTitle }: AIForecastPro
               </div>
               <div className="w-full flex justify-center">
                 <div className="w-full">
-                  <Clock year={expectedValueAGI} />
+                  <Clock year={expectedValueAGI} className="w-full" />
                 </div>
               </div>
               <NumericBetPanel

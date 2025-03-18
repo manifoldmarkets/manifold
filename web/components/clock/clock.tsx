@@ -6,6 +6,7 @@ import { Col } from 'web/components/layout/col'
 import { Display } from './display'
 import clsx from 'clsx'
 import { useIsClient } from 'web/hooks/use-is-client'
+import { CopyLinkOrShareButton } from 'web/components/buttons/copy-link-button'
 
 dayjs.extend(duration)
 
@@ -61,8 +62,9 @@ export const Clock = (props: {
   ms?: number
   className?: string
   size?: 'xs' | 'sm' | 'md' | 'lg'
+  url?: string
 }) => {
-  const { year, ms, className, size = 'lg' } = props
+  const { year, ms, className, size = 'lg', url } = props
   const [timeUntil, setTimeUntil] = useState(
     ms !== undefined
       ? getTimeUntilFromMs(ms)
@@ -95,7 +97,7 @@ export const Clock = (props: {
       displayHeight: { mobile: 15, desktop: 20 },
       unitText: 'text-[8px] sm:text-xs',
       columnGap: 'gap-0.5 sm:gap-1',
-      ringSize: 'ring-2',
+      ringSize: 'ring-1',
     },
     sm: {
       clockText: 'text-sm sm:text-base',
@@ -105,7 +107,7 @@ export const Clock = (props: {
       displayHeight: { mobile: 20, desktop: 30 },
       unitText: 'text-[9px] sm:text-xs',
       columnGap: 'gap-0.5 sm:gap-1.5',
-      ringSize: 'ring-2',
+      ringSize: 'ring-1',
     },
     md: {
       clockText: 'text-base sm:text-2xl',
@@ -115,7 +117,7 @@ export const Clock = (props: {
       displayHeight: { mobile: 25, desktop: 40 },
       unitText: 'text-[10px] sm:text-sm',
       columnGap: 'gap-1 sm:gap-2',
-      ringSize: 'ring-6',
+      ringSize: 'ring-1',
     },
     lg: {
       clockText: 'text-xl sm:text-7xl',
@@ -125,7 +127,7 @@ export const Clock = (props: {
       displayHeight: { mobile: 30, desktop: 60 },
       unitText: 'text-xs sm:text-sm',
       columnGap: 'gap-1.5 sm:gap-3',
-      ringSize: 'ring-8',
+      ringSize: 'ring-2',
     },
   }
 
@@ -143,11 +145,11 @@ export const Clock = (props: {
   )
 
   return (
-    <Row className={clsx(config.clockText, 'gap-1', className)}>
+    <Row className={clsx(config.clockText, 'gap-1 w-full', className)}>
       <Row
         style={{ color: 'red' }}
         className={clsx(
-          'justify-center rounded-lg bg-gray-900 ring ring-gray-300',
+          'w-full justify-center rounded-lg bg-gray-900 ring ring-gray-300',
           config.padding,
           config.columnGap,
           config.ringSize
