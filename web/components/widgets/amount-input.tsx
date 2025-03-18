@@ -161,7 +161,6 @@ export function BuyAmountInput(props: {
   quickButtonAmountSize?: 'large' | 'small'
   disableQuickButtons?: boolean
   token?: InputTokenType
-  liquidityTier?: number | undefined
   sliderColor?: keyof typeof sliderColors
 }) {
   const {
@@ -169,7 +168,6 @@ export function BuyAmountInput(props: {
     onChange,
     error,
     setError,
-    liquidityTier,
     disabled,
     binaryOutcome,
     showBalance,
@@ -297,7 +295,7 @@ export function BuyAmountInput(props: {
             onAmountChange={onChange}
             binaryOutcome={binaryOutcome}
             disabled={disabled}
-            smallAmounts={!hasLotsOfMoney || liquidityTier === 0}
+            smallAmounts={!hasLotsOfMoney}
             token={token}
             sliderColor={sliderColor}
           />
