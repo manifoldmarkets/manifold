@@ -15,9 +15,9 @@ export const TimelineItem = ({ item, position, verticalOffset }: TimelineItemPro
   const itemContent = (
     <div className="flex items-center rounded-full py-1 px-2.5 hover:shadow-md transition-all">
       {item.icon && <div className="mr-1.5 text-primary-600 dark:text-primary-500">{item.icon}</div>}
-      <span className="text-sm font-medium whitespace-nowrap text-gray-900 dark:text-gray-100">{item.title}</span>
+      <span className="text-lg font-medium whitespace-nowrap text-gray-900 dark:text-gray-100">{item.title}</span>
       {item.probability !== undefined && (
-        <span className="ml-1.5 text-xs text-gray-600 dark:text-gray-400">
+        <span className="ml-1.5 text-sm text-gray-600 dark:text-gray-400">
           ({Math.round(item.probability * 100)}%)
         </span>
       )}

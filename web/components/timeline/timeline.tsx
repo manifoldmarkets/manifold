@@ -231,7 +231,7 @@ export const Timeline = ({
                     style={{ left: `${position}%`, transform: 'translateX(-50%)' }}
                   >
                     {/* Month label positioned above the timeline */}
-                    <div className="text-xs text-gray-600 dark:text-gray-400 text-center whitespace-nowrap mb-2">
+                    <div className="text-sm text-gray-600 dark:text-gray-400 text-center whitespace-nowrap mb-2">
                       {formatDateFn(date, 'MMM yyyy')}
                     </div>
                   </div>

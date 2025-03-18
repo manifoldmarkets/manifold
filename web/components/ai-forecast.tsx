@@ -813,7 +813,7 @@ interface ModelReleasesTimelineProps {
 function getEstimatedReleaseDate(title: string, index: number): Date {
   // Hardcoded dates for specific model releases
   if (title.includes('GPT-5')) return new Date(2025, 5, 15)         // June 15, 2025
-  if (title.includes('Claude 3.7')) return new Date(2025, 7, 1)      // August 1, 2025
+  if (title.includes('Claude 3.7')) return new Date(2025, 8, 8)      // August 1, 2025
   if (title.includes('Gemini 3')) return new Date(2025, 4, 1)        // May 1, 2025
   if (title.includes('Grok 4')) return new Date(2025, 10, 10)        // November 10, 2025
   if (title.includes('Deepseek R2')) return new Date(2025, 6, 5)     // July 5, 2025
