@@ -491,6 +491,7 @@ export function ContractParamsForm(props: {
         sportsEventId: params?.sportsEventId,
         sportsLeague: params?.sportsLeague,
         unit: unit.trim(),
+        timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
       })
 
       const newContract = await api('market', createProps as any)

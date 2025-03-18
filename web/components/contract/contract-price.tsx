@@ -222,7 +222,7 @@ export function MultiDateResolutionOrExpectation(props: {
   className?: string
 }) {
   const { contract, className } = props
-  const { answers, resolution } = contract
+  const { answers, resolution, timezone } = contract
   const resolvedAnswer = answers.find((a) => a.id === resolution)
   const value = getExpectedDate(contract)
   const formattedValue = formatExpectedDate(value, contract)
@@ -247,9 +247,11 @@ export function MultiDateResolutionOrExpectation(props: {
           )}
         </>
       ) : (
-        <animated.div className={'mr-2 inline-block'}>
-          {spring.to((val) => formatExpectedDate(val, contract))}
-        </animated.div>
+        <Tooltip text={`tz: ${timezone}`} placement="bottom">
+          <animated.div className={'mr-2 inline-block'}>
+            {spring.to((val) => formatExpectedDate(val, contract))}
+          </animated.div>
+        </Tooltip>
       )}
     </span>
   )

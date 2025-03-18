@@ -67,6 +67,7 @@ export function getNewContract(
     // Multi-numeric
     unit: string | undefined
     midpoints: number[] | undefined
+    timezone: string | undefined
   }
 ) {
   const {
@@ -99,6 +100,7 @@ export function getNewContract(
     siblingContractId,
     unit,
     midpoints,
+    timezone,
   } = props
   const createdTime = Date.now()
 
@@ -138,7 +140,8 @@ export function getNewContract(
         answers,
         midpoints ?? [],
         ante,
-        shouldAnswersSumToOne ?? true
+        shouldAnswersSumToOne ?? true,
+        timezone ?? ''
       ),
   }[outcomeType]()
 
@@ -381,7 +384,8 @@ const getDateProps = (
   answers: string[],
   midpoints: number[],
   ante: number,
-  shouldAnswersSumToOne: boolean
+  shouldAnswersSumToOne: boolean,
+  timezone: string
 ) => {
   const answerObjects = createAnswers(
     contractId,
@@ -400,6 +404,7 @@ const getDateProps = (
     answers: answerObjects,
     totalLiquidity: ante,
     subsidyPool: 0,
+    timezone,
   }
 
   return system

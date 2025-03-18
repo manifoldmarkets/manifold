@@ -308,6 +308,7 @@ export const createMultiDateSchema = z.object({
   midpoints: z.array(z.number().safe()).max(MAX_MULTI_NUMERIC_ANSWERS),
   shouldAnswersSumToOne: z.boolean(),
   addAnswersMode: z.enum(['DISABLED']).default('DISABLED'),
+  timezone: z.string(),
 })
 
 export const createBountySchema = z.object({
