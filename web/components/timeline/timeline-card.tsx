@@ -26,7 +26,7 @@ export function TimelineCard({
         <Timeline 
           items={items} 
           lineColor={lineColor} 
-          className="px-6 py-2"
+          className="px-4 sm:px-6 py-2"
         />
       </div>
     </>

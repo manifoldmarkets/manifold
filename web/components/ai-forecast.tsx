@@ -835,7 +835,7 @@ function ModelReleasesTimeline({ cards, contracts }: ModelReleasesTimelineProps)
         title: card.title,
         path: contract ? contractPath(contract) : `#${card.marketId}`,
         releaseDate,
-        icon: <AIModelIcon title={card.title} className="w-6 h-6" />
+        icon: <AIModelIcon title={card.title} className="w-4 h-4 sm:w-6 sm:h-6" />
       } as TimelineItemData
     })
   }, [cards, contracts])
