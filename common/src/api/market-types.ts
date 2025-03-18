@@ -375,6 +375,7 @@ export const updateMarketProps = z
     descriptionHtml: z.string().optional(),
     descriptionMarkdown: z.string().optional(),
     descriptionJson: z.string().optional(),
+    display: z.enum(['clock', 'default']).optional(),
   })
   .strict()
 

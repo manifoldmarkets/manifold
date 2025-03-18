@@ -284,6 +284,7 @@ export type MultiNumeric = {
 export type MultiDate = Omit<MultiNumeric, 'outcomeType' | 'unit'> & {
   outcomeType: 'DATE'
   timezone: string
+  display?: 'clock'
 }
 
 export type Stonk = {

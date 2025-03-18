@@ -30,6 +30,7 @@ import {
 import { formatExpectedValue, getExpectedValue } from 'common/multi-numeric'
 import { formatExpectedDate } from 'common/multi-date'
 import { getExpectedDate } from 'common/multi-date'
+import { Clock } from '../clock/clock'
 
 export function BinaryResolutionOrChance(props: {
   contract: BinaryContract
@@ -222,7 +223,7 @@ export function MultiDateResolutionOrExpectation(props: {
   className?: string
 }) {
   const { contract, className } = props
-  const { answers, resolution, timezone } = contract
+  const { answers, resolution, timezone, display } = contract
   const resolvedAnswer = answers.find((a) => a.id === resolution)
   const value = getExpectedDate(contract)
   const formattedValue = formatExpectedDate(value, contract)
@@ -246,6 +247,8 @@ export function MultiDateResolutionOrExpectation(props: {
             />
           )}
         </>
+      ) : display === 'clock' ? (
+        <Clock ms={value} size="sm" />
       ) : (
         <Tooltip text={`tz: ${timezone}`} placement="bottom">
           <animated.div className={'mr-2 inline-block'}>
