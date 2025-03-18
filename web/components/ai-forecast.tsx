@@ -280,7 +280,7 @@ function CardBase({
     >
       {children}
     </ClickFrame>
-  );
+  )
 }
 
 // Component for card title with tooltip for benchmarks and prizes
@@ -328,99 +328,87 @@ function AIModelIcon({ title, className = "h-5 w-5" }: { title: string, classNam
 // Get accent color based on card type
 function getAccentColor(type: string) {
   switch(type) {
-    case 'monthly': return 'text-primary-600 dark:text-primary-500';
-    case 'releases': return 'text-fuchsia-700 dark:text-fuchsia-500';
-    case 'benchmark': return 'text-teal-700 dark:text-teal-500';
-    case 'prize': return 'text-amber-700 dark:text-amber-500';
-    case 'misuse': return 'text-rose-700 dark:text-rose-500';
-    case '2028-forecast': return 'text-sky-700 dark:text-sky-500';
-    default: return 'text-primary-600 dark:text-primary-500';
+    case 'monthly': return 'text-primary-600 dark:text-primary-500'
+    case 'releases': return 'text-fuchsia-700 dark:text-fuchsia-500'
+    case 'benchmark': return 'text-teal-700 dark:text-teal-500'
+    case 'prize': return 'text-amber-700 dark:text-amber-500'
+    case 'misuse': return 'text-rose-700 dark:text-rose-500'
+    case '2028-forecast': return 'text-sky-700 dark:text-sky-500'
+    default: return 'text-primary-600 dark:text-primary-500'
   }
 }
 
 // Get gradient based on card type
 function getGradient(type: string, isText = true) {
-  const textPrefix = isText ? 'text-transparent bg-clip-text ' : '';
+  const textPrefix = isText ? 'text-transparent bg-clip-text ' : ''
   
   switch(type) {
     case 'releases':
-      return `${textPrefix}bg-gradient-to-r from-fuchsia-500 via-fuchsia-600 to-fuchsia-700 dark:from-fuchsia-400 dark:via-fuchsia-500 dark:to-fuchsia-600`;
+      return `${textPrefix}bg-gradient-to-r from-fuchsia-500 via-fuchsia-600 to-fuchsia-700 dark:from-fuchsia-400 dark:via-fuchsia-500 dark:to-fuchsia-600`
     case 'benchmark':
-      return `${textPrefix}bg-gradient-to-r from-teal-500 via-teal-600 to-teal-700 dark:from-teal-400 dark:via-teal-500 dark:to-teal-600`;
+      return `${textPrefix}bg-gradient-to-r from-teal-500 via-teal-600 to-teal-700 dark:from-teal-400 dark:via-teal-500 dark:to-teal-600`
     case 'prize':
-      return `${textPrefix}bg-gradient-to-br from-amber-500 via-amber-600 to-amber-700 dark:from-amber-400 dark:via-amber-500 dark:to-amber-600`;
+      return `${textPrefix}bg-gradient-to-br from-amber-500 via-amber-600 to-amber-700 dark:from-amber-400 dark:via-amber-500 dark:to-amber-600`
     case 'misuse':
-      return `${textPrefix}bg-gradient-to-br from-rose-500 via-rose-600 to-rose-700 dark:from-rose-400 dark:via-rose-500 dark:to-rose-600`;
+      return `${textPrefix}bg-gradient-to-br from-rose-500 via-rose-600 to-rose-700 dark:from-rose-400 dark:via-rose-500 dark:to-rose-600`
     case '2028-forecast':
-      return `${textPrefix}bg-gradient-to-br from-cyan-500 via-cyan-600 to-cyan-700 dark:from-cyan-400 dark:via-cyan-500 dark:to-cyan-600`;
+      return `${textPrefix}bg-gradient-to-br from-cyan-500 via-cyan-600 to-cyan-700 dark:from-cyan-400 dark:via-cyan-500 dark:to-cyan-600`
     default:
-      return `${textPrefix}bg-gradient-to-br from-primary-500 via-primary-600 to-primary-700 dark:from-primary-400 dark:via-primary-500 dark:to-primary-600`;
+      return `${textPrefix}bg-gradient-to-br from-primary-500 via-primary-600 to-primary-700 dark:from-primary-400 dark:via-primary-500 dark:to-primary-600`
   }
 }
 
 // Get card background color based on card class or type
 function getCardBgColor(className: string) {
   // Extract card type from className if it exists
-  let cardType = '';
-  if (className.includes('md:col-span-2')) {
-    cardType = 'monthly'; // Special case for the large monthly card
-  } else if (className.includes('monthly')) {
-    cardType = 'monthly';
+  let cardType = ''
+  if (className.includes('monthly')) {
+    cardType = 'monthly' // Special case for the large monthly card
   }
   
   // Card background colors
   switch(cardType) {
     case 'monthly':
-      return 'bg-primary-50 dark:bg-primary-800/20';
+      return 'bg-primary-50 dark:bg-primary-800/20'
     default:
       // If we don't know the type from className, use the card type patterns
       if (className.includes('prize')) {
-        return 'bg-amber-50 dark:bg-amber-800/30';
+        return 'bg-amber-50 dark:bg-amber-800/30'
       }
       if (className.includes('benchmark')) {
-        return 'bg-teal-50 dark:bg-teal-800/38';
+        return 'bg-teal-50 dark:bg-teal-800/38'
       }
       if (className.includes('releases')) {
-        return 'bg-fuchsia-50 dark:bg-fuchsia-800/30';
+        return 'bg-fuchsia-50 dark:bg-fuchsia-800/30'
       }
       if (className.includes('misuse')) {
-        return 'bg-rose-50 dark:bg-rose-800/30';
+        return 'bg-rose-50 dark:bg-rose-800/30'
       }
       if (className.includes('2028-forecast')) {
-        return 'bg-cyan-50 dark:bg-cyan-800/30';
+        return 'bg-cyan-50 dark:bg-cyan-800/30'
       }
       // Default background
-      return 'bg-gray-50 dark:bg-gray-700/20';
+      return 'bg-gray-50 dark:bg-gray-700/20'
   }
 }
 
 // Create contract click handler
 function createContractClickHandler(contract: Contract | null, liveContract: Contract | null, title: string, marketId: string, displayType?: string) {
   return () => {
-    console.log(`[${displayType || 'standard'}] ${title} - Click handler called, marketId:`, marketId);
-    console.log(`Contract found:`, !!contract, 'liveContract:', !!liveContract);
-    
     if (liveContract) {
       try {
-        // Try to get the path directly from liveContract
-        const path = contractPath(liveContract);
-        console.log(`[${displayType || 'standard'}] ${title} - Opening path from liveContract:`, path);
-        window.open(path, '_blank');
-      } catch (e) {
-        console.error("Error opening contract path:", e);
-        // If we have the original contract, try using that
+        // Get the path directly from liveContract
+        const path = contractPath(liveContract)
+        window.open(path, '_blank')
+      } catch {
+        // If we have the original contract, try using that as fallback
         if (contract) {
-          try {
-            const path = contractPath(contract);
-            console.log(`[${displayType || 'standard'}] ${title} - Opening fallback path from contract:`, path);
-            window.open(path, '_blank');
-          } catch (e2) {
-            console.error("Error with fallback path too:", e2);
-          }
+          const path = contractPath(contract)
+          window.open(path, '_blank')
         }
       }
     }
-  };
+  }
 }
 
 // Capability Card Component for the static cards with market data
@@ -441,11 +429,9 @@ function CapabilityCard({
 }) {
   // Find the actual contract by ID
   const contract = useMemo(() => contracts.find(c => c.id === marketId), [contracts, marketId])
-  console.log(`[${displayType}] ${title} - contract found:`, !!contract, 'id:', marketId)
   
   // Always call hooks unconditionally
   const liveContract = contract ? useLiveContract(contract) : null
-  console.log(`[${displayType}] ${title} - liveContract:`, !!liveContract, 'path:', liveContract ? contractPath(liveContract) : 'N/A')
   
   // Get the expected value if it's a numeric contract
   const numericValue = liveContract && liveContract.outcomeType === 'NUMBER' 
@@ -462,8 +448,6 @@ function CapabilityCard({
     if (answers.length < 2) {
       return [{ text: '—', probability: 0 }, { text: '—', probability: 0 }]
     }
-    
-    console.log("Raw answers for top-two-mcq:", answers)
     
     // Sort answers by probability in descending order
     const sortedAnswers = [...answers].sort((a, b) => {
@@ -482,8 +466,6 @@ function CapabilityCard({
         probability: sortedAnswers[1].prob ?? 0 
       }
     ]
-    
-    console.log("Final top-two-mcq results:", result)
     return result
   }
   
@@ -491,17 +473,13 @@ function CapabilityCard({
   const getTopOneOdds = () => {
     if (!liveContract || 
         (liveContract.outcomeType !== 'MULTIPLE_CHOICE')) {
-        console.log("Contract not valid for top-one-mcq:", liveContract?.outcomeType)
         return { text: '—', probability: 0 }
     }
     
     const answers = liveContract.answers || []
     if (answers.length < 1) {
-      console.log("No answers found for top-one-mcq")
       return { text: '—', probability: 0 }
     }
-    
-    console.log("Raw answers for top-one-mcq:", answers)
     
     // Sort answers by probability in descending order and get top one
     const sortedAnswers = [...answers].sort((a, b) => {
@@ -510,14 +488,11 @@ function CapabilityCard({
       return bProb - aProb
     })
     
-    console.log("Sorted top answer for top-one-mcq:", sortedAnswers[0])
-    
     const result = { 
       text: sortedAnswers[0].text || '—', 
       probability: sortedAnswers[0].prob ?? 0 
     }
     
-    console.log("Final result for top-one-mcq:", result)
     return result
   }
   
@@ -530,7 +505,6 @@ function CapabilityCard({
   topCompanies = getTopTwoOdds()
 } else if (displayType === 'top-one-mcq') {
   topModel = getTopOneOdds()
-  console.log(`[${title}] topModel set to:`, topModel)
 } else if (displayType === 'binary-odds') {
   if (liveContract && liveContract.outcomeType === 'BINARY') {
     const prob = liveContract.prob !== undefined 
@@ -963,7 +937,7 @@ export function AIForecast({ whenAgi, contracts = [], hideTitle }: AIForecastPro
                     contracts={contracts}
                     className={`${card.type} ${cardClassName}`}
                   />
-                );
+                )
               })}
             </div>
           )}
