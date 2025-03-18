@@ -155,7 +155,7 @@ export const Timeline = ({
 
   return (
     <div className={`${className}`}>
-      <div className="relative mb-8 mt-16">
+      <div className="relative mb-8 mt-10 sm:mt-16">
         {/* Main container for timeline and item icons */}
         <div className="relative w-full px-8">
           {timelineScrollPosition > 0 && (
@@ -164,7 +164,7 @@ export const Timeline = ({
               className="absolute -left-6 top-[-20px] p-2 rounded-full text-primary-600 z-10"
               aria-label="Scroll backward in time"
             >
-              <MdChevronLeft className="h-6 w-6" />
+              <MdChevronLeft className="h-5 w-5 sm:h-6 sm:w-6" />
             </button>
           )}
           
@@ -174,7 +174,7 @@ export const Timeline = ({
               className="absolute -right-6 top-[-20px] p-2 rounded-full text-primary-600 z-10"
               aria-label="Scroll forward in time"
             >
-              <MdChevronRight className="h-6 w-6" />
+              <MdChevronRight className="h-5 w-5 sm:h-6 sm:w-6" />
             </button>
           )}
         
@@ -200,8 +200,7 @@ export const Timeline = ({
                 
                 // If items are less than 15% apart
                 if (next.position - current.position < 15) {
-                  // Alternate vertical positions
-                  next.verticalOffset = i % 2 === 0 ? 30 : -30
+                  next.verticalOffset = i % 2 === 0 ? 25 : -25
                 }
               }
               
@@ -230,8 +229,8 @@ export const Timeline = ({
                     className="absolute"
                     style={{ left: `${position}%`, transform: 'translateX(-50%)' }}
                   >
-                    {/* Month label positioned above the timeline */}
-                    <div className="text-sm text-gray-600 dark:text-gray-400 text-center whitespace-nowrap mb-2">
+                    {/* Month label positioned below the timeline */}
+                    <div className="text-xxs sm:text-sm text-gray-600 dark:text-gray-400 text-center whitespace-nowrap mb-2">
                       {formatDateFn(date, 'MMM yyyy')}
                     </div>
                   </div>

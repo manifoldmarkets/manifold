@@ -6,7 +6,6 @@ import { Col } from 'web/components/layout/col'
 import { Display } from './display'
 import clsx from 'clsx'
 import { useIsClient } from 'web/hooks/use-is-client'
-import { CopyLinkOrShareButton } from 'web/components/buttons/copy-link-button'
 
 dayjs.extend(duration)
 

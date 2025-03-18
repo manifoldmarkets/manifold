@@ -230,21 +230,21 @@ export const AI_CAPABILITY_CARDS: AICapabilityCard[] = [
     displayType: 'binary-odds'
   },
   {
-    title: 'Trend Line Change in Economic Variables',
+    title: 'Discontinuous Change in Economic Variables',
     description: 'Visible break in trend line on US GDP, GDP per capita, unemployment, or productivity',
     marketId: 'zg7xJ5ZkJJ4wJPJDPjWO',
     type: '2028-forecast',
     displayType: 'binary-odds'
   },
   {
-    title: 'Zero-shot Human-level Video Game Performance',
+    title: 'Zero-shot Human-level Game Performance',
     description: 'AI plays computer games at human level',
     marketId: 'barjfHPUpHGNKSfhBhJx',
     type: '2028-forecast',
     displayType: 'binary-odds'
   },
   {
-    title: 'Self-play Human-level Video Game Performance',
+    title: 'Self-play Human-level Game Performance',
     description: 'AI plays computer games at human level',
     marketId: 'HS8ndzFminW0UN2kRDgq',
     type: '2028-forecast',
@@ -285,8 +285,7 @@ function CardBase({
 
 // Component for card title with tooltip for benchmarks and prizes
 function CardTitle({ 
-  title, 
-  type, 
+  title,
   showModelIcon = false,
   showTooltip = false
 }: { 
@@ -303,7 +302,7 @@ function CardTitle({
             <AIModelIcon title={title} />
           </div>
         )}
-        <h3 className="font-semibold text-gray-900 dark:text-gray-100 text-base sm:text-lg">{title}</h3>
+        <h3 className="font-semibold text-gray-900 dark:text-gray-100 text-sm sm:text-lg">{title}</h3>
       </div>
       
       {showTooltip && (
@@ -747,10 +746,10 @@ function CapabilityCard({
                   {type === 'prize' && title.includes('Millennium') && 'Chance of solving a million-dollar math problem by June 2025'}
                   {type === 'prize' && title.includes('Arc AGI') && 'Probability of claiming Arc-AGI prize by end of 2025'}
                   {type === 'prize' && title.includes('Turing Test') && 'Probability of passing this variation of the Turing Test by 2029'}
-                  {type === 'misuse' && title.includes('Hacking') && 'Probability of AI independently compromising systems by end of 2025'}
+                  {type === 'misuse' && title.includes('Hacking') && 'Probability of AI compromising systems by end of 2025'}
                   {type === '2028-forecast' && title.includes('Romantic') && 'At least 1/1000 Americans talks weekly with one'}
                   {type === '2028-forecast' && title.includes('Blackmail') && 'Risk of AI being used for automated blackmail'}
-                  {type === '2028-forecast' && title.includes('Economic') && 'Break in trend for GDP growth, GDP per capita, productivity, or unemployment'}
+                  {type === '2028-forecast' && title.includes('Economic') && 'Break in trend for GDP growth, GDP/capita, productivity, or unemployment'}
                   {type === '2028-forecast' && title.includes('Zero') && 'AI plays a random computer game as well as a human'}
                   {type === '2028-forecast' && title.includes('Self-play') && 'AI plays a random computer game as well as a human after self-play'}
                 </p>
@@ -835,7 +834,7 @@ function ModelReleasesTimeline({ cards, contracts }: ModelReleasesTimelineProps)
         title: card.title,
         path: contract ? contractPath(contract) : `#${card.marketId}`,
         releaseDate,
-        icon: <AIModelIcon title={card.title} className="w-6 h-6" />
+        icon: <AIModelIcon title={card.title} className="w-4 h-4 sm:w-6 sm:h-6" />
       } as TimelineItemData
     })
   }, [cards, contracts])
