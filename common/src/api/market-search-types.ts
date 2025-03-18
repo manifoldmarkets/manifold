@@ -49,6 +49,7 @@ export const searchProps = z
         z.literal('POLL'),
         z.literal('NUMBER'),
         z.literal('MULTI_NUMERIC'),
+        z.literal('DATE'),
       ])
       .default('ALL'),
     offset: z.coerce.number().gte(0).default(0),

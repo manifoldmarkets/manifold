@@ -2,7 +2,7 @@ import { sum } from 'lodash'
 import { getAnswerProbability } from './calculate'
 import { filterDefined } from './util/array'
 import { getInitialAnswerProbability } from './calculate'
-import { MultiNumericContract } from './contract'
+import { MultiDateContract, MultiNumericContract } from './contract'
 import { formatLargeNumber } from './util/format'
 export const MAX_MULTI_NUMERIC_ANSWERS = 12
 
@@ -32,7 +32,9 @@ export function getExpectedValue(
   )
 }
 
-export const getMinMax = (contract: MultiNumericContract) => {
+export const getMinMax = (
+  contract: MultiNumericContract | MultiDateContract
+) => {
   const { answers } = contract
   const min = Math.min(...answers.map((a) => a.midpoint!))
   const max = Math.max(...answers.map((a) => a.midpoint!))

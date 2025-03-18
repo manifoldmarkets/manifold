@@ -450,6 +450,29 @@ export const Stats = (props: {
             </td>
           </tr>
         )}
+
+        {!hideAdvanced && contract.outcomeType === 'DATE' && (
+          <tr className={clsx(isMod && 'bg-purple-500/30')}>
+            <td>
+              🕒 Clock mode{' '}
+              <InfoTooltip
+                text={'Display date as a clock instead of the default view'}
+              />
+            </td>
+            <td>
+              <CheckOrSwitch
+                canToggle={isMod || isCreator}
+                on={contract.display === 'clock'}
+                setOn={(on) =>
+                  updateMarket({
+                    contractId: contract.id,
+                    display: on ? 'clock' : 'default',
+                  })
+                }
+              />
+            </td>
+          </tr>
+        )}
       </tbody>
     </Table>
   )

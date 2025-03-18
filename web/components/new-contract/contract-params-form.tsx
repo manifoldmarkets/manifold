@@ -9,7 +9,7 @@ import {
   CreateableOutcomeType,
   MAX_DESCRIPTION_LENGTH,
   MAX_QUESTION_LENGTH,
-  MULTI_NUMERIC_BUCKETS_MAX,
+  NUMBER_BUCKETS_MAX,
   NON_BETTING_OUTCOMES,
   twombaContractPath,
   Visibility,
@@ -70,6 +70,7 @@ import { randomString } from 'common/util/random'
 import { formatWithToken } from 'common/util/format'
 import { BiUndo } from 'react-icons/bi'
 import { liquidityTiers } from 'common/tier'
+import { MultiNumericDateSection } from './multi-numeric-date-section'
 
 export function ContractParamsForm(props: {
   creator: User
@@ -133,7 +134,8 @@ export function ContractParamsForm(props: {
   const defaultAnswers =
     outcomeType === 'MULTIPLE_CHOICE' ||
     outcomeType == 'POLL' ||
-    outcomeType == 'MULTI_NUMERIC'
+    outcomeType == 'MULTI_NUMERIC' ||
+    outcomeType == 'DATE'
       ? ['', '']
       : []
 
@@ -163,7 +165,7 @@ export function ContractParamsForm(props: {
       addAnswersModeKey
     )
   const shouldAnswersSumToOne =
-    outcomeType === 'MULTI_NUMERIC'
+    outcomeType === 'MULTI_NUMERIC' || outcomeType === 'DATE'
       ? multiNumericSumsToOne
       : params?.shouldAnswersSumToOne ?? false
 
@@ -327,7 +329,11 @@ export function ContractParamsForm(props: {
 
   const isValidQuestion =
     question.length > 0 && question.length <= MAX_QUESTION_LENGTH
-  const hasAnswers = outcomeType === 'MULTIPLE_CHOICE' || outcomeType === 'POLL'
+  const hasAnswers =
+    outcomeType === 'MULTIPLE_CHOICE' ||
+    outcomeType === 'POLL' ||
+    outcomeType === 'MULTI_NUMERIC' ||
+    outcomeType === 'DATE'
   const isValidMultipleChoice =
     !hasAnswers || answers.every((answer) => answer.trim().length > 0)
 
@@ -350,7 +356,7 @@ export function ContractParamsForm(props: {
     min < max
 
   const midpointsError =
-    outcomeType === 'MULTI_NUMERIC'
+    outcomeType === 'MULTI_NUMERIC' || outcomeType === 'DATE'
       ? midpoints.length !== answers.length
       : false
 
@@ -369,10 +375,9 @@ export function ContractParamsForm(props: {
     !midpointsError &&
     (outcomeType !== 'BOUNTIED_QUESTION' || bountyAmount !== undefined) &&
     (outcomeType === 'NUMBER'
-      ? numberOfBuckets <= MULTI_NUMERIC_BUCKETS_MAX && numberOfBuckets >= 2
+      ? numberOfBuckets <= NUMBER_BUCKETS_MAX && numberOfBuckets >= 2
       : true) &&
-    (outcomeType !== 'MULTI_NUMERIC' ||
-      ((minMaxValid || isValidMultipleChoice) && unit !== ''))
+    (outcomeType !== 'MULTI_NUMERIC' || (minMaxValid && unit !== ''))
 
   const [errorText, setErrorText] = useState<string>('')
   useEffect(() => {
@@ -469,7 +474,10 @@ export function ContractParamsForm(props: {
         groupIds: selectedGroups.map((g) => g.id),
         answers,
         midpoints,
-        addAnswersMode: isMultiNumeric ? 'DISABLED' : addAnswersMode,
+        addAnswersMode:
+          outcomeType === 'MULTI_NUMERIC' || outcomeType === 'DATE'
+            ? 'DISABLED'
+            : addAnswersMode,
         shouldAnswersSumToOne,
         visibility,
         utcOffset: new Date().getTimezoneOffset(),
@@ -483,6 +491,7 @@ export function ContractParamsForm(props: {
         sportsEventId: params?.sportsEventId,
         sportsLeague: params?.sportsLeague,
         unit: unit.trim(),
+        timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
       })
 
       const newContract = await api('market', createProps as any)
@@ -542,6 +551,7 @@ export function ContractParamsForm(props: {
   const isMulti = outcomeType === 'MULTIPLE_CHOICE'
   const isNumber = outcomeType === 'NUMBER'
   const isMultiNumeric = outcomeType === 'MULTI_NUMERIC'
+  const isDate = outcomeType === 'DATE'
 
   const [isGeneratingDescription, setIsGeneratingDescription] = useState(false)
   const [preGenerateContent, setPreGenerateContent] = useState<
@@ -716,6 +726,24 @@ export function ContractParamsForm(props: {
           setShouldAnswersSumToOne={setMultiNumericSumsToOne}
           unit={unit}
           setUnit={setUnit}
+        />
+      )}{' '}
+      {isDate && (
+        <MultiNumericDateSection
+          paramsKey={paramsKey}
+          submitState={submitState}
+          question={question}
+          description={editor?.getHTML()}
+          answers={answers}
+          setAnswers={setAnswers}
+          midpoints={midpoints}
+          setMidpoints={setMidpoints}
+          minString={minString}
+          setMinString={setMinString}
+          maxString={maxString}
+          setMaxString={setMaxString}
+          shouldAnswersSumToOne={shouldAnswersSumToOne}
+          setShouldAnswersSumToOne={setMultiNumericSumsToOne}
         />
       )}
       {outcomeType === 'PSEUDO_NUMERIC' && (

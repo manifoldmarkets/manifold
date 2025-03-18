@@ -2232,6 +2232,7 @@ export const API = (_apiTypeCheck = {
     authed: true,
     returns: {} as {
       buckets: { answers: string[]; midpoints: number[] }
+      thresholds: { answers: string[]; midpoints: number[] }
     },
     props: z
       .object({
@@ -2239,7 +2240,6 @@ export const API = (_apiTypeCheck = {
         min: z.string(),
         max: z.string(),
         description: z.string().optional(),
-        unit: z.string(),
       })
       .strict(),
   },
@@ -2272,7 +2272,7 @@ export const API = (_apiTypeCheck = {
         answers: z.array(z.string()),
         min: z.string(),
         max: z.string(),
-        unit: z.string(),
+        tab: z.enum(['thresholds', 'buckets']),
       })
       .strict(),
   },

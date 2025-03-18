@@ -6,6 +6,7 @@ import { formatMoneyNumber, formatPercent } from './util/format'
 import { getFormattedNumberExpectedValue } from 'common/number'
 import { sortAnswers } from './answer'
 import { getFormattedExpectedValue } from './multi-numeric'
+import { getFormattedExpectedDate } from './multi-date'
 
 export const getContractOGProps = (
   contract: Contract
@@ -41,6 +42,8 @@ export const getContractOGProps = (
       ? getFormattedNumberExpectedValue(contract)
       : outcomeType === 'MULTI_NUMERIC'
       ? getFormattedExpectedValue(contract)
+      : outcomeType === 'DATE'
+      ? getFormattedExpectedDate(contract)
       : outcomeType === 'PSEUDO_NUMERIC' || outcomeType === 'STONK'
       ? getFormattedMappedValue(contract, getDisplayProbability(contract))
       : undefined

@@ -86,7 +86,7 @@ export function OutcomeLabel(props: {
     )
   }
 
-  if (outcomeType === 'MULTIPLE_CHOICE' || outcomeType === 'MULTI_NUMERIC') {
+  if (mechanism === 'cpmm-multi-1') {
     return (
       <span>
         {answer && (

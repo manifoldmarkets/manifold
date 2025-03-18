@@ -13,6 +13,7 @@ import {
   CPMMMultiContract,
   CPMMNumericContract,
   Contract,
+  MultiDateContract,
   MultiNumericContract,
   PseudoNumericContract,
   StonkContract,
@@ -38,6 +39,7 @@ import { NumberContractChart } from 'web/components/charts/contract/number'
 import { UserPositionSearchButton } from 'web/components/charts/user-position-search-button'
 import {
   BinaryResolutionOrChance,
+  MultiDateResolutionOrExpectation,
   MultiNumericResolutionOrExpectation,
   NumberResolutionOrExpectation,
   PseudoNumericResolutionOrExpectation,
@@ -79,6 +81,7 @@ import { LoadingIndicator } from '../widgets/loading-indicator'
 import { GradientContainer } from '../widgets/gradient-container'
 import { getIsLive } from 'common/sports-info'
 import { MultiNumericContractChart } from '../charts/contract/multi-numeric'
+import { MultiDateContractChart } from '../charts/contract/multi-date'
 
 export const ContractOverview = memo(
   (props: {
@@ -157,6 +160,17 @@ export const ContractOverview = memo(
       case 'MULTI_NUMERIC':
         return (
           <MultiNumericOverview
+            contract={contract}
+            points={betPoints as MultiPoints}
+            showResolver={showResolver}
+            setShowResolver={setShowResolver}
+            resolutionRating={resolutionRating}
+            onAnswerCommentClick={onAnswerCommentClick}
+          />
+        )
+      case 'DATE':
+        return (
+          <MultiDateOverview
             contract={contract}
             points={betPoints as MultiPoints}
             showResolver={showResolver}
@@ -656,20 +670,6 @@ const MultiNumericOverview = (props: {
   const { currentTimePeriod, setTimePeriod, maxRange, zoomParams } =
     useTimePicker(contract, () => setShowZoomer(true))
 
-  const shouldAnswersSumToOne =
-    'shouldAnswersSumToOne' in contract ? contract.shouldAnswersSumToOne : true
-
-  const [query, setQuery] = usePersistentInMemoryState(
-    '',
-    'create-answer-text' + contract.id
-  )
-
-  const defaultSort = getDefaultSort(contract)
-  const [sort, setSort] = usePersistentInMemoryState<MultiSort>(
-    defaultSort,
-    'answer-sort' + contract.id
-  )
-
   return (
     <>
       <Row className="relative justify-between gap-2">
@@ -698,7 +698,7 @@ const MultiNumericOverview = (props: {
           />
         )}
       </SizedContainer>
-      {!shouldAnswersSumToOne && contract.mechanism === 'cpmm-multi-1' ? (
+      {!contract.shouldAnswersSumToOne ? (
         <IndependentAnswersResolvePanel
           show={showResolver}
           contract={contract}
@@ -720,10 +720,97 @@ const MultiNumericOverview = (props: {
             selectedAnswerIds={[]}
             contract={contract}
             onAnswerCommentClick={onAnswerCommentClick}
-            sort={sort}
-            setSort={setSort}
-            query={query}
-            setQuery={setQuery}
+            sort={getDefaultSort(contract)}
+            setSort={() => {}}
+            query={''}
+            setQuery={() => {}}
+          />
+          {tradingAllowed(contract) && (
+            <UserBetsSummary
+              className="border-ink-200 !mb-2 mt-2 "
+              contract={contract}
+            />
+          )}
+        </>
+      )}
+    </>
+  )
+}
+const MultiDateOverview = (props: {
+  points: MultiPoints
+  contract: MultiDateContract
+  showResolver: boolean
+  resolutionRating?: ReactNode
+  setShowResolver: (show: boolean) => void
+  onAnswerCommentClick: (answer: Answer) => void
+}) => {
+  const {
+    points,
+    contract,
+    showResolver,
+    resolutionRating,
+    setShowResolver,
+    onAnswerCommentClick,
+  } = props
+
+  const [showZoomer, setShowZoomer] = useState(false)
+  const { currentTimePeriod, setTimePeriod, maxRange, zoomParams } =
+    useTimePicker(contract, () => setShowZoomer(true))
+
+  return (
+    <>
+      <Row className="relative justify-between gap-2">
+        <MultiDateResolutionOrExpectation contract={contract} />
+        <Row className={'relative gap-1'}>
+          <TimeRangePicker
+            className="h-[2.4rem]"
+            currentTimePeriod={currentTimePeriod}
+            setCurrentTimePeriod={setTimePeriod}
+            maxRange={maxRange}
+            color="indigo"
+          />
+        </Row>
+      </Row>
+      <SizedContainer
+        className={clsx('mb-12 h-[150px] w-full pb-4 pr-10 sm:h-[200px]')}
+      >
+        {(w, h) => (
+          <MultiDateContractChart
+            width={w}
+            height={h}
+            multiPoints={points}
+            zoomParams={zoomParams}
+            contract={contract}
+            showZoomer={showZoomer}
+          />
+        )}
+      </SizedContainer>
+      {!contract.shouldAnswersSumToOne ? (
+        <IndependentAnswersResolvePanel
+          show={showResolver}
+          contract={contract}
+          onClose={() => setShowResolver(false)}
+        />
+      ) : showResolver ? (
+        <GradientContainer>
+          <AnswersResolvePanel
+            contract={contract}
+            onClose={() => setShowResolver(false)}
+          />
+        </GradientContainer>
+      ) : null}
+      {!showResolver && (
+        <>
+          {resolutionRating}
+          <AnswersPanel
+            hideSearch
+            selectedAnswerIds={[]}
+            contract={contract}
+            onAnswerCommentClick={onAnswerCommentClick}
+            sort={getDefaultSort(contract)}
+            setSort={() => {}}
+            query={''}
+            setQuery={() => {}}
           />
           {tradingAllowed(contract) && (
             <UserBetsSummary

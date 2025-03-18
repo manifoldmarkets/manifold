@@ -8,7 +8,7 @@ import {
   getMultiNumericAnswerBucketRanges,
 } from 'common/src/number'
 import { usePersistentLocalState } from 'web/hooks/use-persistent-local-state'
-import { MULTI_NUMERIC_BUCKETS_MAX } from 'common/contract'
+import { NUMBER_BUCKETS_MAX } from 'common/contract'
 import ShortToggle from 'web/components/widgets/short-toggle'
 import { track } from 'web/lib/service/analytics'
 import { useEvent } from 'client-common/hooks/use-event'
@@ -39,7 +39,7 @@ export const NumberRangeSection = (props: {
   } = props
   const boundsDefined = min !== undefined && max !== undefined
   const highestPrecision = boundsDefined
-    ? (max - min) / MULTI_NUMERIC_BUCKETS_MAX
+    ? (max - min) / NUMBER_BUCKETS_MAX
     : undefined
   const lowestPrecision = boundsDefined ? (max - min) / 2 : undefined
   const numberOfBuckets = boundsDefined

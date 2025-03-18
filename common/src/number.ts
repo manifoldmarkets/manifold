@@ -1,4 +1,4 @@
-import { CPMMNumericContract, MULTI_NUMERIC_BUCKETS_MAX } from 'common/contract'
+import { CPMMNumericContract, NUMBER_BUCKETS_MAX } from 'common/contract'
 import { filterDefined } from 'common/util/array'
 import { find, findLast, mean, sum } from 'lodash'
 import {
@@ -47,7 +47,7 @@ export const getMultiNumericAnswerBucketRangeNames = (
   max: number,
   precision: number
 ) => {
-  const highestPrecision = (max - min) / MULTI_NUMERIC_BUCKETS_MAX
+  const highestPrecision = (max - min) / NUMBER_BUCKETS_MAX
   const lowestPrecision = (max - min) / 2
   const hasPrecisionError =
     !precision || precision < highestPrecision || precision > lowestPrecision

@@ -28,6 +28,7 @@ export const updateMarket: APIHandler<'market/:contractId/update'> = async (
     sort,
     question,
     coverImageUrl,
+    display,
 
     description: raw,
     descriptionHtml: html,
@@ -66,6 +67,7 @@ export const updateMarket: APIHandler<'market/:contractId/update'> = async (
     addAnswersMode,
     sort,
     description,
+    display,
     lastUpdatedTime: Date.now(),
   })
   await updateContract(pg, contractId, {

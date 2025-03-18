@@ -21,7 +21,6 @@ export async function generateAntes(
   totalMarketCost: number
 ) {
   if (
-    contract.outcomeType === 'MULTIPLE_CHOICE' &&
     contract.mechanism === 'cpmm-multi-1' &&
     !contract.shouldAnswersSumToOne
   ) {
@@ -40,11 +39,8 @@ export async function generateAntes(
       await insertLiquidity(pg, lp)
     }
   } else if (
-    outcomeType === 'BINARY' ||
-    outcomeType === 'PSEUDO_NUMERIC' ||
-    outcomeType === 'STONK' ||
-    outcomeType === 'MULTIPLE_CHOICE' ||
-    outcomeType === 'NUMBER'
+    contract.mechanism === 'cpmm-multi-1' ||
+    contract.mechanism === 'cpmm-1'
   ) {
     const lp = getCpmmInitialLiquidity(
       providerId,

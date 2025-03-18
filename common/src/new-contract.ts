@@ -9,6 +9,7 @@ import {
   CPMMNumber,
   CREATEABLE_OUTCOME_TYPES,
   Contract,
+  MultiDate,
   MultiNumeric,
   NonBet,
   Poll,
@@ -66,6 +67,7 @@ export function getNewContract(
     // Multi-numeric
     unit: string | undefined
     midpoints: number[] | undefined
+    timezone: string | undefined
   }
 ) {
   const {
@@ -98,6 +100,7 @@ export function getNewContract(
     siblingContractId,
     unit,
     midpoints,
+    timezone,
   } = props
   const createdTime = Date.now()
 
@@ -129,6 +132,16 @@ export function getNewContract(
         ante,
         unit ?? '',
         shouldAnswersSumToOne ?? true
+      ),
+    DATE: () =>
+      getDateProps(
+        id,
+        creator.id,
+        answers,
+        midpoints ?? [],
+        ante,
+        shouldAnswersSumToOne ?? true,
+        timezone ?? ''
       ),
   }[outcomeType]()
 
@@ -361,6 +374,37 @@ const getMultiNumericProps = (
     totalLiquidity: ante,
     subsidyPool: 0,
     unit,
+  }
+
+  return system
+}
+const getDateProps = (
+  contractId: string,
+  userId: string,
+  answers: string[],
+  midpoints: number[],
+  ante: number,
+  shouldAnswersSumToOne: boolean,
+  timezone: string
+) => {
+  const answerObjects = createAnswers(
+    contractId,
+    userId,
+    'DISABLED',
+    shouldAnswersSumToOne,
+    ante,
+    answers,
+    { midpoints }
+  )
+  const system: MultiDate = {
+    mechanism: 'cpmm-multi-1',
+    outcomeType: 'DATE',
+    shouldAnswersSumToOne,
+    addAnswersMode: 'DISABLED',
+    answers: answerObjects,
+    totalLiquidity: ante,
+    subsidyPool: 0,
+    timezone,
   }
 
   return system

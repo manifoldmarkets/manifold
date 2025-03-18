@@ -3,6 +3,7 @@ import {
   BsFillXCircleFill,
   BsUiChecks,
   BsUiChecksGrid,
+  BsCalendar2Date,
 } from 'react-icons/bs'
 import { Col } from 'web/components/layout/col'
 import { CgPoll } from 'react-icons/cg'
@@ -81,6 +82,20 @@ export const PREDICTIVE_CONTRACT_TYPES = {
     ),
     shouldSumToOne: true,
     outcomeType: 'MULTI_NUMERIC',
+  },
+  DATE: {
+    label: 'Date',
+    value: 'DATE',
+    name: 'date',
+    descriptor: 'A question with a date answer.',
+    example: 'When will OpenAI release GPT-7?',
+    visual: (
+      <Col className="text-primary-400 relative my-auto h-12 w-12">
+        <BsCalendar2Date className="h-12 w-12" />
+      </Col>
+    ),
+    shouldSumToOne: true,
+    outcomeType: 'DATE',
   },
 } as const
 

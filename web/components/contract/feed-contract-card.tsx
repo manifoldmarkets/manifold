@@ -291,7 +291,8 @@ export function FeedContractCard(props: {
         {isBinaryMc &&
           contract.mechanism === 'cpmm-multi-1' &&
           contract.outcomeType !== 'NUMBER' &&
-          contract.outcomeType !== 'MULTI_NUMERIC' && (
+          contract.outcomeType !== 'MULTI_NUMERIC' &&
+          contract.outcomeType !== 'DATE' && (
             <BinaryMultiAnswersPanel
               contract={contract}
               feedReason={feedReason}
