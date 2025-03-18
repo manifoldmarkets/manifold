@@ -737,7 +737,7 @@ Place a new bet or limit order.
 
 Parameters:
 
-- `amount`: The amount to bet, in mana, before fees.
+- `amount`: The amount to bet, in mana.
 - `contractId`: The ID of the market to bet on.
 - `outcome`: Optional. `YES` (default) or `NO`
 - `limitProb`: Optional. Makes this a limit order. `limitProb` is a number from `0.01` to `0.99` representing the probability price to set a limit order at (like 0.01 is 1%). Can only be two decimal digits - a whole precent.
