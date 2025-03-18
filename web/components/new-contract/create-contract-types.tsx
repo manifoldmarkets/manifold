@@ -88,7 +88,7 @@ export const PREDICTIVE_CONTRACT_TYPES = {
     value: 'DATE',
     name: 'date',
     descriptor: 'A question with a date answer.',
-    example: 'When will the next recession start?',
+    example: 'When will OpenAI release GPT-7?',
     visual: (
       <Col className="text-primary-400 relative my-auto h-12 w-12">
         <BsCalendar2Date className="h-12 w-12" />
