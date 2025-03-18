@@ -111,7 +111,7 @@ export default function AdminPage() {
             <p>Are you sure you want to create new sports markets?</p>
             <p>
               Make sure you are logged into the Manifold account and have
-              ~40,000 mana and 2000 sweepcash.
+              ~50,000 mana.
             </p>
           </ConfirmationButton>
           {isFinished && (
