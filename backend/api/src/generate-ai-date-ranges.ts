@@ -16,7 +16,7 @@ type DateRangeResponse = {
   midpoints: string[]
 }
 
-const baseDateSystemPrompt = () => {
+const baseDateSystemPrompt = (type: 'buckets' | 'thresholds') => {
   return `
     You are a helpful AI assistant that generates date ranges for prediction market questions.
     
@@ -28,13 +28,17 @@ const baseDateSystemPrompt = () => {
     - Each range should have a midpoint value for expected value calculations
     - The midpoints should be dates that represent the exact middle date of the range.
     - Return the ranges and associated midpoints in ascending order
-    - If the min/max is a year/month/day and the max-min < 10 just use single years/months/days as buckets.
+    ${
+      type === 'buckets'
+        ? '- If the min/max is a year/month/day and the max-min < 10 just use single years/months/days as buckets.'
+        : `- If the min/max is a year/month/day and the max-min < 10 just use single 'before year/ before month/ before day' as thresholds.`
+    }
     - ONLY return a single JSON object without any other text or formatting:
     {
       answers: array of range strings,
       midpoints: array of corresponding midpoint dates
     }
-    ${bucketExamples}
+    ${type === 'buckets' ? bucketExamples : thresholdExamples}
 `
 }
 
@@ -115,11 +119,8 @@ export const generateAIDateRanges: APIHandler<'generate-ai-date-ranges'> =
       const prompt = userPrompt(question, min, max, description)
 
       // Prepare system prompts
-      const bucketSystemPrompt = baseDateSystemPrompt()
-      const thresholdSystemPrompt = baseDateSystemPrompt().replace(
-        bucketExamples,
-        thresholdExamples
-      )
+      const bucketSystemPrompt = baseDateSystemPrompt('buckets')
+      const thresholdSystemPrompt = baseDateSystemPrompt('thresholds')
 
       // Generate both bucket and threshold ranges in parallel
       const [buckets, thresholds] = await Promise.all([
