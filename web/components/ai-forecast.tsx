@@ -298,18 +298,18 @@ function CardTitle({
   showTooltip?: boolean 
 }) {
   return (
-    <div className="flex items-center justify-between w-full mb-1">
+    <div className="relative w-full mb-1">
       <div className="flex items-center">
         {showModelIcon && (
           <div className="mr-2 text-ink-600">
             <AIModelIcon title={title} />
           </div>
         )}
-        <h3 className={`font-semibold ${getAccentColor(type)} text-lg`}>{title}</h3>
+        <h3 className="font-semibold text-gray-900 dark:text-gray-50 text-lg">{title}</h3>
       </div>
       
       {showTooltip && (
-        <div className="ml-2">
+        <div className="absolute top-1 right-0">
           <Tooltip title={title} description={getTooltipDescription(title)} />
         </div>
       )}
