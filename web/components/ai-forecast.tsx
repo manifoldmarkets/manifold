@@ -210,13 +210,6 @@ export const AI_CAPABILITY_CARDS: AICapabilityCard[] = [
   
   // AI misuse
   {
-    title: 'AI Blackmail by 2028',
-    description: 'AI Blackmails someone for >$1000',
-    marketId: 'W1KGdImLB5cb1p75M88e',
-    type: 'misuse',
-    displayType: 'binary-odds'
-  },
-  {
     title: 'Hacking',
     description: 'AI independently hacks a system',
     marketId: 's82955uAnR',
@@ -224,19 +217,40 @@ export const AI_CAPABILITY_CARDS: AICapabilityCard[] = [
     displayType: 'binary-odds'
   },
   
-  // Comparisons to humans
+  // 2028 Predictions
   {
-    title: 'Creative Writing',
-    description: 'AI-written novel wins major literary prize by 2027',
-    marketId: 'placeholder-6',
-    type: 'human-comparison',
+    title: 'AI Blackmail by 2028',
+    description: 'AI Blackmails someone for >$1000',
+    marketId: 'W1KGdImLB5cb1p75M88e',
+    type: '2028-forecast',
     displayType: 'binary-odds'
   },
   {
-    title: 'Medical Diagnosis',
-    description: 'AI outperforms average doctor in general diagnosis by 2026',
-    marketId: 'placeholder-7',
-    type: 'human-comparison',
+    title: 'AI Romantic Companions',
+    description: 'At least 1/1000 Americans be talking at least weekly to an AI they consider a romantic companion?',
+    marketId: 'kpG0hv16d75ai3JcKZds',
+    type: '2028-forecast',
+    displayType: 'binary-odds'
+  },
+  {
+    title: 'Trend Line Change in Economic Variables',
+    description: 'Visible break in trend line on US GDP, GDP per capita, unemployment, or productivity',
+    marketId: 'zg7xJ5ZkJJ4wJPJDPjWO',
+    type: '2028-forecast',
+    displayType: 'binary-odds'
+  },
+  {
+    title: 'Zero-shot Human-level Video Game Performance',
+    description: 'AI plays computer games at human level',
+    marketId: 'barjfHPUpHGNKSfhBhJx',
+    type: '2028-forecast',
+    displayType: 'binary-odds'
+  },
+  {
+    title: 'Self-play Human-level Video Game Performance',
+    description: 'AI plays computer games at human level',
+    marketId: 'HS8ndzFminW0UN2kRDgq',
+    type: '2028-forecast',
     displayType: 'binary-odds'
   }
 ]
@@ -325,7 +339,7 @@ function getAccentColor(type: string) {
     case 'benchmark': return 'text-teal-700 dark:text-teal-500';
     case 'prize': return 'text-amber-700 dark:text-amber-500';
     case 'misuse': return 'text-rose-700 dark:text-rose-500';
-    case 'human-comparison': return 'text-cyan-700 dark:text-cyan-500';
+    case '2028-forecast': return 'text-cyan-700 dark:text-cyan-500';
     default: return 'text-primary-600 dark:text-primary-500';
   }
 }
@@ -359,7 +373,7 @@ function getGradient(type: string, isText = true) {
       return `${textPrefix}bg-gradient-to-br from-amber-500 via-amber-600 to-amber-700 dark:from-amber-400 dark:via-amber-500 dark:to-amber-600`;
     case 'misuse':
       return `${textPrefix}bg-gradient-to-br from-rose-500 via-rose-600 to-rose-700 dark:from-rose-400 dark:via-rose-500 dark:to-rose-600`;
-    case 'human-comparison':
+    case '2028-forecast':
       return `${textPrefix}bg-gradient-to-br from-cyan-500 via-cyan-600 to-cyan-700 dark:from-cyan-400 dark:via-cyan-500 dark:to-cyan-600`;
     default:
       return `${textPrefix}bg-gradient-to-br from-primary-500 via-primary-600 to-primary-700 dark:from-primary-400 dark:via-primary-500 dark:to-primary-600`;
@@ -394,7 +408,7 @@ function getCardBgColor(className: string) {
       if (className.includes('misuse')) {
         return 'bg-gradient-to-br from-rose-50 to-rose-100 dark:from-rose-800/40 dark:to-rose-700/50';
       }
-      if (className.includes('human-comparison')) {
+      if (className.includes('2028-forecast')) {
         return 'bg-gradient-to-br from-cyan-50 to-cyan-100 dark:from-cyan-800/40 dark:to-cyan-700/50';
       }
       // Default background for unknown card types
@@ -745,7 +759,7 @@ function CapabilityCard({
                 </div>
               </div>
               {/* Brief descriptive text under percentages */}
-              {(type === 'benchmark' || type === 'prize' || type === 'misuse' || type === 'human-comparison') && (
+              {(type === 'benchmark' || type === 'prize' || type === 'misuse' || type === '2028-forecast') && (
                 <p className="text-ink-600 text-sm mt-3 text-left w-full px-1">
                   {type === 'benchmark' && title.includes('IMO Gold') && 'An LLM gets a IMO gold medal'}
                   {type === 'benchmark' && title.includes('Frontier Math') && 'An LLM gets 80%+'}
@@ -756,7 +770,7 @@ function CapabilityCard({
                   {type === 'prize' && title.includes('Turing Test') && 'Odds of passing rigorous human-indistinguishability test'}
                   {type === 'misuse' && title.includes('Blackmail') && 'Risk of AI being used for automated blackmail'}
                   {type === 'misuse' && title.includes('Hacking') && 'Probability of AI independently compromising systems'}
-                  {type === 'human-comparison' && 'Likelihood of surpassing human-level performance'}
+                  {type === '2028-forecast' && 'Likelihood of surpassing human-level performance'}
                 </p>
               )}
             </div>
@@ -1107,9 +1121,9 @@ export function AIForecast({ whenAgi, contracts = [], hideTitle }: AIForecastPro
       label: 'AI Misuse',
       description: 'How misaligned are these models?'
     },
-    'human-comparison': {
-      label: 'Comparisons to Humans',
-      description: 'Do we still have a comparative advantage?'
+    '2028-prediction': {
+      label: 'Predictions for 2028',
+      description: 'What happens by 2028'
     }
   }
 
