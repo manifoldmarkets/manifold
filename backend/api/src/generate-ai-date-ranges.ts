@@ -1,40 +1,44 @@
 import { APIHandler } from './helpers/endpoint'
 import { track } from 'shared/analytics'
-import {
-  models,
-  promptClaudeParsingJson,
-} from 'shared/helpers/claude'
+import { models, promptClaudeParsingJson } from 'shared/helpers/claude'
 import { log } from 'shared/utils'
 import { rateLimitByUser } from './helpers/rate-limit'
 import { HOUR_MS } from 'common/util/time'
 import {
   assertMidpointsAreAscending,
   assertMidpointsAreUnique,
-  RangeResponse,
 } from './generate-ai-numeric-ranges'
 // Shared guidelines for both threshold and bucket ranges
 // Base system prompt template that both threshold and bucket prompts will use
 
-const baseDateSystemPrompt = () => {
+type DateRangeResponse = {
+  answers: string[]
+  midpoints: string[]
+}
+
+const baseDateSystemPrompt = (type: 'buckets' | 'thresholds') => {
   return `
     You are a helpful AI assistant that generates date ranges for prediction market questions.
     
     GUIDLINES:
     - Generate 2-12 ranges that cover the entire span from start to end
     - Err on the side of fewer (3-5) ranges when possible
-    - Favor human-friendly ranges like:
-      * Round numbers
-      * Smaller ranges for more precision when values are likely to be close
+    - Do NOT generate more than 12 ranges
+    - Today's date is ${new Date().toISOString()}
     - Each range should have a midpoint value for expected value calculations
+    - The midpoints should be dates that represent the exact middle date of the range.
     - Return the ranges and associated midpoints in ascending order
-    - If the unit is a year/month/day and the max-min < 10 just use single years/months/days as buckets.
-    - If the unit is a unit of time, the midpoint should be the ms from now to the target date.
+    ${
+      type === 'buckets'
+        ? '- If the min/max is a year/month/day and the max-min < 10 just use single years/months/days as buckets.'
+        : `- If the min/max is a year/month/day and the max-min < 10 just use single 'before year/ before month/ before day' as thresholds.`
+    }
     - ONLY return a single JSON object without any other text or formatting:
     {
       answers: array of range strings,
-      midpoints: array of corresponding midpoint numbers
+      midpoints: array of corresponding midpoint dates
     }
-    ${bucketExamples}
+    ${type === 'buckets' ? bucketExamples : thresholdExamples}
 `
 }
 
@@ -43,55 +47,118 @@ EXAMPLES:
   Question: If convicted, when will SBF serve time? (min: 2025, max: 2028)
   {
     "answers": ["2025", "2026", "2027", "2028"],
-    "midpoints": [2025.5, 2026.5, 2027.5, 2028.5]
+    "midpoints": ["2025-07-02", "2026-07-02", "2027-07-02", "2028-07-02"]
+  }
+
+  Question: When will the next US recession begin? (min: Q1 2025, max: Q4 2026)
+  {
+    "answers": ["Q1 2025", "Q2 2025", "Q3 2025", "Q4 2025", "Q1 2026", "Q2 2026", "Q3 2026", "Q4 2026"],
+    "midpoints": ["2025-02-14", "2025-05-14", "2025-08-14", "2025-11-14", "2026-02-14", "2026-05-14", "2026-08-14", "2026-11-14"]
+  }
+
+  Question: When will SpaceX complete its first crewed Mars mission? (min: 2025, max: 2035)
+  {
+    "answers": ["2025", "2026", "2027", "2028", "2029", "2030", "2031", "2032", "2033", "2034", "2035"],
+    "midpoints": ["2025-07-02", "2026-07-02", "2027-07-02", "2028-07-02", "2029-07-02", "2030-07-02", "2031-07-02", "2032-07-02", "2033-07-02", "2034-07-02", "2035-07-02"]
+  }
+
+  Question: When will artificial general intelligence be achieved? (min: 2025, max: 2035)
+  {
+    "answers": ["2025", "2026", "2027", "2028", "2029", "2030", "2031", "2032", "2033", "2034", "2035"],
+    "midpoints": ["2025-07-02", "2026-07-02", "2027-07-02", "2028-07-02", "2029-07-02", "2030-07-02", "2031-07-02", "2032-07-02", "2033-07-02", "2034-07-02", "2035-07-02"]
   }
 `
 
-const giveTimeExample = () =>
-  `The current time is ${new Date().toLocaleDateString('en-US', {
-    year: 'numeric',
-    month: 'long',
-    day: 'numeric',
-  })}`
+const thresholdExamples = `
+EXAMPLES:
+  Question: If convicted, when will SBF start serving time? (min: 2025, max: 2028)
+  {
+    "answers": ["Before 2026", "Before 2027", "Before 2028", "Before 2029"],
+    "midpoints": ["2025-07-02", "2026-07-02", "2027-07-02", "2028-07-02"]
+  }
+
+  Question: When will the next US recession begin? (min: Q1 2025, max: Q4 2026)
+  {
+    "answers": ["Before Q1 2025", "Before Q2 2025", "Before Q3 2025", "Before Q4 2025", "Before Q1 2026", "Before Q2 2026", "Before Q3 2026", "Before Q4 2026"],
+    "midpoints": ["2025-02-14", "2025-05-14", "2025-08-14", "2025-11-14", "2026-02-14", "2026-05-14", "2026-08-14", "2026-11-14"]
+  }
+
+  Question: When will SpaceX complete its first crewed Mars mission? (min: 2026, max: 2035)
+  {
+    "answers": ["Before 2027", "Before 2028", "Before 2029", "Before 2030", "Before 2031", "Before 2032", "Before 2033", "Before 2034", "Before 2035"],
+    "midpoints": ["2026-07-02", "2027-07-02", "2028-07-02", "2029-07-02", "2030-07-02", "2031-07-02", "2032-07-02", "2033-07-02", "2034-07-02", "2035-07-02"]
+  }
+
+  Question: When will artificial general intelligence be achieved? (min: 2025, max: 2035)
+  {
+    "answers": ["Before 2026", "Before 2027", "Before 2028", "Before 2029", "Before 2030", "Before 2031", "Before 2032", "Before 2033", "Before 2034", "Before 2035"],
+    "midpoints": ["2026-07-02", "2027-07-02", "2028-07-02", "2029-07-02", "2030-07-02", "2031-07-02", "2032-07-02", "2033-07-02", "2034-07-02", "2035-07-02"]
+  }
+`
+
+const giveTimeExample = () => `The current time is ${new Date().toISOString()}`
 
 const userPrompt = (
   question: string,
   min: string,
   max: string,
-  unit: string,
   description?: string
 ) => {
   return `Question: ${question} ${
     description && description !== '<p></p>'
       ? `\nDescription: ${description}`
       : ''
-  }\nStart: ${min} End: ${max} Unit: ${unit} ${giveTimeExample()}`
+  }\nStart: ${min} End: ${max} ${giveTimeExample()}`
 }
 
 export const generateAIDateRanges: APIHandler<'generate-ai-date-ranges'> =
   rateLimitByUser(
     async (props, auth) => {
-      const { question, min, max, description, unit } = props
+      const { question, min, max, description } = props
 
-      const prompt = userPrompt(question, min, max, unit, description)
+      const prompt = userPrompt(question, min, max, description)
 
-      const bucketSystemPrompt = baseDateSystemPrompt()
+      // Prepare system prompts
+      const bucketSystemPrompt = baseDateSystemPrompt('buckets')
+      const thresholdSystemPrompt = baseDateSystemPrompt('thresholds')
 
-      const buckets = await promptClaudeParsingJson<RangeResponse>(prompt, {
-        model: models.sonnet,
-        system: bucketSystemPrompt,
-      })
+      // Generate both bucket and threshold ranges in parallel
+      const [buckets, thresholds] = await Promise.all([
+        promptClaudeParsingJson<DateRangeResponse>(prompt, {
+          model: models.sonnet,
+          system: bucketSystemPrompt,
+        }),
+        promptClaudeParsingJson<DateRangeResponse>(prompt, {
+          model: models.sonnet,
+          system: thresholdSystemPrompt,
+        }),
+      ])
 
-      assertMidpointsAreUnique(buckets.midpoints)
-      assertMidpointsAreAscending(buckets.midpoints)
-      buckets.midpoints = convertTimeMidpointsToDates(unit, buckets.midpoints)
-      log('buckets', buckets)
+      // Process bucket results
+      const convertedBuckets = {
+        ...buckets,
+        midpoints: convertDateMidpointsToTimes(buckets.midpoints),
+      }
+      assertMidpointsAreUnique(convertedBuckets.midpoints)
+      assertMidpointsAreAscending(convertedBuckets.midpoints)
+      log('buckets', convertedBuckets)
+
+      // Process threshold results
+      const convertedThresholds = {
+        ...thresholds,
+        midpoints: convertDateMidpointsToTimes(thresholds.midpoints),
+      }
+      assertMidpointsAreUnique(convertedThresholds.midpoints)
+      assertMidpointsAreAscending(convertedThresholds.midpoints)
+      log('thresholds', convertedThresholds)
+
       track(auth.uid, 'generate-ai-date-ranges', {
         question,
       })
 
       return {
-        buckets,
+        buckets: convertedBuckets,
+        thresholds: convertedThresholds,
       }
     },
     { maxCalls: 60, windowMs: HOUR_MS }
@@ -100,86 +167,44 @@ export const generateAIDateRanges: APIHandler<'generate-ai-date-ranges'> =
 export const regenerateDateMidpoints: APIHandler<'regenerate-date-midpoints'> =
   rateLimitByUser(
     async (props, auth) => {
-      const { question, description, answers, min, max, unit } = props
+      const { question, description, answers, min, max, tab } = props
 
       const prompt = `${userPrompt(
         question,
         min,
         max,
-        unit,
         description
       )}\nRanges: ${answers.join(', ')}.
-      Generate appropriate midpoints for each range.
+      Generate appropriate midpoint dates for each range.
       RULES:
-      - The midpoints should be numbers that represent the expected value for each range.
-      - If the range is a log scale, use the geometric mean for the midpoint.
+      - The midpoints should be the exact middle date of the range.
 
-      ${bucketExamples}
+      ${tab === 'buckets' ? bucketExamples : thresholdExamples}
 
-      Return ONLY an array of midpoint numbers, one for each range, without any other text or formatting.`
+      Return ONLY an array of midpoint dates, one for each range, without any other text or formatting.`
 
-      const result = await promptClaudeParsingJson<number[]>(prompt, {
+      const result = await promptClaudeParsingJson<string[]>(prompt, {
         model: models.sonnet,
       })
       log('claudeResponse', result)
 
-      track(auth.uid, 'regenerate-numeric-midpoints', {
+      track(auth.uid, 'regenerate-date-midpoints', {
         answers,
       })
 
-      assertMidpointsAreUnique(result)
-      assertMidpointsAreAscending(result)
+      const convertedMidpoints = convertDateMidpointsToTimes(result)
 
-      return { midpoints: convertTimeMidpointsToDates(unit, result) }
+      assertMidpointsAreUnique(convertedMidpoints)
+      assertMidpointsAreAscending(convertedMidpoints)
+
+      return { midpoints: convertedMidpoints }
     },
     { maxCalls: 60, windowMs: HOUR_MS }
   )
 
-const convertTimeMidpointsToDates = (unit: string, midpoints: number[]) => {
-  const now = new Date()
-  const currentYear = now.getFullYear()
-  const currentMonth = now.getMonth()
-  const currentDay = now.getDate()
-
+const convertDateMidpointsToTimes = (midpoints: string[]) => {
   return midpoints.map((midpoint) => {
-    if (unit.trim().toLowerCase() === 'year') {
-      // For years, calculate milliseconds from now to the target year point
-      const targetYear = Math.floor(midpoint)
-      const fraction = midpoint - targetYear
-
-      // Create date for the target year (same month/day as today)
-      const targetDate = new Date(targetYear, currentMonth, currentDay)
-
-      // Add the fraction of the year in milliseconds if there is one
-      if (fraction > 0) {
-        const millisecondsInYear = 365.25 * 24 * 60 * 60 * 1000
-        const additionalMilliseconds = Math.floor(fraction * millisecondsInYear)
-        targetDate.setTime(targetDate.getTime() + additionalMilliseconds)
-      }
-
-      // Return milliseconds from now to target date
-      // If target is in the past, we'll return a small positive value (1 day)
-      const msDiff = targetDate.getTime() - now.getTime()
-      return msDiff > 0 ? msDiff : 24 * 60 * 60 * 1000 // Return at least 1 day if in past
-    } else if (unit.trim().toLowerCase() === 'month') {
-      // For months, add the number of months to current date
-      const targetDate = new Date(
-        currentYear,
-        currentMonth + midpoint,
-        currentDay
-      )
-      const msDiff = targetDate.getTime() - now.getTime()
-      return msDiff > 0 ? msDiff : 24 * 60 * 60 * 1000
-    } else if (unit.trim().toLowerCase() === 'day') {
-      // For days, add the number of days to current date
-      const targetDate = new Date(
-        now.getTime() + midpoint * 24 * 60 * 60 * 1000
-      )
-      const msDiff = targetDate.getTime() - now.getTime()
-      return msDiff > 0 ? msDiff : 24 * 60 * 60 * 1000
-    } else {
-      // Fallback for any other time unit
-      return midpoint
-    }
+    const date = new Date(midpoint)
+    return date.valueOf()
   })
 }

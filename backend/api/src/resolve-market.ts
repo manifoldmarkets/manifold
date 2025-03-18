@@ -116,8 +116,7 @@ function getResolutionParams(
   props: ValidatedAPIParams<'market/:contractId/resolve'>
 ) {
   const { outcomeType } = contract
-  const isMultiChoice =
-    outcomeType === 'MULTIPLE_CHOICE' || outcomeType === 'MULTI_NUMERIC'
+  const isMultiChoice = contract.mechanism === 'cpmm-multi-1'
 
   if (
     outcomeType === 'BINARY' ||

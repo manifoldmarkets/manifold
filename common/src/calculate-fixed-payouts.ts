@@ -1,12 +1,7 @@
 import { sum } from 'lodash'
 import { Bet } from './bet'
 import { getProbability } from './calculate'
-import {
-  CPMMContract,
-  CPMMMultiContract,
-  CPMMNumericContract,
-  MultiNumeric,
-} from './contract'
+import { CPMMContract, MultiContract } from './contract'
 
 export function calculateFixedPayout(
   contract: CPMMContract,
@@ -42,10 +37,7 @@ function calculateFixedMktPayout(contract: CPMMContract, bet: Bet) {
   return betP * shares
 }
 
-function calculateBetPayoutMulti(
-  contract: CPMMMultiContract | CPMMNumericContract | MultiNumeric,
-  bet: Bet
-) {
+function calculateBetPayoutMulti(contract: MultiContract, bet: Bet) {
   let prob = 0
   const { answerId } = bet
   if (answerId) {
@@ -69,7 +61,7 @@ function calculateBetPayoutMulti(
 }
 
 export function calculateFixedPayoutMulti(
-  contract: CPMMMultiContract | CPMMNumericContract | MultiNumeric,
+  contract: MultiContract,
   bet: Bet,
   outcome: string
 ) {

@@ -595,13 +595,15 @@ const useBetData = (props: {
   } = props
 
   const isNumber = outcomeType === 'NUMBER'
-  const isMultiNumeric = outcomeType === 'MULTI_NUMERIC'
+  const isMultiNumeric =
+    outcomeType === 'MULTI_NUMERIC' || outcomeType === 'DATE'
 
   const newBets = useContractBets(
     contractId,
     {
       afterTime: lastBetTime ?? 0,
       includeZeroShareRedemptions: true,
+      // TODO: this shows the redemptions in the trades tab??
       filterRedemptions: !isNumber && !isMultiNumeric,
     },
     useIsPageVisible,
@@ -628,7 +630,8 @@ const useBetData = (props: {
     if (
       outcomeType === 'MULTIPLE_CHOICE' ||
       outcomeType === 'NUMBER' ||
-      outcomeType === 'MULTI_NUMERIC'
+      outcomeType === 'MULTI_NUMERIC' ||
+      outcomeType === 'DATE'
     ) {
       const data = multiPointsString
         ? unserializeBase64Multi(multiPointsString)
