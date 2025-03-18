@@ -38,7 +38,7 @@ function Tooltip({ title, description }: { title: string, description: string })
         className="text-ink-500 hover:text-primary-600 transition-colors focus:outline-none"
         aria-label={`Info about ${title}`}
       >
-        <LuInfo size={16} />
+        <LuInfo className="w-[12px] h-[12px] sm:w-[16px] sm:h-[16px]" />
       </button>
       
       {isVisible && (
@@ -307,7 +307,7 @@ function CardTitle({
       </div>
       
       {showTooltip && (
-        <div className="absolute top-1 right-0">
+        <div className="absolute top-0 sm:top-1 right-0">
           <Tooltip title={title} description={getTooltipDescription(title)} />
         </div>
       )}
