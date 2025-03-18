@@ -59,7 +59,7 @@ export function formatExpectedValue(
   if (value > 1_000_000) {
     return formatLargeNumber(value)
   }
-  if (unit === 'year') {
+  if (unit.toLowerCase().trim() === 'year') {
     return value.toFixed(includeUnit ? 1 : 0)
   }
 

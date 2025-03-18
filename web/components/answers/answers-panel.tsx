@@ -742,6 +742,7 @@ export function Answer(props: {
               feedReason={feedReason}
             />
             <DropdownMenu
+              closeOnClick
               buttonContent={
                 <DotsVerticalIcon className="h-5 w-5" aria-hidden />
               }
