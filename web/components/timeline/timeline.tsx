@@ -155,7 +155,7 @@ export const Timeline = ({
 
   return (
     <div className={`${className}`}>
-      <div className="relative mb-8 mt-16">
+      <div className="relative mb-8 mt-10 sm:mt-16">
         {/* Main container for timeline and item icons */}
         <div className="relative w-full px-8">
           {timelineScrollPosition > 0 && (
