@@ -1,4 +1,3 @@
-import React from 'react'
 import { ClickFrame } from 'web/components/widgets/click-frame'
 import { Timeline, TimelineItemData } from './timeline'
 

@@ -7,7 +7,7 @@ import { CopyLinkOrShareButton } from 'web/components/buttons/copy-link-button'
 import { useLiveContract } from 'web/hooks/use-contract'
 import { getNumberExpectedValue } from 'common/src/number'
 import { Clock } from 'web/components/clock/clock'
-import { Timeline, TimelineCard, TimelineItemData } from 'web/components/timeline'
+import { TimelineCard, TimelineItemData } from 'web/components/timeline'
 import { NumericBetPanel } from 'web/components/answers/numeric-bet-panel'
 import { ClickFrame } from 'web/components/widgets/click-frame'
 import Link from 'next/link'
@@ -314,18 +314,18 @@ function CardTitle({
         </div>
       )}
     </div>
-  );
+  )
 }
 
 // Component for showing AI model icon
 function AIModelIcon({ title, className = "h-5 w-5" }: { title: string, className?: string }) {
-  if (title.includes('GPT')) return <SiOpenai className={className} />;
-  if (title.includes('Claude')) return <SiAnthropic className={className} />;  
-  if (title.includes('Gemini')) return <SiGooglegemini className={className} />;
-  if (title.includes('Grok')) return <RiTwitterXLine className={className} />;
-  if (title.includes('Deepseek')) return <GiSpermWhale className={className} />;
-  if (title.includes('Qwen')) return <PiBirdBold className={className} />;
-  return null;
+  if (title.includes('GPT')) return <SiOpenai className={className} />
+  if (title.includes('Claude')) return <SiAnthropic className={className} />
+  if (title.includes('Gemini')) return <SiGooglegemini className={className} />
+  if (title.includes('Grok')) return <RiTwitterXLine className={className} />
+  if (title.includes('Deepseek')) return <GiSpermWhale className={className} />
+  if (title.includes('Qwen')) return <PiBirdBold className={className} />
+  return null
 }
 
 // Get accent color based on card type

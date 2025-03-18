@@ -78,7 +78,7 @@ export const Timeline = ({
     // Add all months that fall within view range
     const lastDate = new Date(viewEndDate)
     
-    let currentMonth = new Date(firstMonthStart)
+    const currentMonth = new Date(firstMonthStart)
     while (currentMonth <= lastDate) {
       months.push(new Date(currentMonth))
       currentMonth.setMonth(currentMonth.getMonth() + 1)
