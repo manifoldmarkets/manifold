@@ -2,8 +2,6 @@ import React, { useState, useMemo } from 'react'
 import { BinaryContract, CPMMNumericContract, Contract, contractPath } from 'common/contract'
 import { Col } from 'web/components/layout/col'
 import { Row } from 'web/components/layout/row'
-import { ENV_CONFIG } from 'common/envs/constants'
-import { CopyLinkOrShareButton } from 'web/components/buttons/copy-link-button'
 import { useLiveContract } from 'web/hooks/use-contract'
 import { getNumberExpectedValue } from 'common/src/number'
 import { Clock } from 'web/components/clock/clock'
@@ -40,7 +38,7 @@ function Tooltip({ title, description }: { title: string, description: string })
         className="text-ink-500 hover:text-primary-600 transition-colors focus:outline-none"
         aria-label={`Info about ${title}`}
       >
-        <LuInfo size={16} />
+        <LuInfo className="w-[12px] h-[12px] sm:w-[16px] sm:h-[16px]" />
       </button>
       
       {isVisible && (
@@ -265,7 +263,7 @@ function CardBase({
   onClick, 
   children, 
   className = "",
-  minHeight = "min-h-[240px]"
+  minHeight = "min-h-[200px] sm:min-h-[240px]"
 }: { 
   onClick: () => void, 
   children: React.ReactNode, 
@@ -274,7 +272,7 @@ function CardBase({
 }) {
   return (
     <ClickFrame
-      className={`group cursor-pointer rounded-lg p-4 border border-ink-200 dark:border-ink-300
+      className={`group cursor-pointer rounded-lg p-3 sm:p-4 border border-ink-200 dark:border-ink-300
       transition-all hover:shadow-md hover:translate-y-[-2px] ${minHeight}
       shadow-[2px_2px_4px_rgba(0,0,0,0.05)] dark:shadow-[2px_2px_4px_rgba(0,0,0,0.15)] 
       relative ${getCardBgColor(className)} ${className}`}
@@ -305,11 +303,11 @@ function CardTitle({
             <AIModelIcon title={title} />
           </div>
         )}
-        <h3 className="font-semibold text-gray-900 dark:text-gray-100 text-lg">{title}</h3>
+        <h3 className="font-semibold text-gray-900 dark:text-gray-100 text-base sm:text-lg">{title}</h3>
       </div>
       
       {showTooltip && (
-        <div className="absolute top-1 right-0">
+        <div className="absolute top-0 sm:top-1 right-0">
           <Tooltip title={title} description={getTooltipDescription(title)} />
         </div>
       )}
@@ -554,7 +552,7 @@ function CapabilityCard({
   if (displayType === 'top-two-mcq') {
     return (
       <CardBase onClick={clickHandler} className={className}>
-        <Col className="h-full space-y-2">
+        <Col className="h-full space-y-1 sm:space-y-2">
           <div className="w-full">
             <CardTitle 
               title={title} 
@@ -565,28 +563,28 @@ function CapabilityCard({
           </div>
           
           {/* VS Match Layout */}
-          <div className="rounded-md p-3 flex-1 flex flex-col justify-center">
+          <div className="rounded-md p-2 sm:p-3 flex-1 flex flex-col justify-center">
             <div className="flex items-center justify-between px-1">
 
               {/* Left Company */}
               <div className="text-center w-[38%]">
                 {getCompanyLogo(topCompanies[0].text) ? (
                   <div className="flex flex-col items-center">
-                    <div className="h-16 w-16 mb-2 flex items-center justify-center text-primary-600">
+                    <div className="h-14 w-14 sm:h-16 sm:w-16 mb-1 sm:mb-2 flex items-center justify-center text-primary-600">
                       {React.createElement(getCompanyLogo(topCompanies[0].text) as React.FC<{className?: string}>, { 
-                        className: "w-14 h-14" 
+                        className: "w-12 h-12 sm:w-14 sm:h-14" 
                       })}
                     </div>
-                    <div className="text-xl font-bold text-ink-900">
+                    <div className="text-lg sm:text-xl font-bold text-ink-900">
                       {topCompanies[0].text}
                     </div>
                   </div>
                 ) : (
-                  <div className="text-3xl font-bold text-ink-900 truncate">
+                  <div className="text-2xl sm:text-3xl font-bold text-ink-900 truncate">
                     {topCompanies[0].text}
                   </div>
                 )}
-                <div className="text-base text-ink-600 mt-1 font-medium">
+                <div className="text-xs sm:text-base text-ink-600 mt-1 font-medium">
                   {formatPercent(topCompanies[0].probability)}
                 </div>
               </div>
@@ -605,23 +603,23 @@ function CapabilityCard({
                         className: "w-12 h-12" 
                       })}
                     </div>
-                    <div className="text-lg font-bold text-ink-900">
+                    <div className="text-base sm:text-lg font-bold text-ink-900">
                       {topCompanies[1].text}
                     </div>
                   </div>
                 ) : (
-                  <div className="text-lg font-bold text-ink-900 truncate">
+                  <div className="text-base sm:text-lg font-bold text-ink-900 truncate">
                     {topCompanies[1].text}
                   </div>
                 )}
-                <div className="text-base text-ink-600 mt-1 font-medium">
+                <div className="text-xs sm:text-base text-ink-600 mt-1 font-medium">
                   {formatPercent(topCompanies[1].probability)}
                 </div>
               </div>
             </div>
             
             {/* Probability Bar */}
-            <div className="mt-4 h-1.5 w-full rounded-full bg-ink-200 dark:bg-ink-700 overflow-hidden">
+            <div className="mt-2 sm:mt-4 h-1.5 w-full rounded-full bg-ink-200 dark:bg-ink-700 overflow-hidden">
               {/* Calculate the width percentage based on probabilities */}
               <div 
                 className="h-full bg-primary-600 dark:bg-primary-500" 
@@ -653,27 +651,27 @@ function CapabilityCard({
             </div>
             
             {/* Company Layout single company */}
-            <div className="rounded-md p-3 flex-1 flex flex-col justify-center">
+            <div className="rounded-md p-2 sm:p-3 flex-1 flex flex-col justify-center">
               <div className="flex items-center justify-center">
                 {/* Company Display */}
                 <div className="text-center">
                   {getCompanyLogo(topModel.text) ? (
                     <div className="flex flex-col items-center">
-                      <div className="h-16 w-16 mb-2 flex items-center justify-center text-primary-600">
+                      <div className="h-14 w-14 mb-1 flex items-center justify-center text-primary-600">
                         {React.createElement(getCompanyLogo(topModel.text) as React.FC<{className?: string}>, { 
-                          className: "w-14 h-14" 
+                          className: "w-12 h-12" 
                         })}
                       </div>
-                      <div className="text-xl font-bold text-ink-900">
+                      <div className="text-lg sm:text-xl font-bold text-ink-900">
                         {topModel.text}
                       </div>
                     </div>
                   ) : (
-                    <div className="text-3xl font-bold text-ink-900 truncate">
+                    <div className="text-2xl sm:text-3xl font-bold text-ink-900 truncate">
                       {topModel.text}
                     </div>
                   )}
-                  <div className="text-base text-ink-600 mt-1 font-medium">
+                  <div className="text-xs sm:text-base text-ink-600 mt-1 font-medium">
                     {formatPercent(topModel.probability)}
                   </div>
                 </div>
@@ -686,7 +684,7 @@ function CapabilityCard({
     
     return (
       <CardBase onClick={clickHandler} className={className}>
-        <Col className="h-full space-y-2">
+        <Col className="h-full space-y-1 sm:space-y-2">
           <div className="w-full">
             <CardTitle 
               title={title} 
@@ -698,8 +696,8 @@ function CapabilityCard({
           
           <div className="flex flex-col h-full justify-between">
             {/* Main content - centered model name */}
-            <div className="rounded-md p-3 flex-1 flex items-center justify-center">
-              <div className={`font-medium text-center ${topModel.text.length > 15 ? 'text-3xl' : topModel.text.length > 10 ? 'text-4xl' : 'text-5xl'}`}>
+            <div className="rounded-md p-2 sm:p-3 flex-1 flex items-center justify-center">
+              <div className={`font-medium text-center ${topModel.text.length > 15 ? 'text-2xl sm:text-3xl' : topModel.text.length > 10 ? 'text-3xl sm:text-4xl' : 'text-4xl sm:text-5xl'}`}>
                 <span className={getGradient(type)}>
                   {topModel.text}
                 </span>
@@ -707,7 +705,7 @@ function CapabilityCard({
             </div>
             
             {/* Bottom-aligned probability display */}
-            <div className="text-ink-600 text-sm mt-3 text-left w-full px-1">
+            <div className="text-ink-600 text-xs sm:text-sm mt-1 sm:mt-3 text-left w-full px-1">
               Probability: <span className="font-medium">{formatPercent(topModel.probability)}</span>
             </div>
           </div>
@@ -729,11 +727,11 @@ function CapabilityCard({
           />
         </div>
         
-        <div className="flex flex-col items-center justify-center flex-grow mt-2">
+        <div className="flex flex-col items-center justify-center flex-grow mt-1 sm:mt-2">
           {displayType === 'binary-odds' ? (
             <div className="flex flex-col justify-between h-full w-full">
               <div className="flex-1 flex items-center justify-center">
-                <div className={`font-medium text-center ${displayValue.length > 5 ? 'text-6xl' : 'text-6xl'}`}>
+                <div className={`font-medium text-center ${displayValue.length > 5 ? 'text-5xl sm:text-6xl' : 'text-5xl sm:text-6xl'}`}>
                   <span className={getGradient(type)}>
                     {displayValue}
                   </span>
@@ -741,10 +739,10 @@ function CapabilityCard({
               </div>
               {/* Brief descriptive text under percentages */}
               {(type === 'benchmark' || type === 'prize' || type === 'misuse' || type === '2028-forecast') && (
-                <p className="text-ink-600 text-sm mt-3 text-left w-full px-1">
+                <p className="text-ink-600 text-xs sm:text-sm mt-1 sm:mt-3 text-left w-full px-1">
                   {type === 'benchmark' && title.includes('IMO Gold') && 'An LLM gets a IMO gold medal'}
                   {type === 'benchmark' && title.includes('Frontier Math') && 'An LLM gets 80%+'}
-                  {type === 'benchmark' && title.includes('SWE Bench') && 'LLM Top Sscore'}
+                  {type === 'benchmark' && title.includes('SWE Bench') && 'LLM Top Score'}
                   {type === 'benchmark' && title.includes('Last Exam') && 'LLM > Human'}
                   {type === 'prize' && title.includes('Millennium') && 'Chance of solving a million-dollar math problem by June 2025'}
                   {type === 'prize' && title.includes('Arc AGI') && 'Probability of claiming Arc-AGI prize by end of 2025'}
@@ -760,7 +758,7 @@ function CapabilityCard({
             </div>
           ) : displayType === 'date-numeric' ? (
             <div className="h-full flex-1 flex items-center justify-center">
-              <div className={`font-medium text-center ${displayValue.length > 5 ? 'text-4xl' : displayValue.length > 3 ? 'text-5xl' : 'text-6xl'}`}>
+              <div className={`font-medium text-center ${displayValue.length > 5 ? 'text-3xl sm:text-4xl' : displayValue.length > 3 ? 'text-4xl sm:text-5xl' : 'text-5xl sm:text-6xl'}`}>
                 <span className={getGradient(type)}>
                   {displayValue}
                 </span>
@@ -768,7 +766,7 @@ function CapabilityCard({
             </div>
           ) : (
             <div className="h-full flex-1 flex items-center justify-center">
-              <div className={`font-medium text-center ${displayValue.length > 5 ? 'text-4xl' : displayValue.length > 3 ? 'text-5xl' : 'text-6xl'}`}>
+              <div className={`font-medium text-center ${displayValue.length > 5 ? 'text-3xl sm:text-4xl' : displayValue.length > 3 ? 'text-4xl sm:text-5xl' : 'text-5xl sm:text-6xl'}`}>
                 <span className={getGradient(type)}>
                   {displayValue}
                 </span>
@@ -940,16 +938,20 @@ export function AIForecast({ whenAgi, contracts = [], hideTitle }: AIForecastPro
             />
           ) : (
             // Display other card types in a grid
-            <div className={`grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3 mt-2 relative rounded-lg ${CARD_BG_PATTERN}`}>
+            <div className={`grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 gap-3 mt-2 relative rounded-lg ${CARD_BG_PATTERN}`}>
               {capabilityCardsByType[type]?.map((card, idx) => {
                 // Special sizing for "monthly" type cards
-                let cardClassName = "";
+                let cardClassName = ""
                 
-                // For "monthly" cards - make first card 2/3 width and second 1/3 width
-                if (type === "monthly" && idx === 0) {
-                  cardClassName = "md:col-span-2"; // first card takes 2/3 width on desktop
-                } else if (type === "monthly" && idx === 1) {
-                  cardClassName = ""; // Second card takes 1/3 width (default)
+                // For "monthly" cards
+                if (type === "monthly") {
+                  // All monthly cards should be single column on mobile
+                  cardClassName = "col-span-2 sm:col-span-1"
+                  
+                  // First monthly card gets additional width on medium+ screens
+                  if (idx === 0) {
+                    cardClassName += " md:col-span-2"
+                  }
                 }
                 
                 return (
