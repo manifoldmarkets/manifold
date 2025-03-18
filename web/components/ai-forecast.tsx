@@ -7,11 +7,11 @@ import { CopyLinkOrShareButton } from 'web/components/buttons/copy-link-button'
 import { useLiveContract } from 'web/hooks/use-contract'
 import { getNumberExpectedValue } from 'common/src/number'
 import { Clock } from 'web/components/clock/clock'
+import { Timeline, TimelineCard, TimelineItemData } from 'web/components/timeline'
 import { NumericBetPanel } from 'web/components/answers/numeric-bet-panel'
 import { ClickFrame } from 'web/components/widgets/click-frame'
 import Link from 'next/link'
 import { formatPercent } from 'common/util/format'
-import { format as formatDateFn } from 'date-fns'
 import { getDisplayProbability } from 'common/calculate'
 import { SiOpenai, SiGooglegemini, SiAnthropic} from 'react-icons/si'
 import { RiTwitterXLine } from 'react-icons/ri'
@@ -19,7 +19,6 @@ import { LuLink, LuInfo } from 'react-icons/lu'
 import { GiSpermWhale } from "react-icons/gi"
 import { PiBirdBold } from "react-icons/pi"
 import { LiaKiwiBirdSolid } from "react-icons/lia"
-import { MdChevronRight, MdChevronLeft } from "react-icons/md"
 
 // Shared background pattern for all cards
 const BG_PATTERN_LIGHT = "bg-[url(\"data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='%23000000' fill-opacity='0.02' fill-rule='evenodd'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/svg%3E\")]"
@@ -286,7 +285,6 @@ function CardBase({
   );
 }
 
-// Component for card title with optional icon
 // Component for card title with tooltip for benchmarks and prizes
 function CardTitle({ 
   title, 
@@ -310,7 +308,6 @@ function CardTitle({
         <h3 className={`font-semibold ${getAccentColor(type)} text-lg`}>{title}</h3>
       </div>
       
-      {/* Conditionally show tooltip for benchmark and prize cards */}
       {showTooltip && (
         <div className="ml-2">
           <Tooltip title={title} description={getTooltipDescription(title)} />
@@ -342,22 +339,6 @@ function getAccentColor(type: string) {
     case '2028-forecast': return 'text-cyan-700 dark:text-cyan-500';
     default: return 'text-primary-600 dark:text-primary-500';
   }
-}
-
-// Helper function to get a color for each company
-function getCompanyColor(corp: string) {
-  const colorMap: Record<string, string> = {
-    ANTHROPIC: 'bg-blue-500',
-    OPENAI: 'bg-green-500',
-    GOOGLE: 'bg-red-400',
-    META: 'bg-indigo-500',
-    MISTRAL: 'bg-purple-500',
-    COHERE: 'bg-yellow-500',
-    DEEPMIND: 'bg-teal-500',
-    default: 'bg-primary-600'
-  }
-  
-  return colorMap[corp] || colorMap.default
 }
 
 // Get gradient based on card type
@@ -822,7 +803,6 @@ function getCompanyLogo(companyName: string): React.ComponentType | null {
       return LiaKiwiBirdSolid // No specific icon for other companies
   }
 }
-
 // For model releases: Displays model releases on a timeline
 interface ModelReleasesTimelineProps {
   cards: AICapabilityCard[]
@@ -843,12 +823,10 @@ function getEstimatedReleaseDate(title: string, index: number): Date {
   return new Date(2025, 3 + (index % 10), 15)
 }
 
-// Model data structure used throughout timeline components
-
-// Timeline
+// Timeline component for model releases
 function ModelReleasesTimeline({ cards, contracts }: ModelReleasesTimelineProps) {
-  // Prepare model data with release dates and company info
-  const modelData = useMemo(() => {
+  // Prepare timeline items with release dates and model info
+  const timelineItems = useMemo(() => {
     return cards.map((card, index) => {
       // Find the contract
       const contract = contracts.find(c => c.id === card.marketId) || null
@@ -856,235 +834,23 @@ function ModelReleasesTimeline({ cards, contracts }: ModelReleasesTimelineProps)
       
       return {
         title: card.title,
-        marketId: card.marketId,
-        contract,
-        releaseDate
-      }
-    }).sort((a, b) => a.releaseDate.getTime() - b.releaseDate.getTime())
+        path: contract ? contractPath(contract) : `#${card.marketId}`,
+        releaseDate,
+        icon: <AIModelIcon title={card.title} className="w-6 h-6" />
+      } as TimelineItemData
+    })
   }, [cards, contracts])
   
-  if (modelData.length === 0) {
+  if (timelineItems.length === 0) {
     return <div className="text-ink-500 text-center py-4">No model releases to display</div>
   }
 
- // Only show 6 months at a time
-  const currentDate = new Date()
-  const startDate = new Date(currentDate)
-  startDate.setMonth(currentDate.getMonth()) // Start with this month
-  startDate.setDate(1) // Set to first of month
-  
-  const endDate = new Date(startDate)
-  endDate.setMonth(startDate.getMonth() + 5) // 6 months total
-    
-  const latestModelDate = modelData.length ? 
-    modelData.reduce((latest, model) => 
-      model.releaseDate > latest ? model.releaseDate : latest, 
-      modelData[0].releaseDate
-    ) : endDate
-  
-  // Track scroll position with state
-  const [timelineScrollPosition, setTimelineScrollPosition] = useState(0);
-  
-  // Function to handle scrolling forward in time
-  const scrollForward = () => {
-    // Calculate the new start date based on the current view end date
-    // This ensures we don't miss any models that were at the end of the previous page
-    const newStartDate = new Date(viewEndDate);
-    
-    if (newStartDate <= latestModelDate) {
-      setTimelineScrollPosition(timelineScrollPosition + 5)
-    }
-  }
-  
-  // Function to handle scrolling backward in time
-  const scrollBackward = () => {
-    if (timelineScrollPosition > 0) {
-      setTimelineScrollPosition(timelineScrollPosition - 5)
-    }
-  }
-  
-  const viewStartDate = new Date(startDate);
-  viewStartDate.setMonth(startDate.getMonth() + timelineScrollPosition);
-  
-  const viewEndDate = new Date(viewStartDate);
-  viewEndDate.setMonth(viewStartDate.getMonth() + 5); // 6 months total
-  
-  // Generate evenly spaced month markers for the visible timeline
-  const generateMonthMarkers = () => {
-    const months = []
-    const monthStart = new Date(viewStartDate)
-    
-    const lastDate = new Date(viewEndDate)
-    
-    // Go to the start of the month for earliest date
-    while (monthStart <= lastDate) {
-      months.push(new Date(monthStart))
-      monthStart.setMonth(monthStart.getMonth() + 1)
-    }
-    
-    return months
-  }
-  
-  const monthMarkers = generateMonthMarkers()
-  
-  // Calculate position on timeline (0-100%) based on visible range
-  const getTimelinePosition = (date: Date) => {
-    const timeRange = viewEndDate.getTime() - viewStartDate.getTime()
-    if (timeRange === 0) return 0
-    
-    // Calculate raw position as percentage
-    const position = ((date.getTime() - viewStartDate.getTime()) / timeRange) * 100
-    
-    // Check if we're on the second page and need to handle models
-    // that would have been hidden from the first page (appearing at 95-100%)
-    if (timelineScrollPosition > 0) {
-      // Calculate where this date would have been on the previous page
-      const prevPageStartDate = new Date(startDate);
-      prevPageStartDate.setMonth(prevPageStartDate.getMonth() + (timelineScrollPosition - 5));
-      
-      const prevPageEndDate = new Date(prevPageStartDate);
-      prevPageEndDate.setMonth(prevPageEndDate.getMonth() + 5);
-      
-      const prevPageTimeRange = prevPageEndDate.getTime() - prevPageStartDate.getTime();
-      const prevPagePosition = ((date.getTime() - prevPageStartDate.getTime()) / prevPageTimeRange) * 100;
-      
-      // If this model would have been in the last 10% of the previous page (95-100%),
-      // and it's before the current page's normal range, move it to the beginning of this page
-      if (prevPagePosition > 95 && prevPagePosition <= 100 && position < 0) {
-        return 5; // Position at beginning of current page
-      }
-    }
-    
-    // Return position if it's within the visible range (0-100), otherwise return -1
-    if (position >= 0 && position <= 100) {
-      return position
-    } else {
-      return -1 // Indicates the date is outside the visible timeline
-    }
-  }
-
   return (
-    <div className="rounded-lg p-4 mx-2 md:mx-4">
-      <div className="relative mb-10 mt-12">
-        {/* Main container for timeline and model icons */}
-        <div className="relative w-full px-8">
-          {timelineScrollPosition > 0 && (
-            <button 
-              onClick={scrollBackward}
-              className="absolute -left-6 top-[-20px] p-2 rounded-full text-primary-600 z-10"
-              aria-label="Scroll backward in time"
-            >
-              <MdChevronLeft className="h-6 w-6" />
-            </button>
-          )}
-          
-          {viewEndDate < latestModelDate && (
-            <button 
-              onClick={scrollForward}
-              className="absolute -right-6 top-[-20px] p-2 rounded-full text-primary-600 z-10"
-              aria-label="Scroll forward in time"
-            >
-              <MdChevronRight className="h-6 w-6" />
-            </button>
-          )}
-        
-          {/* Model icons with collision detection */}
-          <div className="absolute left-0 right-0 top-[-50px] w-full">
-            {(() => {
-              // First, get all models that would be visible
-              const visibleModels = modelData
-                .map(model => {
-                  const position = getTimelinePosition(model.releaseDate);
-                  
-                  // Don't show models that are in the last 5% of any page
-                  const isNearEndOfPage = position > 95 && position <= 100;
-                  if (position < 0 || position > 100 || isNearEndOfPage) return null;
-                  
-                  return { model, position, verticalOffset: 0 };
-                })
-                .filter(item => item !== null)
-                .sort((a, b) => a.position - b.position); // Sort by position
-              
-              // Detect and resolve collisions
-              for (let i = 0; i < visibleModels.length - 1; i++) {
-                const current = visibleModels[i];
-                const next = visibleModels[i + 1];
-                
-                // If models are too close (less than 15% apart)
-                if (next.position - current.position < 15) {
-                  // Alternate vertical positions
-                  next.verticalOffset = i % 2 === 0 ? 30 : -30;
-                }
-              }
-              
-              // Now render the models with their adjusted positions
-              return visibleModels.map(({ model, position, verticalOffset }) => (
-                <Link
-                  key={model.marketId}
-                  href={model.contract ? contractPath(model.contract) : `#${model.marketId}`}
-                  className="absolute"
-                  style={{
-                    left: `${position}%`,
-                    transform: `translateX(-50%) translateY(${verticalOffset}px)`,
-                    transition: 'transform 0.2s ease-out'
-                  }}
-                >
-                  {/* Model icon with name on the right */}
-                  <div className="flex items-center rounded-full py-1 px-2.5 hover:shadow-md transition-all">
-                    <AIModelIcon title={model.title} className="w-6 h-6 mr-1.5 text-primary-600 dark:text-primary-500" />
-                    <span className="text-sm font-medium whitespace-nowrap text-gray-900 dark:text-gray-100">{model.title}</span>
-                  </div>
-                </Link>
-              ));
-            })()}
-          </div>
-          
-          {/* Timeline content */}
-          <div className="relative w-full">
-            {/* Month markers and labels */}
-            <div className="absolute left-0 right-0 top-[15px]">
-              {monthMarkers.map((date, index) => {
-                const position = (index / (monthMarkers.length - 1)) * 100
-                
-                return (
-                  <div 
-                    key={formatDateFn(date, 'yyyy-MM')} 
-                    className="absolute"
-                    style={{ left: `${position}%`, transform: 'translateX(-50%)' }}
-                  >
-                    {/* Month label positioned above the timeline */}
-                    <div className="text-xs text-gray-600 dark:text-gray-400 text-center whitespace-nowrap mb-2">
-                      {formatDateFn(date, 'MMM yyyy')}
-                    </div>
-                  </div>
-                )
-              })}
-            </div>
-            
-            {/* Timeline line */}
-            <div className="absolute left-0 right-0 h-1 bg-fuchsia-700 dark:bg-fuchsia-500 top-0"></div>
-            
-            {/* Tick marks */}
-            <div className="absolute left-0 right-0 top-0">
-              {monthMarkers.map((date, index) => {
-                const position = (index / (monthMarkers.length - 1)) * 100
-                
-                return (
-                  <div 
-                    key={`tick-${formatDateFn(date, 'yyyy-MM')}`} 
-                    className="absolute"
-                    style={{ left: `${position}%`, transform: 'translateX(-50%)' }}
-                  >
-                    {/* Tick marks */}
-                    <div className="h-3 w-0.5 bg-fuchsia-700 dark:bg-fuchsia-500 -mt-1"></div>
-                  </div>
-                )
-              })}
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
+    <TimelineCard
+      items={timelineItems}
+      lineColor="bg-fuchsia-700 dark:bg-fuchsia-500"
+      backgroundColor="bg-gradient-to-br from-fuchsia-50 to-fuchsia-100 dark:from-fuchsia-800/40 dark:to-fuchsia-700/50"
+    />
   )
 }
 
