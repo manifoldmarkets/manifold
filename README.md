@@ -7,7 +7,7 @@ This [monorepo][] has basically everything involved in running and operating Man
 0. Make sure you have [Yarn 1.x][yarn]
 1. `$ cd web`
 2. `$ yarn`
-3. `$ yarn dev:dev`
+3. `$ yarn dev:dev` or `$ yarn dev` if you do not have the NEXT_PUBLIC_FIREBASE_ENV configuration in your .env file. 
 4. Your site will be available on http://localhost:3000
 
 See [`web/README.md`][web-readme] for more details on hacking on the web client.
