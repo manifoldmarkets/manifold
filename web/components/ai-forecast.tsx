@@ -940,7 +940,7 @@ export function AIForecast({ whenAgi, contracts = [], hideTitle }: AIForecastPro
             />
           ) : (
             // Display other card types in a grid
-            <div className={`grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3 mt-2 relative rounded-lg ${CARD_BG_PATTERN}`}>
+            <div className={`grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 gap-3 mt-2 relative rounded-lg ${CARD_BG_PATTERN}`}>
               {capabilityCardsByType[type]?.map((card, idx) => {
                 // Special sizing for "monthly" type cards
                 let cardClassName = "";
