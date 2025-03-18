@@ -768,9 +768,12 @@ function CapabilityCard({
                   {type === 'prize' && title.includes('Millennium') && 'Chance of solving a million-dollar math problem'}
                   {type === 'prize' && title.includes('Arc AGI') && 'Probability of meeting AGI criteria by 2025'}
                   {type === 'prize' && title.includes('Turing Test') && 'Odds of passing rigorous human-indistinguishability test'}
-                  {type === 'misuse' && title.includes('Blackmail') && 'Risk of AI being used for automated blackmail'}
                   {type === 'misuse' && title.includes('Hacking') && 'Probability of AI independently compromising systems'}
-                  {type === '2028-forecast' && 'Likelihood of surpassing human-level performance'}
+                  {type === '2028-forecast' && title.includes('Romantic') && 'At least 1/1000 Americans talks weekly with one'}
+                  {type === '2028-forecast' && title.includes('Blackmail') && 'Risk of AI being used for automated blackmail'}
+                  {type === '2028-forecast' && title.includes('Economic') && 'Break in trend for GDP growth, GDP per capita, productivity, or unemployment'}
+                  {type === '2028-forecast' && title.includes('Zero') && 'AI plays a random computer game as well as a human'}
+                  {type === '2028-forecast' && title.includes('Self-play') && 'AI plays a random computer game as well as a human after self-play'}
                 </p>
               )}
             </div>
@@ -1121,7 +1124,7 @@ export function AIForecast({ whenAgi, contracts = [], hideTitle }: AIForecastPro
       label: 'AI Misuse',
       description: 'How misaligned are these models?'
     },
-    '2028-prediction': {
+    '2028-forecast': {
       label: 'Predictions for 2028',
       description: 'What happens by 2028'
     }
