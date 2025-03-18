@@ -2,8 +2,6 @@ import React, { useState, useMemo } from 'react'
 import { BinaryContract, CPMMNumericContract, Contract, contractPath } from 'common/contract'
 import { Col } from 'web/components/layout/col'
 import { Row } from 'web/components/layout/row'
-import { ENV_CONFIG } from 'common/envs/constants'
-import { CopyLinkOrShareButton } from 'web/components/buttons/copy-link-button'
 import { useLiveContract } from 'web/hooks/use-contract'
 import { getNumberExpectedValue } from 'common/src/number'
 import { Clock } from 'web/components/clock/clock'
@@ -305,7 +303,7 @@ function CardTitle({
             <AIModelIcon title={title} />
           </div>
         )}
-        <h3 className="font-semibold text-gray-900 dark:text-gray-100 text-lg">{title}</h3>
+        <h3 className="font-semibold text-gray-900 dark:text-gray-100 text-base sm:text-lg">{title}</h3>
       </div>
       
       {showTooltip && (
@@ -577,12 +575,12 @@ function CapabilityCard({
                         className: "w-14 h-14" 
                       })}
                     </div>
-                    <div className="text-xl font-bold text-ink-900">
+                    <div className="text-lg sm:text-xl font-bold text-ink-900">
                       {topCompanies[0].text}
                     </div>
                   </div>
                 ) : (
-                  <div className="text-3xl font-bold text-ink-900 truncate">
+                  <div className="text-2xl sm:text-3xl font-bold text-ink-900 truncate">
                     {topCompanies[0].text}
                   </div>
                 )}
@@ -605,12 +603,12 @@ function CapabilityCard({
                         className: "w-12 h-12" 
                       })}
                     </div>
-                    <div className="text-lg font-bold text-ink-900">
+                    <div className="text-base sm:text-lg font-bold text-ink-900">
                       {topCompanies[1].text}
                     </div>
                   </div>
                 ) : (
-                  <div className="text-lg font-bold text-ink-900 truncate">
+                  <div className="text-base sm:text-lg font-bold text-ink-900 truncate">
                     {topCompanies[1].text}
                   </div>
                 )}
@@ -664,12 +662,12 @@ function CapabilityCard({
                           className: "w-14 h-14" 
                         })}
                       </div>
-                      <div className="text-xl font-bold text-ink-900">
+                      <div className="text-lg sm:text-xl font-bold text-ink-900">
                         {topModel.text}
                       </div>
                     </div>
                   ) : (
-                    <div className="text-3xl font-bold text-ink-900 truncate">
+                    <div className="text-2xl sm:text-3xl font-bold text-ink-900 truncate">
                       {topModel.text}
                     </div>
                   )}
@@ -699,7 +697,7 @@ function CapabilityCard({
           <div className="flex flex-col h-full justify-between">
             {/* Main content - centered model name */}
             <div className="rounded-md p-3 flex-1 flex items-center justify-center">
-              <div className={`font-medium text-center ${topModel.text.length > 15 ? 'text-3xl' : topModel.text.length > 10 ? 'text-4xl' : 'text-5xl'}`}>
+              <div className={`font-medium text-center ${topModel.text.length > 15 ? 'text-2xl sm:text-3xl' : topModel.text.length > 10 ? 'text-3xl sm:text-4xl' : 'text-4xl sm:text-5xl'}`}>
                 <span className={getGradient(type)}>
                   {topModel.text}
                 </span>
@@ -733,7 +731,7 @@ function CapabilityCard({
           {displayType === 'binary-odds' ? (
             <div className="flex flex-col justify-between h-full w-full">
               <div className="flex-1 flex items-center justify-center">
-                <div className={`font-medium text-center ${displayValue.length > 5 ? 'text-6xl' : 'text-6xl'}`}>
+                <div className={`font-medium text-center ${displayValue.length > 5 ? 'text-5xl sm:text-6xl' : 'text-5xl sm:text-6xl'}`}>
                   <span className={getGradient(type)}>
                     {displayValue}
                   </span>
@@ -760,7 +758,7 @@ function CapabilityCard({
             </div>
           ) : displayType === 'date-numeric' ? (
             <div className="h-full flex-1 flex items-center justify-center">
-              <div className={`font-medium text-center ${displayValue.length > 5 ? 'text-4xl' : displayValue.length > 3 ? 'text-5xl' : 'text-6xl'}`}>
+              <div className={`font-medium text-center ${displayValue.length > 5 ? 'text-3xl sm:text-4xl' : displayValue.length > 3 ? 'text-4xl sm:text-5xl' : 'text-5xl sm:text-6xl'}`}>
                 <span className={getGradient(type)}>
                   {displayValue}
                 </span>
@@ -768,7 +766,7 @@ function CapabilityCard({
             </div>
           ) : (
             <div className="h-full flex-1 flex items-center justify-center">
-              <div className={`font-medium text-center ${displayValue.length > 5 ? 'text-4xl' : displayValue.length > 3 ? 'text-5xl' : 'text-6xl'}`}>
+              <div className={`font-medium text-center ${displayValue.length > 5 ? 'text-3xl sm:text-4xl' : displayValue.length > 3 ? 'text-4xl sm:text-5xl' : 'text-5xl sm:text-6xl'}`}>
                 <span className={getGradient(type)}>
                   {displayValue}
                 </span>
@@ -943,13 +941,15 @@ export function AIForecast({ whenAgi, contracts = [], hideTitle }: AIForecastPro
             <div className={`grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 gap-3 mt-2 relative rounded-lg ${CARD_BG_PATTERN}`}>
               {capabilityCardsByType[type]?.map((card, idx) => {
                 // Special sizing for "monthly" type cards
-                let cardClassName = "";
+                let cardClassName = ""
                 
                 // For "monthly" cards - make first card 2/3 width and second 1/3 width
                 if (type === "monthly" && idx === 0) {
-                  cardClassName = "md:col-span-2"; // first card takes 2/3 width on desktop
-                } else if (type === "monthly" && idx === 1) {
-                  cardClassName = ""; // Second card takes 1/3 width (default)
+                  cardClassName = "md:col-span-2"
+                } 
+                // For monthly type, all cards should be single column on mobile
+                else if (type === "monthly") {
+                  cardClassName = "col-span-2 sm:col-span-1"
                 }
                 
                 return (
