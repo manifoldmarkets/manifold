@@ -30,11 +30,7 @@ export const createPublicChatMessage: APIHandler<
     throw new APIError(500, 'Failed to create chat message.')
   }
 
-<<<<<<< HEAD
-  broadcast('public-chat', { message: 'new-message' })
-=======
   broadcast('public-chat', {})
->>>>>>> 1aef31388e3a3d6ab6c83b2de12b5d6666af8ddc
 
   return convertPublicChatMessage({
     ...chatMessage,
