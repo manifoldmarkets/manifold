@@ -821,6 +821,25 @@ export const API = (_apiTypeCheck = {
     returns: [] as Contract[],
     props: searchProps,
   },
+  'get-moving-markets': {
+    method: 'GET',
+    visibility: 'public',
+    authed: false,
+    cache: DEFAULT_CACHE_STRATEGY,
+    returns: {} as {
+      contracts: Contract[],
+      movements: {
+        contractId: string,
+        prevVal: number,
+        newVal: number,
+        createdTime: number
+      }[]
+    },
+    props: z.object({
+      limit: z.coerce.number().gte(0).lte(100).default(50),
+      offset: z.coerce.number().gte(0).default(0),
+    }).strict(),
+  },
   managram: {
     method: 'POST',
     visibility: 'public',
@@ -2273,6 +2292,18 @@ export const API = (_apiTypeCheck = {
         min: z.string(),
         max: z.string(),
         tab: z.enum(['thresholds', 'buckets']),
+      })
+      .strict(),
+  },
+
+  'generate-concise-title': {
+    method: 'POST',
+    visibility: 'public',
+    authed: true,
+    returns: {} as { title: string },
+    props: z
+      .object({
+        question: z.string(),
       })
       .strict(),
   },

@@ -142,6 +142,7 @@ import { getmonthlybets2024 } from './get-monthly-bets-2024'
 import { getmaxminprofit2024 } from './get-max-min-profit-2024'
 import { getNextLoanAmount } from './get-next-loan-amount'
 import { checkSportsEvent } from './check-sports-event'
+import { getMovingMarkets } from './get-moving-markets'
 
 import { createTask } from './create-task'
 import { updateTask } from './update-task'
@@ -172,7 +173,8 @@ import {
   regenerateDateMidpoints,
 } from './generate-ai-date-ranges'
 import { inferNumericUnit } from './infer-numeric-unit'
-// we define the handlers in this object in order to typecheck that every API has a handler
+import { generateConciseTitle } from './generate-concise-title'
+
 export const handlers: { [k in APIPath]: APIHandler<k> } = {
   'refresh-all-clients': refreshAllClients,
   bet: placeBet,
@@ -357,4 +359,6 @@ export const handlers: { [k in APIPath]: APIHandler<k> } = {
   'infer-numeric-unit': inferNumericUnit,
   'generate-ai-date-ranges': generateAIDateRanges,
   'regenerate-date-midpoints': regenerateDateMidpoints,
+  'generate-concise-title': generateConciseTitle,
+  'get-moving-markets': getMovingMarkets,
 }
