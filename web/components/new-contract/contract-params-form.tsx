@@ -1,7 +1,8 @@
 import dayjs from 'dayjs'
 import router from 'next/router'
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useCallback } from 'react'
 import { generateJSON, JSONContent } from '@tiptap/core'
+import { debounce } from 'lodash'
 
 import {
   add_answers_mode,
@@ -228,6 +229,45 @@ export function ContractParamsForm(props: {
     params?.q ?? '',
     questionKey
   )
+
+  const [suggestedTitle, setSuggestedTitle] = useState<string | undefined>()
+  const [applyingTitle, setApplyingTitle] = useState<boolean>(false)
+  const [isGeneratingTitle, setIsGeneratingTitle] = useState(false)
+
+  const generateConciseTitle = useCallback(async (currentQuestion: string) => {
+    if (!currentQuestion || currentQuestion.length < 20) return
+    setIsGeneratingTitle(true)
+    try {
+      const result = await api('generate-concise-title', {
+        question: currentQuestion,
+      })
+      if (result.title) {
+        setSuggestedTitle(
+          result.title !== currentQuestion ? result.title : undefined
+        )
+      }
+    } catch (e) {
+      console.error('Error generating title:', e)
+    }
+    setIsGeneratingTitle(false)
+  }, [])
+
+  const debouncedGenerateTitle = useCallback(
+    debounce((question: string) => {
+      if (question && question.length >= 20) {
+        generateConciseTitle(question)
+      } else if (suggestedTitle) {
+        setSuggestedTitle(undefined)
+      }
+    }, 1000),
+    []
+  )
+
+  useEffect(() => {
+    if (applyingTitle) return
+    debouncedGenerateTitle(question)
+    return () => debouncedGenerateTitle.cancel()
+  }, [question])
 
   const categorizedQuestionKey = 'last-categorized-question' + paramsKey
   const [categorizedQuestion, setCategorizedQuestion] = usePersistentLocalState(
@@ -645,6 +685,32 @@ export function ContractParamsForm(props: {
             findTopicsAndSimilarQuestions(e.target.value || '')
           }}
         />
+
+        <Row className="text-ink-600 -mb-3 mt-2 h-6 items-center gap-2 text-sm">
+          {suggestedTitle && suggestedTitle !== '' ? (
+            <>
+              <span className="">{suggestedTitle}</span>
+              <Button
+                color="gray-outline"
+                size="2xs"
+                loading={isGeneratingTitle}
+                disabled={isGeneratingTitle}
+                onClick={() => {
+                  setApplyingTitle(true)
+                  setQuestion(suggestedTitle)
+                  setSuggestedTitle(undefined)
+                  setTimeout(() => {
+                    setApplyingTitle(false)
+                  }, 1000)
+                }}
+              >
+                Accept
+              </Button>
+            </>
+          ) : isGeneratingTitle && !suggestedTitle ? (
+            <span>Generating concise title...</span>
+          ) : null}
+        </Row>
       </Col>
       {similarContracts.length ? (
         <SimilarContractsSection

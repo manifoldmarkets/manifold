@@ -172,6 +172,7 @@ import {
   regenerateDateMidpoints,
 } from './generate-ai-date-ranges'
 import { inferNumericUnit } from './infer-numeric-unit'
+import { generateConciseTitle } from './generate-concise-title'
 // we define the handlers in this object in order to typecheck that every API has a handler
 export const handlers: { [k in APIPath]: APIHandler<k> } = {
   'refresh-all-clients': refreshAllClients,
@@ -357,4 +358,5 @@ export const handlers: { [k in APIPath]: APIHandler<k> } = {
   'infer-numeric-unit': inferNumericUnit,
   'generate-ai-date-ranges': generateAIDateRanges,
   'regenerate-date-midpoints': regenerateDateMidpoints,
+  'generate-concise-title': generateConciseTitle,
 }

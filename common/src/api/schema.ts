@@ -2276,6 +2276,18 @@ export const API = (_apiTypeCheck = {
       })
       .strict(),
   },
+
+  'generate-concise-title': {
+    method: 'POST',
+    visibility: 'public',
+    authed: true,
+    returns: {} as { title: string },
+    props: z
+      .object({
+        question: z.string(),
+      })
+      .strict(),
+  },
 } as const)
 
 export type APIPath = keyof typeof API
