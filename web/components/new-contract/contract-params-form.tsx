@@ -702,6 +702,9 @@ export function ContractParamsForm(props: {
                   setApplyingTitle(true)
                   setQuestion(suggestedTitle)
                   setSuggestedTitle(undefined)
+                  track('apply concise title', {
+                    title: suggestedTitle,
+                  })
                   setTimeout(() => {
                     setApplyingTitle(false)
                   }, 1000)
