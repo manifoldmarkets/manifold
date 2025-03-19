@@ -89,14 +89,14 @@ export const AI_CAPABILITY_CARDS: AICapabilityCard[] = [
   {
     title: 'LMSYS',
     description: 'Highest ranked model on lmsys',
-    marketId: 'LsZPyLPI82',
+    marketId: '0t8A5ZA0zQ',
     type: 'monthly',
     displayType: 'top-two-mcq',
   },
   {
     title: 'AiderBench',
     description: 'Highest ranked model on Aider',
-    marketId: '0t8A5ZA0zQ', // Top March
+    marketId: 'LsZPyLPI82', // Top April LMSYS
     type: 'monthly',
     displayType: 'top-one-mcq',
   },
@@ -219,35 +219,35 @@ export const AI_CAPABILITY_CARDS: AICapabilityCard[] = [
     title: 'AI Blackmail by 2028',
     description: 'AI Blackmails someone for >$1000',
     marketId: 'W1KGdImLB5cb1p75M88e',
-    type: '2028-forecast',
+    type: 'long-term',
     displayType: 'binary-odds'
   },
   {
     title: 'AI Romantic Companions',
     description: 'At least 1/1000 Americans be talking at least weekly to an AI they consider a romantic companion?',
     marketId: 'kpG0hv16d75ai3JcKZds',
-    type: '2028-forecast',
+    type: 'long-term',
     displayType: 'binary-odds'
   },
   {
     title: 'Discontinuous Change in Economic Variables',
     description: 'Visible break in trend line on US GDP, GDP per capita, unemployment, or productivity',
     marketId: 'zg7xJ5ZkJJ4wJPJDPjWO',
-    type: '2028-forecast',
+    type: 'long-term',
     displayType: 'binary-odds'
   },
   {
     title: 'Zero-shot Human-level Game Performance',
     description: 'AI plays computer games at human level',
     marketId: 'barjfHPUpHGNKSfhBhJx',
-    type: '2028-forecast',
+    type: 'long-term',
     displayType: 'binary-odds'
   },
   {
     title: 'Self-play Human-level Game Performance',
     description: 'AI plays computer games at human level',
     marketId: 'HS8ndzFminW0UN2kRDgq',
-    type: '2028-forecast',
+    type: 'long-term',
     displayType: 'binary-odds'
   }
 ]
@@ -333,7 +333,7 @@ function getAccentColor(type: string) {
     case 'benchmark': return 'text-teal-700 dark:text-teal-500'
     case 'prize': return 'text-amber-700 dark:text-amber-500'
     case 'misuse': return 'text-rose-700 dark:text-rose-500'
-    case '2028-forecast': return 'text-sky-700 dark:text-sky-500'
+    case 'long-term': return 'text-sky-700 dark:text-sky-500'
     default: return 'text-primary-600 dark:text-primary-500'
   }
 }
@@ -351,7 +351,7 @@ function getGradient(type: string, isText = true) {
       return `${textPrefix}bg-gradient-to-br from-amber-500 via-amber-600 to-amber-700 dark:from-amber-400 dark:via-amber-500 dark:to-amber-600`
     case 'misuse':
       return `${textPrefix}bg-gradient-to-br from-rose-500 via-rose-600 to-rose-700 dark:from-rose-400 dark:via-rose-500 dark:to-rose-600`
-    case '2028-forecast':
+    case 'long-term':
       return `${textPrefix}bg-gradient-to-br from-cyan-500 via-cyan-600 to-cyan-700 dark:from-cyan-400 dark:via-cyan-500 dark:to-cyan-600`
     default:
       return `${textPrefix}bg-gradient-to-br from-primary-500 via-primary-600 to-primary-700 dark:from-primary-400 dark:via-primary-500 dark:to-primary-600`
@@ -384,7 +384,7 @@ function getCardBgColor(className: string) {
       if (className.includes('misuse')) {
         return 'bg-rose-50 dark:bg-rose-800/30'
       }
-      if (className.includes('2028-forecast')) {
+      if (className.includes('long-term')) {
         return 'bg-cyan-50 dark:bg-cyan-800/30'
       }
       // Default background
@@ -711,7 +711,7 @@ function CapabilityCard({
                 </div>
               </div>
               {/* Brief descriptive text under percentages */}
-              {(type === 'benchmark' || type === 'prize' || type === 'misuse' || type === '2028-forecast') && (
+              {(type === 'benchmark' || type === 'prize' || type === 'misuse' || type === 'long-term') && (
                 <p className="text-ink-600 text-xs sm:text-sm mt-1 sm:mt-3 text-left w-full px-1">
                   {type === 'benchmark' && title.includes('IMO Gold') && 'An LLM gets a IMO gold medal'}
                   {type === 'benchmark' && title.includes('Frontier Math') && 'An LLM gets 80%+'}
@@ -721,11 +721,11 @@ function CapabilityCard({
                   {type === 'prize' && title.includes('Arc AGI') && 'Probability of claiming Arc-AGI prize by end of 2025'}
                   {type === 'prize' && title.includes('Turing Test') && 'Probability of passing this variation of the Turing Test by 2029'}
                   {type === 'misuse' && title.includes('Hacking') && 'Probability of AI compromising systems by end of 2025'}
-                  {type === '2028-forecast' && title.includes('Romantic') && 'At least 1/1000 Americans talks weekly with one'}
-                  {type === '2028-forecast' && title.includes('Blackmail') && 'Risk of AI being used for automated blackmail'}
-                  {type === '2028-forecast' && title.includes('Economic') && 'Break in trend for GDP growth, GDP/capita, productivity, or unemployment'}
-                  {type === '2028-forecast' && title.includes('Zero') && 'AI plays a random computer game as well as a human'}
-                  {type === '2028-forecast' && title.includes('Self-play') && 'AI plays a random computer game as well as a human after self-play'}
+                  {type === 'long-term' && title.includes('Romantic') && 'At least 1/1000 Americans talks weekly with one'}
+                  {type === 'long-term' && title.includes('Blackmail') && 'Risk of AI being used for automated blackmail'}
+                  {type === 'long-term' && title.includes('Economic') && 'Break in trend for GDP growth, GDP/capita, productivity, or unemployment'}
+                  {type === 'long-term' && title.includes('Zero') && 'AI plays a random computer game as well as a human'}
+                  {type === 'long-term' && title.includes('Self-play') && 'AI plays a random computer game as well as a human after self-play'}
                 </p>
               )}
             </div>
@@ -856,15 +856,15 @@ export function AIForecast({ whenAgi, contracts = [], hideTitle }: AIForecastPro
     },
     'prize': {
       label: 'Prizes',
-      description: 'Will any model claim this prize?'
+      description: 'Will any model claim this prize by the end of this year?'
     },
     'misuse': {
       label: 'AI Misuse',
       description: 'How misaligned are these models?'
     },
-    '2028-forecast': {
-      label: 'Predictions for 2028',
-      description: 'What happens by 2028?'
+    'long-term': {
+      label: 'Long-term Predictions',
+      description: 'What happens in the long-run?'
     }
   }
 
