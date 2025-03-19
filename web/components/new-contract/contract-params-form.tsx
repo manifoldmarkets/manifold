@@ -235,7 +235,10 @@ export function ContractParamsForm(props: {
   const [isGeneratingTitle, setIsGeneratingTitle] = useState(false)
 
   const generateConciseTitle = useCallback(async (currentQuestion: string) => {
-    if (!currentQuestion || currentQuestion.length < 20) return
+    if (!currentQuestion || currentQuestion.length < 20) {
+      if (suggestedTitle) setSuggestedTitle(undefined)
+      return
+    }
     setIsGeneratingTitle(true)
     try {
       const result = await api('generate-concise-title', {
