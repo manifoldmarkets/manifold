@@ -1,7 +1,9 @@
 import { unauthedApi } from 'common/util/api'
 import { APIParams } from 'common/api/schema'
-import { sortBy } from 'lodash'
+import { groupBy, minBy, sortBy } from 'lodash'
 import { buildArray } from 'common/util/array'
+import { getInitialAnswerProbability } from './calculate'
+import { MarketContract } from './contract'
 
 export async function getTotalBetCount(contractId: string) {
   const res = (await unauthedApi('bets', {
@@ -46,22 +48,46 @@ export const getBetPoints = async (
 }
 
 // gets random bets - 50,000 by default
-export const getBetPointsBetween = async (options: APIParams<'bet-points'>) => {
-  const data = await unauthedApi('bet-points', options)
+export const getBetPointsBetween = async (
+  contract: MarketContract,
+  options: Omit<APIParams<'bet-points'>, 'contractId'>
+) => {
+  const data = await unauthedApi('bet-points', {
+    ...options,
+    contractId: contract.id,
+  })
 
   const sorted = sortBy(data, 'createdTime')
 
-  if (sorted.length === 0) return []
+  const startingProbs = []
+  if (contract.mechanism === 'cpmm-multi-1') {
+    const { answers } = contract
+    const rawPointsByAns = groupBy(data, 'answerId')
 
-  // we need to include previous prob for binary in case the prob shifted from something
-  const includePrevProb = !sorted[0].answerId
+    const beforePoints = answers.map((ans) => {
+      const earliestBet = minBy(rawPointsByAns[ans.id], (b) => b.createdTime)
+      return {
+        x: options.afterTime ?? contract.createdTime,
+        y:
+          earliestBet?.probBefore ??
+          getInitialAnswerProbability(contract, ans) ??
+          0,
+        answerId: ans.id,
+      }
+    })
+    startingProbs.push(...beforePoints)
+  } else {
+    if (sorted.length === 0) return []
 
-  return buildArray(
-    includePrevProb && {
+    startingProbs.push({
       x: sorted[0].createdTime - 1,
       y: sorted[0].probBefore,
       answerId: sorted[0].answerId,
-    },
+    })
+  }
+
+  return buildArray(
+    startingProbs,
     sorted.map((r) => ({
       x: r.createdTime,
       y: r.probAfter,

@@ -5,15 +5,14 @@ import { useCallback, useEffect, useLayoutEffect, useState } from 'react'
 import { ScaleTime } from 'd3-scale'
 import { getBetPointsBetween } from 'common/bets'
 import { getMultiBetPoints } from 'common/contract-params'
-import { MultiContract } from 'common/contract'
+import { MarketContract, MultiContract } from 'common/contract'
 
 export async function getPointsBetween(
-  contractId: string,
+  contract: MarketContract,
   min: number,
   max: number
 ) {
-  const points = await getBetPointsBetween({
-    contractId,
+  const points = await getBetPointsBetween(contract, {
     beforeTime: max,
     afterTime: min,
     filterRedemptions: true,
@@ -26,13 +25,13 @@ export async function getPointsBetween(
 
 // only for single value contracts
 export const useDataZoomFetcher = <T>(props: {
-  contractId: string
-  createdTime: number
-  lastBetTime: number
+  contract: MarketContract
   viewXScale?: ScaleTime<number, number>
   points: HistoryPoint<T>[]
 }) => {
-  const { contractId, createdTime, lastBetTime, viewXScale, points } = props
+  const { contract, viewXScale, points } = props
+  const { id: contractId, createdTime } = contract
+  const lastBetTime = contract.lastBetTime ?? createdTime
   const [data, setData] = useState(points)
   const [loading, setLoading] = useState(false)
 
@@ -40,7 +39,7 @@ export const useDataZoomFetcher = <T>(props: {
     debounce(async (min: number, max: number) => {
       if (min && max) {
         setLoading(true)
-        const zoomedPoints = await getPointsBetween(contractId, min, max)
+        const zoomedPoints = await getPointsBetween(contract, min, max)
 
         setData(
           buildArray(
@@ -86,8 +85,7 @@ export async function getMultichoicePointsBetween(
   min: number,
   max: number
 ) {
-  const allBetPoints = await getBetPointsBetween({
-    contractId: contract.id,
+  const allBetPoints = await getBetPointsBetween(contract, {
     filterRedemptions: false,
     includeZeroShareRedemptions: true,
     beforeTime: max,

@@ -97,8 +97,7 @@ export async function getStaticProps(props: {
   ) {
     const includeRedemptions =
       contract.mechanism === 'cpmm-multi-1' && contract.shouldAnswersSumToOne
-    const allBetPoints = await getBetPointsBetween({
-      contractId: contract.id,
+    const allBetPoints = await getBetPointsBetween(contract, {
       filterRedemptions: !includeRedemptions,
       includeZeroShareRedemptions: includeRedemptions,
       beforeTime: (contract.lastBetTime ?? contract.createdTime) + 1,

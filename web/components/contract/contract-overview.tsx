@@ -220,9 +220,7 @@ export const BinaryOverview = (props: {
     useTimePicker(contract, () => setShowZoomer(true))
 
   const { points, loading } = useDataZoomFetcher({
-    contractId: contract.id,
-    createdTime: contract.createdTime,
-    lastBetTime: contract.lastBetTime ?? contract.createdTime,
+    contract,
     viewXScale: zoomParams?.viewXScale,
     points: props.betPoints,
   })
