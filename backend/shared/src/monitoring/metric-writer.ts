@@ -11,7 +11,7 @@ import {
 } from './metrics'
 
 // how often metrics are written. GCP says don't write for a single time series
-// more than once per 5 seconds, and their smallest window is 1 minute
+// more than once per 5 seconds.
 export const METRICS_INTERVAL_MS = 60_000
 
 function serializeTimestamp(ts: number) {
@@ -107,7 +107,6 @@ export class MetricWriter {
   }
 
   async write() {
-    this.store.flush()
     const freshEntries = this.store.freshEntries()
     if (freshEntries.length > 0) {
       for (const entry of freshEntries) {
