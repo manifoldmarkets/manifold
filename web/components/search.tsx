@@ -297,9 +297,19 @@ export function Search(props: SearchProps) {
         ).slice(0, 2)
       : []
   )
+
+  const answersMatchingQuery = contracts?.flatMap((c) =>
+    c.mechanism === 'cpmm-multi-1'
+      ? c.answers
+          .filter((a) => a.text.toLowerCase().includes(query.toLowerCase()))
+          .slice(0, 2)
+      : []
+  )
   const answersByContractId =
     answersWithChanges && filter === 'news'
       ? groupBy(answersWithChanges, 'contractId')
+      : query !== ''
+      ? groupBy(answersMatchingQuery, 'contractId')
       : undefined
   const emptyContractsState =
     props.emptyState ??
