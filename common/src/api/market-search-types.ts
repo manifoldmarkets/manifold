@@ -15,6 +15,7 @@ export const searchProps = z
         z.literal('closed'),
         z.literal('resolved'),
         z.literal('all'),
+        z.literal('news'),
       ])
       .default('all'),
     sort: z

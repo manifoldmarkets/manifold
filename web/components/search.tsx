@@ -2,7 +2,7 @@
 import clsx from 'clsx'
 import { Contract } from 'common/contract'
 import { LiteGroup } from 'common/group'
-import { capitalize, sample, uniqBy } from 'lodash'
+import { capitalize, groupBy, orderBy, sample, uniqBy } from 'lodash'
 import { ReactNode, useEffect, useRef, useState } from 'react'
 import { AddContractToGroupButton } from 'web/components/topics/add-contract-to-group-modal'
 import { useDebouncedEffect } from 'web/hooks/use-debounced-effect'
@@ -104,6 +104,7 @@ export const FILTERS = [
   { label: 'Closing in 90 days', value: 'closing-90-days' },
   { label: 'Closed', value: 'closed' },
   { label: 'Resolved', value: 'resolved' },
+  { label: 'News', value: 'news' },
 ] as const
 
 export type Filter = (typeof FILTERS)[number]['value']
@@ -287,6 +288,19 @@ export function Search(props: SearchProps) {
 
   const setQuery = (query: string) => onChange({ [QUERY_KEY]: query })
 
+  const answersWithChanges = contracts?.flatMap((c) =>
+    c.mechanism === 'cpmm-multi-1'
+      ? orderBy(
+          c.answers.filter((a) => Math.abs(a.probChanges.day) > 0.02),
+          (a) => Math.abs(a.probChanges.day),
+          'desc'
+        ).slice(0, 2)
+      : []
+  )
+  const answersByContractId =
+    answersWithChanges && filter === 'news'
+      ? groupBy(answersWithChanges, 'contractId')
+      : undefined
   const emptyContractsState =
     props.emptyState ??
     (filter !== 'all' ||
@@ -365,6 +379,21 @@ export function Search(props: SearchProps) {
           {/* Main topics row */}
           {showTopicsFilterPills && (
             <Carousel fadeEdges labelsParentClassName="gap-1 items-center">
+              <FilterPill
+                key={'news'}
+                className="h-8 !text-base"
+                selected={filter === 'news'}
+                onSelect={() => {
+                  if (filter === 'news') {
+                    onChange({ [FILTER_KEY]: 'open' })
+                  } else {
+                    track('select search topic', { topic: 'news' })
+                    onChange({ [FILTER_KEY]: 'news', [GROUP_IDS_KEY]: '' })
+                  }
+                }}
+              >
+                📢 News
+              </FilterPill>
               {ALL_PARENT_TOPICS.map((topic) => (
                 <FilterPill
                   key={topic}
@@ -379,7 +408,11 @@ export function Search(props: SearchProps) {
                       const allGroupIds = TOPICS_TO_SUBTOPICS[topic]
                         .map((subtopic) => subtopic.groupIds)
                         .flat()
-                      onChange({ [GROUP_IDS_KEY]: allGroupIds.join(',') })
+                      const changes: Partial<SearchParams> = {
+                        [GROUP_IDS_KEY]: allGroupIds.join(','),
+                      }
+                      if (filter === 'news') changes[FILTER_KEY] = 'open'
+                      onChange(changes)
                     }
                   }}
                 >
@@ -483,6 +516,7 @@ export function Search(props: SearchProps) {
             contracts={contracts}
             onContractClick={onContractClick}
             highlightContractIds={highlightContractIds}
+            contractAnswers={answersByContractId}
             columns={buildArray([
               boostedColumn,
               traderColumn,
