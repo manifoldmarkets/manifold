@@ -20,7 +20,7 @@ import { formatPercent } from 'common/util/format'
 import { AmountInput } from 'web/components/widgets/amount-input'
 import { UserHovercard } from './user/user-hovercard'
 import { useDisplayUserById } from 'web/hooks/use-user-supabase'
-import { MINUTE_MS } from 'common/util/time'
+import { useContract } from 'web/hooks/use-contract'
 
 export const AnnotateChartModal = (props: {
   open: boolean
@@ -35,8 +35,14 @@ export const AnnotateChartModal = (props: {
   const [probChange, setProbChange] = useState<number>()
   const [loading, setLoading] = useState(false)
   const [editedTime, setEditedTime] = useState<number>(atTime)
-
-  const THIRTY_MINUTES = 30 * MINUTE_MS
+  const contract = useContract(contractId)
+  // Format date for datetime-local input
+  const formatDateForInput = (timestamp: number) => {
+    const date = new Date(timestamp)
+    return new Date(date.getTime() - date.getTimezoneOffset() * 60000)
+      .toISOString()
+      .slice(0, 16)
+  }
 
   return (
     <Modal open={open} setOpen={setOpen}>
@@ -56,37 +62,27 @@ export const AnnotateChartModal = (props: {
           </span>
         </Row>
         <Col className={'mt-2 w-full'}>
-          <span>Adjust time</span>
-          <Row className="mt-1 gap-2">
-            <Button
-              size="xs"
-              color="gray-outline"
-              onClick={() => setEditedTime(editedTime - THIRTY_MINUTES)}
-            >
-              -30m
-            </Button>
-            <Button
-              size="xs"
-              color="gray-outline"
-              onClick={() => setEditedTime(editedTime - MINUTE_MS)}
-            >
-              -1m
-            </Button>
-            <Button
-              size="xs"
-              color="gray-outline"
-              onClick={() => setEditedTime(editedTime + MINUTE_MS)}
-            >
-              +1m
-            </Button>
-            <Button
-              size="xs"
-              color="gray-outline"
-              onClick={() => setEditedTime(editedTime + THIRTY_MINUTES)}
-            >
-              +30m
-            </Button>
-          </Row>
+          <span>Date and time</span>
+          <Input
+            type="datetime-local"
+            value={formatDateForInput(editedTime)}
+            min={
+              contract?.createdTime
+                ? formatDateForInput(contract.createdTime)
+                : undefined
+            }
+            max={formatDateForInput(Date.now())}
+            onChange={(e) => {
+              if (e.target.value) {
+                // Ensure time is not before contract creation
+                const newTime = new Date(e.target.value).getTime()
+                if (!contract?.createdTime || newTime >= contract.createdTime) {
+                  setEditedTime(newTime)
+                }
+              }
+            }}
+            className="w-full"
+          />
         </Col>
         <Col className={'w-full'}>
           <span>What happened? </span>
