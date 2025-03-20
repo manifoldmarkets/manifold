@@ -670,6 +670,34 @@ export function ContractParamsForm(props: {
     }
   }
 
+  // Function to get AI-suggested close date
+  const getAISuggestedCloseDate = useCallback(
+    async (currentQuestion: string) => {
+      if (
+        !currentQuestion ||
+        currentQuestion.length < 20 ||
+        !shouldHaveCloseDate
+      ) {
+        return
+      }
+      try {
+        const result = await api('get-close-date', {
+          question: currentQuestion,
+          utcOffset: new Date().getTimezoneOffset() * -1,
+        })
+        if (result?.closeTime) {
+          const date = dayjs(result.closeTime).format('YYYY-MM-DD')
+          const time = dayjs(result.closeTime).format('HH:mm')
+          setCloseDate(date)
+          setCloseHoursMinutes(time)
+        }
+      } catch (e) {
+        console.error('Error getting suggested close date:', e)
+      }
+    },
+    [shouldHaveCloseDate, setCloseDate, setCloseHoursMinutes]
+  )
+
   return (
     <Col className="gap-6">
       <Col>
@@ -686,6 +714,7 @@ export function ContractParamsForm(props: {
           onBlur={(e) => {
             if (outcomeType === 'MULTI_NUMERIC') inferUnit()
             findTopicsAndSimilarQuestions(e.target.value || '')
+            getAISuggestedCloseDate(e.target.value || '')
           }}
         />
 

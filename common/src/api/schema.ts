@@ -2281,12 +2281,24 @@ export const API = (_apiTypeCheck = {
     method: 'POST',
     visibility: 'public',
     authed: true,
-    returns: {} as { title: string },
     props: z
       .object({
         question: z.string(),
       })
       .strict(),
+    returns: {} as { title: string },
+  },
+  'get-close-date': {
+    method: 'POST',
+    visibility: 'undocumented',
+    authed: true,
+    props: z
+      .object({
+        question: z.string(),
+        utcOffset: z.number().optional(),
+      })
+      .strict(),
+    returns: {} as { closeTime: number },
   },
 } as const)
 

@@ -1,4 +1,4 @@
-import { getCloseDate } from 'shared/helpers/openai-utils'
+import { getCloseDate } from 'shared/helpers/ai-close-date'
 import { runScript } from './run-script'
 
 if (require.main === module) {

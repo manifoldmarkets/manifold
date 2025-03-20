@@ -173,6 +173,7 @@ import {
 } from './generate-ai-date-ranges'
 import { inferNumericUnit } from './infer-numeric-unit'
 import { generateConciseTitle } from './generate-concise-title'
+import { getCloseDateEndpoint } from './get-close-date'
 
 export const handlers: { [k in APIPath]: APIHandler<k> } = {
   'refresh-all-clients': refreshAllClients,
@@ -359,4 +360,5 @@ export const handlers: { [k in APIPath]: APIHandler<k> } = {
   'generate-ai-date-ranges': generateAIDateRanges,
   'regenerate-date-midpoints': regenerateDateMidpoints,
   'generate-concise-title': generateConciseTitle,
+  'get-close-date': getCloseDateEndpoint,
 }

@@ -27,46 +27,6 @@ export const generateEmbeddings = async (question: string) => {
   return response.data[0].embedding
 }
 
-export const getCloseDate = async (question: string, utcOffset?: number) => {
-  const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY })
-  const now = dayjs.utc().format('M/D/YYYY h:mm a')
-
-  let response
-  try {
-    const prompt = `Please return the user's desired end date for their question in the form: 12/31/2026 11:59 pm. The end date will serve as a reminder to decide the outcome of their question, e.g. if the question is: 'Will I go to school tomorrow?' the end date should be tomorrow.\n\nHere's their question, and remember: ONLY return the end date in the form: 12/31/2026 11:59 pm: ${question}\nNow: ${now}\nEnd date:`
-    response = await openai.chat.completions.create({
-      model: 'gpt-4o',
-      messages: [{ role: 'system', content: prompt }],
-      max_tokens: 15,
-    })
-  } catch (e: any) {
-    log.error(
-      'Error generating close date ' + !process.env.OPENAI_API_KEY
-        ? ' (no OpenAI API key found) '
-        : ' ' + e.message
-    )
-    return undefined
-  }
-
-  const text = response.choices[0].message.content
-  if (!text) return undefined
-  log(
-    'AI-selected close date for question',
-    question,
-    ':',
-    text,
-    'utc offset',
-    utcOffset ?? 'none'
-  )
-
-  const utcTime = dayjs.utc(text, 'M/D/YYYY h:mm a')
-  const timestamp = utcTime.valueOf()
-  if (!timestamp || !isFinite(timestamp)) return undefined
-
-  // adjust for local timezone
-  return utcTime.utcOffset(utcOffset ?? 0).valueOf()
-}
-
 const imagePrompt = (q: string) =>
   `Header image for a discussion thread about predicting "${q}". Do not include text.`
 
