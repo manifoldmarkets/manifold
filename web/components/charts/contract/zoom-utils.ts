@@ -1,5 +1,4 @@
 import { HistoryPoint, maxMinBin, MultiPoints } from 'common/chart'
-import { buildArray } from 'common/util/array'
 import { debounce } from 'lodash'
 import { useCallback, useEffect, useLayoutEffect, useState } from 'react'
 import { ScaleTime } from 'd3-scale'
@@ -40,14 +39,7 @@ export const useDataZoomFetcher = <T>(props: {
       if (min && max) {
         setLoading(true)
         const zoomedPoints = await getPointsBetween(contract, min, max)
-
-        setData(
-          buildArray(
-            points.filter((p) => p.x <= min),
-            zoomedPoints,
-            points.filter((p) => p.x >= max)
-          ).sort((a, b) => a.x - b.x)
-        )
+        setData(zoomedPoints.sort((a, b) => a.x - b.x))
 
         setLoading(false)
       } else {
@@ -70,7 +62,6 @@ export const useDataZoomFetcher = <T>(props: {
       const max = viewXScale.invert(maxX + 20).valueOf()
       const fixedMin = Math.max(min, createdTime)
       const fixedMax = Math.min(max, lastBetTime) + 1
-
       onZoomData(fixedMin, fixedMax)
     } else {
       onZoomData(createdTime, lastBetTime)
@@ -97,7 +88,7 @@ export async function getMultichoicePointsBetween(
 }
 
 // only for multichoice contracts
-export const useMultiChoiceDataZoomFetcher = <T>(props: {
+export const useMultiChoiceDataZoomFetcher = (props: {
   contract: MultiContract
   viewXScale?: ScaleTime<number, number>
   points: MultiPoints
@@ -128,22 +119,14 @@ export const useMultiChoiceDataZoomFetcher = <T>(props: {
 
         // Process each answer ID
         allAnswerIds.forEach((answerId) => {
-          // Get points for this answer ID
-          const answerPoints = points[answerId] || []
           const zoomedAnswerPoints = zoomedPoints[answerId] || []
-
           // Convert serialized points to HistoryPoint objects
           const typedZoomedPoints = zoomedAnswerPoints.map(([x, y]) => ({
             x,
             y,
           }))
 
-          // Build combined array for this answer
-          newData[answerId] = buildArray(
-            answerPoints.filter((p) => p.x <= min),
-            typedZoomedPoints,
-            answerPoints.filter((p) => p.x >= max)
-          ).sort((a, b) => a.x - b.x)
+          newData[answerId] = typedZoomedPoints.sort((a, b) => a.x - b.x)
         })
 
         setData(newData)

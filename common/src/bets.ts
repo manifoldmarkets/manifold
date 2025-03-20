@@ -1,6 +1,6 @@
 import { unauthedApi } from 'common/util/api'
 import { APIParams } from 'common/api/schema'
-import { groupBy, minBy, sortBy } from 'lodash'
+import { groupBy, minBy, sortBy, uniqBy } from 'lodash'
 import { buildArray } from 'common/util/array'
 import { getInitialAnswerProbability } from './calculate'
 import { MarketContract } from './contract'
@@ -78,7 +78,7 @@ export const getBetPointsBetween = async (
     startingProbs.push(...beforePoints)
   } else {
     if (sorted.length === 0) return []
-
+    // TODO: seems like it does this too much and not just at the beginning?
     startingProbs.push({
       x: sorted[0].createdTime - 1,
       y: sorted[0].probBefore,
@@ -86,12 +86,16 @@ export const getBetPointsBetween = async (
     })
   }
 
-  return buildArray(
-    startingProbs,
-    sorted.map((r) => ({
-      x: r.createdTime,
-      y: r.probAfter,
-      answerId: r.answerId,
-    }))
+  const endPoints = uniqBy(
+    [
+      ...startingProbs,
+      ...sorted.map((r) => ({
+        x: r.createdTime,
+        y: r.probAfter,
+        answerId: r.answerId,
+      })),
+    ],
+    (p) => p.x + p.y + (p.answerId ?? '')
   )
+  return endPoints
 }
