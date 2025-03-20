@@ -20,6 +20,7 @@ import { formatPercent } from 'common/util/format'
 import { AmountInput } from 'web/components/widgets/amount-input'
 import { UserHovercard } from './user/user-hovercard'
 import { useDisplayUserById } from 'web/hooks/use-user-supabase'
+import { MINUTE_MS } from 'common/util/time'
 
 export const AnnotateChartModal = (props: {
   open: boolean
@@ -33,6 +34,10 @@ export const AnnotateChartModal = (props: {
   const [note, setNote] = useState<string>()
   const [probChange, setProbChange] = useState<number>()
   const [loading, setLoading] = useState(false)
+  const [editedTime, setEditedTime] = useState<number>(atTime)
+
+  const THIRTY_MINUTES = 30 * MINUTE_MS
+
   return (
     <Modal open={open} setOpen={setOpen}>
       <Col className={clsx(MODAL_CLASS)}>
@@ -40,7 +45,7 @@ export const AnnotateChartModal = (props: {
           <span className={'text-primary-700 text-xl'}>
             Add a note at{' '}
             <span>
-              {new Date(atTime).toLocaleDateString('en-US', {
+              {new Date(editedTime).toLocaleDateString('en-US', {
                 hour: 'numeric',
                 minute: 'numeric',
                 month: 'short',
@@ -50,6 +55,39 @@ export const AnnotateChartModal = (props: {
             </span>
           </span>
         </Row>
+        <Col className={'mt-2 w-full'}>
+          <span>Adjust time</span>
+          <Row className="mt-1 gap-2">
+            <Button
+              size="xs"
+              color="gray-outline"
+              onClick={() => setEditedTime(editedTime - THIRTY_MINUTES)}
+            >
+              -30m
+            </Button>
+            <Button
+              size="xs"
+              color="gray-outline"
+              onClick={() => setEditedTime(editedTime - MINUTE_MS)}
+            >
+              -1m
+            </Button>
+            <Button
+              size="xs"
+              color="gray-outline"
+              onClick={() => setEditedTime(editedTime + MINUTE_MS)}
+            >
+              +1m
+            </Button>
+            <Button
+              size="xs"
+              color="gray-outline"
+              onClick={() => setEditedTime(editedTime + THIRTY_MINUTES)}
+            >
+              +30m
+            </Button>
+          </Row>
+        </Col>
         <Col className={'w-full'}>
           <span>What happened? </span>
           {comment ? (
@@ -92,7 +130,7 @@ export const AnnotateChartModal = (props: {
               await createChartAnnotation({
                 contractId,
                 text: note?.length ? note : undefined,
-                eventTime: atTime,
+                eventTime: editedTime,
                 answerId,
                 commentId: comment?.id,
                 probChange: probChange ? probChange / 100 : undefined,
