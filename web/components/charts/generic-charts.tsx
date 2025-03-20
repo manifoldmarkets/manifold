@@ -432,7 +432,7 @@ export const MultiValueHistoryChart = <P extends HistoryPoint>(props: {
   useLayoutEffect(() => {
     const propStartDate = props.xScale.domain()[0]?.valueOf()
     const zoomStartDate = zoomParams?.viewXScale?.domain()[0]?.valueOf()
-    if (zoomStartDate === propStartDate) {
+    if (zoomStartDate === propStartDate && !showZoomer) {
       zoomParams?.setXScale(props.xScale)
     }
   }, [rightmostDate])
@@ -779,7 +779,7 @@ export const SingleValueHistoryChart = <P extends HistoryPoint>(props: {
   useLayoutEffect(() => {
     const propStartDate = props.xScale.domain()[0]?.valueOf()
     const zoomStartDate = zoomParams?.viewXScale?.domain()[0]?.valueOf()
-    if (zoomStartDate === propStartDate) {
+    if (zoomStartDate === propStartDate && !showZoomer) {
       zoomParams?.setXScale(props.xScale)
     }
   }, [rightmostDate])
@@ -1058,7 +1058,7 @@ export const SingleValueStackedHistoryChart = <P extends HistoryPoint>(props: {
   useLayoutEffect(() => {
     const propStartDate = props.xScale.domain()[0]?.valueOf()
     const zoomStartDate = zoomParams?.viewXScale?.domain()[0]?.valueOf()
-    if (zoomStartDate === propStartDate) {
+    if (zoomStartDate === propStartDate && !showZoomer) {
       zoomParams?.setXScale(props.xScale)
     }
   }, [rightmostDate])
