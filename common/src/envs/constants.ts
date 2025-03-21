@@ -178,7 +178,7 @@ export const BOT_USERNAMES = [
   'SiriusBOT',
   'bradbot',
   'ShrimpLute',
-  'kbot'
+  'kbot',
 ]
 
 export const MOD_IDS = [
@@ -225,7 +225,7 @@ export const SWEEPSTAKES_MOD_IDS = [
   'JlVpsgzLsbOUT4pajswVMr0ZzmM2', // Joshua
 ]
 
-export const MVP = ['Eliza', 'Gabrielle', 'jacksonpolack']
+export const MVP = ['Eliza', 'Gabrielle']
 
 export const VERIFIED_USERNAMES = [
   'EliezerYudkowsky',
@@ -342,20 +342,14 @@ export const PARTNER_USER_IDS: string[] = [
 ]
 
 export const NEW_USER_HERLPER_IDS = [
-  'cgrBqe2O3AU4Dnng7Nc9wuJHLKb2', // jskf
   '2VhlvfTaRqZbFn2jqxk2Am9jgsE2', // Gabrielle
-  '4juQfJkFnwX9nws3dFOpz4gc1mi2', // jacksonpolack
   'BgCeVUcOzkexeJpSPRNomWQaQaD3', // SemioticRivalry
   'rQPOELuW5zaapaNPnBYQBMoonk92', // Tumbles
   'tlmGNz9kjXc2EteizMORes4qvWl2', // Stephen
   'AJwLWoo3xue32XIiAVrL5SyR1WB2', // Ian
   'uglwf3YKOZNGjjEXKc5HampOFRE2', // D4vid
-  'GRwzCexe5PM6ThrSsodKZT9ziln2', // Inga
   'cA1JupYR5AR8btHUs2xvkui7jA93', // Genzy
-  'hUM4SO8a8qhfqT1gEZ7ElTCGSEz2', // Stralor
-  'JlVpsgzLsbOUT4pajswVMr0ZzmM2', // Joshua
   'srFlJRuVlGa7SEJDM4cY9B5k4Lj2', // Bayesian
-  'oPxjIzlvC5fRbGCaVgkvAiyoXBB2', // mattyb
   'Gg7t9vPD4WPD1iPgj9RUFLYTxgH2', // nikki
   'OdBj5DW6PbYtnImvybpyZzfhb133', // @jim
 ]
