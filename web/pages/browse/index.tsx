@@ -14,7 +14,7 @@ import { Search } from 'web/components/search'
 import { useIsMobile } from 'web/hooks/use-is-mobile'
 import { usePrivateUser, useUser } from 'web/hooks/use-user'
 import { ManifoldLogo } from 'web/components/nav/manifold-logo'
-import { DEFAULT_FOR_YOU } from 'web/components/onboarding/welcome'
+import { DEFAULT_FOR_YOU, Welcome } from 'web/components/onboarding/welcome'
 
 export default function BrowsePage() {
   const user = useUser()
@@ -55,6 +55,7 @@ export function BrowsePageContent() {
 
   return (
     <Col className={clsx('relative col-span-8 mx-auto w-full')}>
+      <Welcome />
       <Search
         showTopicsFilterPills
         persistPrefix="search"
