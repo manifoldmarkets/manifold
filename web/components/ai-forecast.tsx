@@ -1,9 +1,10 @@
 import React, { useState, useMemo } from 'react'
-import { BinaryContract, CPMMNumericContract, Contract, contractPath } from 'common/contract'
+import { BinaryContract, CPMMNumericContract, Contract, contractPath, MultiNumericContract } from 'common/contract'
 import { Col } from 'web/components/layout/col'
 import { Row } from 'web/components/layout/row'
 import { useLiveContract } from 'web/hooks/use-contract'
 import { getNumberExpectedValue } from 'common/src/number'
+import { getExpectedValue, formatExpectedValue } from 'common/src/multi-numeric'
 import { Clock } from 'web/components/clock/clock'
 import { TimelineCard, TimelineItemData } from 'web/components/timeline'
 import { NumericBetPanel } from 'web/components/answers/numeric-bet-panel'
@@ -81,7 +82,7 @@ export type AICapabilityCard = {
   description: string
   marketId: string
   type: string
-  displayType?: 'top-two-mcq' | 'top-one-mcq' | 'binary-odds' | 'date-numeric'
+  displayType?: 'top-two-mcq' | 'top-one-mcq' | 'binary-odds' | 'date-numeric' | 'numeric'
 }
 
 export const AI_CAPABILITY_CARDS: AICapabilityCard[] = [
@@ -105,9 +106,9 @@ export const AI_CAPABILITY_CARDS: AICapabilityCard[] = [
   {
     title: 'GPT-5',
     description: 'GPT-5 model released by EOY',
-    marketId: 'XAsltiEcvy7KwJveXQ42',
+    marketId: 'c29Q6uhyhp',
     type: 'releases',
-    displayType: 'top-one-mcq'
+    displayType: 'date-numeric'
   },
   {
     title: 'Claude 3.7 Opus',
@@ -156,16 +157,16 @@ export const AI_CAPABILITY_CARDS: AICapabilityCard[] = [
   {
     title: 'SWE Bench Top Score',
     description: 'Top SWE Bench score by EOY',
-    marketId: 'placeholder-2',
+    marketId: 'nEhgsIE6U0',
     type: 'benchmark',
-    displayType: 'binary-odds'
+    displayType: 'numeric'
   },
   {
     title: 'Highest Humanity\'s Last Exam Top Score',
     description:'Highest score on Humanity\'s last exam by EOY',
     marketId: 'tzsZCn85RQ',
     type: 'benchmark',
-    displayType: 'binary-odds'
+    displayType: 'numeric'
   },
   {
     title: 'CodeForces Top Score',
@@ -177,9 +178,9 @@ export const AI_CAPABILITY_CARDS: AICapabilityCard[] = [
     {
     title: 'Frontier Math Top Score',
     description: 'top performance on frontier math',
-    marketId: 'Uu5q0usuQg',
+    marketId: 'LNdOg08SsU',
     type: 'benchmark',
-    displayType: 'top-one-mcq'
+    displayType: 'numeric'
   },
   
   // Prizes
@@ -423,7 +424,7 @@ function CapabilityCard({
   title: string
   marketId: string
   type: string
-  displayType?: 'top-two-mcq' | 'top-one-mcq' | 'binary-odds' | 'date-numeric' | undefined
+  displayType?: 'top-two-mcq' | 'top-one-mcq' | 'binary-odds' | 'date-numeric' | 'numeric' | undefined
   contracts: Contract[]
   className?: string
 }) {
@@ -436,6 +437,11 @@ function CapabilityCard({
   // Get the expected value if it's a numeric contract
   const numericValue = liveContract && liveContract.outcomeType === 'NUMBER' 
     ? getNumberExpectedValue(liveContract as CPMMNumericContract) 
+    : null
+    
+  // Get the expected value if it's a multi-numeric contract
+  const multiNumericValue = liveContract && liveContract.outcomeType === 'MULTI_NUMERIC' && liveContract.mechanism === 'cpmm-multi-1'
+    ? getExpectedValue(liveContract as unknown as MultiNumericContract)
     : null
   
   // Get top two companies and their probabilities for "top-two-mcq" display type
@@ -502,21 +508,29 @@ function CapabilityCard({
   let topModel = { text: '—', probability: 0 }
   
   if (displayType === 'top-two-mcq' && liveContract && liveContract.outcomeType === 'MULTIPLE_CHOICE') {
-  topCompanies = getTopTwoOdds()
-} else if (displayType === 'top-one-mcq') {
-  topModel = getTopOneOdds()
-} else if (displayType === 'binary-odds') {
-  if (liveContract && liveContract.outcomeType === 'BINARY') {
-    const prob = liveContract.prob !== undefined 
-      ? liveContract.prob 
-      : getDisplayProbability(liveContract as BinaryContract)
-    displayValue = formatPercent(prob)
-  } 
-} else {
-  // Default fallback
-  displayValue = numericValue !== null 
-    ? numericValue.toFixed(1)
-    : formatPercent(0.25)
+    topCompanies = getTopTwoOdds()
+  } else if (displayType === 'top-one-mcq') {
+    topModel = getTopOneOdds()
+  } else if (displayType === 'binary-odds') {
+    if (liveContract && liveContract.outcomeType === 'BINARY') {
+      const prob = liveContract.prob !== undefined 
+        ? liveContract.prob 
+        : getDisplayProbability(liveContract as BinaryContract)
+      displayValue = formatPercent(prob)
+    } 
+  } else if (displayType === 'numeric' && liveContract) {
+    if (multiNumericValue !== null && liveContract.mechanism === 'cpmm-multi-1') {
+      // For multi-numeric contracts
+      displayValue = formatExpectedValue(multiNumericValue, liveContract as unknown as MultiNumericContract)
+    } else if (numericValue !== null) {
+      // For regular numeric contracts
+      displayValue = numericValue.toFixed(1)
+    }
+  } else {
+    // Default fallback for date-numeric and others
+    displayValue = numericValue !== null 
+      ? numericValue.toFixed(1)
+      : formatPercent(0.25)
   }
   
   // Create click handler for the card
@@ -714,9 +728,6 @@ function CapabilityCard({
               {(type === 'benchmark' || type === 'prize' || type === 'misuse' || type === 'long-term') && (
                 <p className="text-ink-600 text-xs sm:text-sm mt-1 sm:mt-3 text-left w-full px-1">
                   {type === 'benchmark' && title.includes('IMO Gold') && 'An LLM gets a IMO gold medal'}
-                  {type === 'benchmark' && title.includes('Frontier Math') && 'An LLM gets 80%+'}
-                  {type === 'benchmark' && title.includes('SWE Bench') && 'LLM Top Score'}
-                  {type === 'benchmark' && title.includes('Last Exam') && 'LLM > Human'}
                   {type === 'prize' && title.includes('Millennium') && 'Chance of solving a million-dollar math problem by June 2025'}
                   {type === 'prize' && title.includes('Arc AGI') && 'Probability of claiming Arc-AGI prize by end of 2025'}
                   {type === 'prize' && title.includes('Turing Test') && 'Probability of passing this variation of the Turing Test by 2029'}
@@ -729,13 +740,23 @@ function CapabilityCard({
                 </p>
               )}
             </div>
-          ) : displayType === 'date-numeric' ? (
-            <div className="h-full flex-1 flex items-center justify-center">
-              <div className={`font-medium text-center ${displayValue.length > 5 ? 'text-3xl sm:text-4xl' : displayValue.length > 3 ? 'text-4xl sm:text-5xl' : 'text-5xl sm:text-6xl'}`}>
-                <span className={getGradient(type)}>
-                  {displayValue}
-                </span>
+          ) : displayType === 'date-numeric' || displayType === 'numeric' ? (
+            <div className="flex flex-col justify-between h-full w-full">
+              <div className="flex-1 flex items-center justify-center">
+                <div className={`font-medium text-center ${displayValue.length > 5 ? 'text-5xl sm:text-6xl' : 'text-5xl sm:text-6xl'}`}>
+                  <span className={getGradient(type)}>
+                    {displayValue}
+                  </span>
+                </div>
               </div>
+              {/* Brief descriptive text for numeric markets */}
+              {displayType === 'numeric' && (
+                <p className="text-ink-600 text-xs sm:text-sm mt-1 sm:mt-3 text-left w-full px-1">
+                  {type === 'benchmark' && title.includes('SWE Bench') && 'Predicted top score EOY'}
+                  {type === 'benchmark' && title.includes('Frontier Math') && 'Predicted top score EOY'}
+                  {type === 'benchmark' && title.includes('Last Exam') && 'Predicted top score EOY'}
+                </p>
+              )}
             </div>
           ) : (
             <div className="h-full flex-1 flex items-center justify-center">
