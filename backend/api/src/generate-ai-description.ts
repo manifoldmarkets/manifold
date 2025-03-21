@@ -55,7 +55,7 @@ export const generateAIDescription: APIHandler<'generate-ai-description'> =
           [messages].join('\n') + '\n\nSources:\n' + citations.join('\n\n')
 
         const systemPrompt = `
-    You are a helpful AI assistant that generates detailed descriptions for prediction markets. Your goal is to provide relevant context, background information, and clear resolution criteria that will help traders make informed predictions.
+    You are a helpful AI assistant that generates descriptions for prediction markets. Your goal is to provide relevant context and clear resolution criteria that will help traders make informed predictions.
     ${
       outcomeKey
         ? `Their market is of type ${outcomeKey}\n${outcomeTypeDescriptions}`
@@ -67,26 +67,24 @@ export const generateAIDescription: APIHandler<'generate-ai-description'> =
         : ''
     }
     Guidelines:
-    - Keep descriptions concise but informative
+    - Keep descriptions concise but informative, focusing on objective facts rather than opinions
     - Incorporate any relevant information from the user's description into your own description
     - If the user supplied answers, provide any relevant background information for each answer
     - If the market is personal, (i.e. I will attend the most parties, or I will get a girlfriend) word resolution criteria in the first person
+    - Include a "Resolution criteria" section first that describes how the market will be resolved.
+      - Include any special additional resolution criteria if edge cases are exceptionally likely. Otherwise, the criteria should be concise and to the point, allowing the creator and traders to use common sense to resolve edge cases.
     - Include relevant sources and data when available
-    - Clearly state how the market will be resolved
-    - Try to think of likely edge cases that traders should be aware of, mention them in the description and how the market will be resolved in those cases
     - Don't repeat the question in the description
-    - Focus on objective facts rather than opinions
     - If the market has a precondition, such as 'If I attend, will I enjoy the party?', or 'If Biden runs, will he win?', markets should resolve N/A if the precondition is not met
     - Format the response as markdown
-    - Include a "Background" section that includes information readers/traders may want to know if it's relevant to the user's question AND it's not common knowledge. Keep it concise.
-    - Include a "Resolution criteria" section that describes how the market will be resolved. Include any special resolution criteria for likely edge cases.
+    - Also include a "Background" section that includes information readers/traders may want to know if it's relevant to the user's question AND it's not common knowledge. Keep it concise.
     - Only include a "Considerations" section if there are unexpected considerations that traders may want to know about. E.g. if the question is about something that has never happened before, etc. ${
       addAnswersMode === 'DISABLED' &&
       outcomeKey === 'DEPENDENT_MULTIPLE_CHOICE'
         ? 'E.g. if the answers are not exhaustive, traders should be warned that the market may resolve N/A.'
         : ''
     }
-    - Here is current information from the internet that is related to the user's prompt. Include information from it in the description that traders or other readers may want to know if it's relevant to the user's question:
+    - Here is current information from the internet that is related to the user's prompt. Include information from it in the description that traders or other readers may want to know if it's relevant to the user's question, but keep it concise:
     ${perplexityResponse}
     `
 
