@@ -217,6 +217,7 @@ export function getSearchContractSQL(args: {
     searchType,
     token,
     groupIds,
+    filter,
   } = args
   const hideStonks = sort === 'score' && !term.length && !groupId
   const hideLove = sort === 'newest' && !term.length && !groupId && !creatorId
@@ -259,11 +260,28 @@ export function getSearchContractSQL(args: {
       ]
     )
 
+  // Recent movements filter
+  const newsFilter =
+    filter === 'news' &&
+    withClause(
+      `recent_movements as (
+        select distinct contract_id
+        from contract_movement_notifications
+        where created_time > now() - interval '72 hours'
+      )`
+    )
+
+  const newsJoin =
+    filter === 'news' &&
+    join(`recent_movements rm on rm.contract_id = contracts.id`)
+
   // Normal full text search
   const sql = renderSql(
     select(contractColumnsToSelect),
     from('contracts'),
     groupsFilter,
+    newsFilter,
+    newsJoin,
     searchType === 'answer' &&
       join(
         `(${answersSubQuery}) as matched_answers on matched_answers.contract_id = contracts.id`
@@ -330,6 +348,7 @@ function getSearchContractWhereSQL(args: {
     'closing-month': `close_time > now() AND close_time < (now() + interval '30 days' + interval '7 hours') AND resolution_time IS NULL`,
     'closing-90-days': `close_time > now() AND close_time < (now() + interval '90 days' + interval '7 hours') AND resolution_time IS NULL`,
     resolved: 'resolution_time IS NOT NULL',
+    news: '', // News filter uses a different approach with a join
     all: '',
   }
   const contractTypeFilter =

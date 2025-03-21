@@ -28,7 +28,7 @@ import { STONK_INITIAL_PROB } from 'common/stonk'
 import { removeUndefinedProps } from 'common/util/object'
 import { randomString } from 'common/util/random'
 import { slugify } from 'common/util/slugify'
-import { getCloseDate } from 'shared/helpers/openai-utils'
+import { getCloseDate } from 'shared/helpers/ai-close-date'
 import {
   generateContractEmbeddings,
   getContractsDirect,

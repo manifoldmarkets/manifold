@@ -160,7 +160,8 @@ export const ChoiceContractChart = (props: {
   const answers = useChartAnswers(contract)
   const stringifiedMultiPoints = JSON.stringify(multiPoints)
   const rightestPointX = Math.max(
-    ...Object.values(multiPoints).map((p) => last(p)?.x ?? 0)
+    ...Object.values(multiPoints).map((p) => last(p)?.x ?? 0),
+    contract.lastBetTime ?? 0
   )
   const now = useMemo(
     () => Date.now(),

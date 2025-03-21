@@ -37,6 +37,7 @@ import { TRADE_TERM } from 'common/envs/constants'
 import { convertGroup } from 'common/supabase/groups'
 
 const FORCE_SHOW_WELCOME_MODAL = false
+export const DEFAULT_FOR_YOU = false
 
 export function Welcome(props: { setFeedKey?: (key: string) => void }) {
   const { setFeedKey } = props
@@ -156,7 +157,7 @@ export function Welcome(props: { setFeedKey?: (key: string) => void }) {
       track('welcome screen: complete')
       setOpen(false)
 
-      if (window.location.pathname === '/home') {
+      if (window.location.pathname === '/home' && DEFAULT_FOR_YOU) {
         window.location.reload() // reload to ensure personalized feed
       }
     }

@@ -20,3 +20,6 @@ alter table contract_movement_notifications enable row level security;
 drop index if exists contract_notifications_contract_user_created_time_idx;
 
 create index contract_notifications_contract_user_created_time_idx on contract_movement_notifications using btree (contract_id, user_id, created_time desc);
+
+-- Add index to support the moving markets query
+create index contract_notifications_created_time_contract_idx on contract_movement_notifications using btree (created_time desc, contract_id);

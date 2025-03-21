@@ -87,7 +87,7 @@ export function createJobs() {
     ),
     createJob(
       'update-user-portfolio-histories',
-      '*/30 * * * * *', // every 30 seconds
+      '*/45 * * * * *', // every 45 seconds
       () => updateUserPortfolioHistoriesCore()
     ),
     createJob(

@@ -63,6 +63,7 @@ const search = async (
     ? await getGroupIdFromSlug(topicSlug, pg)
     : undefined
   if (
+    filter !== 'news' &&
     !term &&
     !topicSlug &&
     !groupIds &&

@@ -34,6 +34,8 @@ import { SpiceCoin } from 'web/public/custom-components/spiceCoin'
 import { SweepiesCoin } from 'web/public/custom-components/sweepiesCoin'
 import { getFormattedExpectedValue } from 'common/multi-numeric'
 import { getFormattedExpectedDate } from 'common/multi-date'
+import { Answer } from 'common/src/answer'
+import { FaArrowTrendDown, FaArrowTrendUp } from 'react-icons/fa6'
 
 export function ContractsTable(props: {
   contracts: Contract[]
@@ -41,6 +43,7 @@ export function ContractsTable(props: {
   highlightContractIds?: string[]
   columns?: ColumnFormat[]
   hideAvatar?: boolean
+  contractAnswers?: { [contractId: string]: Answer[] }
 }) {
   const {
     contracts,
@@ -48,6 +51,7 @@ export function ContractsTable(props: {
     highlightContractIds,
     columns = [boostedColumn, traderColumn, probColumn, actionColumn],
     hideAvatar,
+    contractAnswers,
   } = props
 
   const user = useUser()
@@ -68,6 +72,7 @@ export function ContractsTable(props: {
           onClick={
             onContractClick ? () => onContractClick(contract) : undefined
           }
+          answers={contractAnswers?.[contract.id]}
         />
       ))}
     </Col>
@@ -81,51 +86,90 @@ function ContractRow(props: {
   faded?: boolean
   onClick?: () => void
   hideAvatar?: boolean
+  answers?: Answer[]
 }) {
   const contract = useLiveContract(props.contract)
 
-  const { columns, hideAvatar, highlighted, faded, onClick } = props
+  const { columns, hideAvatar, highlighted, faded, onClick, answers } = props
   return (
-    <Link
-      href={contractPath(contract)}
-      onClick={(e) => {
-        if (!onClick) {
-          track('click browse contract', {
-            slug: contract.slug,
-            contractId: contract.id,
-            boosted: contract.boosted,
-          })
-          return
-        }
-        onClick()
-        e.preventDefault()
-      }}
-      className={clsx(
-        'flex w-full flex-col p-2 text-base outline-none transition-colors sm:rounded-md',
-        highlighted
-          ? 'bg-primary-100'
-          : 'hover:bg-primary-100 focus-visible:bg-primary-100 active:bg-primary-100',
-        'border-ink-200 border-b last:border-none sm:border-none'
-      )}
-    >
-      <div className="flex w-full flex-col justify-between gap-1 sm:flex-row sm:gap-0">
-        <ContractQuestion
-          contract={contract}
-          className={'w-full sm:w-[calc(100%-12rem)]'}
-          hideAvatar={hideAvatar}
-        />
-        <Row className="w-full justify-end sm:w-fit">
-          {columns.map((column) => (
-            <div
-              key={contract.id + column.header}
-              className={clsx(faded && 'text-ink-500', column.width)}
-            >
-              {column.content({ contract })}
-            </div>
-          ))}
-        </Row>
-      </div>
-    </Link>
+    <div className="w-full">
+      <Link
+        href={contractPath(contract)}
+        onClick={(e) => {
+          if (!onClick) {
+            track('click browse contract', {
+              slug: contract.slug,
+              contractId: contract.id,
+              boosted: contract.boosted,
+            })
+            return
+          }
+          onClick()
+          e.preventDefault()
+        }}
+        className={clsx(
+          'flex w-full flex-col p-2 text-base outline-none transition-colors sm:rounded-md',
+          highlighted
+            ? 'bg-primary-100'
+            : 'hover:bg-primary-100 focus-visible:bg-primary-100 active:bg-primary-100',
+          'border-ink-200 border-b last:border-none sm:border-none'
+        )}
+      >
+        <div className="flex w-full flex-col justify-between gap-1 sm:flex-row sm:gap-0">
+          <ContractQuestion
+            contract={contract}
+            className={'w-full sm:w-[calc(100%-12rem)]'}
+            hideAvatar={hideAvatar}
+          />
+          <Row className="w-full justify-end sm:w-fit">
+            {columns.map((column) => (
+              <div
+                key={contract.id + column.header}
+                className={clsx(faded && 'text-ink-500', column.width)}
+              >
+                {column.content({ contract })}
+              </div>
+            ))}
+          </Row>
+        </div>
+        {answers && answers.length > 0 && (
+          <Col className="mb-2 ml-6 mt-1 gap-1 text-sm sm:ml-8">
+            {answers.map((answer) => (
+              <Row key={answer.id} className="items-center px-2">
+                <span className="text-ink-700 mr-1 line-clamp-1">
+                  {answer.text}
+                </span>
+                <span className="text-sm">
+                  {formatPercentShort(answer.prob)}
+                </span>
+                {Math.abs(clampChange(answer.prob, answer.probChanges.day)) >
+                  0.02 && (
+                  <Row
+                    className={clsx(
+                      'mx-1 inline-flex items-center rounded-full px-1 align-middle text-xs',
+                      answer.probChanges.day > 0
+                        ? 'bg-teal-600/10 text-teal-600'
+                        : 'text-scarlet-500 bg-scarlet-500/10'
+                    )}
+                  >
+                    {answer.probChanges.day > 0 ? (
+                      <FaArrowTrendUp className="mr-0.5 h-2.5  w-2.5" />
+                    ) : (
+                      <FaArrowTrendDown className="mr-0.5 h-2.5 w-2.5" />
+                    )}
+                    {Math.abs(
+                      Math.round(
+                        clampChange(answer.prob, answer.probChanges.day) * 100
+                      )
+                    )}
+                  </Row>
+                )}
+              </Row>
+            ))}
+          </Col>
+        )}
+      </Link>
+    </div>
   )
 }
 
@@ -143,6 +187,18 @@ export function LoadingContractRow() {
       </div>
     </div>
   )
+}
+
+export const clampChange = (currentProb: number, probChange: number) => {
+  if (probChange < 0.01 && probChange > -0.01) return 0
+
+  if (probChange > 0) {
+    // For positive changes, clamp to min of change and current probability
+    return Math.min(probChange, currentProb)
+  } else {
+    // For negative changes, clamp to min of absolute change and (1 - currentProb)
+    return -Math.min(Math.abs(probChange), 1 - currentProb)
+  }
 }
 
 export function isClosed(contract: Contract) {
@@ -178,18 +234,26 @@ export function ContractStatusLabel(props: {
           {formatPercentShort(getDisplayProbability(contract))}
           {showProbChange &&
             contract.probChanges &&
-            Math.round(contract.probChanges.day * 100) !== 0 && (
+            Math.abs(clampChange(contract.prob, contract.probChanges.day)) >
+              0.02 && (
               <Row
                 className={clsx(
-                  'text-ink-700 mb-0.5 ml-[3px] inline-flex items-center rounded-full px-1 align-middle text-xs',
+                  'text-ink-700 mx-1 mb-0.5 inline-flex items-center rounded-full px-1 align-middle text-xs',
                   contract.probChanges.day > 0
                     ? 'bg-teal-600/10 text-teal-600'
                     : 'text-scarlet-500 bg-scarlet-500/10'
                 )}
               >
-                {contract.probChanges.day > 0 ? '+' : '-'}
-                {Math.abs(Math.round((contract.probChanges.day ?? 0) * 100))}
-                <span className="font-thin">%</span>
+                {contract.probChanges.day > 0 ? (
+                  <FaArrowTrendUp className="mr-0.5 h-2.5 w-2.5" />
+                ) : (
+                  <FaArrowTrendDown className="mr-0.5 h-2.5 w-2.5" />
+                )}
+                {Math.abs(
+                  Math.round(
+                    clampChange(contract.prob, contract.probChanges.day) * 100
+                  )
+                )}
               </Row>
             )}
           {chanceLabel && <span className="text-sm font-normal"> chance</span>}

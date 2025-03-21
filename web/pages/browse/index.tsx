@@ -14,6 +14,7 @@ import { Search } from 'web/components/search'
 import { useIsMobile } from 'web/hooks/use-is-mobile'
 import { usePrivateUser, useUser } from 'web/hooks/use-user'
 import { ManifoldLogo } from 'web/components/nav/manifold-logo'
+import { DEFAULT_FOR_YOU } from 'web/components/onboarding/welcome'
 
 export default function BrowsePage() {
   const user = useUser()
@@ -73,7 +74,7 @@ export function BrowsePageContent() {
         headerClassName={'pt-0 px-2'}
         defaultFilter="open"
         defaultSort="score"
-        defaultForYou="1"
+        defaultForYou={DEFAULT_FOR_YOU ? '1' : '0'}
         initialTopics={initialTopics}
       />
     </Col>

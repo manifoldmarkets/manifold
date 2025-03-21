@@ -142,7 +142,6 @@ import { getmonthlybets2024 } from './get-monthly-bets-2024'
 import { getmaxminprofit2024 } from './get-max-min-profit-2024'
 import { getNextLoanAmount } from './get-next-loan-amount'
 import { checkSportsEvent } from './check-sports-event'
-import { getMovingMarkets } from './get-moving-markets'
 
 import { createTask } from './create-task'
 import { updateTask } from './update-task'
@@ -174,6 +173,7 @@ import {
 } from './generate-ai-date-ranges'
 import { inferNumericUnit } from './infer-numeric-unit'
 import { generateConciseTitle } from './generate-concise-title'
+import { getCloseDateEndpoint } from './get-close-date'
 
 export const handlers: { [k in APIPath]: APIHandler<k> } = {
   'refresh-all-clients': refreshAllClients,
@@ -360,5 +360,5 @@ export const handlers: { [k in APIPath]: APIHandler<k> } = {
   'generate-ai-date-ranges': generateAIDateRanges,
   'regenerate-date-midpoints': regenerateDateMidpoints,
   'generate-concise-title': generateConciseTitle,
-  'get-moving-markets': getMovingMarkets,
+  'get-close-date': getCloseDateEndpoint,
 }

@@ -25,12 +25,11 @@ import {
   ANSWERS_TO_HIDE_GRAPH,
   getDefaultSort,
   getSortedAnswers,
-  MAX_ANSWERS,
   sortAnswers,
 } from './answer'
 import { getDashboardsToDisplayOnContract } from './supabase/dashboards'
 import { getBetPointsBetween, getTotalBetCount } from './bets'
-
+import { MarketContract } from './contract'
 export async function getContractParams(
   contract: Contract,
   db: SupabaseClient
@@ -72,8 +71,7 @@ export async function getContractParams(
         })
       : ([] as Bet[]),
     hasMechanism && !shouldHideGraph(contract)
-      ? getBetPointsBetween({
-          contractId: contract.id,
+      ? getBetPointsBetween(contract as MarketContract, {
           filterRedemptions: !includeRedemptions,
           includeZeroShareRedemptions: includeRedemptions,
           beforeTime: (contract.lastBetTime ?? contract.createdTime) + 1,
@@ -159,23 +157,10 @@ export const getMultiBetPoints = (
 
   const rawPointsByAns = groupBy(betPoints, 'answerId')
 
-  const subsetOfAnswers = sortBy(
-    answers,
-    (a) => (a.resolution ? 1 : 0),
-    (a) => -a.totalLiquidity
-  ).slice(0, MAX_ANSWERS)
-
   const pointsByAns = {} as { [answerId: string]: { x: number; y: number }[] }
-  subsetOfAnswers.forEach((ans) => {
-    const startY = getInitialAnswerProbability(contract, ans)
-
-    const points = rawPointsByAns[ans.id] ?? []
-    points.sort((a, b) => a.x - b.x)
-
-    pointsByAns[ans.id] = buildArray<{ x: number; y: number }>(
-      startY != undefined && { x: ans.createdTime, y: startY },
-      maxMinBin(points, 500)
-    )
+  answers.forEach((ans) => {
+    const points = sortBy(rawPointsByAns[ans.id] ?? [], 'x')
+    pointsByAns[ans.id] = maxMinBin(points, 500)
   })
 
   return serializeMultiPoints(pointsByAns)

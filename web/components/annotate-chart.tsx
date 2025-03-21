@@ -20,6 +20,7 @@ import { formatPercent } from 'common/util/format'
 import { AmountInput } from 'web/components/widgets/amount-input'
 import { UserHovercard } from './user/user-hovercard'
 import { useDisplayUserById } from 'web/hooks/use-user-supabase'
+import { useContract } from 'web/hooks/use-contract'
 
 export const AnnotateChartModal = (props: {
   open: boolean
@@ -33,6 +34,16 @@ export const AnnotateChartModal = (props: {
   const [note, setNote] = useState<string>()
   const [probChange, setProbChange] = useState<number>()
   const [loading, setLoading] = useState(false)
+  const [editedTime, setEditedTime] = useState<number>(atTime)
+  const contract = useContract(contractId)
+  // Format date for datetime-local input
+  const formatDateForInput = (timestamp: number) => {
+    const date = new Date(timestamp)
+    return new Date(date.getTime() - date.getTimezoneOffset() * 60000)
+      .toISOString()
+      .slice(0, 16)
+  }
+
   return (
     <Modal open={open} setOpen={setOpen}>
       <Col className={clsx(MODAL_CLASS)}>
@@ -40,7 +51,7 @@ export const AnnotateChartModal = (props: {
           <span className={'text-primary-700 text-xl'}>
             Add a note at{' '}
             <span>
-              {new Date(atTime).toLocaleDateString('en-US', {
+              {new Date(editedTime).toLocaleDateString('en-US', {
                 hour: 'numeric',
                 minute: 'numeric',
                 month: 'short',
@@ -50,6 +61,29 @@ export const AnnotateChartModal = (props: {
             </span>
           </span>
         </Row>
+        <Col className={'mt-2 w-full'}>
+          <span>Date and time</span>
+          <Input
+            type="datetime-local"
+            value={formatDateForInput(editedTime)}
+            min={
+              contract?.createdTime
+                ? formatDateForInput(contract.createdTime)
+                : undefined
+            }
+            max={formatDateForInput(Date.now())}
+            onChange={(e) => {
+              if (e.target.value) {
+                // Ensure time is not before contract creation
+                const newTime = new Date(e.target.value).getTime()
+                if (!contract?.createdTime || newTime >= contract.createdTime) {
+                  setEditedTime(newTime)
+                }
+              }
+            }}
+            className="w-full"
+          />
+        </Col>
         <Col className={'w-full'}>
           <span>What happened? </span>
           {comment ? (
@@ -92,7 +126,7 @@ export const AnnotateChartModal = (props: {
               await createChartAnnotation({
                 contractId,
                 text: note?.length ? note : undefined,
-                eventTime: atTime,
+                eventTime: editedTime,
                 answerId,
                 commentId: comment?.id,
                 probChange: probChange ? probChange / 100 : undefined,
