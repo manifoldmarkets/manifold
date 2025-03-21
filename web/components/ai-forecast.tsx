@@ -557,17 +557,17 @@ function CapabilityCard({
               <div className="text-center w-[38%]">
                 {getCompanyLogo(topCompanies[0].text) ? (
                   <div className="flex flex-col items-center">
-                    <div className="h-14 w-14 sm:h-16 sm:w-16 mb-1 sm:mb-2 flex items-center justify-center text-primary-600">
+                    <div className="h-14 w-14 sm:h-16 sm:w-16 mb-1 sm:mb-2 flex items-center justify-center text-primary-600 dark:text-primary-500">
                       {React.createElement(getCompanyLogo(topCompanies[0].text) as React.FC<{className?: string}>, { 
                         className: "w-12 h-12 sm:w-14 sm:h-14" 
                       })}
                     </div>
-                    <div className="text-lg sm:text-xl font-bold text-ink-900">
+                    <div className="text-lg sm:text-xl font-bold text-primary-600 dark:text-primary-500">
                       {topCompanies[0].text}
                     </div>
                   </div>
                 ) : (
-                  <div className="text-2xl sm:text-3xl font-bold text-ink-900 truncate">
+                  <div className="text-2xl sm:text-3xl font-bold text-primary-600 dark:text-primary-500 truncate">
                     {topCompanies[0].text}
                   </div>
                 )}
@@ -577,7 +577,7 @@ function CapabilityCard({
               </div>
               
               {/* VS Badge */}
-              <div className="text-primary-800 text-med font-black mx-4">
+              <div className="text-ink-500 text-med font-black mx-4">
                 VS
               </div>
               
@@ -585,17 +585,17 @@ function CapabilityCard({
               <div className="text-center w-[38%]">
                 {getCompanyLogo(topCompanies[1].text) ? (
                   <div className="flex flex-col items-center">
-                    <div className="h-14 w-14 mb-1 flex items-center justify-center text-primary-600">
+                    <div className="h-14 w-14 mb-1 flex items-center justify-center text-fuchsia-500 dark:text-fuchsia-400">
                       {React.createElement(getCompanyLogo(topCompanies[1].text) as React.FC<{className?: string}>, { 
                         className: "w-12 h-12" 
                       })}
                     </div>
-                    <div className="text-base sm:text-lg font-bold text-ink-900">
+                    <div className="text-base sm:text-lg font-bold text-fuchsia-500 dark:text-fuchsia-400">
                       {topCompanies[1].text}
                     </div>
                   </div>
                 ) : (
-                  <div className="text-base sm:text-lg font-bold text-ink-900 truncate">
+                  <div className="text-base sm:text-lg font-bold text-fuchsia-500 dark:text-fuchsia-400 truncate">
                     {topCompanies[1].text}
                   </div>
                 )}
@@ -606,12 +606,19 @@ function CapabilityCard({
             </div>
             
             {/* Probability Bar */}
-            <div className="mt-2 sm:mt-4 h-1.5 w-full rounded-full bg-ink-200 dark:bg-ink-700 overflow-hidden">
-              {/* Calculate the width percentage based on probabilities */}
+            <div className="mt-2 sm:mt-4 h-2.5 w-full rounded-full overflow-hidden flex">
+              {/* Left company proportion */}
               <div 
-                className="h-full bg-primary-600 dark:bg-primary-500" 
+                className="h-full bg-primary-600 dark:bg-primary-500 rounded-l-full" 
                 style={{
                   width: `${(topCompanies[0].probability / (topCompanies[0].probability + topCompanies[1].probability)) * 100}%` 
+                }}
+              />
+              {/* Right company proportion */}
+              <div 
+                className="h-full bg-fuchsia-500 dark:bg-fuchsia-400 rounded-r-full" 
+                style={{
+                  width: `${(topCompanies[1].probability / (topCompanies[0].probability + topCompanies[1].probability)) * 100}%` 
                 }}
               />
             </div>
