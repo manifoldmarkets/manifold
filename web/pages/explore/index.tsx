@@ -28,7 +28,6 @@ import { api } from 'web/lib/api/api'
 import { LoadingIndicator } from 'web/components/widgets/loading-indicator'
 import { User } from 'common/user'
 import { FaBaseballBall } from 'react-icons/fa'
-import { AiContent } from 'web/components/ai-content'
 import { Contract, isSportsContract } from 'common/contract'
 import { tsToMillis } from 'common/supabase/utils'
 import { ENV } from 'common/envs/constants'
@@ -315,18 +314,10 @@ function MarketsContent() {
       ),
     },
     {
-      title: 'Activity',
+      title: 'Site activity',
       content: (
         <Col className="pt-1">
           <SiteActivity />
-        </Col>
-      ),
-    },
-    {
-      title: 'AI',
-      content: (
-        <Col className="pt-4">
-          <AiContent />
         </Col>
       ),
     },
