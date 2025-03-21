@@ -27,12 +27,11 @@ export const isSportsInterested: APIHandler<'is-sports-interested'> = async (
   ) {
     await buildUserInterestsCache([userId])
   }
-  // Still no topic interests, return default search
   if (
     !Object.keys(userIdsToAverageTopicConversionScores[userId] ?? {}).length
   ) {
     log('No topic interests, returning true')
-    return { isSportsInterested: true }
+    return { isSportsInterested: false }
   }
   const isInterestedInSports = sportsGroupIds.some(
     (id) =>

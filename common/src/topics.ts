@@ -9,9 +9,9 @@ type TopicInfo = { name: string; groupIds: string[] }
 export const TOPICS_TO_SUBTOPICS: { [key: string]: TopicInfo[] } = {
   '🗳️ Politics': [
     {
-      // US Politics, 2024 US Presidential Election
+      // US Politics
       name: '🇺🇸 USA',
-      groupIds: ['AjxQR8JMpNyDqtiqoA96', 'rr3rBJMwh9PW8hwrgR4J'],
+      groupIds: ['AjxQR8JMpNyDqtiqoA96'],
     },
     { name: '🇨🇳 China', groupIds: ['oWTzfoeemQGkSoPFn2T7'] },
     {
@@ -76,8 +76,6 @@ export const TOPICS_TO_SUBTOPICS: { [key: string]: TopicInfo[] } = {
       name: '🏀 Basketball',
       groupIds: [
         'NjkFkdkvRvBHoeMDQ5NB', // Basketball
-        // 'Tp4TDTWUGnEUMvBcCPIR', // March Madness
-        '9a003f6b-9fd1-46ab-871d-2904953c4d5b', // March Madness 2024
         'beeb69e0-b36f-451a-80e1-e059df456bb1', // College Basketball
         'i0v3cXwuxmO9fpcInVYb', // NBA
       ],
