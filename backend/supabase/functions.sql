@@ -593,20 +593,14 @@ $function$;
 create
 or replace function public.is_admin (input_string text) returns boolean language plpgsql immutable parallel SAFE as $function$
 DECLARE
--- @Austin, @JamesGrugett, @SG, @DavidChee, @Alice, @ian, @IngaWei, @mqp, @Sinclair, @ManifoldPolitics, @baraki
     strings TEXT[] := ARRAY[
-        'igi2zGXsfxYPgB0DJTXVJVmwCOr2',
-        'tlmGNz9kjXc2EteizMORes4qvWl2',
-        'uglwf3YKOZNGjjEXKc5HampOFRE2',
-        'qJHrvvGfGsYiHZkGY6XjVfIMj233',
+        'igi2zGXsfxYPgB0DJTXVJVmwCOr2', -- Austin
+        'tlmGNz9kjXc2EteizMORes4qvWl2', -- Stephen
+        'uglwf3YKOZNGjjEXKc5HampOFRE2', -- David
         'AJwLWoo3xue32XIiAVrL5SyR1WB2', -- ian
-        'GRwzCexe5PM6ThrSsodKZT9ziln2',
-        '62TNqzdBx7X2q621HltsJm8UFht2',
-        '0k1suGSJKVUnHbCPEhHNpgZPkUP2',
-        'vuI5upWB8yU00rP7yxj95J2zd952',
-        'vUks7InCtYhBFrdLQhqXFUBHD4D2',
-        'cA1JupYR5AR8btHUs2xvkui7jA93' -- Gen
-
+        '62TNqzdBx7X2q621HltsJm8UFht2', -- mqp
+        'vuI5upWB8yU00rP7yxj95J2zd952', -- ManifoldPolitics
+        'cA1JupYR5AR8btHUs2xvkui7jA93' -- Genzy
         ];
 BEGIN
     RETURN input_string = ANY(strings);

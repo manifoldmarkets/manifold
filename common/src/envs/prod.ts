@@ -79,7 +79,6 @@ export const PROD_CONFIG: EnvConfig = {
     'IPTOzEqrpkWmEzh6hwvAyY9PqFb2', // Manifold
     'AJwLWoo3xue32XIiAVrL5SyR1WB2', // Ian
     'uglwf3YKOZNGjjEXKc5HampOFRE2', // D4vid
-    'GRwzCexe5PM6ThrSsodKZT9ziln2', // Inga
     '62TNqzdBx7X2q621HltsJm8UFht2', // Marshall
     'z0cH5XmIM9XgWFOBAILQWt0fTHr1', // Rachel W
     'cA1JupYR5AR8btHUs2xvkui7jA93', // Genzy
