@@ -488,6 +488,8 @@ function CapabilityCard({
     if (multiNumericValue !== null && liveContract.mechanism === 'cpmm-multi-1') {
       // For multi-numeric contracts
       displayValue = formatExpectedValue(multiNumericValue, liveContract as unknown as MultiNumericContract)
+      // Strip space between number and percent if it exists
+      displayValue = displayValue.replace(/(\d+(\.\d+)?) %/, '$1%')
     } else if (numericValue !== null) {
       // For regular numeric contracts
       displayValue = numericValue.toFixed(1)
