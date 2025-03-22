@@ -1,6 +1,5 @@
-import React, { useState } from 'react'
+import React from 'react'
 import { format as formatDateFn } from 'date-fns'
-import { MdChevronRight, MdChevronLeft } from "react-icons/md"
 import { TimelineItem } from './timeline-item'
 
 // Type for model data
@@ -34,49 +33,30 @@ export const Timeline = ({
   const currentDate = new Date()
   const startDate = customStartDate || new Date(currentDate.getFullYear(), currentDate.getMonth(), 1)
   
-  const endDate = customEndDate || new Date(startDate)
-  endDate.setMonth(startDate.getMonth() + 5) // 6 months total
-    
+  // Create a date range that covers all items plus one year
   const latestItemDate = sortedItems.length ? 
     sortedItems.reduce((latest, item) => 
       item.releaseDate > latest ? item.releaseDate : latest, 
       sortedItems[0].releaseDate
-    ) : endDate
+    ) : new Date(currentDate)
   
-  // Track scroll position with state
-  const [timelineScrollPosition, setTimelineScrollPosition] = useState(0)
+  // Ensure we have at least one year range for display
+  const endDate = customEndDate || new Date(
+    Math.max(
+      latestItemDate.getTime(), 
+      new Date(startDate).setFullYear(startDate.getFullYear() + 1)
+    )
+  )
   
-  // Handle scrolling forward in time
-  const scrollForward = () => {
-    const newStartDate = new Date(viewEndDate)
-    
-    if (newStartDate <= latestItemDate) {
-      setTimelineScrollPosition(timelineScrollPosition + 5)
-    }
-  }
-  
-  // Handle scrolling backward in time
-  const scrollBackward = () => {
-    if (timelineScrollPosition > 0) {
-      setTimelineScrollPosition(timelineScrollPosition - 5)
-    }
-  }
-  
-  const viewStartDate = new Date(startDate)
-  viewStartDate.setMonth(startDate.getMonth() + timelineScrollPosition)
-  
-  const viewEndDate = new Date(viewStartDate)
-  viewEndDate.setMonth(viewStartDate.getMonth() + 5) // 6 months total
-  
-  // Month markers based on actual date positions
+  // Generate month markers for the entire period
   const generateMonthMarkers = () => {
     const months = []
     
-    // Start with the first day of the visible start month
-    const firstMonthStart = new Date(viewStartDate.getFullYear(), viewStartDate.getMonth(), 1)
+    // Start with the first day of the start month
+    const firstMonthStart = new Date(startDate.getFullYear(), startDate.getMonth(), 1)
     
-    // Add all months that fall within view range
-    const lastDate = new Date(viewEndDate)
+    // Add all months that fall within range
+    const lastDate = new Date(endDate)
     
     const currentMonth = new Date(firstMonthStart)
     while (currentMonth <= lastDate) {
@@ -87,105 +67,81 @@ export const Timeline = ({
     return months
   }
   
-  const monthMarkers = generateMonthMarkers()
+  const allMonthMarkers = generateMonthMarkers()
   
-  // Calculate position on timeline (0-100%) based on visible range
-  const getTimelinePosition = (date: Date) => {
-    const timeRange = viewEndDate.getTime() - viewStartDate.getTime()
+  // First row: first 6 months
+  const firstHalfMonths = allMonthMarkers.slice(0, 6)
+  
+  // Second row: next 6 months
+  const secondRowStartIndex = Math.min(6, allMonthMarkers.length)
+  const secondRowEndIndex = Math.min(12, allMonthMarkers.length)
+  const secondHalfMonths = allMonthMarkers.slice(secondRowStartIndex, secondRowEndIndex)
+  
+  // Calculate timeline position for an item (0-100%) for first row
+  const getFirstRowPosition = (date: Date) => {
+    if (firstHalfMonths.length === 0) return -1
+    
+    const rowStartDate = firstHalfMonths[0]
+    const rowEndDate = new Date(firstHalfMonths[firstHalfMonths.length - 1])
+    rowEndDate.setMonth(rowEndDate.getMonth() + 1) // End of the last month
+    
+    const timeRange = rowEndDate.getTime() - rowStartDate.getTime()
     if (timeRange === 0) return 0
     
-    // Calculate raw position as percentage
-    const position = ((date.getTime() - viewStartDate.getTime()) / timeRange) * 100
+    // Check if date is in this row's range
+    if (date < rowStartDate || date > rowEndDate) return -1
     
-    // Check if this date falls in the last month of our timeline
-    const dateMonth = date.getMonth()
-    const dateYear = date.getFullYear()
-    const lastMonth = viewEndDate.getMonth()
-    const lastYear = viewEndDate.getFullYear()
-    const isInLastMonth = dateMonth === lastMonth && dateYear === lastYear
+    // Calculate position as percentage
+    const position = ((date.getTime() - rowStartDate.getTime()) / timeRange) * 100
+    return Math.max(5, Math.min(95, position)) // Clamp between 5% and 95%
+  }
+  
+  // Calculate timeline position for an item (0-100%) for second row
+  const getSecondRowPosition = (date: Date) => {
+    if (secondHalfMonths.length === 0) return -1
     
-    // If this item is in the last month and we're on the first page,
-    // don't show it (it will be shown on the second page)
-    if (isInLastMonth && timelineScrollPosition === 0) {
-      return -1
-    }
+    const rowStartDate = secondHalfMonths[0]
+    const rowEndDate = new Date(secondHalfMonths[secondHalfMonths.length - 1])
+    rowEndDate.setMonth(rowEndDate.getMonth() + 1) // End of the last month
     
-    // Special handling for items that would appear at the beginning of the timeline
-    // If the date is before our viewStartDate but within 14 days, position it at the start
-    if (date.getTime() < viewStartDate.getTime()) {
-      const daysDifference = (viewStartDate.getTime() - date.getTime()) / (1000 * 60 * 60 * 24)
-      if (daysDifference <= 14) {
-        // Place it at the very beginning of the timeline
-        return 5;
-      }
-      return -1; // Otherwise don't show it
-    }
+    const timeRange = rowEndDate.getTime() - rowStartDate.getTime()
+    if (timeRange === 0) return 0
     
-    // If on second page, handle items that should be shown at the beginning
-    if (timelineScrollPosition > 0) {
-      // Calculate where this date would have been on the previous page
-      const prevPageStartDate = new Date(startDate)
-      prevPageStartDate.setMonth(prevPageStartDate.getMonth() + (timelineScrollPosition - 5))
-      
-      const prevPageEndDate = new Date(prevPageStartDate)
-      prevPageEndDate.setMonth(prevPageStartDate.getMonth() + 5)
-      
-      const prevPageTimeRange = prevPageEndDate.getTime() - prevPageStartDate.getTime()
-      const prevPagePosition = ((date.getTime() - prevPageStartDate.getTime()) / prevPageTimeRange) * 100
-      
-      // For items that were near the end of the previous page, show them at the beginning of this page
-      if (prevPagePosition > 90 && prevPagePosition <= 100 && position < 0) {
-        return 5 // Position at beginning of current page
-      }
-    }
+    // Check if date is in this row's range
+    if (date < rowStartDate || date > rowEndDate) return -1
     
-    // Make sure items near the edges are clamped to reasonable values
-    if (position >= 0 && position <= 100) {
-      return Math.max(5, Math.min(95, position)); // Clamp between 5% and 95%
-    } else {
-      return -1; // Date is outside visible range
-    }
+    // Calculate position as percentage
+    const position = ((date.getTime() - rowStartDate.getTime()) / timeRange) * 100
+    return Math.max(5, Math.min(95, position)) // Clamp between 5% and 95%
   }
   
   // Simple function for positioning month markers evenly
-  const getMonthMarkerPosition = (date: Date, index: number, totalMonths: number) => {
+  const getMonthMarkerPosition = (index: number, totalMonths: number) => {
     // Distribute all months evenly from 0% to 100%
     return (index / (totalMonths - 1)) * 100;
   }
-
-  return (
-    <div className={`${className}`}>
-      <div className="relative mb-8 mt-10 sm:mt-16">
-        {/* Main container for timeline and item icons */}
+  
+  // Create a timeline row component for reuse
+  const TimelineRow = ({
+    monthMarkers,
+    getItemPosition,
+    itemsToShow
+  }: {
+    monthMarkers: Date[]
+    getItemPosition: (date: Date) => number
+    itemsToShow: TimelineItemData[]
+  }) => {
+    return (
+      <div className="relative mb-24 sm:mb-32">
+        {/* Container for timeline and item icons */}
         <div className="relative w-full px-8">
-          {timelineScrollPosition > 0 && (
-            <button 
-              onClick={scrollBackward}
-              className="absolute -left-6 top-[-20px] p-2 rounded-full text-primary-600 z-10"
-              aria-label="Scroll backward in time"
-            >
-              <MdChevronLeft className="h-5 w-5 sm:h-6 sm:w-6" />
-            </button>
-          )}
-          
-          {viewEndDate < latestItemDate && (
-            <button 
-              onClick={scrollForward}
-              className="absolute -right-6 top-[-20px] p-2 rounded-full text-primary-600 z-10"
-              aria-label="Scroll forward in time"
-            >
-              <MdChevronRight className="h-5 w-5 sm:h-6 sm:w-6" />
-            </button>
-          )}
-        
-          {/* Collision detection for icons*/}
-          <div className="absolute left-0 right-0 top-[-45px] w-full h-[45px] overflow-visible">
+          {/* Items on the timeline */}
+          <div className="absolute left-0 right-0 top-[-30px] sm:top-[-40px] w-full h-[30px] sm:h-[40px] overflow-visible">
             {(() => {
-              // Get all visible items
-              const visibleItems = sortedItems
+              // Get all visible items for this row
+              const visibleItems = itemsToShow
                 .map(item => {
-                  const position = getTimelinePosition(item.releaseDate)
-
+                  const position = getItemPosition(item.releaseDate)
                   if (position < 0 || position > 100) return null
                   
                   return { item, position, verticalOffset: 0 }
@@ -221,7 +177,7 @@ export const Timeline = ({
             {/* Month markers and labels */}
             <div className="absolute left-0 right-0 top-[15px]">
               {monthMarkers.map((date, index) => {
-                const position = getMonthMarkerPosition(date, index, monthMarkers.length)
+                const position = getMonthMarkerPosition(index, monthMarkers.length)
                 
                 return (
                   <div 
@@ -244,7 +200,7 @@ export const Timeline = ({
             {/* Tick marks */}
             <div className="absolute left-0 right-0 top-0">
               {monthMarkers.map((date, index) => {
-                const position = getMonthMarkerPosition(date, index, monthMarkers.length)
+                const position = getMonthMarkerPosition(index, monthMarkers.length)
                 
                 return (
                   <div 
@@ -261,6 +217,35 @@ export const Timeline = ({
           </div>
         </div>
       </div>
+    )
+  }
+
+  // Filter items for each row
+  const firstRowItems = sortedItems.filter(item => {
+    return getFirstRowPosition(item.releaseDate) >= 0
+  })
+  
+  const secondRowItems = sortedItems.filter(item => {
+    return getSecondRowPosition(item.releaseDate) >= 0
+  })
+
+  return (
+    <div className={`${className}`}>
+      {/* First row */}
+      <TimelineRow 
+        monthMarkers={firstHalfMonths}
+        getItemPosition={getFirstRowPosition}
+        itemsToShow={firstRowItems}
+      />
+      
+      {/* Second row */}
+      {secondHalfMonths.length > 0 && (
+        <TimelineRow 
+          monthMarkers={secondHalfMonths}
+          getItemPosition={getSecondRowPosition}
+          itemsToShow={secondRowItems}
+        />
+      )}
     </div>
   )
 }

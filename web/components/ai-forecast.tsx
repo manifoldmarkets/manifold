@@ -97,7 +97,7 @@ export const AI_CAPABILITY_CARDS: AICapabilityCard[] = [
   {
     title: 'AiderBench',
     description: 'Highest ranked model on Aider',
-    marketId: 'LsZPyLPI82', // Top April LMSYS
+    marketId: 'QuqA2uAALL',
     type: 'monthly',
     displayType: 'top-one-mcq',
   },
@@ -177,6 +177,13 @@ export const AI_CAPABILITY_CARDS: AICapabilityCard[] = [
     title: 'Hacking',
     description: 'AI independently hacks a system',
     marketId: 's82955uAnR',
+    type: 'misuse',
+    displayType: 'binary-odds'
+  },
+  {
+    title: 'ASL-3 LLM Released',
+    description: 'ASL-3 defined by Anthropic',
+    marketId: 'IBqB2krzjBLt9gG1UqM0',
     type: 'misuse',
     displayType: 'binary-odds'
   },
@@ -707,6 +714,7 @@ function CapabilityCard({
                   {type === 'prize' && title.includes('Arc AGI') && 'Probability of claiming Arc-AGI prize by end of 2025'}
                   {type === 'prize' && title.includes('Turing Test') && 'Probability of passing this variation of the Turing Test by 2029'}
                   {type === 'misuse' && title.includes('Hacking') && 'Probability of AI compromising systems by end of 2025'}
+                  {type === 'misuse' && title.includes('ASL-3') && 'Model released EOY defined as ASL-3 by Anthropic'}
                   {type === 'long-term' && title.includes('Romantic') && 'At least 1/1000 Americans talks weekly with one by 2028'}
                   {type === 'long-term' && title.includes('Blackmail') && 'Risk of AI being used for automated blackmail by 2028'}
                   {type === 'long-term' && title.includes('Economic') && 'Break in trend for GDP growth, GDP/capita, productivity, or unemployment by 2028'}
@@ -865,7 +873,7 @@ export function AIForecast({ whenAgi, contracts = [], hideTitle }: AIForecastPro
   
   const typeInfo = { // controls sorting
     'monthly': {
-      label: 'Best Model in March',
+      label: 'Best Model in April',
       description: 'What\'s the best model this month?'
     },
     'releases': {
