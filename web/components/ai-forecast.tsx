@@ -155,28 +155,28 @@ export const AI_CAPABILITY_CARDS: AICapabilityCard[] = [
     displayType: 'binary-odds'
   },
   {
-    title: 'SWE Bench Top Score',
+    title: 'SWE Bench',
     description: 'Top SWE Bench score by EOY',
     marketId: 'nEhgsIE6U0',
     type: 'benchmark',
     displayType: 'numeric'
   },
   {
-    title: 'Highest Humanity\'s Last Exam Top Score',
+    title: 'Highest Humanity\'s Last Exam',
     description:'Highest score on Humanity\'s last exam by EOY',
     marketId: 'tzsZCn85RQ',
     type: 'benchmark',
     displayType: 'numeric'
   },
   {
-    title: 'CodeForces Top Score',
+    title: 'CodeForces',
     description: '>80% on Frontier Math by EOY',
     marketId: 'RSAcZtOZyl',
     type: 'benchmark',
     displayType: 'top-one-mcq'
   },
     {
-    title: 'Frontier Math Top Score',
+    title: 'Frontier Math',
     description: 'top performance on frontier math',
     marketId: 'LNdOg08SsU',
     type: 'benchmark',
@@ -184,13 +184,6 @@ export const AI_CAPABILITY_CARDS: AICapabilityCard[] = [
   },
   
   // Prizes
-  {
-    title: 'Millennium Prize',
-    description: 'AI Solve Millennium Problem by EOY',
-    marketId: 'KmvP3Ggw5z7vFATu5urA',
-    type: 'prize',
-    displayType: 'binary-odds'
-  },
   {
     title: 'Arc AGI',
     description: 'Arc AGI prize by EOY',
@@ -202,6 +195,13 @@ export const AI_CAPABILITY_CARDS: AICapabilityCard[] = [
     title: 'Turing Test (Long Bets)',
     description: 'Will AI pass long bets Turing Test by EOY?',
     marketId: 'nKyHon3IPOqJYzaWTHJB',
+    type: 'prize',
+    displayType: 'binary-odds'
+  },
+  {
+    title: 'Millennium Prize',
+    description: 'AI Solve Millennium Problem by EOY',
+    marketId: '6vw71lj8bi',
     type: 'prize',
     displayType: 'binary-odds'
   },
@@ -217,7 +217,7 @@ export const AI_CAPABILITY_CARDS: AICapabilityCard[] = [
   
   // 2028 Predictions
   {
-    title: 'AI Blackmail by 2028',
+    title: 'AI Blackmail',
     description: 'AI Blackmails someone for >$1000',
     marketId: 'W1KGdImLB5cb1p75M88e',
     type: 'long-term',
@@ -557,17 +557,17 @@ function CapabilityCard({
               <div className="text-center w-[38%]">
                 {getCompanyLogo(topCompanies[0].text) ? (
                   <div className="flex flex-col items-center">
-                    <div className="h-14 w-14 sm:h-16 sm:w-16 mb-1 sm:mb-2 flex items-center justify-center text-primary-600">
+                    <div className="h-14 w-14 sm:h-16 sm:w-16 mb-1 sm:mb-2 flex items-center justify-center text-primary-600 dark:text-primary-500">
                       {React.createElement(getCompanyLogo(topCompanies[0].text) as React.FC<{className?: string}>, { 
                         className: "w-12 h-12 sm:w-14 sm:h-14" 
                       })}
                     </div>
-                    <div className="text-lg sm:text-xl font-bold text-ink-900">
+                    <div className="text-lg sm:text-xl font-bold text-primary-600 dark:text-primary-500">
                       {topCompanies[0].text}
                     </div>
                   </div>
                 ) : (
-                  <div className="text-2xl sm:text-3xl font-bold text-ink-900 truncate">
+                  <div className="text-2xl sm:text-3xl font-bold text-primary-600 dark:text-primary-500 truncate">
                     {topCompanies[0].text}
                   </div>
                 )}
@@ -577,7 +577,7 @@ function CapabilityCard({
               </div>
               
               {/* VS Badge */}
-              <div className="text-primary-800 text-med font-black mx-4">
+              <div className="text-ink-800 text-med font-black mx-4">
                 VS
               </div>
               
@@ -585,17 +585,17 @@ function CapabilityCard({
               <div className="text-center w-[38%]">
                 {getCompanyLogo(topCompanies[1].text) ? (
                   <div className="flex flex-col items-center">
-                    <div className="h-14 w-14 mb-1 flex items-center justify-center text-primary-600">
+                    <div className="h-14 w-14 mb-1 flex items-center justify-center text-teal-600 dark:text-teal-400">
                       {React.createElement(getCompanyLogo(topCompanies[1].text) as React.FC<{className?: string}>, { 
                         className: "w-12 h-12" 
                       })}
                     </div>
-                    <div className="text-base sm:text-lg font-bold text-ink-900">
+                    <div className="text-base sm:text-lg font-bold text-teal-600 dark:text-teal-400">
                       {topCompanies[1].text}
                     </div>
                   </div>
                 ) : (
-                  <div className="text-base sm:text-lg font-bold text-ink-900 truncate">
+                  <div className="text-base sm:text-lg font-bold text-teal-600 dark:text-teal-400 truncate">
                     {topCompanies[1].text}
                   </div>
                 )}
@@ -606,12 +606,19 @@ function CapabilityCard({
             </div>
             
             {/* Probability Bar */}
-            <div className="mt-2 sm:mt-4 h-1.5 w-full rounded-full bg-ink-200 dark:bg-ink-700 overflow-hidden">
-              {/* Calculate the width percentage based on probabilities */}
+            <div className="mt-2 sm:mt-4 h-2.5 w-full rounded-full overflow-hidden flex">
+              {/* Left company proportion */}
               <div 
-                className="h-full bg-primary-600 dark:bg-primary-500" 
+                className="h-full bg-primary-600 dark:bg-primary-500 rounded-l-full" 
                 style={{
                   width: `${(topCompanies[0].probability / (topCompanies[0].probability + topCompanies[1].probability)) * 100}%` 
+                }}
+              />
+              {/* Right company proportion */}
+              <div 
+                className="h-full bg-teal-600 dark:bg-teal-400 rounded-r-full" 
+                style={{
+                  width: `${(topCompanies[1].probability / (topCompanies[0].probability + topCompanies[1].probability)) * 100}%` 
                 }}
               />
             </div>
@@ -644,17 +651,17 @@ function CapabilityCard({
                 <div className="text-center">
                   {getCompanyLogo(topModel.text) ? (
                     <div className="flex flex-col items-center">
-                      <div className="h-14 w-14 mb-1 flex items-center justify-center text-primary-600">
+                      <div className="h-14 w-14 mb-1 flex items-center justify-center text-primary-600 dark:text-primary-500">
                         {React.createElement(getCompanyLogo(topModel.text) as React.FC<{className?: string}>, { 
                           className: "w-12 h-12" 
                         })}
                       </div>
-                      <div className="text-lg sm:text-xl font-bold text-ink-900">
+                      <div className="text-lg sm:text-xl font-bold text-primary-600 dark:text-primary-500">
                         {topModel.text}
                       </div>
                     </div>
                   ) : (
-                    <div className="text-2xl sm:text-3xl font-bold text-ink-900 truncate">
+                    <div className="text-2xl sm:text-3xl font-bold text-primary-600 dark:text-primary-500 truncate">
                       {topModel.text}
                     </div>
                   )}
@@ -728,15 +735,15 @@ function CapabilityCard({
               {(type === 'benchmark' || type === 'prize' || type === 'misuse' || type === 'long-term') && (
                 <p className="text-ink-600 text-xs sm:text-sm mt-1 sm:mt-3 text-left w-full px-1">
                   {type === 'benchmark' && title.includes('IMO Gold') && 'An LLM gets a IMO gold medal'}
-                  {type === 'prize' && title.includes('Millennium') && 'Chance of solving a million-dollar math problem by June 2025'}
+                  {type === 'prize' && title.includes('Millennium') && 'Chance of solving a million-dollar math problem before 2030'}
                   {type === 'prize' && title.includes('Arc AGI') && 'Probability of claiming Arc-AGI prize by end of 2025'}
                   {type === 'prize' && title.includes('Turing Test') && 'Probability of passing this variation of the Turing Test by 2029'}
                   {type === 'misuse' && title.includes('Hacking') && 'Probability of AI compromising systems by end of 2025'}
-                  {type === 'long-term' && title.includes('Romantic') && 'At least 1/1000 Americans talks weekly with one'}
-                  {type === 'long-term' && title.includes('Blackmail') && 'Risk of AI being used for automated blackmail'}
-                  {type === 'long-term' && title.includes('Economic') && 'Break in trend for GDP growth, GDP/capita, productivity, or unemployment'}
-                  {type === 'long-term' && title.includes('Zero') && 'AI plays a random computer game as well as a human'}
-                  {type === 'long-term' && title.includes('Self-play') && 'AI plays a random computer game as well as a human after self-play'}
+                  {type === 'long-term' && title.includes('Romantic') && 'At least 1/1000 Americans talks weekly with one by 2028'}
+                  {type === 'long-term' && title.includes('Blackmail') && 'Risk of AI being used for automated blackmail by 2028'}
+                  {type === 'long-term' && title.includes('Economic') && 'Break in trend for GDP growth, GDP/capita, productivity, or unemployment by 2028'}
+                  {type === 'long-term' && title.includes('Zero') && 'AI plays a random computer game at human-level by 2028'}
+                  {type === 'long-term' && title.includes('Self-play') && 'AI plays a random computer game as well as a human after self-play by 2028'}
                 </p>
               )}
             </div>
@@ -877,7 +884,7 @@ export function AIForecast({ whenAgi, contracts = [], hideTitle }: AIForecastPro
     },
     'prize': {
       label: 'Prizes',
-      description: 'Will any model claim this prize by the end of this year?'
+      description: 'Will any model claim this prize?'
     },
     'misuse': {
       label: 'AI Misuse',
