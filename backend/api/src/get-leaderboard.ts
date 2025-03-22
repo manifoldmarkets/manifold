@@ -121,7 +121,7 @@ export const getLeaderboard: APIHandler<'leaderboard'> = async ({
     kind === 'volume' && [
       select('user_id'),
       select(
-        `sum((ucm.data->'totalAmountSold')::numeric + (ucm.data->'totalAmountInvested')::numeric) as score`
+        `sum((coalesce((ucm.data->>'totalAmountSold')::numeric,0)) + (coalesce((ucm.data->>'totalAmountInvested')::numeric,0))) as score`
       ),
       groupBy('user_id'),
     ],

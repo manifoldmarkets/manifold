@@ -1,6 +1,5 @@
 /* eslint-disable react/jsx-key */
 import { useEffect, useState } from 'react'
-import { useRouter } from 'next/router'
 import Image from 'next/image'
 
 import { STARTING_BALANCE } from 'common/economy'
@@ -8,7 +7,7 @@ import { User } from 'common/user'
 import { buildArray } from 'common/util/array'
 import { formatMoney } from 'common/util/format'
 import { Button } from 'web/components/buttons/button'
-import { useIsAuthorized, useUser } from 'web/hooks/use-user'
+import { useUser } from 'web/hooks/use-user'
 import { Col } from '../layout/col'
 import { Modal } from '../layout/modal'
 import { Row } from '../layout/row'
@@ -36,21 +35,18 @@ import { capitalize } from 'lodash'
 import { TRADE_TERM } from 'common/envs/constants'
 import { convertGroup } from 'common/supabase/groups'
 
-const FORCE_SHOW_WELCOME_MODAL = false
 export const DEFAULT_FOR_YOU = false
+const SHOW_TOPICS = false
 
 export function Welcome(props: { setFeedKey?: (key: string) => void }) {
   const { setFeedKey } = props
 
   const user = useUser()
-  const authed = useIsAuthorized()
-  const isTwitch = useIsTwitch(user)
 
   const [open, setOpen] = useState(false)
   const [page, setPage] = useState(0)
 
-  const shouldShowWelcomeModal =
-    FORCE_SHOW_WELCOME_MODAL || (!isTwitch && user && user.shouldShowWelcome)
+  const shouldShowWelcomeModal = user?.shouldShowWelcome
 
   const handleSetPage = (page: number) => {
     if (page === 0) {
@@ -67,7 +63,7 @@ export function Welcome(props: { setFeedKey?: (key: string) => void }) {
 
   useEffect(() => {
     if (shouldShowWelcomeModal) {
-      track('welcome screen: landed', { isTwitch })
+      track('welcome screen: landed')
       setOpen(true)
     }
   }, [shouldShowWelcomeModal])
@@ -80,15 +76,17 @@ export function Welcome(props: { setFeedKey?: (key: string) => void }) {
     <WhatIsManifoldPage />,
     <NameInputPage />,
     <PredictionMarketPage />,
-    <TopicsPage
-      trendingTopics={trendingTopics}
-      userInterestedTopics={userInterestedTopics}
-      userBetInTopics={userBetInTopics}
-      onNext={increasePage}
-      setFeedKey={setFeedKey}
-      user={user}
-      goBack={() => handleSetPage(page - 1)}
-    />,
+    SHOW_TOPICS && (
+      <TopicsPage
+        trendingTopics={trendingTopics}
+        userInterestedTopics={userInterestedTopics}
+        userBetInTopics={userBetInTopics}
+        onNext={increasePage}
+        setFeedKey={setFeedKey}
+        user={user}
+        goBack={() => handleSetPage(page - 1)}
+      />
+    ),
     // user && !humanish(user) && <OnboardingVerifyPhone onClose={increasePage} />,
   ])
   const showBottomButtons = page < 3
@@ -146,9 +144,9 @@ export function Welcome(props: { setFeedKey?: (key: string) => void }) {
   }
 
   useEffect(() => {
-    if (user?.id && shouldShowWelcomeModal && authed)
+    if (user?.id && shouldShowWelcomeModal)
       getTrendingAndUserCategories(user.id)
-  }, [user?.id, shouldShowWelcomeModal, authed])
+  }, [user?.id, shouldShowWelcomeModal])
 
   async function increasePage() {
     if (page < availablePages.length - 1) handleSetPage(page + 1)
@@ -185,7 +183,9 @@ export function Welcome(props: { setFeedKey?: (key: string) => void }) {
               >
                 Previous
               </Button>
-              <Button onClick={increasePage}>Next</Button>
+              <Button onClick={increasePage}>
+                {page === availablePages.length - 1 ? 'Finish' : 'Next'}
+              </Button>
             </Row>
           )}
         </Col>
@@ -194,18 +194,18 @@ export function Welcome(props: { setFeedKey?: (key: string) => void }) {
   )
 }
 
-const useIsTwitch = (user: User | null | undefined) => {
-  const router = useRouter()
-  const isTwitch = router.pathname === '/twitch'
+// const useIsTwitch = (user: User | null | undefined) => {
+//   const router = useRouter()
+//   const isTwitch = router.pathname === '/twitch'
 
-  useEffect(() => {
-    if (isTwitch && user?.shouldShowWelcome) {
-      api('me/update', { shouldShowWelcome: false })
-    }
-  }, [isTwitch, user?.id, user?.shouldShowWelcome])
+//   useEffect(() => {
+//     if (isTwitch && user?.shouldShowWelcome) {
+//       api('me/update', { shouldShowWelcome: false })
+//     }
+//   }, [isTwitch, user?.id, user?.shouldShowWelcome])
 
-  return isTwitch
-}
+//   return isTwitch
+// }
 
 function WhatIsManifoldPage() {
   return (

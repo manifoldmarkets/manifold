@@ -10,6 +10,7 @@ create table if not exists
     prev_val_start_time timestamp with time zone default now() not null,
     new_val_start_time timestamp with time zone default now() not null,
     destination text not null, -- mobile, browser, email
+    notification_id text,
     constraint fk_contract_id foreign key (contract_id) references contracts (id),
     constraint fk_user_id foreign key (user_id) references users (id)
   );

@@ -235,7 +235,14 @@ export function ContractParamsForm(props: {
   const [isGeneratingTitle, setIsGeneratingTitle] = useState(false)
 
   const generateConciseTitle = useCallback(async (currentQuestion: string) => {
-    if (!currentQuestion || currentQuestion.length < 20) {
+    if (
+      !currentQuestion ||
+      currentQuestion.length < 20 ||
+      outcomeType === 'MULTIPLE_CHOICE' ||
+      outcomeType === 'BOUNTIED_QUESTION' ||
+      outcomeType === 'POLL' ||
+      outcomeType === 'STONK'
+    ) {
       if (suggestedTitle) setSuggestedTitle(undefined)
       return
     }

@@ -11,6 +11,7 @@ import { useRedirectIfSignedOut } from 'web/hooks/use-redirect-if-signed-out'
 import { DowntimeBanner, ManaForeverBanner } from 'web/components/nav/banner'
 import { Welcome } from 'web/components/onboarding/welcome'
 import { LiveGeneratedFeed } from 'web/components/feed/live-generated-feed'
+import { ExploreContent } from '../explore'
 
 export default function Home() {
   const user = useUser()
@@ -42,6 +43,7 @@ export default function Home() {
       )}
       {/* Preload feed */}
       {user && <LiveGeneratedFeed userId={user.id} hidden />}
+      {user && <ExploreContent render={false} />}
     </Page>
   )
 }

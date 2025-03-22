@@ -2123,6 +2123,7 @@ export const createPaymentSuccessNotification = async (
 export const createMarketMovementNotification = async (
   params: Array<{
     contract: Contract
+    id: string
     privateUser: PrivateUser
     beforeProb: number
     afterProb: number
@@ -2148,6 +2149,7 @@ export const createMarketMovementNotification = async (
     beforeTime,
     afterTime,
     answer,
+    id,
   } of params) {
     // Skip if user blocked the creator
     if (userIsBlocked(privateUser, contract.creatorId)) continue
@@ -2171,7 +2173,7 @@ export const createMarketMovementNotification = async (
 
     // Create the notification
     const notification: Notification = {
-      id: crypto.randomUUID(),
+      id,
       userId: privateUser.id,
       reason: 'market_movements',
       createdTime: Date.now(),

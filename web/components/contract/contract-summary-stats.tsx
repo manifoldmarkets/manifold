@@ -64,7 +64,7 @@ export function ContractSummaryStats(props: {
           <LiquidityTooltip contract={contract} iconClassName="text-ink-500" />
           {!!contract.volume && (
             <Tooltip
-              text={`Trading volume: ${formatWithToken({
+              text={`Total trading volume: ${formatWithToken({
                 amount: contract.volume,
                 token: isCashContract ? 'CASH' : 'M$',
               })}`}

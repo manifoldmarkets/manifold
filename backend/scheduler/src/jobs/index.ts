@@ -21,7 +21,6 @@ import { sendStreakExpirationNotification } from './streak-expiration-notice'
 import { expireLimitOrders } from 'shared/expire-limit-orders'
 import { denormalizeAnswers } from './denormalize-answers'
 import { incrementStreakForgiveness } from './increment-streak-forgiveness'
-import { resolveSportsMarkets } from 'shared/resolve-sports-markets'
 import { sendMarketCloseEmails } from './send-market-close-emails'
 import { pollPollResolutions } from './poll-poll-resolutions'
 import { IMPORTANCE_MINUTE_INTERVAL } from 'shared/importance-score'
@@ -37,6 +36,8 @@ import {
 import { updateUserPortfolioHistoriesCore } from 'shared/update-user-portfolio-histories-core'
 import { isProd } from 'shared/utils'
 import { sendMarketMovementNotifications } from 'shared/send-market-movement-notifications'
+import { sendUnseenMarketMovementPushNotifications } from 'shared/send-unseen-notifications'
+
 export function createJobs() {
   return [
     // Hourly jobs:
@@ -116,6 +117,11 @@ export function createJobs() {
       pollPollResolutions
     ),
     // Daily jobs:
+    createJob(
+      'send-unseen-notifications',
+      '0 0 13 * * *', // 1 PM daily
+      sendUnseenMarketMovementPushNotifications
+    ),
     createJob(
       'clean-old-notifications',
       '0 30 2 * * *', // 230 AM daily

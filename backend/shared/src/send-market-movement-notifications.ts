@@ -1,6 +1,6 @@
 import { convertAnswer, convertContract } from 'common/supabase/contracts'
 import { createSupabaseDirectClient } from './supabase/init'
-import { contractColumnsToSelect, log } from './utils'
+import { contractColumnsToSelect, isProd, log } from './utils'
 import { HOUR_MS } from 'common/util/time'
 import { orderBy } from 'lodash'
 import { Contract } from 'common/contract'
@@ -11,10 +11,10 @@ import { createMarketMovementNotification } from './create-notification'
 import { Row } from 'common/supabase/utils'
 import { SupabaseDirectClient } from './supabase/init'
 import { bulkInsert } from 'shared/supabase/utils'
+import { removeUndefinedProps } from 'common/util/object'
 
 const probThreshold = 0.1
 const pastPeriodHoursAgoStart = 24
-const nowPeriodHoursAgoStart = 2
 const TEST_USER_ID = 'AJwLWoo3xue32XIiAVrL5SyR1WB2'
 const TEST_CONTRACT_IDS = `'Ll8LclSZ8C', 'Z8CqLOzRAq', '6A9gSqIzld', 'D5o5fIGpQnjANdl2DxdU'`
 type ProbChange = {
@@ -26,6 +26,7 @@ type ProbChange = {
 }
 // Currently ignores indie MC contract answer probability movements
 export async function sendMarketMovementNotifications(debug = false) {
+  const nowPeriodHoursAgoStart = debug ? 0.1 : 2
   const pg = createSupabaseDirectClient()
   const now = Date.now()
   const nowStart = now - nowPeriodHoursAgoStart * HOUR_MS
@@ -87,10 +88,13 @@ export async function sendMarketMovementNotifications(debug = false) {
     if (contract.mechanism === 'cpmm-1') {
       const { id, prob } = contract
       const pastAvgProb = pastAvgProbs[id]
+      // const pastAvgProb = 0.1
       if (!pastAvgProb) continue
       const currentAvgProb = currentAvgProbs[id] ?? prob
       const probChange = Math.abs(currentAvgProb - pastAvgProb)
-
+      if (debug) {
+        log(`probChange: ${probChange} for ${contract.slug} ${contract.id}`)
+      }
       if (probChange >= probThreshold) {
         probChanges.push({
           contract,
@@ -160,6 +164,7 @@ export async function sendMarketMovementNotifications(debug = false) {
     orderedProbChanges,
     nowStart,
     pastStart,
+    nowPeriodHoursAgoStart,
     debug
   )
 }
@@ -178,6 +183,7 @@ async function createMarketMovementNotifications(
   probChanges: ProbChange[],
   currentPeriodStart: number,
   previousPeriodStart: number,
+  nowPeriodHoursAgoStart: number,
   debug = false
 ) {
   if (probChanges.length === 0) return
@@ -195,8 +201,7 @@ async function createMarketMovementNotifications(
         where (pu.data->'notificationPreferences'->>'market_movements')::jsonb ?| array['email', 'browser', 'mobile']
         and NOT ((pu.data->'notificationPreferences'->>'opt_out_all')::jsonb @> '["email"]'
               AND (pu.data->'notificationPreferences'->>'opt_out_all')::jsonb @> '["browser"]'
-              AND (pu.data->'notificationPreferences'->>'opt_out_all')::jsonb @> '["mobile"]')
-        and pu.data->>'email' is not null;
+              AND (pu.data->'notificationPreferences'->>'opt_out_all')::jsonb @> '["mobile"]');
       `,
       [contractIds],
       (r) =>
@@ -206,7 +211,7 @@ async function createMarketMovementNotifications(
           contractId: r.contract_id as string,
         } as UserWithContractId)
     )
-  ).filter((u) => (debug ? u.id === TEST_USER_ID : true))
+  ).filter((u) => (debug && isProd() ? u.id === TEST_USER_ID : true))
   log(`Found ${allInterestedUsers.length} interested users`)
 
   // Get existing recent movement notifications for these contracts and users
@@ -257,6 +262,7 @@ async function createMarketMovementNotifications(
 
   // Collection of notification parameters for bulk processing
   const notificationParams: Array<{
+    id: string
     contract: Contract
     privateUser: PrivateUser
     beforeProb: number
@@ -325,9 +331,9 @@ async function createMarketMovementNotifications(
 
       const destinations = []
       if (sendToBrowser) destinations.push('browser')
-
+      const id = crypto.randomUUID()
       for (const destination of destinations) {
-        const record: MovementRecord = {
+        const record: MovementRecord = removeUndefinedProps({
           contract_id: contract.id,
           answer_id: answer?.id ?? null,
           user_id: user.id,
@@ -336,12 +342,14 @@ async function createMarketMovementNotifications(
           prev_val: avgBefore,
           prev_val_start_time: new Date(previousPeriodStart).toISOString(),
           destination,
-        }
+          notification_id: destination === 'browser' ? id : undefined,
+        })
         movementRecords.push(record)
       }
 
       if (sendToBrowser) {
         notificationParams.push({
+          id,
           contract,
           privateUser: user,
           beforeProb: avgBefore,
