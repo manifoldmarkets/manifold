@@ -1,6 +1,6 @@
 import { runScript } from 'run-script'
-import { sendMarketMovementNotifications } from 'shared/send-market-movement-notifications'
-
+import { sendUnseenMarketMovementPushNotifications } from 'shared/send-unseen-notifications'
 runScript(async () => {
-  await sendMarketMovementNotifications(true)
+  // await sendMarketMovementNotifications(true)
+  await sendUnseenMarketMovementPushNotifications()
 })
