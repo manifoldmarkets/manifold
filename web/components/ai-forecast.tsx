@@ -155,28 +155,28 @@ export const AI_CAPABILITY_CARDS: AICapabilityCard[] = [
     displayType: 'binary-odds'
   },
   {
-    title: 'SWE Bench Top Score',
+    title: 'SWE Bench',
     description: 'Top SWE Bench score by EOY',
     marketId: 'nEhgsIE6U0',
     type: 'benchmark',
     displayType: 'numeric'
   },
   {
-    title: 'Highest Humanity\'s Last Exam Top Score',
+    title: 'Highest Humanity\'s Last Exam',
     description:'Highest score on Humanity\'s last exam by EOY',
     marketId: 'tzsZCn85RQ',
     type: 'benchmark',
     displayType: 'numeric'
   },
   {
-    title: 'CodeForces Top Score',
+    title: 'CodeForces',
     description: '>80% on Frontier Math by EOY',
     marketId: 'RSAcZtOZyl',
     type: 'benchmark',
     displayType: 'top-one-mcq'
   },
     {
-    title: 'Frontier Math Top Score',
+    title: 'Frontier Math',
     description: 'top performance on frontier math',
     marketId: 'LNdOg08SsU',
     type: 'benchmark',
@@ -217,7 +217,7 @@ export const AI_CAPABILITY_CARDS: AICapabilityCard[] = [
   
   // 2028 Predictions
   {
-    title: 'AI Blackmail by 2028',
+    title: 'AI Blackmail',
     description: 'AI Blackmails someone for >$1000',
     marketId: 'W1KGdImLB5cb1p75M88e',
     type: 'long-term',
@@ -577,7 +577,7 @@ function CapabilityCard({
               </div>
               
               {/* VS Badge */}
-              <div className="text-ink-500 text-med font-black mx-4">
+              <div className="text-ink-800 text-med font-black mx-4">
                 VS
               </div>
               
@@ -739,11 +739,11 @@ function CapabilityCard({
                   {type === 'prize' && title.includes('Arc AGI') && 'Probability of claiming Arc-AGI prize by end of 2025'}
                   {type === 'prize' && title.includes('Turing Test') && 'Probability of passing this variation of the Turing Test by 2029'}
                   {type === 'misuse' && title.includes('Hacking') && 'Probability of AI compromising systems by end of 2025'}
-                  {type === 'long-term' && title.includes('Romantic') && 'At least 1/1000 Americans talks weekly with one'}
-                  {type === 'long-term' && title.includes('Blackmail') && 'Risk of AI being used for automated blackmail'}
-                  {type === 'long-term' && title.includes('Economic') && 'Break in trend for GDP growth, GDP/capita, productivity, or unemployment'}
-                  {type === 'long-term' && title.includes('Zero') && 'AI plays a random computer game as well as a human'}
-                  {type === 'long-term' && title.includes('Self-play') && 'AI plays a random computer game as well as a human after self-play'}
+                  {type === 'long-term' && title.includes('Romantic') && 'At least 1/1000 Americans talks weekly with one by 2028'}
+                  {type === 'long-term' && title.includes('Blackmail') && 'Risk of AI being used for automated blackmail by 2028'}
+                  {type === 'long-term' && title.includes('Economic') && 'Break in trend for GDP growth, GDP/capita, productivity, or unemployment by 2028'}
+                  {type === 'long-term' && title.includes('Zero') && 'AI plays a random computer game at human-level by 2028'}
+                  {type === 'long-term' && title.includes('Self-play') && 'AI plays a random computer game as well as a human after self-play by 2028'}
                 </p>
               )}
             </div>
