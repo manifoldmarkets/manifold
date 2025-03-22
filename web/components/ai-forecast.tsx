@@ -82,7 +82,7 @@ export type AICapabilityCard = {
   description: string
   marketId: string
   type: string
-  displayType?: 'top-two-mcq' | 'top-one-mcq' | 'binary-odds' | 'date-numeric' | 'numeric'
+  displayType?: 'top-two-mcq' | 'top-one-mcq' | 'binary-odds' | 'date' | 'numeric'
 }
 
 export const AI_CAPABILITY_CARDS: AICapabilityCard[] = [
@@ -108,43 +108,9 @@ export const AI_CAPABILITY_CARDS: AICapabilityCard[] = [
     description: 'GPT-5 model released by EOY',
     marketId: 'c29Q6uhyhp',
     type: 'releases',
-    displayType: 'date-numeric'
+    displayType: 'date'
   },
-  {
-    title: 'Claude 3.7 Opus',
-    description: '',
-    marketId: 'REZNpc8dQO',
-    type: 'releases',
-    displayType: 'top-one-mcq',
-  },
-  {
-    title: 'Gemini 3',
-    description: '',
-    marketId: 'placeholder-3',
-    type: 'releases',
-    displayType: 'date-numeric'
-  },
-  {
-    title: 'Grok 4',
-    description: '',
-    marketId: 'QUyRsPRhgd',
-    type: 'releases',
-    displayType: 'top-one-mcq'
-  },
-  {
-    title: 'Deepseek R2',
-    description: '',
-    marketId: 'hZ8ytzn9gh',
-    type: 'releases',
-    displayType: 'top-one-mcq'
-  },
-  {
-    title: 'Deepseek V4',
-    description: '',
-    marketId: 'yLnQQZsc2E',
-    type: 'releases',
-    displayType: 'top-one-mcq'
-  },
+  // add claude 3.7 opus, grok 4, deepseek r2, deepseek v4
 
   // Benchmarks
   {
@@ -424,7 +390,7 @@ function CapabilityCard({
   title: string
   marketId: string
   type: string
-  displayType?: 'top-two-mcq' | 'top-one-mcq' | 'binary-odds' | 'date-numeric' | 'numeric' | undefined
+  displayType?: 'top-two-mcq' | 'top-one-mcq' | 'binary-odds' | 'date' | 'numeric' | undefined
   contracts: Contract[]
   className?: string
 }) {
@@ -527,7 +493,7 @@ function CapabilityCard({
       displayValue = numericValue.toFixed(1)
     }
   } else {
-    // Default fallback for date-numeric and others
+    // Default fallback for date and others
     displayValue = numericValue !== null 
       ? numericValue.toFixed(1)
       : formatPercent(0.25)
@@ -747,7 +713,7 @@ function CapabilityCard({
                 </p>
               )}
             </div>
-          ) : displayType === 'date-numeric' || displayType === 'numeric' ? (
+          ) : displayType === 'date' || displayType === 'numeric' ? (
             <div className="flex flex-col justify-between h-full w-full">
               <div className="flex-1 flex items-center justify-center">
                 <div className={`font-medium text-center ${displayValue.length > 5 ? 'text-5xl sm:text-6xl' : 'text-5xl sm:text-6xl'}`}>
@@ -809,28 +775,54 @@ interface ModelReleasesTimelineProps {
   contracts: Contract[]
 }
 
-// Helper function for model release timeline (dummy data)
-function getEstimatedReleaseDate(title: string, index: number): Date {
-  // Hardcoded dates for specific model releases
-  if (title.includes('GPT-5')) return new Date(2025, 5, 15)         // June 15, 2025
-  if (title.includes('Claude 3.7')) return new Date(2025, 8, 8)      // August 1, 2025
-  if (title.includes('Gemini 3')) return new Date(2025, 4, 1)        // May 1, 2025
-  if (title.includes('Grok 4')) return new Date(2025, 10, 10)        // November 10, 2025
-  if (title.includes('Deepseek R2')) return new Date(2025, 6, 5)     // July 5, 2025
-  if (title.includes('Deepseek V4')) return new Date(2026, 0, 15)    // January 15, 2026
+// Helper function for model release timeline that uses real date data
+function getEstimatedReleaseDate(contract: Contract | null, title: string, index: number): Date {
+  // If we have a contract and it's a date market (outcomeType: 'DATE')
+  if (contract && contract.outcomeType === 'DATE' && contract.mechanism === 'cpmm-multi-1') {
+    try {
+      // Import the required functions from multi-date.ts
+      const { getExpectedDate } = require('common/src/multi-date')
+      
+      // Get the expected date from the market
+      const expectedMillis = getExpectedDate(contract as any)
+      
+      // Return a Date object from the milliseconds timestamp
+      if (expectedMillis && !isNaN(expectedMillis)) {
+        return new Date(expectedMillis)
+      }
+    } catch (e) {
+      console.error('Error getting date from contract:', e)
+    }
+  }
   
-  // Default fallback with evenly spaced dates
-  return new Date(2025, 3 + (index % 10), 15)
+  // Single fallback date if we can't get the real date from the contract
+  return new Date(2026, 0, 15) // January 15, 2026
 }
 
 // Timeline component for model releases
 function ModelReleasesTimeline({ cards, contracts }: ModelReleasesTimelineProps) {
+  // Process contracts first - get live contracts at the component level
+  const contractsWithLive = useMemo(() => {
+    return cards.map(card => {
+      const contract = contracts.find(c => c.id === card.marketId) || null
+      return { card, contract }
+    })
+  }, [cards, contracts])
+  
+  const contractsWithLiveData = contractsWithLive.map(({ card, contract }) => {
+    const liveContract = contract ? useLiveContract(contract) : null
+    return { card, contract, liveContract }
+  })
+  
   // Prepare timeline items with release dates and model info
   const timelineItems = useMemo(() => {
-    return cards.map((card, index) => {
-      // Find the contract
-      const contract = contracts.find(c => c.id === card.marketId) || null
-      const releaseDate = getEstimatedReleaseDate(card.title, index)
+    return contractsWithLiveData.map(({ card, contract, liveContract }, index) => {
+      // Use the date from the contract if it's a date market
+      const releaseDate = getEstimatedReleaseDate(
+        liveContract && liveContract.outcomeType === 'DATE' ? liveContract : contract, 
+        card.title, 
+        index
+      )
       
       return {
         title: card.title,
@@ -839,7 +831,7 @@ function ModelReleasesTimeline({ cards, contracts }: ModelReleasesTimelineProps)
         icon: <AIModelIcon title={card.title} className="w-4 h-4 sm:w-6 sm:h-6" />
       } as TimelineItemData
     })
-  }, [cards, contracts])
+  }, [contractsWithLiveData])
   
   if (timelineItems.length === 0) {
     return <div className="text-ink-500 text-center py-4">No model releases to display</div>

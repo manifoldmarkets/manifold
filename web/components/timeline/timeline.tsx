@@ -200,7 +200,7 @@ export const Timeline = ({
                 
                 // If items are less than 15% apart
                 if (next.position - current.position < 15) {
-                  next.verticalOffset = i % 2 === 0 ? 25 : -25
+                  next.verticalOffset = i % 2 === 0 ? -25 : 25
                 }
               }
               
