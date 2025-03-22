@@ -185,13 +185,6 @@ export const AI_CAPABILITY_CARDS: AICapabilityCard[] = [
   
   // Prizes
   {
-    title: 'Millennium Prize',
-    description: 'AI Solve Millennium Problem by EOY',
-    marketId: 'KmvP3Ggw5z7vFATu5urA',
-    type: 'prize',
-    displayType: 'binary-odds'
-  },
-  {
     title: 'Arc AGI',
     description: 'Arc AGI prize by EOY',
     marketId: 'W1KGdImLB5cb1p75M88e',
@@ -202,6 +195,13 @@ export const AI_CAPABILITY_CARDS: AICapabilityCard[] = [
     title: 'Turing Test (Long Bets)',
     description: 'Will AI pass long bets Turing Test by EOY?',
     marketId: 'nKyHon3IPOqJYzaWTHJB',
+    type: 'prize',
+    displayType: 'binary-odds'
+  },
+  {
+    title: 'Millennium Prize',
+    description: 'AI Solve Millennium Problem by EOY',
+    marketId: '6vw71lj8bi',
     type: 'prize',
     displayType: 'binary-odds'
   },
@@ -735,7 +735,7 @@ function CapabilityCard({
               {(type === 'benchmark' || type === 'prize' || type === 'misuse' || type === 'long-term') && (
                 <p className="text-ink-600 text-xs sm:text-sm mt-1 sm:mt-3 text-left w-full px-1">
                   {type === 'benchmark' && title.includes('IMO Gold') && 'An LLM gets a IMO gold medal'}
-                  {type === 'prize' && title.includes('Millennium') && 'Chance of solving a million-dollar math problem by June 2025'}
+                  {type === 'prize' && title.includes('Millennium') && 'Chance of solving a million-dollar math problem before 2030'}
                   {type === 'prize' && title.includes('Arc AGI') && 'Probability of claiming Arc-AGI prize by end of 2025'}
                   {type === 'prize' && title.includes('Turing Test') && 'Probability of passing this variation of the Turing Test by 2029'}
                   {type === 'misuse' && title.includes('Hacking') && 'Probability of AI compromising systems by end of 2025'}
@@ -884,7 +884,7 @@ export function AIForecast({ whenAgi, contracts = [], hideTitle }: AIForecastPro
     },
     'prize': {
       label: 'Prizes',
-      description: 'Will any model claim this prize by the end of this year?'
+      description: 'Will any model claim this prize?'
     },
     'misuse': {
       label: 'AI Misuse',
