@@ -1,217 +1,77 @@
-import {
-  NewsDashboardPageProps,
-  SuccesNewsDashboardPageProps,
-} from 'web/public/data/elections-data'
 import { Page } from 'web/components/layout/page'
 import { SEO } from 'web/components/SEO'
-import { capitalize, first } from 'lodash'
-import { Col } from 'web/components/layout/col'
-import { getDashboardProps } from 'web/lib/politics/news-dashboard'
-import Custom404 from 'web/pages/404'
-import NewsPage from 'web/pages/news/[slug]'
-import { useSaveCampaign } from 'web/hooks/use-save-campaign'
-import { useMultiDashboard } from 'web/hooks/use-multi-dashboard'
-import { MultiDashboardHeadlineTabs } from 'web/components/dashboard/multi-dashboard-header'
-import { api } from 'web/lib/api/api'
-import { Headline } from 'common/news'
-import { DashboardPage } from 'web/components/dashboard/dashboard-page'
-import { Row } from 'web/components/layout/row'
-import { HorizontalDashboard } from 'web/components/dashboard/horizontal-dashboard'
-import { contractPath, CPMMNumericContract } from 'common/contract'
-import { getNumberExpectedValue } from 'common/src/number'
-import { Clock } from 'web/components/clock/clock'
-import { NumericBetPanel } from 'web/components/answers/numeric-bet-panel'
-import Link from 'next/link'
-import clsx from 'clsx'
-import { linkClass } from 'web/components/widgets/site-link'
-import { useLiveContract } from 'web/hooks/use-contract'
-import { getContract } from 'common/supabase/contracts'
 import { db } from 'web/lib/supabase/db'
-import { ENV_CONFIG } from 'common/envs/constants'
-import { CopyLinkOrShareButton } from 'web/components/buttons/copy-link-button'
+import { getContract, getContracts } from 'common/supabase/contracts'
+import { CPMMNumericContract, Contract } from 'common/contract'
+import { AIForecast, AI_CAPABILITY_CARDS } from 'web/components/ai-forecast'
 
-// In order to duplicate:
-// - duplicate this directory (endpoint/[[...slug]].tsx)
-// - edit ENDPOINT, TOP_SLUG, SEO, title, description copy
-// - create ${ENDPOINT}_importance_score in dashboard table
-// - create `${ENDPOINT}headlines` dashboard to fill trending markets carousel
-// - edit schema to accept your new ENDPOINT
 const ENDPOINT = 'ai'
-const TOP_SLUG = 'home'
 
+// For static generation
 export async function getStaticPaths() {
   return { paths: [], fallback: 'blocking' }
 }
 
+// Revalidate every minute
 const revalidate = 60
-export async function getStaticProps(props: { params: { slug: string[] } }) {
-  const slug = first(props.params.slug)
-  if (slug) {
-    try {
-      const props = await getDashboardProps(slug, {
-        topSlug: TOP_SLUG,
-        slug: ENDPOINT,
-      })
-      return {
-        props,
-        revalidate,
-      }
-    } catch (e) {
-      return {
-        props: { state: 'not found' },
-        revalidate,
+
+export async function getStaticProps() {
+  try {
+    // Fetch the "When AGI" contract for the hero section
+    const whenAgi = await getContract(db, 'Gtv5mhjKaiLD6Bkvfhcv')
+    
+    // Fetch all contracts from AI_CAPABILITY_CARDS - only try to fetch valid IDs
+    const allContractIds = AI_CAPABILITY_CARDS
+      .map(card => card.marketId)
+      .filter(id => id && !id.startsWith('placeholder-'))
+    
+    let contracts: Contract[] = []
+    if (allContractIds.length > 0) {
+      try {
+        contracts = await getContracts(db, allContractIds) || []
+      } catch (error) {
+        console.error('Error fetching contracts:', error)
+        contracts = []
       }
     }
-  }
-  const headlines = await api('headlines', { slug: ENDPOINT })
-
-  const newsDashboards = await Promise.all(
-    headlines.map(async (headline) => getDashboardProps(headline.slug))
-  )
-  const trendingDashboard = await getDashboardProps(ENDPOINT + 'headline')
-  headlines.unshift({
-    id: TOP_SLUG,
-    slug: TOP_SLUG,
-    title: capitalize(TOP_SLUG),
-  })
-  const whenAgi = await getContract(db, 'Gtv5mhjKaiLD6Bkvfhcv')
-
-  return {
-    props: {
-      newsDashboards,
-      headlines,
-      trendingDashboard,
-      whenAgi,
-    } as MultiDashboardProps,
-    revalidate,
+    
+    return {
+      props: {
+        whenAgi: whenAgi || null,
+        contracts: contracts || []
+      },
+      revalidate,
+    }
+  } catch (error) {
+    console.error('Error in getStaticProps:', error)
+    return {
+      props: {
+        whenAgi: null,
+        contracts: []
+      },
+      revalidate,
+    }
   }
 }
-type MultiDashboardProps = {
-  newsDashboards: NewsDashboardPageProps[]
-  headlines: Headline[]
-  trendingDashboard: NewsDashboardPageProps
-  whenAgi: CPMMNumericContract
-}
-export default function MultiOrSingleDashboardPage(
-  props: MultiDashboardProps | NewsDashboardPageProps
-) {
-  useSaveCampaign()
 
-  // Unknown dashboard
-  if ('state' in props && props.state === 'not found') {
-    return <Custom404 />
-  }
-  // Dashboard
-  if ('initialDashboard' in props) {
-    return <NewsPage {...props} endpoint={ENDPOINT} />
-  }
-  // Multi dasbhoard home page
-  return <MultiDashboard {...props} />
+interface AIDashboardProps {
+  whenAgi: CPMMNumericContract | null
+  contracts: Contract[]
 }
 
-// Note: I previously saw INSUFFICIENT_RESOURCES errors when trying to render all the dashboards
-const MAX_DASHBOARDS = 12
-
-function MultiDashboard(props: MultiDashboardProps) {
-  const { trendingDashboard } = props
-  const newsDashboards = props.newsDashboards.slice(0, MAX_DASHBOARDS)
-  const headlines = props.headlines.slice(0, MAX_DASHBOARDS)
-  const { currentSlug, headlineSlugsToRefs, onClick } = useMultiDashboard(
-    headlines,
-    ENDPOINT,
-    TOP_SLUG
-  )
-  const whenAgi = useLiveContract(props.whenAgi)
-
-  const expectedValueAGI = getNumberExpectedValue(whenAgi)
-  const eventYear = Math.floor(expectedValueAGI)
-  const eventMonth = Math.round((expectedValueAGI - eventYear) * 12)
-  const expectedYear = new Date(eventYear, eventMonth, 1)
-
+export default function AIDashboard({ whenAgi, contracts = [] }: AIDashboardProps) {
   return (
-    <Page trackPageView="ai multi dashboard">
+    <Page trackPageView="ai dashboard">
       <SEO
-        title="Manifold Artificial Intelligence Forecasts"
-        description="Live prediction market odds on all things AI"
+        title="Manifold AI Forecast"
+        description="Live prediction market odds on artificial intelligence progress"
         image="/ai.png"
       />
-      <MultiDashboardHeadlineTabs
-        headlines={headlines}
-        currentSlug={currentSlug}
-        onClick={onClick}
-        endpoint={ENDPOINT}
-        topSlug={TOP_SLUG}
+      
+      <AIForecast 
+        whenAgi={whenAgi} 
+        contracts={contracts} 
       />
-
-      <Col className="mb-8 gap-6 px-2 sm:gap-8 sm:px-4">
-        <Col className={'mb-4 w-full justify-center'}>
-          <Row className={'items-center gap-2'}>
-            <Link
-              href={contractPath(whenAgi)}
-              className={clsx(linkClass, 'text-primary-700 mb-2 text-xl')}
-            >
-              Countdown to AGI
-            </Link>
-            <CopyLinkOrShareButton
-              url={`https://${ENV_CONFIG.domain}/${ENDPOINT}`}
-              eventTrackingName="copy ai share link"
-              tooltip="Share"
-              className="hidden sm:inline"
-            />
-          </Row>
-          <span className={'mb-4'}>
-            The market expects we achieve artificial general intelligence by{' '}
-            {expectedYear.getFullYear()}... What do you think?
-          </span>
-          <Row className={'w-full justify-center'}>
-            <Col className={'w-fit  gap-4'}>
-              <Clock year={expectedValueAGI} />
-              <NumericBetPanel
-                contract={whenAgi}
-                labels={{
-                  lower: 'sooner',
-                  higher: 'later',
-                }}
-              />
-            </Col>
-          </Row>
-        </Col>
-
-        <Col className="px-1">
-          <Row className="items-center gap-1 font-semibold sm:text-lg">
-            <div className="relative">
-              <div className="h-4 w-4 animate-pulse rounded-full bg-indigo-500/40" />
-              <div className="absolute left-1 top-1 h-2 w-2 rounded-full bg-indigo-500" />
-            </div>
-            <span>Trending</span>
-          </Row>
-          {trendingDashboard.state === 'success' && (
-            <HorizontalDashboard
-              initialDashboard={trendingDashboard.initialDashboard}
-              previews={trendingDashboard.previews}
-              initialContracts={trendingDashboard.initialContracts}
-              slug={trendingDashboard.slug}
-            />
-          )}
-        </Col>
-      </Col>
-      {newsDashboards.map((dashboard) =>
-        dashboard.state === 'not found' ? null : (
-          <Col className={'relative my-4'} key={dashboard.slug + 'section'}>
-            <div
-              className={'absolute -top-12'}
-              ref={headlineSlugsToRefs.current[dashboard.slug]}
-            />
-            <DashboardPage
-              {...(dashboard as SuccesNewsDashboardPageProps)}
-              editByDefault={false}
-              embeddedInParent={true}
-              endpoint={ENDPOINT}
-              className="!max-w-none"
-            />
-          </Col>
-        )
-      )}
     </Page>
   )
 }
