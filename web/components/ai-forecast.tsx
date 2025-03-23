@@ -18,6 +18,7 @@ import { LuLink, LuInfo } from 'react-icons/lu'
 import { GiSpermWhale } from "react-icons/gi"
 import { PiBirdBold } from "react-icons/pi"
 import { LiaKiwiBirdSolid } from "react-icons/lia"
+import TooltipComponent from 'web/components/tooltip'
 
 // Shared background pattern for all cards
 const BG_PATTERN_LIGHT = "bg-[url(\"data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='%23000000' fill-opacity='0.02' fill-rule='evenodd'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/svg%3E\")]"
@@ -25,32 +26,6 @@ const BG_PATTERN_DARK = "dark:bg-[url(\"data:image/svg+xml,%3Csvg width='60' hei
 const CARD_BG_PATTERN = `${BG_PATTERN_LIGHT} ${BG_PATTERN_DARK}`
 
 const ENDPOINT = 'ai'
-
-// Tooltip Component for benchmark terms
-function Tooltip({ title, description }: { title: string, description: string }) {
-  const [isVisible, setIsVisible] = useState(false)
-  
-  return (
-    <div className="inline-flex items-center">
-      <button
-        onMouseEnter={() => setIsVisible(true)}
-        onMouseLeave={() => setIsVisible(false)}
-        onClick={() => setIsVisible(!isVisible)}
-        className="text-ink-500 hover:text-primary-600 transition-colors focus:outline-none"
-        aria-label={`Info about ${title}`}
-      >
-        <LuInfo className="w-[12px] h-[12px] sm:w-[16px] sm:h-[16px]" />
-      </button>
-      
-      {isVisible && (
-        <div className="absolute left-full -top-2 transform -translate-x-8 -translate-y-full z-50 w-64 bg-canvas-0 shadow-lg rounded-md border border-ink-200 p-3 text-sm text-ink-700">
-          <h4 className="font-medium mb-1">{title}</h4>
-          <p>{description}</p>
-        </div>
-      )}
-    </div>
-  )
-}
 
 // Function to get the appropriate description for tooltip based on card title
 function getTooltipDescription(cardTitle: string): string {
@@ -281,7 +256,7 @@ function CardTitle({
       
       {showTooltip && (
         <div className="absolute top-0 sm:top-1 right-0">
-          <Tooltip title={title} description={getTooltipDescription(title)} />
+          <TooltipComponent title={title} description={getTooltipDescription(title)} preferredPlacement="top" />
         </div>
       )}
     </div>
