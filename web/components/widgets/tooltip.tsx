@@ -339,9 +339,9 @@ function DashboardTooltip({
               position: 'absolute',
               width: 10,
               height: 10,
-              backgroundColor: 'white',
               ...arrowStyles
             }}
+            className="bg-canvas-0 dark:bg-canvas-40"
           />
           <h4 className="font-medium mb-1">{title}</h4>
           <p>{description}</p>
