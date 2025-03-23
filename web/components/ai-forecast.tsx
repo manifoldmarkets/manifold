@@ -118,7 +118,7 @@ export const AI_CAPABILITY_CARDS: AICapabilityCard[] = [
     displayType: 'numeric'
   },
   {
-    title: 'Highest Humanity\'s Last Exam',
+    title: 'Humanity\'s Last Exam',
     description:'Highest score on Humanity\'s last exam by EOY',
     marketId: 'tzsZCn85RQ',
     type: 'benchmark',
@@ -260,13 +260,13 @@ function CardTitle({
   
   return (
     <div className="relative w-full mb-1">
-      <div className="flex items-center">
+      <div className="flex items-start">
         {showModelIcon && (
           <div className="mr-2 text-ink-600">
             <AIModelIcon title={title} />
           </div>
         )}
-        <h3 className="font-semibold text-gray-900 dark:text-gray-100 text-sm sm:text-lg">{title}</h3>
+        <h3 className="font-semibold text-gray-900 dark:text-gray-100 text-med sm:text-lg pr-2 leading-tight">{title}</h3>
       </div>
       
       {tooltipDescription && (
