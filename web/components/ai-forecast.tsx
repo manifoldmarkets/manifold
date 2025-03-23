@@ -1,4 +1,4 @@
-import React, { useMemo } from 'react'
+import React, { useMemo, useState, useEffect } from 'react'
 import { BinaryContract, CPMMNumericContract, Contract, contractPath, MultiNumericContract } from 'common/contract'
 import { Col } from 'web/components/layout/col'
 import { Row } from 'web/components/layout/row'
@@ -19,6 +19,8 @@ import { GiSpermWhale } from "react-icons/gi"
 import { PiBirdBold } from "react-icons/pi"
 import { LiaKiwiBirdSolid } from "react-icons/lia"
 import TooltipComponent from 'web/components/tooltip'
+import { SizedBinaryChart } from 'web/components/charts/contract/binary'
+import { getBetPoints } from 'common/bets'
 
 // Shared background pattern for all cards
 const BG_PATTERN_LIGHT = "bg-[url(\"data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='%23000000' fill-opacity='0.02' fill-rule='evenodd'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/svg%3E\")]"
@@ -28,7 +30,7 @@ const CARD_BG_PATTERN = `${BG_PATTERN_LIGHT} ${BG_PATTERN_DARK}`
 const ENDPOINT = 'ai'
 
 // Function to get the appropriate description for tooltip based on card title
-function getTooltipDescription(cardTitle: string): string {
+function getTooltipDescription(cardTitle: string): string | null {
   const keyTerms: Record<string, string> = {
     'IMO Gold': 'The International Mathematical Olympiad (IMO) is the world championship mathematics competition for high school students. Getting a gold medal requires a high score on extremely challenging math problems.',
     'Frontier Math': 'Advanced mathematical problems at the cutting edge of research that have traditionally been very difficult for AI systems to solve.',
@@ -37,7 +39,8 @@ function getTooltipDescription(cardTitle: string): string {
     'Millennium Prize': 'The Millennium Prize Problems are seven of the most difficult unsolved problems in mathematics, each with a $1 million prize for solution.',
     'Arc AGI': 'Anthropic\'s Rubric for AI Capability Evaluation - a comprehensive benchmark designed to evaluate artificial general intelligence capabilities.',
     'Turing Test': 'Each of the three human judges will conduct two hour long text-based interviews with each of the four candidates. The computer would have passed the Turing test if it fooled two of the three judges.',
-    'CodeForces': 'CodeForces is a competitive programming platform with challenging algorithmic problems that test reasoning, efficiency, and mathematical thinking.'
+    'CodeForces': 'CodeForces is a competitive programming platform with challenging algorithmic problems that test reasoning, efficiency, and mathematical thinking.',
+    'ASL-3': 'Anthropic Semantic Language 3 is a language model developed by Anthropic that is designed to understand and generate human language at a high level of proficiency.'
   }
   
   // Find the first matching key term in the title
@@ -47,9 +50,12 @@ function getTooltipDescription(cardTitle: string): string {
     }
   }
   
-  // Default description if no match is found
-  return `Please Google for more information about "${cardTitle}" benchmark.`
+  // no tooltip if no match is found
+  return null
 }
+
+// Define section type for the dashboard
+export type SectionType = 'monthly' | 'releases' | 'benchmark' | 'featured-graph' | 'prize' | 'misuse' | 'long-term'
 
 // Define type for capability cards
 export type AICapabilityCard = {
@@ -86,6 +92,15 @@ export const AI_CAPABILITY_CARDS: AICapabilityCard[] = [
     displayType: 'date'
   },
   // add claude 3.7 opus, grok 4, deepseek r2, deepseek v4
+
+  // Featured Graph
+  {
+    title: 'IMO Gold',
+    description: 'AI gets gold on IMO by EOY',
+    marketId: 'BcJbQTDX1rdmaLYGKUOz',
+    type: 'featured-graph',
+    displayType: 'binary-odds'
+  },
 
   // Benchmarks
   {
@@ -235,14 +250,14 @@ function CardBase({
 // Component for card title with tooltip for benchmarks and prizes
 function CardTitle({ 
   title,
-  showModelIcon = false,
-  showTooltip = false
+  showModelIcon = false
 }: { 
   title: string, 
   type: string, 
-  showModelIcon?: boolean,
-  showTooltip?: boolean 
+  showModelIcon?: boolean
 }) {
+  const tooltipDescription = getTooltipDescription(title);
+  
   return (
     <div className="relative w-full mb-1">
       <div className="flex items-center">
@@ -254,9 +269,9 @@ function CardTitle({
         <h3 className="font-semibold text-gray-900 dark:text-gray-100 text-sm sm:text-lg">{title}</h3>
       </div>
       
-      {showTooltip && (
+      {tooltipDescription && (
         <div className="absolute top-0 sm:top-1 right-0">
-          <TooltipComponent title={title} description={getTooltipDescription(title)} preferredPlacement="top" />
+          <TooltipComponent title={title} description={tooltipDescription} preferredPlacement="top" />
         </div>
       )}
     </div>
@@ -280,6 +295,7 @@ function getAccentColor(type: string) {
     case 'monthly': return 'text-primary-600 dark:text-primary-500'
     case 'releases': return 'text-fuchsia-700 dark:text-fuchsia-500'
     case 'benchmark': return 'text-teal-700 dark:text-teal-500'
+    case 'featured-graph': return 'text-indigo-700 dark:text-indigo-500'
     case 'prize': return 'text-amber-700 dark:text-amber-500'
     case 'misuse': return 'text-rose-700 dark:text-rose-500'
     case 'long-term': return 'text-sky-700 dark:text-sky-500'
@@ -296,6 +312,8 @@ function getGradient(type: string, isText = true) {
       return `${textPrefix}bg-gradient-to-r from-fuchsia-500 via-fuchsia-600 to-fuchsia-700 dark:from-fuchsia-400 dark:via-fuchsia-500 dark:to-fuchsia-600`
     case 'benchmark':
       return `${textPrefix}bg-gradient-to-r from-teal-500 via-teal-600 to-teal-700 dark:from-teal-400 dark:via-teal-500 dark:to-teal-600`
+    case 'featured-graph':
+      return `${textPrefix}bg-gradient-to-r from-indigo-500 via-indigo-600 to-indigo-700 dark:from-indigo-400 dark:via-indigo-500 dark:to-indigo-600`
     case 'prize':
       return `${textPrefix}bg-gradient-to-br from-amber-500 via-amber-600 to-amber-700 dark:from-amber-400 dark:via-amber-500 dark:to-amber-600`
     case 'misuse':
@@ -329,6 +347,9 @@ function getCardBgColor(className: string) {
       }
       if (className.includes('releases')) {
         return 'bg-fuchsia-50 dark:bg-fuchsia-800/30'
+      }
+      if (className.includes('featured-graph')) {
+        return 'bg-indigo-50 dark:bg-indigo-800/30'
       }
       if (className.includes('misuse')) {
         return 'bg-rose-50 dark:bg-rose-800/30'
@@ -494,8 +515,7 @@ function CapabilityCard({
             <CardTitle 
               title={title} 
               type={type} 
-              showModelIcon={type === 'releases'} 
-              showTooltip={type === 'benchmark' || type === 'prize'}
+              showModelIcon={type === 'releases'}
             />
           </div>
           
@@ -590,7 +610,6 @@ function CapabilityCard({
                 title={title} 
                 type={type} 
                 showModelIcon
-                showTooltip
               />
             </div>
             
@@ -633,8 +652,7 @@ function CapabilityCard({
             <CardTitle 
               title={title} 
               type={type} 
-              showModelIcon={type === 'releases'} 
-              showTooltip={type === 'benchmark' || type === 'prize'}
+              showModelIcon={type === 'releases'}
             />
           </div>
           
@@ -666,8 +684,7 @@ function CapabilityCard({
           <CardTitle 
             title={title} 
             type={type} 
-            showModelIcon={type === 'releases'} 
-            showTooltip={type === 'benchmark' || type === 'prize'}
+            showModelIcon={type === 'releases'}
           />
         </div>
         
@@ -689,7 +706,7 @@ function CapabilityCard({
                   {type === 'prize' && title.includes('Arc AGI') && 'Probability of claiming Arc-AGI prize by end of 2025'}
                   {type === 'prize' && title.includes('Turing Test') && 'Probability of passing this variation of the Turing Test by 2029'}
                   {type === 'misuse' && title.includes('Hacking') && 'Probability of AI compromising systems by end of 2025'}
-                  {type === 'misuse' && title.includes('ASL-3') && 'Model released EOY defined as ASL-3 by Anthropic'}
+                  {type === 'misuse' && title.includes('ASL-3') && 'Model defined as ASL-3 by Anthropic released by end of 2025'}
                   {type === 'long-term' && title.includes('Romantic') && 'At least 1/1000 Americans talks weekly with one by 2028'}
                   {type === 'long-term' && title.includes('Blackmail') && 'Risk of AI being used for automated blackmail by 2028'}
                   {type === 'long-term' && title.includes('Economic') && 'Break in trend for GDP growth, GDP/capita, productivity, or unemployment by 2028'}
@@ -780,7 +797,7 @@ function getEstimatedReleaseDate(contract: Contract | null, title: string, index
     }
   }
   
-  // Single fallback date if we can't get the real date from the contract
+  // Fallback date if missing data
   return new Date(2026, 0, 15) // January 15, 2026
 }
 
@@ -831,12 +848,88 @@ function ModelReleasesTimeline({ cards, contracts }: ModelReleasesTimelineProps)
   )
 }
 
+// Props for the featured graph section
+export interface FeaturedGraphProps {
+  contract: BinaryContract | null
+}
+
+// Component to display a featured market graph
+function FeaturedMarketGraph({ contract }: FeaturedGraphProps) {
+  const [points, setPoints] = useState<{ x: number; y: number }[] | null>(null)
+  
+  useEffect(() => {
+    if (contract) {
+      // Get data points for the chart
+      getBetPoints(contract.id, {
+        limit: 1000,
+        filterRedemptions: true,
+      }).then((fetchedPoints) => {
+        if (fetchedPoints?.length > 0) {
+          setPoints(fetchedPoints)
+        }
+      })
+    }
+  }, [contract?.id])
+
+  if (!contract) {
+    return <div className="text-ink-500 text-center py-8">No featured market selected</div>
+  }
+  
+  const clickHandler = () => {
+    if (contract) {
+      const path = contractPath(contract)
+      window.open(path, '_blank')
+    }
+  }
+  
+  return (
+    <CardBase
+      onClick={clickHandler}
+      className="fade-in group relative w-full rounded-lg"
+      minHeight=""
+    >
+      <div className="w-full mb-4">
+        <div className="flex justify-between items-center">
+          <div>
+            <span className="text-sm text-gray-600 dark:text-gray-400"> Probability:</span> <span className="text-2xl font-semibold text-gray-800 dark:text-gray-200">{formatPercent(contract.prob ?? 0.5)}</span>
+          </div>
+        </div>
+        
+        {points ? (
+          <div className="mt-4">
+            <SizedBinaryChart
+              betPoints={points}
+              contract={contract}
+              className="w-full"
+              zoomY
+              size="md"
+            />
+          </div>
+        ) : (
+          <div className="h-[250px] flex items-center justify-center bg-indigo-100/50 dark:bg-indigo-800/20 rounded-lg">
+            <div className="animate-pulse text-ink-500">Loading chart data...</div>
+          </div>
+        )}
+      </div>
+    </CardBase>
+  )
+}
+
 export function AIForecast({ whenAgi, contracts = [], hideTitle }: AIForecastProps) {
   const liveWhenAgi = whenAgi && whenAgi.id ? useLiveContract(whenAgi) : null
   const expectedValueAGI = liveWhenAgi ? getNumberExpectedValue(liveWhenAgi) : 2030
   const eventYear = Math.floor(expectedValueAGI)
   const eventMonth = Math.round((expectedValueAGI - eventYear) * 12)
   const expectedYear = new Date(eventYear, eventMonth, 1)
+  
+  // Display featured graph
+  const featuredContract = useMemo(() => {
+    const featuredCard = AI_CAPABILITY_CARDS.find(card => card.type === 'featured-graph')
+    if (featuredCard) {
+      return contracts.find(c => c.id === featuredCard.marketId) as BinaryContract || null
+    }
+    return null
+  }, [contracts])
   
   const capabilityCardsByType = AI_CAPABILITY_CARDS.reduce((grouped, card) => {
     if (!grouped[card.type]) {
@@ -846,7 +939,16 @@ export function AIForecast({ whenAgi, contracts = [], hideTitle }: AIForecastPro
     return grouped
   }, {} as Record<string, typeof AI_CAPABILITY_CARDS>)
   
-  const typeInfo = { // controls sorting
+  // Define section type to make TypeScript happy
+  type SectionType = 'monthly' | 'releases' | 'benchmark' | 'featured-graph' | 'prize' | 'misuse' | 'long-term'
+  
+  interface SectionInfo {
+    label: string
+    description: string
+  }
+  
+  // Define the type information and order of sections
+  const typeInfo: Record<SectionType, SectionInfo> = { // controls sorting
     'monthly': {
       label: 'Best Model in April',
       description: 'What\'s the best model this month?'
@@ -858,6 +960,10 @@ export function AIForecast({ whenAgi, contracts = [], hideTitle }: AIForecastPro
     'benchmark': {
       label: 'Benchmarks',
       description: 'How smart will the LLMs be by the end of this year?'
+    },
+    'featured-graph': {
+      label: featuredContract?.question || 'Featured Graph',
+      description: 'Trend changes in whether AI would win the IMO'
     },
     'prize': {
       label: 'Prizes',
@@ -872,6 +978,17 @@ export function AIForecast({ whenAgi, contracts = [], hideTitle }: AIForecastPro
       description: 'What happens in the long-run?'
     }
   }
+  
+  // Define the order of sections to ensure proper rendering
+  const orderedSections: SectionType[] = [
+    'monthly',
+    'releases',
+    'benchmark',
+    'featured-graph',
+    'prize',
+    'misuse',
+    'long-term'
+  ]
 
   return (
     <Col className="mb-8 gap-4 px-1 sm:gap-6 sm:px-2">
@@ -885,23 +1002,23 @@ export function AIForecast({ whenAgi, contracts = [], hideTitle }: AIForecastPro
       </Col>
       
       {/* Card Categories */}
-      {Object.entries(typeInfo).map(([type, info], index) => (
+      {orderedSections.map((type, index) => (
         <Col key={type} className={`${index > 0 ? 'mt-12 pt-8 border-t border-ink-200 dark:border-ink-800/50' : 'mt-6'}`} id={type}>
           <div className="mb-3">
             <Row className="items-center justify-between">
               <div>
                 <h3 className={`items-center gap-1 font-semibold text-xl ${getAccentColor(type)}`}>
-                  {info.label}
+                  {typeInfo[type].label}
                 </h3>
                 <p className="text-ink-500 text-sm mt-1">
-                  {info.description}
+                  {typeInfo[type].description}
                 </p>
               </div>
               <Link 
                 href={`#${type}`} 
                 className="flex items-center justify-center p-2 text-primary-500 hover:text-primary-700 hover:bg-primary-50 rounded-full transition-all duration-200"
                 scroll={false}
-                aria-label={`Link to ${info.label} section`}
+                aria-label={`Link to ${typeInfo[type].label} section`}
               >
                 <LuLink size={18} />
               </Link>
@@ -913,6 +1030,11 @@ export function AIForecast({ whenAgi, contracts = [], hideTitle }: AIForecastPro
             <ModelReleasesTimeline 
               cards={capabilityCardsByType[type] || []}
               contracts={contracts}
+            />
+          ) : type === 'featured-graph' ? (
+            // Display the featured market graph
+            <FeaturedMarketGraph 
+              contract={featuredContract}
             />
           ) : (
             // Display other card types in a grid
@@ -953,7 +1075,7 @@ export function AIForecast({ whenAgi, contracts = [], hideTitle }: AIForecastPro
       {liveWhenAgi && (
         <div className="mt-12 pt-8 border-t border-ink-200 dark:border-ink-800/50">
           <CardBase
-            onClick={() => window.location.href = contractPath(liveWhenAgi)}
+            onClick={() => window.open(contractPath(liveWhenAgi), '_blank')}
             className="fade-in group relative mx-auto"
             minHeight=""
         >
