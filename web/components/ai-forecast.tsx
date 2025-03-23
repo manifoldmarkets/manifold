@@ -256,7 +256,7 @@ function CardTitle({
   type: string, 
   showModelIcon?: boolean
 }) {
-  const tooltipDescription = getTooltipDescription(title);
+  const tooltipDescription = getTooltipDescription(title)
   
   return (
     <div className="relative w-full mb-1">
