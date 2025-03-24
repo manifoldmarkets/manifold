@@ -34,11 +34,11 @@ import { BinaryDigit } from 'common/tier'
 import { useIsMobile } from 'web/hooks/use-is-mobile'
 import { Spacer } from './layout/spacer'
 import { useSweepstakes } from './sweepstakes-provider'
-import { FilterPill } from './search/filter-pills'
 import { ALL_PARENT_TOPICS, TOPICS_TO_SUBTOPICS } from 'common/topics'
 import { Carousel } from './widgets/carousel'
 import { isEqual } from 'lodash'
 import { SearchInput } from './search/search-input'
+import { removeEmojis } from 'common/util/string'
 
 const USERS_PER_PAGE = 100
 const TOPICS_PER_PAGE = 100
@@ -364,9 +364,90 @@ export function Search(props: SearchProps) {
         )
       )
     : undefined
+  const selectedSubTopic = selectedTopic
+    ? TOPICS_TO_SUBTOPICS[selectedTopic].find(
+        (subtopic) => groupIds === subtopic.groupIds.join(',')
+      )
+    : undefined
+  const selectedAll = !selectedTopic && filter !== 'news'
+
   return (
     <Col className="w-full">
       <Col className={clsx('bg-canvas-0 sticky top-0 z-20', headerClassName)}>
+        <Col className="mb-2">
+          {showTopicsFilterPills && (
+            <Carousel
+              fadeEdges
+              labelsParentClassName="gap-4 items-baseline border-b border-ink-100 dark:border-ink-200 pb-2"
+            >
+              <button
+                className={clsx(
+                  'font-medium',
+                  selectedAll ? 'text-primary-600' : 'text-ink-500'
+                )}
+                onClick={() => {
+                  if (selectedAll) {
+                    return
+                  } else {
+                    track('select search topic', { topic: 'all' })
+                    const changes: Partial<SearchParams> = {
+                      [GROUP_IDS_KEY]: '',
+                    }
+                    if (filter === 'news') changes[FILTER_KEY] = 'open'
+                    onChange(changes)
+                  }
+                }}
+              >
+                All
+              </button>
+              <button
+                className={clsx(
+                  'font-medium',
+                  filter === 'news' ? 'text-primary-600' : 'text-ink-500'
+                )}
+                onClick={() => {
+                  if (filter === 'news') {
+                    onChange({ [FILTER_KEY]: 'open' })
+                  } else {
+                    track('select search topic', { topic: 'news' })
+                    onChange({ [FILTER_KEY]: 'news', [GROUP_IDS_KEY]: '' })
+                  }
+                }}
+              >
+                News
+              </button>
+              {ALL_PARENT_TOPICS.map((topic) => (
+                <button
+                  key={topic}
+                  className={clsx(
+                    'font-medium',
+                    selectedTopic === topic
+                      ? 'text-primary-600'
+                      : 'text-ink-500'
+                  )}
+                  onClick={() => {
+                    if (selectedTopic === topic) {
+                      onChange({ [GROUP_IDS_KEY]: '' })
+                    } else {
+                      track('select search topic', { topic })
+                      // Join all group IDs for this topic's subtopics
+                      const allGroupIds = TOPICS_TO_SUBTOPICS[topic]
+                        .map((subtopic) => subtopic.groupIds)
+                        .flat()
+                      const changes: Partial<SearchParams> = {
+                        [GROUP_IDS_KEY]: allGroupIds.join(','),
+                      }
+                      if (filter === 'news') changes[FILTER_KEY] = 'open'
+                      onChange(changes)
+                    }
+                  }}
+                >
+                  {removeEmojis(topic)}
+                </button>
+              ))}
+            </Carousel>
+          )}
+        </Col>
         {!hideSearch && (
           <SearchInput
             value={query}
@@ -385,61 +466,38 @@ export function Search(props: SearchProps) {
           />
         )}
 
-        <Col className="mt-2">
-          {/* Main topics row */}
-          {showTopicsFilterPills && (
-            <Carousel fadeEdges labelsParentClassName="gap-1 items-center">
-              <FilterPill
-                key={'news'}
-                className="h-8 !text-base"
-                selected={filter === 'news'}
-                onSelect={() => {
-                  if (filter === 'news') {
-                    onChange({ [FILTER_KEY]: 'open' })
-                  } else {
-                    track('select search topic', { topic: 'news' })
-                    onChange({ [FILTER_KEY]: 'news', [GROUP_IDS_KEY]: '' })
-                  }
+        {/* Subtopics row */}
+        {selectedTopic &&
+          Object.keys(TOPICS_TO_SUBTOPICS).some(
+            (topic) => topic === selectedTopic
+          ) && (
+            <Carousel fadeEdges labelsParentClassName="gap-1 mt-3 mb-1.5 ">
+              <button
+                onClick={() => {
+                  onChange({
+                    [GROUP_IDS_KEY]: TOPICS_TO_SUBTOPICS[selectedTopic]
+                      .map((subtopic) => subtopic.groupIds)
+                      .flat()
+                      .join(','),
+                  })
                 }}
+                className={clsx(
+                  'text-ink-500 whitespace-nowrap px-3 py-0.5 text-sm',
+                  !selectedSubTopic &&
+                    'text-primary-700 bg-primary-50 dark:bg-primary-100 rounded-full font-medium'
+                )}
               >
-                📢 News
-              </FilterPill>
-              {ALL_PARENT_TOPICS.map((topic) => (
-                <FilterPill
-                  key={topic}
-                  className="h-8 !text-base"
-                  selected={selectedTopic === topic}
-                  onSelect={() => {
-                    if (selectedTopic === topic) {
-                      onChange({ [GROUP_IDS_KEY]: '' })
-                    } else {
-                      track('select search topic', { topic })
-                      // Join all group IDs for this topic's subtopics
-                      const allGroupIds = TOPICS_TO_SUBTOPICS[topic]
-                        .map((subtopic) => subtopic.groupIds)
-                        .flat()
-                      const changes: Partial<SearchParams> = {
-                        [GROUP_IDS_KEY]: allGroupIds.join(','),
-                      }
-                      if (filter === 'news') changes[FILTER_KEY] = 'open'
-                      onChange(changes)
-                    }
-                  }}
-                >
-                  {topic}
-                </FilterPill>
-              ))}
-            </Carousel>
-          )}
-
-          {/* Subtopics row */}
-          {selectedTopic && (
-            <Carousel fadeEdges labelsParentClassName="gap-1 mt-1 mb-2">
+                All
+              </button>
               {TOPICS_TO_SUBTOPICS[selectedTopic].map(({ name, groupIds }) => (
-                <FilterPill
+                <button
                   key={name}
-                  selected={searchParams[GROUP_IDS_KEY] === groupIds.join(',')}
-                  onSelect={() => {
+                  className={clsx(
+                    'text-ink-500 whitespace-nowrap px-3 py-0.5 text-sm',
+                    searchParams[GROUP_IDS_KEY] === groupIds.join(',') &&
+                      'text-primary-700 bg-primary-50 dark:bg-primary-100 rounded-full font-medium '
+                  )}
+                  onClick={() => {
                     if (searchParams[GROUP_IDS_KEY] === groupIds.join(',')) {
                       onChange({
                         [GROUP_IDS_KEY]: TOPICS_TO_SUBTOPICS[selectedTopic]
@@ -453,12 +511,11 @@ export function Search(props: SearchProps) {
                     }
                   }}
                 >
-                  {name}
-                </FilterPill>
+                  {removeEmojis(name)}
+                </button>
               ))}
             </Carousel>
           )}
-        </Col>
 
         {!hideContractFilters && (
           <ContractFilters
@@ -472,7 +529,7 @@ export function Search(props: SearchProps) {
           />
         )}
       </Col>
-      <Spacer h={2} />
+      <Spacer h={1} />
       {showSearchTypes && (
         <Col>
           {showTopics && (

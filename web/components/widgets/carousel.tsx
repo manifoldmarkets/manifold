@@ -28,9 +28,9 @@ export function Carousel(props: {
       <div
         className={clsx(
           fadeEdges && {
-            'before:from-canvas-50 before:absolute before:left-0 before:top-0 before:z-10 before:h-full before:w-8 before:bg-gradient-to-r before:to-transparent':
+            'before:from-canvas-0 before:absolute before:left-0 before:top-0 before:z-10 before:h-full before:w-8 before:bg-gradient-to-r before:to-transparent':
               !atFront,
-            'after:from-canvas-50 after:absolute after:right-0 after:top-0 after:z-10 after:h-full after:w-8 after:bg-gradient-to-l after:to-transparent':
+            'after:from-canvas-0 after:absolute after:right-0 after:top-0 after:z-10 after:h-full after:w-8 after:bg-gradient-to-l after:to-transparent':
               !atBack,
           }
         )}
@@ -55,18 +55,18 @@ export function Carousel(props: {
       </div>
       {!fadeEdges && !atFront && (
         <div
-          className="hover:bg-ink-100/70 group absolute bottom-0 left-0 top-0 z-10 flex w-10 cursor-pointer select-none items-center justify-center transition-colors"
+          className="hover:bg-ink-100/70 group absolute bottom-0 left-0 top-0 z-10 flex w-10 cursor-pointer select-none items-center justify-center rounded-full transition-colors"
           onMouseDown={scrollLeft}
         >
-          <ChevronLeftIcon className="bg-primary-50 text-primary-800 h-7 w-7 rounded-full transition-colors group-hover:bg-transparent" />
+          <ChevronLeftIcon className=" text-primary-800 h-7 w-7 transition-colors group-hover:bg-transparent" />
         </div>
       )}
       {!fadeEdges && !atBack && (
         <div
-          className="hover:bg-ink-100/70 group absolute bottom-0 right-0 top-0 z-10 flex w-10 cursor-pointer select-none items-center justify-center transition-colors"
+          className="hover:bg-ink-100/70 group absolute bottom-0 right-0 top-0 z-10 flex w-10 cursor-pointer select-none items-center justify-center rounded-full transition-colors"
           onMouseDown={scrollRight}
         >
-          <ChevronRightIcon className="bg-primary-50 text-primary-800 h-7 w-7 rounded-full transition-colors group-hover:bg-transparent" />
+          <ChevronRightIcon className=" text-primary-800 h-7 w-7 transition-colors group-hover:bg-transparent" />
         </div>
       )}
     </div>

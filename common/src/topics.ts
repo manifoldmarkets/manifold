@@ -37,6 +37,7 @@ export const TOPICS_TO_SUBTOPICS: { [key: string]: TopicInfo[] } = {
     { name: '🌏 Africa', groupIds: ['dFsZaGwyohGDVkJi1C3E'] },
     { name: '🌏 Middle East', groupIds: ['xg8wCPeM9JP6gD0igBrA'] },
     { name: '🌎 Asia', groupIds: ['bPTxMZhUYsIUXsWT969d'] },
+    { name: '🌐 Politics', groupIds: ['UCnpxVUdLOZYgoMsDlHD'] }, // default group
   ],
   '💻 Tech': [
     {
@@ -93,6 +94,7 @@ export const TOPICS_TO_SUBTOPICS: { [key: string]: TopicInfo[] } = {
     { name: '🚲 Cycling', groupIds: ['2yisxJryUq9V5sG7P6Gy'] },
     { name: '🎾 Tennis', groupIds: ['1mvN9vIVIopcWiAsXhzp'] },
     { name: '🏏 Cricket', groupIds: ['LcPYoqxSRdeQMms4lR3g'] },
+    { name: '🌐 Sports', groupIds: ['2hGlgVhIyvVaFyQAREPi'] }, // default group
   ],
   '🎬 Entertainment': [
     {

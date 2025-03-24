@@ -33,7 +33,7 @@ export function FilterPill(props: {
   return (
     <button
       className={clsx(
-        'flex h-6 shrink-0 cursor-pointer select-none flex-row items-center whitespace-nowrap rounded-full px-2 text-sm outline-none transition-colors',
+        'flex shrink-0 cursor-pointer select-none flex-row items-center whitespace-nowrap rounded-full px-3 py-0.5 text-sm outline-none transition-colors',
         type === 'spice'
           ? selected
             ? 'bg-amber-500 text-white hover:bg-amber-600'
@@ -64,12 +64,12 @@ export function AdditionalFilterPill(props: {
   type: 'filter' | 'sort' | 'contractType'
   onXClick: () => void
 }) {
-  const { children, className, type, onXClick } = props
+  const { children, className, onXClick } = props
 
   return (
     <Row
       className={clsx(
-        'relative h-6 select-none items-center gap-1 whitespace-nowrap rounded-full pl-2 pr-1 text-sm outline-none transition-colors',
+        'relative select-none items-center gap-1 whitespace-nowrap rounded-full py-0.5 pl-2 pr-1 text-sm outline-none transition-colors',
         'bg-primary-500 text-white',
         className
       )}
@@ -196,7 +196,7 @@ export function DropdownPill(props: {
   return (
     <div
       className={clsx(
-        'flex cursor-pointer select-none flex-row items-center whitespace-nowrap rounded-full py-0.5 pl-2 pr-0.5 text-sm outline-none transition-colors',
+        'flex cursor-pointer select-none flex-row items-center whitespace-nowrap rounded-full py-0.5 pl-3 pr-1 text-sm outline-none transition-colors',
         color === 'indigo'
           ? 'hover:bg-primary-600 focus-visible:bg-primary-600 bg-primary-500 text-white'
           : color === 'light-gray'
