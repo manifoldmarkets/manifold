@@ -16,8 +16,8 @@ Guidelines:
 - Keep important distinctions between market types (date, numeric, multiple choice, and binary), i.e if the market is forecasting 'when' something might happen, keep that distinction
 - Remove unnecessary words, phrases, notations, e.g. "will", etc.
 - Keep it concise
-- Do not return anything other than the concise title
-- If the question is already concise and declarative, do not change it
+- Do not return anything other than the concise title, unless the question is already concise and declarative, in which case return a blank string
+- Do not suggest a longer title than the original. If you can't make it more concise, just return a blank string
 - Keep personal markets personal, e.g. "Will I go to the gym this week?" should NOT be changed to impersonal forms like "Personal gym attendance this week"
 
 Example transformation:
