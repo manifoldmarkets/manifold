@@ -26,6 +26,7 @@ export const SearchInput = (props: {
         placeholder={placeholder ?? 'Search'}
         autoFocus={autoFocus}
         className={clsx('w-full', hasQuery && 'pr-10')}
+        showSearchIcon
       />
       {hasQuery && (
         <IconButton

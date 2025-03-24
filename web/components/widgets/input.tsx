@@ -11,7 +11,7 @@ export const Input = forwardRef(
     } & JSX.IntrinsicElements['input'],
     ref: Ref<HTMLInputElement>
   ) => {
-    const { error, className, showSearchIcon = true, ...rest } = props
+    const { error, className, showSearchIcon, ...rest } = props
 
     return (
       <>
