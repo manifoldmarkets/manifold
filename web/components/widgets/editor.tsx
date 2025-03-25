@@ -81,7 +81,6 @@ export function useTextEditor(props: {
   const { placeholder, className, max, defaultValue, size, key, autofocus } =
     props
   const simple = size === 'sm'
-
   const [content, setContent] = usePersistentLocalState<
     JSONContent | undefined
   >(undefined, getEditorLocalStorageKey(key ?? ''))
@@ -116,7 +115,7 @@ export function useTextEditor(props: {
 
   const editor = useEditor({
     editorProps: getEditorProps(),
-    onUpdate: !key
+    onTransaction: !key
       ? noop
       : ({ editor }) => {
           save(editor.getJSON())

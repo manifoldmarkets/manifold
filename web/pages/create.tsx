@@ -18,20 +18,27 @@ export default function Create() {
   const paramsEntries = Object.fromEntries(searchParams.entries())
 
   function getURLParams() {
-    return searchParams
-      ? (Object.fromEntries(
-          Object.keys(paramsEntries).map((key) => [
-            key,
-            JSON.parse(paramsEntries[key] || 'null'),
-          ])
-        ).params as NewQuestionParams)
-      : ({} as NewQuestionParams)
+    try {
+      return searchParams
+        ? (Object.fromEntries(
+            Object.keys(paramsEntries).map((key) => [
+              key,
+              JSON.parse(paramsEntries[key] || 'null'),
+            ])
+          ).params as NewQuestionParams)
+        : ({} as NewQuestionParams)
+    } catch (error) {
+      console.error('Error parsing URL params:', error)
+      return {} as NewQuestionParams
+    }
   }
 
   const [params, setParams] = useState(getURLParams())
 
   useEffect(() => {
-    setParams(getURLParams())
+    const params = getURLParams()
+    if (!params || Object.keys(params).length === 0) return
+    setParams(params)
   }, [searchParams])
 
   if (!user) return <div />

@@ -86,11 +86,11 @@ export function ContractParamsForm(props: {
   )
 
   const paramsKey =
+    params?.overrideKey ??
     (params?.q ?? '') +
-    (params?.groupSlugs?.join('') ?? '') +
-    (params?.groupIds?.join('') ?? '') +
-    (params?.rand ?? '')
-
+      (params?.groupSlugs?.join('') ?? '') +
+      (params?.groupIds?.join('') ?? '') +
+      (params?.rand ?? '')
   const minStringKey = 'min' + paramsKey
   const [minString, setMinString] = usePersistentLocalState(
     params?.min?.toString() ?? '',
@@ -465,10 +465,13 @@ export function ContractParamsForm(props: {
     size: 'md',
     max: MAX_DESCRIPTION_LENGTH,
     placeholder: 'Optional. Provide background info and details.',
-    defaultValue: params?.description
-      ? JSON.parse(params.description)
-      : undefined,
   })
+
+  useEffect(() => {
+    if (!params?.description || !editor) return
+    editor?.commands.setContent(JSON.parse(params.description))
+  }, [params?.description, editor])
+
   const resetProperties = () => {
     // This has to work when you navigate away so we can't do:
     // editor?.commands.clearContent(true)

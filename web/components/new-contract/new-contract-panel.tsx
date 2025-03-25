@@ -47,6 +47,7 @@ export type NewQuestionParams = {
   unit?: string
   midpoints?: number[]
   rand?: string
+  overrideKey?: string
 }
 
 export type CreateContractStateType =
@@ -95,6 +96,7 @@ export function NewContractPanel(props: {
       visibility: 'public',
       shouldAnswersSumToOne: shouldSumToOne,
       addAnswersMode: m.addAnswersMode,
+      overrideKey: '',
     })
     setState('filling contract params')
   }
