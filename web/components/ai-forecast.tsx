@@ -142,21 +142,21 @@ export const AI_CAPABILITY_CARDS: AICapabilityCard[] = [
   // Prizes
   {
     title: 'Arc AGI',
-    description: 'Arc AGI prize by EOY',
-    marketId: 'W1KGdImLB5cb1p75M88e',
+    description: 'Arc AGI prize before 2030',
+    marketId: 'p0fzp3jqqc',
     type: 'prize',
     displayType: 'binary-odds'
   },
   {
     title: 'Turing Test (Long Bets)',
-    description: 'Will AI pass long bets Turing Test by EOY?',
+    description: 'Will AI pass long bets Turing Test before 2030?',
     marketId: 'nKyHon3IPOqJYzaWTHJB',
     type: 'prize',
     displayType: 'binary-odds'
   },
   {
     title: 'Millennium Prize',
-    description: 'AI Solve Millennium Problem by EOY',
+    description: 'AI Solve Millennium Problem before 2030',
     marketId: '6vw71lj8bi',
     type: 'prize',
     displayType: 'binary-odds'
@@ -182,7 +182,7 @@ export const AI_CAPABILITY_CARDS: AICapabilityCard[] = [
   {
     title: 'AI Blackmail',
     description: 'AI Blackmails someone for >$1000',
-    marketId: 'W1KGdImLB5cb1p75M88e',
+    marketId: '8j0np3Reu0ZIjszv0qiJ',
     type: 'long-term',
     displayType: 'binary-odds'
   },
@@ -702,9 +702,9 @@ function CapabilityCard({
               {(type === 'benchmark' || type === 'prize' || type === 'misuse' || type === 'long-term') && (
                 <p className="text-ink-600 text-xs sm:text-sm mt-1 sm:mt-3 text-left w-full px-1">
                   {type === 'benchmark' && title.includes('IMO Gold') && 'An LLM gets a IMO gold medal'}
-                  {type === 'prize' && title.includes('Millennium') && 'Chance of solving a million-dollar math problem before 2030'}
-                  {type === 'prize' && title.includes('Arc AGI') && 'Probability of claiming Arc-AGI prize by end of 2025'}
-                  {type === 'prize' && title.includes('Turing Test') && 'Probability of passing this variation of the Turing Test by 2029'}
+                  {type === 'prize' && title.includes('Millennium') && 'Chance of solving a million-dollar math problem'}
+                  {type === 'prize' && title.includes('Arc AGI') && 'Probability of claiming Arc-AGI prize'}
+                  {type === 'prize' && title.includes('Turing Test') && 'Probability of passing this variation of the Turing Test'}
                   {type === 'misuse' && title.includes('Hacking') && 'Probability of AI compromising systems by end of 2025'}
                   {type === 'misuse' && title.includes('ASL-3') && 'Model defined as ASL-3 by Anthropic released by end of 2025'}
                   {type === 'long-term' && title.includes('Romantic') && 'At least 1/1000 Americans talks weekly with one by 2028'}
@@ -727,9 +727,9 @@ function CapabilityCard({
               {/* Brief descriptive text for numeric markets */}
               {displayType === 'numeric' && (
                 <p className="text-ink-600 text-xs sm:text-sm mt-1 sm:mt-3 text-left w-full px-1">
-                  {type === 'benchmark' && title.includes('SWE Bench') && 'Predicted top score EOY'}
-                  {type === 'benchmark' && title.includes('Frontier Math') && 'Predicted top score EOY'}
-                  {type === 'benchmark' && title.includes('Last Exam') && 'Predicted top score EOY'}
+                  {type === 'benchmark' && title.includes('SWE Bench') && 'Predicted top score'}
+                  {type === 'benchmark' && title.includes('Frontier Math') && 'Predicted top score'}
+                  {type === 'benchmark' && title.includes('Last Exam') && 'Predicted top score'}
                 </p>
               )}
             </div>
@@ -967,7 +967,7 @@ export function AIForecast({ whenAgi, contracts = [], hideTitle }: AIForecastPro
     },
     'prize': {
       label: 'Prizes',
-      description: 'Will any model claim this prize?'
+      description: 'Will any model claim this prize before 2030?'
     },
     'misuse': {
       label: 'AI Misuse',
