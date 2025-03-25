@@ -115,10 +115,10 @@ export const Timeline = ({
     return Math.max(5, Math.min(95, position)) // Clamp between 5% and 95%
   }
   
-  // Simple function for positioning month markers evenly
-  const getMonthMarkerPosition = (index: number, totalMonths: number) => {
-    // Distribute all months evenly from 0% to 100%
-    return (index / (totalMonths - 1)) * 100;
+  // Position month markers evenly from 0% to 100%
+  const getMonthMarkerPosition = (index: number, months: Date[]) => {
+    if (months.length <= 1) return 0
+    return (index / (months.length - 1)) * 100
   }
   
   // Create a timeline row component for reuse
@@ -132,11 +132,11 @@ export const Timeline = ({
     itemsToShow: TimelineItemData[]
   }) => {
     return (
-      <div className="relative mb-24 sm:mb-32">
+      <div className="relative mb-40 sm:mb-48">
         {/* Container for timeline and item icons */}
         <div className="relative w-full px-8">
           {/* Items on the timeline */}
-          <div className="absolute left-0 right-0 top-[-30px] sm:top-[-40px] w-full h-[30px] sm:h-[40px] overflow-visible">
+          <div className="absolute left-0 right-0 top-[-30px] sm:top-[-40px] w-full h-[80px] sm:h-[90px] overflow-visible">
             {(() => {
               // Get all visible items for this row
               const visibleItems = itemsToShow
@@ -149,14 +149,34 @@ export const Timeline = ({
                 .filter(item => item !== null)
                 .sort((a, b) => a.position - b.position) // Sort by position
               
-              // Detect and resolve collisions
-              for (let i = 0; i < visibleItems.length - 1; i++) {
+              // Detect and resolve collisions with three rows of offsets
+              for (let i = 1; i < visibleItems.length; i++) {
                 const current = visibleItems[i]
-                const next = visibleItems[i + 1]
+                let hasCollision = false
+                const usedOffsets = new Set()
                 
-                // If items are less than 15% apart
-                if (next.position - current.position < 15) {
-                  next.verticalOffset = i % 2 === 0 ? -25 : 25
+                // Check against all previous items
+                for (let j = 0; j < i; j++) {
+                  const previous = visibleItems[j]
+                  
+                  // If items are less than 15% apart
+                  if (Math.abs(current.position - previous.position) < 23) {
+                    hasCollision = true
+                    // Track which offset levels are already used by nearby items
+                    usedOffsets.add(previous.verticalOffset)
+                  }
+                }
+                
+                // If there's a collision, find an available offset level
+                if (hasCollision) {
+                  // Try each offset level (0, -25, -50, -75) until we find an unused one
+                  for (let offsetLevel = 0; offsetLevel <= 4; offsetLevel++) {
+                    const offset = -25 * offsetLevel;
+                    if (!usedOffsets.has(offset)) {
+                      current.verticalOffset = offset;
+                      break;
+                    }
+                  }
                 }
               }
               
@@ -177,7 +197,7 @@ export const Timeline = ({
             {/* Month markers and labels */}
             <div className="absolute left-0 right-0 top-[15px]">
               {monthMarkers.map((date, index) => {
-                const position = getMonthMarkerPosition(index, monthMarkers.length)
+                const position = getMonthMarkerPosition(index, monthMarkers)
                 
                 return (
                   <div 
@@ -200,7 +220,7 @@ export const Timeline = ({
             {/* Tick marks */}
             <div className="absolute left-0 right-0 top-0">
               {monthMarkers.map((date, index) => {
-                const position = getMonthMarkerPosition(index, monthMarkers.length)
+                const position = getMonthMarkerPosition(index, monthMarkers)
                 
                 return (
                   <div 

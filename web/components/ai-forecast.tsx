@@ -71,7 +71,7 @@ export const AI_CAPABILITY_CARDS: AICapabilityCard[] = [
   {
     title: 'LMSYS',
     description: 'Highest ranked model on lmsys',
-    marketId: '0t8A5ZA0zQ',
+    marketId: 'LsZPyLPI82',
     type: 'monthly',
     displayType: 'top-two-mcq',
   },
@@ -91,7 +91,55 @@ export const AI_CAPABILITY_CARDS: AICapabilityCard[] = [
     type: 'releases',
     displayType: 'date'
   },
-  // add claude 3.7 opus, grok 4, deepseek r2, deepseek v4
+  {
+    title: 'Claude Sonnet',
+    description: 'Claude 3.7+ Sonnet released by EOY',
+    marketId: 'sNONOgzE5y',
+    type: 'releases',
+    displayType: 'date'
+  },
+  {
+    title: 'Claude Opus',
+    description: 'Claude 3.0+ Opus released by EOY',
+    marketId: '820ZdsLAs9',
+    type: 'releases',
+    displayType: 'date'
+  },
+  {
+    title:'Gemini 3 Pro',
+    description:'Gemini 3 Pro released by EOY',
+    marketId: '8uNZSPpZU2',
+    type: 'releases',
+    displayType: 'date'
+  },
+  {
+    title: 'Gemini 3 Flash',
+    description: 'Gemini 3 Flash released by EOY',
+    marketId: 'y9Apyg85yE',
+    type: 'releases',
+    displayType: 'date'
+  },
+  {
+    title: 'Grok 4',
+    description: 'Grok 4 model released by EOY',
+    marketId: 'AtEOZUgtLZ',
+    type: 'releases',
+    displayType: 'date'
+  },
+  {
+    title: 'Deepseek R2',
+    description: 'Deepseek R2 model released by EOY',
+    marketId: '0yhESzCU5z',
+    type: 'releases',
+    displayType: 'date'
+  },
+  {
+    title: 'Deepseek V4',
+    description: 'Deepseek V4 model released by EOY',
+    marketId: 'Pd9O5t85hE',
+    type: 'releases',
+    displayType: 'date'
+  },
 
   // Featured Graph
   {
