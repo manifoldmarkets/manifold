@@ -264,11 +264,7 @@ export function ContractParamsForm(props: {
 
   const debouncedGenerateTitle = useCallback(
     debounce((question: string) => {
-      if (question && question.length >= 20) {
-        generateConciseTitle(question)
-      } else if (suggestedTitle) {
-        setSuggestedTitle(undefined)
-      }
+      generateConciseTitle(question)
     }, 1000),
     []
   )

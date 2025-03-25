@@ -108,7 +108,7 @@ export function AmountInput(
             type={allowFloat ? 'number' : 'text'}
             inputMode={allowFloat ? 'decimal' : 'numeric'}
             placeholder="0"
-            maxLength={9}
+            maxLength={16}
             step={0.01}
             value={amountString}
             error={error}

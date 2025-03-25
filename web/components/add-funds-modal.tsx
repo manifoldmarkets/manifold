@@ -92,8 +92,6 @@ export function BuyManaTab(props: { onClose: () => void }) {
           if (!user || !privateUser) return firebaseLogin()
           if (isIOS) {
             initiatePurchaseInDollars(dollarAmount)
-          } else {
-            router.push(`/checkout?dollarAmount=${dollarAmount}`)
           }
           setLoadingPrice(dollarAmount)
         }}
@@ -120,7 +118,7 @@ export function PriceTile(props: {
   const isCurrentlyLoading = loadingPrice === priceInDollars
   const disabled = props.disabled || (loadingPrice && !isCurrentlyLoading)
 
-  const useStripe = bonusInDollars === 0 && !isIOS
+  const useStripe = !isIOS
 
   const onClickHandler = (e: React.MouseEvent) => {
     if (!user) {
