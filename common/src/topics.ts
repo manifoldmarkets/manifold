@@ -11,7 +11,12 @@ export const TOPICS_TO_SUBTOPICS: { [key: string]: TopicInfo[] } = {
     {
       // US Politics
       name: '🇺🇸 USA',
-      groupIds: ['AjxQR8JMpNyDqtiqoA96'],
+      groupIds: [
+        'AjxQR8JMpNyDqtiqoA96', // US Politics
+        'cEzcLXuitr6o4VPI01Q1', // Trump
+        '46e04289-2b15-4997-841b-b8e1d5175c39', // trump's second term
+        'EWgcYV1JYWP19dE3BZCb', // republican party
+      ],
     },
     { name: '🇨🇳 China', groupIds: ['oWTzfoeemQGkSoPFn2T7'] },
     {
@@ -39,9 +44,12 @@ export const TOPICS_TO_SUBTOPICS: { [key: string]: TopicInfo[] } = {
     { name: '🌎 Asia', groupIds: ['bPTxMZhUYsIUXsWT969d'] },
     {
       name: '🌐 Politics',
-      groupIds: ['UCnpxVUdLOZYgoMsDlHD'],
+      groupIds: [
+        'UCnpxVUdLOZYgoMsDlHD', // Politics default
+        'XUjgI120xjTU5n382rWL', // Canadian Politics
+      ],
       hideFromSearch: true,
-    }, // default group
+    },
   ],
   '🤖 AI': [
     {
