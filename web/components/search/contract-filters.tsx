@@ -24,6 +24,7 @@ import {
   DEFAULT_SORT,
   DEFAULT_SORTS,
   FILTERS,
+  FILTER_KEY,
   FOR_YOU_KEY,
   Filter,
   GROUP_IDS_KEY,
@@ -121,7 +122,8 @@ export function ContractFilters(props: {
     !DEFAULT_CONTRACT_TYPES.some((ct) => ct == contractType) &&
     contractType !== DEFAULT_CONTRACT_TYPE
 
-  const forYou = params[FOR_YOU_KEY] === '1' && !params[GROUP_IDS_KEY]
+  const forYou =
+    params[FOR_YOU_KEY] === '1' && !params[GROUP_IDS_KEY] && filter !== 'news'
 
   return (
     <Col className={clsx('mb-1 mt-2 items-stretch gap-1 ', className)}>
@@ -135,11 +137,11 @@ export function ContractFilters(props: {
           />
         )}
 
-        <Row className="bg-ink-100 dark:bg-ink-300 items-center rounded-full">
+        <Row className="bg-ink-100 dark:bg-ink-300 items-center rounded-full ">
           <button
             key="score"
             className={clsx(
-              'flex h-6 cursor-pointer select-none flex-row items-center whitespace-nowrap rounded-full px-2 text-sm outline-none transition-colors',
+              'flex cursor-pointer select-none flex-row items-center whitespace-nowrap rounded-full px-3 py-0.5 text-sm outline-none transition-colors',
               sort == 'score' ? minimalistIndigoSelectedClass : unselectedClass,
               className
             )}
@@ -156,7 +158,7 @@ export function ContractFilters(props: {
           <button
             key="freshness-score"
             className={clsx(
-              'flex h-6 cursor-pointer select-none flex-row items-center whitespace-nowrap rounded-full px-2 text-sm outline-none transition-colors',
+              'flex cursor-pointer select-none flex-row items-center whitespace-nowrap rounded-full px-3 py-0.5 text-sm outline-none transition-colors',
               sort == 'freshness-score'
                 ? minimalistIndigoSelectedClass
                 : unselectedClass,
@@ -175,7 +177,7 @@ export function ContractFilters(props: {
           <button
             key="newest"
             className={clsx(
-              'flex h-6 cursor-pointer select-none flex-row items-center whitespace-nowrap rounded-full px-2 text-sm outline-none transition-colors',
+              'flex cursor-pointer select-none flex-row items-center whitespace-nowrap rounded-full px-3 py-0.5 text-sm outline-none transition-colors',
               sort == 'newest'
                 ? minimalistIndigoSelectedClass
                 : unselectedClass,
@@ -219,6 +221,7 @@ export function ContractFilters(props: {
               updateParams({
                 [FOR_YOU_KEY]: forYou ? '0' : '1',
                 [GROUP_IDS_KEY]: '', // Clear any topic selection when toggling For You
+                [FILTER_KEY]: filter === 'news' ? 'open' : filter,
               })
             }}
             color="minimalist-indigo"
