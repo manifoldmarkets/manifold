@@ -4,7 +4,7 @@ import {
 } from 'common/envs/constants'
 import { removeEmojis } from './util/string'
 
-type TopicInfo = { name: string; groupIds: string[] }
+type TopicInfo = { name: string; groupIds: string[]; hideFromSearch?: boolean }
 
 export const TOPICS_TO_SUBTOPICS: { [key: string]: TopicInfo[] } = {
   '🗳️ Politics': [
@@ -37,9 +37,37 @@ export const TOPICS_TO_SUBTOPICS: { [key: string]: TopicInfo[] } = {
     { name: '🌏 Africa', groupIds: ['dFsZaGwyohGDVkJi1C3E'] },
     { name: '🌏 Middle East', groupIds: ['xg8wCPeM9JP6gD0igBrA'] },
     { name: '🌎 Asia', groupIds: ['bPTxMZhUYsIUXsWT969d'] },
-    { name: '🌐 Politics', groupIds: ['UCnpxVUdLOZYgoMsDlHD'] }, // default group
+    {
+      name: '🌐 Politics',
+      groupIds: ['UCnpxVUdLOZYgoMsDlHD'],
+      hideFromSearch: true,
+    }, // default group
   ],
-  '💻 Tech': [
+  '🤖 AI': [
+    {
+      name: 'AI',
+      groupIds: ['yEWvvwFFIqzf8JklMewp'],
+      hideFromSearch: true,
+    },
+    {
+      name: 'Timelines',
+      groupIds: ['GbbX9U5pYnDeftX9lxUh'],
+    },
+
+    {
+      name: 'OpenAI',
+      groupIds: ['a3ikurqO9fT46Pv9ZGkY'],
+    },
+    {
+      name: 'AI Impacts & Safety',
+      groupIds: ['DnxTZ1P5XEEfnHxy7Q7d', 'q3Su0NeV9ta4DqhqlIEq'],
+    },
+    {
+      name: 'Anthropic',
+      groupIds: ['B8jfqGL9Uqu5nejktmVi'],
+    },
+  ],
+  '💻 Tech & Science': [
     {
       name: '💻 Technology',
       groupIds: [
@@ -57,11 +85,6 @@ export const TOPICS_TO_SUBTOPICS: { [key: string]: TopicInfo[] } = {
     {
       name: '🏥 Health',
       groupIds: ['JpUqUqRn9sSWxrk0Sq35'],
-    },
-    {
-      // AI, Technical AI Timelines
-      name: '🤖 AI',
-      groupIds: ['yEWvvwFFIqzf8JklMewp', 'GbbX9U5pYnDeftX9lxUh'],
     },
     {
       name: '👨‍💻 Code',
@@ -94,9 +117,13 @@ export const TOPICS_TO_SUBTOPICS: { [key: string]: TopicInfo[] } = {
     { name: '🚲 Cycling', groupIds: ['2yisxJryUq9V5sG7P6Gy'] },
     { name: '🎾 Tennis', groupIds: ['1mvN9vIVIopcWiAsXhzp'] },
     { name: '🏏 Cricket', groupIds: ['LcPYoqxSRdeQMms4lR3g'] },
-    { name: '🌐 Sports', groupIds: ['2hGlgVhIyvVaFyQAREPi'] }, // default group
+    {
+      name: '🌐 Sports',
+      groupIds: ['2hGlgVhIyvVaFyQAREPi'],
+      hideFromSearch: true,
+    }, // default group
   ],
-  '🎬 Entertainment': [
+  '🎬 Culture': [
     {
       name: '🤩 Pop culture',
       groupIds: [
@@ -244,6 +271,4 @@ export const ALL_TOPICS = Object.keys(TOPICS_TO_SUBTOPICS)
   .map((topic) => getSubtopics(topic).map(([_, subtopic]) => subtopic))
   .flat()
 
-export const ALL_PARENT_TOPICS = Object.keys(TOPICS_TO_SUBTOPICS).filter(
-  (topic) => topic !== '🪂 NSFW'
-)
+export const ALL_PARENT_TOPICS = Object.keys(TOPICS_TO_SUBTOPICS)

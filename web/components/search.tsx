@@ -370,6 +370,7 @@ export function Search(props: SearchProps) {
       )
     : undefined
   const selectedAll = !selectedTopic && filter !== 'news'
+  const selectedOnlyNews = filter === 'news' && !selectedTopic
 
   return (
     <Col className="w-full">
@@ -403,10 +404,10 @@ export function Search(props: SearchProps) {
               <button
                 className={clsx(
                   'font-medium',
-                  filter === 'news' ? 'text-primary-600' : 'text-ink-500'
+                  selectedOnlyNews ? 'text-primary-600' : 'text-ink-500'
                 )}
                 onClick={() => {
-                  if (filter === 'news') {
+                  if (selectedOnlyNews) {
                     onChange({ [FILTER_KEY]: 'open' })
                   } else {
                     track('select search topic', { topic: 'news' })
@@ -489,31 +490,33 @@ export function Search(props: SearchProps) {
               >
                 All
               </button>
-              {TOPICS_TO_SUBTOPICS[selectedTopic].map(({ name, groupIds }) => (
-                <button
-                  key={name}
-                  className={clsx(
-                    'text-ink-500 whitespace-nowrap px-3 py-0.5 text-sm',
-                    searchParams[GROUP_IDS_KEY] === groupIds.join(',') &&
-                      'text-primary-700 bg-primary-50 dark:bg-primary-100 rounded-full font-medium '
-                  )}
-                  onClick={() => {
-                    if (searchParams[GROUP_IDS_KEY] === groupIds.join(',')) {
-                      onChange({
-                        [GROUP_IDS_KEY]: TOPICS_TO_SUBTOPICS[selectedTopic]
-                          .map((subtopic) => subtopic.groupIds)
-                          .flat()
-                          .join(','),
-                      })
-                    } else {
-                      track('select search subtopic', { subtopic: name })
-                      onChange({ [GROUP_IDS_KEY]: groupIds.join(',') })
-                    }
-                  }}
-                >
-                  {removeEmojis(name)}
-                </button>
-              ))}
+              {TOPICS_TO_SUBTOPICS[selectedTopic]
+                .filter(({ hideFromSearch }) => !hideFromSearch)
+                .map(({ name, groupIds }) => (
+                  <button
+                    key={name}
+                    className={clsx(
+                      'text-ink-500 whitespace-nowrap px-3 py-0.5 text-sm',
+                      searchParams[GROUP_IDS_KEY] === groupIds.join(',') &&
+                        'text-primary-700 bg-primary-50 dark:bg-primary-100 rounded-full font-medium '
+                    )}
+                    onClick={() => {
+                      if (searchParams[GROUP_IDS_KEY] === groupIds.join(',')) {
+                        onChange({
+                          [GROUP_IDS_KEY]: TOPICS_TO_SUBTOPICS[selectedTopic]
+                            .map((subtopic) => subtopic.groupIds)
+                            .flat()
+                            .join(','),
+                        })
+                      } else {
+                        track('select search subtopic', { subtopic: name })
+                        onChange({ [GROUP_IDS_KEY]: groupIds.join(',') })
+                      }
+                    }}
+                  >
+                    {removeEmojis(name)}
+                  </button>
+                ))}
             </Carousel>
           )}
 
