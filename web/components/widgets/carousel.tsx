@@ -28,9 +28,9 @@ export function Carousel(props: {
       <div
         className={clsx(
           fadeEdges && {
-            'before:from-canvas-0 before:absolute before:left-0 before:top-0 before:z-10 before:h-full before:w-8 before:bg-gradient-to-r before:to-transparent':
+            'before:from-canvas-0 before:absolute before:left-0 before:top-0 before:z-10 before:h-full before:w-10 before:bg-gradient-to-r before:to-transparent':
               !atFront,
-            'after:from-canvas-0 after:absolute after:right-0 after:top-0 after:z-10 after:h-full after:w-8 after:bg-gradient-to-l after:to-transparent':
+            'after:from-canvas-0 after:absolute after:right-0 after:top-0 after:z-10 after:h-full after:w-10 after:bg-gradient-to-l after:to-transparent':
               !atBack,
           }
         )}
