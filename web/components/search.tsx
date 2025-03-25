@@ -421,7 +421,7 @@ export function Search(props: SearchProps) {
                 <button
                   key={topic}
                   className={clsx(
-                    'font-medium',
+                    'whitespace-nowrap font-medium',
                     selectedTopic === topic
                       ? 'text-primary-600'
                       : 'text-ink-500'

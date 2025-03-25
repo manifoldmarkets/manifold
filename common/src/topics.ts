@@ -75,7 +75,7 @@ export const TOPICS_TO_SUBTOPICS: { [key: string]: TopicInfo[] } = {
       groupIds: ['B8jfqGL9Uqu5nejktmVi'],
     },
   ],
-  '💻 Tech & Science': [
+  '💻 Tech': [
     {
       name: '💻 Technology',
       groupIds: [
