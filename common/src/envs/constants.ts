@@ -225,7 +225,7 @@ export const SWEEPSTAKES_MOD_IDS = [
   'JlVpsgzLsbOUT4pajswVMr0ZzmM2', // Joshua
 ]
 
-export const MVP = ['Eliza', 'Gabrielle']
+export const MVP = ['Eliza', 'Gabrielle', 'jacksonpolack']
 
 export const VERIFIED_USERNAMES = [
   'EliezerYudkowsky',
