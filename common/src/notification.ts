@@ -417,6 +417,14 @@ export type BetReplyNotificationData = {
   commentText: string
 }
 
+export type MarketMovementData = {
+  val_start: number
+  val_end: number
+  val_start_time: string
+  val_end_time: string
+  answerText?: string
+}
+
 export type AirdropData = {
   amount: number
 }

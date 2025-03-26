@@ -36,7 +36,7 @@ import {
 import { updateUserPortfolioHistoriesCore } from 'shared/update-user-portfolio-histories-core'
 import { isProd } from 'shared/utils'
 import { sendMarketMovementNotifications } from 'shared/send-market-movement-notifications'
-import { sendUnseenMarketMovementPushNotifications } from 'shared/send-unseen-notifications'
+import { sendUnseenMarketMovementNotifications } from 'shared/send-unseen-notifications'
 
 export function createJobs() {
   return [
@@ -120,7 +120,7 @@ export function createJobs() {
     createJob(
       'send-unseen-notifications',
       '0 0 13 * * *', // 1 PM daily
-      sendUnseenMarketMovementPushNotifications
+      sendUnseenMarketMovementNotifications
     ),
     createJob(
       'clean-old-notifications',

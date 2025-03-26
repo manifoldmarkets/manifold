@@ -798,6 +798,88 @@ export const getWeeklyPortfolioUpdateEmail = (
   ] as EmailAndTemplateEntry
 }
 
+export type MarketMovementEmailData = {
+  questionTitle: string
+  questionUrl: string
+  prob: string
+  probChangeStyle: string
+  startProb: number
+  endProb: number
+  answerText?: string
+}
+
+export const getMarketMovementEmail = (
+  userName: string,
+  privateUser: PrivateUser,
+  marketMovements: MarketMovementEmailData[],
+  movementsToSend: number
+) => {
+  if (!privateUser || !privateUser.email) return
+
+  const { unsubscribeUrl, sendToEmail } = getNotificationDestinationsForUser(
+    privateUser,
+    'market_movements'
+  )
+
+  if (!sendToEmail) return
+
+  const firstName = userName.split(' ')[0]
+  const templateData: Record<string, string> = {
+    name: firstName,
+    unsubscribeUrl,
+  }
+
+  for (let i = 0; i < movementsToSend; i++) {
+    const movement = marketMovements[i]
+    if (movement) {
+      templateData[`question${i + 1}Title`] = movement.questionTitle
+      templateData[`question${i + 1}Url`] = movement.questionUrl
+      templateData[`question${i + 1}Prob`] = movement.prob
+
+      const probChange = Math.round(
+        Math.abs(movement.endProb - movement.startProb) * 100
+      )
+      const direction = movement.endProb > movement.startProb ? '+' : '-'
+      templateData[`question${i + 1}Change`] = `${direction}${probChange}`
+      templateData[`question${i + 1}ChangeStyle`] = movement.probChangeStyle
+      templateData[`question${i + 1}Display`] = 'display: table-row'
+
+      // Add answer text to the template data if available
+      if (movement.answerText) {
+        // When answer exists
+        templateData[`question${i + 1}AnswerText`] = movement.answerText
+        templateData[`question${i + 1}AnswerDisplay`] = 'table-row'
+
+        // Show probability on answer row when answer exists
+        templateData[`question${i + 1}AnswerProbStyle`] = 'display: inline'
+
+        // Hide probability on question row when answer exists
+        templateData[`question${i + 1}ProbStyle`] = 'display: none'
+      } else {
+        // When no answer exists
+        templateData[`question${i + 1}AnswerText`] = ''
+        templateData[`question${i + 1}AnswerDisplay`] = 'none'
+
+        // Hide probability on answer row when no answer
+        templateData[`question${i + 1}AnswerProbStyle`] = 'display: none'
+
+        // Show probability on question row when no answer
+        templateData[`question${i + 1}ProbStyle`] = 'display: inline'
+      }
+    } else {
+      // When question doesn't exist
+      templateData[`question${i + 1}Display`] = 'display: none'
+      templateData[`question${i + 1}AnswerDisplay`] = 'none'
+      templateData[`question${i + 1}Title`] = ''
+      templateData[`question${i + 1}AnswerText`] = ''
+      templateData[`question${i + 1}ProbStyle`] = 'display: none'
+      templateData[`question${i + 1}AnswerProbStyle`] = 'display: none'
+    }
+  }
+
+  return [privateUser.email, templateData] as EmailAndTemplateEntry
+}
+
 export const sendNewMatchEmail = async (
   reason: NotificationReason,
   privateUser: PrivateUser,

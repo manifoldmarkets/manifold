@@ -5,6 +5,7 @@ import {
   CommentNotificationData,
   ContractResolutionData,
   LeagueChangeData,
+  MarketMovementData,
   Notification,
   NOTIFICATION_DESCRIPTIONS,
   notification_reason_types,
@@ -2163,7 +2164,7 @@ export const createMarketMovementNotification = async (
     if (!sendToBrowser) continue
 
     // Create the notification data
-    const notificationData = {
+    const notificationData: MarketMovementData = {
       val_start: beforeProb,
       val_end: afterProb,
       val_start_time: beforeTime.toISOString(),
