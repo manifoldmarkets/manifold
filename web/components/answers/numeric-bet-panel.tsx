@@ -389,7 +389,7 @@ export const NumericBetPanel = (props: {
                   amount={potentialPayout}
                   isCashContract={isCashContract}
                 />
-                <span className=" text-green-500">
+                <span className="text-green-500">
                   {'+' + currentReturnPercent}
                 </span>
               </Row>
