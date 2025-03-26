@@ -275,6 +275,11 @@ export function getSearchContractSQL(args: {
     filter === 'news' &&
     join(`recent_movements rm on rm.contract_id = contracts.id`)
 
+  const newsWhere =
+    filter === 'news' &&
+    term === '' &&
+    where(`coalesce(contracts.data->>'isRanked', 'true')::boolean = true`)
+
   // Normal full text search
   const sql = renderSql(
     select(contractColumnsToSelect),
@@ -282,6 +287,7 @@ export function getSearchContractSQL(args: {
     groupsFilter,
     newsFilter,
     newsJoin,
+    newsWhere,
     searchType === 'answer' &&
       join(
         `(${answersSubQuery}) as matched_answers on matched_answers.contract_id = contracts.id`
