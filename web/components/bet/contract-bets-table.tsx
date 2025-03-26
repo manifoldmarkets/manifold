@@ -36,6 +36,7 @@ export function ContractBetsTable(props: {
   contractMetric: ContractMetric
   hideRedemptionAndLoanMessages?: boolean
   paginate?: boolean
+  defaultExpanded?: boolean
 }) {
   const {
     contract,
@@ -43,6 +44,7 @@ export function ContractBetsTable(props: {
     hideRedemptionAndLoanMessages,
     paginate,
     contractMetric,
+    defaultExpanded = false,
   } = props
   const { isResolved, mechanism, outcomeType } = contract
 
@@ -80,7 +82,7 @@ export function ContractBetsTable(props: {
   const [page, setPage] = useState(0)
   const unexpandedBetsPerPage = 2
   const betsPerPage = 5
-  const [expanded, setExpanded] = useState(false)
+  const [expanded, setExpanded] = useState(defaultExpanded)
 
   const displayedBets = expanded
     ? normalBets.slice(page * betsPerPage, (page + 1) * betsPerPage)
@@ -133,7 +135,10 @@ export function ContractBetsTable(props: {
             className={
               'hover:bg-canvas-100 text-primary-700 mb-1 rounded-md p-2 text-sm'
             }
-            onClick={() => setExpanded(true)}
+            onClick={(e) => {
+              e.stopPropagation()
+              setExpanded(true)
+            }}
           >
             Show {normalBets.length - unexpandedBetsPerPage} more {TRADE_TERM}s
           </button>

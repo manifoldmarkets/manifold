@@ -313,17 +313,10 @@ function UserProfile(props: {
 
           <Row className={'items-center gap-1 sm:gap-2'}>
             {isCurrentUser ? (
-              <Row className="my-2 hidden items-center gap-2 px-4 sm:flex">
-                <AddFundsButton
-                  userId={user.id}
-                  className="whitespace-nowra w-full lg:hidden"
-                />
-                <RedeemSweepsButtons
-                  user={user}
-                  className="shrink-0"
-                  redeemableCash={user.cashBalance}
-                />
-              </Row>
+              <AddFundsButton
+                userId={user.id}
+                className="mr-2 w-full whitespace-nowrap px-8 lg:hidden"
+              />
             ) : (
               <>
                 <SendMessageButton toUser={user} currentUser={currentUser} />
@@ -352,17 +345,11 @@ function UserProfile(props: {
         )}
 
         {isCurrentUser && (
-          <Row className="my-2 w-full items-center gap-2 px-4 sm:hidden">
-            <AddFundsButton
-              userId={user.id}
-              className="w-1/2 whitespace-nowrap"
-            />
-            <RedeemSweepsButtons
-              user={user}
-              className="w-1/2"
-              redeemableCash={user.cashBalance}
-            />
-          </Row>
+          <RedeemSweepsButtons
+            user={user}
+            className="m-2 w-48"
+            redeemableCash={user.cashBalance}
+          />
         )}
 
         <Col className="mx-4">

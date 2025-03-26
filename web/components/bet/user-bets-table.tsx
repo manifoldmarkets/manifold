@@ -1,5 +1,4 @@
 'use client'
-import { ChevronUpIcon } from '@heroicons/react/solid'
 import clsx from 'clsx'
 import { LimitBet } from 'common/bet'
 import { getContractBetNullMetrics } from 'common/calculate'
@@ -10,35 +9,21 @@ import {
   MarketContract,
 } from 'common/contract'
 import { ContractMetric } from 'common/contract-metric'
-import { ENV_CONFIG, SWEEPIES_MARKET_TOOLTIP } from 'common/envs/constants'
+import { SWEEPIES_MARKET_TOOLTIP } from 'common/envs/constants'
 import { buildArray } from 'common/util/array'
-import {
-  formatWithToken,
-  maybePluralize,
-  shortFormatNumber,
-  SWEEPIES_MONIKER,
-} from 'common/util/format'
+import { formatWithToken } from 'common/util/format'
 import { searchInAny } from 'common/util/parse'
 import { Dictionary, sortBy, sum, uniqBy, mapValues } from 'lodash'
 import Link from 'next/link'
-import { ReactNode, useEffect, useMemo, useState } from 'react'
-import { BiCaretDown, BiCaretUp } from 'react-icons/bi'
-import { BsThreeDotsVertical } from 'react-icons/bs'
+import { useEffect, useMemo, useState } from 'react'
 import { BetsSummary } from 'web/components/bet/bet-summary'
 import { ContractBetsTable } from 'web/components/bet/contract-bets-table'
 import { OrderTable } from 'web/components/bet/order-book'
-import { Button, IconButton } from 'web/components/buttons/button'
 import { PillButton } from 'web/components/buttons/pill-button'
-import { ContractStatusLabel } from 'web/components/contract/contracts-table'
-import { OutcomeLabel } from 'web/components/outcome-label'
-import { RelativeTimestamp } from 'web/components/relative-timestamp'
-import { Avatar } from 'web/components/widgets/avatar'
-import { Carousel } from 'web/components/widgets/carousel'
 import { Input } from 'web/components/widgets/input'
 import { Pagination } from 'web/components/widgets/pagination'
 import { useContractBets } from 'client-common/hooks/use-bets'
 import { useEvent } from 'client-common/hooks/use-event'
-import { useIsMobile } from 'web/hooks/use-is-mobile'
 import { usePersistentInMemoryState } from 'client-common/hooks/use-persistent-in-memory-state'
 import { usePersistentLocalState } from 'web/hooks/use-persistent-local-state'
 import { usePersistentQueryState } from 'web/hooks/use-persistent-query-state'
@@ -46,8 +31,6 @@ import { useIsAuthorized, useUser } from 'web/hooks/use-user'
 import { api } from 'web/lib/api/api'
 import { User } from 'web/lib/firebase/users'
 import { SweepiesCoin } from 'web/public/custom-components/sweepiesCoin'
-import DropdownMenu from '../widgets/dropdown-menu'
-import { Modal, MODAL_CLASS } from '../layout/modal'
 import { useSweepstakes } from '../sweepstakes-provider'
 import { LoadingIndicator } from '../widgets/loading-indicator'
 import { linkClass } from '../widgets/site-link'
@@ -56,7 +39,13 @@ import { floatingEqual } from 'common/util/math'
 import { Col } from '../layout/col'
 import { Row } from '../layout/row'
 import { useIsPageVisible } from 'web/hooks/use-page-visible'
-import { LimitOrdersTable, LimitOrdersToggle } from './limit-orders-table'
+import { LimitOrdersTable } from './limit-orders-table'
+import { Menu, MenuButton, MenuItem, MenuItems } from '@headlessui/react'
+import { ChevronDownIcon } from '@heroicons/react/solid'
+import { ContractStatusLabel } from '../contract/contracts-table'
+import { BinaryOutcomeLabel, MultiOutcomeLabel } from '../outcome-label'
+import { RelativeTimestamp } from '../relative-timestamp'
+
 type BetSort =
   | 'newest'
   | 'profit'
@@ -97,13 +86,14 @@ export function UserBetsTable(props: { user: User }) {
     false,
     'show-limit-orders-view'
   )
+  type LimitOrderFilter = 'active' | 'filled' | 'expired' | 'cancelled'
   // Add state for showing different order types
-  const [orderFilter, setOrderFilter] = usePersistentInMemoryState<
-    'active' | 'filled' | 'expired' | 'cancelled'
-  >('active', 'limit-orders-filter')
-  const updateOrderFilter = (
-    newFilter: 'active' | 'filled' | 'expired' | 'cancelled'
-  ) => {
+  const [orderFilter, setOrderFilter] =
+    usePersistentInMemoryState<LimitOrderFilter>(
+      'active',
+      'limit-orders-filter'
+    )
+  const updateOrderFilter = (newFilter: LimitOrderFilter) => {
     setOrderFilter(orderFilter === newFilter ? 'active' : newFilter)
   }
 
@@ -149,8 +139,17 @@ export function UserBetsTable(props: { user: User }) {
 
   const [query, setQuery] = usePersistentQueryState('b', '')
 
-  const onSetFilter = (f: BetFilter) => {
-    setFilter(f)
+  const onSetFilter = (f: BetFilter | 'limit_orders') => {
+    if (f === 'limit_orders') {
+      setShowLimitOrders(true)
+      // When toggling limit orders on, set a default filter but it won't be used
+      // while limit orders view is active
+      setFilter('open')
+      return
+    }
+    // When selecting any other filter, turn off limit orders view
+    setShowLimitOrders(false)
+    setFilter(f as BetFilter)
     setPage(0)
   }
 
@@ -212,80 +211,203 @@ export function UserBetsTable(props: { user: User }) {
     : []
 
   const hasSweeps = contracts?.some((c) => c.token === 'CASH')
+
+  // Define sort options for the dropdown
+  const [sortOption, setSortOption] = usePersistentInMemoryState<{
+    field: BetSort
+    direction: 'asc' | 'desc'
+  }>({ field: 'newest', direction: 'desc' }, 'bets-list-sort')
+
+  const sortOptions: {
+    label: string
+    field: BetSort
+    direction: 'asc' | 'desc'
+  }[] = [
+    { label: 'Newest', field: 'newest', direction: 'desc' },
+    { label: 'Oldest', field: 'newest', direction: 'asc' },
+    { label: 'Highest Value', field: 'value', direction: 'desc' },
+    { label: 'Highest Position', field: 'position', direction: 'desc' },
+    { label: 'Highest Profit', field: 'profit', direction: 'desc' },
+    { label: 'Lowest Profit', field: 'profit', direction: 'asc' },
+    { label: 'Highest 1d Change', field: 'day', direction: 'desc' },
+    { label: 'Lowest 1d Change', field: 'day', direction: 'asc' },
+    { label: 'Highest 1w Change', field: 'week', direction: 'desc' },
+    { label: 'Lowest 1w Change', field: 'week', direction: 'asc' },
+    { label: 'Closing Soon', field: 'closeTime', direction: 'asc' },
+  ]
+
+  const filterOptions = [
+    { label: 'All', value: 'all' },
+    { label: 'Open', value: 'open' },
+    { label: 'Sold', value: 'sold' },
+    { label: 'Closed', value: 'closed' },
+    { label: 'Resolved', value: 'resolved' },
+    { label: 'Limit Orders', value: 'limit_orders' },
+  ]
+
+  const limitOrderFilterOptions: {
+    label: string
+    value: LimitOrderFilter
+  }[] = [
+    { label: 'Open', value: 'active' },
+    { label: 'Expired', value: 'expired' },
+    { label: 'Filled', value: 'filled' },
+    { label: 'Cancelled', value: 'cancelled' },
+  ]
+
+  const onSelectSortOption = (option: {
+    field: BetSort
+    direction: 'asc' | 'desc'
+  }) => {
+    setSortOption(option)
+    setPage(0)
+  }
+
   return (
-    <Col>
-      <div className="flex flex-wrap justify-between gap-4 max-sm:flex-col">
+    <Col className="relative">
+      <div
+        className={clsx(
+          'flex flex-wrap justify-between gap-4 max-sm:flex-col',
+          !showLimitOrders && 'bg-canvas-0 sticky top-0 z-10 pt-1'
+        )}
+      >
         <Col className="w-full gap-2">
-          <Row className="items-center gap-1 sm:gap-2">
+          <Col
+            className={
+              'items-end gap-2 sm:flex-row sm:items-center sm:justify-between'
+            }
+          >
             <Input
               placeholder={isYou ? 'Search your bets' : 'Search bets'}
               className={'w-full min-w-[30px]'}
               value={query}
               onChange={(e) => setQuery(e.target.value)}
             />
-            {isYou && (
-              <LimitOrdersToggle
-                showLimitOrders={showLimitOrders}
-                setShowLimitOrders={setShowLimitOrders}
-              />
-            )}
-          </Row>
-          <Carousel labelsParentClassName={'gap-1'}>
-            {showLimitOrders && isYou && (
-              <PillButton
-                selected={orderFilter === 'expired'}
-                onSelect={() => updateOrderFilter('expired')}
-              >
-                Expired
-              </PillButton>
-            )}
-            {showLimitOrders && isYou && (
-              <PillButton
-                selected={orderFilter === 'filled'}
-                onSelect={() => updateOrderFilter('filled')}
-              >
-                Filled
-              </PillButton>
-            )}
-            {showLimitOrders && isYou && (
-              <PillButton
-                selected={orderFilter === 'cancelled'}
-                onSelect={() => updateOrderFilter('cancelled')}
-              >
-                Cancelled
-              </PillButton>
-            )}
-            {showLimitOrders && isYou && (
-              <span className="text-ink-500 ">|</span>
-            )}
-            {(['all', 'open', 'sold', 'closed', 'resolved'] as BetFilter[]).map(
-              (f) => (
-                <PillButton
-                  key={f}
-                  selected={filter === f}
-                  onSelect={() => onSetFilter(f)}
-                >
-                  {f === 'all'
-                    ? 'All'
-                    : f === 'sold'
-                    ? 'Sold'
-                    : f === 'closed'
-                    ? 'Closed'
-                    : f === 'resolved'
-                    ? 'Resolved'
-                    : 'Open'}
-                </PillButton>
-              )
-            )}
-            {hasSweeps && (
+            <Row className="h-full gap-2">
+              {/* Filter Dropdown */}
+              <Col className="relative">
+                <Menu>
+                  <MenuButton className="bg-canvas-0 border-ink-200 hover:bg-canvas-50 inline-flex h-full w-32 items-center justify-between rounded-md border px-3 py-1.5 text-sm shadow-sm">
+                    <span>
+                      {showLimitOrders
+                        ? 'Limit Orders'
+                        : filterOptions.find((opt) => opt.value === filter)
+                            ?.label || 'Filter'}
+                    </span>
+                    <ChevronDownIcon className="ml-2 h-4 w-4" />
+                  </MenuButton>
+                  <MenuItems className="bg-canvas-0 border-ink-200 absolute right-0 z-20 mt-1 w-48 overflow-hidden rounded-md border shadow-lg">
+                    {filterOptions.map((option) => (
+                      <MenuItem key={option.value}>
+                        {({ focus }) => (
+                          <button
+                            className={clsx(
+                              'w-full px-4 py-2 text-left text-sm',
+                              focus ? 'bg-primary-50' : '',
+                              option.value === 'limit_orders' && showLimitOrders
+                                ? 'bg-primary-100'
+                                : ''
+                            )}
+                            onClick={() =>
+                              onSetFilter(
+                                option.value as BetFilter | 'limit_orders'
+                              )
+                            }
+                          >
+                            {option.label}
+                          </button>
+                        )}
+                      </MenuItem>
+                    ))}
+                  </MenuItems>
+                </Menu>
+              </Col>
+
+              {/* Limit Order Status Dropdown - Only visible when showLimitOrders is true */}
+              {showLimitOrders && isYou && (
+                <Col className="relative">
+                  <Menu>
+                    <MenuButton className="bg-canvas-0 border-ink-200 hover:bg-canvas-50 inline-flex h-full w-28 items-center justify-between rounded-md border px-3 py-1.5 text-sm shadow-sm">
+                      <span>
+                        {limitOrderFilterOptions.find(
+                          (opt) => opt.value === orderFilter
+                        )?.label || 'Open'}
+                      </span>
+                      <ChevronDownIcon className="ml-2 h-4 w-4" />
+                    </MenuButton>
+                    <MenuItems className="bg-canvas-0 border-ink-200 absolute right-0 z-20 mt-1 w-48 overflow-hidden rounded-md border shadow-lg">
+                      {limitOrderFilterOptions.map((option) => (
+                        <MenuItem key={option.value}>
+                          {({ focus }) => (
+                            <button
+                              className={clsx(
+                                'w-full px-4 py-2 text-left text-sm',
+                                focus ? 'bg-primary-50' : '',
+                                orderFilter === option.value
+                                  ? 'bg-primary-100'
+                                  : ''
+                              )}
+                              onClick={() => updateOrderFilter(option.value)}
+                            >
+                              {option.label}
+                            </button>
+                          )}
+                        </MenuItem>
+                      ))}
+                    </MenuItems>
+                  </Menu>
+                </Col>
+              )}
+
+              {!showLimitOrders && (
+                <Col className="relative">
+                  <Menu>
+                    <MenuButton className="bg-canvas-0 border-ink-200 hover:bg-canvas-50 inline-flex h-full w-44 items-center justify-between rounded-md border px-3 py-1.5 text-sm shadow-sm">
+                      <span>
+                        {sortOptions.find(
+                          (opt) =>
+                            opt.field === sortOption.field &&
+                            opt.direction === sortOption.direction
+                        )?.label || 'Sort'}
+                      </span>
+                      <ChevronDownIcon className="ml-2 h-4 w-4" />
+                    </MenuButton>
+                    <MenuItems className="bg-canvas-0 border-ink-200 absolute right-0 z-10 mt-1 w-48 overflow-hidden rounded-md border shadow-lg">
+                      {sortOptions.map((option) => (
+                        <MenuItem key={`${option.field}-${option.direction}`}>
+                          {({ focus }) => (
+                            <button
+                              className={clsx(
+                                'w-full px-4 py-2 text-left text-sm',
+                                focus ? 'bg-primary-50' : '',
+                                sortOption.field === option.field &&
+                                  sortOption.direction === option.direction
+                                  ? 'bg-primary-100'
+                                  : ''
+                              )}
+                              onClick={() => onSelectSortOption(option)}
+                            >
+                              {option.label}
+                            </button>
+                          )}
+                        </MenuItem>
+                      ))}
+                    </MenuItems>
+                  </Menu>
+                </Col>
+              )}
+            </Row>
+          </Col>
+          {hasSweeps && filter === 'resolved' && (
+            <Row>
               <PillButton
                 selected={!(prefersPlay ?? false)}
                 onSelect={toggleTokenFilter}
               >
                 Sweepcash
               </PillButton>
-            )}
-          </Carousel>
+            </Row>
+          )}
         </Col>
       </div>
 
@@ -305,18 +427,19 @@ export function UserBetsTable(props: { user: User }) {
           includeExpired={orderFilter === 'expired'}
           includeFilled={orderFilter === 'filled'}
           includeCancelled={orderFilter === 'cancelled'}
-          filter={filter}
+          filter="all" // Use a default filter since filters don't matter for limit orders view
           className="mt-2"
         />
       ) : (
         <BetsTable
-          contracts={filteredContracts as CPMMContract[]}
+          contracts={filteredContracts as MarketContract[]}
           metricsByContractId={nullableMetricsByContract}
           page={page}
           user={user}
           setPage={setPage}
           filter={filter}
           signedInUser={signedInUser}
+          sortOption={sortOption}
         />
       )}
     </Col>
@@ -337,71 +460,31 @@ const NoBets = ({ user }: { user: User }) => {
 }
 
 function BetsTable(props: {
-  contracts: CPMMContract[]
+  contracts: MarketContract[]
   metricsByContractId: { [key: string]: ContractMetric }
   page: number
   setPage: (page: number) => void
   filter: BetFilter
   user: User
   signedInUser: User | null | undefined
+  sortOption: { field: BetSort; direction: 'asc' | 'desc' }
 }) {
-  const { metricsByContractId, page, setPage, filter, user, signedInUser } =
-    props
+  const {
+    metricsByContractId,
+    page,
+    setPage,
+    filter,
+    user,
+    signedInUser,
+    sortOption,
+  } = props
   const areYourBets = user.id === signedInUser?.id
-  const [sort, setSort] = usePersistentInMemoryState<{
-    field: BetSort
-    direction: 'asc' | 'desc'
-  }>({ field: 'newest', direction: 'desc' }, 'bets-list-sort')
-  const onSetSort = (field: BetSort) => {
-    if (sort.field === field) {
-      setSort((prevSort) => ({
-        ...prevSort,
-        direction: prevSort.direction === 'asc' ? 'desc' : 'asc',
-      }))
-    } else {
-      setSort({ field, direction: 'desc' })
-    }
-    setPage(0)
-  }
-
-  type ColumnHeader = {
-    sort: BetSort
-    label: string
-    enabled: boolean
-    altSort?: BetSort
-    placeholder?: boolean
-  }
-
-  const [columns, setColumns] = usePersistentLocalState<ColumnHeader[]>(
-    [
-      { sort: 'newest', label: 'Time', enabled: true },
-      { sort: 'value', label: 'Value', enabled: true },
-      { sort: 'position', label: 'Position', enabled: false },
-      { sort: 'profit', label: 'Profit', enabled: true },
-      { sort: 'day', label: '1d', enabled: true },
-      { sort: 'week', label: '1w', enabled: true },
-      { sort: 'closeTime', label: 'Close', enabled: true },
-    ],
-    'user-bet-table-columns'
-  )
-  const isEnabled = (sort: BetSort) =>
-    !isMobile || columns.find((col) => col.sort === sort)?.enabled
-
-  const handleColumnToggle = (sort: BetSort) => {
-    setColumns((prevConfigs) =>
-      prevConfigs.map((config) =>
-        config.sort === sort ? { ...config, enabled: !config.enabled } : config
-      )
-    )
-  }
-  const enabledColumnsCount = columns.filter((c) => c.enabled).length
-  const [modalOpen, setModalOpen] = useState(false)
 
   // Most of these are descending sorts by default.
   const SORTS: Record<BetSort, (c: Contract) => number> = {
     position: (c) => -sum(Object.values(metricsByContractId[c.id].totalShares)),
     profit: (c) => -metricsByContractId[c.id].profit,
-    profitPercent: (c) => -metricsByContractId[c.id].profit,
+    profitPercent: (c) => -metricsByContractId[c.id].profitPercent,
     value: (c) => -metricsByContractId[c.id].payout,
     newest: (c) => -(metricsByContractId[c.id].lastBetTime ?? 0),
     probChangeDay: (c) => {
@@ -417,191 +500,18 @@ function BetsTable(props: {
       (filter === 'open' ? -1 : 1) *
       (c.resolutionTime ?? c.closeTime ?? Infinity),
   }
+
+  const sortFunction = SORTS[sortOption.field]
   const contracts =
-    sort.direction === 'desc'
-      ? sortBy(props.contracts, SORTS[sort.field])
-      : sortBy(props.contracts, SORTS[sort.field]).reverse()
+    sortOption.direction === 'desc'
+      ? sortBy(props.contracts, sortFunction)
+      : sortBy(props.contracts, sortFunction).reverse()
+
   const rowsPerSection = 50
   const currentSlice = page * rowsPerSection
-  const isMobile = useIsMobile(600)
-
-  const dataColumns: {
-    header: ColumnHeader
-    span: number
-    renderCell: (c: Contract) => ReactNode
-    headerBuddy?: ReactNode
-  }[] = buildArray([
-    {
-      header: columns[0],
-      span: isMobile ? 2 : 1,
-      renderCell: (c: Contract) => (
-        <Row className={'justify-start'}>
-          <RelativeTimestamp
-            time={metricsByContractId[c.id].lastBetTime}
-            shortened
-            className="text-ink-500 -ml-1"
-          />
-        </Row>
-      ),
-    },
-    {
-      header: columns[1],
-      span: isMobile ? 3 : 2,
-      renderCell: (c: Contract) => {
-        const maxOutcome = metricsByContractId[c.id].maxSharesOutcome
-        const showOutcome = maxOutcome && c.outcomeType === 'BINARY'
-        return (
-          <Row className={clsx('justify-end gap-1')}>
-            {showOutcome && isMobile && (
-              <OutcomeLabel
-                contract={c}
-                outcome={maxOutcome}
-                truncate={'short'}
-              />
-            )}
-            <Col className={'sm:min-w-[50px]'}>
-              {Math.floor(metricsByContractId[c.id].payout) <= 0 ? (
-                <span className="text-ink-500 text-right">-</span>
-              ) : (
-                <NumberCell
-                  num={metricsByContractId[c.id].payout}
-                  isCashContract={c.token === 'CASH'}
-                />
-              )}
-            </Col>
-          </Row>
-        )
-      },
-    },
-
-    {
-      header: columns[2],
-      span: 3,
-      renderCell: (c: Contract) => {
-        const maxOutcome = metricsByContractId[c.id].maxSharesOutcome
-        const showOutcome = maxOutcome && c.outcomeType === 'BINARY'
-        const totalShares = sum(
-          Object.values(metricsByContractId[c.id].totalShares)
-        )
-        return (
-          <Row className={clsx('justify-end gap-1')}>
-            {showOutcome &&
-              ((isMobile && !isEnabled('value')) || !isMobile) && (
-                <OutcomeLabel
-                  contract={c}
-                  outcome={maxOutcome}
-                  truncate={'short'}
-                />
-              )}
-            <Col className={'sm:min-w-[50px]'}>
-              {Math.floor(totalShares) <= 0 ? (
-                <span className="text-ink-500 text-right">-</span>
-              ) : (
-                <NumberCell
-                  num={totalShares}
-                  isCashContract={c.token === 'CASH'}
-                />
-              )}
-            </Col>
-          </Row>
-        )
-      },
-      headerBuddy: isMobile && <div className="-mr-2" />,
-    },
-    {
-      header: { ...columns[3] },
-      span: isMobile ? 3 : 2,
-      renderCell: (c: Contract) => {
-        const cm = metricsByContractId[c.id]
-        return (
-          <Row className={'justify-end gap-1'}>
-            {Math.floor(cm.profit) === 0 ? (
-              <span className="text-ink-500 text-right">-</span>
-            ) : (
-              <NumberCell
-                num={cm.profit}
-                change={true}
-                isCashContract={c.token === 'CASH'}
-              />
-            )}
-          </Row>
-        )
-      },
-    },
-    {
-      header: columns[4],
-      span: isMobile ? 3 : 2,
-      renderCell: (c: Contract) => {
-        const cm = metricsByContractId[c.id]
-        return (
-          <Row className={'justify-end gap-1'}>
-            {Math.floor(cm.from?.day.profit ?? 0) === 0 ? (
-              <span className="text-ink-500 text-right">-</span>
-            ) : (
-              <NumberCell
-                num={cm.from?.day.profit ?? 0}
-                change={true}
-                isCashContract={c.token === 'CASH'}
-              />
-            )}
-          </Row>
-        )
-      },
-    },
-    {
-      header: columns[5],
-      span: isMobile ? 3 : 2,
-      renderCell: (c: Contract) => {
-        const cm = metricsByContractId[c.id]
-        return (
-          <Row className={'justify-end gap-1'}>
-            {Math.floor(cm.from?.week.profit ?? 0) === 0 ? (
-              <span className="text-ink-500 text-right">-</span>
-            ) : (
-              <NumberCell
-                num={cm.from?.week.profit ?? 0}
-                change={true}
-                isCashContract={c.token === 'CASH'}
-              />
-            )}
-          </Row>
-        )
-      },
-    },
-    {
-      header: columns[6],
-      span: isMobile ? 3 : 2,
-      renderCell: (c: Contract) => {
-        const closeTime = c.resolutionTime ?? c.closeTime
-        const date = new Date(closeTime ?? Infinity)
-        const isThisYear = new Date().getFullYear() === date.getFullYear()
-        const dateString = date.toLocaleDateString('en-US', {
-          month: '2-digit',
-          day: '2-digit',
-          year: isThisYear ? undefined : '2-digit',
-        })
-        return (
-          <Row className={'justify-end'}>
-            <span className={'text-ink-800'}>
-              {closeTime ? dateString : 'N/A'}
-            </span>
-          </Row>
-        )
-      },
-    },
-  ])
-  const getColSpan = (i: number) =>
-    i === 4
-      ? 'col-span-4'
-      : i === 3
-      ? 'col-span-3'
-      : i === 2
-      ? 'col-span-2'
-      : 'col-span-1'
 
   const [expandedIds, setExpandedIds] = useState<string[]>([])
-
-  const setNewExpandedId = async (id: string) => {
+  const setNewExpandedId = (id: string) => {
     setExpandedIds((oldIds) =>
       oldIds.includes(id)
         ? oldIds.filter((oldId) => oldId !== id)
@@ -609,155 +519,251 @@ function BetsTable(props: {
     )
   }
 
-  const MAX_SHOWN_MOBILE = 5
-  const columnsToDisplay = dataColumns
-    .filter((c) => isEnabled(c.header.sort))
-    .slice(0, isMobile ? MAX_SHOWN_MOBILE : 10)
-
   return (
     <Col className="mb-4 flex-1 gap-4">
       <Col className={'w-full'}>
-        <div
-          className={clsx(
-            'grid-cols-15 bg-canvas-0 sticky z-10 grid w-full py-2 pr-1',
-            isMobile ? 'top-12' : 'top-0' // Sets it below sticky user profile header on mobile
-          )}
-        >
-          {columnsToDisplay.map((col) =>
-            col.header.placeholder ? (
-              <span key={col.header.label} className="text-sm" />
-            ) : (
-              <span
-                key={col.header.sort}
-                className={clsx(
-                  getColSpan(col.span),
-                  'relative flex justify-end first:justify-start'
-                )}
-              >
-                <Header
-                  onClick={() =>
-                    onSetSort(
-                      (col.header.altSort && sort.field === col.header.altSort
-                        ? col.header.altSort
-                        : col.header.sort) as BetSort
-                    )
-                  }
-                  up={
-                    sort.field === col.header.sort ||
-                    sort.field === col.header.altSort
-                      ? sort.direction === 'asc'
-                      : undefined
-                  }
-                  className="text-sm font-semibold"
-                >
-                  {col.header.label}
-                </Header>
-                {col.headerBuddy ? col.headerBuddy : null}
-              </span>
-            )
-          )}
-          {isMobile && (
-            <div className="absolute bottom-1.5 right-0">
-              <DropdownMenu
-                menuWidth="w-32"
-                items={[
-                  {
-                    name: 'Edit Columns',
-                    onClick: () => setModalOpen(true),
-                  },
-                ]}
-                buttonContent={<BsThreeDotsVertical className="h-4" />}
-              />
-            </div>
-          )}
-        </div>
         {contracts
           .slice(currentSlice, currentSlice + rowsPerSection)
           .map((contract) => {
+            const metric = metricsByContractId[contract.id]
+            const closeDate = contract.resolutionTime ?? contract.closeTime
+            const date = closeDate ? new Date(closeDate) : null
+            const isThisYear = date
+              ? new Date().getFullYear() === date.getFullYear()
+              : false
+            const dateString = date
+              ? date.toLocaleDateString('en-US', {
+                  month: '2-digit',
+                  day: '2-digit',
+                  year: isThisYear ? undefined : '2-digit',
+                })
+              : 'N/A'
+            const resolvedAnswer =
+              contract.mechanism === 'cpmm-multi-1'
+                ? contract.answers.find(
+                    (a) =>
+                      a.id === contract.resolution ||
+                      (contract.resolutions?.[a.id] ?? 0) >= 99
+                  )
+                : undefined
+
             return (
               <Row
                 key={contract.id + 'bets-table-row'}
                 className={
-                  'border-ink-200 hover:bg-canvas-50 cursor-pointer border-b py-2'
+                  'border-ink-200 hover:bg-canvas-50 cursor-pointer border-b py-3'
                 }
+                onClick={() => setNewExpandedId(contract.id)}
               >
-                <Col className={'w-full gap-3 sm:gap-2'}>
-                  {/* Contract title*/}
-                  <Row className={'justify-between'}>
-                    <Link
-                      href={contractPath(contract)}
-                      className={clsx(
-                        linkClass,
-                        'line-clamp-2 flex items-center pr-2 sm:pr-1'
-                      )}
-                      onClick={(e) => e.stopPropagation()}
-                    >
-                      <span className="mr-2 inline-flex items-center">
-                        <Avatar
-                          avatarUrl={contract.creatorAvatarUrl}
-                          size={'2xs'}
-                          className={''}
-                        />
-                      </span>
-                      <span className="text-ink-600 line-clamp-1">
+                <Col className="w-full px-2">
+                  <Row className="justify-between">
+                    {/* Left side - Question, probability and creator */}
+                    <Col className="w-3/4">
+                      <Link
+                        href={contractPath(contract)}
+                        className={clsx(
+                          linkClass,
+                          'line-clamp-2 text-lg font-medium'
+                        )}
+                        onClick={(e) => e.stopPropagation()}
+                      >
                         {contract.token == 'CASH' && (
-                          <span>
-                            <Tooltip
-                              text={SWEEPIES_MARKET_TOOLTIP}
-                              className=" relative mr-0.5 inline-flex h-[1em] w-[1.1em] items-baseline"
-                            >
-                              <SweepiesCoin className="absolute inset-0 top-[0.2em]" />
-                            </Tooltip>
-                          </span>
+                          <Tooltip
+                            text={SWEEPIES_MARKET_TOOLTIP}
+                            className="relative mr-0.5 inline-flex h-[1em] w-[1.1em] items-baseline"
+                          >
+                            <SweepiesCoin className="absolute inset-0 top-[0.2em]" />
+                          </Tooltip>
                         )}
                         {contract.question}
-                      </span>
-                      <span className={' ml-1 flex min-w-[40px] justify-end'}>
-                        <ContractStatusLabel
-                          className={
-                            '!text-ink-600 whitespace-nowrap font-semibold'
-                          }
-                          contract={contract}
+                      </Link>
+                      <Row className="mt-1 items-center">
+                        {contract.isResolved ? (
+                          <span className="text-ink-800 mr-1 text-sm">
+                            {contract.outcomeType === 'MULTIPLE_CHOICE' ? (
+                              Object.values(contract.resolutions ?? {}).filter(
+                                (r) => r > 1
+                              ).length > 1 || contract.resolution === 'MKT' ? (
+                                <span>MULTI</span>
+                              ) : contract.resolution === 'CANCEL' ? (
+                                <BinaryOutcomeLabel outcome="CANCEL" />
+                              ) : resolvedAnswer ? (
+                                <MultiOutcomeLabel
+                                  answer={resolvedAnswer}
+                                  resolution={contract.resolution ?? ''}
+                                  truncate="none"
+                                  answerClassName={
+                                    'font-bold text-base-400 !break-normal'
+                                  }
+                                />
+                              ) : null
+                            ) : (
+                              <ContractStatusLabel contract={contract} />
+                            )}
+                            <span className="text-ink-500 ml-1 text-sm">•</span>
+                          </span>
+                        ) : contract.outcomeType !== 'MULTIPLE_CHOICE' ? (
+                          <span className="text-ink-800 mr-1 text-sm">
+                            <ContractStatusLabel contract={contract} />
+                            <span className="text-ink-500 ml-1 text-sm">•</span>
+                          </span>
+                        ) : null}
+                        <Row className="items-center gap-1">
+                          {/* <Avatar
+                            avatarUrl={contract.creatorAvatarUrl}
+                            username={contract.creatorUsername}
+                            size={'xs'}
+                          /> */}
+                          <span className="text-ink-500 text-sm">
+                            {contract.creatorName}
+                          </span>
+
+                          {sortOption.field === 'closeTime' ? (
+                            <span className="text-ink-500 text-sm">
+                              • {dateString}
+                            </span>
+                          ) : sortOption.field === 'newest' ? (
+                            <span className="text-ink-500 text-sm">
+                              •
+                              <RelativeTimestamp
+                                time={metric.lastBetTime}
+                                className="text-ink-500 text-sm"
+                                shortened
+                              />
+                            </span>
+                          ) : null}
+                        </Row>
+                      </Row>
+                    </Col>
+
+                    {/* Right side - Value and profit */}
+                    <Row className="items-start gap-2">
+                      <Col className="text-right">
+                        {/* Display different values based on sort selection */}
+                        {sortOption.field === 'position' ? (
+                          <span className="text-ink-900 text-lg font-medium">
+                            {formatWithToken({
+                              amount: sum(Object.values(metric.totalShares)),
+                              token: contract.token === 'CASH' ? 'CASH' : 'M$',
+                            }).replace('-', '')}
+                          </span>
+                        ) : (
+                          <span className="text-ink-900 text-lg font-medium">
+                            {formatWithToken({
+                              amount: metric.payout,
+                              token: contract.token === 'CASH' ? 'CASH' : 'M$',
+                            }).replace('-', '')}
+                          </span>
+                        )}
+
+                        {sortOption.field === 'day' ? (
+                          <span
+                            className={clsx(
+                              'text-sm font-medium',
+                              (metric.from?.day.profit ?? 0) > 0
+                                ? 'text-teal-500'
+                                : 'text-ink-500'
+                            )}
+                          >
+                            {formatWithToken({
+                              amount: metric.from?.day.profit ?? 0,
+                              token: contract.token === 'CASH' ? 'CASH' : 'M$',
+                            }).replace('-', '')}
+                            <span
+                              className={clsx(
+                                'ml-1 rounded-full px-1.5 py-0.5 text-xs',
+                                (metric.from?.day.profitPercent ?? 0) > 0
+                                  ? 'bg-teal-100 text-teal-800'
+                                  : 'bg-canvas-50 text-ink-600'
+                              )}
+                            >
+                              {(metric.from?.day.profitPercent ?? 0) > 0
+                                ? '+'
+                                : ''}
+                              {(metric.from?.day.profitPercent ?? 0).toFixed(0)}
+                              %
+                            </span>
+                          </span>
+                        ) : sortOption.field === 'week' ? (
+                          <span
+                            className={clsx(
+                              'text-sm font-medium',
+                              (metric.from?.week.profit ?? 0) > 0
+                                ? 'text-teal-500'
+                                : 'text-ink-500'
+                            )}
+                          >
+                            {formatWithToken({
+                              amount: metric.from?.week.profit ?? 0,
+                              token: contract.token === 'CASH' ? 'CASH' : 'M$',
+                            }).replace('-', '')}
+                            <span
+                              className={clsx(
+                                'ml-1 rounded-full px-1.5 py-0.5 text-xs',
+                                (metric.from?.week.profitPercent ?? 0) > 0
+                                  ? 'bg-teal-100 text-teal-800'
+                                  : 'bg-canvas-50 text-ink-600'
+                              )}
+                            >
+                              {(metric.from?.week.profitPercent ?? 0) > 0
+                                ? '+'
+                                : ''}
+                              {(metric.from?.week.profitPercent ?? 0).toFixed(
+                                0
+                              )}
+                              %
+                            </span>
+                          </span>
+                        ) : (
+                          <span
+                            className={clsx(
+                              'text-sm font-medium',
+                              metric.profit > 0
+                                ? 'text-teal-500'
+                                : 'text-ink-500'
+                            )}
+                          >
+                            {formatWithToken({
+                              amount: metric.profit,
+                              token: contract.token === 'CASH' ? 'CASH' : 'M$',
+                            }).replace('-', '')}
+                            <span
+                              className={clsx(
+                                'ml-1 rounded-full px-1.5 py-0.5 text-xs',
+                                metric.profitPercent > 0
+                                  ? 'bg-teal-100 text-teal-800'
+                                  : 'bg-canvas-50 text-ink-600'
+                              )}
+                            >
+                              {metric.profitPercent > 0 ? '+' : ''}
+                              {metric.profitPercent.toFixed(0)}%
+                            </span>
+                          </span>
+                        )}
+                      </Col>
+                      <Col className="flex items-start pt-1">
+                        <ChevronDownIcon
+                          className={clsx(
+                            'text-ink-500 h-4 w-4 transition-transform',
+                            expandedIds.includes(contract.id)
+                              ? 'rotate-180'
+                              : ''
+                          )}
                         />
-                      </span>
-                    </Link>
-                    <IconButton
-                      size={'2xs'}
-                      onClick={() => setNewExpandedId(contract.id)}
-                    >
-                      {expandedIds.includes(contract.id) ? (
-                        <ChevronUpIcon className="h-4" />
-                      ) : (
-                        <ChevronUpIcon className="h-4 rotate-180" />
-                      )}
-                    </IconButton>
+                      </Col>
+                    </Row>
                   </Row>
 
-                  {/* Contract Metrics details*/}
-                  <div
-                    className={'grid-cols-15 grid w-full'}
-                    onClick={() => setNewExpandedId(contract.id)}
-                  >
-                    {columnsToDisplay.map((c) => (
-                      <div
-                        className={clsx(getColSpan(c.span))}
-                        key={c.header.sort + contract.id + 'row'}
-                      >
-                        {c.renderCell(contract)}
-                      </div>
-                    ))}
-                  </div>
-                  <Col className={'-mt-2 w-full'}>
-                    {expandedIds.includes(contract.id) && (
-                      <ExpandedBetRow
-                        contract={contract}
-                        user={user}
-                        signedInUser={signedInUser}
-                        contractMetric={metricsByContractId[contract.id]}
-                        areYourBets={areYourBets}
-                      />
-                    )}
-                  </Col>
+                  {/* Expanded View */}
+                  {expandedIds.includes(contract.id) && (
+                    <ExpandedBetRow
+                      contract={contract}
+                      user={user}
+                      signedInUser={signedInUser}
+                      contractMetric={metricsByContractId[contract.id]}
+                      areYourBets={areYourBets}
+                    />
+                  )}
                 </Col>
               </Row>
             )
@@ -770,39 +776,6 @@ function BetsTable(props: {
         totalItems={contracts.length}
         setPage={setPage}
       />
-      <Modal setOpen={setModalOpen} open={modalOpen}>
-        <div className={MODAL_CLASS}>
-          <span className="mb-4 text-lg font-bold">
-            {enabledColumnsCount >= MAX_SHOWN_MOBILE
-              ? `Unselect ${
-                  MAX_SHOWN_MOBILE + 1 - enabledColumnsCount
-                } column to select another`
-              : `Select ${
-                  MAX_SHOWN_MOBILE - enabledColumnsCount
-                } more ${maybePluralize(
-                  'column',
-                  MAX_SHOWN_MOBILE - enabledColumnsCount
-                )} (max 5)`}
-          </span>
-          {columns.map((col) => (
-            <div key={col.sort}>
-              <div className="mb-2 flex items-center">
-                <input
-                  type="checkbox"
-                  disabled={
-                    !col.enabled &&
-                    columns.filter((c) => c.enabled).length >= MAX_SHOWN_MOBILE
-                  }
-                  checked={col.enabled}
-                  onChange={() => handleColumnToggle(col.sort)}
-                />
-                <label className="ml-2">{col.label}</label>
-              </div>
-            </div>
-          ))}
-          <Button onClick={() => setModalOpen(false)}>Done</Button>
-        </div>
-      </Modal>
     </Col>
   )
 }
@@ -874,64 +847,9 @@ const ExpandedBetRow = (props: {
         isYourBets={areYourBets}
         contractMetric={contractMetric}
         paginate
+        defaultExpanded
       />
     </Col>
-  )
-}
-
-const NumberCell = (props: {
-  num: number
-  change?: boolean
-  isCashContract: boolean
-}) => {
-  const { num, change, isCashContract } = props
-  const formattedNum =
-    num < 1000 && num > -1000
-      ? formatWithToken({ amount: num, token: isCashContract ? 'CASH' : 'M$' })
-      : isCashContract
-      ? SWEEPIES_MONIKER + shortFormatNumber(num)
-      : ENV_CONFIG.moneyMoniker + shortFormatNumber(num)
-  return (
-    <Row className="items-start justify-end ">
-      {change &&
-      formattedNum !==
-        formatWithToken({
-          amount: 0,
-          token: isCashContract ? 'CASH' : 'M$',
-        }) ? (
-        num > 0 ? (
-          <span className="text-teal-500">{formattedNum}</span>
-        ) : (
-          <span className="text-ink-500">{formattedNum}</span>
-        )
-      ) : (
-        <span className="text-ink-800">{formattedNum}</span>
-      )}
-    </Row>
-  )
-}
-
-const Header = (props: {
-  children: ReactNode
-  onClick?: () => void
-  up?: boolean
-  className?: string
-}) => {
-  const { onClick, up, className, children } = props
-  return (
-    <Row
-      className={clsx(className, 'cursor-pointer items-center')}
-      onClick={onClick}
-    >
-      {up != undefined ? (
-        up ? (
-          <BiCaretUp className=" h-4" />
-        ) : (
-          <BiCaretDown className=" h-4" />
-        )
-      ) : null}
-      <span>{children}</span>
-    </Row>
   )
 }
 

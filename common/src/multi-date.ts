@@ -10,12 +10,14 @@ export function getExpectedDate(
   contract: MultiDateContract,
   initialOnly?: boolean
 ) {
-  const { answers, shouldAnswersSumToOne } = contract
+  const { answers, shouldAnswersSumToOne, isResolved } = contract
 
   const answerProbabilities = filterDefined(
     answers.map((a) =>
       initialOnly
         ? getInitialAnswerProbability(contract, a)
+        : isResolved
+        ? a.prob
         : getAnswerProbability(contract, a.id)
     )
   )

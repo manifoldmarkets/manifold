@@ -358,9 +358,7 @@ export function LimitOrdersTable(props: {
                   />
                 </span>
                 <span className="text-ink-600 line-clamp-1">
-                  {contract.token == 'CASH' && (
-                    <SweepiesCoin className="absolute inset-0 top-[0.2em]" />
-                  )}
+                  {contract.token == 'CASH' && <SweepiesCoin />}
                   {contract.question}
                 </span>
               </Link>
