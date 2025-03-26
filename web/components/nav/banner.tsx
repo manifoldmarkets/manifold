@@ -102,6 +102,32 @@ export function ManifestBanner(props: { hideBanner: () => void }) {
   )
 }
 
+export function Manifest2025Banner(props: { hideBanner: () => void }) {
+  const { hideBanner } = props
+  return (
+    <Banner
+      className="border-primary-300 from-primary-100 to-primary-200 border bg-gradient-to-b"
+      link="https://www.manifest.is/"
+      setShowBanner={hideBanner}
+    >
+      <Row className="gap-2 py-1">
+        <LogoIcon
+          className="h-6 w-6 flex-shrink-0 text-black dark:text-white"
+          height={24}
+          width={24}
+          aria-hidden
+          strokeWidth={1}
+        />
+        <div>
+          <span className="font-semibold">
+            Manifest 2025 tickets available! 🎉
+          </span>
+        </div>
+      </Row>
+    </Banner>
+  )
+}
+
 export function DowntimeBanner() {
   const maintainanceBannerEnabled = false
   if (!maintainanceBannerEnabled) return null
