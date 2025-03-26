@@ -14,7 +14,7 @@ export function TimelineCard({
   path,
   className = '',
   lineColor,
-  backgroundColor = 'bg-fuchsia-50 dark:bg-fuchsia-800/45'
+  backgroundColor = 'bg-fuchsia-50 dark:bg-fuchsia-800/45',
 }: TimelineCardProps) {
   const cardContent = (
     <>
@@ -23,10 +23,10 @@ export function TimelineCard({
 
       {/* Padding for timeline */}
       <div className="mb-4 sm:mb-10">
-        <Timeline 
-          items={items} 
-          lineColor={lineColor} 
-          className="px-0 sm:px-6 py-2"
+        <Timeline
+          items={items}
+          lineColor={lineColor}
+          className="px-0 py-2 sm:px-6"
         />
       </div>
     </>
@@ -47,9 +47,5 @@ export function TimelineCard({
     )
   }
 
-  return (
-    <div className={cardClassName}>
-      {cardContent}
-    </div>
-  )
+  return <div className={cardClassName}>{cardContent}</div>
 }

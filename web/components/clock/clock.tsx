@@ -144,7 +144,7 @@ export const Clock = (props: {
   )
 
   return (
-    <Row className={clsx(config.clockText, 'gap-1 w-full', className)}>
+    <Row className={clsx(config.clockText, 'w-full gap-1', className)}>
       <Row
         style={{ color: 'red' }}
         className={clsx(

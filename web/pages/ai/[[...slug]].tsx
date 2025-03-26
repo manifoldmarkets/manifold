@@ -19,26 +19,26 @@ export async function getStaticProps() {
   try {
     // Fetch the "When AGI" contract for the hero section
     const whenAgi = await getContract(db, 'Gtv5mhjKaiLD6Bkvfhcv')
-    
+
     // Fetch all contracts from AI_CAPABILITY_CARDS - only try to fetch valid IDs
-    const allContractIds = AI_CAPABILITY_CARDS
-      .map(card => card.marketId)
-      .filter(id => id && !id.startsWith('placeholder-'))
-    
+    const allContractIds = AI_CAPABILITY_CARDS.map(
+      (card) => card.marketId
+    ).filter((id) => id && !id.startsWith('placeholder-'))
+
     let contracts: Contract[] = []
     if (allContractIds.length > 0) {
       try {
-        contracts = await getContracts(db, allContractIds) || []
+        contracts = (await getContracts(db, allContractIds)) || []
       } catch (error) {
         console.error('Error fetching contracts:', error)
         contracts = []
       }
     }
-    
+
     return {
       props: {
         whenAgi: whenAgi || null,
-        contracts: contracts || []
+        contracts: contracts || [],
       },
       revalidate,
     }
@@ -47,7 +47,7 @@ export async function getStaticProps() {
     return {
       props: {
         whenAgi: null,
-        contracts: []
+        contracts: [],
       },
       revalidate,
     }
@@ -59,7 +59,10 @@ interface AIDashboardProps {
   contracts: Contract[]
 }
 
-export default function AIDashboard({ whenAgi, contracts = [] }: AIDashboardProps) {
+export default function AIDashboard({
+  whenAgi,
+  contracts = [],
+}: AIDashboardProps) {
   return (
     <Page trackPageView="ai dashboard">
       <SEO
@@ -67,11 +70,8 @@ export default function AIDashboard({ whenAgi, contracts = [] }: AIDashboardProp
         description="Live prediction market odds on artificial intelligence progress"
         image="/ai.png"
       />
-      
-      <AIForecast 
-        whenAgi={whenAgi} 
-        contracts={contracts} 
-      />
+
+      <AIForecast whenAgi={whenAgi} contracts={contracts} />
     </Page>
   )
 }

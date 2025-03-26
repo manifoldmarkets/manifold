@@ -56,19 +56,24 @@ export function Tooltip({
     }
   }, [open, autoHideDuration, text])
 
-  const { refs, floatingStyles, middlewareData, context, placement: actualPlacement } =
-    useFloating({
-      open,
-      onOpenChange: setOpen,
-      whileElementsMounted: autoUpdate,
-      placement,
-      middleware: [
-        offset(8),
-        flip(),
-        shift({ padding: 4 }),
-        arrow({ element: arrowRef }),
-      ],
-    })
+  const {
+    refs,
+    floatingStyles,
+    middlewareData,
+    context,
+    placement: actualPlacement,
+  } = useFloating({
+    open,
+    onOpenChange: setOpen,
+    whileElementsMounted: autoUpdate,
+    placement,
+    middleware: [
+      offset(8),
+      flip(),
+      shift({ padding: 4 }),
+      arrow({ element: arrowRef }),
+    ],
+  })
 
   const { x: arrowX, y: arrowY } = middlewareData.arrow ?? {}
 
@@ -79,7 +84,7 @@ export function Tooltip({
     }),
     useRole(context, { role: 'label' }),
   ])
-  
+
   // which side of tooltip arrow is on. like: if tooltip is top-left, arrow is on bottom of tooltip
   const arrowSide = {
     top: 'bottom',
@@ -142,10 +147,10 @@ interface DashboardTooltipProps {
   preferredPlacement?: 'top' | 'right' | 'bottom' | 'left'
 }
 
-function DashboardTooltip({ 
-  title, 
-  description, 
-  preferredPlacement = 'top' 
+function DashboardTooltip({
+  title,
+  description,
+  preferredPlacement = 'top',
 }: DashboardTooltipProps) {
   const [isVisible, setIsVisible] = useState(false)
   const [tooltipStyles, setTooltipStyles] = useState({ top: 0, left: 0 })
@@ -165,143 +170,164 @@ function DashboardTooltip({
       const buttonRect = buttonRef.current!.getBoundingClientRect()
       const viewportWidth = window.innerWidth
       const viewportHeight = window.innerHeight
-      
+
       const tooltipWidth = tooltipRef.current?.offsetWidth || 250
       const tooltipHeight = tooltipRef.current?.offsetHeight || 100
-      
+
       // Calculate available space in each direction
       const spaceTop = buttonRect.top
       const spaceBottom = viewportHeight - buttonRect.bottom
       const spaceLeft = buttonRect.left
       const spaceRight = viewportWidth - buttonRect.right
-      
+
       // Determine actual placement based on available space
       let actualPlacement = preferredPlacement
-      
+
       // If preferred placement is top but not enough space, use bottom
-      if (preferredPlacement === 'top' && spaceTop < tooltipHeight + 10 && spaceBottom >= tooltipHeight + 10) {
+      if (
+        preferredPlacement === 'top' &&
+        spaceTop < tooltipHeight + 10 &&
+        spaceBottom >= tooltipHeight + 10
+      ) {
         actualPlacement = 'bottom'
       }
       // If preferred placement is bottom but not enough space, use top
-      else if (preferredPlacement === 'bottom' && spaceBottom < tooltipHeight + 10 && spaceTop >= tooltipHeight + 10) {
+      else if (
+        preferredPlacement === 'bottom' &&
+        spaceBottom < tooltipHeight + 10 &&
+        spaceTop >= tooltipHeight + 10
+      ) {
         actualPlacement = 'top'
       }
       // If preferred placement is left but not enough space, use right
-      else if (preferredPlacement === 'left' && spaceLeft < tooltipWidth + 10 && spaceRight >= tooltipWidth + 10) {
+      else if (
+        preferredPlacement === 'left' &&
+        spaceLeft < tooltipWidth + 10 &&
+        spaceRight >= tooltipWidth + 10
+      ) {
         actualPlacement = 'right'
       }
       // If preferred placement is right but not enough space, use left
-      else if (preferredPlacement === 'right' && spaceRight < tooltipWidth + 10 && spaceLeft >= tooltipWidth + 10) {
+      else if (
+        preferredPlacement === 'right' &&
+        spaceRight < tooltipWidth + 10 &&
+        spaceLeft >= tooltipWidth + 10
+      ) {
         actualPlacement = 'left'
       }
-      
+
       // Initial positioning based on actual placement
       let top = 0
       let left = 0
       let arrowStyle = {}
-      
+
       const positionByPlacement = {
         top: () => {
           top = buttonRect.top - tooltipHeight - 10
           left = buttonRect.left + buttonRect.width / 2 - tooltipWidth / 2
-          arrowStyle = { 
-            bottom: -5, 
-            left: '50%', 
-            transform: 'translateX(-50%) rotate(45deg)'
+          arrowStyle = {
+            bottom: -5,
+            left: '50%',
+            transform: 'translateX(-50%) rotate(45deg)',
           }
         },
         bottom: () => {
           top = buttonRect.bottom + 10
           left = buttonRect.left + buttonRect.width / 2 - tooltipWidth / 2
-          arrowStyle = { 
-            top: -5, 
-            left: '50%', 
-            transform: 'translateX(-50%) rotate(45deg)'
+          arrowStyle = {
+            top: -5,
+            left: '50%',
+            transform: 'translateX(-50%) rotate(45deg)',
           }
         },
         left: () => {
           top = buttonRect.top + buttonRect.height / 2 - tooltipHeight / 2
           left = buttonRect.left - tooltipWidth - 10
-          arrowStyle = { 
-            right: -5, 
-            top: '50%', 
-            transform: 'translateY(-50%) rotate(45deg)'
+          arrowStyle = {
+            right: -5,
+            top: '50%',
+            transform: 'translateY(-50%) rotate(45deg)',
           }
         },
         right: () => {
           top = buttonRect.top + buttonRect.height / 2 - tooltipHeight / 2
           left = buttonRect.right + 10
-          arrowStyle = { 
-            left: -5, 
-            top: '50%', 
-            transform: 'translateY(-50%) rotate(45deg)'
+          arrowStyle = {
+            left: -5,
+            top: '50%',
+            transform: 'translateY(-50%) rotate(45deg)',
           }
-        }
+        },
       }
-      
+
       // Position based on actual placement or default to top
-      const placementFn = positionByPlacement[actualPlacement] || positionByPlacement.top
+      const placementFn =
+        positionByPlacement[actualPlacement] || positionByPlacement.top
       placementFn()
-      
+
       // Fine-tune horizontal position if needed (without changing the placement)
       if (left < 10) {
-        const isVertical = actualPlacement === 'top' || actualPlacement === 'bottom'
+        const isVertical =
+          actualPlacement === 'top' || actualPlacement === 'bottom'
         left = 10
-        
+
         if (isVertical) {
           arrowStyle = {
             ...arrowStyle,
-            left: buttonRect.left + buttonRect.width / 2 - left
+            left: buttonRect.left + buttonRect.width / 2 - left,
           }
         }
       } else if (left + tooltipWidth > viewportWidth - 10) {
-        const isVertical = actualPlacement === 'top' || actualPlacement === 'bottom'
+        const isVertical =
+          actualPlacement === 'top' || actualPlacement === 'bottom'
         left = viewportWidth - tooltipWidth - 10
-        
+
         if (isVertical) {
           arrowStyle = {
             ...arrowStyle,
-            left: buttonRect.left + buttonRect.width / 2 - left
+            left: buttonRect.left + buttonRect.width / 2 - left,
           }
         }
       }
-      
+
       // Fine-tune vertical position if needed (without changing the placement)
       if (top < 10) {
-        const isHorizontal = actualPlacement === 'left' || actualPlacement === 'right'
+        const isHorizontal =
+          actualPlacement === 'left' || actualPlacement === 'right'
         top = 10
-        
+
         if (isHorizontal) {
           arrowStyle = {
             ...arrowStyle,
-            top: buttonRect.top + buttonRect.height / 2 - top
+            top: buttonRect.top + buttonRect.height / 2 - top,
           }
         }
       } else if (top + tooltipHeight > viewportHeight - 10) {
-        const isHorizontal = actualPlacement === 'left' || actualPlacement === 'right'
+        const isHorizontal =
+          actualPlacement === 'left' || actualPlacement === 'right'
         top = viewportHeight - tooltipHeight - 10
-        
+
         if (isHorizontal) {
           arrowStyle = {
             ...arrowStyle,
-            top: buttonRect.top + buttonRect.height / 2 - top
+            top: buttonRect.top + buttonRect.height / 2 - top,
           }
         }
       }
-      
+
       setTooltipStyles({ top, left })
       setArrowStyles(arrowStyle)
     }
 
     calculatePosition()
-    
+
     // Hide tooltip on scroll
     const handleScroll = () => {
       if (isVisible) hide()
     }
-    
+
     window.addEventListener('scroll', handleScroll, { passive: true })
-    
+
     return () => {
       window.removeEventListener('scroll', handleScroll)
     }
@@ -318,36 +344,38 @@ function DashboardTooltip({
         aria-label={`Info about ${title}`}
         aria-expanded={isVisible}
       >
-        <LuInfo className="w-[12px] h-[12px] sm:w-[16px] sm:h-[16px]" />
+        <LuInfo className="h-[12px] w-[12px] sm:h-[16px] sm:w-[16px]" />
       </button>
-      
-      {isVisible && typeof document !== 'undefined' && createPortal(
-        <div
-          ref={tooltipRef}
-          style={{
-            position: 'fixed',
-            zIndex: 9999,
-            top: tooltipStyles.top,
-            left: tooltipStyles.left,
-            pointerEvents: 'none'
-          }}
-          className="w-64 max-w-xs bg-canvas-0 shadow-lg rounded-md border border-ink-200 p-3 text-sm text-ink-700"
-          role="tooltip"
-        >
+
+      {isVisible &&
+        typeof document !== 'undefined' &&
+        createPortal(
           <div
+            ref={tooltipRef}
             style={{
-              position: 'absolute',
-              width: 10,
-              height: 10,
-              ...arrowStyles
+              position: 'fixed',
+              zIndex: 9999,
+              top: tooltipStyles.top,
+              left: tooltipStyles.left,
+              pointerEvents: 'none',
             }}
-            className="bg-canvas-0 dark:bg-canvas-40"
-          />
-          <h4 className="font-medium mb-1">{title}</h4>
-          <p>{description}</p>
-        </div>,
-        document.body
-      )}
+            className="bg-canvas-0 border-ink-200 text-ink-700 w-64 max-w-xs rounded-md border p-3 text-sm shadow-lg"
+            role="tooltip"
+          >
+            <div
+              style={{
+                position: 'absolute',
+                width: 10,
+                height: 10,
+                ...arrowStyles,
+              }}
+              className="bg-canvas-0 dark:bg-canvas-40"
+            />
+            <h4 className="mb-1 font-medium">{title}</h4>
+            <p>{description}</p>
+          </div>,
+          document.body
+        )}
     </>
   )
 }

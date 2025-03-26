@@ -521,7 +521,7 @@ module.exports = {
         },
       }),
       fontSize: {
-        'xxs': '0.625rem',  // extra small font
+        xxs: '0.625rem', // extra small font
       },
     },
   },
