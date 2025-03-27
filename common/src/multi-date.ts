@@ -4,6 +4,7 @@ import { filterDefined } from './util/array'
 import { getInitialAnswerProbability } from './calculate'
 import { MultiDateContract } from './contract'
 import { getMinMax } from './multi-numeric'
+import { YEAR_MS } from './util/time'
 export const MAX_MULTI_NUMERIC_ANSWERS = 12
 
 export function getExpectedDate(
@@ -76,6 +77,7 @@ export function formatExpectedDate(
     return 'N/A'
   if (answers.length == 0) return '' // probably from static props
 
+  const manyYearSpan = max - min > YEAR_MS * 10
   const formatter = new Intl.DateTimeFormat(
     'en-US',
     contractPageView
@@ -83,6 +85,10 @@ export function formatExpectedDate(
           year: 'numeric',
           month: 'long',
           day: 'numeric',
+        }
+      : manyYearSpan
+      ? {
+          year: 'numeric',
         }
       : {
           month: 'numeric',
