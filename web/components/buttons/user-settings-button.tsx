@@ -184,10 +184,10 @@ export function UserSettingButton(props: { user: User }) {
                         ),
                       },
                     ],
-                {
-                  title: `${numReferrals} Referrals`,
-                  content: <Referrals user={user} />,
-                },
+                // {
+                //   title: `${numReferrals} Referrals`,
+                //   content: <Referrals user={user} />,
+                // },
                 // TODO: if isYou include a tab for users you've blocked?
               ])}
             />
