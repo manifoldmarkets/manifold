@@ -568,7 +568,7 @@ function BetsTable(props: {
                         )}
                         {contract.question}
                       </Link>
-                      <Row className="mt-1 items-center">
+                      <Row className="mt-1 flex-wrap items-center">
                         {contract.isResolved ? (
                           <span className="text-ink-800 mr-1 text-sm">
                             {contract.outcomeType === 'MULTIPLE_CHOICE' ? (
@@ -582,9 +582,9 @@ function BetsTable(props: {
                                 <MultiOutcomeLabel
                                   answer={resolvedAnswer}
                                   resolution={contract.resolution ?? ''}
-                                  truncate="none"
+                                  truncate="long"
                                   answerClassName={
-                                    'font-bold text-base-400 !break-normal'
+                                    'font-semibold text-base-400 !break-normal'
                                   }
                                 />
                               ) : null
