@@ -26,7 +26,7 @@ const formatterWithFraction = new Intl.NumberFormat('en-US', {
 
 export const SWEEPIES_MONIKER = '𝕊'
 
-export type InputTokenType = 'M$' | 'SPICE' | 'CASH'
+export type InputTokenType = 'M$' | 'SPICE' | 'CASH' | 'MANA'
 
 export function formatWithToken(variables: {
   amount: number

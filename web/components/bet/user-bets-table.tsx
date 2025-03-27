@@ -262,7 +262,7 @@ export function UserBetsTable(props: { user: User }) {
     <Col className="relative">
       <div
         className={clsx(
-          'flex flex-wrap justify-between gap-4 max-sm:flex-col',
+          'flex flex-wrap justify-between max-sm:flex-col',
           !showLimitOrders && 'bg-canvas-0 sticky top-0 z-10 pt-1'
         )}
       >
@@ -404,6 +404,10 @@ export function UserBetsTable(props: { user: User }) {
             </Row>
           )}
         </Col>
+        <Row className="text-ink-500 w-full justify-between px-2 pt-2 text-sm">
+          <Col className="">Question</Col>
+          <Col className="pr-6 text-right">Value</Col>
+        </Row>
       </div>
 
       {!loaded ? (
@@ -515,7 +519,7 @@ function BetsTable(props: {
   }
 
   return (
-    <Col className="mb-4 flex-1 gap-4">
+    <Col className="mb-4 flex-1">
       <Col className={'w-full'}>
         {contracts
           .slice(currentSlice, currentSlice + rowsPerSection)
@@ -612,10 +616,17 @@ function BetsTable(props: {
                             username={contract.creatorUsername}
                             size={'xs'}
                           /> */}
-                          <span className="text-ink-500 text-sm">
+                          {/* <span className="text-ink-500 text-sm">
                             {contract.creatorName}
+                            </span> */}
+                          <span className="text-ink-500 text-sm">
+                            to win{' '}
+                            {formatWithToken({
+                              amount: sum(Object.values(metric.totalShares)),
+                              token: contract.token === 'CASH' ? 'CASH' : 'M$',
+                            }).replace('-', '')}{' '}
+                            {showOutcome ? `on ${maxOutcome}` : ''}
                           </span>
-
                           {sortOption.field === 'closeTime' ? (
                             <span className="text-ink-500 text-sm">
                               • {dateString}
@@ -638,27 +649,21 @@ function BetsTable(props: {
                     <Row className="items-start gap-2">
                       <Col className="text-right">
                         {/* Display different values based on sort selection */}
-                        {sortOption.field === 'position' ? (
+                        {/* {sortOption.field === 'position' ? (
                           <span className="text-ink-900 text-lg font-medium">
                             {formatWithToken({
                               amount: sum(Object.values(metric.totalShares)),
-                              token: contract.token === 'CASH' ? 'CASH' : 'M$',
+                              token: contract.token,
                             }).replace('-', '')}
                           </span>
-                        ) : (
-                          <span className="text-ink-900 text-lg font-medium">
-                            {formatWithToken({
-                              amount: metric.payout,
-                              token: contract.token === 'CASH' ? 'CASH' : 'M$',
-                            }).replace('-', '')}
-                          </span>
-                        )}
-
-                        {sortOption.field === 'position' && (
-                          <span className="text-ink-500 text-sm">
-                            {showOutcome ? `on ${maxOutcome}` : 'to win'}
-                          </span>
-                        )}
+                        ) : ( */}
+                        <span className="text-ink-900 text-lg font-medium">
+                          {formatWithToken({
+                            amount: metric.payout,
+                            token: contract.token,
+                          }).replace('-', '')}
+                        </span>
+                        {/* )} */}
 
                         {sortOption.field === 'day' ? (
                           <span
@@ -669,9 +674,10 @@ function BetsTable(props: {
                                 : 'text-ink-500'
                             )}
                           >
+                            {(metric.from?.day.profit ?? 0) > 0 ? '+' : ''}
                             {formatWithToken({
                               amount: metric.from?.day.profit ?? 0,
-                              token: contract.token === 'CASH' ? 'CASH' : 'M$',
+                              token: contract.token,
                             }).replace('-', '')}
                             <span
                               className={clsx(
@@ -697,9 +703,10 @@ function BetsTable(props: {
                                 : 'text-ink-500'
                             )}
                           >
+                            {(metric.from?.week.profit ?? 0) > 0 ? '+' : ''}
                             {formatWithToken({
                               amount: metric.from?.week.profit ?? 0,
-                              token: contract.token === 'CASH' ? 'CASH' : 'M$',
+                              token: contract.token,
                             }).replace('-', '')}
                             <span
                               className={clsx(
@@ -727,10 +734,15 @@ function BetsTable(props: {
                                 : 'text-ink-500'
                             )}
                           >
-                            {formatWithToken({
-                              amount: metric.profit,
-                              token: contract.token === 'CASH' ? 'CASH' : 'M$',
-                            }).replace('-', '')}
+                            {sortOption.field === 'profit' && (
+                              <>
+                                {(metric.profit ?? 0) > 0 ? '+' : ''}
+                                {formatWithToken({
+                                  amount: metric.profit ?? 0,
+                                  token: contract.token,
+                                }).replace('-', '')}
+                              </>
+                            )}
                             <span
                               className={clsx(
                                 'ml-1 rounded-full px-1.5 py-0.5 text-xs',
