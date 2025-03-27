@@ -46,7 +46,8 @@ Your concise version, without any other text or commentary:`
         system,
       })
 
-      return { title: response.trim().replace(/^"|"$/g, '') }
+      const trimmedResponse = response.trim().replace(/^"|"$/g, '')
+      return { title: trimmedResponse === "''" ? '' : trimmedResponse }
     },
     { maxCalls: 100, windowMs: HOUR_MS }
   )
