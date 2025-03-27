@@ -372,7 +372,7 @@ export function UserBetsTable(props: { user: User }) {
                       </span>
                       <ChevronDownIcon className="ml-2 h-4 w-4" />
                     </MenuButton>
-                    <MenuItems className="bg-canvas-0 border-ink-200 absolute right-0 z-10 mt-1 max-h-60 w-48 overflow-auto rounded-md border shadow-lg">
+                    <MenuItems className="bg-canvas-0 border-ink-200 absolute right-0 z-10 mt-1 max-h-80 w-48 overflow-auto rounded-md border shadow-lg sm:max-h-none sm:overflow-hidden">
                       {sortOptions.map((option) => (
                         <MenuItem key={`${option.field}-${option.direction}`}>
                           {({ focus }) => (
@@ -547,6 +547,9 @@ function BetsTable(props: {
                   )
                 : undefined
 
+            const maxOutcome = metricsByContractId[contract.id].maxSharesOutcome
+            const showOutcome = maxOutcome && contract.outcomeType === 'BINARY'
+
             return (
               <Row
                 key={contract.id + 'bets-table-row'}
@@ -653,6 +656,12 @@ function BetsTable(props: {
                               amount: metric.payout,
                               token: contract.token === 'CASH' ? 'CASH' : 'M$',
                             }).replace('-', '')}
+                          </span>
+                        )}
+
+                        {sortOption.field === 'position' && (
+                          <span className="text-ink-500 text-sm">
+                            {showOutcome ? `on ${maxOutcome}` : 'to win'}
                           </span>
                         )}
 
