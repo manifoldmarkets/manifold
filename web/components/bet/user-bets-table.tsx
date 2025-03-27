@@ -128,7 +128,6 @@ export function UserBetsTable(props: { user: User }) {
   // Remove limit_bet filter
   useEffect(() => {
     if (filter === 'limit_bet') {
-      setFilter('open')
       setShowLimitOrders(true)
     }
   }, [filter])
@@ -142,9 +141,6 @@ export function UserBetsTable(props: { user: User }) {
   const onSetFilter = (f: BetFilter | 'limit_orders') => {
     if (f === 'limit_orders') {
       setShowLimitOrders(true)
-      // When toggling limit orders on, set a default filter but it won't be used
-      // while limit orders view is active
-      setFilter('open')
       return
     }
     // When selecting any other filter, turn off limit orders view
@@ -190,7 +186,6 @@ export function UserBetsTable(props: { user: User }) {
     limit_bet: () => true,
   }
   const loaded = nullableMetricsByContract && contracts
-
   const filteredContracts = loaded
     ? queriedContracts
         ?.filter(FILTERS[filter])
@@ -427,7 +422,7 @@ export function UserBetsTable(props: { user: User }) {
           includeExpired={orderFilter === 'expired'}
           includeFilled={orderFilter === 'filled'}
           includeCancelled={orderFilter === 'cancelled'}
-          filter="all" // Use a default filter since filters don't matter for limit orders view
+          filter={'open'}
           className="mt-2"
         />
       ) : (
