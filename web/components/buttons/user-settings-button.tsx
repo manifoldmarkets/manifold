@@ -19,7 +19,6 @@ import {
 } from 'common/envs/constants'
 import { SimpleCopyTextButton } from 'web/components/buttons/copy-link-button'
 import {
-  Referrals,
   useReferralCount,
 } from 'web/components/buttons/referrals-button'
 import { banUser } from 'web/lib/api/api'
