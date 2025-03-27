@@ -50,7 +50,7 @@ export const onCreateMarket = async (
   )
   // Try again if first embedding failed
   if (!embedding) await generateContractEmbeddings(contract, pg)
-  const isNonPredictive = isContractNonPredictive(contract)
+  const isNonPredictive = await isContractNonPredictive(contract)
   if (isNonPredictive) {
     await addGroupToContract(
       pg,

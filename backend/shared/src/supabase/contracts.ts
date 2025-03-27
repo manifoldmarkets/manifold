@@ -13,6 +13,7 @@ import { updateData, DataUpdate, update } from './utils'
 import { camelCase, mapValues, sortBy } from 'lodash'
 import { contractColumnsToSelect, log } from 'shared/utils'
 import { Tables } from 'common/supabase/utils'
+import { promptGemini, parseGeminiResponseAsJson } from 'shared/helpers/gemini'
 // used for API to allow slug as param
 export const getContractIdFromSlug = async (
   pg: SupabaseDirectClient,
@@ -143,7 +144,7 @@ export const getContractGroupMemberIds = async (
   return contractGroupMemberIds.map((r) => r.member_id)
 }
 
-export const isContractNonPredictive = (contract: Contract) => {
+export const isContractNonPredictive = async (contract: Contract) => {
   const isStonk = contract.outcomeType === 'STONK'
   if (isStonk) return true
 
@@ -153,8 +154,64 @@ export const isContractNonPredictive = (contract: Contract) => {
     contract.question.trim().toLowerCase().includes('Daily 4 sided dice roll')
   if (questionIncludesDailyCoinflip) return true
 
-  return contract.creatorUsername === 'ManifoldLove'
+  if (contract.creatorUsername === 'ManifoldLove') return true
+
+  // Check for self-referential markets using Gemini
+  const systemPrompt = `You are a market analysis assistant. Your task is to determine if a market question is self-referential - meaning it refers to itself, its own traders, or its own resolution in a way that makes it non-predictive.
+
+Examples of self-referential markets:
+${unrankedMarketExamples}
+
+Examples of non-self-referential markets:
+- "Will the S&P 500 be above 5000 by the end of 2024?"
+- "Will Biden win the 2024 election?"
+- "Will SpaceX launch Starship in 2024?"
+
+Respond with a JSON object containing:
+{
+  "isSelfReferential": boolean,
+}`
+
+  try {
+    const response = await promptGemini(contract.question, {
+      system: systemPrompt,
+    })
+    const result = parseGeminiResponseAsJson(response)
+    return result.isSelfReferential
+  } catch (error) {
+    log.error('Error checking for self-referential market:', {
+      error: error instanceof Error ? error.message : String(error),
+    })
+    return false // Default to false if we can't determine
+  }
 }
+
+const unrankedMarketExamples = `
+Will all individual "YES" traders in this market a unique MAX PAYOUT when this market closes?
+
+One year from now, will the percentage that this question resolves YES (as shown by Manifold) be above 50%?
+
+Daily coinflip
+
+Will my net worth be above Ṁ20,000 in a week?
+
+Will the standard deviation of the bets on this question exceed 80?
+
+Will this question get X traders before April 1 first 2025
+
+Will this question get over 999.5 traders by 2030
+
+Will this market get at least 77 traders by the end of 2025?
+
+If this market stays ≥97% for 24 hours straight, it resolves YES. If it stays ≤3% for 24 hours straight, it resolves NO.
+Will 'Will the majority of traders hold "no" when this market closes?' close with a trader holding >=500 shares?
+
+Will this market have less than 25 participants on close (in one day)?
+
+Will this market resolve between 30.01% and 69.99%?
+
+This market resolves YES if chance >=50% at time of closing January 9th. Otherwise NO.
+`
 
 export const getContractPrivacyWhereSQLFilter = (
   uid: string | undefined,
