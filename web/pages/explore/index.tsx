@@ -74,10 +74,6 @@ export function ExploreContent(props: { render: boolean }) {
       title: 'Sports',
       content: <SportsTabs />,
     },
-    isNewUser && {
-      title: 'Topics',
-      content: <TopicsContent />,
-    },
     user && {
       title: 'Feed',
       content: (
@@ -93,10 +89,6 @@ export function ExploreContent(props: { render: boolean }) {
           <SiteActivity />
         </Col>
       ),
-    },
-    !isNewUser && {
-      title: 'Topics',
-      content: <TopicsContent />,
     },
     !sportsFirst && { title: 'Sports', content: <SportsTabs /> }
   )
