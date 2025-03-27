@@ -648,22 +648,12 @@ function BetsTable(props: {
                     {/* Right side - Value and profit */}
                     <Row className="items-start gap-2">
                       <Col className="text-right">
-                        {/* Display different values based on sort selection */}
-                        {/* {sortOption.field === 'position' ? (
-                          <span className="text-ink-900 text-lg font-medium">
-                            {formatWithToken({
-                              amount: sum(Object.values(metric.totalShares)),
-                              token: contract.token,
-                            }).replace('-', '')}
-                          </span>
-                        ) : ( */}
                         <span className="text-ink-900 text-lg font-medium">
                           {formatWithToken({
                             amount: metric.payout,
                             token: contract.token,
                           }).replace('-', '')}
                         </span>
-                        {/* )} */}
 
                         {sortOption.field === 'day' ? (
                           <span
@@ -736,24 +726,31 @@ function BetsTable(props: {
                           >
                             {sortOption.field === 'profit' && (
                               <>
-                                {(metric.profit ?? 0) > 0 ? '+' : ''}
+                                {metric.profit > 0 ? '+' : ''}
                                 {formatWithToken({
-                                  amount: metric.profit ?? 0,
+                                  amount: metric.profit,
                                   token: contract.token,
                                 }).replace('-', '')}
                               </>
                             )}
-                            <span
-                              className={clsx(
-                                'ml-1 rounded-full px-1.5 py-0.5 text-xs',
-                                metric.profitPercent > 0
-                                  ? 'bg-teal-100 text-teal-800'
-                                  : 'bg-canvas-50 text-ink-600'
-                              )}
+                            <Tooltip
+                              text={`${formatWithToken({
+                                amount: metric.profit,
+                                token: contract.token,
+                              })} total profit`}
                             >
-                              {metric.profitPercent > 0 ? '+' : ''}
-                              {metric.profitPercent.toFixed(0)}%
-                            </span>
+                              <span
+                                className={clsx(
+                                  'ml-1 rounded-full px-1.5 py-0.5 text-xs',
+                                  metric.profitPercent > 0
+                                    ? 'bg-teal-100 text-teal-800'
+                                    : 'bg-canvas-50 text-ink-600'
+                                )}
+                              >
+                                {metric.profitPercent > 0 ? '+' : ''}
+                                {metric.profitPercent.toFixed(0)}%
+                              </span>
+                            </Tooltip>
                           </span>
                         )}
                       </Col>
