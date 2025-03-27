@@ -526,17 +526,6 @@ function BetsTable(props: {
           .map((contract) => {
             const metric = metricsByContractId[contract.id]
             const closeDate = contract.resolutionTime ?? contract.closeTime
-            const date = closeDate ? new Date(closeDate) : null
-            const isThisYear = date
-              ? new Date().getFullYear() === date.getFullYear()
-              : false
-            const dateString = date
-              ? date.toLocaleDateString('en-US', {
-                  month: '2-digit',
-                  day: '2-digit',
-                  year: isThisYear ? undefined : '2-digit',
-                })
-              : 'N/A'
             const resolvedAnswer =
               contract.mechanism === 'cpmm-multi-1'
                 ? contract.answers.find(
@@ -611,14 +600,16 @@ function BetsTable(props: {
                           </span>
                         ) : null}
                         <Row className="items-center gap-1">
-                          {/* <Avatar
-                            avatarUrl={contract.creatorAvatarUrl}
-                            username={contract.creatorUsername}
-                            size={'xs'}
-                          /> */}
-                          {/* <span className="text-ink-500 text-sm">
-                            {contract.creatorName}
-                            </span> */}
+                          {sortOption.field === 'newest' && (
+                            <span className="text-ink-500 text-sm">
+                              <RelativeTimestamp
+                                time={metric.lastBetTime}
+                                className="text-ink-500 -ml-1 text-sm"
+                                shortened
+                              />{' '}
+                              •
+                            </span>
+                          )}
                           <span className="text-ink-500 text-sm">
                             to win{' '}
                             {formatWithToken({
@@ -629,16 +620,19 @@ function BetsTable(props: {
                           </span>
                           {sortOption.field === 'closeTime' ? (
                             <span className="text-ink-500 text-sm">
-                              • {dateString}
-                            </span>
-                          ) : sortOption.field === 'newest' ? (
-                            <span className="text-ink-500 text-sm">
-                              •
-                              <RelativeTimestamp
-                                time={metric.lastBetTime}
-                                className="text-ink-500 text-sm"
-                                shortened
-                              />
+                              •{' '}
+                              {closeDate ? (
+                                <>
+                                  closes in
+                                  <RelativeTimestamp
+                                    time={closeDate}
+                                    className="text-ink-500 text-sm"
+                                    shortened
+                                  />
+                                </>
+                              ) : (
+                                'never closes'
+                              )}
                             </span>
                           ) : null}
                         </Row>
