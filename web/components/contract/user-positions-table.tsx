@@ -424,7 +424,7 @@ const BinaryUserPositionsTable = memo(
                     <span>{getPositionsTitle('YES')}</span>
                   )}
                   {sortBy === 'shares' && (
-                    <span className="text-ink-600">Max payout</span>
+                    <span className="text-ink-600">To win</span>
                   )}
                 </Row>
                 {visibleLeftPositions.map((position) => {
@@ -475,7 +475,7 @@ const BinaryUserPositionsTable = memo(
                     <span>{getPositionsTitle('NO')}</span>
                   )}
                   {sortBy === 'shares' && (
-                    <span className="text-ink-600">Max payout</span>
+                    <span className="text-ink-600">To win</span>
                   )}
                 </Row>
                 {visibleRightPositions.map((position) => {

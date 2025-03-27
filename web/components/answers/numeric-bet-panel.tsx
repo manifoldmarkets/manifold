@@ -384,7 +384,7 @@ export const NumericBetPanel = (props: {
             />
             <Col className={'mt-0.5'}>
               <Row className={'gap-1'}>
-                <span className={'text-ink-700'}>Max payout:</span>
+                <span className={'text-ink-700'}>To win:</span>
                 <MoneyDisplay
                   amount={potentialPayout}
                   isCashContract={isCashContract}

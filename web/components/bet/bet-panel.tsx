@@ -750,7 +750,7 @@ export const BuyPanelBody = (props: {
                         'Shares'
                       ) : (
                         <>
-                          Max payout
+                          To win
                           {isCashContract && (
                             <InfoTooltip
                               text="Manifold takes a 10% cut of profits on sweepstakes markets."
