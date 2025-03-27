@@ -1,7 +1,7 @@
 import * as admin from 'firebase-admin'
 import * as sharp from 'sharp'
 import { JSONContent } from '@tiptap/core'
-import { getUser, log } from 'shared/utils'
+import { getUser } from 'shared/utils'
 import { Contract } from 'common/contract'
 import { parseMentions, richTextToString } from 'common/util/parse'
 import { completeCalculatedQuestFromTrigger } from 'shared/complete-quest-internal'
@@ -13,10 +13,7 @@ import {
   isContractNonPredictive,
 } from 'shared/supabase/contracts'
 import { addGroupToContract } from 'shared/update-group-contracts-internal'
-import {
-  UNRANKED_GROUP_ID,
-  UNSUBSIDIZED_GROUP_ID,
-} from 'common/supabase/groups'
+import { UNRANKED_GROUP_ID } from 'common/supabase/groups'
 import { HOUSE_LIQUIDITY_PROVIDER_ID } from 'common/antes'
 import { randomString } from 'common/util/random'
 import { followContractInternal } from 'api/follow-contract'
@@ -61,16 +58,16 @@ export const onCreateMarket = async (
       },
       HOUSE_LIQUIDITY_PROVIDER_ID
     )
-    await addGroupToContract(
-      pg,
-      contract,
-      {
-        id: UNSUBSIDIZED_GROUP_ID,
-        slug: 'unsubsidized',
-      },
-      HOUSE_LIQUIDITY_PROVIDER_ID
-    )
-    log('Added contract to unsubsidized group')
+    // await addGroupToContract(
+    //   pg,
+    //   contract,
+    //   {
+    //     id: UNSUBSIDIZED_GROUP_ID,
+    //     slug: 'unsubsidized',
+    //   },
+    //   HOUSE_LIQUIDITY_PROVIDER_ID
+    // )
+    // log('Added contract to unsubsidized group')
   }
   if (contract.visibility === 'public') {
     const groupIds = await pg.map(
