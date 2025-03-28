@@ -35,7 +35,11 @@ import { useAPIGetter } from 'web/hooks/use-api-getter'
 import Link from 'next/link'
 import { ArrowRightIcon } from '@heroicons/react/solid'
 import { Comments } from '../comments'
-
+import { LiteGroup } from 'common/group'
+import DropdownMenu from 'web/components/widgets/dropdown-menu'
+import { ACTIVITY_TYPES } from '../activity'
+import { DropdownPill } from 'web/components/search/filter-pills'
+import { TopicPillSelector } from 'web/components/topics/topic-selector'
 const isProd = ENV === 'PROD'
 const NFL_ID = 'TNQwmbE5p6dnKx2e6Qlp'
 const NBA_ID = 'i0v3cXwuxmO9fpcInVYb'
@@ -63,6 +67,12 @@ export function ExploreContent(props: { render: boolean }) {
     }
   }, [user?.id])
   const sportsFirst = isSportsInterested
+  const [selectedTopic, setSelectedTopic] = usePersistentLocalState<
+    LiteGroup | undefined
+  >(undefined, 'activity-selected-topic')
+  const [selectedTypes, setSelectedTypes] = usePersistentLocalState<
+    ('bets' | 'comments' | 'markets')[]
+  >(['comments'], 'activity-selected-types')
 
   if (!render) return null
   if (user === undefined || (user && isSportsInterested === undefined)) {
@@ -73,19 +83,48 @@ export function ExploreContent(props: { render: boolean }) {
       title: 'Sports',
       content: <SportsTabs />,
     },
+    {
+      title: 'Site activity',
+      content: (
+        <Col className="gap-2 pt-1">
+          <Row className="mt-2 gap-2">
+            <TopicPillSelector
+              topic={selectedTopic}
+              setTopic={setSelectedTopic}
+            />
+            <DropdownMenu
+              closeOnClick
+              selectedItemName={
+                ACTIVITY_TYPES.find(
+                  (t) =>
+                    t.value.length === selectedTypes.length &&
+                    t.value.every((v) => selectedTypes.includes(v))
+                )?.name ?? 'All activity'
+              }
+              items={ACTIVITY_TYPES.map((type) => ({
+                name: type.name,
+                onClick: () => setSelectedTypes([...type.value]),
+              }))}
+              buttonContent={(open) => (
+                <DropdownPill open={open}>
+                  {ACTIVITY_TYPES.find(
+                    (t) =>
+                      t.value.length === selectedTypes.length &&
+                      t.value.every((v) => selectedTypes.includes(v))
+                  )?.name ?? 'All activity'}
+                </DropdownPill>
+              )}
+            />
+          </Row>
+          <SiteActivity topicSlug={selectedTopic?.slug} types={selectedTypes} />
+        </Col>
+      ),
+    },
     user && {
       title: 'Feed',
       content: (
         <Col className="pt-1">
           <LiveGeneratedFeed userId={user.id} />
-        </Col>
-      ),
-    },
-    {
-      title: 'Site activity',
-      content: (
-        <Col className="pt-1">
-          <SiteActivity />
         </Col>
       ),
     },

@@ -20,8 +20,10 @@ import { VisibilityObserver } from 'web/components/widgets/visibility-observer'
 export function SiteActivity(props: {
   className?: string
   blockedUserIds?: string[]
+  topicSlug?: string
+  types?: ('bets' | 'comments' | 'markets')[]
 }) {
-  const { className } = props
+  const { className, topicSlug, types } = props
   const privateUser = usePrivateUser()
 
   const blockedGroupSlugs = privateUser?.blockedGroupSlugs ?? []
@@ -39,6 +41,8 @@ export function SiteActivity(props: {
     blockedUserIds,
     blockedGroupSlugs,
     blockedContractIds,
+    topicSlug,
+    types,
   })
 
   const [allData, setAllData] = useState<typeof data>()
@@ -62,6 +66,11 @@ export function SiteActivity(props: {
       })
     }
   }, [data])
+
+  useEffect(() => {
+    setAllData(undefined)
+    setOffset(0)
+  }, [topicSlug, types])
 
   if (!allData) return <LoadingIndicator />
 
@@ -213,7 +222,7 @@ const MarketCreatedLog = memo(
     )
   }
 )
-// todo: add liking/disliking
+
 const CommentLog = memo(function FeedComment(props: {
   comment: ContractComment
   showDivider?: boolean
