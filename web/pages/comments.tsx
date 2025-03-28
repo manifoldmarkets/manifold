@@ -66,7 +66,6 @@ export const Comments = (props: { key?: string }) => {
     })
   }, [JSON.stringify(data?.comments.map((c) => c.id))])
   const { comments, contracts } = dataInMemory
-  console.log(comments)
 
   const user = useUser()
   return (
