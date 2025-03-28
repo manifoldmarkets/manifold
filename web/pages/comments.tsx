@@ -11,13 +11,13 @@ import { ContractComment } from 'common/comment'
 import { Contract } from 'common/contract'
 import { LoadingCards } from 'web/components/contract/feed-contract-card'
 import { GoodComment } from 'web/components/feed/good-comment'
-import { Tabs } from 'web/components/layout/tabs'
 
 const limit = 20
 export default function CommentsPage() {
   return (
     <Page trackPageView={'comments page'}>
-      <Tabs
+      <Comments />
+      {/* <Tabs
         className={'p-2'}
         tabs={[
           {
@@ -30,17 +30,14 @@ export default function CommentsPage() {
             prerender: true,
           },
         ]}
-      />
+      /> */}
     </Page>
   )
 }
 
-const Comments = (props: { justLikes: boolean; key: string }) => {
-  const { justLikes, key } = props
-  const [page, setPage] = usePersistentInMemoryState(
-    0,
-    `comments-offset-${justLikes}`
-  )
+export const Comments = (props: { key?: string }) => {
+  const { key = 'comments' } = props
+  const [page, setPage] = usePersistentInMemoryState(0, `comments-offset`)
   const [dataInMemory, setDataInMemory] = usePersistentInMemoryState(
     { comments: [] as ContractComment[], contracts: [] as Contract[] },
     key
@@ -49,7 +46,6 @@ const Comments = (props: { justLikes: boolean; key: string }) => {
     'get-best-comments',
     {
       offset: page,
-      justLikes: justLikes ? 1 : 0,
       limit,
       ignoreContractIds: dataInMemory.contracts.map((c) => c.id),
     },
@@ -70,6 +66,7 @@ const Comments = (props: { justLikes: boolean; key: string }) => {
     })
   }, [JSON.stringify(data?.comments.map((c) => c.id))])
   const { comments, contracts } = dataInMemory
+  console.log(comments)
 
   const user = useUser()
   return (
@@ -83,7 +80,7 @@ const Comments = (props: { justLikes: boolean; key: string }) => {
 
         return (
           <GoodComment
-            key={comment.id + justLikes}
+            key={comment.id}
             contract={contract}
             comment={comment}
             trackingLocation={'comments page'}

@@ -8,25 +8,24 @@ import { convertContractComment } from 'common/supabase/comments'
 import { parseJsonContentToText } from 'common/util/parse'
 import { getContractsDirect } from 'shared/supabase/contracts'
 import { uniq } from 'lodash'
-import { promptOpenAI } from 'shared/helpers/openai-utils'
 import { ContractComment } from 'common/comment'
-import { log } from 'shared/utils'
 import { rateLimitByUser } from './helpers/rate-limit'
+import { promptGemini } from 'shared/helpers/gemini'
 
 export const getBestComments: APIHandler<'get-best-comments'> = rateLimitByUser(
   async (props, auth) => {
-    const { limit, offset, ignoreContractIds, justLikes } = props
+    const { limit, ignoreContractIds } = props
     const userId = auth.uid
     const pg = createSupabaseDirectClient()
-    const followedOnly = await pg.one(
-      `
-  select count(*) > 5 as followed_only
-  from user_follows
-  where user_id = $1`,
-      [userId],
-      (r) => r.followed_only
-    )
-    log('followedOnly', followedOnly)
+    const followedOnly = false
+    //   await pg.one(
+    //     `
+    // select count(*) > 5 as followed_only
+    // from user_follows
+    // where user_id = $1`,
+    //     [userId],
+    //     (r) => r.followed_only
+    //   )
     if (
       !Object.keys(userIdsToAverageTopicConversionScores[userId] ?? {}).length
     ) {
@@ -34,8 +33,7 @@ export const getBestComments: APIHandler<'get-best-comments'> = rateLimitByUser(
     }
 
     let allComments: { comment: ContractComment; question: string }[]
-    let commentIds: string[]
-    let gpt4Comments: { comment: ContractComment; question: string }[] = []
+    let commentsToReview: { comment: ContractComment; question: string }[] = []
 
     const introText = `
       I am a user of Manifold. Manifold is a prediction market platform where
@@ -60,7 +58,7 @@ export const getBestComments: APIHandler<'get-best-comments'> = rateLimitByUser(
     `
     if (followedOnly) {
       // Assuming getFollowedRecentComments is defined elsewhere
-      gpt4Comments = await pg.map(
+      commentsToReview = await pg.map(
         `
             select distinct on (cc.created_time) cc.data, c.question
             from contract_comments cc
@@ -87,39 +85,7 @@ export const getBestComments: APIHandler<'get-best-comments'> = rateLimitByUser(
           question: row.question,
         })
       )
-      allComments = gpt4Comments
-    } else if (
-      !Object.keys(userIdsToAverageTopicConversionScores[userId] ?? {})
-        .length ||
-      justLikes
-    ) {
-      allComments = await pg.map(
-        `
-    select distinct on (cc.likes, cc.comment_id) cc.data, c.question
-    from contract_comments cc
-    join contracts c on cc.contract_id = c.id
-    join group_contracts gc on c.id = gc.contract_id
-    where cc.created_time >= now() - interval '1 month'
-    and cc.data->>'replyToCommentId' is null
-    and cc.data->>'betId' is null
-    and cc.data->>'answerOutcome' is null
-    and c.close_time > now()
-    and cc.likes > 0
-    and cc.comment_id not in (
-        select comment_id from user_comment_view_events
-        where user_id = $1
-    )
-    order by cc.likes desc, cc.comment_id
-    offset $2
-    limit $3;
-    `,
-        [userId, offset * limit, limit],
-        (row) => ({
-          comment: convertContractComment(row.data),
-          question: row.question,
-        })
-      )
-      commentIds = allComments.map((c) => c.comment.id)
+      allComments = commentsToReview
     } else {
       const reviewLimit = 1000
       const interestedTopics = Object.entries(
@@ -164,7 +130,7 @@ export const getBestComments: APIHandler<'get-best-comments'> = rateLimitByUser(
       const totalBatches = Math.ceil(allComments.length / batchSize)
 
       const processBatch = async (batch: typeof allComments) => {
-        const batchContent = `
+        const batchPrompt = `
           ${introText}
           ${ignoreText}
           \n
@@ -186,7 +152,7 @@ export const getBestComments: APIHandler<'get-best-comments'> = rateLimitByUser(
           Only return to me the comment ID, (ie don't say here is my top comment, just give me the ID)
         `
 
-        const batchMsgContent = await promptOpenAI(batchContent, 'o3-mini')
+        const batchMsgContent = await promptGemini(batchPrompt)
         const batchCommentIds = batchMsgContent
           ? batchMsgContent
               .split(',')
@@ -204,14 +170,14 @@ export const getBestComments: APIHandler<'get-best-comments'> = rateLimitByUser(
       }
 
       const batchResults = await Promise.all(batchPromises)
-      gpt4Comments = batchResults.flat().slice(0, 100)
+      commentsToReview = batchResults.flat().slice(0, 100)
     }
 
-    const gpt4Prompt = `
+    const prompt = `
       ${introText}
       ${ignoreText}
       \n
-      ${gpt4Comments
+      ${commentsToReview
         .map(
           ({ question, comment }) => `
       ----
@@ -229,10 +195,9 @@ export const getBestComments: APIHandler<'get-best-comments'> = rateLimitByUser(
       So, what are the highest quality ~${limit} comment IDs separated by commas, in order
       of descending quality? (ie don't say here are my top comments, just give me the IDs)
     `
-
-    const gpt4Response = await promptOpenAI(gpt4Prompt, 'o3-mini')
-    commentIds = gpt4Response
-      ? gpt4Response
+    const chosenComments = await promptGemini(prompt)
+    const commentIds = chosenComments
+      ? chosenComments
           .split(',')
           .map((s: string) => s.trim())
           .map((s: string) => s.replace(',', ''))

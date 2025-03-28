@@ -34,7 +34,7 @@ import { ENV } from 'common/envs/constants'
 import { useAPIGetter } from 'web/hooks/use-api-getter'
 import Link from 'next/link'
 import { ArrowRightIcon } from '@heroicons/react/solid'
-import { WEEK_MS } from 'common/util/time'
+import { Comments } from '../comments'
 
 const isProd = ENV === 'PROD'
 const NFL_ID = 'TNQwmbE5p6dnKx2e6Qlp'
@@ -56,7 +56,6 @@ export function ExploreContent(props: { render: boolean }) {
     const { isSportsInterested } = await api('is-sports-interested', {})
     setIsSportsInterested(isSportsInterested)
   }
-  const isNewUser = user && user.createdTime > Date.now() - WEEK_MS
 
   useEffect(() => {
     if (user && isSportsInterested === undefined) {
@@ -89,6 +88,10 @@ export function ExploreContent(props: { render: boolean }) {
           <SiteActivity />
         </Col>
       ),
+    },
+    {
+      title: 'Discussion',
+      content: <Comments />,
     },
     !sportsFirst && { title: 'Sports', content: <SportsTabs /> }
   )
