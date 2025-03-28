@@ -48,8 +48,13 @@ Your concise version, without any other text or commentary:`
         system,
       })
 
-      const trimmedResponse = response.trim().replace(/^"|"$/g, '')
-      return { title: trimmedResponse === "''" ? '' : trimmedResponse }
+      const trimmedResponse = response.trim()
+      return {
+        title:
+          trimmedResponse === '""' || trimmedResponse === "''"
+            ? ''
+            : trimmedResponse,
+      }
     },
     { maxCalls: 100, windowMs: HOUR_MS }
   )
