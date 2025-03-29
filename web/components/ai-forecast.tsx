@@ -20,7 +20,6 @@ import { formatPercent } from 'common/util/format'
 import { getDisplayProbability } from 'common/calculate'
 import { SiOpenai, SiGooglegemini, SiAnthropic } from 'react-icons/si'
 import { RiTwitterXLine } from 'react-icons/ri'
-import { LuLink } from 'react-icons/lu'
 import { GiSpermWhale } from 'react-icons/gi'
 import { PiBirdBold } from 'react-icons/pi'
 import { LiaKiwiBirdSolid } from 'react-icons/lia'
@@ -40,6 +39,10 @@ const ENDPOINT = 'ai'
 // Function to get the appropriate description for tooltip based on card title
 function getTooltipDescription(cardTitle: string): string | null {
   const keyTerms: Record<string, string> = {
+    'AiderBench':
+      "To evaluate an LLM’s editing skill, aider uses benchmarks that assess a model’s ability to consistently follow the system prompt to successfully edit code. The benchmark requires the LLM to edit source files to complete 225 coding exercises in many popular programming languages such as C++, Go, Java, JavaScript, Python and Rust.",
+    'Chatbot Arena':
+      'Chatbot Arena is an open platform for crowdsourced AI benchmarking, where users vote on different model outputs.',
     'IMO Gold':
       'The International Mathematical Olympiad (IMO) is the world championship mathematics competition for high school students. Getting a gold medal requires a high score on extremely challenging math problems.',
     'Frontier Math':
@@ -50,8 +53,8 @@ function getTooltipDescription(cardTitle: string): string | null {
       'A collection of extremely difficult problems across various domains, designed to test the limits of AI capabilities compared to human experts.',
     'Millennium Prize':
       'The Millennium Prize Problems are seven of the most difficult unsolved problems in mathematics, each with a $1 million prize for solution.',
-    'Arc AGI':
-      "Anthropic's Rubric for AI Capability Evaluation - a comprehensive benchmark designed to evaluate artificial general intelligence capabilities.",
+    'ARC-AGI':
+      "The Abstract and Reasoning Corpus for Artificial General Intelligence (ARC-AGI) benchmark to measure intelligence, supposedly the only AI benchmark that measures our progress towards general intelligence. A system that scores well on it must adapt to new problems it has not seen before and that its creators (developers) did not anticipate.",
     'Turing Test':
       'Each of the three human judges will conduct two hour long text-based interviews with each of the four candidates. The computer would have passed the Turing test if it fooled two of the three judges.',
     CodeForces:
@@ -98,14 +101,14 @@ export type AICapabilityCard = {
 export const AI_CAPABILITY_CARDS: AICapabilityCard[] = [
   // Monthly markets
   {
-    title: 'LMSYS',
+    title: 'Chatbot Arena — April',
     description: 'Highest ranked model on lmsys',
     marketId: 'LsZPyLPI82',
     type: 'monthly',
     displayType: 'top-two-mcq',
   },
   {
-    title: 'AiderBench',
+    title: 'AiderBench — April',
     description: 'Highest ranked model on Aider',
     marketId: 'QuqA2uAALL',
     type: 'monthly',
@@ -181,35 +184,35 @@ export const AI_CAPABILITY_CARDS: AICapabilityCard[] = [
 
   // Benchmarks
   {
-    title: 'IMO Gold',
+    title: 'IMO Gold 2025',
     description: 'AI gets gold on IMO by EOY',
     marketId: 'tu2ouer9zq',
     type: 'benchmark',
     displayType: 'binary-odds',
   },
   {
-    title: 'SWE Bench',
+    title: 'SWE Bench 2025',
     description: 'Top SWE Bench score by EOY',
     marketId: 'nEhgsIE6U0',
     type: 'benchmark',
     displayType: 'numeric',
   },
   {
-    title: "Humanity's Last Exam",
+    title: "Humanity's Last Exam 2025",
     description: "Highest score on Humanity's last exam by EOY",
     marketId: 'tzsZCn85RQ',
     type: 'benchmark',
     displayType: 'numeric',
   },
   {
-    title: 'CodeForces',
+    title: 'CodeForces 2025',
     description: '>80% on Frontier Math by EOY',
     marketId: 'RSAcZtOZyl',
     type: 'benchmark',
     displayType: 'top-one-mcq',
   },
   {
-    title: 'Frontier Math',
+    title: 'Frontier Math 2025',
     description: 'top performance on frontier math',
     marketId: 'LNdOg08SsU',
     type: 'benchmark',
@@ -218,21 +221,21 @@ export const AI_CAPABILITY_CARDS: AICapabilityCard[] = [
 
   // Prizes
   {
-    title: 'Arc AGI',
+    title: 'ARC-AGI by 2030',
     description: 'Arc AGI prize before 2030',
     marketId: 'p0fzp3jqqc',
     type: 'prize',
     displayType: 'binary-odds',
   },
   {
-    title: 'Turing Test (Long Bets)',
+    title: 'Turing Test+ by 2030',
     description: 'Will AI pass long bets Turing Test before 2030?',
     marketId: 'nKyHon3IPOqJYzaWTHJB',
     type: 'prize',
     displayType: 'binary-odds',
   },
   {
-    title: 'Millennium Prize',
+    title: 'Millennium Prize by 2030',
     description: 'AI Solve Millennium Problem before 2030',
     marketId: '6vw71lj8bi',
     type: 'prize',
@@ -299,6 +302,7 @@ export interface AIForecastProps {
   whenAgi: CPMMNumericContract | null
   contracts: Contract[]
   hideTitle?: boolean
+  hideSectionTitles?: boolean
 }
 
 // Base card component with shared styling
@@ -881,16 +885,16 @@ function CapabilityCard({
                 <p className="text-ink-600 mt-1 w-full px-1 text-left text-xs sm:mt-3 sm:text-sm">
                   {type === 'benchmark' &&
                     title.includes('IMO Gold') &&
-                    'An LLM gets a IMO gold medal'}
+                    'LLM gets IMO gold medal'}
                   {type === 'prize' &&
                     title.includes('Millennium') &&
                     'Chance of solving a million-dollar math problem'}
                   {type === 'prize' &&
-                    title.includes('Arc AGI') &&
-                    'Probability of claiming Arc-AGI prize'}
+                    title.includes('ARC-AGI') &&
+                    'Chance of claiming the ARC-AGI grand prize'}
                   {type === 'prize' &&
                     title.includes('Turing Test') &&
-                    'Probability of passing this variation of the Turing Test'}
+                    'Chance of passing Long Bets variation of the Turing Test'}
                   {type === 'misuse' &&
                     title.includes('Hacking') &&
                     'Probability of AI compromising systems by end of 2025'}
@@ -1129,14 +1133,23 @@ function FeaturedMarketGraph({ contract }: FeaturedGraphProps) {
       className="fade-in group relative w-full rounded-lg"
       minHeight=""
     >
-      <div className="mb-4 w-full">
+      <Row className="justify-between">
+        <Link
+          href={contractPath(contract)}
+          className="hover:text-primary-700 grow items-start font-semibold transition-colors hover:underline sm:text-lg"
+        >
+          {contract.question}
+        </Link>
+      </Row>
+      
+      <div className="mt-4 mb-4 w-full">
         <div className="flex items-center justify-between">
           <div>
             <span className="text-sm text-gray-600 dark:text-gray-400">
               {' '}
               Probability:
             </span>{' '}
-            <span className="text-2xl font-semibold text-gray-800 dark:text-gray-200">
+            <span className="text-2xl font-semibold text-fuchsia-600 dark:text-fuchsia-500">
               {formatPercent(contract.prob ?? 0.5)}
             </span>
           </div>
@@ -1168,6 +1181,7 @@ export function AIForecast({
   whenAgi,
   contracts = [],
   hideTitle,
+  hideSectionTitles = true,
 }: AIForecastProps) {
   const liveWhenAgi = whenAgi && whenAgi.id ? useLiveContract(whenAgi) : null
   const expectedValueAGI = liveWhenAgi
@@ -1260,51 +1274,19 @@ export function AIForecast({
   ]
 
   return (
-    <Col className="mb-8 gap-4 px-1 sm:gap-6 sm:px-2">
+    <Col className="mb-8 gap-2 px-1 sm:gap-3 sm:px-4 sm:pt-8">
       <Col className={hideTitle ? 'hidden' : ''}>
-        <div className="text-primary-700 mt-4 text-2xl font-normal sm:mt-0 sm:text-3xl">
-          Manifold AI Forecast
-        </div>
-        <div className="text-ink-500 text-md mt-2 flex font-normal">
-          Manifold market odds on AI progress
-        </div>
+          <div className="text-primary-700 text-2xl font-normal sm:text-3xl">
+            Manifold AI Dashboard
+          </div>
       </Col>
 
       {/* Card Categories */}
-      {orderedSections.map((type, index) => (
+      {orderedSections.map((type) => (
         <Col
           key={type}
-          className={`${
-            index > 0
-              ? 'border-ink-200 dark:border-ink-800/50 mt-12 border-t pt-8'
-              : 'mt-6'
-          }`}
           id={type}
         >
-          <div className="mb-3">
-            <Row className="items-center justify-between">
-              <div>
-                <h3
-                  className={`items-center gap-1 text-xl font-semibold ${getAccentColor(
-                    type
-                  )}`}
-                >
-                  {typeInfo[type].label}
-                </h3>
-                <p className="text-ink-500 mt-1 text-sm">
-                  {typeInfo[type].description}
-                </p>
-              </div>
-              <Link
-                href={`#${type}`}
-                className="text-primary-500 hover:text-primary-700 hover:bg-primary-50 flex items-center justify-center rounded-full p-2 transition-all duration-200"
-                scroll={false}
-                aria-label={`Link to ${typeInfo[type].label} section`}
-              >
-                <LuLink size={18} />
-              </Link>
-            </Row>
-          </div>
 
           {type === 'releases' ? (
             // Display releases on a timeline
@@ -1354,7 +1336,7 @@ export function AIForecast({
 
       {/* AGI Clock Card */}
       {liveWhenAgi && (
-        <div className="border-ink-200 dark:border-ink-800/50 mt-12 border-t pt-8">
+        <div>
           <CardBase
             onClick={() => window.open(contractPath(liveWhenAgi), '_blank')}
             className="fade-in group relative mx-auto"

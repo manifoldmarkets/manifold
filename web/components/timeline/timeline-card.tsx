@@ -18,8 +18,14 @@ export function TimelineCard({
 }: TimelineCardProps) {
   const cardContent = (
     <>
-      {/* Increased padding on top */}
-      <div className="pt-12 sm:pt-16"></div>
+      {/* Title row */}
+      <div className="mb-14">
+        <div className="flex justify-between">
+          <div className="font-semibold text-gray-700 dark:text-gray-100 sm:text-lg">
+            Release Timelines
+          </div>
+        </div>
+      </div>
 
       {/* Padding for timeline */}
       <div className="mb-4 sm:mb-10">
