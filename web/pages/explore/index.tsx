@@ -31,9 +31,6 @@ import { FaBaseballBall } from 'react-icons/fa'
 import { Contract, isSportsContract } from 'common/contract'
 import { tsToMillis } from 'common/supabase/utils'
 import { ENV } from 'common/envs/constants'
-import { useAPIGetter } from 'web/hooks/use-api-getter'
-import Link from 'next/link'
-import { ArrowRightIcon } from '@heroicons/react/solid'
 import { Comments } from '../comments'
 import { LiteGroup } from 'common/group'
 import DropdownMenu from 'web/components/widgets/dropdown-menu'
@@ -433,118 +430,6 @@ function MarketsList(
         {loading && <LoadingCards rows={3} />}
         <LoadMoreUntilNotVisible loadMore={loadMore} />
       </div>
-    </Col>
-  )
-}
-const topicsToIds: {
-  [key: string]: {
-    groupIds: string[]
-    slug: string
-  }
-} = {
-  '🗳️ Politics': {
-    groupIds: ['AjxQR8JMpNyDqtiqoA96', 'UCnpxVUdLOZYgoMsDlHD'],
-    slug: 'politics-default',
-  },
-
-  '💻 Technology': {
-    groupIds: [
-      'IlzY3moWwOcpsVZXCVej', // Technology
-      'SmJk6RHToaLxLk0I1ZSC', // Space
-    ],
-    slug: 'technology-default',
-  },
-  '🤖 AI': {
-    groupIds: ['yEWvvwFFIqzf8JklMewp', 'GbbX9U5pYnDeftX9lxUh'],
-    slug: 'ai',
-  },
-  '🎬 Entertainment': {
-    groupIds: [
-      'eJZecx6r22G2NriYYXcC', // Culture
-      'XU1fOYURSnb58lgsqaly', // Entertainment & Pop culture
-      '4QIcUOfCSSha0JZHAg9X', // celebrities
-    ],
-    slug: 'entertainment',
-  },
-  '🍿 Movies & TV': {
-    groupIds: [
-      'KSeNIu7AWgiBBM5FqVuB', // Movies
-      'EUSEngFk1dGGBfaMeAmh', // TV and Film
-    ],
-    slug: 'television-film',
-  },
-  '💵 Business': {
-    groupIds: [
-      'pmK8sntWL1SDkMm53UBR', // Business
-      'CgB83AAMkkOHSrTnzani', // Finance
-      'QDQfgsFiQrNNlZhsRGf5', // Stocks
-      'pK06hNX8MsNw8zaBsX2N', // Tech Stocks
-      '1a9ef4d5-dcc6-468f-a9b7-feccdaa92733', // Big Tech
-      'p88Ycq6yFd5ECKqq9PFO', // Economics
-      'YuJw0M1xvUHrpiRRuKso',
-      'WBeBD6FyMd0NvSL0qjMb',
-    ],
-    slug: 'business',
-  },
-  '🏟️ Sports': {
-    groupIds: [
-      '2hGlgVhIyvVaFyQAREPi', // sports
-      'NjkFkdkvRvBHoeMDQ5NB', // Basketball
-      'beeb69e0-b36f-451a-80e1-e059df456bb1', // College Basketball
-      'i0v3cXwuxmO9fpcInVYb', // NBA
-      'TNQwmbE5p6dnKx2e6Qlp', // nfl
-      'ky1VPTuxrLXMnHyajZFp', // college football
-    ],
-    slug: 'sports-default',
-  },
-}
-
-function TopicsContent() {
-  return (
-    <Col className="gap-8 p-4">
-      {Object.entries(topicsToIds).map(([topic, subtopics]) => (
-        <TopicSection key={topic} topic={topic} subtopics={subtopics} />
-      ))}
-    </Col>
-  )
-}
-
-function TopicSection(props: {
-  topic: string
-  subtopics: { slug: string; groupIds: string[] }
-}) {
-  const { topic, subtopics } = props
-  const { slug, groupIds } = subtopics
-  const { data: markets, loading } = useAPIGetter(
-    'search-markets-full',
-    {
-      gids: groupIds.join(','),
-      limit: 3,
-      sort: 'score',
-      filter: 'open',
-    },
-    undefined,
-    slug + groupIds.join(',')
-  )
-
-  return (
-    <Col className="gap-4">
-      <Link href={`/topic/${slug}`} className="hover:text-primary-700">
-        <h2 className="text-2xl font-bold">{topic}</h2>
-      </Link>
-      {loading || !markets ? (
-        <LoadingCards rows={3} />
-      ) : (
-        markets.map((market) => (
-          <FeedContractCard key={market.id} contract={market} />
-        ))
-      )}
-      <Link href={`/topic/${slug}`} className="hover:text-primary-700">
-        <Row className="items-center justify-end gap-2 text-lg">
-          View 100's more markets in {topic}{' '}
-          <ArrowRightIcon className="h-4 w-4" />
-        </Row>
-      </Link>
     </Col>
   )
 }
