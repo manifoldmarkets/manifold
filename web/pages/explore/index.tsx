@@ -49,7 +49,6 @@ const MLB_ID = 'RFwfANk54JSXOwj4qwsW,786nRQzgVyUnuUtaLTGW' // MLB, Baseball
 const NHL_ID = 'lccgApXa1l7O5ZH3XfhH,tYP9jmPPjoX29KfzE4l5' // NHL, Hockey
 const colClass = 'gap-4 p-1'
 const ALL_IDS = [NFL_ID, SPORTS_ID, EPL_ID, NBA_ID, MLB_ID].join(',')
-
 export function ExploreContent(props: { render: boolean }) {
   const { render } = props
   const user = useUser()
@@ -69,11 +68,10 @@ export function ExploreContent(props: { render: boolean }) {
   const sportsFirst = isSportsInterested
   const [selectedTopic, setSelectedTopic] = usePersistentLocalState<
     LiteGroup | undefined
-  >(undefined, 'activity-selected-topic')
+  >(technologyLiteGroup, 'activity-selected-topic')
   const [selectedTypes, setSelectedTypes] = usePersistentLocalState<
     ('bets' | 'comments' | 'markets')[]
   >(['comments'], 'activity-selected-types')
-
   if (!render) return null
   if (user === undefined || (user && isSportsInterested === undefined)) {
     return <LoadingIndicator />
@@ -558,4 +556,13 @@ export default function ExplorePage() {
       <ExploreContent render={true} />
     </Page>
   )
+}
+
+const technologyLiteGroup: LiteGroup = {
+  id: 'IlzY3moWwOcpsVZXCVej',
+  slug: 'technology-default',
+  name: '🖥️ Technology',
+  totalMembers: 46584,
+  privacyStatus: 'public',
+  importanceScore: 0,
 }
