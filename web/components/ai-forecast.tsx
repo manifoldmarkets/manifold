@@ -101,14 +101,14 @@ export type AICapabilityCard = {
 export const AI_CAPABILITY_CARDS: AICapabilityCard[] = [
   // Monthly markets
   {
-    title: 'Chatbot Arena — April',
+    title: 'Best Chatbot Arena Model — April',
     description: 'Highest ranked model on lmsys',
     marketId: 'LsZPyLPI82',
     type: 'monthly',
     displayType: 'top-two-mcq',
   },
   {
-    title: 'AiderBench — April',
+    title: 'Best AiderBench Model — April',
     description: 'Highest ranked model on Aider',
     marketId: 'QuqA2uAALL',
     type: 'monthly',
@@ -184,35 +184,35 @@ export const AI_CAPABILITY_CARDS: AICapabilityCard[] = [
 
   // Benchmarks
   {
-    title: 'IMO Gold 2025',
+    title: 'IMO Gold',
     description: 'AI gets gold on IMO by EOY',
     marketId: 'tu2ouer9zq',
     type: 'benchmark',
     displayType: 'binary-odds',
   },
   {
-    title: 'SWE Bench 2025',
+    title: 'SWE Bench',
     description: 'Top SWE Bench score by EOY',
     marketId: 'nEhgsIE6U0',
     type: 'benchmark',
     displayType: 'numeric',
   },
   {
-    title: "Humanity's Last Exam 2025",
+    title: "Humanity's Last Exam",
     description: "Highest score on Humanity's last exam by EOY",
     marketId: 'tzsZCn85RQ',
     type: 'benchmark',
     displayType: 'numeric',
   },
   {
-    title: 'CodeForces 2025',
+    title: 'CodeForces',
     description: '>80% on Frontier Math by EOY',
     marketId: 'RSAcZtOZyl',
     type: 'benchmark',
     displayType: 'top-one-mcq',
   },
   {
-    title: 'Frontier Math 2025',
+    title: 'Frontier Math',
     description: 'top performance on frontier math',
     marketId: 'LNdOg08SsU',
     type: 'benchmark',
@@ -1094,6 +1094,17 @@ export interface FeaturedGraphProps {
   contract: BinaryContract | null
 }
 
+// Simple title card component
+function TitleCard({ title, className = '' }: { title: string; className?: string }) {
+  return (
+    <div className={`bg-gray-100 dark:bg-gray-800 rounded-lg p-4 w-full shadow mb-2 ${className}`}>
+      <div className="text-2xl font-semibold text-gray-800 dark:text-gray-200 text-center">
+        {title}
+      </div>
+    </div>
+  )
+}
+
 // Component to display a featured market graph
 function FeaturedMarketGraph({ contract }: FeaturedGraphProps) {
   const [points, setPoints] = useState<{ x: number; y: number }[] | null>(null)
@@ -1268,8 +1279,8 @@ export function AIForecast({
     'releases',
     'benchmark',
     'featured-graph',
-    'prize',
     'misuse',
+    'prize',
     'long-term',
   ]
 
@@ -1282,11 +1293,26 @@ export function AIForecast({
       </Col>
 
       {/* Card Categories */}
-      {orderedSections.map((type) => (
+      {orderedSections.map((type, index) => (
         <Col
           key={type}
           id={type}
         >
+          {/* Insert 2025 Predictions title card after releases and before benchmark
+          {orderedSections[index-1] === 'releases' && type === 'monthly' && (
+            <TitleCard title="Best Model" />
+          )}
+           */}
+
+          {/* Insert 2025 Predictions title card after releases and before benchmark */}
+          {orderedSections[index-1] === 'releases' && type === 'benchmark' && (
+            <TitleCard title="Predictions for 2025" />
+          )}
+
+          {/* Insert Long Term Predictions title card between misuse and prizes */}
+          {orderedSections[index-1] === 'misuse' && type === 'prize' && (
+            <TitleCard title="Long Term Predictions" />
+          )}
 
           {type === 'releases' ? (
             // Display releases on a timeline
