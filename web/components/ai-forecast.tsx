@@ -101,19 +101,19 @@ export type AICapabilityCard = {
 export const AI_CAPABILITY_CARDS: AICapabilityCard[] = [
   // Monthly markets
   {
-    title: 'Best Chatbot Arena Model — April',
+    title: 'Best Chatbot Arena Model in April',
     description: 'Highest ranked model on lmsys',
     marketId: 'LsZPyLPI82',
     type: 'monthly',
     displayType: 'top-two-mcq',
   },
-  {
-    title: 'Best AiderBench Model — April',
-    description: 'Highest ranked model on Aider',
-    marketId: 'QuqA2uAALL',
-    type: 'monthly',
-    displayType: 'top-one-mcq',
-  },
+  //{
+  //  title: 'Best AiderBench Model — April',
+  //  description: 'Highest ranked model on Aider',
+  //  marketId: 'QuqA2uAALL',
+  //  type: 'monthly',
+  //  displayType: 'top-one-mcq',
+  //},
 
   // Releases
   {
@@ -347,7 +347,7 @@ function CardTitle({
     <div className="relative mb-1 w-full">
       <div className="flex items-start">
         {showModelIcon && (
-          <div className="text-ink-600 mr-2">
+          <div className="text-ink-600">
             <AIModelIcon title={title} />
           </div>
         )}
@@ -1337,9 +1337,9 @@ export function AIForecast({
                   // All monthly cards should be single column on mobile
                   cardClassName = 'col-span-2 sm:col-span-1'
 
-                  // First monthly card gets additional width on medium+ screens
+                  // First monthly card gets full width across all screen sizes
                   if (idx === 0) {
-                    cardClassName += ' md:col-span-2'
+                    cardClassName = 'col-span-2 sm:col-span-2 md:col-span-3'
                   }
                 }
 
