@@ -39,8 +39,8 @@ const ENDPOINT = 'ai'
 // Function to get the appropriate description for tooltip based on card title
 function getTooltipDescription(cardTitle: string): string | null {
   const keyTerms: Record<string, string> = {
-    'AiderBench':
-      "To evaluate an LLM’s editing skill, aider uses benchmarks that assess a model’s ability to consistently follow the system prompt to successfully edit code. The benchmark requires the LLM to edit source files to complete 225 coding exercises in many popular programming languages such as C++, Go, Java, JavaScript, Python and Rust.",
+    AiderBench:
+      'To evaluate an LLM’s editing skill, aider uses benchmarks that assess a model’s ability to consistently follow the system prompt to successfully edit code. The benchmark requires the LLM to edit source files to complete 225 coding exercises in many popular programming languages such as C++, Go, Java, JavaScript, Python and Rust.',
     'Chatbot Arena':
       'Chatbot Arena is an open platform for crowdsourced AI benchmarking, where users vote on different model outputs.',
     'IMO Gold':
@@ -54,7 +54,7 @@ function getTooltipDescription(cardTitle: string): string | null {
     'Millennium Prize':
       'The Millennium Prize Problems are seven of the most difficult unsolved problems in mathematics, each with a $1 million prize for solution.',
     'ARC-AGI':
-      "The Abstract and Reasoning Corpus for Artificial General Intelligence (ARC-AGI) benchmark to measure intelligence, supposedly the only AI benchmark that measures our progress towards general intelligence. A system that scores well on it must adapt to new problems it has not seen before and that its creators (developers) did not anticipate.",
+      'The Abstract and Reasoning Corpus for Artificial General Intelligence (ARC-AGI) benchmark to measure intelligence, supposedly the only AI benchmark that measures our progress towards general intelligence. A system that scores well on it must adapt to new problems it has not seen before and that its creators (developers) did not anticipate.',
     'Turing Test':
       'Each of the three human judges will conduct two hour long text-based interviews with each of the four candidates. The computer would have passed the Turing test if it fooled two of the three judges.',
     CodeForces:
@@ -343,7 +343,7 @@ function CardTitle({
             <AIModelIcon title={title} />
           </div>
         )}
-        <h3 className="text-med pr-2 font-semibold leading-tight text-gray-900 dark:text-gray-100 sm:text-lg ml-1">
+        <h3 className="text-med ml-1 pr-2 font-semibold leading-tight text-gray-900 dark:text-gray-100 sm:text-lg">
           {title}
         </h3>
       </div>
@@ -1064,10 +1064,18 @@ export interface FeaturedGraphProps {
 }
 
 // Simple title card component
-function TitleCard({ title, className = '' }: { title: string; className?: string }) {
+function TitleCard({
+  title,
+  className = '',
+}: {
+  title: string
+  className?: string
+}) {
   return (
-    <div className={`bg-gray-100 dark:bg-gray-800 rounded-lg p-2 sm:p-4 w-full shadow mb-2 ${className}`}>
-      <div className="text-lg sm:text-2xl font-semibold text-gray-800 dark:text-gray-100 text-center">
+    <div
+      className={`mb-2 w-full rounded-lg bg-gray-100 p-2 shadow dark:bg-gray-800 sm:p-4 ${className}`}
+    >
+      <div className="text-center text-lg font-semibold text-gray-800 dark:text-gray-100 sm:text-2xl">
         {title}
       </div>
     </div>
@@ -1121,15 +1129,15 @@ function FeaturedMarketGraph({ contract }: FeaturedGraphProps) {
           {contract.question}
         </Link>
       </Row>
-      
-      <div className="mt-4 mb-4 w-full">
+
+      <div className="mb-4 mt-4 w-full">
         <div className="flex items-center justify-between">
           <div>
             <span className="text-sm text-gray-600 dark:text-gray-400">
               {' '}
               Probability:
             </span>{' '}
-            <span className="text-2xl font-semibold text-primary-600 dark:text-primary-500">
+            <span className="text-primary-600 dark:text-primary-500 text-2xl font-semibold">
               {formatPercent(contract.prob ?? 0.5)}
             </span>
           </div>
@@ -1255,17 +1263,14 @@ export function AIForecast({
   return (
     <Col className="mb-8 gap-2 px-1 sm:gap-3 sm:px-4 sm:pt-8">
       <Col className={hideTitle ? 'hidden' : ''}>
-          <div className="text-primary-700 text-2xl font-normal sm:text-3xl">
-            Manifold AI Dashboard
-          </div>
+        <div className="text-primary-700 text-2xl font-normal sm:text-3xl">
+          Manifold AI Dashboard
+        </div>
       </Col>
 
       {/* Card Categories */}
       {orderedSections.map((type, index) => (
-        <Col
-          key={type}
-          id={type}
-        >
+        <Col key={type} id={type}>
           {/* Insert 2025 Predictions title card after releases and before benchmark
           {orderedSections[index-1] === 'releases' && type === 'monthly' && (
             <TitleCard title="Best Model" />
@@ -1273,12 +1278,11 @@ export function AIForecast({
            */}
 
           {/* Insert 2025 Predictions title card after releases and before benchmark */}
-          {orderedSections[index-1] === 'releases' && type === 'benchmark' && (
-            <TitleCard title="Predictions for 2025" />
-          )}
+          {orderedSections[index - 1] === 'releases' &&
+            type === 'benchmark' && <TitleCard title="Predictions for 2025" />}
 
           {/* Insert Long Term Predictions title card between misuse and prizes */}
-          {orderedSections[index-1] === 'misuse' && type === 'prize' && (
+          {orderedSections[index - 1] === 'misuse' && type === 'prize' && (
             <TitleCard title="Long Term Predictions" />
           )}
 
