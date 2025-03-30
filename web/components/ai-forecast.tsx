@@ -107,13 +107,6 @@ export const AI_CAPABILITY_CARDS: AICapabilityCard[] = [
     type: 'monthly',
     displayType: 'top-two-mcq',
   },
-  //{
-  //  title: 'Best AiderBench Model — April',
-  //  description: 'Highest ranked model on Aider',
-  //  marketId: 'QuqA2uAALL',
-  //  type: 'monthly',
-  //  displayType: 'top-one-mcq',
-  //},
 
   // Releases
   {
