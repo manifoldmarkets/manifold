@@ -1075,8 +1075,8 @@ export interface FeaturedGraphProps {
 // Simple title card component
 function TitleCard({ title, className = '' }: { title: string; className?: string }) {
   return (
-    <div className={`bg-gray-100 dark:bg-gray-800 rounded-lg p-4 w-full shadow mb-2 ${className}`}>
-      <div className="text-2xl font-semibold text-gray-800 dark:text-gray-200 text-center">
+    <div className={`bg-gray-100 dark:bg-gray-800 rounded-lg p-2 sm:p-4 w-full shadow mb-2 ${className}`}>
+      <div className="text-lg sm:text-2xl font-semibold text-gray-800 dark:text-gray-200 text-center">
         {title}
       </div>
     </div>
