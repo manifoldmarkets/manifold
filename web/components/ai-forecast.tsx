@@ -302,7 +302,6 @@ export interface AIForecastProps {
   whenAgi: CPMMNumericContract | null
   contracts: Contract[]
   hideTitle?: boolean
-  hideSectionTitles?: boolean
 }
 
 // Base card component with shared styling
@@ -413,7 +412,7 @@ function getCardBgColor(className: string) {
   // Extract card type from className if it exists
   let cardType = ''
   if (className.includes('monthly')) {
-    cardType = 'monthly' // Special case for the large monthly card
+    cardType = 'monthly'
   }
 
   // Card background colors
@@ -421,7 +420,6 @@ function getCardBgColor(className: string) {
     case 'monthly':
       return 'bg-primary-50 dark:bg-primary-800/20'
     default:
-      // If we don't know the type from className, use the card type patterns
       if (className.includes('prize')) {
         return 'bg-amber-50 dark:bg-amber-800/30'
       }
@@ -1138,7 +1136,7 @@ function FeaturedMarketGraph({ contract }: FeaturedGraphProps) {
               {' '}
               Probability:
             </span>{' '}
-            <span className="text-2xl font-semibold text-fuchsia-600 dark:text-fuchsia-500">
+            <span className="text-2xl font-semibold text-primary-600 dark:text-primary-500">
               {formatPercent(contract.prob ?? 0.5)}
             </span>
           </div>
@@ -1170,7 +1168,6 @@ export function AIForecast({
   whenAgi,
   contracts = [],
   hideTitle,
-  hideSectionTitles = true,
 }: AIForecastProps) {
   const liveWhenAgi = whenAgi && whenAgi.id ? useLiveContract(whenAgi) : null
   const expectedValueAGI = liveWhenAgi
