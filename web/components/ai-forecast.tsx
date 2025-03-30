@@ -20,7 +20,6 @@ import { formatPercent } from 'common/util/format'
 import { getDisplayProbability } from 'common/calculate'
 import { SiOpenai, SiGooglegemini, SiAnthropic } from 'react-icons/si'
 import { RiTwitterXLine } from 'react-icons/ri'
-import { LuLink } from 'react-icons/lu'
 import { GiSpermWhale } from 'react-icons/gi'
 import { PiBirdBold } from 'react-icons/pi'
 import { LiaKiwiBirdSolid } from 'react-icons/lia'
@@ -40,6 +39,10 @@ const ENDPOINT = 'ai'
 // Function to get the appropriate description for tooltip based on card title
 function getTooltipDescription(cardTitle: string): string | null {
   const keyTerms: Record<string, string> = {
+    'AiderBench':
+      "To evaluate an LLM’s editing skill, aider uses benchmarks that assess a model’s ability to consistently follow the system prompt to successfully edit code. The benchmark requires the LLM to edit source files to complete 225 coding exercises in many popular programming languages such as C++, Go, Java, JavaScript, Python and Rust.",
+    'Chatbot Arena':
+      'Chatbot Arena is an open platform for crowdsourced AI benchmarking, where users vote on different model outputs.',
     'IMO Gold':
       'The International Mathematical Olympiad (IMO) is the world championship mathematics competition for high school students. Getting a gold medal requires a high score on extremely challenging math problems.',
     'Frontier Math':
@@ -50,8 +53,8 @@ function getTooltipDescription(cardTitle: string): string | null {
       'A collection of extremely difficult problems across various domains, designed to test the limits of AI capabilities compared to human experts.',
     'Millennium Prize':
       'The Millennium Prize Problems are seven of the most difficult unsolved problems in mathematics, each with a $1 million prize for solution.',
-    'Arc AGI':
-      "Anthropic's Rubric for AI Capability Evaluation - a comprehensive benchmark designed to evaluate artificial general intelligence capabilities.",
+    'ARC-AGI':
+      "The Abstract and Reasoning Corpus for Artificial General Intelligence (ARC-AGI) benchmark to measure intelligence, supposedly the only AI benchmark that measures our progress towards general intelligence. A system that scores well on it must adapt to new problems it has not seen before and that its creators (developers) did not anticipate.",
     'Turing Test':
       'Each of the three human judges will conduct two hour long text-based interviews with each of the four candidates. The computer would have passed the Turing test if it fooled two of the three judges.',
     CodeForces:
@@ -98,18 +101,11 @@ export type AICapabilityCard = {
 export const AI_CAPABILITY_CARDS: AICapabilityCard[] = [
   // Monthly markets
   {
-    title: 'LMSYS',
+    title: 'Best Chatbot Arena Model in April',
     description: 'Highest ranked model on lmsys',
     marketId: 'LsZPyLPI82',
     type: 'monthly',
     displayType: 'top-two-mcq',
-  },
-  {
-    title: 'AiderBench',
-    description: 'Highest ranked model on Aider',
-    marketId: 'QuqA2uAALL',
-    type: 'monthly',
-    displayType: 'top-one-mcq',
   },
 
   // Releases
@@ -218,21 +214,21 @@ export const AI_CAPABILITY_CARDS: AICapabilityCard[] = [
 
   // Prizes
   {
-    title: 'Arc AGI',
+    title: 'ARC-AGI by 2030',
     description: 'Arc AGI prize before 2030',
     marketId: 'p0fzp3jqqc',
     type: 'prize',
     displayType: 'binary-odds',
   },
   {
-    title: 'Turing Test (Long Bets)',
+    title: 'Turing Test+ by 2030',
     description: 'Will AI pass long bets Turing Test before 2030?',
     marketId: 'nKyHon3IPOqJYzaWTHJB',
     type: 'prize',
     displayType: 'binary-odds',
   },
   {
-    title: 'Millennium Prize',
+    title: 'Millennium Prize by 2030',
     description: 'AI Solve Millennium Problem before 2030',
     marketId: '6vw71lj8bi',
     type: 'prize',
@@ -343,11 +339,11 @@ function CardTitle({
     <div className="relative mb-1 w-full">
       <div className="flex items-start">
         {showModelIcon && (
-          <div className="text-ink-600 mr-2">
+          <div className="text-ink-600 mr-5">
             <AIModelIcon title={title} />
           </div>
         )}
-        <h3 className="text-med pr-2 font-semibold leading-tight text-gray-900 dark:text-gray-100 sm:text-lg">
+        <h3 className="text-med pr-2 font-semibold leading-tight text-gray-900 dark:text-gray-100 sm:text-lg ml-1">
           {title}
         </h3>
       </div>
@@ -368,7 +364,7 @@ function CardTitle({
 // Component for showing AI model icon
 function AIModelIcon({
   title,
-  className = 'h-5 w-5',
+  className = 'h-6 w-6',
 }: {
   title: string
   className?: string
@@ -380,28 +376,6 @@ function AIModelIcon({
   if (title.includes('Deepseek')) return <GiSpermWhale className={className} />
   if (title.includes('Qwen')) return <PiBirdBold className={className} />
   return null
-}
-
-// Get accent color based on card type
-function getAccentColor(type: string) {
-  switch (type) {
-    case 'monthly':
-      return 'text-primary-600 dark:text-primary-500'
-    case 'releases':
-      return 'text-fuchsia-700 dark:text-fuchsia-500'
-    case 'benchmark':
-      return 'text-teal-700 dark:text-teal-500'
-    case 'featured-graph':
-      return 'text-indigo-700 dark:text-indigo-500'
-    case 'prize':
-      return 'text-amber-700 dark:text-amber-500'
-    case 'misuse':
-      return 'text-rose-700 dark:text-rose-500'
-    case 'long-term':
-      return 'text-sky-700 dark:text-sky-500'
-    default:
-      return 'text-primary-600 dark:text-primary-500'
-  }
 }
 
 // Get gradient based on card type
@@ -431,7 +405,7 @@ function getCardBgColor(className: string) {
   // Extract card type from className if it exists
   let cardType = ''
   if (className.includes('monthly')) {
-    cardType = 'monthly' // Special case for the large monthly card
+    cardType = 'monthly'
   }
 
   // Card background colors
@@ -439,7 +413,6 @@ function getCardBgColor(className: string) {
     case 'monthly':
       return 'bg-primary-50 dark:bg-primary-800/20'
     default:
-      // If we don't know the type from className, use the card type patterns
       if (className.includes('prize')) {
         return 'bg-amber-50 dark:bg-amber-800/30'
       }
@@ -881,16 +854,16 @@ function CapabilityCard({
                 <p className="text-ink-600 mt-1 w-full px-1 text-left text-xs sm:mt-3 sm:text-sm">
                   {type === 'benchmark' &&
                     title.includes('IMO Gold') &&
-                    'An LLM gets a IMO gold medal'}
+                    'LLM gets IMO gold medal'}
                   {type === 'prize' &&
                     title.includes('Millennium') &&
                     'Chance of solving a million-dollar math problem'}
                   {type === 'prize' &&
-                    title.includes('Arc AGI') &&
-                    'Probability of claiming Arc-AGI prize'}
+                    title.includes('ARC-AGI') &&
+                    'Chance of claiming the ARC-AGI grand prize'}
                   {type === 'prize' &&
                     title.includes('Turing Test') &&
-                    'Probability of passing this variation of the Turing Test'}
+                    'Chance of passing Long Bets variation of the Turing Test'}
                   {type === 'misuse' &&
                     title.includes('Hacking') &&
                     'Probability of AI compromising systems by end of 2025'}
@@ -1090,6 +1063,17 @@ export interface FeaturedGraphProps {
   contract: BinaryContract | null
 }
 
+// Simple title card component
+function TitleCard({ title, className = '' }: { title: string; className?: string }) {
+  return (
+    <div className={`bg-gray-100 dark:bg-gray-800 rounded-lg p-2 sm:p-4 w-full shadow mb-2 ${className}`}>
+      <div className="text-lg sm:text-2xl font-semibold text-gray-800 dark:text-gray-100 text-center">
+        {title}
+      </div>
+    </div>
+  )
+}
+
 // Component to display a featured market graph
 function FeaturedMarketGraph({ contract }: FeaturedGraphProps) {
   const [points, setPoints] = useState<{ x: number; y: number }[] | null>(null)
@@ -1129,14 +1113,23 @@ function FeaturedMarketGraph({ contract }: FeaturedGraphProps) {
       className="fade-in group relative w-full rounded-lg"
       minHeight=""
     >
-      <div className="mb-4 w-full">
+      <Row className="justify-between">
+        <Link
+          href={contractPath(contract)}
+          className="hover:text-primary-700 grow items-start font-semibold transition-colors hover:underline sm:text-lg"
+        >
+          {contract.question}
+        </Link>
+      </Row>
+      
+      <div className="mt-4 mb-4 w-full">
         <div className="flex items-center justify-between">
           <div>
             <span className="text-sm text-gray-600 dark:text-gray-400">
               {' '}
               Probability:
             </span>{' '}
-            <span className="text-2xl font-semibold text-gray-800 dark:text-gray-200">
+            <span className="text-2xl font-semibold text-primary-600 dark:text-primary-500">
               {formatPercent(contract.prob ?? 0.5)}
             </span>
           </div>
@@ -1254,57 +1247,40 @@ export function AIForecast({
     'releases',
     'benchmark',
     'featured-graph',
-    'prize',
     'misuse',
+    'prize',
     'long-term',
   ]
 
   return (
-    <Col className="mb-8 gap-4 px-1 sm:gap-6 sm:px-2">
+    <Col className="mb-8 gap-2 px-1 sm:gap-3 sm:px-4 sm:pt-8">
       <Col className={hideTitle ? 'hidden' : ''}>
-        <div className="text-primary-700 mt-4 text-2xl font-normal sm:mt-0 sm:text-3xl">
-          Manifold AI Forecast
-        </div>
-        <div className="text-ink-500 text-md mt-2 flex font-normal">
-          Manifold market odds on AI progress
-        </div>
+          <div className="text-primary-700 text-2xl font-normal sm:text-3xl">
+            Manifold AI Dashboard
+          </div>
       </Col>
 
       {/* Card Categories */}
       {orderedSections.map((type, index) => (
         <Col
           key={type}
-          className={`${
-            index > 0
-              ? 'border-ink-200 dark:border-ink-800/50 mt-12 border-t pt-8'
-              : 'mt-6'
-          }`}
           id={type}
         >
-          <div className="mb-3">
-            <Row className="items-center justify-between">
-              <div>
-                <h3
-                  className={`items-center gap-1 text-xl font-semibold ${getAccentColor(
-                    type
-                  )}`}
-                >
-                  {typeInfo[type].label}
-                </h3>
-                <p className="text-ink-500 mt-1 text-sm">
-                  {typeInfo[type].description}
-                </p>
-              </div>
-              <Link
-                href={`#${type}`}
-                className="text-primary-500 hover:text-primary-700 hover:bg-primary-50 flex items-center justify-center rounded-full p-2 transition-all duration-200"
-                scroll={false}
-                aria-label={`Link to ${typeInfo[type].label} section`}
-              >
-                <LuLink size={18} />
-              </Link>
-            </Row>
-          </div>
+          {/* Insert 2025 Predictions title card after releases and before benchmark
+          {orderedSections[index-1] === 'releases' && type === 'monthly' && (
+            <TitleCard title="Best Model" />
+          )}
+           */}
+
+          {/* Insert 2025 Predictions title card after releases and before benchmark */}
+          {orderedSections[index-1] === 'releases' && type === 'benchmark' && (
+            <TitleCard title="Predictions for 2025" />
+          )}
+
+          {/* Insert Long Term Predictions title card between misuse and prizes */}
+          {orderedSections[index-1] === 'misuse' && type === 'prize' && (
+            <TitleCard title="Long Term Predictions" />
+          )}
 
           {type === 'releases' ? (
             // Display releases on a timeline
@@ -1329,9 +1305,9 @@ export function AIForecast({
                   // All monthly cards should be single column on mobile
                   cardClassName = 'col-span-2 sm:col-span-1'
 
-                  // First monthly card gets additional width on medium+ screens
+                  // First monthly card gets full width across all screen sizes
                   if (idx === 0) {
-                    cardClassName += ' md:col-span-2'
+                    cardClassName = 'col-span-2 sm:col-span-2 md:col-span-3'
                   }
                 }
 
@@ -1354,7 +1330,7 @@ export function AIForecast({
 
       {/* AGI Clock Card */}
       {liveWhenAgi && (
-        <div className="border-ink-200 dark:border-ink-800/50 mt-12 border-t pt-8">
+        <div>
           <CardBase
             onClick={() => window.open(contractPath(liveWhenAgi), '_blank')}
             className="fade-in group relative mx-auto"
