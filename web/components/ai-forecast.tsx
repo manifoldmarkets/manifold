@@ -214,21 +214,21 @@ export const AI_CAPABILITY_CARDS: AICapabilityCard[] = [
 
   // Prizes
   {
-    title: 'ARC-AGI by 2030',
+    title: 'ARC-AGI Grand Prize before 2030',
     description: 'Arc AGI prize before 2030',
     marketId: 'p0fzp3jqqc',
     type: 'prize',
     displayType: 'binary-odds',
   },
   {
-    title: 'Turing Test+ by 2030',
+    title: 'Turing Test (Long Bets) before 2030',
     description: 'Will AI pass long bets Turing Test before 2030?',
     marketId: 'nKyHon3IPOqJYzaWTHJB',
     type: 'prize',
     displayType: 'binary-odds',
   },
   {
-    title: 'Millennium Prize by 2030',
+    title: 'Millennium Prize before 2030',
     description: 'AI Solve Millennium Problem before 2030',
     marketId: '6vw71lj8bi',
     type: 'prize',
@@ -570,7 +570,7 @@ function CapabilityCard({
   }
 
   // Determine the value to display
-  let displayValue = formatPercent(0.25) // '-'
+  let displayValue = formatPercent(0.25) // dummy
   let topCompanies = [
     { text: '—', probability: 0 },
     { text: '—', probability: 0 },
@@ -1137,8 +1137,8 @@ function FeaturedMarketGraph({ contract }: FeaturedGraphProps) {
               {' '}
               Probability:
             </span>{' '}
-            <span className="text-primary-600 dark:text-primary-500 text-2xl font-semibold">
-              {formatPercent(contract.prob ?? 0.5)}
+            <span className="text-teal-600 dark:text-teal-500 text-2xl font-semibold">
+              {formatPercent(contract.prob)}
             </span>
           </div>
         </div>
