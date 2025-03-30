@@ -347,11 +347,11 @@ function CardTitle({
     <div className="relative mb-1 w-full">
       <div className="flex items-start">
         {showModelIcon && (
-          <div className="text-ink-600">
+          <div className="text-ink-600 mr-5">
             <AIModelIcon title={title} />
           </div>
         )}
-        <h3 className="text-med pr-2 font-semibold leading-tight text-gray-900 dark:text-gray-100 sm:text-lg">
+        <h3 className="text-med pr-2 font-semibold leading-tight text-gray-900 dark:text-gray-100 sm:text-lg ml-1">
           {title}
         </h3>
       </div>
@@ -372,7 +372,7 @@ function CardTitle({
 // Component for showing AI model icon
 function AIModelIcon({
   title,
-  className = 'h-5 w-5',
+  className = 'h-6 w-6',
 }: {
   title: string
   className?: string
@@ -384,28 +384,6 @@ function AIModelIcon({
   if (title.includes('Deepseek')) return <GiSpermWhale className={className} />
   if (title.includes('Qwen')) return <PiBirdBold className={className} />
   return null
-}
-
-// Get accent color based on card type
-function getAccentColor(type: string) {
-  switch (type) {
-    case 'monthly':
-      return 'text-primary-600 dark:text-primary-500'
-    case 'releases':
-      return 'text-fuchsia-700 dark:text-fuchsia-500'
-    case 'benchmark':
-      return 'text-teal-700 dark:text-teal-500'
-    case 'featured-graph':
-      return 'text-indigo-700 dark:text-indigo-500'
-    case 'prize':
-      return 'text-amber-700 dark:text-amber-500'
-    case 'misuse':
-      return 'text-rose-700 dark:text-rose-500'
-    case 'long-term':
-      return 'text-sky-700 dark:text-sky-500'
-    default:
-      return 'text-primary-600 dark:text-primary-500'
-  }
 }
 
 // Get gradient based on card type
