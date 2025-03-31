@@ -564,38 +564,41 @@ export function ContractParamsForm(props: {
   }
   const [bountyError, setBountyError] = useState<string | undefined>(undefined)
 
-  const findTopicsAndSimilarQuestions = async (question: string) => {
-    const trimmed = question.toLowerCase().trim()
-    if (trimmed === '') {
-      setHasChosenCategory(false)
-      setSimilarContracts([])
-      return
-    }
-    const [similarGroupsRes, contracts] = await Promise.all([
-      !params?.groupIds?.length &&
-      trimmed !== categorizedQuestion &&
-      !hasChosenCategory
-        ? getSimilarGroupsToContract({ question })
-        : { groups: undefined },
-      !dismissedSimilarContractTitles.includes(trimmed)
-        ? searchContracts({
-            term: question,
-            contractType: outcomeType,
-            filter: 'open',
-            limit: 10,
-            sort: 'most-popular',
-          })
-        : [],
-    ])
+  const findTopicsAndSimilarQuestions = useCallback(
+    async (question: string) => {
+      const trimmed = question.toLowerCase().trim()
+      if (trimmed === '') {
+        setHasChosenCategory(false)
+        setSimilarContracts([])
+        return
+      }
+      const [similarGroupsRes, contracts] = await Promise.all([
+        !params?.groupIds?.length &&
+        trimmed !== categorizedQuestion &&
+        !hasChosenCategory
+          ? getSimilarGroupsToContract({ question })
+          : { groups: undefined },
+        !dismissedSimilarContractTitles.includes(trimmed)
+          ? searchContracts({
+              term: question,
+              contractType: outcomeType,
+              filter: 'open',
+              limit: 10,
+              sort: 'most-popular',
+            })
+          : [],
+      ])
 
-    if (similarGroupsRes.groups) {
-      setSelectedGroups(similarGroupsRes.groups)
-      setCategorizedQuestion(trimmed)
-    }
-    setSimilarContracts(
-      contracts?.filter((c) => compareTwoStrings(c.question, question) > 0.25)
-    )
-  }
+      if (similarGroupsRes.groups) {
+        setSelectedGroups(similarGroupsRes.groups)
+        setCategorizedQuestion(trimmed)
+      }
+      setSimilarContracts(
+        contracts?.filter((c) => compareTwoStrings(c.question, question) > 0.25)
+      )
+    },
+    [dismissedSimilarContractTitles, categorizedQuestion, hasChosenCategory]
+  )
 
   const isMulti = outcomeType === 'MULTIPLE_CHOICE'
   const isNumber = outcomeType === 'NUMBER'
