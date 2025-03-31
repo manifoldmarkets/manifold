@@ -30,7 +30,7 @@ export const getCloseDate = async (question: string, utcOffset?: number) => {
      End date: 12/31/2025 11:59 pm
      (Note how the end date is the minute before the end of 2025, ie in 2025.)
 
-    Here's their question, and remember: ONLY return the end date in the form: MM/DD/YYYY HH:mm am/pm.
+    Here's their question, and remember: ONLY return the end date in the form: MM/DD/YYYY HH:mm am/pm and make sure it's after the current date.
 
     Question: ${question}
     Now: ${now}
@@ -47,7 +47,10 @@ export const getCloseDate = async (question: string, utcOffset?: number) => {
 
   const utcTime = dayjs.utc(response, 'M/D/YYYY h:mm a')
   const timestamp = utcTime.valueOf()
-  if (!timestamp || !isFinite(timestamp)) return undefined
+  if (!timestamp || !isFinite(timestamp) || utcTime.isBefore(dayjs())) {
+    log.error('Invalid close date', { response })
+    return undefined
+  }
 
   // adjust for local timezone
   return utcTime.utcOffset(utcOffset ?? 0).valueOf()
