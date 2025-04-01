@@ -45,6 +45,9 @@ import { ChevronDownIcon } from '@heroicons/react/solid'
 import { ContractStatusLabel } from '../contract/contracts-table'
 import { BinaryOutcomeLabel, MultiOutcomeLabel } from '../outcome-label'
 import { RelativeTimestamp } from '../relative-timestamp'
+import { CogIcon } from '@heroicons/react/outline'
+import { useIsMobile } from 'web/hooks/use-is-mobile'
+import { ArrowSmDownIcon, ArrowSmUpIcon } from '@heroicons/react/solid'
 
 type BetSort =
   | 'newest'
@@ -65,12 +68,21 @@ export type BetFilter =
   | 'all'
   | 'limit_bet'
 
+export type VisibleColumn =
+  | 'value'
+  | 'profit'
+  | 'day'
+  | 'week'
+  | 'position'
+  | 'closeTime'
+
 const JUNE_1_2022 = new Date('2022-06-01T00:00:00.000Z').valueOf()
 export function UserBetsTable(props: { user: User }) {
   const { user } = props
 
   const signedInUser = useUser()
   const isAuth = useIsAuthorized()
+  const isDesktop = !useIsMobile()
 
   const isYou = user.id === signedInUser?.id
 
@@ -81,6 +93,11 @@ export function UserBetsTable(props: { user: User }) {
   const [contracts, setContracts] = usePersistentInMemoryState<
     MarketContract[] | undefined
   >(undefined, `user-contract-metrics-contracts-${user.id}`)
+
+  // Track visible columns with local storage persistence
+  const [visibleColumns, setVisibleColumns] = usePersistentLocalState<
+    VisibleColumn[]
+  >(['value', 'position'], 'bets-visible-columns')
 
   const [showLimitOrders, setShowLimitOrders] = usePersistentLocalState(
     false,
@@ -207,37 +224,20 @@ export function UserBetsTable(props: { user: User }) {
 
   const hasSweeps = contracts?.some((c) => c.token === 'CASH')
 
-  // Define sort options for the dropdown
-  const [sortOption, setSortOption] = usePersistentInMemoryState<{
-    field: BetSort
-    direction: 'asc' | 'desc'
-  }>({ field: 'newest', direction: 'desc' }, 'bets-list-sort')
-
-  const sortOptions: {
+  // Define filter options
+  const filterOptions: {
     label: string
-    field: BetSort
-    direction: 'asc' | 'desc'
+    value: BetFilter | 'limit_orders'
   }[] = [
-    { label: 'Newest', field: 'newest', direction: 'desc' },
-    { label: 'Oldest', field: 'newest', direction: 'asc' },
-    { label: 'Highest Value', field: 'value', direction: 'desc' },
-    { label: 'Highest Position', field: 'position', direction: 'desc' },
-    { label: 'Highest Profit', field: 'profit', direction: 'desc' },
-    { label: 'Lowest Profit', field: 'profit', direction: 'asc' },
-    { label: 'Highest 1d Change', field: 'day', direction: 'desc' },
-    { label: 'Lowest 1d Change', field: 'day', direction: 'asc' },
-    { label: 'Highest 1w Change', field: 'week', direction: 'desc' },
-    { label: 'Lowest 1w Change', field: 'week', direction: 'asc' },
-    { label: 'Closing Soon', field: 'closeTime', direction: 'asc' },
-  ]
-
-  const filterOptions = [
     { label: 'All', value: 'all' },
     { label: 'Open', value: 'open' },
     { label: 'Sold', value: 'sold' },
     { label: 'Closed', value: 'closed' },
     { label: 'Resolved', value: 'resolved' },
-    { label: 'Limit Orders', value: 'limit_orders' },
+    {
+      label: 'Limit Orders',
+      value: 'limit_orders',
+    },
   ]
 
   const limitOrderFilterOptions: {
@@ -250,12 +250,40 @@ export function UserBetsTable(props: { user: User }) {
     { label: 'Cancelled', value: 'cancelled' },
   ]
 
+  // Define sort options for the dropdown in the main component
+  const sortOptions: {
+    label: string
+    field: BetSort
+    direction: 'asc' | 'desc'
+  }[] = [
+    { label: 'Newest', field: 'newest', direction: 'desc' },
+    { label: 'Oldest', field: 'newest', direction: 'asc' },
+    { label: 'Highest Value', field: 'value', direction: 'desc' },
+    { label: 'Lowest Value', field: 'value', direction: 'asc' },
+    { label: 'Highest Position', field: 'position', direction: 'desc' },
+    { label: 'Lowest Position', field: 'position', direction: 'asc' },
+    { label: 'Highest Profit', field: 'profit', direction: 'desc' },
+    { label: 'Lowest Profit', field: 'profit', direction: 'asc' },
+    { label: 'Highest 1d Change', field: 'day', direction: 'desc' },
+    { label: 'Lowest 1d Change', field: 'day', direction: 'asc' },
+    { label: 'Highest 1w Change', field: 'week', direction: 'desc' },
+    { label: 'Lowest 1w Change', field: 'week', direction: 'asc' },
+    { label: 'Closing Soon', field: 'closeTime', direction: 'asc' },
+  ]
+
+  // Restore sort state here, replacing sortDropdownOption
+  const [sortOption, setSortOption] = usePersistentInMemoryState<{
+    field: BetSort
+    direction: 'asc' | 'desc'
+  }>({ field: 'newest', direction: 'desc' }, 'bets-list-sort') // Use original key
+
+  // Handler for the dropdown selection - now updates the main sort state
   const onSelectSortOption = (option: {
     field: BetSort
     direction: 'asc' | 'desc'
   }) => {
     setSortOption(option)
-    setPage(0)
+    setPage(0) // Reset page when dropdown sort changes
   }
 
   return (
@@ -291,7 +319,7 @@ export function UserBetsTable(props: { user: User }) {
                     </span>
                     <ChevronDownIcon className="ml-2 h-4 w-4" />
                   </MenuButton>
-                  <MenuItems className="bg-canvas-0 border-ink-200 absolute right-0 z-20 mt-1 w-48 overflow-hidden rounded-md border shadow-lg">
+                  <MenuItems className="bg-canvas-0 border-ink-200 absolute right-0 z-20 mt-1 w-48  rounded-md border shadow-lg">
                     {filterOptions.map((option) => (
                       <MenuItem key={option.value}>
                         {({ focus }) => (
@@ -330,7 +358,7 @@ export function UserBetsTable(props: { user: User }) {
                       </span>
                       <ChevronDownIcon className="ml-2 h-4 w-4" />
                     </MenuButton>
-                    <MenuItems className="bg-canvas-0 border-ink-200 absolute right-0 z-20 mt-1 w-48 overflow-hidden rounded-md border shadow-lg">
+                    <MenuItems className="bg-canvas-0 border-ink-200 absolute right-0 z-20 mt-1 w-48  rounded-md border shadow-lg">
                       {limitOrderFilterOptions.map((option) => (
                         <MenuItem key={option.value}>
                           {({ focus }) => (
@@ -367,7 +395,7 @@ export function UserBetsTable(props: { user: User }) {
                       </span>
                       <ChevronDownIcon className="ml-2 h-4 w-4" />
                     </MenuButton>
-                    <MenuItems className="bg-canvas-0 border-ink-200 absolute right-0 z-10 mt-1 max-h-80 w-48 overflow-auto rounded-md border shadow-lg sm:max-h-none sm:overflow-hidden">
+                    <MenuItems className="bg-canvas-0 border-ink-200 absolute right-0 z-10 mt-1 max-h-80 w-48 rounded-md border shadow-lg sm:max-h-none ">
                       {sortOptions.map((option) => (
                         <MenuItem key={`${option.field}-${option.direction}`}>
                           {({ focus }) => (
@@ -404,18 +432,16 @@ export function UserBetsTable(props: { user: User }) {
             </Row>
           )}
         </Col>
-        <Row className="text-ink-500 w-full justify-between px-2 pt-2 text-sm">
-          <Col className="">Question</Col>
-          <Col className="pr-6 text-right">Value</Col>
-        </Row>
       </div>
 
       {!loaded ? (
-        <Col className="divide-ink-300 mt-6 divide-y">
-          <LoadingMetricRow />
-          <LoadingMetricRow />
-          <LoadingMetricRow />
-        </Col>
+        <div className="overflow-hidden">
+          <Col className="divide-ink-300 mt-6 divide-y">
+            <LoadingMetricRow />
+            <LoadingMetricRow />
+            <LoadingMetricRow />
+          </Col>
+        </div>
       ) : Object.keys(nullableMetricsByContract).length === 0 ? (
         <NoBets user={user} />
       ) : showLimitOrders && isYou ? (
@@ -439,6 +465,9 @@ export function UserBetsTable(props: { user: User }) {
           filter={filter}
           signedInUser={signedInUser}
           sortOption={sortOption}
+          setSortOption={setSortOption}
+          visibleColumns={visibleColumns}
+          setVisibleColumns={setVisibleColumns}
         />
       )}
     </Col>
@@ -467,6 +496,9 @@ function BetsTable(props: {
   user: User
   signedInUser: User | null | undefined
   sortOption: { field: BetSort; direction: 'asc' | 'desc' }
+  setSortOption: (sort: { field: BetSort; direction: 'asc' | 'desc' }) => void
+  visibleColumns: VisibleColumn[]
+  setVisibleColumns: (columns: VisibleColumn[]) => void
 }) {
   const {
     metricsByContractId,
@@ -476,8 +508,25 @@ function BetsTable(props: {
     user,
     signedInUser,
     sortOption,
+    setSortOption,
+    visibleColumns,
+    setVisibleColumns,
   } = props
   const areYourBets = user.id === signedInUser?.id
+  const isDesktop = !useIsMobile()
+  const [expandedIds, setExpandedIds] = useState<string[]>([])
+
+  // Define handler within BetsTable - uses props now
+  const handleHeaderClick = (field: BetSort) => {
+    let direction: 'asc' | 'desc' = 'desc'
+    if (sortOption.field === field) {
+      direction = sortOption.direction === 'desc' ? 'asc' : 'desc'
+    } else {
+      if (field === 'closeTime') direction = 'asc'
+    }
+    setSortOption({ field, direction })
+    setPage(0)
+  }
 
   // Most of these are descending sorts by default.
   const SORTS: Record<BetSort, (c: Contract) => number> = {
@@ -509,7 +558,6 @@ function BetsTable(props: {
   const rowsPerSection = 50
   const currentSlice = page * rowsPerSection
 
-  const [expandedIds, setExpandedIds] = useState<string[]>([])
   const setNewExpandedId = (id: string) => {
     setExpandedIds((oldIds) =>
       oldIds.includes(id)
@@ -519,271 +567,442 @@ function BetsTable(props: {
   }
 
   return (
-    <Col className="mb-4 flex-1">
-      <Col className={'w-full'}>
-        {contracts
-          .slice(currentSlice, currentSlice + rowsPerSection)
-          .map((contract) => {
-            const metric = metricsByContractId[contract.id]
-            const closeDate = contract.resolutionTime ?? contract.closeTime
-            const resolvedAnswer =
-              contract.mechanism === 'cpmm-multi-1'
-                ? contract.answers.find(
-                    (a) =>
-                      a.id === contract.resolution ||
-                      (contract.resolutions?.[a.id] ?? 0) >= 99
+    <div className="mb-4 flex-1 ">
+      {/* Column customization button outside the scrollable area */}
+      <Row className="justify-end pb-1 pr-6 pt-1">
+        <Menu as="div" className="relative">
+          <MenuButton
+            className="text-ink-500 hover:text-ink-700 flex items-center"
+            aria-label="Customize columns"
+          >
+            <CogIcon className="h-4 w-4" />
+            <span className="ml-1 text-sm">Columns</span>
+          </MenuButton>
+          <MenuItems className="bg-canvas-0 border-ink-200 absolute right-0 z-20 mt-1 w-48 rounded-md border shadow-lg">
+            <div className="px-4 py-2 text-xs font-semibold">
+              Customize Columns
+            </div>
+            <div className="border-ink-200 border-t"></div>
+            {[
+              { value: 'value', label: 'Value' },
+              { value: 'profit', label: 'Profit' },
+              { value: 'day', label: '1d Profit' },
+              { value: 'week', label: '1w Profit' },
+              { value: 'position', label: 'Position' },
+              { value: 'closeTime', label: 'Close Time' },
+            ].map((column) => (
+              <MenuItem key={column.value}>
+                {({ focus }) => {
+                  const isSelected = visibleColumns.includes(
+                    column.value as VisibleColumn
                   )
-                : undefined
 
-            const maxOutcome = metricsByContractId[contract.id].maxSharesOutcome
-            const showOutcome = maxOutcome && contract.outcomeType === 'BINARY'
+                  return (
+                    <button
+                      className={clsx(
+                        'w-full px-4 py-2 text-left text-sm',
+                        focus && 'bg-primary-50',
+                        isSelected && 'bg-primary-100',
+                        'cursor-pointer'
+                      )}
+                      onClick={() => {
+                        if (isSelected) {
+                          if (visibleColumns.length > 1) {
+                            // Always keep at least one column
+                            setVisibleColumns(
+                              visibleColumns.filter((c) => c !== column.value)
+                            )
+                          }
+                        } else {
+                          setVisibleColumns([
+                            ...visibleColumns,
+                            column.value as VisibleColumn,
+                          ])
+                        }
+                      }}
+                    >
+                      {column.label}
+                      {isSelected && (
+                        <span className="text-primary-600 ml-2">✓</span>
+                      )}
+                    </button>
+                  )
+                }}
+              </MenuItem>
+            ))}
+          </MenuItems>
+        </Menu>
+      </Row>
 
-            return (
-              <Row
-                key={contract.id + 'bets-table-row'}
-                className={
-                  'border-ink-200 hover:bg-canvas-50 cursor-pointer border-b py-3'
-                }
-                onClick={() => setNewExpandedId(contract.id)}
-              >
-                <Col className="w-full px-2">
-                  <Row className="justify-between">
-                    {/* Left side - Question, probability and creator */}
-                    <Col className="w-3/4">
-                      <Link
-                        href={contractPath(contract)}
+      {/* Scrollable table content with headers */}
+      <div
+        className={clsx(
+          'scrollbar-thin scrollbar-track-transparent scrollbar-thumb-ink-200 w-full max-w-full overflow-x-auto',
+          visibleColumns.length > 2 ? 'show-scrollbar' : 'hide-scrollbar'
+        )}
+      >
+        <div className="min-w-full">
+          <BetsTableHeaders
+            visibleColumns={visibleColumns}
+            isDesktop={isDesktop}
+            sortOption={sortOption}
+            handleHeaderClick={handleHeaderClick}
+          />
+          {/* Table data rows */}
+          <div className="min-w-full">
+            {contracts
+              .slice(currentSlice, currentSlice + rowsPerSection)
+              .map((contract) => {
+                const metric = metricsByContractId[contract.id]
+                const closeDate = contract.resolutionTime ?? contract.closeTime
+                const resolvedAnswer =
+                  contract.mechanism === 'cpmm-multi-1'
+                    ? contract.answers.find(
+                        (a) =>
+                          a.id === contract.resolution ||
+                          (contract.resolutions?.[a.id] ?? 0) >= 99
+                      )
+                    : undefined
+
+                const maxOutcome =
+                  metricsByContractId[contract.id].maxSharesOutcome
+
+                return (
+                  <div
+                    key={contract.id + 'bets-table-row'}
+                    className="hover:bg-canvas-50  w-full cursor-pointer "
+                  >
+                    <div
+                      className="flex w-full items-start"
+                      onClick={() => setNewExpandedId(contract.id)}
+                    >
+                      {/* Question cell */}
+                      <div
                         className={clsx(
-                          linkClass,
-                          'line-clamp-2 text-lg font-medium'
+                          'border-ink-200 border-b py-3',
+                          isDesktop
+                            ? 'min-w-0 flex-1 pr-4'
+                            : 'w-40 flex-shrink-0'
                         )}
-                        onClick={(e) => e.stopPropagation()}
                       >
-                        {contract.token == 'CASH' && (
-                          <Tooltip
-                            text={SWEEPIES_MARKET_TOOLTIP}
-                            className="relative mr-0.5 inline-flex h-[1em] w-[1.1em] items-baseline"
-                          >
-                            <SweepiesCoin className="absolute inset-0 top-[0.2em]" />
-                          </Tooltip>
-                        )}
-                        {contract.question}
-                      </Link>
-                      <Row className="mt-1 flex-wrap items-center">
-                        {contract.isResolved ? (
-                          <span className="text-ink-800 mr-1 text-sm">
-                            {contract.outcomeType === 'MULTIPLE_CHOICE' ? (
-                              Object.values(contract.resolutions ?? {}).filter(
-                                (r) => r > 1
-                              ).length > 1 || contract.resolution === 'MKT' ? (
-                                <span>MULTI</span>
-                              ) : contract.resolution === 'CANCEL' ? (
-                                <BinaryOutcomeLabel outcome="CANCEL" />
-                              ) : resolvedAnswer ? (
-                                <MultiOutcomeLabel
-                                  answer={resolvedAnswer}
-                                  resolution={contract.resolution ?? ''}
-                                  truncate="long"
-                                  answerClassName={
-                                    'font-semibold text-base-400 !break-normal'
-                                  }
-                                />
-                              ) : null
-                            ) : (
-                              <ContractStatusLabel contract={contract} />
+                        <div className="">
+                          <Link
+                            href={contractPath(contract)}
+                            className={clsx(
+                              linkClass,
+                              'block truncate font-medium'
                             )}
-                            <span className="text-ink-500 ml-1 text-sm">•</span>
-                          </span>
-                        ) : contract.outcomeType !== 'MULTIPLE_CHOICE' ? (
-                          <span className="text-ink-800 mr-1 text-sm">
-                            <ContractStatusLabel contract={contract} />
-                            <span className="text-ink-500 ml-1 text-sm">•</span>
-                          </span>
-                        ) : null}
-                        <Row className="items-center gap-1">
-                          {sortOption.field === 'newest' && (
-                            <span className="text-ink-500 text-sm">
-                              <RelativeTimestamp
-                                time={metric.lastBetTime}
-                                className="text-ink-500 -ml-1 text-sm"
-                                shortened
-                              />{' '}
-                              •
+                            onClick={(e) => e.stopPropagation()}
+                            title={contract.question}
+                          >
+                            {contract.token == 'CASH' && (
+                              <Tooltip
+                                text={SWEEPIES_MARKET_TOOLTIP}
+                                className="relative mr-0.5 inline-flex h-[1em] w-[1.1em] items-baseline"
+                              >
+                                <SweepiesCoin className="absolute inset-0 top-[0.2em]" />
+                              </Tooltip>
+                            )}
+                            <span className="truncate">
+                              {contract.question}
                             </span>
-                          )}
-                          <span className="text-ink-500 text-sm">
-                            to win{' '}
-                            {formatWithToken({
-                              amount: sum(Object.values(metric.totalShares)),
-                              token: contract.token === 'CASH' ? 'CASH' : 'M$',
-                            }).replace('-', '')}{' '}
-                            {showOutcome ? `on ${maxOutcome}` : ''}
-                          </span>
-                          {sortOption.field === 'closeTime' ? (
-                            <span className="text-ink-500 text-sm">
-                              •{' '}
-                              {closeDate ? (
-                                <>
-                                  closes in
-                                  <RelativeTimestamp
-                                    time={closeDate}
-                                    className="text-ink-500 text-sm"
-                                    shortened
+                          </Link>
+                        </div>
+                        <div className="text-ink-500 mt-1 truncate text-sm">
+                          {contract.isResolved ? (
+                            <span className="text-ink-800 mr-1 inline-flex">
+                              {contract.outcomeType === 'MULTIPLE_CHOICE' ? (
+                                Object.values(
+                                  contract.resolutions ?? {}
+                                ).filter((r) => r > 1).length > 1 ||
+                                contract.resolution === 'MKT' ? (
+                                  <span>MULTI</span>
+                                ) : contract.resolution === 'CANCEL' ? (
+                                  <BinaryOutcomeLabel outcome="CANCEL" />
+                                ) : resolvedAnswer ? (
+                                  <MultiOutcomeLabel
+                                    answer={resolvedAnswer}
+                                    resolution={contract.resolution ?? ''}
+                                    truncate="long"
+                                    answerClassName={
+                                      'font-semibold text-base-400 !break-normal'
+                                    }
                                   />
-                                </>
+                                ) : null
                               ) : (
-                                'never closes'
+                                <ContractStatusLabel contract={contract} />
                               )}
+                              <span className="text-ink-500 ml-1 text-sm">
+                                •
+                              </span>
+                            </span>
+                          ) : contract.outcomeType !== 'MULTIPLE_CHOICE' ? (
+                            <span className="text-ink-800 mr-1 inline-flex">
+                              <ContractStatusLabel contract={contract} />
+                              <span className="text-ink-500 ml-1 text-sm">
+                                •
+                              </span>
                             </span>
                           ) : null}
-                        </Row>
-                      </Row>
-                    </Col>
-
-                    {/* Right side - Value and profit */}
-                    <Row className="items-start gap-2">
-                      <Col className="text-right">
-                        <span className="text-ink-900 text-lg font-medium">
-                          {formatWithToken({
-                            amount: metric.payout,
-                            token: contract.token,
-                          }).replace('-', '')}
-                        </span>
-
-                        {sortOption.field === 'day' ? (
-                          <span
-                            className={clsx(
-                              'text-sm font-medium',
-                              (metric.from?.day.profit ?? 0) > 0
-                                ? 'text-teal-500'
-                                : 'text-ink-500'
-                            )}
-                          >
-                            {(metric.from?.day.profit ?? 0) > 0 ? '+' : ''}
-                            {formatWithToken({
-                              amount: metric.from?.day.profit ?? 0,
-                              token: contract.token,
-                            }).replace('-', '')}
-                            <span
-                              className={clsx(
-                                'ml-1 rounded-full px-1.5 py-0.5 text-xs',
-                                (metric.from?.day.profitPercent ?? 0) > 0
-                                  ? 'bg-teal-100 text-teal-800'
-                                  : 'bg-canvas-50 text-ink-600'
-                              )}
-                            >
-                              {(metric.from?.day.profitPercent ?? 0) > 0
-                                ? '+'
-                                : ''}
-                              {(metric.from?.day.profitPercent ?? 0).toFixed(0)}
-                              %
-                            </span>
+                          <span className="text-ink-500 text-sm">
+                            <RelativeTimestamp
+                              time={metric.lastBetTime}
+                              className="text-ink-500 -ml-1 text-sm"
+                              shortened
+                            />
                           </span>
-                        ) : sortOption.field === 'week' ? (
-                          <span
-                            className={clsx(
-                              'text-sm font-medium',
-                              (metric.from?.week.profit ?? 0) > 0
-                                ? 'text-teal-500'
-                                : 'text-ink-500'
-                            )}
-                          >
-                            {(metric.from?.week.profit ?? 0) > 0 ? '+' : ''}
-                            {formatWithToken({
-                              amount: metric.from?.week.profit ?? 0,
-                              token: contract.token,
-                            }).replace('-', '')}
-                            <span
-                              className={clsx(
-                                'ml-1 rounded-full px-1.5 py-0.5 text-xs',
-                                (metric.from?.week.profitPercent ?? 0) > 0
-                                  ? 'bg-teal-100 text-teal-800'
-                                  : 'bg-canvas-50 text-ink-600'
-                              )}
-                            >
-                              {(metric.from?.week.profitPercent ?? 0) > 0
-                                ? '+'
-                                : ''}
-                              {(metric.from?.week.profitPercent ?? 0).toFixed(
-                                0
-                              )}
-                              %
+                          {sortOption.field === 'closeTime' && closeDate ? (
+                            <span className="text-ink-500 ml-1 whitespace-nowrap">
+                              • closes in
+                              <RelativeTimestamp
+                                time={closeDate}
+                                className="text-ink-500"
+                                shortened
+                              />
                             </span>
-                          </span>
-                        ) : (
-                          <span
+                          ) : null}
+                        </div>
+                      </div>
+
+                      {/* Data cells container */}
+                      <div
+                        className={clsx(
+                          'flex items-start justify-end',
+                          !isDesktop && 'flex-grow'
+                        )}
+                      >
+                        {visibleColumns.map((columnType, i) => (
+                          <div
+                            key={columnType}
                             className={clsx(
-                              'text-sm font-medium',
-                              metric.profit > 0
-                                ? 'text-teal-500'
-                                : 'text-ink-500'
+                              'h-[73px] w-[90px] flex-shrink-0 py-3 text-right',
+                              'border-ink-200 border-b'
                             )}
                           >
-                            {sortOption.field === 'profit' && (
+                            {columnType === 'value' && (
                               <>
-                                {metric.profit > 0 ? '+' : ''}
-                                {formatWithToken({
-                                  amount: metric.profit,
-                                  token: contract.token,
-                                }).replace('-', '')}
+                                <div className="text-ink-900 text-lg font-medium">
+                                  {formatWithToken({
+                                    amount: metric.payout,
+                                    token: contract.token,
+                                  }).replace('-', '')}
+                                </div>
+                                {!visibleColumns.includes('profit') && (
+                                  <div
+                                    className={clsx(
+                                      'text-sm font-medium',
+                                      metric.profit > 0
+                                        ? 'text-teal-500'
+                                        : 'text-ink-500'
+                                    )}
+                                  >
+                                    <Tooltip
+                                      text={`${formatWithToken({
+                                        amount: metric.profit,
+                                        token: contract.token,
+                                      })} total profit`}
+                                    >
+                                      <span
+                                        className={clsx(
+                                          'ml-1 rounded-full px-1.5 py-0.5 text-xs',
+                                          metric.profitPercent > 0
+                                            ? 'bg-teal-100 text-teal-800'
+                                            : 'bg-canvas-50 text-ink-600'
+                                        )}
+                                      >
+                                        {metric.profitPercent > 0 ? '+' : ''}
+                                        {metric.profitPercent.toFixed(0)}%
+                                      </span>
+                                    </Tooltip>
+                                  </div>
+                                )}
                               </>
                             )}
-                            <Tooltip
-                              text={`${formatWithToken({
-                                amount: metric.profit,
-                                token: contract.token,
-                              })} total profit`}
-                            >
-                              <span
-                                className={clsx(
-                                  'ml-1 rounded-full px-1.5 py-0.5 text-xs',
-                                  metric.profitPercent > 0
-                                    ? 'bg-teal-100 text-teal-800'
-                                    : 'bg-canvas-50 text-ink-600'
-                                )}
-                              >
-                                {metric.profitPercent > 0 ? '+' : ''}
-                                {metric.profitPercent.toFixed(0)}%
-                              </span>
-                            </Tooltip>
-                          </span>
-                        )}
-                      </Col>
-                      <Col className="flex items-start pt-1">
-                        <ChevronDownIcon
-                          className={clsx(
-                            'text-ink-500 h-4 w-4 transition-transform',
-                            expandedIds.includes(contract.id)
-                              ? 'rotate-180'
-                              : ''
-                          )}
+                            {columnType === 'profit' && (
+                              <>
+                                <div className="text-ink-900 text-lg font-medium">
+                                  {formatWithToken({
+                                    amount: metric.profit,
+                                    token: contract.token,
+                                  })}
+                                </div>
+                                <div
+                                  className={clsx(
+                                    'text-sm font-medium',
+                                    metric.profitPercent > 0
+                                      ? 'text-teal-500'
+                                      : 'text-ink-500'
+                                  )}
+                                >
+                                  <span
+                                    className={clsx(
+                                      'ml-1 rounded-full px-1.5 py-0.5 text-xs',
+                                      metric.profitPercent > 0
+                                        ? 'bg-teal-100 text-teal-800'
+                                        : 'bg-canvas-50 text-ink-600'
+                                    )}
+                                  >
+                                    {metric.profitPercent > 0 ? '+' : ''}
+                                    {metric.profitPercent.toFixed(0)}%
+                                  </span>
+                                </div>
+                              </>
+                            )}
+                            {columnType === 'day' && (
+                              <>
+                                <div className="text-ink-900 text-lg font-medium">
+                                  {formatWithToken({
+                                    amount: metric.from?.day.profit ?? 0,
+                                    token: contract.token,
+                                  })}
+                                </div>
+                                <div
+                                  className={clsx(
+                                    'text-sm font-medium',
+                                    (metric.from?.day.profitPercent ?? 0) > 0
+                                      ? 'text-teal-500'
+                                      : 'text-ink-500'
+                                  )}
+                                >
+                                  <span
+                                    className={clsx(
+                                      'ml-1 rounded-full px-1.5 py-0.5 text-xs',
+                                      (metric.from?.day.profitPercent ?? 0) > 0
+                                        ? 'bg-teal-100 text-teal-800'
+                                        : 'bg-canvas-50 text-ink-600'
+                                    )}
+                                  >
+                                    {(metric.from?.day.profitPercent ?? 0) > 0
+                                      ? '+'
+                                      : ''}
+                                    {(
+                                      metric.from?.day.profitPercent ?? 0
+                                    ).toFixed(0)}
+                                    %
+                                  </span>
+                                </div>
+                              </>
+                            )}
+                            {columnType === 'week' && (
+                              <>
+                                <div className="text-ink-900 text-lg font-medium">
+                                  {formatWithToken({
+                                    amount: metric.from?.week.profit ?? 0,
+                                    token: contract.token,
+                                  })}
+                                </div>
+                                <div
+                                  className={clsx(
+                                    'text-sm font-medium',
+                                    (metric.from?.week.profitPercent ?? 0) > 0
+                                      ? 'text-teal-500'
+                                      : 'text-ink-500'
+                                  )}
+                                >
+                                  <span
+                                    className={clsx(
+                                      'ml-1 rounded-full px-1.5 py-0.5 text-xs',
+                                      (metric.from?.week.profitPercent ?? 0) > 0
+                                        ? 'bg-teal-100 text-teal-800'
+                                        : 'bg-canvas-50 text-ink-600'
+                                    )}
+                                  >
+                                    {(metric.from?.week.profitPercent ?? 0) > 0
+                                      ? '+'
+                                      : ''}
+                                    {(
+                                      metric.from?.week.profitPercent ?? 0
+                                    ).toFixed(0)}
+                                    %
+                                  </span>
+                                </div>
+                              </>
+                            )}
+                            {columnType === 'position' && (
+                              <>
+                                <div className="text-ink-900 text-lg font-medium">
+                                  {formatWithToken({
+                                    amount: sum(
+                                      Object.values(metric.totalShares)
+                                    ),
+                                    token:
+                                      contract.token === 'CASH' ? 'CASH' : 'M$',
+                                  }).replace('-', '')}
+                                </div>
+                                <div className="text-ink-500 text-sm">
+                                  {maxOutcome && `${maxOutcome}`}
+                                </div>
+                              </>
+                            )}
+                            {columnType === 'closeTime' && (
+                              <>
+                                <div className="text-ink-900 whitespace-nowrap text-lg font-medium">
+                                  {closeDate ? (
+                                    <RelativeTimestamp
+                                      time={closeDate}
+                                      className="text-ink-900 text-lg font-medium"
+                                      shortened
+                                    />
+                                  ) : (
+                                    'No close'
+                                  )}
+                                </div>
+                                <div className="text-ink-500 text-sm">
+                                  {contract.isResolved
+                                    ? 'Resolved'
+                                    : closeDate && closeDate < Date.now()
+                                    ? 'Closed'
+                                    : closeDate
+                                    ? 'Closes'
+                                    : ''}
+                                </div>
+                              </>
+                            )}
+                          </div>
+                        ))}
+
+                        {/* Chevron cell */}
+                        <div className="w-[28px] flex-shrink-0 py-3">
+                          <div className="pt-1">
+                            <ChevronDownIcon
+                              className={clsx(
+                                'text-ink-500 h-4 w-4 transition-transform',
+                                expandedIds.includes(contract.id)
+                                  ? 'rotate-180'
+                                  : ''
+                              )}
+                            />
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Expanded content below the main row content */}
+                    {expandedIds.includes(contract.id) && (
+                      <div className="border-ink-200 border-t px-2 py-2">
+                        <ExpandedBetRow
+                          contract={contract}
+                          user={user}
+                          signedInUser={signedInUser}
+                          contractMetric={metric}
+                          areYourBets={areYourBets}
                         />
-                      </Col>
-                    </Row>
-                  </Row>
+                      </div>
+                    )}
+                  </div>
+                )
+              })}
+          </div>
 
-                  {/* Expanded View */}
-                  {expandedIds.includes(contract.id) && (
-                    <ExpandedBetRow
-                      contract={contract}
-                      user={user}
-                      signedInUser={signedInUser}
-                      contractMetric={metricsByContractId[contract.id]}
-                      areYourBets={areYourBets}
-                    />
-                  )}
-                </Col>
-              </Row>
-            )
-          })}
-      </Col>
-
-      <Pagination
-        page={page}
-        pageSize={rowsPerSection}
-        totalItems={contracts.length}
-        setPage={setPage}
-      />
-    </Col>
+          <Pagination
+            page={page}
+            pageSize={rowsPerSection}
+            totalItems={contracts.length}
+            setPage={setPage}
+          />
+        </div>
+      </div>
+    </div>
   )
 }
 
@@ -876,6 +1095,91 @@ export function LoadingMetricRow() {
         <div className="h-4 w-16 rounded bg-gray-200" />
         <div className="h-4 w-16 rounded bg-gray-200" />
       </Row>
+    </div>
+  )
+}
+
+// Custom hook for media queries
+function useMediaQuery(query: string) {
+  const [matches, setMatches] = useState(false)
+
+  useEffect(() => {
+    const media = window.matchMedia(query)
+    if (media.matches !== matches) {
+      setMatches(media.matches)
+    }
+    const listener = () => setMatches(media.matches)
+    media.addEventListener('change', listener)
+    return () => media.removeEventListener('change', listener)
+  }, [matches, query])
+
+  return matches
+}
+
+// Extracted header component
+function BetsTableHeaders(props: {
+  visibleColumns: VisibleColumn[]
+  isDesktop: boolean
+  sortOption: { field: BetSort; direction: 'asc' | 'desc' }
+  handleHeaderClick: (field: BetSort) => void
+}) {
+  const { visibleColumns, isDesktop, sortOption, handleHeaderClick } = props
+
+  return (
+    <div className="border-ink-200 bg-canvas-0 sticky top-0 flex w-full border-b text-sm">
+      {/* Question header */}
+      <div
+        className={clsx(
+          'text-ink-500 px-2 py-2',
+          isDesktop ? 'min-w-0 flex-1 pr-4' : 'w-40 flex-shrink-0'
+        )}
+      >
+        Question
+      </div>
+
+      {/* Data columns headers container */}
+      <div
+        className={clsx(
+          'flex items-center justify-end',
+          !isDesktop && 'flex-grow'
+        )}
+      >
+        {visibleColumns.map((column) => {
+          const sortField = column as BetSort
+          const isSortingByThis = sortOption.field === sortField
+
+          return (
+            <div
+              key={column}
+              className={clsx(
+                'text-ink-500 hover:text-ink-700 w-[90px] flex-shrink-0 cursor-pointer py-2 text-right text-sm'
+              )}
+              onClick={() => handleHeaderClick(sortField)}
+            >
+              <Row className="items-center justify-end gap-1">
+                <span>
+                  {column === 'value' && 'Value'}
+                  {column === 'profit' && 'Profit'}
+                  {column === 'day' && '1d Profit'}
+                  {column === 'week' && '1w Profit'}
+                  {column === 'position' && 'Position'}
+                  {column === 'closeTime' && 'Close'}
+                </span>
+                {isSortingByThis ? (
+                  sortOption.direction === 'desc' ? (
+                    <ArrowSmDownIcon className="h-4 w-4" />
+                  ) : (
+                    <ArrowSmUpIcon className="h-4 w-4" />
+                  )
+                ) : null}
+              </Row>
+            </div>
+          )
+        })}
+
+        {/* Empty space for chevron */}
+        <div className="w-[28px] flex-shrink-0 py-2"></div>
+      </div>
     </div>
   )
 }
