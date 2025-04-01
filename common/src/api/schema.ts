@@ -2069,6 +2069,7 @@ export const API = (_apiTypeCheck = {
         blockedGroupSlugs: z.array(z.string()).optional(),
         blockedContractIds: z.array(z.string()).optional(),
         topicSlug: z.string().optional(),
+        topicId: z.string().optional(),
         types: z.array(z.enum(['bets', 'comments', 'markets'])).optional(),
       })
       .strict(),

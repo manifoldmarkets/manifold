@@ -72,7 +72,7 @@ export default function ActivityPage() {
         </Row>
         <SiteActivity
           className="w-full"
-          topicSlug={selectedTopic?.slug}
+          topicId={selectedTopic?.id}
           types={selectedTypes}
         />
       </Col>

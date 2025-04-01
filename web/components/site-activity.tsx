@@ -20,10 +20,10 @@ import { VisibilityObserver } from 'web/components/widgets/visibility-observer'
 export function SiteActivity(props: {
   className?: string
   blockedUserIds?: string[]
-  topicSlug?: string
+  topicId?: string
   types?: ('bets' | 'comments' | 'markets')[]
 }) {
-  const { className, topicSlug, types } = props
+  const { className, topicId, types } = props
   const privateUser = usePrivateUser()
 
   const blockedGroupSlugs = privateUser?.blockedGroupSlugs ?? []
@@ -41,7 +41,7 @@ export function SiteActivity(props: {
     blockedUserIds,
     blockedGroupSlugs,
     blockedContractIds,
-    topicSlug,
+    topicId,
     types,
   })
 
@@ -70,7 +70,7 @@ export function SiteActivity(props: {
   useEffect(() => {
     setAllData(undefined)
     setOffset(0)
-  }, [topicSlug, types])
+  }, [topicId, types])
 
   if (!allData) return <LoadingIndicator />
 

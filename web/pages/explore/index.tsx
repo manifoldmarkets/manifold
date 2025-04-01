@@ -111,7 +111,7 @@ export function ExploreContent(props: { render: boolean }) {
               )}
             />
           </Row>
-          <SiteActivity topicSlug={selectedTopic?.slug} types={selectedTypes} />
+          <SiteActivity topicId={selectedTopic?.id} types={selectedTypes} />
         </Col>
       ),
     },
