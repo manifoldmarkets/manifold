@@ -673,7 +673,7 @@ function BetsTable(props: {
                     className="hover:bg-canvas-50  w-full cursor-pointer "
                   >
                     <div
-                      className="flex w-full items-start"
+                      className="flex w-full"
                       onClick={() => setNewExpandedId(contract.id)}
                     >
                       {/* Question cell */}
@@ -685,29 +685,30 @@ function BetsTable(props: {
                             : 'w-40 flex-shrink-0'
                         )}
                       >
-                        <div className="">
-                          <Link
-                            href={contractPath(contract)}
+                        <Link
+                          href={contractPath(contract)}
+                          onClick={(e) => e.stopPropagation()}
+                          title={contract.question}
+                        >
+                          {contract.token == 'CASH' && (
+                            <Tooltip
+                              text={SWEEPIES_MARKET_TOOLTIP}
+                              className="relative mr-0.5 inline-flex h-[1em] w-[1.1em] items-baseline"
+                            >
+                              <SweepiesCoin className="absolute inset-0 top-[0.2em]" />
+                            </Tooltip>
+                          )}
+                          <span
                             className={clsx(
-                              linkClass,
-                              'block truncate font-medium'
+                              'line-clamp-2 overflow-hidden text-sm',
+                              visibleColumns.length > 2
+                                ? 'line-clamp-2'
+                                : 'sm:line-clamp-1 sm:text-base'
                             )}
-                            onClick={(e) => e.stopPropagation()}
-                            title={contract.question}
                           >
-                            {contract.token == 'CASH' && (
-                              <Tooltip
-                                text={SWEEPIES_MARKET_TOOLTIP}
-                                className="relative mr-0.5 inline-flex h-[1em] w-[1.1em] items-baseline"
-                              >
-                                <SweepiesCoin className="absolute inset-0 top-[0.2em]" />
-                              </Tooltip>
-                            )}
-                            <span className="truncate">
-                              {contract.question}
-                            </span>
-                          </Link>
-                        </div>
+                            {contract.question}
+                          </span>
+                        </Link>
                         <div className="text-ink-500 mt-1 truncate text-sm">
                           {contract.isResolved ? (
                             <span className="text-ink-800 mr-1 inline-flex">
@@ -767,7 +768,7 @@ function BetsTable(props: {
                       {/* Data cells container */}
                       <div
                         className={clsx(
-                          'flex items-start justify-end',
+                          'flex justify-end',
                           !isDesktop && 'flex-grow'
                         )}
                       >
@@ -775,13 +776,13 @@ function BetsTable(props: {
                           <div
                             key={columnType}
                             className={clsx(
-                              'h-[73px] w-[90px] flex-shrink-0 py-3 text-right',
+                              'w-[90px] flex-shrink-0 py-3 text-right',
                               'border-ink-200 border-b'
                             )}
                           >
                             {columnType === 'value' && (
                               <>
-                                <div className="text-ink-900 text-lg font-medium">
+                                <div className="text-ink-900 font-semibold">
                                   {formatWithToken({
                                     amount: metric.payout,
                                     token: contract.token,
@@ -790,7 +791,7 @@ function BetsTable(props: {
                                 {!visibleColumns.includes('profit') && (
                                   <div
                                     className={clsx(
-                                      'text-sm font-medium',
+                                      'text-sm font-semibold',
                                       metric.profit > 0
                                         ? 'text-teal-500'
                                         : 'text-ink-500'
@@ -820,7 +821,7 @@ function BetsTable(props: {
                             )}
                             {columnType === 'profit' && (
                               <>
-                                <div className="text-ink-900 text-lg font-medium">
+                                <div className="text-ink-900 font-semibold">
                                   {formatWithToken({
                                     amount: metric.profit,
                                     token: contract.token,
@@ -828,7 +829,7 @@ function BetsTable(props: {
                                 </div>
                                 <div
                                   className={clsx(
-                                    'text-sm font-medium',
+                                    'text-sm font-semibold',
                                     metric.profitPercent > 0
                                       ? 'text-teal-500'
                                       : 'text-ink-500'
@@ -850,7 +851,7 @@ function BetsTable(props: {
                             )}
                             {columnType === 'day' && (
                               <>
-                                <div className="text-ink-900 text-lg font-medium">
+                                <div className="text-ink-900 font-semibold">
                                   {formatWithToken({
                                     amount: metric.from?.day.profit ?? 0,
                                     token: contract.token,
@@ -858,7 +859,7 @@ function BetsTable(props: {
                                 </div>
                                 <div
                                   className={clsx(
-                                    'text-sm font-medium',
+                                    'text-sm font-semibold',
                                     (metric.from?.day.profitPercent ?? 0) > 0
                                       ? 'text-teal-500'
                                       : 'text-ink-500'
@@ -885,7 +886,7 @@ function BetsTable(props: {
                             )}
                             {columnType === 'week' && (
                               <>
-                                <div className="text-ink-900 text-lg font-medium">
+                                <div className="text-ink-900 font-semibold">
                                   {formatWithToken({
                                     amount: metric.from?.week.profit ?? 0,
                                     token: contract.token,
@@ -893,7 +894,7 @@ function BetsTable(props: {
                                 </div>
                                 <div
                                   className={clsx(
-                                    'text-sm font-medium',
+                                    'text-sm font-semibold',
                                     (metric.from?.week.profitPercent ?? 0) > 0
                                       ? 'text-teal-500'
                                       : 'text-ink-500'
@@ -920,7 +921,7 @@ function BetsTable(props: {
                             )}
                             {columnType === 'position' && (
                               <>
-                                <div className="text-ink-900 text-lg font-medium">
+                                <div className="text-ink-900 font-semibold">
                                   {formatWithToken({
                                     amount: sum(
                                       Object.values(metric.totalShares)
@@ -936,11 +937,11 @@ function BetsTable(props: {
                             )}
                             {columnType === 'closeTime' && (
                               <>
-                                <div className="text-ink-900 whitespace-nowrap text-lg font-medium">
+                                <div className="text-ink-900 whitespace-nowrap font-semibold">
                                   {closeDate ? (
                                     <RelativeTimestamp
                                       time={closeDate}
-                                      className="text-ink-900 text-lg font-medium"
+                                      className="text-ink-900 font-semibold"
                                       shortened
                                     />
                                   ) : (
