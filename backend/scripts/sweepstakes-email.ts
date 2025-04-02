@@ -9,14 +9,13 @@ const TEST_ARRAY = process.argv.includes('--test-array')
 
 const MY_USER_ID = 'uglwf3YKOZNGjjEXKc5HampOFRE2'
 
-const EMAIL_SUBJECT = 'Redeem your sweepcash by March 28th to avoid losing it'
+const EMAIL_SUBJECT = '[Urgent] Last day to redeem your sweepcash on Manifold'
 
 type SweepstakesUser = {
   id: string
   name: string
   email: string
-  cashBalance?: number
-  cash_balance?: number
+  cash_balance: number
 }
 
 function confirmAction(prompt: string): Promise<boolean> {
@@ -43,11 +42,10 @@ async function getUsersWithMinimumCashBalance(
       u.id, 
       u.name, 
       u.cash_balance,
-      (u.data ->> 'cashBalance')::numeric AS "cashBalance",
       pu.data ->> 'email' AS email
     FROM users u
     JOIN private_users pu ON u.id = pu.id
-    WHERE (u.data ->> 'cashBalance')::numeric >= $1
+    WHERE u.cash_balance >= $1
     `,
     [minimumBalance]
   )
@@ -61,7 +59,6 @@ async function getMyUser(pg: any): Promise<SweepstakesUser | null> {
       u.id, 
       u.name, 
       u.cash_balance,
-      (u.data ->> 'cashBalance')::numeric AS "cashBalance",
       pu.data ->> 'email' AS email
     FROM users u
     JOIN private_users pu ON u.id = pu.id
@@ -82,10 +79,13 @@ runScript(async ({ pg }) => {
       return
     }
 
-    const formattedBalance = myUser.cash_balance !== undefined
-      ? formatSweepies(myUser.cash_balance)
-      : '0'
-    console.log(`Sending test email to: ${myUser.email} with balance: ${formattedBalance}`)
+    const formattedBalance =
+      myUser.cash_balance !== undefined
+        ? formatSweepies(myUser.cash_balance)
+        : '0'
+    console.log(
+      `Sending test email to: ${myUser.email} with balance: ${formattedBalance}`
+    )
     await sendBulkEmails(EMAIL_SUBJECT, 'manifold announcement template', [
       [myUser.email, { name: myUser.name, cashBalance: formattedBalance }],
     ])
@@ -121,16 +121,20 @@ runScript(async ({ pg }) => {
 
   if (TEST_ONLY_FETCH) {
     console.log('Test mode: Not sending emails. Just logging recipients.')
+
     if (users.length > 0) {
-      console.log('Sample recipients (first 5):')
-      users.slice(0, 5).forEach((user) => {
-        const dataBlob = formatSweepies(user.cashBalance || 0)
-        const columnValue = formatSweepies(user.cash_balance || 0)
-        console.log(
-          `- ${user.name} (${user.email}): data blob: ${dataBlob}, column: ${columnValue}`
-        )
+      console.log('Top 5 users by sweepcash balance:')
+
+      const topUsers = users
+        .sort((a, b) => (b.cash_balance ?? 0) - (a.cash_balance ?? 0))
+        .slice(0, 5)
+
+      topUsers.forEach((user) => {
+        const formattedBalance = formatSweepies(user.cash_balance)
+        console.log(`- ${user.name} (${user.email}): ${formattedBalance}`)
       })
     }
+
     return
   }
 
@@ -147,7 +151,10 @@ runScript(async ({ pg }) => {
       user.email,
       {
         name: user.name,
-        cashBalance: user.cash_balance !== undefined ? formatSweepies(user.cash_balance) : '0',
+        cashBalance:
+          user.cash_balance !== undefined
+            ? formatSweepies(user.cash_balance)
+            : '0',
       },
     ])
 
