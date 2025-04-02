@@ -5,6 +5,7 @@ import { ScaleTime } from 'd3-scale'
 import { getBetPointsBetween } from 'common/bets'
 import { getMultiBetPoints } from 'common/contract-params'
 import { MarketContract, MultiContract } from 'common/contract'
+import { buildArray } from 'common/util/array'
 
 export async function getPointsBetween(
   contract: MarketContract,
@@ -39,7 +40,13 @@ export const useDataZoomFetcher = <T>(props: {
       if (min && max) {
         setLoading(true)
         const zoomedPoints = await getPointsBetween(contract, min, max)
-        setData(zoomedPoints.sort((a, b) => a.x - b.x))
+        setData(
+          buildArray(
+            points.filter((p) => p.x <= min),
+            zoomedPoints,
+            points.filter((p) => p.x >= max)
+          ).sort((a, b) => a.x - b.x)
+        )
 
         setLoading(false)
       } else {
