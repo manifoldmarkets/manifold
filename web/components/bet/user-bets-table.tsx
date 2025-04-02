@@ -679,9 +679,7 @@ function BetsTable(props: {
                       <div
                         className={clsx(
                           'border-ink-200 border-b py-3',
-                          isDesktop
-                            ? 'min-w-0 flex-1 pr-4'
-                            : 'w-40 flex-shrink-0'
+                          'w-full min-w-[160px]'
                         )}
                       >
                         <Link
