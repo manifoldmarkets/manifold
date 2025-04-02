@@ -16,6 +16,11 @@ import { UserLink } from './widgets/user-link'
 import { UserHovercard } from './user/user-hovercard'
 import { useAPIGetter } from 'web/hooks/use-api-getter'
 import { VisibilityObserver } from 'web/components/widgets/visibility-observer'
+import { LikeAndDislikeComment } from './comments/comment-actions'
+import { NextRouter, useRouter } from 'next/router'
+import { useUser } from 'web/hooks/use-user'
+import { User } from 'common/user'
+import { PrivateUser } from 'common/user'
 
 export function SiteActivity(props: {
   className?: string
@@ -25,6 +30,8 @@ export function SiteActivity(props: {
 }) {
   const { className, topicId, types } = props
   const privateUser = usePrivateUser()
+  const user = useUser()
+  const router = useRouter()
 
   const blockedGroupSlugs = privateUser?.blockedGroupSlugs ?? []
   const blockedContractIds = privateUser?.blockedContractIds ?? []
@@ -133,7 +140,9 @@ export function SiteActivity(props: {
                         <CommentLog
                           key={item.id}
                           comment={item}
-                          showDivider={i !== items.length - 1}
+                          privateUser={privateUser}
+                          user={user}
+                          router={router}
                         />
                       )
                     )}
@@ -225,22 +234,29 @@ const MarketCreatedLog = memo(
 
 const CommentLog = memo(function FeedComment(props: {
   comment: ContractComment
-  showDivider?: boolean
+  privateUser: PrivateUser | null | undefined
+  user: User | null | undefined
+  router: NextRouter
 }) {
-  const { comment, showDivider = true } = props
+  const { comment, privateUser, user, router } = props
   const {
     userName,
-    text,
     content,
     userId,
     userUsername,
     userAvatarUrl,
     createdTime,
+    contractSlug,
   } = comment
 
   return (
-    <Col>
-      <Row id={comment.id} className="mb-1 items-center gap-2 text-sm">
+    <Col
+      className="hover:bg-canvas-100 cursor-pointer rounded-md p-1"
+      onClick={() => {
+        router.push(`/${userUsername}/${contractSlug}#${comment.id}`)
+      }}
+    >
+      <Row id={comment.id} className="items-center gap-2 text-sm">
         <UserHovercard userId={userId}>
           <Row className="items-center gap-2 font-semibold">
             <Avatar
@@ -262,8 +278,15 @@ const CommentLog = memo(function FeedComment(props: {
           <RelativeTimestamp time={createdTime} shortened />
         </Row>
       </Row>
-      <Content size="sm" className="grow" content={content || text} />
-      {showDivider && <div className="border-ink-200/30 mt-4 border-b" />}
+      <Content size="sm" className="grow" content={content} />
+      <Row className="items-center justify-end">
+        <LikeAndDislikeComment
+          comment={comment}
+          trackingLocation={'site-activity'}
+          privateUser={privateUser}
+          user={user}
+        />
+      </Row>
     </Col>
   )
 })
