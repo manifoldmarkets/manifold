@@ -394,7 +394,7 @@ export function UserBetsTable(props: { user: User }) {
                       </span>
                       <ChevronDownIcon className="ml-2 h-4 w-4" />
                     </MenuButton>
-                    <MenuItems className="bg-canvas-0 border-ink-200 absolute right-0 z-10 mt-1 max-h-80 w-48 rounded-md border shadow-lg sm:max-h-none ">
+                    <MenuItems className="bg-canvas-0 border-ink-200 absolute right-0 z-10 mt-1 max-h-80 w-48 overflow-y-auto rounded-md border shadow-lg sm:max-h-none ">
                       {sortOptions.map((option) => (
                         <MenuItem key={`${option.field}-${option.direction}`}>
                           {({ focus }) => (
