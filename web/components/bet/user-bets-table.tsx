@@ -1129,7 +1129,7 @@ function BetsTableHeaders(props: {
       <div
         className={clsx(
           'text-ink-500 border-ink-200 border-b px-2 py-2',
-          isDesktop ? 'min-w-0 flex-1 pr-4' : 'w-40 flex-shrink-0'
+          'w-full min-w-[160px]'
         )}
       >
         Question
