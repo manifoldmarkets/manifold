@@ -668,13 +668,15 @@ Requires no auth.
 Parameters:
 
 - `term`: The search query in question. Can be empty string.
-- `sort`: Optional. `score` (default), `newest`, `liquidity`, or ... (see code)
-- `filter`: Optional. Closing state. `all` (default), `open`, `closed`, `resolved`, `closing-this-month`, or `closing-next-month`.
+- `sort`: Optional. One of `most-popular` (default), `newest`, `score`, `daily-score`, `freshness-score`, `24-hour-vol`, `liquidity`, `subsidy`, `last-updated`, `close-date`, `start-time`, `resolve-date`, `random`, `bounty-amount`, `prob-descending`, or `prob-ascending`.
+- `filter`: Optional. Closing state. One of `all` (default), `open`, `closed`, `resolved`, `news`, `closing-90-days`, `closing-week`, `closing-month`, or `closing-day`.
 - `contractType`: Optional. `ALL` (default), `BINARY` (yes/no), `MULTIPLE_CHOICE`, `BOUNTY`, `POLL`, or ... (see code)
 - `topicSlug`: Optional. Only include questions with the topic tag with this slug.
 - `creatorId`: Optional. Only include questions created by the user with this id.
 - `limit`: Optional. Number of contracts to return from 0 to 1000. Default 100.
 - `offset`: Optional. Number of contracts to skip. Use with limit to paginate the results.
+- `liquidity`: Optional. Minimum liquidity per contract (or per answer according to tier map)
+- `creatorId`: Optional. Only markets from creator id.
 
 Requires no auth.
 
@@ -884,7 +886,6 @@ Parameters:
 
 [Requires Auth](#authentication). Must be admin/moderator/creator of topic if curated/private. Must be market creator or site moderator if topic is public.
 
-
 ### `POST /v0/market/[marketId]/resolve`
 
 Resolve a market. The required payload format depends on the market type.
@@ -916,7 +917,7 @@ Use the weighted resolution format:
 **2. When `shouldAnswersSumToOne` is false:**
 
 Resolve each answer individually, as you would for a binary market. For each answer, issue a separate resolve request with a payload that includes:
-  
+
 - **outcome**: Either `"YES"` (if the answer is resolved as a win) or `"NO"` (if resolved as a loss).
 - **answerId**: The unique identifier for the answer (as returned in the full market’s `answers` array).
 
@@ -924,7 +925,7 @@ For example, to resolve an individual answer:
 
 ```json
 {
-  "outcome": "YES",  // or "NO"
+  "outcome": "YES", // or "NO"
   "answerId": "<answerId>"
 }
 ```
@@ -938,7 +939,6 @@ This approach treats each answer as an independent binary resolution, ensuring t
 - **probabilityInt**: Required if `value` is provided. It should equal:
   - For log scale: `log10(value - min + 1) / log10(max - min + 1)`
   - Otherwise: `(value - min) / (max - min)`
-
 
 [Requires Auth](#authentication).
 
