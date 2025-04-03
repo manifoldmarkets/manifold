@@ -285,7 +285,7 @@ export function UserBetsTable(props: { user: User }) {
       <div
         className={clsx(
           'flex flex-wrap justify-between max-sm:flex-col',
-          !showLimitOrders && 'bg-canvas-0 sticky top-0 z-10 pt-1'
+          !showLimitOrders && 'bg-canvas-0 sticky top-0 z-20 pt-1'
         )}
       >
         <Col className="w-full gap-2">
