@@ -42,7 +42,12 @@ export function CreatorSharePanel(props: { contract: Contract }) {
           contract.mechanism === 'cpmm-multi-1') && (
           <div className="text-ink-500 text-base">
             Earn{' '}
-            {formatMoney(getUniqueBettorBonusAmount(contract.totalLiquidity))}
+            {formatMoney(
+              getUniqueBettorBonusAmount(
+                contract.totalLiquidity,
+                'answers' in contract ? contract.answers.length : 0
+              )
+            )}{' '}
             for each new trader.
           </div>
         )}

@@ -459,7 +459,7 @@ export const getUniqueBettorBonusQuery = (
   // ian: removed the diminishing bonuses, but we could add them back via contract.uniqueBettorCount
   const bonusAmount = getUniqueBettorBonusAmount(
     contract.totalLiquidity,
-    'answers' in contract ? contract.answers.length : undefined
+    'answers' in contract ? contract.answers.length : 0
   )
 
   const bonusTxnData = removeUndefinedProps({

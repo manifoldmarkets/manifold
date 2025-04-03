@@ -53,7 +53,7 @@ export const REFERRAL_MIN_PURCHASE_DOLLARS = 20
 const uniqueBettorBonusAmounts = [3, 10, 15, 20]
 export const getUniqueBettorBonusAmount = (
   liquidity: number,
-  numAnswers?: number
+  numAnswers: number
 ) => {
   if (!numAnswers) {
     return uniqueBettorBonusAmounts[getTierIndexFromLiquidity(liquidity)]
