@@ -62,7 +62,7 @@ type BetSort =
   | 'costBasis'
   | 'dayPriceChange'
   | 'volume24h'
-
+  | 'liquidity'
 export type BetFilter =
   | 'open'
   | 'sold'
@@ -485,6 +485,7 @@ const availableColumns: { value: BetSort; label: string }[] = [
   { value: 'costBasis', label: 'Cost Basis' },
   { value: 'dayPriceChange', label: '1d Price' },
   { value: 'volume24h', label: '1d Volume' },
+  { value: 'liquidity', label: 'Liquidity' },
 ]
 
 function BetsTable(props: {
@@ -526,7 +527,7 @@ function BetsTable(props: {
   }
 
   // Most of these are descending sorts by default.
-  const SORTS: Record<BetSort, (c: Contract) => number> = {
+  const SORTS: Record<BetSort, (c: MarketContract) => number> = {
     position: (c) => -sum(Object.values(metricsByContractId[c.id].totalShares)),
     profit: (c) => -metricsByContractId[c.id].profit,
     profitPercent: (c) => -metricsByContractId[c.id].profitPercent,
@@ -549,6 +550,7 @@ function BetsTable(props: {
     costBasis: (c) => -(metricsByContractId[c.id].invested ?? 0),
     dayPriceChange: (c) => -(c.mechanism === 'cpmm-1' ? c.probChanges.day : 0),
     volume24h: (c) => -c.volume24Hours,
+    liquidity: (c) => -c.totalLiquidity,
   }
 
   const sortFunction = SORTS[sortOption.field]
@@ -855,19 +857,17 @@ function BetsTable(props: {
                               </>
                             )}
                             {value === 'profitPercent' && (
-                              <>
-                                <div
-                                  className={clsx(
-                                    ' font-semibold',
-                                    metric.profitPercent > 0
-                                      ? 'text-teal-500'
-                                      : 'text-ink-600'
-                                  )}
-                                >
-                                  {metric.profitPercent > 0 ? '+' : ''}
-                                  {metric.profitPercent.toFixed(1)}%
-                                </div>
-                              </>
+                              <div
+                                className={clsx(
+                                  ' font-semibold',
+                                  metric.profitPercent > 0
+                                    ? 'text-teal-500'
+                                    : 'text-ink-600'
+                                )}
+                              >
+                                {metric.profitPercent > 0 ? '+' : ''}
+                                {metric.profitPercent.toFixed(1)}%
+                              </div>
                             )}
                             {value === 'day' && (
                               <>
@@ -957,6 +957,14 @@ function BetsTable(props: {
                                 </div>
                               </>
                             )}
+                            {value === 'liquidity' && (
+                              <div className="text-ink-900 whitespace-nowrap font-semibold">
+                                {formatWithToken({
+                                  amount: contract.totalLiquidity,
+                                  token: contract.token,
+                                })}
+                              </div>
+                            )}
                             {value === 'closeTime' && (
                               <>
                                 <div className="text-ink-900 whitespace-nowrap font-semibold">
@@ -980,57 +988,49 @@ function BetsTable(props: {
                               </>
                             )}
                             {value === 'dayPctChange' && (
-                              <>
-                                <div
-                                  className={clsx(
-                                    'font-semibold',
-                                    (metric.from?.day.profitPercent ?? 0) > 0
-                                      ? 'text-teal-500'
-                                      : 'text-ink-600'
-                                  )}
-                                >
-                                  {(
-                                    metric.from?.day.profitPercent ?? 0
-                                  ).toFixed(1)}
-                                  %
-                                </div>
-                              </>
+                              <div
+                                className={clsx(
+                                  'font-semibold',
+                                  (metric.from?.day.profitPercent ?? 0) > 0
+                                    ? 'text-teal-500'
+                                    : 'text-ink-600'
+                                )}
+                              >
+                                {(metric.from?.day.profitPercent ?? 0).toFixed(
+                                  1
+                                )}
+                                %
+                              </div>
                             )}
                             {value === 'costBasis' && (
-                              <>
-                                <div className="text-ink-900 font-semibold">
-                                  {formatWithToken({
-                                    amount: metric.invested,
-                                    token: contract.token,
-                                  })}
-                                </div>
-                              </>
+                              <div className="text-ink-900 font-semibold">
+                                {formatWithToken({
+                                  amount: metric.invested,
+                                  token: contract.token,
+                                })}
+                              </div>
                             )}
                             {value === 'dayPriceChange' && (
-                              <>
-                                <div className="text-ink-900 font-semibold">
-                                  {contract.mechanism === 'cpmm-1' ? (
-                                    <span>
-                                      {contract.probChanges.day > 0 ? '+' : ''}
-                                      {(contract.probChanges.day * 100).toFixed(
-                                        1
-                                      )}
-                                    </span>
-                                  ) : (
-                                    <span className="text-ink-600">-</span>
-                                  )}
-                                </div>
-                              </>
+                              <div className="text-ink-900 font-semibold">
+                                {contract.mechanism === 'cpmm-1' ? (
+                                  <span>
+                                    {contract.probChanges.day > 0 ? '+' : ''}
+                                    {(contract.probChanges.day * 100).toFixed(
+                                      1
+                                    )}
+                                  </span>
+                                ) : (
+                                  <span className="text-ink-600">-</span>
+                                )}
+                              </div>
                             )}
                             {value === 'volume24h' && (
-                              <>
-                                <div className="text-ink-900 font-semibold">
-                                  {formatWithToken({
-                                    amount: contract.volume24Hours,
-                                    token: contract.token,
-                                  })}
-                                </div>
-                              </>
+                              <div className="text-ink-900 font-semibold">
+                                {formatWithToken({
+                                  amount: contract.volume24Hours,
+                                  token: contract.token,
+                                })}
+                              </div>
                             )}
                           </div>
                         ))}
