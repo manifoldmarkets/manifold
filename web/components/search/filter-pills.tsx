@@ -61,7 +61,6 @@ export function FilterPill(props: {
 export function AdditionalFilterPill(props: {
   className?: string
   children: ReactNode
-  type: 'filter' | 'sort' | 'contractType'
   onXClick: () => void
 }) {
   const { children, className, onXClick } = props

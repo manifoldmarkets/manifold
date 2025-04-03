@@ -46,6 +46,7 @@ const search = async (
     creatorId,
     token,
     gids: groupIds,
+    liquidity,
   } = props
   const isPrizeMarket =
     props.isPrizeMarket == 'true' || props.isPrizeMarket == '1'
@@ -83,7 +84,8 @@ const search = async (
           isPrizeMarket,
           token,
           undefined,
-          creatorId
+          creatorId,
+          liquidity
         ),
         null,
         convertContract
@@ -98,6 +100,7 @@ const search = async (
         sort,
         isPrizeMarket,
         token,
+        liquidity,
       })
       return await pg.map(forYouSql, [term], (r) => convertContract(r))
     }
@@ -134,6 +137,7 @@ const search = async (
           isPrizeMarket,
           token,
           groupIds,
+          liquidity,
         })
       )
       .join(';')

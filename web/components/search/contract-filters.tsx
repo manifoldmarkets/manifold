@@ -5,10 +5,9 @@ import { getLabelFromValue } from './search-dropdown-helpers'
 
 import { useState } from 'react'
 import { FaSortAmountDownAlt } from 'react-icons/fa'
-import { FaFileContract, FaFilter, FaSliders } from 'react-icons/fa6'
+import { FaDroplet, FaFileContract, FaFilter, FaSliders } from 'react-icons/fa6'
 import { IconButton } from 'web/components/buttons/button'
 import { Carousel } from 'web/components/widgets/carousel'
-import { SweepiesCoin } from 'web/public/custom-components/sweepiesCoin'
 
 import { MODAL_CLASS, Modal } from '../layout/modal'
 import { Row } from '../layout/row'
@@ -47,6 +46,7 @@ import {
   unselectedClass,
 } from './filter-pills'
 import { useUser } from 'web/hooks/use-user'
+import { LIQUIDITY_KEY, LIQUIDITY_TIER_LABELS } from '../search'
 
 export function ContractFilters(props: {
   className?: string
@@ -58,7 +58,13 @@ export function ContractFilters(props: {
   const { className, params, updateParams, hideSweepsToggle, topicSlug } = props
   const user = useUser()
 
-  const { s: sort, f: filter, ct: contractType, sw: isSweepiesString } = params
+  const {
+    s: sort,
+    f: filter,
+    ct: contractType,
+    sw: isSweepiesString,
+    li: liquidity,
+  } = params
   const isSweeps = isSweepiesString === '1'
   const { setPrefersPlay } = useSweepstakes()
 
@@ -96,6 +102,15 @@ export function ContractFilters(props: {
     track('select contract type', { contractType: selection })
   }
 
+  const selectLiquidityFilter = (selection: string) => {
+    if (selection === liquidity) {
+      updateParams({ [LIQUIDITY_KEY]: '' })
+    } else {
+      updateParams({ [LIQUIDITY_KEY]: selection })
+      track('select liquidity tier', { tier: selection })
+    }
+  }
+
   const toggleSweepies = () => {
     setPrefersPlay(isSweeps)
     updateParams({
@@ -108,6 +123,9 @@ export function ContractFilters(props: {
     sort === 'close-date' ||
     contractType === 'BOUNTIED_QUESTION'
 
+  const liquidityFilter = LIQUIDITY_TIER_LABELS.find(
+    (tier) => tier.value === liquidity
+  )
   const sortLabel = getLabelFromValue(SORTS, sort)
   const contractTypeLabel = getLabelFromValue(CONTRACT_TYPES, contractType)
 
@@ -230,16 +248,19 @@ export function ContractFilters(props: {
           </FilterPill>
         )}
         {nonDefaultSort && (
-          <AdditionalFilterPill
-            type="sort"
-            onXClick={() => selectSort(DEFAULT_SORT)}
-          >
+          <AdditionalFilterPill onXClick={() => selectSort(DEFAULT_SORT)}>
             {sortLabel}
+          </AdditionalFilterPill>
+        )}
+        {liquidityFilter && (
+          <AdditionalFilterPill
+            onXClick={() => selectLiquidityFilter(liquidityFilter.value)}
+          >
+            {liquidityFilter.label}
           </AdditionalFilterPill>
         )}
         {nonDefaultContractType && (
           <AdditionalFilterPill
-            type="contractType"
             onXClick={() => selectContractType(DEFAULT_CONTRACT_TYPE)}
           >
             {contractTypeLabel}
@@ -287,6 +308,7 @@ export function ContractFilters(props: {
         selectFilter={selectFilter}
         selectSort={selectSort}
         selectContractType={selectContractType}
+        selectLiquidityTier={selectLiquidityFilter}
         toggleSweepies={toggleSweepies}
         hideFilter={hideFilter}
       />
@@ -301,6 +323,7 @@ function FilterModal(props: {
   selectFilter: (selection: Filter) => void
   selectSort: (selection: Sort) => void
   selectContractType: (selection: ContractTypeType) => void
+  selectLiquidityTier: (selection: string) => void
   toggleSweepies: () => void
   hideFilter: boolean
 }) {
@@ -311,10 +334,17 @@ function FilterModal(props: {
     selectFilter,
     selectContractType,
     selectSort,
+    selectLiquidityTier,
     toggleSweepies,
     hideFilter,
   } = props
-  const { s: sort, f: filter, ct: contractType, sw: isSweepiesString } = params
+  const {
+    s: sort,
+    f: filter,
+    ct: contractType,
+    sw: isSweepiesString,
+    li: liquidityTier,
+  } = params
 
   const sortItems =
     contractType == 'BOUNTIED_QUESTION'
@@ -335,18 +365,6 @@ function FilterModal(props: {
               Filters
             </Row>
             <Row className="flex-wrap gap-1">
-              <FilterPill
-                selected={isSweepiesString === '1'}
-                onSelect={toggleSweepies}
-                type="sweepies"
-              >
-                <Row className="items-center gap-1">
-                  <SweepiesCoin
-                    className={isSweepiesString !== '1' ? 'opacity-50' : ''}
-                  />
-                  Sweepstakes
-                </Row>
-              </FilterPill>
               {!hideFilter &&
                 FILTERS.map(({ label: filterLabel, value: filterValue }) => (
                   <FilterPill
@@ -363,6 +381,27 @@ function FilterModal(props: {
                     {filterLabel}
                   </FilterPill>
                 ))}
+              <FilterPill
+                selected={isSweepiesString === '1'}
+                onSelect={toggleSweepies}
+              >
+                Sweepstakes
+              </FilterPill>
+            </Row>
+            <Row className="items-center gap-1 font-semibold">
+              <FaDroplet className="h-4 w-4" />
+              Liquidity filters
+            </Row>
+            <Row className="flex-wrap gap-1">
+              {LIQUIDITY_TIER_LABELS.map(({ label, value }) => (
+                <FilterPill
+                  key={value}
+                  selected={value === liquidityTier}
+                  onSelect={() => selectLiquidityTier(value)}
+                >
+                  {label}
+                </FilterPill>
+              ))}
             </Row>
           </Col>
         )}
