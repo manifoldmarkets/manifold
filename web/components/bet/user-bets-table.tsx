@@ -21,7 +21,6 @@ import { ContractBetsTable } from 'web/components/bet/contract-bets-table'
 import { OrderTable } from 'web/components/bet/order-book'
 import { PillButton } from 'web/components/buttons/pill-button'
 import { Input } from 'web/components/widgets/input'
-import { Pagination } from 'web/components/widgets/pagination'
 import { useContractBets } from 'client-common/hooks/use-bets'
 import { useEvent } from 'client-common/hooks/use-event'
 import { usePersistentInMemoryState } from 'client-common/hooks/use-persistent-in-memory-state'
@@ -47,6 +46,7 @@ import { RelativeTimestamp } from '../relative-timestamp'
 import { CogIcon } from '@heroicons/react/outline'
 import { useIsMobile } from 'web/hooks/use-is-mobile'
 import { ArrowSmDownIcon, ArrowSmUpIcon } from '@heroicons/react/solid'
+import { LoadMoreUntilNotVisible } from '../widgets/visibility-observer'
 
 type BetSort =
   | 'newest'
@@ -145,8 +145,6 @@ export function UserBetsTable(props: { user: User }) {
 
   const { prefersPlay, setPrefersPlay } = useSweepstakes()
 
-  const [page, setPage] = usePersistentInMemoryState(0, 'portfolio-page')
-
   const [query, setQuery] = usePersistentQueryState('b', '')
 
   const onSetFilter = (f: BetFilter | 'limit_orders') => {
@@ -157,12 +155,10 @@ export function UserBetsTable(props: { user: User }) {
     // When selecting any other filter, turn off limit orders view
     setShowLimitOrders(false)
     setFilter(f as BetFilter)
-    setPage(0)
   }
 
   const toggleTokenFilter = () => {
     setPrefersPlay(!prefersPlay)
-    setPage(0)
   }
 
   const nullableMetricsByContract = useMemo(() => {
@@ -277,7 +273,6 @@ export function UserBetsTable(props: { user: User }) {
     direction: 'asc' | 'desc'
   }) => {
     setSortOption(option)
-    setPage(0) // Reset page when dropdown sort changes
   }
 
   return (
@@ -453,9 +448,7 @@ export function UserBetsTable(props: { user: User }) {
         <BetsTable
           contracts={filteredContracts as MarketContract[]}
           metricsByContractId={nullableMetricsByContract}
-          page={page}
           user={user}
-          setPage={setPage}
           filter={filter}
           signedInUser={signedInUser}
           sortOption={sortOption}
@@ -497,8 +490,6 @@ const availableColumns: { value: BetSort; label: string }[] = [
 function BetsTable(props: {
   contracts: MarketContract[]
   metricsByContractId: { [key: string]: ContractMetric }
-  page: number
-  setPage: (page: number) => void
   filter: BetFilter
   user: User
   signedInUser: User | null | undefined
@@ -509,8 +500,6 @@ function BetsTable(props: {
 }) {
   const {
     metricsByContractId,
-    page,
-    setPage,
     filter,
     user,
     signedInUser,
@@ -518,12 +507,13 @@ function BetsTable(props: {
     setSortOption,
     visibleColumns,
     setVisibleColumns,
+    contracts: allContracts,
   } = props
   const areYourBets = user.id === signedInUser?.id
   const isDesktop = !useIsMobile()
   const [expandedIds, setExpandedIds] = useState<string[]>([])
+  const [displayCount, setDisplayCount] = useState(20) // Start with fewer items
 
-  // Define handler within BetsTable - uses props now
   const handleHeaderClick = (field: BetSort) => {
     let direction: 'asc' | 'desc' = 'desc'
     if (sortOption.field === field) {
@@ -532,7 +522,7 @@ function BetsTable(props: {
       if (field === 'closeTime') direction = 'asc'
     }
     setSortOption({ field, direction })
-    setPage(0)
+    setDisplayCount(20) // Reset display count when sorting changes
   }
 
   // Most of these are descending sorts by default.
@@ -564,11 +554,16 @@ function BetsTable(props: {
   const sortFunction = SORTS[sortOption.field]
   const contracts =
     sortOption.direction === 'desc'
-      ? sortBy(props.contracts, sortFunction)
-      : sortBy(props.contracts, sortFunction).reverse()
+      ? sortBy(allContracts, sortFunction)
+      : sortBy(allContracts, sortFunction).reverse()
 
-  const rowsPerSection = 50
-  const currentSlice = page * rowsPerSection
+  const visibleContracts = contracts.slice(0, displayCount)
+
+  const loadMore = useEvent(() => {
+    if (displayCount >= contracts.length) return false
+    setDisplayCount((prev) => Math.min(prev + 20, contracts.length))
+    return displayCount + 20 < contracts.length
+  })
 
   const setNewExpandedId = (id: string) => {
     setExpandedIds((oldIds) =>
@@ -650,64 +645,61 @@ function BetsTable(props: {
           />
           {/* Table data rows */}
           <div className="min-w-full">
-            {contracts
-              .slice(currentSlice, currentSlice + rowsPerSection)
-              .map((contract) => {
-                const metric = metricsByContractId[contract.id]
-                const closeDate = contract.resolutionTime ?? contract.closeTime
-                const resolvedAnswer =
-                  contract.mechanism === 'cpmm-multi-1'
-                    ? contract.answers.find(
-                        (a) =>
-                          a.id === contract.resolution ||
-                          (contract.resolutions?.[a.id] ?? 0) >= 99
-                      )
-                    : undefined
+            {visibleContracts.map((contract) => {
+              const metric = metricsByContractId[contract.id]
+              const closeDate = contract.resolutionTime ?? contract.closeTime
+              const resolvedAnswer =
+                contract.mechanism === 'cpmm-multi-1'
+                  ? contract.answers.find(
+                      (a) =>
+                        a.id === contract.resolution ||
+                        (contract.resolutions?.[a.id] ?? 0) >= 99
+                    )
+                  : undefined
 
-                const maxOutcome =
-                  metricsByContractId[contract.id].maxSharesOutcome
+              const maxOutcome =
+                metricsByContractId[contract.id].maxSharesOutcome
 
-                return (
+              return (
+                <div
+                  key={contract.id + 'bets-table-row'}
+                  className="group w-full cursor-pointer"
+                >
                   <div
-                    key={contract.id + 'bets-table-row'}
-                    className="group w-full cursor-pointer"
+                    className="flex w-full"
+                    onClick={() => setNewExpandedId(contract.id)}
                   >
+                    {/* Question cell */}
                     <div
-                      className="flex w-full"
-                      onClick={() => setNewExpandedId(contract.id)}
+                      className={clsx(
+                        'border-ink-200 border-b py-3',
+                        'w-full min-w-[160px]',
+                        'bg-canvas-0 group-hover:bg-canvas-50 sticky left-0 z-10'
+                      )}
                     >
-                      {/* Question cell */}
-                      <div
-                        className={clsx(
-                          'border-ink-200 border-b py-3',
-                          'w-full min-w-[160px]',
-                          'bg-canvas-0 group-hover:bg-canvas-50 sticky left-0 z-10'
-                        )}
+                      <Link
+                        href={contractPath(contract)}
+                        onClick={(e) => e.stopPropagation()}
+                        title={contract.question}
                       >
-                        <Link
-                          href={contractPath(contract)}
-                          onClick={(e) => e.stopPropagation()}
-                          title={contract.question}
-                        >
-                          {contract.token == 'CASH' && (
-                            <Tooltip
-                              text={SWEEPIES_MARKET_TOOLTIP}
-                              className="relative mr-0.5 inline-flex h-[1em] w-[1.1em] items-baseline"
-                            >
-                              <SweepiesCoin className="absolute inset-0 top-[0.2em]" />
-                            </Tooltip>
-                          )}
-                          <span
-                            className={clsx(
-                              'line-clamp-2 overflow-hidden text-sm',
-                              visibleColumns.length > 2
-                                ? 'line-clamp-2'
-                                : 'sm:line-clamp-1 sm:text-base'
-                            )}
+                        {contract.token == 'CASH' && (
+                          <Tooltip
+                            text={SWEEPIES_MARKET_TOOLTIP}
+                            className="relative mr-0.5 inline-flex h-[1em] w-[1.1em] items-baseline"
                           >
-                            {contract.question}
-                          </span>
-                        </Link>
+                            <SweepiesCoin className="absolute inset-0 top-[0.2em]" />
+                          </Tooltip>
+                        )}
+                        <span
+                          className={clsx(
+                            'line-clamp-2 overflow-hidden text-sm',
+                            visibleColumns.length > 2
+                              ? 'line-clamp-2'
+                              : 'sm:line-clamp-1 sm:text-base'
+                          )}
+                        >
+                          {contract.question}
+                        </span>
                         <div className="text-ink-500 mt-1 truncate text-sm">
                           {contract.isResolved ? (
                             <span className="text-ink-800 mr-1 inline-flex">
@@ -762,179 +754,88 @@ function BetsTable(props: {
                             </span>
                           ) : null}
                         </div>
-                      </div>
+                      </Link>
+                    </div>
 
-                      {/* Data cells container */}
-                      <div
-                        className={clsx(
-                          'flex justify-end',
-                          !isDesktop && 'flex-grow'
-                        )}
-                      >
-                        {availableColumns
-                          .filter((column) =>
-                            visibleColumns.includes(column.value)
-                          )
-                          .map(({ value }) => (
-                            <div
-                              key={value}
-                              className={clsx(
-                                'w-[90px] flex-shrink-0 py-3 text-right',
-                                'border-ink-200 group-hover:bg-canvas-50 border-b'
-                              )}
-                            >
-                              {value === 'value' && (
-                                <>
-                                  <div className="text-ink-900 font-semibold">
-                                    {formatWithToken({
-                                      amount: metric.payout,
-                                      token: contract.token,
-                                    }).replace('-', '')}
-                                  </div>
-                                  {!visibleColumns.includes('profit') &&
-                                    !visibleColumns.includes(
-                                      'profitPercent'
-                                    ) && (
-                                      <div
-                                        className={clsx(
-                                          'text-sm font-semibold',
-                                          metric.profit > 0
-                                            ? 'text-teal-500'
-                                            : 'text-ink-500'
-                                        )}
+                    {/* Data cells container */}
+                    <div
+                      className={clsx(
+                        'flex justify-end',
+                        !isDesktop && 'flex-grow'
+                      )}
+                    >
+                      {availableColumns
+                        .filter((column) =>
+                          visibleColumns.includes(column.value)
+                        )
+                        .map(({ value }) => (
+                          <div
+                            key={value}
+                            className={clsx(
+                              'w-[90px] flex-shrink-0 py-3 text-right',
+                              'border-ink-200 group-hover:bg-canvas-50 border-b'
+                            )}
+                          >
+                            {value === 'value' && (
+                              <>
+                                <div className="text-ink-900 font-semibold">
+                                  {formatWithToken({
+                                    amount: metric.payout,
+                                    token: contract.token,
+                                  }).replace('-', '')}
+                                </div>
+                                {!visibleColumns.includes('profit') &&
+                                  !visibleColumns.includes('profitPercent') && (
+                                    <div
+                                      className={clsx(
+                                        'text-sm font-semibold',
+                                        metric.profit > 0
+                                          ? 'text-teal-500'
+                                          : 'text-ink-500'
+                                      )}
+                                    >
+                                      <Tooltip
+                                        text={`${formatWithToken({
+                                          amount: metric.profit,
+                                          token: contract.token,
+                                        })} total profit`}
                                       >
-                                        <Tooltip
-                                          text={`${formatWithToken({
-                                            amount: metric.profit,
-                                            token: contract.token,
-                                          })} total profit`}
+                                        <span
+                                          className={clsx(
+                                            'ml-1 rounded-full px-1.5 py-0.5 text-xs',
+                                            metric.profitPercent > 0
+                                              ? 'bg-teal-100 text-teal-800'
+                                              : 'bg-canvas-50 text-ink-600'
+                                          )}
                                         >
-                                          <span
-                                            className={clsx(
-                                              'ml-1 rounded-full px-1.5 py-0.5 text-xs',
-                                              metric.profitPercent > 0
-                                                ? 'bg-teal-100 text-teal-800'
-                                                : 'bg-canvas-50 text-ink-600'
-                                            )}
-                                          >
-                                            {metric.profitPercent > 0
-                                              ? '+'
-                                              : ''}
-                                            {metric.profitPercent.toFixed(0)}%
-                                          </span>
-                                        </Tooltip>
-                                      </div>
-                                    )}
-                                </>
-                              )}
-                              {value === 'profit' && (
-                                <>
-                                  <div
-                                    className={clsx(
-                                      'font-semibold',
-                                      metric.profitPercent > 0
-                                        ? 'text-teal-500'
-                                        : 'text-ink-600'
-                                    )}
-                                  >
-                                    {formatWithToken({
-                                      amount: metric.profit,
-                                      token: contract.token,
-                                    })}
-                                  </div>
-                                  {!visibleColumns.includes(
-                                    'profitPercent'
-                                  ) && (
-                                    <div
-                                      className={clsx(
-                                        'text-sm font-semibold',
-                                        metric.profitPercent > 0
-                                          ? 'text-teal-500'
-                                          : 'text-ink-500'
-                                      )}
-                                    >
-                                      <span
-                                        className={clsx(
-                                          'ml-1 rounded-full px-1.5 py-0.5 text-xs',
-                                          metric.profitPercent > 0
-                                            ? 'bg-teal-100 text-teal-800'
-                                            : 'bg-canvas-50 text-ink-600'
-                                        )}
-                                      >
-                                        {metric.profitPercent > 0 ? '+' : ''}
-                                        {metric.profitPercent.toFixed(0)}%
-                                      </span>
+                                          {metric.profitPercent > 0 ? '+' : ''}
+                                          {metric.profitPercent.toFixed(0)}%
+                                        </span>
+                                      </Tooltip>
                                     </div>
                                   )}
-                                </>
-                              )}
-                              {value === 'profitPercent' && (
-                                <>
-                                  <div
-                                    className={clsx(
-                                      ' font-semibold',
-                                      metric.profitPercent > 0
-                                        ? 'text-teal-500'
-                                        : 'text-ink-600'
-                                    )}
-                                  >
-                                    {metric.profitPercent > 0 ? '+' : ''}
-                                    {metric.profitPercent.toFixed(1)}%
-                                  </div>
-                                </>
-                              )}
-                              {value === 'day' && (
-                                <>
-                                  <div className="text-ink-900 font-semibold">
-                                    {formatWithToken({
-                                      amount: metric.from?.day.profit ?? 0,
-                                      token: contract.token,
-                                    })}
-                                  </div>
-                                  {!visibleColumns.includes('dayPctChange') && (
-                                    <div
-                                      className={clsx(
-                                        'text-sm font-semibold',
-                                        (metric.from?.day.profitPercent ?? 0) >
-                                          0
-                                          ? 'text-teal-500'
-                                          : 'text-ink-500'
-                                      )}
-                                    >
-                                      <span
-                                        className={clsx(
-                                          'ml-1 rounded-full px-1.5 py-0.5 text-xs',
-                                          (metric.from?.day.profitPercent ??
-                                            0) > 0
-                                            ? 'bg-teal-100 text-teal-800'
-                                            : 'bg-canvas-50 text-ink-600'
-                                        )}
-                                      >
-                                        {(metric.from?.day.profitPercent ?? 0) >
-                                        0
-                                          ? '+'
-                                          : ''}
-                                        {(
-                                          metric.from?.day.profitPercent ?? 0
-                                        ).toFixed(0)}
-                                        %
-                                      </span>
-                                    </div>
+                              </>
+                            )}
+                            {value === 'profit' && (
+                              <>
+                                <div
+                                  className={clsx(
+                                    'font-semibold',
+                                    metric.profitPercent > 0
+                                      ? 'text-teal-500'
+                                      : 'text-ink-600'
                                   )}
-                                </>
-                              )}
-                              {value === 'week' && (
-                                <>
-                                  <div className="text-ink-900 font-semibold">
-                                    {formatWithToken({
-                                      amount: metric.from?.week.profit ?? 0,
-                                      token: contract.token,
-                                    })}
-                                  </div>
+                                >
+                                  {formatWithToken({
+                                    amount: metric.profit,
+                                    token: contract.token,
+                                  })}
+                                </div>
+                                {!visibleColumns.includes('profitPercent') && (
                                   <div
                                     className={clsx(
                                       'text-sm font-semibold',
-                                      (metric.from?.week.profitPercent ?? 0) > 0
+                                      metric.profitPercent > 0
                                         ? 'text-teal-500'
                                         : 'text-ink-500'
                                     )}
@@ -942,160 +843,234 @@ function BetsTable(props: {
                                     <span
                                       className={clsx(
                                         'ml-1 rounded-full px-1.5 py-0.5 text-xs',
-                                        (metric.from?.week.profitPercent ?? 0) >
+                                        metric.profitPercent > 0
+                                          ? 'bg-teal-100 text-teal-800'
+                                          : 'bg-canvas-50 text-ink-600'
+                                      )}
+                                    >
+                                      {metric.profitPercent > 0 ? '+' : ''}
+                                      {metric.profitPercent.toFixed(0)}%
+                                    </span>
+                                  </div>
+                                )}
+                              </>
+                            )}
+                            {value === 'profitPercent' && (
+                              <>
+                                <div
+                                  className={clsx(
+                                    ' font-semibold',
+                                    metric.profitPercent > 0
+                                      ? 'text-teal-500'
+                                      : 'text-ink-600'
+                                  )}
+                                >
+                                  {metric.profitPercent > 0 ? '+' : ''}
+                                  {metric.profitPercent.toFixed(1)}%
+                                </div>
+                              </>
+                            )}
+                            {value === 'day' && (
+                              <>
+                                <div className="text-ink-900 font-semibold">
+                                  {formatWithToken({
+                                    amount: metric.from?.day.profit ?? 0,
+                                    token: contract.token,
+                                  })}
+                                </div>
+                                {!visibleColumns.includes('dayPctChange') && (
+                                  <div
+                                    className={clsx(
+                                      'text-sm font-semibold',
+                                      (metric.from?.day.profitPercent ?? 0) > 0
+                                        ? 'text-teal-500'
+                                        : 'text-ink-500'
+                                    )}
+                                  >
+                                    <span
+                                      className={clsx(
+                                        'ml-1 rounded-full px-1.5 py-0.5 text-xs',
+                                        (metric.from?.day.profitPercent ?? 0) >
                                           0
                                           ? 'bg-teal-100 text-teal-800'
                                           : 'bg-canvas-50 text-ink-600'
                                       )}
                                     >
-                                      {(metric.from?.week.profitPercent ?? 0) >
-                                      0
+                                      {(metric.from?.day.profitPercent ?? 0) > 0
                                         ? '+'
                                         : ''}
                                       {(
-                                        metric.from?.week.profitPercent ?? 0
+                                        metric.from?.day.profitPercent ?? 0
                                       ).toFixed(0)}
                                       %
                                     </span>
                                   </div>
-                                </>
-                              )}
-                              {value === 'position' && (
-                                <>
-                                  <div className="text-ink-900 font-semibold">
-                                    {formatWithToken({
-                                      amount: sum(
-                                        Object.values(metric.totalShares)
-                                      ),
-                                      token:
-                                        contract.token === 'CASH'
-                                          ? 'CASH'
-                                          : 'M$',
-                                    }).replace('-', '')}
-                                  </div>
-                                  <div className="text-ink-500 text-sm">
-                                    {maxOutcome && `${maxOutcome}`}
-                                  </div>
-                                </>
-                              )}
-                              {value === 'closeTime' && (
-                                <>
-                                  <div className="text-ink-900 whitespace-nowrap font-semibold">
-                                    {closeDate ? (
-                                      <RelativeTimestamp
-                                        time={closeDate}
-                                        className="text-ink-900 font-semibold"
-                                        shortened
-                                      />
-                                    ) : (
-                                      'No close'
-                                    )}
-                                  </div>
-                                  <div className="text-ink-500 text-sm">
-                                    {contract.isResolved
-                                      ? 'Resolved'
-                                      : closeDate && closeDate < Date.now()
-                                      ? 'Closed'
-                                      : ''}
-                                  </div>
-                                </>
-                              )}
-                              {value === 'dayPctChange' && (
-                                <>
-                                  <div
+                                )}
+                              </>
+                            )}
+                            {value === 'week' && (
+                              <>
+                                <div className="text-ink-900 font-semibold">
+                                  {formatWithToken({
+                                    amount: metric.from?.week.profit ?? 0,
+                                    token: contract.token,
+                                  })}
+                                </div>
+                                <div
+                                  className={clsx(
+                                    'text-sm font-semibold',
+                                    (metric.from?.week.profitPercent ?? 0) > 0
+                                      ? 'text-teal-500'
+                                      : 'text-ink-500'
+                                  )}
+                                >
+                                  <span
                                     className={clsx(
-                                      'font-semibold',
-                                      (metric.from?.day.profitPercent ?? 0) > 0
-                                        ? 'text-teal-500'
-                                        : 'text-ink-600'
+                                      'ml-1 rounded-full px-1.5 py-0.5 text-xs',
+                                      (metric.from?.week.profitPercent ?? 0) > 0
+                                        ? 'bg-teal-100 text-teal-800'
+                                        : 'bg-canvas-50 text-ink-600'
                                     )}
                                   >
+                                    {(metric.from?.week.profitPercent ?? 0) > 0
+                                      ? '+'
+                                      : ''}
                                     {(
-                                      metric.from?.day.profitPercent ?? 0
-                                    ).toFixed(1)}
+                                      metric.from?.week.profitPercent ?? 0
+                                    ).toFixed(0)}
                                     %
-                                  </div>
-                                </>
-                              )}
-                              {value === 'costBasis' && (
-                                <>
-                                  <div className="text-ink-900 font-semibold">
-                                    {formatWithToken({
-                                      amount: metric.invested,
-                                      token: contract.token,
-                                    })}
-                                  </div>
-                                </>
-                              )}
-                              {value === 'dayPriceChange' && (
-                                <>
-                                  <div className="text-ink-900 font-semibold">
-                                    {contract.mechanism === 'cpmm-1' ? (
-                                      <span>
-                                        {contract.probChanges.day > 0
-                                          ? '+'
-                                          : ''}
-                                        {(
-                                          contract.probChanges.day * 100
-                                        ).toFixed(1)}
-                                      </span>
-                                    ) : (
-                                      <span className="text-ink-600">-</span>
-                                    )}
-                                  </div>
-                                </>
-                              )}
-                              {value === 'volume24h' && (
-                                <>
-                                  <div className="text-ink-900 font-semibold">
-                                    {formatWithToken({
-                                      amount: contract.volume24Hours,
-                                      token: contract.token,
-                                    })}
-                                  </div>
-                                </>
-                              )}
-                            </div>
-                          ))}
-
-                        {/* Chevron cell */}
-                        <div className=" group-hover:bg-canvas-50 border-ink-200 border-b py-3">
-                          <div className="pt-1">
-                            <ChevronDownIcon
-                              className={clsx(
-                                'text-ink-500 h-4 w-4 transition-transform',
-                                expandedIds.includes(contract.id)
-                                  ? 'rotate-180'
-                                  : ''
-                              )}
-                            />
+                                  </span>
+                                </div>
+                              </>
+                            )}
+                            {value === 'position' && (
+                              <>
+                                <div className="text-ink-900 font-semibold">
+                                  {formatWithToken({
+                                    amount: sum(
+                                      Object.values(metric.totalShares)
+                                    ),
+                                    token: contract.token,
+                                  }).replace('-', '')}
+                                </div>
+                                <div className="text-ink-500 text-sm">
+                                  {maxOutcome && `${maxOutcome}`}
+                                </div>
+                              </>
+                            )}
+                            {value === 'closeTime' && (
+                              <>
+                                <div className="text-ink-900 whitespace-nowrap font-semibold">
+                                  {closeDate ? (
+                                    <RelativeTimestamp
+                                      time={closeDate}
+                                      className="text-ink-900 font-semibold"
+                                      shortened
+                                    />
+                                  ) : (
+                                    'No close'
+                                  )}
+                                </div>
+                                <div className="text-ink-500 text-sm">
+                                  {contract.isResolved
+                                    ? 'Resolved'
+                                    : closeDate && closeDate < Date.now()
+                                    ? 'Closed'
+                                    : ''}
+                                </div>
+                              </>
+                            )}
+                            {value === 'dayPctChange' && (
+                              <>
+                                <div
+                                  className={clsx(
+                                    'font-semibold',
+                                    (metric.from?.day.profitPercent ?? 0) > 0
+                                      ? 'text-teal-500'
+                                      : 'text-ink-600'
+                                  )}
+                                >
+                                  {(
+                                    metric.from?.day.profitPercent ?? 0
+                                  ).toFixed(1)}
+                                  %
+                                </div>
+                              </>
+                            )}
+                            {value === 'costBasis' && (
+                              <>
+                                <div className="text-ink-900 font-semibold">
+                                  {formatWithToken({
+                                    amount: metric.invested,
+                                    token: contract.token,
+                                  })}
+                                </div>
+                              </>
+                            )}
+                            {value === 'dayPriceChange' && (
+                              <>
+                                <div className="text-ink-900 font-semibold">
+                                  {contract.mechanism === 'cpmm-1' ? (
+                                    <span>
+                                      {contract.probChanges.day > 0 ? '+' : ''}
+                                      {(contract.probChanges.day * 100).toFixed(
+                                        1
+                                      )}
+                                    </span>
+                                  ) : (
+                                    <span className="text-ink-600">-</span>
+                                  )}
+                                </div>
+                              </>
+                            )}
+                            {value === 'volume24h' && (
+                              <>
+                                <div className="text-ink-900 font-semibold">
+                                  {formatWithToken({
+                                    amount: contract.volume24Hours,
+                                    token: contract.token,
+                                  })}
+                                </div>
+                              </>
+                            )}
                           </div>
+                        ))}
+
+                      {/* Chevron cell */}
+                      <div className=" group-hover:bg-canvas-50 border-ink-200 border-b py-3">
+                        <div className="pt-1">
+                          <ChevronDownIcon
+                            className={clsx(
+                              'text-ink-500 h-4 w-4 transition-transform',
+                              expandedIds.includes(contract.id)
+                                ? 'rotate-180'
+                                : ''
+                            )}
+                          />
                         </div>
                       </div>
                     </div>
-
-                    {/* Expanded content below the main row content */}
-                    {expandedIds.includes(contract.id) && (
-                      <div className="border-ink-200 border-t px-2 py-2">
-                        <ExpandedBetRow
-                          contract={contract}
-                          user={user}
-                          signedInUser={signedInUser}
-                          contractMetric={metric}
-                          areYourBets={areYourBets}
-                        />
-                      </div>
-                    )}
                   </div>
-                )
-              })}
+
+                  {/* Expanded content below the main row content */}
+                  {expandedIds.includes(contract.id) && (
+                    <div className="border-ink-200 border-t px-2 py-2">
+                      <ExpandedBetRow
+                        contract={contract}
+                        user={user}
+                        signedInUser={signedInUser}
+                        contractMetric={metric}
+                        areYourBets={areYourBets}
+                      />
+                    </div>
+                  )}
+                </div>
+              )
+            })}
           </div>
 
-          <Pagination
-            page={page}
-            pageSize={rowsPerSection}
-            totalItems={contracts.length}
-            setPage={setPage}
+          <LoadMoreUntilNotVisible
+            loadMore={() => Promise.resolve(loadMore())}
           />
         </div>
       </div>
