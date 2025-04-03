@@ -585,11 +585,10 @@ function BetsTable(props: {
             <CogIcon className="h-4 w-4" />
             <span className="ml-1 text-sm">Columns</span>
           </MenuButton>
-          <MenuItems className="bg-canvas-0 border-ink-200 absolute right-0 z-20 mt-1 w-48 rounded-md border shadow-lg">
-            <div className="px-4 py-2 text-xs font-semibold">
+          <MenuItems className="bg-canvas-0 border-ink-200 absolute right-0 z-20 mt-1 h-80 w-48 overflow-y-auto rounded-md border shadow-lg">
+            <div className="border-ink-200 border-b px-4 py-2 text-xs font-semibold">
               Customize Columns
             </div>
-            <div className="border-ink-200 border-t"></div>
             {availableColumns.map((column) => (
               <MenuItem key={column.value}>
                 {({ focus }) => {
