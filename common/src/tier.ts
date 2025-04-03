@@ -3,7 +3,7 @@ export const answerCostTiers = [25, 100, 1000, 10000] as const
 
 export type BinaryDigit = '0' | '1'
 
-export function getTierFromLiquidity(liquidity: number): number {
+export function getTierIndexFromLiquidity(liquidity: number): number {
   return liquidityTiers.findIndex((tier) => tier >= liquidity)
 }
 
@@ -16,7 +16,7 @@ export function getAnswerCostFromLiquidity(
   ]
 }
 
-export function getTierFromLiquidityAndAnswers(
+export function getTierIndexFromLiquidityAndAnswers(
   liquidity: number,
   numAnswers: number
 ): number {

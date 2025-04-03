@@ -13,7 +13,7 @@ import { GradientContainer } from '../widgets/gradient-container'
 import { AddBountyButton, CancelBountyButton } from './bountied-question'
 import { useNativeInfo } from 'web/components/native-message-provider'
 import { formatMoney } from 'common/util/format'
-import { UNIQUE_BETTOR_BONUS_AMOUNT } from 'common/economy'
+import { getUniqueBettorBonusAmount } from 'common/economy'
 import { AddBoostButton } from './add-boost-button'
 import { BoostAnalytics } from './boost-analytics'
 import { Col } from '../layout/col'
@@ -38,13 +38,14 @@ export function CreatorSharePanel(props: { contract: Contract }) {
           )}
         </Row>
 
-        {contract.outcomeType !== 'POLL' &&
-          contract.outcomeType !== 'BOUNTIED_QUESTION' && (
-            <div className="text-ink-500 text-base">
-              Earn {formatMoney(UNIQUE_BETTOR_BONUS_AMOUNT)} for each new
-              trader.
-            </div>
-          )}
+        {(contract.mechanism === 'cpmm-1' ||
+          contract.mechanism === 'cpmm-multi-1') && (
+          <div className="text-ink-500 text-base">
+            Earn{' '}
+            {formatMoney(getUniqueBettorBonusAmount(contract.totalLiquidity))}
+            for each new trader.
+          </div>
+        )}
 
         <BoostAnalytics contract={contract} />
       </Col>

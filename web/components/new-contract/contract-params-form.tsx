@@ -17,9 +17,8 @@ import {
 } from 'common/contract'
 import {
   getAnte,
+  getUniqueBettorBonusAmount,
   MINIMUM_BOUNTY,
-  UNIQUE_ANSWER_BETTOR_BONUS_AMOUNT,
-  UNIQUE_BETTOR_BONUS_AMOUNT,
 } from 'common/economy'
 import { MultipleChoiceAnswers } from 'web/components/answers/multiple-choice-answers'
 import { Button } from 'web/components/buttons/button'
@@ -985,21 +984,20 @@ export function ContractParamsForm(props: {
           ? 'Creating...'
           : 'Created!'}
       </Button>
-      <div className="text-ink-600 -mt-3 text-sm">
-        Earn back your creation cost! Get a{' '}
-        <b>
-          {formatWithToken({
-            amount:
-              outcomeType == 'MULTIPLE_CHOICE'
-                ? UNIQUE_ANSWER_BETTOR_BONUS_AMOUNT
-                : UNIQUE_BETTOR_BONUS_AMOUNT,
-            short: true,
-            token: 'M$',
-          })}{' '}
-          bonus
-        </b>{' '}
-        for each unique trader on your question.
-      </div>
+      {outcomeType !== 'POLL' && outcomeType !== 'BOUNTIED_QUESTION' && (
+        <div className="text-ink-600 -mt-3 text-sm">
+          Earn back your creation cost! Get a{' '}
+          <b>
+            {formatWithToken({
+              amount: getUniqueBettorBonusAmount(liquidityTier, numAnswers),
+              short: true,
+              token: 'M$',
+            })}{' '}
+            bonus
+          </b>{' '}
+          for each unique trader on your question.
+        </div>
+      )}
       <div />
     </Col>
   )

@@ -1,5 +1,10 @@
 import { OutcomeType } from 'common/contract'
-import { answerCostTiers, liquidityTiers } from './tier'
+import {
+  answerCostTiers,
+  liquidityTiers,
+  getTierIndexFromLiquidity,
+  getTierIndexFromLiquidityAndAnswers,
+} from './tier'
 
 export const DEFAULT_CASH_ANTE = 50
 export const MINIMUM_BOUNTY = 1000
@@ -19,8 +24,9 @@ export const getAnte = (
     outcomeType === 'DATE'
   ) {
     const tierIndex =
-      liquidityTiers.findIndex((tier) => tier >= liquidityTier) ??
-      liquidityTiers[liquidityTiers.length - 1]
+      getTierIndexFromLiquidity(liquidityTier) === -1
+        ? liquidityTiers.length - 1
+        : getTierIndexFromLiquidity(liquidityTier)
     return numAnswers
       ? Math.max(numAnswers * answerCostTiers[tierIndex], liquidityTier)
       : liquidityTiers[tierIndex]
@@ -44,8 +50,18 @@ export const REFERRAL_AMOUNT = 1_000
 export const REFERRAL_AMOUNT_CASH = 10.0
 export const REFERRAL_MIN_PURCHASE_DOLLARS = 20
 
-export const UNIQUE_BETTOR_BONUS_AMOUNT = 10
-export const UNIQUE_ANSWER_BETTOR_BONUS_AMOUNT = 10
+const uniqueBettorBonusAmounts = [3, 10, 15, 20]
+export const getUniqueBettorBonusAmount = (
+  liquidity: number,
+  numAnswers?: number
+) => {
+  if (!numAnswers) {
+    return uniqueBettorBonusAmounts[getTierIndexFromLiquidity(liquidity)]
+  }
+  return uniqueBettorBonusAmounts[
+    getTierIndexFromLiquidityAndAnswers(liquidity, numAnswers)
+  ]
+}
 
 /* Disabled bonuses */
 export const NEXT_DAY_BONUS = 100 // Paid on day following signup
