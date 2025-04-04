@@ -54,6 +54,7 @@ import { MultiNumericContractChart } from 'web/components/charts/contract/multi-
 import { MultiDateContractChart } from 'web/components/charts/contract/multi-date'
 import { pointsToBase64 } from 'common/util/og'
 import { mapValues } from 'lodash'
+import { useUser } from 'web/hooks/use-user'
 type Points = HistoryPoint<any>[]
 
 async function getHistoryData(contract: Contract) {
@@ -287,8 +288,8 @@ function ContractSmolView(props: {
   const isDate = outcomeType === 'DATE'
 
   const href = `https://${DOMAIN}${twombaContractPath(contract)}`
-
-  const shareUrl = getShareUrl(contract)
+  const user = useUser()
+  const shareUrl = getShareUrl(contract, user?.username)
 
   const showMultiChart = isMulti && !!props.multiPoints
 

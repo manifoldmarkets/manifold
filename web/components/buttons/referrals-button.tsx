@@ -3,7 +3,6 @@ import { DisplayUser } from 'common/api/user-types'
 import { REFERRAL_AMOUNT } from 'common/economy'
 import { getReferralCount } from 'common/supabase/referrals'
 import { User } from 'common/user'
-import { getReferralCodeFromUser } from 'common/util/share'
 import { useEffect, useState } from 'react'
 import { CopyLinkRow } from 'web/components/buttons/copy-link-button'
 import { Row } from 'web/components/layout/row'
@@ -18,6 +17,7 @@ import { getReferrals } from 'web/lib/supabase/referrals'
 import { Col } from '../layout/col'
 import { CASH_COLOR } from '../portfolio/portfolio-graph'
 import { Subtitle } from '../widgets/subtitle'
+import { ENV_CONFIG } from 'common/envs/constants'
 
 export const useReferralCount = (user: User) => {
   const [referralCount, setReferralCount] = useState(0)
@@ -42,7 +42,7 @@ export function Referrals(props: { user: User }) {
   const isYou = currentUser?.id === user.id
 
   const referredByUser = useDisplayUserById(user.referredByUserId)
-  const url = getReferralCodeFromUser(currentUser?.id)
+  const url = `https://${ENV_CONFIG.domain}?referrer=${user?.username}`
 
   return (
     <Col className="bg-canvas-0 rounded p-6">

@@ -9,7 +9,6 @@ import {
   renderResolution,
 } from 'common/contract'
 import { PrivateUser, User } from 'common/user'
-import { getReferralCodeFromUser } from 'common/util/share'
 import {
   formatLargeNumber,
   formatMoney,
@@ -35,7 +34,6 @@ import {
 } from 'shared/supabase/init'
 import { getLoverRow } from 'common/love/lover'
 import { HOUR_MS } from 'common/util/time'
-import { REFERRAL_AMOUNT, REFERRAL_AMOUNT_CASH } from 'common/economy'
 
 export type PerContractInvestmentsData = {
   questionTitle: string
@@ -541,12 +539,6 @@ export const sendInterestingMarketsEmail = async (
     {
       name: firstName,
       unsubscribeUrl,
-      referralCode: getReferralCodeFromUser(privateUser.id),
-      referralManaAmount: formatMoney(REFERRAL_AMOUNT).replace(
-        ENV_CONFIG.moneyMoniker,
-        ''
-      ),
-      referralCashAmount: REFERRAL_AMOUNT_CASH.toFixed(0),
       question1Title: contractsToSend[0].question,
       question1Link: contractUrl(contractsToSend[0]),
       question1ImgSrc: imageSourceUrl(contractsToSend[0]),

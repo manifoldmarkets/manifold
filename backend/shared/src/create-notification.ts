@@ -11,7 +11,6 @@ import {
   notification_reason_types,
   NotificationReason,
   PaymentCompletedData,
-  ReferralData,
   ReviewNotificationData,
   UniqueBettorData,
 } from 'common/notification'
@@ -691,7 +690,8 @@ export const createLimitBetExpiredNotification = async (
 export const createReferralNotification = async (
   toUserId: string,
   referredUser: User,
-  bonusAmounts: ReferralData
+  bonusAmount: string,
+  referredByContract?: Contract
 ) => {
   const privateUser = await getPrivateUser(toUserId)
   if (!privateUser) return
@@ -704,17 +704,27 @@ export const createReferralNotification = async (
   const notification: Notification = {
     id: referredUser.id + '-signup-referral-bonus',
     userId: toUserId,
-    reason: 'you_referred_user',
+    reason:
+      referredByContract?.creatorId === toUserId
+        ? 'user_joined_to_bet_on_your_market'
+        : 'you_referred_user',
     createdTime: Date.now(),
     isSeen: false,
     sourceId: referredUser.id,
     sourceType: 'user',
+    sourceContractId: referredByContract?.id,
+
     sourceUpdateType: 'updated',
     sourceUserName: referredUser.name,
     sourceUserUsername: referredUser.username,
     sourceUserAvatarUrl: referredUser.avatarUrl,
-    sourceText: '',
-    data: bonusAmounts,
+    sourceText: bonusAmount,
+    // Only pass the contract referral details if they weren't referred to a group
+    sourceContractCreatorUsername: referredByContract?.creatorUsername,
+    sourceContractTitle: referredByContract?.question,
+    sourceContractSlug: referredByContract?.slug,
+    sourceSlug: referredByContract?.slug,
+    sourceTitle: referredByContract?.question,
   }
   const pg = createSupabaseDirectClient()
   await insertNotificationToSupabase(notification, pg)

@@ -1,9 +1,5 @@
 import { APIError, APIHandler } from 'api/helpers/endpoint'
-import {
-  PaymentAmount,
-  REFERRAL_MIN_PURCHASE_DOLLARS,
-  WEB_PRICES,
-} from 'common/economy'
+import { PaymentAmount, WEB_PRICES } from 'common/economy'
 import { SWEEP_PRODUCTION_ENABLED } from 'common/envs/constants'
 import {
   CompleteSessionDirectCashierResponse,
@@ -11,7 +7,6 @@ import {
 } from 'common/gidx/gidx'
 import { User } from 'common/user'
 import { getIp, track, trackPublicEvent } from 'shared/analytics'
-import { distributeReferralBonusIfNoneGiven } from 'shared/distribute-referral-bonus'
 import {
   getGIDXStandardParams,
   getLocalServerIP,
@@ -260,14 +255,6 @@ const sendCoins = async (
       purchasedMana: true,
       purchasedSweepcash: isSweepsVerified,
     })
-    if (referrerInfo && paidInCents / 100 >= REFERRAL_MIN_PURCHASE_DOLLARS) {
-      await distributeReferralBonusIfNoneGiven(
-        tx,
-        user,
-        referrerInfo.id,
-        referrerInfo.sweepsVerified
-      )
-    }
   })
 
   await trackPublicEvent(user.id, 'M$ purchase', {

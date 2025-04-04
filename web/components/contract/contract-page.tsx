@@ -76,6 +76,7 @@ import { api } from 'web/lib/api/api'
 import { shouldHideGraph } from 'common/contract-params'
 import { CreatorSharePanel, NonCreatorSharePanel } from './creator-share-panel'
 import { FollowMarketButton } from '../buttons/follow-market-button'
+import { useSaveReferral } from 'web/hooks/use-save-referral'
 
 export function ContractPageContent(props: ContractParams) {
   const {
@@ -104,7 +105,10 @@ export function ContractPageContent(props: ContractParams) {
   const liveContract =
     !isPlay && liveCashContract ? liveCashContract : livePlayContract
   const user = useUser()
-
+  useSaveReferral(user, {
+    defaultReferrerUsername: props.contract.creatorUsername,
+    contractId: props.contract.id,
+  })
   // Read and set play state from the query
   useEffect(() => {
     if (!router.isReady) return

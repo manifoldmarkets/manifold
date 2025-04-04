@@ -279,7 +279,7 @@ export function HeaderActions(props: {
       )}
       <FollowMarketIconButton contract={currentContract} user={user} />
       <CopyLinkOrShareButton
-        url={getShareUrl(currentContract)}
+        url={getShareUrl(currentContract, user?.username)}
         tooltip="Copy question share link"
         className="text-ink-500 hover:text-ink-600"
         size="xs"

@@ -21,6 +21,7 @@ import { NoLabel, YesLabel } from '../outcome-label'
 import { ProfitBadge } from '../profit-badge'
 import { InfoTooltip } from '../widgets/info-tooltip'
 import { MoneyDisplay } from './money-display'
+import { useUser } from 'web/hooks/use-user'
 
 export function UserBetsSummary(props: {
   contract: Contract
@@ -78,6 +79,7 @@ export function BetsSummary(props: {
   const mainBinaryMCAnswer = getMainBinaryMCAnswer(contract)
   const prob = contract.mechanism === 'cpmm-1' ? getProbability(contract) : 0
   const expectation = prob * yesWinnings + (1 - prob) * noWinnings
+  const user = useUser()
 
   if (metrics.invested === 0 && metrics.profit === 0) return null
 
@@ -245,7 +247,11 @@ export function BetsSummary(props: {
             <MoneyDisplay amount={profit} isCashContract={isCashContract} /> in
             profit!{' '}
             <TweetButton
-              tweetText={getWinningTweet(profit, contract)}
+              tweetText={getWinningTweet(
+                profit,
+                contract,
+                user?.username ?? ''
+              )}
               className="ml-2"
             />
           </div>
