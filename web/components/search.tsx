@@ -30,7 +30,7 @@ import { ContractFilters } from './search/contract-filters'
 import { UserResults } from './search/user-results'
 import { BrowseTopicPills } from './topics/browse-topic-pills'
 import { LoadMoreUntilNotVisible } from 'web/components/widgets/visibility-observer'
-import { BinaryDigit, liquidityTiers } from 'common/tier'
+import { BinaryDigit } from 'common/tier'
 import { useIsMobile } from 'web/hooks/use-is-mobile'
 import { Spacer } from './layout/spacer'
 import { useSweepstakes } from './sweepstakes-provider'
@@ -39,7 +39,6 @@ import { Carousel } from './widgets/carousel'
 import { isEqual } from 'lodash'
 import { SearchInput } from './search/search-input'
 import { removeEmojis } from 'common/util/string'
-import { formatMoney } from 'common/util/format'
 
 const USERS_PER_PAGE = 100
 const TOPICS_PER_PAGE = 100
@@ -134,11 +133,6 @@ export const DEFAULT_TIER = '00000'
 
 export type ContractTypeType = (typeof CONTRACT_TYPES)[number]['value']
 type SearchType = 'Users' | 'Questions' | undefined
-
-export const LIQUIDITY_TIER_LABELS = liquidityTiers.map((tier) => ({
-  label: formatMoney(tier) + '+',
-  value: tier.toString(),
-}))
 
 export type SearchParams = {
   [QUERY_KEY]: string

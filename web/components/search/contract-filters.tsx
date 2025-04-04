@@ -46,7 +46,14 @@ import {
   unselectedClass,
 } from './filter-pills'
 import { useUser } from 'web/hooks/use-user'
-import { LIQUIDITY_KEY, LIQUIDITY_TIER_LABELS } from '../search'
+import { LIQUIDITY_KEY } from '../search'
+import { formatMoney } from 'common/util/format'
+import { liquidityTiers } from 'common/tier'
+
+export const LIQUIDITY_TIER_LABELS = liquidityTiers.map((tier) => ({
+  label: formatMoney(tier) + '+',
+  value: tier.toString(),
+}))
 
 export function ContractFilters(props: {
   className?: string
@@ -393,15 +400,17 @@ function FilterModal(props: {
               Liquidity filters
             </Row>
             <Row className="flex-wrap gap-1">
-              {LIQUIDITY_TIER_LABELS.map(({ label, value }) => (
-                <FilterPill
-                  key={value}
-                  selected={value === liquidityTier}
-                  onSelect={() => selectLiquidityTier(value)}
-                >
-                  {label}
-                </FilterPill>
-              ))}
+              {LIQUIDITY_TIER_LABELS.slice(1, LIQUIDITY_TIER_LABELS.length).map(
+                ({ label, value }) => (
+                  <FilterPill
+                    key={value}
+                    selected={value === liquidityTier}
+                    onSelect={() => selectLiquidityTier(value)}
+                  >
+                    {label}
+                  </FilterPill>
+                )
+              )}
             </Row>
           </Col>
         )}
