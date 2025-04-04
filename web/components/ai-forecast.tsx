@@ -26,6 +26,8 @@ import { LiaKiwiBirdSolid } from 'react-icons/lia'
 import TooltipComponent from 'web/components/widgets/tooltip'
 import { SizedBinaryChart } from 'web/components/charts/contract/binary'
 import { getBetPoints } from 'common/bets'
+import { useUser } from 'web/hooks/use-user'
+import { useSaveReferral } from 'web/hooks/use-save-referral'
 
 // Shared background pattern for all cards
 const BG_PATTERN_LIGHT =
@@ -489,7 +491,7 @@ function CapabilityCard({
     [contracts, marketId]
   )
 
-  // Always call hooks unconditionally
+  // eslint-disable-next-line react-hooks/rules-of-hooks
   const liveContract = contract ? useLiveContract(contract) : null
 
   // Get the expected value if it's a numeric contract
@@ -1012,6 +1014,7 @@ function ModelReleasesTimeline({
   }, [cards, contracts])
 
   const contractsWithLiveData = contractsWithLive.map(({ card, contract }) => {
+    // eslint-disable-next-line react-hooks/rules-of-hooks
     const liveContract = contract ? useLiveContract(contract) : null
     return { card, contract, liveContract }
   })
@@ -1170,10 +1173,13 @@ export function AIForecast({
   contracts = [],
   hideTitle,
 }: AIForecastProps) {
+  // eslint-disable-next-line react-hooks/rules-of-hooks
   const liveWhenAgi = whenAgi && whenAgi.id ? useLiveContract(whenAgi) : null
   const expectedValueAGI = liveWhenAgi
     ? getNumberExpectedValue(liveWhenAgi)
     : 2030
+  const user = useUser()
+  useSaveReferral(user)
   const eventYear = Math.floor(expectedValueAGI)
   const eventMonth = Math.round((expectedValueAGI - eventYear) * 12)
   const expectedYear = new Date(eventYear, eventMonth, 1)

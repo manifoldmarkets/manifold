@@ -17,6 +17,7 @@ import { getUniqueBettorBonusAmount } from 'common/economy'
 import { AddBoostButton } from './add-boost-button'
 import { BoostAnalytics } from './boost-analytics'
 import { Col } from '../layout/col'
+import { useUser } from 'web/hooks/use-user'
 
 export function CreatorSharePanel(props: { contract: Contract }) {
   const { contract } = props
@@ -30,7 +31,10 @@ export function CreatorSharePanel(props: { contract: Contract }) {
           <AddBoostButton contract={contract} />
           <ShareLinkButton contract={contract} />
           <TweetButton
-            tweetText={'I created a question. ' + getShareUrl(contract)}
+            tweetText={
+              'I created a question. ' +
+              getShareUrl(contract, contract.creatorUsername)
+            }
             className="hidden sm:flex"
           />
           {contract.outcomeType == 'BOUNTIED_QUESTION' && (
@@ -73,7 +77,7 @@ export function NonCreatorSharePanel(props: {
       {children}
       <ShareLinkButton contract={contract} />
       <TweetButton
-        tweetText={getShareUrl(contract)}
+        tweetText={getShareUrl(contract, contract.creatorUsername)}
         className="hidden sm:flex"
       />
     </Row>
@@ -83,7 +87,8 @@ export function NonCreatorSharePanel(props: {
 const ShareLinkButton = (props: { contract: Contract; className?: string }) => {
   const { contract, className } = props
   const { isNative } = useNativeInfo()
-  const url = getShareUrl(contract)
+  const user = useUser()
+  const url = getShareUrl(contract, user?.username)
 
   const onClick = () => {
     if (!url) return

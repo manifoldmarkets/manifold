@@ -18,6 +18,8 @@ import {
 import { Carousel } from '../widgets/carousel'
 import { DashboardText } from './dashboard-text-card'
 import { HorizontalDashboardCard } from './horizontal-dashboard-card'
+import { useUser } from 'web/hooks/use-user'
+import { useSaveReferral } from 'web/hooks/use-save-referral'
 
 export function HorizontalDashboard(props: {
   initialDashboard: Dashboard
@@ -26,6 +28,8 @@ export function HorizontalDashboard(props: {
   slug: string
 }) {
   const { initialDashboard, slug, previews, initialContracts } = props
+  const user = useUser()
+  useSaveReferral(user)
   const fetchedDashboard = useDashboardFromSlug(slug)
   const [dashboard, setDashboard] = useState<Dashboard>(initialDashboard)
 

@@ -17,9 +17,10 @@ import { Welcome } from 'web/components/onboarding/welcome'
 import { LiveGeneratedFeed } from 'web/components/feed/live-generated-feed'
 import { ExploreContent } from '../explore'
 import { useBanner } from 'web/components/nav/banner'
-
+import { useSaveReferral } from 'web/hooks/use-save-referral'
 export default function Home() {
   const user = useUser()
+  useSaveReferral(user)
   useRedirectIfSignedOut()
   const [showManifestBanner, hideManifestBanner] = useBanner('manifest-2025')
 

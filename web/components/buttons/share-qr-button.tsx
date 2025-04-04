@@ -5,14 +5,15 @@ import { useState } from 'react'
 import { Modal } from '../layout/modal'
 import { QRCode } from '../widgets/qr-code'
 import { Button } from './button'
+import { useUser } from 'web/hooks/use-user'
 
 export function ShareQRButton(props: {
   contract: Contract
   className?: string
 }) {
   const { contract, className } = props
-  const shareUrl = getShareUrl(contract)
-
+  const user = useUser()
+  const shareUrl = getShareUrl(contract, user?.username)
   const [open, setOpen] = useState(false)
 
   return (

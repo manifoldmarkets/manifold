@@ -15,7 +15,6 @@ import { forwardRef, Ref, useState } from 'react'
 import { useIsMobile } from 'web/hooks/use-is-mobile'
 import { TOPIC_IDS_YOU_CANT_FOLLOW } from 'common/supabase/groups'
 import { getTopicShareUrl } from 'common/util/share'
-import { useRouter } from 'next/router'
 import { useUser } from 'web/hooks/use-user'
 
 export const QuestionsTopicTitle = forwardRef(
@@ -26,7 +25,6 @@ export const QuestionsTopicTitle = forwardRef(
     const [loading, setLoading] = useState(false)
     const user = useUser()
     const isMobile = useIsMobile()
-    const router = useRouter()
 
     return (
       <Row
@@ -40,7 +38,7 @@ export const QuestionsTopicTitle = forwardRef(
         </h1>
         <Row>
           <CopyLinkOrShareButton
-            url={getTopicShareUrl(topic.slug)}
+            url={getTopicShareUrl(topic.slug, user?.username)}
             className={'gap-1 whitespace-nowrap'}
             eventTrackingName={'copy questions page link'}
             size={isMobile ? 'sm' : 'md'}

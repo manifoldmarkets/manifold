@@ -96,7 +96,8 @@ export function SellRow(props: {
               tweetText={getPositionTweet(
                 (sharesOutcome === 'NO' ? -1 : 1) * shares,
                 metric.invested,
-                contract
+                contract,
+                user?.username ?? ''
               )}
             />
           )}

@@ -42,20 +42,29 @@ function getTweetHref(tweetText: string) {
 export const getPositionTweet = (
   position: number,
   invested: number,
-  contract: Contract
+  contract: Contract,
+  username: string
 ) => {
   const p = invested / Math.abs(position)
   const prob = formatPercent(position > 0 ? p : 1 - p)
   const side = position > 0 ? 'greater' : 'less'
 
   return `I'm predicting there's a ${side} than ${prob} chance. ${getShareUrl(
-    contract
+    contract,
+    username
   )}`
 }
 
-export const getWinningTweet = (profit: number, contract: Contract) => {
+export const getWinningTweet = (
+  profit: number,
+  contract: Contract,
+  username: string
+) => {
   const isCashContract = contract.token === 'CASH'
   return `I made ${isCashContract ? SWEEPIES_MONIKER : 'M$'}${formatMoneyNumber(
     profit
-  )} in profit trading on\n'${contract.question}'! ${getShareUrl(contract)}`
+  )} in profit trading on\n'${contract.question}'! ${getShareUrl(
+    contract,
+    username
+  )}`
 }

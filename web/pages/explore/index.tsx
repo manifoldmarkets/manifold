@@ -37,6 +37,7 @@ import DropdownMenu from 'web/components/widgets/dropdown-menu'
 import { ACTIVITY_TYPES } from '../activity'
 import { DropdownPill } from 'web/components/search/filter-pills'
 import { TopicPillSelector } from 'web/components/topics/topic-selector'
+import { useSaveReferral } from 'web/hooks/use-save-referral'
 const isProd = ENV === 'PROD'
 const NFL_ID = 'TNQwmbE5p6dnKx2e6Qlp'
 const NBA_ID = 'i0v3cXwuxmO9fpcInVYb'
@@ -49,6 +50,8 @@ const ALL_IDS = [NFL_ID, SPORTS_ID, EPL_ID, NBA_ID, MLB_ID].join(',')
 export function ExploreContent(props: { render: boolean }) {
   const { render } = props
   const user = useUser()
+  useSaveReferral(user)
+
   const [isSportsInterested, setIsSportsInterested] = usePersistentLocalState<
     boolean | undefined
   >(undefined, 'is-sports-interested')

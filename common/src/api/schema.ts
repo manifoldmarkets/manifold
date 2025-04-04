@@ -2303,6 +2303,18 @@ export const API = (_apiTypeCheck = {
       .strict(),
     returns: {} as { closeTime: number },
   },
+  'refer-user': {
+    method: 'POST',
+    visibility: 'public',
+    authed: true,
+    props: z
+      .object({
+        referredByUsername: z.string(),
+        contractId: z.string().optional(),
+      })
+      .strict(),
+    returns: {} as { success: boolean },
+  },
 } as const)
 
 export type APIPath = keyof typeof API
