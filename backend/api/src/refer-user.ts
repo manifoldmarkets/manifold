@@ -11,7 +11,6 @@ import { runTxnFromBank } from 'shared/txn/run-txn'
 import { MINUTE_MS } from 'common/util/time'
 import { removeUndefinedProps } from 'common/util/object'
 import { trackPublicEvent } from 'shared/analytics'
-import { convertTxn } from 'common/supabase/txns'
 import { updateUser } from 'shared/supabase/users'
 
 export const referUser: APIHandler<'refer-user'> = async (props, auth) => {
@@ -63,25 +62,30 @@ async function handleReferral(
   const pg = createSupabaseDirectClient()
   log(`referredByUserId: ${referredByUserId}`)
   const { txn, user } = await pg.tx({ mode: SERIAL_MODE }, async (tx) => {
-    const user = await getUser(newUserId, tx)
-    if (!user) throw new APIError(500, `User ${newUserId} not found`)
+    const newUser = await getUser(newUserId, tx)
+    if (!newUser) throw new APIError(500, `User ${newUserId} not found`)
 
-    if (user.referredByUserId || user.referredByContractId) {
-      throw new APIError(400, `User ${user.id} already has referral details`)
+    if (newUser.referredByUserId || newUser.referredByContractId) {
+      throw new APIError(400, `User ${newUser.id} already has referral details`)
     }
-    if (user.createdTime < Date.now() - MINUTES_ALLOWED_TO_REFER * MINUTE_MS) {
-      throw new APIError(400, `User ${user.id} is too old to be referred`)
+    if (
+      newUser.createdTime <
+      Date.now() - MINUTES_ALLOWED_TO_REFER * MINUTE_MS
+    ) {
+      throw new APIError(400, `User ${newUser.id} is too old to be referred`)
     }
 
-    const txns = await tx.map(
-      `select * from txns where to_id = $1 and category = 'REFERRAL'`,
-      [referredByUserId],
-      convertTxn
+    const txns = await tx.one(
+      `select count(*) from txns where to_id = $1
+       and category = 'REFERRAL'
+       and data->>'referredUserId' = $2`,
+      [referredByUserId, newUser.id],
+      (row) => row.count
     )
 
     // If the referring user already has a referral txn due to referring this user, halt
     // TODO: store in data instead
-    if (txns.some((txn) => txn.description?.includes(user.id))) {
+    if (txns > 0) {
       throw new APIError(
         404,
         'Existing referral bonus found with matching details'
@@ -97,7 +101,11 @@ async function handleReferral(
       amount: REFERRAL_AMOUNT,
       token: 'M$',
       category: 'REFERRAL',
-      description: `Referred new user id: ${user.id} for ${REFERRAL_AMOUNT}`,
+      description: `Referred new user id: ${newUser.id} for ${REFERRAL_AMOUNT}`,
+      data: removeUndefinedProps({
+        referredUserId: newUser.id,
+        referredContractId: referredByContract?.id,
+      }),
     } as const
 
     const txn = await runTxnFromBank(tx, txnData)
@@ -111,7 +119,7 @@ async function handleReferral(
       })
     )
 
-    return { txn, user }
+    return { txn, user: newUser }
   })
 
   await createReferralNotification(

@@ -47,8 +47,6 @@ export const SUS_STARTING_BALANCE = 10
 export const PHONE_VERIFICATION_BONUS = 1000
 
 export const REFERRAL_AMOUNT = 1_000
-export const REFERRAL_AMOUNT_CASH = 10.0
-export const REFERRAL_MIN_PURCHASE_DOLLARS = 20
 
 const uniqueBettorBonusAmounts = [3, 10, 15, 20]
 export const getUniqueBettorBonusAmount = (
