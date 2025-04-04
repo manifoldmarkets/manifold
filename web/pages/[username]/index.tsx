@@ -167,7 +167,7 @@ function UserProfile(props: {
   const router = useRouter()
   const currentUser = useUser()
   useSaveReferral(currentUser, {
-    defaultReferrerUsername: user?.username,
+    defaultReferrerUsername: user.username,
   })
   const isCurrentUser = user.id === currentUser?.id
   const [expandProfileInfo, setExpandProfileInfo] = usePersistentLocalState(
