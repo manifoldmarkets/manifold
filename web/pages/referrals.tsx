@@ -12,13 +12,15 @@ import { REFERRAL_AMOUNT } from 'common/economy'
 import { formatMoney } from 'common/util/format'
 import clsx from 'clsx'
 import { TokenNumber } from 'web/components/widgets/token-number'
-
+import { referralQuery } from 'common/util/share'
 export const getServerSideProps = redirectIfLoggedOut('/')
 
 export default function ReferralsPage() {
   const user = useUser()
 
-  const url = `https://${ENV_CONFIG.domain}?referrer=${user?.username}`
+  const url = `https://${ENV_CONFIG.domain}${referralQuery(
+    user?.username ?? ''
+  )}`
 
   return (
     <Page trackPageView={'referrals'}>
