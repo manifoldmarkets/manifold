@@ -18,6 +18,7 @@ import { Col } from '../layout/col'
 import { CASH_COLOR } from '../portfolio/portfolio-graph'
 import { Subtitle } from '../widgets/subtitle'
 import { ENV_CONFIG } from 'common/envs/constants'
+import { referralQuery } from 'common/util/share'
 
 export const useReferralCount = (user: User) => {
   const [referralCount, setReferralCount] = useState(0)
@@ -42,7 +43,9 @@ export function Referrals(props: { user: User }) {
   const isYou = currentUser?.id === user.id
 
   const referredByUser = useDisplayUserById(user.referredByUserId)
-  const url = `https://${ENV_CONFIG.domain}?referrer=${user?.username}`
+  const url = `https://${ENV_CONFIG.domain}${referralQuery(
+    user?.username ?? ''
+  )}`
 
   return (
     <Col className="bg-canvas-0 rounded p-6">
