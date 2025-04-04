@@ -15,7 +15,7 @@ import {
 } from 'shared/gidx/helpers'
 import { log } from 'shared/monitoring/log'
 import { createSupabaseDirectClient } from 'shared/supabase/init'
-import { getReferrerInfo, updateUser } from 'shared/supabase/users'
+import { updateUser } from 'shared/supabase/users'
 import { runTxnInBetQueue } from 'shared/txn/run-txn'
 import { getUser, LOCAL_DEV } from 'shared/utils'
 
@@ -243,9 +243,6 @@ const sendCoins = async (
     description: `Free sweepcash bonus for purchasing mana.`,
   } as const
 
-  const referrerInfo = user.usedReferralCode
-    ? await getReferrerInfo(pg, user.referredByUserId)
-    : undefined
   await pg.tx(async (tx) => {
     await runTxnInBetQueue(tx, manaPurchaseTxn)
     if (isSweepsVerified) {
