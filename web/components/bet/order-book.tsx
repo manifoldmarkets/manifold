@@ -482,9 +482,10 @@ function CollapsedOrderRow(props: {
     : undefined;
 
   const onError = () => {}
+  const reverseOutcome = outcome === "YES" ? "NO" : "YES"
 
   const result = getLimitBetReturns(
-    outcome as 'YES' | 'NO',
+    reverseOutcome as 'YES' | 'NO',
     bigNumber,
     contractLimitBets,
     balanceByUserId,
