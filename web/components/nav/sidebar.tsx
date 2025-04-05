@@ -7,7 +7,6 @@ import {
   LoginIcon,
   SearchIcon,
   GlobeAltIcon,
-  ChatIcon,
   StarIcon,
 } from '@heroicons/react/outline'
 // import { PiTelevisionSimple } from 'react-icons/pi'
@@ -56,7 +55,6 @@ export default function Sidebar(props: {
 
   const isNewUser = !!user && user.createdTime > Date.now() - DAY_MS
 
-  // temp fix
   const isLiveTV = false
 
   const navOptions = isMobile
@@ -145,11 +143,7 @@ const getDesktopNav = (
       //   href: '/tv',
       //   icon: PiTelevisionSimple,
       // },
-      {
-        name: 'Share with friends',
-        href: '/referrals',
-        icon: StarIcon,
-      },
+     
       {
         name: 'Notifications',
         href: `/notifications`,
@@ -178,8 +172,6 @@ const getMobileNav = (
 
   return buildArray<NavItem>(
     { name: 'Leagues', href: '/leagues', icon: TrophyIcon },
-    { name: 'Share with friends', href: '/referrals', icon: StarIcon }, // remove this and I will beat you — SG
-
     // { name: 'TV', href: '/tv', icon: PiTelevisionSimple },
     isAdminOrMod && {
       name: 'Reports',
@@ -197,11 +189,7 @@ const bottomNav = (
 ) =>
   buildArray<NavItem>(
     loggedIn && { name: 'About', href: '/about', icon: QuestionMarkCircleIcon },
-    {
-      name: 'Discord',
-      href: 'https://discord.gg/eHQBNBqXuh',
-      icon: ChatIcon,
-    },
+    { name: 'Share with friends', href: '/referrals', icon: StarIcon },
     {
       name: theme ?? 'auto',
       children:
