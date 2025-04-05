@@ -465,6 +465,11 @@ function CollapsedOrderRow(props: {
     .filter((u) => u != null)
     .reverse()
 
+  const totalShares = total / getBinaryMCProb(limitProb, outcome)
+  
+  const colorClassName =
+    outcome === 'YES' ? 'text-teal-500' : 'text-scarlet-600'
+
   const [collapsed, setCollapsed] = useState(true)
 
   return (
@@ -489,12 +494,21 @@ function CollapsedOrderRow(props: {
         />
       </div>
 
-      <div className="self-center pr-1 text-right">
-        <MoneyDisplay
-          amount={total}
-          numberType="short"
-          isCashContract={contract.token === 'CASH'}
-        />
+      <div class="flex flex-col">
+        <div class={clsx(colorClassName, 'text-right')}>
+          <MoneyDisplay
+            amount={totalShares}
+            numberType="short"
+            isCashContract={contract.token === 'CASH'}
+          />
+        </div>
+        <span class="text-ink-500 text-right text-xs">
+          <MoneyDisplay
+            amount={total}
+            numberType="short"
+            isCashContract={contract.token === 'CASH'}
+          />{' '}held
+        </span>
       </div>
 
       {!collapsed &&
