@@ -494,15 +494,15 @@ function CollapsedOrderRow(props: {
         />
       </div>
 
-      <div class="flex flex-col">
-        <div class={clsx(colorClassName, 'text-right')}>
+      <div className="flex flex-col">
+        <div className={clsx(colorClassName, 'text-right')}>
           <MoneyDisplay
             amount={totalShares}
             numberType="short"
             isCashContract={contract.token === 'CASH'}
           />
         </div>
-        <span class="text-ink-500 text-right text-xs">
+        <span className="text-ink-500 text-right text-xs">
           <MoneyDisplay
             amount={total}
             numberType="short"
