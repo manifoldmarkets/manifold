@@ -143,7 +143,7 @@ const getDesktopNav = (
       //   href: '/tv',
       //   icon: PiTelevisionSimple,
       // },
-     
+
       {
         name: 'Notifications',
         href: `/notifications`,
