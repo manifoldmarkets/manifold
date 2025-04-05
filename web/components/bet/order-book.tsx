@@ -11,6 +11,7 @@ import {
   PseudoNumericContract,
   StonkContract,
 } from 'common/contract'
+import { getLimitBetReturns } from 'client-common/lib/bet'
 import { getFormattedMappedValue } from 'common/pseudo-numeric'
 import { formatPercent } from 'common/util/format'
 import { groupBy, keyBy, sortBy, sumBy } from 'lodash'
@@ -391,6 +392,7 @@ export function CollatedOrderTable(props: {
       pseudonymColor: string
     }
   }
+  onAmountChange: (newAmount: number | undefined) => void
 }) {
   const { contract, side, pseudonym } = props
   const limitBets = props.limitBets.filter(
@@ -424,6 +426,8 @@ export function CollatedOrderTable(props: {
             key={prob}
             limitProb={Number(prob)}
             bets={bets}
+            contractLimitBets={limitBets}
+            onAmountChange={onAmountChange}
           />
         ))}
       </div>
@@ -440,6 +444,8 @@ function CollapsedOrderRow(props: {
     | MultiContract
   limitProb: number
   bets: LimitBet[]
+  contractLimitBets: LimitBet[]
+  onAmountChange: (newAmount: number | undefined) => void
 }) {
   const { contract, limitProb, bets } = props
   const { outcome } = bets[0]
@@ -464,6 +470,31 @@ function CollapsedOrderRow(props: {
     .map(([userId]) => usersById[userId])
     .filter((u) => u != null)
     .reverse()
+  
+  const bigNumber = 4503599627370495 // 2^52 - 1
+  const balanceByUserId = {"dummy": bigNumber + 1}
+  const multiProps = {
+    contract.mechanism === 'cpmm-multi-1'
+    ? {
+      answers: contract.answers,
+      answerToBuy: contract.answers.find((a) => a.id === bet.answerId)!,
+      }
+    : undefined
+  }
+  const onError = () => {}
+
+  const result = getLimitBetReturns(
+    outcome,
+    bigNumber,
+    limitBets,
+    balanceByUserId,
+    onError,
+    contract,
+    multiProps,
+    limitProb,
+    false
+    )
+  filledAmount = result.amount
 
   const [collapsed, setCollapsed] = useState(true)
 
@@ -489,13 +520,26 @@ function CollapsedOrderRow(props: {
         />
       </div>
 
-      <div className="self-center pr-1 text-right">
-        <MoneyDisplay
+      <div className="flex flex-row">
+        <div className="self-center pr-1 text-right">
+          <MoneyDisplay
           amount={total}
           numberType="short"
           isCashContract={contract.token === 'CASH'}
         />
+        </div>
+        <button 
+          className="hover:bg-ink-200 bg-canvas-100 rounded-md px-2 py-1.5 text-sm sm:px-3"
+          onClick={() => onAmountChange(filledAmount)}
+          >
+          Fill (<MoneyDisplay
+          amount={filledAmount}
+          numberType="short"
+          isCashContract={contract.token === 'CASH'}
+        />)
+        </button>
       </div>
+
 
       {!collapsed &&
         bets.map((b) => {
@@ -586,6 +630,7 @@ export function OrderBookPanel(props: {
       pseudonymColor: string
     }
   }
+  onAmountChange: (newAmount: number | undefined) => void
 }) {
   const { contract, answer, showTitle, pseudonym } = props
   const limitBets = props.limitBets.filter(
@@ -626,12 +671,14 @@ export function OrderBookPanel(props: {
           contract={contract}
           side="YES"
           pseudonym={pseudonym}
+          onAmountChange={onAmountChange}
         />
         <CollatedOrderTable
           limitBets={noBets}
           contract={contract}
           side="NO"
           pseudonym={pseudonym}
+          onAmountChange={onAmountChange}
         />
       </Row>
 
