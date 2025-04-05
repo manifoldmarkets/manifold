@@ -473,14 +473,14 @@ function CollapsedOrderRow(props: {
   
   const bigNumber = 4503599627370495 // 2^52 - 1
   const balanceByUserId = {"dummy": bigNumber + 1}
-  const multiProps = {
+  const multiProps = 
     contract.mechanism === 'cpmm-multi-1'
     ? {
       answers: contract.answers,
       answerToBuy: contract.answers.find((a) => a.id === bet.answerId)!,
       }
-    : undefined
-  }
+    : undefined;
+
   const onError = () => {}
 
   const result = getLimitBetReturns(
@@ -530,7 +530,7 @@ function CollapsedOrderRow(props: {
         </div>
         {typeof onAmountChange !== 'undefined' ? (
           <button
-            className="hover:bg-ink-200 bg-canvas-100 rounded-md px-2 py-1.5 text-sm sm:px-3"
+            className="hover:bg-ink-200 bg-canvas-100 rounded-md px-2 py-1 text-sm sm:px-2"
             onClick={() => onAmountChange(filledAmount)}
             >
             Fill (<MoneyDisplay
