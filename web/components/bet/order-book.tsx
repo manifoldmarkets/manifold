@@ -392,7 +392,7 @@ export function CollatedOrderTable(props: {
       pseudonymColor: string
     }
   }
-  onAmountChange: (newAmount: number | undefined) => void
+  onAmountChange?: (newAmount: number | undefined) => void
 }) {
   const { contract, side, pseudonym } = props
   const limitBets = props.limitBets.filter(
@@ -445,7 +445,7 @@ function CollapsedOrderRow(props: {
   limitProb: number
   bets: LimitBet[]
   contractLimitBets: LimitBet[]
-  onAmountChange: (newAmount: number | undefined) => void
+  onAmountChange?: (newAmount: number | undefined) => void
 }) {
   const { contract, limitProb, bets } = props
   const { outcome } = bets[0]
@@ -528,18 +528,19 @@ function CollapsedOrderRow(props: {
           isCashContract={contract.token === 'CASH'}
         />
         </div>
-        <button 
-          className="hover:bg-ink-200 bg-canvas-100 rounded-md px-2 py-1.5 text-sm sm:px-3"
-          onClick={() => onAmountChange(filledAmount)}
-          >
-          Fill (<MoneyDisplay
-          amount={filledAmount}
-          numberType="short"
-          isCashContract={contract.token === 'CASH'}
-        />)
-        </button>
+        {typeof onAmountChange !== 'undefined' ? (
+          <button
+            className="hover:bg-ink-200 bg-canvas-100 rounded-md px-2 py-1.5 text-sm sm:px-3"
+            onClick={() => onAmountChange(filledAmount)}
+            >
+            Fill (<MoneyDisplay
+              amount={filledAmount}
+              numberType="short"
+              isCashContract={contract.token === 'CASH'}
+            />)
+          </button>
+        ) : null}
       </div>
-
 
       {!collapsed &&
         bets.map((b) => {
@@ -630,7 +631,7 @@ export function OrderBookPanel(props: {
       pseudonymColor: string
     }
   }
-  onAmountChange: (newAmount: number | undefined) => void
+  onAmountChange?: (newAmount: number | undefined) => void
 }) {
   const { contract, answer, showTitle, pseudonym } = props
   const limitBets = props.limitBets.filter(
