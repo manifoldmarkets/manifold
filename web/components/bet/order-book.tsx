@@ -495,7 +495,7 @@ function CollapsedOrderRow(props: {
     limitProb,
     false
     )
-  const filledAmount = result.amount
+  const filledAmount = Math.floor(result.amount)
 
   const [collapsed, setCollapsed] = useState(true)
 
