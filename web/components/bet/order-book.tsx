@@ -394,7 +394,7 @@ export function CollatedOrderTable(props: {
   }
   onAmountChange?: (newAmount: number | undefined) => void
 }) {
-  const { contract, side, pseudonym } = props
+  const { contract, side, pseudonym, onAmountChange } = props
   const limitBets = props.limitBets.filter(
     (b) => !b.expiresAt || b.expiresAt > Date.now()
   )
@@ -447,7 +447,7 @@ function CollapsedOrderRow(props: {
   contractLimitBets: LimitBet[]
   onAmountChange?: (newAmount: number | undefined) => void
 }) {
-  const { contract, limitProb, bets } = props
+  const { contract, limitProb, bets, contractLimitBets, onAmountChange } = props
   const { outcome } = bets[0]
   const isPseudoNumeric = contract.outcomeType === 'PSEUDO_NUMERIC'
   const isBinaryMC = isBinaryMulti(contract)
@@ -477,14 +477,14 @@ function CollapsedOrderRow(props: {
     contract.mechanism === 'cpmm-multi-1'
     ? {
       answers: contract.answers,
-      answerToBuy: contract.answers.find((a) => a.id === bet.answerId)!,
+      answerToBuy: contract.answers.find((a) => a.id === bets[0].answerId)!,
       }
     : undefined;
 
   const onError = () => {}
 
   const result = getLimitBetReturns(
-    outcome,
+    outcome as 'YES' | 'NO',
     bigNumber,
     limitBets,
     balanceByUserId,
@@ -494,7 +494,7 @@ function CollapsedOrderRow(props: {
     limitProb,
     false
     )
-  filledAmount = result.amount
+  const filledAmount = result.amount
 
   const [collapsed, setCollapsed] = useState(true)
 
@@ -633,7 +633,7 @@ export function OrderBookPanel(props: {
   }
   onAmountChange?: (newAmount: number | undefined) => void
 }) {
-  const { contract, answer, showTitle, pseudonym } = props
+  const { contract, answer, showTitle, pseudonym, onAmountChange } = props
   const limitBets = props.limitBets.filter(
     (b) => (!b.expiresAt || b.expiresAt > Date.now()) && !b.silent
   )
