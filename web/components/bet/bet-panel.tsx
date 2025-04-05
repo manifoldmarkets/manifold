@@ -1019,6 +1019,7 @@ export const BuyPanelBody = (props: {
           )}
           answer={multiProps?.answerToBuy}
           pseudonym={props.pseudonym}
+          onAmountChange={onBetChange}
         />
       )}
     </>
