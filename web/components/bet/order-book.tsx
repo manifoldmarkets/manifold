@@ -486,7 +486,7 @@ function CollapsedOrderRow(props: {
   const result = getLimitBetReturns(
     outcome as 'YES' | 'NO',
     bigNumber,
-    limitBets,
+    contractLimitBets,
     balanceByUserId,
     onError,
     contract,
