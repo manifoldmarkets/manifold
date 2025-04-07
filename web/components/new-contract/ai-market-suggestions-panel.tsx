@@ -192,14 +192,7 @@ const MarketList = ({
               Type: {ALL_CONTRACT_TYPES[market.outcomeType]?.name}
             </div>
           </Row>
-          {market.reasoning && (
-            <div className="bg-primary-50 mt-2 rounded-md p-3 text-sm">
-              <div className="text-primary-800 mb-1 font-medium">
-                AI's reasoning:
-              </div>
-              <div className="text-primary-700">{market.reasoning}</div>
-            </div>
-          )}
+
           <Row className="items-center justify-between">
             <Button
               color="gray"
