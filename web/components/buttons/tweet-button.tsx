@@ -2,7 +2,7 @@ import clsx from 'clsx'
 
 import { Contract } from 'common/contract'
 import {
-  formatMoneyNumber,
+  formatMoneyNumberUSLocale,
   formatPercent,
   SWEEPIES_MONIKER,
 } from 'common/util/format'
@@ -61,10 +61,9 @@ export const getWinningTweet = (
   username: string
 ) => {
   const isCashContract = contract.token === 'CASH'
-  return `I made ${isCashContract ? SWEEPIES_MONIKER : 'M$'}${formatMoneyNumber(
-    profit
-  )} in profit trading on\n'${contract.question}'! ${getShareUrl(
-    contract,
-    username
-  )}`
+  return `I made ${
+    isCashContract ? SWEEPIES_MONIKER : 'M$'
+  }${formatMoneyNumberUSLocale(profit)} in profit trading on\n'${
+    contract.question
+  }'! ${getShareUrl(contract, username)}`
 }
