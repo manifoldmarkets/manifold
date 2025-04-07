@@ -616,13 +616,16 @@ const betChangeToText = (change: BetBalanceChange) => {
 }
 
 const txnTitle = (change: TxnBalanceChange) => {
-  const { type, contract, user, questType, charity } = change
+  const { type, contract, user, questType, charity, answerText } = change
 
   if (user) {
     return user.username
   }
   if (charity) {
     return charity.name
+  }
+  if (answerText) {
+    return answerText
   }
   if (contract) {
     return contract.question

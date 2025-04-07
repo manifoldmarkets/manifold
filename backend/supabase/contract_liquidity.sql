@@ -4,8 +4,28 @@ create table if not exists
     contract_id text not null,
     data jsonb not null,
     liquidity_id text not null,
+    created_time timestamp with time zone default now(),
+    user_id text not null,
     constraint primary key (contract_id, liquidity_id)
   );
+
+-- Triggers
+create trigger contract_liquidity_populate before insert
+or
+update on public.contract_liquidity for each row
+execute function contract_liquidity_populate_cols ();
+
+-- Functions
+create
+or replace function public.contract_liquidity_populate_cols () returns trigger language plpgsql as $function$
+begin
+    if new.data is not null then
+        new.user_id := (new.data) ->> 'userId';
+        new.created_time := millis_to_ts(((new.data) ->> 'createdTime')::bigint);
+    end if;
+    return new;
+end
+$function$;
 
 -- Row Level Security
 alter table contract_liquidity enable row level security;
@@ -21,3 +41,7 @@ select
 drop index if exists contract_liquidity_pkey;
 
 create unique index contract_liquidity_pkey on public.contract_liquidity using btree (contract_id, liquidity_id);
+
+drop index if exists contract_liquidity_user_id;
+
+create index contract_liquidity_user_id on public.contract_liquidity using btree (user_id, created_time desc);
