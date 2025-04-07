@@ -23,10 +23,7 @@ export const getAnte = (
     outcomeType === 'MULTI_NUMERIC' ||
     outcomeType === 'DATE'
   ) {
-    const tierIndex =
-      getTierIndexFromLiquidity(liquidityTier) === -1
-        ? liquidityTiers.length - 1
-        : getTierIndexFromLiquidity(liquidityTier)
+    const tierIndex = getTierIndexFromLiquidity(liquidityTier)
     return numAnswers
       ? Math.max(numAnswers * answerCostTiers[tierIndex], liquidityTier)
       : liquidityTiers[tierIndex]

@@ -388,6 +388,7 @@ export function ContractParamsForm(props: {
 
   const isValidTopics = selectedGroups.length <= MAX_GROUPS_PER_MARKET
   const ante = getAnte(outcomeType, numAnswers, liquidityTier)
+
   const numberOfBuckets = getMultiNumericAnswerBucketRangeNames(
     min ?? 0,
     max ?? 0,
@@ -989,7 +990,7 @@ export function ContractParamsForm(props: {
           Earn back your creation cost! Get a{' '}
           <b>
             {formatWithToken({
-              amount: getUniqueBettorBonusAmount(liquidityTier, numAnswers),
+              amount: getUniqueBettorBonusAmount(ante, numAnswers),
               short: true,
               token: 'M$',
             })}{' '}
