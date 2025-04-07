@@ -7,8 +7,8 @@ import { Txn } from 'common/txn'
 import { filterDefined } from 'common/util/array'
 import { charities } from 'common/charity'
 import { convertTxn } from 'common/supabase/txns'
-import { convertContract } from 'common/supabase/contracts'
 import { LiquidityProvision } from 'common/liquidity-provision'
+import { getContractsDirect } from 'shared/supabase/contracts'
 
 // market creation fees
 export const getBalanceChanges: APIHandler<'get-balance-changes'> = async (
@@ -54,12 +54,7 @@ const getTxnBalanceChanges = async (
   const userIds = filterDefined(
     txns.map((txn) => getOtherUserIdFromTxn(txn, userId))
   )
-  const contracts = await pg.map(
-    `select data from contracts
-    where id = any($1)`,
-    [contractIds],
-    convertContract
-  )
+  const contracts = await getContractsDirect(contractIds, pg)
   const users = await pg.map(
     `select id, username, name from users
     where id = any($1)`,
@@ -120,12 +115,7 @@ const getLiquidityBalanceChanges = async (
   )
 
   const contractIds = filterDefined(liquidityDocs.map((doc) => doc.contractId))
-  const contracts = await pg.map(
-    `select data from contracts where id = any($1)`,
-    [contractIds],
-    convertContract
-  )
-
+  const contracts = await getContractsDirect(contractIds, pg)
   const liquidityChanges = [] as TxnBalanceChange[]
   for (const doc of liquidityDocs) {
     const contract = contracts.find((c) => c.id === doc.contractId)
