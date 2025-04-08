@@ -152,18 +152,20 @@ export const toDisplayResolution = (
   resolutions?: { [outcome: string]: number },
   answerId?: string
 ) => {
+  const isMultiChoice =
+    contract.outcomeType === 'MULTIPLE_CHOICE' ||
+    contract.outcomeType === 'MULTI_NUMERIC' ||
+    contract.outcomeType === 'DATE'
+  if (resolution === 'CANCEL') return 'N/A'
+
   if (contract.outcomeType === 'BINARY') {
     const prob = resolutionProbability ?? getProbability(contract)
     return renderResolution(resolution, prob)
   }
 
   if (contract.outcomeType === 'PSEUDO_NUMERIC') {
-    const { resolution, resolutionValue } = contract
-
-    if (resolution === 'CANCEL') return 'N/A'
-
-    return resolutionValue
-      ? formatLargeNumber(resolutionValue)
+    return contract.resolutionValue
+      ? formatLargeNumber(contract.resolutionValue)
       : formatNumericProbability(
           resolutionProbability ?? getProbability(contract),
           contract
@@ -173,10 +175,20 @@ export const toDisplayResolution = (
     return formatNumericProbability(getProbability(contract), contract)
   }
 
-  const isIndependentMulti =
-    contract.outcomeType === 'MULTIPLE_CHOICE' &&
-    contract.mechanism === 'cpmm-multi-1' &&
-    !contract.shouldAnswersSumToOne
+  if (contract.outcomeType === 'NUMBER') {
+    if (!resolutions) return 'Invalid resolution data'
+
+    const resolvedAnswerIds = Object.keys(resolutions)
+    const resolvedAnswers = contract.answers.filter((a) =>
+      resolvedAnswerIds.includes(a.id)
+    )
+    if (resolvedAnswers.length > 0) {
+      return resolvedAnswers.map((a) => a.text).join(', ')
+    }
+    return 'MULTI'
+  }
+
+  const isIndependentMulti = isMultiChoice && !contract.shouldAnswersSumToOne
   if (isIndependentMulti && answerId) {
     const answer = contract.answers.find((a) => a.id === answerId)
     if (answer) {
@@ -188,13 +200,12 @@ export const toDisplayResolution = (
   }
   if ((resolution === 'MKT' && resolutions) || resolution === 'CHOOSE_MULTIPLE')
     return 'MULTI'
-  if (resolution === 'CANCEL') return 'N/A'
 
   const answer = (contract as MultiContract).answers.find(
     (a) => a.id === resolution
   )
   if (answer) return answer.text
-  return `#${resolution}`
+  return resolution
 }
 
 export const sendWelcomeEmail = async (

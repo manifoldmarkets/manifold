@@ -21,7 +21,7 @@ import {
   PrivateUser,
   User,
 } from 'common/user'
-import { Contract, MarketContract, renderResolution } from 'common/contract'
+import { Contract, MarketContract } from 'common/contract'
 import { getContract, getPrivateUser, getUser, isProd, log } from 'shared/utils'
 import { ContractComment } from 'common/comment'
 import {
@@ -1243,39 +1243,7 @@ export const createContractResolvedNotifications = async (
     resolutions?: { [outcome: string]: number }
   }
 ) => {
-  let resolutionText = outcome ?? contract.question
   const { token } = contract
-  const isMultiChoice =
-    contract.outcomeType === 'MULTIPLE_CHOICE' ||
-    contract.outcomeType === 'MULTI_NUMERIC' ||
-    contract.outcomeType === 'DATE'
-  const isIndependentMulti = isMultiChoice && !contract.shouldAnswersSumToOne
-
-  if (isIndependentMulti) {
-    const answer = contract.answers.find((answer) => answer.id === answerId)
-    resolutionText = `${answer?.text ?? ''}: ${renderResolution(
-      outcome,
-      probabilityInt !== undefined ? probabilityInt / 100 : answer?.prob
-    )}`
-  } else if (isMultiChoice) {
-    const answerText = contract.answers.find(
-      (answer) => answer.id === outcome
-    )?.text
-    if (answerText) resolutionText = answerText
-    else if (outcome === 'CHOOSE_MULTIPLE') resolutionText = 'multiple answers'
-  } else if (contract.outcomeType === 'BINARY') {
-    if (resolutionText === 'MKT' && probabilityInt)
-      resolutionText = `${probabilityInt}%`
-    else if (resolutionText === 'MKT') resolutionText = 'PROB'
-  } else if (contract.outcomeType === 'PSEUDO_NUMERIC') {
-    if (resolutionText === 'MKT' && resolutionValue)
-      resolutionText = `${resolutionValue}`
-  } else if (contract.outcomeType === 'NUMBER') {
-    const resolvedAnswers = contract.answers.filter((a) =>
-      Object.keys(resolutionData.resolutions ?? {}).includes(a.id)
-    )
-    resolutionText = resolvedAnswers.map((a) => a.text).join(', ')
-  }
   const bulkNotifications: Notification[] = []
   const bulkNoPayoutEmails: EmailAndTemplateEntry[] = []
   const bulkEmails: EmailAndTemplateEntry[] = []
@@ -1288,6 +1256,19 @@ export const createContractResolvedNotifications = async (
     resolutionProbability,
     resolutions,
   } = resolutionData
+
+  const isMultiChoice =
+    contract.outcomeType === 'MULTIPLE_CHOICE' ||
+    contract.outcomeType === 'MULTI_NUMERIC' ||
+    contract.outcomeType === 'DATE'
+  const isIndependentMulti = isMultiChoice && !contract.shouldAnswersSumToOne
+  const resolutionText = toDisplayResolution(
+    contract,
+    outcome,
+    resolutionProbability,
+    resolutions,
+    answerId
+  )
 
   const pg = createSupabaseDirectClient()
   const privateUsers = await pg.map(
