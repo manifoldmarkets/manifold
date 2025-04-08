@@ -12,6 +12,7 @@ import { Fees } from './fees'
 import { PollOption } from './poll-option'
 import { formatMoney, formatPercent } from './util/format'
 import { MultiBase64Points } from './chart'
+import { DAY_MS } from './util/time'
 
 /************************************************
 
@@ -589,3 +590,26 @@ export const nativeContractColumnsArray = [
   'boosted',
   'daily_score',
 ]
+
+export const clampChange = (currentProb: number, probChange: number) => {
+  if (probChange < 0.01 && probChange > -0.01) return 0
+
+  if (probChange > 0) {
+    // For positive changes, clamp to min of change and current probability
+    return Math.min(probChange, currentProb)
+  } else {
+    // For negative changes, clamp to min of absolute change and (1 - currentProb)
+    return -Math.min(Math.abs(probChange), 1 - currentProb)
+  }
+}
+
+export const dayProbChange = (contract: CPMMContract) => {
+  const { createdTime } = contract
+  if (Date.now() - createdTime < DAY_MS) {
+    return 0
+  }
+  const change = Math.abs(
+    Math.round(clampChange(contract.prob, contract.probChanges.day) * 100)
+  )
+  return change > 2 ? change : 0
+}

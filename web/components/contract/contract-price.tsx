@@ -71,7 +71,7 @@ export function BinaryResolutionOrChance(props: {
           <div
             className={clsx(
               textColor,
-              'text-ink-600 text-sm',
+              'text-ink-600 text-base',
               subtextClassName
             )}
           >

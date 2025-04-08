@@ -17,6 +17,7 @@ import {
   MultiNumericContract,
   PseudoNumericContract,
   StonkContract,
+  dayProbChange,
   getMainBinaryMCAnswer,
   isBinaryMulti,
   tradingAllowed,
@@ -29,7 +30,7 @@ import { User } from 'common/user'
 import { filterDefined } from 'common/util/array'
 import { formatMoney, formatPercent } from 'common/util/format'
 import { orderBy } from 'lodash'
-import { FaChartArea } from 'react-icons/fa'
+import { FaArrowUp, FaArrowDown, FaChartArea } from 'react-icons/fa'
 import { BinaryMultiAnswersPanel } from 'web/components/answers/binary-multi-answers-panel'
 import {
   NumberDistributionChart,
@@ -82,6 +83,7 @@ import { GradientContainer } from '../widgets/gradient-container'
 import { getIsLive } from 'common/sports-info'
 import { MultiNumericContractChart } from '../charts/contract/multi-numeric'
 import { MultiDateContractChart } from '../charts/contract/multi-date'
+import { Tooltip } from '../widgets/tooltip'
 
 export const ContractOverview = memo(
   (props: {
@@ -238,7 +240,28 @@ export const BinaryOverview = (props: {
     <>
       <Row className="items-end justify-between gap-4">
         <Col>
-          <BinaryResolutionOrChance contract={contract} />
+          <Row className="items-baseline">
+            <BinaryResolutionOrChance contract={contract} />
+            {!!dayProbChange(contract) && (
+              <Tooltip text={`1-day probability change`}>
+                <Row
+                  className={clsx(
+                    'text-ink-700 mx-1 inline-flex items-center rounded-full px-1 align-middle text-xs',
+                    contract.probChanges.day > 0
+                      ? 'text-teal-600'
+                      : 'text-scarlet-500'
+                  )}
+                >
+                  {contract.probChanges.day > 0 ? (
+                    <FaArrowUp className="mr-0.5 h-2.5 w-2.5" />
+                  ) : (
+                    <FaArrowDown className="mr-0.5 h-2.5 w-2.5" />
+                  )}
+                  {dayProbChange(contract)}
+                </Row>
+              </Tooltip>
+            )}
+          </Row>
           {resolutionRating}
         </Col>
         <Row className={'gap-1'}>
