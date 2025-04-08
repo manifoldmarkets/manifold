@@ -19,6 +19,7 @@ Guidelines:
 - Keep it concise
 - Do not return anything other than the active voice, concise title, unless the question is already concise and declarative, in which case return a blank string
 - Do not suggest a longer title than the original. If you can't make it more concise, just return a blank string
+- Do NOT introduce jargon, niche acronyms, or anything that makes the title shorter but also more confusing, i.e. 'SWE' for 'software engineer', or 'S&P breaker' for 'stock market circuit breaker'
 - Keep personal markets personal, e.g. "Will I go to the gym this week?" should NOT be changed to impersonal forms like "Personal gym attendance this week"
 - Don't change the meaning of the question: include important and relevant parts of the question:
   - i.e. 'announce' in 'announce a ceasefire in 2025' is important and distinct from 'ceasefire in 2025'
