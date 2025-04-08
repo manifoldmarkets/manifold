@@ -937,6 +937,7 @@ export const API = (_apiTypeCheck = {
       optOutBetWarnings: z.boolean().optional(),
       isAdvancedTrader: z.boolean().optional(),
       //internal
+      seenStreakModal: z.boolean().optional(),
       shouldShowWelcome: z.boolean().optional(),
       hasSeenContractFollowModal: z.boolean().optional(),
       hasSeenLoanModal: z.boolean().optional(),

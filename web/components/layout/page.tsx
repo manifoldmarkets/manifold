@@ -10,7 +10,7 @@ import { ConfettiOnDemand } from '../confetti-on-demand'
 import { useTracking } from 'web/hooks/use-tracking'
 
 import { Footer } from '../footer'
-
+import { FirstStreakModalManager } from '../profile/first-streak-modal'
 export function Page(props: {
   trackPageView: string | false
   trackPageProps?: Record<string, any>
@@ -39,6 +39,7 @@ export function Page(props: {
     <>
       <ConfettiOnDemand />
       <GoogleOneTapLogin className="fixed bottom-12 right-4 z-[1000]" />
+      <FirstStreakModalManager />
       <Col
         className={clsx(
           !hideBottomBar && 'pb-[58px] lg:pb-0', // bottom bar padding

@@ -45,6 +45,7 @@ import { humanish } from 'common/user'
 import { TokenNumber } from 'web/components/widgets/token-number'
 import { first } from 'lodash'
 import { truncateText } from '../widgets/truncate'
+import { BettingStreakProgressModal } from '../profile/first-streak-modal'
 export function UniqueBettorBonusIncomeNotification(props: {
   notification: Notification
   highlighted: boolean
@@ -351,7 +352,11 @@ export function BettingStreakBonusIncomeNotification(props: {
           <PrimaryNotificationLink text="Prediction Streak" />
         </span>
       )}
-      <BettingStreakModal isOpen={open} setOpen={setOpen} currentUser={user} />
+      <BettingStreakProgressModal
+        open={open}
+        setOpen={setOpen}
+        currentStreak={user?.currentBettingStreak ?? 0}
+      />
     </NotificationFrame>
   )
 }

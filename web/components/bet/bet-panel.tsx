@@ -24,6 +24,7 @@ import {
 } from 'common/contract'
 import {
   formatLargeNumber,
+  formatMoney,
   formatOutcomeLabel,
   formatPercent,
   formatWithToken,
@@ -347,16 +348,9 @@ export const BuyPanelBody = (props: {
       const sharesFilled = updatedBet?.shares ?? submittedBet.shares
       const orderAmount = updatedBet?.orderAmount ?? submittedBet.orderAmount
       toast.success(
-        `${formatWithToken({
-          amount: amountFilled,
-          token: isCashContract ? 'CASH' : 'M$',
-        })}/${formatWithToken({
-          amount: orderAmount,
-          token: isCashContract ? 'CASH' : 'M$',
-        })} filled for ${formatWithToken({
-          amount: sharesFilled,
-          token: isCashContract ? 'CASH' : 'M$',
-        })} on payout`,
+        `${formatMoney(amountFilled)}/${formatMoney(
+          orderAmount
+        )} filled for ${formatMoney(sharesFilled)} payout`,
         {
           duration: 5000,
           id: submittedBet.toastId,
@@ -448,22 +442,22 @@ export const BuyPanelBody = (props: {
         } as APIParams<'bet'>)
       )
       if (bet.isFilled) {
-        toast.success(
-          `${formatWithToken({
-            amount: bet.amount,
-            token: isCashContract ? 'CASH' : 'M$',
-          })}/${formatWithToken({
-            amount: bet.orderAmount ?? 0,
-            token: isCashContract ? 'CASH' : 'M$',
-          })} filled for ${formatWithToken({
-            amount: bet.shares,
-            token: isCashContract ? 'CASH' : 'M$',
-          })} on payout`,
-          {
+        if (bet.limitProb !== undefined) {
+          toast.success(
+            `${formatMoney(bet.amount)}/${formatMoney(
+              bet.orderAmount ?? 0
+            )} filled for ${formatMoney(bet.shares)} payout`,
+            {
+              duration: 5000,
+              id: toastId,
+            }
+          )
+        } else {
+          toast.success(`${formatMoney(bet.amount)} trade placed!`, {
             duration: 5000,
             id: toastId,
-          }
-        )
+          })
+        }
         setSubmittedBet(null)
         setIsSubmitting(false)
         onBuySuccess?.()

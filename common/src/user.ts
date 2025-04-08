@@ -50,6 +50,7 @@ export type User = {
 
   hasSeenLoanModal?: boolean
   hasSeenContractFollowModal?: boolean
+  seenStreakModal?: boolean
   isBannedFromPosting?: boolean
   userDeleted?: boolean
   optOutBetWarnings?: boolean

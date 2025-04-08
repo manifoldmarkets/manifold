@@ -8,7 +8,10 @@ import { Modal } from 'web/components/layout/modal'
 import { Col } from 'web/components/layout/col'
 import { dailyStatsClass } from 'web/components/home/daily-stats'
 import { InfoTooltip } from '../widgets/info-tooltip'
-import { hasCompletedStreakToday } from 'web/components/profile/betting-streak-modal'
+import {
+  BettingStreakModal,
+  hasCompletedStreakToday,
+} from 'web/components/profile/betting-streak-modal'
 import { Title } from 'web/components/widgets/title'
 import { ProgressBar } from 'web/components/progress-bar'
 import {
@@ -71,6 +74,7 @@ export function QuestsModal(props: {
 }) {
   const { open, setOpen, user } = props
   const questStatus = useQuestStatus(user)
+  const [showStreakModal, setShowStreakModal] = useState(false)
 
   const { totalQuestsCompleted, totalQuests, questToCompletionStatus } =
     questStatus ?? { questToCompletionStatus: null }
@@ -113,7 +117,7 @@ export function QuestsModal(props: {
               BETTING_STREAK_BONUS_AMOUNT * (user.currentBettingStreak || 1),
               BETTING_STREAK_BONUS_MAX
             )}
-            href="/browse?fy=1&f=open"
+            onClick={() => setShowStreakModal(true)}
           />
           <QuestRow
             emoji={'📤'}
@@ -147,6 +151,11 @@ export function QuestsModal(props: {
           /> */}
         </Col>
       </div>
+      <BettingStreakModal
+        isOpen={showStreakModal}
+        setOpen={setShowStreakModal}
+        currentUser={user}
+      />
     </Modal>
   )
 }
@@ -159,8 +168,9 @@ const QuestRow = (props: {
   reward: number
   info?: string
   href?: string
+  onClick?: () => void
 }) => {
-  const { title, complete, status, reward, emoji, info, href } = props
+  const { title, complete, status, reward, emoji, info, href, onClick } = props
   return (
     <Row className={'justify-between'}>
       <Col>
@@ -174,6 +184,8 @@ const QuestRow = (props: {
                 <Link className={linkClass} href={href}>
                   {title}
                 </Link>
+              ) : onClick ? (
+                <button onClick={onClick}>{title}</button>
               ) : (
                 title
               )}
