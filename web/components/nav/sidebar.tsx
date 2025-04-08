@@ -69,7 +69,13 @@ export default function Sidebar(props: {
         isAdminOrMod: isAdminOrMod,
       })
 
-  const bottomNavOptions = bottomNav(!!user, theme, toggleTheme, router)
+  const bottomNavOptions = bottomNav(
+    !!user,
+    theme,
+    toggleTheme,
+    router,
+    isMobile
+  )
 
   const createMarketButton = user && !user.isBannedFromPosting && (
     <CreateQuestionButton
@@ -172,6 +178,11 @@ const getMobileNav = (
 
   return buildArray<NavItem>(
     { name: 'Leagues', href: '/leagues', icon: TrophyIcon },
+    {
+      name: 'Share with friends',
+      href: '/referrals',
+      icon: StarIcon,
+    },
     // { name: 'TV', href: '/tv', icon: PiTelevisionSimple },
     isAdminOrMod && {
       name: 'Reports',
@@ -185,11 +196,16 @@ const bottomNav = (
   loggedIn: boolean,
   theme: 'light' | 'dark' | 'auto',
   toggleTheme: () => void,
-  router: AppRouterInstance
+  router: AppRouterInstance,
+  isMobile: boolean | undefined
 ) =>
   buildArray<NavItem>(
     loggedIn && { name: 'About', href: '/about', icon: QuestionMarkCircleIcon },
-    { name: 'Share with friends', href: '/referrals', icon: StarIcon },
+    !isMobile && {
+      name: 'Share with friends',
+      href: '/referrals',
+      icon: StarIcon,
+    },
     {
       name: theme ?? 'auto',
       children:
