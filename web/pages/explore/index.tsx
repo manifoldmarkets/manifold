@@ -67,8 +67,9 @@ export function ExploreContent(props: { render: boolean }) {
   }, [user?.id])
   const sportsFirst = isSportsInterested
   const [selectedTopic, setSelectedTopic] = usePersistentLocalState<
-    LiteGroup | undefined
+    LiteGroup | undefined | 'all'
   >(technologyLiteGroup, 'activity-selected-topic')
+
   const [selectedTypes, setSelectedTypes] = usePersistentLocalState<
     ('bets' | 'comments' | 'markets')[]
   >(['comments'], 'activity-selected-types')
@@ -87,8 +88,10 @@ export function ExploreContent(props: { render: boolean }) {
         <Col className="gap-2 pt-1">
           <Row className="mt-2 gap-2">
             <TopicPillSelector
-              topic={selectedTopic}
-              setTopic={setSelectedTopic}
+              topic={selectedTopic === 'all' ? undefined : selectedTopic}
+              setTopic={(topic) =>
+                setSelectedTopic(topic === undefined ? 'all' : topic)
+              }
             />
             <DropdownMenu
               closeOnClick
@@ -114,7 +117,10 @@ export function ExploreContent(props: { render: boolean }) {
               )}
             />
           </Row>
-          <SiteActivity topicId={selectedTopic?.id} types={selectedTypes} />
+          <SiteActivity
+            topicId={selectedTopic === 'all' ? undefined : selectedTopic?.id}
+            types={selectedTypes}
+          />
         </Col>
       ),
     },

@@ -121,7 +121,7 @@ export function SiteActivity(props: {
                 <Col className="flex-1 gap-2">
                   <ContractMention contract={contract} />
                   <div className="space-y-2">
-                    {items.map((item, i) =>
+                    {items.map((item) =>
                       'amount' in item ? (
                         <FeedBet
                           className="!pt-0"
