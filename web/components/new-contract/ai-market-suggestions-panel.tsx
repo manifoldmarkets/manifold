@@ -44,24 +44,12 @@ export function AIMarketSuggestionsPanel(props: {
       }
       try {
         const existingTitles = regenerate ? markets.map((m) => m.question) : []
-        const [result1, result2] = await Promise.all([
-          api('generate-ai-market-suggestions', {
-            prompt,
-            existingTitles,
-          }),
-          api('generate-ai-market-suggestions-2', {
-            prompt,
-            existingTitles,
-          }),
-        ])
+        const results = await api('generate-ai-market-suggestions', {
+          prompt: regenerate ? lastGeneratedPrompt : prompt,
+          existingTitles,
+        })
 
-        const combinedResults = [...result1, ...result2].sort(
-          () => Math.random() - 0.5
-        )
-
-        setMarkets(
-          regenerate ? [...combinedResults, ...markets] : combinedResults
-        )
+        setMarkets(regenerate ? [...results, ...markets] : results)
       } catch (e) {
         if (e instanceof APIError) {
           toast.error(e.message)
@@ -129,7 +117,7 @@ export function AIMarketSuggestionsPanel(props: {
           {loadingSuggestions || loadingMore ? (
             <Row className="items-center gap-2">
               <LoadingIndicator />
-              <span>Hang on, this can take up to a minute!</span>
+              <span>Hang on, this can take 10-15 seconds!</span>
             </Row>
           ) : prompt === lastGeneratedPrompt ? (
             'Generate more'
@@ -150,6 +138,21 @@ export function AIMarketSuggestionsPanel(props: {
             creating={creating}
             createSuggestedMarket={createSuggestedMarket}
           />
+          <Button
+            color="indigo"
+            size="lg"
+            onClick={() => getSuggestions(true)}
+            disabled={!lastGeneratedPrompt || loadingSuggestions || loadingMore}
+          >
+            {loadingSuggestions || loadingMore ? (
+              <Row className="items-center gap-2">
+                <LoadingIndicator />
+                <span>Hang on, this can take 10-15 seconds!</span>
+              </Row>
+            ) : (
+              <span>Generate more</span>
+            )}
+          </Button>
         </Col>
       )}
     </Col>
@@ -174,9 +177,6 @@ const MarketList = ({
       <div key={i} className="rounded-lg border p-4">
         <Col className="relative gap-2">
           <div className="font-semibold">{market.question}</div>
-          <span className="text-ink-500 absolute -right-2 -top-2.5 text-xs">
-            v{market.promptVersion}
-          </span>
           {market.description && (
             <Content
               content={market.description}
