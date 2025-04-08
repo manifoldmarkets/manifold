@@ -49,7 +49,10 @@ Your concise version, without any other text or commentary:`
         system,
       })
 
-      const trimmedResponse = response.trim()
+      let trimmedResponse = response.trim()
+      if (trimmedResponse.startsWith('"') && trimmedResponse.endsWith('"')) {
+        trimmedResponse = trimmedResponse.slice(1, -1)
+      }
       return {
         title:
           trimmedResponse === '""' || trimmedResponse === "''"
