@@ -8,6 +8,7 @@ import { CommentWithTotalReplies } from 'common/comment'
 import { mapValues, uniq } from 'lodash'
 import { keyBy } from 'lodash'
 import { contractColumnsToSelect } from 'shared/utils'
+import { JSONContent } from '@tiptap/core'
 // todo: personalization based on followed users & topics
 // TODO: maybe run comments by gemini to make sure they're interesting
 export const getSiteActivity: APIHandler<'get-site-activity'> = async (
@@ -150,14 +151,16 @@ export const getSiteActivity: APIHandler<'get-site-activity'> = async (
     .filter((rc) => !rc.reply_to_data?.hidden && !rc.data.hidden)
     .filter(
       (rc) =>
-        !JSON.stringify(rc.data.content).includes('"label":"mods"') &&
-        !JSON.stringify(rc.data.content)
-          .toLowerCase()
-          .includes('please resolve') &&
-        !JSON.stringify(rc.reply_to_data?.content ?? {}).includes(
-          '"label":"mods"'
-        )
+        !hasContentWithText(rc.data.content, [
+          '"label":"mods"',
+          'please resolve',
+        ]) &&
+        !hasContentWithText(rc.reply_to_data?.content, [
+          '"label":"mods"',
+          'please resolve',
+        ])
     )
+
     .flatMap((rc) => filterDefined([rc.reply_to_data, rc.data]))
   const initialUniqueComments = uniqBy(baseCommentData, 'id')
 
@@ -214,4 +217,14 @@ export const getSiteActivity: APIHandler<'get-site-activity'> = async (
     newContracts: filterDefined(newContracts.map(convertContract)),
     relatedContracts: filterDefined(contractsResult),
   }
+}
+
+function hasContentWithText(
+  content: JSONContent | undefined,
+  texts: string[]
+): boolean {
+  const contentStr = JSON.stringify(content ?? {})
+  return texts.some((text) =>
+    contentStr.toLowerCase().includes(text.toLowerCase())
+  )
 }
