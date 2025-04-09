@@ -336,7 +336,7 @@ export const Stats = (props: {
           </tr>
         )}
         <tr>
-          <td>Sweeps</td>
+          <td>Sweepstakes</td>
           <td>
             {!isNonBetPollOrBountiedQuestion && (
               <SweepsToggle
