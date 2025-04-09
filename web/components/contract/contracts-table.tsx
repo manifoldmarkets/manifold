@@ -40,12 +40,7 @@ import { SweepiesCoin } from 'web/public/custom-components/sweepiesCoin'
 import { getFormattedExpectedValue } from 'common/multi-numeric'
 import { getFormattedExpectedDate } from 'common/multi-date'
 import { Answer } from 'common/src/answer'
-import {
-  FaArrowDown,
-  FaArrowTrendDown,
-  FaArrowTrendUp,
-  FaArrowUp,
-} from 'react-icons/fa6'
+import { FaArrowDown, FaArrowUp } from 'react-icons/fa6'
 
 export function ContractsTable(props: {
   contracts: Contract[]
@@ -163,9 +158,9 @@ function ContractRow(props: {
                     )}
                   >
                     {answer.probChanges.day > 0 ? (
-                      <FaArrowTrendUp className="mr-0.5 h-2.5  w-2.5" />
+                      <FaArrowUp className="mr-0.5 h-2.5 w-2.5" />
                     ) : (
-                      <FaArrowTrendDown className="mr-0.5 h-2.5 w-2.5" />
+                      <FaArrowDown className="mr-0.5 h-2.5 w-2.5" />
                     )}
                     {Math.abs(
                       Math.round(
