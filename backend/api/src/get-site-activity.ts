@@ -7,8 +7,7 @@ import { convertBet } from 'common/supabase/bets'
 import { CommentWithTotalReplies } from 'common/comment'
 import { mapValues, uniq } from 'lodash'
 import { keyBy } from 'lodash'
-import { getContractsDirect } from 'shared/supabase/contracts'
-
+import { contractColumnsToSelect } from 'shared/utils'
 // todo: personalization based on followed users & topics
 // TODO: maybe run comments by gemini to make sure they're interesting
 export const getSiteActivity: APIHandler<'get-site-activity'> = async (
@@ -33,6 +32,14 @@ export const getSiteActivity: APIHandler<'get-site-activity'> = async (
       throw new APIError(404, 'Topic not found')
     }
     topicId = topic.id
+  }
+  let blockedTopicIds = []
+  if (blockedGroupSlugs.length > 0) {
+    const blockedTopics = await pg.manyOrNone(
+      `select id from groups where slug = ANY($1)`,
+      [blockedGroupSlugs]
+    )
+    blockedTopicIds = blockedTopics.map((t) => t.id)
   }
   const blockedUserIds = [
     'FDWTsTHFytZz96xmcKzf7S5asYL2', // yunabot (does a lot of manual trades)
@@ -84,6 +91,7 @@ export const getSiteActivity: APIHandler<'get-site-activity'> = async (
        LEFT JOIN contract_comments cc2 ON cc2.comment_id = cc.data->>'replyToCommentId'
       WHERE cc.user_id != ALL($1)
          AND cc.contract_id != ALL($2)
+         AND cc.visibility = 'public'
          ${topicId ? 'AND gc.group_id = $6' : ''}
        ORDER BY cc.created_time DESC
        LIMIT $3 OFFSET $4;`
@@ -96,12 +104,12 @@ export const getSiteActivity: APIHandler<'get-site-activity'> = async (
        WHERE c.visibility = 'public'
          AND c.creator_id != ALL($1)
          AND c.id != ALL($2)
+         AND (c.resolution is null or c.resolution != 'CANCEL')
          ${topicId ? 'AND gc.group_id = $6' : ''}
          AND NOT EXISTS (
-           SELECT 1 FROM group_contracts gc
-           JOIN groups g ON g.id = gc.group_id
-           WHERE gc.contract_id = c.id
-             AND g.slug = ANY($5)
+           SELECT 1 FROM group_contracts gc2
+           WHERE gc2.contract_id = c.id
+             AND gc2.group_id = ANY($5)
          )
        ORDER BY c.created_time DESC
        LIMIT $3 OFFSET $4;`
@@ -119,7 +127,7 @@ export const getSiteActivity: APIHandler<'get-site-activity'> = async (
     blockedContractIds,
     limit,
     offset,
-    blockedGroupSlugs,
+    blockedTopicIds,
     topicId,
     minBetAmount ?? 500,
   ])
@@ -172,7 +180,13 @@ export const getSiteActivity: APIHandler<'get-site-activity'> = async (
         )
       : Promise.resolve([]), // Resolve empty array if no parent IDs
     contractIds.length > 0
-      ? getContractsDirect(contractIds, pg)
+      ? pg.map(
+          `select ${contractColumnsToSelect} from contracts where id in ($1:list)
+          and (resolution is null or resolution != 'CANCEL')
+          and visibility = 'public'`,
+          [contractIds],
+          convertContract
+        )
       : Promise.resolve([]), // Resolve empty array if no contract IDs
   ])
 
@@ -190,9 +204,14 @@ export const getSiteActivity: APIHandler<'get-site-activity'> = async (
   })
 
   return {
-    bets: recentBets.concat(limitOrders).map(convertBet),
-    comments: commentsWithReplyCounts,
+    bets: recentBets
+      .concat(limitOrders)
+      .map(convertBet)
+      .filter((b) => contractsResult.some((c) => c.id === b.contractId)),
+    comments: commentsWithReplyCounts.filter((c) =>
+      contractsResult.some((con) => con.id === c.contractId)
+    ),
     newContracts: filterDefined(newContracts.map(convertContract)),
-    relatedContracts: filterDefined(contractsResult), // Already converted by getContractsDirect
+    relatedContracts: filterDefined(contractsResult),
   }
 }
