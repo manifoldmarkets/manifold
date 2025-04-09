@@ -143,6 +143,9 @@ export const getSiteActivity: APIHandler<'get-site-activity'> = async (
     .filter(
       (rc) =>
         !JSON.stringify(rc.data.content).includes('"label":"mods"') &&
+        !JSON.stringify(rc.data.content)
+          .toLowerCase()
+          .includes('please resolve') &&
         !JSON.stringify(rc.reply_to_data?.content ?? {}).includes(
           '"label":"mods"'
         )

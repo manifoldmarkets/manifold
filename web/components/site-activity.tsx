@@ -1,7 +1,7 @@
 import clsx from 'clsx'
 import { CommentWithTotalReplies, ContractComment } from 'common/comment'
 import { Contract } from 'common/contract'
-import { groupBy, keyBy, orderBy, uniqBy } from 'lodash'
+import { groupBy, keyBy, orderBy, uniq, uniqBy } from 'lodash'
 import { memo, useEffect, useState } from 'react'
 import { usePrivateUser } from 'web/hooks/use-user'
 import { ContractMention } from './contract/contract-mention'
@@ -28,7 +28,8 @@ import { LiteGroup } from 'common/group'
 import DropdownMenu, { DropdownItem } from './widgets/dropdown-menu'
 import { DropdownPill } from './search/filter-pills'
 import { Input } from './widgets/input'
-
+import { filterDefined } from 'common/util/array'
+import { APIResponse } from 'common/src/api/schema'
 export const ACTIVITY_TYPES = [
   { name: 'All activity', value: ['bets', 'comments', 'markets'] },
   { name: 'Trades', value: ['bets'] },
@@ -72,19 +73,25 @@ export function SiteActivity(props: { className?: string }) {
   >(['comments'], 'activity-selected-types')
   const [offset, setOffset] = useState(0)
   const limit = 30 / types.length
+  const [allData, setAllData] = useState<APIResponse<'get-site-activity'>>()
 
-  const { data, loading } = useAPIGetter('get-site-activity', {
-    limit,
-    offset,
-    blockedUserIds,
-    blockedGroupSlugs,
-    blockedContractIds,
-    topicId,
-    types,
-    minBetAmount,
-  })
-
-  const [allData, setAllData] = useState<typeof data>()
+  const { data, loading } = useAPIGetter(
+    'get-site-activity',
+    {
+      limit,
+      offset,
+      blockedUserIds,
+      blockedGroupSlugs,
+      blockedContractIds: filterDefined([
+        ...blockedContractIds,
+        ...uniq(allData?.relatedContracts.map((c) => c.id)),
+      ]),
+      topicId,
+      types,
+      minBetAmount,
+    },
+    ['blockedContractIds']
+  )
 
   useEffect(() => {
     if (data) {
