@@ -1,6 +1,6 @@
 import { Storage } from 'firebase-admin/storage'
 import { DOMAIN } from 'common/envs/constants'
-import { nanoid } from 'nanoid'
+import { nanoid } from 'common/util/random'
 import { log } from 'shared/utils'
 type Bucket = ReturnType<InstanceType<typeof Storage>['bucket']>
 

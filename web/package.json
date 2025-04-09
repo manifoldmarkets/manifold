@@ -55,7 +55,6 @@
     "dayjs": "1.11.4",
     "firebase": "11.1.0",
     "link-preview-js": "3.0.4",
-    "nanoid": "3.3.7",
     "next": "15.0.4",
     "prosemirror-state": "1.4.2",
     "punycode": "2.3.1",
