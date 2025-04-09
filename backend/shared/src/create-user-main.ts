@@ -77,7 +77,7 @@ export const createUserMain = async (
   const rawName = fbUser.displayName || emailName || 'User' + randomString(4)
   const name = cleanDisplayName(rawName)
 
-  const bucket = getStorage().bucket(getStorageBucketId())
+  const bucket = getStorageBucket()
   const avatarUrl = fbUser.photoURL
     ? fbUser.photoURL
     : await generateAvatarUrl(userId, name, bucket)
@@ -257,10 +257,11 @@ async function upsertNewUserEmbeddings(
   )
 }
 
-function getStorageBucketId() {
-  return isProd()
+export function getStorageBucket() {
+  const id = isProd()
     ? PROD_CONFIG.firebaseConfig.storageBucket
     : DEV_CONFIG.firebaseConfig.storageBucket
+  return getStorage().bucket(id)
 }
 
 // Automatically ban users with these device tokens or ip addresses.

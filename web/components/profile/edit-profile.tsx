@@ -12,6 +12,7 @@ import { useEditableUserInfo } from 'web/hooks/use-editable-user-info'
 import { useUser } from 'web/hooks/use-user'
 import { api, updateUser } from 'web/lib/api/api'
 import { uploadPublicImage } from 'web/lib/firebase/storage'
+import { RefreshIcon } from '@heroicons/react/solid'
 
 export function EditUserField(props: {
   label: ReactNode
@@ -114,6 +115,19 @@ export const EditProfile = (props: {
     setAvatarLoading(false)
   }
 
+  const removeAvatar = async () => {
+    setAvatarLoading(true)
+    try {
+      const updatedUser = await api('me/update', { avatarUrl: '' })
+      setAvatarUrl(updatedUser.avatarUrl ?? '')
+    } catch (e) {
+      toast.error('Failed to randomly regenerate avatar.')
+      console.error(e)
+    } finally {
+      setAvatarLoading(false)
+    }
+  }
+
   return (
     <Col className="gap-4">
       <Row className="items-center gap-4">
@@ -128,13 +142,26 @@ export const EditProfile = (props: {
               height={80}
               className="bg-ink-400 h-20 w-20 rounded-full"
             />
-            <input
-              type="file"
-              name="file"
-              onChange={fileHandler}
-              accept="image/*"
-              className="min-w-0 flex-1"
-            />
+            <Col className="items-start gap-2">
+              <input
+                type="file"
+                name="file"
+                onChange={fileHandler}
+                accept="image/*"
+                className="min-w-0 flex-1"
+              />
+              {avatarUrl && (
+                <Button
+                  loading={avatarLoading}
+                  disabled={avatarLoading}
+                  color="gray-outline"
+                  onClick={removeAvatar}
+                  size="xs"
+                >
+                  <RefreshIcon className="mr-1 h-4 w-4" /> Random avatar
+                </Button>
+              )}
+            </Col>
           </>
         )}
       </Row>
