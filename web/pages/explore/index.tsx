@@ -32,11 +32,6 @@ import { Contract, isSportsContract } from 'common/contract'
 import { tsToMillis } from 'common/supabase/utils'
 import { ENV } from 'common/envs/constants'
 import { Comments } from '../comments'
-import { LiteGroup } from 'common/group'
-import DropdownMenu from 'web/components/widgets/dropdown-menu'
-import { ACTIVITY_TYPES } from '../activity'
-import { DropdownPill } from 'web/components/search/filter-pills'
-import { TopicPillSelector } from 'web/components/topics/topic-selector'
 import { useSaveReferral } from 'web/hooks/use-save-referral'
 const isProd = ENV === 'PROD'
 const NFL_ID = 'TNQwmbE5p6dnKx2e6Qlp'
@@ -66,13 +61,7 @@ export function ExploreContent(props: { render: boolean }) {
     }
   }, [user?.id])
   const sportsFirst = isSportsInterested
-  const [selectedTopic, setSelectedTopic] = usePersistentLocalState<
-    LiteGroup | undefined | 'all'
-  >(technologyLiteGroup, 'activity-selected-topic')
 
-  const [selectedTypes, setSelectedTypes] = usePersistentLocalState<
-    ('bets' | 'comments' | 'markets')[]
-  >(['comments'], 'activity-selected-types')
   if (!render) return null
   if (user === undefined || (user && isSportsInterested === undefined)) {
     return <LoadingIndicator />
@@ -86,41 +75,7 @@ export function ExploreContent(props: { render: boolean }) {
       title: 'Site activity',
       content: (
         <Col className="gap-2 pt-1">
-          <Row className="mt-2 gap-2">
-            <TopicPillSelector
-              topic={selectedTopic === 'all' ? undefined : selectedTopic}
-              setTopic={(topic) =>
-                setSelectedTopic(topic === undefined ? 'all' : topic)
-              }
-            />
-            <DropdownMenu
-              closeOnClick
-              selectedItemName={
-                ACTIVITY_TYPES.find(
-                  (t) =>
-                    t.value.length === selectedTypes.length &&
-                    t.value.every((v) => selectedTypes.includes(v))
-                )?.name ?? 'All activity'
-              }
-              items={ACTIVITY_TYPES.map((type) => ({
-                name: type.name,
-                onClick: () => setSelectedTypes([...type.value]),
-              }))}
-              buttonContent={(open) => (
-                <DropdownPill open={open}>
-                  {ACTIVITY_TYPES.find(
-                    (t) =>
-                      t.value.length === selectedTypes.length &&
-                      t.value.every((v) => selectedTypes.includes(v))
-                  )?.name ?? 'All activity'}
-                </DropdownPill>
-              )}
-            />
-          </Row>
-          <SiteActivity
-            topicId={selectedTopic === 'all' ? undefined : selectedTopic?.id}
-            types={selectedTypes}
-          />
+          <SiteActivity />
         </Col>
       ),
     },
@@ -450,13 +405,4 @@ export default function ExplorePage() {
       <ExploreContent render={true} />
     </Page>
   )
-}
-
-const technologyLiteGroup: LiteGroup = {
-  id: 'IlzY3moWwOcpsVZXCVej',
-  slug: 'technology-default',
-  name: '🖥️ Technology',
-  totalMembers: 46584,
-  privacyStatus: 'public',
-  importanceScore: 0,
 }

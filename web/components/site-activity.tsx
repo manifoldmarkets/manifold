@@ -22,26 +22,56 @@ import { useUser } from 'web/hooks/use-user'
 import { User } from 'common/user'
 import { PrivateUser } from 'common/user'
 import { track } from 'web/lib/service/analytics'
+import { usePersistentLocalState } from 'web/hooks/use-persistent-local-state'
+import { TopicPillSelector } from './topics/topic-selector'
+import { LiteGroup } from 'common/group'
+import DropdownMenu, { DropdownItem } from './widgets/dropdown-menu'
+import { DropdownPill } from './search/filter-pills'
+import { Input } from './widgets/input'
 
-export function SiteActivity(props: {
-  className?: string
-  blockedUserIds?: string[]
-  topicId?: string
-  types?: ('bets' | 'comments' | 'markets')[]
-}) {
-  const { className, topicId, types } = props
+export const ACTIVITY_TYPES = [
+  { name: 'All activity', value: ['bets', 'comments', 'markets'] },
+  { name: 'Trades', value: ['bets'] },
+  { name: 'Comments', value: ['comments'] },
+  { name: 'Markets', value: ['markets'] },
+] as const
+
+export function SiteActivity(props: { className?: string }) {
+  const { className } = props
   const privateUser = usePrivateUser()
   const user = useUser()
   const router = useRouter()
 
   const blockedGroupSlugs = privateUser?.blockedGroupSlugs ?? []
   const blockedContractIds = privateUser?.blockedContractIds ?? []
-  const blockedUserIds = (privateUser?.blockedUserIds ?? []).concat(
-    props.blockedUserIds ?? []
+  const blockedUserIds = privateUser?.blockedUserIds ?? []
+
+  const PRESET_BET_AMOUNTS = [500, 1000, 10000]
+
+  // State for the bet amount filter
+  const [minBetAmount, setMinBetAmount] = usePersistentLocalState<
+    number | undefined
+  >(PRESET_BET_AMOUNTS[0], 'activity-min-bet-amount')
+
+  // State to manage the custom input value within the dropdown
+  const [customAmountString, setCustomAmountString] = useState<string>(
+    PRESET_BET_AMOUNTS.includes(minBetAmount ?? 0)
+      ? ''
+      : minBetAmount !== undefined
+      ? String(minBetAmount)
+      : ''
   )
 
+  const [selectedTopic, setSelectedTopic] = usePersistentLocalState<
+    LiteGroup | undefined | 'all'
+  >(technologyLiteGroup, 'activity-selected-topic')
+  const topicId = selectedTopic === 'all' ? undefined : selectedTopic?.id
+
+  const [types, setTypes] = usePersistentLocalState<
+    ('bets' | 'comments' | 'markets')[]
+  >(['comments'], 'activity-selected-types')
   const [offset, setOffset] = useState(0)
-  const limit = 30 / (types?.length ?? 3)
+  const limit = 30 / types.length
 
   const { data, loading } = useAPIGetter('get-site-activity', {
     limit,
@@ -51,6 +81,7 @@ export function SiteActivity(props: {
     blockedContractIds,
     topicId,
     types,
+    minBetAmount,
   })
 
   const [allData, setAllData] = useState<typeof data>()
@@ -78,11 +109,14 @@ export function SiteActivity(props: {
   useEffect(() => {
     setAllData(undefined)
     setOffset(0)
-  }, [topicId, types])
+  }, [topicId, types, minBetAmount])
 
-  if (!allData) return <LoadingIndicator />
-
-  const { bets, comments, newContracts, relatedContracts } = allData
+  const { bets, comments, newContracts, relatedContracts } = allData ?? {
+    bets: [],
+    comments: [],
+    newContracts: [],
+    relatedContracts: [],
+  }
   const contracts = [...newContracts, ...relatedContracts]
   const contractsById = keyBy(contracts, 'id')
 
@@ -107,156 +141,264 @@ export function SiteActivity(props: {
 
   return (
     <Col className={clsx('gap-4', className)}>
-      <Col className="gap-4">
-        {groups.map(({ parentId, items }) => {
-          const contract = contractsById[parentId] as Contract
-
-          // Separate comments and group replies
-          const comments = items.filter(
-            (item): item is CommentWithTotalReplies =>
-              'userId' in item && !('question' in item) && !('amount' in item)
-          )
-          const replies = comments.filter((c) => !!c.replyToCommentId)
-          const repliesByParentId = groupBy(
-            orderBy(replies, 'createdTime', 'asc'), // Sort replies ascending
-            'replyToCommentId'
-          )
-
-          // Filter items to include non-comments and parent comments, sorted descending
-          const displayItems = orderBy(
-            items.filter(
-              (item) =>
-                !(
-                  'userId' in item &&
-                  (item as CommentWithTotalReplies).replyToCommentId
-                ) // Exclude replies from main list
-            ),
-            'createdTime',
-            'desc'
-          )
-
-          return (
-            <Col
-              key={parentId}
-              className={clsx(
-                'bg-canvas-0 dark:bg-canvas-50 dark:border-canvas-50 hover:border-primary-300 gap-2 rounded-lg border px-4 py-3 shadow-md transition-colors sm:px-6'
-              )}
-            >
-              <Row className="gap-2">
-                <Col className="flex-1 gap-2">
-                  <ContractMention
-                    contract={contract}
-                    trackingLocation={'site-activity'}
-                  />
-                  <div className="space-y-1">
-                    {displayItems.map((item) => {
-                      if ('amount' in item) {
-                        // Render Bet
-                        return (
-                          <FeedBet
-                            className="!pt-0"
-                            key={item.id}
-                            contract={contract}
-                            bet={item}
-                            avatarSize="xs"
-                          />
-                        )
-                      } else if ('question' in item) {
-                        // Render Market Creation
-                        return (
-                          <MarketCreatedLog
-                            key={item.id}
-                            contract={item}
-                            showDescription={items.length === 1} // Maybe adjust this logic if needed
-                          />
-                        )
-                      } else if ('userId' in item) {
-                        const comment = item as CommentWithTotalReplies
-                        const childReplies = repliesByParentId[comment.id] ?? []
-                        const hiddenRepliesCount =
-                          (comment.totalReplies ?? 0) - childReplies.length
-
-                        return (
-                          <div key={comment.id}>
-                            <CommentLog
-                              comment={comment}
-                              privateUser={privateUser}
-                              user={user}
-                              router={router}
-                              hiddenReplies={hiddenRepliesCount}
-                            />
-
-                            {hiddenRepliesCount > 0 &&
-                              childReplies.length > 0 && (
-                                <Row className="text-ink-400 ml-6 items-center gap-1 pb-2 pl-2 text-xs">
-                                  <div className="border-ink-400 w-5 border-b-[1px] border-l-[1px]" />
-                                  <button
-                                    onClick={(e) => {
-                                      e.stopPropagation()
-                                      router.push(
-                                        `/${comment.userUsername}/${comment.contractSlug}#${comment.id}`
-                                      )
-                                    }}
-                                    className="hover:underline"
-                                  >
-                                    {hiddenRepliesCount} more{' '}
-                                    {hiddenRepliesCount === 1
-                                      ? 'reply'
-                                      : 'replies'}
-                                  </button>
-                                  <div className="border-ink-400 w-5 border-b-[1px] border-l-[1px]" />
-                                </Row>
-                              )}
-
-                            {childReplies.length > 0 && (
-                              <Col className="ml-6 space-y-1 pl-2">
-                                {childReplies.map((reply) => (
-                                  <CommentLog
-                                    key={reply.id}
-                                    comment={reply}
-                                    privateUser={privateUser}
-                                    user={user}
-                                    router={router}
-                                    isReply={true} // Indicate this is a reply
-                                  />
-                                ))}
-                              </Col>
-                            )}
-                          </div>
-                        )
-                      }
-                    })}
-                  </div>
-                </Col>
-
-                {contract.coverImageUrl && (
-                  <img
-                    src={contract.coverImageUrl}
-                    alt=""
-                    className={clsx(
-                      'rounded-md object-cover',
-                      'h-12 w-12 sm:h-32 sm:w-32',
-                      // Only hide on desktop if single bet
-                      items.length === 1 && 'amount' in items[0] && 'sm:hidden'
-                    )}
-                  />
-                )}
-              </Row>
-            </Col>
-          )
-        })}
-      </Col>
-      <div className="relative">
-        {loading && <LoadingIndicator />}
-        <VisibilityObserver
-          className="pointer-events-none absolute bottom-0 h-screen w-full select-none"
-          onVisibilityUpdated={(visible) => {
-            if (visible && !loading) {
-              setOffset((prev: number) => prev + limit)
-            }
-          }}
+      <Row className="mt-2 items-center gap-2">
+        <TopicPillSelector
+          topic={selectedTopic === 'all' ? undefined : selectedTopic}
+          setTopic={(topic) =>
+            setSelectedTopic(topic === undefined ? 'all' : topic)
+          }
         />
-      </div>
+        <DropdownMenu
+          closeOnClick
+          selectedItemName={
+            ACTIVITY_TYPES.find(
+              (t) =>
+                t.value.length === types.length &&
+                t.value.every((v) => types.includes(v))
+            )?.name ?? 'All activity'
+          }
+          items={ACTIVITY_TYPES.map((type) => ({
+            name: type.name,
+            onClick: () => setTypes([...type.value]),
+          }))}
+          buttonContent={(open) => (
+            <DropdownPill open={open}>
+              {ACTIVITY_TYPES.find(
+                (t) =>
+                  t.value.length === types.length &&
+                  t.value.every((v) => types.includes(v))
+              )?.name ?? 'All activity'}
+            </DropdownPill>
+          )}
+        />
+        {types.includes('bets') && (
+          <DropdownMenu
+            buttonContent={(open) => (
+              <DropdownPill open={open}>
+                Min bet{' '}
+                {minBetAmount !== undefined ? `M$${minBetAmount}` : 'Any'}
+              </DropdownPill>
+            )}
+            items={[
+              ...PRESET_BET_AMOUNTS.map((amount) => ({
+                name: `M$${amount}`,
+                onClick: () => {
+                  setMinBetAmount(amount)
+                },
+              })),
+              {
+                name: (
+                  <Row
+                    className="items-center gap-2"
+                    onClick={(e) => e.stopPropagation()}
+                  >
+                    M$
+                    <Input
+                      type="number"
+                      className="!h-8 w-32"
+                      placeholder="Custom"
+                      min={1}
+                      value={customAmountString}
+                      onChange={(e) => {
+                        e.stopPropagation()
+                        setCustomAmountString(e.target.value)
+                      }}
+                      onBlur={() => {
+                        // Parse and apply the filter when input loses focus
+                        const value = parseInt(customAmountString)
+                        const newAmount =
+                          isNaN(value) || value <= 0 ? undefined : value
+                        setMinBetAmount(newAmount)
+                      }}
+                      onFocus={(e) => e.target.select()}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter') {
+                          e.preventDefault()
+                          // Parse and apply filter immediately on Enter
+                          const value = parseInt(customAmountString)
+                          const newAmount =
+                            isNaN(value) || value <= 0 ? undefined : value
+                          setMinBetAmount(newAmount)
+                        }
+                      }}
+                    />
+                  </Row>
+                ) as any,
+                onClick: undefined,
+                selected:
+                  minBetAmount !== undefined &&
+                  !PRESET_BET_AMOUNTS.includes(minBetAmount),
+                closeOnClickOverride: false,
+              } as DropdownItem,
+              {
+                name: 'M$0',
+                onClick: () => {
+                  setMinBetAmount(0)
+                },
+              },
+            ]}
+          />
+        )}
+      </Row>
+      <Col className="gap-4">
+        {!allData ? (
+          <LoadingIndicator />
+        ) : (
+          groups.map(({ parentId, items }) => {
+            const contract = contractsById[parentId] as Contract
+
+            // Separate comments and group replies
+            const comments = items.filter(
+              (item): item is CommentWithTotalReplies =>
+                'userId' in item && !('question' in item) && !('amount' in item)
+            )
+            const replies = comments.filter((c) => !!c.replyToCommentId)
+            const repliesByParentId = groupBy(
+              orderBy(replies, 'createdTime', 'asc'), // Sort replies ascending
+              'replyToCommentId'
+            )
+
+            // Filter items to include non-comments and parent comments, sorted descending
+            const displayItems = orderBy(
+              items.filter(
+                (item) =>
+                  !(
+                    'userId' in item &&
+                    (item as CommentWithTotalReplies).replyToCommentId
+                  ) // Exclude replies from main list
+              ),
+              'createdTime',
+              'desc'
+            )
+
+            return (
+              <Col
+                key={parentId}
+                className={clsx(
+                  'bg-canvas-0 dark:bg-canvas-50 dark:border-canvas-50 hover:border-primary-300 gap-2 rounded-lg border px-4 py-3 shadow-md transition-colors sm:px-6'
+                )}
+              >
+                <Row className="gap-2">
+                  <Col className="flex-1 gap-2">
+                    <ContractMention
+                      contract={contract}
+                      trackingLocation={'site-activity'}
+                    />
+                    <div className="space-y-1">
+                      {displayItems.map((item) => {
+                        if ('amount' in item) {
+                          // Render Bet
+                          return (
+                            <FeedBet
+                              className="!pt-0"
+                              key={item.id}
+                              contract={contract}
+                              bet={item}
+                              avatarSize="xs"
+                            />
+                          )
+                        } else if ('question' in item) {
+                          // Render Market Creation
+                          return (
+                            <MarketCreatedLog
+                              key={item.id}
+                              contract={item}
+                              showDescription={items.length === 1} // Maybe adjust this logic if needed
+                            />
+                          )
+                        } else if ('userId' in item) {
+                          const comment = item as CommentWithTotalReplies
+                          const childReplies =
+                            repliesByParentId[comment.id] ?? []
+                          const hiddenRepliesCount =
+                            (comment.totalReplies ?? 0) - childReplies.length
+
+                          return (
+                            <div key={comment.id}>
+                              <CommentLog
+                                comment={comment}
+                                privateUser={privateUser}
+                                user={user}
+                                router={router}
+                                hiddenReplies={hiddenRepliesCount}
+                              />
+
+                              {hiddenRepliesCount > 0 &&
+                                childReplies.length > 0 && (
+                                  <Row className="text-ink-400 ml-6 items-center gap-1 pb-2 pl-2 text-xs">
+                                    <div className="border-ink-400 w-5 border-b-[1px] border-l-[1px]" />
+                                    <button
+                                      onClick={(e) => {
+                                        e.stopPropagation()
+                                        router.push(
+                                          `/${comment.userUsername}/${comment.contractSlug}#${comment.id}`
+                                        )
+                                      }}
+                                      className="hover:underline"
+                                    >
+                                      {hiddenRepliesCount} more{' '}
+                                      {hiddenRepliesCount === 1
+                                        ? 'reply'
+                                        : 'replies'}
+                                    </button>
+                                    <div className="border-ink-400 w-5 border-b-[1px] border-l-[1px]" />
+                                  </Row>
+                                )}
+
+                              {childReplies.length > 0 && (
+                                <Col className="ml-6 space-y-1 pl-2">
+                                  {childReplies.map((reply) => (
+                                    <CommentLog
+                                      key={reply.id}
+                                      comment={reply}
+                                      privateUser={privateUser}
+                                      user={user}
+                                      router={router}
+                                      isReply={true} // Indicate this is a reply
+                                    />
+                                  ))}
+                                </Col>
+                              )}
+                            </div>
+                          )
+                        }
+                      })}
+                    </div>
+                  </Col>
+
+                  {contract.coverImageUrl && (
+                    <img
+                      src={contract.coverImageUrl}
+                      alt=""
+                      className={clsx(
+                        'rounded-md object-cover',
+                        'h-12 w-12 sm:h-32 sm:w-32',
+                        // Only hide on desktop if single bet
+                        items.length === 1 &&
+                          'amount' in items[0] &&
+                          'sm:hidden'
+                      )}
+                    />
+                  )}
+                </Row>
+              </Col>
+            )
+          })
+        )}
+      </Col>
+      {allData && (
+        <div className="relative">
+          {loading && <LoadingIndicator />}
+          <VisibilityObserver
+            className="pointer-events-none absolute bottom-0 h-screen w-full select-none"
+            onVisibilityUpdated={(visible) => {
+              if (visible && !loading) {
+                setOffset((prev: number) => prev + limit)
+              }
+            }}
+          />
+        </div>
+      )}
     </Col>
   )
 }
@@ -377,3 +519,11 @@ const CommentLog = memo(function FeedComment(props: {
     </Col>
   )
 })
+const technologyLiteGroup: LiteGroup = {
+  id: 'IlzY3moWwOcpsVZXCVej',
+  slug: 'technology-default',
+  name: '🖥️ Technology',
+  totalMembers: 46584,
+  privacyStatus: 'public',
+  importanceScore: 0,
+}

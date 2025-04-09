@@ -21,6 +21,7 @@ export const getSiteActivity: APIHandler<'get-site-activity'> = async (
     blockedContractIds = [],
     topicSlug,
     types = ['bets', 'comments', 'markets'],
+    minBetAmount,
   } = props
   const pg = createSupabaseDirectClient()
   let topicId = props.topicId
@@ -37,42 +38,35 @@ export const getSiteActivity: APIHandler<'get-site-activity'> = async (
     'FDWTsTHFytZz96xmcKzf7S5asYL2', // yunabot (does a lot of manual trades)
     ...(props.blockedUserIds ?? []),
   ]
-
-  // Build queries
-  const recentBetsQuery = types.includes('bets')
-    ? `SELECT cb.*
+  // Common query parts
+  const betsSelect = `SELECT cb.*
        FROM contract_bets cb
        ${
          topicId
            ? 'JOIN group_contracts gc ON cb.contract_id = gc.contract_id'
            : ''
-       }
-       WHERE abs(cb.amount) >= 500
-         AND cb.is_api IS NOT TRUE
-         AND cb.user_id != ALL($1)
-         AND cb.contract_id != ALL($2)
-         ${topicId ? 'AND gc.group_id = $6' : ''}
-       ORDER BY cb.created_time DESC
-       LIMIT $3 OFFSET $4;`
+       }`
+  const betsEnd = `
+    AND cb.user_id != ALL($1)
+    AND cb.contract_id != ALL($2)
+    AND not cb.is_api
+    ${topicId ? 'AND gc.group_id = $6' : ''}
+     ORDER BY cb.created_time DESC
+    LIMIT $3 OFFSET $4;
+  `
+  // Build queries
+  const recentBetsQuery = types.includes('bets')
+    ? `${betsSelect}
+       WHERE abs(cb.amount) >= $7
+       ${betsEnd}`
     : 'select null where false;'
 
   const limitOrdersQuery = types.includes('bets')
-    ? `SELECT cb.*
-       FROM contract_bets cb
-       ${
-         topicId
-           ? 'JOIN group_contracts gc ON cb.contract_id = gc.contract_id'
-           : ''
-       }
+    ? `${betsSelect}
        WHERE cb.amount = 0
-         AND (cb.data->>'orderAmount')::numeric >= 5000
-         AND cb.is_api IS NOT TRUE
+         AND (cb.data->>'orderAmount')::numeric >= $7
          AND NOT cb.is_filled AND NOT cb.is_cancelled
-         AND cb.user_id != ALL($1)
-         AND cb.contract_id != ALL($2)
-         ${topicId ? 'AND gc.group_id = $6' : ''}
-       ORDER BY cb.created_time DESC
-       LIMIT $3 OFFSET $4;`
+        ${betsEnd}`
     : 'select null where false;'
 
   const recentCommentsQuery = types.includes('comments')
@@ -127,6 +121,7 @@ export const getSiteActivity: APIHandler<'get-site-activity'> = async (
     offset,
     blockedGroupSlugs,
     topicId,
+    minBetAmount ?? 500,
   ])
 
   const recentBets = results[0] || []

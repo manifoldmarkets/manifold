@@ -2076,6 +2076,7 @@ export const API = (_apiTypeCheck = {
         topicSlug: z.string().optional(),
         topicId: z.string().optional(),
         types: z.array(z.enum(['bets', 'comments', 'markets'])).optional(),
+        minBetAmount: z.coerce.number().optional(),
       })
       .strict(),
   },
