@@ -7,13 +7,15 @@ import { useIsClient } from 'web/hooks/use-is-client'
 import { fromNow } from 'client-common/lib/time'
 import { ContractStatusLabel } from './contracts-table'
 import { getTextColor } from './text-color'
+import { track } from 'web/lib/service/analytics'
 
 export function ContractMention(props: {
   contract: Contract
   probChange?: string
   className?: string
+  trackingLocation?: string
 }) {
-  const { contract, probChange, className } = props
+  const { contract, probChange, className, trackingLocation } = props
   const probTextColor = getTextColor(contract)
   const isClient = useIsClient()
 
@@ -22,6 +24,12 @@ export function ContractMention(props: {
       href={contractPath(contract)}
       className={clsx('group inline whitespace-nowrap rounded-sm', className)}
       title={isClient ? tooltipLabel(contract) : undefined}
+      onClick={() => {
+        track('contract mention click', {
+          contractId: contract.id,
+          trackingLocation,
+        })
+      }}
       // target={getIsNative() ? '_self' : '_blank'}
     >
       <span className="break-anywhere text-ink-900 group-hover:text-primary-500 group-focus:text-primary-500 mr-0.5 whitespace-normal font-medium transition-colors">

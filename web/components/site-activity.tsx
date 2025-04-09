@@ -21,6 +21,7 @@ import { NextRouter, useRouter } from 'next/router'
 import { useUser } from 'web/hooks/use-user'
 import { User } from 'common/user'
 import { PrivateUser } from 'common/user'
+import { track } from 'web/lib/service/analytics'
 
 export function SiteActivity(props: {
   className?: string
@@ -143,7 +144,10 @@ export function SiteActivity(props: {
             >
               <Row className="gap-2">
                 <Col className="flex-1 gap-2">
-                  <ContractMention contract={contract} />
+                  <ContractMention
+                    contract={contract}
+                    trackingLocation={'site-activity'}
+                  />
                   <div className="space-y-1">
                     {displayItems.map((item) => {
                       if ('amount' in item) {
@@ -332,6 +336,11 @@ const CommentLog = memo(function FeedComment(props: {
       className={clsx('hover:bg-canvas-100 cursor-pointer rounded-md p-1')}
       onClick={() => {
         router.push(`/${userUsername}/${contractSlug}#${comment.id}`)
+        track('site activity comment click', {
+          commentId: comment.id,
+          userId: userId,
+          contractSlug: contractSlug,
+        })
       }}
     >
       <Row id={comment.id} className="items-center gap-2 text-sm">
