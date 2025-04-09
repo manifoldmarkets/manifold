@@ -29,14 +29,12 @@ import {
 import { ReportModal } from '../buttons/report-button'
 import DropdownMenu from '../widgets/dropdown-menu'
 import { Row } from '../layout/row'
-import { SweepsToggle } from '../sweeps/sweeps-toggle'
 import { getLinkTarget } from '../widgets/linkify'
 import { AddLiquidityModal } from './liquidity-modal'
 import { ContractInfoDialog } from './contract-info-dialog'
 import { WatchMarketModal } from './watch-market-modal'
 import { ChangeBannerButton } from './change-banner-button'
 import { GoGraph } from 'react-icons/go'
-import { useSweepstakes } from '../sweepstakes-provider'
 
 export function HeaderActions(props: {
   playContract: Contract
@@ -241,36 +239,9 @@ export function HeaderActions(props: {
         ]
       : []),
   ]
-  const { prefersPlay, setPrefersPlay } = useSweepstakes()
-  const isPlay = currentContract.token == 'MANA'
-  const sweepsEnabled = !!playContract.siblingContractId
-
-  const isNonBetPollOrBountiedQuestion =
-    playContract.mechanism === 'none' &&
-    (playContract.outcomeType === 'POLL' ||
-      playContract.outcomeType === 'BOUNTIED_QUESTION')
 
   return (
     <Row className="mr-4 shrink-0 items-center [&>*]:flex">
-      {!isNonBetPollOrBountiedQuestion && (
-        <SweepsToggle
-          sweepsEnabled={sweepsEnabled}
-          isPlay={isPlay}
-          onClick={() => {
-            if (prefersPlay && isPlay) {
-              setPrefersPlay(false)
-              setIsPlay(false)
-            } else if (!prefersPlay && !isPlay) {
-              setPrefersPlay(true)
-              setIsPlay(true)
-            } else if (prefersPlay && !isPlay) {
-              setIsPlay(true)
-            } else if (!prefersPlay && isPlay) {
-              setIsPlay(false)
-            }
-          }}
-        />
-      )}
       {!playContract.coverImageUrl && isCreator && (
         <ChangeBannerButton
           contract={playContract}
@@ -291,6 +262,7 @@ export function HeaderActions(props: {
         playContract={playContract}
         statsContract={currentContract}
         user={user}
+        setIsPlay={setIsPlay}
         open={detailsOpen}
         setOpen={setDetailsOpen}
       />

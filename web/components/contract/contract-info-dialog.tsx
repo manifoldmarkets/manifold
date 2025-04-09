@@ -28,12 +28,14 @@ import { InfoTooltip } from '../widgets/info-tooltip'
 import ShortToggle from '../widgets/short-toggle'
 import { Table } from '../widgets/table'
 import { ContractHistoryButton } from './contract-edit-history-button'
-
+import { SweepsToggle } from '../sweeps/sweeps-toggle'
+import { useSweepstakes } from '../sweepstakes-provider'
 export const Stats = (props: {
   contract: Contract
+  setIsPlay: (isPlay: boolean) => void
   user?: User | null | undefined
 }) => {
-  const { contract, user } = props
+  const { contract, user, setIsPlay } = props
   const { creatorId } = contract
   const shouldAnswersSumToOne =
     contract.mechanism === 'cpmm-multi-1'
@@ -110,6 +112,15 @@ export const Stats = (props: {
       contract.subsidyPool -
       ('answers' in contract ? sumBy(contract.answers, 'subsidyPool') : 0)
     : 0
+
+  const { prefersPlay, setPrefersPlay } = useSweepstakes()
+  const isPlay = contract.token == 'MANA'
+  const sweepsEnabled = !!contract.siblingContractId
+
+  const isNonBetPollOrBountiedQuestion =
+    contract.mechanism === 'none' &&
+    (contract.outcomeType === 'POLL' ||
+      contract.outcomeType === 'BOUNTIED_QUESTION')
 
   return (
     <Table>
@@ -324,6 +335,30 @@ export const Stats = (props: {
             </td>
           </tr>
         )}
+        <tr>
+          <td>Sweeps</td>
+          <td>
+            {!isNonBetPollOrBountiedQuestion && (
+              <SweepsToggle
+                sweepsEnabled={sweepsEnabled}
+                isPlay={isPlay}
+                onClick={() => {
+                  if (prefersPlay && isPlay) {
+                    setPrefersPlay(false)
+                    setIsPlay(false)
+                  } else if (!prefersPlay && !isPlay) {
+                    setPrefersPlay(true)
+                    setIsPlay(true)
+                  } else if (prefersPlay && !isPlay) {
+                    setIsPlay(true)
+                  } else if (!prefersPlay && isPlay) {
+                    setIsPlay(false)
+                  }
+                }}
+              />
+            )}
+          </td>
+        </tr>
 
         {addAnswersPossible && (isCreator || isAdmin || isMod) && (
           <tr className={clsx(isMod && 'bg-purple-500/30')}>
@@ -503,10 +538,11 @@ export function ContractInfoDialog(props: {
   playContract: Contract
   statsContract: Contract
   user: User | null | undefined
+  setIsPlay: (isPlay: boolean) => void
   open: boolean
   setOpen: (open: boolean) => void
 }) {
-  const { playContract, statsContract, user, open, setOpen } = props
+  const { playContract, statsContract, user, open, setOpen, setIsPlay } = props
   const isAdmin = useAdmin()
   const isTrusted = useTrusted()
 
@@ -516,7 +552,7 @@ export function ContractInfoDialog(props: {
       setOpen={setOpen}
       className="bg-canvas-0 flex flex-col gap-4 rounded p-6"
     >
-      <Stats contract={statsContract} user={user} />
+      <Stats contract={statsContract} user={user} setIsPlay={setIsPlay} />
 
       {!!user && (
         <>
