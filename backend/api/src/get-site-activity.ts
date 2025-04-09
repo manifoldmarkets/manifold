@@ -140,6 +140,13 @@ export const getSiteActivity: APIHandler<'get-site-activity'> = async (
 
   const baseCommentData = recentCommentRecords
     .filter((rc) => !rc.reply_to_data?.hidden && !rc.data.hidden)
+    .filter(
+      (rc) =>
+        !JSON.stringify(rc.data.content).includes('"label":"mods"') &&
+        !JSON.stringify(rc.reply_to_data?.content ?? {}).includes(
+          '"label":"mods"'
+        )
+    )
     .flatMap((rc) => filterDefined([rc.reply_to_data, rc.data]))
   const initialUniqueComments = uniqBy(baseCommentData, 'id')
 
