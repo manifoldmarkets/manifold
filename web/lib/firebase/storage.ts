@@ -4,7 +4,7 @@ import {
   getDownloadURL,
   StorageReference,
 } from 'firebase/storage'
-import { nanoid } from 'nanoid'
+import { nanoid } from 'common/util/random'
 import { privateStorage, storage } from './init'
 import Compressor from 'compressorjs'
 import { last } from 'lodash'
