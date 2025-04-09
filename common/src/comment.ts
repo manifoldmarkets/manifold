@@ -73,3 +73,7 @@ export type OnContract = {
 }
 
 export type ContractComment = Comment<OnContract>
+
+export type CommentWithTotalReplies = ContractComment & {
+  totalReplies?: number
+}

@@ -4,9 +4,13 @@ import { convertContract } from 'common/supabase/contracts'
 import { filterDefined } from 'common/util/array'
 import { uniqBy } from 'lodash'
 import { convertBet } from 'common/supabase/bets'
-import { convertContractComment } from 'common/supabase/comments'
+import { CommentWithTotalReplies } from 'common/comment'
+import { mapValues, uniq } from 'lodash'
+import { keyBy } from 'lodash'
+import { getContractsDirect } from 'shared/supabase/contracts'
 
 // todo: personalization based on followed users & topics
+// TODO: maybe run comments by gemini to make sure they're interesting
 export const getSiteActivity: APIHandler<'get-site-activity'> = async (
   props
 ) => {
@@ -72,18 +76,21 @@ export const getSiteActivity: APIHandler<'get-site-activity'> = async (
     : 'select null where false;'
 
   const recentCommentsQuery = types.includes('comments')
-    ? `SELECT cc.*
+    ? `SELECT
+           cc.contract_id,
+           cc.comment_id,
+           cc.data,
+           cc2.data as reply_to_data
        FROM contract_comments cc
        ${
          topicId
            ? 'JOIN group_contracts gc ON cc.contract_id = gc.contract_id'
            : ''
        }
-       WHERE (likes - coalesce(dislikes, 0)) >= 2
-         AND cc.user_id != ALL($1)
+       LEFT JOIN contract_comments cc2 ON cc2.comment_id = cc.data->>'replyToCommentId'
+      WHERE cc.user_id != ALL($1)
          AND cc.contract_id != ALL($2)
          ${topicId ? 'AND gc.group_id = $6' : ''}
-         --and data->>'hidden' != 'true'
        ORDER BY cc.created_time DESC
        LIMIT $3 OFFSET $4;`
     : 'select null where false;'
@@ -124,30 +131,63 @@ export const getSiteActivity: APIHandler<'get-site-activity'> = async (
 
   const recentBets = results[0] || []
   const limitOrders = results[1] || []
-  const recentComments = results[2] || []
+  const recentCommentRecords = (results[2] || []) as {
+    contract_id: string
+    comment_id: string
+    data: CommentWithTotalReplies
+    reply_to_data?: CommentWithTotalReplies
+  }[]
   const newContracts = results[3] || []
 
-  const contractIds = uniqBy(
-    [
-      ...recentBets.map((b) => b.contract_id),
-      ...limitOrders.map((b) => b.contract_id),
-      ...recentComments.map((c) => c.contract_id),
-    ],
-    (id) => id
+  const parentCommentIds = uniq(
+    filterDefined(recentCommentRecords.map((rc) => rc.reply_to_data?.id))
   )
 
-  let relatedContracts = [] as any[]
-  if (contractIds.length > 0) {
-    relatedContracts = await pg.manyOrNone(
-      `select * from contracts where id = any($1)`,
-      [contractIds]
-    )
-  }
+  const baseCommentData = recentCommentRecords
+    .filter((rc) => !rc.reply_to_data?.hidden && !rc.data.hidden)
+    .flatMap((rc) => filterDefined([rc.reply_to_data, rc.data]))
+  const initialUniqueComments = uniqBy(baseCommentData, 'id')
+
+  const contractIds = uniq([
+    ...recentBets.map((b) => b.contract_id),
+    ...limitOrders.map((b) => b.contract_id),
+    ...initialUniqueComments.map((c) => c.contractId),
+    ...newContracts.map((c) => c.id), // Include newly created contracts
+  ])
+
+  // Parallel fetching of reply counts and related contracts
+  const [replyCountsResult, contractsResult] = await Promise.all([
+    parentCommentIds.length > 0
+      ? pg.manyOrNone<{ parent_id: string; total_replies: number }>(
+          `SELECT data->>'replyToCommentId' as parent_id, COUNT(*) as total_replies
+           FROM contract_comments
+           WHERE data->>'replyToCommentId' = ANY($1)
+           GROUP BY parent_id;`,
+          [parentCommentIds]
+        )
+      : Promise.resolve([]), // Resolve empty array if no parent IDs
+    contractIds.length > 0
+      ? getContractsDirect(contractIds, pg)
+      : Promise.resolve([]), // Resolve empty array if no contract IDs
+  ])
+
+  const replyCounts = mapValues(
+    keyBy(replyCountsResult, 'parent_id'),
+    (c) => c.total_replies
+  )
+
+  const commentsWithReplyCounts = initialUniqueComments.map((comment) => {
+    if (!comment.replyToCommentId) {
+      // It's a parent comment
+      return { ...comment, totalReplies: replyCounts[comment.id] ?? 0 }
+    }
+    return comment
+  })
 
   return {
     bets: recentBets.concat(limitOrders).map(convertBet),
-    comments: recentComments.map(convertContractComment),
+    comments: commentsWithReplyCounts,
     newContracts: filterDefined(newContracts.map(convertContract)),
-    relatedContracts: filterDefined(relatedContracts.map(convertContract)),
+    relatedContracts: filterDefined(contractsResult), // Already converted by getContractsDirect
   }
 }

@@ -1,5 +1,5 @@
 import clsx from 'clsx'
-import { ContractComment } from 'common/comment'
+import { CommentWithTotalReplies, ContractComment } from 'common/comment'
 import { Contract } from 'common/contract'
 import { groupBy, keyBy, orderBy, uniqBy } from 'lodash'
 import { memo, useEffect, useState } from 'react'
@@ -40,7 +40,7 @@ export function SiteActivity(props: {
   )
 
   const [offset, setOffset] = useState(0)
-  const limit = 10
+  const limit = 30 / (types?.length ?? 3)
 
   const { data, loading } = useAPIGetter('get-site-activity', {
     limit,
@@ -110,6 +110,30 @@ export function SiteActivity(props: {
         {groups.map(({ parentId, items }) => {
           const contract = contractsById[parentId] as Contract
 
+          // Separate comments and group replies
+          const comments = items.filter(
+            (item): item is CommentWithTotalReplies =>
+              'userId' in item && !('question' in item) && !('amount' in item)
+          )
+          const replies = comments.filter((c) => !!c.replyToCommentId)
+          const repliesByParentId = groupBy(
+            orderBy(replies, 'createdTime', 'asc'), // Sort replies ascending
+            'replyToCommentId'
+          )
+
+          // Filter items to include non-comments and parent comments, sorted descending
+          const displayItems = orderBy(
+            items.filter(
+              (item) =>
+                !(
+                  'userId' in item &&
+                  (item as CommentWithTotalReplies).replyToCommentId
+                ) // Exclude replies from main list
+            ),
+            'createdTime',
+            'desc'
+          )
+
           return (
             <Col
               key={parentId}
@@ -120,32 +144,84 @@ export function SiteActivity(props: {
               <Row className="gap-2">
                 <Col className="flex-1 gap-2">
                   <ContractMention contract={contract} />
-                  <div className="space-y-2">
-                    {items.map((item) =>
-                      'amount' in item ? (
-                        <FeedBet
-                          className="!pt-0"
-                          key={item.id}
-                          contract={contract}
-                          bet={item}
-                          avatarSize="xs"
-                        />
-                      ) : 'question' in item ? (
-                        <MarketCreatedLog
-                          key={item.id}
-                          contract={item}
-                          showDescription={items.length === 1}
-                        />
-                      ) : 'channelId' in item ? null : (
-                        <CommentLog
-                          key={item.id}
-                          comment={item}
-                          privateUser={privateUser}
-                          user={user}
-                          router={router}
-                        />
-                      )
-                    )}
+                  <div className="space-y-1">
+                    {displayItems.map((item) => {
+                      if ('amount' in item) {
+                        // Render Bet
+                        return (
+                          <FeedBet
+                            className="!pt-0"
+                            key={item.id}
+                            contract={contract}
+                            bet={item}
+                            avatarSize="xs"
+                          />
+                        )
+                      } else if ('question' in item) {
+                        // Render Market Creation
+                        return (
+                          <MarketCreatedLog
+                            key={item.id}
+                            contract={item}
+                            showDescription={items.length === 1} // Maybe adjust this logic if needed
+                          />
+                        )
+                      } else if ('userId' in item) {
+                        const comment = item as CommentWithTotalReplies
+                        const childReplies = repliesByParentId[comment.id] ?? []
+                        const hiddenRepliesCount =
+                          (comment.totalReplies ?? 0) - childReplies.length
+
+                        return (
+                          <div key={comment.id}>
+                            <CommentLog
+                              comment={comment}
+                              privateUser={privateUser}
+                              user={user}
+                              router={router}
+                              hiddenReplies={hiddenRepliesCount}
+                            />
+
+                            {hiddenRepliesCount > 0 &&
+                              childReplies.length > 0 && (
+                                <Row className="text-ink-400 ml-6 items-center gap-1 pb-2 pl-2 text-xs">
+                                  <div className="border-ink-400 w-5 border-b-[1px] border-l-[1px]" />
+                                  <button
+                                    onClick={(e) => {
+                                      e.stopPropagation()
+                                      router.push(
+                                        `/${comment.userUsername}/${comment.contractSlug}#${comment.id}`
+                                      )
+                                    }}
+                                    className="hover:underline"
+                                  >
+                                    {hiddenRepliesCount} more{' '}
+                                    {hiddenRepliesCount === 1
+                                      ? 'reply'
+                                      : 'replies'}
+                                  </button>
+                                  <div className="border-ink-400 w-5 border-b-[1px] border-l-[1px]" />
+                                </Row>
+                              )}
+
+                            {childReplies.length > 0 && (
+                              <Col className="ml-6 space-y-1 pl-2">
+                                {childReplies.map((reply) => (
+                                  <CommentLog
+                                    key={reply.id}
+                                    comment={reply}
+                                    privateUser={privateUser}
+                                    user={user}
+                                    router={router}
+                                    isReply={true} // Indicate this is a reply
+                                  />
+                                ))}
+                              </Col>
+                            )}
+                          </div>
+                        )
+                      }
+                    })}
                   </div>
                 </Col>
 
@@ -237,8 +313,10 @@ const CommentLog = memo(function FeedComment(props: {
   privateUser: PrivateUser | null | undefined
   user: User | null | undefined
   router: NextRouter
+  isReply?: boolean
+  hiddenReplies?: number
 }) {
-  const { comment, privateUser, user, router } = props
+  const { comment, privateUser, user, router, isReply } = props // Destructure new prop
   const {
     userName,
     content,
@@ -251,7 +329,7 @@ const CommentLog = memo(function FeedComment(props: {
 
   return (
     <Col
-      className="hover:bg-canvas-100 cursor-pointer rounded-md p-1"
+      className={clsx('hover:bg-canvas-100 cursor-pointer rounded-md p-1')}
       onClick={() => {
         router.push(`/${userUsername}/${contractSlug}#${comment.id}`)
       }}
@@ -273,7 +351,7 @@ const CommentLog = memo(function FeedComment(props: {
             />
           </Row>
         </UserHovercard>
-        <div className="-ml-1">commented</div>
+        <div className="-ml-1">{isReply ? 'replied' : 'commented'}</div>
         <Row className="text-ink-400">
           <RelativeTimestamp time={createdTime} shortened />
         </Row>

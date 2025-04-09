@@ -16,7 +16,11 @@ import {
   updateMarketProps,
 } from './market-types'
 import { type Answer } from 'common/answer'
-import { MAX_COMMENT_LENGTH, type ContractComment } from 'common/comment'
+import {
+  CommentWithTotalReplies,
+  MAX_COMMENT_LENGTH,
+  type ContractComment,
+} from 'common/comment'
 import { CandidateBet } from 'common/new-bet'
 import type { Bet, LimitBet } from 'common/bet'
 import { coerceBoolean, contentSchema } from 'common/api/zod-types'
@@ -2058,7 +2062,7 @@ export const API = (_apiTypeCheck = {
     authed: false,
     returns: {} as {
       bets: Bet[]
-      comments: ContractComment[]
+      comments: CommentWithTotalReplies[]
       newContracts: Contract[]
       relatedContracts: Contract[]
     },
