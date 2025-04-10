@@ -335,10 +335,10 @@ export const Stats = (props: {
             </td>
           </tr>
         )}
-        <tr>
-          <td>Sweepstakes</td>
-          <td>
-            {!isNonBetPollOrBountiedQuestion && (
+        {sweepsEnabled && !isNonBetPollOrBountiedQuestion && (
+          <tr>
+            <td>Sweepstakes</td>
+            <td>
               <SweepsToggle
                 sweepsEnabled={sweepsEnabled}
                 isPlay={isPlay}
@@ -356,9 +356,9 @@ export const Stats = (props: {
                   }
                 }}
               />
-            )}
-          </td>
-        </tr>
+            </td>
+          </tr>
+        )}
 
         {addAnswersPossible && (isCreator || isAdmin || isMod) && (
           <tr className={clsx(isMod && 'bg-purple-500/30')}>
