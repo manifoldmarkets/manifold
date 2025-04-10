@@ -169,7 +169,8 @@ export const getSiteActivity: APIHandler<'get-site-activity'> = async (
           'pls',
           'resolves yes',
           'resolves no',
-        ])
+        ]) &&
+        !rc.data.isApi
     )
 
     .flatMap((rc) => filterDefined([rc.reply_to_data, rc.data]))
