@@ -17,22 +17,31 @@ export async function sendUnseenMarketMovementNotifications() {
   const pg = createSupabaseDirectClient()
 
   const results = await pg.manyOrNone(`
-    with user_unseen_notifications as (
+    with latest_contract_notifications as (
+        select distinct on (cmn.contract_id, n.user_id)
+          cmn.notification_id,
+          cmn.contract_id,
+          n.user_id
+        from contract_movement_notifications cmn
+          join user_notifications n on n.notification_id = cmn.notification_id
+        where cmn.destination = 'browser'
+          and cmn.created_time > now() - interval '24 hours'
+          and n.data->>'isSeen' = 'false'
+        order by cmn.contract_id, n.user_id, cmn.created_time desc
+    ),
+    user_unseen_notifications as (
         select
           n.data as notification,
           pu.data as private_user,
           u.id as user_id,
           u.name as user_name,
           row_number() over (partition by n.user_id order by c.importance_score desc) as importance_rank
-        from contract_movement_notifications cmn
-          join user_notifications n on n.notification_id = cmn.notification_id
+        from latest_contract_notifications lcn
+          join user_notifications n on n.notification_id = lcn.notification_id
           join private_users pu on n.user_id = pu.id
           join users u on pu.id = u.id
-          join contracts c on cmn.contract_id = c.id
-        where cmn.destination = 'browser'
-          and cmn.created_time > now() - interval '24 hours'
-          and n.data->>'isSeen' = 'false'
-          and c.resolution is null
+          join contracts c on lcn.contract_id = c.id
+        where c.resolution is null
     )
     select * from user_unseen_notifications
     where importance_rank <= ${MOVEMENTS_TO_SEND}

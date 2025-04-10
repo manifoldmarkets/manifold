@@ -13,7 +13,6 @@ import { SupabaseDirectClient } from './supabase/init'
 import { bulkInsert } from 'shared/supabase/utils'
 import { removeUndefinedProps } from 'common/util/object'
 
-const probThreshold = 0.1
 const pastPeriodHoursAgoStart = 24
 const TEST_USER_ID = 'AJwLWoo3xue32XIiAVrL5SyR1WB2'
 const TEST_CONTRACT_IDS = `'Ll8LclSZ8C', 'Z8CqLOzRAq', '6A9gSqIzld', 'D5o5fIGpQnjANdl2DxdU'`
@@ -27,6 +26,7 @@ type ProbChange = {
 // Currently ignores indie MC contract answer probability movements
 export async function sendMarketMovementNotifications(debug = false) {
   const nowPeriodHoursAgoStart = debug ? 0.1 : 2
+  const probThreshold = debug ? 0.01 : 0.1
   const pg = createSupabaseDirectClient()
   const now = Date.now()
   const nowStart = now - nowPeriodHoursAgoStart * HOUR_MS
@@ -165,7 +165,8 @@ export async function sendMarketMovementNotifications(debug = false) {
     nowStart,
     pastStart,
     nowPeriodHoursAgoStart,
-    debug
+    debug,
+    probThreshold
   )
 }
 type UserWithContractId = PrivateUser & {
@@ -184,7 +185,8 @@ async function createMarketMovementNotifications(
   currentPeriodStart: number,
   previousPeriodStart: number,
   nowPeriodHoursAgoStart: number,
-  debug = false
+  debug: boolean,
+  probThreshold: number
 ) {
   if (probChanges.length === 0) return
 
