@@ -68,8 +68,8 @@ export function SiteActivity(props: { className?: string }) {
     usePersistentLocalState<ActivityState>(
       {
         selectedTopic: technologyLiteGroup,
-        types: ['comments'],
-        minBetAmount: PRESET_BET_AMOUNTS[0],
+        types: ['comments', 'bets', 'markets'],
+        minBetAmount: PRESET_BET_AMOUNTS[1],
       },
       'activity-state'
     )
@@ -340,11 +340,12 @@ export function SiteActivity(props: { className?: string }) {
                           // Render Bet
                           return (
                             <FeedBet
-                              className="!pt-0"
+                              className="py-1"
                               key={item.id}
                               contract={contract}
                               bet={item}
                               avatarSize="xs"
+                              hideActions={true}
                             />
                           )
                         } else if ('question' in item) {
@@ -528,7 +529,7 @@ const CommentLog = memo(function FeedComment(props: {
 
   return (
     <Col
-      className={clsx('hover:bg-canvas-100 cursor-pointer rounded-md p-1')}
+      className={clsx('hover:bg-canvas-100 cursor-pointer rounded-md py-1')}
       onClick={() => {
         router.push(`/${userUsername}/${contractSlug}#${comment.id}`)
         track('site activity comment click', {
