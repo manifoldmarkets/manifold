@@ -29,7 +29,6 @@ import DropdownMenu, { DropdownItem } from './widgets/dropdown-menu'
 import { DropdownPill } from './search/filter-pills'
 import { Input } from './widgets/input'
 import { APIResponse } from 'common/src/api/schema'
-import { usePersistentInMemoryState } from 'client-common/hooks/use-persistent-in-memory-state'
 
 interface ActivityState {
   selectedTopic: LiteGroup | undefined | 'all'
@@ -75,12 +74,7 @@ export function SiteActivity(props: { className?: string }) {
       'activity-state'
     )
 
-  const [offset, setOffset] = usePersistentInMemoryState(0, 'activity-offset')
-  const [blockedContractIds, setBlockedContractIds] =
-    usePersistentInMemoryState<string[]>(
-      userBlockedContractIds,
-      'activity-blocked-contract-ids'
-    )
+  const [offset, setOffset] = useState(0)
 
   const { selectedTopic, types, minBetAmount } = activityState
   const topicId = selectedTopic === 'all' ? undefined : selectedTopic?.id
@@ -99,8 +93,8 @@ export function SiteActivity(props: { className?: string }) {
 
   const updateActivityState = useCallback(
     (newState: Partial<ActivityState>) => {
-      setBlockedContractIds(userBlockedContractIds)
       setOffset(0)
+      setAllData(undefined)
       setTimeout(() => {
         setActivityState((prevState) => ({
           ...prevState,
@@ -108,14 +102,8 @@ export function SiteActivity(props: { className?: string }) {
         }))
       }, 100)
     },
-    [setActivityState, setOffset, setBlockedContractIds]
+    [setActivityState, setOffset]
   )
-
-  useEffect(() => {
-    setBlockedContractIds(
-      uniq([...blockedContractIds, ...userBlockedContractIds])
-    )
-  }, [userBlockedContractIds])
 
   const { data, loading, refresh } = useAPIGetter(
     'get-site-activity',
@@ -124,7 +112,10 @@ export function SiteActivity(props: { className?: string }) {
       offset,
       blockedUserIds,
       blockedGroupSlugs,
-      blockedContractIds,
+      blockedContractIds: uniq([
+        ...userBlockedContractIds,
+        ...(allData?.relatedContracts.map((c) => c.id) ?? []),
+      ]),
       topicId,
       types,
       minBetAmount,
@@ -154,10 +145,6 @@ export function SiteActivity(props: { className?: string }) {
           ),
         }
       })
-      // Add newly loaded related contracts to the block list
-      setBlockedContractIds(
-        uniq([...blockedContractIds, ...data.relatedContracts.map((c) => c.id)])
-      )
     }
   }, [data])
 
