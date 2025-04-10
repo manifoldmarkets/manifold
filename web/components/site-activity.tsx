@@ -29,13 +29,12 @@ import DropdownMenu, { DropdownItem } from './widgets/dropdown-menu'
 import { DropdownPill } from './search/filter-pills'
 import { Input } from './widgets/input'
 import { APIResponse } from 'common/src/api/schema'
+import { usePersistentInMemoryState } from 'client-common/hooks/use-persistent-in-memory-state'
 
 interface ActivityState {
   selectedTopic: LiteGroup | undefined | 'all'
   types: ('bets' | 'comments' | 'markets')[]
   minBetAmount: number | undefined
-  offset: number
-  blockedContractIds: string[]
 }
 
 const technologyLiteGroup: LiteGroup = {
@@ -72,13 +71,18 @@ export function SiteActivity(props: { className?: string }) {
         selectedTopic: technologyLiteGroup,
         types: ['comments'],
         minBetAmount: PRESET_BET_AMOUNTS[0],
-        offset: 0,
-        blockedContractIds: userBlockedContractIds,
       },
       'activity-state'
     )
-  const { selectedTopic, types, minBetAmount, offset, blockedContractIds } =
-    activityState
+
+  const [offset, setOffset] = usePersistentInMemoryState(0, 'activity-offset')
+  const [blockedContractIds, setBlockedContractIds] =
+    usePersistentInMemoryState<string[]>(
+      userBlockedContractIds,
+      'activity-blocked-contract-ids'
+    )
+
+  const { selectedTopic, types, minBetAmount } = activityState
   const topicId = selectedTopic === 'all' ? undefined : selectedTopic?.id
 
   const limit = 30 / types.length
@@ -94,29 +98,26 @@ export function SiteActivity(props: { className?: string }) {
   )
 
   const updateActivityState = useCallback(
-    (
-      newState: Partial<Omit<ActivityState, 'offset' | 'blockedContractIds'>>
-    ) => {
-      // When changing filter parameters, reset offset and blockedContractIds
-      setActivityState((prevState) => ({
-        ...prevState,
-        ...newState,
-        offset: 0,
-        blockedContractIds: userBlockedContractIds,
-      }))
-      setAllData(undefined)
-    },
-    [setActivityState, userBlockedContractIds]
-  )
-
-  const updateActivityStateWithoutReset = useCallback(
     (newState: Partial<ActivityState>) => {
-      setActivityState((prevState) => ({ ...prevState, ...newState }))
+      setBlockedContractIds(userBlockedContractIds)
+      setOffset(0)
+      setTimeout(() => {
+        setActivityState((prevState) => ({
+          ...prevState,
+          ...newState,
+        }))
+      }, 100)
     },
-    [setActivityState]
+    [setActivityState, setOffset, setBlockedContractIds]
   )
 
-  const { data, loading } = useAPIGetter(
+  useEffect(() => {
+    setBlockedContractIds(
+      uniq([...blockedContractIds, ...userBlockedContractIds])
+    )
+  }, [userBlockedContractIds])
+
+  const { data, loading, refresh } = useAPIGetter(
     'get-site-activity',
     {
       limit,
@@ -128,7 +129,7 @@ export function SiteActivity(props: { className?: string }) {
       types,
       minBetAmount,
     },
-    ['blockedContractIds']
+    ['blockedContractIds', 'offset']
   )
 
   useEffect(() => {
@@ -153,23 +154,12 @@ export function SiteActivity(props: { className?: string }) {
           ),
         }
       })
-      updateActivityStateWithoutReset({
-        blockedContractIds: uniq([
-          ...blockedContractIds,
-          ...data.relatedContracts.map((c) => c.id),
-        ]),
-      })
+      // Add newly loaded related contracts to the block list
+      setBlockedContractIds(
+        uniq([...blockedContractIds, ...data.relatedContracts.map((c) => c.id)])
+      )
     }
   }, [data])
-
-  useEffect(() => {
-    updateActivityStateWithoutReset({
-      blockedContractIds: uniq([
-        ...blockedContractIds,
-        ...userBlockedContractIds,
-      ]),
-    })
-  }, [userBlockedContractIds])
 
   // Update custom amount string if minBetAmount changes externally or via presets
   useEffect(() => {
@@ -466,7 +456,10 @@ export function SiteActivity(props: { className?: string }) {
             className="pointer-events-none absolute bottom-0 h-screen w-full select-none"
             onVisibilityUpdated={(visible) => {
               if (visible && !loading) {
-                updateActivityStateWithoutReset({ offset: offset + limit })
+                setOffset(offset + limit)
+                setTimeout(() => {
+                  refresh()
+                }, 100)
               }
             }}
           />
