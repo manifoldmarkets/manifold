@@ -1,20 +1,19 @@
 import { runScript } from './run-script'
 import { type TxnData, runTxnInBetQueue } from 'shared/txn/run-txn'
 import { CASH_TO_MANA_CONVERSION_RATE } from 'common/envs/constants'
-
 // NOTE: After running this script, set all users with cash_balance below 25 to 0
 // to remove any lingering floating point cash balances
 runScript(async ({ pg }) => {
-  console.log('Finding users with cash balances below 25...')
+  console.log('Finding users with cash balances')
 
-  // Find all users with cash_balance below 25 but above 0
+  // Find all users with cash_balance above 0
   const users = await pg.manyOrNone(
     `SELECT id, cash_balance, username FROM users 
-     WHERE cash_balance > 0.000001 AND cash_balance < 25`,
+     WHERE cash_balance > 0.000001`,
     []
   )
 
-  console.log(`Found ${users.length} users with small cash balances.`)
+  console.log(`Found ${users.length} users with cash balances.`)
 
   // Process each user
   let successCount = 0
