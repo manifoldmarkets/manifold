@@ -838,12 +838,16 @@ export const getMarketMovementEmail = (
       templateData[`question${i + 1}Title`] = movement.questionTitle
       templateData[`question${i + 1}Url`] = movement.questionUrl
       templateData[`question${i + 1}Prob`] = movement.prob
-
-      const probChange = Math.round(
-        Math.abs(movement.endProb - movement.startProb) * 100
-      )
-      const direction = movement.endProb > movement.startProb ? '+' : '-'
-      templateData[`question${i + 1}Change`] = `${direction}${probChange}`
+      const arrowColor =
+        movement.endProb > movement.startProb
+          ? '#14b8a6' /* green-500 */
+          : '#ef4444' /* red-500 */
+      templateData[
+        `question${i + 1}ArrowStyle`
+      ] = `color: ${arrowColor}; font-weight: bold;`
+      templateData[`question${i + 1}InitialProb`] = `${Math.round(
+        movement.startProb * 100
+      )}%`
       templateData[`question${i + 1}ChangeStyle`] = movement.probChangeStyle
       templateData[`question${i + 1}Display`] = 'display: table-row'
 

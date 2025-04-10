@@ -73,7 +73,7 @@ export async function sendUnseenMarketMovementNotifications() {
   const notificationsToSend: [PrivateUser, Notification, string, string][] = []
   const bulkEmails = []
 
-  for (const [userId, userResults] of userNotifications) {
+  for (const [_, userResults] of userNotifications) {
     const privateUser = userResults[0].private_user as PrivateUser
     const userName = userResults[0].user_name as string
 
