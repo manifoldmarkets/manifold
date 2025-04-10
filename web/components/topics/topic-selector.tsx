@@ -22,7 +22,6 @@ import { buildArray } from 'common/util/array'
 import DropdownMenu from '../widgets/dropdown-menu'
 import { DropdownPill } from '../search/filter-pills'
 import { CheckIcon } from '@heroicons/react/solid'
-
 export function TopicSelector(props: {
   setSelectedGroup: (group: Group) => void
   max?: number
@@ -330,13 +329,17 @@ export function MultiTopicPillSelector(props: {
               setTopics([])
             },
           },
-          ...searchedGroups.map((topic) => ({
+          ...topics.map((topic) => ({
             name: topic.name,
-            icon: topics.some((t) => t.id === topic.id) && (
-              <CheckIcon className="mr-1 h-4 w-4" />
-            ),
+            icon: <CheckIcon className="mr-1 h-4 w-4" />,
             onClick: () => toggleTopic(topic),
           })),
+          ...searchedGroups
+            .filter((topic) => !topics.some((t) => t.id === topic.id))
+            .map((topic) => ({
+              name: topic.name,
+              onClick: () => toggleTopic(topic),
+            })),
         ]}
         buttonContent={(open) => (
           <DropdownPill open={open}>
