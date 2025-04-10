@@ -2,7 +2,7 @@ import clsx from 'clsx'
 import { CommentWithTotalReplies, ContractComment } from 'common/comment'
 import { Contract } from 'common/contract'
 import { groupBy, keyBy, orderBy, uniq, uniqBy } from 'lodash'
-import { memo, useEffect, useState } from 'react'
+import { memo, useCallback, useEffect, useState } from 'react'
 import { usePrivateUser } from 'web/hooks/use-user'
 import { ContractMention } from './contract/contract-mention'
 import { FeedBet } from './feed/feed-bets'
@@ -28,14 +28,33 @@ import { LiteGroup } from 'common/group'
 import DropdownMenu, { DropdownItem } from './widgets/dropdown-menu'
 import { DropdownPill } from './search/filter-pills'
 import { Input } from './widgets/input'
-import { filterDefined } from 'common/util/array'
 import { APIResponse } from 'common/src/api/schema'
+
+interface ActivityState {
+  selectedTopic: LiteGroup | undefined | 'all'
+  types: ('bets' | 'comments' | 'markets')[]
+  minBetAmount: number | undefined
+  offset: number
+  blockedContractIds: string[]
+}
+
+const technologyLiteGroup: LiteGroup = {
+  id: 'IlzY3moWwOcpsVZXCVej',
+  slug: 'technology-default',
+  name: '🖥️ Technology',
+  totalMembers: 46584,
+  privacyStatus: 'public',
+  importanceScore: 0,
+}
+
 export const ACTIVITY_TYPES = [
   { name: 'All activity', value: ['bets', 'comments', 'markets'] },
   { name: 'Trades', value: ['bets'] },
   { name: 'Comments', value: ['comments'] },
   { name: 'Markets', value: ['markets'] },
 ] as const
+
+const PRESET_BET_AMOUNTS = [500, 1000, 10000]
 
 export function SiteActivity(props: { className?: string }) {
   const { className } = props
@@ -44,15 +63,26 @@ export function SiteActivity(props: { className?: string }) {
   const router = useRouter()
 
   const blockedGroupSlugs = privateUser?.blockedGroupSlugs ?? []
-  const blockedContractIds = privateUser?.blockedContractIds ?? []
+  const userBlockedContractIds = privateUser?.blockedContractIds ?? []
   const blockedUserIds = privateUser?.blockedUserIds ?? []
 
-  const PRESET_BET_AMOUNTS = [500, 1000, 10000]
+  const [activityState, setActivityState] =
+    usePersistentLocalState<ActivityState>(
+      {
+        selectedTopic: technologyLiteGroup,
+        types: ['comments'],
+        minBetAmount: PRESET_BET_AMOUNTS[0],
+        offset: 0,
+        blockedContractIds: userBlockedContractIds,
+      },
+      'activity-state'
+    )
+  const { selectedTopic, types, minBetAmount, offset, blockedContractIds } =
+    activityState
+  const topicId = selectedTopic === 'all' ? undefined : selectedTopic?.id
 
-  // State for the bet amount filter
-  const [minBetAmount, setMinBetAmount] = usePersistentLocalState<
-    number | undefined
-  >(PRESET_BET_AMOUNTS[0], 'activity-min-bet-amount')
+  const limit = 30 / types.length
+  const [allData, setAllData] = useState<APIResponse<'get-site-activity'>>()
 
   // State to manage the custom input value within the dropdown
   const [customAmountString, setCustomAmountString] = useState<string>(
@@ -63,17 +93,28 @@ export function SiteActivity(props: { className?: string }) {
       : ''
   )
 
-  const [selectedTopic, setSelectedTopic] = usePersistentLocalState<
-    LiteGroup | undefined | 'all'
-  >(technologyLiteGroup, 'activity-selected-topic')
-  const topicId = selectedTopic === 'all' ? undefined : selectedTopic?.id
+  const updateActivityState = useCallback(
+    (
+      newState: Partial<Omit<ActivityState, 'offset' | 'blockedContractIds'>>
+    ) => {
+      // When changing filter parameters, reset offset and blockedContractIds
+      setActivityState((prevState) => ({
+        ...prevState,
+        ...newState,
+        offset: 0,
+        blockedContractIds: userBlockedContractIds,
+      }))
+      setAllData(undefined)
+    },
+    [setActivityState, userBlockedContractIds]
+  )
 
-  const [types, setTypes] = usePersistentLocalState<
-    ('bets' | 'comments' | 'markets')[]
-  >(['comments'], 'activity-selected-types')
-  const [offset, setOffset] = useState(0)
-  const limit = 30 / types.length
-  const [allData, setAllData] = useState<APIResponse<'get-site-activity'>>()
+  const updateActivityStateWithoutReset = useCallback(
+    (newState: Partial<ActivityState>) => {
+      setActivityState((prevState) => ({ ...prevState, ...newState }))
+    },
+    [setActivityState]
+  )
 
   const { data, loading } = useAPIGetter(
     'get-site-activity',
@@ -82,10 +123,7 @@ export function SiteActivity(props: { className?: string }) {
       offset,
       blockedUserIds,
       blockedGroupSlugs,
-      blockedContractIds: filterDefined([
-        ...blockedContractIds,
-        ...uniq(allData?.relatedContracts.map((c) => c.id)),
-      ]),
+      blockedContractIds,
       topicId,
       types,
       minBetAmount,
@@ -97,26 +135,52 @@ export function SiteActivity(props: { className?: string }) {
     if (data) {
       setAllData((prev) => {
         if (!prev) return data
+        // Ensure offset is 0 when setting initial data after a filter change
+        const base =
+          offset === 0
+            ? { bets: [], comments: [], newContracts: [], relatedContracts: [] }
+            : prev
         return {
-          bets: uniqBy([...prev.bets, ...data.bets], 'id'),
-          comments: uniqBy([...prev.comments, ...data.comments], 'id'),
+          bets: uniqBy([...base.bets, ...data.bets], 'id'),
+          comments: uniqBy([...base.comments, ...data.comments], 'id'),
           newContracts: uniqBy(
-            [...prev.newContracts, ...data.newContracts],
+            [...base.newContracts, ...data.newContracts],
             'id'
           ),
           relatedContracts: uniqBy(
-            [...prev.relatedContracts, ...data.relatedContracts],
+            [...base.relatedContracts, ...data.relatedContracts],
             'id'
           ),
         }
+      })
+      updateActivityStateWithoutReset({
+        blockedContractIds: uniq([
+          ...blockedContractIds,
+          ...data.relatedContracts.map((c) => c.id),
+        ]),
       })
     }
   }, [data])
 
   useEffect(() => {
-    setAllData(undefined)
-    setOffset(0)
-  }, [topicId, types, minBetAmount])
+    updateActivityStateWithoutReset({
+      blockedContractIds: uniq([
+        ...blockedContractIds,
+        ...userBlockedContractIds,
+      ]),
+    })
+  }, [userBlockedContractIds])
+
+  // Update custom amount string if minBetAmount changes externally or via presets
+  useEffect(() => {
+    setCustomAmountString(
+      PRESET_BET_AMOUNTS.includes(minBetAmount ?? 0)
+        ? ''
+        : minBetAmount !== undefined
+        ? String(minBetAmount)
+        : ''
+    )
+  }, [minBetAmount])
 
   const { bets, comments, newContracts, relatedContracts } = allData ?? {
     bets: [],
@@ -151,9 +215,11 @@ export function SiteActivity(props: { className?: string }) {
       <Row className="mt-2 items-center gap-2">
         <TopicPillSelector
           topic={selectedTopic === 'all' ? undefined : selectedTopic}
-          setTopic={(topic) =>
-            setSelectedTopic(topic === undefined ? 'all' : topic)
-          }
+          setTopic={(topic) => {
+            updateActivityState({
+              selectedTopic: topic === undefined ? 'all' : topic,
+            })
+          }}
         />
         <DropdownMenu
           closeOnClick
@@ -166,7 +232,7 @@ export function SiteActivity(props: { className?: string }) {
           }
           items={ACTIVITY_TYPES.map((type) => ({
             name: type.name,
-            onClick: () => setTypes([...type.value]),
+            onClick: () => updateActivityState({ types: [...type.value] }),
           }))}
           buttonContent={(open) => (
             <DropdownPill open={open}>
@@ -190,7 +256,7 @@ export function SiteActivity(props: { className?: string }) {
               ...PRESET_BET_AMOUNTS.map((amount) => ({
                 name: `M$${amount}`,
                 onClick: () => {
-                  setMinBetAmount(amount)
+                  updateActivityState({ minBetAmount: amount })
                 },
               })),
               {
@@ -215,7 +281,7 @@ export function SiteActivity(props: { className?: string }) {
                         const value = parseInt(customAmountString)
                         const newAmount =
                           isNaN(value) || value <= 0 ? undefined : value
-                        setMinBetAmount(newAmount)
+                        updateActivityState({ minBetAmount: newAmount })
                       }}
                       onFocus={(e) => e.target.select()}
                       onKeyDown={(e) => {
@@ -225,13 +291,13 @@ export function SiteActivity(props: { className?: string }) {
                           const value = parseInt(customAmountString)
                           const newAmount =
                             isNaN(value) || value <= 0 ? undefined : value
-                          setMinBetAmount(newAmount)
+                          updateActivityState({ minBetAmount: newAmount })
                         }
                       }}
                     />
                   </Row>
                 ) as any,
-                onClick: undefined,
+                onClick: undefined, // Let onBlur/onKeyDown handle the state update
                 selected:
                   minBetAmount !== undefined &&
                   !PRESET_BET_AMOUNTS.includes(minBetAmount),
@@ -240,7 +306,7 @@ export function SiteActivity(props: { className?: string }) {
               {
                 name: 'M$0',
                 onClick: () => {
-                  setMinBetAmount(0)
+                  updateActivityState({ minBetAmount: 0 })
                 },
               },
             ]}
@@ -400,7 +466,7 @@ export function SiteActivity(props: { className?: string }) {
             className="pointer-events-none absolute bottom-0 h-screen w-full select-none"
             onVisibilityUpdated={(visible) => {
               if (visible && !loading) {
-                setOffset((prev: number) => prev + limit)
+                updateActivityStateWithoutReset({ offset: offset + limit })
               }
             }}
           />
@@ -526,11 +592,3 @@ const CommentLog = memo(function FeedComment(props: {
     </Col>
   )
 })
-const technologyLiteGroup: LiteGroup = {
-  id: 'IlzY3moWwOcpsVZXCVej',
-  slug: 'technology-default',
-  name: '🖥️ Technology',
-  totalMembers: 46584,
-  privacyStatus: 'public',
-  importanceScore: 0,
-}
