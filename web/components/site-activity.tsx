@@ -325,7 +325,7 @@ export function SiteActivity(props: { className?: string }) {
               <Col
                 key={parentId}
                 className={clsx(
-                  'bg-canvas-0 dark:bg-canvas-50 dark:border-canvas-50 hover:border-primary-300 gap-2 rounded-lg border px-4 py-3 shadow-md transition-colors sm:px-6'
+                  'bg-canvas-0 dark:bg-canvas-50 dark:border-canvas-50 hover:border-primary-300 gap-2 rounded-lg border p-3 shadow-md transition-colors sm:px-5'
                 )}
               >
                 <Row className="gap-2">
@@ -340,7 +340,7 @@ export function SiteActivity(props: { className?: string }) {
                           // Render Bet
                           return (
                             <FeedBet
-                              className="py-1"
+                              className="p-1"
                               key={item.id}
                               contract={contract}
                               bet={item}
@@ -529,7 +529,7 @@ const CommentLog = memo(function FeedComment(props: {
 
   return (
     <Col
-      className={clsx('hover:bg-canvas-100 cursor-pointer rounded-md py-1')}
+      className={clsx('hover:bg-canvas-100 cursor-pointer rounded-md p-1')}
       onClick={() => {
         router.push(`/${userUsername}/${contractSlug}#${comment.id}`)
         track('site activity comment click', {
