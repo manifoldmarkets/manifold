@@ -105,7 +105,8 @@ export const getSiteActivity: APIHandler<'get-site-activity'> = async (
        WHERE c.visibility = 'public'
          AND c.creator_id != ALL($1)
          AND c.id != ALL($2)
-         AND (c.resolution is null or c.resolution != 'CANCEL')
+         AND c.resolution is null
+         AND is_valid_contract(c)
          ${topicId ? 'AND gc.group_id = $6' : ''}
          AND NOT EXISTS (
            SELECT 1 FROM group_contracts gc2
@@ -157,6 +158,8 @@ export const getSiteActivity: APIHandler<'get-site-activity'> = async (
           'this can resolve',
           'plz',
           'pls',
+          'resolves yes',
+          'resolves no',
         ]) &&
         !hasContentWithText(rc.reply_to_data?.content, [
           '"label":"mods"',
@@ -164,6 +167,8 @@ export const getSiteActivity: APIHandler<'get-site-activity'> = async (
           'this can resolve',
           'plz',
           'pls',
+          'resolves yes',
+          'resolves no',
         ])
     )
 
@@ -192,7 +197,7 @@ export const getSiteActivity: APIHandler<'get-site-activity'> = async (
       ? pg.map(
           `select ${contractColumnsToSelect} from contracts where id in ($1:list)
           and (resolution is null or resolution != 'CANCEL')
-          and visibility = 'public'`,
+          and is_valid_contract(contracts)`,
           [contractIds],
           convertContract
         )
