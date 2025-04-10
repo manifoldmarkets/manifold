@@ -23,27 +23,45 @@ import { User } from 'common/user'
 import { PrivateUser } from 'common/user'
 import { track } from 'web/lib/service/analytics'
 import { usePersistentLocalState } from 'web/hooks/use-persistent-local-state'
-import { TopicPillSelector } from './topics/topic-selector'
 import { LiteGroup } from 'common/group'
 import DropdownMenu, { DropdownItem } from './widgets/dropdown-menu'
 import { DropdownPill } from './search/filter-pills'
 import { Input } from './widgets/input'
 import { APIResponse } from 'common/src/api/schema'
+import { MultiTopicPillSelector } from './topics/topic-selector'
 
 interface ActivityState {
-  selectedTopic: LiteGroup | undefined | 'all'
+  selectedTopics: LiteGroup[]
   types: ('bets' | 'comments' | 'markets')[]
   minBetAmount: number | undefined
 }
 
-const technologyLiteGroup: LiteGroup = {
-  id: 'IlzY3moWwOcpsVZXCVej',
-  slug: 'technology-default',
-  name: '🖥️ Technology',
-  totalMembers: 46584,
-  privacyStatus: 'public',
-  importanceScore: 0,
-}
+const defaultGroups: LiteGroup[] = [
+  {
+    id: 'IlzY3moWwOcpsVZXCVej',
+    slug: 'technology-default',
+    name: '🖥️ Technology',
+    totalMembers: 46584,
+    privacyStatus: 'public',
+    importanceScore: 0,
+  },
+  {
+    id: 'UCnpxVUdLOZYgoMsDlHD',
+    slug: 'politics-default',
+    name: '🗳️ Politics',
+    totalMembers: 21594,
+    privacyStatus: 'public',
+    importanceScore: 0,
+  },
+  {
+    id: 'yEWvvwFFIqzf8JklMewp',
+    slug: 'ai',
+    name: '🤖 AI',
+    totalMembers: 26072,
+    privacyStatus: 'public',
+    importanceScore: 0,
+  },
+]
 
 export const ACTIVITY_TYPES = [
   { name: 'All activity', value: ['bets', 'comments', 'markets'] },
@@ -67,17 +85,17 @@ export function SiteActivity(props: { className?: string }) {
   const [activityState, setActivityState] =
     usePersistentLocalState<ActivityState>(
       {
-        selectedTopic: technologyLiteGroup,
+        selectedTopics: defaultGroups,
         types: ['comments', 'bets', 'markets'],
         minBetAmount: PRESET_BET_AMOUNTS[1],
       },
-      'activity-state'
+      'site-activity-state'
     )
-
   const [offset, setOffset] = useState(0)
 
-  const { selectedTopic, types, minBetAmount } = activityState
-  const topicId = selectedTopic === 'all' ? undefined : selectedTopic?.id
+  const { selectedTopics, types, minBetAmount } = activityState
+  const topicIds =
+    selectedTopics.length > 0 ? selectedTopics.map((t) => t.id) : undefined
 
   const limit = 30 / types.length
   const [allData, setAllData] = useState<APIResponse<'get-site-activity'>>()
@@ -116,7 +134,7 @@ export function SiteActivity(props: { className?: string }) {
         ...userBlockedContractIds,
         ...(allData?.relatedContracts.map((c) => c.id) ?? []),
       ]),
-      topicId,
+      topicIds,
       types,
       minBetAmount,
     },
@@ -190,13 +208,12 @@ export function SiteActivity(props: { className?: string }) {
   return (
     <Col className={clsx('gap-4', className)}>
       <Row className="mt-2 items-center gap-2">
-        <TopicPillSelector
-          topic={selectedTopic === 'all' ? undefined : selectedTopic}
-          setTopic={(topic) => {
-            updateActivityState({
-              selectedTopic: topic === undefined ? 'all' : topic,
-            })
-          }}
+        <MultiTopicPillSelector
+          topics={selectedTopics}
+          setTopics={(topics) =>
+            updateActivityState({ selectedTopics: topics })
+          }
+          maxTopics={10}
         />
         <DropdownMenu
           closeOnClick

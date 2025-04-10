@@ -24,7 +24,8 @@ export const getSiteActivity: APIHandler<'get-site-activity'> = async (
     minBetAmount,
   } = props
   const pg = createSupabaseDirectClient()
-  let topicId = props.topicId
+
+  const topicIds = filterDefined([...(props.topicIds ?? []), props.topicId])
   if (topicSlug) {
     const topic = await pg.one(`select id from groups where slug = $1`, [
       topicSlug,
@@ -32,8 +33,9 @@ export const getSiteActivity: APIHandler<'get-site-activity'> = async (
     if (!topic) {
       throw new APIError(404, 'Topic not found')
     }
-    topicId = topic.id
+    topicIds.push(topic.id)
   }
+
   let blockedTopicIds = []
   if (blockedGroupSlugs.length > 0) {
     const blockedTopics = await pg.manyOrNone(
@@ -42,26 +44,31 @@ export const getSiteActivity: APIHandler<'get-site-activity'> = async (
     )
     blockedTopicIds = blockedTopics.map((t) => t.id)
   }
+
   const blockedUserIds = [
     'FDWTsTHFytZz96xmcKzf7S5asYL2', // yunabot (does a lot of manual trades)
     ...(props.blockedUserIds ?? []),
   ]
-  // Common query parts
+
+  const hasTopicFilter = topicIds.length > 0
+
   const betsSelect = `SELECT cb.*
        FROM contract_bets cb
        ${
-         topicId
+         hasTopicFilter
            ? 'JOIN group_contracts gc ON cb.contract_id = gc.contract_id'
            : ''
        }`
+
   const betsEnd = `
     AND cb.user_id != ALL($1)
     AND cb.contract_id != ALL($2)
     AND not cb.is_api
-    ${topicId ? 'AND gc.group_id = $6' : ''}
+    ${hasTopicFilter ? 'AND gc.group_id = ANY($6)' : ''}
      ORDER BY cb.created_time DESC
     LIMIT $3 OFFSET $4;
   `
+
   // Build queries
   const recentBetsQuery = types.includes('bets')
     ? `${betsSelect}
@@ -85,7 +92,7 @@ export const getSiteActivity: APIHandler<'get-site-activity'> = async (
            cc2.data as reply_to_data
        FROM contract_comments cc
        ${
-         topicId
+         hasTopicFilter
            ? 'JOIN group_contracts gc ON cc.contract_id = gc.contract_id'
            : ''
        }
@@ -93,7 +100,7 @@ export const getSiteActivity: APIHandler<'get-site-activity'> = async (
       WHERE cc.user_id != ALL($1)
          AND cc.contract_id != ALL($2)
          AND cc.visibility = 'public'
-         ${topicId ? 'AND gc.group_id = $6' : ''}
+         ${hasTopicFilter ? 'AND gc.group_id = ANY($6)' : ''}
        ORDER BY cc.created_time DESC
        LIMIT $3 OFFSET $4;`
     : 'select null where false;'
@@ -101,13 +108,17 @@ export const getSiteActivity: APIHandler<'get-site-activity'> = async (
   const newContractsQuery = types.includes('markets')
     ? `SELECT c.*
        FROM contracts c
-       ${topicId ? 'JOIN group_contracts gc ON c.id = gc.contract_id' : ''}
+       ${
+         hasTopicFilter
+           ? 'JOIN group_contracts gc ON c.id = gc.contract_id'
+           : ''
+       }
        WHERE c.visibility = 'public'
          AND c.creator_id != ALL($1)
          AND c.id != ALL($2)
          AND c.resolution is null
          AND is_valid_contract(c)
-         ${topicId ? 'AND gc.group_id = $6' : ''}
+         ${hasTopicFilter ? 'AND gc.group_id = ANY($6)' : ''}
          AND NOT EXISTS (
            SELECT 1 FROM group_contracts gc2
            WHERE gc2.contract_id = c.id
@@ -130,7 +141,7 @@ export const getSiteActivity: APIHandler<'get-site-activity'> = async (
     limit,
     offset,
     blockedTopicIds,
-    topicId,
+    topicIds,
     minBetAmount ?? 500,
   ])
 

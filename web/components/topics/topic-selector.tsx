@@ -21,6 +21,7 @@ import { Col } from '../layout/col'
 import { buildArray } from 'common/util/array'
 import DropdownMenu from '../widgets/dropdown-menu'
 import { DropdownPill } from '../search/filter-pills'
+import { CheckIcon } from '@heroicons/react/solid'
 
 export function TopicSelector(props: {
   setSelectedGroup: (group: Group) => void
@@ -278,5 +279,71 @@ export function TopicPillSelector(props: {
         <DropdownPill open={open}>{currentName}</DropdownPill>
       )}
     />
+  )
+}
+
+export function MultiTopicPillSelector(props: {
+  topics: LiteGroup[]
+  setTopics: (topics: LiteGroup[]) => void
+  maxTopics?: number
+}) {
+  const { topics, setTopics, maxTopics = 10 } = props
+  const { query, setQuery, searchedGroups } = useSearchGroups(false)
+
+  const toggleTopic = (topic: LiteGroup) => {
+    const isSelected = topics.some((t) => t.id === topic.id)
+    if (isSelected) {
+      setTopics(topics.filter((t) => t.id !== topic.id))
+    } else if (topics.length < maxTopics) {
+      setTopics([...topics, topic])
+    }
+  }
+
+  return (
+    <div className="relative">
+      <DropdownMenu
+        closeOnClick={false}
+        selectedItemName={
+          topics.length === 0
+            ? 'All topics'
+            : `${topics.length} topics selected`
+        }
+        items={[
+          {
+            name: 'Search topics',
+            nonButtonContent: (
+              <div className="flex">
+                <input
+                  type="text"
+                  className="bg-ink-200 dark:bg-ink-300 focus:ring-primary-500 mx-1 mb-1 w-full rounded-md border-none px-3 py-0.5 text-xs"
+                  placeholder="search"
+                  autoFocus
+                  value={query}
+                  onChange={(e) => setQuery(e.target.value)}
+                />
+              </div>
+            ),
+          },
+          {
+            name: 'All topics',
+            onClick: () => {
+              setTopics([])
+            },
+          },
+          ...searchedGroups.map((topic) => ({
+            name: topic.name,
+            icon: topics.some((t) => t.id === topic.id) && (
+              <CheckIcon className="mr-1 h-4 w-4" />
+            ),
+            onClick: () => toggleTopic(topic),
+          })),
+        ]}
+        buttonContent={(open) => (
+          <DropdownPill open={open}>
+            {topics.length === 0 ? 'All topics' : `${topics.length} topics`}
+          </DropdownPill>
+        )}
+      />
+    </div>
   )
 }
