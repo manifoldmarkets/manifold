@@ -210,9 +210,12 @@ export function SiteActivity(props: { className?: string }) {
       <Row className="mt-2 items-center gap-2">
         <MultiTopicPillSelector
           topics={selectedTopics}
-          setTopics={(topics) =>
+          setTopics={(topics) => {
             updateActivityState({ selectedTopics: topics })
-          }
+            track('site activity topic change', {
+              topics: topics.map((t) => t.slug),
+            })
+          }}
           maxTopics={10}
         />
         <DropdownMenu
@@ -226,7 +229,12 @@ export function SiteActivity(props: { className?: string }) {
           }
           items={ACTIVITY_TYPES.map((type) => ({
             name: type.name,
-            onClick: () => updateActivityState({ types: [...type.value] }),
+            onClick: () => {
+              updateActivityState({ types: [...type.value] })
+              track('site activity type change', {
+                types: [...type.value],
+              })
+            },
           }))}
           buttonContent={(open) => (
             <DropdownPill open={open}>
@@ -251,6 +259,9 @@ export function SiteActivity(props: { className?: string }) {
                 name: `M$${amount}`,
                 onClick: () => {
                   updateActivityState({ minBetAmount: amount })
+                  track('site activity bet amount change', {
+                    amount,
+                  })
                 },
               })),
               {
