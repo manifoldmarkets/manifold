@@ -154,10 +154,16 @@ export const getSiteActivity: APIHandler<'get-site-activity'> = async (
         !hasContentWithText(rc.data.content, [
           '"label":"mods"',
           'please resolve',
+          'this can resolve',
+          'plz',
+          'pls',
         ]) &&
         !hasContentWithText(rc.reply_to_data?.content, [
           '"label":"mods"',
           'please resolve',
+          'this can resolve',
+          'plz',
+          'pls',
         ])
     )
 
