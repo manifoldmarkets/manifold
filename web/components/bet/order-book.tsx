@@ -299,7 +299,7 @@ function OrderRow(props: {
         </td>
       )}
       <td>
-        <div className="pl-2">
+        <div className="">
           {isPseudoNumeric ? (
             <PseudoNumericOutcomeLabel outcome={outcome as 'YES' | 'NO'} />
           ) : isBinaryMC ? (
