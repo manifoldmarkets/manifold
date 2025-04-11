@@ -34,7 +34,7 @@ export const ShareBetCard = (props: ShareBetCardProps) => {
   const won =
     resolution && resolution !== 'CANCEL' ? (profit ?? 0) >= 0 : undefined
   return (
-    <div className="w-full max-w-xl overflow-hidden rounded-lg bg-gradient-to-br from-indigo-600 via-indigo-600 to-purple-500">
+    <div className="w-full min-w-full max-w-xl overflow-hidden rounded-lg bg-gradient-to-br from-indigo-600 via-indigo-600 to-purple-500">
       <div className="flex items-center justify-center pb-4 pt-5">
         <div className="flex items-center gap-2">
           <LogoIcon className="-mt-2 h-14 w-14 text-white" />
@@ -205,13 +205,13 @@ export const ShareBetModal = (
     <Modal
       open={open}
       setOpen={setOpen}
-      size="lg"
-      className="bg-canvas-100 !w-fit rounded-lg sm:p-4"
+      size="mdlg"
+      className="bg-canvas-100 rounded-lg sm:p-4"
     >
-      <Col className=" items-center">
-        <div ref={cardRef}>
+      <Col className="items-center">
+        <Col className="w-full items-center" ref={cardRef}>
           <ShareBetCard {...cardProps} />
-        </div>
+        </Col>
         <Row className=" w-full items-center justify-between gap-2 py-2 sm:pb-0 sm:pt-2">
           <Button color="gray-white" onClick={() => setOpen(false)}>
             Close
