@@ -1118,7 +1118,7 @@ const ExpandedBetRow = (props: {
       <BetsSummary
         className="mb-6 mt-6 flex"
         contract={contract}
-        metrics={contractMetric}
+        metric={contractMetric}
         includeSellButton={includeSellButtonForUser}
         areYourBets={areYourBets}
       />

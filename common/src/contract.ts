@@ -397,6 +397,7 @@ export const isBinaryMulti = (contract: Contract) =>
   contract.mechanism === 'cpmm-multi-1' &&
   contract.outcomeType !== 'NUMBER' &&
   contract.outcomeType !== 'MULTI_NUMERIC' &&
+  contract.outcomeType !== 'DATE' &&
   contract.answers.length === 2 &&
   contract.addAnswersMode === 'DISABLED' &&
   contract.shouldAnswersSumToOne

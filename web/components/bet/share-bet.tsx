@@ -17,10 +17,22 @@ type ShareBetCardProps = {
   avgPrice: string
   betAmount: number
   winAmount: number
+  resolution?: string
+  profit?: number
 }
 export const ShareBetCard = (props: ShareBetCardProps) => {
-  const { questionText, outcome, answer, avgPrice, betAmount, winAmount } =
-    props
+  const {
+    questionText,
+    profit,
+    outcome,
+    answer,
+    avgPrice,
+    betAmount,
+    winAmount,
+    resolution,
+  } = props
+  const won =
+    resolution && resolution !== 'CANCEL' ? (profit ?? 0) >= 0 : undefined
   return (
     <div className="w-full max-w-xl overflow-hidden rounded-lg bg-gradient-to-br from-indigo-600 via-indigo-600 to-purple-500">
       <div className="flex items-center justify-center pb-4 pt-5">
@@ -63,20 +75,37 @@ export const ShareBetCard = (props: ShareBetCardProps) => {
         </div>
 
         <div className="flex justify-between">
-          <div>
-            <div className="text-gray-500">Bet</div>
-            <TokenNumber
-              className="text-2xl font-bold text-gray-900"
-              amount={betAmount}
-            />
-          </div>
-          <div className="text-right">
-            <div className="text-gray-500">To win</div>
-            <TokenNumber
-              className="text-primary-500 text-2xl font-bold"
-              amount={winAmount}
-            />
-          </div>
+          {won !== undefined && !won ? (
+            <div>
+              <div className="text-gray-500">Profit</div>
+              <TokenNumber
+                className="text-2xl font-bold text-red-500"
+                amount={profit}
+              />
+            </div>
+          ) : (
+            <div>
+              <div className="text-gray-500">Bet</div>
+              <TokenNumber
+                className="text-2xl font-bold text-gray-900"
+                amount={betAmount}
+              />
+            </div>
+          )}
+          {(won === undefined || won) && (
+            <div>
+              <div className="text-gray-500">
+                {won !== undefined ? 'Won' : 'To win'}
+              </div>
+              <TokenNumber
+                className={clsx(
+                  'text-2xl font-bold',
+                  won ? 'text-teal-500' : 'text-primary-500'
+                )}
+                amount={winAmount}
+              />
+            </div>
+          )}
         </div>
       </div>
       <div
