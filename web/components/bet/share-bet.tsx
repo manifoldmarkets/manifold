@@ -8,22 +8,25 @@ import { DuplicateIcon } from '@heroicons/react/solid'
 import { useRef } from 'react'
 import { toPng } from 'html-to-image'
 import { TokenNumber } from '../widgets/token-number'
+import clsx from 'clsx'
 
 type ShareBetCardProps = {
   questionText: string
-  selectedOption: string
+  outcome: string
+  answer?: string
   avgPrice: string
   betAmount: number
   winAmount: number
 }
 export const ShareBetCard = (props: ShareBetCardProps) => {
-  const { questionText, selectedOption, avgPrice, betAmount, winAmount } = props
+  const { questionText, outcome, answer, avgPrice, betAmount, winAmount } =
+    props
   return (
-    <div className="w-full max-w-lg overflow-hidden rounded-lg bg-gradient-to-br from-indigo-600 via-indigo-600 to-purple-500">
-      <div className="flex items-center justify-center pb-4 pt-4">
+    <div className="w-full max-w-xl overflow-hidden rounded-lg bg-gradient-to-br from-indigo-600 via-indigo-600 to-purple-500">
+      <div className="flex items-center justify-center pb-4 pt-5">
         <div className="flex items-center gap-2">
-          <LogoIcon className="h-14 w-14 text-white" />
-          <span className="text-3xl font-bold text-white">Manifold</span>
+          <LogoIcon className="-mt-2 h-14 w-14 text-white" />
+          <span className="text-3xl text-white">MANIFOLD</span>
         </div>
       </div>
 
@@ -34,14 +37,26 @@ export const ShareBetCard = (props: ShareBetCardProps) => {
           </div>
         </div>
 
-        <div className="flex items-center">
-          <div className="rounded-md bg-green-100 px-4 py-2 font-bold text-green-800">
-            {selectedOption}
+        <Row className="items-center justify-between">
+          <div
+            className={clsx(
+              'rounded-md px-4 py-2 font-bold',
+              outcome === 'YES'
+                ? 'bg-green-100 text-green-800'
+                : 'bg-red-100 text-red-800'
+            )}
+          >
+            {outcome}
           </div>
-          <div className="flex-1 text-right text-lg text-gray-500">
+          <div className="whitespace-nowrap text-lg text-gray-500">
             Avg {avgPrice}
           </div>
-        </div>
+        </Row>
+        {answer && (
+          <div className="mt-2 line-clamp-2 pl-2 text-lg text-gray-800">
+            {answer}
+          </div>
+        )}
 
         <div className="relative my-6">
           <div className="border-t border-gray-200"></div>
@@ -79,17 +94,6 @@ export const ShareBetCard = (props: ShareBetCardProps) => {
       ></div>
     </div>
   )
-}
-
-ShareBetCard.defaultProps = {
-  marketName: 'Manifold',
-  questionText:
-    'Will LLA hold the most seats in the Chamber of Deputies following the 2025 Argentina election?',
-  selectedOption: 'Yes',
-  avgPrice: '45¢',
-  betAmount: '1.00',
-  winAmount: '2.22',
-  logoSrc: null,
 }
 
 export const ShareBetModal = (
@@ -169,12 +173,12 @@ export const ShareBetModal = (
   }
 
   return (
-    <Modal open={open} setOpen={setOpen}>
-      <Col className="bg-canvas-100 border-primary-300 mt-2 gap-3 rounded-lg border p-3">
+    <Modal open={open} setOpen={setOpen} size="lg">
+      <Col className="bg-canvas-100 border-primary-300 mt-2 items-center gap-3 rounded-lg border p-3">
         <div ref={cardRef}>
           <ShareBetCard {...cardProps} />
         </div>
-        <Row className="items-center justify-between gap-2">
+        <Row className="w-full items-center justify-between gap-2">
           <Button color="gray-white" onClick={() => setOpen(false)}>
             Close
           </Button>

@@ -897,8 +897,8 @@ export const BuyPanelBody = (
               </span>
             </Row>
             <Button
+              className="w-1/2"
               color="gradient"
-              size="sm"
               onClick={() => setIsSharing(true)}
             >
               <Row className="items-center gap-1.5">
@@ -915,10 +915,11 @@ export const BuyPanelBody = (
             open={isSharing}
             setOpen={setIsSharing}
             questionText={contract.question}
-            selectedOption={formatOutcomeLabel(
+            outcome={formatOutcomeLabel(
               contract,
               lastBetDetails.outcome as 'YES' | 'NO' // Assuming binary for now
             )}
+            answer={multiProps?.answerToBuy.text}
             avgPrice={formatPercent(lastBetDetails.probBefore ?? 0)} // Use probBefore for avg price
             betAmount={lastBetDetails.amount}
             winAmount={lastBetDetails.shares}
