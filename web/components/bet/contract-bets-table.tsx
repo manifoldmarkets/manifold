@@ -3,7 +3,6 @@ import {
   Contract,
   CPMMNumericContract,
   getBinaryMCProb,
-  getMainBinaryMCAnswer,
   isBinaryMulti,
 } from 'common/contract'
 import { TRADE_TERM } from 'common/envs/constants'
@@ -21,7 +20,7 @@ import {
 import { groupBy, orderBy, partition, sortBy, sum, sumBy } from 'lodash'
 import { useState } from 'react'
 import { Row } from 'web/components/layout/row'
-import { BinaryOutcomeLabel, OutcomeLabel } from 'web/components/outcome-label'
+import { OutcomeLabel } from 'web/components/outcome-label'
 import { Table } from 'web/components/widgets/table'
 import { formatTimeShort } from 'client-common/lib/time'
 import { Pagination } from '../widgets/pagination'
@@ -238,11 +237,6 @@ function BetRow(props: { bet: Bet; contract: Contract }) {
 
   const isCashContract = contract.token === 'CASH'
   const sharesOrShortSellShares = Math.abs(shares)
-  const mainBinaryMCAnswer = getMainBinaryMCAnswer(contract)
-  const otherBinaryMCAnswer =
-    'answers' in contract
-      ? contract.answers.find((a) => a.id !== mainBinaryMCAnswer?.id)
-      : undefined
   return (
     <tr>
       {(isCPMM || isCpmmMulti) && <td>{shares >= 0 ? 'BUY' : 'SELL'}</td>}
@@ -252,16 +246,12 @@ function BetRow(props: { bet: Bet; contract: Contract }) {
         </td>
       )}
       <td>
-        {isCpmmMulti && !isBinaryMC ? (
-          <BinaryOutcomeLabel outcome={outcome as any} />
-        ) : (
-          <OutcomeLabel
-            pseudonym={getPseudonym(contract)}
-            outcome={outcome}
-            contract={contract}
-            truncate="short"
-          />
-        )}
+        <OutcomeLabel
+          pseudonym={getPseudonym(contract)}
+          outcome={outcome}
+          contract={contract}
+          truncate="short"
+        />
       </td>
       <td>
         <MoneyDisplay
