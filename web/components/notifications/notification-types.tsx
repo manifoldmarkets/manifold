@@ -787,7 +787,8 @@ export function MarketResolvedNotification(props: {
       return <BinaryOutcomeLabel outcome={sourceText as any} />
     }
 
-    if (sourceText.endsWith('%')) {
+    const isNumberWithPercent = /^[0-9]+%$/.test(sourceText)
+    if (isNumberWithPercent) {
       return (
         <ProbPercentLabel
           prob={parseFloat(sourceText.replace('%', '')) / 100}
