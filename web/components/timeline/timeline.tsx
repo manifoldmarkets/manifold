@@ -1,7 +1,7 @@
 import React from 'react'
 import { format as formatDateFn } from 'date-fns'
 import { TimelineItem } from './timeline-item'
-
+import { filterDefined } from 'common/util/array'
 // Type for model data
 export type TimelineItemData = {
   title: string
@@ -189,15 +189,14 @@ const TimelineRow = ({
         <div className="absolute left-0 right-0 top-[-30px] h-[80px] w-full overflow-visible sm:top-[-40px] sm:h-[90px]">
           {(() => {
             // Get all visible items for this row
-            const visibleItems = itemsToShow
-              .map((item) => {
+            const visibleItems = filterDefined(
+              itemsToShow.map((item) => {
                 const position = getItemPosition(item.releaseDate)
                 if (position < 0 || position > 100) return null
 
                 return { item, position, verticalOffset: 0 }
               })
-              .filter((item) => item !== null)
-              .sort((a, b) => a.position - b.position) // Sort by position
+            ).sort((a, b) => a.position - b.position)
 
             // Detect and resolve collisions with three rows of offsets
             for (let i = 1; i < visibleItems.length; i++) {
