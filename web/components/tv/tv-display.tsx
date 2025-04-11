@@ -24,7 +24,7 @@ import { ScheduleItem } from './tv-schedule'
 import { ScheduleTVModal } from './schedule-tv-modal'
 import { DOMAIN, TRADE_TERM } from 'common/envs/constants'
 import { buildArray } from 'common/util/array'
-import { UserBetsSummary } from '../bet/bet-summary'
+import { UserBetsSummary } from '../bet/user-bet-summary'
 
 export function TVDisplay(props: {
   contract: Contract

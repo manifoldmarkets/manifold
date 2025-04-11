@@ -57,7 +57,7 @@ import {
 } from '../answers/answer-resolve-panel'
 import { AnswersPanel } from '../answers/answers-panel'
 import { BuyPanel } from '../bet/bet-panel'
-import { UserBetsSummary } from '../bet/bet-summary'
+import { UserBetsSummary } from '../bet/user-bet-summary'
 import {
   ChartAnnotations,
   EditChartAnnotationsButton,

@@ -21,7 +21,7 @@ import {
 import { base64toFloat32Points } from 'common/edge/og'
 import { HOUSE_BOT_USERNAME, SPICE_MARKET_TOOLTIP } from 'common/envs/constants'
 import { DAY_MS } from 'common/util/time'
-import { UserBetsSummary } from 'web/components/bet/bet-summary'
+import { UserBetsSummary } from 'web/components/bet/user-bet-summary'
 import { ScrollToTopButton } from 'web/components/buttons/scroll-to-top-button'
 import { SidebarSignUpButton } from 'web/components/buttons/sign-up-button'
 import { getMultiBetPointsFromBets } from 'client-common/lib/choice'
