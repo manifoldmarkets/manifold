@@ -26,7 +26,6 @@ import { isAdminId, isModId } from 'common/envs/constants'
 import { NEW_GRAPH_COLOR } from 'common/src/number'
 import { Period, periodDurations } from 'common/period'
 import { type ChartAnnotation } from 'common/supabase/chart-annotations'
-import { User } from 'common/user'
 import { filterDefined } from 'common/util/array'
 import { formatMoney, formatPercent } from 'common/util/format'
 import { orderBy } from 'lodash'
@@ -295,9 +294,7 @@ export const BinaryOverview = (props: {
         chartAnnotations={chartAnnotations}
         zoomY={zoomY}
       />
-      {tradingAllowed(contract) && (
-        <BinaryBetPanel contract={contract} user={user} />
-      )}
+      {tradingAllowed(contract) && <BinaryBetPanel contract={contract} />}
     </>
   )
 }
@@ -518,12 +515,6 @@ const ChoiceOverview = (props: {
             showSetDefaultSort={showSetDefaultSort}
             className={hideGraph ? '-mt-4' : ''}
           />
-          {tradingAllowed(contract) && (
-            <UserBetsSummary
-              className="border-ink-200 !mb-2 mt-2 "
-              contract={contract}
-            />
-          )}
         </>
       )}
     </>
@@ -654,16 +645,7 @@ const NumberOverview = (props: {
       ) : (
         <>
           {resolutionRating}
-          {tradingAllowed(contract) && (
-            <>
-              <NumericBetPanel contract={contract} />
-              <UserBetsSummary
-                className="border-ink-200 !mb-2 mt-2 "
-                contract={contract}
-                includeSellButton={user}
-              />
-            </>
-          )}
+          {tradingAllowed(contract) && <NumericBetPanel contract={contract} />}
         </>
       )}
     </>
@@ -746,12 +728,6 @@ const MultiNumericOverview = (props: {
             query={''}
             setQuery={() => {}}
           />
-          {tradingAllowed(contract) && (
-            <UserBetsSummary
-              className="border-ink-200 !mb-2 mt-2 "
-              contract={contract}
-            />
-          )}
         </>
       )}
     </>
@@ -833,12 +809,6 @@ const MultiDateOverview = (props: {
             query={''}
             setQuery={() => {}}
           />
-          {tradingAllowed(contract) && (
-            <UserBetsSummary
-              className="border-ink-200 !mb-2 mt-2 "
-              contract={contract}
-            />
-          )}
         </>
       )}
     </>
@@ -963,13 +933,6 @@ const BinaryChoiceOverview = (props: {
         <>
           {resolutionRating}
           <BinaryMultiAnswersPanel contract={contract} />
-          {tradingAllowed(contract) && (
-            <UserBetsSummary
-              className="border-ink-200 !mb-2 mt-2 "
-              contract={contract}
-              includeSellButton={user}
-            />
-          )}
         </>
       )}
     </>
@@ -1018,7 +981,7 @@ export const SimpleMultiOverview = (props: { contract: CPMMMultiContract }) => {
       />
 
       <UserBetsSummary
-        className="border-ink-200 !mb-2 mt-2 "
+        className="border-ink-200 mb-2 mt-2 "
         contract={contract}
         includeSellButton={user}
       />
@@ -1065,7 +1028,7 @@ const PseudoNumericOverview = (props: {
       </SizedContainer>
 
       {user && tradingAllowed(contract) && (
-        <BinaryBetPanel contract={contract} user={user} />
+        <BinaryBetPanel contract={contract} />
       )}
     </>
   )
@@ -1106,7 +1069,7 @@ const StonkOverview = (props: {
       </SizedContainer>
 
       {user && tradingAllowed(contract) && (
-        <BinaryBetPanel contract={contract} user={user} />
+        <BinaryBetPanel contract={contract} />
       )}
     </>
   )
@@ -1114,18 +1077,12 @@ const StonkOverview = (props: {
 
 export function BinaryBetPanel(props: {
   contract: BinaryOrPseudoNumericContract
-  user: User | null | undefined
 }) {
-  const { contract, user } = props
+  const { contract } = props
 
   return (
-    <Col className="my-3 w-full">
+    <Col className="mt-2 w-full">
       <BuyPanel inModal={false} contract={contract} className="bg-canvas-50" />
-      <UserBetsSummary
-        className="border-ink-200 !mb-2 mt-2 "
-        contract={contract}
-        includeSellButton={user}
-      />
     </Col>
   )
 }

@@ -81,7 +81,7 @@ export function ContractBetsTable(props: {
 
   const [page, setPage] = useState(0)
   const unexpandedBetsPerPage = 2
-  const betsPerPage = 5
+  const betsPerPage = paginate ? 5 : normalBets.length
   const [expanded, setExpanded] = useState(defaultExpanded)
 
   const displayedBets = expanded
@@ -141,6 +141,19 @@ export function ContractBetsTable(props: {
             }}
           >
             Show {normalBets.length - unexpandedBetsPerPage} more {TRADE_TERM}s
+          </button>
+        )}
+        {expanded && !paginate && normalBets.length > unexpandedBetsPerPage && (
+          <button
+            className={
+              'hover:bg-canvas-100 text-primary-700 mb-1 rounded-md p-2 text-sm'
+            }
+            onClick={(e) => {
+              e.stopPropagation()
+              setExpanded(false)
+            }}
+          >
+            Show less
           </button>
         )}
       </Row>

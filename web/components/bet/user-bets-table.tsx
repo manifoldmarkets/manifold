@@ -1116,7 +1116,7 @@ const ExpandedBetRow = (props: {
   return (
     <Col className={'mt-1 w-full gap-1'}>
       <BetsSummary
-        className="!mb-6 mt-6 flex"
+        className="mb-6 mt-6 flex"
         contract={contract}
         metrics={contractMetric}
         hideTweet

@@ -1,9 +1,10 @@
 import { StarIcon, XIcon } from '@heroicons/react/solid'
 import clsx from 'clsx'
 import {
+  isBinaryMulti,
+  tradingAllowed,
   type Contract,
   type ContractParams,
-  tradingAllowed,
 } from 'common/contract'
 import { mergeWith, uniqBy } from 'lodash'
 import Head from 'next/head'
@@ -402,38 +403,49 @@ export function ContractPageContent(props: ContractParams) {
                   isCashContract={isCashContract}
                 />
               </Row>
-              <ContractOverview
-                contract={liveContract}
-                key={liveContract.id} // reset state when switching play vs cash
-                betPoints={betPoints}
-                showResolver={showResolver}
-                resolutionRating={
-                  userHasReviewed ? (
-                    <Row className="text-ink-500 items-center gap-0.5 text-sm italic">
-                      You rated this resolution{' '}
-                      {justNowReview ?? userReview?.rating}{' '}
-                      <StarIcon className="h-4 w-4" />
-                    </Row>
-                  ) : null
-                }
-                setShowResolver={setShowResolver}
-                onAnswerCommentClick={setReplyTo}
-                chartAnnotations={chartAnnotations}
-                hideGraph={hideGraph}
-                setHideGraph={setHideGraph}
-              />
-
-              {!tradingAllowed(liveContract) && (
-                <UserBetsSummary
-                  className="border-ink-200 !mb-2 "
+              <Col className="gap-2">
+                <ContractOverview
                   contract={liveContract}
+                  key={liveContract.id} // reset state when switching play vs cash
+                  betPoints={betPoints}
+                  showResolver={showResolver}
+                  resolutionRating={
+                    userHasReviewed ? (
+                      <Row className="text-ink-500 items-center gap-0.5 text-sm italic">
+                        You rated this resolution{' '}
+                        {justNowReview ?? userReview?.rating}{' '}
+                        <StarIcon className="h-4 w-4" />
+                      </Row>
+                    ) : null
+                  }
+                  setShowResolver={setShowResolver}
+                  onAnswerCommentClick={setReplyTo}
+                  chartAnnotations={chartAnnotations}
+                  hideGraph={hideGraph}
+                  setHideGraph={setHideGraph}
                 />
-              )}
-              <YourTrades
-                contract={liveContract}
-                yourNewBets={yourNewBets}
-                contractMetric={myContractMetrics}
-              />
+
+                <UserBetsSummary
+                  className="border-ink-200 mb-2 "
+                  contract={liveContract}
+                  includeSellButton={
+                    tradingAllowed(liveContract) &&
+                    (outcomeType === 'NUMBER' ||
+                      isBinaryMulti(liveContract) ||
+                      outcomeType === 'BINARY' ||
+                      outcomeType === 'PSEUDO_NUMERIC' ||
+                      outcomeType === 'STONK')
+                      ? user
+                      : undefined
+                  }
+                />
+
+                <YourTrades
+                  contract={liveContract}
+                  yourNewBets={yourNewBets}
+                  contractMetric={myContractMetrics}
+                />
+              </Col>
             </Col>
             {showReview && user && (
               <div className="relative my-2">

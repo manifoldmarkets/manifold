@@ -190,7 +190,7 @@ export function YourTrades(props: {
   }
 
   return (
-    <Col className="bg-canvas-50 rounded px-3 py-4 pb-0">
+    <Col className="bg-canvas-50 rounded py-4 pb-0 sm:px-3">
       {contract.mechanism === 'cpmm-1' && (
         <YourOrders
           contract={contract}
@@ -207,7 +207,6 @@ export function YourTrades(props: {
             contract={contract}
             bets={userBets}
             isYourBets
-            paginate
           />
         </>
       )}

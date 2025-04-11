@@ -86,7 +86,7 @@ export function BetsSummary(props: {
   const isCashContract = contract.token === 'CASH'
 
   return (
-    <Col className={clsx('mb-8', className)}>
+    <Col className={clsx(className)}>
       <Row className="flex-wrap gap-6 sm:flex-nowrap">
         {resolution ? (
           <Col>
