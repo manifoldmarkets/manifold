@@ -177,13 +177,13 @@ export const ShareBetModal = (
       open={open}
       setOpen={setOpen}
       size="lg"
-      className="bg-canvas-100 !w-fit rounded-lg sm:p-2"
+      className="bg-canvas-100 !w-fit rounded-lg sm:p-4"
     >
       <Col className=" items-center">
         <div ref={cardRef}>
           <ShareBetCard {...cardProps} />
         </div>
-        <Row className=" w-full items-center justify-between gap-2 py-2">
+        <Row className=" w-full items-center justify-between gap-2 py-2 sm:pb-0 sm:pt-2">
           <Button color="gray-white" onClick={() => setOpen(false)}>
             Close
           </Button>
