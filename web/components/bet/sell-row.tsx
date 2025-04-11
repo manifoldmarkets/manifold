@@ -5,7 +5,6 @@ import { User } from 'common/user'
 import { formatShares } from 'common/util/format'
 import { useState } from 'react'
 import { Button } from '../buttons/button'
-import { TweetButton, getPositionTweet } from '../buttons/tweet-button'
 import { Col } from '../layout/col'
 import { Modal } from '../layout/modal'
 import { Row } from '../layout/row'
@@ -21,10 +20,9 @@ export function SellRow(props: {
   contract: CPMMContract
   user: User | null | undefined
   className?: string
-  showTweet?: boolean
   hideStatus?: boolean
 }) {
-  const { className, contract, user, showTweet, hideStatus } = props
+  const { className, contract, user, hideStatus } = props
   const isStonk = contract.outcomeType === 'STONK'
 
   const metric = useSavedContractMetrics(contract)
@@ -88,17 +86,6 @@ export function SellRow(props: {
               shares={shares}
               sharesOutcome={sharesOutcome}
               setOpen={setShowSellModal}
-            />
-          )}
-
-          {showTweet && metric && (
-            <TweetButton
-              tweetText={getPositionTweet(
-                (sharesOutcome === 'NO' ? -1 : 1) * shares,
-                metric.invested,
-                contract,
-                user?.username ?? ''
-              )}
             />
           )}
         </Row>

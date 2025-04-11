@@ -29,13 +29,12 @@ export function CreatorSharePanel(props: { contract: Contract }) {
             <AddBountyButton contract={contract} />
           )}
           <AddBoostButton contract={contract} />
-          <ShareLinkButton contract={contract} />
+          <ShareLinkButton contract={contract} preferLink={true} />
           <TweetButton
             tweetText={
               'I created a question. ' +
               getShareUrl(contract, contract.creatorUsername)
             }
-            className="hidden sm:flex"
           />
           {contract.outcomeType == 'BOUNTIED_QUESTION' && (
             <CancelBountyButton contract={contract} />
@@ -84,8 +83,12 @@ export function NonCreatorSharePanel(props: {
   )
 }
 
-const ShareLinkButton = (props: { contract: Contract; className?: string }) => {
-  const { contract, className } = props
+const ShareLinkButton = (props: {
+  contract: Contract
+  preferLink?: boolean
+  className?: string
+}) => {
+  const { contract, preferLink, className } = props
   const { isNative } = useNativeInfo()
   const user = useUser()
   const url = getShareUrl(contract, user?.username)
@@ -110,7 +113,14 @@ const ShareLinkButton = (props: { contract: Contract; className?: string }) => {
       ) : (
         <LinkIcon className={'h-4 w-4'} aria-hidden />
       )}
-      Share
+      {preferLink ? (
+        <span className="">Link</span>
+      ) : (
+        <>
+          <span className="sm:hidden">Share</span>
+          <span className="hidden sm:inline">Link</span>
+        </>
+      )}
     </Button>
   )
 }

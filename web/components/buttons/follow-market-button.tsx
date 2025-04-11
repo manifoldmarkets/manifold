@@ -25,7 +25,7 @@ export const FollowMarketButton = (props: {
   return (
     <Button
       size="sm"
-      color="indigo-outline"
+      color={following ? 'gray-outline' : 'indigo'}
       onClick={async () => {
         if (!user) return firebaseLogin()
         if (following) {

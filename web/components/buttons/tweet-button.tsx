@@ -7,19 +7,18 @@ import {
   SWEEPIES_MONIKER,
 } from 'common/util/format'
 import { getShareUrl } from 'common/util/share'
-import TwitterLogo from 'web/lib/icons/twitter-logo.svg'
 import { trackCallback } from 'web/lib/service/analytics'
 import { buttonClass } from './button'
+import { PiXLogo } from 'react-icons/pi'
 
 export function TweetButton(props: { tweetText: string; className?: string }) {
   const { tweetText, className } = props
 
   return (
     <a
-      // #1da1f2 is twitter blue
       className={clsx(
         buttonClass('lg', 'none'),
-        'hover:text-ink-0 gap-1 border-2 border-[#1da1f2] text-[#1da1f2] hover:bg-[#1da1f2]',
+        'border-ink-900 hover:bg-ink-900 hover:text-ink-50 gap-1 border-2',
         className
       )}
       href={getTweetHref(tweetText)}
@@ -27,8 +26,8 @@ export function TweetButton(props: { tweetText: string; className?: string }) {
       target="_blank"
       rel="noreferrer"
     >
-      <TwitterLogo width={15} height={15} />
-      <div>Tweet</div>
+      <PiXLogo width={15} height={15} />
+      <div>Share</div>
     </a>
   )
 }
