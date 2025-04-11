@@ -1,12 +1,12 @@
 import { createSupabaseDirectClient } from 'shared/supabase/init'
 import { z } from 'zod'
-import { authEndpoint, validate } from './helpers/endpoint'
+import { APIError, authEndpoint, validate } from './helpers/endpoint'
 import { DashboardItemSchema } from 'common/api/zod-types'
 import { slugify } from 'common/util/slugify'
 import { randomString } from 'common/util/random'
 import { updateDashboardGroups } from 'shared/supabase/dashboard'
 import { MAX_DASHBOARD_TITLE_LENGTH } from 'common/dashboard'
-import { log } from 'shared/utils'
+import { getUser, log } from 'shared/utils'
 
 const schema = z
   .object({
@@ -32,9 +32,10 @@ export const createdashboard = authEndpoint(async (req, auth) => {
     slug = `${slug}-${randomString(8)}`
   }
 
-  const { data: user } = await pg.one(`select data from users where id = $1`, [
-    auth.uid,
-  ])
+  const user = await getUser(auth.uid)
+  if (!user) {
+    throw new APIError(404, 'User not found')
+  }
 
   // create if not exists the group invite link row
   const { id } = await pg.one(
