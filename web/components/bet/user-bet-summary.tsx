@@ -49,21 +49,9 @@ export function BetsSummary(props: {
   metrics: ContractMetric
   areYourBets: boolean
   className?: string
-  hideTweet?: boolean
-  hideProfit?: boolean
-  hideValue?: boolean
   includeSellButton?: User | null | undefined
 }) {
-  const {
-    contract,
-    metrics,
-    className,
-    hideTweet,
-    hideProfit,
-    includeSellButton,
-    hideValue,
-    areYourBets,
-  } = props
+  const { contract, metrics, className, includeSellButton, areYourBets } = props
   const { resolution, outcomeType } = contract
 
   const { payout, invested, totalShares = {}, profit, profitPercent } = metrics
@@ -87,7 +75,7 @@ export function BetsSummary(props: {
 
   return (
     <Col className={clsx(className)}>
-      <Row className="flex-wrap gap-6 sm:flex-nowrap">
+      <Row className={clsx('flex-wrap  gap-4 sm:flex-nowrap sm:gap-6')}>
         {resolution ? (
           <Col>
             <div className="text-ink-500 text-sm">Payout</div>
@@ -162,30 +150,27 @@ export function BetsSummary(props: {
                 </div>
               </Col>
             ) : (
-              !hideValue && (
-                <Col className="hidden sm:inline">
-                  <div className="text-ink-500 whitespace-nowrap text-sm">
-                    Expected value{' '}
-                    <InfoTooltip
-                      text={`How much ${
-                        areYourBets ? 'your' : 'their'
-                      } position in the question is worth right now according to the current probability.`}
-                    />
-                  </div>
-                  <div className="whitespace-nowrap">
-                    <MoneyDisplay
-                      amount={payout}
-                      isCashContract={isCashContract}
-                    />
-                  </div>
-                </Col>
-              )
+              <Col className="hidden sm:inline">
+                <div className="text-ink-500 whitespace-nowrap text-sm">
+                  Expected value{' '}
+                  <InfoTooltip
+                    text={`How much ${
+                      areYourBets ? 'your' : 'their'
+                    } position in the question is worth right now according to the current probability.`}
+                  />
+                </div>
+                <div className="whitespace-nowrap">
+                  <MoneyDisplay
+                    amount={payout}
+                    isCashContract={isCashContract}
+                  />
+                </div>
+              </Col>
             )}
             {includeSellButton && (
               <SellRow
                 contract={contract as CPMMContract}
                 user={includeSellButton}
-                showTweet={false}
                 hideStatus={true}
                 className={'-mt-1'}
               />
@@ -203,7 +188,7 @@ export function BetsSummary(props: {
           </div>
         </Col>
 
-        {isBinary && !resolution && !hideValue && (
+        {isBinary && !resolution && (
           <Col className="hidden sm:inline">
             <div className="text-ink-500 whitespace-nowrap text-sm">
               Expected value{' '}
@@ -222,25 +207,22 @@ export function BetsSummary(props: {
           </Col>
         )}
 
-        {!hideProfit && (
-          <Col>
-            <div className="text-ink-500 whitespace-nowrap text-sm">
-              Profit{' '}
-              <InfoTooltip
-                text={`How much ${
-                  areYourBets ? "you've" : "they've"
-                } made or lost on this question across all ${TRADE_TERM}s (includes both realized & unrealized profits).`}
-              />
-            </div>
-            <div className="whitespace-nowrap">
-              <MoneyDisplay amount={profit} isCashContract={isCashContract} />
-              <ProfitBadge profitPercent={profitPercent} round={true} />
-            </div>
-          </Col>
-        )}
+        <Col>
+          <div className="text-ink-500 whitespace-nowrap text-sm">
+            Profit{' '}
+            <InfoTooltip
+              text={`How much ${
+                areYourBets ? "you've" : "they've"
+              } made or lost on this question across all ${TRADE_TERM}s (includes both realized & unrealized profits).`}
+            />
+          </div>
+          <div className="whitespace-nowrap">
+            <MoneyDisplay amount={profit} isCashContract={isCashContract} />
+            <ProfitBadge profitPercent={profitPercent} round={true} />
+          </div>
+        </Col>
       </Row>
-
-      {!hideTweet && resolution && profit >= 1 && (
+      {resolution && profit >= 1 && (
         <Row className={'mt-4 items-center gap-2'}>
           <div>
             {areYourBets ? 'You' : 'They'} made{' '}

@@ -1119,10 +1119,7 @@ const ExpandedBetRow = (props: {
         className="mb-6 mt-6 flex"
         contract={contract}
         metrics={contractMetric}
-        hideTweet
         includeSellButton={includeSellButtonForUser}
-        hideProfit={true}
-        hideValue={true}
         areYourBets={areYourBets}
       />
       {contract.mechanism === 'cpmm-1' && limitBets.length > 0 && (
