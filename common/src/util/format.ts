@@ -1,12 +1,5 @@
 import { ENV_CONFIG } from '../envs/constants'
-import {
-  BinaryContract,
-  ContractToken,
-  CPMMMultiContract,
-  CPMMNumericContract,
-  PseudoNumericContract,
-  StonkContract,
-} from 'common/contract'
+import { ContractToken, MarketContract } from 'common/contract'
 import { STONK_NO, STONK_YES } from 'common/stonk'
 import { floatingEqual } from './math'
 
@@ -245,12 +238,7 @@ export function toCamelCase(words: string) {
 }
 
 export const formatOutcomeLabel = (
-  contract:
-    | BinaryContract
-    | PseudoNumericContract
-    | StonkContract
-    | CPMMMultiContract
-    | CPMMNumericContract,
+  contract: MarketContract,
   outcomeLabel: 'YES' | 'NO',
   outcomePseudonym?: string
 ) => {

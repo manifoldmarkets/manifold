@@ -54,6 +54,7 @@
     "d3-zoom": "3.0.0",
     "dayjs": "1.11.4",
     "firebase": "11.1.0",
+    "html-to-image": "1.11.13",
     "link-preview-js": "3.0.4",
     "next": "15.0.4",
     "prosemirror-state": "1.4.2",

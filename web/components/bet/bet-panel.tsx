@@ -10,17 +10,13 @@ import { useEffect, useState } from 'react'
 import toast from 'react-hot-toast'
 
 import {
-  BinaryContract,
-  CPMMMultiContract,
-  CPMMNumericContract,
   isBinaryMulti,
+  MarketContract,
   MAX_CPMM_PROB,
   MAX_STONK_PROB,
   MIN_CPMM_PROB,
   MIN_STONK_PROB,
   MultiContract,
-  PseudoNumericContract,
-  StonkContract,
 } from 'common/contract'
 import {
   formatLargeNumber,
@@ -35,7 +31,7 @@ import { Col } from '../layout/col'
 import { Row } from '../layout/row'
 import { BuyAmountInput } from '../widgets/amount-input'
 import { LimitBet } from 'common/bet'
-import { SWEEPIES_NAME, TRADE_TERM } from 'common/envs/constants'
+import { TRADE_TERM } from 'common/envs/constants'
 import {
   getVerificationStatus,
   PROMPT_USER_VERIFICATION_MESSAGES,
@@ -58,7 +54,6 @@ import { WarningConfirmationButton } from '../buttons/warning-confirmation-butto
 import { getAnswerColor } from '../charts/contract/choice'
 import { LocationMonitor } from '../gidx/location-monitor'
 import { ChoicesToggleGroup } from '../widgets/choices-toggle-group'
-import { CashoutLimitWarning } from './cashout-limit-warning'
 import LimitOrderPanel from './limit-order-panel'
 import { MoneyDisplay } from './money-display'
 import { OrderBookPanel, YourOrders } from './order-book'
@@ -76,25 +71,21 @@ import { usePersistentLocalState } from 'web/hooks/use-persistent-local-state'
 import { getLimitBetReturns, MultiBetProps } from 'client-common/lib/bet'
 import { Tooltip } from '../widgets/tooltip'
 import { useIsMobile } from 'web/hooks/use-is-mobile'
+import { ShareBetModal } from './share-bet'
+import { Bet } from 'common/bet'
+import { LuShare } from 'react-icons/lu'
+import { useEvent } from 'client-common/hooks/use-event'
 
+const WAIT_TO_DISMISS = 3000
 export type BinaryOutcomes = 'YES' | 'NO' | undefined
-
-export function BuyPanel(props: {
-  contract:
-    | BinaryContract
-    | PseudoNumericContract
-    | StonkContract
-    | CPMMMultiContract
-    | CPMMNumericContract
+type BuyPanelProps = {
+  contract: MarketContract
   multiProps?: MultiBetProps
-  inModal: boolean
   onBuySuccess?: () => void
   initialOutcome?: BinaryOutcomes
   location?: string
   replyToCommentId?: string
-  alwaysShowOutcomeSwitcher?: boolean
   feedReason?: string
-  children?: React.ReactNode
   pseudonym?: {
     YES: {
       pseudonymName: string
@@ -105,8 +96,16 @@ export function BuyPanel(props: {
       pseudonymColor: keyof typeof sliderColors
     }
   }
+  children?: React.ReactNode
+  alwaysShowOutcomeSwitcher?: boolean
   className?: string
-}) {
+}
+
+export function BuyPanel(
+  props: BuyPanelProps & {
+    inModal: boolean
+  }
+) {
   const {
     contract,
     initialOutcome,
@@ -173,7 +172,7 @@ export function BuyPanel(props: {
       {isPanelBodyVisible && (
         <BuyPanelBody
           {...props}
-          panelClassName={clsx('-mx-2 sm:mx-0', className)}
+          className={clsx('-mx-2 sm:mx-0', className)}
           outcome={outcome}
           setOutcome={setOutcome}
           onClose={
@@ -195,35 +194,13 @@ export function BuyPanel(props: {
   )
 }
 
-export const BuyPanelBody = (props: {
-  contract:
-    | BinaryContract
-    | PseudoNumericContract
-    | StonkContract
-    | CPMMMultiContract
-    | CPMMNumericContract
-  multiProps?: MultiBetProps
-  onBuySuccess?: () => void
-  outcome?: BinaryOutcomes
-  setOutcome: (outcome: 'YES' | 'NO') => void
-  alwaysShowOutcomeSwitcher?: boolean
-  location?: string
-  onClose?: () => void
-  replyToCommentId?: string
-  feedReason?: string
-  panelClassName?: string
-  children?: React.ReactNode
-  pseudonym?: {
-    YES: {
-      pseudonymName: string
-      pseudonymColor: keyof typeof sliderColors
-    }
-    NO: {
-      pseudonymName: string
-      pseudonymColor: keyof typeof sliderColors
-    }
+export const BuyPanelBody = (
+  props: BuyPanelProps & {
+    outcome?: BinaryOutcomes
+    setOutcome: (outcome: 'YES' | 'NO') => void
+    onClose?: () => void
   }
-}) => {
+) => {
   const {
     contract,
     multiProps,
@@ -235,7 +212,7 @@ export const BuyPanelBody = (props: {
     onClose,
     replyToCommentId,
     feedReason,
-    panelClassName,
+    className,
     children,
   } = props
 
@@ -309,6 +286,11 @@ export const BuyPanelBody = (props: {
     : manaSlippageProtection
   const [inputRef, focusAmountInput] = useFocus()
 
+  // State for share row
+  const [showShareRow, setShowShareRow] = useState(false)
+  const [isSharing, setIsSharing] = useState(false) // State to show the actual share card
+  const [lastBetDetails, setLastBetDetails] = useState<Bet | null>(null)
+
   const isCpmmMulti = contract.mechanism === 'cpmm-multi-1'
   if (isCpmmMulti && !multiProps) {
     throw new Error('multiProps must be defined for cpmm-multi-1')
@@ -358,7 +340,17 @@ export const BuyPanelBody = (props: {
       )
       setSubmittedBet(null)
       setIsSubmitting(false)
-      onBuySuccess?.()
+      const finalBetDetails = updatedBet ?? submittedBet
+      if (finalBetDetails) {
+        setLastBetDetails(finalBetDetails)
+        setShowShareRow(true)
+        setIsSharing(false)
+        setTimeout(() => {
+          callOnBuySuccess()
+        }, WAIT_TO_DISMISS)
+      } else {
+        callOnBuySuccess()
+      }
     }
   }, [updatedBet, submittedBet])
 
@@ -386,6 +378,12 @@ export const BuyPanelBody = (props: {
   function onBetChange(newAmount: number | undefined) {
     setBetAmount(newAmount)
   }
+
+  const callOnBuySuccess = useEvent(() => {
+    if (onBuySuccess && !isSharing) {
+      onBuySuccess()
+    }
+  })
 
   const {
     currentPayout,
@@ -421,9 +419,11 @@ export const BuyPanelBody = (props: {
     console.log('betDeps', betDeps)
     setError(undefined)
     setIsSubmitting(true)
-    const toastId = toast.loading(`Placing ${TRADE_TERM.toLowerCase()}...`, {
-      duration: 10000,
-    })
+    const toastId = slippageProtection
+      ? toast.loading(`Placing ${TRADE_TERM.toLowerCase()}...`, {
+          duration: 10000,
+        })
+      : undefined
 
     try {
       const expiresMillisAfter = 1000
@@ -436,13 +436,15 @@ export const BuyPanelBody = (props: {
           answerId: multiProps?.answerToBuy.id,
           replyToCommentId,
           deps: uniq(betDeps.map((b) => b.userId)),
-          expiresMillisAfter,
+          expiresMillisAfter: slippageProtection
+            ? expiresMillisAfter
+            : undefined,
           silent: slippageProtection,
           limitProb: slippageProtection ? limitProb : undefined,
         } as APIParams<'bet'>)
       )
       if (bet.isFilled) {
-        if (bet.limitProb !== undefined) {
+        if (slippageProtection) {
           toast.success(
             `${formatMoney(bet.amount)}/${formatMoney(
               bet.orderAmount ?? 0
@@ -452,16 +454,45 @@ export const BuyPanelBody = (props: {
               id: toastId,
             }
           )
-        } else {
-          toast.success(`${formatMoney(bet.amount)} trade placed!`, {
-            duration: 5000,
-            id: toastId,
-          })
         }
         setSubmittedBet(null)
         setIsSubmitting(false)
-        onBuySuccess?.()
+
+        const fullBet: Bet = {
+          ...(bet as CandidateBet<LimitBet>),
+          id: bet.betId,
+          userId: user.id,
+        }
+        setLastBetDetails(fullBet)
+        setShowShareRow(true)
+        setIsSharing(false)
+        // TODO: we could remove the timeout and just not dismiss the modal
+        setTimeout(() => {
+          callOnBuySuccess()
+        }, WAIT_TO_DISMISS)
+        track(
+          'bet',
+          removeUndefinedProps({
+            location,
+            outcomeType: contract.outcomeType,
+            token: contract.token,
+            slug: contract.slug,
+            contractId: contract.id,
+            amount: betAmount,
+            betGroupId: bet.betGroupId,
+            betId: bet.betId,
+            outcome,
+            isLimitOrder: false,
+            answerId: multiProps?.answerToBuy.id,
+            feedReason,
+            boosted: contract.boosted,
+          })
+        )
       } else {
+        if (!toastId) {
+          console.error('No toastId')
+          return
+        }
         toast.loading(`Filling ${TRADE_TERM.toLowerCase()}...`, {
           duration: expiresMillisAfter + 100,
           id: toastId,
@@ -478,25 +509,6 @@ export const BuyPanelBody = (props: {
         }, expiresMillisAfter + 100)
       }
       setBetAmount(undefined)
-
-      track(
-        'bet',
-        removeUndefinedProps({
-          location,
-          outcomeType: contract.outcomeType,
-          token: contract.token,
-          slug: contract.slug,
-          contractId: contract.id,
-          amount: betAmount,
-          betGroupId: bet.betGroupId,
-          betId: bet.betId,
-          outcome,
-          isLimitOrder: false,
-          answerId: multiProps?.answerToBuy.id,
-          feedReason,
-          boosted: contract.boosted,
-        })
-      )
     } catch (e) {
       if (e instanceof APIError) {
         const message = e.message.toString()
@@ -579,7 +591,7 @@ export const BuyPanelBody = (props: {
 
   return (
     <>
-      <Col className={clsx(panelClassName, 'relative rounded-xl px-4 py-2')}>
+      <Col className={clsx(className, 'relative rounded-xl px-4 py-2')}>
         {children}
         {(isAdvancedTrader || alwaysShowOutcomeSwitcher) && (
           <Row className={'mb-2 mt-2 justify-between'}>
@@ -877,7 +889,41 @@ export const BuyPanelBody = (props: {
             )}
           </Col>
         )}
-        {isCashContract && <CashoutLimitWarning user={user} className="mt-2" />}
+        {showShareRow && lastBetDetails && (
+          <Row className="bg-primary-100 mt-2 items-center justify-between rounded-lg p-3">
+            <Row className="items-baseline gap-2">
+              <span className="text-primary-700 text-sm ">
+                {isSubmitting ? 'Placing trade...' : 'Trade successful!'}
+              </span>
+            </Row>
+            <Button
+              color="gradient"
+              size="sm"
+              onClick={() => setIsSharing(true)}
+            >
+              <Row className="items-center gap-1.5">
+                <LuShare className="h-5 w-5" aria-hidden />
+                Share Bet
+              </Row>
+            </Button>
+          </Row>
+        )}
+
+        {/* Share Card - Shown when user clicks the share button */}
+        {showShareRow && lastBetDetails && isSharing && (
+          <ShareBetModal
+            open={isSharing}
+            setOpen={setIsSharing}
+            questionText={contract.question}
+            selectedOption={formatOutcomeLabel(
+              contract,
+              lastBetDetails.outcome as 'YES' | 'NO' // Assuming binary for now
+            )}
+            avgPrice={formatPercent(lastBetDetails.probBefore ?? 0)} // Use probBefore for avg price
+            betAmount={lastBetDetails.amount}
+            winAmount={lastBetDetails.shares}
+          />
+        )}
 
         {user && (
           <Row className="mt-5 items-start justify-between text-sm">
@@ -888,8 +934,7 @@ export const BuyPanelBody = (props: {
                   isAdvancedTrader ? '' : 'min-w-[110px]'
                 )}
               >
-                Your {isCashContract ? SWEEPIES_NAME : 'mana'}
-                {' balance'}
+                Your mana balance
               </span>
               <span className="text-ink-600 font-semibold">
                 <MoneyDisplay
@@ -957,25 +1002,6 @@ export const BuyPanelBody = (props: {
             </Row>
           </Col>
         )}
-
-        {/* {betType !== 'Limit' && (
-          <div className="text-ink-700 mt-1 text-sm">
-            Fees{' '}
-            <FeeDisplay
-              amount={betAmount}
-              totalFees={fees}
-              isCashContract={isCashContract}
-            />
-          </div>
-        )} */}
-        {/* <div className="text-ink-700 select-none text-sm">
-          No fees
-          <InfoTooltip
-            text={`Now with no fees on ${TRADE_TERM}s, you keep more of your winnings!`}
-            className="text-ink-600 ml-1 mt-0.5"
-            size="sm"
-          />
-        </div> */}
 
         {user && (
           <div className="absolute bottom-2 right-0">

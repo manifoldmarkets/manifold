@@ -138,7 +138,7 @@ function BinaryMultiChoiceBetPanel(props: {
       onBuySuccess={() => setTimeout(closePanel, 500)}
       onClose={closePanel}
       location={'contract page answer'}
-      panelClassName="bg-canvas-50"
+      className="bg-canvas-50"
     >
       <Row className="items-baseline justify-between">
         <div className={'group mr-6 text-2xl'}>
