@@ -23,6 +23,7 @@ import { useQuestStatus } from 'web/hooks/use-quest-status'
 import { LoadingIndicator } from 'web/components/widgets/loading-indicator'
 import Link from 'next/link'
 import { linkClass } from '../widgets/site-link'
+import { StreakProgressBar } from '../profile/streak-progress-bar'
 
 const QUEST_STATS_CLICK_EVENT = 'click quest stats button'
 
@@ -119,6 +120,13 @@ export function QuestsModal(props: {
             )}
             onClick={() => setShowStreakModal(true)}
           />
+          {(user?.currentBettingStreak ?? 0) <= 5 && (
+            <Row className="-mt-2 w-full px-2 pl-12">
+              <StreakProgressBar
+                currentStreak={user?.currentBettingStreak ?? 0}
+              />
+            </Row>
+          )}
           <QuestRow
             emoji={'📤'}
             title={`Share ${shareStatus.requiredCount} market today`}
@@ -175,17 +183,24 @@ const QuestRow = (props: {
     <Row className={'justify-between'}>
       <Col>
         <Row className={'gap-4 sm:gap-6'}>
-          <span className={clsx('text-4xl', complete ? '' : 'grayscale')}>
+          <span
+            className={clsx(
+              'text-3xl sm:text-4xl',
+              complete ? '' : 'grayscale'
+            )}
+          >
             {emoji}
           </span>
           <Col>
-            <span className={clsx('sm:text-xl')}>
+            <span className={clsx('text-left sm:text-xl')}>
               {href ? (
                 <Link className={linkClass} href={href}>
                   {title}
                 </Link>
               ) : onClick ? (
-                <button onClick={onClick}>{title}</button>
+                <button className="text-left" onClick={onClick}>
+                  {title}
+                </button>
               ) : (
                 title
               )}

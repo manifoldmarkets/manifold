@@ -21,12 +21,12 @@ export function StreakProgressBar(props: { currentStreak: number }) {
   const progressPercent = (clampedStreak / numDays) * 100
 
   return (
-    <div className="relative mb-8 w-full pb-8">
+    <div className="relative mb-8 w-full pb-6">
       {/* Background track */}
       <div className="h-2.5 w-full rounded-full bg-gray-200 dark:bg-gray-700" />
       {/* Filled progress */}
       <div
-        className="absolute top-0 h-2.5 rounded-full bg-indigo-600 dark:bg-indigo-400"
+        className="bg-primary-500 absolute top-0 h-2.5 rounded-full"
         style={{ width: `${progressPercent}%` }}
       />
       {/* Progress segments and labels */}
@@ -41,9 +41,7 @@ export function StreakProgressBar(props: { currentStreak: number }) {
               className={clsx(
                 'absolute top-full mt-1.5 items-center text-sm',
                 // Highlight text if streak reached this day
-                index < clampedStreak
-                  ? 'text-indigo-700 dark:text-indigo-300'
-                  : 'text-ink-500'
+                index < clampedStreak ? 'text-primary-700' : 'text-ink-500'
               )}
             >
               <span className="">
@@ -52,9 +50,7 @@ export function StreakProgressBar(props: { currentStreak: number }) {
               <span
                 className={clsx(
                   'font-semibold',
-                  index < clampedStreak
-                    ? 'text-indigo-900 dark:text-indigo-100'
-                    : 'text-ink-700'
+                  index < clampedStreak ? 'text-primary-700' : 'text-ink-700'
                 )}
               >
                 <TokenNumber amount={bonus.amount} coinType="mana" />
