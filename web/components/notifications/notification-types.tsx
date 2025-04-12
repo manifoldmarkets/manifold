@@ -93,6 +93,15 @@ export function NotificationItem(props: {
         setHighlighted={setHighlighted}
       />
     )
+  } else if (reason === 'admin' && sourceType === 'contract') {
+    return (
+      <AIDescriptionUpdateNotification
+        notification={notification}
+        highlighted={highlighted}
+        setHighlighted={setHighlighted}
+        isChildOfGroup={isChildOfGroup}
+      />
+    )
   } else if (sourceType === 'push_notification_bonus') {
     return (
       <PushNotificationBonusNotification
@@ -2104,6 +2113,38 @@ function MarketMovementNotification(props: {
       link={getSourceUrl(notification)}
     >
       {content}
+    </NotificationFrame>
+  )
+}
+
+function AIDescriptionUpdateNotification(props: {
+  notification: Notification
+  highlighted: boolean
+  setHighlighted: (highlighted: boolean) => void
+  isChildOfGroup?: boolean
+}) {
+  const { notification, isChildOfGroup, highlighted, setHighlighted } = props
+  const { sourceContractTitle } = notification
+  return (
+    <NotificationFrame
+      notification={notification}
+      isChildOfGroup={isChildOfGroup}
+      highlighted={highlighted}
+      setHighlighted={setHighlighted}
+      icon={
+        <NotificationIcon
+          symbol={'🤖'}
+          symbolBackgroundClass="bg-gradient-to-br from-blue-500 to-blue-200"
+        />
+      }
+      link={getSourceUrl(notification)}
+    >
+      <div className="line-clamp-3">
+        <span>
+          Our AI added a clarification to the description of{' '}
+          <PrimaryNotificationLink text={sourceContractTitle} />
+        </span>
+      </div>
     </NotificationFrame>
   )
 }

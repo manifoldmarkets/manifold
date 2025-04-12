@@ -2291,3 +2291,30 @@ export const createFollowsOnYourMarketNotification = async (
     await insertNotificationToSupabase(notification, pg)
   }
 }
+
+export const createAIDescriptionUpdateNotification = async (
+  contract: Contract,
+  updateText: string
+) => {
+  const notification: Notification = {
+    id: crypto.randomUUID(),
+    userId: contract.creatorId,
+    reason: 'admin',
+    createdTime: Date.now(),
+    isSeen: false,
+    sourceId: contract.id,
+    sourceType: 'contract',
+    sourceUpdateType: 'updated',
+    sourceContractId: contract.id,
+    sourceUserName: 'Manifold AI',
+    sourceUserUsername: 'ManifoldAI',
+    sourceUserAvatarUrl: 'https://manifold.markets/logo.svg',
+    sourceText: updateText.slice(0, 150),
+    sourceContractTitle: contract.question,
+    sourceContractCreatorUsername: contract.creatorUsername,
+    sourceContractSlug: contract.slug,
+  }
+
+  const pg = createSupabaseDirectClient()
+  await insertNotificationToSupabase(notification, pg)
+}

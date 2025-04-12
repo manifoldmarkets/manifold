@@ -137,7 +137,7 @@ export const createCommentOnContractInternal = async (
       }
       let updatedComment = comment
       if (!replyToBetId) {
-        console.log('finding most recent bet')
+        log('finding most recent bet')
         const bet = await getMostRecentCommentableBet(
           pg,
           buildArray([contract.id, contract.siblingContractId]),

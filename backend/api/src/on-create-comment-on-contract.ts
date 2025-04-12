@@ -5,6 +5,7 @@ import { Bet } from 'common/bet'
 import {
   createCommentOnContractNotification,
   replied_users_info,
+  createAIDescriptionUpdateNotification,
 } from 'shared/create-notification'
 import { parseMentions, richTextToString } from 'common/util/parse'
 import { Contract, contractPath } from 'common/contract'
@@ -343,6 +344,8 @@ Only return the raw JSON object without any markdown code blocks, backticks, add
         slug: contract.slug,
         question: contract.question,
       })
+
+      await createAIDescriptionUpdateNotification(contract, markdownToAppend)
     }
   } catch (e) {
     console.error('Error checking for clarification:', e)

@@ -351,6 +351,10 @@ export const NOTIFICATION_DESCRIPTIONS: notification_descriptions = {
     detailed: 'Get notified when someone follows one of your markets',
     verb: 'followed your market',
   },
+  admin: {
+    simple: 'Admin notifications',
+    detailed: 'Notifications from the Manifold team',
+  },
 }
 
 export type BettingStreakData = {
