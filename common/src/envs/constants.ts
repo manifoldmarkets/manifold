@@ -292,6 +292,7 @@ export const VERIFIED_USERNAMES = [
   'LuigiMangione',
   'LeahLibresco',
   'ModernDayDebate',
+  'NickyCase',
 ]
 
 export const BANNED_TRADING_USER_IDS = [
