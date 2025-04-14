@@ -77,9 +77,8 @@ export const promptOpenAI = async (
 
 export const promptOpenAIWithTools = async (
   prompt: string,
-  options: { model?: MODELS }
+  model: MODELS = 'gpt-4.1-2025-04-14'
 ) => {
-  const { model = 'gpt-4.1-2025-04-14' } = options
   const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY })
 
   try {
@@ -151,8 +150,8 @@ export const parseOpenAIResponseAsJson = (response: string): any => {
 
 export const promptOpenAIParseJson = async <T>(
   prompt: string,
-  options: { model?: MODELS } = {}
+  model: MODELS = 'gpt-4.1-2025-04-14'
 ): Promise<T> => {
-  const response = await promptOpenAIWithTools(prompt, options)
+  const response = await promptOpenAIWithTools(prompt, model)
   return parseOpenAIResponseAsJson(response)
 }
