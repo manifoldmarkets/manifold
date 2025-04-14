@@ -17,11 +17,7 @@ export type User = {
   discordHandle?: string
 
   balance: number // M$
-  cashBalance: number // prize points
-  spiceBalance: number
   totalDeposits: number
-  totalCashDeposits: number
-
   creatorTraders: {
     daily: number
     weekly: number
@@ -29,48 +25,60 @@ export type User = {
     allTime: number
   }
 
+  /**  @deprecated */
+  cashBalance: number // prize points
+  /**  @deprecated */
+  spiceBalance: number
+  /** @deprecated */
+  totalCashDeposits: number
   /**@deprecated 2023-01-015 */
   fractionResolvedCorrectly?: number
-
   /** @deprecated */
   followerCountCached?: number
-
   /** @deprecated */
   homeSections?: string[]
+  /** @deprecated */
+  usedReferralCode?: boolean
+  /** @deprecated */
+  freeQuestionsCreated?: number
+  /**  @deprecated - users created from manifoldpolitics.com site*/
+  fromPolitics?: boolean
+  /** @deprecated */
+  purchasedSweepcash?: boolean
+  /** @deprecated */
+  origin?: 'mani'
+  /** @deprecated */
+  kycLastAttemptTime?: number
+  /** @deprecated */
+  kycDocumentStatus?: 'fail' | 'pending' | 'await-documents' | 'verified'
+  /** @deprecated */
+  sweepstakesVerified?: boolean
+  /** @deprecated */
+  idVerified?: boolean
+  /** @deprecated */
+  sweepstakes5kLimit?: boolean
+  /** @deprecated */
+  sweepstakesVerifiedTime?: number
+  /** @deprecated */
+  fromLove?: boolean
 
   referredByUserId?: string
-  usedReferralCode?: boolean
   referredByContractId?: string
   referredByGroupId?: string
   shouldShowWelcome?: boolean
   lastBetTime?: number
-
   currentBettingStreak?: number
   streakForgiveness: number
-
   hasSeenLoanModal?: boolean
   hasSeenContractFollowModal?: boolean
   seenStreakModal?: boolean
   isBannedFromPosting?: boolean
   userDeleted?: boolean
   optOutBetWarnings?: boolean
-  freeQuestionsCreated?: number
-  fromLove?: boolean
-  /**  @deprecated - users created from manifoldpolitics.com site*/
-  fromPolitics?: boolean
   signupBonusPaid?: number
   isAdvancedTrader?: boolean
   purchasedMana?: boolean
-  purchasedSweepcash?: boolean
   verifiedPhone?: boolean
-  origin?: 'mani'
-  // KYC related fields:
-  kycLastAttemptTime?: number
-  kycDocumentStatus?: 'fail' | 'pending' | 'await-documents' | 'verified'
-  sweepstakesVerified?: boolean
-  idVerified?: boolean
-  sweepstakes5kLimit?: boolean
-  sweepstakesVerifiedTime?: number
 }
 
 export type PrivateUser = {
@@ -103,8 +111,9 @@ export type PrivateUser = {
   discordId?: string
   paymentInfo?: string
 
-  // KYC related fields:
+  /** @deprecated */
   kycFlags?: string[]
+  /** @deprecated */
   sessionFraudScore?: number
 }
 
@@ -134,13 +143,11 @@ export const MINUTES_ALLOWED_TO_REFER = 60
 
 // note this is not exactly same as the function for stats page
 export const isUserLikelySpammer = (
-  user: Pick<User, 'bio' | 'freeQuestionsCreated'>,
-  hasBet: boolean
+  user: Pick<User, 'bio'>,
+  hasBet: boolean,
+  hasCreatedQuestion: boolean
 ) => {
-  return (
-    !hasBet &&
-    ((user.bio ?? '').length > 10 || (user.freeQuestionsCreated ?? 0) > 0)
-  )
+  return !hasBet && ((user.bio ?? '').length > 10 || hasCreatedQuestion)
 }
 
 // This grandfathers in older users who have not yet verified their phone
