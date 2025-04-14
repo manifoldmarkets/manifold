@@ -96,7 +96,10 @@ export default function Analytics(props: {
   )
 }
 
-function ActivityTab(props: { stats: rowfor<'daily_stats'>[], setStats: (stats: rowfor<'daily_stats'>[]) => void }) {
+function ActivityTab(props: {
+  stats: rowfor<'daily_stats'>[]
+  setStats: (stats: rowfor<'daily_stats'>[]) => void
+}) {
   const { stats, setStats } = props
   const dataFor = useCallback(dataForStats(stats), [stats])
   const current = stats[stats.length - 1]
@@ -551,7 +554,9 @@ export function CustomAnalytics(props: {
         tabs={[
           {
             title: 'Activity',
-            content: <ActivityTab stats={localStats} setStats={setLocalStats} />,
+            content: (
+              <ActivityTab stats={localStats} setStats={setLocalStats} />
+            ),
           },
           {
             title: 'Mana Supply',
