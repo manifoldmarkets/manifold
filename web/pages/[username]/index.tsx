@@ -178,10 +178,10 @@ function UserProfile(props: {
   useEffect(() => {
     // wait for user to load
     if (currentUser === undefined) return
-    if (!shouldIgnoreUser && !isCurrentUser) {
+    if (!user.isBannedFromPosting && !user.userDeleted && !isCurrentUser) {
       setExpandProfileInfo(true)
     }
-  }, [shouldIgnoreUser, currentUser?.id, isCurrentUser, user.id])
+  }, [user.isBannedFromPosting, user.userDeleted, currentUser, user.id])
   const [showConfetti, setShowConfetti] = useState(false)
   const [followsYou, setFollowsYou] = useState(false)
   const { ref: titleRef, headerStuck } = useHeaderIsStuck()
