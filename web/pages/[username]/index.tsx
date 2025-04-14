@@ -132,7 +132,6 @@ const shouldIgnoreUserPage = async (
   const bet = await unauthedApi('bets', { userId: user.id, limit: 1 })
   return (
     user.userDeleted ||
-    user.isBannedFromPosting ||
     isUserLikelySpammer(user, bet.length > 0, hasCreatedQuestion)
   )
 }

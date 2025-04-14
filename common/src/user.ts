@@ -143,11 +143,14 @@ export const MINUTES_ALLOWED_TO_REFER = 60
 
 // note this is not exactly same as the function for stats page
 export const isUserLikelySpammer = (
-  user: Pick<User, 'bio'>,
+  user: Pick<User, 'bio' | 'isBannedFromPosting'>,
   hasBet: boolean,
   hasCreatedQuestion: boolean
 ) => {
-  return !hasBet && ((user.bio ?? '').length > 10 || hasCreatedQuestion)
+  return (
+    (!hasBet && ((user.bio ?? '').length > 10 || hasCreatedQuestion)) ||
+    user.isBannedFromPosting
+  )
 }
 
 // This grandfathers in older users who have not yet verified their phone
