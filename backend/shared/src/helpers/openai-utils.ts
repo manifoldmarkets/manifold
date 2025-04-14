@@ -5,7 +5,7 @@ import * as utc from 'dayjs/plugin/utc'
 import { APIError } from 'common/api/utils'
 import { buildArray } from 'common/util/array'
 dayjs.extend(utc)
-export type MODELS = 'o3-mini' | 'gpt-4o'
+export type MODELS = 'o3-mini' | 'gpt-4o' | 'gpt-4.1-2025-04-14'
 
 export const generateEmbeddings = async (question: string) => {
   const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY })
@@ -79,7 +79,7 @@ export const promptOpenAIWithTools = async (
   prompt: string,
   options: { model?: MODELS }
 ) => {
-  const { model = 'gpt-4o' } = options
+  const { model = 'gpt-4.1-2025-04-14' } = options
   const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY })
 
   try {
