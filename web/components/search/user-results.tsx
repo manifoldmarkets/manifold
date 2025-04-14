@@ -4,13 +4,28 @@ import { Row } from '../layout/row'
 import { Avatar } from '../widgets/avatar'
 import Link from 'next/link'
 import { useState } from 'react'
+import { isUserLikelySpammer } from 'common/user'
 
 export const MAX_SHOWN = 9
 
 export function UserResults(props: { userResults: FullUser[] }) {
   const { userResults } = props
   const [expanded, setExpanded] = useState(false)
-  const shownUsers = expanded ? userResults : userResults.slice(0, MAX_SHOWN)
+
+  // Sort users with non-spammers first, maintaining original order within each group
+  const sortedUsers = [...userResults].sort((a, b) => {
+    const aIsSpam = isUserLikelySpammer(a, false, false)
+    const bIsSpam = isUserLikelySpammer(b, false, false)
+    if (aIsSpam === bIsSpam) return 0
+    return aIsSpam ? 1 : -1
+  })
+
+  // For initial view, only show non-spammers
+  const nonSpamUsers = sortedUsers.filter(
+    (user) => !isUserLikelySpammer(user, false, false)
+  )
+  const shownUsers = expanded ? sortedUsers : nonSpamUsers.slice(0, MAX_SHOWN)
+
   return (
     <Col className="mb-4 px-2 sm:px-0">
       <Row className="text-ink-500 items-center gap-1 text-sm">

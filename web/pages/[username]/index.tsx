@@ -54,7 +54,6 @@ import { useFollowers, useFollows } from 'web/hooks/use-follows'
 import { useHeaderIsStuck } from 'web/hooks/use-header-is-stuck'
 import { useIsMobile } from 'web/hooks/use-is-mobile'
 import { useLeagueInfo } from 'web/hooks/use-leagues'
-import { usePersistentLocalState } from 'web/hooks/use-persistent-local-state'
 import { useSaveReferral } from 'web/hooks/use-save-referral'
 import { usePrivateUser, useUser, useWebsocketUser } from 'web/hooks/use-user'
 import { User } from 'web/lib/firebase/users'
@@ -79,7 +78,9 @@ export const getStaticProps = async (props: {
   const hasCreatedQuestion = data?.length
   const { count, rating } = (user ? await getUserRating(user.id) : null) ?? {}
   const averageRating = user ? await getAverageUserRating(user.id) : undefined
-  const shouldIgnoreUser = user ? await shouldIgnoreUserPage(user) : false
+  const shouldIgnoreUser = user
+    ? await shouldIgnoreUserPage(user, !!hasCreatedQuestion)
+    : false
 
   return {
     props: removeUndefinedProps({
@@ -123,13 +124,15 @@ export default function UserPage(props: {
   )
 }
 
-const shouldIgnoreUserPage = async (user: User) => {
+const shouldIgnoreUserPage = async (
+  user: User,
+  hasCreatedQuestion: boolean
+) => {
   // lastBetTime isn't always reliable, so use the contract_bets table to be sure
   const bet = await unauthedApi('bets', { userId: user.id, limit: 1 })
   return (
     user.userDeleted ||
-    user.isBannedFromPosting ||
-    isUserLikelySpammer(user, bet.length > 0)
+    isUserLikelySpammer(user, bet.length > 0, hasCreatedQuestion)
   )
 }
 
@@ -170,10 +173,14 @@ function UserProfile(props: {
     defaultReferrerUsername: user.username,
   })
   const isCurrentUser = user.id === currentUser?.id
-  const [expandProfileInfo, setExpandProfileInfo] = usePersistentLocalState(
-    false,
-    'expand-profile-info'
-  )
+  const [expandProfileInfo, setExpandProfileInfo] = useState(false)
+  useEffect(() => {
+    // wait for user to load
+    if (currentUser === undefined) return
+    if (!user.isBannedFromPosting && !user.userDeleted && !isCurrentUser) {
+      setExpandProfileInfo(true)
+    }
+  }, [user.isBannedFromPosting, user.userDeleted, currentUser, user.id])
   const [showConfetti, setShowConfetti] = useState(false)
   const [followsYou, setFollowsYou] = useState(false)
   const { ref: titleRef, headerStuck } = useHeaderIsStuck()
@@ -221,7 +228,7 @@ function UserProfile(props: {
     >
       <SEO
         title={`${user.name} (@${user.username})`}
-        description={user.bio ?? ''}
+        description={shouldIgnoreUser ? '' : user.bio ?? ''}
         url={`/${user.username}`}
       />
       {shouldIgnoreUser && (
@@ -260,10 +267,10 @@ function UserProfile(props: {
           className={clsx('mx-4 flex-wrap justify-between gap-2 py-1')}
           ref={titleRef}
         >
-          {isCurrentUser ? (
+          {isCurrentUser || shouldIgnoreUser ? (
             <button
               className="group flex gap-2 py-1 pr-2"
-              onClick={() => isCurrentUser && setExpandProfileInfo((v) => !v)}
+              onClick={() => setExpandProfileInfo((v) => !v)}
             >
               <Col className={'relative max-h-14'}>
                 <ImageWithBlurredShadow
@@ -330,7 +337,7 @@ function UserProfile(props: {
             {!isMobile && <UserSettingButton user={user} />}
           </Row>
         </Row>
-        {(expandProfileInfo || !isCurrentUser) && (
+        {expandProfileInfo && (
           <Col className={'mx-4 mt-1 gap-2'}>
             <ProfilePublicStats user={user} currentUser={currentUser} />
             {user.bio && (
