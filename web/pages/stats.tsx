@@ -118,7 +118,6 @@ export function CustomAnalytics(props: {
     manaSupplyOverTime,
     fromBankSummary,
     toBankSummary,
-    totalRedeemable,
   } = props
   const [stats, setStats] = useState(props.stats)
 
@@ -134,8 +133,6 @@ export function CustomAnalytics(props: {
   const yesterdaySupply = manaSupplyOverTime[manaSupplyOverTime.length - 2]
   const differenceInSupplySinceYesterday =
     currentSupply.total_value - yesterdaySupply.total_value
-  const differenceInCashSinceYesterday =
-    currentSupply.total_cash_value - yesterdaySupply.total_cash_value
 
   const [fromBankSummaryCash, fromBankSummaryMana] = partition(
     fromBankSummary,
@@ -158,26 +155,15 @@ export function CustomAnalytics(props: {
     fromBankSummaryMana.filter((txn) => txn.start_time === latestRecordingTime),
     'total_amount'
   )
-  const fromBankCashSum = sumBy(
-    fromBankSummaryCash.filter((txn) => txn.start_time === latestRecordingTime),
-    'total_amount'
-  )
 
   const toBankManaSum = sumBy(
     toBankSummaryMana.filter((txn) => txn.start_time === latestRecordingTime),
     'total_amount'
   )
-  const toBankCashSum = sumBy(
-    toBankSummaryCash.filter((txn) => txn.start_time === latestRecordingTime),
-    'total_amount'
-  )
 
   const netBankManaTrans = fromBankManaSum - toBankManaSum
-  const netBankCashTrans = fromBankCashSum - toBankCashSum
   const unaccountedDifference =
     differenceInSupplySinceYesterday - netBankManaTrans
-  const cashUnaccountedDifference =
-    differenceInCashSinceYesterday - netBankCashTrans
 
   const dailyDividedByWeekly = stats
     .filter((row) => row.dau && row.wau)
@@ -294,56 +280,32 @@ export function CustomAnalytics(props: {
       <DailyChart values={dataFor('engaged_users')} /> */}
       <Spacer h={8} />
       <Title>Mana supply</Title>
-      <div className="text-ink-700 mb-4 grid grid-cols-3 justify-items-end gap-y-1">
+      <div className="text-ink-700 mb-4 grid grid-cols-2 justify-items-end gap-y-1">
         <div className="text-ink-800 mb-2">Supply Today</div>
         <div className="text-ink-800 mb-2">Mana</div>
-        <div className="text-ink-800 mb-2">Sweepcash</div>
 
         <div>Balances</div>
         <div className="font-semibold">
           {formatMoney(currentSupply.balance)}
-        </div>
-        <div className="font-semibold">
-          {formatSweepies(currentSupply.cash_balance)}
         </div>
 
         <div>Investment</div>
         <div className="font-semibold">
           {formatMoney(currentSupply.investment_value)}
         </div>
-        <div className="font-semibold">
-          {formatSweepies(currentSupply.cash_investment_value)}
-        </div>
-
-        {/*
-        <div >Loans</div>
-        <div className="col-span-2 font-semibold">
-          {formatMoney(manaSupply.loanTotal)}
-        </div>
-        */}
 
         <div>AMM liquidity</div>
         <div className="font-semibold">
           {formatMoney(currentSupply.amm_liquidity)}
-        </div>
-        <div className="font-semibold">
-          {formatSweepies(currentSupply.amm_cash_liquidity)}
         </div>
 
         <div>Total</div>
         <div className="font-semibold">
           {formatMoney(currentSupply.total_value)}
         </div>
-        <div className="font-semibold">
-          {formatSweepies(currentSupply.total_cash_value)}
-        </div>
-
-        <div>Total redeemable</div>
-        <div />
-        <div className="font-semibold">{formatSweepies(totalRedeemable)}</div>
 
         <div>
-          Cash over (yesterday){' '}
+          Change over (yesterday){' '}
           <InfoTooltip
             text={
               <>
@@ -357,28 +319,15 @@ export function CustomAnalytics(props: {
         <div className="font-semibold">
           {formatMoney(unaccountedDifference)}
         </div>
-        <div className="font-semibold">
-          {formatSweepies(cashUnaccountedDifference)}
-        </div>
       </div>
       <ManaSupplySummary manaSupplyStats={manaSupplyOverTime} />
       <Spacer h={8} />
       <Title>Transactions from Manifold</Title>
       <BonusSummary txnSummaryStats={fromBankSummaryMana} days={days} />
-      <BonusSummary
-        txnSummaryStats={fromBankSummaryCash}
-        days={days}
-        defaultHidden={['LEAGUE_PRIZE']}
-      />
       <Spacer h={8} />
       <Title>Transactions to Manifold</Title>
       <span className="text-ink-500">(Ignores mana purchases)</span>
       <BonusSummary txnSummaryStats={toBankSummaryMana} days={days} />
-      <BonusSummary
-        txnSummaryStats={toBankSummaryCash}
-        days={days}
-        defaultHidden={['LEAGUE_PRIZE_UNDO']}
-      />
       <Spacer h={8} />
       <Title>Mana sales</Title>
       <p className="text-ink-500">
@@ -414,8 +363,6 @@ export function CustomAnalytics(props: {
         divided by 1000
       </span>
       <Spacer h={10} />
-      <KYCStats />
-      <Spacer h={8} />
       <Title>Retention</Title>
       <p className="text-ink-500">
         What fraction of active traders are still active after the given time
@@ -597,31 +544,6 @@ export function CustomAnalytics(props: {
             title: 'Monthly',
             content: (
               <DailyChart values={rollingSum(dataFor('bet_amount'), 30)} />
-            ),
-          },
-        ]}
-      />
-      <Spacer h={8} />
-      <Title>Total sweepcash {TRADED_TERM}</Title>
-      <p className="text-ink-500">Sum of cash {TRADE_TERM} amounts.</p>
-      <Tabs
-        className="mb-4"
-        defaultIndex={1}
-        tabs={[
-          {
-            title: 'Daily',
-            content: <DailyChart values={dataFor('cash_bet_amount')} />,
-          },
-          {
-            title: 'Weekly',
-            content: (
-              <DailyChart values={rollingSum(dataFor('cash_bet_amount'), 7)} />
-            ),
-          },
-          {
-            title: 'Monthly',
-            content: (
-              <DailyChart values={rollingSum(dataFor('cash_bet_amount'), 30)} />
             ),
           },
         ]}
