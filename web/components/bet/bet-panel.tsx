@@ -920,9 +920,16 @@ export const BuyPanelBody = (
               lastBetDetails.outcome as 'YES' | 'NO' // Assuming binary for now
             )}
             answer={multiProps?.answerToBuy.text}
-            avgPrice={formatPercent(lastBetDetails.probBefore ?? 0)} // Use probBefore for avg price
+            avgPrice={formatPercent(
+              lastBetDetails.outcome === 'YES'
+                ? lastBetDetails.amount / lastBetDetails.shares
+                : 1 - lastBetDetails.amount / lastBetDetails.shares
+            )}
             betAmount={lastBetDetails.amount}
             winAmount={lastBetDetails.shares}
+            currentPrice={
+              contract.mechanism === 'cpmm-1' ? contract.prob : undefined
+            }
           />
         )}
 

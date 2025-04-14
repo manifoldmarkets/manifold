@@ -268,6 +268,9 @@ export function BetsSummary(props: {
                   winAmount={metric.totalShares[maxSharesOutcome]}
                   resolution={resolution}
                   profit={metric.profit}
+                  currentPrice={
+                    contract.mechanism === 'cpmm-1' ? contract.prob : undefined
+                  }
                 />
               )}
             </>

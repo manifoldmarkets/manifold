@@ -9,6 +9,7 @@ import { useRef } from 'react'
 import { toPng } from 'html-to-image'
 import { TokenNumber } from '../widgets/token-number'
 import clsx from 'clsx'
+import { formatPercent } from 'common/util/format'
 
 type ShareBetCardProps = {
   questionText: string
@@ -19,6 +20,7 @@ type ShareBetCardProps = {
   winAmount: number
   resolution?: string
   profit?: number
+  currentPrice?: number
 }
 export const ShareBetCard = (props: ShareBetCardProps) => {
   const {
@@ -30,6 +32,7 @@ export const ShareBetCard = (props: ShareBetCardProps) => {
     betAmount,
     winAmount,
     resolution,
+    currentPrice,
   } = props
   const won =
     resolution && resolution !== 'CANCEL' ? (profit ?? 0) >= 0 : undefined
@@ -49,54 +52,65 @@ export const ShareBetCard = (props: ShareBetCardProps) => {
           </div>
         </div>
 
-        <Row className="items-center justify-between">
-          <div
-            className={clsx(
-              'rounded-md px-4 py-2 font-bold',
-              outcome === 'YES'
-                ? 'bg-green-100 text-green-800'
-                : 'bg-red-100 text-red-800'
-            )}
-          >
-            {outcome}
-          </div>
+        <Row className="items-start justify-between">
+          {answer ? (
+            <div className="line-clamp-2 w-full text-lg text-gray-800">
+              {answer}
+            </div>
+          ) : !!currentPrice ? (
+            <div className="whitespace-nowrap text-lg text-gray-500">
+              Now {formatPercent(currentPrice)}
+            </div>
+          ) : (
+            <div />
+          )}
           <div className="whitespace-nowrap text-lg text-gray-500">
             Avg {avgPrice}
           </div>
         </Row>
-        {answer && (
-          <div className="mt-2 line-clamp-2 pl-2 text-lg text-gray-800">
-            {answer}
-          </div>
-        )}
 
         <div className="relative my-6">
           <div className="border-t border-gray-200"></div>
         </div>
 
-        <div className="flex justify-between">
-          {won !== undefined && !won ? (
-            <div>
+        <Col className="flex justify-between">
+          <Row className="justify-between">
+            {won !== undefined && !won ? (
               <div className="text-gray-500">Profit</div>
-              <TokenNumber
-                className="text-2xl font-bold text-red-500"
-                amount={profit}
-              />
-            </div>
-          ) : (
-            <div>
+            ) : (
               <div className="text-gray-500">Bet</div>
-              <TokenNumber
-                className="text-2xl font-bold text-gray-900"
-                amount={betAmount}
-              />
-            </div>
-          )}
-          {(won === undefined || won) && (
-            <div>
+            )}
+            {(won === undefined || won) && (
               <div className="text-gray-500">
                 {won !== undefined ? 'Won' : 'To win'}
               </div>
+            )}
+          </Row>
+          <Row className="justify-between gap-2">
+            <Row className="gap-2">
+              {won !== undefined && !won ? (
+                <TokenNumber
+                  className="text-2xl font-bold text-red-500"
+                  amount={profit}
+                />
+              ) : (
+                <TokenNumber
+                  className="text-2xl font-bold text-gray-900"
+                  amount={betAmount}
+                />
+              )}
+              <div
+                className={clsx(
+                  'rounded-md px-4 py-2 font-bold',
+                  outcome === 'YES'
+                    ? 'bg-green-100 text-green-800'
+                    : 'bg-red-100 text-red-800'
+                )}
+              >
+                {outcome}
+              </div>
+            </Row>
+            {(won === undefined || won) && (
               <TokenNumber
                 className={clsx(
                   'text-2xl font-bold',
@@ -104,10 +118,11 @@ export const ShareBetCard = (props: ShareBetCardProps) => {
                 )}
                 amount={winAmount}
               />
-            </div>
-          )}
-        </div>
+            )}
+          </Row>
+        </Col>
       </div>
+
       <div
         className="h-4 w-full bg-white"
         style={{
