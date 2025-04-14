@@ -75,7 +75,7 @@ export const promptOpenAI = async (
   return message
 }
 
-export const promptOpenAIWithTools = async (
+export const promptOpenAIWithWebSearch = async (
   prompt: string,
   model: MODELS = 'gpt-4.1-2025-04-14'
 ) => {
@@ -148,10 +148,10 @@ export const parseOpenAIResponseAsJson = (response: string): any => {
   }
 }
 
-export const promptOpenAIParseJson = async <T>(
+export const promptOpenAIWebSearchParseJson = async <T>(
   prompt: string,
   model: MODELS = 'gpt-4.1-2025-04-14'
 ): Promise<T> => {
-  const response = await promptOpenAIWithTools(prompt, model)
+  const response = await promptOpenAIWithWebSearch(prompt, model)
   return parseOpenAIResponseAsJson(response)
 }

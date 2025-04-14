@@ -7,7 +7,7 @@ import { track } from 'shared/analytics'
 import { scrapeUrl } from './helpers/crawl'
 import { rateLimitByUser } from './helpers/rate-limit'
 import { HOUR_MS } from 'common/util/time'
-import { promptOpenAIParseJson } from 'shared/helpers/openai-utils'
+import { promptOpenAIWebSearchParseJson } from 'shared/helpers/openai-utils'
 import { APIParams } from 'common/api/schema'
 
 export const generateSuggestions = async (
@@ -42,7 +42,7 @@ export const generateSuggestions = async (
     ONLY return a valid JSON array of market objects and do NOT include any other text.
   `
 
-  const response = await promptOpenAIParseJson<AIGeneratedMarket[]>(
+  const response = await promptOpenAIWebSearchParseJson<AIGeneratedMarket[]>(
     combinedPrompt
   )
 

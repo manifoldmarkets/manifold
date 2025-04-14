@@ -2,7 +2,7 @@ import { APIError, APIHandler } from './helpers/endpoint'
 import { log } from 'shared/utils'
 import { track } from 'shared/analytics'
 import { anythingToRichText } from 'shared/tiptap'
-import { promptOpenAIWithTools } from 'shared/helpers/openai-utils'
+import { promptOpenAIWithWebSearch } from 'shared/helpers/openai-utils'
 import {
   addAnswersModeDescription,
   outcomeTypeDescriptions,
@@ -79,7 +79,7 @@ export const generateAIDescription: APIHandler<'generate-ai-description'> =
 
         Only return the markdown description, nothing else.
         `
-        const gptResponse = await promptOpenAIWithTools(prompt)
+        const gptResponse = await promptOpenAIWithWebSearch(prompt)
 
         track(auth.uid, 'generate-ai-description', {
           question: question.substring(0, 100),

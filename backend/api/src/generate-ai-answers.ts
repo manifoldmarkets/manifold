@@ -1,6 +1,6 @@
 import { APIError, APIHandler } from './helpers/endpoint'
 import { track } from 'shared/analytics'
-import { promptOpenAIParseJson } from 'shared/helpers/openai-utils'
+import { promptOpenAIWebSearchParseJson } from 'shared/helpers/openai-utils'
 import {
   addAnswersModeDescription,
   multiChoiceOutcomeTypeDescriptions,
@@ -52,7 +52,7 @@ Example output:
 }
   `
 
-        const result = await promptOpenAIParseJson<{
+        const result = await promptOpenAIWebSearchParseJson<{
           answers: string[]
           addAnswersMode: 'DISABLED' | 'ONLY_CREATOR' | 'ANYONE'
         }>(userPrompt)
