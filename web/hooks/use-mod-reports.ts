@@ -1,12 +1,10 @@
 import { useEffect, useState } from 'react'
 import { api } from 'web/lib/api/api'
-import { ModReport, ReportStatus } from 'common/mod-report'
+import { ModReport, ReportStatus } from 'common/src/mod-report'
 import { keyBy, mapValues } from 'lodash'
 import { getReports, LiteReport } from 'web/pages/admin/reports'
 
-export const useModReports = (
-  statuses: ('new' | 'under review' | 'resolved' | 'needs admin')[]
-) => {
+export const useModReports = (statuses: ReportStatus[]) => {
   const [reports, setReports] = useState<ModReport[] | undefined>(undefined)
   const [userReports, setUserReports] = useState<LiteReport[] | undefined>(
     undefined
@@ -23,7 +21,7 @@ export const useModReports = (
     try {
       const response = await api('get-mod-reports', {
         statuses,
-        limit: statuses.includes('resolved') ? 15 : 50,
+        limit: 50,
         offset: 0,
       })
       if (response && response.status === 'success') {
@@ -70,7 +68,7 @@ export const useModReports = (
   useEffect(() => {
     getModReports()
     getUserReports()
-  }, [statuses.length])
+  }, [JSON.stringify(statuses)])
 
   return {
     reports,

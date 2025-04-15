@@ -3,7 +3,7 @@ import { Page } from 'web/components/layout/page'
 import { ControlledTabs } from 'web/components/layout/tabs'
 import { SEO } from 'web/components/SEO'
 import { useAdminOrMod } from 'web/hooks/use-admin'
-import { ModReport, ReportStatus } from 'common/mod-report'
+import { ModReport, ReportStatus } from 'common/src/mod-report'
 import Link from 'next/link'
 import { useModReports } from 'web/hooks/use-mod-reports'
 import ModReportItem from 'web/components/mod-report-item'
@@ -14,6 +14,8 @@ import { useState } from 'react'
 import { usePagination } from 'web/hooks/use-pagination'
 import { PaginationNextPrev } from 'web/components/widgets/pagination'
 import { getReports, LiteReport } from 'web/pages/admin/reports'
+import { Select } from 'web/components/widgets/select'
+import { Row } from 'web/components/layout/row'
 
 const USER_REPORTS_PAGE_SIZE = 10
 
@@ -40,7 +42,12 @@ const fetchUserReports = async (p: {
 
 export default function ReportsPage() {
   const isAdminOrMod = useAdminOrMod()
-  const [activeTab, setActiveTab] = useState('unresolved')
+  const [activeTab, setActiveTab] = useState('mod-reports')
+  const [selectedStatuses, setSelectedStatuses] = useState<ReportStatus[]>([
+    'new',
+    'under review',
+    'needs admin',
+  ])
   const {
     reports: modReports,
     initialLoading,
@@ -48,11 +55,7 @@ export default function ReportsPage() {
     modNotes,
     setReportStatuses,
     setModNotes,
-  } = useModReports(
-    activeTab === 'resolved'
-      ? ['resolved']
-      : ['new', 'under review', 'needs admin']
-  )
+  } = useModReports(selectedStatuses)
   const [bannedIds, setBannedIds] = useState<string[]>([])
 
   const userReportsPagination = usePagination<LiteReport>({
@@ -81,6 +84,20 @@ export default function ReportsPage() {
     await updateModReport(reportId, { mod_note: newNote })
   }
 
+  const handleStatusFilterChange = (
+    e: React.ChangeEvent<HTMLSelectElement>
+  ) => {
+    const value = e.target.value
+
+    if (value === 'all') {
+      setSelectedStatuses(['new', 'under review', 'needs admin', 'resolved'])
+    } else if (value === 'unresolved') {
+      setSelectedStatuses(['new', 'under review', 'needs admin'])
+    } else {
+      setSelectedStatuses([value as ReportStatus])
+    }
+  }
+
   if (!isAdminOrMod)
     return (
       <Page trackPageView={'mod reports'}>
@@ -97,29 +114,24 @@ export default function ReportsPage() {
       </Page>
     )
 
-  const unresolvedReports = (modReports ?? []).filter(
-    (report) =>
-      report.status === 'new' ||
-      report.status === 'under review' ||
-      report.status === 'needs admin'
-  )
-
-  const resolvedReports = (modReports ?? []).filter(
-    (report) => report.status === 'resolved'
-  )
-
   const renderReportList = (reportList: ModReport[]) => (
     <Col className="w-full">
-      {reportList.map((report: ModReport) => (
-        <ModReportItem
-          key={report.report_id}
-          report={report}
-          reportStatuses={reportStatuses}
-          modNotes={modNotes}
-          handleStatusChange={handleStatusChange}
-          handleNoteSave={handleNoteSave}
-        />
-      ))}
+      {reportList.length > 0 ? (
+        reportList.map((report: ModReport) => (
+          <ModReportItem
+            key={report.report_id}
+            report={report}
+            reportStatuses={reportStatuses}
+            modNotes={modNotes}
+            handleStatusChange={handleStatusChange}
+            handleNoteSave={handleNoteSave}
+          />
+        ))
+      ) : (
+        <div className="mt-8 text-center">
+          No reports found with the selected filter.
+        </div>
+      )}
     </Col>
   )
 
@@ -147,30 +159,51 @@ export default function ReportsPage() {
     </Col>
   )
 
+  const renderModReportsContent = () => (
+    <Col className="w-full">
+      <Row className="mb-4 mt-2 justify-end">
+        <Select
+          className="max-w-xs"
+          onChange={handleStatusFilterChange}
+          value={
+            selectedStatuses.length === 4
+              ? 'all'
+              : selectedStatuses.length === 3 &&
+                selectedStatuses.includes('new') &&
+                selectedStatuses.includes('under review') &&
+                selectedStatuses.includes('needs admin')
+              ? 'unresolved'
+              : selectedStatuses.length === 1
+              ? selectedStatuses[0]
+              : 'custom'
+          }
+        >
+          <option value="all">All Statuses</option>
+          <option value="unresolved">Unresolved</option>
+          <option value="new">New</option>
+          <option value="under review">Under Review</option>
+          <option value="needs admin">Needs Admin</option>
+          <option value="resolved">Resolved</option>
+        </Select>
+      </Row>
+      {renderReportList(modReports ?? [])}
+
+      <div className="mt-4 text-center">
+        <Link
+          href="/admin/reports"
+          className="text-primary-700 hover:text-primary-500 hover:underline"
+        >
+          View additional reports...
+        </Link>
+      </div>
+    </Col>
+  )
+
   const tabs = [
     {
-      title: 'Unresolved',
-      content:
-        unresolvedReports.length > 0 ? (
-          renderReportList(unresolvedReports)
-        ) : (
-          <Col className="mt-8 text-center">
-            All reports have been resolved, great job! Keep it up and one day
-            you'll get a raise 🤑
-            <Link
-              href="/admin/reports"
-              className="text-primary-700 hover:text-primary-500 mt-3 text-center hover:underline"
-            >
-              Other reports...
-            </Link>
-          </Col>
-        ),
-      queryString: 'unresolved',
-    },
-    {
-      title: 'Resolved',
-      content: renderReportList(resolvedReports),
-      queryString: 'resolved',
+      title: 'Mod Reports',
+      content: renderModReportsContent(),
+      queryString: 'mod-reports',
     },
     {
       title: 'User Reports',
@@ -190,13 +223,10 @@ export default function ReportsPage() {
         <Title>Reports</Title>
         <ControlledTabs
           tabs={tabs}
-          activeIndex={
-            activeTab === 'resolved' ? 1 : activeTab === 'user-reports' ? 2 : 0
-          }
+          activeIndex={activeTab === 'user-reports' ? 1 : 0}
           trackingName="mod-reports-tabs"
           onClick={(title, index) => {
-            if (index === 0) setActiveTab('unresolved')
-            else if (index === 1) setActiveTab('resolved')
+            if (index === 0) setActiveTab('mod-reports')
             else setActiveTab('user-reports')
           }}
         />
