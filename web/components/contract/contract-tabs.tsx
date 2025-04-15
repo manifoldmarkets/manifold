@@ -96,6 +96,7 @@ export function ContractTabs(props: {
 
   return (
     <ControlledTabs
+      labelClassName="!text-base"
       className="mb-4"
       activeIndex={activeIndex}
       onClick={(title, i) => {
