@@ -73,7 +73,11 @@ export default function UserReportItem(props: {
           </div>
         </div>
         <div className="flex items-center gap-2">
-          <SuperBanControl userId={owner.id} onBan={() => onBan(owner.id)} />
+          <SuperBanControl
+            userId={owner.id}
+            onBan={() => onBan(owner.id)}
+            disabled={isBanned}
+          />
           {createdTime && <RelativeTimestamp time={createdTime} />}
         </div>
       </div>

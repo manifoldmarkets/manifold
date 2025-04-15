@@ -4,8 +4,12 @@ import { superBanUser } from 'web/lib/supabase/super-ban-user'
 import { Col } from './layout/col'
 import { Button } from './buttons/button'
 
-const SuperBanControl = (props: { userId: string; onBan?: () => void }) => {
-  const { userId, onBan } = props
+const SuperBanControl = (props: {
+  userId: string
+  onBan?: () => void
+  disabled?: boolean
+}) => {
+  const { userId, onBan, disabled } = props
   const [showConfirmModal, setShowConfirmModal] = useState(false)
   const [showSummaryModal, setShowSummaryModal] = useState(false)
   const [summaryMessage, setSummaryMessage] = useState('')
@@ -32,7 +36,7 @@ const SuperBanControl = (props: { userId: string; onBan?: () => void }) => {
         color="red"
         size="xs"
         onClick={() => setShowConfirmModal(true)}
-        disabled={loading}
+        disabled={loading || disabled}
         loading={loading}
       >
         Superban
