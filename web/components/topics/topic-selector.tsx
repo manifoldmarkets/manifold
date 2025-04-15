@@ -68,6 +68,13 @@ export function TopicSelector(props: {
     }
   }, [atMax])
 
+  // Open dropdown when typing
+  useEffect(() => {
+    if (query.length > 0 && !atMax && !isDropdownOpen) {
+      setIsDropdownOpen(true)
+    }
+  }, [query, atMax, isDropdownOpen])
+
   return (
     <Col className={clsx('w-full items-start', className)}>
       <Combobox
