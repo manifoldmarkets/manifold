@@ -78,9 +78,8 @@ export const getBetPointsBetween = async (
     startingProbs.push(...beforePoints)
   } else {
     if (sorted.length === 0) return []
-    // TODO: seems like it does this too much and not just at the beginning?
     startingProbs.push({
-      x: sorted[0].createdTime - 1,
+      x: options.afterTime ?? contract.createdTime,
       y: sorted[0].probBefore,
       answerId: sorted[0].answerId,
     })

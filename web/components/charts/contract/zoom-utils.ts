@@ -1,11 +1,12 @@
 import { HistoryPoint, maxMinBin, MultiPoints } from 'common/chart'
-import { debounce } from 'lodash'
+import { debounce, maxBy, minBy } from 'lodash'
 import { useCallback, useEffect, useLayoutEffect, useState } from 'react'
 import { ScaleTime } from 'd3-scale'
 import { getBetPointsBetween } from 'common/bets'
 import { getMultiBetPoints } from 'common/contract-params'
 import { MarketContract, MultiContract } from 'common/contract'
 import { buildArray } from 'common/util/array'
+import { useEvent } from 'client-common/hooks/use-event'
 
 export async function getPointsBetween(
   contract: MarketContract,
@@ -29,44 +30,46 @@ export const useDataZoomFetcher = <T>(props: {
   viewXScale?: ScaleTime<number, number>
   points: HistoryPoint<T>[]
 }) => {
-  const { contract, viewXScale, points } = props
+  const { contract, viewXScale } = props
   const { id: contractId, createdTime } = contract
   const lastBetTime = contract.lastBetTime ?? createdTime
-  const [data, setData] = useState(points)
+  const [data, setData] = useState(props.points)
   const [loading, setLoading] = useState(false)
 
-  const onZoomData = useCallback(
+  const onZoomData = useEvent(
     debounce(async (min: number, max: number) => {
       if (min && max) {
         setLoading(true)
         const zoomedPoints = await getPointsBetween(contract, min, max)
+        const pointsAfterMax = data.filter((p) => p.x >= max)
+        const pointsBeforeMin = data.filter((p) => p.x <= min)
+        const latestPointBeforeMin = maxBy(pointsBeforeMin, 'x')
+        const earliestPointAfterMax = minBy(pointsAfterMax, 'x')
         setData(
           buildArray(
-            points.filter((p) => p.x <= min),
-            zoomedPoints,
-            points.filter((p) => p.x >= max)
+            zoomedPoints.length > 0
+              ? (zoomedPoints as HistoryPoint<T>[])
+              : [latestPointBeforeMin, earliestPointAfterMax]
           ).sort((a, b) => a.x - b.x)
         )
 
         setLoading(false)
       } else {
-        setData(points)
+        setData(props.points)
       }
-    }, 100),
-    [contractId]
+    }, 100)
   )
 
   useLayoutEffect(() => {
-    setData(points)
+    setData(props.points)
   }, [contractId])
 
   useEffect(() => {
     if (viewXScale) {
       const [minX, maxX] = viewXScale.range()
       if (Math.abs(minX - maxX) <= 1) return
-      // 20px buffer
-      const min = viewXScale.invert(minX - 20).valueOf()
-      const max = viewXScale.invert(maxX + 20).valueOf()
+      const min = viewXScale.invert(minX).valueOf()
+      const max = viewXScale.invert(maxX).valueOf()
       const fixedMin = Math.max(min, createdTime)
       const fixedMax = Math.min(max, lastBetTime) + 1
       onZoomData(fixedMin, fixedMax)

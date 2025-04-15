@@ -214,7 +214,6 @@ export const BinaryOverview = (props: {
   zoomY?: boolean
 }) => {
   const { contract, resolutionRating, zoomY } = props
-  const user = useUser()
 
   const [showZoomer, setShowZoomer] = useState(false)
   const { currentTimePeriod, setTimePeriod, maxRange, zoomParams } =

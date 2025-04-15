@@ -28,17 +28,16 @@ import { HistoryPoint } from 'common/chart'
 import { Bet } from 'common/bet'
 import { SizedContainer } from 'web/components/sized-container'
 import { ChartAnnotations } from '../chart-annotations'
+import { buildArray } from 'common/util/array'
 
 export const GRAPH_Y_DIVISOR = 20
 
 const getVisibleYRange = (params: {
   data: SingleContractPoint[]
   zoomY?: boolean
-  start: number
-  end: number | null
   zoomParams?: ZoomParams
 }) => {
-  const { data, zoomY, start, end, zoomParams } = params
+  const { data, zoomY, zoomParams } = params
 
   if (!zoomY || !zoomParams?.xScale) return [0, 1]
 
@@ -52,22 +51,16 @@ const getVisibleYRange = (params: {
     return [0, 1]
   }
 
-  const minX = minXDate ? minXDate.getTime() : start
-  const maxX = maxXDate ? maxXDate.getTime() : end
-
-  const visibleData = data.filter(
-    (p) => p.x >= minX && p.x <= (maxX ?? Infinity)
-  )
   const minYValue = zoomY
     ? Math.max(
-        Math.floor((minBy(visibleData, 'y')?.y ?? 0) * GRAPH_Y_DIVISOR) /
+        Math.floor((minBy(data, 'y')?.y ?? 0) * GRAPH_Y_DIVISOR) /
           GRAPH_Y_DIVISOR,
         0
       )
     : 0
   const maxYValue = zoomY
     ? Math.min(
-        Math.ceil((maxBy(visibleData, 'y')?.y ?? 1) * GRAPH_Y_DIVISOR) /
+        Math.ceil((maxBy(data, 'y')?.y ?? 1) * GRAPH_Y_DIVISOR) /
           GRAPH_Y_DIVISOR,
         1
       )
@@ -115,11 +108,14 @@ export const BinaryContractChart = (props: {
   const now = useMemo(() => Date.now(), [stringifiedBetPoints, endP])
 
   const data = useMemo(() => {
-    return [
-      { x: start, y: contract.initialProbability ?? 0.5 }, // binary markets before 3-16-2022 have no initialProbability
+    return buildArray(
+      !contract.lastBetTime && {
+        x: start,
+        y: contract.initialProbability ?? 0.5,
+      }, // binary markets before 3-16-2022 have no initialProbability
       ...betPoints,
-      { x: end ?? now, y: endP },
-    ]
+      { x: end ?? now, y: endP }
+    )
   }, [end, endP, betPoints])
 
   const rightmostDate = getRightmostVisibleDate(end, last(betPoints)?.x, now)
@@ -129,8 +125,6 @@ export const BinaryContractChart = (props: {
   const [minYValue, maxYValue] = getVisibleYRange({
     data,
     zoomY,
-    start,
-    end,
     zoomParams,
   })
   const yScale = scaleLinear([minYValue, maxYValue], [height, 0])
@@ -269,8 +263,6 @@ export const MultiBinaryChart = (props: {
   const [minYValue, maxYValue] = getVisibleYRange({
     data,
     zoomY,
-    start,
-    end,
     zoomParams,
   })
 
