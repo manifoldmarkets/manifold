@@ -49,7 +49,7 @@ export function CommentInput(props: {
     className,
     blocked,
     autoFocus,
-    placeholder = 'Write a comment...',
+    placeholder = 'What is your prediction?',
     commentTypes,
     onClearInput,
   } = props

@@ -1210,6 +1210,8 @@ export const API = (_apiTypeCheck = {
         contractId: z.string(),
         limit: z.coerce.number().gte(0).lte(100),
         userId: z.string().optional(),
+        question: z.string().optional(),
+        uniqueBettorCount: z.coerce.number().gte(0).optional(),
       })
       .strict(),
     returns: {} as {

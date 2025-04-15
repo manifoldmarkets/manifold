@@ -539,6 +539,12 @@ export function ContractPageContent(props: ContractParams) {
                 <Spacer h={12} />
               </>
             )}
+            <RelatedContractsGrid
+              contracts={relatedMarkets}
+              loadMore={loadMore}
+              showAll={false}
+              className="!bg-canvas-0 !pt-0 pb-4"
+            />
 
             <div ref={tabsContainerRef} className="mb-4">
               <ContractTabs

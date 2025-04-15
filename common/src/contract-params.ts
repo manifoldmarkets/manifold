@@ -85,6 +85,8 @@ export async function getContractParams(
     unauthedApi('get-related-markets', {
       contractId: contract.id,
       limit: 10,
+      question: contract.question,
+      uniqueBettorCount: contract.uniqueBettorCount,
     }),
     getChartAnnotations(contract.id, db),
     getTopicsOnContract(contract.id, db),

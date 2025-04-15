@@ -12,7 +12,6 @@ import { Contract, contractPath, BinaryContract } from 'common/contract'
 import Masonry from 'react-masonry-css'
 import { Button } from 'web/components/buttons/button'
 import { track } from 'web/lib/service/analytics'
-import { ChevronDownIcon, ChevronUpIcon } from '@heroicons/react/outline'
 import { Topic } from 'common/group'
 import { FeedBinaryChart } from 'web/components/feed/feed-chart'
 import { UserHovercard } from '../user/user-hovercard'
@@ -61,7 +60,7 @@ export const RelatedContractsGrid = memo(function (props: {
     props
 
   const [showMore, setShowMore] = useState(showAll ?? false)
-  const titleClass = 'text-ink-600 mb-2 text-xl'
+  const titleClass = 'text-ink-600 mb-2 text-2xl'
 
   return (
     <Col
@@ -71,13 +70,13 @@ export const RelatedContractsGrid = memo(function (props: {
         !justBet && showOnlyAfterBet ? 'hidden' : ''
       )}
     >
-      <h2 className={clsx(titleClass)}>Related questions</h2>
+      <h2 className={clsx(titleClass)}>People are also trading</h2>
       <Col
         className={clsx(
           showMore
             ? 'scrollbar-hide overflow-y-auto scroll-smooth'
             : 'overflow-hidden',
-          showAll ? 'h-full' : showMore ? 'h-[40rem]' : 'h-64'
+          showAll ? 'h-full' : showMore ? 'h-[40rem]' : 'h-80'
         )}
       >
         <Masonry
@@ -101,18 +100,15 @@ export const RelatedContractsGrid = memo(function (props: {
         )}
       </Col>
       {!showAll && (
-        <Button
-          color={'gray-white'}
-          onClick={() => setShowMore(!showMore)}
-          className="!rounded-none !py-4"
-        >
-          {showMore ? (
-            <ChevronUpIcon className="mr-1 h-4 w-4" />
-          ) : (
-            <ChevronDownIcon className="mr-1 h-4 w-4" />
-          )}
-          {showMore ? 'Show less' : 'Show more'}
-        </Button>
+        <Row className="">
+          <Button
+            color={'gray'}
+            onClick={() => setShowMore(!showMore)}
+            className="mt-1"
+          >
+            {showMore ? 'Show less' : 'Show more'}
+          </Button>
+        </Row>
       )}
     </Col>
   )
