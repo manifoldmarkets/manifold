@@ -57,6 +57,7 @@ export default function ReportsPage() {
     setModNotes,
   } = useModReports(selectedStatuses)
   const [bannedIds, setBannedIds] = useState<string[]>([])
+  const [showBannedUsers, setShowBannedUsers] = useState(false)
 
   const userReportsPagination = usePagination<LiteReport>({
     pageSize: USER_REPORTS_PAGE_SIZE,
@@ -135,29 +136,54 @@ export default function ReportsPage() {
     </Col>
   )
 
-  const renderUserReportsList = () => (
-    <Col className="w-full">
-      <PaginationNextPrev {...userReportsPagination} className="mb-4" />
+  const renderUserReportsList = () => {
+    const filteredReports = userReportsPagination.items?.filter((report) => {
+      if (showBannedUsers) return true
+      // Check if user is banned either from stored bannedIds or from the isBannedFromPosting flag
+      return !(
+        bannedIds.includes(report.owner.id) || report.owner.isBannedFromPosting
+      )
+    })
 
-      {userReportsPagination.isLoading ? (
-        <div className="my-8 text-center">Loading user reports...</div>
-      ) : userReportsPagination.items &&
-        userReportsPagination.items.length > 0 ? (
-        userReportsPagination.items.map((report) => (
-          <UserReportItem
-            key={report.id}
-            report={report}
-            bannedIds={bannedIds}
-            onBan={(userId) => setBannedIds([...bannedIds, userId])}
-          />
-        ))
-      ) : (
-        <div className="my-8 text-center">No user reports found.</div>
-      )}
+    return (
+      <Col className="w-full">
+        <Row className="mb-4 mt-2 justify-end">
+          <Select
+            className="max-w-xs"
+            onChange={(e) => setShowBannedUsers(e.target.value === 'all')}
+            value={showBannedUsers ? 'all' : 'hide-banned'}
+          >
+            <option value="all">Show All Users</option>
+            <option value="hide-banned">Hide Banned Users</option>
+          </Select>
+        </Row>
 
-      <PaginationNextPrev {...userReportsPagination} className="mt-4" />
-    </Col>
-  )
+        <PaginationNextPrev {...userReportsPagination} className="mb-4" />
+
+        {userReportsPagination.isLoading ? (
+          <div className="my-8 text-center">Loading user reports...</div>
+        ) : filteredReports && filteredReports.length > 0 ? (
+          filteredReports.map((report) => (
+            <UserReportItem
+              key={report.id}
+              report={report}
+              bannedIds={bannedIds}
+              onBan={(userId) => setBannedIds([...bannedIds, userId])}
+            />
+          ))
+        ) : (
+          <div className="my-8 text-center">
+            {userReportsPagination.items &&
+            userReportsPagination.items.length > 0
+              ? 'No visible reports with current filter settings.'
+              : 'No user reports found.'}
+          </div>
+        )}
+
+        <PaginationNextPrev {...userReportsPagination} className="mt-4" />
+      </Col>
+    )
+  }
 
   const renderModReportsContent = () => (
     <Col className="w-full">
