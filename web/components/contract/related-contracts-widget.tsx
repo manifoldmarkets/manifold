@@ -105,6 +105,7 @@ export const RelatedContractsGrid = memo(function (props: {
             color={'gray'}
             onClick={() => setShowMore(!showMore)}
             className="mt-1"
+            size={'sm'}
           >
             {showMore ? 'Show less' : 'Show more'}
           </Button>
