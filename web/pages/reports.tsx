@@ -7,9 +7,15 @@ import { ModReport, ReportStatus } from 'common/mod-report'
 import Link from 'next/link'
 import { useModReports } from 'web/hooks/use-mod-reports'
 import ModReportItem from 'web/components/mod-report-item'
+import UserReportItem from 'web/components/user-report-item'
 import { Title } from 'web/components/widgets/title'
 import { api } from 'web/lib/api/api'
 import { useState } from 'react'
+import { usePagination } from 'web/hooks/use-pagination'
+import { PaginationNextPrev } from 'web/components/widgets/pagination'
+import { getReports, LiteReport } from 'web/pages/admin/reports'
+
+const USER_REPORTS_PAGE_SIZE = 10
 
 const updateModReport = async (
   reportId: number,
@@ -22,6 +28,14 @@ const updateModReport = async (
     console.error('Error updating report:', response)
     return null
   }
+}
+
+const fetchUserReports = async (p: {
+  limit: number
+  offset?: number
+  after?: { createdTime?: number | undefined }
+}) => {
+  return await getReports(p)
 }
 
 export default function ReportsPage() {
@@ -39,6 +53,12 @@ export default function ReportsPage() {
       ? ['resolved']
       : ['new', 'under review', 'needs admin']
   )
+  const [bannedIds, setBannedIds] = useState<string[]>([])
+
+  const userReportsPagination = usePagination<LiteReport>({
+    pageSize: USER_REPORTS_PAGE_SIZE,
+    q: fetchUserReports,
+  })
 
   const handleStatusChange = async (
     reportId: number,
@@ -103,6 +123,30 @@ export default function ReportsPage() {
     </Col>
   )
 
+  const renderUserReportsList = () => (
+    <Col className="w-full">
+      <PaginationNextPrev {...userReportsPagination} className="mb-4" />
+
+      {userReportsPagination.isLoading ? (
+        <div className="my-8 text-center">Loading user reports...</div>
+      ) : userReportsPagination.items &&
+        userReportsPagination.items.length > 0 ? (
+        userReportsPagination.items.map((report) => (
+          <UserReportItem
+            key={report.id}
+            report={report}
+            bannedIds={bannedIds}
+            onBan={(userId) => setBannedIds([...bannedIds, userId])}
+          />
+        ))
+      ) : (
+        <div className="my-8 text-center">No user reports found.</div>
+      )}
+
+      <PaginationNextPrev {...userReportsPagination} className="mt-4" />
+    </Col>
+  )
+
   const tabs = [
     {
       title: 'Unresolved',
@@ -128,6 +172,11 @@ export default function ReportsPage() {
       content: renderReportList(resolvedReports),
       queryString: 'resolved',
     },
+    {
+      title: 'User Reports',
+      content: renderUserReportsList(),
+      queryString: 'user-reports',
+    },
   ]
 
   return (
@@ -141,11 +190,15 @@ export default function ReportsPage() {
         <Title>Reports</Title>
         <ControlledTabs
           tabs={tabs}
-          activeIndex={activeTab === 'resolved' ? 1 : 0}
-          trackingName="mod-reports-tabs"
-          onClick={(title, index) =>
-            setActiveTab(index === 0 ? 'unresolved' : 'resolved')
+          activeIndex={
+            activeTab === 'resolved' ? 1 : activeTab === 'user-reports' ? 2 : 0
           }
+          trackingName="mod-reports-tabs"
+          onClick={(title, index) => {
+            if (index === 0) setActiveTab('unresolved')
+            else if (index === 1) setActiveTab('resolved')
+            else setActiveTab('user-reports')
+          }}
         />
       </Col>
     </Page>

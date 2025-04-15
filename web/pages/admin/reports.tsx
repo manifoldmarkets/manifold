@@ -136,7 +136,7 @@ export default function Reports(props: { reports: LiteReport[] }) {
   )
 }
 
-const getReports = async (p: {
+export const getReports = async (p: {
   limit: number
   offset?: number
   after?: { createdTime?: number | undefined }
@@ -162,7 +162,7 @@ const getReports = async (p: {
 
 // adapted from api/v0/reports
 
-type LiteReport = {
+export type LiteReport = {
   slug: string
   id: string
   text: string | JSONContent
