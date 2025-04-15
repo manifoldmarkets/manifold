@@ -4,12 +4,15 @@ import { Row } from '../layout/row'
 import { Col } from '../layout/col'
 import toast from 'react-hot-toast'
 import { LogoIcon } from '../icons/logo-icon'
-import { DuplicateIcon } from '@heroicons/react/solid'
+import { DuplicateIcon, ShareIcon } from '@heroicons/react/solid'
 import { useRef } from 'react'
 import { toPng } from 'html-to-image'
 import { TokenNumber } from '../widgets/token-number'
 import clsx from 'clsx'
 import { formatPercent } from 'common/util/format'
+import { useNativeInfo } from '../native-message-provider'
+import { postMessageToNative } from 'web/lib/native/post-message'
+import { LuShare } from 'react-icons/lu'
 
 type ShareBetCardProps = {
   questionText: string
@@ -148,6 +151,7 @@ export const ShareBetModal = (
 ) => {
   const { open, setOpen, ...cardProps } = props
   const cardRef = useRef<HTMLDivElement>(null)
+  const { isNative, isIOS } = useNativeInfo()
 
   const handleCopyShareImage = async () => {
     if (!cardRef.current) return
@@ -199,12 +203,25 @@ export const ShareBetModal = (
           return
         }
         try {
-          await navigator.clipboard.write([
-            new ClipboardItem({
-              [blob.type]: blob,
-            }),
-          ])
-          toast.success('Image copied to clipboard!')
+          if (isNative) {
+            // Convert blob to base64 for sharing
+            const reader = new FileReader()
+            reader.readAsDataURL(blob)
+            reader.onloadend = () => {
+              const base64data = reader.result as string
+              // Use share with url property for the image data
+              postMessageToNative('share', {
+                url: base64data,
+              })
+            }
+          } else {
+            await navigator.clipboard.write([
+              new ClipboardItem({
+                [blob.type]: blob,
+              }),
+            ])
+            toast.success('Image copied to clipboard!')
+          }
         } catch (err) {
           console.error('Failed to copy image:', err)
           toast.error('Failed to copy image to clipboard')
@@ -227,14 +244,20 @@ export const ShareBetModal = (
         <Col className="w-full items-center" ref={cardRef}>
           <ShareBetCard {...cardProps} />
         </Col>
-        <Row className=" w-full items-center justify-between gap-2 py-2 sm:pb-0 sm:pt-2">
+        <Row className=" w-full items-center justify-between gap-2 px-2 py-2 sm:px-0 sm:pb-0 sm:pt-2">
           <Button color="gray-white" onClick={() => setOpen(false)}>
             Close
           </Button>
           <Button color="gradient" onClick={handleCopyShareImage}>
             <Row className="items-center gap-1.5">
-              <DuplicateIcon className="h-5 w-5" aria-hidden />
-              Copy Image
+              {isIOS ? (
+                <LuShare className="h-5 w-5" aria-hidden />
+              ) : isNative ? (
+                <ShareIcon className="h-5 w-5" aria-hidden />
+              ) : (
+                <DuplicateIcon className="h-5 w-5" aria-hidden />
+              )}
+              {isNative ? 'Share Image' : 'Copy Image'}
             </Row>
           </Button>
         </Row>
