@@ -712,7 +712,7 @@ const CommentLog = memo(function FeedComment(props: {
           <RelativeTimestamp time={createdTime} shortened />
         </Row>
       </Row>
-      <Content size="md" className="grow" content={content} />
+      <Content size="sm" className="grow" content={content} />
       <Row className="items-center justify-end">
         <LikeAndDislikeComment
           comment={comment}
