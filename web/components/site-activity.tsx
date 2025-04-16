@@ -469,7 +469,7 @@ const MarketCreatedLog = memo(
               content={props.contract.description}
               className="mt-2 text-left"
             />
-            <div className="dark:from-canvas-0 absolute bottom-0 left-0 right-0 h-12 bg-gradient-to-t from-white to-transparent" />
+            <div className="from-canvas-50 absolute bottom-0 left-0 right-0 h-12 bg-gradient-to-t to-transparent" />
           </div>
         )}
       </Col>
