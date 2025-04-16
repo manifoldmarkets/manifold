@@ -48,6 +48,7 @@ export function FeedBinaryChart(props: {
         className={className}
         size={'sm'}
         noWatermark
+        startTime={startDate}
       />
     )
   }

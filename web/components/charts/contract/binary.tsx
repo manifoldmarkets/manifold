@@ -83,6 +83,7 @@ export const BinaryContractChart = (props: {
   graphColor?: string
   noWatermark?: boolean
   zoomY?: boolean
+  startTime?: number
 }) => {
   const {
     contract,
@@ -98,9 +99,11 @@ export const BinaryContractChart = (props: {
     graphColor,
     noWatermark,
     zoomY,
+    startTime,
   } = props
 
-  const start = Math.min(first(betPoints)?.x ?? Infinity, contract.createdTime)
+  const start =
+    startTime ?? Math.min(first(betPoints)?.x ?? Infinity, contract.createdTime)
   const end = getEndDate(contract)
   const endP = getProbability(contract as BinaryContract)
   const stringifiedBetPoints = JSON.stringify(betPoints)
@@ -173,6 +176,7 @@ export function SizedBinaryChart(props: {
   chartAnnotations?: ChartAnnotation[]
   noWatermark?: boolean
   zoomY?: boolean
+  startTime?: number
 }) {
   const {
     showZoomer,
@@ -188,6 +192,7 @@ export function SizedBinaryChart(props: {
     chartAnnotations,
     noWatermark,
     zoomY,
+    startTime,
   } = props
 
   return (
@@ -214,6 +219,7 @@ export function SizedBinaryChart(props: {
             chartAnnotations={chartAnnotations}
             noWatermark={noWatermark}
             zoomY={zoomY}
+            startTime={startTime}
           />
         )}
       </SizedContainer>
