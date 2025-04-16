@@ -31,7 +31,7 @@ import { MultiTopicPillSelector } from './topics/topic-selector'
 import { useSavedContractMetrics } from 'web/hooks/use-saved-contract-metrics'
 import { Bet } from 'common/bet'
 import { YourMetricsFooter } from './contract/feed-contract-card'
-
+import Image from 'next/image'
 interface ActivityState {
   selectedTopics: LiteGroup[]
   types: ('bets' | 'comments' | 'markets')[]
@@ -471,7 +471,7 @@ const MarketCreatedLog = memo(
               content={props.contract.description}
               className="mt-2 text-left"
             />
-            <div className="from-canvas-50 absolute bottom-0 left-0 right-0 h-12 bg-gradient-to-t to-transparent" />
+            <div className="dark:from-canvas-50 from-canvas-0 absolute bottom-0 left-0 right-0 h-12 bg-gradient-to-t to-transparent" />
           </div>
         )}
       </Col>
@@ -525,10 +525,31 @@ const ActivityLog = memo(function ActivityLog(props: {
     >
       <Row className="gap-2">
         <Col className="flex-1 gap-2">
-          <ContractMention
-            contract={contract}
-            trackingLocation={'site-activity'}
-          />
+          <Row className="gap-2">
+            {contract.coverImageUrl && (
+              <Image
+                src={contract.coverImageUrl}
+                alt=""
+                width={100}
+                height={100}
+                className={clsx(
+                  'rounded-md object-cover',
+                  'h-12 w-12 sm:h-32 sm:w-32',
+                  // Only hide on desktop if single bet
+                  items.length === 1 && 'amount' in items[0] && 'sm:hidden'
+                )}
+              />
+            )}
+            <ContractMention
+              className={
+                displayItems.length === 1 && 'question' in displayItems[0]
+                  ? ''
+                  : '!opacity-60'
+              }
+              contract={contract}
+              trackingLocation={'site-activity'}
+            />
+          </Row>
           <div className="space-y-1">
             {displayItems.map((item) => {
               if ('amount' in item) {
@@ -607,24 +628,12 @@ const ActivityLog = memo(function ActivityLog(props: {
             })}
           </div>
         </Col>
-
-        {contract.coverImageUrl && (
-          <img
-            src={contract.coverImageUrl}
-            alt=""
-            className={clsx(
-              'rounded-md object-cover',
-              'h-12 w-12 sm:h-32 sm:w-32',
-              // Only hide on desktop if single bet
-              items.length === 1 && 'amount' in items[0] && 'sm:hidden'
-            )}
-          />
-        )}
       </Row>
       {contract.outcomeType === 'BINARY' && position && position.hasShares && (
         <YourMetricsFooter
           metrics={position}
           isCashContract={contract.token === 'CASH'}
+          className="dark:!bg-canvas-50 !bg-canvas-0"
         />
       )}
     </Col>
@@ -684,7 +693,7 @@ const CommentLog = memo(function FeedComment(props: {
           <RelativeTimestamp time={createdTime} shortened />
         </Row>
       </Row>
-      <Content size="sm" className="grow" content={content} />
+      <Content size="md" className="grow" content={content} />
       <Row className="items-center justify-end">
         <LikeAndDislikeComment
           comment={comment}
