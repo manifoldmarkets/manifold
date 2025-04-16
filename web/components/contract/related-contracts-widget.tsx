@@ -66,7 +66,7 @@ export const RelatedContractsGrid = memo(function (props: {
     <Col
       className={clsx(
         className,
-        'bg-canvas-50 -mx-4 flex-1 px-4 pt-6 lg:-mx-8 xl:hidden',
+        ' -mx-4 flex-1 px-4 pt-6 lg:-mx-8 xl:hidden',
         !justBet && showOnlyAfterBet ? 'hidden' : ''
       )}
     >
@@ -80,7 +80,7 @@ export const RelatedContractsGrid = memo(function (props: {
         )}
       >
         <Masonry
-          breakpointCols={{ default: 2, 768: 1 }}
+          breakpointCols={{ default: 1 }}
           className={clsx('flex w-auto snap-x gap-2')}
         >
           {contracts.map((contract) => (
