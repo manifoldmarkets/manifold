@@ -1,7 +1,7 @@
 import clsx from 'clsx'
 import { CommentWithTotalReplies, ContractComment } from 'common/comment'
 import { Contract } from 'common/contract'
-import { groupBy, keyBy, orderBy, uniq, uniqBy } from 'lodash'
+import { groupBy, isEqual, keyBy, orderBy, uniq, uniqBy } from 'lodash'
 import { memo, useCallback, useEffect, useState } from 'react'
 import { usePrivateUser, useUser } from 'web/hooks/use-user'
 import { ContractMention } from './contract/contract-mention'
@@ -264,13 +264,21 @@ export function SiteActivity(props: { className?: string }) {
             <>
               <FilterPill
                 selected={filterMode === 'followed-topics'}
-                onSelect={() => setFilterMode('followed-topics')}
+                onSelect={() => {
+                  if (filterMode !== 'followed-topics') {
+                    setFilterMode('followed-topics')
+                  }
+                }}
               >
                 My Topics
               </FilterPill>
               <FilterPill
                 selected={filterMode === 'followed-markets'}
-                onSelect={() => setFilterMode('followed-markets')}
+                onSelect={() => {
+                  if (filterMode !== 'followed-markets') {
+                    setFilterMode('followed-markets')
+                  }
+                }}
               >
                 My Markets
               </FilterPill>
@@ -288,6 +296,7 @@ export function SiteActivity(props: { className?: string }) {
                 type.value.every((v) => types.includes(v))
               }
               onSelect={() => {
+                if (isEqual(types, type.value)) return
                 updateActivityState({ types: [...type.value] })
                 track('site activity type change', {
                   types: [...type.value],
