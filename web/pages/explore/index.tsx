@@ -114,7 +114,7 @@ const OrganizableMarketsPage = (props: { user: User | null; tabs: Tab[] }) => {
   ]
 
   return (
-    <Col className="relative w-full p-1">
+    <Col className="relative w-full px-2">
       <DragDropContext
         onDragEnd={(result) => {
           if (!result.destination) return

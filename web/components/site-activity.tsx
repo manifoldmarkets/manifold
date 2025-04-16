@@ -3,7 +3,7 @@ import { CommentWithTotalReplies, ContractComment } from 'common/comment'
 import { Contract } from 'common/contract'
 import { groupBy, keyBy, orderBy, uniq, uniqBy } from 'lodash'
 import { memo, useCallback, useEffect, useState } from 'react'
-import { usePrivateUser } from 'web/hooks/use-user'
+import { usePrivateUser, useUser } from 'web/hooks/use-user'
 import { ContractMention } from './contract/contract-mention'
 import { FeedBet } from './feed/feed-bets'
 import { Col } from './layout/col'
@@ -18,22 +18,27 @@ import { useAPIGetter } from 'web/hooks/use-api-getter'
 import { VisibilityObserver } from 'web/components/widgets/visibility-observer'
 import { LikeAndDislikeComment } from './comments/comment-actions'
 import { NextRouter, useRouter } from 'next/router'
-import { useUser } from 'web/hooks/use-user'
 import { User } from 'common/user'
 import { PrivateUser } from 'common/user'
 import { track } from 'web/lib/service/analytics'
 import { usePersistentLocalState } from 'web/hooks/use-persistent-local-state'
 import { LiteGroup } from 'common/group'
 import DropdownMenu, { DropdownItem } from './widgets/dropdown-menu'
-import { DropdownPill } from './search/filter-pills'
+import { DropdownPill, FilterPill } from './search/filter-pills'
 import { Input } from './widgets/input'
 import { APIResponse } from 'common/src/api/schema'
 import { MultiTopicPillSelector } from './topics/topic-selector'
+import { useSavedContractMetrics } from 'web/hooks/use-saved-contract-metrics'
+import { Bet } from 'common/bet'
+import { YourMetricsFooter } from './contract/feed-contract-card'
 
 interface ActivityState {
   selectedTopics: LiteGroup[]
   types: ('bets' | 'comments' | 'markets')[]
   minBetAmount: number | undefined
+  onlyFollowedTopics: boolean
+  onlyFollowedContracts: boolean
+  filterMode: 'custom-topics' | 'followed-topics' | 'followed-markets'
 }
 
 const defaultGroups: LiteGroup[] = [
@@ -88,14 +93,25 @@ export function SiteActivity(props: { className?: string }) {
         selectedTopics: defaultGroups,
         types: ['comments', 'bets', 'markets'],
         minBetAmount: PRESET_BET_AMOUNTS[1],
+        onlyFollowedTopics: false,
+        onlyFollowedContracts: false,
+        filterMode: 'custom-topics',
       },
-      'site-activity-state'
+      'site-activity-state-1'
     )
   const [offset, setOffset] = useState(0)
 
-  const { selectedTopics, types, minBetAmount } = activityState
+  const { selectedTopics, types, minBetAmount, filterMode } = activityState
+
+  // Derive onlyFollowedTopics and onlyFollowedContracts from filterMode
+  const onlyFollowedTopics = filterMode === 'followed-topics'
+  const onlyFollowedContracts = filterMode === 'followed-markets'
+
+  // Only send topic IDs if we're in custom-topics or followed-topics mode (not in followed-markets mode)
   const topicIds =
-    selectedTopics.length > 0 ? selectedTopics.map((t) => t.id) : undefined
+    filterMode === 'custom-topics' && selectedTopics.length > 0
+      ? selectedTopics.map((t) => t.id)
+      : undefined
 
   const limit = 30 / types.length
   const [allData, setAllData] = useState<APIResponse<'get-site-activity'>>()
@@ -123,6 +139,15 @@ export function SiteActivity(props: { className?: string }) {
     [setActivityState, setOffset]
   )
 
+  // Update filter mode when switching between different filtering options
+  const setFilterMode = useCallback(
+    (mode: ActivityState['filterMode']) => {
+      updateActivityState({ filterMode: mode })
+      track('site activity filter mode change', { mode })
+    },
+    [updateActivityState]
+  )
+
   const { data, loading, refresh } = useAPIGetter(
     'get-site-activity',
     {
@@ -137,6 +162,9 @@ export function SiteActivity(props: { className?: string }) {
       topicIds,
       types,
       minBetAmount,
+      onlyFollowedTopics,
+      onlyFollowedContracts,
+      userId: user?.id,
     },
     ['blockedContractIds', 'offset']
   )
@@ -206,282 +234,186 @@ export function SiteActivity(props: { className?: string }) {
   )
 
   return (
-    <Col className={clsx('gap-4', className)}>
-      <Row className="mt-2 items-center gap-2">
-        <MultiTopicPillSelector
-          topics={selectedTopics}
-          setTopics={(topics) => {
-            updateActivityState({ selectedTopics: topics })
-            track('site activity topic change', {
-              topics: topics.map((t) => t.slug),
-            })
-          }}
-          maxTopics={10}
-        />
-        <DropdownMenu
-          closeOnClick
-          selectedItemName={
-            ACTIVITY_TYPES.find(
-              (t) =>
-                t.value.length === types.length &&
-                t.value.every((v) => types.includes(v))
-            )?.name ?? 'All activity'
-          }
-          items={ACTIVITY_TYPES.map((type) => ({
-            name: type.name,
-            onClick: () => {
-              updateActivityState({ types: [...type.value] })
-              track('site activity type change', {
-                types: [...type.value],
-              })
-            },
-          }))}
-          buttonContent={(open) => (
-            <DropdownPill open={open}>
-              {ACTIVITY_TYPES.find(
-                (t) =>
-                  t.value.length === types.length &&
-                  t.value.every((v) => types.includes(v))
-              )?.name ?? 'All activity'}
-            </DropdownPill>
+    <>
+      <Col className="bg-canvas-0 sticky top-[2.9rem] z-10 -mt-2 gap-2 py-2">
+        {/* Primary Filter Mode Pills */}
+        <Row className="flex-wrap gap-2">
+          <FilterPill
+            selected={filterMode === 'custom-topics'}
+            onSelect={() => {
+              if (filterMode !== 'custom-topics') {
+                setFilterMode('custom-topics')
+              }
+            }}
+          >
+            Custom
+            <MultiTopicPillSelector
+              buttonClassName={'-mr-2 !bg-transparent !py-0 !pl-1 '}
+              topics={selectedTopics}
+              setTopics={(topics) => {
+                updateActivityState({ selectedTopics: topics })
+                track('site activity topic change', {
+                  topics: topics.map((t) => t.slug),
+                })
+              }}
+              maxTopics={10}
+              highlight={filterMode === 'custom-topics'}
+            />
+          </FilterPill>
+          {user && (
+            <>
+              <FilterPill
+                selected={filterMode === 'followed-topics'}
+                onSelect={() => setFilterMode('followed-topics')}
+              >
+                My Topics
+              </FilterPill>
+              <FilterPill
+                selected={filterMode === 'followed-markets'}
+                onSelect={() => setFilterMode('followed-markets')}
+              >
+                My Markets
+              </FilterPill>
+            </>
           )}
-        />
-        {types.includes('bets') && (
-          <DropdownMenu
-            buttonContent={(open) => (
-              <DropdownPill open={open}>
-                Min bet{' '}
-                {minBetAmount !== undefined ? `M$${minBetAmount}` : 'Any'}
-              </DropdownPill>
-            )}
-            items={[
-              ...PRESET_BET_AMOUNTS.map((amount) => ({
-                name: `M$${amount}`,
-                onClick: () => {
-                  updateActivityState({ minBetAmount: amount })
-                  track('site activity bet amount change', {
-                    amount,
-                  })
-                },
-              })),
-              {
-                name: (
-                  <Row
-                    className="items-center gap-2"
-                    onClick={(e) => e.stopPropagation()}
-                  >
-                    M$
-                    <Input
-                      type="number"
-                      className="!h-8 w-32"
-                      placeholder="Custom"
-                      min={1}
-                      value={customAmountString}
-                      onChange={(e) => {
-                        e.stopPropagation()
-                        setCustomAmountString(e.target.value)
-                      }}
-                      onBlur={() => {
-                        // Parse and apply the filter when input loses focus
-                        const value = parseInt(customAmountString)
-                        const newAmount =
-                          isNaN(value) || value <= 0 ? undefined : value
-                        updateActivityState({ minBetAmount: newAmount })
-                      }}
-                      onFocus={(e) => e.target.select()}
-                      onKeyDown={(e) => {
-                        if (e.key === 'Enter') {
-                          e.preventDefault()
-                          // Parse and apply filter immediately on Enter
+        </Row>
+
+        {/* Activity Type Filter Pills */}
+        <Row className="flex-wrap gap-2">
+          {ACTIVITY_TYPES.map((type) => (
+            <FilterPill
+              key={type.name}
+              selected={
+                types.length === type.value.length &&
+                type.value.every((v) => types.includes(v))
+              }
+              onSelect={() => {
+                updateActivityState({ types: [...type.value] })
+                track('site activity type change', {
+                  types: [...type.value],
+                })
+              }}
+            >
+              {type.name}
+            </FilterPill>
+          ))}
+
+          {/* Min Bet Amount (only show when filtering by trades exclusively) */}
+          {types.every((t) => t === 'bets') && (
+            <DropdownMenu
+              buttonContent={(open) => (
+                <DropdownPill open={open}>
+                  Min bet{' '}
+                  {minBetAmount !== undefined ? `M$${minBetAmount}` : 'Any'}
+                </DropdownPill>
+              )}
+              items={[
+                ...PRESET_BET_AMOUNTS.map((amount) => ({
+                  name: `M$${amount}`,
+                  onClick: () => {
+                    updateActivityState({ minBetAmount: amount })
+                    track('site activity bet amount change', {
+                      amount,
+                    })
+                  },
+                })),
+                {
+                  name: (
+                    <Row
+                      className="items-center gap-2"
+                      onClick={(e) => e.stopPropagation()}
+                    >
+                      M$
+                      <Input
+                        type="number"
+                        className="!h-8 w-32"
+                        placeholder="Custom"
+                        min={1}
+                        value={customAmountString}
+                        onChange={(e) => {
+                          e.stopPropagation()
+                          setCustomAmountString(e.target.value)
+                        }}
+                        onBlur={() => {
+                          // Parse and apply the filter when input loses focus
                           const value = parseInt(customAmountString)
                           const newAmount =
                             isNaN(value) || value <= 0 ? undefined : value
                           updateActivityState({ minBetAmount: newAmount })
-                        }
-                      }}
-                    />
-                  </Row>
-                ) as any,
-                onClick: undefined, // Let onBlur/onKeyDown handle the state update
-                selected:
-                  minBetAmount !== undefined &&
-                  !PRESET_BET_AMOUNTS.includes(minBetAmount),
-                closeOnClickOverride: false,
-              } as DropdownItem,
-              {
-                name: 'M$0',
-                onClick: () => {
-                  updateActivityState({ minBetAmount: 0 })
+                        }}
+                        onFocus={(e) => e.target.select()}
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter') {
+                            e.preventDefault()
+                            // Parse and apply filter immediately on Enter
+                            const value = parseInt(customAmountString)
+                            const newAmount =
+                              isNaN(value) || value <= 0 ? undefined : value
+                            updateActivityState({ minBetAmount: newAmount })
+                          }
+                        }}
+                      />
+                    </Row>
+                  ) as any,
+                  onClick: undefined, // Let onBlur/onKeyDown handle the state update
+                  selected:
+                    minBetAmount !== undefined &&
+                    !PRESET_BET_AMOUNTS.includes(minBetAmount),
+                  closeOnClickOverride: false,
+                } as DropdownItem,
+                {
+                  name: 'M$0',
+                  onClick: () => {
+                    updateActivityState({ minBetAmount: 0 })
+                  },
                 },
-              },
-            ]}
-          />
-        )}
-      </Row>
-      <Col className="gap-4">
-        {!allData ? (
-          <LoadingIndicator />
-        ) : (
-          groups.map(({ parentId, items }) => {
-            const contract = contractsById[parentId] as Contract
-
-            // Separate comments and group replies
-            const comments = items.filter(
-              (item): item is CommentWithTotalReplies =>
-                'userId' in item && !('question' in item) && !('amount' in item)
-            )
-            const replies = comments.filter((c) => !!c.replyToCommentId)
-            const repliesByParentId = groupBy(
-              orderBy(replies, 'createdTime', 'asc'), // Sort replies ascending
-              'replyToCommentId'
-            )
-
-            // Filter items to include non-comments and parent comments, sorted descending
-            const displayItems = orderBy(
-              items.filter(
-                (item) =>
-                  !(
-                    'userId' in item &&
-                    (item as CommentWithTotalReplies).replyToCommentId
-                  ) // Exclude replies from main list
-              ),
-              'createdTime',
-              'desc'
-            )
-
-            return (
-              <Col
-                key={parentId}
-                className={clsx(
-                  'bg-canvas-0 dark:bg-canvas-50 dark:border-canvas-50 hover:border-primary-300 gap-2 rounded-lg border p-3 shadow-md transition-colors sm:px-5'
-                )}
-              >
-                <Row className="gap-2">
-                  <Col className="flex-1 gap-2">
-                    <ContractMention
-                      contract={contract}
-                      trackingLocation={'site-activity'}
-                    />
-                    <div className="space-y-1">
-                      {displayItems.map((item) => {
-                        if ('amount' in item) {
-                          // Render Bet
-                          return (
-                            <FeedBet
-                              className="p-1"
-                              key={item.id}
-                              contract={contract}
-                              bet={item}
-                              avatarSize="xs"
-                              hideActions={true}
-                            />
-                          )
-                        } else if ('question' in item) {
-                          // Render Market Creation
-                          return (
-                            <MarketCreatedLog
-                              key={item.id}
-                              contract={item}
-                              showDescription={items.length === 1} // Maybe adjust this logic if needed
-                            />
-                          )
-                        } else if ('userId' in item) {
-                          const comment = item as CommentWithTotalReplies
-                          const childReplies =
-                            repliesByParentId[comment.id] ?? []
-                          const hiddenRepliesCount =
-                            (comment.totalReplies ?? 0) - childReplies.length
-
-                          return (
-                            <div key={comment.id}>
-                              <CommentLog
-                                comment={comment}
-                                privateUser={privateUser}
-                                user={user}
-                                router={router}
-                                hiddenReplies={hiddenRepliesCount}
-                              />
-
-                              {hiddenRepliesCount > 0 &&
-                                childReplies.length > 0 && (
-                                  <Row className="text-ink-400 ml-6 items-center gap-1 pb-2 pl-2 text-xs">
-                                    <div className="border-ink-400 w-5 border-b-[1px] border-l-[1px]" />
-                                    <button
-                                      onClick={(e) => {
-                                        e.stopPropagation()
-                                        router.push(
-                                          `/${comment.userUsername}/${comment.contractSlug}#${comment.id}`
-                                        )
-                                      }}
-                                      className="hover:underline"
-                                    >
-                                      {hiddenRepliesCount} more{' '}
-                                      {hiddenRepliesCount === 1
-                                        ? 'reply'
-                                        : 'replies'}
-                                    </button>
-                                    <div className="border-ink-400 w-5 border-b-[1px] border-l-[1px]" />
-                                  </Row>
-                                )}
-
-                              {childReplies.length > 0 && (
-                                <Col className="ml-6 space-y-1 pl-2">
-                                  {childReplies.map((reply) => (
-                                    <CommentLog
-                                      key={reply.id}
-                                      comment={reply}
-                                      privateUser={privateUser}
-                                      user={user}
-                                      router={router}
-                                      isReply={true} // Indicate this is a reply
-                                    />
-                                  ))}
-                                </Col>
-                              )}
-                            </div>
-                          )
-                        }
-                      })}
-                    </div>
-                  </Col>
-
-                  {contract.coverImageUrl && (
-                    <img
-                      src={contract.coverImageUrl}
-                      alt=""
-                      className={clsx(
-                        'rounded-md object-cover',
-                        'h-12 w-12 sm:h-32 sm:w-32',
-                        // Only hide on desktop if single bet
-                        items.length === 1 &&
-                          'amount' in items[0] &&
-                          'sm:hidden'
-                      )}
-                    />
-                  )}
-                </Row>
-              </Col>
-            )
-          })
+              ]}
+            />
+          )}
+        </Row>
+      </Col>
+      <Col className={clsx('gap-3', className)}>
+        <Col className="gap-4">
+          {!allData ? (
+            <LoadingIndicator />
+          ) : items.length === 0 ? (
+            <div className="text-ink-500 mt-8 text-center">
+              No activity found with current filters
+            </div>
+          ) : (
+            groups.map(({ parentId, items }) => {
+              return (
+                <ActivityLog
+                  key={parentId}
+                  parentId={parentId}
+                  items={items}
+                  contractsById={contractsById}
+                  privateUser={privateUser}
+                  user={user}
+                  router={router}
+                />
+              )
+            })
+          )}
+        </Col>
+        {allData && (
+          <div className="relative">
+            {loading && <LoadingIndicator />}
+            <VisibilityObserver
+              className="pointer-events-none absolute bottom-0 h-screen w-full select-none"
+              onVisibilityUpdated={(visible) => {
+                if (visible && !loading) {
+                  setOffset(offset + limit)
+                  setTimeout(() => {
+                    refresh()
+                  }, 100)
+                }
+              }}
+            />
+          </div>
         )}
       </Col>
-      {allData && (
-        <div className="relative">
-          {loading && <LoadingIndicator />}
-          <VisibilityObserver
-            className="pointer-events-none absolute bottom-0 h-screen w-full select-none"
-            onVisibilityUpdated={(visible) => {
-              if (visible && !loading) {
-                setOffset(offset + limit)
-                setTimeout(() => {
-                  refresh()
-                }, 100)
-              }
-            }}
-          />
-        </div>
-      )}
-    </Col>
+    </>
   )
 }
 
@@ -535,6 +467,158 @@ const MarketCreatedLog = memo(
     )
   }
 )
+
+const ActivityLog = memo(function ActivityLog(props: {
+  parentId: string
+  items: [
+    Contract | CommentWithTotalReplies | Bet,
+    ...(Contract | CommentWithTotalReplies | Bet)[]
+  ]
+  contractsById: Record<string, Contract>
+  privateUser: PrivateUser | null | undefined
+  user: User | null | undefined
+  router: NextRouter
+}) {
+  const { items, contractsById, parentId, privateUser, user, router } = props
+  const contract = contractsById[parentId] as Contract
+  const position = useSavedContractMetrics(contract)
+
+  // Separate comments and group replies
+  const comments = items.filter(
+    (item): item is CommentWithTotalReplies =>
+      'userId' in item && !('question' in item) && !('amount' in item)
+  )
+  const replies = comments.filter((c) => !!c.replyToCommentId)
+  const repliesByParentId = groupBy(
+    orderBy(replies, 'createdTime', 'asc'), // Sort replies ascending
+    'replyToCommentId'
+  )
+
+  // Filter items to include non-comments and parent comments, sorted descending
+  const displayItems = orderBy(
+    items.filter(
+      (item) =>
+        !(
+          'userId' in item && (item as CommentWithTotalReplies).replyToCommentId
+        ) // Exclude replies from main list
+    ),
+    'createdTime',
+    'desc'
+  )
+
+  return (
+    <Col
+      className={clsx(
+        'bg-canvas-0 dark:bg-canvas-50 dark:border-canvas-50 hover:border-primary-300 gap-2 rounded-lg border p-3 shadow-md transition-colors sm:px-5'
+      )}
+    >
+      <Row className="gap-2">
+        <Col className="flex-1 gap-2">
+          <ContractMention
+            contract={contract}
+            trackingLocation={'site-activity'}
+          />
+          <div className="space-y-1">
+            {displayItems.map((item) => {
+              if ('amount' in item) {
+                // Render Bet
+                return (
+                  <FeedBet
+                    className="p-1"
+                    key={`${item.id}-bet-${parentId}`}
+                    contract={contract}
+                    bet={item}
+                    avatarSize="xs"
+                    hideActions={true}
+                  />
+                )
+              } else if ('question' in item) {
+                // Render Market Creation
+                return (
+                  <MarketCreatedLog
+                    key={`${item.id}-market-created-${parentId}`}
+                    contract={item}
+                    showDescription={items.length === 1} // Maybe adjust this logic if needed
+                  />
+                )
+              } else if ('userId' in item) {
+                const comment = item as CommentWithTotalReplies
+                const childReplies = repliesByParentId[comment.id] ?? []
+                const hiddenRepliesCount =
+                  (comment.totalReplies ?? 0) - childReplies.length
+
+                return (
+                  <div key={`${comment.id}-comment-${parentId}`}>
+                    <CommentLog
+                      comment={comment}
+                      privateUser={privateUser}
+                      user={user}
+                      router={router}
+                      hiddenReplies={hiddenRepliesCount}
+                    />
+
+                    {hiddenRepliesCount > 0 && childReplies.length > 0 && (
+                      <Row className="text-ink-400 ml-6 items-center gap-1 pb-2 pl-2 text-xs">
+                        <div className="border-ink-400 w-5 border-b-[1px] border-l-[1px]" />
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation()
+                            router.push(
+                              `/${comment.userUsername}/${comment.contractSlug}#${comment.id}`
+                            )
+                          }}
+                          className="hover:underline"
+                        >
+                          {hiddenRepliesCount} more{' '}
+                          {hiddenRepliesCount === 1 ? 'reply' : 'replies'}
+                        </button>
+                        <div className="border-ink-400 w-5 border-b-[1px] border-l-[1px]" />
+                      </Row>
+                    )}
+
+                    {childReplies.length > 0 && (
+                      <Col className="ml-6 space-y-1 pl-2">
+                        {childReplies.map((reply) => (
+                          <CommentLog
+                            key={`${reply.id}-reply-${parentId}`}
+                            comment={reply}
+                            privateUser={privateUser}
+                            user={user}
+                            router={router}
+                            isReply={true} // Indicate this is a reply
+                          />
+                        ))}
+                      </Col>
+                    )}
+                  </div>
+                )
+              }
+            })}
+          </div>
+        </Col>
+
+        {contract.coverImageUrl && (
+          <img
+            src={contract.coverImageUrl}
+            alt=""
+            className={clsx(
+              'rounded-md object-cover',
+              'h-12 w-12 sm:h-32 sm:w-32',
+              // Only hide on desktop if single bet
+              items.length === 1 && 'amount' in items[0] && 'sm:hidden'
+            )}
+          />
+        )}
+      </Row>
+      {contract.outcomeType === 'BINARY' && position && position.hasShares && (
+        <YourMetricsFooter
+          metrics={position}
+          isCashContract={contract.token === 'CASH'}
+        />
+      )}
+    </Col>
+  )
+})
 
 const CommentLog = memo(function FeedComment(props: {
   comment: ContractComment

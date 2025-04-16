@@ -292,8 +292,16 @@ export function MultiTopicPillSelector(props: {
   topics: LiteGroup[]
   setTopics: (topics: LiteGroup[]) => void
   maxTopics?: number
+  highlight?: boolean
+  buttonClassName?: string
 }) {
-  const { topics, setTopics, maxTopics = 10 } = props
+  const {
+    topics,
+    setTopics,
+    maxTopics = 10,
+    highlight = false,
+    buttonClassName,
+  } = props
   const { query, setQuery, searchedGroups } = useSearchGroups(false)
 
   const toggleTopic = (topic: LiteGroup) => {
@@ -349,8 +357,12 @@ export function MultiTopicPillSelector(props: {
             })),
         ]}
         buttonContent={(open) => (
-          <DropdownPill open={open}>
-            {topics.length === 0 ? 'All topics' : `${topics.length} topics`}
+          <DropdownPill
+            className={buttonClassName}
+            open={open}
+            color={highlight ? 'indigo' : 'gray'}
+          >
+            {topics.length === 0 ? 'All Topics' : `${topics.length} Topics`}
           </DropdownPill>
         )}
       />
