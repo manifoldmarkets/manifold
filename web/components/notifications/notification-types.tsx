@@ -182,6 +182,7 @@ export function NotificationItem(props: {
         notification={notification}
         highlighted={highlighted}
         setHighlighted={setHighlighted}
+        isChildOfGroup={isChildOfGroup}
       />
     )
   } else if (reason === 'bet_fill') {
