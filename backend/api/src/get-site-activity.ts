@@ -23,6 +23,7 @@ export const getSiteActivity: APIHandler<'get-site-activity'> = async (
     minBetAmount,
     onlyFollowedTopics = false,
     onlyFollowedContracts = false,
+    onlyFollowedUsers = false,
     userId,
     topicIds,
   } = props
@@ -75,6 +76,19 @@ export const getSiteActivity: APIHandler<'get-site-activity'> = async (
     }
   }
 
+  // Get followed user IDs if user wants to filter by followed users
+  let followedUserIds: string[] = []
+  if (onlyFollowedUsers && userId) {
+    const followedUsers = await pg.manyOrNone(
+      `select follow_id from user_follows where user_id = $1`,
+      [userId]
+    )
+    followedUserIds = followedUsers.map((u) => u.follow_id)
+    if (followedUserIds.length === 0) {
+      return emptyReturn
+    }
+  }
+
   const topicFilterPart = hasTopicFilter
     ? 'JOIN group_contracts gc ON cb.contract_id = gc.contract_id'
     : ''
@@ -86,6 +100,12 @@ export const getSiteActivity: APIHandler<'get-site-activity'> = async (
 
   const followedContractsFilterPart =
     onlyFollowedContracts && followedContractIds.length > 0 ? '' : ''
+
+  // Filter bets by followed users if necessary
+  const followedUsersFilterPartBets =
+    onlyFollowedUsers && followedUserIds.length > 0
+      ? 'AND cb.user_id = ANY($10)'
+      : ''
 
   const betsSelect = `SELECT distinct on (cb.created_time) cb.*
        FROM contract_bets cb
@@ -108,6 +128,7 @@ export const getSiteActivity: APIHandler<'get-site-activity'> = async (
         ? 'AND cb.contract_id = ANY($9)'
         : ''
     }
+    ${followedUsersFilterPartBets}
      ORDER BY cb.created_time DESC
     LIMIT $3 OFFSET $4;
   `
@@ -136,6 +157,12 @@ export const getSiteActivity: APIHandler<'get-site-activity'> = async (
       ? 'JOIN group_contracts gct ON cc.contract_id = gct.contract_id'
       : ''
 
+  // Filter comments by followed users if necessary
+  const followedUsersFilterPartComments =
+    onlyFollowedUsers && followedUserIds.length > 0
+      ? 'AND cc.user_id = ANY($10)'
+      : ''
+
   const recentCommentsQuery = types.includes('comments')
     ? `SELECT distinct on (cc.created_time)
            cc.contract_id,
@@ -160,6 +187,7 @@ export const getSiteActivity: APIHandler<'get-site-activity'> = async (
              ? 'AND cc.contract_id = ANY($9)'
              : ''
          }
+         ${followedUsersFilterPartComments}
        ORDER BY cc.created_time DESC
        LIMIT $3 OFFSET $4;`
     : 'select null where false;'
@@ -171,6 +199,12 @@ export const getSiteActivity: APIHandler<'get-site-activity'> = async (
   const followedTopicsFilterForContracts =
     onlyFollowedTopics && followedTopicIds.length > 0
       ? 'JOIN group_contracts gct ON c.id = gct.contract_id'
+      : ''
+
+  // Filter contracts by followed users if necessary
+  const followedUsersFilterPartContracts =
+    onlyFollowedUsers && followedUserIds.length > 0
+      ? 'AND c.creator_id = ANY($10)'
       : ''
 
   const newContractsQuery = types.includes('markets')
@@ -194,6 +228,7 @@ export const getSiteActivity: APIHandler<'get-site-activity'> = async (
              ? 'AND c.id = ANY($9)'
              : ''
          }
+         ${followedUsersFilterPartContracts}
          AND NOT EXISTS (
            SELECT 1 FROM group_contracts gc2
            WHERE gc2.contract_id = c.id
@@ -220,6 +255,7 @@ export const getSiteActivity: APIHandler<'get-site-activity'> = async (
     minBetAmount ?? 500,
     followedTopicIds,
     followedContractIds,
+    followedUserIds, // New parameter $10
   ])
 
   const recentBets = results[0] || []

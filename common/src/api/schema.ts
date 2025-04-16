@@ -2079,6 +2079,7 @@ export const API = (_apiTypeCheck = {
         minBetAmount: z.coerce.number().optional(),
         onlyFollowedTopics: coerceBoolean.optional(),
         onlyFollowedContracts: coerceBoolean.optional(),
+        onlyFollowedUsers: coerceBoolean.optional(),
         userId: z.string().optional(),
       })
       .strict(),

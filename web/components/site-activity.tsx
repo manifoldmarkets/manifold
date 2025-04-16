@@ -24,7 +24,7 @@ import { track } from 'web/lib/service/analytics'
 import { usePersistentLocalState } from 'web/hooks/use-persistent-local-state'
 import { LiteGroup } from 'common/group'
 import DropdownMenu, { DropdownItem } from './widgets/dropdown-menu'
-import { DropdownPill, FilterPill } from './search/filter-pills'
+import { DropdownPill } from './search/filter-pills'
 import { Input } from './widgets/input'
 import { APIResponse } from 'common/src/api/schema'
 import { MultiTopicPillSelector } from './topics/topic-selector'
@@ -36,9 +36,11 @@ interface ActivityState {
   selectedTopics: LiteGroup[]
   types: ('bets' | 'comments' | 'markets')[]
   minBetAmount: number | undefined
-  onlyFollowedTopics: boolean
-  onlyFollowedContracts: boolean
-  filterMode: 'custom-topics' | 'followed-topics' | 'followed-markets'
+  filterMode:
+    | 'custom-topics'
+    | 'followed-topics'
+    | 'followed-markets'
+    | 'followed-users'
 }
 
 const defaultGroups: LiteGroup[] = [
@@ -93,21 +95,20 @@ export function SiteActivity(props: { className?: string }) {
         selectedTopics: [], //defaultGroups,
         types: ['comments', 'bets', 'markets'],
         minBetAmount: PRESET_BET_AMOUNTS[1],
-        onlyFollowedTopics: false,
-        onlyFollowedContracts: false,
         filterMode: 'custom-topics',
       },
-      'site-activity-state-1'
+      'site-activity-state-2'
     )
   const [offset, setOffset] = useState(0)
 
   const { selectedTopics, types, minBetAmount, filterMode } = activityState
 
-  // Derive onlyFollowedTopics and onlyFollowedContracts from filterMode
+  // Derive filter flags from filterMode
   const onlyFollowedTopics = filterMode === 'followed-topics'
   const onlyFollowedContracts = filterMode === 'followed-markets'
+  const onlyFollowedUsers = filterMode === 'followed-users'
 
-  // Only send topic IDs if we're in custom-topics or followed-topics mode (not in followed-markets mode)
+  // Only send topic IDs if we're in custom-topics mode
   const topicIds =
     filterMode === 'custom-topics' && selectedTopics.length > 0
       ? selectedTopics.map((t) => t.id)
@@ -164,6 +165,7 @@ export function SiteActivity(props: { className?: string }) {
       minBetAmount,
       onlyFollowedTopics,
       onlyFollowedContracts,
+      onlyFollowedUsers,
       userId: user?.id,
     },
     ['blockedContractIds', 'offset']
@@ -233,55 +235,72 @@ export function SiteActivity(props: { className?: string }) {
     'desc'
   )
 
+  const filterLabels = {
+    'followed-users': 'Followed Users',
+    'followed-topics': 'Followed Topics',
+    'followed-markets': 'Followed Markets',
+  }
+
+  const currentFilterLabel =
+    filterLabels[filterMode as keyof typeof filterLabels] ?? 'My Follows'
+
   return (
     <>
-      <Col className="bg-canvas-0 sticky top-[2.9rem] z-10 -mt-2 gap-2 py-2">
+      <Col className="bg-canvas-0 sticky top-[2.9rem] z-10 -mt-2 gap-2 pb-1 pt-2">
         {/* Primary Filter Mode Pills + Activity Type Dropdown */}
         <Row className="flex-wrap gap-2">
-          <FilterPill
-            selected={filterMode === 'custom-topics'}
-            onSelect={() => {
+          <MultiTopicPillSelector
+            topics={selectedTopics}
+            setTopics={(topics) => {
               if (filterMode !== 'custom-topics') {
                 setFilterMode('custom-topics')
               }
+              if (isEqual(selectedTopics, topics)) return
+              updateActivityState({ selectedTopics: topics })
+              track('site activity topic change', {
+                topics: topics.map((t) => t.slug),
+              })
             }}
-          >
-            <MultiTopicPillSelector
-              buttonClassName={'-mr-2 !bg-transparent !py-0 !pl-1 '}
-              topics={selectedTopics}
-              setTopics={(topics) => {
-                updateActivityState({ selectedTopics: topics })
-                track('site activity topic change', {
-                  topics: topics.map((t) => t.slug),
-                })
-              }}
-              maxTopics={10}
-              highlight={filterMode === 'custom-topics'}
-            />
-          </FilterPill>
+            maxTopics={10}
+            highlight={filterMode === 'custom-topics'}
+          />
           {user && (
-            <>
-              <FilterPill
-                selected={filterMode === 'followed-topics'}
-                onSelect={() => {
-                  if (filterMode !== 'followed-topics') {
-                    setFilterMode('followed-topics')
-                  }
-                }}
-              >
-                My Topics
-              </FilterPill>
-              <FilterPill
-                selected={filterMode === 'followed-markets'}
-                onSelect={() => {
-                  if (filterMode !== 'followed-markets') {
-                    setFilterMode('followed-markets')
-                  }
-                }}
-              >
-                My Markets
-              </FilterPill>
-            </>
+            <DropdownMenu
+              buttonContent={(open) => (
+                <DropdownPill
+                  color={filterMode !== 'custom-topics' ? 'indigo' : 'gray'}
+                  open={open}
+                >
+                  {currentFilterLabel}
+                </DropdownPill>
+              )}
+              items={[
+                {
+                  name: 'Followed Users',
+                  onClick: () => {
+                    if (filterMode !== 'followed-users') {
+                      setFilterMode('followed-users')
+                    }
+                  },
+                },
+                {
+                  name: 'Followed Topics',
+                  onClick: () => {
+                    if (filterMode !== 'followed-topics') {
+                      setFilterMode('followed-topics')
+                    }
+                  },
+                },
+                {
+                  name: 'Followed Markets',
+                  onClick: () => {
+                    if (filterMode !== 'followed-markets') {
+                      setFilterMode('followed-markets')
+                    }
+                  },
+                },
+              ]}
+            />
           )}
 
           <DropdownMenu
@@ -534,7 +553,7 @@ const ActivityLog = memo(function ActivityLog(props: {
                 height={100}
                 className={clsx(
                   'rounded-md object-cover',
-                  'h-12 w-12 sm:h-32 sm:w-32',
+                  'h-12 w-12',
                   // Only hide on desktop if single bet
                   items.length === 1 && 'amount' in items[0] && 'sm:hidden'
                 )}
@@ -544,7 +563,7 @@ const ActivityLog = memo(function ActivityLog(props: {
               className={
                 displayItems.length === 1 && 'question' in displayItems[0]
                   ? ''
-                  : '!opacity-60'
+                  : '!opacity-70'
               }
               contract={contract}
               trackingLocation={'site-activity'}
