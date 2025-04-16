@@ -90,7 +90,7 @@ export function SiteActivity(props: { className?: string }) {
   const [activityState, setActivityState] =
     usePersistentLocalState<ActivityState>(
       {
-        selectedTopics: defaultGroups,
+        selectedTopics: [], //defaultGroups,
         types: ['comments', 'bets', 'markets'],
         minBetAmount: PRESET_BET_AMOUNTS[1],
         onlyFollowedTopics: false,
@@ -236,7 +236,7 @@ export function SiteActivity(props: { className?: string }) {
   return (
     <>
       <Col className="bg-canvas-0 sticky top-[2.9rem] z-10 -mt-2 gap-2 py-2">
-        {/* Primary Filter Mode Pills */}
+        {/* Primary Filter Mode Pills + Activity Type Dropdown */}
         <Row className="flex-wrap gap-2">
           <FilterPill
             selected={filterMode === 'custom-topics'}
@@ -246,7 +246,6 @@ export function SiteActivity(props: { className?: string }) {
               }
             }}
           >
-            Custom
             <MultiTopicPillSelector
               buttonClassName={'-mr-2 !bg-transparent !py-0 !pl-1 '}
               topics={selectedTopics}
@@ -284,28 +283,31 @@ export function SiteActivity(props: { className?: string }) {
               </FilterPill>
             </>
           )}
-        </Row>
 
-        {/* Activity Type Filter Pills */}
-        <Row className="flex-wrap gap-2">
-          {ACTIVITY_TYPES.map((type) => (
-            <FilterPill
-              key={type.name}
-              selected={
-                types.length === type.value.length &&
-                type.value.every((v) => types.includes(v))
-              }
-              onSelect={() => {
+          <DropdownMenu
+            buttonContent={(open) => (
+              <DropdownPill open={open}>
+                {ACTIVITY_TYPES.find(
+                  (type) =>
+                    types.length === type.value.length &&
+                    type.value.every((v) => types.includes(v))
+                )?.name || 'All activity'}
+              </DropdownPill>
+            )}
+            items={ACTIVITY_TYPES.map((type) => ({
+              name: type.name,
+              onClick: () => {
                 if (isEqual(types, type.value)) return
                 updateActivityState({ types: [...type.value] })
                 track('site activity type change', {
                   types: [...type.value],
                 })
-              }}
-            >
-              {type.name}
-            </FilterPill>
-          ))}
+              },
+              selected:
+                types.length === type.value.length &&
+                type.value.every((v) => types.includes(v)),
+            }))}
+          />
 
           {/* Min Bet Amount (only show when filtering by trades exclusively) */}
           {types.every((t) => t === 'bets') && (
