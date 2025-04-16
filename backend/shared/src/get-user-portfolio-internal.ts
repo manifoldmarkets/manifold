@@ -50,12 +50,6 @@ export const getUserPortfolioInternal = async (userId: string) => {
       dayAgoPortfolio.totalDeposits
     : 0
 
-  const dayAgoCashProfit = dayAgoPortfolio
-    ? dayAgoPortfolio.balance +
-      dayAgoPortfolio.investmentValue -
-      dayAgoPortfolio.totalDeposits
-    : 0
-
   log(
     'time',
     Date.now() - startTime,
@@ -83,10 +77,7 @@ export const getUserPortfolioInternal = async (userId: string) => {
     spiceBalance,
     totalDeposits,
     totalCashDeposits,
-    dailyProfit:
-      investmentValue + balance + spiceBalance - totalDeposits - dayAgoProfit,
-    dailyCashProfit:
-      cashInvestmentValue + cashBalance - totalCashDeposits - dayAgoCashProfit,
+    dailyProfit: investmentValue + balance - totalDeposits - dayAgoProfit,
     timestamp: Date.now(),
   } as LivePortfolioMetrics
 }

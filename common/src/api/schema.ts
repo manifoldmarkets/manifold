@@ -434,16 +434,15 @@ export const API = (_apiTypeCheck = {
       .object({
         limit: z.coerce.number(),
         userId: z.string(),
+        balance: z.coerce.number(),
       })
       .strict(),
     returns: {} as {
       manaMetrics: ContractMetric[]
-      cashMetrics: ContractMetric[]
       contracts: MarketContract[]
       manaProfit: number
-      cashProfit: number
       manaInvestmentValue: number
-      cashInvestmentValue: number
+      balance: number
     },
   },
   // deprecated. use /bets?username= instead
