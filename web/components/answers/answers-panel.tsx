@@ -134,11 +134,7 @@ export function AnswersPanel(props: {
     ...a,
     prob: getAnswerProbability(contract, a.id),
   }))
-  const [showAll, setShowAll] = useState(
-    props.showAll ??
-      ((addAnswersMode === 'DISABLED' && answers.length <= 10) ||
-        answers.length <= 5)
-  )
+  const [showAll, setShowAll] = useState(props.showAll)
 
   const shouldAnswersSumToOne = getShouldAnswersSumToOne(contract)
 
