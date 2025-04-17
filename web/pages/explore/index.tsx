@@ -72,7 +72,7 @@ export function ExploreContent(props: { render: boolean }) {
       content: <SportsTabs />,
     },
     {
-      title: 'Site activity',
+      title: 'Activity',
       content: (
         <Col className="gap-2 pt-1">
           <SiteActivity />
