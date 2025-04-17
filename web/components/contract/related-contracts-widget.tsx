@@ -76,7 +76,7 @@ export const RelatedContractsGrid = memo(function (props: {
           showMore
             ? 'scrollbar-hide overflow-y-auto scroll-smooth'
             : 'overflow-hidden',
-          showAll ? 'h-full' : showMore ? 'h-[40rem]' : 'h-80'
+          showAll ? 'h-full' : showMore ? 'h-[40rem]' : 'max-h-80'
         )}
       >
         <Masonry
@@ -99,7 +99,7 @@ export const RelatedContractsGrid = memo(function (props: {
           <LoadMoreUntilNotVisible loadMore={loadMore} />
         )}
       </Col>
-      {!showAll && (
+      {!showAll && contracts.length > 3 && (
         <Row className="">
           <Button
             color={'gray'}
