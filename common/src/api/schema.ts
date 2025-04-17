@@ -189,7 +189,7 @@ export const API = (_apiTypeCheck = {
     method: 'GET',
     visibility: 'public',
     authed: false,
-    cache: DEFAULT_CACHE_STRATEGY,
+    // cache: DEFAULT_CACHE_STRATEGY,
     returns: [] as ContractComment[],
     props: z
       .object({
