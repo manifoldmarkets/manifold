@@ -1,17 +1,17 @@
 import { TokenNumber } from './widgets/token-number'
-import { Row } from './layout/row'
 import { PHONE_VERIFICATION_BONUS } from 'common/src/economy'
 
-export const PlayMoneyDisclaimer = ({ isLong }: { isLong?: boolean }) => {
+export const PlayMoneyDisclaimer = () => {
   return (
-    <Row className="text-ink-500 my-1.5 justify-center text-sm">
-      Get
+    <span className="text-ink-500 my-1.5 text-sm">
+      Get{' '}
       <TokenNumber
+        className="font-semibold"
         amount={PHONE_VERIFICATION_BONUS}
         coinType="mana"
-        className="mx-1"
-      />
-      {isLong && ' to start trading!'}
-    </Row>
+        isInline
+      />{' '}
+      to start trading!
+    </span>
   )
 }
