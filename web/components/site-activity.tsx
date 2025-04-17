@@ -753,8 +753,7 @@ function MultiTopicPillSelector(props: {
           : `${
               topics.length === 1 ? topics[0].name : `${topics.length} Topics`
             }`
-      // Highlight if custom topics are selected, otherwise use gray for 'All Topics'
-      buttonColor = 'indigo'
+      buttonColor = topics.length === 0 ? 'gray' : 'indigo'
       break
   }
 
