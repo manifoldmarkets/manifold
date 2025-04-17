@@ -9,6 +9,8 @@ create table if not exists
 
 create index market_drafts_user_id_idx on market_drafts (user_id);
 
+alter table market_drafts enable row level security;
+
 -- Function to update the timestamp
 create
 or replace function trigger_set_timestamp () returns trigger as $$
