@@ -75,6 +75,7 @@ import { ChartAnnotation } from 'common/supabase/chart-annotations'
 import { Dictionary } from 'lodash'
 import { Reaction } from 'common/reaction'
 import { YEAR_MS } from 'common/util/time'
+import { MarketDraft } from 'common/drafts'
 // mqp: very unscientific, just balancing our willingness to accept load
 // with user willingness to put up with stale data
 export const DEFAULT_CACHE_STRATEGY =
@@ -2324,6 +2325,48 @@ export const API = (_apiTypeCheck = {
       })
       .strict(),
     returns: {} as { success: boolean },
+  },
+
+  'save-market-draft': {
+    method: 'POST',
+    visibility: 'public',
+    authed: true,
+    returns: {} as { id: number },
+    props: z
+      .object({
+        data: z.object({
+          question: z.string(),
+          description: z.any().optional(),
+          outcomeType: z.string(),
+          answers: z.array(z.string()).optional(),
+          closeDate: z.string().optional(),
+          closeHoursMinutes: z.string().optional(),
+          visibility: z.string(),
+          selectedGroups: z.array(z.any()),
+          savedAt: z.number(),
+        }),
+      })
+      .strict(),
+  },
+
+  'get-market-drafts': {
+    method: 'GET',
+    visibility: 'public',
+    authed: true,
+    returns: [] as MarketDraft[],
+    props: z.object({}).strict(),
+  },
+
+  'delete-market-draft': {
+    method: 'POST',
+    visibility: 'public',
+    authed: true,
+    returns: {} as { success: boolean },
+    props: z
+      .object({
+        id: z.coerce.number(),
+      })
+      .strict(),
   },
 } as const)
 

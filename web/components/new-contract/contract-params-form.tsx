@@ -35,7 +35,7 @@ import { Group, MAX_GROUPS_PER_MARKET } from 'common/group'
 import { STONK_NO, STONK_YES } from 'common/stonk'
 import { User } from 'common/user'
 import { removeUndefinedProps } from 'common/util/object'
-import { extensions } from 'common/util/parse'
+import { extensions, richTextToString } from 'common/util/parse'
 import {
   setPersistentLocalState,
   usePersistentLocalState,
@@ -71,6 +71,9 @@ import { formatWithToken } from 'common/util/format'
 import { BiUndo } from 'react-icons/bi'
 import { liquidityTiers } from 'common/tier'
 import { MultiNumericDateSection } from './multi-numeric-date-section'
+import { Modal, MODAL_CLASS } from '../layout/modal'
+import { RelativeTimestamp } from '../relative-timestamp'
+import { MarketDraft } from 'common/drafts'
 
 export function ContractParamsForm(props: {
   creator: User
@@ -505,6 +508,69 @@ export function ContractParamsForm(props: {
   const [submitState, setSubmitState] = useState<
     'EDITING' | 'LOADING' | 'DONE'
   >('EDITING')
+
+  const [drafts, setDrafts] = useState<MarketDraft[]>([])
+  const [showDraftsModal, setShowDraftsModal] = useState(false)
+
+  useEffect(() => {
+    loadDrafts()
+  }, [])
+
+  const loadDrafts = async () => {
+    try {
+      const drafts = await api('get-market-drafts', {})
+      setDrafts(drafts)
+    } catch (error) {
+      console.error('Error loading drafts:', error)
+    }
+  }
+
+  const saveDraftToDb = async () => {
+    try {
+      const draft = {
+        question,
+        description: editor?.getJSON(),
+        outcomeType,
+        answers,
+        closeDate,
+        closeHoursMinutes,
+        visibility,
+        selectedGroups,
+        savedAt: Date.now(),
+      }
+
+      await api('save-market-draft', { data: draft })
+      await loadDrafts() // Refresh drafts list
+    } catch (error) {
+      console.error('Error saving draft:', error)
+    }
+  }
+
+  const loadDraftFromDb = async (draft: MarketDraft) => {
+    try {
+      setQuestion(draft.data.question)
+      if (draft.data.description && editor) {
+        editor.commands.setContent(draft.data.description)
+      }
+      setAnswers(draft.data.answers ?? defaultAnswers)
+      setCloseDate(draft.data.closeDate)
+      setCloseHoursMinutes(draft.data.closeHoursMinutes)
+      setVisibility(draft.data.visibility as Visibility)
+      setSelectedGroups(draft.data.selectedGroups)
+      setShowDraftsModal(false)
+    } catch (error) {
+      console.error('Error loading draft:', error)
+    }
+  }
+
+  const deleteDraft = async (id: number) => {
+    try {
+      await api('delete-market-draft', { id })
+      await loadDrafts()
+    } catch (error) {
+      console.error('Error deleting draft:', error)
+    }
+  }
 
   const submit = async () => {
     if (!isValid) return
@@ -999,7 +1065,109 @@ export function ContractParamsForm(props: {
           for each unique trader on your question.
         </div>
       )}
-      <div />
+      <Row className="w-full gap-2">
+        <Button className="w-full" color="gray-white" onClick={saveDraftToDb}>
+          Save draft
+        </Button>
+        <Button
+          className="w-full"
+          color="gray-white"
+          onClick={() => setShowDraftsModal(true)}
+        >
+          View drafts ({drafts.length})
+        </Button>
+      </Row>
+      <DraftsModal
+        showDraftsModal={showDraftsModal}
+        setShowDraftsModal={setShowDraftsModal}
+        drafts={drafts}
+        loadDraftFromDb={loadDraftFromDb}
+        deleteDraft={deleteDraft}
+      />
     </Col>
+  )
+}
+
+interface DraftsModalProps {
+  showDraftsModal: boolean
+  setShowDraftsModal: (show: boolean) => void
+  drafts: MarketDraft[]
+  loadDraftFromDb: (draft: MarketDraft) => void
+  deleteDraft: (id: number) => void
+}
+
+function DraftsModal(props: DraftsModalProps) {
+  const {
+    showDraftsModal,
+    setShowDraftsModal,
+    drafts,
+    loadDraftFromDb,
+    deleteDraft,
+  } = props
+
+  return (
+    <Modal
+      className={MODAL_CLASS}
+      open={showDraftsModal}
+      setOpen={setShowDraftsModal}
+    >
+      <div className="max-h-[80vh] overflow-y-auto p-6">
+        <h3 className="mb-4 text-xl font-semibold">Saved Drafts</h3>
+        {drafts.length === 0 ? (
+          <p>No saved drafts</p>
+        ) : (
+          <div className="flex flex-col gap-4">
+            {drafts.map((draft) => (
+              <div
+                key={draft.id}
+                className="flex flex-col gap-2 rounded border p-4"
+              >
+                <div className="flex items-center justify-between">
+                  <div className="flex-1">
+                    <p className="font-medium">
+                      {draft.data.question || 'Untitled'}
+                    </p>
+                    <p className="text-ink-600 text-sm">
+                      <RelativeTimestamp
+                        time={new Date(draft.createdAt).getTime()}
+                      />
+                    </p>
+                  </div>
+                  <div className="flex gap-2">
+                    <Button
+                      color="gray-outline"
+                      onClick={() => loadDraftFromDb(draft)}
+                    >
+                      Load
+                    </Button>
+                    <Button
+                      color="red-outline"
+                      onClick={() => deleteDraft(draft.id)}
+                    >
+                      Delete
+                    </Button>
+                  </div>
+                </div>
+
+                <div className="text-ink-600 text-sm">
+                  <p>Type: {draft.data.outcomeType}</p>
+                  {draft.data.answers.length > 0 && (
+                    <p>
+                      Answers: {draft.data.answers.slice(0, 5).join(', ')}
+                      {draft.data.answers.length > 5 && '...'}
+                    </p>
+                  )}
+                  {draft.data.description && (
+                    <p className="line-clamp-2">
+                      Description: {richTextToString(draft.data.description)}
+                    </p>
+                  )}
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+    </Modal>
   )
 }
