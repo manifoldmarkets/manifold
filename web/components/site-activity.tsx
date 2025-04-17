@@ -753,7 +753,7 @@ function MultiTopicPillSelector(props: {
     default:
       buttonLabel =
         topics.length === 0
-          ? 'No filters'
+          ? 'All sources'
           : `${
               topics.length === 1 ? topics[0].name : `${topics.length} Topics`
             }`
@@ -763,7 +763,7 @@ function MultiTopicPillSelector(props: {
 
   const dropdownItems: (DropdownItem | null)[] = [
     {
-      name: 'No filters',
+      name: 'All sources',
       icon:
         filterMode === 'custom-topics' && topics.length === 0 ? (
           <CheckIcon className="mr-1 h-4 w-4" />
