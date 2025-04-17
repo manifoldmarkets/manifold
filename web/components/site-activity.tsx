@@ -27,20 +27,23 @@ import DropdownMenu, { DropdownItem } from './widgets/dropdown-menu'
 import { DropdownPill } from './search/filter-pills'
 import { Input } from './widgets/input'
 import { APIResponse } from 'common/src/api/schema'
-import { MultiTopicPillSelector } from './topics/topic-selector'
 import { useSavedContractMetrics } from 'web/hooks/use-saved-contract-metrics'
 import { Bet } from 'common/bet'
 import { YourMetricsFooter } from './contract/feed-contract-card'
 import Image from 'next/image'
+import { CheckIcon } from '@heroicons/react/solid'
+import { filterDefined } from 'common/util/array'
+import { useSearchGroups } from './topics/topic-selector'
+type FilterMode =
+  | 'custom-topics'
+  | 'followed-topics'
+  | 'followed-markets'
+  | 'followed-users'
 interface ActivityState {
   selectedTopics: LiteGroup[]
   types: ('bets' | 'comments' | 'markets')[]
   minBetAmount: number | undefined
-  filterMode:
-    | 'custom-topics'
-    | 'followed-topics'
-    | 'followed-markets'
-    | 'followed-users'
+  filterMode: FilterMode // Use the defined type
 }
 
 const defaultGroups: LiteGroup[] = [
@@ -141,8 +144,8 @@ export function SiteActivity(props: { className?: string }) {
   )
 
   // Update filter mode when switching between different filtering options
-  const setFilterMode = useCallback(
-    (mode: ActivityState['filterMode']) => {
+  const setFilterModeCallback = useCallback(
+    (mode: FilterMode) => {
       updateActivityState({ filterMode: mode })
       track('site activity filter mode change', { mode })
     },
@@ -235,15 +238,6 @@ export function SiteActivity(props: { className?: string }) {
     'desc'
   )
 
-  const filterLabels = {
-    'followed-users': 'Followed Users',
-    'followed-topics': 'Followed Topics',
-    'followed-markets': 'Followed Markets',
-  }
-
-  const currentFilterLabel =
-    filterLabels[filterMode as keyof typeof filterLabels] ?? 'My Follows'
-
   return (
     <>
       <Col className="bg-canvas-0 sticky top-[2.9rem] z-10 -mt-2 gap-2 pb-1 pt-2">
@@ -252,56 +246,18 @@ export function SiteActivity(props: { className?: string }) {
           <MultiTopicPillSelector
             topics={selectedTopics}
             setTopics={(topics) => {
-              if (filterMode !== 'custom-topics') {
-                setFilterMode('custom-topics')
-              }
+              // No need to set filterMode here, toggleTopic in the component handles it
               if (isEqual(selectedTopics, topics)) return
               updateActivityState({ selectedTopics: topics })
               track('site activity topic change', {
                 topics: topics.map((t) => t.slug),
               })
             }}
+            filterMode={filterMode}
+            setFilterMode={setFilterModeCallback}
+            userId={user?.id}
             maxTopics={10}
-            highlight={filterMode === 'custom-topics'}
           />
-          {user && (
-            <DropdownMenu
-              buttonContent={(open) => (
-                <DropdownPill
-                  color={filterMode !== 'custom-topics' ? 'indigo' : 'gray'}
-                  open={open}
-                >
-                  {currentFilterLabel}
-                </DropdownPill>
-              )}
-              items={[
-                {
-                  name: 'Followed Users',
-                  onClick: () => {
-                    if (filterMode !== 'followed-users') {
-                      setFilterMode('followed-users')
-                    }
-                  },
-                },
-                {
-                  name: 'Followed Topics',
-                  onClick: () => {
-                    if (filterMode !== 'followed-topics') {
-                      setFilterMode('followed-topics')
-                    }
-                  },
-                },
-                {
-                  name: 'Followed Markets',
-                  onClick: () => {
-                    if (filterMode !== 'followed-markets') {
-                      setFilterMode('followed-markets')
-                    }
-                  },
-                },
-              ]}
-            />
-          )}
 
           <DropdownMenu
             buttonContent={(open) => (
@@ -724,3 +680,185 @@ const CommentLog = memo(function FeedComment(props: {
     </Col>
   )
 })
+
+function MultiTopicPillSelector(props: {
+  topics: LiteGroup[]
+  setTopics: (topics: LiteGroup[]) => void
+  filterMode: FilterMode
+  setFilterMode: (mode: FilterMode) => void
+  maxTopics?: number
+  buttonClassName?: string
+  userId: string | undefined
+}) {
+  const {
+    topics,
+    setTopics,
+    filterMode,
+    setFilterMode,
+    maxTopics = 10,
+    buttonClassName,
+    userId,
+  } = props
+  const { query, setQuery, searchedGroups } = useSearchGroups(false)
+
+  const toggleTopic = (topic: LiteGroup) => {
+    const isSelected = topics.some((t) => t.id === topic.id)
+    let newTopics: LiteGroup[]
+    if (isSelected) {
+      newTopics = topics.filter((t) => t.id !== topic.id)
+    } else if (topics.length < maxTopics) {
+      newTopics = [...topics, topic]
+    } else {
+      return // Max topics reached or no change needed
+    }
+    setTopics(newTopics)
+    // Switch to custom topics mode when a topic is added/removed, unless it results in zero topics
+    if (newTopics.length > 0) {
+      setFilterMode('custom-topics')
+    } else {
+      // If the last topic was removed, revert to 'custom-topics' but showing 'All Topics'
+      setFilterMode('custom-topics')
+    }
+  }
+  const triggerAllTopics = () => {
+    if (filterMode !== 'custom-topics') {
+      setFilterMode('custom-topics')
+    }
+    if (topics.length !== 0) {
+      setTopics([])
+    }
+  }
+  // Determine button label and color based on filterMode and topics
+  let buttonLabel: string
+  let buttonColor: 'indigo' | 'gray'
+
+  switch (filterMode) {
+    case 'followed-users':
+      buttonLabel = 'Followed Users'
+      buttonColor = 'indigo'
+      break
+    case 'followed-topics':
+      buttonLabel = 'Followed Topics'
+      buttonColor = 'indigo'
+      break
+    case 'followed-markets':
+      buttonLabel = 'Followed Markets'
+      buttonColor = 'indigo'
+      break
+    case 'custom-topics':
+    default:
+      buttonLabel =
+        topics.length === 0
+          ? 'No filters'
+          : `${
+              topics.length === 1 ? topics[0].name : `${topics.length} Topics`
+            }`
+      // Highlight if custom topics are selected, otherwise use gray for 'All Topics'
+      buttonColor = 'indigo'
+      break
+  }
+
+  const dropdownItems: (DropdownItem | null)[] = [
+    {
+      name: 'No filters',
+      icon:
+        filterMode === 'custom-topics' && topics.length === 0 ? (
+          <CheckIcon className="mr-1 h-4 w-4" />
+        ) : undefined,
+      onClick: triggerAllTopics,
+    },
+    // Follow options (only if logged in)
+    ...(userId
+      ? ([
+          {
+            name: 'Followed Markets',
+            icon:
+              filterMode === 'followed-markets' ? (
+                <CheckIcon className="mr-1 h-4 w-4" />
+              ) : undefined,
+            onClick: () => {
+              if (filterMode !== 'followed-markets')
+                setFilterMode('followed-markets')
+              else triggerAllTopics()
+            },
+          },
+          {
+            name: 'Followed Users',
+            icon:
+              filterMode === 'followed-users' ? (
+                <CheckIcon className="mr-1 h-4 w-4" />
+              ) : undefined,
+            onClick: () => {
+              if (filterMode !== 'followed-users')
+                setFilterMode('followed-users')
+              else triggerAllTopics()
+            },
+          },
+          {
+            name: 'Followed Topics',
+            icon:
+              filterMode === 'followed-topics' ? (
+                <CheckIcon className="mr-1 h-4 w-4" />
+              ) : undefined,
+            onClick: () => {
+              if (filterMode !== 'followed-topics')
+                setFilterMode('followed-topics')
+              else triggerAllTopics()
+            },
+          },
+        ] as (DropdownItem | null)[])
+      : []),
+
+    // Custom Topic Section Header and Search
+    {
+      name: 'Custom Topics Header', // Unique key for the header/search section
+      nonButtonContent: (
+        <div className="flex flex-col px-1 pt-1">
+          <input
+            type="text"
+            className="bg-ink-200 dark:bg-ink-300 focus:ring-primary-500 my-1 ml-2 w-40 rounded-md border-none text-xs"
+            placeholder="Search topics"
+            autoFocus={filterMode === 'custom-topics'} // Autofocus if in custom mode
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            onClick={(e) => e.stopPropagation()} // Prevent dropdown close on click
+          />
+        </div>
+      ),
+      closeOnClickOverride: false, // Keep dropdown open for search input interaction
+    } as DropdownItem,
+
+    // Selected topics (show checkmark, clicking removes)
+    ...topics.map((topic) => ({
+      name: topic.name,
+      icon: <CheckIcon className="mr-1 h-4 w-4" />,
+      onClick: () => toggleTopic(topic),
+    })),
+
+    // Searched topics (no checkmark, clicking adds & sets mode to custom)
+    ...searchedGroups
+      .filter((topic) => !topics.some((t) => t.id === topic.id))
+      .map((topic) => ({
+        name: topic.name,
+        onClick: () => toggleTopic(topic), // toggleTopic handles mode switching
+      })),
+  ]
+
+  return (
+    <div className="relative">
+      <DropdownMenu
+        closeOnClick={false} // Keep dropdown open for multi-select & search
+        items={filterDefined(dropdownItems)} // Filter out nulls from conditional rendering
+        buttonContent={(open) => (
+          <DropdownPill
+            className={buttonClassName}
+            open={open}
+            color={buttonColor} // Use determined color
+          >
+            {buttonLabel} {/* Use determined label */}
+          </DropdownPill>
+        )}
+      />
+    </div>
+  )
+}
