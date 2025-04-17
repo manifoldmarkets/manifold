@@ -765,6 +765,7 @@ function MultiTopicPillSelector(props: {
           <CheckIcon className="mr-1 h-4 w-4" />
         ) : undefined,
       onClick: triggerAllTopics,
+      closeOnClick: true,
     },
     // Follow options (only if logged in)
     ...(userId
@@ -780,6 +781,7 @@ function MultiTopicPillSelector(props: {
                 setFilterMode('followed-markets')
               else triggerAllTopics()
             },
+            closeOnClick: true,
           },
           {
             name: 'Followed Users',
@@ -792,6 +794,7 @@ function MultiTopicPillSelector(props: {
                 setFilterMode('followed-users')
               else triggerAllTopics()
             },
+            closeOnClick: true,
           },
           {
             name: 'Followed Topics',
@@ -804,6 +807,7 @@ function MultiTopicPillSelector(props: {
                 setFilterMode('followed-topics')
               else triggerAllTopics()
             },
+            closeOnClick: true,
           },
         ] as (DropdownItem | null)[])
       : []),
@@ -824,7 +828,6 @@ function MultiTopicPillSelector(props: {
           />
         </div>
       ),
-      closeOnClickOverride: false, // Keep dropdown open for search input interaction
     } as DropdownItem,
 
     // Selected topics (show checkmark, clicking removes)
