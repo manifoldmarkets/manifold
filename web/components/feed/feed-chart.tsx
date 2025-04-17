@@ -13,7 +13,7 @@ export function FeedBinaryChart(props: {
   startDate?: number
   className?: string
 }) {
-  const { contract, className, startDate } = props
+  const { contract, className } = props
 
   const [points, setPoints] = usePersistentInMemoryState<
     { x: number; y: number }[] | null | undefined
@@ -21,13 +21,12 @@ export function FeedBinaryChart(props: {
 
   // cache the current time so we don't re-render the chart every time
   const [now] = useState(Date.now())
-  const startingDate = startDate ? startDate : now - DAY_MS
-
+  const startDate = props.startDate ? props.startDate : now - DAY_MS
   useEffect(() => {
     getBetPoints(contract.id, {
       limit: 1000,
       filterRedemptions: true,
-      afterTime: startingDate,
+      afterTime: startDate,
     }).then((points) => {
       if (points.length > 0)
         setPoints(
