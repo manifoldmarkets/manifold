@@ -49,6 +49,7 @@ function getNavigation(user: User) {
       name: 'Explore',
       href: '/explore',
       icon: IoCompassOutline,
+      iconClassName: '!h-[1.9rem] !w-[1.9rem] !mb-[0.19rem] !mt-[0.13rem]',
     },
     {
       name: 'Profile',
@@ -68,6 +69,7 @@ const signedOutNavigation = () => [
     name: 'Explore',
     href: '/explore',
     icon: IoCompassOutline,
+    iconClassName: '!h-[1.9rem] !w-[1.9rem] !mb-[0.19rem] !mt-[0.13rem]',
     // prefetch: false, // should we not prefetch this?
   },
   // { name: 'News', href: '/news', icon: NewspaperIcon, alwaysShowName: true },
@@ -195,7 +197,9 @@ function NavBarItem(props: {
         onTouchStart={() => setTouched(true)}
         onTouchEnd={() => setTouched(false)}
       >
-        {item.icon && <item.icon className={iconClassName} />}
+        {item.icon && (
+          <item.icon className={clsx(iconClassName, item.iconClassName)} />
+        )}
         {children}
         {item.name}
       </button>
@@ -218,7 +222,9 @@ function NavBarItem(props: {
       onTouchStart={() => setTouched(true)}
       onTouchEnd={() => setTouched(false)}
     >
-      {item.icon && <item.icon className={iconClassName} />}
+      {item.icon && (
+        <item.icon className={clsx(iconClassName, item.iconClassName)} />
+      )}
       {children}
       {item.name}
     </Link>
