@@ -1024,6 +1024,20 @@ export function ContractParamsForm(props: {
         liquidityTier={liquidityTier}
         setLiquidityTier={setLiquidityTier}
       />
+      {outcomeType !== 'POLL' && outcomeType !== 'BOUNTIED_QUESTION' && (
+        <div className="text-ink-600 -mt-3 text-sm">
+          Earn back your creation cost! Get a{' '}
+          <b>
+            {formatWithToken({
+              amount: getUniqueBettorBonusAmount(ante, numAnswers),
+              short: true,
+              token: 'M$',
+            })}{' '}
+            bonus
+          </b>{' '}
+          for each unique trader on your question.
+        </div>
+      )}
       {errorText && <span className={'text-error'}>{errorText}</span>}
       <Button
         className="w-full"
@@ -1051,20 +1065,6 @@ export function ContractParamsForm(props: {
           ? 'Creating...'
           : 'Created!'}
       </Button>
-      {outcomeType !== 'POLL' && outcomeType !== 'BOUNTIED_QUESTION' && (
-        <div className="text-ink-600 -mt-3 text-sm">
-          Earn back your creation cost! Get a{' '}
-          <b>
-            {formatWithToken({
-              amount: getUniqueBettorBonusAmount(ante, numAnswers),
-              short: true,
-              token: 'M$',
-            })}{' '}
-            bonus
-          </b>{' '}
-          for each unique trader on your question.
-        </div>
-      )}
       <Row className="w-full gap-2">
         <Button className="w-full" color="gray-white" onClick={saveDraftToDb}>
           Save draft
