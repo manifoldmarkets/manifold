@@ -260,8 +260,12 @@ export function SiteActivity(props: { className?: string }) {
           />
 
           <DropdownMenu
+            closeOnClick
             buttonContent={(open) => (
-              <DropdownPill open={open}>
+              <DropdownPill
+                open={open}
+                color={types.length === 3 ? 'gray' : 'indigo'}
+              >
                 {ACTIVITY_TYPES.find(
                   (type) =>
                     types.length === type.value.length &&
