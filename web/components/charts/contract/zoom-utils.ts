@@ -4,7 +4,7 @@ import { useCallback, useEffect, useLayoutEffect, useState } from 'react'
 import { ScaleTime } from 'd3-scale'
 import { getBetPointsBetween } from 'common/bets'
 import { getMultiBetPoints } from 'common/contract-params'
-import { MarketContract, MultiContract } from 'common/contract'
+import { CPMMContract, MarketContract, MultiContract } from 'common/contract'
 import { buildArray } from 'common/util/array'
 import { useEvent } from 'client-common/hooks/use-event'
 
@@ -26,7 +26,7 @@ export async function getPointsBetween(
 
 // only for single value contracts
 export const useDataZoomFetcher = <T>(props: {
-  contract: MarketContract
+  contract: CPMMContract
   viewXScale?: ScaleTime<number, number>
   points: HistoryPoint<T>[]
 }) => {

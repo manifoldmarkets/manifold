@@ -2,7 +2,7 @@
 import { OgCardProps } from 'common/contract-seo'
 import clsx from 'clsx'
 import { ProbGraph } from './graph'
-import { base64toFloat32Points, Point } from 'common/edge/og'
+import { base64toPoints, Point } from 'common/edge/og'
 import Logo from 'web/public/logo.svg'
 
 // See https://github.com/vercel/satori#documentation for styling restrictions
@@ -21,7 +21,7 @@ export function OgMarket(props: OgCardProps) {
   const probabilityAsFloat = probability
     ? parseFloat(probability.replace('%', ''))
     : undefined
-  const data = points ? (base64toFloat32Points(points) as Point[]) : []
+  const data = points ? (base64toPoints(points) as Point[]) : []
   const numTraders = Number(props.numTraders ?? 0)
   const showGraph = data && data.length > 5
 

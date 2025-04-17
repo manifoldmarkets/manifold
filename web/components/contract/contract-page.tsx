@@ -18,7 +18,6 @@ import {
   MultiPoints,
   unserializeBase64Multi,
 } from 'common/chart'
-import { base64toFloat32Points } from 'common/edge/og'
 import { HOUSE_BOT_USERNAME, SPICE_MARKET_TOOLTIP } from 'common/envs/constants'
 import { DAY_MS } from 'common/util/time'
 import { UserBetsSummary } from 'web/components/bet/user-bet-summary'
@@ -78,6 +77,7 @@ import { shouldHideGraph } from 'common/contract-params'
 import { CreatorSharePanel, NonCreatorSharePanel } from './creator-share-panel'
 import { FollowMarketButton } from '../buttons/follow-market-button'
 import { useSaveReferral } from 'web/hooks/use-save-referral'
+import { base64toPoints } from 'common/edge/og'
 
 export function ContractPageContent(props: ContractParams) {
   const {
@@ -666,7 +666,7 @@ const useBetData = (props: {
         [...(array1 ?? []), ...(array2 ?? [])].sort((a, b) => a.x - b.x)
       ) as MultiPoints
     } else {
-      const points = pointsString ? base64toFloat32Points(pointsString) : []
+      const points = pointsString ? base64toPoints(pointsString) : []
       const newPoints = newBetsWithoutRedemptions.map((bet) => ({
         x: bet.createdTime,
         y: bet.probAfter,

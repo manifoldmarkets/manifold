@@ -109,16 +109,8 @@ export const BinaryContractChart = (props: {
   const stringifiedBetPoints = JSON.stringify(betPoints)
 
   const now = useMemo(() => Date.now(), [stringifiedBetPoints, endP])
-
   const data = useMemo(() => {
-    return buildArray(
-      !contract.lastBetTime && {
-        x: start,
-        y: contract.initialProbability ?? 0.5,
-      }, // binary markets before 3-16-2022 have no initialProbability
-      ...betPoints,
-      { x: end ?? now, y: endP }
-    )
+    return buildArray(...betPoints, { x: end ?? now, y: endP })
   }, [end, endP, betPoints])
 
   const rightmostDate = getRightmostVisibleDate(end, last(betPoints)?.x, now)

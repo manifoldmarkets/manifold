@@ -77,7 +77,14 @@ export const getBetPointsBetween = async (
     })
     startingProbs.push(...beforePoints)
   } else {
-    if (sorted.length === 0) return []
+    if (sorted.length === 0)
+      return buildArray(
+        options.afterTime === contract.createdTime && {
+          x: contract.createdTime,
+          y: contract.initialProbability ?? 0.5,
+          answerId: undefined,
+        }
+      )
     startingProbs.push({
       x: options.afterTime ?? contract.createdTime,
       y: sorted[0].probBefore,
