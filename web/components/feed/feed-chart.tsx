@@ -21,7 +21,7 @@ export function FeedBinaryChart(props: {
 
   // cache the current time so we don't re-render the chart every time
   const [now] = useState(Date.now())
-  const startDate = props.startDate ? props.startDate : now - DAY_MS
+  const startDate = props.startDate ?? now - DAY_MS
   useEffect(() => {
     getBetPoints(contract.id, {
       limit: 1000,
