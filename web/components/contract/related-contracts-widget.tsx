@@ -61,6 +61,7 @@ export const RelatedContractsGrid = memo(function (props: {
 
   const [showMore, setShowMore] = useState(showAll ?? false)
   const titleClass = 'text-ink-600 mb-2 text-2xl'
+  if (!contracts.length) return null
 
   return (
     <Col
