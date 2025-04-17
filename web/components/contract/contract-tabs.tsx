@@ -34,7 +34,6 @@ import { usePersistentInMemoryState } from 'client-common/hooks/use-persistent-i
 import { useSubscribeNewComments } from 'client-common/hooks/use-comments'
 import { ParentFeedComment } from '../comments/comment'
 import { useHashInUrlPageRouter } from 'web/hooks/use-hash-in-url-page-router'
-import { useHashInUrl } from 'web/hooks/use-hash-in-url'
 import { MultiNumericBetGroup } from 'web/components/feed/feed-multi-numeric-bet-group'
 import { Button } from '../buttons/button'
 import DropdownMenu from '../widgets/dropdown-menu'
@@ -47,6 +46,7 @@ import {
   useContractBets,
 } from 'client-common/hooks/use-bets'
 import { useIsPageVisible } from 'web/hooks/use-page-visible'
+import { useCommentThread } from 'web/hooks/use-comments'
 
 export function ContractTabs(props: {
   staticContract: Contract
@@ -62,7 +62,6 @@ export function ContractTabs(props: {
   totalBets: number
   totalPositions: number
   pinnedComments: ContractComment[]
-  appRouter?: boolean
 }) {
   const {
     staticContract,
@@ -76,8 +75,9 @@ export function ContractTabs(props: {
     setActiveIndex,
     totalBets,
     pinnedComments,
-    appRouter,
   } = props
+
+  const highlightedCommentId = useHashInUrlPageRouter('')
 
   const [totalPositions, setTotalPositions] = useState(props.totalPositions)
   const [totalComments, setTotalComments] = useState(comments.length)
@@ -127,7 +127,7 @@ export function ContractTabs(props: {
               replyTo={replyTo}
               clearReply={() => setReplyTo?.(undefined)}
               className="-ml-2 -mr-1"
-              appRouter={appRouter}
+              highlightCommentId={highlightedCommentId}
             />
           ),
         },
@@ -174,7 +174,6 @@ export const CommentsTabContent = memo(function CommentsTabContent(props: {
   className?: string
   highlightCommentId?: string
   pinnedComments: ContractComment[]
-  appRouter?: boolean
   scrollToEnd?: boolean
 }) {
   const {
@@ -186,7 +185,6 @@ export const CommentsTabContent = memo(function CommentsTabContent(props: {
     clearReply,
     className,
     highlightCommentId,
-    appRouter,
     scrollToEnd,
   } = props
   const user = useUser()
@@ -224,15 +222,62 @@ export const CommentsTabContent = memo(function CommentsTabContent(props: {
 
   // Listen for new comments
   const newComments = useSubscribeNewComments(staticContract.id)
-  const comments = uniqBy(
+  const allFetchedComments = uniqBy(
     [
       ...(newComments ?? []),
       ...(newFetchedComments ?? []),
       ...(fetchedComments ?? []),
-      ...props.comments,
+      ...props.comments.filter((c) => c.id !== highlightCommentId),
     ],
     'id'
   ).filter((c) => !blockedUserIds.includes(c.userId))
+
+  const commentExistsLocally = allFetchedComments.some(
+    (c) => c.id === highlightCommentId
+  )
+
+  // Fetch the thread only if the comment isn't already loaded
+  const fetchedCommentThread = useCommentThread(
+    commentExistsLocally ? undefined : highlightCommentId
+  )
+
+  // If the comment exists locally, construct the thread from local comments
+  const localCommentThread = useMemo(() => {
+    if (!commentExistsLocally || !highlightCommentId) return undefined
+
+    const highlightedComment = allFetchedComments.find(
+      (c) => c.id === highlightCommentId
+    )
+    if (!highlightedComment) return undefined
+
+    const parentId = highlightedComment.replyToCommentId ?? highlightCommentId
+    const threadComments = allFetchedComments.filter(
+      (c) => c.id === parentId || c.replyToCommentId === parentId
+    )
+    return sortBy(threadComments, 'createdTime')
+  }, [highlightCommentId, commentExistsLocally])
+
+  const comments = useMemo(() => {
+    // Use the fetched thread if available, otherwise the locally constructed one
+    const threadToMerge = fetchedCommentThread ?? localCommentThread
+    if (!threadToMerge) return allFetchedComments
+
+    const threadIds = new Set(threadToMerge.map((c) => c.id))
+    const filteredComments = allFetchedComments.filter(
+      (c) => !threadIds.has(c.id)
+    )
+    // Ensure thread comments are included and the list is unique
+    return uniqBy([...threadToMerge, ...filteredComments], 'id')
+  }, [
+    JSON.stringify(allFetchedComments),
+    JSON.stringify(fetchedCommentThread),
+    JSON.stringify(localCommentThread),
+  ])
+
+  const isLoadingHighlightedComment =
+    highlightCommentId &&
+    !commentExistsLocally &&
+    fetchedCommentThread === undefined
 
   const [parentCommentsToRender, setParentCommentsToRender] = useState(
     props.comments.filter((c) => !c.replyToCommentId).length
@@ -339,20 +384,14 @@ export const CommentsTabContent = memo(function CommentsTabContent(props: {
         .flat(),
     [comments.length]
   )
-  const idToHighlight =
-    // eslint-disable-next-line react-hooks/rules-of-hooks
-    highlightCommentId ?? appRouter
-      ? // eslint-disable-next-line react-hooks/rules-of-hooks
-        useHashInUrl()
-      : // eslint-disable-next-line react-hooks/rules-of-hooks
-        useHashInUrlPageRouter('')
+
   useEffect(() => {
-    if (idToHighlight) {
-      const currentlyVisible = visibleCommentIds.includes(idToHighlight)
+    if (highlightCommentId) {
+      const currentlyVisible = visibleCommentIds.includes(highlightCommentId)
       if (!currentlyVisible) setParentCommentsToRender(comments.length)
     }
     setCommentsLength?.(comments.length)
-  }, [idToHighlight, comments.length])
+  }, [highlightCommentId, comments.length])
 
   const loadMore = () => setParentCommentsToRender((prev) => prev + LOAD_MORE)
   const pinnedComments = uniqBy(
@@ -480,34 +519,40 @@ export const CommentsTabContent = memo(function CommentsTabContent(props: {
         </div>
       ))}
 
-      {parentComments.slice(0, parentCommentsToRender).map((parent) => (
-        <FeedCommentThread
-          key={parent.id}
-          playContract={staticContract}
-          liveContract={liveContract}
-          parentComment={parent}
-          threadComments={commentsByParent[parent.id] ?? []}
-          trackingLocation={'contract page'}
-          idInUrl={idToHighlight}
-          showReplies={
-            !isBountiedQuestion ||
-            (!!user && user.id === staticContract.creatorId)
-          }
-          childrenBountyTotal={
-            staticContract.outcomeType == 'BOUNTIED_QUESTION'
-              ? childrensBounties[parent.id]
-              : undefined
-          }
-          bets={bets?.filter(
-            (b) =>
-              b.replyToCommentId &&
-              [parent]
-                .concat(commentsByParent[parent.id] ?? [])
-                .map((c) => c.id)
-                .includes(b.replyToCommentId)
-          )}
-        />
-      ))}
+      {isLoadingHighlightedComment ? (
+        <Col className="h-32 items-center justify-center">
+          <LoadingIndicator />
+        </Col>
+      ) : (
+        parentComments.slice(0, parentCommentsToRender).map((parent) => (
+          <FeedCommentThread
+            key={parent.id}
+            playContract={staticContract}
+            liveContract={liveContract}
+            parentComment={parent}
+            threadComments={commentsByParent[parent.id] ?? []}
+            trackingLocation={'contract page'}
+            idInUrl={highlightCommentId}
+            showReplies={
+              !isBountiedQuestion ||
+              (!!user && user.id === staticContract.creatorId)
+            }
+            childrenBountyTotal={
+              staticContract.outcomeType == 'BOUNTIED_QUESTION'
+                ? childrensBounties[parent.id]
+                : undefined
+            }
+            bets={bets?.filter(
+              (b) =>
+                b.replyToCommentId &&
+                [parent]
+                  .concat(commentsByParent[parent.id] ?? [])
+                  .map((c) => c.id)
+                  .includes(b.replyToCommentId)
+            )}
+          />
+        ))
+      )}
       <div className="relative w-full">
         <VisibilityObserver
           onVisibilityUpdated={onVisibilityUpdated}
