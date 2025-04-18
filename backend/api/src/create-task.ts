@@ -1,3 +1,4 @@
+import { log } from 'shared/utils'
 import { APIHandler } from './helpers/endpoint'
 import { createSupabaseDirectClient } from 'shared/supabase/init'
 
@@ -10,7 +11,7 @@ export const createTask: APIHandler<'create-task'> = async (props, auth) => {
   } = props
   const pg = createSupabaseDirectClient()
 
-  console.log('Creating task', {
+  log('Creating task', {
     userId: auth.uid,
     text,
     categoryId,

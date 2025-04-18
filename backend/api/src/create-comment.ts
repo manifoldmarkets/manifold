@@ -276,7 +276,7 @@ async function getMostRecentCommentableBet(
       [contractIds, userId, commentCreatedTime, answerOutcome, maxAge],
       convertBet
     )
-    .catch((e) => console.error('Failed to get bet: ' + e))
+    .catch((e) => log.error('Failed to get bet: ' + e))
   return first(bet ?? [])
 }
 
@@ -298,5 +298,5 @@ async function getLargestPosition(
     select * from user_positions order by shares desc limit 1`,
       [contractId, userId]
     )
-    .catch((e) => console.error('Failed to get position: ' + e))
+    .catch((e) => log.error('Failed to get position: ' + e))
 }

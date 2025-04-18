@@ -1,10 +1,11 @@
+import { log } from 'shared/utils'
 import { APIHandler } from './helpers/endpoint'
 import { createSupabaseDirectClient } from 'shared/supabase/init'
 
 export const getCategories: APIHandler<'get-categories'> = async (_, auth) => {
   const pg = createSupabaseDirectClient()
 
-  console.log('Getting categories for user', auth.uid)
+  log('Getting categories for user', auth.uid)
 
   const categories = await pg.manyOrNone(
     `SELECT DISTINCT ON (c.id) c.*

@@ -1,9 +1,11 @@
+import { log } from 'shared/utils'
+
 export const constructPrefixTsQuery = (term: string) => {
   const sanitized = term
     .replace(/'/g, "''")
     .replace(/[!&|():*<>]/g, '')
     .trim()
-  console.log(`Term: "${sanitized}"`)
+  log(`Term: "${sanitized}"`)
   if (sanitized === '') return ''
   const tokens = sanitized.split(/\s+/)
   return tokens.join(' & ') + ':*'

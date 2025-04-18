@@ -1,11 +1,15 @@
+import { log } from 'shared/utils'
 import { APIHandler } from './helpers/endpoint'
 import { createSupabaseDirectClient } from 'shared/supabase/init'
 
-export const createCategory: APIHandler<'create-category'> = async (props, auth) => {
+export const createCategory: APIHandler<'create-category'> = async (
+  props,
+  auth
+) => {
   const { name, color } = props
   const pg = createSupabaseDirectClient()
 
-  console.log('Creating category', { userId: auth.uid, name, color })
+  log('Creating category', { userId: auth.uid, name, color })
 
   const result = await pg.one(
     `insert into categories (user_id, name, color)

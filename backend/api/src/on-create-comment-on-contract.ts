@@ -348,6 +348,6 @@ Only return the raw JSON object without any markdown code blocks, backticks, add
       await createAIDescriptionUpdateNotification(contract, markdownToAppend)
     }
   } catch (e) {
-    console.error('Error checking for clarification:', e)
+    log.error('Error checking for clarification:', { e })
   }
 }
