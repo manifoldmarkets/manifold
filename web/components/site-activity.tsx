@@ -74,7 +74,7 @@ const defaultGroups: LiteGroup[] = [
 ]
 
 export const ACTIVITY_TYPES = [
-  { name: 'All activity', value: ['bets', 'comments', 'markets'] },
+  { name: 'All activity types', value: ['bets', 'comments', 'markets'] },
   { name: 'Trades', value: ['bets'] },
   { name: 'Comments', value: ['comments'] },
   { name: 'Markets', value: ['markets'] },
@@ -270,7 +270,7 @@ export function SiteActivity(props: { className?: string }) {
                   (type) =>
                     types.length === type.value.length &&
                     type.value.every((v) => types.includes(v))
-                )?.name || 'All activity'}
+                )?.name || 'All activity types'}
               </DropdownPill>
             )}
             items={ACTIVITY_TYPES.map((type) => ({
