@@ -12,6 +12,9 @@ import { Row } from 'common/supabase/utils'
 import { SupabaseDirectClient } from './supabase/init'
 import { bulkInsert } from 'shared/supabase/utils'
 import { removeUndefinedProps } from 'common/util/object'
+import { createPushNotifications } from 'shared/create-push-notifications'
+import { truncateText } from './send-unseen-notifications'
+import { Notification } from 'common/notification'
 
 const pastPeriodHoursAgoStart = 24
 const TEST_USER_ID = 'AJwLWoo3xue32XIiAVrL5SyR1WB2'
@@ -223,27 +226,27 @@ async function createMarketMovementNotifications(
     `
     SELECT *
     FROM contract_movement_notifications
-    WHERE 
-      contract_id = ANY($1) 
+    WHERE
+      contract_id = ANY($1)
       AND user_id = ANY($2)
       AND created_time > now() - interval '${pastPeriodHoursAgoStart} hours';
-    
+
     SELECT
       contract_id,
       user_id
     FROM user_contract_views
-    WHERE 
-      contract_id = ANY($1) 
+    WHERE
+      contract_id = ANY($1)
       AND user_id = ANY($2)
       AND last_page_view_ts > now() - interval '${nowPeriodHoursAgoStart} hours';
-    
+
     SELECT distinct on (contract_id, user_id)
       contract_id,
       user_id,
       prob_after
     FROM contract_bets
-    WHERE 
-      contract_id = ANY($1) 
+    WHERE
+      contract_id = ANY($1)
       AND user_id = ANY($2)
       AND created_time > now() - interval '${pastPeriodHoursAgoStart} hours'
       order by contract_id, user_id, created_time desc;
@@ -273,6 +276,12 @@ async function createMarketMovementNotifications(
     afterTime: Date
     answer?: Answer
   }> = []
+  const mobileNotificationsToSend: [
+    PrivateUser,
+    Notification,
+    string,
+    string
+  ][] = []
 
   for (const {
     contract,
@@ -302,54 +311,56 @@ async function createMarketMovementNotifications(
     // Create records and notifications
     for (const user of usersInterestedInContract) {
       // Check user notification preferences
-      const { sendToBrowser } = getNotificationDestinationsForUser(
-        user,
-        'market_movements'
-      )
-
-      if (!sendToBrowser) continue
+      const { sendToBrowser, sendToMobile } =
+        getNotificationDestinationsForUser(user, 'market_movements')
 
       const sumsToOne =
         mechanism === 'cpmm-multi-1' && contract.shouldAnswersSumToOne
-      // Check if a similar notification has already been sent
-      const existingNotifications = recentMovementNotifications.filter(
-        (notification) =>
-          notification.user_id === user.id &&
-          notification.contract_id === contract.id &&
-          (sumsToOne ? true : notification.answer_id == (answer?.id ?? null))
-      )
 
-      const skipNotification = existingNotifications.some((notification) => {
-        // Only one notification per sumsToOne contract per day
-        if (sumsToOne) return true
-        const existingDirection = notification.new_val > notification.prev_val
-        const newDirection = avgAfter > avgBefore
-        return existingDirection === newDirection
-      })
+      // Check if a similar notification has already been sent recently for the relevant destination
+      const existingNotificationsForUserAndContract =
+        recentMovementNotifications.filter(
+          (notification) =>
+            notification.user_id === user.id &&
+            notification.contract_id === contract.id &&
+            (sumsToOne ? true : notification.answer_id == (answer?.id ?? null))
+        )
 
-      if (skipNotification) {
-        continue
+      const hasSimilarRecentNotification = (
+        destination: 'browser' | 'mobile'
+      ) =>
+        existingNotificationsForUserAndContract.some((notification) => {
+          if (notification.destination !== destination) return false
+          // Only one notification per sumsToOne contract per day per destination
+          if (sumsToOne) return true
+          const existingDirection = notification.new_val > notification.prev_val
+          const newDirection = avgAfter > avgBefore
+          return existingDirection === newDirection
+        })
+
+      const protoRecord: Omit<
+        MovementRecord,
+        'notification_id' | 'destination'
+      > = {
+        contract_id: contract.id,
+        answer_id: answer?.id ?? null,
+        user_id: user.id,
+        new_val: avgAfter,
+        new_val_start_time: new Date(currentPeriodStart).toISOString(),
+        prev_val: avgBefore,
+        prev_val_start_time: new Date(previousPeriodStart).toISOString(),
       }
 
-      const destinations = []
-      if (sendToBrowser) destinations.push('browser')
-      const id = crypto.randomUUID()
-      for (const destination of destinations) {
+      // Handle Browser Notifications
+      if (sendToBrowser && !hasSimilarRecentNotification('browser')) {
+        const id = crypto.randomUUID()
         const record: MovementRecord = removeUndefinedProps({
-          contract_id: contract.id,
-          answer_id: answer?.id ?? null,
-          user_id: user.id,
-          new_val: avgAfter,
-          new_val_start_time: new Date(currentPeriodStart).toISOString(),
-          prev_val: avgBefore,
-          prev_val_start_time: new Date(previousPeriodStart).toISOString(),
-          destination,
-          notification_id: destination === 'browser' ? id : undefined,
+          ...protoRecord,
+          destination: 'browser',
+          notification_id: id,
         })
         movementRecords.push(record)
-      }
 
-      if (sendToBrowser) {
         notificationParams.push({
           id,
           contract,
@@ -361,6 +372,56 @@ async function createMarketMovementNotifications(
           answer,
         })
       }
+
+      // Handle Mobile Push Notifications
+      if (sendToMobile && !hasSimilarRecentNotification('mobile')) {
+        // Create record for tracking
+        const record: MovementRecord = removeUndefinedProps({
+          ...protoRecord,
+          destination: 'mobile',
+          notification_id: null, // No user_notification row needed for mobile-only
+        })
+        movementRecords.push(record)
+
+        // Prepare data for createPushNotifications
+        const answerText = answer?.text
+        const startProb = avgBefore
+        const endProb = avgAfter
+
+        const startProbText = `${Math.round(startProb * 100)}%`
+        const endProbText = `${Math.round(endProb * 100)}%`
+
+        // Basic title/body for the notification
+        const questionText = truncateText(
+          contract.question,
+          answerText ? 70 : 130
+        )
+        const answerSegment = answerText
+          ? `:${truncateText(answerText, 60)}`
+          : ''
+        const title = 'Market movement'
+        const body = `${questionText}${answerSegment}: ${startProbText} → ${endProbText}`
+
+        const tempNotification: Notification = {
+          id: crypto.randomUUID(),
+          userId: user.id,
+          reason: 'market_movements',
+          createdTime: Date.now(),
+          isSeen: false,
+          sourceId: answer?.id ?? contract.id,
+          sourceType: answer?.id ? 'answer' : 'contract',
+          sourceContractId: contract.id,
+          sourceUserName: contract.creatorName,
+          sourceUserUsername: contract.creatorUsername,
+          sourceUserAvatarUrl: contract.creatorAvatarUrl ?? '',
+          sourceText: answerText ?? (contract.question || ''),
+          sourceContractTitle: contract.question,
+          sourceContractCreatorUsername: contract.creatorUsername,
+          sourceContractSlug: contract.slug,
+        }
+
+        mobileNotificationsToSend.push([user, tempNotification, title, body])
+      }
     }
   }
 
@@ -371,15 +432,31 @@ async function createMarketMovementNotifications(
       log(
         `Added ${movementRecords.length} contract movement notification records for tracking`
       )
-      if (notificationParams.length > 0) {
-        log(`Sending ${notificationParams.length} notifications in bulk`)
-        const notifications = await createMarketMovementNotification(
-          notificationParams
-        )
-        log(`Created ${notifications.length} notifications`)
-      }
     } catch (e) {
       log.error(`Error adding contract movement notification records: ${e}`)
+    }
+  }
+
+  // Send Browser Notifications
+  if (notificationParams.length > 0) {
+    try {
+      log(`Sending ${notificationParams.length} browser notifications in bulk`)
+      const notifications = await createMarketMovementNotification(
+        notificationParams
+      )
+      log(`Created ${notifications.length} browser notifications`)
+    } catch (e) {
+      log.error(`Error creating browser notifications: ${e}`)
+    }
+  }
+
+  // Send Mobile Push Notifications
+  if (mobileNotificationsToSend.length > 0) {
+    try {
+      log(`Sending ${mobileNotificationsToSend.length} push notifications`)
+      await createPushNotifications(mobileNotificationsToSend)
+    } catch (e) {
+      log.error(`Error sending push notifications: ${e}`)
     }
   }
 }
