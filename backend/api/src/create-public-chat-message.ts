@@ -1,5 +1,5 @@
 import { removeUndefinedProps } from 'common/util/object'
-import { getUser } from 'shared/utils'
+import { getUser, log } from 'shared/utils'
 import { createSupabaseClient } from 'shared/supabase/init'
 import { Json } from 'common/supabase/schema'
 import { APIError, APIHandler } from 'api/helpers/endpoint'
