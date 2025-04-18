@@ -1,4 +1,13 @@
-import { groupBy, keyBy, minBy, mapValues, sortBy, sumBy, uniqBy } from 'lodash'
+import {
+  groupBy,
+  keyBy,
+  minBy,
+  mapValues,
+  sortBy,
+  sumBy,
+  uniqBy,
+  maxBy,
+} from 'lodash'
 import { memo, useEffect, useMemo, useReducer, useRef, useState } from 'react'
 import clsx from 'clsx'
 import { ChevronDownIcon, ChevronUpIcon } from '@heroicons/react/solid'
@@ -46,7 +55,6 @@ import {
   useContractBets,
 } from 'client-common/hooks/use-bets'
 import { useIsPageVisible } from 'web/hooks/use-page-visible'
-import { useCommentThread } from 'web/hooks/use-comments'
 
 export function ContractTabs(props: {
   staticContract: Contract
@@ -190,7 +198,7 @@ export const CommentsTabContent = memo(function CommentsTabContent(props: {
   const user = useUser()
 
   // Load all comments once
-  const { data: fetchedComments } = useAPIGetter(
+  const { data: fetchedComments, loading: commentsLoading } = useAPIGetter(
     'comments',
     {
       contractId: staticContract.id,
@@ -207,77 +215,41 @@ export const CommentsTabContent = memo(function CommentsTabContent(props: {
     useIsPageVisible,
     (params) => api('bets', params)
   )
+  const latestCommentTime = useMemo(
+    () => maxBy(fetchedComments, 'createdTime')?.createdTime,
+    [fetchedComments?.length]
+  )
 
   const isPageVisible = useIsPageVisible()
-  const { data: newFetchedComments } = useAPIGetter(
-    'comments',
-    {
-      contractId: staticContract.id,
-      afterTime: staticContract.lastCommentTime,
-    },
-    undefined,
-    'new-comments-' + staticContract.id,
-    isPageVisible
-  )
+  const { data: newFetchedComments, loading: newCommentsLoading } =
+    useAPIGetter(
+      'comments',
+      {
+        contractId: staticContract.id,
+        afterTime: latestCommentTime,
+      },
+      undefined,
+      'new-comments-' + staticContract.id,
+      isPageVisible
+    )
 
   // Listen for new comments
   const newComments = useSubscribeNewComments(staticContract.id)
-  const allFetchedComments = uniqBy(
+  const comments = uniqBy(
     [
       ...(newComments ?? []),
       ...(newFetchedComments ?? []),
       ...(fetchedComments ?? []),
-      ...props.comments.filter((c) => c.id !== highlightCommentId),
+      ...props.comments,
     ],
     'id'
   ).filter((c) => !blockedUserIds.includes(c.userId))
 
-  const commentExistsLocally = allFetchedComments.some(
-    (c) => c.id === highlightCommentId
-  )
-
-  // Fetch the thread only if the comment isn't already loaded
-  const fetchedCommentThread = useCommentThread(
-    commentExistsLocally ? undefined : highlightCommentId
-  )
-
-  // If the comment exists locally, construct the thread from local comments
-  const localCommentThread = useMemo(() => {
-    if (!commentExistsLocally || !highlightCommentId) return undefined
-
-    const highlightedComment = allFetchedComments.find(
-      (c) => c.id === highlightCommentId
-    )
-    if (!highlightedComment) return undefined
-
-    const parentId = highlightedComment.replyToCommentId ?? highlightCommentId
-    const threadComments = allFetchedComments.filter(
-      (c) => c.id === parentId || c.replyToCommentId === parentId
-    )
-    return sortBy(threadComments, 'createdTime')
-  }, [highlightCommentId, commentExistsLocally])
-
-  const comments = useMemo(() => {
-    // Use the fetched thread if available, otherwise the locally constructed one
-    const threadToMerge = fetchedCommentThread ?? localCommentThread
-    if (!threadToMerge) return allFetchedComments
-
-    const threadIds = new Set(threadToMerge.map((c) => c.id))
-    const filteredComments = allFetchedComments.filter(
-      (c) => !threadIds.has(c.id)
-    )
-    // Ensure thread comments are included and the list is unique
-    return uniqBy([...threadToMerge, ...filteredComments], 'id')
-  }, [
-    JSON.stringify(allFetchedComments),
-    JSON.stringify(fetchedCommentThread),
-    JSON.stringify(localCommentThread),
-  ])
-
+  const commentExistsLocally = comments.some((c) => c.id === highlightCommentId)
   const isLoadingHighlightedComment =
     highlightCommentId &&
     !commentExistsLocally &&
-    fetchedCommentThread === undefined
+    (commentsLoading || newCommentsLoading)
 
   const [parentCommentsToRender, setParentCommentsToRender] = useState(
     props.comments.filter((c) => !c.replyToCommentId).length
