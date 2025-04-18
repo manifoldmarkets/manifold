@@ -161,10 +161,30 @@ const App = () => {
     log('notification', notification)
     if (notification == undefined) return
 
+    // Resolve the destination URL from the notification.
+    const destination = getSourceUrl(notification)
+
+    // If the webview is already loaded and listening, forward the message so
+    // the web client can mark the notification as seen, etc.
     if (hasLoadedWebView && listeningToNative.current) {
-      communicateWithWebview('notification', notification)
-      setLastLinkInMemory(getSourceUrl(notification))
-    } else setEndpointWithNativeQuery(getSourceUrl(notification))
+      // Send multiple times in case the client JavaScript isn\'t ready yet
+      // (mirrors the logic in sendWebviewAuthInfo).
+      const timeouts = [0, 200, 800]
+      timeouts.forEach((timeout) =>
+        setTimeout(
+          () => communicateWithWebview('notification', notification),
+          timeout
+        )
+      )
+    }
+
+    // Always set the URL so that, even if the message is missed, the webview
+    // navigates to the correct page when it becomes active.
+    setEndpointWithNativeQuery(destination)
+
+    // Keep track of the last link so that if the webview is killed we can
+    // still recover it on reboot.
+    setLastLinkInMemory(destination)
   }
 
   useEffect(() => {

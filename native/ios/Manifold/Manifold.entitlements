@@ -12,6 +12,8 @@
     <array>
       <string>applinks:manifold.markets</string>
       <string>webcredentials:manifold.markets</string>
+      <string>applinks:manifold.markets</string>
+      <string>webcredentials:manifold.markets</string>
     </array>
   </dict>
 </plist>

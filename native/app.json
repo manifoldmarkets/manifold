@@ -4,7 +4,7 @@
     "slug": "manifold-markets",
     "owner": "iansp",
     "jsEngine": "hermes",
-    "version": "2.0.54",
+    "version": "2.0.55",
     "orientation": "portrait",
     "icon": "./assets/logo.png",
     "userInterfaceStyle": "light",
@@ -59,20 +59,23 @@
         "backgroundColor": "#4337C9"
       },
       "package": "com.markets.manifold",
-      "versionCode": 62
+      "versionCode": 63
     },
     "ios": {
       "infoPlist": {
-        "NSCameraUsageDescription": "Pictures can be attached to the content you create."
+        "NSCameraUsageDescription": "Pictures can be attached to the content you create.",
+        "ITSAppUsesNonExemptEncryption": false
       },
       "supportsTablet": true,
       "usesAppleSignIn": true,
       "bundleIdentifier": "com.markets.manifold",
       "associatedDomains": [
         "applinks:manifold.markets",
+        "webcredentials:manifold.markets",
+        "applinks:manifold.markets",
         "webcredentials:manifold.markets"
       ],
-      "buildNumber": "1.0.49"
+      "buildNumber": "1.0.50"
     }
   }
 }
