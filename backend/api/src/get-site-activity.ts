@@ -212,10 +212,8 @@ export const getSiteActivity: APIHandler<'get-site-activity'> = async (
        FROM contracts c
        ${topicFilterForContracts}
        ${followedTopicsFilterForContracts}
-       WHERE c.visibility = 'public'
-         AND c.creator_id != ALL($1)
+       WHERE c.creator_id != ALL($1)
          AND c.id != ALL($2)
-         AND c.resolution is null
          AND is_valid_contract(c)
          ${hasTopicFilter ? 'AND gc.group_id = ANY($6)' : ''}
          ${
@@ -322,7 +320,10 @@ export const getSiteActivity: APIHandler<'get-site-activity'> = async (
       ? pg.map(
           `select ${contractColumnsToSelect} from contracts where id in ($1:list)
           and (resolution is null or resolution != 'CANCEL')
-          and is_valid_contract(contracts)`,
+          and visibility = 'public'
+          -- allow recently resolved contracts to be included
+          and (close_time is null or close_time > now() - interval '1 hour')
+          `,
           [contractIds],
           convertContract
         )
