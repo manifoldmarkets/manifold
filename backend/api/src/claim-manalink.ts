@@ -4,7 +4,6 @@ import { APIError, authEndpoint, validate } from './helpers/endpoint'
 import { runTxnInBetQueue } from 'shared/txn/run-txn'
 import { createSupabaseDirectClient } from 'shared/supabase/init'
 import { Row, tsToMillis } from 'common/supabase/utils'
-import { getUserPortfolioInternal } from 'shared/get-user-portfolio-internal'
 import { getUser } from 'shared/utils'
 
 const bodySchema = z.object({ slug: z.string() }).strict()
@@ -65,9 +64,7 @@ export const claimmanalink = authEndpoint(async (req, auth) => {
       throw new APIError(500, `User ${creator_id} not found`)
     }
 
-    const { canSend, message } = await canSendMana(fromUser, () =>
-      getUserPortfolioInternal(fromUser.id)
-    )
+    const { canSend, message } = await canSendMana(fromUser)
     if (!canSend) {
       throw new APIError(403, message)
     }

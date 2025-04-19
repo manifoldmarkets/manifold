@@ -3,7 +3,6 @@ import { createSupabaseDirectClient } from './supabase/init'
 import { updateData } from './supabase/utils'
 import { getContractSupabase, getUser } from 'shared/utils'
 import { APIError } from 'common/api/utils'
-import { getUserPortfolioInternal } from 'shared/get-user-portfolio-internal'
 import { canSendMana } from 'common/can-send-mana'
 
 export const awardBounty = async (props: {
@@ -25,11 +24,7 @@ export const awardBounty = async (props: {
 
   const user = await getUser(fromUserId)
   if (!user) throw new APIError(404, 'User not found')
-  const { canSend, message } = await canSendMana(
-    user,
-    () => getUserPortfolioInternal(user.id),
-    0
-  )
+  const { canSend, message } = await canSendMana(user)
   if (!canSend) {
     throw new APIError(403, message)
   }

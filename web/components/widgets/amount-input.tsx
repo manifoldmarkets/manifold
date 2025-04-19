@@ -93,50 +93,48 @@ export function AmountInput(
 
   return (
     <Col className={clsx('relative', className)}>
-      <label className="font-sm md:font-lg relative">
-        {label && (
-          <span className="text-ink-400 absolute top-1/2 my-auto ml-2 -translate-y-1/2">
-            {label}
-          </span>
-        )}
-        <Row>
-          <Input
-            {...rest}
-            className={clsx(label && 'pl-9', 'text-lg', inputClassName)}
-            style={inputStyle}
-            ref={inputRef}
-            type={allowFloat ? 'number' : 'text'}
-            inputMode={allowFloat ? 'decimal' : 'numeric'}
-            placeholder="0"
-            maxLength={16}
-            step={0.01}
-            value={amountString}
-            error={error}
-            disabled={disabled}
-            onChange={(e) => onAmountChange(e.target.value)}
-            onBlur={() => setAmountString(amount?.toString() ?? '')}
-            onKeyDown={(e) => {
-              if (e.key === 'ArrowUp') {
-                onChangeAmount((amount ?? 0) + 5)
-              } else if (e.key === 'ArrowDown') {
-                onChangeAmount(Math.max(0, (amount ?? 0) - 5))
-              }
-            }}
-            min={allowFloat ? 0 : 1}
-          />
-          {quickAddMoreButton
-            ? quickAddMoreButton
-            : !disableClearButton &&
-              amount !== undefined && (
-                <button
-                  className="text-ink-400 hover:text-ink-500 active:text-ink-500 absolute right-4 top-1/2 -translate-y-1/2"
-                  onClick={() => onChangeAmount(undefined)}
-                >
-                  <XIcon className="h-4 w-4" />
-                </button>
-              )}
-        </Row>
-      </label>
+      <Row className="relative w-fit">
+        <Input
+          {...rest}
+          className={clsx(label && 'pl-9', 'text-lg', inputClassName)}
+          style={inputStyle}
+          ref={inputRef}
+          type={allowFloat ? 'number' : 'text'}
+          inputMode={allowFloat ? 'decimal' : 'numeric'}
+          placeholder="0"
+          maxLength={16}
+          step={0.01}
+          value={amountString}
+          error={error}
+          disabled={disabled}
+          onChange={(e) => onAmountChange(e.target.value)}
+          onBlur={() => setAmountString(amount?.toString() ?? '')}
+          onKeyDown={(e) => {
+            if (e.key === 'ArrowUp') {
+              onChangeAmount((amount ?? 0) + 5)
+            } else if (e.key === 'ArrowDown') {
+              onChangeAmount(Math.max(0, (amount ?? 0) - 5))
+            }
+          }}
+          min={allowFloat ? 0 : 1}
+        />
+        {quickAddMoreButton
+          ? quickAddMoreButton
+          : !disableClearButton &&
+            amount !== undefined && (
+              <button
+                className="text-ink-400 hover:text-ink-500 active:text-ink-500 absolute right-4 top-1/2 -translate-y-1/2"
+                onClick={() => onChangeAmount(undefined)}
+              >
+                <XIcon className="h-4 w-4" />
+              </button>
+            )}
+      </Row>
+      {label && (
+        <span className="text-ink-400 absolute top-1/2 my-auto ml-2 -translate-y-1/2">
+          {label}
+        </span>
+      )}
     </Col>
   )
 }

@@ -78,6 +78,7 @@ import { CreatorSharePanel, NonCreatorSharePanel } from './creator-share-panel'
 import { FollowMarketButton } from '../buttons/follow-market-button'
 import { useSaveReferral } from 'web/hooks/use-save-referral'
 import { base64toPoints } from 'common/edge/og'
+import { useDisplayUserById } from 'web/hooks/use-user-supabase'
 
 export function ContractPageContent(props: ContractParams) {
   const {
@@ -260,7 +261,8 @@ export function ContractPageContent(props: ContractParams) {
 
   const isSpiceMarket = !!liveContract.isSpicePayout
   const isCashContract = liveContract.token === 'CASH'
-
+  const resolverId = liveContract.resolverId
+  const resolverUser = useDisplayUserById(resolverId)
   return (
     <>
       {props.contract.visibility !== 'public' && (
@@ -451,11 +453,14 @@ export function ContractPageContent(props: ContractParams) {
               <div className="relative my-2">
                 <ReviewPanel
                   marketId={props.contract.id}
+                  title={props.contract.question}
                   author={props.contract.creatorName}
                   onSubmit={(rating: Rating) => {
                     setJustNowReview(rating)
                     setShowReview(false)
                   }}
+                  resolverUser={resolverUser}
+                  currentUser={user}
                 />
                 <button
                   className="text-ink-400 hover:text-ink-600 absolute right-0 top-0 p-4"

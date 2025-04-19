@@ -1,11 +1,9 @@
-import { humanish } from 'common/user'
 import { canSendMana } from 'common/can-send-mana'
 import { APIError, type APIHandler } from './helpers/endpoint'
 import { insertTxns } from 'shared/txn/run-txn'
 import { createManaPaymentNotification } from 'shared/create-notification'
 import * as crypto from 'crypto'
 import { isAdminId } from 'common/envs/constants'
-import { getUserPortfolioInternal } from 'shared/get-user-portfolio-internal'
 import { createSupabaseDirectClient } from 'shared/supabase/init'
 import { getUser, getUsers } from 'shared/utils'
 import { bulkIncrementBalances } from 'shared/supabase/users'
@@ -42,17 +40,7 @@ export const managram: APIHandler<'managram'> = async (props, auth) => {
         throw new APIError(401, `User ${fromId} not found`)
       }
 
-      if (!humanish(fromUser)) {
-        throw new APIError(
-          403,
-          'You must verify your phone number to send mana.'
-        )
-      }
-
-      const { canSend, message: errorMessage } = await canSendMana(
-        fromUser,
-        () => getUserPortfolioInternal(fromUser.id)
-      )
+      const { canSend, message: errorMessage } = await canSendMana(fromUser)
       if (!canSend) {
         throw new APIError(403, errorMessage)
       }
