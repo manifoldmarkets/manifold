@@ -371,13 +371,14 @@ function AIModelIcon({
   title: string
   className?: string
 }) {
-  if (title.toLowerCase().includes('gpt')) return <SiOpenai className={className} />
-  if (title.toLowerCase().includes('claude')) return <SiAnthropic className={className} />
-  if (title.toLowerCase().includes('gemini')) return <SiGooglegemini className={className} />
-  if (title.toLowerCase().includes('grok')) return <RiTwitterXLine className={className} />
-  if (title.toLowerCase().includes('deepseek')) return <GiSpermWhale className={className} />
-  if (title.toLowerCase().includes('qwen')) return <PiBirdBold className={className} />
-  return null
+  const titleLower = title?.toLowerCase() || ''
+  if (['gpt', 'openai'].some(term => titleLower.includes(term))) return <SiOpenai className={className} />
+  if (['claude', 'anthropic'].some(term => titleLower.includes(term))) return <SiAnthropic className={className} />
+  if (['gemini', 'google', 'deepmind'].some(term=>titleLower.includes(term))) return <SiGooglegemini className={className} />
+  if (['grok', 'xai'].some(term=>titleLower.includes(term))) return <RiTwitterXLine className={className} />
+  if (titleLower.includes('deepseek')) return <GiSpermWhale className={className} />
+  if (titleLower.includes('qwen')) return <PiBirdBold className={className} />
+  return <LiaKiwiBirdSolid className={className} />
 }
 
 // Get gradient based on card type
@@ -660,17 +661,10 @@ function CapabilityCard({
             <div className="flex items-end justify-center space-x-1 px-1 sm:space-x-3">
               {/* 2nd Place - Left */}
               <div className="w-[28%] text-center">
-                {getCompanyLogo(topCompanies[1].text) ? (
+                {topCompanies[1].text ? (
                   <div className="flex flex-col items-center">
                     <div className="mb-1 flex h-10 w-10 items-center justify-center text-gray-600 dark:text-gray-300 sm:h-12 sm:w-12">
-                      {React.createElement(
-                        getCompanyLogo(topCompanies[1].text) as React.FC<{
-                          className?: string
-                        }>,
-                        {
-                          className: 'w-8 h-8 sm:w-10 sm:h-10',
-                        }
-                      )}
+                      <AIModelIcon title={topCompanies[1].text} className="w-8 h-8 sm:w-10 sm:h-10" />
                     </div>
                     <div className="text-xs font-bold text-gray-700 dark:text-gray-300 sm:text-sm">
                       {topCompanies[1].text}
@@ -694,17 +688,10 @@ function CapabilityCard({
 
               {/* 1st Place - Middle */}
               <div className="w-[38%] text-center">
-                {getCompanyLogo(topCompanies[0].text) ? (
+                {topCompanies[0].text ? (
                   <div className="flex flex-col items-center">
                     <div className="text-primary-600 dark:text-primary-400 mb-1 flex h-14 w-14 items-center justify-center sm:mb-2 sm:h-16 sm:w-16">
-                      {React.createElement(
-                        getCompanyLogo(topCompanies[0].text) as React.FC<{
-                          className?: string
-                        }>,
-                        {
-                          className: 'w-12 h-12 sm:w-14 sm:h-14',
-                        }
-                      )}
+                      <AIModelIcon title={topCompanies[0].text} className="w-12 h-12 sm:w-14 sm:h-14" />
                     </div>
                     <div className="text-primary-600 dark:text-primary-400 text-base font-bold sm:text-lg">
                       {topCompanies[0].text}
@@ -728,17 +715,10 @@ function CapabilityCard({
 
               {/* 3rd Place - Right */}
               <div className="w-[28%] text-center">
-                {getCompanyLogo(topCompanies[2].text) ? (
+                {topCompanies[2].text ? (
                   <div className="flex flex-col items-center">
                     <div className="mb-1 flex h-10 w-10 items-center justify-center text-gray-600 dark:text-gray-300 sm:h-12 sm:w-12">
-                      {React.createElement(
-                        getCompanyLogo(topCompanies[2].text) as React.FC<{
-                          className?: string
-                        }>,
-                        {
-                          className: 'w-8 h-8 sm:w-10 sm:h-10',
-                        }
-                      )}
+                      <AIModelIcon title={topCompanies[2].text} className="w-8 h-8 sm:w-10 sm:h-10" />
                     </div>
                     <div className="text-xs font-bold text-gray-700 dark:text-gray-300 sm:text-sm">
                       {topCompanies[2].text}
@@ -785,17 +765,10 @@ function CapabilityCard({
               <div className="flex items-center justify-center">
                 {/* Company Display */}
                 <div className="text-center">
-                  {getCompanyLogo(topModel.text) ? (
+                  {topModel.text ? (
                     <div className="flex flex-col items-center">
                       <div className="text-primary-600 dark:text-primary-500 mb-1 flex h-14 w-14 items-center justify-center">
-                        {React.createElement(
-                          getCompanyLogo(topModel.text) as React.FC<{
-                            className?: string
-                          }>,
-                          {
-                            className: 'w-12 h-12',
-                          }
-                        )}
+                        <AIModelIcon title={topModel.text} className="w-12 h-12" />
                       </div>
                       <div className="text-primary-600 dark:text-primary-500 text-lg font-bold sm:text-xl">
                         {topModel.text}
@@ -974,29 +947,6 @@ function CapabilityCard({
   )
 }
 
-// Get company logo component based on company name
-function getCompanyLogo(companyName: string): React.ComponentType | null {
-  // Strip any trailing whitespace or periods that might be in the company name
-  const normalizedName = companyName.trim().replace(/\.$/, '')
-
-  switch (normalizedName.toLowerCase()) {
-    case 'openai':
-    case 'gpt-5':
-      return SiOpenai
-    case 'anthropic':
-    case 'claude':
-      return SiAnthropic
-    case 'gemini':
-    case 'deepmind':
-    case 'google':
-      return SiGooglegemini
-    case 'xai':
-    case 'grok':
-      return RiTwitterXLine // Using X icon for xAI
-    default:
-      return LiaKiwiBirdSolid // No specific icon for other companies
-  }
-}
 // For model releases: Displays model releases on a timeline
 interface ModelReleasesTimelineProps {
   cards: AICapabilityCard[]
