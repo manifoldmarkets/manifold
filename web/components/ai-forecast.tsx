@@ -371,12 +371,12 @@ function AIModelIcon({
   title: string
   className?: string
 }) {
-  if (title.includes('GPT')) return <SiOpenai className={className} />
-  if (title.includes('Claude')) return <SiAnthropic className={className} />
-  if (title.includes('Gemini')) return <SiGooglegemini className={className} />
-  if (title.includes('Grok')) return <RiTwitterXLine className={className} />
-  if (title.includes('Deepseek')) return <GiSpermWhale className={className} />
-  if (title.includes('Qwen')) return <PiBirdBold className={className} />
+  if (title.toLowerCase().includes('gpt')) return <SiOpenai className={className} />
+  if (title.toLowerCase().includes('claude')) return <SiAnthropic className={className} />
+  if (title.toLowerCase().includes('gemini')) return <SiGooglegemini className={className} />
+  if (title.toLowerCase().includes('grok')) return <RiTwitterXLine className={className} />
+  if (title.toLowerCase().includes('deepseek')) return <GiSpermWhale className={className} />
+  if (title.toLowerCase().includes('qwen')) return <PiBirdBold className={className} />
   return null
 }
 
