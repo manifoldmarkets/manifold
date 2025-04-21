@@ -660,11 +660,6 @@ function CapabilityCard({
             <div className="flex items-end justify-center space-x-1 px-1 sm:space-x-3">
               {/* 2nd Place - Left */}
               <div className="w-[28%] text-center">
-                <div className="mb-2 flex flex-col items-center">
-                  <div className="text-gray-800 dark:text-gray-200 flex h-8 w-8 items-center justify-center rounded-full bg-gray-100 text-sm font-bold dark:bg-gray-700 sm:h-10 sm:w-10 sm:text-base">
-                    2
-                  </div>
-                </div>
                 {getCompanyLogo(topCompanies[1].text) ? (
                   <div className="flex flex-col items-center">
                     <div className="mb-1 flex h-10 w-10 items-center justify-center text-gray-600 dark:text-gray-300 sm:h-12 sm:w-12">
@@ -689,16 +684,16 @@ function CapabilityCard({
                 <div className="text-ink-600 mt-1 text-xs font-medium">
                   {formatPercent(topCompanies[1].probability)}
                 </div>
-                <div className="h-16 w-full rounded-t-lg bg-gray-300 dark:bg-gray-600 sm:h-20"></div>
+                <div 
+                  className="w-full rounded-t-lg bg-gray-300 dark:bg-gray-600"
+                  style={{
+                    height: `${Math.max(8, topCompanies[1].probability * 100)}px`
+                  }}
+                ></div>
               </div>
 
               {/* 1st Place - Middle */}
               <div className="w-[38%] text-center">
-                <div className="mb-2 flex flex-col items-center">
-                  <div className="text-primary-700 dark:text-primary-400 flex h-10 w-10 items-center justify-center rounded-full bg-primary-50 text-lg font-bold dark:bg-primary-900/40 sm:h-12 sm:w-12 sm:text-xl">
-                    1
-                  </div>
-                </div>
                 {getCompanyLogo(topCompanies[0].text) ? (
                   <div className="flex flex-col items-center">
                     <div className="text-primary-600 dark:text-primary-400 mb-1 flex h-14 w-14 items-center justify-center sm:mb-2 sm:h-16 sm:w-16">
@@ -723,16 +718,16 @@ function CapabilityCard({
                 <div className="text-ink-600 mt-1 text-xs font-medium sm:text-base">
                   {formatPercent(topCompanies[0].probability)}
                 </div>
-                <div className="h-24 w-full rounded-t-lg bg-primary-300 dark:bg-primary-600 sm:h-28"></div>
+                <div 
+                  className="w-full rounded-t-lg bg-primary-300 dark:bg-primary-600"
+                  style={{
+                    height: `${Math.max(8, topCompanies[0].probability * 100)}px`
+                  }}
+                ></div>
               </div>
 
               {/* 3rd Place - Right */}
               <div className="w-[28%] text-center">
-                <div className="mb-2 flex flex-col items-center">
-                  <div className="text-gray-800 dark:text-gray-200 flex h-8 w-8 items-center justify-center rounded-full bg-gray-100 text-sm font-bold dark:bg-gray-700 sm:h-10 sm:w-10 sm:text-base">
-                    3
-                  </div>
-                </div>
                 {getCompanyLogo(topCompanies[2].text) ? (
                   <div className="flex flex-col items-center">
                     <div className="mb-1 flex h-10 w-10 items-center justify-center text-gray-600 dark:text-gray-300 sm:h-12 sm:w-12">
@@ -757,7 +752,12 @@ function CapabilityCard({
                 <div className="text-ink-600 mt-1 text-xs font-medium">
                   {formatPercent(topCompanies[2].probability)}
                 </div>
-                <div className="h-12 w-full rounded-t-lg bg-gray-200 dark:bg-gray-700 sm:h-16"></div>
+                <div 
+                  className="w-full rounded-t-lg bg-gray-200 dark:bg-gray-700"
+                  style={{
+                    height: `${Math.max(8, topCompanies[2].probability * 100)}px`
+                  }}
+                ></div>
               </div>
             </div>
 
