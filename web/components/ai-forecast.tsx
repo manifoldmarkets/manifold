@@ -666,12 +666,12 @@ function CapabilityCard({
                     <div className="mb-1 flex h-10 w-10 items-center justify-center text-gray-600 dark:text-gray-300 sm:h-12 sm:w-12">
                       <AIModelIcon title={topCompanies[1].text} className="w-8 h-8 sm:w-10 sm:h-10" />
                     </div>
-                    <div className="text-xs font-bold text-gray-700 dark:text-gray-300 sm:text-sm">
+                    <div className="text-sm font-bold text-gray-700 dark:text-gray-300 sm:text-lg">
                       {topCompanies[1].text}
                     </div>
                   </div>
                 ) : (
-                  <div className="truncate text-xs font-bold text-gray-700 dark:text-gray-300 sm:text-sm">
+                  <div className="truncate text-sm font-bold text-gray-700 dark:text-gray-300 sm:text-lg">
                     {topCompanies[1].text}
                   </div>
                 )}
@@ -693,16 +693,16 @@ function CapabilityCard({
                     <div className="text-primary-600 dark:text-primary-400 mb-1 flex h-14 w-14 items-center justify-center sm:mb-2 sm:h-16 sm:w-16">
                       <AIModelIcon title={topCompanies[0].text} className="w-12 h-12 sm:w-14 sm:h-14" />
                     </div>
-                    <div className="text-primary-600 dark:text-primary-400 text-base font-bold sm:text-lg">
+                    <div className="text-primary-600 dark:text-primary-400 text-lg font-bold sm:text-2xl">
                       {topCompanies[0].text}
                     </div>
                   </div>
                 ) : (
-                  <div className="text-primary-600 dark:text-primary-400 truncate text-base font-bold sm:text-lg">
+                  <div className="text-primary-600 dark:text-primary-400 truncate text-lg font-bold sm:text-2xl">
                     {topCompanies[0].text}
                   </div>
                 )}
-                <div className="text-ink-600 mt-1 text-xs font-medium sm:text-base">
+                <div className="text-ink-600 mt-1 text-base font-medium sm:text-base">
                   {formatPercent(topCompanies[0].probability)}
                 </div>
                 <div 
@@ -720,16 +720,16 @@ function CapabilityCard({
                     <div className="mb-1 flex h-10 w-10 items-center justify-center text-gray-600 dark:text-gray-300 sm:h-12 sm:w-12">
                       <AIModelIcon title={topCompanies[2].text} className="w-8 h-8 sm:w-10 sm:h-10" />
                     </div>
-                    <div className="text-xs font-bold text-gray-700 dark:text-gray-300 sm:text-sm">
+                    <div className="text-sm font-bold text-gray-700 dark:text-gray-300 sm:text-lg">
                       {topCompanies[2].text}
                     </div>
                   </div>
                 ) : (
-                  <div className="truncate text-xs font-bold text-gray-700 dark:text-gray-300 sm:text-sm">
+                  <div className="truncate text-sm font-bold text-gray-700 dark:text-gray-300 sm:text-lg">
                     {topCompanies[2].text}
                   </div>
                 )}
-                <div className="text-ink-600 mt-1 text-xs font-medium">
+                <div className="text-ink-600 mt-1 text-base font-medium">
                   {formatPercent(topCompanies[2].probability)}
                 </div>
                 <div 
