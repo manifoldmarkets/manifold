@@ -1,9 +1,10 @@
 import { StarIcon, XIcon } from '@heroicons/react/solid'
 import clsx from 'clsx'
 import {
+  isBinaryMulti,
+  tradingAllowed,
   type Contract,
   type ContractParams,
-  tradingAllowed,
 } from 'common/contract'
 import { mergeWith, uniqBy } from 'lodash'
 import Head from 'next/head'
@@ -17,10 +18,9 @@ import {
   MultiPoints,
   unserializeBase64Multi,
 } from 'common/chart'
-import { base64toFloat32Points } from 'common/edge/og'
 import { HOUSE_BOT_USERNAME, SPICE_MARKET_TOOLTIP } from 'common/envs/constants'
 import { DAY_MS } from 'common/util/time'
-import { UserBetsSummary } from 'web/components/bet/bet-summary'
+import { UserBetsSummary } from 'web/components/bet/user-bet-summary'
 import { ScrollToTopButton } from 'web/components/buttons/scroll-to-top-button'
 import { SidebarSignUpButton } from 'web/components/buttons/sign-up-button'
 import { getMultiBetPointsFromBets } from 'client-common/lib/choice'
@@ -76,6 +76,9 @@ import { api } from 'web/lib/api/api'
 import { shouldHideGraph } from 'common/contract-params'
 import { CreatorSharePanel, NonCreatorSharePanel } from './creator-share-panel'
 import { FollowMarketButton } from '../buttons/follow-market-button'
+import { useSaveReferral } from 'web/hooks/use-save-referral'
+import { base64toPoints } from 'common/edge/og'
+import { useDisplayUserById } from 'web/hooks/use-user-supabase'
 
 export function ContractPageContent(props: ContractParams) {
   const {
@@ -104,7 +107,10 @@ export function ContractPageContent(props: ContractParams) {
   const liveContract =
     !isPlay && liveCashContract ? liveCashContract : livePlayContract
   const user = useUser()
-
+  useSaveReferral(user, {
+    defaultReferrerUsername: props.contract.creatorUsername,
+    contractId: props.contract.id,
+  })
   // Read and set play state from the query
   useEffect(() => {
     if (!router.isReady) return
@@ -255,7 +261,8 @@ export function ContractPageContent(props: ContractParams) {
 
   const isSpiceMarket = !!liveContract.isSpicePayout
   const isCashContract = liveContract.token === 'CASH'
-
+  const resolverId = liveContract.resolverId
+  const resolverUser = useDisplayUserById(resolverId)
   return (
     <>
       {props.contract.visibility !== 'public' && (
@@ -398,48 +405,62 @@ export function ContractPageContent(props: ContractParams) {
                   isCashContract={isCashContract}
                 />
               </Row>
-              <ContractOverview
-                contract={liveContract}
-                key={liveContract.id} // reset state when switching play vs cash
-                betPoints={betPoints}
-                showResolver={showResolver}
-                resolutionRating={
-                  userHasReviewed ? (
-                    <Row className="text-ink-500 items-center gap-0.5 text-sm italic">
-                      You rated this resolution{' '}
-                      {justNowReview ?? userReview?.rating}{' '}
-                      <StarIcon className="h-4 w-4" />
-                    </Row>
-                  ) : null
-                }
-                setShowResolver={setShowResolver}
-                onAnswerCommentClick={setReplyTo}
-                chartAnnotations={chartAnnotations}
-                hideGraph={hideGraph}
-                setHideGraph={setHideGraph}
-              />
-
-              {!tradingAllowed(liveContract) && (
-                <UserBetsSummary
-                  className="border-ink-200 !mb-2 "
+              <Col className="gap-2">
+                <ContractOverview
                   contract={liveContract}
+                  key={liveContract.id} // reset state when switching play vs cash
+                  betPoints={betPoints}
+                  showResolver={showResolver}
+                  resolutionRating={
+                    userHasReviewed ? (
+                      <Row className="text-ink-500 items-center gap-0.5 text-sm italic">
+                        You rated this resolution{' '}
+                        {justNowReview ?? userReview?.rating}{' '}
+                        <StarIcon className="h-4 w-4" />
+                      </Row>
+                    ) : null
+                  }
+                  setShowResolver={setShowResolver}
+                  onAnswerCommentClick={setReplyTo}
+                  chartAnnotations={chartAnnotations}
+                  hideGraph={hideGraph}
+                  setHideGraph={setHideGraph}
                 />
-              )}
-              <YourTrades
-                contract={liveContract}
-                yourNewBets={yourNewBets}
-                contractMetric={myContractMetrics}
-              />
+
+                <UserBetsSummary
+                  className="border-ink-200 mb-2 "
+                  contract={liveContract}
+                  includeSellButton={
+                    tradingAllowed(liveContract) &&
+                    (outcomeType === 'NUMBER' ||
+                      isBinaryMulti(liveContract) ||
+                      outcomeType === 'BINARY' ||
+                      outcomeType === 'PSEUDO_NUMERIC' ||
+                      outcomeType === 'STONK')
+                      ? user
+                      : undefined
+                  }
+                />
+
+                <YourTrades
+                  contract={liveContract}
+                  yourNewBets={yourNewBets}
+                  contractMetric={myContractMetrics}
+                />
+              </Col>
             </Col>
             {showReview && user && (
               <div className="relative my-2">
                 <ReviewPanel
                   marketId={props.contract.id}
+                  title={props.contract.question}
                   author={props.contract.creatorName}
                   onSubmit={(rating: Rating) => {
                     setJustNowReview(rating)
                     setShowReview(false)
                   }}
+                  resolverUser={resolverUser}
+                  currentUser={user}
                 />
                 <button
                   className="text-ink-400 hover:text-ink-600 absolute right-0 top-0 p-4"
@@ -522,6 +543,14 @@ export function ContractPageContent(props: ContractParams) {
                 />
                 <Spacer h={12} />
               </>
+            )}
+            {comments.length > 3 && (
+              <RelatedContractsGrid
+                contracts={relatedMarkets}
+                loadMore={loadMore}
+                showAll={false}
+                className=" !pt-0 pb-4"
+              />
             )}
 
             <div ref={tabsContainerRef} className="mb-4">
@@ -642,7 +671,7 @@ const useBetData = (props: {
         [...(array1 ?? []), ...(array2 ?? [])].sort((a, b) => a.x - b.x)
       ) as MultiPoints
     } else {
-      const points = pointsString ? base64toFloat32Points(pointsString) : []
+      const points = pointsString ? base64toPoints(pointsString) : []
       const newPoints = newBetsWithoutRedemptions.map((bet) => ({
         x: bet.createdTime,
         y: bet.probAfter,

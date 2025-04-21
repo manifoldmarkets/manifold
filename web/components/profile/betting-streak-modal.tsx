@@ -62,13 +62,6 @@ export function BettingStreakModal(props: {
             The more days you predict in a row, the more you earn!
           </span>
           <span className={'text-primary-700'}>
-            • Where can I check my streak?
-          </span>
-          <span className={'ml-2'}>
-            You can see your current streak on the top right of your profile
-            page.
-          </span>
-          <span className={'text-primary-700'}>
             • Can I save my streak if I forget?
           </span>
           <span className={'ml-2'}>

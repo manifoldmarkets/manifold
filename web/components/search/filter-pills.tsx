@@ -61,7 +61,6 @@ export function FilterPill(props: {
 export function AdditionalFilterPill(props: {
   className?: string
   children: ReactNode
-  type: 'filter' | 'sort' | 'contractType'
   onXClick: () => void
 }) {
   const { children, className, onXClick } = props
@@ -190,6 +189,8 @@ export function DropdownPill(props: {
   color?: 'indigo' | 'gray' | 'light-gray'
   open: boolean
   children: ReactNode
+  onClick?: () => void
+  className?: string
 }) {
   const color = props.color ?? 'gray'
 
@@ -201,8 +202,10 @@ export function DropdownPill(props: {
           ? 'hover:bg-primary-600 focus-visible:bg-primary-600 bg-primary-500 text-white'
           : color === 'light-gray'
           ? 'bg-ink-100 hover:bg-ink-200 text-ink-600 dark:bg-ink-300 dark:hover:bg-ink-400'
-          : 'bg-ink-200 hover:bg-ink-300 text-ink-600 dark:bg-ink-300 dark:hover:bg-ink-400'
+          : 'bg-ink-200 hover:bg-ink-300 text-ink-600 dark:bg-ink-300 dark:hover:bg-ink-400',
+        props.className
       )}
+      onClick={props.onClick}
     >
       {/* eslint-disable react/prop-types */}
       {props.children}

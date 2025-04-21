@@ -1,9 +1,5 @@
 import { APIError, APIHandler } from 'api/helpers/endpoint'
-import {
-  PaymentAmount,
-  REFERRAL_MIN_PURCHASE_DOLLARS,
-  WEB_PRICES,
-} from 'common/economy'
+import { PaymentAmount, WEB_PRICES } from 'common/economy'
 import { SWEEP_PRODUCTION_ENABLED } from 'common/envs/constants'
 import {
   CompleteSessionDirectCashierResponse,
@@ -11,7 +7,6 @@ import {
 } from 'common/gidx/gidx'
 import { User } from 'common/user'
 import { getIp, track, trackPublicEvent } from 'shared/analytics'
-import { distributeReferralBonusIfNoneGiven } from 'shared/distribute-referral-bonus'
 import {
   getGIDXStandardParams,
   getLocalServerIP,
@@ -20,7 +15,7 @@ import {
 } from 'shared/gidx/helpers'
 import { log } from 'shared/monitoring/log'
 import { createSupabaseDirectClient } from 'shared/supabase/init'
-import { getReferrerInfo, updateUser } from 'shared/supabase/users'
+import { updateUser } from 'shared/supabase/users'
 import { runTxnInBetQueue } from 'shared/txn/run-txn'
 import { getUser, LOCAL_DEV } from 'shared/utils'
 
@@ -248,9 +243,6 @@ const sendCoins = async (
     description: `Free sweepcash bonus for purchasing mana.`,
   } as const
 
-  const referrerInfo = user.usedReferralCode
-    ? await getReferrerInfo(pg, user.referredByUserId)
-    : undefined
   await pg.tx(async (tx) => {
     await runTxnInBetQueue(tx, manaPurchaseTxn)
     if (isSweepsVerified) {
@@ -260,14 +252,6 @@ const sendCoins = async (
       purchasedMana: true,
       purchasedSweepcash: isSweepsVerified,
     })
-    if (referrerInfo && paidInCents / 100 >= REFERRAL_MIN_PURCHASE_DOLLARS) {
-      await distributeReferralBonusIfNoneGiven(
-        tx,
-        user,
-        referrerInfo.id,
-        referrerInfo.sweepsVerified
-      )
-    }
   })
 
   await trackPublicEvent(user.id, 'M$ purchase', {

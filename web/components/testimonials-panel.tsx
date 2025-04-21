@@ -62,7 +62,7 @@ export function TestimonialsPanel() {
           </div>
           <div className="absolute left-8 top-6 sm:top-48 md:left-8">
             <div className="hidden text-right text-sm text-black sm:inline">
-              <PlayMoneyDisclaimer isLong />
+              <PlayMoneyDisclaimer />
             </div>
           </div>
         </div>

@@ -145,6 +145,7 @@ export type SearchParams = {
   [TOPIC_FILTER_KEY]: string
   [SWEEPIES_KEY]: '0' | '1' | '2'
   [GROUP_IDS_KEY]: string
+  [LIQUIDITY_KEY]: string // empty string or stringified number
 }
 
 export const QUERY_KEY = 'q'
@@ -158,6 +159,7 @@ export const MARKET_TIER_KEY = 'mt'
 export const TOPIC_FILTER_KEY = 'tf'
 export const SWEEPIES_KEY = 'sw'
 export const GROUP_IDS_KEY = 'gids'
+export const LIQUIDITY_KEY = 'li'
 
 export type SupabaseAdditionalFilter = {
   creatorId?: string
@@ -706,6 +708,7 @@ export const useSearchResults = (props: {
         tf: topicSlug,
         sw: sweepState,
         gids,
+        li: liquidity,
       } = searchParams
 
       const includeUsersAndTopics =
@@ -742,6 +745,7 @@ export const useSearchResults = (props: {
                   ? 'CASH'
                   : 'MANA',
               gids,
+              liquidity: liquidity === '' ? undefined : parseInt(liquidity),
             }),
           ]
 
@@ -845,6 +849,7 @@ export const useSearchQueryState = (props: {
   defaultForYou?: '1' | '0'
   useUrlParams?: boolean
   defaultTopicFilter?: string
+  defaultLiquidityTier?: string
 }) => {
   const {
     persistPrefix,
@@ -857,6 +862,7 @@ export const useSearchQueryState = (props: {
     defaultForYou,
     defaultTopicFilter,
     defaultSweepies,
+    defaultLiquidityTier,
   } = props
 
   const defaults = {
@@ -870,6 +876,7 @@ export const useSearchQueryState = (props: {
     [TOPIC_FILTER_KEY]: defaultTopicFilter ?? '',
     [SWEEPIES_KEY]: defaultSweepies ?? '0',
     [GROUP_IDS_KEY]: '',
+    [LIQUIDITY_KEY]: defaultLiquidityTier ?? '',
   }
 
   const useHook = useUrlParams ? usePersistentQueriesState : useNothing

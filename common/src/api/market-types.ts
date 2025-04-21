@@ -18,6 +18,7 @@ import { z } from 'zod'
 import { coerceBoolean, contentSchema } from './zod-types'
 import { randomStringRegex } from 'common/util/random'
 import { MAX_MULTI_NUMERIC_ANSWERS } from 'common/multi-numeric'
+import { liquidityTiers } from 'common/tier'
 
 export type LiteMarket = {
   // Unique identifier for this market
@@ -342,7 +343,7 @@ export const createMarketProps = z
     isTwitchContract: z.boolean().optional(),
     utcOffset: z.number().optional(),
     extraLiquidity: z.number().min(1).optional(),
-    liquidityTier: z.number().min(0),
+    liquidityTier: z.number().min(liquidityTiers[0]),
     idempotencyKey: z.string().regex(randomStringRegex).length(10).optional(),
     sportsStartTimestamp: z.string().optional(),
     sportsEventId: z.string().optional(),

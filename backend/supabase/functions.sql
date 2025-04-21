@@ -64,23 +64,23 @@ or replace function public.close_contract_embeddings (
     FROM contract_embeddings
     WHERE contract_id = input_contract_id
 )
-                                             SELECT contract_id,
-                                                    similarity,
-                                                    data
-                                             FROM public.search_contract_embeddings(
-                                                          (
-                                                              SELECT embedding
-                                                              FROM embedding
-                                                          ),
-                                                          similarity_threshold,
-                                                          match_count + 500
-                                                  )
-                                                      join contracts on contract_id = contracts.id
-                                             where contract_id != input_contract_id
-                                               and resolution_time is null
-                                               and contracts.visibility = 'public'
-                                             order by similarity * similarity * importance_score desc
-                                             limit match_count;
+SELECT contract_id,
+      similarity,
+      data
+FROM public.search_contract_embeddings(
+            (
+                SELECT embedding
+                FROM embedding
+            ),
+            similarity_threshold,
+            match_count + 500
+    )
+        join contracts on contract_id = contracts.id
+where contract_id != input_contract_id
+  and resolution_time is null
+  and contracts.visibility = 'public'
+order by similarity * similarity * importance_score desc
+limit match_count;
 $function$;
 
 create

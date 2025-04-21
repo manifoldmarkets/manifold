@@ -4,13 +4,20 @@ import { Row } from '../layout/row'
 import { Avatar } from '../widgets/avatar'
 import Link from 'next/link'
 import { useState } from 'react'
+import { isUserLikelySpammer } from 'common/user'
 
 export const MAX_SHOWN = 9
 
 export function UserResults(props: { userResults: FullUser[] }) {
   const { userResults } = props
   const [expanded, setExpanded] = useState(false)
-  const shownUsers = expanded ? userResults : userResults.slice(0, MAX_SHOWN)
+
+  // For initial view, only show non-spammers
+  const nonSpamUsers = userResults.filter(
+    (user) => !isUserLikelySpammer(user, !!user.lastBetTime, false)
+  )
+  const shownUsers = expanded ? userResults : nonSpamUsers.slice(0, MAX_SHOWN)
+
   return (
     <Col className="mb-4 px-2 sm:px-0">
       <Row className="text-ink-500 items-center gap-1 text-sm">

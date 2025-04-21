@@ -1,7 +1,7 @@
 import React from 'react'
 import { format as formatDateFn } from 'date-fns'
 import { TimelineItem } from './timeline-item'
-
+import { filterDefined } from 'common/util/array'
 // Type for model data
 export type TimelineItemData = {
   title: string
@@ -132,139 +132,6 @@ export const Timeline = ({
     return Math.max(5, Math.min(95, position)) // Clamp between 5% and 95%
   }
 
-  // Position month markers evenly from 0% to 100%
-  const getMonthMarkerPosition = (index: number, months: Date[]) => {
-    if (months.length <= 1) return 0
-    return (index / (months.length - 1)) * 100
-  }
-
-  // Create a timeline row component for reuse
-  const TimelineRow = ({
-    monthMarkers,
-    getItemPosition,
-    itemsToShow,
-  }: {
-    monthMarkers: Date[]
-    getItemPosition: (date: Date) => number
-    itemsToShow: TimelineItemData[]
-  }) => {
-    return (
-      <div className="relative mb-40 sm:mb-48">
-        {/* Container for timeline and item icons */}
-        <div className="relative w-full px-8">
-          {/* Items on the timeline */}
-          <div className="absolute left-0 right-0 top-[-30px] h-[80px] w-full overflow-visible sm:top-[-40px] sm:h-[90px]">
-            {(() => {
-              // Get all visible items for this row
-              const visibleItems = itemsToShow
-                .map((item) => {
-                  const position = getItemPosition(item.releaseDate)
-                  if (position < 0 || position > 100) return null
-
-                  return { item, position, verticalOffset: 0 }
-                })
-                .filter((item) => item !== null)
-                .sort((a, b) => a.position - b.position) // Sort by position
-
-              // Detect and resolve collisions with three rows of offsets
-              for (let i = 1; i < visibleItems.length; i++) {
-                const current = visibleItems[i]
-                let hasCollision = false
-                const usedOffsets = new Set()
-
-                // Check against all previous items
-                for (let j = 0; j < i; j++) {
-                  const previous = visibleItems[j]
-
-                  // If items are less than 15% apart
-                  if (Math.abs(current.position - previous.position) < 23) {
-                    hasCollision = true
-                    // Track which offset levels are already used by nearby items
-                    usedOffsets.add(previous.verticalOffset)
-                  }
-                }
-
-                // If there's a collision, find an available offset level
-                if (hasCollision) {
-                  // Try each offset level (0, -25, -50, -75) until we find an unused one
-                  for (let offsetLevel = 0; offsetLevel <= 4; offsetLevel++) {
-                    const offset = -25 * offsetLevel
-                    if (!usedOffsets.has(offset)) {
-                      current.verticalOffset = offset
-                      break
-                    }
-                  }
-                }
-              }
-
-              // Render the items with adjusted positions
-              return visibleItems.map(({ item, position, verticalOffset }) => (
-                <TimelineItem
-                  key={`${item.title}-${item.releaseDate.getTime()}`}
-                  item={item}
-                  position={position}
-                  verticalOffset={verticalOffset}
-                />
-              ))
-            })()}
-          </div>
-
-          {/* Timeline content */}
-          <div className="relative w-full">
-            {/* Month markers and labels */}
-            <div className="absolute left-0 right-0 top-[15px]">
-              {monthMarkers.map((date, index) => {
-                const position = getMonthMarkerPosition(index, monthMarkers)
-
-                return (
-                  <div
-                    key={formatDateFn(date, 'yyyy-MM')}
-                    className="absolute"
-                    style={{
-                      left: `${position}%`,
-                      transform: 'translateX(-50%)',
-                    }}
-                  >
-                    {/* Month label positioned below the timeline */}
-                    <div className="text-xxs mb-2 whitespace-nowrap text-center text-gray-600 dark:text-gray-400 sm:text-sm">
-                      {formatDateFn(date, 'MMM yyyy')}
-                    </div>
-                  </div>
-                )
-              })}
-            </div>
-
-            {/* Timeline line */}
-            <div
-              className={`absolute left-0 right-0 h-1 ${lineColor} top-0`}
-            ></div>
-
-            {/* Tick marks */}
-            <div className="absolute left-0 right-0 top-0">
-              {monthMarkers.map((date, index) => {
-                const position = getMonthMarkerPosition(index, monthMarkers)
-
-                return (
-                  <div
-                    key={`tick-${formatDateFn(date, 'yyyy-MM')}`}
-                    className="absolute"
-                    style={{
-                      left: `${position}%`,
-                      transform: 'translateX(-50%)',
-                    }}
-                  >
-                    {/* Tick marks */}
-                    <div className={`h-3 w-0.5 ${lineColor} -mt-1`}></div>
-                  </div>
-                )
-              })}
-            </div>
-          </div>
-        </div>
-      </div>
-    )
-  }
-
   // Filter items for each row
   const firstRowItems = sortedItems.filter((item) => {
     return getFirstRowPosition(item.releaseDate) >= 0
@@ -281,6 +148,7 @@ export const Timeline = ({
         monthMarkers={firstHalfMonths}
         getItemPosition={getFirstRowPosition}
         itemsToShow={firstRowItems}
+        lineColor={lineColor}
       />
 
       {/* Second row */}
@@ -289,8 +157,142 @@ export const Timeline = ({
           monthMarkers={secondHalfMonths}
           getItemPosition={getSecondRowPosition}
           itemsToShow={secondRowItems}
+          lineColor={lineColor}
         />
       )}
+    </div>
+  )
+}
+// Position month markers evenly from 0% to 100%
+const getMonthMarkerPosition = (index: number, months: Date[]) => {
+  if (months.length <= 1) return 0
+  return (index / (months.length - 1)) * 100
+}
+
+// Create a timeline row component for reuse
+const TimelineRow = ({
+  monthMarkers,
+  getItemPosition,
+  itemsToShow,
+  lineColor,
+}: {
+  monthMarkers: Date[]
+  getItemPosition: (date: Date) => number
+  itemsToShow: TimelineItemData[]
+  lineColor: string
+}) => {
+  return (
+    <div className="relative mb-40 sm:mb-48">
+      {/* Container for timeline and item icons */}
+      <div className="relative w-full px-8">
+        {/* Items on the timeline */}
+        <div className="absolute left-0 right-0 top-[-30px] h-[80px] w-full overflow-visible sm:top-[-40px] sm:h-[90px]">
+          {(() => {
+            // Get all visible items for this row
+            const visibleItems = filterDefined(
+              itemsToShow.map((item) => {
+                const position = getItemPosition(item.releaseDate)
+                if (position < 0 || position > 100) return null
+
+                return { item, position, verticalOffset: 0 }
+              })
+            ).sort((a, b) => a.position - b.position)
+
+            // Detect and resolve collisions with three rows of offsets
+            for (let i = 1; i < visibleItems.length; i++) {
+              const current = visibleItems[i]
+              let hasCollision = false
+              const usedOffsets = new Set()
+
+              // Check against all previous items
+              for (let j = 0; j < i; j++) {
+                const previous = visibleItems[j]
+
+                // If items are less than 15% apart
+                if (Math.abs(current.position - previous.position) < 23) {
+                  hasCollision = true
+                  // Track which offset levels are already used by nearby items
+                  usedOffsets.add(previous.verticalOffset)
+                }
+              }
+
+              // If there's a collision, find an available offset level
+              if (hasCollision) {
+                // Try each offset level (0, -25, -50, -75) until we find an unused one
+                for (let offsetLevel = 0; offsetLevel <= 4; offsetLevel++) {
+                  const offset = -25 * offsetLevel
+                  if (!usedOffsets.has(offset)) {
+                    current.verticalOffset = offset
+                    break
+                  }
+                }
+              }
+            }
+
+            // Render the items with adjusted positions
+            return visibleItems.map(({ item, position, verticalOffset }) => (
+              <TimelineItem
+                key={`${item.title}-${item.releaseDate.getTime()}`}
+                item={item}
+                position={position}
+                verticalOffset={verticalOffset}
+              />
+            ))
+          })()}
+        </div>
+
+        {/* Timeline content */}
+        <div className="relative w-full">
+          {/* Month markers and labels */}
+          <div className="absolute left-0 right-0 top-[15px]">
+            {monthMarkers.map((date, index) => {
+              const position = getMonthMarkerPosition(index, monthMarkers)
+
+              return (
+                <div
+                  key={formatDateFn(date, 'yyyy-MM')}
+                  className="absolute"
+                  style={{
+                    left: `${position}%`,
+                    transform: 'translateX(-50%)',
+                  }}
+                >
+                  {/* Month label positioned below the timeline */}
+                  <div className="text-xxs mb-2 whitespace-nowrap text-center text-gray-600 dark:text-gray-400 sm:text-sm">
+                    {formatDateFn(date, 'MMM yyyy')}
+                  </div>
+                </div>
+              )
+            })}
+          </div>
+
+          {/* Timeline line */}
+          <div
+            className={`absolute left-0 right-0 h-1 ${lineColor} top-0`}
+          ></div>
+
+          {/* Tick marks */}
+          <div className="absolute left-0 right-0 top-0">
+            {monthMarkers.map((date, index) => {
+              const position = getMonthMarkerPosition(index, monthMarkers)
+
+              return (
+                <div
+                  key={`tick-${formatDateFn(date, 'yyyy-MM')}`}
+                  className="absolute"
+                  style={{
+                    left: `${position}%`,
+                    transform: 'translateX(-50%)',
+                  }}
+                >
+                  {/* Tick marks */}
+                  <div className={`h-3 w-0.5 ${lineColor} -mt-1`}></div>
+                </div>
+              )
+            })}
+          </div>
+        </div>
+      </div>
     </div>
   )
 }

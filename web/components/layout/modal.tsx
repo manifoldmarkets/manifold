@@ -13,7 +13,7 @@ export function Modal(props: {
   children: ReactNode
   open: boolean
   setOpen?: (open: boolean) => void
-  size?: 'sm' | 'md' | 'lg' | 'xl'
+  size?: 'sm' | 'md' | 'mdlg' | 'lg' | 'xl'
   position?: 'center' | 'top' | 'bottom'
   className?: string
   onClose?: () => void
@@ -31,6 +31,7 @@ export function Modal(props: {
   const sizeClass = {
     sm: 'w-full sm:max-w-sm',
     md: 'w-full sm:max-w-lg',
+    mdlg: 'w-full sm:max-w-xl',
     lg: 'w-full max-w-2xl',
     xl: 'w-full max-w-5xl',
   }[size]

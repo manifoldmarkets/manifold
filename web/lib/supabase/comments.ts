@@ -2,6 +2,7 @@ import { run } from 'common/supabase/utils'
 import { db } from './db'
 import { chunk } from 'lodash'
 import { convertContractComment } from 'common/supabase/comments'
+import { filterDefined } from 'common/util/array'
 
 export async function getComment(commentId: string) {
   const res = await db
@@ -15,6 +16,42 @@ export async function getComment(commentId: string) {
   }
 
   return convertContractComment(res.data)
+}
+
+export async function getCommentThread(commentId: string) {
+  const comment = await getComment(commentId)
+  if (!comment) return null
+
+  if (comment.replyToCommentId) {
+    const [parentComment, { data }] = await Promise.all([
+      getComment(comment.replyToCommentId),
+      run(
+        db
+          .from('contract_comments')
+          .select()
+          .eq('contract_id', comment.contractId)
+          .not('data->>replyToCommentId', 'is', null)
+          .in('data->>replyToCommentId', [comment.replyToCommentId])
+          .order('created_time', { ascending: true })
+      ),
+    ])
+    console.log('parentComment', parentComment)
+    console.log('data', data)
+    return filterDefined([parentComment, ...data.map(convertContractComment)])
+  }
+
+  const { data } = await run(
+    db
+      .from('contract_comments')
+      .select()
+      .eq('contract_id', comment.contractId)
+      .not('data->>replyToCommentId', 'is', null)
+      .in('data->>replyToCommentId', [commentId])
+      .order('created_time', { ascending: true })
+  )
+  console.log('comment', comment)
+  console.log('data', data)
+  return filterDefined([comment, ...data.map(convertContractComment)])
 }
 
 export async function getAllCommentRows(limit: number) {
@@ -40,6 +77,7 @@ export async function getCommentRows(contractId: string) {
   )
   return data
 }
+
 export async function getNewCommentRows(
   contractId: string,
   afterTime: string,

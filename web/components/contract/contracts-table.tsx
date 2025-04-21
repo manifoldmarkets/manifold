@@ -1,7 +1,12 @@
 import { EyeOffIcon } from '@heroicons/react/solid'
 import clsx from 'clsx'
 import { getDisplayProbability } from 'common/calculate'
-import { Contract, contractPath } from 'common/contract'
+import {
+  clampChange,
+  Contract,
+  contractPath,
+  dayProbChange,
+} from 'common/contract'
 import {
   ENV_CONFIG,
   SPICE_MARKET_TOOLTIP,
@@ -35,7 +40,7 @@ import { SweepiesCoin } from 'web/public/custom-components/sweepiesCoin'
 import { getFormattedExpectedValue } from 'common/multi-numeric'
 import { getFormattedExpectedDate } from 'common/multi-date'
 import { Answer } from 'common/src/answer'
-import { FaArrowTrendDown, FaArrowTrendUp } from 'react-icons/fa6'
+import { FaArrowDown, FaArrowUp } from 'react-icons/fa6'
 
 export function ContractsTable(props: {
   contracts: Contract[]
@@ -153,9 +158,9 @@ function ContractRow(props: {
                     )}
                   >
                     {answer.probChanges.day > 0 ? (
-                      <FaArrowTrendUp className="mr-0.5 h-2.5  w-2.5" />
+                      <FaArrowUp className="mr-0.5 h-2.5 w-2.5" />
                     ) : (
-                      <FaArrowTrendDown className="mr-0.5 h-2.5 w-2.5" />
+                      <FaArrowDown className="mr-0.5 h-2.5 w-2.5" />
                     )}
                     {Math.abs(
                       Math.round(
@@ -189,18 +194,6 @@ export function LoadingContractRow() {
   )
 }
 
-export const clampChange = (currentProb: number, probChange: number) => {
-  if (probChange < 0.01 && probChange > -0.01) return 0
-
-  if (probChange > 0) {
-    // For positive changes, clamp to min of change and current probability
-    return Math.min(probChange, currentProb)
-  } else {
-    // For negative changes, clamp to min of absolute change and (1 - currentProb)
-    return -Math.min(Math.abs(probChange), 1 - currentProb)
-  }
-}
-
 export function isClosed(contract: Contract) {
   return (
     !!contract.closeTime &&
@@ -232,10 +225,8 @@ export function ContractStatusLabel(props: {
       ) : (
         <span className={clsx(probTextColor, 'whitespace-nowrap', className)}>
           {formatPercentShort(getDisplayProbability(contract))}
-          {showProbChange &&
-            contract.probChanges &&
-            Math.abs(clampChange(contract.prob, contract.probChanges.day)) >
-              0.02 && (
+          {showProbChange && !!dayProbChange(contract) && (
+            <Tooltip text={`1-day probability change`}>
               <Row
                 className={clsx(
                   'text-ink-700 mx-1 mb-0.5 inline-flex items-center rounded-full px-1 align-middle text-xs',
@@ -245,17 +236,14 @@ export function ContractStatusLabel(props: {
                 )}
               >
                 {contract.probChanges.day > 0 ? (
-                  <FaArrowTrendUp className="mr-0.5 h-2.5 w-2.5" />
+                  <FaArrowUp className="mr-0.5 h-2.5 w-2.5" />
                 ) : (
-                  <FaArrowTrendDown className="mr-0.5 h-2.5 w-2.5" />
+                  <FaArrowDown className="mr-0.5 h-2.5 w-2.5" />
                 )}
-                {Math.abs(
-                  Math.round(
-                    clampChange(contract.prob, contract.probChanges.day) * 100
-                  )
-                )}
+                {dayProbChange(contract)}
               </Row>
-            )}
+            </Tooltip>
+          )}
           {chanceLabel && <span className="text-sm font-normal"> chance</span>}
         </span>
       )

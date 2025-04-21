@@ -3,8 +3,13 @@ export const answerCostTiers = [25, 100, 1000, 10000] as const
 
 export type BinaryDigit = '0' | '1'
 
-export function getTierFromLiquidity(liquidity: number): number {
-  return liquidityTiers.findIndex((tier) => tier >= liquidity)
+export function getTierIndexFromLiquidity(liquidity: number): number {
+  for (let tierIndex = liquidityTiers.length - 1; tierIndex >= 0; tierIndex--) {
+    if (liquidity >= liquidityTiers[tierIndex]) {
+      return tierIndex
+    }
+  }
+  return 0
 }
 
 export function getAnswerCostFromLiquidity(
@@ -12,13 +17,23 @@ export function getAnswerCostFromLiquidity(
   numAnswers: number
 ): number {
   return answerCostTiers[
-    liquidityTiers.findIndex((tier) => tier >= liquidity / numAnswers)
+    getTierIndexFromLiquidityAndAnswers(liquidity, numAnswers)
   ]
 }
 
-export function getTierFromLiquidityAndAnswers(
+export function getTierIndexFromLiquidityAndAnswers(
   liquidity: number,
   numAnswers: number
 ): number {
-  return liquidityTiers.findIndex((tier) => tier >= liquidity / numAnswers)
+  const liquidityPerAnswer = liquidity / numAnswers
+  for (
+    let tierIndex = answerCostTiers.length - 1;
+    tierIndex >= 0;
+    tierIndex--
+  ) {
+    if (liquidityPerAnswer >= answerCostTiers[tierIndex]) {
+      return tierIndex
+    }
+  }
+  return 0
 }

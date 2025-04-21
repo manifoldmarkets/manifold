@@ -11,7 +11,6 @@ import {
   notification_reason_types,
   NotificationReason,
   PaymentCompletedData,
-  ReferralData,
   ReviewNotificationData,
   UniqueBettorData,
 } from 'common/notification'
@@ -22,7 +21,7 @@ import {
   PrivateUser,
   User,
 } from 'common/user'
-import { Contract, MarketContract, renderResolution } from 'common/contract'
+import { Contract, MarketContract } from 'common/contract'
 import { getContract, getPrivateUser, getUser, isProd, log } from 'shared/utils'
 import { ContractComment } from 'common/comment'
 import {
@@ -691,7 +690,8 @@ export const createLimitBetExpiredNotification = async (
 export const createReferralNotification = async (
   toUserId: string,
   referredUser: User,
-  bonusAmounts: ReferralData
+  bonusAmount: string,
+  referredByContract?: Contract
 ) => {
   const privateUser = await getPrivateUser(toUserId)
   if (!privateUser) return
@@ -704,17 +704,27 @@ export const createReferralNotification = async (
   const notification: Notification = {
     id: referredUser.id + '-signup-referral-bonus',
     userId: toUserId,
-    reason: 'you_referred_user',
+    reason:
+      referredByContract?.creatorId === toUserId
+        ? 'user_joined_to_bet_on_your_market'
+        : 'you_referred_user',
     createdTime: Date.now(),
     isSeen: false,
     sourceId: referredUser.id,
     sourceType: 'user',
+    sourceContractId: referredByContract?.id,
+
     sourceUpdateType: 'updated',
     sourceUserName: referredUser.name,
     sourceUserUsername: referredUser.username,
     sourceUserAvatarUrl: referredUser.avatarUrl,
-    sourceText: '',
-    data: bonusAmounts,
+    sourceText: bonusAmount,
+    // Only pass the contract referral details if they weren't referred to a group
+    sourceContractCreatorUsername: referredByContract?.creatorUsername,
+    sourceContractTitle: referredByContract?.question,
+    sourceContractSlug: referredByContract?.slug,
+    sourceSlug: referredByContract?.slug,
+    sourceTitle: referredByContract?.question,
   }
   const pg = createSupabaseDirectClient()
   await insertNotificationToSupabase(notification, pg)
@@ -1233,39 +1243,7 @@ export const createContractResolvedNotifications = async (
     resolutions?: { [outcome: string]: number }
   }
 ) => {
-  let resolutionText = outcome ?? contract.question
   const { token } = contract
-  const isMultiChoice =
-    contract.outcomeType === 'MULTIPLE_CHOICE' ||
-    contract.outcomeType === 'MULTI_NUMERIC' ||
-    contract.outcomeType === 'DATE'
-  const isIndependentMulti = isMultiChoice && !contract.shouldAnswersSumToOne
-
-  if (isIndependentMulti) {
-    const answer = contract.answers.find((answer) => answer.id === answerId)
-    resolutionText = `${answer?.text ?? ''}: ${renderResolution(
-      outcome,
-      probabilityInt !== undefined ? probabilityInt / 100 : answer?.prob
-    )}`
-  } else if (isMultiChoice) {
-    const answerText = contract.answers.find(
-      (answer) => answer.id === outcome
-    )?.text
-    if (answerText) resolutionText = answerText
-    else if (outcome === 'CHOOSE_MULTIPLE') resolutionText = 'multiple answers'
-  } else if (contract.outcomeType === 'BINARY') {
-    if (resolutionText === 'MKT' && probabilityInt)
-      resolutionText = `${probabilityInt}%`
-    else if (resolutionText === 'MKT') resolutionText = 'PROB'
-  } else if (contract.outcomeType === 'PSEUDO_NUMERIC') {
-    if (resolutionText === 'MKT' && resolutionValue)
-      resolutionText = `${resolutionValue}`
-  } else if (contract.outcomeType === 'NUMBER') {
-    const resolvedAnswers = contract.answers.filter((a) =>
-      Object.keys(resolutionData.resolutions ?? {}).includes(a.id)
-    )
-    resolutionText = resolvedAnswers.map((a) => a.text).join(', ')
-  }
   const bulkNotifications: Notification[] = []
   const bulkNoPayoutEmails: EmailAndTemplateEntry[] = []
   const bulkEmails: EmailAndTemplateEntry[] = []
@@ -1278,6 +1256,19 @@ export const createContractResolvedNotifications = async (
     resolutionProbability,
     resolutions,
   } = resolutionData
+
+  const isMultiChoice =
+    contract.outcomeType === 'MULTIPLE_CHOICE' ||
+    contract.outcomeType === 'MULTI_NUMERIC' ||
+    contract.outcomeType === 'DATE'
+  const isIndependentMulti = isMultiChoice && !contract.shouldAnswersSumToOne
+  const resolutionText = toDisplayResolution(
+    contract,
+    outcome,
+    resolutionProbability,
+    resolutions,
+    answerId
+  )
 
   const pg = createSupabaseDirectClient()
   const privateUsers = await pg.map(
@@ -2299,4 +2290,31 @@ export const createFollowsOnYourMarketNotification = async (
 
     await insertNotificationToSupabase(notification, pg)
   }
+}
+
+export const createAIDescriptionUpdateNotification = async (
+  contract: Contract,
+  updateText: string
+) => {
+  const notification: Notification = {
+    id: crypto.randomUUID(),
+    userId: contract.creatorId,
+    reason: 'admin',
+    createdTime: Date.now(),
+    isSeen: false,
+    sourceId: contract.id,
+    sourceType: 'contract',
+    sourceUpdateType: 'updated',
+    sourceContractId: contract.id,
+    sourceUserName: 'Manifold AI',
+    sourceUserUsername: 'ManifoldAI',
+    sourceUserAvatarUrl: 'https://manifold.markets/logo.svg',
+    sourceText: updateText.slice(0, 150),
+    sourceContractTitle: contract.question,
+    sourceContractCreatorUsername: contract.creatorUsername,
+    sourceContractSlug: contract.slug,
+  }
+
+  const pg = createSupabaseDirectClient()
+  await insertNotificationToSupabase(notification, pg)
 }

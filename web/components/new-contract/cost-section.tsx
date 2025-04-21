@@ -94,20 +94,19 @@ function Tier(props: {
   const { currentTier, liquidityTier, setLiquidityTier, isTierDisabled } = props
 
   const tierIndex = liquidityTiers.findIndex((tier) => tier === liquidityTier)
-
   return (
     <div
       className={clsx(
         currentTier == liquidityTier
           ? tierIndex == 0
-            ? 'ring-ink-500 ring-2'
+            ? 'ring-2 ring-green-400'
             : tierIndex == 1
             ? 'ring-2 ring-blue-500'
             : tierIndex == 2
             ? 'ring-2 ring-purple-400'
             : 'ring-2 ring-pink-500'
           : tierIndex == 0
-          ? 'hover:ring-ink-500/50 opacity-90 ring-transparent'
+          ? 'opacity-90 ring-transparent hover:ring-green-500/50'
           : tierIndex == 1
           ? 'opacity-90 ring-transparent hover:ring-blue-500/50'
           : tierIndex == 2

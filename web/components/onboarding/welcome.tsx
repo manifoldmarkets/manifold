@@ -34,6 +34,7 @@ import { getSavedContractVisitsLocally } from 'web/hooks/use-save-visits'
 import { capitalize } from 'lodash'
 import { TRADE_TERM } from 'common/envs/constants'
 import { convertGroup } from 'common/supabase/groups'
+import { setCachedReferralInfoForUser } from 'web/lib/firebase/users'
 
 export const DEFAULT_FOR_YOU = false
 const SHOW_TOPICS = false
@@ -62,9 +63,13 @@ export function Welcome(props: { setFeedKey?: (key: string) => void }) {
   }
 
   useEffect(() => {
+    if (!user) return
     if (shouldShowWelcomeModal) {
       track('welcome screen: landed')
       setOpen(true)
+    } else {
+      // Wait until after they've had the opportunity to change their name
+      setCachedReferralInfoForUser(user)
     }
   }, [shouldShowWelcomeModal])
 

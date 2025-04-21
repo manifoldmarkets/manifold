@@ -173,54 +173,20 @@ export default function Leagues() {
 
       <Col className="mx-auto w-full max-w-xl gap-2 px-1 pt-4">
         <Col className="px-2">
-          <Title className="!mb-2">Leagues</Title>
-          <Row className="mb-2 items-center gap-4">
-            <Col className="items-center gap-1">
-              <Select
-                className="!border-ink-200 !h-10"
-                value={season}
-                onChange={(e) => onSetSeason(+e.target.value as season)}
-              >
-                {SEASONS.map((season) => (
-                  <option key={season} value={season}>
-                    Season {season}: {getSeasonMonth(season)}
-                  </option>
-                ))}
-              </Select>
-            </Col>
-            <Col className="items-center gap-1">
-              <Row className="gap-1.5">
-                <div className={'text-sm'}>
-                  {seasonStatus === 'closing-period' && (
-                    <>
-                      Ends randomly within <br />
-                      <ClockIcon className="text-ink-1000 inline h-4 w-4" />{' '}
-                      {getCountdownStringHoursMinutes(randomPeriodEnd)}
-                    </>
-                  )}
-                  {seasonStatus === 'ended' && (
-                    <>Ended {formatTime(seasonEnd)}</>
-                  )}
-                  {seasonStatus === 'current' && (
-                    <>
-                      Countdown:{' '}
-                      <InfoTooltip
-                        text={
-                          'Once the countdown is reached the leaderboards will freeze at a random time in the following 24h to determine final ranks.'
-                        }
-                      >
-                        <Countdown
-                          className=" text-sm"
-                          endDate={countdownEnd}
-                        />
-                      </InfoTooltip>
-                    </>
-                  )}
-                </div>
-              </Row>
-            </Col>
+          <Row className="mb-2 items-center justify-between gap-4">
+            <Title className="!mb-0">Leagues</Title>
+            <Select
+              className="!border-ink-200 !h-10"
+              value={season}
+              onChange={(e) => onSetSeason(+e.target.value as season)}
+            >
+              {SEASONS.map((season) => (
+                <option key={season} value={season}>
+                  Season {season}: {getSeasonMonth(season)}
+                </option>
+              ))}
+            </Select>
           </Row>
-
           <Col className="text-ink-700 my-2 justify-center gap-1">
             <div>
               Win{' '}
@@ -230,11 +196,33 @@ export default function Leagues() {
               >
                 prizes
               </span>{' '}
-              by earning the most mana from trades placed this month! Includes
-              unrealized profits.
+              for the most profit (realized and unrealized) on trades placed
+              this month!
+              <span className={'ml-1'}>
+                {seasonStatus === 'closing-period' && (
+                  <>
+                    Ends randomly within <br />
+                    <ClockIcon className="text-ink-1000 inline h-4 w-4" />{' '}
+                    {getCountdownStringHoursMinutes(randomPeriodEnd)}
+                  </>
+                )}
+                {seasonStatus === 'ended' && <>Ended {formatTime(seasonEnd)}</>}
+                {seasonStatus === 'current' && (
+                  <>
+                    Season ends in:{' '}
+                    <InfoTooltip
+                      text={
+                        'Once the countdown is reached the leaderboards will freeze at a random time in the following 24h to determine final ranks.'
+                      }
+                    >
+                      <Countdown className=" text-sm" endDate={countdownEnd} />
+                    </InfoTooltip>
+                  </>
+                )}
+              </span>
             </div>
             <div>
-              Looking for the all time leaderboard? It's{' '}
+              All-time leaderboard is{' '}
               <Link
                 href="/leaderboards"
                 className="text-primary-600 hover:text-primary-800 underline-offset-2 hover:underline"
@@ -244,6 +232,7 @@ export default function Leagues() {
               .
             </div>
           </Col>
+
           <PrizesModal open={prizesModalOpen} setOpen={setPrizesModalOpen} />
 
           {cohort && (

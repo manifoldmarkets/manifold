@@ -69,7 +69,7 @@ export const Comments = (props: { key?: string }) => {
 
   const user = useUser()
   return (
-    <Col className={'gap-2 p-4'}>
+    <Col className={'gap-2 pt-1 sm:p-4'}>
       {!comments.length && <LoadingCards />}
       {comments.map((comment) => {
         const contract = contracts.find(

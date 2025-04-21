@@ -44,6 +44,7 @@ export function TopicSelector(props: {
   } = props
   const user = useUser()
   const [isCreatingNewGroup, setIsCreatingNewGroup] = useState(false)
+  const [isDropdownOpen, setIsDropdownOpen] = useState(false)
 
   const { query, setQuery, searchedGroups, loading } =
     useSearchGroups(addingToContract)
@@ -55,9 +56,24 @@ export function TopicSelector(props: {
     }
     if (group) setSelectedGroup(group)
     setQuery('') // Clear the input
+    setIsDropdownOpen(false) // Close dropdown on selection
   }
 
   const atMax = max != undefined && selectedIds && selectedIds.length >= max
+
+  // Force close dropdown when disabled
+  useEffect(() => {
+    if (atMax) {
+      setIsDropdownOpen(false)
+    }
+  }, [atMax])
+
+  // Open dropdown when typing
+  useEffect(() => {
+    if (query.length > 0 && !atMax && !isDropdownOpen) {
+      setIsDropdownOpen(true)
+    }
+  }, [query, atMax, isDropdownOpen])
 
   return (
     <Col className={clsx('w-full items-start', className)}>
@@ -85,63 +101,83 @@ export function TopicSelector(props: {
                 ? `You're at ${MAX_GROUPS_PER_MARKET} tags. Remove tags to add more.`
                 : placeholder ?? 'Search topics'
             }
+            onFocus={() => !atMax && setIsDropdownOpen(true)}
+            onClick={() => !atMax && setIsDropdownOpen(true)}
+            onBlur={(e) => {
+              // Only close if we're not clicking within the dropdown
+              // This timeout gives time for click events to register on options
+              setTimeout(() => {
+                setIsDropdownOpen(false)
+              }, 200)
+            }}
           />
-          <ComboboxButton className="absolute inset-y-0 right-0 flex items-center rounded-r-md px-2 focus:outline-none">
+          <ComboboxButton
+            className="absolute inset-y-0 right-0 flex items-center rounded-r-md px-2 focus:outline-none"
+            onClick={(e) => {
+              if (!atMax) {
+                setIsDropdownOpen(!isDropdownOpen)
+              }
+            }}
+          >
             <SelectorIcon className="text-ink-400 h-5 w-5" aria-hidden="true" />
           </ComboboxButton>
 
-          <ComboboxOptions
-            static={isCreatingNewGroup}
-            className="bg-canvas-0 ring-ink-1000 absolute z-10 mt-1 max-h-60 w-full overflow-x-hidden rounded-md py-1 shadow-lg ring-1 ring-opacity-5 focus:outline-none"
-          >
-            {loading ? (
-              <>
-                <LoadingOption className={'w-3/4'} />
-                <LoadingOption className={'w-1/2'} />
-                <LoadingOption className={'w-3/4'} />
-              </>
-            ) : (
-              searchedGroups
-                .filter((group) => !selectedIds?.some((id) => id == group.id))
-                .map((group: LiteGroup) => (
-                  <ComboboxOption
-                    key={group.id}
-                    value={group}
-                    className={({ active }) =>
-                      clsx(
-                        'relative flex h-12 cursor-pointer select-none items-center justify-between px-6 py-2 transition-colors',
-                        active ? 'bg-primary-200 text-ink-1000' : 'text-ink-900'
-                      )
-                    }
-                  >
-                    <div className={'truncate'}>
-                      {group.name} ({group.totalMembers} followers)
-                    </div>
-                    {group.privacyStatus != 'public' && (
-                      <Row className={'text-ink-500'}>
-                        {PRIVACY_STATUS_ITEMS[group.privacyStatus].icon}
-                      </Row>
-                    )}
-                  </ComboboxOption>
-                ))
-            )}
+          {isDropdownOpen && !atMax && (
+            <ComboboxOptions
+              static={isCreatingNewGroup}
+              className="bg-canvas-0 ring-ink-1000 absolute z-10 mt-1 max-h-60 w-full overflow-x-hidden rounded-md py-1 shadow-lg ring-1 ring-opacity-5 focus:outline-none"
+            >
+              {loading ? (
+                <>
+                  <LoadingOption className={'w-3/4'} />
+                  <LoadingOption className={'w-1/2'} />
+                  <LoadingOption className={'w-3/4'} />
+                </>
+              ) : (
+                searchedGroups
+                  .filter((group) => !selectedIds?.some((id) => id == group.id))
+                  .map((group: LiteGroup) => (
+                    <ComboboxOption
+                      key={group.id}
+                      value={group}
+                      className={({ active }) =>
+                        clsx(
+                          'relative flex h-12 cursor-pointer select-none items-center justify-between px-6 py-2 transition-colors',
+                          active
+                            ? 'bg-primary-200 text-ink-1000'
+                            : 'text-ink-900'
+                        )
+                      }
+                    >
+                      <div className={'truncate'}>
+                        {group.name} ({group.totalMembers} followers)
+                      </div>
+                      {group.privacyStatus != 'public' && (
+                        <Row className={'text-ink-500'}>
+                          {PRIVACY_STATUS_ITEMS[group.privacyStatus].icon}
+                        </Row>
+                      )}
+                    </ComboboxOption>
+                  ))
+              )}
 
-            {user && !loading && (
-              <ComboboxOption
-                value={'new'}
-                className={clsx(
-                  'relative flex h-12 cursor-pointer select-none items-center justify-between px-6 py-2 transition-colors',
-                  'data-[focus]:bg-primary-200 data-[focus]:text-ink-1000 text-ink-900',
-                  loading ? 'animate-pulse' : ''
-                )}
-              >
-                <Row className={'items-center gap-1 truncate'}>
-                  <PlusCircleIcon className="mr-2 h-5 w-5 text-teal-500" />
-                  Create a new topic
-                </Row>
-              </ComboboxOption>
-            )}
-          </ComboboxOptions>
+              {user && !loading && (
+                <ComboboxOption
+                  value={'new'}
+                  className={clsx(
+                    'relative flex h-12 cursor-pointer select-none items-center justify-between px-6 py-2 transition-colors',
+                    'data-[focus]:bg-primary-200 data-[focus]:text-ink-1000 text-ink-900',
+                    loading ? 'animate-pulse' : ''
+                  )}
+                >
+                  <Row className={'items-center gap-1 truncate'}>
+                    <PlusCircleIcon className="mr-2 h-5 w-5 text-teal-500" />
+                    Create a new topic
+                  </Row>
+                </ComboboxOption>
+              )}
+            </ComboboxOptions>
+          )}
         </div>
       </Combobox>
       {isCreatingNewGroup && (
@@ -167,7 +203,7 @@ const LoadingOption = (props: { className: string }) => (
   </div>
 )
 
-const useSearchGroups = (addingToContract: boolean) => {
+export const useSearchGroups = (addingToContract: boolean) => {
   const [query, setQuery] = useState('')
   const [searchedGroups, setSearchedGroups] = useState<LiteGroup[]>([])
   const [loading, setLoading] = useState(false)

@@ -72,23 +72,14 @@ export const AnswerBar = (props: {
 
   return (
     <Col
-      className={clsx('relative isolate h-full w-full', className)}
+      className={clsx('relative h-full w-full', className)}
       onPointerOver={onHover && (() => onHover(true))}
       onPointerLeave={onHover && (() => onHover(false))}
       onClick={onClick}
     >
-      <Row className="group my-auto h-full items-center justify-between gap-x-4 px-3 py-2 leading-none">
-        <div className="flex-grow">{label}</div>
-        <Row
-          className="relative items-center justify-end gap-2"
-          onClick={(e) => e.stopPropagation()}
-        >
-          {end}
-        </Row>
-      </Row>
       <div
         className={clsx(
-          'absolute bottom-0 left-0 right-0 -z-10 h-full rounded opacity-70 transition-all group-hover:opacity-100',
+          'absolute bottom-0 left-0 right-0 h-full rounded opacity-70 transition-all group-hover:opacity-100',
           hideBar ? 'bg-ink-200' : props.barColor ?? 'bg-canvas-50'
         )}
       >
@@ -97,7 +88,7 @@ export const AnswerBar = (props: {
           <div
             className={clsx(
               'absolute top-0 h-full rounded ring-1 ring-purple-500 sm:ring-2',
-              resolvedProb > prob ? 'bg-purple-100 dark:bg-purple-900' : 'z-10'
+              resolvedProb > prob ? 'bg-purple-100 dark:bg-purple-900' : ''
             )}
             style={{
               width: `${resolvedProb * 100}%`,
@@ -107,7 +98,7 @@ export const AnswerBar = (props: {
         {/* main bar */}
         {!hideBar && (
           <div
-            className="isolate h-full rounded dark:brightness-75"
+            className="h-full rounded dark:brightness-75"
             style={{
               width: `max(8px, ${prob * 100}%)`,
               background: color,
@@ -116,6 +107,16 @@ export const AnswerBar = (props: {
         )}
         {renderBackgroundLayer}
       </div>
+
+      <Row className="group relative my-auto h-full items-center justify-between gap-x-4 px-3 py-2 leading-none">
+        <div className="flex-grow">{label}</div>
+        <Row
+          className="relative items-center justify-end gap-2"
+          onClick={(e) => e.stopPropagation()}
+        >
+          {end}
+        </Row>
+      </Row>
     </Col>
   )
 }

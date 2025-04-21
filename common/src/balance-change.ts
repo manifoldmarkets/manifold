@@ -45,6 +45,7 @@ export type TxnBalanceChange = BalanceChange & {
   user?: Pick<User, 'username' | 'name'>
   charity?: { name: string; slug: string }
   description?: string
+  answerText?: string
 }
 
 export const isBetChange = (

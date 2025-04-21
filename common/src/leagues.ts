@@ -4,7 +4,7 @@ export type season = (typeof SEASONS)[number]
 
 export const SEASONS = [
   1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22,
-  23,
+  23, 24,
 ] as const
 export const CURRENT_SEASON = SEASONS[SEASONS.length - 1]
 
@@ -33,6 +33,7 @@ const SEASON_END_TIMES = [
   new Date('2025-01-01T22:06:13-08:00'),
   new Date('2025-02-01T22:18:13-08:00'),
   new Date('2025-03-02T02:25:41-08:00'),
+  new Date('2025-04-01T20:32:23-08:00'),
 ]
 
 export type League = {

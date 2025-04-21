@@ -31,6 +31,8 @@ import { type Contract } from 'common/contract'
 import { UserHovercard } from '../user/user-hovercard'
 import clsx from 'clsx'
 import { useSaveCampaign } from 'web/hooks/use-save-campaign'
+import { referralQuery } from 'common/util/share'
+import { useSaveReferral } from 'web/hooks/use-save-referral'
 
 export type DashboardEndpoints = 'news' | 'politics' | 'ai'
 
@@ -46,6 +48,7 @@ export function DashboardPage(props: {
   className?: string
 }) {
   const user = useUser()
+  useSaveReferral(user)
   useSaveCampaign()
 
   const router = useRouter()
@@ -138,7 +141,9 @@ export function DashboardPage(props: {
 
               <div className="flex items-center">
                 <CopyLinkOrShareButton
-                  url={`https://${ENV_CONFIG.domain}/${endpoint}/${slug}`}
+                  url={`https://${ENV_CONFIG.domain}/${endpoint}/${slug}${
+                    user?.username ? referralQuery(user.username) : ''
+                  }`}
                   eventTrackingName="copy dashboard link"
                   tooltip="Share"
                 />

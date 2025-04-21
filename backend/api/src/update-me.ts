@@ -10,6 +10,8 @@ import { getUser, getUserByUsername, log } from 'shared/utils'
 import { APIError, APIHandler } from './helpers/endpoint'
 import { updateUser } from 'shared/supabase/users'
 import { broadcastUpdatedUser } from 'shared/websockets/helpers'
+import { generateAvatarUrl } from 'shared/helpers/generate-and-update-avatar-urls'
+import { getStorageBucket } from 'shared/create-user-main'
 
 export const updateMe: APIHandler<'me/update'> = async (props, auth) => {
   const update = cloneDeep(props)
@@ -29,6 +31,18 @@ export const updateMe: APIHandler<'me/update'> = async (props, auth) => {
     const otherUserExists = await getUserByUsername(cleanedUsername)
     if (otherUserExists) throw new APIError(403, 'Username already taken')
     update.username = cleanedUsername
+  }
+
+  if (update.avatarUrl === '') {
+    const bucket = getStorageBucket()
+    const newAvatarUrl = await generateAvatarUrl(
+      auth.uid,
+      user.name,
+      bucket,
+      true // Have to use random name to deal w/ cache issues
+    )
+    update.avatarUrl = newAvatarUrl
+    log(`Generated new avatar for user ${auth.uid}: ${newAvatarUrl}`)
   }
 
   const pg = createSupabaseDirectClient()

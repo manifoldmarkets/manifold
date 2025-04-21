@@ -9,7 +9,6 @@ import {
   renderResolution,
 } from 'common/contract'
 import { PrivateUser, User } from 'common/user'
-import { getReferralCodeFromUser } from 'common/util/share'
 import {
   formatLargeNumber,
   formatMoney,
@@ -35,7 +34,6 @@ import {
 } from 'shared/supabase/init'
 import { getLoverRow } from 'common/love/lover'
 import { HOUR_MS } from 'common/util/time'
-import { REFERRAL_AMOUNT, REFERRAL_AMOUNT_CASH } from 'common/economy'
 
 export type PerContractInvestmentsData = {
   questionTitle: string
@@ -154,18 +152,20 @@ export const toDisplayResolution = (
   resolutions?: { [outcome: string]: number },
   answerId?: string
 ) => {
+  const isMultiChoice =
+    contract.outcomeType === 'MULTIPLE_CHOICE' ||
+    contract.outcomeType === 'MULTI_NUMERIC' ||
+    contract.outcomeType === 'DATE'
+  if (resolution === 'CANCEL') return 'N/A'
+
   if (contract.outcomeType === 'BINARY') {
     const prob = resolutionProbability ?? getProbability(contract)
     return renderResolution(resolution, prob)
   }
 
   if (contract.outcomeType === 'PSEUDO_NUMERIC') {
-    const { resolution, resolutionValue } = contract
-
-    if (resolution === 'CANCEL') return 'N/A'
-
-    return resolutionValue
-      ? formatLargeNumber(resolutionValue)
+    return contract.resolutionValue
+      ? formatLargeNumber(contract.resolutionValue)
       : formatNumericProbability(
           resolutionProbability ?? getProbability(contract),
           contract
@@ -175,10 +175,20 @@ export const toDisplayResolution = (
     return formatNumericProbability(getProbability(contract), contract)
   }
 
-  const isIndependentMulti =
-    contract.outcomeType === 'MULTIPLE_CHOICE' &&
-    contract.mechanism === 'cpmm-multi-1' &&
-    !contract.shouldAnswersSumToOne
+  if (contract.outcomeType === 'NUMBER') {
+    if (!resolutions) return 'Invalid resolution data'
+
+    const resolvedAnswerIds = Object.keys(resolutions)
+    const resolvedAnswers = contract.answers.filter((a) =>
+      resolvedAnswerIds.includes(a.id)
+    )
+    if (resolvedAnswers.length > 0) {
+      return resolvedAnswers.map((a) => a.text).join(', ')
+    }
+    return 'MULTI'
+  }
+
+  const isIndependentMulti = isMultiChoice && !contract.shouldAnswersSumToOne
   if (isIndependentMulti && answerId) {
     const answer = contract.answers.find((a) => a.id === answerId)
     if (answer) {
@@ -190,13 +200,12 @@ export const toDisplayResolution = (
   }
   if ((resolution === 'MKT' && resolutions) || resolution === 'CHOOSE_MULTIPLE')
     return 'MULTI'
-  if (resolution === 'CANCEL') return 'N/A'
 
   const answer = (contract as MultiContract).answers.find(
     (a) => a.id === resolution
   )
   if (answer) return answer.text
-  return `#${resolution}`
+  return resolution
 }
 
 export const sendWelcomeEmail = async (
@@ -541,12 +550,6 @@ export const sendInterestingMarketsEmail = async (
     {
       name: firstName,
       unsubscribeUrl,
-      referralCode: getReferralCodeFromUser(privateUser.id),
-      referralManaAmount: formatMoney(REFERRAL_AMOUNT).replace(
-        ENV_CONFIG.moneyMoniker,
-        ''
-      ),
-      referralCashAmount: REFERRAL_AMOUNT_CASH.toFixed(0),
       question1Title: contractsToSend[0].question,
       question1Link: contractUrl(contractsToSend[0]),
       question1ImgSrc: imageSourceUrl(contractsToSend[0]),
@@ -835,12 +838,16 @@ export const getMarketMovementEmail = (
       templateData[`question${i + 1}Title`] = movement.questionTitle
       templateData[`question${i + 1}Url`] = movement.questionUrl
       templateData[`question${i + 1}Prob`] = movement.prob
-
-      const probChange = Math.round(
-        Math.abs(movement.endProb - movement.startProb) * 100
-      )
-      const direction = movement.endProb > movement.startProb ? '+' : '-'
-      templateData[`question${i + 1}Change`] = `${direction}${probChange}`
+      const arrowColor =
+        movement.endProb > movement.startProb
+          ? '#14b8a6' /* green-500 */
+          : '#ef4444' /* red-500 */
+      templateData[
+        `question${i + 1}ArrowStyle`
+      ] = `color: ${arrowColor}; font-weight: bold;`
+      templateData[`question${i + 1}InitialProb`] = `${Math.round(
+        movement.startProb * 100
+      )}%`
       templateData[`question${i + 1}ChangeStyle`] = movement.probChangeStyle
       templateData[`question${i + 1}Display`] = 'display: table-row'
 

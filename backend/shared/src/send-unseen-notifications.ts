@@ -1,6 +1,5 @@
 import { createSupabaseDirectClient } from 'shared/supabase/init'
 import { log } from 'shared/utils'
-import { createPushNotifications } from 'shared/create-push-notifications'
 import { getNotificationDestinationsForUser } from 'common/user-notification-preferences'
 import { PrivateUser } from 'common/user'
 import { MarketMovementData, Notification } from 'common/notification'
@@ -17,22 +16,31 @@ export async function sendUnseenMarketMovementNotifications() {
   const pg = createSupabaseDirectClient()
 
   const results = await pg.manyOrNone(`
-    with user_unseen_notifications as (
+    with latest_contract_notifications as (
+        select distinct on (cmn.contract_id, n.user_id)
+          cmn.notification_id,
+          cmn.contract_id,
+          n.user_id
+        from contract_movement_notifications cmn
+          join user_notifications n on n.notification_id = cmn.notification_id
+        where cmn.destination = 'browser'
+          and cmn.created_time > now() - interval '24 hours'
+          and n.data->>'isSeen' = 'false'
+        order by cmn.contract_id, n.user_id, cmn.created_time desc
+    ),
+    user_unseen_notifications as (
         select
           n.data as notification,
           pu.data as private_user,
           u.id as user_id,
           u.name as user_name,
           row_number() over (partition by n.user_id order by c.importance_score desc) as importance_rank
-        from contract_movement_notifications cmn
-          join user_notifications n on n.notification_id = cmn.notification_id
+        from latest_contract_notifications lcn
+          join user_notifications n on n.notification_id = lcn.notification_id
           join private_users pu on n.user_id = pu.id
           join users u on pu.id = u.id
-          join contracts c on cmn.contract_id = c.id
-        where cmn.destination = 'browser'
-          and cmn.created_time > now() - interval '24 hours'
-          and n.data->>'isSeen' = 'false'
-          and c.resolution is null
+          join contracts c on lcn.contract_id = c.id
+        where c.resolution is null
     )
     select * from user_unseen_notifications
     where importance_rank <= ${MOVEMENTS_TO_SEND}
@@ -61,42 +69,18 @@ export async function sendUnseenMarketMovementNotifications() {
   )
 
   // Prepare notifications for sending
-  const notificationsToSend: [PrivateUser, Notification, string, string][] = []
   const bulkEmails = []
 
-  for (const [userId, userResults] of userNotifications) {
+  for (const [_, userResults] of userNotifications) {
     const privateUser = userResults[0].private_user as PrivateUser
     const userName = userResults[0].user_name as string
 
-    // Get top notification for push notification
-    const topResult = userResults[0]
-    const topNotification = topResult.notification as Notification
-
-    const { sendToMobile, sendToEmail } = getNotificationDestinationsForUser(
+    const { sendToEmail } = getNotificationDestinationsForUser(
       privateUser,
       'market_movements'
     )
 
-    if (sendToMobile) {
-      const { sourceContractTitle: question } = topNotification
-      const data = topNotification.data as MarketMovementData
-      const startProb = data.val_start
-      const endProb = data.val_end
-      const answerText = data.answerText
-
-      const startProbText = `${Math.round(startProb * 100)}%`
-      const endProbText = `${Math.round(endProb * 100)}%`
-
-      // Basic title/body for the notification
-      const questionText = truncateText(question, answerText ? 70 : 130)
-      const answer = answerText ? `:\n${truncateText(answerText, 60)}` : ''
-      const title = 'Market movement'
-      const body = `${questionText}${answer}: ${startProbText} → ${endProbText}`
-
-      notificationsToSend.push([privateUser, topNotification, title, body])
-    }
-
-    // Prepare email notification (using up to 5 notifications)
+    // Prepare email notification (using up to MOVEMENTS_TO_SEND notifications)
     if (sendToEmail) {
       const marketMovements: MarketMovementEmailData[] = userResults.map(
         (result) => {
@@ -136,12 +120,6 @@ export async function sendUnseenMarketMovementNotifications() {
         bulkEmails.push(emailEntry)
       }
     }
-  }
-
-  // Send push notifications
-  if (notificationsToSend.length > 0) {
-    log(`Sending ${notificationsToSend.length} push notifications`)
-    await createPushNotifications(notificationsToSend)
   }
 
   // Send emails

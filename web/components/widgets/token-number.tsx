@@ -83,9 +83,7 @@ export function TokenNumber(props: {
           short: numberType == 'short',
         })
       ) : numberType == 'short' ? (
-        shortenNumber(
-          +formatMoneyNoMoniker(Math.abs(amount ?? 0)).replaceAll(',', '')
-        )
+        shortenNumber(Math.abs(amount ?? 0))
       ) : numberType == 'animated' ? (
         <AnimatedNumber amount={Math.abs(amount ?? 0)} />
       ) : numberType == 'toDecimal' ? (

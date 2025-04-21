@@ -51,14 +51,12 @@ export const ManaSupplySummary = (props: {
   manaSupplyStats: rowFor<'mana_supply_stats'>[]
 }) => {
   const { manaSupplyStats } = props
-  const [manaData, cashData] = orderAndGroupData(manaSupplyStats)
+  const [manaData] = orderAndGroupData(manaSupplyStats)
 
   return (
     <>
       <Title>Mana supply over time</Title>
       <StackedChart data={manaData} />
-      <Title className="mt-4">Sweepcash supply supply over time</Title>
-      <StackedChart data={cashData} />
     </>
   )
 }

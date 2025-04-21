@@ -45,6 +45,7 @@ import { humanish } from 'common/user'
 import { TokenNumber } from 'web/components/widgets/token-number'
 import { first } from 'lodash'
 import { truncateText } from '../widgets/truncate'
+import { BettingStreakProgressModal } from '../profile/first-streak-modal'
 export function UniqueBettorBonusIncomeNotification(props: {
   notification: Notification
   highlighted: boolean
@@ -351,7 +352,11 @@ export function BettingStreakBonusIncomeNotification(props: {
           <PrimaryNotificationLink text="Prediction Streak" />
         </span>
       )}
-      <BettingStreakModal isOpen={open} setOpen={setOpen} currentUser={user} />
+      <BettingStreakProgressModal
+        open={open}
+        setOpen={setOpen}
+        currentStreak={user?.currentBettingStreak ?? 0}
+      />
     </NotificationFrame>
   )
 }
@@ -467,10 +472,18 @@ export function ReferralNotification(props: {
   isChildOfGroup?: boolean
 }) {
   const { notification, isChildOfGroup, highlighted, setHighlighted } = props
-  const { sourceId, sourceUserName, sourceUserUsername, data } = notification
-  const { manaAmount, cashAmount } = (data ?? {
+  const {
+    sourceId,
+    sourceUserName,
+    sourceContractTitle,
+    sourceContractCreatorUsername,
+    sourceUserUsername,
+    data,
+  } = notification
+  const user = useUser()
+  const isYourMarket = sourceContractCreatorUsername === user?.username
+  const { manaAmount } = (data ?? {
     manaAmount: REFERRAL_AMOUNT,
-    cashAmount: 0,
   }) as ReferralData
   return (
     <NotificationFrame
@@ -482,33 +495,24 @@ export function ReferralNotification(props: {
         <AvatarNotificationIcon notification={notification} symbol={'👋'} />
       }
       link={getSourceUrl(notification)}
-      subtitle={
-        <NotificationUserLink
-          userId={sourceId}
-          name={sourceUserName}
-          username={sourceUserUsername}
-        />
-      }
     >
       <div className="line-clamp-3">
-        {cashAmount > 0 && (
-          <>
-            <TokenNumber
-              className={'text-amber-500'}
-              amount={cashAmount}
-              coinType="CASH"
-              isInline
-            />
-            {' + '}
-          </>
-        )}
         <TokenNumber
           className={'text-teal-600'}
           amount={manaAmount}
           coinType="MANA"
           isInline
         />{' '}
-        for referring a new user!
+        Bonus {isYourMarket ? 'for' : 'for referring the new user'}{' '}
+        <NotificationUserLink
+          userId={sourceId}
+          name={sourceUserName}
+          username={sourceUserUsername}
+        />{' '}
+        {isYourMarket ? 'signing up on your market ' : ''}
+        {!isChildOfGroup && (
+          <PrimaryNotificationLink text={sourceContractTitle} />
+        )}
       </div>
     </NotificationFrame>
   )

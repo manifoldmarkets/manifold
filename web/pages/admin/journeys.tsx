@@ -53,10 +53,10 @@ export default function Journeys() {
     )
     .map((u) => u.id)
   const likelySpammers = unBannedUsers.filter((u) =>
-    isUserLikelySpammer(u, userIdsThatBet.includes(u.id))
+    isUserLikelySpammer(u, userIdsThatBet.includes(u.id), false)
   )
   const unlikelySpammers = unBannedUsers.filter(
-    (u) => !isUserLikelySpammer(u, userIdsThatBet.includes(u.id))
+    (u) => !isUserLikelySpammer(u, userIdsThatBet.includes(u.id), false)
   )
   const referrers = unBannedUsers.filter((u) => u.referredByUserId)
 

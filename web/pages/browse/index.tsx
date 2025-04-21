@@ -15,9 +15,10 @@ import { useIsMobile } from 'web/hooks/use-is-mobile'
 import { usePrivateUser, useUser } from 'web/hooks/use-user'
 import { ManifoldLogo } from 'web/components/nav/manifold-logo'
 import { DEFAULT_FOR_YOU, Welcome } from 'web/components/onboarding/welcome'
-
+import { useSaveReferral } from 'web/hooks/use-save-referral'
 export default function BrowsePage() {
   const user = useUser()
+  useSaveReferral(user)
 
   return (
     <Page trackPageView={'questions page'} className="lg:px-4">

@@ -6,6 +6,7 @@ import {
   CPMMContract,
   CPMMMultiContract,
   getMainBinaryMCAnswer,
+  isBinaryMulti,
 } from 'common/contract'
 import { ContractMetric } from 'common/contract-metric'
 import { TRADE_TERM } from 'common/envs/constants'
@@ -21,7 +22,14 @@ import { NoLabel, YesLabel } from '../outcome-label'
 import { ProfitBadge } from '../profit-badge'
 import { InfoTooltip } from '../widgets/info-tooltip'
 import { MoneyDisplay } from './money-display'
-
+import { useUser } from 'web/hooks/use-user'
+import { ShareBetModal } from './share-bet'
+import { useState } from 'react'
+import { Button } from '../buttons/button'
+import { LuShare } from 'react-icons/lu'
+import { getPseudonym } from '../charts/contract/choice'
+import { maxBy } from 'lodash'
+import { formatPercent } from 'common/util/format'
 export function UserBetsSummary(props: {
   contract: Contract
   initialMetrics?: ContractMetric
@@ -35,7 +43,7 @@ export function UserBetsSummary(props: {
   return (
     <BetsSummary
       contract={contract}
-      metrics={metrics}
+      metric={metrics}
       className={className}
       includeSellButton={includeSellButton}
       areYourBets
@@ -45,28 +53,20 @@ export function UserBetsSummary(props: {
 
 export function BetsSummary(props: {
   contract: Contract
-  metrics: ContractMetric
+  metric: ContractMetric
   areYourBets: boolean
   className?: string
-  hideTweet?: boolean
-  hideProfit?: boolean
-  hideValue?: boolean
   includeSellButton?: User | null | undefined
 }) {
-  const {
-    contract,
-    metrics,
-    className,
-    hideTweet,
-    hideProfit,
-    includeSellButton,
-    hideValue,
-    areYourBets,
-  } = props
+  const { contract, metric, className, includeSellButton, areYourBets } = props
   const { resolution, outcomeType } = contract
+  const [showShareModal, setShowShareModal] = useState(false)
 
-  const { payout, invested, totalShares = {}, profit, profitPercent } = metrics
+  const { payout, invested, totalShares = {}, profit, profitPercent } = metric
 
+  const maxSharesOutcome =
+    metric.maxSharesOutcome ??
+    maxBy(Object.entries(totalShares), ([, value]) => value)?.[0]
   const yesWinnings = totalShares.YES ?? 0
   const noWinnings = totalShares.NO ?? 0
 
@@ -78,14 +78,18 @@ export function BetsSummary(props: {
   const mainBinaryMCAnswer = getMainBinaryMCAnswer(contract)
   const prob = contract.mechanism === 'cpmm-1' ? getProbability(contract) : 0
   const expectation = prob * yesWinnings + (1 - prob) * noWinnings
+  const user = useUser()
 
-  if (metrics.invested === 0 && metrics.profit === 0) return null
+  if (metric.invested === 0 && metric.profit === 0) return null
 
   const isCashContract = contract.token === 'CASH'
+  const avgPrice = maxSharesOutcome
+    ? metric.invested / metric.totalShares[maxSharesOutcome]
+    : 0
 
   return (
-    <Col className={clsx('mb-8', className)}>
-      <Row className="flex-wrap gap-6 sm:flex-nowrap">
+    <Col className={clsx(className)}>
+      <Row className={clsx('flex-wrap items-center gap-4 sm:gap-6')}>
         {resolution ? (
           <Col>
             <div className="text-ink-500 text-sm">Payout</div>
@@ -160,30 +164,27 @@ export function BetsSummary(props: {
                 </div>
               </Col>
             ) : (
-              !hideValue && (
-                <Col className="hidden sm:inline">
-                  <div className="text-ink-500 whitespace-nowrap text-sm">
-                    Expected value{' '}
-                    <InfoTooltip
-                      text={`How much ${
-                        areYourBets ? 'your' : 'their'
-                      } position in the question is worth right now according to the current probability.`}
-                    />
-                  </div>
-                  <div className="whitespace-nowrap">
-                    <MoneyDisplay
-                      amount={payout}
-                      isCashContract={isCashContract}
-                    />
-                  </div>
-                </Col>
-              )
+              <Col className="hidden sm:inline">
+                <div className="text-ink-500 whitespace-nowrap text-sm">
+                  Expected value{' '}
+                  <InfoTooltip
+                    text={`How much ${
+                      areYourBets ? 'your' : 'their'
+                    } position in the question is worth right now according to the current probability.`}
+                  />
+                </div>
+                <div className="whitespace-nowrap">
+                  <MoneyDisplay
+                    amount={payout}
+                    isCashContract={isCashContract}
+                  />
+                </div>
+              </Col>
             )}
             {includeSellButton && (
               <SellRow
                 contract={contract as CPMMContract}
                 user={includeSellButton}
-                showTweet={false}
                 hideStatus={true}
                 className={'-mt-1'}
               />
@@ -201,7 +202,7 @@ export function BetsSummary(props: {
           </div>
         </Col>
 
-        {isBinary && !resolution && !hideValue && (
+        {isBinary && !resolution && (
           <Col className="hidden sm:inline">
             <div className="text-ink-500 whitespace-nowrap text-sm">
               Expected value{' '}
@@ -220,37 +221,67 @@ export function BetsSummary(props: {
           </Col>
         )}
 
-        {!hideProfit && (
-          <Col>
-            <div className="text-ink-500 whitespace-nowrap text-sm">
-              Profit{' '}
-              <InfoTooltip
-                text={`How much ${
-                  areYourBets ? "you've" : "they've"
-                } made or lost on this question across all ${TRADE_TERM}s (includes both realized & unrealized profits).`}
-              />
-            </div>
-            <div className="whitespace-nowrap">
-              <MoneyDisplay amount={profit} isCashContract={isCashContract} />
-              <ProfitBadge profitPercent={profitPercent} round={true} />
-            </div>
-          </Col>
-        )}
-      </Row>
-
-      {!hideTweet && resolution && profit >= 1 && (
-        <Row className={'mt-4 items-center gap-2'}>
-          <div>
-            {areYourBets ? 'You' : 'They'} made{' '}
-            <MoneyDisplay amount={profit} isCashContract={isCashContract} /> in
-            profit!{' '}
-            <TweetButton
-              tweetText={getWinningTweet(profit, contract)}
-              className="ml-2"
+        <Col>
+          <div className="text-ink-500 whitespace-nowrap text-sm">
+            Profit{' '}
+            <InfoTooltip
+              text={`How much ${
+                areYourBets ? "you've" : "they've"
+              } made or lost on this question across all ${TRADE_TERM}s (includes both realized & unrealized profits).`}
             />
           </div>
-        </Row>
-      )}
+          <div className="whitespace-nowrap">
+            <MoneyDisplay amount={profit} isCashContract={isCashContract} />
+            <ProfitBadge profitPercent={profitPercent} round={true} />
+          </div>
+        </Col>
+        {(contract.mechanism !== 'cpmm-multi-1' || isBinaryMulti(contract)) &&
+          maxSharesOutcome &&
+          (yesWinnings > 1 || noWinnings > 1) &&
+          (resolution === undefined || resolution !== 'CANCEL') && (
+            <>
+              <Button
+                className="h-10"
+                size={'lg'}
+                color={'green-outline'}
+                onClick={() => setShowShareModal(true)}
+              >
+                <Row className="items-center gap-2">
+                  <LuShare className="h-5 w-5" aria-hidden />
+                  Share
+                </Row>
+              </Button>
+              {showShareModal && (
+                <ShareBetModal
+                  open={showShareModal}
+                  setOpen={setShowShareModal}
+                  questionText={contract.question}
+                  outcome={mainBinaryMCAnswer ? 'YES' : maxSharesOutcome}
+                  answer={
+                    getPseudonym(contract)?.[maxSharesOutcome as 'YES' | 'NO']
+                      ?.pseudonymName
+                  }
+                  avgPrice={formatPercent(
+                    maxSharesOutcome === 'YES' ? avgPrice : 1 - avgPrice
+                  )}
+                  betAmount={metric.invested}
+                  winAmount={metric.totalShares[maxSharesOutcome]}
+                  resolution={resolution}
+                  profit={metric.profit}
+                  currentPrice={
+                    contract.mechanism === 'cpmm-1' ? contract.prob : undefined
+                  }
+                />
+              )}
+            </>
+          )}
+        {resolution && resolution !== 'CANCEL' && (
+          <TweetButton
+            className="h-10"
+            tweetText={getWinningTweet(profit, contract, user?.username ?? '')}
+          />
+        )}
+      </Row>
       {mainBinaryMCAnswer && (
         <BinaryMultiSellRow
           answer={mainBinaryMCAnswer}
@@ -258,7 +289,7 @@ export function BetsSummary(props: {
         />
       )}
       {includeSellButton && contract.outcomeType === 'NUMBER' && (
-        <MultiNumericSellPanel contract={contract} userId={metrics.userId} />
+        <MultiNumericSellPanel contract={contract} userId={metric.userId} />
       )}
     </Col>
   )

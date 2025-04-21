@@ -71,7 +71,7 @@ export type notification_preferences = {
   onboarding_flow: notification_destination_types[]
   thank_you_for_purchases: notification_destination_types[]
   opt_out_all: notification_destination_types[]
-  // When adding a new notification preference, use add-new-notification-preference.ts to existing users
+  admin: notification_destination_types[] // Atm this preference isn't checked, it's always assumed true
 }
 
 export const getDefaultNotificationPreferences = (isDev?: boolean) => {
@@ -168,7 +168,7 @@ export const getDefaultNotificationPreferences = (isDev?: boolean) => {
     probability_updates_on_watched_markets: constructPref(true, false, true),
     thank_you_for_purchases: constructPref(false, false, false),
     onboarding_flow: constructPref(true, true, false),
-
+    admin: constructPref(true, true, true),
     opt_out_all: [],
   }
   return defaults

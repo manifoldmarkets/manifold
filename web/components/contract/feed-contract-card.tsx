@@ -436,13 +436,19 @@ const BottomActionRow = (props: {
 export function YourMetricsFooter(props: {
   metrics: ContractMetric
   isCashContract: boolean
+  className?: string
 }) {
-  const { metrics, isCashContract } = props
+  const { metrics, isCashContract, className } = props
   const { totalShares, maxSharesOutcome, profit } = metrics
   const { YES: yesShares, NO: noShares } = totalShares
 
   return (
-    <Row className="bg-ink-200/50 my-2 flex-wrap items-center justify-between gap-x-4 gap-y-1 rounded p-2 text-sm">
+    <Row
+      className={clsx(
+        'bg-ink-200/50 my-2 flex-wrap items-center justify-between gap-x-4 gap-y-1 rounded p-2 text-sm',
+        className
+      )}
+    >
       <Row className="items-center gap-2">
         <span className="text-ink-500">Payout on {maxSharesOutcome}</span>
         <span className="text-ink-700 font-semibold">

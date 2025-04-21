@@ -4,6 +4,7 @@ import { sortBy, uniqBy } from 'lodash'
 import {
   getAllCommentRows,
   getComment,
+  getCommentThread,
   getNumContractComments,
 } from 'web/lib/supabase/comments'
 import { convertContractComment } from 'common/supabase/comments'
@@ -45,6 +46,26 @@ export function useCommentOnContract(commentId: string) {
     getComment(commentId).then(setComment)
   }, [commentId])
   return comment
+}
+
+export function useCommentThread(commentId: string | undefined) {
+  const [thread, setThread] = useState<ContractComment[] | undefined>(undefined)
+
+  useEffect(() => {
+    if (!commentId) {
+      setThread(undefined)
+      return
+    }
+    console.log('fetching comment thread', commentId)
+
+    getCommentThread(commentId).then((comments) => {
+      if (comments) {
+        setThread(sortBy(comments, 'createdTime'))
+      }
+    })
+  }, [commentId])
+
+  return thread
 }
 
 export const useSubscribeGlobalComments = () => {

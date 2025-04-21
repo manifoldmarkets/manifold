@@ -6,8 +6,7 @@ import {
   QuestionMarkCircleIcon,
   LoginIcon,
   SearchIcon,
-  GlobeAltIcon,
-  ChatIcon,
+  StarIcon,
 } from '@heroicons/react/outline'
 // import { PiTelevisionSimple } from 'react-icons/pi'
 import TrophyIcon from 'web/lib/icons/trophy-icon.svg'
@@ -34,6 +33,7 @@ import { Col } from '../layout/col'
 import { DAY_MS } from 'common/util/time'
 import { useAdminOrMod } from 'web/hooks/use-admin'
 import { AppRouterInstance } from 'next/dist/shared/lib/app-router-context.shared-runtime'
+import { IoCompassOutline } from 'react-icons/io5'
 
 export default function Sidebar(props: {
   className?: string
@@ -55,7 +55,6 @@ export default function Sidebar(props: {
 
   const isNewUser = !!user && user.createdTime > Date.now() - DAY_MS
 
-  // temp fix
   const isLiveTV = false
 
   const navOptions = isMobile
@@ -70,7 +69,13 @@ export default function Sidebar(props: {
         isAdminOrMod: isAdminOrMod,
       })
 
-  const bottomNavOptions = bottomNav(!!user, theme, toggleTheme, router)
+  const bottomNavOptions = bottomNav(
+    !!user,
+    theme,
+    toggleTheme,
+    router,
+    isMobile
+  )
 
   const createMarketButton = user && !user.isBannedFromPosting && (
     <CreateQuestionButton
@@ -137,13 +142,15 @@ const getDesktopNav = (
       {
         name: 'Explore',
         href: '/explore',
-        icon: GlobeAltIcon,
+        icon: IoCompassOutline,
+        iconClassName: '!h-[1.6rem] !w-[1.6rem] !mr-[0.65rem]',
       },
       // {
       //   name: 'TV',
       //   href: '/tv',
       //   icon: PiTelevisionSimple,
       // },
+
       {
         name: 'Notifications',
         href: `/notifications`,
@@ -172,6 +179,11 @@ const getMobileNav = (
 
   return buildArray<NavItem>(
     { name: 'Leagues', href: '/leagues', icon: TrophyIcon },
+    {
+      name: 'Share with friends',
+      href: '/referrals',
+      icon: StarIcon,
+    },
     // { name: 'TV', href: '/tv', icon: PiTelevisionSimple },
     isAdminOrMod && {
       name: 'Reports',
@@ -185,14 +197,15 @@ const bottomNav = (
   loggedIn: boolean,
   theme: 'light' | 'dark' | 'auto',
   toggleTheme: () => void,
-  router: AppRouterInstance
+  router: AppRouterInstance,
+  isMobile: boolean | undefined
 ) =>
   buildArray<NavItem>(
     loggedIn && { name: 'About', href: '/about', icon: QuestionMarkCircleIcon },
-    {
-      name: 'Discord',
-      href: 'https://discord.gg/eHQBNBqXuh',
-      icon: ChatIcon,
+    !isMobile && {
+      name: 'Share with friends',
+      href: '/referrals',
+      icon: StarIcon,
     },
     {
       name: theme ?? 'auto',

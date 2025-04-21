@@ -2,8 +2,7 @@ import { APIError, APIHandler } from './helpers/endpoint'
 import { log } from 'shared/utils'
 import { track } from 'shared/analytics'
 import { anythingToRichText } from 'shared/tiptap'
-import { perplexity } from 'shared/helpers/perplexity'
-import { models, promptClaude } from 'shared/helpers/claude'
+import { promptOpenAIWithWebSearch } from 'shared/helpers/openai-utils'
 import {
   addAnswersModeDescription,
   outcomeTypeDescriptions,
@@ -43,65 +42,53 @@ export const generateAIDescription: APIHandler<'generate-ai-description'> =
 
       log('Generating AI description for:', userQuestionAndDescription)
       try {
-        const { messages, citations } = await perplexity(
-          userQuestionAndDescription,
-          {
-            systemPrompts: [
-              `You are a helpful AI assistant that researches information about the user's prompt`,
-            ],
-          }
-        )
-        const perplexityResponse =
-          [messages].join('\n') + '\n\nSources:\n' + citations.join('\n\n')
+        const prompt = `
+        You are a helpful AI assistant that uses web search to research and generate descriptions for prediction markets. Your goal is to provide relevant context and clear resolution criteria that will help traders make informed predictions.
+        ${
+          outcomeKey
+            ? `Their market is of type ${outcomeKey}\n${outcomeTypeDescriptions}`
+            : ''
+        }
+        ${
+          addAnswersMode
+            ? `\nThe user has specified that the addAnswersMode is ${addAnswersMode}\n${addAnswersModeDescription}`
+            : ''
+        }
+        Guidelines:
+        - Keep descriptions concise but informative, focusing on objective facts rather than opinions
+        - Incorporate any relevant information from the user's description into your own description
+        - If the user supplied answers, provide any relevant background information for each answer
+        - If the market is personal, (i.e. I will attend the most parties, or I will get a girlfriend) word resolution criteria in the first person
+        - Include a "Resolution criteria" section first that describes how the market will be resolved.
+          - Include any special additional resolution criteria if edge cases are exceptionally likely. Otherwise, the criteria should be concise and to the point, allowing the creator and traders to use common sense to resolve edge cases.
+        - Include relevant sources and data when available from your web search
+        - Don't repeat the question in the description
+        - If the market has a precondition, such as 'If I attend, will I enjoy the party?', or 'If Biden runs, will he win?', markets should resolve N/A if the precondition is not met
+        - Format the response as markdown
+        - Also include a "Background" section that includes information readers/traders may want to know if it's relevant to the user's question AND it's not common knowledge. Keep it concise.
+        - Only include a "Considerations" section if there are unexpected considerations that traders may want to know about. E.g. if the question is about something that has never happened before, etc. ${
+          addAnswersMode === 'DISABLED' &&
+          outcomeKey === 'DEPENDENT_MULTIPLE_CHOICE'
+            ? 'E.g. if the answers are not exhaustive, traders should be warned that the market may resolve N/A.'
+            : ''
+        }
+        - Use your web search tool to gather relevant, up-to-date information related to the user's prompt to inform the description. Include information from it in the description that traders or other readers may want to know if it's relevant to the user's question, but keep it concise.
 
-        const systemPrompt = `
-    You are a helpful AI assistant that generates descriptions for prediction markets. Your goal is to provide relevant context and clear resolution criteria that will help traders make informed predictions.
-    ${
-      outcomeKey
-        ? `Their market is of type ${outcomeKey}\n${outcomeTypeDescriptions}`
-        : ''
-    }
-    ${
-      addAnswersMode
-        ? `\nThe user has specified that the addAnswersMode is ${addAnswersMode}\n${addAnswersModeDescription}`
-        : ''
-    }
-    Guidelines:
-    - Keep descriptions concise but informative, focusing on objective facts rather than opinions
-    - Incorporate any relevant information from the user's description into your own description
-    - If the user supplied answers, provide any relevant background information for each answer
-    - If the market is personal, (i.e. I will attend the most parties, or I will get a girlfriend) word resolution criteria in the first person
-    - Include a "Resolution criteria" section first that describes how the market will be resolved.
-      - Include any special additional resolution criteria if edge cases are exceptionally likely. Otherwise, the criteria should be concise and to the point, allowing the creator and traders to use common sense to resolve edge cases.
-    - Include relevant sources and data when available
-    - Don't repeat the question in the description
-    - If the market has a precondition, such as 'If I attend, will I enjoy the party?', or 'If Biden runs, will he win?', markets should resolve N/A if the precondition is not met
-    - Format the response as markdown
-    - Also include a "Background" section that includes information readers/traders may want to know if it's relevant to the user's question AND it's not common knowledge. Keep it concise.
-    - Only include a "Considerations" section if there are unexpected considerations that traders may want to know about. E.g. if the question is about something that has never happened before, etc. ${
-      addAnswersMode === 'DISABLED' &&
-      outcomeKey === 'DEPENDENT_MULTIPLE_CHOICE'
-        ? 'E.g. if the answers are not exhaustive, traders should be warned that the market may resolve N/A.'
-        : ''
-    }
-    - Here is current information from the internet that is related to the user's prompt. Include information from it in the description that traders or other readers may want to know if it's relevant to the user's question, but keep it concise:
-    ${perplexityResponse}
-    `
+        User's prompt:
+        ${userQuestionAndDescription}
 
-        const prompt = `${userQuestionAndDescription}\n\n Only return the markdown description, nothing else`
-        const claudeResponse = await promptClaude(prompt, {
-          model: models.sonnet,
-          system: systemPrompt,
-        })
+        Only return the markdown description, nothing else.
+        `
+        const gptResponse = await promptOpenAIWithWebSearch(prompt)
 
         track(auth.uid, 'generate-ai-description', {
-          question,
+          question: question.substring(0, 100),
           hasExistingDescription: !!description,
         })
 
-        return { description: anythingToRichText({ markdown: claudeResponse }) }
+        return { description: anythingToRichText({ markdown: gptResponse }) }
       } catch (e) {
-        console.error('Failed to generate description:', e)
+        log.error('Failed to generate description:', { e })
         throw new APIError(
           500,
           'Failed to generate description. Please try again.'

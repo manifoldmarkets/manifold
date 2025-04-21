@@ -56,12 +56,9 @@ export function BetDialog(props: {
     <Modal
       open={open}
       setOpen={setOpen}
-      className={clsx(
-        MODAL_CLASS,
-        'pointer-events-auto max-h-[42rem] select-none overflow-auto'
-      )}
+      className={clsx(MODAL_CLASS, '!px-0 !py-0')}
     >
-      <Col className="px-4">
+      <Col className="max-h-[42rem] overflow-auto px-4 py-4">
         <Row className="items-baseline justify-between gap-2">
           <Link
             className="!text-xl hover:underline"

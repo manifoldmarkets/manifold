@@ -25,6 +25,7 @@ import { contractColumnsToSelect, log } from 'shared/utils'
 import { PrivateUser } from 'common/user'
 import { GROUP_SCORE_PRIOR } from 'common/feed'
 import { tsToMillis } from 'common/supabase/utils'
+import { answerCostTiers, getTierIndexFromLiquidity } from 'common/tier'
 
 const DEFAULT_THRESHOLD = 1000
 type TokenInputType = 'CASH' | 'MANA' | 'ALL' | 'CASH_AND_MANA'
@@ -42,6 +43,7 @@ export async function getForYouSQL(items: {
   token: TokenInputType
   privateUser?: PrivateUser
   threshold?: number
+  liquidity?: number
 }) {
   const {
     filter,
@@ -53,6 +55,7 @@ export async function getForYouSQL(items: {
     privateUser,
     threshold = DEFAULT_THRESHOLD,
     token,
+    liquidity,
   } = items
 
   const userId = items.userId
@@ -88,7 +91,9 @@ export async function getForYouSQL(items: {
       sort,
       isPrizeMarket,
       token,
-      privateUser
+      privateUser,
+      undefined,
+      liquidity
     )
   }
   const GROUP_SCORE_POWER = 4
@@ -125,6 +130,7 @@ export async function getForYouSQL(items: {
         hideStonks: true,
         isPrizeMarket,
         token,
+        liquidity,
       }),
       offset <= threshold / 2 &&
         sort === 'score' &&
@@ -163,7 +169,8 @@ export const basicSearchSQL = (
   isPrizeMarket: boolean,
   token: TokenInputType,
   privateUser?: PrivateUser,
-  creatorId?: string
+  creatorId?: string,
+  liquidity?: number
 ) => {
   const sortByScore = sort === 'score' ? 'importance_score' : 'freshness_score'
   return renderSql(
@@ -178,6 +185,7 @@ export const basicSearchSQL = (
       isPrizeMarket,
       token,
       creatorId,
+      liquidity,
     }),
     privateUserBlocksSql(privateUser),
     lim(limit, offset)
@@ -206,6 +214,7 @@ export function getSearchContractSQL(args: {
   isPrizeMarket?: boolean
   token: TokenInputType
   groupIds?: string
+  liquidity?: number
 }) {
   const {
     term,
@@ -333,6 +342,7 @@ function getSearchContractWhereSQL(args: {
   hideLove?: boolean
   isPrizeMarket?: boolean
   token: TokenInputType
+  liquidity?: number
 }) {
   const {
     filter,
@@ -344,6 +354,7 @@ function getSearchContractWhereSQL(args: {
     hideLove,
     isPrizeMarket,
     token,
+    liquidity,
   } = args
   type FilterSQL = Record<string, string>
   const filterSQL: FilterSQL = {
@@ -374,7 +385,17 @@ function getSearchContractWhereSQL(args: {
   const sortFilter = sort == 'close-date' ? 'close_time > NOW()' : ''
   const creatorFilter = creatorId ? `creator_id = '${creatorId}'` : ''
   const visibilitySQL = getContractPrivacyWhereSQLFilter(uid, creatorId)
-
+  const answerLiquidity =
+    answerCostTiers[getTierIndexFromLiquidity(liquidity ?? 0)]
+  const liquidityFilter = liquidity
+    ? `(
+    CASE
+        WHEN mechanism = 'cpmm-multi-1' AND jsonb_typeof(data->'answers') = 'array' AND jsonb_array_length(data->'answers') > 0
+        THEN (coalesce((data->>'totalLiquidity')::numeric, 0) / jsonb_array_length(data->'answers'))
+        ELSE coalesce((data->>'totalLiquidity')::numeric, 0)
+    END
+  ) >= case when mechanism = 'cpmm-multi-1' then ${answerLiquidity} else ${liquidity} end`
+    : ''
   const deletedFilter = `deleted = false`
 
   const isPrizeMarketFilter = isPrizeMarket ? 'is_spice_payout = true' : ''
@@ -394,6 +415,7 @@ function getSearchContractWhereSQL(args: {
     where(loveFilter, [[PROD_MANIFOLD_LOVE_GROUP_SLUG]]),
     where(sortFilter),
     where(contractTypeFilter),
+    where(liquidityFilter),
     where(visibilitySQL),
     where(creatorFilter),
     where(deletedFilter),

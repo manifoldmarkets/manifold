@@ -174,6 +174,8 @@ import {
 import { inferNumericUnit } from './infer-numeric-unit'
 import { generateConciseTitle } from './generate-concise-title'
 import { getCloseDateEndpoint } from './get-close-date'
+import { referUser } from './refer-user'
+import { saveMarketDraft, getMarketDrafts, deleteMarketDraft } from './market-drafts'
 
 export const handlers: { [k in APIPath]: APIHandler<k> } = {
   'refresh-all-clients': refreshAllClients,
@@ -361,4 +363,8 @@ export const handlers: { [k in APIPath]: APIHandler<k> } = {
   'regenerate-date-midpoints': regenerateDateMidpoints,
   'generate-concise-title': generateConciseTitle,
   'get-close-date': getCloseDateEndpoint,
+  'refer-user': referUser,
+  'save-market-draft': saveMarketDraft,
+  'get-market-drafts': getMarketDrafts,
+  'delete-market-draft': deleteMarketDraft,
 }

@@ -28,7 +28,7 @@ import { Headline } from 'common/news'
 import { type Contract } from 'common/contract'
 import clsx from 'clsx'
 import { DashboardEndpoints } from 'web/components/dashboard/dashboard-page'
-
+import { useSaveReferral } from 'web/hooks/use-save-referral'
 export function PoliticsDashboardPage(props: {
   initialDashboard: Dashboard
   previews: LinkPreviews
@@ -41,6 +41,7 @@ export function PoliticsDashboardPage(props: {
   className?: string
 }) {
   const user = useUser()
+  useSaveReferral(user)
   const router = useRouter()
   const pathName = usePathname() ?? ''
 

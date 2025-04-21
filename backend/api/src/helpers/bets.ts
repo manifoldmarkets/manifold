@@ -23,10 +23,7 @@ import {
   PARTNER_USER_IDS,
 } from 'common/envs/constants'
 import { Answer } from 'common/answer'
-import {
-  UNIQUE_ANSWER_BETTOR_BONUS_AMOUNT,
-  UNIQUE_BETTOR_BONUS_AMOUNT,
-} from 'common/economy'
+import { getUniqueBettorBonusAmount } from 'common/economy'
 import { removeUndefinedProps } from 'common/util/object'
 import { UniqueBettorBonusTxn } from 'common/txn'
 import { getInsertQuery } from 'shared/supabase/utils'
@@ -422,7 +419,7 @@ export const getMakerIdsFromBetResult = (result: NewBetResult) => {
 }
 
 export const getUniqueBettorBonusQuery = (
-  contract: Contract,
+  contract: MarketContract,
   bettor: User,
   bet: CandidateBet
 ) => {
@@ -460,10 +457,10 @@ export const getUniqueBettorBonusQuery = (
     }
 
   // ian: removed the diminishing bonuses, but we could add them back via contract.uniqueBettorCount
-  const bonusAmount =
-    contract.mechanism === 'cpmm-multi-1'
-      ? UNIQUE_ANSWER_BETTOR_BONUS_AMOUNT
-      : UNIQUE_BETTOR_BONUS_AMOUNT
+  const bonusAmount = getUniqueBettorBonusAmount(
+    contract.totalLiquidity,
+    'answers' in contract ? contract.answers.length : 0
+  )
 
   const bonusTxnData = removeUndefinedProps({
     contractId: contract.id,

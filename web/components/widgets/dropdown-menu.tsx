@@ -22,6 +22,7 @@ export type DropdownItem = {
   linkProps?: React.AnchorHTMLAttributes<HTMLAnchorElement>
   className?: string
   nonButtonContent?: ReactNode
+  closeOnClick?: boolean
 }
 
 export default function DropdownMenu(props: {
@@ -111,7 +112,7 @@ export default function DropdownMenu(props: {
                           if (item.onClick) {
                             item.onClick()
                           }
-                          if (closeOnClick) {
+                          if (closeOnClick || item.closeOnClick) {
                             close()
                           }
                         }}
