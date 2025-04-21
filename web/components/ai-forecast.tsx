@@ -679,7 +679,7 @@ function CapabilityCard({
                   {formatPercent(topCompanies[1].probability)}
                 </div>
                 <div 
-                  className="w-full rounded-t-lg bg-gray-300 dark:bg-gray-600"
+                  className="w-full rounded-t-lg bg-blue-200 dark:bg-blue-700/60"
                   style={{
                     height: `${Math.max(8, topCompanies[1].probability * 100)}px`
                   }}
@@ -733,16 +733,13 @@ function CapabilityCard({
                   {formatPercent(topCompanies[2].probability)}
                 </div>
                 <div 
-                  className="w-full rounded-t-lg bg-gray-200 dark:bg-gray-700"
+                  className="w-full rounded-t-lg bg-blue-100 dark:bg-blue-800/40"
                   style={{
                     height: `${Math.max(8, topCompanies[2].probability * 100)}px`
                   }}
                 ></div>
               </div>
             </div>
-
-            {/* Base podium */}
-            <div className="mt-0 h-2 w-full bg-gray-200 dark:bg-gray-700"></div>
           </div>
         </Col>
       </CardBase>
