@@ -10,7 +10,7 @@ import { usePersistentLocalState } from 'web/hooks/use-persistent-local-state'
 import { ControlledTabs } from '../layout/tabs'
 import { debounce } from 'lodash'
 import { MAX_MULTI_NUMERIC_ANSWERS } from 'common/multi-numeric'
-
+import { formatMoney } from 'common/util/format'
 export const MultiNumericDateSection = (props: {
   submitState: 'EDITING' | 'LOADING' | 'DONE'
   question: string
@@ -26,6 +26,7 @@ export const MultiNumericDateSection = (props: {
   setMidpoints: (midpoints: number[]) => void
   shouldAnswersSumToOne: boolean
   setShouldAnswersSumToOne: (shouldAnswersSumToOne: boolean) => void
+  marginalCost: number
 }) => {
   const {
     paramsKey,
@@ -42,6 +43,7 @@ export const MultiNumericDateSection = (props: {
     setMaxString,
     setShouldAnswersSumToOne,
     shouldAnswersSumToOne,
+    marginalCost,
   } = props
   const defaultAnswers = ['', '']
   const [isGeneratingRanges, setIsGeneratingRanges] = useState(false)
@@ -250,6 +252,7 @@ export const MultiNumericDateSection = (props: {
               className="hover:bg-canvas-50 border-ink-300 text-ink-700 bg-canvas-0 focus:ring-primary-500 inline-flex items-center rounded border px-2.5 py-1.5 text-xs font-medium shadow-sm focus:outline-none focus:ring-2 focus:ring-offset-2"
             >
               Add bucket
+              {marginalCost > 0 ? ` +${formatMoney(marginalCost)}` : ''}
             </Button>
           </Row>
         </Col>
@@ -291,6 +294,7 @@ export const MultiNumericDateSection = (props: {
               className="hover:bg-canvas-50 border-ink-300 text-ink-700 bg-canvas-0 focus:ring-primary-500 inline-flex items-center rounded border px-2.5 py-1.5 text-xs font-medium shadow-sm focus:outline-none focus:ring-2 focus:ring-offset-2"
             >
               Add threshold
+              {marginalCost > 0 ? ` +${formatMoney(marginalCost)}` : ''}
             </Button>
           </Row>
         </Col>

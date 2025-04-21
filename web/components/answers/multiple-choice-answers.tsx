@@ -7,6 +7,7 @@ import { InfoTooltip } from '../widgets/info-tooltip'
 import { OutcomeType } from 'common/contract'
 import { ChoicesToggleGroup } from '../widgets/choices-toggle-group'
 import { Button } from '../buttons/button'
+import { formatMoney } from 'common/util/format'
 
 export function MultipleChoiceAnswers(props: {
   answers: string[]
@@ -19,6 +20,7 @@ export function MultipleChoiceAnswers(props: {
   question: string
   generateAnswers: () => void
   isGeneratingAnswers: boolean
+  marginalCost: number
 }) {
   const {
     answers,
@@ -31,6 +33,7 @@ export function MultipleChoiceAnswers(props: {
     question,
     generateAnswers,
     isGeneratingAnswers,
+    marginalCost,
   } = props
 
   const setAnswer = (i: number, answer: string) => {
@@ -130,6 +133,7 @@ export function MultipleChoiceAnswers(props: {
             className="hover:bg-canvas-50 border-ink-300 text-ink-700 bg-canvas-0 focus:ring-primary-500 inline-flex items-center rounded border px-2.5 py-1.5 text-xs font-medium shadow-sm focus:outline-none focus:ring-2 focus:ring-offset-2"
           >
             Add {outcomeType == 'POLL' ? 'option' : 'answer'}
+            {marginalCost > 0 ? ` +${formatMoney(marginalCost)}` : ''}
           </button>
         </Row>
       )}

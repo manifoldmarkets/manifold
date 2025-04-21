@@ -10,6 +10,7 @@ import { usePersistentLocalState } from 'web/hooks/use-persistent-local-state'
 import { ControlledTabs } from '../layout/tabs'
 import { debounce } from 'lodash'
 import { MAX_MULTI_NUMERIC_ANSWERS } from 'common/multi-numeric'
+import { formatMoney } from 'common/util/format'
 
 export const MultiNumericRangeSection = (props: {
   submitState: 'EDITING' | 'LOADING' | 'DONE'
@@ -30,6 +31,7 @@ export const MultiNumericRangeSection = (props: {
   setShouldAnswersSumToOne: (shouldAnswersSumToOne: boolean) => void
   unit: string
   setUnit: (unit: string) => void
+  marginalCost: number
 }) => {
   const {
     paramsKey,
@@ -50,6 +52,7 @@ export const MultiNumericRangeSection = (props: {
     shouldAnswersSumToOne,
     unit,
     setUnit,
+    marginalCost,
   } = props
   const defaultAnswers = ['', '']
   const [isGeneratingRanges, setIsGeneratingRanges] = useState(false)
@@ -267,6 +270,7 @@ export const MultiNumericRangeSection = (props: {
               className="hover:bg-canvas-50 border-ink-300 text-ink-700 bg-canvas-0 focus:ring-primary-500 inline-flex items-center rounded border px-2.5 py-1.5 text-xs font-medium shadow-sm focus:outline-none focus:ring-2 focus:ring-offset-2"
             >
               Add bucket
+              {marginalCost > 0 ? ` +${formatMoney(marginalCost)}` : ''}
             </Button>
           </Row>
         </Col>
@@ -307,6 +311,7 @@ export const MultiNumericRangeSection = (props: {
               className="hover:bg-canvas-50 border-ink-300 text-ink-700 bg-canvas-0 focus:ring-primary-500 inline-flex items-center rounded border px-2.5 py-1.5 text-xs font-medium shadow-sm focus:outline-none focus:ring-2 focus:ring-offset-2"
             >
               Add threshold
+              {marginalCost > 0 ? ` +${formatMoney(marginalCost)}` : ''}
             </Button>
           </Row>
         </Col>
@@ -335,7 +340,7 @@ export const MultiNumericRangeSection = (props: {
             <Input
               type="number"
               error={minMaxError}
-              className="w-24"
+              className="w-28"
               placeholder="Low"
               onClick={(e) => e.stopPropagation()}
               onChange={(e) => setMinString(e.target.value)}
@@ -343,7 +348,6 @@ export const MultiNumericRangeSection = (props: {
               disabled={submitState === 'LOADING'}
               value={minString ?? ''}
             />
-
             <Input
               type="number"
               error={minMaxError}
@@ -366,7 +370,7 @@ export const MultiNumericRangeSection = (props: {
               value={unit}
             />
             <Button
-              className="hidden sm:inline-flex"
+              className="hidden whitespace-nowrap sm:inline-flex"
               color="indigo-outline"
               onClick={generateRanges}
               loading={isGeneratingRanges}

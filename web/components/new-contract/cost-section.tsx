@@ -40,6 +40,8 @@ export const CostSection = (props: {
         <PriceSection
           liquidityTier={liquidityTier}
           setLiquidityTier={setLiquidityTier}
+          numAnswers={numAnswers}
+          outcomeType={outcomeType}
         />
       )}
 
@@ -63,8 +65,10 @@ export const CostSection = (props: {
 function PriceSection(props: {
   liquidityTier: number
   setLiquidityTier: (tier: number) => void
+  numAnswers: number | undefined
+  outcomeType: CreateableOutcomeType
 }) {
-  const { liquidityTier, setLiquidityTier } = props
+  const { liquidityTier, setLiquidityTier, numAnswers, outcomeType } = props
 
   return (
     <Col className="w-full gap-2">
@@ -75,6 +79,7 @@ function PriceSection(props: {
         {liquidityTiers.map((tier) => (
           <Tier
             key={tier}
+            ante={getAnte(outcomeType, numAnswers, tier)}
             currentTier={liquidityTier}
             liquidityTier={tier}
             setLiquidityTier={setLiquidityTier}
@@ -86,12 +91,14 @@ function PriceSection(props: {
 }
 
 function Tier(props: {
+  ante: number
   currentTier: number
   liquidityTier: number
   setLiquidityTier: (tier: number) => void
   isTierDisabled?: boolean
 }) {
-  const { currentTier, liquidityTier, setLiquidityTier, isTierDisabled } = props
+  const { ante, currentTier, liquidityTier, setLiquidityTier, isTierDisabled } =
+    props
 
   const tierIndex = liquidityTiers.findIndex((tier) => tier === liquidityTier)
   return (
@@ -124,7 +131,7 @@ function Tier(props: {
       <Col className="sm:items-center">
         <TokenNumber
           className="text-xl font-semibold"
-          amount={liquidityTier}
+          amount={ante}
           numberType="short"
         />
       </Col>

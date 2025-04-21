@@ -135,7 +135,7 @@ export const Button = forwardRef(function Button(
       {loading && (
         <LoadingIndicator
           className="mr-2 w-fit self-stretch"
-          size={size === '2xs' || size === 'xs' ? 'sm' : 'md'}
+          size={size === '2xs' || size === 'xs' || size === 'sm' ? 'sm' : 'md'}
           spinnerClassName="!w-[unset] aspect-square"
         />
       )}

@@ -69,11 +69,12 @@ import { getMultiNumericAnswerBucketRangeNames } from 'common/src/number'
 import { randomString } from 'common/util/random'
 import { formatWithToken } from 'common/util/format'
 import { BiUndo } from 'react-icons/bi'
-import { liquidityTiers } from 'common/tier'
+import { getAnswerCostFromLiquidity, liquidityTiers } from 'common/tier'
 import { MultiNumericDateSection } from './multi-numeric-date-section'
 import { Modal, MODAL_CLASS } from '../layout/modal'
 import { RelativeTimestamp } from '../relative-timestamp'
 import { MarketDraft } from 'common/drafts'
+import { toast } from 'react-hot-toast'
 
 export function ContractParamsForm(props: {
   creator: User
@@ -225,6 +226,7 @@ export function ContractParamsForm(props: {
       else setAnswers((a) => [...a, ''])
     }
   }, [addAnswersMode, answers.length])
+  const [isSavingDraft, setIsSavingDraft] = useState(false)
 
   const questionKey = 'new-question' + paramsKey
   const [question, setQuestion] = usePersistentLocalState(
@@ -391,7 +393,9 @@ export function ContractParamsForm(props: {
 
   const isValidTopics = selectedGroups.length <= MAX_GROUPS_PER_MARKET
   const ante = getAnte(outcomeType, numAnswers, liquidityTier)
-
+  const antePlusOneAnswer = getAnte(outcomeType, numAnswers + 1, liquidityTier)
+  const answerCost = getAnswerCostFromLiquidity(ante, numAnswers)
+  const marginalCost = antePlusOneAnswer > ante ? answerCost : 0
   const numberOfBuckets = getMultiNumericAnswerBucketRangeNames(
     min ?? 0,
     max ?? 0,
@@ -526,6 +530,7 @@ export function ContractParamsForm(props: {
   }
 
   const saveDraftToDb = async () => {
+    setIsSavingDraft(true)
     try {
       const draft = {
         question,
@@ -538,11 +543,14 @@ export function ContractParamsForm(props: {
         selectedGroups,
         savedAt: Date.now(),
       }
-
       await api('save-market-draft', { data: draft })
-      await loadDrafts() // Refresh drafts list
+      toast.success('Draft saved')
+      await loadDrafts()
     } catch (error) {
       console.error('Error saving draft:', error)
+      toast.error('Error saving draft')
+    } finally {
+      setIsSavingDraft(false)
     }
   }
 
@@ -843,6 +851,7 @@ export function ContractParamsForm(props: {
           question={question}
           generateAnswers={generateAnswers}
           isGeneratingAnswers={isGeneratingAnswers}
+          marginalCost={marginalCost}
         />
       )}
       {outcomeType == 'BOUNTIED_QUESTION' && (
@@ -902,6 +911,7 @@ export function ContractParamsForm(props: {
           setShouldAnswersSumToOne={setMultiNumericSumsToOne}
           unit={unit}
           setUnit={setUnit}
+          marginalCost={marginalCost}
         />
       )}{' '}
       {isDate && (
@@ -920,6 +930,7 @@ export function ContractParamsForm(props: {
           setMaxString={setMaxString}
           shouldAnswersSumToOne={shouldAnswersSumToOne}
           setShouldAnswersSumToOne={setMultiNumericSumsToOne}
+          marginalCost={marginalCost}
         />
       )}
       {outcomeType === 'PSEUDO_NUMERIC' && (
@@ -1065,13 +1076,22 @@ export function ContractParamsForm(props: {
           ? 'Creating...'
           : 'Created!'}
       </Button>
-      <Row className="w-full gap-2">
-        <Button className="w-full" color="gray-white" onClick={saveDraftToDb}>
+      <Row className="-mt-2 w-full gap-2">
+        <Button
+          size="sm"
+          className="w-full"
+          color="gray-outline"
+          onClick={saveDraftToDb}
+          disabled={isSavingDraft}
+          loading={isSavingDraft}
+        >
           Save draft
         </Button>
         <Button
+          size="sm"
           className="w-full"
-          color="gray-white"
+          disabled={drafts.length === 0}
+          color={'gray-outline'}
           onClick={() => setShowDraftsModal(true)}
         >
           View drafts ({drafts.length})
