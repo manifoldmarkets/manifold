@@ -1283,13 +1283,19 @@ export function AIForecast({
           )}
            */}
 
-          {/* Insert 2025 Predictions title card after releases and before benchmark */}
+          {/* Insert 2025 Predictions header after releases and before benchmark */}
           {orderedSections[index - 1] === 'releases' &&
-            type === 'benchmark' && <TitleCard title="Predictions for 2025" />}
+            type === 'benchmark' && (
+              <h2 className="text-xl font-semibold text-gray-800 dark:text-gray-100 sm:text-2xl mb-2 mt-8 sm:mt-8">
+                Predictions for 2025
+              </h2>
+            )}
 
-          {/* Insert Long Term Predictions title card between misuse and prizes */}
+          {/* Insert Long Term Predictions header between misuse and prizes */}
           {orderedSections[index - 1] === 'misuse' && type === 'prize' && (
-            <TitleCard title="Long Term Predictions" />
+            <h2 className="text-xl font-semibold text-primary-600 dark:text-primary-500 sm:text-2xl mb-2 mt-8 sm:mt-8">
+              Long Term Predictions
+            </h2>
           )}
 
           {type === 'releases' ? (
