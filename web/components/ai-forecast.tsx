@@ -93,7 +93,7 @@ export type AICapabilityCard = {
   marketId: string
   type: string
   displayType?:
-    | 'top-two-mcq'
+    | 'top-three-mcq' // renamed from top-two-mcq
     | 'top-one-mcq'
     | 'binary-odds'
     | 'date'
@@ -107,7 +107,7 @@ export const AI_CAPABILITY_CARDS: AICapabilityCard[] = [
     description: 'Highest ranked model on lmsys',
     marketId: 'LsZPyLPI82',
     type: 'monthly',
-    displayType: 'top-two-mcq',
+    displayType: 'top-three-mcq',
   },
 
   // Releases
@@ -476,7 +476,7 @@ function CapabilityCard({
   marketId: string
   type: string
   displayType?:
-    | 'top-two-mcq'
+    | 'top-three-mcq'
     | 'top-one-mcq'
     | 'binary-odds'
     | 'date'
@@ -508,21 +508,31 @@ function CapabilityCard({
       ? getExpectedValue(liveContract as unknown as MultiNumericContract)
       : null
 
-  // Get top two companies and their probabilities for "top-two-mcq" display type
-  const getTopTwoOdds = () => {
+  // Get top three companies and their probabilities for "top-three-mcq" display type
+  const getTopThreeOdds = () => {
     if (!liveContract || liveContract.outcomeType !== 'MULTIPLE_CHOICE') {
       return [
         { text: '—', probability: 0 },
         { text: '—', probability: 0 },
+        { text: '—', probability: 0 }
       ]
     }
 
     const answers = liveContract.answers || []
-    if (answers.length < 2) {
-      return [
-        { text: '—', probability: 0 },
-        { text: '—', probability: 0 },
-      ]
+    if (answers.length < 3) {
+      // Fill with placeholder values if less than 3 answers
+      const result = []
+      for (let i = 0; i < 3; i++) {
+        if (i < answers.length) {
+          result.push({
+            text: answers[i].text || '—',
+            probability: answers[i].prob ?? 0,
+          })
+        } else {
+          result.push({ text: '—', probability: 0 })
+        }
+      }
+      return result
     }
 
     // Sort answers by probability in descending order
@@ -541,6 +551,10 @@ function CapabilityCard({
         text: sortedAnswers[1].text || '—',
         probability: sortedAnswers[1].prob ?? 0,
       },
+      {
+        text: sortedAnswers[2].text || '—',
+        probability: sortedAnswers[2].prob ?? 0,
+      }
     ]
     return result
   }
@@ -576,15 +590,16 @@ function CapabilityCard({
   let topCompanies = [
     { text: '—', probability: 0 },
     { text: '—', probability: 0 },
+    { text: '—', probability: 0 }
   ]
   let topModel = { text: '—', probability: 0 }
 
   if (
-    displayType === 'top-two-mcq' &&
+    displayType === 'top-three-mcq' &&
     liveContract &&
     liveContract.outcomeType === 'MULTIPLE_CHOICE'
   ) {
-    topCompanies = getTopTwoOdds()
+    topCompanies = getTopThreeOdds()
   } else if (displayType === 'top-one-mcq') {
     topModel = getTopOneOdds()
   } else if (displayType === 'binary-odds') {
@@ -626,7 +641,8 @@ function CapabilityCard({
     displayType
   )
 
-  if (displayType === 'top-two-mcq') {
+  if (displayType === 'top-three-mcq') {
+    // Podium layout with 1st in middle, 2nd on left, 3rd on right
     return (
       <CardBase onClick={clickHandler} className={className}>
         <Col className="h-full space-y-1 sm:space-y-2">
@@ -638,14 +654,54 @@ function CapabilityCard({
             />
           </div>
 
-          {/* VS Match Layout */}
+          {/* Podium Layout */}
           <div className="flex flex-1 flex-col justify-center rounded-md p-2 sm:p-3">
-            <div className="flex items-center justify-between px-1">
-              {/* Left Company */}
+            {/* Model Display Area */}
+            <div className="flex items-end justify-center space-x-1 px-1 sm:space-x-3">
+              {/* 2nd Place - Left */}
+              <div className="w-[28%] text-center">
+                <div className="mb-2 flex flex-col items-center">
+                  <div className="text-gray-800 dark:text-gray-200 flex h-8 w-8 items-center justify-center rounded-full bg-gray-100 text-sm font-bold dark:bg-gray-700 sm:h-10 sm:w-10 sm:text-base">
+                    2
+                  </div>
+                </div>
+                {getCompanyLogo(topCompanies[1].text) ? (
+                  <div className="flex flex-col items-center">
+                    <div className="mb-1 flex h-10 w-10 items-center justify-center text-gray-600 dark:text-gray-300 sm:h-12 sm:w-12">
+                      {React.createElement(
+                        getCompanyLogo(topCompanies[1].text) as React.FC<{
+                          className?: string
+                        }>,
+                        {
+                          className: 'w-8 h-8 sm:w-10 sm:h-10',
+                        }
+                      )}
+                    </div>
+                    <div className="text-xs font-bold text-gray-700 dark:text-gray-300 sm:text-sm">
+                      {topCompanies[1].text}
+                    </div>
+                  </div>
+                ) : (
+                  <div className="truncate text-xs font-bold text-gray-700 dark:text-gray-300 sm:text-sm">
+                    {topCompanies[1].text}
+                  </div>
+                )}
+                <div className="text-ink-600 mt-1 text-xs font-medium">
+                  {formatPercent(topCompanies[1].probability)}
+                </div>
+                <div className="h-16 w-full rounded-t-lg bg-gray-300 dark:bg-gray-600 sm:h-20"></div>
+              </div>
+
+              {/* 1st Place - Middle */}
               <div className="w-[38%] text-center">
+                <div className="mb-2 flex flex-col items-center">
+                  <div className="text-primary-700 dark:text-primary-400 flex h-10 w-10 items-center justify-center rounded-full bg-primary-50 text-lg font-bold dark:bg-primary-900/40 sm:h-12 sm:w-12 sm:text-xl">
+                    1
+                  </div>
+                </div>
                 {getCompanyLogo(topCompanies[0].text) ? (
                   <div className="flex flex-col items-center">
-                    <div className="text-primary-600 dark:text-primary-500 mb-1 flex h-14 w-14 items-center justify-center sm:mb-2 sm:h-16 sm:w-16">
+                    <div className="text-primary-600 dark:text-primary-400 mb-1 flex h-14 w-14 items-center justify-center sm:mb-2 sm:h-16 sm:w-16">
                       {React.createElement(
                         getCompanyLogo(topCompanies[0].text) as React.FC<{
                           className?: string
@@ -655,79 +711,58 @@ function CapabilityCard({
                         }
                       )}
                     </div>
-                    <div className="text-primary-600 dark:text-primary-500 text-lg font-bold sm:text-xl">
+                    <div className="text-primary-600 dark:text-primary-400 text-base font-bold sm:text-lg">
                       {topCompanies[0].text}
                     </div>
                   </div>
                 ) : (
-                  <div className="text-primary-600 dark:text-primary-500 truncate text-2xl font-bold sm:text-3xl">
+                  <div className="text-primary-600 dark:text-primary-400 truncate text-base font-bold sm:text-lg">
                     {topCompanies[0].text}
                   </div>
                 )}
                 <div className="text-ink-600 mt-1 text-xs font-medium sm:text-base">
                   {formatPercent(topCompanies[0].probability)}
                 </div>
+                <div className="h-24 w-full rounded-t-lg bg-primary-300 dark:bg-primary-600 sm:h-28"></div>
               </div>
 
-              {/* VS Badge */}
-              <div className="text-ink-800 text-med mx-4 font-black">VS</div>
-
-              {/* Right Company */}
-              <div className="w-[38%] text-center">
-                {getCompanyLogo(topCompanies[1].text) ? (
+              {/* 3rd Place - Right */}
+              <div className="w-[28%] text-center">
+                <div className="mb-2 flex flex-col items-center">
+                  <div className="text-gray-800 dark:text-gray-200 flex h-8 w-8 items-center justify-center rounded-full bg-gray-100 text-sm font-bold dark:bg-gray-700 sm:h-10 sm:w-10 sm:text-base">
+                    3
+                  </div>
+                </div>
+                {getCompanyLogo(topCompanies[2].text) ? (
                   <div className="flex flex-col items-center">
-                    <div className="mb-1 flex h-14 w-14 items-center justify-center text-teal-600 dark:text-teal-400">
+                    <div className="mb-1 flex h-10 w-10 items-center justify-center text-gray-600 dark:text-gray-300 sm:h-12 sm:w-12">
                       {React.createElement(
-                        getCompanyLogo(topCompanies[1].text) as React.FC<{
+                        getCompanyLogo(topCompanies[2].text) as React.FC<{
                           className?: string
                         }>,
                         {
-                          className: 'w-12 h-12',
+                          className: 'w-8 h-8 sm:w-10 sm:h-10',
                         }
                       )}
                     </div>
-                    <div className="text-base font-bold text-teal-600 dark:text-teal-400 sm:text-lg">
-                      {topCompanies[1].text}
+                    <div className="text-xs font-bold text-gray-700 dark:text-gray-300 sm:text-sm">
+                      {topCompanies[2].text}
                     </div>
                   </div>
                 ) : (
-                  <div className="truncate text-base font-bold text-teal-600 dark:text-teal-400 sm:text-lg">
-                    {topCompanies[1].text}
+                  <div className="truncate text-xs font-bold text-gray-700 dark:text-gray-300 sm:text-sm">
+                    {topCompanies[2].text}
                   </div>
                 )}
-                <div className="text-ink-600 mt-1 text-xs font-medium sm:text-base">
-                  {formatPercent(topCompanies[1].probability)}
+                <div className="text-ink-600 mt-1 text-xs font-medium">
+                  {formatPercent(topCompanies[2].probability)}
                 </div>
+                <div className="h-12 w-full rounded-t-lg bg-gray-200 dark:bg-gray-700 sm:h-16"></div>
               </div>
             </div>
 
-            {/* Probability Bar */}
-            <div className="mt-2 flex h-2.5 w-full overflow-hidden rounded-full sm:mt-4">
-              {/* Left company proportion */}
-              <div
-                className="bg-primary-600 dark:bg-primary-500 h-full rounded-l-full"
-                style={{
-                  width: `${
-                    (topCompanies[0].probability /
-                      (topCompanies[0].probability +
-                        topCompanies[1].probability)) *
-                    100
-                  }%`,
-                }}
-              />
-              {/* Right company proportion */}
-              <div
-                className="h-full rounded-r-full bg-teal-600 dark:bg-teal-400"
-                style={{
-                  width: `${
-                    (topCompanies[1].probability /
-                      (topCompanies[0].probability +
-                        topCompanies[1].probability)) *
-                    100
-                  }%`,
-                }}
-              />
-            </div>
+            {/* Base podium */}
+            <div className="mt-0 h-2 w-full bg-gray-200 dark:bg-gray-700"></div>
           </div>
         </Col>
       </CardBase>
