@@ -663,23 +663,23 @@ function CapabilityCard({
               <div className="w-[28%] text-center">
                 {topCompanies[1].text ? (
                   <div className="flex flex-col items-center">
-                    <div className="mb-1 flex h-10 w-10 items-center justify-center text-gray-600 dark:text-gray-300 sm:h-12 sm:w-12">
+                    <div className="mb-1 flex h-10 w-10 items-center justify-center text-blue-600 dark:text-blue-300 sm:h-12 sm:w-12">
                       <AIModelIcon title={topCompanies[1].text} className="w-8 h-8 sm:w-10 sm:h-10" />
                     </div>
-                    <div className="text-sm font-bold text-gray-700 dark:text-gray-300 sm:text-lg">
+                    <div className="text-sm font-bold text-blue-600 dark:text-blue-300 sm:text-lg">
                       {topCompanies[1].text}
                     </div>
                   </div>
                 ) : (
-                  <div className="truncate text-sm font-bold text-gray-700 dark:text-gray-300 sm:text-lg">
+                  <div className="truncate text-sm font-bold text-blue-600 dark:text-blue-300 sm:text-lg">
                     {topCompanies[1].text}
                   </div>
                 )}
-                <div className="text-ink-600 mt-1 text-xs font-medium">
+                <div className="text-ink-600 mt-1 text-base font-medium">
                   {formatPercent(topCompanies[1].probability)}
                 </div>
                 <div 
-                  className="w-full rounded-t-lg bg-blue-200 dark:bg-blue-700/60"
+                  className="w-full rounded-t-lg bg-blue-600 dark:bg-blue-300"
                   style={{
                     height: `${Math.max(8, topCompanies[1].probability * 100)}px`
                   }}
@@ -690,15 +690,15 @@ function CapabilityCard({
               <div className="w-[38%] text-center">
                 {topCompanies[0].text ? (
                   <div className="flex flex-col items-center">
-                    <div className="text-primary-600 dark:text-primary-400 mb-1 flex h-14 w-14 items-center justify-center sm:mb-2 sm:h-16 sm:w-16">
+                    <div className="text-primary-700 mb-1 flex h-14 w-14 items-center justify-center sm:mb-2 sm:h-16 sm:w-16">
                       <AIModelIcon title={topCompanies[0].text} className="w-12 h-12 sm:w-14 sm:h-14" />
                     </div>
-                    <div className="text-primary-600 dark:text-primary-400 text-lg font-bold sm:text-2xl">
+                    <div className="text-primary-700 text-lg font-bold sm:text-2xl">
                       {topCompanies[0].text}
                     </div>
                   </div>
                 ) : (
-                  <div className="text-primary-600 dark:text-primary-400 truncate text-lg font-bold sm:text-2xl">
+                  <div className="text-primary-700 truncate text-lg font-bold sm:text-2xl">
                     {topCompanies[0].text}
                   </div>
                 )}
@@ -706,7 +706,7 @@ function CapabilityCard({
                   {formatPercent(topCompanies[0].probability)}
                 </div>
                 <div 
-                  className="w-full rounded-t-lg bg-primary-300 dark:bg-primary-600"
+                  className="w-full rounded-t-lg bg-primary-700"
                   style={{
                     height: `${Math.max(8, topCompanies[0].probability * 100)}px`
                   }}
@@ -717,15 +717,15 @@ function CapabilityCard({
               <div className="w-[28%] text-center">
                 {topCompanies[2].text ? (
                   <div className="flex flex-col items-center">
-                    <div className="mb-1 flex h-10 w-10 items-center justify-center text-gray-600 dark:text-gray-300 sm:h-12 sm:w-12">
+                    <div className="mb-1 flex h-10 w-10 items-center justify-center text-blue-500 dark:text-blue-200 sm:h-12 sm:w-12">
                       <AIModelIcon title={topCompanies[2].text} className="w-8 h-8 sm:w-10 sm:h-10" />
                     </div>
-                    <div className="text-sm font-bold text-gray-700 dark:text-gray-300 sm:text-lg">
+                    <div className="text-sm font-bold text-blue-500 dark:text-blue-200 sm:text-lg">
                       {topCompanies[2].text}
                     </div>
                   </div>
                 ) : (
-                  <div className="truncate text-sm font-bold text-gray-700 dark:text-gray-300 sm:text-lg">
+                  <div className="truncate text-sm font-bold text-blue-500 dark:text-blue-200 sm:text-lg">
                     {topCompanies[2].text}
                   </div>
                 )}
@@ -733,7 +733,7 @@ function CapabilityCard({
                   {formatPercent(topCompanies[2].probability)}
                 </div>
                 <div 
-                  className="w-full rounded-t-lg bg-blue-100 dark:bg-blue-800/40"
+                  className="w-full rounded-t-lg bg-blue-500 dark:bg-blue-200"
                   style={{
                     height: `${Math.max(8, topCompanies[2].probability * 100)}px`
                   }}
@@ -764,15 +764,15 @@ function CapabilityCard({
                 <div className="text-center">
                   {topModel.text ? (
                     <div className="flex flex-col items-center">
-                      <div className="text-primary-600 dark:text-primary-500 mb-1 flex h-14 w-14 items-center justify-center">
+                      <div className="text-primary-700 mb-1 flex h-14 w-14 items-center justify-center">
                         <AIModelIcon title={topModel.text} className="w-12 h-12" />
                       </div>
-                      <div className="text-primary-600 dark:text-primary-500 text-lg font-bold sm:text-xl">
+                      <div className="text-primary-700 text-lg font-bold sm:text-xl">
                         {topModel.text}
                       </div>
                     </div>
                   ) : (
-                    <div className="text-primary-600 dark:text-primary-500 truncate text-2xl font-bold sm:text-3xl">
+                    <div className="ttext-primary-700 truncate text-2xl font-bold sm:text-3xl">
                       {topModel.text}
                     </div>
                   )}
@@ -1268,16 +1268,22 @@ export function AIForecast({
           {/* Insert 2025 Predictions header after releases and before benchmark */}
           {orderedSections[index - 1] === 'releases' &&
             type === 'benchmark' && (
-              <h2 className="text-xl font-semibold text-gray-800 dark:text-gray-100 sm:text-2xl mb-2 mt-8 sm:mt-8">
-                Predictions for 2025
-              </h2>
+              <>
+                <div className="mx-auto my-8 h-px w-3/4 bg-gray-200 dark:bg-gray-700"></div>
+                <h2 className="text-xl font-semibold text-primary-700 sm:text-2xl mb-2">
+                  Predictions for 2025
+                </h2>
+              </>
             )}
 
           {/* Insert Long Term Predictions header between misuse and prizes */}
           {orderedSections[index - 1] === 'misuse' && type === 'prize' && (
-            <h2 className="text-xl font-semibold text-primary-600 dark:text-primary-500 sm:text-2xl mb-2 mt-8 sm:mt-8">
-              Long Term Predictions
-            </h2>
+            <>
+              <div className="mx-auto my-8 h-px w-full max-w-4xl bg-gray-200 dark:bg-gray-700"></div>
+              <h2 className="text-xl font-semibold text-primary-700 sm:text-2xl mb-2">
+                Long Term Predictions
+              </h2>
+            </>
           )}
 
           {type === 'releases' ? (
