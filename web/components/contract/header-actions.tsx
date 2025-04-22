@@ -32,7 +32,7 @@ import { Row } from '../layout/row'
 import { getLinkTarget } from '../widgets/linkify'
 import { AddLiquidityModal } from './liquidity-modal'
 import { ContractInfoDialog } from './contract-info-dialog'
-import { WatchMarketModal } from './watch-market-modal'
+import { FollowMarketModal } from './follow-market-modal'
 import { ChangeBannerButton } from './change-banner-button'
 import { GoGraph } from 'react-icons/go'
 
@@ -290,10 +290,10 @@ export function HeaderActions(props: {
           contentOwnerId: playContract.creatorId,
         }}
       />
-      <WatchMarketModal
+      <FollowMarketModal
         open={followingOpen}
         setOpen={setFollowingOpen}
-        title={`You ${following ? 'watched' : 'unwatched'} a question!`}
+        title={`You ${following ? 'followed' : 'unfollowed'} a question!`}
       />
     </Row>
   )
