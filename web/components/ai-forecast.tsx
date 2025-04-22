@@ -53,7 +53,7 @@ function getTooltipDescription(cardTitle: string): string | null {
       'A test of AI coding capabilities across real-world software engineering tasks from GitHub issues.',
     "Humanity's Last Exam":
       'A collection of extremely difficult problems across various domains, designed to test the limits of AI capabilities compared to human experts.',
-    "Pokemon":
+    Pokemon:
       'Whether an LLM would be able to become a Pokemon master, i.e. beat the Pokemon game.',
     'Millennium Prize':
       'The Millennium Prize Problems are seven of the most difficult unsolved problems in mathematics, each with a $1 million prize for solution.',
@@ -381,11 +381,18 @@ function AIModelIcon({
   className?: string
 }) {
   const titleLower = title?.toLowerCase() || ''
-  if (['gpt', 'openai'].some(term => titleLower.includes(term))) return <SiOpenai className={className} />
-  if (['claude', 'anthropic'].some(term => titleLower.includes(term))) return <SiAnthropic className={className} />
-  if (['gemini', 'google', 'deepmind'].some(term=>titleLower.includes(term))) return <SiGooglegemini className={className} />
-  if (['grok', 'xai'].some(term=>titleLower.includes(term))) return <RiTwitterXLine className={className} />
-  if (titleLower.includes('deepseek')) return <GiSpermWhale className={className} />
+  if (['gpt', 'openai'].some((term) => titleLower.includes(term)))
+    return <SiOpenai className={className} />
+  if (['claude', 'anthropic'].some((term) => titleLower.includes(term)))
+    return <SiAnthropic className={className} />
+  if (
+    ['gemini', 'google', 'deepmind'].some((term) => titleLower.includes(term))
+  )
+    return <SiGooglegemini className={className} />
+  if (['grok', 'xai'].some((term) => titleLower.includes(term)))
+    return <RiTwitterXLine className={className} />
+  if (titleLower.includes('deepseek'))
+    return <GiSpermWhale className={className} />
   if (titleLower.includes('qwen')) return <PiBirdBold className={className} />
   return <LiaKiwiBirdSolid className={className} />
 }
@@ -524,7 +531,7 @@ function CapabilityCard({
       return [
         { text: '—', probability: 0 },
         { text: '—', probability: 0 },
-        { text: '—', probability: 0 }
+        { text: '—', probability: 0 },
       ]
     }
 
@@ -564,7 +571,7 @@ function CapabilityCard({
       {
         text: sortedAnswers[2].text || '—',
         probability: sortedAnswers[2].prob ?? 0,
-      }
+      },
     ]
     return result
   }
@@ -600,7 +607,7 @@ function CapabilityCard({
   let topCompanies = [
     { text: '—', probability: 0 },
     { text: '—', probability: 0 },
-    { text: '—', probability: 0 }
+    { text: '—', probability: 0 },
   ]
   let topModel = { text: '—', probability: 0 }
 
@@ -673,7 +680,10 @@ function CapabilityCard({
                 {topCompanies[1].text ? (
                   <div className="flex flex-col items-center">
                     <div className="mb-1 flex h-10 w-10 items-center justify-center text-blue-600 dark:text-blue-300 sm:h-12 sm:w-12">
-                      <AIModelIcon title={topCompanies[1].text} className="w-8 h-8 sm:w-10 sm:h-10" />
+                      <AIModelIcon
+                        title={topCompanies[1].text}
+                        className="h-8 w-8 sm:h-10 sm:w-10"
+                      />
                     </div>
                     <div className="text-sm font-bold text-blue-600 dark:text-blue-300 sm:text-lg">
                       {topCompanies[1].text}
@@ -687,10 +697,13 @@ function CapabilityCard({
                 <div className="text-ink-600 mt-1 text-base font-medium">
                   {formatPercent(topCompanies[1].probability)}
                 </div>
-                <div 
+                <div
                   className="w-full rounded-t-lg bg-blue-600 dark:bg-blue-300"
                   style={{
-                    height: `${Math.max(8, topCompanies[1].probability * 100)}px`
+                    height: `${Math.max(
+                      8,
+                      topCompanies[1].probability * 100
+                    )}px`,
                   }}
                 ></div>
               </div>
@@ -700,7 +713,10 @@ function CapabilityCard({
                 {topCompanies[0].text ? (
                   <div className="flex flex-col items-center">
                     <div className="text-primary-600 mb-1 flex h-14 w-14 items-center justify-center sm:mb-2 sm:h-16 sm:w-16">
-                      <AIModelIcon title={topCompanies[0].text} className="w-12 h-12 sm:w-14 sm:h-14" />
+                      <AIModelIcon
+                        title={topCompanies[0].text}
+                        className="h-12 w-12 sm:h-14 sm:w-14"
+                      />
                     </div>
                     <div className="text-primary-600 text-lg font-bold sm:text-2xl">
                       {topCompanies[0].text}
@@ -714,10 +730,13 @@ function CapabilityCard({
                 <div className="text-ink-600 mt-1 text-base font-medium sm:text-base">
                   {formatPercent(topCompanies[0].probability)}
                 </div>
-                <div 
-                  className="w-full rounded-t-lg bg-primary-600"
+                <div
+                  className="bg-primary-600 w-full rounded-t-lg"
                   style={{
-                    height: `${Math.max(8, topCompanies[0].probability * 100)}px`
+                    height: `${Math.max(
+                      8,
+                      topCompanies[0].probability * 100
+                    )}px`,
                   }}
                 ></div>
               </div>
@@ -727,7 +746,10 @@ function CapabilityCard({
                 {topCompanies[2].text ? (
                   <div className="flex flex-col items-center">
                     <div className="mb-1 flex h-10 w-10 items-center justify-center text-blue-500 dark:text-blue-200 sm:h-12 sm:w-12">
-                      <AIModelIcon title={topCompanies[2].text} className="w-8 h-8 sm:w-10 sm:h-10" />
+                      <AIModelIcon
+                        title={topCompanies[2].text}
+                        className="h-8 w-8 sm:h-10 sm:w-10"
+                      />
                     </div>
                     <div className="text-sm font-bold text-blue-500 dark:text-blue-200 sm:text-lg">
                       {topCompanies[2].text}
@@ -741,10 +763,13 @@ function CapabilityCard({
                 <div className="text-ink-600 mt-1 text-base font-medium">
                   {formatPercent(topCompanies[2].probability)}
                 </div>
-                <div 
+                <div
                   className="w-full rounded-t-lg bg-blue-500 dark:bg-blue-200"
                   style={{
-                    height: `${Math.max(8, topCompanies[2].probability * 100)}px`
+                    height: `${Math.max(
+                      8,
+                      topCompanies[2].probability * 100
+                    )}px`,
                   }}
                 ></div>
               </div>
@@ -774,7 +799,10 @@ function CapabilityCard({
                   {topModel.text ? (
                     <div className="flex flex-col items-center">
                       <div className="text-primary-600 mb-1 flex h-14 w-14 items-center justify-center">
-                        <AIModelIcon title={topModel.text} className="w-12 h-12" />
+                        <AIModelIcon
+                          title={topModel.text}
+                          className="h-12 w-12"
+                        />
                       </div>
                       <div className="text-primary-600 text-lg font-bold sm:text-xl">
                         {topModel.text}
@@ -1134,7 +1162,7 @@ function FeaturedMarketGraph({ contract }: FeaturedGraphProps) {
               {' '}
               Probability:
             </span>{' '}
-            <span className="text-teal-600 dark:text-teal-500 text-2xl font-semibold">
+            <span className="text-2xl font-semibold text-teal-600 dark:text-teal-500">
               {formatPercent(contract.prob)}
             </span>
           </div>
@@ -1282,7 +1310,7 @@ export function AIForecast({
             type === 'benchmark' && (
               <>
                 <div className="mx-auto my-8 h-px w-3/4 bg-gray-200 dark:bg-gray-700"></div>
-                <h2 className="text-xl font-semibold text-primary-600 sm:text-2xl mb-2">
+                <h2 className="text-primary-600 mb-2 text-xl font-semibold sm:text-2xl">
                   Predictions for 2025
                 </h2>
               </>
@@ -1292,7 +1320,7 @@ export function AIForecast({
           {orderedSections[index - 1] === 'misuse' && type === 'prize' && (
             <>
               <div className="mx-auto my-8 h-px w-full max-w-4xl bg-gray-200 dark:bg-gray-700"></div>
-              <h2 className="text-xl font-semibold text-primary-600 sm:text-2xl mb-2">
+              <h2 className="text-primary-600 mb-2 text-xl font-semibold sm:text-2xl">
                 Long Term Predictions
               </h2>
             </>
