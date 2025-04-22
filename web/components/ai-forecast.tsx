@@ -862,6 +862,26 @@ function CapabilityCard({
                   <span className={getGradient(type)}>{displayValue}</span>
                 </div>
               </div>
+              
+              {/* 7-day movement indicator for binary markets */}
+              {liveContract && 
+               liveContract.outcomeType === 'BINARY' && 
+               'probChanges' in liveContract && 
+               liveContract.probChanges && 
+               typeof liveContract.probChanges.week === 'number' && 
+               Math.abs(liveContract.probChanges.week) >= 0.01 && (
+                <div className="absolute bottom-2 right-2">
+                  <div className={`text-sm font-medium ${
+                    liveContract.probChanges.week > 0 
+                      ? 'text-teal-600' 
+                      : 'text-scarlet-600'
+                  }`}>
+                    {liveContract.probChanges.week > 0 ? '+' : ''}
+                    {Math.round(liveContract.probChanges.week * 100)}% 7d
+                  </div>
+                </div>
+              )}
+              
               {/* Brief descriptive text under percentages */}
               {(type === 'benchmark' ||
                 type === 'prize' ||
@@ -920,6 +940,7 @@ function CapabilityCard({
                   <span className={getGradient(type)}>{displayValue}</span>
                 </div>
               </div>
+              
               {/* Brief descriptive text for numeric markets */}
               {displayType === 'numeric' && (
                 <p className="text-ink-600 mt-1 w-full px-1 text-left text-xs sm:mt-3 sm:text-sm">
