@@ -978,6 +978,7 @@ export const API = (_apiTypeCheck = {
         hasSeenAppBannerInNotificationsOn: z.number().optional(),
         installedAppPlatforms: z.array(z.string()).optional(),
         paymentInfo: z.string().optional(),
+        lastAppReviewTime: z.number().optional(),
       })
       .strict(),
   },

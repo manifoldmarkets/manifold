@@ -71,8 +71,6 @@
       "bundleIdentifier": "com.markets.manifold",
       "associatedDomains": [
         "applinks:manifold.markets",
-        "webcredentials:manifold.markets",
-        "applinks:manifold.markets",
         "webcredentials:manifold.markets"
       ],
       "buildNumber": "1.0.50"

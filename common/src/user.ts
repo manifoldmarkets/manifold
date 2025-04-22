@@ -110,6 +110,8 @@ export type PrivateUser = {
   installedAppPlatforms?: string[]
   discordId?: string
   paymentInfo?: string
+  // Timestamp of the last time the user was prompted for an app review or successfully reviewed.
+  lastAppReviewTime?: number
 
   /** @deprecated */
   kycFlags?: string[]
