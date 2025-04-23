@@ -5,7 +5,7 @@ import { ContractMetric, isSummary } from './contract-metric'
 import { filterDefined } from './util/array'
 
 export const LOAN_DAILY_RATE = 0.015
-const MAX_LOAN_NET_WORTH_PERCENT = 0.05
+export const MAX_LOAN_NET_WORTH_PERCENT = 0.05
 
 const calculateNewLoan = (investedValue: number, loanTotal: number) => {
   const netValue = investedValue - loanTotal
