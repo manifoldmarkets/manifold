@@ -134,9 +134,9 @@ function NotificationsContent(props: {
       ? dayjs(lastPushModalSeenTime).isSame(dayjs(), 'day')
       : false
 
-    const sixMonthsAgo = dayjs().subtract(6, 'months').valueOf()
+    const yearAgo = dayjs().subtract(1, 'years').valueOf()
     const recentlyReviewed = privateUser.lastAppReviewTime
-      ? privateUser.lastAppReviewTime > sixMonthsAgo
+      ? privateUser.lastAppReviewTime > yearAgo
       : false
     const shouldCheckReviewAbility =
       isNative && resolution && !recentlyReviewed && !shownPushModalToday
