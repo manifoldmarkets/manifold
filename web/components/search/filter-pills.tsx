@@ -23,17 +23,21 @@ export const unselectedClass =
 export function FilterPill(props: {
   selected: boolean
   color?: 'gray' | 'minimalist-indigo'
+  disabled?: boolean
   onSelect: () => void
   className?: string
   children: ReactNode
   type?: 'spice' | 'sweepies'
 }) {
-  const { children, selected, onSelect, className, type, color } = props
+  const { children, selected, onSelect, className, type, color, disabled } =
+    props
 
   return (
     <button
+      disabled={disabled}
       className={clsx(
-        'flex shrink-0 cursor-pointer select-none flex-row items-center whitespace-nowrap rounded-full px-3 py-0.5 text-sm outline-none transition-colors',
+        'flex shrink-0 select-none flex-row items-center whitespace-nowrap rounded-full px-3 py-0.5 text-sm outline-none transition-colors',
+        disabled ? 'cursor-not-allowed opacity-50' : 'cursor-pointer',
         type === 'spice'
           ? selected
             ? 'bg-amber-500 text-white hover:bg-amber-600'

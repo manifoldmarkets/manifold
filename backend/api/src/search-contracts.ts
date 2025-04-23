@@ -38,15 +38,12 @@ const search = async (
     term = '',
     filter,
     sort,
-    contractType,
     offset,
     limit,
     topicSlug: possibleTopicSlug,
     forYou,
-    creatorId,
     token,
     gids: groupIds,
-    liquidity,
   } = props
   const isPrizeMarket =
     props.isPrizeMarket == 'true' || props.isPrizeMarket == '1'
@@ -74,33 +71,20 @@ const search = async (
   ) {
     if (!isForYou || !userId) {
       return await pg.map(
-        basicSearchSQL(
-          userId,
-          filter,
-          contractType,
-          limit,
-          offset,
-          sort,
+        basicSearchSQL({
+          ...props,
+          uid: userId,
           isPrizeMarket,
-          token,
-          undefined,
-          creatorId,
-          liquidity
-        ),
+        }),
         null,
         convertContract
       )
     } else {
       const forYouSql = await getForYouSQL({
-        userId,
-        filter,
-        contractType,
-        limit,
-        offset,
+        ...props,
+        uid: userId,
         sort,
         isPrizeMarket,
-        token,
-        liquidity,
       })
       return await pg.map(forYouSql, [term], (r) => convertContract(r))
     }
@@ -123,21 +107,13 @@ const search = async (
     const multiQuery = searchTypes
       .map((searchType) =>
         getSearchContractSQL({
+          ...props,
           term: cleanTerm,
-          filter,
-          sort,
-          contractType,
-          offset,
-          limit,
-          groupId,
-          creatorId,
           uid: userId,
-          isForYou,
           searchType,
+          groupId,
           isPrizeMarket,
-          token,
           groupIds,
-          liquidity,
         })
       )
       .join(';')

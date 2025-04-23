@@ -215,8 +215,8 @@ This market resolves YES if chance >=50% at time of closing January 9th. Otherwi
 
 export const getContractPrivacyWhereSQLFilter = (
   uid: string | undefined,
-  creatorId?: string,
-  contractIdString = 'id'
+  contractIdString: string,
+  creatorId?: string
 ) => {
   const otherVisibilitySQL = `
   OR (visibility = 'unlisted'

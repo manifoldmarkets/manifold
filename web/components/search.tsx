@@ -146,6 +146,7 @@ export type SearchParams = {
   [SWEEPIES_KEY]: '0' | '1' | '2'
   [GROUP_IDS_KEY]: string
   [LIQUIDITY_KEY]: string // empty string or stringified number
+  [HAS_BETS_KEY]: '0' | '1'
 }
 
 export const QUERY_KEY = 'q'
@@ -160,6 +161,7 @@ export const TOPIC_FILTER_KEY = 'tf'
 export const SWEEPIES_KEY = 'sw'
 export const GROUP_IDS_KEY = 'gids'
 export const LIQUIDITY_KEY = 'li'
+export const HAS_BETS_KEY = 'hb'
 
 export type SupabaseAdditionalFilter = {
   creatorId?: string
@@ -249,6 +251,7 @@ export function Search(props: SearchProps) {
   const prizeMarketState = searchParams[PRIZE_MARKET_KEY]
   const sweepiesState = searchParams[SWEEPIES_KEY]
   const groupIds = searchParams[GROUP_IDS_KEY]
+  const hasBets = searchParams[HAS_BETS_KEY] === '1'
   useEffect(() => {
     const isSweeps = sweepiesState === '1'
     if (prefersPlay !== isSweeps) return
@@ -595,6 +598,7 @@ export function Search(props: SearchProps) {
               probColumn,
               !hideActions && actionColumn,
             ])}
+            showPosition={hasBets}
           />
           <LoadMoreUntilNotVisible loadMore={loadMoreContracts} />
           {shouldLoadMore && <LoadingContractResults />}
@@ -709,6 +713,7 @@ export const useSearchResults = (props: {
         sw: sweepState,
         gids,
         li: liquidity,
+        hb: hasBets,
       } = searchParams
 
       const includeUsersAndTopics =
@@ -746,6 +751,7 @@ export const useSearchResults = (props: {
                   : 'MANA',
               gids,
               liquidity: liquidity === '' ? undefined : parseInt(liquidity),
+              hasBets,
             }),
           ]
 
@@ -877,6 +883,7 @@ export const useSearchQueryState = (props: {
     [SWEEPIES_KEY]: defaultSweepies ?? '0',
     [GROUP_IDS_KEY]: '',
     [LIQUIDITY_KEY]: defaultLiquidityTier ?? '',
+    [HAS_BETS_KEY]: '0' as '0' | '1',
   }
 
   const useHook = useUrlParams ? usePersistentQueriesState : useNothing

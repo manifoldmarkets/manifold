@@ -71,6 +71,7 @@ export function ContractFilters(props: {
     ct: contractType,
     sw: isSweepiesString,
     li: liquidity,
+    hb: hasBets,
   } = params
   const isSweeps = isSweepiesString === '1'
   const { setPrefersPlay } = useSweepstakes()
@@ -239,19 +240,16 @@ export function ContractFilters(props: {
           selectFilter={selectFilter}
           currentFilter={filter}
         />
-        {!topicSlug && !hideSweepsToggle && !!user && (
+        {user && (
           <FilterPill
-            selected={forYou}
+            selected={hasBets === '1'}
             onSelect={() => {
               updateParams({
-                [FOR_YOU_KEY]: forYou ? '0' : '1',
-                [GROUP_IDS_KEY]: '', // Clear any topic selection when toggling For You
-                [FILTER_KEY]: filter === 'news' ? 'open' : filter,
+                hb: hasBets === '1' ? '0' : '1',
               })
             }}
-            color="minimalist-indigo"
           >
-            For you
+            Your bets
           </FilterPill>
         )}
         {nonDefaultSort && (
@@ -271,6 +269,17 @@ export function ContractFilters(props: {
             onXClick={() => selectContractType(DEFAULT_CONTRACT_TYPE)}
           >
             {contractTypeLabel}
+          </AdditionalFilterPill>
+        )}
+        {forYou && (
+          <AdditionalFilterPill
+            onXClick={() => {
+              updateParams({
+                [FOR_YOU_KEY]: '0',
+              })
+            }}
+          >
+            For you
           </AdditionalFilterPill>
         )}
         {!hideFilter &&
@@ -318,6 +327,9 @@ export function ContractFilters(props: {
         selectLiquidityTier={selectLiquidityFilter}
         toggleSweepies={toggleSweepies}
         hideFilter={hideFilter}
+        updateParams={updateParams}
+        forYou={forYou}
+        topicSlug={topicSlug}
       />
     </Col>
   )
@@ -333,6 +345,9 @@ function FilterModal(props: {
   selectLiquidityTier: (selection: string) => void
   toggleSweepies: () => void
   hideFilter: boolean
+  updateParams: (params: Partial<SearchParams>) => void
+  forYou: boolean
+  topicSlug?: string
 }) {
   const {
     open,
@@ -344,6 +359,9 @@ function FilterModal(props: {
     selectLiquidityTier,
     toggleSweepies,
     hideFilter,
+    updateParams,
+    forYou,
+    topicSlug,
   } = props
   const {
     s: sort,
@@ -352,6 +370,8 @@ function FilterModal(props: {
     sw: isSweepiesString,
     li: liquidityTier,
   } = params
+
+  const user = useUser()
 
   const sortItems =
     contractType == 'BOUNTIED_QUESTION'
@@ -394,6 +414,21 @@ function FilterModal(props: {
               >
                 Sweepstakes
               </FilterPill>
+              {user && (
+                <FilterPill
+                  disabled={!!topicSlug}
+                  selected={forYou}
+                  onSelect={() => {
+                    updateParams({
+                      [FOR_YOU_KEY]: forYou ? '0' : '1',
+                      [GROUP_IDS_KEY]: '', // Clear any topic selection when toggling For You
+                      [FILTER_KEY]: filter === 'news' ? 'open' : filter,
+                    })
+                  }}
+                >
+                  For you
+                </FilterPill>
+              )}
             </Row>
             <Row className="items-center gap-1 font-semibold">
               <FaDroplet className="h-4 w-4" />
@@ -487,6 +522,7 @@ function ToggleButton(props: {
     </button>
   )
 }
+
 export function BestHotToggle(props: {
   sort: Sort
   onChange: (params: Partial<SearchParams>) => void
