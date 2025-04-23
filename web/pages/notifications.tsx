@@ -2,6 +2,7 @@ import clsx from 'clsx'
 import {
   combineAndSumIncomeNotifications,
   combineReactionNotifications,
+  ContractResolutionData,
   Notification,
   NotificationGroup,
   ReactionNotificationTypes,
@@ -122,8 +123,26 @@ function NotificationsContent(props: {
     (params) => api('get-notifications', params),
     usePersistentLocalState
   )
-  const resolution = groupedNotifications?.some((ng) =>
-    ng.notifications.some((n) => n.reason === 'resolutions_on_watched_markets')
+  const resolution = groupedNotifications?.some(
+    (ng) =>
+      ng.notifications.some(
+        (n) => n.reason === 'resolutions_on_watched_markets'
+      ) ||
+      ng.notifications.some((n) => {
+        if (n.reason === 'resolutions_on_watched_markets_with_shares_in') {
+          const { data } = n
+          const d =
+            data && 'userPayout' in data
+              ? (data as ContractResolutionData)
+              : {
+                  userPayout: 0,
+                  userInvestment: 0,
+                }
+          const profit = d.userPayout - d.userInvestment
+          return profit > -1
+        }
+        return false
+      })
   )
   const { isNative } = useNativeInfo()
   const lastPushModalSeenTime =
