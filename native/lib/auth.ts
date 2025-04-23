@@ -1,7 +1,7 @@
 import AsyncStorage from '@react-native-async-storage/async-storage'
 import { log } from 'components/logger'
 
-export type keys = 'user'
+export type keys = 'user' | 'lastNotificationIds'
 export const storeData = async (key: keys, value: object) => {
   try {
     const jsonValue = JSON.stringify(value)

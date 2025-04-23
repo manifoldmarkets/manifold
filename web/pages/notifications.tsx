@@ -43,6 +43,9 @@ import { usePersistentLocalState } from 'web/hooks/use-persistent-local-state'
 import { useUnseenPrivateMessageChannels } from 'web/hooks/use-private-messages'
 import { PrivateMessagesList } from '../components/messaging/private-messages-list'
 import { maybePluralize } from 'common/util/format'
+import dayjs from 'dayjs'
+import { postMessageToNative } from 'web/lib/native/post-message'
+import { useEvent } from 'client-common/hooks/use-event'
 
 export default function NotificationsPage() {
   const privateUser = usePrivateUser()
@@ -119,6 +122,41 @@ function NotificationsContent(props: {
     (params) => api('get-notifications', params),
     usePersistentLocalState
   )
+  const resolution = groupedNotifications?.some((ng) =>
+    ng.notifications.some((n) => n.reason === 'resolutions_on_watched_markets')
+  )
+  const { isNative } = useNativeInfo()
+  const lastPushModalSeenTime =
+    privateUser.lastPromptedToEnablePushNotifications
+
+  const checkIfShouldPromptStoreReview = useEvent(() => {
+    const shownPushModalToday = lastPushModalSeenTime
+      ? dayjs(lastPushModalSeenTime).isSame(dayjs(), 'day')
+      : false
+
+    const sixMonthsAgo = dayjs().subtract(6, 'months').valueOf()
+    const recentlyReviewed = privateUser.lastAppReviewTime
+      ? privateUser.lastAppReviewTime > sixMonthsAgo
+      : false
+    const shouldCheckReviewAbility =
+      isNative && resolution && !recentlyReviewed && !shownPushModalToday
+
+    if (shouldCheckReviewAbility) {
+      postMessageToNative('hasReviewActionRequested', {})
+    }
+  })
+
+  useEffect(() => {
+    setTimeout(() => {
+      // Give the push notification modal time to show and the user to see their notifs
+      checkIfShouldPromptStoreReview()
+    }, 3000)
+  }, [
+    isNative,
+    resolution,
+    lastPushModalSeenTime,
+    privateUser.lastAppReviewTime,
+  ])
 
   const [unseenNewMarketNotifs, setNewMarketNotifsAsSeen] = useState(
     groupedNewMarketNotifications?.filter((n) => !n.isSeen).length ?? 0
