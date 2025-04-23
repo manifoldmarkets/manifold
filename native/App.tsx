@@ -14,6 +14,7 @@ import {
   Share,
 } from 'react-native'
 import Clipboard from '@react-native-clipboard/clipboard'
+import * as ExpoClipboard from 'expo-clipboard'
 import { User as FirebaseUser } from 'firebase/auth'
 import * as WebBrowser from 'expo-web-browser'
 // @ts-ignore
@@ -355,6 +356,27 @@ const App = () => {
       })
     } else if (type === 'copyToClipboard') {
       Clipboard.setString(payload)
+    } else if (type === 'copyImageToClipboard') {
+      const { imageDataUri } = payload as { imageDataUri: string }
+      if (imageDataUri) {
+        // Strip the prefix (e.g., "data:image/png;base64,")
+        const base64Data = imageDataUri.split(',')[1]
+        if (base64Data) {
+          ExpoClipboard.setImageAsync(base64Data)
+            .then(() => {
+              log('Image copy success')
+              // Maybe send a success/error message back to webview?
+            })
+            .catch((e: Error) => {
+              log('Error copying image to clipboard:', e)
+              // communicateWithWebview('imageCopyResult', { success: false, error: e.message })
+            })
+        } else {
+          log('Failed to extract base64 data from imageDataUri')
+        }
+      } else {
+        log('copyImageToClipboard message received without imageDataUri')
+      }
     }
     // User needs to enable push notifications
     else if (type === 'promptEnablePushNotifications') {
