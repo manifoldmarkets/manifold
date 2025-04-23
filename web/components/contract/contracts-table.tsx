@@ -6,6 +6,7 @@ import {
   Contract,
   contractPath,
   dayProbChange,
+  resolution,
 } from 'common/contract'
 import {
   ENV_CONFIG,
@@ -19,7 +20,10 @@ import { useUser } from 'web/hooks/use-user'
 import { getTextColor } from './text-color'
 import { ContractMinibar } from '../charts/minibar'
 import { Row } from '../layout/row'
-import { BinaryContractOutcomeLabel } from '../outcome-label'
+import {
+  BinaryContractOutcomeLabel,
+  BinaryOutcomeLabel,
+} from '../outcome-label'
 import { Avatar } from '../widgets/avatar'
 import { useLiveContract } from 'web/hooks/use-contract'
 import { Col } from '../layout/col'
@@ -41,7 +45,8 @@ import { getFormattedExpectedValue } from 'common/multi-numeric'
 import { getFormattedExpectedDate } from 'common/multi-date'
 import { Answer } from 'common/src/answer'
 import { FaArrowDown, FaArrowUp } from 'react-icons/fa6'
-
+import { useSavedContractMetrics } from 'web/hooks/use-saved-contract-metrics'
+import { maxBy } from 'lodash'
 export function ContractsTable(props: {
   contracts: Contract[]
   onContractClick?: (contract: Contract) => void
@@ -49,6 +54,7 @@ export function ContractsTable(props: {
   columns?: ColumnFormat[]
   hideAvatar?: boolean
   contractAnswers?: { [contractId: string]: Answer[] }
+  showPosition?: boolean
 }) {
   const {
     contracts,
@@ -57,12 +63,21 @@ export function ContractsTable(props: {
     columns = [boostedColumn, traderColumn, probColumn, actionColumn],
     hideAvatar,
     contractAnswers,
+    showPosition,
   } = props
 
   const user = useUser()
 
   return (
     <Col className="w-full">
+      {showPosition && (
+        <Row className="border-ink-300 bg-canvas-0 grid-cols-16 sticky top-[7.8rem] z-10 grid border-b px-3 py-1 pr-6 text-right sm:grid-cols-4">
+          <Col className="col-span-3 opacity-70 sm:col-span-1">Value</Col>
+          <Col className="col-span-4 opacity-70 sm:col-span-1">Profit</Col>
+          <Col className="col-span-4 opacity-70 sm:col-span-1">1d Profit</Col>
+          <Col className="col-span-5 opacity-70 sm:col-span-1">To win</Col>
+        </Row>
+      )}
       {contracts.map((contract) => (
         <ContractRow
           key={contract.id}
@@ -78,9 +93,44 @@ export function ContractsTable(props: {
             onContractClick ? () => onContractClick(contract) : undefined
           }
           answers={contractAnswers?.[contract.id]}
+          showPosition={showPosition}
         />
       ))}
     </Col>
+  )
+}
+
+function PositionRow(props: { contract: Contract }) {
+  const { contract } = props
+  const savedMetric = useSavedContractMetrics(contract)
+  if (!savedMetric) return null
+  const { payout, totalShares = {}, profit, from } = savedMetric
+  const dayChange = from?.day.profit ?? 0
+  const maxSharesOutcome =
+    savedMetric.maxSharesOutcome ??
+    maxBy(Object.entries(totalShares), ([, value]) => value)?.[0]
+  return (
+    <Row className="border-ink-300 grid-cols-16 grid border-b px-3 pb-1 pr-6 text-right opacity-70 sm:grid-cols-4 ">
+      <Col className="col-span-3 sm:col-span-1">{formatMoney(payout)}</Col>
+      <Col className="col-span-4  sm:col-span-1">
+        {(profit >= 1 ? '+' : profit <= -1 ? '-' : '') +
+          formatMoney(Math.abs(profit)).replace('-', '')}
+      </Col>
+      <Col className="col-span-4  sm:col-span-1">
+        {dayChange >= 1 ? '+' : dayChange <= -1 ? '-' : ''}
+        {formatMoney(Math.abs(dayChange)).replace('-', '')}
+      </Col>
+      <Col className="col-span-5 sm:col-span-1">
+        <span className="">
+          {maxSharesOutcome
+            ? formatMoney(totalShares[maxSharesOutcome] ?? 0)
+            : 0}{' '}
+          {maxSharesOutcome && contract.mechanism === 'cpmm-1' && (
+            <BinaryOutcomeLabel outcome={maxSharesOutcome as resolution} />
+          )}
+        </span>
+      </Col>
+    </Row>
   )
 }
 
@@ -92,12 +142,21 @@ function ContractRow(props: {
   onClick?: () => void
   hideAvatar?: boolean
   answers?: Answer[]
+  showPosition?: boolean
 }) {
   const contract = useLiveContract(props.contract)
 
-  const { columns, hideAvatar, highlighted, faded, onClick, answers } = props
+  const {
+    columns,
+    hideAvatar,
+    highlighted,
+    faded,
+    onClick,
+    answers,
+    showPosition,
+  } = props
   return (
-    <div className="w-full">
+    <Col className="w-full">
       <Link
         href={contractPath(contract)}
         onClick={(e) => {
@@ -117,13 +176,14 @@ function ContractRow(props: {
           highlighted
             ? 'bg-primary-100'
             : 'hover:bg-primary-100 focus-visible:bg-primary-100 active:bg-primary-100',
-          'border-ink-200 border-b last:border-none sm:border-none'
+          'border-ink-200 last:border-none sm:border-none',
+          !showPosition && 'border-b'
         )}
       >
         <div className="flex w-full flex-col justify-between gap-1 sm:flex-row sm:gap-0">
           <ContractQuestion
             contract={contract}
-            className={'w-full sm:w-[calc(100%-12rem)]'}
+            className={clsx('w-full sm:w-[calc(100%-12rem)]')}
             hideAvatar={hideAvatar}
           />
           <Row className="w-full justify-end sm:w-fit">
@@ -174,7 +234,8 @@ function ContractRow(props: {
           </Col>
         )}
       </Link>
-    </div>
+      {showPosition && <PositionRow contract={contract} />}
+    </Col>
   )
 }
 

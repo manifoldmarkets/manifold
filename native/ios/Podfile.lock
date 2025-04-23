@@ -225,6 +225,8 @@ PODS:
     - ExpoModulesCore
   - ExpoAsset (11.0.5):
     - ExpoModulesCore
+  - ExpoClipboard (7.0.1):
+    - ExpoModulesCore
   - ExpoCrypto (14.0.2):
     - ExpoModulesCore
   - ExpoFileSystem (18.0.12):
@@ -1930,6 +1932,7 @@ DEPENDENCIES:
   - expo-dev-menu-interface (from `../node_modules/expo-dev-menu-interface/ios`)
   - ExpoAppleAuthentication (from `../node_modules/expo-apple-authentication/ios`)
   - ExpoAsset (from `../node_modules/expo-asset/ios`)
+  - ExpoClipboard (from `../node_modules/expo-clipboard/ios`)
   - ExpoCrypto (from `../node_modules/expo-crypto/ios`)
   - ExpoFileSystem (from `../node_modules/expo-file-system/ios`)
   - ExpoFont (from `../node_modules/expo-font/ios`)
@@ -2053,6 +2056,8 @@ EXTERNAL SOURCES:
     :path: "../node_modules/expo-apple-authentication/ios"
   ExpoAsset:
     :path: "../node_modules/expo-asset/ios"
+  ExpoClipboard:
+    :path: "../node_modules/expo-clipboard/ios"
   ExpoCrypto:
     :path: "../node_modules/expo-crypto/ios"
   ExpoFileSystem:
@@ -2237,6 +2242,7 @@ SPEC CHECKSUMS:
   expo-dev-menu-interface: 00dc42302a72722fdecec3fa048de84a9133bcc4
   ExpoAppleAuthentication: ee61704f441b3ef10a3d1280acbb6b9e2e04a38d
   ExpoAsset: 0687fe05f5d051c4a34dd1f9440bd00858413cfe
+  ExpoClipboard: 5250b207b6d545f4e9aac5ea3c6e61c4f16d0aed
   ExpoCrypto: 1eaf79360c8135af1f2ebb133394fd3513ca9a3d
   ExpoFileSystem: c8c19bf80d914c83dda3beb8569d7fb603be0970
   ExpoFont: 773955186469acc5108ff569712a2d243857475f

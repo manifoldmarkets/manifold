@@ -48,7 +48,7 @@ export function Referrals(props: { user: User }) {
   )}`
 
   return (
-    <Col className="bg-canvas-0 rounded p-6">
+    <Col className="">
       {isYou && (
         <>
           <span className={'text-primary-700 pb-2 text-xl'}>
@@ -67,7 +67,7 @@ export function Referrals(props: { user: User }) {
             each!
           </span>
           <CopyLinkRow
-            linkBoxClassName="w-28"
+            linkBoxClassName="w-1/2"
             url={url}
             eventTrackingName="copy referral link"
           />

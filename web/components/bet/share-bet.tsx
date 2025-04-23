@@ -4,7 +4,7 @@ import { Row } from '../layout/row'
 import { Col } from '../layout/col'
 import toast from 'react-hot-toast'
 import { LogoIcon } from '../icons/logo-icon'
-import { DuplicateIcon, ShareIcon } from '@heroicons/react/solid'
+import { DuplicateIcon } from '@heroicons/react/solid'
 import { useRef } from 'react'
 import { toPng } from 'html-to-image'
 import { TokenNumber } from '../widgets/token-number'
@@ -13,6 +13,7 @@ import { formatPercent } from 'common/util/format'
 import { useNativeInfo } from '../native-message-provider'
 import { postMessageToNative } from 'web/lib/native/post-message'
 import { LuShare } from 'react-icons/lu'
+import { ClipboardCopyIcon } from '@heroicons/react/outline'
 
 type ShareBetCardProps = {
   questionText: string
@@ -84,7 +85,7 @@ export const ShareBetCard = (props: ShareBetCardProps) => {
               <div className="text-gray-500">Bet</div>
             )}
             {(won === undefined || won) && (
-              <div className="text-gray-500">
+              <div className="whitespace-nowrap text-gray-500">
                 {won !== undefined ? 'Won' : 'To win'}
               </div>
             )}
@@ -143,6 +144,52 @@ export const ShareBetCard = (props: ShareBetCardProps) => {
   )
 }
 
+// Helper function to generate base64 image data
+const generateBase64ImageData = async (
+  cardRef: React.RefObject<HTMLDivElement>
+): Promise<string | null> => {
+  if (!cardRef.current) return null
+
+  try {
+    const dataUrl = await toPng(cardRef.current, {
+      quality: 1.0,
+      pixelRatio: 2,
+      skipFonts: true,
+      style: {
+        transformOrigin: 'center center',
+        transform: 'none',
+      },
+      filter: (node) => {
+        return !(node as HTMLElement).classList?.contains('tippy-box')
+      },
+    })
+
+    // Convert dataUrl to blob for web clipboard compatibility & easier handling
+    const blob = await fetch(dataUrl).then((res) => res.blob())
+    if (!blob) {
+      toast.error('Failed to create image blob')
+      return null
+    }
+
+    // Convert blob to base64 for sending to native
+    return new Promise((resolve) => {
+      const reader = new FileReader()
+      reader.readAsDataURL(blob)
+      reader.onloadend = () => {
+        resolve(reader.result as string)
+      }
+      reader.onerror = () => {
+        toast.error('Failed to read image blob')
+        resolve(null)
+      }
+    })
+  } catch (err) {
+    console.error('Failed to generate image:', err)
+    toast.error('Failed to generate image')
+    return null
+  }
+}
+
 export const ShareBetModal = (
   props: {
     open: boolean
@@ -153,84 +200,48 @@ export const ShareBetModal = (
   const cardRef = useRef<HTMLDivElement>(null)
   const { isNative, isIOS } = useNativeInfo()
 
-  const handleCopyShareImage = async () => {
-    if (!cardRef.current) return
+  // Handler for sharing (iOS or Web Copy)
+  const handleiOSShareOrWebCopy = async () => {
+    const base64data = await generateBase64ImageData(cardRef)
+    if (!base64data) return
 
     try {
-      const dataUrl = await toPng(cardRef.current, {
-        quality: 1.0,
-        pixelRatio: 2,
-        skipFonts: true,
-        style: {
-          // Ensure all styles are inlined
-          transformOrigin: 'center center',
-          transform: 'none',
-        },
-        filter: (node) => {
-          // Skip problematic elements that might cause CORS issues
-          return !(node as HTMLElement).classList?.contains('tippy-box')
-        },
-      })
-
-      // Create a temporary image element
-      const img = new Image()
-      img.crossOrigin = 'anonymous'
-
-      // Wait for image to load before proceeding
-      await new Promise((resolve, reject) => {
-        img.onload = resolve
-        img.onerror = reject
-        img.src = dataUrl
-      })
-
-      // Create a canvas to draw the image
-      const canvas = document.createElement('canvas')
-      canvas.width = img.width
-      canvas.height = img.height
-      const ctx = canvas.getContext('2d')
-      if (!ctx) {
-        toast.error('Failed to create image context')
-        return
-      }
-
-      // Draw the image on the canvas
-      ctx.drawImage(img, 0, 0)
-
-      // Convert to blob and copy to clipboard
-      canvas.toBlob(async (blob) => {
+      if (isNative) {
+        // Send to native for sharing
+        postMessageToNative('share', {
+          url: base64data,
+        })
+      } else {
+        // Web: Copy blob to clipboard
+        const blob = await fetch(base64data).then((res) => res.blob())
         if (!blob) {
           toast.error('Failed to create image blob')
           return
         }
-        try {
-          if (isNative) {
-            // Convert blob to base64 for sharing
-            const reader = new FileReader()
-            reader.readAsDataURL(blob)
-            reader.onloadend = () => {
-              const base64data = reader.result as string
-              // Use share with url property for the image data
-              postMessageToNative('share', {
-                url: base64data,
-              })
-            }
-          } else {
-            await navigator.clipboard.write([
-              new ClipboardItem({
-                [blob.type]: blob,
-              }),
-            ])
-            toast.success('Image copied to clipboard!')
-          }
-        } catch (err) {
-          console.error('Failed to copy image:', err)
-          toast.error('Failed to copy image to clipboard')
-        }
-      }, 'image/png')
+        await navigator.clipboard.write([
+          new ClipboardItem({
+            [blob.type]: blob,
+          }),
+        ])
+        toast.success('Image copied to clipboard!')
+      }
     } catch (err) {
-      console.error('Failed to generate image:', err)
-      toast.error('Failed to generate image')
+      console.error('Failed to copy/share image:', err)
+      toast.error(`Failed to ${isNative ? 'share' : 'copy'} image`)
     }
+  }
+
+  // Handler specifically for copying on Android
+  const handleAndroidCopy = async () => {
+    if (!isNative) return // Should not happen based on button visibility
+
+    const base64data = await generateBase64ImageData(cardRef)
+    if (!base64data) return
+
+    postMessageToNative('copyImageToClipboard', {
+      imageDataUri: base64data,
+    })
+    toast.success('Image copied to clipboard!')
   }
 
   return (
@@ -248,18 +259,28 @@ export const ShareBetModal = (
           <Button color="gray-white" onClick={() => setOpen(false)}>
             Close
           </Button>
-          <Button color="gradient" onClick={handleCopyShareImage}>
-            <Row className="items-center gap-1.5">
-              {isIOS ? (
-                <LuShare className="h-5 w-5" aria-hidden />
-              ) : isNative ? (
-                <ShareIcon className="h-5 w-5" aria-hidden />
-              ) : (
-                <DuplicateIcon className="h-5 w-5" aria-hidden />
-              )}
-              {isNative ? 'Share Image' : 'Copy Image'}
-            </Row>
-          </Button>
+          <Row className="items-center justify-end gap-2">
+            {isNative && !isIOS && (
+              <Button color="indigo" onClick={handleAndroidCopy}>
+                <Row className="items-center gap-1.5">
+                  <ClipboardCopyIcon className="h-5 w-5" aria-hidden />
+                  Copy Image
+                </Row>
+              </Button>
+            )}
+            {((isNative && isIOS) || !isNative) && (
+              <Button color="gradient" onClick={handleiOSShareOrWebCopy}>
+                <Row className="items-center gap-1.5">
+                  {isIOS ? (
+                    <LuShare className="h-5 w-5" aria-hidden />
+                  ) : (
+                    <DuplicateIcon className="h-5 w-5" aria-hidden />
+                  )}
+                  {isNative ? 'Share Image' : 'Copy Image'}
+                </Row>
+              </Button>
+            )}
+          </Row>
         </Row>
       </Col>
     </Modal>

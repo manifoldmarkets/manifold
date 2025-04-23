@@ -85,12 +85,12 @@ export async function sendWeeklyMarketsEmails() {
 }
 
 export async function getForYouMarkets(
-  userId: string,
+  uid: string,
   limit: number,
   privateUser: PrivateUser
 ) {
   const searchMarketSQL = await getForYouSQL({
-    userId,
+    uid,
     filter: 'open',
     contractType: 'ALL',
     limit: limit * 2,

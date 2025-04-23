@@ -18,7 +18,10 @@ import {
   supabaseUserConsolePath,
 } from 'common/envs/constants'
 import { SimpleCopyTextButton } from 'web/components/buttons/copy-link-button'
-import { useReferralCount } from 'web/components/buttons/referrals-button'
+import {
+  Referrals,
+  useReferralCount,
+} from 'web/components/buttons/referrals-button'
 import { banUser } from 'web/lib/api/api'
 import SuperBanControl from '../SuperBanControl'
 import { buildArray } from 'common/util/array'
@@ -181,10 +184,10 @@ export function UserSettingButton(props: { user: User }) {
                         ),
                       },
                     ],
-                // {
-                //   title: `${numReferrals} Referrals`,
-                //   content: <Referrals user={user} />,
-                // },
+                {
+                  title: `${numReferrals} Referrals`,
+                  content: <Referrals user={user} />,
+                },
                 // TODO: if isYou include a tab for users you've blocked?
               ])}
             />
