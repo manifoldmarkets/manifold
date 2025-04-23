@@ -1885,7 +1885,7 @@ PODS:
     - React-Core
   - RNCClipboard (1.14.1):
     - React-Core
-  - RNIap (12.15.2):
+  - RNIap (12.16.2):
     - React-Core
   - RNSentry (6.10.0):
     - DoubleConversion
@@ -2318,7 +2318,7 @@ SPEC CHECKSUMS:
   ReactCommon: bfd3600989d79bc3acbe7704161b171a1480b9fd
   RNCAsyncStorage: 826b603ae9c0f88b5ac4e956801f755109fa4d5c
   RNCClipboard: 0a720adef5ec193aa0e3de24c3977222c7e52a37
-  RNIap: 2a3674383dcf383e5b7b3c4680dc87f1b2657326
+  RNIap: 2fba6c91f79fb7c71fcc44465f606061653caf01
   RNSentry: 04c096f6931bb1eb46eb5bfb132e9dc67687fad1
   Sentry: 1ca8405451040482877dcd344dfa3ef80b646631
   SocketRocket: d4aabe649be1e368d1318fdf28a022d714d65748

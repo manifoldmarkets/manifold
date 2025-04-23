@@ -19,7 +19,6 @@ import * as WebBrowser from 'expo-web-browser'
 // @ts-ignore
 import * as LinkingManager from 'react-native/Libraries/Linking/NativeLinkingManager'
 import * as Linking from 'expo-linking'
-import { Subscription } from 'expo-modules-core'
 import { setFirebaseUserViaJson } from 'common/firebase-auth'
 import { StatusBar } from 'expo-status-bar'
 import { IosIapListener } from 'components/ios-iap-listener'
@@ -42,6 +41,7 @@ import { useIsConnected } from 'lib/use-is-connected'
 import { checkLocationPermission, getLocation } from 'lib/location'
 import * as Sentry from '@sentry/react-native'
 import * as StoreReview from 'expo-store-review'
+import { MaybeNotificationResponse, Subscription } from 'expo-notifications'
 
 Sentry.init({
   dsn: 'https://2353d2023dad4bc192d293c8ce13b9a1@o4504040581496832.ingest.us.sentry.io/4504040585494528',
@@ -68,8 +68,6 @@ const App = () => {
   // This tracks if the app has its nativeMessageListener set up
   // NOTE: After the webview is killed on android due to OOM, this will always be false, see: https://github.com/react-native-webview/react-native-webview/issues/2680
   const listeningToNative = useRef(false)
-  // Sometimes we're linked to a url but the webview has been killed by the OS. We save it here to reload it on reboot
-  const [lastLinkInMemory, setLastLinkInMemory] = useState<string | undefined>()
   const [baseUri, setBaseUri] = useState(BASE_URI)
 
   // Auth
@@ -158,8 +156,16 @@ const App = () => {
     // Perhaps this isn't current if the webview is killed for memory collection? Not sure
     const notification = response.notification.request.content
       .data as Notification
-    log('notification', notification)
     if (notification == undefined) return
+    const lastNotificationIds = await getData<string[]>('lastNotificationIds')
+    if (
+      lastNotificationIds?.length &&
+      lastNotificationIds.some((id) => id === notification.id)
+    ) {
+      log('skipping lastNotificationResponse', notification.id)
+      return
+    }
+    log('handling notification', notification)
 
     // Resolve the destination URL from the notification.
     const destination = getSourceUrl(notification)
@@ -182,45 +188,19 @@ const App = () => {
     // navigates to the correct page when it becomes active.
     setEndpointWithNativeQuery(destination)
 
-    // Keep track of the last link so that if the webview is killed we can
-    // still recover it on reboot.
-    setLastLinkInMemory(destination)
+    storeData('lastNotificationIds', [
+      ...(lastNotificationIds || []),
+      notification.id,
+    ])
   }
 
   useEffect(() => {
-    log(
-      'Running lastNotificationInMemory effect, has loaded webview:',
-      hasLoadedWebView,
-      'last link in memory:',
-      lastLinkInMemory
-    )
-    // If there's a notification in memory and the webview has not loaded, set it as the url to load
-    if (lastLinkInMemory && !hasLoadedWebView) {
-      log(
-        'Setting url to load from last notification in memory:',
-        lastLinkInMemory
-      )
-      setEndpointWithNativeQuery(lastLinkInMemory)
-    }
-    if (lastLinkInMemory) {
-      // Delete the last notification in memory after 3 seconds
-      const timeout = setTimeout(() => {
-        setLastLinkInMemory(undefined)
-        log('Cleared last notification in memory')
-      }, 3000)
-      return () => {
-        clearTimeout(timeout)
-        log('Cleared last notification in memory timeout')
-      }
-    }
-  }, [lastLinkInMemory, hasLoadedWebView])
-
-  useEffect(() => {
-    // This listener is fired whenever a user taps on or interacts with a notification (works when app is foregrounded, backgrounded, or killed)
+    // This listener is fired whenever a user taps on or interacts with a notification (works when app is foregrounded)
     notificationResponseListener.current =
-      Notifications.addNotificationResponseReceivedListener(
-        handlePushNotification
-      )
+      Notifications.addNotificationResponseReceivedListener((response) => {
+        log('notification response', response)
+        handlePushNotification(response)
+      })
 
     return () => {
       notificationResponseListener.current &&
@@ -228,7 +208,7 @@ const App = () => {
           notificationResponseListener.current
         )
     }
-  }, [hasLoadedWebView])
+  }, [])
 
   useEffect(() => {
     Linking.getInitialURL().then((url) => {
@@ -242,6 +222,29 @@ const App = () => {
         handleBackButtonPress
       )
   }, [])
+
+  const handleLastNotificationResponse = async (
+    lastNotif: MaybeNotificationResponse
+  ) => {
+    if (
+      lastNotif &&
+      lastNotif.notification.request.content.data &&
+      lastNotif.actionIdentifier === Notifications.DEFAULT_ACTION_IDENTIFIER
+    ) {
+      log(
+        'processing lastNotificationResponse',
+        lastNotif.notification.request.content.data
+      )
+      handlePushNotification(lastNotif)
+      // Clearing the last notification response doesn't seem to persist across app restarts, so we store the id
+      Notifications.clearLastNotificationResponseAsync()
+    }
+  }
+
+  const lastNotificationResponse = Notifications.useLastNotificationResponse()
+  useEffect(() => {
+    handleLastNotificationResponse(lastNotificationResponse)
+  }, [lastNotificationResponse])
 
   // Handle deep links
   useEffect(() => {
@@ -261,7 +264,6 @@ const App = () => {
       if (hasLoadedWebView && listeningToNative.current)
         communicateWithWebview('link', { url })
       else setEndpointWithNativeQuery(url)
-      setLastLinkInMemory(url)
       // If we don't clear the url, we'll reopen previously opened links
       const clearUrlCacheEvent = {
         hostname: 'manifold.markets',
