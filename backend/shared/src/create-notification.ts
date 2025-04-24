@@ -68,7 +68,6 @@ import {
   createSupabaseDirectClient,
   SupabaseDirectClient,
 } from 'shared/supabase/init'
-import * as crypto from 'crypto'
 import {
   getUniqueBettorIds,
   getUniqueBettorIdsForAnswer,
@@ -88,6 +87,7 @@ import { convertBet } from 'common/supabase/bets'
 import { getRangeContainingValues, answerToMidpoint } from 'common/number'
 import { floatingEqual } from 'common/util/math'
 import { ContractMetric } from 'common/contract-metric'
+import { nanoid } from 'common/util/random'
 
 type recipients_to_reason_texts = {
   [userId: string]: { reason: notification_reason_types }
@@ -217,7 +217,7 @@ export const createCommentOnContractNotification = async (
   const isReply = Object.keys(repliedUsersInfo).length > 0
   const buildNotification = (userId: string, reason: NotificationReason) => {
     const notification: Notification = {
-      id: crypto.randomUUID(),
+      id: nanoid(6),
       userId,
       reason,
       createdTime: Date.now(),
@@ -532,7 +532,7 @@ export const createBetFillNotification = async (
   }
 
   const notification: Notification = {
-    id: crypto.randomUUID(),
+    id: nanoid(6),
     userId: toUser.id,
     reason: 'bet_fill',
     createdTime: Date.now(),
@@ -606,7 +606,7 @@ export const createLimitBetCanceledNotification = async (
       : Math.round(limitBet.limitProb * 100) + '%'
 
   const notification: Notification = {
-    id: crypto.randomUUID(),
+    id: nanoid(6),
     userId: toUserId,
     reason: 'limit_order_cancelled',
     createdTime: Date.now(),
@@ -657,7 +657,7 @@ export const createLimitBetExpiredNotification = async (
       : Math.round(limitBet.limitProb * 100) + '%'
 
   const notification: Notification = {
-    id: crypto.randomUUID(),
+    id: nanoid(6),
     userId: toUserId,
     reason: 'limit_order_cancelled',
     createdTime: Date.now(),
@@ -776,7 +776,7 @@ export const createManaPaymentNotification = async (
   if (optedOut) return
 
   const notification: Notification = {
-    id: crypto.randomUUID(),
+    id: nanoid(6),
     userId: toUserId,
     reason: 'mana_payment_received',
     createdTime: Date.now(),
@@ -815,7 +815,7 @@ export const createBettingStreakBonusNotification = async (
   if (!sendToBrowser) return
 
   const notification: Notification = {
-    id: crypto.randomUUID(),
+    id: nanoid(6),
     userId: user.id,
     reason: 'betting_streaks',
     createdTime: Date.now(),
@@ -863,7 +863,7 @@ export const createBettingStreakExpiringNotification = async (
       privateUser,
       'betting_streaks'
     )
-    const id = crypto.randomUUID()
+    const id = nanoid(6)
     const notification: Notification = {
       id,
       userId,
@@ -915,7 +915,7 @@ export const createLeagueChangedNotification = async (
   )
   if (!sendToBrowser) return
 
-  const id = crypto.randomUUID()
+  const id = nanoid(6)
   const data: LeagueChangeData = {
     previousLeague,
     newLeague,
@@ -1042,7 +1042,7 @@ export const createNewBettorNotification = async (
         : undefined
 
     const notification: Notification = {
-      id: crypto.randomUUID(),
+      id: nanoid(6),
       userId: creatorId,
       reason: 'unique_bettors_on_your_contract',
       createdTime: Date.now(),
@@ -1295,7 +1295,7 @@ export const createContractResolvedNotifications = async (
     reason: NotificationReason
   ): Notification => {
     return {
-      id: crypto.randomUUID(),
+      id: nanoid(6),
       userId,
       reason,
       createdTime: Date.now(),
@@ -1539,7 +1539,7 @@ export const createBountyAwardedNotification = async (
   if (!privateUser) return
   if (userOptedOutOfBrowserNotifications(privateUser)) return
   const notification: Notification = {
-    id: crypto.randomUUID(),
+    id: nanoid(6),
     userId: userId,
     reason: 'bounty_awarded',
     createdTime: Date.now(),
@@ -1570,7 +1570,7 @@ export const createBountyAddedNotification = async (
   if (!privateUser || !sender) return
   if (userOptedOutOfBrowserNotifications(privateUser)) return
   const notification: Notification = {
-    id: crypto.randomUUID(),
+    id: nanoid(6),
     userId: userId,
     reason: 'bounty_added',
     createdTime: Date.now(),
@@ -1609,7 +1609,7 @@ export const createBountyCanceledNotification = async (
     reason: notification_preference
   ): Notification => {
     return {
-      id: crypto.randomUUID(),
+      id: nanoid(6),
       userId,
       reason,
       createdTime: Date.now(),
@@ -1686,7 +1686,7 @@ export const createVotedOnPollNotification = async (
     reason: notification_preference
   ) => {
     const notification: Notification = {
-      id: crypto.randomUUID(),
+      id: nanoid(6),
       userId,
       reason,
       createdTime: Date.now(),
@@ -1756,7 +1756,7 @@ export const createPollClosedNotification = async (
     reason: NotificationReason
   ) => {
     const notification: Notification = {
-      id: crypto.randomUUID(),
+      id: nanoid(6),
       userId,
       reason,
       createdTime: Date.now(),
@@ -1822,7 +1822,7 @@ export const createReferralsProgramNotification = async (
       reason: 'onboarding_flow',
       createdTime: Date.now(),
       isSeen: false,
-      sourceId: crypto.randomUUID(),
+      sourceId: nanoid(6),
       sourceType: 'referral_program',
       sourceUpdateType: 'created',
       sourceUserName: '',
@@ -1867,7 +1867,7 @@ export const createFollowSuggestionNotification = async (
 ) => {
   const privateUser = await getPrivateUser(userId)
   if (!privateUser) return
-  const id = crypto.randomUUID()
+  const id = nanoid(6)
   const contractCreator = await getUser(contract.creatorId)
   if (!contractCreator) return
 
@@ -1899,7 +1899,7 @@ export const createMarketReviewedNotification = async (
 ) => {
   const privateUser = await getPrivateUser(userId)
   if (!privateUser) return
-  const id = crypto.randomUUID()
+  const id = nanoid(6)
   const reason = 'review_on_your_market'
   const { sendToBrowser } = getNotificationDestinationsForUser(
     privateUser,
@@ -2092,7 +2092,7 @@ export const createPaymentSuccessNotification = async (
   transactionId: string
 ) => {
   const notification: Notification = {
-    id: crypto.randomUUID(),
+    id: nanoid(6),
     userId: paymentData.userId,
     reason: 'payment_status',
     createdTime: Date.now(),
@@ -2297,7 +2297,7 @@ export const createAIDescriptionUpdateNotification = async (
   updateText: string
 ) => {
   const notification: Notification = {
-    id: crypto.randomUUID(),
+    id: nanoid(6),
     userId: contract.creatorId,
     reason: 'admin',
     createdTime: Date.now(),

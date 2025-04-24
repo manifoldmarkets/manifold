@@ -20,13 +20,13 @@ import {
   userOptedOutOfBrowserNotifications,
 } from 'common/user-notification-preferences'
 import { Notification } from 'common/notification'
-import * as crypto from 'crypto'
 import { sendBonusWithInterestingMarketsEmail } from 'shared/emails'
 import { insertNotificationToSupabase } from 'shared/supabase/notifications'
 import { APIError } from 'common/api/utils'
 import { getForYouMarkets } from 'shared/weekly-markets-emails'
 import { updatePrivateUser, updateUser } from './supabase/users'
 import { convertUser } from 'common/supabase/users'
+import { nanoid } from 'common/util/random'
 
 /*
 D1 send mana bonus email
@@ -182,7 +182,7 @@ const createSignupBonusNotification = async (
 ) => {
   if (!userOptedOutOfBrowserNotifications(privateUser)) {
     const notification: Notification = {
-      id: crypto.randomUUID(),
+      id: nanoid(6),
       userId: privateUser.id,
       reason: 'onboarding_flow',
       createdTime: Date.now(),
