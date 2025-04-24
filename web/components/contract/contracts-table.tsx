@@ -236,7 +236,10 @@ function ContractRow(props: {
         <div className="flex w-full flex-col items-start justify-between gap-1 sm:flex-row sm:gap-0">
           <ContractQuestion
             contract={contract}
-            className={clsx('w-full sm:w-[calc(100%-12rem)]')}
+            className={clsx(
+              'w-full',
+              !showPosition && 'sm:w-[calc(100%-12rem)]'
+            )}
             hideAvatar={hideAvatar}
           />
           {/* Hide normal action columns row on mobile when showing position row */}
