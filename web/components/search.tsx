@@ -593,7 +593,7 @@ export function Search(props: SearchProps) {
             highlightContractIds={highlightContractIds}
             contractAnswers={answersByContractId}
             columns={buildArray([
-              boostedColumn,
+              !hasBets && boostedColumn,
               traderColumn,
               probColumn,
               !hideActions && actionColumn,

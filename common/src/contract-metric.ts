@@ -1,3 +1,5 @@
+import { maxBy } from 'lodash'
+
 export type ContractMetric = {
   id: number
   userId: string
@@ -48,3 +50,10 @@ export type ContractMetricsByOutcome = Record<string, ContractMetric[]>
 export const isSummary = (
   metric: ContractMetric | Omit<ContractMetric, 'id'>
 ) => metric.answerId === null
+
+export const getMaxSharesOutcome = (metric: ContractMetric | undefined) => {
+  return (
+    metric?.maxSharesOutcome ??
+    maxBy(Object.entries(metric?.totalShares ?? {}), ([, value]) => value)?.[0]
+  )
+}

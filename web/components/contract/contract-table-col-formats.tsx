@@ -54,16 +54,14 @@ export const probColumn = {
   content: (props: { contract: Contract }) => {
     const { contract } = props
     return (
-      <div className="font-semibold">
-        <ContractStatusLabel
-          contract={contract}
-          showProbChange={
-            contract.uniqueBettorCountDay !== contract.uniqueBettorCount
-          }
-          className="block w-[3ch] text-right"
-          width={'w-[65px]'}
-        />
-      </div>
+      <ContractStatusLabel
+        contract={contract}
+        showProbChange={
+          contract.uniqueBettorCountDay !== contract.uniqueBettorCount
+        }
+        className="block w-[3ch] text-right"
+        width={'w-[65px]'}
+      />
     )
   },
   width: 'w-[80px]',

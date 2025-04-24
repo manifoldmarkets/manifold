@@ -8,7 +8,7 @@ import {
   getMainBinaryMCAnswer,
   isBinaryMulti,
 } from 'common/contract'
-import { ContractMetric } from 'common/contract-metric'
+import { ContractMetric, getMaxSharesOutcome } from 'common/contract-metric'
 import { TRADE_TERM } from 'common/envs/constants'
 import { User } from 'common/user'
 import { BinaryMultiSellRow } from 'web/components/answers/answer-components'
@@ -28,7 +28,6 @@ import { useState } from 'react'
 import { Button } from '../buttons/button'
 import { LuShare } from 'react-icons/lu'
 import { getPseudonym } from '../charts/contract/choice'
-import { maxBy } from 'lodash'
 import { formatPercent } from 'common/util/format'
 export function UserBetsSummary(props: {
   contract: Contract
@@ -64,9 +63,7 @@ export function BetsSummary(props: {
 
   const { payout, invested, totalShares = {}, profit, profitPercent } = metric
 
-  const maxSharesOutcome =
-    metric.maxSharesOutcome ??
-    maxBy(Object.entries(totalShares), ([, value]) => value)?.[0]
+  const maxSharesOutcome = getMaxSharesOutcome(metric)
   const yesWinnings = totalShares.YES ?? 0
   const noWinnings = totalShares.NO ?? 0
 
