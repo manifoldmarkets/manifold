@@ -1,6 +1,6 @@
 import clsx from 'clsx'
 import { CommentWithTotalReplies, ContractComment } from 'common/comment'
-import { Contract } from 'common/contract'
+import { Contract, MarketContract } from 'common/contract'
 import { groupBy, isEqual, keyBy, orderBy, uniq, uniqBy } from 'lodash'
 import { memo, useCallback, useEffect, useState } from 'react'
 import { usePrivateUser, useUser } from 'web/hooks/use-user'
@@ -537,7 +537,7 @@ const ActivityLog = memo(function ActivityLog(props: {
                   <FeedBet
                     className="p-1"
                     key={`${item.id}-bet-${parentId}`}
-                    contract={contract}
+                    contract={contract as MarketContract}
                     bet={item}
                     avatarSize="xs"
                     hideActions={true}

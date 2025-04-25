@@ -29,6 +29,8 @@ import { Button } from '../buttons/button'
 import { LuShare } from 'react-icons/lu'
 import { getPseudonym } from '../charts/contract/choice'
 import { formatPercent } from 'common/util/format'
+import { useDisplayUserById } from 'web/hooks/use-user-supabase'
+
 export function UserBetsSummary(props: {
   contract: Contract
   initialMetrics?: ContractMetric
@@ -76,6 +78,7 @@ export function BetsSummary(props: {
   const prob = contract.mechanism === 'cpmm-1' ? getProbability(contract) : 0
   const expectation = prob * yesWinnings + (1 - prob) * noWinnings
   const user = useUser()
+  const bettor = useDisplayUserById(metric.userId)
 
   if (metric.invested === 0 && metric.profit === 0) return null
 
@@ -248,7 +251,7 @@ export function BetsSummary(props: {
                   Share
                 </Row>
               </Button>
-              {showShareModal && (
+              {showShareModal && bettor && (
                 <ShareBetModal
                   open={showShareModal}
                   setOpen={setShowShareModal}
@@ -265,9 +268,12 @@ export function BetsSummary(props: {
                   winAmount={metric.totalShares[maxSharesOutcome]}
                   resolution={resolution}
                   profit={metric.profit}
-                  currentPrice={
-                    contract.mechanism === 'cpmm-1' ? contract.prob : undefined
-                  }
+                  bettor={{
+                    id: bettor.id,
+                    name: bettor.name,
+                    username: bettor.username,
+                    avatarUrl: bettor.avatarUrl,
+                  }}
                 />
               )}
             </>

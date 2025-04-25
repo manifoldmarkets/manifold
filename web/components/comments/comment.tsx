@@ -3,7 +3,7 @@ import { memo, ReactNode, useEffect, useMemo, useRef, useState } from 'react'
 
 import { Bet } from 'common/bet'
 import { ContractComment } from 'common/comment'
-import { Contract } from 'common/contract'
+import { Contract, MarketContract } from 'common/contract'
 import { CommentView } from 'common/events'
 import { Col } from 'web/components/layout/col'
 import { Row } from 'web/components/layout/row'
@@ -231,7 +231,7 @@ export const FeedComment = memo(function FeedComment(props: {
                     className={'bg-canvas-50'}
                     avatarSize={'2xs'}
                     // TODO: condition to toggle
-                    contract={playContract}
+                    contract={playContract as MarketContract}
                     bets={bets}
                   />
                 </Row>

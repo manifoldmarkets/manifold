@@ -9,11 +9,11 @@ import { useRef } from 'react'
 import { toPng } from 'html-to-image'
 import { TokenNumber } from '../widgets/token-number'
 import clsx from 'clsx'
-import { formatPercent } from 'common/util/format'
 import { useNativeInfo } from '../native-message-provider'
 import { postMessageToNative } from 'web/lib/native/post-message'
 import { LuShare } from 'react-icons/lu'
 import { ClipboardCopyIcon } from '@heroicons/react/outline'
+import { Avatar } from '../widgets/avatar'
 
 type ShareBetCardProps = {
   questionText: string
@@ -24,8 +24,16 @@ type ShareBetCardProps = {
   winAmount: number
   resolution?: string
   profit?: number
-  currentPrice?: number
+  bettor: {
+    id: string
+    name: string
+    username: string
+    avatarUrl?: string
+  }
+  isLimitBet?: boolean
+  orderAmount?: number
 }
+
 export const ShareBetCard = (props: ShareBetCardProps) => {
   const {
     questionText,
@@ -36,10 +44,16 @@ export const ShareBetCard = (props: ShareBetCardProps) => {
     betAmount,
     winAmount,
     resolution,
-    currentPrice,
+    bettor,
+    isLimitBet,
+    orderAmount,
   } = props
   const won =
     resolution && resolution !== 'CANCEL' ? (profit ?? 0) >= 0 : undefined
+  const isSell = betAmount < 0
+  const displayAmount = Math.abs(betAmount)
+  const displayOrderAmount = orderAmount ? Math.abs(orderAmount) : undefined
+
   return (
     <div className="w-full min-w-full max-w-xl overflow-hidden rounded-lg bg-gradient-to-br from-indigo-600 via-indigo-600 to-purple-500">
       <div className="flex items-center justify-center pb-4 pt-5">
@@ -50,28 +64,33 @@ export const ShareBetCard = (props: ShareBetCardProps) => {
       </div>
 
       <div className="mx-6 mb-3 rounded-lg bg-white p-6">
-        <div className="mb-6 flex">
+        <div className={clsx(' flex', answer ? 'mb-4' : 'mb-6')}>
           <div className="flex-1">
             <h2 className="text-2xl font-bold text-gray-800">{questionText}</h2>
           </div>
         </div>
 
-        <Row className="items-start justify-between">
-          {answer ? (
-            <div className="line-clamp-2 w-full text-lg text-gray-800">
+        <Col className="gap-2">
+          {answer && (
+            <div className="mb-2 line-clamp-2 w-full text-lg font-semibold text-gray-800">
               {answer}
             </div>
-          ) : !!currentPrice ? (
-            <div className="whitespace-nowrap text-lg text-gray-500">
-              Now {formatPercent(currentPrice)}
-            </div>
-          ) : (
-            <div />
           )}
-          <div className="whitespace-nowrap text-lg text-gray-500">
-            Avg {avgPrice}
-          </div>
-        </Row>
+          <Row className="items-center justify-between">
+            <Row className="items-center gap-2">
+              <Avatar
+                username={bettor.username}
+                avatarUrl={bettor.avatarUrl}
+                size="sm"
+                noLink={true}
+              />
+              <div className="text-lg text-gray-800">{bettor.name}</div>
+            </Row>
+            <div className="whitespace-nowrap text-lg text-gray-500">
+              {isLimitBet ? 'Limit order at' : 'Avg'} {avgPrice}
+            </div>
+          </Row>
+        </Col>
 
         <div className="relative my-6">
           <div className="border-t border-gray-200"></div>
@@ -82,7 +101,9 @@ export const ShareBetCard = (props: ShareBetCardProps) => {
             {won !== undefined && !won ? (
               <div className="text-gray-500">Profit</div>
             ) : (
-              <div className="text-gray-500">Bet</div>
+              <div className="text-gray-500">
+                {isLimitBet ? 'Limit order' : isSell ? 'Sold' : 'Bet'}
+              </div>
             )}
             {(won === undefined || won) && (
               <div className="whitespace-nowrap text-gray-500">
@@ -100,7 +121,11 @@ export const ShareBetCard = (props: ShareBetCardProps) => {
               ) : (
                 <TokenNumber
                   className="text-2xl font-bold text-gray-900"
-                  amount={betAmount}
+                  amount={
+                    isLimitBet
+                      ? displayOrderAmount ?? displayAmount
+                      : displayAmount
+                  }
                 />
               )}
               <div
@@ -120,7 +145,7 @@ export const ShareBetCard = (props: ShareBetCardProps) => {
                   'text-2xl font-bold',
                   won ? 'text-teal-500' : 'text-primary-500'
                 )}
-                amount={winAmount}
+                amount={Math.abs(winAmount)}
               />
             )}
           </Row>
@@ -144,7 +169,6 @@ export const ShareBetCard = (props: ShareBetCardProps) => {
   )
 }
 
-// Helper function to generate base64 image data
 const generateBase64ImageData = async (
   cardRef: React.RefObject<HTMLDivElement>
 ): Promise<string | null> => {
@@ -164,14 +188,12 @@ const generateBase64ImageData = async (
       },
     })
 
-    // Convert dataUrl to blob for web clipboard compatibility & easier handling
     const blob = await fetch(dataUrl).then((res) => res.blob())
     if (!blob) {
       toast.error('Failed to create image blob')
       return null
     }
 
-    // Convert blob to base64 for sending to native
     return new Promise((resolve) => {
       const reader = new FileReader()
       reader.readAsDataURL(blob)
@@ -200,19 +222,16 @@ export const ShareBetModal = (
   const cardRef = useRef<HTMLDivElement>(null)
   const { isNative, isIOS } = useNativeInfo()
 
-  // Handler for sharing (iOS or Web Copy)
   const handleiOSShareOrWebCopy = async () => {
     const base64data = await generateBase64ImageData(cardRef)
     if (!base64data) return
 
     try {
       if (isNative) {
-        // Send to native for sharing
         postMessageToNative('share', {
           url: base64data,
         })
       } else {
-        // Web: Copy blob to clipboard
         const blob = await fetch(base64data).then((res) => res.blob())
         if (!blob) {
           toast.error('Failed to create image blob')
@@ -231,9 +250,8 @@ export const ShareBetModal = (
     }
   }
 
-  // Handler specifically for copying on Android
   const handleAndroidCopy = async () => {
-    if (!isNative) return // Should not happen based on button visibility
+    if (!isNative) return
 
     const base64data = await generateBase64ImageData(cardRef)
     if (!base64data) return

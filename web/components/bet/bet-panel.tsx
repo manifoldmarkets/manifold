@@ -288,7 +288,7 @@ export const BuyPanelBody = (
 
   // State for share row
   const [showShareRow, setShowShareRow] = useState(false)
-  const [isSharing, setIsSharing] = useState(false) // State to show the actual share card
+  const [isSharing, setIsSharing] = useState(false)
   const [lastBetDetails, setLastBetDetails] = useState<Bet | null>(null)
 
   const isCpmmMulti = contract.mechanism === 'cpmm-multi-1'
@@ -909,15 +909,14 @@ export const BuyPanelBody = (
           </Row>
         )}
 
-        {/* Share Card - Shown when user clicks the share button */}
-        {showShareRow && lastBetDetails && isSharing && (
+        {showShareRow && lastBetDetails && isSharing && user && (
           <ShareBetModal
             open={isSharing}
             setOpen={setIsSharing}
             questionText={contract.question}
             outcome={formatOutcomeLabel(
               contract,
-              lastBetDetails.outcome as 'YES' | 'NO' // Assuming binary for now
+              lastBetDetails.outcome as 'YES' | 'NO'
             )}
             answer={multiProps?.answerToBuy.text}
             avgPrice={formatPercent(
@@ -927,9 +926,14 @@ export const BuyPanelBody = (
             )}
             betAmount={lastBetDetails.amount}
             winAmount={lastBetDetails.shares}
-            currentPrice={
-              contract.mechanism === 'cpmm-1' ? contract.prob : undefined
-            }
+            bettor={{
+              id: user.id,
+              name: user.name,
+              username: user.username,
+              avatarUrl: user.avatarUrl,
+            }}
+            isLimitBet={lastBetDetails.limitProb !== undefined}
+            orderAmount={lastBetDetails.orderAmount}
           />
         )}
 

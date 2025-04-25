@@ -19,7 +19,12 @@ import {
 } from 'common/antes'
 import { Bet } from 'common/bet'
 import { ContractComment } from 'common/comment'
-import { BinaryContract, Contract, CPMMNumericContract } from 'common/contract'
+import {
+  BinaryContract,
+  Contract,
+  CPMMNumericContract,
+  MarketContract,
+} from 'common/contract'
 import { buildArray } from 'common/util/array'
 import { shortFormatNumber, maybePluralize } from 'common/util/format'
 import { MINUTE_MS } from 'common/util/time'
@@ -632,7 +637,7 @@ export const BetsTabContent = memo(function BetsTabContent(props: {
             <FeedBet
               onReply={setReplyToBet}
               key={item.id}
-              contract={contract}
+              contract={contract as MarketContract}
               bet={item.bet}
             />
           ) : item.type === 'betGroup' ? (

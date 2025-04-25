@@ -2,7 +2,12 @@ import { ReplyIcon } from '@heroicons/react/solid'
 import clsx from 'clsx'
 import { DisplayUser } from 'common/api/user-types'
 import { Bet } from 'common/bet'
-import { Contract, getBinaryMCProb, isBinaryMulti } from 'common/contract'
+import {
+  Contract,
+  getBinaryMCProb,
+  isBinaryMulti,
+  MarketContract,
+} from 'common/contract'
 import { TRADE_TERM } from 'common/envs/constants'
 import { getFormattedMappedValue } from 'common/pseudo-numeric'
 import { BETTOR } from 'common/user'
@@ -32,9 +37,13 @@ import { MoneyDisplay } from '../bet/money-display'
 import { UserHovercard } from '../user/user-hovercard'
 import { InfoTooltip } from '../widgets/info-tooltip'
 import { getPseudonym } from '../charts/contract/choice'
+import { LuShare } from 'react-icons/lu'
+import { formatPercent } from 'common/util/format'
+import { ShareBetModal } from '../bet/share-bet'
+import { formatOutcomeLabel } from 'common/util/format'
 
 export const FeedBet = memo(function FeedBet(props: {
-  contract: Contract
+  contract: MarketContract
   bet: Bet
   avatarSize?: AvatarSizeType
   className?: string
@@ -75,8 +84,9 @@ export const FeedBet = memo(function FeedBet(props: {
     </Col>
   )
 })
+
 export const FeedReplyBet = memo(function FeedReplyBet(props: {
-  contract: Contract
+  contract: MarketContract
   bets: Bet[]
   avatarSize?: AvatarSizeType
   className?: string
@@ -303,11 +313,14 @@ export function BetStatusText(props: {
 function BetActions(props: {
   onReply?: (bet: Bet) => void
   bet: Bet
-  contract: Contract
+  contract: MarketContract
 }) {
   const { onReply, bet, contract } = props
   const user = useUser()
+  const [isSharing, setIsSharing] = useState(false)
+  const bettor = useDisplayUserById(bet.userId)
   if (!user) return null
+
   return (
     <Row className="items-center gap-1">
       <RepostButton
@@ -337,6 +350,55 @@ function BetActions(props: {
             <ReplyIcon className=" h-5 w-5" />
           </Button>
         </Tooltip>
+      )}
+      <Tooltip text="Share bet" placement="top">
+        <Button
+          className={'!p-1'}
+          color={'gray-white'}
+          size={'2xs'}
+          onClick={() => setIsSharing(true)}
+        >
+          <LuShare className="h-5 w-5" />
+        </Button>
+      </Tooltip>
+
+      {isSharing && bettor && (
+        <ShareBetModal
+          open={isSharing}
+          setOpen={setIsSharing}
+          questionText={contract.question}
+          outcome={formatOutcomeLabel(contract, bet.outcome as 'YES' | 'NO')}
+          answer={
+            contract.mechanism === 'cpmm-multi-1'
+              ? contract.answers?.find((a) => a.id === bet.answerId)?.text
+              : undefined
+          }
+          avgPrice={
+            bet.limitProb !== undefined
+              ? formatPercent(bet.limitProb)
+              : formatPercent(
+                  bet.outcome === 'YES'
+                    ? bet.amount / bet.shares
+                    : 1 - bet.amount / bet.shares
+                )
+          }
+          betAmount={bet.amount}
+          winAmount={
+            bet.limitProb !== undefined && bet.orderAmount !== undefined
+              ? bet.outcome === 'YES'
+                ? bet.orderAmount / bet.limitProb
+                : bet.orderAmount / (1 - bet.limitProb)
+              : bet.shares
+          }
+          bettor={{
+            id: bettor.id,
+            name: bettor.name,
+            username: bettor.username,
+            avatarUrl: bettor.avatarUrl,
+          }}
+          isLimitBet={bet.limitProb !== undefined}
+          orderAmount={bet.orderAmount}
+        />
       )}
     </Row>
   )
