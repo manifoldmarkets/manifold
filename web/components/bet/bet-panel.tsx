@@ -287,7 +287,6 @@ export const BuyPanelBody = (
   const [inputRef, focusAmountInput] = useFocus()
 
   // State for share row
-  const [showShareRow, setShowShareRow] = useState(false)
   const [isSharing, setIsSharing] = useState(false)
   const [lastBetDetails, setLastBetDetails] = useState<Bet | null>(null)
 
@@ -343,12 +342,12 @@ export const BuyPanelBody = (
       const finalBetDetails = updatedBet ?? submittedBet
       if (finalBetDetails) {
         setLastBetDetails(finalBetDetails)
-        setShowShareRow(true)
         setIsSharing(false)
         setTimeout(() => {
           callOnBuySuccess()
         }, WAIT_TO_DISMISS)
       } else {
+        setLastBetDetails(null)
         callOnBuySuccess()
       }
     }
@@ -464,7 +463,6 @@ export const BuyPanelBody = (
           userId: user.id,
         }
         setLastBetDetails(fullBet)
-        setShowShareRow(true)
         setIsSharing(false)
         // TODO: we could remove the timeout and just not dismiss the modal
         setTimeout(() => {
@@ -523,6 +521,7 @@ export const BuyPanelBody = (
         toast.error(`Error submitting ${TRADE_TERM}`, { id: toastId })
       }
       setIsSubmitting(false)
+      setLastBetDetails(null)
     }
   }
   const [showLocationMonitor, setShowLocationMonitor] = useState(false)
@@ -889,7 +888,7 @@ export const BuyPanelBody = (
             )}
           </Col>
         )}
-        {showShareRow && lastBetDetails && (
+        {lastBetDetails && (
           <Row className="bg-primary-100 mt-2 items-center justify-between rounded-lg p-3">
             <Row className="items-baseline gap-2">
               <span className="text-primary-700 text-sm ">
@@ -909,7 +908,7 @@ export const BuyPanelBody = (
           </Row>
         )}
 
-        {showShareRow && lastBetDetails && isSharing && user && (
+        {lastBetDetails && isSharing && user && (
           <ShareBetModal
             open={isSharing}
             setOpen={setIsSharing}
