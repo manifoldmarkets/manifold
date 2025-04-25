@@ -75,6 +75,7 @@ import { Modal, MODAL_CLASS } from '../layout/modal'
 import { RelativeTimestamp } from '../relative-timestamp'
 import { MarketDraft } from 'common/drafts'
 import { toast } from 'react-hot-toast'
+import { useEvent } from 'client-common/hooks/use-event'
 
 export function ContractParamsForm(props: {
   creator: User
@@ -341,6 +342,17 @@ export function ContractParamsForm(props: {
   const closeTime = closeDate
     ? dayjs(`${closeDate}T${closeHoursMinutes}`).valueOf()
     : undefined
+  const hasManuallyEditedCloseDateKey =
+    'has-manually-edited-close-date' + paramsKey
+  const [_, setHasManuallyEditedCloseDate] = usePersistentLocalState<boolean>(
+    false,
+    hasManuallyEditedCloseDateKey
+  )
+  // Only way to get the real state is to read directly from localStorage after await to bypass stale closures
+  const readHasManuallyEditedCloseDate = useCallback(
+    () => safeLocalStorage?.getItem(hasManuallyEditedCloseDateKey) === 'true',
+    [hasManuallyEditedCloseDateKey]
+  )
 
   const min = minString ? parseFloat(minString) : undefined
   const max = maxString ? parseFloat(maxString) : undefined
@@ -487,6 +499,7 @@ export function ContractParamsForm(props: {
     setPersistentLocalState(questionKey, '')
     safeLocalStorage?.removeItem(closeDateKey)
     safeLocalStorage?.removeItem(closeHoursMinutesKey)
+    setPersistentLocalState(hasManuallyEditedCloseDateKey, false)
     setPersistentLocalState(visibilityKey, 'public')
     setPersistentLocalState(selectedGroupsKey, [])
     setPersistentLocalState('threshold-answers' + paramsKey, defaultAnswers)
@@ -754,32 +767,45 @@ export function ContractParamsForm(props: {
   }
 
   // Function to get AI-suggested close date
-  const getAISuggestedCloseDate = useCallback(
-    async (currentQuestion: string) => {
-      if (
-        !currentQuestion ||
-        currentQuestion.length < 20 ||
-        !shouldHaveCloseDate
-      ) {
-        return
+  const getAISuggestedCloseDate = useEvent(async (currentQuestion: string) => {
+    if (
+      !currentQuestion ||
+      currentQuestion.length < 20 ||
+      !shouldHaveCloseDate
+    ) {
+      return
+    }
+    try {
+      const result = await api('get-close-date', {
+        question: currentQuestion,
+        utcOffset: new Date().getTimezoneOffset() * -1,
+      })
+      const latestManualEditState = readHasManuallyEditedCloseDate()
+      if (result?.closeTime && !latestManualEditState) {
+        const date = dayjs(result.closeTime).format('YYYY-MM-DD')
+        const time = dayjs(result.closeTime).format('HH:mm')
+        setCloseDate(date)
+        setCloseHoursMinutes(time)
       }
-      try {
-        const result = await api('get-close-date', {
-          question: currentQuestion,
-          utcOffset: new Date().getTimezoneOffset() * -1,
-        })
-        if (result?.closeTime) {
-          const date = dayjs(result.closeTime).format('YYYY-MM-DD')
-          const time = dayjs(result.closeTime).format('HH:mm')
-          setCloseDate(date)
-          setCloseHoursMinutes(time)
-        }
-      } catch (e) {
-        console.error('Error getting suggested close date:', e)
-      }
-    },
-    [shouldHaveCloseDate, setCloseDate, setCloseHoursMinutes]
-  )
+    } catch (e) {
+      console.error('Error getting suggested close date:', e)
+    }
+  })
+
+  const handleSetCloseDate = (date: string | undefined) => {
+    setCloseDate(date)
+    setHasManuallyEditedCloseDate(true)
+  }
+
+  const handleSetCloseHoursMinutes = (time: string | undefined) => {
+    setCloseHoursMinutes(time)
+    setHasManuallyEditedCloseDate(true)
+  }
+
+  const handleSetNeverCloses = (never: boolean) => {
+    setNeverCloses(never)
+    setHasManuallyEditedCloseDate(true)
+  }
 
   return (
     <Col className="gap-6">
@@ -1001,11 +1027,11 @@ export function ContractParamsForm(props: {
       </Col>
       <CloseTimeSection
         closeDate={closeDate}
-        setCloseDate={setCloseDate}
+        setCloseDate={handleSetCloseDate}
         closeHoursMinutes={closeHoursMinutes}
-        setCloseHoursMinutes={setCloseHoursMinutes}
+        setCloseHoursMinutes={handleSetCloseHoursMinutes}
         neverCloses={neverCloses}
-        setNeverCloses={setNeverCloses}
+        setNeverCloses={handleSetNeverCloses}
         submitState={submitState}
         outcomeType={outcomeType}
         initTime={initTime}
