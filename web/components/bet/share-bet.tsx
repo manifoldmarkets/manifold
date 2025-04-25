@@ -13,7 +13,7 @@ import { useNativeInfo } from '../native-message-provider'
 import { postMessageToNative } from 'web/lib/native/post-message'
 import { LuShare } from 'react-icons/lu'
 import { ClipboardCopyIcon } from '@heroicons/react/outline'
-import { Avatar } from '../widgets/avatar'
+import { DisplayUser } from 'common/api/user-types'
 
 type ShareBetCardProps = {
   questionText: string
@@ -24,15 +24,13 @@ type ShareBetCardProps = {
   winAmount: number
   resolution?: string
   profit?: number
-  bettor: {
-    id: string
-    name: string
-    username: string
-    avatarUrl?: string
-  }
+  bettor: DisplayUser
   isLimitBet?: boolean
   orderAmount?: number
 }
+
+// Simple in-memory cache for avatar data URIs
+const avatarDataUriCache: { [url: string]: string } = {}
 
 export const ShareBetCard = (props: ShareBetCardProps) => {
   const {
@@ -78,13 +76,20 @@ export const ShareBetCard = (props: ShareBetCardProps) => {
           )}
           <Row className="items-center justify-between">
             <Row className="items-center gap-2">
-              <Avatar
-                username={bettor.username}
-                avatarUrl={bettor.avatarUrl}
-                size="sm"
-                noLink={true}
-              />
-              <div className="text-lg text-gray-800">{bettor.name}</div>
+              {/* Avatar component is cached in every copied image, have to use img instead */}
+              {bettor.avatarUrl ? (
+                <img
+                  src={bettor.avatarUrl}
+                  alt={`${bettor.name} avatar`}
+                  className="h-8 w-8 flex-shrink-0 rounded-full bg-gray-200 object-cover"
+                  data-testid="share-avatar"
+                />
+              ) : (
+                <div className="h-8 w-8 flex-shrink-0 rounded-full bg-gray-200"></div>
+              )}
+              <div className="whitespace-nowrap text-lg text-gray-800">
+                {bettor.name}
+              </div>
             </Row>
             <div className="whitespace-nowrap text-lg text-gray-500">
               {isLimitBet ? 'Limit order at' : 'Avg'} {avgPrice}
@@ -175,10 +180,54 @@ const generateBase64ImageData = async (
   if (!cardRef.current) return null
 
   try {
+    // Find the avatar image element using data-testid
+    const avatarImg = cardRef.current.querySelector(
+      '[data-testid="share-avatar"]'
+    ) as HTMLImageElement | null
+
+    if (avatarImg && avatarImg.src && !avatarImg.src.startsWith('data:')) {
+      const originalUrl = avatarImg.src
+
+      // Check cache first
+      if (avatarDataUriCache[originalUrl]) {
+        console.log('Using cached data URI for avatar:', originalUrl)
+        avatarImg.src = avatarDataUriCache[originalUrl]
+      } else {
+        // Only fetch if src is a URL and not in cache
+        console.log('Pre-fetching avatar image:', originalUrl)
+        try {
+          const response = await fetch(originalUrl)
+          if (!response.ok) {
+            throw new Error(`Failed to fetch avatar: ${response.statusText}`)
+          }
+          const blob = await response.blob()
+          const dataUri = await new Promise<string>((resolve, reject) => {
+            const reader = new FileReader()
+            reader.onloadend = () => resolve(reader.result as string)
+            reader.onerror = reject
+            reader.readAsDataURL(blob)
+          })
+          // Embed the fetched image data directly
+          console.log('Embedding data URI for avatar')
+          avatarImg.src = dataUri
+          // Store in cache
+          avatarDataUriCache[originalUrl] = dataUri
+        } catch (error) {
+          console.error('Failed to pre-fetch and embed avatar image:', error)
+          // Set src to a transparent placeholder on error
+          avatarImg.src =
+            'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII='
+          // Don't cache the error/placeholder
+        }
+      }
+    }
+    // Now generate the image
     const dataUrl = await toPng(cardRef.current, {
       quality: 1.0,
       pixelRatio: 2,
       skipFonts: true,
+      imagePlaceholder:
+        'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII=',
       style: {
         transformOrigin: 'center center',
         transform: 'none',
@@ -188,9 +237,10 @@ const generateBase64ImageData = async (
       },
     })
 
+    // Convert final PNG to blob and back to data URI if needed (or directly use dataUrl)
     const blob = await fetch(dataUrl).then((res) => res.blob())
     if (!blob) {
-      toast.error('Failed to create image blob')
+      toast.error('Failed to create final image blob')
       return null
     }
 
@@ -201,7 +251,7 @@ const generateBase64ImageData = async (
         resolve(reader.result as string)
       }
       reader.onerror = () => {
-        toast.error('Failed to read image blob')
+        toast.error('Failed to read final image blob')
         resolve(null)
       }
     })
@@ -222,11 +272,22 @@ export const ShareBetModal = (
   const cardRef = useRef<HTMLDivElement>(null)
   const { isNative, isIOS } = useNativeInfo()
 
-  const handleiOSShareOrWebCopy = async () => {
+  const generateAndProcessImage = async (
+    processFn: (base64data: string) => Promise<void> | void
+  ) => {
     const base64data = await generateBase64ImageData(cardRef)
     if (!base64data) return
 
     try {
+      await processFn(base64data)
+    } catch (err) {
+      console.error('Failed during image processing:', err)
+      toast.error('Failed to process image')
+    }
+  }
+
+  const handleiOSShareOrWebCopy = () => {
+    generateAndProcessImage(async (base64data) => {
       if (isNative) {
         postMessageToNative('share', {
           url: base64data,
@@ -244,23 +305,19 @@ export const ShareBetModal = (
         ])
         toast.success('Image copied to clipboard!')
       }
-    } catch (err) {
-      console.error('Failed to copy/share image:', err)
-      toast.error(`Failed to ${isNative ? 'share' : 'copy'} image`)
-    }
-  }
-
-  const handleAndroidCopy = async () => {
-    if (!isNative) return
-
-    const base64data = await generateBase64ImageData(cardRef)
-    if (!base64data) return
-
-    postMessageToNative('copyImageToClipboard', {
-      imageDataUri: base64data,
     })
-    toast.success('Image copied to clipboard!')
   }
+
+  const handleAndroidCopy = () => {
+    if (!isNative) return
+    generateAndProcessImage((base64data) => {
+      postMessageToNative('copyImageToClipboard', {
+        imageDataUri: base64data,
+      })
+      toast.success('Image copied to clipboard!')
+    })
+  }
+  if (!open) return null
 
   return (
     <Modal
