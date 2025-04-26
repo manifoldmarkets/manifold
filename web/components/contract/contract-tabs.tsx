@@ -629,9 +629,15 @@ export const BetsTabContent = memo(function BetsTabContent(props: {
   const scrollRef = useRef<HTMLDivElement>(null)
   const isCashContract = contract.token === 'CASH'
 
+  // Determine how many loading rows to show (up to ITEMS_PER_PAGE)
+  const numLoadingRows = shouldLoadMore
+    ? Math.min(ITEMS_PER_PAGE, Math.max(0, totalBets - pageItems.length))
+    : 0
+
   return (
     <>
-      <Col className="mb-4 items-start gap-7" ref={scrollRef}>
+      <div ref={scrollRef} />
+      <Col className="mb-4 items-start gap-7">
         {pageItems.map((item) =>
           item.type === 'bet' ? (
             <FeedBet
@@ -658,8 +664,11 @@ export const BetsTabContent = memo(function BetsTabContent(props: {
             </div>
           )
         )}
-        {/* TODO: skeleton */}
-        {shouldLoadMore && <LoadingIndicator />}
+        {/* Render skeleton loading rows */}
+        {shouldLoadMore &&
+          Array(numLoadingRows)
+            .fill(0)
+            .map((_, i) => <LoadingBetRow key={`loading-${i}`} />)}
       </Col>
       <Pagination
         page={page}
@@ -667,9 +676,23 @@ export const BetsTabContent = memo(function BetsTabContent(props: {
         totalItems={totalItems}
         setPage={(page) => {
           setPage(page)
-          scrollRef.current?.scrollIntoView()
+          scrollRef.current?.scrollIntoView({
+            block: 'center',
+          })
         }}
       />
     </>
   )
 })
+
+function LoadingBetRow() {
+  return (
+    <div className="flex w-full animate-pulse gap-3 rounded-md ">
+      {/* Avatar skeleton */}
+      <div className="h-10 w-10 rounded-full bg-gray-500" />
+      <Col className="flex-1 justify-center gap-1.5">
+        <div className="h-4 w-1/2 rounded bg-gray-500" />
+      </Col>
+    </div>
+  )
+}
