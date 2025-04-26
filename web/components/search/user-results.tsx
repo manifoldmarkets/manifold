@@ -12,11 +12,23 @@ export function UserResults(props: { userResults: FullUser[] }) {
   const { userResults } = props
   const [expanded, setExpanded] = useState(false)
 
-  // For initial view, only show non-spammers
   const nonSpamUsers = userResults.filter(
     (user) => !isUserLikelySpammer(user, !!user.lastBetTime, false)
   )
-  const shownUsers = expanded ? userResults : nonSpamUsers.slice(0, MAX_SHOWN)
+  // Determine initial users: prefer non-spammers, but show spammers if they are the only results.
+  let initialUsersToShow: FullUser[]
+  if (nonSpamUsers.length > 0) {
+    initialUsersToShow = nonSpamUsers.slice(0, MAX_SHOWN)
+  } else if (userResults.length > 0) {
+    // Show spammers if no non-spammers exist
+    initialUsersToShow = userResults.slice(0, MAX_SHOWN)
+  } else {
+    initialUsersToShow = []
+  }
+
+  const shownUsers = expanded ? userResults : initialUsersToShow
+  const numInitiallyHidden = userResults.length - initialUsersToShow.length
+  const shouldShowButton = numInitiallyHidden > 0
 
   return (
     <Col className="mb-4 px-2 sm:px-0">
@@ -45,14 +57,12 @@ export function UserResults(props: { userResults: FullUser[] }) {
             {u.username}
           </Link>
         ))}
-        {userResults.length > MAX_SHOWN && (
+        {shouldShowButton && (
           <button
             onClick={() => setExpanded(!expanded)}
             className="text-primary-700 bg-ink-200 hover:bg-ink-300 flex flex-row items-center gap-1 rounded-full p-2 py-1"
           >
-            {expanded
-              ? `Show less`
-              : `Show ${userResults.length - MAX_SHOWN} more`}
+            {expanded ? `Show less` : `Show ${numInitiallyHidden} more`}
           </button>
         )}
       </Row>
