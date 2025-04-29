@@ -6,17 +6,29 @@ import {
   createSupabaseDirectClient,
 } from 'shared/supabase/init'
 import { bulkUpdate } from 'shared/supabase/utils'
-import { CURRENT_SEASON, getSeasonDates } from 'common/leagues'
+import { getSeasonDates } from 'common/leagues'
 import { getProfitMetrics } from 'common/calculate'
 import { convertContract } from 'common/supabase/contracts'
+import {
+  getEffectiveCurrentSeason,
+  getSeasonEndTimeRow,
+} from 'shared/supabase/leagues'
 
-export async function updateLeague() {
-  const pg = createSupabaseDirectClient()
+export async function updateLeague(
+  manualSeason?: number,
+  tx?: SupabaseDirectClient
+) {
+  const pg = tx ?? createSupabaseDirectClient()
 
-  const season = CURRENT_SEASON
-  const { start, end } = getSeasonDates(season)
+  const season = manualSeason ?? (await getEffectiveCurrentSeason())
+  let seasonInfo = await getSeasonEndTimeRow(pg, season)
+  if (!seasonInfo) {
+    log('Season info not found. Exiting.')
+    return
+  }
+  const { start } = getSeasonDates(season)
   const seasonStart = start.getTime()
-  const seasonEnd = end.getTime()
+  const seasonEnd = seasonInfo.end_time
 
   if (Date.now() > seasonEnd) {
     log('Season has ended. Exiting.')
@@ -32,27 +44,26 @@ export async function updateLeague() {
     (r) => r.id as string
   )
   log(`Loaded ${userIds.length} user ids.`)
-  // Earned fees from bets in your markets during the season.
-  const creatorFees = await pg.manyOrNone<{
-    user_id: string
-    category: string
-    amount: number
-  }>(
-    `select
-      contracts.creator_id as user_id,
-      'CREATOR_FEE' as category,
-      sum((cb.data->'fees'->>'creatorFee')::numeric) as amount
-    from contract_bets cb
-    join contracts on contracts.id = cb.contract_id
-    where
-      cb.created_time > millis_to_ts($2)
-      and cb.created_time < millis_to_ts($3)
-    group by contracts.creator_id
-    `,
-    [season, seasonStart, seasonEnd]
-  )
 
-  console.log('creator fees', creatorFees.length)
+  // // Earned fees from bets in your markets during the season.
+  // const creatorFees = await pg.manyOrNone<{
+  //   user_id: string
+  //   category: string
+  //   amount: number
+  // }>(
+  //   `select
+  //     contracts.creator_id as user_id,
+  //     'CREATOR_FEE' as category,
+  //     sum((cb.data->'fees'->>'creatorFee')::numeric) as amount
+  //   from contract_bets cb
+  //   join contracts on contracts.id = cb.contract_id
+  //   where
+  //     cb.created_time > millis_to_ts($2)
+  //     and cb.created_time < millis_to_ts($3)
+  //   group by contracts.creator_id
+  //   `,
+  //   [season, seasonStart, seasonEnd]
+  // )
 
   log('Loading bets...')
   const betData = await pg.manyOrNone<{ data: Bet }>(
@@ -94,12 +105,8 @@ export async function updateLeague() {
       ) {
         const { profit } = getProfitMetrics(contract, contractBets)
         if (isNaN(profit)) {
-          console.error(
-            'Profit is NaN! contract',
-            contract.slug,
-            contract.id,
-            'userId',
-            userId
+          log.error(
+            `Profit is NaN! contract ${contract.slug} (${contract.id}) userId ${userId}`
           )
           continue
         }
@@ -115,7 +122,7 @@ export async function updateLeague() {
   }
 
   const amountByUserId = groupBy(
-    [...userProfit, ...creatorFees].map((u) => ({
+    userProfit.map((u) => ({
       ...u,
       amount: +u.amount,
     })),
@@ -136,7 +143,7 @@ export async function updateLeague() {
     })
   }
 
-  console.log('Mana earned updates', manaEarnedUpdates.length)
+  log(`Mana earned updates: ${manaEarnedUpdates.length}`)
 
   await bulkUpdate(pg, 'leagues', ['user_id', 'season'], manaEarnedUpdates)
   log('Done.')

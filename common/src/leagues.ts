@@ -1,40 +1,40 @@
+import { LeagueChangeData } from './notification'
 import { Row } from './supabase/utils'
 
-export type season = (typeof SEASONS)[number]
+// export type season = (typeof SEASONS)[number]
 
-export const SEASONS = [
-  1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22,
-  23, 24,
-] as const
-export const CURRENT_SEASON = SEASONS[SEASONS.length - 1]
+// export const SEASONS = [
+//   1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22,
+//   23, 24,
+// ] as const
 
 export const LEAGUES_START = new Date('2023-05-01T00:00:00-07:00') // Pacific Daylight Time (PDT) as time zone offset
 
-const SEASON_END_TIMES = [
-  new Date('2023-06-01T12:06:23-07:00'),
-  new Date('2023-07-01T12:22:53-07:00'),
-  new Date('2023-08-01T17:05:29-07:00'),
-  new Date('2023-09-01T20:20:04-07:00'),
-  new Date('2023-10-01T11:17:16-07:00'),
-  new Date('2023-11-01T14:01:38-07:00'),
-  new Date('2023-12-01T14:02:25-08:00'),
-  new Date('2024-01-01T19:06:12-08:00'),
-  new Date('2024-02-01T17:51:49-08:00'),
-  new Date('2024-03-01T15:30:22-08:00'),
-  new Date('2024-04-01T21:43:18-08:00'),
-  new Date('2024-05-01T16:32:08-07:00'),
-  new Date('2024-06-01T11:10:19-07:00'),
-  new Date('2024-07-01T18:41:35-07:00'),
-  new Date('2024-08-01T22:11:54-07:00'), // 16
-  new Date('2024-09-01T12:54:14-07:00'),
-  new Date('2024-10-01T15:55:00-07:00'),
-  new Date('2024-11-02T22:18:29+00:00'),
-  new Date('2024-12-02T10:19:34-08:00'),
-  new Date('2025-01-01T22:06:13-08:00'),
-  new Date('2025-02-01T22:18:13-08:00'),
-  new Date('2025-03-02T02:25:41-08:00'),
-  new Date('2025-04-01T20:32:23-08:00'),
-]
+// const SEASON_END_TIMES = [
+//   new Date('2023-06-01T12:06:23-07:00'),
+//   new Date('2023-07-01T12:22:53-07:00'),
+//   new Date('2023-08-01T17:05:29-07:00'),
+//   new Date('2023-09-01T20:20:04-07:00'),
+//   new Date('2023-10-01T11:17:16-07:00'),
+//   new Date('2023-11-01T14:01:38-07:00'),
+//   new Date('2023-12-01T14:02:25-08:00'),
+//   new Date('2024-01-01T19:06:12-08:00'),
+//   new Date('2024-02-01T17:51:49-08:00'),
+//   new Date('2024-03-01T15:30:22-08:00'),
+//   new Date('2024-04-01T21:43:18-08:00'),
+//   new Date('2024-05-01T16:32:08-07:00'),
+//   new Date('2024-06-01T11:10:19-07:00'),
+//   new Date('2024-07-01T18:41:35-07:00'),
+//   new Date('2024-08-01T22:11:54-07:00'), // 16
+//   new Date('2024-09-01T12:54:14-07:00'),
+//   new Date('2024-10-01T15:55:00-07:00'),
+//   new Date('2024-11-02T22:18:29+00:00'),
+//   new Date('2024-12-02T10:19:34-08:00'),
+//   new Date('2025-01-01T22:06:13-08:00'),
+//   new Date('2025-02-01T22:18:13-08:00'),
+//   new Date('2025-03-02T02:25:41-08:00'),
+//   new Date('2025-04-01T20:32:23-08:00'),
+// ]
 
 export type League = {
   season: number
@@ -58,17 +58,16 @@ export const getSeasonDates = (season: number) => {
   const start = new Date(LEAGUES_START)
   start.setMonth(start.getMonth() + season - 1)
 
-  let end: Date
-  if (SEASON_END_TIMES[season - 1]) {
-    end = new Date(SEASON_END_TIMES[season - 1])
-  } else {
-    end = new Date(LEAGUES_START)
-    end.setMonth(end.getMonth() + season)
-    // Add a day, though the random close time will be some time before this.
-    end.setDate(end.getDate() + 1)
-  }
+  // NOTE: The exact season end time used for backend logic (rollover, payouts)
+  // is now stored in the season_end_times table in the database.
+  // This function now calculates an approximate end date primarily for display purposes
+  // or as a fallback if the database row doesn't exist.
+  const approxEnd = new Date(LEAGUES_START)
+  approxEnd.setMonth(approxEnd.getMonth() + season)
+  // Add a day, just to be safely after the potential random close time.
+  approxEnd.setDate(approxEnd.getDate() + 1)
 
-  return { start, end }
+  return { start, approxEnd }
 }
 
 export const getSeasonCountdownEnd = (season: number) => {
@@ -77,20 +76,8 @@ export const getSeasonCountdownEnd = (season: number) => {
   return end
 }
 
-export const getSeasonStatus = (season: number) => {
-  const { start } = getSeasonDates(season)
-  const countdownEnd = getSeasonCountdownEnd(season)
-  const now = new Date()
-  if (now < start) {
-    return 'upcoming'
-  } else if (now > countdownEnd) {
-    if (!SEASON_END_TIMES[season - 1]) {
-      return 'closing-period'
-    }
-    return 'ended'
-  } else {
-    return 'current'
-  }
+export type LeagueChangeNotificationData = LeagueChangeData & {
+  userId: string
 }
 
 export const DIVISION_NAMES = {
@@ -266,12 +253,13 @@ export const getLeaguePath = (
 export const parseLeaguePath = (
   slugs: string[],
   rowsBySeason: { [season: number]: league_user_info[] },
+  seasons: number[],
   userId?: string
 ) => {
   const [seasonSlug, divisionSlug, cohortSlug, userIdSlug] = slugs
   let season = +seasonSlug
-  if (!SEASONS.includes(season as season)) {
-    season = CURRENT_SEASON
+  if (!seasons.includes(season)) {
+    season = seasons[seasons.length - 1]
   }
 
   const seasonRows = rowsBySeason[season] ?? []

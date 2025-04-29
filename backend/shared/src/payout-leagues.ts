@@ -1,16 +1,20 @@
-import { getLeaguePrize, league_user_info } from 'common/leagues'
-import { SupabaseDirectClient } from './supabase/init'
-import { createLeagueChangedNotification } from './create-notification'
-import { runTxnFromBank } from './txn/run-txn'
+import {
+  getLeaguePrize,
+  league_user_info,
+  LeagueChangeNotificationData,
+} from 'common/leagues'
+import { SupabaseTransaction } from './supabase/init'
+import { createLeagueChangedNotifications } from './create-notification'
+import { TxnData, insertTxns } from './txn/run-txn'
+import { bulkIncrementBalances } from './supabase/users'
 
-import { LeaguePrizeTxn } from 'common/txn'
-import { chunk } from 'lodash'
+import { log } from './utils'
 
 export const sendEndOfSeasonNotificationsAndBonuses = async (
-  pg: SupabaseDirectClient,
-  prevSeason: number
+  pg: SupabaseTransaction,
+  prevSeason: number,
+  newSeason: number
 ) => {
-  const newSeason = prevSeason + 1
   const prevRows = await pg.manyOrNone<league_user_info>(
     `select * from user_league_info
     where season = $1`,
@@ -25,70 +29,108 @@ export const sendEndOfSeasonNotificationsAndBonuses = async (
     prevRows.map((r) => [r.user_id, r])
   )
 
-  for (const rows of chunk(newRows, 5)) {
-    await Promise.all(
-      rows.map((newRow) => {
-        const prevRow = prevRowsByUserId[newRow.user_id] as
-          | league_user_info
-          | undefined
-        if (prevRow) {
-          return sendEndOfSeasonNotificationAndBonus(
-            pg,
-            prevRow,
-            newRow,
-            prevSeason
-          )
-        }
-        return Promise.resolve()
-      })
-    )
-  }
-}
-
-const sendEndOfSeasonNotificationAndBonus = async (
-  pg: SupabaseDirectClient,
-  prevRow: league_user_info,
-  newRow: league_user_info,
-  season: number
-) => {
-  const { user_id: userId, division, rank } = prevRow
-
-  const prize = getLeaguePrize(division, rank)
-  if (!prize) return
-
-  const data: Omit<LeaguePrizeTxn, 'fromId' | 'id' | 'createdTime'> = {
-    fromType: 'BANK',
-    toId: userId,
-    toType: 'USER',
-    amount: prize,
-    token: 'M$',
-    category: 'LEAGUE_PRIZE',
-    data: prevRow,
-  }
-
-  const alreadyGotPrize = await pg.oneOrNone(
-    `select * from txns
-      where category = 'LEAGUE_PRIZE'
-      and data->'data'->>'season' = $1
-      and to_id = $2`,
-    [season.toString(), userId]
+  // Fetch all users who already received prizes for this season
+  const alreadyGotPrizeRows = await pg.manyOrNone<{ to_id: string }>(
+    `select to_id from txns
+     where category = 'LEAGUE_PRIZE'
+     and data->'data'->>'season' = $1`,
+    [prevSeason.toString()]
   )
-  if (!alreadyGotPrize) {
-    console.log(
-      'send',
-      newRow.user_id,
-      'division',
-      division,
-      'rank',
-      rank,
-      'prize',
-      prize,
-      data.token
-    )
+  // Create a Set for efficient lookups
+  const alreadyGotPrizeUserIds = new Set(
+    alreadyGotPrizeRows.map((row) => row.to_id)
+  )
 
-    await pg.tx(async (tx) => {
-      await runTxnFromBank(tx, data)
-      await createLeagueChangedNotification(userId, prevRow, newRow, prize, tx)
-    })
+  const notificationData: LeagueChangeNotificationData[] = []
+
+  const prizesToAward: Array<{
+    userId: string
+    prevRow: league_user_info
+    newRow: league_user_info
+    prize: number
+  }> = []
+
+  // Check eligibility for users in this chunk
+  for (const newRow of newRows) {
+    const prevRow = prevRowsByUserId[newRow.user_id]
+    if (!prevRow) continue
+
+    const prize = getLeaguePrize(prevRow.division, prevRow.rank)
+    if (!prize || prize <= 0) continue
+
+    // Check if prize already awarded using our Set
+    if (!alreadyGotPrizeUserIds.has(newRow.user_id)) {
+      prizesToAward.push({
+        userId: newRow.user_id,
+        prevRow,
+        newRow,
+        prize,
+      })
+    } else {
+      log(
+        `User ${newRow.user_id} already received prize for season ${prevSeason}`
+      )
+    }
+  }
+
+  if (prizesToAward.length > 0) {
+    const balanceIncrements: Array<{
+      id: string
+      balance: number
+      totalDeposits: number
+    }> = []
+    const txnDatas: TxnData[] = []
+    const currentNotifications: LeagueChangeNotificationData[] = []
+
+    for (const prizeAward of prizesToAward) {
+      const { userId, prevRow, newRow, prize } = prizeAward
+
+      // Prepare balance increment data
+      balanceIncrements.push({
+        id: userId,
+        balance: prize,
+        totalDeposits: prize,
+      })
+
+      // Construct transaction data - including fromId now
+      const txnData: TxnData = {
+        fromId: 'BANK',
+        fromType: 'BANK',
+        toId: userId,
+        toType: 'USER',
+        amount: prize,
+        token: 'M$',
+        category: 'LEAGUE_PRIZE',
+        data: { ...prevRow, season: prevSeason },
+      }
+      txnDatas.push(txnData)
+
+      // Prepare notification data
+      currentNotifications.push({
+        userId,
+        previousLeague: prevRow,
+        newLeague: newRow,
+        bonusAmount: prize,
+      })
+      log(
+        `Preparing end of season bonus: user_id: ${userId}, division: ${prevRow.division}, rank: ${prevRow.rank}, prize: ${prize}`
+      )
+    }
+
+    // Execute bulk updates and inserts within the transaction
+    // Pass the transaction object 'tx' to the helper functions
+    await bulkIncrementBalances(pg, balanceIncrements)
+    await insertTxns(pg, txnDatas)
+
+    // Add notifications to the main list only if the transaction succeeds
+    notificationData.push(...currentNotifications)
+  }
+
+  // Call the bulk notification function after collecting all data
+  if (notificationData.length > 0) {
+    log(`Sending ${notificationData.length} league change notifications.`)
+    await createLeagueChangedNotifications(pg, notificationData)
+  } else {
+    log(`No league change notifications to send for season ${prevSeason}.`)
   }
 }
