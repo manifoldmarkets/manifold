@@ -2374,7 +2374,7 @@ export const API = (_apiTypeCheck = {
     visibility: 'public',
     authed: false,
     props: z.object({
-      season: z.number().int().positive().optional(),
+      season: z.coerce.number().int().positive().optional(),
     }),
     returns: {} as {
       season: number

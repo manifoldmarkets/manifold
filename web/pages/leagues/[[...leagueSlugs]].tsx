@@ -37,10 +37,53 @@ import { InfoTooltip } from 'web/components/widgets/info-tooltip'
 import { LoadingIndicator } from 'web/components/widgets/loading-indicator'
 import { useEffectCheckEquality } from 'web/hooks/use-effect-check-equality'
 import Link from 'next/link'
-import { useAPIGetter } from 'web/hooks/use-api-getter'
 import { DAY_MS } from 'common/util/time'
+import { api } from 'web/lib/api/api'
+import { APIResponse } from 'common/api/schema'
 
-export default function Leagues() {
+export async function getStaticPaths() {
+  return { paths: [], fallback: 'blocking' }
+}
+
+export async function getStaticProps(props: {
+  params: { leagueSlugs: string[] }
+}) {
+  try {
+    // Extract season from URL if available
+    const leagueSlugs = props.params?.leagueSlugs || []
+    const seasonParam = leagueSlugs[0]
+    const season =
+      seasonParam && !isNaN(parseInt(seasonParam))
+        ? parseInt(seasonParam)
+        : undefined
+
+    const currentSeasonInfo = await api('get-season-info', {})
+    const seasonInfo = await api('get-season-info', season ? { season } : {})
+    return {
+      props: {
+        initialSeasonInfo: seasonInfo,
+        currentSeasonInfo,
+      },
+      revalidate: 60, // Revalidate every minute
+    }
+  } catch (err) {
+    console.error('Error fetching season info:', err)
+    return {
+      props: {
+        initialSeasonInfo: null,
+      },
+      revalidate: 60, // Retry sooner if there was an error
+    }
+  }
+}
+
+interface LeaguesProps {
+  initialSeasonInfo: APIResponse<'get-season-info'> | null
+  currentSeasonInfo: APIResponse<'get-season-info'> | null
+}
+
+export default function Leagues(props: LeaguesProps) {
+  const { initialSeasonInfo, currentSeasonInfo } = props
   const user = useUser()
 
   const [rows, setRows] = usePersistentInMemoryState<league_user_info[]>(
@@ -49,14 +92,14 @@ export default function Leagues() {
   )
 
   const rowsBySeason = useMemo(() => groupBy(rows, 'season'), [rows])
-  const { data: seasonInfo } = useAPIGetter('get-season-info', {})
+  const seasonInfo = initialSeasonInfo ?? currentSeasonInfo
   const seasons = useMemo(() => {
     const seasons = []
-    for (let i = 1; i <= (seasonInfo?.season ?? 1); i++) {
+    for (let i = 1; i <= (currentSeasonInfo?.season ?? 1); i++) {
       seasons.push(i)
     }
     return seasons
-  }, [seasonInfo?.season])
+  }, [currentSeasonInfo?.season])
 
   const [season, setSeason] = useState<number>(seasonInfo?.season ?? 1)
   useEffect(() => {
@@ -109,11 +152,9 @@ export default function Leagues() {
     )
 
     if (cohort) {
-      replace(getLeaguePath(season, division, cohort), undefined, {
-        shallow: true,
-      })
+      replace(getLeaguePath(season, division, cohort), undefined)
     } else {
-      replace(`${season}`, undefined, { shallow: true })
+      replace(`${season}`, undefined)
     }
   }
 
