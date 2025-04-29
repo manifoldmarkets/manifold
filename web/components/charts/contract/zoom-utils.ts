@@ -161,11 +161,10 @@ export const useMultiChoiceDataZoomFetcher = (props: {
       const [minX, maxX] = viewXScale.range()
       if (Math.abs(minX - maxX) <= 1) return
       // 20px buffer
-      const min = viewXScale.invert(minX - 20).valueOf()
-      const max = viewXScale.invert(maxX + 20).valueOf()
-      const fixedMin = Math.max(min, createdTime)
-      const fixedMax = Math.min(max, lastBetTime) + 1
-
+      const min = viewXScale.invert(minX).valueOf()
+      const max = viewXScale.invert(maxX).valueOf()
+      const fixedMin = Math.max(min, createdTime) - 1000
+      const fixedMax = Math.min(max, lastBetTime) + 1000
       onZoomData(fixedMin, fixedMax)
     } else {
       onZoomData()
