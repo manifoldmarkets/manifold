@@ -93,7 +93,9 @@ export function AmountInput(
 
   return (
     <Col className={clsx('relative', className)}>
-      <Row className="relative w-fit">
+      <Row
+        className={clsx('relative', disableClearButton ? 'w-full' : 'w-fit')}
+      >
         <Input
           {...rest}
           className={clsx(label && 'pl-9', 'text-lg', inputClassName)}
