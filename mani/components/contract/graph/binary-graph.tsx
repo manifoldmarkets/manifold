@@ -1,6 +1,6 @@
 import { Bet } from 'common/bet'
 import { HistoryPoint } from 'common/chart'
-import { Period } from 'common/period'
+import { Period, periodDurations } from 'common/period'
 import { View, PanResponder } from 'react-native'
 import { hexToRgb } from 'constants/colors'
 import { LineChart } from 'react-native-svg-charts'
@@ -108,16 +108,7 @@ export function BinaryGraph({
             (point) =>
               point.x >=
               referenceTime
-                .subtract(
-                  currentTimePeriod === 'daily'
-                    ? 1
-                    : currentTimePeriod === 'weekly'
-                    ? 7
-                    : currentTimePeriod === 'monthly'
-                    ? 30
-                    : 0,
-                  'day'
-                )
+                .subtract(periodDurations[currentTimePeriod], 'millisecond')
                 .valueOf()
           )
 

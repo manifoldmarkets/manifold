@@ -3,6 +3,8 @@ import { Period, periodDurations } from 'common/period'
 import { ChoicesToggleGroup, ColorType } from '../widgets/choices-toggle-group'
 
 const labels: { [label: string]: Period } = {
+  '1H': '1hour',
+  '6H': '6hour',
   '1D': 'daily',
   '1W': 'weekly',
   '1M': 'monthly',
