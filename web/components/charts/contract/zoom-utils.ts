@@ -1,6 +1,6 @@
 import { HistoryPoint, maxMinBin, MultiPoints } from 'common/chart'
 import { debounce, maxBy, minBy } from 'lodash'
-import { useCallback, useEffect, useLayoutEffect, useState } from 'react'
+import { useEffect, useLayoutEffect, useState } from 'react'
 import { ScaleTime } from 'd3-scale'
 import { getBetPointsBetween } from 'common/bets'
 import { getMultiBetPoints } from 'common/contract-params'
@@ -109,7 +109,7 @@ export const useMultiChoiceDataZoomFetcher = (props: {
   const [data, setData] = useState(points)
   const [loading, setLoading] = useState(false)
 
-  const onZoomData = useCallback(
+  const onZoomData = useEvent(
     debounce(async (min?: number, max?: number) => {
       if (min && max) {
         setLoading(true)
@@ -144,8 +144,7 @@ export const useMultiChoiceDataZoomFetcher = (props: {
       } else {
         setData(points)
       }
-    }, 100),
-    [contract.id]
+    }, 100)
   )
 
   useLayoutEffect(() => {
