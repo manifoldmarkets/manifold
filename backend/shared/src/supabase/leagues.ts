@@ -44,7 +44,7 @@ export const getSeasonEndTimeRow = async (
 ): Promise<SeasonEndTimeInfo | null> => {
   const row = await pg.oneOrNone(
     `SELECT season, ts_to_millis(end_time) as end_time, status
-     FROM season_end_times
+     FROM leagues_season_end_times
      WHERE season = $1`,
     [season]
   )
@@ -58,7 +58,7 @@ export const insertSeasonEndTime = async (
 ): Promise<void> => {
   await pg.none(
     // Inserts with default status 'active'
-    `INSERT INTO season_end_times (season, end_time)
+    `INSERT INTO leagues_season_end_times (season, end_time)
      VALUES ($1, $2)
      ON CONFLICT (season) DO NOTHING`,
     [season, endTime.toISOString()]
@@ -71,7 +71,7 @@ export const updateSeasonStatus = async (
   status: SeasonStatus
 ): Promise<void> => {
   await pg.none(
-    `UPDATE season_end_times
+    `UPDATE leagues_season_end_times
      SET status = $2
      WHERE season = $1`,
     [season, status]
@@ -82,7 +82,7 @@ export const getEffectiveCurrentSeason = async (): Promise<number> => {
   const pg = createSupabaseDirectClient()
   // Find the season marked as active
   const activeSeason = await pg.oneOrNone<{ season: number }>(
-    `SELECT season FROM season_end_times WHERE status = 'active' LIMIT 1`
+    `SELECT season FROM leagues_season_end_times WHERE status = 'active' LIMIT 1`
   )
 
   if (activeSeason?.season) {
@@ -92,10 +92,10 @@ export const getEffectiveCurrentSeason = async (): Promise<number> => {
   // If no season is active (error state or initialization), find the latest completed and return + 1
   // This case *shouldn't* happen in normal operation after initialization.
   log.error(
-    'No active season found in season_end_times! Falling back to latest completed + 1.'
+    'No active season found in leagues_season_end_times! Falling back to latest completed + 1.'
   )
   const latestCompleted = await pg.oneOrNone<{ season: number }>(
-    `SELECT max(season) as season FROM season_end_times WHERE status = 'complete'`
+    `SELECT max(season) as season FROM leagues_season_end_times WHERE status = 'complete'`
   )
 
   if (latestCompleted?.season) {
@@ -103,6 +103,8 @@ export const getEffectiveCurrentSeason = async (): Promise<number> => {
   }
 
   // If the table is completely empty (very first run ever)
-  log.error('season_end_times table appears empty. Defaulting to season 1.')
+  log.error(
+    'leagues_season_end_times table appears empty. Defaulting to season 1.'
+  )
   return 1
 }

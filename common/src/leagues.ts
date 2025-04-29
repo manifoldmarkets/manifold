@@ -59,7 +59,7 @@ export const getSeasonDates = (season: number) => {
   start.setMonth(start.getMonth() + season - 1)
 
   // NOTE: The exact season end time used for backend logic (rollover, payouts)
-  // is now stored in the season_end_times table in the database.
+  // is now stored in the leagues_season_end_times table in the database.
   // This function now calculates an approximate end date primarily for display purposes
   // or as a fallback if the database row doesn't exist.
   const approxEnd = new Date(LEAGUES_START)

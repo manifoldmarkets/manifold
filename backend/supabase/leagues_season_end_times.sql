@@ -1,16 +1,16 @@
 create table
-  season_end_times (
+  leagues_season_end_times (
     season int primary key,
     end_time timestamp with time zone not null,
     status text not null default 'active' check (status in ('active', 'processing', 'complete'))
   );
 
 -- Row Level Security
-alter table season_end_times enable row level security;
+alter table leagues_season_end_times enable row level security;
 
--- Backfill script for season_end_times table
+-- Backfill script for leagues_season_end_times table
 insert into
-  season_end_times (season, end_time, status) -- Changed processed to status
+  leagues_season_end_times (season, end_time, status) -- Changed processed to status
 values
   (1, '2023-06-01T12:06:23-07:00', 'complete'), -- Set status to complete
   (2, '2023-07-01T12:22:53-07:00', 'complete'),
