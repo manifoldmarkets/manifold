@@ -83,6 +83,7 @@ import { getIsLive } from 'common/sports-info'
 import { MultiNumericContractChart } from '../charts/contract/multi-numeric'
 import { MultiDateContractChart } from '../charts/contract/multi-date'
 import { Tooltip } from '../widgets/tooltip'
+import { useIsMobile } from 'web/hooks/use-is-mobile'
 
 export const ContractOverview = memo(
   (props: {
@@ -233,10 +234,10 @@ export const BinaryOverview = (props: {
     chartAnnotations,
     enableAdd,
   } = useAnnotateChartTools(contract, props.chartAnnotations)
-
+  const isMobile = useIsMobile()
   return (
     <>
-      <Row className="items-end justify-between gap-4">
+      <Row className="items-end justify-between gap-2 sm:gap-4">
         <Col>
           <Row className="items-baseline">
             <BinaryResolutionOrChance contract={contract} />
@@ -263,7 +264,7 @@ export const BinaryOverview = (props: {
           {resolutionRating}
         </Col>
         <Row className={'gap-1'}>
-          {loading && (
+          {loading && !isMobile && (
             <LoadingIndicator spinnerColor="border-ink-400" size="sm" />
           )}
           {enableAdd && (
@@ -277,6 +278,7 @@ export const BinaryOverview = (props: {
             setCurrentTimePeriod={setTimePeriod}
             maxRange={maxRange}
             color="green"
+            ignoreLabels={isMobile ? ['6H'] : undefined}
           />
         </Row>
       </Row>

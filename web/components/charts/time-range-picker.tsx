@@ -1,7 +1,6 @@
 import clsx from 'clsx'
 import { Period, periodDurations } from 'common/period'
 import { ChoicesToggleGroup, ColorType } from '../widgets/choices-toggle-group'
-
 const labels: { [label: string]: Period } = {
   '1H': '1hour',
   '6H': '6hour',
@@ -10,7 +9,6 @@ const labels: { [label: string]: Period } = {
   '1M': 'monthly',
   ALL: 'allTime',
 }
-
 export const TimeRangePicker = (props: {
   currentTimePeriod: Period | 'custom'
   setCurrentTimePeriod: (period: Period) => void
@@ -20,6 +18,7 @@ export const TimeRangePicker = (props: {
   disabled?: boolean
   className?: string
   toggleClassName?: string
+  ignoreLabels?: string[]
 }) => {
   const {
     currentTimePeriod,
@@ -29,18 +28,28 @@ export const TimeRangePicker = (props: {
     disabled,
     className,
     toggleClassName,
+    ignoreLabels,
   } = props
+
+  const filteredLabels = { ...labels }
+
+  // Filter out labels that should be ignored
+  if (ignoreLabels && ignoreLabels.length > 0) {
+    for (const label of ignoreLabels) {
+      delete filteredLabels[label]
+    }
+  }
 
   const disabledOptions = !maxRange
     ? undefined
-    : Object.values(labels).filter(
+    : Object.values(filteredLabels).filter(
         (period) => period !== 'allTime' && periodDurations[period] > maxRange
       )
 
   return (
     <ChoicesToggleGroup
       currentChoice={currentTimePeriod}
-      choicesMap={labels}
+      choicesMap={filteredLabels}
       setChoice={setCurrentTimePeriod as any}
       disabled={disabled}
       disabledOptions={disabledOptions}
