@@ -112,9 +112,6 @@ export const sendEndOfSeasonNotificationsAndBonuses = async (
         newLeague: newRow,
         bonusAmount: prize,
       })
-      log(
-        `Preparing end of season bonus: user_id: ${userId}, division: ${prevRow.division}, rank: ${prevRow.rank}, prize: ${prize}`
-      )
     }
 
     // Execute bulk updates and inserts within the transaction

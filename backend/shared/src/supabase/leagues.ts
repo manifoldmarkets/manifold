@@ -34,7 +34,7 @@ export type SeasonStatus = 'active' | 'processing' | 'complete'
 
 export type SeasonEndTimeInfo = {
   season: number
-  end_time: number // Stored as epoch ms
+  end_time: number
   status: SeasonStatus
 }
 
@@ -43,7 +43,7 @@ export const getSeasonEndTimeRow = async (
   season: number
 ): Promise<SeasonEndTimeInfo | null> => {
   const row = await pg.oneOrNone(
-    `SELECT season, millis_to_ts(end_time) as end_time, status
+    `SELECT season, ts_to_millis(end_time) as end_time, status
      FROM season_end_times
      WHERE season = $1`,
     [season]

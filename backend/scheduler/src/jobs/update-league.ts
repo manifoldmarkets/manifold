@@ -27,6 +27,7 @@ export async function updateLeague(
     return
   }
   const { start } = getSeasonDates(season)
+  log(`Season start: ${start}`)
   const seasonStart = start.getTime()
   const seasonEnd = seasonInfo.end_time
 
@@ -151,12 +152,13 @@ export async function updateLeague(
 
 const getRelevantContracts = async (pg: SupabaseDirectClient, bets: Bet[]) => {
   const betContractIds = uniq(bets.map((b) => b.contractId))
+  if (betContractIds.length === 0) return []
   return await pg.map(
     `select * from contracts
     where id in ($1:list)
     and token = 'MANA'
     and visibility = 'public'
-    and (data->'isRanked')::boolean is not false`,
+    and coalesce((data->'isRanked')::boolean, true) = true`,
     [betContractIds],
     convertContract
   )

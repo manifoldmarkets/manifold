@@ -38,6 +38,8 @@ export async function autoLeaguesCycle() {
     log(`No row found for active season ${currentSeason}. Creating one.`)
     const randomEndTime = calculateRandomEndTime(currentSeason, now)
     await insertSeasonEndTime(pg, currentSeason, randomEndTime) // Inserts with status 'active'
+    await generateNextSeason(pg, currentSeason)
+    await insertBots(pg, currentSeason)
     seasonInfo = await getSeasonEndTimeRow(pg, currentSeason) // Re-fetch
     if (!seasonInfo) {
       log.error(
@@ -66,91 +68,82 @@ export async function autoLeaguesCycle() {
   if (now >= seasonInfo.end_time && seasonInfo.status === 'active') {
     log(`Season ${currentSeason} end time has passed. Processing rollover...`)
     let nextSeason: number | undefined // Declare outside to use in success log
-    try {
-      // Wrap the sequence in a transaction
-      await pg.tx(async (tx) => {
-        // 1. Mark current season as processing
-        log(
-          `Updating season ${currentSeason} status to 'processing' within transaction.`,
-          { season: currentSeason }
-        )
-        await updateSeasonStatus(tx, currentSeason, 'processing')
-
-        // 2. Run final league updates for the season
-        log(
-          `Running updateLeague for season ${currentSeason} within transaction...`,
-          { season: currentSeason }
-        )
-        await updateLeague(currentSeason, tx)
-        log(
-          `Running updateLeagueRanks for season ${currentSeason} within transaction...`,
-          { season: currentSeason }
-        )
-        await updateLeagueRanks(currentSeason, tx)
-
-        // 3. Generate the *next* season's structure
-        nextSeason = currentSeason + 1 // Assign here
-        log(
-          `Generating leagues for next season ${nextSeason} within transaction...`,
-          { nextSeason }
-        )
-        await generateNextSeason(tx, nextSeason)
-        await insertBots(tx, nextSeason)
-
-        // 4. Create the row for the *next* season and set its status to active
-        log(
-          `Creating row for next season ${nextSeason} with status 'active' within transaction.`,
-          { nextSeason }
-        )
-        const nextSeasonEndTime = calculateRandomEndTime(nextSeason, now)
-        await insertSeasonEndTime(tx, nextSeason, nextSeasonEndTime)
-
-        // 5. Run first league updates for the *next* season
-        log(
-          `Running updateLeague for season ${nextSeason} within transaction...`,
-          { season: nextSeason }
-        )
-        await updateLeague(nextSeason, tx)
-
-        log(
-          `Running updateLeagueRanks for season ${nextSeason} within transaction...`,
-          { season: nextSeason }
-        )
-        await updateLeagueRanks(nextSeason, tx)
-
-        // 6. Send notifications and bonuses for the *completed* season
-        log(
-          `Sending end-of-season payouts/notifications for ${currentSeason} within transaction...`,
-          { season: currentSeason }
-        )
-        await sendEndOfSeasonNotificationsAndBonuses(
-          tx,
-          currentSeason,
-          nextSeason
-        )
-
-        // 7. Mark the current season as complete
-        log(
-          `Updating season ${currentSeason} status to 'complete' within transaction.`,
-          { season: currentSeason }
-        )
-        await updateSeasonStatus(tx, currentSeason, 'complete')
-      })
-
-      // If the transaction succeeded:
+    // Wrap the sequence in a transaction
+    await pg.tx(async (tx) => {
+      // 1. Mark current season as processing
       log(
-        `Season ${currentSeason} rollover transaction complete. Season ${
-          nextSeason ?? '(unknown)'
-        } is now active.`
+        `Updating season ${currentSeason} status to 'processing' within transaction.`,
+        { season: currentSeason }
       )
-    } catch (error) {
-      // Transaction automatically rolled back on error
-      log.error(
-        `Error processing season ${currentSeason} rollover transaction. Rolled back automatically.`,
-        error instanceof Error ? { err: error } : { data: error }
+      await updateSeasonStatus(tx, currentSeason, 'processing')
+
+      // 2. Run final league updates for the season
+      log(
+        `Running updateLeague for season ${currentSeason} within transaction...`,
+        { season: currentSeason }
       )
-      // No need for manual status revert, transaction handles it.
-    }
+      await updateLeague(currentSeason, tx)
+      log(
+        `Running updateLeagueRanks for season ${currentSeason} within transaction...`,
+        { season: currentSeason }
+      )
+      await updateLeagueRanks(currentSeason, tx)
+
+      // 3. Generate the *next* season's structure
+      nextSeason = currentSeason + 1 // Assign here
+      log(
+        `Generating leagues for next season ${nextSeason} within transaction...`,
+        { nextSeason }
+      )
+      await generateNextSeason(tx, nextSeason)
+      await insertBots(tx, nextSeason)
+
+      // 4. Create the row for the *next* season and set its status to active
+      log(
+        `Creating row for next season ${nextSeason} with status 'active' within transaction.`,
+        { nextSeason }
+      )
+      const nextSeasonEndTime = calculateRandomEndTime(nextSeason, now)
+      await insertSeasonEndTime(tx, nextSeason, nextSeasonEndTime)
+
+      // 5. Run first league updates for the *next* season
+      log(
+        `Running updateLeague for season ${nextSeason} within transaction...`,
+        { season: nextSeason }
+      )
+      await updateLeague(nextSeason, tx)
+
+      log(
+        `Running updateLeagueRanks for season ${nextSeason} within transaction...`,
+        { season: nextSeason }
+      )
+      await updateLeagueRanks(nextSeason, tx)
+
+      // 6. Send notifications and bonuses for the *completed* season
+      log(
+        `Sending end-of-season payouts/notifications for ${currentSeason} within transaction...`,
+        { season: currentSeason }
+      )
+      await sendEndOfSeasonNotificationsAndBonuses(
+        tx,
+        currentSeason,
+        nextSeason
+      )
+
+      // 7. Mark the current season as complete
+      log(
+        `Updating season ${currentSeason} status to 'complete' within transaction.`,
+        { season: currentSeason }
+      )
+      await updateSeasonStatus(tx, currentSeason, 'complete')
+    })
+
+    // If the transaction succeeded:
+    log(
+      `Season ${currentSeason} rollover transaction complete. Season ${
+        nextSeason ?? '(unknown)'
+      } is now active.`
+    )
   } else if (seasonInfo.status === 'processing') {
     log(`Season ${currentSeason} is already processing. Skipping.`)
   } else if (seasonInfo.status === 'complete') {

@@ -22,6 +22,7 @@ export async function generateNextSeason(
   log(`Generating season ${season}`)
   const prevSeason = season - 1
   const startDate = getSeasonDates(prevSeason).start
+  // const startDate = new Date('2025-01-01')
   const rows = await pg.manyOrNone<league_user_info>(
     `select * from user_league_info
     where season = $1
@@ -46,10 +47,10 @@ export async function generateNextSeason(
   const activeUserIdsSet = new Set(activeUserIds.map((u) => u.user_id))
 
   const usersByDivision = generateDivisions(rows, activeUserIdsSet)
-  log(`usersByDivision: ${usersByDivision}`)
+  log(`usersByDivision`, { usersByDivision })
 
-  const userCohorts = await generateCohorts(pg, usersByDivision)
-  log(`user cohorts: ${userCohorts}`)
+  const userCohorts = generateCohorts(usersByDivision)
+  log(`user cohorts`, { userCohorts })
 
   const leagueInserts = Object.entries(userCohorts).map(
     ([userId, { division, cohort }]) => ({
@@ -59,8 +60,9 @@ export async function generateNextSeason(
       cohort,
     })
   )
-  log(`league inserts: ${leagueInserts}`)
+  log(`league inserts`, { leagueInserts })
   log(`Inserting ${leagueInserts.length} cohort rows`)
+  if (leagueInserts.length === 0) return
 
   // Bulk insert leagues.
   const insertStatement =
@@ -83,7 +85,7 @@ const generateDivisions = (
 
   const rowsByCohort = groupBy(rows, 'cohort')
   const activeRows = rows.filter((r) => activeUserIds.has(r.user_id))
-  console.log('rows', rows.length, 'active rows', activeRows.length)
+  log(`rows: ${rows.length}, active rows: ${activeRows.length}`)
 
   for (const row of activeRows) {
     const { user_id, division, cohort, rank, mana_earned } = row
@@ -107,10 +109,7 @@ const generateDivisions = (
   return usersByNewDivision
 }
 
-const generateCohorts = async (
-  pg: SupabaseDirectClient,
-  usersByDivision: { [division: number]: string[] }
-) => {
+const generateCohorts = (usersByDivision: { [division: number]: string[] }) => {
   const userCohorts: {
     [userId: string]: { division: number; cohort: string }
   } = {}
@@ -291,7 +290,7 @@ export const addToLeagueIfNotInOne = async (
     log('User opted out of leagues', userId)
     return
   }
-
+  log('Adding user to league', userId)
   const season = await getEffectiveCurrentSeason()
 
   const existingLeague = await pg.oneOrNone<{
