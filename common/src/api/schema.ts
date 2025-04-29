@@ -406,7 +406,7 @@ export const API = (_apiTypeCheck = {
       .object({
         contractId: z.string(),
         answerId: z.string().optional(),
-        limit: z.coerce.number().gte(0).lte(50000).default(50000),
+        limit: z.coerce.number().gte(0).lte(50000).default(5000),
         beforeTime: z.coerce.number(),
         afterTime: z.coerce.number(),
         filterRedemptions: coerceBoolean.optional(),
