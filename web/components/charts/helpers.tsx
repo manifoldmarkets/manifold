@@ -562,7 +562,7 @@ export const SVGChart = <X, TT extends { x: number; y: number }>(props: {
             <text
               x="24"
               y="4"
-              className="text-ink-800 dark:text-white text-xs"
+              className="text-ink-800 text-xs dark:text-white"
               stroke="none"
               fill="currentColor"
               fontWeight={100}
