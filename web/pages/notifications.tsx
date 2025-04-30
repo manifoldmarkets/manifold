@@ -47,6 +47,7 @@ import { maybePluralize } from 'common/util/format'
 import dayjs from 'dayjs'
 import { postMessageToNative } from 'web/lib/native/post-message'
 import { useEvent } from 'client-common/hooks/use-event'
+import { ChevronDownIcon, ChevronUpIcon } from '@heroicons/react/solid'
 
 export default function NotificationsPage() {
   const privateUser = usePrivateUser()
@@ -114,6 +115,7 @@ function NotificationsContent(props: {
   const { privateUser, user, section } = props
   const {
     groupedNotifications,
+    pinnedNotifications,
     mostRecentNotification,
     groupedNewMarketNotifications,
     groupedMentionNotifications,
@@ -201,6 +203,7 @@ function NotificationsContent(props: {
                 <NotificationsList
                   privateUser={privateUser}
                   groupedNotifications={groupedNotifications}
+                  pinnedNotifications={pinnedNotifications}
                   mostRecentNotification={mostRecentNotification}
                   markAllAsSeen={markAllAsSeen}
                 />
@@ -317,6 +320,7 @@ function RenderNotificationGroups(props: {
 
 export function NotificationsList(props: {
   groupedNotifications: NotificationGroup[] | undefined
+  pinnedNotifications?: Notification[]
   privateUser?: PrivateUser
   mostRecentNotification?: Notification
   emptyTitle?: string
@@ -328,9 +332,14 @@ export function NotificationsList(props: {
     groupedNotifications,
     mostRecentNotification,
     markAllAsSeen,
+    pinnedNotifications,
   } = props
   const [page, setPage] = useState(0)
   const user = useUser()
+  const [pinnedExpanded, setPinnedExpanded] = usePersistentLocalState(
+    true,
+    'pinned-notifications-expanded'
+  )
 
   const paginatedGroupedNotifications = useMemo(() => {
     const start = page * NOTIFICATIONS_PER_PAGE
@@ -353,22 +362,54 @@ export function NotificationsList(props: {
   ])
 
   return (
-    <Col className={'min-h-[100vh] gap-0 text-sm'}>
-      {groupedNotifications === undefined ||
-      paginatedGroupedNotifications === undefined ? (
-        <LoadingIndicator />
-      ) : paginatedGroupedNotifications.length === 0 ? (
-        <div className={'mt-2'}>
-          {emptyTitle ? emptyTitle : `You don't have any notifications, yet.`}
-        </div>
-      ) : (
-        <RenderNotificationGroups
-          notificationGroups={paginatedGroupedNotifications}
-          totalItems={groupedNotifications.length}
-          page={page}
-          setPage={setPage}
-        />
+    <Col className="gap-2">
+      {pinnedNotifications && pinnedNotifications.length > 0 && (
+        <Col className="gap-1 rounded-md border-2 border-indigo-500 p-2">
+          <Row
+            className={clsx(
+              'bg-primary-100',
+              'cursor-pointer items-center justify-between px-3 py-2'
+            )}
+            onClick={() => setPinnedExpanded(!pinnedExpanded)}
+          >
+            <span>
+              {pinnedNotifications.length}{' '}
+              {maybePluralize('comment', pinnedNotifications.length)} that may
+              need your attention
+            </span>
+            {pinnedExpanded ? (
+              <ChevronUpIcon className="h-5 w-5" />
+            ) : (
+              <ChevronDownIcon className="h-5 w-5" />
+            )}
+          </Row>
+          {pinnedExpanded &&
+            pinnedNotifications.map((notification) => (
+              <NotificationItem
+                key={notification.id}
+                notification={notification}
+              />
+            ))}
+        </Col>
       )}
+
+      {groupedNotifications === undefined && user && <LoadingIndicator />}
+      {groupedNotifications &&
+        groupedNotifications.length === 0 &&
+        (!pinnedNotifications || pinnedNotifications.length === 0) && (
+          <div className="text-ink-500 mt-4 text-center">
+            {emptyTitle ? emptyTitle : `You don't have any notifications yet.`}
+          </div>
+        )}
+      {paginatedGroupedNotifications &&
+        paginatedGroupedNotifications.length > 0 && (
+          <RenderNotificationGroups
+            notificationGroups={paginatedGroupedNotifications}
+            totalItems={groupedNotifications?.length ?? 0}
+            page={page}
+            setPage={setPage}
+          />
+        )}
       {privateUser && groupedNotifications && user && isNative && (
         <PushNotificationsModal
           user={user}

@@ -181,6 +181,7 @@ import {
   deleteMarketDraft,
 } from './market-drafts'
 import { getSeasonInfo } from './get-season-info'
+import { markNotificationRead } from './mark-all-notifications'
 
 export const handlers: { [k in APIPath]: APIHandler<k> } = {
   'refresh-all-clients': refreshAllClients,
@@ -373,4 +374,5 @@ export const handlers: { [k in APIPath]: APIHandler<k> } = {
   'get-market-drafts': getMarketDrafts,
   'delete-market-draft': deleteMarketDraft,
   'get-season-info': getSeasonInfo,
+  'mark-notification-read': markNotificationRead,
 }

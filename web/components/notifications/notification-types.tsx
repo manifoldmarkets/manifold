@@ -67,6 +67,7 @@ import {
   QuestionOrGroupLink,
 } from './notification-helpers'
 import { FaArrowTrendUp, FaArrowTrendDown } from 'react-icons/fa6'
+import { api } from 'web/lib/api/api'
 
 export function NotificationItem(props: {
   notification: Notification
@@ -1090,12 +1091,24 @@ function CommentNotification(props: {
     reason,
     sourceText,
     sourceContractTitle,
+    markedAsRead,
   } = notification
+
   const reasonText =
     reason === 'reply_to_users_answer' || reason === 'reply_to_users_comment'
       ? 'replied to you '
       : `commented `
+
   const comment = sourceText
+
+  const handleDismiss = async () => {
+    await api('mark-notification-read', {
+      notificationId: notification.id,
+    })
+  }
+
+  const isPinned = markedAsRead === false
+
   return (
     <NotificationFrame
       notification={notification}
@@ -1106,15 +1119,17 @@ function CommentNotification(props: {
         <AvatarNotificationIcon notification={notification} symbol={'💬'} />
       }
       subtitle={
-        comment ? (
-          <div className="line-clamp-2">
-            <Linkify text={comment} />{' '}
-          </div>
-        ) : (
-          <></>
-        )
+        <div>
+          {comment && (
+            <div className="line-clamp-2">
+              <Linkify text={comment} />
+            </div>
+          )}
+        </div>
       }
       link={getSourceUrl(notification)}
+      isPinned={isPinned}
+      onDismiss={isPinned ? handleDismiss : undefined}
     >
       <div className="line-clamp-3">
         <NotificationUserLink

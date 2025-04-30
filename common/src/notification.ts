@@ -42,7 +42,7 @@ export type Notification = {
   sourceTitle?: string
 
   isSeenOnHref?: string
-  worksOnSweeple?: boolean
+  markedAsRead?: boolean
 }
 
 export type NotificationReason =

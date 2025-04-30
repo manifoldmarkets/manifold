@@ -7,7 +7,11 @@ import {
   replied_users_info,
   createAIDescriptionUpdateNotification,
 } from 'shared/create-notification'
-import { parseMentions, richTextToString } from 'common/util/parse'
+import {
+  parseJsonContentToText,
+  parseMentions,
+  richTextToString,
+} from 'common/util/parse'
 import { Contract, contractPath } from 'common/contract'
 import { User } from 'common/user'
 import {
@@ -26,6 +30,7 @@ import { cloneDeep } from 'lodash'
 import { track } from 'shared/analytics'
 import { DEV_HOUSE_LIQUIDITY_PROVIDER_ID } from 'common/antes'
 import { promptOpenAI } from 'shared/helpers/openai-utils'
+import { parseGeminiResponseAsJson, promptGemini } from 'shared/helpers/gemini'
 
 type ClarificationResponse = {
   isClarification: boolean
@@ -40,7 +45,11 @@ export const onCreateCommentOnContract = async (props: {
 }) => {
   const { contract, comment, creator, bet } = props
   const pg = createSupabaseDirectClient()
-
+  const lastCommentTime = comment.createdTime
+  await updateContract(pg, contract.id, {
+    lastCommentTime,
+    lastUpdatedTime: Date.now(),
+  })
   await revalidateStaticProps(contractPath(contract)).catch((e) =>
     log.error('Failed to revalidate contract after comment', {
       e,
@@ -49,14 +58,7 @@ export const onCreateCommentOnContract = async (props: {
     })
   )
 
-  const lastCommentTime = comment.createdTime
-
   await followContractInternal(pg, contract.id, true, creator.id)
-
-  await updateContract(pg, contract.id, {
-    lastCommentTime,
-    lastUpdatedTime: Date.now(),
-  })
 
   if (
     creator.id === contract.creatorId &&
@@ -76,36 +78,41 @@ const getReplyInfo = async (
 ) => {
   if (comment.answerOutcome && contract.outcomeType === 'MULTIPLE_CHOICE') {
     const answer = await getAnswer(pg, comment.answerOutcome)
-    const comments = await pg.manyOrNone(
-      `select comment_id, user_id
+    const comments = await pg.manyOrNone<{
+      user_id: string
+      data: ContractComment // Need data for context
+    }>(
+      `select user_id, data
       from contract_comments
-      where contract_id = $1 and coalesce(data->>'answerOutcome', '') = $2`,
+      where contract_id = $1 and coalesce(data->>'answerOutcome', '') = $2
+      order by created_time asc`,
       [contract.id, answer?.id ?? '']
     )
     return {
       repliedToAnswer: answer,
       repliedToType: 'answer',
       repliedUserId: answer?.userId,
-      commentsInSameReplyChain: comments,
+      commentsInSameReplyChain: comments, // Comments replying to the same answer
     } as const
   } else if (comment.replyToCommentId) {
-    const comments = await pg.manyOrNone(
-      `select comment_id, user_id, data->>'replyToCommentId' as reply_to_id
+    const comments = await pg.manyOrNone<{
+      user_id: string
+      data: ContractComment
+    }>(
+      `select user_id, data
       from contract_comments where contract_id = $1
         and (coalesce(data->>'replyToCommentId', '') = $2
             or comment_id = $2)
-      `,
+      order by created_time asc`,
       [contract.id, comment.replyToCommentId]
     )
     return {
       repliedToAnswer: null,
       repliedToType: 'comment',
       repliedUserId: comments.find(
-        (c) => c.comment_id === comment.replyToCommentId
+        (c) => c.data.id === comment.replyToCommentId
       )?.user_id,
-      commentsInSameReplyChain: comments.filter(
-        (c) => c.reply_to_id === comment.replyToCommentId
-      ),
+      commentsInSameReplyChain: comments,
     } as const
   } else {
     return null
@@ -144,7 +151,8 @@ export const handleCommentNotifications = async (
       }
 
     if (commentsInSameReplyChain) {
-      // The rest of the children in the chain are always comments
+      // Add users from the reply chain (parent and siblings) to notifications,
+      // excluding the commenter and the direct recipient (already added)
       commentsInSameReplyChain.forEach((c) => {
         if (c.user_id !== comment.userId && c.user_id !== repliedUserId) {
           repliedUsers[c.user_id] = {
@@ -161,13 +169,58 @@ export const handleCommentNotifications = async (
     await insertModReport(comment)
   }
 
+  // Prepare context for Gemini check
+  let threadContext: string | null = null
+  let newCommentText = ''
+  if (replyInfo?.commentsInSameReplyChain) {
+    // Build the thread context: comments in the same chain + the new comment
+    const threadComments = [
+      ...replyInfo.commentsInSameReplyChain
+        .filter((c) => c.data.id !== comment.id) // Filter out the new comment itself
+        .map((c) => ({
+          userId: c.user_id,
+          userName: c.data.userName,
+          userUsername: c.data.userUsername,
+          content: c.data.content,
+        })),
+    ]
+
+    threadContext = threadComments
+      .map((c) => {
+        const authorTag =
+          c.userId === contract.creatorId ? '[CREATOR]' : '[USER]'
+        const name = c.userName
+          ? `${c.userName} (@${c.userUsername})`
+          : `User ${c.userId.substring(0, 4)}`
+        return `${authorTag} ${name}: ${richTextToString(c.content)}`
+      })
+      .join('\n---\n') // Separator between comments
+  }
+
+  // Format the new comment text
+  const newCommentAuthorTag =
+    comment.userId === contract.creatorId ? '[CREATOR]' : '[USER]'
+  newCommentText = `${newCommentAuthorTag} ${
+    commentCreator.name
+      ? `${commentCreator.name} (@${commentCreator.username})`
+      : `User ${commentCreator.id.substring(0, 4)}`
+  }: ${richTextToString(comment.content)}`
+
+  // Check if comment needs response using Gemini, now with context
+  const checkResult =
+    comment.userId === contract.creatorId
+      ? { needsResponse: false }
+      : await checkCommentNeedsResponse(contract, threadContext, newCommentText)
+  const needsResponse = checkResult.needsResponse
+
   await createCommentOnContractNotification(
     comment.id,
     commentCreator,
     richTextToString(comment.content),
     contract,
     repliedUsers,
-    mentionedUsers
+    mentionedUsers,
+    needsResponse
   )
   return [...mentionedUsers, ...Object.keys(repliedUsers)]
 }
@@ -349,5 +402,53 @@ Only return the raw JSON object without any markdown code blocks, backticks, add
     }
   } catch (e) {
     log.error('Error checking for clarification:', { e })
+  }
+}
+
+export const checkCommentNeedsResponse = async (
+  contract: Contract,
+  threadContext: string | null,
+  newCommentText: string
+) => {
+  const prompt = `
+  Analyze the NEWEST COMMENT on a prediction market and determine if it requires a response from the market creator.
+
+  The creator is a user of Manifold Markets that created the market and resolves it using their judgement, along with the title and description of the market.
+
+  The NEWEST COMMENT should be considered as needing a response if it:
+  1. Asks for clarification about the market or its resolution criteria
+  2. Requests the market to be resolved
+  3. Points out potential issues that need to be addressed
+  4. (If relevant to the market) Requests an update on the status of the market from the creator
+  5. Asks a direct question to the market creator and the question is related to the market
+
+  Market title: ${contract.question}
+  Market description: ${parseJsonContentToText(contract.description)}
+
+  ${
+    threadContext
+      ? `COMMENT THREAD CONTEXT (previous messages):\n\`\`\`\n${threadContext}\n\`\`\`\nThe thread context uses [USER] and [CREATOR] tags. Discussions between users not addressing the creator should NOT be considered as needing a response.`
+      : 'This is a top-level comment (not a reply).'
+  }
+
+  NEWEST COMMENT (Analyze this comment for whether a response is needed):
+  \`\`\`
+  ${newCommentText}
+  \`\`\`
+
+  Return a JSON object with:
+  - needsResponse: boolean // True if the *newest comment* requires a response based ONLY on its content and the criteria above.
+  - reason: string (brief explanation why, or empty if no response needed)
+
+  Only return the JSON object, no other text.`
+
+  try {
+    const response = await promptGemini(prompt)
+    const result = parseGeminiResponseAsJson(response)
+    return result as { needsResponse: boolean; reason: string }
+  } catch (error) {
+    log.error(`Error checking if comment needs response: ${error}`)
+    // Default to false if there's an error
+    return { needsResponse: false, reason: '' }
   }
 }

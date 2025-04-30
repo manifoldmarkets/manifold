@@ -2383,6 +2383,15 @@ export const API = (_apiTypeCheck = {
       status: 'active' | 'processing' | 'complete'
     },
   },
+  'mark-notification-read': {
+    method: 'POST',
+    visibility: 'private',
+    authed: true,
+    returns: {} as { success: boolean },
+    props: z.object({
+      notificationId: z.string(),
+    }).strict(),
+  },
 } as const)
 
 export type APIPath = keyof typeof API
