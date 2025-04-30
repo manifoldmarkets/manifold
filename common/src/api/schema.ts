@@ -2077,7 +2077,9 @@ export const API = (_apiTypeCheck = {
         blockedGroupSlugs: z.array(z.string()).optional(),
         blockedContractIds: z.array(z.string()).optional(),
         topicIds: z.array(z.string()).optional(),
-        types: z.array(z.enum(['bets', 'comments', 'markets'])).optional(),
+        types: z
+          .array(z.enum(['bets', 'comments', 'markets', 'limit-orders']))
+          .optional(),
         minBetAmount: z.coerce.number().optional(),
         onlyFollowedTopics: coerceBoolean.optional(),
         onlyFollowedContracts: coerceBoolean.optional(),
@@ -2388,9 +2390,11 @@ export const API = (_apiTypeCheck = {
     visibility: 'private',
     authed: true,
     returns: {} as { success: boolean },
-    props: z.object({
-      notificationId: z.string(),
-    }).strict(),
+    props: z
+      .object({
+        notificationId: z.string(),
+      })
+      .strict(),
   },
 } as const)
 

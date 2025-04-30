@@ -34,14 +34,17 @@ import Image from 'next/image'
 import { CheckIcon } from '@heroicons/react/solid'
 import { filterDefined } from 'common/util/array'
 import { useSearchGroups } from './topics/topic-selector'
+
 type FilterMode =
   | 'custom-topics'
+  | 'limit-orders'
   | 'followed-topics'
   | 'followed-markets'
   | 'followed-users'
+
 interface ActivityState {
   selectedTopics: LiteGroup[]
-  types: ('bets' | 'comments' | 'markets')[]
+  types: ('bets' | 'comments' | 'markets' | 'limit-orders')[]
   minBetAmount: number | undefined
   filterMode: FilterMode // Use the defined type
 }
@@ -73,9 +76,13 @@ const defaultGroups: LiteGroup[] = [
   },
 ]
 
-export const ACTIVITY_TYPES = [
-  { name: 'All activity types', value: ['bets', 'comments', 'markets'] },
-  { name: 'Trades', value: ['bets'] },
+const ACTIVITY_TYPES = [
+  {
+    name: 'All activity',
+    value: ['bets', 'comments', 'markets', 'limit-orders'],
+  },
+  { name: 'Trades', value: ['bets', 'limit-orders'] },
+  { name: 'Limit Orders', value: ['limit-orders'] },
   { name: 'Comments', value: ['comments'] },
   { name: 'Markets', value: ['markets'] },
 ] as const
@@ -96,11 +103,16 @@ export function SiteActivity(props: { className?: string }) {
     usePersistentLocalState<ActivityState>(
       {
         selectedTopics: [], //defaultGroups,
-        types: ['comments', 'bets', 'markets'],
+        types: [
+          'bets',
+          'comments',
+          'markets',
+          'limit-orders',
+        ] as ActivityState['types'],
         minBetAmount: PRESET_BET_AMOUNTS[1],
         filterMode: 'custom-topics',
       },
-      'site-activity-state-2'
+      'site-activity-state-3'
     )
   const [offset, setOffset] = useState(0)
 
@@ -264,7 +276,7 @@ export function SiteActivity(props: { className?: string }) {
             buttonContent={(open) => (
               <DropdownPill
                 open={open}
-                color={types.length === 3 ? 'gray' : 'indigo'}
+                color={types.length === 4 ? 'gray' : 'indigo'}
               >
                 {ACTIVITY_TYPES.find(
                   (type) =>
@@ -288,13 +300,16 @@ export function SiteActivity(props: { className?: string }) {
             }))}
           />
 
-          {/* Min Bet Amount (only show when filtering by trades exclusively) */}
-          {types.every((t) => t === 'bets') && (
+          {/* Min Bet Amount (show when filtering by bets or limit orders) */}
+          {((types.includes('bets') &&
+            types.includes('limit-orders') &&
+            types.length === 2) ||
+            (types.includes('bets') && types.length === 1) ||
+            (types.includes('limit-orders') && types.length === 1)) && (
             <DropdownMenu
               buttonContent={(open) => (
                 <DropdownPill open={open}>
-                  Min bet{' '}
-                  {minBetAmount !== undefined ? `M$${minBetAmount}` : 'Any'}
+                  ≥ {minBetAmount !== undefined ? `M$${minBetAmount}` : 'Any'}
                 </DropdownPill>
               )}
               items={[
