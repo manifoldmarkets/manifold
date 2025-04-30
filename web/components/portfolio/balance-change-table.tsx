@@ -39,14 +39,16 @@ import { Button } from 'web/components/buttons/button'
 import { Modal } from '../layout/modal'
 import { QuestType } from 'common/quest'
 import { PROFIT_FEE_FRACTION } from 'common/economy'
+import { CalendarIcon } from '@heroicons/react/solid'
+import DropdownMenu from '../widgets/dropdown-menu'
 
 export const BalanceChangeTable = (props: { user: User }) => {
   const { user } = props
 
+  const fourteenDaysAgo = dayjs().startOf('day').subtract(14, 'day').valueOf()
   const [before, setBefore] = useState<number | undefined>(undefined)
-  const [after, setAfter] = useState(
-    dayjs().startOf('day').subtract(14, 'day').valueOf()
-  )
+  const [after, setAfter] = useState(fourteenDaysAgo)
+  const [showDateFilters, setShowDateFilters] = useState(false)
 
   const { data: allBalanceChanges } = useAPIGetter('get-balance-changes', {
     userId: user.id,
@@ -85,49 +87,87 @@ export const BalanceChangeTable = (props: { user: User }) => {
   })
   const pendingCashouts =
     cashouts?.filter((c) => c.txn.gidxStatus === 'Pending')?.length ?? 0
+
+  const hasCashouts = cashouts && cashouts.length > 0
+
+  const relativeDateText = before
+    ? `${formatJustDateShort(after)} - ${formatJustDateShort(before)}`
+    : after === fourteenDaysAgo
+    ? 'Last 14 days'
+    : `Since ${formatJustDateShort(after)}`
+
   return (
     <Col className={'w-full justify-center gap-4 py-1'}>
       <Input
         type={'text'}
+        className="w-full"
         placeholder={'Search your balance changes'}
         value={query}
         onChange={(e) => setQuery(e.target.value)}
       />
-      <Row className="flex-wrap justify-between gap-2">
-        <Row className="items-center gap-2">
-          <Input
-            type="date"
-            className="dark:date-range-input-white text-ink-700 !h-8 w-[120px] !px-2 !py-1 text-sm"
-            value={dayjs(after).format('YYYY-MM-DD')}
-            max={before ? dayjs(before).format('YYYY-MM-DD') : undefined}
-            onChange={(e) =>
-              setAfter(dayjs(e.target.value).startOf('day').valueOf())
-            }
+
+      <Row className="flex-wrap items-center justify-between gap-2">
+        {showDateFilters ? (
+          <Row className="items-center gap-2">
+            <Input
+              type="date"
+              className="dark:date-range-input-white text-ink-700 !h-8 w-[120px] !px-2 !py-1 text-sm"
+              value={dayjs(after).format('YYYY-MM-DD')}
+              max={before ? dayjs(before).format('YYYY-MM-DD') : undefined}
+              onChange={(e) =>
+                setAfter(dayjs(e.target.value).startOf('day').valueOf())
+              }
+            />
+            <span className="text-ink-700 text-sm">to</span>
+            <Input
+              type="date"
+              className="dark:date-range-input-white text-ink-700 !h-8 w-[120px] !px-2 !py-1 text-sm"
+              value={before ? dayjs(before).format('YYYY-MM-DD') : ''}
+              min={dayjs(after).format('YYYY-MM-DD')}
+              onChange={(e) =>
+                setBefore(
+                  e.target.value
+                    ? dayjs(e.target.value).endOf('day').valueOf()
+                    : undefined
+                )
+              }
+            />
+            <Button
+              color="gray-outline"
+              className="whitespace-nowrap"
+              size="xs"
+              onClick={() => setShowDateFilters(false)}
+            >
+              Hide dates
+            </Button>
+          </Row>
+        ) : (
+          <Row className="items-center gap-2">
+            <span className="text-ink-700 text-sm">{relativeDateText}</span>
+            <Button
+              color="gray-outline"
+              size="xs"
+              className="whitespace-nowrap"
+              onClick={() => setShowDateFilters(true)}
+            >
+              <CalendarIcon className="mr-1 h-4 w-4" />
+              Filter dates
+            </Button>
+          </Row>
+        )}
+        {hasCashouts && (
+          <DropdownMenu
+            items={[
+              {
+                name: `View ${maybePluralize('redemption', cashouts.length)} ${
+                  pendingCashouts > 0 ? `(${pendingCashouts} pending)` : ''
+                }`,
+                onClick: () => setShowCashoutModal(true),
+              },
+            ]}
+            menuWidth="w-52"
+            buttonClass="px-2 py-1"
           />
-          <span className="text-ink-700 text-sm">to</span>
-          <Input
-            type="date"
-            className="dark:date-range-input-white text-ink-700 !h-8 w-[120px] !px-2 !py-1 text-sm"
-            value={before ? dayjs(before).format('YYYY-MM-DD') : ''}
-            min={dayjs(after).format('YYYY-MM-DD')}
-            onChange={(e) =>
-              setBefore(
-                e.target.value
-                  ? dayjs(e.target.value).endOf('day').valueOf()
-                  : undefined
-              )
-            }
-          />
-        </Row>
-        {cashouts && cashouts.length > 0 && (
-          <Button
-            color="gray-outline"
-            size="xs"
-            onClick={() => setShowCashoutModal(true)}
-          >
-            View {maybePluralize('redemption', cashouts?.length ?? 0)}{' '}
-            {pendingCashouts > 0 ? `(${pendingCashouts} pending)` : ''}
-          </Button>
         )}
       </Row>
       {!!before && before < Date.now() && (
