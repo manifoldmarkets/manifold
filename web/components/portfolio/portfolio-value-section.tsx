@@ -2,7 +2,7 @@
 import clsx from 'clsx'
 import { Period, periodDurations } from 'common/period'
 import { LivePortfolioMetrics } from 'common/portfolio-metrics'
-import { last, orderBy } from 'lodash'
+import { last, sortBy } from 'lodash'
 import { ReactNode, memo, useMemo, useState } from 'react'
 import { SizedContainer } from 'web/components/sized-container'
 import { useIsMobile } from 'web/hooks/use-is-mobile'
@@ -98,10 +98,9 @@ export const PortfolioValueSection = memo(
 
     const updatedPortfolioHistory = useMemo(
       () =>
-        orderBy(
+        sortBy(
           filterDefined([...(portfolioHistory ?? []), portfolio]),
-          (p) => p.timestamp,
-          'desc'
+          (p) => p.timestamp
         ),
       [portfolioHistory, portfolio]
     )
