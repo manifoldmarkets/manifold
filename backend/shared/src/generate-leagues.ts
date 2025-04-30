@@ -3,26 +3,26 @@ import { pgp, SupabaseDirectClient } from './supabase/init'
 import { genNewAdjectiveAnimal } from 'common/util/adjective-animal'
 import { BOT_USERNAMES, OPTED_OUT_OF_LEAGUES } from 'common/envs/constants'
 import {
-  CURRENT_SEASON,
   getCohortSize,
   getDivisionChange,
   getSeasonDates,
   league_user_info,
   MAX_COHORT_SIZE,
-  SEASONS,
 } from 'common/leagues'
 import { getCurrentPortfolio } from './helpers/portfolio'
-import { createLeagueChangedNotification } from 'shared/create-notification'
+import { createLeagueChangedNotifications } from 'shared/create-notification'
 import { bulkInsert } from './supabase/utils'
 import { log } from './utils'
+import { getEffectiveCurrentSeason } from './supabase/leagues'
 
 export async function generateNextSeason(
   pg: SupabaseDirectClient,
   season: number
 ) {
-  console.log('Generating season', season)
+  log(`Generating season ${season}`)
   const prevSeason = season - 1
   const startDate = getSeasonDates(prevSeason).start
+  // const startDate = new Date('2025-01-01')
   const rows = await pg.manyOrNone<league_user_info>(
     `select * from user_league_info
     where season = $1
@@ -47,10 +47,10 @@ export async function generateNextSeason(
   const activeUserIdsSet = new Set(activeUserIds.map((u) => u.user_id))
 
   const usersByDivision = generateDivisions(rows, activeUserIdsSet)
-  console.log('usersByDivision', usersByDivision)
+  log(`usersByDivision`, { usersByDivision })
 
-  const userCohorts = await generateCohorts(pg, usersByDivision)
-  console.log('user cohorts', userCohorts)
+  const userCohorts = generateCohorts(usersByDivision)
+  log(`user cohorts`, { userCohorts })
 
   const leagueInserts = Object.entries(userCohorts).map(
     ([userId, { division, cohort }]) => ({
@@ -60,8 +60,9 @@ export async function generateNextSeason(
       cohort,
     })
   )
-  console.log('league inserts', leagueInserts)
-  console.log('Inserting', leagueInserts.length, 'cohort rows')
+  log(`league inserts`, { leagueInserts })
+  log(`Inserting ${leagueInserts.length} cohort rows`)
+  if (leagueInserts.length === 0) return
 
   // Bulk insert leagues.
   const insertStatement =
@@ -84,7 +85,7 @@ const generateDivisions = (
 
   const rowsByCohort = groupBy(rows, 'cohort')
   const activeRows = rows.filter((r) => activeUserIds.has(r.user_id))
-  console.log('rows', rows.length, 'active rows', activeRows.length)
+  log(`rows: ${rows.length}, active rows: ${activeRows.length}`)
 
   for (const row of activeRows) {
     const { user_id, division, cohort, rank, mana_earned } = row
@@ -108,10 +109,7 @@ const generateDivisions = (
   return usersByNewDivision
 }
 
-const generateCohorts = async (
-  pg: SupabaseDirectClient,
-  usersByDivision: { [division: number]: string[] }
-) => {
+const generateCohorts = (usersByDivision: { [division: number]: string[] }) => {
   const userCohorts: {
     [userId: string]: { division: number; cohort: string }
   } = {}
@@ -125,15 +123,8 @@ const generateCohorts = async (
     const usersPerCohort = Math.ceil(divisionUserIds.length / numCohorts)
     const cohortsWithOneLess =
       usersPerCohort * numCohorts - divisionUserIds.length
-    console.log(
-      'division users',
-      divisionUserIds.length,
-      'numCohorts',
-      numCohorts,
-      'usersPerCohort',
-      usersPerCohort,
-      'cohortsWithOneLess',
-      cohortsWithOneLess
+    log(
+      `division users: ${divisionUserIds.length}, numCohorts: ${numCohorts}, usersPerCohort: ${usersPerCohort}, cohortsWithOneLess: ${cohortsWithOneLess}`
     )
 
     let remainingUserIds = shuffle(divisionUserIds.concat())
@@ -151,7 +142,7 @@ const generateCohorts = async (
       }
       remainingUserIds = remainingUserIds.filter((uid) => !userCohorts[uid])
       i++
-      console.log('cohort', cohort, cohortOfUsers.length)
+      log(`cohort: ${cohort}, cohortOfUsers: ${cohortOfUsers.length}`)
     }
   }
 
@@ -299,8 +290,8 @@ export const addToLeagueIfNotInOne = async (
     log('User opted out of leagues', userId)
     return
   }
-
-  const season = SEASONS[SEASONS.length - 1]
+  log('Adding user to league', userId)
+  const season = await getEffectiveCurrentSeason()
 
   const existingLeague = await pg.oneOrNone<{
     season: number
@@ -320,13 +311,14 @@ export const addToLeagueIfNotInOne = async (
   if (!data) return
   const cohort = data.cohort
 
-  await createLeagueChangedNotification(
-    userId,
-    undefined,
-    { season, division, cohort },
-    0,
-    pg
-  )
+  await createLeagueChangedNotifications(pg, [
+    {
+      userId,
+      previousLeague: undefined,
+      newLeague: { season, division, cohort },
+      bonusAmount: 0,
+    },
+  ])
   return { season, division, cohort }
 }
 
@@ -334,14 +326,16 @@ export const addNewUserToLeague = async (
   pg: SupabaseDirectClient,
   userId: string
 ) => {
-  const data = await addUserToLeague(pg, userId, CURRENT_SEASON, 1)
+  const season = await getEffectiveCurrentSeason()
+  const data = await addUserToLeague(pg, userId, season, 1)
   if (!data) return
-  const { season, division, cohort } = data
-  await createLeagueChangedNotification(
-    userId,
-    undefined,
-    { season, division, cohort },
-    0,
-    pg
-  )
+  const { division, cohort } = data
+  await createLeagueChangedNotifications(pg, [
+    {
+      userId,
+      previousLeague: undefined,
+      newLeague: { season, division, cohort },
+      bonusAmount: 0,
+    },
+  ])
 }

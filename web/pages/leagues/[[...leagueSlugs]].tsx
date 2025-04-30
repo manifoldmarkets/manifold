@@ -5,14 +5,10 @@ import { useRouter } from 'next/router'
 
 import {
   DIVISION_NAMES,
-  CURRENT_SEASON,
   getLeaguePath,
   league_user_info,
   parseLeaguePath,
-  getSeasonStatus,
-  SEASONS,
   getSeasonMonth,
-  season,
   getSeasonCountdownEnd,
   getSeasonDates,
   getMaxDivisionBySeason,
@@ -41,8 +37,53 @@ import { InfoTooltip } from 'web/components/widgets/info-tooltip'
 import { LoadingIndicator } from 'web/components/widgets/loading-indicator'
 import { useEffectCheckEquality } from 'web/hooks/use-effect-check-equality'
 import Link from 'next/link'
+import { DAY_MS } from 'common/util/time'
+import { api } from 'web/lib/api/api'
+import { APIResponse } from 'common/api/schema'
 
-export default function Leagues() {
+export async function getStaticPaths() {
+  return { paths: [], fallback: 'blocking' }
+}
+
+export async function getStaticProps(props: {
+  params: { leagueSlugs: string[] }
+}) {
+  try {
+    // Extract season from URL if available
+    const leagueSlugs = props.params?.leagueSlugs || []
+    const seasonParam = leagueSlugs[0]
+    const season =
+      seasonParam && !isNaN(parseInt(seasonParam))
+        ? parseInt(seasonParam)
+        : undefined
+
+    const currentSeasonInfo = await api('get-season-info', {})
+    const seasonInfo = await api('get-season-info', season ? { season } : {})
+    return {
+      props: {
+        initialSeasonInfo: seasonInfo,
+        currentSeasonInfo,
+      },
+      revalidate: 60, // Revalidate every minute
+    }
+  } catch (err) {
+    console.error('Error fetching season info:', err)
+    return {
+      props: {
+        initialSeasonInfo: null,
+      },
+      revalidate: 60, // Retry sooner if there was an error
+    }
+  }
+}
+
+interface LeaguesProps {
+  initialSeasonInfo: APIResponse<'get-season-info'> | null
+  currentSeasonInfo: APIResponse<'get-season-info'> | null
+}
+
+export default function Leagues(props: LeaguesProps) {
+  const { initialSeasonInfo, currentSeasonInfo } = props
   const user = useUser()
 
   const [rows, setRows] = usePersistentInMemoryState<league_user_info[]>(
@@ -51,8 +92,16 @@ export default function Leagues() {
   )
 
   const rowsBySeason = useMemo(() => groupBy(rows, 'season'), [rows])
+  const seasonInfo = initialSeasonInfo ?? currentSeasonInfo
+  const seasons = useMemo(() => {
+    const seasons = []
+    for (let i = 1; i <= (currentSeasonInfo?.season ?? 1); i++) {
+      seasons.push(i)
+    }
+    return seasons
+  }, [currentSeasonInfo?.season])
 
-  const [season, setSeason] = useState<number>(CURRENT_SEASON)
+  const [season, setSeason] = useState<number>(seasonInfo?.season ?? 1)
   useEffect(() => {
     getLeagueRows(season).then((rows) => {
       setRows((currRows) =>
@@ -98,15 +147,14 @@ export default function Leagues() {
     const { season, division, cohort } = parseLeaguePath(
       [newSeason.toString()],
       rowsBySeason,
+      seasons,
       user?.id
     )
 
     if (cohort) {
-      replace(getLeaguePath(season, division, cohort), undefined, {
-        shallow: true,
-      })
+      replace(getLeaguePath(season, division, cohort), undefined)
     } else {
-      replace(`${season}`, undefined, { shallow: true })
+      replace(`${season}`, undefined)
     }
   }
 
@@ -134,6 +182,7 @@ export default function Leagues() {
     const { season, division, cohort, highlightedUserId } = parseLeaguePath(
       leagueSlugs ?? [],
       rowsBySeason,
+      seasons,
       user?.id
     )
     console.log(
@@ -150,10 +199,12 @@ export default function Leagues() {
   }, [isReady, seasonLoaded, leagueSlugs, user?.id])
 
   const MARKER = '★'
-  const seasonStatus = getSeasonStatus(season)
+  const seasonStatus = seasonInfo?.status
   const countdownEnd = getSeasonCountdownEnd(season)
-  const { end: seasonEnd } = getSeasonDates(season)
-  const randomPeriodEnd = new Date(countdownEnd.getTime() + 24 * 60 * 60 * 1000)
+  const { approxEnd: seasonEnd } = getSeasonDates(season)
+  const closingPeriod =
+    seasonStatus === 'active' && seasonEnd.getTime() < Date.now() + DAY_MS
+  const randomPeriodEnd = new Date(countdownEnd.getTime() + DAY_MS)
 
   const userRow = seasonRows.find((row) => row.user_id === user?.id)
   const userDivision = userRow?.division
@@ -178,9 +229,9 @@ export default function Leagues() {
             <Select
               className="!border-ink-200 !h-10"
               value={season}
-              onChange={(e) => onSetSeason(+e.target.value as season)}
+              onChange={(e) => onSetSeason(+e.target.value)}
             >
-              {SEASONS.map((season) => (
+              {seasons.map((season) => (
                 <option key={season} value={season}>
                   Season {season}: {getSeasonMonth(season)}
                 </option>
@@ -199,15 +250,17 @@ export default function Leagues() {
               for the most profit (realized and unrealized) on trades placed
               this month!
               <span className={'ml-1'}>
-                {seasonStatus === 'closing-period' && (
+                {closingPeriod && (
                   <>
                     Ends randomly within <br />
                     <ClockIcon className="text-ink-1000 inline h-4 w-4" />{' '}
                     {getCountdownStringHoursMinutes(randomPeriodEnd)}
                   </>
                 )}
-                {seasonStatus === 'ended' && <>Ended {formatTime(seasonEnd)}</>}
-                {seasonStatus === 'current' && (
+                {seasonStatus === 'complete' && (
+                  <>Ended {formatTime(seasonEnd)}</>
+                )}
+                {seasonStatus === 'active' && (
                   <>
                     Season ends in:{' '}
                     <InfoTooltip

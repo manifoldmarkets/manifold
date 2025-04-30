@@ -74,7 +74,7 @@ import {
   getUniqueVoterIds,
 } from 'shared/supabase/contracts'
 import { richTextToString } from 'common/util/parse'
-import { league_user_info } from 'common/leagues'
+import { LeagueChangeNotificationData } from 'common/leagues'
 import { hasUserSeenMarket } from 'shared/helpers/seen-markets'
 import { isAdminId, isModId } from 'common/envs/constants'
 import {
@@ -899,44 +899,72 @@ export const createBettingStreakExpiringNotification = async (
   await bulkInsertNotifications(bulkNotifications, pg)
 }
 
-/** @deprecated until bulkified **/
-export const createLeagueChangedNotification = async (
-  userId: string,
-  previousLeague: league_user_info | undefined,
-  newLeague: { season: number; division: number; cohort: string },
-  bonusAmount: number,
-  pg: SupabaseDirectClient
+export const createLeagueChangedNotifications = async (
+  pg: SupabaseDirectClient,
+  data: LeagueChangeNotificationData[]
 ) => {
-  const privateUser = await getPrivateUser(userId)
-  if (!privateUser) return
-  const { sendToBrowser } = getNotificationDestinationsForUser(
-    privateUser,
-    'league_changed'
-  )
-  if (!sendToBrowser) return
+  if (data.length === 0) return
 
-  const id = nanoid(6)
-  const data: LeagueChangeData = {
-    previousLeague,
-    newLeague,
-    bonusAmount,
+  log(`Creating ${data.length} league change notifications.`)
+
+  const userIds = data.map((d) => d.userId)
+
+  // Fetch all relevant private users in bulk
+  const privateUsers = await pg.map(
+    `select * from private_users where id = any($1)`,
+    [userIds],
+    convertPrivateUser
+  )
+  const privateUserMap = new Map(privateUsers.map((user) => [user.id, user]))
+
+  const bulkNotifications: Notification[] = []
+
+  for (const item of data) {
+    const privateUser = privateUserMap.get(item.userId)
+    if (!privateUser) {
+      log(`Could not find private user ${item.userId}`)
+      continue
+    }
+
+    // Check notification preferences
+    const { sendToBrowser } = getNotificationDestinationsForUser(
+      privateUser,
+      'league_changed'
+    )
+    if (!sendToBrowser) continue
+
+    // Construct notification data
+    const id = nanoid(6) // Still need a unique ID per notification
+    const notificationData: LeagueChangeData = {
+      previousLeague: item.previousLeague,
+      newLeague: item.newLeague,
+      bonusAmount: item.bonusAmount,
+    }
+
+    const notification: Notification = {
+      id,
+      userId: item.userId,
+      reason: 'league_changed',
+      createdTime: Date.now(),
+      isSeen: false,
+      sourceId: id, // Use the generated id as sourceId for uniqueness? Or maybe season identifier? Let's use id for now.
+      sourceText: item.bonusAmount.toString(),
+      sourceType: 'league_change',
+      sourceUpdateType: 'created',
+      sourceUserName: '', // Not relevant for this type
+      sourceUserUsername: '', // Not relevant for this type
+      sourceUserAvatarUrl: '', // Not relevant for this type
+      data: notificationData,
+    }
+    bulkNotifications.push(notification)
   }
-  const notification: Notification = {
-    id,
-    userId,
-    reason: 'league_changed',
-    createdTime: Date.now(),
-    isSeen: false,
-    sourceId: id,
-    sourceText: bonusAmount.toString(),
-    sourceType: 'league_change',
-    sourceUpdateType: 'created',
-    sourceUserName: '',
-    sourceUserUsername: '',
-    sourceUserAvatarUrl: '',
-    data,
+
+  if (bulkNotifications.length > 0) {
+    await bulkInsertNotifications(bulkNotifications, pg)
+    log(`Inserted ${bulkNotifications.length} league change notifications.`)
+  } else {
+    log('No league change notifications met filter criteria.')
   }
-  await insertNotificationToSupabase(notification, pg)
 }
 
 export const createLikeNotification = async (reaction: Reaction) => {

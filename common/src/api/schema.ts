@@ -2369,6 +2369,20 @@ export const API = (_apiTypeCheck = {
       })
       .strict(),
   },
+  'get-season-info': {
+    method: 'GET',
+    visibility: 'public',
+    authed: false,
+    props: z.object({
+      season: z.coerce.number().int().positive().optional(),
+    }),
+    returns: {} as {
+      season: number
+      startTime: number // epoch ms
+      endTime: number | null // epoch ms, null if a *mystery* for clients
+      status: 'active' | 'processing' | 'complete'
+    },
+  },
 } as const)
 
 export type APIPath = keyof typeof API
