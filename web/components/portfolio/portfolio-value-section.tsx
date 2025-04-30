@@ -2,8 +2,8 @@
 import clsx from 'clsx'
 import { Period, periodDurations } from 'common/period'
 import { LivePortfolioMetrics } from 'common/portfolio-metrics'
-import { last } from 'lodash'
-import { ReactNode, memo, useState } from 'react'
+import { last, orderBy } from 'lodash'
+import { ReactNode, memo, useMemo, useState } from 'react'
 import { SizedContainer } from 'web/components/sized-container'
 import { useIsMobile } from 'web/hooks/use-is-mobile'
 import { usePortfolioHistory } from 'web/hooks/use-portfolio-history'
@@ -21,7 +21,7 @@ import { PortfolioGraph, PortfolioMode } from './portfolio-graph'
 import { getPortfolioValues } from '../portfolio-helpers'
 import { useSweepstakes } from '../sweepstakes-provider'
 import { SPICE_TO_MANA_CONVERSION_RATE } from 'common/envs/constants'
-import { useUser } from 'web/hooks/use-user'
+import { filterDefined } from 'common/util/array'
 
 export type PortfolioHoveredGraphType =
   | 'balance'
@@ -96,7 +96,16 @@ export const PortfolioValueSection = memo(
       })
     }
 
-    const lastPortfolioMetrics = portfolio ?? last(portfolioHistory)
+    const updatedPortfolioHistory = useMemo(
+      () =>
+        orderBy(
+          filterDefined([...(portfolioHistory ?? []), portfolio]),
+          (p) => p.timestamp,
+          'desc'
+        ),
+      [portfolioHistory, portfolio]
+    )
+    const lastPortfolioMetrics = last(updatedPortfolioHistory)
 
     const zoomParams = useZoom()
 
@@ -157,7 +166,6 @@ export const PortfolioValueSection = memo(
           portfolioGraphElement={noHistoryGraphElement}
           disabled={true}
           size={size}
-          user={user}
           portfolioFocus={portfolioFocus}
           setPortfolioFocus={onSetPortfolioFocus}
           graphValues={graphValues}
@@ -225,9 +233,6 @@ export const PortfolioValueSection = memo(
       netCash: totalCashValue,
     }
 
-    const updatedPortfolioHistory = portfolio
-      ? [...portfolioHistory, portfolio]
-      : portfolioHistory
     const hideSweepsToggle =
       user.createdTime > new Date('2025-02-12').getTime() ||
       portfolioValues.netCash <= 0
@@ -260,7 +265,6 @@ export const PortfolioValueSection = memo(
         size={size}
         portfolioValues={portfolioValues}
         graphValues={graphValues}
-        user={user}
       />
     )
   }
@@ -282,7 +286,6 @@ function TwombaPortfolioValueSkeleton(props: {
   graphValues: GraphValueType
   portfolioFocus: PortfolioMode
   setPortfolioFocus: (mode: PortfolioMode) => void
-  user: User
   hideSweepsToggle?: boolean
 }) {
   const {
@@ -297,7 +300,6 @@ function TwombaPortfolioValueSkeleton(props: {
     graphValues,
     portfolioFocus,
     setPortfolioFocus,
-    user,
     hideSweepsToggle,
   } = props
 
@@ -306,7 +308,6 @@ function TwombaPortfolioValueSkeleton(props: {
     setPortfolioFocus(portfolioFocus === toggleTo ? 'all' : toggleTo)
   }
 
-  const currentUser = useUser()
   const sweepsState = useSweepstakes()
   const prefersPlay = hideSweepsToggle ? true : sweepsState.prefersPlay
 
@@ -434,6 +435,7 @@ function TwombaPortfolioValueSkeleton(props: {
             disabled={disabled}
             className="bg-canvas-0 border-0"
             toggleClassName="grow justify-center"
+            ignoreLabels={['1H', '6H']}
           />
         )}
       </Col>
