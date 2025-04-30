@@ -548,28 +548,28 @@ export const SVGChart = <X, TT extends { x: number; y: number }>(props: {
           </g>
         </g>
         {!noWatermark && (
-          <>
-            <rect
-              x={4}
-              y={h - 23}
-              width={150}
-              height={18}
-              className="fill-canvas-0"
-              rx={4}
-              ry={4}
-              opacity={0.85}
+          <g className="opacity-50" transform={`translate(10, ${h - 20})`}>
+            <path
+              d="M5.24854 17.0952L18.7175 6.80301L14.3444 20M5.24854 17.0952L9.79649 18.5476M5.24854 17.0952L4.27398 6.52755M14.3444 20L9.79649 18.5476M14.3444 20L22 12.638L16.3935 13.8147M9.79649 18.5476L12.3953 15.0668M4.27398 6.52755L10.0714 13.389M4.27398 6.52755L2 9.0818L4.47389 8.85643M12.9451 11.1603L10.971 5L8.65369 11.6611"
+              stroke="currentColor"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth=".8"
+              fill="none"
+              className="text-ink-800 dark:text-white"
+              transform="translate(0, -11) scale(0.9)"
             />
             <text
-              x={10}
-              y={h - 10}
-              fontSize="12"
+              x="24"
+              y="4"
+              className="text-ink-800 dark:text-white text-xs"
+              stroke="none"
               fill="currentColor"
-              opacity={0.5}
-              fontWeight={'semibold'}
+              fontWeight={100}
             >
-              Source: manifold.markets
+              MANIFOLD
             </text>
-          </>
+          </g>
         )}
       </svg>
     </div>
