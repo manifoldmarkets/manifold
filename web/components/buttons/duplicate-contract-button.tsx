@@ -33,10 +33,24 @@ export function duplicateContractHref(contract: Contract) {
   const params = {
     q: contract.question,
     closeTime,
-    description: descriptionString,
     outcomeType: contract.outcomeType,
     visibility: contract.visibility,
   } as NewQuestionParams
+
+  // Not sure what description length is the true cutoff, but this seems to work
+  if (descriptionString.length < 10000) {
+    params.description = descriptionString
+  } else {
+    params.description = JSON.stringify({
+      type: 'paragraph',
+      content: [
+        {
+          type: 'text',
+          text: `This contract's description is too long to duplicate.`,
+        },
+      ],
+    })
+  }
 
   if (contract.outcomeType === 'PSEUDO_NUMERIC') {
     params.min = contract.min
