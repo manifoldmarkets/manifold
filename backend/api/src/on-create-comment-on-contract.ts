@@ -29,7 +29,6 @@ import { JSONContent } from '@tiptap/core'
 import { cloneDeep } from 'lodash'
 import { track } from 'shared/analytics'
 import { DEV_HOUSE_LIQUIDITY_PROVIDER_ID } from 'common/antes'
-import { promptOpenAI } from 'shared/helpers/openai-utils'
 import { parseGeminiResponseAsJson, promptGemini } from 'shared/helpers/gemini'
 
 type ClarificationResponse = {
@@ -315,7 +314,9 @@ NOTE: If the creator explicitly states that their comment is not a clarification
 Only return the raw JSON object without any markdown code blocks, backticks, additional formatting, or anything else.`
 
   try {
-    const response = await promptOpenAI(prompt, 'o4-mini')
+    const response = await promptGemini(prompt, {
+      model: 'gemini-2.5-pro-preview-03-25',
+    })
     log('Clarification response:', {
       question: contract.question,
       contractId: contract.id,
@@ -326,7 +327,9 @@ Only return the raw JSON object without any markdown code blocks, backticks, add
       log.error('No response from ai clarification')
       return
     }
-    const clarification = JSON.parse(response) as ClarificationResponse
+    const clarification = parseGeminiResponseAsJson(
+      response
+    ) as ClarificationResponse
 
     if (clarification.isClarification && clarification.description) {
       const dateParts = new Date()
@@ -344,9 +347,6 @@ Only return the raw JSON object without any markdown code blocks, backticks, add
         ? 'PDT'
         : 'PST'
 
-      const hasBulletPoints = ['\n- ', '\n• ', '\n* '].some((bullet) =>
-        clarification.description?.includes(bullet)
-      )
       const formattedDescription = clarification.description.replace(
         /\n[•\-*] /g,
         '\n   - '
@@ -355,9 +355,7 @@ Only return the raw JSON object without any markdown code blocks, backticks, add
         contract
       )}#${comment.id}))`
 
-      const markdownToAppend = hasBulletPoints
-        ? `- Update ${date} (${timeZone}) ${summaryNote}: ${formattedDescription}`
-        : `- Update ${date} (${timeZone}): ${formattedDescription} ${summaryNote}`
+      const markdownToAppend = `- Update ${date} (${timeZone}) ${summaryNote}: ${formattedDescription} `
 
       const appendDescription = anythingToRichText({
         markdown: markdownToAppend,
