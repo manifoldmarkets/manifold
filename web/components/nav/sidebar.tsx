@@ -6,7 +6,6 @@ import {
   QuestionMarkCircleIcon,
   LoginIcon,
   SearchIcon,
-  GlobeAltIcon,
   StarIcon,
 } from '@heroicons/react/outline'
 // import { PiTelevisionSimple } from 'react-icons/pi'
@@ -34,6 +33,7 @@ import { Col } from '../layout/col'
 import { DAY_MS } from 'common/util/time'
 import { useAdminOrMod } from 'web/hooks/use-admin'
 import { AppRouterInstance } from 'next/dist/shared/lib/app-router-context.shared-runtime'
+import { IoCompassOutline } from 'react-icons/io5'
 
 export default function Sidebar(props: {
   className?: string
@@ -142,7 +142,8 @@ const getDesktopNav = (
       {
         name: 'Explore',
         href: '/explore',
-        icon: GlobeAltIcon,
+        icon: IoCompassOutline,
+        iconClassName: '!h-[1.6rem] !w-[1.6rem] !mr-[0.65rem]',
       },
       // {
       //   name: 'TV',

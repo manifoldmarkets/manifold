@@ -14,7 +14,7 @@ import {
 } from 'common/supabase/contract-metrics'
 import { getTopicsOnContract } from 'common/supabase/groups'
 import { removeUndefinedProps } from 'common/util/object'
-import { pointsToBase64, pointsToBase64Float32 } from 'common/util/og'
+import { pointsToBase64 } from 'common/util/og'
 import { SupabaseClient } from 'common/supabase/utils'
 import { buildArray } from 'common/util/array'
 import { groupBy, mapValues, omit, orderBy, sortBy } from 'lodash'
@@ -85,6 +85,8 @@ export async function getContractParams(
     unauthedApi('get-related-markets', {
       contractId: contract.id,
       limit: 10,
+      question: contract.question,
+      uniqueBettorCount: contract.uniqueBettorCount,
     }),
     getChartAnnotations(contract.id, db),
     getTopicsOnContract(contract.id, db),
@@ -97,9 +99,7 @@ export async function getContractParams(
 
   const ogPoints = isMulti ? [] : binAvg(allBetPoints)
   // Non-numeric markets don't need as much precision
-  const pointsString = pointsToBase64Float32(
-    ogPoints.map((p) => [p.x, p.y] as const)
-  )
+  const pointsString = pointsToBase64(ogPoints.map((p) => [p.x, p.y] as const))
 
   if (
     contract.outcomeType === 'MULTIPLE_CHOICE' &&

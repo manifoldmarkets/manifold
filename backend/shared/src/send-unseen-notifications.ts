@@ -1,6 +1,5 @@
 import { createSupabaseDirectClient } from 'shared/supabase/init'
 import { log } from 'shared/utils'
-import { createPushNotifications } from 'shared/create-push-notifications'
 import { getNotificationDestinationsForUser } from 'common/user-notification-preferences'
 import { PrivateUser } from 'common/user'
 import { MarketMovementData, Notification } from 'common/notification'
@@ -70,42 +69,18 @@ export async function sendUnseenMarketMovementNotifications() {
   )
 
   // Prepare notifications for sending
-  const notificationsToSend: [PrivateUser, Notification, string, string][] = []
   const bulkEmails = []
 
   for (const [_, userResults] of userNotifications) {
     const privateUser = userResults[0].private_user as PrivateUser
     const userName = userResults[0].user_name as string
 
-    // Get top notification for push notification
-    const topResult = userResults[0]
-    const topNotification = topResult.notification as Notification
-
-    const { sendToMobile, sendToEmail } = getNotificationDestinationsForUser(
+    const { sendToEmail } = getNotificationDestinationsForUser(
       privateUser,
       'market_movements'
     )
 
-    if (sendToMobile) {
-      const { sourceContractTitle: question } = topNotification
-      const data = topNotification.data as MarketMovementData
-      const startProb = data.val_start
-      const endProb = data.val_end
-      const answerText = data.answerText
-
-      const startProbText = `${Math.round(startProb * 100)}%`
-      const endProbText = `${Math.round(endProb * 100)}%`
-
-      // Basic title/body for the notification
-      const questionText = truncateText(question, answerText ? 70 : 130)
-      const answer = answerText ? `:\n${truncateText(answerText, 60)}` : ''
-      const title = 'Market movement'
-      const body = `${questionText}${answer}: ${startProbText} → ${endProbText}`
-
-      notificationsToSend.push([privateUser, topNotification, title, body])
-    }
-
-    // Prepare email notification (using up to 5 notifications)
+    // Prepare email notification (using up to MOVEMENTS_TO_SEND notifications)
     if (sendToEmail) {
       const marketMovements: MarketMovementEmailData[] = userResults.map(
         (result) => {
@@ -145,12 +120,6 @@ export async function sendUnseenMarketMovementNotifications() {
         bulkEmails.push(emailEntry)
       }
     }
-  }
-
-  // Send push notifications
-  if (notificationsToSend.length > 0) {
-    log(`Sending ${notificationsToSend.length} push notifications`)
-    await createPushNotifications(notificationsToSend)
   }
 
   // Send emails

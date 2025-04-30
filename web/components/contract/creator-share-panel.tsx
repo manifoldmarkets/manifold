@@ -18,6 +18,7 @@ import { AddBoostButton } from './add-boost-button'
 import { BoostAnalytics } from './boost-analytics'
 import { Col } from '../layout/col'
 import { useUser } from 'web/hooks/use-user'
+import { LuShare } from 'react-icons/lu'
 
 export function CreatorSharePanel(props: { contract: Contract }) {
   const { contract } = props
@@ -89,7 +90,7 @@ const ShareLinkButton = (props: {
   className?: string
 }) => {
   const { contract, preferLink, className } = props
-  const { isNative } = useNativeInfo()
+  const { isNative, isIOS } = useNativeInfo()
   const user = useUser()
   const url = getShareUrl(contract, user?.username)
 
@@ -108,7 +109,9 @@ const ShareLinkButton = (props: {
       onClick={onClick}
       className={clsx('gap-1', className)}
     >
-      {isNative ? (
+      {isIOS ? (
+        <LuShare className={'h-4 w-4'} aria-hidden />
+      ) : isNative ? (
         <ShareIcon className={'h-4 w-4'} aria-hidden />
       ) : (
         <LinkIcon className={'h-4 w-4'} aria-hidden />

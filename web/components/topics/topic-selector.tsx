@@ -21,7 +21,7 @@ import { Col } from '../layout/col'
 import { buildArray } from 'common/util/array'
 import DropdownMenu from '../widgets/dropdown-menu'
 import { DropdownPill } from '../search/filter-pills'
-import { CheckIcon } from '@heroicons/react/solid'
+
 export function TopicSelector(props: {
   setSelectedGroup: (group: Group) => void
   max?: number
@@ -67,6 +67,13 @@ export function TopicSelector(props: {
       setIsDropdownOpen(false)
     }
   }, [atMax])
+
+  // Open dropdown when typing
+  useEffect(() => {
+    if (query.length > 0 && !atMax && !isDropdownOpen) {
+      setIsDropdownOpen(true)
+    }
+  }, [query, atMax, isDropdownOpen])
 
   return (
     <Col className={clsx('w-full items-start', className)}>
@@ -196,7 +203,7 @@ const LoadingOption = (props: { className: string }) => (
   </div>
 )
 
-const useSearchGroups = (addingToContract: boolean) => {
+export const useSearchGroups = (addingToContract: boolean) => {
   const [query, setQuery] = useState('')
   const [searchedGroups, setSearchedGroups] = useState<LiteGroup[]>([])
   const [loading, setLoading] = useState(false)
@@ -278,75 +285,5 @@ export function TopicPillSelector(props: {
         <DropdownPill open={open}>{currentName}</DropdownPill>
       )}
     />
-  )
-}
-
-export function MultiTopicPillSelector(props: {
-  topics: LiteGroup[]
-  setTopics: (topics: LiteGroup[]) => void
-  maxTopics?: number
-}) {
-  const { topics, setTopics, maxTopics = 10 } = props
-  const { query, setQuery, searchedGroups } = useSearchGroups(false)
-
-  const toggleTopic = (topic: LiteGroup) => {
-    const isSelected = topics.some((t) => t.id === topic.id)
-    if (isSelected) {
-      setTopics(topics.filter((t) => t.id !== topic.id))
-    } else if (topics.length < maxTopics) {
-      setTopics([...topics, topic])
-    }
-  }
-
-  return (
-    <div className="relative">
-      <DropdownMenu
-        closeOnClick={false}
-        selectedItemName={
-          topics.length === 0
-            ? 'All topics'
-            : `${topics.length} topics selected`
-        }
-        items={[
-          {
-            name: 'Search topics',
-            nonButtonContent: (
-              <div className="flex">
-                <input
-                  type="text"
-                  className="bg-ink-200 dark:bg-ink-300 focus:ring-primary-500 mx-1 mb-1 w-full rounded-md border-none px-3 py-0.5 text-xs"
-                  placeholder="search"
-                  autoFocus
-                  value={query}
-                  onChange={(e) => setQuery(e.target.value)}
-                />
-              </div>
-            ),
-          },
-          {
-            name: 'All topics',
-            onClick: () => {
-              setTopics([])
-            },
-          },
-          ...topics.map((topic) => ({
-            name: topic.name,
-            icon: <CheckIcon className="mr-1 h-4 w-4" />,
-            onClick: () => toggleTopic(topic),
-          })),
-          ...searchedGroups
-            .filter((topic) => !topics.some((t) => t.id === topic.id))
-            .map((topic) => ({
-              name: topic.name,
-              onClick: () => toggleTopic(topic),
-            })),
-        ]}
-        buttonContent={(open) => (
-          <DropdownPill open={open}>
-            {topics.length === 0 ? 'All topics' : `${topics.length} topics`}
-          </DropdownPill>
-        )}
-      />
-    </div>
   )
 }

@@ -28,7 +28,7 @@ import {
 } from 'react'
 import toast from 'react-hot-toast'
 import { Button } from 'web/components/buttons/button'
-import { WatchMarketModal } from 'web/components/contract/watch-market-modal'
+import { FollowMarketModal } from 'web/components/contract/follow-market-modal'
 import { Col } from 'web/components/layout/col'
 import { Row } from 'web/components/layout/row'
 import { SwitchSetting } from 'web/components/switch-setting'
@@ -260,7 +260,7 @@ export function NotificationSettings(props: {
           icon={<ExclamationIcon className={'h-6 w-6'} />}
           data={optOutAll}
         />
-        <WatchMarketModal open={showWatchModal} setOpen={setShowWatchModal} />
+        <FollowMarketModal open={showWatchModal} setOpen={setShowWatchModal} />
       </Col>
     </SectionRoutingContext.Provider>
   )

@@ -1,9 +1,8 @@
 import * as dayjs from 'dayjs'
 import * as utc from 'dayjs/plugin/utc'
-import { models, promptClaude } from './claude'
 import { log } from 'shared/utils'
+import { promptGemini } from './gemini'
 dayjs.extend(utc)
-export type MODELS = 'o3-mini'
 
 export const getCloseDate = async (question: string, utcOffset?: number) => {
   const now = dayjs.utc().format('M/D/YYYY h:mm a')
@@ -35,8 +34,8 @@ export const getCloseDate = async (question: string, utcOffset?: number) => {
     Question: ${question}
     Now: ${now}
     End date:`
-    response = await promptClaude(prompt, {
-      model: models.haiku,
+    response = await promptGemini(prompt, {
+      model: 'gemini-2.0-flash',
     })
   } catch (e: any) {
     log.error('Error generating close date', { e })

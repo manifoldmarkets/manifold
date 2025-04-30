@@ -123,6 +123,8 @@ export const contractColumnsToSelect = nativeContractColumnsArray.join(',')
 export const prefixedContractColumnsToSelect = nativeContractColumnsArray
   .map((col) => `c.${col}`)
   .join(',')
+export const contractColumnsToSelectWithPrefix = (prefix: string) =>
+  nativeContractColumnsArray.map((col) => `${prefix}.${col}`).join(',')
 
 export const getContract = async (
   pg: SupabaseDirectClient,

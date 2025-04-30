@@ -13,7 +13,7 @@ else
 fi
 
 # Set working directory and other environment-specific variables
-if [[ "$ENV" == mani:* ]]; then
+if [[ "$ENV" == native:* ]]; then
     # Try to get local IP address from WiFi interface first, then ethernet
     LOCAL_IP=$(ipconfig getifaddr en0)
     if [ -z "$LOCAL_IP" ]; then
@@ -31,17 +31,17 @@ if [ "$DEBUG" = "true" ]; then
 fi
 
 # Fallback to localhost if no IP is found for mani environments
-if [[ "$ENV" == mani:* ]] && [ -z "$LOCAL_IP" ]; then
+if [[ "$ENV" == native:* ]] && [ -z "$LOCAL_IP" ]; then
     LOCAL_IP="localhost"
     echo "Warning: Could not detect local IP address, using localhost"
-elif [[ "$ENV" == mani:* ]]; then
+elif [[ "$ENV" == native:* ]]; then
     echo "Using local IP address: $LOCAL_IP"
 fi
 
 # You need to install tmux, on mac you can do this with `brew install tmux`
-if [[ "$ENV" == mani:* ]]; then
+if [[ "$ENV" == native:* ]]; then
     # Create a new tmux session
-    SESSION_NAME="mani-dev"
+    SESSION_NAME="native-dev"
     
     # Kill existing session if it exists
     tmux kill-session -t $SESSION_NAME 2>/dev/null
@@ -50,7 +50,7 @@ if [[ "$ENV" == mani:* ]]; then
     tmux new-session -d -s $SESSION_NAME "NEXT_PUBLIC_FIREBASE_ENV=${NEXT_ENV} yarn --cwd=backend/api $API_COMMAND"
     
     # Split window horizontally and start Expo
-    tmux split-window -h "NEXT_PUBLIC_API_URL=${LOCAL_IP}:8088 NEXT_PUBLIC_FIREBASE_ENV=${NEXT_ENV} yarn --cwd=mani start:${FIREBASE_PROJECT}"
+    tmux split-window -h "NEXT_PUBLIC_API_URL=${LOCAL_IP}:8088 NEXT_PUBLIC_FIREBASE_ENV=${NEXT_ENV} yarn --cwd=native start:${FIREBASE_PROJECT}"
     
     # Select the Expo pane (for input)
     tmux select-pane -t 1

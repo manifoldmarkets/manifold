@@ -75,6 +75,7 @@ import { ChartAnnotation } from 'common/supabase/chart-annotations'
 import { Dictionary } from 'lodash'
 import { Reaction } from 'common/reaction'
 import { YEAR_MS } from 'common/util/time'
+import { MarketDraft } from 'common/drafts'
 // mqp: very unscientific, just balancing our willingness to accept load
 // with user willingness to put up with stale data
 export const DEFAULT_CACHE_STRATEGY =
@@ -188,7 +189,7 @@ export const API = (_apiTypeCheck = {
     method: 'GET',
     visibility: 'public',
     authed: false,
-    cache: DEFAULT_CACHE_STRATEGY,
+    // cache: DEFAULT_CACHE_STRATEGY,
     returns: [] as ContractComment[],
     props: z
       .object({
@@ -405,7 +406,7 @@ export const API = (_apiTypeCheck = {
       .object({
         contractId: z.string(),
         answerId: z.string().optional(),
-        limit: z.coerce.number().gte(0).lte(50000).default(50000),
+        limit: z.coerce.number().gte(0).lte(50000).default(5000),
         beforeTime: z.coerce.number(),
         afterTime: z.coerce.number(),
         filterRedemptions: coerceBoolean.optional(),
@@ -434,16 +435,15 @@ export const API = (_apiTypeCheck = {
       .object({
         limit: z.coerce.number(),
         userId: z.string(),
+        balance: z.coerce.number(),
       })
       .strict(),
     returns: {} as {
       manaMetrics: ContractMetric[]
-      cashMetrics: ContractMetric[]
       contracts: MarketContract[]
       manaProfit: number
-      cashProfit: number
       manaInvestmentValue: number
-      cashInvestmentValue: number
+      balance: number
     },
   },
   // deprecated. use /bets?username= instead
@@ -978,6 +978,7 @@ export const API = (_apiTypeCheck = {
         hasSeenAppBannerInNotificationsOn: z.number().optional(),
         installedAppPlatforms: z.array(z.string()).optional(),
         paymentInfo: z.string().optional(),
+        lastAppReviewTime: z.number().optional(),
       })
       .strict(),
   },
@@ -1210,6 +1211,8 @@ export const API = (_apiTypeCheck = {
         contractId: z.string(),
         limit: z.coerce.number().gte(0).lte(100),
         userId: z.string().optional(),
+        question: z.string().optional(),
+        uniqueBettorCount: z.coerce.number().gte(0).optional(),
       })
       .strict(),
     returns: {} as {
@@ -2073,11 +2076,13 @@ export const API = (_apiTypeCheck = {
         blockedUserIds: z.array(z.string()).optional(),
         blockedGroupSlugs: z.array(z.string()).optional(),
         blockedContractIds: z.array(z.string()).optional(),
-        topicSlug: z.string().optional(),
-        topicId: z.string().optional(),
         topicIds: z.array(z.string()).optional(),
         types: z.array(z.enum(['bets', 'comments', 'markets'])).optional(),
         minBetAmount: z.coerce.number().optional(),
+        onlyFollowedTopics: coerceBoolean.optional(),
+        onlyFollowedContracts: coerceBoolean.optional(),
+        onlyFollowedUsers: coerceBoolean.optional(),
+        userId: z.string().optional(),
       })
       .strict(),
   },
@@ -2321,6 +2326,48 @@ export const API = (_apiTypeCheck = {
       })
       .strict(),
     returns: {} as { success: boolean },
+  },
+
+  'save-market-draft': {
+    method: 'POST',
+    visibility: 'public',
+    authed: true,
+    returns: {} as { id: number },
+    props: z
+      .object({
+        data: z.object({
+          question: z.string(),
+          description: z.any().optional(),
+          outcomeType: z.string(),
+          answers: z.array(z.string()).optional(),
+          closeDate: z.string().optional(),
+          closeHoursMinutes: z.string().optional(),
+          visibility: z.string(),
+          selectedGroups: z.array(z.any()),
+          savedAt: z.number(),
+        }),
+      })
+      .strict(),
+  },
+
+  'get-market-drafts': {
+    method: 'GET',
+    visibility: 'public',
+    authed: true,
+    returns: [] as MarketDraft[],
+    props: z.object({}).strict(),
+  },
+
+  'delete-market-draft': {
+    method: 'POST',
+    visibility: 'public',
+    authed: true,
+    returns: {} as { success: boolean },
+    props: z
+      .object({
+        id: z.coerce.number(),
+      })
+      .strict(),
   },
 } as const)
 

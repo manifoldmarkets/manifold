@@ -8,7 +8,7 @@ import {
   getMainBinaryMCAnswer,
   isBinaryMulti,
 } from 'common/contract'
-import { ContractMetric } from 'common/contract-metric'
+import { ContractMetric, getMaxSharesOutcome } from 'common/contract-metric'
 import { TRADE_TERM } from 'common/envs/constants'
 import { User } from 'common/user'
 import { BinaryMultiSellRow } from 'web/components/answers/answer-components'
@@ -28,8 +28,9 @@ import { useState } from 'react'
 import { Button } from '../buttons/button'
 import { LuShare } from 'react-icons/lu'
 import { getPseudonym } from '../charts/contract/choice'
-import { maxBy } from 'lodash'
 import { formatPercent } from 'common/util/format'
+import { useDisplayUserById } from 'web/hooks/use-user-supabase'
+
 export function UserBetsSummary(props: {
   contract: Contract
   initialMetrics?: ContractMetric
@@ -64,9 +65,7 @@ export function BetsSummary(props: {
 
   const { payout, invested, totalShares = {}, profit, profitPercent } = metric
 
-  const maxSharesOutcome =
-    metric.maxSharesOutcome ??
-    maxBy(Object.entries(totalShares), ([, value]) => value)?.[0]
+  const maxSharesOutcome = getMaxSharesOutcome(metric)
   const yesWinnings = totalShares.YES ?? 0
   const noWinnings = totalShares.NO ?? 0
 
@@ -79,6 +78,7 @@ export function BetsSummary(props: {
   const prob = contract.mechanism === 'cpmm-1' ? getProbability(contract) : 0
   const expectation = prob * yesWinnings + (1 - prob) * noWinnings
   const user = useUser()
+  const bettor = useDisplayUserById(metric.userId)
 
   if (metric.invested === 0 && metric.profit === 0) return null
 
@@ -251,7 +251,7 @@ export function BetsSummary(props: {
                   Share
                 </Row>
               </Button>
-              {showShareModal && (
+              {showShareModal && bettor && (
                 <ShareBetModal
                   open={showShareModal}
                   setOpen={setShowShareModal}
@@ -268,9 +268,12 @@ export function BetsSummary(props: {
                   winAmount={metric.totalShares[maxSharesOutcome]}
                   resolution={resolution}
                   profit={metric.profit}
-                  currentPrice={
-                    contract.mechanism === 'cpmm-1' ? contract.prob : undefined
-                  }
+                  bettor={{
+                    id: bettor.id,
+                    name: bettor.name,
+                    username: bettor.username,
+                    avatarUrl: bettor.avatarUrl,
+                  }}
                 />
               )}
             </>

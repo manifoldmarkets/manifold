@@ -13,5 +13,4 @@ export type PortfolioMetrics = {
 }
 export type LivePortfolioMetrics = PortfolioMetrics & {
   dailyProfit: number
-  dailyCashProfit: number
 }

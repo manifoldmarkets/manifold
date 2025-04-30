@@ -1,7 +1,6 @@
 import dayjs from 'dayjs'
 import { capitalize, clamp } from 'lodash'
 import { useEffect, useRef, useState } from 'react'
-import toast from 'react-hot-toast'
 import { LimitBet } from 'common/bet'
 import { getProbability } from 'common/calculate'
 import {
@@ -10,7 +9,7 @@ import {
   MarketContract,
   MultiContract,
 } from 'common/contract'
-import { formatPercent } from 'common/util/format'
+import { formatOutcomeLabel, formatPercent } from 'common/util/format'
 import { DAY_MS, HOUR_MS, MINUTE_MS, MONTH_MS, WEEK_MS } from 'common/util/time'
 import { Input } from 'web/components/widgets/input'
 import { firebaseLogin, User } from 'web/lib/firebase/users'
@@ -36,6 +35,11 @@ import { getLimitBetReturns, MultiBetProps } from 'client-common/lib/bet'
 import DropdownMenu from '../widgets/dropdown-menu'
 import { SelectorIcon } from '@heroicons/react/solid'
 import { InfoTooltip } from '../widgets/info-tooltip'
+import { LuShare } from 'react-icons/lu'
+import { ShareBetModal } from './share-bet'
+import { Bet } from 'common/bet'
+import { useEvent } from 'client-common/hooks/use-event'
+import { CandidateBet } from 'common/new-bet'
 
 const expirationOptions = [
   { label: 'Never expires', value: 0 },
@@ -46,6 +50,8 @@ const expirationOptions = [
   { label: 'Expires in 1 month', value: MONTH_MS },
   { label: 'Custom time...', value: -1 },
 ]
+
+const WAIT_TO_DISMISS = 3000
 
 export default function LimitOrderPanel(props: {
   contract: MarketContract
@@ -121,7 +127,15 @@ export default function LimitOrderPanel(props: {
   const [selectedExpiration, setSelectedExpiration] =
     usePersistentLocalState<number>(0, 'limit-order-expiration')
 
-  // Find matching expiration option if available
+  const [isSharing, setIsSharing] = useState(false)
+  const [lastBetDetails, setLastBetDetails] = useState<Bet | null>(null)
+
+  const callOnBuySuccess = useEvent(() => {
+    if (onBuySuccess && !isSharing) {
+      onBuySuccess()
+    }
+  })
+
   useEffect(() => {
     if (expiration === 0) {
       setSelectedExpiration(0)
@@ -203,32 +217,28 @@ export default function LimitOrderPanel(props: {
     const answerId = multiProps?.answerToBuy.id
 
     try {
-      const bet = await toast.promise(
-        api(
-          'bet',
-          removeUndefinedProps({
-            outcome,
-            amount,
-            contractId: contract.id,
-            answerId,
-            limitProb,
-            expiresAt: addCustomExpiration ? expiresAt : undefined,
-            expiresMillisAfter,
-            deps: betDeps.current?.map((b) => b.userId),
-            silent: expiresMillisAfter && expiresMillisAfter <= 1000,
-          } as APIParams<'bet'>)
-        ),
-        {
-          loading: `Submitting ${TRADE_TERM}...`,
-          success: `${capitalize(TRADE_TERM)} submitted!`,
-          error: `Error submitting ${TRADE_TERM}`,
-        }
+      const bet = await api(
+        'bet',
+        removeUndefinedProps({
+          outcome,
+          amount,
+          contractId: contract.id,
+          answerId,
+          limitProb,
+          expiresAt: addCustomExpiration ? expiresAt : undefined,
+          expiresMillisAfter,
+          deps: betDeps.current?.map((b) => b.userId),
+          silent: expiresMillisAfter && expiresMillisAfter <= 1000,
+        } as APIParams<'bet'>)
       )
-
       console.log(`placed ${TRADE_TERM}. Result:`, bet)
-      if (onBuySuccess) onBuySuccess()
 
-      await track('bet', {
+      const fullBet: Bet = {
+        ...(bet as CandidateBet<LimitBet>),
+        id: bet.betId,
+        userId: user.id,
+      }
+      track('bet', {
         location: 'bet panel',
         outcomeType: contract.outcomeType,
         slug: contract.slug,
@@ -240,7 +250,13 @@ export default function LimitOrderPanel(props: {
         answerId: multiProps?.answerToBuy.id,
         token: contract.token,
       })
+      setLastBetDetails(fullBet)
+      setIsSharing(false)
+      setTimeout(() => {
+        callOnBuySuccess()
+      }, WAIT_TO_DISMISS)
     } catch (e) {
+      setLastBetDetails(null)
       if (e instanceof APIError) {
         setError(e.message.toString())
       } else {
@@ -256,7 +272,6 @@ export default function LimitOrderPanel(props: {
   let currentReturn = 0
   let orderAmount = 0
   let filledAmount = 0
-  // let fees = noFees
   try {
     const result = getLimitBetReturns(
       outcome ?? 'YES',
@@ -283,7 +298,7 @@ export default function LimitOrderPanel(props: {
     )
   }
   const returnPercent = formatPercent(currentReturn)
-  // const totalFees = getFeeTotal(fees)
+
   const hideYesNo = isBinaryMC || !!pseudonym
 
   const expirationItems = expirationOptions.map((option) => ({
@@ -492,17 +507,6 @@ export default function LimitOrderPanel(props: {
           </Row>
         )}
 
-        {/* <Row className="items-center justify-between gap-2 text-sm">
-          <Row className="text-ink-500 flex-nowrap items-center gap-2 whitespace-nowrap">
-            Fees
-          </Row>
-          <FeeDisplay
-            amount={filledAmount}
-            totalFees={totalFees}
-            isCashContract={isCashContract}
-          />
-        </Row> */}
-
         <Col className="gap-2">
           {user ? (
             <>
@@ -546,6 +550,60 @@ export default function LimitOrderPanel(props: {
                   )}
                 </Button>
               </Row>
+
+              {lastBetDetails && (
+                <Row className="bg-primary-100 mt-2 items-center justify-between rounded-lg p-3">
+                  <Row className="items-baseline gap-2">
+                    <span className="text-primary-700 text-sm ">
+                      {isSubmitting ? 'Placing trade...' : 'Trade successful!'}
+                    </span>
+                  </Row>
+                  <Button
+                    className="w-1/2"
+                    color="gradient"
+                    onClick={() => setIsSharing(true)}
+                  >
+                    <Row className="items-center gap-1.5">
+                      <LuShare className="h-5 w-5" aria-hidden />
+                      Share Bet
+                    </Row>
+                  </Button>
+                </Row>
+              )}
+
+              {lastBetDetails && isSharing && user && (
+                <ShareBetModal
+                  open={isSharing}
+                  setOpen={setIsSharing}
+                  questionText={contract.question}
+                  outcome={formatOutcomeLabel(
+                    contract,
+                    lastBetDetails.outcome as 'YES' | 'NO'
+                  )}
+                  answer={multiProps?.answerToBuy.text}
+                  avgPrice={formatPercent(lastBetDetails.limitProb ?? 0)}
+                  betAmount={
+                    lastBetDetails.orderAmount ?? lastBetDetails.amount
+                  }
+                  winAmount={
+                    lastBetDetails.limitProb !== undefined &&
+                    lastBetDetails.orderAmount !== undefined
+                      ? lastBetDetails.outcome === 'YES'
+                        ? lastBetDetails.orderAmount / lastBetDetails.limitProb
+                        : lastBetDetails.orderAmount /
+                          (1 - lastBetDetails.limitProb)
+                      : lastBetDetails.shares
+                  }
+                  bettor={{
+                    id: user.id,
+                    name: user.name,
+                    username: user.username,
+                    avatarUrl: user.avatarUrl,
+                  }}
+                  isLimitBet={true}
+                  orderAmount={lastBetDetails.orderAmount}
+                />
+              )}
             </>
           ) : (
             <Button

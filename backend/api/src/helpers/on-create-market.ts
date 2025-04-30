@@ -1,7 +1,7 @@
 import * as admin from 'firebase-admin'
 import * as sharp from 'sharp'
 import { JSONContent } from '@tiptap/core'
-import { getUser } from 'shared/utils'
+import { getUser, log } from 'shared/utils'
 import { Contract } from 'common/contract'
 import { parseMentions, richTextToString } from 'common/util/parse'
 import { completeCalculatedQuestFromTrigger } from 'shared/complete-quest-internal'
@@ -135,7 +135,7 @@ export const uploadImageToStorage = async (imgUrl: string, prefix: string) => {
     })
 
     stream.on('finish', () => {
-      console.log('Image upload completed')
+      log('Image upload completed')
       const url = file.publicUrl()
       resolve(url.replace(/%2F/g, '/'))
     })

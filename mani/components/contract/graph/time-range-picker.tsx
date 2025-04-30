@@ -1,10 +1,12 @@
 import { View, TouchableOpacity, StyleSheet } from 'react-native'
-import { Period } from 'common/period'
+import { Period, periodDurations } from 'common/period'
 import { useColor } from 'hooks/use-color'
 import { ThemedText } from 'components/themed-text'
 import { Rounded } from 'constants/border-radius'
 
 const labels: { [label: string]: Period } = {
+  '1H': '1hour',
+  '6H': '6hour',
   '1D': 'daily',
   '1W': 'weekly',
   '1M': 'monthly',
@@ -19,13 +21,6 @@ export const TimeRangePicker = (props: {
 }) => {
   const { currentTimePeriod, setCurrentTimePeriod, maxRange, disabled } = props
   const color = useColor()
-
-  const periodDurations = {
-    daily: 24 * 60 * 60 * 1000,
-    weekly: 7 * 24 * 60 * 60 * 1000,
-    monthly: 30 * 24 * 60 * 60 * 1000,
-    allTime: Number.MAX_SAFE_INTEGER,
-  }
 
   const availableOptions = !maxRange
     ? Object.entries(labels)

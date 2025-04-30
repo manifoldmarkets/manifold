@@ -88,7 +88,7 @@ export const generateAIDescription: APIHandler<'generate-ai-description'> =
 
         return { description: anythingToRichText({ markdown: gptResponse }) }
       } catch (e) {
-        console.error('Failed to generate description:', e)
+        log.error('Failed to generate description:', { e })
         throw new APIError(
           500,
           'Failed to generate description. Please try again.'

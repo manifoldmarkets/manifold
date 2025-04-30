@@ -37,7 +37,6 @@ export function MarketModal(props: {
             len == 1 ? 'Embed 1 question' : `Embed grid of ${len} questions`
           }
           onSubmit={onSubmit}
-          className="grow overflow-y-auto"
         />
       </Col>
     </Modal>

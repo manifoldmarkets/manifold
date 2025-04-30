@@ -4,26 +4,41 @@ import { superBanUser } from 'web/lib/supabase/super-ban-user'
 import { Col } from './layout/col'
 import { Button } from './buttons/button'
 
-const SuperBanControl = (props: { userId: string }) => {
-  const { userId } = props
+const SuperBanControl = (props: {
+  userId: string
+  onBan?: () => void
+  disabled?: boolean
+}) => {
+  const { userId, onBan, disabled } = props
   const [showConfirmModal, setShowConfirmModal] = useState(false)
   const [showSummaryModal, setShowSummaryModal] = useState(false)
   const [summaryMessage, setSummaryMessage] = useState('')
+  const [loading, setLoading] = useState(false)
 
   async function handleSuperBan() {
     setShowConfirmModal(false)
+    setLoading(true)
     try {
       const message = await superBanUser(userId)
       setSummaryMessage(message)
       setShowSummaryModal(true)
+      onBan?.()
     } catch (error) {
       console.error('Superban failed:', error)
+    } finally {
+      setLoading(false)
     }
   }
 
   return (
     <>
-      <Button color="red" size="xs" onClick={() => setShowConfirmModal(true)}>
+      <Button
+        color="red"
+        size="xs"
+        onClick={() => setShowConfirmModal(true)}
+        disabled={loading || disabled}
+        loading={loading}
+      >
         Superban
       </Button>
 

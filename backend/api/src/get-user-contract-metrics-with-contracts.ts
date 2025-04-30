@@ -12,11 +12,7 @@ export const getUserContractMetricsWithContracts: APIHandler<
   'get-user-contract-metrics-with-contracts'
 > = async (props, auth) => {
   const { userId, limit, offset = 0, perAnswer = false, inMani } = props
-  const visibilitySQL = getContractPrivacyWhereSQLFilter(
-    auth?.uid,
-    undefined,
-    'c.id'
-  )
+  const visibilitySQL = getContractPrivacyWhereSQLFilter(auth?.uid, 'c.id')
   const pg = createSupabaseDirectClient()
   const q = `
         SELECT 

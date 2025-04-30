@@ -8,31 +8,21 @@ import { useUser } from 'web/hooks/use-user'
 import { track } from 'web/lib/service/analytics'
 import { BrowsePageContent } from '../browse'
 import { useRedirectIfSignedOut } from 'web/hooks/use-redirect-if-signed-out'
-import {
-  DowntimeBanner,
-  ManaForeverBanner,
-  Manifest2025Banner,
-} from 'web/components/nav/banner'
+import { DowntimeBanner } from 'web/components/nav/banner'
 import { Welcome } from 'web/components/onboarding/welcome'
 import { LiveGeneratedFeed } from 'web/components/feed/live-generated-feed'
 import { ExploreContent } from '../explore'
-import { useBanner } from 'web/components/nav/banner'
 import { useSaveReferral } from 'web/hooks/use-save-referral'
 export default function Home() {
   const user = useUser()
   useSaveReferral(user)
   useRedirectIfSignedOut()
-  const [showManifestBanner, hideManifestBanner] = useBanner('manifest-2025')
 
   return (
     <Page trackPageView={'home'} className="lg:px-4">
       <Welcome />
       <SEO title={`Home`} description={`Browse all questions`} url={`/home`} />
       <DowntimeBanner />
-      <ManaForeverBanner />
-      {showManifestBanner && (
-        <Manifest2025Banner hideBanner={hideManifestBanner} />
-      )}
       <DailyStats className="z-50 mb-1 w-full px-2 py-2" user={user} />
       <BrowsePageContent />
       {user && (

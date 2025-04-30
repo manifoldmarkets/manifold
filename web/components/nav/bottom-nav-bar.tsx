@@ -10,7 +10,6 @@ import {
   QuestionMarkCircleIcon,
   SearchIcon,
   UserCircleIcon,
-  GlobeAltIcon,
 } from '@heroicons/react/outline'
 import { MenuAlt3Icon, XIcon } from '@heroicons/react/solid'
 import clsx from 'clsx'
@@ -29,9 +28,7 @@ import { Avatar } from '../widgets/avatar'
 import { TokenNumber } from '../widgets/token-number'
 import Sidebar from './sidebar'
 import { NavItem } from './sidebar-item'
-import { buildArray } from 'common/util/array'
-import TrophyIcon from 'web/lib/icons/trophy-icon.svg'
-import { ReportsIcon } from '../reports-icon'
+import { IoCompassOutline } from 'react-icons/io5'
 
 export const BOTTOM_NAV_BAR_HEIGHT = 58
 
@@ -39,6 +36,7 @@ const itemClass =
   'sm:hover:bg-ink-200 block w-full py-1 px-3 text-center sm:hover:text-primary-700 transition-colors'
 const selectedItemClass = 'bg-ink-100 text-primary-700'
 const touchItemClass = 'bg-primary-100'
+const iconClassName = 'mx-auto my-1 h-7 w-7'
 
 function getNavigation(user: User) {
   return [
@@ -50,14 +48,15 @@ function getNavigation(user: User) {
     {
       name: 'Explore',
       href: '/explore',
-      icon: GlobeAltIcon,
+      icon: IoCompassOutline,
+      iconClassName: '!h-[1.9rem] !w-[1.9rem] !mb-[0.19rem] !mt-[0.13rem]',
     },
     {
       name: 'Profile',
       href: `/${user.username}`,
     },
     {
-      name: 'Notifs',
+      name: 'Inbox',
       href: `/notifications`,
       icon: NotificationsIcon,
     },
@@ -69,8 +68,8 @@ const signedOutNavigation = () => [
   {
     name: 'Explore',
     href: '/explore',
-    icon: GlobeAltIcon,
-    alwaysShowName: true,
+    icon: IoCompassOutline,
+    iconClassName: '!h-[1.9rem] !w-[1.9rem] !mb-[0.19rem] !mt-[0.13rem]',
     // prefetch: false, // should we not prefetch this?
   },
   // { name: 'News', href: '/news', icon: NewspaperIcon, alwaysShowName: true },
@@ -78,13 +77,11 @@ const signedOutNavigation = () => [
     name: 'About',
     href: '/about',
     icon: QuestionMarkCircleIcon,
-    alwaysShowName: true,
   },
   {
     name: 'Sign in',
     onClick: firebaseLogin,
     icon: UserCircleIcon,
-    alwaysShowName: true,
   },
 ]
 
@@ -124,7 +121,8 @@ export function BottomNavBar() {
             )}
             onClick={() => setSidebarOpen(true)}
           >
-            <MenuAlt3Icon className="mx-auto my-2 h-8 w-8" aria-hidden="true" />
+            <MenuAlt3Icon className={iconClassName} aria-hidden="true" />
+            More
           </div>
           <MobileSidebar
             sidebarOpen={sidebarOpen}
@@ -199,9 +197,11 @@ function NavBarItem(props: {
         onTouchStart={() => setTouched(true)}
         onTouchEnd={() => setTouched(false)}
       >
-        {item.icon && <item.icon className="mx-auto my-2 h-8 w-8" />}
+        {item.icon && (
+          <item.icon className={clsx(iconClassName, item.iconClassName)} />
+        )}
         {children}
-        {item.alwaysShowName && item.name}
+        {item.name}
       </button>
     )
   }
@@ -222,9 +222,11 @@ function NavBarItem(props: {
       onTouchStart={() => setTouched(true)}
       onTouchEnd={() => setTouched(false)}
     >
-      {item.icon && <item.icon className="mx-auto my-2 h-8 w-8" />}
+      {item.icon && (
+        <item.icon className={clsx(iconClassName, item.iconClassName)} />
+      )}
       {children}
-      {item.alwaysShowName && item.name}
+      {item.name}
     </Link>
   )
 }
@@ -274,22 +276,5 @@ export function MobileSidebar(props: {
         </Dialog>
       </Transition>
     </div>
-  )
-}
-
-const getMobileNav = (
-  toggleModal: () => void,
-  options: { isNewUser: boolean; isLiveTV?: boolean; isAdminOrMod: boolean }
-) => {
-  const { isAdminOrMod } = options
-
-  return buildArray<NavItem>(
-    { name: 'Leagues', href: '/leagues', icon: TrophyIcon },
-    // Remove Messages item
-    isAdminOrMod && {
-      name: 'Reports',
-      href: '/reports',
-      icon: ReportsIcon,
-    }
   )
 }

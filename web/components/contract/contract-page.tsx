@@ -18,7 +18,6 @@ import {
   MultiPoints,
   unserializeBase64Multi,
 } from 'common/chart'
-import { base64toFloat32Points } from 'common/edge/og'
 import { HOUSE_BOT_USERNAME, SPICE_MARKET_TOOLTIP } from 'common/envs/constants'
 import { DAY_MS } from 'common/util/time'
 import { UserBetsSummary } from 'web/components/bet/user-bet-summary'
@@ -78,6 +77,8 @@ import { shouldHideGraph } from 'common/contract-params'
 import { CreatorSharePanel, NonCreatorSharePanel } from './creator-share-panel'
 import { FollowMarketButton } from '../buttons/follow-market-button'
 import { useSaveReferral } from 'web/hooks/use-save-referral'
+import { base64toPoints } from 'common/edge/og'
+import { useDisplayUserById } from 'web/hooks/use-user-supabase'
 
 export function ContractPageContent(props: ContractParams) {
   const {
@@ -260,7 +261,8 @@ export function ContractPageContent(props: ContractParams) {
 
   const isSpiceMarket = !!liveContract.isSpicePayout
   const isCashContract = liveContract.token === 'CASH'
-
+  const resolverId = liveContract.resolverId
+  const resolverUser = useDisplayUserById(resolverId)
   return (
     <>
       {props.contract.visibility !== 'public' && (
@@ -451,11 +453,14 @@ export function ContractPageContent(props: ContractParams) {
               <div className="relative my-2">
                 <ReviewPanel
                   marketId={props.contract.id}
+                  title={props.contract.question}
                   author={props.contract.creatorName}
                   onSubmit={(rating: Rating) => {
                     setJustNowReview(rating)
                     setShowReview(false)
                   }}
+                  resolverUser={resolverUser}
+                  currentUser={user}
                 />
                 <button
                   className="text-ink-400 hover:text-ink-600 absolute right-0 top-0 p-4"
@@ -538,6 +543,14 @@ export function ContractPageContent(props: ContractParams) {
                 />
                 <Spacer h={12} />
               </>
+            )}
+            {comments.length > 3 && (
+              <RelatedContractsGrid
+                contracts={relatedMarkets}
+                loadMore={loadMore}
+                showAll={false}
+                className=" !pt-0 pb-4"
+              />
             )}
 
             <div ref={tabsContainerRef} className="mb-4">
@@ -658,7 +671,7 @@ const useBetData = (props: {
         [...(array1 ?? []), ...(array2 ?? [])].sort((a, b) => a.x - b.x)
       ) as MultiPoints
     } else {
-      const points = pointsString ? base64toFloat32Points(pointsString) : []
+      const points = pointsString ? base64toPoints(pointsString) : []
       const newPoints = newBetsWithoutRedemptions.map((bet) => ({
         x: bet.createdTime,
         y: bet.probAfter,

@@ -92,11 +92,10 @@ export function FeedCommentHeader(props: {
   const isReplyToBet = betAmount !== undefined
   const commenterIsBettor = commenterAndBettorMatch(comment)
   const isLimitBet = betOrderAmount !== undefined && betLimitProb !== undefined
-
   return (
     <Col className={clsx('text-ink-600 text-sm', className)}>
-      <Row className="justify-between">
-        <Row className="gap-1">
+      <Row className="items-start justify-between">
+        <span className="items-center gap-x-1">
           <UserHovercard userId={userId}>
             <UserLink
               user={{
@@ -178,6 +177,8 @@ export function FeedCommentHeader(props: {
           {!inTimeline && isApi && (
             <InfoTooltip text="Placed via API">🤖</InfoTooltip>
           )}
+        </span>
+        <Row className="gap-1">
           {!inTimeline && menuProps && (
             <DotMenu
               comment={comment}
@@ -186,8 +187,6 @@ export function FeedCommentHeader(props: {
               liveContractId={menuProps.liveContractId}
             />
           )}
-        </Row>
-        <Row className="gap-1">
           {bountyAwarded && bountyAwarded > 0 && (
             <span className="select-none text-teal-600">
               +
@@ -208,7 +207,7 @@ const getBoughtMoney = (
   let bought: string | undefined
   let money: string | undefined
   if (betAmount != undefined) {
-    bought = betAmount >= 0 ? 'bought' : 'sold'
+    bought = betAmount >= 0 ? ' bought' : ' sold'
     money = formatWithToken({
       amount: Math.abs(betAmount),
       token: isCashContract ? 'CASH' : 'M$',
@@ -547,6 +546,7 @@ function DotMenu(props: {
                 toast.error(
                   wasHidden ? 'Error unhiding comment' : 'Error hiding comment'
                 )
+                console.error(e)
                 // undo optimistic update
                 updateComment({ hidden: wasHidden })
               }
@@ -563,6 +563,7 @@ function DotMenu(props: {
               try {
                 await api('pin-comment', { commentPath })
               } catch (e) {
+                console.error(e)
                 toast.error(
                   wasPinned ? 'Error pinning comment' : 'Error pinning comment'
                 )

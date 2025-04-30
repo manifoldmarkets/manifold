@@ -1,4 +1,13 @@
-import { groupBy, keyBy, minBy, mapValues, sortBy, sumBy, uniqBy } from 'lodash'
+import {
+  groupBy,
+  keyBy,
+  minBy,
+  mapValues,
+  sortBy,
+  sumBy,
+  uniqBy,
+  maxBy,
+} from 'lodash'
 import { memo, useEffect, useMemo, useReducer, useRef, useState } from 'react'
 import clsx from 'clsx'
 import { ChevronDownIcon, ChevronUpIcon } from '@heroicons/react/solid'
@@ -10,7 +19,12 @@ import {
 } from 'common/antes'
 import { Bet } from 'common/bet'
 import { ContractComment } from 'common/comment'
-import { BinaryContract, Contract, CPMMNumericContract } from 'common/contract'
+import {
+  BinaryContract,
+  Contract,
+  CPMMNumericContract,
+  MarketContract,
+} from 'common/contract'
 import { buildArray } from 'common/util/array'
 import { shortFormatNumber, maybePluralize } from 'common/util/format'
 import { MINUTE_MS } from 'common/util/time'
@@ -34,7 +48,6 @@ import { usePersistentInMemoryState } from 'client-common/hooks/use-persistent-i
 import { useSubscribeNewComments } from 'client-common/hooks/use-comments'
 import { ParentFeedComment } from '../comments/comment'
 import { useHashInUrlPageRouter } from 'web/hooks/use-hash-in-url-page-router'
-import { useHashInUrl } from 'web/hooks/use-hash-in-url'
 import { MultiNumericBetGroup } from 'web/components/feed/feed-multi-numeric-bet-group'
 import { Button } from '../buttons/button'
 import DropdownMenu from '../widgets/dropdown-menu'
@@ -62,7 +75,6 @@ export function ContractTabs(props: {
   totalBets: number
   totalPositions: number
   pinnedComments: ContractComment[]
-  appRouter?: boolean
 }) {
   const {
     staticContract,
@@ -76,8 +88,9 @@ export function ContractTabs(props: {
     setActiveIndex,
     totalBets,
     pinnedComments,
-    appRouter,
   } = props
+
+  const highlightedCommentId = useHashInUrlPageRouter('')
 
   const [totalPositions, setTotalPositions] = useState(props.totalPositions)
   const [totalComments, setTotalComments] = useState(comments.length)
@@ -96,6 +109,7 @@ export function ContractTabs(props: {
 
   return (
     <ControlledTabs
+      labelClassName="!text-base"
       className="mb-4"
       activeIndex={activeIndex}
       onClick={(title, i) => {
@@ -126,7 +140,7 @@ export function ContractTabs(props: {
               replyTo={replyTo}
               clearReply={() => setReplyTo?.(undefined)}
               className="-ml-2 -mr-1"
-              appRouter={appRouter}
+              highlightCommentId={highlightedCommentId}
             />
           ),
         },
@@ -173,7 +187,6 @@ export const CommentsTabContent = memo(function CommentsTabContent(props: {
   className?: string
   highlightCommentId?: string
   pinnedComments: ContractComment[]
-  appRouter?: boolean
   scrollToEnd?: boolean
 }) {
   const {
@@ -185,13 +198,12 @@ export const CommentsTabContent = memo(function CommentsTabContent(props: {
     clearReply,
     className,
     highlightCommentId,
-    appRouter,
     scrollToEnd,
   } = props
   const user = useUser()
 
   // Load all comments once
-  const { data: fetchedComments } = useAPIGetter(
+  const { data: fetchedComments, loading: commentsLoading } = useAPIGetter(
     'comments',
     {
       contractId: staticContract.id,
@@ -208,18 +220,23 @@ export const CommentsTabContent = memo(function CommentsTabContent(props: {
     useIsPageVisible,
     (params) => api('bets', params)
   )
+  const latestCommentTime = useMemo(
+    () => maxBy(fetchedComments, 'createdTime')?.createdTime,
+    [fetchedComments?.length]
+  )
 
   const isPageVisible = useIsPageVisible()
-  const { data: newFetchedComments } = useAPIGetter(
-    'comments',
-    {
-      contractId: staticContract.id,
-      afterTime: staticContract.lastCommentTime,
-    },
-    undefined,
-    'new-comments-' + staticContract.id,
-    isPageVisible
-  )
+  const { data: newFetchedComments, loading: newCommentsLoading } =
+    useAPIGetter(
+      'comments',
+      {
+        contractId: staticContract.id,
+        afterTime: latestCommentTime,
+      },
+      undefined,
+      'new-comments-' + staticContract.id,
+      isPageVisible
+    )
 
   // Listen for new comments
   const newComments = useSubscribeNewComments(staticContract.id)
@@ -232,6 +249,12 @@ export const CommentsTabContent = memo(function CommentsTabContent(props: {
     ],
     'id'
   ).filter((c) => !blockedUserIds.includes(c.userId))
+
+  const commentExistsLocally = comments.some((c) => c.id === highlightCommentId)
+  const isLoadingHighlightedComment =
+    highlightCommentId &&
+    !commentExistsLocally &&
+    (commentsLoading || newCommentsLoading)
 
   const [parentCommentsToRender, setParentCommentsToRender] = useState(
     props.comments.filter((c) => !c.replyToCommentId).length
@@ -338,20 +361,14 @@ export const CommentsTabContent = memo(function CommentsTabContent(props: {
         .flat(),
     [comments.length]
   )
-  const idToHighlight =
-    // eslint-disable-next-line react-hooks/rules-of-hooks
-    highlightCommentId ?? appRouter
-      ? // eslint-disable-next-line react-hooks/rules-of-hooks
-        useHashInUrl()
-      : // eslint-disable-next-line react-hooks/rules-of-hooks
-        useHashInUrlPageRouter('')
+
   useEffect(() => {
-    if (idToHighlight) {
-      const currentlyVisible = visibleCommentIds.includes(idToHighlight)
+    if (highlightCommentId) {
+      const currentlyVisible = visibleCommentIds.includes(highlightCommentId)
       if (!currentlyVisible) setParentCommentsToRender(comments.length)
     }
     setCommentsLength?.(comments.length)
-  }, [idToHighlight, comments.length])
+  }, [highlightCommentId, comments.length])
 
   const loadMore = () => setParentCommentsToRender((prev) => prev + LOAD_MORE)
   const pinnedComments = uniqBy(
@@ -479,34 +496,40 @@ export const CommentsTabContent = memo(function CommentsTabContent(props: {
         </div>
       ))}
 
-      {parentComments.slice(0, parentCommentsToRender).map((parent) => (
-        <FeedCommentThread
-          key={parent.id}
-          playContract={staticContract}
-          liveContract={liveContract}
-          parentComment={parent}
-          threadComments={commentsByParent[parent.id] ?? []}
-          trackingLocation={'contract page'}
-          idInUrl={idToHighlight}
-          showReplies={
-            !isBountiedQuestion ||
-            (!!user && user.id === staticContract.creatorId)
-          }
-          childrenBountyTotal={
-            staticContract.outcomeType == 'BOUNTIED_QUESTION'
-              ? childrensBounties[parent.id]
-              : undefined
-          }
-          bets={bets?.filter(
-            (b) =>
-              b.replyToCommentId &&
-              [parent]
-                .concat(commentsByParent[parent.id] ?? [])
-                .map((c) => c.id)
-                .includes(b.replyToCommentId)
-          )}
-        />
-      ))}
+      {isLoadingHighlightedComment ? (
+        <Col className="h-32 items-center justify-center">
+          <LoadingIndicator />
+        </Col>
+      ) : (
+        parentComments.slice(0, parentCommentsToRender).map((parent) => (
+          <FeedCommentThread
+            key={parent.id}
+            playContract={staticContract}
+            liveContract={liveContract}
+            parentComment={parent}
+            threadComments={commentsByParent[parent.id] ?? []}
+            trackingLocation={'contract page'}
+            idInUrl={highlightCommentId}
+            showReplies={
+              !isBountiedQuestion ||
+              (!!user && user.id === staticContract.creatorId)
+            }
+            childrenBountyTotal={
+              staticContract.outcomeType == 'BOUNTIED_QUESTION'
+                ? childrensBounties[parent.id]
+                : undefined
+            }
+            bets={bets?.filter(
+              (b) =>
+                b.replyToCommentId &&
+                [parent]
+                  .concat(commentsByParent[parent.id] ?? [])
+                  .map((c) => c.id)
+                  .includes(b.replyToCommentId)
+            )}
+          />
+        ))
+      )}
       <div className="relative w-full">
         <VisibilityObserver
           onVisibilityUpdated={onVisibilityUpdated}
@@ -606,15 +629,21 @@ export const BetsTabContent = memo(function BetsTabContent(props: {
   const scrollRef = useRef<HTMLDivElement>(null)
   const isCashContract = contract.token === 'CASH'
 
+  // Determine how many loading rows to show (up to ITEMS_PER_PAGE)
+  const numLoadingRows = shouldLoadMore
+    ? Math.min(ITEMS_PER_PAGE, Math.max(0, totalBets - pageItems.length))
+    : 0
+
   return (
     <>
-      <Col className="mb-4 items-start gap-7" ref={scrollRef}>
+      <div ref={scrollRef} />
+      <Col className="mb-4 items-start gap-7">
         {pageItems.map((item) =>
           item.type === 'bet' ? (
             <FeedBet
               onReply={setReplyToBet}
               key={item.id}
-              contract={contract}
+              contract={contract as MarketContract}
               bet={item.bet}
             />
           ) : item.type === 'betGroup' ? (
@@ -635,8 +664,11 @@ export const BetsTabContent = memo(function BetsTabContent(props: {
             </div>
           )
         )}
-        {/* TODO: skeleton */}
-        {shouldLoadMore && <LoadingIndicator />}
+        {/* Render skeleton loading rows */}
+        {shouldLoadMore &&
+          Array(numLoadingRows)
+            .fill(0)
+            .map((_, i) => <LoadingBetRow key={`loading-${i}`} />)}
       </Col>
       <Pagination
         page={page}
@@ -644,9 +676,23 @@ export const BetsTabContent = memo(function BetsTabContent(props: {
         totalItems={totalItems}
         setPage={(page) => {
           setPage(page)
-          scrollRef.current?.scrollIntoView()
+          scrollRef.current?.scrollIntoView({
+            block: 'center',
+          })
         }}
       />
     </>
   )
 })
+
+function LoadingBetRow() {
+  return (
+    <div className="flex w-full animate-pulse gap-3 rounded-md ">
+      {/* Avatar skeleton */}
+      <div className="h-10 w-10 rounded-full bg-gray-500" />
+      <Col className="flex-1 justify-center gap-1.5">
+        <div className="h-4 w-1/2 rounded bg-gray-500" />
+      </Col>
+    </div>
+  )
+}

@@ -79,7 +79,7 @@ Description: ${JSON.stringify(contract.description)}
 The following comments have been submitted:
 
 ` + sortedComments.map((c) => `${c.likes} likes:\n${c.content}`).join('\n\n')
-    const resultMessage = await promptOpenAI(prompt, 'o3-mini')
+    const resultMessage = await promptOpenAI(prompt, 'o4-mini')
     if (resultMessage) {
       await updateContract(pg, contract.id, {
         gptCommentSummary: resultMessage,

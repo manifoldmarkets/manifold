@@ -53,7 +53,7 @@ export const Avatar = memo(
     // there can be no avatar URL or username in the feed, we show a "submit comment"
     // item with a fake grey user circle guy even if you aren't signed in
     return (
-      <div className="relative">
+      <div className={isUserFresh ? 'relative' : ''}>
         {avatarUrl ? (
           <Image
             width={sizeInPx}

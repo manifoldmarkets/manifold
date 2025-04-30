@@ -35,7 +35,7 @@ import { Group, MAX_GROUPS_PER_MARKET } from 'common/group'
 import { STONK_NO, STONK_YES } from 'common/stonk'
 import { User } from 'common/user'
 import { removeUndefinedProps } from 'common/util/object'
-import { extensions } from 'common/util/parse'
+import { extensions, richTextToString } from 'common/util/parse'
 import {
   setPersistentLocalState,
   usePersistentLocalState,
@@ -69,8 +69,13 @@ import { getMultiNumericAnswerBucketRangeNames } from 'common/src/number'
 import { randomString } from 'common/util/random'
 import { formatWithToken } from 'common/util/format'
 import { BiUndo } from 'react-icons/bi'
-import { liquidityTiers } from 'common/tier'
+import { getAnswerCostFromLiquidity, liquidityTiers } from 'common/tier'
 import { MultiNumericDateSection } from './multi-numeric-date-section'
+import { Modal, MODAL_CLASS } from '../layout/modal'
+import { RelativeTimestamp } from '../relative-timestamp'
+import { MarketDraft } from 'common/drafts'
+import { toast } from 'react-hot-toast'
+import { useEvent } from 'client-common/hooks/use-event'
 
 export function ContractParamsForm(props: {
   creator: User
@@ -222,6 +227,7 @@ export function ContractParamsForm(props: {
       else setAnswers((a) => [...a, ''])
     }
   }, [addAnswersMode, answers.length])
+  const [isSavingDraft, setIsSavingDraft] = useState(false)
 
   const questionKey = 'new-question' + paramsKey
   const [question, setQuestion] = usePersistentLocalState(
@@ -336,6 +342,17 @@ export function ContractParamsForm(props: {
   const closeTime = closeDate
     ? dayjs(`${closeDate}T${closeHoursMinutes}`).valueOf()
     : undefined
+  const hasManuallyEditedCloseDateKey =
+    'has-manually-edited-close-date' + paramsKey
+  const [_, setHasManuallyEditedCloseDate] = usePersistentLocalState<boolean>(
+    false,
+    hasManuallyEditedCloseDateKey
+  )
+  // Only way to get the real state is to read directly from localStorage after await to bypass stale closures
+  const readHasManuallyEditedCloseDate = useCallback(
+    () => safeLocalStorage?.getItem(hasManuallyEditedCloseDateKey) === 'true',
+    [hasManuallyEditedCloseDateKey]
+  )
 
   const min = minString ? parseFloat(minString) : undefined
   const max = maxString ? parseFloat(maxString) : undefined
@@ -388,7 +405,9 @@ export function ContractParamsForm(props: {
 
   const isValidTopics = selectedGroups.length <= MAX_GROUPS_PER_MARKET
   const ante = getAnte(outcomeType, numAnswers, liquidityTier)
-
+  const antePlusOneAnswer = getAnte(outcomeType, numAnswers + 1, liquidityTier)
+  const answerCost = getAnswerCostFromLiquidity(ante, numAnswers)
+  const marginalCost = antePlusOneAnswer > ante ? answerCost : 0
   const numberOfBuckets = getMultiNumericAnswerBucketRangeNames(
     min ?? 0,
     max ?? 0,
@@ -480,6 +499,7 @@ export function ContractParamsForm(props: {
     setPersistentLocalState(questionKey, '')
     safeLocalStorage?.removeItem(closeDateKey)
     safeLocalStorage?.removeItem(closeHoursMinutesKey)
+    setPersistentLocalState(hasManuallyEditedCloseDateKey, false)
     setPersistentLocalState(visibilityKey, 'public')
     setPersistentLocalState(selectedGroupsKey, [])
     setPersistentLocalState('threshold-answers' + paramsKey, defaultAnswers)
@@ -505,6 +525,73 @@ export function ContractParamsForm(props: {
   const [submitState, setSubmitState] = useState<
     'EDITING' | 'LOADING' | 'DONE'
   >('EDITING')
+
+  const [drafts, setDrafts] = useState<MarketDraft[]>([])
+  const [showDraftsModal, setShowDraftsModal] = useState(false)
+
+  useEffect(() => {
+    loadDrafts()
+  }, [])
+
+  const loadDrafts = async () => {
+    try {
+      const drafts = await api('get-market-drafts', {})
+      setDrafts(drafts)
+    } catch (error) {
+      console.error('Error loading drafts:', error)
+    }
+  }
+
+  const saveDraftToDb = async () => {
+    setIsSavingDraft(true)
+    try {
+      const draft = {
+        question,
+        description: editor?.getJSON(),
+        outcomeType,
+        answers,
+        closeDate,
+        closeHoursMinutes,
+        visibility,
+        selectedGroups,
+        savedAt: Date.now(),
+      }
+      await api('save-market-draft', { data: draft })
+      toast.success('Draft saved')
+      await loadDrafts()
+    } catch (error) {
+      console.error('Error saving draft:', error)
+      toast.error('Error saving draft')
+    } finally {
+      setIsSavingDraft(false)
+    }
+  }
+
+  const loadDraftFromDb = async (draft: MarketDraft) => {
+    try {
+      setQuestion(draft.data.question)
+      if (draft.data.description && editor) {
+        editor.commands.setContent(draft.data.description)
+      }
+      setAnswers(draft.data.answers ?? defaultAnswers)
+      setCloseDate(draft.data.closeDate)
+      setCloseHoursMinutes(draft.data.closeHoursMinutes)
+      setVisibility(draft.data.visibility as Visibility)
+      setSelectedGroups(draft.data.selectedGroups)
+      setShowDraftsModal(false)
+    } catch (error) {
+      console.error('Error loading draft:', error)
+    }
+  }
+
+  const deleteDraft = async (id: number) => {
+    try {
+      await api('delete-market-draft', { id })
+      await loadDrafts()
+    } catch (error) {
+      console.error('Error deleting draft:', error)
+    }
+  }
 
   const submit = async () => {
     if (!isValid) return
@@ -680,32 +767,45 @@ export function ContractParamsForm(props: {
   }
 
   // Function to get AI-suggested close date
-  const getAISuggestedCloseDate = useCallback(
-    async (currentQuestion: string) => {
-      if (
-        !currentQuestion ||
-        currentQuestion.length < 20 ||
-        !shouldHaveCloseDate
-      ) {
-        return
+  const getAISuggestedCloseDate = useEvent(async (currentQuestion: string) => {
+    if (
+      !currentQuestion ||
+      currentQuestion.length < 20 ||
+      !shouldHaveCloseDate
+    ) {
+      return
+    }
+    try {
+      const result = await api('get-close-date', {
+        question: currentQuestion,
+        utcOffset: new Date().getTimezoneOffset() * -1,
+      })
+      const latestManualEditState = readHasManuallyEditedCloseDate()
+      if (result?.closeTime && !latestManualEditState) {
+        const date = dayjs(result.closeTime).format('YYYY-MM-DD')
+        const time = dayjs(result.closeTime).format('HH:mm')
+        setCloseDate(date)
+        setCloseHoursMinutes(time)
       }
-      try {
-        const result = await api('get-close-date', {
-          question: currentQuestion,
-          utcOffset: new Date().getTimezoneOffset() * -1,
-        })
-        if (result?.closeTime) {
-          const date = dayjs(result.closeTime).format('YYYY-MM-DD')
-          const time = dayjs(result.closeTime).format('HH:mm')
-          setCloseDate(date)
-          setCloseHoursMinutes(time)
-        }
-      } catch (e) {
-        console.error('Error getting suggested close date:', e)
-      }
-    },
-    [shouldHaveCloseDate, setCloseDate, setCloseHoursMinutes]
-  )
+    } catch (e) {
+      console.error('Error getting suggested close date:', e)
+    }
+  })
+
+  const handleSetCloseDate = (date: string | undefined) => {
+    setCloseDate(date)
+    setHasManuallyEditedCloseDate(true)
+  }
+
+  const handleSetCloseHoursMinutes = (time: string | undefined) => {
+    setCloseHoursMinutes(time)
+    setHasManuallyEditedCloseDate(true)
+  }
+
+  const handleSetNeverCloses = (never: boolean) => {
+    setNeverCloses(never)
+    setHasManuallyEditedCloseDate(true)
+  }
 
   return (
     <Col className="gap-6">
@@ -777,6 +877,7 @@ export function ContractParamsForm(props: {
           question={question}
           generateAnswers={generateAnswers}
           isGeneratingAnswers={isGeneratingAnswers}
+          marginalCost={marginalCost}
         />
       )}
       {outcomeType == 'BOUNTIED_QUESTION' && (
@@ -836,6 +937,7 @@ export function ContractParamsForm(props: {
           setShouldAnswersSumToOne={setMultiNumericSumsToOne}
           unit={unit}
           setUnit={setUnit}
+          marginalCost={marginalCost}
         />
       )}{' '}
       {isDate && (
@@ -854,6 +956,7 @@ export function ContractParamsForm(props: {
           setMaxString={setMaxString}
           shouldAnswersSumToOne={shouldAnswersSumToOne}
           setShouldAnswersSumToOne={setMultiNumericSumsToOne}
+          marginalCost={marginalCost}
         />
       )}
       {outcomeType === 'PSEUDO_NUMERIC' && (
@@ -924,11 +1027,11 @@ export function ContractParamsForm(props: {
       </Col>
       <CloseTimeSection
         closeDate={closeDate}
-        setCloseDate={setCloseDate}
+        setCloseDate={handleSetCloseDate}
         closeHoursMinutes={closeHoursMinutes}
-        setCloseHoursMinutes={setCloseHoursMinutes}
+        setCloseHoursMinutes={handleSetCloseHoursMinutes}
         neverCloses={neverCloses}
-        setNeverCloses={setNeverCloses}
+        setNeverCloses={handleSetNeverCloses}
         submitState={submitState}
         outcomeType={outcomeType}
         initTime={initTime}
@@ -958,6 +1061,20 @@ export function ContractParamsForm(props: {
         liquidityTier={liquidityTier}
         setLiquidityTier={setLiquidityTier}
       />
+      {outcomeType !== 'POLL' && outcomeType !== 'BOUNTIED_QUESTION' && (
+        <div className="text-ink-600 -mt-3 text-sm">
+          Earn back your creation cost! Get a{' '}
+          <b>
+            {formatWithToken({
+              amount: getUniqueBettorBonusAmount(ante, numAnswers),
+              short: true,
+              token: 'M$',
+            })}{' '}
+            bonus
+          </b>{' '}
+          for each unique trader on your question.
+        </div>
+      )}
       {errorText && <span className={'text-error'}>{errorText}</span>}
       <Button
         className="w-full"
@@ -985,21 +1102,118 @@ export function ContractParamsForm(props: {
           ? 'Creating...'
           : 'Created!'}
       </Button>
-      {outcomeType !== 'POLL' && outcomeType !== 'BOUNTIED_QUESTION' && (
-        <div className="text-ink-600 -mt-3 text-sm">
-          Earn back your creation cost! Get a{' '}
-          <b>
-            {formatWithToken({
-              amount: getUniqueBettorBonusAmount(ante, numAnswers),
-              short: true,
-              token: 'M$',
-            })}{' '}
-            bonus
-          </b>{' '}
-          for each unique trader on your question.
-        </div>
-      )}
-      <div />
+      <Row className="-mt-2 w-full gap-2">
+        <Button
+          size="sm"
+          className="w-full"
+          color="gray-outline"
+          onClick={saveDraftToDb}
+          disabled={isSavingDraft}
+          loading={isSavingDraft}
+        >
+          Save draft
+        </Button>
+        <Button
+          size="sm"
+          className="w-full"
+          disabled={drafts.length === 0}
+          color={'gray-outline'}
+          onClick={() => setShowDraftsModal(true)}
+        >
+          View drafts ({drafts.length})
+        </Button>
+      </Row>
+      <DraftsModal
+        showDraftsModal={showDraftsModal}
+        setShowDraftsModal={setShowDraftsModal}
+        drafts={drafts}
+        loadDraftFromDb={loadDraftFromDb}
+        deleteDraft={deleteDraft}
+      />
     </Col>
+  )
+}
+
+interface DraftsModalProps {
+  showDraftsModal: boolean
+  setShowDraftsModal: (show: boolean) => void
+  drafts: MarketDraft[]
+  loadDraftFromDb: (draft: MarketDraft) => void
+  deleteDraft: (id: number) => void
+}
+
+function DraftsModal(props: DraftsModalProps) {
+  const {
+    showDraftsModal,
+    setShowDraftsModal,
+    drafts,
+    loadDraftFromDb,
+    deleteDraft,
+  } = props
+
+  return (
+    <Modal
+      className={MODAL_CLASS}
+      open={showDraftsModal}
+      setOpen={setShowDraftsModal}
+    >
+      <div className="max-h-[80vh] overflow-y-auto p-6">
+        <h3 className="mb-4 text-xl font-semibold">Saved Drafts</h3>
+        {drafts.length === 0 ? (
+          <p>No saved drafts</p>
+        ) : (
+          <div className="flex flex-col gap-4">
+            {drafts.map((draft) => (
+              <div
+                key={draft.id}
+                className="flex flex-col gap-2 rounded border p-4"
+              >
+                <div className="flex items-center justify-between">
+                  <div className="flex-1">
+                    <p className="font-medium">
+                      {draft.data.question || 'Untitled'}
+                    </p>
+                    <p className="text-ink-600 text-sm">
+                      <RelativeTimestamp
+                        time={new Date(draft.createdAt).getTime()}
+                      />
+                    </p>
+                  </div>
+                  <div className="flex gap-2">
+                    <Button
+                      color="gray-outline"
+                      onClick={() => loadDraftFromDb(draft)}
+                    >
+                      Load
+                    </Button>
+                    <Button
+                      color="red-outline"
+                      onClick={() => deleteDraft(draft.id)}
+                    >
+                      Delete
+                    </Button>
+                  </div>
+                </div>
+
+                <div className="text-ink-600 text-sm">
+                  <p>Type: {draft.data.outcomeType}</p>
+                  {draft.data.answers.length > 0 && (
+                    <p>
+                      Answers: {draft.data.answers.slice(0, 5).join(', ')}
+                      {draft.data.answers.length > 5 && '...'}
+                    </p>
+                  )}
+                  {draft.data.description && (
+                    <p className="line-clamp-2">
+                      Description: {richTextToString(draft.data.description)}
+                    </p>
+                  )}
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+    </Modal>
   )
 }

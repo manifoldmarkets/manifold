@@ -1,7 +1,6 @@
 import { APIHandler } from 'api/helpers/endpoint'
 import { createSupabaseDirectClient } from 'shared/supabase/init'
 import { sumBy } from 'lodash'
-import { log } from 'shared/utils'
 import { from, select, where, renderSql } from 'shared/supabase/sql-builder'
 
 export const getBoostAnalytics: APIHandler<'get-boost-analytics'> = async (
@@ -26,7 +25,6 @@ export const getBoostAnalytics: APIHandler<'get-boost-analytics'> = async (
   const results = await pg.multi(`${adQuery}; ${viewQuery};`)
   const adData = results[0]
   const viewData = results[1]
-  log('ad data', { adData, viewData })
 
   const promotedViewData = viewData?.filter((v) => v.promoted_views > 0)
   return {

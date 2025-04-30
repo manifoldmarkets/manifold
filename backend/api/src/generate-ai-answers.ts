@@ -64,7 +64,7 @@ Example output:
 
         return result
       } catch (e) {
-        console.error('Failed to generate answers:', e)
+        log.error('Failed to generate answers:', { e })
         throw new APIError(500, 'Failed to generate answers. Please try again.')
       }
     },

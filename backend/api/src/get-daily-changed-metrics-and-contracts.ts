@@ -11,7 +11,7 @@ export const getDailyChangedMetricsAndContracts: APIHandler<
   if (props.userId != auth.uid) {
     throw new APIError(403, 'You can only query your own changes')
   }
-  const { userId, limit } = props
+  const { userId, limit, balance } = props
 
   const since = Date.now() - DAY_MS
   // First update the user's metrics
@@ -26,16 +26,8 @@ export const getDailyChangedMetricsAndContracts: APIHandler<
     userMetrics,
     contractsById
   )
-  const cashStats = getUnresolvedStatsForToken(
-    'CASH',
-    userMetrics,
-    contractsById
-  )
   const manaMetrics = userMetrics.filter(
     (m) => contractsById[m.contractId]?.token === 'MANA'
-  )
-  const cashMetrics = userMetrics.filter(
-    (m) => contractsById[m.contractId]?.token === 'CASH'
   )
   const topManaMetrics = sortBy(
     manaMetrics,
@@ -45,40 +37,24 @@ export const getDailyChangedMetricsAndContracts: APIHandler<
     manaMetrics,
     (m) => m.from?.day.profit ?? 0
   ).slice(0, limit / 2)
-  const topCashMetrics = sortBy(
-    cashMetrics,
-    (m) => -(m.from?.day.profit ?? 0)
-  ).slice(0, limit / 2)
-  const bottomCashMetrics = sortBy(
-    cashMetrics,
-    (m) => m.from?.day.profit ?? 0
-  ).slice(0, limit / 2)
   const uniqueContractIds = uniqBy(
-    [
-      ...topManaMetrics,
-      ...bottomManaMetrics,
-      ...topCashMetrics,
-      ...bottomCashMetrics,
-    ],
+    [...topManaMetrics, ...bottomManaMetrics],
     'contractId'
   ).map((m) => m.contractId)
   const contracts = Object.values(contractsById).filter((c) =>
     uniqueContractIds.includes(c.id)
   ) as MarketContract[]
-
   return {
     manaMetrics: uniqBy(
       topManaMetrics.concat(bottomManaMetrics),
       (m) => m.contractId
     ),
-    cashMetrics: uniqBy(
-      topCashMetrics.concat(bottomCashMetrics),
-      (m) => m.contractId
-    ),
+    cashMetrics: [],
     contracts,
     manaProfit: manaStats.dailyProfit,
-    cashProfit: cashStats.dailyProfit,
+    cashProfit: 0,
     manaInvestmentValue: manaStats.value,
-    cashInvestmentValue: cashStats.value,
+    cashInvestmentValue: 0,
+    balance,
   }
 }

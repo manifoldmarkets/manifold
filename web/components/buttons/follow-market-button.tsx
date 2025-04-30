@@ -4,7 +4,7 @@ import { User } from 'common/user'
 import { useEffect, useState } from 'react'
 import toast from 'react-hot-toast'
 import { Button, IconButton } from 'web/components/buttons/button'
-import { WatchMarketModal } from 'web/components/contract/watch-market-modal'
+import { FollowMarketModal } from 'web/components/contract/follow-market-modal'
 import { Row } from 'web/components/layout/row'
 import { Contract } from 'common/contract'
 import { firebaseLogin } from 'web/lib/firebase/users'
@@ -54,10 +54,10 @@ export const FollowMarketButton = (props: {
           Follow
         </Row>
       )}
-      <WatchMarketModal
+      <FollowMarketModal
         open={open}
         setOpen={setOpen}
-        title={`You ${following ? 'watched' : 'unwatched'} a question!`}
+        title={`You ${following ? 'followed' : 'unfollowed'} a question!`}
       />
     </Button>
   )
@@ -99,10 +99,10 @@ export const FollowMarketIconButton = (props: {
           aria-hidden="true"
         />
       )}
-      <WatchMarketModal
+      <FollowMarketModal
         open={open}
         setOpen={setOpen}
-        title={`You ${following ? 'watched' : 'unwatched'} a question!`}
+        title={`You ${following ? 'followed' : 'unfollowed'} a question!`}
       />
     </IconButton>
   )
@@ -138,7 +138,7 @@ const useIsWatching = (contract: Contract, user: User | undefined | null) => {
 export async function unfollowMarket(contractId: string, contractSlug: string) {
   await toast.promise(api('follow-contract', { contractId, follow: false }), {
     loading: 'Unfollowing...',
-    success: "You'll no longer receive notifications from this question",
+    success: 'Unfollowed market!',
     error: 'Failed to unfollow',
   })
   track('Unwatch Market', {
@@ -149,7 +149,7 @@ export async function unfollowMarket(contractId: string, contractSlug: string) {
 export async function followMarket(contractId: string, contractslug: string) {
   await toast.promise(api('follow-contract', { contractId, follow: true }), {
     loading: 'Following...',
-    success: "You'll now receive notifications from this question!",
+    success: 'Followed market!',
     error: 'Failed to follow',
   })
   track('Watch Market', {

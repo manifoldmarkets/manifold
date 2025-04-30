@@ -12,9 +12,7 @@ export const MiniStackedBar = (props: {
 }) => {
   const { options, width = 'w-[3ch]' } = props
   return (
-    <div
-      className={clsx('bg-canvas-0/50 relative my-0.5 inline-flex h-5', width)}
-    >
+    <div className={clsx('bg-canvas-0/50 relative inline-flex h-5 ', width)}>
       {options.map((option, i) => (
         <span
           key={i}

@@ -262,7 +262,7 @@ NOTE: If the creator explicitly states that their comment is not a clarification
 Only return the raw JSON object without any markdown code blocks, backticks, additional formatting, or anything else.`
 
   try {
-    const response = await promptOpenAI(prompt, 'o3-mini')
+    const response = await promptOpenAI(prompt, 'o4-mini')
     log('Clarification response:', {
       question: contract.question,
       contractId: contract.id,
@@ -348,6 +348,6 @@ Only return the raw JSON object without any markdown code blocks, backticks, add
       await createAIDescriptionUpdateNotification(contract, markdownToAppend)
     }
   } catch (e) {
-    console.error('Error checking for clarification:', e)
+    log.error('Error checking for clarification:', { e })
   }
 }

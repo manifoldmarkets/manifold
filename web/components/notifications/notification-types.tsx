@@ -182,6 +182,7 @@ export function NotificationItem(props: {
         notification={notification}
         highlighted={highlighted}
         setHighlighted={setHighlighted}
+        isChildOfGroup={isChildOfGroup}
       />
     )
   } else if (reason === 'bet_fill') {
@@ -940,6 +941,9 @@ export function MarketResolvedNotification(props: {
         {content}
         <Modal open={openRateModal} setOpen={setOpenRateModal}>
           <ReviewPanel
+            title={notification.sourceContractTitle ?? ''}
+            resolverUser={undefined}
+            currentUser={undefined}
             marketId={notification.sourceId}
             author={notification.sourceUserName}
             className="my-2"

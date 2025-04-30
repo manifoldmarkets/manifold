@@ -1,6 +1,6 @@
 import clsx from 'clsx'
 import { ContractComment } from 'common/comment'
-import { Contract } from 'common/contract'
+import { Contract, MarketContract } from 'common/contract'
 import { DESTINY_GROUP_SLUG } from 'common/envs/constants'
 import { buildArray, filterDefined } from 'common/util/array'
 import {
@@ -248,7 +248,7 @@ export function ActivityLog(props: {
                     <FeedBet
                       className="!pt-0"
                       key={item.id}
-                      contract={contract}
+                      contract={contract as MarketContract}
                       bet={item}
                       avatarSize="xs"
                     />

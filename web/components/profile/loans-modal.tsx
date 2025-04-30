@@ -6,7 +6,8 @@ import { LOAN_DAILY_RATE, overLeveraged } from 'common/loans'
 import { useHasReceivedLoanToday } from 'web/hooks/use-has-received-loan'
 import { useIsEligibleForLoans } from 'web/hooks/use-is-eligible-for-loans'
 import { useAPIGetter } from 'web/hooks/use-api-getter'
-
+import { formatMoney, formatPercent } from 'common/util/format'
+import { MAX_LOAN_NET_WORTH_PERCENT } from 'common/loans'
 export function LoansModal(props: {
   user: User
   isOpen: boolean
@@ -23,10 +24,9 @@ export function LoansModal(props: {
         <span className={'text-8xl'}>🏦</span>
         <span className="text-xl">Daily loans on your {PLURAL_BETS}</span>
         {receivedLoanToday ? (
-          <span className={'text-ink-600 text-sm italic'}>
-            You have already received your loan today. Come back tomorrow for
-            {nextLoanAmount > 0 &&
-              ` ${ENV_CONFIG.moneyMoniker}${Math.floor(nextLoanAmount)}!`}
+          <span className={'text-ink-600 italic'}>
+            You have already received your loan today. Come back tomorrow for{' '}
+            {nextLoanAmount > 0 && formatMoney(nextLoanAmount)}!
           </span>
         ) : !isEligible || nextLoanAmount < 1 ? (
           <span className={'text-ink-600 text-sm italic'}>
@@ -52,9 +52,11 @@ export function LoansModal(props: {
             tied up until the outcome is determined, which could take years. To
             let you continue to place {TRADE_TERM}s, we offer a unique solution:
             0% interest loans. Each day, you're eligible to receive a loan
-            amounting to {LOAN_DAILY_RATE * 100}% of your total {TRADE_TERM}{' '}
-            value. If the value of your {TRADE_TERM} decreases, the loan amount
-            will be {LOAN_DAILY_RATE * 100}% of the current, lower value.
+            amounting to {LOAN_DAILY_RATE * 100}% of your total investment
+            value, though no single market's loan can exceed{' '}
+            {formatPercent(MAX_LOAN_NET_WORTH_PERCENT)} of your net worth. If
+            the value of your investment decreases, the loan amount will be{' '}
+            {LOAN_DAILY_RATE * 100}% of the current, lower value.
           </span>
           <span className={'text-primary-700'}>
             • Do I have to pay back a loan?
@@ -82,8 +84,7 @@ export function LoansModal(props: {
             Previous loans count against your total invested amount. So on the
             next day, you would get back {LOAN_DAILY_RATE * 100}% of{' '}
             {ENV_CONFIG.moneyMoniker}(1000 - {LOAN_DAILY_RATE * 1000}) =
-            {ENV_CONFIG.moneyMoniker}
-            {LOAN_DAILY_RATE * (1000 - LOAN_DAILY_RATE * 1000)}.
+            {formatMoney(LOAN_DAILY_RATE * (1000 - LOAN_DAILY_RATE * 1000))}.
           </span>
         </Col>
       </Col>

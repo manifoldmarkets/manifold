@@ -19,6 +19,7 @@ export function ProfitWidget(props: { user: User | null | undefined }) {
     api('get-daily-changed-metrics-and-contracts', {
       limit: 24,
       userId: user.id,
+      balance: Math.floor(user.balance),
     }).then(setData)
   }, [user?.id])
 

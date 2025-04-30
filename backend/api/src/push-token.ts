@@ -80,9 +80,7 @@ const payUserPushNotificationsBonus = async (
     `select * from txns where to_id = $1 and category = 'PUSH_NOTIFICATION_BONUS' limit 1`,
     [userId]
   )
-  if (previousTxn) {
-    throw new APIError(400, 'Already awarded PUSH_NOTIFICATION_BONUS')
-  }
+  if (previousTxn) return null
 
   const bonusTxn: Omit<
     PushNotificationBonusTxn,

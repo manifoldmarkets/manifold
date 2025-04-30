@@ -21,7 +21,6 @@ import { APIResponse } from 'common/api/schema'
 import { usePersistentInMemoryState } from 'client-common/hooks/use-persistent-in-memory-state'
 import { TokenNumber } from '../widgets/token-number'
 import { floatingEqual } from 'common/util/math'
-
 const DAILY_PROFIT_CLICK_EVENT = 'click daily profit button'
 
 export const DailyProfit = function DailyProfit(props: {
@@ -38,26 +37,24 @@ export const DailyProfit = function DailyProfit(props: {
     api('get-daily-changed-metrics-and-contracts', {
       limit: 24,
       userId: user.id,
+      balance: Math.floor(user.balance),
     }).then(setData)
-  }, [user?.id])
+  }, [user?.balance])
 
   const manaProfit = data?.manaProfit ?? 0
-  const cashProfit = data?.cashProfit ?? 0
   const manaInvestmentValue = data?.manaInvestmentValue ?? 0
-  const cashInvestmentValue = data?.cashInvestmentValue ?? 0
-  const manaNetWorth = manaInvestmentValue + (user?.balance ?? 0)
-  const cashNetWorth = cashInvestmentValue + (user?.cashBalance ?? 0)
+  const manaNetWorth = manaInvestmentValue + (data?.balance ?? 0)
 
   const [openMana, setOpenMana] = useState(false)
-  const [openCash, setOpenCash] = useState(false)
   useEffect(() => {
-    if ((openMana || openCash) && !data && user) {
+    if (openMana && !data && user) {
       api('get-daily-changed-metrics-and-contracts', {
         limit: 24,
         userId: user.id,
+        balance: Math.floor(user.balance),
       }).then(setData)
     }
-  }, [user?.id, openMana, openCash])
+  }, [user?.id, openMana])
 
   return (
     <>
@@ -71,7 +68,7 @@ export const DailyProfit = function DailyProfit(props: {
             <Row>
               <TokenNumber
                 amount={data ? manaNetWorth : undefined}
-                numberType="short"
+                // numberType="short"
                 isInline
               />
 
@@ -88,34 +85,6 @@ export const DailyProfit = function DailyProfit(props: {
               )}
             </Row>
           </button>
-          {cashNetWorth >= 1 && (
-            <button
-              onClick={withTracking(() => {
-                setOpenCash(true)
-              }, DAILY_PROFIT_CLICK_EVENT)}
-            >
-              <Row>
-                <TokenNumber
-                  amount={data ? cashNetWorth : undefined}
-                  numberType="short"
-                  coinType="sweepies"
-                  isInline
-                />
-
-                {!floatingEqual(cashProfit, 0) && (
-                  <span
-                    className={clsx(
-                      'ml-1 mt-1 text-xs',
-                      cashProfit >= 0 ? 'text-teal-600' : 'text-scarlet-600'
-                    )}
-                  >
-                    {cashProfit >= 0 ? '+' : '-'}
-                    {shortFormatNumber(Math.abs(cashProfit))}
-                  </span>
-                )}
-              </Row>
-            </button>
-          )}
         </Row>
         <div className="text-ink-600 text-center text-xs ">Net worth</div>
       </div>
@@ -128,16 +97,6 @@ export const DailyProfit = function DailyProfit(props: {
         dailyProfit={manaProfit}
         netWorth={manaNetWorth}
         token="MANA"
-      />
-
-      <DailyProfitModal
-        setOpen={setOpenCash}
-        open={openCash}
-        metrics={data?.cashMetrics}
-        contracts={data?.contracts}
-        dailyProfit={cashProfit}
-        netWorth={cashNetWorth}
-        token="CASH"
       />
     </>
   )

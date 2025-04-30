@@ -19,6 +19,7 @@ import { User as FirebaseUser } from 'firebase/auth'
 import { postMessageToNative } from 'web/lib/native/post-message'
 import { MesageTypeMap, nativeToWebMessageType } from 'common/native-message'
 import { usePersistentLocalState } from 'web/hooks/use-persistent-local-state'
+import { api } from 'web/lib/api/api'
 
 type NativeContextType = {
   isNative: boolean
@@ -106,6 +107,24 @@ export const NativeMessageProvider = (props: { children: React.ReactNode }) => {
         } catch (e) {
           console.log(`Error navigating to linked route`, e)
         }
+      } else if (type === 'hasReviewAction') {
+        const { hasAction, isAvailable } =
+          data as MesageTypeMap['hasReviewAction']
+        if (hasAction && isAvailable) {
+          console.log('Store review is available, requesting review.')
+          postMessageToNative('storeReviewRequested', {})
+          // Update the user's last review time optimistically
+          api('me/private/update', { lastAppReviewTime: Date.now() }).catch(
+            (e) => {
+              console.error('Failed to update lastAppReviewTime', e)
+            }
+          )
+        } else {
+          console.log('Store review not available or action already taken.', {
+            hasAction,
+            isAvailable,
+          })
+        }
       }
     }
   )
@@ -117,6 +136,7 @@ export const NativeMessageProvider = (props: { children: React.ReactNode }) => {
       'pushToken',
       'notification',
       'link',
+      'hasReviewAction',
     ],
     handleNativeMessage
   )

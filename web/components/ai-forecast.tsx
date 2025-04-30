@@ -53,6 +53,8 @@ function getTooltipDescription(cardTitle: string): string | null {
       'A test of AI coding capabilities across real-world software engineering tasks from GitHub issues.',
     "Humanity's Last Exam":
       'A collection of extremely difficult problems across various domains, designed to test the limits of AI capabilities compared to human experts.',
+    Pokemon:
+      'Whether an LLM would be able to become a Pokemon master, i.e. beat the Pokemon game.',
     'Millennium Prize':
       'The Millennium Prize Problems are seven of the most difficult unsolved problems in mathematics, each with a $1 million prize for solution.',
     'ARC-AGI':
@@ -93,7 +95,7 @@ export type AICapabilityCard = {
   marketId: string
   type: string
   displayType?:
-    | 'top-two-mcq'
+    | 'top-three-mcq' // renamed from top-two-mcq
     | 'top-one-mcq'
     | 'binary-odds'
     | 'date'
@@ -107,7 +109,7 @@ export const AI_CAPABILITY_CARDS: AICapabilityCard[] = [
     description: 'Highest ranked model on lmsys',
     marketId: 'LsZPyLPI82',
     type: 'monthly',
-    displayType: 'top-two-mcq',
+    displayType: 'top-three-mcq',
   },
 
   // Releases
@@ -213,24 +215,31 @@ export const AI_CAPABILITY_CARDS: AICapabilityCard[] = [
     type: 'benchmark',
     displayType: 'numeric',
   },
+  {
+    title: 'Pokemon',
+    description: 'Pokemon master',
+    marketId: 'ssZ5lUgItL',
+    type: 'benchmark',
+    displayType: 'binary-odds',
+  },
 
   // Prizes
   {
-    title: 'ARC-AGI by 2030',
+    title: 'ARC-AGI Grand Prize before 2030',
     description: 'Arc AGI prize before 2030',
     marketId: 'p0fzp3jqqc',
     type: 'prize',
     displayType: 'binary-odds',
   },
   {
-    title: 'Turing Test+ by 2030',
+    title: 'Turing Test (Long Bets) before 2030',
     description: 'Will AI pass long bets Turing Test before 2030?',
     marketId: 'nKyHon3IPOqJYzaWTHJB',
     type: 'prize',
     displayType: 'binary-odds',
   },
   {
-    title: 'Millennium Prize by 2030',
+    title: 'Millennium Prize before 2030',
     description: 'AI Solve Millennium Problem before 2030',
     marketId: '6vw71lj8bi',
     type: 'prize',
@@ -371,13 +380,21 @@ function AIModelIcon({
   title: string
   className?: string
 }) {
-  if (title.includes('GPT')) return <SiOpenai className={className} />
-  if (title.includes('Claude')) return <SiAnthropic className={className} />
-  if (title.includes('Gemini')) return <SiGooglegemini className={className} />
-  if (title.includes('Grok')) return <RiTwitterXLine className={className} />
-  if (title.includes('Deepseek')) return <GiSpermWhale className={className} />
-  if (title.includes('Qwen')) return <PiBirdBold className={className} />
-  return null
+  const titleLower = title?.toLowerCase() || ''
+  if (['gpt', 'openai'].some((term) => titleLower.includes(term)))
+    return <SiOpenai className={className} />
+  if (['claude', 'anthropic'].some((term) => titleLower.includes(term)))
+    return <SiAnthropic className={className} />
+  if (
+    ['gemini', 'google', 'deepmind'].some((term) => titleLower.includes(term))
+  )
+    return <SiGooglegemini className={className} />
+  if (['grok', 'xai'].some((term) => titleLower.includes(term)))
+    return <RiTwitterXLine className={className} />
+  if (titleLower.includes('deepseek'))
+    return <GiSpermWhale className={className} />
+  if (titleLower.includes('qwen')) return <PiBirdBold className={className} />
+  return <LiaKiwiBirdSolid className={className} />
 }
 
 // Get gradient based on card type
@@ -413,7 +430,7 @@ function getCardBgColor(className: string) {
   // Card background colors
   switch (cardType) {
     case 'monthly':
-      return 'bg-primary-50 dark:bg-primary-800/20'
+      return 'bg-primary-50 dark:bg-primary-600/10'
     default:
       if (className.includes('prize')) {
         return 'bg-amber-50 dark:bg-amber-800/30'
@@ -476,7 +493,7 @@ function CapabilityCard({
   marketId: string
   type: string
   displayType?:
-    | 'top-two-mcq'
+    | 'top-three-mcq'
     | 'top-one-mcq'
     | 'binary-odds'
     | 'date'
@@ -508,21 +525,31 @@ function CapabilityCard({
       ? getExpectedValue(liveContract as unknown as MultiNumericContract)
       : null
 
-  // Get top two companies and their probabilities for "top-two-mcq" display type
-  const getTopTwoOdds = () => {
+  // Get top three companies and their probabilities for "top-three-mcq" display type
+  const getTopThreeOdds = () => {
     if (!liveContract || liveContract.outcomeType !== 'MULTIPLE_CHOICE') {
       return [
+        { text: '—', probability: 0 },
         { text: '—', probability: 0 },
         { text: '—', probability: 0 },
       ]
     }
 
     const answers = liveContract.answers || []
-    if (answers.length < 2) {
-      return [
-        { text: '—', probability: 0 },
-        { text: '—', probability: 0 },
-      ]
+    if (answers.length < 3) {
+      // Fill with placeholder values if less than 3 answers
+      const result = []
+      for (let i = 0; i < 3; i++) {
+        if (i < answers.length) {
+          result.push({
+            text: answers[i].text || '—',
+            probability: answers[i].prob ?? 0,
+          })
+        } else {
+          result.push({ text: '—', probability: 0 })
+        }
+      }
+      return result
     }
 
     // Sort answers by probability in descending order
@@ -540,6 +567,10 @@ function CapabilityCard({
       {
         text: sortedAnswers[1].text || '—',
         probability: sortedAnswers[1].prob ?? 0,
+      },
+      {
+        text: sortedAnswers[2].text || '—',
+        probability: sortedAnswers[2].prob ?? 0,
       },
     ]
     return result
@@ -572,19 +603,20 @@ function CapabilityCard({
   }
 
   // Determine the value to display
-  let displayValue = formatPercent(0.25) // '-'
+  let displayValue = formatPercent(0.25) // dummy
   let topCompanies = [
+    { text: '—', probability: 0 },
     { text: '—', probability: 0 },
     { text: '—', probability: 0 },
   ]
   let topModel = { text: '—', probability: 0 }
 
   if (
-    displayType === 'top-two-mcq' &&
+    displayType === 'top-three-mcq' &&
     liveContract &&
     liveContract.outcomeType === 'MULTIPLE_CHOICE'
   ) {
-    topCompanies = getTopTwoOdds()
+    topCompanies = getTopThreeOdds()
   } else if (displayType === 'top-one-mcq') {
     topModel = getTopOneOdds()
   } else if (displayType === 'binary-odds') {
@@ -626,7 +658,8 @@ function CapabilityCard({
     displayType
   )
 
-  if (displayType === 'top-two-mcq') {
+  if (displayType === 'top-three-mcq') {
+    // Podium layout with 1st in middle, 2nd on left, 3rd on right
     return (
       <CardBase onClick={clickHandler} className={className}>
         <Col className="h-full space-y-1 sm:space-y-2">
@@ -638,95 +671,108 @@ function CapabilityCard({
             />
           </div>
 
-          {/* VS Match Layout */}
+          {/* Podium Layout */}
           <div className="flex flex-1 flex-col justify-center rounded-md p-2 sm:p-3">
-            <div className="flex items-center justify-between px-1">
-              {/* Left Company */}
-              <div className="w-[38%] text-center">
-                {getCompanyLogo(topCompanies[0].text) ? (
+            {/* Model Display Area */}
+            <div className="flex items-end justify-center space-x-1 px-1 sm:space-x-3">
+              {/* 2nd Place - Left */}
+              <div className="w-[28%] text-center">
+                {topCompanies[1].text ? (
                   <div className="flex flex-col items-center">
-                    <div className="text-primary-600 dark:text-primary-500 mb-1 flex h-14 w-14 items-center justify-center sm:mb-2 sm:h-16 sm:w-16">
-                      {React.createElement(
-                        getCompanyLogo(topCompanies[0].text) as React.FC<{
-                          className?: string
-                        }>,
-                        {
-                          className: 'w-12 h-12 sm:w-14 sm:h-14',
-                        }
-                      )}
+                    <div className="mb-1 flex h-10 w-10 items-center justify-center text-blue-600 dark:text-blue-300 sm:h-12 sm:w-12">
+                      <AIModelIcon
+                        title={topCompanies[1].text}
+                        className="h-8 w-8 sm:h-10 sm:w-10"
+                      />
                     </div>
-                    <div className="text-primary-600 dark:text-primary-500 text-lg font-bold sm:text-xl">
-                      {topCompanies[0].text}
-                    </div>
-                  </div>
-                ) : (
-                  <div className="text-primary-600 dark:text-primary-500 truncate text-2xl font-bold sm:text-3xl">
-                    {topCompanies[0].text}
-                  </div>
-                )}
-                <div className="text-ink-600 mt-1 text-xs font-medium sm:text-base">
-                  {formatPercent(topCompanies[0].probability)}
-                </div>
-              </div>
-
-              {/* VS Badge */}
-              <div className="text-ink-800 text-med mx-4 font-black">VS</div>
-
-              {/* Right Company */}
-              <div className="w-[38%] text-center">
-                {getCompanyLogo(topCompanies[1].text) ? (
-                  <div className="flex flex-col items-center">
-                    <div className="mb-1 flex h-14 w-14 items-center justify-center text-teal-600 dark:text-teal-400">
-                      {React.createElement(
-                        getCompanyLogo(topCompanies[1].text) as React.FC<{
-                          className?: string
-                        }>,
-                        {
-                          className: 'w-12 h-12',
-                        }
-                      )}
-                    </div>
-                    <div className="text-base font-bold text-teal-600 dark:text-teal-400 sm:text-lg">
+                    <div className="text-sm font-bold text-blue-600 dark:text-blue-300 sm:text-lg">
                       {topCompanies[1].text}
                     </div>
                   </div>
                 ) : (
-                  <div className="truncate text-base font-bold text-teal-600 dark:text-teal-400 sm:text-lg">
+                  <div className="truncate text-sm font-bold text-blue-600 dark:text-blue-300 sm:text-lg">
                     {topCompanies[1].text}
                   </div>
                 )}
-                <div className="text-ink-600 mt-1 text-xs font-medium sm:text-base">
+                <div className="text-ink-600 mt-1 text-base font-medium">
                   {formatPercent(topCompanies[1].probability)}
                 </div>
+                <div
+                  className="w-full rounded-t-lg bg-blue-600 dark:bg-blue-300"
+                  style={{
+                    height: `${Math.max(
+                      8,
+                      topCompanies[1].probability * 100
+                    )}px`,
+                  }}
+                ></div>
               </div>
-            </div>
 
-            {/* Probability Bar */}
-            <div className="mt-2 flex h-2.5 w-full overflow-hidden rounded-full sm:mt-4">
-              {/* Left company proportion */}
-              <div
-                className="bg-primary-600 dark:bg-primary-500 h-full rounded-l-full"
-                style={{
-                  width: `${
-                    (topCompanies[0].probability /
-                      (topCompanies[0].probability +
-                        topCompanies[1].probability)) *
-                    100
-                  }%`,
-                }}
-              />
-              {/* Right company proportion */}
-              <div
-                className="h-full rounded-r-full bg-teal-600 dark:bg-teal-400"
-                style={{
-                  width: `${
-                    (topCompanies[1].probability /
-                      (topCompanies[0].probability +
-                        topCompanies[1].probability)) *
-                    100
-                  }%`,
-                }}
-              />
+              {/* 1st Place - Middle */}
+              <div className="w-[38%] text-center">
+                {topCompanies[0].text ? (
+                  <div className="flex flex-col items-center">
+                    <div className="text-primary-600 mb-1 flex h-14 w-14 items-center justify-center sm:mb-2 sm:h-16 sm:w-16">
+                      <AIModelIcon
+                        title={topCompanies[0].text}
+                        className="h-12 w-12 sm:h-14 sm:w-14"
+                      />
+                    </div>
+                    <div className="text-primary-600 text-lg font-bold sm:text-2xl">
+                      {topCompanies[0].text}
+                    </div>
+                  </div>
+                ) : (
+                  <div className="text-primary-600 truncate text-lg font-bold sm:text-2xl">
+                    {topCompanies[0].text}
+                  </div>
+                )}
+                <div className="text-ink-600 mt-1 text-base font-medium sm:text-base">
+                  {formatPercent(topCompanies[0].probability)}
+                </div>
+                <div
+                  className="bg-primary-600 w-full rounded-t-lg"
+                  style={{
+                    height: `${Math.max(
+                      8,
+                      topCompanies[0].probability * 100
+                    )}px`,
+                  }}
+                ></div>
+              </div>
+
+              {/* 3rd Place - Right */}
+              <div className="w-[28%] text-center">
+                {topCompanies[2].text ? (
+                  <div className="flex flex-col items-center">
+                    <div className="mb-1 flex h-10 w-10 items-center justify-center text-blue-500 dark:text-blue-200 sm:h-12 sm:w-12">
+                      <AIModelIcon
+                        title={topCompanies[2].text}
+                        className="h-8 w-8 sm:h-10 sm:w-10"
+                      />
+                    </div>
+                    <div className="text-sm font-bold text-blue-500 dark:text-blue-200 sm:text-lg">
+                      {topCompanies[2].text}
+                    </div>
+                  </div>
+                ) : (
+                  <div className="truncate text-sm font-bold text-blue-500 dark:text-blue-200 sm:text-lg">
+                    {topCompanies[2].text}
+                  </div>
+                )}
+                <div className="text-ink-600 mt-1 text-base font-medium">
+                  {formatPercent(topCompanies[2].probability)}
+                </div>
+                <div
+                  className="w-full rounded-t-lg bg-blue-500 dark:bg-blue-200"
+                  style={{
+                    height: `${Math.max(
+                      8,
+                      topCompanies[2].probability * 100
+                    )}px`,
+                  }}
+                ></div>
+              </div>
             </div>
           </div>
         </Col>
@@ -750,24 +796,20 @@ function CapabilityCard({
               <div className="flex items-center justify-center">
                 {/* Company Display */}
                 <div className="text-center">
-                  {getCompanyLogo(topModel.text) ? (
+                  {topModel.text ? (
                     <div className="flex flex-col items-center">
-                      <div className="text-primary-600 dark:text-primary-500 mb-1 flex h-14 w-14 items-center justify-center">
-                        {React.createElement(
-                          getCompanyLogo(topModel.text) as React.FC<{
-                            className?: string
-                          }>,
-                          {
-                            className: 'w-12 h-12',
-                          }
-                        )}
+                      <div className="text-primary-600 mb-1 flex h-14 w-14 items-center justify-center">
+                        <AIModelIcon
+                          title={topModel.text}
+                          className="h-12 w-12"
+                        />
                       </div>
-                      <div className="text-primary-600 dark:text-primary-500 text-lg font-bold sm:text-xl">
+                      <div className="text-primary-600 text-lg font-bold sm:text-xl">
                         {topModel.text}
                       </div>
                     </div>
                   ) : (
-                    <div className="text-primary-600 dark:text-primary-500 truncate text-2xl font-bold sm:text-3xl">
+                    <div className="ttext-primary-600 truncate text-2xl font-bold sm:text-3xl">
                       {topModel.text}
                     </div>
                   )}
@@ -857,6 +899,9 @@ function CapabilityCard({
                   {type === 'benchmark' &&
                     title.includes('IMO Gold') &&
                     'LLM gets IMO gold medal'}
+                  {type === 'benchmark' &&
+                    title.includes('Pokemon') &&
+                    'LLM becomes a Pokemon Master'}
                   {type === 'prize' &&
                     title.includes('Millennium') &&
                     'Chance of solving a million-dollar math problem'}
@@ -939,29 +984,6 @@ function CapabilityCard({
   )
 }
 
-// Get company logo component based on company name
-function getCompanyLogo(companyName: string): React.ComponentType | null {
-  // Strip any trailing whitespace or periods that might be in the company name
-  const normalizedName = companyName.trim().replace(/\.$/, '')
-
-  switch (normalizedName.toLowerCase()) {
-    case 'openai':
-    case 'gpt-5':
-      return SiOpenai
-    case 'anthropic':
-    case 'claude':
-      return SiAnthropic
-    case 'gemini':
-    case 'deepmind':
-    case 'google':
-      return SiGooglegemini
-    case 'xai':
-    case 'grok':
-      return RiTwitterXLine // Using X icon for xAI
-    default:
-      return LiaKiwiBirdSolid // No specific icon for other companies
-  }
-}
 // For model releases: Displays model releases on a timeline
 interface ModelReleasesTimelineProps {
   cards: AICapabilityCard[]
@@ -1127,7 +1149,7 @@ function FeaturedMarketGraph({ contract }: FeaturedGraphProps) {
       <Row className="justify-between">
         <Link
           href={contractPath(contract)}
-          className="hover:text-primary-700 grow items-start font-semibold transition-colors hover:underline sm:text-lg"
+          className="hover:text-primary-600 grow items-start font-semibold transition-colors hover:underline sm:text-lg"
         >
           {contract.question}
         </Link>
@@ -1140,8 +1162,8 @@ function FeaturedMarketGraph({ contract }: FeaturedGraphProps) {
               {' '}
               Probability:
             </span>{' '}
-            <span className="text-primary-600 dark:text-primary-500 text-2xl font-semibold">
-              {formatPercent(contract.prob ?? 0.5)}
+            <span className="text-2xl font-semibold text-teal-600 dark:text-teal-500">
+              {formatPercent(contract.prob)}
             </span>
           </div>
         </div>
@@ -1269,7 +1291,7 @@ export function AIForecast({
   return (
     <Col className="mb-8 gap-2 px-1 sm:gap-3 sm:px-4 sm:pt-8">
       <Col className={hideTitle ? 'hidden' : ''}>
-        <div className="text-primary-700 text-2xl font-normal sm:text-3xl">
+        <div className="text-primary-600 text-2xl font-normal sm:text-3xl">
           Manifold AI Dashboard
         </div>
       </Col>
@@ -1283,13 +1305,25 @@ export function AIForecast({
           )}
            */}
 
-          {/* Insert 2025 Predictions title card after releases and before benchmark */}
+          {/* Insert 2025 Predictions header after releases and before benchmark */}
           {orderedSections[index - 1] === 'releases' &&
-            type === 'benchmark' && <TitleCard title="Predictions for 2025" />}
+            type === 'benchmark' && (
+              <>
+                <div className="mx-auto my-8 h-px w-3/4 bg-gray-200 dark:bg-gray-700"></div>
+                <h2 className="text-primary-600 mb-2 text-xl font-semibold sm:text-2xl">
+                  Predictions for 2025
+                </h2>
+              </>
+            )}
 
-          {/* Insert Long Term Predictions title card between misuse and prizes */}
+          {/* Insert Long Term Predictions header between misuse and prizes */}
           {orderedSections[index - 1] === 'misuse' && type === 'prize' && (
-            <TitleCard title="Long Term Predictions" />
+            <>
+              <div className="mx-auto my-8 h-px w-full max-w-4xl bg-gray-200 dark:bg-gray-700"></div>
+              <h2 className="text-primary-600 mb-2 text-xl font-semibold sm:text-2xl">
+                Long Term Predictions
+              </h2>
+            </>
           )}
 
           {type === 'releases' ? (
@@ -1349,7 +1383,7 @@ export function AIForecast({
             <Row className="justify-between">
               <Link
                 href={contractPath(liveWhenAgi)}
-                className="hover:text-primary-700 grow items-start font-semibold transition-colors hover:underline sm:text-lg"
+                className="hover:text-primary-600 grow items-start font-semibold transition-colors hover:underline sm:text-lg"
               >
                 When will we achieve artificial general intelligence?
               </Link>

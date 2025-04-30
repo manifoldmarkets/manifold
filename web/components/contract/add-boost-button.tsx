@@ -46,13 +46,13 @@ export function AddBoostButton(props: {
     <>
       <Button
         onClick={handleButtonClick}
-        color={'gradient-pink'}
+        color={contract.boosted ? 'indigo-outline' : 'gradient-pink'}
         size="sm"
         className={className}
         data-boost-button
       >
         <BsRocketTakeoff className="mr-1 h-5 w-5" />
-        {contract.boosted ? 'Market boosted' : 'Boost market'}
+        {contract.boosted ? 'Boosted' : 'Boost'}
       </Button>
 
       <BoostPurchaseModal
