@@ -35,12 +35,9 @@ values
   (21, '2025-02-01T22:18:13-08:00', 'complete'),
   (22, '2025-03-02T02:25:41-08:00', 'complete'),
   (23, '2025-04-01T20:32:23-08:00', 'complete')
-  -- Add season 24 with status 'active' if it should be the current one
   -- (24, '2025-05-01T00:00:00-07:00', 'active') -- Example: Needs a placeholder or actual end time
 on conflict (season) do
 update
 set
   end_time = EXCLUDED.end_time,
   status = EXCLUDED.status;
-
--- Changed processed to status
