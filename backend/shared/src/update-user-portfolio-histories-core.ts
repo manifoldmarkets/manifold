@@ -163,7 +163,13 @@ export async function updateUserPortfolioHistoriesCore(userIds?: string[]) {
         contractsById,
         userMetrics
       ),
-      profit: manaPayouts + balance - totalDeposits - unrankedManaInvested,
+      // TODO: we still have to subtract resolved unranked (profit-invested) from balance
+      profit:
+        manaPayouts +
+        balance +
+        // unranked mana invested is equivalent to balance
+        unrankedManaInvested -
+        totalDeposits,
     }
 
     const didPortfolioChange =
