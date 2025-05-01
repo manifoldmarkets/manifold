@@ -705,6 +705,8 @@ const txnTitle = (change: TxnBalanceChange) => {
     case 'CONTRACT_RESOLUTION_FEE':
     case 'UNDO_CONTRACT_RESOLUTION_FEE':
       return ''
+    case 'PUSH_NOTIFICATION_BONUS':
+      return 'Push notification bonus'
     default:
       return type
   }
@@ -714,6 +716,8 @@ const txnTypeToDescription = (txnCategory: string) => {
   switch (txnCategory) {
     case 'MARKET_BOOST_CREATE':
       return 'Boost'
+    case 'PUSH_NOTIFICATION_BONUS':
+      return 'For enabling push notifications'
     case 'CANCEL_UNIQUE_BETTOR_BONUS':
       return 'Cancel unique trader bonus'
     case 'PRODUCE_SPICE':
