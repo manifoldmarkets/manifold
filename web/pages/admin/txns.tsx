@@ -15,9 +15,12 @@ import { useAPIGetter } from 'web/hooks/use-api-getter'
 import { useDisplayUserById } from 'web/hooks/use-user-supabase'
 import { formatTime } from 'client-common/lib/time'
 import { uniq } from 'lodash'
+import { usePersistentInMemoryState } from 'client-common/hooks/use-persistent-in-memory-state'
 
 export default function TxnsPage() {
-  const [ignoredCategories, setIgnoredCategories] = useState<string[]>([])
+  const [ignoredCategories, setIgnoredCategories] = usePersistentInMemoryState<
+    string[]
+  >([], 'txns-ignored-categories')
   const [page, setPage] = useState(0)
   const { data } = useAPIGetter('txns', {
     limit: 50,
