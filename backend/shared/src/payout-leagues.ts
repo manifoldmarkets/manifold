@@ -53,10 +53,26 @@ export const sendEndOfSeasonNotificationsAndBonuses = async (
   // Check eligibility for users in this chunk
   for (const newRow of newRows) {
     const prevRow = prevRowsByUserId[newRow.user_id]
-    if (!prevRow) continue
+    if (!prevRow) {
+      notificationData.push({
+        userId: newRow.user_id,
+        previousLeague: undefined,
+        newLeague: newRow,
+        bonusAmount: 0,
+      })
+      continue
+    }
 
     const prize = getLeaguePrize(prevRow.division, prevRow.rank)
-    if (!prize || prize <= 0) continue
+    if (!prize || prize <= 0) {
+      notificationData.push({
+        userId: newRow.user_id,
+        previousLeague: prevRow,
+        newLeague: newRow,
+        bonusAmount: 0,
+      })
+      continue
+    }
 
     // Check if prize already awarded using our Set
     if (!alreadyGotPrizeUserIds.has(newRow.user_id)) {
