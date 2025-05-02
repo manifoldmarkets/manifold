@@ -11,7 +11,6 @@ import { useUser } from './use-user'
 import { uniqBy } from 'lodash'
 import { useBatchedGetter } from 'client-common/hooks/use-batched-getter'
 import { queryHandlers } from 'web/lib/supabase/batch-query-handlers'
-import { api } from 'web/lib/api/api'
 
 export const useSavedContractMetrics = (
   contract: Contract,
@@ -31,7 +30,6 @@ export const useAllSavedContractMetrics = (
   const [savedMetrics, setSavedMetrics] = usePersistentLocalState<
     ContractMetric[] | undefined
   >(undefined, `contract-metrics-${contract.id}-${answerId}-saved`)
-
   const updateMetricsWithNewProbs = (metrics: ContractMetric[]) => {
     if (!user) return metrics
     const { metricsByContract } = calculateUpdatedMetricsForContracts([
@@ -50,11 +48,14 @@ export const useAllSavedContractMetrics = (
   const refreshMyMetrics = useEvent(async () => {
     if (!user?.id) return
 
-    const metrics = await api('market/:id/positions', {
-      id: contract.id,
-      userId: user.id,
-      answerId,
-    })
+    let q = db
+      .from('user_contract_metrics')
+      .select('data')
+      .eq('contract_id', contract.id)
+      .eq('user_id', user.id)
+    if (answerId) q = q.eq('answer_id', answerId)
+    const { data } = await q
+    const metrics = data?.map((m) => m.data) as ContractMetric[]
 
     if (!metrics.length) {
       setSavedMetrics([])
@@ -63,6 +64,7 @@ export const useAllSavedContractMetrics = (
     setSavedMetrics(updateMetricsWithNewProbs(metrics))
   })
 
+  // For some reason all of the deps trigger this effect the very first time the bet summary is rendered
   useEffect(() => {
     refreshMyMetrics()
   }, [user?.id, contract.id, answerId, contract.resolution])
