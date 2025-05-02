@@ -184,7 +184,7 @@ export const BOT_USERNAMES = [
 
 export const MOD_IDS = [
   'qnIAzz9RamaodeiJSiGZO6xRGC63', // Agh
-  'srFlJRuVlGa7SEJDM4cY9B5k4Lj2', //bayesian
+  'srFlJRuVlGa7SEJDM4cY9B5k4Lj2', // bayesian
   'EJQOCF3MfLTFYbhiKncrNefQDBz1', // chrisjbillington
   'MV9fTVHetcfp3h6CVYzpypIsbyN2', // CodeandSolder
   'HTbxWFlzWGeHUTiwZvvF0qm8W433', // Conflux
@@ -218,7 +218,7 @@ export const MOD_IDS = [
 ]
 
 export const SWEEPSTAKES_MOD_IDS = [
-  'uglwf3YKOZNGjjEXKc5HampOFRE2', //SirSalty
+  'uglwf3YKOZNGjjEXKc5HampOFRE2', // SirSalty
   'KHX2ThSFtLQlau58hrjtCX7OL2h2', // shankypanky (stefanie)
   '2VhlvfTaRqZbFn2jqxk2Am9jgsE2', // Gabrielle
   'HTbxWFlzWGeHUTiwZvvF0qm8W433', // Conflux
@@ -297,16 +297,16 @@ export const VERIFIED_USERNAMES = [
 ]
 
 export const BANNED_TRADING_USER_IDS = [
-  'zgCIqq8AmRUYVu6AdQ9vVEJN8On1', //firstuserhere aka _deleted_
-  'LIBAoi7tpqeNLYM1xxJ1QJBQqW32', //lastuserhere
-  'p3ADzwIUS3fk0ka80XYEE3OM3S32', //PC
+  'zgCIqq8AmRUYVu6AdQ9vVEJN8On1', // firstuserhere aka _deleted_
+  'LIBAoi7tpqeNLYM1xxJ1QJBQqW32', // lastuserhere
+  'p3ADzwIUS3fk0ka80XYEE3OM3S32', // PC
   '4JuXgDx47xPagH5mcLDqLzUSN5g2', // BTE
   'iD1ObV4sInhkBXs3Ten96j4Co6O2', // BTE alt
   'zRMxfUt51RcEIcZkuw6ySiNJYBE3', // BTE alt
   'wo2LRCvgaNSllK3q0Wnv8hlusTa2', // BTE alt
   'os2ilMb1d8WDeXxiQAo6btlig1Z2', // BTE alt
   'zRMxfUt51RcEIcZkuw6ySiNJYBE3', // BTE alt
-  'fnuHBW8dHwZp2TbEt2MKJY9d28V2', //Klob (Caleb)
+  'fnuHBW8dHwZp2TbEt2MKJY9d28V2', // Klob (Caleb)
 ]
 
 export const PARTNER_USER_IDS: string[] = [
@@ -338,9 +338,9 @@ export const PARTNER_USER_IDS: string[] = [
   'EJQOCF3MfLTFYbhiKncrNefQDBz1', // chrisjbillington
   '7HhTMy4xECaVKvl5MmEAfVUkRCS2', // KevinBurke
   'oPxjIzlvC5fRbGCaVgkvAiyoXBB2', // mattyb
-  'OdBj5DW6PbYtnImvybpyZzfhb133', //jim
-  'm5K4FlZLo0aeDd5Z7W4xX3TAGHs1', //JeffBerman
-  'LmtawaGf6jO0oFGzth1UCrUXFW82', //AaronSimansky
+  'OdBj5DW6PbYtnImvybpyZzfhb133', // jim
+  'm5K4FlZLo0aeDd5Z7W4xX3TAGHs1', // JeffBerman
+  'LmtawaGf6jO0oFGzth1UCrUXFW82', // AaronSimansky
 ]
 
 export const NEW_USER_HERLPER_IDS = [
@@ -353,7 +353,7 @@ export const NEW_USER_HERLPER_IDS = [
   'cA1JupYR5AR8btHUs2xvkui7jA93', // Genzy
   'srFlJRuVlGa7SEJDM4cY9B5k4Lj2', // Bayesian
   'Gg7t9vPD4WPD1iPgj9RUFLYTxgH2', // nikki
-  'OdBj5DW6PbYtnImvybpyZzfhb133', // @jim
+  'OdBj5DW6PbYtnImvybpyZzfhb133', // jim
 ]
 
 export const OPTED_OUT_OF_LEAGUES = [
@@ -364,7 +364,7 @@ export const OPTED_OUT_OF_LEAGUES = [
   'BhNkw088bMNwIFF2Aq5Gg9NTPzz1', // acc
   'JlVpsgzLsbOUT4pajswVMr0ZzmM2', // Joshua
   'oPxjIzlvC5fRbGCaVgkvAiyoXBB2', // mattyb
-  'NndHcEmeJhPQ6n7e7yqAPa3Oiih2', //josh
+  'NndHcEmeJhPQ6n7e7yqAPa3Oiih2', // josh
 ]
 
 export const HIDE_FROM_LEADERBOARD_USER_IDS = [
