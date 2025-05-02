@@ -96,7 +96,7 @@ export const sendEndOfSeasonNotificationsAndBonuses = async (
       totalDeposits: number
     }> = []
     const txnDatas: TxnData[] = []
-    const currentNotifications: LeagueChangeNotificationData[] = []
+    const prizeNotifications: LeagueChangeNotificationData[] = []
 
     for (const prizeAward of prizesToAward) {
       const { userId, prevRow, newRow, prize } = prizeAward
@@ -122,7 +122,7 @@ export const sendEndOfSeasonNotificationsAndBonuses = async (
       txnDatas.push(txnData)
 
       // Prepare notification data
-      currentNotifications.push({
+      prizeNotifications.push({
         userId,
         previousLeague: prevRow,
         newLeague: newRow,
@@ -136,7 +136,7 @@ export const sendEndOfSeasonNotificationsAndBonuses = async (
     await insertTxns(pg, txnDatas)
 
     // Add notifications to the main list only if the transaction succeeds
-    notificationData.push(...currentNotifications)
+    notificationData.push(...prizeNotifications)
   }
 
   // Call the bulk notification function after collecting all data
