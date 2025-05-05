@@ -3,6 +3,7 @@ import {
   groupBy,
   mapValues,
   maxBy,
+  orderBy,
   partition,
   sortBy,
   sum,
@@ -348,7 +349,9 @@ export const getContractBetMetrics = (
 
   const { totalShares, hasShares, hasYesShares, hasNoShares } =
     getCpmmShares(yourBets)
-  const lastBetTime = Math.max(...yourBets.map((b) => b.createdTime))
+  const lastBet = orderBy(yourBets, (b) => b.createdTime, 'desc')[0]
+  const lastBetTime = lastBet.createdTime
+  const lastProb = lastBet.probAfter
   const maxSharesOutcome = hasShares
     ? maxBy(Object.keys(totalShares), (outcome) => totalShares[outcome])
     : null
@@ -364,6 +367,7 @@ export const getContractBetMetrics = (
     hasNoShares,
     maxSharesOutcome: maxSharesOutcome ?? null,
     lastBetTime,
+    lastProb,
     answerId: answerId ?? null,
     totalAmountSold,
     totalAmountInvested,

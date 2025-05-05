@@ -6,6 +6,7 @@ export type ContractMetric = {
   contractId: string
   answerId: string | null
   lastBetTime: number
+  lastProb: number | null
   hasNoShares: boolean
   hasShares: boolean
   hasYesShares: boolean
