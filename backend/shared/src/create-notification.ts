@@ -552,16 +552,14 @@ export const createBetFillNotification = async (
     sourceContractSlug: contract.slug,
     sourceContractId: contract.id,
     data: {
-      betOutcome: bet.outcome,
       betAnswer,
       creatorOutcome: limitBet.outcome,
-      fillAmount,
       probability: limitBet.limitProb,
       limitOrderTotal: limitBet.orderAmount,
       limitOrderRemaining: remainingAmount,
       limitAt: limitAt.toString(),
       outcomeType: contract.outcomeType,
-      token: contract.token,
+      mechanism: contract.mechanism,
     } as BetFillData,
   }
   if (sendToBrowser) {
@@ -607,6 +605,11 @@ export const createLimitBetCanceledNotification = async (
       ? limitBet.limitProb * (contract.max - contract.min) + contract.min
       : Math.round(limitBet.limitProb * 100) + '%'
 
+  const betAnswer =
+    'answers' in contract
+      ? (contract.answers as Answer[]).find((a) => a.id === limitBet.answerId)
+      : undefined
+
   const notification: Notification = {
     id: nanoid(6),
     userId: toUserId,
@@ -631,7 +634,11 @@ export const createLimitBetCanceledNotification = async (
       limitOrderRemaining: remainingAmount,
       limitAt: limitAt.toString(),
       outcomeType: contract.outcomeType,
-      token: contract.token,
+      mechanism: contract.mechanism,
+      betAnswer: betAnswer?.text,
+      betAnswerId: limitBet.answerId,
+      expiresAt: limitBet.expiresAt,
+      createdTime: limitBet.createdTime,
     } as BetFillData,
   }
   const pg = createSupabaseDirectClient()
@@ -657,6 +664,10 @@ export const createLimitBetExpiredNotification = async (
     contract.outcomeType === 'PSEUDO_NUMERIC'
       ? limitBet.limitProb * (contract.max - contract.min) + contract.min
       : Math.round(limitBet.limitProb * 100) + '%'
+  const betAnswer =
+    'answers' in contract
+      ? (contract.answers as Answer[]).find((a) => a.id === limitBet.answerId)
+      : undefined
 
   const notification: Notification = {
     id: nanoid(6),
@@ -682,7 +693,11 @@ export const createLimitBetExpiredNotification = async (
       limitOrderRemaining: remainingAmount,
       limitAt: limitAt.toString(),
       outcomeType: contract.outcomeType,
-      token: contract.token,
+      betAnswer: betAnswer?.text,
+      betAnswerId: limitBet.answerId,
+      expiresAt: limitBet.expiresAt,
+      createdTime: limitBet.createdTime,
+      mechanism: contract.mechanism,
     } as BetFillData,
   }
   const pg = createSupabaseDirectClient()

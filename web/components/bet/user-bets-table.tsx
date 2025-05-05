@@ -743,7 +743,7 @@ function BetsTable(props: {
                                   <BinaryOutcomeLabel outcome="CANCEL" />
                                 ) : resolvedAnswer ? (
                                   <MultiOutcomeLabel
-                                    answer={resolvedAnswer}
+                                    answerText={resolvedAnswer.text}
                                     resolution={contract.resolution ?? ''}
                                     truncate="long"
                                     answerClassName={
