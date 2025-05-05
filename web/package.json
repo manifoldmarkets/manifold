@@ -9,7 +9,7 @@
     "dev:dev": "cross-env NEXT_PUBLIC_FIREBASE_ENV=DEV yarn dev",
     "dev:prod": "cross-env NEXT_PUBLIC_FIREBASE_ENV=PROD yarn dev",
     "dev:local": "cross-env NEXT_PUBLIC_API_URL=localhost:8088 yarn devdev",
-    "dev:remote": "cross-env NEXT_PUBLIC_API_URL=192.168.1.245:8088 yarn dev:prod",
+    "dev:remote": "cross-env NEXT_PUBLIC_API_URL=172.20.10.2:8088 yarn dev:prod",
     "devdev": "yarn dev:dev",
     "prod": "yarn dev:prod",
     "disk-space-info": "du -hs ./node_modules && du -hs ./.next && du -hs ./.next/cache",

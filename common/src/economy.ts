@@ -114,8 +114,8 @@ export const WEB_PRICES = PaymentAmounts
 
 export type WebPriceInDollars =
   (typeof PaymentAmounts)[number]['priceInDollars']
-// TODO: these prices should be a function of whether the user is sweepstakes verified or not
-export const IOS_PRICES = [
+export const IOS_PRICES = PaymentAmounts
+export const OLD_IOS_PRICES = [
   {
     mana: 1_000,
     priceInDollars: 14.99,

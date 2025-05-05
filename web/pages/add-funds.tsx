@@ -19,7 +19,7 @@ export default function AddFundsPage() {
       <Col className="bg-canvas-0 mx-auto max-w-[700px] rounded p-4 py-8 sm:p-8 sm:shadow-md">
         <Title>Get Mana</Title>
 
-        <BuyManaTab onClose={() => {}} />
+        <BuyManaTab />
       </Col>
     </Page>
   )
