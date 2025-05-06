@@ -260,8 +260,8 @@ export function UserBetsTable(props: { user: User }) {
     { label: 'Highest 1w Change', field: 'week', direction: 'desc' },
     { label: 'Lowest 1w Change', field: 'week', direction: 'asc' },
     { label: 'Closing Soon', field: 'closeTime', direction: 'asc' },
-    { label: 'Largest Discount', field: 'priceDiff', direction: 'desc' },
-    { label: 'Smallest Discount', field: 'priceDiff', direction: 'asc' },
+    { label: '↓ ∆ Last Trade', field: 'priceDiff', direction: 'desc' },
+    { label: '↑ ∆ Last Trade', field: 'priceDiff', direction: 'asc' },
   ]
 
   // Restore sort state here, replacing sortDropdownOption
@@ -489,7 +489,7 @@ const availableColumns: { value: BetSort; label: string }[] = [
   { value: 'dayPriceChange', label: '1d Price' },
   { value: 'volume24h', label: '1d Volume' },
   { value: 'liquidity', label: 'Liquidity' },
-  { value: 'priceDiff', label: 'Discount %' },
+  { value: 'priceDiff', label: '∆ Last Trade' },
 ]
 
 function BetsTable(props: {
@@ -578,7 +578,7 @@ function BetsTable(props: {
         return 0
       }
 
-      return -((userPrice - currentPrice) / userPrice) * 100
+      return ((userPrice - currentPrice) / userPrice) * 100
     },
   }
 
@@ -1098,22 +1098,25 @@ function BetsTable(props: {
                                   )
                                 }
 
-                                const discountPercent =
+                                const changeSinceLastTrade =
                                   ((userPrice - currentPrice) / userPrice) * 100
 
                                 return (
                                   <div
                                     className={clsx(
                                       'font-semibold',
-                                      discountPercent < 0
+                                      changeSinceLastTrade < 0
                                         ? 'text-teal-500'
-                                        : discountPercent > 0
+                                        : changeSinceLastTrade > 0
                                         ? 'text-scarlet-500'
                                         : 'text-ink-600'
                                     )}
                                   >
-                                    {discountPercent > 0 ? '+' : ''}
-                                    {discountPercent.toFixed(0)}%
+                                    {changeSinceLastTrade < 0 ? '' : '-'}
+                                    {changeSinceLastTrade
+                                      .toFixed(0)
+                                      .replace('-', '+')}
+                                    %
                                   </div>
                                 )
                               })()}
