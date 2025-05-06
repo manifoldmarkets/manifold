@@ -72,6 +72,7 @@ export const generateAIDescription: APIHandler<'generate-ai-description'> =
             ? 'E.g. if the answers are not exhaustive, traders should be warned that the market may resolve N/A.'
             : ''
         }
+        - Format each separate section with a #### header
         - Use your web search tool to gather relevant, up-to-date information related to the user's prompt to inform the description. Include information from it in the description that traders or other readers may want to know if it's relevant to the user's question, but keep it concise.
 
         User's prompt:

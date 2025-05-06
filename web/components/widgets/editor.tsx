@@ -38,7 +38,7 @@ import { safeLocalStorage } from 'web/lib/util/local'
 const editorExtensions = (simple = false): Extensions =>
   nodeViewMiddleware([
     StarterKit.configure({
-      heading: simple ? false : { levels: [1, 2, 3] },
+      heading: simple ? false : { levels: [1, 2, 3, 4] },
       horizontalRule: simple ? false : {},
     }),
     simple ? DisplayImage : BasicImage,
