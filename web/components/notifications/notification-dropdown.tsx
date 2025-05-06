@@ -31,7 +31,7 @@ export default function NotificationDropdown(props: {
         items={notificationDropdownItems}
         buttonContent={
           <DotsVerticalIcon
-            className={clsx('my-1 h-4 w-4 md:invisible md:group-hover:visible')}
+            className={clsx('h-4 w-4 md:invisible md:group-hover:visible')}
           />
         }
         menuWidth="w-52"

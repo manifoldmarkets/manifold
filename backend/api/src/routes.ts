@@ -117,7 +117,7 @@ import { getNotifications } from 'api/get-notifications'
 import { getCheckoutSession } from 'api/gidx/get-checkout-session'
 import { completeCheckoutSession } from 'api/gidx/complete-checkout-session'
 import { getContractTopics } from './get-contract-topics'
-import { getRelatedMarkets } from 'api/get-related-markets'
+import { getRelatedMarkets } from './get-related-markets'
 import { getRelatedMarketsByGroup } from './get-related-markets-by-group'
 import { followContract } from './follow-contract'
 import { getUserLimitOrdersWithContracts } from 'api/get-user-limit-orders-with-contracts'
@@ -175,7 +175,13 @@ import { inferNumericUnit } from './infer-numeric-unit'
 import { generateConciseTitle } from './generate-concise-title'
 import { getCloseDateEndpoint } from './get-close-date'
 import { referUser } from './refer-user'
-import { saveMarketDraft, getMarketDrafts, deleteMarketDraft } from './market-drafts'
+import {
+  saveMarketDraft,
+  getMarketDrafts,
+  deleteMarketDraft,
+} from './market-drafts'
+import { getSeasonInfo } from './get-season-info'
+import { markNotificationRead } from './mark-all-notifications'
 
 export const handlers: { [k in APIPath]: APIHandler<k> } = {
   'refresh-all-clients': refreshAllClients,
@@ -367,4 +373,6 @@ export const handlers: { [k in APIPath]: APIHandler<k> } = {
   'save-market-draft': saveMarketDraft,
   'get-market-drafts': getMarketDrafts,
   'delete-market-draft': deleteMarketDraft,
+  'get-season-info': getSeasonInfo,
+  'mark-notification-read': markNotificationRead,
 }

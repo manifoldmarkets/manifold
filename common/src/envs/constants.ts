@@ -179,7 +179,8 @@ export const BOT_USERNAMES = [
   'bradbot',
   'ShrimpLute',
   'kbot',
-  'RISKBOT'
+  'ataribot',
+  'RISKBOT',
 ]
 
 export const MOD_IDS = [
@@ -307,6 +308,7 @@ export const BANNED_TRADING_USER_IDS = [
   'os2ilMb1d8WDeXxiQAo6btlig1Z2', // BTE alt
   'zRMxfUt51RcEIcZkuw6ySiNJYBE3', // BTE alt
   'fnuHBW8dHwZp2TbEt2MKJY9d28V2', // Klob (Caleb)
+  'RK6Nd7IBfMVOcLekfqcN9Ys17qJ2', // PeterNjeim
 ]
 
 export const PARTNER_USER_IDS: string[] = [

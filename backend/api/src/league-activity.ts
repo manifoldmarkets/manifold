@@ -39,7 +39,7 @@ export const getLeagueActivity = async (
     (row: { user_id: string }) => row.user_id
   )
 
-  const { start, end } = getSeasonDates(season)
+  const { start, approxEnd: end } = getSeasonDates(season)
 
   const bets = await pg.map<Bet>(
     `select

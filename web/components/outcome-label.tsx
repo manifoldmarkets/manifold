@@ -18,7 +18,7 @@ export function OutcomeLabel(props: {
   contract: Pick<Contract, 'outcomeType' | 'mechanism'>
   outcome: resolution | string
   truncate: 'short' | 'long' | 'none'
-  answer?: Answer
+  answer?: Pick<Answer, 'text'>
   pseudonym?: {
     YES: {
       pseudonymName: string
@@ -31,6 +31,7 @@ export function OutcomeLabel(props: {
   }
 }) {
   const { outcome, contract, truncate, answer, pseudonym } = props
+  const answerText = answer?.text
   const { outcomeType, mechanism } = contract
   // const mainBinaryMCAnswer = getMainBinaryMCAnswer(contract)
   const { pseudonymName, pseudonymColor } =
@@ -73,9 +74,9 @@ export function OutcomeLabel(props: {
   if (outcomeType === 'NUMBER') {
     return (
       <span>
-        {answer && (
+        {answerText && (
           <MultiOutcomeLabel
-            answer={answer}
+            answerText={answerText}
             resolution={outcome}
             truncate={truncate}
             answerClassName={'font-bold text-base-400 !break-normal'}
@@ -89,9 +90,9 @@ export function OutcomeLabel(props: {
   if (mechanism === 'cpmm-multi-1') {
     return (
       <span>
-        {answer && (
+        {answerText && (
           <MultiOutcomeLabel
-            answer={answer}
+            answerText={answerText}
             resolution={outcome}
             truncate={truncate}
             answerClassName={'font-bold text-base-400 !break-normal'}
@@ -154,12 +155,12 @@ export function BinaryContractOutcomeLabel(props: {
 }
 
 export function MultiOutcomeLabel(props: {
-  answer: Answer
+  answerText: string
   resolution: string | 'CANCEL' | 'MKT'
   truncate: 'short' | 'long' | 'none'
   answerClassName?: string
 }) {
-  const { answer, resolution, truncate, answerClassName } = props
+  const { answerText, resolution, truncate, answerClassName } = props
 
   if (resolution === 'CANCEL') return <CancelLabel />
   if (resolution === 'MKT' || resolution === 'CHOOSE_MULTIPLE')
@@ -167,7 +168,7 @@ export function MultiOutcomeLabel(props: {
 
   return (
     <AnswerLabel
-      text={answer.text}
+      text={answerText}
       truncate={truncate}
       className={answerClassName}
     />

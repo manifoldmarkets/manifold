@@ -1,12 +1,18 @@
 import { log, revalidateStaticProps } from 'shared/utils'
-import { createSupabaseDirectClient } from 'shared/supabase/init'
+import {
+  SupabaseDirectClient,
+  createSupabaseDirectClient,
+} from 'shared/supabase/init'
 import { bulkUpdate } from 'shared/supabase/utils'
-import { SEASONS } from 'common/leagues'
+import { getEffectiveCurrentSeason } from 'shared/supabase/leagues'
 
-export async function updateLeagueRanks() {
-  const pg = createSupabaseDirectClient()
+export async function updateLeagueRanks(
+  manualSeason?: number,
+  tx?: SupabaseDirectClient
+) {
+  const pg = tx ?? createSupabaseDirectClient()
 
-  const season = SEASONS[SEASONS.length - 1]
+  const season = manualSeason ?? (await getEffectiveCurrentSeason())
 
   log('Loading user ranks...')
   const userIds = await pg.manyOrNone<{ id: string; rank: number }>(

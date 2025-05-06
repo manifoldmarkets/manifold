@@ -129,3 +129,13 @@ export function broadcastNewChartAnnotation(
 ) {
   broadcast(`contract/${contractId}/chart-annotation`, { annotation })
 }
+
+export function broadcastNotificationsRead(
+  userId: string,
+  notificationIds: string[]
+) {
+  broadcast(`user-notification-status/${userId}`, {
+    type: 'marked_as_read',
+    notificationIds,
+  })
+}

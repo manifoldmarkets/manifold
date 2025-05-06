@@ -1,5 +1,9 @@
 import { isAdminId, isModId } from 'common/envs/constants'
-import { getContract, revalidateContractStaticProps } from 'shared/utils'
+import {
+  getContract,
+  getUser,
+  revalidateContractStaticProps,
+} from 'shared/utils'
 import { getComment } from 'shared/supabase/contract-comments'
 import { createSupabaseDirectClient } from 'shared/supabase/init'
 import { updateData } from 'shared/supabase/utils'
@@ -19,6 +23,13 @@ export const hideComment: APIHandler<'hide-comment'> = async (
   }
 
   const pg = createSupabaseDirectClient()
+  const user = await getUser(auth.uid)
+  if (!user) throw new APIError(404, 'User not found')
+  if (user.isBannedFromPosting || user.userDeleted)
+    throw new APIError(
+      403,
+      'You are banned from posting or your account has been deleted'
+    )
 
   const contract = await getContract(pg, contractId)
   if (!contract) throw new APIError(404, 'Contract not found')
@@ -33,12 +44,16 @@ export const hideComment: APIHandler<'hide-comment'> = async (
   }
 
   const comment = await getComment(pg, commentId)
+  const hide = !comment.hidden
+  if ((isAdminId(comment.userId) || isModId(comment.userId)) && hide) {
+    throw new APIError(403, 'You cannot hide comments from admins or mods')
+  }
 
   // update the comment
   await updateData(pg, 'contract_comments', 'comment_id', {
     comment_id: commentId,
-    hidden: !comment.hidden,
-    hiddenTime: Date.now(),
+    hidden: hide,
+    hiddenTime: hide ? Date.now() : undefined,
     hiderId: auth.uid,
   })
 

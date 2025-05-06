@@ -42,7 +42,7 @@ export type Notification = {
   sourceTitle?: string
 
   isSeenOnHref?: string
-  worksOnSweeple?: boolean
+  markedAsRead?: boolean
 }
 
 export type NotificationReason =
@@ -369,16 +369,17 @@ export type LeagueChangeData = {
 }
 
 export type BetFillData = {
-  betOutcome: string
   betAnswer?: string
   creatorOutcome: string
   probability: number
-  fillAmount: number
   limitOrderTotal?: number
   limitOrderRemaining?: number
   limitAt?: string
-  outcomeType?: OutcomeType
-  token?: ContractToken
+  mechanism: 'cpmm-1' | 'cpmm-multi-1'
+  outcomeType: OutcomeType
+  betAnswerId?: string
+  expiresAt?: number
+  createdTime?: number
 }
 
 export type ContractResolutionData = {

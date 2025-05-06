@@ -5,13 +5,10 @@ import { Row } from '../components/layout/row'
 import { WebPriceInDollars } from 'common/economy'
 import { FullscreenConfetti } from 'web/components/widgets/fullscreen-confetti'
 import { useRouter } from 'next/router'
-import { useIosPurchases } from 'web/hooks/use-ios-purchases'
-import { useNativeInfo } from 'web/components/native-message-provider'
 import { usePrices } from 'web/hooks/use-prices'
 import { FundsSelector } from 'web/components/gidx/funds-selector'
 
 const CheckoutPage = () => {
-  const { isIOS } = useNativeInfo()
   const prices = usePrices()
 
   const [error, setError] = useState<string | null>(null)
@@ -19,11 +16,6 @@ const CheckoutPage = () => {
   const [showConfetti, setShowConfetti] = useState(false)
   const [loadingPrice, setLoadingPrice] = useState<WebPriceInDollars | null>(
     null
-  )
-  const { initiatePurchaseInDollars, loadingMessage } = useIosPurchases(
-    setError,
-    setLoadingPrice,
-    () => setShowConfetti(true)
   )
   useEffect(() => {
     if (router.query.purchaseSuccess) {
@@ -49,9 +41,6 @@ const CheckoutPage = () => {
     setShowConfetti(false)
     setError(null)
     setLoadingPrice(dollarAmount)
-    if (isIOS) {
-      initiatePurchaseInDollars(dollarAmount)
-    }
   }
 
   return (
@@ -64,9 +53,6 @@ const CheckoutPage = () => {
         />
       </Col>
       <Row className="text-error mt-2">{error}</Row>
-      {loadingMessage && (
-        <Row className="text-ink-500 mt-2 text-sm">{loadingMessage}</Row>
-      )}
     </Page>
   )
 }

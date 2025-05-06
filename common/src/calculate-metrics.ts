@@ -309,6 +309,7 @@ export const calculateUserMetricsWithNewBetsOnly = (
     hasShares,
     maxSharesOutcome,
     lastBetTime: lastBet.createdTime,
+    lastProb: lastBet.probAfter,
     totalSpent,
     payout: floatingEqual(payout, 0) ? 0 : payout,
     totalAmountSold: floatingEqual(totalAmountSold, 0) ? 0 : totalAmountSold,
@@ -428,6 +429,7 @@ export const getDefaultMetric = (
   from: undefined,
   totalAmountInvested: 0,
   totalAmountSold: 0,
+  lastProb: null,
 })
 
 const defaultTimeScaleValues = {

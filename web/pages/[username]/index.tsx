@@ -428,6 +428,12 @@ function UserProfile(props: {
                 ),
               },
               {
+                title: 'Balance log',
+                stackedTabIcon: <ViewListIcon className="h-5" />,
+                content: <BalanceChangeTable user={user} />,
+                queryString: balanceChangesKey,
+              },
+              {
                 title: 'Comments',
                 stackedTabIcon: <ChatAlt2Icon className="h-5" />,
                 content: (
@@ -435,12 +441,6 @@ function UserProfile(props: {
                     <UserCommentsList user={user} />
                   </Col>
                 ),
-              },
-              {
-                title: 'Balance log',
-                stackedTabIcon: <ViewListIcon className="h-5" />,
-                content: <BalanceChangeTable user={user} />,
-                queryString: balanceChangesKey,
               },
               {
                 title: 'Payments',

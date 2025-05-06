@@ -4,7 +4,7 @@ import { runTransactionWithRetries } from 'shared/transact-with-retries'
 import { updateContract } from 'shared/supabase/contracts'
 import { FieldVal } from 'shared/supabase/utils'
 import { runTxnInBetQueue } from 'shared/txn/run-txn'
-import { getContract, log } from 'shared/utils'
+import { getContract, getUser, log } from 'shared/utils'
 import { APIError, type APIHandler } from './helpers/endpoint'
 import { getNewLiquidityProvision } from 'common/add-liquidity'
 import { convertLiquidity } from 'common/supabase/liquidity'
@@ -18,6 +18,13 @@ import {
 export const removeLiquidity: APIHandler<
   'market/:contractId/remove-liquidity'
 > = async ({ contractId, amount: totalAmount }, auth) => {
+  const user = await getUser(auth.uid)
+  if (!user) throw new APIError(404, 'User not found')
+  if (user.isBannedFromPosting || user.userDeleted)
+    throw new APIError(
+      403,
+      'You are banned from posting or your account has been deleted'
+    )
   const liquidity = await runTransactionWithRetries(async (pgTrans) => {
     const contract = await getContract(pgTrans, contractId)
     if (!contract) throw new APIError(404, `Contract not found`)

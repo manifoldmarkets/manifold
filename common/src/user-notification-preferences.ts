@@ -93,7 +93,7 @@ export const getDefaultNotificationPreferences = (isDev?: boolean) => {
     // Watched Markets
     all_comments_on_watched_markets: constructPref(false, false, false),
     // Answers
-    all_answers_on_watched_markets: constructPref(true, false, false),
+    all_answers_on_watched_markets: constructPref(false, false, false),
     // Comments
     all_replies_to_my_comments_on_watched_markets: constructPref(
       true,

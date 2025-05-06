@@ -19,7 +19,7 @@ export const getSiteActivity: APIHandler<'get-site-activity'> = async (
     offset = 0,
     blockedGroupSlugs = [],
     blockedContractIds = [],
-    types = ['bets', 'comments', 'markets'],
+    types = ['bets', 'comments', 'markets', 'limit-orders'],
     minBetAmount,
     onlyFollowedTopics = false,
     onlyFollowedContracts = false,
@@ -140,10 +140,9 @@ export const getSiteActivity: APIHandler<'get-site-activity'> = async (
        ${betsEnd}`
     : 'select null where false;'
 
-  const limitOrdersQuery = types.includes('bets')
+  const limitOrdersQuery = types.includes('limit-orders')
     ? `${betsSelect}
-       WHERE cb.amount = 0
-         AND (cb.data->>'orderAmount')::numeric >= $7
+       WHERE ((cb.data->>'orderAmount')::numeric - cb.amount) > $7 * 0.9
          AND NOT cb.is_filled AND NOT cb.is_cancelled
         ${betsEnd}`
     : 'select null where false;'

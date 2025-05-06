@@ -16,8 +16,6 @@ import { Modal } from './layout/modal'
 import { AmountInput } from './widgets/amount-input'
 import { Col } from './layout/col'
 import { shortenNumber } from 'common/util/formatNumber'
-import { useIosPurchases } from 'web/hooks/use-ios-purchases'
-import { useNativeInfo } from './native-message-provider'
 import { TokenNumber } from './widgets/token-number'
 import { FundsSelector } from 'web/components/gidx/funds-selector'
 import { firebaseLogin, User } from 'web/lib/firebase/users'
@@ -30,6 +28,7 @@ const BUY_MANA_GRAPHICS = [
   '/buy-mana-graphics/1M.png',
 ]
 
+// TODO: this should send stripe a redirect to the proper market/create page
 export function AddFundsModal(props: {
   open: boolean
   setOpen(open: boolean): void
@@ -45,7 +44,7 @@ export function AddFundsModal(props: {
       size="lg"
       className="bg-canvas-0 text-ink-1000 rounded-md p-8"
     >
-      <BuyManaTab onClose={() => setOpen(false)} />
+      <BuyManaTab />
       {/* <Tabs
         trackingName="buy modal tabs"
         className="[&_svg]:hidden" // hide carousel switcher
@@ -69,19 +68,11 @@ export function AddFundsModal(props: {
   )
 }
 
-export function BuyManaTab(props: { onClose: () => void }) {
-  const { onClose } = props
+export function BuyManaTab() {
   const user = useUser()
   const privateUser = usePrivateUser()
-  const { isIOS } = useNativeInfo()
   const [loadingPrice, setLoadingPrice] = useState<WebPriceInDollars | null>(
     null
-  )
-  const [error, setError] = useState<string | null>(null)
-  const { initiatePurchaseInDollars, loadingMessage } = useIosPurchases(
-    setError,
-    setLoadingPrice,
-    onClose
   )
 
   return (
@@ -89,15 +80,10 @@ export function BuyManaTab(props: { onClose: () => void }) {
       <FundsSelector
         onSelectPriceInDollars={(dollarAmount) => {
           if (!user || !privateUser) return firebaseLogin()
-          if (isIOS) {
-            initiatePurchaseInDollars(dollarAmount)
-          }
           setLoadingPrice(dollarAmount)
         }}
         loadingPrice={loadingPrice}
       />
-      {loadingMessage && <span className="text-ink-500">{loadingMessage}</span>}
-      {error && <span className="text-error">{error}</span>}
     </Col>
   )
 }
@@ -108,16 +94,13 @@ export function PriceTile(props: {
   loadingPrice: WebPriceInDollars | null
   disabled: boolean
   user: User | null | undefined
-  onClick?: () => void
+  onClick: () => void
 }) {
   const { loadingPrice, onClick, amounts, index, user } = props
   const { mana, priceInDollars, bonusInDollars } = amounts
-  const { isIOS } = useNativeInfo()
 
   const isCurrentlyLoading = loadingPrice === priceInDollars
   const disabled = props.disabled || (loadingPrice && !isCurrentlyLoading)
-
-  const useStripe = !isIOS
 
   const onClickHandler = (e: React.MouseEvent) => {
     if (!user) {
@@ -125,10 +108,7 @@ export function PriceTile(props: {
       firebaseLogin()
       return
     }
-
-    if (!useStripe && onClick) {
-      onClick()
-    }
+    onClick()
   }
 
   const imgSrc =
@@ -143,7 +123,7 @@ export function PriceTile(props: {
         'ring-indigo-600',
         isCurrentlyLoading && 'pointer-events-none animate-pulse cursor-wait'
       )}
-      type={useStripe ? 'submit' : 'button'}
+      type={'submit'}
       onClick={onClickHandler}
     >
       <Col className={' w-full items-center rounded-t px-4 pb-2 pt-4'}>
@@ -196,18 +176,14 @@ export function PriceTile(props: {
   )
   const [url, setUrl] = useState('https://manifold.markets')
   useEffect(() => setUrl(window.location.href), [])
-  if (useStripe) {
-    return (
-      <form
-        // Expects cents
-        action={checkoutURL(user?.id || '', amounts.priceInDollars, url)}
-        method="POST"
-      >
-        {tile}
-      </form>
-    )
-  }
-  return tile
+  return (
+    <form
+      action={checkoutURL(user?.id || '', amounts.priceInDollars, url)}
+      method="POST"
+    >
+      {tile}
+    </form>
+  )
 }
 
 export const SpiceToManaForm = (props: {

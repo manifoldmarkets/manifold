@@ -319,16 +319,17 @@ function BetActions(props: {
   const user = useUser()
   const [isSharing, setIsSharing] = useState(false)
   const bettor = useDisplayUserById(bet.userId)
-  if (!user) return null
 
   return (
     <Row className="items-center gap-1">
-      <RepostButton
-        bet={bet}
-        size={'2xs'}
-        className={'!p-1'}
-        playContract={contract}
-      />
+      {user && (
+        <RepostButton
+          bet={bet}
+          size={'2xs'}
+          className={'!p-1'}
+          playContract={contract}
+        />
+      )}
       {onReply && (
         <Tooltip
           text={`Reply to this ${TRADE_TERM}`}

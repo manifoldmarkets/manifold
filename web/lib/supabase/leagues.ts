@@ -1,13 +1,13 @@
-import { CURRENT_SEASON, league_user_info } from 'common/leagues'
+import { league_user_info } from 'common/leagues'
 import { convertSQLtoTS, tsToMillis } from 'common/supabase/utils'
 import { db } from './db'
 
-export async function getLeagueInfo(userId: string) {
+export async function getLeagueInfo(userId: string, season: number) {
   const { data } = await db
     .from('user_league_info')
     .select('*')
     .eq('user_id', userId)
-    .eq('season', CURRENT_SEASON)
+    .eq('season', season)
     .limit(1)
   if (data && data.length > 0) {
     return data[0]

@@ -18,10 +18,10 @@ export const getUserPortfolioHistory: APIHandler<
     from user_portfolio_history
     where
       user_id = $1
-      and ts > $2
+      and ($2 is null or ts > $2)
     order by random()
     limit 1000`,
-    [userId, startDate],
+    [userId, period === 'allTime' ? null : startDate],
     convertPortfolioHistory
   )
 

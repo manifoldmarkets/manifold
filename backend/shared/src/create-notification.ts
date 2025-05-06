@@ -74,7 +74,7 @@ import {
   getUniqueVoterIds,
 } from 'shared/supabase/contracts'
 import { richTextToString } from 'common/util/parse'
-import { league_user_info } from 'common/leagues'
+import { LeagueChangeNotificationData } from 'common/leagues'
 import { hasUserSeenMarket } from 'shared/helpers/seen-markets'
 import { isAdminId, isModId } from 'common/envs/constants'
 import {
@@ -200,7 +200,8 @@ export const createCommentOnContractNotification = async (
   sourceText: string,
   sourceContract: Contract,
   repliedUsersInfo: replied_users_info,
-  taggedUserIds: string[]
+  taggedUserIds: string[],
+  requiresResponse: boolean
 ) => {
   const pg = createSupabaseDirectClient()
 
@@ -216,7 +217,7 @@ export const createCommentOnContractNotification = async (
   )
   const isReply = Object.keys(repliedUsersInfo).length > 0
   const buildNotification = (userId: string, reason: NotificationReason) => {
-    const notification: Notification = {
+    return removeUndefinedProps({
       id: nanoid(6),
       userId,
       reason,
@@ -238,9 +239,11 @@ export const createCommentOnContractNotification = async (
       data: {
         isReply,
       } as CommentNotificationData,
-      worksOnSweeple: !!sourceContract.siblingContractId,
-    }
-    return removeUndefinedProps(notification)
+      markedAsRead:
+        requiresResponse && sourceContract.creatorId === userId
+          ? false
+          : undefined,
+    }) as Notification
   }
 
   const needNotFollowContractReasons = ['tagged_user']
@@ -549,18 +552,15 @@ export const createBetFillNotification = async (
     sourceContractSlug: contract.slug,
     sourceContractId: contract.id,
     data: {
-      betOutcome: bet.outcome,
       betAnswer,
       creatorOutcome: limitBet.outcome,
-      fillAmount,
       probability: limitBet.limitProb,
       limitOrderTotal: limitBet.orderAmount,
       limitOrderRemaining: remainingAmount,
       limitAt: limitAt.toString(),
       outcomeType: contract.outcomeType,
-      token: contract.token,
+      mechanism: contract.mechanism,
     } as BetFillData,
-    worksOnSweeple: !!contract.siblingContractId,
   }
   if (sendToBrowser) {
     const pg = createSupabaseDirectClient()
@@ -605,6 +605,11 @@ export const createLimitBetCanceledNotification = async (
       ? limitBet.limitProb * (contract.max - contract.min) + contract.min
       : Math.round(limitBet.limitProb * 100) + '%'
 
+  const betAnswer =
+    'answers' in contract
+      ? (contract.answers as Answer[]).find((a) => a.id === limitBet.answerId)
+      : undefined
+
   const notification: Notification = {
     id: nanoid(6),
     userId: toUserId,
@@ -629,7 +634,11 @@ export const createLimitBetCanceledNotification = async (
       limitOrderRemaining: remainingAmount,
       limitAt: limitAt.toString(),
       outcomeType: contract.outcomeType,
-      token: contract.token,
+      mechanism: contract.mechanism,
+      betAnswer: betAnswer?.text,
+      betAnswerId: limitBet.answerId,
+      expiresAt: limitBet.expiresAt,
+      createdTime: limitBet.createdTime,
     } as BetFillData,
   }
   const pg = createSupabaseDirectClient()
@@ -655,6 +664,10 @@ export const createLimitBetExpiredNotification = async (
     contract.outcomeType === 'PSEUDO_NUMERIC'
       ? limitBet.limitProb * (contract.max - contract.min) + contract.min
       : Math.round(limitBet.limitProb * 100) + '%'
+  const betAnswer =
+    'answers' in contract
+      ? (contract.answers as Answer[]).find((a) => a.id === limitBet.answerId)
+      : undefined
 
   const notification: Notification = {
     id: nanoid(6),
@@ -680,7 +693,11 @@ export const createLimitBetExpiredNotification = async (
       limitOrderRemaining: remainingAmount,
       limitAt: limitAt.toString(),
       outcomeType: contract.outcomeType,
-      token: contract.token,
+      betAnswer: betAnswer?.text,
+      betAnswerId: limitBet.answerId,
+      expiresAt: limitBet.expiresAt,
+      createdTime: limitBet.createdTime,
+      mechanism: contract.mechanism,
     } as BetFillData,
   }
   const pg = createSupabaseDirectClient()
@@ -838,7 +855,6 @@ export const createBettingStreakBonusNotification = async (
       bonusAmount: amount,
       cashAmount: 0,
     } as BettingStreakData,
-    worksOnSweeple: true,
   }
   const pg = createSupabaseDirectClient()
   await insertNotificationToSupabase(notification, pg)
@@ -881,7 +897,6 @@ export const createBettingStreakExpiringNotification = async (
       data: {
         streak: streak,
       } as BettingStreakData,
-      worksOnSweeple: true,
     }
     if (sendToMobile) {
       bulkPushNotifications.push([
@@ -899,44 +914,72 @@ export const createBettingStreakExpiringNotification = async (
   await bulkInsertNotifications(bulkNotifications, pg)
 }
 
-/** @deprecated until bulkified **/
-export const createLeagueChangedNotification = async (
-  userId: string,
-  previousLeague: league_user_info | undefined,
-  newLeague: { season: number; division: number; cohort: string },
-  bonusAmount: number,
-  pg: SupabaseDirectClient
+export const createLeagueChangedNotifications = async (
+  pg: SupabaseDirectClient,
+  data: LeagueChangeNotificationData[]
 ) => {
-  const privateUser = await getPrivateUser(userId)
-  if (!privateUser) return
-  const { sendToBrowser } = getNotificationDestinationsForUser(
-    privateUser,
-    'league_changed'
-  )
-  if (!sendToBrowser) return
+  if (data.length === 0) return
 
-  const id = nanoid(6)
-  const data: LeagueChangeData = {
-    previousLeague,
-    newLeague,
-    bonusAmount,
+  log(`Creating ${data.length} league change notifications.`)
+
+  const userIds = data.map((d) => d.userId)
+
+  // Fetch all relevant private users in bulk
+  const privateUsers = await pg.map(
+    `select * from private_users where id = any($1)`,
+    [userIds],
+    convertPrivateUser
+  )
+  const privateUserMap = new Map(privateUsers.map((user) => [user.id, user]))
+
+  const bulkNotifications: Notification[] = []
+
+  for (const item of data) {
+    const privateUser = privateUserMap.get(item.userId)
+    if (!privateUser) {
+      log(`Could not find private user ${item.userId}`)
+      continue
+    }
+
+    // Check notification preferences
+    const { sendToBrowser } = getNotificationDestinationsForUser(
+      privateUser,
+      'league_changed'
+    )
+    if (!sendToBrowser) continue
+
+    // Construct notification data
+    const id = nanoid(6) // Still need a unique ID per notification
+    const notificationData: LeagueChangeData = {
+      previousLeague: item.previousLeague,
+      newLeague: item.newLeague,
+      bonusAmount: item.bonusAmount,
+    }
+
+    const notification: Notification = {
+      id,
+      userId: item.userId,
+      reason: 'league_changed',
+      createdTime: Date.now(),
+      isSeen: false,
+      sourceId: id, // Use the generated id as sourceId for uniqueness? Or maybe season identifier? Let's use id for now.
+      sourceText: item.bonusAmount.toString(),
+      sourceType: 'league_change',
+      sourceUpdateType: 'created',
+      sourceUserName: '', // Not relevant for this type
+      sourceUserUsername: '', // Not relevant for this type
+      sourceUserAvatarUrl: '', // Not relevant for this type
+      data: notificationData,
+    }
+    bulkNotifications.push(notification)
   }
-  const notification: Notification = {
-    id,
-    userId,
-    reason: 'league_changed',
-    createdTime: Date.now(),
-    isSeen: false,
-    sourceId: id,
-    sourceText: bonusAmount.toString(),
-    sourceType: 'league_change',
-    sourceUpdateType: 'created',
-    sourceUserName: '',
-    sourceUserUsername: '',
-    sourceUserAvatarUrl: '',
-    data,
+
+  if (bulkNotifications.length > 0) {
+    await bulkInsertNotifications(bulkNotifications, pg)
+    log(`Inserted ${bulkNotifications.length} league change notifications.`)
+  } else {
+    log('No league change notifications met filter criteria.')
   }
-  await insertNotificationToSupabase(notification, pg)
 }
 
 export const createLikeNotification = async (reaction: Reaction) => {
@@ -998,7 +1041,6 @@ export const createLikeNotification = async (reaction: Reaction) => {
     sourceText: text,
     sourceSlug: slug,
     sourceTitle: contract.question,
-    worksOnSweeple: !!contract.siblingContractId && content_type !== 'contract',
   }
   return await insertNotificationToSupabase(notification, pg)
 }
@@ -1323,7 +1365,6 @@ export const createContractResolvedNotifications = async (
         profit: userIdToContractMetrics?.[userId]?.profit ?? 0,
         token,
       }) as ContractResolutionData,
-      worksOnSweeple: !!contract.siblingContractId,
     }
   }
 
@@ -1523,7 +1564,6 @@ export const createQuestPayoutNotification = async (
       questType,
       questCount,
     } as QuestRewardTxn['data'],
-    worksOnSweeple: true,
   }
   const pg = createSupabaseDirectClient()
   await insertNotificationToSupabase(notification, pg)
@@ -2000,7 +2040,6 @@ export const createPushNotificationBonusNotification = async (
     sourceUserAvatarUrl: MANIFOLD_AVATAR_URL,
     sourceText: amount.toString(),
     sourceTitle: 'Push Notification Bonus',
-    worksOnSweeple: true,
   }
   const pg = createSupabaseDirectClient()
   await insertNotificationToSupabase(notification, pg)
@@ -2105,7 +2144,6 @@ export const createPaymentSuccessNotification = async (
     sourceUserAvatarUrl: '',
     sourceText: '',
     data: paymentData,
-    worksOnSweeple: true,
   }
 
   const pg = createSupabaseDirectClient()

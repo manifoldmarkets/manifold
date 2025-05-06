@@ -2077,7 +2077,9 @@ export const API = (_apiTypeCheck = {
         blockedGroupSlugs: z.array(z.string()).optional(),
         blockedContractIds: z.array(z.string()).optional(),
         topicIds: z.array(z.string()).optional(),
-        types: z.array(z.enum(['bets', 'comments', 'markets'])).optional(),
+        types: z
+          .array(z.enum(['bets', 'comments', 'markets', 'limit-orders']))
+          .optional(),
         minBetAmount: z.coerce.number().optional(),
         onlyFollowedTopics: coerceBoolean.optional(),
         onlyFollowedContracts: coerceBoolean.optional(),
@@ -2366,6 +2368,31 @@ export const API = (_apiTypeCheck = {
     props: z
       .object({
         id: z.coerce.number(),
+      })
+      .strict(),
+  },
+  'get-season-info': {
+    method: 'GET',
+    visibility: 'public',
+    authed: false,
+    props: z.object({
+      season: z.coerce.number().int().positive().optional(),
+    }),
+    returns: {} as {
+      season: number
+      startTime: number // epoch ms
+      endTime: number | null // epoch ms, null if a *mystery* for clients
+      status: 'active' | 'processing' | 'complete'
+    },
+  },
+  'mark-notification-read': {
+    method: 'POST',
+    visibility: 'private',
+    authed: true,
+    returns: {} as { success: boolean },
+    props: z
+      .object({
+        notificationId: z.string(),
       })
       .strict(),
   },
