@@ -398,7 +398,7 @@ async function createMarketMovementNotifications(
           answerText ? 70 : 130
         )
         const answerSegment = answerText
-          ? `:${truncateText(answerText, 60)}`
+          ? `: ${truncateText(answerText, 60)}`
           : ''
         const title = 'Market movement'
         const body = `${questionText}${answerSegment}: ${startProbText} → ${endProbText}`
