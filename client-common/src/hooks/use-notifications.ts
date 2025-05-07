@@ -117,6 +117,7 @@ export function useNotifications(
         )
       }
       if (type === 'marked_as_seen' && since) {
+        console.log('marked as seen since', since)
         setNotifications((notifs) =>
           notifs?.map((n) =>
             n.createdTime < since ? { ...n, isSeen: true } : n
