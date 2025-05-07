@@ -138,10 +138,11 @@ export function ContractParamsForm(props: {
   // For multiple choice, init to 2 empty answers
   const defaultAnswers =
     outcomeType === 'MULTIPLE_CHOICE' ||
-    outcomeType == 'POLL' ||
     outcomeType == 'MULTI_NUMERIC' ||
     outcomeType == 'DATE'
       ? ['', '']
+      : outcomeType == 'POLL'
+      ? ['', '', 'See results']
       : []
 
   const answersKey = 'new-answers-with-other' + paramsKey
