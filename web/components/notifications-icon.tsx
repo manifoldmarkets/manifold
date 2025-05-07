@@ -16,7 +16,6 @@ import { useUnseenPrivateMessageChannels } from 'web/hooks/use-private-messages'
 export function NotificationsIcon(props: { className?: string }) {
   const privateUser = usePrivateUser()
   const { className } = props
-
   return (
     <Row className="relative justify-center">
       {privateUser && <UnseenNotificationsBubble privateUser={privateUser} />}
