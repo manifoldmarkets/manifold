@@ -92,7 +92,7 @@ export function UserBetsTable(props: { user: User }) {
   // Track visible columns with local storage persistence
   const [visibleColumns, setVisibleColumns] = usePersistentLocalState<
     BetSort[]
-  >(['value', 'position'], 'bets-visible-columns')
+  >(['value', 'position', 'priceDiff'], 'bets-visible-columns-1')
 
   const [showLimitOrders, setShowLimitOrders] = usePersistentLocalState(
     false,
@@ -476,21 +476,26 @@ const NoBets = ({ user }: { user: User }) => {
     </>
   )
 }
-const availableColumns: { value: BetSort; label: string }[] = [
-  { value: 'value', label: 'Value' },
-  { value: 'position', label: 'Position' },
-  { value: 'profit', label: 'Profit' },
-  { value: 'profitPercent', label: 'Profit %' },
-  { value: 'day', label: '1d Profit' },
-  { value: 'dayPctChange', label: '1d Profit %' },
-  { value: 'week', label: '1w Profit' },
-  { value: 'closeTime', label: 'Close Time' },
-  { value: 'costBasis', label: 'Cost Basis' },
-  { value: 'dayPriceChange', label: '1d Price' },
-  { value: 'volume24h', label: '1d Volume' },
-  { value: 'liquidity', label: 'Liquidity' },
-  { value: 'priceDiff', label: '∆ Last Trade' },
-]
+const availableColumns: { value: BetSort; label: string; tooltip?: string }[] =
+  [
+    { value: 'value', label: 'Value' },
+    { value: 'position', label: 'Position' },
+    { value: 'profit', label: 'Profit' },
+    { value: 'profitPercent', label: 'Profit %' },
+    { value: 'day', label: '1d Profit' },
+    { value: 'dayPctChange', label: '1d Profit %' },
+    { value: 'week', label: '1w Profit' },
+    { value: 'closeTime', label: 'Close Time' },
+    { value: 'costBasis', label: 'Cost Basis' },
+    { value: 'dayPriceChange', label: '1d Price' },
+    { value: 'volume24h', label: '1d Volume' },
+    { value: 'liquidity', label: 'Liquidity' },
+    {
+      value: 'priceDiff',
+      label: 'Last Trade ∆',
+      tooltip: 'Percent change in market probability since your last trade',
+    },
+  ]
 
 function BetsTable(props: {
   contracts: MarketContract[]
@@ -1300,7 +1305,15 @@ function BetsTableHeaders(props: {
                 onClick={() => handleHeaderClick(sortField)}
               >
                 <Row className="relative items-center justify-end gap-1">
-                  <span>{column.label}</span>
+                  <span>
+                    {column.tooltip ? (
+                      <Tooltip text={column.tooltip} placement="top">
+                        {column.label}
+                      </Tooltip>
+                    ) : (
+                      column.label
+                    )}
+                  </span>
                   {isSortingByThis ? (
                     sortOption.direction === 'desc' ? (
                       <ArrowSmDownIcon className="absolute -right-4 h-4 w-4" />
