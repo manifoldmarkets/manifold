@@ -104,8 +104,7 @@ export function PollPanel(props: {
             hideBar={
               !showResults &&
               !hasVoted &&
-              !!closeTime &&
-              closeTime > Date.now() &&
+              (!closeTime || closeTime < Date.now()) &&
               !isCreator
             }
             className={'min-h-[40px]'}
