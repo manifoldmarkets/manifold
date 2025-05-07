@@ -76,7 +76,7 @@ import { RelativeTimestamp } from '../relative-timestamp'
 import { MarketDraft } from 'common/drafts'
 import { toast } from 'react-hot-toast'
 import { useEvent } from 'client-common/hooks/use-event'
-
+export const seeResultsAnswer = 'See results'
 export function ContractParamsForm(props: {
   creator: User
   outcomeType: CreateableOutcomeType
@@ -138,10 +138,11 @@ export function ContractParamsForm(props: {
   // For multiple choice, init to 2 empty answers
   const defaultAnswers =
     outcomeType === 'MULTIPLE_CHOICE' ||
-    outcomeType == 'POLL' ||
     outcomeType == 'MULTI_NUMERIC' ||
     outcomeType == 'DATE'
       ? ['', '']
+      : outcomeType == 'POLL'
+      ? ['', '', seeResultsAnswer]
       : []
 
   const answersKey = 'new-answers-with-other' + paramsKey
@@ -688,6 +689,7 @@ export function ContractParamsForm(props: {
   )
 
   const isMulti = outcomeType === 'MULTIPLE_CHOICE'
+  const isPoll = outcomeType === 'POLL'
   const isNumber = outcomeType === 'NUMBER'
   const isMultiNumeric = outcomeType === 'MULTI_NUMERIC'
   const isDate = outcomeType === 'DATE'
@@ -865,7 +867,7 @@ export function ContractParamsForm(props: {
           question={question}
         />
       ) : null}
-      {(isMulti || outcomeType == 'POLL') && !isNumber && (
+      {(isMulti || isPoll) && !isNumber && (
         <MultipleChoiceAnswers
           answers={answers}
           setAnswers={setAnswers}

@@ -4,10 +4,11 @@ import { Col } from '../layout/col'
 import { Row } from '../layout/row'
 import { ExpandingInput } from '../widgets/expanding-input'
 import { InfoTooltip } from '../widgets/info-tooltip'
-import { OutcomeType } from 'common/contract'
 import { ChoicesToggleGroup } from '../widgets/choices-toggle-group'
 import { Button } from '../buttons/button'
 import { formatMoney } from 'common/util/format'
+import { seeResultsAnswer } from '../new-contract/contract-params-form'
+import { last } from 'lodash'
 
 export function MultipleChoiceAnswers(props: {
   answers: string[]
@@ -15,7 +16,7 @@ export function MultipleChoiceAnswers(props: {
   addAnswersMode: 'DISABLED' | 'ONLY_CREATOR' | 'ANYONE'
   setAddAnswersMode: (mode: 'DISABLED' | 'ONLY_CREATOR' | 'ANYONE') => void
   shouldAnswersSumToOne: boolean
-  outcomeType: OutcomeType
+  outcomeType: 'POLL' | 'MULTIPLE_CHOICE'
   placeholder?: string
   question: string
   generateAnswers: () => void
@@ -48,7 +49,22 @@ export function MultipleChoiceAnswers(props: {
     }
   }
 
-  const addAnswer = () => setAnswer(answers.length, '')
+  const addAnswer = () => {
+    const lastAnswer = last(answers)
+    if (
+      outcomeType === 'POLL' &&
+      lastAnswer?.toLowerCase() === seeResultsAnswer.toLowerCase()
+    ) {
+      const newAnswers = [
+        ...answers.slice(0, answers.length - 1),
+        '',
+        lastAnswer,
+      ]
+      setAnswers(newAnswers)
+    } else {
+      setAnswer(answers.length, '')
+    }
+  }
 
   const focusAnswer = (i: number) => {
     const input = document.getElementById(`answer-input-${i}`)
