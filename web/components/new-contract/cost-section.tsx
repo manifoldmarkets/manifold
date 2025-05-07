@@ -28,14 +28,11 @@ export const CostSection = (props: {
   const [fundsModalOpen, setFundsModalOpen] = useState(false)
   return (
     <Col className="items-start px-1">
-      <label className="mb-1 gap-2">
-        <span>
-          {CREATEABLE_NON_PREDICTIVE_OUTCOME_TYPES.includes(outcomeType)
-            ? 'Cost'
-            : 'Liquidity'}
-        </span>
-      </label>
-
+      {!CREATEABLE_NON_PREDICTIVE_OUTCOME_TYPES.includes(outcomeType) && (
+        <label className="mb-1 gap-2">
+          <span>Liquidity</span>
+        </label>
+      )}
       {!CREATEABLE_NON_PREDICTIVE_OUTCOME_TYPES.includes(outcomeType) && (
         <PriceSection
           liquidityTier={liquidityTier}
@@ -44,7 +41,6 @@ export const CostSection = (props: {
           outcomeType={outcomeType}
         />
       )}
-
       {ante > balance && (
         <div className="mb-2 mr-auto mt-2 self-center whitespace-nowrap text-xs font-medium tracking-wide">
           <span className="text-scarlet-500 mr-2">Insufficient balance</span>
