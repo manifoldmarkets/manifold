@@ -67,7 +67,7 @@ export const getBetPointsBetween = async (
     const beforePoints = answers.map((ans) => {
       const earliestBet = minBy(rawPointsByAns[ans.id], (b) => b.createdTime)
       return {
-        x: options.afterTime ?? contract.createdTime,
+        x: Math.max(ans.createdTime, options.afterTime),
         y:
           earliestBet?.probBefore ??
           getInitialAnswerProbability(contract, ans) ??
