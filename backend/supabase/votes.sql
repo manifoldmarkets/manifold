@@ -11,12 +11,11 @@ create table if not exists
 -- Row Level Security
 alter table votes enable row level security;
 
--- Policies
-drop policy if exists "Enable read access for all users" on votes;
+drop policy if exists "self read" on votes;
 
-create policy "Enable read access for all users" on votes for
+create policy "self read" on votes for
 select
-  using (true);
+  using ((user_id = firebase_uid ()));
 
 -- Indexes
 drop index if exists votes_pkey;

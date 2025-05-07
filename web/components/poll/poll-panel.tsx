@@ -5,7 +5,7 @@ import {
 } from 'common/contract'
 import { PollOption } from 'common/poll-option'
 import { useEffect, useState, useMemo } from 'react'
-import { useUser } from 'web/hooks/use-user'
+import { useIsAuthorized, useUser } from 'web/hooks/use-user'
 import { castPollVote } from 'web/lib/api/api'
 import { firebaseLogin } from 'web/lib/firebase/users'
 import { AnswerBar } from '../answers/answer-components'
@@ -39,10 +39,11 @@ export function PollPanel(props: {
   const [userVotedId, setUserVotedId] = useState<string | undefined>(undefined)
 
   const user = useUser()
+  const authed = useIsAuthorized()
   const isCreator = user?.id === contract.creatorId
 
   useEffect(() => {
-    if (!user) {
+    if (!user || !authed) {
       setHasVoted(false)
       setUserVotedId(undefined)
     } else {
@@ -56,7 +57,7 @@ export function PollPanel(props: {
         }
       })
     }
-  }, [contract.id, user])
+  }, [contract.id, user, authed])
 
   const shouldShowResults = useMemo(() => {
     if (isCreator) return true
