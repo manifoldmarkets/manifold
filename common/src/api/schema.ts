@@ -2183,7 +2183,7 @@ export const API = (_apiTypeCheck = {
   'get-contract-voters': {
     method: 'GET',
     visibility: 'public',
-    authed: false,
+    authed: true,
     props: z
       .object({
         contractId: z.string(),
@@ -2194,7 +2194,7 @@ export const API = (_apiTypeCheck = {
   'get-contract-option-voters': {
     method: 'GET',
     visibility: 'public',
-    authed: false,
+    authed: true,
     props: z.object({ contractId: z.string(), optionId: z.string() }),
     returns: [] as DisplayUser[],
   },

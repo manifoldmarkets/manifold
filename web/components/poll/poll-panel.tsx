@@ -1,6 +1,10 @@
-import { PollContract, contractPath } from 'common/contract'
+import {
+  PollContract,
+  PollVoterVisibility,
+  contractPath,
+} from 'common/contract'
 import { PollOption } from 'common/poll-option'
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useMemo } from 'react'
 import { useUser } from 'web/hooks/use-user'
 import { castPollVote } from 'web/lib/api/api'
 import { firebaseLogin } from 'web/lib/firebase/users'
@@ -27,14 +31,16 @@ export function PollPanel(props: {
   maxOptions?: number
   showResults?: boolean
 }) {
-  const { contract, maxOptions, showResults } = props
-  const { options, closeTime } = contract
+  const { contract, maxOptions } = props
+  const { options, closeTime, voterVisibility = 'everyone' } = contract
   const totalVotes = sumBy(options, (option) => option.votes)
   const votingOpen = !closeTime || closeTime > Date.now()
   const [hasVoted, setHasVoted] = useState<boolean | undefined>(undefined)
   const [userVotedId, setUserVotedId] = useState<string | undefined>(undefined)
 
   const user = useUser()
+  const isCreator = user?.id === contract.creatorId
+
   useEffect(() => {
     if (!user) {
       setHasVoted(false)
@@ -52,6 +58,13 @@ export function PollPanel(props: {
     }
   }, [contract.id, user])
 
+  const shouldShowResults = useMemo(() => {
+    if (isCreator) return true
+    if (hasVoted) return true
+    if (!votingOpen) return true
+    return false
+  }, [hasVoted, votingOpen, isCreator])
+
   const castVote = (voteId: string) => {
     if (!user) {
       firebaseLogin()
@@ -64,7 +77,6 @@ export function PollPanel(props: {
   }
 
   const optionsToShow = maxOptions ? options.slice(0, maxOptions) : options
-  const isCreator = user?.id === contract.creatorId
 
   return (
     <Col className="text-ink-1000 gap-2">
@@ -90,6 +102,8 @@ export function PollPanel(props: {
                     option={option}
                     contractId={contract.id}
                     userVotedId={userVotedId}
+                    voterVisibility={voterVisibility}
+                    isCreator={isCreator}
                   />
                 )}
                 {!hasVoted && votingOpen && (
@@ -101,12 +115,7 @@ export function PollPanel(props: {
                 )}
               </Row>
             }
-            hideBar={
-              !showResults &&
-              !hasVoted &&
-              (!closeTime || closeTime < Date.now()) &&
-              !isCreator
-            }
+            hideBar={!shouldShowResults}
             className={'min-h-[40px]'}
           />
         )
@@ -128,10 +137,19 @@ export function SeeVotesButton(props: {
   option: PollOption
   contractId: string
   userVotedId?: string
+  voterVisibility: PollVoterVisibility
+  isCreator: boolean
 }) {
-  const { option, contractId, userVotedId } = props
+  const { option, contractId, userVotedId, voterVisibility, isCreator } = props
   const [open, setOpen] = useState(false)
   const disabled = option.votes === 0
+
+  const canSeeVoters = useMemo(() => {
+    if (voterVisibility === 'everyone') return true
+    if (voterVisibility === 'creator' && isCreator) return true
+    return false
+  }, [voterVisibility, isCreator])
+
   return (
     <>
       {option.id == userVotedId && (
@@ -145,7 +163,7 @@ export function SeeVotesButton(props: {
           e.preventDefault()
           setOpen(true)
         }}
-        disabled={disabled}
+        disabled={disabled || !canSeeVoters}
       >
         <span>{option.votes}</span>{' '}
         <span className={clsx('text-xs opacity-80')}>
@@ -153,7 +171,11 @@ export function SeeVotesButton(props: {
         </span>
       </button>
       <Modal open={open} setOpen={setOpen}>
-        <SeeVotesModalContent option={option} contractId={contractId} />
+        <SeeVotesModalContent
+          option={option}
+          contractId={contractId}
+          canSeeVoters={canSeeVoters}
+        />
       </Modal>
     </>
   )
@@ -162,20 +184,25 @@ export function SeeVotesButton(props: {
 export function SeeVotesModalContent(props: {
   option: PollOption
   contractId: string
+  canSeeVoters: boolean
 }) {
-  const { option, contractId } = props
+  const { option, contractId, canSeeVoters } = props
   const { data: voters } = useAPIGetter('get-contract-option-voters', {
     contractId,
     optionId: option.id,
   })
+
   return (
     <Col className={clsx(MODAL_CLASS)}>
       <div className="line-clamp-2 w-full">
         Votes on <b>{option.text}</b>
       </div>
-      {/* <Spacer h={2} /> */}
       <Col className={clsx(SCROLLABLE_MODAL_CLASS, 'w-full gap-2')}>
-        {!voters ? (
+        {!canSeeVoters ? (
+          <div className="text-ink-700">
+            Voter identities are private for this poll.
+          </div>
+        ) : !voters ? (
           <LoadingIndicator />
         ) : voters.length == 0 ? (
           'No votes yet...'

@@ -14,6 +14,7 @@ import {
   NON_BETTING_OUTCOMES,
   twombaContractPath,
   Visibility,
+  PollVoterVisibility,
 } from 'common/contract'
 import {
   getAnte,
@@ -76,6 +77,8 @@ import { RelativeTimestamp } from '../relative-timestamp'
 import { MarketDraft } from 'common/drafts'
 import { toast } from 'react-hot-toast'
 import { useEvent } from 'client-common/hooks/use-event'
+import { ChoicesToggleGroup } from '../widgets/choices-toggle-group'
+
 export const seeResultsAnswer = 'See results'
 export function ContractParamsForm(props: {
   creator: User
@@ -389,6 +392,12 @@ export function ContractParamsForm(props: {
       setCloseHoursMinutes(initTime)
     }
   }, [outcomeType])
+  const pollVoterVisibilityKey = 'poll-voter-visibility' + paramsKey
+  const [voterVisibility, setVoterVisibility] =
+    usePersistentLocalState<PollVoterVisibility>(
+      'everyone',
+      pollVoterVisibilityKey
+    )
 
   const isValidQuestion =
     question.length > 0 && question.length <= MAX_QUESTION_LENGTH
@@ -515,7 +524,7 @@ export function ContractParamsForm(props: {
     setPersistentLocalState(isLogScaleKey, false)
     setPersistentLocalState(bountyKey, defaultBountyAmount)
     setPersistentLocalState(hasChosenCategoryKey, false)
-
+    setPersistentLocalState(pollVoterVisibilityKey, 'everyone')
     removePersistentInMemoryState(similarContractsKey)
     removePersistentInMemoryState(dismissedSimilarContractsKey)
 
@@ -629,6 +638,7 @@ export function ContractParamsForm(props: {
         sportsLeague: params?.sportsLeague,
         unit: unit.trim(),
         timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+        voterVisibility: outcomeType === 'POLL' ? voterVisibility : undefined,
       })
 
       const newContract = await api('market', createProps as any)
@@ -1038,6 +1048,26 @@ export function ContractParamsForm(props: {
         outcomeType={outcomeType}
         initTime={initTime}
       />
+      {outcomeType === 'POLL' && (
+        <>
+          <Col className="gap-2">
+            <label className="gap-1">
+              <span className="mb-1">Who can see who voted?</span>
+            </label>
+            <ChoicesToggleGroup
+              className="w-fit"
+              currentChoice={voterVisibility}
+              choicesMap={{
+                Everyone: 'everyone',
+                'Only me': 'creator',
+              }}
+              setChoice={(val) =>
+                setVoterVisibility(val as PollVoterVisibility)
+              }
+            />
+          </Col>
+        </>
+      )}
       <Row className="mt-2 items-center gap-2">
         <span>
           Publicly listed{' '}
