@@ -60,6 +60,7 @@ export const PortfolioSummary = (props: { user: User; className?: string }) => {
               headerClassName={'!hidden'}
               topicSlug="recent"
               contractsOnly
+              refreshOnVisible
               hideContractFilters
               hideSearch
             />

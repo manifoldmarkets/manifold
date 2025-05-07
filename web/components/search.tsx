@@ -39,6 +39,7 @@ import { Carousel } from './widgets/carousel'
 import { isEqual } from 'lodash'
 import { SearchInput } from './search/search-input'
 import { removeEmojis } from 'common/util/string'
+import { useIsPageVisible } from 'web/hooks/use-page-visible'
 
 const USERS_PER_PAGE = 100
 const TOPICS_PER_PAGE = 100
@@ -203,6 +204,7 @@ type SearchProps = {
   hideAvatars?: boolean
   initialTopics?: LiteGroup[]
   showTopicsFilterPills?: boolean
+  refreshOnVisible?: boolean
 }
 
 export function Search(props: SearchProps) {
@@ -229,6 +231,7 @@ export function Search(props: SearchProps) {
     hideSearchTypes,
     hideAvatars,
     showTopicsFilterPills,
+    refreshOnVisible,
   } = props
 
   const isMobile = useIsMobile()
@@ -273,6 +276,7 @@ export function Search(props: SearchProps) {
     loading,
     shouldLoadMore,
     loadMoreContracts,
+    refreshContracts,
   } = useSearchResults({
     persistPrefix,
     searchParams: actuallySearchParams,
@@ -280,6 +284,12 @@ export function Search(props: SearchProps) {
     isReady,
     additionalFilter,
   })
+  const visible = useIsPageVisible()
+  useEffect(() => {
+    if (visible && refreshOnVisible) {
+      refreshContracts()
+    }
+  }, [visible, refreshOnVisible])
 
   const showTopics = topics && topics.length > 0 && query && query.length > 0
   const showUsers = users && users.length > 0 && query && query.length > 0
@@ -841,6 +851,7 @@ export const useSearchResults = (props: {
     loading,
     shouldLoadMore: state.shouldLoadMore,
     loadMoreContracts: () => querySearchResults(false, true),
+    refreshContracts: () => querySearchResults(true, true),
   }
 }
 
