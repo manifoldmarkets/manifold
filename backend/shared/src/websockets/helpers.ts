@@ -139,3 +139,9 @@ export function broadcastNotificationsRead(
     notificationIds,
   })
 }
+export function broadcastAllNotificationsRead(userId: string, since: number) {
+  broadcast(`user-notification-status/${userId}`, {
+    type: 'marked_as_seen',
+    since,
+  })
+}

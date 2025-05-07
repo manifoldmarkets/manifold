@@ -103,16 +103,23 @@ export function useNotifications(
     topics: [`user-notification-status/${userId}`],
     onBroadcast: ({ data }) => {
       const payload = data as {
-        type: string
-        notificationIds: string[]
+        type: 'marked_as_read' | 'marked_as_seen'
+        notificationIds?: string[]
+        since?: number
       }
-      if (payload.type === 'marked_as_read' && payload.notificationIds) {
+      const { type, notificationIds, since } = payload
+      if (type === 'marked_as_read' && notificationIds) {
         // Handle notification read update
         setNotifications((notifs) =>
           notifs?.map((n) =>
-            payload.notificationIds.includes(n.id)
-              ? { ...n, markedAsRead: true }
-              : n
+            notificationIds.includes(n.id) ? { ...n, markedAsRead: true } : n
+          )
+        )
+      }
+      if (type === 'marked_as_seen' && since) {
+        setNotifications((notifs) =>
+          notifs?.map((n) =>
+            n.createdTime < since ? { ...n, isSeen: true } : n
           )
         )
       }

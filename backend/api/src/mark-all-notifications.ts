@@ -1,6 +1,9 @@
 import { APIHandler, authEndpoint } from './helpers/endpoint'
 import { createSupabaseDirectClient } from 'shared/supabase/init'
-import { broadcastNotificationsRead } from 'shared/websockets/helpers'
+import {
+  broadcastNotificationsRead,
+  broadcastAllNotificationsRead,
+} from 'shared/websockets/helpers'
 
 export const markallnotifications = authEndpoint(async (_req, auth) => {
   const pg = createSupabaseDirectClient()
@@ -11,6 +14,8 @@ export const markallnotifications = authEndpoint(async (_req, auth) => {
     and data->>'isSeen' = 'false'`,
     [auth.uid]
   )
+
+  broadcastAllNotificationsRead(auth.uid, Date.now())
 
   return { success: true }
 })
