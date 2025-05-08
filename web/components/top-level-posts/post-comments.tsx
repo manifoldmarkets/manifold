@@ -54,7 +54,7 @@ export function PostCommentsActivity(props: {
   )
 
   return (
-    <Col className="p-2">
+    <Col>
       <PostCommentInput post={post} />
       {topLevelComments.map((parent) => (
         <PostCommentThread

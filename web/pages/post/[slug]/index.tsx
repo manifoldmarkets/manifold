@@ -158,39 +158,16 @@ export default function PostPage(props: {
             <Row>
               <BackButton className="!p-0" />
             </Row>
-            <Row className="border-canvas-50 items-center justify-between gap-1 border-b py-4 text-3xl font-bold">
-              <span>
-                {post.title}{' '}
-                {post.visibility === 'unlisted' && (
-                  <EyeOffIcon className="inline-block h-4 w-4" />
-                )}
-              </span>
-              {isAdminOrMod && post && (
-                <DropdownMenu
-                  items={[
-                    {
-                      name:
-                        post.visibility === 'unlisted'
-                          ? 'Make Public'
-                          : 'Make Unlisted',
-                      icon:
-                        post.visibility === 'unlisted' ? (
-                          <EyeOffIcon className="h-5 w-5" />
-                        ) : (
-                          <EyeOffIcon className="h-5 w-5" />
-                        ),
-                      onClick: togglePostVisibility,
-                    },
-                  ]}
-                  buttonContent={<DotsHorizontalIcon className="h-5 w-5" />}
-                  buttonClass="p-2"
-                  menuWidth="w-40"
-                />
-              )}
-            </Row>
-            <Row className="border-canvas-50 items-center justify-between border-b py-4">
-              <Row className="items-center gap-2">
-                <UserAvatarAndBadge user={creator} />
+            <Col className="border-canvas-50 pt-4">
+              <Row className=" items-center justify-between gap-1 text-2xl font-bold">
+                <span>
+                  {post.title}{' '}
+                  {post.visibility === 'unlisted' && (
+                    <EyeOffIcon className="inline-block h-4 w-4" />
+                  )}
+                </span>
+              </Row>
+              <Row className="mt-3 items-center gap-2 ">
                 <CopyLinkOrShareButton
                   tooltip="Copy link to post"
                   url={shareUrl}
@@ -216,7 +193,33 @@ export default function PostPage(props: {
                     onUnreact={handleUnreact}
                   />
                 )}
+                {isAdminOrMod && post && (
+                  <DropdownMenu
+                    items={[
+                      {
+                        name:
+                          post.visibility === 'unlisted'
+                            ? 'Make Public'
+                            : 'Make Unlisted',
+                        icon:
+                          post.visibility === 'unlisted' ? (
+                            <EyeOffIcon className="h-5 w-5" />
+                          ) : (
+                            <EyeOffIcon className="h-5 w-5" />
+                          ),
+                        onClick: togglePostVisibility,
+                      },
+                    ]}
+                    buttonContent={<DotsHorizontalIcon className="h-5 w-5" />}
+                    buttonClass="p-2"
+                    menuWidth="w-40"
+                  />
+                )}
               </Row>
+            </Col>
+
+            <Row className="border-canvas-50 items-center justify-between gap-4 border-b py-4">
+              <UserAvatarAndBadge user={creator} />
               <span className="text-ink-700">
                 {new Date(post.createdTime).toLocaleDateString('en-US', {
                   year: 'numeric',
@@ -238,9 +241,7 @@ export default function PostPage(props: {
           </div>
         </div>
         <Spacer h={4} />
-        <div className="rounded-lg px-6 py-4 sm:py-0">
-          <PostCommentsActivity post={post} comments={comments} />
-        </div>
+        <PostCommentsActivity post={post} comments={comments} />
       </Col>
     </Page>
   )
