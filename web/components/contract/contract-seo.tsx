@@ -23,6 +23,7 @@ export function ContractSEO(props: {
       description={seoDesc}
       url={twombaContractPath(contract)}
       ogProps={{ props: ogCardProps, endpoint: 'market' }}
+      shouldIgnore={contract.visibility !== 'public'}
     />
   )
 }

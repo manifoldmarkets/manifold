@@ -5,7 +5,7 @@ import { getUser, log } from 'shared/utils'
 import { Contract } from 'common/contract'
 import { parseMentions, richTextToString } from 'common/util/parse'
 import { completeCalculatedQuestFromTrigger } from 'shared/complete-quest-internal'
-import { createNewContractNotification } from 'shared/create-notification'
+import { createNewContractNotification } from 'shared/notifications/create-new-contract-notif'
 import { createSupabaseDirectClient } from 'shared/supabase/init'
 import { upsertGroupEmbedding } from 'shared/helpers/embeddings'
 import {

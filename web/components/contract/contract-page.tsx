@@ -7,7 +7,6 @@ import {
   type ContractParams,
 } from 'common/contract'
 import { mergeWith, uniqBy } from 'lodash'
-import Head from 'next/head'
 import Image from 'next/image'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { Answer } from 'common/answer'
@@ -265,12 +264,6 @@ export function ContractPageContent(props: ContractParams) {
   const resolverUser = useDisplayUserById(resolverId)
   return (
     <>
-      {props.contract.visibility !== 'public' && (
-        <Head>
-          <meta name="robots" content="noindex, nofollow" />
-        </Head>
-      )}
-
       <Row className="w-full items-start justify-center gap-8">
         <Col
           className={clsx(

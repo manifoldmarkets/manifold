@@ -19,6 +19,7 @@ import { type Answer } from 'common/answer'
 import {
   CommentWithTotalReplies,
   MAX_COMMENT_LENGTH,
+  PostComment,
   type ContractComment,
 } from 'common/comment'
 import { CandidateBet } from 'common/new-bet'
@@ -76,6 +77,7 @@ import { Dictionary } from 'lodash'
 import { Reaction } from 'common/reaction'
 import { YEAR_MS } from 'common/util/time'
 import { MarketDraft } from 'common/drafts'
+import { TopLevelPost } from 'common/top-level-post'
 // mqp: very unscientific, just balancing our willingness to accept load
 // with user willingness to put up with stale data
 export const DEFAULT_CACHE_STRATEGY =
@@ -1149,7 +1151,8 @@ export const API = (_apiTypeCheck = {
     props: z
       .object({
         contentId: z.string(),
-        contentType: z.enum(['comment', 'contract']),
+        contentType: z.enum(['comment', 'contract', 'post']),
+        commentParentType: z.enum(['post']).optional(),
         remove: z.boolean().optional(),
         reactionType: z.enum(['like', 'dislike']).optional().default('like'),
       })
@@ -1492,6 +1495,26 @@ export const API = (_apiTypeCheck = {
     }),
     cache: DEFAULT_CACHE_STRATEGY,
     returns: {} as Dashboard,
+  },
+  'get-posts': {
+    method: 'GET',
+    visibility: 'public',
+    authed: false,
+    preferAuth: true,
+    cache: DEFAULT_CACHE_STRATEGY,
+    props: z
+      .object({
+        sortBy: z
+          .enum(['created_time', 'importance_score'])
+          .optional()
+          .default('created_time'),
+        term: z.string().optional(),
+        limit: z.coerce.number().gte(0).lte(200).default(100),
+        userId: z.string().optional(),
+        offset: z.coerce.number().gte(0).default(0),
+      })
+      .strict(),
+    returns: [] as TopLevelPost[],
   },
   'create-public-chat-message': {
     method: 'POST',
@@ -2393,6 +2416,60 @@ export const API = (_apiTypeCheck = {
     props: z
       .object({
         notificationId: z.string(),
+      })
+      .strict(),
+  },
+  'create-post': {
+    method: 'POST',
+    visibility: 'public',
+    authed: true,
+    returns: {} as { post: TopLevelPost },
+    props: z
+      .object({
+        title: z.string().min(1).max(120),
+        content: contentSchema,
+        isAnnouncement: z.boolean().optional(),
+        visibility: z.enum(['public', 'unlisted']).optional(), 
+      })
+      .strict(),
+  },
+  'update-post': {
+    method: 'POST',
+    visibility: 'public',
+    authed: true,
+    returns: {} as { post: TopLevelPost },
+    props: z
+      .object({
+        id: z.string(),
+        title: z.string().min(1).max(480).optional(),
+        content: contentSchema.optional(),
+        visibility: z.enum(['public', 'unlisted']).optional(),
+      })
+      .strict(),
+  },
+  'create-post-comment': {
+    method: 'POST',
+    visibility: 'public',
+    authed: true,
+    returns: {} as { comment: PostComment },
+    props: z
+      .object({
+        postId: z.string(),
+        content: contentSchema,
+        replyToCommentId: z.string().optional(),
+      })
+      .strict(),
+  },
+  'update-post-comment': {
+    method: 'POST',
+    visibility: 'public',
+    authed: true,
+    returns: {} as { comment: PostComment },
+    props: z
+      .object({
+        commentId: z.string(),
+        postId: z.string(),
+        hidden: z.boolean(),
       })
       .strict(),
   },

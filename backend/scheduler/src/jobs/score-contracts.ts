@@ -1,4 +1,7 @@
-import { calculateImportanceScore } from 'shared/importance-score'
+import {
+  calculateImportanceScore,
+  calculatePostImportanceScore,
+} from 'shared/importance-score'
 import {
   createSupabaseClient,
   createSupabaseDirectClient,
@@ -7,4 +10,5 @@ import {
 export const scoreContracts = async () => {
   const pg = createSupabaseDirectClient()
   await calculateImportanceScore(pg)
+  await calculatePostImportanceScore(pg)
 }

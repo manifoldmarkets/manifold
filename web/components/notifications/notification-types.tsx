@@ -71,6 +71,7 @@ import { FaArrowTrendUp, FaArrowTrendDown } from 'react-icons/fa6'
 import { api } from 'web/lib/api/api'
 import { removeUndefinedProps } from 'common/util/object'
 import toast from 'react-hot-toast'
+import { NewPostFromFollowedUserNotification } from './followed-post-notification'
 
 export function NotificationItem(props: {
   notification: Notification
@@ -216,6 +217,15 @@ export function NotificationItem(props: {
   ) {
     return (
       <LimitOrderExpiredNotification
+        notification={notification}
+        isChildOfGroup={isChildOfGroup}
+        highlighted={highlighted}
+        setHighlighted={setHighlighted}
+      />
+    )
+  } else if (sourceType === 'post' && sourceUpdateType === 'created') {
+    return (
+      <NewPostFromFollowedUserNotification
         notification={notification}
         isChildOfGroup={isChildOfGroup}
         highlighted={highlighted}
@@ -1216,7 +1226,7 @@ function CommentNotification(props: {
     sourceUserUsername,
     reason,
     sourceText,
-    sourceContractTitle,
+    sourceTitle,
     markedAsRead,
   } = notification
 
@@ -1266,13 +1276,14 @@ function CommentNotification(props: {
         {reasonText}
         {!isChildOfGroup && (
           <span>
-            on <PrimaryNotificationLink text={sourceContractTitle} />
+            on <PrimaryNotificationLink text={sourceTitle} />
           </span>
         )}
       </div>
     </NotificationFrame>
   )
 }
+
 function BetReplyNotification(props: {
   notification: Notification
   highlighted: boolean
@@ -1372,8 +1383,9 @@ function TaggedUserNotification(props: {
   isChildOfGroup?: boolean
 }) {
   const { notification, isChildOfGroup, highlighted, setHighlighted } = props
-  const { sourceId, sourceUserName, sourceUserUsername, sourceContractTitle } =
+  const { sourceId, sourceUserName, sourceUserUsername, sourceTitle } =
     notification
+
   return (
     <NotificationFrame
       notification={notification}
@@ -1394,7 +1406,7 @@ function TaggedUserNotification(props: {
         tagged you{' '}
         {!isChildOfGroup && (
           <span>
-            on <PrimaryNotificationLink text={sourceContractTitle} />
+            on <PrimaryNotificationLink text={sourceTitle} />
           </span>
         )}
       </div>
@@ -1499,13 +1511,19 @@ function UserLikeNotification(props: {
       }
       link={getSourceUrl(notification)}
       subtitle={
-        sourceType === 'comment_like' ? <Linkify text={sourceText} /> : <></>
+        sourceType === 'comment_like' || sourceType === 'post_comment_like' ? (
+          <Linkify text={sourceText} />
+        ) : (
+          <></>
+        )
       }
     >
       {reactorsText && <PrimaryNotificationLink text={reactorsText} />} liked
       your
-      {sourceType === 'comment_like'
+      {sourceType === 'comment_like' || sourceType === 'post_comment_like'
         ? ' comment ' + (isChildOfGroup ? '' : 'on ')
+        : sourceType === 'post_like'
+        ? ' post '
         : ' question '}
       {!isChildOfGroup && <QuestionOrGroupLink notification={notification} />}
       <MultiUserReactionModal

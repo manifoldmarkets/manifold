@@ -10,37 +10,15 @@ create table if not exists
     constraint primary key (post_id, comment_id)
   );
 
--- Triggers
-create trigger post_comment_populate before insert
-or
-update on public.old_post_comments for each row
-execute function post_comment_populate_cols ();
-
--- Functions
-create
-or replace function public.post_comment_populate_cols () returns trigger language plpgsql as $function$ begin
-  if new.data is not null then
-    new.visibility := (new.data)->>'visibility';
-    new.user_id := (new.data)->>'userId';
-  end if;
-  return new;
-end $function$;
-
 -- Row Level Security
 alter table old_post_comments enable row level security;
 
 -- Policies
-drop policy if exists "auth read" on old_post_comments;
+drop policy if exists "public read" on old_post_comments;
 
-create policy "auth read" on old_post_comments for
+create policy "public read" on old_post_comments for
 select
-  to service_role using (true);
-
-drop policy if exists "user can insert" on old_post_comments;
-
-create policy "user can insert" on old_post_comments for insert
-with
-  check (true);
+  using (true);
 
 -- Indexes
 drop index if exists post_comments_pkey;

@@ -22,6 +22,16 @@ export const queryHandlers: QueryHandlers = {
     )
     return reactionsData
   },
+  'post-reactions': async ({ ids }: BatchQueryParams) => {
+    const { data: reactionsData } = await run(
+      db
+        .from('user_reactions')
+        .select()
+        .eq('content_type', 'post')
+        .in('content_id', Array.from(ids))
+    )
+    return reactionsData
+  },
   'contract-reactions': async ({ ids }: BatchQueryParams) => {
     const { data: reactionsData } = await run(
       db
@@ -32,6 +42,17 @@ export const queryHandlers: QueryHandlers = {
     )
     return reactionsData
   },
+  'post-comment-likes': async ({ ids }: BatchQueryParams) => {
+    const { data: reactionsData } = await run(
+      db
+        .from('user_reactions')
+        .select()
+        .eq('content_type', 'comment')
+        .in('content_id', Array.from(ids))
+    )
+    return reactionsData
+  },
+
   'contract-metrics': async ({ ids, userId }: BatchQueryParams) => {
     if (!userId) return []
     return await getContractIdsWithMetrics(db, userId, Array.from(ids))

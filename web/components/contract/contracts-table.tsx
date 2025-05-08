@@ -173,7 +173,7 @@ function PositionRow(props: {
   )
 }
 
-function ContractRow(props: {
+export function ContractRow(props: {
   contract: Contract
   columns: ColumnFormat[]
   highlighted?: boolean

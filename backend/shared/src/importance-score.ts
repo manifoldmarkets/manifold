@@ -24,6 +24,7 @@ import { BOT_USERNAMES } from 'common/envs/constants'
 import { bulkUpdate } from 'shared/supabase/utils'
 import { convertContract } from 'common/supabase/contracts'
 import { Row } from 'common/supabase/utils'
+import { convertPost } from 'common/top-level-post'
 
 export const IMPORTANCE_MINUTE_INTERVAL = 2
 export const MIN_IMPORTANCE_SCORE = 0.1
@@ -473,3 +474,134 @@ const bountiedImportanceScore = (
 const sigmoid = (x: number) => 1 / (1 + Math.exp(-x))
 
 const normalize = (x: number, max: number) => sigmoid((6 * x) / max - 3)
+
+// Scoring for Posts
+export async function calculatePostImportanceScore(
+  pg: SupabaseDirectClientTimeout,
+  readOnly = false
+) {
+  const now = Date.now()
+  log('Calculating post importance scores')
+  const dayAgo = now - DAY_MS
+  const weekAgo = now - WEEK_MS
+
+  const posts = await pg.map(
+    `SELECT id, data, importance_score FROM old_posts
+            where visibility = 'public'
+            and created_time > now() - interval '1 month'`,
+    [],
+    convertPost
+  )
+
+  log(`Found ${posts.length} posts to potentially score`)
+
+  const dailyPostCommentCounts = await getPostCommentCounts(
+    pg,
+    dayAgo,
+    posts.map((p) => p.id)
+  )
+  const weeklyPostCommentCounts = await getPostCommentCounts(
+    pg,
+    weekAgo,
+    posts.map((p) => p.id)
+  )
+
+  const dailyPostLikeCounts = await getPostLikeCounts(
+    pg,
+    dayAgo,
+    posts.map((p) => p.id)
+  )
+  const weeklyPostLikeCounts = await getPostLikeCounts(
+    pg,
+    weekAgo,
+    posts.map((p) => p.id)
+  )
+
+  const postsWithUpdates: { id: string; importance_score: number }[] = []
+
+  for (const post of posts) {
+    const postId = post.id
+    const currentImportanceScore = post.importanceScore
+
+    const commentsToday = dailyPostCommentCounts[postId] ?? 0
+    const commentsWeek = weeklyPostCommentCounts[postId] ?? 0 // This is total for the week up to 'weekAgo'
+    const likesToday = dailyPostLikeCounts[postId] ?? 0
+    const likesWeek = weeklyPostLikeCounts[postId] ?? 0 // This is total for the week up to 'weekAgo'
+
+    // Simplified scoring logic for posts
+    // Weights can be adjusted. Normalization max value can be tuned.
+    const todayActivity = commentsToday + likesToday
+    // Activity for the whole week (including today)
+    // For weekly counts, we should query for all comments/likes in the last week,
+    // not just those from 'weekAgo' up to 'dayAgo'.
+    // The current getPostCommentCounts(pg, weekAgo) gets everything *since* weekAgo.
+    const weekActivityTotal = commentsWeek + likesWeek
+
+    // Let's define a score based on a mix of today's and week's activity
+    // Example: todayActivity is more heavily weighted.
+    // A simple sum for now, which can be refined.
+    const rawScore = todayActivity * 2 + weekActivityTotal
+
+    // Normalize the score (e.g., 0 to 1 range)
+    // Max raw score needs estimation based on typical activity.
+    // If a very active post gets ~10 interactions (likes+comments) today, and ~50 in a week:
+    // (10*2) + 50 = 20 + 50 = 70.
+    const newImportanceScore = normalize(rawScore, 50) // Using existing normalize function
+
+    // Only update if the score has changed significantly
+    const epsilon = 0.01
+    if (Math.abs(newImportanceScore - currentImportanceScore) > epsilon) {
+      postsWithUpdates.push({
+        id: postId,
+        importance_score: clamp(newImportanceScore, 0, 1),
+      })
+    }
+  }
+
+  log(`Found ${postsWithUpdates.length} posts to update scores for`)
+
+  if (!readOnly && postsWithUpdates.length > 0) {
+    log('Updating scores for posts', {
+      postsWithUpdates,
+    })
+    await bulkUpdate(pg, 'old_posts', ['id'], postsWithUpdates)
+  }
+}
+
+// Helper to get post comment counts since a certain time
+export const getPostCommentCounts = async (
+  pg: SupabaseDirectClient,
+  since: number,
+  postIds: string[]
+): Promise<{ [postId: string]: number }> => {
+  const query = `
+    SELECT post_id, COUNT(comment_id)::int AS comment_count
+    FROM old_post_comments
+    WHERE created_time >= millis_to_ts($1) AND post_id = ANY(ARRAY[$2])
+    GROUP BY post_id
+  `
+  const results = await pg.manyOrNone(query, [since, postIds])
+  return Object.fromEntries(
+    results.map((r: any) => [r.post_id, parseInt(r.comment_count)])
+  )
+}
+
+// Helper to get post like counts since a certain time
+export const getPostLikeCounts = async (
+  pg: SupabaseDirectClient,
+  since: number,
+  postIds: string[]
+): Promise<{ [postId: string]: number }> => {
+  const query = `
+    SELECT content_id AS post_id, COUNT(reaction_id)::int AS like_count
+    FROM user_reactions
+    WHERE content_type = 'post' AND reaction_type = 'like'
+    AND created_time >= millis_to_ts($1)
+    AND content_id = ANY(ARRAY[$2])
+    GROUP BY content_id
+  `
+  const results = await pg.manyOrNone(query, [since, postIds])
+  return Object.fromEntries(
+    results.map((r: any) => [r.post_id, parseInt(r.like_count)])
+  )
+}

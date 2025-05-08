@@ -2,7 +2,7 @@
 import clsx from 'clsx'
 import { Contract } from 'common/contract'
 import { LiteGroup } from 'common/group'
-import { capitalize, groupBy, orderBy, sample, uniqBy } from 'lodash'
+import { capitalize, groupBy, minBy, orderBy, sample, uniqBy } from 'lodash'
 import { ReactNode, useEffect, useRef, useState } from 'react'
 import { AddContractToGroupButton } from 'web/components/topics/add-contract-to-group-modal'
 import { useDebouncedEffect } from 'web/hooks/use-debounced-effect'
@@ -19,13 +19,8 @@ import { Button } from 'web/components/buttons/button'
 import { usePersistentLocalState } from 'web/hooks/use-persistent-local-state'
 import { api, searchGroups } from 'web/lib/api/api'
 import { searchUsers } from 'web/lib/supabase/users'
-import {
-  actionColumn,
-  boostedColumn,
-  probColumn,
-  traderColumn,
-} from './contract/contract-table-col-formats'
-import { ContractsTable, LoadingContractRow } from './contract/contracts-table'
+
+import { LoadingContractRow } from './contract/contracts-table'
 import { ContractFilters } from './search/contract-filters'
 import { UserResults } from './search/user-results'
 import { BrowseTopicPills } from './topics/browse-topic-pills'
@@ -40,6 +35,9 @@ import { isEqual } from 'lodash'
 import { SearchInput } from './search/search-input'
 import { removeEmojis } from 'common/util/string'
 import { useIsPageVisible } from 'web/hooks/use-page-visible'
+import { TopLevelPost } from 'common/top-level-post'
+import { CombinedResults } from './contract/combined-results'
+import { APIParams } from 'common/api/schema'
 
 const USERS_PER_PAGE = 100
 const TOPICS_PER_PAGE = 100
@@ -118,6 +116,7 @@ export const CONTRACT_TYPES = [
   { label: 'Bounty', value: 'BOUNTIED_QUESTION' },
   { label: 'Stock', value: 'STONK' },
   { label: 'Poll', value: 'POLL' },
+  { label: 'Posts', value: 'POSTS' },
 ] as const
 
 export const DEFAULT_SORT = 'score'
@@ -176,6 +175,7 @@ export type SearchState = {
   users: FullUser[] | undefined
   topics: LiteGroup[] | undefined
   shouldLoadMore: boolean
+  posts: TopLevelPost[] | undefined
 }
 
 type SearchProps = {
@@ -277,6 +277,7 @@ export function Search(props: SearchProps) {
     shouldLoadMore,
     loadMoreContracts,
     refreshContracts,
+    posts,
   } = useSearchResults({
     persistPrefix,
     searchParams: actuallySearchParams,
@@ -475,7 +476,7 @@ export function Search(props: SearchProps) {
                 ? 'Search questions'
                 : isMobile
                 ? 'Search'
-                : 'Search questions, users, and topics'
+                : 'Search questions, users, topics, and posts'
             }
             autoFocus={autoFocus}
             loading={loading}
@@ -590,26 +591,26 @@ export function Search(props: SearchProps) {
         </Col>
       )}
 
-      {!contracts ? (
+      {!contracts && !posts ? (
         <LoadingContractResults />
-      ) : contracts.length === 0 ? (
+      ) : contracts?.length === 0 && posts?.length === 0 ? (
         emptyContractsState
       ) : (
         <>
-          <ContractsTable
-            hideAvatar={hideAvatars}
-            contracts={contracts}
-            onContractClick={onContractClick}
-            highlightContractIds={highlightContractIds}
-            contractAnswers={answersByContractId}
-            columns={buildArray([
-              !hasBets && boostedColumn,
-              traderColumn,
-              probColumn,
-              !hideActions && actionColumn,
-            ])}
-            showPosition={hasBets}
-          />
+          {(contracts && contracts.length > 0) ||
+          (posts && posts.length > 0) ? (
+            <CombinedResults
+              contracts={contracts ?? []}
+              posts={posts ?? []}
+              searchParams={searchParams}
+              onContractClick={onContractClick}
+              highlightContractIds={highlightContractIds}
+              answersByContractId={answersByContractId}
+              hideAvatars={hideAvatars}
+              hideActions={hideActions}
+              hasBets={hasBets}
+            />
+          ) : null}
           <LoadMoreUntilNotVisible loadMore={loadMoreContracts} />
           {shouldLoadMore && <LoadingContractResults />}
           {!shouldLoadMore && (
@@ -691,6 +692,7 @@ const FRESH_SEARCH_CHANGED_STATE: SearchState = {
   users: undefined,
   topics: undefined,
   shouldLoadMore: true,
+  posts: undefined,
 }
 
 export const useSearchResults = (props: {
@@ -726,6 +728,18 @@ export const useSearchResults = (props: {
         hb: hasBets,
       } = searchParams
 
+      const shouldSearchPosts =
+        (sort === 'score' || sort === 'newest') &&
+        (!contractsOnly || !!state.posts?.length) &&
+        !topicSlug &&
+        forYou === '0' &&
+        isPrizeMarketString === '0' &&
+        !liquidity &&
+        hasBets === '0' &&
+        (contractType === 'ALL' || contractType === 'POSTS') &&
+        (filter === 'all' || filter === 'open') &&
+        !gids.length
+
       const includeUsersAndTopics =
         !contractsOnly && props.includeUsersAndTopics
 
@@ -739,8 +753,28 @@ export const useSearchResults = (props: {
             }
           }, 500)
         }
-
+        const postApiParams: APIParams<'get-posts'> = {
+          sortBy: sort === 'score' ? 'importance_score' : 'created_time',
+          term: query,
+          limit: 10,
+          userId: additionalFilter?.creatorId,
+          offset: freshQuery ? 0 : state.posts?.length ?? 0,
+        }
         try {
+          if (contractType === 'POSTS') {
+            const posts = await api('get-posts', postApiParams)
+            const shouldLoadMore = posts.length === 10
+            setState({
+              contracts: [],
+              users: undefined,
+              topics: undefined,
+              posts: uniqBy(buildArray(state.posts, posts), 'id'),
+              shouldLoadMore,
+            })
+            clearTimeout(timeoutId)
+            setLoading(false)
+            return shouldLoadMore
+          }
           const searchPromises: Promise<any>[] = [
             api('search-markets-full', {
               term: query,
@@ -774,17 +808,86 @@ export const useSearchResults = (props: {
                 type: 'lite',
               })
             )
+            if (shouldSearchPosts) {
+              searchPromises.push(api('get-posts', postApiParams))
+            }
+          } else if (shouldSearchPosts || additionalFilter?.creatorId) {
+            searchPromises.push(api('get-posts', postApiParams))
           }
 
           const results = await Promise.all(searchPromises)
 
           if (id === requestId.current) {
-            const newContracts = results[0]
-            const newUsers = results[1]
-            const newTopics = results[2]
+            const newContracts = results[0] as Contract[]
+            let postResultIndex = 1
+            const newUsers = includeUsersAndTopics
+              ? results[postResultIndex++]
+              : undefined
+            const newTopics = includeUsersAndTopics
+              ? results[postResultIndex++]
+              : undefined
+
+            const newPostsResults =
+              (shouldSearchPosts || additionalFilter?.creatorId) &&
+              results.length >= postResultIndex
+                ? (results[postResultIndex] as TopLevelPost[])
+                : undefined
+
             const freshContracts = freshQuery
               ? newContracts
               : buildArray(state.contracts, newContracts)
+            const bottomScoreFromAllContracts =
+              sort === 'score'
+                ? minBy(freshContracts, 'importanceScore')?.importanceScore
+                : minBy(freshContracts, 'createdTime')?.createdTime
+
+            // This is necessary bc the posts are in a different table than the contracts.
+            // TODO: this is bad and will leave posts out of the search results randomly.
+            // We should fix this by joining the posts table to the contracts table or something.
+            let postFilteringThreshold: number | undefined
+            if (sort === 'score') {
+              if (
+                !freshQuery &&
+                state.contracts &&
+                state.contracts.length > 0
+              ) {
+                postFilteringThreshold = minBy(
+                  state.contracts,
+                  'importanceScore'
+                )?.importanceScore
+              } else {
+                postFilteringThreshold = bottomScoreFromAllContracts
+              }
+            } else {
+              if (
+                !freshQuery &&
+                state.contracts &&
+                state.contracts.length > 0
+              ) {
+                postFilteringThreshold = minBy(
+                  state.contracts,
+                  'createdTime'
+                )?.createdTime
+              } else {
+                postFilteringThreshold = bottomScoreFromAllContracts
+              }
+            }
+            const freshPosts =
+              freshQuery || !state.posts
+                ? newPostsResults
+                : uniqBy(
+                    buildArray(
+                      state.posts,
+                      newPostsResults?.filter((p) =>
+                        postFilteringThreshold === undefined
+                          ? true
+                          : sort === 'score'
+                          ? p.importanceScore <= postFilteringThreshold
+                          : p.createdTime <= postFilteringThreshold
+                      )
+                    ),
+                    'id'
+                  )
 
             const shouldLoadMore =
               newContracts.length === CONTRACTS_PER_SEARCH_PAGE
@@ -792,9 +895,9 @@ export const useSearchResults = (props: {
             setState({
               contracts: freshContracts,
               users: includeUsersAndTopics ? newUsers : state.users,
-              topics: includeUsersAndTopics ? newTopics.lite : state.topics,
+              topics: includeUsersAndTopics ? newTopics?.lite : state.topics,
+              posts: freshPosts,
               shouldLoadMore,
-              // lastSearchParams: searchParams,
             })
             clearTimeout(timeoutId)
             setLoading(false)
@@ -852,6 +955,7 @@ export const useSearchResults = (props: {
     shouldLoadMore: state.shouldLoadMore,
     loadMoreContracts: () => querySearchResults(false, true),
     refreshContracts: () => querySearchResults(true, true),
+    posts: state.posts,
   }
 }
 

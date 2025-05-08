@@ -72,10 +72,13 @@ export const getStaticProps = async (props: {
 
   const user = await getUserForStaticProps(db, username)
 
-  const { data } = user
-    ? await db.from('contracts').select('id').eq('creator_id', user.id).limit(1)
-    : { data: null }
-  const hasCreatedQuestion = data?.length
+  const [contracts, posts] = user
+    ? await Promise.all([
+        db.from('contracts').select('id').eq('creator_id', user.id).limit(1),
+        db.from('old_posts').select('id').eq('creator_id', user.id).limit(1),
+      ])
+    : []
+  const hasCreatedQuestion = contracts?.data?.length || posts?.data?.length
   const { count, rating } = (user ? await getUserRating(user.id) : null) ?? {}
   const averageRating = user ? await getAverageUserRating(user.id) : undefined
   const shouldIgnoreUser = user
@@ -230,12 +233,8 @@ function UserProfile(props: {
         title={`${user.name} (@${user.username})`}
         description={shouldIgnoreUser ? '' : user.bio ?? ''}
         url={`/${user.username}`}
+        shouldIgnore={shouldIgnoreUser}
       />
-      {shouldIgnoreUser && (
-        <Head>
-          <meta name="robots" content="noindex, nofollow" />
-        </Head>
-      )}
       {showConfetti && <FullscreenConfetti />}
 
       <Col className="relative">
