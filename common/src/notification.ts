@@ -82,6 +82,7 @@ export type notification_source_types =
   | 'new_match'
   | 'bet_reply'
   | 'new_message'
+  | 'post'
   | love_notification_source_types
   | 'push_notification_bonus'
   | 'airdrop'
@@ -484,6 +485,9 @@ export function getSourceUrl(notification: Notification) {
     sourceSlug,
     reason,
   } = notification
+  if (sourceType === 'post') {
+    return `/post/${sourceSlug}`
+  }
   if (sourceType === 'weekly_portfolio_update')
     return `/week/${sourceUserUsername}/${sourceSlug}`
   if (reason === 'market_follows')

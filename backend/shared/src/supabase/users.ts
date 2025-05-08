@@ -38,6 +38,10 @@ export const getUserFollowerIds = async (
   )
   return userFollowerIds.map((r) => r.user_id)
 }
+export const getAllUserIds = async (pg: SupabaseDirectClient) => {
+  const userIds = await pg.map(`select id from users`, [], (r) => r.id)
+  return userIds
+}
 
 export const getWhenToIgnoreUsersTime = () => {
   // Always get the same time a month ago today so postgres can cache the query

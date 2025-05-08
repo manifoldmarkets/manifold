@@ -13,6 +13,9 @@ import Link from 'next/link'
 import { api } from 'web/lib/api/api'
 import { Page } from 'web/components/layout/page'
 import { DAY_MS } from 'common/util/time'
+import ShortToggle from 'web/components/widgets/short-toggle'
+import { Row } from 'web/components/layout/row'
+import { useAdmin } from 'web/hooks/use-admin'
 
 export default function CreatePostPage() {
   return (
@@ -27,6 +30,7 @@ export function CreatePostForm(props: { group?: Group }) {
 
   const [error, setError] = useState('')
   const [isSubmitting, setIsSubmitting] = useState(false)
+  const [isAnnouncement, setIsAnnouncement] = useState(false)
 
   const { group } = props
 
@@ -38,6 +42,7 @@ export function CreatePostForm(props: { group?: Group }) {
   const isValid = editor && title.length > 0 && !editor.isEmpty
 
   const user = useUser()
+  const isAdmin = useAdmin()
   const canCreate = user?.createdTime && Date.now() - user.createdTime > DAY_MS
 
   async function savePost(title: string) {
@@ -46,6 +51,7 @@ export function CreatePostForm(props: { group?: Group }) {
       title: title,
       content: editor.getJSON(),
       groupId: group?.id,
+      isAnnouncement,
     }
 
     const result = await api('create-post', newPost).catch((e) => {
@@ -85,7 +91,15 @@ export function CreatePostForm(props: { group?: Group }) {
               </label>
               <TextEditor editor={editor} />
               <Spacer h={6} />
-
+              {isAdmin && (
+                <Row className="items-center gap-2 px-1 py-2">
+                  <ShortToggle on={isAnnouncement} setOn={setIsAnnouncement} />
+                  <span className="mb-1">
+                    Announcement post (sends a notification to all users)
+                  </span>
+                </Row>
+              )}
+              <Spacer h={6} />
               {error !== '' && <div className="text-scarlet-500">{error}</div>}
             </div>
           </form>

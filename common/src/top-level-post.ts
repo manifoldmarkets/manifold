@@ -31,6 +31,7 @@ export type TopLevelPost = {
   groupId?: string
   featuredLabel?: string
   visibility: Visibility
+  isAnnouncement?: boolean
 }
 
 export const convertPost = (sqlPost: Row<'old_posts'>) =>

@@ -71,6 +71,7 @@ import { FaArrowTrendUp, FaArrowTrendDown } from 'react-icons/fa6'
 import { api } from 'web/lib/api/api'
 import { removeUndefinedProps } from 'common/util/object'
 import toast from 'react-hot-toast'
+import { NewPostFromFollowedUserNotification } from './followed-post-notification'
 
 export function NotificationItem(props: {
   notification: Notification
@@ -216,6 +217,15 @@ export function NotificationItem(props: {
   ) {
     return (
       <LimitOrderExpiredNotification
+        notification={notification}
+        isChildOfGroup={isChildOfGroup}
+        highlighted={highlighted}
+        setHighlighted={setHighlighted}
+      />
+    )
+  } else if (sourceType === 'post' && sourceUpdateType === 'created') {
+    return (
+      <NewPostFromFollowedUserNotification
         notification={notification}
         isChildOfGroup={isChildOfGroup}
         highlighted={highlighted}

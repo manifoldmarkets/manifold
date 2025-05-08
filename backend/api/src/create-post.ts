@@ -8,11 +8,18 @@ import {
   createSupabaseDirectClient,
   SupabaseTransaction,
 } from 'shared/supabase/init'
+import { createNewPostFromFollowedUserNotification } from 'shared/notifications/create-new-post-notif'
 
 export const createPost: APIHandler<'create-post'> = async (props, auth) => {
   const pg = createSupabaseDirectClient()
 
-  const { title, content } = props
+  const { title, content, isAnnouncement } = props
+  if (isAnnouncement && !isAdminId(auth.uid)) {
+    throw new APIError(
+      403,
+      'You are not allowed to create an announcement post'
+    )
+  }
 
   const creator = await getUser(auth.uid)
   if (!creator) throw new APIError(401, 'Your account was not found')
@@ -31,6 +38,7 @@ export const createPost: APIHandler<'create-post'> = async (props, auth) => {
       creatorUsername: creator.username,
       creatorAvatarUrl: creator.avatarUrl,
       visibility: 'public',
+      isAnnouncement,
     })
 
     // currently uses the trigger to populate group_id, creator_id, created_time.
@@ -39,7 +47,12 @@ export const createPost: APIHandler<'create-post'> = async (props, auth) => {
       post,
     ])
 
-    return { post }
+    return {
+      result: { post },
+      continue: async () => {
+        await createNewPostFromFollowedUserNotification(post, creator, pg)
+      },
+    }
   })
 }
 

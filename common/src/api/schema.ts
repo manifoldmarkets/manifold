@@ -2407,6 +2407,7 @@ export const API = (_apiTypeCheck = {
       .object({
         title: z.string().min(1).max(120),
         content: contentSchema,
+        isAnnouncement: z.boolean().optional(),
       })
       .strict(),
   },
