@@ -14,9 +14,11 @@ import { api } from 'web/lib/api/api'
 import { Button } from '../buttons/button'
 import toast from 'react-hot-toast'
 import { EyeOffIcon } from '@heroicons/react/solid'
+import { ChatIcon } from '@heroicons/react/outline'
 import { useAdminOrMod } from 'web/hooks/use-admin'
 import { useUser } from 'web/hooks/use-user'
 import { ReactButton } from '../contract/react-button'
+import { getNumPostComments } from 'web/lib/supabase/comments'
 
 export function PostCard(props: {
   post: TopLevelPost
@@ -26,6 +28,11 @@ export function PostCard(props: {
   const [isLoading, setIsLoading] = useState(false)
   const isAdminOrMod = useAdminOrMod()
   const currentUser = useUser()
+  const [commentCount, setCommentCount] = useState<number | null>(null)
+
+  useEffect(() => {
+    getNumPostComments(post.id).then(setCommentCount)
+  }, [post.id])
 
   const handleSetUnlisted = async (e: React.MouseEvent<HTMLButtonElement>) => {
     e.preventDefault()
@@ -89,13 +96,20 @@ export function PostCard(props: {
       </Col>
       {/* Action button to make post unlisted */}
       {/* This button will appear for all users, API will enforce permissions */}
-      <Row className="items-center gap-2 self-end">
+
+      <Row className="items-center gap-4 self-end">
+        {commentCount !== null && (
+          <Row className="text-ink-600 items-center gap-1">
+            <ChatIcon className="h-6 w-6" />
+            <span className="text-ink-600 text-sm">{commentCount}</span>
+          </Row>
+        )}
         <div
           onClick={(e) => {
             e.preventDefault()
             e.stopPropagation()
           }}
-          className="z-10"
+          className="z-10a"
         >
           <ReactButton
             contentId={post.id}

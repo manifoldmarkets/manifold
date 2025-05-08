@@ -2058,6 +2058,7 @@ export type Database = {
           group_id: string | null
           id: string
           visibility: string | null
+          importance_score: number | null
         }
         Insert: {
           created_time?: string | null
@@ -2066,6 +2067,7 @@ export type Database = {
           group_id?: string | null
           id?: string
           visibility?: string | null
+          importance_score?: number | null
         }
         Update: {
           created_time?: string | null
@@ -2074,6 +2076,7 @@ export type Database = {
           group_id?: string | null
           id?: string
           visibility?: string | null
+          importance_score?: number | null
         }
         Relationships: [
           {

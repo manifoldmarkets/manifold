@@ -127,6 +127,15 @@ export async function getNumContractComments(contractId: string) {
   )
   return count ?? 0
 }
+export async function getNumPostComments(postId: string) {
+  const { count } = await run(
+    db
+      .from('old_post_comments')
+      .select('*', { head: true, count: 'exact' })
+      .eq('post_id', postId)
+  )
+  return count ?? 0
+}
 
 export async function getPostCommentRows(postId: string, afterTime?: string) {
   let q = db

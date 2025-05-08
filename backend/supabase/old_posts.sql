@@ -6,7 +6,8 @@ create table if not exists
     data jsonb not null,
     group_id text,
     id text primary key default uuid_generate_v4 () not null,
-    visibility text
+    visibility text,
+    importance_score numeric default 0 not null,
   );
 
 -- Foreign Keys

@@ -32,6 +32,8 @@ export type TopLevelPost = {
   featuredLabel?: string
   visibility: Visibility
   isAnnouncement?: boolean
+  /** @deprecated - not deprecated, only updated in native column though*/
+  importanceScore: number
 }
 
 export const convertPost = (sqlPost: Row<'old_posts'>) =>

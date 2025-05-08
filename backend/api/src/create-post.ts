@@ -39,6 +39,7 @@ export const createPost: APIHandler<'create-post'> = async (props, auth) => {
       creatorAvatarUrl: creator.avatarUrl,
       visibility: 'public',
       isAnnouncement,
+      importanceScore: NEW_MARKET_IMPORTANCE_SCORE,
     })
 
     // currently uses the trigger to populate group_id, creator_id, created_time.
@@ -71,6 +72,7 @@ export const getSlug = async (tx: SupabaseTransaction, title: string) => {
 import { update } from 'shared/supabase/utils'
 import { isAdminId, isModId } from 'common/envs/constants'
 import { getPost } from 'shared/supabase/posts'
+import { NEW_MARKET_IMPORTANCE_SCORE } from 'common/new-contract'
 
 export const updatePost: APIHandler<'update-post'> = async (props, auth) => {
   const { id, title, content, visibility } = props

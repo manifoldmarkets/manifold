@@ -10,25 +10,50 @@ import { track } from 'web/lib/service/analytics'
 import { buttonClass } from 'web/components/buttons/button'
 import Link from 'next/link'
 import { getAllPosts } from './post/[slug]'
+import { useEffect, useState } from 'react'
+import { Button } from 'web/components/buttons/button'
+
 export async function getStaticProps() {
-  const posts = await getAllPosts()
+  const bestPosts = await getAllPosts('importance_score')
   return {
     props: {
-      posts,
+      bestPosts,
     },
+    revalidate: 60, // Revalidate every minute
   }
 }
 
-export default function LatestPostsPage(props: { posts: TopLevelPost[] }) {
-  const { posts } = props
+export default function PostsPage(props: { bestPosts: TopLevelPost[] }) {
+  const { bestPosts } = props
   const user = useUser()
+  const [sortBy, setSortBy] = useState<'latest' | 'best'>('best')
+  const latestPosts = useLatestPosts()
+  const posts = sortBy === 'latest' ? latestPosts : bestPosts
 
   return (
     <Page trackPageView={'latest posts page'}>
-      <Col className="py-2">
+      <Col className=" px-2 py-3">
         <Row className="my-4 items-start justify-between sm:mt-0">
           <Col>
-            <Title className="mx-4 !mb-0 sm:mx-0">Latest Posts</Title>
+            <Title className="mx-4 !mb-0 sm:mx-0">
+              {sortBy === 'latest' ? 'Latest Posts' : 'Best Posts'}
+            </Title>
+            <Row className="mx-4 mt-2 gap-2 sm:mx-0">
+              <Button
+                size="xs"
+                color={sortBy === 'best' ? 'indigo' : 'gray-outline'}
+                onClick={() => setSortBy('best')}
+              >
+                Best
+              </Button>
+              <Button
+                size="xs"
+                color={sortBy === 'latest' ? 'indigo' : 'gray-outline'}
+                onClick={() => setSortBy('latest')}
+              >
+                Latest
+              </Button>
+            </Row>
           </Col>
           <Col>
             {user && (
@@ -42,19 +67,26 @@ export default function LatestPostsPage(props: { posts: TopLevelPost[] }) {
             )}
           </Col>
         </Row>
-        {posts ? <LatestPosts latestPosts={posts} /> : <LoadingIndicator />}
+        {posts ? <Posts posts={posts} /> : <LoadingIndicator />}
       </Col>
     </Page>
   )
 }
 
-export function LatestPosts(props: { latestPosts: TopLevelPost[] }) {
-  const { latestPosts } = props
+export function Posts(props: { posts: TopLevelPost[] }) {
+  const { posts } = props
   return (
     <Col className="gap-2">
-      {latestPosts.map((post) => (
+      {posts.map((post) => (
         <PostCard key={post.id} post={post} />
       ))}
     </Col>
   )
+}
+const useLatestPosts = () => {
+  const [latestPosts, setLatestPosts] = useState<TopLevelPost[]>([])
+  useEffect(() => {
+    getAllPosts('created_time').then(setLatestPosts)
+  }, [])
+  return latestPosts
 }
