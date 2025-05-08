@@ -2,7 +2,7 @@
 import clsx from 'clsx'
 import { Contract } from 'common/contract'
 import { LiteGroup } from 'common/group'
-import { capitalize, groupBy, orderBy, sample, uniqBy } from 'lodash'
+import { capitalize, groupBy, minBy, orderBy, sample, uniqBy } from 'lodash'
 import { ReactNode, useEffect, useRef, useState } from 'react'
 import { AddContractToGroupButton } from 'web/components/topics/add-contract-to-group-modal'
 import { useDebouncedEffect } from 'web/hooks/use-debounced-effect'
@@ -726,9 +726,10 @@ export const useSearchResults = (props: {
         li: liquidity,
         hb: hasBets,
       } = searchParams
+
       const shouldSearchPosts =
         (sort === 'score' || sort === 'newest') &&
-        !contractsOnly &&
+        (!contractsOnly || !!state.posts?.length) &&
         !topicSlug &&
         forYou === '0' &&
         isPrizeMarketString === '0' &&
@@ -780,8 +781,9 @@ export const useSearchResults = (props: {
           const postApiParams: APIParams<'get-posts'> = {
             sortBy: sort === 'score' ? 'importance_score' : 'created_time',
             term: query,
-            limit: 20,
+            limit: 10,
             userId: additionalFilter?.creatorId,
+            offset: freshQuery ? 0 : state.posts?.length ?? 0,
           }
 
           if (includeUsersAndTopics) {
@@ -803,7 +805,7 @@ export const useSearchResults = (props: {
           const results = await Promise.all(searchPromises)
 
           if (id === requestId.current) {
-            const newContracts = results[0]
+            const newContracts = results[0] as Contract[]
             let postResultIndex = 1
             const newUsers = includeUsersAndTopics
               ? results[postResultIndex++]
@@ -815,14 +817,64 @@ export const useSearchResults = (props: {
             const newPostsResults =
               (shouldSearchPosts || additionalFilter?.creatorId) &&
               results.length >= postResultIndex
-                ? results[postResultIndex]
+                ? (results[postResultIndex] as TopLevelPost[])
                 : undefined
 
             const freshContracts = freshQuery
               ? newContracts
               : buildArray(state.contracts, newContracts)
+            const bottomScoreFromAllContracts =
+              sort === 'score'
+                ? minBy(freshContracts, 'importanceScore')?.importanceScore
+                : minBy(freshContracts, 'createdTime')?.createdTime
+
+            // This is necessary bc the posts are in a different table than the contracts.
+            // TODO: this is bad and will leave posts out of the search results randomly.
+            // We should fix this by joining the posts table to the contracts table or something.
+            let postFilteringThreshold: number | undefined
+            if (sort === 'score') {
+              if (
+                !freshQuery &&
+                state.contracts &&
+                state.contracts.length > 0
+              ) {
+                postFilteringThreshold = minBy(
+                  state.contracts,
+                  'importanceScore'
+                )?.importanceScore
+              } else {
+                postFilteringThreshold = bottomScoreFromAllContracts
+              }
+            } else {
+              if (
+                !freshQuery &&
+                state.contracts &&
+                state.contracts.length > 0
+              ) {
+                postFilteringThreshold = minBy(
+                  state.contracts,
+                  'createdTime'
+                )?.createdTime
+              } else {
+                postFilteringThreshold = bottomScoreFromAllContracts
+              }
+            }
             const freshPosts =
-              freshQuery || !state.posts ? newPostsResults : state.posts
+              freshQuery || !state.posts
+                ? newPostsResults
+                : uniqBy(
+                    buildArray(
+                      state.posts,
+                      newPostsResults?.filter((p) =>
+                        postFilteringThreshold === undefined
+                          ? true
+                          : sort === 'score'
+                          ? p.importanceScore <= postFilteringThreshold
+                          : p.createdTime <= postFilteringThreshold
+                      )
+                    ),
+                    'id'
+                  )
 
             const shouldLoadMore =
               newContracts.length === CONTRACTS_PER_SEARCH_PAGE

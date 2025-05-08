@@ -1511,6 +1511,7 @@ export const API = (_apiTypeCheck = {
         term: z.string().optional(),
         limit: z.coerce.number().gte(0).lte(200).default(100),
         userId: z.string().optional(),
+        offset: z.coerce.number().gte(0).default(0),
       })
       .strict(),
     returns: [] as TopLevelPost[],

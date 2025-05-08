@@ -12,11 +12,10 @@ import {
   leftJoin,
 } from 'shared/supabase/sql-builder'
 import { buildArray } from 'common/util/array'
-import { isAdminId, isModId } from 'common/envs/constants'
+import { isAdminId } from 'common/envs/constants'
 export const getPosts: APIHandler<'get-posts'> = async (props, auth) => {
-  const { sortBy = 'created_time', term, limit, userId } = props
+  const { sortBy = 'created_time', term, limit, userId, offset } = props
   const requester = auth?.uid
-  const isMod = isModId(requester ?? '')
   const isAdmin = isAdminId(requester ?? '')
   const pg = createSupabaseDirectClient()
 
@@ -36,7 +35,7 @@ export const getPosts: APIHandler<'get-posts'> = async (props, auth) => {
       ),
     groupBy('op.id'),
     orderBy(`op.${sortBy} DESC`),
-    limitSql(limit)
+    limitSql(limit, offset)
   )
 
   const query = renderSql(...sqlParts)
