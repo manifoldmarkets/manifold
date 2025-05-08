@@ -6,17 +6,6 @@ import { useEffect } from 'react'
 import { db } from './db'
 import { api } from '../api/api'
 
-export async function getPostsByUser(userId: string) {
-  const { data } = await run(
-    db
-      .from('old_posts')
-      .select()
-      .eq('creator_id', userId)
-      .order('created_time', { ascending: false } as any)
-  )
-  return data.map(convertPost)
-}
-
 export async function getPostBySlug(slug: string) {
   const { data } = await run(
     db.from('old_posts').select().eq('data->>slug', slug)
