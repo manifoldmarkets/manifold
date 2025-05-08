@@ -1,5 +1,5 @@
 import { assertUnreachable } from 'common/util/types'
-import { createLikeNotification } from 'shared/create-notification'
+import { createLikeNotification } from 'shared/notifications/create-new-like-notif'
 import { createSupabaseDirectClient } from 'shared/supabase/init'
 import { log } from 'shared/utils'
 import { APIError, APIHandler } from './helpers/endpoint'

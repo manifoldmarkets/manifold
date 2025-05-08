@@ -3,10 +3,10 @@ import { isProd, log, revalidateStaticProps } from 'shared/utils'
 import { ContractComment } from 'common/comment'
 import { Bet } from 'common/bet'
 import {
-  createCommentOnContractNotification,
   replied_users_info,
   createAIDescriptionUpdateNotification,
 } from 'shared/create-notification'
+import { createCommentOnContractNotification } from 'shared/notifications/create-new-contract-comment-notif'
 import {
   parseJsonContentToText,
   parseMentions,
