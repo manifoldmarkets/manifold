@@ -41,7 +41,7 @@ export const createNewPostFromFollowedUserNotification = async (
         sourceUserUsername: creator.username,
         sourceUserAvatarUrl: creator.avatarUrl,
         sourceText: richTextToString(post.content),
-        sourceSlug: post.slug,
+        sourceSlug: `post/${post.slug}`,
         sourceTitle: post.title,
       }
       bulkNotifications.push(notification)
@@ -77,7 +77,7 @@ export const createNewPostFromFollowedUserNotification = async (
           sourceUserUsername: creator.username,
           sourceUserAvatarUrl: creator.avatarUrl,
           sourceText: richTextToString(post.content),
-          sourceSlug: post.slug,
+          sourceSlug: `post/${post.slug}`,
           sourceTitle: post.title,
         }
         bulkNotifications.push(notification)

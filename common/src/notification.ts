@@ -488,13 +488,6 @@ export function getSourceUrl(notification: Notification) {
     reason,
   } = notification
 
-  if (
-    sourceType === 'post' ||
-    sourceType === 'post_like' ||
-    sourceType === 'post_comment_like'
-  ) {
-    return `/post/${sourceSlug}`
-  }
   if (sourceType === 'weekly_portfolio_update')
     return `/week/${sourceUserUsername}/${sourceSlug}`
   if (reason === 'market_follows')

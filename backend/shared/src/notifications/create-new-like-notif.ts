@@ -53,7 +53,7 @@ export const createLikeNotification = async (
       sourceUserUsername: user.username,
       sourceUserAvatarUrl: user.avatarUrl,
       sourceText: richTextToString(comment.content).slice(0, 200),
-      sourceSlug: post.slug + '#' + comment.id,
+      sourceSlug: `post/${post.slug}#${comment.id}`,
       sourceTitle: post.title,
     }
     return await insertNotificationToSupabase(notification, pg)
@@ -80,7 +80,7 @@ export const createLikeNotification = async (
       sourceUserUsername: user.username,
       sourceUserAvatarUrl: user.avatarUrl,
       sourceText: richTextToString(post.content).slice(0, 200),
-      sourceSlug: post.slug,
+      sourceSlug: `post/${post.slug}`,
       sourceTitle: post.title,
     }
     return await insertNotificationToSupabase(notification, pg)
