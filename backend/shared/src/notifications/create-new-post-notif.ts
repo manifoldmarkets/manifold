@@ -76,7 +76,7 @@ export const createNewPostFromFollowedUserNotification = async (
           sourceUserName: creator.name,
           sourceUserUsername: creator.username,
           sourceUserAvatarUrl: creator.avatarUrl,
-          sourceText: richTextToString(post.content),
+          sourceText: richTextToString(post.content).slice(0, 200),
           sourceSlug: `post/${post.slug}`,
           sourceTitle: post.title,
         }

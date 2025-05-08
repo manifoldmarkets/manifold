@@ -495,11 +495,27 @@ export async function calculatePostImportanceScore(
 
   log(`Found ${posts.length} posts to potentially score`)
 
-  const dailyPostCommentCounts = await getPostCommentCounts(pg, dayAgo)
-  const weeklyPostCommentCounts = await getPostCommentCounts(pg, weekAgo)
+  const dailyPostCommentCounts = await getPostCommentCounts(
+    pg,
+    dayAgo,
+    posts.map((p) => p.id)
+  )
+  const weeklyPostCommentCounts = await getPostCommentCounts(
+    pg,
+    weekAgo,
+    posts.map((p) => p.id)
+  )
 
-  const dailyPostLikeCounts = await getPostLikeCounts(pg, dayAgo)
-  const weeklyPostLikeCounts = await getPostLikeCounts(pg, weekAgo)
+  const dailyPostLikeCounts = await getPostLikeCounts(
+    pg,
+    dayAgo,
+    posts.map((p) => p.id)
+  )
+  const weeklyPostLikeCounts = await getPostLikeCounts(
+    pg,
+    weekAgo,
+    posts.map((p) => p.id)
+  )
 
   const postsWithUpdates: { id: string; importance_score: number }[] = []
 
@@ -555,20 +571,16 @@ export async function calculatePostImportanceScore(
 // Helper to get post comment counts since a certain time
 export const getPostCommentCounts = async (
   pg: SupabaseDirectClient,
-  since?: number
+  since: number,
+  postIds: string[]
 ): Promise<{ [postId: string]: number }> => {
-  let query = `
+  const query = `
     SELECT post_id, COUNT(comment_id)::int AS comment_count
     FROM old_post_comments
+    WHERE created_time >= millis_to_ts($1) AND post_id = ANY(ARRAY[$2])
+    GROUP BY post_id
   `
-  const params: any[] = []
-  if (since) {
-    query += ` WHERE created_time >= millis_to_ts($1)`
-    params.push(since)
-  }
-  query += ` GROUP BY post_id`
-
-  const results = await pg.manyOrNone(query, params)
+  const results = await pg.manyOrNone(query, [since, postIds])
   return Object.fromEntries(
     results.map((r: any) => [r.post_id, parseInt(r.comment_count)])
   )
@@ -577,22 +589,18 @@ export const getPostCommentCounts = async (
 // Helper to get post like counts since a certain time
 export const getPostLikeCounts = async (
   pg: SupabaseDirectClient,
-  since?: number
+  since: number,
+  postIds: string[]
 ): Promise<{ [postId: string]: number }> => {
-  let query = `
+  const query = `
     SELECT content_id AS post_id, COUNT(reaction_id)::int AS like_count
     FROM user_reactions
     WHERE content_type = 'post' AND reaction_type = 'like'
+    AND created_time >= millis_to_ts($1)
+    AND content_id = ANY(ARRAY[$2])
+    GROUP BY content_id
   `
-  const params: any[] = []
-  if (since) {
-    // Ensure correct parameter indexing if query string is built conditionally
-    query += ` AND created_time >= millis_to_ts($${params.length + 1})`
-    params.push(since)
-  }
-  query += ` GROUP BY content_id`
-
-  const results = await pg.manyOrNone(query, params)
+  const results = await pg.manyOrNone(query, [since, postIds])
   return Object.fromEntries(
     results.map((r: any) => [r.post_id, parseInt(r.like_count)])
   )
