@@ -4,7 +4,7 @@ import { type ContractToken, type Visibility } from './contract'
 
 export const MAX_COMMENT_LENGTH = 10000
 
-export type AnyCommentType = OnContract | OnLover
+export type AnyCommentType = OnContract | OnPost | OnLover
 
 // Currently, comments are created after the bet, not atomically with the bet.
 // They're uniquely identified by the pair contractId/betId.
@@ -77,3 +77,8 @@ export type ContractComment = Comment<OnContract>
 export type CommentWithTotalReplies = ContractComment & {
   totalReplies?: number
 }
+export type OnPost = {
+  commentType: 'post'
+  postId: string
+}
+export type PostComment = Comment<OnPost>

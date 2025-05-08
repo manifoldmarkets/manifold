@@ -3,6 +3,7 @@ import { db } from './db'
 import { chunk } from 'lodash'
 import { convertContractComment } from 'common/supabase/comments'
 import { filterDefined } from 'common/util/array'
+import { PostComment } from 'common/comment'
 
 export async function getComment(commentId: string) {
   const res = await db
@@ -125,4 +126,29 @@ export async function getNumContractComments(contractId: string) {
       .eq('contract_id', contractId)
   )
   return count ?? 0
+}
+
+export async function getPostCommentRows(postId: string, afterTime?: string) {
+  let q = db
+    .from('old_post_comments')
+    .select()
+    .eq('post_id', postId)
+    .order('created_time', { ascending: false } as any)
+
+  if (afterTime) q = q.gt('created_time', afterTime)
+
+  const { data } = await run(q)
+  return data
+}
+
+export async function getCommentsOnPost(postId: string, afterTime?: string) {
+  const rows = await getPostCommentRows(postId, afterTime)
+  return rows.map(
+    (c) =>
+      ({
+        ...(c.data as any),
+        id: c.comment_id,
+        createdTime: c.created_time && Date.parse(c.created_time),
+      } as PostComment)
+  )
 }

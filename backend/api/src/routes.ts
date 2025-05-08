@@ -182,6 +182,8 @@ import {
 } from './market-drafts'
 import { getSeasonInfo } from './get-season-info'
 import { markNotificationRead } from './mark-all-notifications'
+import { createPostComment, updatePostComment } from './create-post-comment'
+import { createPost, updatePost } from './create-post'
 
 export const handlers: { [k in APIPath]: APIHandler<k> } = {
   'refresh-all-clients': refreshAllClients,
@@ -370,9 +372,13 @@ export const handlers: { [k in APIPath]: APIHandler<k> } = {
   'generate-concise-title': generateConciseTitle,
   'get-close-date': getCloseDateEndpoint,
   'refer-user': referUser,
+  'create-post-comment': createPostComment,
+  'create-post': createPost,
+  'update-post': updatePost,
+  'update-post-comment': updatePostComment,
   'save-market-draft': saveMarketDraft,
   'get-market-drafts': getMarketDrafts,
   'delete-market-draft': deleteMarketDraft,
   'get-season-info': getSeasonInfo,
   'mark-notification-read': markNotificationRead,
-}
+} as const

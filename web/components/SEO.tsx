@@ -10,8 +10,9 @@ export function SEO<
   url?: string
   ogProps?: { props: P; endpoint: string }
   image?: string
+  shouldIgnore?: boolean
 }) {
-  const { title, description, url, image, ogProps } = props
+  const { title, description, url, image, ogProps, shouldIgnore } = props
 
   const imageUrl =
     image ??
@@ -37,6 +38,7 @@ export function SEO<
         content={description}
         key="description2"
       />
+      {shouldIgnore && <meta name="robots" content="noindex, nofollow" />}
 
       {url && <link rel="canonical" href={absUrl} />}
 

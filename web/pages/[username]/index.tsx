@@ -230,12 +230,8 @@ function UserProfile(props: {
         title={`${user.name} (@${user.username})`}
         description={shouldIgnoreUser ? '' : user.bio ?? ''}
         url={`/${user.username}`}
+        shouldIgnore={shouldIgnoreUser}
       />
-      {shouldIgnoreUser && (
-        <Head>
-          <meta name="robots" content="noindex, nofollow" />
-        </Head>
-      )}
       {showConfetti && <FullscreenConfetti />}
 
       <Col className="relative">

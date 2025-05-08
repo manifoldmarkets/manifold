@@ -19,6 +19,7 @@ import { type Answer } from 'common/answer'
 import {
   CommentWithTotalReplies,
   MAX_COMMENT_LENGTH,
+  PostComment,
   type ContractComment,
 } from 'common/comment'
 import { CandidateBet } from 'common/new-bet'
@@ -76,6 +77,7 @@ import { Dictionary } from 'lodash'
 import { Reaction } from 'common/reaction'
 import { YEAR_MS } from 'common/util/time'
 import { MarketDraft } from 'common/drafts'
+import { TopLevelPost } from 'common/top-level-post'
 // mqp: very unscientific, just balancing our willingness to accept load
 // with user willingness to put up with stale data
 export const DEFAULT_CACHE_STRATEGY =
@@ -2393,6 +2395,58 @@ export const API = (_apiTypeCheck = {
     props: z
       .object({
         notificationId: z.string(),
+      })
+      .strict(),
+  },
+  'create-post': {
+    method: 'POST',
+    visibility: 'public',
+    authed: true,
+    returns: {} as { post: TopLevelPost },
+    props: z
+      .object({
+        title: z.string().min(1).max(120),
+        content: contentSchema,
+      })
+      .strict(),
+  },
+  'update-post': {
+    method: 'POST',
+    visibility: 'public',
+    authed: true,
+    returns: {} as { post: TopLevelPost },
+    props: z
+      .object({
+        id: z.string(),
+        title: z.string().min(1).max(480).optional(),
+        content: contentSchema.optional(),
+        visibility: z.string().optional(),
+      })
+      .strict(),
+  },
+  'create-post-comment': {
+    method: 'POST',
+    visibility: 'public',
+    authed: true,
+    returns: {} as { comment: PostComment },
+    props: z
+      .object({
+        postId: z.string(),
+        content: contentSchema,
+        replyToCommentId: z.string().optional(),
+      })
+      .strict(),
+  },
+  'update-post-comment': {
+    method: 'POST',
+    visibility: 'public',
+    authed: true,
+    returns: {} as { comment: PostComment },
+    props: z
+      .object({
+        commentId: z.string(),
+        postId: z.string(),
+        hidden: z.boolean(),
       })
       .strict(),
   },
