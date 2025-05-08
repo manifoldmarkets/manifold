@@ -27,10 +27,7 @@ export const getPosts: APIHandler<'get-posts'> = async (props, auth) => {
     from('old_posts op'),
     leftJoin('old_post_comments opc on op.id = opc.post_id'),
     leftJoin('user_reactions r on op.id = r.content_id'),
-    userId !== requester &&
-      !isMod &&
-      !isAdmin &&
-      where(`op.visibility = 'public'`),
+    userId !== requester && !isAdmin && where(`op.visibility = 'public'`),
     userId && where(`op.creator_id = $1`),
     term &&
       term.trim().length > 0 &&

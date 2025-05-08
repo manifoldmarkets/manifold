@@ -8,6 +8,7 @@ import { Avatar } from '../widgets/avatar'
 import { UserIcon } from '@heroicons/react/solid'
 import { Tooltip } from '../widgets/tooltip'
 import { UserHovercard } from '../user/user-hovercard'
+import { EyeOffIcon } from '@heroicons/react/outline'
 
 export function PostRow(props: {
   post: TopLevelPost
@@ -51,11 +52,18 @@ export function PostRow(props: {
                   />
                 </UserHovercard>
               )}
-              <Row className="gap-1">
-                {/* <span className="text-ink-700 bg-canvas-100 rounded-lg px-2 pt-0.5 text-center text-sm">
-                  POST
-                </span> */}
-                <span className="line-clamp-1">{post.title}</span>
+              <Row className="items-center gap-1">
+                {post.visibility === 'unlisted' && (
+                  <EyeOffIcon className="text-ink-500 h-4 w-4" />
+                )}
+                <span
+                  className={clsx(
+                    'line-clamp-1',
+                    post.visibility === 'unlisted' && 'text-ink-500'
+                  )}
+                >
+                  {post.title}
+                </span>
               </Row>
             </Row>
           </Col>
