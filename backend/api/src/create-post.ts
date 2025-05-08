@@ -13,7 +13,7 @@ import { createNewPostFromFollowedUserNotification } from 'shared/notifications/
 export const createPost: APIHandler<'create-post'> = async (props, auth) => {
   const pg = createSupabaseDirectClient()
 
-  const { title, content, isAnnouncement } = props
+  const { title, content, isAnnouncement, visibility } = props
   if (isAnnouncement && !isAdminId(auth.uid)) {
     throw new APIError(
       403,
@@ -37,7 +37,7 @@ export const createPost: APIHandler<'create-post'> = async (props, auth) => {
       creatorName: creator.name,
       creatorUsername: creator.username,
       creatorAvatarUrl: creator.avatarUrl,
-      visibility: 'public',
+      visibility: visibility ?? 'public',
       isAnnouncement,
       importanceScore: NEW_MARKET_IMPORTANCE_SCORE,
     })
@@ -51,6 +51,7 @@ export const createPost: APIHandler<'create-post'> = async (props, auth) => {
     return {
       result: { post },
       continue: async () => {
+        if (visibility === 'unlisted') return
         await createNewPostFromFollowedUserNotification(post, creator, pg)
       },
     }
@@ -79,16 +80,45 @@ export const updatePost: APIHandler<'update-post'> = async (props, auth) => {
   const pg = createSupabaseDirectClient()
   const post = await getPost(pg, id)
   if (!post) throw new APIError(404, 'Post not found')
-  if (visibility && !isAdminId(auth.uid) && !isModId(auth.uid)) {
+  if (
+    !isAdminId(auth.uid) &&
+    !isModId(auth.uid) &&
+    post.creatorId !== auth.uid
+  ) {
     throw new APIError(
       403,
-      'You are not allowed to change visibility of this post'
+      'You are not allowed to change this post unless you are the creator, an admin, or a mod.'
     )
   }
-  const newData = removeUndefinedProps({ id, title, content, visibility })
 
-  const updatedPost = await updateData(pg, 'old_posts', 'id', {
-    ...newData,
+  const newData: Partial<TopLevelPost> = removeUndefinedProps({
+    id,
+    title,
+    content,
   })
+
+  if (visibility === 'public') {
+    // Previously unlisted by a mod.
+    if (
+      post.visibility === 'unlisted' &&
+      !!post.unlistedById &&
+      post.unlistedById !== auth.uid &&
+      !isAdminId(auth.uid) &&
+      !isModId(auth.uid)
+    ) {
+      throw new APIError(
+        403,
+        'This post was last unlisted by a mod. Only they can unlist it again or change its visibility.'
+      )
+    }
+    newData.visibility = 'public'
+    newData.unlistedById = undefined
+  } else {
+    newData.visibility = visibility
+    newData.unlistedById = auth.uid
+  }
+
+  const updatePayload = removeUndefinedProps({ id, ...newData })
+  const updatedPost = await updateData(pg, 'old_posts', 'id', updatePayload)
   return { post: convertPost(updatedPost) }
 }

@@ -17,6 +17,8 @@ import ShortToggle from 'web/components/widgets/short-toggle'
 import { Row } from 'web/components/layout/row'
 import { useAdmin } from 'web/hooks/use-admin'
 import { BackButton } from 'web/components/contract/back-button'
+import { Visibility } from 'common/contract'
+import { InfoTooltip } from 'web/components/widgets/info-tooltip'
 
 export default function CreatePostPage() {
   return (
@@ -28,6 +30,7 @@ export default function CreatePostPage() {
 
 export function CreatePostForm(props: { group?: Group }) {
   const [title, setTitle] = useState('')
+  const [postVisibility, setPostVisibility] = useState<Visibility>('public')
 
   const [error, setError] = useState('')
   const [isSubmitting, setIsSubmitting] = useState(false)
@@ -53,6 +56,7 @@ export function CreatePostForm(props: { group?: Group }) {
       content: editor.getJSON(),
       groupId: group?.id,
       isAnnouncement,
+      visibility: postVisibility,
     }
 
     const result = await api('create-post', newPost).catch((e) => {
@@ -96,12 +100,31 @@ export function CreatePostForm(props: { group?: Group }) {
               <Spacer h={6} />
               {isAdmin && (
                 <Row className="items-center gap-2 px-1 py-2">
-                  <ShortToggle on={isAnnouncement} setOn={setIsAnnouncement} />
-                  <span className="mb-1">
+                  <ShortToggle
+                    colorMode="warning"
+                    on={isAnnouncement}
+                    setOn={setIsAnnouncement}
+                  />
+                  <span
+                    className={clsx(
+                      'mb-1',
+                      isAnnouncement && 'text-scarlet-500'
+                    )}
+                  >
                     Announcement post (sends a notification to all users)
                   </span>
                 </Row>
               )}
+              <Row className="items-center gap-2 px-1 py-2">
+                <ShortToggle
+                  on={postVisibility === 'public'}
+                  setOn={(on) => setPostVisibility(on ? 'public' : 'unlisted')}
+                />
+                <span className="mb-1">
+                  Publicly listed{' '}
+                  <InfoTooltip text="Public posts show up on the browse and search pages. Unlisted posts are only visible via link." />
+                </span>
+              </Row>
               <Spacer h={6} />
               {error !== '' && <div className="text-scarlet-500">{error}</div>}
             </div>

@@ -2429,6 +2429,7 @@ export const API = (_apiTypeCheck = {
         title: z.string().min(1).max(120),
         content: contentSchema,
         isAnnouncement: z.boolean().optional(),
+        visibility: z.enum(['public', 'unlisted']).optional(), 
       })
       .strict(),
   },
@@ -2442,7 +2443,7 @@ export const API = (_apiTypeCheck = {
         id: z.string(),
         title: z.string().min(1).max(480).optional(),
         content: contentSchema.optional(),
-        visibility: z.string().optional(),
+        visibility: z.enum(['public', 'unlisted']).optional(),
       })
       .strict(),
   },

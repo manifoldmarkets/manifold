@@ -139,7 +139,11 @@ export default function PostPage(props: {
       )
     } catch (error) {
       console.error('Error updating post visibility:', error)
-      toast.error('Failed to update post visibility.')
+      toast.error(
+        `Failed to update post visibility. ${
+          error instanceof Error ? error.message : ''
+        }`
+      )
     } finally {
     }
   }
@@ -193,28 +197,29 @@ export default function PostPage(props: {
                     onUnreact={handleUnreact}
                   />
                 )}
-                {isAdminOrMod && post && (
-                  <DropdownMenu
-                    items={[
-                      {
-                        name:
-                          post.visibility === 'unlisted'
-                            ? 'Make Public'
-                            : 'Make Unlisted',
-                        icon:
-                          post.visibility === 'unlisted' ? (
-                            <EyeOffIcon className="h-5 w-5" />
-                          ) : (
-                            <EyeOffIcon className="h-5 w-5" />
-                          ),
-                        onClick: togglePostVisibility,
-                      },
-                    ]}
-                    buttonContent={<DotsHorizontalIcon className="h-5 w-5" />}
-                    buttonClass="p-2"
-                    menuWidth="w-40"
-                  />
-                )}
+                {(isAdminOrMod || post.creatorId === currentUser?.id) &&
+                  post && (
+                    <DropdownMenu
+                      items={[
+                        {
+                          name:
+                            post.visibility === 'unlisted'
+                              ? 'Make Public'
+                              : 'Make Unlisted',
+                          icon:
+                            post.visibility === 'unlisted' ? (
+                              <EyeOffIcon className="h-5 w-5" />
+                            ) : (
+                              <EyeOffIcon className="h-5 w-5" />
+                            ),
+                          onClick: togglePostVisibility,
+                        },
+                      ]}
+                      buttonContent={<DotsHorizontalIcon className="h-5 w-5" />}
+                      buttonClass="p-2"
+                      menuWidth="w-40"
+                    />
+                  )}
               </Row>
             </Col>
 

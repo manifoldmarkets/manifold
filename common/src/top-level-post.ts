@@ -31,6 +31,7 @@ export type TopLevelPost = {
   groupId?: string
   featuredLabel?: string
   visibility: Visibility
+  unlistedById?: string
   isAnnouncement?: boolean
   /** @deprecated - not deprecated, only updated in native column though*/
   importanceScore: number
