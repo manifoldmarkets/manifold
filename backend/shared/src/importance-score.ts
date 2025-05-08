@@ -485,10 +485,10 @@ export async function calculatePostImportanceScore(
   const dayAgo = now - DAY_MS
   const weekAgo = now - WEEK_MS
 
-  // Fetch all posts - This is not scalable and needs refinement.
-  // Consider fetching posts with recent activity or those with existing importance > 0.
   const posts = await pg.map(
-    'SELECT id, data, importance_score FROM old_posts',
+    `SELECT id, data, importance_score FROM old_posts
+            where visibility = 'public'
+            and created_time > now() - interval '1 month'`,
     [],
     convertPost
   )
