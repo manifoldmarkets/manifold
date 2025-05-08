@@ -12,11 +12,9 @@ import {
   leftJoin,
 } from 'shared/supabase/sql-builder'
 import { buildArray } from 'common/util/array'
-import { isAdminId } from 'common/envs/constants'
 export const getPosts: APIHandler<'get-posts'> = async (props, auth) => {
   const { sortBy = 'created_time', term, limit, userId, offset } = props
   const requester = auth?.uid
-  const isAdmin = isAdminId(requester ?? '')
   const pg = createSupabaseDirectClient()
 
   const sqlParts = buildArray(
@@ -26,7 +24,7 @@ export const getPosts: APIHandler<'get-posts'> = async (props, auth) => {
     from('old_posts op'),
     leftJoin('old_post_comments opc on op.id = opc.post_id'),
     leftJoin('user_reactions r on op.id = r.content_id'),
-    userId !== requester && !isAdmin && where(`op.visibility = 'public'`),
+    userId !== requester && where(`op.visibility = 'public'`),
     userId && where(`op.creator_id = $1`),
     term &&
       term.trim().length > 0 &&
