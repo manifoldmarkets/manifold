@@ -16,6 +16,7 @@ import { DAY_MS } from 'common/util/time'
 import ShortToggle from 'web/components/widgets/short-toggle'
 import { Row } from 'web/components/layout/row'
 import { useAdmin } from 'web/hooks/use-admin'
+import { BackButton } from 'web/components/contract/back-button'
 
 export default function CreatePostPage() {
   return (
@@ -65,8 +66,10 @@ export function CreatePostForm(props: { group?: Group }) {
     }
   }
   return (
-    <div className="mx-auto w-full max-w-3xl px-4">
-      <Title>Create a post</Title>
+    <div className="mx-auto w-full max-w-3xl px-4 py-3">
+      <Title className="!mb-4">
+        <BackButton /> Create post
+      </Title>
       {canCreate ? (
         <>
           <form>

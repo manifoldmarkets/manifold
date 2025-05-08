@@ -36,6 +36,7 @@ import { ReactButton } from 'web/components/contract/react-button'
 import { getPostBySlug } from 'web/lib/supabase/posts'
 import { useSaveReferral } from 'web/hooks/use-save-referral'
 import DropdownMenu from 'web/components/widgets/dropdown-menu'
+import { BackButton } from 'web/components/contract/back-button'
 
 export async function getStaticProps(props: { params: { slug: string } }) {
   const { slug } = props.params
@@ -154,6 +155,9 @@ export default function PostPage(props: {
       <Col className="mx-auto w-full max-w-2xl p-4">
         {!editing && (
           <Col>
+            <Row>
+              <BackButton className="!p-0" />
+            </Row>
             <Row className="border-canvas-50 items-center justify-between gap-1 border-b py-4 text-3xl font-bold">
               <span>
                 {post.title}{' '}

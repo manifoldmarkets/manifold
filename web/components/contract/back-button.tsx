@@ -18,7 +18,7 @@ export function BackButton(props: { className?: string }) {
 
   return (
     <Button
-      className={clsx('rounded-none', className)}
+      className={clsx('rounded', className)}
       onClick={router.back}
       color={'gray-white'}
     >

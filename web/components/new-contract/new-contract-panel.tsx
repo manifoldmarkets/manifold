@@ -23,6 +23,8 @@ import { AIMarketSuggestionsPanel } from './ai-market-suggestions-panel'
 import { Button } from '../buttons/button'
 import { Spacer } from '../layout/spacer'
 import { WEEK_MS } from 'common/util/time'
+import Router from 'next/router'
+import { DocumentTextIcon } from '@heroicons/react/outline'
 
 export type NewQuestionParams = {
   groupIds?: string[]
@@ -160,6 +162,23 @@ export function NewContractPanel(props: {
             params={params}
           />
         )}
+        <Spacer h={2} />
+        <Button
+          className="hover:ring-primary-200 bg-primary-600/5 cursor-pointer rounded-lg px-4 py-2 text-left transition-all hover:ring-2"
+          color="none"
+          onClick={() => Router.push('/create-post')}
+        >
+          <Row className="w-full items-center justify-start gap-6">
+            <DocumentTextIcon className="h-12 w-12 text-cyan-600" />
+            <Col className="w-full items-start gap-0.5">
+              <div className="py-0.5 font-semibold sm:text-lg">Post</div>
+              <span className="text-ink-700 text-sm italic ">
+                Share groups of markets, updates, ideas, or stories with the
+                community.
+              </span>
+            </Col>
+          </Row>
+        </Button>
       </Col>
     </Col>
   )
