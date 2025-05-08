@@ -7,6 +7,7 @@ import { track } from 'web/lib/service/analytics'
 import { Avatar } from '../widgets/avatar'
 import { UserIcon } from '@heroicons/react/solid'
 import { Tooltip } from '../widgets/tooltip'
+import { UserHovercard } from '../user/user-hovercard'
 
 export function PostRow(props: {
   post: TopLevelPost
@@ -41,12 +42,14 @@ export function PostRow(props: {
           <Col className="w-full">
             <Row className="items-center gap-2 sm:gap-4">
               {!hideAvatar && (
-                <Avatar
-                  size="xs"
-                  username={post.creatorUsername}
-                  avatarUrl={post.creatorAvatarUrl}
-                  noLink // Or link to user profile if desired
-                />
+                <UserHovercard userId={post.creatorId}>
+                  <Avatar
+                    size="xs"
+                    username={post.creatorUsername}
+                    avatarUrl={post.creatorAvatarUrl}
+                    noLink // Or link to user profile if desired
+                  />
+                </UserHovercard>
               )}
               <Row className="gap-1">
                 {/* <span className="text-ink-700 bg-canvas-100 rounded-lg px-2 pt-0.5 text-center text-sm">

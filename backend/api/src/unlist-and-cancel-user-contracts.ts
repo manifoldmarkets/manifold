@@ -3,10 +3,12 @@ import { isAdminId, isModId } from 'common/envs/constants'
 import { throwErrorIfNotMod } from 'shared/helpers/auth'
 import { createSupabaseDirectClient } from 'shared/supabase/init'
 import { resolveMarketHelper } from 'shared/resolve-market-helpers'
-import { getUser } from 'shared/utils'
+import { getUser, log } from 'shared/utils'
 import { updateContract } from 'shared/supabase/contracts'
 import { convertContract } from 'common/supabase/contracts'
 import { MarketContract } from 'common/contract'
+import { convertPost } from 'common/top-level-post'
+import { updateData } from 'shared/supabase/utils'
 
 export const unlistAndCancelUserContracts: APIHandler<
   'unlist-and-cancel-user-contracts'
@@ -15,7 +17,7 @@ export const unlistAndCancelUserContracts: APIHandler<
     throw new APIError(403, 'Only admins and mods can perform this action.')
   }
 
-  await throwErrorIfNotMod(auth.uid)
+  throwErrorIfNotMod(auth.uid)
 
   const resolver = await getUser(auth.uid)
   if (!resolver) {
@@ -34,8 +36,14 @@ export const unlistAndCancelUserContracts: APIHandler<
     convertContract
   )
 
-  if (contracts.length === 0) {
-    console.log('No contracts found for this user.')
+  const posts = await pg.map(
+    `SELECT * FROM old_posts WHERE creator_id = $1`,
+    [userId],
+    (r) => convertPost(r)
+  )
+
+  if (contracts.length === 0 && posts.length === 0) {
+    log('No contracts or posts found for this user.')
     return
   }
 
@@ -61,7 +69,24 @@ export const unlistAndCancelUserContracts: APIHandler<
       })
     }
   } catch (error) {
-    console.error('Error resolving contracts:', error)
+    log.error('Error resolving contracts:', { error })
     throw new APIError(500, 'Failed to update one or more contracts.')
   }
+
+  if (posts.length === 0) {
+    log('No posts found for this user.')
+    // No need to throw an error, just return if there are no posts and contracts were handled.
+    // If contracts were also empty, the function would have returned earlier if uncommented.
+    return
+  }
+  log(`Found ${posts.length} posts to unlist.`)
+
+  for (const post of posts) {
+    await updateData(pg, 'old_posts', 'id', {
+      id: post.id,
+      visibility: 'unlisted',
+    })
+    log(`Unlisted post ${post.id}`)
+  }
+  log('Successfully unlisted all posts for the user.')
 }

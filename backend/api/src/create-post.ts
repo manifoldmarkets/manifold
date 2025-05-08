@@ -69,7 +69,7 @@ export const getSlug = async (tx: SupabaseTransaction, title: string) => {
   return preexistingPost ? proposedSlug + '-' + randomString() : proposedSlug
 }
 
-import { update } from 'shared/supabase/utils'
+import { updateData } from 'shared/supabase/utils'
 import { isAdminId, isModId } from 'common/envs/constants'
 import { getPost } from 'shared/supabase/posts'
 import { NEW_MARKET_IMPORTANCE_SCORE } from 'common/new-contract'
@@ -87,10 +87,8 @@ export const updatePost: APIHandler<'update-post'> = async (props, auth) => {
   }
   const newData = removeUndefinedProps({ id, title, content, visibility })
 
-  const updatedPost = await update(pg, 'old_posts', 'id', {
-    id,
-    data: { ...post, ...newData },
-    visibility,
+  const updatedPost = await updateData(pg, 'old_posts', 'id', {
+    ...newData,
   })
   return { post: convertPost(updatedPost) }
 }
