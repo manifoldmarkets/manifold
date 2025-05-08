@@ -52,13 +52,15 @@ export const executeBatchQuery = debounce(async (handlers: QueryHandlers) => {
   }
 }, 10)
 
+const reactionsFilter = (data: Reaction[], id: string) =>
+  data.filter((item) => item.content_id === id)
+
 export const filtersByQueryType: Record<string, FilterCallback<any>> = {
   markets: (data: Contract[], id: string) =>
     data.find((item) => item.id === id),
-  'comment-reactions': (data: Reaction[], id: string) =>
-    data.filter((item) => item.content_id === id),
-  'contract-reactions': (data: Reaction[], id: string) =>
-    data.filter((item) => item.content_id === id),
+  'comment-reactions': reactionsFilter,
+  'post-reactions': reactionsFilter,
+  'contract-reactions': reactionsFilter,
   'contract-metrics': (data: string[], id: string) => data.includes(id),
   user: (data: DisplayUser[], id: string) =>
     data.find((item) => item.id === id),
@@ -80,6 +82,7 @@ export const useBatchedGetter = <T>(
     | 'markets'
     | 'comment-reactions'
     | 'contract-reactions'
+    | 'post-reactions'
     | 'contract-metrics'
     | 'user'
     | 'users',

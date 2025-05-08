@@ -46,6 +46,17 @@ export const addOrRemoveReaction: APIHandler<'react'> = async (props, auth) => {
       }
 
       ownerId = creatorId
+    } else if (contentType === 'post') {
+      const creatorId = await pg.oneOrNone(
+        `select creator_id from old_posts where id = $1`,
+        [contentId],
+        (r) => r?.creator_id
+      )
+
+      if (!creatorId) {
+        throw new APIError(404, 'Failed to find post')
+      }
+      ownerId = creatorId
     } else {
       assertUnreachable(contentType)
     }

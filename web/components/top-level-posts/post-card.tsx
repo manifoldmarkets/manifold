@@ -15,6 +15,9 @@ import { Button } from '../buttons/button'
 import toast from 'react-hot-toast'
 import { EyeOffIcon } from '@heroicons/react/solid'
 import { useAdminOrMod } from 'web/hooks/use-admin'
+import { useUser } from 'web/hooks/use-user'
+import { ReactButton } from '../contract/react-button'
+
 export function PostCard(props: {
   post: TopLevelPost
   onPostClick?: (post: TopLevelPost) => void
@@ -22,6 +25,7 @@ export function PostCard(props: {
   const { post, onPostClick } = props
   const [isLoading, setIsLoading] = useState(false)
   const isAdminOrMod = useAdminOrMod()
+  const currentUser = useUser()
 
   const handleSetUnlisted = async (e: React.MouseEvent<HTMLButtonElement>) => {
     e.preventDefault()
@@ -86,6 +90,30 @@ export function PostCard(props: {
       {/* Action button to make post unlisted */}
       {/* This button will appear for all users, API will enforce permissions */}
       <Row className="items-center gap-2 self-end">
+        <div
+          onClick={(e) => {
+            e.preventDefault()
+            e.stopPropagation()
+          }}
+          className="z-10"
+        >
+          <ReactButton
+            contentId={post.id}
+            contentCreatorId={post.creatorId}
+            user={currentUser}
+            contentType={'post'}
+            contentText={post.title}
+            trackingLocation={'post card'}
+            reactionType={'like'}
+            size={'xs'}
+            className={'z-10'}
+            userReactedWith={
+              currentUser && post.likedByUserIds?.includes(currentUser.id)
+                ? 'like'
+                : 'none'
+            }
+          />
+        </div>
         {isAdminOrMod && (
           <Button
             size="xs"

@@ -1516,6 +1516,8 @@ function UserLikeNotification(props: {
       your
       {sourceType === 'comment_like'
         ? ' comment ' + (isChildOfGroup ? '' : 'on ')
+        : sourceType === 'post_like'
+        ? ' post '
         : ' question '}
       {!isChildOfGroup && <QuestionOrGroupLink notification={notification} />}
       <MultiUserReactionModal

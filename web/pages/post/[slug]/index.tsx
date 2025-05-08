@@ -7,7 +7,7 @@ import {
 } from 'web/components/widgets/editor'
 import { EyeOffIcon, PencilIcon } from '@heroicons/react/solid'
 import { Button } from 'web/components/buttons/button'
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { Row } from 'web/components/layout/row'
 import { Col } from 'web/components/layout/col'
 import { ENV_CONFIG } from 'common/envs/constants'
@@ -31,19 +31,20 @@ import {
 import { ExpandingInput } from 'web/components/widgets/expanding-input'
 import { useAdminOrMod } from 'web/hooks/use-admin'
 import toast from 'react-hot-toast'
+import { ReactButton } from 'web/components/contract/react-button'
 
 export async function getStaticProps(props: { params: { slug: string } }) {
   const { slug } = props.params
 
-  const post = await getPostBySlug(slug)
-  const creator = post ? await getUserById(post.creatorId) : null
-  const comments = post ? await getCommentsOnPost(post.id) : []
+  const postData = await getPostBySlug(slug)
+  const creator = postData ? await getUserById(postData.creatorId) : null
+  const comments = postData ? await getCommentsOnPost(postData.id) : []
   const watched: string[] = []
   const skipped: string[] = []
 
   return {
     props: {
-      post,
+      post: postData,
       creator,
       comments,
       watched,
@@ -72,11 +73,46 @@ export default function PostPage(props: {
   const isAdminOrMod = useAdminOrMod()
   const [isVisibilityLoading, setIsVisibilityLoading] = useState(false)
   const [editing, setEditing] = useState(false)
+  const currentUser = useUser()
+
+  useEffect(() => {
+    setPost(props.post)
+  }, [props.post])
 
   if (!post || !creator) {
     return <Custom404 />
   }
   const shareUrl = `https://${ENV_CONFIG.domain}${postPath(post.slug)}`
+
+  const handleReact = () => {
+    if (!currentUser || !post) return
+    setPost((prevPost) => {
+      if (!prevPost) return null
+      const newLikedByUserIds = [
+        ...(prevPost.likedByUserIds ?? []),
+        currentUser.id,
+      ]
+      return {
+        ...prevPost,
+        likedByUserCount: (prevPost.likedByUserCount ?? 0) + 1,
+        likedByUserIds: newLikedByUserIds,
+      }
+    })
+  }
+
+  const handleUnreact = () => {
+    if (!currentUser || !post) return
+    setPost((prevPost) => {
+      if (!prevPost) return null
+      const newLikedByUserIds =
+        prevPost.likedByUserIds?.filter((id) => id !== currentUser.id) ?? []
+      return {
+        ...prevPost,
+        likedByUserCount: Math.max(0, (prevPost.likedByUserCount ?? 0) - 1),
+        likedByUserIds: newLikedByUserIds,
+      }
+    })
+  }
 
   const togglePostVisibility = async () => {
     if (!post) return
@@ -121,13 +157,33 @@ export default function PostPage(props: {
               {post.title}
             </div>
             <Row className="border-canvas-50 items-center justify-between border-b py-4">
-              <Row className="gap-2">
+              <Row className="items-center gap-2">
                 <UserAvatarAndBadge user={creator} />
                 <CopyLinkOrShareButton
                   tooltip="Copy link to post"
                   url={shareUrl}
                   eventTrackingName={'copy post link'}
                 />
+                {post && (
+                  <ReactButton
+                    contentId={post.id}
+                    contentCreatorId={post.creatorId}
+                    user={currentUser}
+                    contentType={'post'}
+                    contentText={post.title}
+                    trackingLocation={'post page'}
+                    reactionType={'like'}
+                    size={'sm'}
+                    userReactedWith={
+                      currentUser &&
+                      post.likedByUserIds?.includes(currentUser.id)
+                        ? 'like'
+                        : 'none'
+                    }
+                    onReact={handleReact}
+                    onUnreact={handleUnreact}
+                  />
+                )}
               </Row>
               <span className="text-ink-700">
                 {new Date(post.createdTime).toLocaleDateString('en-US', {
