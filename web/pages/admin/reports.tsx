@@ -20,6 +20,7 @@ import { api } from 'web/lib/api/api'
 import { getComment } from 'web/lib/supabase/comments'
 import { db } from 'web/lib/supabase/db'
 import { DisplayUser, getUserById } from 'web/lib/supabase/users'
+import { convertPost } from 'common/top-level-post'
 
 const PAGE_SIZE = 20
 
@@ -225,6 +226,26 @@ const convertReports = async (
           partialReport = {
             slug: `/${reportedUser?.username}`,
             text: reportedUser?.name ?? '',
+          }
+        } else if (contentType === 'post') {
+          const { data: postRow, error: postError } = await db
+            .from('old_posts')
+            .select('*')
+            .eq('id', contentId)
+            .single()
+
+          if (postError || !postRow) {
+            console.error(
+              `Error fetching post ${contentId} for report:`,
+              postError
+            )
+            partialReport = null
+          } else {
+            const post = convertPost(postRow)
+            partialReport = {
+              slug: `/post/${post.slug}`,
+              text: post.content,
+            }
           }
         }
 

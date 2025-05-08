@@ -37,6 +37,8 @@ import { getPostBySlug } from 'web/lib/supabase/posts'
 import { useSaveReferral } from 'web/hooks/use-save-referral'
 import DropdownMenu from 'web/components/widgets/dropdown-menu'
 import { BackButton } from 'web/components/contract/back-button'
+import { report as reportContent } from 'web/lib/api/api'
+import { IoWarning } from 'react-icons/io5'
 
 export async function getStaticProps(props: { params: { slug: string } }) {
   const { slug } = props.params
@@ -213,6 +215,24 @@ export default function PostPage(props: {
                               <EyeOffIcon className="h-5 w-5" />
                             ),
                           onClick: togglePostVisibility,
+                        },
+                        {
+                          name: 'Report',
+                          icon: <IoWarning className="h-5 w-5" />,
+                          onClick: async () => {
+                            await toast.promise(
+                              reportContent({
+                                contentId: post.id,
+                                contentType: 'post',
+                                contentOwnerId: post.creatorId,
+                              }),
+                              {
+                                loading: 'Reporting...',
+                                success: `Post reported! Admins will take a look within 24 hours.`,
+                                error: `Error reporting post`,
+                              }
+                            )
+                          },
                         },
                       ]}
                       buttonContent={<DotsHorizontalIcon className="h-5 w-5" />}
