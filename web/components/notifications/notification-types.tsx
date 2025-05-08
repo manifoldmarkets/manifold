@@ -1226,7 +1226,7 @@ function CommentNotification(props: {
     sourceUserUsername,
     reason,
     sourceText,
-    sourceContractTitle,
+    sourceTitle,
     markedAsRead,
   } = notification
 
@@ -1276,13 +1276,14 @@ function CommentNotification(props: {
         {reasonText}
         {!isChildOfGroup && (
           <span>
-            on <PrimaryNotificationLink text={sourceContractTitle} />
+            on <PrimaryNotificationLink text={sourceTitle} />
           </span>
         )}
       </div>
     </NotificationFrame>
   )
 }
+
 function BetReplyNotification(props: {
   notification: Notification
   highlighted: boolean
@@ -1382,8 +1383,9 @@ function TaggedUserNotification(props: {
   isChildOfGroup?: boolean
 }) {
   const { notification, isChildOfGroup, highlighted, setHighlighted } = props
-  const { sourceId, sourceUserName, sourceUserUsername, sourceContractTitle } =
+  const { sourceId, sourceUserName, sourceUserUsername, sourceTitle } =
     notification
+
   return (
     <NotificationFrame
       notification={notification}
@@ -1404,7 +1406,7 @@ function TaggedUserNotification(props: {
         tagged you{' '}
         {!isChildOfGroup && (
           <span>
-            on <PrimaryNotificationLink text={sourceContractTitle} />
+            on <PrimaryNotificationLink text={sourceTitle} />
           </span>
         )}
       </div>

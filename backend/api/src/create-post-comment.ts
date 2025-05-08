@@ -9,6 +9,9 @@ import { broadcastNewPostComment } from 'shared/websockets/helpers'
 import { nanoid } from 'common/util/random'
 import { isAdminId, isModId } from 'common/envs/constants'
 import { updateData } from 'shared/supabase/utils'
+import { compact } from 'lodash'
+import { parseMentions } from 'common/util/parse'
+import { createCommentOnPostNotification } from 'shared/notifications/create-new-contract-comment-notif'
 
 export const createPostComment: APIHandler<'create-post-comment'> = async (
   props,
@@ -67,7 +70,43 @@ export const createPostComment: APIHandler<'create-post-comment'> = async (
     }
     broadcastNewPostComment(post.id, post.visibility, creator, comment)
 
-    return { comment }
+    return {
+      result: { comment },
+      continue: async () => {
+        // Handle notifications
+        try {
+          let repliedUserId: string | undefined = undefined
+          if (comment.replyToCommentId) {
+            const repliedCommentData = await pg.oneOrNone<{
+              data: PostComment
+            }>(`SELECT data FROM old_post_comments WHERE comment_id = $1`, [
+              comment.replyToCommentId,
+            ])
+            if (repliedCommentData) {
+              repliedUserId = repliedCommentData.data.userId
+            }
+          }
+
+          const mentionedUserIds = compact(parseMentions(comment.content))
+
+          await createCommentOnPostNotification(
+            pg,
+            comment,
+            post,
+            creator,
+            repliedUserId,
+            mentionedUserIds
+          )
+        } catch (notificationError) {
+          log.error('Failed to send post comment notifications', {
+            error: notificationError,
+            postId: post.id,
+            commentId: comment.id,
+            creatorId: creator.id,
+          })
+        }
+      },
+    }
   } catch (error) {
     log.error('Failed to create post comment', {
       error,

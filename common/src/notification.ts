@@ -486,7 +486,12 @@ export function getSourceUrl(notification: Notification) {
     sourceContractSlug,
     sourceSlug,
     reason,
+    data,
   } = notification
+  const isCommentOnPost = data?.commentType === 'post'
+  if (isCommentOnPost) {
+    return `/post/${sourceSlug}#${sourceId}`
+  }
   if (
     sourceType === 'post' ||
     sourceType === 'post_like' ||
