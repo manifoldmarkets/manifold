@@ -37,6 +37,7 @@ import { Tooltip } from 'web/components/widgets/tooltip'
 import { copyToClipboard } from 'web/lib/util/copy'
 import { buildArray } from 'common/util/array'
 import { useAdminOrMod } from 'web/hooks/use-admin'
+import { ReactButton } from 'web/components/contract/react-button'
 
 const roundThreadColor = 'border-ink-100 dark:border-ink-200'
 
@@ -301,6 +302,18 @@ export function PostCommentItem(props: {
             optimisticallyHidden={optimisticallyHidden}
           />
           <Row className="text-ink-500 mt-2 w-full items-center justify-end gap-1 text-xs">
+            <ReactButton
+              contentId={comment.id}
+              contentCreatorId={comment.userId}
+              user={user}
+              contentType={'comment'}
+              reactionType={'like'}
+              contentText={`comment by ${comment.userName}`}
+              trackingLocation={'post comment item'}
+              size={'xs'}
+              className={'text-gray-500'}
+              postId={post.id}
+            />
             {onReplyClick && (
               <Tooltip text="Reply" placement="bottom">
                 <IconButton

@@ -1152,6 +1152,7 @@ export const API = (_apiTypeCheck = {
       .object({
         contentId: z.string(),
         contentType: z.enum(['comment', 'contract', 'post']),
+        commentParentType: z.enum(['post']).optional(),
         remove: z.boolean().optional(),
         reactionType: z.enum(['like', 'dislike']).optional().default('like'),
       })

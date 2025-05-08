@@ -61,6 +61,7 @@ export const filtersByQueryType: Record<string, FilterCallback<any>> = {
   'comment-reactions': reactionsFilter,
   'post-reactions': reactionsFilter,
   'contract-reactions': reactionsFilter,
+  'post-comment-likes': reactionsFilter,
   'contract-metrics': (data: string[], id: string) => data.includes(id),
   user: (data: DisplayUser[], id: string) =>
     data.find((item) => item.id === id),
@@ -84,6 +85,7 @@ export const useBatchedGetter = <T>(
     | 'contract-reactions'
     | 'post-reactions'
     | 'contract-metrics'
+    | 'post-comment-likes'
     | 'user'
     | 'users',
   id: string,

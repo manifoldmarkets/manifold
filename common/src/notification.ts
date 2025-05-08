@@ -84,6 +84,7 @@ export type notification_source_types =
   | 'new_message'
   | 'post'
   | 'post_like'
+  | 'post_comment_like'
   | love_notification_source_types
   | 'push_notification_bonus'
   | 'airdrop'
@@ -486,7 +487,11 @@ export function getSourceUrl(notification: Notification) {
     sourceSlug,
     reason,
   } = notification
-  if (sourceType === 'post' || sourceType === 'post_like') {
+  if (
+    sourceType === 'post' ||
+    sourceType === 'post_like' ||
+    sourceType === 'post_comment_like'
+  ) {
     return `/post/${sourceSlug}`
   }
   if (sourceType === 'weekly_portfolio_update')
@@ -528,6 +533,7 @@ export const ReactionNotificationTypes: Partial<notification_source_types>[] = [
   'comment_like',
   'contract_like',
   'post_like',
+  'post_comment_like',
 ]
 
 export const BalanceChangeNotificationTypes: NotificationReason[] = [

@@ -10,19 +10,56 @@ import { richTextToString } from 'common/util/parse'
 import { insertNotificationToSupabase } from 'shared/supabase/notifications'
 import { getCommentSafe } from 'shared/supabase/contract-comments'
 import { getPost } from 'shared/supabase/posts'
+import { APIError } from 'common/api/utils'
+import { PostComment } from 'common/comment'
 
-export const createLikeNotification = async (reaction: Reaction) => {
+export const createLikeNotification = async (
+  reaction: Reaction,
+  commentParentType?: 'post'
+) => {
   const { reaction_id, content_owner_id, user_id, content_id, content_type } =
     reaction
-
   const creatorPrivateUser = await getPrivateUser(content_owner_id)
   const user = await getUser(user_id)
   if (!creatorPrivateUser || !user) return
 
   const pg = createSupabaseDirectClient()
-  if (content_type === 'post') {
+  if (commentParentType === 'post') {
+    const comment = await pg.oneOrNone(
+      `SELECT data FROM old_post_comments WHERE comment_id = $1`,
+      [content_id],
+      (row) => row.data as PostComment
+    )
+    if (!comment) throw new APIError(404, 'Comment not found')
+    const post = await getPost(pg, comment.postId)
+    if (!post) throw new APIError(404, 'Post not found')
+    const { sendToBrowser } = getNotificationDestinationsForUser(
+      creatorPrivateUser,
+      'user_liked_your_content'
+    )
+
+    if (!sendToBrowser) return
+    const id = `${reaction.user_id}-${content_id}-like`
+    const notification: Notification = {
+      id,
+      userId: content_owner_id,
+      reason: 'user_liked_your_content',
+      createdTime: Date.now(),
+      isSeen: false,
+      sourceId: reaction_id,
+      sourceType: 'post_comment_like',
+      sourceUpdateType: 'created',
+      sourceUserName: user.name,
+      sourceUserUsername: user.username,
+      sourceUserAvatarUrl: user.avatarUrl,
+      sourceText: richTextToString(comment.content).slice(0, 200),
+      sourceSlug: post.slug + '#' + comment.id,
+      sourceTitle: post.title,
+    }
+    return await insertNotificationToSupabase(notification, pg)
+  } else if (content_type === 'post') {
     const post = await getPost(pg, content_id)
-    if (!post) return
+    if (!post) throw new APIError(404, 'Post not found')
     const { sendToBrowser } = getNotificationDestinationsForUser(
       creatorPrivateUser,
       'user_liked_your_content'

@@ -13,7 +13,6 @@ import useLongTouch from 'web/hooks/use-long-touch'
 import { useReactionsOnContent } from 'web/hooks/use-reactions'
 import { useUsers } from 'web/hooks/use-user-supabase'
 import { track } from 'web/lib/service/analytics'
-import { react, unreact } from 'web/lib/supabase/reactions'
 import { Col } from '../layout/col'
 import { Row } from '../layout/row'
 import {
@@ -25,6 +24,7 @@ import { Avatar } from '../widgets/avatar'
 import { LoadingIndicator } from '../widgets/loading-indicator'
 import { Tooltip } from '../widgets/tooltip'
 import { UserLink } from '../widgets/user-link'
+import { api } from 'web/lib/api/api'
 
 const LIKES_SHOWN = 3
 
@@ -43,6 +43,7 @@ export const ReactButton = memo(function ReactButton(props: {
   feedReason?: string
   contractId?: string
   commentId?: string
+  postId?: string
   heartClassName?: string
   userReactedWith?: 'like' | 'none'
   onReact?: () => void
@@ -62,6 +63,7 @@ export const ReactButton = memo(function ReactButton(props: {
     size,
     contractId,
     commentId,
+    postId,
     heartClassName,
     reactionType = 'like',
     userReactedWith,
@@ -104,7 +106,13 @@ export const ReactButton = memo(function ReactButton(props: {
     setReacted(shouldReact)
     if (shouldReact) {
       if (props.onReact) props.onReact()
-      await react(contentId, contentType, reactionType)
+      await api('react', {
+        remove: false,
+        contentId,
+        contentType,
+        reactionType,
+        commentParentType: postId ? 'post' : undefined,
+      })
 
       track(
         reactionType,
@@ -116,11 +124,18 @@ export const ReactButton = memo(function ReactButton(props: {
           commentId:
             commentId ?? (contentType === 'comment' ? contentId : undefined),
           feedReason,
+          postId: postId ?? (contentType === 'post' ? contentId : undefined),
         })
       )
     } else {
       if (props.onUnreact) props.onUnreact()
-      await unreact(contentId, contentType, reactionType)
+      await api('react', {
+        remove: true,
+        contentId,
+        contentType,
+        reactionType,
+        commentParentType: postId ? 'post' : undefined,
+      })
     }
   }
 

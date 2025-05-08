@@ -1509,12 +1509,16 @@ function UserLikeNotification(props: {
       }
       link={getSourceUrl(notification)}
       subtitle={
-        sourceType === 'comment_like' ? <Linkify text={sourceText} /> : <></>
+        sourceType === 'comment_like' || sourceType === 'post_comment_like' ? (
+          <Linkify text={sourceText} />
+        ) : (
+          <></>
+        )
       }
     >
       {reactorsText && <PrimaryNotificationLink text={reactorsText} />} liked
       your
-      {sourceType === 'comment_like'
+      {sourceType === 'comment_like' || sourceType === 'post_comment_like'
         ? ' comment ' + (isChildOfGroup ? '' : 'on ')
         : sourceType === 'post_like'
         ? ' post '
