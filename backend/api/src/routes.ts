@@ -184,6 +184,7 @@ import { getSeasonInfo } from './get-season-info'
 import { markNotificationRead } from './mark-all-notifications'
 import { createPostComment, updatePostComment } from './create-post-comment'
 import { createPost, updatePost } from './create-post'
+import { getPosts } from './get-posts'
 
 export const handlers: { [k in APIPath]: APIHandler<k> } = {
   'refresh-all-clients': refreshAllClients,
@@ -296,6 +297,7 @@ export const handlers: { [k in APIPath]: APIHandler<k> } = {
   'get-groups-with-top-contracts': getGroupsWithTopContracts,
   'get-balance-changes': getBalanceChanges,
   'get-partner-stats': getPartnerStats,
+  'get-posts': getPosts,
   'get-seen-market-ids': getSeenMarketIds,
   'record-contract-view': recordContractView,
   'get-dashboard-from-slug': getDashboardFromSlug,

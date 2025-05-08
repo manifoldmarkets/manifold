@@ -9,12 +9,15 @@ import { useUser } from 'web/hooks/use-user'
 import { track } from 'web/lib/service/analytics'
 import { buttonClass } from 'web/components/buttons/button'
 import Link from 'next/link'
-import { getAllPosts, useLatestPosts } from 'web/lib/supabase/posts'
+import { useLatestPosts } from 'web/lib/supabase/posts'
 import { useState } from 'react'
 import { Button } from 'web/components/buttons/button'
+import { unauthedApi } from 'common/util/api'
 
 export async function getStaticProps() {
-  const bestPosts = await getAllPosts('importance_score')
+  const bestPosts = await unauthedApi('get-posts', {
+    sortBy: 'importance_score',
+  })
   return {
     props: {
       bestPosts,

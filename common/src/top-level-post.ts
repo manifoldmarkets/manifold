@@ -34,6 +34,8 @@ export type TopLevelPost = {
   isAnnouncement?: boolean
   /** @deprecated - not deprecated, only updated in native column though*/
   importanceScore: number
+  /** @deprecated - not deprecated, only available via the get-posts endpoint*/
+  uniqueUsers?: number
 }
 
 export const convertPost = (sqlPost: Row<'old_posts'>) =>

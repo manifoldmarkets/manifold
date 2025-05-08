@@ -4,20 +4,7 @@ import { convertPost, TopLevelPost } from 'common/top-level-post'
 import { useState } from 'react'
 import { useEffect } from 'react'
 import { db } from './db'
-
-export async function getAllPosts(
-  sortBy: 'created_time' | 'importance_score' = 'created_time'
-) {
-  const { data } = await run(
-    db
-      .from('old_posts')
-      .select()
-      .eq('visibility', 'public')
-      .order(sortBy, { ascending: false } as any)
-      .limit(100)
-  )
-  return data.map(convertPost)
-}
+import { api } from '../api/api'
 
 export async function getPostsByUser(userId: string) {
   const { data } = await run(
@@ -43,7 +30,7 @@ export async function getPostBySlug(slug: string) {
 export const useLatestPosts = () => {
   const [latestPosts, setLatestPosts] = useState<TopLevelPost[]>([])
   useEffect(() => {
-    getAllPosts('created_time').then(setLatestPosts)
+    api('get-posts', { sortBy: 'created_time' }).then(setLatestPosts)
   }, [])
   return latestPosts
 }

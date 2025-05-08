@@ -5,19 +5,22 @@ import {
   TextEditor,
   useTextEditor,
 } from 'web/components/widgets/editor'
-import { EyeOffIcon, PencilIcon } from '@heroicons/react/solid'
+import {
+  EyeOffIcon,
+  PencilIcon,
+  DotsHorizontalIcon,
+} from '@heroicons/react/solid'
 import { Button } from 'web/components/buttons/button'
 import { useState, useEffect } from 'react'
 import { Row } from 'web/components/layout/row'
 import { Col } from 'web/components/layout/col'
-import { ENV_CONFIG } from 'common/envs/constants'
 import Custom404 from 'web/pages/404'
 import { UserAvatarAndBadge } from 'web/components/widgets/user-link'
 import { SEO } from 'web/components/SEO'
 import { richTextToString } from 'common/util/parse'
 import { CopyLinkOrShareButton } from 'web/components/buttons/copy-link-button'
 import { DisplayUser, getUserById } from 'web/lib/supabase/users'
-import { TopLevelPost } from 'common/src/top-level-post'
+import { getPostShareUrl, TopLevelPost } from 'common/src/top-level-post'
 import { useUser } from 'web/hooks/use-user'
 import { api } from 'web/lib/api/api'
 import { getCommentsOnPost } from 'web/lib/supabase/comments'
@@ -31,6 +34,8 @@ import { useAdminOrMod } from 'web/hooks/use-admin'
 import toast from 'react-hot-toast'
 import { ReactButton } from 'web/components/contract/react-button'
 import { getPostBySlug } from 'web/lib/supabase/posts'
+import { useSaveReferral } from 'web/hooks/use-save-referral'
+import DropdownMenu from 'web/components/widgets/dropdown-menu'
 
 export async function getStaticProps(props: { params: { slug: string } }) {
   const { slug } = props.params
@@ -70,9 +75,11 @@ export default function PostPage(props: {
   const comments = [...newComments, ...props.comments]
   const [post, setPost] = useState(props.post)
   const isAdminOrMod = useAdminOrMod()
-  const [isVisibilityLoading, setIsVisibilityLoading] = useState(false)
   const [editing, setEditing] = useState(false)
   const currentUser = useUser()
+  useSaveReferral(currentUser, {
+    defaultReferrerUsername: post?.creatorUsername,
+  })
 
   useEffect(() => {
     setPost(props.post)
@@ -81,7 +88,7 @@ export default function PostPage(props: {
   if (!post || !creator) {
     return <Custom404 />
   }
-  const shareUrl = `https://${ENV_CONFIG.domain}${postPath(post.slug)}`
+  const shareUrl = getPostShareUrl(post, currentUser?.username)
 
   const handleReact = () => {
     if (!currentUser || !post) return
@@ -115,7 +122,6 @@ export default function PostPage(props: {
 
   const togglePostVisibility = async () => {
     if (!post) return
-    setIsVisibilityLoading(true)
     const newVisibility = post.visibility === 'unlisted' ? 'public' : 'unlisted'
     try {
       await api('update-post', {
@@ -134,7 +140,6 @@ export default function PostPage(props: {
       console.error('Error updating post visibility:', error)
       toast.error('Failed to update post visibility.')
     } finally {
-      setIsVisibilityLoading(false)
     }
   }
 
@@ -149,12 +154,36 @@ export default function PostPage(props: {
       <Col className="mx-auto w-full max-w-2xl p-4">
         {!editing && (
           <Col>
-            <div className="border-canvas-50 border-b py-4 text-3xl font-bold">
-              {post.visibility === 'unlisted' && (
-                <EyeOffIcon className="h-4 w-4" />
+            <Row className="border-canvas-50 items-center justify-between gap-1 border-b py-4 text-3xl font-bold">
+              <span>
+                {post.title}{' '}
+                {post.visibility === 'unlisted' && (
+                  <EyeOffIcon className="inline-block h-4 w-4" />
+                )}
+              </span>
+              {isAdminOrMod && post && (
+                <DropdownMenu
+                  items={[
+                    {
+                      name:
+                        post.visibility === 'unlisted'
+                          ? 'Make Public'
+                          : 'Make Unlisted',
+                      icon:
+                        post.visibility === 'unlisted' ? (
+                          <EyeOffIcon className="h-5 w-5" />
+                        ) : (
+                          <EyeOffIcon className="h-5 w-5" />
+                        ),
+                      onClick: togglePostVisibility,
+                    },
+                  ]}
+                  buttonContent={<DotsHorizontalIcon className="h-5 w-5" />}
+                  buttonClass="p-2"
+                  menuWidth="w-40"
+                />
               )}
-              {post.title}
-            </div>
+            </Row>
             <Row className="border-canvas-50 items-center justify-between border-b py-4">
               <Row className="items-center gap-2">
                 <UserAvatarAndBadge user={creator} />
@@ -204,18 +233,6 @@ export default function PostPage(props: {
             />
           </div>
         </div>
-        <Row>
-          {isAdminOrMod && post && (
-            <Button
-              size="xs"
-              color={'gray-outline'}
-              onClick={togglePostVisibility}
-              loading={isVisibilityLoading}
-            >
-              {post.visibility === 'unlisted' ? 'Make Public' : 'Make Unlisted'}
-            </Button>
-          )}
-        </Row>
         <Spacer h={4} />
         <div className="rounded-lg px-6 py-4 sm:py-0">
           <PostCommentsActivity post={post} comments={comments} />
@@ -301,8 +318,4 @@ function RichEditPost(props: {
       )}
     </Col>
   )
-}
-
-function postPath(postSlug: string) {
-  return `/post/${postSlug}`
 }

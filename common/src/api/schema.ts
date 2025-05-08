@@ -1496,6 +1496,25 @@ export const API = (_apiTypeCheck = {
     cache: DEFAULT_CACHE_STRATEGY,
     returns: {} as Dashboard,
   },
+  'get-posts': {
+    method: 'GET',
+    visibility: 'public',
+    authed: false,
+    preferAuth: true,
+    cache: DEFAULT_CACHE_STRATEGY,
+    props: z
+      .object({
+        sortBy: z
+          .enum(['created_time', 'importance_score'])
+          .optional()
+          .default('created_time'),
+        term: z.string().optional(),
+        limit: z.coerce.number().gte(0).lte(200).default(100),
+        userId: z.string().optional(),
+      })
+      .strict(),
+    returns: [] as TopLevelPost[],
+  },
   'create-public-chat-message': {
     method: 'POST',
     visibility: 'undocumented',

@@ -21,17 +21,12 @@ import {
   getTotalPublicContractsCreated,
 } from 'web/lib/supabase/users'
 import { CreateQuestionButton } from '../buttons/create-question-button'
-import {
-  actionColumn,
-  probColumn,
-  traderColumn,
-} from '../contract/contract-table-col-formats'
-import { ContractsTable } from '../contract/contracts-table'
 import { UserReviews } from '../reviews/user-reviews'
 import { SearchInput } from '../search/search-input'
 import { InfoTooltip } from '../widgets/info-tooltip'
 import { LoadMoreUntilNotVisible } from 'web/components/widgets/visibility-observer'
 import { ContractFilters } from '../search/contract-filters'
+import { CombinedResults } from '../contract/combined-results'
 
 export function UserContractsList(props: {
   creator: User
@@ -58,8 +53,6 @@ export function UserContractsList(props: {
 
   const persistPrefix = `user-contracts-list-${creator.id}`
 
-  // Hoist search state up to this component so we can set filter to closed from red dot
-
   const [params, updateParams, isReady] = useSearchQueryState({
     defaultFilter: 'all',
     defaultSort: 'newest',
@@ -67,7 +60,7 @@ export function UserContractsList(props: {
     defaultSweepies: '2',
   })
 
-  const { contracts, loading, shouldLoadMore, loadMoreContracts } =
+  const { contracts, loading, shouldLoadMore, loadMoreContracts, posts } =
     useSearchResults({
       persistPrefix,
       searchParams: params,
@@ -165,12 +158,13 @@ export function UserContractsList(props: {
         />
       </Col>
       <Col className="w-full">
-        {!contracts ? (
+        {loading && !contracts && !posts ? (
           <LoadingContractResults />
-        ) : contracts.length === 0 ? (
+        ) : (!contracts || contracts.length === 0) &&
+          (!posts || posts.length === 0) ? (
           <>
             <div className="text-ink-700 mx-2 mt-3 text-center">
-              No questions found
+              No questions or posts found
             </div>
             {creator.id === user?.id && (
               <Row className={'mt-6 justify-center'}>
@@ -180,15 +174,11 @@ export function UserContractsList(props: {
           </>
         ) : (
           <>
-            <ContractsTable
-              hideAvatar
-              contracts={contracts}
-              columns={[
-                // tierColumn,
-                traderColumn,
-                probColumn,
-                actionColumn,
-              ]}
+            <CombinedResults
+              contracts={contracts ?? []}
+              posts={posts ?? []}
+              searchParams={params}
+              hideAvatars={true}
             />
             <LoadMoreUntilNotVisible loadMore={loadMoreContracts} />
             {shouldLoadMore && <LoadingContractResults />}
