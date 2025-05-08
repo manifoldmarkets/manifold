@@ -116,6 +116,7 @@ export const CONTRACT_TYPES = [
   { label: 'Bounty', value: 'BOUNTIED_QUESTION' },
   { label: 'Stock', value: 'STONK' },
   { label: 'Poll', value: 'POLL' },
+  { label: 'Posts', value: 'POSTS' },
 ] as const
 
 export const DEFAULT_SORT = 'score'
@@ -735,7 +736,7 @@ export const useSearchResults = (props: {
         isPrizeMarketString === '0' &&
         !liquidity &&
         hasBets === '0' &&
-        contractType === 'ALL' &&
+        (contractType === 'ALL' || contractType === 'POSTS') &&
         (filter === 'all' || filter === 'open') &&
         !gids.length
 
@@ -752,8 +753,28 @@ export const useSearchResults = (props: {
             }
           }, 500)
         }
-
+        const postApiParams: APIParams<'get-posts'> = {
+          sortBy: sort === 'score' ? 'importance_score' : 'created_time',
+          term: query,
+          limit: 10,
+          userId: additionalFilter?.creatorId,
+          offset: freshQuery ? 0 : state.posts?.length ?? 0,
+        }
         try {
+          if (contractType === 'POSTS') {
+            const posts = await api('get-posts', postApiParams)
+            const shouldLoadMore = posts.length === 10
+            setState({
+              contracts: [],
+              users: undefined,
+              topics: undefined,
+              posts: uniqBy(buildArray(state.posts, posts), 'id'),
+              shouldLoadMore,
+            })
+            clearTimeout(timeoutId)
+            setLoading(false)
+            return shouldLoadMore
+          }
           const searchPromises: Promise<any>[] = [
             api('search-markets-full', {
               term: query,
@@ -777,14 +798,6 @@ export const useSearchResults = (props: {
               hasBets,
             }),
           ]
-
-          const postApiParams: APIParams<'get-posts'> = {
-            sortBy: sort === 'score' ? 'importance_score' : 'created_time',
-            term: query,
-            limit: 10,
-            userId: additionalFilter?.creatorId,
-            offset: freshQuery ? 0 : state.posts?.length ?? 0,
-          }
 
           if (includeUsersAndTopics) {
             searchPromises.push(
