@@ -32,7 +32,6 @@ export default function PostsPage(props: { bestPosts: TopLevelPost[] }) {
   const [sortBy, setSortBy] = useState<'latest' | 'best'>('best')
   const latestPosts = useLatestPosts()
   const posts = sortBy === 'latest' ? latestPosts : bestPosts
-
   return (
     <Page trackPageView={'latest posts page'}>
       <Col className=" px-2 py-3">
