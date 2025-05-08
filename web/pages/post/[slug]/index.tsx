@@ -16,10 +16,8 @@ import { UserAvatarAndBadge } from 'web/components/widgets/user-link'
 import { SEO } from 'web/components/SEO'
 import { richTextToString } from 'common/util/parse'
 import { CopyLinkOrShareButton } from 'web/components/buttons/copy-link-button'
-import { run } from 'common/supabase/utils'
 import { DisplayUser, getUserById } from 'web/lib/supabase/users'
-import { db } from 'web/lib/supabase/db'
-import { convertPost, TopLevelPost } from 'common/src/top-level-post'
+import { TopLevelPost } from 'common/src/top-level-post'
 import { useUser } from 'web/hooks/use-user'
 import { api } from 'web/lib/api/api'
 import { getCommentsOnPost } from 'web/lib/supabase/comments'
@@ -32,6 +30,7 @@ import { ExpandingInput } from 'web/components/widgets/expanding-input'
 import { useAdminOrMod } from 'web/hooks/use-admin'
 import toast from 'react-hot-toast'
 import { ReactButton } from 'web/components/contract/react-button'
+import { getPostBySlug } from 'web/lib/supabase/posts'
 
 export async function getStaticProps(props: { params: { slug: string } }) {
   const { slug } = props.params
@@ -306,47 +305,4 @@ function RichEditPost(props: {
 
 function postPath(postSlug: string) {
   return `/post/${postSlug}`
-}
-
-async function getPostBySlug(slug: string) {
-  const { data } = await run(
-    db.from('old_posts').select().eq('data->>slug', slug)
-  )
-  if (data && data.length > 0) {
-    return convertPost(data[0])
-  }
-  return null
-}
-
-export async function getPost(postId: string) {
-  const { data } = await run(db.from('old_posts').select().eq('id', postId))
-  if (data && data.length > 0) {
-    return convertPost(data[0])
-  }
-  return null
-}
-
-export async function getAllPosts(
-  sortBy: 'created_time' | 'importance_score' = 'created_time'
-) {
-  const { data } = await run(
-    db
-      .from('old_posts')
-      .select()
-      .eq('visibility', 'public')
-      .order(sortBy, { ascending: false } as any)
-      .limit(100)
-  )
-  return data.map(convertPost)
-}
-
-export async function getPostsByUser(userId: string) {
-  const { data } = await run(
-    db
-      .from('old_posts')
-      .select()
-      .eq('creator_id', userId)
-      .order('created_time', { ascending: false } as any)
-  )
-  return data.map(convertPost)
 }

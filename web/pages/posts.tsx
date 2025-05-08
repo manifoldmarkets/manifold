@@ -9,8 +9,8 @@ import { useUser } from 'web/hooks/use-user'
 import { track } from 'web/lib/service/analytics'
 import { buttonClass } from 'web/components/buttons/button'
 import Link from 'next/link'
-import { getAllPosts } from './post/[slug]'
-import { useEffect, useState } from 'react'
+import { getAllPosts, useLatestPosts } from 'web/lib/supabase/posts'
+import { useState } from 'react'
 import { Button } from 'web/components/buttons/button'
 
 export async function getStaticProps() {
@@ -82,11 +82,4 @@ export function Posts(props: { posts: TopLevelPost[] }) {
       ))}
     </Col>
   )
-}
-const useLatestPosts = () => {
-  const [latestPosts, setLatestPosts] = useState<TopLevelPost[]>([])
-  useEffect(() => {
-    getAllPosts('created_time').then(setLatestPosts)
-  }, [])
-  return latestPosts
 }
