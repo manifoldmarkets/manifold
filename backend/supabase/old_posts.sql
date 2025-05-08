@@ -45,3 +45,11 @@ select
 drop index if exists posts_pkey;
 
 create unique index posts_pkey on public.old_posts using btree (id);
+
+create index idx_old_posts_creator_id on old_posts (creator_id, created_time desc);
+
+create index idx_old_posts_vis_created_time on old_posts (visibility, created_time desc);
+
+create index idx_old_posts_vis_importance_score on old_posts (visibility, importance_score desc);
+
+-- create index idx_old_posts_title_fts on old_posts using gin (to_tsvector('english', data ->> 'title'));
