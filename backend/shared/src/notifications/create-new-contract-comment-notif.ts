@@ -342,13 +342,11 @@ export const createCommentOnPostNotification = async (
       sourceUserUsername: commentCreator.username,
       sourceUserAvatarUrl: commentCreator.avatarUrl,
       sourceText: commentText,
-      sourceSlug: post.slug, // Post's slug
-      sourceTitle: postTitle, // Post's title
-      data: {
-        commentType: 'post',
+      sourceSlug: `post/${post.slug}#${comment.id}`,
+      sourceTitle: postTitle,
+      data: removeUndefinedProps({
         isReply: !!repliedUserId,
-        postId: post.id, // include postId for easier reference if needed
-      },
+      }),
     }) as Notification
   }
 
@@ -383,7 +381,7 @@ export const createCommentOnPostNotification = async (
       continue
     }
 
-    const { sendToBrowser, sendToEmail, sendToMobile, notificationPreference } =
+    const { sendToBrowser, sendToMobile, notificationPreference } =
       getNotificationDestinationsForUser(privateUser, reason)
 
     const receivedNotifications = usersToReceivedNotifications[userId] ?? []
@@ -408,29 +406,29 @@ export const createCommentOnPostNotification = async (
       receivedNotifications.push('mobile')
     }
 
-    if (sendToEmail && !receivedNotifications.includes('email')) {
-      const emailPostObject = {
-        question: postTitle,
-        slug: post.slug,
-        id: post.id,
-        creatorUsername: post.creatorUsername,
-      } as any
+    // if (sendToEmail && !receivedNotifications.includes('email')) {
+    //   const emailPostObject = {
+    //     question: postTitle,
+    //     slug: post.slug,
+    //     id: post.id,
+    //     creatorUsername: post.creatorUsername,
+    //   } as any
 
-      const email = getNewCommentEmail(
-        reason,
-        privateUser,
-        privateUser.name,
-        commentCreator,
-        emailPostObject,
-        commentText,
-        comment.id,
-        undefined
-      )
-      if (email) {
-        bulkEmails.push(email)
-      }
-      receivedNotifications.push('email')
-    }
+    //   const email = getNewCommentEmail(
+    //     reason,
+    //     privateUser,
+    //     privateUser.name,
+    //     commentCreator,
+    //     emailPostObject,
+    //     commentText,
+    //     comment.id,
+    //     undefined
+    //   )
+    //   if (email) {
+    //     bulkEmails.push(email)
+    //   }
+    //   receivedNotifications.push('email')
+    // }
     usersToReceivedNotifications[userId] = receivedNotifications
   }
 
