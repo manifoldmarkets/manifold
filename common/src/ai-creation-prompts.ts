@@ -1,5 +1,19 @@
 import { MONTH_MS } from './util/time'
 
+export const resolutionCriteriaPrompt = `
+CLEAR, EASY-TO-VERIFY RESOLUTION CRITERIA
+- Markets ideally have unambiguous resolution criteria
+- Ideally resolution criteria include sources that users can visit and easily see the outcome when it comes time to resolve the market
+- Include links to sources for resolution criteria, being as specific as possible, i.e. "Stock price of Tesla above $420 by x date" should include a link to https://www.marketwatch.com/investing/stock/tsla and not just https://www.marketwatch.com/
+- Prioritize resolution links that are easy for users to find their answer at
+- Avoid subjective or feeling-based outcomes unless prompted by the user
+- In the resolution criteria, include edge cases if they are particularly likely. Otherwise, the criteria should be concise and to the point, allowing the creator and traders to use common sense to resolve edge cases.
+- Avoid situations that resolve N/A, which cancels all trades because a precondition is not met
+- Markets do NOT resolve via 'votes'. If you can't come up with good, objective resollution criteria you have two options:
+1. Markets resolve to a poll that other users vote on. This is the preferred option and makes sense for subjective questions.
+2. Markets resolve to the user's opinion if their question title includes the first person, like which option will I prefer, or how will I feel about the event/news/thing.
+`
+
 export const guidelinesPrompt = `
 A prediction market is a contract that users can trade based on the likelihood of future events. 
 Users buy and sell shares based on their forecasts, with prices reflecting the crowd's collective prediction of how likely an event is to occur.
@@ -38,14 +52,7 @@ QUICK RESOLUTION (unless otherwise specified by the user)
 - When possible, include markets with known, upcoming resolution dates, i.e. elections, sports events, sentencing/court dates, etc. as long as they are not too far in the future.
 - Be sure to include 'before [date]' or 'on [event]' in the title
 
-CLEAR, EASY-TO-VERIFY RESOLUTION CRITERIA
-- Markets should have unambiguous outcomes
-- Ideally suggestions should include sources that users can visit and easily see the outcome when it comes time to resolve the market
-- Use specific resolution criteria and trusted sources when crafting the market suggestions
-- Include links to sources for resolution criteria, being as specific as possible, i.e. "Stock price of Tesla above $420 by x date" should include a link to https://www.marketwatch.com/investing/stock/tsla and not just https://www.marketwatch.com/
-- Prioritize resolution source links that are easy for users to find their answer at
-- Avoid subjective or feeling-based outcomes unless prompted by the user
-- Avoid situations that resolve N/A, which cancels all trades because a precondition is not met
+${resolutionCriteriaPrompt}
 
 MULTIPLE CHOICE MARKETS
 - If a market is about a number, range of dates, or other options, include an answers array that includes reasonable options based on the news article/surrounding context.
@@ -56,10 +63,6 @@ PERSONAL QUESTIONS
   - "POLL" outcomes require an answers array for users to vote on, and resolve automatically on the close date based on votes, rather than trades.
 - If a question is about events closely related to the user, the question and description should be worded from the creator's point of view, i.e. 'I move to Colorado by August 1st 2025', 'I get a new job by December 31st 2025', etc.
 - Personal questions may still be markets (i.e. non-POLL outcomes) if they have clear resolution criteria and are not based on opinions.
-
-Following each market suggestion, add a "Reasoning:" section that addresses the following points:
-1. A clear explanation of why this market follows from the user's prompt and related source material
-2. Why it's a good prediction market (e.g., has clear resolution criteria, neither a yes nor no outcome is overwhelmingly likely, etc. from above)
 `
 
 export const multiChoiceOutcomeTypeDescriptions = `
