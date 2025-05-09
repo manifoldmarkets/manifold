@@ -536,25 +536,13 @@ export async function calculatePostImportanceScore(
     const likesToday = dailyPostLikeCounts[postId] ?? 0
     const likesWeek = weeklyPostLikeCounts[postId] ?? 0 // This is total for the week up to 'weekAgo'
 
-    // Simplified scoring logic for posts
-    // Weights can be adjusted. Normalization max value can be tuned.
     const todayActivity = commentsToday + likesToday
-    // Activity for the whole week (including today)
-    // For weekly counts, we should query for all comments/likes in the last week,
-    // not just those from 'weekAgo' up to 'dayAgo'.
-    // The current getPostCommentCounts(pg, weekAgo) gets everything *since* weekAgo.
+
     const weekActivityTotal = commentsWeek + likesWeek
 
-    // Let's define a score based on a mix of today's and week's activity
-    // Example: todayActivity is more heavily weighted.
-    // A simple sum for now, which can be refined.
     const rawScore = todayActivity * 2 + weekActivityTotal
 
-    // Normalize the score (e.g., 0 to 1 range)
-    // Max raw score needs estimation based on typical activity.
-    // If a very active post gets ~10 interactions (likes+comments) today, and ~50 in a week:
-    // (10*2) + 50 = 20 + 50 = 70.
-    const newImportanceScore = normalize(rawScore, 70)
+    const newImportanceScore = normalize(rawScore, 100)
 
     // Only update if the score has changed significantly
     const epsilon = 0.01
