@@ -2466,6 +2466,7 @@ export type Database = {
           parent_id: string | null
           parent_type: string | null
           user_id: string
+          dismissed_by_user_id: string | null
         }
         Insert: {
           content_id: string
@@ -2477,6 +2478,7 @@ export type Database = {
           parent_id?: string | null
           parent_type?: string | null
           user_id: string
+          dismissed_by_user_id?: string | null
         }
         Update: {
           content_id?: string
@@ -2488,6 +2490,7 @@ export type Database = {
           parent_id?: string | null
           parent_type?: string | null
           user_id?: string
+          dismissed_by_user_id?: string | null
         }
         Relationships: [
           {

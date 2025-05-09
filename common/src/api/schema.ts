@@ -2419,6 +2419,17 @@ export const API = (_apiTypeCheck = {
       })
       .strict(),
   },
+  'dismiss-user-report': {
+    method: 'POST',
+    visibility: 'public',
+    authed: true,
+    props: z
+      .object({
+        reportId: z.string(),
+      })
+      .strict(),
+    returns: {} as { success: boolean },
+  },
   'create-post': {
     method: 'POST',
     visibility: 'public',
@@ -2429,7 +2440,7 @@ export const API = (_apiTypeCheck = {
         title: z.string().min(1).max(120),
         content: contentSchema,
         isAnnouncement: z.boolean().optional(),
-        visibility: z.enum(['public', 'unlisted']).optional(), 
+        visibility: z.enum(['public', 'unlisted']).optional(),
       })
       .strict(),
   },
@@ -2469,7 +2480,7 @@ export const API = (_apiTypeCheck = {
       .object({
         commentId: z.string(),
         postId: z.string(),
-        hidden: z.boolean(),
+        hidden: z.boolean().optional(),
       })
       .strict(),
   },

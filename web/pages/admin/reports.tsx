@@ -145,6 +145,7 @@ export const getReports = async (p: {
   const q = db
     .from('reports')
     .select()
+    .is('dismissed_by_user_id', null)
     .order('created_time', { ascending: false })
 
   if (p.offset) {
