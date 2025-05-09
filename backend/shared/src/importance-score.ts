@@ -554,7 +554,7 @@ export async function calculatePostImportanceScore(
     // Max raw score needs estimation based on typical activity.
     // If a very active post gets ~10 interactions (likes+comments) today, and ~50 in a week:
     // (10*2) + 50 = 20 + 50 = 70.
-    const newImportanceScore = normalize(rawScore, 100) // Using existing normalize function
+    const newImportanceScore = normalize(rawScore, 70)
 
     // Only update if the score has changed significantly
     const epsilon = 0.01
