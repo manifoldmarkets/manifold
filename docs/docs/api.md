@@ -190,7 +190,6 @@ Parameters:
 - `userId`: The ID of the user.
 
 Response type: `LivePortfolioMetrics`
-_Note: The `LivePortfolioMetrics` type definition should be added here._
 
 ```tsx
 type PortfolioMetrics = {
@@ -224,23 +223,6 @@ Parameters:
 - `period`: The time period for the portfolio history. Enum values: 'daily', 'weekly', 'monthly', 'allTime'.
 
 Response type: Array of `PortfolioMetrics`
-_Note: The `PortfolioMetrics` type definition should be added here._
-
-```tsx
-type PortfolioMetrics = {
-  investmentValue: number
-  cashInvestmentValue: number
-  balance: number
-  cashBalance: number
-  spiceBalance: number
-  totalDeposits: number
-  totalCashDeposits: number
-  loanTotal: number
-  timestamp: number // Unix timestamp in milliseconds
-  profit?: number
-  userId: string
-}
-```
 
 ### `GET /v0/groups`
 
