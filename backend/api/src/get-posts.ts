@@ -24,7 +24,8 @@ export const getPosts: APIHandler<'get-posts'> = async (props, auth) => {
     from('old_posts op'),
     leftJoin('old_post_comments opc on op.id = opc.post_id'),
     leftJoin('user_reactions r on op.id = r.content_id'),
-    userId !== requester && where(`op.visibility = 'public'`),
+    (userId !== requester || !requester) && where(`op.visibility = 'public'`),
+    where(`op.group_id is null`),
     userId && where(`op.creator_id = $1`),
     term &&
       term.trim().length > 0 &&
@@ -38,7 +39,6 @@ export const getPosts: APIHandler<'get-posts'> = async (props, auth) => {
 
   const query = renderSql(...sqlParts)
   const data = await pg.manyOrNone(query, [userId, term])
-
   return data.map((d) => ({
     ...convertPost(d),
     reactionCount: d.reaction_count,
