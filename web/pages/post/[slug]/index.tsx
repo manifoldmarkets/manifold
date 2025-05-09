@@ -57,8 +57,6 @@ export async function getStaticProps(props: { params: { slug: string } }) {
       watched,
       skipped,
     },
-
-    revalidate: 60, // regenerate after a minute
   }
 }
 

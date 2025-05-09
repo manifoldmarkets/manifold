@@ -1,7 +1,7 @@
 import { APIError, APIHandler } from './helpers/endpoint'
 import { PostComment } from 'common/comment'
 import { createSupabaseDirectClient } from 'shared/supabase/init'
-import { getUser, getPrivateUser } from 'shared/utils'
+import { getUser, getPrivateUser, revalidateStaticProps } from 'shared/utils'
 import { getPost } from 'shared/supabase/posts'
 import { removeUndefinedProps } from 'common/util/object'
 import { log } from 'shared/monitoring/log'
@@ -12,6 +12,7 @@ import { updateData } from 'shared/supabase/utils'
 import { compact } from 'lodash'
 import { parseMentions } from 'common/util/parse'
 import { createCommentOnPostNotification } from 'shared/notifications/create-new-contract-comment-notif'
+import { TopLevelPost } from 'common/top-level-post'
 
 export const createPostComment: APIHandler<'create-post-comment'> = async (
   props,
@@ -73,6 +74,7 @@ export const createPostComment: APIHandler<'create-post-comment'> = async (
     return {
       result: { comment },
       continue: async () => {
+        await revalidatePost(post)
         // Handle notifications
         try {
           let repliedUserId: string | undefined = undefined
@@ -143,4 +145,10 @@ export const updatePostComment: APIHandler<'update-post-comment'> = async (
       hidden,
     },
   }
+}
+
+export const revalidatePost = async (post: TopLevelPost) => {
+  // Revalidate the post page
+  const path = `/post/${post.slug}`
+  revalidateStaticProps(path)
 }

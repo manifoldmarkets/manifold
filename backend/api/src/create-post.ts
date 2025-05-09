@@ -74,6 +74,7 @@ import { updateData } from 'shared/supabase/utils'
 import { isAdminId, isModId } from 'common/envs/constants'
 import { getPost } from 'shared/supabase/posts'
 import { NEW_MARKET_IMPORTANCE_SCORE } from 'common/new-contract'
+import { revalidatePost } from './create-post-comment'
 
 export const updatePost: APIHandler<'update-post'> = async (props, auth) => {
   const { id, title, content, visibility } = props
@@ -120,5 +121,6 @@ export const updatePost: APIHandler<'update-post'> = async (props, auth) => {
 
   const updatePayload = removeUndefinedProps({ id, ...newData })
   const updatedPost = await updateData(pg, 'old_posts', 'id', updatePayload)
+  await revalidatePost(post)
   return { post: convertPost(updatedPost) }
 }

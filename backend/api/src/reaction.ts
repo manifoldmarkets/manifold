@@ -3,6 +3,8 @@ import { createLikeNotification } from 'shared/notifications/create-new-like-not
 import { createSupabaseDirectClient } from 'shared/supabase/init'
 import { log } from 'shared/utils'
 import { APIError, APIHandler } from './helpers/endpoint'
+import { revalidatePost } from './create-post-comment'
+import { getPost } from 'shared/supabase/posts'
 
 export const addOrRemoveReaction: APIHandler<'react'> = async (props, auth) => {
   const {
@@ -104,6 +106,12 @@ export const addOrRemoveReaction: APIHandler<'react'> = async (props, auth) => {
   return {
     result: { success: true },
     continue: async () => {
+      if (contentType === 'post') {
+        const post = await getPost(pg, contentId)
+        if (post) {
+          await revalidatePost(post)
+        }
+      }
       if (contentType === 'comment' && commentParentType !== 'post') {
         const likeCount = await pg.one(
           `select count(*) from user_reactions
