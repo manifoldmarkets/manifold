@@ -51,24 +51,11 @@ export function CombinedResults(props: CombinedResultsProps) {
 
   const sort = searchParams[SORT_KEY]
   let combinedItems: (Contract | TopLevelPost)[] = []
-
-  if (sort === 'newest') {
-    combinedItems = sortBy(
-      [...contracts, ...posts],
-      (item) => item.createdTime
-    ).reverse()
-  } else if (sort === 'score') {
-    const itemsWithScores = [...contracts, ...posts].map((item) => {
-      return { item, score: item.importanceScore ?? -Infinity }
-    })
-    combinedItems = sortBy(itemsWithScores, (obj) => obj.score)
-      .reverse()
-      .map((obj) => obj.item)
-  } else {
-    // For other sorts, just show contracts, then posts by createdTime
-    combinedItems = [...sortBy(contracts, (c) => c.createdTime).reverse()]
-    combinedItems.push(...sortBy(posts, (p) => p.createdTime).reverse())
-  }
+  combinedItems = sortBy([...contracts, ...posts], (item) => {
+    if (sort === 'newest') return -item.createdTime
+    if (sort === 'score') return -item.importanceScore
+    return 0
+  })
 
   if (!combinedItems.length) return null
 

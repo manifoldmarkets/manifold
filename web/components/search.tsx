@@ -597,8 +597,7 @@ export function Search(props: SearchProps) {
         emptyContractsState
       ) : (
         <>
-          {(contracts && contracts.length > 0) ||
-          (posts && posts.length > 0) ? (
+          {contracts || posts ? (
             <CombinedResults
               contracts={contracts ?? []}
               posts={posts ?? []}
@@ -728,7 +727,7 @@ export const useSearchResults = (props: {
         hb: hasBets,
       } = searchParams
 
-      const shouldSearchPosts =
+      const shouldSearchPostsWithContracts =
         (sort === 'score' || sort === 'newest') &&
         (!contractsOnly || !!state.posts?.length) &&
         !topicSlug &&
@@ -738,7 +737,9 @@ export const useSearchResults = (props: {
         hasBets === '0' &&
         (contractType === 'ALL' || contractType === 'POSTS') &&
         (filter === 'all' || filter === 'open') &&
-        !gids.length
+        !gids.length &&
+        // There aren't that many posts, so we don't need to wait up for them
+        (state.posts?.length ?? 0) < 20
 
       const includeUsersAndTopics =
         !contractsOnly && props.includeUsersAndTopics
@@ -808,10 +809,8 @@ export const useSearchResults = (props: {
                 type: 'lite',
               })
             )
-            if (shouldSearchPosts) {
-              searchPromises.push(api('get-posts', postApiParams))
-            }
-          } else if (shouldSearchPosts || additionalFilter?.creatorId) {
+          }
+          if (shouldSearchPostsWithContracts) {
             searchPromises.push(api('get-posts', postApiParams))
           }
 
@@ -828,7 +827,7 @@ export const useSearchResults = (props: {
               : undefined
 
             const newPostsResults =
-              (shouldSearchPosts || additionalFilter?.creatorId) &&
+              shouldSearchPostsWithContracts &&
               results.length >= postResultIndex
                 ? (results[postResultIndex] as TopLevelPost[])
                 : undefined
