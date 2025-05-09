@@ -3,7 +3,6 @@ import { APIError, getCloudRunServiceUrl } from 'common/api/utils'
 import {
   Contract,
   contractPath,
-  isSpecialLoveContract,
   nativeContractColumnsArray,
   MarketContract,
 } from 'common/contract'
@@ -146,19 +145,18 @@ export const getContract = async (
 export const getContractAndMetricsAndLiquidities = async (
   pg: SupabaseTransaction,
   unresolvedContract: MarketContract,
-  answerId: string | undefined
 ) => {
   const { id: contractId, mechanism } = unresolvedContract
   const isMulti = mechanism === 'cpmm-multi-1'
   const sumsToOne = isMulti && unresolvedContract.shouldAnswersSumToOne
   const metricsQuery = sumsToOne
     ? `
-     select data from user_contract_metrics 
+     select data from user_contract_metrics
      where contract_id = $1 and
      answer_id is not null`
     : isMulti
     ? `
-    select data from user_contract_metrics 
+    select data from user_contract_metrics
       where contract_id = $1
       and (answer_id = $2 or (
             -- Only get summary metric if they've bet on the answer
@@ -171,16 +169,13 @@ export const getContractAndMetricsAndLiquidities = async (
             )
           )`
     : `select data from user_contract_metrics where contract_id = $1`
-  // Filter out initial liquidity if set up with special liquidity per answer.
-  const filterAnte = isMulti && isSpecialLoveContract(unresolvedContract)
+
   const results = await pg.multi(
     `select ${contractColumnsToSelect} from contracts where id = $1;
      select * from answers where contract_id = $1 order by index;
      ${metricsQuery};
-     select * from contract_liquidity where contract_id = $1 ${
-       filterAnte ? `and data->>'answerId' = $2` : ''
-     };`,
-    [contractId, answerId]
+     select * from contract_liquidity where contract_id = $1`,
+    [contractId]
   )
 
   const contract = first(results[0].map(convertContract)) as MarketContract

@@ -17,7 +17,6 @@ import { boostmarket } from './boost-market'
 import { redeemboost } from './redeem-market-ad-reward'
 import { followtopic } from './follow-topic'
 import { editcomment } from 'api/edit-comment'
-
 import { leagueActivity } from './league-activity'
 import { updategroup } from './update-group'
 import { updateUserDisinterestEmbedding } from 'api/update-user-disinterests'
@@ -41,16 +40,9 @@ import { getdashboardfromslug } from './get-dashboard-from-slug'
 import { banuser } from 'api/ban-user'
 import { createprivateusermessage } from 'api/create-private-user-message'
 import { createprivateusermessagechannel } from 'api/create-private-user-message-channel'
-import { createlover } from 'api/love/create-lover'
-import { updatelover } from 'api/love/update-lover'
-import { createcommentonlover } from 'api/love/create-comment-on-lover'
-import { hidecommentonlover } from 'api/love/hide-comment-on-lover'
-import { searchlocation } from './search-location'
-import { searchnearcity } from './search-near-city'
 import { leaveprivateusermessagechannel } from 'api/leave-private-user-message-channel'
 import { updateprivateusermessagechannel } from 'api/update-private-user-message-channel'
 import { editanswercpmm } from 'api/edit-answer'
-import { createlovecompatibilityquestion } from 'api/love/create-love-compatibility-question'
 import { createchartannotation } from 'api/create-chart-annotation'
 import { deletechartannotation } from 'api/delete-chart-annotation'
 
@@ -146,16 +138,6 @@ export const addOldRoutes = (app: express.Application) => {
   app.post(
     '/update-private-user-message-channel',
     ...apiRoute(updateprivateusermessagechannel)
-  )
-  app.post('/create-lover', ...apiRoute(createlover))
-  app.post('/update-lover', ...apiRoute(updatelover))
-  app.post('/create-comment-on-lover', ...apiRoute(createcommentonlover))
-  app.post('/hide-comment-on-lover', ...apiRoute(hidecommentonlover))
-  app.post('/searchlocation', ...apiRoute(searchlocation))
-  app.post('/searchnearcity', ...apiRoute(searchnearcity))
-  app.post(
-    '/createlovecompatibilityquestion',
-    ...apiRoute(createlovecompatibilityquestion)
   )
   app.post('/create-chart-annotation', ...apiRoute(createchartannotation))
   app.post('/delete-chart-annotation', ...apiRoute(deletechartannotation))
