@@ -135,7 +135,6 @@ import { getMarketsByIds } from './get-markets'
 import { getTopicTopics } from './get-topic-topics'
 import { getTopicDashboards } from './get-topic-dashboards'
 import { generateAIMarketSuggestions } from './generate-ai-market-suggestions'
-import { generateAIMarketSuggestions2 } from './generate-ai-market-suggestions-2'
 import { generateAIDescription } from './generate-ai-description'
 import { generateAIAnswers } from './generate-ai-answers'
 import { getmonthlybets2024 } from './get-monthly-bets-2024'
@@ -342,7 +341,6 @@ export const handlers: { [k in APIPath]: APIHandler<k> } = {
   leaderboard: getLeaderboard,
   'get-daily-changed-metrics-and-contracts': getDailyChangedMetricsAndContracts,
   'generate-ai-market-suggestions': generateAIMarketSuggestions,
-  'generate-ai-market-suggestions-2': generateAIMarketSuggestions2,
   'generate-ai-description': generateAIDescription,
   'generate-ai-answers': generateAIAnswers,
   'get-monthly-bets-2024': getmonthlybets2024,

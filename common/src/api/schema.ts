@@ -1925,18 +1925,6 @@ export const API = (_apiTypeCheck = {
       })
       .strict(),
   },
-  'generate-ai-market-suggestions-2': {
-    method: 'POST',
-    visibility: 'public',
-    authed: true,
-    returns: [] as AIGeneratedMarket[],
-    props: z
-      .object({
-        prompt: z.string(),
-        existingTitles: z.array(z.string()).optional(),
-      })
-      .strict(),
-  },
   'generate-ai-description': {
     method: 'POST',
     visibility: 'public',
