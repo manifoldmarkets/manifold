@@ -486,9 +486,17 @@ export async function calculatePostImportanceScore(
   const weekAgo = now - WEEK_MS
 
   const posts = await pg.map(
-    `SELECT id, data, importance_score FROM old_posts
-            where visibility = 'public'
-            and created_time > now() - interval '1 month'`,
+    `SELECT DISTINCT p.id, p.data, p.importance_score
+     FROM old_posts p
+     LEFT JOIN old_post_comments c ON p.id = c.post_id
+     LEFT JOIN user_reactions r ON p.id = r.content_id AND r.content_type = 'post'
+     WHERE p.visibility = 'public'
+       AND (
+         p.created_time > now() - interval '1 month' OR
+         c.created_time > now() - interval '1 month' OR
+         r.created_time > now() - interval '1 month'
+       )
+    `,
     [],
     convertPost
   )
@@ -546,7 +554,7 @@ export async function calculatePostImportanceScore(
     // Max raw score needs estimation based on typical activity.
     // If a very active post gets ~10 interactions (likes+comments) today, and ~50 in a week:
     // (10*2) + 50 = 20 + 50 = 70.
-    const newImportanceScore = normalize(rawScore, 50) // Using existing normalize function
+    const newImportanceScore = normalize(rawScore, 100) // Using existing normalize function
 
     // Only update if the score has changed significantly
     const epsilon = 0.01
