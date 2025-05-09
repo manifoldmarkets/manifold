@@ -155,11 +155,11 @@ export function NewContractPanel(props: {
               color="none"
               onClick={() => Router.push('/create-post')}
             >
-              <Row className="w-full items-center justify-start gap-6">
-                <DocumentTextIcon className="h-12 w-12 text-cyan-600" />
+              <Row className="w-full justify-start gap-4">
+                <DocumentTextIcon className="h-14 w-14 self-center text-cyan-600" />
                 <Col className="w-full items-start gap-0.5">
-                  <div className="py-0.5 font-semibold sm:text-lg">Post</div>
-                  <span className="text-ink-700 text-sm italic ">
+                  <div className="font-semibold sm:text-lg">Post</div>
+                  <span className=" text-left text-sm  ">
                     Share groups of markets, updates, ideas, or stories with the
                     community.
                   </span>
