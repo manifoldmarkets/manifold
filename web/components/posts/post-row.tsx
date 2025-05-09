@@ -39,7 +39,7 @@ export function PostRow(props: {
             : 'hover:bg-primary-100 focus-visible:bg-primary-100 active:bg-primary-100'
         )}
       >
-        <Row className="w-full items-start justify-between gap-2">
+        <Col className=" w-full items-start gap-1 sm:flex-row sm:items-start sm:justify-between sm:gap-0">
           <Col className="w-full">
             <Row className="items-center gap-2 sm:gap-4">
               {!hideAvatar && (
@@ -58,7 +58,7 @@ export function PostRow(props: {
                 )}
                 <span
                   className={clsx(
-                    'line-clamp-1',
+                    'line-clamp-3',
                     post.visibility === 'unlisted' && 'text-ink-500'
                   )}
                 >
@@ -82,8 +82,7 @@ export function PostRow(props: {
             <div className="w-12 text-cyan-600">POST</div>
             <div className="invisible w-12"></div>
           </Row>
-        </Row>
-        {/* Optionally display post content snippet or other details here */}
+        </Col>
       </Link>
     </Col>
   )
