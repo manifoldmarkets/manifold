@@ -699,18 +699,18 @@ function CapabilityCard({
               <div className="w-[38%] text-center">
                 {topCompanies[0].text ? (
                   <div className="flex flex-col items-center">
-                    <div className="text-primary-600 mb-1 flex h-14 w-14 items-center justify-center sm:mb-2 sm:h-16 sm:w-16">
+                    <div className="text-primary-700 mb-1 flex h-14 w-14 items-center justify-center sm:mb-2 sm:h-16 sm:w-16">
                       <AIModelIcon
                         title={topCompanies[0].text}
                         className="h-12 w-12 sm:h-14 sm:w-14"
                       />
                     </div>
-                    <div className="text-primary-600 text-lg font-bold sm:text-2xl">
+                    <div className="text-primary-700 text-lg font-bold sm:text-2xl">
                       {topCompanies[0].text}
                     </div>
                   </div>
                 ) : (
-                  <div className="text-primary-600 truncate text-lg font-bold sm:text-2xl">
+                  <div className="text-primary-700 truncate text-lg font-bold sm:text-2xl">
                     {topCompanies[0].text}
                   </div>
                 )}
@@ -776,18 +776,18 @@ function CapabilityCard({
                 <div className="text-center">
                   {topModel.text ? (
                     <div className="flex flex-col items-center">
-                      <div className="text-primary-600 mb-1 flex h-14 w-14 items-center justify-center">
+                      <div className="text-primary-700 mb-1 flex h-14 w-14 items-center justify-center">
                         <AIModelIcon
                           title={topModel.text}
                           className="h-12 w-12"
                         />
                       </div>
-                      <div className="text-primary-600 text-lg font-bold sm:text-xl">
+                      <div className="text-primary-700 text-lg font-bold sm:text-xl">
                         {topModel.text}
                       </div>
                     </div>
                   ) : (
-                    <div className="ttext-primary-600 truncate text-2xl font-bold sm:text-3xl">
+                    <div className="ttext-primary-700 truncate text-2xl font-bold sm:text-3xl">
                       {topModel.text}
                     </div>
                   )}
@@ -1148,7 +1148,7 @@ function FeaturedMarketGraph({ contract }: FeaturedGraphProps) {
       <Row className="justify-between">
         <Link
           href={contractPath(contract)}
-          className="hover:text-primary-600 grow items-start font-semibold transition-colors hover:underline sm:text-lg"
+          className="hover:text-primary-700 grow items-start font-semibold transition-colors hover:underline sm:text-lg"
         >
           {contract.question}
         </Link>
@@ -1290,7 +1290,7 @@ export function AIForecast({
   return (
     <Col className="mb-8 gap-2 px-1 sm:gap-3 sm:px-4 sm:pt-8">
       <Col className={hideTitle ? 'hidden' : ''}>
-        <div className="text-primary-600 text-2xl font-normal sm:text-3xl">
+        <div className="text-primary-700 text-2xl font-normal sm:text-3xl">
           Manifold AI Dashboard
         </div>
       </Col>
@@ -1309,7 +1309,7 @@ export function AIForecast({
             type === 'benchmark' && (
               <>
                 <div className="mx-auto my-8 h-px w-3/4 bg-gray-200 dark:bg-gray-700"></div>
-                <h2 className="text-primary-600 mb-2 text-xl font-semibold sm:text-2xl">
+                <h2 className="text-primary-700 mb-2 text-xl font-semibold sm:text-2xl">
                   Predictions for 2025
                 </h2>
               </>
@@ -1319,7 +1319,7 @@ export function AIForecast({
           {orderedSections[index - 1] === 'misuse' && type === 'prize' && (
             <>
               <div className="mx-auto my-8 h-px w-full max-w-4xl bg-gray-200 dark:bg-gray-700"></div>
-              <h2 className="text-primary-600 mb-2 text-xl font-semibold sm:text-2xl">
+              <h2 className="text-primary-700 mb-2 text-xl font-semibold sm:text-2xl">
                 Long Term Predictions
               </h2>
             </>
@@ -1382,7 +1382,7 @@ export function AIForecast({
             <Row className="justify-between">
               <Link
                 href={contractPath(liveWhenAgi)}
-                className="hover:text-primary-600 grow items-start font-semibold transition-colors hover:underline sm:text-lg"
+                className="hover:text-primary-700 grow items-start font-semibold transition-colors hover:underline sm:text-lg"
               >
                 When will we achieve artificial general intelligence?
               </Link>
