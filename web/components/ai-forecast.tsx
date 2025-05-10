@@ -105,9 +105,9 @@ export type AICapabilityCard = {
 export const AI_CAPABILITY_CARDS: AICapabilityCard[] = [
   // Monthly markets
   {
-    title: 'Best Chatbot Arena Model in April',
+    title: 'Best Chatbot Arena Model in May',
     description: 'Highest ranked model on lmsys',
-    marketId: 'LsZPyLPI82',
+    marketId: 'tttALhsqsR',
     type: 'monthly',
     displayType: 'top-three-mcq',
   },
