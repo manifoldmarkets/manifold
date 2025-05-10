@@ -381,11 +381,18 @@ function AIModelIcon({
   className?: string
 }) {
   const titleLower = title?.toLowerCase() || ''
-  if (['gpt', 'openai'].some(term => titleLower.includes(term))) return <SiOpenai className={className} />
-  if (['claude', 'anthropic'].some(term => titleLower.includes(term))) return <SiAnthropic className={className} />
-  if (['gemini', 'google', 'deepmind'].some(term=>titleLower.includes(term))) return <SiGooglegemini className={className} />
-  if (['grok', 'xai'].some(term=>titleLower.includes(term))) return <RiTwitterXLine className={className} />
-  if (titleLower.includes('deepseek')) return <GiSpermWhale className={className} />
+  if (['gpt', 'openai'].some((term) => titleLower.includes(term)))
+    return <SiOpenai className={className} />
+  if (['claude', 'anthropic'].some((term) => titleLower.includes(term)))
+    return <SiAnthropic className={className} />
+  if (
+    ['gemini', 'google', 'deepmind'].some((term) => titleLower.includes(term))
+  )
+    return <SiGooglegemini className={className} />
+  if (['grok', 'xai'].some((term) => titleLower.includes(term)))
+    return <RiTwitterXLine className={className} />
+  if (titleLower.includes('deepseek'))
+    return <GiSpermWhale className={className} />
   if (titleLower.includes('qwen')) return <PiBirdBold className={className} />
   return <LiaKiwiBirdSolid className={className} />
 }
@@ -524,7 +531,7 @@ function CapabilityCard({
       return [
         { text: '—', probability: 0 },
         { text: '—', probability: 0 },
-        { text: '—', probability: 0 }
+        { text: '—', probability: 0 },
       ]
     }
 
@@ -564,7 +571,7 @@ function CapabilityCard({
       {
         text: sortedAnswers[2].text || '—',
         probability: sortedAnswers[2].prob ?? 0,
-      }
+      },
     ]
     return result
   }
@@ -600,7 +607,7 @@ function CapabilityCard({
   let topCompanies = [
     { text: '—', probability: 0 },
     { text: '—', probability: 0 },
-    { text: '—', probability: 0 }
+    { text: '—', probability: 0 },
   ]
   let topModel = { text: '—', probability: 0 }
 
@@ -673,7 +680,10 @@ function CapabilityCard({
                 {topCompanies[1].text ? (
                   <div className="flex flex-col items-center">
                     <div className="mb-1 flex h-10 w-10 items-center justify-center text-blue-600 dark:text-blue-300 sm:h-12 sm:w-12">
-                      <AIModelIcon title={topCompanies[1].text} className="w-8 h-8 sm:w-10 sm:h-10" />
+                      <AIModelIcon
+                        title={topCompanies[1].text}
+                        className="h-8 w-8 sm:h-10 sm:w-10"
+                      />
                     </div>
                     <div className="text-sm font-bold text-blue-600 dark:text-blue-300 sm:text-lg">
                       {topCompanies[1].text}
@@ -687,9 +697,13 @@ function CapabilityCard({
                 <div className="text-ink-600 mt-1 text-base font-medium">
                   {formatPercent(topCompanies[1].probability)}
                 </div>
-                <div className="w-full rounded-t-lg bg-blue-600 dark:bg-blue-300"
+                <div
+                  className="w-full rounded-t-lg bg-blue-600 dark:bg-blue-300"
                   style={{
-                    height: `${Math.max(8, topCompanies[1].probability * 100)}px`
+                    height: `${Math.max(
+                      8,
+                      topCompanies[1].probability * 100
+                    )}px`,
                   }}
                 ></div>
               </div>
@@ -719,7 +733,10 @@ function CapabilityCard({
                 <div
                   className="bg-primary-600 w-full rounded-t-lg"
                   style={{
-                    height: `${Math.max(8, topCompanies[0].probability * 100)}px`
+                    height: `${Math.max(
+                      8,
+                      topCompanies[0].probability * 100
+                    )}px`,
                   }}
                 ></div>
               </div>
@@ -729,7 +746,10 @@ function CapabilityCard({
                 {topCompanies[2].text ? (
                   <div className="flex flex-col items-center">
                     <div className="mb-1 flex h-10 w-10 items-center justify-center text-blue-500 dark:text-blue-200 sm:h-12 sm:w-12">
-                      <AIModelIcon title={topCompanies[2].text} className="w-8 h-8 sm:w-10 sm:h-10" />
+                      <AIModelIcon
+                        title={topCompanies[2].text}
+                        className="h-8 w-8 sm:h-10 sm:w-10"
+                      />
                     </div>
                     <div className="text-sm font-bold text-blue-500 dark:text-blue-200 sm:text-lg">
                       {topCompanies[2].text}
@@ -743,10 +763,13 @@ function CapabilityCard({
                 <div className="text-ink-600 mt-1 text-base font-medium">
                   {formatPercent(topCompanies[2].probability)}
                 </div>
-                <div 
+                <div
                   className="w-full rounded-t-lg bg-blue-500 dark:bg-blue-200"
                   style={{
-                    height: `${Math.max(8, topCompanies[2].probability * 100)}px`
+                    height: `${Math.max(
+                      8,
+                      topCompanies[2].probability * 100
+                    )}px`,
                   }}
                 ></div>
               </div>
@@ -867,26 +890,28 @@ function CapabilityCard({
                   <span className={getGradient(type)}>{displayValue}</span>
                 </div>
               </div>
-              
+
               {/* 7-day movement indicator for binary markets */}
-              {liveContract && 
-               liveContract.outcomeType === 'BINARY' && 
-               'probChanges' in liveContract && 
-               liveContract.probChanges && 
-               typeof liveContract.probChanges.week === 'number' && 
-               Math.abs(liveContract.probChanges.week) >= 0.01 && (
-                <div className="absolute bottom-2 right-2">
-                  <div className={`text-sm font-medium ${
-                    liveContract.probChanges.week > 0 
-                      ? 'text-teal-600' 
-                      : 'text-scarlet-600'
-                  }`}>
-                    {liveContract.probChanges.week > 0 ? '+' : ''}
-                    {Math.round(liveContract.probChanges.week * 100)}% 7d
+              {liveContract &&
+                liveContract.outcomeType === 'BINARY' &&
+                'probChanges' in liveContract &&
+                liveContract.probChanges &&
+                typeof liveContract.probChanges.week === 'number' &&
+                Math.abs(liveContract.probChanges.week) >= 0.01 && (
+                  <div className="absolute bottom-2 right-2">
+                    <div
+                      className={`text-sm font-medium ${
+                        liveContract.probChanges.week > 0
+                          ? 'text-teal-600'
+                          : 'text-scarlet-600'
+                      }`}
+                    >
+                      {liveContract.probChanges.week > 0 ? '+' : ''}
+                      {Math.round(liveContract.probChanges.week * 100)}% 7d
+                    </div>
                   </div>
-                </div>
-              )}
-              
+                )}
+
               {/* Brief descriptive text under percentages */}
               {(type === 'benchmark' ||
                 type === 'prize' ||
@@ -945,7 +970,7 @@ function CapabilityCard({
                   <span className={getGradient(type)}>{displayValue}</span>
                 </div>
               </div>
-              
+
               {/* Brief descriptive text for numeric markets */}
               {displayType === 'numeric' && (
                 <p className="text-ink-600 mt-1 w-full px-1 text-left text-xs sm:mt-3 sm:text-sm">
@@ -1160,7 +1185,7 @@ function FeaturedMarketGraph({ contract }: FeaturedGraphProps) {
               {' '}
               Probability:
             </span>{' '}
-            <span className="text-teal-600 dark:text-teal-500 text-2xl font-semibold">
+            <span className="text-2xl font-semibold text-teal-600 dark:text-teal-500">
               {formatPercent(contract.prob)}
             </span>
           </div>
