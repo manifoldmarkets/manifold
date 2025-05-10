@@ -321,6 +321,7 @@ export const createBountySchema = z.object({
 export const createPollSchema = z.object({
   outcomeType: z.enum(['POLL']),
   answers: z.array(z.string().trim().min(1)).min(2).max(MAX_ANSWERS),
+  voterVisibility: z.enum(['creator', 'everyone']).optional(),
 })
 
 export const createMarketProps = z

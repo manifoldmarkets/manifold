@@ -15,6 +15,7 @@ import { removeUndefinedProps } from 'common/util/object'
 import { createPushNotifications } from 'shared/create-push-notifications'
 import { truncateText } from './send-unseen-notifications'
 import { Notification } from 'common/notification'
+import { nanoid } from 'common/util/random'
 
 const pastPeriodHoursAgoStart = 24
 const TEST_USER_ID = 'AJwLWoo3xue32XIiAVrL5SyR1WB2'
@@ -353,7 +354,7 @@ async function createMarketMovementNotifications(
 
       // Handle Browser Notifications
       if (sendToBrowser && !hasSimilarRecentNotification('browser')) {
-        const id = crypto.randomUUID()
+        const id = nanoid(6)
         const record: MovementRecord = removeUndefinedProps({
           ...protoRecord,
           destination: 'browser',
@@ -397,13 +398,13 @@ async function createMarketMovementNotifications(
           answerText ? 70 : 130
         )
         const answerSegment = answerText
-          ? `:${truncateText(answerText, 60)}`
+          ? `: ${truncateText(answerText, 60)}`
           : ''
         const title = 'Market movement'
         const body = `${questionText}${answerSegment}: ${startProbText} → ${endProbText}`
 
         const tempNotification: Notification = {
-          id: crypto.randomUUID(),
+          id: nanoid(6),
           userId: user.id,
           reason: 'market_movements',
           createdTime: Date.now(),

@@ -8,7 +8,7 @@ import {
   CPMMContract,
   MarketContract,
 } from 'common/contract'
-import { ContractMetric } from 'common/contract-metric'
+import { ContractMetric, getMaxSharesOutcome } from 'common/contract-metric'
 import { SWEEPIES_MARKET_TOOLTIP } from 'common/envs/constants'
 import { buildArray } from 'common/util/array'
 import { formatWithToken } from 'common/util/format'
@@ -63,6 +63,7 @@ type BetSort =
   | 'dayPriceChange'
   | 'volume24h'
   | 'liquidity'
+  | 'priceDiff'
 export type BetFilter =
   | 'open'
   | 'sold'
@@ -91,7 +92,7 @@ export function UserBetsTable(props: { user: User }) {
   // Track visible columns with local storage persistence
   const [visibleColumns, setVisibleColumns] = usePersistentLocalState<
     BetSort[]
-  >(['value', 'position'], 'bets-visible-columns')
+  >(['value', 'position', 'priceDiff'], 'bets-visible-columns-1')
 
   const [showLimitOrders, setShowLimitOrders] = usePersistentLocalState(
     false,
@@ -259,6 +260,8 @@ export function UserBetsTable(props: { user: User }) {
     { label: 'Highest 1w Change', field: 'week', direction: 'desc' },
     { label: 'Lowest 1w Change', field: 'week', direction: 'asc' },
     { label: 'Closing Soon', field: 'closeTime', direction: 'asc' },
+    { label: '↓ ∆ Last Trade', field: 'priceDiff', direction: 'desc' },
+    { label: '↑ ∆ Last Trade', field: 'priceDiff', direction: 'asc' },
   ]
 
   // Restore sort state here, replacing sortDropdownOption
@@ -473,20 +476,26 @@ const NoBets = ({ user }: { user: User }) => {
     </>
   )
 }
-const availableColumns: { value: BetSort; label: string }[] = [
-  { value: 'value', label: 'Value' },
-  { value: 'position', label: 'Position' },
-  { value: 'profit', label: 'Profit' },
-  { value: 'profitPercent', label: 'Profit %' },
-  { value: 'day', label: '1d Profit' },
-  { value: 'dayPctChange', label: '1d Profit %' },
-  { value: 'week', label: '1w Profit' },
-  { value: 'closeTime', label: 'Close Time' },
-  { value: 'costBasis', label: 'Cost Basis' },
-  { value: 'dayPriceChange', label: '1d Price' },
-  { value: 'volume24h', label: '1d Volume' },
-  { value: 'liquidity', label: 'Liquidity' },
-]
+const availableColumns: { value: BetSort; label: string; tooltip?: string }[] =
+  [
+    { value: 'value', label: 'Value' },
+    { value: 'position', label: 'Position' },
+    { value: 'profit', label: 'Profit' },
+    { value: 'profitPercent', label: 'Profit %' },
+    { value: 'day', label: '1d Profit' },
+    { value: 'dayPctChange', label: '1d Profit %' },
+    { value: 'week', label: '1w Profit' },
+    { value: 'closeTime', label: 'Close Time' },
+    { value: 'costBasis', label: 'Cost Basis' },
+    { value: 'dayPriceChange', label: '1d Price' },
+    { value: 'volume24h', label: '1d Volume' },
+    { value: 'liquidity', label: 'Liquidity' },
+    {
+      value: 'priceDiff',
+      label: 'Last Trade ∆',
+      tooltip: 'Percent change in market probability since your last trade',
+    },
+  ]
 
 function BetsTable(props: {
   contracts: MarketContract[]
@@ -551,6 +560,31 @@ function BetsTable(props: {
     dayPriceChange: (c) => -(c.mechanism === 'cpmm-1' ? c.probChanges.day : 0),
     volume24h: (c) => -c.volume24Hours,
     liquidity: (c) => -c.totalLiquidity,
+    priceDiff: (c) => {
+      const metric = metricsByContractId[c.id]
+      const lastProb = metric.lastProb
+      const currentProb = c.mechanism === 'cpmm-1' ? c.prob : null
+      const maxOutcome = getMaxSharesOutcome(metric)
+
+      if (!lastProb || currentProb === null || !maxOutcome) {
+        return 0
+      }
+
+      let userPrice: number
+      let currentPrice: number
+
+      if (maxOutcome === 'YES') {
+        userPrice = lastProb
+        currentPrice = currentProb
+      } else if (maxOutcome === 'NO') {
+        userPrice = 1 - lastProb
+        currentPrice = 1 - currentProb
+      } else {
+        return 0
+      }
+
+      return ((userPrice - currentPrice) / userPrice) * 100
+    },
   }
 
   const sortFunction = SORTS[sortOption.field]
@@ -714,7 +748,7 @@ function BetsTable(props: {
                                   <BinaryOutcomeLabel outcome="CANCEL" />
                                 ) : resolvedAnswer ? (
                                   <MultiOutcomeLabel
-                                    answer={resolvedAnswer}
+                                    answerText={resolvedAnswer.text}
                                     resolution={contract.resolution ?? ''}
                                     truncate="long"
                                     answerClassName={
@@ -1032,6 +1066,65 @@ function BetsTable(props: {
                                 })}
                               </div>
                             )}
+                            {value === 'priceDiff' &&
+                              (() => {
+                                const lastProb = metric.lastProb
+                                const currentProb =
+                                  contract.mechanism === 'cpmm-1'
+                                    ? contract.prob
+                                    : null
+                                const maxOutcome = getMaxSharesOutcome(metric)
+                                if (
+                                  !lastProb ||
+                                  currentProb === null ||
+                                  !maxOutcome
+                                ) {
+                                  return (
+                                    <span className="text-ink-400 text-xs">
+                                      --
+                                    </span>
+                                  )
+                                }
+
+                                let userPrice: number
+                                let currentPrice: number
+
+                                if (maxOutcome === 'YES') {
+                                  userPrice = lastProb
+                                  currentPrice = currentProb
+                                } else if (maxOutcome === 'NO') {
+                                  userPrice = 1 - lastProb
+                                  currentPrice = 1 - currentProb
+                                } else {
+                                  return (
+                                    <span className="text-ink-400 text-xs">
+                                      --
+                                    </span>
+                                  )
+                                }
+
+                                const changeSinceLastTrade =
+                                  ((userPrice - currentPrice) / userPrice) * 100
+
+                                return (
+                                  <div
+                                    className={clsx(
+                                      'font-semibold',
+                                      changeSinceLastTrade < 0
+                                        ? 'text-teal-500'
+                                        : changeSinceLastTrade > 0
+                                        ? 'text-scarlet-500'
+                                        : 'text-ink-600'
+                                    )}
+                                  >
+                                    {changeSinceLastTrade < 0 ? '' : '-'}
+                                    {changeSinceLastTrade
+                                      .toFixed(0)
+                                      .replace('-', '+')}
+                                    %
+                                  </div>
+                                )
+                              })()}
                           </div>
                         ))}
 
@@ -1167,23 +1260,6 @@ export function LoadingMetricRow() {
   )
 }
 
-// Custom hook for media queries
-function useMediaQuery(query: string) {
-  const [matches, setMatches] = useState(false)
-
-  useEffect(() => {
-    const media = window.matchMedia(query)
-    if (media.matches !== matches) {
-      setMatches(media.matches)
-    }
-    const listener = () => setMatches(media.matches)
-    media.addEventListener('change', listener)
-    return () => media.removeEventListener('change', listener)
-  }, [matches, query])
-
-  return matches
-}
-
 // Extracted header component
 function BetsTableHeaders(props: {
   visibleColumns: BetSort[]
@@ -1229,7 +1305,15 @@ function BetsTableHeaders(props: {
                 onClick={() => handleHeaderClick(sortField)}
               >
                 <Row className="relative items-center justify-end gap-1">
-                  <span>{column.label}</span>
+                  <span>
+                    {column.tooltip ? (
+                      <Tooltip text={column.tooltip} placement="top">
+                        {column.label}
+                      </Tooltip>
+                    ) : (
+                      column.label
+                    )}
+                  </span>
                   {isSortingByThis ? (
                     sortOption.direction === 'desc' ? (
                       <ArrowSmDownIcon className="absolute -right-4 h-4 w-4" />

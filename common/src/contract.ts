@@ -305,10 +305,13 @@ export type BountiedQuestion = {
   isAutoBounty?: boolean
 }
 
+export type PollVoterVisibility = 'creator' | 'everyone'
+
 export type Poll = {
   outcomeType: 'POLL'
   options: PollOption[]
   resolutions?: string[]
+  voterVisibility?: PollVoterVisibility
 }
 
 export type Sports = {

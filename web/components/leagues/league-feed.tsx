@@ -6,7 +6,7 @@ import { Col } from '../layout/col'
 import { Bet } from 'common/bet'
 import { ContractComment } from 'common/comment'
 import { leagueActivity } from 'web/lib/api/api'
-import { Contract } from 'common/contract'
+import { Contract, MarketContract } from 'common/contract'
 import { FeedBet } from '../feed/feed-bets'
 import { FeedComment } from '../comments/comment'
 import { useIsAuthorized } from 'web/hooks/use-user'
@@ -45,7 +45,7 @@ export function LeagueFeed(props: { season: number; cohort: string }) {
                 <FeedBet
                   key={item.id}
                   bet={item as Bet}
-                  contract={contract}
+                  contract={contract as MarketContract}
                   avatarSize="xs"
                 />
               ) : (

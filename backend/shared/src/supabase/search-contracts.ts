@@ -21,7 +21,7 @@ import {
   buildUserInterestsCache,
   userIdsToAverageTopicConversionScores,
 } from 'shared/topic-interests'
-import { contractColumnsToSelect, log } from 'shared/utils'
+import { contractColumnsToSelectWithPrefix, log } from 'shared/utils'
 import { PrivateUser } from 'common/user'
 import { GROUP_SCORE_PRIOR } from 'common/feed'
 import { tsToMillis } from 'common/supabase/utils'
@@ -32,33 +32,37 @@ type TokenInputType = 'CASH' | 'MANA' | 'ALL' | 'CASH_AND_MANA'
 let importanceScoreThreshold: number | undefined = undefined
 let freshnessScoreThreshold: number | undefined = undefined
 
-export async function getForYouSQL(items: {
-  userId: string
+type SharedSearchArgs = {
   filter: string
   contractType: string
   limit: number
   offset: number
-  sort: 'score' | 'freshness-score'
-  isPrizeMarket: boolean
+  sort: string
   token: TokenInputType
-  privateUser?: PrivateUser
-  threshold?: number
+  creatorId?: string
+  uid?: string
+  hasBets?: string
   liquidity?: number
-}) {
+  isPrizeMarket?: boolean
+}
+
+export async function getForYouSQL(
+  args: SharedSearchArgs & {
+    uid: string
+    privateUser?: PrivateUser
+    threshold?: number
+  }
+) {
   const {
-    filter,
-    contractType,
     limit,
     offset,
     sort,
-    isPrizeMarket,
     privateUser,
     threshold = DEFAULT_THRESHOLD,
-    token,
-    liquidity,
-  } = items
+    hasBets,
+  } = args
 
-  const userId = items.userId
+  const userId = args.uid
   // const userId = 'hqdXgp0jK2YMMhPs067eFK4afEH3' // Eliza
   // if (process.platform === 'darwin') {
   //   userId = await loadRandomUser()
@@ -82,20 +86,13 @@ export async function getForYouSQL(items: {
   if (
     !Object.keys(userIdsToAverageTopicConversionScores[userId] ?? {}).length
   ) {
-    return basicSearchSQL(
-      userId,
-      filter,
-      contractType,
-      limit,
-      offset,
-      sort,
-      isPrizeMarket,
-      token,
+    return basicSearchSQL({
+      ...args,
+      uid: userId,
       privateUser,
-      undefined,
-      liquidity
-    )
+    })
   }
+  const userBetsJoin = hasBets === '1' && userId && userBetsJoinSql
   const GROUP_SCORE_POWER = 4
   const forYou = renderSql(
     buildArray(
@@ -123,14 +120,10 @@ export async function getForYouSQL(items: {
         `user_follows as (select follow_id from user_follows where user_id = $1)`,
         [userId]
       ),
+      userBetsJoin,
       getSearchContractWhereSQL({
-        filter,
-        contractType,
-        uid: userId,
+        ...args,
         hideStonks: true,
-        isPrizeMarket,
-        token,
-        liquidity,
       }),
       offset <= threshold / 2 &&
         sort === 'score' &&
@@ -160,36 +153,26 @@ export async function getForYouSQL(items: {
 }
 
 export const basicSearchSQL = (
-  userId: string | undefined,
-  filter: string,
-  contractType: string,
-  limit: number,
-  offset: number,
-  sort: 'score' | 'freshness-score',
-  isPrizeMarket: boolean,
-  token: TokenInputType,
-  privateUser?: PrivateUser,
-  creatorId?: string,
-  liquidity?: number
+  args: SharedSearchArgs & {
+    privateUser?: PrivateUser
+  }
 ) => {
+  const { sort, privateUser, ...rest } = args
   const sortByScore = sort === 'score' ? 'importance_score' : 'freshness_score'
-  return renderSql(
-    select(contractColumnsToSelect),
+  const userBetsJoin = args.hasBets === '1' && args.uid && userBetsJoinSql
+  const sql = renderSql(
+    select(contractColumnsToSelectWithPrefix('contracts')),
     from('contracts'),
+    userBetsJoin,
     orderBy(`${sortByScore} desc`),
     getSearchContractWhereSQL({
-      filter,
-      contractType,
-      uid: userId,
+      ...rest,
       hideStonks: true,
-      isPrizeMarket,
-      token,
-      creatorId,
-      liquidity,
     }),
     privateUserBlocksSql(privateUser),
-    lim(limit, offset)
+    lim(args.limit, args.offset)
   )
+  return sql
 }
 
 export type SearchTypes =
@@ -199,23 +182,15 @@ export type SearchTypes =
   | 'prefix'
   | 'answer'
 
-export function getSearchContractSQL(args: {
-  term: string
-  filter: string
-  sort: string
-  contractType: string
-  offset: number
-  limit: number
-  groupId?: string
-  creatorId?: string
-  uid?: string
-  isForYou?: boolean
-  searchType: SearchTypes
-  isPrizeMarket?: boolean
-  token: TokenInputType
-  groupIds?: string
-  liquidity?: number
-}) {
+export function getSearchContractSQL(
+  args: SharedSearchArgs & {
+    term: string
+    groupId?: string
+    isForYou?: boolean
+    searchType: SearchTypes
+    groupIds?: string
+  }
+) {
   const {
     term,
     sort,
@@ -227,6 +202,8 @@ export function getSearchContractSQL(args: {
     token,
     groupIds,
     filter,
+    uid,
+    hasBets,
   } = args
   const hideStonks = sort === 'score' && !term.length && !groupId
   const hideLove = sort === 'newest' && !term.length && !groupId && !creatorId
@@ -236,7 +213,7 @@ export function getSearchContractSQL(args: {
   if (isUrl) {
     const slug = term.split('/').pop()
     return renderSql(
-      select(contractColumnsToSelect),
+      select(contractColumnsToSelectWithPrefix('contracts')),
       from('contracts'),
       whereSql,
       where('slug = $1', [slug])
@@ -289,14 +266,16 @@ export function getSearchContractSQL(args: {
     term === '' &&
     where(`coalesce(contracts.data->>'isRanked', 'true')::boolean = true`)
 
+  const userBetsJoin = hasBets === '1' && uid && userBetsJoinSql
   // Normal full text search
   const sql = renderSql(
-    select(contractColumnsToSelect),
+    select(contractColumnsToSelectWithPrefix('contracts')),
     from('contracts'),
     groupsFilter,
     newsFilter,
     newsJoin,
     newsWhere,
+    userBetsJoin,
     searchType === 'answer' &&
       join(
         `(${answersSubQuery}) as matched_answers on matched_answers.contract_id = contracts.id`
@@ -329,6 +308,7 @@ export function getSearchContractSQL(args: {
     orderBy(getSearchContractSortSQL(sort)),
     sqlLimit(limit, offset)
   )
+  // log('Search SQL:', sql)
   return sql
 }
 
@@ -343,6 +323,7 @@ function getSearchContractWhereSQL(args: {
   isPrizeMarket?: boolean
   token: TokenInputType
   liquidity?: number
+  hasBets?: string
 }) {
   const {
     filter,
@@ -355,6 +336,7 @@ function getSearchContractWhereSQL(args: {
     isPrizeMarket,
     token,
     liquidity,
+    hasBets,
   } = args
   type FilterSQL = Record<string, string>
   const filterSQL: FilterSQL = {
@@ -384,29 +366,35 @@ function getSearchContractWhereSQL(args: {
     : ''
   const sortFilter = sort == 'close-date' ? 'close_time > NOW()' : ''
   const creatorFilter = creatorId ? `creator_id = '${creatorId}'` : ''
-  const visibilitySQL = getContractPrivacyWhereSQLFilter(uid, creatorId)
+  const visibilitySQL = getContractPrivacyWhereSQLFilter(
+    uid,
+    'contracts.id',
+    creatorId
+  )
   const answerLiquidity =
     answerCostTiers[getTierIndexFromLiquidity(liquidity ?? 0)]
   const liquidityFilter = liquidity
     ? `(
     CASE
-        WHEN mechanism = 'cpmm-multi-1' AND jsonb_typeof(data->'answers') = 'array' AND jsonb_array_length(data->'answers') > 0
-        THEN (coalesce((data->>'totalLiquidity')::numeric, 0) / jsonb_array_length(data->'answers'))
-        ELSE coalesce((data->>'totalLiquidity')::numeric, 0)
+        WHEN mechanism = 'cpmm-multi-1' AND jsonb_typeof(contracts.data->'answers') = 'array' AND jsonb_array_length(contracts.data->'answers') > 0
+        THEN (coalesce((contracts.data->>'totalLiquidity')::numeric, 0) / jsonb_array_length(contracts.data->'answers'))
+        ELSE coalesce((contracts.data->>'totalLiquidity')::numeric, 0)
     END
   ) >= case when mechanism = 'cpmm-multi-1' then ${answerLiquidity} else ${liquidity} end`
     : ''
   const deletedFilter = `deleted = false`
 
   const isPrizeMarketFilter = isPrizeMarket ? 'is_spice_payout = true' : ''
-
+  // User bets filter
+  const userBetsWhere =
+    hasBets === '1' && uid && where('cm.user_id = $1', [uid])
   const tokenFilter =
     token === 'CASH'
       ? `token = 'CASH'`
       : token === 'MANA'
       ? `token = 'MANA'`
       : token === 'CASH_AND_MANA'
-      ? `data->>'siblingContractId' is not null`
+      ? `contracts.data->>'siblingContractId' is not null`
       : ''
 
   return [
@@ -421,6 +409,7 @@ function getSearchContractWhereSQL(args: {
     where(deletedFilter),
     where(isPrizeMarketFilter),
     where(tokenFilter),
+    userBetsWhere,
   ]
 }
 
@@ -450,17 +439,17 @@ export const sortFields: SortFields = {
     order: 'DESC',
   },
   '24-hour-vol': {
-    sql: "(data->>'volume24Hours')::numeric",
+    sql: "(contracts.data->>'volume24Hours')::numeric",
     sortCallback: (c: Contract) => c.volume24Hours,
     order: 'DESC',
   },
   liquidity: {
-    sql: "(data->>'elasticity')::numeric",
+    sql: "(contracts.data->>'elasticity')::numeric",
     sortCallback: (c: Contract) => c.elasticity,
     order: 'ASC',
   },
   subsidy: {
-    sql: "COALESCE((data->>'totalLiquidity')::numeric, 0)",
+    sql: "COALESCE((contracts.data->>'totalLiquidity')::numeric, 0)",
     sortCallback: (c: Contract) =>
       c.mechanism === 'cpmm-1' || c.mechanism === 'cpmm-multi-1'
         ? c.totalLiquidity
@@ -495,7 +484,7 @@ export const sortFields: SortFields = {
   },
   'start-time': {
     // sql: `close_time`,
-    sql: `coalesce((data->>'sportsStartTimestamp')::timestamp with time zone, close_time)`,
+    sql: `coalesce((contracts.data->>'sportsStartTimestamp')::timestamp with time zone, close_time)`,
     sortCallback: (c: Contract) =>
       isSportsContract(c)
         ? tsToMillis(c.sportsStartTimestamp)
@@ -508,17 +497,17 @@ export const sortFields: SortFields = {
     order: 'DESC',
   },
   'bounty-amount': {
-    sql: "COALESCE((data->>'bountyLeft')::numeric, -1)",
+    sql: "COALESCE((contracts.data->>'bountyLeft')::numeric, -1)",
     sortCallback: (c: Contract) => ('bountyLeft' in c && c.bountyLeft) || -1,
     order: 'DESC',
   },
   'prob-descending': {
-    sql: "resolution DESC, (data->>'p')::numeric",
+    sql: "resolution DESC, (contracts.data->>'p')::numeric",
     sortCallback: (c: Contract) => ('p' in c && c.p) || 0,
     order: 'DESC NULLS LAST',
   },
   'prob-ascending': {
-    sql: "resolution DESC, (data->>'p')::numeric",
+    sql: "resolution DESC, (contracts.data->>'p')::numeric",
     sortCallback: (c: Contract) => ('p' in c && c.p) || 0,
     order: 'ASC',
   },
@@ -594,3 +583,7 @@ export const privateUserBlocksSql = (privateUser?: PrivateUser) => {
     blockedGroupSlugs.length > 0 && where(`not exists (${blockedGroupsQuery})`)
   )
 }
+
+const userBetsJoinSql = join(
+  `user_contract_metrics cm on cm.contract_id = contracts.id and cm.answer_id is null and cm.has_shares`
+)

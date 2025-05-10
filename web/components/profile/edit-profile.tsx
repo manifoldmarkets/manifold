@@ -1,6 +1,6 @@
 import { PrivateUser, User } from 'common/user'
 
-import { ReactNode, useState } from 'react'
+import { ReactNode, useCallback, useState } from 'react'
 import toast from 'react-hot-toast'
 import { Button } from 'web/components/buttons/button'
 import { Col } from 'web/components/layout/col'
@@ -67,7 +67,7 @@ export const EditProfile = (props: {
   const [twitterHandle, setTwitterHandle] = useState(user.twitterHandle || '')
   const [discordHandle, setDiscordHandle] = useState(user.discordHandle || '')
 
-  const handleSave = async () => {
+  const getUpdates = useCallback(() => {
     const updates: { [key: string]: string } = {}
 
     if (bio.trim() !== (user.bio || '').trim()) updates.bio = bio.trim()
@@ -80,11 +80,22 @@ export const EditProfile = (props: {
     if (name.trim() !== (user.name || '').trim()) updates.name = name.trim()
     if (username.trim() !== (user.username || '').trim())
       updates.username = username.trim()
+    return updates
+  }, [bio, website, twitterHandle, discordHandle, name, username, user])
+  const updates = getUpdates()
 
+  const handleSave = async () => {
     if (Object.keys(updates).length > 0) {
       setLoading(true)
-      await api('me/update', updates)
-      setLoading(false)
+      try {
+        await api('me/update', updates)
+        toast.success('Profile updated successfully')
+      } catch (e) {
+        toast.error('Failed to update profile')
+        console.error(e)
+      } finally {
+        setLoading(false)
+      }
     } else {
       toast.error('No changes to save')
     }
@@ -240,7 +251,10 @@ export const EditProfile = (props: {
         <div className="text-ink-500">{privateUser.email ?? '\u00a0'}</div>
       </div>
 
-      <Button onClick={handleSave} disabled={loading}>
+      <Button
+        onClick={handleSave}
+        disabled={loading || Object.keys(updates).length === 0}
+      >
         {loading ? <LoadingIndicator /> : 'Save'}
       </Button>
     </Col>

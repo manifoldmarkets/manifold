@@ -13,6 +13,7 @@ import {
   MultiNumeric,
   NonBet,
   Poll,
+  PollVoterVisibility,
   PseudoNumeric,
   Stonk,
   add_answers_mode,
@@ -68,6 +69,9 @@ export function getNewContract(
     unit: string | undefined
     midpoints: number[] | undefined
     timezone: string | undefined
+
+    // Poll
+    voterVisibility: PollVoterVisibility | undefined
   }
 ) {
   const {
@@ -101,6 +105,7 @@ export function getNewContract(
     unit,
     midpoints,
     timezone,
+    voterVisibility,
   } = props
   const createdTime = Date.now()
 
@@ -121,7 +126,7 @@ export function getNewContract(
       ),
     STONK: () => getStonkCpmmProps(initialProb, ante),
     BOUNTIED_QUESTION: () => getBountiedQuestionProps(ante, isAutoBounty),
-    POLL: () => getPollProps(answers),
+    POLL: () => getPollProps(answers, voterVisibility),
     NUMBER: () => getNumberProps(id, creator.id, min, max, answers, ante),
     MULTI_NUMERIC: () =>
       getMultiNumericProps(
@@ -495,7 +500,10 @@ const getBountiedQuestionProps = (
   return system
 }
 
-const getPollProps = (answers: string[]) => {
+const getPollProps = (
+  answers: string[],
+  voterVisibility: PollVoterVisibility | undefined
+) => {
   const ids = answers.map(() => randomString())
 
   const options: PollOption[] = answers.map((answer, i) => ({
@@ -505,11 +513,12 @@ const getPollProps = (answers: string[]) => {
     votes: 0,
   }))
 
-  const system: NonBet & Poll = {
+  const system: NonBet & Poll = removeUndefinedProps({
     mechanism: 'none',
     outcomeType: 'POLL',
     options: options,
-  }
+    voterVisibility,
+  })
   return system
 }
 

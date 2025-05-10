@@ -37,9 +37,15 @@ import { updateUserPortfolioHistoriesCore } from 'shared/update-user-portfolio-h
 import { isProd } from 'shared/utils'
 import { sendMarketMovementNotifications } from 'shared/send-market-movement-notifications'
 import { sendUnseenMarketMovementNotifications } from 'shared/send-unseen-notifications'
+import { autoLeaguesCycle } from './auto-leagues-cycle'
 
 export function createJobs() {
   return [
+    createJob(
+      'auto-leagues-cycle',
+      '0 */10 * * * *', // every 10 minutes
+      autoLeaguesCycle
+    ),
     // Hourly jobs:
     createJob(
       'send-market-close-emails',
@@ -64,7 +70,7 @@ export function createJobs() {
     createJob(
       'update-league',
       '0 */15 * * * *', // every 15 minutes
-      updateLeague
+      () => updateLeague()
     ),
     createJob(
       'check-push-receipts',
@@ -88,7 +94,7 @@ export function createJobs() {
     ),
     createJob(
       'update-user-portfolio-histories',
-      '*/45 * * * * *', // every 45 seconds
+      '30 * * * * *', // every minute
       () => updateUserPortfolioHistoriesCore()
     ),
     createJob(
@@ -182,7 +188,7 @@ export function createJobs() {
     createJob(
       'update-league-ranks',
       '0 0 0 * * *', // every day at midnight
-      updateLeagueRanks
+      () => updateLeagueRanks()
     ),
     createJob(
       'reset-betting-streaks',

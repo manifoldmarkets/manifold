@@ -9,7 +9,8 @@ create table if not exists
     id text default uuid_generate_v4 () not null,
     parent_id text,
     parent_type text,
-    user_id text not null
+    user_id text not null,
+    dismissed_by_user_id text
   );
 
 -- Foreign Keys

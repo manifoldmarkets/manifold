@@ -134,7 +134,7 @@ const emojiMenuActive = (view: { state: any }) => {
   return active
 }
 
-export type CommentType = 'comment' | 'repost'
+export type CommentType = 'comment' | 'repost' | 'top-level-post'
 export function CommentInputTextArea(props: {
   user: User | undefined | null
   replyTo?: { id: string; username: string }
@@ -224,15 +224,18 @@ export function CommentInputTextArea(props: {
             </button>
           </Tooltip>
         )}
-        {!isSubmitting && submit && commentTypes.includes('comment') && (
-          <button
-            className="text-ink-500 hover:text-ink-700 active:bg-ink-300 disabled:text-ink-300 px-4 transition-colors"
-            disabled={!editor || editor.isEmpty}
-            onClick={() => submit('comment')}
-          >
-            <PaperAirplaneIcon className="m-0 h-[25px] w-[22px] rotate-90 p-0" />
-          </button>
-        )}
+        {!isSubmitting &&
+          submit &&
+          (commentTypes[0] === 'comment' ||
+            commentTypes[0] === 'top-level-post') && (
+            <button
+              className="text-ink-500 hover:text-ink-700 active:bg-ink-300 disabled:text-ink-300 px-4 transition-colors"
+              disabled={!editor || editor.isEmpty}
+              onClick={() => submit(commentTypes[0])}
+            >
+              <PaperAirplaneIcon className="m-0 h-[25px] w-[22px] rotate-90 p-0" />
+            </button>
+          )}
 
         {submit && isSubmitting && (
           <LoadingIndicator

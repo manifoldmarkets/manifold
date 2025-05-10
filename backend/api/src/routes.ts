@@ -117,7 +117,7 @@ import { getNotifications } from 'api/get-notifications'
 import { getCheckoutSession } from 'api/gidx/get-checkout-session'
 import { completeCheckoutSession } from 'api/gidx/complete-checkout-session'
 import { getContractTopics } from './get-contract-topics'
-import { getRelatedMarkets } from 'api/get-related-markets'
+import { getRelatedMarkets } from './get-related-markets'
 import { getRelatedMarketsByGroup } from './get-related-markets-by-group'
 import { followContract } from './follow-contract'
 import { getUserLimitOrdersWithContracts } from 'api/get-user-limit-orders-with-contracts'
@@ -135,7 +135,6 @@ import { getMarketsByIds } from './get-markets'
 import { getTopicTopics } from './get-topic-topics'
 import { getTopicDashboards } from './get-topic-dashboards'
 import { generateAIMarketSuggestions } from './generate-ai-market-suggestions'
-import { generateAIMarketSuggestions2 } from './generate-ai-market-suggestions-2'
 import { generateAIDescription } from './generate-ai-description'
 import { generateAIAnswers } from './generate-ai-answers'
 import { getmonthlybets2024 } from './get-monthly-bets-2024'
@@ -175,7 +174,17 @@ import { inferNumericUnit } from './infer-numeric-unit'
 import { generateConciseTitle } from './generate-concise-title'
 import { getCloseDateEndpoint } from './get-close-date'
 import { referUser } from './refer-user'
-import { saveMarketDraft, getMarketDrafts, deleteMarketDraft } from './market-drafts'
+import {
+  saveMarketDraft,
+  getMarketDrafts,
+  deleteMarketDraft,
+} from './market-drafts'
+import { getSeasonInfo } from './get-season-info'
+import { markNotificationRead } from './mark-all-notifications'
+import { createPostComment, updatePostComment } from './create-post-comment'
+import { createPost, updatePost } from './create-post'
+import { getPosts } from './get-posts'
+import { dismissUserReport } from './dismiss-user-report'
 
 export const handlers: { [k in APIPath]: APIHandler<k> } = {
   'refresh-all-clients': refreshAllClients,
@@ -288,6 +297,7 @@ export const handlers: { [k in APIPath]: APIHandler<k> } = {
   'get-groups-with-top-contracts': getGroupsWithTopContracts,
   'get-balance-changes': getBalanceChanges,
   'get-partner-stats': getPartnerStats,
+  'get-posts': getPosts,
   'get-seen-market-ids': getSeenMarketIds,
   'record-contract-view': recordContractView,
   'get-dashboard-from-slug': getDashboardFromSlug,
@@ -331,7 +341,6 @@ export const handlers: { [k in APIPath]: APIHandler<k> } = {
   leaderboard: getLeaderboard,
   'get-daily-changed-metrics-and-contracts': getDailyChangedMetricsAndContracts,
   'generate-ai-market-suggestions': generateAIMarketSuggestions,
-  'generate-ai-market-suggestions-2': generateAIMarketSuggestions2,
   'generate-ai-description': generateAIDescription,
   'generate-ai-answers': generateAIAnswers,
   'get-monthly-bets-2024': getmonthlybets2024,
@@ -364,7 +373,14 @@ export const handlers: { [k in APIPath]: APIHandler<k> } = {
   'generate-concise-title': generateConciseTitle,
   'get-close-date': getCloseDateEndpoint,
   'refer-user': referUser,
+  'create-post-comment': createPostComment,
+  'create-post': createPost,
+  'update-post': updatePost,
+  'update-post-comment': updatePostComment,
   'save-market-draft': saveMarketDraft,
   'get-market-drafts': getMarketDrafts,
   'delete-market-draft': deleteMarketDraft,
-}
+  'get-season-info': getSeasonInfo,
+  'mark-notification-read': markNotificationRead,
+  'dismiss-user-report': dismissUserReport,
+} as const

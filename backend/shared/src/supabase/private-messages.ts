@@ -12,13 +12,13 @@ import { APIError } from 'common/api/utils'
 import { broadcast } from 'shared/websockets/server'
 import { track } from 'shared/analytics'
 import { getNotificationDestinationsForUser } from 'common/user-notification-preferences'
-import * as crypto from 'crypto'
 import { Notification } from 'common/notification'
 import { createPushNotifications } from 'shared/create-push-notifications'
 import { sendNewMessageEmail } from 'shared/emails'
 import * as dayjs from 'dayjs'
 import * as utc from 'dayjs/plugin/utc'
 import * as timezone from 'dayjs/plugin/timezone'
+import { nanoid } from 'common/util/random'
 dayjs.extend(utc)
 dayjs.extend(timezone)
 export const leaveChatContent = (userName: string) => ({
@@ -215,7 +215,7 @@ const createNewMessageNotification = async (
     reason
   )
   const sourceText = `${fromUser.name} sent you a message!`
-  const id = crypto.randomUUID()
+  const id = nanoid(6)
   const notification: Notification = {
     id,
     userId: privateUser.id,

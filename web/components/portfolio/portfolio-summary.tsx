@@ -7,6 +7,8 @@ import { LoadingContractRow } from '../contract/contracts-table'
 import { Col } from '../layout/col'
 import { Search } from '../search'
 import { PortfolioValueSection } from './portfolio-value-section'
+import { useEffect } from 'react'
+import { useIsPageVisible } from 'web/hooks/use-page-visible'
 
 export const PortfolioSummary = (props: { user: User; className?: string }) => {
   const { user, className } = props
@@ -17,9 +19,25 @@ export const PortfolioSummary = (props: { user: User; className?: string }) => {
   const isCreatedInLastWeek =
     user.createdTime > Date.now() - 7 * 24 * 60 * 60 * 1000
 
-  const { data: portfolioData } = useAPIGetter('get-user-portfolio', {
+  const {
+    data: portfolioData,
+    refresh,
+    loading,
+  } = useAPIGetter('get-user-portfolio', {
     userId: user.id,
   })
+  useEffect(() => {
+    if (currentUser?.id === user.id && !loading) {
+      refresh()
+    }
+  }, [currentUser?.balance, currentUser?.id])
+
+  const visible = useIsPageVisible()
+  useEffect(() => {
+    if (visible && !loading) {
+      refresh()
+    }
+  }, [visible])
 
   return (
     <Col className={clsx(className, 'gap-4')}>
@@ -60,6 +78,7 @@ export const PortfolioSummary = (props: { user: User; className?: string }) => {
               headerClassName={'!hidden'}
               topicSlug="recent"
               contractsOnly
+              refreshOnVisible
               hideContractFilters
               hideSearch
             />

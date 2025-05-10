@@ -179,6 +179,51 @@ Requires no auth.
 
 _This api is deprecated in favor of the more versatile [/v0/bets/](#get-v0bets) api._
 
+### `GET /v0/get-user-portfolio`
+
+Get a user's live portfolio metrics.
+
+Requires no auth.
+
+Parameters:
+
+- `userId`: The ID of the user.
+
+Response type: `LivePortfolioMetrics`
+
+```tsx
+type PortfolioMetrics = {
+  investmentValue: number
+  cashInvestmentValue: number
+  balance: number
+  cashBalance: number
+  spiceBalance: number
+  totalDeposits: number
+  totalCashDeposits: number
+  loanTotal: number
+  timestamp: number // Unix timestamp in milliseconds
+  profit?: number
+  userId: string
+}
+
+type LivePortfolioMetrics = PortfolioMetrics & {
+  dailyProfit: number
+}
+```
+
+### `GET /v0/get-user-portfolio-history`
+
+Get a user's portfolio history over a specified period.
+
+Requires no auth.
+
+Parameters:
+
+- `userId`: The ID of the user.
+- `period`: The time period for the portfolio history. Enum values: 'daily', 'weekly', 'monthly', 'allTime'.
+
+Response type: Array of `PortfolioMetrics`
+
 ### `GET /v0/groups`
 
 Get all topics, in order of descending creation time, 500 at a time. This endpoint returns only public topics, not curated or private ones.
@@ -897,7 +942,7 @@ Resolve a market. The required payload format depends on the market type.
 
 #### For Free Response or Multiple Choice Markets
 
-The resolution payload format depends on the market’s `shouldAnswersSumToOne` setting:
+The resolution payload format depends on the market's `shouldAnswersSumToOne` setting:
 
 **1. When `shouldAnswersSumToOne` is true (the default for dpm-2 free response and multiple choice):**
 
@@ -919,7 +964,7 @@ Use the weighted resolution format:
 Resolve each answer individually, as you would for a binary market. For each answer, issue a separate resolve request with a payload that includes:
 
 - **outcome**: Either `"YES"` (if the answer is resolved as a win) or `"NO"` (if resolved as a loss).
-- **answerId**: The unique identifier for the answer (as returned in the full market’s `answers` array).
+- **answerId**: The unique identifier for the answer (as returned in the full market's `answers` array).
 
 For example, to resolve an individual answer:
 

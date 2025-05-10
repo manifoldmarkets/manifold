@@ -6,6 +6,7 @@ import { promptOpenAIWithWebSearch } from 'shared/helpers/openai-utils'
 import {
   addAnswersModeDescription,
   outcomeTypeDescriptions,
+  resolutionCriteriaPrompt,
 } from 'common/ai-creation-prompts'
 import { HOUR_MS } from 'common/util/time'
 import { rateLimitByUser } from './helpers/rate-limit'
@@ -59,8 +60,9 @@ export const generateAIDescription: APIHandler<'generate-ai-description'> =
         - Incorporate any relevant information from the user's description into your own description
         - If the user supplied answers, provide any relevant background information for each answer
         - If the market is personal, (i.e. I will attend the most parties, or I will get a girlfriend) word resolution criteria in the first person
-        - Include a "Resolution criteria" section first that describes how the market will be resolved.
-          - Include any special additional resolution criteria if edge cases are exceptionally likely. Otherwise, the criteria should be concise and to the point, allowing the creator and traders to use common sense to resolve edge cases.
+        - Include only up to 3 sections and only 3 sections in the description: Resolution criteria, Background, and Considerations. Do not write anything else.
+        - The "Resolution criteria" section should be the first section and describe how the market will be resolved:
+        - ${resolutionCriteriaPrompt}
         - Include relevant sources and data when available from your web search
         - Don't repeat the question in the description
         - If the market has a precondition, such as 'If I attend, will I enjoy the party?', or 'If Biden runs, will he win?', markets should resolve N/A if the precondition is not met
@@ -72,7 +74,8 @@ export const generateAIDescription: APIHandler<'generate-ai-description'> =
             ? 'E.g. if the answers are not exhaustive, traders should be warned that the market may resolve N/A.'
             : ''
         }
-        - Use your web search tool to gather relevant, up-to-date information related to the user's prompt to inform the description. Include information from it in the description that traders or other readers may want to know if it's relevant to the user's question, but keep it concise.
+        - Format each separate section with a #### header
+        - Use your web search tool to gather relevant, up-to-date information related to the user's prompt to inform the description if necesaary. Include information from it in the description that traders or other readers may want to know if it's relevant to the user's question, but keep it concise.
 
         User's prompt:
         ${userQuestionAndDescription}

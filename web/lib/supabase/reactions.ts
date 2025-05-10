@@ -16,19 +16,6 @@ export const unreact = async (
   })
 }
 
-export const react = async (
-  contentId: string,
-  contentType: ReactionContentTypes,
-  reactionType: ReactionType
-) => {
-  api('react', {
-    remove: false,
-    contentId,
-    contentType,
-    reactionType,
-  })
-}
-
 export async function getLikedContracts(userId: string) {
   // TODO: The best way to do this would be to join the matching table via contentId and type
 

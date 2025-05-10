@@ -42,7 +42,7 @@ export type Notification = {
   sourceTitle?: string
 
   isSeenOnHref?: string
-  worksOnSweeple?: boolean
+  markedAsRead?: boolean
 }
 
 export type NotificationReason =
@@ -82,6 +82,9 @@ export type notification_source_types =
   | 'new_match'
   | 'bet_reply'
   | 'new_message'
+  | 'post'
+  | 'post_like'
+  | 'post_comment_like'
   | love_notification_source_types
   | 'push_notification_bonus'
   | 'airdrop'
@@ -369,16 +372,17 @@ export type LeagueChangeData = {
 }
 
 export type BetFillData = {
-  betOutcome: string
   betAnswer?: string
   creatorOutcome: string
   probability: number
-  fillAmount: number
   limitOrderTotal?: number
   limitOrderRemaining?: number
   limitAt?: string
-  outcomeType?: OutcomeType
-  token?: ContractToken
+  mechanism: 'cpmm-1' | 'cpmm-multi-1'
+  outcomeType: OutcomeType
+  betAnswerId?: string
+  expiresAt?: number
+  createdTime?: number
 }
 
 export type ContractResolutionData = {
@@ -483,6 +487,7 @@ export function getSourceUrl(notification: Notification) {
     sourceSlug,
     reason,
   } = notification
+
   if (sourceType === 'weekly_portfolio_update')
     return `/week/${sourceUserUsername}/${sourceSlug}`
   if (reason === 'market_follows')
@@ -521,6 +526,8 @@ export function getSourceUrl(notification: Notification) {
 export const ReactionNotificationTypes: Partial<notification_source_types>[] = [
   'comment_like',
   'contract_like',
+  'post_like',
+  'post_comment_like',
 ]
 
 export const BalanceChangeNotificationTypes: NotificationReason[] = [

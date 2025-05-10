@@ -99,6 +99,32 @@ export function useNotifications(
       })
     },
   })
+  useApiSubscription({
+    topics: [`user-notification-status/${userId}`],
+    onBroadcast: ({ data }) => {
+      const payload = data as {
+        type: 'marked_as_read' | 'marked_as_seen'
+        notificationIds?: string[]
+        since?: number
+      }
+      const { type, notificationIds, since } = payload
+      if (type === 'marked_as_read' && notificationIds) {
+        // Handle notification read update
+        setNotifications((notifs) =>
+          notifs?.map((n) =>
+            notificationIds.includes(n.id) ? { ...n, markedAsRead: true } : n
+          )
+        )
+      }
+      if (type === 'marked_as_seen' && since) {
+        setNotifications((notifs) =>
+          notifs?.map((n) =>
+            n.createdTime < since ? { ...n, isSeen: true } : n
+          )
+        )
+      }
+    },
+  })
   return { notifications, markAllAsSeen }
 }
 
@@ -155,19 +181,26 @@ export function useGroupedNotifications(
     ? sortBy(filteredNotifications, (n) => -n.createdTime)
     : undefined
 
+  const pinnedNotifications = sortedNotifications?.filter(
+    (n) => n.markedAsRead === false
+  )
+  const regularNotifications = sortedNotifications?.filter(
+    (n) => n.markedAsRead !== false
+  )
+
   const [groupedNotifications, mostRecentNotification] =
-    groupGeneralNotifications(sortedNotifications, [
+    groupGeneralNotifications(regularNotifications, [
       'loan_income',
       'contract_from_followed_user',
     ])
 
   const groupedNewMarketNotifications = groupSpecificNotifications(
-    sortedNotifications,
+    regularNotifications,
     (n) => n.reason === 'contract_from_followed_user',
     (n) => new Date(n.createdTime).toDateString() + n.sourceUserUsername
   )
   const groupedMentionNotifications = groupSpecificNotifications(
-    sortedNotifications,
+    regularNotifications,
     (n) =>
       n.reason === 'tagged_user' ||
       (n.sourceType === 'comment' &&
@@ -181,6 +214,7 @@ export function useGroupedNotifications(
   return useMemo(
     () => ({
       mostRecentNotification,
+      pinnedNotifications,
       groupedNotifications,
       groupedNewMarketNotifications,
       groupedMentionNotifications,

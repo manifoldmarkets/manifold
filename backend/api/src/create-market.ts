@@ -19,6 +19,7 @@ import {
   contractUrl,
   nativeContractColumnsArray,
   NUMBER_CREATION_ENABLED,
+  PollVoterVisibility,
 } from 'common/contract'
 import { getAnte } from 'common/economy'
 import { MAX_GROUPS_PER_MARKET } from 'common/group'
@@ -130,6 +131,7 @@ export async function createMarketHelper(body: Body, auth: AuthedUser) {
     unit,
     midpoints,
     timezone,
+    voterVisibility,
   } = validateMarketBody(body)
 
   const userId = auth.uid
@@ -224,6 +226,7 @@ export async function createMarketHelper(body: Body, auth: AuthedUser) {
           unit: unit ?? '',
           midpoints: midpoints,
           timezone: timezone,
+          voterVisibility: voterVisibility as PollVoterVisibility | undefined,
         })
       )
       const nativeKeys = nativeContractColumnsArray.map(camelCase)
@@ -358,7 +361,8 @@ function validateMarketBody(body: Body) {
     isAutoBounty: boolean | undefined,
     unit: string | undefined,
     midpoints: number[] | undefined,
-    timezone: string | undefined
+    timezone: string | undefined,
+    voterVisibility: PollVoterVisibility | undefined
 
   if (outcomeType === 'PSEUDO_NUMERIC') {
     const parsed = validateMarketType(outcomeType, createNumericSchema, body)
@@ -467,7 +471,11 @@ function validateMarketBody(body: Body) {
   }
 
   if (outcomeType === 'POLL') {
-    ;({ answers } = validateMarketType(outcomeType, createPollSchema, body))
+    ;({ answers, voterVisibility } = validateMarketType(
+      outcomeType,
+      createPollSchema,
+      body
+    ))
   }
 
   return {
@@ -503,6 +511,7 @@ function validateMarketBody(body: Body) {
     unit,
     midpoints,
     timezone,
+    voterVisibility,
   }
 }
 

@@ -3,7 +3,7 @@ import { memo, ReactNode, useEffect, useMemo, useRef, useState } from 'react'
 
 import { Bet } from 'common/bet'
 import { ContractComment } from 'common/comment'
-import { Contract } from 'common/contract'
+import { Contract, MarketContract } from 'common/contract'
 import { CommentView } from 'common/events'
 import { Col } from 'web/components/layout/col'
 import { Row } from 'web/components/layout/row'
@@ -117,11 +117,13 @@ export const FeedComment = memo(function FeedComment(props: {
 
   return (
     <Col className="group">
-      <CommentReplyHeader
-        hideBetHeader={commenterAndBettorMatch(comment)}
-        comment={comment}
-        contract={playContract}
-      />
+      {!commenterAndBettorMatch(comment) && (
+        <CommentReplyHeader
+          comment={comment}
+          contract={playContract}
+          hideBetHeader={false}
+        />
+      )}
       <Row ref={ref} className={clsx(isParent ? 'gap-2' : 'gap-1')}>
         <Row className="relative">
           {/*// Curved reply line*/}
@@ -204,7 +206,7 @@ export const FeedComment = memo(function FeedComment(props: {
       {!!bets?.length && (
         <Row>
           <Col className={'w-full'}>
-            {groupedBets?.map((bets, i) => {
+            {groupedBets?.map((bets) => {
               return (
                 <Row
                   className={'relative mt-1 w-full'}
@@ -223,15 +225,14 @@ export const FeedComment = memo(function FeedComment(props: {
                     className={clsx(
                       straightThreadColor,
                       'absolute bottom-0 left-4 w-0.5 group-last:hidden ',
-                      i === groupedBets.length - 1 && 'hidden',
-                      isParent ? 'top-0' : '-top-1'
+                      isParent ? 'top-0' : '-top-1',
+                      lastInReplyChain ? 'hidden' : ''
                     )}
                   />
                   <FeedReplyBet
                     className={'bg-canvas-50'}
                     avatarSize={'2xs'}
-                    // TODO: condition to toggle
-                    contract={playContract}
+                    contract={playContract as MarketContract}
                     bets={bets}
                   />
                 </Row>

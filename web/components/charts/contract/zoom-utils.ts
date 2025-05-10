@@ -1,6 +1,6 @@
 import { HistoryPoint, maxMinBin, MultiPoints } from 'common/chart'
 import { debounce, maxBy, minBy } from 'lodash'
-import { useCallback, useEffect, useLayoutEffect, useState } from 'react'
+import { useEffect, useLayoutEffect, useState } from 'react'
 import { ScaleTime } from 'd3-scale'
 import { getBetPointsBetween } from 'common/bets'
 import { getMultiBetPoints } from 'common/contract-params'
@@ -109,7 +109,7 @@ export const useMultiChoiceDataZoomFetcher = (props: {
   const [data, setData] = useState(points)
   const [loading, setLoading] = useState(false)
 
-  const onZoomData = useCallback(
+  const onZoomData = useEvent(
     debounce(async (min?: number, max?: number) => {
       if (min && max) {
         setLoading(true)
@@ -144,8 +144,7 @@ export const useMultiChoiceDataZoomFetcher = (props: {
       } else {
         setData(points)
       }
-    }, 100),
-    [contract.id]
+    }, 100)
   )
 
   useLayoutEffect(() => {
@@ -161,11 +160,10 @@ export const useMultiChoiceDataZoomFetcher = (props: {
       const [minX, maxX] = viewXScale.range()
       if (Math.abs(minX - maxX) <= 1) return
       // 20px buffer
-      const min = viewXScale.invert(minX - 20).valueOf()
-      const max = viewXScale.invert(maxX + 20).valueOf()
-      const fixedMin = Math.max(min, createdTime)
-      const fixedMax = Math.min(max, lastBetTime) + 1
-
+      const min = viewXScale.invert(minX).valueOf()
+      const max = viewXScale.invert(maxX).valueOf()
+      const fixedMin = Math.max(min, createdTime) - 1000
+      const fixedMax = Math.min(max, lastBetTime) + 1000
       onZoomData(fixedMin, fixedMax)
     } else {
       onZoomData()

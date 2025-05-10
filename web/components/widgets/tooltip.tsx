@@ -46,6 +46,11 @@ export function Tooltip({
 }: TooltipProps) {
   const arrowRef = useRef(null)
   const [open, setOpen] = useState(false)
+  const [mounted, setMounted] = useState(false)
+
+  useEffect(() => {
+    setMounted(true)
+  }, [])
 
   useEffect(() => {
     if (open && autoHideDuration) {
@@ -105,38 +110,42 @@ export function Tooltip({
       >
         {children}
       </span>
-      <Transition
-        show={open}
-        enter="transition-opacity ease-out duration-50"
-        enterFrom="opacity-0"
-        enterTo="opacity-100"
-        leave={noFade ? '' : 'transition-opacity ease-in duration-150'}
-        leaveFrom="opacity-100"
-        leaveTo="opacity-0"
-        as="div"
-        role="tooltip"
-        ref={refs.setFloating}
-        style={floatingStyles}
-        className={clsx(
-          'text-ink-0 bg-ink-700 z-20 w-max max-w-xs whitespace-normal rounded px-2 py-1 text-center text-sm font-medium',
-          tooltipClassName
+      {mounted &&
+        createPortal(
+          <Transition
+            show={open}
+            enter="transition-opacity ease-out duration-50"
+            enterFrom="opacity-0"
+            enterTo="opacity-100"
+            leave={noFade ? '' : 'transition-opacity ease-in duration-150'}
+            leaveFrom="opacity-100"
+            leaveTo="opacity-0"
+            as="div"
+            role="tooltip"
+            ref={refs.setFloating}
+            style={floatingStyles}
+            className={clsx(
+              'text-ink-0 bg-ink-700 z-20 w-max max-w-xs whitespace-normal rounded px-2 py-1 text-center text-sm font-medium',
+              tooltipClassName
+            )}
+            suppressHydrationWarning={suppressHydrationWarning}
+            {...getFloatingProps()}
+          >
+            {text}
+            <div
+              ref={arrowRef}
+              className="bg-ink-700 absolute h-2 w-2 rotate-45"
+              style={{
+                top: arrowY != null ? arrowY : '',
+                left: arrowX != null ? arrowX : '',
+                right: '',
+                bottom: '',
+                [arrowSide]: '-4px',
+              }}
+            />
+          </Transition>,
+          document.body
         )}
-        suppressHydrationWarning={suppressHydrationWarning}
-        {...getFloatingProps()}
-      >
-        {text}
-        <div
-          ref={arrowRef}
-          className="bg-ink-700 absolute h-2 w-2 rotate-45"
-          style={{
-            top: arrowY != null ? arrowY : '',
-            left: arrowX != null ? arrowX : '',
-            right: '',
-            bottom: '',
-            [arrowSide]: '-4px',
-          }}
-        />
-      </Transition>
     </>
   )
 }

@@ -7,7 +7,7 @@ import { ManaPurchaseTxn } from 'common/txn'
 import { sendThankYouEmail } from 'shared/emails'
 import { runTxnInBetQueue } from 'shared/txn/run-txn'
 import { createSupabaseDirectClient } from 'shared/supabase/init'
-import { IOS_PRICES, MANI_IOS_PRICES } from 'common/economy'
+import { MANI_IOS_PRICES, OLD_IOS_PRICES } from 'common/economy'
 
 const IAP_TYPES_PROCESSED = 'apple'
 
@@ -61,7 +61,7 @@ export const validateiap: APIHandler<'validateIap'> = async (props, auth) => {
     log('transactionId', transactionId, 'already processed')
     throw new APIError(403, 'iap transaction already processed')
   }
-  const allPrices = IOS_PRICES.concat(isProd() ? [] : MANI_IOS_PRICES)
+  const allPrices = OLD_IOS_PRICES.concat(isProd() ? [] : MANI_IOS_PRICES)
   const priceData = allPrices.find((p) => p.sku === productId)
   if (!priceData) {
     log('productId', productId, 'not found in price data')

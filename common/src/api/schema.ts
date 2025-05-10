@@ -19,6 +19,7 @@ import { type Answer } from 'common/answer'
 import {
   CommentWithTotalReplies,
   MAX_COMMENT_LENGTH,
+  PostComment,
   type ContractComment,
 } from 'common/comment'
 import { CandidateBet } from 'common/new-bet'
@@ -76,6 +77,7 @@ import { Dictionary } from 'lodash'
 import { Reaction } from 'common/reaction'
 import { YEAR_MS } from 'common/util/time'
 import { MarketDraft } from 'common/drafts'
+import { TopLevelPost } from 'common/top-level-post'
 // mqp: very unscientific, just balancing our willingness to accept load
 // with user willingness to put up with stale data
 export const DEFAULT_CACHE_STRATEGY =
@@ -406,7 +408,7 @@ export const API = (_apiTypeCheck = {
       .object({
         contractId: z.string(),
         answerId: z.string().optional(),
-        limit: z.coerce.number().gte(0).lte(50000).default(50000),
+        limit: z.coerce.number().gte(0).lte(50000).default(5000),
         beforeTime: z.coerce.number(),
         afterTime: z.coerce.number(),
         filterRedemptions: coerceBoolean.optional(),
@@ -978,6 +980,7 @@ export const API = (_apiTypeCheck = {
         hasSeenAppBannerInNotificationsOn: z.number().optional(),
         installedAppPlatforms: z.array(z.string()).optional(),
         paymentInfo: z.string().optional(),
+        lastAppReviewTime: z.number().optional(),
       })
       .strict(),
   },
@@ -1148,7 +1151,8 @@ export const API = (_apiTypeCheck = {
     props: z
       .object({
         contentId: z.string(),
-        contentType: z.enum(['comment', 'contract']),
+        contentType: z.enum(['comment', 'contract', 'post']),
+        commentParentType: z.enum(['post']).optional(),
         remove: z.boolean().optional(),
         reactionType: z.enum(['like', 'dislike']).optional().default('like'),
       })
@@ -1491,6 +1495,26 @@ export const API = (_apiTypeCheck = {
     }),
     cache: DEFAULT_CACHE_STRATEGY,
     returns: {} as Dashboard,
+  },
+  'get-posts': {
+    method: 'GET',
+    visibility: 'public',
+    authed: false,
+    preferAuth: true,
+    cache: DEFAULT_CACHE_STRATEGY,
+    props: z
+      .object({
+        sortBy: z
+          .enum(['created_time', 'importance_score'])
+          .optional()
+          .default('created_time'),
+        term: z.string().optional(),
+        limit: z.coerce.number().gte(0).lte(200).default(100),
+        userId: z.string().optional(),
+        offset: z.coerce.number().gte(0).default(0),
+      })
+      .strict(),
+    returns: [] as TopLevelPost[],
   },
   'create-public-chat-message': {
     method: 'POST',
@@ -1901,18 +1925,6 @@ export const API = (_apiTypeCheck = {
       })
       .strict(),
   },
-  'generate-ai-market-suggestions-2': {
-    method: 'POST',
-    visibility: 'public',
-    authed: true,
-    returns: [] as AIGeneratedMarket[],
-    props: z
-      .object({
-        prompt: z.string(),
-        existingTitles: z.array(z.string()).optional(),
-      })
-      .strict(),
-  },
   'generate-ai-description': {
     method: 'POST',
     visibility: 'public',
@@ -2076,7 +2088,9 @@ export const API = (_apiTypeCheck = {
         blockedGroupSlugs: z.array(z.string()).optional(),
         blockedContractIds: z.array(z.string()).optional(),
         topicIds: z.array(z.string()).optional(),
-        types: z.array(z.enum(['bets', 'comments', 'markets'])).optional(),
+        types: z
+          .array(z.enum(['bets', 'comments', 'markets', 'limit-orders']))
+          .optional(),
         minBetAmount: z.coerce.number().optional(),
         onlyFollowedTopics: coerceBoolean.optional(),
         onlyFollowedContracts: coerceBoolean.optional(),
@@ -2180,7 +2194,7 @@ export const API = (_apiTypeCheck = {
   'get-contract-voters': {
     method: 'GET',
     visibility: 'public',
-    authed: false,
+    authed: true,
     props: z
       .object({
         contractId: z.string(),
@@ -2191,7 +2205,7 @@ export const API = (_apiTypeCheck = {
   'get-contract-option-voters': {
     method: 'GET',
     visibility: 'public',
-    authed: false,
+    authed: true,
     props: z.object({ contractId: z.string(), optionId: z.string() }),
     returns: [] as DisplayUser[],
   },
@@ -2365,6 +2379,96 @@ export const API = (_apiTypeCheck = {
     props: z
       .object({
         id: z.coerce.number(),
+      })
+      .strict(),
+  },
+  'get-season-info': {
+    method: 'GET',
+    visibility: 'public',
+    authed: false,
+    props: z.object({
+      season: z.coerce.number().int().positive().optional(),
+    }),
+    returns: {} as {
+      season: number
+      startTime: number // epoch ms
+      endTime: number | null // epoch ms, null if a *mystery* for clients
+      status: 'active' | 'processing' | 'complete'
+    },
+  },
+  'mark-notification-read': {
+    method: 'POST',
+    visibility: 'private',
+    authed: true,
+    returns: {} as { success: boolean },
+    props: z
+      .object({
+        notificationId: z.string(),
+      })
+      .strict(),
+  },
+  'dismiss-user-report': {
+    method: 'POST',
+    visibility: 'public',
+    authed: true,
+    props: z
+      .object({
+        reportId: z.string(),
+      })
+      .strict(),
+    returns: {} as { success: boolean },
+  },
+  'create-post': {
+    method: 'POST',
+    visibility: 'public',
+    authed: true,
+    returns: {} as { post: TopLevelPost },
+    props: z
+      .object({
+        title: z.string().min(1).max(120),
+        content: contentSchema,
+        isAnnouncement: z.boolean().optional(),
+        visibility: z.enum(['public', 'unlisted']).optional(),
+      })
+      .strict(),
+  },
+  'update-post': {
+    method: 'POST',
+    visibility: 'public',
+    authed: true,
+    returns: {} as { post: TopLevelPost },
+    props: z
+      .object({
+        id: z.string(),
+        title: z.string().min(1).max(480).optional(),
+        content: contentSchema.optional(),
+        visibility: z.enum(['public', 'unlisted']).optional(),
+      })
+      .strict(),
+  },
+  'create-post-comment': {
+    method: 'POST',
+    visibility: 'public',
+    authed: true,
+    returns: {} as { comment: PostComment },
+    props: z
+      .object({
+        postId: z.string(),
+        content: contentSchema,
+        replyToCommentId: z.string().optional(),
+      })
+      .strict(),
+  },
+  'update-post-comment': {
+    method: 'POST',
+    visibility: 'public',
+    authed: true,
+    returns: {} as { comment: PostComment },
+    props: z
+      .object({
+        commentId: z.string(),
+        postId: z.string(),
+        hidden: z.boolean().optional(),
       })
       .strict(),
   },

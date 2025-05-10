@@ -44,6 +44,7 @@ import {
   BinaryOutcomeLabel,
   MultiLabel,
   NumericValueLabel,
+  OutcomeLabel,
   ProbPercentLabel,
 } from 'web/components/outcome-label'
 import { SEARCH_TYPE_KEY } from 'web/components/search'
@@ -67,6 +68,10 @@ import {
   QuestionOrGroupLink,
 } from './notification-helpers'
 import { FaArrowTrendUp, FaArrowTrendDown } from 'react-icons/fa6'
+import { api } from 'web/lib/api/api'
+import { removeUndefinedProps } from 'common/util/object'
+import toast from 'react-hot-toast'
+import { NewPostFromFollowedUserNotification } from './followed-post-notification'
 
 export function NotificationItem(props: {
   notification: Notification
@@ -212,6 +217,15 @@ export function NotificationItem(props: {
   ) {
     return (
       <LimitOrderExpiredNotification
+        notification={notification}
+        isChildOfGroup={isChildOfGroup}
+        highlighted={highlighted}
+        setHighlighted={setHighlighted}
+      />
+    )
+  } else if (sourceType === 'post' && sourceUpdateType === 'created') {
+    return (
+      <NewPostFromFollowedUserNotification
         notification={notification}
         isChildOfGroup={isChildOfGroup}
         highlighted={highlighted}
@@ -488,10 +502,11 @@ function LimitOrderCancelledNotification(props: {
     probability,
     limitAt: dataLimitAt,
     outcomeType,
-    token,
+    mechanism,
+    betAnswer,
   } = (data as BetFillData) ?? {}
 
-  const amountRemaining = formatMoney(parseInt(sourceText ?? '0'), token)
+  const amountRemaining = formatMoney(parseInt(sourceText ?? '0'))
   const limitAt =
     dataLimitAt !== undefined
       ? dataLimitAt
@@ -511,7 +526,20 @@ function LimitOrderCancelledNotification(props: {
       : 'text-blue-600'
   const description = (
     <span>
-      Your<span className={clsx('mx-1', color)}>{outcome}</span>
+      Your{' '}
+      {mechanism ? (
+        <OutcomeLabel
+          outcome={creatorOutcome}
+          contract={{
+            outcomeType,
+            mechanism,
+          }}
+          answer={betAnswer ? { text: betAnswer } : undefined}
+          truncate="short"
+        />
+      ) : (
+        <span className={clsx(color)}>{outcome}</span>
+      )}{' '}
       limit order for {amountRemaining} at {limitAt} was cancelled due to
       insufficient funds.
     </span>
@@ -538,6 +566,35 @@ function LimitOrderCancelledNotification(props: {
     </NotificationFrame>
   )
 }
+// Helper function to format duration into a human-readable string
+function formatDuration(milliseconds: number): string {
+  if (milliseconds <= 0) return 'less than a minute'
+
+  const seconds = milliseconds / 1000
+  const minutes = seconds / 60
+  const hours = minutes / 60
+  const days = hours / 24
+  const months = days / 30 // Approximation using 30 days per month
+
+  if (months >= 1) {
+    const roundedMonths = Math.round(months)
+    return `about ${roundedMonths} month${roundedMonths !== 1 ? 's' : ''}`
+  } else if (days >= 1) {
+    const roundedDays = Math.round(days)
+    return `about ${roundedDays} day${roundedDays !== 1 ? 's' : ''}`
+  } else if (hours >= 1) {
+    const roundedHours = Math.round(hours)
+    return `about ${roundedHours} hour${roundedHours !== 1 ? 's' : ''}`
+  } else {
+    const roundedMinutes = Math.round(minutes)
+    if (roundedMinutes >= 1) {
+      return `about ${roundedMinutes} minute${roundedMinutes !== 1 ? 's' : ''}`
+    } else {
+      return 'less than a minute'
+    }
+  }
+}
+
 function LimitOrderExpiredNotification(props: {
   notification: Notification
   highlighted: boolean
@@ -545,19 +602,73 @@ function LimitOrderExpiredNotification(props: {
   isChildOfGroup?: boolean
 }) {
   const { notification, isChildOfGroup, highlighted, setHighlighted } = props
-  const { sourceText, data, sourceContractTitle } = notification
+  const { sourceText, data, sourceContractTitle, sourceContractId } =
+    notification
   const {
     creatorOutcome,
     probability,
     limitAt: dataLimitAt,
     outcomeType,
-    token,
+    limitOrderTotal,
+    betAnswerId,
+    expiresAt,
+    createdTime,
+    mechanism,
+    betAnswer,
   } = (data as BetFillData) ?? {}
-  const amountRemaining = formatMoney(parseInt(sourceText ?? '0'), token)
+
+  const [isLoading, setIsLoading] = useState(false)
+
+  const amountRemaining = formatMoney(parseInt(sourceText ?? '0'))
   const limitAt =
     dataLimitAt !== undefined
       ? dataLimitAt
       : Math.round(probability * 100) + '%'
+
+  const canShowRefreshButton =
+    !!limitOrderTotal &&
+    !!creatorOutcome &&
+    !!probability &&
+    !!sourceContractId &&
+    !!expiresAt &&
+    !!createdTime &&
+    (outcomeType !== 'BINARY' && outcomeType !== 'PSEUDO_NUMERIC'
+      ? !!betAnswerId
+      : true)
+
+  const handleRefreshOrder = async () => {
+    if (!canShowRefreshButton || !expiresAt || !createdTime) {
+      toast.error('Could not duplicate order: missing required data.')
+      return
+    }
+    setIsLoading(true)
+    try {
+      const expiresMillisAfter = expiresAt - createdTime
+      await api(
+        'bet',
+        removeUndefinedProps({
+          contractId: sourceContractId,
+          amount: limitOrderTotal,
+          outcome: creatorOutcome as 'YES' | 'NO',
+          limitProb: probability,
+          expiresMillisAfter,
+          answerId: betAnswerId,
+        })
+      )
+      // Format the duration for the success message
+      const formattedDuration = formatDuration(expiresMillisAfter)
+      toast.success(`Duplicate order placed! Expires in ${formattedDuration}`)
+    } catch (error) {
+      console.error('Error duplicating limit order:', error)
+      toast.error(
+        `Error duplicating order: ${
+          error instanceof Error ? error.message : 'Unknown error'
+        }`
+      )
+    } finally {
+      setIsLoading(false)
+    }
+  }
 
   const outcome =
     outcomeType === 'PSEUDO_NUMERIC'
@@ -573,7 +684,20 @@ function LimitOrderExpiredNotification(props: {
       : 'text-blue-600'
   const description = (
     <span>
-      Your<span className={clsx('mx-1', color)}>{outcome}</span>
+      Your{' '}
+      {mechanism ? (
+        <OutcomeLabel
+          outcome={creatorOutcome}
+          contract={{
+            outcomeType,
+            mechanism,
+          }}
+          answer={betAnswer ? { text: betAnswer } : undefined}
+          truncate="short"
+        />
+      ) : (
+        <span className={clsx(color)}>{outcome}</span>
+      )}{' '}
       limit order for {amountRemaining} at {limitAt} has expired{' '}
     </span>
   )
@@ -605,6 +729,20 @@ function LimitOrderExpiredNotification(props: {
           </span>
         )}
       </div>
+      {canShowRefreshButton && (
+        <Button
+          size="2xs"
+          color="gray-outline"
+          onClick={(e) => {
+            e.preventDefault()
+            handleRefreshOrder()
+          }}
+          loading={isLoading}
+          className="mt-1 self-start"
+        >
+          Duplicate order
+        </Button>
+      )}
     </NotificationFrame>
   )
 }
@@ -624,9 +762,8 @@ function BetFillNotification(props: {
     limitAt: dataLimitAt,
     outcomeType,
     betAnswer,
-    token,
   } = (data as BetFillData) ?? {}
-  const amount = formatMoney(parseInt(sourceText ?? '0'), token)
+  const amount = formatMoney(parseInt(sourceText ?? '0'))
   const limitAt =
     dataLimitAt !== undefined
       ? dataLimitAt
@@ -661,15 +798,15 @@ function BetFillNotification(props: {
       {limitOrderRemaining === 0 && (
         <>
           Your limit order{' '}
-          {limitOrderTotal && <>for {formatMoney(limitOrderTotal, token)}</>} is
+          {limitOrderTotal && <>for {formatMoney(limitOrderTotal)}</>} is
           complete
         </>
       )}
       {!!limitOrderRemaining && (
         <>
-          You have {formatMoney(limitOrderRemaining, token)}
-          {limitOrderTotal && <>/{formatMoney(limitOrderTotal, token)}</>}{' '}
-          remaining in your order
+          You have {formatMoney(limitOrderRemaining)}
+          {limitOrderTotal && <>/{formatMoney(limitOrderTotal)}</>} remaining in
+          your order
         </>
       )}
     </>
@@ -1089,13 +1226,25 @@ function CommentNotification(props: {
     sourceUserUsername,
     reason,
     sourceText,
-    sourceContractTitle,
+    sourceTitle,
+    markedAsRead,
   } = notification
+
   const reasonText =
     reason === 'reply_to_users_answer' || reason === 'reply_to_users_comment'
       ? 'replied to you '
       : `commented `
+
   const comment = sourceText
+
+  const handleDismiss = async () => {
+    await api('mark-notification-read', {
+      notificationId: notification.id,
+    })
+  }
+
+  const isPinned = markedAsRead === false
+
   return (
     <NotificationFrame
       notification={notification}
@@ -1106,15 +1255,17 @@ function CommentNotification(props: {
         <AvatarNotificationIcon notification={notification} symbol={'💬'} />
       }
       subtitle={
-        comment ? (
-          <div className="line-clamp-2">
-            <Linkify text={comment} />{' '}
-          </div>
-        ) : (
-          <></>
-        )
+        <div>
+          {comment && (
+            <div className="line-clamp-2">
+              <Linkify text={comment} />
+            </div>
+          )}
+        </div>
       }
       link={getSourceUrl(notification)}
+      isPinned={isPinned}
+      onDismiss={isPinned ? handleDismiss : undefined}
     >
       <div className="line-clamp-3">
         <NotificationUserLink
@@ -1125,13 +1276,14 @@ function CommentNotification(props: {
         {reasonText}
         {!isChildOfGroup && (
           <span>
-            on <PrimaryNotificationLink text={sourceContractTitle} />
+            on <PrimaryNotificationLink text={sourceTitle} />
           </span>
         )}
       </div>
     </NotificationFrame>
   )
 }
+
 function BetReplyNotification(props: {
   notification: Notification
   highlighted: boolean
@@ -1231,8 +1383,9 @@ function TaggedUserNotification(props: {
   isChildOfGroup?: boolean
 }) {
   const { notification, isChildOfGroup, highlighted, setHighlighted } = props
-  const { sourceId, sourceUserName, sourceUserUsername, sourceContractTitle } =
+  const { sourceId, sourceUserName, sourceUserUsername, sourceTitle } =
     notification
+
   return (
     <NotificationFrame
       notification={notification}
@@ -1253,7 +1406,7 @@ function TaggedUserNotification(props: {
         tagged you{' '}
         {!isChildOfGroup && (
           <span>
-            on <PrimaryNotificationLink text={sourceContractTitle} />
+            on <PrimaryNotificationLink text={sourceTitle} />
           </span>
         )}
       </div>
@@ -1358,13 +1511,19 @@ function UserLikeNotification(props: {
       }
       link={getSourceUrl(notification)}
       subtitle={
-        sourceType === 'comment_like' ? <Linkify text={sourceText} /> : <></>
+        sourceType === 'comment_like' || sourceType === 'post_comment_like' ? (
+          <Linkify text={sourceText} />
+        ) : (
+          <></>
+        )
       }
     >
       {reactorsText && <PrimaryNotificationLink text={reactorsText} />} liked
       your
-      {sourceType === 'comment_like'
+      {sourceType === 'comment_like' || sourceType === 'post_comment_like'
         ? ' comment ' + (isChildOfGroup ? '' : 'on ')
+        : sourceType === 'post_like'
+        ? ' post '
         : ' question '}
       {!isChildOfGroup && <QuestionOrGroupLink notification={notification} />}
       <MultiUserReactionModal

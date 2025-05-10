@@ -8,6 +8,10 @@ import { UserLink, BannedBadge } from 'web/components/widgets/user-link'
 import { Tooltip } from 'web/components/widgets/tooltip'
 import { LiteReport } from 'web/pages/admin/reports'
 import SuperBanControl from 'web/components/SuperBanControl'
+import { useAdmin } from 'web/hooks/use-admin'
+import { api } from 'web/lib/api/api'
+import toast from 'react-hot-toast'
+import { Button } from 'web/components/buttons/button'
 
 export default function UserReportItem(props: {
   report: LiteReport
@@ -22,13 +26,33 @@ export default function UserReportItem(props: {
     contentType,
     createdTime,
     reasonsDescription,
+    id: reportId,
   } = props.report
   const { bannedIds, onBan } = props
   const isBanned = owner.isBannedFromPosting || bannedIds.includes(owner.id)
   const [showContent, setShowContent] = useState(!isBanned)
+  const [isDismissedLocal, setIsDismissedLocal] = useState(false)
+  const isAdmin = useAdmin()
+
   useEffect(() => {
     setShowContent(!isBanned)
   }, [isBanned])
+
+  const handleDismiss = async () => {
+    if (!reportId) return
+    try {
+      await toast.promise(api('dismiss-user-report', { reportId }), {
+        loading: 'Dismissing report...',
+        success: 'Report dismissed',
+        error: 'Failed to dismiss report',
+      })
+      setIsDismissedLocal(true)
+    } catch (e) {
+      console.error('Error dismissing report:', e)
+    }
+  }
+
+  if (isDismissedLocal) return null
 
   return (
     <div className="bg-canvas-50 my-4 rounded-lg p-4">
@@ -78,6 +102,16 @@ export default function UserReportItem(props: {
             onBan={() => onBan(owner.id)}
             disabled={isBanned}
           />
+          {isAdmin && (
+            <Button
+              color="red-outline"
+              size="xs"
+              onClick={handleDismiss}
+              className="whitespace-nowrap"
+            >
+              Dismiss Report
+            </Button>
+          )}
           {createdTime && <RelativeTimestamp time={createdTime} />}
         </div>
       </div>

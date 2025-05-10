@@ -1,7 +1,7 @@
 import { broadcast, broadcastMulti } from './server'
 import { Bet, LimitBet } from 'common/bet'
 import { Contract, Visibility } from 'common/contract'
-import { ContractComment } from 'common/comment'
+import { ContractComment, PostComment } from 'common/comment'
 import { User } from 'common/user'
 import { Answer } from 'common/answer'
 import { ChartAnnotation } from 'common/supabase/chart-annotations'
@@ -67,6 +67,19 @@ export function broadcastNewComment(
   }
   broadcastMulti(topics, payload)
 }
+export function broadcastNewPostComment(
+  postId: string,
+  visibility: Visibility,
+  creator: User,
+  comment: PostComment
+) {
+  const payload = { creator, comment }
+  const topics = [`post/${postId}/new-comment`]
+  if (visibility === 'public') {
+    topics.push('global', 'global/new-post-comment')
+  }
+  broadcastMulti(topics, payload)
+}
 
 export function broadcastNewContract(contract: Contract, creator: User) {
   const payload = { contract, creator }
@@ -128,4 +141,20 @@ export function broadcastNewChartAnnotation(
   annotation: ChartAnnotation
 ) {
   broadcast(`contract/${contractId}/chart-annotation`, { annotation })
+}
+
+export function broadcastNotificationsRead(
+  userId: string,
+  notificationIds: string[]
+) {
+  broadcast(`user-notification-status/${userId}`, {
+    type: 'marked_as_read',
+    notificationIds,
+  })
+}
+export function broadcastAllNotificationsRead(userId: string, since: number) {
+  broadcast(`user-notification-status/${userId}`, {
+    type: 'marked_as_seen',
+    since,
+  })
 }

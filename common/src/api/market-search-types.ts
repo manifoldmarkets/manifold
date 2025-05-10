@@ -76,5 +76,6 @@ export const searchProps = z
       .default('ALL'),
     gids: z.string().optional(),
     liquidity: z.coerce.number().optional(),
+    hasBets: z.union([z.literal('1'), z.literal('0')]).optional(),
   })
   .strict()

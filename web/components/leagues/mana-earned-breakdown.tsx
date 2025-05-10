@@ -51,7 +51,7 @@ export const ManaEarnedBreakdown = (props: {
   //     (mana_earned_breakdown.AD_REDEEM ?? 0),
   // } as { [key: string]: number }
 
-  const { start, end } = getSeasonDates(season)
+  const { start, approxEnd: end } = getSeasonDates(season)
   const loadingBets = useBetsOnce((params) => api('bets', params), {
     userId: user.id,
     afterTime: start.getTime(),

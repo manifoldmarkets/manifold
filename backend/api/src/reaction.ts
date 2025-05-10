@@ -1,11 +1,19 @@
 import { assertUnreachable } from 'common/util/types'
-import { createLikeNotification } from 'shared/create-notification'
+import { createLikeNotification } from 'shared/notifications/create-new-like-notif'
 import { createSupabaseDirectClient } from 'shared/supabase/init'
 import { log } from 'shared/utils'
 import { APIError, APIHandler } from './helpers/endpoint'
+import { revalidatePost } from './create-post-comment'
+import { getPost } from 'shared/supabase/posts'
 
 export const addOrRemoveReaction: APIHandler<'react'> = async (props, auth) => {
-  const { contentId, contentType, remove, reactionType = 'like' } = props
+  const {
+    contentId,
+    contentType,
+    remove,
+    reactionType = 'like',
+    commentParentType,
+  } = props
   const userId = auth.uid
 
   const pg = createSupabaseDirectClient()
@@ -21,30 +29,46 @@ export const addOrRemoveReaction: APIHandler<'react'> = async (props, auth) => {
   if (remove) {
     await deleteReaction(reactionType)
   } else {
-    // get the id of the person this content belongs to, to denormalize the owner
     let ownerId: string
     if (contentType === 'comment') {
-      const userId = await pg.oneOrNone(
-        `select user_id from contract_comments where comment_id = $1`,
-        [contentId],
-        (r) => r?.user_id
-      )
-
-      if (!userId) {
+      let commentAuthorId: string | undefined
+      if (commentParentType === 'post') {
+        commentAuthorId = await pg.oneOrNone(
+          `select user_id from old_post_comments where comment_id = $1`,
+          [contentId],
+          (r) => r?.user_id
+        )
+      } else {
+        // Default to contract comment if commentParentType is not 'post' or undefined
+        commentAuthorId = await pg.oneOrNone(
+          `select user_id from contract_comments where comment_id = $1`,
+          [contentId],
+          (r) => r?.user_id
+        )
+      }
+      if (!commentAuthorId) {
         throw new APIError(404, 'Failed to find comment')
       }
-      ownerId = userId
+      ownerId = commentAuthorId
     } else if (contentType === 'contract') {
       const creatorId = await pg.oneOrNone(
         `select creator_id from contracts where id = $1`,
         [contentId],
         (r) => r?.creator_id
       )
-
       if (!creatorId) {
         throw new APIError(404, 'Failed to find contract')
       }
-
+      ownerId = creatorId
+    } else if (contentType === 'post') {
+      const creatorId = await pg.oneOrNone(
+        `select creator_id from old_posts where id = $1`,
+        [contentId],
+        (r) => r?.creator_id
+      )
+      if (!creatorId) {
+        throw new APIError(404, 'Failed to find post')
+      }
       ownerId = creatorId
     } else {
       assertUnreachable(contentType)
@@ -59,16 +83,13 @@ export const addOrRemoveReaction: APIHandler<'react'> = async (props, auth) => {
 
     if (existingReactions.length > 0) {
       const existingReactionType = existingReactions[0].reaction_type
-      // if it's the same reaction type, do nothing
       if (existingReactionType === reactionType) {
         return { result: { success: true }, continue: async () => {} }
       } else {
-        // otherwise, remove the other reaction type
         await deleteReaction(existingReactionType)
       }
     }
 
-    // actually do the insert
     const reactionRow = await pg.one(
       `insert into user_reactions
        (content_id, content_type, content_owner_id, user_id, reaction_type)
@@ -78,14 +99,20 @@ export const addOrRemoveReaction: APIHandler<'react'> = async (props, auth) => {
     )
 
     if (reactionType === 'like') {
-      await createLikeNotification(reactionRow)
+      await createLikeNotification(reactionRow, commentParentType)
     }
   }
 
   return {
     result: { success: true },
     continue: async () => {
-      if (contentType === 'comment') {
+      if (contentType === 'post') {
+        const post = await getPost(pg, contentId)
+        if (post) {
+          await revalidatePost(post)
+        }
+      }
+      if (contentType === 'comment' && commentParentType !== 'post') {
         const likeCount = await pg.one(
           `select count(*) from user_reactions
            where content_id = $1 and content_type = $2 and reaction_type = $3`,

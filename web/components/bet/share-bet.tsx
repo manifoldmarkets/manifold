@@ -4,15 +4,16 @@ import { Row } from '../layout/row'
 import { Col } from '../layout/col'
 import toast from 'react-hot-toast'
 import { LogoIcon } from '../icons/logo-icon'
-import { DuplicateIcon, ShareIcon } from '@heroicons/react/solid'
+import { DuplicateIcon } from '@heroicons/react/solid'
 import { useRef } from 'react'
 import { toPng } from 'html-to-image'
 import { TokenNumber } from '../widgets/token-number'
 import clsx from 'clsx'
-import { formatPercent } from 'common/util/format'
 import { useNativeInfo } from '../native-message-provider'
 import { postMessageToNative } from 'web/lib/native/post-message'
 import { LuShare } from 'react-icons/lu'
+import { ClipboardCopyIcon } from '@heroicons/react/outline'
+import { DisplayUser } from 'common/api/user-types'
 
 type ShareBetCardProps = {
   questionText: string
@@ -23,8 +24,14 @@ type ShareBetCardProps = {
   winAmount: number
   resolution?: string
   profit?: number
-  currentPrice?: number
+  bettor: DisplayUser
+  isLimitBet?: boolean
+  orderAmount?: number
 }
+
+// Simple in-memory cache for avatar data URIs
+const avatarDataUriCache: { [url: string]: string } = {}
+
 export const ShareBetCard = (props: ShareBetCardProps) => {
   const {
     questionText,
@@ -35,10 +42,16 @@ export const ShareBetCard = (props: ShareBetCardProps) => {
     betAmount,
     winAmount,
     resolution,
-    currentPrice,
+    bettor,
+    isLimitBet,
+    orderAmount,
   } = props
   const won =
     resolution && resolution !== 'CANCEL' ? (profit ?? 0) >= 0 : undefined
+  const isSell = betAmount < 0
+  const displayAmount = Math.abs(betAmount)
+  const displayOrderAmount = orderAmount ? Math.abs(orderAmount) : undefined
+
   return (
     <div className="w-full min-w-full max-w-xl overflow-hidden rounded-lg bg-gradient-to-br from-indigo-600 via-indigo-600 to-purple-500">
       <div className="flex items-center justify-center pb-4 pt-5">
@@ -49,28 +62,40 @@ export const ShareBetCard = (props: ShareBetCardProps) => {
       </div>
 
       <div className="mx-6 mb-3 rounded-lg bg-white p-6">
-        <div className="mb-6 flex">
+        <div className={clsx(' flex', answer ? 'mb-4' : 'mb-6')}>
           <div className="flex-1">
             <h2 className="text-2xl font-bold text-gray-800">{questionText}</h2>
           </div>
         </div>
 
-        <Row className="items-start justify-between">
-          {answer ? (
-            <div className="line-clamp-2 w-full text-lg text-gray-800">
+        <Col className="gap-2">
+          {answer && (
+            <div className="mb-2 line-clamp-2 w-full text-lg font-semibold text-gray-800">
               {answer}
             </div>
-          ) : !!currentPrice ? (
-            <div className="whitespace-nowrap text-lg text-gray-500">
-              Now {formatPercent(currentPrice)}
-            </div>
-          ) : (
-            <div />
           )}
-          <div className="whitespace-nowrap text-lg text-gray-500">
-            Avg {avgPrice}
-          </div>
-        </Row>
+          <Row className="items-center justify-between">
+            <Row className="items-center gap-2">
+              {/* Avatar component is cached in every copied image, have to use img instead */}
+              {bettor.avatarUrl ? (
+                <img
+                  src={bettor.avatarUrl}
+                  alt={`${bettor.name} avatar`}
+                  className="h-8 w-8 flex-shrink-0 rounded-full bg-gray-200 object-cover"
+                  data-testid="share-avatar"
+                />
+              ) : (
+                <div className="h-8 w-8 flex-shrink-0 rounded-full bg-gray-200"></div>
+              )}
+              <div className="whitespace-nowrap text-lg text-gray-800">
+                {bettor.name}
+              </div>
+            </Row>
+            <div className="whitespace-nowrap text-lg text-gray-500">
+              {isLimitBet ? 'Limit order at' : 'Avg'} {avgPrice}
+            </div>
+          </Row>
+        </Col>
 
         <div className="relative my-6">
           <div className="border-t border-gray-200"></div>
@@ -81,10 +106,12 @@ export const ShareBetCard = (props: ShareBetCardProps) => {
             {won !== undefined && !won ? (
               <div className="text-gray-500">Profit</div>
             ) : (
-              <div className="text-gray-500">Bet</div>
+              <div className="text-gray-500">
+                {isLimitBet ? 'Limit order' : isSell ? 'Sold' : 'Bet'}
+              </div>
             )}
             {(won === undefined || won) && (
-              <div className="text-gray-500">
+              <div className="whitespace-nowrap text-gray-500">
                 {won !== undefined ? 'Won' : 'To win'}
               </div>
             )}
@@ -99,7 +126,11 @@ export const ShareBetCard = (props: ShareBetCardProps) => {
               ) : (
                 <TokenNumber
                   className="text-2xl font-bold text-gray-900"
-                  amount={betAmount}
+                  amount={
+                    isLimitBet
+                      ? displayOrderAmount ?? displayAmount
+                      : displayAmount
+                  }
                 />
               )}
               <div
@@ -119,7 +150,7 @@ export const ShareBetCard = (props: ShareBetCardProps) => {
                   'text-2xl font-bold',
                   won ? 'text-teal-500' : 'text-primary-500'
                 )}
-                amount={winAmount}
+                amount={Math.abs(winAmount)}
               />
             )}
           </Row>
@@ -143,6 +174,94 @@ export const ShareBetCard = (props: ShareBetCardProps) => {
   )
 }
 
+const generateBase64ImageData = async (
+  cardRef: React.RefObject<HTMLDivElement>
+): Promise<string | null> => {
+  if (!cardRef.current) return null
+
+  try {
+    // Find the avatar image element using data-testid
+    const avatarImg = cardRef.current.querySelector(
+      '[data-testid="share-avatar"]'
+    ) as HTMLImageElement | null
+
+    if (avatarImg && avatarImg.src && !avatarImg.src.startsWith('data:')) {
+      const originalUrl = avatarImg.src
+
+      // Check cache first
+      if (avatarDataUriCache[originalUrl]) {
+        console.log('Using cached data URI for avatar:', originalUrl)
+        avatarImg.src = avatarDataUriCache[originalUrl]
+      } else {
+        // Only fetch if src is a URL and not in cache
+        console.log('Pre-fetching avatar image:', originalUrl)
+        try {
+          const response = await fetch(originalUrl)
+          if (!response.ok) {
+            throw new Error(`Failed to fetch avatar: ${response.statusText}`)
+          }
+          const blob = await response.blob()
+          const dataUri = await new Promise<string>((resolve, reject) => {
+            const reader = new FileReader()
+            reader.onloadend = () => resolve(reader.result as string)
+            reader.onerror = reject
+            reader.readAsDataURL(blob)
+          })
+          // Embed the fetched image data directly
+          console.log('Embedding data URI for avatar')
+          avatarImg.src = dataUri
+          // Store in cache
+          avatarDataUriCache[originalUrl] = dataUri
+        } catch (error) {
+          console.error('Failed to pre-fetch and embed avatar image:', error)
+          // Set src to a transparent placeholder on error
+          avatarImg.src =
+            'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII='
+          // Don't cache the error/placeholder
+        }
+      }
+    }
+    // Now generate the image
+    const dataUrl = await toPng(cardRef.current, {
+      quality: 1.0,
+      pixelRatio: 2,
+      skipFonts: true,
+      imagePlaceholder:
+        'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII=',
+      style: {
+        transformOrigin: 'center center',
+        transform: 'none',
+      },
+      filter: (node) => {
+        return !(node as HTMLElement).classList?.contains('tippy-box')
+      },
+    })
+
+    // Convert final PNG to blob and back to data URI if needed (or directly use dataUrl)
+    const blob = await fetch(dataUrl).then((res) => res.blob())
+    if (!blob) {
+      toast.error('Failed to create final image blob')
+      return null
+    }
+
+    return new Promise((resolve) => {
+      const reader = new FileReader()
+      reader.readAsDataURL(blob)
+      reader.onloadend = () => {
+        resolve(reader.result as string)
+      }
+      reader.onerror = () => {
+        toast.error('Failed to read final image blob')
+        resolve(null)
+      }
+    })
+  } catch (err) {
+    console.error('Failed to generate image:', err)
+    toast.error('Failed to generate image')
+    return null
+  }
+}
+
 export const ShareBetModal = (
   props: {
     open: boolean
@@ -153,85 +272,52 @@ export const ShareBetModal = (
   const cardRef = useRef<HTMLDivElement>(null)
   const { isNative, isIOS } = useNativeInfo()
 
-  const handleCopyShareImage = async () => {
-    if (!cardRef.current) return
+  const generateAndProcessImage = async (
+    processFn: (base64data: string) => Promise<void> | void
+  ) => {
+    const base64data = await generateBase64ImageData(cardRef)
+    if (!base64data) return
 
     try {
-      const dataUrl = await toPng(cardRef.current, {
-        quality: 1.0,
-        pixelRatio: 2,
-        skipFonts: true,
-        style: {
-          // Ensure all styles are inlined
-          transformOrigin: 'center center',
-          transform: 'none',
-        },
-        filter: (node) => {
-          // Skip problematic elements that might cause CORS issues
-          return !(node as HTMLElement).classList?.contains('tippy-box')
-        },
-      })
+      await processFn(base64data)
+    } catch (err) {
+      console.error('Failed during image processing:', err)
+      toast.error('Failed to process image')
+    }
+  }
 
-      // Create a temporary image element
-      const img = new Image()
-      img.crossOrigin = 'anonymous'
-
-      // Wait for image to load before proceeding
-      await new Promise((resolve, reject) => {
-        img.onload = resolve
-        img.onerror = reject
-        img.src = dataUrl
-      })
-
-      // Create a canvas to draw the image
-      const canvas = document.createElement('canvas')
-      canvas.width = img.width
-      canvas.height = img.height
-      const ctx = canvas.getContext('2d')
-      if (!ctx) {
-        toast.error('Failed to create image context')
-        return
-      }
-
-      // Draw the image on the canvas
-      ctx.drawImage(img, 0, 0)
-
-      // Convert to blob and copy to clipboard
-      canvas.toBlob(async (blob) => {
+  const handleiOSShareOrWebCopy = () => {
+    generateAndProcessImage(async (base64data) => {
+      if (isNative) {
+        postMessageToNative('share', {
+          url: base64data,
+        })
+      } else {
+        const blob = await fetch(base64data).then((res) => res.blob())
         if (!blob) {
           toast.error('Failed to create image blob')
           return
         }
-        try {
-          if (isNative) {
-            // Convert blob to base64 for sharing
-            const reader = new FileReader()
-            reader.readAsDataURL(blob)
-            reader.onloadend = () => {
-              const base64data = reader.result as string
-              // Use share with url property for the image data
-              postMessageToNative('share', {
-                url: base64data,
-              })
-            }
-          } else {
-            await navigator.clipboard.write([
-              new ClipboardItem({
-                [blob.type]: blob,
-              }),
-            ])
-            toast.success('Image copied to clipboard!')
-          }
-        } catch (err) {
-          console.error('Failed to copy image:', err)
-          toast.error('Failed to copy image to clipboard')
-        }
-      }, 'image/png')
-    } catch (err) {
-      console.error('Failed to generate image:', err)
-      toast.error('Failed to generate image')
-    }
+        await navigator.clipboard.write([
+          new ClipboardItem({
+            [blob.type]: blob,
+          }),
+        ])
+        toast.success('Image copied to clipboard!')
+      }
+    })
   }
+
+  const handleAndroidCopy = () => {
+    if (!isNative) return
+    generateAndProcessImage((base64data) => {
+      postMessageToNative('copyImageToClipboard', {
+        imageDataUri: base64data,
+      })
+      toast.success('Image copied to clipboard!')
+    })
+  }
+  if (!open) return null
 
   return (
     <Modal
@@ -248,18 +334,28 @@ export const ShareBetModal = (
           <Button color="gray-white" onClick={() => setOpen(false)}>
             Close
           </Button>
-          <Button color="gradient" onClick={handleCopyShareImage}>
-            <Row className="items-center gap-1.5">
-              {isIOS ? (
-                <LuShare className="h-5 w-5" aria-hidden />
-              ) : isNative ? (
-                <ShareIcon className="h-5 w-5" aria-hidden />
-              ) : (
-                <DuplicateIcon className="h-5 w-5" aria-hidden />
-              )}
-              {isNative ? 'Share Image' : 'Copy Image'}
-            </Row>
-          </Button>
+          <Row className="items-center justify-end gap-2">
+            {isNative && !isIOS && (
+              <Button color="indigo" onClick={handleAndroidCopy}>
+                <Row className="items-center gap-1.5">
+                  <ClipboardCopyIcon className="h-5 w-5" aria-hidden />
+                  Copy Image
+                </Row>
+              </Button>
+            )}
+            {((isNative && isIOS) || !isNative) && (
+              <Button color="gradient" onClick={handleiOSShareOrWebCopy}>
+                <Row className="items-center gap-1.5">
+                  {isIOS ? (
+                    <LuShare className="h-5 w-5" aria-hidden />
+                  ) : (
+                    <DuplicateIcon className="h-5 w-5" aria-hidden />
+                  )}
+                  {isNative ? 'Share Image' : 'Copy Image'}
+                </Row>
+              </Button>
+            )}
+          </Row>
         </Row>
       </Col>
     </Modal>
