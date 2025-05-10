@@ -899,7 +899,7 @@ function CapabilityCard({
                     'LLM gets IMO gold medal'}
                   {type === 'benchmark' &&
                     title.includes('Pokemon') &&
-                    'LLM becomes a Pokemon Master'}
+                    'LLM becomes a Pokemon Master with minimal assistance'}
                   {type === 'prize' &&
                     title.includes('Millennium') &&
                     'Chance of solving a million-dollar math problem'}
