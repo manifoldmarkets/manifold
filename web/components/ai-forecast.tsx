@@ -687,8 +687,7 @@ function CapabilityCard({
                 <div className="text-ink-600 mt-1 text-base font-medium">
                   {formatPercent(topCompanies[1].probability)}
                 </div>
-                <div 
-                  className="w-full rounded-t-lg bg-blue-600 dark:bg-blue-300"
+                <div className="w-full rounded-t-lg bg-blue-600 dark:bg-blue-300"
                   style={{
                     height: `${Math.max(8, topCompanies[1].probability * 100)}px`
                   }}
@@ -718,7 +717,7 @@ function CapabilityCard({
                   {formatPercent(topCompanies[0].probability)}
                 </div>
                 <div
-                  className="bg-primary-600 w-full rounded-t-lg"
+                  className="bg-primary-700 w-full rounded-t-lg"
                   style={{
                     height: `${Math.max(8, topCompanies[0].probability * 100)}px`
                   }}
