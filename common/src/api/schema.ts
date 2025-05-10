@@ -25,9 +25,7 @@ import {
 import { CandidateBet } from 'common/new-bet'
 import type { Bet, LimitBet } from 'common/bet'
 import { coerceBoolean, contentSchema } from 'common/api/zod-types'
-import { Lover } from 'common/love/lover'
 import { AIGeneratedMarket, Contract, MarketContract } from 'common/contract'
-import { CompatibilityScore } from 'common/love/compatibility-score'
 import type { Txn, ManaPayTxn } from 'common/txn'
 import { LiquidityProvision } from 'common/liquidity-provision'
 import { DisplayUser, FullUser } from './user-types'
@@ -37,7 +35,6 @@ import { MAX_ANSWER_LENGTH } from 'common/answer'
 import { type LinkPreview } from 'common/link-preview'
 import { Headline } from 'common/news'
 import { Row } from 'common/supabase/utils'
-import { LikeData, ShipData } from './love-types'
 import { AnyBalanceChangeType } from 'common/balance-change'
 import { Dashboard } from 'common/dashboard'
 import { ChatMessage, PrivateChatMessage } from 'common/chat-message'
@@ -1159,19 +1156,6 @@ export const API = (_apiTypeCheck = {
       .strict(),
     returns: { success: true },
   },
-  'compatible-lovers': {
-    method: 'GET',
-    visibility: 'private',
-    authed: false,
-    props: z.object({ userId: z.string() }),
-    returns: {} as {
-      lover: Lover
-      compatibleLovers: Lover[]
-      loverCompatibilityScores: {
-        [userId: string]: CompatibilityScore
-      }
-    },
-  },
   post: {
     method: 'POST',
     visibility: 'private',
@@ -1193,17 +1177,6 @@ export const API = (_apiTypeCheck = {
     props: z.object({ url: z.string() }).strict(),
     cache: 'max-age=86400, stale-while-revalidate=86400',
     returns: {} as LinkPreview,
-  },
-  'remove-pinned-photo': {
-    method: 'POST',
-    visibility: 'private',
-    authed: true,
-    returns: { success: true },
-    props: z
-      .object({
-        userId: z.string(),
-      })
-      .strict(),
   },
   'get-related-markets': {
     method: 'GET',
@@ -1279,103 +1252,6 @@ export const API = (_apiTypeCheck = {
       since: z.number(),
     }),
     returns: [] as string[],
-  },
-  'get-compatibility-questions': {
-    method: 'GET',
-    visibility: 'public',
-    authed: false,
-    props: z.object({}),
-    returns: {} as {
-      status: 'success'
-      questions: (Row<'love_questions'> & {
-        answer_count: number
-        score: number
-      })[]
-    },
-  },
-  'like-lover': {
-    method: 'POST',
-    visibility: 'private',
-    authed: true,
-    props: z.object({
-      targetUserId: z.string(),
-      remove: z.boolean().optional(),
-    }),
-    returns: {} as {
-      status: 'success'
-    },
-  },
-  'ship-lovers': {
-    method: 'POST',
-    visibility: 'private',
-    authed: true,
-    props: z.object({
-      targetUserId1: z.string(),
-      targetUserId2: z.string(),
-      remove: z.boolean().optional(),
-    }),
-    returns: {} as {
-      status: 'success'
-    },
-  },
-
-  'get-likes-and-ships': {
-    method: 'GET',
-    visibility: 'public',
-    authed: false,
-    props: z
-      .object({
-        userId: z.string(),
-      })
-      .strict(),
-    returns: {} as {
-      status: 'success'
-      likesReceived: LikeData[]
-      likesGiven: LikeData[]
-      ships: ShipData[]
-    },
-  },
-  'has-free-like': {
-    method: 'GET',
-    visibility: 'private',
-    authed: true,
-    props: z.object({}).strict(),
-    returns: {} as {
-      status: 'success'
-      hasFreeLike: boolean
-    },
-  },
-  'star-lover': {
-    method: 'POST',
-    visibility: 'private',
-    authed: true,
-    props: z.object({
-      targetUserId: z.string(),
-      remove: z.boolean().optional(),
-    }),
-    returns: {} as {
-      status: 'success'
-    },
-  },
-  'get-lovers': {
-    method: 'GET',
-    visibility: 'public',
-    authed: false,
-    props: z.object({}).strict(),
-    returns: {} as {
-      status: 'success'
-      lovers: Lover[]
-    },
-  },
-  'get-lover-answers': {
-    method: 'GET',
-    visibility: 'public',
-    authed: false,
-    props: z.object({ userId: z.string() }).strict(),
-    returns: {} as {
-      status: 'success'
-      answers: Row<'love_compatibility_answers'>[]
-    },
   },
   'search-groups': {
     method: 'GET',

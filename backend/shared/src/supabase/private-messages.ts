@@ -3,7 +3,6 @@ import { SupabaseDirectClient } from 'shared/supabase/init'
 import { ChatVisibility } from 'common/chat-message'
 import { User } from 'common/user'
 import { first } from 'lodash'
-
 import { log } from 'shared/monitoring/log'
 import { HOUR_MS } from 'common/util/time'
 import { getPrivateUser, getUser } from 'shared/utils'
@@ -14,7 +13,6 @@ import { track } from 'shared/analytics'
 import { getNotificationDestinationsForUser } from 'common/user-notification-preferences'
 import { Notification } from 'common/notification'
 import { createPushNotifications } from 'shared/create-push-notifications'
-import { sendNewMessageEmail } from 'shared/emails'
 import * as dayjs from 'dayjs'
 import * as utc from 'dayjs/plugin/utc'
 import * as timezone from 'dayjs/plugin/timezone'
@@ -189,28 +187,19 @@ const notifyOtherUserInChannelIfInactive = async (
 
   const otherUser = await getUser(otherUserId.user_id)
   if (!otherUser) return
-  // We're only sending emails for users who have a lover profile
-  const hasLoverProfile = await pg.oneOrNone(
-    `select 1 from lovers where user_id = $1`,
-    [otherUserId.user_id]
-  )
-  await createNewMessageNotification(
-    creator,
-    otherUser,
-    channelId,
-    hasLoverProfile
-  )
+
+  await createNewMessageNotification(creator, otherUser, channelId)
 }
 const createNewMessageNotification = async (
   fromUser: User,
   toUser: User,
-  channelId: number,
-  otherUserHasLoverProfile: boolean
+  channelId: number
 ) => {
   const privateUser = await getPrivateUser(toUser.id)
   if (!privateUser) return
   const reason = 'new_message'
-  const { sendToMobile, sendToEmail } = getNotificationDestinationsForUser(
+  // TODO: send email
+  const { sendToMobile } = getNotificationDestinationsForUser(
     privateUser,
     reason
   )
@@ -236,15 +225,5 @@ const createNewMessageNotification = async (
     await createPushNotifications([
       [privateUser, notification, `${fromUser.name} messaged you`, sourceText],
     ])
-  }
-  if (sendToEmail && otherUserHasLoverProfile) {
-    await sendNewMessageEmail(
-      reason,
-      privateUser,
-      fromUser,
-      toUser,
-      channelId,
-      sourceText
-    )
   }
 }
