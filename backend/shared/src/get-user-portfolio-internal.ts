@@ -69,6 +69,7 @@ export const getUserPortfolioInternal = async (userId: string) => {
     totalCashDeposits,
   } = user
   return {
+    userId,
     loanTotal,
     investmentValue,
     cashInvestmentValue,
