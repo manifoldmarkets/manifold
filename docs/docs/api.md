@@ -179,7 +179,7 @@ Requires no auth.
 
 _This api is deprecated in favor of the more versatile [/v0/bets/](#get-v0bets) api._
 
-### `GET /v0/user-portfolio`
+### `GET /v0/get-user-portfolio`
 
 Get a user's live portfolio metrics.
 
@@ -211,7 +211,7 @@ type LivePortfolioMetrics = PortfolioMetrics & {
 }
 ```
 
-### `GET /v0/user-portfolio-history`
+### `GET /v0/get-user-portfolio-history`
 
 Get a user's portfolio history over a specified period.
 
