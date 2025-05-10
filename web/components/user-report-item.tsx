@@ -8,7 +8,7 @@ import { UserLink, BannedBadge } from 'web/components/widgets/user-link'
 import { Tooltip } from 'web/components/widgets/tooltip'
 import { LiteReport } from 'web/pages/admin/reports'
 import SuperBanControl from 'web/components/SuperBanControl'
-import { useAdmin } from 'web/hooks/use-admin'
+import { useAdminOrMod } from 'web/hooks/use-admin'
 import { api } from 'web/lib/api/api'
 import toast from 'react-hot-toast'
 import { Button } from 'web/components/buttons/button'
@@ -32,7 +32,7 @@ export default function UserReportItem(props: {
   const isBanned = owner.isBannedFromPosting || bannedIds.includes(owner.id)
   const [showContent, setShowContent] = useState(!isBanned)
   const [isDismissedLocal, setIsDismissedLocal] = useState(false)
-  const isAdmin = useAdmin()
+  const isMod = useAdminOrMod()
 
   useEffect(() => {
     setShowContent(!isBanned)
@@ -102,7 +102,7 @@ export default function UserReportItem(props: {
             onBan={() => onBan(owner.id)}
             disabled={isBanned}
           />
-          {isAdmin && (
+          {isMod && (
             <Button
               color="red-outline"
               size="xs"
