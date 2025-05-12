@@ -84,7 +84,6 @@ export function CreatePostForm(props: { group?: Group }) {
                 </span>
               </label>
               <ExpandingInput
-                placeholder="e.g. Elon Mania Post"
                 autoFocus
                 maxLength={480}
                 value={title}
