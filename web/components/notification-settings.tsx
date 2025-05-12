@@ -94,6 +94,7 @@ const mobilePushEnabled: Array<notification_preference> = [
   'betting_streaks',
   'market_movements',
   'limit_order_fills',
+  'all_comments_on_followed_posts',
   // TODO: add these
   // 'contract_from_followed_user',
   // 'probability_updates_on_watched_markets',
@@ -117,6 +118,7 @@ const comments: NotificationSectionData = {
     'all_replies_to_my_answers_on_watched_markets',
     'all_comments_on_contracts_with_shares_in_on_watched_markets',
     'all_comments_on_watched_markets',
+    'all_comments_on_followed_posts',
   ],
 }
 
