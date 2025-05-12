@@ -255,6 +255,13 @@ export const createCommentOnPostNotification = async (
 ) => {
   const usersToNotify: { userId: string; reason: NotificationReason }[] = []
 
+  // Fetch post followers
+  const followerIds = await pg.map(
+    `select user_id from post_follows where post_id = $1`,
+    [post.id],
+    (r) => r.user_id
+  )
+
   // 1. Post Creator
   if (post.creatorId !== commentCreator.id) {
     usersToNotify.push({
@@ -310,6 +317,22 @@ export const createCommentOnPostNotification = async (
       usersToNotify.push({
         userId: mentionedUserId,
         reason: 'tagged_user',
+      })
+    }
+  })
+
+  // 4. Post Followers
+  followerIds.forEach((followerId) => {
+    // Ensure follower is not the commenter, post creator, replied user, or a mentioned user (already processed)
+    if (
+      followerId !== commentCreator.id &&
+      followerId !== post.creatorId &&
+      followerId !== repliedUserId &&
+      !mentionedUserIds.includes(followerId)
+    ) {
+      usersToNotify.push({
+        userId: followerId,
+        reason: 'all_comments_on_followed_posts',
       })
     }
   })

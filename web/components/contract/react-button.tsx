@@ -8,7 +8,7 @@ import { removeUndefinedProps } from 'common/util/object'
 import { capitalize } from 'lodash'
 import { memo, useEffect, useState } from 'react'
 import toast from 'react-hot-toast'
-import { Button, SizeType } from 'web/components/buttons/button'
+import { Button, ColorType, SizeType } from 'web/components/buttons/button'
 import useLongTouch from 'web/hooks/use-long-touch'
 import { useReactionsOnContent } from 'web/hooks/use-reactions'
 import { useUsers } from 'web/hooks/use-user-supabase'
@@ -49,6 +49,8 @@ export const ReactButton = memo(function ReactButton(props: {
   onReact?: () => void
   onUnreact?: () => void
   hideReactList?: boolean
+  color?: ColorType
+  children?: React.ReactNode
 }) {
   const {
     user,
@@ -68,6 +70,8 @@ export const ReactButton = memo(function ReactButton(props: {
     reactionType = 'like',
     userReactedWith,
     hideReactList,
+    color = 'gray-white',
+    children,
   } = props
   const allReactions = useReactionsOnContent(contentType, contentId)
   const reactions = allReactions?.filter(
@@ -211,11 +215,12 @@ export const ReactButton = memo(function ReactButton(props: {
                   {totalReactions}
                 </div>
               )}
+              {children}
             </Row>
           </button>
         ) : (
           <Button
-            color={'gray-white'}
+            color={color}
             disabled={disabled}
             size={size}
             className={clsx(
@@ -241,6 +246,7 @@ export const ReactButton = memo(function ReactButton(props: {
                   {totalReactions}
                 </div>
               )}
+              {children}
             </Row>
           </Button>
         )}

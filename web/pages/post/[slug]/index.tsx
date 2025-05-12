@@ -39,6 +39,7 @@ import DropdownMenu from 'web/components/widgets/dropdown-menu'
 import { BackButton } from 'web/components/contract/back-button'
 import { report as reportContent } from 'web/lib/api/api'
 import { IoWarning } from 'react-icons/io5'
+import { FollowPostButton } from 'web/components/buttons/follow-post-button'
 
 export async function getStaticProps(props: { params: { slug: string } }) {
   const { slug } = props.params
@@ -172,11 +173,6 @@ export default function PostPage(props: {
                 </span>
               </Row>
               <Row className="mt-3 items-center gap-2 ">
-                <CopyLinkOrShareButton
-                  tooltip="Copy link to post"
-                  url={shareUrl}
-                  eventTrackingName={'copy post link'}
-                />
                 {post && (
                   <ReactButton
                     contentId={post.id}
@@ -195,7 +191,22 @@ export default function PostPage(props: {
                     }
                     onReact={handleReact}
                     onUnreact={handleUnreact}
-                  />
+                    color={'gray-outline'}
+                    className="!p-1.5"
+                  >
+                    <span className="mr-1">Like</span>
+                  </ReactButton>
+                )}
+                <CopyLinkOrShareButton
+                  color={'gray-outline'}
+                  tooltip="Copy link to post"
+                  url={shareUrl}
+                  eventTrackingName={'copy post link'}
+                >
+                  <span className="ml-2">Share</span>
+                </CopyLinkOrShareButton>
+                {currentUser && (
+                  <FollowPostButton post={post} user={currentUser} />
                 )}
                 {(isAdminOrMod || post.creatorId === currentUser?.id) &&
                   post && (

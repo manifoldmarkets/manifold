@@ -358,6 +358,10 @@ export const NOTIFICATION_DESCRIPTIONS: notification_descriptions = {
     simple: 'Admin notifications',
     detailed: 'Notifications from the Manifold team',
   },
+  all_comments_on_followed_posts: {
+    simple: 'All new comments on posts you follow',
+    detailed: 'All new comments on posts you follow',
+  },
 }
 
 export type BettingStreakData = {

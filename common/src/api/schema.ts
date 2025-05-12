@@ -2472,6 +2472,18 @@ export const API = (_apiTypeCheck = {
       })
       .strict(),
   },
+  'follow-post': {
+    method: 'POST',
+    visibility: 'public',
+    authed: true,
+    returns: {} as { success: true },
+    props: z
+      .object({
+        postId: z.string(),
+        follow: z.boolean(),
+      })
+      .strict(),
+  },
 } as const)
 
 export type APIPath = keyof typeof API

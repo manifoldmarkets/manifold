@@ -11,6 +11,7 @@ export type notification_preferences = {
   all_comments_on_watched_markets: notification_destination_types[]
   all_answers_on_watched_markets: notification_destination_types[]
   poll_close_on_watched_markets: notification_destination_types[]
+  all_comments_on_followed_posts: notification_destination_types[]
 
   // Comments
   all_replies_to_my_comments_on_watched_markets: notification_destination_types[]
@@ -94,6 +95,8 @@ export const getDefaultNotificationPreferences = (isDev?: boolean) => {
     all_comments_on_watched_markets: constructPref(false, false, false),
     // Answers
     all_answers_on_watched_markets: constructPref(false, false, false),
+    // Added for post follows
+    all_comments_on_followed_posts: constructPref(true, true, true),
     // Comments
     all_replies_to_my_comments_on_watched_markets: constructPref(
       true,
