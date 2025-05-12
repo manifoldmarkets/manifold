@@ -20,13 +20,13 @@ export const createNewPostFromFollowedUserNotification = async (
   pg: SupabaseDirectClient
 ) => {
   const bulkNotifications: Notification[] = []
-
+  const { isAnnouncement } = post
   // Get all followers of the post creator
-  const followerIds = post.isAnnouncement
+  const followerIds = isAnnouncement
     ? await getAllUserIds(pg)
     : await getUserFollowerIds(creator.id, pg)
 
-  if (post.isAnnouncement) {
+  if (isAnnouncement) {
     for (const userId of followerIds) {
       const notification: Notification = {
         id: nanoid(6),
@@ -86,6 +86,6 @@ export const createNewPostFromFollowedUserNotification = async (
   }
 
   if (bulkNotifications.length > 0) {
-    await bulkInsertNotifications(bulkNotifications, pg)
+    await bulkInsertNotifications(bulkNotifications, pg, isAnnouncement)
   }
 }

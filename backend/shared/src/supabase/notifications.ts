@@ -16,7 +16,8 @@ export const insertNotificationToSupabase = async (
 
 export const bulkInsertNotifications = async (
   notifications: Notification[],
-  pg: SupabaseDirectClient
+  pg: SupabaseDirectClient,
+  skipBroadcast: boolean = false
 ) => {
   await bulkInsert(
     pg,
@@ -27,7 +28,10 @@ export const bulkInsertNotifications = async (
       data: n,
     }))
   )
-  notifications.forEach((notification) =>
-    broadcast(`user-notifications/${notification.userId}`, { notification })
-  )
+  // Useful for admin notifs as broadcasting 100k notifications probably broke the site
+  if (!skipBroadcast) {
+    notifications.forEach((notification) =>
+      broadcast(`user-notifications/${notification.userId}`, { notification })
+    )
+  }
 }
