@@ -310,6 +310,7 @@ Format the description in markdown, sticking to just the following:
 - Use bullet points for lists
 
 I will append the title of 'Update from creator' to the beginning of the description. You do not need to include this in your response.
+Be as concise as possible. I will link your clarification to the creator's comment, so when in doubt, err on the side of brevity and let the user check out the comment for more details.
 NOTE: If the creator explicitly states that their comment is not a clarification, such as saying "these comments are not a clarification," then you must not treat it as clarifying or changing the resolution criteria. In that case, return {"isClarification": false, "description": ""}.
 Only return the raw JSON object without any markdown code blocks, backticks, additional formatting, or anything else.`
 
