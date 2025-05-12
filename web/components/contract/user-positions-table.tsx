@@ -99,7 +99,7 @@ export const UserPositionsTable = memo(
       const rows = await getOrderedContractMetricRowsForContractId(
         contractId,
         db,
-        answerId,
+        sortBy === 'profit' ? undefined : answerId,
         sortBy
       )
 
@@ -159,7 +159,7 @@ export const UserPositionsTable = memo(
       currentAnswerId ? cm.answerId === currentAnswerId : !cm.answerId
     )
     const profitPositionsToDisplay = contractMetricsOrderedByProfit?.filter(
-      (cm) => (currentAnswerId ? cm.answerId === currentAnswerId : !cm.answerId)
+      (cm) => !cm.answerId
     )
 
     if (contract.mechanism === 'cpmm-1' || isBinaryMulti(contract)) {
@@ -172,7 +172,7 @@ export const UserPositionsTable = memo(
                 const newSort = sortBy === 'shares' ? 'profit' : 'shares'
                 setSortBy(newSort)
                 setPage(0)
-                updateContractMetrics(newSort)
+                updateContractMetrics(newSort, currentAnswerId)
               }}
             />
           </Row>
@@ -223,7 +223,9 @@ export const UserPositionsTable = memo(
 
           <Row className={'mb-2 mt-1 items-center justify-between gap-2'}>
             <Row className={'font-semibold '}>
-              {answers.length >= 4 ? (
+              {sortBy === 'profit' ? (
+                <span className="text-ink-600">Overall Profit</span>
+              ) : answers.length >= 4 ? (
                 <Select
                   className="h-9 w-full max-w-sm"
                   value={currentAnswerId}
