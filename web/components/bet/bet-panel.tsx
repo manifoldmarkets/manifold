@@ -29,7 +29,7 @@ import { api, APIError } from 'web/lib/api/api'
 import { firebaseLogin } from 'web/lib/firebase/users'
 import { Col } from '../layout/col'
 import { Row } from '../layout/row'
-import { BuyAmountInput } from '../widgets/amount-input'
+import { AmountInput, BuyAmountInput } from '../widgets/amount-input'
 import { LimitBet } from 'common/bet'
 import { TRADE_TERM } from 'common/envs/constants'
 import {
@@ -75,6 +75,7 @@ import { ShareBetModal } from './share-bet'
 import { Bet } from 'common/bet'
 import { LuShare } from 'react-icons/lu'
 import { useEvent } from 'client-common/hooks/use-event'
+import { calculateCpmmAmountToBuyShares } from 'common/calculate-cpmm'
 
 const WAIT_TO_DISMISS = 3000
 export type BinaryOutcomes = 'YES' | 'NO' | undefined
@@ -289,6 +290,12 @@ export const BuyPanelBody = (
   // State for share row
   const [isSharing, setIsSharing] = useState(false)
   const [lastBetDetails, setLastBetDetails] = useState<Bet | null>(null)
+
+  // State for editing payout
+  const [isEditingPayout, setIsEditingPayout] = useState(false)
+  const [editablePayout, setEditablePayout] = useState<number | undefined>(
+    undefined
+  )
 
   const isCpmmMulti = contract.mechanism === 'cpmm-multi-1'
   if (isCpmmMulti && !multiProps) {
@@ -588,6 +595,41 @@ export const BuyPanelBody = (
   const betType = isStonk ? 'Market' : betTypeSetting
   const isMobile = useIsMobile()
 
+  const handlePayoutEdited = useEvent(() => {
+    if (
+      !outcome ||
+      !editablePayout ||
+      isNaN(editablePayout) ||
+      editablePayout <= 0
+    ) {
+      setIsEditingPayout(false)
+      return
+    }
+
+    try {
+      const amount = calculateCpmmAmountToBuyShares(
+        contract,
+        editablePayout,
+        outcome,
+        allUnfilledBets,
+        balanceByUserId,
+        multiProps?.answerToBuy
+      )
+
+      if (amount && isFinite(amount) && amount > 0) {
+        setBetAmount(amount)
+        setError(undefined) // Clear potential previous errors
+      } else {
+        toast.error('Could not calculate bet for that payout amount')
+      }
+    } catch (err) {
+      console.error('Error calculating bet amount from shares:', err)
+      toast.error('Error calculating bet amount')
+    } finally {
+      setIsEditingPayout(false)
+    }
+  })
+
   return (
     <>
       <Col className={clsx(className, 'relative rounded-xl px-4 py-2')}>
@@ -751,20 +793,7 @@ export const BuyPanelBody = (
                   </Row>
                   <Row className="min-w-[128px] items-baseline justify-between sm:justify-start">
                     <div className="text-ink-600 mr-2 min-w-[120px] flex-nowrap whitespace-nowrap">
-                      {isPseudoNumeric || isStonk ? (
-                        'Shares'
-                      ) : (
-                        <>
-                          To win
-                          {isCashContract && (
-                            <InfoTooltip
-                              text="Manifold takes a 10% cut of profits on sweepstakes markets."
-                              className="text-ink-600 ml-1 mt-0.5"
-                              size="sm"
-                            />
-                          )}
-                        </>
-                      )}
+                      {isPseudoNumeric || isStonk ? 'Shares' : <>To win</>}
                     </div>
                     <Row className="items-baseline">
                       <span className="mr-1 whitespace-nowrap text-lg">
@@ -773,10 +802,41 @@ export const BuyPanelBody = (
                         ) : isPseudoNumeric ? (
                           Math.floor(currentPayout)
                         ) : (
-                          <MoneyDisplay
-                            amount={currentPayout}
-                            isCashContract={isCashContract}
-                          />
+                          <>
+                            {isEditingPayout ? (
+                              <AmountInput
+                                inputClassName="w-32"
+                                onBlur={handlePayoutEdited}
+                                onKeyDown={(e) => {
+                                  if (e.key === 'Enter') {
+                                    handlePayoutEdited()
+                                  } else if (e.key === 'Escape') {
+                                    setIsEditingPayout(false)
+                                  }
+                                }}
+                                autoFocus
+                                min={1}
+                                step={1}
+                                amount={editablePayout}
+                                onChangeAmount={setEditablePayout}
+                              />
+                            ) : (
+                              <span
+                                className={clsx(
+                                  'cursor-pointer hover:underline'
+                                )}
+                                onClick={() => {
+                                  setEditablePayout(Math.floor(currentPayout))
+                                  setIsEditingPayout(true)
+                                }}
+                              >
+                                {formatWithToken({
+                                  amount: currentPayout,
+                                  token: 'M$',
+                                })}
+                              </span>
+                            )}
+                          </>
                         )}
                       </span>
                       <span className="text-green-500 ">
