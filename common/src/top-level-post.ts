@@ -51,11 +51,5 @@ export const getPostShareUrl = (
   `https://${ENV_CONFIG.domain}/post/${post.slug}${
     username ? referralQuery(username) : ''
   }`
-export const getPostCommentShareUrl = (
-  post: TopLevelPost,
-  commentId: string,
-  username: string | undefined
-) =>
-  `https://${ENV_CONFIG.domain}/post/${post.slug}#${commentId}${
-    username ? referralQuery(username) : ''
-  }`
+export const getPostCommentShareUrl = (post: TopLevelPost, commentId: string) =>
+  `https://${ENV_CONFIG.domain}/post/${post.slug}#${commentId}`
