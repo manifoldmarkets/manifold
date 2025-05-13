@@ -180,6 +180,7 @@ export function PostCommentInput(props: {
       parentCommentId={parentCommentId}
       onSubmitComment={onSubmitComment}
       pageId={post.id}
+      placeholder="Add your comment"
       blocked={isBlocked(privateUser, post.creatorId)}
       commentTypes={['top-level-post']}
     />
