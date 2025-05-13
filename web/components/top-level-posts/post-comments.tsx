@@ -299,7 +299,7 @@ export function PostCommentItem(props: {
               : 'bg-canvas-50'
           )}
         >
-          <div className="text-ink-500 mt-0.5 flex items-center justify-between text-xs sm:text-sm">
+          <div className="text-ink-500 mt-0.5 flex items-center justify-between text-sm">
             <Row className="gap-1">
               <UserLink
                 user={{
@@ -307,14 +307,16 @@ export function PostCommentItem(props: {
                   name: userName,
                   username: userUsername,
                 }}
+                className={'text-ink-600 font-semibold '}
               />
             </Row>
             {comment.editedTime && (
-              <span className="ml-1 pt-0.5 text-xs"> (edited)</span>
+              <span className="ml-1   text-sm"> (edited)</span>
             )}
             <CopyLinkDateTimeComponent
               prefix={'post'}
               slug={post.slug}
+              size={'sm'}
               createdTime={comment.editedTime ?? createdTime}
               elementId={comment.id}
             />
