@@ -278,7 +278,6 @@ export default function LimitOrderPanel(props: {
       amount,
       unfilledBets,
       balanceByUserId,
-      setError,
       contract,
       multiProps,
       limitProb,
@@ -290,8 +289,11 @@ export default function LimitOrderPanel(props: {
     filledAmount = result.amount
     // fees = result.fees
     betDeps.current = result.betDeps
+    if (result.calculationError && error !== result.calculationError) {
+      setError(result.calculationError)
+    }
   } catch (err: any) {
-    console.error('Error in calculateCpmmMultiArbitrageBet:', err)
+    console.error('Error in calculateCpmmMultiArbitrage:', err)
     setError(
       err?.message ??
         `An error occurred during ${TRADE_TERM} calculation, try again.`

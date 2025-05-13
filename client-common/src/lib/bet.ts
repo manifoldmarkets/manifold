@@ -17,7 +17,6 @@ export const getLimitBetReturns = (
   betAmount: number,
   unfilledBets: LimitBet[],
   balanceByUserId: { [userId: string]: number },
-  setError: (error: string) => void,
   contract: MarketContract,
   multiProps: MultiBetProps | undefined,
   manualLimitProb: number | undefined,
@@ -67,6 +66,7 @@ export const getLimitBetReturns = (
   let fees = noFees
   let betDeps: LimitBet[] = []
   let probAfter = 0
+  let calculationError: string | undefined = undefined
   try {
     if (arbitrageProps) {
       const { answers, answerToBuy } = arbitrageProps
@@ -116,10 +116,9 @@ export const getLimitBetReturns = (
     }
   } catch (err: any) {
     console.error('Error in getLimitBetReturns:', err)
-    setError(
+    calculationError =
       err?.message ??
-        `An error occurred during ${TRADE_TERM} calculation, try again.`
-    )
+      `An error occurred during ${TRADE_TERM} calculation, try again.`
   }
   const remainingMatched = limitProb
     ? ((orderAmount ?? 0) - amount) /
@@ -139,6 +138,7 @@ export const getLimitBetReturns = (
     probAfter,
     limitProb,
     prob,
+    calculationError,
   }
 }
 export type MultiBetProps = {

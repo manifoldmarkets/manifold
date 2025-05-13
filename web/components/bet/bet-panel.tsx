@@ -398,12 +398,12 @@ export const BuyPanelBody = (
     betDeps,
     limitProb,
     prob,
+    calculationError,
   } = getLimitBetReturns(
     outcome ?? 'YES',
     betAmount ?? 0,
     unfilledBets,
     balanceByUserId,
-    setError,
     contract,
     multiProps,
     undefined,
@@ -419,6 +419,12 @@ export const BuyPanelBody = (
     probBefore = 1 - prob
     probAfter = 1 - newProbAfter
   }
+
+  useEffect(() => {
+    if (calculationError) {
+      setError(calculationError)
+    }
+  }, [calculationError, setError])
 
   async function submitBet() {
     if (!user || !betAmount) return
