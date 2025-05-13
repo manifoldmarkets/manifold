@@ -237,9 +237,7 @@ export function PostCommentItem(props: {
       name: 'Copy Link',
       icon: <LinkIcon className="h-5 w-5" />,
       onClick: () => {
-        copyToClipboard(
-          getPostCommentShareUrl(post, comment.id, user?.username)
-        )
+        copyToClipboard(getPostCommentShareUrl(post, comment.id))
         toast.success('Link copied to clipboard')
       },
     },
