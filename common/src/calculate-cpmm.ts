@@ -14,12 +14,7 @@ import {
   calculateCpmmMultiArbitrageSellYes,
 } from './calculate-cpmm-arbitrage'
 import { Answer } from './answer'
-import {
-  CPMMContract,
-  CPMMMultiContract,
-  MAX_CPMM_PROB,
-  MIN_CPMM_PROB,
-} from 'common/contract'
+import { MarketContract, MAX_CPMM_PROB, MIN_CPMM_PROB } from 'common/contract'
 import { addObjects } from 'common/util/object'
 
 export type CpmmState = {
@@ -592,7 +587,7 @@ export function calculateAmountToBuyShares(
 }
 
 export function calculateCpmmAmountToBuyShares(
-  contract: CPMMContract | CPMMMultiContract,
+  contract: MarketContract,
   shares: number,
   outcome: 'YES' | 'NO',
   allUnfilledBets: LimitBet[],

@@ -110,7 +110,10 @@ export function AmountInput(
           error={error}
           disabled={disabled}
           onChange={(e) => onAmountChange(e.target.value)}
-          onBlur={() => setAmountString(amount?.toString() ?? '')}
+          onBlur={(e) => {
+            setAmountString(amount?.toString() ?? '')
+            props.onBlur?.(e)
+          }}
           onKeyDown={(e) => {
             if (e.key === 'ArrowUp') {
               onChangeAmount((amount ?? 0) + 5)

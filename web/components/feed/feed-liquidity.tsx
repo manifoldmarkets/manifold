@@ -84,11 +84,7 @@ function LiquidityStatusText(props: {
       <span>
         {isAnte ? 'created question with' : amount >= 0 ? 'added' : 'withdrew'}
       </span>
-      <MoneyDisplay
-        amount={Math.abs(amount)}
-        isCashContract={isCashContract}
-        className="text-primary-700"
-      />
+      <MoneyDisplay amount={Math.abs(amount)} isCashContract={isCashContract} />
       <span>subsidy</span>
       <RelativeTimestamp time={createdTime} shortened />
     </div>
