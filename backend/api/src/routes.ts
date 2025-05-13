@@ -186,7 +186,8 @@ import { createPost, updatePost } from './create-post'
 import { getPosts } from './get-posts'
 import { dismissUserReport } from './dismiss-user-report'
 import { followPost } from './follow-post'
-
+import { editPostComment } from './edit-post-comment'
+import { getUserComments } from './get-comments'
 export const handlers: { [k in APIPath]: APIHandler<k> } = {
   'refresh-all-clients': refreshAllClients,
   bet: placeBet,
@@ -385,4 +386,6 @@ export const handlers: { [k in APIPath]: APIHandler<k> } = {
   'mark-notification-read': markNotificationRead,
   'dismiss-user-report': dismissUserReport,
   'follow-post': followPost,
+  'edit-post-comment': editPostComment,
+  'user-comments': getUserComments,
 } as const

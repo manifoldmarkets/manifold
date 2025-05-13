@@ -1,5 +1,5 @@
 import { useCallback } from 'react'
-import { ContractComment } from 'common/comment'
+import { ContractComment, PostComment } from 'common/comment'
 import { User } from 'common/user'
 import { groupConsecutive } from 'common/util/array'
 import { UserLink } from 'web/components/widgets/user-link'
@@ -17,10 +17,9 @@ import clsx from 'clsx'
 import { linkClass } from 'web/components/widgets/site-link'
 import { UserHovercard } from '../user/user-hovercard'
 
-type ContractKey = {
-  contractId: string
-  contractSlug: string
-  contractQuestion: string
+type Key = {
+  slug: string
+  title: string
 }
 
 function contractPath(slug: string) {
@@ -35,24 +34,29 @@ export function UserCommentsList(props: { user: User }) {
   const q = useCallback(
     async (p: { limit: number; offset: number }) => {
       const page = p.offset / p.limit
-      return await api('comments', {
+      return (await api('user-comments', {
         userId: user.id,
         limit: p.limit,
         page,
-      })
+      })) as (ContractComment | PostComment)[]
     },
     [user.id]
   )
   const pagination = usePagination({ pageSize: 50, q })
 
   const items = groupConsecutive(pagination.items, (c) => {
-    return {
-      contractId: c.contractId,
-      contractQuestion: c.contractQuestion,
-      contractSlug: c.contractSlug,
+    if (c.commentType === 'contract') {
+      return {
+        slug: c.contractSlug,
+        title: c.contractQuestion,
+      }
+    } else {
+      return {
+        slug: c.postSlug ?? '',
+        title: c.postTitle ?? '',
+      }
     }
   })
-
   if (items.length === 0) {
     if (pagination.isComplete) {
       return <p className="text-ink-500 mt-4">No comments yet</p>
@@ -75,12 +79,13 @@ export function UserCommentsList(props: { user: User }) {
 }
 
 function ProfileCommentGroup(props: {
-  groupKey: ContractKey
-  items: ContractComment[]
+  groupKey: Key
+  items: (ContractComment | PostComment)[]
 }) {
   const { groupKey, items } = props
-  const { contractSlug, contractQuestion } = groupKey
-  const path = contractPath(contractSlug)
+  const { slug, title } = groupKey
+  const path =
+    items[0].commentType === 'contract' ? contractPath(slug) : `/post/${slug}`
   return (
     <div className="bg-canvas-0 border-ink-300 border-b p-2">
       <Link
@@ -90,11 +95,11 @@ function ProfileCommentGroup(props: {
         )}
         href={path}
       >
-        {contractQuestion}
+        {title}
       </Link>
       <Col className="gap-6">
         {items.map((c) => (
-          <ProfileComment key={c.id} comment={c} contractSlug={contractSlug} />
+          <ProfileComment key={c.id} comment={c} slug={slug} />
         ))}
       </Col>
     </div>
@@ -102,10 +107,10 @@ function ProfileCommentGroup(props: {
 }
 
 function ProfileComment(props: {
-  comment: ContractComment
-  contractSlug: string
+  comment: ContractComment | PostComment
+  slug: string
 }) {
-  const { comment, contractSlug } = props
+  const { comment, slug } = props
   const {
     text,
     content,
@@ -119,7 +124,11 @@ function ProfileComment(props: {
 
   return (
     <Link
-      href={getCommentLink('market', contractSlug, id)}
+      href={
+        comment.commentType === 'contract'
+          ? getCommentLink('market', slug, id)
+          : `/post/${slug}#${id}`
+      }
       className={
         'hover:bg-canvas-100 relative flex flex-row items-start space-x-3 rounded-lg p-2'
       }

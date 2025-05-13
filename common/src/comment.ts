@@ -80,5 +80,7 @@ export type CommentWithTotalReplies = ContractComment & {
 export type OnPost = {
   commentType: 'post'
   postId: string
+  postSlug?: string // only available via get-comments api
+  postTitle?: string // only available via get-comments api
 }
 export type PostComment = Comment<OnPost>

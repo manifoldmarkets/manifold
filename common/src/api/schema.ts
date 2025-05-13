@@ -17,6 +17,7 @@ import {
 } from './market-types'
 import { type Answer } from 'common/answer'
 import {
+  Comment,
   CommentWithTotalReplies,
   MAX_COMMENT_LENGTH,
   PostComment,
@@ -202,6 +203,20 @@ export const API = (_apiTypeCheck = {
         page: z.coerce.number().gte(0).default(0),
         userId: z.string().optional(),
         isPolitics: coerceBoolean.optional(),
+      })
+      .strict(),
+  },
+  'user-comments': {
+    method: 'GET',
+    visibility: 'public',
+    authed: false,
+    returns: [] as Comment[],
+    props: z
+      .object({
+        afterTime: z.coerce.number().optional(),
+        limit: z.coerce.number().gte(0).lte(1000).default(1000),
+        page: z.coerce.number().gte(0).default(0),
+        userId: z.string(),
       })
       .strict(),
   },
@@ -2483,6 +2498,19 @@ export const API = (_apiTypeCheck = {
         follow: z.boolean(),
       })
       .strict(),
+  },
+  'edit-post-comment': {
+    method: 'POST',
+    visibility: 'public',
+    authed: true,
+    props: z
+      .object({
+        commentId: z.string(),
+        postId: z.string(),
+        content: contentSchema,
+      })
+      .strict(),
+    returns: {} as { success: boolean },
   },
 } as const)
 

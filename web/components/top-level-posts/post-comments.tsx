@@ -7,7 +7,10 @@ import { Dictionary, groupBy, sortBy } from 'lodash'
 import { useRouter } from 'next/router'
 import { useEffect, useRef, useState } from 'react'
 import { Avatar } from 'web/components/widgets/avatar'
-import { CommentInput } from 'web/components/comments/comment-input'
+import {
+  CommentInput,
+  CommentInputTextArea,
+} from 'web/components/comments/comment-input'
 import { Content } from 'web/components/widgets/editor'
 import { CopyLinkDateTimeComponent } from 'web/components/feed/copy-link-date-time'
 import { Col } from 'web/components/layout/col'
@@ -28,7 +31,8 @@ import {
   EyeOffIcon,
   LinkIcon,
   EyeIcon,
-} from '@heroicons/react/solid'
+  PencilIcon,
+} from '@heroicons/react/outline'
 import DropdownMenu, {
   DropdownItem,
 } from 'web/components/widgets/dropdown-menu'
@@ -38,6 +42,13 @@ import { copyToClipboard } from 'web/lib/util/copy'
 import { buildArray } from 'common/util/array'
 import { useAdminOrMod } from 'web/hooks/use-admin'
 import { ReactButton } from 'web/components/contract/react-button'
+import { JSONContent } from '@tiptap/core'
+import { Modal } from 'web/components/layout/modal'
+import { Title } from 'web/components/widgets/title'
+import { useTextEditor } from 'web/components/widgets/editor'
+import { MAX_COMMENT_LENGTH } from 'common/comment'
+import { safeLocalStorage } from 'web/lib/util/local'
+import { User } from 'common/user'
 
 const roundThreadColor = 'border-ink-100 dark:border-ink-200'
 
@@ -192,6 +203,9 @@ export function PostCommentItem(props: {
   const [optimisticallyHidden, setOptimisticallyHidden] = useState(
     comment.hidden ?? false
   )
+  const [isEditing, setIsEditing] = useState(false)
+  const [commentState, setCommentState] = useState(comment)
+
   useEffect(() => {
     if (router.asPath.endsWith(`#${comment.id}`)) {
       setHighlighted(true)
@@ -206,7 +220,19 @@ export function PostCommentItem(props: {
 
   const isParent = !indent
 
+  const setContent = (content: JSONContent) => {
+    setCommentState((prevState) => ({ ...prevState, content }))
+  }
+
+  const isCreator = user?.id === userId
+  const canEdit = isCreator || isAdminOrMod
+
   const menuItems: DropdownItem[] = buildArray(
+    canEdit && {
+      name: 'Edit',
+      icon: <PencilIcon className="h-5 w-5" />,
+      onClick: () => setIsEditing(true),
+    },
     {
       name: 'Copy Link',
       icon: <LinkIcon className="h-5 w-5" />,
@@ -283,12 +309,16 @@ export function PostCommentItem(props: {
                 }}
               />
             </Row>
+            {comment.editedTime && (
+              <span className="ml-1 pt-0.5 text-xs"> (edited)</span>
+            )}
             <CopyLinkDateTimeComponent
               prefix={'post'}
               slug={post.slug}
-              createdTime={createdTime}
+              createdTime={comment.editedTime ?? createdTime}
               elementId={comment.id}
             />
+
             <DropdownMenu
               items={menuItems}
               buttonContent={<DotsHorizontalIcon className="h-5 w-5" />}
@@ -298,7 +328,7 @@ export function PostCommentItem(props: {
             />
           </div>
           <HideableContent
-            comment={comment}
+            comment={commentState}
             optimisticallyHidden={optimisticallyHidden}
           />
           <Row className="text-ink-500 mt-2 w-full items-center justify-end gap-1 text-xs">
@@ -328,6 +358,16 @@ export function PostCommentItem(props: {
           </Row>
         </Col>
       </Row>
+      {isEditing && (
+        <EditPostCommentModal
+          comment={commentState}
+          setContent={setContent}
+          post={post}
+          open={isEditing}
+          setOpen={setIsEditing}
+          user={user}
+        />
+      )}
     </Col>
   )
 }
@@ -337,8 +377,7 @@ function HideableContent(props: {
   optimisticallyHidden?: boolean
 }) {
   const { comment, optimisticallyHidden } = props
-  const { text, content } = comment
-  //hides if enough dislikes
+  const { content } = comment
   const dislikes = comment.dislikes ?? 0
   const likes = comment.likes ?? 0
   const majorityDislikes = dislikes > 10 && dislikes / (likes + dislikes) >= 0.8
@@ -357,7 +396,7 @@ function HideableContent(props: {
       Comment hidden
     </div>
   ) : (
-    <Content size="sm" className="mt-1 grow" content={content || text} />
+    <Content size="sm" className="mt-1 grow" content={content} />
   )
 }
 
@@ -383,4 +422,78 @@ export const usePostComments = (postId: string, afterTime?: string) => {
   }, [postId, afterTime])
 
   return { comments }
+}
+
+function EditPostCommentModal(props: {
+  comment: PostComment
+  setContent: (content: JSONContent) => void
+  post: TopLevelPost
+  open: boolean
+  setOpen: (open: boolean) => void
+  user: User | null | undefined
+}) {
+  const key = `edit post comment ${props.comment.id}`
+  const { comment, user, post, setContent, open, setOpen } = props
+  const [isSubmitting, setIsSubmitting] = useState(false)
+
+  const editor = useTextEditor({
+    key,
+    size: 'sm',
+    max: MAX_COMMENT_LENGTH,
+    defaultValue: comment.content,
+    placeholder: 'Edit your comment',
+  })
+
+  useEffect(() => {
+    if (open) {
+      editor?.commands.focus('end')
+    }
+  }, [editor, open])
+
+  const submitComment = async () => {
+    if (!editor || editor.isEmpty || isSubmitting || !user) return
+    setIsSubmitting(true)
+    editor.commands.focus('end')
+    if (editor.state.selection.empty) {
+      editor.commands.insertContent(' ')
+      const endPos = editor.state.selection.from
+      editor.commands.deleteRange({ from: endPos - 1, to: endPos })
+    }
+
+    const newContent = editor.getJSON()
+
+    try {
+      await api('edit-post-comment', {
+        commentId: comment.id,
+        postId: post.id,
+        content: newContent,
+      })
+      setContent(newContent)
+      setIsSubmitting(false)
+      editor.commands.clearContent(true)
+      safeLocalStorage?.removeItem(`text ${key}`)
+      setOpen(false)
+      toast.success('Comment updated!')
+    } catch (e) {
+      console.error('Error editing comment', e)
+      toast.error('Failed to edit comment. Please try again.')
+      setIsSubmitting(false)
+    }
+  }
+
+  return (
+    <Modal open={open} setOpen={setOpen}>
+      <Col className={'bg-canvas-50 rounded-md p-4'}>
+        <Title>Edit Comment</Title>
+        <CommentInputTextArea
+          autoFocus={true}
+          editor={editor}
+          user={user}
+          submit={submitComment}
+          isSubmitting={isSubmitting}
+          submitOnEnter={true}
+        />
+      </Col>
+    </Modal>
+  )
 }
