@@ -2,7 +2,7 @@ import { convertContractComment } from 'common/supabase/comments'
 import { SupabaseDirectClient } from 'shared/supabase/init'
 import { APIError } from 'common/api/utils'
 import { millisToTs } from 'common/supabase/utils'
-import { Comment } from 'common/comment'
+import { ContractComment, PostComment } from 'common/comment'
 
 export async function getCommentSafe(
   pg: SupabaseDirectClient,
@@ -27,7 +27,7 @@ export async function getComment(pg: SupabaseDirectClient, commentId: string) {
   return comment
 }
 
-export async function getCommentsDirect<T extends Comment>(
+export async function getCommentsDirect(
   pg: SupabaseDirectClient,
   filters: {
     userId?: string
@@ -38,7 +38,7 @@ export async function getCommentsDirect<T extends Comment>(
     commentId?: string
     afterTime?: number
   }
-): Promise<T[]> {
+) {
   const {
     userId,
     contractId,
@@ -49,7 +49,6 @@ export async function getCommentsDirect<T extends Comment>(
     afterTime,
   } = filters
 
-  let query: string
   const params: any[] = [
     limit,
     page * limit,
@@ -60,9 +59,44 @@ export async function getCommentsDirect<T extends Comment>(
     afterTime ? millisToTs(afterTime) : null,
   ]
 
-  // Combine contract comments and old post comments for a user's page
-  if (userId) {
-    query = `
+  return await pg.map(
+    `
+        select cc.data from contract_comments cc
+          join contracts c on cc.contract_id = c.id
+        where c.visibility = 'public'
+          and cc.contract_id = $3 -- contractId (must be present here)
+          -- userId ($4) is ignored in this branch
+          and ($5 is null or cc.data->>'replyToCommentId' = $5) -- replyToCommentId
+          and ($6 is null or cc.comment_id = $6)           -- commentId
+          and ($7 is null or cc.created_time > $7)        -- afterTime
+        order by cc.created_time desc
+        limit $1
+        offset $2
+    `,
+    params,
+    convertContractComment
+  )
+}
+
+export async function getPostAndContractComments(
+  pg: SupabaseDirectClient,
+  filters: {
+    userId: string
+    limit?: number
+    page?: number
+    afterTime?: number
+  }
+): Promise<(ContractComment | PostComment)[]> {
+  const { userId, limit = 5000, page = 0, afterTime } = filters
+
+  const params: any[] = [
+    limit,
+    page * limit,
+    userId,
+    afterTime ? millisToTs(afterTime) : null,
+  ]
+
+  const query = `
       SELECT * FROM (
         -- Contract Comments
         SELECT
@@ -75,12 +109,9 @@ export async function getCommentsDirect<T extends Comment>(
         JOIN contracts c ON cc.contract_id = c.id
         WHERE
             c.visibility = 'public'
-            AND ($3 IS NULL OR cc.contract_id = $3) -- contractId (can be null when querying by user)
-            AND cc.user_id = $4                   -- userId (must be present here)
-            AND ($5 IS NULL OR cc.data->>'replyToCommentId' = $5) -- replyToCommentId
-            AND ($6 IS NULL OR cc.comment_id = $6)   -- commentId
-            AND ($7 IS NULL OR cc.created_time > $7) -- afterTime
-
+            AND cc.user_id = $3                   -- userId (must be present here)
+            AND ($4 IS NULL OR cc.created_time > $4) -- afterTime
+            
         UNION ALL
 
         -- Old Post Comments
@@ -93,35 +124,17 @@ export async function getCommentsDirect<T extends Comment>(
         FROM old_post_comments opc
         join old_posts op on opc.post_id = op.id
         WHERE
-             opc.user_id = $4
-            AND ($7 IS NULL OR opc.created_time > $7)
+            opc.user_id = $3
+            AND ($4 IS NULL OR opc.created_time > $4)
             and op.visibility = 'public'
       ) AS combined_comments
       ORDER BY created_time DESC
       LIMIT $1 -- limit
       OFFSET $2 -- offset
     `
-  } else {
-    if (!contractId) {
-      throw new APIError(400, 'Either contractId or userId must be provided')
-    }
-    query = `
-        select cc.data from contract_comments cc
-          join contracts c on cc.contract_id = c.id
-        where c.visibility = 'public'
-          and cc.contract_id = $3 -- contractId (must be present here)
-          -- userId ($4) is ignored in this branch
-          and ($5 is null or cc.data->>'replyToCommentId' = $5) -- replyToCommentId
-          and ($6 is null or cc.comment_id = $6)           -- commentId
-          and ($7 is null or cc.created_time > $7)        -- afterTime
-        order by cc.created_time desc
-        limit $1
-        offset $2
-    `
-  }
 
   return await pg.map(query, params, (r) => {
-    const comment = r.data as T
+    const comment = r.data as ContractComment | PostComment
     if (comment.commentType === 'post') {
       comment.postSlug = r.slug
       comment.postTitle = r.title

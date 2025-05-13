@@ -233,11 +233,11 @@ const checkForClarification = async (
   let answerContext = ''
 
   if (comment.replyToCommentId) {
-    const originalComment = await getCommentsDirect<ContractComment>(pg, {
+    const originalComment = await getCommentsDirect(pg, {
       contractId: contract.id,
       commentId: comment.replyToCommentId,
     })
-    const relatedComments = await getCommentsDirect<ContractComment>(pg, {
+    const relatedComments = await getCommentsDirect(pg, {
       contractId: contract.id,
       replyToCommentId: comment.replyToCommentId,
     })

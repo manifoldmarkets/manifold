@@ -1,8 +1,10 @@
 import { APIError, type APIHandler } from './helpers/endpoint'
 import { createSupabaseDirectClient } from 'shared/supabase/init'
 import { getContractFromSlugSupabase } from 'shared/utils'
-import { getCommentsDirect } from 'shared/supabase/contract-comments'
-import { ContractComment, Comment } from 'common/comment'
+import {
+  getCommentsDirect,
+  getPostAndContractComments,
+} from 'shared/supabase/contract-comments'
 
 export const getComments: APIHandler<'comments'> = async (props) => {
   const { userId, contractSlug } = props
@@ -14,7 +16,7 @@ export const getComments: APIHandler<'comments'> = async (props) => {
     props.contractId ?? (await getContractFromSlugSupabase(contractSlug!))?.id
   const pg = createSupabaseDirectClient()
 
-  return await getCommentsDirect<ContractComment>(pg, {
+  return await getCommentsDirect(pg, {
     ...props,
     contractId,
   })
@@ -23,5 +25,5 @@ export const getComments: APIHandler<'comments'> = async (props) => {
 export const getUserComments: APIHandler<'user-comments'> = async (props) => {
   const pg = createSupabaseDirectClient()
 
-  return await getCommentsDirect<Comment>(pg, props)
+  return await getPostAndContractComments(pg, props)
 }
