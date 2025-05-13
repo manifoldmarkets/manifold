@@ -150,7 +150,7 @@ export function formatShares(amount: number, isCashContract: boolean) {
       maximumFractionDigits: 2,
     })
   } else {
-    return formatWithCommas(amount)
+    return formatWithCommas(getMoneyNumber(amount))
   }
 }
 
@@ -257,7 +257,6 @@ export const formatOutcomeLabel = (
   return outcomeLabel === 'YES' ? 'HIGHER' : 'LOWER'
 }
 
-// Add this new function for locale-aware number formatting without currency
 export function formatNumber(
   amount: number,
   options?: {
