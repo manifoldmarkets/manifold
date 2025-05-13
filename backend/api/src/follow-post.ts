@@ -1,5 +1,8 @@
 import { APIError, APIHandler } from './helpers/endpoint'
-import { createSupabaseDirectClient } from 'shared/supabase/init'
+import {
+  createSupabaseDirectClient,
+  SupabaseDirectClient,
+} from 'shared/supabase/init'
 import { log } from 'shared/monitoring/log'
 
 export const followPost: APIHandler<'follow-post'> = async (props, auth) => {
@@ -11,10 +14,7 @@ export const followPost: APIHandler<'follow-post'> = async (props, auth) => {
   try {
     if (follow) {
       // Add a new follow relationship
-      await pg.none(
-        'INSERT INTO post_follows (post_id, user_id) VALUES ($1, $2) ON CONFLICT (post_id, user_id) DO NOTHING',
-        [postId, userId]
-      )
+      await followPostInternal(pg, postId, userId)
     } else {
       // Remove the follow relationship
       await pg.none(
@@ -36,4 +36,15 @@ export const followPost: APIHandler<'follow-post'> = async (props, auth) => {
     })
     throw new APIError(500, 'Failed to update post follow status')
   }
+}
+
+export const followPostInternal = async (
+  pg: SupabaseDirectClient,
+  postId: string,
+  userId: string
+) => {
+  await pg.none(
+    'INSERT INTO post_follows (post_id, user_id) VALUES ($1, $2) ON CONFLICT (post_id, user_id) DO NOTHING',
+    [postId, userId]
+  )
 }

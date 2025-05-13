@@ -13,7 +13,7 @@ import { compact } from 'lodash'
 import { parseMentions } from 'common/util/parse'
 import { createCommentOnPostNotification } from 'shared/notifications/create-new-contract-comment-notif'
 import { TopLevelPost } from 'common/top-level-post'
-
+import { followPostInternal } from './follow-post'
 export const createPostComment: APIHandler<'create-post-comment'> = async (
   props,
   auth
@@ -74,6 +74,7 @@ export const createPostComment: APIHandler<'create-post-comment'> = async (
     return {
       result: { comment },
       continue: async () => {
+        await followPostInternal(pg, post.id, creator.id)
         await revalidatePost(post)
         // Handle notifications
         try {

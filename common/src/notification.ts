@@ -361,6 +361,7 @@ export const NOTIFICATION_DESCRIPTIONS: notification_descriptions = {
   all_comments_on_followed_posts: {
     simple: 'All new comments on posts you follow',
     detailed: 'All new comments on posts you follow',
+    verb: 'commented',
   },
 }
 
