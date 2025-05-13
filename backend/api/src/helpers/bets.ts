@@ -19,7 +19,6 @@ import { CandidateBet } from 'common/new-bet'
 import {
   BANNED_TRADING_USER_IDS,
   BOT_USERNAMES,
-  INSTITUTIONAL_PARTNER_USER_IDS,
   PARTNER_USER_IDS,
 } from 'common/envs/constants'
 import { Answer } from 'common/answer'
@@ -80,7 +79,7 @@ export const fetchContractBetDataAndValidate = async (
       where contract_id = $2 and (
         $3 is null or id in ($3:list) or ${isSumsToOne}
       ) order by index;
-    select b.*, u.balance, u.cash_balance from contract_bets b join users u on b.user_id = u.id
+    select b.*, u.balance from contract_bets b join users u on b.user_id = u.id
       where ${whereLimitOrderBets};
     -- My contract metrics
     select data from user_contract_metrics ucm where 
@@ -113,7 +112,6 @@ export const fetchContractBetDataAndValidate = async (
   const answers = results[2].map(convertAnswer)
   const unfilledBets = results[3].map(convertBet) as (LimitBet & {
     balance: number
-    cash_balance: number
   })[]
   const myContractMetrics = results[4].map((r) => r.data as ContractMetric)
   // We get slightly more contract metrics than we need bc the contract_metrics index works poorly when selecting
@@ -152,23 +150,13 @@ export const fetchContractBetDataAndValidate = async (
   const balanceByUserId = Object.fromEntries(
     uniqBy(unfilledBets, (b) => b.userId).map((bet) => [
       bet.userId,
-      contract.token === 'CASH' ? bet.cash_balance : bet.balance,
+      bet.balance,
     ])
   )
   const unfilledBetUserIds = Object.keys(balanceByUserId)
-  const balance = contract.token === 'CASH' ? user.cashBalance : user.balance
+  const balance = user.balance
   if (amount !== undefined && balance < amount)
     throw new APIError(403, 'Insufficient balance.')
-  if (
-    (!user.sweepstakesVerified || !user.idVerified) &&
-    contract.token === 'CASH' &&
-    !INSTITUTIONAL_PARTNER_USER_IDS.includes(user.id)
-  ) {
-    throw new APIError(
-      403,
-      'You must be kyc verified to trade on sweepstakes markets.'
-    )
-  }
 
   if (BANNED_TRADING_USER_IDS.includes(user.id) || user.userDeleted) {
     throw new APIError(403, 'You are banned or deleted. And not #blessed.')
@@ -214,16 +202,13 @@ export const getUserBalancesAndMetrics = async (
   answerId?: string
 ) => {
   const startTime = Date.now()
-  const { token, id: contractId, mechanism } = contract
+  const { id: contractId, mechanism } = contract
   // TODO: if we pass the makers' answerIds, we don't need to fetch the metrics for all answers
   const sumsToOne =
     mechanism === 'cpmm-multi-1' && contract.shouldAnswersSumToOne
   const results = await pgTrans.multi(
     `
-      SELECT ${
-        token === 'CASH' ? 'cash_balance AS balance' : 'balance'
-      }, id FROM users WHERE id = ANY($1);
-
+      SELECT balance, id FROM users WHERE id = ANY($1);
       select data from user_contract_metrics where user_id = any($1) and contract_id = $2 and
            ($3 is null or answer_id = $3 or answer_id is null);
     `,
@@ -360,7 +345,7 @@ export const updateMakers = async (
   const bulkLimitOrderBalanceUpdates = Object.entries(allSpentByUser).map(
     ([userId, spent]) => ({
       id: userId,
-      [contract.token === 'CASH' ? 'cashBalance' : 'balance']: -spent,
+      balance: -spent,
     })
   )
 

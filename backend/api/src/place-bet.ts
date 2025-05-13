@@ -144,7 +144,6 @@ export const placeBetMain = async (
     unfilledBets,
     balanceByUserId
   )
-  checkIfTakerOrderAllowed(contract, simulatedResult.newBet, isApi)
   const simulatedMakerIds = getMakerIdsFromBetResult(simulatedResult)
 
   const result = await runTransactionWithRetries(async (pgTrans) => {
@@ -403,8 +402,7 @@ export const executeNewBetResult = async (
   const userBalanceUpdates = [
     {
       id: user.id,
-      [contract.token === 'CASH' ? 'cashBalance' : 'balance']:
-        -newBet.amount - apiFee + (newBet.loanAmount ?? 0),
+      balance: -newBet.amount - apiFee + (newBet.loanAmount ?? 0),
     },
   ]
   const makersByTakerBetId: Record<string, maker[]> = {
@@ -623,45 +621,5 @@ export const executeNewBetResult = async (
     contractUpdate,
     userUpdates,
     updatedMakers,
-  }
-}
-
-// const assertAdminAccumulatesNoMoreThanTenShares = (
-//   user: User,
-//   contract: MarketContract,
-//   contractMetrics: ContractMetric[],
-//   answerId: string | undefined
-// ) => {
-//   if (!isAdminId(user.id) || contract.token !== 'CASH') return
-//   const myMetrics = contractMetrics.find(
-//     (m) =>
-//       m.userId === user.id &&
-//       (answerId &&
-//       contract.mechanism === 'cpmm-multi-1' &&
-//       !contract.shouldAnswersSumToOne
-//         ? m.answerId === answerId
-//         : m.answerId === null)
-//   )
-//   if (myMetrics) {
-//     if (sum(Object.values(myMetrics.totalShares)) > 10 && isProd()) {
-//       throw new APIError(
-//         403,
-//         `Admins cannot accumulate more than 10 shares per answer per question.`
-//       )
-//     }
-//   }
-// }
-
-const checkIfTakerOrderAllowed = (
-  contract: MarketContract,
-  bet: CandidateBet<Bet>,
-  isApi: boolean
-) => {
-  const { fills } = bet
-  if (contract.takerAPIOrdersDisabled && fills && fills.length > 0 && isApi) {
-    throw new APIError(
-      403,
-      'Experimental: taker API orders are disabled for this contract.'
-    )
   }
 }
