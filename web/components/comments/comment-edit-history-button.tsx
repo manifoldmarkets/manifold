@@ -58,7 +58,7 @@ export const CommentEditHistoryButton = (props: { comment: Comment }) => {
       <DateTimeTooltip time={comment.editedTime} placement={'top'}>
         <button
           className={
-            'text-ink-400 hover:bg-ink-50 mx-1 inline-block whitespace-nowrap rounded px-0.5 text-sm'
+            'text-ink-500 hover:bg-ink-50 mx-1 inline-block whitespace-nowrap rounded px-0.5 text-sm'
           }
           onClick={() => setShowEditHistory(true)}
         >
