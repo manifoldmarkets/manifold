@@ -156,38 +156,47 @@ export async function getOrderedContractMetricRowsForContractId(
   db: SupabaseClient,
   answerId?: string,
   order: 'profit' | 'shares' = 'profit',
-  limit: number = 50
+  limit: number = 50,
+  offset: number = 0
 ) {
-  const q1 = db
+  let query1 = db
     .from('user_contract_metrics')
     .select('*')
     .eq('contract_id', contractId)
-    .limit(limit)
-  const q2 = db
+  let query2 = db
     .from('user_contract_metrics')
     .select('*')
     .eq('contract_id', contractId)
-    .limit(limit)
 
   if (answerId) {
-    q1.eq('answer_id', answerId)
-    q2.eq('answer_id', answerId)
+    query1.eq('answer_id', answerId)
+    query2.eq('answer_id', answerId)
   } else {
-    q1.is('answer_id', null)
-    q2.is('answer_id', null)
+    query1.is('answer_id', null)
+    query2.is('answer_id', null)
   }
 
   if (order === 'shares') {
-    q1.eq(`has_yes_shares`, true).order(`total_shares_yes`, {
+    query1.eq('has_yes_shares', true).order('total_shares_yes', {
       ascending: false,
     })
-    q2.eq(`has_no_shares`, true).order(`total_shares_no`, { ascending: false })
+    query2
+      .eq('has_no_shares', true)
+      .order('total_shares_no', { ascending: false })
   } else {
-    q1.order(`profit`, { ascending: false, nullsFirst: false }).gt(`profit`, 0)
-    q2.order(`profit`, { ascending: true, nullsFirst: false }).lt(`profit`, 0)
+    query1
+      .order('profit', { ascending: false, nullsFirst: false })
+      .gt('profit', 0)
+    query2
+      .order('profit', { ascending: true, nullsFirst: false })
+      .lt('profit', 0)
   }
-  const { data: q1Data } = await run(q1)
-  const { data: q2Data } = await run(q2)
+
+  query1 = query1.range(offset, offset + limit - 1)
+  query2 = query2.range(offset, offset + limit - 1)
+
+  const { data: q1Data } = await run(query1)
+  const { data: q2Data } = await run(query2)
   return q1Data.concat(q2Data)
 }
 
