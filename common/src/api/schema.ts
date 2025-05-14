@@ -2485,7 +2485,7 @@ export const API = (_apiTypeCheck = {
       .object({
         commentId: z.string(),
         postId: z.string(),
-        hidden: z.boolean().optional(),
+        hidden: z.boolean(),
       })
       .strict(),
   },

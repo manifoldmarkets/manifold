@@ -7,8 +7,6 @@ import { removeUndefinedProps } from 'common/util/object'
 import { log } from 'shared/monitoring/log'
 import { broadcastNewPostComment } from 'shared/websockets/helpers'
 import { nanoid } from 'common/util/random'
-import { isAdminId, isModId } from 'common/envs/constants'
-import { updateData } from 'shared/supabase/utils'
 import { compact } from 'lodash'
 import { parseMentions } from 'common/util/parse'
 import { createCommentOnPostNotification } from 'shared/notifications/create-new-contract-comment-notif'
@@ -117,34 +115,6 @@ export const createPostComment: APIHandler<'create-post-comment'> = async (
       userId: creator.id,
     })
     throw new APIError(500, 'Failed to create comment')
-  }
-}
-
-export const updatePostComment: APIHandler<'update-post-comment'> = async (
-  props,
-  auth
-) => {
-  const { commentId, postId, hidden } = props
-  if (!isAdminId(auth.uid) && !isModId(auth.uid))
-    throw new APIError(403, 'You are not authorized to update this comment')
-  const pg = createSupabaseDirectClient()
-  const comment = await pg.oneOrNone(
-    `SELECT data FROM old_post_comments WHERE comment_id = $1 AND post_id = $2`,
-    [commentId, postId],
-    (row) => row.data as PostComment
-  )
-  if (!comment) throw new APIError(404, 'Comment not found')
-
-  await updateData(pg, 'old_post_comments', 'comment_id', {
-    comment_id: commentId,
-    hidden,
-  })
-
-  return {
-    comment: {
-      ...comment,
-      hidden,
-    },
   }
 }
 

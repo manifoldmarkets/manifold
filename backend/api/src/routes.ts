@@ -181,12 +181,12 @@ import {
 } from './market-drafts'
 import { getSeasonInfo } from './get-season-info'
 import { markNotificationRead } from './mark-all-notifications'
-import { createPostComment, updatePostComment } from './create-post-comment'
+import { createPostComment } from './create-post-comment'
 import { createPost, updatePost } from './create-post'
 import { getPosts } from './get-posts'
 import { dismissUserReport } from './dismiss-user-report'
 import { followPost } from './follow-post'
-import { editPostComment } from './edit-post-comment'
+import { editPostComment, updatePostComment } from './edit-post-comment'
 import { getUserComments } from './get-comments'
 export const handlers: { [k in APIPath]: APIHandler<k> } = {
   'refresh-all-clients': refreshAllClients,
