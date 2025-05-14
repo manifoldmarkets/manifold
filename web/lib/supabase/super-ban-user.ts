@@ -30,8 +30,17 @@ async function superBanUser(userId: string) {
       commentsStatus = 'were not found'
     }
   }
+  const posts = await api('get-posts', { userId })
+  if (posts.length > 0) {
+    for (const post of posts) {
+      await api('update-post', {
+        id: post.id,
+        visibility: 'unlisted',
+      })
+    }
+  }
 
-  return `Super ban completed. Markets ${marketsStatus}. Comments ${commentsStatus}.`
+  return `Super ban completed. Markets ${marketsStatus}. Comments ${commentsStatus}. Posts hidden: ${posts.length}.`
 }
 
 export { superBanUser }
