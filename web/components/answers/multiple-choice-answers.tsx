@@ -88,9 +88,11 @@ export function MultipleChoiceAnswers(props: {
   const numAnswers = answers.length + (hasOther ? 1 : 0)
 
   const canRemoveAnswers =
-    (!shouldAnswersSumToOne && numAnswers > 1) ||
-    numAnswers > 2 ||
-    (numAnswers > 1 && addAnswersMode !== 'DISABLED')
+    outcomeType === 'POLL'
+      ? numAnswers > 2
+      : (!shouldAnswersSumToOne && numAnswers > 1) ||
+        numAnswers > 2 ||
+        (numAnswers > 1 && addAnswersMode !== 'DISABLED')
 
   return (
     <Col className="gap-2">
