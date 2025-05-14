@@ -147,16 +147,17 @@ export async function updateUserPortfolioHistoriesCore(userIds?: string[]) {
     const userMetrics = currentMetricsByUserId[user.id] ?? []
     const { currentPortfolio } = userToPortfolioMetrics[user.id]
     const { balance, totalDeposits } = user
-    const { value: manaPayouts } = getUnresolvedStatsForToken(
+    const { value: rankedManaPayouts } = getUnresolvedStatsForToken(
       'MANA',
       userMetrics.filter((m) => m.isRanked),
       contractsById
     )
-    const { invested: unrankedManaInvested } = getUnresolvedStatsForToken(
-      'MANA',
-      userMetrics.filter((m) => !m.isRanked),
-      contractsById
-    )
+    const { invested: unrankedManaInvested, loan: unrankedManaLoan } =
+      getUnresolvedStatsForToken(
+        'MANA',
+        userMetrics.filter((m) => !m.isRanked),
+        contractsById
+      )
     const newPortfolio = {
       ...calculateNewPortfolioMetricsWithContractMetrics(
         user,
@@ -165,10 +166,11 @@ export async function updateUserPortfolioHistoriesCore(userIds?: string[]) {
       ),
       // TODO: we still have to subtract resolved unranked (profit-invested) from balance
       profit:
-        manaPayouts +
+        rankedManaPayouts +
         balance +
         // unranked mana invested is equivalent to balance
         unrankedManaInvested -
+        unrankedManaLoan -
         totalDeposits,
     }
 
@@ -332,15 +334,21 @@ export const getUnresolvedStatsForToken = (
   const metrics = contractMetrics.map((cm) => {
     const contract = contractsById[cm.contractId] as MarketContract
     if (contract.token !== token) {
-      return { value: 0, invested: 0, dailyProfit: 0 }
+      return { value: 0, invested: 0, dailyProfit: 0, loan: 0 }
     }
     if (contract.isResolved) {
-      return { value: 0, invested: 0, dailyProfit: cm.from?.day?.profit ?? 0 }
+      return {
+        value: 0,
+        invested: 0,
+        dailyProfit: cm.from?.day?.profit ?? 0,
+        loan: 0,
+      }
     }
 
     // ignore summary metrics
     if (contract.mechanism === 'cpmm-multi-1') {
-      if (!cm.answerId) return { value: 0, invested: 0, dailyProfit: 0 }
+      if (!cm.answerId)
+        return { value: 0, invested: 0, dailyProfit: 0, loan: 0 }
       const answer = contract.answers.find((a) => a.id === cm.answerId)
       // Might not get an answer if it's not denormalized and resolved already, (excluded by the sql query)
       if (!answer || answer.resolutionTime)
@@ -348,6 +356,7 @@ export const getUnresolvedStatsForToken = (
           value: 0,
           invested: 0,
           dailyProfit: cm.from?.day?.profit ?? 0,
+          loan: 0,
         }
       return {
         value:
@@ -355,6 +364,7 @@ export const getUnresolvedStatsForToken = (
           (cm.loan ?? 0),
         invested: cm.invested ?? 0,
         dailyProfit: cm.from?.day?.profit ?? 0,
+        loan: cm.loan ?? 0,
       }
     }
 
@@ -364,6 +374,7 @@ export const getUnresolvedStatsForToken = (
         (cm.loan ?? 0),
       invested: cm.invested ?? 0,
       dailyProfit: cm.from?.day?.profit ?? 0,
+      loan: cm.loan ?? 0,
     }
   })
 
@@ -371,6 +382,7 @@ export const getUnresolvedStatsForToken = (
     value: sumBy(metrics, (m) => m.value),
     invested: sumBy(metrics, (m) => m.invested),
     dailyProfit: sumBy(metrics, (m) => m.dailyProfit),
+    loan: sumBy(metrics, (m) => m.loan),
   }
 }
 
