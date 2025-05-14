@@ -35,18 +35,29 @@ export default function PostsPage(props: { bestPosts: TopLevelPost[] }) {
   const [viewType, setViewType] = useState<'latest' | 'best' | 'changelog'>(
     'best'
   )
-  const { data: differentPosts, loading } = useAPIGetter('get-posts', {
-    sortBy: 'created_time',
-    isChangeLog:
-      router.query.filter === 'changelog' || viewType === 'changelog',
-  })
 
   useEffect(() => {
+    if (!router.isReady) return
     const filter = router.query.filter as string | undefined
     if (filter === 'changelog') {
-      setViewType('changelog')
+      if (viewType !== 'changelog') setViewType('changelog')
+    } else if (viewType === 'changelog' && !filter) {
+      setViewType('best')
     }
-  }, [router.query.filter, router.isReady])
+  }, [router.isReady, router.query.filter, viewType])
+
+  const shouldFetchDifferentPosts =
+    viewType === 'latest' || viewType === 'changelog'
+  const { data: differentPosts, loading } = useAPIGetter(
+    'get-posts',
+    {
+      sortBy: 'created_time',
+      isChangeLog: viewType === 'changelog',
+    },
+    undefined,
+    undefined,
+    router.isReady && shouldFetchDifferentPosts
+  )
 
   const posts = viewType === 'best' ? bestPosts : differentPosts
   return (
