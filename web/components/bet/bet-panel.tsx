@@ -424,7 +424,7 @@ export const BuyPanelBody = (
     if (calculationError) {
       setError(calculationError)
     }
-  }, [calculationError, setError])
+  }, [calculationError, error])
 
   async function submitBet() {
     if (!user || !betAmount) return
