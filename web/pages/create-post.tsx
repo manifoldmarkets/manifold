@@ -35,6 +35,7 @@ export function CreatePostForm(props: { group?: Group }) {
   const [error, setError] = useState('')
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [isAnnouncement, setIsAnnouncement] = useState(false)
+  const [isChangeLog, setIsChangeLog] = useState(false)
 
   const { group } = props
 
@@ -57,6 +58,7 @@ export function CreatePostForm(props: { group?: Group }) {
       groupId: group?.id,
       isAnnouncement,
       visibility: postVisibility,
+      isChangeLog,
     }
 
     const result = await api('create-post', newPost).catch((e) => {
@@ -98,21 +100,36 @@ export function CreatePostForm(props: { group?: Group }) {
               <TextEditor editor={editor} />
               <Spacer h={6} />
               {isAdmin && (
-                <Row className="items-center gap-2 px-1 py-2">
-                  <ShortToggle
-                    colorMode="warning"
-                    on={isAnnouncement}
-                    setOn={setIsAnnouncement}
-                  />
-                  <span
-                    className={clsx(
-                      'mb-1',
-                      isAnnouncement && 'text-scarlet-500'
-                    )}
-                  >
-                    Announcement post (sends a notification to all users)
-                  </span>
-                </Row>
+                <>
+                  <Row className="items-center gap-2 px-1 py-2">
+                    <ShortToggle
+                      colorMode="warning"
+                      on={isAnnouncement}
+                      setOn={setIsAnnouncement}
+                    />
+                    <span
+                      className={clsx(
+                        'mb-1',
+                        isAnnouncement && 'text-scarlet-500'
+                      )}
+                    >
+                      Announcement (sends a notification to all users)
+                    </span>
+                  </Row>
+                  <Row className="items-center gap-2 px-1 py-2">
+                    <ShortToggle on={isChangeLog} setOn={setIsChangeLog} />
+                    <span className="mb-1">
+                      Changelog (shows up on the{' '}
+                      <Link
+                        href="/posts?filter=changelog"
+                        className={linkClass}
+                      >
+                        changelog page
+                      </Link>
+                      )
+                    </span>
+                  </Row>
+                </>
               )}
               <Row className="items-center gap-2 px-1 py-2">
                 <ShortToggle

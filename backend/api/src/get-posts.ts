@@ -13,7 +13,14 @@ import {
 } from 'shared/supabase/sql-builder'
 import { buildArray } from 'common/util/array'
 export const getPosts: APIHandler<'get-posts'> = async (props, auth) => {
-  const { sortBy = 'created_time', term, limit, userId, offset } = props
+  const {
+    sortBy = 'created_time',
+    term,
+    limit,
+    userId,
+    offset,
+    isChangeLog,
+  } = props
   const requester = auth?.uid
   const pg = createSupabaseDirectClient()
 
@@ -26,6 +33,7 @@ export const getPosts: APIHandler<'get-posts'> = async (props, auth) => {
     leftJoin('user_reactions r on op.id = r.content_id'),
     (userId !== requester || !requester) && where(`op.visibility = 'public'`),
     where(`op.group_id is null`),
+    isChangeLog && where(`(op.data->>'isChangeLog')::boolean = true`),
     userId && where(`op.creator_id = $1`),
     term &&
       term.trim().length > 0 &&

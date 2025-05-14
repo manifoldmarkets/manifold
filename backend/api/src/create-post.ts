@@ -13,11 +13,11 @@ import { createNewPostFromFollowedUserNotification } from 'shared/notifications/
 export const createPost: APIHandler<'create-post'> = async (props, auth) => {
   const pg = createSupabaseDirectClient()
 
-  const { title, content, isAnnouncement, visibility } = props
-  if (isAnnouncement && !isAdminId(auth.uid)) {
+  const { title, content, isAnnouncement, visibility, isChangeLog } = props
+  if ((isAnnouncement || isChangeLog) && !isAdminId(auth.uid)) {
     throw new APIError(
       403,
-      'You are not allowed to create an announcement post'
+      'Only admins can create announcement or changelog posts'
     )
   }
 
@@ -39,6 +39,7 @@ export const createPost: APIHandler<'create-post'> = async (props, auth) => {
       creatorAvatarUrl: creator.avatarUrl,
       visibility: visibility ?? 'public',
       isAnnouncement,
+      isChangeLog,
       importanceScore: NEW_MARKET_IMPORTANCE_SCORE,
     })
 

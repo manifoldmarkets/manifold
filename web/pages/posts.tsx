@@ -9,10 +9,11 @@ import { useUser } from 'web/hooks/use-user'
 import { track } from 'web/lib/service/analytics'
 import { buttonClass } from 'web/components/buttons/button'
 import Link from 'next/link'
-import { useLatestPosts } from 'web/lib/supabase/posts'
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { Button } from 'web/components/buttons/button'
 import { unauthedApi } from 'common/util/api'
+import { useRouter } from 'next/router'
+import { useAPIGetter } from 'web/hooks/use-api-getter'
 
 export async function getStaticProps() {
   const bestPosts = await unauthedApi('get-posts', {
@@ -29,31 +30,68 @@ export async function getStaticProps() {
 export default function PostsPage(props: { bestPosts: TopLevelPost[] }) {
   const { bestPosts } = props
   const user = useUser()
-  const [sortBy, setSortBy] = useState<'latest' | 'best'>('best')
-  const latestPosts = useLatestPosts()
-  const posts = sortBy === 'latest' ? latestPosts : bestPosts
+  const router = useRouter()
+
+  const [viewType, setViewType] = useState<'latest' | 'best' | 'changelog'>(
+    'best'
+  )
+  const { data: differentPosts, loading } = useAPIGetter('get-posts', {
+    sortBy: 'created_time',
+    isChangeLog: viewType === 'changelog',
+  })
+
+  useEffect(() => {
+    const filter = router.query.filter as string | undefined
+    if (filter === 'changelog' && viewType !== 'changelog') {
+      setViewType('changelog')
+    }
+  }, [router.query.filter, router.isReady])
+
+  const posts = viewType === 'best' ? bestPosts : differentPosts
   return (
-    <Page trackPageView={'latest posts page'}>
+    <Page trackPageView={'posts page'}>
       <Col className=" px-2 py-3">
         <Row className="my-4 items-start justify-between sm:mt-0">
           <Col>
             <Title className="mx-4 !mb-0 sm:mx-0">
-              {sortBy === 'latest' ? 'Latest Posts' : 'Best Posts'}
+              {viewType === 'latest'
+                ? 'Latest Posts'
+                : viewType === 'best'
+                ? 'Best Posts'
+                : 'Changelog Posts'}
             </Title>
             <Row className="mx-4 mt-2 gap-2 sm:mx-0">
               <Button
                 size="xs"
-                color={sortBy === 'best' ? 'indigo' : 'gray-outline'}
-                onClick={() => setSortBy('best')}
+                color={viewType === 'best' ? 'indigo' : 'gray-outline'}
+                onClick={() => {
+                  setViewType('best')
+                  router.push('/posts', undefined, { shallow: true })
+                }}
               >
                 Best
               </Button>
               <Button
                 size="xs"
-                color={sortBy === 'latest' ? 'indigo' : 'gray-outline'}
-                onClick={() => setSortBy('latest')}
+                color={viewType === 'latest' ? 'indigo' : 'gray-outline'}
+                onClick={() => {
+                  setViewType('latest')
+                  router.push('/posts', undefined, { shallow: true })
+                }}
               >
                 Latest
+              </Button>
+              <Button
+                size="xs"
+                color={viewType === 'changelog' ? 'indigo' : 'gray-outline'}
+                onClick={() => {
+                  setViewType('changelog')
+                  router.push('/posts?filter=changelog', undefined, {
+                    shallow: true,
+                  })
+                }}
+              >
+                Changelog
               </Button>
             </Row>
           </Col>
@@ -69,7 +107,12 @@ export default function PostsPage(props: { bestPosts: TopLevelPost[] }) {
             )}
           </Col>
         </Row>
-        {posts ? <Posts posts={posts} /> : <LoadingIndicator />}
+        {loading ? <LoadingIndicator /> : <Posts posts={posts ?? []} />}
+        {!loading && posts && posts.length === 0 && (
+          <Col className="items-center justify-center py-4 text-gray-500">
+            No posts found.
+          </Col>
+        )}
       </Col>
     </Page>
   )

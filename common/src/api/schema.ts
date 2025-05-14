@@ -1527,6 +1527,7 @@ export const API = (_apiTypeCheck = {
         limit: z.coerce.number().gte(0).lte(200).default(100),
         userId: z.string().optional(),
         offset: z.coerce.number().gte(0).default(0),
+        isChangeLog: coerceBoolean.optional(),
       })
       .strict(),
     returns: [] as TopLevelPost[],
@@ -2444,6 +2445,7 @@ export const API = (_apiTypeCheck = {
         content: contentSchema,
         isAnnouncement: z.boolean().optional(),
         visibility: z.enum(['public', 'unlisted']).optional(),
+        isChangeLog: z.boolean().optional(),
       })
       .strict(),
   },

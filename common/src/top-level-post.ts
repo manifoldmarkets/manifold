@@ -33,6 +33,7 @@ export type TopLevelPost = {
   visibility: Visibility
   unlistedById?: string
   isAnnouncement?: boolean
+  isChangeLog?: boolean
   /** @deprecated - not deprecated, only updated in native column though*/
   importanceScore: number
   /** @deprecated - not deprecated, only available via the get-posts endpoint*/
