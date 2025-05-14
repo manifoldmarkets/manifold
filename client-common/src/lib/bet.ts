@@ -1,4 +1,7 @@
-import { getCpmmProbability } from 'common/calculate-cpmm'
+import {
+  CPMM_ARBITRAGE_ERROR_PREFIX,
+  getCpmmProbability,
+} from 'common/calculate-cpmm'
 import { LimitBet } from 'common/bet'
 import { Answer } from 'common/answer'
 import { noFees } from 'common/fees'
@@ -117,7 +120,11 @@ export const getLimitBetReturns = (
   } catch (err: any) {
     console.error('Error in getLimitBetReturns:', err)
     calculationError =
-      err?.message ??
+      (err?.message.startsWith(CPMM_ARBITRAGE_ERROR_PREFIX)
+        ? `Error buying ${outcome} on this answer, buy ${
+            outcome === 'YES' ? 'NO' : 'YES'
+          } in other answers first.`
+        : err?.message) ??
       `An error occurred during ${TRADE_TERM} calculation, try again.`
   }
   const remainingMatched = limitProb

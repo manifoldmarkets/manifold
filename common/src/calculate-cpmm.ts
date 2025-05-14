@@ -16,7 +16,8 @@ import {
 import { Answer } from './answer'
 import { MarketContract, MAX_CPMM_PROB, MIN_CPMM_PROB } from 'common/contract'
 import { addObjects } from 'common/util/object'
-
+export const CPMM_ARBITRAGE_ERROR_PREFIX =
+  'calculateAmountToBuySharesFixedP only works for p = 0.5, got '
 export type CpmmState = {
   pool: { [outcome: string]: number }
   p: number
@@ -185,9 +186,7 @@ export function calculateCpmmAmountToBuySharesFixedP(
   outcome: 'YES' | 'NO'
 ) {
   if (!floatingEqual(state.p, 0.5)) {
-    throw new Error(
-      'calculateAmountToBuySharesFixedP only works for p = 0.5, got ' + state.p
-    )
+    throw new Error(CPMM_ARBITRAGE_ERROR_PREFIX + state.p)
   }
 
   const { YES: y, NO: n } = state.pool
