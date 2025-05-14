@@ -56,6 +56,7 @@ export default function AboutPage() {
             )}
 
             <LabCard title="📺 TV" href="/tv" />
+            <LabCard title="️✨ Changelog" href="/posts?filter=changelog" />
             <LabCard title="️🔖 Dashboards" href="/dashboard" />
             <LabCard title="⚡️ Site activity" href="/live" />
             <LabCard title="🤖 AI" href="/ai" />
