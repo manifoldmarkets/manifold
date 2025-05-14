@@ -463,23 +463,30 @@ function EditPostCommentModal(props: {
 
     const newContent = editor.getJSON()
 
-    try {
-      await api('edit-post-comment', {
+    await toast.promise(
+      api('edit-post-comment', {
         commentId: comment.id,
         postId: post.id,
         content: newContent,
-      })
-      setContent(newContent)
-      setIsSubmitting(false)
-      editor.commands.clearContent(true)
-      safeLocalStorage?.removeItem(`text ${key}`)
-      setOpen(false)
-      toast.success('Comment updated!')
-    } catch (e) {
-      console.error('Error editing comment', e)
-      toast.error('Failed to edit comment. Please try again.')
-      setIsSubmitting(false)
-    }
+      }),
+      {
+        loading: 'Updating comment...',
+        success: () => {
+          setContent(newContent)
+          if (editor && !editor.isDestroyed) {
+            editor.commands.clearContent(true)
+          }
+          safeLocalStorage?.removeItem(`text ${key}`)
+          setOpen(false)
+          return 'Comment updated!'
+        },
+        error: (e) => {
+          console.error('Error editing comment', e)
+          return 'Failed to edit comment. Please try again.'
+        },
+      }
+    )
+    setIsSubmitting(false)
   }
 
   return (
