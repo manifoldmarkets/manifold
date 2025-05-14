@@ -298,7 +298,7 @@ SYSTEM: Please analyze if the creator's latest comment ${
   ONLY choose to issue a clarification if you are CERTAIN that the creator's comment is unambiguously changing the resolution criteria as outlined in the description/question.
   Do not issue clarifications for everything the creator says, only clarifications on how the market will resolve.
   A clarification should very likely be a response to a question from a user about how the market will resolve in x case. Ignore lighthearted commentary and banter.
-
+  If the creator is about to resolve the market, and detailing their reasoning, do not issue a clarification.
   If the creator says that they're going to update the description themselves, or they indicate their comment ${
     commentsContext ? '(or their comments in the thread)' : ''
   } shouldn't be used to update the description, do not issue a clarification.
