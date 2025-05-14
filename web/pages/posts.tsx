@@ -37,12 +37,13 @@ export default function PostsPage(props: { bestPosts: TopLevelPost[] }) {
   )
   const { data: differentPosts, loading } = useAPIGetter('get-posts', {
     sortBy: 'created_time',
-    isChangeLog: viewType === 'changelog',
+    isChangeLog:
+      router.query.filter === 'changelog' || viewType === 'changelog',
   })
 
   useEffect(() => {
     const filter = router.query.filter as string | undefined
-    if (filter === 'changelog' && viewType !== 'changelog') {
+    if (filter === 'changelog') {
       setViewType('changelog')
     }
   }, [router.query.filter, router.isReady])
