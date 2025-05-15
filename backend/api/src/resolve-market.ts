@@ -11,7 +11,6 @@ import {
   resolveMultiSchema,
   resolvePseudoNumericSchema,
 } from 'common/api/market-types'
-import { resolveLoveMarketOtherAnswers } from 'shared/love/love-markets'
 import { betsQueue } from 'shared/helpers/fn-queue'
 import { createSupabaseDirectClient } from 'shared/supabase/init'
 import { broadcastUserUpdates } from 'shared/supabase/users'
@@ -80,22 +79,6 @@ export const resolveMarketMain: APIHandler<
     contractId,
     resolutionParams,
   })
-
-  if (
-    contract.isLove &&
-    contract.mechanism === 'cpmm-multi-1' &&
-    resolutionParams.outcome === 'YES' &&
-    'answerId' in resolutionParams
-  ) {
-    // For Love Markets:
-    // When resolving one answer YES, first resolve all other answers.
-    await resolveLoveMarketOtherAnswers(
-      contract,
-      caller,
-      creator,
-      resolutionParams
-    )
-  }
 
   const { userUpdates } = await resolveMarketHelper(
     contract as MarketContract,

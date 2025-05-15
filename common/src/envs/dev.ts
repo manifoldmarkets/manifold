@@ -3,8 +3,6 @@ import { EnvConfig, PROD_CONFIG } from './prod'
 export const DEV_CONFIG: EnvConfig = {
   ...PROD_CONFIG,
   domain: 'dev.manifold.markets',
-  loveDomain: 'dev.manifold.love',
-  loveDomainAlternate: 'dev.manifoldlove.com',
   googleAnalyticsId: '',
   firebaseConfig: {
     apiKey: 'AIzaSyBoq3rzUa8Ekyo3ZaTnlycQYPRCA26VpOw',
