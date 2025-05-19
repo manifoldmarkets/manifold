@@ -182,6 +182,7 @@ export const BOT_USERNAMES = [
   'ataribot',
   'RISKBOT',
   'harmonia',
+  'Dagonet',
 ]
 
 export const MOD_IDS = [

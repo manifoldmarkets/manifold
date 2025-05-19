@@ -93,6 +93,7 @@ export const placeMultiBetMain = async (
         user,
         isApi,
         contractMetrics,
+        balanceByUserId,
         undefined,
         betGroupId,
         deterministic,
