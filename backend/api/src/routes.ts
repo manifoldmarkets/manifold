@@ -19,7 +19,6 @@ import { setnews } from './set-news'
 import { getDashboardFromSlug } from './get-dashboard-from-slug'
 import { unresolve } from './unresolve'
 import { updateMarket } from 'api/update-market'
-import { getCompatibleLovers } from './love/compatible-lovers'
 import { type APIPath } from 'common/api/schema'
 import { getMarkets } from 'api/markets'
 import { hideComment } from './hide-comment'
@@ -48,22 +47,13 @@ import { post } from 'api/post'
 import { fetchLinkPreview } from './fetch-link-preview'
 import { type APIHandler } from './helpers/endpoint'
 import { requestLoan } from 'api/request-loan'
-import { removePinnedPhoto } from './love/remove-pinned-photo'
 import { getHeadlines, getPoliticsHeadlines } from './get-headlines'
 import { getBoostAnalytics } from 'api/get-boost-analytics'
-import { getCompatibilityQuestions } from './love/get-compatibililty-questions'
 import { addOrRemoveReaction } from './reaction'
-import { likeLover } from './love/like-lover'
-import { shipLovers } from './love/ship-lovers'
 import { createManalink } from './create-manalink'
-import { getLikesAndShips } from './love/get-likes-and-ships'
-import { hasFreeLike } from './love/has-free-like'
-import { starLover } from './love/star-lover'
-import { getLovers } from './love/get-lovers'
 import { unlistAndCancelUserContracts } from './unlist-and-cancel-user-contracts'
 import { getGroupsWithTopContracts } from 'api/get-topics-with-markets'
 import { getBalanceChanges } from 'api/get-balance-changes'
-import { getLoverAnswers } from './love/get-lover-answers'
 import { placeMultiBet } from 'api/place-multi-bet'
 import { getPartnerStats } from './get-partner-stats'
 import { getSeenMarketIds } from 'api/get-seen-market-ids'
@@ -276,23 +266,13 @@ export const handlers: { [k in APIPath]: APIHandler<k> } = {
   'update-notif-settings': updateNotifSettings,
   headlines: getHeadlines,
   'politics-headlines': getPoliticsHeadlines,
-  'compatible-lovers': getCompatibleLovers,
   post: post,
   'fetch-link-preview': fetchLinkPreview,
   'request-loan': requestLoan,
-  'remove-pinned-photo': removePinnedPhoto,
   'get-related-markets': getRelatedMarkets,
   'get-related-markets-by-group': getRelatedMarketsByGroup,
   'unlist-and-cancel-user-contracts': unlistAndCancelUserContracts,
   'get-boost-analytics': getBoostAnalytics,
-  'get-compatibility-questions': getCompatibilityQuestions,
-  'like-lover': likeLover,
-  'ship-lovers': shipLovers,
-  'get-likes-and-ships': getLikesAndShips,
-  'has-free-like': hasFreeLike,
-  'star-lover': starLover,
-  'get-lovers': getLovers,
-  'get-lover-answers': getLoverAnswers,
   'set-news': setnews,
   'search-groups': searchGroups,
   'search-my-groups': searchMyGroups,

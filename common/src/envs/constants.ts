@@ -46,8 +46,6 @@ export function isSweepstakesModId(id: string) {
   return SWEEPSTAKES_MOD_IDS.includes(id)
 }
 export const DOMAIN = ENV_CONFIG.domain
-export const LOVE_DOMAIN = ENV_CONFIG.loveDomain
-export const LOVE_DOMAIN_ALTERNATE = ENV_CONFIG.loveDomainAlternate
 export const FIREBASE_CONFIG = ENV_CONFIG.firebaseConfig
 export const PROJECT_ID = ENV_CONFIG.firebaseConfig.projectId
 export const IS_PRIVATE_MANIFOLD = ENV_CONFIG.visibility === 'PRIVATE'
@@ -60,18 +58,6 @@ export const AUTH_COOKIE_NAME = `FBUSER_${PROJECT_ID.toUpperCase().replace(
 // Manifold's domain or any subdomains thereof
 export const CORS_ORIGIN_MANIFOLD = new RegExp(
   '^https?://(?:[a-zA-Z0-9\\-]+\\.)*' + escapeRegExp(ENV_CONFIG.domain) + '$'
-)
-// Manifold love domain or any subdomains thereof
-export const CORS_ORIGIN_MANIFOLD_LOVE = new RegExp(
-  '^https?://(?:[a-zA-Z0-9\\-]+\\.)*' +
-    escapeRegExp(ENV_CONFIG.loveDomain) +
-    '$'
-)
-// Manifold love domain or any subdomains thereof
-export const CORS_ORIGIN_MANIFOLD_LOVE_ALTERNATE = new RegExp(
-  '^https?://(?:[a-zA-Z0-9\\-]+\\.)*' +
-    escapeRegExp(ENV_CONFIG.loveDomainAlternate) +
-    '$'
 )
 
 export const CORS_ORIGIN_CHARITY = new RegExp(

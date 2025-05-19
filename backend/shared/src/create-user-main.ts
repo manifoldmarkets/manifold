@@ -1,20 +1,14 @@
 import * as admin from 'firebase-admin'
-import { PrivateUser, User } from 'common/user'
+import { PrivateUser } from 'common/user'
 import { randomString } from 'common/util/random'
 import { cleanDisplayName, cleanUsername } from 'common/util/clean-username'
-
 import { track } from 'shared/analytics'
 import { getDefaultNotificationPreferences } from 'common/user-notification-preferences'
-import { removeUndefinedProps } from 'common/util/object'
 import { generateAvatarUrl } from 'shared/helpers/generate-and-update-avatar-urls'
 import { getStorage } from 'firebase-admin/storage'
 import { DEV_CONFIG } from 'common/envs/dev'
 import { PROD_CONFIG } from 'common/envs/prod'
-import {
-  LOVE_DOMAIN,
-  LOVE_DOMAIN_ALTERNATE,
-  RESERVED_PATHS,
-} from 'common/envs/constants'
+import { RESERVED_PATHS } from 'common/envs/constants'
 import { log, isProd, getUser, getUserByUsername } from 'shared/utils'
 import { trackSignupFB } from 'shared/fb-analytics'
 import {
@@ -60,12 +54,6 @@ export const createUserMain = async (
 
   log(`Create user from: ${host}`)
 
-  const fromLove =
-    (host?.includes('localhost')
-      ? process.env.IS_MANIFOLD_LOVE === 'true'
-      : host?.includes(LOVE_DOMAIN) || host?.includes(LOVE_DOMAIN_ALTERNATE)) ||
-    undefined
-
   const deviceToken = testUserAKAEmailPasswordUser
     ? randomString() + randomString()
     : preDeviceToken
@@ -108,8 +96,7 @@ export const createUserMain = async (
     if (sameNameUser)
       throw new APIError(403, 'Username already taken', { username })
 
-    // Only undefined prop should be fromLove
-    const userData: Partial<User> = removeUndefinedProps({
+    const userData = {
       id: userId,
       avatarUrl,
       streakForgiveness: 1,
@@ -119,9 +106,8 @@ export const createUserMain = async (
         (deviceToken && bannedDeviceTokens.includes(deviceToken)) ||
           (ip && bannedIpAddresses.includes(ip))
       ),
-      fromLove,
       signupBonusPaid: 0,
-    })
+    }
 
     const privateUser: PrivateUser = {
       id: userId,
@@ -171,12 +157,7 @@ export const createUserMain = async (
 
   const continuation = async () => {
     const pg = createSupabaseDirectClient()
-    await track(
-      user.id,
-      fromLove ? 'create lover' : 'create user',
-      { username: user.username },
-      { ip }
-    )
+    await track(user.id, 'create user', { username: user.username }, { ip })
 
     await addContractsToSeenMarketsTable(userId, visitedContractIds, pg)
     await upsertNewUserEmbeddings(userId, visitedContractIds, pg)
