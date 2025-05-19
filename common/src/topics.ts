@@ -9,7 +9,6 @@ type TopicInfo = { name: string; groupIds: string[]; hideFromSearch?: boolean }
 export const TOPICS_TO_SUBTOPICS: { [key: string]: TopicInfo[] } = {
   '🗳️ Politics': [
     {
-      // US Politics
       name: '🇺🇸 USA',
       groupIds: [
         'AjxQR8JMpNyDqtiqoA96', // US Politics
@@ -190,7 +189,6 @@ export const TOPICS_TO_SUBTOPICS: { [key: string]: TopicInfo[] } = {
       groupIds: ['YuJw0M1xvUHrpiRRuKso', 'WBeBD6FyMd0NvSL0qjMb'],
     },
   ],
-
   '🤪 Fun': [
     {
       name: '🎲 Fun & games',
