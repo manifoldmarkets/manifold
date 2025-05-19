@@ -105,17 +105,17 @@ module.exports = {
       },
       {
         source: '/terms',
-        destination: 'https://docs.manifold.markets/terms-and-conditions',
+        destination: 'https://docs.manifold.markets/terms',
         permanent: true,
       },
       {
         source: '/mana-only-terms',
-        destination: 'https://docs.manifold.markets/mana-only-terms',
+        destination: 'https://docs.manifold.markets/terms',
         permanent: true,
       },
       {
         source: '/sweepstakes-rules',
-        destination: 'https://docs.manifold.markets/rules',
+        destination: 'https://docs.manifold.markets/sweepstakes-rules',
         permanent: true,
       },
       {

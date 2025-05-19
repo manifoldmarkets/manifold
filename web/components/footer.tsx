@@ -21,15 +21,6 @@ export const Footer = ({ showAbout = false }: { showAbout?: boolean }) => (
     >
       Terms
     </a>
-    {' + '}
-    <a
-      href="/mana-only-terms"
-      target="_blank"
-      className="hover:underline"
-      onClick={() => track('Click Mana-only TOS')}
-    >
-      Mana-only Terms
-    </a>
     <span className="mx-2">&bull;</span>
     <a
       href="/privacy"
@@ -38,15 +29,6 @@ export const Footer = ({ showAbout = false }: { showAbout?: boolean }) => (
       onClick={() => track('Click Privacy')}
     >
       Privacy
-    </a>
-    <span className="mx-2">&bull;</span>
-    <a
-      href="/sweepstakes-rules"
-      target="_blank"
-      className="hover:underline"
-      onClick={() => track('Click Sweepstakes Rules')}
-    >
-      Rules
     </a>
   </div>
 )

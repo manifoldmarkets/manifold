@@ -1,18 +1,18 @@
-# Terms of Service (Mana-only)
+# Terms of Service 
 
-Last updated October 15, 2024
+Last updated May 19, 2025
 
 **1. AGREEMENT TO TERMS**
 
-These Terms of Use constitute a legally binding agreement made between you, whether personally or on behalf of an entity (“you”) and Manifold Markets, Inc. ("**Company** ", “**we**”, “**us**”, or “**our**”), concerning your access to and use of the Mana-only version of[https://manifold.markets](https://manifold.markets/) website as well as any other media form, media channel, mobile website or mobile application related, linked, or otherwise connected thereto (collectively, the “Site”). We are registered in California, United States. You agree that by accessing the Site, you have read, understood, and agreed to be bound by all of these Terms of Use. IF YOU DO NOT AGREE WITH ALL OF THESE TERMS OF USE, THEN YOU ARE EXPRESSLY PROHIBITED FROM USING THE SITE AND YOU MUST DISCONTINUE USE IMMEDIATELY.
+These Terms of Use constitute a legally binding agreement made between you, whether personally or on behalf of an entity (“you”) and Manifold Markets, Inc. ("**Company** ", “**we**”, “**us**”, or “**our**”), concerning your access to and use of[https://manifold.markets](https://manifold.markets/) website as well as any other media form, media channel, mobile website or mobile application related, linked, or otherwise connected thereto (collectively, the “Site”). We are registered in California, United States. You agree that by accessing the Site, you have read, understood, and agreed to be bound by all of these Terms of Use. IF YOU DO NOT AGREE WITH ALL OF THESE TERMS OF USE, THEN YOU ARE EXPRESSLY PROHIBITED FROM USING THE SITE AND YOU MUST DISCONTINUE USE IMMEDIATELY.
 
-Supplemental terms and conditions or documents that may be posted on the Site from time to time are hereby expressly incorporated herein by reference. Other documents posted to the Site, such as the ["Sweepstakes Rules"](/sweepstakes) are not applicable to Mana-only users. We reserve the right, in our sole discretion, to make changes or modifications to these Terms of Use from time to time. We will alert you about any changes by updating the "Last updated" date of these Terms of Use, and you waive any right to receive specific notice of each such change. Please ensure that you check the applicable Terms every time you use our Site so that you understand which Terms apply. You will be subject to, and will be deemed to have been made aware of and to have accepted, the changes in any revised Terms of Use by your continued use of the Site after the date such revised Terms of Use are posted.
+Supplemental terms and conditions or documents that may be posted on the Site from time to time are hereby expressly incorporated herein by reference.  We reserve the right, in our sole discretion, to make changes or modifications to these Terms of Use from time to time. We will alert you about any changes by updating the "Last updated" date of these Terms of Use, and you waive any right to receive specific notice of each such change. Please ensure that you check the applicable Terms every time you use our Site so that you understand which Terms apply. You will be subject to, and will be deemed to have been made aware of and to have accepted, the changes in any revised Terms of Use by your continued use of the Site after the date such revised Terms of Use are posted.
 
 The information provided on the Site is not intended for distribution to or use by any person or entity in any jurisdiction or country where such distribution or use would be contrary to law or regulation or which would subject us to any registration requirement within such jurisdiction or country. Accordingly, those persons who choose to access the Site from other locations do so on their own initiative and are solely responsible for compliance with local laws, if and to the extent local laws are applicable.
 
 The Site is not tailored to comply with industry-specific regulations (Health Insurance Portability and Accountability Act (HIPAA), Federal Information Security Management Act (FISMA), etc.), so if your interactions would be subjected to such laws, you may not use this Site. You may not use the Site in a way that would violate the Gramm-Leach-Bliley Act (GLBA).
 
-The Mana-only portion of the Site is intended for users who are at least 13 years of age, however due to the addition of the Sweepstakes Rules, We may further restrict these Mana-only Terms to remain in compliance with various state and federal sweepstakes regulations. All users who are minors in the jurisdiction in which they reside (generally under the age of 18) must have the permission of, and be directly supervised by, their parent or guardian to use the Site. If you are a minor, you must have your parent or guardian read and agree to these Terms of Use prior to you using the Site.
+The Site is intended for users who are at least 13 years of age. All users who are minors in the jurisdiction in which they reside (generally under the age of 18) must have the permission of, and be directly supervised by, their parent or guardian to use the Site. If you are a minor, you must have your parent or guardian read and agree to these Terms of Use prior to you using the Site.
 
 **2. INTELLECTUAL PROPERTY RIGHTS**
 
@@ -24,7 +24,7 @@ Provided that you are eligible to use the Site, you are granted a limited licens
 
 By using the Site, you represent and warrant that: (1) all registration information you submit will be true, accurate, current, and complete; (2) you will maintain the accuracy of such information and promptly update such registration information as necessary;   (3) you have the legal capacity and you agree to comply with these Terms of Use; (4) you are not under the age of 13;   (5) you are not a minor in the jurisdiction in which you reside , or if a minor, you have received parental permission to use the Site ; (6) you will not access the Site through automated or non-human means, whether through a bot, script or otherwise; (7) you will not use the Site for any illegal or unauthorized purpose; and (8) your use of the Site will not violate any applicable law or regulation.
 
-If you provide any information that is untrue, inaccurate, not current, or incomplete, or if you attempt to access the Sweepstakes version of the Site and are less than 18 years old or reside in a restricted jurisdiction, we have the right to suspend or terminate your account and refuse any and all current or future use of the Site (or any portion thereof).
+If you provide any information that is untrue, inaccurate, not current, or incomplete, we have the right to suspend or terminate your account and refuse any and all current or future use of the Site (or any portion thereof).
 
 **4. USER REGISTRATION**
 
@@ -51,6 +51,19 @@ You agree to provide current, complete, and accurate purchase and account inform
 You agree to pay all charges at the prices then in effect for your purchases and any applicable shipping fees, and you authorize us to charge your chosen payment provider for any such amounts upon placing your order. We reserve the right to correct any errors or mistakes in pricing, even if we have already requested or received payment.
 
 We reserve the right to refuse any order placed through the Site. We may, in our sole discretion, limit or cancel quantities purchased per person, per household, or per order. These restrictions may include orders placed by or under the same customer account, the same payment method, and/or orders that use the same billing or shipping address. We reserve the right to limit or prohibit orders that, in our sole judgment, appear to be placed by dealers, resellers, or distributors.
+
+**6.5  Virtual Currency (Mana)**  
+
+1. **Play-Money Only.** The Site employs a points-based virtual currency called **“Mana.”** Mana is provided solely for entertainment, learning, and non-monetary contest purposes within the Site. It is **not** legal tender, electronic money, a security, a commodity, or any other instrument with intrinsic or monetary value.  
+
+2. **No Cash Value or Redemption.** Mana has zero cash or redeemable value. It may not be bought, sold, traded, transferred, gifted, or exchanged—whether on the Site or elsewhere—for money, property, products, services, or any other consideration.  
+
+3. **License, Not Ownership.** All Mana remains the sole property of Manifold Markets, Inc. You receive only a limited, revocable license to use Mana in accordance with these Terms; you acquire no vested or proprietary interest in the currency itself.  
+
+4. **Modification or Discontinuation.** We reserve the right to credit, debit, modify, expire, or eliminate Mana balances (or the Mana program as a whole) at any time, with or without notice, and without liability to you.  
+
+5. **Regulatory Exemption.** Because Mana is strictly play money with no monetary value, it is not subject to—and the Site is not operated under—any financial-services or gambling regulations.
+
 
 **7.  REFUNDS  POLICY**
 

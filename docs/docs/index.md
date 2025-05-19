@@ -10,4 +10,3 @@ This site hosts Manifold's:
 
 - [API documentation](/api)
 - [FAQ](/faq)
-- [Sweepstakes FAQ](/sweepstakes)
