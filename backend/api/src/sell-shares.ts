@@ -196,7 +196,6 @@ const sellSharesMain: APIHandler<'market/:contractId/sell'> = async (
       throw new APIError(503, 'Please try betting again.')
     }
     const betGroupId = randomString(12)
-
     return await executeNewBetResult(
       pgTrans,
       newBetResult,
@@ -204,6 +203,7 @@ const sellSharesMain: APIHandler<'market/:contractId/sell'> = async (
       user,
       isApi,
       contractMetrics,
+      balanceByUserId,
       undefined,
       betGroupId,
       deterministic

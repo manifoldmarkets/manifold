@@ -112,6 +112,7 @@ const multiSellMain: APIHandler<'multi-sell'> = async (props, auth) => {
         user,
         isApi,
         contractMetrics,
+        balancesByUserId,
         undefined,
         betGroupId,
         deterministic,

@@ -214,7 +214,7 @@ export const getUserBalancesAndMetrics = async (
     `,
     [userIds, contractId, sumsToOne ? null : answerId ?? null]
   )
-  const balanceByUserId = Object.fromEntries(
+  const balanceByUserId: Record<string, number> = Object.fromEntries(
     results[0].map((user) => [user.id, user.balance])
   )
   const contractMetrics = results[1].map((r) => r.data) as ContractMetric[]

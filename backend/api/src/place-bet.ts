@@ -202,6 +202,7 @@ export const placeBetMain = async (
       user,
       isApi,
       contractMetrics,
+      balanceByUserId,
       replyToCommentId,
       betGroupId,
       deterministic,
@@ -327,6 +328,7 @@ export const executeNewBetResult = async (
   user: User,
   isApi: boolean,
   contractMetrics: ContractMetric[],
+  balanceByUserId: Record<string, number>,
   replyToCommentId?: string,
   betGroupId?: string,
   deterministic?: boolean,
@@ -592,6 +594,16 @@ export const executeNewBetResult = async (
   )
   log(`placeBet bulk insert/update took ${Date.now() - startTime}ms`)
   const userUpdates = results[0] as UserUpdate[]
+  if (userUpdates.length) {
+    // if negative balances, make sure the balance is higher than when they started
+    for (const userUpdate of userUpdates) {
+      if (userUpdate.balance < 0) {
+        if (userUpdate.balance < balanceByUserId[userUpdate.id]) {
+          throw new APIError(403, 'Maker has insufficient balance.')
+        }
+      }
+    }
+  }
   const streakIncremented = results[1][0].streak_incremented
   const newContract = results[4].map(convertContract)[0]
   const bonusTxn = first(results[8].map(convertTxn)) as
