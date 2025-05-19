@@ -188,7 +188,7 @@ export function getSearchContractSQL(
     groupId?: string
     isForYou?: boolean
     searchType: SearchTypes
-    groupIds?: string
+    groupIds?: string[]
   }
 ) {
   const {
@@ -227,7 +227,7 @@ export function getSearchContractSQL(
   )
 
   const groupsFilter =
-    (groupIds || groupId) &&
+    (groupIds?.length || groupId) &&
     where(
       `
     exists (
@@ -239,11 +239,7 @@ export function getSearchContractSQL(
       }
       and gc.group_id = any($1)
     )`,
-      [
-        filterDefined([groupId, groupIds || undefined])
-          .join(',')
-          .split(','),
-      ]
+      [filterDefined([groupId, ...(groupIds ?? [])])]
     )
 
   // Recent movements filter

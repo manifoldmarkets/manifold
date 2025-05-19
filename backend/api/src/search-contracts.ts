@@ -1,5 +1,8 @@
 import { z } from 'zod'
-import { createSupabaseDirectClient } from 'shared/supabase/init'
+import {
+  createSupabaseDirectClient,
+  SupabaseDirectClient,
+} from 'shared/supabase/init'
 import { type APIHandler } from './helpers/endpoint'
 import {
   getSearchContractSQL,
@@ -60,6 +63,10 @@ const search = async (
   const groupId = topicSlug
     ? await getGroupIdFromSlug(topicSlug, pg)
     : undefined
+  const groupIdsForSearchSql = await getAllSubTopicsForParentTopicIds(
+    pg,
+    groupIds
+  )
   if (
     filter !== 'news' &&
     !term &&
@@ -113,7 +120,7 @@ const search = async (
           searchType,
           groupId,
           isPrizeMarket,
-          groupIds,
+          groupIds: groupIdsForSearchSql,
         })
       )
       .join(';')
@@ -158,4 +165,26 @@ const search = async (
       'id'
     ).slice(0, limit)
   }
+}
+
+const getAllSubTopicsForParentTopicIds = async (
+  pg: SupabaseDirectClient,
+  groupIds: string | undefined
+) => {
+  const initialTopIds = groupIds
+    ? groupIds.split(',').filter((id) => id && id.length > 0)
+    : []
+
+  if (initialTopIds.length > 0) {
+    const bottomGroupIds = await pg.map(
+      `SELECT DISTINCT bottom_id FROM group_groups
+                WHERE top_id in ($1:list) and bottom_id not in ($1:list)`,
+      [initialTopIds],
+      (r) => r.bottom_id
+    )
+    if (bottomGroupIds.length > 0) {
+      return [...initialTopIds, ...bottomGroupIds]
+    }
+  }
+  return initialTopIds
 }
