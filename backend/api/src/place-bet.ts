@@ -54,6 +54,7 @@ import { convertTxn } from 'common/supabase/txns'
 import {
   fetchContractBetDataAndValidate,
   getMakerIdsFromBetResult,
+  validateMakerBalances,
   getRoundedLimitProb,
   getUniqueBettorBonusQuery,
   getUserBalancesAndMetrics,
@@ -189,6 +190,8 @@ export const placeBetMain = async (
       log.warn('Matched limit orders changed from simulated values.')
       throw new APIError(503, 'Please try betting again.')
     }
+
+    validateMakerBalances(newBetResult, balanceByUserId)
 
     const betGroupId =
       contract.mechanism === 'cpmm-multi-1' && contract.shouldAnswersSumToOne

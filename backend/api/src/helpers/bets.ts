@@ -403,6 +403,26 @@ export const getMakerIdsFromBetResult = (result: NewBetResult) => {
   return uniq([...makerUserIds, ...cancelledUserIds])
 }
 
+export const validateMakerBalances = (
+  result: NewBetResult,
+  balanceByUserId: Record<string, number>
+) => {
+  const allMakers = [
+    ...(result.makers ?? []),
+    ...(result.otherBetResults?.flatMap((r) => r.makers) ?? []),
+  ]
+  const spentByUser = mapValues(
+    groupBy(allMakers, (m) => m.bet.userId),
+    (makers) => sumBy(makers, (m) => m.amount)
+  )
+  for (const [userId, spent] of Object.entries(spentByUser)) {
+    const balance = balanceByUserId[userId]
+    if (balance !== undefined && spent > balance) {
+      throw new APIError(403, 'Maker has insufficient balance.')
+    }
+  }
+}
+
 export const getUniqueBettorBonusQuery = (
   contract: MarketContract,
   bettor: User,

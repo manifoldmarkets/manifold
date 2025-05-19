@@ -14,6 +14,7 @@ import { ContractMetric } from 'common/contract-metric'
 import {
   fetchContractBetDataAndValidate,
   getMakerIdsFromBetResult,
+  validateMakerBalances,
   getUserBalancesAndMetrics,
 } from 'api/helpers/bets'
 import { randomString } from 'common/util/random'
@@ -195,6 +196,8 @@ const sellSharesMain: APIHandler<'market/:contractId/sell'> = async (
       log.warn('Matched limit orders changed from simulated values.')
       throw new APIError(503, 'Please try betting again.')
     }
+
+    validateMakerBalances(newBetResult, balanceByUserId)
     const betGroupId = randomString(12)
 
     return await executeNewBetResult(
