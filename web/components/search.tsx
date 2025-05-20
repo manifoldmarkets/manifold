@@ -273,7 +273,6 @@ export function Search(props: SearchProps) {
   const selectedFollowed = searchParams[TOPIC_FILTER_KEY] === 'followed'
   const showSearchTypes =
     !!query && !hideSearchTypes && !contractsOnly && !selectedFollowed
-
   const {
     contracts,
     users,
