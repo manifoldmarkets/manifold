@@ -249,7 +249,7 @@ export function Search(props: SearchProps) {
     defaultForYou,
     useUrlParams,
     persistPrefix,
-    defaultTopicFilter: topicSlug,
+    // defaultTopicFilter: topicSlug,
     defaultSweepies: hideSweepsToggle ? '2' : prefersPlay ? '0' : '1',
   })
 
@@ -261,6 +261,9 @@ export function Search(props: SearchProps) {
   const sweepiesState = searchParams[SWEEPIES_KEY]
   const groupIds = searchParams[GROUP_IDS_KEY]
   const hasBets = searchParams[HAS_BETS_KEY] === '1'
+  // const actuallySearchParams = searchParams
+  if (topicSlug) searchParams[TOPIC_FILTER_KEY] = topicSlug
+  // if (hideSweepsToggle) actuallySearchParams[SWEEPIES_KEY] = '2'
 
   useEffect(() => {
     const isSweeps = sweepiesState === '1'
