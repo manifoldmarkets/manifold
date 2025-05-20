@@ -84,9 +84,10 @@ export const Timeline = ({
   // First row: first 6 months
   const firstHalfMonths = allMonthMarkers.slice(0, 6)
 
-  // Second row: next 6 months
-  const secondRowStartIndex = Math.min(6, allMonthMarkers.length)
-  const secondRowEndIndex = Math.min(12, allMonthMarkers.length)
+  // Second row: overlapping with first row by including the 6th month again
+  // This ensures the 6th month appears in both rows and items in that month can be displayed in either row
+  const secondRowStartIndex = Math.min(5, allMonthMarkers.length - 1) // Start from the 6th month (index 5)
+  const secondRowEndIndex = Math.min(11, allMonthMarkers.length)      // Go up to the 12th month
   const secondHalfMonths = allMonthMarkers.slice(
     secondRowStartIndex,
     secondRowEndIndex
@@ -97,14 +98,17 @@ export const Timeline = ({
     if (firstHalfMonths.length === 0) return -1
 
     const rowStartDate = firstHalfMonths[0]
-    const rowEndDate = new Date(firstHalfMonths[firstHalfMonths.length - 1])
-    // Go to the end of the last month for accurate range calculation
-    rowEndDate.setMonth(rowEndDate.getMonth() + 1, 0) 
-
+    
+    // Get the last month in this row
+    const lastMonth = firstHalfMonths[firstHalfMonths.length - 1]
+    
+    // Create a date for the last day of the last month in this row
+    const rowEndDate = new Date(lastMonth.getFullYear(), lastMonth.getMonth() + 1, 0)
+    
     const timeRange = rowEndDate.getTime() - rowStartDate.getTime()
     if (timeRange === 0) return 0
 
-    // Check if date is in this row's range
+    // Check if date is in this row's range - include the full last month
     if (date < rowStartDate || date > rowEndDate) return -1
 
     // For day-accurate positioning within the month spans
@@ -165,14 +169,17 @@ export const Timeline = ({
     if (secondHalfMonths.length === 0) return -1
 
     const rowStartDate = secondHalfMonths[0]
-    const rowEndDate = new Date(secondHalfMonths[secondHalfMonths.length - 1])
-    // Go to the end of the last month for accurate range calculation
-    rowEndDate.setMonth(rowEndDate.getMonth() + 1, 0)
+    
+    // Get the last month in this row
+    const lastMonth = secondHalfMonths[secondHalfMonths.length - 1]
+    
+    // Create a date for the last day of the last month in this row
+    const rowEndDate = new Date(lastMonth.getFullYear(), lastMonth.getMonth() + 1, 0)
 
     const timeRange = rowEndDate.getTime() - rowStartDate.getTime()
     if (timeRange === 0) return 0
 
-    // Check if date is in this row's range
+    // Check if date is in this row's range - include the full last month
     if (date < rowStartDate || date > rowEndDate) return -1
 
     // For day-accurate positioning within the month spans
@@ -228,13 +235,63 @@ export const Timeline = ({
     return Math.max(5, Math.min(95, exactPosition)) // Clamp between 5% and 95%
   }
 
-  // Filter items for each row
+  // Filter items for each row, with special handling for the overlapping month
   const firstRowItems = sortedItems.filter((item) => {
-    return getFirstRowPosition(item.releaseDate) >= 0
+    // First row gets items for the first 5 months, plus items from the first half of the 6th month
+    const position = getFirstRowPosition(item.releaseDate)
+    if (position < 0) return false
+    
+    // For items in the 6th month, we need to decide if they go in the first or second row
+    if (firstHalfMonths.length === 6 && // We have at least 6 months
+        secondHalfMonths.length > 0 && // We have a second row
+        item.releaseDate >= firstHalfMonths[5]) { // Item is in or after the 6th month
+      
+      // Check if this date is in the 6th month
+      const sixthMonth = firstHalfMonths[5]
+      const seventhMonthStart = new Date(sixthMonth.getFullYear(), sixthMonth.getMonth() + 1, 1)
+      
+      if (item.releaseDate >= sixthMonth && item.releaseDate < seventhMonthStart) {
+        // If it's in the 6th month, determine if it belongs in first or second row
+        // Items in the first half of the month go to the first row
+        const dayOfMonth = item.releaseDate.getDate()
+        const lastDayOfMonth = new Date(sixthMonth.getFullYear(), sixthMonth.getMonth() + 1, 0).getDate()
+        const midpoint = Math.ceil(lastDayOfMonth / 2)
+        
+        // Items in the second half of the month go to the second row
+        if (dayOfMonth > midpoint) return false
+      } else if (item.releaseDate >= seventhMonthStart) {
+        // Items after the 6th month always go to the second row
+        return false
+      }
+    }
+    
+    return true
   })
 
   const secondRowItems = sortedItems.filter((item) => {
-    return getSecondRowPosition(item.releaseDate) >= 0
+    // Check if the item belongs to the second row
+    const position = getSecondRowPosition(item.releaseDate)
+    if (position < 0) return false
+    
+    // For items in the 6th month (which is duplicated), we need to decide where they go
+    if (secondHalfMonths.length > 0 && firstHalfMonths.length === 6) {
+      const sixthMonth = firstHalfMonths[5] // This is the same as secondHalfMonths[0]
+      const seventhMonthStart = secondHalfMonths.length > 1 
+        ? secondHalfMonths[1] 
+        : new Date(sixthMonth.getFullYear(), sixthMonth.getMonth() + 1, 1)
+      
+      // If the item is in the 6th month, determine which row it belongs to
+      if (item.releaseDate >= sixthMonth && item.releaseDate < seventhMonthStart) {
+        const dayOfMonth = item.releaseDate.getDate()
+        const lastDayOfMonth = new Date(sixthMonth.getFullYear(), sixthMonth.getMonth() + 1, 0).getDate()
+        const midpoint = Math.ceil(lastDayOfMonth / 2)
+        
+        // Items in the first half of the month go to the first row, not the second
+        if (dayOfMonth <= midpoint) return false
+      }
+    }
+    
+    return true
   })
 
   return (
@@ -261,7 +318,11 @@ export const Timeline = ({
 }
 // Position month markers evenly from 0% to 100%
 const getMonthMarkerPosition = (index: number, months: Date[]) => {
+  // Early return for empty or single-month arrays
   if (months.length <= 1) return 0
+  
+  // For consistent visual display, we maintain equal spacing between month markers
+  // This approach ensures the timeline looks orderly, with months evenly spaced
   return (index / (months.length - 1)) * 100
 }
 
