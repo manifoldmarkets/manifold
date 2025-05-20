@@ -1,9 +1,4 @@
-import {
-  Row,
-  SupabaseClient,
-  run,
-  tsToMillis,
-} from 'common/supabase/utils'
+import { Row, SupabaseClient, run, tsToMillis } from 'common/supabase/utils'
 import { Group, Topic } from 'common/group'
 
 export const UNRANKED_GROUP_ID = 'f141b8ca-eac3-4400-962a-72973b3ceb62'
@@ -54,6 +49,18 @@ export async function getGroupMemberIds(db: SupabaseClient, groupId: string) {
     db.from('group_members').select('member_id').eq('group_id', groupId)
   )
   return data ? data.map((member) => member.member_id) : []
+}
+export async function getFollowedGroupsCount(
+  db: SupabaseClient,
+  userId: string
+) {
+  const { count } = await run(
+    db
+      .from('group_members')
+      .select('group_id', { count: 'exact' })
+      .eq('member_id', userId)
+  )
+  return count
 }
 
 export const convertGroup = (row: Row<'groups'>): Group => ({

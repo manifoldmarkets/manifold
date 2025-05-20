@@ -38,6 +38,11 @@ import { useIsPageVisible } from 'web/hooks/use-page-visible'
 import { TopLevelPost } from 'common/top-level-post'
 import { CombinedResults } from './contract/combined-results'
 import { APIParams } from 'common/api/schema'
+import { useUser } from 'web/hooks/use-user'
+import { useAPIGetter } from 'web/hooks/use-api-getter'
+import { getFollowedGroupsCount } from 'common/supabase/groups'
+import { db } from 'web/lib/supabase/db'
+import { DAY_MS } from 'common/util/time'
 
 const USERS_PER_PAGE = 100
 const TOPICS_PER_PAGE = 100
@@ -103,7 +108,7 @@ export const FILTERS = [
   { label: 'Closing in 90 days', value: 'closing-90-days' },
   { label: 'Closed', value: 'closed' },
   { label: 'Resolved', value: 'resolved' },
-  { label: 'News', value: 'news' },
+  { label: 'Recently changed', value: 'news' },
 ] as const
 
 export type Filter = (typeof FILTERS)[number]['value']
@@ -244,7 +249,8 @@ export function Search(props: SearchProps) {
     defaultForYou,
     useUrlParams,
     persistPrefix,
-    defaultSweepies: prefersPlay ? '0' : '1',
+    defaultTopicFilter: topicSlug,
+    defaultSweepies: hideSweepsToggle ? '2' : prefersPlay ? '0' : '1',
   })
 
   const query = searchParams[QUERY_KEY]
@@ -255,6 +261,7 @@ export function Search(props: SearchProps) {
   const sweepiesState = searchParams[SWEEPIES_KEY]
   const groupIds = searchParams[GROUP_IDS_KEY]
   const hasBets = searchParams[HAS_BETS_KEY] === '1'
+
   useEffect(() => {
     const isSweeps = sweepiesState === '1'
     if (prefersPlay !== isSweeps) return
@@ -263,11 +270,9 @@ export function Search(props: SearchProps) {
     })
   }, [prefersPlay, sweepiesState])
 
-  const showSearchTypes = !!query && !hideSearchTypes && !contractsOnly
-
-  const actuallySearchParams = searchParams
-  if (topicSlug) actuallySearchParams[TOPIC_FILTER_KEY] = topicSlug
-  if (hideSweepsToggle) actuallySearchParams[SWEEPIES_KEY] = '2'
+  const selectedFollowed = searchParams[TOPIC_FILTER_KEY] === 'followed'
+  const showSearchTypes =
+    !!query && !hideSearchTypes && !contractsOnly && !selectedFollowed
 
   const {
     contracts,
@@ -280,7 +285,7 @@ export function Search(props: SearchProps) {
     posts,
   } = useSearchResults({
     persistPrefix,
-    searchParams: actuallySearchParams,
+    searchParams: searchParams,
     includeUsersAndTopics: showSearchTypes,
     isReady,
     additionalFilter,
@@ -385,9 +390,68 @@ export function Search(props: SearchProps) {
         (subtopic) => groupIds === subtopic.groupIds.join(',')
       )
     : undefined
-  const selectedAll = !selectedTopic && filter !== 'news'
-  const selectedOnlyNews = filter === 'news' && !selectedTopic
+  const selectedAll = !selectedTopic && !selectedFollowed
+  const user = useUser()
 
+  const {
+    data: followedGroupsData,
+    loading: isLoadingFollowedGroups,
+    refresh: refreshFollowedGroups,
+  } = useAPIGetter(
+    'search-groups',
+    {
+      limit: 150,
+      type: 'lite',
+      term: query,
+      memberGroupsOnly: true,
+    },
+    undefined,
+    undefined,
+    !!user?.id && selectedFollowed
+  )
+  const [followedCount, setFollowedCount] = useState<number>(0)
+  // Refresh the followed count when the page is visible
+  useEffect(() => {
+    if (visible && selectedFollowed && user?.id) {
+      getFollowedGroupsCount(db, user?.id).then((count) => {
+        setFollowedCount(count)
+      })
+    }
+  }, [visible, selectedFollowed, user?.id])
+
+  // Refresh groups that they're following if the followed count changes
+  useEffect(() => {
+    if (visible && selectedFollowed) {
+      refreshFollowedGroups()
+      refreshContracts()
+    }
+  }, [followedCount])
+
+  const usersFollowedGroups = followedGroupsData?.lite
+  const followedGroupsCount = followedGroupsData?.lite?.length ?? 0
+  const shouldLoadTrendingTopics =
+    !!user &&
+    (user.createdTime > Date.now() - DAY_MS ||
+      (followedGroupsCount < 5 && !!followedGroupsData))
+  const shouldShowTrendingTopics = selectedFollowed && shouldLoadTrendingTopics
+  const shouldShowALotOfTrendingTopics =
+    shouldShowTrendingTopics && contracts?.length === 0
+
+  const { data: trendingTopicsData, loading: isLoadingTrendingTopics } =
+    useAPIGetter(
+      'search-groups',
+      {
+        limit: 100,
+        type: 'lite',
+        term: query,
+      },
+      undefined,
+      undefined,
+      shouldLoadTrendingTopics
+    )
+  const trendingTopics = trendingTopicsData?.lite.filter(
+    (topic) => !(usersFollowedGroups ?? []).some((t) => t.id === topic.id)
+  )
   return (
     <Col className="w-full">
       <Col className={clsx('bg-canvas-0 sticky top-0 z-20', headerClassName)}>
@@ -403,36 +467,38 @@ export function Search(props: SearchProps) {
                   selectedAll ? 'text-primary-600' : 'text-ink-500'
                 )}
                 onClick={() => {
-                  if (selectedAll) {
-                    return
-                  } else {
+                  if (!selectedAll) {
                     track('select search topic', { topic: 'all' })
                     const changes: Partial<SearchParams> = {
                       [GROUP_IDS_KEY]: '',
+                      [TOPIC_FILTER_KEY]: '',
                     }
-                    if (filter === 'news') changes[FILTER_KEY] = 'open'
                     onChange(changes)
                   }
                 }}
               >
                 All
               </button>
-              <button
-                className={clsx(
-                  'font-medium',
-                  selectedOnlyNews ? 'text-primary-600' : 'text-ink-500'
-                )}
-                onClick={() => {
-                  if (selectedOnlyNews) {
-                    onChange({ [FILTER_KEY]: 'open' })
-                  } else {
-                    track('select search topic', { topic: 'news' })
-                    onChange({ [FILTER_KEY]: 'news', [GROUP_IDS_KEY]: '' })
-                  }
-                }}
-              >
-                News
-              </button>
+              {!!user?.id && (
+                <button
+                  className={clsx(
+                    'font-medium',
+                    selectedFollowed ? 'text-primary-600' : 'text-ink-500'
+                  )}
+                  onClick={() => {
+                    if (!selectedFollowed) {
+                      track('select search topic', { topic: 'followed' })
+                      const changes: Partial<SearchParams> = {
+                        [TOPIC_FILTER_KEY]: 'followed',
+                        [GROUP_IDS_KEY]: '',
+                      }
+                      onChange(changes)
+                    }
+                  }}
+                >
+                  Followed
+                </button>
+              )}
               {ALL_PARENT_TOPICS.map((topic) => (
                 <button
                   key={topic}
@@ -443,9 +509,7 @@ export function Search(props: SearchProps) {
                       : 'text-ink-500'
                   )}
                   onClick={() => {
-                    if (selectedTopic === topic) {
-                      onChange({ [GROUP_IDS_KEY]: '' })
-                    } else {
+                    if (selectedTopic != topic) {
                       track('select search topic', { topic })
                       // Join all group IDs for this topic's subtopics
                       const allGroupIds = TOPICS_TO_SUBTOPICS[topic]
@@ -453,8 +517,8 @@ export function Search(props: SearchProps) {
                         .flat()
                       const changes: Partial<SearchParams> = {
                         [GROUP_IDS_KEY]: allGroupIds.join(','),
+                        [TOPIC_FILTER_KEY]: '', // Clear direct topicSlug when a parent topic is selected
                       }
-                      if (filter === 'news') changes[FILTER_KEY] = 'open'
                       onChange(changes)
                     }
                   }}
@@ -549,6 +613,50 @@ export function Search(props: SearchProps) {
         )}
       </Col>
       <Spacer h={1} />
+      {selectedFollowed && (
+        <Col className="mb-2">
+          <>
+            <Row className="text-ink-500 items-center gap-1 text-sm">
+              <hr className="border-ink-300 ml-2 grow sm:ml-0" />
+              <span>Your Followed Topics</span>
+              <hr className="border-ink-300 mr-2 grow sm:mr-0" />
+            </Row>
+            {usersFollowedGroups ? (
+              <BrowseTopicPills
+                className={'relative w-full px-2 py-1'}
+                topics={usersFollowedGroups}
+                clipOnMobile={true}
+              />
+            ) : isLoadingFollowedGroups ? (
+              <div className="text-ink-500 px-2 py-3 text-sm">
+                Loading your followed topics...
+              </div>
+            ) : null}
+          </>
+
+          {shouldShowTrendingTopics && (
+            <>
+              <Row className="text-ink-500 items-center gap-1 text-sm">
+                <hr className="border-ink-300 ml-2 grow sm:ml-0" />
+                <span>Explore Topics To Follow</span>
+                <hr className="border-ink-300 mr-2 grow sm:mr-0" />
+              </Row>
+              {trendingTopics ? (
+                <BrowseTopicPills
+                  className={'relative w-full px-2 py-1'}
+                  topics={trendingTopics}
+                  clipOnMobile={!shouldShowALotOfTrendingTopics}
+                  initialShown={shouldShowALotOfTrendingTopics ? 20 : undefined}
+                />
+              ) : isLoadingTrendingTopics ? (
+                <div className="text-ink-500 px-2 py-3 text-sm">
+                  Loading trending topics...
+                </div>
+              ) : null}
+            </>
+          )}
+        </Col>
+      )}
       {showSearchTypes && (
         <Col>
           {showTopics && (
@@ -713,6 +821,7 @@ export const useSearchResults = (props: {
 
   const querySearchResults = useEvent(
     async (freshQuery?: boolean, contractsOnly?: boolean) => {
+      if (!isReady) return true
       const {
         q: query,
         s: sort,
@@ -914,22 +1023,16 @@ export const useSearchResults = (props: {
 
   useDebouncedEffect(
     () => {
-      if (isReady && !state.contracts?.length) {
+      if (!state.contracts?.length) {
         querySearchResults(true)
       }
     },
     50,
     [isReady]
   )
-  useDebouncedEffect(
-    () => {
-      if (isReady) {
-        querySearchResults(true)
-      }
-    },
-    50,
-    [JSON.stringify(searchParams)]
-  )
+  useDebouncedEffect(() => querySearchResults(true), 50, [
+    JSON.stringify(searchParams),
+  ])
 
   const contracts = state.contracts
     ? uniqBy(

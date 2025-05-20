@@ -55,7 +55,12 @@ export const searchProps = z
       .default('ALL'),
     offset: z.coerce.number().gte(0).default(0),
     limit: z.coerce.number().gt(0).lte(1000).default(100),
-    topicSlug: z.string().regex(FIRESTORE_DOC_REF_ID_REGEX).optional(),
+    topicSlug: z
+      .string()
+      .regex(FIRESTORE_DOC_REF_ID_REGEX)
+      .or(z.literal('recent'))
+      .or(z.literal('followed'))
+      .optional(),
     forYou: z.union([z.literal('1'), z.literal('0')]).default('0'),
     creatorId: z.string().regex(FIRESTORE_DOC_REF_ID_REGEX).optional(),
     isPrizeMarket: z

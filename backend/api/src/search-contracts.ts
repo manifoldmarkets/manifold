@@ -46,7 +46,7 @@ const search = async (
     topicSlug: possibleTopicSlug,
     forYou,
     token,
-    gids: groupIds,
+    gids,
   } = props
   const isPrizeMarket =
     props.isPrizeMarket == 'true' || props.isPrizeMarket == '1'
@@ -57,20 +57,30 @@ const search = async (
 
   const isForYou = forYou === '1'
   const isRecent = possibleTopicSlug === 'recent'
-  const topicSlug =
-    possibleTopicSlug && !isRecent ? possibleTopicSlug : undefined
+  const isFollowed = possibleTopicSlug === 'followed'
+  const topicSlugForGroupIdLookup =
+    possibleTopicSlug && !isRecent && !isFollowed
+      ? possibleTopicSlug
+      : undefined
   const pg = createSupabaseDirectClient()
-  const groupId = topicSlug
-    ? await getGroupIdFromSlug(topicSlug, pg)
+  const groupId = topicSlugForGroupIdLookup
+    ? await getGroupIdFromSlug(topicSlugForGroupIdLookup, pg)
     : undefined
-  const groupIdsForSearchSql = await getAllSubTopicsForParentTopicIds(
-    pg,
-    groupIds
-  )
+  const groupIds =
+    isFollowed && !!userId
+      ? await pg.map(
+          'select group_id from group_members where member_id = $1',
+          [userId],
+          (r) => r.group_id
+        )
+      : await getAllSubTopicsForParentTopicIds(pg, gids)
+  if (isFollowed && userId && groupIds.length === 0) {
+    return []
+  }
   if (
     filter !== 'news' &&
     !term &&
-    !topicSlug &&
+    !topicSlugForGroupIdLookup &&
     !groupIds &&
     (sort === 'score' || sort === 'freshness-score') &&
     (token === 'MANA' || token === 'ALL') &&
@@ -120,7 +130,7 @@ const search = async (
           searchType,
           groupId,
           isPrizeMarket,
-          groupIds: groupIdsForSearchSql,
+          groupIds,
         })
       )
       .join(';')
