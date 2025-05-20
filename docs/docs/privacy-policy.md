@@ -1,6 +1,6 @@
 # Manifold Privacy Policy
 
-**Last Updated: May 19, 2025**
+**Last Updated: May 19th, 2025**
 
 ## 1. Introduction
 
