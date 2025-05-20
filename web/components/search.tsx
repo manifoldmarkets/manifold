@@ -397,15 +397,14 @@ export function Search(props: SearchProps) {
     loading: isLoadingFollowedGroups,
     refresh: refreshFollowedGroups,
   } = useAPIGetter(
-    'search-groups',
+    'search-my-groups',
     {
       limit: 150,
       type: 'lite',
       term: query,
-      memberGroupsOnly: true,
     },
     undefined,
-    `user-followed-groups`,
+    undefined,
     !!user?.id && selectedFollowed
   )
   const [followedCount, setFollowedCount] = useState<number>(0)
@@ -445,7 +444,7 @@ export function Search(props: SearchProps) {
         term: query,
       },
       undefined,
-      `trending-topics`,
+      undefined,
       shouldLoadTrendingTopics
     )
   const trendingTopics = trendingTopicsData?.lite.filter(
