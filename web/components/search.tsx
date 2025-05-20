@@ -405,7 +405,7 @@ export function Search(props: SearchProps) {
     },
     undefined,
     undefined,
-    !!user?.id && selectedFollowed
+    !!user && selectedFollowed
   )
   const [followedCount, setFollowedCount] = useState<number>(0)
   // Refresh the followed count when the page is visible
