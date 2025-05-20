@@ -49,12 +49,8 @@ const processViewQueue = async () => {
     const oldestViewsUniqueByContract = filterDefined(
       contractIds.map((contractId) => viewsByContract[contractId].shift())
     )
-    log(
-      `Processing ${oldestViewsUniqueByContract.length} of ${totalViews} views for ${contractIds.length} contracts`
-    )
     await Promise.all(
       oldestViewsUniqueByContract.map(async (viewEvent) => {
-        log('Processing view', { viewEvent })
         const { userId, kind, contractId } = viewEvent
         const [ts_column, count_column] = VIEW_COLUMNS[kind]
 
