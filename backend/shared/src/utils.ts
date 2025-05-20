@@ -145,6 +145,7 @@ export const getContract = async (
 export const getContractAndMetricsAndLiquidities = async (
   pg: SupabaseTransaction,
   unresolvedContract: MarketContract,
+  answerId: string | undefined
 ) => {
   const { id: contractId, mechanism } = unresolvedContract
   const isMulti = mechanism === 'cpmm-multi-1'
@@ -175,7 +176,7 @@ export const getContractAndMetricsAndLiquidities = async (
      select * from answers where contract_id = $1 order by index;
      ${metricsQuery};
      select * from contract_liquidity where contract_id = $1`,
-    [contractId]
+    [contractId, answerId]
   )
 
   const contract = first(results[0].map(convertContract)) as MarketContract

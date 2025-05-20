@@ -87,6 +87,7 @@ export const resolveMarketHelper = async (
     } = await getContractAndMetricsAndLiquidities(
       tx,
       unresolvedContract,
+      answerId
     )
     const isIndieMC = c.mechanism === 'cpmm-multi-1' && !c.shouldAnswersSumToOne
 
