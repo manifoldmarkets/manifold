@@ -405,7 +405,7 @@ export function Search(props: SearchProps) {
       memberGroupsOnly: true,
     },
     undefined,
-    undefined,
+    `user-followed-groups`,
     !!user?.id && selectedFollowed
   )
   const [followedCount, setFollowedCount] = useState<number>(0)
@@ -445,7 +445,7 @@ export function Search(props: SearchProps) {
         term: query,
       },
       undefined,
-      undefined,
+      `trending-topics`,
       shouldLoadTrendingTopics
     )
   const trendingTopics = trendingTopicsData?.lite.filter(
