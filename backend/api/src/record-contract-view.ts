@@ -44,7 +44,6 @@ export const recordContractView: APIHandler<'record-contract-view'> = async (
 const processViewQueue = async () => {
   const pg = createSupabaseDirectClient()
   while (Object.values(viewsByContract).length > 0) {
-    const totalViews = Object.values(viewsByContract).length
     const contractIds = Object.keys(viewsByContract)
     const oldestViewsUniqueByContract = filterDefined(
       contractIds.map((contractId) => viewsByContract[contractId].shift())
