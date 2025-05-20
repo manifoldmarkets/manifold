@@ -10,7 +10,7 @@ import {
 } from 'common/new-bet'
 import { removeUndefinedProps } from 'common/util/object'
 import { Bet, getNewBetId, LimitBet, maker } from 'common/bet'
-import { floatingEqual } from 'common/util/math'
+import { EPSILON, floatingEqual } from 'common/util/math'
 import { log } from 'shared/utils'
 import { Answer } from 'common/answer'
 import { CpmmState, getCpmmProbability } from 'common/calculate-cpmm'
@@ -597,7 +597,7 @@ export const executeNewBetResult = async (
   if (userUpdates.length) {
     // if negative balances, make sure the balance is higher than when they started
     for (const userUpdate of userUpdates) {
-      if (userUpdate.balance < 0) {
+      if (userUpdate.balance < -EPSILON) {
         if (userUpdate.balance < balanceByUserId[userUpdate.id]) {
           throw new APIError(403, 'Maker has insufficient balance.')
         }
