@@ -451,6 +451,7 @@ export function Search(props: SearchProps) {
   const trendingTopics = trendingTopicsData?.lite.filter(
     (topic) => !(usersFollowedGroups ?? []).some((t) => t.id === topic.id)
   )
+
   return (
     <Col className="w-full">
       <Col className={clsx('bg-canvas-0 sticky top-0 z-20', headerClassName)}>
