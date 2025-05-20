@@ -98,7 +98,8 @@ export const Timeline = ({
 
     const rowStartDate = firstHalfMonths[0]
     const rowEndDate = new Date(firstHalfMonths[firstHalfMonths.length - 1])
-    rowEndDate.setMonth(rowEndDate.getMonth() + 1) // End of the last month
+    // Go to the end of the last month for accurate range calculation
+    rowEndDate.setMonth(rowEndDate.getMonth() + 1, 0) 
 
     const timeRange = rowEndDate.getTime() - rowStartDate.getTime()
     if (timeRange === 0) return 0
@@ -106,10 +107,57 @@ export const Timeline = ({
     // Check if date is in this row's range
     if (date < rowStartDate || date > rowEndDate) return -1
 
-    // Calculate position as percentage
-    const position =
-      ((date.getTime() - rowStartDate.getTime()) / timeRange) * 100
-    return Math.max(5, Math.min(95, position)) // Clamp between 5% and 95%
+    // For day-accurate positioning within the month spans
+    // Calculate the position based on the proportion of time elapsed in the range
+    const exactPosition = ((date.getTime() - rowStartDate.getTime()) / timeRange) * 100
+
+    // Interpolate position between month markers for more accurate day positioning
+    // Find the month this date belongs to
+    let monthIndex = -1;
+    for (let i = 0; i < firstHalfMonths.length; i++) {
+      const currentMonth = firstHalfMonths[i];
+      const nextMonthStart = i < firstHalfMonths.length - 1 
+        ? firstHalfMonths[i + 1] 
+        : new Date(currentMonth.getFullYear(), currentMonth.getMonth() + 1, 1);
+      
+      if (date >= currentMonth && date < nextMonthStart) {
+        monthIndex = i;
+        break;
+      }
+    }
+
+    // If it's the last month in the row
+    if (monthIndex === -1 && date >= firstHalfMonths[firstHalfMonths.length - 1]) {
+      monthIndex = firstHalfMonths.length - 1;
+    }
+
+    // If we found the month, calculate a more precise position
+    if (monthIndex >= 0) {
+      // Get positions of the current and next month markers
+      const currentMonthPosition = getMonthMarkerPosition(monthIndex, firstHalfMonths);
+      const nextMonthPosition = monthIndex < firstHalfMonths.length - 1 
+        ? getMonthMarkerPosition(monthIndex + 1, firstHalfMonths)
+        : 100;
+      
+      // Calculate start and end dates for interpolation
+      const monthStart = firstHalfMonths[monthIndex];
+      const monthEnd = monthIndex < firstHalfMonths.length - 1
+        ? firstHalfMonths[monthIndex + 1]
+        : new Date(monthStart.getFullYear(), monthStart.getMonth() + 1, 0); // Last day of month
+      
+      // Calculate position within the month
+      const monthProgress = (date.getTime() - monthStart.getTime()) / 
+                          (monthEnd.getTime() - monthStart.getTime());
+      
+      // Interpolate between month markers
+      const interpolatedPosition = currentMonthPosition + 
+        monthProgress * (nextMonthPosition - currentMonthPosition);
+      
+      return Math.max(5, Math.min(95, interpolatedPosition)); // Clamp between 5% and 95%
+    }
+
+    // Fallback to original calculation
+    return Math.max(5, Math.min(95, exactPosition)) // Clamp between 5% and 95%
   }
 
   // Calculate timeline position for an item (0-100%) for second row
@@ -118,7 +166,8 @@ export const Timeline = ({
 
     const rowStartDate = secondHalfMonths[0]
     const rowEndDate = new Date(secondHalfMonths[secondHalfMonths.length - 1])
-    rowEndDate.setMonth(rowEndDate.getMonth() + 1) // End of the last month
+    // Go to the end of the last month for accurate range calculation
+    rowEndDate.setMonth(rowEndDate.getMonth() + 1, 0)
 
     const timeRange = rowEndDate.getTime() - rowStartDate.getTime()
     if (timeRange === 0) return 0
@@ -126,10 +175,57 @@ export const Timeline = ({
     // Check if date is in this row's range
     if (date < rowStartDate || date > rowEndDate) return -1
 
-    // Calculate position as percentage
-    const position =
-      ((date.getTime() - rowStartDate.getTime()) / timeRange) * 100
-    return Math.max(5, Math.min(95, position)) // Clamp between 5% and 95%
+    // For day-accurate positioning within the month spans
+    // Calculate the position based on the proportion of time elapsed in the range
+    const exactPosition = ((date.getTime() - rowStartDate.getTime()) / timeRange) * 100
+
+    // Interpolate position between month markers for more accurate day positioning
+    // Find the month this date belongs to
+    let monthIndex = -1;
+    for (let i = 0; i < secondHalfMonths.length; i++) {
+      const currentMonth = secondHalfMonths[i];
+      const nextMonthStart = i < secondHalfMonths.length - 1 
+        ? secondHalfMonths[i + 1] 
+        : new Date(currentMonth.getFullYear(), currentMonth.getMonth() + 1, 1);
+      
+      if (date >= currentMonth && date < nextMonthStart) {
+        monthIndex = i;
+        break;
+      }
+    }
+
+    // If it's the last month in the row
+    if (monthIndex === -1 && date >= secondHalfMonths[secondHalfMonths.length - 1]) {
+      monthIndex = secondHalfMonths.length - 1;
+    }
+
+    // If we found the month, calculate a more precise position
+    if (monthIndex >= 0) {
+      // Get positions of the current and next month markers
+      const currentMonthPosition = getMonthMarkerPosition(monthIndex, secondHalfMonths);
+      const nextMonthPosition = monthIndex < secondHalfMonths.length - 1 
+        ? getMonthMarkerPosition(monthIndex + 1, secondHalfMonths)
+        : 100;
+      
+      // Calculate start and end dates for interpolation
+      const monthStart = secondHalfMonths[monthIndex];
+      const monthEnd = monthIndex < secondHalfMonths.length - 1
+        ? secondHalfMonths[monthIndex + 1]
+        : new Date(monthStart.getFullYear(), monthStart.getMonth() + 1, 0); // Last day of month
+      
+      // Calculate position within the month
+      const monthProgress = (date.getTime() - monthStart.getTime()) / 
+                          (monthEnd.getTime() - monthStart.getTime());
+      
+      // Interpolate between month markers
+      const interpolatedPosition = currentMonthPosition + 
+        monthProgress * (nextMonthPosition - currentMonthPosition);
+      
+      return Math.max(5, Math.min(95, interpolatedPosition)); // Clamp between 5% and 95%
+    }
+
+    // Fallback to original calculation
+    return Math.max(5, Math.min(95, exactPosition)) // Clamp between 5% and 95%
   }
 
   // Filter items for each row
