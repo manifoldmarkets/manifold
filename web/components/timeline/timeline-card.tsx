@@ -19,7 +19,7 @@ export function TimelineCard({
   const cardContent = (
     <>
       {/* Title row */}
-      <div className="mb-14">
+      <div className="mb-20">
         <div className="flex justify-between">
           <div className="font-semibold text-gray-700 dark:text-gray-100 sm:text-lg">
             Release Timelines
