@@ -1168,7 +1168,7 @@ function FeaturedMarketGraph({ contract }: FeaturedGraphProps) {
     if (contract) {
       // Get data points for the chart
       getBetPoints(contract.id, {
-        limit: 1000,
+        limit: 5000,
         filterRedemptions: true,
       }).then((fetchedPoints) => {
         if (fetchedPoints?.length > 0) {
