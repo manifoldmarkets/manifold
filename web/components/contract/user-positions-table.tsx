@@ -76,8 +76,11 @@ export const UserPositionsTable = memo(
         ? { [answerDetails.answer.id]: answerDetails.totalPositions }
         : {}
     )
-    const answers =
-      answer || contract.mechanism !== 'cpmm-multi-1' ? [] : contract.answers
+    const answers = answer
+      ? [answer]
+      : contract.mechanism !== 'cpmm-multi-1'
+      ? []
+      : contract.answers
 
     const [currentAnswerId, setCurrentAnswerId] = useState<string | undefined>(
       answers.length > 0
