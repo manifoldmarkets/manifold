@@ -344,7 +344,7 @@ Manifold Markets is able to maintain the best range of diverse questions thanks 
 
 ### What are the Manifold terms and conditions?
 
-Here you can find the [Manifold Markets terms and conditions](/terms-and-conditions)
+Here you can find the [terms and conditions](/terms) and [privacy policy](/privacy-policy).
 
 ### How to resolve a dispute on Manifold Markets?
 
