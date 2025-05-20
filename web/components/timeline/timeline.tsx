@@ -236,6 +236,7 @@ const TimelineRow = ({
                 item={item}
                 position={position}
                 verticalOffset={verticalOffset}
+                lineColor={lineColor}
               />
             ))
           })()}
