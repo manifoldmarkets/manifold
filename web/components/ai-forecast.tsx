@@ -95,7 +95,7 @@ export type AICapabilityCard = {
   marketId: string
   type: string
   displayType?:
-    | 'top-three-mcq' // renamed from top-two-mcq
+    | 'top-three-mcq'
     | 'top-one-mcq'
     | 'binary-odds'
     | 'date'
@@ -188,13 +188,6 @@ export const AI_CAPABILITY_CARDS: AICapabilityCard[] = [
     displayType: 'binary-odds',
   },
   {
-    title: 'SWE Bench',
-    description: 'Top SWE Bench score by EOY',
-    marketId: 'nEhgsIE6U0',
-    type: 'benchmark',
-    displayType: 'numeric',
-  },
-  {
     title: "Humanity's Last Exam",
     description: "Highest score on Humanity's last exam by EOY",
     marketId: 'tzsZCn85RQ',
@@ -219,6 +212,13 @@ export const AI_CAPABILITY_CARDS: AICapabilityCard[] = [
     title: 'Pokemon',
     description: 'Pokemon master',
     marketId: 'ssZ5lUgItL',
+    type: 'benchmark',
+    displayType: 'binary-odds',
+  },
+    {
+    title: 'OpenAI Claims AGI',
+    description: 'OAI claims AGI by EOY',
+    marketId: '5SLp6d9yzy',
     type: 'benchmark',
     displayType: 'binary-odds',
   },
@@ -279,10 +279,31 @@ export const AI_CAPABILITY_CARDS: AICapabilityCard[] = [
     displayType: 'binary-odds',
   },
   {
+    title: 'Fully AI-generated Movie', 
+    description: 'High quality AI-generated movie',
+    marketId: 'A319ydGB1B7f4PMOROL3',
+    type: 'long-term',
+    displayType: 'binary-odds',
+  },
+  {
+    title: 'Reliable Household Robot',
+    description: 'Reliable household robot developed',
+    marketId: 'Q64BBTJSHWQfhovq5bnA',
+    type: 'long-term',
+    displayType: 'binary-odds',
+  },
+  {
     title: 'Discontinuous Change in Economic Variables',
     description:
       'Visible break in trend line on US GDP, GDP per capita, unemployment, or productivity',
     marketId: 'zg7xJ5ZkJJ4wJPJDPjWO',
+    type: 'long-term',
+    displayType: 'binary-odds',
+  },
+  {
+    title: 'AI Politically Relevant',
+    description: 'AI Discourse = Abortion Discourse',
+    marketId: 'nOXCmJFNsLx08PjOc4Qk',
     type: 'long-term',
     displayType: 'binary-odds',
   },
@@ -920,10 +941,13 @@ function CapabilityCard({
                 <p className="text-ink-600 mt-1 w-full px-1 text-left text-xs sm:mt-3 sm:text-sm">
                   {type === 'benchmark' &&
                     title.includes('IMO Gold') &&
-                    'LLM gets IMO gold medal'}
+                    'LLM gets IMO gold'}
                   {type === 'benchmark' &&
                     title.includes('Pokemon') &&
                     'LLM becomes a Pokemon Master with minimal assistance'}
+                  {type === 'benchmark' &&
+                    title.includes('AGI') &&
+                    'OpenAI claims to have achieved AGI by the end of 2025'}
                   {type === 'prize' &&
                     title.includes('Millennium') &&
                     'Chance of solving a million-dollar math problem'}
@@ -938,10 +962,13 @@ function CapabilityCard({
                     'Probability of AI compromising systems by end of 2025'}
                   {type === 'misuse' &&
                     title.includes('ASL-3') &&
-                    'Model defined as ASL-3 by Anthropic released by end of 2025'}
+                    'Model defined as ASL-3 released by end of 2025'}
                   {type === 'long-term' &&
                     title.includes('Romantic') &&
                     'At least 1/1000 Americans talks weekly with one by 2028'}
+                  {type === 'long-term' &&
+                    title.includes('Movie') &&
+                    'AI generates a high-quality movie with a single prompt by 2028'}
                   {type === 'long-term' &&
                     title.includes('Blackmail') &&
                     'Risk of AI being used for automated blackmail by 2028'}
@@ -949,11 +976,17 @@ function CapabilityCard({
                     title.includes('Economic') &&
                     'Break in trend for GDP growth, GDP/capita, productivity, or unemployment by 2028'}
                   {type === 'long-term' &&
+                    title.includes('Relevant') &&
+                    'AI as big as a political issue as abortion by 2028'}
+                  {type === 'long-term' &&
                     title.includes('Zero') &&
                     'AI plays a random computer game at human-level by 2028'}
                   {type === 'long-term' &&
                     title.includes('Self-play') &&
                     'AI plays a random computer game as well as a human after self-play by 2028'}
+                  {type === 'long-term' &&
+                    title.includes('Robot') &&
+                    'Reliable general household robot available by 2030'}
                 </p>
               )}
             </div>
@@ -974,9 +1007,6 @@ function CapabilityCard({
               {/* Brief descriptive text for numeric markets */}
               {displayType === 'numeric' && (
                 <p className="text-ink-600 mt-1 w-full px-1 text-left text-xs sm:mt-3 sm:text-sm">
-                  {type === 'benchmark' &&
-                    title.includes('SWE Bench') &&
-                    'Predicted top score'}
                   {type === 'benchmark' &&
                     title.includes('Frontier Math') &&
                     'Predicted top score'}
