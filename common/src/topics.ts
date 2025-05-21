@@ -50,37 +50,18 @@ export const SEARCH_TOPICS_TO_SUBTOPICS: { [key: string]: TopicInfo[] } = {
       hideFromSearch: true,
     },
   ],
-  '🤖 AI': [
-    {
-      name: 'AI',
-      groupIds: ['yEWvvwFFIqzf8JklMewp'],
-      hideFromSearch: true,
-    },
-    {
-      name: 'Timelines',
-      groupIds: ['GbbX9U5pYnDeftX9lxUh'],
-    },
-
-    {
-      name: 'OpenAI',
-      groupIds: ['a3ikurqO9fT46Pv9ZGkY'],
-    },
-    {
-      name: 'AI Impacts & Safety',
-      groupIds: ['DnxTZ1P5XEEfnHxy7Q7d', 'q3Su0NeV9ta4DqhqlIEq'],
-    },
-    {
-      name: 'Anthropic',
-      groupIds: ['B8jfqGL9Uqu5nejktmVi'],
-    },
-  ],
-  '💻 Tech': [
+  '💻 Technology': [
     {
       name: '💻 Technology',
       groupIds: [
         'IlzY3moWwOcpsVZXCVej', // Technology
         'SmJk6RHToaLxLk0I1ZSC', // Space
       ],
+      hideFromSearch: true,
+    },
+    {
+      name: 'AI',
+      groupIds: ['yEWvvwFFIqzf8JklMewp'],
     },
     {
       name: '🔬 Science',
@@ -90,12 +71,21 @@ export const SEARCH_TOPICS_TO_SUBTOPICS: { [key: string]: TopicInfo[] } = {
       ],
     },
     {
-      name: '🏥 Health',
-      groupIds: ['JpUqUqRn9sSWxrk0Sq35'],
+      name: '👨‍💻 Coding',
+      groupIds: ['PZJMbrLekgJBy7OOBKGT'],
     },
     {
-      name: '👨‍💻 Code',
-      groupIds: ['PZJMbrLekgJBy7OOBKGT'],
+      // Crypto, Bitcoin
+      name: '🪙 Crypto',
+      groupIds: ['YuJw0M1xvUHrpiRRuKso', 'WBeBD6FyMd0NvSL0qjMb'],
+    },
+    {
+      name: '🪸 Climate',
+      groupIds: ['97oNExy8iFftY2EgdkLw'],
+    },
+    {
+      name: '🏥 Health',
+      groupIds: ['JpUqUqRn9sSWxrk0Sq35'],
     },
     {
       name: '🧮 Math',
@@ -159,6 +149,7 @@ export const SEARCH_TOPICS_TO_SUBTOPICS: { [key: string]: TopicInfo[] } = {
       name: '🏴‍☠️ One Piece',
       groupIds: ['uJSql24HUqpEpVU0FrjI'],
     },
+    { name: '📚 Books', groupIds: ['o3T3Wvaoqw90dns1Q7nU'] },
   ],
   '💵 Business': [
     {
