@@ -149,10 +149,7 @@ export const SEARCH_TOPICS_TO_SUBTOPICS: { [key: string]: TopicInfo[] } = {
     },
     {
       name: '🎮 Gaming',
-      groupIds: [
-        '5FaFmmaNNFTSA5r0vTAi', // Gaming
-        // '9FaZmHrfS8IcDJyu6pUD', // Video Games TODO: MERGE
-      ],
+      groupIds: ['5FaFmmaNNFTSA5r0vTAi'], // Gaming
     },
     {
       name: '🎮️ Destiny.gg',
