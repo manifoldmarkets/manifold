@@ -135,8 +135,8 @@ export const SEARCH_TOPICS_TO_SUBTOPICS: { [key: string]: TopicInfo[] } = {
       name: '🤩 Pop culture',
       groupIds: [
         'XU1fOYURSnb58lgsqaly', // Entertainment & Pop culture
-        // 'eJZecx6r22G2NriYYXcC', // Culture TODO: MERGE
-        // '4QIcUOfCSSha0JZHAg9X', // celebrities TODO: MERGE
+        'eJZecx6r22G2NriYYXcC', // Culture
+        '4QIcUOfCSSha0JZHAg9X', // celebrities
       ],
     },
     {
@@ -235,7 +235,7 @@ export const WELCOME_FLOW_TOPICS: WelcomeTopicInfo[] = [
   { name: 'Sports', groupId: '2hGlgVhIyvVaFyQAREPi' },
   { name: 'Music', groupId: 'Xuc2UY8gGfjQqFXwxq5d' },
   { name: 'Movies & TV', groupId: 'EUSEngFk1dGGBfaMeAmh' },
-  { name: 'Culture', groupId: 'XU1fOYURSnb58lgsqaly' },
+  { name: 'Culture', groupId: 'eJZecx6r22G2NriYYXcC' },
   { name: 'Gaming', groupId: '5FaFmmaNNFTSA5r0vTAi' },
   { name: 'Finance', groupId: 'CgB83AAMkkOHSrTnzani' },
   { name: 'Business', groupId: 'pmK8sntWL1SDkMm53UBR' },
