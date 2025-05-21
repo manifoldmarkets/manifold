@@ -6,7 +6,7 @@ import { removeEmojis } from './util/string'
 
 type TopicInfo = { name: string; groupIds: string[]; hideFromSearch?: boolean }
 
-export const TOPICS_TO_SUBTOPICS: { [key: string]: TopicInfo[] } = {
+export const SEARCH_TOPICS_TO_SUBTOPICS: { [key: string]: TopicInfo[] } = {
   '🗳️ Politics': [
     {
       name: '🇺🇸 USA',
@@ -134,15 +134,15 @@ export const TOPICS_TO_SUBTOPICS: { [key: string]: TopicInfo[] } = {
     {
       name: '🤩 Pop culture',
       groupIds: [
-        'eJZecx6r22G2NriYYXcC', // Culture
         'XU1fOYURSnb58lgsqaly', // Entertainment & Pop culture
-        '4QIcUOfCSSha0JZHAg9X', // celebrities
+        // 'eJZecx6r22G2NriYYXcC', // Culture TODO: MERGE
+        // '4QIcUOfCSSha0JZHAg9X', // celebrities TODO: MERGE
       ],
     },
     {
       name: '🍿 Movies & TV',
       groupIds: [
-        'KSeNIu7AWgiBBM5FqVuB', // Movies
+        // 'KSeNIu7AWgiBBM5FqVuB', // Movies TODO: MERGE
         'EUSEngFk1dGGBfaMeAmh', // TV and Film
       ],
     },
@@ -154,7 +154,7 @@ export const TOPICS_TO_SUBTOPICS: { [key: string]: TopicInfo[] } = {
       name: '🎮 Gaming',
       groupIds: [
         '5FaFmmaNNFTSA5r0vTAi', // Gaming
-        '9FaZmHrfS8IcDJyu6pUD', // Video Games
+        // '9FaZmHrfS8IcDJyu6pUD', // Video Games TODO: MERGE
       ],
     },
     {
@@ -224,16 +224,25 @@ export const TOPICS_TO_SUBTOPICS: { [key: string]: TopicInfo[] } = {
   ],
 }
 
-export const TOPICS_TO_HIDE_FROM_WELCOME_FLOW = [] as string[]
-if (
-  !TOPICS_TO_HIDE_FROM_WELCOME_FLOW.every((topic) =>
-    Object.keys(TOPICS_TO_SUBTOPICS).includes(topic)
-  )
-) {
-  throw new Error(
-    `${TOPICS_TO_HIDE_FROM_WELCOME_FLOW.join(', ')} contains invalid topics`
-  )
-}
+export type WelcomeTopicInfo = { name: string; groupId: string }
+
+export const WELCOME_FLOW_TOPICS: WelcomeTopicInfo[] = [
+  { name: 'Politics', groupId: 'UCnpxVUdLOZYgoMsDlHD' },
+  { name: 'AI', groupId: 'yEWvvwFFIqzf8JklMewp' },
+  { name: 'Technology', groupId: 'IlzY3moWwOcpsVZXCVej' },
+  { name: 'Coding', groupId: 'PZJMbrLekgJBy7OOBKGT' },
+  { name: 'Science', groupId: 'XMhZ5LbQoLMZiOpQJRnj' },
+  { name: 'Sports', groupId: '2hGlgVhIyvVaFyQAREPi' },
+  { name: 'Music', groupId: 'Xuc2UY8gGfjQqFXwxq5d' },
+  { name: 'Movies & TV', groupId: 'EUSEngFk1dGGBfaMeAmh' },
+  { name: 'Culture', groupId: 'XU1fOYURSnb58lgsqaly' },
+  { name: 'Gaming', groupId: '5FaFmmaNNFTSA5r0vTAi' },
+  { name: 'Finance', groupId: 'CgB83AAMkkOHSrTnzani' },
+  { name: 'Business', groupId: 'pmK8sntWL1SDkMm53UBR' },
+  { name: 'Economics', groupId: 'p88Ycq6yFd5ECKqq9PFO' },
+  { name: 'Crypto', groupId: 'YuJw0M1xvUHrpiRRuKso' },
+  { name: 'Sex & Love', groupId: '3syjPCC7PxE5KurTiTT3' },
+]
 
 export const GROUP_SLUGS_TO_HIDE_FROM_WELCOME_FLOW = [
   'world-default',
@@ -269,12 +278,10 @@ export const GROUP_SLUGS_TO_HIDE_FROM_WELCOME_FLOW = [
 ]
 
 export const getSubtopics = (topic: string) =>
-  TOPICS_TO_SUBTOPICS[topic].map(
+  SEARCH_TOPICS_TO_SUBTOPICS[topic].map(
     (subtopic) =>
       [subtopic.name, removeEmojis(subtopic.name), subtopic.groupIds] as const
   )
-export const ALL_TOPICS = Object.keys(TOPICS_TO_SUBTOPICS)
+export const ALL_TOPICS = Object.keys(SEARCH_TOPICS_TO_SUBTOPICS)
   .map((topic) => getSubtopics(topic).map(([_, subtopic]) => subtopic))
   .flat()
-
-export const ALL_PARENT_TOPICS = Object.keys(TOPICS_TO_SUBTOPICS)

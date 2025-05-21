@@ -29,7 +29,7 @@ import { BinaryDigit } from 'common/tier'
 import { useIsMobile } from 'web/hooks/use-is-mobile'
 import { Spacer } from './layout/spacer'
 import { useSweepstakes } from './sweepstakes-provider'
-import { ALL_PARENT_TOPICS, TOPICS_TO_SUBTOPICS } from 'common/topics'
+import { SEARCH_TOPICS_TO_SUBTOPICS } from 'common/topics'
 import { Carousel } from './widgets/carousel'
 import { isEqual } from 'lodash'
 import { SearchInput } from './search/search-input'
@@ -379,16 +379,17 @@ export function Search(props: SearchProps) {
         )}
       </Col>
     ))
+  const ALL_PARENT_TOPICS = Object.keys(SEARCH_TOPICS_TO_SUBTOPICS)
 
   const selectedTopic = groupIds
     ? ALL_PARENT_TOPICS.find((topic) =>
-        TOPICS_TO_SUBTOPICS[topic].some((subtopic) =>
+        SEARCH_TOPICS_TO_SUBTOPICS[topic].some((subtopic) =>
           groupIds.split(',').some((id) => subtopic.groupIds.includes(id))
         )
       )
     : undefined
   const selectedSubTopic = selectedTopic
-    ? TOPICS_TO_SUBTOPICS[selectedTopic].find(
+    ? SEARCH_TOPICS_TO_SUBTOPICS[selectedTopic].find(
         (subtopic) => groupIds === subtopic.groupIds.join(',')
       )
     : undefined
@@ -514,7 +515,7 @@ export function Search(props: SearchProps) {
                     if (selectedTopic != topic) {
                       track('select search topic', { topic })
                       // Join all group IDs for this topic's subtopics
-                      const allGroupIds = TOPICS_TO_SUBTOPICS[topic]
+                      const allGroupIds = SEARCH_TOPICS_TO_SUBTOPICS[topic]
                         .map((subtopic) => subtopic.groupIds)
                         .flat()
                       const changes: Partial<SearchParams> = {
@@ -551,14 +552,14 @@ export function Search(props: SearchProps) {
 
         {/* Subtopics row */}
         {selectedTopic &&
-          Object.keys(TOPICS_TO_SUBTOPICS).some(
+          Object.keys(SEARCH_TOPICS_TO_SUBTOPICS).some(
             (topic) => topic === selectedTopic
           ) && (
             <Carousel fadeEdges labelsParentClassName="gap-1 mt-3 mb-1.5 ">
               <button
                 onClick={() => {
                   onChange({
-                    [GROUP_IDS_KEY]: TOPICS_TO_SUBTOPICS[selectedTopic]
+                    [GROUP_IDS_KEY]: SEARCH_TOPICS_TO_SUBTOPICS[selectedTopic]
                       .map((subtopic) => subtopic.groupIds)
                       .flat()
                       .join(','),
@@ -572,7 +573,7 @@ export function Search(props: SearchProps) {
               >
                 All
               </button>
-              {TOPICS_TO_SUBTOPICS[selectedTopic]
+              {SEARCH_TOPICS_TO_SUBTOPICS[selectedTopic]
                 .filter(({ hideFromSearch }) => !hideFromSearch)
                 .map(({ name, groupIds }) => (
                   <button
@@ -585,7 +586,9 @@ export function Search(props: SearchProps) {
                     onClick={() => {
                       if (searchParams[GROUP_IDS_KEY] === groupIds.join(',')) {
                         onChange({
-                          [GROUP_IDS_KEY]: TOPICS_TO_SUBTOPICS[selectedTopic]
+                          [GROUP_IDS_KEY]: SEARCH_TOPICS_TO_SUBTOPICS[
+                            selectedTopic
+                          ]
                             .map((subtopic) => subtopic.groupIds)
                             .flat()
                             .join(','),

@@ -15,10 +15,8 @@ import { run } from 'common/supabase/utils'
 import { db } from 'web/lib/supabase/db'
 import { Group } from 'common/group'
 import {
-  getSubtopics,
   GROUP_SLUGS_TO_HIDE_FROM_WELCOME_FLOW,
-  TOPICS_TO_HIDE_FROM_WELCOME_FLOW,
-  TOPICS_TO_SUBTOPICS,
+  WELCOME_FLOW_TOPICS,
 } from 'common/topics'
 import { intersection, orderBy, uniq, uniqBy } from 'lodash'
 import { track } from 'web/lib/service/analytics'
@@ -28,16 +26,16 @@ import { api, updateUser, followTopic, followUser } from 'web/lib/api/api'
 import { randomString } from 'common/util/random'
 import { unfollowTopic } from 'web/lib/supabase/groups'
 import { PillButton } from 'web/components/buttons/pill-button'
-import { removeEmojis } from 'common/util/string'
 import { unauthedApi } from 'common/util/api'
 import { getSavedContractVisitsLocally } from 'web/hooks/use-save-visits'
 import { capitalize } from 'lodash'
 import { TRADE_TERM } from 'common/envs/constants'
 import { convertGroup } from 'common/supabase/groups'
 import { setCachedReferralInfoForUser } from 'web/lib/firebase/users'
+import { removeEmojis } from 'common/util/string'
 
 export const DEFAULT_FOR_YOU = false
-const SHOW_TOPICS = false
+const SHOW_TOPICS = true
 
 export function Welcome(props: { setFeedKey?: (key: string) => void }) {
   const { setFeedKey } = props
@@ -97,10 +95,7 @@ export function Welcome(props: { setFeedKey?: (key: string) => void }) {
   const showBottomButtons = page < 3
 
   const getTrendingAndUserCategories = async (userId: string) => {
-    const hardCodedTopicIds = Object.keys(TOPICS_TO_SUBTOPICS)
-      .map((topic) => getSubtopics(topic))
-      .flat()
-      .flatMap(([_, __, groupIds]) => groupIds)
+    const hardCodedTopicIds = WELCOME_FLOW_TOPICS.map((topic) => topic.groupId)
     const [userInterestedTopicsRes, trendingTopicsRes] = await Promise.all([
       unauthedApi('get-interesting-groups-from-views', {
         userId,
@@ -256,6 +251,7 @@ function NameInputPage() {
     try {
       await updateUser({ username })
     } catch (e) {
+      console.error(e)
       username += randomString(5)
       await updateUser({ username })
     }
@@ -338,10 +334,6 @@ function TopicsPage(props: {
     string[] | undefined
   >()
 
-  const topics = Object.keys(TOPICS_TO_SUBTOPICS).filter(
-    (topic) => !TOPICS_TO_HIDE_FROM_WELCOME_FLOW.includes(topic)
-  )
-
   useEffect(() => {
     if (userBetInTopics.length > 0) {
       userBetInTopics.forEach((group) => selectTopic(group.id))
@@ -368,9 +360,7 @@ function TopicsPage(props: {
     // if user is following us politics
     if (
       intersection(selectedTopics, [
-        'AjxQR8JMpNyDqtiqoA96',
-        'pYwsGvORZFlcq7QrkI6n',
-        'cEzcLXuitr6o4VPI01Q1',
+        'UCnpxVUdLOZYgoMsDlHD', // Politics
       ]).length > 0
     ) {
       await followUser('vuI5upWB8yU00rP7yxj95J2zd952') // follow @ManifoldPolitics
@@ -379,16 +369,14 @@ function TopicsPage(props: {
     // if user is following AI topics
     if (
       intersection(selectedTopics, [
-        'yEWvvwFFIqzf8JklMewp',
-        'a3ikurqO9fT46Pv9ZGkY',
-        'GbbX9U5pYnDeftX9lxUh',
+        'yEWvvwFFIqzf8JklMewp', // AI
       ]).length > 0
     ) {
       await followUser('8lZo8X5lewh4hnCoreI7iSc0GxK2') // follow @ManifoldAI
     }
 
     if (
-      intersection(selectedTopics, ['0d39aa2b-1447-4298-bc60-5ef67d9cea4f'])
+      intersection(selectedTopics, ['0d39aa2b-1447-4298-bc60-5ef67d9cea4f']) // This ID is not in WELCOME_FLOW_TOPICS. Consider removing or updating if it's for a specific meme group.
         .length > 0
     ) {
       await followUser('fBFdG15kdfeBmjRVEajSMLayZ2y1') // follow @JasonTweenieMemes
@@ -401,13 +389,14 @@ function TopicsPage(props: {
   const pillButton = (
     topicWithEmoji: string,
     topicName: string,
-    groupIds: string[]
+    groupId: string
   ) => (
     <PillButton
+      className="!text-ink-900 !px-5 !py-5 !text-lg"
       key={topicName}
-      selected={groupIds.every((g) => selectedTopics.includes(g))}
+      selected={selectedTopics.includes(groupId)}
       onSelect={() => {
-        groupIds.map((g) => selectTopic(g))
+        selectTopic(groupId)
         track('onboarding select topic', { name: topicName })
       }}
     >
@@ -417,50 +406,40 @@ function TopicsPage(props: {
 
   return (
     <Col>
-      <div className="text-primary-700 mb-6 text-center text-2xl font-normal">
+      <div className="text-primary-700 mb-2 text-2xl font-normal">
         What interests you?
       </div>
-      <div className="mb-4 text-lg">
-        Select 3 or more topics to personalize your experience.
+      <div className="text-ink-800 mb-2 text-base">
+        We'll use this to customize your experience.
       </div>
       <Col className="h-[25rem] gap-2 overflow-y-auto sm:h-[32rem]">
+        <Col className="mb-3 gap-1">
+          <Row className="flex flex-wrap gap-x-3 gap-y-3">
+            {WELCOME_FLOW_TOPICS.map((topic) => {
+              return pillButton(topic.name, topic.name, topic.groupId)
+            })}
+          </Row>
+        </Col>
         <Col className={'gap-1'}>
           <div className="text-ink-700 text-sm">
             {userInterestedTopics.length > 0 || userBetInTopics.length > 0
               ? 'Suggested'
-              : 'Trending now'}
+              : 'Trending'}
           </div>
-          <Row className={'flex-wrap gap-1'}>
+          <Row className="flex flex-wrap gap-x-3 gap-y-3">
             {trendingTopics.map((group) => (
               <div className="" key={group.id + '-section'}>
-                {pillButton(group.name, removeEmojis(group.name), [group.id])}
+                {pillButton(group.name, removeEmojis(group.name), group.id)}
               </div>
             ))}
           </Row>
         </Col>
-
-        {topics.map((topic) => (
-          <Col className="mb-3 gap-1" key={topic + '-section'}>
-            <div className="text-ink-700 text-sm">{topic.slice(3)}</div>
-            <Row className="flex flex-wrap gap-x-1 gap-y-1.5">
-              {getSubtopics(topic)
-                .filter(([_, __, groupId]) => !!groupId)
-                .map(([subtopicWithEmoji, subtopic, groupIds]) => {
-                  return pillButton(subtopicWithEmoji, subtopic, groupIds)
-                })}
-            </Row>
-          </Col>
-        ))}
       </Col>
       <Row className={'mt-4 justify-between'}>
         <Button onClick={goBack} color={'gray-white'}>
           Previous
         </Button>
-        <Button
-          onClick={closeDialog}
-          disabled={(userSelectedTopics ?? []).length <= 2}
-          loading={isLoading}
-        >
+        <Button onClick={closeDialog} loading={isLoading}>
           Finish
         </Button>
       </Row>
