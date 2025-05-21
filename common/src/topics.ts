@@ -141,10 +141,7 @@ export const SEARCH_TOPICS_TO_SUBTOPICS: { [key: string]: TopicInfo[] } = {
     },
     {
       name: '🍿 Movies & TV',
-      groupIds: [
-        // 'KSeNIu7AWgiBBM5FqVuB', // Movies TODO: MERGE
-        'EUSEngFk1dGGBfaMeAmh', // TV and Film
-      ],
+      groupIds: ['KSeNIu7AWgiBBM5FqVuB'], // Movies
     },
     {
       name: '🎶 Music',
@@ -234,7 +231,7 @@ export const WELCOME_FLOW_TOPICS: WelcomeTopicInfo[] = [
   { name: 'Science', groupId: 'XMhZ5LbQoLMZiOpQJRnj' },
   { name: 'Sports', groupId: '2hGlgVhIyvVaFyQAREPi' },
   { name: 'Music', groupId: 'Xuc2UY8gGfjQqFXwxq5d' },
-  { name: 'Movies & TV', groupId: 'EUSEngFk1dGGBfaMeAmh' },
+  { name: 'Movies & TV', groupId: 'KSeNIu7AWgiBBM5FqVuB' },
   { name: 'Culture', groupId: 'eJZecx6r22G2NriYYXcC' },
   { name: 'Gaming', groupId: '5FaFmmaNNFTSA5r0vTAi' },
   { name: 'Finance', groupId: 'CgB83AAMkkOHSrTnzani' },
