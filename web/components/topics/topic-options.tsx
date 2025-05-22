@@ -22,7 +22,6 @@ import {
   AddContractToGroupModal,
   AddContractToGroupPermissionType,
 } from 'web/components/topics/add-contract-to-group-modal'
-import { BsFillPersonDashFill } from 'react-icons/bs'
 import { BiSolidVolumeMute } from 'react-icons/bi'
 import { usePrivateUser } from 'web/hooks/use-user'
 import { blockGroup, unBlockGroup } from 'web/components/topics/topic-dropdown'
@@ -38,13 +37,12 @@ export function TopicOptions(props: {
   addAbout: () => void
   className?: string
 }) {
-  const { group, user, isMember, unfollow, addAbout, className } = props
+  const { group, user, isMember, addAbout, className } = props
   const privateUser = usePrivateUser()
   const [editingName, setEditingName] = useState(false)
   const [showAddContract, setShowAddContract] = useState(false)
   const [showDelete, setShowDelete] = useState(false)
   const userRole = useGroupRole(group.id, user)
-  const isCreator = group.creatorId == user?.id
   const isMobile = useIsMobile()
 
   const hasAbout = !!group.about && !JSONEmpty(group.about)
@@ -66,12 +64,6 @@ export function TopicOptions(props: {
         name: 'Add description',
         icon: <PlusIcon className="h-5 w-5" />,
         onClick: addAbout,
-      },
-    isMember &&
-      !isCreator && {
-        name: 'Unfollow',
-        icon: <BsFillPersonDashFill className="h-5 w-5" />,
-        onClick: unfollow,
       },
     !isMember &&
       privateUser && {

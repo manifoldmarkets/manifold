@@ -24,7 +24,7 @@ export function useIsFollowingTopic(groupSlug?: string) {
   >(undefined, 'is-member-' + groupSlug)
   const isAuthorized = useIsAuthorized()
   useEffect(() => {
-    if (!isAuthorized || !groupSlug) {
+    if (isAuthorized === false || !groupSlug) {
       setIsFollowing(false)
     } else {
       getUserIsFollowingTopic({ groupSlug }).then((result) => {

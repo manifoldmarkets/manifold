@@ -1,5 +1,6 @@
 import { Group } from 'common/group'
 import { BookmarkIcon, PlusCircleIcon } from '@heroicons/react/outline'
+import { BookmarkIcon as FilledBookmark } from '@heroicons/react/solid'
 import { CopyLinkOrShareButton } from 'web/components/buttons/copy-link-button'
 import { Button } from 'web/components/buttons/button'
 import { AddContractToGroupModal } from 'web/components/topics/add-contract-to-group-modal'
@@ -11,11 +12,11 @@ import { TopicOptions } from 'web/components/topics/topic-options'
 import { Row } from 'web/components/layout/row'
 import { useIsFollowingTopic } from 'web/hooks/use-group-supabase'
 import { forwardRef, Ref, useState } from 'react'
-// import { TopicDropdown } from 'web/components/topics/topic-dropdown'
 import { useIsMobile } from 'web/hooks/use-is-mobile'
 import { TOPIC_IDS_YOU_CANT_FOLLOW } from 'common/supabase/groups'
 import { getTopicShareUrl } from 'common/util/share'
 import { useUser } from 'web/hooks/use-user'
+import { Tooltip } from '../widgets/tooltip'
 
 export const QuestionsTopicTitle = forwardRef(
   (props: { topic: Group; addAbout: () => void }, ref: Ref<HTMLDivElement>) => {
@@ -34,7 +35,7 @@ export const QuestionsTopicTitle = forwardRef(
         ref={ref}
       >
         <h1 className="text-primary-700 self-center truncate text-2xl">
-          {topic.name}
+          <Tooltip text={topic.name}>{topic.name}</Tooltip>
         </h1>
         <Row>
           <CopyLinkOrShareButton
@@ -45,6 +46,33 @@ export const QuestionsTopicTitle = forwardRef(
           >
             Share
           </CopyLinkOrShareButton>
+          {!TOPIC_IDS_YOU_CANT_FOLLOW.includes(topic.id) && (
+            <Button
+              color={'gray-white'}
+              className={'whitespace-nowrap'}
+              loading={loading}
+              disabled={loading || !user || isFollowing === undefined}
+              size={isMobile ? 'sm' : 'md'}
+              onClick={async () => {
+                setLoading(true)
+                if (isFollowing) {
+                  await internalUnfollowTopic(user, topic)
+                  setIsFollowing(false)
+                } else {
+                  await internalFollowTopic(user, topic)
+                  setIsFollowing(true)
+                }
+                setLoading(false)
+              }}
+            >
+              {loading ? null : isFollowing ? (
+                <FilledBookmark className={'mr-1 h-5 w-5'} />
+              ) : (
+                <BookmarkIcon className={'mr-1 h-5 w-5'} />
+              )}
+              {isFollowing ? 'Following' : 'Follow'}
+            </Button>
+          )}
           {isFollowing && !isMobile && user ? (
             <>
               <Button
@@ -67,31 +95,7 @@ export const QuestionsTopicTitle = forwardRef(
                 />
               )}
             </>
-          ) : (
-            !isFollowing &&
-            !TOPIC_IDS_YOU_CANT_FOLLOW.includes(topic.id) &&
-            user && (
-              <Button
-                color={'gray-white'}
-                className={'whitespace-nowrap'}
-                loading={loading}
-                size={isMobile ? 'sm' : 'md'}
-                onClick={() => {
-                  setLoading(true)
-                  internalFollowTopic(user, topic)
-                    .then(() => {
-                      setIsFollowing(true)
-                    })
-                    .finally(() => {
-                      setLoading(false)
-                    })
-                }}
-              >
-                {!loading && <BookmarkIcon className={'mr-1 h-5 w-5'} />}
-                Follow
-              </Button>
-            )
-          )}
+          ) : null}
 
           <TopicOptions
             group={topic}
