@@ -395,7 +395,6 @@ export function Search(props: SearchProps) {
     : undefined
   const selectedAll = !selectedTopic && !selectedFollowed
   const user = useUser()
-
   const {
     data: followedGroupsData,
     loading: isLoadingFollowedGroups,
