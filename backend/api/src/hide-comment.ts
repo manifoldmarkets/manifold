@@ -8,6 +8,7 @@ import { getComment } from 'shared/supabase/contract-comments'
 import { createSupabaseDirectClient } from 'shared/supabase/init'
 import { updateData } from 'shared/supabase/utils'
 import { APIError, type APIHandler } from './helpers/endpoint'
+import { trackPublicEvent } from 'shared/analytics'
 
 export const hideComment: APIHandler<'hide-comment'> = async (
   { commentPath },
@@ -58,4 +59,15 @@ export const hideComment: APIHandler<'hide-comment'> = async (
   })
 
   await revalidateContractStaticProps(contract)
+  return {
+    result: { success: true },
+    continue: async () => {
+      await trackPublicEvent(auth.uid, 'hide_comment', {
+        contractId,
+        commentId,
+        hidden: hide,
+        userId: auth.uid,
+      })
+    },
+  }
 }
