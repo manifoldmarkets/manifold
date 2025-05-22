@@ -163,15 +163,10 @@ export const SEARCH_TOPICS_TO_SUBTOPICS: { [key: string]: TopicInfo[] } = {
       ],
     },
     {
-      name: '📊 Econ',
+      name: '📊 Economics',
       groupIds: [
         'p88Ycq6yFd5ECKqq9PFO', // Economics
       ],
-    },
-    {
-      // Crypto, Bitcoin
-      name: '🪙 Crypto',
-      groupIds: ['YuJw0M1xvUHrpiRRuKso', 'WBeBD6FyMd0NvSL0qjMb'],
     },
   ],
   '🤪 Fun': [
