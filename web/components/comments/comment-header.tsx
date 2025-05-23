@@ -449,6 +449,7 @@ function DotMenu(props: {
   const user = useUser()
   const privateUser = usePrivateUser()
   const isMod = useAdminOrMod()
+  const isAdmin = isAdminId(user?.id)
   const isContractCreator = privateUser?.id === playContract.creatorId
   const [editingComment, setEditingComment] = useState(false)
   const [tipping, setTipping] = useState(false)
@@ -549,6 +550,25 @@ function DotMenu(props: {
                 console.error(e)
                 // undo optimistic update
                 updateComment({ hidden: wasHidden })
+              }
+            },
+          },
+          (isAdmin || isMod) && {
+            name: comment.deleted ? 'Undelete comment' : 'Delete comment',
+            icon: <EyeOffIcon className="h-5 w-5 text-red-500" />,
+            onClick: async () => {
+              const commentPath = `contracts/${playContract.id}/comments/${comment.id}`
+              const wasDeleted = comment.deleted
+              updateComment({ deleted: !wasDeleted })
+
+              try {
+                await api('delete-comment', { commentPath })
+              } catch (e) {
+                toast.error(
+                  wasDeleted ? 'Error undeleting comment' : 'Error deleting comment'
+                )
+                console.error(e)
+                updateComment({ deleted: wasDeleted })
               }
             },
           },

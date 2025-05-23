@@ -22,6 +22,7 @@ import { updateMarket } from 'api/update-market'
 import { type APIPath } from 'common/api/schema'
 import { getMarkets } from 'api/markets'
 import { hideComment } from './hide-comment'
+import { deleteComment } from './delete-comment'
 import { pinComment } from './pin-comment'
 import { getManagrams } from './get-managrams'
 import { getGroups } from './get-groups'
@@ -195,6 +196,7 @@ export const handlers: { [k in APIPath]: APIHandler<k> } = {
   'get-contract': getContract,
   comment: createComment,
   'hide-comment': hideComment,
+  'delete-comment': deleteComment,
   'pin-comment': pinComment,
   comments: getComments,
   market: createMarket,
