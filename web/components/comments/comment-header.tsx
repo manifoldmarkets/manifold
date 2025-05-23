@@ -12,7 +12,6 @@ import clsx from 'clsx'
 import { Bet } from 'common/bet'
 import { ContractComment } from 'common/comment'
 import { Contract } from 'common/contract'
-import { isAdminId } from 'common/envs/constants'
 import { buildArray } from 'common/util/array'
 import { formatPercent, formatWithToken } from 'common/util/format'
 import { useState } from 'react'
@@ -522,7 +521,7 @@ function DotMenu(props: {
               },
             },
           user &&
-            (comment.userId === user.id || isAdminId(user?.id)) && {
+            (comment.userId === user.id || isMod) && {
               name: 'Edit',
               icon: <PencilIcon className="h-5 w-5" />,
               onClick: () => setEditingComment(true),
@@ -533,7 +532,7 @@ function DotMenu(props: {
             onClick: async () => setAnnotating(true),
           },
           (isMod || isContractCreator) && {
-            name: comment.hidden ? 'Unhide' : 'Hide',
+            name: comment.hidden ? 'Undelete comment' : 'Delete comment',
             icon: <EyeOffIcon className="h-5 w-5 text-red-500" />,
             onClick: async () => {
               const commentPath = `contracts/${playContract.id}/comments/${comment.id}`
@@ -544,7 +543,7 @@ function DotMenu(props: {
                 await api('hide-comment', { commentPath })
               } catch (e) {
                 toast.error(
-                  wasHidden ? 'Error unhiding comment' : 'Error hiding comment'
+                  wasHidden ? 'Error undeleting comment' : 'Error deleting comment'
                 )
                 console.error(e)
                 // undo optimistic update
