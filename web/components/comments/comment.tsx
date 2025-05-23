@@ -329,6 +329,8 @@ function HideableContent(props: { comment: ContractComment }) {
   const initiallyHidden = majorityDislikes || comment.hidden
   const [showHidden, setShowHidden] = useState(false)
 
+  if (comment.hidden) return null
+
   return initiallyHidden && !showHidden ? (
     <div
       className="hover text-ink-600 text-sm font-thin italic hover:cursor-pointer"

@@ -248,7 +248,9 @@ export const CommentsTabContent = memo(function CommentsTabContent(props: {
       ...props.comments,
     ],
     'id'
-  ).filter((c) => !blockedUserIds.includes(c.userId))
+  )
+    .filter((c) => !blockedUserIds.includes(c.userId))
+    .filter((c) => !c.hidden)
 
   const commentExistsLocally = comments.some((c) => c.id === highlightCommentId)
   const isLoadingHighlightedComment =
@@ -372,7 +374,9 @@ export const CommentsTabContent = memo(function CommentsTabContent(props: {
 
   const loadMore = () => setParentCommentsToRender((prev) => prev + LOAD_MORE)
   const pinnedComments = uniqBy(
-    props.pinnedComments.concat(comments.filter((comment) => comment.pinned)),
+    props.pinnedComments
+      .filter((comment) => !comment.hidden)
+      .concat(comments.filter((comment) => comment.pinned)),
     'id'
   )
   const onVisibilityUpdated = useEvent((visible: boolean) => {
