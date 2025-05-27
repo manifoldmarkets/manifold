@@ -293,10 +293,12 @@ ${richTextToString(comment.content)}
 
 SYSTEM: Please analyze if the creator's latest comment ${
     commentsContext ? '(in context of the comment thread)' : ''
-  } is clarifying or adding important details about how the market will be resolved, that is not already covered by the market's description/question title. 
+  } is clarifying or adding important details about how the market will be resolved, that is not already covered by a reasonable interpretation of the market's description/question title. 
 
   ONLY choose to issue a clarification if you are CERTAIN that the creator's comment is unambiguously changing the resolution criteria as outlined in the description/question.
+  Do not issue clarifications if a reasonable interpretation of the description already handles the creator's comment. 
   Do not issue clarifications for everything the creator says, only clarifications on how the market will resolve.
+  Do not attempt to interpret images/videos/google drive/doc/any other links as clarifications by themselves. The creator will say something if it's intended to be a clarification.
   A clarification should very likely be a response to a question from a user about how the market will resolve in x case. Ignore lighthearted commentary and banter.
   If the creator is about to resolve the market, and detailing their reasoning, do not try to summarize the comment. In this case, just add a note that they're about to resolve the market and to see the linked comment for more details.
   If the creator says that they're going to update the description themselves, or they indicate their comment ${
@@ -320,7 +322,7 @@ Only return the raw JSON object without any markdown code blocks, backticks, add
 
   try {
     const response = await promptGemini(prompt, {
-      model: 'gemini-2.5-pro-preview-03-25',
+      model: 'gemini-2.5-pro-preview-05-06',
     })
     log('Clarification response:', {
       question: contract.question,
