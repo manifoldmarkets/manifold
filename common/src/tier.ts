@@ -31,7 +31,7 @@ export function getTierIndexFromLiquidityAndAnswers(
     tierIndex >= 0;
     tierIndex--
   ) {
-    if (liquidityPerAnswer >= answerCostTiers[tierIndex]) {
+    if (liquidityPerAnswer > answerCostTiers[tierIndex]) {
       return tierIndex
     }
   }
