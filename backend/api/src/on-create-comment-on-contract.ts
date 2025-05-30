@@ -272,9 +272,13 @@ ${answer.text}`
     ? `Market is set to close on ${new Date(contract.closeTime).toISOString()}`
     : ''
 
+  const resolutionNote =
+    contract.mechanism === 'cpmm-1'
+      ? `If the creator is about to resolve the market and detailing their reasoning, do not try to summarize the comment. In this case, just add a note that they're about to resolve the market and to see the linked comment for more details.`
+      : `If the creator is about to resolve an answer and detailing their reasoning, do not issue a clarification.`
   const prompt = `SYSTEM: You are analyzing a ${
     commentsContext ? 'comment thread' : 'comment'
-  } on a prediction market (that is managed by a creator) to determine if the creator's latest comment clarifies the resolution criteria.
+  } on a prediction market on Manidfold Markets (that is managed by a creator) to determine if the creator's latest comment clarifies the resolution criteria.
 
 CONTEXT:
 Market question: ${contract.question}
@@ -294,13 +298,17 @@ ${richTextToString(comment.content)}
 SYSTEM: Please analyze if the creator's latest comment ${
     commentsContext ? '(in context of the comment thread)' : ''
   } is clarifying or adding important details about how the market will be resolved, that is not already covered by a reasonable interpretation of the market's description/question title. 
+  Here's info about how resolving a market works in Manifold Markets:
+  ${ResolvingMarketsExplanation}
 
   ONLY choose to issue a clarification if you are CERTAIN that the creator's comment is unambiguously changing the resolution criteria as outlined in the description/question.
+  By default, do not issue clarifications. Be conservative.
   Do not issue clarifications if a reasonable interpretation of the description already handles the creator's comment. 
   Do not issue clarifications for everything the creator says, only clarifications on how the market will resolve.
+  Creators may close markets during periods of uncertainty about how a market will resolve, or if they don't want to put their liquidity up for grabs for live trading. Do not issue clarifications for minor close time changes. If the creator is announcing they won't support live trading, that is realtively notable and may desever a clarification. If the creator says they're waiting to resolve for some reason, extending the resolution time in a major way, that may deserve a clarification.
   Do not attempt to interpret images/videos/google drive/doc/any other links as clarifications by themselves. The creator will say something if it's intended to be a clarification.
-  A clarification should very likely be a response to a question from a user about how the market will resolve in x case. Ignore lighthearted commentary and banter.
-  If the creator is about to resolve the market, and detailing their reasoning, do not try to summarize the comment. In this case, just add a note that they're about to resolve the market and to see the linked comment for more details.
+  A clarification will most likely be a response to a question from a user about how the market will resolve in x case. Ignore lighthearted commentary and banter.
+  ${resolutionNote}
   If the creator says that they're going to update the description themselves, or they indicate their comment ${
     commentsContext ? '(or their comments in the thread)' : ''
   } shouldn't be used to update the description, do not issue a clarification.
@@ -457,3 +465,51 @@ export const checkCommentNeedsResponse = async (
     return { needsResponse: false, reason: '' }
   }
 }
+
+const ResolvingMarketsExplanation = `
+### How does resolving markets work?
+
+Whoever created the market gets to resolve it! Manifold puts trust in its users to resolve their own markets in a timely and accurate manner. We encourage creators to set clear resolution criteria in advance. In exceptional circumstances, our team of moderators will overturn resolutions.
+
+- The creator is free to use their judgment.
+  - This allows for many new kinds of prediction markets to be created that are less objective. (E.g. "Will I enjoy participating in the Metaverse in 2023?")
+- Market creators who are known to be reputable will earn followers, positive reviews, and more activity on their questions.
+- Check out the [resolution section in the community guidelines](https://manifoldmarkets.notion.site/Community-Guidelines-f6c77b1af41749828df7dae5e8735400).
+
+### How should I resolve a market?
+
+Markets should be resolved in a timely fashion once the resolution conditions are met.
+
+If a market closes and there won't be a resolution in the foreseeable future, consider editing and extending the closing date.
+
+- For Yes/No markets it is generally recommended to resolve fully to one outcome. Only resolve to a particular probability (PARTIAL) if you have a good justification for it.
+- Resolving to PARTIAL allows you to choose a specific % if you think the outcome lies between Yes and No.
+- When resolving Free response and multiple choice markets, you can resolve fully to one answer, or select multiple and the % of the winnings you want to go towards each type of share.
+
+### What does resolving to N/A do?
+
+Resolving a market to N/A effectively cancels the market. 
+
+This means that:
+
+- All users who have traded on the market have their mana returned to them.
+- Any user who made a profit by selling shares before resolution will have that mana subtracted from their balance. This could lead to a negative balance in some cases.
+- All liquidity providers will have their mana returned to them, including the initial amount it cost to make the market.
+
+### Closed versus resolved markets
+
+#### Closed market
+
+- When a market is closed, trading is halted but nothing is finalised.
+- Resolution criteria for an outcome have not yet been met.
+  - If the criteria have been met then write a comment @'ing the creator asking them to resolve it.
+- No one can make bets.
+- No one can sell out of current positions.
+- The market can be edited by the creator to reopen the market and extend the close date.
+
+#### Resolved market
+
+- Resolution criteria for an outcome have been met.
+- Creator chooses the correct answer.
+- Winners are paid out and loans are taken back.
+`
