@@ -62,13 +62,18 @@ export const onCreateCommentOnContract = async (props: {
   if (
     creator.id === contract.creatorId &&
     !contract.isResolved &&
-    contract.outcomeType !== 'POLL'
+    contract.outcomeType !== 'POLL' &&
+    !conscientiousCreatorIds.includes(creator.id)
   ) {
     await checkForClarification(pg, contract, comment)
   }
 
   await handleCommentNotifications(pg, comment, contract, creator, bet)
 }
+
+const conscientiousCreatorIds = [
+  'hqdXgp0jK2YMMhPs067eFK4afEH3', // Eliza
+]
 
 const getReplyInfo = async (
   pg: SupabaseDirectClient,
