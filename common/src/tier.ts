@@ -31,7 +31,11 @@ export function getTierIndexFromLiquidityAndAnswers(
     tierIndex >= 0;
     tierIndex--
   ) {
-    if (liquidityPerAnswer >= answerCostTiers[tierIndex]) {
+    if (numAnswers > 1 && liquidityPerAnswer >= answerCostTiers[tierIndex]) {
+      return tierIndex
+    }
+    // This handles the case of an MC answer with 1k liquidity and only one answer
+    else if (liquidityPerAnswer > answerCostTiers[tierIndex]) {
       return tierIndex
     }
   }
