@@ -215,7 +215,7 @@ export const AI_CAPABILITY_CARDS: AICapabilityCard[] = [
     type: 'benchmark',
     displayType: 'binary-odds',
   },
-  {
+    {
     title: 'OpenAI Claims AGI',
     description: 'OAI claims AGI by EOY',
     marketId: '5SLp6d9yzy',
@@ -279,7 +279,7 @@ export const AI_CAPABILITY_CARDS: AICapabilityCard[] = [
     displayType: 'binary-odds',
   },
   {
-    title: 'Fully AI-generated Movie',
+    title: 'Fully AI-generated Movie', 
     description: 'High quality AI-generated movie',
     marketId: 'A319ydGB1B7f4PMOROL3',
     type: 'long-term',
