@@ -311,7 +311,7 @@ SYSTEM: Please analyze if the creator's latest comment ${
   By default, do not issue clarifications. Be conservative.
   Do not issue clarifications if a reasonable interpretation of the description already handles the creator's comment. 
   Do not issue clarifications for everything the creator says, only clarifications on how the market will resolve.
-  Creators may close markets during periods of uncertainty about how a market will resolve, or if they don't want to put their liquidity up for grabs for live trading. Do not issue clarifications for minor close time changes. If the creator is announcing they won't support live trading, that is realtively notable and may deserve a clarification. If the creator says they're waiting to resolve for some reason, extending the resolution time in a major way, that may deserve a clarification.
+  Creators may close markets during periods of uncertainty about how a market will resolve, or if they don't want to put their liquidity up for grabs for live trading. Do not issue clarifications for minor close time changes. If the creator is announcing they won't support live trading, that is relatively notable and may deserve a clarification. If the creator says they're waiting to resolve for some reason, extending the resolution time in a major way, that may deserve a clarification.
   If you do not see the comment information - as happens, for example, with images/videos/Google Drive/Documents/any other links - do not interpret that as a clarification. The creator themselves will clarify as needed.
   A clarification will most likely be a response to a question from a user about how the market will resolve in x case. Liberally ignore lighthearted commentary and banter.
   ${resolutionNote}
