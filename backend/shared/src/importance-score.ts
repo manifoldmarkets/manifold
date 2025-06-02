@@ -575,9 +575,10 @@ export async function calculatePostImportanceScore(
 
     const weekActivityTotal = commentsWeek + likesWeek
 
-    const rawScore = todayActivity * 2 + weekActivityTotal
+    const rawScore =
+      normalize(todayActivity, 100) * 2 + normalize(weekActivityTotal, 250)
 
-    const newImportanceScore = normalize(rawScore, 150)
+    const newImportanceScore = normalize(rawScore, 3)
 
     // Only update if the score has changed significantly
     const epsilon = 0.01
