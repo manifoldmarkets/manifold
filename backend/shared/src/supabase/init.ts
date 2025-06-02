@@ -145,7 +145,7 @@ export function createSupabaseDirectClient(
     // that last for approx. an hour. See: https://docs.google.com/spreadsheets/d/1GrXMQtPXRL3j3dSza7rwI4fRmFjabk0x1sJYoTRKpoE/edit?gid=801504140#gid=801504140
     // Although we don't yet know the cause, setting this timeout will limit the damage
     // from these connections. We should figure out the cause ASAP.
-    idle_in_transaction_session_timeout: 15_000,
+    idle_in_transaction_session_timeout: 60_000, // 1 minute
     max: 40,
   })
   const pool = client.$pool
