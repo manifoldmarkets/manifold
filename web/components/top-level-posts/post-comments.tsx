@@ -59,9 +59,8 @@ export function PostCommentsActivity(props: {
   const { post, comments } = props
   const commentsByUserId = groupBy(comments, (c) => c.userId)
   const commentsByParentId = groupBy(comments, (c) => c.replyToCommentId ?? '_')
-  const topLevelComments = sortBy(
-    commentsByParentId['_'] ?? [],
-    (c) => -c.createdTime
+  const topLevelComments = sortBy(commentsByParentId['_'] ?? [], (c) =>
+    c.hidden ? 0 : -c.createdTime
   )
 
   return (
