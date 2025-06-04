@@ -9,6 +9,7 @@ import { convertContract } from 'common/supabase/contracts'
 import { MarketContract } from 'common/contract'
 import { convertPost } from 'common/top-level-post'
 import { updateData } from 'shared/supabase/utils'
+import { revalidatePost } from './create-post-comment'
 
 export const unlistAndCancelUserContracts: APIHandler<
   'unlist-and-cancel-user-contracts'
@@ -86,6 +87,7 @@ export const unlistAndCancelUserContracts: APIHandler<
       id: post.id,
       visibility: 'unlisted',
     })
+    revalidatePost(post)
     log(`Unlisted post ${post.id}`)
   }
   log('Successfully unlisted all posts for the user.')
