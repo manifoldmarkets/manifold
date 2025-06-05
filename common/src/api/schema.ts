@@ -200,6 +200,7 @@ export const API = (_apiTypeCheck = {
         limit: z.coerce.number().gte(0).lte(1000).default(1000),
         page: z.coerce.number().gte(0).default(0),
         userId: z.string().optional(),
+        order: z.enum(['likes', 'newest', 'oldest']).optional(),
         isPolitics: coerceBoolean.optional(),
       })
       .strict(),
