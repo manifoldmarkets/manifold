@@ -48,14 +48,14 @@ export const TimelineItem = ({
   // Create connecting line from item to timeline
   const ConnectingLine = () => {
     // Calculate the distance from the bottom of the item to the timeline
-    const itemHeight = 28; // Approximate height of the timeline item
-    const topOffset = itemHeight + 4; // Start below the item
+    const itemHeight = 28 // Approximate height of the timeline item
+    const topOffset = itemHeight + 4 // Start below the item
     // Adding 10px to ensure the line reaches the timeline and lower items still get a line
-    const lineHeight = Math.abs(verticalOffset) + 8; 
-    
+    const lineHeight = Math.abs(verticalOffset) + 8
+
     return (
-      <div 
-        className={`absolute w-[1px] ${lineColor} opacity-80`} 
+      <div
+        className={`absolute w-[1px] ${lineColor} opacity-80`}
         style={{
           left: '50%',
           top: `${topOffset}px`, // Position from the top of the item
