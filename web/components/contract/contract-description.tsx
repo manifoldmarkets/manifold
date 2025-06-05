@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { MAX_DESCRIPTION_LENGTH } from 'common/contract'
-import { useAdmin } from 'web/hooks/use-admin'
+import { useAdminOrMod } from 'web/hooks/use-admin'
 import { useUser } from 'web/hooks/use-user'
 import { Row } from '../layout/row'
 import { TextEditor, useTextEditor } from 'web/components/widgets/editor'
@@ -21,14 +21,14 @@ export function ContractDescription(props: {
 }) {
   const { contractId, creatorId, isSweeps, description } = props
 
-  const isAdmin = useAdmin()
+  const isModOrAdmin = useAdminOrMod()
   const user = useUser()
   const isCreator = user?.id === creatorId
 
   return (
     <>
       <div className="mb-2 mt-6">
-        {isCreator || isAdmin ? (
+        {isCreator || isModOrAdmin ? (
           <EditableDescription
             contractId={contractId}
             description={description}
