@@ -474,6 +474,49 @@ type FullMarket = LiteMarket & {
 }
 ```
 
+### `GET /v0/slug/[marketSlug]`
+
+Get information about a single market by slug (the portion of the URL path after the username).
+
+Requires no auth.
+
+Example request:
+
+```bash
+curl "https://api.manifold.markets/v0/slug/will-carrick-flynn-win-the-general" -X GET
+```
+
+Response type: A `FullMarket`
+
+### `GET /v0/search-markets`
+
+Search or filter markets, Similar to the [browse page](https://manifold.markets/browse).
+
+Requires no auth.
+
+Parameters:
+
+- `term`: The search query in question. Can be empty string.
+- `sort`: Optional. One of `most-popular` (default), `newest`, `score`, `daily-score`, `freshness-score`, `24-hour-vol`, `liquidity`, `subsidy`, `last-updated`, `close-date`, `start-time`, `resolve-date`, `random`, `bounty-amount`, `prob-descending`, or `prob-ascending`.
+- `filter`: Optional. Closing state. One of `all` (default), `open`, `closed`, `resolved`, `news`, `closing-90-days`, `closing-week`, `closing-month`, or `closing-day`.
+- `contractType`: Optional. `ALL` (default), `BINARY` (yes/no), `MULTIPLE_CHOICE`, `BOUNTY`, `POLL`, or ... (see code)
+- `topicSlug`: Optional. Only include questions with the topic tag with this slug.
+- `creatorId`: Optional. Only include questions created by the user with this id.
+- `limit`: Optional. Number of contracts to return from 0 to 1000. Default 100.
+- `offset`: Optional. Number of contracts to skip. Use with limit to paginate the results.
+- `liquidity`: Optional. Minimum liquidity per contract (or per answer according to tier map)
+- `creatorId`: Optional. Only markets from creator id.
+
+Requires no auth.
+
+Example request:
+
+```bash
+curl https://api.manifold.markets/v0/search-markets?term=biden&sort=liquidity&filter=resolved&contractType=BINARY&limit=2 -X GET
+```
+
+Response type: Array of `LiteMarket`.
+
 ### `GET /v0/market/[marketId]/prob`
 
 Get the current probability (or probabilities for multiple choice markets) for a market without caching.
@@ -690,48 +733,165 @@ type ContractMetric = {
 }
 ```
 
-### `GET /v0/slug/[marketSlug]`
+### `GET /v0/get-user-contract-metrics-with-contracts`
 
-Get information about a single market by slug (the portion of the URL path after the username).
+Get a user's contract metrics and their corresponding contracts, ordered by profit or last bet time. This is useful for displaying a user's portfolio.
 
-Requires no auth.
-
-Example request:
-
-```bash
-curl "https://api.manifold.markets/v0/slug/will-carrick-flynn-win-the-general" -X GET
-```
-
-Response type: A `FullMarket`
-
-### `GET /v0/search-markets`
-
-Search or filter markets, Similar to the [browse page](https://manifold.markets/browse).
-
-Requires no auth.
+Requires no auth. When authenticated, the response may include metrics from private markets that are visible to you.
 
 Parameters:
 
-- `term`: The search query in question. Can be empty string.
-- `sort`: Optional. One of `most-popular` (default), `newest`, `score`, `daily-score`, `freshness-score`, `24-hour-vol`, `liquidity`, `subsidy`, `last-updated`, `close-date`, `start-time`, `resolve-date`, `random`, `bounty-amount`, `prob-descending`, or `prob-ascending`.
-- `filter`: Optional. Closing state. One of `all` (default), `open`, `closed`, `resolved`, `news`, `closing-90-days`, `closing-week`, `closing-month`, or `closing-day`.
-- `contractType`: Optional. `ALL` (default), `BINARY` (yes/no), `MULTIPLE_CHOICE`, `BOUNTY`, `POLL`, or ... (see code)
-- `topicSlug`: Optional. Only include questions with the topic tag with this slug.
-- `creatorId`: Optional. Only include questions created by the user with this id.
-- `limit`: Optional. Number of contracts to return from 0 to 1000. Default 100.
-- `offset`: Optional. Number of contracts to skip. Use with limit to paginate the results.
-- `liquidity`: Optional. Minimum liquidity per contract (or per answer according to tier map)
-- `creatorId`: Optional. Only markets from creator id.
+- `userId`: Required. The ID of the user.
+- `limit`: Required. The number of contracts to return.
+- `offset`: Optional. The number of contracts to skip for pagination. Default 0.
+- `order`: Optional. The sort order for the contracts. One of `lastBetTime` (default) or `profit`.
+- `perAnswer`: Optional. If `true` for multiple choice markets, metrics will be returned for each answer. If `false` (default), only summary metrics for the market are returned.
 
-Requires no auth.
+Response type: an object with `metricsByContract` and `contracts`.
 
-Example request:
+- `metricsByContract`: A dictionary mapping a contract ID to an array of `ContractMetric` objects.
+- `contracts`: An array of `MarketContract` objects.
 
-```bash
-curl https://api.manifold.markets/v0/search-markets?term=biden&sort=liquidity&filter=resolved&contractType=BINARY&limit=2 -X GET
+Example response:
+
+```json
+{
+    "metricsByContract": {
+        "xv86CDBe0flxF2epvO3f": [
+            {
+                "from": {
+                    "day": {
+                        "value": 132936.84161688015,
+                        "profit": 0,
+                        "invested": 132936.84161688015,
+                        "prevValue": 132936.84161688015,
+                        "profitPercent": 0
+                    },
+                    "week": {
+                        "value": 132936.84161688015,
+                        "profit": 0,
+                        "invested": 132936.84161688015,
+                        "prevValue": 132936.84161688015,
+                        "profitPercent": 0
+                    },
+                    "month": {
+                        "value": 132936.84161688015,
+                        "profit": 0,
+                        "invested": 132936.84161688015,
+                        "prevValue": 132936.84161688015,
+                        "profitPercent": 0
+                    }
+                },
+                "loan": 0,
+                "payout": 132936.84161688015,
+                "profit": 73386.56039227714,
+                "userId": "AJwLWoo3xue32XIiAVrL5SyR1WB2",
+                "answerId": null,
+                "invested": 63625.999354329724,
+                "userName": "Ian Philips",
+                "hasShares": true,
+                "contractId": "xv86CDBe0flxF2epvO3f",
+                "totalSpent": {
+                    "NO": 63625.999354329724,
+                    "YES": 0
+                },
+                "hasNoShares": true,
+                "lastBetTime": 1719868394000,
+                "totalShares": {
+                    "NO": 132936.84161688015
+                },
+                "hasYesShares": false,
+                "userUsername": "ian",
+                "profitPercent": 109.48224425971169,
+                "userAvatarUrl": "https://firebasestorage.googleapis.com/v0/b/mantic-markets.appspot.com/o/user-images%2Fian%2Fm6zfu88qLr.png?alt=media&token=126eab7e-fcba-49bd-b2e2-669b3fa9eaf0",
+                "totalAmountSold": 7480.277829512599,
+                "maxSharesOutcome": "NO",
+                "totalAmountInvested": 67030.55905411561
+            }
+        ]
+    },
+    "contracts": [
+        {
+            "p": 0.47784802346618205,
+            "id": "xv86CDBe0flxF2epvO3f",
+            "pool": {
+                "NO": 11520.402666342714,
+                "YES": 1043748.1561188638
+            },
+            "prob": 0,
+            "slug": "will-tesla-stock-reach-275-by-88-of-e836ca33649e",
+            "volume": 21510052.08761673,
+            "question": "Will TSLA reach >$ 275 before 8pm EST on 8/8?",
+            "closeTime": 1723166651449,
+            "creatorId": "nHX1qmzRItUHm3ifj7wNNR8hGf62",
+            "mechanism": "cpmm-1",
+            "viewCount": 20625,
+            "dailyScore": 0,
+            "elasticity": 1.3259613990620638,
+            "groupSlugs": [
+                "ev",
+                "tsla",
+                "tesla",
+                "wall-street-bets"
+            ],
+            "isResolved": true,
+            "marketTier": "crystal",
+            "resolution": "NO",
+            "resolverId": "nHX1qmzRItUHm3ifj7wNNR8hGf62",
+            "visibility": "public",
+            "createdTime": 1715825810671,
+            "creatorName": "TSLABull",
+            "description": {
+              "type": "doc",
+              "content":
+              [
+                 {
+                        "type": "paragraph",
+                        "content": [
+                            {
+                                "text": "text removed",
+                                "type": "text"
+                            }
+                        ]
+                  },
+              ]
+            }
+            "lastBetTime": 1723187716841,
+            "outcomeType": "BINARY",
+            "probChanges": {
+                "day": 0,
+                "week": 0,
+                "month": 0
+            },
+            "subsidyPool": 0,
+            "collectedFees": {
+                "creatorFee": 173884.84121027112,
+                "platformFee": 172931.0356998528,
+                "liquidityFee": 0
+            },
+            "coverImageUrl": "https://storage.googleapis.com/mantic-markets.appspot.com/contract-images/PedroSobral/112df20121f7.jpg",
+            "volume24Hours": 0,
+            "freshnessScore": 0,
+            "resolutionTime": 1723166651449,
+            "totalLiquidity": 100000,
+            "conversionScore": 0.1337930700139641,
+            "creatorUsername": "MolbyDick",
+            "importanceScore": 0.0740977547170235,
+            "lastCommentTime": 1741622281671,
+            "lastUpdatedTime": 1741622283813,
+            "popularityScore": 0,
+            "creatorAvatarUrl": "https://lh3.googleusercontent.com/a-/ALV-UjXY86BCu6RTvqG8yEFc5Y7D_S97tCf20jO2Z8tVPKaaUqG14DA9PLqiLMFEeMfNIZqYYE4tIzI_BrVccd4GjslXsd5xpRxNHEYntNGm2gIyorhNQXCFWaGveqVbopCKtvW8Hxom_b74OxRgIK95auugOa5P56HIijcmp8zUBmze5fHo3g0ex4yJjnK3v7cvgEOF25_-TG4N8zJWXs8h_RcZDoDOKDs__GbJIprrIRmH0xBPqyMPjM6JiRSy1sfS72DHbE53wywXJmkbjC8pw3Fv6tHNtztWvt2EKzgxFCFO5vBboyToBEm5ne-O_e2iPy2vA10-am1HyumXwhHQ8TmgD7hUTB7yokY1_OnpMRIYz_I26jS_8xrIRYiLTpn4tz1ehGr5MBXc52cHtHOFIr75TBvfRBucNqWMi55HJ3gMafiLCsRRufPbWV9W75ebNkpPQr-Fajv1VVUfjMrOmDhzwcB0uEArrgF0lQ1aSuwd2JN11ZJo7Y7p4gyPbmMDureFH9Ppk6xmGp53c3N5lIgeS_dH309hrZWL-N1_L1xoWufgpSeq0GaYVcpChDe_uWm5muiM39lzL5xdzCh5CLJn2HsflObP9H_Ei2mQXM_JQa0PHtPI11wk4w90HMPihYAIv8U4GECdlSV7nKemKVQ5C9asqy40yji5loeo3jof6fSSvWMYvFj206ohJ0r-NviW0y2A-Pp_VCPDMPg8cLpToFGPcmYguqw6Kw87iUow37UNBwG_vKFyI9_k0QWVT6dXpSSMYpts6Ui-KOv__LGb_ybFWH0dHGR_KA_WNNWZyoH8IDbwiGhUATlBS8qTwS7MDrON0E7K2MJCxCHBcVQdmXFNrBvz0zi2kwCtaPUcLR9teA9h_lcj2ybyXjPfdY_KVPz_smz9XzNssQ5Qaw5sR6n1aTX-wNaONG7j3nIvaOXIArN1glV07JsXIOQYPkPHFnWWq0DMoqOBJHBcna922FE=s96-c",
+            "uniqueBettorCount": 501,
+            "creatorCreatedTime": 1713057686215,
+            "initialProbability": 0.5,
+            "uniqueBettorCountDay": 0,
+            "resolutionProbability": 0.01,
+            "token": "MANA",
+            "boosted": false
+        }
+    ]
+}
 ```
-
-Response type: Array of `LiteMarket`.
 
 ### `GET /v0/users`
 

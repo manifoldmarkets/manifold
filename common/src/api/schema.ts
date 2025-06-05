@@ -2037,13 +2037,15 @@ export const API = (_apiTypeCheck = {
       metricsByContract: Dictionary<ContractMetric[]>
       contracts: MarketContract[]
     },
-    props: z.object({
-      userId: z.string(),
-      limit: z.coerce.number(),
-      offset: z.coerce.number().gte(0).optional(),
-      perAnswer: coerceBoolean.optional(),
-      inMani: coerceBoolean.optional(),
-    }),
+    props: z
+      .object({
+        userId: z.string(),
+        limit: z.coerce.number().gte(0).lte(10_000).default(100),
+        offset: z.coerce.number().gte(0).optional(),
+        perAnswer: coerceBoolean.optional(),
+        order: z.enum(['lastBetTime', 'profit']).optional(),
+      })
+      .strict(),
   },
   validateIap: {
     method: 'POST',
