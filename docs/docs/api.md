@@ -1033,6 +1033,7 @@ Parameters:
 - `limit`. Optional. How many comments to return. The default and maximum are both 1000.
 - `page`. Optional. For pagination with `limit`
 - `userId`: Optional. Get only comments created by this user.
+- `order`: Optional. One of [`likes`, `newest`, `oldest`]
 
 Requires no auth.
 
