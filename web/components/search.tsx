@@ -274,8 +274,15 @@ export function Search(props: SearchProps) {
   }, [prefersPlay, sweepiesState])
 
   const selectedFollowed = searchParams[TOPIC_FILTER_KEY] === 'followed'
+  const selectedManifest = searchParams[TOPIC_FILTER_KEY] === 'manifest'
+
   const showSearchTypes =
-    !!query && !hideSearchTypes && !contractsOnly && !selectedFollowed
+    !!query &&
+    !hideSearchTypes &&
+    !contractsOnly &&
+    !selectedFollowed &&
+    !selectedManifest
+
   const {
     contracts,
     users,
@@ -292,6 +299,7 @@ export function Search(props: SearchProps) {
     isReady,
     additionalFilter,
   })
+
   const visible = useIsPageVisible()
   useEffect(() => {
     if (visible && refreshOnVisible) {
@@ -334,6 +342,7 @@ export function Search(props: SearchProps) {
       : query !== ''
       ? groupBy(answersMatchingQuery, 'contractId')
       : undefined
+
   const emptyContractsState =
     props.emptyState ??
     (filter !== 'all' ||
@@ -393,7 +402,7 @@ export function Search(props: SearchProps) {
         (subtopic) => groupIds === subtopic.groupIds.join(',')
       )
     : undefined
-  const selectedAll = !selectedTopic && !selectedFollowed
+  const selectedAll = !selectedTopic && !selectedFollowed && !selectedManifest
   const user = useUser()
   const {
     data: followedGroupsData,
@@ -499,6 +508,26 @@ export function Search(props: SearchProps) {
                   }}
                 >
                   Followed
+                </button>
+              )}
+              {!!user?.id && (
+                <button
+                  className={clsx(
+                    'font-medium',
+                    selectedManifest ? 'text-primary-600' : 'text-ink-500'
+                  )}
+                  onClick={() => {
+                    if (!selectedManifest) {
+                      track('select search topic', { topic: 'manifest' })
+                      const changes: Partial<SearchParams> = {
+                        [TOPIC_FILTER_KEY]: 'manifest',
+                        [GROUP_IDS_KEY]: '',
+                      }
+                      onChange(changes)
+                    }
+                  }}
+                >
+                  Manifest
                 </button>
               )}
               {ALL_PARENT_TOPICS.map((topic) => (
