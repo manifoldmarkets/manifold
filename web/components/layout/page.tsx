@@ -43,7 +43,7 @@ export function Page(props: {
       <Col
         className={clsx(
           !hideBottomBar &&
-            'pb-[calc(58px+env(safe-area-inset-bottom))] lg:pb-[env(safe-area-inset-bottom)]',
+            'pb-[calc(58px+env(safe-area-max-inset-bottom))] lg:pb-[env(safe-area-max-inset-bottom)]',
           'text-ink-1000 mx-auto min-h-screen w-full max-w-[1440px] lg:grid lg:grid-cols-12'
         )}
       >
