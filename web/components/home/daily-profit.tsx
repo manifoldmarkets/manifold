@@ -1,4 +1,4 @@
-import { memo, useCallback, useEffect, useMemo, useState } from 'react'
+import { useEffect, useState } from 'react'
 import clsx from 'clsx'
 import { ArrowUpIcon } from '@heroicons/react/solid'
 import { User } from 'common/user'
@@ -6,140 +6,122 @@ import { withTracking } from 'web/lib/service/analytics'
 import { Row } from 'web/components/layout/row'
 import { formatMoney, shortFormatNumber } from 'common/util/format'
 import { ContractMetric } from 'common/contract-metric'
-import { CPMMContract } from 'common/contract'
-import { getUserContractMetricsByProfitWithContracts } from 'common/supabase/contract-metrics'
+import { ContractToken, CPMMContract, MarketContract } from 'common/contract'
 import { Modal, MODAL_CLASS } from 'web/components/layout/modal'
 import { Col } from 'web/components/layout/col'
-import { keyBy, partition, sortBy, sum } from 'lodash'
+import { keyBy, partition, sortBy } from 'lodash'
 import { ContractMention } from 'web/components/contract/contract-mention'
 import { dailyStatsClass } from 'web/components/home/daily-stats'
 import { Pagination } from 'web/components/widgets/pagination'
-import { LoadingIndicator } from '../widgets/loading-indicator'
-import { db } from 'web/lib/supabase/db'
 import { getFormattedMappedValue } from 'common/pseudo-numeric'
 import { Table } from '../widgets/table'
-import { usePersistentLocalState } from 'web/hooks/use-persistent-local-state'
-import { useAPIGetter } from 'web/hooks/use-api-getter'
-import { ENV_CONFIG } from 'common/envs/constants'
-import { PortfolioMetrics } from 'common/portfolio-metrics'
-
+import { TRADE_TERM } from 'common/envs/constants'
+import { api } from 'web/lib/api/api'
+import { APIResponse } from 'common/api/schema'
+import { usePersistentInMemoryState } from 'client-common/hooks/use-persistent-in-memory-state'
+import { TokenNumber } from '../widgets/token-number'
+import { floatingEqual } from 'common/util/math'
 const DAILY_PROFIT_CLICK_EVENT = 'click daily profit button'
 
-export const DailyProfit = memo(function DailyProfit(props: {
+export const DailyProfit = function DailyProfit(props: {
   user: User | null | undefined
   isCurrentUser?: boolean
 }) {
   const { user } = props
-
-  const [cachedPortfolio, setCachedPortfolio] = usePersistentLocalState<
-    PortfolioMetrics | undefined
-  >(undefined, `portfolio-${user?.id}`)
-  const { data: fetchedPortfolio } = useAPIGetter(
-    'get-user-portfolio',
-    user
-      ? {
-          userId: user.id,
-        }
-      : undefined
-  )
-
-  const portfolio = fetchedPortfolio ?? cachedPortfolio
+  const [data, setData] = usePersistentInMemoryState<
+    APIResponse<'get-daily-changed-metrics-and-contracts'> | undefined
+  >(undefined, 'daily-profit-' + user?.id)
 
   useEffect(() => {
-    if (portfolio) setCachedPortfolio(portfolio)
-  }, [portfolio])
+    if (!user) return
+    api('get-daily-changed-metrics-and-contracts', {
+      limit: 24,
+      userId: user.id,
+      balance: Math.floor(user.balance),
+    }).then(setData)
+  }, [user?.balance])
 
-  const networth = portfolio
-    ? portfolio.investmentValue +
-      (user?.balance ?? 0) +
-      (user?.spiceBalance ?? 0)
-    : 0
+  const manaProfit = data?.manaProfit ?? 0
+  const manaInvestmentValue = data?.manaInvestmentValue ?? 0
+  const manaNetWorth = manaInvestmentValue + (data?.balance ?? 0)
 
-  const [open, setOpen] = useState(false)
-
-  const refreshContractMetrics = useCallback(async () => {
-    if (user)
-      return getUserContractMetricsByProfitWithContracts(user.id, db, 'day')
-  }, [user])
-
-  const [data, setData] = usePersistentLocalState<
-    { metrics: ContractMetric[]; contracts: CPMMContract[] } | undefined
-  >(undefined, `daily-profit-${user?.id}`)
-
+  const [openMana, setOpenMana] = useState(false)
   useEffect(() => {
-    if (open) refreshContractMetrics().then(setData)
-  }, [open, refreshContractMetrics, setData])
-
-  const dailyProfit = Math.round(
-    useMemo(() => {
-      if (!data) return 0
-      return sum(data.metrics.map((m) => m.from?.day.profit ?? 0))
-    }, [data])
-  )
-
-  if (!user) return <div />
+    if (openMana && !data && user) {
+      api('get-daily-changed-metrics-and-contracts', {
+        limit: 24,
+        userId: user.id,
+        balance: Math.floor(user.balance),
+      }).then(setData)
+    }
+  }, [user?.id, openMana])
 
   return (
     <>
-      <button
-        className={clsx(dailyStatsClass)}
-        onClick={withTracking(() => {
-          setOpen(true)
-        }, DAILY_PROFIT_CLICK_EVENT)}
-      >
-        <Row>
-          <Col className="items-center">
-            <div>
-              {portfolio
-                ? formatMoney(networth)
-                : `${ENV_CONFIG.moneyMoniker}----`}
-            </div>
-            <div className="text-ink-600 text-xs ">Net worth</div>
-          </Col>
+      <div className={clsx(dailyStatsClass)}>
+        <Row className="gap-2">
+          <button
+            onClick={withTracking(() => {
+              setOpenMana(true)
+            }, DAILY_PROFIT_CLICK_EVENT)}
+          >
+            <Row>
+              <TokenNumber
+                amount={data ? manaNetWorth : undefined}
+                // numberType="short"
+                isInline
+              />
 
-          {dailyProfit !== 0 && (
-            <span
-              className={clsx(
-                'ml-1 mt-1 text-xs',
-                dailyProfit >= 0 ? 'text-teal-600' : 'text-scarlet-600'
+              {!floatingEqual(manaProfit, 0) && (
+                <span
+                  className={clsx(
+                    'ml-1 mt-1 text-xs',
+                    manaProfit >= 0 ? 'text-teal-600' : 'text-scarlet-600'
+                  )}
+                >
+                  {manaProfit >= 0 ? '+' : '-'}
+                  {shortFormatNumber(Math.abs(manaProfit))}
+                </span>
               )}
-            >
-              {dailyProfit >= 0 ? '+' : '-'}
-              {shortFormatNumber(Math.abs(dailyProfit))}
-            </span>
-          )}
+            </Row>
+          </button>
         </Row>
-      </button>
-      {user && (
-        <DailyProfitModal
-          setOpen={setOpen}
-          open={open}
-          metrics={data?.metrics}
-          contracts={data?.contracts}
-          dailyProfit={dailyProfit}
-          investment={networth}
-        />
-      )}
+        <div className="text-ink-600 text-center text-xs ">Net worth</div>
+      </div>
+
+      <DailyProfitModal
+        setOpen={setOpenMana}
+        open={openMana}
+        metrics={data?.manaMetrics}
+        contracts={data?.contracts}
+        dailyProfit={manaProfit}
+        netWorth={manaNetWorth}
+        token="MANA"
+      />
     </>
   )
-})
+}
 
 export function DailyProfitModal(props: {
   open: boolean
   setOpen: (open: boolean) => void
   metrics?: ContractMetric[]
-  contracts?: CPMMContract[]
+  contracts?: MarketContract[]
   dailyProfit: number
-  investment: number
+  netWorth: number
+  token: ContractToken
 }) {
-  const { open, setOpen, metrics, contracts, dailyProfit, investment } = props
+  const { open, setOpen, metrics, contracts, dailyProfit, netWorth, token } =
+    props
 
   return (
     <Modal open={open} setOpen={setOpen} className={MODAL_CLASS} size={'lg'}>
       <Row className={'mx-2 justify-between'}>
         <Col>
           <span className={'ml-1'}>Your net worth</span>
-          <span className={'mb-1 text-2xl'}>{formatMoney(investment)}</span>
+          <span className={'mb-1 text-2xl'}>
+            {formatMoney(netWorth, token)}
+          </span>
         </Col>
         <Col>
           <span className={'ml-1'}>Profit today</span>
@@ -154,13 +136,13 @@ export function DailyProfitModal(props: {
             ) : (
               <ArrowUpIcon className={'mr-1 h-4 w-4 rotate-180 transform'} />
             )}
-            {formatMoney(dailyProfit)}
+            {formatMoney(dailyProfit, token)}
           </span>
         </Col>
       </Row>
 
       {!metrics || !contracts ? (
-        <LoadingIndicator />
+        <LoadingProfitRows />
       ) : (
         <ProfitChangeTable
           contracts={contracts}
@@ -168,20 +150,49 @@ export function DailyProfitModal(props: {
           from={'day'}
           rowsPerSection={5}
           showPagination={true}
+          token={token}
         />
       )}
     </Modal>
   )
 }
+function LoadingProfitRows() {
+  return (
+    <Col className=" w-full gap-2">
+      <LoadingProfitRow />
+      <LoadingProfitRow />
+      <LoadingProfitRow />
+      <LoadingProfitRow />
+      <LoadingProfitRow />
+    </Col>
+  )
+}
+
+function LoadingProfitRow() {
+  // You can add any UI inside Loading, including a Skeleton.
+  return (
+    <div className="border-ink-200 flex w-full animate-pulse border-b p-2 last:border-none sm:rounded-md sm:border-none">
+      <Row className="w-full  justify-between gap-1 sm:gap-4">
+        <Row className={clsx('sm:w-[calc(100%-12rem] w-full gap-2 sm:gap-4')}>
+          <div className="h-5 w-2/3 rounded-full bg-gray-500" />
+        </Row>
+        <div className="">
+          <div className="h-5 w-12 rounded-full bg-gray-500" />
+        </div>
+      </Row>
+    </div>
+  )
+}
 
 export function ProfitChangeTable(props: {
-  contracts: CPMMContract[]
+  contracts: MarketContract[]
   metrics: ContractMetric[]
   from: 'day' | 'week' | 'month'
   rowsPerSection: number
   showPagination: boolean
+  token: ContractToken
 }) {
-  const { metrics, from, rowsPerSection, showPagination } = props
+  const { metrics, from, rowsPerSection, showPagination, token } = props
   const [page, setPage] = useState(0)
   const currentSlice = page * rowsPerSection
 
@@ -215,7 +226,7 @@ export function ProfitChangeTable(props: {
   if (positive.length === 0 && negative.length === 0)
     return (
       <div className="text-ink-500 px-4">
-        No profit changes found. Return later after making a few bets.
+        No profit changes found. Return later after making a few {TRADE_TERM}s.
       </div>
     )
 
@@ -232,7 +243,7 @@ export function ProfitChangeTable(props: {
           {rows.map(([contract, profit]) => (
             <tr key={contract.id + 'mention'}>
               <MarketCell contract={contract} from={from} />
-              <ProfitCell profit={profit} />
+              <ProfitCell profit={profit} token={token} />
             </tr>
           ))}
         </tbody>
@@ -273,13 +284,13 @@ const MarketCell = (props: {
   )
 }
 
-const ProfitCell = (props: { profit: number }) => (
+const ProfitCell = (props: { profit: number; token: ContractToken }) => (
   <td
     className={clsx(
       'mx-2 min-w-[2rem] text-right',
       props.profit > 0 ? 'text-teal-600' : 'text-ink-600'
     )}
   >
-    {formatMoney(props.profit)}
+    {formatMoney(props.profit, props.token)}
   </td>
 )

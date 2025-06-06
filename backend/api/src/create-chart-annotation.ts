@@ -1,15 +1,18 @@
 import { z } from 'zod'
 import { MAX_ANSWER_LENGTH } from 'common/answer'
 import { APIError, authEndpoint, validate } from 'api/helpers/endpoint'
-import { log, getContractSupabase, getUser } from 'shared/utils'
+import {
+  log,
+  getContractSupabase,
+  getUser,
+  revalidateContractStaticProps,
+} from 'shared/utils'
 import { throwErrorIfNotMod } from 'shared/helpers/auth'
 import { MAX_ID_LENGTH } from 'common/group'
-import {
-  createSupabaseClient,
-  createSupabaseDirectClient,
-} from 'shared/supabase/init'
-import { getComment } from 'shared/supabase/contract_comments'
+import { createSupabaseDirectClient } from 'shared/supabase/init'
+import { getComment } from 'shared/supabase/contract-comments'
 import { richTextToString } from 'common/util/parse'
+import { broadcastNewChartAnnotation } from 'shared/websockets/helpers'
 
 const bodySchema = z
   .object({
@@ -43,8 +46,9 @@ export const createchartannotation = authEndpoint(async (req, auth) => {
 
   const creator = await getUser(auth.uid)
   if (!creator) throw new APIError(404, 'Your account was not found')
-  const db = createSupabaseClient()
-  const comment = commentId ? await getComment(db, commentId) : null
+  const pg = createSupabaseDirectClient()
+
+  const comment = commentId ? await getComment(pg, commentId) : null
 
   const text = passedText
     ? passedText.trim()
@@ -65,16 +69,15 @@ export const createchartannotation = authEndpoint(async (req, auth) => {
     probChange,
   })
 
-  const pg = createSupabaseDirectClient()
   const res = await pg.one(
     `
     insert into chart_annotations
         (contract_id, event_time, text, comment_id, external_url, thumbnail_url,
          creator_id, creator_name, creator_username, creator_avatar_url, answer_id,
-         user_username, user_avatar_url, user_name, user_id, prob_change
+         user_id, prob_change
          )
-        values ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16)
-    returning id
+        values ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)
+    returning *
         `,
     [
       contractId,
@@ -88,13 +91,13 @@ export const createchartannotation = authEndpoint(async (req, auth) => {
       creator.username,
       creator.avatarUrl,
       answerId,
-      comment?.userUsername ?? null,
-      comment?.userAvatarUrl ?? null,
-      comment?.userName ?? null,
       comment?.userId ?? null,
       probChange ?? null,
     ]
   )
+
+  broadcastNewChartAnnotation(contractId, res)
+  await revalidateContractStaticProps(contract)
 
   return { success: true, id: Number(res.id) }
 })

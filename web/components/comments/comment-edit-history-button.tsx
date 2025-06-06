@@ -7,7 +7,7 @@ import { Col } from 'web/components/layout/col'
 import { Title } from 'web/components/widgets/title'
 import { Content } from 'web/components/widgets/editor'
 import { LoadingIndicator } from 'web/components/widgets/loading-indicator'
-import { formatTimeShort } from 'web/lib/util/time'
+import { formatTimeShort } from 'client-common/lib/time'
 import { shortenedFromNow } from 'web/lib/util/shortenedFromNow'
 import { useIsClient } from 'web/hooks/use-is-client'
 import { DateTimeTooltip } from '../widgets/datetime-tooltip'
@@ -58,7 +58,7 @@ export const CommentEditHistoryButton = (props: { comment: Comment }) => {
       <DateTimeTooltip time={comment.editedTime} placement={'top'}>
         <button
           className={
-            'text-ink-400 hover:bg-ink-50 mx-1 inline-block whitespace-nowrap rounded px-0.5 text-sm'
+            'text-ink-500 hover:bg-ink-50 mx-1 inline-block whitespace-nowrap rounded px-0.5 text-sm'
           }
           onClick={() => setShowEditHistory(true)}
         >

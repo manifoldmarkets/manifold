@@ -1,12 +1,11 @@
-import { db } from './db'
-import { run, selectFrom } from 'common/supabase/utils'
+import { run } from 'common/supabase/utils'
 import { type User } from 'common/user'
-import { APIError, api } from '../firebase/api'
+import { APIError, api } from '../api/api'
 import { DAY_MS, WEEK_MS } from 'common/util/time'
 import { HIDE_FROM_LEADERBOARD_USER_IDS } from 'common/envs/constants'
-export type { DisplayUser } from 'common/api/user-types'
-
-const defaultFields = ['id', 'name', 'username', 'avatarUrl'] as const
+import type { DisplayUser } from 'common/api/user-types'
+import { db } from './db'
+export type { DisplayUser }
 
 export async function getUserById(id: string) {
   return api('user/by-id/:id/lite', { id })
@@ -24,13 +23,23 @@ export async function getFullUserById(id: string) {
   return api('user/by-id/:id', { id })
 }
 
-export function getUserSafe(userId: string) {
-  return getFullUserById(userId).catch((e: unknown) => {
+export async function getUserSafe(userId: string) {
+  try {
+    return await getFullUserById(userId)
+  } catch (e) {
     if (e instanceof APIError && e.code === 404) {
       return null
     }
     throw e
-  })
+  }
+}
+
+export async function getPrivateUserSafe() {
+  try {
+    return await api('me/private')
+  } catch (e) {
+    return null
+  }
 }
 
 export async function searchUsers(prompt: string, limit: number) {
@@ -38,15 +47,14 @@ export async function searchUsers(prompt: string, limit: number) {
 }
 
 export async function getDisplayUsers(userIds: string[]) {
-  // note: random order
   const { data } = await run(
-    selectFrom(db, 'users', ...defaultFields, 'isBannedFromPosting').in(
-      'id',
-      userIds
-    )
+    db
+      .from('users')
+      .select(`id, name, username, data->avatarUrl, data->isBannedFromPosting`)
+      .in('id', userIds)
   )
 
-  return data
+  return data as unknown as DisplayUser[]
 }
 
 // leaderboards
@@ -66,37 +74,12 @@ export async function getCreatorRank(userId: string) {
   return data
 }
 
-export async function getTopTraders() {
-  // add extra for @acc, excluded users
-  const { data } = await run(db.rpc('profit_leaderboard', { limit_n: 25 }))
-  return data
-}
-
-export async function getTopCreators() {
-  const { data } = await run(db.rpc('creator_leaderboard', { limit_n: 20 }))
-  return data
-}
-
-export async function getTopUserCreators(
-  userId: string,
-  excludedUserIds: string[],
-  limit: number
-) {
-  const { data } = await run(
-    db.rpc('top_creators_for_user', {
-      uid: userId,
-      excluded_ids: excludedUserIds,
-      limit_n: limit,
-    })
-  )
-  return data
-}
-
-export const getTotalContractsCreated = async (userId: string) => {
+export const getTotalPublicContractsCreated = async (userId: string) => {
   const { count } = await run(
     db
-      .from('public_contracts')
+      .from('contracts')
       .select('*', { head: true, count: 'exact' })
+      .eq('visibility', 'public')
       .eq('creator_id', userId)
   )
   return count
@@ -116,8 +99,9 @@ export const getContractsCreatedProgress = async (
 
   const { count } = await run(
     db
-      .from('public_contracts')
+      .from('contracts')
       .select('*', { head: true, count: 'exact' })
+      .eq('visibility', 'public')
       .eq('creator_id', userId)
       .gte('created_time', startIsoString)
       .lt('created_time', endIsoString)

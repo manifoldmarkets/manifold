@@ -16,6 +16,7 @@ import { useIsAuthorized } from 'web/hooks/use-user'
 import { formatPercent } from 'common/util/format'
 import { Input } from 'web/components/widgets/input'
 import { Contract } from 'common/contract'
+import { TRADED_TERM } from 'common/envs/constants'
 
 function getMostRecentViewMillis(view: rowfor<'user_contract_views'>) {
   return Math.max(
@@ -52,10 +53,10 @@ export default function Journeys() {
     )
     .map((u) => u.id)
   const likelySpammers = unBannedUsers.filter((u) =>
-    isUserLikelySpammer(u, userIdsThatBet.includes(u.id))
+    isUserLikelySpammer(u, userIdsThatBet.includes(u.id), false)
   )
   const unlikelySpammers = unBannedUsers.filter(
-    (u) => !isUserLikelySpammer(u, userIdsThatBet.includes(u.id))
+    (u) => !isUserLikelySpammer(u, userIdsThatBet.includes(u.id), false)
   )
   const referrers = unBannedUsers.filter((u) => u.referredByUserId)
 
@@ -156,10 +157,10 @@ export default function Journeys() {
           </Button>
         </Row>
         <Row>
-          Fraction of (likely real) users that bet:{' '}
+          Fraction of (likely real) users that {TRADED_TERM}:{' '}
           {(userIdsThatBet.length / unlikelySpammers.length).toPrecision(2)}. If
           a user is highlighted in yellow, they're likely a spammer. If they're
-          highlighted in green, they've bet.
+          highlighted in green, they've {TRADED_TERM}.
         </Row>
         <table>
           <thead>

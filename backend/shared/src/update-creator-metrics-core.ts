@@ -4,12 +4,11 @@ import {
   SupabaseDirectClient,
 } from 'shared/supabase/init'
 import { log } from 'shared/utils'
-import { User } from 'common/user'
 
 import { buildArray } from 'common/util/array'
-import { bulkInsert, bulkUpdate } from 'shared/supabase/utils'
-import { removeUndefinedProps } from 'common/util/object'
-export const CREATOR_UPDATE_FREQUENCY = 13
+import { bulkInsert, bulkUpdateData } from 'shared/supabase/utils'
+import { chunk } from 'lodash'
+export const CREATOR_UPDATE_FREQUENCY = 57
 export async function updateCreatorMetricsCore() {
   const now = Date.now()
   const yesterday = now - DAY_MS
@@ -17,15 +16,14 @@ export async function updateCreatorMetricsCore() {
   const monthAgo = now - DAY_MS * 30
   const pg = createSupabaseDirectClient()
   log('Loading active creators...')
-  // TODO: Once we've computed scores for all old market creators, we could focus just on the ones with open markets
   const allActiveUserIds = await pg.map(
     `
       select contracts.creator_id, latest_cph.ts
       from (
         select distinct creator_id
         from contracts
-        where outcome_type != 'POLL'
---         and close_time > now() - interval '1 month'
+        where outcome_type != 'POLL' and outcome_type != 'BOUNTY'
+        and close_time > now() - interval '1 week'
       ) contracts
         left join lateral (
         select ts
@@ -55,7 +53,7 @@ export async function updateCreatorMetricsCore() {
         sum((contracts.data->'collectedFees'->'creatorFee')::numeric) as fees_earned
         from contracts
         where creator_id in ($1:list)
-        and contracts.outcome_type != 'POLL'
+        and contracts.outcome_type != 'POLL' and contracts.outcome_type != 'BOUNTY'
         group by creator_id
     `,
     [activeUserIds],
@@ -76,23 +74,17 @@ export async function updateCreatorMetricsCore() {
     weekAgo,
     monthAgo
   )
-  const activeUsers = await pg.map(
-    `select data from users where id in ($1:list)`,
-    [activeUserIds],
-    (r) => r.data as User
-  )
-  const userUpdates = activeUsers
-    .filter((u) => Object.keys(creatorTraders).includes(u.id))
-    .map((user) => ({
-      ...user,
-      creatorTraders: {
-        ...creatorTraders[user.id],
-        allTime:
-          creatorPortfolioUpdates.find((c) => c.user_id === user.id)
-            ?.unique_bettors ?? 0,
-      },
-    }))
-
+  const userUpdates = Object.entries(creatorTraders).map(([id, traders]) => ({
+    id,
+    creatorTraders: {
+      ...traders,
+      allTime:
+        creatorPortfolioUpdates.find((c) => c.user_id === id)?.unique_bettors ??
+        0,
+    },
+  }))
+  const chunkSize = 50
+  const userUpdateChunks = chunk(userUpdates, chunkSize)
   log('Writing updates and inserts...')
   await Promise.all(
     buildArray(
@@ -102,14 +94,10 @@ export async function updateCreatorMetricsCore() {
           .then(() =>
             log('Finished creating Supabase portfolio history entries...')
           ),
-      bulkUpdate(
-        pg,
-        'users',
-        ['id'],
-        userUpdates.map((u) => ({
-          id: u.id,
-          data: `${JSON.stringify(removeUndefinedProps(u))}::jsonb`,
-        }))
+      Promise.all(
+        userUpdateChunks.map(async (chunk) =>
+          bulkUpdateData(pg, 'users', chunk)
+        )
       )
         .catch((e) => log.error('Error bulk writing user updates', e))
         .then(() => log('Committed Firestore writes.'))
@@ -159,7 +147,7 @@ const getCreatorTraders = async (
        from contracts as c
           join contract_traders as ct on c.id = ct.contract_id
        where c.creator_id in ($1:list)
-       and c.outcome_type != 'POLL'
+       and c.outcome_type != 'POLL' and c.outcome_type != 'BOUNTY'
        group by c.creator_id`,
       [userIds, new Date(since).toISOString()],
       (r) => [r.creator_id as string, r.total as number]

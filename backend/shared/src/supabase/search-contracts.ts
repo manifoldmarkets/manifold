@@ -1,4 +1,4 @@
-import { Contract } from 'common/contract'
+import { Contract, isSportsContract } from 'common/contract'
 import { createSupabaseDirectClient } from 'shared/supabase/init'
 import {
   from,
@@ -16,41 +16,65 @@ import {
 import { getContractPrivacyWhereSQLFilter } from 'shared/supabase/contracts'
 import { PROD_MANIFOLD_LOVE_GROUP_SLUG } from 'common/envs/constants'
 import { constructPrefixTsQuery } from 'shared/helpers/search'
-import { buildArray } from 'common/util/array'
+import { buildArray, filterDefined } from 'common/util/array'
 import {
   buildUserInterestsCache,
   userIdsToAverageTopicConversionScores,
 } from 'shared/topic-interests'
-import { log } from 'shared/utils'
+import { contractColumnsToSelectWithPrefix, log } from 'shared/utils'
 import { PrivateUser } from 'common/user'
-import { FEED_CARD_CONVERSION_PRIOR } from 'common/feed'
+import { GROUP_SCORE_PRIOR } from 'common/feed'
+import { tsToMillis } from 'common/supabase/utils'
+import { answerCostTiers, getTierIndexFromLiquidity } from 'common/tier'
 
 const DEFAULT_THRESHOLD = 1000
-const DEBUG = false
-
+type TokenInputType = 'CASH' | 'MANA' | 'ALL' | 'CASH_AND_MANA'
 let importanceScoreThreshold: number | undefined = undefined
 let freshnessScoreThreshold: number | undefined = undefined
 
+type SharedSearchArgs = {
+  filter: string
+  contractType: string
+  limit: number
+  offset: number
+  sort: string
+  token: TokenInputType
+  creatorId?: string
+  uid?: string
+  hasBets?: string
+  liquidity?: number
+  isPrizeMarket?: boolean
+}
+
 export async function getForYouSQL(
-  userId: string,
-  filter: string,
-  contractType: string,
-  limit: number,
-  offset: number,
-  sort: 'score' | 'freshness-score',
-  isPrizeMarket: boolean,
-  privateUser?: PrivateUser,
-  threshold: number = DEFAULT_THRESHOLD
+  args: SharedSearchArgs & {
+    uid: string
+    privateUser?: PrivateUser
+    threshold?: number
+  }
 ) {
+  const {
+    limit,
+    offset,
+    sort,
+    privateUser,
+    threshold = DEFAULT_THRESHOLD,
+    hasBets,
+  } = args
+
+  const userId = args.uid
+  // const userId = 'hqdXgp0jK2YMMhPs067eFK4afEH3' // Eliza
+  // if (process.platform === 'darwin') {
+  //   userId = await loadRandomUser()
+  //   log('Searching for random user id:', userId)
+  // }
+
+  const sortByScore = sort === 'score' ? 'importance_score' : 'freshness_score'
   if (
     importanceScoreThreshold === undefined ||
     freshnessScoreThreshold === undefined
-  )
+  ) {
     await loadScoreThresholds(threshold)
-  const sortByScore = sort === 'score' ? 'importance_score' : 'freshness_score'
-  if (DEBUG && process.platform === 'darwin') {
-    userId = await loadRandomUser()
-    log('Searching for random user id:', userId)
   }
 
   if (
@@ -62,25 +86,14 @@ export async function getForYouSQL(
   if (
     !Object.keys(userIdsToAverageTopicConversionScores[userId] ?? {}).length
   ) {
-    log('No topic interests found for user', userId)
-    return renderSql(
-      select(
-        `data, importance_score, conversion_score, freshness_score, view_count`
-      ),
-      from('contracts'),
-      orderBy(`${sortByScore} desc`),
-      getSearchContractWhereSQL({
-        filter,
-        contractType,
-        uid: userId,
-        hideStonks: true,
-        isPrizeMarket,
-      }),
-      privateUserBlocksSql(privateUser),
-      lim(limit, offset)
-    )
+    return basicSearchSQL({
+      ...args,
+      uid: userId,
+      privateUser,
+    })
   }
-
+  const userBetsJoin = hasBets === '1' && userId && userBetsJoinSql
+  const GROUP_SCORE_POWER = 4
   const forYou = renderSql(
     buildArray(
       select(
@@ -107,12 +120,10 @@ export async function getForYouSQL(
         `user_follows as (select follow_id from user_follows where user_id = $1)`,
         [userId]
       ),
+      userBetsJoin,
       getSearchContractWhereSQL({
-        filter,
-        contractType,
-        uid: userId,
+        ...args,
         hideStonks: true,
-        isPrizeMarket,
       }),
       offset <= threshold / 2 &&
         sort === 'score' &&
@@ -127,31 +138,43 @@ export async function getForYouSQL(
       // If user has contract-topic scores, use ONLY the defined topic scores when ranking
       // If the user has no contract-matching topic score, use only the contract's importance score
       orderBy(`case
+      when bool_or(contracts.boosted) then avg(contracts.${sortByScore})
       when bool_or(uti.avg_conversion_score is not null)
-      then avg(coalesce(uti.avg_conversion_score, ${FEED_CARD_CONVERSION_PRIOR}) * contracts.${sortByScore})
-      else avg(contracts.${sortByScore}*${FEED_CARD_CONVERSION_PRIOR})
+      then avg(power(coalesce(uti.avg_conversion_score, ${GROUP_SCORE_PRIOR}), ${GROUP_SCORE_POWER}) * contracts.${sortByScore})
+      else avg(contracts.${sortByScore}*${GROUP_SCORE_PRIOR})
       end * (1 + case
       when bool_or(contracts.creator_id = any(select follow_id from user_follows)) then 0.2
       else 0.0
-      end) 
+      end)
       desc`)
     )
   )
   return forYou
 }
 
-export const hasGroupAccess = async (groupId?: string, uid?: string) => {
-  const pg = createSupabaseDirectClient()
-  if (!groupId) return undefined
-  return await pg
-    .one('select * from check_group_accessibility($1,$2)', [
-      groupId,
-      uid ?? null,
-    ])
-    .then((r: any) => {
-      return r.check_group_accessibility
-    })
+export const basicSearchSQL = (
+  args: SharedSearchArgs & {
+    privateUser?: PrivateUser
+  }
+) => {
+  const { sort, privateUser, ...rest } = args
+  const sortByScore = sort === 'score' ? 'importance_score' : 'freshness_score'
+  const userBetsJoin = args.hasBets === '1' && args.uid && userBetsJoinSql
+  const sql = renderSql(
+    select(contractColumnsToSelectWithPrefix('contracts')),
+    from('contracts'),
+    userBetsJoin,
+    orderBy(`${sortByScore} desc`),
+    getSearchContractWhereSQL({
+      ...rest,
+      hideStonks: true,
+    }),
+    privateUserBlocksSql(privateUser),
+    lim(args.limit, args.offset)
+  )
+  return sql
 }
+
 export type SearchTypes =
   | 'without-stopwords'
   | 'with-stopwords'
@@ -159,22 +182,15 @@ export type SearchTypes =
   | 'prefix'
   | 'answer'
 
-export function getSearchContractSQL(args: {
-  term: string
-  filter: string
-  sort: string
-  contractType: string
-  offset: number
-  limit: number
-  groupId?: string
-  creatorId?: string
-  uid?: string
-  groupAccess?: boolean
-  isForYou?: boolean
-  searchType: SearchTypes
-  isPolitics?: boolean
-  isPrizeMarket?: boolean
-}) {
+export function getSearchContractSQL(
+  args: SharedSearchArgs & {
+    term: string
+    groupId?: string
+    isForYou?: boolean
+    searchType: SearchTypes
+    groupIds?: string[]
+  }
+) {
   const {
     term,
     sort,
@@ -183,7 +199,11 @@ export function getSearchContractSQL(args: {
     groupId,
     creatorId,
     searchType,
-    isPolitics,
+    token,
+    groupIds,
+    filter,
+    uid,
+    hasBets,
   } = args
   const hideStonks = sort === 'score' && !term.length && !groupId
   const hideLove = sort === 'newest' && !term.length && !groupId && !creatorId
@@ -193,7 +213,7 @@ export function getSearchContractSQL(args: {
   if (isUrl) {
     const slug = term.split('/').pop()
     return renderSql(
-      select('data, importance_score, view_count'),
+      select(contractColumnsToSelectWithPrefix('contracts')),
       from('contracts'),
       whereSql,
       where('slug = $1', [slug])
@@ -203,44 +223,89 @@ export function getSearchContractSQL(args: {
   const answersSubQuery = renderSql(
     select('distinct a.contract_id'),
     from('answers a'),
-    where(`a.text_fts @@ websearch_to_tsquery('english', $1)`, [term])
+    where(`a.text_fts @@ websearch_to_tsquery('english_extended', $1)`, [term])
   )
 
+  const groupsFilter =
+    (groupIds?.length || groupId) &&
+    where(
+      `
+    exists (
+      select 1 from group_contracts gc 
+      where ${
+        token === 'CASH'
+          ? "gc.contract_id = contracts.data->>'siblingContractId'"
+          : 'gc.contract_id = contracts.id'
+      }
+      and gc.group_id = any($1)
+    )`,
+      [filterDefined([groupId, ...(groupIds ?? [])])]
+    )
+
+  // Recent movements filter
+  const newsFilter =
+    filter === 'news' &&
+    withClause(
+      `recent_movements as (
+        select distinct contract_id
+        from contract_movement_notifications
+        where created_time > now() - interval '72 hours'
+      )`
+    )
+
+  const newsJoin =
+    filter === 'news' &&
+    join(`recent_movements rm on rm.contract_id = contracts.id`)
+
+  const newsWhere =
+    filter === 'news' &&
+    term === '' &&
+    where(`coalesce(contracts.data->>'isRanked', 'true')::boolean = true`)
+
+  const userBetsJoin = hasBets === '1' && uid && userBetsJoinSql
   // Normal full text search
-  return renderSql(
-    select('data, importance_score, view_count'),
+  const sql = renderSql(
+    select(contractColumnsToSelectWithPrefix('contracts')),
     from('contracts'),
-    groupId && [
-      join('group_contracts gc on gc.contract_id = contracts.id'),
-      where('gc.group_id = $1', [groupId]),
-    ],
+    groupsFilter,
+    newsFilter,
+    newsJoin,
+    newsWhere,
+    userBetsJoin,
     searchType === 'answer' &&
       join(
         `(${answersSubQuery}) as matched_answers on matched_answers.contract_id = contracts.id`
       ),
 
     whereSql,
-    isPolitics && where('is_politics = true'),
     term.length && [
       searchType === 'prefix' &&
         where(
-          `question_fts @@ to_tsquery('english', $1)`,
+          `question_fts @@ to_tsquery('english_extended', $1)`,
           constructPrefixTsQuery(term)
         ),
       searchType === 'without-stopwords' &&
-        where(`question_fts @@ websearch_to_tsquery('english', $1)`, term),
+        where(
+          `question_fts @@ websearch_to_tsquery('english_extended', $1)`,
+          term
+        ),
       searchType === 'with-stopwords' &&
         where(
           `question_nostop_fts @@ websearch_to_tsquery('english_nostop_with_prefix', $1)`,
           term
         ),
       searchType === 'description' &&
-        where(`description_fts @@ websearch_to_tsquery('english', $1)`, term),
+        where(
+          `description_fts @@ websearch_to_tsquery('english_extended', $1)`,
+          term
+        ),
     ],
 
     orderBy(getSearchContractSortSQL(sort)),
     sqlLimit(limit, offset)
   )
+  // log('Search SQL:', sql)
+  return sql
 }
 
 function getSearchContractWhereSQL(args: {
@@ -249,11 +314,12 @@ function getSearchContractWhereSQL(args: {
   contractType: string
   creatorId?: string
   uid?: string
-  groupId?: string
-  hasGroupAccess?: boolean
   hideStonks?: boolean
   hideLove?: boolean
   isPrizeMarket?: boolean
+  token: TokenInputType
+  liquidity?: number
+  hasBets?: string
 }) {
   const {
     filter,
@@ -261,21 +327,23 @@ function getSearchContractWhereSQL(args: {
     contractType,
     creatorId,
     uid,
-    groupId,
-    hasGroupAccess,
     hideStonks,
     hideLove,
     isPrizeMarket,
+    token,
+    liquidity,
+    hasBets,
   } = args
-
   type FilterSQL = Record<string, string>
   const filterSQL: FilterSQL = {
     open: 'resolution_time IS NULL AND (close_time > NOW() or close_time is null)',
     closed: 'close_time < NOW() AND resolution_time IS NULL',
-    // Include an extra day to capture markets that close on the first of the month. Add 7 hours to shift UTC time zone to PT.
-    'closing-this-month': `close_time > now() AND close_time < (date_trunc('month', now()) + interval '1 month' + interval '1 day' + interval '7 hours') AND resolution_time IS NULL`,
-    'closing-next-month': `close_time > ((date_trunc('month', now()) + interval '1 month') + interval '1 day' + interval '7 hours') AND close_time < (date_trunc('month', now()) + interval '2 month' + interval '1 day' + interval '7 hours') AND resolution_time IS NULL`,
+    'closing-day': `close_time > now() AND close_time < (now() + interval '1 day' + interval '7 hours') AND resolution_time IS NULL`,
+    'closing-week': `close_time > now() AND close_time < (now() + interval '7 days' + interval '7 hours') AND resolution_time IS NULL`,
+    'closing-month': `close_time > now() AND close_time < (now() + interval '30 days' + interval '7 hours') AND resolution_time IS NULL`,
+    'closing-90-days': `close_time > now() AND close_time < (now() + interval '90 days' + interval '7 hours') AND resolution_time IS NULL`,
     resolved: 'resolution_time IS NOT NULL',
+    news: '', // News filter uses a different approach with a join
     all: '',
   }
   const contractTypeFilter =
@@ -284,7 +352,7 @@ function getSearchContractWhereSQL(args: {
       : contractType === 'MULTIPLE_CHOICE'
       ? `outcome_type = 'FREE_RESPONSE' OR outcome_type = 'MULTIPLE_CHOICE'`
       : contractType === 'PSEUDO_NUMERIC'
-      ? `outcome_type = 'PSEUDO_NUMERIC' OR outcome_type = 'NUMBER'`
+      ? `outcome_type = 'PSEUDO_NUMERIC' OR outcome_type = 'NUMBER' OR outcome_type = 'MULTI_NUMERIC'`
       : `outcome_type = '${contractType}'`
 
   const stonkFilter =
@@ -296,14 +364,34 @@ function getSearchContractWhereSQL(args: {
   const creatorFilter = creatorId ? `creator_id = '${creatorId}'` : ''
   const visibilitySQL = getContractPrivacyWhereSQLFilter(
     uid,
-    creatorId,
-    groupId,
-    hasGroupAccess
+    'contracts.id',
+    creatorId
   )
-
+  const answerLiquidity =
+    answerCostTiers[getTierIndexFromLiquidity(liquidity ?? 0)]
+  const liquidityFilter = liquidity
+    ? `(
+    CASE
+        WHEN mechanism = 'cpmm-multi-1' AND jsonb_typeof(contracts.data->'answers') = 'array' AND jsonb_array_length(contracts.data->'answers') > 0
+        THEN (coalesce((contracts.data->>'totalLiquidity')::numeric, 0) / jsonb_array_length(contracts.data->'answers'))
+        ELSE coalesce((contracts.data->>'totalLiquidity')::numeric, 0)
+    END
+  ) >= case when mechanism = 'cpmm-multi-1' then ${answerLiquidity} else ${liquidity} end`
+    : ''
   const deletedFilter = `deleted = false`
 
   const isPrizeMarketFilter = isPrizeMarket ? 'is_spice_payout = true' : ''
+  // User bets filter
+  const userBetsWhere =
+    hasBets === '1' && uid && where('cm.user_id = $1', [uid])
+  const tokenFilter =
+    token === 'CASH'
+      ? `token = 'CASH'`
+      : token === 'MANA'
+      ? `token = 'MANA'`
+      : token === 'CASH_AND_MANA'
+      ? `contracts.data->>'siblingContractId' is not null`
+      : ''
 
   return [
     where(filterSQL[filter]),
@@ -311,10 +399,13 @@ function getSearchContractWhereSQL(args: {
     where(loveFilter, [[PROD_MANIFOLD_LOVE_GROUP_SLUG]]),
     where(sortFilter),
     where(contractTypeFilter),
+    where(liquidityFilter),
     where(visibilitySQL),
     where(creatorFilter),
     where(deletedFilter),
     where(isPrizeMarketFilter),
+    where(tokenFilter),
+    userBetsWhere,
   ]
 }
 
@@ -328,13 +419,13 @@ type SortFields = Record<
 >
 export const sortFields: SortFields = {
   score: {
-    sql: `importance_score::numeric desc, (data->>'uniqueBettorCount')::integer`,
+    sql: `importance_score::numeric desc, unique_bettor_count`,
     sortCallback: (c: Contract) =>
       c.importanceScore > 0 ? c.importanceScore : c.uniqueBettorCount,
     order: 'DESC',
   },
   'daily-score': {
-    sql: "(data->>'dailyScore')::numeric",
+    sql: 'daily_score',
     sortCallback: (c: Contract) => c.dailyScore,
     order: 'DESC',
   },
@@ -344,17 +435,17 @@ export const sortFields: SortFields = {
     order: 'DESC',
   },
   '24-hour-vol': {
-    sql: "(data->>'volume24Hours')::numeric",
+    sql: "(contracts.data->>'volume24Hours')::numeric",
     sortCallback: (c: Contract) => c.volume24Hours,
     order: 'DESC',
   },
   liquidity: {
-    sql: "(data->>'elasticity')::numeric",
+    sql: "(contracts.data->>'elasticity')::numeric",
     sortCallback: (c: Contract) => c.elasticity,
     order: 'ASC',
   },
   subsidy: {
-    sql: "COALESCE((data->>'totalLiquidity')::numeric, 0)",
+    sql: "COALESCE((contracts.data->>'totalLiquidity')::numeric, 0)",
     sortCallback: (c: Contract) =>
       c.mechanism === 'cpmm-1' || c.mechanism === 'cpmm-multi-1'
         ? c.totalLiquidity
@@ -363,12 +454,12 @@ export const sortFields: SortFields = {
   },
 
   'last-updated': {
-    sql: "(data->>'lastUpdatedTime')::numeric",
+    sql: 'last_updated_time',
     sortCallback: (c: Contract) => c.lastUpdatedTime,
     order: 'DESC',
   },
   'most-popular': {
-    sql: "(data->>'uniqueBettorCount')::integer",
+    sql: 'unique_bettor_count',
     sortCallback: (c: Contract) => c.uniqueBettorCount,
     order: 'DESC',
   },
@@ -387,23 +478,32 @@ export const sortFields: SortFields = {
     sortCallback: (c: Contract) => c.closeTime ?? Infinity,
     order: 'ASC',
   },
+  'start-time': {
+    // sql: `close_time`,
+    sql: `coalesce((contracts.data->>'sportsStartTimestamp')::timestamp with time zone, close_time)`,
+    sortCallback: (c: Contract) =>
+      isSportsContract(c)
+        ? tsToMillis(c.sportsStartTimestamp)
+        : c.closeTime ?? Infinity,
+    order: 'ASC',
+  },
   random: {
     sql: 'random()',
     sortCallback: () => Math.random(),
     order: 'DESC',
   },
   'bounty-amount': {
-    sql: "COALESCE((data->>'bountyLeft')::numeric, -1)",
+    sql: "COALESCE((contracts.data->>'bountyLeft')::numeric, -1)",
     sortCallback: (c: Contract) => ('bountyLeft' in c && c.bountyLeft) || -1,
     order: 'DESC',
   },
   'prob-descending': {
-    sql: "resolution DESC, (data->>'p')::numeric",
+    sql: "resolution DESC, (contracts.data->>'p')::numeric",
     sortCallback: (c: Contract) => ('p' in c && c.p) || 0,
     order: 'DESC NULLS LAST',
   },
   'prob-ascending': {
-    sql: "resolution DESC, (data->>'p')::numeric",
+    sql: "resolution DESC, (contracts.data->>'p')::numeric",
     sortCallback: (c: Contract) => ('p' in c && c.p) || 0,
     order: 'ASC',
   },
@@ -479,3 +579,7 @@ export const privateUserBlocksSql = (privateUser?: PrivateUser) => {
     blockedGroupSlugs.length > 0 && where(`not exists (${blockedGroupsQuery})`)
   )
 }
+
+const userBetsJoinSql = join(
+  `user_contract_metrics cm on cm.contract_id = contracts.id and cm.answer_id is null and cm.has_shares`
+)

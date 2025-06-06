@@ -1,19 +1,22 @@
-import { APIHandler } from './helpers/endpoint'
-import { FieldValue } from 'firebase-admin/firestore'
-import * as firebase from 'firebase-admin'
+import { APIError, APIHandler } from './helpers/endpoint'
 import { followUserInternal } from './follow-user'
+import { FieldVal } from 'shared/supabase/utils'
+import { createSupabaseDirectClient } from 'shared/supabase/init'
+import { updatePrivateUser } from 'shared/supabase/users'
 
 export const blockUser: APIHandler<'user/by-id/:id/block'> = async (
   { id },
   auth
 ) => {
-  const privateUsers = firestore.collection('private-users')
-  await firestore.runTransaction(async (trans) => {
-    trans.update(privateUsers.doc(auth.uid), {
-      blockedUserIds: FieldValue.arrayUnion(id),
+  if (auth.uid === id) throw new APIError(400, 'You cannot block yourself')
+
+  const pg = createSupabaseDirectClient()
+  await pg.tx(async (tx) => {
+    await updatePrivateUser(tx, auth.uid, {
+      blockedUserIds: FieldVal.arrayConcat(id),
     })
-    trans.update(privateUsers.doc(id), {
-      blockedByUserIds: FieldValue.arrayUnion(auth.uid),
+    await updatePrivateUser(tx, id, {
+      blockedByUserIds: FieldVal.arrayConcat(auth.uid),
     })
   })
 
@@ -24,16 +27,13 @@ export const unblockUser: APIHandler<'user/by-id/:id/unblock'> = async (
   { id },
   auth
 ) => {
-  const privateUsers = firestore.collection('private-users')
-
-  await firestore.runTransaction(async (trans) => {
-    trans.update(privateUsers.doc(auth.uid), {
-      blockedUserIds: FieldValue.arrayRemove(id),
+  const pg = createSupabaseDirectClient()
+  await pg.tx(async (tx) => {
+    await updatePrivateUser(tx, auth.uid, {
+      blockedUserIds: FieldVal.arrayRemove(id),
     })
-    trans.update(privateUsers.doc(id), {
-      blockedByUserIds: FieldValue.arrayRemove(auth.uid),
+    await updatePrivateUser(tx, id, {
+      blockedByUserIds: FieldVal.arrayRemove(auth.uid),
     })
   })
 }
-
-const firestore = firebase.firestore()

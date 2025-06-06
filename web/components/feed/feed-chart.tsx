@@ -1,13 +1,11 @@
 import { BinaryContract } from 'common/contract'
 import { useEffect, useState } from 'react'
-import { BinaryChart } from '../contract/contract-overview'
 import { DAY_MS } from 'common/util/time'
 import PlaceholderGraph from 'web/lib/icons/placeholder-graph.svg'
-import { usePersistentInMemoryState } from 'web/hooks/use-persistent-in-memory-state'
-import { getBetPoints } from 'common/supabase/bets'
-import { db } from 'web/lib/supabase/db'
-import { maxBy, minBy } from 'lodash'
+import { usePersistentInMemoryState } from 'client-common/hooks/use-persistent-in-memory-state'
 import { buildArray } from 'common/util/array'
+import { SizedBinaryChart } from '../charts/contract/binary'
+import { getBetPoints } from 'common/bets'
 
 // defaults to the previous day, unless you set a startDate
 export function FeedBinaryChart(props: {
@@ -15,7 +13,7 @@ export function FeedBinaryChart(props: {
   startDate?: number
   className?: string
 }) {
-  const { contract, className, startDate } = props
+  const { contract, className } = props
 
   const [points, setPoints] = usePersistentInMemoryState<
     { x: number; y: number }[] | null | undefined
@@ -23,13 +21,12 @@ export function FeedBinaryChart(props: {
 
   // cache the current time so we don't re-render the chart every time
   const [now] = useState(Date.now())
-  const startingDate = startDate ? startDate : now - DAY_MS
-
+  const startDate = props.startDate ?? now - DAY_MS
   useEffect(() => {
-    getBetPoints(db, contract.id, {
+    getBetPoints(contract.id, {
       limit: 1000,
       filterRedemptions: true,
-      afterTime: startingDate,
+      afterTime: startDate,
     }).then((points) => {
       if (points.length > 0)
         setPoints(
@@ -41,19 +38,16 @@ export function FeedBinaryChart(props: {
     })
   }, [startDate, contract.id])
 
-  const max = maxBy(points, 'y')?.y ?? 1
-  const min = minBy(points, 'y')?.y ?? 0
-
-  const percentBounds = { max, min }
-
   if (points && points.length > 0 && !!points[0]) {
     return (
-      <BinaryChart
+      <SizedBinaryChart
         betPoints={points}
         contract={contract}
-        percentBounds={percentBounds}
+        zoomY
         className={className}
         size={'sm'}
+        noWatermark
+        startTime={startDate}
       />
     )
   }

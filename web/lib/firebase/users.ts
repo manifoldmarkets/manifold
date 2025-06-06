@@ -1,65 +1,29 @@
 import { Contract } from 'common/contract'
 import {
-  isVerified,
+  humanish,
   MINUTES_ALLOWED_TO_REFER,
   PrivateUser,
   User,
-  UserAndPrivateUser,
 } from 'common/user'
 import dayjs from 'dayjs'
 import utc from 'dayjs/plugin/utc'
 import {
   GoogleAuthProvider,
   OAuthProvider,
-  getAuth,
   signInWithPopup,
 } from 'firebase/auth'
-import { doc, getDoc, updateDoc } from 'firebase/firestore'
 import { getIsNative } from 'web/lib/native/is-native'
 import { nativeSignOut } from 'web/lib/native/native-messages'
-import { safeLocalStorage } from '../util/local'
-import { api, referUser } from './api'
-import { app } from './init'
-import { coll, listenForValue } from './utils'
-import { removeUndefinedProps } from 'common/util/object'
 import { postMessageToNative } from 'web/lib/native/post-message'
-
+import { getFirebaseAuth } from './auth'
 dayjs.extend(utc)
-
-export const users = coll<User>('users')
-export const privateUsers = coll<PrivateUser>('private-users')
+import { safeLocalStorage } from '../util/local'
+import { api } from '../api/api'
+import { removeUndefinedProps } from 'common/util/object'
 
 export type { User }
 
-export const auth = getAuth(app)
-
-export async function getPrivateUser(userId: string) {
-  return (await getDoc(doc(privateUsers, userId))).data()!
-}
-
-export async function getUserAndPrivateUser(userId: string) {
-  const [user, privateUser] = await Promise.all([
-    api('user/by-id/:id', { id: userId }),
-    getPrivateUser(userId),
-  ])
-  return { user, privateUser } as UserAndPrivateUser
-}
-
-export async function updatePrivateUser(
-  userId: string,
-  update: Partial<PrivateUser>
-) {
-  await updateDoc(doc(privateUsers, userId), { ...update })
-}
-
-export function listenForPrivateUser(
-  userId: string,
-  setPrivateUser: (privateUser: PrivateUser | null) => void
-) {
-  const userRef = doc(privateUsers, userId)
-  return listenForValue<PrivateUser>(userRef, setPrivateUser)
-}
-
+export const auth = getFirebaseAuth()
 export const CACHED_REFERRAL_USERNAME_KEY = 'CACHED_REFERRAL_KEY'
 const CACHED_REFERRAL_CONTRACT_ID_KEY = 'CACHED_REFERRAL_CONTRACT_KEY'
 
@@ -109,7 +73,8 @@ export async function setCachedReferralInfoForUser(user: User) {
     `User created in last ${MINUTES_ALLOWED_TO_REFER} minutes, trying to set referral`
   )
   // get user via username
-  referUser(
+  api(
+    'refer-user',
     removeUndefinedProps({
       referredByUsername: cachedReferralUsername,
       contractId: cachedReferralContractId ?? undefined,
@@ -179,7 +144,7 @@ export const isContractBlocked = (
 
 export const canSetReferrer = (user: User) => {
   if (user.referredByUserId) return false
-  if (!isVerified(user)) return false
+  if (!humanish(user)) return false
   const now = dayjs().utc()
   const userCreatedTime = dayjs(user.createdTime)
   return now.diff(userCreatedTime, 'minute') < MINUTES_ALLOWED_TO_REFER

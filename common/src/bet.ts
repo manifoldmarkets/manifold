@@ -1,7 +1,7 @@
 import { groupBy, mapValues } from 'lodash'
-import { Visibility } from './contract'
 import { Fees } from './fees'
 import { maxMinBin } from './chart'
+import { nanoid } from 'common/util/random'
 
 /************************************************
 
@@ -13,13 +13,8 @@ supabase status: columns exist for
   outcome: text
   probBefore: number
   probAfter: number
-  isAnte: boolean
   isRedemption: boolean
-  isChallenge: boolean
   visibility: text
-
-any changes to the type of these columns in firestore will require modifying
-the supabase trigger, or replication of contracts may fail!
 
 *************************************************/
 
@@ -30,6 +25,7 @@ export type Bet = {
   contractId: string
   answerId?: string // For multi-binary contracts
   createdTime: number
+  updatedTime?: number // Generated on supabase, useful for limit orders
 
   amount: number // bet size; negative if SELL bet
   loanAmount?: number
@@ -43,10 +39,7 @@ export type Bet = {
 
   isApi?: boolean // true if bet was placed via API
 
-  isAnte: boolean
   isRedemption: boolean
-  isChallenge: boolean
-  visibility: Visibility
   /** @deprecated */
   challengeSlug?: string
 
@@ -73,6 +66,7 @@ type LimitProps = {
   // Non-limit orders can also be filled by matching with multiple limit orders.
   fills: fill[]
   expiresAt?: number // ms since epoch.
+  silent?: boolean // New default quick limit order type. API bets cannot be silent.
 }
 
 export type fill = {
@@ -81,26 +75,10 @@ export type fill = {
   amount: number
   shares: number
   timestamp: number
-  // Note: Old fills might have no fees, and the value would be undefined.
-  fees: Fees
+  fees?: Fees
   // If the fill is a sale, it means the matching bet has shares of the same outcome.
   // I.e. -fill.shares === matchedBet.shares
   isSale?: boolean
-}
-
-export type BetFilter = {
-  contractId?: string
-  userId?: string
-  filterChallenges?: boolean
-  filterRedemptions?: boolean
-  filterAntes?: boolean
-  isOpenLimitOrder?: boolean
-  afterTime?: number
-  beforeTime?: number
-  order?: 'desc' | 'asc'
-  limit?: number
-  commentRepliesOnly?: boolean
-  answerId?: string
 }
 
 export const calculateMultiBets = (
@@ -117,3 +95,11 @@ export const calculateMultiBets = (
     )
   )
 }
+export type maker = {
+  bet: LimitBet
+  amount: number
+  shares: number
+  timestamp: number
+}
+
+export const getNewBetId = () => nanoid(12)

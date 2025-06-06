@@ -1,6 +1,6 @@
 import { Placement } from '@floating-ui/react'
 import { ReactNode } from 'react'
-import { formatTime } from 'web/lib/util/time'
+import { formatTime } from 'client-common/lib/time'
 import { Tooltip } from './tooltip'
 
 export function DateTimeTooltip(props: {
@@ -17,5 +17,12 @@ export function DateTimeTooltip(props: {
   const formattedTime = formatTime(time)
   const toolTip = text ? `${text} ${formattedTime}` : formattedTime
 
-  return <Tooltip text={toolTip} {...rest} suppressHydrationWarning />
+  return (
+    <Tooltip
+      text={toolTip}
+      tooltipClassName="z-40"
+      {...rest}
+      suppressHydrationWarning
+    />
+  )
 }

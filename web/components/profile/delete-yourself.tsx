@@ -7,7 +7,7 @@ import { ConfirmationButton } from '../buttons/confirmation-button'
 import { Col } from '../layout/col'
 import { Input } from '../widgets/input'
 import { Title } from '../widgets/title'
-import { api } from 'web/lib/firebase/api'
+import { api } from 'web/lib/api/api'
 
 export function DeleteYourselfButton(props: { username: string }) {
   const { username } = props
@@ -57,9 +57,14 @@ export function DeleteYourselfButton(props: { username: string }) {
     >
       <Col>
         <Title>Are you sure?</Title>
-        <div>
+        <div className="mb-2">
           Deleting your account means you will no longer be able to use your
-          account. You will lose access to all of your data.
+          account.
+        </div>
+        <div className="mb-6">
+          Your profile will be deleted, but people may still see your username,
+          trades, and comments on markets. Please consider changing your
+          username before deleting to mitigate this.
         </div>
         <Input
           type="text"

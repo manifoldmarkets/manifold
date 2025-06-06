@@ -13,7 +13,7 @@ import {
 } from 'common/supabase/groups'
 import {
   FEED_BETA_LOSS,
-  FEED_CARD_CONVERSION_PRIOR,
+  GROUP_SCORE_PRIOR,
   FEED_CARD_HITS,
   FEED_CARD_MISSES,
 } from 'common/feed'
@@ -41,7 +41,7 @@ export async function calculateUserTopicInterests(
   const pg = createSupabaseDirectClient()
   const userCardGroupIdMisses = await pg.map(
     `
-        select ucv.user_id, gc.group_id 
+        select ucv.user_id, gc.group_id
         from user_contract_views ucv
         join contracts c on ucv.contract_id = c.id
         join group_contracts gc on c.id = gc.contract_id
@@ -110,7 +110,7 @@ export async function calculateUserTopicInterests(
     ...Object.keys(userIdsToGroupIdsHits),
   ])
   await getPreviousStats(pg, allUserIds, createdTimesOnly)
-  // eslint-disable-next-line @typescript-eslint/no-var-requires
+  // eslint-disable-next-line @typescript-eslint/no-require-imports
   const betaIncompleteInverse = require('@stdlib/math-base-special-betaincinv')
   log(`Writing user topic interests for ${allUserIds.length} users`)
   const scoresToWrite = filterDefined(
@@ -129,7 +129,7 @@ export async function calculateUserTopicInterests(
           const priorStats =
             myPriorConversionScores[groupId] ??
             ({
-              conversionScore: FEED_CARD_CONVERSION_PRIOR,
+              conversionScore: GROUP_SCORE_PRIOR,
               hits: 0,
               misses: 0,
             } as GroupIdsToStats[number])
@@ -237,7 +237,7 @@ const getPreviousStats = async (
         userIdToGroupStats[row.userId][groupId] = {
           hits: FEED_CARD_HITS,
           misses: FEED_CARD_MISSES,
-          conversionScore: FEED_CARD_CONVERSION_PRIOR,
+          conversionScore: GROUP_SCORE_PRIOR,
         }
       }
     }

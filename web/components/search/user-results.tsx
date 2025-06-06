@@ -4,19 +4,32 @@ import { Row } from '../layout/row'
 import { Avatar } from '../widgets/avatar'
 import Link from 'next/link'
 import { useState } from 'react'
-import { useIsMobile } from 'web/hooks/use-is-mobile'
+import { isUserLikelySpammer } from 'common/user'
 
-export const MAX_SHOWN = 15
-export const MAX_SHOWN_MOBILE = 8
+export const MAX_SHOWN = 9
 
 export function UserResults(props: { userResults: FullUser[] }) {
   const { userResults } = props
   const [expanded, setExpanded] = useState(false)
-  const isMobile = useIsMobile()
-  const MAX_INIT_USERS = isMobile ? MAX_SHOWN_MOBILE : MAX_SHOWN
-  const shownUsers = expanded
-    ? userResults
-    : userResults.slice(0, MAX_INIT_USERS)
+
+  const nonSpamUsers = userResults.filter(
+    (user) => !isUserLikelySpammer(user, !!user.lastBetTime, false)
+  )
+  // Determine initial users: prefer non-spammers, but show spammers if they are the only results.
+  let initialUsersToShow: FullUser[]
+  if (nonSpamUsers.length > 0) {
+    initialUsersToShow = nonSpamUsers.slice(0, MAX_SHOWN)
+  } else if (userResults.length > 0) {
+    // Show spammers if no non-spammers exist
+    initialUsersToShow = userResults.slice(0, MAX_SHOWN)
+  } else {
+    initialUsersToShow = []
+  }
+
+  const shownUsers = expanded ? userResults : initialUsersToShow
+  const numInitiallyHidden = userResults.length - initialUsersToShow.length
+  const shouldShowButton = numInitiallyHidden > 0
+
   return (
     <Col className="mb-4 px-2 sm:px-0">
       <Row className="text-ink-500 items-center gap-1 text-sm">
@@ -44,14 +57,12 @@ export function UserResults(props: { userResults: FullUser[] }) {
             {u.username}
           </Link>
         ))}
-        {userResults.length > MAX_INIT_USERS && (
+        {shouldShowButton && (
           <button
             onClick={() => setExpanded(!expanded)}
             className="text-primary-700 bg-ink-200 hover:bg-ink-300 flex flex-row items-center gap-1 rounded-full p-2 py-1"
           >
-            {expanded
-              ? `Show less`
-              : `Show ${userResults.length - MAX_INIT_USERS} more`}
+            {expanded ? `Show less` : `Show ${numInitiallyHidden} more`}
           </button>
         )}
       </Row>

@@ -1,6 +1,8 @@
 import { useMemo } from 'react'
-import { first, last } from 'lodash'
+import { first, last, minBy, maxBy } from 'lodash'
 import { scaleTime, scaleLinear } from 'd3-scale'
+import clsx from 'clsx'
+
 import { getAnswerProbability, getProbability } from 'common/calculate'
 import { BinaryContract, CPMMMultiContract } from 'common/contract'
 import {
@@ -21,7 +23,51 @@ import {
   SingleContractPoint,
 } from './single-value'
 import { ChartAnnotation } from 'common/supabase/chart-annotations'
-import { getVersusColors } from './choice'
+import { getAnswerColor } from './choice'
+import { HistoryPoint } from 'common/chart'
+import { Bet } from 'common/bet'
+import { SizedContainer } from 'web/components/sized-container'
+import { ChartAnnotations } from '../chart-annotations'
+import { buildArray } from 'common/util/array'
+
+export const GRAPH_Y_DIVISOR = 20
+
+const getVisibleYRange = (params: {
+  data: SingleContractPoint[]
+  zoomY?: boolean
+  zoomParams?: ZoomParams
+}) => {
+  const { data, zoomY, zoomParams } = params
+
+  if (!zoomY || !zoomParams?.xScale) return [0, 1]
+
+  const [minXDate, maxXDate] = zoomParams?.viewXScale.domain() ?? [null, null]
+  const [fullMin, fullMax] = zoomParams.xScale.domain()
+
+  if (
+    minXDate.getTime() === fullMin.getTime() &&
+    maxXDate.getTime() === fullMax.getTime()
+  ) {
+    return [0, 1]
+  }
+
+  const minYValue = zoomY
+    ? Math.max(
+        Math.floor((minBy(data, 'y')?.y ?? 0) * GRAPH_Y_DIVISOR) /
+          GRAPH_Y_DIVISOR,
+        0
+      )
+    : 0
+  const maxYValue = zoomY
+    ? Math.min(
+        Math.ceil((maxBy(data, 'y')?.y ?? 1) * GRAPH_Y_DIVISOR) /
+          GRAPH_Y_DIVISOR,
+        1
+      )
+    : 1
+
+  return [minYValue, maxYValue]
+}
 
 export const BinaryContractChart = (props: {
   contract: BinaryContract
@@ -29,20 +75,21 @@ export const BinaryContractChart = (props: {
   width: number
   height: number
   zoomParams?: ZoomParams
-  percentBounds?: { max?: number; min?: number }
   showZoomer?: boolean
   hoveredAnnotation?: number | null
   setHoveredAnnotation?: (id: number | null) => void
   pointerMode?: PointerMode
   chartAnnotations?: ChartAnnotation[]
   graphColor?: string
+  noWatermark?: boolean
+  zoomY?: boolean
+  startTime?: number
 }) => {
   const {
     contract,
     width,
     height,
     zoomParams,
-    percentBounds,
     betPoints,
     showZoomer,
     hoveredAnnotation,
@@ -50,25 +97,32 @@ export const BinaryContractChart = (props: {
     pointerMode = 'zoom',
     chartAnnotations,
     graphColor,
+    noWatermark,
+    zoomY,
+    startTime,
   } = props
 
-  const start = first(betPoints)?.x ?? contract.createdTime
+  const start =
+    startTime ?? Math.min(first(betPoints)?.x ?? Infinity, contract.createdTime)
   const end = getEndDate(contract)
   const endP = getProbability(contract as BinaryContract)
+  const stringifiedBetPoints = JSON.stringify(betPoints)
 
-  const now = useMemo(() => Date.now(), [betPoints])
-
+  const now = useMemo(() => Date.now(), [stringifiedBetPoints, endP])
   const data = useMemo(() => {
-    return [...betPoints, { x: end ?? now, y: endP }]
+    return buildArray(...betPoints, { x: end ?? now, y: endP })
   }, [end, endP, betPoints])
 
   const rightmostDate = getRightmostVisibleDate(end, last(betPoints)?.x, now)
 
   const xScale = scaleTime([start, rightmostDate], [0, width])
-  const yScale = scaleLinear(
-    [percentBounds?.min ?? 0, percentBounds?.max ?? 1],
-    [height, 0]
-  )
+
+  const [minYValue, maxYValue] = getVisibleYRange({
+    data,
+    zoomY,
+    zoomParams,
+  })
+  const yScale = scaleLinear([minYValue, maxYValue], [height, 0])
 
   return (
     <SingleValueHistoryChart
@@ -76,6 +130,7 @@ export const BinaryContractChart = (props: {
       h={height}
       xScale={xScale}
       yScale={yScale}
+      rightmostDate={rightmostDate}
       zoomParams={zoomParams}
       showZoomer={showZoomer}
       yKind="percent"
@@ -93,7 +148,81 @@ export const BinaryContractChart = (props: {
       setHoveredAnnotation={setHoveredAnnotation}
       pointerMode={pointerMode}
       chartAnnotations={chartAnnotations}
+      noWatermark={noWatermark}
     />
+  )
+}
+
+export function SizedBinaryChart(props: {
+  showZoomer?: boolean
+  zoomParams?: ZoomParams
+  showAnnotations?: boolean
+  betPoints: HistoryPoint<Partial<Bet>>[]
+  contract: BinaryContract
+  className?: string
+  size?: 'sm' | 'md'
+  color?: string
+  hoveredAnnotation?: number | null
+  setHoveredAnnotation?: (id: number | null) => void
+  pointerMode?: PointerMode
+  chartAnnotations?: ChartAnnotation[]
+  noWatermark?: boolean
+  zoomY?: boolean
+  startTime?: number
+}) {
+  const {
+    showZoomer,
+    zoomParams,
+    showAnnotations,
+    betPoints,
+    contract,
+    className,
+    size = 'md',
+    pointerMode,
+    setHoveredAnnotation,
+    hoveredAnnotation,
+    chartAnnotations,
+    noWatermark,
+    zoomY,
+    startTime,
+  } = props
+
+  return (
+    <>
+      <SizedContainer
+        className={clsx(
+          showZoomer ? 'mb-12' : '',
+          'w-full pb-3 pr-10',
+          size == 'sm' ? 'h-[100px]' : 'h-[150px] sm:h-[250px]',
+          className
+        )}
+      >
+        {(w, h) => (
+          <BinaryContractChart
+            width={w}
+            height={h}
+            betPoints={betPoints}
+            showZoomer={showZoomer}
+            zoomParams={zoomParams}
+            contract={contract}
+            hoveredAnnotation={hoveredAnnotation}
+            setHoveredAnnotation={setHoveredAnnotation}
+            pointerMode={pointerMode}
+            chartAnnotations={chartAnnotations}
+            noWatermark={noWatermark}
+            zoomY={zoomY}
+            startTime={startTime}
+          />
+        )}
+      </SizedContainer>
+      {showAnnotations && chartAnnotations?.length ? (
+        <ChartAnnotations
+          annotations={chartAnnotations}
+          hoveredAnnotation={hoveredAnnotation}
+          setHoveredAnnotation={setHoveredAnnotation}
+        />
+      ) : null}
+    </>
   )
 }
 
@@ -103,18 +232,11 @@ export const MultiBinaryChart = (props: {
   width: number
   height: number
   zoomParams?: ZoomParams
-  percentBounds?: { max?: number; min?: number }
   showZoomer?: boolean
+  zoomY?: boolean
 }) => {
-  const {
-    contract,
-    width,
-    height,
-    zoomParams,
-    percentBounds,
-    betPoints,
-    showZoomer,
-  } = props
+  const { contract, width, height, zoomParams, betPoints, showZoomer, zoomY } =
+    props
 
   const start = first(betPoints)?.x ?? contract.createdTime
   const end = getEndDate(contract)
@@ -124,21 +246,25 @@ export const MultiBinaryChart = (props: {
     mainBinaryMCAnswer.id
   )
 
-  const [bottom, top] = getVersusColors(contract.answers)
-
-  const now = useMemo(() => Date.now(), [betPoints])
+  const [bottom, top] = contract.answers.map(getAnswerColor)
+  const stringifiedBetPoints = JSON.stringify(betPoints)
+  const now = useMemo(() => Date.now(), [stringifiedBetPoints, endP])
 
   const data = useMemo(() => {
-    return [...betPoints, { x: end ?? now, y: endP }]
+    return [{ x: start, y: 0.5 }, ...betPoints, { x: end ?? now, y: endP }]
   }, [end, endP, betPoints])
 
   const rightmostDate = getRightmostVisibleDate(end, last(betPoints)?.x, now)
 
   const xScale = scaleTime([start, rightmostDate], [0, width])
-  const yScale = scaleLinear(
-    [percentBounds?.min ?? 0, percentBounds?.max ?? 1],
-    [height, 0]
-  )
+
+  const [minYValue, maxYValue] = getVisibleYRange({
+    data,
+    zoomY,
+    zoomParams,
+  })
+
+  const yScale = scaleLinear([minYValue, maxYValue], [height, 0])
 
   return (
     <SingleValueStackedHistoryChart
@@ -146,6 +272,7 @@ export const MultiBinaryChart = (props: {
       h={height}
       xScale={xScale}
       yScale={yScale}
+      rightmostDate={rightmostDate}
       zoomParams={zoomParams}
       showZoomer={showZoomer}
       data={data}

@@ -11,6 +11,7 @@ export type notification_preferences = {
   all_comments_on_watched_markets: notification_destination_types[]
   all_answers_on_watched_markets: notification_destination_types[]
   poll_close_on_watched_markets: notification_destination_types[]
+  all_comments_on_followed_posts: notification_destination_types[]
 
   // Comments
   all_replies_to_my_comments_on_watched_markets: notification_destination_types[]
@@ -25,6 +26,7 @@ export type notification_preferences = {
   vote_on_your_contract: notification_destination_types[]
   your_poll_closed: notification_destination_types[]
   review_on_your_market: notification_destination_types[]
+  market_follows: notification_destination_types[]
 
   // Market updates
   resolutions_on_watched_markets: notification_destination_types[]
@@ -34,6 +36,7 @@ export type notification_preferences = {
   bounty_awarded: notification_destination_types[]
   bounty_added: notification_destination_types[]
   bounty_canceled: notification_destination_types[]
+  market_movements: notification_destination_types[]
 
   // Balance Changes
   loan_income: notification_destination_types[]
@@ -43,7 +46,9 @@ export type notification_preferences = {
   limit_order_fills: notification_destination_types[]
   quest_payout: notification_destination_types[]
   airdrop: notification_destination_types[]
+  manifest_airdrop: notification_destination_types[]
   extra_purchased_mana: notification_destination_types[]
+  payment_status: notification_destination_types[]
 
   // Leagues
   league_changed: notification_destination_types[]
@@ -67,7 +72,7 @@ export type notification_preferences = {
   onboarding_flow: notification_destination_types[]
   thank_you_for_purchases: notification_destination_types[]
   opt_out_all: notification_destination_types[]
-  // When adding a new notification preference, use add-new-notification-preference.ts to existing users
+  admin: notification_destination_types[] // Atm this preference isn't checked, it's always assumed true
 }
 
 export const getDefaultNotificationPreferences = (isDev?: boolean) => {
@@ -89,7 +94,9 @@ export const getDefaultNotificationPreferences = (isDev?: boolean) => {
     // Watched Markets
     all_comments_on_watched_markets: constructPref(false, false, false),
     // Answers
-    all_answers_on_watched_markets: constructPref(true, false, false),
+    all_answers_on_watched_markets: constructPref(false, false, false),
+    // Added for post follows
+    all_comments_on_followed_posts: constructPref(true, true, true),
     // Comments
     all_replies_to_my_comments_on_watched_markets: constructPref(
       true,
@@ -115,7 +122,7 @@ export const getDefaultNotificationPreferences = (isDev?: boolean) => {
     vote_on_your_contract: constructPref(true, true, false),
     your_poll_closed: constructPref(true, true, false),
     review_on_your_market: constructPref(true, false, false),
-
+    market_follows: constructPref(true, false, false),
     // Market updates
     resolutions_on_watched_markets: constructPref(true, true, true),
     all_votes_on_watched_markets: constructPref(false, false, false),
@@ -128,16 +135,19 @@ export const getDefaultNotificationPreferences = (isDev?: boolean) => {
     bounty_added: constructPref(true, false, false),
     bounty_canceled: constructPref(true, false, false),
     poll_close_on_watched_markets: constructPref(true, false, false),
+    market_movements: constructPref(true, true, true),
 
     // Balance Changes
     loan_income: constructPref(true, false, false),
     betting_streaks: constructPref(true, false, true),
     referral_bonuses: constructPref(true, true, false),
     unique_bettors_on_your_contract: constructPref(true, true, false),
-    limit_order_fills: constructPref(true, false, false),
+    limit_order_fills: constructPref(true, false, true),
     quest_payout: constructPref(true, false, false),
     airdrop: constructPref(true, false, false),
+    manifest_airdrop: constructPref(true, false, false),
     extra_purchased_mana: constructPref(true, false, false),
+    payment_status: constructPref(true, false, false),
 
     // Leagues
     league_changed: constructPref(true, false, false),
@@ -161,7 +171,7 @@ export const getDefaultNotificationPreferences = (isDev?: boolean) => {
     probability_updates_on_watched_markets: constructPref(true, false, true),
     thank_you_for_purchases: constructPref(false, false, false),
     onboarding_flow: constructPref(true, true, false),
-
+    admin: constructPref(true, true, true),
     opt_out_all: [],
   }
   return defaults
@@ -211,7 +221,11 @@ export const getNotificationDestinationsForUser = (
   const unsubscribeEndpoint = getApiUrl('unsubscribe')
   try {
     const notificationPreference = getNotificationPreference(reason)
-    const destinations = notificationSettings[notificationPreference] ?? []
+    // Get default destinations if user has no settings for this preference
+    // TODO: write the default notif preferences to the user's settings when missing
+    const destinations =
+      notificationSettings[notificationPreference] ??
+      getDefaultNotificationPreferences()[notificationPreference]
     const optOutOfAllSettings = notificationSettings.opt_out_all
     // Your market closure notifications are high priority, opt-out doesn't affect their delivery
     const optedOutOfEmail =
@@ -230,7 +244,7 @@ export const getNotificationDestinationsForUser = (
       urlToManageThisNotification: `${DOMAIN}/notifications?tab=settings&section=${notificationPreference}`,
       notificationPreference,
     }
-  } catch (e) {
+  } catch {
     // Fail safely
     console.log(
       `couldn't get notification destinations for type ${reason} for user ${privateUser.id}`

@@ -10,7 +10,7 @@ import {
   getCpmmProbability,
 } from './calculate-cpmm'
 import { getFeeTotal, getTakerFee, noFees } from './fees'
-import { getMultiNumericAnswerBucketRanges } from './multi-numeric'
+import { getMultiNumericAnswerBucketRanges } from './number'
 import { getNewSellBetInfo } from './sell-bet'
 import { Bet } from './bet'
 

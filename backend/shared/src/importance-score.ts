@@ -1,5 +1,7 @@
-import { SupabaseDirectClient } from 'shared/supabase/init'
-import { SupabaseClient } from 'common/supabase/utils'
+import {
+  SupabaseDirectClient,
+  SupabaseDirectClientTimeout,
+} from 'shared/supabase/init'
 import {
   DAY_MS,
   HOUR_MS,
@@ -8,23 +10,27 @@ import {
   WEEK_MS,
   YEAR_MS,
 } from 'common/util/time'
-import { log } from 'shared/utils'
-import { BountiedQuestionContract, Contract } from 'common/contract'
+import { log, prefixedContractColumnsToSelect } from 'shared/utils'
+import {
+  BountiedQuestionContract,
+  Contract,
+  isMarketRanked,
+} from 'common/contract'
 import { getRecentContractLikes } from 'shared/supabase/likes'
-import { clamp, max, sortBy } from 'lodash'
+import { clamp, sortBy } from 'lodash'
 import { floatingEqual, logit } from 'common/util/math'
 
 import { BOT_USERNAMES } from 'common/envs/constants'
 import { bulkUpdate } from 'shared/supabase/utils'
 import { convertContract } from 'common/supabase/contracts'
-import { removeNullOrUndefinedProps } from 'common/util/object'
+import { Row } from 'common/supabase/utils'
+import { convertPost } from 'common/top-level-post'
 
 export const IMPORTANCE_MINUTE_INTERVAL = 2
 export const MIN_IMPORTANCE_SCORE = 0.1
 
 export async function calculateImportanceScore(
-  db: SupabaseClient,
-  pg: SupabaseDirectClient,
+  pg: SupabaseDirectClientTimeout,
   readOnly = false,
   rescoreAll = false
 ) {
@@ -34,46 +40,21 @@ export async function calculateImportanceScore(
   const dayAgo = now - DAY_MS
   const weekAgo = now - 7 * DAY_MS
   const select = (whereClause: string) => `
-    select c.id,
-           question,
-           mechanism,
-           c.data->'prob' as prob,
-           c.data->'volume' as volume,
-           c.data->'elasticity' as elasticity,
-           c.data->'probChanges' as prob_changes,
-           c.data->'uniqueBettorCount' as unique_bettors,
-           c.data->'createdTime' as created_time,
-           c.data->'volume24Hours' as volume_24_hours,
-           c.data->'shouldAnswersSumToOne' as should_answers_sum_to_one,
-           conversion_score,importance_score, freshness_score, view_count,
+    select ${prefixedContractColumnsToSelect},
            case when count(a.prob) > 0 then json_agg(a.prob) end as answer_probs
     from contracts c
-           left join answers a on c.id = a.contract_id
+    left join answers a on c.id = a.contract_id
     ${whereClause}
     group by c.id
        `
   const convertRow = (row: any) => {
-    const {
-      should_answers_sum_to_one,
-      unique_bettors,
-      created_time,
-      volume_24_hours,
-      prob_changes,
-      answer_probs,
-      ...rest
-    } = row
-    const data = removeNullOrUndefinedProps({
-      shouldAnswersSumToOne: should_answers_sum_to_one,
-      probChanges: prob_changes,
-      volume24Hours: volume_24_hours as number,
-      uniqueBettorCount: unique_bettors as number,
-      createdTime: created_time as number,
+    const { answer_probs, ...rest } = row
+    const contractData = {
       answers: answer_probs?.map((p: number) => ({ prob: p as number })) ?? [],
       ...rest,
-    }) as Contract
-    return convertContract({ ...row, data })
+    }
+    return convertContract(contractData)
   }
-
   const activeContracts = await pg.map(
     select(
       'where last_bet_time > millis_to_ts($1) or last_comment_time > millis_to_ts($1)'
@@ -83,7 +64,9 @@ export async function calculateImportanceScore(
   )
   // We have to downgrade previously active contracts to allow the new ones to bubble up
   const previouslyActiveContracts = await pg.map(
-    select('where importance_score > $1 or freshness_score > $1 or resolution_time is null'),
+    select(
+      'where importance_score > $1 or freshness_score > $1 or c.resolution_time is null'
+    ),
     [MIN_IMPORTANCE_SCORE],
     convertRow
   )
@@ -103,9 +86,9 @@ export async function calculateImportanceScore(
     'previously active contracts'
   )
 
-  const todayComments = await getTodayComments(db)
-  const todayLikesByContract = await getRecentContractLikes(db, dayAgo)
-  const thisWeekLikesByContract = await getRecentContractLikes(db, weekAgo)
+  const todayComments = await getTodayComments(pg)
+  const todayLikesByContract = await getRecentContractLikes(pg, dayAgo)
+  const thisWeekLikesByContract = await getRecentContractLikes(pg, weekAgo)
 
   const todayTradersByContract = {
     ...(await getContractTraders(pg, dayAgo, contractIds)),
@@ -121,11 +104,21 @@ export async function calculateImportanceScore(
     ...(await getContractTraders(pg, weekAgo, contractIds)),
     ...(await getContractVoters(pg, weekAgo, contractIds)),
   }
+  const activeBoosts = await pg.manyOrNone<Row<'contract_boosts'>>(
+    `select * from contract_boosts where start_time <= now() and end_time > now() and funded`
+  )
 
   const contractsWithUpdates: Contract[] = []
+  const marketComponents: Record<string, any>[] = []
 
   for (const contract of contracts) {
-    const { importanceScore, freshnessScore } = computeContractScores(
+    const boosted = activeBoosts.some((b) => b.contract_id === contract.id)
+    const {
+      importanceScore,
+      freshnessScore,
+      dailyScore,
+      rawMarketImportanceBreakdown,
+    } = computeContractScores(
       now,
       contract,
       todayComments[contract.id] ?? 0,
@@ -133,26 +126,42 @@ export async function calculateImportanceScore(
       thisWeekLikesByContract[contract.id] ?? 0,
       todayTradersByContract[contract.id] ?? 0,
       hourAgoTradersByContract[contract.id] ?? 0,
-      thisWeekTradersByContract[contract.id] ?? 0
+      thisWeekTradersByContract[contract.id] ?? 0,
+      boosted
     )
+
+    if (isNaN(dailyScore)) {
+      log.error('NaN daily score for contract ' + contract.id)
+    }
+    if (isNaN(freshnessScore)) {
+      log.error('NaN freshness score for contract ' + contract.id)
+    }
+    if (isNaN(importanceScore)) {
+      log.error('NaN importance score for contract ' + contract.id)
+    }
 
     const epsilon = 0.01
     // NOTE: These scores aren't updated in firestore, so are never accurate in the data blob
     if (
       rescoreAll ||
       !floatingEqual(importanceScore, contract.importanceScore, epsilon) ||
-      !floatingEqual(freshnessScore, contract.freshnessScore, epsilon)
+      !floatingEqual(freshnessScore, contract.freshnessScore, epsilon) ||
+      !floatingEqual(dailyScore, contract.dailyScore, epsilon) ||
+      boosted !== contract.boosted
     ) {
       contract.importanceScore = importanceScore
       contract.freshnessScore = freshnessScore
+      contract.dailyScore = dailyScore
+      contract.boosted = boosted
       contractsWithUpdates.push(contract)
+      marketComponents.push(rawMarketImportanceBreakdown)
     }
   }
 
   // sort in descending order by score
   contractsWithUpdates.sort((a, b) => b.importanceScore - a.importanceScore)
 
-  console.log('Found', contractsWithUpdates.length, 'contracts to update')
+  log('Found', contractsWithUpdates.length, 'contracts to update')
 
   if (
     contractsWithUpdates.filter(
@@ -161,31 +170,81 @@ export async function calculateImportanceScore(
   )
     log('WARNING: some scores are out of bounds')
 
-  log('Top 30 contracts by score')
+  if (rescoreAll) {
+    log('')
+    log('Top 30 contracts by score')
 
-  contractsWithUpdates.slice(0, 30).forEach((contract) => {
-    log(contract.importanceScore, contract.question)
-  })
-
-  // Sort in descending order by freshness
-  const freshest = sortBy(
-    contractsWithUpdates,
-    (c) => -1 * (c.freshnessScore ?? 0)
-  )
-  log('Top 30 contracts by freshness')
-
-  freshest.slice(0, 30).forEach((contract) => {
-    log(contract.freshnessScore, contract.question)
-  })
-
-  log('Bottom 5 contracts by score')
-  contractsWithUpdates
-    .slice()
-    .reverse()
-    .slice(0, 5)
-    .forEach((contract) => {
-      log(contract.importanceScore, contract.question)
+    const topContracts = contractsWithUpdates.slice(0, 40).map((contract) => {
+      const breakdown =
+        marketComponents.find((mc) => mc.contractId === contract.id) || {}
+      return {
+        Question: contract.question.slice(0, 60),
+        Total: contract.importanceScore.toFixed(2),
+        '24h vol': breakdown.volume24HoursComponent?.toFixed(2) || '',
+        'Trader hourly': breakdown.traderHourComponent?.toFixed(2) || '',
+        Today: breakdown.todayScoreComponent?.toFixed(2) || '',
+        'Poll Newness': breakdown.newness?.toFixed(2) || '',
+        Closing: breakdown.closingSoonnnessComponent?.toFixed(2) || '',
+        Comments: breakdown.commentScore?.toFixed(2) || '',
+        Week: breakdown.thisWeekScoreComponent?.toFixed(2) || '',
+        Ranked: breakdown.rankedScore?.toFixed(2) || '',
+        Boost: breakdown.boostScore?.toFixed(2) || '',
+        'Total Traders': contract.uniqueBettorCount || '',
+        Resolved: contract.isResolved ? 'Yes' : 'No',
+      }
     })
+
+    console.table(topContracts)
+    log('')
+    log('Bottom 5 contracts by score')
+    contractsWithUpdates
+      .slice()
+      .reverse()
+      .slice(0, 5)
+      .forEach((contract) => {
+        log(
+          contract.importanceScore,
+          contract.question,
+          contract.token === 'CASH' ? '[sweep]' : ''
+        )
+      })
+
+    // Sort in descending order by freshness
+    const freshest = sortBy(
+      contractsWithUpdates,
+      (c) => -1 * (c.freshnessScore ?? 0)
+    )
+    log('')
+    log('Top 30 contracts by freshness')
+
+    const freshestContracts = freshest.slice(0, 40).map((contract) => {
+      const breakdown =
+        marketComponents.find((mc) => mc.contractId === contract.id) || {}
+      return {
+        Question: contract.question.slice(0, 60),
+        'Fresh Score': contract.freshnessScore.toFixed(2),
+        '24h volume': breakdown.freshVolume24h?.toFixed(2) || '',
+        Today: breakdown.freshTodayScore?.toFixed(2) || '',
+        'Last Updated': breakdown.freshLastUpdated?.toFixed(2) || '',
+        Ranked: breakdown.rankedScore?.toFixed(2) || '',
+      }
+    })
+
+    console.table(freshestContracts)
+    log('')
+    log('Bottom 5 contracts by freshness')
+    freshest
+      .slice()
+      .reverse()
+      .slice(0, 5)
+      .forEach((contract) => {
+        log(
+          contract.freshnessScore,
+          contract.question,
+          contract.token === 'CASH' ? '[sweep]' : ''
+        )
+      })
+  }
 
   if (!readOnly) {
     log('Updating', contractsWithUpdates.length, 'contracts')
@@ -193,26 +252,30 @@ export async function calculateImportanceScore(
       pg,
       'contracts',
       ['id'],
-      contractsWithUpdates.map((contract) => ({
-        id: contract.id,
-        importance_score: contract.importanceScore,
-        freshness_score: contract.freshnessScore,
-      }))
+      contractsWithUpdates
+        .filter(
+          (c) =>
+            !isNaN(c.importanceScore) &&
+            !isNaN(c.freshnessScore) &&
+            !isNaN(c.dailyScore)
+        )
+        .map((contract) => ({
+          id: contract.id,
+          boosted: contract.boosted,
+          importance_score: contract.importanceScore,
+          freshness_score: contract.freshnessScore,
+          daily_score: contract.dailyScore,
+        }))
     )
   }
 }
 
-export const getTodayComments = async (db: SupabaseClient) => {
-  const counts = await db
-    .rpc('count_recent_comments_by_contract')
-    .then((res) =>
-      (res.data ?? []).map(({ contract_id, comment_count }) => [
-        contract_id,
-        comment_count,
-      ])
-    )
+export const getTodayComments = async (pg: SupabaseDirectClient) => {
+  const counts = await pg.func<
+    { contract_id: string; comment_count: number }[]
+  >('count_recent_comments_by_contract')
 
-  return Object.fromEntries(counts)
+  return Object.fromEntries(counts.map((c) => [c.contract_id, c.comment_count]))
 }
 
 export const getContractTraders = async (
@@ -263,16 +326,15 @@ export const computeContractScores = (
   likesWeek: number,
   tradersToday: number,
   traderHour: number,
-  tradersWeek: number
+  tradersWeek: number,
+  isBoosted: boolean
 ) => {
   const todayScore = likesToday + tradersToday
   const thisWeekScore = likesWeek + tradersWeek
-  const thisWeekScoreWeight = thisWeekScore / 10
-  const popularityScore = todayScore + thisWeekScoreWeight
   const wasCreatedToday = contract.createdTime > now - DAY_MS
 
-  const { createdTime, closeTime, isResolved, outcomeType } = contract
-
+  const { createdTime, closeTime, isResolved, outcomeType, resolutionTime } =
+    contract
   const commentScore = commentsToday
     ? normalize(Math.log10(1 + commentsToday), Math.log10(50))
     : 0
@@ -291,44 +353,15 @@ export const computeContractScores = (
       ? closeTime <= now + DAY_MS
         ? 1
         : closeTime <= now + WEEK_MS
-        ? 0.9
+        ? 0.8
         : closeTime <= now + MONTH_MS
-        ? 0.75
-        : closeTime <= now + MONTH_MS * 3
         ? 0.5
+        : closeTime <= now + MONTH_MS * 3
+        ? 0.25
         : closeTime <= now + YEAR_MS
-        ? 0.33
-        : 0.25
+        ? 0.1
+        : 0
       : 0
-
-  const liquidityScore = isResolved
-    ? 0
-    : normalize(clamp(1 / contract.elasticity, 0, 100), 100)
-
-  let uncertainness = 0
-
-  if (!isResolved) {
-    if (contract.mechanism === 'cpmm-1') {
-      const { prob } = contract
-      uncertainness = normalize(prob * (1 - prob), 0.25)
-    } else if (contract.mechanism === 'cpmm-multi-1') {
-      const { answers, shouldAnswersSumToOne } = contract
-      const probs = sortBy(answers.map((a) => a.prob)).reverse()
-      if (probs.length === 0) {
-        uncertainness = 0
-      } else if (!shouldAnswersSumToOne) {
-        // for independent binary markets
-        uncertainness = max(probs.map((p) => normalize(p * (1 - p), 0.25))) ?? 0
-      } else if (probs.length < 3) {
-        const prob = probs[0]
-        uncertainness = normalize(prob * (1 - prob), 0.25)
-      } else {
-        const [p1, p2] = probs.slice(0, 2)
-        const product = p1 * p2 * (1 - p1 - p2)
-        uncertainness = normalize(product, 1 / 3 ** 3)
-      }
-    }
-  }
 
   let dailyScore = 0
   let logOddsChange = 0
@@ -341,64 +374,119 @@ export const computeContractScores = (
     dailyScore = Math.log(thisWeekScore + 1) * logOddsChange
   }
 
-  const marketMovt =
-    normalize(logOddsChange, 5) * normalize(contract.uniqueBettorCount, 10) // ignore movt on small markets
+  if (isResolved && resolutionTime) {
+    const timeSinceResolution = now - resolutionTime
+    const daysSinceResolution = timeSinceResolution / DAY_MS
 
-  const conversionScore = normalize(contract.conversionScore, 1)
+    if (daysSinceResolution > 7) {
+      // For markets resolved over a week ago, importance is based purely on trader count
+      // Use the total unique bettor count from the contract
+      const traderScore = clamp(
+        normalize(
+          Math.log10(contract.uniqueBettorCount + 1),
+          Math.log10(20_000)
+        ),
+        0,
+        1
+      )
+      const importanceScore = traderScore * MIN_IMPORTANCE_SCORE
 
-  // recalibrate all of these numbers as site usage changes
-  const rawMarketImportance =
-    2 * normalize(Math.log10(contract.volume24Hours + 1), 5) +
-    2 * normalize(traderHour, 20) +
-    2 * normalize(todayScore, 100) +
-    2 * liquidityScore +
-    newness +
-    marketMovt +
-    closingSoonnness +
-    commentScore +
-    normalize(thisWeekScore, 200) +
-    normalize(contract.uniqueBettorCount, 1000) +
-    normalize(Math.log10(contract.volume + 1), 7) +
-    uncertainness +
-    conversionScore
+      return {
+        todayScore,
+        thisWeekScore,
+        freshnessScore: 0,
+        dailyScore: 0,
+        importanceScore,
+        logOddsChange: 0,
+        rawMarketImportanceBreakdown: {
+          contractId: contract.id,
+          resolvedTraderBonus: traderScore,
+        },
+      }
+    }
+  }
 
+  const volume24HoursComponent =
+    3 * normalize(Math.log10(contract.volume24Hours + 1), 5)
+  const traderHourComponent = 3 * normalize(traderHour, 25)
+  const todayScoreComponent = 2 * normalize(todayScore, 100)
+  const closingSoonnnessComponent = closingSoonnness
+  const commentScoreComponent = commentScore * 2
+  const thisWeekScoreComponent = normalize(thisWeekScore, 1000)
+  const rankedScore = isMarketRanked(contract) ? 0 : -1
+  const boostScore = isBoosted ? 3 : 0
+  const computedRawMarketImportance =
+    volume24HoursComponent +
+    traderHourComponent +
+    todayScoreComponent +
+    closingSoonnnessComponent +
+    commentScoreComponent +
+    thisWeekScoreComponent +
+    rankedScore +
+    boostScore
+
+  const newnessComponent = newness
   const rawPollImportance =
     2 * normalize(traderHour, 20) +
     2 * normalize(todayScore, 100) +
-    2 * newness +
+    newnessComponent +
     commentScore +
     normalize(thisWeekScore, 200) +
-    normalize(contract.uniqueBettorCount, 1000)
+    boostScore
 
   const importanceScore =
     outcomeType === 'BOUNTIED_QUESTION'
       ? bountiedImportanceScore(contract, newness, commentScore)
       : outcomeType === 'POLL'
-      ? normalize(rawPollImportance, 5) // increase max as polls catch on
-      : normalize(rawMarketImportance, 8)
+      ? Math.max(normalize(rawPollImportance, 5), isBoosted ? 0.9 : 0)
+      : Math.max(normalize(computedRawMarketImportance, 5), isBoosted ? 0.9 : 0)
 
-  const rawMarketFreshness =
-    normalize(Math.log10(contract.volume24Hours + 1), 5) +
-    normalize(traderHour, 20) +
-    newness
-
+  // Calculate freshness components
   const todayRatio = todayScore / (thisWeekScore - todayScore + 1)
   const hourRatio = traderHour / (thisWeekScore - traderHour + 1)
-  const freshnessFactor = clamp((todayRatio + 10 * hourRatio) / 5, 0.05, 1)
+  const freshnessFactor = clamp((todayRatio + 5 * hourRatio) / 5, 0.05, 1) // Reduced multiplier for hourRatio
+
+  const freshVolume24h =
+    (contract.volume24Hours / (contract.volume + 1)) *
+    normalize(Math.log10(contract.volume24Hours + 1), 5)
+  const freshTodayScore = normalize(todayScore, 10)
+  const freshLastUpdated =
+    normalize(0.05 - (now - contract.lastUpdatedTime) / DAY_MS, 0.05) / 2
+
+  const rawMarketFreshness =
+    freshVolume24h + freshTodayScore + freshLastUpdated + rankedScore
+
+  const rawMarketImportanceBreakdown = {
+    contractId: contract.id,
+    volume24HoursComponent,
+    traderHourComponent,
+    todayScoreComponent,
+    closingSoonnnessComponent,
+    commentScore: commentScoreComponent,
+    thisWeekScoreComponent,
+    rankedScore,
+    boostScore,
+    // Freshness components
+    freshVolume24h,
+    freshTodayScore,
+    freshLastUpdated,
+    // Poll components
+    newness: newnessComponent,
+  }
 
   const freshnessScore =
     outcomeType === 'POLL' || outcomeType === 'BOUNTIED_QUESTION'
       ? freshnessFactor * importanceScore
-      : normalize(rawMarketFreshness, 2)
+      : normalize(rawMarketFreshness, 3)
 
   return {
     todayScore,
     thisWeekScore,
-    popularityScore: popularityScore >= 1 ? popularityScore : 0,
     freshnessScore,
     dailyScore,
     importanceScore,
     logOddsChange,
+    rawMarketImportanceBreakdown,
   }
 }
 
@@ -415,9 +503,137 @@ const bountiedImportanceScore = (
   const rawImportance =
     3 * commentScore + newness + bountyScore + bountyLeftScore
 
-  return normalize(rawImportance, 6)
+  return 0.1 * normalize(rawImportance, 6)
 }
 
 const sigmoid = (x: number) => 1 / (1 + Math.exp(-x))
 
 const normalize = (x: number, max: number) => sigmoid((6 * x) / max - 3)
+
+// Scoring for Posts
+export async function calculatePostImportanceScore(
+  pg: SupabaseDirectClientTimeout,
+  readOnly = false
+) {
+  const now = Date.now()
+  log('Calculating post importance scores')
+  const dayAgo = now - DAY_MS
+  const weekAgo = now - WEEK_MS
+
+  const posts = await pg.map(
+    `SELECT DISTINCT p.id, p.data, p.importance_score
+     FROM old_posts p
+     LEFT JOIN old_post_comments c ON p.id = c.post_id
+     LEFT JOIN user_reactions r ON p.id = r.content_id AND r.content_type = 'post'
+     WHERE p.visibility = 'public'
+       AND (
+         p.created_time > now() - interval '1 month' OR
+         c.created_time > now() - interval '1 month' OR
+         r.created_time > now() - interval '1 month'
+       )
+    `,
+    [],
+    convertPost
+  )
+
+  log(`Found ${posts.length} posts to potentially score`)
+
+  const dailyPostCommentCounts = await getPostCommentCounts(
+    pg,
+    dayAgo,
+    posts.map((p) => p.id)
+  )
+  const weeklyPostCommentCounts = await getPostCommentCounts(
+    pg,
+    weekAgo,
+    posts.map((p) => p.id)
+  )
+
+  const dailyPostLikeCounts = await getPostLikeCounts(
+    pg,
+    dayAgo,
+    posts.map((p) => p.id)
+  )
+  const weeklyPostLikeCounts = await getPostLikeCounts(
+    pg,
+    weekAgo,
+    posts.map((p) => p.id)
+  )
+
+  const postsWithUpdates: { id: string; importance_score: number }[] = []
+
+  for (const post of posts) {
+    const postId = post.id
+    const currentImportanceScore = post.importanceScore
+
+    const commentsToday = dailyPostCommentCounts[postId] ?? 0
+    const commentsWeek = weeklyPostCommentCounts[postId] ?? 0 // This is total for the week up to 'weekAgo'
+    const likesToday = dailyPostLikeCounts[postId] ?? 0
+    const likesWeek = weeklyPostLikeCounts[postId] ?? 0 // This is total for the week up to 'weekAgo'
+
+    const todayActivity = commentsToday + likesToday
+
+    const weekActivityTotal = commentsWeek + likesWeek
+
+    const rawScore =
+      normalize(todayActivity, 100) * 2 + normalize(weekActivityTotal, 250)
+
+    const newImportanceScore = normalize(rawScore, 3)
+
+    // Only update if the score has changed significantly
+    const epsilon = 0.01
+    if (Math.abs(newImportanceScore - currentImportanceScore) > epsilon) {
+      postsWithUpdates.push({
+        id: postId,
+        importance_score: clamp(newImportanceScore, 0, 1),
+      })
+    }
+  }
+
+  log(`Found ${postsWithUpdates.length} posts to update scores for`)
+
+  if (!readOnly && postsWithUpdates.length > 0) {
+    log('Updating scores for posts', {
+      postsWithUpdates,
+    })
+    await bulkUpdate(pg, 'old_posts', ['id'], postsWithUpdates)
+  }
+}
+
+// Helper to get post comment counts since a certain time
+export const getPostCommentCounts = async (
+  pg: SupabaseDirectClient,
+  since: number,
+  postIds: string[]
+): Promise<{ [postId: string]: number }> => {
+  const query = `
+    SELECT post_id, COUNT(comment_id)::int AS comment_count
+    FROM old_post_comments
+    WHERE created_time >= millis_to_ts($1) AND post_id = ANY(ARRAY[$2])
+    GROUP BY post_id
+  `
+  const results = await pg.manyOrNone(query, [since, postIds])
+  return Object.fromEntries(
+    results.map((r: any) => [r.post_id, parseInt(r.comment_count)])
+  )
+}
+
+// Helper to get post like counts since a certain time
+export const getPostLikeCounts = async (
+  pg: SupabaseDirectClient,
+  since: number,
+  postIds: string[]
+): Promise<{ [postId: string]: number }> => {
+  const query = `
+    SELECT content_id AS post_id, COUNT(reaction_id)::int AS like_count
+    FROM user_reactions
+    WHERE content_type = 'post' AND reaction_type = 'like'
+    AND created_time >= millis_to_ts($1)
+    AND content_id = ANY(ARRAY[$2])
+    GROUP BY content_id
+  `
+  const results = await pg.manyOrNone(query, [since, postIds])
+  return Object.fromEntries(
+    results.map((r: any) => [r.post_id, parseInt(r.like_count)])
+  )
+}

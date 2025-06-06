@@ -56,7 +56,8 @@
       "channel": "default",
       "env": {
         "NEXT_PUBLIC_FIREBASE_ENV": "PROD",
-        "NATIVE_BUILD_TYPE": "PROD"
+        "NATIVE_BUILD_TYPE": "PROD",
+        "SENTRY_PROPERTIES": "./sentry.properties"
       },
       "android": {
         "credentialsSource": "local"

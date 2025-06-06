@@ -2,7 +2,6 @@ import { escapeRegExp } from 'lodash'
 import { DEV_CONFIG } from './dev'
 import { EnvConfig, PROD_CONFIG } from './prod'
 
-// Valid in web client & Vercel deployments only.
 export const ENV = (process.env.NEXT_PUBLIC_FIREBASE_ENV ?? 'PROD') as
   | 'PROD'
   | 'DEV'
@@ -12,17 +11,27 @@ export const CONFIGS: { [env: string]: EnvConfig } = {
   DEV: DEV_CONFIG,
 }
 
-export const PRODUCT_MARKET_FIT_ENABLED = false
-export const SPICE_PRODUCTION_ENABLED = true
+export const TWOMBA_CASHOUT_ENABLED = true
+export const SWEEP_PRODUCTION_ENABLED = false
+export const SPICE_PRODUCTION_ENABLED = false
 export const SPICE_TO_MANA_CONVERSION_RATE = 1
+export const CASH_TO_MANA_CONVERSION_RATE = 100
+export const MIN_CASH_DONATION = 25
 export const MIN_SPICE_DONATION = 25000
-export const CHARITY_FEE = 0.05
-export const SPICE_TO_CHARITY_DOLLARS = (1 / 1000) * (1 - CHARITY_FEE) // prize points -> dollars
+export const CASH_TO_CHARITY_DOLLARS = 1
+export const NY_FL_CASHOUT_LIMIT = 5000
+export const DOLLAR_PURCHASE_LIMIT = 5000
 
 export const SPICE_NAME = 'Prize Point'
+export const SWEEPIES_NAME = 'sweepcash'
 export const SPICE_MARKET_TOOLTIP = `Prize market! Earn ${SPICE_NAME}s on resolution`
+export const SWEEPIES_MARKET_TOOLTIP = `Sweepstakes market! Win real cash prizes.`
+export const CASH_SUFFIX = '--cash'
 
-export const DASHBOARD_ENABLED = ENV === 'DEV'
+export const TRADE_TERM = 'bet'
+export const TRADED_TERM = 'bet'
+export const TRADING_TERM = 'betting'
+export const TRADER_TERM = 'trader'
 
 export const ENV_CONFIG = CONFIGS[ENV]
 
@@ -33,9 +42,10 @@ export function isAdminId(id: string) {
 export function isModId(id: string) {
   return MOD_IDS.includes(id)
 }
+export function isSweepstakesModId(id: string) {
+  return SWEEPSTAKES_MOD_IDS.includes(id)
+}
 export const DOMAIN = ENV_CONFIG.domain
-export const LOVE_DOMAIN = ENV_CONFIG.loveDomain
-export const LOVE_DOMAIN_ALTERNATE = ENV_CONFIG.loveDomainAlternate
 export const FIREBASE_CONFIG = ENV_CONFIG.firebaseConfig
 export const PROJECT_ID = ENV_CONFIG.firebaseConfig.projectId
 export const IS_PRIVATE_MANIFOLD = ENV_CONFIG.visibility === 'PRIVATE'
@@ -48,18 +58,6 @@ export const AUTH_COOKIE_NAME = `FBUSER_${PROJECT_ID.toUpperCase().replace(
 // Manifold's domain or any subdomains thereof
 export const CORS_ORIGIN_MANIFOLD = new RegExp(
   '^https?://(?:[a-zA-Z0-9\\-]+\\.)*' + escapeRegExp(ENV_CONFIG.domain) + '$'
-)
-// Manifold love domain or any subdomains thereof
-export const CORS_ORIGIN_MANIFOLD_LOVE = new RegExp(
-  '^https?://(?:[a-zA-Z0-9\\-]+\\.)*' +
-    escapeRegExp(ENV_CONFIG.loveDomain) +
-    '$'
-)
-// Manifold love domain or any subdomains thereof
-export const CORS_ORIGIN_MANIFOLD_LOVE_ALTERNATE = new RegExp(
-  '^https?://(?:[a-zA-Z0-9\\-]+\\.)*' +
-    escapeRegExp(ENV_CONFIG.loveDomainAlternate) +
-    '$'
 )
 
 export const CORS_ORIGIN_CHARITY = new RegExp(
@@ -160,11 +158,22 @@ export const BOT_USERNAMES = [
   'brontobot',
   'OracleBot',
   'spacedroplet',
+  'AriZernerBot',
+  'PV_bot',
+  'draaglom_bot',
+  'SiriusBOT',
+  'bradbot',
+  'ShrimpLute',
+  'kbot',
+  'ataribot',
+  'RISKBOT',
+  'harmonia',
+  'Dagonet',
 ]
 
 export const MOD_IDS = [
   'qnIAzz9RamaodeiJSiGZO6xRGC63', // Agh
-  'srFlJRuVlGa7SEJDM4cY9B5k4Lj2', //bayesian
+  'srFlJRuVlGa7SEJDM4cY9B5k4Lj2', // bayesian
   'EJQOCF3MfLTFYbhiKncrNefQDBz1', // chrisjbillington
   'MV9fTVHetcfp3h6CVYzpypIsbyN2', // CodeandSolder
   'HTbxWFlzWGeHUTiwZvvF0qm8W433', // Conflux
@@ -187,14 +196,26 @@ export const MOD_IDS = [
   'lkkqZxiWCpOgtJ9ztJcAKz4d9y33', // NathanpmYoung
   'fSrex43BDjeneNZ4ZLfxllSb8b42', // NcyRocks
   'BgCeVUcOzkexeJpSPRNomWQaQaD3', // SemioticRivalry
-  'OEbsAczmbBc4Sl1bacYZNPJLLLc2', // SirCryptomind
-  'YOILpFNyg0gGj79zBIBUpJigHQ83', // SneakySly
   'KHX2ThSFtLQlau58hrjtCX7OL2h2', // shankypanky (stefanie)
   'hUM4SO8a8qhfqT1gEZ7ElTCGSEz2', // Stralor
   'tO4DwIsujySUwtSnrr2hnU1WJtJ3', // WieDan
+  'oPxjIzlvC5fRbGCaVgkvAiyoXBB2', // mattyb
+  'Iua2KQvL6KYcfGLGNI6PVeGkseo1', // Ziddletwix
+  'Gg7t9vPD4WPD1iPgj9RUFLYTxgH2', // nikki
+  'XNrWcIrA22hpv20fHn4ApoTPsh63', // bagelfan
+  '0k1suGSJKVUnHbCPEhHNpgZPkUP2', // Sinclair
 ]
 
-export const MVP = ['Eliza', 'Gabrielle']
+export const SWEEPSTAKES_MOD_IDS = [
+  'uglwf3YKOZNGjjEXKc5HampOFRE2', // SirSalty
+  'KHX2ThSFtLQlau58hrjtCX7OL2h2', // shankypanky (stefanie)
+  '2VhlvfTaRqZbFn2jqxk2Am9jgsE2', // Gabrielle
+  'HTbxWFlzWGeHUTiwZvvF0qm8W433', // Conflux
+  'YGZdZUSFQyM8j2YzPaBqki8NBz23', // jack
+  'JlVpsgzLsbOUT4pajswVMr0ZzmM2', // Joshua
+]
+
+export const MVP = ['Eliza', 'Gabrielle', 'jacksonpolack']
 
 export const VERIFIED_USERNAMES = [
   'EliezerYudkowsky',
@@ -224,7 +245,7 @@ export const VERIFIED_USERNAMES = [
   'RazibKhan',
   'JamesMedlock',
   'Writer',
-  'GeorgeHotz',
+  'geohot',
   'ShayneCoplan',
   'SanghyeonSeo',
   'KatjaGrace',
@@ -244,17 +265,39 @@ export const VERIFIED_USERNAMES = [
   'patrissimo',
   'postjawline',
   'MatthewYglesias',
+  'MatthewYglesiasvuyf',
   'BillyMcRascal',
   'kyootbot',
   'MaximLott',
   'liron',
   'LarsDoucet',
   'PeterWildeford',
+  'SethWalder',
+  'SneakySly',
+  'ConorSen',
+  'transmissions11',
+  'DanHendrycks',
+  'Cremieux',
+  'tracewoodgrains',
+  'LuigiMangione',
+  'LeahLibresco',
+  'ModernDayDebate',
+  'NickyCase',
+  'TamayBesiroglu',
 ]
 
-export const BLESSED_BANNED_USER_IDS = [
-  'wBZSAA3MrnWjz7eHrKAq43OXBtA2', // kazoo
-  '4Qy6MOn8AFRTecA6FMzdljPJFsv1', //HamsterHawk
+export const BANNED_TRADING_USER_IDS = [
+  'zgCIqq8AmRUYVu6AdQ9vVEJN8On1', // firstuserhere aka _deleted_
+  'LIBAoi7tpqeNLYM1xxJ1QJBQqW32', // lastuserhere
+  'p3ADzwIUS3fk0ka80XYEE3OM3S32', // PC
+  '4JuXgDx47xPagH5mcLDqLzUSN5g2', // BTE
+  'iD1ObV4sInhkBXs3Ten96j4Co6O2', // BTE alt
+  'zRMxfUt51RcEIcZkuw6ySiNJYBE3', // BTE alt
+  'wo2LRCvgaNSllK3q0Wnv8hlusTa2', // BTE alt
+  'os2ilMb1d8WDeXxiQAo6btlig1Z2', // BTE alt
+  'zRMxfUt51RcEIcZkuw6ySiNJYBE3', // BTE alt
+  'fnuHBW8dHwZp2TbEt2MKJY9d28V2', // Klob (Caleb)
+  'RK6Nd7IBfMVOcLekfqcN9Ys17qJ2', // PeterNjeim
 ]
 
 export const PARTNER_USER_IDS: string[] = [
@@ -273,47 +316,35 @@ export const PARTNER_USER_IDS: string[] = [
   'BgCeVUcOzkexeJpSPRNomWQaQaD3', // SemioticRivalry
   'X1xu1kvOxuevx09xuR2urWfzf7i1', // KeenenWatts
   '4juQfJkFnwX9nws3dFOpz4gc1mi2', // jacksonpolack
-  '5LZ4LgYuySdL1huCWe7bti02ghx2', // James
   '8WEiWcxUd7QLeiveyI8iqbSIffU2', // goblinodds
   'Iua2KQvL6KYcfGLGNI6PVeGkseo1', // Ziddletwix
   'GRaWlYn2fNah0bvr6OW28l28nFn1', // cash
   'ZKkL3lFRFaYfiaT9ZOdiv2iUJBM2', // mint
   'hRbPwezgxnat6GpJQxoFxq1xgUZ2', // AmmonLam
-  'iPQVGUbwOfT3MmWIZs3JaruVzhV2', // Mugiwaraplus
-  'k9gKj9BgTLN5tkqYztHeNoSpwyl1', // OnePieceExplained
   'foOeshHZOET3yMvRTMPINpnb8Bj2', // PunishedFurry
   'EBGhoFSxRtVBu4617SLZUe1FeJt1', // FranklinBaldo
-  'GPlNcdBrcfZ3PiAfhnI9mQfHZbm1', // RemNi
   '4xOTMCIOkGesdJft50wVFZFb5IB3', // Tripping
-  'hUM4SO8a8qhfqT1gEZ7ElTCGSEz2', // Stralor aka Pat Scott
   'srFlJRuVlGa7SEJDM4cY9B5k4Lj2', // Bayesian
   'H6b5PWELWfRV6HhyHAlCGq7yJJu2', // AndrewG
   'EJQOCF3MfLTFYbhiKncrNefQDBz1', // chrisjbillington
   '7HhTMy4xECaVKvl5MmEAfVUkRCS2', // KevinBurke
   'oPxjIzlvC5fRbGCaVgkvAiyoXBB2', // mattyb
+  'OdBj5DW6PbYtnImvybpyZzfhb133', // jim
+  'm5K4FlZLo0aeDd5Z7W4xX3TAGHs1', // JeffBerman
+  'LmtawaGf6jO0oFGzth1UCrUXFW82', // AaronSimansky
 ]
 
 export const NEW_USER_HERLPER_IDS = [
-  'cgrBqe2O3AU4Dnng7Nc9wuJHLKb2', // jskf
   '2VhlvfTaRqZbFn2jqxk2Am9jgsE2', // Gabrielle
-  '4juQfJkFnwX9nws3dFOpz4gc1mi2', // jacksonpolack
   'BgCeVUcOzkexeJpSPRNomWQaQaD3', // SemioticRivalry
   'rQPOELuW5zaapaNPnBYQBMoonk92', // Tumbles
-  'igi2zGXsfxYPgB0DJTXVJVmwCOr2', // Austin
-  '5LZ4LgYuySdL1huCWe7bti02ghx2', // James
   'tlmGNz9kjXc2EteizMORes4qvWl2', // Stephen
-  '0k1suGSJKVUnHbCPEhHNpgZPkUP2', // Sinclair
   'AJwLWoo3xue32XIiAVrL5SyR1WB2', // Ian
   'uglwf3YKOZNGjjEXKc5HampOFRE2', // D4vid
-  'GRwzCexe5PM6ThrSsodKZT9ziln2', // Inga
   'cA1JupYR5AR8btHUs2xvkui7jA93', // Genzy
-  'hUM4SO8a8qhfqT1gEZ7ElTCGSEz2', // Stralor
-  'sA7V30Ic73XZtniboy2eKr6ekkn1', // MartinRandall
-  'JlVpsgzLsbOUT4pajswVMr0ZzmM2', // Joshua
   'srFlJRuVlGa7SEJDM4cY9B5k4Lj2', // Bayesian
-  'oPxjIzlvC5fRbGCaVgkvAiyoXBB2', // mattyb
   'Gg7t9vPD4WPD1iPgj9RUFLYTxgH2', // nikki
-  'OdBj5DW6PbYtnImvybpyZzfhb133', // @jim
+  'OdBj5DW6PbYtnImvybpyZzfhb133', // jim
 ]
 
 export const OPTED_OUT_OF_LEAGUES = [
@@ -324,7 +355,7 @@ export const OPTED_OUT_OF_LEAGUES = [
   'BhNkw088bMNwIFF2Aq5Gg9NTPzz1', // acc
   'JlVpsgzLsbOUT4pajswVMr0ZzmM2', // Joshua
   'oPxjIzlvC5fRbGCaVgkvAiyoXBB2', // mattyb
-  'NndHcEmeJhPQ6n7e7yqAPa3Oiih2', //josh
+  'NndHcEmeJhPQ6n7e7yqAPa3Oiih2', // josh
 ]
 
 export const HIDE_FROM_LEADERBOARD_USER_IDS = [
@@ -332,10 +363,35 @@ export const HIDE_FROM_LEADERBOARD_USER_IDS = [
   'tRZZ6ihugZQLXPf6aPRneGpWLmz1', // ManifoldLove
 ]
 
+export const INSTITUTIONAL_PARTNER_USER_IDS: string[] = []
+
+export const BEING_DEAD_HEADS = [
+  '6hHpzvRG0pMq8PNJs7RZj2qlZGn2',
+  'AJwLWoo3xue32XIiAVrL5SyR1WB2',
+  'D8O4yNtFhEU8Y7Taf3BilznJOcu2',
+  'tlmGNz9kjXc2EteizMORes4qvWl2',
+]
+
 export const HOUSE_BOT_USERNAME = 'acc'
 
-export function firestoreConsolePath(contractId: string) {
-  return `https://console.firebase.google.com/project/${PROJECT_ID}/firestore/data/~2Fcontracts~2F${contractId}`
+export function supabaseUserConsolePath(userId: string) {
+  const tableId = ENV === 'DEV' ? 19247 : 25916
+  return `https://supabase.com/dashboard/project/${ENV_CONFIG.supabaseInstanceId}/editor/${tableId}/?filter=id%3Aeq%3A${userId}`
+}
+
+export function supabasePrivateUserConsolePath(userId: string) {
+  const tableId = ENV === 'DEV' ? 2189688 : 153495548
+  return `https://supabase.com/dashboard/project/${ENV_CONFIG.supabaseInstanceId}/editor/${tableId}/?filter=id%3Aeq%3A${userId}`
+}
+
+export function supabaseConsoleContractPath(contractId: string) {
+  const tableId = ENV === 'DEV' ? 19254 : 25924
+  return `https://supabase.com/dashboard/project/${ENV_CONFIG.supabaseInstanceId}/editor/${tableId}?filter=id%3Aeq%3A${contractId}`
+}
+
+export function supabaseConsoleTxnPath(txnId: string) {
+  const tableId = ENV === 'DEV' ? 20014 : 25940
+  return `https://supabase.com/dashboard/project/${ENV_CONFIG.supabaseInstanceId}/editor/${tableId}?filter=id%3Aeq%3A${txnId}`
 }
 
 export const GOOGLE_PLAY_APP_URL =
@@ -395,6 +451,22 @@ export const HIDE_FROM_NEW_USER_SLUGS = [
   'metaforecasting',
   'death-markets',
   ...GROUP_SLUGS_TO_IGNORE_IN_MARKETS_EMAIL,
+]
+
+export const GROUP_SLUGS_TO_NOT_INTRODUCE_IN_FEED = [
+  'rationalussy',
+  'nsfw',
+  'planecrash',
+  'glowfic',
+  'no-resolution',
+  'the-market',
+  'spam',
+  'test',
+  'eto',
+  'friend-stocks',
+  'testing',
+  'all-stonks',
+  PROD_MANIFOLD_LOVE_GROUP_SLUG,
 ]
 
 export const EXTERNAL_REDIRECTS = ['/umami']
@@ -490,3 +562,4 @@ export const RESERVED_PATHS = [
 ]
 
 export const MANA_PURCHASE_RATE_CHANGE_DATE = new Date('2024-05-16T18:20:00Z')
+export const MANA_PURCHASE_RATE_REVERT_DATE = new Date('2024-09-17T17:06:00Z') // commit date of sweepcash - PR #2840 5e8b46d8

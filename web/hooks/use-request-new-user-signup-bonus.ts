@@ -1,14 +1,17 @@
 import { useUser } from 'web/hooks/use-user'
 import { useEffect } from 'react'
-import { call } from 'web/lib/firebase/api'
+import { call } from 'web/lib/api/api'
 import { toast } from 'react-hot-toast'
 import { getApiUrl } from 'common/api/utils'
 import { usePersistentLocalState } from 'web/hooks/use-persistent-local-state'
 import { uniq } from 'lodash'
 import { MARKET_VISIT_BONUS, MARKET_VISIT_BONUS_TOTAL } from 'common/economy'
 import { formatMoney } from 'common/util/format'
-import { isVerified } from 'common/user'
+import { humanish } from 'common/user'
 
+/**
+ * @deprecated market visit bonus no longer in use
+ */
 export const useRequestNewUserSignupBonus = (contractId: string) => {
   const user = useUser()
 
@@ -46,7 +49,7 @@ export const useRequestNewUserSignupBonus = (contractId: string) => {
       newContractIdsVisited.includes(contractId) ||
       remainingBonuses <= 0 ||
       !user ||
-      !isVerified(user) ||
+      !humanish(user) ||
       user.signupBonusPaid === undefined ||
       user.signupBonusPaid >= MARKET_VISIT_BONUS_TOTAL
     )

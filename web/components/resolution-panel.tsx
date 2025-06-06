@@ -2,28 +2,27 @@ import { useState } from 'react'
 import { YesNoCancelSelector } from './bet/yes-no-selector'
 import { Spacer } from './layout/spacer'
 import { ResolveConfirmationButton } from './buttons/confirmation-button'
-import { APIError, api } from 'web/lib/firebase/api'
+import { APIError, api } from 'web/lib/api/api'
 import { getAnswerProbability, getProbability } from 'common/calculate'
 import {
   BinaryContract,
-  CPMMMultiContract,
   Contract,
-  canCancelContract,
+  MultiContract,
   resolution,
 } from 'common/contract'
 import { BETTORS } from 'common/user'
 import { Row } from 'web/components/layout/row'
 import { ProbabilityInput } from './widgets/probability-input'
-import { Button, IconButton } from './buttons/button'
+import { Button } from './buttons/button'
 import { Answer } from 'common/answer'
 import { Col } from './layout/col'
 import { removeUndefinedProps } from 'common/util/object'
-import { XIcon } from '@heroicons/react/solid'
 import { useUser } from 'web/hooks/use-user'
 import { EditCloseTimeModal } from 'web/components/contract/contract-details'
 import clsx from 'clsx'
 import { linkClass } from 'web/components/widgets/site-link'
 import Link from 'next/link'
+import { XIcon } from '@heroicons/react/solid'
 
 function getResolveButtonColor(outcome: resolution | undefined) {
   return outcome === 'YES'
@@ -44,7 +43,7 @@ function getResolveButtonLabel(
   return outcome === 'CANCEL'
     ? 'N/A'
     : outcome === 'MKT'
-    ? `${prob}%`
+    ? `${prob ?? ''}%`
     : outcome ?? ''
 }
 
@@ -89,9 +88,6 @@ export function ResolutionPanel(props: {
     }
   }
 
-  const user = useUser()
-  const canCancel = !!user && canCancelContract(user.id, contract)
-
   return (
     <>
       <ResolveHeader
@@ -101,11 +97,7 @@ export function ResolutionPanel(props: {
         fullTitle={inModal}
       />
 
-      <YesNoCancelSelector
-        selected={outcome}
-        onSelect={setOutcome}
-        canCancel={canCancel}
-      />
+      <YesNoCancelSelector selected={outcome} onSelect={setOutcome} />
 
       <Spacer h={4} />
       {!!error && <div className="text-scarlet-500">{error}</div>}
@@ -123,14 +115,14 @@ export function ResolutionPanel(props: {
             </>
           ) : outcome === 'MKT' ? (
             <Col className="gap-2">
-              <Row className="flex-wrap items-center gap-2">
+              <Col className=" gap-2">
                 <span>Pay out at this probability:</span>{' '}
                 <ProbabilityInput
                   prob={prob}
                   onChange={setProb}
                   className="!h-11 w-28"
                 />
-              </Row>
+              </Col>
               <div className="text-ink-500">
                 Yes holders get this percent of the winnings and No holders get
                 the rest.
@@ -142,6 +134,7 @@ export function ResolutionPanel(props: {
         </div>
         {!inModal && (
           <ResolveConfirmationButton
+            size="xl"
             color={getResolveButtonColor(outcome)}
             label={getResolveButtonLabel(outcome, prob)}
             marketTitle={contract.question}
@@ -179,6 +172,12 @@ export function ResolveHeader(props: {
   }
   return (
     <Col>
+      <Row className="justify-end">
+        <Button onClick={onClose} color="gray-white">
+          <XIcon className="mr-2 h-4 w-4" />
+          Close
+        </Button>
+      </Row>
       <Row className="mb-6 items-start justify-between">
         {closeTime && closeTime < Date.now() ? (
           <Col>
@@ -197,9 +196,6 @@ export function ResolveHeader(props: {
         ) : (
           <div />
         )}
-        <IconButton size={'2xs'} onClick={onClose}>
-          <XIcon className="h-5 w-5" />
-        </IconButton>
       </Row>
       <div className="mb-2 text-lg">
         {!isCreator && (
@@ -225,16 +221,13 @@ export function ResolveHeader(props: {
 }
 
 export function MiniResolutionPanel(props: {
-  contract: CPMMMultiContract
+  contract: MultiContract
   answer: Answer
   isAdmin: boolean
   isCreator: boolean
   modalSetOpen?: (open: boolean) => void
 }) {
   const { contract, answer, isAdmin, isCreator, modalSetOpen } = props
-
-  const user = useUser()
-  const canCancel = !!user && canCancelContract(user.id, contract)
 
   const [outcome, setOutcome] = useState<resolution | undefined>()
   const toggleOutcome = (newOutcome: resolution | undefined) => {
@@ -290,11 +283,7 @@ export function MiniResolutionPanel(props: {
         </div>
       )}
       <Col className="gap-1">
-        <YesNoCancelSelector
-          selected={outcome}
-          onSelect={toggleOutcome}
-          canCancel={canCancel}
-        />
+        <YesNoCancelSelector selected={outcome} onSelect={toggleOutcome} />
         {outcome === 'MKT' && (
           <Col className="gap-2">
             <Row className="flex-wrap items-center gap-1">
@@ -322,6 +311,7 @@ export function MiniResolutionPanel(props: {
         )}
       </Col>
       <ResolveConfirmationButton
+        size="sm"
         color={getResolveButtonColor(outcome)}
         label={getResolveButtonLabel(outcome, prob)}
         marketTitle={`${contract.question} - ${answer.text}`}
@@ -347,9 +337,7 @@ export const ResolutionExplainer = (props: {
           right. <br />{' '}
         </>
       )}
-      If you need help, ask in the comments section below; mention{' '}
-      <span className="font-semibold">@mods</span> in your comment if you want
-      to cancel the {answerOrQuestion}. Or, ask in our{' '}
+      If you need help, ask in the comments section below. Or, ask in our{' '}
       <Link
         onClick={(e) => {
           e.stopPropagation()

@@ -1,50 +1,47 @@
-import * as admin from 'firebase-admin'
 import {
   createSupabaseDirectClient,
   SupabaseDirectClient,
 } from 'shared/supabase/init'
-import { log } from 'shared/utils'
-import { Answer } from 'common/answer'
+import { contractColumnsToSelect, log } from 'shared/utils'
 import { DAY_MS, MONTH_MS, WEEK_MS } from 'common/util/time'
 import { Contract, CPMM } from 'common/contract'
 import { computeElasticity } from 'common/calculate-metrics'
 import { hasChanges } from 'common/util/object'
 import { chunk, groupBy, mapValues } from 'lodash'
 import { LimitBet } from 'common/bet'
-import { SafeBulkWriter } from 'shared/safe-bulk-writer'
+import { bulkUpdateData } from './supabase/utils'
+import { convertAnswer, convertContract } from 'common/supabase/contracts'
 import { bulkUpdateAnswers } from './supabase/answers'
 
-export async function updateContractMetricsCore(
-  outcomeType: 'multi' | 'non-multi'
-) {
-  const firestore = admin.firestore()
+export async function updateContractMetricsCore() {
   const pg = createSupabaseDirectClient()
   log('Loading contract data...')
-  const allContracts = await pg.map(
+  const where = `
+  where (c.resolution_time is null and c.last_bet_time > now() - interval '1 month')
+  or c.resolution_time > now() - interval '1 month'`
+  const results = await pg.multi(
     `
-    select data from contracts
-    where case 
-      when $1 = 'multi' then outcome_type = $2 
-      else outcome_type != $2 end
-    and (resolution_time is null or resolution_time > now() - interval '1 month')
+    select ${contractColumnsToSelect} from contracts c
+    ${where};
+    select * from answers a
+    where a.contract_id in (
+      select id from contracts c
+      ${where}
+    );
     `,
-    [outcomeType, 'MULTIPLE_CHOICE'],
-    (r) => r.data as Contract
+    []
   )
+  const allContracts = results[0].map(convertContract)
+  const sumToOneContractIds = allContracts
+    .filter((c) => c.mechanism === 'cpmm-multi-1' && c.shouldAnswersSumToOne)
+    .map((c) => c.id)
+  const answers = results[1].map(convertAnswer)
   log(`Loaded ${allContracts.length} contracts.`)
+  log(`Loaded ${answers.length} answers.`)
   const chunks = chunk(allContracts, 1000)
   let i = 0
   for (const contracts of chunks) {
     const contractIds = contracts.map((c) => c.id)
-    const answers = await pg.map(
-      `select data
-       from answers
-       where contract_id = any ($1)`,
-      [contractIds],
-      (r) => r.data as Answer
-    )
-    log(`Loaded ${answers.length} answers.`)
-
     const now = Date.now()
     const dayAgo = now - DAY_MS
     const weekAgo = now - WEEK_MS
@@ -66,17 +63,20 @@ export async function updateContractMetricsCore(
 
     log('Loading historic contract probabilities...')
     const [dayAgoProbs, weekAgoProbs, monthAgoProbs] = await Promise.all(
-      [dayAgo, weekAgo, monthAgo].map((t) => getBetProbsAt(pg, t, contractIds))
+      [dayAgo, weekAgo, monthAgo].map((t) =>
+        getBetProbsAt(pg, t, contractIds, sumToOneContractIds)
+      )
     )
 
     log('Loading volume...')
-    const volume = await getVolumeSince(pg, dayAgo, contractIds)
+    const volumeAndCount = await getVolumeAndCountSince(pg, dayAgo, contractIds)
 
     log('Loading unfilled limits...')
     const limits = await getUnfilledLimitOrders(pg, contractIds)
 
     log('Computing metric updates...')
-    const writer = new SafeBulkWriter()
+
+    const contractUpdates: ({ id: string } & Partial<Contract>)[] = []
 
     const answerUpdates: {
       id: string
@@ -90,12 +90,12 @@ export async function updateContractMetricsCore(
     for (const contract of contracts) {
       let cpmmFields: Partial<CPMM> = {}
       if (contract.mechanism === 'cpmm-1') {
-        const { poolProb, resProb, resTime } = currentContractProbs[contract.id]
+        const { id } = contract
+        const { poolProb, resProb, resTime } = currentContractProbs[id]
         const prob = resProb ?? poolProb
-        const key = `${contract.id} _`
-        const dayAgoProb = dayAgoProbs[key] ?? poolProb
-        const weekAgoProb = weekAgoProbs[key] ?? poolProb
-        const monthAgoProb = monthAgoProbs[key] ?? poolProb
+        const dayAgoProb = dayAgoProbs[id] ?? poolProb
+        const weekAgoProb = weekAgoProbs[id] ?? poolProb
+        const monthAgoProb = monthAgoProbs[id] ?? poolProb
         cpmmFields = {
           prob,
           probChanges: {
@@ -118,7 +118,7 @@ export async function updateContractMetricsCore(
                 }
               : currentAnswerProbs[answer.id]
           const prob = resProb ?? poolProb
-          const key = `${contract.id} ${answer.id}`
+          const key = contract.id + answer.id
           const dayAgoProb = dayAgoProbs[key] ?? poolProb
           const weekAgoProb = weekAgoProbs[key] ?? poolProb
           const monthAgoProb = monthAgoProbs[key] ?? poolProb
@@ -138,20 +138,20 @@ export async function updateContractMetricsCore(
         }
       }
       const elasticity = computeElasticity(limits[contract.id] ?? [], contract)
-      const update = {
-        volume24Hours: volume[contract.id] ?? 0,
+      const update: Partial<Contract> = {
+        volume24Hours: volumeAndCount[contract.id]?.volume ?? 0,
+        uniqueBettorCountDay: volumeAndCount[contract.id]?.countDay ?? 0,
         elasticity,
         ...cpmmFields,
       }
 
       if (hasChanges(contract, update)) {
-        const contractDoc = firestore.collection('contracts').doc(contract.id)
-        writer.update(contractDoc, update)
+        contractUpdates.push({ id: contract.id, ...update })
       }
     }
 
-    log('Committing writes...')
-    await writer.close()
+    await bulkUpdateData(pg, 'contracts', contractUpdates)
+
     i += contracts.length
     log(`Finished ${i}/${allContracts.length} contracts.`)
 
@@ -170,8 +170,8 @@ const getUnfilledLimitOrders = async (
     `select contract_id, data
     from contract_bets
     where (data->'limitProb')::numeric > 0
-    and not (data->'isFilled')::boolean
-    and not (data->'isCancelled')::boolean
+    and not contract_bets.is_filled
+    and not contract_bets.is_cancelled
     and contract_id = any($1)`,
     [contractIds]
   )
@@ -180,23 +180,28 @@ const getUnfilledLimitOrders = async (
     (rows) => rows.map((r) => r.data as LimitBet)
   )
 }
-
-const getVolumeSince = async (
+const getVolumeAndCountSince = async (
   pg: SupabaseDirectClient,
   since: number,
   contractIds: string[]
 ) => {
   return Object.fromEntries(
     await pg.map(
-      `select contract_id, sum(abs(amount)) as volume
+      `select contract_id, sum(abs(amount)) as volume,
+      count(distinct case when created_time > now() - interval '1 day' and not is_redemption then user_id end)::numeric as count_day
       from contract_bets
       where created_time >= millis_to_ts($1)
       and not is_redemption
-      and not is_ante
       and contract_id = any($2)
        group by contract_id`,
       [since, contractIds],
-      (r) => [r.contract_id as string, parseFloat(r.volume as string)]
+      (r) => [
+        r.contract_id as string,
+        {
+          volume: parseFloat(r.volume as string),
+          countDay: parseFloat(r.count_day as string),
+        },
+      ]
     )
   )
 }
@@ -234,7 +239,8 @@ const getCurrentProbs = async (
 const getBetProbsAt = async (
   pg: SupabaseDirectClient,
   when: number,
-  contractIds: string[]
+  contractIds: string[],
+  sumToOneContractIds: string[]
 ) => {
   return Object.fromEntries(
     await pg.map(
@@ -244,6 +250,7 @@ const getBetProbsAt = async (
         from contract_bets
         where created_time < millis_to_ts($1)
         and contract_id = any($2) 
+        and (not is_redemption or contract_id = any($3))
         order by contract_id, answer_id, created_time desc
       ), probs_after as (
         select distinct on (contract_id, answer_id)
@@ -251,6 +258,7 @@ const getBetProbsAt = async (
         from contract_bets
         where created_time >= millis_to_ts($1)
         and contract_id = any($2)
+        and (not is_redemption or contract_id = any($3))
         order by contract_id, answer_id, created_time
       )
       select
@@ -261,11 +269,8 @@ const getBetProbsAt = async (
       full outer join probs_before as pb
         on pa.contract_id = pb.contract_id and pa.answer_id = pb.answer_id
       `,
-      [when, contractIds],
-      (r) => [
-        `${r.contract_id} ${r.answer_id ?? '_'}`,
-        parseFloat(r.prob as string),
-      ]
+      [when, contractIds, sumToOneContractIds],
+      (r) => [r.contract_id + (r.answer_id ?? ''), parseFloat(r.prob as string)]
     )
   )
 }

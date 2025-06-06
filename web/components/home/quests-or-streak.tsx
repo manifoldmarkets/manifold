@@ -8,7 +8,10 @@ import { Modal } from 'web/components/layout/modal'
 import { Col } from 'web/components/layout/col'
 import { dailyStatsClass } from 'web/components/home/daily-stats'
 import { InfoTooltip } from '../widgets/info-tooltip'
-import { hasCompletedStreakToday } from 'web/components/profile/betting-streak-modal'
+import {
+  BettingStreakModal,
+  hasCompletedStreakToday,
+} from 'web/components/profile/betting-streak-modal'
 import { Title } from 'web/components/widgets/title'
 import { ProgressBar } from 'web/components/progress-bar'
 import {
@@ -20,6 +23,7 @@ import { useQuestStatus } from 'web/hooks/use-quest-status'
 import { LoadingIndicator } from 'web/components/widgets/loading-indicator'
 import Link from 'next/link'
 import { linkClass } from '../widgets/site-link'
+import { StreakProgressBar } from '../profile/streak-progress-bar'
 
 const QUEST_STATS_CLICK_EVENT = 'click quest stats button'
 
@@ -71,6 +75,7 @@ export function QuestsModal(props: {
 }) {
   const { open, setOpen, user } = props
   const questStatus = useQuestStatus(user)
+  const [showStreakModal, setShowStreakModal] = useState(false)
 
   const { totalQuestsCompleted, totalQuests, questToCompletionStatus } =
     questStatus ?? { questToCompletionStatus: null }
@@ -83,7 +88,6 @@ export function QuestsModal(props: {
   const streakStatus = questToCompletionStatus['BETTING_STREAK']
   const shareStatus = questToCompletionStatus['SHARES']
   const createStatus = questToCompletionStatus['MARKETS_CREATED']
-  const referralsStatus = questToCompletionStatus['REFERRALS']
 
   return (
     <Modal open={open} setOpen={setOpen} size={'lg'}>
@@ -114,8 +118,15 @@ export function QuestsModal(props: {
               BETTING_STREAK_BONUS_AMOUNT * (user.currentBettingStreak || 1),
               BETTING_STREAK_BONUS_MAX
             )}
-            href="/browse?fy=1&f=open"
+            onClick={() => setShowStreakModal(true)}
           />
+          {(user?.currentBettingStreak ?? 0) <= 5 && (
+            <Row className="-mt-2 w-full px-2 pl-12">
+              <StreakProgressBar
+                currentStreak={user?.currentBettingStreak ?? 0}
+              />
+            </Row>
+          )}
           <QuestRow
             emoji={'📤'}
             title={`Share ${shareStatus.requiredCount} market today`}
@@ -133,7 +144,7 @@ export function QuestsModal(props: {
             reward={QUEST_DETAILS.MARKETS_CREATED.rewardAmount}
             href={'/create'}
           />
-          <QuestRow
+          {/* <QuestRow
             emoji={'🙋️'}
             title={`Refer a friend this week`}
             complete={
@@ -145,9 +156,14 @@ export function QuestsModal(props: {
               'Just click the share button on a question and your referral code will be added to the link'
             }
             href={'/referrals'}
-          />
+          /> */}
         </Col>
       </div>
+      <BettingStreakModal
+        isOpen={showStreakModal}
+        setOpen={setShowStreakModal}
+        currentUser={user}
+      />
     </Modal>
   )
 }
@@ -160,21 +176,31 @@ const QuestRow = (props: {
   reward: number
   info?: string
   href?: string
+  onClick?: () => void
 }) => {
-  const { title, complete, status, reward, emoji, info, href } = props
+  const { title, complete, status, reward, emoji, info, href, onClick } = props
   return (
     <Row className={'justify-between'}>
       <Col>
         <Row className={'gap-4 sm:gap-6'}>
-          <span className={clsx('text-4xl', complete ? '' : 'grayscale')}>
+          <span
+            className={clsx(
+              'text-3xl sm:text-4xl',
+              complete ? '' : 'grayscale'
+            )}
+          >
             {emoji}
           </span>
           <Col>
-            <span className={clsx('sm:text-xl')}>
+            <span className={clsx('text-left sm:text-xl')}>
               {href ? (
                 <Link className={linkClass} href={href}>
                   {title}
                 </Link>
+              ) : onClick ? (
+                <button className="text-left" onClick={onClick}>
+                  {title}
+                </button>
               ) : (
                 title
               )}

@@ -19,29 +19,6 @@ export async function setQuestScoreValue(
   return data
 }
 
-// TODO: To reduce writes, we could just reset quest stats where users already have a score saved
-export async function setQuestScoreValueOnUsers(
-  userIds: string[],
-  scoreIds: string[],
-  scoreValue: number,
-  db: SupabaseClient,
-  idempotencyKey?: string
-) {
-  const values = scoreIds
-    .map((scoreId) =>
-      userIds.map((userId) => ({
-        user_id: userId,
-        score_id: scoreId,
-        score_value: scoreValue,
-        idempotency_key: idempotencyKey,
-      }))
-    )
-    .flat()
-
-  const { data } = await run(db.from('user_quest_metrics').upsert(values))
-  return data
-}
-
 export async function getQuestScores(
   userId: string,
   scoreIds: string[],

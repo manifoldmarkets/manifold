@@ -89,7 +89,10 @@ export function Pagination(props: {
     >
       <Row className="mx-auto gap-4">
         <PaginationArrow
-          onClick={() => onClick(page - 1)}
+          onClick={(e) => {
+            e?.stopPropagation()
+            onClick(page - 1)
+          }}
           disabled={page <= 0}
           nextOrPrev="prev"
         />
@@ -108,7 +111,10 @@ export function Pagination(props: {
           ))}
         </Row>
         <PaginationArrow
-          onClick={() => onClick(page + 1)}
+          onClick={(e) => {
+            e?.stopPropagation()
+            onClick(page + 1)
+          }}
           disabled={page >= maxPage}
           nextOrPrev="next"
         />
@@ -118,7 +124,7 @@ export function Pagination(props: {
 }
 
 export function PaginationArrow(props: {
-  onClick: () => void
+  onClick: (e?: React.MouseEvent) => void
   disabled: boolean
   nextOrPrev: 'next' | 'prev'
 }) {
@@ -154,7 +160,10 @@ export function PageNumbers(props: {
   }
   return (
     <button
-      onClick={() => setPage(pageNumber)}
+      onClick={(e) => {
+        e.stopPropagation()
+        setPage(pageNumber)
+      }}
       className={clsx(
         'select-none rounded-lg px-2',
         page === pageNumber

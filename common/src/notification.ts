@@ -1,9 +1,17 @@
-import { OutcomeType } from 'common/contract'
+import { ContractToken, OutcomeType } from 'common/contract'
 import { groupPath } from './group'
 import { PAST_BET } from './user'
 import { notification_preference } from './user-notification-preferences'
 import { Bet } from 'common/bet'
 import { league_user_info } from './leagues'
+import { groupBy } from 'lodash'
+
+export type NotificationGroup = {
+  notifications: Notification[]
+  groupedById: string
+  isSeen: boolean
+  latestCreatedTime: number
+}
 
 export type Notification = {
   id: string
@@ -34,6 +42,7 @@ export type Notification = {
   sourceTitle?: string
 
   isSeenOnHref?: string
+  markedAsRead?: boolean
 }
 
 export type NotificationReason =
@@ -73,10 +82,15 @@ export type notification_source_types =
   | 'new_match'
   | 'bet_reply'
   | 'new_message'
+  | 'post'
+  | 'post_like'
+  | 'post_comment_like'
   | love_notification_source_types
   | 'push_notification_bonus'
   | 'airdrop'
+  | 'manifest_airdrop'
   | 'extra_purchased_mana'
+  | 'payment_status'
 
 export type love_notification_source_types =
   | 'love_contract'
@@ -92,6 +106,7 @@ export type notification_source_update_types =
   | 'deleted'
   | 'closed'
   | 'canceled'
+  | 'expired'
 
 /** @deprecated - use a notification_preference (in user-notification-preferences.ts) */
 export type notification_reason_types =
@@ -99,7 +114,6 @@ export type notification_reason_types =
   | 'contract_from_followed_user'
   | 'you_referred_user'
   | 'user_joined_to_bet_on_your_market'
-  | 'unique_bettors_on_your_contract'
   | 'bet_fill'
   | 'limit_order_cancelled'
   | 'user_joined_from_your_group_invite'
@@ -167,8 +181,8 @@ export const NOTIFICATION_DESCRIPTIONS: notification_descriptions = {
     detailed: 'New questions from users you follow',
   },
   limit_order_fills: {
-    simple: 'Limit order fills',
-    detailed: 'When your limit order is filled by another user',
+    simple: 'Limit order fills, expirations, and cancellations',
+    detailed: 'When your limit order fills, cancels, or expires',
   },
   loan_income: {
     simple: 'Automatic loans from your predictions in unresolved questions',
@@ -318,15 +332,43 @@ export const NOTIFICATION_DESCRIPTIONS: notification_descriptions = {
     simple: 'You received a gift of mana',
     detailed: 'Manifold has sent you a gift of mana',
   },
+  manifest_airdrop: {
+    simple: 'You received a gift for attending Manifest',
+    detailed: 'Manifold has sent you a gift for attending Manifest',
+  },
   extra_purchased_mana: {
     simple: 'You just received 9x your purchased mana in 2024',
     detailed: 'Manifold has sent you a gift of 9x your purchased mana in 2024.',
+  },
+  payment_status: {
+    simple: 'Payment updates',
+    detailed: 'Updates on your payment statuses',
+  },
+  market_movements: {
+    simple: 'Market movements',
+    detailed:
+      'When the probability of a market that you follow changes by a large amount',
+  },
+  market_follows: {
+    simple: 'Someone followed your market',
+    detailed: 'Get notified when someone follows one of your markets',
+    verb: 'followed your market',
+  },
+  admin: {
+    simple: 'Admin notifications',
+    detailed: 'Notifications from the Manifold team',
+  },
+  all_comments_on_followed_posts: {
+    simple: 'All new comments on posts you follow',
+    detailed: 'All new comments on posts you follow',
+    verb: 'commented',
   },
 }
 
 export type BettingStreakData = {
   streak: number
   bonusAmount: number
+  cashAmount?: number
 }
 export type LeagueChangeData = {
   previousLeague: league_user_info | undefined
@@ -335,15 +377,17 @@ export type LeagueChangeData = {
 }
 
 export type BetFillData = {
-  betOutcome: string
   betAnswer?: string
   creatorOutcome: string
   probability: number
-  fillAmount: number
   limitOrderTotal?: number
   limitOrderRemaining?: number
   limitAt?: string
-  outcomeType?: OutcomeType
+  mechanism: 'cpmm-1' | 'cpmm-multi-1'
+  outcomeType: OutcomeType
+  betAnswerId?: string
+  expiresAt?: number
+  createdTime?: number
 }
 
 export type ContractResolutionData = {
@@ -354,6 +398,7 @@ export type ContractResolutionData = {
   totalShareholders?: number
   profit?: number
   answerId?: string
+  token?: ContractToken
 }
 
 export type UniqueBettorData = {
@@ -366,6 +411,8 @@ export type UniqueBettorData = {
   isPartner?: boolean
   totalUniqueBettors?: number
   totalAmountBet?: number
+  token?: ContractToken
+  bonusAmount?: number
 }
 
 export type ReviewNotificationData = {
@@ -383,12 +430,38 @@ export type BetReplyNotificationData = {
   commentText: string
 }
 
+export type MarketMovementData = {
+  val_start: number
+  val_end: number
+  val_start_time: string
+  val_end_time: string
+  answerText?: string
+}
+
 export type AirdropData = {
   amount: number
 }
 
+export type ManaPaymentData = {
+  message: string
+  token?: 'M$' | 'CASH'
+}
+
 export type ExtraPurchasedManaData = {
   amount: number
+}
+
+export type PaymentCompletedData = {
+  userId: string
+  amount: number
+  currency: string
+  paymentMethodType: string
+  paymentAmountType: string
+}
+
+export type ReferralData = {
+  manaAmount: number
+  cashAmount: number
 }
 
 export function getSourceIdForLinkComponent(
@@ -417,9 +490,13 @@ export function getSourceUrl(notification: Notification) {
     sourceContractCreatorUsername,
     sourceContractSlug,
     sourceSlug,
+    reason,
   } = notification
+
   if (sourceType === 'weekly_portfolio_update')
     return `/week/${sourceUserUsername}/${sourceSlug}`
+  if (reason === 'market_follows')
+    return `/${sourceContractCreatorUsername}/${sourceContractSlug}`
   if (sourceType === 'follow') return `/${sourceUserUsername}`
   if (sourceType === 'group' && sourceSlug) return `${groupPath(sourceSlug)}`
   // User referral via contract:
@@ -454,6 +531,8 @@ export function getSourceUrl(notification: Notification) {
 export const ReactionNotificationTypes: Partial<notification_source_types>[] = [
   'comment_like',
   'contract_like',
+  'post_like',
+  'post_comment_like',
 ]
 
 export const BalanceChangeNotificationTypes: NotificationReason[] = [
@@ -472,3 +551,82 @@ export const BalanceChangeNotificationTypes: NotificationReason[] = [
   'bet_fill',
   'mana_payment_received',
 ]
+
+export const DELETE_PUSH_TOKEN = 'delete'
+
+export function combineReactionNotifications(notifications: Notification[]) {
+  const groupedNotificationsBySourceType = groupBy(
+    notifications,
+    (n) =>
+      `${n.sourceType}-${
+        n.sourceTitle ?? n.sourceContractTitle ?? n.sourceContractId
+      }-${n.sourceText}`
+  )
+
+  const newNotifications = Object.values(groupedNotificationsBySourceType).map(
+    (notifications) => {
+      const mostRecentNotification = notifications[0]
+
+      return {
+        ...mostRecentNotification,
+        data: {
+          ...mostRecentNotification.data,
+          relatedNotifications: notifications,
+        },
+      }
+    }
+  )
+
+  return newNotifications as Notification[]
+}
+
+// Loop through the contracts and combine the notification items into one
+export function combineAndSumIncomeNotifications(
+  notifications: Notification[]
+) {
+  const newNotifications: Notification[] = []
+  const groupedNotificationsBySourceType = groupBy(
+    notifications,
+    (n) => n.sourceType
+  )
+  const titleForNotification = (notification: Notification) => {
+    const outcomeType = notification.data?.outcomeType
+    return (
+      (notification.sourceTitle ?? notification.sourceContractTitle) +
+      (outcomeType !== 'NUMBER' ? notification.data?.answerText ?? '' : '') +
+      notification.data?.isPartner
+    )
+  }
+
+  for (const sourceType in groupedNotificationsBySourceType) {
+    // Source title splits by contracts, groups, betting streak bonus
+    const groupedNotificationsBySourceTitle = groupBy(
+      groupedNotificationsBySourceType[sourceType],
+      (notification) => titleForNotification(notification)
+    )
+    for (const sourceTitle in groupedNotificationsBySourceTitle) {
+      const notificationsForSourceTitle =
+        groupedNotificationsBySourceTitle[sourceTitle]
+
+      let sum = 0
+      notificationsForSourceTitle.forEach((notification) => {
+        sum += parseFloat(notification.sourceText ?? '0')
+      })
+
+      const { bet: _, ...otherData } =
+        notificationsForSourceTitle[0]?.data ?? {}
+
+      const newNotification = {
+        ...notificationsForSourceTitle[0],
+        sourceText: sum.toString(),
+        sourceUserUsername: notificationsForSourceTitle[0].sourceUserUsername,
+        data: {
+          relatedNotifications: notificationsForSourceTitle,
+          ...otherData,
+        },
+      }
+      newNotifications.push(newNotification)
+    }
+  }
+  return newNotifications
+}

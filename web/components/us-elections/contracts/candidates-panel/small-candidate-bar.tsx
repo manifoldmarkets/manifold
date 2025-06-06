@@ -72,7 +72,7 @@ export const SmallCandidateBar = (props: {
               {!resolution && hasBets && isCpmm && user && (
                 <UserPosition
                   contract={contract as CPMMMultiContract}
-                  answer={answer as Answer}
+                  answer={answer}
                   userBets={userBets}
                   user={user}
                   className="text-ink-700 dark:text-ink-800 text-xs hover:underline"
@@ -92,7 +92,7 @@ export const SmallCandidateBar = (props: {
             </div>
             <MultiBettor
               contract={contract as CPMMMultiContract}
-              answer={answer as Answer}
+              answer={answer}
             />
           </Row>
         </Row>

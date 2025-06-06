@@ -2,6 +2,10 @@ import { APIHandler } from 'api/helpers/endpoint'
 import { createSupabaseDirectClient } from 'shared/supabase/init'
 import { Row } from 'common/supabase/utils'
 import * as dayjs from 'dayjs'
+import * as utc from 'dayjs/plugin/utc'
+import * as timezone from 'dayjs/plugin/timezone'
+dayjs.extend(utc)
+dayjs.extend(timezone)
 import { sortBy } from 'lodash'
 
 export const getTxnSummaryStats: APIHandler<'get-txn-summary-stats'> = async (

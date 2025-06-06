@@ -19,6 +19,7 @@ type MinimalContract = {
   slug?: string
   visibility: Visibility
   creatorUsername: string
+  token: 'MANA' | 'CASH'
 }
 
 export const BET_BALANCE_CHANGE_TYPES = [
@@ -37,13 +38,14 @@ export type BetBalanceChange = BalanceChange & {
 }
 
 export type TxnBalanceChange = BalanceChange & {
-  type: AnyTxnCategory | 'STARTING_BALANCE'
+  type: AnyTxnCategory
   token: Txn['token']
   contract?: MinimalContract
   questType?: QuestType
   user?: Pick<User, 'username' | 'name'>
   charity?: { name: string; slug: string }
   description?: string
+  answerText?: string
 }
 
 export const isBetChange = (

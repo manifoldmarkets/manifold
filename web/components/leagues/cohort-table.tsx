@@ -12,7 +12,6 @@ import { DIVISION_NAMES, league_user_info } from 'common/leagues'
 import { formatMoney } from 'common/util/format'
 import { useUsers } from 'web/hooks/use-user-supabase'
 import { Col } from '../layout/col'
-import { InfoTooltip } from '../widgets/info-tooltip'
 import { LoadingIndicator } from '../widgets/loading-indicator'
 import { UserAvatarAndBadge } from '../widgets/user-link'
 import { ManaEarnedBreakdown } from './mana-earned-breakdown'
@@ -76,13 +75,7 @@ export const CohortTable = (props: {
           <tr>
             <th className={clsx('pb-1 pl-10 pr-2')}>User</th>
             <th className={clsx('px-2 pb-1 text-right sm:pr-10')}>
-              <InfoTooltip
-                text={
-                  'Includes both realized and unrealized profits from bets placed this month plus quest rewards and unique trader bonuses.'
-                }
-              >
-                Mana earned{' '}
-              </InfoTooltip>
+              Mana earned
             </th>
           </tr>
         </thead>

@@ -18,6 +18,7 @@ import {
 } from '../contract/contract-table-col-formats'
 import { LoadingIndicator } from '../widgets/loading-indicator'
 import { Button } from '../buttons/button'
+import { Contract } from 'common/contract'
 
 export const UserWatchedContractsButton = memo(
   function UserLikedContractsButton(props: { user: User; className?: string }) {
@@ -41,7 +42,7 @@ export const UserWatchedContractsButton = memo(
     // filter by query
     const filteredWatchedContracts = watchedContracts?.filter((c) => {
       return (
-        query === '' || c.question.toLowerCase().includes(query.toLowerCase())
+        query === '' || c.question?.toLowerCase().includes(query.toLowerCase())
       )
     })
 
@@ -79,25 +80,28 @@ export const UserWatchedContractsButton = memo(
                   probColumn,
                   {
                     header: 'Unwatch',
-                    content: (contract) => (
-                      <Button
-                        size="2xs"
-                        color="gray-outline"
-                        onClick={async (e) => {
-                          e.stopPropagation()
-                          e.preventDefault()
-                          await unfollowMarket(contract.id, contract.slug, user)
-                          setWatchedContracts(
-                            filteredWatchedContracts?.filter(
-                              (c) => c.id !== contract.id
+                    content: (props: { contract: Contract }) => {
+                      const { contract } = props
+                      return (
+                        <Button
+                          size="2xs"
+                          color="gray-outline"
+                          onClick={async (e) => {
+                            e.stopPropagation()
+                            e.preventDefault()
+                            await unfollowMarket(contract.id, contract.slug)
+                            setWatchedContracts(
+                              filteredWatchedContracts?.filter(
+                                (c) => c.id !== contract.id
+                              )
                             )
-                          )
-                          setWatchedContractsCount(watchedContractsCount - 1)
-                        }}
-                      >
-                        Unwatch
-                      </Button>
-                    ),
+                            setWatchedContractsCount(watchedContractsCount - 1)
+                          }}
+                        >
+                          Unwatch
+                        </Button>
+                      )
+                    },
                     width: 'w-16',
                   },
                 ]}

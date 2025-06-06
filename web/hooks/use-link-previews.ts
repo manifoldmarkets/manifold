@@ -1,7 +1,7 @@
 import { LinkPreview } from 'common/link-preview'
 import { useState } from 'react'
 import { useDebouncedEffect } from 'web/hooks/use-debounced-effect'
-import { api } from 'web/lib/firebase/api'
+import { api } from 'web/lib/api/api'
 import { safeLocalStorage } from 'web/lib/util/local'
 
 export const useLinkPreview = (url: string, initial?: LinkPreview) => {

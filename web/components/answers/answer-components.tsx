@@ -1,24 +1,32 @@
 import { ChatIcon } from '@heroicons/react/outline'
+import { SparklesIcon } from '@heroicons/react/solid'
+import { animated } from '@react-spring/web'
 import clsx from 'clsx'
 import { Answer } from 'common/answer'
+import { getAnswerProbability } from 'common/calculate'
 import {
   CPMMMultiContract,
-  CPMMNumericContract,
   getMainBinaryMCAnswer,
   MultiContract,
   resolution,
   tradingAllowed,
 } from 'common/contract'
-import { formatMoney, formatPercent } from 'common/util/format'
-import { ReactNode, useState } from 'react'
-import { Button } from '../buttons/button'
-import { Modal, MODAL_CLASS, SCROLLABLE_MODAL_CLASS } from '../layout/modal'
-import { AnswerCpmmBetPanel } from './answer-bet-panel'
-import { useUser } from 'web/hooks/use-user'
-import { Bet } from 'common/bet'
-import { sumBy } from 'lodash'
+import { TRADE_TERM } from 'common/envs/constants'
 import { User } from 'common/user'
+import { formatPercent } from 'common/util/format'
+import { HOUR_MS } from 'common/util/time'
+import { capitalize } from 'lodash'
+import { ReactNode, useState } from 'react'
+import { useAnimatedNumber } from 'web/hooks/use-animated-number'
+import { useUser } from 'web/hooks/use-user'
+import { track } from 'web/lib/service/analytics'
+import { formatTimeShort } from 'client-common/lib/time'
+import { MoneyDisplay } from '../bet/money-display'
 import { SellSharesModal } from '../bet/sell-row'
+import { Button } from '../buttons/button'
+import { Col } from '../layout/col'
+import { Modal, MODAL_CLASS, SCROLLABLE_MODAL_CLASS } from '../layout/modal'
+import { Row } from '../layout/row'
 import {
   BinaryOutcomeLabel,
   NoLabel,
@@ -26,21 +34,15 @@ import {
   ProbPercentLabel,
   YesLabel,
 } from '../outcome-label'
-import { getAnswerProbability, getContractBetMetrics } from 'common/calculate'
-import { formatTimeShort } from 'web/lib/util/time'
-import { Col } from '../layout/col'
-import { Row } from '../layout/row'
+import { UserHovercard } from '../user/user-hovercard'
 import { Avatar, EmptyAvatar } from '../widgets/avatar'
 import { Linkify } from '../widgets/linkify'
 import { Tooltip } from '../widgets/tooltip'
-import { animated } from '@react-spring/web'
-import { useAnimatedNumber } from 'web/hooks/use-animated-number'
-import { HOUR_MS } from 'common/util/time'
-import { SparklesIcon } from '@heroicons/react/solid'
-import { track } from 'web/lib/service/analytics'
-import { UserHovercard } from '../user/user-hovercard'
-import { useSaveBinaryShares } from 'web/hooks/use-save-binary-shares'
-import { useUserContractBets } from 'web/hooks/use-user-bets'
+import { AnswerCpmmBetPanel } from './answer-bet-panel'
+import { useSavedContractMetrics } from 'web/hooks/use-saved-contract-metrics'
+import { ContractMetric } from 'common/contract-metric'
+import { floatingEqual } from 'common/util/math'
+import { getAnswerColor, getPseudonym } from '../charts/contract/choice'
 
 export const AnswerBar = (props: {
   color: string // 6 digit hex
@@ -70,18 +72,14 @@ export const AnswerBar = (props: {
 
   return (
     <Col
-      className={clsx('relative isolate h-full w-full', className)}
+      className={clsx('relative h-full w-full', className)}
       onPointerOver={onHover && (() => onHover(true))}
       onPointerLeave={onHover && (() => onHover(false))}
       onClick={onClick}
     >
-      <Row className="group my-auto h-full items-center justify-between gap-x-4 px-3 py-2 leading-none">
-        <div className="flex-grow">{label}</div>
-        <Row className="relative  items-center justify-end gap-2">{end}</Row>
-      </Row>
       <div
         className={clsx(
-          'absolute bottom-0 left-0 right-0 -z-10 h-full rounded opacity-70 transition-all group-hover:opacity-100',
+          'absolute bottom-0 left-0 right-0 h-full rounded opacity-70 transition-all group-hover:opacity-100',
           hideBar ? 'bg-ink-200' : props.barColor ?? 'bg-canvas-50'
         )}
       >
@@ -90,7 +88,7 @@ export const AnswerBar = (props: {
           <div
             className={clsx(
               'absolute top-0 h-full rounded ring-1 ring-purple-500 sm:ring-2',
-              resolvedProb > prob ? 'bg-purple-100 dark:bg-purple-900' : 'z-10'
+              resolvedProb > prob ? 'bg-purple-100 dark:bg-purple-900' : ''
             )}
             style={{
               width: `${resolvedProb * 100}%`,
@@ -100,7 +98,7 @@ export const AnswerBar = (props: {
         {/* main bar */}
         {!hideBar && (
           <div
-            className="isolate h-full rounded dark:brightness-75"
+            className="h-full rounded dark:brightness-75"
             style={{
               width: `max(8px, ${prob * 100}%)`,
               background: color,
@@ -109,6 +107,16 @@ export const AnswerBar = (props: {
         )}
         {renderBackgroundLayer}
       </div>
+
+      <Row className="group relative my-auto h-full items-center justify-between gap-x-4 px-3 py-2 leading-none">
+        <div className="flex-grow">{label}</div>
+        <Row
+          className="relative items-center justify-end gap-2"
+          onClick={(e) => e.stopPropagation()}
+        >
+          {end}
+        </Row>
+      </Row>
     </Col>
   )
 }
@@ -204,8 +212,9 @@ export const AddComment = (props: { onClick: () => void }) => {
 export const MultiBettor = (props: {
   answer: Answer
   contract: CPMMMultiContract
+  buttonClassName?: string
 }) => {
-  const { answer, contract } = props
+  const { answer, contract, buttonClassName } = props
   const [outcome, setOutcome] = useState<'YES' | 'NO' | undefined>(undefined)
 
   return (
@@ -227,14 +236,15 @@ export const MultiBettor = (props: {
       <Button
         size="2xs"
         color="indigo-outline"
-        className="bg-primary-50"
+        className={clsx('bg-primary-50', buttonClassName)}
         onClick={(e) => {
           e.stopPropagation()
+          // TODO: Twomba tracking bet terminology
           track('bet intent', { location: 'answer panel' })
           setOutcome('YES')
         }}
       >
-        Bet
+        {capitalize(TRADE_TERM)}
       </Button>
     </>
   )
@@ -269,6 +279,7 @@ const YesNoBetButtons = (props: {
         className={clsx('!px-2.5', fillColor ?? 'bg-canvas-50')}
         onClick={(e) => {
           e.stopPropagation()
+          // TODO: Twomba tracking bet terminology
           track('bet intent', { location: 'answer panel' })
           setOutcome('YES')
         }}
@@ -281,6 +292,7 @@ const YesNoBetButtons = (props: {
         className={clsx('!px-2.5', fillColor ?? 'bg-canvas-50')}
         onClick={(e) => {
           e.stopPropagation()
+          // TODO: Twomba tracking bet terminology
           track('bet intent', { location: 'answer panel' })
           setOutcome('NO')
         }}
@@ -293,15 +305,16 @@ const YesNoBetButtons = (props: {
 
 export const MultiSeller = (props: {
   answer: Answer
-  contract: CPMMMultiContract | CPMMNumericContract
-  userBets: Bet[]
+  contract: MultiContract
+  metric: ContractMetric
   user: User
+  className?: string
 }) => {
-  const { answer, contract, userBets, user } = props
+  const { answer, contract, metric, user, className } = props
   const [open, setOpen] = useState(false)
-  const sharesSum = sumBy(userBets, (bet) =>
-    bet.outcome === 'YES' ? bet.shares : -bet.shares
-  )
+  const { totalShares, maxSharesOutcome } = metric
+  const outcome = (maxSharesOutcome ?? 'YES') as 'YES' | 'NO'
+  const sharesSum = totalShares[outcome] ?? 0
 
   return (
     <>
@@ -309,18 +322,21 @@ export const MultiSeller = (props: {
         <SellSharesModal
           contract={contract}
           user={user}
-          userBets={userBets}
-          shares={Math.abs(sharesSum)}
-          sharesOutcome={sharesSum > 0 ? 'YES' : 'NO'}
+          metric={metric}
+          shares={sharesSum}
+          sharesOutcome={outcome}
           setOpen={setOpen}
           answerId={answer.id}
         />
       )}
       <button
-        className={'hover:text-ink-700 decoration-2 hover:underline'}
+        className={clsx(
+          'hover:text-primary-700 text-primary-600 decoration-2 hover:underline',
+          className
+        )}
         onClick={() => setOpen(true)}
       >
-        Sell
+        <span className="font-bold">Sell</span>
       </button>
     </>
   )
@@ -332,11 +348,16 @@ export const BinaryMultiSellRow = (props: {
 }) => {
   const { contract, answer } = props
   const user = useUser()
-  const userBets = useUserContractBets(user?.id, contract.id)?.filter(
-    (b) => b.answerId === answer.id
-  )
+  const metric = useSavedContractMetrics(contract, answer.id)
   const [open, setOpen] = useState(false)
-  const { sharesOutcome, shares } = useSaveBinaryShares(contract, userBets)
+  const otherAnswer = contract.answers.find((a) => a.id !== answer.id)!
+  const { totalShares, maxSharesOutcome } = metric ?? {
+    totalShares: { YES: 0, NO: 0 },
+    maxSharesOutcome: 'YES',
+  }
+  const sharesOutcome = maxSharesOutcome as 'YES' | 'NO' | undefined
+  const sharesSum = totalShares?.[sharesOutcome ?? 'YES'] ?? 0
+
   if (!sharesOutcome || !user || contract.isResolved) return null
   return (
     <Row className={'mt-2'}>
@@ -344,11 +365,12 @@ export const BinaryMultiSellRow = (props: {
         <SellSharesModal
           contract={contract}
           user={user}
-          userBets={userBets ?? []}
-          shares={shares}
+          metric={metric}
+          shares={sharesSum}
           sharesOutcome={sharesOutcome}
           setOpen={setOpen}
           answerId={getMainBinaryMCAnswer(contract)?.id}
+          binaryPseudonym={getPseudonym(contract)}
         />
       )}
       <Button
@@ -362,12 +384,23 @@ export const BinaryMultiSellRow = (props: {
         }}
       >
         <Row className={'gap-1'}>
-          Sell
+          Sell {Math.floor(sharesSum)}
           <OutcomeLabel
             outcome={sharesOutcome}
             contract={contract}
             truncate={'short'}
+            pseudonym={{
+              YES: {
+                pseudonymName: answer.text,
+                pseudonymColor: getAnswerColor(answer),
+              },
+              NO: {
+                pseudonymName: otherAnswer.text,
+                pseudonymColor: getAnswerColor(otherAnswer),
+              },
+            }}
           />
+          shares
         </Row>
       </Button>
     </Row>
@@ -405,12 +438,21 @@ export const OpenProb = (props: {
     </Row>
   )
 }
-export const ClosedProb = (props: { prob: number; resolvedProb?: number }) => {
-  const { prob, resolvedProb: resolveProb } = props
+export const ClosedProb = (props: {
+  prob: number
+  resolvedProb?: number
+  className?: string
+}) => {
+  const { prob, resolvedProb: resolveProb, className } = props
   return (
     <>
       {!!resolveProb && (
-        <span className="dark:text-ink-900 text-lg text-purple-500">
+        <span
+          className={clsx(
+            'dark:text-ink-900 text-lg text-purple-500',
+            className
+          )}
+        >
           {Math.round(resolveProb * 100)}%
         </span>
       )}
@@ -418,7 +460,8 @@ export const ClosedProb = (props: { prob: number; resolvedProb?: number }) => {
         className={clsx(
           'text-ink-500 whitespace-nowrap text-lg',
           resolveProb != undefined &&
-            'inline-block min-w-[40px] text-right line-through'
+            'inline-block min-w-[40px] text-right line-through',
+          className
         )}
       >
         {formatPercent(prob)}
@@ -431,31 +474,28 @@ export const AnswerStatus = (props: {
   contract: MultiContract
   answer: Answer
   noNewIcon?: boolean
+  className?: string
 }) => {
-  const { contract, answer } = props
+  const { contract, answer, className } = props
   const { resolutions } = contract
 
-  const answerResolution =
-    'resolution' in answer ? answer.resolution : undefined
+  const answerResolution = answer.resolution
 
   const prob = getAnswerProbability(contract, answer.id)
   const resolvedProb =
-    answerResolution === 'MKT' && 'resolutionProbability' in answer
+    answerResolution === 'MKT'
       ? answer.resolutionProbability ?? answer.prob
       : resolutions
       ? (resolutions?.[answer.id] ?? 0) / 100
       : undefined
 
-  const isOpen = tradingAllowed(
-    contract,
-    'resolution' in answer ? answer : undefined
-  )
+  const isOpen = tradingAllowed(contract, answer)
 
   if (answerResolution) {
     return (
-      <Row className="items-center gap-1.5 font-semibold">
+      <Row className={clsx('items-center gap-1.5 font-semibold', className)}>
         <div className={'text-ink-800 text-base'}>Resolved</div>
-        {answerResolution === 'MKT' && 'resolutionProbability' in answer ? (
+        {answerResolution === 'MKT' && answer.resolutionProbability ? (
           <ProbPercentLabel
             prob={answer.resolutionProbability ?? answer.prob}
           />
@@ -466,9 +506,14 @@ export const AnswerStatus = (props: {
     )
   }
   return isOpen ? (
-    <OpenProb contract={contract} answer={answer} noNewIcon />
+    <OpenProb
+      className={className}
+      contract={contract}
+      answer={answer}
+      noNewIcon
+    />
   ) : (
-    <ClosedProb prob={prob} resolvedProb={resolvedProb} />
+    <ClosedProb className={className} prob={prob} resolvedProb={resolvedProb} />
   )
 }
 export const BetButtons = (props: {
@@ -479,15 +524,12 @@ export const BetButtons = (props: {
 }) => {
   const { contract, answer, fillColor, feedReason } = props
 
-  const isOpen = tradingAllowed(
-    contract,
-    'resolution' in answer ? answer : undefined
-  )
+  const isOpen = tradingAllowed(contract, answer)
   if (!isOpen) return null
   return (
     <YesNoBetButtons
       feedReason={feedReason}
-      answer={answer as Answer}
+      answer={answer}
       contract={contract as CPMMMultiContract}
       fillColor={fillColor}
     />
@@ -495,60 +537,88 @@ export const BetButtons = (props: {
 }
 
 export function AnswerPosition(props: {
-  contract: CPMMMultiContract | CPMMNumericContract
-  userBets: Bet[]
+  contract: MultiContract
   answer: Answer
   user: User
+  myMetric: ContractMetric
   className?: string
+  addDot?: boolean
 }) {
-  const { contract, user, userBets, answer, className } = props
+  const { contract, user, answer, className, addDot, myMetric } = props
 
-  const { invested, totalShares } = getContractBetMetrics(contract, userBets)
+  const { invested, totalShares } = myMetric ?? {
+    invested: 0,
+    totalShares: { YES: 0, NO: 0 },
+  }
 
   const yesWinnings = totalShares.YES ?? 0
   const noWinnings = totalShares.NO ?? 0
   const position = yesWinnings - noWinnings
+  const isCashContract = contract.token === 'CASH'
+  const canSell = tradingAllowed(contract, answer)
+  const won =
+    (position > 1e-7 && answer.resolution === 'YES') ||
+    (position < -1e-7 && answer.resolution === 'NO')
+
+  if (floatingEqual(yesWinnings, 0) && floatingEqual(noWinnings, 0)) return null
 
   return (
-    <Row
-      className={clsx(
-        className,
-        'text-ink-500 gap-1.5 whitespace-nowrap text-xs font-semibold'
-      )}
-    >
-      <Row className="gap-1">
-        Payout
-        {position > 1e-7 ? (
-          <>
-            <span className="text-ink-700">{formatMoney(position)}</span> on
-            <YesLabel />
-          </>
-        ) : position < -1e-7 ? (
-          <>
-            <span className="text-ink-700">{formatMoney(-position)}</span> on
-            <NoLabel />
-          </>
-        ) : (
-          '——'
+    <>
+      <Row
+        className={clsx(
+          className,
+          'text-ink-500 gap-1.5 whitespace-nowrap text-xs'
         )}
-      </Row>
-      &middot;
-      <Row className="gap-1">
-        <div className="text-ink-500">Spent</div>
-        <div className="text-ink-700">{formatMoney(invested)}</div>
-      </Row>
-      {(!contract.closeTime || contract.closeTime > Date.now()) &&
-        !answer.resolutionTime && (
+      >
+        <Row className="gap-1">
+          {canSell ? 'Payout' : won ? 'Paid out' : 'Held out for'}
+          {position > 1e-7 ? (
+            <>
+              <span className="text-ink-700">
+                <MoneyDisplay
+                  amount={position}
+                  isCashContract={isCashContract}
+                />
+              </span>{' '}
+              on
+              <YesLabel />
+            </>
+          ) : position < -1e-7 ? (
+            <>
+              <span className="text-ink-700">
+                {' '}
+                <MoneyDisplay
+                  amount={-position}
+                  isCashContract={isCashContract}
+                />
+              </span>{' '}
+              on
+              <NoLabel />
+            </>
+          ) : (
+            '——'
+          )}
+        </Row>
+        &middot;
+        <Row className="gap-1">
+          <div className="text-ink-500">Spent</div>
+          <div className="text-ink-700">
+            <MoneyDisplay amount={invested} isCashContract={isCashContract} />
+          </div>
+        </Row>
+        {canSell && (
           <>
             &middot;
             <MultiSeller
               answer={answer}
               contract={contract}
-              userBets={userBets}
+              metric={myMetric}
               user={user}
             />
           </>
         )}
-    </Row>
+      </Row>
+      {addDot && <span>&middot;</span>}
+    </>
   )
 }

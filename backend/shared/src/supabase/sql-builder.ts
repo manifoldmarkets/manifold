@@ -30,7 +30,7 @@ export type SqlParts = {
 
 type Args = (Args | SqlParts | SqlBuilder | undefined | false | 0 | '')[]
 
-function buildSql(...parts: Args): SqlBuilder {
+export function buildSql(...parts: Args): SqlBuilder {
   const definedParts = buildArray(parts)
 
   return {

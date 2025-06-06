@@ -19,8 +19,6 @@ import {
   notification_destination_types,
   notification_preference,
 } from 'common/user-notification-preferences'
-import { deleteField } from 'firebase/firestore'
-import { uniq } from 'lodash'
 import {
   createContext,
   ReactNode,
@@ -30,18 +28,17 @@ import {
 } from 'react'
 import toast from 'react-hot-toast'
 import { Button } from 'web/components/buttons/button'
-import { WatchMarketModal } from 'web/components/contract/watch-market-modal'
+import { FollowMarketModal } from 'web/components/contract/follow-market-modal'
 import { Col } from 'web/components/layout/col'
 import { Row } from 'web/components/layout/row'
 import { SwitchSetting } from 'web/components/switch-setting'
-
-import { updatePrivateUser } from 'web/lib/firebase/users'
-import { getIsNative } from 'web/lib/native/is-native'
 import { UserWatchedContractsButton } from 'web/components/notifications/watched-markets'
 import { usePrivateUser, useUser } from 'web/hooks/use-user'
-import { usePersistentInMemoryState } from 'web/hooks/use-persistent-in-memory-state'
+import { usePersistentInMemoryState } from 'client-common/hooks/use-persistent-in-memory-state'
 import TrophyIcon from 'web/lib/icons/trophy-icon.svg'
 import { postMessageToNative } from 'web/lib/native/post-message'
+import { api } from 'web/lib/api/api'
+import { useNativeInfo } from './native-message-provider'
 
 const emailsEnabled: Array<notification_preference> = [
   'all_comments_on_watched_markets',
@@ -70,6 +67,7 @@ const emailsEnabled: Array<notification_preference> = [
   'new_endorsement',
   'new_match',
   'new_message',
+  'market_movements',
   // TODO: add these
 
   // 'referral_bonuses',
@@ -94,9 +92,10 @@ const mobilePushEnabled: Array<notification_preference> = [
   'all_answers_on_my_markets',
   'tagged_user',
   'betting_streaks',
-
+  'market_movements',
+  'limit_order_fills',
+  'all_comments_on_followed_posts',
   // TODO: add these
-  // 'limit_order_fills',
   // 'contract_from_followed_user',
   // 'probability_updates_on_watched_markets',
 ]
@@ -119,6 +118,7 @@ const comments: NotificationSectionData = {
     'all_replies_to_my_answers_on_watched_markets',
     'all_comments_on_contracts_with_shares_in_on_watched_markets',
     'all_comments_on_watched_markets',
+    'all_comments_on_followed_posts',
   ],
 }
 
@@ -127,6 +127,7 @@ const updates: NotificationSectionData = {
   subscriptionTypes: [
     'resolutions_on_watched_markets',
     'resolutions_on_watched_markets_with_shares_in',
+    'market_movements',
     'all_votes_on_watched_markets',
     'poll_close_on_watched_markets',
     'bounty_canceled',
@@ -143,6 +144,7 @@ const yourMarkets: NotificationSectionData = {
     'vote_on_your_contract',
     'your_poll_closed',
     'review_on_your_market',
+    'market_follows',
   ],
 }
 const bonuses: NotificationSectionData = {
@@ -193,15 +195,16 @@ export const SectionRoutingContext = createContext<string | undefined>(
 
 export function NotificationSettings(props: {
   navigateToSection: string | undefined
+  privateUser: PrivateUser
 }) {
-  const { navigateToSection } = props
+  const { navigateToSection, privateUser } = props
   const user = useUser()
   const [showWatchModal, setShowWatchModal] = useState(false)
 
   return (
     <SectionRoutingContext.Provider value={navigateToSection}>
       <Col className={'gap-6 p-2'}>
-        <PushNotificationsBanner />
+        <PushNotificationsBanner privateUser={privateUser} />
         <Row className={'text-ink-700 gap-2 text-xl'}>
           {user ? (
             <UserWatchedContractsButton user={user} />
@@ -259,7 +262,7 @@ export function NotificationSettings(props: {
           icon={<ExclamationIcon className={'h-6 w-6'} />}
           data={optOutAll}
         />
-        <WatchMarketModal open={showWatchModal} setOpen={setShowWatchModal} />
+        <FollowMarketModal open={showWatchModal} setOpen={setShowWatchModal} />
       </Col>
     </SectionRoutingContext.Provider>
   )
@@ -283,8 +286,6 @@ function NotificationSettingLine(props: {
   const highlight = navigateToSection === subscriptionTypeKey
   const isOptOutSection = subscriptionTypeKey === 'opt_out_all'
 
-  const privateUser = usePrivateUser()!
-
   return (
     <Row
       className={clsx(
@@ -305,7 +306,6 @@ function NotificationSettingLine(props: {
                   setting: 'browser',
                   newValue: newVal,
                   subscriptionTypeKey: subscriptionTypeKey,
-                  privateUser: privateUser,
                   emailEnabled: emailEnabled,
                   inAppEnabled: inAppEnabled,
                   setError: setError,
@@ -325,7 +325,6 @@ function NotificationSettingLine(props: {
                   setting: 'email',
                   newValue: newVal,
                   subscriptionTypeKey: subscriptionTypeKey,
-                  privateUser: privateUser,
                   emailEnabled: emailEnabled,
                   inAppEnabled: inAppEnabled,
                   setError: setError,
@@ -345,7 +344,6 @@ function NotificationSettingLine(props: {
                   setting: 'mobile',
                   newValue: newVal,
                   subscriptionTypeKey: subscriptionTypeKey,
-                  privateUser: privateUser,
                   emailEnabled: emailEnabled,
                   inAppEnabled: inAppEnabled,
                   setError: setError,
@@ -430,15 +428,17 @@ export const NotificationSection = (props: {
   )
 }
 
-export const PushNotificationsBanner = () => {
-  const privateUser = usePrivateUser()!
+export const PushNotificationsBanner = (props: {
+  privateUser: PrivateUser
+}) => {
+  const { privateUser } = props
   const {
     interestedInPushNotifications,
     rejectedPushNotificationsOn,
     pushToken,
   } = privateUser
 
-  const isNative = getIsNative()
+  const { isNative } = useNativeInfo()
 
   if (pushToken || !isNative) return <div />
 
@@ -452,10 +452,10 @@ export const PushNotificationsBanner = () => {
             size={'2xs'}
             className={'ml-2 inline-block whitespace-nowrap'}
             onClick={() => {
-              updatePrivateUser(privateUser.id, {
-                // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-                // @ts-ignore
-                interestedInPushNotifications: deleteField(),
+              api('update-notif-settings', {
+                type: 'opt_out_all',
+                medium: 'mobile',
+                enabled: false,
               })
             }}
           >
@@ -531,7 +531,6 @@ const attemptToChangeSetting = (props: {
   setting: 'browser' | 'email' | 'mobile'
   newValue: boolean
   subscriptionTypeKey: notification_preference
-  privateUser: PrivateUser
   emailEnabled: boolean
   inAppEnabled: boolean
   setError: (error: string) => void
@@ -541,7 +540,6 @@ const attemptToChangeSetting = (props: {
     setting,
     newValue,
     subscriptionTypeKey,
-    privateUser,
     emailEnabled,
     inAppEnabled,
     setError,
@@ -564,7 +562,6 @@ const attemptToChangeSetting = (props: {
   changeSetting({
     setting: setting,
     newValue: newValue,
-    privateUser: privateUser,
     subscriptionTypeKey: subscriptionTypeKey,
     setEnabled: setEnabled,
   })
@@ -573,24 +570,18 @@ const attemptToChangeSetting = (props: {
 export const changeSetting = (props: {
   setting: 'browser' | 'email' | 'mobile'
   newValue: boolean
-  privateUser: PrivateUser
   subscriptionTypeKey: notification_preference
   setEnabled?: (setting: boolean) => void
 }) => {
-  const { setting, newValue, privateUser, subscriptionTypeKey, setEnabled } =
-    props
-  const destinations = getUsersSavedPreference(subscriptionTypeKey, privateUser)
+  const { setting, newValue, subscriptionTypeKey, setEnabled } = props
   const loading = 'Changing Notifications Settings'
   const success = 'Changed Notification Settings!'
   toast
     .promise(
-      updatePrivateUser(privateUser.id, {
-        notificationPreferences: {
-          ...privateUser.notificationPreferences,
-          [subscriptionTypeKey]: destinations.includes(setting)
-            ? destinations.filter((d) => d !== setting)
-            : uniq([...destinations, setting]),
-        },
+      api('update-notif-settings', {
+        type: subscriptionTypeKey,
+        medium: setting,
+        enabled: newValue,
       }),
       {
         success,

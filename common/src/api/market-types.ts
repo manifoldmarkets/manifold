@@ -2,23 +2,23 @@ import { JSONContent } from '@tiptap/core'
 import { Answer, MAX_ANSWERS } from 'common/answer'
 import { getAnswerProbability, getProbability } from 'common/calculate'
 import {
-  CREATEABLE_OUTCOME_TYPES,
   Contract,
-  MARKET_TIER_TYPES,
   MAX_QUESTION_LENGTH,
-  MarketTierType,
   MultiContract,
   RESOLUTIONS,
   VISIBILITIES,
 } from 'common/contract'
+import { MINIMUM_BOUNTY } from 'common/economy'
 import { DOMAIN } from 'common/envs/constants'
+import { MAX_ID_LENGTH } from 'common/group'
+import { getMappedValue } from 'common/pseudo-numeric'
 import { removeUndefinedProps } from 'common/util/object'
 import { richTextToString } from 'common/util/parse'
-import { getMappedValue } from 'common/pseudo-numeric'
 import { z } from 'zod'
-import { MAX_ID_LENGTH } from 'common/group'
-import { contentSchema } from './zod-types'
-import { MINIMUM_BOUNTY } from 'common/economy'
+import { coerceBoolean, contentSchema } from './zod-types'
+import { randomStringRegex } from 'common/util/random'
+import { MAX_MULTI_NUMERIC_ANSWERS } from 'common/multi-numeric'
+import { liquidityTiers } from 'common/tier'
 
 export type LiteMarket = {
   // Unique identifier for this market
@@ -59,7 +59,9 @@ export type LiteMarket = {
   uniqueBettorCount: number
   lastUpdatedTime?: number
   lastBetTime?: number
-  marketTier?: MarketTierType
+  sportsStartTimestamp?: string
+  sportsEventId?: string
+  sportsLeague?: string
 }
 export type ApiAnswer = Omit<
   Answer & {
@@ -118,7 +120,8 @@ export function toLiteMarket(contract: Contract): LiteMarket {
     loverUserId2,
     matchCreatorId,
     isLove,
-    marketTier,
+    token,
+    siblingContractId,
   } = contract
 
   const { p, totalLiquidity } = contract as any
@@ -167,7 +170,8 @@ export function toLiteMarket(contract: Contract): LiteMarket {
     lastBetTime,
     lastCommentTime,
     ...numericValues,
-    marketTier,
+    token,
+    siblingContractId,
 
     // Manifold love props.
     loverUserId1,
@@ -237,7 +241,7 @@ function augmentAnswerWithProbability(
   answer: Answer
 ): ApiAnswer {
   const probability = getAnswerProbability(contract, answer.id)
-  const { poolYes, poolNo, prob: _, ...other } = answer as Answer
+  const { poolYes, poolNo, prob: _, ...other } = answer
   const pool = {
     YES: poolYes,
     NO: poolNo,
@@ -256,7 +260,6 @@ function augmentAnswerWithProbability(
 export const createBinarySchema = z.object({
   outcomeType: z.enum(['BINARY', 'STONK']),
   initialProb: z.number().min(1).max(99).optional(),
-  extraLiquidity: z.number().min(1).optional(),
 })
 
 export const createNumericSchema = z.object({
@@ -265,23 +268,48 @@ export const createNumericSchema = z.object({
   max: z.number().safe(),
   initialValue: z.number().safe(),
   isLogScale: z.boolean().optional(),
-  extraLiquidity: z.number().min(1).optional(),
 })
 
 export const createMultiSchema = z.object({
   outcomeType: z.enum(['MULTIPLE_CHOICE']),
   answers: z.array(z.string().trim().min(1)).max(MAX_ANSWERS),
+  answerShortTexts: z
+    .array(z.string().trim().min(1))
+    .max(MAX_ANSWERS)
+    .optional(),
+  answerImageUrls: z
+    .array(z.string().trim().min(1))
+    .max(MAX_ANSWERS)
+    .optional(),
   addAnswersMode: z
     .enum(['DISABLED', 'ONLY_CREATOR', 'ANYONE'])
     .default('DISABLED'),
   shouldAnswersSumToOne: z.boolean().optional(),
-  extraLiquidity: z.number().min(1).optional(),
 })
-export const createMultiNumericSchema = z.object({
+
+export const createNumberSchema = z.object({
   outcomeType: z.enum(['NUMBER']),
   min: z.number().safe(),
   max: z.number().safe(),
   precision: z.number().gt(0),
+})
+
+export const createMultiNumericSchema = z.object({
+  outcomeType: z.enum(['MULTI_NUMERIC']),
+  answers: z.array(z.string().trim().min(1)).max(MAX_MULTI_NUMERIC_ANSWERS),
+  midpoints: z.array(z.number().safe()).max(MAX_MULTI_NUMERIC_ANSWERS),
+  shouldAnswersSumToOne: z.boolean(),
+  addAnswersMode: z.enum(['DISABLED']).default('DISABLED'),
+  unit: z.string(),
+})
+
+export const createMultiDateSchema = z.object({
+  outcomeType: z.enum(['DATE']),
+  answers: z.array(z.string().trim().min(1)).max(MAX_MULTI_NUMERIC_ANSWERS),
+  midpoints: z.array(z.number().safe()).max(MAX_MULTI_NUMERIC_ANSWERS),
+  shouldAnswersSumToOne: z.boolean(),
+  addAnswersMode: z.enum(['DISABLED']).default('DISABLED'),
+  timezone: z.string(),
 })
 
 export const createBountySchema = z.object({
@@ -293,6 +321,7 @@ export const createBountySchema = z.object({
 export const createPollSchema = z.object({
   outcomeType: z.enum(['POLL']),
   answers: z.array(z.string().trim().min(1)).min(2).max(MAX_ANSWERS),
+  voterVisibility: z.enum(['creator', 'everyone']).optional(),
 })
 
 export const createMarketProps = z
@@ -310,16 +339,17 @@ export const createMarketProps = z
         'Close time must be in the future.'
       )
       .optional(),
-    outcomeType: z.enum(CREATEABLE_OUTCOME_TYPES),
     groupIds: z.array(z.string().min(1).max(MAX_ID_LENGTH)).optional(),
-    visibility: z.enum(VISIBILITIES).default('public'),
+    visibility: z.enum(VISIBILITIES).default('public').optional(),
     isTwitchContract: z.boolean().optional(),
     utcOffset: z.number().optional(),
-    loverUserId1: z.string().optional(),
-    loverUserId2: z.string().optional(),
-    matchCreatorId: z.string().optional(),
-    isLove: z.boolean().optional(),
-    marketTier: z.enum(MARKET_TIER_TYPES).optional(),
+    extraLiquidity: z.number().min(1).optional(),
+    liquidityTier: z.number().min(liquidityTiers[0]),
+    idempotencyKey: z.string().regex(randomStringRegex).length(10).optional(),
+    sportsStartTimestamp: z.string().optional(),
+    sportsEventId: z.string().optional(),
+    sportsLeague: z.string().optional(),
+    takerAPIOrdersDisabled: coerceBoolean.optional(),
   })
   .and(
     z.union([
@@ -328,7 +358,9 @@ export const createMarketProps = z
       createBountySchema,
       createPollSchema,
       createBinarySchema,
+      createNumberSchema,
       createMultiNumericSchema,
+      createMultiDateSchema,
     ])
   )
 
@@ -341,12 +373,11 @@ export const updateMarketProps = z
     addAnswersMode: z.enum(['ONLY_CREATOR', 'ANYONE']).optional(),
     coverImageUrl: z.string().or(z.null()).optional(),
     sort: z.string().optional(),
-    isSpicePayout: z.boolean().optional(),
-
     description: z.string().optional(),
     descriptionHtml: z.string().optional(),
     descriptionMarkdown: z.string().optional(),
     descriptionJson: z.string().optional(),
+    display: z.enum(['clock', 'default']).optional(),
   })
   .strict()
 

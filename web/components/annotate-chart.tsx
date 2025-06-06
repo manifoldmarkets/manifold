@@ -4,15 +4,12 @@ import clsx from 'clsx'
 import { Input } from 'web/components/widgets/input'
 import { useState } from 'react'
 import { Button } from 'web/components/buttons/button'
-import {
-  createChartAnnotation,
-  deleteChartAnnotation,
-} from 'web/lib/firebase/api'
+import { createChartAnnotation, deleteChartAnnotation } from 'web/lib/api/api'
 import { Row } from './layout/row'
 import { UserLink } from 'web/components/widgets/user-link'
 import { Avatar } from 'web/components/widgets/avatar'
 import { useUser } from 'web/hooks/use-user'
-import { useCommentOnContract } from 'web/hooks/use-comments-supabase'
+import { useCommentOnContract } from 'web/hooks/use-comments'
 import { Content } from 'web/components/widgets/editor'
 import { LoadingIndicator } from 'web/components/widgets/loading-indicator'
 import { ChartAnnotation } from 'common/supabase/chart-annotations'
@@ -22,6 +19,8 @@ import { FaArrowTrendDown, FaArrowTrendUp } from 'react-icons/fa6'
 import { formatPercent } from 'common/util/format'
 import { AmountInput } from 'web/components/widgets/amount-input'
 import { UserHovercard } from './user/user-hovercard'
+import { useDisplayUserById } from 'web/hooks/use-user-supabase'
+import { useContract } from 'web/hooks/use-contract'
 
 export const AnnotateChartModal = (props: {
   open: boolean
@@ -35,6 +34,16 @@ export const AnnotateChartModal = (props: {
   const [note, setNote] = useState<string>()
   const [probChange, setProbChange] = useState<number>()
   const [loading, setLoading] = useState(false)
+  const [editedTime, setEditedTime] = useState<number>(atTime)
+  const contract = useContract(contractId)
+  // Format date for datetime-local input
+  const formatDateForInput = (timestamp: number) => {
+    const date = new Date(timestamp)
+    return new Date(date.getTime() - date.getTimezoneOffset() * 60000)
+      .toISOString()
+      .slice(0, 16)
+  }
+
   return (
     <Modal open={open} setOpen={setOpen}>
       <Col className={clsx(MODAL_CLASS)}>
@@ -42,7 +51,7 @@ export const AnnotateChartModal = (props: {
           <span className={'text-primary-700 text-xl'}>
             Add a note at{' '}
             <span>
-              {new Date(atTime).toLocaleDateString('en-US', {
+              {new Date(editedTime).toLocaleDateString('en-US', {
                 hour: 'numeric',
                 minute: 'numeric',
                 month: 'short',
@@ -52,6 +61,29 @@ export const AnnotateChartModal = (props: {
             </span>
           </span>
         </Row>
+        <Col className={'mt-2 w-full'}>
+          <span>Date and time</span>
+          <Input
+            type="datetime-local"
+            value={formatDateForInput(editedTime)}
+            min={
+              contract?.createdTime
+                ? formatDateForInput(contract.createdTime)
+                : undefined
+            }
+            max={formatDateForInput(Date.now())}
+            onChange={(e) => {
+              if (e.target.value) {
+                // Ensure time is not before contract creation
+                const newTime = new Date(e.target.value).getTime()
+                if (!contract?.createdTime || newTime >= contract.createdTime) {
+                  setEditedTime(newTime)
+                }
+              }
+            }}
+            className="w-full"
+          />
+        </Col>
         <Col className={'w-full'}>
           <span>What happened? </span>
           {comment ? (
@@ -94,7 +126,7 @@ export const AnnotateChartModal = (props: {
               await createChartAnnotation({
                 contractId,
                 text: note?.length ? note : undefined,
-                eventTime: atTime,
+                eventTime: editedTime,
                 answerId,
                 commentId: comment?.id,
                 probChange: probChange ? probChange / 100 : undefined,
@@ -121,21 +153,12 @@ export const ReadChartAnnotationModal = (props: {
   const user = useUser()
   const [loading, setLoading] = useState(false)
   const { chartAnnotation, open, setOpen } = props
-  const {
-    event_time,
-    creator_username,
-    creator_id,
-    creator_name,
-    creator_avatar_url,
-    comment_id,
-    user_username,
-    user_id,
-    user_name,
-    user_avatar_url,
-    prob_change,
-  } = chartAnnotation
+  const { event_time, creator_id, comment_id, user_id, prob_change } =
+    chartAnnotation
   // eslint-disable-next-line react-hooks/rules-of-hooks
   const comment = comment_id ? useCommentOnContract(comment_id) : undefined
+  const author = useDisplayUserById(user_id || creator_id || undefined)
+
   return (
     <Modal open={open} setOpen={setOpen}>
       <Col className={clsx(MODAL_CLASS)}>
@@ -144,20 +167,14 @@ export const ReadChartAnnotationModal = (props: {
             <Row className={'items-center gap-2'}>
               <UserHovercard userId={user_id as string}>
                 <Avatar
-                  username={user_username ?? creator_username}
-                  avatarUrl={user_avatar_url ?? creator_avatar_url}
+                  username={author?.username}
+                  avatarUrl={author?.avatarUrl}
                   size={'md'}
                 />
               </UserHovercard>
               <Col>
                 <UserHovercard userId={user_id as string}>
-                  <UserLink
-                    user={{
-                      id: user_id ?? creator_id,
-                      username: user_username ?? creator_username,
-                      name: user_name ?? creator_name,
-                    }}
-                  />
+                  <UserLink user={author} />
                 </UserHovercard>
                 <span className={'text-ink-500 text-xs'}>
                   {new Date(event_time).toLocaleDateString('en-US', {
@@ -204,7 +221,7 @@ export const ReadChartAnnotationModal = (props: {
         <Row className={'w-full'}>
           {comment_id ? (
             comment ? (
-              <Content content={comment.content} />
+              <Content size="sm" content={comment.content} />
             ) : (
               <LoadingIndicator />
             )

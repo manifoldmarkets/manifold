@@ -1,7 +1,7 @@
 import { mergeAttributes, Node } from '@tiptap/core'
 import { ContractsGrid } from '../contract/contracts-grid'
 
-import { useContracts } from 'web/hooks/use-contract-supabase'
+import { useContracts } from 'web/hooks/use-contract'
 import { LoadingIndicator } from '../widgets/loading-indicator'
 
 export default Node.create({

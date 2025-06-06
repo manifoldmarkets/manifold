@@ -1,5 +1,20 @@
 import { run } from 'common/supabase/utils'
 import { db } from 'web/lib/supabase/db'
+import { api } from '../api/api'
+import { ReactionContentTypes, ReactionType } from 'common/reaction'
+
+export const unreact = async (
+  contentId: string,
+  contentType: ReactionContentTypes,
+  reactionType: ReactionType
+) => {
+  api('react', {
+    remove: true,
+    contentId,
+    contentType,
+    reactionType,
+  })
+}
 
 export async function getLikedContracts(userId: string) {
   // TODO: The best way to do this would be to join the matching table via contentId and type

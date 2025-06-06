@@ -1,31 +1,30 @@
 import {
   CashIcon,
   ChatAlt2Icon,
-  ScaleIcon,
-  PresentationChartLineIcon,
-  ViewListIcon,
   ChevronDownIcon,
+  PresentationChartLineIcon,
+  ScaleIcon,
+  ViewListIcon,
 } from '@heroicons/react/outline'
-import { PencilIcon } from '@heroicons/react/solid'
 import clsx from 'clsx'
 import { DIVISION_NAMES, getLeaguePath } from 'common/leagues'
+import { getUserForStaticProps } from 'common/supabase/users'
+import { isUserLikelySpammer } from 'common/user'
+import { unauthedApi } from 'common/util/api'
+import { buildArray } from 'common/util/array'
 import { removeUndefinedProps } from 'common/util/object'
 import Head from 'next/head'
 import Link from 'next/link'
 import { useRouter } from 'next/router'
 import { useEffect, useState } from 'react'
-import dayjs from 'dayjs'
-
-import { SEO } from 'web/components/SEO'
-import { ENV_CONFIG } from 'common/envs/constants'
-import { referralQuery } from 'common/util/share'
 import { UserBetsTable } from 'web/components/bet/user-bets-table'
-import { CopyLinkOrShareButton } from 'web/components/buttons/copy-link-button'
 import { FollowButton } from 'web/components/buttons/follow-button'
-import { MoreOptionsUserButton } from 'web/components/buttons/more-options-user-button'
 import { TextButton } from 'web/components/buttons/text-button'
-import { UserCommentsList } from 'web/components/comments/comments-list'
+import { UserSettingButton } from 'web/components/buttons/user-settings-button'
+import { UserCommentsList } from 'web/components/comments/profile-comments'
+import { BackButton } from 'web/components/contract/back-button'
 import { FollowList } from 'web/components/follow-list'
+import { ManaCircleIcon } from 'web/components/icons/mana-circle-icon'
 import { Col } from 'web/components/layout/col'
 import { Modal } from 'web/components/layout/modal'
 import { Page } from 'web/components/layout/page'
@@ -33,9 +32,16 @@ import { Row } from 'web/components/layout/row'
 import { Spacer } from 'web/components/layout/spacer'
 import { QueryUncontrolledTabs, Tabs } from 'web/components/layout/tabs'
 import { SendMessageButton } from 'web/components/messaging/send-message-button'
+import { BalanceChangeTable } from 'web/components/portfolio/balance-change-table'
+import { PortfolioSummary } from 'web/components/portfolio/portfolio-summary'
+import { PortfolioValueSection } from 'web/components/portfolio/portfolio-value-section'
+import { AddFundsButton } from 'web/components/profile/add-funds-button'
 import { BlockedUser } from 'web/components/profile/blocked-user'
+import { RedeemSweepsButtons } from 'web/components/profile/redeem-sweeps-buttons'
 import { UserContractsList } from 'web/components/profile/user-contracts-list'
 import { UserLikedContractsButton } from 'web/components/profile/user-liked-contracts-button'
+import { SEO } from 'web/components/SEO'
+import { UserHandles } from 'web/components/user/user-handles'
 import { Avatar } from 'web/components/widgets/avatar'
 import { FullscreenConfetti } from 'web/components/widgets/fullscreen-confetti'
 import ImageWithBlurredShadow from 'web/components/widgets/image-with-blurred-shadow'
@@ -43,35 +49,19 @@ import { Linkify } from 'web/components/widgets/linkify'
 import { linkClass } from 'web/components/widgets/site-link'
 import { Title } from 'web/components/widgets/title'
 import { StackedUserNames, UserLink } from 'web/components/widgets/user-link'
-import { useAdmin } from 'web/hooks/use-admin'
+import { useAdminOrMod } from 'web/hooks/use-admin'
 import { useFollowers, useFollows } from 'web/hooks/use-follows'
+import { useHeaderIsStuck } from 'web/hooks/use-header-is-stuck'
 import { useIsMobile } from 'web/hooks/use-is-mobile'
 import { useLeagueInfo } from 'web/hooks/use-leagues'
 import { useSaveReferral } from 'web/hooks/use-save-referral'
-import { usePrivateUser, useUser, usePollUser } from 'web/hooks/use-user'
-import { useDiscoverUsers } from 'web/hooks/use-users'
+import { usePrivateUser, useUser, useWebsocketUser } from 'web/hooks/use-user'
 import { User } from 'web/lib/firebase/users'
 import TrophyIcon from 'web/lib/icons/trophy-icon.svg'
 import { db } from 'web/lib/supabase/db'
 import { getAverageUserRating, getUserRating } from 'web/lib/supabase/reviews'
 import Custom404 from 'web/pages/404'
 import { UserPayments } from 'web/pages/payments'
-import { UserHandles } from 'web/components/user/user-handles'
-import { BackButton } from 'web/components/contract/back-button'
-import { useHeaderIsStuck } from 'web/hooks/use-header-is-stuck'
-import { shouldIgnoreUserPage } from 'common/user'
-import { PortfolioSummary } from 'web/components/portfolio/portfolio-summary'
-import { isBetChange } from 'common/balance-change'
-import { BalanceChangeTable } from 'web/components/portfolio/balance-card'
-import { buttonClass } from 'web/components/buttons/button'
-import { usePersistentLocalState } from 'web/hooks/use-persistent-local-state'
-import { buildArray } from 'common/util/array'
-import { ManaCircleIcon } from 'web/components/icons/mana-circle-icon'
-import { useAPIGetter } from 'web/hooks/use-api-getter'
-import { PortfolioValueSection } from 'web/components/portfolio/portfolio-value-section'
-import { VerifyPhoneNumberBanner } from 'web/components/user/verify-phone-number-banner'
-import { FaCrown } from 'react-icons/fa6'
-import { getUserForStaticProps } from 'common/supabase/users'
 
 export const getStaticProps = async (props: {
   params: {
@@ -82,9 +72,18 @@ export const getStaticProps = async (props: {
 
   const user = await getUserForStaticProps(db, username)
 
+  const [contracts, posts] = user
+    ? await Promise.all([
+        db.from('contracts').select('id').eq('creator_id', user.id).limit(1),
+        db.from('old_posts').select('id').eq('creator_id', user.id).limit(1),
+      ])
+    : []
+  const hasCreatedQuestion = contracts?.data?.length || posts?.data?.length
   const { count, rating } = (user ? await getUserRating(user.id) : null) ?? {}
   const averageRating = user ? await getAverageUserRating(user.id) : undefined
-  const shouldIgnoreUser = user ? await shouldIgnoreUserPage(user, db) : false
+  const shouldIgnoreUser = user
+    ? await shouldIgnoreUserPage(user, !!hasCreatedQuestion)
+    : false
 
   return {
     props: removeUndefinedProps({
@@ -94,6 +93,7 @@ export const getStaticProps = async (props: {
       reviewCount: count,
       averageRating: averageRating,
       shouldIgnoreUser,
+      hasCreatedQuestion,
     }),
     revalidate: 60,
   }
@@ -110,19 +110,32 @@ export default function UserPage(props: {
   reviewCount?: number
   averageRating?: number
   shouldIgnoreUser: boolean
+  hasCreatedQuestion: boolean
 }) {
-  const isAdmin = useAdmin()
+  const isAdminOrMod = useAdminOrMod()
   const { user, ...profileProps } = props
   const privateUser = usePrivateUser()
   const blockedByCurrentUser =
     privateUser?.blockedUserIds.includes(user?.id ?? '_') ?? false
   if (!user) return <Custom404 />
-  else if (user.userDeleted && !isAdmin) return <DeletedUser />
+  else if (user.userDeleted && !isAdminOrMod) return <DeletedUser />
 
   return privateUser && blockedByCurrentUser ? (
     <BlockedUser user={user} privateUser={privateUser} />
   ) : (
     <UserProfile user={user} {...profileProps} />
+  )
+}
+
+const shouldIgnoreUserPage = async (
+  user: User,
+  hasCreatedQuestion: boolean
+) => {
+  // lastBetTime isn't always reliable, so use the contract_bets table to be sure
+  const bet = await unauthedApi('bets', { userId: user.id, limit: 1 })
+  return (
+    user.userDeleted ||
+    isUserLikelySpammer(user, bet.length > 0, hasCreatedQuestion)
   )
 }
 
@@ -146,31 +159,31 @@ function UserProfile(props: {
   reviewCount?: number
   averageRating?: number
   shouldIgnoreUser: boolean
+  hasCreatedQuestion: boolean
 }) {
-  const { rating, shouldIgnoreUser, reviewCount, averageRating } = props
-  const user = usePollUser(props.user.id) ?? props.user
+  const {
+    rating,
+    hasCreatedQuestion,
+    shouldIgnoreUser,
+    reviewCount,
+    averageRating,
+  } = props
+  const user = useWebsocketUser(props.user.id) ?? props.user
   const isMobile = useIsMobile()
   const router = useRouter()
   const currentUser = useUser()
-
-  const { data: newBalanceChanges } = useAPIGetter('get-balance-changes', {
-    userId: user.id,
-    after: dayjs().startOf('day').subtract(14, 'day').valueOf(),
-  })
-  // TODO: paginate
-
-  const balanceChanges = newBalanceChanges ?? []
-  const hasBetBalanceChanges = balanceChanges.some((b) => isBetChange(b))
-  const balanceChangesKey = 'balance-changes'
-
   useSaveReferral(currentUser, {
-    defaultReferrerUsername: user?.username,
+    defaultReferrerUsername: user.username,
   })
   const isCurrentUser = user.id === currentUser?.id
-  const [expandProfileInfo, setExpandProfileInfo] = usePersistentLocalState(
-    false,
-    'expand-profile-info'
-  )
+  const [expandProfileInfo, setExpandProfileInfo] = useState(false)
+  useEffect(() => {
+    // wait for user to load
+    if (currentUser === undefined) return
+    if (!user.isBannedFromPosting && !user.userDeleted && !isCurrentUser) {
+      setExpandProfileInfo(true)
+    }
+  }, [user.isBannedFromPosting, user.userDeleted, currentUser, user.id])
   const [showConfetti, setShowConfetti] = useState(false)
   const [followsYou, setFollowsYou] = useState(false)
   const { ref: titleRef, headerStuck } = useHeaderIsStuck()
@@ -207,6 +220,8 @@ function UserProfile(props: {
     }
   }, [currentUser?.id, user?.id])
 
+  const balanceChangesKey = 'balance-changes'
+
   return (
     <Page
       key={user.id}
@@ -216,20 +231,16 @@ function UserProfile(props: {
     >
       <SEO
         title={`${user.name} (@${user.username})`}
-        description={user.bio ?? ''}
+        description={shouldIgnoreUser ? '' : user.bio ?? ''}
         url={`/${user.username}`}
+        shouldIgnore={shouldIgnoreUser}
       />
-      {shouldIgnoreUser && (
-        <Head>
-          <meta name="robots" content="noindex, nofollow" />
-        </Head>
-      )}
       {showConfetti && <FullscreenConfetti />}
 
       <Col className="relative">
         <Row
           className={
-            'bg-canvas-50 sticky top-0 z-10 h-12 w-full justify-between gap-1 sm:static sm:h-auto'
+            'bg-canvas-0 sticky top-0 z-10 h-12 w-full justify-between gap-1 sm:static sm:h-auto'
           }
         >
           {isMobile && (
@@ -246,7 +257,7 @@ function UserProfile(props: {
                 <UserLink user={user} noLink />
               </div>
 
-              <MoreOptionsUserButton user={user} />
+              <UserSettingButton user={user} />
             </>
           )}
         </Row>
@@ -255,10 +266,10 @@ function UserProfile(props: {
           className={clsx('mx-4 flex-wrap justify-between gap-2 py-1')}
           ref={titleRef}
         >
-          {isCurrentUser ? (
+          {isCurrentUser || shouldIgnoreUser ? (
             <button
               className="group flex gap-2 py-1 pr-2"
-              onClick={() => isCurrentUser && setExpandProfileInfo((v) => !v)}
+              onClick={() => setExpandProfileInfo((v) => !v)}
             >
               <Col className={'relative max-h-14'}>
                 <ImageWithBlurredShadow
@@ -310,16 +321,22 @@ function UserProfile(props: {
           )}
 
           <Row className={'items-center gap-1 sm:gap-2'}>
-            {!isCurrentUser && (
+            {isCurrentUser ? (
+              <AddFundsButton
+                userId={user.id}
+                className="mr-2 w-full whitespace-nowrap px-8 lg:hidden"
+              />
+            ) : (
               <>
                 <SendMessageButton toUser={user} currentUser={currentUser} />
                 <FollowButton userId={user.id} />
               </>
             )}
-            {!isMobile && <MoreOptionsUserButton user={user} />}
+
+            {!isMobile && <UserSettingButton user={user} />}
           </Row>
         </Row>
-        {(expandProfileInfo || !isCurrentUser) && (
+        {expandProfileInfo && (
           <Col className={'mx-4 mt-1 gap-2'}>
             <ProfilePublicStats user={user} currentUser={currentUser} />
             {user.bio && (
@@ -334,6 +351,14 @@ function UserProfile(props: {
               className="mt-2"
             />
           </Col>
+        )}
+
+        {isCurrentUser && (
+          <RedeemSweepsButtons
+            user={user}
+            className="m-2 w-48"
+            redeemableCash={user.cashBalance}
+          />
         )}
 
         <Col className="mx-4">
@@ -351,12 +376,14 @@ function UserProfile(props: {
                 stackedTabIcon: <PresentationChartLineIcon className="h-5" />,
                 content: (
                   <>
-                    <VerifyPhoneNumberBanner user={currentUser} />
+                    {/* <Col className="mt-2 gap-2"> */}
+                    {/* <VerifyPhoneNumberBanner user={currentUser} /> */}
+                    {/* </Col> */}
                     <PortfolioSummary className="mt-4" user={user} />
                   </>
                 ),
               },
-              (!!user.lastBetTime || hasBetBalanceChanges) && {
+              !!user.lastBetTime && {
                 title: 'Trades',
                 prerender: true,
                 stackedTabIcon: <ManaCircleIcon className="h-5 w-5" />,
@@ -370,8 +397,12 @@ function UserProfile(props: {
                           defaultTimePeriod={
                             currentUser?.id === user.id ? 'weekly' : 'monthly'
                           }
-                          hideAddFundsButton
                         />
+
+                        <div className="text-ink-800 border-ink-300 mx-2 mt-6 gap-2 border-t pt-4 text-xl font-semibold lg:mx-0">
+                          Trades
+                        </div>
+
                         <Spacer h={4} />
                       </>
                     )}
@@ -379,8 +410,7 @@ function UserProfile(props: {
                   </>
                 ),
               },
-              (user.creatorTraders.allTime > 0 ||
-                (user.freeQuestionsCreated ?? 0) > 0) && {
+              hasCreatedQuestion && {
                 title: 'Questions',
                 prerender: true,
                 stackedTabIcon: <ScaleIcon className="h-5" />,
@@ -397,6 +427,12 @@ function UserProfile(props: {
                 ),
               },
               {
+                title: 'Balance log',
+                stackedTabIcon: <ViewListIcon className="h-5" />,
+                content: <BalanceChangeTable user={user} />,
+                queryString: balanceChangesKey,
+              },
+              {
                 title: 'Comments',
                 stackedTabIcon: <ChatAlt2Icon className="h-5" />,
                 content: (
@@ -404,17 +440,6 @@ function UserProfile(props: {
                     <UserCommentsList user={user} />
                   </Col>
                 ),
-              },
-              {
-                title: 'Balance log',
-                stackedTabIcon: <ViewListIcon className="h-5" />,
-                content: (
-                  <BalanceChangeTable
-                    user={user}
-                    balanceChanges={balanceChanges}
-                  />
-                ),
-                queryString: balanceChangesKey,
               },
               {
                 title: 'Payments',
@@ -494,29 +519,12 @@ function ProfilePublicStats(props: {
         </Link>
       )}
 
-      {isCurrentUser && (
+      {/* {isCurrentUser && (
         <Link href={`/${user.username}/partner`} className={linkClass}>
           <FaCrown className="mb-1 mr-1 inline h-4 w-4" />
           Partner
         </Link>
-      )}
-
-      <ShareButton user={user} currentUser={currentUser} />
-
-      {isCurrentUser && (
-        <>
-          <Link
-            href="/profile"
-            className={clsx(
-              buttonClass('2xs', 'gray-white'),
-              '-mx-1 gap-0.5 !px-1 !py-0.5'
-            )}
-          >
-            <PencilIcon className="mb-0.5 h-4 w-4" />
-            <span className="text-sm">Edit profile</span>
-          </Link>
-        </>
-      )}
+      )} */}
 
       <FollowsDialog
         user={user}
@@ -526,32 +534,6 @@ function ProfilePublicStats(props: {
         isOpen={followsOpen}
         setIsOpen={setFollowsOpen}
       />
-    </Row>
-  )
-}
-
-const ShareButton = (props: {
-  user: User
-  currentUser: User | undefined | null
-}) => {
-  const { user, currentUser } = props
-  const isSameUser = currentUser?.id === user.id
-  const url = `https://${ENV_CONFIG.domain}/${user.username}${
-    !isSameUser && currentUser ? referralQuery(currentUser.username) : ''
-  }`
-
-  return (
-    <Row className={'items-center'}>
-      <CopyLinkOrShareButton
-        url={url}
-        iconClassName={'h-3 !stroke-[3]'}
-        className={'-mx-1 gap-1 !px-1 !py-0.5'}
-        eventTrackingName={'share user page'}
-        tooltip={'Copy link to profile'}
-        size={'2xs'}
-      >
-        <span className={'text-sm'}>Share</span>
-      </CopyLinkOrShareButton>
     </Row>
   )
 }
@@ -567,14 +549,6 @@ function FollowsDialog(props: {
   const { user, followingIds, followerIds, defaultTab, isOpen, setIsOpen } =
     props
 
-  const currentUser = useUser()
-  const myFollowedIds = useFollows(currentUser?.id)
-  const suggestedUserIds = useDiscoverUsers(
-    isOpen ? user.id : undefined, // don't bother fetching this unless someone looks
-    myFollowedIds ?? [],
-    50
-  )
-
   return (
     <Modal open={isOpen} setOpen={setIsOpen}>
       <Col className="bg-canvas-0 max-h-[90vh] rounded pt-6">
@@ -589,10 +563,6 @@ function FollowsDialog(props: {
             {
               title: 'Followers',
               content: <FollowList userIds={followerIds} />,
-            },
-            {
-              title: 'Similar',
-              content: <FollowList userIds={suggestedUserIds} />,
             },
           ]}
           defaultIndex={defaultTab === 'following' ? 0 : 1}

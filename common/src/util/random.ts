@@ -1,8 +1,15 @@
-// max 10 length string. For longer, concat multiple
-export const randomString = (length = 10) =>
-  Math.random()
-    .toString(36)
-    .substring(2, length + 2)
+const a = 'useandom26T198340PX75pxJACKVERYMINDBUSHWOLFGQZbfghjklqvwyzrict'
+export const nanoid = (e = 21) => {
+  let t = ''
+  const r = crypto.getRandomValues(new Uint8Array(e))
+  for (let n = 0; n < e; n++) t += a[61 & r[n]]
+  if (t.length !== e) throw new Error('Failed to generate random string')
+  return t
+}
+
+// Matches the output of the randomString function, for validation purposes.
+export const randomStringRegex = new RegExp(`^[${a}]+$`)
+export const randomString = (length = 10) => nanoid(length)
 
 export function genHash(str: string) {
   // xmur3

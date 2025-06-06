@@ -1,21 +1,24 @@
 import clsx from 'clsx'
 
 import { Contract } from 'common/contract'
-import { formatMoneyNumber, formatPercent } from 'common/util/format'
+import {
+  formatMoneyNumberUSLocale,
+  formatPercent,
+  SWEEPIES_MONIKER,
+} from 'common/util/format'
 import { getShareUrl } from 'common/util/share'
-import TwitterLogo from 'web/lib/icons/twitter-logo.svg'
 import { trackCallback } from 'web/lib/service/analytics'
 import { buttonClass } from './button'
+import { PiXLogo } from 'react-icons/pi'
 
 export function TweetButton(props: { tweetText: string; className?: string }) {
   const { tweetText, className } = props
 
   return (
     <a
-      // #1da1f2 is twitter blue
       className={clsx(
         buttonClass('lg', 'none'),
-        'hover:text-ink-0 gap-1 border-2 border-[#1da1f2] text-[#1da1f2] hover:bg-[#1da1f2]',
+        'border-ink-900 hover:bg-ink-900 hover:text-ink-50 gap-1 border-2',
         className
       )}
       href={getTweetHref(tweetText)}
@@ -23,8 +26,8 @@ export function TweetButton(props: { tweetText: string; className?: string }) {
       target="_blank"
       rel="noreferrer"
     >
-      <TwitterLogo width={15} height={15} />
-      <div>Tweet</div>
+      <PiXLogo width={15} height={15} />
+      <div>Share</div>
     </a>
   )
 }
@@ -45,7 +48,7 @@ export const getPositionTweet = (
   const prob = formatPercent(position > 0 ? p : 1 - p)
   const side = position > 0 ? 'greater' : 'less'
 
-  return `I'm betting there's a ${side} than ${prob} chance. ${getShareUrl(
+  return `I'm predicting there's a ${side} than ${prob} chance. ${getShareUrl(
     contract,
     username
   )}`
@@ -56,7 +59,10 @@ export const getWinningTweet = (
   contract: Contract,
   username: string
 ) => {
-  return `I made M$${formatMoneyNumber(profit)} in profit trading on\n'${
+  const isCashContract = contract.token === 'CASH'
+  return `I ${profit >= 0 ? 'won' : 'lost'} ${
+    isCashContract ? SWEEPIES_MONIKER : 'M$'
+  }${formatMoneyNumberUSLocale(profit).replace('-', '')} trading on\n'${
     contract.question
   }'! ${getShareUrl(contract, username)}`
 }

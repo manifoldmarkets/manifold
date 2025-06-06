@@ -22,7 +22,7 @@ Consider a prediction market on a question like: "Will Democrats win the 2024 US
 
 If the market is currently displaying a probability of 50%, but you believe that the true chance is higher, you can purchase shares at a cost $0.50/share that will pay out $1 if the Democrats win. Suppose the true probability is 60%, then you will make $0.10 for each share you purchase in expectation.
 
-Now, you or I could be mistaken and overshoot the true probability one way or another. If so, there's now a monetary incentive for someone else to bet and correct it! Over time, the implied probability will converge to the [market's best estimate](https://en.wikipedia.org/wiki/Efficient-market_hypothesis).
+Now, you or I could be mistaken and overshoot the true probability one way or another. If so, there's now a monetary incentive for someone else to bet and correct it! Over time, the implied probability will converge to the [market's best estimate](https://en.wikipedia.org/wiki/Efficient-market_hypothesis).
 
 [![Explainer video](https://ruittinten.nl/wp-content/uploads/youtube-placeholder.png)](https://youtu.be/xA27x7GRMZQ)
 
@@ -30,9 +30,9 @@ Now, you or I could be mistaken and overshoot the true probability one way or an
 
 Yes! Manifold has consistently proven its validity and efficacy as a leading prediction market platform. Manifold compiles site wide prediction data to determine how well calibrated the site is at predicting events, you can assess Manifold's predictive track record in real time on our [platform calibration page](https://manifold.markets/calibration).
 
-Beyond our platform, there is substantial evidence that play-money prediction markets provide real forecasting power. Examples include [sports betting](http://www.electronicmarkets.org/fileadmin/user_upload/doc/Issues/Volume_16/Issue_01/V16I1_Statistical_Tests_of_Real-Money_versus_Play-Money_Prediction_Markets.pdf) and internal prediction markets at firms like [Google](https://www.networkworld.com/article/2284098/google-bets-on-value-of-prediction-markets.html).
+Beyond our platform, there is substantial evidence that play-money prediction markets provide real forecasting power. Examples include [sports betting](http://www.electronicmarkets.org/fileadmin/user_upload/doc/Issues/Volume_16/Issue_01/V16I1_Statistical_Tests_of_Real-Money_versus_Play-Money_Prediction_Markets.pdf) and internal prediction markets at firms like [Google](https://www.networkworld.com/article/2284098/google-bets-on-value-of-prediction-markets.html).
 
-Traders in a play-money environment are competing for social prestige and a sense of progression that comes from predicting and trading well. Manifold also has prizes available in some regions.
+Traders in a play-money environment are competing for social prestige and a sense of progression that comes from predicting and trading well.
 
 ## Using Manifold
 
@@ -46,17 +46,11 @@ If a market doesn't exist... [Create a market yourself!](https://manifold.market
 
 ### What is mana (M)?
 
-Mana (M) is the play-money currency used to bet on Manifold Markets. It **cannot be converted to cash**. All users start with M200 for free.
+Mana (M) is the play-money currency used to bet on Manifold Markets. It **cannot be converted to cash**. All users start with M1000 for free.
 
 Mana can be used to create, subsidise, and promote markets on your own questions.
 
 In addition, you can [purchase more mana](https://manifold.markets/add-funds).
-
-### What are prize points
-
-- When a prize points enabled question or multiple choice answer resolves, you receive prize points if you hold a stake in the correct side. If you sell your stake before the market resolves, you only receive mana. Of course, if you hold to the end but the market resolves against you, you receive nothing. See resolution and payouts sections below for more details.
-- You may convert prize points back into mana
-- Prize points can be [redeemed for charity donations](#how-can-i-donate-to-charity) at a rate of $0.95 per 1,000 points
 
 ### How can I earn mana?
 
@@ -69,18 +63,9 @@ Mana can be earned by making correct predictions, successful trades, creating po
   Quests provide specific incentives to engage with Manifold Markets in different ways.
 
 **Daily prediction streaks** -
-There is a daily quest to bet, which gives a reward of M10. For each consecutive day you bet, this is increased in increments of M5 up to a maximum of M25 per day. Your daily betting streak can be viewed at the top right of your profile page.
+There is a daily quest to bet, which gives a reward of M5. For each consecutive day you bet, this is increased in increments of M5 up to a maximum of M25 per day. Your daily betting streak can be viewed at the top right of your profile page.
 
 You can find all other available quests by navigating to your profile page and clicking on the streak button.
-
-
-### How else can I earn prize points?
-
-- [**Referring friends**](https://manifold.markets/referrals) -
-  Receive 1,000 Prize Points for each person who signs up when you share a market or group! Make sure they use your share link and place at least one trade after signing up. Click share, DO NOT copy the URL.
-
-- **Leagues** -
-  [Manifold Leagues](https://manifold.markets/leagues) are a fun way to compete with people globally who predict at a similar skill/intensity. They are a month long competition with significant rewards, so keep an eye on opportunities to advance in your league!
 
 ### What types of questions can I use Manifold to answer?
 
@@ -123,7 +108,7 @@ Here are some of the top use cases for our markets, with corresponding examples.
 Can be used for personal projects, startups, or even large intra-company processes.
 
 - Predicting the success of your projects and using that knowledge to influence decisions.
-  - [Manifold’s biggest growth vector](https://manifold.markets/SG/what-will-manifolds-biggest-growth)
+  - [Manifold's biggest growth vector](https://manifold.markets/SG/what-will-manifolds-biggest-growth)
   - [Beeminder](https://manifold.markets/dreev/which-beeminder-featureproject-will)
 - Community feedback on whether you should add a new feature
   - [How will Manifold improve our commenting?](https://manifold.markets/ManifoldMarkets/how-will-manifold-markets-integrate)
@@ -162,9 +147,9 @@ Here are some other tips to get you started:
 - **Create innovative answers** -
   Certain free response markets provide room for creativity! The answers themselves can often affect the outcome based on how compelling they are. Being the first to bet on an answer generally gives the best odds!
 - [**Sort by close date**](https://manifold.markets/browse?s=close-date) -
-  This will show you the markets that will close the soonest. Most of these markets will tend to have converged to one extreme leaving not much room for profit. However, you will find some that haven’t. These are great to bet on as you won’t have to wait a long time for a potential return on investment.
+  This will show you the markets that will close the soonest. Most of these markets will tend to have converged to one extreme leaving not much room for profit. However, you will find some that haven't. These are great to bet on as you won't have to wait a long time for a potential return on investment.
 - [**Sort by newest**](https://manifold.markets/browse?s=newest) -
-  This may allow you to find markets which haven’t had enough bets to converge to an accurate probability allowing you to snatch up some cheap shares.
+  This may allow you to find markets which haven't had enough bets to converge to an accurate probability allowing you to snatch up some cheap shares.
 - **Follow successful traders** -
   This increases your exposure to winning strategies. Watching how some of the [top traders on Manifold Markets](https://manifold.markets/leaderboards) use their mana can provide a good indication of what works. If you're ever curious how someone made a large profit on a market with a small position, or predicted an event, ask them!
 
@@ -185,7 +170,7 @@ Whoever created the market gets to resolve it! Manifold puts trust in its users 
 
 Markets should be resolved in a timely fashion once the resolution conditions are met.
 
-If a market closes and there won’t be a resolution in the foreseeable future, consider editing and extending the closing date.
+If a market closes and there won't be a resolution in the foreseeable future, consider editing and extending the closing date.
 
 - For Yes/No markets it is generally recommended to resolve fully to one outcome. Only resolve to a particular probability (PARTIAL) if you have a good justification for it.
 - Resolving to PARTIAL allows you to choose a specific % if you think the outcome lies between Yes and No.
@@ -201,7 +186,7 @@ This means that:
 - Any user who made a profit by selling shares before resolution will have that mana subtracted from their balance. This could lead to a negative balance in some cases.
 - All liquidity providers will have their mana returned to them, including the initial amount it cost to make the market.
 
-Don’t abuse resolving to N/A as it inflicts an opportunity cost on bettors. Fees paid to manifold are deducted from any refunds granted during the N/A cancellation process. Fees paid to the market creator are refunded to traders.
+Don't abuse resolving to N/A as it inflicts an opportunity cost on bettors. Fees paid to manifold are deducted from any refunds granted during the N/A cancellation process. Fees paid to the market creator are refunded to traders.
 
 ### Closed versus resolved markets
 
@@ -209,7 +194,7 @@ Don’t abuse resolving to N/A as it inflicts an opportunity cost on bettors. Fe
 
 - When a market is closed, trading is halted but nothing is finalised.
 - Resolution criteria for an outcome have not yet been met.
-  - If the criteria have been met then write a comment @’ing the creator asking them to resolve it.
+  - If the criteria have been met then write a comment @'ing the creator asking them to resolve it.
 - No one can make bets.
 - No one can sell out of current positions.
 - The market can be edited by the creator to reopen the market and extend the close date.
@@ -218,8 +203,7 @@ Don’t abuse resolving to N/A as it inflicts an opportunity cost on bettors. Fe
 
 - Resolution criteria for an outcome have been met.
 - Creator chooses the correct answer.
-- Winners are paid out and loans are taken back. 
-- If a market has prize points enabled, winnings will be paid in prize points. Otherwise, winners will receive mana.
+- Winners are paid out and loans are taken back.
 
 ## Market mechanics
 
@@ -247,16 +231,16 @@ The number of shares you own determines your pay-out when the market resolves. E
 
 We do a calculation behind the scenes to determine what the price of each share is. The greater the probability of the outcome, the more expensive that type of share will be. So if the market probability is 3% then the NO shares will be super expensive (giving you a bad pay-out), but yes shares will be cheap.
 
-Due to the price of shares fluctuating with the probability you can potentially “buy low and sell high” similar to how you might on a stock market. Selling shares will always give you less value than waiting for a correct resolution, but may be less risky.
+Due to the price of shares fluctuating with the probability you can potentially "buy low and sell high" similar to how you might on a stock market. Selling shares will always give you less value than waiting for a correct resolution, but may be less risky.
 
 ### How are payouts calculated?
 
-- Users’ potential profits are locked in at the moment they place their trade. The amount is equivalent to how many shares they buy. This means subsequent bets by other users on a market do not affect a previous trader’s profit on resolution.
+- Users' potential profits are locked in at the moment they place their trade. The amount is equivalent to how many shares they buy. This means subsequent bets by other users on a market do not affect a previous trader's profit on resolution.
 - E.g. 300 YES shares means a M300 payout if the market resolves YES.
 
 ### What is a limit order?
 
-Limit orders allow you to place a bet at a specific probability, rather than just the current market probability. This means you can set up ‘open orders’ that wait for other users to come and trade against. All open limit orders can be viewed in the order book.
+Limit orders allow you to place a bet at a specific probability, rather than just the current market probability. This means you can set up 'open orders' that wait for other users to come and trade against. All open limit orders can be viewed in the order book.
 
 #### Advantages of limit orders
 
@@ -299,9 +283,9 @@ The liquidity in a market is the amount of capital available for traders to trad
 
 ### What are loans?
 
-Loans are deprecated. Here's how it used to work:
+Here's how they work:
 
-Every day at midnight PT, you'd get 4% of your total bet amount back as a loan. If your bet has depreciated in value, you will get 4% of the lower value. You can see how much your last loan was by navigating to your Notifications and then Balance changes tab.
+Every day at midnight PT, you'd get 1.5% of your total bet amount back as a loan. If your bet has depreciated in value, you will get 1.5% of the lower value. You can see how much your last loan was by navigating to your Notifications and then Balance changes tab.
 
 - **Do I have to pay back a loan?**
   Yes, but don't worry! You will automatically pay back loans when the market resolves or you sell your bet. If this causes your balance to go negative then you will have to free up some mana before you can start trading again.
@@ -314,21 +298,10 @@ Every day at midnight PT, you'd get 4% of your total bet amount back as a loan. 
   It's possible, but very rare.
 
 - **What is an example?**
-  If you bet M1000 today, you will get M40 back tomorrow.
-  Previous loans count against your total bet amount. So on the next day, you would get back 4% of M(1000 - 40) = M38.4.
+  If you bet M1000 today, you will get M15 back tomorrow.
+  Previous loans count against your total bet amount. So on the next day, you would get back 1.5% of M(1000 - 15) = M14.775.
 
 ## Misc
-
-### How can I donate to charity
-
-- First [select a non-profit](https://manifold.markets/charity) from the charity page
-- For every 1000 prize points you redeem we will donate $0.95 USD.
-- There is no limit to how much you can donate!
-
-### What kinds of charities can I donate to through Manifold Markets?
-
-The most popular included charities are GiveWell, Rethink Priorities, Balsa Research, EA Long-Term Future Fund, Grand Teton National Park Foundation, QURI, AI Impacts, Mriya, Doctors Without Borders, EA Animal Welfare Fund, EWG, GiveDirectly, and many more. Contact charity@manifold.markets if there is a charity not included that you would like to donate to!
-Read more here: [Charity page](https://manifold.markets/charity);
 
 ### How can I turn off emails and other notifications?
 
@@ -371,7 +344,7 @@ Manifold Markets is able to maintain the best range of diverse questions thanks 
 
 ### What are the Manifold terms and conditions?
 
-Here you can find the [Manifold Markets terms and conditions](https://manifold.markets/terms.html)
+Here you can find the [terms and conditions](/terms) and [privacy policy](/privacy-policy).
 
 ### How to resolve a dispute on Manifold Markets?
 
@@ -387,4 +360,4 @@ Manifold Markets believes users should have autonomy over their own markets as m
 
 ### Can you play Manifold Markets for free?
 
-Yes, Manifold is a free to play social prediction game with prizes enabled in select regions. Outside of permitted regions, you are unable to redeem your Prize Points for prizes. Prize Points can always be exchanged back to mana to continue playing.
+Yes, Manifold is a free to play social prediction game. Users may choose to participate in mana markets for free. Users may choose to buy additional mana, although it is not necessary.

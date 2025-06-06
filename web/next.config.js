@@ -4,7 +4,9 @@ const API_DOCS_URL = 'https://docs.manifold.markets/api'
 module.exports = {
   productionBrowserSourceMaps: true,
   reactStrictMode: true,
-  optimizeFonts: false,
+  eslint: {
+    ignoreDuringBuilds: true, // we lint in CI
+  },
   modularizeImports: {
     '@heroicons/react/solid/?(((\\w*)?/?)*)': {
       transform: '@heroicons/react/solid/{{ matches.[1] }}/{{member}}',
@@ -30,6 +32,7 @@ module.exports = {
     dangerouslyAllowSVG: true,
     remotePatterns: [
       { hostname: 'manifold.markets' },
+      { hostname: 'dev.manifold.markets' },
       { hostname: 'oaidalleapiprodscus.blob.core.windows.net' },
       { hostname: 'lh3.googleusercontent.com' },
       { hostname: 'i.imgur.com' },
@@ -59,10 +62,16 @@ module.exports = {
   async redirects() {
     return [
       {
-        source: '/elections',
-        destination: '/politics',
+        source: '/politics',
+        destination: '/election',
         permanent: true,
       },
+      {
+        source: '/elections',
+        destination: '/election',
+        permanent: true,
+      },
+
       {
         source: '/api',
         destination: API_DOCS_URL,
@@ -83,11 +92,7 @@ module.exports = {
         destination: '/lab',
         permanent: true,
       },
-      {
-        source: '/sitemap',
-        destination: '/about',
-        permanent: true,
-      },
+
       {
         source: '/versus',
         destination: '/VersusBot?tab=questions',
@@ -95,12 +100,22 @@ module.exports = {
       },
       {
         source: '/privacy',
-        destination: '/privacy.html',
+        destination: 'https://docs.manifold.markets/privacy-policy',
         permanent: true,
       },
       {
         source: '/terms',
-        destination: '/terms.html',
+        destination: 'https://docs.manifold.markets/terms',
+        permanent: true,
+      },
+      {
+        source: '/mana-only-terms',
+        destination: 'https://docs.manifold.markets/terms',
+        permanent: true,
+      },
+      {
+        source: '/sweepstakes-rules',
+        destination: 'https://docs.manifold.markets/sweepstakes-rules',
         permanent: true,
       },
       {
@@ -111,12 +126,7 @@ module.exports = {
       },
       {
         source: '/this-month',
-        destination: '/markets?f=closing-this-month&s=most-popular',
-        permanent: true,
-      },
-      {
-        source: '/markets',
-        destination: '/browse',
+        destination: '/browse?f=closing-this-month&s=most-popular',
         permanent: true,
       },
       {
@@ -141,26 +151,18 @@ module.exports = {
       },
       {
         source: '/group/:slug*',
-        destination: '/browse/:slug*',
+        destination: '/topic/:slug*',
         permanent: true,
       },
       {
-        source: '/post/:slug*',
-        destination: '/old-posts/:slug*',
+        source: '/browse/:slug+',
+        destination: '/topic/:slug+',
         permanent: false,
       },
       {
-        source: '/questions:slug*',
-        has: [
-          {
-            type: 'query',
-            key: 'topic',
-            // Using a named capture group to capture the value of 'topic'
-            value: '(?<slug>.*)',
-          },
-        ],
+        source: '/old-posts/:slug*',
+        destination: '/post/:slug*',
         permanent: true,
-        destination: '/browse/:slug', // Using the captured value here
       },
       {
         source: '/questions',
@@ -170,7 +172,7 @@ module.exports = {
       {
         source: '/dashboard/:slug',
         destination: '/news/:slug',
-        permanent: false, // TODO: after 1/7/2024 change this and below to true
+        permanent: true,
       },
       {
         source: '/home:slug*',

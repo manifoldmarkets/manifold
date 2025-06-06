@@ -1,6 +1,6 @@
 import { GetServerSideProps } from 'next'
 import { getServerSideSitemap, ISitemapField } from 'next-sitemap'
-import { searchContracts } from 'web/lib/firebase/api'
+import { searchContracts } from 'web/lib/api/api'
 
 export const getServerSideProps: GetServerSideProps = async (ctx) => {
   const contracts = await searchContracts({

@@ -9,10 +9,8 @@ import { LinkPreviews } from 'common/link-preview'
 import { useEffect, useState } from 'react'
 import { key } from 'web/components/dashboard/dashboard-content'
 import { Row } from 'web/components/layout/row'
-import { useContracts } from 'web/hooks/use-contract-supabase'
+import { useContracts } from 'web/hooks/use-contract'
 import { useDashboardFromSlug } from 'web/hooks/use-dashboard'
-import { useSaveReferral } from 'web/hooks/use-save-referral'
-import { useUser } from 'web/hooks/use-user'
 import {
   DashboardNewsItemPlaceholder,
   MaybeDashboardNewsItem,
@@ -20,6 +18,8 @@ import {
 import { Carousel } from '../widgets/carousel'
 import { DashboardText } from './dashboard-text-card'
 import { HorizontalDashboardCard } from './horizontal-dashboard-card'
+import { useUser } from 'web/hooks/use-user'
+import { useSaveReferral } from 'web/hooks/use-save-referral'
 
 export function HorizontalDashboard(props: {
   initialDashboard: Dashboard
@@ -27,10 +27,9 @@ export function HorizontalDashboard(props: {
   initialContracts: Contract[]
   slug: string
 }) {
+  const { initialDashboard, slug, previews, initialContracts } = props
   const user = useUser()
   useSaveReferral(user)
-
-  const { initialDashboard, slug, previews, initialContracts } = props
   const fetchedDashboard = useDashboardFromSlug(slug)
   const [dashboard, setDashboard] = useState<Dashboard>(initialDashboard)
 

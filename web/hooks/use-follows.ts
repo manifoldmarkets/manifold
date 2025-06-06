@@ -1,31 +1,44 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useCallback } from 'react'
 import {
   getUserIdFollows,
   getUserFollowers,
   getUserIsFollowing,
 } from 'web/lib/supabase/follows'
-import { useSubscription } from 'web/lib/supabase/realtime/use-subscription'
 import { usePersistentLocalState } from './use-persistent-local-state'
 import { db } from 'web/lib/supabase/db'
+import { followUser, unfollowUser } from 'web/lib/api/api'
+import toast from 'react-hot-toast'
 
 export const useFollows = (userId: string | null | undefined) => {
-  const { rows } = useSubscription('user_follows', {
-    k: 'user_id',
-    v: userId ?? '_',
-  })
+  const [follows, setFollows] = useState<string[] | undefined>(undefined)
 
-  if (!userId) return undefined
-  return rows?.map((r) => r.follow_id)
+  useEffect(() => {
+    if (userId) {
+      getUserIdFollows(userId).then((data) => {
+        setFollows(data?.map((r) => r.follow_id) ?? [])
+      })
+    } else {
+      setFollows(undefined)
+    }
+  }, [userId])
+
+  return follows
 }
 
 export const useFollowers = (userId: string | undefined) => {
-  const { rows } = useSubscription('user_follows', {
-    k: 'follow_id',
-    v: userId ?? '_',
-  })
+  const [followers, setFollowers] = useState<string[] | undefined>(undefined)
 
-  if (!userId) return undefined
-  return rows?.map((r) => r.user_id)
+  useEffect(() => {
+    if (userId) {
+      getUserFollowers(userId).then((data) => {
+        setFollowers(data?.map((r) => r.user_id) ?? [])
+      })
+    } else {
+      setFollowers(undefined)
+    }
+  }, [userId])
+
+  return followers
 }
 
 export const useIsFollowing = (
@@ -33,10 +46,32 @@ export const useIsFollowing = (
   followId: string
 ) => {
   const [isFollowing, setIsFollowing] = useState<boolean>(false)
+
   useEffect(() => {
-    if (userId) getUserIsFollowing(userId, followId).then(setIsFollowing)
+    if (userId) {
+      getUserIsFollowing(userId, followId).then(setIsFollowing)
+    }
   }, [userId, followId])
-  return { isFollowing, setIsFollowing }
+
+  const toggleFollow = useCallback(async () => {
+    if (!userId) return
+
+    try {
+      if (isFollowing) {
+        setIsFollowing(false)
+        await unfollowUser(followId)
+      } else {
+        setIsFollowing(true)
+        await followUser(followId)
+      }
+    } catch (error) {
+      setIsFollowing(!isFollowing) // undo the optimistic update
+      toast.error('Failed to follow user. Please try again.')
+      console.error(error)
+    }
+  }, [userId, followId, isFollowing])
+
+  return { isFollowing, toggleFollow }
 }
 
 export const useFollowedIdsSupabase = (userId: string) => {

@@ -1,41 +1,41 @@
-import {
-  CPMMContract,
-  CPMMMultiContract,
-  CPMMNumericContract,
-} from 'common/contract'
-import { User } from 'common/user'
-import { getInvested } from 'common/calculate'
-import { useState } from 'react'
-import { Col } from '../layout/col'
-import { Row } from '../layout/row'
-import { formatMoney, formatWithCommas } from 'common/util/format'
-import { OutcomeLabel } from '../outcome-label'
-import { useUserContractBets } from 'web/hooks/use-user-bets'
-import { useSaveBinaryShares } from 'web/hooks/use-save-binary-shares'
-import { Button } from '../buttons/button'
 import clsx from 'clsx'
-import { Bet } from 'common/bet'
-import { Modal } from '../layout/modal'
-import { Title } from '../widgets/title'
-import { SellPanel } from './sell-panel'
-import { TweetButton, getPositionTweet } from '../buttons/tweet-button'
+import { CPMMContract, MultiContract } from 'common/contract'
 import { getStonkDisplayShares } from 'common/stonk'
+import { User } from 'common/user'
+import { formatShares } from 'common/util/format'
+import { useState } from 'react'
+import { Button } from '../buttons/button'
+import { Col } from '../layout/col'
+import { Modal } from '../layout/modal'
+import { Row } from '../layout/row'
+import { OutcomeLabel } from '../outcome-label'
+import { Title } from '../widgets/title'
+import { MoneyDisplay } from './money-display'
+import { SellPanel } from './sell-panel'
+import { ContractMetric } from 'common/contract-metric'
+import { useSavedContractMetrics } from 'web/hooks/use-saved-contract-metrics'
+import { useAnswer } from 'web/hooks/use-answers'
 
 export function SellRow(props: {
   contract: CPMMContract
   user: User | null | undefined
   className?: string
-  showTweet?: boolean
   hideStatus?: boolean
 }) {
-  const { className, contract, user, showTweet, hideStatus } = props
+  const { className, contract, user, hideStatus } = props
   const isStonk = contract.outcomeType === 'STONK'
 
-  const userBets = useUserContractBets(user?.id, contract.id)
+  const metric = useSavedContractMetrics(contract)
+  const { totalShares, maxSharesOutcome } = metric ?? {
+    totalShares: { YES: 0, NO: 0 },
+    maxSharesOutcome: 'YES',
+  }
+  const sharesOutcome = maxSharesOutcome as 'YES' | 'NO' | null
+  const shares = totalShares[sharesOutcome ?? 'YES'] ?? 0
   const [showSellModal, setShowSellModal] = useState(false)
 
   const { mechanism } = contract
-  const { sharesOutcome, shares } = useSaveBinaryShares(contract, userBets)
+  const isCashContract = contract.token === 'CASH'
 
   if (sharesOutcome && user && mechanism === 'cpmm-1') {
     return (
@@ -49,7 +49,14 @@ export function SellRow(props: {
                   of{' '}
                 </>
               ) : (
-                <>You'll get {formatMoney(shares)} on </>
+                <>
+                  You'll get{' '}
+                  <MoneyDisplay
+                    amount={shares}
+                    isCashContract={isCashContract}
+                  />{' '}
+                  on{' '}
+                </>
               )}
               <OutcomeLabel
                 outcome={sharesOutcome}
@@ -74,22 +81,11 @@ export function SellRow(props: {
           {showSellModal && (
             <SellSharesModal
               contract={contract}
+              metric={metric}
               user={user}
-              userBets={userBets ?? []}
               shares={shares}
               sharesOutcome={sharesOutcome}
               setOpen={setShowSellModal}
-            />
-          )}
-
-          {showTweet && userBets && (
-            <TweetButton
-              tweetText={getPositionTweet(
-                (sharesOutcome === 'NO' ? -1 : 1) * shares,
-                getInvested(contract, userBets),
-                contract,
-                user.username
-              )}
             />
           )}
         </Row>
@@ -102,25 +98,38 @@ export function SellRow(props: {
 
 export function SellSharesModal(props: {
   className?: string
-  contract: CPMMContract | CPMMMultiContract | CPMMNumericContract
-  userBets: Bet[]
+  contract: CPMMContract | MultiContract
+  metric: ContractMetric | undefined
   shares: number
   sharesOutcome: 'YES' | 'NO'
   user: User
   setOpen: (open: boolean) => void
   answerId?: string
+  binaryPseudonym?: {
+    YES: {
+      pseudonymName: string
+      pseudonymColor: string
+    }
+    NO: {
+      pseudonymName: string
+      pseudonymColor: string
+    }
+  }
 }) {
   const {
     className,
     contract,
     shares,
     sharesOutcome,
-    userBets,
+    metric,
     user,
     setOpen,
     answerId,
+    binaryPseudonym,
   } = props
   const isStonk = contract.outcomeType === 'STONK'
+  const isCashContract = contract.token === 'CASH'
+  const { answer } = useAnswer(answerId)
 
   return (
     <Modal open={true} setOpen={setOpen}>
@@ -132,16 +141,17 @@ export function SellSharesModal(props: {
             <>You have {getStonkDisplayShares(contract, shares)} shares of </>
           ) : (
             <>
-              You have {formatWithCommas(shares)} shares worth{' '}
-              {formatMoney(shares)} if this {answerId ? 'answer' : 'question'}{' '}
-              resolves{' '}
+              You have {formatShares(shares, isCashContract)} shares worth{' '}
+              <MoneyDisplay amount={shares} isCashContract={isCashContract} />{' '}
+              if this {answerId ? 'answer' : 'question'} resolves{' '}
             </>
           )}
           <OutcomeLabel
             outcome={sharesOutcome}
             contract={contract}
             truncate={'short'}
-            answerId={answerId}
+            answer={answer}
+            pseudonym={binaryPseudonym}
           />
           .
         </div>
@@ -151,9 +161,10 @@ export function SellSharesModal(props: {
           shares={shares}
           sharesOutcome={sharesOutcome}
           user={user}
-          userBets={userBets ?? []}
+          metric={metric}
           onSellSuccess={() => setOpen(false)}
           answerId={answerId}
+          binaryPseudonym={binaryPseudonym}
         />
       </Col>
     </Modal>

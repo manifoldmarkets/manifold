@@ -1,17 +1,14 @@
-import { BETTING_STREAK_BONUS_MAX } from 'common/economy'
+import { BETTING_STREAK_BONUS_MAX, REFERRAL_AMOUNT } from 'common/economy'
 import {
+  BettingStreakData,
   getSourceUrl,
   LeagueChangeData,
+  ManaPaymentData,
   Notification,
+  ReferralData,
   UniqueBettorData,
 } from 'common/notification'
-import {
-  formatLargeNumber,
-  formatMoney,
-  formatMoneyToDecimal,
-  maybePluralize,
-} from 'common/util/format'
-import { groupBy } from 'lodash'
+import { formatMoney, maybePluralize } from 'common/util/format'
 import { useState } from 'react'
 import clsx from 'clsx'
 
@@ -44,87 +41,40 @@ import {
   PARTNER_UNIQUE_TRADER_BONUS_MULTI,
   PARTNER_UNIQUE_TRADER_THRESHOLD,
 } from 'common/partner'
-import { isVerified } from 'common/user'
-import { CoinNumber } from 'web/components/widgets/manaCoinNumber'
-import { SpiceCoin } from 'web/public/custom-components/spiceCoin'
-
-// Loop through the contracts and combine the notification items into one
-export function combineAndSumIncomeNotifications(
-  notifications: Notification[]
-) {
-  const newNotifications: Notification[] = []
-  const groupedNotificationsBySourceType = groupBy(
-    notifications,
-    (n) => n.sourceType
-  )
-  const titleForNotification = (notification: Notification) => {
-    const outcomeType = notification.data?.outcomeType
-    return (
-      (notification.sourceTitle ?? notification.sourceContractTitle) +
-      (outcomeType !== 'NUMBER' ? notification.data?.answerText ?? '' : '') +
-      notification.data?.isPartner
-    )
-  }
-
-  for (const sourceType in groupedNotificationsBySourceType) {
-    // Source title splits by contracts, groups, betting streak bonus
-    const groupedNotificationsBySourceTitle = groupBy(
-      groupedNotificationsBySourceType[sourceType],
-      (notification) => titleForNotification(notification)
-    )
-    for (const sourceTitle in groupedNotificationsBySourceTitle) {
-      const notificationsForSourceTitle =
-        groupedNotificationsBySourceTitle[sourceTitle]
-
-      let sum = 0
-      notificationsForSourceTitle.forEach((notification) => {
-        sum += parseFloat(notification.sourceText ?? '0')
-      })
-
-      const { bet: _, ...otherData } =
-        notificationsForSourceTitle[0]?.data ?? {}
-
-      const newNotification = {
-        ...notificationsForSourceTitle[0],
-        sourceText: sum.toString(),
-        sourceUserUsername: notificationsForSourceTitle[0].sourceUserUsername,
-        data: {
-          relatedNotifications: notificationsForSourceTitle,
-          ...otherData,
-        },
-      }
-      newNotifications.push(newNotification)
-    }
-  }
-  return newNotifications
-}
-
+import { humanish } from 'common/user'
+import { TokenNumber } from 'web/components/widgets/token-number'
+import { first } from 'lodash'
+import { truncateText } from '../widgets/truncate'
+import { BettingStreakProgressModal } from '../profile/first-streak-modal'
 export function UniqueBettorBonusIncomeNotification(props: {
   notification: Notification
   highlighted: boolean
   setHighlighted: (highlighted: boolean) => void
+  isChildOfGroup?: boolean
 }) {
-  const { notification, highlighted, setHighlighted } = props
+  const { notification, highlighted, setHighlighted, isChildOfGroup } = props
   const { sourceText } = notification
   const [open, setOpen] = useState(false)
-  const data = (notification.data ?? {}) as UniqueBettorData
-  const { outcomeType, isPartner, totalUniqueBettors } = data
+  const myData = (notification.data ?? {}) as UniqueBettorData
   const relatedNotifications =
-    data && 'relatedNotifications' in data
-      ? (data as any).relatedNotifications
+    myData && 'relatedNotifications' in myData
+      ? ((myData as any).relatedNotifications as Notification[])
       : []
+  const singleGroupedNotif = relatedNotifications.length === 1
+  const data = (
+    singleGroupedNotif ? first(relatedNotifications)?.data : myData
+  ) as UniqueBettorData
+  const { outcomeType, isPartner, totalUniqueBettors } = data
   const numNewTraders =
     relatedNotifications.length > 0 ? relatedNotifications.length : 1
-  const answerText =
-    relatedNotifications.length > 0
-      ? relatedNotifications[0].data?.answerText
-      : undefined
+  const answerText = truncateText(data.answerText, 'lg')
 
   const partnerBonusPerTrader =
     outcomeType === 'MULTIPLE_CHOICE'
       ? PARTNER_UNIQUE_TRADER_BONUS_MULTI
       : PARTNER_UNIQUE_TRADER_BONUS
   const partnerBonusAmount = numNewTraders * partnerBonusPerTrader
+  const showBet = data?.bet && data?.outcomeType
   return (
     <NotificationFrame
       notification={notification}
@@ -137,14 +87,6 @@ export function UniqueBettorBonusIncomeNotification(props: {
           symbol={'🎁'}
           setOpen={setOpen}
         />
-      }
-      subtitle={
-        notification.data?.bet &&
-        notification.data?.outcomeType && (
-          <div className={'ml-0.5'}>
-            <BettorStatusLabel uniqueBettorData={data} />
-          </div>
-        )
       }
       link={getSourceUrl(notification)}
     >
@@ -160,8 +102,26 @@ export function UniqueBettorBonusIncomeNotification(props: {
               : 'new traders'
           }
         />{' '}
-        on <QuestionOrGroupLink notification={notification} />{' '}
-        {answerText && outcomeType !== 'NUMBER' ? ` (${answerText})` : ''}
+        {showBet ? (
+          <BettorStatusLabel
+            className="mr-1"
+            uniqueBettorData={data}
+            answerText={answerText}
+          />
+        ) : answerText && outcomeType !== 'NUMBER' ? (
+          <span className="mr-1">
+            on <span className="text-primary-700">{answerText}</span>
+          </span>
+        ) : null}
+        {!isChildOfGroup && (
+          <>
+            {' on '}
+            <QuestionOrGroupLink
+              truncatedLength="lg"
+              notification={notification}
+            />{' '}
+          </>
+        )}
       </span>
       {isPartner && totalUniqueBettors && (
         <div>
@@ -193,6 +153,7 @@ export function UniqueBettorBonusIncomeNotification(props: {
     </NotificationFrame>
   )
 }
+// Note: not used atm
 export function UniqueBettorNotification(props: {
   notification: Notification
   highlighted: boolean
@@ -230,7 +191,10 @@ export function UniqueBettorNotification(props: {
         notification.data?.bet &&
         notification.data?.outcomeType && (
           <div className={'ml-0.5'}>
-            <BettorStatusLabel uniqueBettorData={data} />
+            <BettorStatusLabel
+              uniqueBettorData={data}
+              className="line-clamp-1 gap-1"
+            />
           </div>
         )
       }
@@ -325,7 +289,11 @@ export function BettingStreakBonusIncomeNotification(props: {
   const { sourceText } = notification
   const [open, setOpen] = useState(false)
   const user = useUser()
-  const streakInDays = notification.data?.streak
+  const {
+    streak: streakInDays,
+    cashAmount,
+    bonusAmount,
+  } = notification.data as BettingStreakData
   const noBonus = sourceText === '0'
   return (
     <NotificationFrame
@@ -334,10 +302,10 @@ export function BettingStreakBonusIncomeNotification(props: {
       setHighlighted={setHighlighted}
       isChildOfGroup={true}
       subtitle={
-        noBonus && user && !isVerified(user) ? (
+        noBonus && user && !humanish(user) ? (
           <span>
             Verify your phone number to get up to{' '}
-            <CoinNumber
+            <TokenNumber
               amount={BETTING_STREAK_BONUS_MAX}
               className={'font-bold'}
               isInline
@@ -347,7 +315,7 @@ export function BettingStreakBonusIncomeNotification(props: {
         ) : (
           noBonus &&
           user &&
-          isVerified(user) && (
+          humanish(user) && (
             <span>Come back and predict again tomorrow for a bonus!</span>
           )
         )
@@ -369,7 +337,14 @@ export function BettingStreakBonusIncomeNotification(props: {
         </span>
       ) : (
         <span className="line-clamp-3">
-          <IncomeNotificationLabel notification={notification} />{' '}
+          {bonusAmount && (
+            <TokenNumber
+              className={'text-teal-600'}
+              isInline={true}
+              amount={bonusAmount}
+              coinType={'mana'}
+            />
+          )}{' '}
           {sourceText && +sourceText === BETTING_STREAK_BONUS_MAX && (
             <span>(max) </span>
           )}
@@ -377,7 +352,11 @@ export function BettingStreakBonusIncomeNotification(props: {
           <PrimaryNotificationLink text="Prediction Streak" />
         </span>
       )}
-      <BettingStreakModal isOpen={open} setOpen={setOpen} currentUser={user} />
+      <BettingStreakProgressModal
+        open={open}
+        setOpen={setOpen}
+        currentStreak={user?.currentBettingStreak ?? 0}
+      />
     </NotificationFrame>
   )
 }
@@ -460,6 +439,7 @@ export function ManaPaymentReceivedNotification(props: {
 }) {
   const { notification, highlighted, setHighlighted } = props
   const { data, sourceId, sourceUserName, sourceUserUsername } = notification
+  const { token } = data as ManaPaymentData
   return (
     <NotificationFrame
       notification={notification}
@@ -479,13 +459,13 @@ export function ManaPaymentReceivedNotification(props: {
           className=""
         />
         <PrimaryNotificationLink text=" sent you " />
-        <IncomeNotificationLabel notification={notification} />
+        <IncomeNotificationLabel notification={notification} token={token} />
       </span>
     </NotificationFrame>
   )
 }
 
-export function UserJoinedNotification(props: {
+export function ReferralNotification(props: {
   notification: Notification
   highlighted: boolean
   setHighlighted: (highlighted: boolean) => void
@@ -495,33 +475,16 @@ export function UserJoinedNotification(props: {
   const {
     sourceId,
     sourceUserName,
+    sourceContractTitle,
+    sourceContractCreatorUsername,
     sourceUserUsername,
-    sourceSlug,
-    reason,
-    sourceText,
+    data,
   } = notification
-  let reasonBlock = <span>because of a link you shared</span>
-  if (sourceSlug && reason == 'user_joined_to_bet_on_your_market') {
-    reasonBlock = (
-      <>
-        to bet on the question{' '}
-        <QuestionOrGroupLink
-          notification={notification}
-          truncatedLength={'xl'}
-        />
-      </>
-    )
-  } else if (sourceSlug && reason === 'user_joined_from_your_group_invite') {
-    reasonBlock = (
-      <>
-        because you shared{' '}
-        <QuestionOrGroupLink
-          notification={notification}
-          truncatedLength={'xl'}
-        />
-      </>
-    )
-  }
+  const user = useUser()
+  const isYourMarket = sourceContractCreatorUsername === user?.username
+  const { manaAmount } = (data ?? {
+    manaAmount: REFERRAL_AMOUNT,
+  }) as ReferralData
   return (
     <NotificationFrame
       notification={notification}
@@ -532,25 +495,24 @@ export function UserJoinedNotification(props: {
         <AvatarNotificationIcon notification={notification} symbol={'👋'} />
       }
       link={getSourceUrl(notification)}
-      subtitle={
-        sourceText && (
-          <span>
-            As a thank you, we sent you{' '}
-            <span className="text-teal-500">
-              {formatMoney(parseInt(sourceText))}
-            </span>
-            !
-          </span>
-        )
-      }
     >
       <div className="line-clamp-3">
+        <TokenNumber
+          className={'text-teal-600'}
+          amount={manaAmount}
+          coinType="MANA"
+          isInline
+        />{' '}
+        Bonus {isYourMarket ? 'for' : 'for referring the new user'}{' '}
         <NotificationUserLink
           userId={sourceId}
           name={sourceUserName}
           username={sourceUserUsername}
         />{' '}
-        joined Manifold {reasonBlock}
+        {isYourMarket ? 'signing up on your market ' : ''}
+        {!isChildOfGroup && (
+          <PrimaryNotificationLink text={sourceContractTitle} />
+        )}
       </div>
     </NotificationFrame>
   )
@@ -586,9 +548,8 @@ export function LeagueChangedNotification(props: {
       subtitle={
         bonusAmount > 0 ? (
           <span>
-            You earned{' '}
-            <PrizeIncomeNotificationLabel notification={notification} /> as a
-            prize
+            You earned <IncomeNotificationLabel notification={notification} />{' '}
+            as a prize
             {previousLeague &&
               ` for placing Rank ${previousLeague.rank} this season`}
             .
@@ -622,40 +583,40 @@ export function LeagueChangedNotification(props: {
   )
 }
 
-function PrizeIncomeNotificationLabel(props: {
-  notification: Notification
-  className?: string
-}) {
-  const { notification, className } = props
-  const { sourceText } = notification
-  return sourceText ? (
-    <span className={clsx('', className)}>
-      <SpiceCoin className="mb-0.5" />
-      {formatLargeNumber(parseFloat(sourceText))}
-    </span>
-  ) : (
-    <div />
-  )
-}
-
 function IncomeNotificationLabel(props: {
   notification: Notification
+  token?: 'M$' | 'CASH'
   className?: string
 }) {
-  const { notification, className } = props
+  const { notification, token = 'M$', className } = props
   const { sourceText } = notification
-  return sourceText ? (
-    <span className={clsx('text-teal-600', className)}>
-      {formatMoneyToDecimal(parseFloat(sourceText))}
-    </span>
+  return sourceText && token === 'M$' ? (
+    <TokenNumber
+      className={clsx('text-teal-600', className)}
+      amount={parseFloat(sourceText)}
+      coinType={'mana'}
+      isInline
+    />
+  ) : sourceText && token === 'CASH' ? (
+    <TokenNumber
+      className={clsx('text-amber-500', className)}
+      amount={parseFloat(sourceText)}
+      coinType={'CASH'}
+      isInline
+    />
   ) : (
     <div />
   )
 }
 
-const BettorStatusLabel = (props: { uniqueBettorData: UniqueBettorData }) => {
-  const { bet, outcomeType, answerText, totalAmountBet } =
-    props.uniqueBettorData
+const BettorStatusLabel = (props: {
+  uniqueBettorData: UniqueBettorData
+  className?: string
+  answerText?: string
+}) => {
+  const { uniqueBettorData, className } = props
+  const { bet, outcomeType, totalAmountBet, token } = uniqueBettorData
+  const answerText = props.answerText ?? uniqueBettorData.answerText
   const { amount, outcome } = bet
   const showProb =
     (outcomeType === 'PSEUDO_NUMERIC' &&
@@ -663,9 +624,9 @@ const BettorStatusLabel = (props: { uniqueBettorData: UniqueBettorData }) => {
     (outcomeType !== 'PSEUDO_NUMERIC' && outcomeType !== 'NUMBER')
   const showOutcome = outcomeType === 'MULTIPLE_CHOICE'
   return (
-    <span className={'line-clamp-1 gap-1'}>
+    <span className={className}>
       <span className="text-ink-600">
-        {formatMoney(totalAmountBet ?? amount)}
+        {formatMoney(totalAmountBet ?? amount, token)}
       </span>{' '}
       {showOutcome && `${outcome} `}
       on{' '}
@@ -726,6 +687,7 @@ function MultiUserNotificationModal(props: {
                 />
                 {notif.data?.bet && notif.data?.outcomeType && (
                   <BettorStatusLabel
+                    className="line-clamp-1 gap-1"
                     uniqueBettorData={notif.data as UniqueBettorData}
                   />
                 )}

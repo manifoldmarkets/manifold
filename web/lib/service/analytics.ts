@@ -5,7 +5,7 @@ import { db } from 'web/lib/supabase/db'
 import { removeUndefinedProps } from 'common/util/object'
 import { getIsNative } from '../native/is-native'
 import { ShareEvent } from 'common/events'
-import { api, completeQuest } from 'web/lib/firebase/api'
+import { api, completeQuest } from 'web/lib/api/api'
 import { QuestType } from 'common/quest'
 import { run, SupabaseClient } from 'common/supabase/utils'
 import { Json } from 'common/supabase/schema'
@@ -127,7 +127,7 @@ function insertUserEvent(
     }
   } else if (
     (name === 'click market card feed' ||
-      name === 'click market card welcome topic section' ||
+      name === 'click browse contract' ||
       name === 'bet' ||
       name === 'copy market link' ||
       name === 'comment' ||
@@ -138,7 +138,9 @@ function insertUserEvent(
     const feedReason = data?.feedReason as string
     const isCardClick = name.includes('click market card')
     const kind =
-      name === 'copy market link'
+      name === 'click browse contract'
+        ? 'browse click'
+        : name === 'copy market link'
         ? 'page share'
         : name === 'like' && feedReason
         ? 'card like'
@@ -163,13 +165,18 @@ function insertUserEvent(
         removeUndefinedProps({
           contractId,
           commentId: commentId ?? undefined,
-          kind,
+          kind: kind as any,
           feedType: feedReason,
           betGroupId: data?.betGroupId as string,
           betId: data?.betId as string,
         })
       )
     }
+  } else if (name === 'view good comment' && contractId && commentId) {
+    return api('record-comment-view', {
+      contractId,
+      commentId,
+    })
   }
   return run(
     db.from('user_events').insert({

@@ -5,7 +5,6 @@ import {
   SupabaseClient as SupabaseClientGeneric,
   SupabaseClientOptions as SupabaseClientOptionsGeneric,
 } from '@supabase/supabase-js'
-
 import { Database } from './schema'
 import { User } from '../user'
 import { Contract } from '../contract'
@@ -29,13 +28,6 @@ export type Row<T extends Selectable> = T extends TableName
 export type Column<T extends Selectable> = keyof Row<T> & string
 
 export type SupabaseClient = SupabaseClientGeneric<Database, 'public', Schema>
-
-export type CollectionTableMapping = { [coll: string]: TableName }
-export const collectionTables: CollectionTableMapping = {
-  'private-users': 'private_users',
-  contracts: 'contracts',
-  manalinks: 'manalinks',
-}
 
 export function createClient(
   instanceId: string,
@@ -71,10 +63,8 @@ type JsonTypes = {
   users: User
   user_contract_metrics: ContractMetric
   contracts: Contract
-  cotracts_rbac: Contract
   answers: Answer
   contract_bets: Bet
-  public_contract_bets: Bet
   groups: Group
   txns: Txn
 }
@@ -82,23 +72,6 @@ type JsonTypes = {
 export type DataFor<T extends Selectable> = T extends keyof JsonTypes
   ? JsonTypes[T]
   : any
-
-export function selectJson<T extends TableName | ViewName>(
-  db: SupabaseClient,
-  table: T
-) {
-  return db.from(table).select<string, { data: DataFor<T> }>('data')
-}
-
-export function selectFrom<
-  T extends TableName,
-  TData extends DataFor<T>,
-  TFields extends (string & keyof TData)[],
-  TResult = Pick<TData, TFields[number]>
->(db: SupabaseClient, table: T, ...fields: TFields) {
-  const query = fields.map((f) => `data->${f}`).join(', ')
-  return db.from(table).select<string, TResult>(query)
-}
 
 export function millisToTs(millis: number) {
   return new Date(millis).toISOString()

@@ -1,60 +1,65 @@
+import clsx from 'clsx'
+import { Answer } from 'common/answer'
 import { APIError } from 'common/api/utils'
-import { Bet, LimitBet } from 'common/bet'
-import {
-  getAnswerProbability,
-  getInvested,
-  getProbability,
-} from 'common/calculate'
-import {
-  calculateCpmmMultiSumsToOneSale,
-  calculateCpmmSale,
-  getCpmmProbability,
-} from 'common/calculate-cpmm'
+import { LimitBet } from 'common/bet'
+import { getCpmmProbability } from 'common/calculate-cpmm'
 import {
   CPMMContract,
   CPMMMultiContract,
   CPMMNumericContract,
+  MultiContract,
 } from 'common/contract'
-import { getMappedValue, getFormattedMappedValue } from 'common/pseudo-numeric'
+import { TRADE_TERM } from 'common/envs/constants'
+import { Fees, getFeeTotal } from 'common/fees'
+import { getFormattedMappedValue, getMappedValue } from 'common/pseudo-numeric'
+import { getSharesFromStonkShares, getStonkDisplayShares } from 'common/stonk'
 import { User } from 'common/user'
 import {
   formatLargeNumber,
   formatPercent,
-  formatWithCommas,
-  formatMoney,
+  formatShares,
+  formatWithToken,
 } from 'common/util/format'
-import { sumBy } from 'lodash'
-import { useState } from 'react'
-import { useUnfilledBetsAndBalanceByUserId } from 'web/hooks/use-bets'
-import { api } from 'web/lib/firebase/api'
+import { useState, useRef } from 'react'
+import toast from 'react-hot-toast'
+import { api } from 'web/lib/api/api'
 import { track } from 'web/lib/service/analytics'
 import { WarningConfirmationButton } from '../buttons/warning-confirmation-button'
 import { Col } from '../layout/col'
 import { Row } from '../layout/row'
 import { Spacer } from '../layout/spacer'
 import { AmountInput } from '../widgets/amount-input'
-import { getSharesFromStonkShares, getStonkDisplayShares } from 'common/stonk'
-import clsx from 'clsx'
-import toast from 'react-hot-toast'
-import { Answer } from 'common/answer'
-import { addObjects } from 'common/util/object'
-import { Fees, getFeeTotal, noFees } from 'common/fees'
-import { FeeDisplay } from './fees'
+import { MoneyDisplay } from './money-display'
+import { ContractMetric } from 'common/contract-metric'
+import { uniq } from 'lodash'
+import { useUnfilledBetsAndBalanceByUserId } from 'client-common/hooks/use-bets'
+import { useIsPageVisible } from 'web/hooks/use-page-visible'
+import { getSaleResult, getSaleResultMultiSumsToOne } from 'common/sell-bet'
 
 export function SellPanel(props: {
-  contract: CPMMContract | CPMMMultiContract | CPMMNumericContract
-  userBets: Bet[]
+  contract: CPMMContract | MultiContract
+  metric: ContractMetric | undefined
   shares: number
   sharesOutcome: 'YES' | 'NO'
   user: User
   onSellSuccess?: () => void
   answerId?: string
+  binaryPseudonym?: {
+    YES: {
+      pseudonymName: string
+      pseudonymColor: string
+    }
+    NO: {
+      pseudonymName: string
+      pseudonymColor: string
+    }
+  }
 }) {
   const {
     contract,
     shares,
     sharesOutcome,
-    userBets,
+    metric,
     user,
     onSellSuccess,
     answerId,
@@ -63,19 +68,24 @@ export function SellPanel(props: {
   const isPseudoNumeric = outcomeType === 'PSEUDO_NUMERIC'
   const isStonk = outcomeType === 'STONK'
   const isMultiSumsToOne =
-    (outcomeType === 'MULTIPLE_CHOICE' && contract.shouldAnswersSumToOne) ||
-    outcomeType === 'NUMBER'
+    contract.mechanism === 'cpmm-multi-1' && contract.shouldAnswersSumToOne
   const answer =
     answerId && 'answers' in contract
       ? contract.answers.find((a) => a.id === answerId)
       : undefined
 
   const { unfilledBets: allUnfilledBets, balanceByUserId } =
-    useUnfilledBetsAndBalanceByUserId(contract.id)
+    useUnfilledBetsAndBalanceByUserId(
+      contract.id,
+      (params) => api('bets', params),
+      (params) => api('users/by-id/balance', params),
+      useIsPageVisible
+    )
 
-  const unfilledBets = answerId
-    ? allUnfilledBets.filter((b) => b.answerId === answerId)
-    : allUnfilledBets
+  const unfilledBets =
+    answerId && !isMultiSumsToOne
+      ? allUnfilledBets.filter((b) => b.answerId === answerId)
+      : allUnfilledBets
 
   const [displayAmount, setDisplayAmount] = useState<number | undefined>(() => {
     const probChange = isMultiSumsToOne
@@ -112,21 +122,23 @@ export function SellPanel(props: {
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [wasSubmitted, setWasSubmitted] = useState(false)
 
-  const betDisabled = isSubmitting || !amount || error !== undefined
+  const betDisabled =
+    isSubmitting || !amount || (error && error.includes('Maximum'))
 
   // Sell all shares if remaining shares would be < 1
   const isSellingAllShares = amount === Math.floor(shares)
 
   const sellQuantity = isSellingAllShares ? shares : amount ?? 0
 
-  const loanAmount = sumBy(userBets, (bet) => bet.loanAmount ?? 0)
+  const loanAmount = metric?.loan ?? 0
   const soldShares = Math.min(sellQuantity, shares)
   const saleFrac = soldShares / shares
   const loanPaid = saleFrac * loanAmount
   const isLoadPaid = loanPaid === 0
 
-  const invested = getInvested(contract, userBets)
+  const invested = metric?.invested ?? 0
   const costBasis = invested * saleFrac
+  const betDeps = useRef<LimitBet[]>()
 
   async function submitSell() {
     if (!user || !amount) return
@@ -139,6 +151,7 @@ export function SellPanel(props: {
       outcome: sharesOutcome,
       contractId: contract.id,
       answerId,
+      deps: uniq(betDeps.current?.map((b) => b.userId)),
     })
       .then(() => {
         setIsSubmitting(false)
@@ -147,10 +160,16 @@ export function SellPanel(props: {
         if (onSellSuccess) onSellSuccess()
       })
       .catch((e: unknown) => {
+        console.error(e)
         if (e instanceof APIError) {
-          toast.error(e.message)
+          const message = e.message.toString()
+          toast.error(
+            message.includes('could not serialize access')
+              ? 'Error placing bet'
+              : message
+          )
         } else {
-          console.error(e)
+          setError(`Error placing ${TRADE_TERM}`)
         }
         setIsSubmitting(false)
       })
@@ -164,11 +183,12 @@ export function SellPanel(props: {
     })
   }
 
-  let initialProb: number, saleValue: number, buyAmount: number
+  let initialProb: number, saleValue: number
   let fees: Fees
   let cpmmState
+  let makers: LimitBet[]
   if (isMultiSumsToOne) {
-    ;({ initialProb, cpmmState, saleValue, fees, buyAmount } =
+    ;({ initialProb, cpmmState, saleValue, fees, makers } =
       getSaleResultMultiSumsToOne(
         contract,
         answerId!,
@@ -178,7 +198,7 @@ export function SellPanel(props: {
         balanceByUserId
       ))
   } else {
-    ;({ initialProb, cpmmState, saleValue, fees, buyAmount } = getSaleResult(
+    ;({ initialProb, cpmmState, saleValue, fees, makers } = getSaleResult(
       contract,
       sellQuantity,
       sharesOutcome,
@@ -187,7 +207,7 @@ export function SellPanel(props: {
       answer
     ))
   }
-
+  betDeps.current = makers
   const totalFees = getFeeTotal(fees)
   const netProceeds = saleValue - loanPaid
   const profit = saleValue - costBasis
@@ -216,11 +236,14 @@ export function SellPanel(props: {
 
     // Check for errors.
     if (realAmount !== undefined && realAmount > shares) {
-      setError(`Maximum ${formatWithCommas(Math.floor(shares))} shares`)
+      setError(
+        `Maximum ${formatShares(Math.floor(shares), isCashContract)} shares`
+      )
     } else {
       setError(undefined)
     }
   }
+  const isCashContract = contract.token === 'CASH'
 
   return (
     <>
@@ -234,7 +257,7 @@ export function SellPanel(props: {
             ? 0
             : Math.floor(displayAmount)
         }
-        allowFloat={isStonk}
+        allowFloat={isStonk || isCashContract}
         onChangeAmount={onAmountChange}
         label="Shares"
         error={!!error}
@@ -261,24 +284,35 @@ export function SellPanel(props: {
         {!isStonk && (
           <Row className="text-ink-500 items-center justify-between gap-2">
             Sale value
-            <span className="text-ink-700">{formatMoney(saleValue)}</span>
+            <span className="text-ink-700">
+              <MoneyDisplay
+                amount={saleValue + totalFees}
+                isCashContract={isCashContract}
+              />
+            </span>
           </Row>
         )}
         {!isLoadPaid && (
           <Row className="text-ink-500  items-center justify-between gap-2">
             Loan repayment
             <span className="text-ink-700">
-              {formatMoney(Math.floor(-loanPaid))}
+              <MoneyDisplay
+                amount={Math.floor(-loanPaid)}
+                isCashContract={isCashContract}
+              />
             </span>
           </Row>
         )}
+        {/* <Row className="text-ink-500 items-center justify-between gap-2">
+          Fees
+          <FeeDisplay totalFees={totalFees} amount={saleValue + totalFees} />
+        </Row> */}
+
         <Row className="text-ink-500 items-center justify-between gap-2">
           Profit
-          <span className="text-ink-700">{formatMoney(profit)}</span>
-        </Row>
-        <Row className="text-ink-500 items-center justify-between gap-2">
-          Fees
-          <FeeDisplay totalFees={totalFees} amount={buyAmount} />
+          <span className="text-ink-700">
+            <MoneyDisplay amount={profit} isCashContract={isCashContract} />
+          </span>
         </Row>
         <Row className="items-center justify-between">
           <div className="text-ink-500">
@@ -297,7 +331,12 @@ export function SellPanel(props: {
 
         <Row className="text-ink-1000 mt-4 items-center justify-between gap-2 text-xl">
           Payout
-          <span className="text-ink-700">{formatMoney(netProceeds)}</span>
+          <span className="text-ink-700">
+            <MoneyDisplay
+              amount={netProceeds}
+              isCashContract={isCashContract}
+            />
+          </span>
         </Row>
       </Col>
 
@@ -315,8 +354,11 @@ export function SellPanel(props: {
         color="indigo"
         actionLabel={
           isStonk
-            ? `Sell ${formatMoney(saleValue)}`
-            : `Sell ${formatWithCommas(sellQuantity)} shares`
+            ? `Sell ${formatWithToken({
+                amount: saleValue,
+                token: isCashContract ? 'CASH' : 'M$',
+              })}`
+            : `Sell ${formatShares(sellQuantity, isCashContract)} shares`
         }
         inModal={true}
       />
@@ -326,90 +368,72 @@ export function SellPanel(props: {
   )
 }
 
-const getSaleResult = (
-  contract: CPMMContract | CPMMMultiContract | CPMMNumericContract,
-  shares: number,
-  outcome: 'YES' | 'NO',
-  unfilledBets: LimitBet[],
-  balanceByUserId: { [userId: string]: number },
-  answer?: Answer
-) => {
-  if (contract.mechanism === 'cpmm-multi-1' && !answer)
-    throw new Error('getSaleResult: answer must be defined for cpmm-multi-1')
+export function MultiSellerPosition(props: { metric: ContractMetric }) {
+  const { metric } = props
+  const { totalShares } = metric
+  const yesWinnings = totalShares.YES ?? 0
+  const noWinnings = totalShares.NO ?? 0
+  const position = yesWinnings - noWinnings
 
-  const initialProb = answer
-    ? answer.prob
-    : getProbability(contract as CPMMContract)
-  const initialCpmmState = answer
-    ? {
-        pool: { YES: answer.poolYes, NO: answer.poolNo },
-        p: 0.5,
-        collectedFees: contract.collectedFees,
-      }
-    : {
-        pool: (contract as CPMMContract).pool,
-        p: (contract as CPMMContract).p,
-        collectedFees: contract.collectedFees,
-      }
-
-  const { cpmmState, saleValue, buyAmount, fees } = calculateCpmmSale(
-    initialCpmmState,
-    shares,
-    outcome,
-    unfilledBets,
-    balanceByUserId
-  )
-  const resultProb = getCpmmProbability(cpmmState.pool, cpmmState.p)
-  const probChange = Math.abs(resultProb - initialProb)
-
-  return {
-    saleValue,
-    buyAmount,
-    cpmmState,
-    initialProb,
-    resultProb,
-    probChange,
-    fees,
+  if (position > 1e-7) {
+    return <>YES</>
   }
+  return <>NO</>
 }
 
-const getSaleResultMultiSumsToOne = (
-  contract: CPMMMultiContract | CPMMNumericContract,
-  answerId: string,
-  shares: number,
-  outcome: 'YES' | 'NO',
-  unfilledBets: LimitBet[],
-  balanceByUserId: { [userId: string]: number }
-) => {
-  const initialProb = getAnswerProbability(contract, answerId)
-  const answerToSell = contract.answers.find((a) => a.id === answerId)
-  const { newBetResult, saleValue, buyAmount, otherBetResults } =
-    calculateCpmmMultiSumsToOneSale(
-      contract.answers,
-      answerToSell!,
-      shares,
-      outcome,
-      undefined,
+export function MultiSellerProfit(props: {
+  contract: CPMMMultiContract | CPMMNumericContract
+  metric: ContractMetric
+  answer: Answer
+}) {
+  const { contract, metric, answer } = props
+  const { id: answerId } = answer
+  const { outcomeType } = contract
+  const isMultiSumsToOne =
+    (outcomeType === 'MULTIPLE_CHOICE' && contract.shouldAnswersSumToOne) ||
+    outcomeType === 'NUMBER'
+  const sharesSum = metric.totalShares[metric.maxSharesOutcome ?? 'YES'] ?? 0
+  const sharesOutcome = (metric.maxSharesOutcome ?? 'YES') as 'YES' | 'NO'
+
+  const { unfilledBets: allUnfilledBets, balanceByUserId } =
+    useUnfilledBetsAndBalanceByUserId(
+      contract.id,
+      (params) => api('bets', params),
+      (params) => api('users/by-id/balance', params),
+      useIsPageVisible
+    )
+
+  const unfilledBets = allUnfilledBets.filter((b) => b.answerId === answerId)
+  const isCashContract = contract.token === 'CASH'
+
+  let saleValue: number
+
+  if (isMultiSumsToOne) {
+    ;({ saleValue } = getSaleResultMultiSumsToOne(
+      contract,
+      answerId,
+      Math.abs(sharesSum),
+      sharesOutcome,
+      unfilledBets,
+      balanceByUserId
+    ))
+  } else {
+    ;({ saleValue } = getSaleResult(
+      contract,
+      Math.abs(sharesSum),
+      sharesOutcome,
       unfilledBets,
       balanceByUserId,
-      contract.collectedFees
-    )
-  const { cpmmState, totalFees } = newBetResult
-  const resultProb = getCpmmProbability(cpmmState.pool, cpmmState.p)
-  const probChange = Math.abs(resultProb - initialProb)
-
-  const fees = addObjects(
-    totalFees,
-    otherBetResults.map((r) => r.totalFees).reduce(addObjects, noFees)
-  )
-
-  return {
-    saleValue,
-    buyAmount,
-    cpmmState,
-    initialProb,
-    resultProb,
-    probChange,
-    fees,
+      answer
+    ))
   }
+
+  const invested = metric.invested
+
+  return (
+    <MoneyDisplay
+      amount={saleValue - invested}
+      isCashContract={isCashContract}
+    />
+  )
 }

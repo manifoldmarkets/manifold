@@ -6,12 +6,13 @@ import { buildArray } from 'common/util/array'
 import {
   DotsVerticalIcon,
   PencilIcon,
+  PlusIcon,
   PlusCircleIcon,
   TrashIcon,
 } from '@heroicons/react/solid'
 import DropdownMenu, {
   DropdownItem,
-} from 'web/components/comments/dropdown-menu'
+} from 'web/components/widgets/dropdown-menu'
 import clsx from 'clsx'
 import { Modal } from 'web/components/layout/modal'
 import { Col } from 'web/components/layout/col'
@@ -21,28 +22,30 @@ import {
   AddContractToGroupModal,
   AddContractToGroupPermissionType,
 } from 'web/components/topics/add-contract-to-group-modal'
-import { BsFillPersonDashFill } from 'react-icons/bs'
 import { BiSolidVolumeMute } from 'react-icons/bi'
 import { usePrivateUser } from 'web/hooks/use-user'
 import { blockGroup, unBlockGroup } from 'web/components/topics/topic-dropdown'
 import { useIsMobile } from 'web/hooks/use-is-mobile'
 import { DeleteTopicModal } from './delete-topic-modal'
+import { JSONEmpty } from 'web/components/contract/contract-description'
 
 export function TopicOptions(props: {
   group: Group
   user: User | null | undefined
   isMember: boolean
   unfollow: () => void
+  addAbout: () => void
   className?: string
 }) {
-  const { group, user, isMember, unfollow, className } = props
+  const { group, user, isMember, addAbout, className } = props
   const privateUser = usePrivateUser()
   const [editingName, setEditingName] = useState(false)
   const [showAddContract, setShowAddContract] = useState(false)
   const [showDelete, setShowDelete] = useState(false)
   const userRole = useGroupRole(group.id, user)
-  const isCreator = group.creatorId == user?.id
   const isMobile = useIsMobile()
+
+  const hasAbout = !!group.about && !JSONEmpty(group.about)
 
   const groupOptionItems = buildArray(
     isMember &&
@@ -56,11 +59,11 @@ export function TopicOptions(props: {
       icon: <PencilIcon className="h-5 w-5" />,
       onClick: () => setEditingName(true),
     },
-    isMember &&
-      !isCreator && {
-        name: 'Unfollow',
-        icon: <BsFillPersonDashFill className="h-5 w-5" />,
-        onClick: unfollow,
+    userRole === 'admin' &&
+      !hasAbout && {
+        name: 'Add description',
+        icon: <PlusIcon className="h-5 w-5" />,
+        onClick: addAbout,
       },
     !isMember &&
       privateUser && {
@@ -84,7 +87,7 @@ export function TopicOptions(props: {
       <DropdownMenu
         closeOnClick={true}
         items={groupOptionItems}
-        icon={<DotsVerticalIcon className={clsx('h-5 w-5')} />}
+        buttonContent={<DotsVerticalIcon className={clsx('h-5 w-5')} />}
         className={className}
         menuItemsClass="flex flex-col"
         withinOverflowContainer={true}
@@ -126,17 +129,12 @@ export function getAddContractToGroupPermission(
   userRole: GroupRole | null | undefined,
   isCreator?: boolean
 ): AddContractToGroupPermissionType {
-  if (
-    privacyStatus != 'private' &&
-    (userRole === 'admin' || userRole === 'moderator' || isCreator)
-  ) {
+  if (userRole === 'admin' || userRole === 'moderator' || isCreator) {
     return 'any'
   }
   if (privacyStatus == 'public') {
     return 'new'
   }
-  if (privacyStatus == 'private') {
-    return 'private'
-  }
+
   return 'none'
 }

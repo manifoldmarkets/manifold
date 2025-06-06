@@ -1,13 +1,14 @@
 import { DashboardLinkItem, DashboardQuestionItem } from 'common/dashboard'
-import { api } from 'web/lib/firebase/api'
+import { api } from 'web/lib/api/api'
 import Custom404 from '../404'
 import { fetchLinkPreviews } from 'common/link-preview'
 import { DashboardPage } from 'web/components/dashboard/dashboard-page'
 import { Page } from 'web/components/layout/page'
-import { getContracts } from 'web/lib/supabase/contracts'
 import { removeUndefinedProps } from 'common/util/object'
 import { omit } from 'lodash'
 import { NewsDashboardPageProps } from 'web/public/data/elections-data'
+import { initSupabaseAdmin } from 'web/lib/supabase/admin-db'
+import { getContracts } from 'common/supabase/contracts'
 
 // copied wholesale from /news/[slug].tsx TODO: refactor?
 
@@ -38,8 +39,10 @@ export async function getStaticProps() {
       .map((item) => item.slug)
       .slice(0, 20) // preload just the first n questions
 
+    const db = await initSupabaseAdmin()
+
     const previews = await fetchLinkPreviews(links)
-    const fullContracts = await getContracts(questionSlugs, 'slug')
+    const fullContracts = await getContracts(db, questionSlugs, 'slug')
     const contracts = fullContracts.map((c) =>
       // remove some heavy fields that are not needed for the cards
       removeUndefinedProps(omit(c, 'description', 'coverImageUrl'))
@@ -72,7 +75,7 @@ export default function News(props: NewsDashboardPageProps) {
   }
 
   return (
-    <Page trackPageView={'news main'} className="items-center">
+    <Page trackPageView={'news main'} className="!col-span-7 items-center">
       <DashboardPage {...props} editByDefault={false} endpoint={'news'} />
     </Page>
   )

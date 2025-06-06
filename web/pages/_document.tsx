@@ -4,7 +4,7 @@ import Script from 'next/script'
 
 export default function Document() {
   return (
-    <Html lang="en">
+    <Html lang="en" className="font-figtree font-normal">
       {/* Prevent flash of light theme before stylesheet loads. See use-theme.ts */}
       <style>
         {`@media (prefers-color-scheme: dark) {
@@ -19,7 +19,7 @@ export default function Document() {
         <link rel="icon" href={ENV_CONFIG.faviconPath} />
         <Script src="/init-theme.js" strategy="beforeInteractive" />
       </Head>
-      <body className="bg-canvas-50 text-ink-1000">
+      <body className="bg-canvas-0 text-ink-1000">
         <Main />
         <NextScript />
       </body>

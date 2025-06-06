@@ -1,54 +1,111 @@
-import { BetFilter } from 'common/bet'
-import { getBets as getBetsSupabase, getPublicBets } from 'common/supabase/bets'
-import { run, tsToMillis, type SupabaseClient } from 'common/supabase/utils'
 import { APIError, type APIHandler } from './helpers/endpoint'
-import { createSupabaseClient } from 'shared/supabase/init'
+import {
+  createSupabaseDirectClient,
+  SupabaseDirectClient,
+} from 'shared/supabase/init'
 import { getContractIdFromSlug } from 'shared/supabase/contracts'
 import { getUserIdFromUsername } from 'shared/supabase/users'
+import { getBetsWithFilter } from 'shared/supabase/bets'
+import { convertBet, NON_POINTS_BETS_LIMIT } from 'common/supabase/bets'
+import { filterDefined } from 'common/util/array'
+import { ValidatedAPIParams } from 'common/api/schema'
 
-async function getBetTime(db: SupabaseClient, id: string) {
-  const { data } = await run(
-    db.from('contract_bets').select('created_time').eq('bet_id', id).single()
-  )
-  return tsToMillis(data.created_time)
-}
+export const getBetsInternal = async (props: ValidatedAPIParams<'bets'>) => {
+  const {
+    limit,
+    username,
+    contractSlug,
+    answerId,
+    before,
+    after,
+    beforeTime,
+    afterTime,
+    order,
+    kinds,
+    filterRedemptions,
+    includeZeroShareRedemptions,
+    commentRepliesOnly,
+    count,
+    points,
+    id,
+  } = props
+  if (limit === 0) {
+    return []
+  } else if (limit > NON_POINTS_BETS_LIMIT && !points) {
+    throw new APIError(
+      400,
+      'Non-points limit must be less than or equal to ' + NON_POINTS_BETS_LIMIT
+    )
+  }
+  const pg = createSupabaseDirectClient()
+  if (id) {
+    const bet = await pg.map(
+      `select * from contract_bets where bet_id = $1`,
+      [id],
+      (r) => (r ? convertBet(r) : undefined)
+    )
+    return filterDefined(bet)
+  }
 
-export const getBets: APIHandler<'bets'> = async (props) => {
-  const { limit, username, contractSlug, before, after, order, kinds } = props
-
-  const db = createSupabaseClient()
-
-  const userId = props.userId ?? (await getUserIdFromUsername(db, username))
+  const userId = props.userId ?? (await getUserIdFromUsername(pg, username))
   const contractId =
-    props.contractId ?? (await getContractIdFromSlug(db, contractSlug))
+    props.contractId ?? (await getContractIdFromSlug(pg, contractSlug))
 
   // mqp: this pagination approach is technically incorrect if multiple bets
   // have the exact same createdTime, but that's very unlikely
-  const beforeTime = !before
-    ? undefined
-    : await getBetTime(db, before).catch(() => {
-        throw new APIError(404, 'Bet specified in before parameter not found')
-      })
+  const beforeBetTime =
+    before === undefined
+      ? undefined
+      : await getBetTime(pg, before).catch(() => {
+          throw new APIError(404, 'Bet specified in before parameter not found')
+        })
 
-  const afterTime = !after
+  const afterBetTime = !after
     ? undefined
-    : await getBetTime(db, after).catch(() => {
+    : await getBetTime(pg, after).catch(() => {
         throw new APIError(404, 'Bet specified in after parameter not found')
       })
 
-  const opts: BetFilter = {
+  const opts = {
     userId,
     contractId,
-    beforeTime,
-    afterTime,
+    answerId,
+    beforeTime:
+      beforeTime !== undefined && beforeBetTime !== undefined
+        ? Math.min(beforeTime, beforeBetTime)
+        : beforeTime ?? beforeBetTime,
+    afterTime:
+      afterTime && afterBetTime
+        ? Math.max(afterTime, afterBetTime)
+        : afterTime ?? afterBetTime,
     limit,
     order,
-    isOpenLimitOrder: kinds === 'open-limit',
+    kinds,
+    filterRedemptions,
+    includeZeroShareRedemptions,
+    count,
+    points,
+    commentRepliesOnly,
   }
 
-  const bets = contractId
-    ? await getBetsSupabase(db, opts)
-    : await getPublicBets(db, opts)
+  return await getBetsWithFilter(pg, opts)
+}
 
-  return bets
+export const getBets: APIHandler<'bets'> = async (props) =>
+  getBetsInternal(props)
+
+export const getBetPointsBetween: APIHandler<'bet-points'> = async (props) =>
+  getBetsInternal({
+    ...props,
+    points: true,
+  })
+
+async function getBetTime(pg: SupabaseDirectClient, id: string) {
+  const created = await pg.oneOrNone(
+    `
+  select ts_to_millis(created_time) as "createdTime" from postgres.public.contract_bets where bet_id = $1`,
+    [id],
+    (r) => r.createdTime
+  )
+  return created ?? undefined
 }

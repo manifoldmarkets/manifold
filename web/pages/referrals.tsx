@@ -10,16 +10,17 @@ import { InfoBox } from 'web/components/widgets/info-box'
 import { QRCode } from 'web/components/widgets/qr-code'
 import { REFERRAL_AMOUNT } from 'common/economy'
 import { formatMoney } from 'common/util/format'
-import { CoinNumber } from 'web/components/widgets/manaCoinNumber'
-import { SPICE_COLOR } from 'web/components/portfolio/portfolio-value-graph'
 import clsx from 'clsx'
-
+import { TokenNumber } from 'web/components/widgets/token-number'
+import { referralQuery } from 'common/util/share'
 export const getServerSideProps = redirectIfLoggedOut('/')
 
 export default function ReferralsPage() {
   const user = useUser()
 
-  const url = `https://${ENV_CONFIG.domain}?referrer=${user?.username}`
+  const url = `https://${ENV_CONFIG.domain}${referralQuery(
+    user?.username ?? ''
+  )}`
 
   return (
     <Page trackPageView={'referrals'}>
@@ -44,12 +45,9 @@ export default function ReferralsPage() {
 
           <div className={'mb-4'}>
             Invite new users to Manifold and get{' '}
-            <CoinNumber
-              isSpice
+            <TokenNumber
+              coinType={'MANA'}
               amount={REFERRAL_AMOUNT}
-              style={{
-                color: SPICE_COLOR,
-              }}
               className={clsx('font-bold')}
               isInline
             />{' '}

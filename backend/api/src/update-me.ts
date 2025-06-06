@@ -5,12 +5,13 @@ import { RESERVED_PATHS } from 'common/envs/constants'
 import { cleanDisplayName, cleanUsername } from 'common/util/clean-username'
 import { removeUndefinedProps } from 'common/util/object'
 import { cloneDeep } from 'lodash'
-import { SafeBulkWriter } from 'shared/safe-bulk-writer'
 import { createSupabaseDirectClient } from 'shared/supabase/init'
 import { getUser, getUserByUsername, log } from 'shared/utils'
 import { APIError, APIHandler } from './helpers/endpoint'
-import * as admin from 'firebase-admin'
 import { updateUser } from 'shared/supabase/users'
+import { broadcastUpdatedUser } from 'shared/websockets/helpers'
+import { generateAvatarUrl } from 'shared/helpers/generate-and-update-avatar-urls'
+import { getStorageBucket } from 'shared/create-user-main'
 
 export const updateMe: APIHandler<'me/update'> = async (props, auth) => {
   const update = cloneDeep(props)
@@ -30,6 +31,18 @@ export const updateMe: APIHandler<'me/update'> = async (props, auth) => {
     const otherUserExists = await getUserByUsername(cleanedUsername)
     if (otherUserExists) throw new APIError(403, 'Username already taken')
     update.username = cleanedUsername
+  }
+
+  if (update.avatarUrl === '') {
+    const bucket = getStorageBucket()
+    const newAvatarUrl = await generateAvatarUrl(
+      auth.uid,
+      user.name,
+      bucket,
+      true // Have to use random name to deal w/ cache issues
+    )
+    update.avatarUrl = newAvatarUrl
+    log(`Generated new avatar for user ${auth.uid}: ${newAvatarUrl}`)
   }
 
   const pg = createSupabaseDirectClient()
@@ -53,6 +66,9 @@ export const updateMe: APIHandler<'me/update'> = async (props, auth) => {
       await updateUser(pg, auth.uid, { avatarUrl })
     }
 
+    broadcastUpdatedUser(
+      removeUndefinedProps({ id: auth.uid, name, username, avatarUrl })
+    )
     await updateUserDenormalizedFields(auth.uid, { name, username, avatarUrl })
   }
 
@@ -67,28 +83,22 @@ const updateUserDenormalizedFields = async (
     avatarUrl?: string
   }
 ) => {
-  const firestore = admin.firestore()
   const pg = createSupabaseDirectClient()
 
   log('Updating denormalized user data on contracts...')
 
-  const bulkWriter = new SafeBulkWriter()
-
-  const contractRows = await pg.manyOrNone(
-    `select id from contracts where creator_id = $1`,
-    [userId]
-  )
   const contractUpdate: Partial<Contract> = removeUndefinedProps({
     creatorName: update.name,
     creatorUsername: update.username,
     creatorAvatarUrl: update.avatarUrl,
   })
 
-  for (const row of contractRows) {
-    const ref = firestore.collection('contracts').doc(row.id)
-    bulkWriter.update(ref, contractUpdate)
-  }
-  log(`Updated ${contractRows.length} contracts.`)
+  const contractIds = await pg.map(
+    `update contracts set data = data || $1 where creator_id = $2 returning id`,
+    [JSON.stringify(contractUpdate), userId],
+    (row) => row.id
+  )
+  log(`Updated ${contractIds} contracts.`)
 
   const commentUpdate: Partial<ContractComment> = removeUndefinedProps({
     userName: update.name,
@@ -106,6 +116,5 @@ const updateUserDenormalizedFields = async (
   )
   log(`Updated ${commentIds.length} comments.`)
 
-  await bulkWriter.flush()
   log('Done denormalizing!')
 }

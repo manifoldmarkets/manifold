@@ -3,8 +3,8 @@ import { getProbability } from 'common/calculate'
 import {
   BinaryContract,
   Contract,
-  getMainBinaryMCAnswer,
-  MultiContract,
+  // getMainBinaryMCAnswer,
+  // MultiContract,
   OutcomeType,
   resolution,
 } from 'common/contract'
@@ -12,37 +12,61 @@ import { formatLargeNumber, formatPercent } from 'common/util/format'
 import { Bet } from 'common/bet'
 import { STONK_NO, STONK_YES } from 'common/stonk'
 import { AnswerLabel } from './answers/answer-components'
+import { Answer } from 'common/answer'
 
 export function OutcomeLabel(props: {
-  contract: Contract
+  contract: Pick<Contract, 'outcomeType' | 'mechanism'>
   outcome: resolution | string
   truncate: 'short' | 'long' | 'none'
-  answerId?: string
+  answer?: Pick<Answer, 'text'>
+  pseudonym?: {
+    YES: {
+      pseudonymName: string
+      pseudonymColor: string
+    }
+    NO: {
+      pseudonymName: string
+      pseudonymColor: string
+    }
+  }
 }) {
-  const { outcome, contract, truncate, answerId } = props
+  const { outcome, contract, truncate, answer, pseudonym } = props
+  const answerText = answer?.text
   const { outcomeType, mechanism } = contract
-  const mainBinaryMCAnswer = getMainBinaryMCAnswer(contract)
+  // const mainBinaryMCAnswer = getMainBinaryMCAnswer(contract)
+  const { pseudonymName, pseudonymColor } =
+    pseudonym?.[outcome as 'YES' | 'NO'] ?? {}
 
-  if (mainBinaryMCAnswer && mechanism === 'cpmm-multi-1') {
+  if (pseudonymName && pseudonymColor) {
     return (
-      <MultiOutcomeLabel
-        contract={contract}
-        resolution={
-          outcome === 'YES' ? mainBinaryMCAnswer.id : contract.answers[1].id
+      <span
+        className={clsx(
+          pseudonymColor == 'azure'
+            ? 'text-azure-600 dark:text-azure-400'
+            : pseudonymColor == 'sienna'
+            ? 'text-sienna-600 dark:text-sienna-400'
+            : ''
+        )}
+        style={
+          pseudonymColor !== 'azure' && pseudonymColor !== 'sienna'
+            ? {
+                color: pseudonymColor,
+              }
+            : {}
         }
-        truncate={truncate}
-        answerClassName={'font-bold text-base-400 !break-normal'}
-      />
+      >
+        {pseudonymName}
+      </span>
     )
   }
+
   if (outcomeType === 'PSEUDO_NUMERIC')
     return <PseudoNumericOutcomeLabel outcome={outcome as any} />
 
   if (outcomeType === 'BINARY')
     return <BinaryOutcomeLabel outcome={outcome as any} />
 
-  if (outcomeType === 'CERT' || outcomeType === 'QUADRATIC_FUNDING')
-    return <></>
+  if (outcomeType === 'QUADRATIC_FUNDING') return <></>
 
   if (outcomeType === 'STONK') {
     return <StonkOutcomeLabel outcome={outcome as any} />
@@ -50,10 +74,10 @@ export function OutcomeLabel(props: {
   if (outcomeType === 'NUMBER') {
     return (
       <span>
-        {answerId && (
+        {answerText && (
           <MultiOutcomeLabel
-            contract={contract}
-            resolution={answerId}
+            answerText={answerText}
+            resolution={outcome}
             truncate={truncate}
             answerClassName={'font-bold text-base-400 !break-normal'}
           />
@@ -63,13 +87,13 @@ export function OutcomeLabel(props: {
     )
   }
 
-  if (outcomeType === 'MULTIPLE_CHOICE' && mechanism === 'cpmm-multi-1') {
+  if (mechanism === 'cpmm-multi-1') {
     return (
       <span>
-        {answerId && (
+        {answerText && (
           <MultiOutcomeLabel
-            contract={contract}
-            resolution={answerId}
+            answerText={answerText}
+            resolution={outcome}
             truncate={truncate}
             answerClassName={'font-bold text-base-400 !break-normal'}
           />
@@ -87,14 +111,7 @@ export function OutcomeLabel(props: {
     return <></>
   }
 
-  return (
-    <MultiOutcomeLabel
-      contract={contract}
-      resolution={outcome}
-      truncate={truncate}
-      answerClassName={'font-bold text-base-400 !break-normal'}
-    />
-  )
+  return <>???</>
 }
 
 export function BinaryOutcomeLabel(props: { outcome: resolution }) {
@@ -138,21 +155,20 @@ export function BinaryContractOutcomeLabel(props: {
 }
 
 export function MultiOutcomeLabel(props: {
-  contract: MultiContract
+  answerText: string
   resolution: string | 'CANCEL' | 'MKT'
   truncate: 'short' | 'long' | 'none'
   answerClassName?: string
 }) {
-  const { contract, resolution, truncate, answerClassName } = props
+  const { answerText, resolution, truncate, answerClassName } = props
 
   if (resolution === 'CANCEL') return <CancelLabel />
   if (resolution === 'MKT' || resolution === 'CHOOSE_MULTIPLE')
     return <MultiLabel />
 
-  const chosen = contract.answers?.find((answer) => answer.id === resolution)
   return (
     <AnswerLabel
-      text={chosen ? chosen.text : `Answer #${resolution}`}
+      text={answerText}
       truncate={truncate}
       className={answerClassName}
     />

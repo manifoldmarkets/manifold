@@ -1,28 +1,24 @@
 import type { AppProps } from 'next/app'
 import Head from 'next/head'
 import Script from 'next/script'
-import { useEffect } from 'react'
+import { useEffect, useState } from 'react'
 import { AuthProvider, AuthUser } from 'web/components/auth-context'
-import { NativeMessageListener } from 'web/components/native-message-listener'
+import { NativeMessageProvider } from 'web/components/native-message-provider'
 import { useHasLoaded } from 'web/hooks/use-has-loaded'
 import '../styles/globals.css'
 import { getIsNative } from 'web/lib/native/is-native'
-import { Major_Mono_Display, Figtree } from 'next/font/google'
+import { Figtree } from 'next/font/google'
 import { GoogleOneTapSetup } from 'web/lib/firebase/google-onetap-login'
-import clsx from 'clsx'
 import { useRefreshAllClients } from 'web/hooks/use-refresh-all-clients'
 import { postMessageToNative } from 'web/lib/native/post-message'
-import { useThemeManager } from 'web/hooks/use-theme'
-import Welcome from 'web/components/onboarding/welcome'
-
+import { ENV_CONFIG, TRADE_TERM } from 'common/envs/constants'
+import { Sweepstakes } from 'web/components/sweepstakes-provider'
+import { capitalize } from 'lodash'
+import { ThemeProvider } from 'web/hooks/use-theme'
+import { DevtoolsDetector, setupDevtoolsDetector } from 'web/lib/util/devtools'
+import { useRouter } from 'next/router'
 // See https://nextjs.org/docs/basic-features/font-optimization#google-fonts
 // and if you add a font, you must add it to tailwind config as well for it to work.
-
-const logoFont = Major_Mono_Display({
-  weight: ['400'],
-  variable: '--font-logo',
-  subsets: ['latin'],
-})
 
 const mainFont = Figtree({
   weight: ['300', '400', '500', '600', '700'],
@@ -31,7 +27,11 @@ const mainFont = Figtree({
 })
 
 function firstLine(msg: string) {
-  return msg.replace(/\r?\n.*/s, '')
+  const newlineIndex = msg.indexOf('\n')
+  if (newlineIndex === -1) {
+    return msg
+  }
+  return msg.substring(0, newlineIndex)
 }
 
 // It can be very hard to see client logs on native, so send them manually
@@ -60,6 +60,37 @@ function printBuildInfo() {
   }
 }
 
+// ian: Required by GambleId
+const useDevtoolsDetector = () => {
+  const [_, setDetector] = useState<DevtoolsDetector | null>(null)
+  const [isDevtoolsOpen, setIsDevtoolsOpen] = useState(false)
+
+  useEffect(() => {
+    const ignore =
+      window.location.host === 'localhost:3000' ||
+      process.env.NEXT_PUBLIC_FIREBASE_ENV === 'DEV'
+
+    if (ignore) {
+      return
+    }
+    const devtoolsDetector = setupDevtoolsDetector()
+    setDetector(devtoolsDetector)
+
+    devtoolsDetector.config.onDetectOpen = () => {
+      setIsDevtoolsOpen(true)
+    }
+
+    // Start detecting right away
+    devtoolsDetector.paused = false
+
+    return () => {
+      // Pause the detector when component unmounts
+      devtoolsDetector.paused = true
+    }
+  }, [])
+  return isDevtoolsOpen
+}
+
 // specially treated props that may be present in the server/static props
 type ManifoldPageProps = { auth?: AuthUser }
 
@@ -68,11 +99,30 @@ function MyApp({ Component, pageProps }: AppProps<ManifoldPageProps>) {
   useHasLoaded()
   useRefreshAllClients()
 
-  useThemeManager()
+  // ian: Required by GambleId
+  const devToolsOpen = false //useDevtoolsDetector()
+  const router = useRouter()
+
+  useEffect(() => {
+    const handleRouteChange = (url: string) => {
+      ;(window as any).dataLayer?.push({
+        event: 'page_view',
+        page_path: url,
+        page_location: window.location.href,
+        page_title: document.title,
+        'gtm.start': new Date().getTime(),
+      })
+    }
+    router.events.on('routeChangeComplete', handleRouteChange)
+    return () => {
+      router.events.off('routeChangeComplete', handleRouteChange)
+    }
+  }, [router.events])
 
   const title = 'Manifold'
-  const description =
-    'Manifold is a social prediction game. Bet on news, politics, tech, & AI with play money. Or create your own prediction market.'
+  const description = `Manifold is a social prediction game. ${capitalize(
+    TRADE_TERM
+  )} on news, politics, tech, & AI with play money. Or create your own prediction market.`
 
   return (
     <>
@@ -111,6 +161,17 @@ function MyApp({ Component, pageProps }: AppProps<ManifoldPageProps>) {
           content="width=device-width, initial-scale=1,maximum-scale=1, user-scalable=no"
         />
         <meta name="apple-itunes-app" content="app-id=6444136749" />
+        {/* set safari overscroll/address bar to canvas-0. TODO: change based on site theme preference */}
+        <meta
+          name="theme-color"
+          content="#1e293b"
+          media="(prefers-color-scheme: dark)"
+        />
+        <meta
+          name="theme-color"
+          content="#fdfeff"
+          media="(prefers-color-scheme: light)"
+        />
         <link
           rel="search"
           type="application/opensearchdescription+xml"
@@ -118,23 +179,34 @@ function MyApp({ Component, pageProps }: AppProps<ManifoldPageProps>) {
           title="Manifold"
         />
       </Head>
-      <div
-        className={clsx(
-          'font-figtree contents font-normal',
-          logoFont.variable,
-          mainFont.variable
-        )}
-      >
-        <AuthProvider serverUser={pageProps.auth}>
-          <NativeMessageListener />
-          <Welcome />
-          <Component {...pageProps} />
-        </AuthProvider>
-        {/* Workaround for https://github.com/tailwindlabs/headlessui/discussions/666, to allow font CSS variable */}
-        <div id="headlessui-portal-root">
-          <div />
+      <style>
+        {`html {
+          --font-main: ${mainFont.style.fontFamily};
+        }`}
+      </style>
+
+      {/*
+        ian: It would be nice to find a way to let people take screenshots of a crash + console log.
+        One idea: just disable them for !user.sweepstakesVerified users.
+        */}
+      {devToolsOpen ? (
+        <div
+          className={'flex h-screen flex-col items-center justify-center p-4'}
+        >
+          You cannot use developer tools with manifold. Please close them and
+          refresh.
         </div>
-      </div>
+      ) : (
+        <ThemeProvider>
+          <AuthProvider serverUser={pageProps.auth}>
+            <Sweepstakes>
+              <NativeMessageProvider>
+                <Component {...pageProps} />
+              </NativeMessageProvider>
+            </Sweepstakes>
+          </AuthProvider>
+        </ThemeProvider>
+      )}
 
       <GoogleOneTapSetup />
 
@@ -178,18 +250,14 @@ function MyApp({ Component, pageProps }: AppProps<ManifoldPageProps>) {
       />
 
       <Script
-        async
-        src="https://www.googletagmanager.com/gtag/js?id=G-SSFK1Q138D"
-      />
-      <Script
-        id="gaw"
+        id="gtm"
         dangerouslySetInnerHTML={{
           __html: `
-  window.dataLayer = window.dataLayer || [];
-  function gtag(){dataLayer.push(arguments);}
-  gtag('js', new Date());
-
-  gtag('config', 'G-SSFK1Q138D');`,
+  (function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start':
+new Date().getTime(),event:'gtm.js'});var f=d.getElementsByTagName(s)[0],
+j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
+'https://www.googletagmanager.com/gtm.js?id='+i+dl;f.parentNode.insertBefore(j,f);
+})(window,document,'script','dataLayer','${ENV_CONFIG.googleAnalyticsId}');`,
         }}
       />
     </>

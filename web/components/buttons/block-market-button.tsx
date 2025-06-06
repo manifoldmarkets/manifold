@@ -3,7 +3,7 @@ import { Button } from 'web/components/buttons/button'
 import { withTracking } from 'web/lib/service/analytics'
 import { toast } from 'react-hot-toast'
 import { Contract } from 'common/contract'
-import { api } from 'web/lib/firebase/api'
+import { api } from 'web/lib/api/api'
 
 export function BlockMarketButton(props: { contract: Contract }) {
   const { contract } = props

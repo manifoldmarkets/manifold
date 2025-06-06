@@ -2,30 +2,20 @@ import { addObjects } from 'common/util/object'
 
 export const FEE_START_TIME = 1713292320000
 
-const TAKER_FEE_CONSTANT = 0.07
+const TAKER_FEE_CONSTANT = 0
 export const getTakerFee = (shares: number, prob: number) => {
   return TAKER_FEE_CONSTANT * prob * (1 - prob) * shares
 }
 
-const CREATORS_EARN_WHOLE_FEE_UP_TO = 1000
-export const getFeesSplit = (
-  totalFees: number,
-  previouslyCollectedFees: Fees
-) => {
-  const before1k = Math.max(
-    0,
-    CREATORS_EARN_WHOLE_FEE_UP_TO - previouslyCollectedFees.creatorFee
-  )
-  const allToCreatorAmount = Math.min(totalFees, before1k)
-  const splitWithCreatorAmount = totalFees - allToCreatorAmount
+export const getFeesSplit = (totalFees: number) => {
   return {
-    creatorFee: allToCreatorAmount + splitWithCreatorAmount * 0.5,
-    platformFee: splitWithCreatorAmount * 0.5,
+    creatorFee: 0,
+    platformFee: totalFees,
     liquidityFee: 0,
   }
 }
 
-export const FLAT_TRADE_FEE = 0.1
+export const FLAT_TRADE_FEE = 0
 export const FLAT_COMMENT_FEE = 1
 
 export const DPM_PLATFORM_FEE = 0.0

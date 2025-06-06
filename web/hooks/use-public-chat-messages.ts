@@ -1,46 +1,53 @@
 import { db } from 'web/lib/supabase/db'
-import { Row } from 'common/supabase/utils'
-import { maxBy, orderBy } from 'lodash'
-import { usePersistentSupabasePolling } from 'web/hooks/use-persistent-supabase-polling'
-import { convertPublicChatMessage } from 'common/chat-message'
+import { orderBy, uniqBy } from 'lodash'
+import { usePersistentLocalState } from './use-persistent-local-state'
+import { useEffect } from 'react'
+import { useApiSubscription } from 'client-common/hooks/use-api-subscription'
+import { ChatMessage, convertPublicChatMessage } from 'common/chat-message'
 
-export function useRealtimePublicMessagesPolling(
-  channelId: string,
-  ms: number,
-  initialLimit = 100,
-  ignoreSystemStatus = false
-) {
-  let allRowsQ = db
-    .from('chat_messages')
-    .select('*')
-    .eq('channel_id', channelId)
-    .order('created_time', { ascending: false })
-    .limit(initialLimit)
-  if (ignoreSystemStatus) allRowsQ = allRowsQ.neq('visibility', 'system_status')
+export function usePublicChat(channelId: string, limit: number) {
+  const [messages, setMessages] = usePersistentLocalState<
+    ChatMessage[] | undefined
+  >(undefined, `public-chat-messages-${limit}-v2-${channelId}`)
 
-  const newRowsOnlyQ = (rows: Row<'chat_messages'>[] | undefined) => {
-    // You can't use allRowsQ here because it keeps tacking on another gt clause
-    let q = db
+  const [newestId, setNewestId] = usePersistentLocalState<number | undefined>(
+    undefined,
+    `public-chat-newest-id`
+  )
+
+  const fetchMessages = async () => {
+    const { data } = await db
       .from('chat_messages')
       .select('*')
       .eq('channel_id', channelId)
-      .gt('id', maxBy(rows, 'id')?.id ?? 0)
-    if (ignoreSystemStatus) q = q.neq('visibility', 'system_status')
-    return q
+      .order('created_time', { ascending: false })
+      .gt('id', newestId ?? 0)
+      .limit(limit)
+
+    if (data) {
+      const newMessages = data.map(convertPublicChatMessage)
+      setMessages((prevMessages) =>
+        orderBy(
+          uniqBy([...newMessages, ...(prevMessages ?? [])], (m) => m.id),
+          'createdTime',
+          'desc'
+        )
+      )
+
+      if (data.length > 0) setNewestId(data[0].id)
+    }
   }
 
-  const results = usePersistentSupabasePolling(
-    'chat_messages',
-    allRowsQ,
-    newRowsOnlyQ,
-    `public-chat-messages-${channelId}-${ms}ms-${initialLimit}limit-v1`,
-    {
-      ms,
-      deps: [channelId],
-      shouldUseLocalStorage: true,
-    }
-  )
-  return results
-    ? orderBy(results.map(convertPublicChatMessage), 'createdTime', 'desc')
-    : undefined
+  useEffect(() => {
+    fetchMessages()
+  }, [limit])
+
+  useApiSubscription({
+    topics: ['public-chat'],
+    onBroadcast: () => {
+      fetchMessages()
+    },
+  })
+
+  return messages
 }

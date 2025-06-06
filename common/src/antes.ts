@@ -1,4 +1,4 @@
-import { CPMMBinaryContract, CPMMMultiContract } from './contract'
+import { BinaryContract, MultiContract } from './contract'
 import { removeUndefinedProps } from './util/object'
 
 export const HOUSE_LIQUIDITY_PROVIDER_ID = 'IPTOzEqrpkWmEzh6hwvAyY9PqFb2' // @ManifoldMarkets' id
@@ -6,7 +6,7 @@ export const DEV_HOUSE_LIQUIDITY_PROVIDER_ID = '94YYTk1AFWfbWMpfYcvnnwI1veP2' //
 
 export function getCpmmInitialLiquidity(
   providerId: string,
-  contract: CPMMBinaryContract | CPMMMultiContract,
+  contract: BinaryContract | MultiContract,
   amount: number,
   createdTime: number,
   answerId?: string

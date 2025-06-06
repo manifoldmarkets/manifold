@@ -1,12 +1,14 @@
 import { XIcon } from '@heroicons/react/solid'
-
 import { MAX_ANSWERS, MAX_ANSWER_LENGTH } from 'common/answer'
 import { Col } from '../layout/col'
 import { Row } from '../layout/row'
 import { ExpandingInput } from '../widgets/expanding-input'
 import { InfoTooltip } from '../widgets/info-tooltip'
-import { OutcomeType } from 'common/contract'
 import { ChoicesToggleGroup } from '../widgets/choices-toggle-group'
+import { Button } from '../buttons/button'
+import { formatMoney } from 'common/util/format'
+import { seeResultsAnswer } from '../new-contract/contract-params-form'
+import { last } from 'lodash'
 
 export function MultipleChoiceAnswers(props: {
   answers: string[]
@@ -14,9 +16,12 @@ export function MultipleChoiceAnswers(props: {
   addAnswersMode: 'DISABLED' | 'ONLY_CREATOR' | 'ANYONE'
   setAddAnswersMode: (mode: 'DISABLED' | 'ONLY_CREATOR' | 'ANYONE') => void
   shouldAnswersSumToOne: boolean
-  setShouldAnswersSumToOne: (shouldAnswersSumToOne: boolean) => void
-  outcomeType: OutcomeType
+  outcomeType: 'POLL' | 'MULTIPLE_CHOICE'
   placeholder?: string
+  question: string
+  generateAnswers: () => void
+  isGeneratingAnswers: boolean
+  marginalCost: number
 }) {
   const {
     answers,
@@ -24,9 +29,12 @@ export function MultipleChoiceAnswers(props: {
     addAnswersMode,
     setAddAnswersMode,
     shouldAnswersSumToOne,
-    setShouldAnswersSumToOne,
     outcomeType,
     placeholder,
+    question,
+    generateAnswers,
+    isGeneratingAnswers,
+    marginalCost,
   } = props
 
   const setAnswer = (i: number, answer: string) => {
@@ -35,31 +43,72 @@ export function MultipleChoiceAnswers(props: {
   }
 
   const removeAnswer = (i: number) => {
-    const newAnswers = answers.slice(0, i).concat(answers.slice(i + 1))
-    setAnswers(newAnswers)
+    if (canRemoveAnswers) {
+      const newAnswers = answers.slice(0, i).concat(answers.slice(i + 1))
+      setAnswers(newAnswers)
+    }
   }
 
-  const addAnswer = () => setAnswer(answers.length, '')
+  const addAnswer = () => {
+    const lastAnswer = last(answers)
+    if (
+      outcomeType === 'POLL' &&
+      lastAnswer?.toLowerCase() === seeResultsAnswer.toLowerCase()
+    ) {
+      const newAnswers = [
+        ...answers.slice(0, answers.length - 1),
+        '',
+        lastAnswer,
+      ]
+      setAnswers(newAnswers)
+    } else {
+      setAnswer(answers.length, '')
+    }
+  }
 
-  const hasOther = shouldAnswersSumToOne && addAnswersMode !== 'DISABLED'
+  const focusAnswer = (i: number) => {
+    const input = document.getElementById(`answer-input-${i}`)
+    input?.focus()
+  }
+  const focusPrevAnswer = (i: number) => focusAnswer(i == 0 ? 0 : i - 1)
+  const focusNextAnswer = (i: number) => {
+    if (i == answers.length - 1) {
+      addAnswer()
+      setTimeout(() => focusAnswer(i + 1), 0) // focus after react removes the answer
+    } else {
+      focusAnswer(i + 1)
+    }
+  }
+
+  const hasOther =
+    shouldAnswersSumToOne &&
+    addAnswersMode !== 'DISABLED' &&
+    outcomeType !== 'POLL'
+
   const numAnswers = answers.length + (hasOther ? 1 : 0)
+
+  const canRemoveAnswers =
+    outcomeType === 'POLL'
+      ? numAnswers > 2
+      : (!shouldAnswersSumToOne && numAnswers > 1) ||
+        numAnswers > 2 ||
+        (numAnswers > 1 && addAnswersMode !== 'DISABLED')
 
   return (
     <Col className="gap-2">
       {answers.slice(0, answers.length).map((answer, i) => (
         <Row className="items-center gap-2 align-middle" key={i}>
           {i + 1}.{' '}
-          <ExpandingInput
+          <AnswerInput
+            id={`answer-input-${i}`}
             value={answer}
             onChange={(e) => setAnswer(i, e.target.value)}
-            className="ml-2 w-full"
+            onUp={() => focusPrevAnswer(i)}
+            onDown={() => focusNextAnswer(i)}
+            onDelete={() => removeAnswer(i)}
             placeholder={placeholder ?? `Option ${i + 1}`}
-            rows={1}
-            maxLength={MAX_ANSWER_LENGTH}
           />
-          {(!shouldAnswersSumToOne ||
-            numAnswers > 2 ||
-            (numAnswers > 1 && addAnswersMode !== 'DISABLED')) && (
+          {canRemoveAnswers && (
             <button
               onClick={() => removeAnswer(i)}
               type="button"
@@ -73,14 +122,7 @@ export function MultipleChoiceAnswers(props: {
 
       {hasOther && (
         <Row className="items-center gap-2">
-          {answers.length + 1}.{' '}
-          <ExpandingInput
-            disabled={true}
-            value={'Other'}
-            className="ml-2 w-full"
-            rows={1}
-            maxLength={MAX_ANSWER_LENGTH}
-          />
+          {answers.length + 1}. <AnswerInput disabled value={'Other'} />
           <div className="mx-1.5">
             <InfoTooltip
               text={
@@ -91,13 +133,25 @@ export function MultipleChoiceAnswers(props: {
         </Row>
       )}
       {numAnswers < MAX_ANSWERS && (
-        <Row className="justify-end">
+        <Row className="justify-end gap-2">
+          {question && outcomeType === 'MULTIPLE_CHOICE' && (
+            <Button
+              color="indigo-outline"
+              size="xs"
+              loading={isGeneratingAnswers}
+              onClick={generateAnswers}
+              disabled={!question || isGeneratingAnswers}
+            >
+              Generate with AI
+            </Button>
+          )}
           <button
             type="button"
             onClick={addAnswer}
             className="hover:bg-canvas-50 border-ink-300 text-ink-700 bg-canvas-0 focus:ring-primary-500 inline-flex items-center rounded border px-2.5 py-1.5 text-xs font-medium shadow-sm focus:outline-none focus:ring-2 focus:ring-offset-2"
           >
             Add {outcomeType == 'POLL' ? 'option' : 'answer'}
+            {marginalCost > 0 ? ` +${formatMoney(marginalCost)}` : ''}
           </button>
         </Row>
       )}
@@ -131,7 +185,7 @@ export function MultipleChoiceAnswers(props: {
             />
           </Col>
 
-          <Col className="items-start gap-2">
+          {/* <Col className="items-start gap-2">
             <Row className="items-center gap-2">
               <div className="cursor-pointer">
                 How many answers will be chosen?
@@ -154,10 +208,58 @@ export function MultipleChoiceAnswers(props: {
                 setShouldAnswersSumToOne(choice === 'true')
               }
             />
-          </Col>
+          </Col> */}
         </>
       )}
     </Col>
+  )
+}
+
+const AnswerInput = (props: {
+  id?: string
+  disabled?: boolean
+  value?: string
+  onChange?: (e: React.ChangeEvent<HTMLTextAreaElement>) => void
+  onUp?: () => void
+  onDown?: () => void
+  onDelete?: () => void
+  placeholder?: string
+}) => {
+  const { id, disabled, value, onChange, onUp, onDown, onDelete, placeholder } =
+    props
+
+  return (
+    <ExpandingInput
+      id={id}
+      className="ml-2 w-full"
+      disabled={disabled}
+      placeholder={placeholder}
+      value={value}
+      onChange={onChange}
+      onKeyDown={(e) => {
+        if (e.key == 'ArrowUp' && !e.shiftKey && !e.altKey) {
+          e.preventDefault()
+          e.stopPropagation()
+          onUp?.()
+        }
+        if (e.key == 'ArrowDown' && !e.shiftKey && !e.altKey) {
+          e.preventDefault()
+          e.stopPropagation()
+          onDown?.()
+        }
+        if (e.key == 'Enter' && !e.shiftKey && !e.altKey) {
+          e.preventDefault()
+          e.stopPropagation()
+          onDown?.()
+        }
+        if (e.key == 'Backspace' && value === '' && !e.shiftKey && !e.altKey) {
+          onDelete?.()
+          onUp?.()
+        }
+      }}
+      rows={1}
+      maxLength={MAX_ANSWER_LENGTH}
+    />
   )
 }
 

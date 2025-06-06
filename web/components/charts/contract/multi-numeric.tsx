@@ -1,56 +1,90 @@
 import { useMemo } from 'react'
-import { keyBy, last, sum } from 'lodash'
+import { last, map, sum, zip, keyBy, max, min } from 'lodash'
 import { scaleLinear, scaleTime } from 'd3-scale'
-import { CPMMNumericContract } from 'common/contract'
+import { MultiNumericContract } from 'common/contract'
 import { NUMERIC_GRAPH_COLOR } from 'common/numeric-constants'
 import { getEndDate, getRightmostVisibleDate, ZoomParams } from '../helpers'
 import { SingleValueHistoryChart } from '../generic-charts'
 import { SingleContractChartTooltip } from './single-value'
-import { map, zip } from 'd3-array'
+
+import { MultiPoints } from 'common/chart'
 import {
   formatExpectedValue,
   getExpectedValue,
-  answerTextToMidpoint,
-} from 'common/multi-numeric'
-import { MultiPoints } from 'common/chart'
-import { getFilledInMultiNumericBetPoints } from 'common/contract-params'
-import { Row } from 'web/components/layout/row'
+  getMinMax,
+} from 'common/src/multi-numeric'
+import { getAnswerProbAtEveryBetTime } from 'common/contract-params'
 
-const getBetPoints = (contract: CPMMNumericContract, bets: MultiPoints) => {
-  const filledInBetPoints = getFilledInMultiNumericBetPoints(bets, contract)
-  const answerTexts = keyBy(contract.answers, 'id')
-  // multiply the prob value by the value of the bucket
-  const expectedValues = Object.entries(filledInBetPoints).map(
-    ([answerId, pts]) =>
-      pts.map((pt) => ({
-        x: pt[0],
-        y: pt[1] * answerTextToMidpoint(answerTexts[answerId].text),
-      }))
-  )
-  return map(zip(...expectedValues), (group) => ({
-    y: sum(group.map((pt) => pt.y)) ?? 0,
-    x: group[0].x,
-  }))
-}
-export const DistributionChartTooltip = (props: {
-  ttProps: { x: number; y: number }
-  getX: (x: number) => string
-  formatY: (y: number) => string
-}) => {
-  const { ttProps, formatY } = props
-  const { y } = ttProps
-  const x = props.getX(ttProps.x)
+const getBetPoints = (contract: MultiNumericContract, bets: MultiPoints) => {
+  const { answers, shouldAnswersSumToOne } = contract
+  const answersById = keyBy(answers, 'id')
+  const filledInBetPoints = getAnswerProbAtEveryBetTime(bets, contract)
+  if (shouldAnswersSumToOne) {
+    // multiply the prob value by the value of the bucket
+    const expectedValues = Object.entries(filledInBetPoints).map(
+      ([answerId, pts]) =>
+        pts.map((pt) => ({
+          x: pt.x,
+          y: pt.y * answersById[answerId].midpoint!,
+        }))
+    )
+    return map(
+      zip(...expectedValues) as Array<{ x: number; y: number }[]>,
+      (group) => ({
+        y: sum(group.map((pt) => pt.y)) ?? 0,
+        x: group[0].x,
+      })
+    )
+  } else {
+    // Handle threshold-style expected value calculation
+    // First, organize points by timestamp
+    const pointsByTimestamp: Record<number, Record<string, number>> = {}
 
-  return (
-    <Row className="items-center gap-2">
-      <span className="font-semibold">{x}</span>
-      <span className="text-ink-600">{formatY(y)}</span>
-    </Row>
-  )
+    // Group all probabilities by timestamp
+    Object.entries(filledInBetPoints).forEach(([answerId, pts]) => {
+      pts.forEach((pt) => {
+        const timestamp = pt.x
+        if (!pointsByTimestamp[timestamp]) {
+          pointsByTimestamp[timestamp] = {}
+        }
+        pointsByTimestamp[timestamp][answerId] = pt.y
+      })
+    })
+
+    // Calculate expected value at each timestamp
+    return Object.entries(pointsByTimestamp)
+      .map(([timestamp, probsByAnswer]) => {
+        const answerIds = answers.map((a) => a.id)
+        const probabilities = answerIds.map((id) => probsByAnswer[id] || 0)
+
+        // Calculate expected value using threshold method
+        let expectedValue = 0
+
+        // For each threshold except the last one
+        for (let i = 0; i < probabilities.length - 1; i++) {
+          // Calculate the probability of being in this "bucket" between thresholds
+          const bucketProbability = probabilities[i] - probabilities[i + 1]
+          // Add the contribution to the expected value
+          expectedValue +=
+            answersById[answerIds[i]].midpoint! * bucketProbability
+        }
+
+        // Add the contribution from the last threshold
+        const lastIndex = probabilities.length - 1
+        expectedValue +=
+          answersById[answerIds[lastIndex]].midpoint! * probabilities[lastIndex]
+
+        return {
+          x: parseInt(timestamp),
+          y: expectedValue,
+        }
+      })
+      .sort((a, b) => a.x - b.x) // Sort by timestamp
+  }
 }
 
 export const MultiNumericContractChart = (props: {
-  contract: CPMMNumericContract
+  contract: MultiNumericContract
   multiPoints: MultiPoints
   width: number
   height: number
@@ -58,34 +92,43 @@ export const MultiNumericContractChart = (props: {
   showZoomer?: boolean
 }) => {
   const { contract, width, multiPoints, height, zoomParams, showZoomer } = props
-  const { min, max } = contract
   const start = contract.createdTime
   const end = getEndDate(contract)
-  const startP = getExpectedValue(contract, true)
   const endP = getExpectedValue(contract)
   const stringifiedMultiPoints = JSON.stringify(multiPoints)
   const betPoints = useMemo(
     () => getBetPoints(contract, multiPoints),
     [stringifiedMultiPoints]
   )
-  const now = useMemo(() => Date.now(), [stringifiedMultiPoints])
+  const now = useMemo(() => Date.now(), [stringifiedMultiPoints, endP])
 
   const singlePointData = useMemo(
-    () => [{ x: start, y: startP }, ...betPoints, { x: end ?? now, y: endP }],
-    [JSON.stringify(betPoints), start, startP, end, endP]
+    () => [
+      ...(betPoints || []),
+      {
+        x: end ?? now,
+        y: endP,
+      },
+    ],
+    [betPoints, end, endP, now]
   )
+  const { min: answerMin, max: answerMax } = getMinMax(contract)
+  const allYs = singlePointData.map((p) => p.y)
+  const minY = min([...allYs, answerMin])!
+  const maxY = max([...allYs, answerMax])!
   const rightmostDate = getRightmostVisibleDate(end, last(betPoints)?.x, now)
   const xScale = scaleTime([start, rightmostDate], [0, width])
 
   // clamp log scale to make sure zeroes go to the bottom
-  const yScale = scaleLinear([min, max], [height, 0])
+  const yScale = scaleLinear([minY, maxY], [height, 0])
   return (
     <SingleValueHistoryChart
       w={width}
       h={height}
       xScale={xScale}
       yScale={yScale}
-      negativeThreshold={min}
+      rightmostDate={rightmostDate}
+      negativeThreshold={minY}
       zoomParams={zoomParams}
       showZoomer={showZoomer}
       data={singlePointData}

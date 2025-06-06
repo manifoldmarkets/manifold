@@ -1,9 +1,9 @@
 import { useEffect } from 'react'
-import { nativeToWebMessageType } from 'common/native-message'
+import { MesageTypeMap, nativeToWebMessageType } from 'common/native-message'
 
-export const useNativeMessages = (
-  messageTypes: nativeToWebMessageType[],
-  onMessageReceived: (type: string, data: any) => void
+export const useNativeMessages = <T extends nativeToWebMessageType>(
+  messageTypes: T[],
+  onMessageReceived: (type: T, data: MesageTypeMap[T]) => void
 ) => {
   const handleNativeMessage = async (e: any) => {
     let event

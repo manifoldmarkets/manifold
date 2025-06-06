@@ -1,29 +1,35 @@
-import { formatMoney } from 'common/util/format'
+import { formatWithToken } from 'common/util/format'
 
-import { BETTORS, User } from 'common/user'
-import { useEffect, useState } from 'react'
 import { ContractMetric } from 'common/contract-metric'
+import { getRanking } from 'common/supabase/contract-metrics'
+import { BETTORS, User } from 'common/user'
 import { removeUndefinedProps } from 'common/util/object'
+import { useEffect, useState } from 'react'
 import { Leaderboard } from 'web/components/leaderboard'
 import { db } from 'web/lib/supabase/db'
-import { getRanking } from 'common/supabase/contract-metrics'
 
 export function ContractLeaderboard(props: {
   topContractMetrics: ContractMetric[]
   currentUser: User | undefined | null
   contractId: string
   currentUserMetrics: ContractMetric | undefined
+  isCashContract: boolean
 }) {
-  const { topContractMetrics, currentUser, contractId, currentUserMetrics } =
-    props
+  const {
+    topContractMetrics,
+    currentUser,
+    contractId,
+    currentUserMetrics,
+    isCashContract,
+  } = props
   const maxToShowMinusCurrentUser = 5
   const topRankedUserIds = topContractMetrics
     .slice(0, maxToShowMinusCurrentUser)
     .map((m) => m.userId)
   const userIsAlreadyRanked =
     currentUser && topRankedUserIds.includes(currentUser.id)
+  // TODO: refactor all this to just work when this leaderboard is rendered (when market resolves)
   const [yourRank, setYourRank] = useState<number | undefined>(undefined)
-
   useEffect(() => {
     if (currentUserMetrics?.profit && !yourRank && !userIsAlreadyRanked) {
       getRanking(contractId, currentUserMetrics.profit, db).then((rank) =>
@@ -52,11 +58,11 @@ export function ContractLeaderboard(props: {
     .map((cm) => {
       const { profit } = cm
       return removeUndefinedProps({
-        id: cm.userId,
+        userId: cm.userId,
         name: cm.userName,
         username: cm.userUsername,
         avatarUrl: cm.userAvatarUrl,
-        total: profit,
+        score: profit,
         rank:
           cm.userId === currentUser?.id && !userIsAlreadyRanked
             ? yourRank
@@ -66,8 +72,8 @@ export function ContractLeaderboard(props: {
       })
     })
   const top = Object.values(userProfits)
-    .sort((a, b) => b.total - a.total)
-    .filter((p) => p.total > 0)
+    .sort((a, b) => b.score - a.score)
+    .filter((p) => p.score > 0)
     .slice(
       0,
       !currentUser || userIsAlreadyRanked || !currentUserMetrics
@@ -82,11 +88,15 @@ export function ContractLeaderboard(props: {
       columns={[
         {
           header: 'Total profit',
-          renderCell: (entry) => formatMoney(entry.total),
+          renderCell: (entry) =>
+            formatWithToken({
+              amount: entry.score,
+              token: isCashContract ? 'CASH' : 'M$',
+            }),
         },
       ]}
       className="mt-12"
-      highlightUsername={currentUser?.username}
+      highlightUserId={currentUser?.id}
     />
   ) : null
 }

@@ -22,7 +22,7 @@ export const readJson = async <T>(filename: string) => {
   return JSON.parse(data) as T
 }
 
-const SEPARATOR = '|'
+const SEPARATOR = ','
 
 export const writeCsv = async <T extends { [field: string]: string }>(
   filename: string,

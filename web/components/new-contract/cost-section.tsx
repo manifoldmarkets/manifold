@@ -1,46 +1,47 @@
-import { CreateableOutcomeType, MarketTierType } from 'common/contract'
-import { ReactNode, useState } from 'react'
+import {
+  CREATEABLE_NON_PREDICTIVE_OUTCOME_TYPES,
+  CreateableOutcomeType,
+} from 'common/contract'
+import { useState } from 'react'
 import { Col } from 'web/components/layout/col'
 
 import clsx from 'clsx'
-import { getTieredCost } from 'common/economy'
 import { ENV_CONFIG } from 'common/envs/constants'
-import { capitalize } from 'lodash'
 import { AddFundsModal } from 'web/components/add-funds-modal'
 import { Button } from 'web/components/buttons/button'
-import {
-  CrystalTier,
-  PlayTier,
-  PlusTier,
-  PremiumTier,
-} from 'web/public/custom-components/tiers'
-import { LogoIcon } from '../icons/logo-icon'
-import { CoinNumber } from '../widgets/manaCoinNumber'
+
+import { TokenNumber } from '../widgets/token-number'
+import { liquidityTiers } from 'common/tier'
+import { getAnte } from 'common/economy'
 
 export const CostSection = (props: {
   balance: number
   outcomeType: CreateableOutcomeType
-  baseCost: number
-  marketTier: MarketTierType | undefined
-  setMarketTier: (tier: MarketTierType) => void
+  liquidityTier: number
+  setLiquidityTier: (tier: number) => void
+  numAnswers: number | undefined
 }) => {
-  const { balance, outcomeType, baseCost, marketTier, setMarketTier } = props
+  const { balance, outcomeType, liquidityTier, setLiquidityTier, numAnswers } =
+    props
+  const ante = getAnte(outcomeType, numAnswers, liquidityTier)
+
   const [fundsModalOpen, setFundsModalOpen] = useState(false)
-  const currentCost = getTieredCost(baseCost, marketTier, outcomeType)
   return (
     <Col className="items-start px-1">
-      <label className="mb-1 gap-2">
-        <span>Tier</span>
-      </label>
-
-      <PriceSection
-        baseCost={baseCost}
-        outcomeType={outcomeType}
-        currentTier={marketTier}
-        setMarketTier={setMarketTier}
-      />
-
-      {currentCost > balance && (
+      {!CREATEABLE_NON_PREDICTIVE_OUTCOME_TYPES.includes(outcomeType) && (
+        <label className="mb-1 gap-2">
+          <span>Liquidity</span>
+        </label>
+      )}
+      {!CREATEABLE_NON_PREDICTIVE_OUTCOME_TYPES.includes(outcomeType) && (
+        <PriceSection
+          liquidityTier={liquidityTier}
+          setLiquidityTier={setLiquidityTier}
+          numAnswers={numAnswers}
+          outcomeType={outcomeType}
+        />
+      )}
+      {ante > balance && (
         <div className="mb-2 mr-auto mt-2 self-center whitespace-nowrap text-xs font-medium tracking-wide">
           <span className="text-scarlet-500 mr-2">Insufficient balance</span>
           <Button
@@ -58,127 +59,75 @@ export const CostSection = (props: {
 }
 
 function PriceSection(props: {
-  baseCost: number
+  liquidityTier: number
+  setLiquidityTier: (tier: number) => void
+  numAnswers: number | undefined
   outcomeType: CreateableOutcomeType
-  currentTier: MarketTierType | undefined
-  setMarketTier: (tier: MarketTierType) => void
 }) {
-  const { baseCost, outcomeType, currentTier, setMarketTier } = props
+  const { liquidityTier, setLiquidityTier, numAnswers, outcomeType } = props
 
-  if (!currentTier) {
-    return <CoinNumber amount={getTieredCost(baseCost, 'basic', outcomeType)} />
-  }
   return (
     <Col className="w-full gap-2">
       <div className="text-ink-600 text-sm">
-        Choose a tier to determine how much initial liquidity to inject into the
-        market. More liquidity attracts more traders but has a higher cost.
+        More liquidity attracts more traders but has a higher cost.
       </div>
-      <div
-        className={clsx(
-          'grid w-full gap-2',
-          outcomeType === 'NUMBER'
-            ? 'grid-cols-3'
-            : 'grid-cols-2 sm:grid-cols-5'
-        )}
-      >
-        {outcomeType !== 'NUMBER' && (
+      <div className="grid w-full grid-cols-2 gap-2 sm:grid-cols-4">
+        {liquidityTiers.map((tier) => (
           <Tier
-            baseCost={baseCost}
-            tier="play"
-            icon={<PlayTier />}
-            outcomeType={outcomeType}
-            currentTier={currentTier}
-            setMarketTier={setMarketTier}
+            key={tier}
+            ante={getAnte(outcomeType, numAnswers, tier)}
+            currentTier={liquidityTier}
+            liquidityTier={tier}
+            setLiquidityTier={setLiquidityTier}
           />
-        )}
-        {outcomeType !== 'NUMBER' && (
-          <Tier
-            baseCost={baseCost}
-            tier="basic"
-            icon={
-              <LogoIcon
-                className="stroke-ink-600 h-[1em] w-[1em] shrink-0 stroke-[1.5px] transition-transform"
-                aria-hidden
-              />
-            }
-            outcomeType={outcomeType}
-            currentTier={currentTier}
-            setMarketTier={setMarketTier}
-          />
-        )}
-        <Tier
-          baseCost={baseCost}
-          tier="plus"
-          icon={<PlusTier />}
-          outcomeType={outcomeType}
-          currentTier={currentTier}
-          setMarketTier={setMarketTier}
-        />
-        <Tier
-          baseCost={baseCost}
-          tier="premium"
-          icon={<PremiumTier />}
-          outcomeType={outcomeType}
-          currentTier={currentTier}
-          setMarketTier={setMarketTier}
-        />
-        <Tier
-          baseCost={baseCost}
-          tier="crystal"
-          icon={<CrystalTier />}
-          outcomeType={outcomeType}
-          currentTier={currentTier}
-          setMarketTier={setMarketTier}
-        />
+        ))}
       </div>
     </Col>
   )
 }
 
 function Tier(props: {
-  baseCost: number
-  icon: ReactNode
-  tier: MarketTierType
-  outcomeType: CreateableOutcomeType
-  currentTier: MarketTierType
-  setMarketTier: (tier: MarketTierType) => void
+  ante: number
+  currentTier: number
+  liquidityTier: number
+  setLiquidityTier: (tier: number) => void
+  isTierDisabled?: boolean
 }) {
-  const { baseCost, icon, tier, outcomeType, currentTier, setMarketTier } =
+  const { ante, currentTier, liquidityTier, setLiquidityTier, isTierDisabled } =
     props
+
+  const tierIndex = liquidityTiers.findIndex((tier) => tier === liquidityTier)
   return (
     <div
       className={clsx(
-        currentTier == tier
-          ? tier == 'play'
-            ? 'outline-green-500'
-            : tier == 'basic'
-            ? 'outline-ink-500'
-            : tier == 'plus'
-            ? 'outline-blue-500'
-            : tier == 'premium'
-            ? 'outline-purple-400'
-            : 'outline-pink-500'
-          : tier == 'play'
-          ? 'opacity-50 outline-transparent hover:outline-green-500/50'
-          : tier == 'basic'
-          ? 'hover:outline-ink-500/50 opacity-50 outline-transparent'
-          : tier == 'plus'
-          ? 'opacity-50 outline-transparent hover:outline-purple-500/50'
-          : tier == 'premium'
-          ? 'opacity-50 outline-transparent hover:outline-fuchsia-400/50'
-          : 'opacity-50 outline-transparent hover:outline-pink-500/50',
-        'bg-canvas-50 w-full cursor-pointer select-none items-center rounded px-4 py-2 outline transition-colors',
-        'flex flex-row gap-2 sm:flex-col sm:gap-0'
+        currentTier == liquidityTier
+          ? tierIndex == 0
+            ? 'ring-2 ring-green-400'
+            : tierIndex == 1
+            ? 'ring-2 ring-blue-500'
+            : tierIndex == 2
+            ? 'ring-2 ring-purple-400'
+            : 'ring-2 ring-pink-500'
+          : tierIndex == 0
+          ? 'opacity-90 ring-transparent hover:ring-green-500/50'
+          : tierIndex == 1
+          ? 'opacity-90 ring-transparent hover:ring-blue-500/50'
+          : tierIndex == 2
+          ? 'opacity-90 ring-transparent hover:ring-fuchsia-400/50'
+          : 'opacity-90 ring-transparent hover:ring-pink-500/50',
+        'bg-canvas-50 cursor-pointer ',
+        'flex w-full select-none flex-row items-center gap-2 rounded px-4 py-2 ring transition-colors sm:flex-col sm:gap-0'
       )}
-      onClick={() => setMarketTier(tier)}
+      onClick={() => {
+        if (!isTierDisabled) {
+          setLiquidityTier(liquidityTier)
+        }
+      }}
     >
-      <div className="text-5xl sm:text-4xl">{icon}</div>
       <Col className="sm:items-center">
-        <div className="text-ink-600">{capitalize(tier)}</div>
-        <CoinNumber
+        <TokenNumber
           className="text-xl font-semibold"
-          amount={getTieredCost(baseCost, tier, outcomeType)}
+          amount={ante}
           numberType="short"
         />
       </Col>

@@ -14,7 +14,6 @@ import { clamp, sortBy } from 'lodash'
 import React, {
   ReactNode,
   SVGProps,
-  useCallback,
   useDeferredValue,
   useEffect,
   useId,
@@ -22,9 +21,9 @@ import React, {
   useRef,
   useState,
 } from 'react'
-import { useEvent } from 'web/hooks/use-event'
+import { useEvent } from 'client-common/hooks/use-event'
 import { useMeasureSize } from 'web/hooks/use-measure-size'
-import { ManaSvg, SpiceSvg } from './mana-spice-chart'
+import { ManaSvg, SpiceSvg, SweepiesSvg } from './mana-spice-chart'
 import { PositionsTooltip } from 'web/components/charts/contract/choice'
 import { ChartPosition } from 'common/chart-position'
 
@@ -38,10 +37,7 @@ export const XAxis = <X,>(props: { w: number; h: number; axis: Axis<X> }) => {
   const axisRef = useRef<SVGGElement>(null)
   useEffect(() => {
     if (axisRef.current != null) {
-      select(axisRef.current)
-        .call(axis)
-        .select('.domain')
-        .attr('stroke-width', 0)
+      select(axisRef.current).call(axis).select('.domain').remove()
     }
   }, [h, axis])
   return <g ref={axisRef} transform={`translate(0, ${h})`} />
@@ -88,7 +84,7 @@ export const YAxis = <Y,>(props: {
         })
       }
 
-      brush.select('.domain').attr('stroke-width', 0)
+      brush.select('.domain').remove()
       if (iconSVG) {
         brush.selectAll('.tick text').attr('x', '1.7em') // Horizontal offset from the text
       }
@@ -159,7 +155,7 @@ export const AreaWithTopStroke = <P,>(props: {
         py1={py1}
         curve={curve}
         fill={color}
-        className={clsx('opacity-20', className)}
+        className={clsx(' opacity-20', className)}
         onClick={onClick}
       />
       <LinePath data={data} px={px} py={py1} curve={curve} stroke={color} />
@@ -341,6 +337,7 @@ export const SVGChart = <X, TT extends { x: number; y: number }>(props: {
   chartPositions?: ChartPosition[]
   hideXAxis?: boolean
   yKind?: ValueKind
+  noWatermark?: boolean
 }) => {
   const {
     children,
@@ -368,6 +365,7 @@ export const SVGChart = <X, TT extends { x: number; y: number }>(props: {
     chartPositions,
     hoveredChartPosition,
     setHoveredChartPosition,
+    noWatermark,
   } = props
 
   const showAnnotations = xScale && yAtTime && y0 !== undefined
@@ -488,6 +486,8 @@ export const SVGChart = <X, TT extends { x: number; y: number }>(props: {
                 ? ManaSvg
                 : yKind === 'spice'
                 ? SpiceSvg
+                : yKind === 'sweepies'
+                ? SweepiesSvg
                 : undefined
             }
           />
@@ -547,6 +547,30 @@ export const SVGChart = <X, TT extends { x: number; y: number }>(props: {
                 ))}
           </g>
         </g>
+        {!noWatermark && (
+          <g className="opacity-50" transform={`translate(10, ${h - 20})`}>
+            <path
+              d="M5.24854 17.0952L18.7175 6.80301L14.3444 20M5.24854 17.0952L9.79649 18.5476M5.24854 17.0952L4.27398 6.52755M14.3444 20L9.79649 18.5476M14.3444 20L22 12.638L16.3935 13.8147M9.79649 18.5476L12.3953 15.0668M4.27398 6.52755L10.0714 13.389M4.27398 6.52755L2 9.0818L4.47389 8.85643M12.9451 11.1603L10.971 5L8.65369 11.6611"
+              stroke="currentColor"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth=".8"
+              fill="none"
+              className="text-ink-800 dark:text-white"
+              transform="translate(0, -11) scale(0.9)"
+            />
+            <text
+              x="24"
+              y="4"
+              className="text-ink-800 text-xs dark:text-white"
+              stroke="none"
+              fill="currentColor"
+              fontWeight={100}
+            >
+              MANIFOLD
+            </text>
+          </g>
+        )}
       </svg>
     </div>
   )
@@ -689,14 +713,16 @@ export const useZoom = (
 ): ZoomParams => {
   const svgRef = useRef<SVGSVGElement>(null)
   const zoomRef = useRef<ZoomBehavior<SVGSVGElement, unknown>>()
-  const [xScale, setXScale] = useState<ScaleTime<number, number>>(scaleTime())
+  const xScaleRef = useRef<ScaleTime<number, number>>(scaleTime())
+
   const [viewXScale, setViewXScale] = useState<ScaleTime<number, number>>(
     scaleTime()
   )
 
-  const rescale = useCallback(
+  const rescale = useEvent(
     (scale: ScaleTime<number, number> | null, syncZoomer = true) => {
       onRescale?.(scale)
+      const xScale = xScaleRef.current
       const newXScale = scale ?? xScale
       setViewXScale(() => newXScale)
 
@@ -715,13 +741,17 @@ export const useZoom = (
         zoomRef.current?.transform as any,
         zoomIdentity.translate(translation, 0).scale(scaleFactor)
       )
-    },
-    [xScale]
+    }
   )
 
-  const rescaleBetween = (start: number | Date, end: number | Date) => {
-    if (xScale) rescale(xScale.copy().domain([start, end]))
-  }
+  const rescaleBetween = useEvent(
+    (start: number | Date, end: number | Date) => {
+      const xScale = xScaleRef.current
+      if (xScale) rescale(xScale.copy().domain([start, end]))
+    }
+  )
+
+  const xScale = xScaleRef.current
 
   return {
     svgRef,
@@ -731,7 +761,7 @@ export const useZoom = (
       zoomRef.current = z
     },
     setXScale: (scale) => {
-      setXScale(() => scale)
+      xScaleRef.current = scale
       setViewXScale(() => scale)
     },
     xScale: xScale ?? scaleTime(),

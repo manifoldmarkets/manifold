@@ -38,7 +38,7 @@ export async function linkTwitchAccountRedirect(
   user: User,
   privateUser: PrivateUser
 ) {
-  const apiKey = privateUser.apiKey ?? (await generateNewApiKey(user.id))
+  const apiKey = privateUser.apiKey ?? (await generateNewApiKey())
   if (!apiKey) throw new Error("Couldn't retrieve or create Manifold api key")
 
   const [twitchAuthURL] = await initLinkTwitchAccount(user.id, apiKey)

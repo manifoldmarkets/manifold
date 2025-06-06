@@ -5,7 +5,6 @@ import { Row } from 'web/components/layout/row'
 import { TopicTag } from 'web/components/topics/topic-tag'
 import { XIcon } from '@heroicons/react/outline'
 import { TopicSelector } from 'web/components/topics/topic-selector'
-import { toast } from 'react-hot-toast'
 import { uniqBy } from 'lodash'
 
 export const TopicSelectorSection = (props: {
@@ -30,7 +29,6 @@ export const TopicSelectorSection = (props: {
               location={'create page'}
               key={group.id}
               topic={group}
-              isPrivate={false}
               className="bg-ink-100"
             >
               <button
@@ -49,14 +47,11 @@ export const TopicSelectorSection = (props: {
         </Row>
       )}
       <TopicSelector
+        addingToContract={true}
         setSelectedGroup={(group) => {
-          if (group.privacyStatus === 'private') {
-            toast.error('You cannot use private groups.')
-          } else {
-            setSelectedGroups((groups) =>
-              uniqBy([...(groups ?? []), group], 'id')
-            )
-          }
+          setSelectedGroups((groups) =>
+            uniqBy([...(groups ?? []), group], 'id')
+          )
           setHasChosenCategory(true)
         }}
         max={MAX_GROUPS_PER_MARKET}

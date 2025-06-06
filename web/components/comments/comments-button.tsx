@@ -12,7 +12,7 @@ import { User } from 'common/user'
 import {
   useCommentsOnContract,
   useNumContractComments,
-} from 'web/hooks/use-comments-supabase'
+} from 'web/hooks/use-comments'
 import { Button } from 'web/components/buttons/button'
 import { Row } from '../layout/row'
 
@@ -42,9 +42,9 @@ export function CommentsButton(props: {
     >
       <Tooltip text={`Comments`} placement="top" noTap>
         <Row className={'items-center gap-1.5'}>
-          <ChatIcon className="h-6 w-6" />
+          <ChatIcon className="stroke-ink-500 h-6 w-6" />
           {totalComments > 0 && (
-            <div className="text-ink-500 h-5 align-middle text-sm disabled:opacity-50">
+            <div className=" h-5 align-middle text-sm disabled:opacity-50">
               {totalComments}
             </div>
           )}
@@ -78,7 +78,7 @@ function CommentsDialog(props: {
     <Modal
       open={open}
       setOpen={setOpen}
-      className={clsx('bg-canvas-0 rounded-lg pl-2 pr-4 pt-4')}
+      className={'bg-canvas-0 w-full rounded-lg pl-2 pr-4 pt-4'}
       size={'lg'}
     >
       <div className="mb-2 ml-2">
@@ -86,7 +86,9 @@ function CommentsDialog(props: {
       </div>
       <Col className={clsx(SCROLLABLE_MODAL_CLASS, 'scrollbar-hide')}>
         <CommentsTabContent
-          contract={contract}
+          // TODO: fix
+          staticContract={contract}
+          liveContract={contract}
           comments={comments}
           blockedUserIds={blockedUserIds}
           highlightCommentId={highlightCommentId}

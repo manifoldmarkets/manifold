@@ -2,7 +2,7 @@ import { Col } from 'web/components/layout/col'
 import { Row } from 'web/components/layout/row'
 import { Button } from 'web/components/buttons/button'
 import { withTracking } from 'web/lib/service/analytics'
-import { api } from 'web/lib/firebase/api'
+import { api } from 'web/lib/api/api'
 import { toast } from 'react-hot-toast'
 import { PrivateUser, User } from 'common/user'
 

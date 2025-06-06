@@ -5,7 +5,13 @@ import { first, last, mapValues, meanBy } from 'lodash'
 export type Point<X, Y, T = unknown> = { x: X; y: Y; obj?: T }
 export type HistoryPoint<T = unknown> = Point<number, number, T>
 export type DistributionPoint<T = unknown> = Point<number, number, T>
-export type ValueKind = 'Ṁ' | 'percent' | 'amount' | 'spice'
+export type ValueKind =
+  | 'Ṁ'
+  | 'percent'
+  | 'amount'
+  | 'spice'
+  | 'sweepies'
+  | 'date'
 
 export type MultiPoints = { [answerId: string]: HistoryPoint<never>[] }
 
@@ -36,7 +42,7 @@ export const maxMinBin = <P extends HistoryPoint>(
   points: P[],
   bins: number
 ) => {
-  if (points.length < 2 || bins <= 0) return points
+  if (points.length < bins || bins <= 0) return points
 
   const min = points[0].x
   const max = points[points.length - 1].x
@@ -80,16 +86,22 @@ export function binAvg<P extends HistoryPoint>(sorted: P[], limit = 100) {
   const binWidth = Math.ceil((max - min) / limit)
 
   const newPoints = []
-  let lastAvgY = sorted[0].y
+
+  let lastY: number | undefined = sorted[0].y
 
   for (let i = 0; i < limit; i++) {
     const binStart = min + i * binWidth
     const binEnd = binStart + binWidth
     const binPoints = sorted.filter((p) => p.x >= binStart && p.x < binEnd)
+
     if (binPoints.length > 0) {
-      lastAvgY = meanBy(binPoints, 'y')
+      const avg = meanBy(binPoints, 'y')
+      lastY = last(binPoints)!.y
+      newPoints.push({ x: binEnd, y: avg })
+    } else if (lastY != undefined) {
+      newPoints.push({ x: binEnd, y: lastY })
+      lastY = undefined
     }
-    newPoints.push({ x: binEnd, y: lastAvgY })
   }
 
   return newPoints

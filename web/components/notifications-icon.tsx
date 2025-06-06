@@ -1,82 +1,56 @@
 'use client'
 import { BellIcon } from '@heroicons/react/outline'
-import { BellIcon as SolidBellIcon } from '@heroicons/react/solid'
 import { Row } from 'web/components/layout/row'
-import { useEffect, useState } from 'react'
+import { useEffect } from 'react'
 import { usePrivateUser } from 'web/hooks/use-user'
-import { useGroupedUnseenNotifications } from 'web/hooks/use-notifications'
 import { PrivateUser } from 'common/user'
-import { NOTIFICATIONS_PER_PAGE } from './notifications/notification-helpers'
-import {
-  notification_source_types,
-  NotificationReason,
-} from 'common/notification'
 import { usePathname } from 'next/navigation'
+import { usePersistentLocalState } from 'web/hooks/use-persistent-local-state'
+import {
+  NOTIFICATIONS_PER_PAGE,
+  useGroupedUnseenNotifications,
+} from 'client-common/hooks/use-notifications'
+import { api } from 'web/lib/api/api'
+import { useUnseenPrivateMessageChannels } from 'web/hooks/use-private-messages'
 
-export function NotificationsIcon(props: {
-  className?: string
-  selectTypes?: notification_source_types[]
-  selectReasons?: NotificationReason[]
-}) {
+export function NotificationsIcon(props: { className?: string }) {
   const privateUser = usePrivateUser()
-  const { selectTypes, selectReasons, className } = props
-
+  const { className } = props
   return (
     <Row className="relative justify-center">
-      {privateUser && (
-        <UnseenNotificationsBubble
-          selectTypes={selectTypes}
-          privateUser={privateUser}
-          selectReasons={selectReasons}
-        />
-      )}
+      {privateUser && <UnseenNotificationsBubble privateUser={privateUser} />}
       <BellIcon className={className} />
     </Row>
   )
 }
 
-export function SolidNotificationsIcon(props: {
-  className?: string
-  selectTypes?: notification_source_types[]
-  selectReasons?: NotificationReason[]
-}) {
-  const privateUser = usePrivateUser()
-  const { selectTypes, selectReasons, className } = props
-  return (
-    <Row className="relative justify-center">
-      {privateUser && (
-        <UnseenNotificationsBubble
-          selectTypes={selectTypes}
-          privateUser={privateUser}
-          selectReasons={selectReasons}
-        />
-      )}
-      <SolidBellIcon className={className} />
-    </Row>
-  )
-}
-
-function UnseenNotificationsBubble(props: {
-  privateUser: PrivateUser
-  selectTypes?: notification_source_types[]
-  selectReasons?: NotificationReason[]
-}) {
+function UnseenNotificationsBubble(props: { privateUser: PrivateUser }) {
   const pathname = usePathname()
-  const { privateUser, selectTypes, selectReasons } = props
-  const [seen, setSeen] = useState(false)
-  const unseenSourceIdsToNotificationIds =
-    useGroupedUnseenNotifications(privateUser.id, selectTypes, selectReasons) ??
-    []
+  const { privateUser } = props
+  const [lastSeenTime, setLastSeenTime] = usePersistentLocalState(
+    0,
+    'notifications-seen-time'
+  )
+  const unseenNotificationGroups =
+    useGroupedUnseenNotifications(
+      privateUser.id,
+      (params) => api('get-notifications', params),
+      usePersistentLocalState
+    ) ?? []
 
-  const unseenNotifs = Object.keys(unseenSourceIdsToNotificationIds).length
+  const { unseenChannels } = useUnseenPrivateMessageChannels(false)
+
+  const unseenNotifs =
+    unseenNotificationGroups.filter((ng) => ng.latestCreatedTime > lastSeenTime)
+      .length + unseenChannels.length
 
   useEffect(() => {
     if (pathname?.endsWith('notifications')) {
-      setSeen(pathname.endsWith('notifications'))
+      setLastSeenTime(Date.now())
     }
-  }, [pathname])
+  }, [pathname, unseenNotifs])
 
-  if (unseenNotifs === 0 || seen) {
+  if (unseenNotifs === 0) {
     return null
   }
 

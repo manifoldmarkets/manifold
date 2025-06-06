@@ -1,3 +1,15 @@
+import clsx from 'clsx'
+import { DistributionPoint, HistoryPoint, Point, ValueKind } from 'common/chart'
+import { ChartPosition } from 'common/chart-position'
+import { CPMMNumericContract } from 'common/contract'
+import { getAnswerContainingValue, getPrecision } from 'common/src/number'
+import { ChartAnnotation } from 'common/supabase/chart-annotations'
+import {
+  formatMoneyNumber,
+  formatPercent,
+  formatSweepiesNumber,
+  formatWithCommas,
+} from 'common/util/format'
 import { bisector } from 'd3-array'
 import { axisBottom, axisRight } from 'd3-axis'
 import { ScaleContinuousNumeric, ScaleTime } from 'd3-scale'
@@ -12,14 +24,18 @@ import { last, mapValues, range } from 'lodash'
 import {
   ReactNode,
   useCallback,
-  useEffect,
   useId,
+  useLayoutEffect,
   useMemo,
   useState,
 } from 'react'
-import { DistributionPoint, HistoryPoint, Point, ValueKind } from 'common/chart'
-import { formatMoneyNumber, formatPercent } from 'common/util/format'
-import { useEvent } from 'web/hooks/use-event'
+import {
+  AnnotateChartModal,
+  ReadChartAnnotationModal,
+} from 'web/components/annotate-chart'
+import { DistributionChartTooltip } from 'web/components/charts/contract/number'
+import { useEvent } from 'client-common/hooks/use-event'
+import { roundToNearestFive } from 'web/lib/util/roundToNearestFive'
 import {
   AreaPath,
   AreaWithTopStroke,
@@ -31,18 +47,9 @@ import {
   TooltipProps,
   ZoomParams,
 } from './helpers'
-import { roundToNearestFive } from 'web/lib/util/roundToNearestFive'
 import { ZoomSlider } from './zoom-slider'
-import clsx from 'clsx'
-import {
-  AnnotateChartModal,
-  ReadChartAnnotationModal,
-} from 'web/components/annotate-chart'
-import { ChartAnnotation } from 'common/supabase/chart-annotations'
-import { DistributionChartTooltip } from 'web/components/charts/contract/multi-numeric'
-import { getAnswerContainingValue, getPrecision } from 'common/multi-numeric'
-import { CPMMNumericContract } from 'common/contract'
-import { ChartPosition } from 'common/chart-position'
+import { NUMERIC_GRAPH_COLOR } from 'common/numeric-constants'
+import { timeFormat } from 'd3-time-format'
 
 const interpolateY = (
   curve: CurveFactory,
@@ -394,6 +401,7 @@ export const MultiValueHistoryChart = <P extends HistoryPoint>(props: {
   chartPositions?: ChartPosition[]
   hoveredChartPosition?: ChartPosition | null
   setHoveredChartPosition?: (position: ChartPosition | null) => void
+  rightmostDate?: number
 }) => {
   const {
     data,
@@ -411,13 +419,23 @@ export const MultiValueHistoryChart = <P extends HistoryPoint>(props: {
     chartPositions = [],
     setHoveredChartPosition,
     hoveredChartPosition,
+    yKind = 'percent',
+    rightmostDate,
   } = props
 
-  useEffect(() => {
+  useLayoutEffect(() => {
     if (props.xScale) {
       zoomParams?.setXScale(props.xScale)
     }
   }, [w])
+
+  useLayoutEffect(() => {
+    const propStartDate = props.xScale.domain()[0]?.valueOf()
+    const zoomStartDate = zoomParams?.viewXScale?.domain()[0]?.valueOf()
+    if (zoomStartDate === propStartDate && !showZoomer) {
+      zoomParams?.setXScale(props.xScale)
+    }
+  }, [rightmostDate])
 
   const xScale = zoomParams?.viewXScale ?? props.xScale
 
@@ -444,15 +462,16 @@ export const MultiValueHistoryChart = <P extends HistoryPoint>(props: {
 
   const { xAxis, yAxis } = useMemo(() => {
     const [min, max] = yScale.domain()
-    const nTicks = h < 200 ? 3 : 5
-    const pctTickValues = getTickValues(min, max, nTicks)
+    const yTickValues = getOptimalTickValues(min, max)
     const xAxis = axisBottom<Date>(xScale).ticks(w / 100)
     const yAxis = axisRight<number>(yScale)
-      .tickValues(pctTickValues)
-      .tickFormat((n) => formatPct(n))
+      .tickValues(yTickValues)
+      .tickFormat((n) =>
+        yKind === 'percent' ? formatPct(n) : formatWithCommas(Math.round(n))
+      )
 
     return { xAxis, yAxis }
-  }, [w, h, xScale, yScale])
+  }, [w, h, xScale, yScale, yKind])
 
   const sortedLines = useMemo(
     () =>
@@ -528,6 +547,8 @@ export const MultiValueHistoryChart = <P extends HistoryPoint>(props: {
   })
 
   const hoveringId = props.hoveringId ?? ttParams?.ans
+  const hoveringData = hoveringId ? data[hoveringId] : null
+
   const getYValueByAnswerIdAndTime = (time: number, answerId: string) => {
     const selector = timeSelectors[answerId]
     if (!selector) return null
@@ -575,7 +596,7 @@ export const MultiValueHistoryChart = <P extends HistoryPoint>(props: {
                   py={py}
                   curve={curve}
                   className={clsx(
-                    ' stroke-canvas-0 transition-[stroke-width]',
+                    'stroke-canvas-0 transition-[stroke-width]',
                     hoveringId && hoveringId !== id
                       ? 'stroke-[0px] opacity-50'
                       : 'stroke-[4px]'
@@ -594,33 +615,32 @@ export const MultiValueHistoryChart = <P extends HistoryPoint>(props: {
                   )}
                   stroke={color}
                 />
+                <line />{' '}
+                {/* hack to make line appear if only two data points (no bets). idk why it works*/}
               </g>
             )
         )}
         {/* show hovering line on top */}
-        {hoveringId && hoveringId in data && (
-          <g key={`${hoveringId}-front`}>
+        {hoveringData && (
+          <>
             <LinePath
-              data={data[hoveringId].points}
+              data={hoveringData.points}
               px={px}
               py={py}
               curve={curve}
-              className={clsx(' transition-[stroke-width]', 'stroke-2')}
-              stroke={data[hoveringId].color}
+              className={'stroke-2'}
+              stroke={hoveringData.color}
             />
-          </g>
-        )}
-        {/* hover effect put last so it shows on top */}
-        {hoveringId && hoveringId in data && (
-          <AreaPath
-            data={data[hoveringId].points}
-            px={px}
-            py0={yScale(0)}
-            py1={py}
-            curve={curve}
-            fill={data[hoveringId].color}
-            opacity={0.5}
-          />
+            <AreaPath
+              data={hoveringData.points}
+              px={px}
+              py0={yScale(0)}
+              py1={py}
+              curve={curve}
+              fill={hoveringData.color}
+              opacity={0.5}
+            />
+          </>
         )}
         {ttParams && (
           <SliceMarker
@@ -723,7 +743,9 @@ export const SingleValueHistoryChart = <P extends HistoryPoint>(props: {
   hideXAxis?: boolean
   onGraphClick?: () => void
   areaClassName?: string
+  noWatermark?: boolean
   className?: string
+  rightmostDate?: number
 }) => {
   const {
     contractId,
@@ -744,13 +766,23 @@ export const SingleValueHistoryChart = <P extends HistoryPoint>(props: {
     hideXAxis,
     onGraphClick,
     areaClassName,
+    noWatermark,
+    rightmostDate,
   } = props
 
-  useEffect(() => {
+  useLayoutEffect(() => {
     if (props.xScale) {
       zoomParams?.setXScale(props.xScale)
     }
   }, [w])
+
+  useLayoutEffect(() => {
+    const propStartDate = props.xScale.domain()[0]?.valueOf()
+    const zoomStartDate = zoomParams?.viewXScale?.domain()[0]?.valueOf()
+    if (zoomStartDate === propStartDate && !showZoomer) {
+      zoomParams?.setXScale(props.xScale)
+    }
+  }, [rightmostDate])
 
   const xScale = zoomParams?.viewXScale ?? props.xScale
 
@@ -763,23 +795,40 @@ export const SingleValueHistoryChart = <P extends HistoryPoint>(props: {
   const py1 = useCallback((p: P) => yScale(p.y), [yScale])
   const { xAxis, yAxis } = useMemo(() => {
     const [min, max] = yScale.domain()
-    const nTicks = h < 200 ? 3 : 5
-    const customTickValues = getTickValues(min, max, nTicks)
+    const yTickValues = getOptimalTickValues(min, max)
+
     const xAxis = axisBottom<Date>(xScale).ticks(w / 120)
-    const yAxis =
+    const yAxis = axisRight<number>(yScale)
+    if (yKind === 'percent' || negativeThreshold) {
+      yAxis.tickValues(yTickValues)
+    } else {
+      yAxis.ticks(h < 200 ? 3 : 5)
+    }
+
+    yAxis.tickFormat(
       yKind === 'percent'
-        ? axisRight<number>(yScale)
-            .tickValues(customTickValues)
-            .tickFormat((n) => formatPct(n))
+        ? (n) => formatPct(n)
         : yKind === 'Ṁ' || yKind === 'spice'
-        ? negativeThreshold
-          ? axisRight<number>(yScale)
-              .tickValues(customTickValues)
-              .tickFormat((n) => formatMoneyNumber(n))
-          : axisRight<number>(yScale)
-              .ticks(nTicks)
-              .tickFormat((n) => formatMoneyNumber(n))
-        : axisRight<number>(yScale).ticks(nTicks)
+        ? (n) => formatMoneyNumber(n)
+        : yKind === 'sweepies'
+        ? (n) => formatSweepiesNumber(n)
+        : yKind === 'date'
+        ? (n) => {
+            const date = new Date(n)
+            const timeSpan = max - min
+            if (timeSpan > 3 * 365 * 24 * 60 * 60 * 1000) {
+              // > 3 years
+              return timeFormat('%Y')(date) // Years only
+            } else if (timeSpan > 60 * 24 * 60 * 60 * 1000) {
+              // > 60 days
+              return timeFormat('%b %Y')(date) // Month and year
+            } else {
+              return timeFormat('%b %d')(date) // Month, day
+            }
+          }
+        : (n) => formatWithCommas(n)
+    )
+
     return { xAxis, yAxis }
   }, [w, h, yKind, xScale, yScale])
 
@@ -860,6 +909,7 @@ export const SingleValueHistoryChart = <P extends HistoryPoint>(props: {
         pointerMode={pointerMode}
         hideXAxis={hideXAxis}
         yKind={yKind}
+        noWatermark={noWatermark}
       >
         {typeof color !== 'string' && (
           <defs>
@@ -894,7 +944,7 @@ export const SingleValueHistoryChart = <P extends HistoryPoint>(props: {
       {showZoomer && zoomParams && (
         <ZoomSlider
           zoomParams={zoomParams}
-          color="light-green"
+          color={color === NUMERIC_GRAPH_COLOR ? 'indigo' : 'light-green'}
           className="relative top-4"
         />
       )}
@@ -921,6 +971,53 @@ export const SingleValueHistoryChart = <P extends HistoryPoint>(props: {
   )
 }
 
+export const getOptimalTickValues = (
+  min: number,
+  max: number,
+  maxTicks: number = 6
+) => {
+  const range = max - min
+
+  if (range === 0) {
+    return [min, min, min]
+  }
+
+  // Determine the magnitude of the range
+  const magnitude = Math.floor(Math.log10(range))
+  const normalizedRange = range / Math.pow(10, magnitude)
+
+  // Define nice step sizes based on the normalized range
+  const niceSteps = [1, 2, 2.5, 5, 10]
+  let step =
+    niceSteps.find(
+      (s) => normalizedRange / s >= 2 && normalizedRange / s <= maxTicks - 1
+    ) ?? normalizedRange / 2
+  step *= Math.pow(10, magnitude)
+
+  // Adjust start and end to be multiples of the step
+  let start = Math.floor(min / step) * step
+  let end = Math.ceil(max / step) * step
+
+  // Ensure start and end include min and max
+  if (start > min) start -= step
+  if (end < max) end += step
+
+  const ticks = []
+  const epsilon = step / 1e6 // To handle floating point precision issues
+  for (let i = start; i <= end + epsilon; i += step) {
+    const tick = Number((Math.round(i / step) * step).toFixed(10))
+    ticks.push(tick)
+  }
+
+  // Always include min and max if they're not already in the ticks
+  if (ticks[0] > min) ticks.unshift(min)
+  if (ticks[ticks.length - 1] < max) ticks.push(max)
+
+  // Remove any ticks outside the range
+  const finalTicks = ticks.filter((tick) => tick >= min && tick <= max)
+
+  return finalTicks
+}
 // copied gratuitously from SingleValueHistoryChart
 export const SingleValueStackedHistoryChart = <P extends HistoryPoint>(props: {
   data: P[]
@@ -930,6 +1027,7 @@ export const SingleValueStackedHistoryChart = <P extends HistoryPoint>(props: {
   bottomColor: string
   xScale: ScaleTime<number, number>
   yScale: ScaleContinuousNumeric<number, number>
+  rightmostDate?: number
   zoomParams?: ZoomParams
   showZoomer?: boolean
   curve?: CurveFactory
@@ -948,13 +1046,22 @@ export const SingleValueStackedHistoryChart = <P extends HistoryPoint>(props: {
     curve = curveStepAfter,
     yScale,
     zoomParams,
+    rightmostDate,
   } = props
 
-  useEffect(() => {
+  useLayoutEffect(() => {
     if (props.xScale) {
       zoomParams?.setXScale(props.xScale)
     }
   }, [w])
+
+  useLayoutEffect(() => {
+    const propStartDate = props.xScale.domain()[0]?.valueOf()
+    const zoomStartDate = zoomParams?.viewXScale?.domain()[0]?.valueOf()
+    if (zoomStartDate === propStartDate && !showZoomer) {
+      zoomParams?.setXScale(props.xScale)
+    }
+  }, [rightmostDate])
 
   const xScale = zoomParams?.viewXScale ?? props.xScale
 

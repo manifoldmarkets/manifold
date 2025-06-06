@@ -1,8 +1,11 @@
+import { getDisplayProbability } from 'common/calculate'
 import { Contract } from 'common/contract'
 import { StateElectionMarket } from 'web/public/data/elections-data'
 
 export const DEM_LIGHT_HEX = '#cedcef'
 export const REP_LIGHT_HEX = '#f4dad7'
+export const DEM_COLOR = '#5671ba'
+export const REP_COLOR = '#c25555'
 export const DEM_DARK_HEX = '#4a5fa8'
 export const REP_DARK_HEX = '#9d3336'
 
@@ -15,6 +18,11 @@ export function hexToRgb(hex: string) {
   const b = parseInt(hex.slice(5, 7), 16)
   return { r, g, b }
 }
+
+export const ALSO_DEMOCRATIC = [
+  'Angus King (Independent)',
+  'Bernie Sanders (Independent)',
+]
 
 export const probToColor = (
   contract: Contract | null,
@@ -31,22 +39,37 @@ export const probToColor = (
     return '#' + ((1 << 24) + (r << 16) + (g << 8) + b).toString(16).slice(1)
   }
 
-  if (!contract || contract.mechanism !== 'cpmm-multi-1') return undefined
-  const answers = contract.answers
+  if (!contract) return undefined
+
+  let probDemocratic: number | undefined
+  let probRepublican: number | undefined
+  let probOther: number | undefined
+  let probDemocraticIndependent: number
+
+  if (contract.mechanism === 'cpmm-multi-1') {
+    const answers = contract.answers
+    probDemocraticIndependent =
+      answers.find((a) => ALSO_DEMOCRATIC.includes(a.text))?.prob ?? 0
+    probDemocratic =
+      (answers.find(
+        (a) =>
+          a.text == 'Democratic Party' || a.text.includes('Democratic Party')
+      )?.prob ?? 0) + probDemocraticIndependent
+    probRepublican = answers.find(
+      (a) => a.text == 'Republican Party' || a.text.includes('Republican Party')
+    )?.prob
+    probOther = answers.find((a) => a.text == 'Other')?.prob ?? 0
+  } else if (contract.mechanism === 'cpmm-1') {
+    probRepublican = getDisplayProbability(contract)
+    probDemocratic = 1 - probRepublican
+    probOther = 0
+  }
 
   // Base colors
   const DEM_LIGHT = hexToRgb(DEM_LIGHT_HEX)
   const REP_LIGHT = hexToRgb(REP_LIGHT_HEX)
   const DEM_DARK = hexToRgb(DEM_DARK_HEX)
   const REP_DARK = hexToRgb(REP_DARK_HEX)
-
-  let probDemocratic = answers.find(
-    (a) => a.text == 'Democratic Party' || a.text.includes('Democratic Party')
-  )?.prob
-  let probRepublican = answers.find(
-    (a) => a.text == 'Republican Party' || a.text.includes('Republican Party')
-  )?.prob
-  const probOther = answers.find((a) => a.text == 'Other')?.prob
 
   if (
     probDemocratic === undefined ||
@@ -55,13 +78,7 @@ export const probToColor = (
   )
     return undefined
 
-  if (data?.otherParty) {
-    console.log(data, probDemocratic, probRepublican, probOther)
-  }
   if (data && data.otherParty) {
-    const otherAnswer = contract?.answers.find(
-      (answer) => answer.text == 'Other'
-    )
     if (data.otherParty == 'Democratic Party') {
       probDemocratic += probOther
     }
@@ -69,9 +86,7 @@ export const probToColor = (
       probRepublican += probOther
     }
   }
-  if (data?.otherParty) {
-    console.log('AFTER', data, probDemocratic, probRepublican, probOther)
-  }
+
   // Calculate the difference
   const repOverDem = probRepublican - probDemocratic
   const absoluteDifference = Math.abs(repOverDem)

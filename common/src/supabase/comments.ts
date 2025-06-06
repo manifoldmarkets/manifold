@@ -47,7 +47,6 @@ export async function getRecentTopLevelCommentsAndReplies(
 
 export const convertContractComment = (row: Row<'contract_comments'>) =>
   convertSQLtoTS<'contract_comments', ContractComment>(row, {
-    fs_updated_time: false,
     created_time: tsToMillis as any,
   })
 

@@ -1,5 +1,6 @@
 // Learn more https://docs.expo.io/guides/customizing-metro
-const { getDefaultConfig } = require('expo/metro-config')
+const { getSentryExpoConfig } = require('@sentry/react-native/metro');
+
 
 /**
  * Metro configuration for React Native
@@ -9,7 +10,8 @@ const { getDefaultConfig } = require('expo/metro-config')
  */
 const path = require('path')
 const projectRoot = __dirname
-const defaultConfig = getDefaultConfig(projectRoot)
+const defaultConfig = getSentryExpoConfig(projectRoot);
+
 const extraNodeModules = {
   common: path.resolve(__dirname + '/../common/src'),
   components: path.resolve(__dirname + '/components'),
@@ -41,5 +43,6 @@ module.exports = {
           : path.join(process.cwd(), `node_modules/${name}`),
     }),
     assetExts: [...defaultConfig.resolver.assetExts, 'cjs'],
+    sourceExts: [...defaultConfig.resolver.sourceExts, 'cjs'],
   },
 }

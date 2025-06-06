@@ -1,8 +1,8 @@
 import { runScript } from 'run-script'
-import { updateLeagueCore } from 'functions/scheduled/update-league'
+import { updateLeague } from 'scheduler/jobs/update-league'
 
 if (require.main === module) {
   runScript(async () => {
-    await updateLeagueCore()
+    await updateLeague()
   })
 }

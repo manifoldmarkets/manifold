@@ -2,16 +2,16 @@
 import { createContext, ReactNode, useEffect, useState } from 'react'
 import { pickBy } from 'lodash'
 import { onIdTokenChanged, User as FirebaseUser } from 'firebase/auth'
-import {
-  auth,
-  getPrivateUser,
-  listenForPrivateUser,
-} from 'web/lib/firebase/users'
-import { createUser } from 'web/lib/firebase/api'
+import { auth, firebaseLogout } from 'web/lib/firebase/users'
+import { createUser } from 'web/lib/api/api'
 import { randomString } from 'common/util/random'
 import { identifyUser, setUserProperty } from 'web/lib/service/analytics'
 import { useStateCheckEquality } from 'web/hooks/use-state-check-equality'
-import { AUTH_COOKIE_NAME, TEN_YEARS_SECS } from 'common/envs/constants'
+import {
+  AUTH_COOKIE_NAME,
+  BANNED_TRADING_USER_IDS,
+  TEN_YEARS_SECS,
+} from 'common/envs/constants'
 import { getCookie, setCookie } from 'web/lib/util/cookie'
 import {
   type PrivateUser,
@@ -21,11 +21,15 @@ import {
 import { nativePassUsers, nativeSignOut } from 'web/lib/native/native-messages'
 import { safeLocalStorage } from 'web/lib/util/local'
 import { getSavedContractVisitsLocally } from 'web/hooks/use-save-visits'
-import { getSupabaseToken } from 'web/lib/firebase/api'
-import { updateSupabaseAuth } from 'web/lib/supabase/db'
-import { usePollUser } from 'web/hooks/use-user'
+import { getSupabaseToken } from 'web/lib/api/api'
+
+import { useWebsocketUser, useWebsocketPrivateUser } from 'web/hooks/use-user'
 import { useEffectCheckEquality } from 'web/hooks/use-effect-check-equality'
-import { getUserSafe } from 'web/lib/supabase/users'
+import { getPrivateUserSafe, getUserSafe } from 'web/lib/supabase/users'
+import toast from 'react-hot-toast'
+import { Row } from './layout/row'
+import { TokenNumber } from './widgets/token-number'
+import { updateSupabaseAuth } from 'web/lib/supabase/db'
 
 // Either we haven't looked up the logged in user yet (undefined), or we know
 // the user is not logged in (null), or we know the user is logged in.
@@ -113,6 +117,19 @@ export function AuthProvider(props: {
 
   useEffect(() => {
     if (authUser) {
+      if (
+        BANNED_TRADING_USER_IDS.includes(authUser.user.id) ||
+        authUser.user.userDeleted
+      ) {
+        const message = authUser.user.userDeleted
+          ? 'You have deleted the account associated with this email. To restore your account please email info@manifold.markets'
+          : 'You are banned from trading. To learn more please email info@manifold.markets'
+
+        firebaseLogout().then(() => {
+          alert(message)
+        })
+        return
+      }
       // Persist to local storage, to reduce login blink next time.
       // Note: Cap on localStorage size is ~5mb
       safeLocalStorage?.setItem(CACHED_USER_KEY, JSON.stringify(authUser))
@@ -150,7 +167,7 @@ export function AuthProvider(props: {
 
           const [user, privateUser, supabaseJwt] = await Promise.all([
             getUserSafe(fbUser.uid),
-            getPrivateUser(fbUser.uid),
+            getPrivateUserSafe(),
             getSupabaseToken().catch((e) => {
               console.error('Error getting supabase token', e)
               return null
@@ -199,21 +216,25 @@ export function AuthProvider(props: {
     }
   }, [uid])
 
-  useEffect(() => {
-    if (authLoaded && uid) {
-      const privateUserListener = listenForPrivateUser(uid, (privateUser) => {
-        setPrivateUser(privateUser ?? undefined)
-      })
-      return () => {
-        privateUserListener()
-      }
-    }
-  }, [authLoaded, uid])
-
-  const listenUser = usePollUser(uid ?? undefined)
+  const listenUser = useWebsocketUser(uid ?? undefined)
   useEffectCheckEquality(() => {
-    if (authLoaded && listenUser) setUser(listenUser)
+    if (authLoaded && listenUser) {
+      if (user) {
+        const balanceChange = listenUser.balance - user.balance
+        const cashBalanceChange = listenUser.cashBalance - user.cashBalance
+
+        if (balanceChange > 0 || cashBalanceChange > 0) {
+          showToast(balanceChange, cashBalanceChange)
+        }
+      }
+      setUser(listenUser)
+    }
   }, [authLoaded, listenUser])
+
+  const listenPrivateUser = useWebsocketPrivateUser(uid ?? undefined)
+  useEffectCheckEquality(() => {
+    if (authLoaded && listenPrivateUser) setPrivateUser(listenPrivateUser)
+  }, [authLoaded, listenPrivateUser])
 
   const username = authUser?.user.username
   useEffect(() => {
@@ -224,5 +245,35 @@ export function AuthProvider(props: {
 
   return (
     <AuthContext.Provider value={authUser}>{children}</AuthContext.Provider>
+  )
+}
+
+const showToast = (manaChange: number, cashChange: number) => {
+  toast.success(
+    <Row className="gap-1">
+      <span>Cha-ching! Received</span>
+      {manaChange > 0 && (
+        <Row className="items-center justify-center">
+          +
+          <TokenNumber
+            amount={manaChange}
+            className="font-bold"
+            coinType="MANA"
+          />
+          {cashChange > 0 && <span className="mx-1">&</span>}
+        </Row>
+      )}
+      {cashChange > 0 && (
+        <Row className="items-center justify-center">
+          +
+          <TokenNumber
+            amount={cashChange}
+            className="font-bold"
+            coinType="CASH"
+          />
+        </Row>
+      )}
+    </Row>,
+    { duration: 5000, icon: '🎉' }
   )
 }

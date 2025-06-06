@@ -4,7 +4,7 @@ import { LinkPreviewProps } from 'web/components/editor/link-preview-extension'
 import { Editor } from '@tiptap/react'
 import { JSONContent } from '@tiptap/core'
 import { filterDefined } from 'common/util/array'
-import { api } from 'web/lib/firebase/api'
+import { api } from 'web/lib/api/api'
 
 const linkPreviewDismissed: { [key: string]: boolean } = {}
 export const LinkPreviewNodeView = (props: LinkPreviewProps) => {

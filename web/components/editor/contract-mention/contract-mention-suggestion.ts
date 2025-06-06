@@ -2,7 +2,7 @@ import type { MentionOptions } from '@tiptap/extension-mention'
 import { PluginKey } from 'prosemirror-state'
 import { MentionList } from './contract-mention-list'
 import { makeMentionRender } from '../user-mention/mention-suggestion'
-import { searchContracts } from 'web/lib/firebase/api'
+import { searchContracts } from 'web/lib/api/api'
 
 type Suggestion = MentionOptions['suggestion']
 

@@ -1,8 +1,8 @@
-import * as admin from 'firebase-admin'
 import { getUser } from 'shared/utils'
 import { APIError, APIHandler } from './helpers/endpoint'
-import { updateUser } from 'shared/supabase/users'
+import { updatePrivateUser, updateUser } from 'shared/supabase/users'
 import { createSupabaseDirectClient } from 'shared/supabase/init'
+import { FieldVal } from 'shared/supabase/utils'
 
 export const deleteMe: APIHandler<'me/delete'> = async (body, auth) => {
   const { username } = body
@@ -22,10 +22,8 @@ export const deleteMe: APIHandler<'me/delete'> = async (body, auth) => {
     userDeleted: true,
     isBannedFromPosting: true,
   })
-  await firestore.doc(`private-users/${auth.uid}`).update({
-    email: admin.firestore.FieldValue.delete(),
-    twitchInfo: admin.firestore.FieldValue.delete(),
+  await updatePrivateUser(pg, auth.uid, {
+    email: FieldVal.delete(),
+    twitchInfo: FieldVal.delete(),
   })
 }
-
-const firestore = admin.firestore()

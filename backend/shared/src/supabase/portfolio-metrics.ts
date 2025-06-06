@@ -2,19 +2,21 @@ import { millisToTs } from 'common/supabase/utils'
 import { SupabaseDirectClient } from './init'
 import { convertPortfolioHistory } from 'common/supabase/portfolio-metrics'
 
-// copied from getPortfolioHistory in common/supabase/portfolio-metrics.ts
-export async function getPortfolioHistoryDirect(
+export async function getPortfolioHistory(
   userId: string,
   start: number,
-  db: SupabaseDirectClient
+  limit: number,
+  pg: SupabaseDirectClient
 ) {
-  return db.map(
-    `select ts, investment_value, total_deposits, balance, loan_total
+  return pg.map(
+    `select *
     from user_portfolio_history
-    where user_id = $1 
+    where user_id = $1
     and ts > $2
-    order by ts asc`,
-    [userId, millisToTs(start)],
+    order by ts
+    limit $3
+    `,
+    [userId, millisToTs(start), limit],
     convertPortfolioHistory
   )
 }

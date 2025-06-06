@@ -1,18 +1,10 @@
 import dayjs from 'dayjs'
 import { useEffect, useState } from 'react'
-import { useSubscription } from 'web/lib/supabase/realtime/use-subscription'
+import { useApiSubscription } from 'client-common/hooks/use-api-subscription'
+import { Row } from 'common/supabase/utils'
+import { db } from 'web/lib/supabase/db'
 
-export interface ScheduleItem {
-  id: number
-  creator_id: string
-  source: string
-  title: string
-  stream_id: string
-  contract_id: string
-  start_time: string
-  end_time: string
-  is_featured: boolean
-}
+export type ScheduleItem = Row<'tv_schedule'>
 
 export const filterSchedule = (
   schedule: ScheduleItem[] | null,
@@ -34,17 +26,17 @@ export const useTVSchedule = (
 ) => {
   const [schedule, setSchedule] = useState(defaultSchedule)
 
-  const tvSchedule = useSubscription('tv_schedule')
-
   useEffect(() => {
-    if (!tvSchedule.rows || !tvSchedule.rows.length) return
+    setSchedule(filterSchedule(defaultSchedule, defaultScheduleId))
+  }, [defaultSchedule, defaultScheduleId])
 
-    const newSchedule = filterSchedule(
-      tvSchedule.rows as any,
-      defaultScheduleId
-    )
-    setSchedule(newSchedule)
-  }, [tvSchedule.rows])
+  useApiSubscription({
+    topics: ['tv_schedule'],
+    onBroadcast: async () => {
+      const { data } = await db.from('tv_schedule').select('*')
+      if (data) setSchedule(filterSchedule(data, defaultScheduleId))
+    },
+  })
 
   return schedule
 }

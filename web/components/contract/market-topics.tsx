@@ -1,5 +1,7 @@
-import { Contract } from 'common/contract'
-import { useGroupsWhereUserHasRole } from 'web/hooks/use-group-supabase'
+import {
+  useGroupsWhereUserHasRole,
+  useTopicsWithContract,
+} from 'web/hooks/use-group-supabase'
 import Link from 'next/link'
 import { useState } from 'react'
 import { useUser } from 'web/hooks/use-user'
@@ -8,39 +10,15 @@ import { Modal } from 'web/components/layout/modal'
 import { Col } from 'web/components/layout/col'
 import { ContractTopicsList } from 'web/components/topics/contract-topics-list'
 import { useAdminOrMod } from 'web/hooks/use-admin'
-import { filterDefined } from 'common/util/array'
-import { Group, groupPath, Topic } from 'common/group'
+import { groupPath, Topic } from 'common/group'
 import { track } from 'web/lib/service/analytics'
-import { removeEmojis } from 'common/topics'
-import { TopicTag } from 'web/components/topics/topic-tag'
+import { removeEmojis } from 'common/util/string'
 import { Tooltip } from '../widgets/tooltip'
 import { SPICE_MARKET_TOOLTIP } from 'common/envs/constants'
 import { Row } from '../layout/row'
 import { SpiceCoin } from 'web/public/custom-components/spiceCoin'
-
-type TopicRowProps = {
-  contract: Contract
-  dashboards: { slug: string; title: string }[]
-  topics: Topic[]
-  isSpiceMarket: boolean
-}
-
-export function MarketTopics(props: TopicRowProps) {
-  const { contract, topics } = props
-  if (contract.visibility === 'private') {
-    return <PrivateMarketGroups topic={topics[0]} />
-  } else {
-    return <PublicMarketTopics {...props} />
-  }
-}
-
-function PrivateMarketGroups(props: { topic?: Topic }) {
-  const { topic } = props
-  if (topic) {
-    return <TopicTag location={'market page'} topic={topic} isPrivate />
-  }
-  return null
-}
+import clsx from 'clsx'
+import { TopicTag } from '../topics/topic-tag'
 
 const DashboardLink = (props: {
   dashboard: { slug: string; title: string }
@@ -48,7 +26,10 @@ const DashboardLink = (props: {
   const { dashboard } = props
   return (
     <Link
-      className="text-teal-700 hover:underline active:underline"
+      className={clsx(
+        'group items-center gap-1 text-teal-500 hover:bg-teal-100 hover:text-teal-700' +
+          ' whitespace-nowrap rounded px-1 py-0.5 text-sm transition-colors'
+      )}
       href={`/news/${dashboard.slug}`}
     >
       {dashboard.title}
@@ -70,29 +51,37 @@ const TopicLink = (props: { topic: Topic; contractId: string }) => {
         })
       }}
     >
-      #{removeEmojis(topic.name)}
+      {removeEmojis(topic.name)}
     </Link>
   )
 }
 
-export function PublicMarketTopics(props: TopicRowProps) {
+type TopicRowProps = {
+  contract: { id: string; creatorId: string }
+  dashboards: { slug: string; title: string }[]
+  topics: Topic[]
+  isSpiceMarket: boolean
+}
+
+export function MarketTopics(props: TopicRowProps) {
   const [open, setOpen] = useState(false)
-  const { contract, topics, dashboards, isSpiceMarket } = props
+  const { contract, dashboards, isSpiceMarket } = props
   const user = useUser()
   const isCreator = contract.creatorId === user?.id
-  const adminGroups = useGroupsWhereUserHasRole(user?.id)
+  const myEditableGroupIds = useGroupsWhereUserHasRole(user?.id)
   const isMod = useAdminOrMod()
-  const canEdit = isMod || isCreator || (adminGroups && adminGroups.length > 0)
-  const onlyGroups = !isMod && !isCreator ? adminGroups : undefined
+  const canEdit =
+    isMod || isCreator || (myEditableGroupIds && myEditableGroupIds.length > 0)
 
-  const canEditGroup = (group: Group) =>
-    isCreator ||
-    isMod ||
-    // if user has admin role in that group
-    !!(adminGroups && adminGroups.some((g) => g.group_id === group.id))
+  const topicPickerProps = useTopicsWithContract(contract.id, props.topics)
+  const { topics } = topicPickerProps
+
+  const canEditGroup = (groupId: string) =>
+    isCreator || isMod || !!myEditableGroupIds?.includes(groupId)
+
   return (
     <>
-      <div className="group mt-1 flex flex-wrap gap-x-3 gap-y-1 text-xs font-medium sm:text-sm">
+      <div className="group mt-1 flex flex-wrap gap-x-1 gap-y-1 text-xs font-medium sm:text-sm">
         {isSpiceMarket && (
           <Link href="/browse?p=1&f=open">
             <Tooltip text={SPICE_MARKET_TOOLTIP}>
@@ -106,7 +95,17 @@ export function PublicMarketTopics(props: TopicRowProps) {
           <DashboardLink key={d.slug} dashboard={d} />
         ))}
         {topics.map((t) => (
-          <TopicLink key={t.id} topic={t} contractId={contract.id} />
+          <TopicTag
+            key={t.id}
+            topic={t}
+            location="market page"
+            onClick={() => {
+              track('click category pill on market', {
+                contractId: contract.id,
+                categoryName: t.name,
+              })
+            }}
+          />
         ))}
         {user && canEdit && (
           <button
@@ -115,10 +114,13 @@ export function PublicMarketTopics(props: TopicRowProps) {
               e.stopPropagation()
               setOpen(true)
             }}
-            className="hover:bg-ink-400/20 text-ink-500 -ml-2 flex items-center rounded-md px-2 text-xs sm:invisible sm:text-sm sm:group-hover:visible"
+            className={clsx(
+              'hover:bg-ink-400/20 text-ink-500 flex items-center rounded-md text-xs sm:text-sm',
+              topics.length ? 'px-1' : 'px-2'
+            )}
           >
             {topics.length ? (
-              <PencilIcon className="h-4 w-4" />
+              <PencilIcon className="h-4 w-4 " />
             ) : (
               <>
                 <PlusIcon className="mr-1 h-3 " /> Topics
@@ -135,13 +137,8 @@ export function PublicMarketTopics(props: TopicRowProps) {
         >
           <ContractTopicsList
             canEdit={!!canEdit}
-            contract={contract}
-            onlyGroupIds={
-              onlyGroups
-                ? filterDefined(onlyGroups.map((g) => g.group_id))
-                : undefined
-            }
-            canEditGroup={canEditGroup}
+            canEditTopic={canEditGroup}
+            {...topicPickerProps}
           />
         </Col>
       </Modal>

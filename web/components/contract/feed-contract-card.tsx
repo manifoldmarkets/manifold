@@ -1,55 +1,53 @@
 import clsx from 'clsx'
 import Link from 'next/link'
 import Router from 'next/router'
-import { useEffect, useState } from 'react'
-
 import { Contract, contractPath, isBinaryMulti } from 'common/contract'
 import { ContractMetric } from 'common/contract-metric'
+import { ENV_CONFIG, SWEEPIES_NAME } from 'common/envs/constants'
 import { ContractCardView } from 'common/events'
 import { User } from 'common/user'
-import { formatMoney, shortFormatNumber } from 'common/util/format'
-import { ClaimButton } from 'web/components/ad/claim-ad-button'
+import { formatWithToken, shortFormatNumber } from 'common/util/format'
+import { removeUndefinedProps } from 'common/util/object'
+import { removeEmojis } from 'common/util/string'
+import { TbDropletHeart, TbMoneybag } from 'react-icons/tb'
+import { BinaryMultiAnswersPanel } from 'web/components/answers/binary-multi-answers-panel'
+import { NumericBetButton } from 'web/components/bet/numeric-bet-button'
+import { Button } from 'web/components/buttons/button'
+import { JSONEmpty } from 'web/components/contract/contract-description'
 import {
   ContractStatusLabel,
   VisibilityIcon,
 } from 'web/components/contract/contracts-table'
+import { TopicTag } from 'web/components/topics/topic-tag'
 import { Avatar } from 'web/components/widgets/avatar'
+import { Tooltip } from 'web/components/widgets/tooltip'
 import { UserLink } from 'web/components/widgets/user-link'
-import { useFirebasePublicContract } from 'web/hooks/use-contract-supabase'
+import { useAPIGetter } from 'web/hooks/use-api-getter'
+import { useLiveContract } from 'web/hooks/use-contract'
 import { useIsVisible } from 'web/hooks/use-is-visible'
 import { useSavedContractMetrics } from 'web/hooks/use-saved-contract-metrics'
 import { useUser } from 'web/hooks/use-user'
 import { track } from 'web/lib/service/analytics'
 import { getMarketMovementInfo } from 'web/lib/supabase/feed-timeline/feed-market-movement-display'
+import { SpiceCoin } from 'web/public/custom-components/spiceCoin'
 import { SimpleAnswerBars } from '../answers/answers-panel'
 import { BetButton } from '../bet/feed-bet-button'
 import { CommentsButton } from '../comments/comments-button'
+import { FeedDropdown } from '../feed/card-dropdown'
 import { CardReason } from '../feed/card-reason'
 import { FeedBinaryChart } from '../feed/feed-chart'
 import FeedContractCardDescription from '../feed/feed-contract-card-description'
 import { Col } from '../layout/col'
 import { Row } from '../layout/row'
 import { PollPanel } from '../poll/poll-panel'
-import { ClickFrame } from '../widgets/click-frame'
-import { LikeButton } from './like-button'
-import { TradesButton } from './trades-button'
-import { FeedDropdown } from '../feed/card-dropdown'
-import { JSONEmpty } from 'web/components/contract/contract-description'
-import { ENV_CONFIG } from 'common/envs/constants'
-import { TbDropletHeart, TbMoneybag } from 'react-icons/tb'
-import { Tooltip } from 'web/components/widgets/tooltip'
-import { Button } from 'web/components/buttons/button'
-import { useAdTimer } from 'web/hooks/use-ad-timer'
-import { AD_WAIT_SECONDS } from 'common/boost'
-import { getAdCanPayFunds } from 'web/lib/supabase/ads'
+import { LiquidityTooltip } from '../tiers/liquidity-tooltip'
 import { UserHovercard } from '../user/user-hovercard'
-import { BinaryMultiAnswersPanel } from 'web/components/answers/binary-multi-answers-panel'
-import { removeUndefinedProps } from 'common/util/object'
-import { removeEmojis } from 'common/util/string'
-import { NumericBetButton } from 'web/components/bet/numeric-bet-button'
-import { TopicTag } from 'web/components/topics/topic-tag'
-import { SpiceCoin } from 'web/public/custom-components/spiceCoin'
-import { TierTooltip } from '../tiers/tier-tooltip'
+import { ClickFrame } from '../widgets/click-frame'
+import { ReactButton } from './react-button'
+import { TradesButton } from './trades-button'
+import { SweepiesCoin } from 'web/public/custom-components/sweepiesCoin'
+import { capitalize } from 'lodash'
+import { getIsLive } from 'common/sports-info'
 
 const DEBUG_FEED_CARDS =
   typeof window != 'undefined' &&
@@ -58,7 +56,6 @@ const DEBUG_FEED_CARDS =
 export function FeedContractCard(props: {
   contract: Contract
   children?: React.ReactNode
-  promotedData?: { adId: string; reward: number }
   /** location of the card, to disambiguate card click events */
   trackingPostfix?: string
   className?: string
@@ -71,7 +68,6 @@ export function FeedContractCard(props: {
   feedReason?: string
 }) {
   const {
-    promotedData,
     trackingPostfix,
     className,
     children,
@@ -84,9 +80,7 @@ export function FeedContractCard(props: {
   } = props
   const user = useUser()
 
-  const contract =
-    useFirebasePublicContract(props.contract.visibility, props.contract.id) ??
-    props.contract
+  const contract = useLiveContract(props.contract)
 
   const {
     closeTime,
@@ -96,8 +90,8 @@ export function FeedContractCard(props: {
     creatorAvatarUrl,
     outcomeType,
     mechanism,
-    marketTier,
   } = contract
+
   const isBinaryMc = isBinaryMulti(contract)
   const isBinaryCpmm = outcomeType === 'BINARY' && mechanism === 'cpmm-1'
   const isStonk = outcomeType === 'STONK'
@@ -108,37 +102,22 @@ export function FeedContractCard(props: {
 
   // Note: if we ever make cards taller than viewport, we'll need to pass a lower threshold to the useIsVisible hook
 
-  const [visible, setVisible] = useState(false)
   const { ref } = useIsVisible(
     () => {
-      !DEBUG_FEED_CARDS &&
+      if (!DEBUG_FEED_CARDS)
         track('view market card', {
           contractId: contract.id,
           creatorId: contract.creatorId,
           slug: contract.slug,
-          isPromoted: !!promotedData,
         } as ContractCardView)
-      setVisible(true)
     },
     false,
-    true,
-    () => {
-      setVisible(false)
-    }
+    true
   )
 
-  const adSecondsLeft =
-    // eslint-disable-next-line react-hooks/rules-of-hooks
-    promotedData && useAdTimer(contract.id, AD_WAIT_SECONDS, visible)
-  const [canAdPay, setCanAdPay] = useState(true)
-  const adId = promotedData?.adId
-  useEffect(() => {
-    if (adId) {
-      getAdCanPayFunds(adId).then((canPay) => {
-        setCanAdPay(canPay)
-      })
-    }
-  }, [adId])
+  const topics = useAPIGetter('market/:contractId/groups', {
+    contractId: contract.id,
+  })
 
   const { probChange, startTime, ignore } = getMarketMovementInfo(contract)
 
@@ -149,28 +128,28 @@ export function FeedContractCard(props: {
         contractId: contract.id,
         creatorId: contract.creatorId,
         slug: contract.slug,
-        isPromoted: !!promotedData,
         feedReason: feedReason,
       })
     )
 
   const nonTextDescription = !JSONEmpty(contract.description)
   const isPrizeMarket = !!contract.isSpicePayout
+  const isCashContract = contract.token == 'CASH'
 
   return (
     <ClickFrame
       className={clsx(
-        isPrizeMarket
-          ? 'mt-2 ring-1 ring-amber-200 hover:ring-amber-400 dark:ring-amber-400 hover:dark:ring-amber-200'
-          : 'ring-primary-200 hover:ring-1',
-        className,
+        'ring-primary-200 hover:ring-1',
+
         'relative cursor-pointer rounded-xl transition-all ',
-        'flex w-full flex-col gap-0.5 px-4',
+        'flex w-full flex-col gap-0.5 px-4 py-2',
+
         size === 'sm'
           ? 'bg-canvas-50'
           : size === 'md'
-          ? 'bg-canvas-0 shadow-md sm:px-6'
-          : 'bg-canvas-0'
+          ? 'bg-canvas-0 dark:bg-canvas-50 dark:border-canvas-50 hover:border-primary-300 gap-2 rounded-lg border shadow-md transition-colors'
+          : 'bg-canvas-0',
+        className
       )}
       onClick={(e) => {
         trackClick()
@@ -179,7 +158,7 @@ export function FeedContractCard(props: {
       }}
       ref={ref}
     >
-      {isPrizeMarket && (
+      {isPrizeMarket ? (
         <div
           className={clsx(
             'absolute right-4 top-0 z-40 -translate-y-1/2 transform bg-amber-200 text-amber-700',
@@ -190,8 +169,16 @@ export function FeedContractCard(props: {
             <SpiceCoin className="-mt-0.5" /> Prize Market
           </span>
         </div>
+      ) : (
+        <></>
       )}
       <Col className={clsx('w-full', size === 'xs' ? '' : 'gap-1.5 ', 'pt-4')}>
+        {getIsLive(contract) && (
+          <Row className="items-center gap-2 text-red-500">
+            <div className="ml-2 h-2 w-2 animate-pulse rounded-full bg-red-500" />
+            Live
+          </Row>
+        )}
         <Row className="w-full justify-between">
           <UserHovercard userId={creatorId}>
             <Row className={'text-ink-500 items-center gap-1 text-sm'}>
@@ -214,21 +201,24 @@ export function FeedContractCard(props: {
             </Row>
           </UserHovercard>
           <Row className="gap-2">
-            {promotedData && canAdPay && (
-              <div className="text-ink-400 w-12 text-sm">
-                Ad {adSecondsLeft ? adSecondsLeft + 's' : ''}
-              </div>
+            {isCashContract && (
+              <span
+                className={clsx(
+                  'bg-amber-200 text-amber-700',
+                  'rounded-full px-2 pt-1 text-xs font-semibold'
+                )}
+              >
+                <SweepiesCoin className="-mt-0.5" /> {capitalize(SWEEPIES_NAME)}{' '}
+              </span>
             )}
-            {marketTier && marketTier !== 'basic' ? (
-              <TierTooltip tier={marketTier} contract={contract} />
-            ) : feedReason ? (
+            {feedReason ? (
               <CardReason
                 reason={feedReason as any}
                 probChange={probChange}
                 since={startTime}
               />
             ) : (
-              <></>
+              <LiquidityTooltip contract={contract} />
             )}
             {hide && (
               <FeedDropdown
@@ -300,10 +290,11 @@ export function FeedContractCard(props: {
 
         {isBinaryMc &&
           contract.mechanism === 'cpmm-multi-1' &&
-          contract.outcomeType !== 'NUMBER' && (
+          contract.outcomeType !== 'NUMBER' &&
+          contract.outcomeType !== 'MULTI_NUMERIC' &&
+          contract.outcomeType !== 'DATE' && (
             <BinaryMultiAnswersPanel
               contract={contract}
-              answers={contract.answers}
               feedReason={feedReason}
             />
           )}
@@ -315,19 +306,12 @@ export function FeedContractCard(props: {
             startDate={startTime ? startTime : contract.createdTime}
           />
         )}
-        {promotedData && canAdPay && (
-          <Col className={clsx('w-full items-center')}>
-            <ClaimButton
-              {...promotedData}
-              onClaim={() => Router.push(path)}
-              disabled={adSecondsLeft !== undefined && adSecondsLeft > 0}
-              className={'z-10 my-2 whitespace-nowrap'}
-            />
-          </Col>
-        )}
 
         {isBinaryCpmm && metrics && metrics.hasShares && (
-          <YourMetricsFooter metrics={metrics} />
+          <YourMetricsFooter
+            metrics={metrics}
+            isCashContract={contract.token === 'CASH'}
+          />
         )}
 
         {size === 'md' && feedReason == 'freshness' && nonTextDescription && (
@@ -340,7 +324,7 @@ export function FeedContractCard(props: {
           <Col>
             {!hideTags && (
               <CategoryTags
-                categories={contract.groupLinks}
+                categories={topics.data}
                 // hide tags after first line. (tags are 24 px tall)
                 className="h-6 flex-wrap overflow-hidden"
               />
@@ -376,6 +360,7 @@ const BottomActionRow = (props: {
 }) => {
   const { contract, feedReason, user, underline } = props
   const { question } = contract
+  const isCashContract = contract.token == 'CASH'
 
   return (
     <Row
@@ -414,9 +399,12 @@ const BottomActionRow = (props: {
                 className={'text-ink-500 h-full items-center gap-1.5 text-sm'}
               >
                 <TbDropletHeart className="h-6 w-6 stroke-2" />
-                <div>
-                  {ENV_CONFIG.moneyMoniker}
-                  {shortFormatNumber(contract.totalLiquidity)}
+                <div className="text-ink-600">
+                  {formatWithToken({
+                    amount: contract.totalLiquidity,
+                    token: isCashContract ? 'CASH' : 'M$',
+                    short: true,
+                  })}
                 </div>
               </Row>
             </Tooltip>
@@ -428,41 +416,62 @@ const BottomActionRow = (props: {
         <CommentsButton contract={contract} user={user} className={'h-full'} />
       </BottomRowButtonWrapper>
       <BottomRowButtonWrapper>
-        <LikeButton
+        <ReactButton
           contentId={contract.id}
           contentCreatorId={contract.creatorId}
           user={user}
           contentType={'contract'}
           contentText={question}
-          size={'2xs'}
+          size={'xs'}
           trackingLocation={'contract card (feed)'}
           placement="top"
           feedReason={feedReason}
           contractId={contract.id}
+          heartClassName="stroke-ink-500"
         />
       </BottomRowButtonWrapper>
     </Row>
   )
 }
-export function YourMetricsFooter(props: { metrics: ContractMetric }) {
-  const { metrics } = props
+export function YourMetricsFooter(props: {
+  metrics: ContractMetric
+  isCashContract: boolean
+  className?: string
+}) {
+  const { metrics, isCashContract, className } = props
   const { totalShares, maxSharesOutcome, profit } = metrics
   const { YES: yesShares, NO: noShares } = totalShares
 
   return (
-    <Row className="bg-ink-200/50 my-2 flex-wrap items-center justify-between gap-x-4 gap-y-1 rounded p-2 text-sm">
+    <Row
+      className={clsx(
+        'bg-ink-200/50 my-2 flex-wrap items-center justify-between gap-x-4 gap-y-1 rounded p-2 text-sm',
+        className
+      )}
+    >
       <Row className="items-center gap-2">
         <span className="text-ink-500">Payout on {maxSharesOutcome}</span>
         <span className="text-ink-700 font-semibold">
           {maxSharesOutcome === 'YES'
-            ? formatMoney(yesShares)
-            : formatMoney(noShares)}{' '}
+            ? formatWithToken({
+                amount: yesShares,
+                token: isCashContract ? 'CASH' : 'M$',
+              })
+            : formatWithToken({
+                amount: noShares,
+                token: isCashContract ? 'CASH' : 'M$',
+              })}{' '}
         </span>
       </Row>
       <Row className="items-center gap-2">
         <div className="text-ink-500">Profit </div>
         <div className={clsx('text-ink-700 font-semibold')}>
-          {profit ? formatMoney(profit) : '--'}
+          {profit
+            ? formatWithToken({
+                amount: profit,
+                token: isCashContract ? 'CASH' : 'M$',
+              })
+            : '--'}
         </div>
       </Row>
     </Row>
@@ -482,5 +491,32 @@ export function CategoryTags(props: {
         <TopicTag location={'feed card'} key={category.slug} topic={category} />
       ))}
     </Row>
+  )
+}
+
+export const LoadingCards = (props: { rows?: number }) => {
+  const { rows = 3 } = props
+  return (
+    <Col className="w-full">
+      {[...Array(rows)].map((r, i) => (
+        <Col
+          key={'loading-' + i}
+          className="bg-canvas-0 border-canvas-0 mb-4 gap-2 rounded-xl border p-4 drop-shadow-md"
+        >
+          <Row className="mb-2 items-center gap-2">
+            <div className="h-8 w-8 animate-pulse rounded-full bg-gray-200" />
+            <div className="h-4 w-1/4 animate-pulse rounded bg-gray-200" />
+          </Row>
+          <div className="mb-2 h-4 w-3/4 animate-pulse rounded bg-gray-200" />
+          <div className="mb-4 h-4 w-1/2 animate-pulse rounded bg-gray-200" />
+          <Row className="justify-between">
+            <div className="h-6 w-1/12 animate-pulse rounded bg-gray-200" />
+            <div className="h-6 w-1/12 animate-pulse rounded bg-gray-200" />
+            <div className="h-6 w-1/12 animate-pulse rounded bg-gray-200" />
+            <div className="h-6 w-1/12 animate-pulse rounded bg-gray-200" />
+          </Row>
+        </Col>
+      ))}
+    </Col>
   )
 }

@@ -1,5 +1,5 @@
 import { MultiPoints } from 'common/chart'
-import { CPMMMultiContract, Contract } from 'common/contract'
+import { BinaryContract, CPMMMultiContract, Contract } from 'common/contract'
 import { LinkPreviews } from 'common/link-preview'
 import { Headline } from 'common/news'
 import { Dashboard } from 'common/dashboard'
@@ -26,7 +26,7 @@ export const presidency2024: StateElectionMarket[] = [
   },
   {
     state: 'AZ',
-    slug: 'which-party-will-win-the-us-preside-c1307cf9f69a',
+    slug: 'will-trump-win-arizona-in-the-2024',
   },
   {
     state: 'AR',
@@ -58,7 +58,7 @@ export const presidency2024: StateElectionMarket[] = [
   },
   {
     state: 'GA',
-    slug: 'which-party-will-win-the-us-preside-9d5b554982a7',
+    slug: 'will-trump-win-georgia-in-the-2024',
   },
   {
     state: 'HI',
@@ -107,7 +107,7 @@ export const presidency2024: StateElectionMarket[] = [
   },
   {
     state: 'MI',
-    slug: 'which-party-will-win-the-us-preside-7e7362326c95',
+    slug: 'will-trump-win-michigan-in-the-2024',
   },
   {
     state: 'MN',
@@ -127,7 +127,7 @@ export const presidency2024: StateElectionMarket[] = [
   },
   {
     state: 'NC',
-    slug: 'which-party-will-win-the-us-preside-c2b132de8821',
+    slug: 'will-trump-win-north-carolina-in-th',
   },
   {
     state: 'ND',
@@ -152,7 +152,7 @@ export const presidency2024: StateElectionMarket[] = [
   },
   {
     state: 'NV',
-    slug: 'which-party-will-win-the-us-preside-5777ea10ce2a',
+    slug: 'will-trump-win-nevada-in-the-2024-p',
   },
   {
     state: 'NY',
@@ -172,7 +172,7 @@ export const presidency2024: StateElectionMarket[] = [
   },
   {
     state: 'PA',
-    slug: 'which-party-will-win-the-us-preside',
+    slug: 'will-trump-win-pennsylvania-in-the',
   },
   {
     state: 'RI',
@@ -213,7 +213,7 @@ export const presidency2024: StateElectionMarket[] = [
   },
   {
     state: 'WI',
-    slug: 'which-party-will-win-the-us-preside-ee07598f45ea',
+    slug: 'will-trump-win-wisconsin-in-the-202',
   },
   {
     state: 'WV',
@@ -225,7 +225,7 @@ export const presidency2024: StateElectionMarket[] = [
   },
 ]
 
-export const swingStates = ['WI', 'MI', 'PA', 'NV', 'AZ', 'GA']
+export const swingStates = ['WI', 'MI', 'PA', 'NV', 'AZ', 'GA', 'NC']
 
 export type MapContractsDictionary = {
   [key: string]: Contract | null
@@ -233,19 +233,21 @@ export type MapContractsDictionary = {
 
 export type ElectionsPageProps = {
   rawPresidencyStateContracts: MapContractsDictionary
+  rawPresidencySwingCashContracts: MapContractsDictionary
   rawSenateStateContracts: MapContractsDictionary
   rawGovernorStateContracts: MapContractsDictionary
   rawPolicyContracts: PolicyContractType[]
-  electionPartyContract: CPMMMultiContract | null
+  electionPartyContract: BinaryContract | null
+  electionPartyCashContract: BinaryContract | null
   electionCandidateContract: Contract | null
   republicanCandidateContract: Contract | null
   democratCandidateContract: Contract | null
   newHampshireContract: Contract | null
   republicanVPContract: Contract | null
   houseContract: Contract | null
-  // democraticVPContract: Contract | null
+  democraticVPContract: Contract | null
   // republicanElectability: Contract | null
-  // democraticElectability: Contract | null
+  democraticElectability: Contract | null
   linkPreviews: LinkPreviews
   newsDashboards: NewsDashboardPageProps[]
   headlines: Headline[]

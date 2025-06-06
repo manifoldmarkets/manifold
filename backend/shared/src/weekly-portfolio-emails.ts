@@ -1,17 +1,15 @@
-import {
-  CPMMBinaryContract,
-  CPMMContract,
-  CPMMMultiContract,
-} from 'common/contract'
-import { getPrivateUsersNotSent, getUser, isProd, log } from 'shared/utils'
+import { CPMMContract, CPMMMultiContract } from 'common/contract'
+import { getPrivateUsersNotSent, isProd, log } from 'shared/utils'
 import { filterDefined } from 'common/util/array'
 import { DAY_MS } from 'common/util/time'
-import { chunk, partition, sortBy, sum, uniq } from 'lodash'
+import { partition, sortBy, sum, uniq } from 'lodash'
 import {
   PerContractInvestmentsData,
   OverallPerformanceData,
-  emailMoneyFormat,
-  sendWeeklyPortfolioUpdateEmail,
+  formatMoneyEmail,
+  getWeeklyPortfolioUpdateEmail,
+  sendBulkEmails,
+  EmailAndTemplateEntry,
 } from 'shared/emails'
 import { contractUrl } from 'shared/utils'
 import { getUsersContractMetricsOrderedByProfit } from 'common/supabase/contract-metrics'
@@ -19,10 +17,9 @@ import {
   createSupabaseClient,
   createSupabaseDirectClient,
 } from 'shared/supabase/init'
-import { getContracts } from 'common/supabase/contracts'
 import { DIVISION_NAMES } from 'common/leagues'
-import { User } from 'common/user'
 import * as numeral from 'numeral'
+import { getContractsDirect } from 'shared/supabase/contracts'
 
 const USERS_TO_EMAIL = 1000
 const WEEKLY_MOVERS_TO_SEND = 6
@@ -54,11 +51,6 @@ export async function sendPortfolioUpdateEmailsToAllUsers() {
   const db = createSupabaseClient()
 
   const userIds = privateUsers.map((user) => user.id)
-  const users = await pg.map(
-    `select data from users where id = any($1)`,
-    [userIds],
-    (r) => r.data as User
-  )
 
   const usersToContractsCreated = {} as { [userId: string]: number }
   await pg.map(
@@ -108,137 +100,131 @@ export async function sendPortfolioUpdateEmailsToAllUsers() {
     db,
     'week'
   )
-  const allWeeklyMoversContracts = (await getContracts(
+  const allWeeklyMoversContracts = await getContractsDirect(
     uniq(
       Object.values(usersToContractMetrics).flatMap((cms) =>
         cms.map((cm) => cm.contractId)
       )
     ),
-    db
-  )) as CPMMBinaryContract[]
-  const chunks = chunk(privateUsers, 250)
-  let sent = 0
-  for (const chunk of chunks) {
-    await Promise.all(
-      chunk.map(async (privateUser) => {
-        const user = await getUser(privateUser.id)
-        // Don't send to a user unless they're over 5 days old
-        if (!user || user.createdTime > Date.now() - 5 * DAY_MS) return
+    pg
+  )
+  const bulkEmails: EmailAndTemplateEntry[] = []
+  privateUsers.forEach((privateUser) => {
+    // Don't send to a user unless they're over 5 days old
+    if (privateUser.createdTime > Date.now() - 5 * DAY_MS) return
 
-        // Compute fun auxiliary stats
-        const totalContractsUserBetOnInLastWeek =
-          contractBetCountInLastWeek[privateUser.id] ?? 0
-        const greenBg = 'rgba(0,160,0,0.2)'
-        const redBg = 'rgba(160,0,0,0.2)'
-        const clearBg = 'rgba(255,255,255,0)'
-        const usersMetrics = usersToContractMetrics[privateUser.id]
-        const profit = sum(usersMetrics.map((cm) => cm.from?.week.profit ?? 0))
-        const roundedProfit = Math.round(profit) === 0 ? 0 : Math.floor(profit)
-        const marketsCreated = usersToContractsCreated?.[privateUser.id] ?? 0
-        const performanceData = {
-          profit: emailMoneyFormat(profit),
-          profit_style: `background-color: ${
-            roundedProfit > 0 ? greenBg : roundedProfit === 0 ? clearBg : redBg
-          }`,
-          markets_created: marketsCreated.toString(),
-          likes_received: (
-            usersToLikesReceived[privateUser.id] ?? 0
-          ).toString(),
-          unique_bettors: (
-            users.find((u) => privateUser.id === u.id)?.creatorTraders.weekly ??
-            0
-          ).toString(),
-          markets_traded: totalContractsUserBetOnInLastWeek.toString(),
-          prediction_streak:
-            (user.currentBettingStreak ?? 0).toString() + ' days',
-          league_rank: usersToLeagueStats[user.id] ?? 'Unranked',
-        } as OverallPerformanceData
+    // Compute fun auxiliary stats
+    const totalContractsUserBetOnInLastWeek =
+      contractBetCountInLastWeek[privateUser.id] ?? 0
+    const greenBg = 'rgba(0,160,0,0.2)'
+    const redBg = 'rgba(160,0,0,0.2)'
+    const clearBg = 'rgba(255,255,255,0)'
+    const usersMetrics = usersToContractMetrics[privateUser.id]
+    // TODO: group the contract metrics by contract token and show both profits
+    const profit = sum(usersMetrics.map((cm) => cm.from?.week.profit ?? 0))
+    const roundedProfit = Math.round(profit) === 0 ? 0 : Math.floor(profit)
+    const marketsCreated = usersToContractsCreated?.[privateUser.id] ?? 0
+    const performanceData = {
+      // TODO: don't just show mana profit
+      profit: formatMoneyEmail(profit, 'MANA'),
+      profit_style: `background-color: ${
+        roundedProfit > 0 ? greenBg : roundedProfit === 0 ? clearBg : redBg
+      }`,
+      markets_created: marketsCreated.toString(),
+      likes_received: (usersToLikesReceived[privateUser.id] ?? 0).toString(),
+      unique_bettors: privateUser.weeklyTraders.toString(),
+      markets_traded: totalContractsUserBetOnInLastWeek.toString(),
+      prediction_streak: privateUser.currentBettingStreak.toString() + ' days',
+      league_rank: usersToLeagueStats[privateUser.id] ?? 'Unranked',
+    } as OverallPerformanceData
 
-        const weeklyMoverContracts = filterDefined(
-          usersToContractMetrics[user.id]
-            .map((cm) => cm.contractId)
-            .map((contractId) =>
-              allWeeklyMoversContracts.find((c) => c.id === contractId)
-            )
+    const weeklyMoverContracts = filterDefined(
+      usersToContractMetrics[privateUser.id]
+        .map((cm) => cm.contractId)
+        .map((contractId) =>
+          allWeeklyMoversContracts.find((c) => c.id === contractId)
         )
-
-        // Compute weekly movers stats
-        const investmentValueDifferences = sortBy(
-          filterDefined(
-            weeklyMoverContracts.map((contract) => {
-              const cpmmContract = contract as CPMMContract | CPMMMultiContract
-
-              const cm = usersToContractMetrics[user.id].filter(
-                (cm) => cm.contractId === contract.id
-              )[0]
-              if (!cm || !cm.from) return undefined
-              const fromWeek = cm.from.week
-              const profit = fromWeek.profit
-              const currentValue = cm.payout
-              const { resolution, mechanism } = cpmmContract
-              const resolutionTitle =
-                mechanism === 'cpmm-multi-1' &&
-                resolution &&
-                cpmmContract.shouldAnswersSumToOne
-                  ? cpmmContract.answers.find((a) => a.id === resolution)?.text
-                  : resolution
-              return {
-                currentValue,
-                pastValue: fromWeek.prevValue,
-                profit,
-                contractSlug: contract.slug,
-                questionTitle: contract.question,
-                questionUrl: contractUrl(contract),
-                questionProb:
-                  resolutionTitle && resolutionTitle !== 'MKT'
-                    ? resolutionTitle.length > 7
-                      ? resolutionTitle.slice(0, 5) + '...'
-                      : resolutionTitle
-                    : mechanism === 'cpmm-1'
-                    ? Math.round(cpmmContract.prob * 100) + '%'
-                    : '',
-                profitStyle: `color: ${
-                  profit > 0 ? 'rgba(0,160,0,1)' : '#a80000'
-                };`,
-              } as PerContractInvestmentsData
-            })
-          ),
-          (differences) => Math.abs(differences.profit)
-        ).reverse()
-
-        // Don't show markets with abs profit < 1
-        const [winningInvestments, losingInvestments] = partition(
-          investmentValueDifferences.filter(
-            (diff) => Math.abs(diff.profit) > 1
-          ),
-          (investmentsData: PerContractInvestmentsData) => {
-            return investmentsData.profit > 0
-          }
-        )
-        // Pick 3 winning investments and 3 losing investments
-        const topInvestments = winningInvestments.slice(0, 3)
-        const worstInvestments = losingInvestments.slice(0, 3)
-        // If no bets in the last week ANd no market movers AND no markets created, don't send email
-        if (
-          totalContractsUserBetOnInLastWeek === 0 &&
-          topInvestments.length === 0 &&
-          worstInvestments.length === 0 &&
-          marketsCreated === 0
-        ) {
-          return
-        }
-        await sendWeeklyPortfolioUpdateEmail(
-          user,
-          privateUser,
-          topInvestments.concat(
-            worstInvestments
-          ) as PerContractInvestmentsData[],
-          performanceData,
-          WEEKLY_MOVERS_TO_SEND
-        )
-        sent++
-        log(`emails sent: ${sent}/${privateUsers.length}`)
-      })
     )
-  }
+
+    // Compute weekly movers stats
+    const investmentValueDifferences = sortBy(
+      filterDefined(
+        weeklyMoverContracts.map((contract) => {
+          const cpmmContract = contract as CPMMContract | CPMMMultiContract
+
+          const cm = usersToContractMetrics[privateUser.id].filter(
+            (cm) => cm.contractId === contract.id
+          )[0]
+          if (!cm || !cm.from) return undefined
+          const fromWeek = cm.from.week
+          const profit = fromWeek.profit
+          const currentValue = cm.payout
+          const { resolution, mechanism } = cpmmContract
+          const resolutionTitle =
+            mechanism === 'cpmm-multi-1' &&
+            resolution &&
+            cpmmContract.shouldAnswersSumToOne
+              ? cpmmContract.answers.find((a) => a.id === resolution)?.text
+              : resolution
+          return {
+            currentValue,
+            token: contract.token,
+            pastValue: fromWeek.prevValue,
+            profit,
+            contractSlug: contract.slug,
+            questionTitle: contract.question,
+            questionUrl: contractUrl(contract),
+            questionProb:
+              resolutionTitle && resolutionTitle !== 'MKT'
+                ? resolutionTitle.length > 7
+                  ? resolutionTitle.slice(0, 5) + '...'
+                  : resolutionTitle
+                : mechanism === 'cpmm-1'
+                ? Math.round(cpmmContract.prob * 100) + '%'
+                : '',
+            profitStyle: `color: ${
+              profit > 0 ? 'rgba(0,160,0,1)' : '#a80000'
+            };`,
+          } as PerContractInvestmentsData
+        })
+      ),
+      (differences) => Math.abs(differences.profit)
+    ).reverse()
+
+    // Don't show markets with abs profit < 1
+    const [winningInvestments, losingInvestments] = partition(
+      investmentValueDifferences.filter((diff) => Math.abs(diff.profit) > 1),
+      (investmentsData: PerContractInvestmentsData) => {
+        return investmentsData.profit > 0
+      }
+    )
+    // Pick 3 winning investments and 3 losing investments
+    const topInvestments = winningInvestments.slice(0, 3)
+    const worstInvestments = losingInvestments.slice(0, 3)
+    // If no bets in the last week ANd no market movers AND no markets created, don't send email
+    if (
+      totalContractsUserBetOnInLastWeek === 0 &&
+      topInvestments.length === 0 &&
+      worstInvestments.length === 0 &&
+      marketsCreated === 0
+    ) {
+      return
+    }
+    const email = getWeeklyPortfolioUpdateEmail(
+      privateUser.name,
+      privateUser,
+      topInvestments.concat(worstInvestments) as PerContractInvestmentsData[],
+      performanceData,
+      WEEKLY_MOVERS_TO_SEND
+    )
+    if (email) {
+      bulkEmails.push(email)
+    }
+  })
+  await sendBulkEmails(
+    `Here's your weekly portfolio update!`,
+    'portfolio-update-bulk',
+    bulkEmails
+  )
+  log(`Portfolio emails sent: ${bulkEmails}`)
 }

@@ -34,39 +34,45 @@ export function CalibrationChart(props: {
 
   return (
     <SVGChart w={width} h={height} xAxis={xAxis} yAxis={yAxis} noGridlines>
-      {/* points */}
-      {yesPoints.map((p, i) => (
-        // triangle pointing up
-        <polygon
-          key={i}
-          points={`
-           ${px(p)},${py(p) - 6}
-            ${px(p) - 3 * V3},${py(p) + 3}
-            ${px(p) + 3 * V3},${py(p) + 3}`}
-          fill="green"
-        />
-      ))}
-      {noPoints.map((p, i) => (
-        // triangle pointing down
-        <polygon
-          key={i}
-          points={`
-            ${px(p)},${py(p) + 6}
-            ${px(p) - 3 * V3},${py(p) - 3}
-            ${px(p) + 3 * V3},${py(p) - 3}`}
-          fill="red"
-        />
-      ))}
-      {/* line x = y */}
+      {/* diagonal line x = y */}
       <line
         x1={xScale(0)}
         y1={yScale(0)}
         x2={xScale(1)}
         y2={yScale(1)}
         stroke="rgb(99 102 241)"
-        strokeWidth={1}
+        strokeWidth={1.5}
         strokeDasharray="4 8"
       />
+
+      {/* points */}
+      {noPoints.map((p, i) => (
+        // triangle pointing down (red points)
+        <polygon
+          key={i}
+          points={`
+            ${px(p)},${py(p) + 6}
+            ${px(p) - 3 * V3},${py(p) - 3}
+            ${px(p) + 3 * V3},${py(p) - 3}`}
+          fill="#ef4444"
+          stroke="#b91c1c"
+          strokeWidth={0.5}
+        />
+      ))}
+
+      {yesPoints.map((p, i) => (
+        // triangle pointing up (green points)
+        <polygon
+          key={i}
+          points={`
+           ${px(p)},${py(p) - 6}
+            ${px(p) - 3 * V3},${py(p) + 3}
+            ${px(p) + 3 * V3},${py(p) + 3}`}
+          fill="#10b981"
+          stroke="#047857"
+          strokeWidth={0.5}
+        />
+      ))}
     </SVGChart>
   )
 }

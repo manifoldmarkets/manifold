@@ -15,6 +15,6 @@ type Report = {
   parentType?: 'contract' | 'post' | 'user'
 }
 
-export type ReportContentTypes = 'user' | 'comment' | 'contract'
+export type ReportContentTypes = 'user' | 'comment' | 'contract' | 'post'
 
 export type ReportProps = Omit<Report, 'id' | 'createdTime' | 'userId'>

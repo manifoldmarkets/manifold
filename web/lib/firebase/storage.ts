@@ -1,30 +1,47 @@
-import { ref, uploadBytesResumable, getDownloadURL } from 'firebase/storage'
-import { nanoid } from 'nanoid'
-import { storage } from './init'
+import {
+  ref,
+  uploadBytesResumable,
+  getDownloadURL,
+  StorageReference,
+} from 'firebase/storage'
+import { nanoid } from 'common/util/random'
+import { privateStorage, storage } from './init'
 import Compressor from 'compressorjs'
+import { last } from 'lodash'
 
 const ONE_YEAR_SECS = 60 * 60 * 24 * 365
 
-export const uploadImage = async (
+export const uploadPublicImage = async (
   username: string,
   file: File,
   prefix?: string,
   onProgress?: (progress: number, isRunning: boolean) => void
 ) => {
   // Replace filename with a nanoid to avoid collisions
-  const [, ext] = file.name.split('.')
+  const ext = last(file.name.split('.'))
   const filename = `${nanoid(10)}.${ext}`
   const storageRef = ref(
     storage,
     `user-images/${username}${prefix ? '/' + prefix : ''}/${filename}`
   )
+  return await uploadImage(file, storageRef, onProgress)
+}
 
+const uploadImage = async (
+  file: File,
+  storageRef: StorageReference,
+  onProgress?: (progress: number, isRunning: boolean) => void
+) => {
   if (file.size > 20 * 1024 ** 2) {
     return Promise.reject('File is over 20 MB')
   }
 
+  if (file.type === 'application/pdf' && file.size > 2 * 1024 ** 2) {
+    return Promise.reject('PDF file is over 2MB, please submit a smaller file.')
+  }
+
   // if  >1MB compress
-  if (file.size > 1024 ** 2) {
+  if (file.type.startsWith('image/') && file.size > 1024 ** 2) {
     file = await new Promise((resolve, reject) => {
       new Compressor(file, {
         quality: 0.6,
@@ -73,6 +90,7 @@ export const uploadImage = async (
 
   return await promise
 }
+
 
 export const uploadAudio = async (
   file: File,
@@ -128,4 +146,15 @@ export const uploadAudio = async (
     console.error('Error uploading audio:', error)
     throw error
   }
+
+export const uploadPrivateImage = async (
+  userId: string,
+  file: File,
+  fileName: string,
+  onProgress?: (progress: number, isRunning: boolean) => void
+) => {
+  const path = `private-images/${userId}/${fileName}`
+  const storageRef = ref(privateStorage, path)
+  return await uploadImage(file, storageRef, onProgress)
+
 }

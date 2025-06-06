@@ -1,22 +1,26 @@
 import dayjs from 'dayjs'
 import router from 'next/router'
-import { useEffect, useState } from 'react'
-import { generateJSON } from '@tiptap/core'
+import { useEffect, useState, useCallback } from 'react'
+import { generateJSON, JSONContent } from '@tiptap/core'
+import { debounce } from 'lodash'
 
 import {
   add_answers_mode,
   Contract,
-  contractPath,
-  CREATEABLE_NON_PREDICTIVE_OUTCOME_TYPES,
   CreateableOutcomeType,
-  MarketTierType,
   MAX_DESCRIPTION_LENGTH,
   MAX_QUESTION_LENGTH,
-  MULTI_NUMERIC_BUCKETS_MAX,
+  NUMBER_BUCKETS_MAX,
   NON_BETTING_OUTCOMES,
+  twombaContractPath,
   Visibility,
+  PollVoterVisibility,
 } from 'common/contract'
-import { getAnte, MINIMUM_BOUNTY } from 'common/economy'
+import {
+  getAnte,
+  getUniqueBettorBonusAmount,
+  MINIMUM_BOUNTY,
+} from 'common/economy'
 import { MultipleChoiceAnswers } from 'web/components/answers/multiple-choice-answers'
 import { Button } from 'web/components/buttons/button'
 import { Row } from 'web/components/layout/row'
@@ -32,13 +36,16 @@ import { Group, MAX_GROUPS_PER_MARKET } from 'common/group'
 import { STONK_NO, STONK_YES } from 'common/stonk'
 import { User } from 'common/user'
 import { removeUndefinedProps } from 'common/util/object'
-import { extensions } from 'common/util/parse'
-import { usePersistentLocalState } from 'web/hooks/use-persistent-local-state'
+import { extensions, richTextToString } from 'common/util/parse'
+import {
+  setPersistentLocalState,
+  usePersistentLocalState,
+} from 'web/hooks/use-persistent-local-state'
 import {
   api,
   getSimilarGroupsToContract,
   searchContracts,
-} from 'web/lib/firebase/api'
+} from 'web/lib/api/api'
 import { track } from 'web/lib/service/analytics'
 import { getGroup, getGroupFromSlug } from 'web/lib/supabase/group'
 import { safeLocalStorage } from 'web/lib/util/local'
@@ -46,85 +53,146 @@ import { Col } from '../layout/col'
 import { BuyAmountInput } from '../widgets/amount-input'
 import { getContractTypeFromValue } from './create-contract-types'
 import { NewQuestionParams } from './new-contract-panel'
-import { getContractWithFields } from 'web/lib/supabase/contracts'
 import { filterDefined } from 'common/util/array'
-import { LiteMarket } from 'common/api/market-types'
-import { usePersistentInMemoryState } from 'web/hooks/use-persistent-in-memory-state'
+import {
+  removePersistentInMemoryState,
+  usePersistentInMemoryState,
+} from 'client-common/hooks/use-persistent-in-memory-state'
 import { compareTwoStrings } from 'string-similarity'
 import { CostSection } from 'web/components/new-contract/cost-section'
 import { CloseTimeSection } from 'web/components/new-contract/close-time-section'
 import { TopicSelectorSection } from 'web/components/new-contract/topic-selector-section'
 import { PseudoNumericRangeSection } from 'web/components/new-contract/pseudo-numeric-range-section'
 import { SimilarContractsSection } from 'web/components/new-contract/similar-contracts-section'
-import { MultiNumericRangeSection } from 'web/components/new-contract/multi-numeric-range-section'
-import { getMultiNumericAnswerBucketRangeNames } from 'common/multi-numeric'
+import { MultiNumericRangeSection } from './multi-numeric-range-section'
+import { NumberRangeSection } from './number-range-section'
+import { getMultiNumericAnswerBucketRangeNames } from 'common/src/number'
+import { randomString } from 'common/util/random'
+import { formatWithToken } from 'common/util/format'
+import { BiUndo } from 'react-icons/bi'
+import { getAnswerCostFromLiquidity, liquidityTiers } from 'common/tier'
+import { MultiNumericDateSection } from './multi-numeric-date-section'
+import { Modal, MODAL_CLASS } from '../layout/modal'
+import { RelativeTimestamp } from '../relative-timestamp'
+import { MarketDraft } from 'common/drafts'
+import { toast } from 'react-hot-toast'
+import { useEvent } from 'client-common/hooks/use-event'
+import { ChoicesToggleGroup } from '../widgets/choices-toggle-group'
 
+export const seeResultsAnswer = 'See results'
 export function ContractParamsForm(props: {
   creator: User
   outcomeType: CreateableOutcomeType
-  params?: NewQuestionParams
+  params?: Partial<NewQuestionParams>
 }) {
   const { creator, params, outcomeType } = props
-  const [marketTier, setMarketTier] = useState<MarketTierType | undefined>(
-    CREATEABLE_NON_PREDICTIVE_OUTCOME_TYPES.includes(outcomeType)
-      ? undefined
-      : 'plus'
-  )
-  const paramsKey =
-    (params?.q ?? '') +
-    (params?.groupSlugs?.join('') ?? '') +
-    (params?.groupIds?.join('') ?? '')
-  const [minString, setMinString] = usePersistentLocalState(
-    params?.min?.toString() ?? '',
-    'min' + paramsKey
-  )
-  const [maxString, setMaxString] = usePersistentLocalState(
-    params?.max?.toString() ?? '',
-    'max' + paramsKey
-  )
-  const [precision, setPrecision] = usePersistentLocalState<number | undefined>(
-    params?.precision ?? 1,
-    'numeric-precision' + paramsKey
-  )
-  const [isLogScale, setIsLogScale] = usePersistentLocalState<boolean>(
-    !!params?.isLogScale,
-    'new-is-log-scale' + paramsKey
+
+  const [liquidityTier, setLiquidityTier] = usePersistentLocalState<number>(
+    liquidityTiers[0],
+    'liquidity-tier'
   )
 
+  const paramsKey =
+    params?.overrideKey ??
+    (params?.q ?? '') +
+      (params?.groupSlugs?.join('') ?? '') +
+      (params?.groupIds?.join('') ?? '') +
+      (params?.rand ?? '')
+  const minStringKey = 'min' + paramsKey
+  const [minString, setMinString] = usePersistentLocalState(
+    params?.min?.toString() ?? '',
+    minStringKey
+  )
+
+  const maxStringKey = 'max' + paramsKey
+  const [maxString, setMaxString] = usePersistentLocalState(
+    params?.max?.toString() ?? '',
+    maxStringKey
+  )
+
+  const precisionKey = 'numeric-precision' + paramsKey
+  const [precision, setPrecision] = usePersistentLocalState<number | undefined>(
+    params?.precision ?? 1,
+    precisionKey
+  )
+
+  const isLogScaleKey = 'new-is-log-scale' + paramsKey
+  const [isLogScale, setIsLogScale] = usePersistentLocalState<boolean>(
+    !!params?.isLogScale,
+    isLogScaleKey
+  )
+
+  const visibilityKey = 'new-visibility' + paramsKey
+  const [visibility, setVisibility] = usePersistentLocalState<Visibility>(
+    (params?.visibility ?? 'public') as Visibility,
+    visibilityKey
+  )
+
+  const initValueKey = 'new-init-value' + paramsKey
   const [initialValueString, setInitialValueString] = usePersistentLocalState(
     params?.initValue?.toString(),
-    'new-init-value' + paramsKey
+    initValueKey
   )
-  const [visibility, setVisibility] = usePersistentLocalState<Visibility>(
-    'public' as Visibility,
-    `new-visibility` + paramsKey
-  )
+
+  // Don't use the usePersistentLocalState hook for this, because there's too high a risk that it will survive in local storage
+  // longer than it should under a trivial paramsKey like '', and improperly prevent users from creating any new contracts.
+  const [idempotencyKey] = useState(randomString())
 
   // For multiple choice, init to 2 empty answers
   const defaultAnswers =
-    outcomeType === 'MULTIPLE_CHOICE' || outcomeType == 'POLL' ? ['', ''] : []
+    outcomeType === 'MULTIPLE_CHOICE' ||
+    outcomeType == 'MULTI_NUMERIC' ||
+    outcomeType == 'DATE'
+      ? ['', '']
+      : outcomeType == 'POLL'
+      ? ['', '', seeResultsAnswer]
+      : []
 
+  const answersKey = 'new-answers-with-other' + paramsKey
   const [answers, setAnswers] = usePersistentLocalState(
-    params?.answers ? params.answers : defaultAnswers,
-    'new-answers-with-other' + paramsKey
+    params?.answers ?? defaultAnswers,
+    answersKey
   )
+  const [midpoints, setMidpoints] = usePersistentLocalState<number[]>(
+    params?.midpoints ?? [],
+    'new-numeric-midpoints' + paramsKey
+  )
+  const [multiNumericSumsToOne, setMultiNumericSumsToOne] =
+    usePersistentLocalState<boolean>(
+      params?.shouldAnswersSumToOne ?? true,
+      'multi-numeric-sums-to-one' + paramsKey
+    )
+  const unitKey = 'multi-numeric-unit' + paramsKey
+  const [unit, setUnit] = usePersistentLocalState<string>(
+    params?.unit ?? '',
+    unitKey
+  )
+  const addAnswersModeKey = 'new-add-answers-mode' + paramsKey
   const [addAnswersMode, setAddAnswersMode] =
     usePersistentLocalState<add_answers_mode>(
       params?.addAnswersMode ?? 'DISABLED',
-      'new-add-answers-mode' + paramsKey
+      addAnswersModeKey
     )
-  const [shouldAnswersSumToOne, setShouldAnswersSumToOne] =
-    usePersistentLocalState(
-      params?.shouldAnswersSumToOne ?? outcomeType === 'NUMBER' ?? true,
-      'new-should-answers-sum-to-one' + paramsKey
-    )
-  // NOTE: if you add another user-controlled state variable here, you should also add it to the duplication parameters
+  const shouldAnswersSumToOne =
+    outcomeType === 'MULTI_NUMERIC' || outcomeType === 'DATE'
+      ? multiNumericSumsToOne
+      : params?.shouldAnswersSumToOne ?? false
 
-  const hasOtherAnswer = addAnswersMode !== 'DISABLED' && shouldAnswersSumToOne
+  // NOTE: if you add another user-controlled state variable, you should also add it to the duplication parameters and resetProperties()
+
+  const hasOtherAnswer =
+    addAnswersMode !== 'DISABLED' &&
+    shouldAnswersSumToOne &&
+    outcomeType != 'POLL'
   const numAnswers = hasOtherAnswer ? answers.length + 1 : answers.length
 
   useEffect(() => {
-    if (params?.q) setQuestion(params?.q ?? '')
+    if (!params?.q) return
+
+    setQuestion(params.q)
+    if (!params.groupIds?.length && !params.groupSlugs?.length) {
+      findTopicsAndSimilarQuestions(params.q)
+    }
   }, [params?.q])
 
   useEffect(() => {
@@ -142,9 +210,7 @@ export function ContractParamsForm(props: {
     if (params?.groupIds) {
       const getAndSetGroups = async (groupIds: string[]) => {
         const groups = await Promise.all(groupIds.map((id) => getGroup(id)))
-        setSelectedGroups(
-          filterDefined(groups).filter((g) => g.privacyStatus !== 'private')
-        )
+        setSelectedGroups(filterDefined(groups))
       }
       getAndSetGroups(params.groupIds)
     }
@@ -153,9 +219,7 @@ export function ContractParamsForm(props: {
         const groups = await Promise.all(
           groupSlugs.map((s) => getGroupFromSlug(s))
         )
-        setSelectedGroups(
-          filterDefined(groups).filter((g) => g.privacyStatus !== 'private')
-        )
+        setSelectedGroups(filterDefined(groups))
       }
       getAndSetGroupsViaSlugs(params.groupSlugs)
     }
@@ -164,30 +228,83 @@ export function ContractParamsForm(props: {
   useEffect(() => {
     if (addAnswersMode === 'DISABLED' && answers.length < 2) {
       if (answers.length === 0) setAnswers(defaultAnswers)
-      else setAnswers(answers.concat(['']))
+      else setAnswers((a) => [...a, ''])
     }
-  })
+  }, [addAnswersMode, answers.length])
+  const [isSavingDraft, setIsSavingDraft] = useState(false)
 
+  const questionKey = 'new-question' + paramsKey
   const [question, setQuestion] = usePersistentLocalState(
-    '',
-    'new-question' + paramsKey
+    params?.q ?? '',
+    questionKey
   )
+
+  const [suggestedTitle, setSuggestedTitle] = useState<string | undefined>()
+  const [applyingTitle, setApplyingTitle] = useState<boolean>(false)
+  const [isGeneratingTitle, setIsGeneratingTitle] = useState(false)
+
+  const generateConciseTitle = useCallback(async (currentQuestion: string) => {
+    if (
+      !currentQuestion ||
+      currentQuestion.length < 20 ||
+      outcomeType === 'MULTIPLE_CHOICE' ||
+      outcomeType === 'BOUNTIED_QUESTION' ||
+      outcomeType === 'POLL' ||
+      outcomeType === 'STONK'
+    ) {
+      if (suggestedTitle) setSuggestedTitle(undefined)
+      return
+    }
+    setIsGeneratingTitle(true)
+    try {
+      const result = await api('generate-concise-title', {
+        question: currentQuestion,
+      })
+      if (result.title) {
+        setSuggestedTitle(
+          result.title !== currentQuestion ? result.title : undefined
+        )
+      }
+    } catch (e) {
+      console.error('Error generating title:', e)
+    }
+    setIsGeneratingTitle(false)
+  }, [])
+
+  const debouncedGenerateTitle = useCallback(
+    debounce((question: string) => {
+      generateConciseTitle(question)
+    }, 1000),
+    []
+  )
+
+  useEffect(() => {
+    if (applyingTitle) return
+    debouncedGenerateTitle(question)
+    return () => debouncedGenerateTitle.cancel()
+  }, [question])
+
+  const categorizedQuestionKey = 'last-categorized-question' + paramsKey
   const [categorizedQuestion, setCategorizedQuestion] = usePersistentLocalState(
     '',
-    'last-categorized-question' + paramsKey
+    categorizedQuestionKey
   )
+  const hasDuplicateCategories =
+    (params?.groupIds?.length ?? 0) > 0 || (params?.groupSlugs?.length ?? 0) > 0
+  const hasChosenCategoryKey = 'has-chosen-category' + paramsKey
   const [hasChosenCategory, setHasChosenCategory] = usePersistentLocalState(
-    (params?.groupIds?.length ?? 0) > 0,
-    'has-chosen-category' + paramsKey
+    hasDuplicateCategories,
+    hasChosenCategoryKey
   )
+
+  const similarContractsKey = 'similar-contracts' + paramsKey
   const [similarContracts, setSimilarContracts] = usePersistentInMemoryState<
     Contract[]
-  >([], 'similar-contracts' + paramsKey)
+  >([], similarContractsKey)
 
+  const dismissedSimilarContractsKey = 'dismissed-similar-contracts'
   const [dismissedSimilarContractTitles, setDismissedSimilarContractTitles] =
-    usePersistentInMemoryState<string[]>([], 'dismissed-similar-contracts')
-
-  const ante = getAnte(outcomeType, numAnswers)
+    usePersistentInMemoryState<string[]>([], dismissedSimilarContractsKey)
 
   const timeInMs = params?.closeTime ? Number(params.closeTime) : undefined
   const initDate = (timeInMs ? dayjs(timeInMs) : dayjs().add(7, 'day')).format(
@@ -195,39 +312,51 @@ export function ContractParamsForm(props: {
   )
   const initTime = timeInMs ? dayjs(timeInMs).format('HH:mm') : '23:59'
 
+  const closeDateKey = 'now-close-date' + paramsKey
   const [closeDate, setCloseDate] = usePersistentLocalState<undefined | string>(
     initDate,
-    'now-close-date' + paramsKey
+    closeDateKey
   )
 
+  const closeHoursMinutesKey = 'now-close-time' + paramsKey
   const [closeHoursMinutes, setCloseHoursMinutes] = usePersistentLocalState<
     string | undefined
-  >(initTime, 'now-close-time' + paramsKey)
+  >(initTime, closeHoursMinutesKey)
 
+  const selectedGroupsKey = 'new-selected-groups' + paramsKey
   const [selectedGroups, setSelectedGroups] = usePersistentLocalState<Group[]>(
     [],
-    'new-selected-groups' + paramsKey
+    selectedGroupsKey
   )
 
-  const defaultBountyAmount = 500
+  const defaultBountyAmount = 1000
+  const bountyKey = 'new-bounty' + paramsKey
   const [bountyAmount, setBountyAmount] = usePersistentLocalState<
     number | undefined
-  >(defaultBountyAmount, 'new-bounty' + paramsKey)
+  >(defaultBountyAmount, bountyKey)
+
+  const isAutoBountyKey = 'is-auto-bounty' + paramsKey
   const [isAutoBounty, setIsAutoBounty] = usePersistentLocalState(
     false,
-    `is-auto-bounty` + paramsKey
+    isAutoBountyKey
   )
 
   const { balance } = creator
 
-  const anteOrBounty =
-    outcomeType === 'BOUNTIED_QUESTION'
-      ? bountyAmount ?? defaultBountyAmount
-      : ante
-
   const closeTime = closeDate
     ? dayjs(`${closeDate}T${closeHoursMinutes}`).valueOf()
     : undefined
+  const hasManuallyEditedCloseDateKey =
+    'has-manually-edited-close-date' + paramsKey
+  const [_, setHasManuallyEditedCloseDate] = usePersistentLocalState<boolean>(
+    false,
+    hasManuallyEditedCloseDateKey
+  )
+  // Only way to get the real state is to read directly from localStorage after await to bypass stale closures
+  const readHasManuallyEditedCloseDate = useCallback(
+    () => safeLocalStorage?.getItem(hasManuallyEditedCloseDateKey) === 'true',
+    [hasManuallyEditedCloseDateKey]
+  )
 
   const min = minString ? parseFloat(minString) : undefined
   const max = maxString ? parseFloat(maxString) : undefined
@@ -263,9 +392,20 @@ export function ContractParamsForm(props: {
       setCloseHoursMinutes(initTime)
     }
   }, [outcomeType])
+  const pollVoterVisibilityKey = 'poll-voter-visibility' + paramsKey
+  const [voterVisibility, setVoterVisibility] =
+    usePersistentLocalState<PollVoterVisibility>(
+      'everyone',
+      pollVoterVisibilityKey
+    )
 
-  const isValidQuestion = question.length > 0
-  const hasAnswers = outcomeType === 'MULTIPLE_CHOICE' || outcomeType === 'POLL'
+  const isValidQuestion =
+    question.length > 0 && question.length <= MAX_QUESTION_LENGTH
+  const hasAnswers =
+    outcomeType === 'MULTIPLE_CHOICE' ||
+    outcomeType === 'POLL' ||
+    outcomeType === 'MULTI_NUMERIC' ||
+    outcomeType === 'DATE'
   const isValidMultipleChoice =
     !hasAnswers || answers.every((answer) => answer.trim().length > 0)
 
@@ -274,52 +414,67 @@ export function ContractParamsForm(props: {
     !shouldHaveCloseDate || (closeTime ?? Infinity) > Date.now()
 
   const isValidTopics = selectedGroups.length <= MAX_GROUPS_PER_MARKET
-
+  const ante = getAnte(outcomeType, numAnswers, liquidityTier)
+  const antePlusOneAnswer = getAnte(outcomeType, numAnswers + 1, liquidityTier)
+  const answerCost = getAnswerCostFromLiquidity(ante, numAnswers)
+  const marginalCost = antePlusOneAnswer > ante ? answerCost : 0
   const numberOfBuckets = getMultiNumericAnswerBucketRangeNames(
     min ?? 0,
     max ?? 0,
     precision && precision > 0 ? precision : 1
   ).length
+  const minMaxValid =
+    min !== undefined &&
+    max !== undefined &&
+    isFinite(min) &&
+    isFinite(max) &&
+    min < max
+
+  const midpointsError =
+    outcomeType === 'MULTI_NUMERIC' || outcomeType === 'DATE'
+      ? midpoints.length !== answers.length
+      : false
+
   const isValid =
     isValidQuestion &&
-    ante !== undefined &&
-    ante !== null &&
     ante <= balance &&
     isValidDate &&
     isValidTopics &&
     (outcomeType !== 'PSEUDO_NUMERIC' ||
-      (min !== undefined &&
-        max !== undefined &&
-        initialValue !== undefined &&
-        isFinite(min) &&
-        isFinite(max) &&
-        min < max &&
-        max - min > 0.01 &&
+      (initialValue !== undefined &&
+        minMaxValid &&
         min < initialValue &&
+        max - min > 0.01 &&
         initialValue < max)) &&
     isValidMultipleChoice &&
+    !midpointsError &&
     (outcomeType !== 'BOUNTIED_QUESTION' || bountyAmount !== undefined) &&
     (outcomeType === 'NUMBER'
-      ? numberOfBuckets <= MULTI_NUMERIC_BUCKETS_MAX && numberOfBuckets >= 2
-      : true)
+      ? numberOfBuckets <= NUMBER_BUCKETS_MAX && numberOfBuckets >= 2
+      : true) &&
+    (outcomeType !== 'MULTI_NUMERIC' || (minMaxValid && unit !== ''))
 
   const [errorText, setErrorText] = useState<string>('')
   useEffect(() => {
     setErrorText('')
+    if (isValid) return
 
-    if (!isValid) {
-      if (!isValidDate) {
-        setErrorText('Close date must be in the future')
-      } else if (!isValidMultipleChoice) {
-        setErrorText(
-          `All ${outcomeType === 'POLL' ? 'options' : 'answers'} must have text`
-        )
-      } else if (!isValidTopics) {
-        // can happen in rare cases when duplicating old question
-        setErrorText(
-          `A question can can have at most up to ${MAX_GROUPS_PER_MARKET} topic tags.`
-        )
-      }
+    if (!isValidDate) {
+      setErrorText('Close date must be in the future')
+    } else if (!isValidMultipleChoice) {
+      setErrorText(
+        `All ${outcomeType === 'POLL' ? 'options' : 'answers'} must have text`
+      )
+    } else if (!isValidTopics) {
+      // can happen in rare cases when duplicating old question
+      setErrorText(
+        `A question can can have at most up to ${MAX_GROUPS_PER_MARKET} topic tags.`
+      )
+    }
+    if (!isValidQuestion) {
+      setErrorText(
+        `Question must be between 1 and ${MAX_QUESTION_LENGTH} characters`
+      )
     }
   }, [
     isValid,
@@ -332,46 +487,123 @@ export function ContractParamsForm(props: {
   const editorKey = 'create market' + paramsKey
   const editor = useTextEditor({
     key: editorKey,
+    size: 'md',
     max: MAX_DESCRIPTION_LENGTH,
     placeholder: 'Optional. Provide background info and details.',
-    defaultValue: params?.description
-      ? JSON.parse(params.description)
-      : undefined,
   })
-  const resetProperties = () => {
-    // We would call this:
-    // editor?.commands.clearContent(true)
-    // except it doesn't work after you've navigated away. So we do this instead:
-    safeLocalStorage?.removeItem(getEditorLocalStorageKey(editorKey))
 
-    safeLocalStorage?.removeItem(`text create market`)
-    setQuestion('')
-    setCloseDate(undefined)
-    setCloseHoursMinutes(undefined)
-    setSelectedGroups([])
-    setVisibility((params?.visibility as Visibility) ?? 'public')
-    setAnswers(defaultAnswers)
-    setMinString('')
-    setMaxString('')
-    setInitialValueString('')
-    setIsLogScale(false)
-    setBountyAmount(defaultBountyAmount)
-    setHasChosenCategory(false)
-    setSimilarContracts([])
-    setDismissedSimilarContractTitles([])
-    setPrecision(1)
-    setMarketTier(
-      CREATEABLE_NON_PREDICTIVE_OUTCOME_TYPES.includes(outcomeType)
-        ? undefined
-        : 'plus'
-    )
+  useEffect(() => {
+    if (!params?.description || !editor) return
+    editor?.commands.setContent(JSON.parse(params.description))
+  }, [params?.description, editor])
+
+  const resetProperties = () => {
+    // This has to work when you navigate away so we can't do:
+    // editor?.commands.clearContent(true)
+    // setQuestion('')
+    // because react hooks have unmounted
+
+    safeLocalStorage?.removeItem(getEditorLocalStorageKey(editorKey))
+    safeLocalStorage?.removeItem(`text create market`) // TODO: why is this here?
+
+    setPersistentLocalState(questionKey, '')
+    safeLocalStorage?.removeItem(closeDateKey)
+    safeLocalStorage?.removeItem(closeHoursMinutesKey)
+    setPersistentLocalState(hasManuallyEditedCloseDateKey, false)
+    setPersistentLocalState(visibilityKey, 'public')
+    setPersistentLocalState(selectedGroupsKey, [])
+    setPersistentLocalState('threshold-answers' + paramsKey, defaultAnswers)
+    setPersistentLocalState('threshold-midpoints' + paramsKey, [])
+    setPersistentLocalState('bucket-answers' + paramsKey, defaultAnswers)
+    setPersistentLocalState('bucket-midpoints' + paramsKey, [])
+    setPersistentLocalState(unitKey, '')
+    setPersistentLocalState(answersKey, defaultAnswers)
+    setPersistentLocalState(minStringKey, '')
+    setPersistentLocalState(maxStringKey, '')
+    setPersistentLocalState(initValueKey, '')
+    setPersistentLocalState(isLogScaleKey, false)
+    setPersistentLocalState(bountyKey, defaultBountyAmount)
+    setPersistentLocalState(hasChosenCategoryKey, false)
+    setPersistentLocalState(pollVoterVisibilityKey, 'everyone')
+    removePersistentInMemoryState(similarContractsKey)
+    removePersistentInMemoryState(dismissedSimilarContractsKey)
+
+    setPersistentLocalState(precisionKey, 1)
+    // market tier is ordinary react state and gets reset automatically
   }
 
   const [submitState, setSubmitState] = useState<
     'EDITING' | 'LOADING' | 'DONE'
   >('EDITING')
 
-  async function submit() {
+  const [drafts, setDrafts] = useState<MarketDraft[]>([])
+  const [showDraftsModal, setShowDraftsModal] = useState(false)
+
+  useEffect(() => {
+    loadDrafts()
+  }, [])
+
+  const loadDrafts = async () => {
+    try {
+      const drafts = await api('get-market-drafts', {})
+      setDrafts(drafts)
+    } catch (error) {
+      console.error('Error loading drafts:', error)
+    }
+  }
+
+  const saveDraftToDb = async () => {
+    setIsSavingDraft(true)
+    try {
+      const draft = {
+        question,
+        description: editor?.getJSON(),
+        outcomeType,
+        answers,
+        closeDate,
+        closeHoursMinutes,
+        visibility,
+        selectedGroups,
+        savedAt: Date.now(),
+      }
+      await api('save-market-draft', { data: draft })
+      toast.success('Draft saved')
+      await loadDrafts()
+    } catch (error) {
+      console.error('Error saving draft:', error)
+      toast.error('Error saving draft')
+    } finally {
+      setIsSavingDraft(false)
+    }
+  }
+
+  const loadDraftFromDb = async (draft: MarketDraft) => {
+    try {
+      setQuestion(draft.data.question)
+      if (draft.data.description && editor) {
+        editor.commands.setContent(draft.data.description)
+      }
+      setAnswers(draft.data.answers ?? defaultAnswers)
+      setCloseDate(draft.data.closeDate)
+      setCloseHoursMinutes(draft.data.closeHoursMinutes)
+      setVisibility(draft.data.visibility as Visibility)
+      setSelectedGroups(draft.data.selectedGroups)
+      setShowDraftsModal(false)
+    } catch (error) {
+      console.error('Error loading draft:', error)
+    }
+  }
+
+  const deleteDraft = async (id: number) => {
+    try {
+      await api('delete-market-draft', { id })
+      await loadDrafts()
+    } catch (error) {
+      console.error('Error deleting draft:', error)
+    }
+  }
+
+  const submit = async () => {
     if (!isValid) return
     setSubmitState('LOADING')
     try {
@@ -387,7 +619,11 @@ export function ContractParamsForm(props: {
         isLogScale,
         groupIds: selectedGroups.map((g) => g.id),
         answers,
-        addAnswersMode,
+        midpoints,
+        addAnswersMode:
+          outcomeType === 'MULTI_NUMERIC' || outcomeType === 'DATE'
+            ? 'DISABLED'
+            : addAnswersMode,
         shouldAnswersSumToOne,
         visibility,
         utcOffset: new Date().getTimezoneOffset(),
@@ -395,13 +631,17 @@ export function ContractParamsForm(props: {
         isAutoBounty:
           outcomeType === 'BOUNTIED_QUESTION' ? isAutoBounty : undefined,
         precision,
-        marketTier,
+        liquidityTier,
+        idempotencyKey,
+        sportsStartTimestamp: params?.sportsStartTimestamp,
+        sportsEventId: params?.sportsEventId,
+        sportsLeague: params?.sportsLeague,
+        unit: unit.trim(),
+        timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+        voterVisibility: outcomeType === 'POLL' ? voterVisibility : undefined,
       })
 
       const newContract = await api('market', createProps as any)
-
-      // wait for supabase
-      const supabaseContract = await waitForSupabaseContract(newContract)
 
       track('create market', {
         slug: newContract.slug,
@@ -409,19 +649,11 @@ export function ContractParamsForm(props: {
         outcomeType,
       })
 
-      // Clear form data from localstorage on navigate, since market is created.
+      // Await to clear form data from localstorage after navigate, since market is created.
       // Don't clear before navigate, because looks like a bug.
-      const clearFormOnNavigate = () => {
-        resetProperties()
-        router.events.off('routeChangeComplete', clearFormOnNavigate)
-      }
-      router.events.on('routeChangeComplete', clearFormOnNavigate)
-
-      try {
-        await router.push(contractPath(supabaseContract as Contract))
-      } catch (error) {
-        console.error(error)
-      }
+      const path = twombaContractPath(newContract)
+      await router.push(path)
+      resetProperties()
     } catch (e) {
       console.error('error creating contract', e)
       setErrorText((e as any).message || 'Error creating contract')
@@ -430,41 +662,163 @@ export function ContractParamsForm(props: {
   }
   const [bountyError, setBountyError] = useState<string | undefined>(undefined)
 
-  const finishedTypingQuestion = async () => {
-    const trimmed = question.toLowerCase().trim()
-    if (trimmed === '') {
-      setHasChosenCategory(false)
-      setSimilarContracts([])
-      return
-    }
-    const [similarGroupsRes, contracts] = await Promise.all([
-      !params?.groupIds?.length &&
-      trimmed !== categorizedQuestion &&
-      !hasChosenCategory
-        ? getSimilarGroupsToContract({ question })
-        : { groups: undefined },
-      !dismissedSimilarContractTitles.includes(trimmed)
-        ? searchContracts({
-            term: question,
-            contractType: outcomeType,
-            filter: 'open',
-            limit: 10,
-            sort: 'most-popular',
-          })
-        : [],
-    ])
+  const findTopicsAndSimilarQuestions = useCallback(
+    async (question: string) => {
+      const trimmed = question.toLowerCase().trim()
+      if (trimmed === '') {
+        setHasChosenCategory(false)
+        setSimilarContracts([])
+        return
+      }
+      const [similarGroupsRes, contracts] = await Promise.all([
+        !params?.groupIds?.length &&
+        trimmed !== categorizedQuestion &&
+        !hasChosenCategory
+          ? getSimilarGroupsToContract({ question })
+          : { groups: undefined },
+        !dismissedSimilarContractTitles.includes(trimmed)
+          ? searchContracts({
+              term: question,
+              contractType: outcomeType,
+              filter: 'open',
+              limit: 10,
+              sort: 'most-popular',
+            })
+          : [],
+      ])
 
-    if (similarGroupsRes.groups) {
-      setSelectedGroups(similarGroupsRes.groups)
-      setCategorizedQuestion(trimmed)
-    }
-    setSimilarContracts(
-      contracts?.filter((c) => compareTwoStrings(c.question, question) > 0.25)
-    )
-  }
+      if (similarGroupsRes.groups) {
+        setSelectedGroups(similarGroupsRes.groups)
+        setCategorizedQuestion(trimmed)
+      }
+      setSimilarContracts(
+        contracts?.filter((c) => compareTwoStrings(c.question, question) > 0.25)
+      )
+    },
+    [dismissedSimilarContractTitles, categorizedQuestion, hasChosenCategory]
+  )
 
   const isMulti = outcomeType === 'MULTIPLE_CHOICE'
-  const isNumericMulti = outcomeType === 'NUMBER'
+  const isPoll = outcomeType === 'POLL'
+  const isNumber = outcomeType === 'NUMBER'
+  const isMultiNumeric = outcomeType === 'MULTI_NUMERIC'
+  const isDate = outcomeType === 'DATE'
+
+  const [isGeneratingDescription, setIsGeneratingDescription] = useState(false)
+  const [preGenerateContent, setPreGenerateContent] = useState<
+    JSONContent | undefined
+  >()
+
+  const generateAIDescription = async () => {
+    if (!question) return
+    setIsGeneratingDescription(true)
+    try {
+      // Store current content before generating
+      setPreGenerateContent(editor?.getJSON())
+
+      const result = await api('generate-ai-description', {
+        question,
+        description: editor?.getHTML(),
+        answers,
+        outcomeType,
+        shouldAnswersSumToOne,
+        addAnswersMode,
+      })
+      if (result.description && editor) {
+        const endPos = editor.state.doc.content.size
+        editor.commands.setTextSelection(endPos)
+        editor.commands.insertContent(result.description)
+      }
+    } catch (e) {
+      console.error('Error generating description:', e)
+      // Reset preGenerateContent on error
+      setPreGenerateContent(undefined)
+    }
+    setIsGeneratingDescription(false)
+  }
+  const [isGeneratingAnswers, setIsGeneratingAnswers] = useState(false)
+
+  const generateAnswers = async () => {
+    if (!question || outcomeType !== 'MULTIPLE_CHOICE') return
+    setIsGeneratingAnswers(true)
+    try {
+      const result = await api('generate-ai-answers', {
+        question,
+        description: editor?.getHTML(),
+        shouldAnswersSumToOne,
+        answers,
+      })
+      setAnswers([...answers, ...result.answers])
+      setAddAnswersMode(result.addAnswersMode)
+    } catch (e) {
+      console.error('Error generating answers:', e)
+    }
+    setIsGeneratingAnswers(false)
+  }
+
+  const undoGeneration = () => {
+    if (preGenerateContent && editor) {
+      editor.commands.setContent(preGenerateContent)
+      setPreGenerateContent(undefined)
+    }
+  }
+
+  const inferUnit = async () => {
+    if (!question || unit !== '') return
+    try {
+      const result = await api('infer-numeric-unit', {
+        question,
+        description: editor?.getHTML(),
+      })
+      if (result.unit) {
+        setUnit(result.unit)
+      }
+    } catch (e) {
+      console.error('Error inferring unit:', e)
+    }
+  }
+
+  // Function to get AI-suggested close date
+  const getAISuggestedCloseDate = useEvent(async (currentQuestion: string) => {
+    if (
+      !currentQuestion ||
+      currentQuestion.length < 20 ||
+      !shouldHaveCloseDate
+    ) {
+      return
+    }
+    try {
+      const result = await api('get-close-date', {
+        question: currentQuestion,
+        utcOffset: new Date().getTimezoneOffset() * -1,
+      })
+      const latestManualEditState = readHasManuallyEditedCloseDate()
+      if (result?.closeTime && !latestManualEditState) {
+        const date = dayjs(result.closeTime).format('YYYY-MM-DD')
+        const time = dayjs(result.closeTime).format('HH:mm')
+        setCloseDate(date)
+        setCloseHoursMinutes(time)
+      }
+    } catch (e) {
+      console.error('Error getting suggested close date:', e)
+    }
+  })
+
+  const handleSetCloseDate = (date: string | undefined) => {
+    setCloseDate(date)
+    setHasManuallyEditedCloseDate(true)
+  }
+
+  const handleSetCloseHoursMinutes = (time: string | undefined) => {
+    setCloseHoursMinutes(time)
+    setHasManuallyEditedCloseDate(true)
+  }
+
+  const handleSetNeverCloses = (never: boolean) => {
+    setNeverCloses(never)
+    setHasManuallyEditedCloseDate(true)
+  }
+
   return (
     <Col className="gap-6">
       <Col>
@@ -478,8 +832,41 @@ export function ContractParamsForm(props: {
           maxLength={MAX_QUESTION_LENGTH}
           value={question}
           onChange={(e) => setQuestion(e.target.value || '')}
-          onBlur={finishedTypingQuestion}
+          onBlur={(e) => {
+            if (outcomeType === 'MULTI_NUMERIC') inferUnit()
+            findTopicsAndSimilarQuestions(e.target.value || '')
+            getAISuggestedCloseDate(e.target.value || '')
+          }}
         />
+
+        <Row className="text-ink-600 -mb-3 mt-2 h-6 items-center gap-2 text-sm">
+          {suggestedTitle && suggestedTitle !== '' ? (
+            <>
+              <span className="">{suggestedTitle}</span>
+              <Button
+                color="gray-outline"
+                size="2xs"
+                loading={isGeneratingTitle}
+                disabled={isGeneratingTitle}
+                onClick={() => {
+                  setApplyingTitle(true)
+                  setQuestion(suggestedTitle)
+                  setSuggestedTitle(undefined)
+                  track('apply concise title', {
+                    title: suggestedTitle,
+                  })
+                  setTimeout(() => {
+                    setApplyingTitle(false)
+                  }, 1000)
+                }}
+              >
+                Accept
+              </Button>
+            </>
+          ) : isGeneratingTitle && !suggestedTitle ? (
+            <span>Generating concise title...</span>
+          ) : null}
+        </Row>
       </Col>
       {similarContracts.length ? (
         <SimilarContractsSection
@@ -490,16 +877,19 @@ export function ContractParamsForm(props: {
           question={question}
         />
       ) : null}
-      {(isMulti || outcomeType == 'POLL') && !isNumericMulti && (
+      {(isMulti || isPoll) && !isNumber && (
         <MultipleChoiceAnswers
           answers={answers}
           setAnswers={setAnswers}
           addAnswersMode={addAnswersMode}
           setAddAnswersMode={setAddAnswersMode}
           shouldAnswersSumToOne={shouldAnswersSumToOne}
-          setShouldAnswersSumToOne={setShouldAnswersSumToOne}
           outcomeType={outcomeType}
           placeholder={isMulti ? 'Type your answer..' : undefined}
+          question={question}
+          generateAnswers={generateAnswers}
+          isGeneratingAnswers={isGeneratingAnswers}
+          marginalCost={marginalCost}
         />
       )}
       {outcomeType == 'BOUNTIED_QUESTION' && (
@@ -514,7 +904,7 @@ export function ContractParamsForm(props: {
             onChange={(newAmount) => setBountyAmount(newAmount)}
             error={bountyError}
             setError={setBountyError}
-            quickButtonValues="large"
+            quickButtonAmountSize="large"
           />
           <Row className="mt-2 items-center gap-2">
             <span>
@@ -539,6 +929,48 @@ export function ContractParamsForm(props: {
           Predict the value of a number.
         </div>
       )}
+      {isMultiNumeric && (
+        <MultiNumericRangeSection
+          paramsKey={paramsKey}
+          submitState={submitState}
+          question={question}
+          description={editor?.getHTML()}
+          answers={answers}
+          setAnswers={setAnswers}
+          midpoints={midpoints}
+          setMidpoints={setMidpoints}
+          minString={minString}
+          setMinString={setMinString}
+          maxString={maxString}
+          setMaxString={setMaxString}
+          min={min}
+          max={max}
+          shouldAnswersSumToOne={shouldAnswersSumToOne}
+          setShouldAnswersSumToOne={setMultiNumericSumsToOne}
+          unit={unit}
+          setUnit={setUnit}
+          marginalCost={marginalCost}
+        />
+      )}{' '}
+      {isDate && (
+        <MultiNumericDateSection
+          paramsKey={paramsKey}
+          submitState={submitState}
+          question={question}
+          description={editor?.getHTML()}
+          answers={answers}
+          setAnswers={setAnswers}
+          midpoints={midpoints}
+          setMidpoints={setMidpoints}
+          minString={minString}
+          setMinString={setMinString}
+          maxString={maxString}
+          setMaxString={setMaxString}
+          shouldAnswersSumToOne={shouldAnswersSumToOne}
+          setShouldAnswersSumToOne={setMultiNumericSumsToOne}
+          marginalCost={marginalCost}
+        />
+      )}
       {outcomeType === 'PSEUDO_NUMERIC' && (
         <PseudoNumericRangeSection
           minString={minString}
@@ -555,8 +987,8 @@ export function ContractParamsForm(props: {
           max={max}
         />
       )}{' '}
-      {isNumericMulti && (
-        <MultiNumericRangeSection
+      {isNumber && (
+        <NumberRangeSection
           minString={minString}
           setMinString={setMinString}
           maxString={maxString}
@@ -576,29 +1008,105 @@ export function ContractParamsForm(props: {
         question={question}
       />
       <Col className="items-start gap-3">
-        <label className="px-1">
-          <span>Description</span>
-        </label>
+        <Row className="w-full items-center justify-between">
+          <label className="px-1">
+            <span>Description</span>
+          </label>
+          <Row className="gap-2">
+            {preGenerateContent && (
+              <Button
+                color="gray-outline"
+                size="xs"
+                disabled={isGeneratingDescription}
+                onClick={undoGeneration}
+                className="gap-1"
+              >
+                <BiUndo className="h-4 w-4" />
+              </Button>
+            )}
+            <Button
+              color="indigo-outline"
+              size="xs"
+              loading={isGeneratingDescription}
+              onClick={generateAIDescription}
+              disabled={!question || isGeneratingDescription}
+            >
+              Generate with AI
+            </Button>
+          </Row>
+        </Row>
         <TextEditor editor={editor} />
       </Col>
       <CloseTimeSection
         closeDate={closeDate}
-        setCloseDate={setCloseDate}
+        setCloseDate={handleSetCloseDate}
         closeHoursMinutes={closeHoursMinutes}
-        setCloseHoursMinutes={setCloseHoursMinutes}
+        setCloseHoursMinutes={handleSetCloseHoursMinutes}
         neverCloses={neverCloses}
-        setNeverCloses={setNeverCloses}
+        setNeverCloses={handleSetNeverCloses}
         submitState={submitState}
         outcomeType={outcomeType}
         initTime={initTime}
       />
+      {outcomeType === 'POLL' && (
+        <>
+          <Col className="gap-2">
+            <label className="gap-1">
+              <span className="mb-1">Who can see who voted?</span>
+            </label>
+            <ChoicesToggleGroup
+              className="w-fit"
+              currentChoice={voterVisibility}
+              choicesMap={{
+                Everyone: 'everyone',
+                'Only me': 'creator',
+              }}
+              setChoice={(val) =>
+                setVoterVisibility(val as PollVoterVisibility)
+              }
+            />
+          </Col>
+        </>
+      )}
+      <Row className="mt-2 items-center gap-2">
+        <span>
+          Publicly listed{' '}
+          <InfoTooltip
+            text={
+              visibility === 'public'
+                ? 'Visible on home page and search results'
+                : "Only visible via link. Won't notify followers"
+            }
+          />
+        </span>
+        <ShortToggle
+          on={visibility === 'public'}
+          setOn={(on) => {
+            setVisibility(on ? 'public' : 'unlisted')
+          }}
+        />
+      </Row>
       <CostSection
         balance={balance}
-        baseCost={anteOrBounty}
+        numAnswers={numAnswers}
         outcomeType={outcomeType}
-        marketTier={marketTier}
-        setMarketTier={setMarketTier}
+        liquidityTier={liquidityTier}
+        setLiquidityTier={setLiquidityTier}
       />
+      {outcomeType !== 'POLL' && outcomeType !== 'BOUNTIED_QUESTION' && (
+        <div className="text-ink-600 -mt-3 text-sm">
+          Earn back your creation cost! Get a{' '}
+          <b>
+            {formatWithToken({
+              amount: getUniqueBettorBonusAmount(ante, numAnswers),
+              short: true,
+              token: 'M$',
+            })}{' '}
+            bonus
+          </b>{' '}
+          for each unique trader on your question.
+        </div>
+      )}
       {errorText && <span className={'text-error'}>{errorText}</span>}
       <Button
         className="w-full"
@@ -617,43 +1125,127 @@ export function ContractParamsForm(props: {
         }}
       >
         {submitState === 'EDITING'
-          ? 'Create Question'
+          ? `Create question for ${formatWithToken({
+              amount: ante,
+              short: true,
+              token: 'M$',
+            })}`
           : submitState === 'LOADING'
           ? 'Creating...'
           : 'Created!'}
       </Button>
-      <div />
+      <Row className="-mt-2 w-full gap-2">
+        <Button
+          size="sm"
+          className="w-full"
+          color="gray-outline"
+          onClick={saveDraftToDb}
+          disabled={isSavingDraft}
+          loading={isSavingDraft}
+        >
+          Save draft
+        </Button>
+        <Button
+          size="sm"
+          className="w-full"
+          disabled={drafts.length === 0}
+          color={'gray-outline'}
+          onClick={() => setShowDraftsModal(true)}
+        >
+          View drafts ({drafts.length})
+        </Button>
+      </Row>
+      <DraftsModal
+        showDraftsModal={showDraftsModal}
+        setShowDraftsModal={setShowDraftsModal}
+        drafts={drafts}
+        loadDraftFromDb={loadDraftFromDb}
+        deleteDraft={deleteDraft}
+      />
     </Col>
   )
 }
 
-async function fetchContract(contractId: string) {
-  try {
-    const contract = await getContractWithFields(contractId)
-    if (contract && contract.visibility && contract.slug) {
-      return contract
-    }
-    return null
-  } catch (error) {
-    console.error('Error fetching the contract:', error)
-    return null
-  }
+interface DraftsModalProps {
+  showDraftsModal: boolean
+  setShowDraftsModal: (show: boolean) => void
+  drafts: MarketDraft[]
+  loadDraftFromDb: (draft: MarketDraft) => void
+  deleteDraft: (id: number) => void
 }
 
-async function waitForSupabaseContract(contract: LiteMarket) {
-  let retries = 100
+function DraftsModal(props: DraftsModalProps) {
+  const {
+    showDraftsModal,
+    setShowDraftsModal,
+    drafts,
+    loadDraftFromDb,
+    deleteDraft,
+  } = props
 
-  const delay = (ms: number) =>
-    new Promise((resolve) => setTimeout(resolve, ms))
+  return (
+    <Modal
+      className={MODAL_CLASS}
+      open={showDraftsModal}
+      setOpen={setShowDraftsModal}
+    >
+      <div className="max-h-[80vh] overflow-y-auto p-6">
+        <h3 className="mb-4 text-xl font-semibold">Saved Drafts</h3>
+        {drafts.length === 0 ? (
+          <p>No saved drafts</p>
+        ) : (
+          <div className="flex flex-col gap-4">
+            {drafts.map((draft) => (
+              <div
+                key={draft.id}
+                className="flex flex-col gap-2 rounded border p-4"
+              >
+                <div className="flex items-center justify-between">
+                  <div className="flex-1">
+                    <p className="font-medium">
+                      {draft.data.question || 'Untitled'}
+                    </p>
+                    <p className="text-ink-600 text-sm">
+                      <RelativeTimestamp
+                        time={new Date(draft.createdAt).getTime()}
+                      />
+                    </p>
+                  </div>
+                  <div className="flex gap-2">
+                    <Button
+                      color="gray-outline"
+                      onClick={() => loadDraftFromDb(draft)}
+                    >
+                      Load
+                    </Button>
+                    <Button
+                      color="red-outline"
+                      onClick={() => deleteDraft(draft.id)}
+                    >
+                      Delete
+                    </Button>
+                  </div>
+                </div>
 
-  while (retries > 0) {
-    const c = await fetchContract(contract.id)
-    if (c) return c
-    retries--
-    await delay(100) // wait for 100 milliseconds after each try
-  }
-
-  throw new Error(
-    `We created your market, but it's taking a while to appear. Check this link in a minute: ${contract.url}`
+                <div className="text-ink-600 text-sm">
+                  <p>Type: {draft.data.outcomeType}</p>
+                  {draft.data.answers.length > 0 && (
+                    <p>
+                      Answers: {draft.data.answers.slice(0, 5).join(', ')}
+                      {draft.data.answers.length > 5 && '...'}
+                    </p>
+                  )}
+                  {draft.data.description && (
+                    <p className="line-clamp-2">
+                      Description: {richTextToString(draft.data.description)}
+                    </p>
+                  )}
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+    </Modal>
   )
 }

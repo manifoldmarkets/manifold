@@ -165,7 +165,7 @@ export const AuthPage = (props: {
               style={styles.googleButton}
               onPress={async () => {
                 setLoading(true)
-                await promptAsync()
+                await promptAsync({ showInRecents: true })
                 setLoading(false)
               }}
             >
@@ -178,7 +178,9 @@ export const AuthPage = (props: {
                     resizeMode: 'contain',
                   }}
                 />
-                <Text style={styles.googleText}>Sign in with Google</Text>
+                <Text style={styles.googleText} maxFontSizeMultiplier={1}>
+                  Sign in with Google
+                </Text>
               </View>
             </TouchableOpacity>
 
@@ -227,7 +229,6 @@ function useAppleAuthentication() {
 
 const styles = StyleSheet.create({
   googleButton: {
-    // backgroundColor: '#4285F4',
     backgroundColor: 'white',
     borderRadius: 5,
     width: '100%',
@@ -242,7 +243,7 @@ const styles = StyleSheet.create({
   googleText: {
     color: '#4285F4',
     marginLeft: -2,
-    fontSize: 17.5,
+    fontSize: 18,
     fontWeight: 'bold',
   },
   centerFlex: {
@@ -306,25 +307,24 @@ function Eula() {
   return (
     <>
       <View style={styles.eulaContainer}>
-        <Text style={styles.text}>
-          By signing up for Manifold, you agree to
-        </Text>
+        <Text style={styles.text}>By signing up, you agree to our</Text>
         <TouchableOpacity
-          style={{ marginRight: 5 }}
           onPress={() => {
             setOpen(true)
             setExpanded('privacy')
           }}
         >
-          <Text style={[styles.clickable, styles.text]}>Privacy Policy,</Text>
+          <Text style={[styles.clickable, styles.text]}>Privacy Policy</Text>
         </TouchableOpacity>
+        <Text style={styles.text}> & </Text>
+
         <TouchableOpacity
           onPress={() => {
             setOpen(true)
             setExpanded('tos')
           }}
         >
-          <Text style={[styles.clickable, styles.text]}>Terms of Service</Text>
+          <Text style={[styles.clickable, styles.text]}>ToS</Text>
         </TouchableOpacity>
       </View>
       <Modal
@@ -339,13 +339,13 @@ function Eula() {
             {expanded === 'tos' && (
               <WebView
                 style={{ height: 500, width: 300 }}
-                source={{ uri: 'https://manifold.markets/terms' }}
+                source={{ uri: 'https://docs.manifold.markets/terms-and-conditions' }}
               />
             )}
             {expanded === 'privacy' && (
               <WebView
                 style={{ height: 500, width: 300 }}
-                source={{ uri: 'https://manifold.markets/privacy' }}
+                source={{ uri: 'https://docs.manifold.markets/privacy-policy' }}
               />
             )}
           </View>

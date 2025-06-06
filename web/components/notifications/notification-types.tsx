@@ -1,6 +1,6 @@
 import { GiftIcon, StarIcon } from '@heroicons/react/solid'
 import clsx from 'clsx'
-import { REFERRAL_AMOUNT } from 'common/economy'
+import { TRADED_TERM } from 'common/envs/constants'
 import {
   AirdropData,
   BetFillData,
@@ -9,6 +9,7 @@ import {
   ExtraPurchasedManaData,
   getSourceUrl,
   Notification,
+  PaymentCompletedData,
   ReactionNotificationTypes,
   ReviewNotificationData,
 } from 'common/notification'
@@ -17,13 +18,13 @@ import {
   MANIFOLD_USER_NAME,
   MANIFOLD_USER_USERNAME,
 } from 'common/user'
-import { formatMoney } from 'common/util/format'
+import { formatMoney, formatMoneyUSD } from 'common/util/format'
 import { floatingEqual } from 'common/util/math'
 import { WeeklyPortfolioUpdate } from 'common/weekly-portfolio-update'
 import { sortBy } from 'lodash'
 import Link from 'next/link'
 import { useState } from 'react'
-import { Referrals } from 'web/components/buttons/referrals-button'
+import { BsBank } from 'react-icons/bs'
 import { Col } from 'web/components/layout/col'
 import { Row } from 'web/components/layout/row'
 import { MultiUserReactionModal } from 'web/components/multi-user-reaction-link'
@@ -35,26 +36,26 @@ import {
   ManaPaymentReceivedNotification,
   PushNotificationBonusNotification,
   QuestIncomeNotification,
+  ReferralNotification,
   UniqueBettorBonusIncomeNotification,
   UniqueBettorNotification,
-  UserJoinedNotification,
 } from 'web/components/notifications/income-summary-notifications'
 import {
   BinaryOutcomeLabel,
   MultiLabel,
   NumericValueLabel,
+  OutcomeLabel,
   ProbPercentLabel,
 } from 'web/components/outcome-label'
-import { SEARCH_TYPE_KEY } from 'web/components/supabase-search'
+import { SEARCH_TYPE_KEY } from 'web/components/search'
 import { Avatar } from 'web/components/widgets/avatar'
 import { useReview } from 'web/hooks/use-review'
-import { useUser } from 'web/hooks/use-user'
-import { canSetReferrer } from 'web/lib/firebase/users'
+import { SpiceCoin } from 'web/public/custom-components/spiceCoin'
 import { Button } from '../buttons/button'
 import { Modal } from '../layout/modal'
 import { Rating, ReviewPanel } from '../reviews/stars'
+import { TokenNumber } from '../widgets/token-number'
 import { Linkify } from '../widgets/linkify'
-import { CoinNumber } from '../widgets/manaCoinNumber'
 import { linkClass } from '../widgets/site-link'
 import {
   AvatarNotificationIcon,
@@ -66,7 +67,11 @@ import {
   PrimaryNotificationLink,
   QuestionOrGroupLink,
 } from './notification-helpers'
-import { SPICE_COLOR } from 'web/components/portfolio/portfolio-value-graph'
+import { FaArrowTrendUp, FaArrowTrendDown } from 'react-icons/fa6'
+import { api } from 'web/lib/api/api'
+import { removeUndefinedProps } from 'common/util/object'
+import toast from 'react-hot-toast'
+import { NewPostFromFollowedUserNotification } from './followed-post-notification'
 
 export function NotificationItem(props: {
   notification: Notification
@@ -82,6 +87,7 @@ export function NotificationItem(props: {
         notification={notification}
         highlighted={highlighted}
         setHighlighted={setHighlighted}
+        isChildOfGroup={isChildOfGroup}
       />
     )
   } else if (reason === 'unique_bettors_on_your_contract') {
@@ -90,6 +96,15 @@ export function NotificationItem(props: {
         notification={notification}
         highlighted={highlighted}
         setHighlighted={setHighlighted}
+      />
+    )
+  } else if (reason === 'admin' && sourceType === 'contract') {
+    return (
+      <AIDescriptionUpdateNotification
+        notification={notification}
+        highlighted={highlighted}
+        setHighlighted={setHighlighted}
+        isChildOfGroup={isChildOfGroup}
       />
     )
   } else if (sourceType === 'push_notification_bonus') {
@@ -140,6 +155,14 @@ export function NotificationItem(props: {
         setHighlighted={setHighlighted}
       />
     )
+  } else if (reason === 'payment_status') {
+    return (
+      <PaymentSuccessNotification
+        notification={notification}
+        highlighted={highlighted}
+        setHighlighted={setHighlighted}
+      />
+    )
   } else if (reason === 'bounty_added') {
     return (
       <BountyAddedNotification
@@ -160,10 +183,11 @@ export function NotificationItem(props: {
     )
   } else if (sourceType === 'user' && sourceUpdateType === 'updated') {
     return (
-      <UserJoinedNotification
+      <ReferralNotification
         notification={notification}
         highlighted={highlighted}
         setHighlighted={setHighlighted}
+        isChildOfGroup={isChildOfGroup}
       />
     )
   } else if (reason === 'bet_fill') {
@@ -175,9 +199,33 @@ export function NotificationItem(props: {
         setHighlighted={setHighlighted}
       />
     )
-  } else if (reason === 'limit_order_cancelled') {
+  } else if (
+    reason === 'limit_order_cancelled' &&
+    sourceUpdateType === 'updated'
+  ) {
     return (
       <LimitOrderCancelledNotification
+        notification={notification}
+        isChildOfGroup={isChildOfGroup}
+        highlighted={highlighted}
+        setHighlighted={setHighlighted}
+      />
+    )
+  } else if (
+    reason === 'limit_order_cancelled' &&
+    sourceUpdateType === 'expired'
+  ) {
+    return (
+      <LimitOrderExpiredNotification
+        notification={notification}
+        isChildOfGroup={isChildOfGroup}
+        highlighted={highlighted}
+        setHighlighted={setHighlighted}
+      />
+    )
+  } else if (sourceType === 'post' && sourceUpdateType === 'created') {
+    return (
+      <NewPostFromFollowedUserNotification
         notification={notification}
         isChildOfGroup={isChildOfGroup}
         highlighted={highlighted}
@@ -309,6 +357,15 @@ export function NotificationItem(props: {
         setHighlighted={setHighlighted}
       />
     )
+  } else if (reason === 'market_follows') {
+    return (
+      <FollowsOnYourMarketNotification
+        notification={notification}
+        isChildOfGroup={isChildOfGroup}
+        highlighted={highlighted}
+        setHighlighted={setHighlighted}
+      />
+    )
   } else if (reason === 'league_changed') {
     return (
       <LeagueChangedNotification
@@ -389,9 +446,27 @@ export function NotificationItem(props: {
         setHighlighted={setHighlighted}
       />
     )
+  } else if (reason === 'manifest_airdrop') {
+    return (
+      <ManifestAirdropNotification
+        notification={notification}
+        isChildOfGroup={isChildOfGroup}
+        highlighted={highlighted}
+        setHighlighted={setHighlighted}
+      />
+    )
   } else if (reason === 'extra_purchased_mana') {
     return (
       <ExtraPurchasedManaNotification
+        notification={notification}
+        isChildOfGroup={isChildOfGroup}
+        highlighted={highlighted}
+        setHighlighted={setHighlighted}
+      />
+    )
+  } else if (reason === 'market_movements') {
+    return (
+      <MarketMovementNotification
         notification={notification}
         isChildOfGroup={isChildOfGroup}
         highlighted={highlighted}
@@ -427,7 +502,10 @@ function LimitOrderCancelledNotification(props: {
     probability,
     limitAt: dataLimitAt,
     outcomeType,
+    mechanism,
+    betAnswer,
   } = (data as BetFillData) ?? {}
+
   const amountRemaining = formatMoney(parseInt(sourceText ?? '0'))
   const limitAt =
     dataLimitAt !== undefined
@@ -448,7 +526,20 @@ function LimitOrderCancelledNotification(props: {
       : 'text-blue-600'
   const description = (
     <span>
-      Your<span className={clsx('mx-1', color)}>{outcome}</span>
+      Your{' '}
+      {mechanism ? (
+        <OutcomeLabel
+          outcome={creatorOutcome}
+          contract={{
+            outcomeType,
+            mechanism,
+          }}
+          answer={betAnswer ? { text: betAnswer } : undefined}
+          truncate="short"
+        />
+      ) : (
+        <span className={clsx(color)}>{outcome}</span>
+      )}{' '}
       limit order for {amountRemaining} at {limitAt} was cancelled due to
       insufficient funds.
     </span>
@@ -472,6 +563,186 @@ function LimitOrderCancelledNotification(props: {
           </span>
         )}
       </div>
+    </NotificationFrame>
+  )
+}
+// Helper function to format duration into a human-readable string
+function formatDuration(milliseconds: number): string {
+  if (milliseconds <= 0) return 'less than a minute'
+
+  const seconds = milliseconds / 1000
+  const minutes = seconds / 60
+  const hours = minutes / 60
+  const days = hours / 24
+  const months = days / 30 // Approximation using 30 days per month
+
+  if (months >= 1) {
+    const roundedMonths = Math.round(months)
+    return `about ${roundedMonths} month${roundedMonths !== 1 ? 's' : ''}`
+  } else if (days >= 1) {
+    const roundedDays = Math.round(days)
+    return `about ${roundedDays} day${roundedDays !== 1 ? 's' : ''}`
+  } else if (hours >= 1) {
+    const roundedHours = Math.round(hours)
+    return `about ${roundedHours} hour${roundedHours !== 1 ? 's' : ''}`
+  } else {
+    const roundedMinutes = Math.round(minutes)
+    if (roundedMinutes >= 1) {
+      return `about ${roundedMinutes} minute${roundedMinutes !== 1 ? 's' : ''}`
+    } else {
+      return 'less than a minute'
+    }
+  }
+}
+
+function LimitOrderExpiredNotification(props: {
+  notification: Notification
+  highlighted: boolean
+  setHighlighted: (highlighted: boolean) => void
+  isChildOfGroup?: boolean
+}) {
+  const { notification, isChildOfGroup, highlighted, setHighlighted } = props
+  const { sourceText, data, sourceContractTitle, sourceContractId } =
+    notification
+  const {
+    creatorOutcome,
+    probability,
+    limitAt: dataLimitAt,
+    outcomeType,
+    limitOrderTotal,
+    betAnswerId,
+    expiresAt,
+    createdTime,
+    mechanism,
+    betAnswer,
+  } = (data as BetFillData) ?? {}
+
+  const [isLoading, setIsLoading] = useState(false)
+
+  const amountRemaining = formatMoney(parseInt(sourceText ?? '0'))
+  const limitAt =
+    dataLimitAt !== undefined
+      ? dataLimitAt
+      : Math.round(probability * 100) + '%'
+
+  const canShowRefreshButton =
+    !!limitOrderTotal &&
+    !!creatorOutcome &&
+    !!probability &&
+    !!sourceContractId &&
+    !!expiresAt &&
+    !!createdTime &&
+    (outcomeType !== 'BINARY' && outcomeType !== 'PSEUDO_NUMERIC'
+      ? !!betAnswerId
+      : true)
+
+  const handleRefreshOrder = async () => {
+    if (!canShowRefreshButton || !expiresAt || !createdTime) {
+      toast.error('Could not duplicate order: missing required data.')
+      return
+    }
+    setIsLoading(true)
+    try {
+      const expiresMillisAfter = expiresAt - createdTime
+      await api(
+        'bet',
+        removeUndefinedProps({
+          contractId: sourceContractId,
+          amount: limitOrderTotal,
+          outcome: creatorOutcome as 'YES' | 'NO',
+          limitProb: probability,
+          expiresMillisAfter,
+          answerId: betAnswerId,
+        })
+      )
+      // Format the duration for the success message
+      const formattedDuration = formatDuration(expiresMillisAfter)
+      toast.success(`Duplicate order placed! Expires in ${formattedDuration}`)
+    } catch (error) {
+      console.error('Error duplicating limit order:', error)
+      toast.error(
+        `Error duplicating order: ${
+          error instanceof Error ? error.message : 'Unknown error'
+        }`
+      )
+    } finally {
+      setIsLoading(false)
+    }
+  }
+
+  const outcome =
+    outcomeType === 'PSEUDO_NUMERIC'
+      ? creatorOutcome === 'YES'
+        ? ' HIGHER'
+        : ' LOWER'
+      : creatorOutcome
+  const color =
+    creatorOutcome === 'YES'
+      ? 'text-teal-600'
+      : creatorOutcome === 'NO'
+      ? 'text-scarlet-600'
+      : 'text-blue-600'
+  const description = (
+    <span>
+      Your{' '}
+      {mechanism ? (
+        <OutcomeLabel
+          outcome={creatorOutcome}
+          contract={{
+            outcomeType,
+            mechanism,
+          }}
+          answer={betAnswer ? { text: betAnswer } : undefined}
+          truncate="short"
+        />
+      ) : (
+        <span className={clsx(color)}>{outcome}</span>
+      )}{' '}
+      limit order for {amountRemaining} at {limitAt} has expired{' '}
+    </span>
+  )
+  return (
+    <NotificationFrame
+      notification={notification}
+      isChildOfGroup={isChildOfGroup}
+      highlighted={highlighted}
+      setHighlighted={setHighlighted}
+      icon={
+        <AvatarNotificationIcon
+          notification={
+            {
+              sourceUserName: MANIFOLD_USER_NAME,
+              sourceUserUsername: MANIFOLD_USER_USERNAME,
+              sourceUserAvatarUrl: MANIFOLD_AVATAR_URL,
+            } as Notification
+          }
+          symbol={'🚫'}
+        />
+      }
+      link={getSourceUrl(notification)}
+    >
+      <div className="line-clamp-3">
+        {description}
+        {!isChildOfGroup && (
+          <span>
+            on <PrimaryNotificationLink text={sourceContractTitle} />
+          </span>
+        )}
+      </div>
+      {canShowRefreshButton && (
+        <Button
+          size="2xs"
+          color="gray-outline"
+          onClick={(e) => {
+            e.preventDefault()
+            handleRefreshOrder()
+          }}
+          loading={isLoading}
+          className="mt-1 self-start"
+        >
+          Duplicate order
+        </Button>
+      )}
     </NotificationFrame>
   )
 }
@@ -623,7 +894,7 @@ export function MarketResolvedNotification(props: {
     sourceContractTitle,
     sourceContractCreatorUsername,
   } = notification
-  const { userInvestment, userPayout, profitRank, totalShareholders } =
+  const { userInvestment, userPayout, profitRank, totalShareholders, token } =
     (data as ContractResolutionData) ?? {}
   const profit = userPayout - userInvestment
   const profitable = profit > 0 && !floatingEqual(userInvestment, 0)
@@ -634,18 +905,22 @@ export function MarketResolvedNotification(props: {
       : ''
   const secondaryTitle =
     sourceText === 'CANCEL' && userInvestment > 0 ? (
-      <>Your {formatMoney(userInvestment)} invested has been returned to you</>
+      <>
+        Your {formatMoney(userInvestment, token)} invested has been returned to
+        you
+      </>
     ) : sourceText === 'CANCEL' && Math.abs(userPayout) > 0 ? (
-      <>Your {formatMoney(-userPayout)} in profit has been removed</>
+      <>Your {formatMoney(-userPayout, token)} in profit has been removed</>
     ) : profitable ? (
       <>
-        Your {formatMoney(userInvestment)} won{' '}
-        <span className="text-teal-600">+{formatMoney(profit)}</span> in profit
+        Your {formatMoney(userInvestment, token)} won{' '}
+        <span className="text-teal-600">+{formatMoney(profit, token)}</span> in
+        profit
         {comparison ? `, and ${comparison}` : ``} 🎉🎉🎉
       </>
     ) : userInvestment > 0 ? (
       <>
-        You lost {formatMoney(Math.abs(profit))}
+        You lost {formatMoney(Math.abs(profit), token)}
         {comparison ? `, but ${comparison}` : ``}
       </>
     ) : null
@@ -659,7 +934,8 @@ export function MarketResolvedNotification(props: {
       return <BinaryOutcomeLabel outcome={sourceText as any} />
     }
 
-    if (sourceText.includes('%')) {
+    const isNumberWithPercent = /^[0-9]+%$/.test(sourceText)
+    if (isNumberWithPercent) {
       return (
         <ProbPercentLabel
           prob={parseFloat(sourceText.replace('%', '')) / 100}
@@ -687,13 +963,27 @@ export function MarketResolvedNotification(props: {
 
   const resolvedByAdmin = sourceUserUsername != sourceContractCreatorUsername
 
+  const showManifoldAsResolver = token === 'CASH'
+
+  const resolverName = showManifoldAsResolver
+    ? MANIFOLD_USER_NAME
+    : resolvedByAdmin
+    ? 'A mod'
+    : sourceUserName
+  const resolverUsername = showManifoldAsResolver
+    ? MANIFOLD_USER_USERNAME
+    : sourceUserUsername
+  const resolverAvatarUrl = showManifoldAsResolver
+    ? MANIFOLD_AVATAR_URL
+    : notification.sourceUserAvatarUrl
+
   const content =
     sourceText === 'CANCEL' ? (
       <>
         <NotificationUserLink
           userId={sourceId}
-          name={resolvedByAdmin ? 'A mod' : sourceUserName}
-          username={sourceUserUsername}
+          name={resolverName}
+          username={resolverUsername}
         />{' '}
         cancelled {isChildOfGroup && <span>the question</span>}
         {!isChildOfGroup && (
@@ -710,8 +1000,8 @@ export function MarketResolvedNotification(props: {
       <>
         <NotificationUserLink
           userId={sourceId}
-          name={resolvedByAdmin ? 'A mod' : sourceUserName}
-          username={sourceUserUsername}
+          name={resolverName}
+          username={resolverUsername}
         />{' '}
         resolved {isChildOfGroup && <span>the question</span>}
         {!isChildOfGroup && (
@@ -731,7 +1021,7 @@ export function MarketResolvedNotification(props: {
   const showReviewButton = !userReview && !justNowReview
 
   return (
-    <Col className="relative">
+    <>
       <NotificationFrame
         notification={notification}
         isChildOfGroup={isChildOfGroup}
@@ -767,7 +1057,10 @@ export function MarketResolvedNotification(props: {
         icon={
           <>
             <AvatarNotificationIcon
-              notification={notification}
+              notification={{
+                ...notification,
+                sourceUserAvatarUrl: resolverAvatarUrl,
+              }}
               symbol={sourceText === 'CANCEL' ? '🚫' : profitable ? '💰' : '☑️'}
             />
             {!!secondaryTitle && (
@@ -785,6 +1078,9 @@ export function MarketResolvedNotification(props: {
         {content}
         <Modal open={openRateModal} setOpen={setOpenRateModal}>
           <ReviewPanel
+            title={notification.sourceContractTitle ?? ''}
+            resolverUser={undefined}
+            currentUser={undefined}
             marketId={notification.sourceId}
             author={notification.sourceUserName}
             className="my-2"
@@ -811,13 +1107,7 @@ export function MarketResolvedNotification(props: {
               />
 
               <NotificationIcon
-                symbol={
-                  <CoinNumber
-                    amount={profit}
-                    className="text-xs font-semibold"
-                    numberType="short"
-                  />
-                }
+                symbol={<TokenNumber hideAmount={true} coinType={token} />}
                 symbolBackgroundClass={
                   profit < 0
                     ? 'border-ink-300  border-2 ring-4 ring-ink-200'
@@ -831,7 +1121,7 @@ export function MarketResolvedNotification(props: {
           {secondaryTitle}
         </NotificationFrame>
       )}
-    </Col>
+    </>
   )
 }
 
@@ -936,13 +1226,25 @@ function CommentNotification(props: {
     sourceUserUsername,
     reason,
     sourceText,
-    sourceContractTitle,
+    sourceTitle,
+    markedAsRead,
   } = notification
+
   const reasonText =
     reason === 'reply_to_users_answer' || reason === 'reply_to_users_comment'
       ? 'replied to you '
       : `commented `
+
   const comment = sourceText
+
+  const handleDismiss = async () => {
+    await api('mark-notification-read', {
+      notificationId: notification.id,
+    })
+  }
+
+  const isPinned = markedAsRead === false
+
   return (
     <NotificationFrame
       notification={notification}
@@ -953,15 +1255,17 @@ function CommentNotification(props: {
         <AvatarNotificationIcon notification={notification} symbol={'💬'} />
       }
       subtitle={
-        comment ? (
-          <div className="line-clamp-2">
-            <Linkify text={comment} />{' '}
-          </div>
-        ) : (
-          <></>
-        )
+        <div>
+          {comment && (
+            <div className="line-clamp-2">
+              <Linkify text={comment} />
+            </div>
+          )}
+        </div>
       }
       link={getSourceUrl(notification)}
+      isPinned={isPinned}
+      onDismiss={isPinned ? handleDismiss : undefined}
     >
       <div className="line-clamp-3">
         <NotificationUserLink
@@ -972,13 +1276,14 @@ function CommentNotification(props: {
         {reasonText}
         {!isChildOfGroup && (
           <span>
-            on <PrimaryNotificationLink text={sourceContractTitle} />
+            on <PrimaryNotificationLink text={sourceTitle} />
           </span>
         )}
       </div>
     </NotificationFrame>
   )
 }
+
 function BetReplyNotification(props: {
   notification: Notification
   highlighted: boolean
@@ -1009,7 +1314,7 @@ function BetReplyNotification(props: {
           name={sourceUserName}
           username={sourceUserUsername}
         />{' '}
-        bet{' '}
+        {TRADED_TERM}{' '}
         <span
           className={
             betOutcome === 'YES' ? 'text-teal-600' : 'text-scarlet-600'
@@ -1078,8 +1383,9 @@ function TaggedUserNotification(props: {
   isChildOfGroup?: boolean
 }) {
   const { notification, isChildOfGroup, highlighted, setHighlighted } = props
-  const { sourceId, sourceUserName, sourceUserUsername, sourceContractTitle } =
+  const { sourceId, sourceUserName, sourceUserUsername, sourceTitle } =
     notification
+
   return (
     <NotificationFrame
       notification={notification}
@@ -1100,7 +1406,7 @@ function TaggedUserNotification(props: {
         tagged you{' '}
         {!isChildOfGroup && (
           <span>
-            on <PrimaryNotificationLink text={sourceContractTitle} />
+            on <PrimaryNotificationLink text={sourceTitle} />
           </span>
         )}
       </div>
@@ -1205,13 +1511,19 @@ function UserLikeNotification(props: {
       }
       link={getSourceUrl(notification)}
       subtitle={
-        sourceType === 'comment_like' ? <Linkify text={sourceText} /> : <></>
+        sourceType === 'comment_like' || sourceType === 'post_comment_like' ? (
+          <Linkify text={sourceText} />
+        ) : (
+          <></>
+        )
       }
     >
       {reactorsText && <PrimaryNotificationLink text={reactorsText} />} liked
       your
-      {sourceType === 'comment_like'
+      {sourceType === 'comment_like' || sourceType === 'post_comment_like'
         ? ' comment ' + (isChildOfGroup ? '' : 'on ')
+        : sourceType === 'post_like'
+        ? ' post '
         : ' question '}
       {!isChildOfGroup && <QuestionOrGroupLink notification={notification} />}
       <MultiUserReactionModal
@@ -1262,6 +1574,45 @@ function FollowNotification(props: {
   )
 }
 
+function FollowsOnYourMarketNotification(props: {
+  notification: Notification
+  highlighted: boolean
+  setHighlighted: (highlighted: boolean) => void
+  isChildOfGroup?: boolean
+}) {
+  const { notification, isChildOfGroup, highlighted, setHighlighted } = props
+  const { sourceId, sourceUserName, sourceUserUsername } = notification
+
+  return (
+    <NotificationFrame
+      notification={notification}
+      isChildOfGroup={isChildOfGroup}
+      highlighted={highlighted}
+      setHighlighted={setHighlighted}
+      icon={
+        <AvatarNotificationIcon
+          notification={notification}
+          symbol={
+            <Col className="from-ink-400 to-ink-200 h-5 w-5 items-center rounded-lg bg-gradient-to-br text-sm">
+              👀
+            </Col>
+          }
+        />
+      }
+      link={`/${sourceUserUsername}`}
+    >
+      <>
+        <NotificationUserLink
+          userId={sourceId}
+          name={sourceUserName}
+          username={sourceUserUsername}
+        />{' '}
+        followed your market <QuestionOrGroupLink notification={notification} />
+      </>
+    </NotificationFrame>
+  )
+}
+
 function LiquidityNotification(props: {
   notification: Notification
   highlighted: boolean
@@ -1275,6 +1626,7 @@ function LiquidityNotification(props: {
     sourceUserUsername,
     sourceText,
     sourceContractTitle,
+    data,
   } = notification
   return (
     <NotificationFrame
@@ -1294,7 +1646,9 @@ function LiquidityNotification(props: {
           username={sourceUserUsername}
         />{' '}
         added{' '}
-        {sourceText && <span>{formatMoney(parseInt(sourceText))} of</span>}{' '}
+        {sourceText && (
+          <span>{formatMoney(parseInt(sourceText), data?.token)} of</span>
+        )}{' '}
         liquidity{' '}
         {!isChildOfGroup && (
           <span>
@@ -1312,57 +1666,48 @@ function ReferralProgramNotification(props: {
   setHighlighted: (highlighted: boolean) => void
   isChildOfGroup?: boolean
 }) {
-  const { notification, highlighted, setHighlighted } = props
-  const [showModal, setShowModal] = useState(false)
-  const user = useUser()
-
-  return (
-    <NotificationFrame
-      notification={notification}
-      isChildOfGroup={false}
-      highlighted={highlighted}
-      setHighlighted={setHighlighted}
-      onClick={() => setShowModal(true)}
-      icon={
-        <AvatarNotificationIcon
-          notification={
-            {
-              sourceUserName: MANIFOLD_USER_NAME,
-              sourceUserUsername: MANIFOLD_USER_USERNAME,
-              sourceUserAvatarUrl: MANIFOLD_AVATAR_URL,
-            } as Notification
-          }
-          symbol={'💸'}
-        />
-      }
-      subtitle={
-        user && canSetReferrer(user) ? (
-          <span>Did a friend refer you? Tap here to attribute them!</span>
-        ) : (
-          <span>Tap here to see your referral code.</span>
-        )
-      }
-    >
-      <span>
-        Refer friends and get{' '}
-        <CoinNumber
-          isSpice
-          amount={REFERRAL_AMOUNT}
-          style={{
-            color: SPICE_COLOR,
-          }}
-          className={clsx('mr-1 font-bold')}
-          isInline
-        />
-        on every sign up!
-      </span>
-      {user && showModal && (
-        <Modal open setOpen={setShowModal}>
-          <Referrals user={user} />
-        </Modal>
-      )}
-    </NotificationFrame>
-  )
+  // const { notification, highlighted, setHighlighted } = props
+  // const [showModal, setShowModal] = useState(false)
+  // const user = useUser()
+  return null
+  // return (
+  //   <NotificationFrame
+  //     notification={notification}
+  //     isChildOfGroup={false}
+  //     highlighted={highlighted}
+  //     setHighlighted={setHighlighted}
+  //     onClick={() => setShowModal(true)}
+  //     icon={
+  //       <AvatarNotificationIcon
+  //         notification={
+  //           {
+  //             sourceUserName: MANIFOLD_USER_NAME,
+  //             sourceUserUsername: MANIFOLD_USER_USERNAME,
+  //             sourceUserAvatarUrl: MANIFOLD_AVATAR_URL,
+  //           } as Notification
+  //         }
+  //         symbol={'💸'}
+  //       />
+  //     }
+  //     subtitle={<span>Tap here to see your referral code.</span>}
+  //   >
+  //     <span>
+  //       Refer friends and get{' '}
+  //       <TokenNumber
+  //         coinType={'MANA'}
+  //         amount={REFERRAL_AMOUNT}
+  //         className={clsx('mr-1 font-bold')}
+  //         isInline
+  //       />
+  //       on every sign up!
+  //     </span>
+  //     {user && showModal && (
+  //       <Modal open={showModal} setOpen={setShowModal}>
+  //         <Referrals user={user} />
+  //       </Modal>
+  //     )}
+  //   </NotificationFrame>
+  // )
 }
 
 function FollowFromReferralNotification(props: {
@@ -1400,7 +1745,7 @@ function FollowFromReferralNotification(props: {
             name={sourceUserName}
             username={sourceUserUsername}
           />{' '}
-          (you just bet on their question!)
+          (you just {TRADED_TERM} on their question!)
         </span>
       </>
     </NotificationFrame>
@@ -1769,8 +2114,33 @@ function AirdropNotification(props: {
       subtitle={<></>}
     >
       Congratulations! You just received{' '}
-      <span className="font-semibold">{formatMoney(amount)}</span> as a gift
-      from Manifold for being active for 30 days this year!
+      <span className="font-semibold">{formatMoney(amount)}</span>as a gift from
+      Manifold for being active for 30 days this year!
+    </NotificationFrame>
+  )
+}
+
+function ManifestAirdropNotification(props: {
+  notification: Notification
+  highlighted: boolean
+  setHighlighted: (highlighted: boolean) => void
+  isChildOfGroup?: boolean
+}) {
+  const { notification, highlighted, setHighlighted, isChildOfGroup } = props
+  const { amount } = notification.data as AirdropData
+
+  return (
+    <NotificationFrame
+      notification={notification}
+      isChildOfGroup={isChildOfGroup}
+      highlighted={highlighted}
+      setHighlighted={setHighlighted}
+      icon={<GiftIcon className="text-primary-500 h-8 w-8" />}
+      subtitle={<></>}
+    >
+      Congratulations! As a gift for attending Manifest, you just received{' '}
+      <span className="font-semibold">{formatMoney(amount)}</span> and{' '}
+      <SpiceCoin /> 5,000!
     </NotificationFrame>
   )
 }
@@ -1796,6 +2166,148 @@ function ExtraPurchasedManaNotification(props: {
       Thank you for buying mana in 2024! You just received{' '}
       <span className="font-semibold">{formatMoney(amount)}</span>, which is 9
       times what you purchased, as a gift from Manifold!
+    </NotificationFrame>
+  )
+}
+
+export function PaymentSuccessNotification(props: {
+  notification: Notification
+  highlighted: boolean
+  setHighlighted: (highlighted: boolean) => void
+  isChildOfGroup?: boolean
+}) {
+  const { notification, isChildOfGroup, highlighted, setHighlighted } = props
+  const { amount, currency, paymentMethodType } =
+    notification.data as PaymentCompletedData
+  return (
+    <NotificationFrame
+      notification={notification}
+      isChildOfGroup={isChildOfGroup}
+      highlighted={highlighted}
+      setHighlighted={setHighlighted}
+      icon={<BsBank className="text-primary-500 h-8 w-8" />}
+      subtitle={
+        <span className="text-ink-600">
+          You should receive your funds within the next couple days.
+        </span>
+      }
+    >
+      <span>
+        Your {paymentMethodType} payment for {formatMoneyUSD(amount)} {currency}{' '}
+        was approved!
+      </span>
+    </NotificationFrame>
+  )
+}
+
+function MarketMovementNotification(props: {
+  notification: Notification
+  highlighted: boolean
+  setHighlighted: (highlighted: boolean) => void
+  isChildOfGroup?: boolean
+}) {
+  const { notification, isChildOfGroup, highlighted, setHighlighted } = props
+  const { sourceContractTitle, data } = notification
+
+  const startProb = data?.val_start ?? 0
+  const endProb = data?.val_end ?? 0
+  const answerText = data?.answerText
+
+  // Calculate the difference and determine if it's an increase or decrease
+  const probDiff = endProb - startProb
+  const isIncrease = probDiff > 0
+
+  // Format the probabilities as percentages
+  const startProbText = `${Math.round(startProb * 100)}%`
+  const endProbText = `${Math.round(endProb * 100)}%`
+
+  // Colors and direction text based on movement
+  // const changeColor = isIncrease ? 'text-teal-600' : 'text-scarlet-600'
+  const newProbClass = 'text-ink-900 font-semibold'
+
+  // Font Awesome trend icons based on direction
+  const TrendIcon = isIncrease ? FaArrowTrendUp : FaArrowTrendDown
+  const iconColor = isIncrease ? 'text-teal-500' : 'text-scarlet-500'
+
+  // Content to display for different market types
+  const content = (
+    <div className="flex items-center gap-2">
+      <div className="flex-grow">
+        {answerText ? (
+          <>
+            <PrimaryNotificationLink
+              truncatedLength="xl"
+              text={sourceContractTitle}
+            />
+            <br />
+            <span className="font-semibold">{answerText}</span> moved{' '}
+            <span className={newProbClass}>
+              {startProbText} → <span>{endProbText}</span>
+            </span>{' '}
+          </>
+        ) : (
+          <>
+            <PrimaryNotificationLink
+              text={sourceContractTitle}
+              truncatedLength="xl"
+            />
+            <br />
+            Probability moved{' '}
+            <span className={newProbClass}>
+              {startProbText} →<span>{endProbText}</span>
+            </span>
+          </>
+        )}
+      </div>
+    </div>
+  )
+
+  return (
+    <NotificationFrame
+      notification={notification}
+      isChildOfGroup={isChildOfGroup}
+      highlighted={highlighted}
+      setHighlighted={setHighlighted}
+      icon={
+        <div className="flex h-full w-full items-center justify-center">
+          <TrendIcon className={`${iconColor} h-6 w-6`} />
+        </div>
+      }
+      link={getSourceUrl(notification)}
+    >
+      {content}
+    </NotificationFrame>
+  )
+}
+
+function AIDescriptionUpdateNotification(props: {
+  notification: Notification
+  highlighted: boolean
+  setHighlighted: (highlighted: boolean) => void
+  isChildOfGroup?: boolean
+}) {
+  const { notification, isChildOfGroup, highlighted, setHighlighted } = props
+  const { sourceContractTitle } = notification
+  return (
+    <NotificationFrame
+      notification={notification}
+      isChildOfGroup={isChildOfGroup}
+      highlighted={highlighted}
+      setHighlighted={setHighlighted}
+      icon={
+        <NotificationIcon
+          symbol={'🤖'}
+          symbolBackgroundClass="bg-gradient-to-br from-blue-500 to-blue-200"
+        />
+      }
+      link={getSourceUrl(notification)}
+    >
+      <div className="line-clamp-3">
+        <span>
+          Our AI added a clarification to the description of{' '}
+          <PrimaryNotificationLink text={sourceContractTitle} />
+        </span>
+      </div>
     </NotificationFrame>
   )
 }

@@ -1,50 +1,56 @@
+import clsx from 'clsx'
+import { Bet } from 'common/bet'
+import { ContractComment } from 'common/comment'
 import { Contract } from 'common/contract'
-import { Modal } from 'web/components/layout/modal'
-import { Col } from 'web/components/layout/col'
+import { useState } from 'react'
+import { toast } from 'react-hot-toast'
+import { BiRepost } from 'react-icons/bi'
+import { Button, SizeType } from 'web/components/buttons/button'
 import {
   CommentReplyHeader,
   CommentReplyHeaderWithBet,
-  ContractCommentInput,
   FeedCommentHeader,
-} from 'web/components/feed/feed-comments'
-import { useState } from 'react'
-import { Button, SizeType } from 'web/components/buttons/button'
-import clsx from 'clsx'
-import { BiRepost } from 'react-icons/bi'
-import { Tooltip } from 'web/components/widgets/tooltip'
-import { Bet } from 'common/bet'
-import { ContractComment } from 'common/comment'
-import { Content } from 'web/components/widgets/editor'
+} from 'web/components/comments/comment-header'
+import { ContractCommentInput } from 'web/components/comments/comment-input'
+import { Col } from 'web/components/layout/col'
+import { Modal } from 'web/components/layout/modal'
 import { Avatar } from 'web/components/widgets/avatar'
+import { Content } from 'web/components/widgets/editor'
+import { Tooltip } from 'web/components/widgets/tooltip'
+import { api } from 'web/lib/api/api'
 import { Row } from '../layout/row'
-import { api } from 'web/lib/firebase/api'
-import { toast } from 'react-hot-toast'
 import { UserHovercard } from '../user/user-hovercard'
 
 export const RepostButton = (props: {
-  contract: Contract
+  playContract: Contract
   bet?: Bet
   size: SizeType
   className?: string
+  iconClassName?: string
 }) => {
-  const { contract, bet, size, className } = props
+  const { playContract, bet, size, className, iconClassName } = props
   const [open, setOpen] = useState(false)
   return (
     <>
-      <Tooltip text="Repost with comment to followers" placement="bottom" noTap>
+      <Tooltip
+        text="Repost with comment to followers"
+        placement="bottom"
+        noTap
+        className="flex select-none items-center"
+      >
         <Button
           color={'gray-white'}
           size={size}
           className={clsx(className)}
           onClick={() => setOpen(true)}
         >
-          <BiRepost className="h-6 w-6" />
+          <BiRepost className={clsx(iconClassName, 'h-6 w-6')} />
         </Button>
       </Tooltip>
       {open && (
         <RepostModal
           bet={bet}
-          contract={contract}
+          playContract={playContract}
           open={open}
           setOpen={setOpen}
         />
@@ -54,17 +60,17 @@ export const RepostButton = (props: {
 }
 
 export const RepostModal = (props: {
-  contract: Contract
+  playContract: Contract
   bet?: Bet
   comment?: ContractComment
   open: boolean
   setOpen: (open: boolean) => void
 }) => {
-  const { contract, comment, bet, open, setOpen } = props
+  const { playContract, comment, bet, open, setOpen } = props
   const [loading, setLoading] = useState(false)
   const repost = async () =>
     api('post', {
-      contractId: contract.id,
+      contractId: playContract.id,
       commentId: comment?.id,
       betId: bet?.id,
     })
@@ -90,12 +96,12 @@ export const RepostModal = (props: {
               (comment.bettorUsername && !commenterIsBettor)) &&
               (bet ? (
                 <CommentReplyHeaderWithBet
+                  contract={playContract}
                   comment={comment}
-                  contract={contract}
                   bet={bet}
                 />
               ) : (
-                <CommentReplyHeader comment={comment} contract={contract} />
+                <CommentReplyHeader comment={comment} contract={playContract} />
               ))}
             <Row className={'gap-1'}>
               <UserHovercard userId={comment.userId}>
@@ -114,12 +120,12 @@ export const RepostModal = (props: {
               >
                 <FeedCommentHeader
                   comment={comment}
-                  contract={contract}
+                  playContract={playContract}
                   inTimeline={false}
                   isParent={true}
                 />
 
-                <Content content={comment.content} />
+                <Content size="sm" content={comment.content} />
               </Col>
             </Row>
             <Row className={'mt-4 justify-between'}>
@@ -143,8 +149,9 @@ export const RepostModal = (props: {
           </Col>
         ) : (
           <ContractCommentInput
+            autoFocus
             replyTo={bet}
-            contract={contract}
+            playContract={playContract}
             trackingLocation={'contract page'}
             commentTypes={['repost']}
             onClearInput={() => setOpen(false)}

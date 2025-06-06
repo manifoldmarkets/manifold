@@ -3,8 +3,7 @@
   "version": "1.0.0",
   "private": true,
   "scripts": {
-    "build": "yarn compile && yarn --cwd=../../common alias && yarn alias",
-    "compile": "tsc -b",
+    "build": "tsc -b && (cd ../../common && tsc-alias) && tsc-alias",
     "alias": "tsc-alias",
     "verify": "yarn --cwd=../.. verify",
     "verify:dir": "npx eslint . --max-warnings 0"
@@ -12,8 +11,10 @@
   "sideEffects": false,
   "dependencies": {
     "@amplitude/node": "1.10.2",
+    "@anthropic-ai/sdk": "0.24.3",
     "@google-cloud/monitoring": "4.0.0",
     "@google-cloud/secret-manager": "4.2.1",
+    "@google/generative-ai": "0.22.0",
     "@stdlib/math-base-special-betaincinv": "0.2.1",
     "@tiptap/core": "2.0.0-beta.204",
     "@tiptap/html": "2.0.0-beta.204",
@@ -24,11 +25,12 @@
     "gcp-metadata": "6.1.0",
     "lodash": "4.17.21",
     "mailgun-js": "0.22.0",
-    "openai": "4.16.1",
+    "openai": "4.92.1",
     "pg-promise": "11.4.1",
     "string-similarity": "4.0.4"
   },
   "devDependencies": {
-    "@types/mailgun-js": "0.22.12"
+    "@types/mailgun-js": "0.22.12",
+    "@types/numeral": "2.0.5"
   }
 }

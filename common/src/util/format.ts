@@ -1,12 +1,7 @@
 import { ENV_CONFIG } from '../envs/constants'
-import {
-  BinaryContract,
-  CPMMMultiContract,
-  CPMMNumericContract,
-  PseudoNumericContract,
-  StonkContract,
-} from 'common/contract'
+import { ContractToken, MarketContract } from 'common/contract'
 import { STONK_NO, STONK_YES } from 'common/stonk'
+import { floatingEqual } from './math'
 
 const formatter = new Intl.NumberFormat('en-US', {
   style: 'currency',
@@ -15,9 +10,78 @@ const formatter = new Intl.NumberFormat('en-US', {
   minimumFractionDigits: 0,
 })
 
-export function formatMoney(amount: number) {
+const formatterWithFraction = new Intl.NumberFormat('en-US', {
+  style: 'currency',
+  currency: 'USD',
+  maximumFractionDigits: 2,
+  minimumFractionDigits: 2,
+})
+
+export const SWEEPIES_MONIKER = '𝕊'
+
+export type InputTokenType = 'M$' | 'SPICE' | 'CASH' | 'MANA'
+
+export function formatWithToken(variables: {
+  amount: number
+  token: InputTokenType
+  toDecimal?: number
+  short?: boolean
+}) {
+  const { amount, token, toDecimal, short } = variables
+  if (token === 'CASH') {
+    return formatSweepies(amount, { toDecimal, short })
+  }
+  if (toDecimal) {
+    return formatMoneyWithDecimals(amount)
+  }
+  if (short) {
+    return formatMoneyShort(amount)
+  }
+  return formatMoney(amount)
+}
+
+export function formatMoney(amount: number, token?: ContractToken) {
+  if (token === 'CASH') {
+    return formatSweepies(amount)
+  }
   const newAmount = getMoneyNumber(amount)
-  return formatter.format(newAmount).replace('$', ENV_CONFIG.moneyMoniker)
+  return `${ENV_CONFIG.moneyMoniker}${formatNumber(newAmount)}`
+}
+
+export function formatMoneyNoMoniker(amount: number) {
+  const newAmount = getMoneyNumber(amount)
+  return formatNumber(newAmount)
+}
+
+export function formatSweepies(
+  amount: number,
+  parameters?: {
+    toDecimal?: number
+    short?: boolean
+  }
+) {
+  const numberText = formatSweepiesNumber(amount, parameters)
+  const negative = numberText.startsWith('-')
+
+  return (negative ? '-' : '') + SWEEPIES_MONIKER + numberText.replace('-', '')
+}
+
+export function formatSweepiesNumber(
+  amount: number,
+  parameters?: {
+    toDecimal?: number
+    short?: boolean
+  }
+) {
+  const { toDecimal, short } = parameters ?? {}
+  if (short) {
+    return formatLargeNumber(amount)
+  }
+  const toDecimalPlace = toDecimal ?? 2
+  return amount.toLocaleString('en-US', {
+    minimumFractionDigits: toDecimalPlace,
+    maximumFractionDigits: toDecimalPlace,
+  })
 }
 
 export function formatSpice(amount: number) {
@@ -25,24 +89,31 @@ export function formatSpice(amount: number) {
   return formatter.format(newAmount).replace('$', 'P ')
 }
 
-export function formatMoneyNoMoniker(amount: number) {
-  const newAmount = getMoneyNumber(amount)
-  return formatter.format(newAmount).replace('$', '')
-}
-
 export function formatMoneyShort(amount: number) {
   const newAmount = getMoneyNumber(amount)
   return ENV_CONFIG.moneyMoniker + formatLargeNumber(newAmount)
 }
 
-export function formatMoneyUSD(amount: number) {
+export function formatMoneyUSD(amount: number, fraction?: boolean) {
+  if (fraction) {
+    return formatterWithFraction.format(amount)
+  }
   const newAmount = getMoneyNumber(amount)
   return formatter.format(newAmount)
 }
 
-export function formatMoneyNumber(amount: number) {
+export function formatSweepsToUSD(amount: number) {
+  return formatterWithFraction.format(amount)
+}
+
+export function formatMoneyNumberUSLocale(amount: number) {
   const newAmount = getMoneyNumber(amount)
   return formatter.format(newAmount).replace('$', '')
+}
+
+export function formatMoneyNumber(amount: number) {
+  const newAmount = getMoneyNumber(amount)
+  return formatNumber(newAmount)
 }
 
 export function getMoneyNumber(amount: number) {
@@ -53,34 +124,34 @@ export function getMoneyNumber(amount: number) {
   return Math.round(plusEpsilon) === 0 ? 0 : plusEpsilon
 }
 
+export function getMoneyNumberToDecimal(amount: number) {
+  return Math.abs(amount - Math.round(amount)) < 0.0001
+    ? Math.round(amount).toFixed(0)
+    : amount.toFixed(1)
+}
+
 export function formatMoneyWithDecimals(amount: number) {
   return ENV_CONFIG.moneyMoniker + amount.toFixed(2)
 }
 
 export function formatMoneyToDecimal(amount: number) {
-  const amountString =
-    Math.abs(amount - Math.round(amount)) < 0.0001
-      ? Math.round(amount).toFixed(0)
-      : amount.toFixed(1)
-  return ENV_CONFIG.moneyMoniker + amountString
+  return ENV_CONFIG.moneyMoniker + getMoneyNumberToDecimal(amount)
 }
 
 export function formatWithCommas(amount: number) {
-  return formatter.format(Math.floor(amount)).replace('$', '')
+  return formatNumber(Math.floor(amount))
 }
 
-export function manaToUSD(mana: number) {
-  return (mana / 1000).toLocaleString('en-US', {
-    style: 'currency',
-    currency: 'USD',
-  })
-}
-
-export function formatCents(cents: number) {
-  return (cents / 100).toLocaleString('en-US', {
-    style: 'currency',
-    currency: 'USD',
-  })
+export function formatShares(amount: number, isCashContract: boolean) {
+  if (isCashContract) {
+    // Format with locale, but ensure 2 decimal places
+    return amount.toLocaleString(undefined, {
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2,
+    })
+  } else {
+    return formatWithCommas(getMoneyNumber(amount))
+  }
 }
 
 export function formatPercentShort(zeroToOne: number) {
@@ -115,6 +186,7 @@ const showPrecision = (x: number, sigfigs: number) =>
 // Eg 1234567.89 => 1.23M; 5678 => 5.68K
 export function formatLargeNumber(num: number, sigfigs = 2): string {
   const absNum = Math.abs(num)
+  if (floatingEqual(absNum, 0)) return '0'
   if (absNum < 0.1) return showPrecision(num, 1)
   if (absNum < 1) return showPrecision(num, sigfigs)
 
@@ -130,6 +202,7 @@ export function formatLargeNumber(num: number, sigfigs = 2): string {
 }
 
 export function shortFormatNumber(num: number): string {
+  if (floatingEqual(num, 0)) return '0'
   if (num < 10 && num > -10) return showPrecision(num, 1)
   if (num < 100 && num > -100) return showPrecision(num, 2)
   if (num < 1000 && num > -1000) return showPrecision(num, 3)
@@ -165,14 +238,13 @@ export function toCamelCase(words: string) {
 }
 
 export const formatOutcomeLabel = (
-  contract:
-    | BinaryContract
-    | PseudoNumericContract
-    | StonkContract
-    | CPMMMultiContract
-    | CPMMNumericContract,
-  outcomeLabel: 'YES' | 'NO'
+  contract: MarketContract,
+  outcomeLabel: 'YES' | 'NO',
+  outcomePseudonym?: string
 ) => {
+  if (outcomePseudonym) {
+    return outcomePseudonym
+  }
   if (
     contract.outcomeType === 'BINARY' ||
     contract.mechanism === 'cpmm-multi-1'
@@ -183,4 +255,18 @@ export const formatOutcomeLabel = (
     return outcomeLabel === 'YES' ? STONK_YES : STONK_NO
   }
   return outcomeLabel === 'YES' ? 'HIGHER' : 'LOWER'
+}
+
+export function formatNumber(
+  amount: number,
+  options?: {
+    minimumFractionDigits?: number
+    maximumFractionDigits?: number
+  }
+) {
+  // Use toLocaleString - it uses Intl.NumberFormat internally and respects locale
+  return amount.toLocaleString(undefined, {
+    minimumFractionDigits: options?.minimumFractionDigits ?? 0,
+    maximumFractionDigits: options?.maximumFractionDigits ?? 0,
+  })
 }

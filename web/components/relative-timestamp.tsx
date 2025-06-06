@@ -1,5 +1,5 @@
 import { DateTimeTooltip } from './widgets/datetime-tooltip'
-import { fromNow } from 'web/lib/util/time'
+import { fromNow } from 'client-common/lib/time'
 import { useIsClient } from 'web/hooks/use-is-client'
 import { Placement } from '@floating-ui/react'
 
@@ -8,9 +8,11 @@ export function RelativeTimestamp(props: {
   className?: string
   placement?: Placement
   shortened?: boolean
+  useUseClient?: boolean
 }) {
-  const { time, className, placement, shortened } = props
-  const isClient = useIsClient()
+  const { time, className, placement, shortened, useUseClient } = props
+  // eslint-disable-next-line react-hooks/rules-of-hooks
+  const isClient = useUseClient ? useIsClient() : true
   return (
     <DateTimeTooltip
       className="text-ink-400 ml-1 whitespace-nowrap"

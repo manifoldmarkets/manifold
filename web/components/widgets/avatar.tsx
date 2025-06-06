@@ -4,6 +4,8 @@ import { memo, MouseEvent, useEffect, useState } from 'react'
 import { UserCircleIcon, UserIcon, UsersIcon } from '@heroicons/react/solid'
 import Image from 'next/image'
 import { floor } from 'lodash'
+import { isFresh } from './user-link'
+import { LuSprout } from 'react-icons/lu'
 
 export type AvatarSizeType = '2xs' | 'xs' | 'sm' | 'md' | 'lg' | 'xl'
 export const Avatar = memo(
@@ -14,8 +16,10 @@ export const Avatar = memo(
     size?: AvatarSizeType
     className?: string
     preventDefault?: boolean
+    createdTime?: number
   }) => {
-    const { username, noLink, size, className, preventDefault } = props
+    const { username, noLink, size, className, preventDefault, createdTime } =
+      props
     const [avatarUrl, setAvatarUrl] = useState(props.avatarUrl)
     useEffect(() => setAvatarUrl(props.avatarUrl), [props.avatarUrl])
     const s =
@@ -34,6 +38,8 @@ export const Avatar = memo(
         : 10
     const sizeInPx = s * 4
 
+    const isUserFresh = createdTime ? isFresh(createdTime) : false
+
     const onClick = (e: MouseEvent) => {
       if (!noLink && username) {
         if (preventDefault) {
@@ -46,34 +52,45 @@ export const Avatar = memo(
 
     // there can be no avatar URL or username in the feed, we show a "submit comment"
     // item with a fake grey user circle guy even if you aren't signed in
-    return avatarUrl ? (
-      <Image
-        width={sizeInPx}
-        height={sizeInPx}
-        className={clsx(
-          'bg-canvas-0 my-0 flex-shrink-0 rounded-full object-cover',
-          `w-${s} h-${s}`,
-          !noLink && 'cursor-pointer',
-          className
+    return (
+      <div className={isUserFresh ? 'relative' : ''}>
+        {avatarUrl ? (
+          <Image
+            width={sizeInPx}
+            height={sizeInPx}
+            className={clsx(
+              'bg-canvas-0 my-0 flex-shrink-0 rounded-full object-cover',
+              `w-${s} h-${s}`,
+              !noLink && 'cursor-pointer',
+              className,
+              isUserFresh && 'ring-1 ring-green-500'
+            )}
+            style={{ maxWidth: `${s * 0.25}rem` }}
+            src={avatarUrl}
+            onClick={onClick}
+            alt={`${username ?? 'Unknown user'} avatar`}
+            onError={() => {
+              // If the image doesn't load, clear the avatarUrl to show the default
+              // Mostly for localhost, when getting a 403 from googleusercontent
+              setAvatarUrl('')
+            }}
+          />
+        ) : (
+          <UserCircleIcon
+            className={clsx(
+              `bg-canvas-0 flex-shrink-0 rounded-full w-${s} h-${s} text-ink-500`,
+              className,
+              isUserFresh && 'ring-1 ring-green-500'
+            )}
+            onClick={onClick}
+          />
         )}
-        style={{ maxWidth: `${s * 0.25}rem` }}
-        src={avatarUrl}
-        onClick={onClick}
-        alt={`${username ?? 'Unknown user'} avatar`}
-        onError={() => {
-          // If the image doesn't load, clear the avatarUrl to show the default
-          // Mostly for localhost, when getting a 403 from googleusercontent
-          setAvatarUrl('')
-        }}
-      />
-    ) : (
-      <UserCircleIcon
-        className={clsx(
-          `bg-canvas-0 flex-shrink-0 rounded-full w-${s} h-${s} text-ink-500`,
-          className
+        {isUserFresh && (
+          <div className="absolute -right-2 -top-[0.41rem] rotate-45">
+            <LuSprout className="h-4 w-4 text-green-500" />
+          </div>
         )}
-        aria-hidden="true"
-      />
+      </div>
     )
   }
 )

@@ -4,7 +4,7 @@ import { postTweet } from 'shared/twitter'
 import { MANACHAN_TWEET_COST } from 'common/economy'
 import { createSupabaseDirectClient } from 'shared/supabase/init'
 import { getUser } from 'shared/utils'
-import { runTxn } from 'shared/txn/run-txn'
+import { runTxnInBetQueue } from 'shared/txn/run-txn'
 import { insert } from 'shared/supabase/utils'
 
 const bodySchema = z
@@ -22,7 +22,7 @@ export const manachantweet = authEndpoint(async (req, auth) => {
   if (!user) throw new APIError(401, 'Your account was not found')
 
   const result = await pg.tx(async (tx) => {
-    await runTxn(tx, {
+    await runTxnInBetQueue(tx, {
       category: 'MANACHAN_TWEET',
       token: 'M$',
       fromType: 'USER',

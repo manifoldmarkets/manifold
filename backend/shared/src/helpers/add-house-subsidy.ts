@@ -1,6 +1,3 @@
-import * as admin from 'firebase-admin'
-import { FieldValue } from 'firebase-admin/firestore'
-
 import { CPMMContract, CPMMMultiContract } from 'common/contract'
 import { getContractSupabase, isProd } from 'shared/utils'
 import {
@@ -11,8 +8,8 @@ import { getNewLiquidityProvision } from 'common/add-liquidity'
 import { insertLiquidity } from 'shared/supabase/liquidity'
 import { createSupabaseDirectClient } from 'shared/supabase/init'
 import { APIError } from 'common/api/utils'
-
-const firestore = admin.firestore()
+import { updateContract } from 'shared/supabase/contracts'
+import { FieldVal } from 'shared/supabase/utils'
 
 export const addHouseSubsidy = async (contractId: string, amount: number) => {
   const pg = createSupabaseDirectClient()
@@ -34,10 +31,9 @@ export const addHouseSubsidy = async (contractId: string, amount: number) => {
 
   await pg.tx(async (tx) => {
     await insertLiquidity(tx, newLiquidityProvision)
-
-    await firestore.doc(`contracts/${contractId}`).update({
-      subsidyPool: FieldValue.increment(amount),
-      totalLiquidity: FieldValue.increment(amount),
+    await updateContract(tx, contractId, {
+      subsidyPool: FieldVal.increment(amount),
+      totalLiquidity: FieldVal.increment(amount),
     })
   })
 }
@@ -70,15 +66,15 @@ export const addHouseSubsidyToAnswer = async (
 
     await tx.none(
       `update answers
-      set data = data ||
-        jsonb_build_object('totalLiquidity', data->>'totalLiquidity'::numeric + $1) ||
-        jsonb_build_object('subsidyPool', data->>'subsidyPool'::numeric + $1)
+      set
+        total_liquidity = total_liquidity + $1,
+        subsidy_pool = subsidy_pool + $1
       where id = $2`,
       [amount, answerId]
     )
 
-    await firestore.doc(`contracts/${contractId}`).update({
-      totalLiquidity: FieldValue.increment(amount),
+    await updateContract(tx, contractId, {
+      totalLiquidity: FieldVal.increment(amount),
     })
   })
 }

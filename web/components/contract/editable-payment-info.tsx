@@ -1,38 +1,25 @@
 import { useEffect, useState } from 'react'
 import { CheckIcon, XIcon, PencilIcon } from '@heroicons/react/solid'
 import { IconButton } from '../buttons/button'
-import { updatePrivateUser, getPrivateUser } from 'web/lib/firebase/users'
 import { Input } from '../widgets/input'
+import { usePrivateUser } from 'web/hooks/use-user'
+import { api } from 'web/lib/api/api'
 
-type EditablePaymentInfoProps = {
-  userId: string
-}
-
-export const EditablePaymentInfo = ({ userId }: EditablePaymentInfoProps) => {
+export const EditablePaymentInfo = () => {
   const [isEditing, setEditing] = useState(false)
-  const [paymentInfo, setPaymentInfo] = useState('')
+  const privateUser = usePrivateUser()
+  const [paymentInfo, setPaymentInfo] = useState(privateUser?.paymentInfo || '')
 
   useEffect(() => {
-    const getPaymentInfo = async () => {
-      try {
-        const userData = await getPrivateUser(userId)
-        if (userData && userData.paymentInfo) {
-          setPaymentInfo(userData.paymentInfo)
-        }
-      } catch (error) {
-        console.error('Failed to fetch payment info', error)
-      }
-    }
-
-    getPaymentInfo()
-  }, [userId])
+    setPaymentInfo(privateUser?.paymentInfo || '')
+  }, [privateUser])
 
   const edit = () => {
     setEditing(true)
   }
 
   const onSave = async (newPaymentInfo: string) => {
-    await updatePrivateUser(userId, {
+    await api('me/private/update', {
       paymentInfo: newPaymentInfo,
     })
     setEditing(false)

@@ -1,0 +1,19 @@
+{
+  "name": "client-common",
+  "version": "1.0.0",
+  "private": true,
+  "main": "src/index.ts",
+  "types": "src/index.ts",
+  "dependencies": {
+    "firebase": "10.12.2",
+    "dayjs": "1.11.4"
+  },
+  "devDependencies": {
+    "typescript": "^5.0.0"
+  },
+  "peerDependencies": {
+    "firebase": "10.12.2",
+    "react": "18.3.1",
+    "react-native": "0.76.5"
+  }
+}

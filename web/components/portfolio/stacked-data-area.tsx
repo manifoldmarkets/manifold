@@ -4,7 +4,12 @@ import { DiagonalPattern } from '../charts/generic-charts'
 import { AreaPath } from '../charts/helpers'
 import { PortfolioHoveredGraphType } from './portfolio-value-section'
 import { HistoryPoint } from 'common/chart'
-import { AreaPointType } from './portfolio-chart'
+
+export type AreaPointType = {
+  x: number // The x-coordinate
+  y0: number // Lower boundary of the area
+  y1: number // Upper boundary of the area
+}
 
 export function StackedArea<P extends HistoryPoint>(props: {
   id: string

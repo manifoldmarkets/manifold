@@ -1,49 +1,41 @@
 import clsx from 'clsx'
-import { sum } from 'lodash'
 import { ELASTICITY_BET_AMOUNT } from 'common/calculate-metrics'
 import { Contract, contractPool } from 'common/contract'
 import {
   ENV_CONFIG,
-  firestoreConsolePath,
   isAdminId,
   isModId,
+  supabaseConsoleContractPath,
+  TRADED_TERM,
 } from 'common/envs/constants'
+import { UNRANKED_GROUP_ID } from 'common/supabase/groups'
 import { BETTORS, User } from 'common/user'
-import { formatMoney, formatMoneyWithDecimals } from 'common/util/format'
+import dayjs from 'dayjs'
 import { capitalize, sumBy } from 'lodash'
 import { toast } from 'react-hot-toast'
-import { TiVolumeMute } from 'react-icons/ti'
-import { BlockMarketButton } from 'web/components/buttons/block-market-button'
-import { FollowMarketButton } from 'web/components/buttons/follow-market-button'
 import { useAdmin, useDev, useTrusted } from 'web/hooks/use-admin'
-import {
-  api,
-  updateMarket,
-  updateUserDisinterestEmbedding,
-} from 'web/lib/firebase/api'
-import { formatTime } from 'web/lib/util/time'
-import { Button } from '../buttons/button'
+import { api, updateMarket } from 'web/lib/api/api'
+import { formatTime } from 'client-common/lib/time'
+import { MoneyDisplay } from '../bet/money-display'
 import { CopyLinkOrShareButton } from '../buttons/copy-link-button'
-import { DuplicateContractButton } from '../buttons/duplicate-contract-button'
-import { ReportButton } from '../buttons/report-button'
+import { ShareEmbedButton, ShareIRLButton } from '../buttons/share-embed-button'
+import { ShareQRButton } from '../buttons/share-qr-button'
 import { Modal } from '../layout/modal'
 import { Row } from '../layout/row'
+import SuperBanControl from '../SuperBanControl'
+import { InfoBox } from '../widgets/info-box'
 import { InfoTooltip } from '../widgets/info-tooltip'
 import ShortToggle from '../widgets/short-toggle'
 import { Table } from '../widgets/table'
-import { UNRANKED_GROUP_ID } from 'common/supabase/groups'
 import { ContractHistoryButton } from './contract-edit-history-button'
-import { ShareEmbedButton, ShareIRLButton } from '../buttons/share-embed-button'
-import { ShareQRButton } from '../buttons/share-qr-button'
-import dayjs from 'dayjs'
-import SuperBanControl from '../SuperBanControl'
-import { BoostButton } from './boost-button'
-
+import { SweepsToggle } from '../sweeps/sweeps-toggle'
+import { useSweepstakes } from '../sweepstakes-provider'
 export const Stats = (props: {
   contract: Contract
+  setIsPlay: (isPlay: boolean) => void
   user?: User | null | undefined
 }) => {
-  const { contract, user } = props
+  const { contract, user, setIsPlay } = props
   const { creatorId } = contract
   const shouldAnswersSumToOne =
     contract.mechanism === 'cpmm-multi-1'
@@ -51,6 +43,7 @@ export const Stats = (props: {
       : false
   const addAnswersMode =
     contract.mechanism === 'cpmm-multi-1' ? contract.addAnswersMode : 'DISABLED'
+  const isCashContract = contract.token === 'CASH'
 
   const hideAdvanced = !user
   const isDev = useDev()
@@ -73,10 +66,10 @@ export const Stats = (props: {
     resolutionTime,
     uniqueBettorCount,
     mechanism,
+    viewCount,
     outcomeType,
     id,
     elasticity,
-    isSpicePayout,
   } = contract
 
   const typeDisplay =
@@ -113,6 +106,21 @@ export const Stats = (props: {
       : { label: 'Mistake', desc: "Likely one of Austin's bad ideas" }
 
   const isBettingContract = contract.mechanism !== 'none'
+  const drizzler = mechanism === 'cpmm-1' || mechanism === 'cpmm-multi-1'
+  const drizzled = drizzler
+    ? contract.totalLiquidity -
+      contract.subsidyPool -
+      ('answers' in contract ? sumBy(contract.answers, 'subsidyPool') : 0)
+    : 0
+
+  const { prefersPlay, setPrefersPlay } = useSweepstakes()
+  const isPlay = contract.token == 'MANA'
+  const sweepsEnabled = !!contract.siblingContractId
+
+  const isNonBetPollOrBountiedQuestion =
+    contract.mechanism === 'none' &&
+    (contract.outcomeType === 'POLL' ||
+      contract.outcomeType === 'BOUNTIED_QUESTION')
 
   return (
     <Table>
@@ -143,13 +151,23 @@ export const Stats = (props: {
                 Total bounty{' '}
                 <InfoTooltip text="The total bounty the creator has put up" />
               </td>
-              <td>{formatMoney(contract.totalBounty)}</td>
+              <td>
+                <MoneyDisplay
+                  amount={contract.totalBounty}
+                  isCashContract={isCashContract}
+                />
+              </td>
             </tr>
             <tr>
               <td>
                 Bounty left <InfoTooltip text="Bounty left to pay out" />
               </td>
-              <td>{formatMoney(contract.bountyLeft)}</td>
+              <td>
+                <MoneyDisplay
+                  amount={contract.bountyLeft}
+                  isCashContract={isCashContract}
+                />
+              </td>
             </tr>
           </>
         )}
@@ -185,7 +203,12 @@ export const Stats = (props: {
                 <span className="mr-1">24 hour volume</span>
                 <InfoTooltip text="Amount bought or sold in the last 24 hours" />
               </td>
-              <td>{formatMoney(contract.volume24Hours)}</td>
+              <td>
+                <MoneyDisplay
+                  amount={contract.volume24Hours}
+                  isCashContract={isCashContract}
+                />
+              </td>
             </tr>
 
             <tr>
@@ -193,24 +216,36 @@ export const Stats = (props: {
                 <span className="mr-1">Total volume</span>
                 <InfoTooltip text="Total amount bought or sold" />
               </td>
-              <td>{formatMoney(contract.volume)}</td>
+              <td>
+                <MoneyDisplay
+                  amount={contract.volume}
+                  isCashContract={isCashContract}
+                />
+              </td>
             </tr>
 
-            <tr>
+            {/* <tr>
               <td>
                 <span className="mr-1">Collected fees</span>
                 <InfoTooltip text="Includes both platform and creator fees" />
               </td>
               <td>
-                {formatMoneyWithDecimals(
-                  sum(Object.values(contract.collectedFees))
-                )}
+                <MoneyDisplay
+                  amount={sum(Object.values(contract.collectedFees))}
+                  isCashContract={isCashContract}
+                  numberType="toDecimal"
+                />
               </td>
-            </tr>
+            </tr> */}
 
             <tr>
               <td>{capitalize(BETTORS)}</td>
               <td>{uniqueBettorCount ?? '0'}</td>
+            </tr>
+
+            <tr>
+              <td>Views</td>
+              <td>{viewCount ?? '0'}</td>
             </tr>
           </>
         )}
@@ -221,13 +256,25 @@ export const Stats = (props: {
                 <span className="mr-1">Elasticity</span>
                 <InfoTooltip
                   text={
-                    mechanism === 'cpmm-1'
-                      ? `Log-odds change between a ${formatMoney(
-                          ELASTICITY_BET_AMOUNT
-                        )} bet on YES and NO`
-                      : `Log-odds change from a ${formatMoney(
-                          ELASTICITY_BET_AMOUNT
-                        )} bet`
+                    mechanism === 'cpmm-1' ? (
+                      <>
+                        Log-odds change between a{' '}
+                        <MoneyDisplay
+                          amount={ELASTICITY_BET_AMOUNT}
+                          isCashContract={isCashContract}
+                        />{' '}
+                        {TRADED_TERM} on YES and NO
+                      </>
+                    ) : (
+                      <>
+                        Log-odds change from a{' '}
+                        <MoneyDisplay
+                          amount={ELASTICITY_BET_AMOUNT}
+                          isCashContract={isCashContract}
+                        />{' '}
+                        {TRADED_TERM}
+                      </>
+                    )
                   }
                 />
               </Row>
@@ -237,21 +284,40 @@ export const Stats = (props: {
         )}
 
         {isBettingContract && (
+          <>
+            <tr>
+              <td>Liquidity subsidies</td>
+              <td>
+                {drizzler ? (
+                  <>
+                    <MoneyDisplay
+                      amount={drizzled}
+                      isCashContract={isCashContract}
+                    />{' '}
+                    /{' '}
+                    <MoneyDisplay
+                      amount={contract.totalLiquidity}
+                      isCashContract={isCashContract}
+                    />
+                  </>
+                ) : (
+                  <MoneyDisplay amount={100} isCashContract={isCashContract} />
+                )}
+              </td>
+            </tr>
+          </>
+        )}
+        {drizzler && drizzled !== contract.totalLiquidity ? (
           <tr>
-            <td>Liquidity subsidies</td>
-            <td>
-              {mechanism === 'cpmm-1' || mechanism === 'cpmm-multi-1'
-                ? `${formatMoney(
-                    contract.totalLiquidity -
-                      contract.subsidyPool -
-                      ('answers' in contract
-                        ? sumBy(contract.answers, 'subsidyPool')
-                        : 0)
-                  )} / ${formatMoney(contract.totalLiquidity)}`
-                : formatMoney(100)}
+            <td colSpan={2}>
+              <InfoBox
+                title="Where's my liquidity?"
+                text="Liquidity is
+                  drizzled in slowly to prevent manipulation"
+              />
             </td>
           </tr>
-        )}
+        ) : null}
 
         {!hideAdvanced && isBettingContract && (
           <tr>
@@ -266,6 +332,30 @@ export const Stats = (props: {
                     contract.pool.NO
                   )} LOWER`
                 : contractPool(contract)}
+            </td>
+          </tr>
+        )}
+        {sweepsEnabled && !isNonBetPollOrBountiedQuestion && (
+          <tr>
+            <td>Sweepstakes</td>
+            <td>
+              <SweepsToggle
+                sweepsEnabled={sweepsEnabled}
+                isPlay={isPlay}
+                onClick={() => {
+                  if (prefersPlay && isPlay) {
+                    setPrefersPlay(false)
+                    setIsPlay(false)
+                  } else if (!prefersPlay && !isPlay) {
+                    setPrefersPlay(true)
+                    setIsPlay(true)
+                  } else if (prefersPlay && !isPlay) {
+                    setIsPlay(true)
+                  } else if (!prefersPlay && isPlay) {
+                    setIsPlay(false)
+                  }
+                }}
+              />
             </td>
           </tr>
         )}
@@ -302,10 +392,10 @@ export const Stats = (props: {
         {(isAdmin || isDev) && (
           <>
             <tr className="bg-purple-500/30">
-              <td>Firestore link</td>
+              <td>Supabase link</td>
               <td>
                 <a
-                  href={firestoreConsolePath(id)}
+                  href={supabaseConsoleContractPath(id)}
                   target="_blank"
                   className="text-primary-600"
                   rel="noreferrer"
@@ -330,7 +420,7 @@ export const Stats = (props: {
           </>
         )}
 
-        {!hideAdvanced && contract.visibility != 'private' && (
+        {!hideAdvanced && (
           <tr className={clsx(isMod && 'bg-purple-500/30')}>
             <td>
               🔎 Publicly listed{' '}
@@ -363,7 +453,7 @@ export const Stats = (props: {
             <td>
               🏆 Ranked{' '}
               <InfoTooltip
-                text={'Profit and creator bonuses count towards leagues'}
+                text={'Profit from this market count towards leagues'}
               />
             </td>
             <td>
@@ -395,21 +485,24 @@ export const Stats = (props: {
             </td>
           </tr>
         )}
-        {!hideAdvanced && isBettingContract && (
+
+        {!hideAdvanced && contract.outcomeType === 'DATE' && (
           <tr className={clsx(isMod && 'bg-purple-500/30')}>
             <td>
-              💰 Prize market{' '}
+              🕒 Clock mode{' '}
               <InfoTooltip
-                text={'Whether this market issue prizes points on resolution'}
+                text={'Display date as a clock instead of the default view'}
               />
             </td>
             <td>
               <CheckOrSwitch
-                canToggle={isAdmin}
-                disabled={!isAdmin}
-                on={!!isSpicePayout}
-                setOn={(val) =>
-                  updateMarket({ contractId: contract.id, isSpicePayout: val })
+                canToggle={isMod || isCreator}
+                on={contract.display === 'clock'}
+                setOn={(on) =>
+                  updateMarket({
+                    contractId: contract.id,
+                    display: on ? 'clock' : 'default',
+                  })
                 }
               />
             </td>
@@ -420,7 +513,7 @@ export const Stats = (props: {
   )
 }
 
-const CheckOrSwitch = (props: {
+export const CheckOrSwitch = (props: {
   canToggle: boolean
   disabled?: boolean
   on: boolean
@@ -442,15 +535,16 @@ const CheckOrSwitch = (props: {
 }
 
 export function ContractInfoDialog(props: {
-  contract: Contract
+  playContract: Contract
+  statsContract: Contract
   user: User | null | undefined
+  setIsPlay: (isPlay: boolean) => void
   open: boolean
   setOpen: (open: boolean) => void
 }) {
-  const { contract, user, open, setOpen } = props
+  const { playContract, statsContract, user, open, setOpen, setIsPlay } = props
   const isAdmin = useAdmin()
   const isTrusted = useTrusted()
-  const isCreator = user?.id === contract.creatorId
 
   return (
     <Modal
@@ -458,62 +552,23 @@ export function ContractInfoDialog(props: {
       setOpen={setOpen}
       className="bg-canvas-0 flex flex-col gap-4 rounded p-6"
     >
-      <FollowMarketButton contract={contract} user={user} />
-
-      <Stats contract={contract} user={user} />
+      <Stats contract={statsContract} user={user} setIsPlay={setIsPlay} />
 
       {!!user && (
         <>
           <Row className="my-2 flex-wrap gap-2">
-            {!isCreator && <BoostButton contract={contract} />}
-            <DuplicateContractButton contract={contract} />
-
-            <ContractHistoryButton contract={contract} />
-            <ShareQRButton contract={contract} />
-            <ShareIRLButton contract={contract} />
-            <ShareEmbedButton contract={contract} />
+            <ContractHistoryButton contract={playContract} />
+            <ShareQRButton contract={playContract} />
+            <ShareIRLButton contract={playContract} />
+            <ShareEmbedButton contract={statsContract} />
           </Row>
           <Row className="flex-wrap gap-2">
-            <ReportButton
-              report={{
-                contentId: contract.id,
-                contentType: 'contract',
-                contentOwnerId: contract.creatorId,
-              }}
-            />
-
-            <BlockMarketButton contract={contract} />
-            <DisinterestedButton contract={contract} user={user} />
             {isAdmin || isTrusted ? (
-              <SuperBanControl userId={contract.creatorId} />
+              <SuperBanControl userId={playContract.creatorId} />
             ) : null}
           </Row>
         </>
       )}
     </Modal>
-  )
-}
-const DisinterestedButton = (props: {
-  contract: Contract
-  user: User | null | undefined
-}) => {
-  const { contract, user } = props
-  if (!user) return null
-  const markUninteresting = async () => {
-    await updateUserDisinterestEmbedding({
-      contractId: contract.id,
-      creatorId: contract.creatorId,
-    })
-    toast(`We won't show you content like that again`, {
-      icon: <TiVolumeMute className={'h-5 w-5 text-teal-500'} />,
-    })
-  }
-  return (
-    <Button size="xs" color="yellow-outline" onClick={markUninteresting}>
-      <Row className={'items-center text-sm'}>
-        <TiVolumeMute className="h-5 w-5" />
-        Uninterested
-      </Row>
-    </Button>
   )
 }

@@ -225,7 +225,6 @@ const migrateMultiDpmToCpmm = async (
       isApi: false,
       isAnte: false,
       isRedemption: false,
-      isChallenge: false,
       visibility: 'public',
       userAvatarUrl: b.userAvatarUrl,
       userUsername: b.userUsername,

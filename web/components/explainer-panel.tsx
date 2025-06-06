@@ -1,25 +1,32 @@
-import clsx from 'clsx'
-import { Col } from './layout/col'
 import { ChevronDoubleDownIcon } from '@heroicons/react/solid'
-import { Card } from './widgets/card'
+import clsx from 'clsx'
+import { ENV_CONFIG, TRADING_TERM } from 'common/envs/constants'
 import React from 'react'
-import { Row } from './layout/row'
-import { FaHandHoldingUsd, FaPercentage } from 'react-icons/fa'
+import { GoGraph } from 'react-icons/go'
 import { TbTargetArrow } from 'react-icons/tb'
 import { track } from 'web/lib/service/analytics'
-import { SPICE_PRODUCTION_ENABLED } from 'common/envs/constants'
+import { AboutManifold } from './about-manifold'
+import { Col } from './layout/col'
+import { Row } from './layout/row'
+import { Card } from './widgets/card'
 
-export const ExplainerPanel = (props: { className?: string }) => {
-  const { className } = props
+import { ManaCoin } from 'web/public/custom-components/manaCoin'
+import { formatMoney } from 'common/util/format'
+
+export const ExplainerPanel = (props: {
+  className?: string
+  showWhatIsManifold?: boolean
+  showAccuracy?: boolean
+}) => {
+  const { className, showWhatIsManifold = true, showAccuracy = true } = props
   const handleSectionClick = (sectionTitle: string) => {
     track('explainer section click', { sectionTitle })
   }
   return (
-    <Col className={clsx(className)}>
-      <h2 className={clsx('text-ink-600 mb-2 text-xl')}>What is this?</h2>
-      <Accuracy onClick={handleSectionClick} />
-      <WhatAreOdds onClick={handleSectionClick} />
-      <WhyShouldI onClick={handleSectionClick} />
+    <Col className={clsx('max-w-xl', className)}>
+      {showWhatIsManifold && <WhatIsManifold onClick={handleSectionClick} />}
+      {showAccuracy && <Accuracy onClick={handleSectionClick} />}
+      <PlayMoney onClick={handleSectionClick} />
     </Col>
   )
 }
@@ -32,7 +39,7 @@ export const ExpandSection = (props: {
   const { title, children, onClick } = props
 
   return (
-    <Card className="mb-4">
+    <Card className="my-2">
       <details className="group flex flex-col gap-2">
         <summary className="flex list-none items-center justify-between px-4 py-3 [&::-webkit-details-marker]:hidden">
           <Row className="items-center text-lg font-semibold">{title}</Row>
@@ -50,30 +57,7 @@ export const ExpandSection = (props: {
   )
 }
 
-const WhatAreOdds = ({
-  onClick,
-}: {
-  onClick: (sectionTitle: string) => void
-}) => (
-  <ExpandSection
-    title={
-      <Row className="items-start">
-        <FaPercentage className="mr-2 mt-[0.25em] flex-shrink-0 align-text-bottom" />{' '}
-        What are the odds?
-      </Row>
-    }
-    onClick={() => onClick('What are the odds?')}
-  >
-    <div className="pb-2">The odds are the chance that the event happens.</div>
-    <div className="pb-2">
-      The odds are set by traders who have insight into the question weighted
-      proportional to their confidence (bet size) and how correct they've been
-      in the past (balance).
-    </div>
-  </ExpandSection>
-)
-
-const WhyShouldI = ({
+const WhatIsManifold = ({
   onClick,
 }: {
   onClick: (sectionTitle: string) => void
@@ -81,22 +65,12 @@ const WhyShouldI = ({
   <ExpandSection
     title={
       <>
-        <FaHandHoldingUsd className="mr-2" /> Why should I bet?
+        <GoGraph className="mr-2  " /> What is Manifold?
       </>
     }
-    onClick={() => onClick('Why should I bet?')}
+    onClick={() => onClick('What is Manifold?')}
   >
-    {SPICE_PRODUCTION_ENABLED && (
-      <div className="pb-2">
-        By betting, you can win prize points which are redeemable for real cash
-        charity donations
-      </div>
-    )}
-    <div className="pb-2">
-      Betting on questions provides accurate answers of important real, world
-      questions.
-    </div>
-    <div className="pb-2">Get started for free! No credit card required.</div>
+    <AboutManifold />
   </ExpandSection>
 )
 
@@ -104,13 +78,13 @@ const Accuracy = ({ onClick }: { onClick: (sectionTitle: string) => void }) => (
   <ExpandSection
     title={
       <>
-        <TbTargetArrow className="mr-2" /> Are our forecasts accurate?
+        <TbTargetArrow className="mr-2" /> Are our predictions accurate?
       </>
     }
     onClick={() => onClick('Are our forecasts accurate?')}
   >
     <div className="pb-2">
-      Manifold is{' '}
+      Yes! Manifold is{' '}
       <a
         className="text-primary-700 hover:underline"
         target="_blank"
@@ -119,21 +93,48 @@ const Accuracy = ({ onClick }: { onClick: (sectionTitle: string) => void }) => (
         very well calibrated
       </a>
       , with forecasts on average within <strong>4 percentage points</strong> of
-      the true probability.
+      the true probability. Our probabilities are created by users buying and
+      selling shares of a market.
     </div>
     <div className="pb-2">
-      By using the combined wisdom of thousands of users, we outperform
-      real-money platforms. For example, in the{' '}
+      In the 2022 US midterm elections, we {''}
       <a
         className="text-primary-700 hover:underline"
         target="_blank"
         href="https://firstsigma.substack.com/p/midterm-elections-forecast-comparison-analysis"
       >
-        2022 US midterm elections
+        outperformed all other prediction market platforms {''}
       </a>
-      , we outperformed all prediction markets and were in line with
-      FiveThirtyEight’s performance.
+      and were in line with FiveThirtyEight’s performance. Many people who don't
+      like {TRADING_TERM} still use Manifold to get reliable news.
     </div>
     <div></div>
+  </ExpandSection>
+)
+
+const PlayMoney = ({
+  onClick,
+}: {
+  onClick: (sectionTitle: string) => void
+}) => (
+  <ExpandSection
+    title={
+      <>
+        <ManaCoin className="!mr-2 h-4 w-4 grayscale" />
+        Why use play money?
+      </>
+    }
+    onClick={() => onClick('Why play money?')}
+  >
+    <div className="pb-2">
+      Mana ({ENV_CONFIG.moneyMoniker}) is the play-money currency used to bet on
+      Manifold. It cannot be converted to cash. All users start with{' '}
+      {formatMoney(1000)} for free.
+    </div>
+    <div className="pb-2">
+      Play money means it's much easier for anyone anywhere in the world to get
+      started and try out forecasting without any risk. It also means there's
+      more freedom to create and bet on any type of question.
+    </div>
   </ExpandSection>
 )

@@ -2,12 +2,11 @@ import clsx from 'clsx'
 import { User } from 'common/user'
 import { formatMoney } from 'common/util/format'
 import { useEffect, useState } from 'react'
-import { ProfitType, useMaxAndMinProfit } from 'web/hooks/use-wrapped-2023'
-import { LoadingIndicator } from '../widgets/loading-indicator'
-import { NavButtons } from './NavButtons'
-import { Row } from '../layout/row'
-import { useContract } from 'web/hooks/use-contract-supabase'
+import { ProfitType, useMaxAndMinProfit } from 'web/hooks/use-wrapped-2024'
 import { Col } from '../layout/col'
+import { Row } from '../layout/row'
+import { NavButtons } from './NavButtons'
+import { LoadingIndicator } from '../widgets/loading-indicator'
 
 export function MaxMinProfit(props: {
   goToPrevPage: () => void
@@ -20,8 +19,6 @@ export function MaxMinProfit(props: {
   const [animateOut, setAnimateOut] = useState(false)
 
   const { maxProfit, minProfit } = useMaxAndMinProfit(user.id)
-  const maxContract = useContract(maxProfit?.contractId)
-  const minContract = useContract(minProfit?.contractId)
 
   //triggers for animation in
   useEffect(() => {
@@ -45,7 +42,7 @@ export function MaxMinProfit(props: {
     }, 1000)
   }
 
-  if (maxContract == undefined || minContract == undefined) {
+  if (maxProfit === undefined || minProfit === undefined) {
     return (
       <div className="mx-auto my-auto">
         <LoadingIndicator />
@@ -53,9 +50,28 @@ export function MaxMinProfit(props: {
     )
   }
 
-  if (maxContract == null || minContract == null) {
-    return <>An error occured</>
+  if (maxProfit === null || minProfit === null) {
+    return (
+      <>
+        <div className="mx-auto my-auto">
+          You don't have any resolved bets this year!
+        </div>
+        <NavButtons goToPrevPage={goToPrevPage} goToNextPage={onGoToNext} />
+      </>
+    )
   }
+
+  function getBetOnThing(profit: ProfitType) {
+    const contract = profit.contract
+    const betOnAnswer =
+      profit.answerId && 'answers' in contract
+        ? contract.answers.find((a) => a.id === profit.answerId)
+        : undefined
+    return [contract, betOnAnswer]
+  }
+
+  const [maxContract, maxBetOnAnswer] = getBetOnThing(maxProfit)
+  const [minContract, minBetOnAnswer] = getBetOnThing(minProfit)
 
   return (
     <>
@@ -92,9 +108,12 @@ export function MaxMinProfit(props: {
                 animateOut ? 'animate-fade-out' : 'animate-fade-in'
               )}
             >
-              You made the most betting
+              You made the most trading
               <BettingDirection profit={maxProfit} /> on{' '}
-              <b>{maxContract.question}</b>
+              <b>
+                {maxBetOnAnswer ? maxBetOnAnswer.text : maxContract.question}
+              </b>{' '}
+              {maxBetOnAnswer && <>on {maxContract.question}</>}
             </div>
             <div
               className={clsx(
@@ -106,9 +125,13 @@ export function MaxMinProfit(props: {
                   : 'invisible'
               )}
             >
-              You lost the most betting
+              You lost the most trading
               <BettingDirection profit={minProfit} />
-              on <b>{minContract.question}</b>
+              on{' '}
+              <b>
+                {minBetOnAnswer ? minBetOnAnswer.text : minContract.question}
+              </b>{' '}
+              {minBetOnAnswer && <>on {minContract.question}</>}
             </div>
           </Col>
         </Row>

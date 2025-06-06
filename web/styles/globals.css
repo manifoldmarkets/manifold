@@ -78,8 +78,8 @@
     --color-ink-50: 10 8 43;
     --color-ink-0: 0 0 0;
 
-    --color-canvas-0: 30 41 59;
-    --color-canvas-50: 15 23 41;
+    --color-canvas-0: 15 23 41;
+    --color-canvas-50: 30 41 59;
     --color-canvas-100: 51 65 85;
 
     --color-primary-950: 238 242 255;
@@ -199,4 +199,45 @@
 
 text {
   font-family: icomoon, var(--font-main), emoji, sans-serif;
+}
+
+.coin-offset {
+  --coin-offset: calc(1.1em);
+  --coin-top-offset: calc(0.25em);
+}
+
+.text-xs .coin-offset {
+  --coin-top-offset: calc(0.2em);
+}
+
+.text-sm .coin-offset {
+  --coin-top-offset: calc(0.17em);
+}
+
+.text-lg .coin-offset {
+  --coin-top-offset: calc(0.3em);
+}
+
+.text-xl .coin-offset {
+  --coin-top-offset: calc(0.2em);
+}
+
+.text-2xl .coin-offset {
+  --coin-top-offset: calc(0.15em);
+}
+
+.text-3xl .coin-offset {
+  --coin-top-offset: calc(0.1em);
+}
+
+.text-4xl .coin-offset {
+  --coin-top-offset: calc(0.05em);
+}
+
+.text-5xl .coin-offset {
+  --coin-top-offset: calc(0em);
+}
+
+.text-6xl .coin-offset {
+  --coin-top-offset: calc(0em);
 }

@@ -3,10 +3,10 @@ import { ContractComment } from 'common/comment'
 import { BountiedQuestionContract } from 'common/contract'
 import { User } from 'common/user'
 import { formatMoney } from 'common/util/format'
-import { forwardRef, useEffect, useState } from 'react'
+import { useState } from 'react'
 import { FaXmark } from 'react-icons/fa6'
 import { TbMoneybag } from 'react-icons/tb'
-import { api, cancelBounty } from 'web/lib/firebase/api'
+import { api, cancelBounty } from 'web/lib/api/api'
 import { Button } from '../buttons/button'
 import { ConfirmationButton } from '../buttons/confirmation-button'
 import { Col } from '../layout/col'
@@ -14,56 +14,6 @@ import { MODAL_CLASS, Modal } from '../layout/modal'
 import { Row } from '../layout/row'
 import { BuyAmountInput } from '../widgets/amount-input'
 import { InfoTooltip } from '../widgets/info-tooltip'
-
-const loadLottie = () => import('react-lottie')
-const loadAwardJson = () => import('../../public/lottie/award.json')
-
-let lottieLib: ReturnType<typeof loadLottie> | undefined
-let animationJson: ReturnType<typeof loadAwardJson> | undefined
-
-const loadImports = async () => {
-  lottieLib ??= loadLottie()
-  animationJson ??= loadAwardJson()
-  return {
-    Lottie: (await lottieLib).default,
-    award: await animationJson,
-  }
-}
-
-export const LootboxAnimation = forwardRef(() => {
-  const [imports, setImports] =
-    useState<Awaited<ReturnType<typeof loadImports>>>()
-
-  useEffect(() => {
-    loadImports().then((x) => setImports(x))
-  }, [])
-
-  if (imports == null) {
-    return null
-  }
-  const { Lottie, award } = imports
-  return (
-    <Lottie
-      options={{
-        loop: true,
-        autoplay: true,
-        animationData: award,
-        rendererSettings: {
-          preserveAspectRatio: 'xMidYMid slice',
-        },
-      }}
-      height={200}
-      width={200}
-      isStopped={false}
-      isPaused={false}
-      style={{
-        color: '#6366f1',
-        pointerEvents: 'none',
-        background: 'transparent',
-      }}
-    />
-  )
-})
 
 export function BountyLeft(props: {
   bountyLeft: number
@@ -166,7 +116,7 @@ export function AwardBountyButton(props: {
       </Button>
       <Modal open={open} setOpen={setOpen}>
         <Col className={MODAL_CLASS}>
-          <LootboxAnimation />
+          <div className="text-[150px]">🏅</div>
           <span>
             Award <b>{comment.userName}</b> a bounty
           </span>

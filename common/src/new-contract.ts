@@ -1,66 +1,79 @@
-import { JSONContent } from '@tiptap/core'
-import {
-  add_answers_mode,
-  Binary,
-  BountiedQuestion,
-  Contract,
-  CPMM,
-  CPMMMulti,
-  NonBet,
-  CREATEABLE_OUTCOME_TYPES,
-  Poll,
-  PseudoNumeric,
-  Stonk,
-  Visibility,
-  CPMMMultiNumeric,
-  MarketTierType,
-} from './contract'
-import { User } from './user'
-import { removeUndefinedProps } from './util/object'
-import { computeBinaryCpmmElasticityFromAnte } from './calculate-metrics'
-import { randomString } from './util/random'
-import { PollOption } from './poll-option'
 import { Answer } from './answer'
 import { getMultiCpmmLiquidity } from './calculate-cpmm'
+import { computeBinaryCpmmElasticityFromAnte } from './calculate-metrics'
+import {
+  Binary,
+  BountiedQuestion,
+  CPMM,
+  CPMMMulti,
+  CPMMNumber,
+  CREATEABLE_OUTCOME_TYPES,
+  Contract,
+  MultiDate,
+  MultiNumeric,
+  NonBet,
+  Poll,
+  PollVoterVisibility,
+  PseudoNumeric,
+  Stonk,
+  add_answers_mode,
+} from './contract'
+import { PollOption } from './poll-option'
+import { User } from './user'
+import { removeUndefinedProps } from './util/object'
+import { randomString } from './util/random'
 
 export const NEW_MARKET_IMPORTANCE_SCORE = 0.25
 
-export function getNewContract(props: {
-  id: string
-  slug: string
-  creator: User
-  question: string
-  outcomeType: (typeof CREATEABLE_OUTCOME_TYPES)[number]
-  description: JSONContent
-  initialProb: number
-  ante: number
-  closeTime: number | undefined
-  visibility: Visibility
-  coverImageUrl?: string
+export function getNewContract(
+  props: Pick<
+    Contract,
+    | 'id'
+    | 'slug'
+    | 'question'
+    | 'description'
+    | 'closeTime'
+    | 'visibility'
+    | 'isTwitchContract'
+    | 'token'
+    | 'takerAPIOrdersDisabled'
+    | 'siblingContractId'
+    | 'coverImageUrl'
+  > & {
+    creator: User
+    outcomeType: (typeof CREATEABLE_OUTCOME_TYPES)[number]
+    initialProb: number
+    ante: number
 
-  // twitch
-  isTwitchContract: boolean | undefined
+    // Numeric
+    min: number
+    max: number
+    isLogScale: boolean
 
-  // used for numeric markets
-  min: number
-  max: number
-  isLogScale: boolean
-  answers: string[]
-  addAnswersMode: add_answers_mode | undefined
-  shouldAnswersSumToOne: boolean | undefined
+    // Multi-choice
+    answers: string[]
+    addAnswersMode?: add_answers_mode | undefined
+    shouldAnswersSumToOne?: boolean | undefined
+    answerShortTexts?: string[]
+    answerImageUrls?: string[]
 
-  // Manifold.love
-  loverUserId1: string | undefined
-  loverUserId2: string | undefined
-  matchCreatorId: string | undefined
-  isLove: boolean | undefined
-  answerLoverUserIds: string[] | undefined
+    // Bountied
+    isAutoBounty?: boolean | undefined
 
-  specialLiquidityPerAnswer: number | undefined
+    // Sports
+    sportsStartTimestamp?: string
+    sportsEventId?: string
+    sportsLeague?: string
 
-  isAutoBounty: boolean | undefined
-  marketTier?: MarketTierType
-}) {
+    // Multi-numeric
+    unit: string | undefined
+    midpoints: number[] | undefined
+    timezone: string | undefined
+
+    // Poll
+    voterVisibility: PollVoterVisibility | undefined
+  }
+) {
   const {
     id,
     slug,
@@ -79,15 +92,20 @@ export function getNewContract(props: {
     answers,
     addAnswersMode,
     shouldAnswersSumToOne,
-    loverUserId1,
-    loverUserId2,
-    matchCreatorId,
-    isLove,
     coverImageUrl,
-    specialLiquidityPerAnswer,
-    answerLoverUserIds,
     isAutoBounty,
-    marketTier
+    token,
+    sportsStartTimestamp,
+    sportsEventId,
+    sportsLeague,
+    answerShortTexts,
+    answerImageUrls,
+    takerAPIOrdersDisabled,
+    siblingContractId,
+    unit,
+    midpoints,
+    timezone,
+    voterVisibility,
   } = props
   const createdTime = Date.now()
 
@@ -103,13 +121,33 @@ export function getNewContract(props: {
         addAnswersMode ?? 'DISABLED',
         shouldAnswersSumToOne ?? true,
         ante,
-        specialLiquidityPerAnswer,
-        answerLoverUserIds
+        answerShortTexts,
+        answerImageUrls
       ),
     STONK: () => getStonkCpmmProps(initialProb, ante),
     BOUNTIED_QUESTION: () => getBountiedQuestionProps(ante, isAutoBounty),
-    POLL: () => getPollProps(answers),
+    POLL: () => getPollProps(answers, voterVisibility),
     NUMBER: () => getNumberProps(id, creator.id, min, max, answers, ante),
+    MULTI_NUMERIC: () =>
+      getMultiNumericProps(
+        id,
+        creator.id,
+        answers,
+        midpoints ?? [],
+        ante,
+        unit ?? '',
+        shouldAnswersSumToOne ?? true
+      ),
+    DATE: () =>
+      getDateProps(
+        id,
+        creator.id,
+        answers,
+        midpoints ?? [],
+        ante,
+        shouldAnswersSumToOne ?? true,
+        timezone ?? ''
+      ),
   }[outcomeType]()
 
   const contract: Contract = removeUndefinedProps({
@@ -136,6 +174,7 @@ export function getNewContract(props: {
     freshnessScore: 0,
     conversionScore: DEFAULT_CONVERSION_SCORE,
     uniqueBettorCount: 0,
+    uniqueBettorCountDay: 0,
     viewCount: 0,
     lastUpdatedTime: createdTime,
 
@@ -144,7 +183,9 @@ export function getNewContract(props: {
     elasticity:
       propsByOutcomeType.mechanism === 'cpmm-1'
         ? computeBinaryCpmmElasticityFromAnte(ante)
-        : 4.99,
+        : propsByOutcomeType.mechanism === 'cpmm-multi-1'
+        ? 4.99 // TODO: calculate
+        : 1_000_000,
 
     collectedFees: {
       creatorFee: 0,
@@ -153,11 +194,15 @@ export function getNewContract(props: {
     },
 
     isTwitchContract,
-    loverUserId1,
-    loverUserId2,
-    matchCreatorId,
-    isLove,
-    marketTier,
+    token,
+
+    sportsStartTimestamp,
+    sportsEventId,
+    sportsLeague,
+
+    takerAPIOrdersDisabled,
+    siblingContractId,
+    boosted: false,
   })
   if (visibility === 'unlisted') {
     contract.unlistedById = creator.id
@@ -199,7 +244,7 @@ const getBinaryCpmmProps = (initialProb: number, ante: number) => {
     initialProbability: p,
     p,
     pool: pool,
-    prob: initialProb,
+    prob: p,
     probChanges: { day: 0, week: 0, month: 0 },
   }
 
@@ -231,6 +276,8 @@ const getStonkCpmmProps = (initialProb: number, ante: number) => {
   return system
 }
 
+export const VERSUS_COLORS = ['#4e46dc', '#e9a23b']
+
 const getMultipleChoiceProps = (
   contractId: string,
   userId: string,
@@ -238,9 +285,14 @@ const getMultipleChoiceProps = (
   addAnswersMode: add_answers_mode,
   shouldAnswersSumToOne: boolean,
   ante: number,
-  specialLiquidityPerAnswer?: number,
-  answerLoverUserIds?: string[]
+  shortTexts?: string[],
+  imageUrls?: string[]
 ) => {
+  const isBinaryMulti =
+    addAnswersMode === 'DISABLED' &&
+    answers.length === 2 &&
+    shouldAnswersSumToOne
+
   const answersWithOther = answers.concat(
     !shouldAnswersSumToOne || addAnswersMode === 'DISABLED' ? [] : ['Other']
   )
@@ -251,8 +303,11 @@ const getMultipleChoiceProps = (
     shouldAnswersSumToOne,
     ante,
     answersWithOther,
-    specialLiquidityPerAnswer,
-    answerLoverUserIds
+    removeUndefinedProps({
+      colors: isBinaryMulti ? VERSUS_COLORS : undefined,
+      shortTexts,
+      imageUrls,
+    })
   )
   const system: CPMMMulti = {
     mechanism: 'cpmm-multi-1',
@@ -260,13 +315,13 @@ const getMultipleChoiceProps = (
     addAnswersMode: addAnswersMode ?? 'DISABLED',
     shouldAnswersSumToOne: shouldAnswersSumToOne ?? true,
     answers: answerObjects,
-    totalLiquidity: specialLiquidityPerAnswer ?? ante,
+    totalLiquidity: ante,
     subsidyPool: 0,
-    specialLiquidityPerAnswer,
   }
 
   return system
 }
+
 const getNumberProps = (
   contractId: string,
   userId: string,
@@ -283,7 +338,7 @@ const getNumberProps = (
     ante,
     answers
   )
-  const system: CPMMMultiNumeric = {
+  const system: CPMMNumber = {
     mechanism: 'cpmm-multi-1',
     outcomeType: 'NUMBER',
     addAnswersMode: 'DISABLED',
@@ -297,6 +352,68 @@ const getNumberProps = (
 
   return system
 }
+const getMultiNumericProps = (
+  contractId: string,
+  userId: string,
+  answers: string[],
+  midpoints: number[],
+  ante: number,
+  unit: string,
+  shouldAnswersSumToOne: boolean
+) => {
+  const answerObjects = createAnswers(
+    contractId,
+    userId,
+    'DISABLED',
+    shouldAnswersSumToOne,
+    ante,
+    answers,
+    { midpoints }
+  )
+  const system: MultiNumeric = {
+    mechanism: 'cpmm-multi-1',
+    outcomeType: 'MULTI_NUMERIC',
+    shouldAnswersSumToOne,
+    addAnswersMode: 'DISABLED',
+    answers: answerObjects,
+    totalLiquidity: ante,
+    subsidyPool: 0,
+    unit,
+  }
+
+  return system
+}
+const getDateProps = (
+  contractId: string,
+  userId: string,
+  answers: string[],
+  midpoints: number[],
+  ante: number,
+  shouldAnswersSumToOne: boolean,
+  timezone: string
+) => {
+  const answerObjects = createAnswers(
+    contractId,
+    userId,
+    'DISABLED',
+    shouldAnswersSumToOne,
+    ante,
+    answers,
+    { midpoints }
+  )
+  const system: MultiDate = {
+    mechanism: 'cpmm-multi-1',
+    outcomeType: 'DATE',
+    shouldAnswersSumToOne,
+    addAnswersMode: 'DISABLED',
+    answers: answerObjects,
+    totalLiquidity: ante,
+    subsidyPool: 0,
+    timezone,
+  }
+
+  return system
+}
 
 function createAnswers(
   contractId: string,
@@ -305,9 +422,14 @@ function createAnswers(
   shouldAnswersSumToOne: boolean,
   ante: number,
   answers: string[],
-  specialLiquidityPerAnswer?: number,
-  answerLoverUserIds?: string[]
+  options: {
+    colors?: string[]
+    shortTexts?: string[]
+    imageUrls?: string[]
+    midpoints?: number[]
+  } = {}
 ) {
+  const { colors, shortTexts, imageUrls, midpoints } = options
   const ids = answers.map(() => randomString())
 
   let prob = 0.5
@@ -330,14 +452,6 @@ function createAnswers(
     // Naive solution that doesn't maximize liquidity:
     // poolYes = ante * prob
     // poolNo = ante * (prob ** 2 / (1 - prob))
-  } else if (specialLiquidityPerAnswer) {
-    // We start each answer at 2%. We want the max payout for a YES resolution to be specialLiquidityPerAnswer.
-    // I think that means it has specialLiquidityPerAnswer YES shares in the pool.
-    // Then we can solve probability identity:
-    // prob = poolNo / (poolYes + poolNo)
-    prob = 0.02
-    poolYes = specialLiquidityPerAnswer
-    poolNo = specialLiquidityPerAnswer / (1 / prob - 1)
   }
 
   const now = Date.now()
@@ -351,7 +465,9 @@ function createAnswers(
       userId,
       text,
       createdTime: now,
-      loverUserId: answerLoverUserIds?.[i],
+      color: colors?.[i],
+      shortText: shortTexts?.[i],
+      imageUrl: imageUrls?.[i],
 
       poolYes,
       poolNo,
@@ -363,6 +479,7 @@ function createAnswers(
         addAnswersMode !== 'DISABLED' &&
         i === answers.length - 1,
       probChanges: { day: 0, week: 0, month: 0 },
+      midpoint: midpoints?.[i],
     })
     return answer
   })
@@ -375,7 +492,6 @@ const getBountiedQuestionProps = (
   const system: NonBet & BountiedQuestion = {
     mechanism: 'none',
     outcomeType: 'BOUNTIED_QUESTION',
-    bountyTxns: [],
     totalBounty: ante,
     bountyLeft: ante,
     isAutoBounty: isAutoBounty ?? false,
@@ -384,7 +500,10 @@ const getBountiedQuestionProps = (
   return system
 }
 
-const getPollProps = (answers: string[]) => {
+const getPollProps = (
+  answers: string[],
+  voterVisibility: PollVoterVisibility | undefined
+) => {
   const ids = answers.map(() => randomString())
 
   const options: PollOption[] = answers.map((answer, i) => ({
@@ -394,11 +513,12 @@ const getPollProps = (answers: string[]) => {
     votes: 0,
   }))
 
-  const system: NonBet & Poll = {
+  const system: NonBet & Poll = removeUndefinedProps({
     mechanism: 'none',
     outcomeType: 'POLL',
     options: options,
-  }
+    voterVisibility,
+  })
   return system
 }
 

@@ -11,12 +11,10 @@ import { Row } from '../layout/row'
 import { RelativeTimestampNoTooltip } from '../relative-timestamp'
 import { truncateText } from '../widgets/truncate'
 import NotificationDropdown from './notification-dropdown'
-import { groupBy } from 'lodash'
-import { SparklesIcon } from '@heroicons/react/solid'
+import { SparklesIcon, XCircleIcon } from '@heroicons/react/solid'
 import { UserLink } from '../widgets/user-link'
 import { UserHovercard } from '../user/user-hovercard'
-
-export const NOTIFICATIONS_PER_PAGE = 30
+import { Button } from '../buttons/button'
 
 function getHighlightClass(highlight: boolean) {
   return highlight ? 'text-ink-1000 bg-primary-50' : 'text-ink-700'
@@ -175,6 +173,8 @@ export function NotificationFrame(props: {
   subtitle?: string | ReactNode
   isChildOfGroup?: boolean
   customBackground?: ReactNode
+  isPinned?: boolean
+  onDismiss?: () => void
 }) {
   const {
     notification,
@@ -186,8 +186,16 @@ export function NotificationFrame(props: {
     onClick,
     link,
     customBackground,
+    isPinned,
+    onDismiss,
   } = props
   const isMobile = useIsMobile()
+
+  const markAsSeen = () => {
+    if (highlighted) {
+      setHighlighted(false)
+    }
+  }
 
   const frameObject = (
     <Row className="cursor-pointer text-sm md:text-base">
@@ -198,19 +206,35 @@ export function NotificationFrame(props: {
           <div className="mt-1 line-clamp-3 text-xs md:text-sm">{subtitle}</div>
         </Col>
 
-        <Row className="mt-1 items-center justify-end gap-1 pr-1 sm:w-36">
-          {highlighted && !isMobile && (
-            <SparklesIcon className="text-primary-600 h-4 w-4" />
-          )}
-          <RelativeTimestampNoTooltip
-            time={notification.createdTime}
-            shortened={isMobile}
-            className={clsx(
-              'text-xs',
-              highlighted ? 'text-primary-600' : 'text-ink-700'
+        <Col className="h-full items-end justify-between gap-1">
+          <Row className="mt-1 justify-end gap-1 sm:w-36">
+            {highlighted && !isMobile && (
+              <SparklesIcon className="text-primary-600 h-4 w-4" />
             )}
-          />
-        </Row>
+            <RelativeTimestampNoTooltip
+              time={notification.createdTime}
+              shortened={isMobile}
+              className={clsx(
+                'text-xs',
+                highlighted ? 'text-primary-600' : 'text-ink-700'
+              )}
+            />
+            <NotificationDropdown notification={notification} />
+          </Row>
+          {isPinned && onDismiss && (
+            <Button
+              color="gray-white"
+              onClick={(e) => {
+                e.preventDefault()
+                e.stopPropagation()
+                onDismiss()
+              }}
+              className="text-ink-500 hover:text-ink-700 "
+            >
+              <XCircleIcon className="h-5 w-5" />
+            </Button>
+          )}
+        </Col>
       </Row>
     </Row>
   )
@@ -218,7 +242,9 @@ export function NotificationFrame(props: {
   return (
     <Row
       className={clsx(
-        'hover:bg-primary-100 group p-2 transition-colors',
+        'group p-2 transition-colors',
+        isPinned && 'bg-primary-50',
+        'hover:bg-primary-100',
         getHighlightClass(highlighted)
       )}
     >
@@ -229,9 +255,8 @@ export function NotificationFrame(props: {
             href={link}
             className={clsx('flex w-full flex-col')}
             onClick={() => {
-              if (highlighted) {
-                setHighlighted(false)
-              }
+              markAsSeen()
+              onClick?.()
             }}
           >
             {frameObject}
@@ -242,21 +267,13 @@ export function NotificationFrame(props: {
         <Col
           className={'w-full'}
           onClick={() => {
-            if (highlighted) {
-              setHighlighted(false)
-            }
-            if (onClick) {
-              onClick()
-            }
+            markAsSeen()
+            onClick?.()
           }}
         >
           {frameObject}
         </Col>
       )}
-
-      <div className="self-start">
-        <NotificationDropdown notification={notification} />
-      </div>
     </Row>
   )
 }
@@ -273,29 +290,4 @@ export function ParentNotificationHeader(props: {
       {children}
     </div>
   )
-}
-export function combineReactionNotifications(notifications: Notification[]) {
-  const groupedNotificationsBySourceType = groupBy(
-    notifications,
-    (n) =>
-      `${n.sourceType}-${
-        n.sourceTitle ?? n.sourceContractTitle ?? n.sourceContractId
-      }-${n.sourceText}`
-  )
-
-  const newNotifications = Object.values(groupedNotificationsBySourceType).map(
-    (notifications) => {
-      const mostRecentNotification = notifications[0]
-
-      return {
-        ...mostRecentNotification,
-        data: {
-          ...mostRecentNotification.data,
-          relatedNotifications: notifications,
-        },
-      }
-    }
-  )
-
-  return newNotifications as Notification[]
 }

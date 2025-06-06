@@ -43,6 +43,10 @@ export const CUSTOM_METRICS = {
     metricKind: 'GAUGE',
     valueKind: 'distributionValue',
   },
+  'pg/transaction_duration': {
+    metricKind: 'GAUGE',
+    valueKind: 'distributionValue',
+  },
   'app/bet_count': {
     metricKind: 'CUMULATIVE',
     valueKind: 'int64Value',
@@ -60,6 +64,10 @@ export const CUSTOM_METRICS = {
     valueKind: 'int64Value',
   },
   'pg/connections_terminated': {
+    metricKind: 'CUMULATIVE',
+    valueKind: 'int64Value',
+  },
+  'pg/connections_disconnected': {
     metricKind: 'CUMULATIVE',
     valueKind: 'int64Value',
   },

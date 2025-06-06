@@ -1,11 +1,14 @@
-import { SupabaseDirectClient, pgp } from 'shared/supabase/init'
+import { type SupabaseDirectClient } from 'shared/supabase/init'
 import { convertAnswer } from 'common/supabase/contracts'
-import { groupBy } from 'lodash'
+import { groupBy, mapValues, sortBy } from 'lodash'
 import { Answer } from 'common/answer'
-import { bulkInsert, updateDataAndReturn, insert as upsert } from './utils'
-import { randomString } from 'common/util/random'
+import { bulkUpdate, insert, update } from './utils'
 import { removeUndefinedProps } from 'common/util/object'
-import { millisToTs } from 'common/supabase/utils'
+import { millisToTs, Row } from 'common/supabase/utils'
+import {
+  broadcastNewAnswer,
+  broadcastUpdatedAnswers,
+} from 'shared/websockets/helpers'
 
 export const getAnswer = async (pg: SupabaseDirectClient, id: string) => {
   const row = await pg.oneOrNone(`select * from answers where id = $1`, [id])
@@ -19,14 +22,14 @@ export const getAnswersForContractsDirect = async (
   if (contractIds.length === 0) {
     return {}
   }
-  return groupBy(
-    await pg.map(
-      `select * from answers
-    where contract_id in ($1:list)`,
-      [contractIds],
-      (r) => convertAnswer(r)
-    ),
-    'contractId'
+  const answers = await pg.map(
+    `select * from answers
+            where contract_id in ($1:list)`,
+    [contractIds],
+    (r) => convertAnswer(r)
+  )
+  return mapValues(groupBy(answers, 'contractId'), (answers) =>
+    sortBy(answers, 'index')
   )
 }
 
@@ -34,8 +37,10 @@ export const getAnswersForContract = async (
   pg: SupabaseDirectClient,
   contractId: string
 ) => {
+  // Answers must be sorted by index, or you get non-deterministic results
   return await pg.map(
-    `select * from answers where contract_id = $1`,
+    `select * from answers where contract_id = $1
+            order by index`,
     [contractId],
     convertAnswer
   )
@@ -45,57 +50,77 @@ export const insertAnswer = async (
   pg: SupabaseDirectClient,
   ans: Omit<Answer, 'id'>
 ) => {
-  return await upsert(pg, 'answers', answerToRow(ans))
-}
-
-export const bulkInsertAnswers = async (
-  pg: SupabaseDirectClient,
-  answers: Omit<Answer, 'id'>[]
-) => {
-  if (answers.length > 0) {
-    return await bulkInsert(pg, 'answers', answers.map(answerToRow))
-  }
+  const row = await insert(pg, 'answers', answerToRow(ans))
+  broadcastNewAnswer(convertAnswer(row))
 }
 
 export const updateAnswer = async (
   pg: SupabaseDirectClient,
-  id: string,
-  update: Partial<Answer>
+  answerId: string,
+  data: Partial<Answer>
 ) => {
-  return convertAnswer(
-    await updateDataAndReturn(pg, 'answers', 'id', { ...update, id })
+  const row = await update(
+    pg,
+    'answers',
+    'id',
+    partialAnswerToRow({ ...data, id: answerId })
   )
+  const answer = convertAnswer(row)
+  broadcastUpdatedAnswers(answer.contractId, [answer])
+  return answer
 }
 
+export const updateAnswers = async (
+  pg: SupabaseDirectClient,
+  contractId: string,
+  updates: (Partial<Answer> & { id: string })[]
+) => {
+  await bulkUpdate(pg, 'answers', ['id'], updates.map(partialAnswerToRow))
+
+  broadcastUpdatedAnswers(contractId, updates)
+}
+
+// Can update answers across multiple contracts.
 export const bulkUpdateAnswers = async (
   pg: SupabaseDirectClient,
-  answers: (Partial<Answer> & { id: string })[]
+  updates: Partial<Answer>[]
 ) => {
-  if (answers.length > 0) {
-    const values = answers
-      .map((ans) =>
-        pgp.as.format(`($1, $2)`, [ans.id, JSON.stringify(ans) + '::jsonb'])
-      )
-      .join(',\n')
-
-    await pg.none(
-      `update answers as a
-        set data = data || v.update
-      from (values ${values}) as v(id, update)
-      where a.id = v.id`
-    )
-  }
+  await bulkUpdate(pg, 'answers', ['id'], updates.map(partialAnswerToRow))
 }
 
 export const answerToRow = (answer: Omit<Answer, 'id'> & { id?: string }) => ({
-  id: 'id' in answer ? answer.id : randomString(),
+  id: answer.id,
   index: answer.index,
   contract_id: answer.contractId,
   user_id: answer.userId,
   text: answer.text,
+  color: answer.color,
   pool_yes: answer.poolYes,
   pool_no: answer.poolNo,
   prob: answer.prob,
-  created_time: answer.createdTime ? millisToTs(answer.createdTime) : undefined,
-  data: JSON.stringify(removeUndefinedProps(answer)) + '::jsonb',
+  total_liquidity: answer.totalLiquidity,
+  subsidy_pool: answer.subsidyPool,
+  created_time: answer.createdTime
+    ? millisToTs(answer.createdTime) + '::timestamptz'
+    : undefined,
+  is_other: answer.isOther,
+  resolution: answer.resolution,
+  resolution_time: answer.resolutionTime
+    ? millisToTs(answer.resolutionTime) + '::timestamptz'
+    : undefined,
+  resolution_probability: answer.resolutionProbability,
+  resolver_id: answer.resolverId,
+  prob_change_day: answer.probChanges?.day,
+  prob_change_week: answer.probChanges?.week,
+  prob_change_month: answer.probChanges?.month,
+  image_url: answer.imageUrl,
+  short_text: answer.shortText,
+  midpoint: answer.midpoint,
 })
+
+// does not convert isOther, loverUserId
+export const partialAnswerToRow = (answer: Partial<Answer>) => {
+  const partial: any = removeUndefinedProps(answerToRow(answer as any))
+  delete partial.data
+  return partial as Partial<Row<'answers'>>
+}

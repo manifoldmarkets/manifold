@@ -2,7 +2,7 @@ import { mergeAttributes } from '@tiptap/core'
 import Mention from '@tiptap/extension-mention'
 import Link from 'next/link'
 import { ContractMention as LoadedContractMention } from 'web/components/contract/contract-mention'
-import { useContract } from 'web/hooks/use-contract-supabase'
+import { useContract } from 'web/hooks/use-contract'
 import { contractMentionSuggestion } from './contract-mention-suggestion'
 
 const name = 'contract-mention-component'

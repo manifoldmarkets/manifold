@@ -1,17 +1,17 @@
-import { SparklesIcon } from '@heroicons/react/solid'
-import { MARKET_VISIT_BONUS_TOTAL, STARTING_BALANCE } from 'common/economy'
-import { formatMoney } from 'common/util/format'
+import { TokenNumber } from './widgets/token-number'
+import { PHONE_VERIFICATION_BONUS } from 'common/src/economy'
 
-export const PlayMoneyDisclaimer = (props: { text?: string }) => {
-  const { text } = props
+export const PlayMoneyDisclaimer = () => {
   return (
-    <div className="text-ink-500 my-1 flex items-start justify-center gap-1.5 px-2 text-sm">
-      <SparklesIcon className="mt-0.5 h-4 w-4 shrink-0" />
-      {text
-        ? text
-        : `Get ${formatMoney(
-            STARTING_BALANCE + MARKET_VISIT_BONUS_TOTAL
-          )} play money`}
-    </div>
+    <span className="text-ink-500 my-1.5 text-sm">
+      Get{' '}
+      <TokenNumber
+        className="font-semibold"
+        amount={PHONE_VERIFICATION_BONUS}
+        coinType="mana"
+        isInline
+      />{' '}
+      to start trading!
+    </span>
   )
 }

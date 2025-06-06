@@ -40,10 +40,7 @@ export const updatememberrole = authEndpoint(async (req, auth) => {
     const isAdminRequest = isAdminId(auth.uid)
     const isModRequest = isModId(auth.uid)
 
-    if (
-      !isAdminRequest &&
-      !(isModRequest && group.privacy_status !== 'private')
-    ) {
+    if (!isAdminRequest && !isModRequest) {
       const requesterMembership = await tx.oneOrNone(
         'select role from group_members where member_id = $1 and group_id = $2',
         [auth.uid, groupId]

@@ -1,30 +1,8 @@
 import { useIsFollowing } from 'web/hooks/use-follows'
 import { isBlocked, usePrivateUser, useUser } from 'web/hooks/use-user'
-import { followUser, unfollowUser } from 'web/lib/firebase/api'
 import { track } from 'web/lib/service/analytics'
 import { Button } from './button'
 import clsx from 'clsx'
-
-export const onFollowClick = (
-  userId: string,
-  isFollowing: boolean,
-  setIsFollowing: (isFollowing: boolean) => void
-) => {
-  const onFollow = () => {
-    track('follow')
-    followUser(userId).then(() => setIsFollowing(true))
-  }
-
-  const onUnfollow = () => {
-    track('unfollow')
-    unfollowUser(userId).then(() => setIsFollowing(false))
-  }
-  if (isFollowing) {
-    onUnfollow()
-  } else {
-    onFollow()
-  }
-}
 
 export function FollowButton(props: {
   userId: string
@@ -32,7 +10,7 @@ export function FollowButton(props: {
 }) {
   const { userId, size = 'sm' } = props
   const user = useUser()
-  const { isFollowing, setIsFollowing } = useIsFollowing(user?.id, userId)
+  const { isFollowing, toggleFollow } = useIsFollowing(user?.id, userId)
   const privateUser = usePrivateUser()
   if (!user || user.id === userId) return null
   if (isBlocked(privateUser, userId)) return <div />
@@ -49,7 +27,8 @@ export function FollowButton(props: {
       )}
       onClick={(e) => {
         e.preventDefault()
-        onFollowClick(userId, isFollowing, setIsFollowing)
+        track(isFollowing ? 'unfollow' : 'follow')
+        toggleFollow()
       }}
     >
       {isFollowing ? 'Following' : 'Follow'}

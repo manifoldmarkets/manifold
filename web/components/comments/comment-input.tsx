@@ -3,11 +3,10 @@ import { Editor } from '@tiptap/react'
 import clsx from 'clsx'
 import { User } from 'common/user'
 import { useEffect, useState } from 'react'
-import { useUser } from 'web/hooks/use-user'
-import { MAX_COMMENT_LENGTH } from 'common/comment'
+import { isBlocked, usePrivateUser, useUser } from 'web/hooks/use-user'
+import { ContractComment, MAX_COMMENT_LENGTH } from 'common/comment'
 import { Avatar } from '../widgets/avatar'
 import { TextEditor, useTextEditor } from '../widgets/editor'
-import { ReplyToUserInfo } from '../feed/feed-comments'
 import { Row } from '../layout/row'
 import { LoadingIndicator } from '../widgets/loading-indicator'
 import { safeLocalStorage } from 'web/lib/util/local'
@@ -16,8 +15,17 @@ import { BiRepost } from 'react-icons/bi'
 import { Tooltip } from 'web/components/widgets/tooltip'
 import { track } from 'web/lib/service/analytics'
 import { firebaseLogin } from 'web/lib/firebase/users'
-import { useEvent } from 'web/hooks/use-event'
+import { useEvent } from 'client-common/hooks/use-event'
 import { APIError } from 'common/api/utils'
+import { Answer } from 'common/answer'
+import { Bet } from 'common/bet'
+import { Contract } from 'common/contract'
+import { useDisplayUserById } from 'web/hooks/use-user-supabase'
+import { api } from 'web/lib/api/api'
+import { CommentOnAnswer } from '../feed/comment-on-answer'
+import { ReplyToUserInfo } from './comment'
+import { ReplyToBetRow } from './comment-header'
+import { useAnswer } from 'web/hooks/use-answers'
 
 export function CommentInput(props: {
   replyToUserInfo?: ReplyToUserInfo
@@ -30,6 +38,7 @@ export function CommentInput(props: {
   blocked?: boolean
   placeholder?: string
   commentTypes: CommentType[]
+  autoFocus: boolean
   onClearInput?: () => void
 }) {
   const {
@@ -39,7 +48,8 @@ export function CommentInput(props: {
     pageId,
     className,
     blocked,
-    placeholder = 'Write a comment...',
+    autoFocus,
+    placeholder = 'What is your prediction?',
     commentTypes,
     onClearInput,
   } = props
@@ -75,7 +85,7 @@ export function CommentInput(props: {
 
     try {
       await onSubmitComment?.(editor, type)
-      editor.commands.clearContent(true)
+      if (!editor.isDestroyed) editor.commands.clearContent(true)
       // force clear save, because it can fail if editor unrenders
       safeLocalStorage?.removeItem(`text ${key}`)
       onClearInput?.()
@@ -100,6 +110,7 @@ export function CommentInput(props: {
       <Avatar avatarUrl={user?.avatarUrl} username={user?.username} size="sm" />
       <CommentInputTextArea
         editor={editor}
+        autoFocus={autoFocus}
         replyTo={replyToUserInfo}
         user={user}
         submit={submitComment}
@@ -123,7 +134,7 @@ const emojiMenuActive = (view: { state: any }) => {
   return active
 }
 
-export type CommentType = 'comment' | 'repost'
+export type CommentType = 'comment' | 'repost' | 'top-level-post'
 export function CommentInputTextArea(props: {
   user: User | undefined | null
   replyTo?: { id: string; username: string }
@@ -131,6 +142,7 @@ export function CommentInputTextArea(props: {
   submit?: (type: CommentType) => void
   isSubmitting: boolean
   submitOnEnter?: boolean
+  autoFocus: boolean
   hideToolbar?: boolean
   commentTypes?: CommentType[]
 }) {
@@ -141,6 +153,7 @@ export function CommentInputTextArea(props: {
     editor,
     submit,
     isSubmitting,
+    autoFocus,
     replyTo,
     commentTypes = ['comment'],
   } = props
@@ -190,6 +203,10 @@ export function CommentInputTextArea(props: {
     }
   }, [replyTo, editor])
 
+  useEffect(() => {
+    if (editor && autoFocus) editor.commands.focus('end')
+  }, [editor, autoFocus])
+
   return (
     <TextEditor editor={editor} simple hideToolbar={hideToolbar}>
       <Row className={''}>
@@ -207,24 +224,140 @@ export function CommentInputTextArea(props: {
             </button>
           </Tooltip>
         )}
-        {!isSubmitting && submit && commentTypes.includes('comment') && (
-          <button
-            className="text-ink-500 hover:text-ink-700 active:bg-ink-300 disabled:text-ink-300 px-4 transition-colors"
-            disabled={!editor || editor.isEmpty}
-            onClick={() => submit('comment')}
-          >
-            <PaperAirplaneIcon className="m-0 h-[25px] w-[22px] rotate-90 p-0" />
-          </button>
-        )}
+        {!isSubmitting &&
+          submit &&
+          (commentTypes[0] === 'comment' ||
+            commentTypes[0] === 'top-level-post') && (
+            <button
+              className="text-ink-500 hover:text-ink-700 active:bg-ink-300 disabled:text-ink-300 px-4 transition-colors"
+              disabled={!editor || editor.isEmpty}
+              onClick={() => submit(commentTypes[0])}
+            >
+              <PaperAirplaneIcon className="m-0 h-[25px] w-[22px] rotate-90 p-0" />
+            </button>
+          )}
 
         {submit && isSubmitting && (
           <LoadingIndicator
             size={'md'}
             className={'px-4'}
-            spinnerClassName="border-ink-500"
+            spinnerColor="border-ink-500"
           />
         )}
       </Row>
     </TextEditor>
+  )
+}
+
+export function ContractCommentInput(props: {
+  playContract: Contract
+  autoFocus: boolean
+  className?: string
+  replyTo?: Answer | Bet
+  replyToUserInfo?: ReplyToUserInfo
+  parentCommentId?: string
+  clearReply?: () => void
+  trackingLocation: string
+  onSubmit?: (comment: ContractComment) => void
+  commentTypes: CommentType[]
+  onClearInput?: () => void
+}) {
+  const {
+    playContract,
+    autoFocus,
+    replyTo,
+    parentCommentId,
+    className,
+    clearReply,
+    trackingLocation,
+    onSubmit,
+    commentTypes,
+    onClearInput,
+  } = props
+  const user = useUser()
+  const privateUser = usePrivateUser()
+  const isReplyToBet = replyTo && 'amount' in replyTo
+  const isReplyToAnswer = replyTo && !isReplyToBet
+  const replyToUserInfo =
+    useDisplayUserById(replyTo?.userId) ?? props.replyToUserInfo
+  const onSubmitComment = useEvent(
+    async (editor: Editor, type: CommentType) => {
+      if (!user) return
+
+      let comment: ContractComment | undefined
+      if (type === 'comment') {
+        comment = await api('comment', {
+          contractId: playContract.id,
+          content: editor.getJSON(),
+          replyToAnswerId: isReplyToAnswer ? replyTo.id : undefined,
+          replyToCommentId: parentCommentId,
+          replyToBetId: isReplyToBet ? replyTo.id : undefined,
+        })
+      } else {
+        comment = await api('post', {
+          contractId: playContract.id,
+          content: editor.getJSON(),
+          betId: isReplyToBet ? replyTo.id : undefined,
+        })
+        if (comment) toast.success('Reposted to your followers!')
+      }
+      clearReply?.()
+      onSubmit?.(comment)
+      await track(type, {
+        location: trackingLocation,
+        replyTo: isReplyToBet
+          ? 'bet'
+          : isReplyToAnswer
+          ? 'answer'
+          : replyToUserInfo
+          ? 'user'
+          : undefined,
+        commentId: comment.id,
+        contractId: playContract.id,
+      })
+    }
+  )
+
+  const { answer: betAnswer } = useAnswer(
+    isReplyToBet ? replyTo.answerId : undefined
+  )
+
+  return (
+    <>
+      {isReplyToBet ? (
+        <ReplyToBetRow
+          commenterIsBettor={replyTo?.userId === user?.id}
+          betAmount={replyTo.amount}
+          betOutcome={replyTo.outcome}
+          bettorId={replyTo.userId}
+          betOrderAmount={replyTo.orderAmount}
+          betLimitProb={replyTo.limitProb}
+          betAnswer={betAnswer}
+          contract={playContract}
+          clearReply={clearReply}
+        />
+      ) : replyTo ? (
+        <CommentOnAnswer answer={replyTo} clear={clearReply} />
+      ) : null}
+
+      <CommentInput
+        autoFocus={autoFocus}
+        replyToUserInfo={replyToUserInfo}
+        parentCommentId={parentCommentId}
+        onSubmitComment={onSubmitComment}
+        pageId={playContract.id + commentTypes.join(', ')}
+        className={className}
+        blocked={isBlocked(privateUser, playContract.creatorId)}
+        placeholder={
+          replyTo || parentCommentId
+            ? 'Write a reply ...'
+            : playContract.outcomeType === 'BOUNTIED_QUESTION'
+            ? 'Write an answer or comment'
+            : undefined
+        }
+        commentTypes={commentTypes}
+        onClearInput={onClearInput}
+      />
+    </>
   )
 }

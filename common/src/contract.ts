@@ -1,18 +1,18 @@
-import { Answer } from './answer'
-import { Bet } from './bet'
-import { Fees } from './fees'
 import { JSONContent } from '@tiptap/core'
-import { GroupLink, Topic } from 'common/group'
-import { ContractMetric, ContractMetricsByOutcome } from './contract-metric'
-import { ContractComment } from './comment'
-import { ENV_CONFIG, isAdminId, isModId } from './envs/constants'
-import { formatMoney, formatPercent } from './util/format'
-import { sum } from 'lodash'
 import { getDisplayProbability } from 'common/calculate'
-import { PollOption } from './poll-option'
+import { Topic } from 'common/group'
 import { ChartAnnotation } from 'common/supabase/chart-annotations'
-import { MINUTE_MS } from './util/time'
+import { sum } from 'lodash'
+import { Answer } from './answer'
 import { getLiquidity } from './calculate-cpmm'
+import { ContractComment } from './comment'
+import { ContractMetric } from './contract-metric'
+import { CASH_SUFFIX, ENV_CONFIG } from './envs/constants'
+import { Fees } from './fees'
+import { PollOption } from './poll-option'
+import { formatMoney, formatPercent } from './util/format'
+import { MultiBase64Points } from './chart'
+import { DAY_MS } from './util/time'
 
 /************************************************
 
@@ -39,14 +39,14 @@ the supabase trigger, or replication of contracts may fail!
 type AnyContractType =
   | (CPMM & Binary)
   | (CPMM & PseudoNumeric)
-  | (Uniswap2 & Cert)
   | QuadraticFunding
   | (CPMM & Stonk)
   | CPMMMulti
   | (NonBet & BountiedQuestion)
   | (NonBet & Poll)
-  | CPMMMultiNumeric
-
+  | CPMMNumber
+  | MultiNumeric
+  | MultiDate
 export type Contract<T extends AnyContractType = AnyContractType> = {
   id: string
   slug: string // auto-generated; must be unique
@@ -83,6 +83,7 @@ export type Contract<T extends AnyContractType = AnyContractType> = {
 
   collectedFees: Fees
   uniqueBettorCount: number
+  uniqueBettorCountDay: number
 
   unlistedById?: string
   featuredLabel?: string
@@ -93,7 +94,11 @@ export type Contract<T extends AnyContractType = AnyContractType> = {
 
   gptCommentSummary?: string
 
-  marketTier?: MarketTierType
+  token: ContractToken
+  siblingContractId?: string
+
+  /** @deprecated - no longer used */
+  takerAPIOrdersDisabled?: boolean
 
   // Manifold.love
   loverUserId1?: string // The user id's of the pair of lovers referenced in the question.
@@ -103,50 +108,49 @@ export type Contract<T extends AnyContractType = AnyContractType> = {
 
   /** @deprecated - no more auto-subsidization */
   isSubsidized?: boolean // NOTE: not backfilled, undefined = true
-  /** @deprecated - no more auto-subsidization */
-  isPolitics?: boolean
-  /** @deprecated - these are still being updated, but group-contracts is source of truth so try to use that */
+  /** @deprecated - try to use group-contracts table instead */
   groupSlugs?: string[]
-  /** @deprecated */
-  groupLinks?: GroupLink[]
-  /** @deprecated - not deprecated, only updated in supabase though*/
+  /** @deprecated - not deprecated, only updated in native column though*/
   popularityScore: number
-  /** @deprecated - not deprecated, only updated in supabase though*/
+  /** @deprecated - not deprecated, only updated in native column though*/
   importanceScore: number
-  /** @deprecated - not deprecated, only updated in supabase though*/
+  /** @deprecated - not deprecated, only updated in native column though*/
   dailyScore: number
-  /** @deprecated - not deprecated, only updated in supabase though*/
+  /** @deprecated - not deprecated, only updated in native column though*/
   freshnessScore: number
-  /** @deprecated - not deprecated, only updated in supabase though*/
+  /** @deprecated - not deprecated, only updated in native column though*/
   conversionScore: number
-  /** @deprecated - not deprecated, only updated in supabase though*/
+  /** @deprecated - not deprecated, only updated in native column though*/
   viewCount: number
+  /** @deprecated - not deprecated, only updated in native column though*/
+  boosted: boolean
   /** @deprecated - not up-to-date */
   likedByUserCount?: number
 } & T
 
+export type ContractToken = 'MANA' | 'CASH'
 export type CPMMContract = Contract & CPMM
 export type CPMMMultiContract = Contract & CPMMMulti
-export type CPMMNumericContract = Contract & CPMMMultiNumeric
+export type CPMMNumericContract = Contract & CPMMNumber
+export type MultiNumericContract = Contract & MultiNumeric
+export type MultiDateContract = Contract & MultiDate
 export type MarketContract =
   | CPMMContract
   | CPMMMultiContract
   | CPMMNumericContract
-
+  | MultiNumericContract
+  | MultiDateContract
 export type BinaryContract = Contract & Binary
-export type CPMMBinaryContract = BinaryContract & CPMM
 export type PseudoNumericContract = Contract & PseudoNumeric
-export type CertContract = Contract & Cert
-export type Uniswap2CertContract = CertContract & Uniswap2
 export type QuadraticFundingContract = Contract & QuadraticFunding
 export type StonkContract = Contract & Stonk
-export type CPMMStonkContract = StonkContract & CPMM
-export type BountiedQuestionContract = Contract & BountiedQuestion & NonBet
-export type PollContract = Contract & Poll & NonBet
-
+export type BountiedQuestionContract = Contract & BountiedQuestion
+export type PollContract = Contract & Poll
+export type SportsContract = Contract & Sports
 export type BinaryOrPseudoNumericContract =
-  | CPMMBinaryContract
+  | BinaryContract
   | PseudoNumericContract
+  | StonkContract
 
 export type CPMM = {
   mechanism: 'cpmm-1'
@@ -160,14 +164,6 @@ export type CPMM = {
     week: number
     month: number
   }
-}
-
-export type Uniswap2 = {
-  mechanism: 'uniswap-2'
-  // outcome can be e.g. 'M$' or a 'SHARE'
-  pool: { [outcome: string]: number }
-  // The price of the token in terms of M$. Similar to prob.
-  price: number
 }
 
 export type NonBet = {
@@ -203,7 +199,7 @@ export type CPMMMulti = {
   sort?: SortType
 }
 
-export type CPMMMultiNumeric = {
+export type CPMMNumber = {
   mechanism: 'cpmm-multi-1'
   outcomeType: 'NUMBER'
   shouldAnswersSumToOne: true
@@ -224,10 +220,6 @@ export type CPMMMultiNumeric = {
 }
 
 export type add_answers_mode = 'DISABLED' | 'ONLY_CREATOR' | 'ANYONE'
-
-export type Cert = {
-  outcomeType: 'CERT'
-}
 
 export type QuadraticFunding = {
   outcomeType: 'QUADRATIC_FUNDING'
@@ -261,13 +253,33 @@ export type PseudoNumeric = {
   resolutionProbability?: number
 }
 
-export type MultipleNumeric = {
+export type Number = {
   outcomeType: 'NUMBER'
   answers: Answer[]
   min: number
   max: number
   resolution?: string | 'MKT' | 'CANCEL'
   resolutions?: { [outcome: string]: number } // Used for MKT resolution.
+}
+
+export type MultiNumeric = {
+  mechanism: 'cpmm-multi-1'
+  outcomeType: 'MULTI_NUMERIC'
+  unit: string
+  answers: Answer[]
+  shouldAnswersSumToOne: boolean
+  addAnswersMode: 'DISABLED'
+  totalLiquidity: number
+  subsidyPool: number
+  resolutions?: { [answerId: string]: number }
+  resolution?: string | 'CHOOSE_MULTIPLE' | 'CANCEL'
+  sort?: SortType
+}
+
+export type MultiDate = Omit<MultiNumeric, 'outcomeType' | 'unit'> & {
+  outcomeType: 'DATE'
+  timezone: string
+  display?: 'clock'
 }
 
 export type Stonk = {
@@ -279,31 +291,45 @@ export type BountiedQuestion = {
   outcomeType: 'BOUNTIED_QUESTION'
   totalBounty: number
   bountyLeft: number
-  // the bounty txn ids
-  bountyTxns: string[]
+  /** @deprecated */
+  bountyTxns?: string[]
 
   // Special mode where bounty pays out automatically in proportion to likes over 48 hours.
   isAutoBounty?: boolean
 }
 
+export type PollVoterVisibility = 'creator' | 'everyone'
+
 export type Poll = {
   outcomeType: 'POLL'
   options: PollOption[]
   resolutions?: string[]
+  voterVisibility?: PollVoterVisibility
 }
 
-export type MultiContract = CPMMMultiContract | CPMMNumericContract
+export type Sports = {
+  sportsStartTimestamp: string
+  sportsEventId: string
+  sportsLeague: string
+}
+
+export type MultiContract =
+  | CPMMMultiContract
+  | CPMMNumericContract
+  | MultiNumericContract
+  | MultiDateContract
 
 type AnyOutcomeType =
   | Binary
-  | Cert
   | QuadraticFunding
   | Stonk
   | BountiedQuestion
   | Poll
-  | MultipleNumeric
+  | Number
   | CPMMMulti
   | PseudoNumeric
+  | MultiNumeric
+  | MultiDate
 
 export type OutcomeType = AnyOutcomeType['outcomeType']
 export type resolution = 'YES' | 'NO' | 'MKT' | 'CANCEL'
@@ -316,6 +342,8 @@ export const CREATEABLE_OUTCOME_TYPES = [
   'BOUNTIED_QUESTION',
   'POLL',
   'NUMBER',
+  'MULTI_NUMERIC',
+  'DATE',
 ] as const
 
 export const CREATEABLE_NON_PREDICTIVE_OUTCOME_TYPES = [
@@ -364,10 +392,16 @@ export function contractPool(contract: Contract) {
 export const isBinaryMulti = (contract: Contract) =>
   contract.mechanism === 'cpmm-multi-1' &&
   contract.outcomeType !== 'NUMBER' &&
+  contract.outcomeType !== 'MULTI_NUMERIC' &&
+  contract.outcomeType !== 'DATE' &&
   contract.answers.length === 2 &&
   contract.addAnswersMode === 'DISABLED' &&
   contract.shouldAnswersSumToOne
 // contract.createdTime > 1708574059795 // In case we don't want to convert pre-commit contracts
+
+export const isSportsContract = (
+  contract: Contract
+): contract is SportsContract => 'sportsEventId' in contract
 
 export const getMainBinaryMCAnswer = (contract: Contract) =>
   isBinaryMulti(contract) && contract.mechanism === 'cpmm-multi-1'
@@ -394,65 +428,68 @@ export const MAX_QUESTION_LENGTH = 120
 export const MAX_DESCRIPTION_LENGTH = 16000
 
 export const CPMM_MIN_POOL_QTY = 0.01
-export const MULTI_NUMERIC_BUCKETS_MAX = 50
-export const MULTI_NUMERIC_CREATION_ENABLED = true
+export const NUMBER_BUCKETS_MAX = 50
+export const NUMBER_CREATION_ENABLED = false
 
-export type Visibility = 'public' | 'unlisted' | 'private'
+export type Visibility = 'public' | 'unlisted'
 export const VISIBILITIES = ['public', 'unlisted'] as const
 
 export const SORTS = [
   { label: 'High %', value: 'prob-desc' },
   { label: 'Low %', value: 'prob-asc' },
-  { label: 'Old', value: 'old' },
-  { label: 'New', value: 'new' },
+  { label: 'Oldest', value: 'old' },
+  { label: 'Newest', value: 'new' },
   { label: 'Trending', value: 'liquidity' },
   { label: 'A-Z', value: 'alphabetical' },
 ] as const
 
 export type SortType = (typeof SORTS)[number]['value']
 
-export type MarketTierType = 'play' | 'basic' | 'plus' | 'premium' | 'crystal'
-
-export const MARKET_TIER_MULTIPLES = {
-  play: 0.1,
-  basic: 1,
-  plus: 10,
-  premium: 100,
-  crystal: 1000,
-}
-
-
-export const MARKET_TIER_TYPES = [
-  'play',
-  'basic',
-  'plus',
-  'premium',
-  'crystal',
-] as const
-
 export const MINUTES_ALLOWED_TO_UNRESOLVE = 10
 
-export function contractPath(contract: Contract) {
+export function contractPath(contract: {
+  creatorUsername: string
+  slug: string
+}) {
   return `/${contract.creatorUsername}/${contract.slug}`
+}
+
+export function twombaContractPath(contract: {
+  creatorUsername: string
+  slug: string
+  token?: ContractToken
+}) {
+  const isCashContract = contract.token == 'CASH'
+  const cleanedSlug = contract.slug.replace(new RegExp(`${CASH_SUFFIX}$`), '')
+  return `/${contract.creatorUsername}/${cleanedSlug}${
+    isCashContract ? '?play=false' : '?play=true'
+  }`
+}
+
+export type CashType = {
+  contract: Contract
+  lastBetTime?: number
+  pointsString: string
+  multiPointsString: MultiBase64Points
+  totalPositions: number
+  totalBets: number
 }
 
 export type ContractParams = {
   contract: Contract
   lastBetTime?: number
   pointsString?: string
-  multiPointsString?: { [answerId: string]: string }
+  multiPointsString?: MultiBase64Points
   comments: ContractComment[]
-  userPositionsByOutcome: ContractMetricsByOutcome
   totalPositions: number
   totalBets: number
   topContractMetrics: ContractMetric[]
   relatedContracts: Contract[]
   chartAnnotations: ChartAnnotation[]
-  relatedContractsByTopicSlug: Record<string, Contract[]>
   topics: Topic[]
   dashboards: { slug: string; title: string }[]
   pinnedComments: ContractComment[]
-  betReplies: Bet[]
+  cash?: CashType
 }
 
 export type MaybeAuthedContractParams =
@@ -468,11 +505,6 @@ export const MAX_CPMM_PROB = 0.99
 export const MIN_CPMM_PROB = 0.01
 export const MAX_STONK_PROB = 0.95
 export const MIN_STONK_PROB = 0.2
-
-export const canCancelContract = (userId: string, contract: Contract) => {
-  const createdRecently = (Date.now() - contract.createdTime) / MINUTE_MS < 15
-  return createdRecently || isModId(userId) || isAdminId(userId)
-}
 
 export const isMarketRanked = (contract: Contract) =>
   contract.isRanked != false &&
@@ -523,4 +555,58 @@ export const getAdjustedProfit = (
     : isMarketRanked(contract)
     ? undefined
     : -1 * profit
+}
+
+// Add the AIGeneratedMarket type definition here, before the API object
+export type AIGeneratedMarket = Pick<
+  MarketContract,
+  'question' | 'description'
+> & {
+  outcomeType:
+    | 'INDEPENDENT_MULTIPLE_CHOICE'
+    | 'DEPENDENT_MULTIPLE_CHOICE'
+    | 'BINARY'
+    | 'POLL'
+  descriptionMarkdown: string
+  closeDate: string
+  shouldAnswersSumToOne?: boolean
+  initialProb?: number
+  answers?: string[]
+  reasoning?: string
+  addAnswersMode?: add_answers_mode
+  promptVersion: number
+}
+
+export const nativeContractColumnsArray = [
+  'data',
+  'importance_score',
+  'freshness_score',
+  'conversion_score',
+  'view_count',
+  'token',
+  'boosted',
+  'daily_score',
+]
+
+export const clampChange = (currentProb: number, probChange: number) => {
+  if (probChange < 0.01 && probChange > -0.01) return 0
+
+  if (probChange > 0) {
+    // For positive changes, clamp to min of change and current probability
+    return Math.min(probChange, currentProb)
+  } else {
+    // For negative changes, clamp to min of absolute change and (1 - currentProb)
+    return -Math.min(Math.abs(probChange), 1 - currentProb)
+  }
+}
+
+export const dayProbChange = (contract: CPMMContract) => {
+  const { createdTime } = contract
+  if (Date.now() - createdTime < DAY_MS) {
+    return 0
+  }
+  const change = Math.abs(
+    Math.round(clampChange(contract.prob, contract.probChanges.day) * 100)
+  )
+  return change > 2 ? change : 0
 }

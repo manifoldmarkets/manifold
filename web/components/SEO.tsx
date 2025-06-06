@@ -2,14 +2,17 @@ import { removeUndefinedProps } from 'common/util/object'
 import { buildOgUrl } from 'common/util/og'
 import Head from 'next/head'
 
-export function SEO<P extends Record<string, string | undefined>>(props: {
+export function SEO<
+  P extends Record<string, string | string[] | undefined>
+>(props: {
   title: string
   description: string
   url?: string
   ogProps?: { props: P; endpoint: string }
   image?: string
+  shouldIgnore?: boolean
 }) {
-  const { title, description, url, image, ogProps } = props
+  const { title, description, url, image, ogProps, shouldIgnore } = props
 
   const imageUrl =
     image ??
@@ -35,6 +38,7 @@ export function SEO<P extends Record<string, string | undefined>>(props: {
         content={description}
         key="description2"
       />
+      {shouldIgnore && <meta name="robots" content="noindex, nofollow" />}
 
       {url && <link rel="canonical" href={absUrl} />}
 

@@ -4,7 +4,7 @@ import { IconButton } from '../buttons/button'
 import { ExpandingInput } from '../widgets/expanding-input'
 import { Linkify } from '../widgets/linkify'
 import { Group, MAX_GROUP_NAME_LENGTH } from 'common/group'
-import { updateGroup } from 'web/lib/firebase/api'
+import { updateGroup } from 'web/lib/api/api'
 import { Row } from 'web/components/layout/row'
 
 export const EditableTopicName = (props: {

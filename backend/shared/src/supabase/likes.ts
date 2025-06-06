@@ -1,14 +1,9 @@
-import { SupabaseClient } from 'common/supabase/utils'
+import { SupabaseDirectClient } from 'shared/supabase/init'
 
 export async function getRecentContractLikes(
-  db: SupabaseClient,
+  pg: SupabaseDirectClient,
   since: number
 ) {
-  const response = await db.rpc('recently_liked_contract_counts', {
-    since,
-  })
-  const likesByContract = Object.fromEntries(
-    (response.data ?? []).flat().map(({ contract_id, n }) => [contract_id, n])
-  )
-  return likesByContract
+  const counts = await pg.func('recently_liked_contract_counts', since)
+  return Object.fromEntries(counts.map((c: any) => [c.contract_id, c.n]))
 }

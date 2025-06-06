@@ -1,8 +1,9 @@
 import { useMemo } from 'react'
 import { scaleTime, scaleLinear } from 'd3-scale'
-import { min, max } from 'lodash'
+import { max } from 'lodash'
 import dayjs from 'dayjs'
-
+import utc from 'dayjs/plugin/utc'
+import timezone from 'dayjs/plugin/timezone'
 import { formatPercent } from 'common/util/format'
 import { Row } from '../layout/row'
 import { SingleValueHistoryChart } from './generic-charts'
@@ -11,12 +12,12 @@ import { SizedContainer } from 'web/components/sized-container'
 import { HistoryPoint } from 'common/chart'
 import { curveLinear } from 'd3-shape'
 
-const getPoints = (startDate: number, dailyValues: number[]) => {
-  const startDateDayJs = dayjs(startDate)
-  return dailyValues.map((y, i) => ({
-    x: startDateDayJs.add(i, 'day').toDate().valueOf(),
-    y: y,
-  }))
+dayjs.extend(utc)
+dayjs.extend(timezone)
+
+type Point = {
+  x: string // YYYY-MM-DD
+  y: number
 }
 
 const DailyCountTooltip = (props: TooltipProps<HistoryPoint>) => {
@@ -39,34 +40,26 @@ const DailyPercentTooltip = (props: TooltipProps<HistoryPoint>) => {
   )
 }
 
-export function DailyChart(props: {
-  startDate: number
-  dailyValues: number[]
-  excludeFirstDays?: number
-  excludeLastDays?: number
-  pct?: boolean
-}) {
-  const { dailyValues, startDate, excludeFirstDays, excludeLastDays, pct } =
-    props
+export function DailyChart(props: { values: Point[]; pct?: boolean }) {
+  const { values, pct } = props
+
+  const data = useMemo(() => {
+    return values.map((v) => ({
+      x: dayjs(v.x).tz('America/Los_Angeles').startOf('day').valueOf(),
+      y: v.y,
+    }))
+  }, [values])
 
   const zoomParams = useZoom()
   const [xMin, xMax] = zoomParams.viewXScale.domain()
 
-  const data = useMemo(() => {
-    const pointsExcludingFirstDays = getPoints(
-      startDate,
-      dailyValues ?? []
-    ).slice(excludeFirstDays ?? 0)
-    return pointsExcludingFirstDays.slice(
-      0,
-      pointsExcludingFirstDays.length - (excludeLastDays ?? 0)
-    )
-  }, [startDate, dailyValues, excludeFirstDays, excludeLastDays])
-  // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-  const minDate = min(data.map((d) => d.x))!
-  // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-  const maxDate = max(data.map((d) => d.x))!
-  // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+  if (data.length === 0) {
+    return <div className="text-ink-300">No data</div>
+  }
+
+  const first = data[0].x
+  const last = data[data.length - 1].x
+
   const maxValue = max(
     data
       .filter((d) => d.x >= xMin.valueOf() && d.x <= xMax.valueOf())
@@ -79,7 +72,7 @@ export function DailyChart(props: {
         <SingleValueHistoryChart
           w={width}
           h={height}
-          xScale={scaleTime([minDate, maxDate], [0, width])}
+          xScale={scaleTime([first, last], [0, width])}
           yScale={scaleLinear([0, maxValue], [height, 0])}
           yKind={pct ? 'percent' : 'amount'}
           data={data}
@@ -88,6 +81,7 @@ export function DailyChart(props: {
           curve={curveLinear}
           zoomParams={zoomParams}
           showZoomer
+          noWatermark
         />
       )}
     </SizedContainer>

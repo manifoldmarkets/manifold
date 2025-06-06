@@ -1,43 +1,54 @@
-import { ChevronDownIcon, ChevronUpIcon } from '@heroicons/react/outline'
+import { Bet } from 'common/bet'
 import {
   Contract,
   CPMMNumericContract,
   getBinaryMCProb,
   isBinaryMulti,
 } from 'common/contract'
-import { Bet } from 'common/bet'
-import { groupBy, orderBy, partition, sortBy, sum, sumBy } from 'lodash'
-import {
-  formatMoney,
-  formatPercent,
-  formatWithCommas,
-} from 'common/util/format'
-import { Spacer } from 'web/components/layout/spacer'
-import { Table } from 'web/components/widgets/table'
-import { useState } from 'react'
-import { BinaryOutcomeLabel, OutcomeLabel } from 'web/components/outcome-label'
-import { getStonkDisplayShares } from 'common/stonk'
-import { getFormattedMappedValue } from 'common/pseudo-numeric'
-import { formatTimeShort } from 'web/lib/util/time'
-import { Button } from '../buttons/button'
+import { TRADE_TERM } from 'common/envs/constants'
 import {
   answerToRange,
   getMultiNumericAnswerMidpoints,
-} from 'common/multi-numeric'
+} from 'common/src/number'
+import { getFormattedMappedValue } from 'common/pseudo-numeric'
+import { getStonkDisplayShares } from 'common/stonk'
+import {
+  formatPercent,
+  formatShares,
+  formatWithToken,
+} from 'common/util/format'
+import { groupBy, orderBy, partition, sortBy, sum, sumBy } from 'lodash'
+import { useState } from 'react'
+import { Row } from 'web/components/layout/row'
+import { OutcomeLabel } from 'web/components/outcome-label'
+import { Table } from 'web/components/widgets/table'
+import { formatTimeShort } from 'client-common/lib/time'
+import { Pagination } from '../widgets/pagination'
+import { MoneyDisplay } from './money-display'
+import { ContractMetric } from 'common/contract-metric'
+import { getPseudonym } from '../charts/contract/choice'
 
 export function ContractBetsTable(props: {
   contract: Contract
   bets: Bet[]
   isYourBets: boolean
+  contractMetric: ContractMetric
   hideRedemptionAndLoanMessages?: boolean
-  truncate?: boolean
+  paginate?: boolean
+  defaultExpanded?: boolean
 }) {
-  const { contract, isYourBets, hideRedemptionAndLoanMessages, truncate } =
-    props
+  const {
+    contract,
+    isYourBets,
+    hideRedemptionAndLoanMessages,
+    paginate,
+    contractMetric,
+    defaultExpanded = false,
+  } = props
   const { isResolved, mechanism, outcomeType } = contract
 
   const bets = sortBy(
-    props.bets.filter((b) => !b.isAnte && (b.amount !== 0 || b.loanAmount)),
+    props.bets.filter((b) => b.amount !== 0 || b.loanAmount),
     (bet) => bet.createdTime
   ).reverse()
 
@@ -50,7 +61,7 @@ export function ContractBetsTable(props: {
     )
   )
 
-  const amountLoaned = sumBy(bets, (bet) => bet.loanAmount ?? 0)
+  const amountLoaned = contractMetric.loan
 
   const isCPMM = mechanism === 'cpmm-1'
   const isCpmmMulti = mechanism === 'cpmm-multi-1'
@@ -67,39 +78,19 @@ export function ContractBetsTable(props: {
     'desc'
   )
 
-  const [truncated, setTruncated] = useState(truncate ?? false)
-  const truncatedBetCount = 3
-  const moreBetsCount =
-    (isMultiNumber ? groupedBets.length : normalBets.length) - truncatedBetCount
+  const [page, setPage] = useState(0)
+  const unexpandedBetsPerPage = 2
+  const betsPerPage = paginate ? 5 : normalBets.length
+  const [expanded, setExpanded] = useState(defaultExpanded)
+
+  const displayedBets = expanded
+    ? normalBets.slice(page * betsPerPage, (page + 1) * betsPerPage)
+    : normalBets.slice(0, unexpandedBetsPerPage)
+
+  const isCashContract = contract.token === 'CASH'
 
   return (
     <div className="overflow-x-auto">
-      {!hideRedemptionAndLoanMessages && amountRedeemed > 0 && (
-        <>
-          <div className="text-ink-500 pl-2 text-sm">
-            {amountRedeemed} {isPseudoNumeric ? 'HIGHER' : 'YES'} shares and{' '}
-            {amountRedeemed} {isPseudoNumeric ? 'LOWER' : 'NO'} shares
-            automatically redeemed for {formatMoney(amountRedeemed)}.
-          </div>
-          <Spacer h={4} />
-        </>
-      )}
-
-      {!hideRedemptionAndLoanMessages && !isResolved && amountLoaned > 0 && (
-        <>
-          <div className="text-ink-500 pl-2 text-sm">
-            {isYourBets ? (
-              <>You currently have a loan of {formatMoney(amountLoaned)}.</>
-            ) : (
-              <>
-                This user currently has a loan of {formatMoney(amountLoaned)}.
-              </>
-            )}
-          </div>
-          <Spacer h={4} />
-        </>
-      )}
-
       <Table>
         <thead>
           <tr className="p-2">
@@ -121,42 +112,99 @@ export function ContractBetsTable(props: {
         </thead>
         <tbody>
           {isMultiNumber
-            ? groupedBets
-                .slice(0, truncated ? truncatedBetCount : undefined)
-                .map((bets) => (
-                  <MultiNumberBetRow
-                    key={bets[0].id}
-                    bets={bets}
-                    contract={contract as CPMMNumericContract}
-                    isYourBet={isYourBets}
-                  />
-                ))
-            : (truncated
-                ? normalBets.slice(0, truncatedBetCount)
-                : normalBets
-              ).map((bet) => (
+            ? (expanded
+                ? groupedBets.slice(0, betsPerPage)
+                : groupedBets.slice(0, unexpandedBetsPerPage)
+              ).map((bets) => (
+                <MultiNumberBetRow
+                  key={bets[0].id}
+                  bets={bets}
+                  contract={contract as CPMMNumericContract}
+                  isYourBet={isYourBets}
+                />
+              ))
+            : displayedBets.map((bet) => (
                 <BetRow key={bet.id} bet={bet} contract={contract} />
               ))}
         </tbody>
       </Table>
-
-      {truncate && moreBetsCount > 0 && (
-        <Button
-          className="w-full"
-          color="gray-white"
-          onClick={() => setTruncated((b) => !b)}
-        >
-          {truncated ? (
-            <>
-              <ChevronDownIcon className="mr-1 h-4 w-4" />{' '}
-              {`Show ${moreBetsCount} more trades`}
-            </>
-          ) : (
-            <>
-              <ChevronUpIcon className="mr-1 h-4 w-4" /> {`Show fewer trades`}
-            </>
+      <Row className={''}>
+        {!expanded && normalBets.length > unexpandedBetsPerPage && (
+          <button
+            className={
+              'hover:bg-canvas-100 text-primary-700 mb-1 rounded-md p-2 text-sm'
+            }
+            onClick={(e) => {
+              e.stopPropagation()
+              setExpanded(true)
+            }}
+          >
+            Show {normalBets.length - unexpandedBetsPerPage} more {TRADE_TERM}s
+          </button>
+        )}
+        {expanded && !paginate && normalBets.length > unexpandedBetsPerPage && (
+          <button
+            className={
+              'hover:bg-canvas-100 text-primary-700 mb-1 rounded-md p-2 text-sm'
+            }
+            onClick={(e) => {
+              e.stopPropagation()
+              setExpanded(false)
+            }}
+          >
+            Show less
+          </button>
+        )}
+      </Row>
+      {expanded && (
+        <>
+          {paginate && (
+            <Pagination
+              page={page}
+              setPage={setPage}
+              pageSize={betsPerPage}
+              totalItems={
+                isMultiNumber ? groupedBets.length : normalBets.length
+              }
+            />
           )}
-        </Button>
+          {!hideRedemptionAndLoanMessages && amountRedeemed > 0 && (
+            <div className="text-ink-500 pl-2 text-sm">
+              {amountRedeemed} {isPseudoNumeric ? 'HIGHER' : 'YES'} shares and{' '}
+              {amountRedeemed} {isPseudoNumeric ? 'LOWER' : 'NO'} shares
+              automatically redeemed for{' '}
+              <MoneyDisplay
+                amount={amountRedeemed}
+                isCashContract={isCashContract}
+              />
+              .
+            </div>
+          )}
+          {!hideRedemptionAndLoanMessages &&
+            !isResolved &&
+            amountLoaned > 0 && (
+              <div className="text-ink-500 mt-2 pl-2 text-sm">
+                {isYourBets ? (
+                  <>
+                    You currently have a loan of{' '}
+                    <MoneyDisplay
+                      amount={amountLoaned}
+                      isCashContract={isCashContract}
+                    />
+                  </>
+                ) : (
+                  <>
+                    This user currently has a loan of{' '}
+                    <MoneyDisplay
+                      amount={amountLoaned}
+                      isCashContract={isCashContract}
+                    />
+                    .
+                  </>
+                )}
+              </div>
+            )}
+        </>
       )}
     </div>
   )
@@ -182,10 +230,13 @@ function BetRow(props: { bet: Bet; contract: Contract }) {
   const ofTotalAmount =
     bet.limitProb === undefined || bet.orderAmount === undefined
       ? ''
-      : ` / ${formatMoney(bet.orderAmount)}`
+      : ` / ${formatWithToken({
+          amount: bet.orderAmount,
+          token: contract.token == 'CASH' ? 'CASH' : 'M$',
+        })}`
 
+  const isCashContract = contract.token === 'CASH'
   const sharesOrShortSellShares = Math.abs(shares)
-
   return (
     <tr>
       {(isCPMM || isCpmmMulti) && <td>{shares >= 0 ? 'BUY' : 'SELL'}</td>}
@@ -195,26 +246,24 @@ function BetRow(props: { bet: Bet; contract: Contract }) {
         </td>
       )}
       <td>
-        {bet.isAnte ? (
-          'ANTE'
-        ) : isCpmmMulti && !isBinaryMC ? (
-          <BinaryOutcomeLabel outcome={outcome as any} />
-        ) : (
-          <OutcomeLabel
-            outcome={outcome}
-            contract={contract}
-            truncate="short"
-          />
-        )}
+        <OutcomeLabel
+          pseudonym={getPseudonym(contract)}
+          outcome={outcome}
+          contract={contract}
+          truncate="short"
+        />
       </td>
       <td>
-        {formatMoney(Math.abs(amount))}
+        <MoneyDisplay
+          amount={Math.abs(amount)}
+          isCashContract={isCashContract}
+        />
         {ofTotalAmount}
       </td>
       <td>
         {isStonk
           ? getStonkDisplayShares(contract, sharesOrShortSellShares, 2)
-          : formatWithCommas(sharesOrShortSellShares)}
+          : formatShares(sharesOrShortSellShares, isCashContract)}
       </td>
 
       <td>
@@ -276,11 +325,15 @@ export const groupMultiNumericBets = (
     (a) => bets.find((b) => b.answerId === a.id)?.probBefore ?? 0
   )
   const expectedValueBefore = getExpectedValueAtProbs(betProbBefores).toFixed(2)
+  const isCashContract = contract.token === 'CASH'
 
   const ofTotalAmount = bets.some(
     (b) => b.orderAmount !== undefined && b.limitProb !== undefined
   )
-    ? ` / ${formatMoney(sumBy(bets, (b) => b.orderAmount ?? 0))}`
+    ? ` / ${formatWithToken({
+        amount: sumBy(bets, (b) => b.orderAmount ?? 0),
+        token: isCashContract ? 'CASH' : 'M$',
+      })}`
     : ''
 
   return {
@@ -311,6 +364,7 @@ function MultiNumberBetRow(props: {
   if (!bet) return null
 
   const { amount, createdTime, shares } = bet
+  const isCashContract = contract.token === 'CASH'
 
   return (
     <tr>
@@ -319,10 +373,13 @@ function MultiNumberBetRow(props: {
         {lowerRange} - {higherRange}
       </td>
       <td>
-        {formatMoney(Math.abs(amount))}
+        <MoneyDisplay
+          amount={Math.abs(amount)}
+          isCashContract={isCashContract}
+        />
         {ofTotalAmount}
       </td>
-      <td>{formatWithCommas(Math.abs(shares))}</td>
+      <td>{formatShares(Math.abs(shares), isCashContract)}</td>
 
       <td>
         {expectedValueBefore} → {expectedValueAfter}

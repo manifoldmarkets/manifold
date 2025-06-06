@@ -3,10 +3,10 @@ import {
   keyBy,
   minBy,
   mapValues,
-  maxBy,
   sortBy,
   sumBy,
   uniqBy,
+  maxBy,
 } from 'lodash'
 import { memo, useEffect, useMemo, useReducer, useRef, useState } from 'react'
 import clsx from 'clsx'
@@ -20,9 +20,10 @@ import {
 import { Bet } from 'common/bet'
 import { ContractComment } from 'common/comment'
 import {
-  CPMMBinaryContract,
+  BinaryContract,
   Contract,
   CPMMNumericContract,
+  MarketContract,
 } from 'common/contract'
 import { buildArray } from 'common/util/array'
 import { shortFormatNumber, maybePluralize } from 'common/util/format'
@@ -32,34 +33,39 @@ import { LoadingIndicator } from 'web/components/widgets/loading-indicator'
 import { Pagination } from 'web/components/widgets/pagination'
 import { Tooltip } from 'web/components/widgets/tooltip'
 import { VisibilityObserver } from 'web/components/widgets/visibility-observer'
-import { useEvent } from 'web/hooks/use-event'
+import { useEvent } from 'client-common/hooks/use-event'
 import { useLiquidity } from 'web/hooks/use-liquidity'
 import { useUser } from 'web/hooks/use-user'
 import { track } from 'web/lib/service/analytics'
-import { getOlderBets } from 'web/lib/supabase/bets'
 import { FeedBet } from '../feed/feed-bets'
-import { ContractCommentInput, FeedCommentThread } from '../feed/feed-comments'
+import { FeedCommentThread } from '../comments/comment-thread'
+import { ContractCommentInput } from '../comments/comment-input'
 import { FeedLiquidity } from '../feed/feed-liquidity'
 import { Col } from '../layout/col'
 import { Row } from '../layout/row'
 import { ControlledTabs } from '../layout/tabs'
-import { ContractMetricsByOutcome } from 'common/contract-metric'
-import { usePersistentInMemoryState } from 'web/hooks/use-persistent-in-memory-state'
-import { useRealtimeCommentsPolling } from 'web/hooks/use-comments-supabase'
-import { ParentFeedComment } from '../feed/feed-comments'
+import { usePersistentInMemoryState } from 'client-common/hooks/use-persistent-in-memory-state'
+import { useSubscribeNewComments } from 'client-common/hooks/use-comments'
+import { ParentFeedComment } from '../comments/comment'
 import { useHashInUrlPageRouter } from 'web/hooks/use-hash-in-url-page-router'
-import { useHashInUrl } from 'web/hooks/use-hash-in-url'
 import { MultiNumericBetGroup } from 'web/components/feed/feed-multi-numeric-bet-group'
 import { Button } from '../buttons/button'
-import DropdownMenu from '../comments/dropdown-menu'
+import DropdownMenu from '../widgets/dropdown-menu'
 import generateFilterDropdownItems from '../search/search-dropdown-helpers'
 import { useAPIGetter } from 'web/hooks/use-api-getter'
+import { api } from 'web/lib/api/api'
+import { TRADE_TERM } from 'common/envs/constants'
+import {
+  listenToOrderUpdates,
+  useContractBets,
+} from 'client-common/hooks/use-bets'
+import { useIsPageVisible } from 'web/hooks/use-page-visible'
 
 export function ContractTabs(props: {
-  contract: Contract
+  staticContract: Contract
+  liveContract: Contract
   bets: Bet[]
   comments: ContractComment[]
-  userPositionsByOutcome: ContractMetricsByOutcome
   replyTo?: Answer | Bet
   setReplyTo?: (replyTo?: Answer | Bet) => void
   cancelReplyToAnswer?: () => void
@@ -69,11 +75,10 @@ export function ContractTabs(props: {
   totalBets: number
   totalPositions: number
   pinnedComments: ContractComment[]
-  betReplies: Bet[]
-  appRouter?: boolean
 }) {
   const {
-    contract,
+    staticContract,
+    liveContract,
     comments,
     bets,
     replyTo,
@@ -82,11 +87,10 @@ export function ContractTabs(props: {
     activeIndex,
     setActiveIndex,
     totalBets,
-    userPositionsByOutcome,
     pinnedComments,
-    appRouter,
-    betReplies,
   } = props
+
+  const highlightedCommentId = useHashInUrlPageRouter('')
 
   const [totalPositions, setTotalPositions] = useState(props.totalPositions)
   const [totalComments, setTotalComments] = useState(comments.length)
@@ -105,6 +109,7 @@ export function ContractTabs(props: {
 
   return (
     <ControlledTabs
+      labelClassName="!text-base"
       className="mb-4"
       activeIndex={activeIndex}
       onClick={(title, i) => {
@@ -126,7 +131,8 @@ export function ContractTabs(props: {
           title: commentsTitle,
           content: (
             <CommentsTabContent
-              contract={contract}
+              staticContract={staticContract}
+              liveContract={liveContract}
               comments={comments}
               pinnedComments={pinnedComments}
               setCommentsLength={setTotalComments}
@@ -134,25 +140,18 @@ export function ContractTabs(props: {
               replyTo={replyTo}
               clearReply={() => setReplyTo?.(undefined)}
               className="-ml-2 -mr-1"
-              bets={uniqBy(bets.concat(betReplies), (b) => b.id)}
-              appRouter={appRouter}
+              highlightCommentId={highlightedCommentId}
             />
           ),
         },
         totalBets > 0 &&
-          (contract.mechanism === 'cpmm-1' ||
-            contract.mechanism === 'cpmm-multi-1') && {
+          (liveContract.mechanism === 'cpmm-1' ||
+            liveContract.mechanism === 'cpmm-multi-1') && {
             title: positionsTitle,
             content: (
               <UserPositionsTable
-                positions={
-                  // If contract is resolved, will have to refetch positions by profit
-                  Object.values(userPositionsByOutcome).length > 0 &&
-                  !contract.isResolved
-                    ? userPositionsByOutcome
-                    : undefined
-                }
-                contract={contract as CPMMBinaryContract}
+                key={liveContract.id}
+                contract={liveContract as BinaryContract}
                 setTotalPositions={setTotalPositions}
               />
             ),
@@ -162,7 +161,8 @@ export function ContractTabs(props: {
           content: (
             <Col className={'gap-4'}>
               <BetsTabContent
-                contract={contract}
+                key={liveContract.id}
+                contract={liveContract}
                 bets={bets}
                 totalBets={totalBets}
                 setReplyToBet={setReplyTo}
@@ -177,74 +177,106 @@ export function ContractTabs(props: {
 
 const LOAD_MORE = 10
 export const CommentsTabContent = memo(function CommentsTabContent(props: {
-  contract: Contract
+  staticContract: Contract // contains the comments
+  liveContract: Contract // you trade on this
   comments: ContractComment[]
   blockedUserIds: string[]
   setCommentsLength?: (length: number) => void
   replyTo?: Answer | Bet
   clearReply?: () => void
   className?: string
-  bets?: Bet[]
   highlightCommentId?: string
   pinnedComments: ContractComment[]
-  appRouter?: boolean
   scrollToEnd?: boolean
 }) {
   const {
-    contract,
+    staticContract,
+    liveContract,
     blockedUserIds,
     setCommentsLength,
     replyTo,
     clearReply,
     className,
-    bets,
     highlightCommentId,
-    appRouter,
     scrollToEnd,
   } = props
   const user = useUser()
 
   // Load all comments once
-  const { data: fetchedComments } = useAPIGetter('comments', {
-    contractId: contract.id,
-  })
-
-  // Poll for new comments
-  const realtimeComments = useRealtimeCommentsPolling(
-    contract.id,
-    maxBy(props.comments, 'createdTime')?.createdTime ?? 0,
-    500
+  const { data: fetchedComments, loading: commentsLoading } = useAPIGetter(
+    'comments',
+    {
+      contractId: staticContract.id,
+    },
+    undefined,
+    'comments-' + staticContract.id
   )
+
+  const bets = useContractBets(
+    staticContract.id,
+    {
+      commentRepliesOnly: true,
+    },
+    useIsPageVisible,
+    (params) => api('bets', params)
+  )
+  const latestCommentTime = useMemo(
+    () => maxBy(fetchedComments, 'createdTime')?.createdTime,
+    [fetchedComments?.length]
+  )
+
+  const isPageVisible = useIsPageVisible()
+  const { data: newFetchedComments, loading: newCommentsLoading } =
+    useAPIGetter(
+      'comments',
+      {
+        contractId: staticContract.id,
+        afterTime: latestCommentTime,
+      },
+      undefined,
+      'new-comments-' + staticContract.id,
+      isPageVisible
+    )
+
+  // Listen for new comments
+  const newComments = useSubscribeNewComments(staticContract.id)
   const comments = uniqBy(
     [
-      ...(realtimeComments ?? []),
+      ...(newComments ?? []),
+      ...(newFetchedComments ?? []),
       ...(fetchedComments ?? []),
       ...props.comments,
     ],
     'id'
   ).filter((c) => !blockedUserIds.includes(c.userId))
 
+  const commentExistsLocally = comments.some((c) => c.id === highlightCommentId)
+  const isLoadingHighlightedComment =
+    highlightCommentId &&
+    !commentExistsLocally &&
+    (commentsLoading || newCommentsLoading)
+
   const [parentCommentsToRender, setParentCommentsToRender] = useState(
     props.comments.filter((c) => !c.replyToCommentId).length
   )
 
-  const isBinary = contract.outcomeType === 'BINARY'
-  const isBountiedQuestion = contract.outcomeType == 'BOUNTIED_QUESTION'
+  const isBinary = staticContract.outcomeType === 'BINARY'
+  const isBountiedQuestion = staticContract.outcomeType == 'BOUNTIED_QUESTION'
   const bestFirst =
     isBountiedQuestion &&
-    (!user || user.id !== contract.creatorId) &&
-    !contract.isAutoBounty
+    (!user || user.id !== staticContract.creatorId) &&
+    !staticContract.isAutoBounty
 
   const sorts = buildArray(
     bestFirst ? 'Best' : 'Newest',
     bestFirst ? 'Newest' : 'Best',
-    isBinary && 'Yes bets',
+    isBinary && `Yes bets`,
     isBinary && 'No bets'
   )
 
   const [sortIndex, setSortIndex] = usePersistentInMemoryState(
     0,
-    `comments-sort-${contract.id}`
+    `comments-sort-${staticContract.id}`
   )
   const sort = sorts[sortIndex]
 
@@ -268,7 +300,11 @@ export const CommentsTabContent = memo(function CommentsTabContent(props: {
             ? -Infinity
             : c.hidden
             ? Infinity
-            : -((c.bountyAwarded ?? 0) * 1000 + (c.likes ?? 0))
+            : -(
+                (c.bountyAwarded ?? 0) * 1000 +
+                (c.likes ?? 0) -
+                (c.dislikes ?? 0)
+              )
       : sort === 'Yes bets'
       ? (c: ContractComment) => -(c.betReplyAmountsByOutcome?.['YES'] ?? 0)
       : sort === 'No bets'
@@ -325,20 +361,14 @@ export const CommentsTabContent = memo(function CommentsTabContent(props: {
         .flat(),
     [comments.length]
   )
-  const idToHighlight =
-    // eslint-disable-next-line react-hooks/rules-of-hooks
-    highlightCommentId ?? appRouter
-      ? // eslint-disable-next-line react-hooks/rules-of-hooks
-        useHashInUrl()
-      : // eslint-disable-next-line react-hooks/rules-of-hooks
-        useHashInUrlPageRouter('')
+
   useEffect(() => {
-    if (idToHighlight) {
-      const currentlyVisible = visibleCommentIds.includes(idToHighlight)
+    if (highlightCommentId) {
+      const currentlyVisible = visibleCommentIds.includes(highlightCommentId)
       if (!currentlyVisible) setParentCommentsToRender(comments.length)
     }
     setCommentsLength?.(comments.length)
-  }, [idToHighlight, comments.length])
+  }, [highlightCommentId, comments.length])
 
   const loadMore = () => setParentCommentsToRender((prev) => prev + LOAD_MORE)
   const pinnedComments = uniqBy(
@@ -361,22 +391,29 @@ export const CommentsTabContent = memo(function CommentsTabContent(props: {
 
   const [expandGptSummary, setExpandGptSummary] = usePersistentInMemoryState(
     false,
-    `expand-gpt-summary-${contract.id}`
+    `expand-gpt-summary-${staticContract.id}`
   )
+
+  function getSortLabel(sort: string) {
+    if (sort == 'Yes bets') return `Yes ${TRADE_TERM}s`
+    if (sort == 'No bets') return `No ${TRADE_TERM}s`
+    return sort
+  }
 
   return (
     <Col className={clsx(className, scrollToEnd && 'flex-col-reverse')}>
       <div ref={endOfMessagesRef} />
       <ContractCommentInput
+        autoFocus={false}
         replyTo={replyTo}
         className="mb-4 mr-px mt-px"
-        contract={contract}
+        playContract={staticContract}
         clearReply={clearReply}
         trackingLocation={'contract page'}
         commentTypes={['comment', 'repost']}
       />
 
-      {contract.gptCommentSummary && (
+      {staticContract.gptCommentSummary && (
         <Button
           className="mb-2 rounded-md bg-teal-100 p-4"
           size="xs"
@@ -398,7 +435,7 @@ export const CommentsTabContent = memo(function CommentsTabContent(props: {
                 !expandGptSummary && 'line-clamp-3'
               )}
             >
-              {contract.gptCommentSummary}
+              {staticContract.gptCommentSummary}
             </div>
           </Col>
         </Button>
@@ -411,27 +448,32 @@ export const CommentsTabContent = memo(function CommentsTabContent(props: {
               <span className="text-ink-400 text-sm">Sort by:</span>
               <DropdownMenu
                 items={generateFilterDropdownItems(
-                  sorts.map((s, i) => ({ label: s, value: i + '' })),
+                  sorts.map((s, i) => ({
+                    label: getSortLabel(s),
+                    value: i + '',
+                  })),
                   (value: string) => {
                     const i = parseInt(value)
                     setSortIndex(i)
                     console.log(i)
                     refreezeIds()
                     track('change-comments-sort', {
-                      contractSlug: contract.slug,
-                      contractName: contract.question,
+                      contractSlug: staticContract.slug,
+                      contractName: staticContract.question,
                       totalComments: comments.length,
-                      totalUniqueTraders: contract.uniqueBettorCount,
+                      totalUniqueTraders: staticContract.uniqueBettorCount,
                     })
                   }
                 )}
-                icon={
+                buttonContent={
                   <Row className="text-ink-600 w-20 items-center text-sm">
-                    <span className="whitespace-nowrap">{sort}</span>
+                    <span className="whitespace-nowrap">
+                      {getSortLabel(sort)}
+                    </span>
                     <ChevronDownIcon className="h-4 w-4" />
                   </Row>
                 }
-                menuWidth={'w-24'}
+                menuWidth={'w-28'}
                 selectedItemName={sort}
                 closeOnClick
               />
@@ -442,42 +484,52 @@ export const CommentsTabContent = memo(function CommentsTabContent(props: {
 
       {pinnedComments.map((comment) => (
         <div key={comment.id} className={'pt-3'}>
-          <PinnedComment
+          <ParentFeedComment
             comment={comment}
-            contract={contract}
+            playContract={staticContract}
+            liveContract={liveContract}
             trackingLocation={'contract page'}
             seeReplies={false}
             numReplies={0}
+            isPinned
           />
         </div>
       ))}
 
-      {parentComments.slice(0, parentCommentsToRender).map((parent) => (
-        <FeedCommentThread
-          key={parent.id}
-          contract={contract}
-          parentComment={parent}
-          threadComments={commentsByParent[parent.id] ?? []}
-          trackingLocation={'contract page'}
-          idInUrl={idToHighlight}
-          showReplies={
-            !isBountiedQuestion || (!!user && user.id === contract.creatorId)
-          }
-          childrenBountyTotal={
-            contract.outcomeType == 'BOUNTIED_QUESTION'
-              ? childrensBounties[parent.id]
-              : undefined
-          }
-          bets={bets?.filter(
-            (b) =>
-              b.replyToCommentId &&
-              [parent]
-                .concat(commentsByParent[parent.id] ?? [])
-                .map((c) => c.id)
-                .includes(b.replyToCommentId)
-          )}
-        />
-      ))}
+      {isLoadingHighlightedComment ? (
+        <Col className="h-32 items-center justify-center">
+          <LoadingIndicator />
+        </Col>
+      ) : (
+        parentComments.slice(0, parentCommentsToRender).map((parent) => (
+          <FeedCommentThread
+            key={parent.id}
+            playContract={staticContract}
+            liveContract={liveContract}
+            parentComment={parent}
+            threadComments={commentsByParent[parent.id] ?? []}
+            trackingLocation={'contract page'}
+            idInUrl={highlightCommentId}
+            showReplies={
+              !isBountiedQuestion ||
+              (!!user && user.id === staticContract.creatorId)
+            }
+            childrenBountyTotal={
+              staticContract.outcomeType == 'BOUNTIED_QUESTION'
+                ? childrensBounties[parent.id]
+                : undefined
+            }
+            bets={bets?.filter(
+              (b) =>
+                b.replyToCommentId &&
+                [parent]
+                  .concat(commentsByParent[parent.id] ?? [])
+                  .map((c) => c.id)
+                  .includes(b.replyToCommentId)
+            )}
+          />
+        ))
+      )}
       <div className="relative w-full">
         <VisibilityObserver
           onVisibilityUpdated={onVisibilityUpdated}
@@ -488,31 +540,6 @@ export const CommentsTabContent = memo(function CommentsTabContent(props: {
   )
 })
 
-const PinnedComment = (props: {
-  contract: Contract
-  comment: ContractComment
-  seeReplies: boolean
-  numReplies: number
-  trackingLocation: string
-  bets?: Bet[]
-}) => {
-  const { comment, contract, trackingLocation, bets, seeReplies, numReplies } =
-    props
-
-  return (
-    <ParentFeedComment
-      contract={contract}
-      comment={comment}
-      trackingLocation={trackingLocation}
-      highlighted={false}
-      bets={bets}
-      seeReplies={seeReplies}
-      numReplies={numReplies}
-      isPinned={true}
-    />
-  )
-}
-
 export const BetsTabContent = memo(function BetsTabContent(props: {
   contract: Contract
   bets: Bet[]
@@ -522,9 +549,13 @@ export const BetsTabContent = memo(function BetsTabContent(props: {
   const { contract, setReplyToBet, totalBets } = props
   const { outcomeType } = contract
   const [olderBets, setOlderBets] = useState<Bet[]>([])
+
   const [page, setPage] = useState(0)
-  const ITEMS_PER_PAGE = 50
+  const isNumber = outcomeType === 'NUMBER'
+  const ITEMS_PER_PAGE = 50 * (isNumber ? contract.answers.length : 1)
   const bets = [...props.bets, ...olderBets]
+  listenToOrderUpdates(contract.id, setOlderBets, true)
+
   const oldestBet = minBy(bets, (b) => b.createdTime)
   const start = page * ITEMS_PER_PAGE
   const end = start + ITEMS_PER_PAGE
@@ -537,14 +568,13 @@ export const BetsTabContent = memo(function BetsTabContent(props: {
       l.userId !== DEV_HOUSE_LIQUIDITY_PROVIDER_ID &&
       l.amount > 0
   )
-  const isMultiNumber = outcomeType === 'NUMBER'
-  const betsByBetGroupId = isMultiNumber
-    ? groupBy(props.bets, (bet) => bet.betGroupId ?? bet.id)
+  const betsByBetGroupId = isNumber
+    ? groupBy(bets, (bet) => bet.betGroupId ?? bet.id)
     : {}
   const groupedBets = Object.values(betsByBetGroupId)
 
   const items = [
-    ...(isMultiNumber
+    ...(isNumber
       ? groupedBets.map((bets) => ({
           type: 'betGroup' as const,
           id: 'bets-tab-' + bets[0].betGroupId,
@@ -571,10 +601,15 @@ export const BetsTabContent = memo(function BetsTabContent(props: {
   const oldestBetTime = oldestBet?.createdTime ?? now
   useEffect(() => {
     if (!shouldLoadMore) return
-    getOlderBets(contract.id, oldestBetTime, limit)
+    api('bets', {
+      contractId: contract.id,
+      beforeTime: oldestBetTime,
+      limit,
+      filterRedemptions: !isNumber,
+      includeZeroShareRedemptions: isNumber,
+    })
       .then((olderBets) => {
-        const filteredBets = olderBets.filter((bet) => !bet.isAnte)
-        setOlderBets((bets) => uniqBy([...bets, ...filteredBets], (b) => b.id))
+        setOlderBets((bets) => uniqBy([...bets, ...olderBets], (b) => b.id))
       })
       .catch((err) => {
         console.error(err)
@@ -592,16 +627,23 @@ export const BetsTabContent = memo(function BetsTabContent(props: {
   ).slice(start, end)
 
   const scrollRef = useRef<HTMLDivElement>(null)
+  const isCashContract = contract.token === 'CASH'
+
+  // Determine how many loading rows to show (up to ITEMS_PER_PAGE)
+  const numLoadingRows = shouldLoadMore
+    ? Math.min(ITEMS_PER_PAGE, Math.max(0, totalBets - pageItems.length))
+    : 0
 
   return (
     <>
-      <Col className="mb-4 items-start gap-7" ref={scrollRef}>
+      <div ref={scrollRef} />
+      <Col className="mb-4 items-start gap-7">
         {pageItems.map((item) =>
           item.type === 'bet' ? (
             <FeedBet
               onReply={setReplyToBet}
               key={item.id}
-              contract={contract}
+              contract={contract as MarketContract}
               bet={item.bet}
             />
           ) : item.type === 'betGroup' ? (
@@ -611,11 +653,22 @@ export const BetsTabContent = memo(function BetsTabContent(props: {
               bets={item.bets}
             />
           ) : (
-            <FeedLiquidity key={item.id} liquidity={item.lp} />
+            <div
+              key={item.id}
+              className="-ml-2 rounded-full bg-gradient-to-r from-pink-300/50 via-purple-300/50 to-indigo-300/50 p-2"
+            >
+              <FeedLiquidity
+                liquidity={item.lp}
+                isCashContract={isCashContract}
+              />
+            </div>
           )
         )}
-        {/* TODO: skeleton */}
-        {shouldLoadMore && <LoadingIndicator />}
+        {/* Render skeleton loading rows */}
+        {shouldLoadMore &&
+          Array(numLoadingRows)
+            .fill(0)
+            .map((_, i) => <LoadingBetRow key={`loading-${i}`} />)}
       </Col>
       <Pagination
         page={page}
@@ -623,9 +676,23 @@ export const BetsTabContent = memo(function BetsTabContent(props: {
         totalItems={totalItems}
         setPage={(page) => {
           setPage(page)
-          scrollRef.current?.scrollIntoView()
+          scrollRef.current?.scrollIntoView({
+            block: 'center',
+          })
         }}
       />
     </>
   )
 })
+
+function LoadingBetRow() {
+  return (
+    <div className="flex w-full animate-pulse gap-3 rounded-md ">
+      {/* Avatar skeleton */}
+      <div className="h-10 w-10 rounded-full bg-gray-500" />
+      <Col className="flex-1 justify-center gap-1.5">
+        <div className="h-4 w-1/2 rounded bg-gray-500" />
+      </Col>
+    </div>
+  )
+}

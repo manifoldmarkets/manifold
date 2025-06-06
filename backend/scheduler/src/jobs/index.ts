@@ -1,16 +1,12 @@
 import { createJob } from './helpers'
 import { updateContractMetricsCore } from 'shared/update-contract-metrics-core'
 import { sendOnboardingNotificationsInternal } from 'shared/onboarding-helpers'
-import { updateUserMetricsCore } from 'shared/update-user-metrics-core'
-import { updateGroupMetricsCore } from 'shared/update-group-metrics-core'
-import { cleanOldTombstones } from './clean-old-tombstones'
+import { updateUserMetricPeriods } from 'shared/update-user-metric-periods'
 import { cleanOldNotifications } from './clean-old-notifications'
-import { truncateIncomingWrites } from './truncate-incoming-writes'
-import { updateStatsCore } from './update-stats'
+import { updateCashStatsCore, updateStatsCore } from './update-stats'
 import { calculateConversionScore } from 'shared/conversion-score'
 import { autoAwardBounty } from './auto-award-bounty'
-import { resetPgStats } from 'replicator/jobs/reset-pg-stats'
-import { MINUTE_MS } from 'common/util/time'
+import { resetPgStats } from './reset-pg-stats'
 import { calculateUserTopicInterests } from 'shared/calculate-user-topic-interests'
 import {
   CREATOR_UPDATE_FREQUENCY,
@@ -18,23 +14,52 @@ import {
 } from 'shared/update-creator-metrics-core'
 import { sendPortfolioUpdateEmailsToAllUsers } from 'shared/weekly-portfolio-emails'
 import { sendWeeklyMarketsEmails } from 'shared/weekly-markets-emails'
-import { resetWeeklyEmailsFlags } from 'replicator/jobs/reset-weekly-emails-flags'
+import { resetWeeklyEmailsFlags } from './reset-weekly-emails-flags'
 import { calculateGroupImportanceScore } from 'shared/group-importance-score'
 import { checkPushNotificationReceipts } from 'shared/check-push-receipts'
-import { sendStreakExpirationNotification } from 'replicator/jobs/streak-expiration-notice'
+import { sendStreakExpirationNotification } from './streak-expiration-notice'
+import { expireLimitOrders } from 'shared/expire-limit-orders'
+import { denormalizeAnswers } from './denormalize-answers'
+import { incrementStreakForgiveness } from './increment-streak-forgiveness'
+import { sendMarketCloseEmails } from './send-market-close-emails'
+import { pollPollResolutions } from './poll-poll-resolutions'
+import { IMPORTANCE_MINUTE_INTERVAL } from 'shared/importance-score'
+import { scoreContracts } from './score-contracts'
+import { updateLeagueRanks } from './update-league-ranks'
+import { updateLeague } from './update-league'
+import { drizzleLiquidity } from './drizzle-liquidity'
+import { resetBettingStreaksInternal } from './reset-betting-streaks'
+import {
+  resetDailyQuestStatsInternal,
+  resetWeeklyQuestStatsInternal,
+} from './reset-quests-stats'
+import { updateUserPortfolioHistoriesCore } from 'shared/update-user-portfolio-histories-core'
+import { isProd } from 'shared/utils'
+import { sendMarketMovementNotifications } from 'shared/send-market-movement-notifications'
+import { sendUnseenMarketMovementNotifications } from 'shared/send-unseen-notifications'
+import { autoLeaguesCycle } from './auto-leagues-cycle'
 
 export function createJobs() {
   return [
+    createJob(
+      'auto-leagues-cycle',
+      '0 */10 * * * *', // every 10 minutes
+      autoLeaguesCycle
+    ),
     // Hourly jobs:
     createJob(
-      'update-contract-metrics-multi',
+      'send-market-close-emails',
+      '0 0 * * * *', // every hour
+      sendMarketCloseEmails
+    ),
+    createJob(
+      'update-contract-metrics',
       '0 */21 * * * *', // every 21 minutes - (on the 3rd minute of every hour)
-      () => updateContractMetricsCore('multi'),
-      30 * MINUTE_MS
+      updateContractMetricsCore
     ),
     createJob(
       'update-creator-metrics',
-      `0 */${CREATOR_UPDATE_FREQUENCY} * * * *`, // every 13 minutes - (on the 5th minute of every hour)
+      `0 */${CREATOR_UPDATE_FREQUENCY} * * * *`, // every 57 minutes - (on the 57th minute of every hour)
       updateCreatorMetricsCore
     ),
     createJob(
@@ -43,9 +68,9 @@ export function createJobs() {
       () => calculateGroupImportanceScore()
     ),
     createJob(
-      'update-group-metrics',
-      '0 */17 * * * *', // every 17 minutes - (on the 8th minute of every hour)
-      updateGroupMetricsCore
+      'update-league',
+      '0 */15 * * * *', // every 15 minutes
+      () => updateLeague()
     ),
     createJob(
       'check-push-receipts',
@@ -53,10 +78,9 @@ export function createJobs() {
       checkPushNotificationReceipts
     ),
     createJob(
-      'update-contract-metrics-non-multi',
-      '0 */19 * * * *', // every 19 minutes - (on the 16th minute of every hour)
-      () => updateContractMetricsCore('non-multi'),
-      30 * MINUTE_MS
+      'send-contract-movement-notifications',
+      '0 12 * * * *', // on the 12th minute of every hour
+      () => sendMarketMovementNotifications(false)
     ),
     createJob(
       'calculate-conversion-scores',
@@ -69,26 +93,52 @@ export function createJobs() {
       autoAwardBounty
     ),
     createJob(
-      'update-user-metrics',
+      'update-user-portfolio-histories',
+      '30 * * * * *', // every minute
+      () => updateUserPortfolioHistoriesCore()
+    ),
+    createJob(
+      'drizzle-liquidity',
+      '0 */7 * * * *', // every 7th minute
+      drizzleLiquidity
+    ),
+    createJob(
+      'expire-limit-orders',
+      '0 */1 * * * *', // every minute
+      expireLimitOrders
+    ),
+    createJob(
+      'score-contracts',
+      `0 */${isProd() ? IMPORTANCE_MINUTE_INTERVAL : 60} * * * *`, // every 2 minutes
+      scoreContracts
+    ),
+    createJob(
+      'denormalize-answers',
       '0 * * * * *', // every minute
-      () => updateUserMetricsCore(),
-      10 * MINUTE_MS // The caches take time to build
+      denormalizeAnswers
+    ),
+    createJob(
+      'poll-poll-resolutions',
+      '0 */1 * * * *', // every minute
+      pollPollResolutions
     ),
     // Daily jobs:
     createJob(
-      'truncate-incoming-writes',
-      '0 0 2 * * *', // 2am daily
-      truncateIncomingWrites
-    ),
-    createJob(
-      'clean-old-tombstones',
-      '0 0 2 * * *', // 2am daily
-      cleanOldTombstones
+      'send-unseen-notifications',
+      '0 0 13 * * *', // 1 PM daily
+      sendUnseenMarketMovementNotifications
     ),
     createJob(
       'clean-old-notifications',
       '0 30 2 * * *', // 230 AM daily
       cleanOldNotifications
+    ),
+    createJob(
+      'update-user-metric-periods',
+      '0 0 2 * * *', // 2 AM daily
+      async () => {
+        await updateUserMetricPeriods()
+      }
     ),
     createJob(
       'reset-pg-stats',
@@ -103,7 +153,12 @@ export function createJobs() {
     createJob(
       'update-stats',
       '0 20 4 * * *', // on 4:20am daily
-      updateStatsCore
+      () => updateStatsCore(7)
+    ),
+    createJob(
+      'update-cash-stats',
+      '0 20 4 * * *', // on 4:20am daily
+      () => updateCashStatsCore(7)
     ),
     createJob(
       'onboarding-notification',
@@ -112,23 +167,49 @@ export function createJobs() {
     ),
     createJob(
       'weekly-portfolio-emails',
-      '0 * 12-14 * * 5',
+      '0 * 12-14 * * 5', // every Friday from 12pm to 2pm
       sendPortfolioUpdateEmailsToAllUsers
     ),
     createJob(
       'weekly-markets-emails',
-      '0 */3 11-17 * * 1',
+      '0 */2 10-17 * * 1', // every Monday
       sendWeeklyMarketsEmails
     ),
     createJob(
       'reset-weekly-email-flags',
-      '0 0 0 * * 6',
+      '0 0 0 * * 6', // every Saturday at midnight
       resetWeeklyEmailsFlags
     ),
     createJob(
       'send-streak-notifications',
       '0 30 18 * * *', // 6:30pm PST daily ( 9:30pm EST )
       sendStreakExpirationNotification
+    ),
+    createJob(
+      'update-league-ranks',
+      '0 0 0 * * *', // every day at midnight
+      () => updateLeagueRanks()
+    ),
+    createJob(
+      'reset-betting-streaks',
+      '0 0 0 * * *', // every day at midnight
+      resetBettingStreaksInternal
+    ),
+    createJob(
+      'reset-quests-stats',
+      '0 0 0 * * *', // every day at midnight
+      resetDailyQuestStatsInternal
+    ),
+    createJob(
+      'reset-weekly-quests-stats',
+      '0 0 0 * * 1', // every Monday at midnight
+      resetWeeklyQuestStatsInternal
+    ),
+    // Monthly jobs:
+    createJob(
+      'increment-streak-forgiveness',
+      '0 0 3 1 * *', // 3am PST on the 1st day of the month
+      incrementStreakForgiveness
     ),
   ]
 }

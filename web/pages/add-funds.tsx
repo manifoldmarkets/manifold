@@ -3,21 +3,7 @@ import { SEO } from 'web/components/SEO'
 import { Title } from 'web/components/widgets/title'
 import { Page } from 'web/components/layout/page'
 import { useRedirectIfSignedOut } from 'web/hooks/use-redirect-if-signed-out'
-import { formatMoney } from 'common/util/format'
 import { BuyManaTab } from 'web/components/add-funds-modal'
-
-export const WEB_PRICES = {
-  [formatMoney(10000)]: 1399,
-  [formatMoney(25000)]: 2999,
-  [formatMoney(100000)]: 10999,
-  [formatMoney(1000000)]: 100000,
-}
-
-export const IOS_PRICES = {
-  [formatMoney(10000)]: 1499,
-  [formatMoney(25000)]: 3499,
-  [formatMoney(100000)]: 14299,
-}
 
 export default function AddFundsPage() {
   useRedirectIfSignedOut()
@@ -33,7 +19,7 @@ export default function AddFundsPage() {
       <Col className="bg-canvas-0 mx-auto max-w-[700px] rounded p-4 py-8 sm:p-8 sm:shadow-md">
         <Title>Get Mana</Title>
 
-        <BuyManaTab onClose={() => {}} />
+        <BuyManaTab />
       </Col>
     </Page>
   )

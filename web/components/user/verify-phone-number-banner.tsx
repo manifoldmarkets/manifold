@@ -1,39 +1,38 @@
-import { isVerified, User } from 'common/user'
 import { PHONE_VERIFICATION_BONUS } from 'common/economy'
-import { formatMoney } from 'common/util/format'
-import { Button } from 'web/components/buttons/button'
+import { humanish, User } from 'common/user'
 import { useState } from 'react'
-import { VerifyPhone } from 'web/components/verify-phone'
-import { Modal } from 'web/components/layout/modal'
+import { Button } from 'web/components/buttons/button'
 import { Col } from 'web/components/layout/col'
-import { CoinNumber } from 'web/components/widgets/manaCoinNumber'
+import { Modal } from 'web/components/layout/modal'
+import { OnboardingVerifyPhone } from 'web/components/onboarding-verify-phone'
+import { TokenNumber } from 'web/components/widgets/token-number'
+import { useUser } from 'web/hooks/use-user'
 
 export const VerifyPhoneNumberBanner = (props: {
   user: User | null | undefined
 }) => {
-  const { user } = props
+  const user = useUser() ?? props.user
+
   const [showVerifyPhone, setShowVerifyPhone] = useState(false)
-  if (!user || isVerified(user)) return null
+  if (!user || humanish(user)) return null
   return (
     <Col
       className={
-        'border-ink-400 m-2 items-center justify-between gap-2 rounded-sm border bg-indigo-200 p-2 px-3 dark:bg-indigo-700 sm:flex-row'
+        'border-primary-500 bg-primary-100 items-center justify-between gap-2 rounded border p-2 px-4 sm:flex-row'
       }
     >
-      <span>
-        Verify you're not a robot to collect{' '}
-        <CoinNumber
+      <span>Verify your phone number. </span>
+      <Button
+        className={'w-full whitespace-nowrap font-semibold sm:w-fit'}
+        onClick={() => setShowVerifyPhone(true)}
+        color="violet"
+      >
+        Verify and claim&nbsp;
+        <TokenNumber
           amount={PHONE_VERIFICATION_BONUS}
           className={'font-bold'}
           isInline
         />
-        .{' '}
-      </span>
-      <Button
-        className={'whitespace-nowrap'}
-        onClick={() => setShowVerifyPhone(true)}
-      >
-        Claim {formatMoney(PHONE_VERIFICATION_BONUS)}
       </Button>
       <VerifyPhoneModal open={showVerifyPhone} setOpen={setShowVerifyPhone} />
     </Col>
@@ -47,7 +46,7 @@ export const VerifyPhoneModal = (props: {
   return (
     <Modal open={open} setOpen={setOpen}>
       <Col className={'bg-canvas-0 p-4'}>
-        <VerifyPhone onClose={() => setOpen(false)} />
+        <OnboardingVerifyPhone onClose={() => setOpen(false)} />
       </Col>
     </Modal>
   )

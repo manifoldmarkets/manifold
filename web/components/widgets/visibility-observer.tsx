@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
-import { useEvent } from '../../hooks/use-event'
+import { useEvent } from 'client-common/hooks/use-event'
 
 export function VisibilityObserver(props: {
   className?: string

@@ -1,15 +1,16 @@
 import { Col } from 'web/components/layout/col'
-import { LoadingIndicator } from 'web/components/widgets/loading-indicator'
 import clsx from 'clsx'
 import Link from 'next/link'
-import { useAPIGetter } from 'web/hooks/use-api-getter'
-import { FeedContractCard } from 'web/components/contract/feed-contract-card'
+import {
+  FeedContractCard,
+  LoadingCards,
+} from 'web/components/contract/feed-contract-card'
 import { VisibilityObserver } from 'web/components/widgets/visibility-observer'
-import { usePersistentInMemoryState } from 'web/hooks/use-persistent-in-memory-state'
+import { usePersistentInMemoryState } from 'client-common/hooks/use-persistent-in-memory-state'
 import { useEffect, useState } from 'react'
 import { APIResponse } from 'common/api/schema'
 import { uniqBy } from 'lodash'
-import { ScoredFeedRepost } from 'web/components/feed/scored-feed-repost-item'
+import { RepostFeedCard } from 'web/components/feed/repost-feed-card'
 import { useUser } from 'web/hooks/use-user'
 import { Contract } from 'common/contract'
 import { Repost } from 'common/repost'
@@ -17,7 +18,8 @@ import { ContractComment } from 'common/comment'
 import { Bet } from 'common/bet'
 import { User } from 'common/user'
 import { Row } from 'web/components/layout/row'
-import { AD_PERIOD, AD_REDEEM_REWARD } from 'common/boost'
+import { api } from 'web/lib/api/api'
+import { useEvent } from 'client-common/hooks/use-event'
 
 const defaultValue: APIResponse<'get-feed'> & { offset: number } = {
   contracts: [],
@@ -25,46 +27,43 @@ const defaultValue: APIResponse<'get-feed'> & { offset: number } = {
   idsToReason: {},
   bets: [],
   reposts: [],
-  ads: [],
   offset: 0,
 }
 
-export function LiveGeneratedFeed(props: { userId: string; reload: boolean }) {
-  const { userId, reload } = props
+export function LiveGeneratedFeed(props: { userId: string; hidden?: boolean }) {
+  const { userId, hidden } = props
   const user = useUser()
 
-  const limit = 5
+  const limit = 7
   const [feedData, setFeedData] = usePersistentInMemoryState(
     defaultValue,
     `feed-data-${userId}`
   )
   const ignoreContractIds = feedData.contracts.map((c) => c.id)
-  const { data, error, refresh, setData } = useAPIGetter(
-    'get-feed',
-    {
-      userId,
-      offset: feedData.offset,
-      limit,
-      ignoreContractIds,
-    },
-    ['ignoreContractIds', 'offset']
-  )
-  const [loading, setLoading] = useState(false)
+  const [data, setData] = usePersistentInMemoryState<
+    APIResponse<'get-feed'> | undefined
+  >(undefined, `feed-data`)
 
-  useEffect(() => {
-    if (reload) {
-      setData(undefined)
-      setFeedData(defaultValue)
-      setLoading(true)
-      setTimeout(async () => {
-        refresh()
-      }, 100)
+  const refresh = useEvent(async () => {
+    try {
+      const data = await api('get-feed', {
+        userId,
+        offset: feedData.offset,
+        limit,
+        ignoreContractIds,
+      })
+      setData(data)
+    } catch (e) {
+      console.error(e)
     }
-  }, [reload])
+  })
+  useEffect(() => {
+    if (!data) {
+      refresh()
+    }
+  }, [])
 
-  if (error) {
-    console.error(error.message)
-  }
+  const [loading, setLoading] = useState(false)
 
   useEffect(() => {
     if (!data) return
@@ -74,57 +73,43 @@ export function LiveGeneratedFeed(props: { userId: string; reload: boolean }) {
       idsToReason: { ...feedData.idsToReason, ...data.idsToReason },
       bets: uniqBy(feedData.bets.concat(data.bets), 'id'),
       reposts: uniqBy(feedData.reposts.concat(data.reposts), 'id'),
-      ads: uniqBy(feedData.ads.concat(data.ads), (a) => a.contract.id),
       offset: feedData.offset + limit,
     })
     setTimeout(() => {
       setLoading(false)
     }, 50)
   }, [data])
-  const { contracts, reposts, ads, comments, bets, idsToReason } = feedData
+  const { contracts, reposts, comments, bets, idsToReason } = feedData
+
+  if (hidden) return null
 
   if (
     (data === undefined && contracts.length === 0) ||
     (contracts.length === 0 && loading)
   )
-    return <LoadingIndicator />
+    return <LoadingCards />
 
   return (
     <Col className={clsx('relative w-full gap-4')}>
-      {contracts.map((contract, i) => {
+      {contracts.map((contract) => {
         const repost = reposts.find((r) => r.contract_id === contract.id)
         const comment = comments.find((c) => c.contractId === contract.id)
         const bet = bets.find((b) => b.contractId === contract.id)
-        const adIndex = i / AD_PERIOD - 1
-        const ad = ads[adIndex]
+
         return (
-          <>
-            {i % AD_PERIOD === 0 && i !== 0 && ad && (
-              <FeedCard
-                key={ad.contract.id + comment?.id}
-                contract={ad.contract}
-                repost={undefined}
-                comment={undefined}
-                bet={undefined}
-                user={user}
-                reason={'ad'}
-                adId={ad.adId}
-              />
-            )}
-            <FeedCard
-              key={contract.id + comment?.id}
-              contract={contract}
-              repost={repost}
-              comment={comment}
-              bet={bet}
-              user={user}
-              reason={idsToReason[contract.id]}
-            />
-          </>
+          <FeedCard
+            key={contract.id + comment?.id}
+            contract={contract}
+            repost={repost}
+            comment={comment}
+            bet={bet}
+            user={user}
+            reason={idsToReason[contract.id]}
+          />
         )
       })}
       <div className="relative">
-        {loading && <LoadingIndicator />}
+        {loading && <LoadingCards rows={1} />}
         <VisibilityObserver
           className="pointer-events-none absolute bottom-0 h-screen w-full select-none"
           onVisibilityUpdated={(visible) => {
@@ -135,16 +120,13 @@ export function LiveGeneratedFeed(props: { userId: string; reload: boolean }) {
           }}
         />
       </div>
-      {contracts.length === 0 && (
+      {contracts.length === 0 && !loading && (
         <div className="text-ink-1000 m-4 flex w-full flex-col items-center justify-center">
           <div>Congratulations!</div>
           <div>You've reached the end of the feed.</div>
           <div>You are free.</div>
           <br />
-          <Link
-            href="/browse?s=newest&f=open"
-            className="text-primary-700 hover:underline"
-          >
+          <Link href="/home" className="text-primary-700 hover:underline">
             Browse new questions
           </Link>
           <Link href="/create" className="text-primary-700 hover:underline">
@@ -163,9 +145,8 @@ const FeedCard = (props: {
   bet: Bet | undefined
   user: User | undefined | null
   reason: string
-  adId?: string
 }) => {
-  const { contract, adId, reason, user, repost, comment, bet } = props
+  const { contract, reason, user, repost, comment, bet } = props
   const [hidden, setHidden] = useState(false)
   return hidden ? (
     <Col
@@ -178,7 +159,7 @@ const FeedCard = (props: {
       </Row>
     </Col>
   ) : repost && comment ? (
-    <ScoredFeedRepost
+    <RepostFeedCard
       contract={contract}
       comment={comment}
       repost={repost}
@@ -194,7 +175,6 @@ const FeedCard = (props: {
       key={contract.id}
       hide={() => setHidden(true)}
       feedReason={reason}
-      promotedData={adId ? { adId, reward: AD_REDEEM_REWARD } : undefined}
     />
   )
 }

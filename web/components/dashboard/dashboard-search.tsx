@@ -6,14 +6,14 @@ import {
   useYourDashboards,
   useYourFollowedDashboards,
 } from 'web/hooks/use-dashboard'
-import { useEvent } from 'web/hooks/use-event'
-import { usePersistentInMemoryState } from 'web/hooks/use-persistent-in-memory-state'
+import { useEvent } from 'client-common/hooks/use-event'
+import { usePersistentInMemoryState } from 'client-common/hooks/use-persistent-in-memory-state'
 import { usePersistentQueryState } from 'web/hooks/use-persistent-query-state'
 import {
   historyStore,
   usePersistentState,
 } from 'web/hooks/use-persistent-state'
-import { supabaseSearchDashboards } from 'web/lib/firebase/api'
+import { supabaseSearchDashboards } from 'web/lib/api/api'
 import { Col } from '../layout/col'
 import { Row } from '../layout/row'
 import { Input } from '../widgets/input'

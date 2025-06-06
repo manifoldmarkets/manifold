@@ -1,6 +1,6 @@
 {
   "compilerOptions": {
-    "target": "es5",
+    "target": "es6",
     "lib": ["dom", "dom.iterable", "esnext"],
     "allowJs": true,
     "skipLibCheck": true,
@@ -16,7 +16,8 @@
     "incremental": true,
     "paths": {
       "common/*": ["../common/src/*"],
-      "web/*": ["./*"]
+      "web/*": ["./*"],
+      "client-common/*": ["../client-common/src/*"]
     },
     "plugins": [
       {
@@ -32,6 +33,7 @@
     "**/*.ts",
     "**/*.tsx",
     "../common/src/**/*.ts",
+    "../client-common/src/**/*.ts",
     ".next/types/**/*.ts"
   ],
   "exclude": ["node_modules"]

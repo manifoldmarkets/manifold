@@ -1,44 +1,56 @@
-import { memo, useState } from 'react'
-import dayjs from 'dayjs'
-import { Contract, getBinaryMCProb, isBinaryMulti } from 'common/contract'
+import { ReplyIcon } from '@heroicons/react/solid'
+import clsx from 'clsx'
+import { DisplayUser } from 'common/api/user-types'
 import { Bet } from 'common/bet'
-import { useUser } from 'web/hooks/use-user'
+import {
+  Contract,
+  getBinaryMCProb,
+  isBinaryMulti,
+  MarketContract,
+} from 'common/contract'
+import { TRADE_TERM } from 'common/envs/constants'
+import { getFormattedMappedValue } from 'common/pseudo-numeric'
+import { BETTOR } from 'common/user'
+import { floatingEqual, floatingLesserEqual } from 'common/util/math'
+import dayjs from 'dayjs'
+import { sumBy, uniq } from 'lodash'
+import { memo, useState } from 'react'
+import { Button } from 'web/components/buttons/button'
+import { RepostButton } from 'web/components/comments/repost-modal'
+import { Col } from 'web/components/layout/col'
+import { Modal, MODAL_CLASS } from 'web/components/layout/modal'
 import { Row } from 'web/components/layout/row'
+import { MultipleOrSingleAvatars } from 'web/components/multiple-or-single-avatars'
+import { OutcomeLabel } from 'web/components/outcome-label'
+import { RelativeTimestamp } from 'web/components/relative-timestamp'
 import {
   Avatar,
   AvatarSizeType,
   EmptyAvatar,
 } from 'web/components/widgets/avatar'
-import clsx from 'clsx'
-import { formatMoney } from 'common/util/format'
-import { OutcomeLabel } from 'web/components/outcome-label'
-import { RelativeTimestamp } from 'web/components/relative-timestamp'
-import { getFormattedMappedValue } from 'common/pseudo-numeric'
-import { UserLink } from 'web/components/widgets/user-link'
-import { BETTOR } from 'common/user'
-import { floatingEqual, floatingLesserEqual } from 'common/util/math'
-import { Col } from 'web/components/layout/col'
-import { ReplyIcon } from '@heroicons/react/solid'
-import { track } from 'web/lib/service/analytics'
 import { Tooltip } from 'web/components/widgets/tooltip'
-import { InfoTooltip } from '../widgets/info-tooltip'
-import { sumBy, uniq } from 'lodash'
-import { Modal, MODAL_CLASS } from 'web/components/layout/modal'
-import { MultipleOrSingleAvatars } from 'web/components/multiple-or-single-avatars'
-import { RepostButton } from 'web/components/comments/repost-modal'
-import { Button } from 'web/components/buttons/button'
-import { UserHovercard } from '../user/user-hovercard'
+import { UserLink } from 'web/components/widgets/user-link'
+import { useUser } from 'web/hooks/use-user'
 import { useDisplayUserById, useUsers } from 'web/hooks/use-user-supabase'
-import { DisplayUser } from 'common/api/user-types'
+import { track } from 'web/lib/service/analytics'
+import { MoneyDisplay } from '../bet/money-display'
+import { UserHovercard } from '../user/user-hovercard'
+import { InfoTooltip } from '../widgets/info-tooltip'
+import { getPseudonym } from '../charts/contract/choice'
+import { LuShare } from 'react-icons/lu'
+import { formatPercent } from 'common/util/format'
+import { ShareBetModal } from '../bet/share-bet'
+import { formatOutcomeLabel } from 'common/util/format'
 
 export const FeedBet = memo(function FeedBet(props: {
-  contract: Contract
+  contract: MarketContract
   bet: Bet
   avatarSize?: AvatarSizeType
   className?: string
   onReply?: (bet: Bet) => void
+  hideActions?: boolean
 }) {
-  const { contract, bet, avatarSize, className, onReply } = props
+  const { contract, bet, avatarSize, className, onReply, hideActions } = props
   const { createdTime, userId } = bet
   const user = useDisplayUserById(userId)
   const showUser = dayjs(createdTime).isAfter('2022-06-01')
@@ -65,13 +77,16 @@ export const FeedBet = memo(function FeedBet(props: {
             className="flex-1"
           />
         </Row>
-        <BetActions onReply={onReply} bet={bet} contract={contract} />
+        {!hideActions && (
+          <BetActions onReply={onReply} bet={bet} contract={contract} />
+        )}
       </Row>
     </Col>
   )
 })
+
 export const FeedReplyBet = memo(function FeedReplyBet(props: {
-  contract: Contract
+  contract: MarketContract
   bets: Bet[]
   avatarSize?: AvatarSizeType
   className?: string
@@ -79,7 +94,6 @@ export const FeedReplyBet = memo(function FeedReplyBet(props: {
 }) {
   const { contract, bets, avatarSize, className } = props
   const showUser = bets.every((b) => dayjs(b.createdTime).isAfter('2022-06-01'))
-  useDisplayUserById
 
   const users = useUsers(bets.map((b) => b.userId))
 
@@ -152,10 +166,13 @@ export function BetStatusesText(props: {
   const { bets, contract, className, inTimeline } = props
   const { amount, outcome, createdTime, answerId, userId } = bets[0]
   const user = useDisplayUserById(userId)
+  const isCashContract = contract.token === 'CASH'
 
   const bought = amount >= 0 ? 'bought' : 'sold'
   const absAmount = Math.abs(sumBy(bets, (b) => b.amount))
-  const money = formatMoney(absAmount)
+  const money = (
+    <MoneyDisplay amount={absAmount} isCashContract={isCashContract} />
+  )
   const uniqueUsers = uniq(bets.map((b) => b.userId))
 
   return (
@@ -172,7 +189,11 @@ export function BetStatusesText(props: {
         {bought} {money}{' '}
         <OutcomeLabel
           outcome={outcome}
-          answerId={answerId}
+          answer={
+            contract.mechanism === 'cpmm-multi-1'
+              ? contract.answers?.find((a) => a.id === answerId)
+              : undefined
+          }
           contract={contract}
           truncate="short"
         />{' '}
@@ -190,11 +211,15 @@ export function BetStatusText(props: {
   inTimeline?: boolean
 }) {
   const { bet, contract, hideUser, className, inTimeline } = props
+  const isCashContract = contract.token === 'CASH'
   const betUser = useDisplayUserById(bet.userId)
   const self = useUser()
-  const { amount, outcome, createdTime, answerId, isApi } = bet
+  const { amount, outcome, createdTime, answerId, isApi, silent } = bet
   const getProb = (prob: number) =>
     !isBinaryMulti(contract) ? prob : getBinaryMCProb(prob, outcome)
+  const cancelledOrExpired =
+    bet.isCancelled ||
+    (bet.expiresAt && bet.expiresAt < Date.now() && !bet.silent)
 
   const probBefore = getProb(bet.probBefore)
   const probAfter = getProb(bet.probAfter)
@@ -204,18 +229,19 @@ export function BetStatusText(props: {
       : getBinaryMCProb(bet.limitProb, outcome)
   const bought = amount >= 0 ? 'bought' : 'sold'
   const absAmount = Math.abs(amount)
-  const money = formatMoney(absAmount)
+  const money = (
+    <MoneyDisplay amount={absAmount} isCashContract={isCashContract} />
+  )
+  const isNormalLimitOrder =
+    bet.limitProb !== undefined && bet.orderAmount !== undefined && !silent
   const orderAmount =
-    bet.limitProb !== undefined && bet.orderAmount !== undefined
-      ? formatMoney(bet.orderAmount)
-      : ''
+    bet.limitProb !== undefined && bet.orderAmount !== undefined ? (
+      <MoneyDisplay amount={bet.orderAmount} isCashContract={isCashContract} />
+    ) : null
   const anyFilled = !floatingLesserEqual(amount, 0)
   const allFilled = floatingEqual(amount, bet.orderAmount ?? amount)
 
-  const hadPoolMatch =
-    (bet.limitProb === undefined ||
-      bet.fills?.some((fill) => fill.matchedBetId === null)) ??
-    false
+  const hadPoolMatch = bet.fills?.length ?? false
 
   const fromProb = hadPoolMatch
     ? getFormattedMappedValue(contract, probBefore)
@@ -224,6 +250,11 @@ export function BetStatusText(props: {
   const toProb = hadPoolMatch
     ? getFormattedMappedValue(contract, probAfter)
     : getFormattedMappedValue(contract, limitProb ?? probAfter)
+
+  const answer =
+    contract.mechanism === 'cpmm-multi-1'
+      ? contract.answers?.find((a) => a.id === answerId)
+      : undefined
 
   return (
     <div className={clsx('text-ink-1000 text-sm', className)}>
@@ -238,7 +269,7 @@ export function BetStatusText(props: {
       ) : (
         <></>
       )}{' '}
-      {orderAmount ? (
+      {isNormalLimitOrder ? (
         <span>
           {anyFilled ? (
             <>
@@ -248,19 +279,23 @@ export function BetStatusText(props: {
             <>created limit order for {orderAmount}</>
           )}{' '}
           <OutcomeLabel
+            pseudonym={getPseudonym(contract)}
             outcome={outcome}
-            answerId={answerId}
+            answer={answer}
             contract={contract}
             truncate="short"
           />{' '}
-          at {toProb} {bet.isCancelled && !allFilled ? '(cancelled)' : ''}
+          at {toProb} {cancelledOrExpired && !allFilled ? '(cancelled)' : ''}
         </span>
       ) : (
         <>
-          {bought} {money}{' '}
+          {bought} {money}
+          {orderAmount ? '/' : ''}
+          {orderAmount}{' '}
           <OutcomeLabel
+            pseudonym={getPseudonym(contract)}
             outcome={outcome}
-            answerId={answerId}
+            answer={answer}
             contract={contract}
             truncate="short"
           />{' '}
@@ -278,28 +313,36 @@ export function BetStatusText(props: {
 function BetActions(props: {
   onReply?: (bet: Bet) => void
   bet: Bet
-  contract: Contract
+  contract: MarketContract
 }) {
   const { onReply, bet, contract } = props
   const user = useUser()
-  if (!user) return null
+  const [isSharing, setIsSharing] = useState(false)
+  const bettor = useDisplayUserById(bet.userId)
+
   return (
     <Row className="items-center gap-1">
-      <RepostButton
-        bet={bet}
-        size={'2xs'}
-        className={'!p-1'}
-        contract={contract}
-      />
+      {user && (
+        <RepostButton
+          bet={bet}
+          size={'2xs'}
+          className={'!p-1'}
+          playContract={contract}
+        />
+      )}
       {onReply && (
-        <Tooltip text={`Reply to this bet`} placement="top" className="mr-2">
+        <Tooltip
+          text={`Reply to this ${TRADE_TERM}`}
+          placement="top"
+          className="mr-2"
+        >
           <Button
             className={'!p-1'}
             color={'gray-white'}
             size={'2xs'}
             onClick={() => {
               onReply(bet)
-              track('reply to bet', {
+              track(`reply to ${TRADE_TERM}`, {
                 slug: contract.slug,
                 amount: bet.amount,
               })
@@ -308,6 +351,55 @@ function BetActions(props: {
             <ReplyIcon className=" h-5 w-5" />
           </Button>
         </Tooltip>
+      )}
+      <Tooltip text="Share bet" placement="top">
+        <Button
+          className={'!p-1'}
+          color={'gray-white'}
+          size={'2xs'}
+          onClick={() => setIsSharing(true)}
+        >
+          <LuShare className="h-5 w-5" />
+        </Button>
+      </Tooltip>
+
+      {isSharing && bettor && (
+        <ShareBetModal
+          open={isSharing}
+          setOpen={setIsSharing}
+          questionText={contract.question}
+          outcome={formatOutcomeLabel(contract, bet.outcome as 'YES' | 'NO')}
+          answer={
+            contract.mechanism === 'cpmm-multi-1'
+              ? contract.answers?.find((a) => a.id === bet.answerId)?.text
+              : undefined
+          }
+          avgPrice={
+            bet.limitProb !== undefined
+              ? formatPercent(bet.limitProb)
+              : formatPercent(
+                  bet.outcome === 'YES'
+                    ? bet.amount / bet.shares
+                    : 1 - bet.amount / bet.shares
+                )
+          }
+          betAmount={bet.amount}
+          winAmount={
+            bet.limitProb !== undefined && bet.orderAmount !== undefined
+              ? bet.outcome === 'YES'
+                ? bet.orderAmount / bet.limitProb
+                : bet.orderAmount / (1 - bet.limitProb)
+              : bet.shares
+          }
+          bettor={{
+            id: bettor.id,
+            name: bettor.name,
+            username: bettor.username,
+            avatarUrl: bettor.avatarUrl,
+          }}
+          isLimitBet={bet.limitProb !== undefined}
+          orderAmount={bet.orderAmount}
+        />
       )}
     </Row>
   )

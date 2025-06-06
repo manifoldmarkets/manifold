@@ -1,127 +1,49 @@
-import { track } from 'web/lib/service/analytics'
 import { PencilAltIcon } from '@heroicons/react/solid'
+import Router from 'next/router'
 import clsx from 'clsx'
-
+import { SEO } from 'web/components/SEO'
 import { DailyStats } from 'web/components/home/daily-stats'
 import { Page } from 'web/components/layout/page'
-import { useRedirectIfSignedOut } from 'web/hooks/use-redirect-if-signed-out'
-import { useSaveReferral } from 'web/hooks/use-save-referral'
 import { useUser } from 'web/hooks/use-user'
-import { api } from 'web/lib/firebase/api'
-import { Headline } from 'common/news'
-import { HeadlineTabs } from 'web/components/dashboard/header'
-import { WelcomeTopicSections } from 'web/components/home/welcome-topic-sections'
-import { useNewUserMemberTopicsAndContracts } from 'web/hooks/use-group-supabase'
-import { LoadingIndicator } from 'web/components/widgets/loading-indicator'
-import { DAY_MS } from 'common/util/time'
-import { useSaveScroll } from 'web/hooks/use-save-scroll'
-import Router from 'next/router'
-import { Col } from 'web/components/layout/col'
-import { User } from 'common/user'
+import { track } from 'web/lib/service/analytics'
+import { BrowsePageContent } from '../browse'
+import { useRedirectIfSignedOut } from 'web/hooks/use-redirect-if-signed-out'
+import { DowntimeBanner } from 'web/components/nav/banner'
+import { Welcome } from 'web/components/onboarding/welcome'
 import { LiveGeneratedFeed } from 'web/components/feed/live-generated-feed'
-import { useABTest } from 'web/hooks/use-ab-test'
-import { useEffect, useState } from 'react'
-
-export async function getStaticProps() {
-  try {
-    const headlines = await api('headlines', {})
-    return {
-      props: {
-        headlines,
-        revalidate: 30 * 60, // 30 minutes
-      },
-    }
-  } catch (err) {
-    return { props: { headlines: [] }, revalidate: 60 }
-  }
-}
-
-export default function Home(props: { headlines: Headline[] }) {
-  useRedirectIfSignedOut()
+import { ExploreContent } from '../explore'
+import { useSaveReferral } from 'web/hooks/use-save-referral'
+export default function Home() {
   const user = useUser()
   useSaveReferral(user)
-  useSaveScroll('home')
+  useRedirectIfSignedOut()
 
-  const { headlines } = props
   return (
-    <Page
-      trackPageView={'home'}
-      trackPageProps={{ kind: 'desktop' }}
-      className=" !mt-0"
-      banner={null}
-    >
-      <HeadlineTabs
-        endpoint={'news'}
-        headlines={headlines}
-        currentSlug={'home'}
-        hideEmoji
-      />
-      {!user ? <LoadingIndicator /> : <HomeContent user={user} />}
-    </Page>
-  )
-}
-
-export function HomeContent(props: { user: User }) {
-  const { user } = props
-  const welcomeABTest = useABTest('show welcome topics', ['show', 'hide'])
-  const [prevShouldShowWelcome, _] = useState(user.shouldShowWelcome)
-  const [reload, setReload] = useState(false)
-  const welcomeTopicsEnabled =
-    welcomeABTest === 'show' && (user?.createdTime ?? 0) > Date.now() - DAY_MS
-  const memberTopicsWithContracts = useNewUserMemberTopicsAndContracts(
-    user,
-    welcomeTopicsEnabled
-  )
-  useEffect(() => {
-    if (
-      !welcomeTopicsEnabled &&
-      prevShouldShowWelcome &&
-      !user.shouldShowWelcome
-    ) {
-      setReload(true)
-      setTimeout(() => {
-        setReload(false)
-      }, 200)
-    }
-  }, [user.shouldShowWelcome])
-
-  if (welcomeTopicsEnabled && !memberTopicsWithContracts) {
-    return <LoadingIndicator />
-  }
-  return (
-    <Col className="w-full items-center self-center pb-4 sm:px-2">
+    <Page trackPageView={'home'} className="lg:px-4">
+      <Welcome />
+      <SEO title={`Home`} description={`Browse all questions`} url={`/home`} />
+      <DowntimeBanner />
+      <DailyStats className="z-50 mb-1 w-full px-2 py-2" user={user} />
+      <BrowsePageContent />
       {user && (
-        <DailyStats
-          className="bg-canvas-50 z-50 mb-1 w-full px-2 pb-2 pt-1 sm:sticky sm:top-9"
-          user={user}
-        />
-      )}
-
-      {user && (
-        <Col className={clsx('w-full sm:px-2')}>
-          {welcomeTopicsEnabled && memberTopicsWithContracts && (
-            <WelcomeTopicSections
-              memberTopicsWithContracts={memberTopicsWithContracts}
-            />
+        <button
+          type="button"
+          className={clsx(
+            'focus:ring-primary-500 fixed  right-3 z-20 inline-flex items-center rounded-full border  border-transparent  p-4 shadow-sm focus:outline-none focus:ring-2 focus:ring-offset-2 lg:hidden',
+            'disabled:bg-ink-300 text-ink-0 from-primary-500 hover:from-primary-700 to-blue-500 hover:to-blue-700 enabled:bg-gradient-to-r',
+            'bottom-[64px]'
           )}
-
-          <LiveGeneratedFeed userId={user.id} reload={reload} />
-        </Col>
+          onClick={() => {
+            Router.push('/create')
+            track('mobile create button')
+          }}
+        >
+          <PencilAltIcon className="h-6 w-6" aria-hidden="true" />
+        </button>
       )}
-      <button
-        type="button"
-        className={clsx(
-          'focus:ring-primary-500 fixed  right-3 z-20 inline-flex items-center rounded-full border  border-transparent  p-4 shadow-sm focus:outline-none focus:ring-2 focus:ring-offset-2 lg:hidden',
-          'disabled:bg-ink-300 text-ink-0 from-primary-500 hover:from-primary-700 to-blue-500 hover:to-blue-700 enabled:bg-gradient-to-r',
-          'bottom-[64px]'
-        )}
-        onClick={() => {
-          Router.push('/create')
-          track('mobile create button')
-        }}
-      >
-        <PencilAltIcon className="h-6 w-6" aria-hidden="true" />
-      </button>
-    </Col>
+      {/* Preload feed */}
+      {user && <LiveGeneratedFeed userId={user.id} hidden />}
+      {user && <ExploreContent render={false} />}
+    </Page>
   )
 }

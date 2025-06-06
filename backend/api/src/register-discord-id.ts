@@ -1,9 +1,12 @@
-import * as admin from 'firebase-admin'
 import { APIError, authEndpoint, validate } from 'api/helpers/endpoint'
-import { createSupabaseClient } from 'shared/supabase/init'
+import {
+  createSupabaseClient,
+  createSupabaseDirectClient,
+} from 'shared/supabase/init'
 import { getPrivateUser } from 'shared/utils'
 import { z } from 'zod'
 import { randomUUID } from 'crypto'
+import { updatePrivateUser } from 'shared/supabase/users'
 
 const bodySchema = z
   .object({
@@ -13,23 +16,18 @@ const bodySchema = z
 
 export const registerdiscordid = authEndpoint(async (req, auth) => {
   const { discordId } = validate(bodySchema, req.body)
-  const firestore = admin.firestore()
-  const update = await firestore
-    .collection('private-users')
-    .doc(auth.uid)
-    .update({
-      discordId,
-    })
+  const pg = createSupabaseDirectClient()
+
+  await updatePrivateUser(pg, auth.uid, { discordId })
 
   const privateUser = await getPrivateUser(auth.uid)
-  if (!privateUser) throw new Error('No private user found')
+  if (!privateUser) throw new APIError(500, 'No private user found')
   let apiKey = privateUser.apiKey
   if (!apiKey) {
     apiKey = randomUUID()
-    await firestore.collection('private-users').doc(auth.uid).update({
-      apiKey,
-    })
+    await updatePrivateUser(pg, auth.uid, { apiKey })
   }
+
   const db = createSupabaseClient()
   const { error } = await db.from('discord_users').upsert({
     discord_user_id: discordId,
@@ -38,5 +36,5 @@ export const registerdiscordid = authEndpoint(async (req, auth) => {
   })
   if (error) throw new APIError(500, error.message)
 
-  return { success: true, update }
+  return { success: true }
 })

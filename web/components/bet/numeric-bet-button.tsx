@@ -14,9 +14,7 @@ export function NumericBetButton(props: {
 }) {
   const { contract, user } = props
   const [open, setOpen] = useState(false)
-  const [direction, setDirection] = useState<
-    'more than' | 'less than' | 'about right'
-  >()
+  const [direction, setDirection] = useState<'more than' | 'less than'>()
 
   return (
     <Row className=" gap-2">
@@ -26,7 +24,7 @@ export function NumericBetButton(props: {
         onClick={(e) => {
           e.preventDefault()
           e.stopPropagation()
-          track('bet intent', { location: 'feeed card' })
+          track('bet intent', { location: 'feeed card', token: contract.token })
           if (!user) {
             firebaseLogin()
             return
@@ -39,28 +37,11 @@ export function NumericBetButton(props: {
       </Button>
       <Button
         size="xs"
-        color={'indigo-outline'}
-        onClick={(e) => {
-          e.preventDefault()
-          e.stopPropagation()
-          track('bet intent', { location: 'feeed card' })
-          if (!user) {
-            firebaseLogin()
-            return
-          }
-          setDirection('about right')
-          setOpen(true)
-        }}
-      >
-        About right
-      </Button>
-      <Button
-        size="xs"
         color={'green-outline'}
         onClick={(e) => {
           e.preventDefault()
           e.stopPropagation()
-          track('bet intent', { location: 'feeed card' })
+          track('bet intent', { location: 'feeed card', token: contract.token })
           if (!user) {
             firebaseLogin()
             return

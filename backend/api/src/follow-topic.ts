@@ -12,5 +12,5 @@ const bodySchema = z
 export const followtopic = authEndpoint(async (req, auth) => {
   const { groupId } = validate(bodySchema, req.body)
 
-  return addUserToTopic(groupId, auth.uid, auth.uid)
+  return addUserToTopic(groupId, auth.uid)
 })

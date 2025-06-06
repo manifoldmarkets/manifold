@@ -1,47 +1,41 @@
 import { ArrowRightIcon } from '@heroicons/react/outline'
 import clsx from 'clsx'
 import { OTHER_TOOLTIP_TEXT, sortAnswers, type Answer } from 'common/answer'
-import { Bet } from 'common/bet'
 import { getAnswerProbability } from 'common/calculate'
 import { CPMMMultiContract, MultiContract, contractPath } from 'common/contract'
 import { User } from 'common/user'
-import { floatingEqual } from 'common/util/math'
-import { sumBy } from 'lodash'
 import Link from 'next/link'
 import { useUser } from 'web/hooks/use-user'
-import { getAnswerColor, useChartAnswers } from '../charts/contract/choice'
+import { getAnswerColor } from '../charts/contract/choice'
 import { Col } from '../layout/col'
 import { Row } from '../layout/row'
 import { InfoTooltip } from '../widgets/info-tooltip'
 import { AnswerPosition, AnswerStatus, MultiBettor } from './answer-components'
 import { Linkify } from '../widgets/linkify'
+import { ContractMetric } from 'common/contract-metric'
+import { useAllSavedContractMetrics } from 'web/hooks/use-saved-contract-metrics'
 
 // just the bars
 export function SmallAnswerBars(props: {
-  contract: MultiContract
+  contract: CPMMMultiContract
   maxAnswers?: number
   barColor?: string
   className?: string
 }) {
   const { contract, maxAnswers = Infinity, barColor, className } = props
-  const { outcomeType } = contract
 
   const shouldAnswersSumToOne =
     'shouldAnswersSumToOne' in contract ? contract.shouldAnswersSumToOne : true
   const user = useUser()
-  const answers = contract.answers
-    .filter(
-      (a) =>
-        outcomeType === 'MULTIPLE_CHOICE' || ('number' in a && a.number !== 0)
-    )
-    .map((a) => ({ ...a, prob: getAnswerProbability(contract, a.id) }))
+  const answers = contract.answers.map((a) => ({
+    ...a,
+    prob: getAnswerProbability(contract, a.id),
+  }))
 
   const displayedAnswers = sortAnswers(contract, answers).slice(0, maxAnswers)
 
   const moreCount = answers.length - displayedAnswers.length
-
-  const answersArray = useChartAnswers(contract).map((answer) => answer.text)
-
+  const allMetrics = useAllSavedContractMetrics(contract)
   // Note: Hide answers if there is just one "Other" answer.
   const showNoAnswers =
     answers.length === 0 || (shouldAnswersSumToOne && answers.length === 1)
@@ -58,8 +52,9 @@ export function SmallAnswerBars(props: {
               key={answer.id}
               answer={answer}
               contract={contract}
-              color={getAnswerColor(answer, answersArray)}
+              color={getAnswerColor(answer)}
               barColor={barColor}
+              myMetric={allMetrics?.find((m) => m.answerId === answer.id)}
             />
           ))}
           {moreCount > 0 && (
@@ -85,10 +80,10 @@ export function SmallAnswer(props: {
   color: string
   user: User | undefined | null
   onCommentClick?: () => void
-  userBets?: Bet[]
   barColor?: string
+  myMetric?: ContractMetric
 }) {
-  const { answer, contract, color, userBets, user, barColor } = props
+  const { answer, contract, color, user, barColor, myMetric } = props
 
   const prob = getAnswerProbability(contract, answer.id)
 
@@ -102,11 +97,6 @@ export function SmallAnswer(props: {
       ? 1
       : (resolutions?.[answer.id] ?? 0) / 100
 
-  const sharesSum = sumBy(userBets, (bet) =>
-    bet.outcome === 'YES' ? bet.shares : -bet.shares
-  )
-  const hasBets = userBets && !floatingEqual(sharesSum, 0)
-
   return (
     <Col className={'w-full'}>
       <SmallAnswerBar
@@ -118,13 +108,13 @@ export function SmallAnswer(props: {
         contract={contract}
         answer={answer}
       />
-      {!resolution && hasBets && isCpmm && user && (
+      {!resolution && isCpmm && user && myMetric && (
         <AnswerPosition
           contract={contract}
-          answer={answer as Answer}
-          userBets={userBets}
+          answer={answer}
           className="mt-0.5 self-end sm:mx-3 sm:mt-0"
           user={user}
+          myMetric={myMetric}
         />
       )}
     </Col>
@@ -152,7 +142,7 @@ export const SmallAnswerBar = (props: {
     answer,
   } = props
 
-  const isOther = 'isOther' in answer && answer.isOther
+  const isOther = !!answer.isOther
   const textColorClass = resolvedProb === 0 ? 'text-ink-700' : 'text-ink-900'
   return (
     <Col className={clsx('relative isolate h-full w-full', className)}>
@@ -209,7 +199,7 @@ export const SmallAnswerBar = (props: {
             <AnswerStatus contract={contract} answer={answer} noNewIcon />
             <MultiBettor
               contract={contract as CPMMMultiContract}
-              answer={answer as Answer}
+              answer={answer}
             />
           </Row>
         </Row>

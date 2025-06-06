@@ -1,43 +1,51 @@
 import { APIHandler } from 'api/helpers/endpoint'
 import { createSupabaseDirectClient } from 'shared/supabase/init'
 import { Bet } from 'common/bet'
-import { Contract } from 'common/contract'
 import { orderBy } from 'lodash'
 import { BetBalanceChange, TxnBalanceChange } from 'common/balance-change'
 import { Txn } from 'common/txn'
 import { filterDefined } from 'common/util/array'
 import { charities } from 'common/charity'
 import { convertTxn } from 'common/supabase/txns'
+import { LiquidityProvision } from 'common/liquidity-provision'
+import { getContractsDirect } from 'shared/supabase/contracts'
 
 // market creation fees
 export const getBalanceChanges: APIHandler<'get-balance-changes'> = async (
   props
 ) => {
-  const { after, userId } = props
-  const [betBalanceChanges, txnBalanceChanges] = await Promise.all([
-    getBetBalanceChanges(after, userId),
-    getTxnBalanceChanges(after, userId),
-  ])
-  return orderBy(
-    [...betBalanceChanges, ...txnBalanceChanges],
+  const { userId, before, after } = props
+  const [betBalanceChanges, txnBalanceChanges, liquidityChanges] =
+    await Promise.all([
+      getBetBalanceChanges(before, after, userId),
+      getTxnBalanceChanges(before, after, userId),
+      getLiquidityBalanceChanges(before, after, userId),
+    ])
+  const allChanges = orderBy(
+    [...betBalanceChanges, ...txnBalanceChanges, ...liquidityChanges],
     (change) => change.createdTime,
     'desc'
   )
+  return allChanges
 }
 
-const getTxnBalanceChanges = async (after: number, userId: string) => {
+const getTxnBalanceChanges = async (
+  before: number | undefined,
+  after: number,
+  userId: string
+) => {
   const pg = createSupabaseDirectClient()
   const balanceChanges = [] as TxnBalanceChange[]
 
   const txns = await pg.map(
-    `
-    select *
+    `select *
     from txns
-    where created_time > millis_to_ts($1)
-      and (to_id = $2 or from_id = $2)
-    order by created_time;
-    `,
-    [after, userId],
+    where
+      ($1 is null or created_time < millis_to_ts($1)) and
+      created_time >= millis_to_ts($2)
+      and (to_id = $3 or from_id = $3)
+    order by created_time`,
+    [before, after, userId],
     convertTxn
   )
   const contractIds = filterDefined(
@@ -46,19 +54,10 @@ const getTxnBalanceChanges = async (after: number, userId: string) => {
   const userIds = filterDefined(
     txns.map((txn) => getOtherUserIdFromTxn(txn, userId))
   )
-  const contracts = await pg.map(
-    `
-    select data from contracts
-    where id = any($1);
-    `,
-    [contractIds],
-    (row) => row.data as Contract
-  )
+  const contracts = await getContractsDirect(contractIds, pg)
   const users = await pg.map(
-    `
-    select id, username, name from users
-    where id = any($1);
-    `,
+    `select id, username, name from users
+    where id = any($1)`,
     [userIds],
     (row) => row
   )
@@ -81,6 +80,7 @@ const getTxnBalanceChanges = async (after: number, userId: string) => {
             visibility: contract.visibility,
             slug: contract.visibility === 'public' ? contract.slug : '',
             creatorUsername: contract.creatorUsername,
+            token: contract.token,
           }
         : undefined,
       questType: txn.data?.questType,
@@ -88,8 +88,7 @@ const getTxnBalanceChanges = async (after: number, userId: string) => {
       charity:
         txn.toType === 'CHARITY'
           ? {
-              name:
-                charities.find((c) => c.slug === txn.toId)?.name ?? txn.toId,
+              name: charities.find((c) => c.id === txn.toId)?.name ?? txn.toId,
               slug: txn.toId,
             }
           : undefined,
@@ -97,6 +96,59 @@ const getTxnBalanceChanges = async (after: number, userId: string) => {
     balanceChanges.push(balanceChange)
   }
   return balanceChanges
+}
+
+const getLiquidityBalanceChanges = async (
+  before: number | undefined,
+  after: number,
+  userId: string
+) => {
+  const pg = createSupabaseDirectClient()
+  const liquidityDocs = await pg.map(
+    `select data from contract_liquidity
+    where user_id = $1
+    and created_time >= millis_to_ts($2)
+    and ($3 is null or created_time < millis_to_ts($3))
+    and data->>'answerId' is not null
+    order by created_time desc nulls last`,
+    [userId, after, before],
+    (row) => row.data as LiquidityProvision
+  )
+
+  const contractIds = filterDefined(liquidityDocs.map((doc) => doc.contractId))
+  const contracts = await getContractsDirect(contractIds, pg)
+  const liquidityChanges = [] as TxnBalanceChange[]
+  for (const doc of liquidityDocs) {
+    const contract = contracts.find((c) => c.id === doc.contractId)
+    if (!contract) continue
+    // We just used the ante txns in the balance log, no need to duplicate them
+    if (Math.abs(doc.createdTime - contract.createdTime) < 100) continue
+    const balanceChange: TxnBalanceChange = {
+      key: doc.id,
+      type: 'ADD_SUBSIDY',
+      token: 'M$',
+      amount: -doc.amount,
+      createdTime: doc.createdTime,
+      contract: {
+        question:
+          contract.visibility === 'public'
+            ? contract.question
+            : '[unlisted question]',
+        visibility: contract.visibility,
+        slug: contract.visibility === 'public' ? contract.slug : '',
+        creatorUsername: contract.creatorUsername,
+        token: contract.token,
+      },
+      answerText:
+        doc.answerId &&
+        contract.visibility === 'public' &&
+        contract.mechanism === 'cpmm-multi-1'
+          ? contract.answers.find((a) => a.id === doc.answerId)?.text
+          : undefined,
+    }
+    liquidityChanges.push(balanceChange)
+  }
+  return liquidityChanges
 }
 
 const getOtherUserIdFromTxn = (txn: Txn, userId: string) => {
@@ -119,28 +171,47 @@ const getContractIdFromTxn = (txn: Txn) => {
   return null
 }
 
-const getBetBalanceChanges = async (after: number, userId: string) => {
+const getBetBalanceChanges = async (
+  before: number | undefined,
+  after: number,
+  userId: string
+) => {
   const pg = createSupabaseDirectClient()
   const contractToBets: {
     [contractId: string]: {
-      bets: Bet[]
-      contract: Contract
+      bets: (Bet & { answerText?: string | undefined })[]
+      contract: BetBalanceChange['contract']
     }
   } = {}
   await pg.map(
-    `
-     select json_agg(cb.data) as bets, c.data as contract
+    `select
+       json_agg(cb.data || jsonb_build_object('answerText', a.text)) as bets,
+       c.id,
+       c.question,
+       c.slug,
+       c.visibility,
+       c.data->>'creatorUsername' as creator_username,
+       c.token
      from contract_bets cb
-              join contracts c on cb.contract_id = c.id
-     where cb.updated_time > millis_to_ts($1)
-        and cb.user_id = $2
+        join contracts c on cb.contract_id = c.id
+        left join answers a on a.id = cb.answer_id
+     where
+        ($1 is null or cb.updated_time < millis_to_ts($1))
+        and cb.updated_time >= millis_to_ts($2)
+        and cb.user_id = $3
      group by c.id;
     `,
-    [after, userId],
+    [before, after, userId],
     (row) => {
-      contractToBets[row.contract.id] = {
-        bets: orderBy(row.bets as Bet[], (bet) => bet.createdTime, 'asc'),
-        contract: row.contract as Contract,
+      contractToBets[row.id] = {
+        bets: orderBy(row.bets, (bet) => bet.createdTime, 'asc'),
+        contract: {
+          question: row.question,
+          slug: row.slug,
+          visibility: row.visibility,
+          creatorUsername: row.creator_username,
+          token: row.token,
+        },
       }
     }
   )
@@ -160,11 +231,7 @@ const getBetBalanceChanges = async (after: number, userId: string) => {
       if (isRedemption && nextBetIsRedemption) continue
       if (isRedemption && amount === 0) continue
 
-      const { question, visibility, creatorUsername, slug } = contract
-      const text =
-        contract.mechanism === 'cpmm-multi-1' && bet.answerId
-          ? contract.answers.find((a) => a.id === bet.answerId)?.text
-          : undefined
+      const { question, visibility, creatorUsername, slug, token } = contract
       const balanceChangeProps = {
         key: bet.id,
         bet: {
@@ -176,8 +243,12 @@ const getBetBalanceChanges = async (after: number, userId: string) => {
           slug: visibility === 'public' ? slug : '',
           visibility,
           creatorUsername,
+          token,
         },
-        answer: text && bet.answerId ? { text, id: bet.answerId } : undefined,
+        answer:
+          bet.answerText && bet.answerId
+            ? { text: bet.answerText, id: bet.answerId }
+            : undefined,
       }
       if (bet.limitProb !== undefined && bet.fills) {
         const fillsInTimeframe = bet.fills.filter(

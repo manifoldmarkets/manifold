@@ -2,9 +2,9 @@ import { runScript } from 'run-script'
 import { calculateImportanceScore } from 'shared/importance-score'
 
 if (require.main === module) {
-  runScript(async ({ db, pg }) => {
+  runScript(async ({ pg }) => {
     const readOnly = true
     const rescoreAll = true
-    await calculateImportanceScore(db, pg, readOnly, rescoreAll)
+    await calculateImportanceScore(pg, readOnly, rescoreAll)
   })
 }

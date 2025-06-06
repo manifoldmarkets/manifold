@@ -3,15 +3,20 @@ import { ENV_CONFIG } from 'common/envs/constants'
 
 let currentToken: string | undefined
 
+export function getSupabaseInstanceId() {
+  return ENV_CONFIG.supabaseInstanceId
+}
+
 export function initSupabaseClient() {
-  return createClient(ENV_CONFIG.supabaseInstanceId, ENV_CONFIG.supabaseAnonKey)
+  const instanceId = getSupabaseInstanceId()
+  return createClient(instanceId, ENV_CONFIG.supabaseAnonKey)
 }
 
 export function updateSupabaseAuth(token?: string) {
   if (currentToken != token) {
     currentToken = token
     if (token == null) {
-      db['rest'].headers['Authorization']
+      delete db['rest'].headers['Authorization']
       db['realtime'].setAuth(null)
     } else {
       db['rest'].headers['Authorization'] = `Bearer ${token}`

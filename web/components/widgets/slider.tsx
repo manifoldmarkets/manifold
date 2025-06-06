@@ -1,8 +1,9 @@
 import clsx from 'clsx'
 import * as RxSlider from '@radix-ui/react-slider'
 import { ReactNode } from 'react'
+import { filterDefined } from 'common/util/array'
 
-const colors = {
+export const sliderColors = {
   green: ['bg-teal-400', 'focus:outline-teal-600/30 bg-teal-600'],
   'light-green': [
     'bg-emerald-200/50 dark:bg-emerald-800/50',
@@ -10,6 +11,13 @@ const colors = {
   ],
   red: ['bg-scarlet-400', 'focus:outline-scarlet-600/30 bg-scarlet-600'],
   indigo: ['bg-primary-300', 'focus:outline-primary-500/30 bg-primary-500'],
+  violet: ['bg-violet-300', 'focus:outline-violet-500/30 bg-violet-500'],
+  azure: ['bg-azure-300', 'focus:outline-azure-500/30 bg-azure-500'],
+  sienna: ['bg-sienna-300', 'focus:outline-sienna-500/30 bg-sienna-500'],
+  gray: [
+    'dark:bg-ink-500 bg-ink-600',
+    'focus:outline-ink-800/30 dark:bg-ink-700 bg-ink-700',
+  ],
   // light: ['primary-200', 'primary-300']
 } as const
 export type Mark = { value: number; label: string }
@@ -21,10 +29,11 @@ export function Slider(props: {
   max?: number
   step?: number
   marks?: Mark[]
-  color?: keyof typeof colors
+  color?: keyof typeof sliderColors
   className?: string
   disabled?: boolean
   inverted?: boolean
+  fillToRight?: boolean
 }) {
   const {
     amount,
@@ -37,18 +46,19 @@ export function Slider(props: {
     disabled,
     color = 'indigo',
     inverted,
+    fillToRight,
   } = props
 
-  const [trackClasses, thumbClasses] = colors[color]
+  const [trackClasses, thumbClasses] = sliderColors[color]
 
   return (
     <RxSlider.Root
       className={clsx(
         className,
         'relative flex touch-none select-none items-center',
-        marks ? 'h-[42px]' : 'h-5'
+        marks ? 'h-[43px]' : 'h-5'
       )}
-      value={[amount]}
+      value={filterDefined([amount, fillToRight ? max : undefined])}
       onValueChange={([val]) => onChange(val)}
       min={min}
       max={max}
@@ -66,7 +76,13 @@ export function Slider(props: {
             >
               <div
                 className={clsx(
-                  amount >= value ? trackClasses : 'bg-ink-400',
+                  fillToRight
+                    ? amount <= value
+                      ? trackClasses
+                      : 'bg-ink-300'
+                    : amount >= value
+                    ? trackClasses
+                    : 'bg-ink-400',
                   'h-2 w-2 rounded-full'
                 )}
               />
@@ -90,7 +106,7 @@ export function RangeSlider(props: {
   max?: number
   disabled?: boolean
   step?: number
-  color?: keyof typeof colors
+  color?: keyof typeof sliderColors
   handleSize?: number
   className?: string
   marks?: Mark[]
@@ -108,13 +124,13 @@ export function RangeSlider(props: {
     marks,
   } = props
 
-  const [trackClasses, thumbClasses] = colors[color]
+  const [trackClasses, thumbClasses] = sliderColors[color]
 
   return (
     <RxSlider.Root
       className={clsx(
-        className,
-        'relative flex h-7 touch-none select-none items-center'
+        'relative flex h-7 touch-none select-none items-center',
+        className
       )}
       value={[lowValue, highValue]}
       step={step ?? 1}

@@ -1,17 +1,16 @@
 import {
-  Group,
   GroupAboutSchema,
   GroupNameSchema,
   MAX_ID_LENGTH,
 } from 'common/group'
-import { removeUndefinedProps } from 'common/util/object'
 import { randomString } from 'common/util/random'
 import { slugify } from 'common/util/slugify'
 import { log, getUser } from 'shared/utils'
 import { z } from 'zod'
 import { APIError, authEndpoint, validate } from './helpers/endpoint'
 import { createSupabaseDirectClient } from 'shared/supabase/init'
-import { bulkInsert } from 'shared/supabase/utils'
+import { bulkInsert, insert } from 'shared/supabase/utils'
+import { convertGroup } from 'common/supabase/groups'
 
 const bodySchema = z
   .object({
@@ -23,12 +22,10 @@ const bodySchema = z
   .strict()
 
 export const creategroup = authEndpoint(async (req, auth) => {
-  const {
-    name,
-    about = '',
-    memberIds,
-    privacyStatus,
-  } = validate(bodySchema, req.body)
+  const { name, about, memberIds, privacyStatus } = validate(
+    bodySchema,
+    req.body
+  )
 
   const creator = await getUser(auth.uid)
   if (!creator) throw new APIError(401, 'Your account was not found')
@@ -56,22 +53,14 @@ export const creategroup = authEndpoint(async (req, auth) => {
 
   const slug = await getSlug(name)
 
-  const groupData: Omit<Group, 'id'> = removeUndefinedProps({
-    creatorId: creator.id,
+  const group = await insert(pg, 'groups', {
+    creator_id: creator.id,
     slug,
     name,
     about,
-    createdTime: Date.now(),
-    totalMembers: memberIds.length,
-    postIds: [],
-    privacyStatus,
-    importanceScore: 0,
+    total_members: memberIds.length,
+    privacy_status: privacyStatus,
   })
-
-  const group = await pg.one(
-    `insert into groups (data) values ($1) returning *`,
-    [groupData]
-  )
 
   await bulkInsert(
     pg,
@@ -83,7 +72,7 @@ export const creategroup = authEndpoint(async (req, auth) => {
     }))
   )
 
-  return { status: 'success', group: group }
+  return { status: 'success', group: convertGroup(group) }
 })
 
 // we still need to do this because groups with different names may slugify the same

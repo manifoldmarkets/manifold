@@ -7,16 +7,18 @@ import {
 import {
   Contract,
   CPMMContract,
-  CPMMMultiContract,
-  CPMMNumericContract,
+  MarketContract,
+  MultiContract,
 } from './contract'
 import { sumBy } from 'lodash'
 import { Answer } from './answer'
-import { removeUndefinedProps } from './util/object'
+import { addObjects, removeUndefinedProps } from './util/object'
 import {
   ArbitrageBetArray,
   calculateCpmmMultiArbitrageSellYesEqually,
 } from 'common/calculate-cpmm-arbitrage'
+import { getAnswerProbability, getProbability } from './calculate'
+import { noFees } from './fees'
 
 export type CandidateBet<T extends Bet> = Omit<
   T,
@@ -26,7 +28,7 @@ export type CandidateBet<T extends Bet> = Omit<
 export const getCpmmSellBetInfo = (
   shares: number,
   outcome: 'YES' | 'NO',
-  contract: CPMMContract | CPMMMultiContract,
+  contract: MarketContract,
   unfilledBets: LimitBet[],
   balanceByUserId: { [userId: string]: number },
   loanPaid: number,
@@ -83,9 +85,7 @@ export const getCpmmSellBetInfo = (
     isFilled: true,
     isCancelled: false,
     orderAmount: takerAmount,
-    isAnte: false,
     isRedemption: false,
-    isChallenge: false,
     visibility: contract.visibility,
     answerId: answer?.id,
   })
@@ -102,7 +102,7 @@ export const getCpmmSellBetInfo = (
 }
 
 export const getCpmmMultiSellBetInfo = (
-  contract: CPMMMultiContract | CPMMNumericContract,
+  contract: MultiContract,
   answers: Answer[],
   answerToSell: Answer,
   shares: number,
@@ -148,13 +148,10 @@ export const getCpmmMultiSellBetInfo = (
     isFilled: true,
     isCancelled: false,
     orderAmount: takerAmount,
-    isAnte: false,
     isRedemption: false,
-    isChallenge: false,
-    visibility: contract.visibility,
   }
 
-  const otherResultsWithBet = otherBetResults!.map((result) => {
+  const updatedOtherBetResults = otherBetResults!.map((result) => {
     const { answer, takers, cpmmState, outcome, totalFees } = result
     const probBefore = answer.prob
     const probAfter = getCpmmProbability(cpmmState.pool, cpmmState.p)
@@ -174,10 +171,7 @@ export const getCpmmMultiSellBetInfo = (
       probAfter,
       createdTime: now,
       fees: totalFees,
-      isAnte: false,
       isRedemption: true,
-      isChallenge: false,
-      visibility: contract.visibility,
     })
     return {
       ...result,
@@ -190,24 +184,24 @@ export const getCpmmMultiSellBetInfo = (
     newPool: cpmmState.pool,
     makers,
     ordersToCancel,
-    otherResultsWithBet,
+    otherBetResults: updatedOtherBetResults,
   }
 }
 export const getCpmmMultiSellSharesInfo = (
-  contract: CPMMMultiContract | CPMMNumericContract,
-  answers: Answer[],
+  contract: MultiContract,
   userBetsByAnswerIdToSell: { [answerId: string]: Bet[] },
   unfilledBets: LimitBet[],
   balanceByUserId: { [userId: string]: number },
   loanPaidByAnswerId: { [answerId: string]: number }
 ) => {
+  const { answers, collectedFees } = contract
   const { otherBetResults, newBetResults } =
     calculateCpmmMultiArbitrageSellYesEqually(
       answers,
       userBetsByAnswerIdToSell,
       unfilledBets,
       balanceByUserId,
-      contract.collectedFees
+      collectedFees
     )
 
   const now = Date.now()
@@ -241,9 +235,7 @@ export const getNewSellBetInfo = (
   const probAfter = getCpmmProbability(cpmmState.pool, cpmmState.p)
   const amount = sumBy(takers, 'amount')
   const shares = sumBy(takers, 'shares')
-  const oldAnswer = initialAnswers.find(
-    (a) => a.id === updatedAnswer.id
-  ) as Answer
+  const oldAnswer = initialAnswers.find((a) => a.id === updatedAnswer.id)!
   const isRedemption = amount === 0
   const loanPaid = loanPaidByAnswerId[oldAnswer.id] ?? 0
   const newBet: CandidateBet<Bet> = removeUndefinedProps({
@@ -261,9 +253,7 @@ export const getNewSellBetInfo = (
     probAfter,
     createdTime: now,
     fees: totalFees,
-    isAnte: false,
     isRedemption,
-    isChallenge: false,
     visibility: contract.visibility,
   })
 
@@ -274,5 +264,106 @@ export const getNewSellBetInfo = (
     newPool: cpmmState.pool,
     makers: newBetResult.makers,
     ordersToCancel: newBetResult.ordersToCancel,
+  }
+}
+
+export const getSaleResult = (
+  contract: CPMMContract | MultiContract,
+  shares: number,
+  outcome: 'YES' | 'NO',
+  unfilledBets: LimitBet[],
+  balanceByUserId: { [userId: string]: number },
+  answer?: Answer
+) => {
+  if (contract.mechanism === 'cpmm-multi-1' && !answer)
+    throw new Error('getSaleResult: answer must be defined for cpmm-multi-1')
+
+  const initialProb = answer
+    ? answer.prob
+    : getProbability(contract as CPMMContract)
+  const initialCpmmState = answer
+    ? {
+        pool: { YES: answer.poolYes, NO: answer.poolNo },
+        p: 0.5,
+        collectedFees: contract.collectedFees,
+      }
+    : {
+        pool: (contract as CPMMContract).pool,
+        p: (contract as CPMMContract).p,
+        collectedFees: contract.collectedFees,
+      }
+
+  const {
+    cpmmState,
+    saleValue,
+    buyAmount,
+    fees,
+    makers: wholeMakers,
+    ordersToCancel,
+  } = calculateCpmmSale(
+    initialCpmmState,
+    shares,
+    outcome,
+    unfilledBets,
+    balanceByUserId
+  )
+  const resultProb = getCpmmProbability(cpmmState.pool, cpmmState.p)
+  const probChange = Math.abs(resultProb - initialProb)
+  const makers = wholeMakers.map((m) => m.bet).concat(ordersToCancel)
+  return {
+    saleValue,
+    buyAmount,
+    cpmmState,
+    initialProb,
+    resultProb,
+    probChange,
+    fees,
+    makers,
+  }
+}
+
+export const getSaleResultMultiSumsToOne = (
+  contract: MultiContract,
+  answerId: string,
+  shares: number,
+  outcome: 'YES' | 'NO',
+  unfilledBets: LimitBet[],
+  balanceByUserId: { [userId: string]: number }
+) => {
+  const initialProb = getAnswerProbability(contract, answerId)
+  const answerToSell = contract.answers.find((a) => a.id === answerId)
+  const { newBetResult, saleValue, buyAmount, otherBetResults } =
+    calculateCpmmMultiSumsToOneSale(
+      contract.answers,
+      answerToSell!,
+      shares,
+      outcome,
+      undefined,
+      unfilledBets,
+      balanceByUserId,
+      contract.collectedFees
+    )
+  const { cpmmState, totalFees } = newBetResult
+  const resultProb = getCpmmProbability(cpmmState.pool, cpmmState.p)
+  const probChange = Math.abs(resultProb - initialProb)
+
+  const fees = addObjects(
+    totalFees,
+    otherBetResults.map((r) => r.totalFees).reduce(addObjects, noFees)
+  )
+  const makers = newBetResult.makers
+    .map((m) => m.bet)
+    .concat(otherBetResults.flatMap((r) => r.makers.map((m) => m.bet)))
+    .concat(newBetResult.ordersToCancel)
+    .concat(otherBetResults.flatMap((r) => r.ordersToCancel))
+  return {
+    saleValue,
+    buyAmount,
+    cpmmState,
+    initialProb,
+    resultProb,
+    probChange,
+    fees,
+    makers,
   }
 }

@@ -1,12 +1,15 @@
-import * as admin from 'firebase-admin'
 import { APIError, type APIHandler } from './helpers/endpoint'
 import { isAdminId, isModId } from 'common/envs/constants'
 import { throwErrorIfNotMod } from 'shared/helpers/auth'
-import { createSupabaseClient } from 'shared/supabase/init'
+import { createSupabaseDirectClient } from 'shared/supabase/init'
 import { resolveMarketHelper } from 'shared/resolve-market-helpers'
-import { getUser } from 'shared/utils'
-import { Contract } from 'common/contract'
-import { betsQueue } from 'shared/helpers/fn-queue'
+import { getUser, log } from 'shared/utils'
+import { updateContract } from 'shared/supabase/contracts'
+import { convertContract } from 'common/supabase/contracts'
+import { MarketContract } from 'common/contract'
+import { convertPost } from 'common/top-level-post'
+import { updateData } from 'shared/supabase/utils'
+import { revalidatePost } from './create-post-comment'
 
 export const unlistAndCancelUserContracts: APIHandler<
   'unlist-and-cancel-user-contracts'
@@ -15,7 +18,7 @@ export const unlistAndCancelUserContracts: APIHandler<
     throw new APIError(403, 'Only admins and mods can perform this action.')
   }
 
-  await throwErrorIfNotMod(auth.uid)
+  throwErrorIfNotMod(auth.uid)
 
   const resolver = await getUser(auth.uid)
   if (!resolver) {
@@ -26,19 +29,22 @@ export const unlistAndCancelUserContracts: APIHandler<
     throw new APIError(500, 'Creator not found')
   }
 
-  const db = createSupabaseClient()
-  const { data, error } = await db
-    .from('contracts')
-    .select('data')
-    .eq('creatorId', userId)
-  if (error) {
-    throw new APIError(500, 'Failed to fetch contracts: ' + error.message)
-  }
+  const pg = createSupabaseDirectClient()
 
-  const contracts = data.map((contract) => contract.data as Contract)
+  const contracts = await pg.map(
+    `SELECT * FROM contracts WHERE creator_id = $1`,
+    [userId],
+    convertContract
+  )
 
-  if (contracts.length === 0) {
-    console.log('No contracts found for this user.')
+  const posts = await pg.map(
+    `SELECT * FROM old_posts WHERE creator_id = $1`,
+    [userId],
+    (r) => convertPost(r)
+  )
+
+  if (contracts.length === 0 && posts.length === 0) {
+    log('No contracts or posts found for this user.')
     return
   }
 
@@ -50,27 +56,39 @@ export const unlistAndCancelUserContracts: APIHandler<
   }
 
   for (const contract of contracts) {
-    await firestore.doc(`contracts/${contract.id}`).update({
+    await updateContract(pg, contract.id, {
       visibility: 'unlisted',
     })
   }
 
   try {
-    await Promise.all(
-      contracts.map((contract) =>
-        betsQueue.enqueueFnFirst(
-          () =>
-            resolveMarketHelper(contract, resolver, creator, {
-              outcome: 'CANCEL',
-            }),
-          [contract.id, creator.id]
-        )
-      )
-    )
+    for (const contract of contracts.filter(
+      (c) => c.mechanism === 'cpmm-1' || c.mechanism === 'cpmm-multi-1'
+    )) {
+      await resolveMarketHelper(contract as MarketContract, resolver, creator, {
+        outcome: 'CANCEL',
+      })
+    }
   } catch (error) {
-    console.error('Error resolving contracts:', error)
+    log.error('Error resolving contracts:', { error })
     throw new APIError(500, 'Failed to update one or more contracts.')
   }
-}
 
-const firestore = admin.firestore()
+  if (posts.length === 0) {
+    log('No posts found for this user.')
+    // No need to throw an error, just return if there are no posts and contracts were handled.
+    // If contracts were also empty, the function would have returned earlier if uncommented.
+    return
+  }
+  log(`Found ${posts.length} posts to unlist.`)
+
+  for (const post of posts) {
+    await updateData(pg, 'old_posts', 'id', {
+      id: post.id,
+      visibility: 'unlisted',
+    })
+    revalidatePost(post)
+    log(`Unlisted post ${post.id}`)
+  }
+  log('Successfully unlisted all posts for the user.')
+}

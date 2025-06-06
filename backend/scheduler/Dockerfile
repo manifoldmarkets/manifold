@@ -10,7 +10,7 @@ RUN yarn install --frozen-lockfile --production
 # then copy over typescript payload
 COPY dist ./
 
-ENV PORT 80
+ENV PORT=80
 EXPOSE 80/tcp
 
 ENTRYPOINT [ "node", "--inspect", "--max-old-space-size=14336", "backend/scheduler/lib/index.js" ]

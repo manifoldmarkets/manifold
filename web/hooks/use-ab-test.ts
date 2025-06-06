@@ -1,17 +1,20 @@
 import { createRNG } from 'common/util/random'
-import { useState } from 'react'
 import { ensureDeviceToken } from 'web/components/auth-context'
 import { track } from 'web/lib/service/analytics'
 import { useEffectCheckEquality } from './use-effect-check-equality'
+import { usePersistentInMemoryState } from 'client-common/hooks/use-persistent-in-memory-state'
 
-const AB_TEST_CACHE: { [testName: string]: boolean } = {}
+const AB_TEST_CACHE: Record<string, boolean> = {}
 
 export const useABTest = <T extends string>(
   testName: string,
   variants: T[],
-  trackingProperties?: any
+  trackingProperties?: Record<string, unknown>
 ) => {
-  const [variant, setVariant] = useState<T | undefined>(undefined)
+  const [variant, setVariant] = usePersistentInMemoryState<T | undefined>(
+    undefined,
+    `ab-test-${testName}`
+  )
 
   useEffectCheckEquality(() => {
     const deviceId = ensureDeviceToken()
@@ -23,10 +26,9 @@ export const useABTest = <T extends string>(
 
     setVariant(randomVariant)
 
-    // only track once per user session
+    // Only track once per user session
     if (!AB_TEST_CACHE[testName]) {
       AB_TEST_CACHE[testName] = true
-
       track(testName, { ...trackingProperties, variant: randomVariant })
     }
   }, [testName, trackingProperties, variants])

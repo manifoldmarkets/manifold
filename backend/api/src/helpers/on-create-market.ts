@@ -1,14 +1,11 @@
 import * as admin from 'firebase-admin'
 import * as sharp from 'sharp'
 import { JSONContent } from '@tiptap/core'
-
 import { getUser, log } from 'shared/utils'
 import { Contract } from 'common/contract'
 import { parseMentions, richTextToString } from 'common/util/parse'
-import { addUserToContractFollowers } from 'shared/follow-market'
-
 import { completeCalculatedQuestFromTrigger } from 'shared/complete-quest-internal'
-import { createNewContractNotification } from 'shared/create-notification'
+import { createNewContractNotification } from 'shared/notifications/create-new-contract-notif'
 import { createSupabaseDirectClient } from 'shared/supabase/init'
 import { upsertGroupEmbedding } from 'shared/helpers/embeddings'
 import {
@@ -16,21 +13,17 @@ import {
   isContractNonPredictive,
 } from 'shared/supabase/contracts'
 import { addGroupToContract } from 'shared/update-group-contracts-internal'
-import {
-  UNRANKED_GROUP_ID,
-  UNSUBSIDIZED_GROUP_ID,
-} from 'common/supabase/groups'
+import { UNRANKED_GROUP_ID } from 'common/supabase/groups'
 import { HOUSE_LIQUIDITY_PROVIDER_ID } from 'common/antes'
 import { randomString } from 'common/util/random'
-import { generateImage } from 'shared/helpers/openai-utils'
+import { followContractInternal } from 'api/follow-contract'
 
 export const onCreateMarket = async (
   contract: Contract,
-  firestore: admin.firestore.Firestore,
-  triggerEventId?: string
+  embedding: number[]
 ) => {
-  const { creatorId, question, creatorUsername } = contract
-  const eventId = triggerEventId ?? contract.id + '-on-create'
+  const { creatorId } = contract
+  const eventId = contract.id + '-on-create'
   const contractCreator = await getUser(creatorId)
   if (!contractCreator) throw new Error('Could not find contract creator')
 
@@ -42,7 +35,8 @@ export const onCreateMarket = async (
   )
   const desc = contract.description as JSONContent
   const mentioned = parseMentions(desc)
-  await addUserToContractFollowers(contract.id, contractCreator.id)
+  const pg = createSupabaseDirectClient()
+  await followContractInternal(pg, contract.id, true, contractCreator.id)
 
   await createNewContractNotification(
     contractCreator,
@@ -51,78 +45,69 @@ export const onCreateMarket = async (
     richTextToString(desc),
     mentioned
   )
-  const pg = createSupabaseDirectClient()
-
-  const embedding = await pg.oneOrNone(
-    `select embedding
-              from contract_embeddings
-              where contract_id = $1`,
-    [contract.id]
-  )
+  // Try again if first embedding failed
   if (!embedding) await generateContractEmbeddings(contract, pg)
-  const isNonPredictive = isContractNonPredictive(contract)
+  const isNonPredictive = await isContractNonPredictive(contract)
   if (isNonPredictive) {
     await addGroupToContract(
+      pg,
       contract,
       {
         id: UNRANKED_GROUP_ID,
         slug: 'nonpredictive',
-        name: 'Unranked',
       },
       HOUSE_LIQUIDITY_PROVIDER_ID
     )
-    await addGroupToContract(
-      contract,
-      {
-        id: UNSUBSIDIZED_GROUP_ID,
-        slug: 'unsubsidized',
-        name: 'Unsubsidized',
-      },
-      HOUSE_LIQUIDITY_PROVIDER_ID
-    )
-    log('Added contract to unsubsidized group')
+    // await addGroupToContract(
+    //   pg,
+    //   contract,
+    //   {
+    //     id: UNSUBSIDIZED_GROUP_ID,
+    //     slug: 'unsubsidized',
+    //   },
+    //   HOUSE_LIQUIDITY_PROVIDER_ID
+    // )
+    // log('Added contract to unsubsidized group')
   }
   if (contract.visibility === 'public') {
-    const groupIds = (contract.groupLinks ?? []).map((gl) => gl.groupId)
+    const groupIds = await pg.map(
+      `select group_id from group_contracts where contract_id = $1`,
+      [contract.id],
+      (data) => data.group_id
+    )
+
     await Promise.all(
       groupIds.map(async (groupId) => upsertGroupEmbedding(pg, groupId))
     )
   }
 
-  await uploadAndSetCoverImage(
-    question,
-    contract.id,
-    creatorUsername,
-    firestore
-  )
+  // await uploadAndSetCoverImage(pg, question, contract.id, creatorUsername)
 }
 
-const uploadAndSetCoverImage = async (
-  question: string,
-  contractId: string,
-  creatorUsername: string,
-  firestore: admin.firestore.Firestore
-) => {
-  const dalleImage = await generateImage(question)
-  if (!dalleImage) return
-  // first save the url to the contract
-  const snapshot = await firestore.collection('contracts').doc(contractId).get()
-  console.log('generated dalle image: ' + dalleImage)
+// const uploadAndSetCoverImage = async (
+//   pg: SupabaseDirectClient,
+//   question: string,
+//   contractId: string,
+//   creatorUsername: string
+// ) => {
+//   const dalleImage = await generateImage(question)
+//   if (!dalleImage) return
+//   log('generated dalle image: ' + dalleImage)
 
-  // Upload to firestore bucket. if we succeed, update the url. we do this because openAI deletes images after a month
-  const coverImageUrl = await uploadToStorage(
-    dalleImage,
-    creatorUsername
-  ).catch((err) => {
-    console.error('Failed to load image', err)
-    return null
-  })
-  if (!coverImageUrl) return
+//   // Upload to firestore bucket. if we succeed, update the url. we do this because openAI deletes images after a month
+//   const coverImageUrl = await uploadImageToStorage(
+//     dalleImage,
+//     `contract-images/${creatorUsername}`
+//   ).catch((err) => {
+//     log.error('Failed to load image', err)
+//     return null
+//   })
+//   if (!coverImageUrl) return
 
-  await snapshot.ref.update({ coverImageUrl })
-}
+//   await updateContract(pg, contractId, { coverImageUrl })
+// }
 
-export const uploadToStorage = async (imgUrl: string, username: string) => {
+export const uploadImageToStorage = async (imgUrl: string, prefix: string) => {
   const response = await fetch(imgUrl)
 
   const arrayBuffer = await response.arrayBuffer()
@@ -135,7 +120,7 @@ export const uploadToStorage = async (imgUrl: string, username: string) => {
   const bucket = admin.storage().bucket()
   await bucket.makePublic()
 
-  const file = bucket.file(`contract-images/${username}/${randomString()}.jpg`)
+  const file = bucket.file(`${prefix}/${randomString()}.jpg`)
 
   return new Promise<string>((resolve, reject) => {
     const stream = file.createWriteStream({
@@ -150,7 +135,7 @@ export const uploadToStorage = async (imgUrl: string, username: string) => {
     })
 
     stream.on('finish', () => {
-      console.log('Image upload completed')
+      log('Image upload completed')
       const url = file.publicUrl()
       resolve(url.replace(/%2F/g, '/'))
     })

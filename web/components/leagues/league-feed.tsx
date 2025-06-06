@@ -5,13 +5,13 @@ import { useEffect, useState } from 'react'
 import { Col } from '../layout/col'
 import { Bet } from 'common/bet'
 import { ContractComment } from 'common/comment'
-import { leagueActivity } from 'web/lib/firebase/api'
-import { Contract } from 'common/contract'
+import { leagueActivity } from 'web/lib/api/api'
+import { Contract, MarketContract } from 'common/contract'
 import { FeedBet } from '../feed/feed-bets'
-import { FeedComment } from '../feed/feed-comments'
+import { FeedComment } from '../comments/comment'
 import { useIsAuthorized } from 'web/hooks/use-user'
 import { ContractMention } from '../contract/contract-mention'
-import { LoadMoreUntilNotVisible } from '../widgets/visibility-observer'
+import { LoadMoreUntilNotVisible } from 'web/components/widgets/visibility-observer'
 import { LoadingIndicator } from '../widgets/loading-indicator'
 
 export function LeagueFeed(props: { season: number; cohort: string }) {
@@ -45,13 +45,15 @@ export function LeagueFeed(props: { season: number; cohort: string }) {
                 <FeedBet
                   key={item.id}
                   bet={item as Bet}
-                  contract={contract}
+                  contract={contract as MarketContract}
                   avatarSize="xs"
                 />
               ) : (
                 <FeedComment
                   key={item.id}
-                  contract={contract}
+                  // TODO: fix
+                  playContract={contract}
+                  liveContract={contract}
                   comment={item}
                   trackingLocation={`league-S${season}-${cohort}`}
                 />

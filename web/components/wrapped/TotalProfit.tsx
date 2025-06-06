@@ -2,7 +2,7 @@ import clsx from 'clsx'
 import { User } from 'common/user'
 import { formatMoney } from 'common/util/format'
 import { useEffect, useState } from 'react'
-import { useTotalProfit } from 'web/hooks/use-wrapped-2023'
+import { useTotalProfit } from 'web/hooks/use-wrapped-2024'
 import { Spacer } from '../layout/spacer'
 import { LoadingIndicator } from '../widgets/loading-indicator'
 import { NavButtons } from './NavButtons'
@@ -52,6 +52,7 @@ export function TotalProfit(props: {
     return <>An error occured</>
   }
 
+  const positiveProfit = totalProfit >= 0
   return (
     <>
       <div className="relative mx-auto my-auto">
@@ -61,14 +62,14 @@ export function TotalProfit(props: {
             animateOut ? 'animate-fade-out' : 'animate-fade-in'
           )}
         >
-          On those bets, you made{' '}
+          On those trades, you{positiveProfit ? ' made' : ' lost'}{' '}
           <span
             className={clsx(
               'font-bold ',
-              totalProfit < 0 ? 'text-red-300' : 'text-green-300'
+              positiveProfit ? 'text-green-300' : 'text-red-300'
             )}
           >
-            {formatMoney(totalProfit)}
+            {formatMoney(Math.abs(totalProfit))}
           </span>
         </div>
         <Spacer h={4} />

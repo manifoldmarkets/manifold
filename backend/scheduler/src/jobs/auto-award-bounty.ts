@@ -1,12 +1,11 @@
-import * as admin from 'firebase-admin'
 import { sortBy, sumBy } from 'lodash'
-
 import { BountiedQuestionContract } from 'common/contract'
 import { getAutoBountyPayoutPerHour } from 'common/bounty'
 import { createSupabaseDirectClient } from 'shared/supabase/init'
 import { awardBounty } from 'shared/bounty'
-import { promptGPT4 } from 'shared/helpers/openai-utils'
+import { promptOpenAI } from 'shared/helpers/openai-utils'
 import { log, revalidateContractStaticProps } from 'shared/utils'
+import { updateContract } from 'shared/supabase/contracts'
 
 export const autoAwardBounty = async () => {
   const pg = createSupabaseDirectClient()
@@ -80,11 +79,11 @@ Description: ${JSON.stringify(contract.description)}
 The following comments have been submitted:
 
 ` + sortedComments.map((c) => `${c.likes} likes:\n${c.content}`).join('\n\n')
-    const resultMessage = await promptGPT4(prompt)
+    const resultMessage = await promptOpenAI(prompt, 'o4-mini')
     if (resultMessage) {
-      const firestore = admin.firestore()
-      const contractRef = firestore.collection('contracts').doc(contract.id)
-      await contractRef.update({ gptCommentSummary: resultMessage })
+      await updateContract(pg, contract.id, {
+        gptCommentSummary: resultMessage,
+      })
     }
 
     await revalidateContractStaticProps(contract)

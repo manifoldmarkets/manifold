@@ -10,9 +10,18 @@ import { Page } from 'web/components/layout/page'
 import { Row } from 'web/components/layout/row'
 import { linkClass } from 'web/components/widgets/site-link'
 import { Title } from 'web/components/widgets/title'
-import { useAnswersCpmm } from 'web/hooks/use-answers'
-import { searchContracts } from 'web/lib/firebase/api'
+import { searchContracts } from 'web/lib/api/api'
 import { ChevronDownIcon, ChevronUpIcon } from '@heroicons/react/outline'
+import { useContract } from 'web/hooks/use-contract'
+import { capitalize } from 'lodash'
+import { TRADE_TERM } from 'common/envs/constants'
+
+type Company = {
+  name: string
+  slug: string
+  valuation: number
+  contractId: string
+}
 
 export async function getStaticProps() {
   const contracts = await searchContracts({
@@ -24,37 +33,39 @@ export async function getStaticProps() {
     limit: 1000,
   }).catch(() => [])
 
+  const companies: Company[] = contracts
+    .filter(
+      (c) =>
+        c.question.includes('Exit valuation of ') &&
+        c.mechanism === 'cpmm-multi-1'
+    )
+    .map((contract) => {
+      const name = contract.question
+        .split('Exit valuation of ')[1]
+        .split(' (YC S23)?')[0]
+      const valuation = getValuation((contract as CPMMMultiContract).answers)
+      return {
+        name,
+        valuation,
+        slug: contract.slug,
+        contractId: contract.id,
+      }
+    })
+
   return {
     props: {
-      contracts,
+      companies: sortBy(companies, (c) => -c.valuation),
     },
     revalidate: 60,
   }
 }
 
-export default function YCS23Page(props: { contracts: CPMMMultiContract[] }) {
-  const { contracts } = props
-
-  const companyProps = contracts
-    .filter((c) => c.question.includes('Exit valuation of '))
-    .map((contract) => {
-      const name = contract.question
-        .split('Exit valuation of ')[1]
-        .split(' (YC S23)?')[0]
-      const valuation = getValuation(contract.answers)
-      return {
-        name,
-        valuation,
-        contract,
-      }
-    })
-  const sortedCompanyProps = sortBy(companyProps, (c) => c.valuation).reverse()
-
+export default function YCS23Page(props: { companies: Company[] }) {
   return (
     <Page trackPageView="YC S23">
       <Title className="!mb-2 px-4 pt-3 lg:px-0">YC S23</Title>
       <div className="mb-4 ml-4 lg:ml-0">
-        Bet on the exit valuation of each YC company
+        {capitalize(TRADE_TERM)} on the exit valuation of each YC company
       </div>
 
       <Col className="bg-canvas-0 max-w-3xl pb-2">
@@ -62,11 +73,10 @@ export default function YCS23Page(props: { contracts: CPMMMultiContract[] }) {
           <div className="pl-[54px]">Company</div>
           <div className="">Valuation</div>
         </Row>
-        {sortedCompanyProps.map(({ contract, name }, i) => (
+        {props.companies.map((company, i) => (
           <CompanyRow
-            key={contract.id}
-            contract={contract}
-            name={name}
+            key={company.contractId}
+            company={company}
             index={i + 1}
           />
         ))}
@@ -75,24 +85,23 @@ export default function YCS23Page(props: { contracts: CPMMMultiContract[] }) {
   )
 }
 
-const CompanyRow = (props: {
-  contract: CPMMMultiContract
-  name: string
-  index: number
-}) => {
-  const { contract, name, index } = props
+const CompanyRow = (props: { company: Company; index: number }) => {
+  const { company, index } = props
+  const { contractId, name, slug } = company
+  const contract = useContract(contractId) as
+    | CPMMMultiContract
+    | null
+    | undefined
 
-  const answers = useAnswersCpmm(contract.id) ?? contract.answers
-  contract.answers = answers
+  const answers = contract?.answers
 
-  const valuation = getValuation(answers)
+  const valuation = answers ? getValuation(answers) : company.valuation
   const [expanded, setExpanded] = useState(false)
 
   return (
     <Col className="hover:bg-primary-100 active:bg-primary-100">
       <Link
-        href={`/ManifoldMarkets/${contract.slug}`}
-        key={contract.id}
+        href={`/ManifoldMarkets/${slug}`}
         onClick={(e) => e.stopPropagation()}
       >
         <Row className="cursor-pointer select-none justify-between px-3 py-2">
@@ -118,7 +127,11 @@ const CompanyRow = (props: {
       </Link>
       {expanded && (
         <Col className="border-ink-200 border-b px-3 pb-4 pt-2">
-          <SimpleAnswerBars contract={contract} />
+          {contract ? (
+            <SimpleAnswerBars contract={contract} />
+          ) : (
+            <div>Loading...</div>
+          )}
         </Col>
       )}
     </Col>

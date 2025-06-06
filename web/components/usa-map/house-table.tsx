@@ -15,13 +15,10 @@ export function HouseTable(props: { liveHouseContract: CPMMMultiContract }) {
   const { liveHouseContract } = props
   const [sort, setSort] = useState<MultiSort>('alphabetical')
 
-  const isMultipleChoice = liveHouseContract.outcomeType === 'MULTIPLE_CHOICE'
-  const answers = liveHouseContract.answers
-    .filter((a) => isMultipleChoice || ('number' in a && a.number !== 0))
-    .map((a) => ({
-      ...a,
-      prob: getAnswerProbability(liveHouseContract, a.id),
-    }))
+  const answers = liveHouseContract.answers.map((a) => ({
+    ...a,
+    prob: getAnswerProbability(liveHouseContract, a.id),
+  }))
 
   const sortedAnswers = useMemo(
     () => sortAnswers(liveHouseContract, answers, sort),
@@ -54,7 +51,6 @@ export function HouseTable(props: { liveHouseContract: CPMMMultiContract }) {
     <>
       <HouseBar
         liveAnswers={answers}
-        liveHouseContract={liveHouseContract}
         handleClick={handleClick}
         onMouseEnter={onMouseEnter}
         onMouseLeave={onMouseLeave}
@@ -164,7 +160,7 @@ export function HouseTable(props: { liveHouseContract: CPMMMultiContract }) {
             <HouseRow
               key={answer.text}
               id={answer.text}
-              houseAnswer={answer as Answer}
+              houseAnswer={answer}
               contract={liveHouseContract}
               isSelected={targetAnswer === answer.text}
               isHovered={hoverAnswer === answer.text}
@@ -275,14 +271,14 @@ interface DistrictInfo {
 }
 
 function extractDistrictInfo(input: string): DistrictInfo {
-  const regex = /^(?<state>[A-Z]{2})-(?<number>\d{2})/
-  const match = input.match(regex)
+  const parts = input.split(' ')[0].split('-')
+  const state = parts[0].trim()
+  const number = parts[1].slice(0, 2).trim()
 
-  if (!match || !match.groups) {
+  if (state.length !== 2 || isNaN(Number(number))) {
     throw new Error('Invalid input format')
   }
 
-  const { state, number } = match.groups
   return {
     state,
     number,

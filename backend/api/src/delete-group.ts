@@ -1,33 +1,28 @@
 import { isAdminId, isModId } from 'common/envs/constants'
-import { run } from 'common/supabase/utils'
 import { log } from 'shared/utils'
-import {
-  createSupabaseClient,
-  createSupabaseDirectClient,
-} from 'shared/supabase/init'
+import { createSupabaseDirectClient } from 'shared/supabase/init'
+import { from, renderSql, select, where } from 'shared/supabase/sql-builder'
 import { APIError, type AuthedUser } from './helpers/endpoint'
+import { Row } from 'common/supabase/utils'
 
 export const deleteGroup = async (
   props: { id: string } | { slug: string },
   auth: AuthedUser
 ) => {
-  const db = createSupabaseClient()
   const pg = createSupabaseDirectClient()
 
-  const q = db.from('groups').select()
-  if ('id' in props) {
-    q.eq('id', props.id)
-  } else {
-    q.eq('slug', props.slug)
-  }
+  const whereClause = 'id' in props ? 'id = ${id}' : 'slug = ${slug}'
+  const query = renderSql(
+    select('*'),
+    from('groups'),
+    where(whereClause, props)
+  )
 
-  const { data: groups } = await run(q)
+  const group = await pg.oneOrNone<Row<'groups'>>(query)
 
-  if (groups.length == 0) {
+  if (!group) {
     throw new APIError(404, 'Group not found')
   }
-
-  const group = groups[0]
 
   log(
     `delete group ${group.name} ${group.slug} initiated by ${auth.uid}`,

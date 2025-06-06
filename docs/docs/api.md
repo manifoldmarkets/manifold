@@ -19,7 +19,7 @@ Please migrate any code you have to the new domain. The old domain will disappea
 
 Our API is still in alpha — things may change or break at any time!
 
-If you have questions, come chat with us on [Discord](https://discord.com/invite/eHQBNBqXuh). We’d love to hear about what you build!
+If you have questions, come chat with us on [Discord](https://discord.com/invite/eHQBNBqXuh). We'd love to hear about what you build!
 
 If you notice any errors or omissions in this documentation, please let us know on Discord, or fix it yourself by [submitting a pull request](https://github.com/manifoldmarkets/manifold/blob/main/docs/docs/api.md).
 
@@ -70,21 +70,21 @@ APIs that require authentication accept an `Authorization` header in one of two 
 
 ## Usage Guidelines
 
-Feel free to use the API for any purpose you'd like. There is a rate limit of 1000 requests per minute per IP. Please don't use multiple IP addresses to circumvent this limit.
+Feel free to use the API for any purpose you'd like. There is a rate limit of 500 requests per minute per IP. Please don't use multiple IP addresses to circumvent this limit.
 
 ## Fees
 
-- A non-refundable transaction fee of $M0.25 will be levied on any bet, sell, or limit order placed through the API, or by any account marked as a bot. (The fee has been levied even if the returned "bet" object claims there was no fee; this is a known bug.)
 - Comments placed through the API will incur a $M1 transaction fee.
 
 ## Trade history dumps
 
-For data analysis and backtesting purposes, you can bulk download all markets and bets/trades on the platform.
+For data analysis and backtesting purposes, you can bulk download all markets and bets/trades on the platform since December 2021.
 
-- [Markets dump](https://firebasestorage.googleapis.com/v0/b/mantic-markets.appspot.com/o/trade-dumps%2Fmanifold-dump-markets-04082023.json.zip?alt=media&token=7e18a376-6ac3-4d66-a9a0-552b967f2fe8) (10MB)
-- [Bets dump](https://firebasestorage.googleapis.com/v0/b/mantic-markets.appspot.com/o/trade-dumps%2Fmanifold-dump-bets-04082023.zip?alt=media&token=c3ffdfbd-6769-48e3-8cfc-4fc93c2443f3) (436MB)
+- [Bets data 2024-07-04](https://firebasestorage.googleapis.com/v0/b/mantic-markets.appspot.com/o/trade-dumps%2Fmanifold-dump-bets-04072024.json.zip?alt=media&token=5ff8fd10-8079-4570-9728-7d0be1d4a463) (967MB)
+- [Markets data 2024-07-06](https://firebasestorage.googleapis.com/v0/b/mantic-markets.appspot.com/o/trade-dumps%2Fmanifold-contracts-20240706.json.zip?alt=media&token=ca3ef6b6-fe61-41b4-a789-dcc2d4ea4421) (87MB)
+- [Comments data 2024-07-06](https://firebasestorage.googleapis.com/v0/b/mantic-markets.appspot.com/o/trade-dumps%2Fmanifold-comments-20240706.json.zip?alt=media&token=08f9a2b1-534a-493d-bb01-77cf1f54b9f3) (127MB)
 
-Dumps last updated: August 8, 2023
+Data dumps last updated: July 6, 2024
 
 ## Useful resources
 
@@ -129,12 +129,6 @@ type User = {
   totalDeposits: number
   lastBetTime?: number
   currentBettingStreak?: number
-  profitCached: {
-    daily: number
-    weekly: number
-    monthly: number
-    allTime: number
-  }
 }
 ```
 
@@ -184,6 +178,51 @@ Get bets by a particular user.
 Requires no auth.
 
 _This api is deprecated in favor of the more versatile [/v0/bets/](#get-v0bets) api._
+
+### `GET /v0/get-user-portfolio`
+
+Get a user's live portfolio metrics.
+
+Requires no auth.
+
+Parameters:
+
+- `userId`: The ID of the user.
+
+Response type: `LivePortfolioMetrics`
+
+```tsx
+type PortfolioMetrics = {
+  investmentValue: number
+  cashInvestmentValue: number
+  balance: number
+  cashBalance: number
+  spiceBalance: number
+  totalDeposits: number
+  totalCashDeposits: number
+  loanTotal: number
+  timestamp: number // Unix timestamp in milliseconds
+  profit?: number
+  userId: string
+}
+
+type LivePortfolioMetrics = PortfolioMetrics & {
+  dailyProfit: number
+}
+```
+
+### `GET /v0/get-user-portfolio-history`
+
+Get a user's portfolio history over a specified period.
+
+Requires no auth.
+
+Parameters:
+
+- `userId`: The ID of the user.
+- `period`: The time period for the portfolio history. Enum values: 'daily', 'weekly', 'monthly', 'allTime'.
+
+Response type: Array of `PortfolioMetrics`
 
 ### `GET /v0/groups`
 
@@ -319,6 +358,9 @@ type LiteMarket = {
 
   lastUpdatedTime?: number
   lastBetTime?: number
+
+  token?: 'MANA' | 'CASH' // mana or prizecash question
+  siblingContractId?: string // id of the prizecash or mana version of this question that you get to by toggling.
 }
 ```
 
@@ -347,7 +389,7 @@ Example response:
   "creatorAvatarUrl": "https://firebasestorage.googleapis.com/v0/b/mantic-markets.appspot.com/o/user-images%2FAngela%2F50463444807_edfd4598d6_o.jpeg?alt=media&token=ef44e13b-2e6c-4498-b9c4-8e38bdaf1476",
   "closeTime": 1655265001448,
   "question": "What is good?",
-  "description": "Resolves proportionally to the answer(s) which I find most compelling. (Obviously I’ll refrain from giving my own answers)\n\n(Please have at it with philosophy, ethics, etc etc)\n\n\nContract resolved automatically.",
+  "description": "Resolves proportionally to the answer(s) which I find most compelling. (Obviously I'll refrain from giving my own answers)\n\n(Please have at it with philosophy, ethics, etc etc)\n\n\nContract resolved automatically.",
   "url": "https://manifold.markets/Angela/what-is-good",
   "pool": null,
   "outcomeType": "FREE_RESPONSE",
@@ -357,6 +399,7 @@ Example response:
   "isResolved": true,
   "resolution": "MKT",
   "resolutionTime": 1655265001448,
+  "token": "MANA",
   "answers": [
     {
       "createdTime": 1655258941573,
@@ -431,6 +474,114 @@ type FullMarket = LiteMarket & {
 }
 ```
 
+### `GET /v0/slug/[marketSlug]`
+
+Get information about a single market by slug (the portion of the URL path after the username).
+
+Requires no auth.
+
+Example request:
+
+```bash
+curl "https://api.manifold.markets/v0/slug/will-carrick-flynn-win-the-general" -X GET
+```
+
+Response type: A `FullMarket`
+
+### `GET /v0/search-markets`
+
+Search or filter markets, Similar to the [browse page](https://manifold.markets/browse).
+
+Requires no auth.
+
+Parameters:
+
+- `term`: The search query in question. Can be empty string.
+- `sort`: Optional. One of `most-popular` (default), `newest`, `score`, `daily-score`, `freshness-score`, `24-hour-vol`, `liquidity`, `subsidy`, `last-updated`, `close-date`, `start-time`, `resolve-date`, `random`, `bounty-amount`, `prob-descending`, or `prob-ascending`.
+- `filter`: Optional. Closing state. One of `all` (default), `open`, `closed`, `resolved`, `news`, `closing-90-days`, `closing-week`, `closing-month`, or `closing-day`.
+- `contractType`: Optional. `ALL` (default), `BINARY` (yes/no), `MULTIPLE_CHOICE`, `BOUNTY`, `POLL`, or ... (see code)
+- `topicSlug`: Optional. Only include questions with the topic tag with this slug.
+- `creatorId`: Optional. Only include questions created by the user with this id.
+- `limit`: Optional. Number of contracts to return from 0 to 1000. Default 100.
+- `offset`: Optional. Number of contracts to skip. Use with limit to paginate the results.
+- `liquidity`: Optional. Minimum liquidity per contract (or per answer according to tier map)
+- `creatorId`: Optional. Only markets from creator id.
+
+Requires no auth.
+
+Example request:
+
+```bash
+curl https://api.manifold.markets/v0/search-markets?term=biden&sort=liquidity&filter=resolved&contractType=BINARY&limit=2 -X GET
+```
+
+Response type: Array of `LiteMarket`.
+
+### `GET /v0/market/[marketId]/prob`
+
+Get the current probability (or probabilities for multiple choice markets) for a market without caching.
+
+Parameters:
+
+- `id`: Required. The ID of the market.
+
+Example request:
+
+```bash
+curl "https://api.manifold.markets/v0/market/9t61v9e7x4/prob" -X GET
+```
+
+Example response:
+
+```json
+{
+  "prob": 0.62
+}
+```
+
+For non-binary markets (e.g. multiple choice, set) you get a dictionary of probabilities for each answer id.
+
+Example response:
+
+```json
+{
+  "answerProbs": {
+    "PI806hsqn2": 0.670156962142921,
+    "tO5sp2SAlA": 0.3298430378570791
+  }
+}
+```
+
+### `GET /v0/market-probs`
+
+Get the current probabilities for multiple markets in a single request.
+
+Parameters:
+
+- `ids`: Required. An array of market IDs, up to length 100.
+
+Example request:
+
+```bash
+curl "https://api.manifold.markets/v0/market-probs?ids=9t61v9e7x4&ids=ZNlNdzz690" -X GET
+```
+
+Example response:
+
+```json
+{
+  "9t61v9e7x4": {
+    "prob": 0.62
+  },
+  "ZNlNdzz690": {
+    "answerProbs": {
+      "answer1": 0.67,
+      "answer2": 0.33
+    }
+  }
+}
+```
+
 ### `GET /v0/market/[marketId]/positions`
 
 Get positions information about a single market.
@@ -441,6 +592,7 @@ Parameters:
 - `top`: Optional. The number of top positions (ordered by `order`) to return.
 - `bottom`: Optional. The number of bottom positions (ordered by `order`) to return.
 - `userId`: Optional. The user ID to query by. If provided, only the position for this user will be returned.
+- `answerId`: Optional. The answer ID to query by. If provided, only the positions for this answer will be returned.
 
 Requires no auth.
 
@@ -581,46 +733,165 @@ type ContractMetric = {
 }
 ```
 
-### `GET /v0/slug/[marketSlug]`
+### `GET /v0/get-user-contract-metrics-with-contracts`
 
-Get information about a single market by slug (the portion of the URL path after the username).
+Get a user's contract metrics and their corresponding contracts, ordered by profit or last bet time. This is useful for displaying a user's portfolio.
 
-Requires no auth.
-
-Example request:
-
-```bash
-curl "https://api.manifold.markets/v0/slug/will-carrick-flynn-win-the-general" -X GET
-```
-
-Response type: A `FullMarket`
-
-### `GET /v0/search-markets`
-
-Search or filter markets, Similar to the [browse page](https://manifold.markets/browse).
-
-Requires no auth.
+Requires no auth. When authenticated, the response may include metrics from private markets that are visible to you.
 
 Parameters:
 
-- `term`: The search query in question. Can be empty string.
-- `sort`: Optional. `score` (default), `newest`, `liquidity`, or ... (see code)
-- `filter`: Optional. Closing state. `all` (default), `open`, `closed`, `resolved`, `closing-this-month`, or `closing-next-month`.
-- `contractType`: Optional. `ALL` (default), `BINARY` (yes/no), `MULTIPLE_CHOICE`, `BOUNTY`, `POLL`, or ... (see code)
-- `topicSlug`: Optional. Only include questions with the topic tag with this slug.
-- `creatorId`: Optional. Only include questions created by the user with this id.
-- `limit`: Optional. Number of contracts to return from 0 to 1000. Default 100.
-- `offset`: Optional. Number of contracts to skip. Use with limit to paginate the results.
+- `userId`: Required. The ID of the user.
+- `limit`: Required. The number of contracts to return.
+- `offset`: Optional. The number of contracts to skip for pagination. Default 0.
+- `order`: Optional. The sort order for the contracts. One of `lastBetTime` (default) or `profit`.
+- `perAnswer`: Optional. If `true` for multiple choice markets, metrics will be returned for each answer. If `false` (default), only summary metrics for the market are returned.
 
-Requires no auth.
+Response type: an object with `metricsByContract` and `contracts`.
 
-Example request:
+- `metricsByContract`: A dictionary mapping a contract ID to an array of `ContractMetric` objects.
+- `contracts`: An array of `MarketContract` objects.
 
-```bash
-curl https://api.manifold.markets/v0/search-markets?term=biden&sort=liquidity&filter=resolved&contractType=BINARY&limit=2 -X GET
+Example response:
+
+```json
+{
+    "metricsByContract": {
+        "xv86CDBe0flxF2epvO3f": [
+            {
+                "from": {
+                    "day": {
+                        "value": 132936.84161688015,
+                        "profit": 0,
+                        "invested": 132936.84161688015,
+                        "prevValue": 132936.84161688015,
+                        "profitPercent": 0
+                    },
+                    "week": {
+                        "value": 132936.84161688015,
+                        "profit": 0,
+                        "invested": 132936.84161688015,
+                        "prevValue": 132936.84161688015,
+                        "profitPercent": 0
+                    },
+                    "month": {
+                        "value": 132936.84161688015,
+                        "profit": 0,
+                        "invested": 132936.84161688015,
+                        "prevValue": 132936.84161688015,
+                        "profitPercent": 0
+                    }
+                },
+                "loan": 0,
+                "payout": 132936.84161688015,
+                "profit": 73386.56039227714,
+                "userId": "AJwLWoo3xue32XIiAVrL5SyR1WB2",
+                "answerId": null,
+                "invested": 63625.999354329724,
+                "userName": "Ian Philips",
+                "hasShares": true,
+                "contractId": "xv86CDBe0flxF2epvO3f",
+                "totalSpent": {
+                    "NO": 63625.999354329724,
+                    "YES": 0
+                },
+                "hasNoShares": true,
+                "lastBetTime": 1719868394000,
+                "totalShares": {
+                    "NO": 132936.84161688015
+                },
+                "hasYesShares": false,
+                "userUsername": "ian",
+                "profitPercent": 109.48224425971169,
+                "userAvatarUrl": "https://firebasestorage.googleapis.com/v0/b/mantic-markets.appspot.com/o/user-images%2Fian%2Fm6zfu88qLr.png?alt=media&token=126eab7e-fcba-49bd-b2e2-669b3fa9eaf0",
+                "totalAmountSold": 7480.277829512599,
+                "maxSharesOutcome": "NO",
+                "totalAmountInvested": 67030.55905411561
+            }
+        ]
+    },
+    "contracts": [
+        {
+            "p": 0.47784802346618205,
+            "id": "xv86CDBe0flxF2epvO3f",
+            "pool": {
+                "NO": 11520.402666342714,
+                "YES": 1043748.1561188638
+            },
+            "prob": 0,
+            "slug": "will-tesla-stock-reach-275-by-88-of-e836ca33649e",
+            "volume": 21510052.08761673,
+            "question": "Will TSLA reach >$ 275 before 8pm EST on 8/8?",
+            "closeTime": 1723166651449,
+            "creatorId": "nHX1qmzRItUHm3ifj7wNNR8hGf62",
+            "mechanism": "cpmm-1",
+            "viewCount": 20625,
+            "dailyScore": 0,
+            "elasticity": 1.3259613990620638,
+            "groupSlugs": [
+                "ev",
+                "tsla",
+                "tesla",
+                "wall-street-bets"
+            ],
+            "isResolved": true,
+            "marketTier": "crystal",
+            "resolution": "NO",
+            "resolverId": "nHX1qmzRItUHm3ifj7wNNR8hGf62",
+            "visibility": "public",
+            "createdTime": 1715825810671,
+            "creatorName": "TSLABull",
+            "description": {
+              "type": "doc",
+              "content":
+              [
+                 {
+                        "type": "paragraph",
+                        "content": [
+                            {
+                                "text": "text removed",
+                                "type": "text"
+                            }
+                        ]
+                  },
+              ]
+            }
+            "lastBetTime": 1723187716841,
+            "outcomeType": "BINARY",
+            "probChanges": {
+                "day": 0,
+                "week": 0,
+                "month": 0
+            },
+            "subsidyPool": 0,
+            "collectedFees": {
+                "creatorFee": 173884.84121027112,
+                "platformFee": 172931.0356998528,
+                "liquidityFee": 0
+            },
+            "coverImageUrl": "https://storage.googleapis.com/mantic-markets.appspot.com/contract-images/PedroSobral/112df20121f7.jpg",
+            "volume24Hours": 0,
+            "freshnessScore": 0,
+            "resolutionTime": 1723166651449,
+            "totalLiquidity": 100000,
+            "conversionScore": 0.1337930700139641,
+            "creatorUsername": "MolbyDick",
+            "importanceScore": 0.0740977547170235,
+            "lastCommentTime": 1741622281671,
+            "lastUpdatedTime": 1741622283813,
+            "popularityScore": 0,
+            "creatorAvatarUrl": "https://lh3.googleusercontent.com/a-/ALV-UjXY86BCu6RTvqG8yEFc5Y7D_S97tCf20jO2Z8tVPKaaUqG14DA9PLqiLMFEeMfNIZqYYE4tIzI_BrVccd4GjslXsd5xpRxNHEYntNGm2gIyorhNQXCFWaGveqVbopCKtvW8Hxom_b74OxRgIK95auugOa5P56HIijcmp8zUBmze5fHo3g0ex4yJjnK3v7cvgEOF25_-TG4N8zJWXs8h_RcZDoDOKDs__GbJIprrIRmH0xBPqyMPjM6JiRSy1sfS72DHbE53wywXJmkbjC8pw3Fv6tHNtztWvt2EKzgxFCFO5vBboyToBEm5ne-O_e2iPy2vA10-am1HyumXwhHQ8TmgD7hUTB7yokY1_OnpMRIYz_I26jS_8xrIRYiLTpn4tz1ehGr5MBXc52cHtHOFIr75TBvfRBucNqWMi55HJ3gMafiLCsRRufPbWV9W75ebNkpPQr-Fajv1VVUfjMrOmDhzwcB0uEArrgF0lQ1aSuwd2JN11ZJo7Y7p4gyPbmMDureFH9Ppk6xmGp53c3N5lIgeS_dH309hrZWL-N1_L1xoWufgpSeq0GaYVcpChDe_uWm5muiM39lzL5xdzCh5CLJn2HsflObP9H_Ei2mQXM_JQa0PHtPI11wk4w90HMPihYAIv8U4GECdlSV7nKemKVQ5C9asqy40yji5loeo3jof6fSSvWMYvFj206ohJ0r-NviW0y2A-Pp_VCPDMPg8cLpToFGPcmYguqw6Kw87iUow37UNBwG_vKFyI9_k0QWVT6dXpSSMYpts6Ui-KOv__LGb_ybFWH0dHGR_KA_WNNWZyoH8IDbwiGhUATlBS8qTwS7MDrON0E7K2MJCxCHBcVQdmXFNrBvz0zi2kwCtaPUcLR9teA9h_lcj2ybyXjPfdY_KVPz_smz9XzNssQ5Qaw5sR6n1aTX-wNaONG7j3nIvaOXIArN1glV07JsXIOQYPkPHFnWWq0DMoqOBJHBcna922FE=s96-c",
+            "uniqueBettorCount": 501,
+            "creatorCreatedTime": 1713057686215,
+            "initialProbability": 0.5,
+            "uniqueBettorCountDay": 0,
+            "resolutionProbability": 0.01,
+            "token": "MANA",
+            "boosted": false
+        }
+    ]
+}
 ```
-
-Response type: Array of `LiteMarket`.
 
 ### `GET /v0/users`
 
@@ -686,7 +957,9 @@ Parameters:
     - A `M$100` bet on `YES` with `limitProb=0.6` would fill partially or completely depending on current unfilled limit bets and the AMM's liquidity. Any remaining portion of the bet not filled would remain to be matched against in the future.
   - An unfilled limit order bet can be cancelled using the cancel API.
 
-- `expiresAt`: When the limit order should be automatically canceled.
+- `expiresAt`: Optional. When the limit order should be automatically canceled.
+- `expiresMillisAfter`: Optional. Miliseconds after creation when the limit order should be automatically canceled.
+- `dryRun`: Optional. If true, the bet will not be placed and the API will return a simulated result.
 
 [Requires Auth](#authentication).
 
@@ -820,27 +1093,56 @@ Parameters:
 
 ### `POST /v0/market/[marketId]/resolve`
 
-Resolve a market.
+Resolve a market. The required payload format depends on the market type.
 
-Parameters:
+#### For Binary Markets
 
-For binary markets:
+- **outcome**: One of `YES`, `NO`, `MKT`, or `CANCEL`.
+- **probabilityInt** (optional): The probability to use for a `MKT` resolution.
 
-- `outcome`: One of `YES`, `NO`, `MKT`, or `CANCEL`.
-- `probabilityInt`: Optional. The probability to use for `MKT` resolution.
+#### For Free Response or Multiple Choice Markets
 
-For free response or multiple choice markets:
+The resolution payload format depends on the market's `shouldAnswersSumToOne` setting:
 
-- `outcome`: One of `MKT`, `CANCEL`, or a `number` indicating the answer index.
-- `resolutions`: An array of `{ answer, pct }` objects to use as the weights for resolving in favor of multiple free response options. Can only be set with `MKT` outcome. Note that the total weights must add to 100.
+**1. When `shouldAnswersSumToOne` is true (the default for dpm-2 free response and multiple choice):**
 
-For numeric markets:
+Use the weighted resolution format:
 
-- `outcome`: One of `CANCEL`, or a `number` indicating the selected numeric bucket ID.
-- `value`: The value that the market resolves to.
-- `probabilityInt`: Required if `value` is present. Should be equal to
+```json
+{
+  "outcome": "MKT",  // or CANCEL, or a number indicating the selected answer index
+  "resolutions": [
+    { "answer": <number>, "pct": <number> }
+  ]
+}
+```
 
-  - If log scale: `log10(value - min + 1) / log10(max - min + 1)`
+- Each object in the `resolutions` array assigns a weight (`pct`) to an answer (indicated by its index). The weights must add up to 100.
+
+**2. When `shouldAnswersSumToOne` is false:**
+
+Resolve each answer individually, as you would for a binary market. For each answer, issue a separate resolve request with a payload that includes:
+
+- **outcome**: Either `"YES"` (if the answer is resolved as a win) or `"NO"` (if resolved as a loss).
+- **answerId**: The unique identifier for the answer (as returned in the full market's `answers` array).
+
+For example, to resolve an individual answer:
+
+```json
+{
+  "outcome": "YES", // or "NO"
+  "answerId": "<answerId>"
+}
+```
+
+This approach treats each answer as an independent binary resolution, ensuring that the actual answer identifier is included in the payload.
+
+#### For Numeric Markets
+
+- **outcome**: Either `CANCEL` or a number indicating the selected numeric bucket ID.
+- **value**: The value that the market resolves to.
+- **probabilityInt**: Required if `value` is provided. It should equal:
+  - For log scale: `log10(value - min + 1) / log10(max - min + 1)`
   - Otherwise: `(value - min) / (max - min)`
 
 [Requires Auth](#authentication).
@@ -851,22 +1153,9 @@ Sell shares in a market.
 
 Parameters:
 
-- `outcome`: `YES` or `NO`. Optional. Which kind of shares you are selling - defaults to the kind you have.
+- `outcome`: `YES` or `NO`. Which kind of shares you are selling - defaults to the kind you have.
 - `shares`: Optional. How many shares you are selling - defaults to all.
 - `answerId`: Required on multi choice. The ID of the answer you are selling your position in.
-
-[Requires Auth](#authentication).
-
-Response type: A `Bet`
-
-### `POST /v0/sell-shares-dpm`
-
-Sell a position in a multi choice or "free response" market that's on the deprecated contract mechanism `dpm-2`. The mechanism is inferior in that you can only bet YES and you can only sell an entire bet.
-
-Parameters:
-
-- `contractId`: the ID of the market
-- `betId`: the ID of the bet to sell
 
 [Requires Auth](#authentication).
 
@@ -901,9 +1190,10 @@ Parameters:
 
 - `contractId`: Optional. The ID of the market to read comments of.
 - `contractSlug`: Optional. The slug of the market to read comments of.
-- `limit`. Optional. How many comments to return. Default 5000.
+- `limit`. Optional. How many comments to return. The default and maximum are both 1000.
 - `page`. Optional. For pagination with `limit`
 - `userId`: Optional. Get only comments created by this user.
+- `order`: Optional. One of [`likes`, `newest`, `oldest`]
 
 Requires no auth.
 
@@ -915,7 +1205,7 @@ Parameters:
 
 - `userId`: Optional. Include only bets by the user with this ID.
 - `username`: Optional. Include only bets by the user with this username.
-- `contractId`: Optional. Include only bets on the market with this ID.
+- `contractId`: Optional. Include only bets on the market with this ID. Can be multiple ids.
 - `contractSlug`: Optional. Include only bets on the market with this slug.
 - `limit`: Optional. How many bets to return. The default and maximum are both 1000.
 - `before`: Optional. Include only bets created before the bet with this ID.
@@ -925,6 +1215,8 @@ Parameters:
     get bets 11 through 20.
 - `after`: Optional. Include only bets created after the bet with this ID.
   - For example, if you request the 10 most recent bets and then perform a second query with `after=[the id of the 1st bet]`, you will receive up to 10 new bets, if available.
+- `beforeTime`: Optional. Include only bets created before this timestamp.
+- `afterTime`: Optional. Include only bets created after this timestamp.
 - `kinds`: Optional. Specifies subsets of bets to return. Possible kinds: `open-limit` (open limit orders, including ones on closed and reolved markets).
 - `order`: Optional. `asc` or `desc` (default). The sorting order for returned bets.
 
@@ -998,7 +1290,7 @@ Example response:
 ]
 ```
 
-### `GET /v0/managrams`
+### `GET /v0/managrams` (Deprecated)
 
 Gets a list of managrams, ordered by creation time descending.
 
@@ -1012,36 +1304,7 @@ Parameters:
 
 Requires no auth.
 
-Example request:
-
-```bash
-curl "https://api.manifold.markets/v0/managrams?toId=IPTOzEqrpkWmEzh6hwvAyY9PqFb2" -X GET
-```
-
-Example response:
-
-```json
-[
-  {
-    "id": "INKcoBUVT914i1XUJ6rG",
-    "data": {
-      "groupId": "e097e0c5-3ce0-4eb2-9ca7-6554f86b84cd",
-      "message": "Puzzles for Progress",
-      "visibility": "public"
-    },
-    "toId": "AJwLWoo3xue32XIiAVrL5SyR1WB2",
-    "token": "M$",
-    "amount": 2500,
-    "fromId": "jO7sUhIDTQbAJ3w86akzncTlpRG2",
-    "toType": "USER",
-    "category": "MANA_PAYMENT",
-    "fromType": "USER",
-    "createdTime": 1695665438987,
-    "description": "Mana payment 2500 from MichaelWheatley to jO7sUhIDTQbAJ3w86akzncTlpRG2"
-  },
-  ...
-]
-```
+_This api is deprecated in favor of the more versatile [/v0/txns/](#get-v0txns) api below._
 
 ### `POST /v0/managram`
 
@@ -1103,6 +1366,58 @@ See a specific user's answers to compatibility questions.
 
 Requires no auth.
 
+### `GET /v0/txns`
+
+Get a list of transactions, ordered by creation date descending.
+
+Parameters:
+
+- `token`: Optional. Type of token (e.g., 'CASH', 'MANA')
+- `offset`: Optional. Number of records to skip (for pagination). Default is 0.
+- `limit`: Optional. Maximum number of records to return. The default and maximum are both 100.
+- `before`: Optional. Include only transactions created before this timestamp.
+- `after`: Optional. Include only transactions created after this timestamp.
+- `toId`: Optional. Include only transactions to the user with this ID.
+- `fromId`: Optional. Include only transactions from the user with this ID.
+- `category`: Optional. Include only transactions of this category.
+
+Requires no auth.
+
+Example request:
+
+```bash
+curl "https://api.manifold.markets/v0/txns?limit=10&category=MANA_PAYMENT" -X GET
+```
+
+Response type: An array of `Txn`.
+
+Example response:
+
+```json
+[
+  {
+    "id": "INKcoBUVT914i1XUJ6rG",
+    "data": {
+      "groupId": "e097e0c5-3ce0-4eb2-9ca7-6554f86b84cd",
+      "message": "Puzzles for Progress",
+      "visibility": "public"
+    },
+    "toId": "AJwLWoo3xue32XIiAVrL5SyR1WB2",
+    "token": "M$",
+    "amount": 2500,
+    "fromId": "jO7sUhIDTQbAJ3w86akzncTlpRG2",
+    "toType": "USER",
+    "category": "MANA_PAYMENT",
+    "fromType": "USER",
+    "createdTime": 1695665438987,
+    "description": "Mana payment 2500 from MichaelWheatley to jO7sUhIDTQbAJ3w86akzncTlpRG2"
+  },
+  ...
+]
+```
+
+Note: This API corresponds to the `txns` postgres table and does not include bets and liquidity injections.
+
 Example response (truncated):
 
 ```json
@@ -1152,6 +1467,136 @@ Example response (truncated):
 }
 ```
 
+## Websockets
+
+Manifold provides a real-time websocket server that allows you to subscribe to updates about markets, bets, and other events. The websocket endpoint is available at `wss://api.manifold.markets/ws` and `wss://api.dev.manifold.markets/ws`.
+
+### Message Format
+
+All messages sent to and from the server must be valid JSON strings. Each client message must include:
+
+- `type`: The type of message ('identify', 'subscribe', 'unsubscribe', or 'ping')
+- `txid`: A unique number identifying this message
+
+The server will respond to each client message with an acknowledgement:
+
+```json
+{
+  "type": "ack",
+  "txid": 123,
+  "success": true
+}
+```
+
+### Subscribing to Topics
+
+To subscribe to updates, send a message with:
+
+```json
+{
+  "type": "subscribe",
+  "txid": 123,
+  "topics": ["global/new-bet", "contract/[marketId]"]
+}
+```
+
+Available topics:
+
+#### Global topics
+
+- `global/new-bet` - All new bets across all markets
+- `global/new-contract` - All new markets being created
+- `global/new-comment` - All new comments across all markets
+- `global/new-subsidy` - All new liquidity subsidies
+- `global/updated-contract` - Updates to any public market
+
+#### Per-contract topics (replace [marketId] with the actual market ID)
+
+- `contract/[marketId]` - General market updates
+- `contract/[marketId]/new-bet` - New bets on this market
+- `contract/[marketId]/new-comment` - New comments on this market
+- `contract/[marketId]/new-subsidy` - New liquidity subsidies on this market
+- `contract/[marketId]/new-answer` - New answers added to this market (for multiple choice markets)
+- `contract/[marketId]/updated-answers` - Updates to answers on this market
+- `contract/[marketId]/orders` - Updates to limit orders on this market
+- `contract/[marketId]/chart-annotation` - New chart annotations on this market
+- `contract/[marketId]/user-metrics/[userId]` - Updates to a user's position in this market
+
+#### Other topics
+
+- `user/[userId]` - Updates to a user's public information
+- `answer/[answerId]/update` - Updates to a specific answer
+- `tv_schedule` - Updates to the TV schedule
+
+### Example Usage
+
+Here's an example of how to connect and subscribe to global bet updates using Node.js:
+
+```typescript
+import { APIRealtimeClient } from 'common/api/websocket-client'
+
+const client = new APIRealtimeClient('wss://api.manifold.markets/ws')
+
+// Subscribe to all new bets
+client.subscribe(['global/new-bet'], (msg) => {
+  console.log('New bet:', msg.data)
+})
+
+// Subscribe to a specific market's updates
+client.subscribe(['contract/1234'], (msg) => {
+  console.log('Market update:', msg.data)
+})
+```
+
+Or using plain WebSocket:
+
+```javascript
+const ws = new WebSocket('wss://api.manifold.markets/ws')
+let txid = 0
+
+ws.onopen = () => {
+  // Subscribe to global bets
+  ws.send(
+    JSON.stringify({
+      type: 'subscribe',
+      txid: txid++,
+      topics: ['global/new-bet'],
+    })
+  )
+}
+
+ws.onmessage = (event) => {
+  const msg = JSON.parse(event.data)
+  if (msg.type === 'broadcast') {
+    console.log('Received broadcast:', msg.data)
+  }
+}
+
+// Send periodic pings to keep connection alive
+setInterval(() => {
+  ws.send(
+    JSON.stringify({
+      type: 'ping',
+      txid: txid++,
+    })
+  )
+}, 30000)
+```
+
+The server will send broadcast messages in this format:
+
+```json
+{
+  "type": "broadcast",
+  "topic": "global/new-bet",
+  "data": {
+    // Bet data
+  }
+}
+```
+
+Note: The websocket connection requires periodic pings (every 30-60 seconds) to stay alive. If no ping is received for 60 seconds, the connection will be terminated.
+
 ## Internal API
 
 Manifold has some internal API endpoints that are not part of the official API. These are largely undocumented, but a few are mentioned here for third-party use until a more permanent solution is implimented. These endpoints are not preceeded by `/v0` and are even more subject to sudden changes than the official API endpoints.
@@ -1166,6 +1611,7 @@ Parameters:
 
 ## Changelog
 
+- 2024-10-30: Remove undefined parameter from `/v0/market/[marketId]/sell` and remove `sell-shares-dpm` endpoint
 - 2024-02-01: Add Manifold Love endpoints `/get-lovers`, `/get-lover-answers?userId=[user_id]`, `/get-compatibility-questions`
 - 2023-12-19: Formatting & copy improvements. Updated parameters and return types.
 - 2023-12-18: `manifold.markets/api` -> `api.manifold.markets`. Please migrate old code.

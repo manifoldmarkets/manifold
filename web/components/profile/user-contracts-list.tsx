@@ -5,17 +5,28 @@ import { shortFormatNumber } from 'common/util/format'
 import { ReactNode, useEffect, useState } from 'react'
 import { Col } from 'web/components/layout/col'
 import { Row } from 'web/components/layout/row'
+import {
+  FILTER_KEY,
+  LoadingContractResults,
+  NoMoreResults,
+  QUERY_KEY,
+  useSearchQueryState,
+  useSearchResults,
+} from 'web/components/search'
 import { Tooltip } from 'web/components/widgets/tooltip'
+import { useUser } from 'web/hooks/use-user'
+import { db } from 'web/lib/supabase/db'
 import {
   getCreatorRank,
-  getTotalContractsCreated,
+  getTotalPublicContractsCreated,
 } from 'web/lib/supabase/users'
-import { db } from 'web/lib/supabase/db'
-import { SupabaseSearch } from 'web/components/supabase-search'
-import { useUser } from 'web/hooks/use-user'
 import { CreateQuestionButton } from '../buttons/create-question-button'
 import { UserReviews } from '../reviews/user-reviews'
+import { SearchInput } from '../search/search-input'
 import { InfoTooltip } from '../widgets/info-tooltip'
+import { LoadMoreUntilNotVisible } from 'web/components/widgets/visibility-observer'
+import { ContractFilters } from '../search/contract-filters'
+import { CombinedResults } from '../contract/combined-results'
 
 export function UserContractsList(props: {
   creator: User
@@ -31,7 +42,7 @@ export function UserContractsList(props: {
   const [unresolvedMarkets, setUnresolvedMarkets] = useState<number>(0)
 
   useEffect(() => {
-    getTotalContractsCreated(creator.id).then(setMarketsCreated)
+    getTotalPublicContractsCreated(creator.id).then(setMarketsCreated)
     getCreatorRank(creator.id).then(setCreatorRank)
     getUnresolvedContractsCount(creator.id, db).then((count) =>
       setUnresolvedMarkets(count)
@@ -39,17 +50,33 @@ export function UserContractsList(props: {
   }, [creator.id, allTime])
 
   const user = useUser()
-  // reset the key to force a re-render when the filter changes
-  const [key, setKey] = useState(0)
-  const [filter, setFilter] = useState<'all' | 'closed'>('all')
-  const seeClosed = () => {
-    setFilter('closed')
-    setKey((k) => k + 1)
-  }
+
+  const persistPrefix = `user-contracts-list-${creator.id}`
+
+  const [params, updateParams, isReady] = useSearchQueryState({
+    defaultFilter: 'all',
+    defaultSort: 'newest',
+    persistPrefix,
+    defaultSweepies: '2',
+  })
+
+  const { contracts, loading, shouldLoadMore, loadMoreContracts, posts } =
+    useSearchResults({
+      persistPrefix,
+      searchParams: params,
+      includeUsersAndTopics: false,
+      isReady,
+      additionalFilter: { creatorId: creator.id },
+    })
+
+  const query = params[QUERY_KEY]
+  const setQuery = (query: string) => updateParams({ [QUERY_KEY]: query })
+
+  const seeClosed = () => updateParams({ [FILTER_KEY]: 'closed' })
 
   return (
     <Col className={'w-full'}>
-      <Row className={'gap-8 pb-4'}>
+      <Row className={'mb-4 gap-8'}>
         {rating && !!reviewCount && reviewCount > 0 && averageRating && (
           <Col>
             <Row className="text-ink-600 gap-0.5 text-xs sm:text-sm">
@@ -111,18 +138,33 @@ export function UserContractsList(props: {
           }
         />
       </Row>
-      <SupabaseSearch
-        key={key}
-        defaultFilter={filter}
-        defaultSort="newest"
-        additionalFilter={{
-          creatorId: creator.id,
-        }}
-        persistPrefix={`user-contracts-list-${creator.id}`}
-        emptyState={
+
+      <Col className="bg-canvas-0 sticky -top-px z-20">
+        <SearchInput
+          value={query}
+          setValue={setQuery}
+          placeholder={
+            creator.id === user?.id
+              ? 'Search your questions'
+              : `Search questions by ${creator.name}`
+          }
+          autoFocus={true}
+          loading={loading}
+        />
+        <ContractFilters
+          params={params}
+          updateParams={updateParams}
+          hideSweepsToggle
+        />
+      </Col>
+      <Col className="w-full">
+        {loading && !contracts && !posts ? (
+          <LoadingContractResults />
+        ) : (!contracts || contracts.length === 0) &&
+          (!posts || posts.length === 0) ? (
           <>
             <div className="text-ink-700 mx-2 mt-3 text-center">
-              No questions found
+              No questions or posts found
             </div>
             {creator.id === user?.id && (
               <Row className={'mt-6 justify-center'}>
@@ -130,9 +172,22 @@ export function UserContractsList(props: {
               </Row>
             )}
           </>
-        }
-        contractsOnly
-      />
+        ) : (
+          <>
+            <CombinedResults
+              contracts={contracts ?? []}
+              posts={posts ?? []}
+              searchParams={params}
+              hideAvatars={true}
+            />
+            <LoadMoreUntilNotVisible loadMore={loadMoreContracts} />
+            {shouldLoadMore && <LoadingContractResults />}
+            {!shouldLoadMore && (
+              <NoMoreResults params={params} onChange={updateParams} />
+            )}
+          </>
+        )}
+      </Col>
     </Col>
   )
 }

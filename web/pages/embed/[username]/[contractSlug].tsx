@@ -1,14 +1,20 @@
 import clsx from 'clsx'
-import { HistoryPoint, MultiPoints } from 'common/chart'
+import {
+  HistoryPoint,
+  MultiBase64Points,
+  MultiPoints,
+  unserializeBase64Multi,
+} from 'common/chart'
 import {
   CPMMMultiContract,
   Contract,
-  contractPath,
-  isBinaryMulti,
   getMainBinaryMCAnswer,
+  isBinaryMulti,
+  twombaContractPath,
 } from 'common/contract'
-import { DOMAIN } from 'common/envs/constants'
-import { getContractFromSlug } from 'common/supabase/contracts'
+import { getMultiBetPoints, getSingleBetPoints } from 'common/contract-params'
+import { DOMAIN, TRADE_TERM } from 'common/envs/constants'
+import { getContract, getContractFromSlug } from 'common/supabase/contracts'
 import { formatMoney } from 'common/util/format'
 import { getShareUrl } from 'common/util/share'
 import Image from 'next/image'
@@ -20,30 +26,35 @@ import {
   BinaryContractChart,
   MultiBinaryChart,
 } from 'web/components/charts/contract/binary'
+import { ChoiceContractChart } from 'web/components/charts/contract/choice'
 import { PseudoNumericContractChart } from 'web/components/charts/contract/pseudo-numeric'
 import { StonkContractChart } from 'web/components/charts/contract/stonk'
 import {
   BinaryResolutionOrChance,
+  MultiDateResolutionOrExpectation,
+  MultiNumericResolutionOrExpectation,
   PseudoNumericResolutionOrExpectation,
   StonkPrice,
 } from 'web/components/contract/contract-price'
 import { ContractSEO } from 'web/components/contract/contract-seo'
+import { ContractSummaryStats } from 'web/components/contract/contract-summary-stats'
 import { Col } from 'web/components/layout/col'
 import { Row } from 'web/components/layout/row'
+import { Spacer } from 'web/components/layout/spacer'
+import { PollPanel } from 'web/components/poll/poll-panel'
 import { SizedContainer } from 'web/components/sized-container'
 import { Avatar } from 'web/components/widgets/avatar'
 import { QRCode } from 'web/components/widgets/qr-code'
-import { useFirebasePublicContract } from 'web/hooks/use-contract-supabase'
+import { useLiveContract } from 'web/hooks/use-contract'
 import { track } from 'web/lib/service/analytics'
 import { db } from 'web/lib/supabase/db'
 import Custom404 from '../../404'
-import { ContractSummaryStats } from 'web/components/contract/contract-summary-stats'
-import { PollPanel } from 'web/components/poll/poll-panel'
-import { getBetPoints } from 'common/supabase/bets'
-import { getSingleBetPoints } from 'common/contract-params'
-import { ChoiceContractChart } from 'web/components/charts/contract/choice'
-import { Spacer } from 'web/components/layout/spacer'
-
+import { getBetPoints, getBetPointsBetween } from 'common/bets'
+import { MultiNumericContractChart } from 'web/components/charts/contract/multi-numeric'
+import { MultiDateContractChart } from 'web/components/charts/contract/multi-date'
+import { pointsToBase64 } from 'common/util/og'
+import { mapValues } from 'lodash'
+import { useUser } from 'web/hooks/use-user'
 type Points = HistoryPoint<any>[]
 
 async function getHistoryData(contract: Contract) {
@@ -51,7 +62,7 @@ async function getHistoryData(contract: Contract) {
     case 'BINARY':
     case 'PSEUDO_NUMERIC':
     case 'STONK': {
-      const allBetPoints = await getBetPoints(db, contract.id)
+      const allBetPoints = await getBetPoints(contract.id)
       const points = getSingleBetPoints(allBetPoints, contract)
       return points.map(([x, y]) => ({ x, y }))
     }
@@ -64,23 +75,41 @@ export async function getStaticProps(props: {
   params: { username: string; contractSlug: string }
 }) {
   const { contractSlug } = props.params
-  const contract = (await getContractFromSlug(contractSlug, db)) || null
+  // TODO: use admin db
+  const contract = await getContractFromSlug(db, contractSlug)
   if (contract == null) {
     return { notFound: true, revalidate: 60 }
   }
+
   const points = await getHistoryData(contract)
 
-  const multiPoints = null
-  // if (contract.mechanism == 'cpmm-multi-1') {
-  //   const allBetPoints = await getBetPoints(db, contract.id)
-  //   const serializedMultiPoints = getMultiBetPoints(
-  //     allBetPoints,
-  //     contract as CPMMMultiContract
-  //   )
-  //   multiPoints = unserializeMultiPoints(serializedMultiPoints)
-  // }
+  let cashContract = null
+  let cashPoints = null
+  if (contract.siblingContractId) {
+    cashContract = await getContract(db, contract.siblingContractId)
+    if (cashContract) {
+      cashPoints = await getHistoryData(cashContract)
+    }
+  }
+  let multiPoints = null
+  if (
+    contract.outcomeType === 'MULTI_NUMERIC' ||
+    contract.outcomeType === 'DATE'
+  ) {
+    const includeRedemptions =
+      contract.mechanism === 'cpmm-multi-1' && contract.shouldAnswersSumToOne
+    const allBetPoints = await getBetPointsBetween(contract, {
+      filterRedemptions: !includeRedemptions,
+      includeZeroShareRedemptions: includeRedemptions,
+      beforeTime: (contract.lastBetTime ?? contract.createdTime) + 1,
+      afterTime: contract.createdTime,
+    })
+    multiPoints = mapValues(getMultiBetPoints(allBetPoints, contract), (v) =>
+      pointsToBase64(v)
+    )
+  }
   return {
-    props: { contract, points, multiPoints },
+    props: { contract, points, multiPoints, cashContract, cashPoints },
   }
 }
 
@@ -91,21 +120,35 @@ export async function getStaticPaths() {
 export default function ContractEmbedPage(props: {
   contract: Contract
   points: Points | null
-  multiPoints?: MultiPoints | null
+  multiPoints?: MultiBase64Points | null
+  cashContract: Contract | null
+  cashPoints: Points | null
 }) {
-  const contract =
-    useFirebasePublicContract(props.contract.visibility, props.contract.id) ??
-    props.contract
+  const [showQRCode, setShowQRCode] = useState(false)
+  const [isCash, setIsCash] = useState(false)
+  const { cashContract, points, cashPoints } = props
+  const multiPoints = props.multiPoints
+    ? unserializeBase64Multi(props.multiPoints)
+    : null
+
+  const contract = useLiveContract(props.contract)
+  const liveCashContract = cashContract
+    ? // eslint-disable-next-line react-hooks/rules-of-hooks
+      useLiveContract(cashContract)
+    : null
 
   const router = useRouter()
 
-  const [showQRCode, setShowQRCode] = useState(false)
-
   useEffect(() => {
-    if (router.query.qr !== undefined) {
-      setShowQRCode(true)
+    if (router.isReady) {
+      if (router.query.qr !== undefined) {
+        setShowQRCode(true)
+      }
+      if (router.query.play !== undefined) {
+        setIsCash(router.query.play === 'false')
+      }
     }
-  }, [router.query.qr])
+  }, [router.isReady, router.query])
 
   useEffect(() => {
     if (contract?.id)
@@ -117,18 +160,18 @@ export default function ContractEmbedPage(props: {
       })
   }, [contract?.creatorId, contract?.id, contract?.slug])
 
-  if (!contract) {
+  if (!contract || (isCash && !liveCashContract)) {
     return <Custom404 />
   }
 
   return (
     <>
       <NoSEO />
-      <ContractSEO contract={contract} />
+      <ContractSEO contract={isCash ? liveCashContract! : contract} />
       <ContractSmolView
-        contract={contract}
-        points={props.points}
-        multiPoints={props.multiPoints}
+        contract={isCash ? liveCashContract! : contract}
+        points={isCash ? cashPoints : points}
+        multiPoints={multiPoints}
         showQRCode={showQRCode}
       />
     </>
@@ -142,37 +185,67 @@ const ContractChart = (props: {
   width: number
   height: number
 }) => {
-  const { contract, points, ...rest } = props
-  if (!points) return null
+  const { contract, points, multiPoints, ...rest } = props
 
-  switch (contract.outcomeType) {
-    case 'BINARY':
-      return (
-        <BinaryContractChart {...rest} contract={contract} betPoints={points} />
-      )
-    case 'PSEUDO_NUMERIC':
-      return (
-        <PseudoNumericContractChart
-          {...rest}
-          contract={contract}
-          betPoints={points}
-        />
-      )
-    case 'STONK':
-      return (
-        <StonkContractChart {...rest} betPoints={points} contract={contract} />
-      )
-    case 'MULTIPLE_CHOICE':
-      return isBinaryMulti(contract) ? (
-        <MultiBinaryChart
-          {...rest}
-          contract={contract as CPMMMultiContract}
-          betPoints={points}
-        />
-      ) : null
-    default:
-      return null
+  if (points) {
+    switch (contract.outcomeType) {
+      case 'BINARY':
+        return (
+          <BinaryContractChart
+            {...rest}
+            contract={contract}
+            betPoints={points}
+          />
+        )
+      case 'PSEUDO_NUMERIC':
+        return (
+          <PseudoNumericContractChart
+            {...rest}
+            contract={contract}
+            betPoints={points}
+          />
+        )
+      case 'STONK':
+        return (
+          <StonkContractChart
+            {...rest}
+            betPoints={points}
+            contract={contract}
+          />
+        )
+      case 'MULTIPLE_CHOICE':
+        return isBinaryMulti(contract) ? (
+          <MultiBinaryChart
+            {...rest}
+            contract={contract as CPMMMultiContract}
+            betPoints={points}
+          />
+        ) : null
+    }
   }
+  if (multiPoints) {
+    switch (contract.outcomeType) {
+      case 'MULTI_NUMERIC':
+        return (
+          <MultiNumericContractChart
+            {...rest}
+            contract={contract}
+            multiPoints={multiPoints}
+          />
+        )
+      case 'DATE':
+        return (
+          <MultiDateContractChart
+            {...rest}
+            contract={contract}
+            multiPoints={multiPoints}
+          />
+        )
+      default:
+        return null
+    }
+  }
+  return null
 }
 
 const numBars = (height: number, withChart?: boolean) => {
@@ -201,8 +274,9 @@ function ContractSmolView(props: {
   multiPoints?: MultiPoints | null
   showQRCode: boolean
 }) {
-  const { contract, points, showQRCode } = props
+  const { contract, points, multiPoints, showQRCode } = props
   const { question, outcomeType } = contract
+  const isCashContract = contract.token == 'CASH'
 
   const isBinary = outcomeType === 'BINARY'
   const isPseudoNumeric = outcomeType === 'PSEUDO_NUMERIC'
@@ -210,10 +284,12 @@ function ContractSmolView(props: {
   const mainBinaryMCAnswer = getMainBinaryMCAnswer(contract)
   const isBountiedQuestion = outcomeType === 'BOUNTIED_QUESTION'
   const isPoll = outcomeType === 'POLL'
+  const isMultiNumeric = outcomeType === 'MULTI_NUMERIC'
+  const isDate = outcomeType === 'DATE'
 
-  const href = `https://${DOMAIN}${contractPath(contract)}`
-
-  const shareUrl = getShareUrl(contract, undefined)
+  const href = `https://${DOMAIN}${twombaContractPath(contract)}`
+  const user = useUser()
+  const shareUrl = getShareUrl(contract, user?.username)
 
   const showMultiChart = isMulti && !!props.multiPoints
 
@@ -242,6 +318,18 @@ function ContractSmolView(props: {
             contract={contract}
             className="!flex-col !justify-end !gap-0 !font-semibold"
             subtextClassName="text-right w-full font-normal -mt-1"
+          />
+        )}
+        {isMultiNumeric && (
+          <MultiNumericResolutionOrExpectation
+            contract={contract}
+            className="!flex-col !gap-0"
+          />
+        )}
+        {isDate && (
+          <MultiDateResolutionOrExpectation
+            contract={contract}
+            className="!flex-col !gap-0"
           />
         )}
 
@@ -276,7 +364,7 @@ function ContractSmolView(props: {
                     <div className="relative">
                       <ContractChart
                         contract={contract}
-                        points={props.multiPoints![mainBinaryMCAnswer.id]}
+                        points={multiPoints![mainBinaryMCAnswer.id]}
                         width={w - 10}
                         height={h - 24}
                       />
@@ -291,7 +379,7 @@ function ContractSmolView(props: {
                     <div className="relative">
                       <ChoiceContractChart
                         contract={contract as CPMMMultiContract}
-                        multiPoints={props.multiPoints!}
+                        multiPoints={multiPoints!}
                         width={w - 28}
                         height={h - numBars(h, showMultiChart) * 55}
                         selectedAnswerIds={contract.answers.map((a) => a.id)}
@@ -310,6 +398,7 @@ function ContractSmolView(props: {
                 <ContractChart
                   contract={contract}
                   points={points}
+                  multiPoints={multiPoints}
                   width={w}
                   height={h}
                 />
@@ -342,8 +431,15 @@ function ContractSmolView(props: {
           </Col>
         )}
       </div>
-      <Row className="text-ink-500 mt-4 w-full justify-end text-sm md:text-lg">
-        <ContractSummaryStats contract={contract} />
+      <Row className="text-ink-500 mt-4 w-full justify-end text-sm ">
+        <ContractSummaryStats
+          contractId={contract.id}
+          creatorId={contract.creatorId}
+          question={contract.question}
+          financeContract={contract}
+          editable={false}
+          isCashContract={isCashContract}
+        />
       </Row>
     </Col>
   )
@@ -355,7 +451,7 @@ function FloatingQRCode(props: { shareUrl: string }) {
     <div className="absolute inset-0 z-10 m-auto flex items-center justify-center">
       <div className="border-ink-400 bg-canvas-50 rounded-xl border p-4 pb-2 drop-shadow">
         <QRCode url={shareUrl} />
-        <div className="mt-1 text-center text-lg">Scan to bet!</div>
+        <div className="mt-1 text-center text-lg">Scan to {TRADE_TERM}!</div>
       </div>
     </div>
   )

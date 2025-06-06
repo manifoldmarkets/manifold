@@ -1,37 +1,38 @@
 import { generateJSON } from '@tiptap/html'
-import { getCloudRunServiceUrl } from 'common//api/utils'
-import { Contract, contractPath } from 'common/contract'
+import { APIError, getCloudRunServiceUrl } from 'common/api/utils'
+import {
+  Contract,
+  contractPath,
+  nativeContractColumnsArray,
+  MarketContract,
+} from 'common/contract'
 import { PrivateUser } from 'common/user'
 import { extensions } from 'common/util/parse'
 import * as admin from 'firebase-admin'
-import {
-  CollectionGroup,
-  CollectionReference,
-  DocumentData,
-  Query,
-  QueryDocumentSnapshot,
-  QuerySnapshot,
-} from 'firebase-admin/firestore'
-import { first, groupBy, mapValues, sumBy } from 'lodash'
-import { BETTING_STREAK_RESET_HOUR } from 'common/economy'
-import { DAY_MS } from 'common/util/time'
+import { first, uniq } from 'lodash'
 import {
   createSupabaseDirectClient,
   SupabaseDirectClient,
+  SupabaseTransaction,
 } from 'shared/supabase/init'
 import {
   ENV_CONFIG,
   GROUP_SLUGS_TO_IGNORE_IN_MARKETS_EMAIL,
 } from 'common/envs/constants'
-import { convertUser } from 'common/supabase/users'
-import { convertContract } from 'common/supabase/contracts'
-import { Row } from 'common/supabase/utils'
-import { SafeBulkWriter } from 'shared/safe-bulk-writer'
-import { log, Logger } from 'shared/monitoring/log'
+import { convertPrivateUser, convertUser } from 'common/supabase/users'
+import { convertAnswer, convertContract } from 'common/supabase/contracts'
+import { Row, tsToMillis } from 'common/supabase/utils'
+import { log } from 'shared/monitoring/log'
 import { metrics } from 'shared/monitoring/metrics'
-
+import { convertLiquidity } from 'common/supabase/liquidity'
+import { ContractMetric } from 'common/contract-metric'
 export { metrics }
-export { log, Logger }
+export { log }
+import * as dayjs from 'dayjs'
+import * as utc from 'dayjs/plugin/utc'
+import * as timezone from 'dayjs/plugin/timezone'
+dayjs.extend(utc)
+dayjs.extend(timezone)
 
 export const logMemory = () => {
   const used = process.memoryUsage()
@@ -78,10 +79,10 @@ export const revalidateStaticProps = async (
     )
 
     if (resp.ok) {
-      metrics.inc('vercel/revalidations_succeeded', { path: pathToRevalidate })
+      // metrics.inc('vercel/revalidations_succeeded', { path: pathToRevalidate })
       log('Revalidated', pathToRevalidate)
     } else {
-      metrics.inc('vercel/revalidations_failed', { path: pathToRevalidate })
+      // metrics.inc('vercel/revalidations_failed', { path: pathToRevalidate })
       try {
         const json = await resp.json()
         log.error(
@@ -104,152 +105,102 @@ export async function revalidateContractStaticProps(contract: Contract) {
     revalidateStaticProps(`/embed${contractPath(contract)}`),
   ])
 }
-
-export type UpdateSpec = {
-  doc: admin.firestore.DocumentReference
-  fields: { [k: string]: unknown }
-}
-
-export const writeAsync = async (
-  db: admin.firestore.Firestore,
-  updates: UpdateSpec[],
-  operationType: 'update' | 'set' = 'update'
-) => {
-  const writer = new SafeBulkWriter(undefined, db)
-  for (const update of updates) {
-    const { doc, fields } = update
-    if (operationType === 'update') {
-      writer.update(doc, fields as any)
-    } else {
-      writer.set(doc, fields)
-    }
-  }
-  await writer.close()
-}
-
-export const loadPaginated = async <T extends DocumentData>(
-  q: Query<T> | CollectionReference<T>,
-  batchSize = 500
-) => {
-  const results: T[] = []
-  let prev: QuerySnapshot<T> | undefined
-  for (let i = 0; prev == undefined || prev.size > 0; i++) {
-    prev = await (prev == undefined
-      ? q.limit(batchSize)
-      : q.limit(batchSize).startAfter(prev.docs[prev.size - 1])
-    ).get()
-    results.push(...prev.docs.map((d) => d.data() as T))
-  }
-  return results
-}
-
-export const processPaginated = async <T extends DocumentData, U>(
-  q: Query<T>,
-  batchSize: number,
-  fn: (ts: QuerySnapshot<T>) => Promise<U>
-) => {
-  const results = []
-  let prev: QuerySnapshot<T> | undefined
-  let processed = 0
-  for (let i = 0; prev == null || prev.size > 0; i++) {
-    log(`Loading next page.`)
-    prev = await (prev == null
-      ? q.limit(batchSize)
-      : q.limit(batchSize).startAfter(prev.docs[prev.size - 1])
-    ).get()
-    log(`Loaded ${prev.size} documents.`)
-    processed += prev.size
-    results.push(await fn(prev))
-    log(`Processed ${prev.size} documents. Total: ${processed}`)
-  }
-  return results
-}
-
-export const processPartitioned = async <T extends DocumentData, U>(
-  group: CollectionGroup<T>,
-  partitions: number,
-  fn: (ts: QueryDocumentSnapshot<T>[]) => Promise<U>
-) => {
-  const logProgress = (i: number, msg: string) => {
-    log(`[${i + 1}/~${partitions}] ${msg}`)
-  }
-  const parts = group.getPartitions(partitions)
-  const results: U[] = []
-  let i = 0
-  let docsProcessed = 0
-  let currentlyProcessing: { i: number; n: number; job: Promise<U> } | undefined
-  for await (const part of parts) {
-    logProgress(i, 'Loading partition.')
-    const ts = await part.toQuery().get()
-    logProgress(i, `Loaded ${ts.size} documents.`)
-    if (currentlyProcessing != null) {
-      results.push(await currentlyProcessing.job)
-      docsProcessed += currentlyProcessing.n
-      logProgress(
-        currentlyProcessing.i,
-        `Processed ${currentlyProcessing.n} documents: Total: ${docsProcessed}`
-      )
-    }
-    logProgress(i, `Processing ${ts.size} documents.`)
-    currentlyProcessing = { i: i, n: ts.size, job: fn(ts.docs) }
-    i++
-  }
-  if (currentlyProcessing != null) {
-    results.push(await currentlyProcessing.job)
-    docsProcessed += currentlyProcessing.n
-    logProgress(
-      currentlyProcessing.i,
-      `Processed ${currentlyProcessing.n} documents: Total: ${docsProcessed}`
-    )
-  }
-  return results
-}
+export const LOCAL_DEV = process.env.GOOGLE_CLOUD_PROJECT == null
 
 // TODO: deprecate in favor of common/src/envs/is-prod.ts
 export const isProd = () => {
-  // mqp: kind of hacky rn. the first clause is for cloud run API service,
+  // ian: The first clause is for the API server, and the
   // second clause is for local scripts and cloud functions
-  if (process.env.ENVIRONMENT) {
-    return process.env.ENVIRONMENT == 'PROD'
+  if (process.env.NEXT_PUBLIC_FIREBASE_ENV) {
+    return process.env.NEXT_PUBLIC_FIREBASE_ENV === 'PROD'
   } else {
     return admin.app().options.projectId === 'mantic-markets'
   }
 }
 
-export const getDoc = async <T>(collection: string, doc: string) => {
-  const snap = await admin.firestore().collection(collection).doc(doc).get()
+export const contractColumnsToSelect = nativeContractColumnsArray.join(',')
+export const prefixedContractColumnsToSelect = nativeContractColumnsArray
+  .map((col) => `c.${col}`)
+  .join(',')
+export const contractColumnsToSelectWithPrefix = (prefix: string) =>
+  nativeContractColumnsArray.map((col) => `${prefix}.${col}`).join(',')
 
-  return snap.exists ? (snap.data() as T) : undefined
+export const getContract = async (
+  pg: SupabaseDirectClient,
+  contractId: string
+) => {
+  const res = await pg.multi(
+    `select ${contractColumnsToSelect} from contracts where id = $1 limit 1;
+     select * from answers where contract_id = $1 order by index;`,
+    [contractId]
+  )
+  const contract = first(res[0].map(convertContract))
+  const answers = res[1].map(convertAnswer)
+  if (contract && 'answers' in contract) {
+    contract.answers = answers
+  }
+  return contract
 }
 
-export const getValue = async <T>(ref: admin.firestore.DocumentReference) => {
-  const snap = await ref.get()
+export const getContractAndMetricsAndLiquidities = async (
+  pg: SupabaseTransaction,
+  unresolvedContract: MarketContract,
+  answerId: string | undefined
+) => {
+  const { id: contractId, mechanism } = unresolvedContract
+  const isMulti = mechanism === 'cpmm-multi-1'
+  const sumsToOne = isMulti && unresolvedContract.shouldAnswersSumToOne
+  const metricsQuery = sumsToOne
+    ? `
+     select data from user_contract_metrics
+     where contract_id = $1 and
+     answer_id is not null`
+    : isMulti
+    ? `
+    select data from user_contract_metrics
+      where contract_id = $1
+      and (answer_id = $2 or (
+            -- Only get summary metric if they've bet on the answer
+            answer_id is null and
+            exists (
+              select 1 from user_contract_metrics ucm
+              where ucm.contract_id = $1
+              and ucm.answer_id = $2
+              )
+            )
+          )`
+    : `select data from user_contract_metrics where contract_id = $1`
 
-  return snap.exists ? (snap.data() as T) : undefined
+  const results = await pg.multi(
+    `select ${contractColumnsToSelect} from contracts where id = $1;
+     select * from answers where contract_id = $1 order by index;
+     ${metricsQuery};
+     select * from contract_liquidity where contract_id = $1`,
+    [contractId, answerId]
+  )
+
+  const contract = first(results[0].map(convertContract)) as MarketContract
+  if (!contract) throw new APIError(404, 'Contract not found')
+  const answers = results[1].map(convertAnswer)
+  if ('answers' in contract) {
+    contract.answers = answers
+  }
+  // We don't get the summary metric, we recreate them from all the answer metrics
+  const contractMetrics = results[2].map((row) => row.data as ContractMetric)
+  const liquidities = results[3].map(convertLiquidity)
+
+  return { contract, contractMetrics, liquidities }
 }
 
-export const getValues = async <T>(query: admin.firestore.Query) => {
-  const snap = await query.get()
-  return snap.docs.map((doc) => doc.data() as T)
-}
-
-export const getContract = (contractId: string) => {
-  return getDoc<Contract>('contracts', contractId)
-}
 export const getContractSupabase = async (contractId: string) => {
   const pg = createSupabaseDirectClient()
-  const res = await pg.map(
-    `select data, importance_score, conversion_score, view_count from contracts where id = $1
-            limit 1`,
-    [contractId],
-    (row) => convertContract(row)
-  )
-  return first(res)
+  return await getContract(pg, contractId)
 }
+
 export const getContractFromSlugSupabase = async (contractSlug: string) => {
   const pg = createSupabaseDirectClient()
   const res = await pg.map(
-    `select data, importance_score, conversion_score, view_count from contracts where slug = $1
+    `select ${contractColumnsToSelect} from contracts where slug = $1
             limit 1`,
     [contractSlug],
     (row) => convertContract(row)
@@ -267,6 +218,27 @@ export const getUser = async (
     convertUser
   )
 }
+export const getUserAndPrivateUserOrThrow = async (
+  userId: string,
+  pg: SupabaseDirectClient = createSupabaseDirectClient()
+) => {
+  const rows = await pg.multi(
+    `select * from users where id = $1 limit 1;
+           select * from private_users where id = $1 limit 1;`,
+    [userId]
+  )
+  const userRow = rows[0][0] as Row<'users'> | null
+  const privateUserRow = rows[1][0] as Row<'private_users'> | null
+
+  if (!userRow || !privateUserRow) {
+    throw new APIError(404, 'User or private user not found.')
+  }
+
+  return {
+    user: convertUser(userRow),
+    privateUser: convertPrivateUser(privateUserRow),
+  }
+}
 
 export const getUsers = async (
   userIds: string[],
@@ -274,20 +246,41 @@ export const getUsers = async (
 ) => {
   const res = await pg.map(
     `select * from users where id = any($1)`,
-    [userIds],
+    [uniq(userIds)],
     (row) => convertUser(row)
   )
   return res
 }
 
-export const getPrivateUser = (userId: string) => {
-  return getDoc<PrivateUser>('private-users', userId)
+export const getPrivateUser = async (
+  userId: string,
+  pg: SupabaseDirectClient = createSupabaseDirectClient()
+) => {
+  return await pg.oneOrNone(
+    `select * from private_users where id = $1 limit 1`,
+    [userId],
+    convertPrivateUser
+  )
+}
+export const getPrivateUserSupabase = (userId: string) => {
+  const pg = createSupabaseDirectClient()
+
+  return pg.oneOrNone(
+    `select data from private_users where id = $1`,
+    [userId],
+    (row) => (row ? (row.data as PrivateUser) : null)
+  )
 }
 
-export const getAllPrivateUsers = async () => {
-  const firestore = admin.firestore()
-  const users = await firestore.collection('private-users').get()
-  return users.docs.map((doc) => doc.data() as PrivateUser)
+export const getPrivateUserByKey = async (
+  apiKey: string,
+  pg: SupabaseDirectClient = createSupabaseDirectClient()
+) => {
+  return await pg.oneOrNone(
+    `select * from private_users where data->>'apiKey' = $1 limit 1`,
+    [apiKey],
+    convertPrivateUser
+  )
 }
 
 export const getPrivateUsersNotSent = async (
@@ -296,18 +289,29 @@ export const getPrivateUsersNotSent = async (
   pg: SupabaseDirectClient
 ) => {
   return await pg.map(
-    `select data from private_users 
-         where (data->'notificationPreferences'->>'${preference}')::jsonb @> '["email"]'
+    `select pu.data, u.name,
+       u.created_time,
+       coalesce(((u.data->'creatorTraders'->>'weekly')::bigint),0) as weekly_traders,
+       coalesce(((u.data->>'currentBettingStreak')::bigint),0) as current_betting_streak
+         from private_users pu
+         join users u on pu.id = u.id
+         where (pu.data->'notificationPreferences'->>'${preference}')::jsonb @> '["email"]'
          and ${
            preference === 'trending_markets'
              ? 'weekly_trending_email_sent'
              : 'weekly_portfolio_email_sent'
          } = false
-         and (data->'notificationPreferences'->>'opt_out_all')::jsonb <> '["email"]'
-         and data->>'email' is not null
+         and (pu.data->'notificationPreferences'->>'opt_out_all')::jsonb <> '["email"]'
+         and pu.data->>'email' is not null
          limit $1`,
     [limit],
-    (row) => row.data as PrivateUser
+    (row) => ({
+      ...(row.data as PrivateUser),
+      createdTime: tsToMillis(row.created_time as string),
+      name: row.name as string,
+      weeklyTraders: row.weekly_traders as number,
+      currentBettingStreak: row.current_betting_streak as number,
+    })
   )
 }
 
@@ -319,34 +323,7 @@ export const getUserByUsername = async (
     `select * from users where username = $1`,
     username
   )
-
   return res ? convertUser(res) : null
-}
-
-export const checkAndMergePayouts = (
-  payouts: {
-    userId: string
-    payout: number
-    deposit?: number
-  }[]
-) => {
-  for (const { payout, deposit } of payouts) {
-    if (!isFinite(payout)) {
-      throw new Error('Payout is not finite: ' + payout)
-    }
-    if (deposit !== undefined && !isFinite(deposit)) {
-      throw new Error('Deposit is not finite: ' + deposit)
-    }
-  }
-
-  const groupedPayouts = groupBy(payouts, 'userId')
-  return Object.values(
-    mapValues(groupedPayouts, (payouts, userId) => ({
-      userId,
-      payout: sumBy(payouts, 'payout'),
-      deposit: sumBy(payouts, (p) => p.deposit ?? 0),
-    }))
-  )
 }
 
 export function contractUrl(contract: Contract) {
@@ -370,14 +347,19 @@ export async function getTrendingContractsToEmail() {
 }
 
 export const getBettingStreakResetTimeBeforeNow = () => {
-  const now = Date.now()
-  const currentDateResetTime = new Date().setUTCHours(
-    BETTING_STREAK_RESET_HOUR,
-    0,
-    0,
-    0
-  )
-  // if now is before reset time, use yesterday's reset time
-  const lastDateResetTime = currentDateResetTime - DAY_MS
-  return now < currentDateResetTime ? lastDateResetTime : currentDateResetTime
+  // Get current time in Pacific
+  const now = dayjs().tz('America/Los_Angeles')
+
+  // Get today's reset time (midnight Pacific)
+  const todayResetTime = now.startOf('day')
+
+  // Get yesterday's reset time
+  const yesterdayResetTime = todayResetTime.subtract(1, 'day')
+
+  // Use yesterday's reset time if we haven't hit today's yet
+  const resetTime = (
+    now.isBefore(todayResetTime) ? yesterdayResetTime : todayResetTime
+  ).valueOf()
+  log('betting streak reset time', resetTime)
+  return resetTime
 }

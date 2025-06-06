@@ -1,3 +1,4 @@
+import { TRADE_TERM } from 'common/envs/constants'
 import { useRouter } from 'next/router'
 import { useState, useEffect } from 'react'
 import { Button } from 'web/components/buttons/button'
@@ -7,10 +8,10 @@ import { Row } from 'web/components/layout/row'
 import { LoadingIndicator } from 'web/components/widgets/loading-indicator'
 import { Title } from 'web/components/widgets/title'
 import { usePrivateUser } from 'web/hooks/use-user'
-import { registerDiscordId } from 'web/lib/firebase/api'
+import { registerDiscordId } from 'web/lib/api/api'
 import { firebaseLogin } from 'web/lib/firebase/users'
-const SUCCESS_MESSAGE =
-  'Success! You can now bet with our discord bot using emoji reactions. You can close this page.'
+
+const SUCCESS_MESSAGE = `Success! You can now ${TRADE_TERM} with our discord bot using emoji reactions. You can close this page.`
 export default function RegisterOnDiscord() {
   const router = useRouter()
   const privateUser = usePrivateUser()
@@ -25,7 +26,9 @@ export default function RegisterOnDiscord() {
     if (!router.isReady) return
     const { discordId } = router.query
     if (!discordId) {
-      setError('No discord id provided, try to bet again with the bot.')
+      setError(
+        `No discord id provided, try to ${TRADE_TERM} again with the bot.`
+      )
       return
     }
     if (privateUser) {
@@ -72,7 +75,7 @@ export default function RegisterOnDiscord() {
         <Row className={'text-ink-600 mt-12 gap-1 text-sm'}>
           Questions? come by our
           <a
-            className={'text-indigo-700'}
+            className={'text-primary-700'}
             href="https://discord.com/invite/eHQBNBqXuh"
           >
             Discord

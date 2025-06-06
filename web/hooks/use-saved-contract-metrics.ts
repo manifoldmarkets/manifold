@@ -1,73 +1,148 @@
-import { ContractMetric } from 'common/contract-metric'
+import { ContractMetric, isSummary } from 'common/contract-metric'
 import { Contract } from 'common/contract'
-import { useUser } from './use-user'
-import { getUserContractMetrics } from 'common/supabase/contract-metrics'
+import { getTopContractMetrics } from 'common/supabase/contract-metrics'
 import { db } from 'web/lib/supabase/db'
-import { useEffect, useRef } from 'react'
+import { useEffect, useState } from 'react'
 import { usePersistentLocalState } from './use-persistent-local-state'
-import { first, isEqual } from 'lodash'
-import { useEvent } from 'web/hooks/use-event'
+import { useEvent } from 'client-common/hooks/use-event'
+import { useApiSubscription } from 'client-common/hooks/use-api-subscription'
+import { calculateUpdatedMetricsForContracts } from 'common/calculate-metrics'
+import { useUser } from './use-user'
+import { uniqBy } from 'lodash'
+import { useBatchedGetter } from 'client-common/hooks/use-batched-getter'
+import { queryHandlers } from 'web/lib/supabase/batch-query-handlers'
 
-export const useSavedContractMetrics = (contract: Contract) => {
+export const useSavedContractMetrics = (
+  contract: Contract,
+  answerId?: string
+) => {
+  const allMetrics = useAllSavedContractMetrics(contract, answerId)
+  return allMetrics?.find((m) =>
+    answerId ? m.answerId === answerId : isSummary(m)
+  )
+}
+
+export const useAllSavedContractMetrics = (
+  contract: Contract,
+  answerId?: string
+) => {
   const user = useUser()
-  const lastBetTimeRef = useRef<number>(user?.lastBetTime ?? 0)
-
-  useEffect(() => {
-    lastBetTimeRef.current = user?.lastBetTime ?? 0
-  }, [user?.lastBetTime])
-
   const [savedMetrics, setSavedMetrics] = usePersistentLocalState<
-    ContractMetric | undefined
-  >(undefined, `contract-metrics-${contract.id}`)
+    ContractMetric[] | undefined
+  >(undefined, `contract-metrics-${contract.id}-${answerId}-saved`)
+  const updateMetricsWithNewProbs = (metrics: ContractMetric[]) => {
+    if (!user) return metrics
+    const { metricsByContract } = calculateUpdatedMetricsForContracts([
+      { contract, metrics },
+    ])
+    return metricsByContract[contract.id] as ContractMetric[]
+  }
+  useEffect(() => {
+    setSavedMetrics(updateMetricsWithNewProbs(savedMetrics ?? []))
+  }, [
+    'answers' in contract
+      ? JSON.stringify(contract.answers)
+      : contract.lastBetTime,
+  ])
 
-  const callback = useEvent(async () => {
+  const refreshMyMetrics = useEvent(async () => {
     if (!user?.id) return
-    // Wait a small amount for the bet to replicate to supabase
-    await new Promise((resolve) => setTimeout(resolve, 1000))
-    const retry = lastBetTimeRef.current > Date.now() - 5000 ? 5 : 0
-    const queryAndSet = async (retries: number) =>
-      getUserContractMetrics(user.id, contract.id, db).then((metrics) =>
-        tryToGetDifferentMetricsThanSaved(
-          savedMetrics,
-          metrics,
-          retries,
-          setSavedMetrics,
-          queryAndSet
-        )
-      )
-    queryAndSet(retry)
+
+    let q = db
+      .from('user_contract_metrics')
+      .select('data')
+      .eq('contract_id', contract.id)
+      .eq('user_id', user.id)
+    if (answerId) q = q.eq('answer_id', answerId)
+    const { data } = await q
+    const metrics = data?.map((m) => m.data) as ContractMetric[]
+
+    if (!metrics.length) {
+      setSavedMetrics([])
+      return
+    }
+    setSavedMetrics(updateMetricsWithNewProbs(metrics))
   })
 
+  // For some reason all of the deps trigger this effect the very first time the bet summary is rendered
   useEffect(() => {
-    callback()
-  }, [user?.id, contract.id, contract.lastBetTime])
+    refreshMyMetrics()
+  }, [user?.id, contract.id, answerId, contract.resolution])
 
-  return savedMetrics
-}
-
-const tryToGetDifferentMetricsThanSaved = (
-  savedMetrics: ContractMetric | undefined,
-  metrics: ContractMetric[] | undefined,
-  retries: number,
-  setSavedMetrics: (metric: ContractMetric | undefined) => void,
-  queryAndSet: (retries: number) => void
-) => {
-  const metric = first(metrics)
-  if (metric && !savedMetrics) setSavedMetrics(metric)
-  else if (metric && savedMetrics && retries > 0) {
-    // If we get the same metric as the saved one, retry to make sure we have the latest
-    if (isEqual(metric, savedMetrics)) {
-      queryAndSet(retries - 1)
-    } else setSavedMetrics({ ...savedMetrics, ...metric })
-  } else if (metric && savedMetrics && retries === 0) {
-    setSavedMetrics({ ...savedMetrics, ...metric })
-  } else if (retries > 0) queryAndSet(retries - 1)
-}
-
-export const useReadLocalContractMetrics = (contractId: string) => {
-  const [savedMetrics] = usePersistentLocalState<ContractMetric | undefined>(
-    undefined,
-    `contract-metrics-${contractId}`
+  const applyUpdate = useEvent(
+    async (newMetrics: Omit<ContractMetric, 'id'>[]) => {
+      const metrics = newMetrics.filter((m) =>
+        answerId ? m.answerId === answerId : true
+      ) as ContractMetric[]
+      if (metrics.length > 0)
+        setSavedMetrics(
+          uniqBy(
+            [...metrics, ...(savedMetrics ?? [])],
+            (m) => m.answerId + m.userId + m.contractId
+          )
+        )
+    }
   )
+
+  useApiSubscription({
+    topics: [`contract/${contract.id}/user-metrics/${user?.id}`],
+    onBroadcast: (msg) =>
+      applyUpdate(msg.data.metrics as Omit<ContractMetric, 'id'>[]),
+    enabled: !!user?.id,
+  })
+
   return savedMetrics
+}
+
+export const useTopContractMetrics = (props: {
+  playContract: Contract
+  cashContract: Contract | null
+  defaultTopManaTraders: ContractMetric[]
+  defaultTopCashTraders: ContractMetric[]
+  prefersPlay: boolean
+}) => {
+  const {
+    playContract,
+    cashContract,
+    defaultTopManaTraders,
+    defaultTopCashTraders,
+    prefersPlay,
+  } = props
+
+  const [topManaTraders, setTopManaTraders] = useState<ContractMetric[]>(
+    defaultTopManaTraders
+  )
+  const [topCashTraders, setTopCashTraders] = useState<ContractMetric[]>(
+    defaultTopCashTraders
+  )
+
+  const topContractMetrics = prefersPlay ? topManaTraders : topCashTraders
+
+  // If the contract resolves while the user is on the page, get the top contract metrics
+  useEffect(() => {
+    if (playContract.resolution) {
+      getTopContractMetrics(playContract.id, 10, db).then(setTopManaTraders)
+    }
+  }, [playContract.resolution])
+  useEffect(() => {
+    if (cashContract?.resolution) {
+      getTopContractMetrics(cashContract.id, 10, db).then(setTopCashTraders)
+    }
+  }, [cashContract?.resolution])
+
+  return topContractMetrics
+}
+
+export const useHasContractMetrics = (contractId: string) => {
+  const user = useUser()
+  const [hasMetric] = useBatchedGetter<boolean>(
+    queryHandlers,
+    'contract-metrics',
+    contractId,
+    false,
+    !!user?.id,
+    user?.id
+  )
+
+  return hasMetric
 }

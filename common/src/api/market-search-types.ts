@@ -8,11 +8,14 @@ export const searchProps = z
     filter: z
       .union([
         z.literal('open'),
-        z.literal('closing-this-month'),
-        z.literal('closing-next-month'),
+        z.literal('closing-90-days'),
+        z.literal('closing-week'),
+        z.literal('closing-month'),
+        z.literal('closing-day'),
         z.literal('closed'),
         z.literal('resolved'),
         z.literal('all'),
+        z.literal('news'),
       ])
       .default('all'),
     sort: z
@@ -27,6 +30,7 @@ export const searchProps = z
         z.literal('subsidy'),
         z.literal('last-updated'),
         z.literal('close-date'),
+        z.literal('start-time'),
         z.literal('resolve-date'),
         z.literal('random'),
         z.literal('bounty-amount'),
@@ -45,14 +49,20 @@ export const searchProps = z
         z.literal('STONK'),
         z.literal('POLL'),
         z.literal('NUMBER'),
+        z.literal('MULTI_NUMERIC'),
+        z.literal('DATE'),
       ])
       .default('ALL'),
     offset: z.coerce.number().gte(0).default(0),
     limit: z.coerce.number().gt(0).lte(1000).default(100),
-    topicSlug: z.string().regex(FIRESTORE_DOC_REF_ID_REGEX).optional(),
+    topicSlug: z
+      .string()
+      .regex(FIRESTORE_DOC_REF_ID_REGEX)
+      .or(z.literal('recent'))
+      .or(z.literal('followed'))
+      .optional(),
     forYou: z.union([z.literal('1'), z.literal('0')]).default('0'),
     creatorId: z.string().regex(FIRESTORE_DOC_REF_ID_REGEX).optional(),
-    isPolitics: z.coerce.boolean().optional(),
     isPrizeMarket: z
       .union([
         z.literal('true'),
@@ -61,5 +71,16 @@ export const searchProps = z
         z.literal('0'),
       ])
       .default('0'),
+    token: z
+      .union([
+        z.literal('MANA'),
+        z.literal('CASH'),
+        z.literal('ALL'),
+        z.literal('CASH_AND_MANA'),
+      ])
+      .default('ALL'),
+    gids: z.string().optional(),
+    liquidity: z.coerce.number().optional(),
+    hasBets: z.union([z.literal('1'), z.literal('0')]).optional(),
   })
   .strict()

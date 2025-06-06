@@ -13,6 +13,7 @@ export type JobContext = ContextDetails & {
 export type RequestContext = ContextDetails & {
   endpoint: string
   traceId: string
+  baseEndpoint: string
 }
 
 export type MonitoringContext = JobContext | RequestContext

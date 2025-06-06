@@ -3,7 +3,6 @@ import { Title } from 'web/components/widgets/title'
 import { Page } from 'web/components/layout/page'
 import { SEO } from 'web/components/SEO'
 import { Dictionary, mapValues, range, sortBy } from 'lodash'
-import { getUserBetsFromResolvedContracts } from 'web/lib/supabase/bets'
 import { Bet, LimitBet } from 'common/bet'
 import { Contract } from 'common/contract'
 import { ContractMention } from 'web/components/contract/contract-mention'
@@ -18,6 +17,7 @@ import { getFullUserByUsername } from 'web/lib/supabase/users'
 import Custom404 from '../404'
 import { DeletedUser } from '.'
 import { User } from 'web/lib/firebase/users'
+import { TRADE_TERM, TRADED_TERM } from 'common/envs/constants'
 
 export const getStaticProps = async (props: {
   params: {
@@ -27,11 +27,8 @@ export const getStaticProps = async (props: {
   const { username } = props.params
   const user = await getFullUserByUsername(username)
 
-  const bets = user
-    ? await getUserBetsFromResolvedContracts(user.id, 10000)
-    : []
   const { yesBuckets, noBuckets, yesBetsBuckets, noBetsBuckets } =
-    getCalibrationPoints(bets)
+    getCalibrationPoints([])
 
   const yesPoints = getXY(yesBuckets)
   const noPoints = getXY(noBuckets)
@@ -109,7 +106,7 @@ export default function CalibrationPage(props: {
               )}
             </SizedContainer>
             <div className="text-ink-800 text-center text-sm">
-              Probability after bet
+              Probability after {TRADE_TERM}
             </div>
           </div>
 
@@ -117,8 +114,8 @@ export default function CalibrationPage(props: {
             <b>Interpretation</b>
             <ul>
               <li>
-                The green dot at (x%, y%) means when {user.name} bet YES at x%,
-                the question resolved YES y% of the time on average.
+                The green dot at (x%, y%) means when {user.name} {TRADED_TERM}{' '}
+                YES at x%, the question resolved YES y% of the time on average.
               </li>
 
               <li>
@@ -127,13 +124,13 @@ export default function CalibrationPage(props: {
               </li>
 
               <li>
-                The score is the mean squared error for yes and no bets times
-                -100.
+                The score is the mean squared error for yes and no {TRADE_TERM}s
+                times -100.
               </li>
 
               <li>
-                Each point is a bucket of bets weighted by bet amount with a
-                maximum range of 10% (sell trades are excluded).
+                Each point is a bucket of {TRADE_TERM}s weighted by {TRADE_TERM}{' '}
+                amount with a maximum range of 10% (sell trades are excluded).
               </li>
             </ul>
           </div>
@@ -161,17 +158,16 @@ function BetsTable(props: {
       <Row className="justify-center">
         <ChoicesToggleGroup
           choicesMap={{
-            'YES bets': 'YES',
-            'NO bets': 'NO',
+            'YES trades': 'YES',
+            'NO trades': 'NO',
           }}
           currentChoice={betsShown}
           setChoice={(c) => setBetsShown(c as 'YES' | 'NO')}
           color="indigo"
         />
       </Row>
-
       <div className="text-ink-400 text-center text-xs">
-        3 largest bets for each bucket
+        3 largest {TRADE_TERM}s for each bucket
       </div>
 
       {Object.entries(betsShown === 'YES' ? yesBetsBuckets : noBetsBuckets).map(

@@ -1,6 +1,6 @@
 import { useUser } from 'web/hooks/use-user'
 import { useIsMobile } from 'web/hooks/use-is-mobile'
-import { useRealtimePublicMessagesPolling } from 'web/hooks/use-public-chat-messages'
+import { usePublicChat } from 'web/hooks/use-public-chat-messages'
 import { uniq } from 'lodash'
 import { useUsersInStore } from 'web/hooks/use-user-supabase'
 import {
@@ -11,9 +11,9 @@ import { useTextEditor } from 'web/components/widgets/editor'
 import { useEffect, useState } from 'react'
 import { track } from 'web/lib/service/analytics'
 import { firebaseLogin, User } from 'web/lib/firebase/users'
-import { api } from 'web/lib/firebase/api'
+import { api } from 'web/lib/api/api'
 import { toast } from 'react-hot-toast'
-import { ReplyToUserInfo } from 'web/components/feed/feed-comments'
+import { ReplyToUserInfo } from 'web/components/comments/comment'
 import { Col } from 'web/components/layout/col'
 import clsx from 'clsx'
 import { LoadingIndicator } from 'web/components/widgets/loading-indicator'
@@ -35,20 +35,15 @@ export const PublicChat = (props: {
   const user = useUser()
   const isMobile = useIsMobile()
 
-  const realtimeMessages = useRealtimePublicMessagesPolling(channelId, 300)
+  const realtimeMessages = usePublicChat(channelId, 100)
 
-  const maxUsersToGet = 100
   const messageUserIds = uniq(
     (realtimeMessages ?? [])
       .filter((message) => message.userId !== user?.id)
       .map((message) => message.userId)
   )
 
-  const otherUsers = useUsersInStore(
-    messageUserIds,
-    `${channelId}`,
-    maxUsersToGet
-  )
+  const otherUsers = useUsersInStore(messageUserIds, `${channelId}`, 100)
   const { topVisibleRef, showMessages, messages, innerDiv, outerDiv } =
     usePaginatedScrollingMessages(realtimeMessages, 200, user?.id)
 
@@ -167,6 +162,7 @@ export const PublicChat = (props: {
           </Button>
         ) : (
           <CommentInputTextArea
+            autoFocus={false}
             editor={editor}
             user={user}
             submit={submitMessage}

@@ -4,10 +4,8 @@ import { useState } from 'react'
 import { usePrivateUser } from 'web/hooks/use-user'
 import { Button } from './buttons/button'
 import { Row } from './layout/row'
-import {
-  SupabaseAdditionalFilter,
-  SupabaseSearch,
-} from 'web/components/supabase-search'
+import { SupabaseAdditionalFilter, Search } from 'web/components/search'
+import { Col } from './layout/col'
 
 export function SelectMarkets(props: {
   submitLabel: (length: number) => string
@@ -35,27 +33,29 @@ export function SelectMarkets(props: {
   }
 
   return (
-    <div className={clsx('px-1', className)}>
-      <SupabaseSearch
-        persistPrefix="contract-select-modal"
-        onContractClick={toggleContract}
-        hideActions
-        highlightContractIds={contracts.map((c) => c.id)}
-        additionalFilter={{
-          excludeContractIds: [
-            ...(additionalFilter?.excludeContractIds ?? []),
-            ...(privateUser?.blockedContractIds ?? []),
-          ],
-          excludeGroupSlugs: privateUser?.blockedGroupSlugs,
-          excludeUserIds: privateUser?.blockedUserIds,
-        }}
-        headerClassName={'!bg-canvas-0'}
-        contractsOnly
-        defaultFilter="all"
-      />
-      <Row className="bg-canvas-0 fixed inset-x-0 bottom-0 justify-end px-8 py-2">
+    <Col className={clsx('bg-canvas-0 overflow-y-auto px-1', className)}>
+      <Col className="max-h-[66vh] overflow-y-auto">
+        <Search
+          persistPrefix="contract-select-modal"
+          onContractClick={toggleContract}
+          hideActions
+          highlightContractIds={contracts.map((c) => c.id)}
+          additionalFilter={{
+            excludeContractIds: [
+              ...(additionalFilter?.excludeContractIds ?? []),
+              ...(privateUser?.blockedContractIds ?? []),
+            ],
+            excludeGroupSlugs: privateUser?.blockedGroupSlugs,
+            excludeUserIds: privateUser?.blockedUserIds,
+          }}
+          headerClassName={'!bg-canvas-0'}
+          contractsOnly
+          defaultFilter="all"
+        />
+      </Col>
+      <Row className="justify-between pt-4">
         {!loading && (
-          <Row className="grow justify-end gap-4">
+          <>
             <Button
               onClick={() => {
                 if (contracts.length > 0) {
@@ -78,9 +78,9 @@ export function SelectMarkets(props: {
                 ? submitLabel(contracts.length)
                 : 'Add questions'}
             </Button>
-          </Row>
+          </>
         )}
       </Row>
-    </div>
+    </Col>
   )
 }

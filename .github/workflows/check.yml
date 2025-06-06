@@ -23,20 +23,35 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v3
-      - name: Install Node 18
+      - name: Install Node 20
         uses: actions/setup-node@v4
         env:
           FORCE_COLOR: 0 # https://github.com/actions/setup-node/issues/317
         with:
-          node-version: 18
+          node-version: 20
           cache: 'yarn'
       - name: Install dependencies
         run: yarn install --prefer-offline --frozen-lockfile
+      - name: Build common
+        working-directory: common
+        run: yarn build
       - name: Run Typescript checker on web client
-        if: ${{ success() || failure() }}
         working-directory: web
         run: tsc --pretty --project tsconfig.json --noEmit
-      - name: Run Typescript checker on cloud functions
+      - name: Build shared
         if: ${{ success() || failure() }}
-        working-directory: backend/functions
-        run: tsc -b -v --pretty
+        working-directory: backend/shared
+        run: yarn build
+      - name: Check TypeScript Version
+        run: tsc --version
+      - name: Run Typescript checker on API
+        working-directory: backend/api
+        run: tsc --noEmit --skipLibCheck --pretty
+      - name: Lint API
+        if: ${{ success() }}
+        working-directory: backend/api
+        run: yarn verify:dir
+      - name: Run Typescript checker on scheduler
+        if: ${{ success() || failure() }}
+        working-directory: backend/scheduler
+        run: tsc --noEmit --skipLibCheck --pretty

@@ -17,18 +17,18 @@ import {
   ClipboardCopyIcon,
   DuplicateIcon,
 } from '@heroicons/react/outline'
-import ArrowUpSquareIcon from 'web/lib/icons/arrow-up-square-icon.svg'
 import { getNativePlatform } from 'web/lib/native/is-native'
 import { useBrowserOS } from 'web/hooks/use-browser-os'
 import { ShareIcon } from '@heroicons/react/outline'
 import { postMessageToNative } from 'web/lib/native/post-message'
+import { useNativeInfo } from '../native-message-provider'
+import { LuShare } from 'react-icons/lu'
 
 export function CopyLinkOrShareButton(props: {
   url: string
   eventTrackingName: string // was type ShareEventName — why??
   tooltip?: string
   className?: string
-  iconClassName?: string
   size?: SizeType
   children?: React.ReactNode
   color?: ColorType
@@ -42,13 +42,11 @@ export function CopyLinkOrShareButton(props: {
     children,
     eventTrackingName,
     className,
-    iconClassName,
     tooltip,
     color,
     trackingInfo,
   } = props
-  // NOTE: this results in hydration errors on mobile dev
-  const { isNative, platform } = getNativePlatform()
+  const { isNative, platform } = useNativeInfo()
   const { os } = useBrowserOS()
 
   const onClick = () => {
@@ -73,16 +71,16 @@ export function CopyLinkOrShareButton(props: {
         color={color ?? 'gray-white'}
       >
         {(isNative && platform === 'ios') || os === 'ios' ? (
-          <ArrowUpSquareIcon className={clsx(iconClassName ?? 'h-[1.4rem]')} />
-        ) : (isNative && platform === 'android') || os === 'android' ? (
-          <ShareIcon
+          <LuShare
+            className={clsx('h-[1.4rem] w-[1.1rem]')}
             strokeWidth={'2.5'}
-            className={clsx(iconClassName ?? 'h-[1.4rem]')}
           />
+        ) : (isNative && platform === 'android') || os === 'android' ? (
+          <ShareIcon strokeWidth={'2.5'} className={clsx('h-[1.4rem]')} />
         ) : (
           <LinkIcon
             strokeWidth={'2.5'}
-            className={clsx(iconClassName ?? 'h-[1.1rem]')}
+            className={clsx('h-[1.1rem]')}
             aria-hidden="true"
           />
         )}
@@ -105,7 +103,7 @@ const ToolTipOrDiv = (
   )
 
 export const CopyLinkRow = (props: {
-  url?: string // required if not loading
+  url: string
   eventTrackingName: string
   linkBoxClassName?: string
   linkButtonClassName?: string
@@ -113,9 +111,7 @@ export const CopyLinkRow = (props: {
   const { url, eventTrackingName, linkBoxClassName, linkButtonClassName } =
     props
 
-  // TODO: this is resulting in hydration errors on mobile dev
-  const { isNative, platform } = getNativePlatform()
-  const { os } = useBrowserOS()
+  const { isNative } = useNativeInfo()
 
   // "copied" success state animations
   const [bgPressed, setBgPressed] = useState(false)
@@ -151,21 +147,13 @@ export const CopyLinkRow = (props: {
       onClick={onClick}
     >
       <div className={'select-all truncate'}>{displayUrl}</div>
-      {url && (
-        <div className={linkButtonClassName}>
-          {!iconPressed ? (
-            (isNative && platform === 'ios') || os === 'ios' ? (
-              <ArrowUpSquareIcon className={'h-[1.4rem]'} />
-            ) : (isNative && platform === 'android') || os === 'android' ? (
-              <ShareIcon strokeWidth={'2.5'} className={'h-[1.4rem]'} />
-            ) : (
-              <DuplicateIcon className="h-5 w-5" />
-            )
-          ) : (
-            <CheckIcon className="h-5 w-5" />
-          )}
-        </div>
-      )}
+      <div className={linkButtonClassName}>
+        {!iconPressed ? (
+          <DuplicateIcon className="h-5 w-5" />
+        ) : (
+          <CheckIcon className="h-5 w-5" />
+        )}
+      </div>
     </button>
   )
 }

@@ -1,26 +1,37 @@
-import { AddFundsModal } from '../add-funds-modal'
-import { useUser } from 'web/hooks/use-user'
+import { useRouter } from 'next/router'
 import { useState } from 'react'
-import { PlusIcon } from '@heroicons/react/solid'
-import { Button } from '../buttons/button'
+import { useUser } from 'web/hooks/use-user'
+import { AddFundsModal } from '../add-funds-modal'
+import { Button, SizeType } from '../buttons/button'
+import { ManaCoin } from 'web/public/custom-components/manaCoin'
 
-export function AddFundsButton(props: { userId?: string; className?: string }) {
-  const { userId, className } = props
+export function AddFundsButton(props: {
+  userId?: string
+  className?: string
+  size?: SizeType
+}) {
+  const { userId, className, size } = props
   const [open, setOpen] = useState(false)
   const user = useUser()
+  const router = useRouter()
 
   if (!userId || user?.id !== userId) return null
+
   return (
     <>
       <Button
-        onClick={() => setOpen(true)}
-        size="md"
+        onClick={() =>
+          router.asPath.includes('/checkout')
+            ? router.reload()
+            : router.push('/checkout')
+        }
+        size={size ?? 'md'}
         color="gradient-pink"
         className={className}
       >
-        <PlusIcon className="mr-1 h-3 w-3" />
-        Get mana
+        Get mana <ManaCoin className="ml-1" />
       </Button>
+
       <AddFundsModal open={open} setOpen={setOpen} />
     </>
   )

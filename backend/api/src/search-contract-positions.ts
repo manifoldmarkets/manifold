@@ -9,23 +9,23 @@ import {
   where,
 } from 'shared/supabase/sql-builder'
 import { type APIHandler } from './helpers/endpoint'
-import { convertUser } from 'common/supabase/users'
 import { createSupabaseDirectClient } from 'shared/supabase/init'
-import { toUserAPIResponse } from 'common/api/user-types'
 
 export const searchContractPositions: APIHandler<
   'search-contract-positions'
 > = async (props) => {
   const { term, contractId, limit } = props
   const pg = createSupabaseDirectClient()
-  const searchAllSQL = getSearchUserSQL(term, limit, contractId)
-  const users = await pg.map(searchAllSQL, [], convertUser)
-  return users.map(toUserAPIResponse)
+  const query = getSearchUserSQL(term, limit, contractId)
+  const users = await pg.manyOrNone(query)
+  return users
 }
 
 function getSearchUserSQL(term: string, lim: number, contractId: string) {
   const search = renderSql(
-    select('users.*'),
+    select(
+      `users.id, name, username, users.data->>'avatarUrl' as "avatarUrl", users.data->'isBannedFromPosting' as "isBannedFromPosting"`
+    ),
     from('users'),
     term
       ? [

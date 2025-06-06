@@ -1,5 +1,5 @@
 import clsx from 'clsx'
-import { ReactNode, useEffect } from 'react'
+import { ReactNode } from 'react'
 import { BottomNavBar } from '../nav/bottom-nav-bar'
 import Sidebar from '../nav/sidebar'
 import { Toaster } from 'react-hot-toast'
@@ -8,11 +8,9 @@ import { Col } from './col'
 import { GoogleOneTapLogin } from 'web/lib/firebase/google-onetap-login'
 import { ConfettiOnDemand } from '../confetti-on-demand'
 import { useTracking } from 'web/hooks/use-tracking'
-import { usePersistentLocalState } from 'web/hooks/use-persistent-local-state'
-import { safeLocalStorage } from 'web/lib/util/local'
-import { Banner } from '../nav/banner'
-import { useUser } from 'web/hooks/use-user'
 
+import { Footer } from '../footer'
+import { FirstStreakModalManager } from '../profile/first-streak-modal'
 export function Page(props: {
   trackPageView: string | false
   trackPageProps?: Record<string, any>
@@ -20,6 +18,7 @@ export function Page(props: {
   children?: ReactNode
   hideSidebar?: boolean
   hideBottomBar?: boolean
+  hideFooter?: boolean
   banner?: ReactNode
 }) {
   const {
@@ -32,28 +31,15 @@ export function Page(props: {
     banner,
   } = props
 
-  // Force enable maintainance banner.
-  const maintainanceBannerEnabled = false
-
   // eslint-disable-next-line react-hooks/rules-of-hooks
-  trackPageView && useTracking(`view ${trackPageView}`, trackPageProps)
+  if (trackPageView) useTracking(`view ${trackPageView}`, trackPageProps)
   const isMobile = useIsMobile()
-
-  const [showBanner, setShowBanner] = usePersistentLocalState<
-    boolean | undefined
-  >(undefined, 'show-banner')
-  useEffect(() => {
-    const shouldHide = safeLocalStorage?.getItem('show-banner') === 'false'
-    if (!shouldHide) {
-      setShowBanner(true)
-    }
-  }, [showBanner])
-  const user = useUser()
 
   return (
     <>
       <ConfettiOnDemand />
       <GoogleOneTapLogin className="fixed bottom-12 right-4 z-[1000]" />
+      <FirstStreakModalManager />
       <Col
         className={clsx(
           !hideBottomBar && 'pb-[58px] lg:pb-0', // bottom bar padding
@@ -70,23 +56,11 @@ export function Page(props: {
           <Sidebar className="sticky top-0 hidden self-start px-2 lg:col-span-2 lg:flex" />
         )}
         <main
-          className={clsx(
-            'flex flex-1 flex-col lg:mt-6 xl:px-2',
-            'col-span-8',
-            maintainanceBannerEnabled && showBanner ? 'lg:mt-0' : 'lg:mt-6',
-            className
-          )}
+          className={clsx('l:px-2 col-span-7 flex flex-1 flex-col', className)}
         >
-          {maintainanceBannerEnabled && showBanner && user && (
-            <Banner className="mb-3" setShowBanner={setShowBanner}>
-              <div className="flex flex-col items-start">
-                🛠️ Trading has been turned off, while we fix issues with the
-                site. Sorry for the inconvenience.
-              </div>
-            </Banner>
-          )}
           {banner}
           {children}
+          {!props.hideFooter && <Footer />}
         </main>
       </Col>
       {!hideBottomBar && <BottomNavBar />}

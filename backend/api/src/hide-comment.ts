@@ -1,12 +1,14 @@
 import { isAdminId, isModId } from 'common/envs/constants'
-import { getContract, revalidateContractStaticProps } from 'shared/utils'
-import { getComment } from 'shared/supabase/contract_comments'
 import {
-  createSupabaseClient,
-  createSupabaseDirectClient,
-} from 'shared/supabase/init'
+  getContract,
+  getUser,
+  revalidateContractStaticProps,
+} from 'shared/utils'
+import { getComment } from 'shared/supabase/contract-comments'
+import { createSupabaseDirectClient } from 'shared/supabase/init'
 import { updateData } from 'shared/supabase/utils'
 import { APIError, type APIHandler } from './helpers/endpoint'
+import { trackPublicEvent } from 'shared/analytics'
 
 export const hideComment: APIHandler<'hide-comment'> = async (
   { commentPath },
@@ -21,9 +23,16 @@ export const hideComment: APIHandler<'hide-comment'> = async (
     )
   }
 
-  const db = createSupabaseClient()
+  const pg = createSupabaseDirectClient()
+  const user = await getUser(auth.uid)
+  if (!user) throw new APIError(404, 'User not found')
+  if (user.isBannedFromPosting || user.userDeleted)
+    throw new APIError(
+      403,
+      'You are banned from posting or your account has been deleted'
+    )
 
-  const contract = await getContract(contractId)
+  const contract = await getContract(pg, contractId)
   if (!contract) throw new APIError(404, 'Contract not found')
 
   const isContractCreator = contract.creatorId === auth.uid
@@ -35,16 +44,30 @@ export const hideComment: APIHandler<'hide-comment'> = async (
     )
   }
 
-  const comment = await getComment(db, commentId)
+  const comment = await getComment(pg, commentId)
+  const hide = !comment.hidden
+  if ((isAdminId(comment.userId) || isModId(comment.userId)) && hide) {
+    throw new APIError(403, 'You cannot hide comments from admins or mods')
+  }
 
   // update the comment
-  const pg = createSupabaseDirectClient()
-  updateData(pg, 'contract_comments', 'comment_id', {
+  await updateData(pg, 'contract_comments', 'comment_id', {
     comment_id: commentId,
-    hidden: !comment.hidden,
-    hiddenTime: Date.now(),
+    hidden: hide,
+    hiddenTime: hide ? Date.now() : undefined,
     hiderId: auth.uid,
   })
 
   await revalidateContractStaticProps(contract)
+  return {
+    result: { success: true },
+    continue: async () => {
+      await trackPublicEvent(auth.uid, 'hide_comment', {
+        contractId,
+        commentId,
+        hidden: hide,
+        userId: auth.uid,
+      })
+    },
+  }
 }

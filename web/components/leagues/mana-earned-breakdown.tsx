@@ -6,23 +6,25 @@ import { ChevronDownIcon, ChevronUpIcon } from '@heroicons/react/outline'
 import { getSeasonDates } from 'common/leagues'
 import { formatMoney } from 'common/util/format'
 import { Row } from '../layout/row'
-import { usePublicContracts } from 'web/hooks/use-contract-supabase'
+import { usePublicContracts } from 'web/hooks/use-contract'
 import { Col } from '../layout/col'
 import { Modal, MODAL_CLASS } from '../layout/modal'
 import { LoadingIndicator } from '../widgets/loading-indicator'
-import { Subtitle } from '../widgets/subtitle'
-import { Table } from '../widgets/table'
 import { UserAvatarAndBadge } from '../widgets/user-link'
 import { Contract, contractPath } from 'common/contract'
 import { Bet } from 'common/bet'
-import { calculateUserMetrics } from 'common/calculate-metrics'
+import { calculateUserMetricsWithouLoans } from 'common/calculate-metrics'
 import { ProfitBadge } from '../profit-badge'
 import { ContractMetric } from 'common/contract-metric'
-import { useBets } from 'web/hooks/use-bets-supabase'
+
 import ShortToggle from '../widgets/short-toggle'
 import { useState } from 'react'
 import { ContractBetsTable } from 'web/components/bet/contract-bets-table'
 import { DisplayUser } from 'common/api/user-types'
+import { TRADE_TERM } from 'common/envs/constants'
+import { capitalize } from 'lodash'
+import { useBetsOnce } from 'client-common/hooks/use-bets'
+import { api } from 'web/lib/api/api'
 
 export const ManaEarnedBreakdown = (props: {
   user: DisplayUser
@@ -38,19 +40,19 @@ export const ManaEarnedBreakdown = (props: {
     showDialog,
     setShowDialog,
     mana_earned,
-    mana_earned_breakdown,
+    // mana_earned_breakdown,
   } = props
 
-  const breakdown = {
-    PROFIT: mana_earned_breakdown.profit,
-    ...mana_earned_breakdown,
-    MARKET_BOOST_REDEEM:
-      (mana_earned_breakdown.MARKET_BOOST_REDEEM ?? 0) +
-      (mana_earned_breakdown.AD_REDEEM ?? 0),
-  } as { [key: string]: number }
+  // const breakdown = {
+  //   PROFIT: mana_earned_breakdown.profit,
+  //   ...mana_earned_breakdown,
+  //   MARKET_BOOST_REDEEM:
+  //     (mana_earned_breakdown.MARKET_BOOST_REDEEM ?? 0) +
+  //     (mana_earned_breakdown.AD_REDEEM ?? 0),
+  // } as { [key: string]: number }
 
-  const { start, end } = getSeasonDates(season)
-  const loadingBets = useBets({
+  const { start, approxEnd: end } = getSeasonDates(season)
+  const loadingBets = useBetsOnce((params) => api('bets', params), {
     userId: user.id,
     afterTime: start.getTime(),
     beforeTime: end.getTime(),
@@ -62,7 +64,7 @@ export const ManaEarnedBreakdown = (props: {
     ? uniq(loadingBets.map((b) => b.contractId))
     : undefined
   const contracts = usePublicContracts(contractIds)?.filter(
-    (c) => c.isRanked !== false
+    (c) => c.isRanked !== false && c.token === 'MANA'
   )
 
   const contractsById = keyBy(contracts, 'id')
@@ -73,7 +75,9 @@ export const ManaEarnedBreakdown = (props: {
     mapValues(betsByContract, (bets, contractId) => {
       const contract = contractsById[contractId]
       return contract
-        ? calculateUserMetrics(contract, bets, user).find((cm) => !cm.answerId)
+        ? calculateUserMetricsWithouLoans(contract, bets, user.id).find(
+            (cm) => !cm.answerId
+          )
         : undefined
     })
 
@@ -98,16 +102,25 @@ export const ManaEarnedBreakdown = (props: {
         <Row className="mb-2 items-center gap-4">
           <UserAvatarAndBadge user={user} />
         </Row>
-        <Subtitle className="text-ink-800 !mb-2 !mt-2">Mana earned</Subtitle>
-        <Table className="text-base">
-          <thead className={clsx('text-ink-600 text-left font-semibold')}>
+        <Row className="items-baseline justify-between">
+          <span className="text-primary-700 mb-2 text-lg">
+            Profit on trades placed this season:
+          </span>
+          {formatMoney(mana_earned)}
+        </Row>
+        <span className="text-ink-600 text-sm">
+          Only counts profit on trades placed on/after{' '}
+          {start.toLocaleDateString()}.
+        </span>
+        {/* <Table className="text-base">
+           <thead className={clsx('text-ink-600 text-left font-semibold')}>
             <tr>
               <th className={clsx('px-2 pb-1')}>Category</th>
               <th className={clsx('px-2 pb-1 text-right')}>Amount</th>
             </tr>
           </thead>
           <tbody>
-            {Object.keys(MANA_EARNED_CATEGORY_LABELS).map((category) =>
+             {Object.keys(MANA_EARNED_CATEGORY_LABELS).map((category) =>
               (category === 'CREATOR_FEE' ||
                 category === 'UNIQUE_BETTOR_BONUS') &&
               !breakdown[category] ? null : (
@@ -128,14 +141,11 @@ export const ManaEarnedBreakdown = (props: {
               </td>
             </tr>
           </tbody>
-        </Table>
+        </Table> */}
 
         {contracts && contracts.length > 0 && (
           <Col>
-            <Subtitle className="text-ink-800 mt-6">
-              Profit by question
-            </Subtitle>
-            <Row className="mb-4 gap-2">
+            <Row className="my-4 gap-2">
               <ShortToggle on={showHighestFirst} setOn={setShowHighestFirst} />{' '}
               Highest first
             </Row>
@@ -214,7 +224,7 @@ const ContractBetsEntry = (props: {
           ) : (
             <ChevronDownIcon className="h-5 w-5" />
           )}
-          Bets
+          {capitalize(TRADE_TERM)}s
         </Row>
       )}
 
@@ -223,6 +233,7 @@ const ContractBetsEntry = (props: {
           contract={contract}
           bets={bets}
           isYourBets={false}
+          contractMetric={metrics}
           hideRedemptionAndLoanMessages
         />
       )}
@@ -230,12 +241,7 @@ const ContractBetsEntry = (props: {
   )
 }
 
-const MANA_EARNED_CATEGORY_LABELS = {
-  PROFIT: 'Profit',
-  BETTING_STREAK_BONUS: 'Streak bonuses',
-  QUEST_REWARD: 'Quests',
-  MARKET_BOOST_REDEEM: 'Boosts claimed',
-  UNIQUE_BETTOR_BONUS: 'Trader bonuses',
-  REFERRAL: 'Referrals',
-  CREATOR_FEE: 'Creator earnings',
-} as { [key: string]: string }
+// const MANA_EARNED_CATEGORY_LABELS = {
+//   PROFIT: 'Profit',
+//   UNIQUE_BETTOR_BONUS: 'Trader bonuses',
+// } as { [key: string]: string }

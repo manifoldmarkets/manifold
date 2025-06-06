@@ -13,9 +13,8 @@ import { ManifoldLogo } from 'web/components/nav/manifold-logo'
 import { Page } from 'web/components/layout/page'
 import { SEO } from 'web/components/SEO'
 import { Title } from 'web/components/widgets/title'
-import { useSaveReferral } from 'web/hooks/use-save-referral'
 import { usePrivateUser, useUser } from 'web/hooks/use-user'
-import { firebaseLogin, updatePrivateUser } from 'web/lib/firebase/users'
+import { firebaseLogin } from 'web/lib/firebase/users'
 import { track } from 'web/lib/service/analytics'
 import {
   getDockURLForUser,
@@ -26,12 +25,13 @@ import {
 import { copyToClipboard } from 'web/lib/util/copy'
 import { formatMoney } from 'common/util/format'
 import { REFERRAL_AMOUNT, STARTING_BALANCE } from 'common/economy'
-import { ENV_CONFIG } from 'common/envs/constants'
+import { ENV_CONFIG, TRADE_TERM, TRADING_TERM } from 'common/envs/constants'
 import { CopyLinkRow } from 'web/components/buttons/copy-link-button'
+import { api } from 'web/lib/api/api'
+import { capitalize } from 'lodash'
 
 export default function TwitchLandingPage() {
   const user = useUser()
-  useSaveReferral(user)
 
   const privateUser = usePrivateUser()
 
@@ -39,7 +39,7 @@ export default function TwitchLandingPage() {
     <Page trackPageView={'twitch landing page'}>
       <SEO
         title="Manifold on Twitch"
-        description="Get more out of Twitch with play-money betting questions."
+        description={`Get more out of Twitch with play-money ${TRADING_TERM} questions.`}
       />
       <div className="px-4 pt-2 md:mt-0 lg:hidden">
         <ManifoldLogo />
@@ -141,8 +141,8 @@ function TwitchPlaysManifoldMarkets(props: {
         <Title className={'!-my-0 md:block'}>Twitch plays manifold</Title>
       </Row>
       <Col className="mb-4 gap-4">
-        Start betting on Twitch now by linking your account and typing commands
-        in chat!
+        Start {TRADING_TERM} on Twitch now by linking your account and typing
+        commands in chat!
         {twitchUser && !twitchInfo.needsRelinking ? (
           <Button
             size="xl"
@@ -172,8 +172,8 @@ function TwitchPlaysManifoldMarkets(props: {
         <div>
           Instead of Twitch channel points we use our own play money, mana (
           {ENV_CONFIG.moneyMoniker}). All viewers start with{' '}
-          {formatMoney(STARTING_BALANCE)} and can earn more for free by betting
-          well.
+          {formatMoney(STARTING_BALANCE)} and can earn more for free by{' '}
+          {TRADING_TERM} well.
         </div>
       </Col>
     </div>
@@ -204,11 +204,19 @@ function TwitchChatCommands() {
         <Subtitle text="For Chat" />
         <Command
           command="y#"
-          desc={`Bets # amount of ${ENV_CONFIG.moneyMoniker} on yes, for example !y20 would bet ${ENV_CONFIG.moneyMoniker}20 on yes.`}
+          desc={`${capitalize(TRADE_TERM)}s # amount of ${
+            ENV_CONFIG.moneyMoniker
+          } on yes, for example !y20 would ${TRADE_TERM} ${
+            ENV_CONFIG.moneyMoniker
+          }20 on yes.`}
         />
         <Command
           command="n#"
-          desc={`Bets # amount of ${ENV_CONFIG.moneyMoniker} on no, for example !n30 would bet ${ENV_CONFIG.moneyMoniker}30 on no.`}
+          desc={`${capitalize(TRADE_TERM)}s # amount of ${
+            ENV_CONFIG.moneyMoniker
+          } on no, for example !n30 would ${TRADE_TERM} ${
+            ENV_CONFIG.moneyMoniker
+          }30 on no.`}
         />
         <Command
           command="sell"
@@ -332,9 +340,7 @@ function BotConnectButton(props: {
     toast.promise(
       updateBotEnabledForUser(privateUser, connected)
         .then(() =>
-          updatePrivateUser(privateUser.id, {
-            twitchInfo: { ...twitchInfo, botEnabled: connected },
-          })
+          api('save-twitch', { twitchInfo: { botEnabled: connected } })
         )
         .finally(() => setLoading(false)),
       { loading: 'Updating bot settings...', error, success },

@@ -3,26 +3,22 @@ import { User } from 'common/user'
 import { Button } from 'web/components/buttons/button'
 import { useRouter } from 'next/router'
 import { BiEnvelope } from 'react-icons/bi'
-import {
-  useOtherUserIdsInPrivateMessageChannelIds,
-  useSortedPrivateMessageChannelIds,
-} from 'web/hooks/use-private-messages'
-import { useIsAuthorized, usePrivateUser } from 'web/hooks/use-user'
-import { findKey, first } from 'lodash'
+import { useSortedPrivateMessageMemberships } from 'web/hooks/use-private-messages'
+import { usePrivateUser } from 'web/hooks/use-user'
+import { findKey } from 'lodash'
 import { useState } from 'react'
 import { Modal, MODAL_CLASS } from 'web/components/layout/modal'
 import { Col } from 'web/components/layout/col'
 import {
   createPrivateMessageChannelWithUsers,
   sendUserPrivateMessage,
-} from 'web/lib/firebase/api'
+} from 'web/lib/api/api'
 import { useTextEditor } from 'web/components/widgets/editor'
 import { MAX_COMMENT_LENGTH } from 'common/comment'
 import { CommentInputTextArea } from 'web/components/comments/comment-input'
 import { Title } from 'web/components/widgets/title'
 import { Row } from 'web/components/layout/row'
 import { firebaseLogin } from 'web/lib/firebase/users'
-import { PrivateMessageMembership } from 'web/lib/supabase/private-messages'
 
 export const SendMessageButton = (props: {
   toUser: User
@@ -33,28 +29,24 @@ export const SendMessageButton = (props: {
   const { toUser, currentUser, includeLabel, circleButton } = props
   const router = useRouter()
   const privateUser = usePrivateUser()
-  const isAuthed = useIsAuthorized()
-  const channels = useSortedPrivateMessageChannelIds(currentUser?.id, isAuthed)
-  const channelIdsToUserIds = useOtherUserIdsInPrivateMessageChannelIds(
-    currentUser?.id,
-    isAuthed,
-    channels
-  )
+  const channelMemberships = useSortedPrivateMessageMemberships(currentUser?.id)
+  const { memberIdsByChannelId } = channelMemberships
+
   const [openComposeModal, setOpenComposeModal] = useState(false)
   const [error, setError] = useState('')
   const [submitting, setSubmitting] = useState(false)
 
   const messageButtonClicked = async () => {
     if (!currentUser) return firebaseLogin()
-    if (!isAuthed) return
-    const keyFound = findKey(
-      channelIdsToUserIds,
-      (values: PrivateMessageMembership[]) =>
-        values.length === 1 && first(values)?.user_id === toUser.id
+    const previousDirectMessageChannel = findKey(
+      memberIdsByChannelId,
+      (dm) => dm.includes(toUser.id) && dm.length === 1
     )
 
     const previousChannelId =
-      keyFound !== undefined ? parseInt(keyFound) : undefined
+      previousDirectMessageChannel !== undefined
+        ? previousDirectMessageChannel
+        : undefined
 
     if (previousChannelId) router.push(`/messages/${previousChannelId}`)
     else setOpenComposeModal(true)
@@ -119,6 +111,7 @@ export const SendMessageButton = (props: {
             <Title className={'!mb-2'}>Message {toUser.name}</Title>
           </Row>
           <CommentInputTextArea
+            autoFocus={true}
             editor={editor}
             user={currentUser}
             submit={sendMessage}

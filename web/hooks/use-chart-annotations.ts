@@ -1,43 +1,24 @@
-import { db } from 'web/lib/supabase/db'
-import { useSubscription } from 'web/lib/supabase/realtime/use-subscription'
-import {
-  ChartAnnotation,
-  getChartAnnotations,
-} from 'common/supabase/chart-annotations'
-import { orderBy } from 'lodash'
-import { useEffect, useState } from 'react'
+import { useState, useEffect } from 'react'
 import { PointerMode } from 'web/components/charts/helpers'
 import { useUser } from 'web/hooks/use-user'
 import { Contract } from 'common/contract'
 import { isAdminId, isModId } from 'common/envs/constants'
-
-export const useChartAnnotations = (contractId: string) => {
-  const { rows: annotations, status } = useSubscription(
-    'chart_annotations',
-    { k: 'contract_id', v: contractId },
-    () => getChartAnnotations(contractId, db)
-  )
-
-  return {
-    chartAnnotations: orderBy(annotations, (a) => a.event_time, 'asc'),
-    status,
-  }
-}
+import { ChartAnnotation } from 'common/supabase/chart-annotations'
+import { useApiSubscription } from 'client-common/hooks/use-api-subscription'
+import { sortBy } from 'lodash'
 
 export const useAnnotateChartTools = (
   contract: Contract,
-  staticChartAnnotations: ChartAnnotation[]
+  initialChartAnnotations: ChartAnnotation[]
 ) => {
   const [pointerMode, setPointerMode] = useState<PointerMode>('zoom')
   const [hoveredAnnotation, setHoveredAnnotation] = useState<number | null>(
     null
   )
   const user = useUser()
-  const { chartAnnotations: liveAnnotations, status } = useChartAnnotations(
-    contract.id
+  const [chartAnnotations, setChartAnnotations] = useState<ChartAnnotation[]>(
+    initialChartAnnotations
   )
-  const chartAnnotations =
-    status === 'live' ? liveAnnotations : staticChartAnnotations
 
   const updateHoveredAnnotation = async (hoveredAnnotation: number | null) => {
     if (pointerMode === 'annotate') return
@@ -49,13 +30,25 @@ export const useAnnotateChartTools = (
     }
     setHoveredAnnotation(hoveredAnnotation)
   }
+
   useEffect(() => {
     if (pointerMode === 'annotate') setPointerMode('zoom')
   }, [chartAnnotations.length])
 
+  useApiSubscription({
+    topics: [`contract/${contract.id}/chart-annotation`],
+    onBroadcast: (msg) => {
+      const newAnnotation = msg.data.annotation as ChartAnnotation
+      setChartAnnotations((prevAnnotations) =>
+        sortBy([...prevAnnotations, newAnnotation], (c) => c.event_time)
+      )
+    },
+  })
+
   const enableAdd =
     user &&
     (user.id === contract.creatorId || isModId(user.id) || isAdminId(user.id))
+
   return {
     pointerMode,
     setPointerMode,

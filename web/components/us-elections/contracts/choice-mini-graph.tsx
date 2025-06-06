@@ -45,7 +45,6 @@ export const ChoiceMiniGraph = (props: {
   const now = useMemo(() => Date.now(), [multiPoints])
 
   const data = useMemo(() => {
-    const answerOrder = answers.map((a) => a.text)
     const ret = {} as Record<
       string,
       { points: HistoryPoint<never>[]; color: string }
@@ -54,20 +53,18 @@ export const ChoiceMiniGraph = (props: {
     answers.forEach((a) => {
       const points = cloneDeep(multiPoints[a.id] ?? [])
 
-      if ('resolution' in a) {
-        if (a.resolutionTime) {
-          points.push({
-            x: a.resolutionTime,
-            y: getAnswerProbability(contract, a.id),
-          })
-        }
+      if (a.resolution && a.resolutionTime) {
+        points.push({
+          x: a.resolutionTime,
+          y: getAnswerProbability(contract, a.id),
+        })
       } else {
         points.push({
           x: end ?? now,
           y: getAnswerProbability(contract, a.id),
         })
       }
-      const color = getAnswerColor(a, answerOrder)
+      const color = getAnswerColor(a)
       ret[a.id] = { points, color }
     })
 

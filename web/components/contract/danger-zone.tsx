@@ -1,6 +1,10 @@
 import { Contract, MINUTES_ALLOWED_TO_UNRESOLVE } from 'common/contract'
 import { useEffect } from 'react'
-import { useAdmin, useTrusted } from 'web/hooks/use-admin'
+import {
+  useAdmin,
+  useSweepstakesTrusted,
+  useTrusted,
+} from 'web/hooks/use-admin'
 import { useUser } from 'web/hooks/use-user'
 import { Button } from '../buttons/button'
 import { DeleteMarketButton } from '../buttons/delete-market-button'
@@ -36,10 +40,12 @@ export function DangerZone(props: {
     resolution,
     resolutionTime,
     uniqueBettorCount,
+    token,
   } = contract
 
   const isAdmin = useAdmin()
   const isMod = useTrusted()
+  const isSweepstakesTrusted = useSweepstakesTrusted()
   const user = useUser()
   const isCreator = user?.id === creatorId
   const isClosed = !!closeTime && closeTime < Date.now()
@@ -59,10 +65,10 @@ export function DangerZone(props: {
     (!uniqueBettorCount || uniqueBettorCount < 2)
 
   const canResolve =
-    (isCreator || isAdmin || isMod) &&
     !isResolved &&
     outcomeType !== 'STONK' &&
-    mechanism !== 'none'
+    mechanism !== 'none' &&
+    (token === 'CASH' ? isSweepstakesTrusted : isCreator || isAdmin || isMod)
 
   const now = dayjs().utc()
   const creatorCanUnresolve =
@@ -71,16 +77,21 @@ export function DangerZone(props: {
     now.diff(dayjs(resolutionTime), 'minute') < MINUTES_ALLOWED_TO_UNRESOLVE
 
   const canUnresolve =
-    (isAdmin || isMod || (isCreator && creatorCanUnresolve)) && isResolved
+    isResolved &&
+    (mechanism === 'cpmm-multi-1' ? contract.shouldAnswersSumToOne : true) &&
+    (token === 'CASH'
+      ? isAdmin
+      : isAdmin || isMod || (isCreator && creatorCanUnresolve))
 
   useEffect(() => {
     if (
       canReview &&
       userHasBet &&
-      // resolved less than week ago
       Date.now() - (contract.resolutionTime ?? 0) < WEEK_MS
     ) {
       setShowReview(true)
+    } else {
+      setShowReview(false)
     }
   }, [canReview, userHasBet, contract.resolutionTime])
 

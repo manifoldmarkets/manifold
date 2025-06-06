@@ -1,10 +1,9 @@
 import clsx from 'clsx'
 import { ContractComment } from 'common/comment'
-import { Contract } from 'common/contract'
+import { Contract, MarketContract } from 'common/contract'
 import { DESTINY_GROUP_SLUG } from 'common/envs/constants'
 import { buildArray, filterDefined } from 'common/util/array'
 import {
-  difference,
   groupBy,
   keyBy,
   orderBy,
@@ -15,12 +14,18 @@ import {
   uniqBy,
 } from 'lodash'
 import { ReactNode, memo, useEffect, useState } from 'react'
-import { useRealtimeBets } from 'web/hooks/use-bets-supabase'
-import { useRealtimeComments } from 'web/hooks/use-comments-supabase'
+import {
+  useBetsOnce,
+  useSubscribeGlobalBets,
+} from 'client-common/hooks/use-bets'
+import {
+  useGlobalComments,
+  useSubscribeGlobalComments,
+} from 'web/hooks/use-comments'
 import {
   usePublicContracts,
-  useRealtimeNewContracts,
-} from 'web/hooks/use-contract-supabase'
+  useLiveAllNewContracts,
+} from 'web/hooks/use-contract'
 import {
   usePrivateUser,
   useShouldBlockDestiny,
@@ -39,12 +44,9 @@ import { UserLink } from './widgets/user-link'
 import { track } from 'web/lib/service/analytics'
 import { getRecentCommentsOnContracts } from 'web/lib/supabase/comments'
 import { getRecentActiveContractsOnTopics } from 'web/lib/supabase/contracts'
-import { getBetsOnContracts } from 'common/supabase/bets'
-import { db } from 'web/lib/supabase/db'
 import { Bet } from 'common/bet'
 import { UserHovercard } from './user/user-hovercard'
-
-const EXTRA_USERNAMES_TO_EXCLUDE = ['Charlie', 'GamblingGandalf']
+import { api } from 'web/lib/api/api'
 
 export function ActivityLog(props: {
   count: number
@@ -83,7 +85,8 @@ export function ActivityLog(props: {
       count
     )
     const recentContractIds = recentContracts.map((c) => c.id)
-    const recentBets = await getBetsOnContracts(db, recentContractIds, {
+    const recentBets = await api('bets', {
+      contractId: recentContractIds,
       limit: count * 3,
       filterRedemptions: true,
       order: 'desc',
@@ -101,25 +104,36 @@ export function ActivityLog(props: {
     if (topicSlugs) getRecentTopicalContent(topicSlugs)
   }, [topicSlugs])
 
-  const { rows: realtimeBets } = useRealtimeBets({
+  const recentBets = useBetsOnce((params) => api('bets', params), {
     limit: count * 3,
     filterRedemptions: true,
     order: 'desc',
   })
+  const allRealtimeBets = useSubscribeGlobalBets({
+    filterRedemptions: true,
+  })
+  const realtimeBets = sortBy(allRealtimeBets, 'createdTime')
+    .reverse()
+    .slice(0, count * 3)
 
-  const realtimeComments = useRealtimeComments(count * 3)
+  const recentComments = useGlobalComments(count * 3)
+  const realtimeComments = useSubscribeGlobalComments()
 
-  const newContracts = useRealtimeNewContracts(count * 3)?.filter(
+  const newContracts = useLiveAllNewContracts(count * 3)?.filter(
     (c) =>
       !blockedContractIds.includes(c.id) &&
       !blockedUserIds.includes(c.creatorId) &&
       c.visibility === 'public' &&
-      (!c.groupSlugs?.some((slug) => blockedGroupSlugs.includes(slug)) ??
+      (!c.groupSlugs?.some((slug) => blockedGroupSlugs.includes(slug)) ||
         true) &&
       (topicSlugs?.some((s) => c.groupSlugs?.includes(s)) ?? true)
   )
   const bets = uniqBy(
-    (realtimeBets ?? []).concat(recentTopicalBets ?? []),
+    [
+      ...(realtimeBets ?? []),
+      ...(recentTopicalBets ?? []),
+      ...(recentBets ?? []),
+    ],
     'id'
   ).filter(
     (bet) =>
@@ -127,7 +141,11 @@ export function ActivityLog(props: {
       !blockedUserIds.includes(bet.userId)
   )
   const comments = uniqBy(
-    (realtimeComments ?? []).concat(recentTopicalComments ?? []),
+    [
+      ...(realtimeComments ?? []),
+      ...(recentTopicalComments ?? []),
+      ...(recentComments ?? []),
+    ],
     'id'
   ).filter(
     (c) =>
@@ -152,15 +170,11 @@ export function ActivityLog(props: {
       : true
   )
 
-  const [contracts, unlistedContracts] = partition(
+  const [contracts, _unlistedContracts] = partition(
     filterDefined(activeContracts ?? []).concat(newContracts ?? []),
     (c) => c.visibility === 'public'
   )
-
-  const ignoredContractIds = difference(
-    activeContractIds,
-    activeContracts?.map((c) => c.id) ?? []
-  ).concat(unlistedContracts.map((c) => c.id))
+  const contractsById = keyBy(contracts, 'id')
 
   const items = sortBy(
     pill === 'all'
@@ -175,9 +189,8 @@ export function ActivityLog(props: {
     .reverse()
     .filter((i) =>
       // filter out comments and bets on ignored/off-topic contracts
-      'contractId' in i ? !ignoredContractIds.includes(i.contractId) : true
+      'contractId' in i ? contractsById[i.contractId] : true
     )
-  const contractsById = keyBy(contracts, 'id')
 
   const startIndex =
     range(0, items.length - count).find((i) =>
@@ -235,7 +248,7 @@ export function ActivityLog(props: {
                     <FeedBet
                       className="!pt-0"
                       key={item.id}
-                      contract={contract}
+                      contract={contract as MarketContract}
                       bet={item}
                       avatarSize="xs"
                     />

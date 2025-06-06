@@ -94,7 +94,7 @@ export function usePagination<T>(opts: PaginationOptions<T>) {
 
   useEffect(() => {
     dispatch({ type: 'PREFIX', prefix: opts.prefix ?? [] })
-  }, [opts.prefix])
+  }, [JSON.stringify(opts.prefix)])
 
   // note: i guess if q changed we would probably want to wipe existing items,
   // and ignore the results of in-progress queries here? unclear with no example

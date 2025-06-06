@@ -1,14 +1,6 @@
 import { runScript } from 'run-script'
-
-import { sortBy, uniqBy } from 'lodash'
-import * as admin from 'firebase-admin'
-import { Firestore } from 'firebase-admin/firestore'
-
-import {
-  Contract,
-  DPMBinaryContract,
-  CPMMBinaryContract,
-} from 'common/contract'
+import { uniqBy } from 'lodash'
+import { Contract } from 'common/contract'
 import { Bet } from 'common/bet'
 import { calculateDpmPayout, getDpmProbability } from 'common/calculate-dpm'
 import {
@@ -18,42 +10,52 @@ import {
 } from 'common/antes'
 import { noFees } from 'common/fees'
 import { addObjects } from 'common/util/object'
-import { getUsers, isProd, revalidateContractStaticProps } from 'shared/utils'
+import {
+  getContract,
+  getUsers,
+  isProd,
+  revalidateContractStaticProps,
+} from 'shared/utils'
 import { calculateUserMetrics } from 'common/calculate-metrics'
 import { bulkUpdateContractMetrics } from 'shared/helpers/user-contract-metrics'
-
-type DocRef = admin.firestore.DocumentReference
+import { insertLiquidity } from 'shared/supabase/liquidity'
+import { SupabaseDirectClient } from 'shared/supabase/init'
+import { getBetsWithFilter } from 'shared/supabase/bets'
+import { updateData } from 'shared/supabase/utils'
+import { updateContract } from 'shared/supabase/contracts'
 
 async function recalculateContract(
-  firestore: Firestore,
-  contractRef: DocRef,
+  pg: SupabaseDirectClient,
+  contractId: string,
   isCommit = false
 ) {
-  await firestore.runTransaction(async (transaction) => {
-    const contractDoc = await transaction.get(contractRef)
-    const contract = contractDoc.data() as DPMBinaryContract
+  await pg.tx(async (tx) => {
+    const contract = await getContract(tx, contractId)
 
-    if (!contract?.slug) {
-      console.log('missing slug; id=', contractRef.id)
+    if (!contract) {
+      console.error('contract not found')
+      return
+    }
+
+    if (!contract.slug) {
+      console.log('missing slug; id=', contractId)
       return
     }
 
     console.log('recalculating', contract.slug)
 
-    if (contract.mechanism !== 'dpm-2' || contract.outcomeType !== 'BINARY') {
+    if (
+      (contract as any).mechanism !== 'dpm-2' ||
+      contract.outcomeType !== 'BINARY'
+    ) {
       console.log('invalid candidate to port to cfmm')
       return
     }
 
-    const betsRef = contractRef.collection('bets')
-    const betDocs = await transaction.get(betsRef)
-    const bets = sortBy(
-      betDocs.docs.map((d) => d.data() as Bet),
-      (b) => b.createdTime
-    )
+    const bets = await getBetsWithFilter(tx, { contractId })
 
     const getSoldBetPayout = (bet: Bet) => {
-      const soldBet = bets.find((b) => bet.sale?.betId === b.id)
+      const soldBet = bets.find((b) => (bet as any).sale?.betId === b.id)
       return soldBet
         ? -soldBet.amount / Math.sqrt(soldBet.probBefore * soldBet.probAfter)
         : 0
@@ -61,9 +63,9 @@ async function recalculateContract(
 
     const newBets: Bet[] = []
     for (const bet of bets) {
-      const shares = bet.sale
+      const shares = (bet as any).sale
         ? getSoldBetPayout(bet)
-        : bet.isSold
+        : (bet as any).isSold
         ? bet.amount / Math.sqrt(bet.probBefore * bet.probAfter) // make up fake share qty
         : calculateDpmPayout(contract, bet, bet.outcome)
 
@@ -71,22 +73,24 @@ async function recalculateContract(
         'converting',
         bet.shares,
         bet.outcome,
-        bet.isSold ? '(sold)' : '',
+        (bet as any).isSold ? '(sold)' : '',
         'shares to',
         shares
       )
 
       if (isCommit)
-        transaction.update(betsRef.doc(bet.id), {
+        await updateData(tx, 'contract_bets', 'bet_id', {
+          bet_id: bet.id,
           shares,
           dpmShares: bet.shares,
-        })
+        } as any)
 
       newBets.push({ ...bet, shares })
     }
 
     const prob =
-      contract.resolutionProbability ?? getDpmProbability(contract.totalShares)
+      contract.resolutionProbability ??
+      getDpmProbability((contract as any).totalShares)
 
     const ante = 100
     const newPool = { YES: ante, NO: ante }
@@ -112,8 +116,6 @@ async function recalculateContract(
       dpmPool: contract.pool,
     }
 
-    const liquidityDocRef = contractRef.collection('liquidity').doc()
-
     const providerId = isProd()
       ? HOUSE_LIQUIDITY_PROVIDER_ID
       : DEV_HOUSE_LIQUIDITY_PROVIDER_ID
@@ -122,8 +124,7 @@ async function recalculateContract(
       {
         ...contract,
         ...contractUpdate,
-      } as CPMMBinaryContract,
-      liquidityDocRef.id,
+      } as any,
       ante,
       contract.createdTime
     )
@@ -137,17 +138,19 @@ async function recalculateContract(
     }
     const userContractMetrics = users.flatMap((user) =>
       calculateUserMetrics(
-        updatedContract as CPMMBinaryContract,
+        updatedContract as any,
         newBets.filter((b) => b.userId === user.id),
-        user
+        user,
+        []
       )
     )
     if (isCommit) {
-      transaction.update(contractRef, {
+      await updateContract(tx, contractId, {
         ...contractUpdate,
         ...additionalInfo,
       })
-      transaction.set(liquidityDocRef, lp)
+
+      await insertLiquidity(pg, lp)
 
       await bulkUpdateContractMetrics(userContractMetrics)
       console.log('updated', contract.slug)
@@ -158,31 +161,30 @@ async function recalculateContract(
 }
 
 if (require.main === module) {
-  runScript(async ({ firestore }) => {
+  runScript(async ({ pg, db }) => {
     const slug = process.argv[2]
     const isCommit = process.argv[3] === 'commit'
 
-    const contractRefs =
-      slug === 'all'
-        ? await firestore
-            .collection('contracts')
-            .where('mechanism', '==', 'dpm-2')
-            .where('outcomeType', '==', 'BINARY')
-            .get()
-            .then((snap) => snap.docs.map((d) => d.ref))
-        : await firestore
-            .collection('contracts')
-            .where('slug', '==', slug)
-            .where('mechanism', '==', 'dpm-2')
-            .where('outcomeType', '==', 'BINARY')
-            .get()
-            .then((snap) =>
-              !snap.empty ? [firestore.doc(`contracts/${snap.docs[0].id}`)] : []
-            )
+    const query = db
+      .from('contracts')
+      .select('id')
+      .eq('mechanism', 'dpm-2')
+      .eq('outcome_type', 'BINARY')
 
-    for (const contractRef of contractRefs) {
-      await recalculateContract(firestore, contractRef, isCommit).catch((e) =>
-        console.log('error: ', e, 'id=', contractRef.id)
+    if (slug !== 'all') {
+      query.eq('slug', slug)
+    }
+
+    const { data, error } = await query
+
+    if (error) {
+      console.error('error fetching contracts', error)
+      return
+    }
+
+    for (const { id } of data) {
+      await recalculateContract(pg, id, isCommit).catch((e) =>
+        console.error('error: ', e, 'id=', id)
       )
       console.log()
       console.log()

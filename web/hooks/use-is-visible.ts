@@ -1,5 +1,5 @@
 import { useEffect, useRef } from 'react'
-import { useEvent } from 'web/hooks/use-event'
+import { useEvent } from 'client-common/hooks/use-event'
 
 export function useIsVisible(
   onSeenStart: () => void,

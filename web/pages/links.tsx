@@ -13,8 +13,6 @@ import { SEO } from 'web/components/SEO'
 import { Subtitle } from 'web/components/widgets/subtitle'
 import { Title } from 'web/components/widgets/title'
 import { redirectIfLoggedOut } from 'web/lib/firebase/server-auth'
-import { getUserAndPrivateUser } from 'web/lib/firebase/users'
-
 import { ENV_CONFIG, isAdminId } from 'common/envs/constants'
 import { linkClaimed, ManalinkCardFromView } from 'web/components/manalink-card'
 import { Pagination } from 'web/components/widgets/pagination'
@@ -27,6 +25,7 @@ import {
   getUserManalinks,
   getUserManalinkClaims,
 } from 'web/lib/supabase/manalinks'
+import { getUserForStaticProps } from 'common/supabase/users'
 
 type LinkAndClaims = { link: ManalinkInfo; claims: ClaimInfo[] }
 
@@ -34,8 +33,8 @@ const LINKS_PER_PAGE = 24
 
 export const getServerSideProps = redirectIfLoggedOut('/', async (_, creds) => {
   const adminDb = await initSupabaseAdmin()
-  const [auth, links, claims] = await Promise.all([
-    getUserAndPrivateUser(creds.uid),
+  const [user, links, claims] = await Promise.all([
+    getUserForStaticProps(adminDb, creds.uid),
     getUserManalinks(creds.uid, adminDb),
     getUserManalinkClaims(creds.uid, adminDb),
   ])
@@ -44,7 +43,7 @@ export const getServerSideProps = redirectIfLoggedOut('/', async (_, creds) => {
     link: l,
     claims: claimsByLinkId[l.slug] ?? [],
   }))
-  return { props: { auth, userLinks } }
+  return { props: { user, userLinks } }
 })
 
 export function getManalinkUrl(slug: string) {
@@ -52,11 +51,10 @@ export function getManalinkUrl(slug: string) {
 }
 
 export default function LinkPage(props: {
-  auth: { user: User }
+  user: User
   userLinks: LinkAndClaims[]
 }) {
-  const { user } = props.auth
-  const { userLinks } = props
+  const { user, userLinks } = props
   const [highlightedSlug, setHighlightedSlug] = useState('')
   const [showDisabled, setShowDisabled] = useState(false)
   const displayedLinks = showDisabled
@@ -69,7 +67,7 @@ export default function LinkPage(props: {
       <SEO
         title="Manalinks"
         description="Send mana to others with a link, even if they don't have a Manifold account yet!"
-        url="/send"
+        url="/links"
       />
       <Col className="mt-6 w-full px-8">
         <Row className="items-start justify-between">

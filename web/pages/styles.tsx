@@ -220,6 +220,7 @@ function NumberInputExample() {
 
 function EditorExample() {
   const editor = useTextEditor({
+    size: 'md',
     defaultValue: '<p>Rich text editor from <code>editor.tsx</code></p>',
   })
   return <TextEditor editor={editor} />

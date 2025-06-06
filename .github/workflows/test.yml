@@ -3,24 +3,28 @@ name: Unit tests
 on:
   push:
     branches: [main]
+    paths:
+      - 'common/**'
   pull_request:
     branches: [main]
+    paths:
+      - 'common/**'
 
 jobs:
   test:
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v3
-    - name: Setup Node.js
-      uses: actions/setup-node@v4
-      with:
-        node-version: 18
-        cache: 'yarn'
-    - name: Install dependencies
-      run: yarn install --prefer-offline --frozen-lockfile
-      working-directory: ./common
-    - name: Run lint
-      run: yarn lint
-    - name: Run unit tests
-      run: yarn test
-      working-directory: ./common
+      - uses: actions/checkout@v3
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 18
+          cache: 'yarn'
+      - name: Install dependencies
+        run: yarn install --prefer-offline --frozen-lockfile
+        working-directory: ./common
+      - name: Run lint
+        run: yarn lint
+      - name: Run unit tests
+        run: yarn test
+        working-directory: ./common

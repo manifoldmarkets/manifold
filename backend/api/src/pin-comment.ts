@@ -1,11 +1,8 @@
 import { isAdminId, isModId } from 'common/envs/constants'
 import { getContract, revalidateContractStaticProps } from 'shared/utils'
 import { APIError, type APIHandler } from './helpers/endpoint'
-import {
-  createSupabaseClient,
-  createSupabaseDirectClient,
-} from 'shared/supabase/init'
-import { getComment } from 'shared/supabase/contract_comments'
+import { createSupabaseDirectClient } from 'shared/supabase/init'
+import { getComment } from 'shared/supabase/contract-comments'
 import { updateData } from 'shared/supabase/utils'
 
 export const pinComment: APIHandler<'pin-comment'> = async (
@@ -22,9 +19,8 @@ export const pinComment: APIHandler<'pin-comment'> = async (
     )
   }
 
-  const db = createSupabaseClient()
-
-  const contract = await getContract(contractId)
+  const pg = createSupabaseDirectClient()
+  const contract = await getContract(pg, contractId)
   if (!contract) throw new APIError(404, 'Contract not found')
 
   const isContractCreator = contract.creatorId === auth.uid
@@ -36,11 +32,10 @@ export const pinComment: APIHandler<'pin-comment'> = async (
     )
   }
 
-  const comment = await getComment(db, commentId)
+  const comment = await getComment(pg, commentId)
 
   // update the comment
-  const pg = createSupabaseDirectClient()
-  updateData(pg, 'contract_comments', 'comment_id', {
+  await updateData(pg, 'contract_comments', 'comment_id', {
     comment_id: commentId,
     pinned: !comment.pinned,
     pinnedTime: Date.now(),

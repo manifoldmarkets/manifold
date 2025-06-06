@@ -9,11 +9,10 @@ import { Card } from '../widgets/card'
 
 export function CharityCard(props: { charity: Charity; raised: number }) {
   const { charity, raised } = props
-  const { slug, photo, preview, tags } = charity
-  const raisedUSD = Math.floor(raised / 100)
+  const { id, photo, preview, tags } = charity
 
   return (
-    <Link href={`/charity/${slug}`} className="flex-1">
+    <Link href={`/charity/${id}`} className="flex-1">
       <Card className="!rounded-2xl">
         <Row className="mb-2 mt-6">{tags?.includes('New') && <NewBadge />}</Row>
         <div className="px-8">
@@ -27,12 +26,12 @@ export function CharityCard(props: { charity: Charity; raised: number }) {
         </div>
         <Col className="p-8">
           <div className="line-clamp-4 text-sm">{preview}</div>
-          {raisedUSD > 0 && (
+          {raised > 0 && (
             <>
               <Row className="text-ink-900 mt-4 flex-1 items-end justify-center gap-6">
                 <Row className="items-baseline gap-1">
                   <span className="text-3xl font-semibold">
-                    {formatMoneyUSD(raisedUSD)}
+                    {formatMoneyUSD(raised)}
                   </span>
                   raised
                 </Row>

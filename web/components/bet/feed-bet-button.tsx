@@ -5,11 +5,13 @@ import { Col } from '../layout/col'
 import { Modal, MODAL_CLASS } from '../layout/modal'
 import { BuyPanel } from './bet-panel'
 import { track } from 'web/lib/service/analytics'
-import { CPMMBinaryContract, StonkContract } from 'common/contract'
+import { BinaryContract, StonkContract } from 'common/contract'
 import { User, firebaseLogin } from 'web/lib/firebase/users'
+import { TRADE_TERM } from 'common/envs/constants'
+import { capitalize } from 'lodash'
 
 export function BetButton(props: {
-  contract: CPMMBinaryContract | StonkContract
+  contract: BinaryContract | StonkContract
   user: User | null | undefined
   feedReason?: string
   className?: string
@@ -29,7 +31,11 @@ export function BetButton(props: {
       firebaseLogin()
       return
     }
-    track('bet intent', { location: 'feed card', outcome })
+    track('bet intent', {
+      location: 'feed card',
+      outcome,
+      token: contract.token,
+    })
     setDialogueThatIsOpen(outcome)
   }
 
@@ -41,7 +47,7 @@ export function BetButton(props: {
         onClick={() => handleBetButtonClick('YES')}
         className="mr-2"
       >
-        {labels?.yes ?? 'Bet Yes'}
+        {labels?.yes ?? `${capitalize(TRADE_TERM)} Yes`}
       </Button>
 
       <Button
@@ -49,7 +55,7 @@ export function BetButton(props: {
         size="xs"
         onClick={() => handleBetButtonClick('NO')}
       >
-        {labels?.no ?? 'Bet No'}
+        {labels?.no ?? `${capitalize(TRADE_TERM)} No`}
       </Button>
 
       {open && (

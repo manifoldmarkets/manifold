@@ -4,22 +4,16 @@ import { Col } from 'web/components/layout/col'
 import { Row } from 'web/components/layout/row'
 import { UserLink } from 'web/components/widgets/user-link'
 import Curve from 'web/lib/icons/comment-curve.svg'
-import { getAnswerColor, useChartAnswers } from '../charts/contract/choice'
+import { getAnswerColor } from '../charts/contract/choice'
 import { useDisplayUserByIdOrAnswer } from 'web/hooks/use-user-supabase'
 import { XCircleIcon } from '@heroicons/react/solid'
 import { RelativeTimestamp } from 'web/components/relative-timestamp'
 import { UserHovercard } from '../user/user-hovercard'
-import { MultiContract } from 'common/contract'
 
-export function CommentOnAnswer(props: {
-  answer: Answer
-  contract: MultiContract
-  clear?: () => void
-}) {
-  const { answer, contract, clear } = props
+export function CommentOnAnswer(props: { answer: Answer; clear?: () => void }) {
+  const { answer, clear } = props
 
-  const answersArray = useChartAnswers(contract).map((answer) => answer.text)
-  const color = getAnswerColor(answer, answersArray)
+  const color = getAnswerColor(answer)
 
   return (
     <Row className="items-end pl-2">

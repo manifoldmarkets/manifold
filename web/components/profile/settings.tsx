@@ -2,7 +2,6 @@ import { RefreshIcon } from '@heroicons/react/solid'
 import Link from 'next/link'
 import toast from 'react-hot-toast'
 import { AiOutlineCopy } from 'react-icons/ai'
-import { updatePrivateUser } from 'web/lib/firebase/users'
 import { copyToClipboard } from 'web/lib/util/copy'
 import { Button } from '../buttons/button'
 import { ConfirmationButton } from '../buttons/confirmation-button'
@@ -15,49 +14,45 @@ import { Title } from '../widgets/title'
 import { PrivateUser, User } from 'common/user'
 import { useState } from 'react'
 import { generateNewApiKey } from 'web/lib/api/api-key'
-import { api } from 'web/lib/firebase/api'
+import { api } from 'web/lib/api/api'
+import { DeleteYourselfButton } from './delete-yourself'
+import { capitalize } from 'lodash'
+import { ENV_CONFIG, isAdminId, TRADE_TERM } from 'common/envs/constants'
+import { useNativeInfo } from '../native-message-provider'
+import { postMessageToNative } from 'web/lib/native/post-message'
 
-export const Settings = (props: { user: User; privateUser: PrivateUser }) => {
+export const AccountSettings = (props: {
+  user: User
+  privateUser: PrivateUser
+}) => {
   const { user, privateUser } = props
 
   const [apiKey, setApiKey] = useState(privateUser.apiKey || '')
   const [betWarnings, setBetWarnings] = useState(!user.optOutBetWarnings)
-  const [advancedTraderMode, setAdvancedTraderMode] = useState(
-    !!user.isAdvancedTrader
-  )
+  const [appUrl, setAppUrl] = useState('https://' + ENV_CONFIG.domain)
+  const isAdmin = isAdminId(user.id)
+  const { isNative } = useNativeInfo()
 
+  const sendAppUrl = async () => {
+    postMessageToNative('setAppUrl', { appUrl })
+    return
+  }
   const updateApiKey = async (e?: React.MouseEvent) => {
-    const newApiKey = await generateNewApiKey(user.id)
+    const newApiKey = await generateNewApiKey()
     setApiKey(newApiKey ?? '')
     e?.preventDefault()
 
     if (!privateUser.twitchInfo) return
-    await updatePrivateUser(privateUser.id, {
-      twitchInfo: { ...privateUser.twitchInfo, needsRelinking: true },
-    })
+    await api('save-twitch', { twitchInfo: { needsRelinking: true } })
   }
 
   return (
-    <Col className="gap-2">
+    <Col className="gap-5">
       <div>
         <label className="mb-1 block">
-          Advanced trader mode <InfoTooltip text={'More advanced betting UI'} />
-        </label>
-        <ShortToggle
-          on={advancedTraderMode}
-          setOn={(enabled) => {
-            setAdvancedTraderMode(enabled)
-            api('me/update', { isAdvancedTrader: enabled })
-          }}
-        />
-      </div>
-      <div>
-        <label className="mb-1 block">
-          Bet warnings{' '}
+          {capitalize(TRADE_TERM)} warnings{' '}
           <InfoTooltip
-            text={
-              'Warnings before you place a bet that is either 1. a large portion of your balance, or 2. going to move the probability by a large amount'
-            }
+            text={`Warnings before you place a ${TRADE_TERM} that is either 1. a large portion of your balance, or 2. going to move the probability by a large amount`}
           />
         </label>
         <ShortToggle
@@ -70,6 +65,19 @@ export const Settings = (props: { user: User; privateUser: PrivateUser }) => {
       </div>
 
       <div>
+        <label className="mb-1 block">Notifications & Emails </label>
+        <Link href="/notifications?tab=settings">
+          <Button>Edit settings</Button>
+        </Link>
+      </div>
+      {isAdmin && isNative && (
+        <div>
+          Native url
+          <Input value={appUrl} onChange={(e) => setAppUrl(e.target.value)} />
+          <Button onClick={sendAppUrl}>Send</Button>
+        </div>
+      )}
+      <div>
         <label className="mb-1 block">API key</label>
         <Row className="items-stretch gap-3">
           <Input
@@ -79,6 +87,7 @@ export const Settings = (props: { user: User; privateUser: PrivateUser }) => {
             readOnly
             className={'w-24'}
           />
+
           <Button
             color={'indigo'}
             onClick={() => {
@@ -117,6 +126,12 @@ export const Settings = (props: { user: User; privateUser: PrivateUser }) => {
             </Col>
           </ConfirmationButton>
         </Row>
+      </div>
+      <div>
+        <label className="mb-1 block">Delete Account </label>
+        <div className="flex  items-center  ">
+          <DeleteYourselfButton username={user.username} />
+        </div>
       </div>
     </Col>
   )

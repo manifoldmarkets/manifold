@@ -1,68 +1,30 @@
 import OpenAI from 'openai'
 import * as dayjs from 'dayjs'
-import 'dayjs/plugin/utc'
+import { log } from 'shared/utils'
+import * as utc from 'dayjs/plugin/utc'
+import { APIError } from 'common/api/utils'
+import { buildArray } from 'common/util/array'
+dayjs.extend(utc)
+export type MODELS = 'o3-mini' | 'gpt-4o' | 'gpt-4.1-2025-04-14' | 'o4-mini'
 
 export const generateEmbeddings = async (question: string) => {
   const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY })
   let response
   try {
     response = await openai.embeddings.create({
-      model: 'text-embedding-ada-002',
+      model: 'text-embedding-3-small',
       input: question,
     })
   } catch (e: any) {
-    console.error(
-      'Error generating embeddings',
-      !process.env.OPENAI_API_KEY ? ' (no OpenAI API key found)' : '',
-      e.message
+    log.error(
+      'Error generating embeddings ' +
+        (!process.env.OPENAI_API_KEY ? ' (no OpenAI API key found) ' : ' ') +
+        e.message
     )
     return undefined
   }
-
+  log('Made embeddings for question', question)
   return response.data[0].embedding
-}
-
-export const getCloseDate = async (question: string, utcOffset?: number) => {
-  const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY })
-  const now = dayjs.utc().format('M/D/YYYY h:mm a')
-
-  let response
-  try {
-    response = await openai.completions.create({
-      model: 'gpt-3.5-turbo-instruct',
-      prompt: `Question: Will I finish the task by 2027?\nNow: 5/2/2026 12:11 pm\nEnd date: 12/31/2026 11:59 pm\n\nQuestion: Will an AI-drawn movie have a rating >=7.0 on IMDB before 2025?\nNow: 5/2/2019 3:47 pm\nEnd date: 12/31/2024 11:59 pm\n\nQuestion: Will Bolsanaro concede the election by Nov 15?\nNow: 8/5/2022 1:20 pm\nEnd date: 11/14/2022 11:59 pm\n\nQuestion: Will Dwarf Fortress be released on Steam this year?\nNow: 2/5/2023 11:24 am\nEnd date: 12/31/2023 11:59 pm\n\nQuestion: Will eat ice cream today?\nNow: 10/2/2022 5:55 pm\nEnd date: 10/2/2022 11:59 pm\n\nQuestion: ${question}\nNow: ${now}\nEnd date:`,
-      temperature: 0.4,
-      max_tokens: 15,
-      top_p: 1,
-      frequency_penalty: 0,
-      presence_penalty: 0,
-    })
-  } catch (e: any) {
-    console.error(
-      'Error generating close date',
-      !process.env.OPENAI_API_KEY ? ' (no OpenAI API key found)' : '',
-      e.message
-    )
-    return undefined
-  }
-
-  const text = response.choices[0].text?.trim()
-  if (!text) return undefined
-  console.log(
-    'AI-selected close date for question',
-    question,
-    ':',
-    text,
-    'utc offset',
-    utcOffset ?? 'none'
-  )
-
-  const utcTime = dayjs.utc(text, 'M/D/YYYY h:mm a')
-  const timestamp = utcTime.valueOf()
-  if (!timestamp || !isFinite(timestamp)) return undefined
-
-  // adjust for local timezone
-  return utcTime.utcOffset(utcOffset ?? 0).valueOf()
 }
 
 const imagePrompt = (q: string) =>
@@ -84,20 +46,112 @@ export const generateImage = async (q: string) => {
     .catch((err) => (console.log(err), undefined))
 }
 
-export const promptGPT4 = async (prompt: string) => {
+export const promptOpenAI = async (
+  prompt: string,
+  model: MODELS,
+  options: { system?: string } = {}
+) => {
+  const { system } = options
   const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY })
 
   const result = await openai.chat.completions
     .create({
-      model: 'gpt-4-turbo-preview',
-      messages: [{ role: 'system', content: prompt }],
-      max_tokens: 4096,
+      model,
+      messages: buildArray(
+        system && {
+          role: 'system',
+          content: system,
+        },
+        { role: 'user', content: prompt }
+      ),
     })
     .catch((err) => (console.log(err), undefined))
 
-  if (!result) return undefined
+  if (!result) throw new APIError(500, 'No result from OpenAI')
 
   const message = result.choices[0].message.content
-  console.log('GPT4 returned message:', message)
+  log('GPT4 returned message:', message)
+  if (!message) throw new APIError(500, 'No result from OpenAI')
   return message
+}
+
+export const promptOpenAIWithWebSearch = async (
+  prompt: string,
+  model: MODELS = 'gpt-4.1-2025-04-14'
+) => {
+  const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY })
+
+  try {
+    const result = await openai.responses.create({
+      model,
+      input: prompt,
+      tools: [{ type: 'web_search_preview', search_context_size: 'high' }], // Provide the tool definition
+      tool_choice: 'required',
+    })
+
+    const message = result.output_text
+    log('OpenAI with tools returned message:', message)
+    if (!message) throw new Error('No message returned from OpenAI') // Changed to Error
+
+    // Return the entire message object (could contain content or tool_calls)
+    return message
+  } catch (err: any) {
+    log.error('Error calling OpenAI with tools:', err?.message ?? err)
+    // Propagate the error or return a specific error indicator
+    // Throwing an APIError might be suitable depending on usage context
+    throw new APIError(
+      500,
+      `OpenAI API error: ${err?.message ?? 'Unknown error'}`
+    )
+  }
+}
+
+export const removeJsonTicksFromResponse = (response: string): string => {
+  // Remove markdown code block formatting if present
+  const jsonBlockRegex = /```(?:json)?\s*([\s\S]*?)```/
+  const match = response.match(jsonBlockRegex)
+
+  if (match && match[1]) {
+    return match[1].trim()
+  }
+
+  // If no markdown formatting found, return the original response
+  return response.trim()
+}
+
+// Helper function to ensure the response is valid JSON, adapted from claude.ts
+export const parseOpenAIResponseAsJson = (response: string): any => {
+  const cleanedResponse = removeJsonTicksFromResponse(response)
+
+  try {
+    // Try to parse as is
+    return JSON.parse(cleanedResponse)
+  } catch (error) {
+    // If parsing fails, try to handle common issues
+
+    // Check if it's an array wrapped in extra text
+    const arrayStart = cleanedResponse.indexOf('[')
+    const arrayEnd = cleanedResponse.lastIndexOf(']')
+
+    if (arrayStart !== -1 && arrayEnd !== -1 && arrayEnd > arrayStart) {
+      const potentialArray = cleanedResponse.substring(arrayStart, arrayEnd + 1)
+      try {
+        return JSON.parse(potentialArray)
+      } catch (e) {
+        // If still fails, throw the original error
+        throw error
+      }
+    }
+
+    // If we can't fix it, throw the original error
+    throw error
+  }
+}
+
+export const promptOpenAIWebSearchParseJson = async <T>(
+  prompt: string,
+  model: MODELS = 'gpt-4.1-2025-04-14'
+): Promise<T> => {
+  const response = await promptOpenAIWithWebSearch(prompt, model)
+  return parseOpenAIResponseAsJson(response)
 }

@@ -1,69 +1,41 @@
 import { uniqBy } from 'lodash'
 import { Contract } from 'common/contract'
-import { MutableRefObject, useEffect, useRef, useState } from 'react'
-import { buildArray } from 'common/util/array'
+import { useEffect, useRef, useState } from 'react'
 import { usePrivateUser } from './use-user'
 import { isContractBlocked } from 'web/lib/firebase/users'
-import { db } from 'web/lib/supabase/db'
-import { useEvent } from './use-event'
+import { useEvent } from 'client-common/hooks/use-event'
+import { api } from 'web/lib/api/api'
 
-const GROUPS_PAGE_SIZE = 6
-// const RELATED_PAGE_SIZE = 10
+const LIMIT = 10
 
 export const useRelatedMarkets = (
   contract: Contract,
   initialContracts: Contract[]
 ) => {
   const [savedContracts, setSavedContracts] = useState(initialContracts)
-  // const relatedPage = useRef(0)
-  const groupsPage = useRef(0)
-  const creatorPage = useRef(0)
+  const offset = useRef(0)
   const privateUser = usePrivateUser()
   let hasLoadedMoreContracts = false
 
   const loadMore = useEvent(async () => {
-    const setContracts = (
-      contracts: Contract[],
-      page: MutableRefObject<number>
-    ) => {
-      setSavedContracts((sc) => {
-        const newContracts = uniqBy(buildArray(sc, contracts), (c) => c.id)
-        page.current += 1
-        const filteredContracts = newContracts.filter(
-          (c) => !isContractBlocked(privateUser, c) && c.id !== contract.id
-        )
-        if (filteredContracts.length > sc.length) {
-          hasLoadedMoreContracts = true
-        }
-        return filteredContracts
-      })
-    }
+    const { groupContracts } = await api('get-related-markets-by-group', {
+      contractId: contract.id,
+      limit: LIMIT,
+      offset: offset.current,
+    })
 
-    if (contract.groupSlugs?.length) {
-      const groupSlugsToUse = contract.groupSlugs.filter(
-        (slug) => !['spam', 'improperly-resolved'].includes(slug)
+    setSavedContracts((sc) => {
+      const newContracts = uniqBy([...sc, ...groupContracts], (c) => c.id)
+      const filteredContracts = newContracts.filter(
+        (c) => !isContractBlocked(privateUser, c) && c.id !== contract.id
       )
-      const [{ data: groupSlugData }, { data: creatorData }] =
-        await Promise.all([
-          db.rpc('search_contracts_by_group_slugs_1' as any, {
-            p_group_slugs: groupSlugsToUse,
-            lim: GROUPS_PAGE_SIZE,
-            start: groupsPage.current * GROUPS_PAGE_SIZE,
-          }),
-          db.rpc('search_contracts_by_group_slugs_for_creator_1' as any, {
-            creator_id: contract.creatorId,
-            p_group_slugs: groupSlugsToUse,
-            lim: GROUPS_PAGE_SIZE,
-            start: creatorPage.current * GROUPS_PAGE_SIZE,
-          }),
-        ])
+      if (filteredContracts.length > sc.length) {
+        hasLoadedMoreContracts = true
+      }
+      offset.current += LIMIT
+      return filteredContracts
+    })
 
-      if (groupSlugData) setContracts(groupSlugData, groupsPage)
-      if (creatorData) setContracts(creatorData, creatorPage)
-    } else {
-      // const contracts = await getRelatedContracts(contract, RELATED_PAGE_SIZE)
-      // setContracts(contracts, relatedPage)
-    }
     return hasLoadedMoreContracts
   })
 

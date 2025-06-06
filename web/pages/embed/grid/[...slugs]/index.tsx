@@ -1,15 +1,12 @@
-import { Contract } from 'web/lib/firebase/contracts'
+import { Contract } from 'common/contract'
 import { ContractsGrid } from 'web/components/contract/contracts-grid'
-import { getContractFromSlug } from 'common/supabase/contracts'
-import { db } from 'web/lib/supabase/db'
-import { filterDefined } from 'common/util/array'
+import { getContracts } from 'common/supabase/contracts'
+import { initSupabaseAdmin } from 'web/lib/supabase/admin-db'
 
 export async function getStaticProps(props: { params: { slugs: string[] } }) {
   const { slugs } = props.params
-
-  const contracts = filterDefined(
-    await Promise.all(slugs.map((slug) => getContractFromSlug(slug, db)))
-  )
+  const adminDb = await initSupabaseAdmin()
+  const contracts = await getContracts(adminDb, slugs, 'slug')
 
   return {
     props: {

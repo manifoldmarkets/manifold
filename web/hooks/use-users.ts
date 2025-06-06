@@ -1,27 +1,6 @@
 import { PrivateUser, User } from 'common/user'
 import { useEffect, useState } from 'react'
-import {
-  getRecentlyActiveUsers,
-  getTopUserCreators,
-} from 'web/lib/supabase/users'
-import { getPrivateUser } from 'web/lib/firebase/users'
-
-export const useDiscoverUsers = (
-  userId: string | null | undefined,
-  excludedUserIds: string[],
-  limit: number
-) => {
-  const [discoverUserIds, setDiscoverUserIds] = useState<string[] | undefined>()
-
-  useEffect(() => {
-    if (userId)
-      getTopUserCreators(userId, excludedUserIds, limit).then((rows) => {
-        setDiscoverUserIds(rows.map((r) => r.user_id))
-      })
-  }, [userId])
-
-  return discoverUserIds
-}
+import { getRecentlyActiveUsers } from 'web/lib/supabase/users'
 
 export const useRecentlyActiveUsersAndPrivateUsers = (limit: number) => {
   const [usersAndPrivates, setUsersAndPrivates] = useState<
@@ -32,12 +11,9 @@ export const useRecentlyActiveUsersAndPrivateUsers = (limit: number) => {
   >()
   const loadUsers = async () => {
     const users = await getRecentlyActiveUsers(limit)
-    const privateUsers = await Promise.all(
-      users.map(async (u) => getPrivateUser(u.id))
-    )
     const usersAndPrivates = users.map((user) => ({
       user,
-      privateUser: privateUsers.find((p) => p?.id === user.id),
+      privateUser: undefined,
     }))
     setUsersAndPrivates(usersAndPrivates)
   }

@@ -1,7 +1,8 @@
 import { remove } from 'lodash'
 import { APIError } from 'common/api/utils'
+import { log } from 'shared/utils'
 
-const DEFAULT_QUEUE_TIME_LIMIT = 5000
+export const DEFAULT_QUEUE_TIME_LIMIT = 10_000
 
 type WorkItem = {
   fn: () => Promise<any>
@@ -11,8 +12,8 @@ type WorkItem = {
   timestamp: number
 }
 
-export const createFnQueue = (props?: { timeout?: number }) => {
-  const { timeout = DEFAULT_QUEUE_TIME_LIMIT } = props || {}
+export const createFnQueue = (props?: { timeout?: number; name?: string }) => {
+  const { timeout = DEFAULT_QUEUE_TIME_LIMIT, name = 'unnamed' } = props || {}
 
   const state = {
     fnQueue: [] as WorkItem[],
@@ -43,14 +44,22 @@ export const createFnQueue = (props?: { timeout?: number }) => {
   }
 
   const enqueueFn = async <T>(fn: () => Promise<T>, dependencies: string[]) => {
-    return await enqueuePrivate(fn, dependencies, false)
+    const startTime = Date.now()
+    const result = await enqueuePrivate(fn, dependencies, false)
+    const endTime = Date.now()
+    log(`${name} enqueue fn took: ${endTime - startTime}ms`)
+    return result
   }
 
   const enqueueFnFirst = async <T>(
     fn: () => Promise<T>,
     dependencies: string[]
   ) => {
-    return await enqueuePrivate(fn, dependencies, true)
+    const startTime = Date.now()
+    const result = await enqueuePrivate(fn, dependencies, true)
+    const endTime = Date.now()
+    log(`${name} enqueue fn first took: ${endTime - startTime}ms`)
+    return result
   }
 
   const spliceExpiredItems = (queue: typeof fnQueue) => {
@@ -86,7 +95,10 @@ export const createFnQueue = (props?: { timeout?: number }) => {
     const expiredItems = spliceExpiredItems(fnQueue)
     for (const item of expiredItems) {
       item.reject(
-        new APIError(503, 'High volume of requests. Please try again later.')
+        new APIError(
+          503,
+          `High volume of requests (${fnQueue.length} requests in queue); please try again later.`
+        )
       )
     }
 
@@ -113,4 +125,6 @@ export const createFnQueue = (props?: { timeout?: number }) => {
   return { enqueueFn, enqueueFnFirst }
 }
 
-export const betsQueue = createFnQueue()
+export const ordersQueue = createFnQueue({ name: 'Orders' })
+export const betsQueue = createFnQueue({ name: 'Bets' })
+export const pollQueue = createFnQueue({ name: 'Poll' })

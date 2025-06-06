@@ -1,10 +1,11 @@
-import { api } from 'web/lib/firebase/api'
 import { DashboardLinkItem, DashboardQuestionItem } from 'common/dashboard'
 import { fetchLinkPreviews } from 'common/link-preview'
-import { getContracts } from 'web/lib/supabase/contracts'
+import { getContracts } from 'common/supabase/contracts'
 import { removeUndefinedProps } from 'common/util/object'
 import { capitalize, omit } from 'lodash'
 import { DashboardEndpoints } from 'web/components/dashboard/dashboard-page'
+import { api } from 'web/lib/api/api'
+import { db } from 'web/lib/supabase/db'
 
 export const getDashboardProps = async (
   slug: string,
@@ -24,7 +25,7 @@ export const getDashboardProps = async (
     .slice(0, 20) // preload just the first n questions
 
   const previews = await fetchLinkPreviews(links)
-  const fullContracts = await getContracts(questionSlugs, 'slug')
+  const fullContracts = await getContracts(db, questionSlugs, 'slug')
   const contracts = fullContracts.map((c) =>
     // remove some heavy fields that are not needed for the cards
     removeUndefinedProps(omit(c, 'description', 'coverImageUrl'))

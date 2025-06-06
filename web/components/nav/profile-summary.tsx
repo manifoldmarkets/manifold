@@ -1,19 +1,14 @@
-import { PlusIcon } from '@heroicons/react/outline'
 import clsx from 'clsx'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { useState } from 'react'
-import { SPICE_PRODUCTION_ENABLED } from 'common/envs/constants'
 import { User } from 'web/lib/firebase/users'
 import { trackCallback } from 'web/lib/service/analytics'
-import { AddFundsModal } from '../add-funds-modal'
 import { Avatar } from '../widgets/avatar'
-import { CoinNumber } from '../widgets/manaCoinNumber'
+import { TokenNumber } from '../widgets/token-number'
 
 export function ProfileSummary(props: { user: User; className?: string }) {
   const { user, className } = props
 
-  const [buyModalOpen, setBuyModalOpen] = useState(false)
   const currentPage = usePathname() ?? ''
   const url = `/${user.username}`
   return (
@@ -35,30 +30,20 @@ export function ProfileSummary(props: { user: User; className?: string }) {
       />
       <div className="mr-1 w-2 shrink-[2]" />
       <div className="shrink-0 grow">
-        {!SPICE_PRODUCTION_ENABLED && <div>{user.name}</div>}
+        {user.cashBalance < 1 && <div className="text-sm">{user.name}</div>}
         <div className="flex items-center text-sm">
-          <CoinNumber
+          <TokenNumber
             amount={user?.balance}
             numberType="animated"
-            className="text-primary-600 mr-2"
+            className="mr-1 text-violet-600 dark:text-violet-400"
           />
-          <button
-            className="hover:bg-primary-300 hover:dark:bg-primary-600 text-primary-600 group rounded-md p-1 ring-[1.5px] ring-inset ring-current transition-all hover:dark:text-white"
-            onClick={(e) => {
-              e.preventDefault()
-              setBuyModalOpen(true)
-            }}
-          >
-            <div className="sr-only">Get mana</div>
-            <PlusIcon className="h-2 w-2" strokeWidth="4.5" />
-          </button>
-          <AddFundsModal open={buyModalOpen} setOpen={setBuyModalOpen} />
         </div>
-        {SPICE_PRODUCTION_ENABLED && (
-          <CoinNumber
+        {/* remove this after deprecating sweeps */}
+        {user.cashBalance >= 1 && (
+          <TokenNumber
             className="text-sm text-amber-600 dark:text-amber-400"
-            amount={user.spiceBalance}
-            isSpice
+            amount={user.cashBalance}
+            coinType="sweepies"
           />
         )}
       </div>

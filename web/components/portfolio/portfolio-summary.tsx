@@ -5,8 +5,10 @@ import { useAPIGetter } from 'web/hooks/use-api-getter'
 import { useIsAuthorized, usePrivateUser, useUser } from 'web/hooks/use-user'
 import { LoadingContractRow } from '../contract/contracts-table'
 import { Col } from '../layout/col'
-import { SupabaseSearch } from '../supabase-search'
+import { Search } from '../search'
 import { PortfolioValueSection } from './portfolio-value-section'
+import { useEffect } from 'react'
+import { useIsPageVisible } from 'web/hooks/use-page-visible'
 
 export const PortfolioSummary = (props: { user: User; className?: string }) => {
   const { user, className } = props
@@ -17,9 +19,25 @@ export const PortfolioSummary = (props: { user: User; className?: string }) => {
   const isCreatedInLastWeek =
     user.createdTime > Date.now() - 7 * 24 * 60 * 60 * 1000
 
-  const { data: portfolioData } = useAPIGetter('get-user-portfolio', {
+  const {
+    data: portfolioData,
+    refresh,
+    loading,
+  } = useAPIGetter('get-user-portfolio', {
     userId: user.id,
   })
+  useEffect(() => {
+    if (currentUser?.id === user.id && !loading) {
+      refresh()
+    }
+  }, [currentUser?.balance, currentUser?.id])
+
+  const visible = useIsPageVisible()
+  useEffect(() => {
+    if (visible && !loading) {
+      refresh()
+    }
+  }, [visible])
 
   return (
     <Col className={clsx(className, 'gap-4')}>
@@ -36,8 +54,8 @@ export const PortfolioSummary = (props: { user: User; className?: string }) => {
       />
 
       {isCurrentUser && (
-        <Col className="mb-6 mt-2 gap-2">
-          <div className="text-ink-800 mx-2 text-xl lg:mx-0">
+        <Col className={clsx('border-ink-300 mb-6 mt-2 gap-2 border-t')}>
+          <div className="text-ink-800 mx-2 pt-4 text-xl font-semibold lg:mx-0">
             Recently viewed
           </div>
           {!isAuthed && (
@@ -48,7 +66,7 @@ export const PortfolioSummary = (props: { user: User; className?: string }) => {
             </Col>
           )}
           {isAuthed && (
-            <SupabaseSearch
+            <Search
               persistPrefix="recent"
               additionalFilter={{
                 excludeContractIds: privateUser?.blockedContractIds,
@@ -60,6 +78,7 @@ export const PortfolioSummary = (props: { user: User; className?: string }) => {
               headerClassName={'!hidden'}
               topicSlug="recent"
               contractsOnly
+              refreshOnVisible
               hideContractFilters
               hideSearch
             />

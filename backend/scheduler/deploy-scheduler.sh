@@ -12,13 +12,14 @@ ENV=${1:-dev}
 
 case $ENV in
     dev)
-      ENVIRONMENT=DEV
+      NEXT_PUBLIC_FIREBASE_ENV=DEV
       GCLOUD_PROJECT=dev-mantic-markets
-      MACHINE_TYPE=n2-standard-2 ;;
+      # MACHINE_TYPE=n2-standard-2 ;;
+      MACHINE_TYPE=e2-small ;;  # If you want to change this, you have to change it in the GCP console
     prod)
-      ENVIRONMENT=PROD
+      NEXT_PUBLIC_FIREBASE_ENV=PROD
       GCLOUD_PROJECT=mantic-markets
-      MACHINE_TYPE=n2-standard-4 ;;
+      MACHINE_TYPE=n2-highmem-2;;  # If you want to change this, you have to change it in the GCP console
     *)
       echo "Invalid environment; must be dev or prod."
       exit 1
@@ -27,6 +28,8 @@ esac
 GIT_REVISION=$(git rev-parse --short HEAD)
 TIMESTAMP=$(date +"%s")
 IMAGE_TAG="${TIMESTAMP}-${GIT_REVISION}"
+
+echo "Deploy start time: $(date "+%Y-%m-%d %I:%M:%S %p")"
 
 yarn build
 if [ "${INITIALIZE}" = false ]; then
@@ -60,23 +63,26 @@ else
     gcloud builds submit . --tag ${IMAGE_URL} --project ${GCLOUD_PROJECT}
 fi
 
+echo "Current time: $(date "+%Y-%m-%d %I:%M:%S %p")"
+
+COMMON_ARGS=(
+  --project ${GCLOUD_PROJECT}
+  --zone ${ZONE}
+  --container-image ${IMAGE_URL}
+  --container-env NEXT_PUBLIC_FIREBASE_ENV=${NEXT_PUBLIC_FIREBASE_ENV},GOOGLE_CLOUD_PROJECT=${GCLOUD_PROJECT}
+)
+
 # If you augment the instance, be sure to increase --max-old-space-size in the Dockerfile
 if [ "${INITIALIZE}" = true ]; then
 #    If you just deleted the instance you don't need this line
 #    gcloud compute addresses create ${SERVICE_NAME} --project ${GCLOUD_PROJECT} --region ${REGION}
     gcloud compute instances create-with-container ${SERVICE_NAME} \
-           --project ${GCLOUD_PROJECT} \
-           --zone ${ZONE} \
+           "${COMMON_ARGS[@]}" \
            --address ${IP_ADDRESS_NAME} \
-           --container-image ${IMAGE_URL} \
            --machine-type ${MACHINE_TYPE} \
-           --container-env ENVIRONMENT=${ENVIRONMENT} \
-           --container-env GOOGLE_CLOUD_PROJECT=${GCLOUD_PROJECT} \
            --scopes default,cloud-platform \
            --tags http-server
 else
     gcloud compute instances update-container ${SERVICE_NAME} \
-           --project ${GCLOUD_PROJECT} \
-           --zone ${ZONE} \
-           --container-image ${IMAGE_URL}
+           "${COMMON_ARGS[@]}"
 fi

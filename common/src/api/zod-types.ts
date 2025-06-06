@@ -51,3 +51,10 @@ export const DashboardItemSchema = z.union([
   DashboardLinkItemSchema,
   DashboardTextItemSchema,
 ])
+
+// Zod doesn't handle z.coerce.boolean() properly for GET requests
+export const coerceBoolean = z
+  .union([z.boolean(), z.literal('true'), z.literal('false')])
+  .transform(
+    (value) => value === true || value === 'true'
+  ) as z.ZodType<boolean>

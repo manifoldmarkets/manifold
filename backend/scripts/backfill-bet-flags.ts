@@ -11,7 +11,7 @@ const firestore = admin.firestore()
 
 async function updateAllBets() {
   const writer = new SafeBulkWriter({ throttling: false })
-  const flags = ['isAnte', 'isRedemption', 'isChallenge']
+  const flags = ['isAnte', 'isRedemption']
   let updated = 0
   const bets = firestore.collectionGroup('bets')
   await processPartitioned(bets, 100, async (docs) => {

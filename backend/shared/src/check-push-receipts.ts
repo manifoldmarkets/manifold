@@ -1,12 +1,12 @@
-import { Expo } from 'expo-server-sdk'
-import * as admin from 'firebase-admin'
+import { Expo, ExpoPushErrorReceipt } from 'expo-server-sdk'
 import { createSupabaseDirectClient } from 'shared/supabase/init'
 import { convertPushTicket } from 'common/push-ticket'
 import { log } from 'shared/monitoring/log'
+import { updatePrivateUser } from './supabase/users'
+import { FieldVal } from './supabase/utils'
 
 export const checkPushNotificationReceipts = async () => {
   const expo = new Expo()
-  const firestore = admin.firestore()
   // Later, after the Expo push notification service has delivered the
   // notifications to Apple or Google (usually quickly, but allow the service
   // up to 30 minutes when under load), a "receipt" for each notification is
@@ -37,12 +37,25 @@ export const checkPushNotificationReceipts = async () => {
   for (const chunk of receiptIdChunks) {
     try {
       const receipts = await expo.getPushNotificationReceiptsAsync(chunk)
-      log(receipts)
+      log('got total receipts:', Object.keys(receipts).length)
+      log('got error receipts', {
+        receipts: Object.entries(receipts)
+          .filter(([_, r]) => r.status === 'error')
+          .map(([receiptId, r]) => {
+            const receipt = r as ExpoPushErrorReceipt
+            return {
+              details: Object.entries(receipt.details ?? {}),
+              status: receipt.status,
+              message: receipt.message,
+              receiptId,
+            }
+          }),
+      })
       await Promise.all(
         Object.entries(receipts).map(async ([receiptId, receipt]) => {
           const ticket = tickets.find((ticket) => ticket.id === receiptId)
           if (!ticket) {
-            log(`Could not find ticket for receiptId ${receiptId}`)
+            log.error(`Could not find ticket for receiptId ${receiptId}`)
             return
           }
           // eslint-disable-next-line @typescript-eslint/ban-ts-comment
@@ -50,7 +63,7 @@ export const checkPushNotificationReceipts = async () => {
           const { status, message, details } = receipt
           let error: string | null = null
           if (status === 'error') {
-            log(`There was an error sending a notification: ${message}`)
+            log.error(`There was an error sending a notification: ${message}`)
             if (details && details.error) {
               error = details.error
               // The error codes are listed in the Expo documentation:
@@ -58,12 +71,9 @@ export const checkPushNotificationReceipts = async () => {
               log(`The error code is ${error}`)
               if (error === 'DeviceNotRegistered') {
                 // set private user pushToken to null
-                await firestore
-                  .collection('private-users')
-                  .doc(ticket.userId)
-                  .update({
-                    pushToken: admin.firestore.FieldValue.delete(),
-                  })
+                await updatePrivateUser(pg, ticket.userId, {
+                  pushToken: FieldVal.delete(),
+                })
               }
             }
           }
@@ -78,7 +88,7 @@ export const checkPushNotificationReceipts = async () => {
         })
       )
     } catch (error) {
-      log(error)
+      log.error('error on check push', { error })
     }
   }
 }

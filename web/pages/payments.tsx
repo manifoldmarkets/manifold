@@ -13,7 +13,7 @@ import { Modal } from 'web/components/layout/modal'
 import { SelectUsers } from 'web/components/select-users'
 import { DisplayUser } from 'common/api/user-types'
 import { AmountInput } from 'web/components/widgets/amount-input'
-import { api } from 'web/lib/firebase/api'
+import { api } from 'web/lib/api/api'
 import { useUser } from 'web/hooks/use-user'
 import { ENV_CONFIG, isAdminId } from 'common/envs/constants'
 import { uniq } from 'lodash'
@@ -22,7 +22,7 @@ import { UserAvatarAndBadge, UserLink } from 'web/components/widgets/user-link'
 import { QrcodeIcon, XIcon } from '@heroicons/react/outline'
 import { User } from 'web/lib/firebase/users'
 import { Avatar } from 'web/components/widgets/avatar'
-import { formatMoney } from 'common/util/format'
+import { formatSpice, formatWithToken } from 'common/util/format'
 import { Linkify } from 'web/components/widgets/linkify'
 import { ExpandingInput } from 'web/components/widgets/expanding-input'
 import { RelativeTimestamp } from 'web/components/relative-timestamp'
@@ -33,6 +33,9 @@ import { CopyLinkRow } from 'web/components/buttons/copy-link-button'
 import { useRouter } from 'next/router'
 import { filterDefined } from 'common/util/array'
 import { UserHovercard } from 'web/components/user/user-hovercard'
+
+import { ChoicesToggleGroup } from 'web/components/widgets/choices-toggle-group'
+import { TokenNumber } from 'web/components/widgets/token-number'
 
 export default function Payments() {
   const { payments, load } = useAllManaPayments()
@@ -215,7 +218,12 @@ const PaymentCards = (props: {
                 }
               >
                 {decreasedBalance ? '-' : '+'}
-                {formatMoney(Math.abs(payment.amount))}
+                {payment.token === 'SPICE'
+                  ? formatSpice(Math.abs(payment.amount))
+                  : formatWithToken({
+                      amount: Math.abs(payment.amount),
+                      token: payment.token,
+                    })}
               </span>
             </Row>
             <Row className={'ml-1 mt-2'}>
@@ -250,6 +258,7 @@ export const PaymentsModal = (props: {
   const [message, setMessage] = useState(defaultMessage)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
+  const [isCash, setIsCash] = useState(false)
   const [toUsers, setToUsers] = useState<DisplayUser[]>([])
   const [removedToUser, setRemovedToUser] = useState(false)
   const { canSend, message: cannotSendMessage } = useCanSendMana(fromUser)
@@ -257,6 +266,8 @@ export const PaymentsModal = (props: {
   useEffect(() => {
     if (toUser) setToUsers([toUser])
   }, [toUser])
+
+  const showCash = isAdminId(fromUser.id)
   return (
     <Modal open={show} setOpen={setShow}>
       <Col className={'bg-canvas-0 rounded-md p-4'}>
@@ -291,13 +302,31 @@ export const PaymentsModal = (props: {
             </Col>
           </Row>
           <Row className={'items-center justify-between'}>
+            {showCash && (
+              <Col>
+                <span>Token</span>
+                <ChoicesToggleGroup
+                  currentChoice={isCash ? 'CASH' : 'M$'}
+                  setChoice={(val) => setIsCash(val === 'CASH')}
+                  choicesMap={{
+                    Mana: 'M$',
+                    Sweepcash: 'CASH',
+                  }}
+                />
+              </Col>
+            )}
             <Col>
               <span>Amount</span>
               <AmountInput
                 amount={amount}
                 allowNegative={isAdmin}
                 onChangeAmount={setAmount}
-                label={ENV_CONFIG.moneyMoniker}
+                label={
+                  <TokenNumber
+                    coinType={showCash && isCash ? 'CASH' : 'MANA'}
+                    hideAmount
+                  />
+                }
                 inputClassName={'w-52'}
                 onBlur={() => {
                   if (amount && amount < 10 && !isAdmin) {
@@ -332,6 +361,7 @@ export const PaymentsModal = (props: {
                     amount,
                     message,
                     groupId,
+                    token: showCash && isCash ? 'CASH' : 'M$',
                   })
                   setError('')
                   setShow(false)
@@ -348,6 +378,7 @@ export const PaymentsModal = (props: {
                 !toUsers.length ||
                 !canSend
               }
+              loading={loading}
             >
               Send
             </Button>
@@ -376,7 +407,7 @@ export const QRModal = (props: {
   return (
     <Modal open={show} setOpen={setShow} className="bg-canvas-0 rounded-lg">
       <div className="flex flex-col items-center p-8">
-        <div className="mb-4 text-2xl text-indigo-700">
+        <div className="text-primary-700 mb-4 text-2xl">
           Scan to send mana to {user.name}
         </div>
 

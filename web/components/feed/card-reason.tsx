@@ -16,28 +16,33 @@ export function CardReason(props: {
   repost?: Repost
   probChange?: number
   since?: number
+  className?: string
 }) {
-  const { reason, repost, probChange, since } = props
+  const { reason, repost, probChange, since, className } = props
 
   if (probChange) {
     return <ProbabilityChange probChange={probChange} since={since} />
   } else if (reason === 'freshness') {
     return (
-      <Row className={'text-ink-400 items-center gap-1 text-sm'}>
+      <Row
+        className={clsx('text-ink-400 items-center gap-1 text-sm', className)}
+      >
         <HiSparkles className={'h-4 w-4 text-yellow-400'} />
         trending
       </Row>
     )
   } else if (reason === 'conversion') {
     return (
-      <Row className={'text-ink-400 items-center gap-1.5 text-sm'}>
+      <Row
+        className={clsx('text-ink-400 items-center gap-1.5 text-sm', className)}
+      >
         <FaGem className="h-3 w-3 text-blue-400" />
         interesting
       </Row>
     )
   } else if (reason === 'importance') {
     return (
-      <span className="text-ink-400 text-sm">
+      <span className={clsx('text-ink-400 text-sm', className)}>
         <Row className={'items-center gap-1'}>
           <FireIcon className="text-ink-400 h-4 w-4" />
           popular
@@ -46,7 +51,7 @@ export function CardReason(props: {
     )
   } else if (reason === 'followed') {
     return (
-      <span className="text-ink-400 text-sm">
+      <span className={clsx('text-ink-400 text-sm', className)}>
         <Row className={'items-center gap-1'}>
           <UserIcon className="text-ink-400 h-4 w-4" />
           following
@@ -56,7 +61,7 @@ export function CardReason(props: {
   } else if (reason === 'reposted' && repost) {
     return (
       <Tooltip text={'Reposted by ' + repost.user_name}>
-        <Row className={'text-ink-400 gap-1 text-sm'}>
+        <Row className={clsx('text-ink-400 gap-1 text-sm', className)}>
           <BiRepost className={'text-ink-400 h-5 w-5'} />
           <UserHovercard userId={repost.user_id}>
             <UserLink

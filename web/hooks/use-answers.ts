@@ -1,58 +1,36 @@
-import { useEffect } from 'react'
-import { Answer } from 'common/answer'
-import { usePersistentInMemoryState } from './use-persistent-in-memory-state'
-import { getAnswersForContracts } from 'common/supabase/contracts'
-import { db } from 'web/lib/supabase/db'
-import { getAnswerBettorCount } from 'common/supabase/answers'
-import { useApiSubscription } from './use-api-subscription'
+import { type Answer } from 'common/answer'
+import { useAPIGetter } from './use-api-getter'
+import { useApiSubscription } from 'client-common/hooks/use-api-subscription'
+import { prepopulateCache } from 'client-common/hooks/use-api-getter'
 
-export const useAnswersCpmm = (contractId: string) => {
-  const [answers, setAnswers] = usePersistentInMemoryState<
-    Answer[] | undefined
-  >(undefined, 'answersCpmm-' + contractId)
+export function useAnswer(answerId: string | undefined) {
+  const { data: answer, setData: setAnswer } = useAPIGetter(
+    'answer/:answerId',
+    answerId ? { answerId } : undefined
+  )
 
-  useEffect(() => {
-    getAnswersForContracts(db, [contractId]).then((answers) =>
-      setAnswers(answers[contractId])
-    )
-  }, [contractId])
-
-  useApiSubscription({
-    topics: [`contract/${contractId}/new-answer`],
-    onBroadcast: ({ data }) => {
-      setAnswers((answers) => [...(answers ?? []), data.answer as Answer])
-    },
-  })
-
-  useApiSubscription({
-    topics: [`contract/${contractId}/updated-answer`],
-    onBroadcast: ({ data }) => {
-      const newAnswer = data.answer as Answer
-      setAnswers((answers) =>
-        (answers ?? []).map((answer) =>
-          answer.id === newAnswer.id ? newAnswer : answer
-        )
-      )
-    },
-  })
-
-  return answers
+  return { answer: answerId ? answer : undefined, setAnswer }
 }
 
-export const useUniqueBettorCountOnAnswer = (
-  contractId: string,
-  answerId: string | undefined
-) => {
-  const [uniqueAnswerBettorCount, setUniqueAnswerBettorCount] =
-    usePersistentInMemoryState<number>(
-      0,
-      'uniqueAnswerBettorCount-' + contractId + '-' + answerId
-    )
-  useEffect(() => {
-    if (answerId)
-      getAnswerBettorCount(db, contractId, answerId).then(
-        setUniqueAnswerBettorCount
+export function useLiveAnswer(answerId: string | undefined) {
+  const { answer, setAnswer } = useAnswer(answerId)
+
+  useApiSubscription({
+    enabled: answerId != undefined,
+    topics: [`answer/${answerId}/update`],
+    onBroadcast: ({ data }) => {
+      setAnswer((a) =>
+        a ? { ...a, ...(data.answer as Answer) } : (data.answer as Answer)
       )
-  }, [answerId])
-  return uniqueAnswerBettorCount
+    },
+  })
+
+  return answer
+}
+
+export function precacheAnswers(answers: Answer[]) {
+  for (const answer of answers) {
+    if (answer.id)
+      prepopulateCache('answer/:answerId', { answerId: answer.id }, answer)
+  }
 }

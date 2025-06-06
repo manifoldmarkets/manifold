@@ -1,25 +1,31 @@
 import { pgp, SupabaseDirectClient } from 'shared/supabase/init'
-import { SupabaseClient } from 'common/supabase/utils'
 import { WEEK_MS } from 'common/util/time'
 import { APIError } from 'common/api/utils'
-import { User } from 'common/user'
-import { updateData } from './utils'
+import { PrivateUser, User } from 'common/user'
+import { FieldValFunction, updateData } from './utils'
+import {
+  broadcastUpdatedPrivateUser,
+  broadcastUpdatedUser,
+} from 'shared/websockets/helpers'
+import { removeUndefinedProps } from 'common/util/object'
+import { getBettingStreakResetTimeBeforeNow } from 'shared/utils'
+import { log } from 'node:console'
+import { groupBy, mapValues, sumBy } from 'lodash'
+import { Row } from 'common/supabase/utils'
 
 // used for API to allow username as parm
 export const getUserIdFromUsername = async (
-  db: SupabaseClient,
+  pg: SupabaseDirectClient,
   username?: string
 ) => {
   if (!username) return undefined
-
-  const { data, error } = await db
-    .from('users')
-    .select('id')
-    .eq('username', username)
-    .single()
-  if (error) throw new APIError(404, `User with username ${username} not found`)
-
-  return data.id
+  const id = await pg.oneOrNone(
+    `select id from users where username = $1`,
+    [username],
+    (r) => r?.id as string
+  )
+  if (!id) throw new APIError(400, 'No user found with that username')
+  return id
 }
 
 export const getUserFollowerIds = async (
@@ -31,6 +37,10 @@ export const getUserFollowerIds = async (
     [userId]
   )
   return userFollowerIds.map((r) => r.user_id)
+}
+export const getAllUserIds = async (pg: SupabaseDirectClient) => {
+  const userIds = await pg.map(`select id from users`, [], (r) => r.id)
+  return userIds
 }
 
 export const getWhenToIgnoreUsersTime = () => {
@@ -75,26 +85,102 @@ export const updateUser = async (
   id: string,
   update: Partial<User>
 ) => {
-  await updateData(db, 'users', 'id', { id, ...update })
+  const fullUpdate = { id, ...update }
+  await updateData(db, 'users', 'id', fullUpdate)
+  broadcastUpdatedUser(fullUpdate)
+}
+
+// private_users has 2 columns that aren't in the data column
+export type UpdateType =
+  | Partial<PrivateUser>
+  | {
+      [key in keyof PrivateUser]?: FieldValFunction
+    }
+
+export const updatePrivateUser = async (
+  db: SupabaseDirectClient,
+  id: string,
+  update: UpdateType
+) => {
+  await updateData(db, 'private_users', 'id', { id, ...update })
+  broadcastUpdatedPrivateUser(id)
 }
 
 export const incrementBalance = async (
   db: SupabaseDirectClient,
   id: string,
-  deltas: { balance?: number; spiceBalance?: number; totalDeposits?: number }
+  deltas: {
+    balance?: number
+    cashBalance?: number
+    spiceBalance?: number
+    totalDeposits?: number
+    totalCashDeposits?: number
+  }
 ) => {
-  await db.none(
-    `update users
-    set balance = balance + $1,
-        spice_balance = spice_balance + $2,
-        total_deposits = total_deposits + $3
-    where id = $4`,
-    [
-      deltas.balance ?? 0,
-      deltas.spiceBalance ?? 0,
-      deltas.totalDeposits ?? 0,
+  const updates = [
+    ['balance', deltas.balance],
+    ['cash_balance', deltas.cashBalance],
+    ['spice_balance', deltas.spiceBalance],
+    ['total_deposits', deltas.totalDeposits],
+    ['total_cash_deposits', deltas.totalCashDeposits],
+  ].filter(([_, v]) => v) // defined and not 0
+
+  if (updates.length === 0) {
+    return
+  }
+
+  const result = await db.one(
+    `update users set ${updates
+      .map(([k, v]) => `${k} = ${k} + ${v}`)
+      .join(',')} where id = $1
+    returning id, ${updates.map(([k]) => k).join(', ')}`,
+    [id]
+  )
+
+  broadcastUpdatedUser(
+    removeUndefinedProps({
       id,
-    ]
+      balance: result.balance,
+      cashBalance: result.cash_balance,
+      spiceBalance: result.spice_balance,
+      totalDeposits: result.total_deposits,
+      totalCashDeposits: result.total_cash_deposits,
+    })
+  )
+}
+
+export const incrementStreakQuery = (user: User, newBetTime: number) => {
+  const betStreakResetTime = getBettingStreakResetTimeBeforeNow()
+
+  return pgp.as.format(
+    `
+    WITH old_data AS (
+      SELECT 
+        coalesce((data->>'lastBetTime')::bigint, 0) AS lastBetTime,
+        coalesce((data->>'currentBettingStreak')::int, 0) AS currentBettingStreak
+      FROM users
+      WHERE id = $1
+    )
+    UPDATE users SET 
+      data = jsonb_set(
+        jsonb_set(data, '{currentBettingStreak}', 
+          CASE
+            WHEN old_data.lastBetTime < $2
+            THEN (old_data.currentBettingStreak + 1)::text::jsonb
+            ELSE old_data.currentBettingStreak::text::jsonb
+          END
+        ),
+        '{lastBetTime}', to_jsonb($3)::jsonb
+      )
+    FROM old_data
+    WHERE users.id = $1
+    RETURNING 
+      CASE
+        WHEN old_data.lastBetTime < $2 THEN true
+        ELSE false
+      END AS streak_incremented
+  `,
+    [user.id, betStreakResetTime, newBetTime]
   )
 }
 
@@ -103,29 +189,126 @@ export const bulkIncrementBalances = async (
   userUpdates: {
     id: string
     balance?: number
+    cashBalance?: number
     spiceBalance?: number
     totalDeposits?: number
+    totalCashDeposits?: number
   }[]
 ) => {
   if (userUpdates.length === 0) return
+  const query = bulkIncrementBalancesQuery(userUpdates)
+  const results = await db.many(query)
+  broadcastUserUpdates(results)
+}
 
-  const values = userUpdates
+export type UserUpdate = Pick<
+  Row<'users'>,
+  | 'id'
+  | 'balance'
+  | 'cash_balance'
+  | 'spice_balance'
+  | 'total_deposits'
+  | 'total_cash_deposits'
+>
+export const broadcastUserUpdates = (userUpdates: UserUpdate[]) => {
+  for (const row of userUpdates) {
+    broadcastUpdatedUser({
+      id: row.id,
+      balance: row.balance,
+      cashBalance: row.cash_balance,
+      spiceBalance: row.spice_balance,
+      totalDeposits: row.total_deposits,
+      totalCashDeposits: row.total_cash_deposits,
+    })
+  }
+}
+
+export const bulkIncrementBalancesQuery = (
+  userUpdates: {
+    id: string
+    balance?: number
+    cashBalance?: number
+    spiceBalance?: number
+    totalDeposits?: number
+    totalCashDeposits?: number
+  }[]
+) => {
+  if (userUpdates.length === 0) return 'select 1 where false'
+
+  // Group and sum updates for duplicate user IDs
+  const groupedUpdates = groupBy(userUpdates, 'id')
+  const summedUpdates = mapValues(groupedUpdates, (updates) => ({
+    id: updates[0].id,
+    balance: sumBy(updates, 'balance') ?? 0,
+    cashBalance: sumBy(updates, 'cashBalance') ?? 0,
+    spiceBalance: sumBy(updates, 'spiceBalance') ?? 0,
+    totalDeposits: sumBy(updates, 'totalDeposits') ?? 0,
+    totalCashDeposits: sumBy(updates, 'totalCashDeposits') ?? 0,
+  }))
+
+  const values = Object.values(summedUpdates)
     .map((update) =>
-      pgp.as.format(`($1, $2, $3, $4)`, [
+      pgp.as.format(`($1, $2, $3, $4, $5, $6)`, [
         update.id,
-        update.balance ?? 0,
-        update.spiceBalance ?? 0,
-        update.totalDeposits ?? 0,
+        update.balance,
+        update.cashBalance,
+        update.spiceBalance,
+        update.totalDeposits,
+        update.totalCashDeposits,
       ])
     )
     .join(',\n')
 
-  await db.none(`update users as u
-    set 
+  return `update users as u
+    set
         balance = u.balance + v.balance,
+        cash_balance = u.cash_balance + v.cash_balance,
         spice_balance = u.spice_balance + v.spice_balance,
-        total_deposits = u.total_deposits + v.total_deposits
-    from (values ${values}) as v(id, balance, spice_balance, total_deposits)
+        total_deposits = u.total_deposits + v.total_deposits,
+        total_cash_deposits = u.total_cash_deposits + v.total_cash_deposits
+    from (values ${values}) as v(id, balance, cash_balance, spice_balance, total_deposits, total_cash_deposits)
     where u.id = v.id
-  `)
+    returning u.id, u.balance, u.cash_balance, u.spice_balance, u.total_deposits, u.total_cash_deposits
+    `
+}
+
+export const getUserIdFromReferralCode = async (
+  pg: SupabaseDirectClient,
+  referralCode: string | undefined
+) => {
+  if (!referralCode) return undefined
+  const startOfId = referralCode.replace(/#/g, '0')
+  log('startOfId', startOfId)
+  return await pg.oneOrNone(
+    `select id, coalesce((data->>'sweepstakesVerified')::boolean, false) as sweeps_verified from users
+           where id ilike $1 || '%' limit 1`,
+    [startOfId],
+    (r) =>
+      r
+        ? {
+            id: r.id as string,
+            sweepsVerified: r.sweeps_verified as boolean,
+          }
+        : null
+  )
+}
+export const getReferrerInfo = async (
+  pg: SupabaseDirectClient,
+  referredByUserId: string | undefined
+) => {
+  if (!referredByUserId) return undefined
+  return await pg.oneOrNone(
+    `select id,
+       coalesce((data->>'sweepstakesVerified')::boolean, false) as sweeps_verified
+       from users where id = $1 
+      `,
+    [referredByUserId],
+    (row) =>
+      row
+        ? {
+            id: row.id as string,
+            sweepsVerified: row.sweeps_verified as boolean,
+          }
+        : null
+  )
 }

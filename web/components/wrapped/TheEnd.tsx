@@ -15,8 +15,9 @@ export function TheEnd(props: {
   goToPrevPage: () => void
   username: string
   restart: () => void
+  isCurrentUser: boolean
 }) {
-  const { goToPrevPage, username, restart } = props
+  const { goToPrevPage, username, restart, isCurrentUser } = props
   const url = getWrappedUrl(username)
   return (
     <>
@@ -65,11 +66,11 @@ export function TheEnd(props: {
             // e.preventDefault()
             e.stopPropagation()
           }}
-          href="/home"
+          href={isCurrentUser ? `/${username}` : '/home'}
           className="font-md z-50 flex flex-row items-center justify-center gap-1 rounded-md px-4 py-2 text-center text-sm ring-inset transition-colors hover:text-pink-400 hover:underline disabled:cursor-not-allowed"
         >
           <HomeIcon className={clsx('h-5 w-5')} aria-hidden="true" />
-          Back to Home
+          Back to {isCurrentUser ? 'Profile' : `Home`}
         </Link>
       </Col>
       <NavButtons goToPrevPage={goToPrevPage} />
@@ -78,4 +79,4 @@ export function TheEnd(props: {
 }
 
 export const getWrappedUrl = (username: string | undefined) =>
-  `https://${ENV_CONFIG.domain}/${username}/wrapped2023`
+  `https://${ENV_CONFIG.domain}/${username}/wrapped2024`

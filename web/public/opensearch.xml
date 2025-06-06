@@ -1,10 +1,10 @@
-<?xml version="1.0" encoding="UTF-8" ?>
+<?xml version="1.0" encoding="UTF-8"?>
 <OpenSearchDescription xmlns="http://a9.com/-/spec/opensearch/1.1/"
                        xmlns:moz="http://www.mozilla.org/2006/browser/search/">
   <ShortName>Manifold</ShortName>
-  <Description>Search market questions on Manifold</Description>
-  <InputEncoding>UTF-8</InputEncoding>
+  <Description>Search Manifold questions, topics, or users</Description>
   <Image width="16" height="16" type="image/x-icon">https://manifold.markets/favicon.ico</Image>
-  <Url type="text/html" template="https://manifold.markets/browse?s=score&amp;f=all&amp;q={searchTerms}"/>
-  <moz:SearchForm>https://manifold.markets</moz:SearchForm>
-</OpenSearchDescription>
+  <InputEncoding>UTF-8</InputEncoding>
+  <Url type="text/html" template="https://manifold.markets/browse?q={searchTerms}"/>
+  <moz:SearchForm>https://manifold.markets/browse</moz:SearchForm>
+</OpenSearchDescription> 

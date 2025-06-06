@@ -1,146 +1,184 @@
-import { groupBy, mapValues, maxBy, min, sum, sumBy } from 'lodash'
+import { groupBy, mapValues, min, orderBy, sum, sumBy } from 'lodash'
 
-import { getBinaryRedeemableAmount, getRedemptionBets } from 'common/redeem'
-import { floatingEqual } from 'common/util/math'
 import {
-  CPMMContract,
-  CPMMMultiContract,
-  CPMMNumericContract,
-} from 'common/contract'
+  getBinaryRedeemableAmountFromContractMetric,
+  getRedemptionBets,
+} from 'common/redeem'
+import { floatingEqual } from 'common/util/math'
+
 import { APIError } from 'common/api/utils'
 import { log } from 'shared/utils'
 import { getNewSellBetInfo } from 'common/sell-bet'
 import * as crypto from 'crypto'
 import { getSellAllRedemptionPreliminaryBets } from 'common/calculate-cpmm-arbitrage'
-import { incrementBalance } from 'shared/supabase/users'
 import { SupabaseDirectClient } from 'shared/supabase/init'
 import { convertBet } from 'common/supabase/bets'
-import { bulkInsertBets } from 'shared/supabase/bets'
-
+import { Bet, getNewBetId } from 'common/bet'
+import { Contract } from 'common/contract'
+import { MarginalBet } from 'common/calculate-metrics'
+import { ContractMetric, isSummary } from 'common/contract-metric'
+import { bulkUpdateUserMetricsWithNewBetsOnly } from 'shared/helpers/user-contract-metrics'
 export const redeemShares = async (
   pgTrans: SupabaseDirectClient,
-  userId: string,
-  contract: CPMMContract | CPMMMultiContract | CPMMNumericContract
+  userIds: string[],
+  contract: Contract,
+  newBets: MarginalBet[],
+  contractMetrics: ContractMetric[]
 ) => {
-  const { id: contractId } = contract
+  const betsToInsert: Bet[] = []
+  const balanceUpdates: {
+    id: string
+    balance?: number
+    cashBalance?: number
+  }[] = []
 
-  const bets = await pgTrans.map(
-    `select * from contract_bets where contract_id = $1 and user_id = $2`,
-    [contractId, userId],
-    convertBet
-  )
+  if (!userIds.length)
+    return {
+      betsToInsert,
+      updatedMetrics: contractMetrics,
+      balanceUpdates,
+    }
 
-  log(
-    `Loaded ${bets.length} bets for user ${userId} on contract ${contractId} to redeem shares`
-  )
-
-  const userNonRedemptionBetsByAnswer = groupBy(
-    bets.filter((bet) => bet.shares !== 0),
-    (bet) => bet.answerId
-  )
-
-  // We should be able to extend this to any sum-to-one cpmm-multi contract
-  if (contract.outcomeType === 'NUMBER') {
-    const answersToSharesIn = mapValues(userNonRedemptionBetsByAnswer, (bets) =>
-      sumBy(bets, (b) => b.shares)
-    )
-    const allShares = Object.values(answersToSharesIn)
-    const minShares = min(allShares) ?? 0
-    if (minShares > 0 && allShares.length === contract.answers.length) {
-      const loanAmountByAnswerId = mapValues(
-        groupBy(bets, 'answerId'),
-        (bets) => sumBy(bets, (bet) => bet.loanAmount ?? 0)
-      )
-
-      const saleBets = getSellAllRedemptionPreliminaryBets(
-        contract.answers,
-        minShares,
-        contract.collectedFees,
-        Date.now()
-      )
-
-      const now = Date.now()
-      const sellBetCandidates = saleBets.map((b) =>
-        getNewSellBetInfo(
-          b,
-          now,
-          contract.answers,
-          contract,
-          loanAmountByAnswerId
+  const bets =
+    contract.outcomeType === 'NUMBER'
+      ? await pgTrans.map(
+          `select * from contract_bets where contract_id = $1 and user_id = any($2);`,
+          [contract.id, userIds],
+          convertBet
         )
+      : []
+
+  for (const userId of userIds) {
+    // This should work for any sum-to-one cpmm-multi contract, as well
+    if (contract.outcomeType === 'NUMBER') {
+      const myMetrics = contractMetrics.filter((m) => m.userId === userId)
+      const userNonRedemptionBetsByAnswer = groupBy(
+        bets.filter((bet) => bet.shares !== 0 && bet.userId === userId),
+        (bet) => bet.answerId
+      )
+      log(
+        `Loaded ${bets.length} bets for user ${userId} on contract ${contract.id} to redeem shares`
       )
 
-      const saleValue = -sumBy(sellBetCandidates, (r) => r.bet.amount)
-      const loanPaid = sum(Object.values(loanAmountByAnswerId))
-      const incrementAmount = saleValue - loanPaid
+      const answersToSharesIn = mapValues(
+        userNonRedemptionBetsByAnswer,
+        (bets) => sumBy(bets, (b) => b.shares)
+      )
+      const allShares = Object.values(answersToSharesIn)
+      const minShares = min(allShares) ?? 0
+      if (minShares > 0 && allShares.length === contract.answers.length) {
+        const loanAmountByAnswerId = mapValues(
+          groupBy(
+            myMetrics.filter((m) => !isSummary(m)),
+            'answerId'
+          ),
+          (metrics) => sumBy(metrics, (m) => m.loan ?? 0)
+        )
 
-      if (incrementAmount !== 0) {
-        await incrementBalance(pgTrans, userId, {
-          balance: incrementAmount,
+        const saleBets = getSellAllRedemptionPreliminaryBets(
+          contract.answers,
+          minShares,
+          contract.collectedFees,
+          Date.now()
+        )
+
+        const now = Date.now()
+        const sellBetCandidates = saleBets.map((b) =>
+          getNewSellBetInfo(
+            b,
+            now,
+            contract.answers,
+            contract,
+            loanAmountByAnswerId
+          )
+        )
+
+        const saleValue = -sumBy(sellBetCandidates, (r) => r.bet.amount)
+        const loanPaid = sum(Object.values(loanAmountByAnswerId))
+        const incrementAmount = saleValue - loanPaid
+
+        if (incrementAmount !== 0) {
+          balanceUpdates.push({
+            id: userId,
+            [contract.token === 'CASH' ? 'cashBalance' : 'balance']:
+              incrementAmount,
+          })
+        }
+
+        const betGroupId = crypto.randomBytes(12).toString('hex')
+        betsToInsert.push(
+          ...sellBetCandidates.map((b) => ({
+            id: getNewBetId(),
+            userId,
+            ...b.newBet,
+            betGroupId,
+          }))
+        )
+
+        log('cpmm-multi-1 redeemed', {
+          shares: minShares,
+          totalAmount: saleValue,
+        })
+      }
+    } else {
+      let totalAmountRedeemed = 0
+      for (const metric of contractMetrics.filter((m) => m.userId === userId)) {
+        const newUsersBets = newBets.filter(
+          (b) => b.answerId == metric.answerId && b.userId === userId
+        )
+        if (!newUsersBets.length) continue
+
+        const { shares, loanPayment, netAmount } =
+          getBinaryRedeemableAmountFromContractMetric(metric)
+        if (floatingEqual(shares, 0)) {
+          continue
+        }
+        if (!isFinite(netAmount)) {
+          throw new APIError(
+            500,
+            'Invalid redemption amount, no clue what happened here.'
+          )
+        }
+        totalAmountRedeemed += netAmount
+        const answerId = metric.answerId ?? undefined
+        const lastProb = orderBy(newUsersBets, 'createdTime', 'desc')[0]
+          .probAfter
+        betsToInsert.push(
+          ...getRedemptionBets(
+            contract,
+            shares,
+            loanPayment,
+            lastProb,
+            answerId,
+            userId
+          )
+        )
+        log('redeeming', {
+          shares,
+          netAmount,
+          answerId,
+          userId,
         })
       }
 
-      const betGroupId = crypto.randomBytes(12).toString('hex')
-      await bulkInsertBets(
-        sellBetCandidates.map((b) => ({
-          userId,
-          ...b.newBet,
-          betGroupId,
-        })),
-        pgTrans
-      )
-
-      log('cpmm-multi-1 redeemed', {
-        shares: minShares,
-        totalAmount: saleValue,
-      })
-      return { status: 'success' }
+      if (totalAmountRedeemed !== 0) {
+        balanceUpdates.push({
+          id: userId,
+          [contract.token === 'CASH' ? 'cashBalance' : 'balance']:
+            totalAmountRedeemed,
+        })
+      }
     }
   }
-
-  let totalAmount = 0
-
-  for (const [answerId, bets] of Object.entries(
-    userNonRedemptionBetsByAnswer
-  )) {
-    const { shares, loanPayment, netAmount } = getBinaryRedeemableAmount(bets)
-    if (floatingEqual(shares, 0)) {
-      continue
-    }
-    if (!isFinite(netAmount)) {
-      throw new APIError(
-        500,
-        'Invalid redemption amount, no clue what happened here.'
-      )
-    }
-
-    totalAmount += netAmount
-
-    const lastProb = maxBy(bets, (b) => b.createdTime)?.probAfter as number
-    const [yesBet, noBet] = getRedemptionBets(
-      contract,
-      shares,
-      loanPayment,
-      lastProb,
-      answerId === 'undefined' ? undefined : answerId
-    )
-    await bulkInsertBets(
-      [yesBet, noBet].map((b) => ({
-        userId,
-        ...b,
-      })),
-      pgTrans
-    )
-
-    log('redeemed', {
-      shares,
-      netAmount,
-    })
+  const updatedMetrics = await bulkUpdateUserMetricsWithNewBetsOnly(
+    pgTrans,
+    betsToInsert,
+    contractMetrics,
+    false
+  )
+  return {
+    updatedMetrics,
+    balanceUpdates,
+    betsToInsert,
   }
-
-  if (totalAmount !== 0) {
-    await incrementBalance(pgTrans, userId, { balance: totalAmount })
-  }
-
-  return { status: 'success' }
 }

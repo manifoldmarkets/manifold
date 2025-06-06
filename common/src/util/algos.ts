@@ -1,7 +1,8 @@
 export function binarySearch(
   min: number,
   max: number,
-  comparator: (x: number) => number
+  comparator: (x: number) => number,
+  maxIterations = 50
 ) {
   let mid = 0
   let i = 0
@@ -20,6 +21,9 @@ export function binarySearch(
     }
 
     i++
+    if (i >= maxIterations) {
+      break
+    }
     if (i > 100000) {
       throw new Error(
         'Binary search exceeded max iterations' +

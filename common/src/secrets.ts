@@ -28,6 +28,17 @@ export const secrets = (
     'TWILIO_AUTH_TOKEN',
     'TWILIO_SID',
     'TWILIO_VERIFY_SID',
+    'GIDX_API_KEY',
+    'GIDX_MERCHANT_ID',
+    'GIDX_PRODUCT_TYPE_ID',
+    'GIDX_DEVICE_TYPE_ID',
+    'GIDX_ACTIVITY_TYPE_ID',
+    'ANTHROPIC_API_KEY',
+    'PERPLEXITY_API_KEY',
+    'FIRECRAWL_API_KEY',
+    'SPORTSDB_KEY',
+    'VERIFIED_PHONE_NUMBER',
+    'GEMINI_API_KEY',
     // Some typescript voodoo to keep the string literal types while being not readonly.
   ] as const
 ).concat()
@@ -104,7 +115,7 @@ export const getServiceAccountCredentials = (env: 'PROD' | 'DEV') => {
 
   try {
     return JSON.parse(readFileSync(keyPath, { encoding: 'utf8' }))
-  } catch (e) {
+  } catch {
     throw new Error(`Failed to load service account key from ${keyPath}.`)
   }
 }

@@ -12,6 +12,8 @@ import {
   APISchema,
   ValidatedAPIParams,
 } from 'common/api/schema'
+import { log } from 'shared/utils'
+import { getPrivateUserByKey } from 'shared/utils'
 
 export type Json = Record<string, unknown> | Json[]
 export type JsonHandler<T extends Json> = (
@@ -58,7 +60,7 @@ export const parseCredentials = async (req: Request): Promise<Credentials> => {
         return { kind: 'jwt', data: await auth.verifyIdToken(payload) }
       } catch (err) {
         // This is somewhat suspicious, so get it into the firebase console
-        console.error('Error verifying Firebase JWT: ', err, scheme, payload)
+        log.error('Error verifying Firebase JWT: ', { err, scheme, payload })
         throw new APIError(500, 'Error validating token.')
       }
     case 'Key':
@@ -69,8 +71,6 @@ export const parseCredentials = async (req: Request): Promise<Credentials> => {
 }
 
 export const lookupUser = async (creds: Credentials): Promise<AuthedUser> => {
-  const firestore = admin.firestore()
-  const privateUsers = firestore.collection('private-users')
   switch (creds.kind) {
     case 'jwt': {
       if (typeof creds.data.user_id !== 'string') {
@@ -80,11 +80,10 @@ export const lookupUser = async (creds: Credentials): Promise<AuthedUser> => {
     }
     case 'key': {
       const key = creds.data
-      const privateUserQ = await privateUsers.where('apiKey', '==', key).get()
-      if (privateUserQ.empty) {
+      const privateUser = await getPrivateUserByKey(key)
+      if (!privateUser) {
         throw new APIError(401, `No private user exists with API key ${key}.`)
       }
-      const privateUser = privateUserQ.docs[0].data() as PrivateUser
       return { uid: privateUser.id, creds: { privateUser, ...creds } }
     }
     default:
@@ -101,6 +100,9 @@ export const validate = <T extends z.ZodTypeAny>(schema: T, val: unknown) => {
         error: i.message,
       }
     })
+    if (issues.length > 0) {
+      log.error(issues.map((i) => `${i.field}: ${i.error}`).join('\n'))
+    }
     throw new APIError(400, 'Error validating request.', issues)
   } else {
     return result.data as z.infer<T>
@@ -166,7 +168,7 @@ export const typedEndpoint = <N extends APIPath>(
     try {
       authUser = await lookupUser(await parseCredentials(req))
     } catch (e) {
-      if (authRequired) next(e)
+      if (authRequired) return next(e)
     }
 
     const props = {

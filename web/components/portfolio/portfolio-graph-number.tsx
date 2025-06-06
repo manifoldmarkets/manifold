@@ -1,64 +1,53 @@
 import clsx from 'clsx'
-import { PortfolioMode } from './portfolio-value-graph'
-import { PortfolioHoveredGraphType } from './portfolio-value-section'
-import { CoinNumber } from '../widgets/manaCoinNumber'
 import { Col } from '../layout/col'
+import { TokenNumber } from '../widgets/token-number'
+import { PortfolioMode } from './portfolio-graph'
 
-export function PortfolioGraphNumber(props: {
-  numberType: 'balance' | 'investment' | 'spice'
+export const PortfolioGraphNumber = (props: {
+  numberType: 'balance' | 'investment' | 'spice' | 'profit'
   descriptor: string
   portfolioFocus: PortfolioMode
-  portfolioHoveredGraph: PortfolioHoveredGraphType
-  setPortfolioHoveredGraph: (hovered: PortfolioHoveredGraphType) => void
   displayedAmount: number | undefined
-  color: string
   onClick: () => void
   className?: string
   isSpice?: boolean
-}) {
+  prefersPlay?: boolean
+}) => {
   const {
     portfolioFocus,
     numberType,
     descriptor,
-    portfolioHoveredGraph,
-    setPortfolioHoveredGraph,
     displayedAmount,
-    color,
     onClick,
     className,
     isSpice,
+    prefersPlay,
   } = props
+
   return (
     <div
       className={clsx(
-        'group cursor-pointer select-none rounded px-2 py-1 transition-opacity',
-        portfolioFocus == numberType || portfolioHoveredGraph == numberType
+        'group cursor-pointer select-none rounded px-2 py-1 transition-colors',
+        portfolioFocus !== 'all' && portfolioFocus !== numberType
+          ? 'opacity-50 hover:opacity-[0.75]'
+          : portfolioFocus == numberType
           ? 'opacity-100'
-          : portfolioFocus !== 'all' && portfolioFocus !== numberType
-          ? 'opacity-50 hover:opacity-[0.85]'
-          : 'opacity-[0.85]',
-
+          : 'opacity-[0.75] hover:opacity-100',
         className
       )}
-      style={{ backgroundColor: color }}
       onClick={onClick}
-      onMouseEnter={() => {
-        if (portfolioFocus == 'all') {
-          setPortfolioHoveredGraph(numberType)
-        }
-      }}
-      onMouseLeave={() => setPortfolioHoveredGraph(undefined)}
     >
       <Col>
-        <CoinNumber
+        <TokenNumber
           amount={displayedAmount}
-          className={clsx('font-bold text-white transition-all')}
-          isSpice={isSpice}
+          className={clsx('font-bold transition-all', className)}
+          coinType={isSpice ? 'spice' : prefersPlay ? 'mana' : 'sweepies'}
         />
 
         <div
           className={clsx(
-            'sm:sm mx-auto -mt-1 text-xs text-white/80 transition-all group-hover:text-white'
+            portfolioFocus == numberType ? 'text-white/80' : 'text-ink-600',
+            ' mx-auto -mt-1 text-xs transition-all'
           )}
         >
           {descriptor}

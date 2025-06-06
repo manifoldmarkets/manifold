@@ -1,11 +1,9 @@
-import { z } from 'zod'
-import { APIError, authEndpoint, validate } from 'api/helpers/endpoint'
-import { isVerified, MINUTES_ALLOWED_TO_REFER } from 'common/user'
+import { APIError, APIHandler } from 'api/helpers/endpoint'
+import { MINUTES_ALLOWED_TO_REFER } from 'common/user'
 import { Contract } from 'common/contract'
-import { createSupabaseDirectClient } from 'shared/supabase/init'
+import { createSupabaseDirectClient, SERIAL_MODE } from 'shared/supabase/init'
 import { REFERRAL_AMOUNT } from 'common/economy'
 import { createReferralNotification } from 'shared/create-notification'
-import { completeReferralsQuest } from 'shared/complete-quest-internal'
 import { convertUser } from 'common/supabase/users'
 import { first } from 'lodash'
 import { log, getContractSupabase, getUser } from 'shared/utils'
@@ -13,18 +11,10 @@ import { runTxnFromBank } from 'shared/txn/run-txn'
 import { MINUTE_MS } from 'common/util/time'
 import { removeUndefinedProps } from 'common/util/object'
 import { trackPublicEvent } from 'shared/analytics'
-import { convertTxn } from 'common/supabase/txns'
 import { updateUser } from 'shared/supabase/users'
 
-const bodySchema = z
-  .object({
-    referredByUsername: z.string(),
-    contractId: z.string().optional(),
-  })
-  .strict()
-
-export const referuser = authEndpoint(async (req, auth) => {
-  const { referredByUsername, contractId } = validate(bodySchema, req.body)
+export const referUser: APIHandler<'refer-user'> = async (props, auth) => {
+  const { referredByUsername, contractId } = props
 
   const pg = createSupabaseDirectClient()
   const referredByUser = first(
@@ -47,9 +37,6 @@ export const referuser = authEndpoint(async (req, auth) => {
   if (!newUser) {
     throw new APIError(401, `User ${auth.uid} not found`)
   }
-  if (!isVerified(newUser)) {
-    throw new APIError(403, 'You must verify your phone number first.')
-  }
   let referredByContract: Contract | undefined
   if (contractId) {
     referredByContract = await getContractSupabase(contractId)
@@ -64,8 +51,8 @@ export const referuser = authEndpoint(async (req, auth) => {
     referredByContractId: contractId,
   })
 
-  return { status: 'ok' }
-})
+  return { success: true }
+}
 
 async function handleReferral(
   newUserId: string,
@@ -74,26 +61,31 @@ async function handleReferral(
 ) {
   const pg = createSupabaseDirectClient()
   log(`referredByUserId: ${referredByUserId}`)
-  const { txn, user } = await pg.tx(async (tx) => {
-    const user = await getUser(newUserId, tx)
-    if (!user) throw new APIError(500, `User ${newUserId} not found`)
+  const { txn, user } = await pg.tx({ mode: SERIAL_MODE }, async (tx) => {
+    const newUser = await getUser(newUserId, tx)
+    if (!newUser) throw new APIError(500, `User ${newUserId} not found`)
 
-    if (user.referredByUserId || user.referredByContractId) {
-      throw new APIError(400, `User ${user.id} already has referral details`)
+    if (newUser.referredByUserId || newUser.referredByContractId) {
+      throw new APIError(400, `User ${newUser.id} already has referral details`)
     }
-    if (user.createdTime < Date.now() - MINUTES_ALLOWED_TO_REFER * MINUTE_MS) {
-      throw new APIError(400, `User ${user.id} is too old to be referred`)
+    if (
+      newUser.createdTime <
+      Date.now() - MINUTES_ALLOWED_TO_REFER * MINUTE_MS
+    ) {
+      throw new APIError(400, `User ${newUser.id} is too old to be referred`)
     }
 
-    const txns = await tx.map(
-      `select * from txns where to_id = $1 and category = 'REFERRAL'`,
-      [referredByUserId],
-      convertTxn
+    const txns = await tx.one(
+      `select count(*) from txns where to_id = $1
+       and category = 'REFERRAL'
+       and data->>'referredUserId' = $2`,
+      [referredByUserId, newUser.id],
+      (row) => row.count
     )
 
     // If the referring user already has a referral txn due to referring this user, halt
     // TODO: store in data instead
-    if (txns.some((txn) => txn.description?.includes(user.id))) {
+    if (txns > 0) {
       throw new APIError(
         404,
         'Existing referral bonus found with matching details'
@@ -107,9 +99,13 @@ async function handleReferral(
       toId: referredByUserId,
       toType: 'USER',
       amount: REFERRAL_AMOUNT,
-      token: 'SPICE',
+      token: 'M$',
       category: 'REFERRAL',
-      description: `Referred new user id: ${user.id} for ${REFERRAL_AMOUNT}`,
+      description: `Referred new user id: ${newUser.id} for ${REFERRAL_AMOUNT}`,
+      data: removeUndefinedProps({
+        referredUserId: newUser.id,
+        referredContractId: referredByContract?.id,
+      }),
     } as const
 
     const txn = await runTxnFromBank(tx, txnData)
@@ -123,7 +119,7 @@ async function handleReferral(
       })
     )
 
-    return { txn, user }
+    return { txn, user: newUser }
   })
 
   await createReferralNotification(
@@ -132,5 +128,4 @@ async function handleReferral(
     txn.amount.toString(),
     referredByContract
   )
-  await completeReferralsQuest(referredByUserId)
 }

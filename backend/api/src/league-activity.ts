@@ -39,7 +39,7 @@ export const getLeagueActivity = async (
     (row: { user_id: string }) => row.user_id
   )
 
-  const { start, end } = getSeasonDates(season)
+  const { start, approxEnd: end } = getSeasonDates(season)
 
   const bets = await pg.map<Bet>(
     `select
@@ -83,8 +83,9 @@ export const getLeagueActivity = async (
     `select
       data from contracts
     where
-      contracts.id = any($1)
-      and contracts.visibility = 'public'
+      id = any($1)
+      and visibility = 'public'
+      and token = 'MANA'
       `,
     [contractIds],
     (row) => row.data

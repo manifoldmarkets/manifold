@@ -1,6 +1,6 @@
 import { LimitBet } from 'common/bet'
 import {
-  CPMMBinaryContract,
+  BinaryContract,
   CPMMMultiContract,
   StonkContract,
 } from 'common/contract'
@@ -8,20 +8,40 @@ import { getDisplayProbability } from 'common/calculate'
 import { HistoryPoint } from 'common/chart'
 import { scaleLinear } from 'd3-scale'
 import { AreaWithTopStroke, SVGChart, formatPct } from '../helpers'
-import { curveStepBefore, line } from 'd3-shape'
+import { curveStepAfter } from 'd3-shape'
 import { axisBottom, axisRight } from 'd3-axis'
 import { formatLargeNumber } from 'common/util/format'
 import { Answer } from 'common/answer'
+import { DEM_COLOR, REP_COLOR } from 'web/components/usa-map/state-election-map'
+
+function getColor(color: string) {
+  if (color === 'azure') {
+    return DEM_COLOR
+  } else if (color === 'sienna') {
+    return REP_COLOR
+  }
+  return color
+}
 
 export function DepthChart(props: {
-  contract: CPMMBinaryContract | StonkContract | CPMMMultiContract
+  contract: BinaryContract | StonkContract | CPMMMultiContract
   answer?: Answer
   yesBets: LimitBet[]
   noBets: LimitBet[]
   width: number
   height: number
+  pseudonym?: {
+    YES: {
+      pseudonymName: string
+      pseudonymColor: string
+    }
+    NO: {
+      pseudonymName: string
+      pseudonymColor: string
+    }
+  }
 }) {
-  const { contract, answer, yesBets, noBets, width, height } = props
+  const { contract, answer, yesBets, noBets, width, height, pseudonym } = props
 
   const yesData = cumulative(yesBets)
   const noData = cumulative(noBets)
@@ -41,40 +61,38 @@ export function DepthChart(props: {
 
   const currentValue = answer
     ? answer.prob
-    : getDisplayProbability(contract as CPMMBinaryContract | StonkContract)
+    : getDisplayProbability(contract as BinaryContract | StonkContract)
 
   const xScale = scaleLinear().domain([0, 1]).range([0, width])
   const yScale = scaleLinear().domain([0, maxAmount]).range([height, 0])
-  const dl = line<HistoryPoint>()
-    .x((p) => xScale(p.x))
-    .y((p) => yScale(p.y))
-    .curve(curveStepBefore)
 
   const yAxis = axisRight<number>(yScale).ticks(8).tickFormat(formatLargeNumber)
   const xAxis = axisBottom<number>(xScale).ticks(6).tickFormat(formatPct)
 
-  const dYes = dl(yesData)
-  const dNo = dl(noData)
+  if (yesData.length === 0 || noData.length === 0) {
+    return null
+  }
 
-  if (dYes === null || dNo === null) return null
+  const yesColor = pseudonym?.YES?.pseudonymColor ?? '#11b981'
+  const noColor = pseudonym?.NO?.pseudonymColor ?? '#ef4444'
 
   return (
-    <SVGChart w={width} h={height} xAxis={xAxis} yAxis={yAxis}>
+    <SVGChart w={width} h={height} xAxis={xAxis} yAxis={yAxis} noWatermark>
       <AreaWithTopStroke
-        color="#11b981"
+        color={getColor(yesColor)}
         data={yesData}
         px={(p) => xScale(p.x)}
         py0={yScale(0)}
         py1={(p) => yScale(p.y)}
-        curve={curveStepBefore}
+        curve={curveStepAfter}
       />
       <AreaWithTopStroke
-        color="red"
+        color={getColor(noColor)}
         data={noData}
         px={(p) => xScale(p.x)}
         py0={yScale(0)}
         py1={(p) => yScale(p.y)}
-        curve={curveStepBefore}
+        curve={curveStepAfter}
       />
 
       {/* line at current value */}
@@ -92,7 +110,8 @@ export function DepthChart(props: {
 }
 
 // Converts a list of LimitBets into a list of coordinates to render into a depth chart.
-// Going in order of probability, the y value accumulates each order's amount.
+// The y value accumulates each order's amount.
+// Note this means YES bets are in reverse probability order
 function cumulative(bets: LimitBet[]): HistoryPoint[] {
   const result: HistoryPoint[] = []
   let totalAmount = 0

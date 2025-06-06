@@ -5,9 +5,8 @@
   "private": true,
   "scripts": {
     "dev": "nodemon src/index.ts --ext '*'",
-    "start": "ENVIRONMENT=PROD nodemon src/index.ts --ext '*'",
-    "build": "yarn compile && yarn --cwd=../../common alias && yarn --cwd=../shared alias && yarn alias && yarn dist",
-    "dist": "yarn dist:prepare && yarn dist:copy",
+    "start": "NEXT_PUBLIC_FIREBASE_ENV=PROD nodemon src/index.ts --ext '*'",
+    "build": "tsc -b && (cd ../../common && tsc-alias) && (cd ../shared && tsc-alias) && tsc-alias && yarn dist:prepare && yarn dist:copy",
     "dist:prepare": "rm -rf dist && mkdir -p dist/common/lib dist/backend/shared/lib dist/backend/scheduler/lib",
     "dist:copy": "cp -R ../../common/lib/* dist/common/lib && cp -R ../shared/lib/* dist/backend/shared/lib && cp -R ./lib/* dist/backend/scheduler/lib && cp ../../yarn.lock dist && cp package.json dist && cp -R src/templates dist/backend/scheduler/lib",
     "prune-images": "gcloud compute ssh scheduler --command 'sudo docker image prune -af'",
@@ -19,8 +18,11 @@
     "node": ">=16.0.0"
   },
   "dependencies": {
+    "@amplitude/node": "1.10.2",
     "@google-cloud/monitoring": "4.0.0",
     "@google-cloud/secret-manager": "4.2.1",
+    "@google/generative-ai": "0.24.0",
+    "@stdlib/math-base-special-betaincinv": "0.2.1",
     "@supabase/supabase-js": "2.38.5",
     "@tiptap/core": "2.0.0-beta.204",
     "@tiptap/extension-image": "2.0.0-beta.204",
@@ -30,7 +32,7 @@
     "@tiptap/starter-kit": "2.0.0-beta.204",
     "@tiptap/suggestion": "2.0.0-beta.204",
     "colors": "1.4.0",
-    "croner": "7.0.4",
+    "croner": "9.0.0",
     "dayjs": "1.11.4",
     "expo-server-sdk": "3.7.0",
     "express": "4.18.1",

@@ -1,16 +1,13 @@
-import * as admin from 'firebase-admin'
 import { z } from 'zod'
-
-import { Contract } from 'common/contract'
-import { Answer, MAX_ANSWER_LENGTH } from 'common/answer'
+import { MAX_ANSWER_LENGTH } from 'common/answer'
 import { APIError, authEndpoint, validate } from './helpers/endpoint'
 import { isAdminId, isModId } from 'common/envs/constants'
 import { recordContractEdit } from 'shared/record-contract-edit'
 import { HOUR_MS } from 'common/util/time'
 import { removeUndefinedProps } from 'common/util/object'
-import { broadcastUpdatedAnswer } from 'shared/websockets/helpers'
 import { getAnswer, updateAnswer } from 'shared/supabase/answers'
 import { createSupabaseDirectClient } from 'shared/supabase/init'
+import { getContract } from 'shared/utils'
 
 const bodySchema = z
   .object({
@@ -20,18 +17,13 @@ const bodySchema = z
     color: z.string().length(7).startsWith('#').optional(),
   })
   .strict()
-const firestore = admin.firestore()
 
 export const editanswercpmm = authEndpoint(async (req, auth) => {
   const { contractId, answerId, text, color } = validate(bodySchema, req.body)
 
   const pg = createSupabaseDirectClient()
-
-  const contractDoc = firestore.doc(`contracts/${contractId}`)
-
-  const contractSnap = await contractDoc.get()
-  if (!contractSnap.exists) throw new APIError(404, 'Contract not found')
-  const contract = contractSnap.data() as Contract
+  const contract = await getContract(pg, contractId)
+  if (!contract) throw new APIError(404, 'Contract not found')
 
   if (contract.mechanism !== 'cpmm-multi-1')
     throw new APIError(403, 'Requires a cpmm multiple choice contract')
@@ -67,20 +59,9 @@ export const editanswercpmm = authEndpoint(async (req, auth) => {
     throw new APIError(403, 'Contract owner, mod, or answer owner required')
 
   const update = removeUndefinedProps({ text, color })
-  const newAnswer = { ...answer, ...update }
-
-  const answers = contract.answers.map((answer) =>
-    answer.id === answerId ? newAnswer : answer
-  )
-
   await updateAnswer(pg, answerId, update)
 
-  await contractDoc.update({
-    answers,
-  })
-
   await recordContractEdit(contract, auth.uid, ['answers'])
-  broadcastUpdatedAnswer(contract, newAnswer as Answer)
 
   return { status: 'success' }
 })

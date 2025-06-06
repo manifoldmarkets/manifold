@@ -5,7 +5,7 @@ import clsx from 'clsx'
 
 import { Group, groupPath } from 'common/group'
 import { useAPIGetter } from 'web/hooks/use-api-getter'
-import { followTopic } from 'web/lib/firebase/api'
+import { followTopic } from 'web/lib/api/api'
 import { unfollowTopic } from 'web/lib/supabase/groups'
 import { Button } from '../buttons/button'
 import { Col } from '../layout/col'

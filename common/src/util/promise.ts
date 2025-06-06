@@ -29,7 +29,7 @@ export async function withRetries<T>(q: PromiseLike<T>, policy?: RetryPolicy) {
 export const mapAsyncChunked = async <T, U>(
   items: T[],
   f: (item: T, index: number) => Promise<U>,
-  chunkSize = 100
+  chunkSize = 20
 ) => {
   const results: U[] = []
 
@@ -47,16 +47,11 @@ export const mapAsyncChunked = async <T, U>(
 export const mapAsync = <T, U>(
   items: T[],
   f: (item: T, index: number) => Promise<U>,
-  maxConcurrentRequests = 100
+  maxConcurrentRequests = 20
 ) => {
   let index = 0
   let currRequests = 0
   const results: U[] = []
-
-  // The following is a hack to fix a Node bug where the process exits before
-  // the promise is resolved.
-  // eslint-disable-next-line @typescript-eslint/no-empty-function
-  const intervalId = setInterval(() => {}, 10000)
 
   return new Promise((resolve: (results: U[]) => void, reject) => {
     const doWork = () => {
@@ -78,5 +73,5 @@ export const mapAsync = <T, U>(
 
     if (items.length === 0) resolve([])
     else doWork()
-  }).finally(() => clearInterval(intervalId))
+  })
 }

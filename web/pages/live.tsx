@@ -6,6 +6,7 @@ import { Row } from 'web/components/layout/row'
 import { TopicSelector } from 'web/components/topics/topic-selector'
 import { usePersistentQueryState } from 'web/hooks/use-persistent-query-state'
 import { useTopicFromRouter } from 'web/hooks/use-topic-from-router'
+import { TRADE_TERM } from 'common/envs/constants'
 
 export default function LivePage() {
   const [topicSlug, setTopicSlug] = usePersistentQueryState('topic', '')
@@ -14,7 +15,7 @@ export default function LivePage() {
     <Page trackPageView={'live page'}>
       <SEO
         title="Live"
-        description="Watch all site activity live, including bets, comments, and new questions."
+        description={`Watch all site activity live, including ${TRADE_TERM}s, comments, and new questions.`}
         url="/live"
       />
 
@@ -28,6 +29,7 @@ export default function LivePage() {
             {topicFromRouter ? topicFromRouter.name : 'Site'} activity feed
           </span>
           <TopicSelector
+            addingToContract={false}
             setSelectedGroup={(group) => {
               setTopicSlug(group.slug)
             }}

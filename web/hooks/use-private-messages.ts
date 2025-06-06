@@ -1,238 +1,136 @@
-import { ChatMessage } from 'common/chat-message'
-import { millisToTs, Row, run, tsToMillis } from 'common/supabase/utils'
-import { usePersistentSubscription } from 'web/lib/supabase/realtime/use-subscription'
-import { useEffect } from 'react'
-import {
-  NumericDictionary,
-  first,
-  groupBy,
-  maxBy,
-  orderBy,
-  uniqBy,
-  uniq,
-} from 'lodash'
-import { useIsAuthorized } from 'web/hooks/use-user'
+import { PrivateChatMessage } from 'common/chat-message'
+import { millisToTs, tsToMillis } from 'common/supabase/utils'
+import { useEffect, useState } from 'react'
+import { max, orderBy, uniq, uniqBy } from 'lodash'
 import { usePersistentLocalState } from 'web/hooks/use-persistent-local-state'
 import {
-  convertChatMessage,
-  getChannelLastSeenTimeQuery,
   getSortedChatMessageChannels,
-  getMessageChannelMemberships,
-  getNonEmptyChatMessageChannelIds,
-  getOtherUserIdsInPrivateMessageChannelIds,
-  PrivateMessageMembership,
   getTotalChatMessages,
 } from 'web/lib/supabase/private-messages'
-import { usePersistentSupabasePolling } from 'web/hooks/use-persistent-supabase-polling'
-import { db } from 'web/lib/supabase/db'
-import { MINUTE_MS } from 'common/util/time'
-import { safeLocalStorage } from 'web/lib/util/local'
-import { useEvent } from 'web/hooks/use-event'
 import { useIsPageVisible } from 'web/hooks/use-page-visible'
 import { track } from 'web/lib/service/analytics'
 import { usePathname } from 'next/navigation'
+import { api } from 'web/lib/api/api'
+import { PrivateMessageChannel } from 'common/supabase/private-messages'
+import { useAPIGetter } from 'web/hooks/use-api-getter'
+import { useApiSubscription } from 'client-common/hooks/use-api-subscription'
+import { usePersistentInMemoryState } from 'client-common/hooks/use-persistent-in-memory-state'
 
-// NOTE: must be authorized (useIsAuthorized) to use this hook
-export function useRealtimePrivateMessagesPolling(
+export function usePrivateMessages(
   channelId: number,
-  isAuthed: boolean,
-  ms: number,
-  initialLimit = 50,
-  ignoreSystemStatus = false
+  limit: number,
+  userId: string
 ) {
-  if (!isAuthed) {
-    console.error('useRealtimePrivateMessages must be authorized')
-  }
-  let allRowsQ = db
-    .from('private_user_messages')
-    .select('*')
-    .eq('channel_id', channelId)
-    .order('created_time', { ascending: false })
-    .limit(initialLimit)
-  if (ignoreSystemStatus) allRowsQ = allRowsQ.neq('visibility', 'system_status')
+  const [messages, setMessages] = usePersistentLocalState<
+    PrivateChatMessage[] | undefined
+  >(undefined, `private-messages-${channelId}-${limit}-v1`)
 
-  const newRowsOnlyQ = (rows: Row<'private_user_messages'>[] | undefined) => {
-    // You can't use allRowsQ here because it keeps tacking on another gt clause
-    let q = db
-      .from('private_user_messages')
-      .select('*')
-      .eq('channel_id', channelId)
-      .gt('id', maxBy(rows, 'id')?.id ?? 0)
-    if (ignoreSystemStatus) q = q.neq('visibility', 'system_status')
-    return q
-  }
-
-  const results = usePersistentSupabasePolling(
-    'private_user_messages',
-    allRowsQ,
-    newRowsOnlyQ,
-    `private-messages-${channelId}-${ms}ms-${initialLimit}limit-v1`,
-    {
-      ms,
-      deps: [channelId],
-      shouldUseLocalStorage: true,
-    }
-  )
-  return results
-    ? orderBy(results.map(convertChatMessage), 'createdTime', 'desc')
-    : undefined
-}
-
-// NOTE: must be authorized (useIsAuthorized) to use this hook
-export function useRealtimePrivateMessageChannelMemberships(
-  userId: string,
-  isAuthed: boolean
-) {
-  if (!isAuthed) {
-    console.error(
-      'useRealtimePrivateMessageChannelMemberships must be authorized'
+  const fetchMessages = async () => {
+    const newMessages = await api('get-channel-messages', {
+      channelId,
+      limit,
+      id: messages ? max(messages.map((m) => m.id)) : undefined,
+    })
+    setMessages((prevMessages) =>
+      orderBy(
+        uniqBy([...newMessages, ...(prevMessages ?? [])], (m) => m.id),
+        'createdTime',
+        'desc'
+      )
     )
   }
-  const { rows } = usePersistentSubscription(
-    'private_user_message_channel_members',
-    'private_user_message_channel_members',
-    safeLocalStorage,
-    { k: 'user_id', v: userId },
-    () => getMessageChannelMemberships(userId, 100)
-  )
-  return rows
-}
 
-export const useHasUnseenPrivateMessage = (
-  userId: string | undefined,
-  channelId: number,
-  chats: ChatMessage[] | undefined
-) => {
-  const [lastSeenChatTime, setLastSeenChatTime] = usePersistentLocalState<
-    number | undefined
-  >(undefined, `private-message-channel-last-seen-${userId}-${channelId}`)
-  const isAuthed = useIsAuthorized()
   useEffect(() => {
-    if (!userId || !isAuthed) return
-    run(getChannelLastSeenTimeQuery(channelId, userId)).then(({ data }) =>
-      setLastSeenChatTime(tsToMillis(first(data)?.created_time ?? '0'))
-    )
-  }, [isAuthed, userId, chats?.length])
+    fetchMessages()
+  }, [channelId, limit, messages?.length])
 
-  const lastChatMessage = first(
-    chats?.filter((c) => c.userId !== userId)
-  )?.createdTime
-  return (
-    lastChatMessage && lastSeenChatTime && lastChatMessage > lastSeenChatTime
-  )
+  useApiSubscription({
+    topics: ['private-user-messages/' + userId],
+    onBroadcast: () => {
+      fetchMessages()
+    },
+  })
+
+  return messages
 }
 
-// NOTE: must be authorized (useIsAuthorized) to use this hook
 export const useUnseenPrivateMessageChannels = (
-  userId: string,
-  isAuthed: boolean
+  ignorePageSeenTime: boolean
 ) => {
-  if (!isAuthed)
-    console.error('useUnseenPrivateMessageChannels must be authorized')
-
   const pathName = usePathname()
   const lastSeenMessagesPageTime = useLastSeenMessagesPageTime()
   const [lastSeenChatTimeByChannelId, setLastSeenChatTimeByChannelId] =
-    usePersistentLocalState<Record<number, number> | undefined>(
-      undefined,
-      `private-message-channel-last-seen-${userId}`
-    )
+    useState<Record<number, number> | undefined>(undefined)
 
-  const messageChannelMemberships = useRealtimePrivateMessageChannelMemberships(
-    userId,
-    isAuthed
-  )
-  const channelIds = messageChannelMemberships?.map((m) => m.channel_id) ?? []
-  const fetcher = useEvent(async () => {
-    const q = Promise.all(
-      channelIds.map(async (channelId) =>
-        run(
-          db
-            .from('private_user_messages')
-            .select('*')
-            .eq('channel_id', channelId)
-            .gt('created_time', millisToTs(lastSeenMessagesPageTime))
-            .neq('visibility', 'system_status')
-            .limit(1)
-            .order('created_time', { ascending: false })
-        )
-      )
-    )
-    const data = await q
-    return data.map((d) => d.data).flat()
+  const { data, refresh } = useAPIGetter('get-channel-memberships', {
+    lastUpdatedTime: ignorePageSeenTime
+      ? new Date(0).toISOString()
+      : millisToTs(lastSeenMessagesPageTime),
+    limit: 100,
   })
+  const { channels } = data ?? {
+    channels: [] as PrivateMessageChannel[],
+    memberIdsByChannelId: {},
+  }
 
-  const { rows } = usePersistentSubscription(
-    'private_user_messages_all_channels',
-    'private_user_messages',
-    safeLocalStorage,
-    { k: 'channel_id', op: 'in', v: channelIds },
-    fetcher
-  )
-  const messageRows = rows?.filter((row) => row.visibility !== 'system_status')
-
-  const allMessagesByChannelId = groupBy(
-    orderBy(messageRows?.map(convertChatMessage), 'createdTime', 'desc'),
-    (m) => m.channelId
-  )
+  useEffect(() => {
+    refresh()
+  }, [pathName])
 
   const fetchLastSeenTimesPerChannel = async (forChannelIds: number[]) => {
     if (!forChannelIds.length) return
-    const results = await Promise.all(
-      forChannelIds.map(async (channelId) => {
-        const { data } = await run(
-          getChannelLastSeenTimeQuery(channelId, userId)
-        )
-        return { channelId, time: tsToMillis(first(data)?.created_time ?? '0') }
-      })
-    )
+    const seenTimes = await api('get-channel-seen-time', {
+      channelIds: forChannelIds,
+    })
     const newState = lastSeenChatTimeByChannelId ?? {}
-    results.forEach(({ channelId, time }) => (newState[channelId] = time))
+    seenTimes.forEach(([channelId, time]) => {
+      newState[channelId] = tsToMillis(time)
+    })
     setLastSeenChatTimeByChannelId(newState)
   }
 
   useEffect(() => {
-    const newMessageRows = messageRows
-      ?.filter((m) => tsToMillis(m.created_time) > lastSeenMessagesPageTime)
+    const newMessageRows = channels
+      .filter(
+        (m) =>
+          ignorePageSeenTime ||
+          tsToMillis(m.last_updated_time) > lastSeenMessagesPageTime
+      )
       .map((m) => m.channel_id)
     if (newMessageRows?.length)
       fetchLastSeenTimesPerChannel(uniq(newMessageRows))
-  }, [messageRows?.length])
+  }, [channels?.length])
 
   useEffect(() => {
     if (
       !lastSeenChatTimeByChannelId ||
-      channelIds.some((cId) => lastSeenChatTimeByChannelId[cId] === undefined)
+      channels.some(
+        (c) => lastSeenChatTimeByChannelId[c.channel_id] === undefined
+      )
     ) {
-      fetchLastSeenTimesPerChannel(channelIds)
+      fetchLastSeenTimesPerChannel(channels.map((c) => c.channel_id))
     }
-  }, [channelIds])
+  }, [channels?.length])
 
   if (!lastSeenChatTimeByChannelId)
-    return {
-      unseenMessages: [],
-    }
+    return { unseenChannels: [], lastSeenChatTimeByChannelId: {} }
+  const unseenChannels = channels.filter((channel) => {
+    const channelId = channel.channel_id
+    const notifyAfterTime = tsToMillis(
+      channels?.find((m) => m.channel_id === channelId)?.notify_after_time ??
+        '0'
+    )
 
-  const unseenMessages = Object.keys(allMessagesByChannelId)
-    .map((channelIdString) => {
-      const channelId = parseInt(channelIdString)
-      const notifyAfterTime = tsToMillis(
-        messageChannelMemberships?.find((m) => m.channel_id === channelId)
-          ?.notify_after_time ?? '0'
-      )
-      const lastSeenTime = lastSeenChatTimeByChannelId[channelId] ?? 0
-      const lastSeenChatTime =
-        notifyAfterTime > lastSeenTime ? notifyAfterTime : lastSeenTime ?? 0
-
-      return allMessagesByChannelId[channelId]?.filter(
-        (c) => c.userId !== userId && c.createdTime > lastSeenChatTime
-      )
-    })
-    .flat()
-    .filter((message) => message.createdTime > lastSeenMessagesPageTime)
-    .filter((message) => !pathName?.endsWith(`/messages/${message.channelId}`))
-
-  return { unseenMessages }
+    const lastSeenTime = lastSeenChatTimeByChannelId[channelId] ?? 0
+    const lastSeenChatTime = Math.max(notifyAfterTime, lastSeenTime)
+    const unseen =
+      tsToMillis(channel.last_updated_time) > lastSeenChatTime &&
+      (ignorePageSeenTime ||
+        tsToMillis(channel.last_updated_time) > lastSeenMessagesPageTime) &&
+      !pathName?.endsWith(`/messages/${channelId}`)
+    return unseen
+  })
+  return { unseenChannels, lastSeenChatTimeByChannelId }
 }
 
 const useLastSeenMessagesPageTime = () => {
@@ -241,112 +139,47 @@ const useLastSeenMessagesPageTime = () => {
 
   const [lastSeenMessagesPageTime, setLastSeenMessagesPageTime] =
     usePersistentLocalState(0, 'last-seen-private-messages-page')
+  const [unloadingPage, setUnloadingPage] = usePersistentInMemoryState(
+    '',
+    'unloading-page-private-messages-page'
+  )
   useEffect(() => {
-    if (pathname === '/messages') {
+    if (pathname === '/messages' || unloadingPage === '/messages') {
       setLastSeenMessagesPageTime(Date.now())
       track('view messages page')
-      return
     }
+    setUnloadingPage(pathname)
   }, [pathname, isVisible])
 
   return lastSeenMessagesPageTime
 }
 
-export const useSortedPrivateMessageChannelIds = (
-  userId: string | undefined,
-  isAuthed: boolean | undefined
-) => {
-  const [channelIds, setChannelIds] = usePersistentLocalState<
-    Row<'private_user_message_channels'>[] | undefined
-  >(undefined, `private-message-channel-ids-${userId}`)
-  useEffect(() => {
-    if (userId && isAuthed)
-      getSortedChatMessageChannels(userId, 100).then(setChannelIds)
-  }, [userId, isAuthed])
-  return channelIds
+export type ChannelMembership = {
+  channels: PrivateMessageChannel[]
+  memberIdsByChannelId: { [key: string]: string[] }
 }
 
-export const usePrivateMessageChannel = (
+export const useSortedPrivateMessageMemberships = (
   userId: string | undefined,
-  isAuthed: boolean | undefined,
-  forChannelId: string
-) => {
-  const [channelId, setChannelId] = usePersistentLocalState<
-    Row<'private_user_message_channels'> | undefined
-  >(undefined, `private-message-channel-id-${userId}-${forChannelId}`)
-  useEffect(() => {
-    if (userId && isAuthed)
-      getSortedChatMessageChannels(userId, 1, forChannelId).then((c) =>
-        setChannelId(first(c))
-      )
-  }, [userId, isAuthed])
-  return channelId
-}
-
-export const useNonEmptyPrivateMessageChannels = (
-  userId: string | undefined,
-  isAuthed: boolean | undefined
-) => {
-  const [channels, setChannels] = usePersistentLocalState<
-    Row<'private_user_message_channels'>[]
-  >([], `non-empty-private-message-channel-ids-${userId}`)
-  useEffect(() => {
-    if (userId && isAuthed)
-      getNonEmptyChatMessageChannelIds(userId, 100).then(setChannels)
-  }, [userId, isAuthed])
-  return channels
-}
-
-export const useOtherUserIdsInPrivateMessageChannelIds = (
-  userId: string | undefined,
-  isAuthed: boolean | undefined,
-  channels: Row<'private_user_message_channels'>[] | undefined
+  limit: number = 100,
+  forChannelId?: number
 ) => {
   const [channelMemberships, setChannelMemberships] = usePersistentLocalState<
-    PrivateMessageMembership[] | undefined
-  >(undefined, `private-message-channel-memberships-${userId}`)
+    ChannelMembership | undefined
+  >(undefined, `private-message-memberships-${userId}-${forChannelId}-v1`)
+
   useEffect(() => {
-    if (
-      userId &&
-      isAuthed &&
-      channels &&
-      channels.some((c) => {
-        const matchingMembership = channelMemberships?.find(
-          (cm) => cm.channel_id === c.id
-        )
-        // TODO: probably should keep track of when we last checked the membership status vs last 5 minutes
-        return (
-          !matchingMembership ||
-          matchingMembership?.status === undefined ||
-          tsToMillis(c?.last_updated_time ?? '0') > Date.now() - 5 * MINUTE_MS
-        )
-      })
-    ) {
-      // Non general chat
-      getOtherUserIdsInPrivateMessageChannelIds(
-        userId,
-        channels.filter((c) => !c.title).map((c) => c.id),
-        100
-      ).then((c) =>
-        setChannelMemberships((prev) =>
-          uniqBy([...(prev ?? []), ...c], (cm) => cm.user_id + cm.channel_id)
-        )
+    if (userId)
+      getSortedChatMessageChannels(limit, forChannelId).then(
+        setChannelMemberships
       )
-      // General chat w/ tons of users
-      getOtherUserIdsInPrivateMessageChannelIds(
-        userId,
-        channels.filter((c) => c.title).map((c) => c.id),
-        50
-      ).then((c) =>
-        setChannelMemberships((prev) =>
-          uniqBy([...(prev ?? []), ...c], (cm) => cm.user_id + cm.channel_id)
-        )
-      )
+  }, [userId, forChannelId])
+  return (
+    channelMemberships ?? {
+      channels: undefined,
+      memberIdsByChannelId: undefined,
     }
-  }, [userId, isAuthed, JSON.stringify(channels)])
-  return groupBy(channelMemberships, 'channel_id') as NumericDictionary<
-    PrivateMessageMembership[]
-  >
+  )
 }
 
 export const useMessagesCount = (

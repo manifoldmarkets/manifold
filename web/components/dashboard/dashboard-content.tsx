@@ -1,4 +1,4 @@
-import { useContracts } from 'web/hooks/use-contract-supabase'
+import { useContracts } from 'web/hooks/use-contract'
 import {
   DashboardNewsItemPlaceholder,
   MaybeDashboardNewsItem,
@@ -169,7 +169,6 @@ const TopicList = (props: { topics: string[] }) => {
           key={group.id}
           location={'dashboard page'}
           topic={group}
-          isPrivate={group.privacyStatus === 'private'}
           className="bg-ink-100"
         />
       ))}

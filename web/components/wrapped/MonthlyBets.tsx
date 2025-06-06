@@ -1,8 +1,8 @@
 import clsx from 'clsx'
 import { useEffect, useState } from 'react'
-import { MonthlyBetsType } from 'web/hooks/use-wrapped-2023'
+import { MonthlyBetsType } from 'web/hooks/use-wrapped-2024'
 import { LoadingIndicator } from '../widgets/loading-indicator'
-import { numberWithCommas } from 'web/lib/util/formatNumber'
+import { numberWithCommas } from 'common/util/formatNumber'
 import { Spacer } from '../layout/spacer'
 import { MONTHS } from './GeneralStats'
 import { NavButtons } from './NavButtons'
@@ -97,7 +97,7 @@ export function MonthlyBets(props: {
               : 'invisible'
           )}
         >
-          You've bet a total of{' '}
+          You've traded a total of{' '}
           <span className="font-bold text-fuchsia-300">
             {numberWithCommas(totalBetsThisYear)}
           </span>{' '}
@@ -114,7 +114,7 @@ export function MonthlyBets(props: {
               : 'invisible'
           )}
         >
-          You bet the most in{' '}
+          You traded the most in{' '}
           <span className={clsx('highlight-black font-bold text-fuchsia-300')}>
             {monthName}
           </span>
@@ -122,7 +122,7 @@ export function MonthlyBets(props: {
           <span className="font-bold text-fuchsia-300">
             {numberWithCommas(monthWithMaxBets.bet_count)}
           </span>{' '}
-          bets!
+          trades!
         </div>
       </div>
       <NavButtons goToPrevPage={goToPrevPage} goToNextPage={onGoToNext} />

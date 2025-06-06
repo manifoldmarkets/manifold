@@ -2,256 +2,429 @@ import { Col } from 'web/components/layout/col'
 import { InfoTooltip } from 'web/components/widgets/info-tooltip'
 import { Row } from 'web/components/layout/row'
 import { Input } from 'web/components/widgets/input'
-import { useEffect, useState } from 'react'
-import {
-  getMultiNumericAnswerBucketRangeNames,
-  getMultiNumericAnswerBucketRanges,
-} from 'common/multi-numeric'
+import { useState, useCallback, useEffect } from 'react'
+import { Button } from '../buttons/button'
+import { api, APIError } from 'web/lib/api/api'
+import { XIcon } from '@heroicons/react/solid'
 import { usePersistentLocalState } from 'web/hooks/use-persistent-local-state'
-import { MULTI_NUMERIC_BUCKETS_MAX } from 'common/contract'
-import ShortToggle from 'web/components/widgets/short-toggle'
-import { track } from 'web/lib/service/analytics'
-import { useEvent } from 'web/hooks/use-event'
+import { ControlledTabs } from '../layout/tabs'
+import { debounce } from 'lodash'
+import { MAX_MULTI_NUMERIC_ANSWERS } from 'common/multi-numeric'
+import { formatMoney } from 'common/util/format'
 
 export const MultiNumericRangeSection = (props: {
+  submitState: 'EDITING' | 'LOADING' | 'DONE'
+  question: string
   minString: string
   setMinString: (value: string) => void
   maxString: string
   setMaxString: (value: string) => void
-  precision: number | undefined
-  setPrecision: (value: number | undefined) => void
-  submitState: 'EDITING' | 'LOADING' | 'DONE'
   min: number | undefined
   max: number | undefined
+  description?: string
+  answers: string[]
   paramsKey: string
+  setAnswers: (answers: string[]) => void
+  midpoints: number[]
+  setMidpoints: (midpoints: number[]) => void
+  shouldAnswersSumToOne: boolean
+  setShouldAnswersSumToOne: (shouldAnswersSumToOne: boolean) => void
+  unit: string
+  setUnit: (unit: string) => void
+  marginalCost: number
 }) => {
   const {
-    minString,
-    setMinString,
-    precision,
-    setPrecision,
-    maxString,
-    setMaxString,
+    paramsKey,
     submitState,
+    question,
+    description,
+    answers,
+    midpoints,
+    setAnswers,
+    setMidpoints,
     min,
     max,
-    paramsKey,
+    minString,
+    setMinString,
+    maxString,
+    setMaxString,
+    setShouldAnswersSumToOne,
+    shouldAnswersSumToOne,
+    unit,
+    setUnit,
+    marginalCost,
   } = props
-  const boundsDefined = min !== undefined && max !== undefined
-  const highestPrecision = boundsDefined
-    ? (max - min) / MULTI_NUMERIC_BUCKETS_MAX
-    : undefined
-  const lowestPrecision = boundsDefined ? (max - min) / 2 : undefined
-  const numberOfBuckets = boundsDefined
-    ? getMultiNumericAnswerBucketRangeNames(min, max, precision ?? 1).length
-    : 0
-
-  const [precisionError, setPrecisionError] = useState<string>()
-  const [includeMax, setIncludeMax] = useState<boolean>(true)
+  const defaultAnswers = ['', '']
+  const [isGeneratingRanges, setIsGeneratingRanges] = useState(false)
+  // thresholds
+  const [thresholdAnswers, setThresholdAnswers] = usePersistentLocalState<
+    string[]
+  >(
+    shouldAnswersSumToOne ? defaultAnswers : answers,
+    'threshold-answers' + paramsKey
+  )
+  const [thresholdMidpoints, setThresholdMidpoints] = usePersistentLocalState<
+    number[]
+  >(shouldAnswersSumToOne ? [] : midpoints, 'threshold-midpoints' + paramsKey)
+  // buckets
+  const [bucketAnswers, setBucketAnswers] = usePersistentLocalState<string[]>(
+    !shouldAnswersSumToOne ? defaultAnswers : answers,
+    'bucket-answers' + paramsKey
+  )
+  const [bucketMidpoints, setBucketMidpoints] = usePersistentLocalState<
+    number[]
+  >(!shouldAnswersSumToOne ? [] : midpoints, 'bucket-midpoints' + paramsKey)
   const minMaxError = min !== undefined && max !== undefined && min >= max
+  const [error, setError] = useState<string>('')
+  const [dateError, setDateError] = useState<string>('')
+  const [regenerateError, setRegenerateError] = useState<string>('')
+  const [maxAnswersReached, setMaxAnswersReached] = useState<boolean>(false)
 
+  const selectedTab = shouldAnswersSumToOne ? 'buckets' : 'thresholds'
+
+  // Check if max answers limit is reached
   useEffect(() => {
-    if (
-      !boundsDefined ||
-      precision === undefined ||
-      lowestPrecision === undefined ||
-      highestPrecision === undefined
-    )
-      return
-    if (minMaxError) {
-      setPrecisionError(undefined)
-    } else {
-      if (precision < highestPrecision) {
-        setPrecisionError(
-          `Precision must be greater than or equal to ${highestPrecision}`
-        )
-      } else if (precision > lowestPrecision) {
-        setPrecisionError(
-          `Precision must be less than or equal to ${lowestPrecision}`
-        )
+    const currentAnswers =
+      selectedTab === 'buckets' ? bucketAnswers : thresholdAnswers
+    setMaxAnswersReached(currentAnswers.length > MAX_MULTI_NUMERIC_ANSWERS)
+  }, [selectedTab, bucketAnswers.length, thresholdAnswers.length])
+
+  const generateRanges = async () => {
+    setError('')
+    setRegenerateError('')
+    if (!question || min === undefined || max === undefined || !unit) return
+    setIsGeneratingRanges(true)
+    try {
+      const result = await api('generate-ai-numeric-ranges', {
+        question,
+        description,
+        min,
+        max,
+        unit,
+      })
+
+      setThresholdAnswers(result.thresholds.answers)
+      setThresholdMidpoints(result.thresholds.midpoints)
+      setBucketAnswers(result.buckets.answers)
+      setBucketMidpoints(result.buckets.midpoints)
+    } catch (e) {
+      console.error('Error generating ranges:', e)
+      if (e instanceof APIError) {
+        setError(e.message)
       } else {
-        setPrecisionError(undefined)
+        setError('An error occurred while generating ranges.')
       }
     }
-    if (precision < highestPrecision || precision > lowestPrecision) return
-    if (precision === 1) {
-      const ranges = getMultiNumericAnswerBucketRanges(min, max, precision)
-      setBuckets(ranges.map((r) => r[0].toString()))
+    setIsGeneratingRanges(false)
+  }
+
+  const removeAnswer = (i: number, tab: 'thresholds' | 'buckets') => {
+    const newAnswers =
+      tab === 'thresholds'
+        ? thresholdAnswers.slice(0, i).concat(thresholdAnswers.slice(i + 1))
+        : bucketAnswers.slice(0, i).concat(bucketAnswers.slice(i + 1))
+    const newMidpoints =
+      tab === 'thresholds'
+        ? thresholdMidpoints.slice(0, i).concat(thresholdMidpoints.slice(i + 1))
+        : bucketMidpoints.slice(0, i).concat(bucketMidpoints.slice(i + 1))
+    if (tab === 'thresholds') {
+      setThresholdAnswers(newAnswers)
+      setThresholdMidpoints(newMidpoints)
     } else {
-      const ranges = getMultiNumericAnswerBucketRangeNames(min, max, precision)
-      setBuckets(ranges)
+      setBucketAnswers(newAnswers)
+      setBucketMidpoints(newMidpoints)
     }
-  }, [min, max, precision, includeMax])
+  }
 
-  const updatePrecision = useEvent((value: number) => {
-    if (isNaN(value) || value <= 0) {
-      setPrecision(undefined)
-      setDisplayPrecision('')
-      setMaxString(displayMaxString)
+  const handleRangeBlur = () => {
+    setError('')
+    setRegenerateError('')
+    if (!minMaxError && question && unit) {
+      generateRanges()
+    }
+  }
+
+  const handleTabChange = (tab: 'thresholds' | 'buckets') => {
+    setShouldAnswersSumToOne(tab === 'buckets')
+    // Switch between threshold and bucket answers without any post-processing
+    if (tab === 'thresholds') {
+      setAnswers(thresholdAnswers)
+      setMidpoints(thresholdMidpoints)
     } else {
-      const newMaxString = (
-        parseFloat(maxString) - (includeMax ? precision ?? 0 : 0)
-      ).toString()
-      setPrecision(value)
-      setDisplayPrecision(value.toString())
-      updateMax(newMaxString, value)
+      setAnswers(bucketAnswers)
+      setMidpoints(bucketMidpoints)
     }
-  })
-
-  const [buckets, setBuckets] = usePersistentLocalState<string[] | undefined>(
-    undefined,
-    'new-buckets' + paramsKey
-  )
-  const bucketsToShow = 2
-  const [showAllBuckets, setShowAllBuckets] = useState(
-    max && min ? numberOfBuckets <= bucketsToShow * 2 : false
-  )
-  const [displayMaxString, setDisplayMaxString] = useState<string>(maxString)
-  const [displayPrecision, setDisplayPrecision] = useState<string>(
-    (precision ?? 1).toString()
-  )
-
-  const updateMax = (value: string, precision: number) => {
-    if (includeMax) setMaxString((parseFloat(value) + precision).toString())
-    else setMaxString(value)
-    setDisplayMaxString(value)
   }
 
   useEffect(() => {
-    const maxIncludingPrecision = (
-      parseFloat(maxString) + (precision ?? 0)
-    ).toString()
-    if (includeMax && maxString !== maxIncludingPrecision) {
-      setMaxString(maxIncludingPrecision)
-    } else if (!includeMax && maxString !== displayMaxString) {
-      setMaxString(displayMaxString)
+    handleTabChange(selectedTab)
+  }, [
+    JSON.stringify(thresholdAnswers),
+    JSON.stringify(bucketAnswers),
+    JSON.stringify(thresholdMidpoints),
+    JSON.stringify(bucketMidpoints),
+  ])
+
+  const handleAnswerChanged = async (
+    answers: string[],
+    min: number | undefined,
+    max: number | undefined,
+    tab: 'thresholds' | 'buckets'
+  ) => {
+    setRegenerateError('')
+    // Only regenerate midpoints if we have min and max
+    if (min === undefined || max === undefined) return
+
+    try {
+      const result = await api('regenerate-numeric-midpoints', {
+        question,
+        answers,
+        min,
+        max,
+        description,
+        unit,
+        tab: selectedTab,
+      })
+      setMidpoints(result.midpoints)
+
+      // Update the stored answers and midpoints based on current tab
+      if (tab === 'thresholds') {
+        setThresholdMidpoints(result.midpoints)
+      } else {
+        setBucketMidpoints(result.midpoints)
+      }
+    } catch (e) {
+      console.error('Error regenerating midpoints:', e)
+      if (e instanceof APIError) {
+        setRegenerateError(e.message)
+      } else {
+        setRegenerateError('An error occurred while regenerating midpoints.')
+      }
     }
-  }, [includeMax])
+  }
+
+  // Create debounced version of handleAnswerChanged
+  const debouncedHandleAnswerChanged = useCallback(
+    debounce(
+      (answers: string[], tab: 'thresholds' | 'buckets') =>
+        handleAnswerChanged(answers, min, max, tab),
+      1000
+    ),
+    [min, max, setMidpoints]
+  )
+
+  const addAnswer = () => {
+    if (selectedTab === 'thresholds') {
+      if (thresholdAnswers.length < MAX_MULTI_NUMERIC_ANSWERS) {
+        setThresholdAnswers([...thresholdAnswers, ''])
+      }
+    } else {
+      if (bucketAnswers.length < MAX_MULTI_NUMERIC_ANSWERS) {
+        setBucketAnswers([...bucketAnswers, ''])
+      }
+    }
+  }
+  useEffect(() => {
+    if (question.toLowerCase().includes('when')) {
+      setDateError(
+        'Exact dates are not yet supported, you can try "how many days/weeks/months/years" etc.'
+      )
+    } else {
+      setDateError('')
+    }
+  }, [question])
+
+  const tabs = [
+    {
+      title: 'Buckets',
+      content: (
+        <Col className="mt-2 gap-2">
+          {bucketAnswers.map((answer, i) => (
+            <Row key={i} className="items-center gap-2">
+              {i + 1}.{' '}
+              <Input
+                className="w-full"
+                value={answer}
+                onChange={(e) => {
+                  const newAnswers = [...bucketAnswers]
+                  newAnswers[i] = e.target.value
+                  setBucketAnswers(newAnswers)
+                  debouncedHandleAnswerChanged(newAnswers, 'buckets')
+                }}
+              />
+              {bucketAnswers.length > 2 && (
+                <button
+                  onClick={() => removeAnswer(i, 'buckets')}
+                  type="button"
+                  className="hover:bg-canvas-50 border-ink-300 text-ink-700 bg-canvas-0 focus:ring-primary-500 inline-flex items-center rounded-full border p-1 text-xs font-medium shadow-sm focus:outline-none focus:ring-2 focus:ring-offset-2"
+                >
+                  <XIcon className="h-5 w-5" aria-hidden="true" />
+                </button>
+              )}
+            </Row>
+          ))}
+          <Row className="justify-end gap-2">
+            <Button
+              color="none"
+              onClick={addAnswer}
+              className="hover:bg-canvas-50 border-ink-300 text-ink-700 bg-canvas-0 focus:ring-primary-500 inline-flex items-center rounded border px-2.5 py-1.5 text-xs font-medium shadow-sm focus:outline-none focus:ring-2 focus:ring-offset-2"
+            >
+              Add bucket
+              {marginalCost > 0 ? ` +${formatMoney(marginalCost)}` : ''}
+            </Button>
+          </Row>
+        </Col>
+      ),
+    },
+    {
+      title: 'Thresholds',
+      content: (
+        <Col className="mt-2 gap-2">
+          {thresholdAnswers.map((answer, i) => (
+            <Row key={i} className="items-center gap-2">
+              {i + 1}.{' '}
+              <Input
+                className="w-full"
+                value={answer}
+                onChange={(e) => {
+                  const newAnswers = [...thresholdAnswers]
+                  newAnswers[i] = e.target.value
+                  setThresholdAnswers(newAnswers)
+                  debouncedHandleAnswerChanged(newAnswers, 'thresholds')
+                }}
+              />
+              {thresholdAnswers.length > 2 && (
+                <button
+                  onClick={() => removeAnswer(i, 'thresholds')}
+                  type="button"
+                  className="hover:bg-canvas-50 border-ink-300 text-ink-700 bg-canvas-0 focus:ring-primary-500 inline-flex items-center rounded-full border p-1 text-xs font-medium shadow-sm focus:outline-none focus:ring-2 focus:ring-offset-2"
+                >
+                  <XIcon className="h-5 w-5" aria-hidden="true" />
+                </button>
+              )}
+            </Row>
+          ))}
+          <Row className="justify-end gap-2">
+            <Button
+              color="none"
+              onClick={addAnswer}
+              className="hover:bg-canvas-50 border-ink-300 text-ink-700 bg-canvas-0 focus:ring-primary-500 inline-flex items-center rounded border px-2.5 py-1.5 text-xs font-medium shadow-sm focus:outline-none focus:ring-2 focus:ring-offset-2"
+            >
+              Add threshold
+              {marginalCost > 0 ? ` +${formatMoney(marginalCost)}` : ''}
+            </Button>
+          </Row>
+        </Col>
+      ),
+    },
+  ]
+  const titles = tabs.map((tab) => tab.title.toLowerCase())
 
   return (
     <Col>
       <Row className={'flex-wrap gap-x-4'}>
+        {dateError && (
+          <div className="text-scarlet-500 text-sm">{dateError}</div>
+        )}
         <Col className="mb-2 items-start">
-          <Row className=" gap-1 px-1 py-2">
-            <span className="">Range </span>
+          <Row className=" items-baseline gap-1 px-1 py-2">
+            <span className="">Range & metric</span>
             <InfoTooltip text="The lower and higher bounds of the numeric range. Choose bounds the value could reasonably be expected to hit." />
+            {minMaxError && (
+              <span className="text-scarlet-500 text-sm">
+                Max must be greater than min
+              </span>
+            )}
           </Row>
           <Row className={'gap-2'}>
             <Input
               type="number"
               error={minMaxError}
-              className="w-32"
+              className="w-28"
               placeholder="Low"
               onClick={(e) => e.stopPropagation()}
               onChange={(e) => setMinString(e.target.value)}
+              onBlur={handleRangeBlur}
               disabled={submitState === 'LOADING'}
               value={minString ?? ''}
             />
-
             <Input
               type="number"
               error={minMaxError}
-              className="w-32"
+              className="w-28"
               placeholder="High"
               onClick={(e) => e.stopPropagation()}
-              onChange={(e) => updateMax(e.target.value, precision ?? 0)}
+              onChange={(e) => setMaxString(e.target.value)}
+              onBlur={handleRangeBlur}
               disabled={submitState === 'LOADING'}
-              value={displayMaxString}
+              value={maxString}
             />
+            <Input
+              type="text"
+              className="w-[7.25rem]"
+              placeholder="Metric"
+              onClick={(e) => e.stopPropagation()}
+              onChange={(e) => setUnit(e.target.value)}
+              onBlur={handleRangeBlur}
+              disabled={submitState === 'LOADING'}
+              value={unit}
+            />
+            <Button
+              className="hidden whitespace-nowrap sm:inline-flex"
+              color="indigo-outline"
+              onClick={generateRanges}
+              loading={isGeneratingRanges}
+              disabled={
+                !question ||
+                isGeneratingRanges ||
+                min === undefined ||
+                max === undefined ||
+                minMaxError ||
+                !unit
+              }
+            >
+              {answers.length > 0 ? 'Regenerate ranges' : 'Generate ranges'}
+            </Button>
           </Row>
-        </Col>
-        <Col className={''}>
-          <label className="gap-2 px-1 py-2">
-            <span className="mb-1">Precision </span>
-            <InfoTooltip
-              text={`The precision of the range. The range will be divided into possible answers of this size.`}
-            />
-          </label>
-          <Input
-            type="number"
-            className="w-32"
-            placeholder="Precision"
-            error={!!precisionError && !minMaxError}
-            onClick={(e) => e.stopPropagation()}
-            onChange={(e) => setDisplayPrecision(e.target.value)}
-            onBlur={(e) => updatePrecision(parseFloat(e.target.value))}
-            disabled={submitState === 'LOADING'}
-            min={highestPrecision}
-            max={lowestPrecision}
-            value={displayPrecision}
-          />
-          <span className="text-scarlet-500 text-sm">{precisionError}</span>
         </Col>
       </Row>
+      <Row className="mb-2 w-full gap-2 sm:hidden">
+        <Button
+          color="indigo-outline"
+          onClick={generateRanges}
+          loading={isGeneratingRanges}
+          disabled={
+            !question ||
+            isGeneratingRanges ||
+            min === undefined ||
+            max === undefined ||
+            minMaxError ||
+            !unit
+          }
+        >
+          {answers.length > 0 ? 'Regenerate ranges' : 'Generate ranges'}
+        </Button>
+      </Row>
+      {error && (
+        <div className="text-scarlet-500 mb-2 mt-2 text-sm">{error}</div>
+      )}
 
-      {minMaxError && (
+      <ControlledTabs
+        activeIndex={titles.indexOf(selectedTab)}
+        onClick={(title) => {
+          handleTabChange(title.toLowerCase() as 'thresholds' | 'buckets')
+        }}
+        tabs={tabs}
+      />
+      {regenerateError && (
         <div className="text-scarlet-500 mb-2 mt-2 text-sm">
-          The maximum value must be greater than the minimum.
+          {regenerateError}
         </div>
       )}
-      {buckets && (
-        <Col className={'gap-1'}>
-          <Row>
-            <label className="gap-2 px-1 py-2">
-              <span className="mb-1">Answers </span>
-              <InfoTooltip
-                text={`You will choose one of these answers when you resolve the question. The more answers there are, the more precise forecast is.`}
-              />
-            </label>
-            <Row className="ml-2 items-center gap-1.5">
-              <ShortToggle
-                size={'sm'}
-                on={includeMax}
-                setOn={(toggle) => {
-                  setIncludeMax(toggle)
-                  track('Include max toggle', { toggle })
-                }}
-              />
-              <span className={'my-auto  text-sm'}>
-                Include max + precision
-              </span>
-            </Row>
-          </Row>
-          <Row className={'ml-1 flex-wrap items-center gap-2'}>
-            {buckets
-              .slice(
-                0,
-                showAllBuckets || numberOfBuckets <= 4
-                  ? numberOfBuckets
-                  : bucketsToShow
-              )
-              .map((a, i) => (
-                <span className={'whitespace-nowrap'} key={a}>
-                  {a}
-                  {showAllBuckets
-                    ? i !== buckets.length - 1
-                      ? ', '
-                      : ''
-                    : i === 0
-                    ? ', '
-                    : ''}
-                </span>
-              ))}
-            {!showAllBuckets && numberOfBuckets > 4 && (
-              <>
-                {buckets.length > 4 && (
-                  <span
-                    className="cursor-pointer hover:underline "
-                    onClick={() => setShowAllBuckets(true)}
-                  >
-                    ...
-                  </span>
-                )}
-                {buckets.slice(-bucketsToShow).map((a, i) => (
-                  <span className={'whitespace-nowrap'} key={a}>
-                    {a}
-                    {bucketsToShow === i + 1 ? '' : ', '}
-                  </span>
-                ))}
-              </>
-            )}
-          </Row>
-        </Col>
+      {maxAnswersReached && (
+        <div className="mb-2 mt-2 text-sm text-amber-500">
+          Maximum of {MAX_MULTI_NUMERIC_ANSWERS} answers reached.
+        </div>
       )}
     </Col>
   )

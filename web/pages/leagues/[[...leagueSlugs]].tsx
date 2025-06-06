@@ -5,14 +5,10 @@ import { useRouter } from 'next/router'
 
 import {
   DIVISION_NAMES,
-  CURRENT_SEASON,
   getLeaguePath,
   league_user_info,
   parseLeaguePath,
-  getSeasonStatus,
-  SEASONS,
   getSeasonMonth,
-  season,
   getSeasonCountdownEnd,
   getSeasonDates,
   getMaxDivisionBySeason,
@@ -25,7 +21,7 @@ import { Row } from 'web/components/layout/row'
 import { Select } from 'web/components/widgets/select'
 import { Title } from 'web/components/widgets/title'
 import { useUser } from 'web/hooks/use-user'
-import { usePersistentInMemoryState } from 'web/hooks/use-persistent-in-memory-state'
+import { usePersistentInMemoryState } from 'client-common/hooks/use-persistent-in-memory-state'
 import { getLeagueRows } from 'web/lib/supabase/leagues'
 import { CohortTable } from 'web/components/leagues/cohort-table'
 import { PrizesModal } from 'web/components/leagues/prizes-modal'
@@ -33,12 +29,61 @@ import { LeagueFeed } from 'web/components/leagues/league-feed'
 import { QueryUncontrolledTabs } from 'web/components/layout/tabs'
 import { SEO } from 'web/components/SEO'
 import { Countdown } from 'web/components/widgets/countdown'
-import { formatTime, getCountdownStringHoursMinutes } from 'web/lib/util/time'
+import {
+  formatTime,
+  getCountdownStringHoursMinutes,
+} from 'client-common/lib/time'
 import { InfoTooltip } from 'web/components/widgets/info-tooltip'
 import { LoadingIndicator } from 'web/components/widgets/loading-indicator'
 import { useEffectCheckEquality } from 'web/hooks/use-effect-check-equality'
+import Link from 'next/link'
+import { DAY_MS } from 'common/util/time'
+import { api } from 'web/lib/api/api'
+import { APIResponse } from 'common/api/schema'
 
-export default function Leagues() {
+export async function getStaticPaths() {
+  return { paths: [], fallback: 'blocking' }
+}
+
+export async function getStaticProps(props: {
+  params: { leagueSlugs: string[] }
+}) {
+  try {
+    // Extract season from URL if available
+    const leagueSlugs = props.params?.leagueSlugs || []
+    const seasonParam = leagueSlugs[0]
+    const season =
+      seasonParam && !isNaN(parseInt(seasonParam))
+        ? parseInt(seasonParam)
+        : undefined
+
+    const currentSeasonInfo = await api('get-season-info', {})
+    const seasonInfo = await api('get-season-info', season ? { season } : {})
+    return {
+      props: {
+        initialSeasonInfo: seasonInfo,
+        currentSeasonInfo,
+      },
+      revalidate: 60, // Revalidate every minute
+    }
+  } catch (err) {
+    console.error('Error fetching season info:', err)
+    return {
+      props: {
+        initialSeasonInfo: null,
+      },
+      revalidate: 60, // Retry sooner if there was an error
+    }
+  }
+}
+
+interface LeaguesProps {
+  initialSeasonInfo: APIResponse<'get-season-info'> | null
+  currentSeasonInfo: APIResponse<'get-season-info'> | null
+}
+
+export default function Leagues(props: LeaguesProps) {
+  const { initialSeasonInfo, currentSeasonInfo } = props
   const user = useUser()
 
   const [rows, setRows] = usePersistentInMemoryState<league_user_info[]>(
@@ -47,8 +92,16 @@ export default function Leagues() {
   )
 
   const rowsBySeason = useMemo(() => groupBy(rows, 'season'), [rows])
+  const seasonInfo = initialSeasonInfo ?? currentSeasonInfo
+  const seasons = useMemo(() => {
+    const seasons = []
+    for (let i = 1; i <= (currentSeasonInfo?.season ?? 1); i++) {
+      seasons.push(i)
+    }
+    return seasons
+  }, [currentSeasonInfo?.season])
 
-  const [season, setSeason] = useState<number>(CURRENT_SEASON)
+  const [season, setSeason] = useState<number>(seasonInfo?.season ?? 1)
   useEffect(() => {
     getLeagueRows(season).then((rows) => {
       setRows((currRows) =>
@@ -94,15 +147,14 @@ export default function Leagues() {
     const { season, division, cohort } = parseLeaguePath(
       [newSeason.toString()],
       rowsBySeason,
+      seasons,
       user?.id
     )
 
     if (cohort) {
-      replace(getLeaguePath(season, division, cohort), undefined, {
-        shallow: true,
-      })
+      replace(getLeaguePath(season, division, cohort), undefined)
     } else {
-      replace(`${season}`, undefined, { shallow: true })
+      replace(`${season}`, undefined)
     }
   }
 
@@ -130,6 +182,7 @@ export default function Leagues() {
     const { season, division, cohort, highlightedUserId } = parseLeaguePath(
       leagueSlugs ?? [],
       rowsBySeason,
+      seasons,
       user?.id
     )
     console.log(
@@ -146,10 +199,12 @@ export default function Leagues() {
   }, [isReady, seasonLoaded, leagueSlugs, user?.id])
 
   const MARKER = '★'
-  const seasonStatus = getSeasonStatus(season)
+  const seasonStatus = seasonInfo?.status
   const countdownEnd = getSeasonCountdownEnd(season)
-  const { end: seasonEnd } = getSeasonDates(season)
-  const randomPeriodEnd = new Date(countdownEnd.getTime() + 24 * 60 * 60 * 1000)
+  const { approxEnd: seasonEnd } = getSeasonDates(season)
+  const closingPeriod =
+    seasonStatus === 'active' && seasonEnd.getTime() < Date.now() + DAY_MS
+  const randomPeriodEnd = new Date(countdownEnd.getTime() + DAY_MS)
 
   const userRow = seasonRows.find((row) => row.user_id === user?.id)
   const userDivision = userRow?.division
@@ -167,69 +222,71 @@ export default function Leagues() {
         url={url}
       />
 
-      <Col className="mx-auto w-full max-w-xl gap-2 pt-2 sm:pt-0">
-        <Col className="sm:mt-2 lg:mt-0">
-          <Row className="mb-2 items-center gap-4">
-            <Title className="!mb-0 hidden sm:block">Leagues</Title>
-            <Col className="items-center gap-1">
-              <Select
-                className="!border-ink-200 !h-10"
-                value={season}
-                onChange={(e) => onSetSeason(+e.target.value as season)}
-              >
-                {SEASONS.map((season) => (
-                  <option key={season} value={season}>
-                    Season {season}: {getSeasonMonth(season)}
-                  </option>
-                ))}
-              </Select>
-            </Col>
-            <Col className="items-center gap-1">
-              <Row className="gap-1.5">
-                <div className={'text-sm'}>
-                  {seasonStatus === 'closing-period' && (
-                    <>
-                      Ends randomly within <br />
-                      <ClockIcon className="text-ink-1000 inline h-4 w-4" />{' '}
-                      {getCountdownStringHoursMinutes(randomPeriodEnd)}
-                    </>
-                  )}
-                  {seasonStatus === 'ended' && (
-                    <>Ended {formatTime(seasonEnd)}</>
-                  )}
-                  {seasonStatus === 'current' && (
-                    <>
-                      Countdown:{' '}
-                      <InfoTooltip
-                        text={
-                          'Once the countdown is reached the leaderboards will freeze at a random time in the following 24h to determine final ranks.'
-                        }
-                      >
-                        <Countdown
-                          className=" text-sm"
-                          endDate={countdownEnd}
-                        />
-                      </InfoTooltip>
-                    </>
-                  )}
-                </div>
-              </Row>
-            </Col>
+      <Col className="mx-auto w-full max-w-xl gap-2 px-1 pt-4">
+        <Col className="px-2">
+          <Row className="mb-2 items-center justify-between gap-4">
+            <Title className="!mb-0">Leagues</Title>
+            <Select
+              className="!border-ink-200 !h-10"
+              value={season}
+              onChange={(e) => onSetSeason(+e.target.value)}
+            >
+              {seasons.map((season) => (
+                <option key={season} value={season}>
+                  Season {season}: {getSeasonMonth(season)}
+                </option>
+              ))}
+            </Select>
           </Row>
-
-          <Row className="mb-2 mt-2 items-center gap-3">
-            <text className="">
-              Compete for{' '}
+          <Col className="text-ink-700 my-2 justify-center gap-1">
+            <div>
+              Win{' '}
               <span
                 className="border-primary-600 text-primary-600 hover:text-primary-800 cursor-help border-b border-dotted"
                 onClick={togglePrizesModal}
               >
                 prizes
               </span>{' '}
-              and promotion by earning the most mana this month!
-            </text>
-            <PrizesModal open={prizesModalOpen} setOpen={setPrizesModalOpen} />
-          </Row>
+              for the most profit (realized and unrealized) on trades placed
+              this month!
+              <span className={'ml-1'}>
+                {closingPeriod && (
+                  <>
+                    Ends randomly within <br />
+                    <ClockIcon className="text-ink-1000 inline h-4 w-4" />{' '}
+                    {getCountdownStringHoursMinutes(randomPeriodEnd)}
+                  </>
+                )}
+                {seasonStatus === 'complete' && (
+                  <>Ended {formatTime(seasonEnd)}</>
+                )}
+                {seasonStatus === 'active' && (
+                  <>
+                    Season ends in:{' '}
+                    <InfoTooltip
+                      text={
+                        'Once the countdown is reached the leaderboards will freeze at a random time in the following 24h to determine final ranks.'
+                      }
+                    >
+                      <Countdown className=" text-sm" endDate={countdownEnd} />
+                    </InfoTooltip>
+                  </>
+                )}
+              </span>
+            </div>
+            <div>
+              All-time leaderboard is{' '}
+              <Link
+                href="/leaderboards"
+                className="text-primary-600 hover:text-primary-800 underline-offset-2 hover:underline"
+              >
+                here
+              </Link>
+              .
+            </div>
+          </Col>
+
+          <PrizesModal open={prizesModalOpen} setOpen={setPrizesModalOpen} />
 
           {cohort && (
             <Row className="mt-2 gap-2">

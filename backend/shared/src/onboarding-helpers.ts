@@ -1,6 +1,3 @@
-import * as admin from 'firebase-admin'
-import * as dayjs from 'dayjs'
-
 import { createSupabaseDirectClient } from 'shared/supabase/init'
 import { runTxnFromBank } from 'shared/txn/run-txn'
 import {
@@ -8,7 +5,7 @@ import {
   MARKET_VISIT_BONUS_TOTAL,
   NEXT_DAY_BONUS,
 } from 'common/economy'
-import { getUser, getUsers, isProd, log } from 'shared/utils'
+import { getPrivateUser, getUser, isProd, log } from 'shared/utils'
 import { SignupBonusTxn } from 'common/txn'
 import {
   MANIFOLD_AVATAR_URL,
@@ -16,99 +13,94 @@ import {
   MANIFOLD_USER_USERNAME,
   PrivateUser,
   User,
-  isVerified,
+  humanish,
 } from 'common/user'
 import {
   getNotificationDestinationsForUser,
   userOptedOutOfBrowserNotifications,
 } from 'common/user-notification-preferences'
 import { Notification } from 'common/notification'
-import * as crypto from 'crypto'
 import { sendBonusWithInterestingMarketsEmail } from 'shared/emails'
 import { insertNotificationToSupabase } from 'shared/supabase/notifications'
 import { APIError } from 'common/api/utils'
 import { getForYouMarkets } from 'shared/weekly-markets-emails'
-import { updateUser } from './supabase/users'
-
-const LAST_TIME_ON_CREATE_USER_SCHEDULED_EMAIL = 1690810713000
+import { updatePrivateUser, updateUser } from './supabase/users'
+import { convertUser } from 'common/supabase/users'
+import { nanoid } from 'common/util/random'
 
 /*
 D1 send mana bonus email
-[deprecated] D2 send creator guide email
 */
 export async function sendOnboardingNotificationsInternal() {
   if (!isProd()) return
-  const { recentUserIds } = await getRecentNonLoverUserIds()
+  const pg = createSupabaseDirectClient()
+
+  const recentUsers = await pg.map(
+    `select * from users
+          where
+              -- adding padding in case the scheduler went down
+              created_time < now() - interval '23 hours' and
+              created_time > now() - interval '1 week' and
+              (data->>'fromLove' is null or data->>'fromLove' = 'false')
+              `,
+    [],
+    convertUser
+  )
 
   log(
     'Non love users created older than 1 day, younger than 1 week:' +
-      recentUserIds.length
+      recentUsers.length
   )
 
-  await sendBonusNotifications(recentUserIds)
+  await Promise.all(recentUsers.map(sendNextDayManaBonus))
+  // const unactivatedUsers = recentUsers.filter((user) => !user.lastBetTime)
+  // const templateId = 'didnt-bet-new-user-survey'
+  // const unactivatedUsersSentEmailAlready = await pg.map(
+  //   `select distinct users.id from users
+  //           join sent_emails on users.id = sent_emails.user_id
+  //           where users.id = any($1)
+  //           and sent_emails.email_template_id = $2`,
+  //   [unactivatedUsers.map((user) => user.id), templateId],
+  //   (row) => row.id
+  // )
+
+  // await Promise.all(
+  //   unactivatedUsers
+  //     .filter((user) => !unactivatedUsersSentEmailAlready.includes(user.id))
+  //     .map(async (user) => {
+  //       await sendUnactivatedNewUserEmail(user, templateId)
+  //       await pg.none(
+  //         `insert into sent_emails (user_id, email_template_id) values ($1, $2)`,
+  //         [user.id, templateId]
+  //       )
+  //     })
+  // )
 }
 
-const getRecentNonLoverUserIds = async () => {
+const sendNextDayManaBonus = async (user: User) => {
   const pg = createSupabaseDirectClient()
 
-  const userDetails = await pg.map(
-    `select id, (data->'createdTime') as created_time from users
-          where
-              millis_to_ts(((data->'createdTime')::bigint)) < now() - interval '23 hours' and
-              millis_to_ts(((data->'createdTime')::bigint)) > now() - interval '1 week'and
-              (data->>'verifiedPhone')::boolean = true and
-              (data->>'fromLove' is null or data->>'fromLove' = 'false')
-              `,
-    // + `and username like '%manifoldtestnewuser%'`,
-    [],
-    (r) => ({
-      id: r.id,
-      createdTime: r.created_time,
-    })
-  )
+  const { txn, privateUser } = await pg.tx(async (tx) => {
+    const privateUser = await getPrivateUser(user.id, tx)
+    if (!privateUser) throw new APIError(404, `private user not found`)
 
-  const recentUserIds = userDetails.map((u) => u.id) as string[]
-
-  const userIdsToReceiveCreatorGuideEmail = userDetails
-    .filter(
-      (u) =>
-        dayjs().diff(dayjs(u.createdTime), 'day') >= 2 &&
-        dayjs().diff(dayjs(u.createdTime), 'day') < 3 &&
-        u.createdTime > LAST_TIME_ON_CREATE_USER_SCHEDULED_EMAIL
-    )
-    .map((u) => u.id) as string[]
-
-  return { recentUserIds, userIdsToReceiveCreatorGuideEmail }
-}
-
-const sendNextDayManaBonus = async (
-  firestore: admin.firestore.Firestore,
-  user: User
-) => {
-  const pg = createSupabaseDirectClient()
-
-  const privateUser = await firestore.runTransaction(async (transaction) => {
-    const toDoc = firestore.doc(`private-users/${user.id}`)
-    const toUserSnap = await transaction.get(toDoc)
-    if (!toUserSnap.exists) return null
-
-    const privateUser = toUserSnap.data() as PrivateUser
     if (privateUser.manaBonusSent) {
       log(`User ${user.id} already received mana bonus`)
-      return null
+      return {}
     } else {
-      transaction.update(toDoc, {
+      await updatePrivateUser(tx, user.id, {
         manaBonusSent: true,
-        weeklyTrendingEmailSent: true, // not yet, but about to!
       })
+      await tx.none(
+        `update private_users set weekly_trending_email_sent = true where id = $1`,
+        [user.id]
+      )
     }
-    return privateUser
-  })
 
-  if (!privateUser) return
-
-  const signupBonusTxn: Omit<SignupBonusTxn, 'fromId' | 'id' | 'createdTime'> =
-    {
+    const signupBonusTxn: Omit<
+      SignupBonusTxn,
+      'fromId' | 'id' | 'createdTime'
+    > = {
       fromType: 'BANK',
       amount: NEXT_DAY_BONUS,
       category: 'SIGNUP_BONUS',
@@ -118,15 +110,9 @@ const sendNextDayManaBonus = async (
       description: 'Next day signup bonus',
     }
 
-  const txn = await pg
-    .tx((tx) => runTxnFromBank(tx, signupBonusTxn))
-    .catch((e) => {
-      log.error(
-        `User ${user.id} had initial signup bonus marked but may not have recieved mana! Must manually reconcile`
-      )
-      log.error(e && typeof e === 'object' && 'message' in e ? e.message : e)
-      return null
-    })
+    const txn = await runTxnFromBank(tx, signupBonusTxn)
+    return { txn, privateUser }
+  })
 
   if (!txn) return
 
@@ -145,7 +131,7 @@ export const sendOnboardingMarketVisitBonus = async (userId: string) => {
       throw new APIError(404, `User ${userId} not found`)
     }
 
-    if (!isVerified(user)) {
+    if (!humanish(user)) {
       throw new APIError(403, 'User not yet verified phone number.')
     }
 
@@ -188,12 +174,6 @@ export const sendOnboardingMarketVisitBonus = async (userId: string) => {
   })
 }
 
-const sendBonusNotifications = async (userIds: string[]) => {
-  const firestore = admin.firestore()
-  const users = await getUsers(userIds)
-  await Promise.all(users.map((user) => sendNextDayManaBonus(firestore, user)))
-}
-
 const createSignupBonusNotification = async (
   user: User,
   privateUser: PrivateUser,
@@ -202,7 +182,7 @@ const createSignupBonusNotification = async (
 ) => {
   if (!userOptedOutOfBrowserNotifications(privateUser)) {
     const notification: Notification = {
-      id: crypto.randomUUID(),
+      id: nanoid(6),
       userId: privateUser.id,
       reason: 'onboarding_flow',
       createdTime: Date.now(),

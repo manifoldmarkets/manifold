@@ -11,22 +11,22 @@ import {
   limit as lim,
   where,
   orderBy as order,
-  leftJoin,
   groupBy,
 } from 'shared/supabase/sql-builder'
 import { buildArray, filterDefined } from 'common/util/array'
 import { log } from 'shared/utils'
-import { adContract } from 'common/boost'
 import {
+  activeTopics,
   buildUserInterestsCache,
+  minimumContractsQualityBarWhereClauses,
   userIdsToAverageTopicConversionScores,
 } from 'shared/topic-interests'
 import { privateUserBlocksSql } from 'shared/supabase/search-contracts'
 import { getFollowedReposts, getTopicReposts } from 'shared/supabase/reposts'
-import { FeedContract } from 'common/feed'
+import { FeedContract, GROUP_SCORE_PRIOR } from 'common/feed'
 
 const DEBUG_USER_ID = undefined
-const DEBUG_FEED = process.platform === 'darwin'
+const DEBUG_FEED = false //process.platform === 'darwin'
 export const getFeed: APIHandler<'get-feed'> = async (props) => {
   const { limit, offset, ignoreContractIds } = props
   const pg = createSupabaseDirectClient()
@@ -60,15 +60,15 @@ export const getFeed: APIHandler<'get-feed'> = async (props) => {
   ) {
     log('no topic interests for user', userId)
     const defaultContracts = await pg.map(
-      `select data, importance_score, conversion_score, freshness_score, view_count from contracts
-                order by importance_score desc 
+      `select data, importance_score, conversion_score, freshness_score, view_count, token from contracts
+                order by importance_score desc
                 limit $1 offset $2`,
       [limit * 4, offset],
       (r) => convertContract(r)
     )
     return {
       contracts: defaultContracts,
-      ads: [],
+      ads: [], // TODO: remove
       idsToReason: Object.fromEntries(
         defaultContracts.map((c) => [c.id, 'importance'])
       ),
@@ -77,69 +77,60 @@ export const getFeed: APIHandler<'get-feed'> = async (props) => {
       reposts: [],
     }
   }
-  const viewedContractsQuery = renderSql(
-    select(`contract_id, max(view_time) AS latest_seen_time`),
-    from(
-      `(select contract_id, last_page_view_ts as view_time from user_contract_views where user_id = $1 union all
-           select contract_id, last_promoted_view_ts as view_time from user_contract_views where user_id = $1 union all
-           select contract_id, last_card_view_ts as view_time from user_contract_views where user_id = $1) as combined_views`,
-      [userId]
-    ),
-    groupBy(`contract_id`)
-  )
 
-  const claimedAdsQuery = renderSql(
-    select('1'),
-    from(`txns`),
-    where(`category = 'MARKET_BOOST_REDEEM'`),
-    where(`to_id = $1`, [userId]),
-    where(`from_id = market_ads.id`)
-  )
-
-  const adsJoin = renderSql(
-    select(`market_ads.id, market_id, funds, cost_per_view`),
-    from(`market_ads`),
-    join(`contracts on market_ads.market_id = contracts.id`),
-    where(`funds >= cost_per_view`),
-    where(`market_ads.user_id != $1`, [userId]),
-    where(`contracts.close_time > now()`),
-    where(`contracts.visibility = 'public'`),
-    where(`not exists (${claimedAdsQuery})`),
-    order(`cost_per_view desc`),
-    lim(50)
-  )
-  const topicIds = Object.keys(userIdsToAverageTopicConversionScores[userId])
-  const topicWeights = Object.values(
+  const userInterestTopicIds = Object.keys(
     userIdsToAverageTopicConversionScores[userId]
   )
-  const baseQueryArray = (boosts = false) =>
+  const userInterestTopicWeights = Object.values(
+    userIdsToAverageTopicConversionScores[userId]
+  )
+  const newUser = userInterestTopicIds.length < 100
+  if (!newUser) {
+    // add top trending topics from activeTopics that aren't in user's interests already
+    const topUnseenActiveTopics = orderBy(
+      Object.entries(activeTopics).filter(
+        ([topicId]) => !userInterestTopicIds.includes(topicId)
+      ),
+      ([, score]) => score,
+      'desc'
+    ).slice(0, 10)
+    userInterestTopicIds.push(
+      ...topUnseenActiveTopics.map(([topicId]) => topicId)
+    )
+    userInterestTopicWeights.push(
+      ...topUnseenActiveTopics.map(([, score]) => score)
+    )
+  }
+  const MAX_TOPICS_TO_EVALUATE = 350
+  const cutoffIndex =
+    userInterestTopicWeights.length > MAX_TOPICS_TO_EVALUATE
+      ? Math.min(
+          userInterestTopicWeights.filter((w) => w > GROUP_SCORE_PRIOR).length,
+          MAX_TOPICS_TO_EVALUATE
+        )
+      : userInterestTopicWeights.length
+
+  const baseQueryArray = () =>
     buildArray(
       select('contracts.*'),
-      !boosts
-        ? select(
-            `avg(uti.avg_conversion_score) as topic_conversion_score, cv.latest_seen_time`
-          )
-        : select(
-            `uti.avg_conversion_score as topic_conversion_score, ma.id as ad_id`
-          ),
+      select(`avg(uti.topic_score) as topic_conversion_score`),
       from(
         `(select
                unnest(array[$1]) as group_id,
-               unnest(array[$2]) as avg_conversion_score) as uti`,
-        [topicIds, topicWeights]
+               unnest(array[$2]) as topic_score
+                ) as uti`,
+        [
+          userInterestTopicIds.slice(0, cutoffIndex),
+          userInterestTopicWeights.slice(0, cutoffIndex),
+        ]
       ),
       join(`group_contracts on group_contracts.group_id = uti.group_id`),
       join(`contracts on contracts.id = group_contracts.contract_id`),
-      // Another option: get the top 1000 contracts by uti.CS * contracts.CS and then filter by user_contract_views
-      !boosts && [
-        leftJoin(
-          `(${viewedContractsQuery}) cv ON cv.contract_id = contracts.id`
-        ),
-        where(`cv.latest_seen_time is null`),
-      ],
-      where(`contracts.close_time > now()`),
-      where(`contracts.outcome_type != 'STONK'`),
-      where(`contracts.visibility = 'public'`),
+      where(
+        'not exists (select 1 from user_contract_views where user_id = $1 and contract_id = contracts.id)',
+        [userId]
+      ),
+      ...minimumContractsQualityBarWhereClauses(),
       where(
         `contracts.id not in (select contract_id from user_disinterests where user_id = $1 and contract_id = contracts.id)`,
         [userId]
@@ -148,16 +139,8 @@ export const getFeed: APIHandler<'get-feed'> = async (props) => {
         where(`contracts.id <> all(array[$1])`, [ignoreContractIds]),
       privateUserBlocksSql(privateUser),
       lim(limit, offset),
-      !boosts && groupBy(`contracts.id, cv.latest_seen_time`)
+      groupBy(`contracts.id`)
     )
-
-  const adsQuery = renderSql(
-    ...baseQueryArray(true),
-    join(`(${adsJoin}) ma on ma.market_id = contracts.id`),
-    order(
-      `uti.avg_conversion_score  * contracts.conversion_score * ma.cost_per_view desc`
-    )
-  )
 
   const followedQuery = renderSql(
     ...baseQueryArray(),
@@ -168,9 +151,8 @@ export const getFeed: APIHandler<'get-feed'> = async (props) => {
     order(`contracts.conversion_score desc`)
   )
   const sorts = {
-    conversion: `avg(uti.avg_conversion_score  * contracts.conversion_score) desc`,
-    importance: `avg(uti.avg_conversion_score  * contracts.importance_score) desc`,
-    freshness: `avg(uti.avg_conversion_score  * contracts.freshness_score) desc`,
+    conversion: `avg(uti.topic_score  * contracts.conversion_score) desc`,
+    freshness: `avg(uti.topic_score  * contracts.freshness_score) desc`,
   }
   const sortQueries = Object.values(sorts).map((orderQ) =>
     renderSql(...baseQueryArray(), order(orderQ))
@@ -183,10 +165,8 @@ export const getFeed: APIHandler<'get-feed'> = async (props) => {
   const startTime = Date.now()
   const [
     convertingContracts,
-    importantContracts,
     freshContracts,
     followedContracts,
-    adContracts,
     followedRepostData,
     topicRepostData,
   ] = await Promise.all([
@@ -210,16 +190,6 @@ export const getFeed: APIHandler<'get-feed'> = async (props) => {
           topicConversionScore: r.topic_conversion_score as number,
         } as FeedContract)
     ),
-    pg.map(
-      adsQuery,
-      [],
-      (r) =>
-        ({
-          adId: r.ad_id as string,
-          contract: convertContract(r),
-          topicConversionScore: r.topic_conversion_score as number,
-        } as FeedContract)
-    ),
     getFollowedReposts(
       userId,
       limit,
@@ -232,8 +202,8 @@ export const getFeed: APIHandler<'get-feed'> = async (props) => {
       userId,
       limit,
       offset,
-      topicIds,
-      topicWeights,
+      userInterestTopicIds,
+      userInterestTopicWeights,
       renderSql(privateUserBlocksSql(privateUser)).replace('where', 'and'),
       pg
     ),
@@ -246,15 +216,9 @@ export const getFeed: APIHandler<'get-feed'> = async (props) => {
 
   const contracts = uniqBy(
     orderBy(
-      convertingContracts.concat(
-        importantContracts,
-        freshContracts,
-        followedContracts,
-        allReposts
-      ),
+      convertingContracts.concat(freshContracts, followedContracts, allReposts),
       (c) =>
         c.contract.conversionScore *
-        c.contract.importanceScore *
         c.contract.freshnessScore *
         c.topicConversionScore,
       'desc'
@@ -268,19 +232,15 @@ export const getFeed: APIHandler<'get-feed'> = async (props) => {
         ? 'followed'
         : convertingContracts.find((cc) => cc.contract.id === c.id)
         ? 'conversion'
-        : importantContracts.find((cc) => cc.contract.id === c.id)
-        ? 'importance'
         : freshContracts.find((cc) => cc.contract.id === c.id)
         ? 'freshness'
         : '',
     ])
   )
-  const ads = (adContracts as adContract[]).filter(
-    (c) => !contracts.map((c) => c.id).includes(c.contract.id)
-  )
+
   return {
     contracts,
-    ads,
+    ads: [], // TODO: remove
     idsToReason,
     comments: filterDefined(allReposts.map((c) => c.comment)),
     bets: filterDefined(allReposts.map((c) => c.bet)),

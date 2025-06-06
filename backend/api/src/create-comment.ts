@@ -2,11 +2,10 @@ import { JSONContent } from '@tiptap/core'
 import { ContractComment } from 'common/comment'
 import { FLAT_COMMENT_FEE } from 'common/fees'
 import { removeUndefinedProps } from 'common/util/object'
-import { getContract, getUser } from 'shared/utils'
+import { getContract, getUser, log } from 'shared/utils'
 import { APIError, type APIHandler, AuthedUser } from './helpers/endpoint'
 import { anythingToRichText } from 'shared/tiptap'
 import {
-  createSupabaseClient,
   createSupabaseDirectClient,
   SupabaseDirectClient,
 } from 'shared/supabase/init'
@@ -15,9 +14,10 @@ import { onCreateCommentOnContract } from './on-create-comment-on-contract'
 import { millisToTs } from 'common/supabase/utils'
 import { convertBet } from 'common/supabase/bets'
 import { Bet } from 'common/bet'
-import { runTxn } from 'shared/txn/run-txn'
-import { DisplayUser } from 'common/api/user-types'
+import { runTxnInBetQueue } from 'shared/txn/run-txn'
 import { broadcastNewComment } from 'shared/websockets/helpers'
+import { buildArray } from 'common/util/array'
+import { type Contract } from 'common/contract'
 
 export const MAX_COMMENT_JSON_LENGTH = 20000
 
@@ -81,8 +81,6 @@ export const createCommentOnContractInternal = async (
         .then(convertBet)
     : undefined
 
-  const bettor = bet && (await getUser(bet.userId))
-
   const isApi = auth.creds.kind === 'key'
 
   const comment = removeUndefinedProps({
@@ -104,31 +102,29 @@ export const createCommentOnContractInternal = async (
     answerOutcome: replyToAnswerId,
     visibility: contract.visibility,
 
-    ...denormalizeBet(bet, bettor),
+    ...denormalizeBet(bet, contract),
+
     isApi,
     isRepost,
   } as ContractComment)
-
-  const db = createSupabaseClient()
-  const ret = await db.from('contract_comments').insert({
-    contract_id: contractId,
-    comment_id: comment.id,
-    user_id: creator.id,
-    created_time: millisToTs(now),
-    data: comment,
-  })
-
-  if (ret.error) {
-    throw new APIError(500, 'Failed to create comment: ' + ret.error.message)
-  }
-  broadcastNewComment(contract, creator, comment)
+  await pg
+    .none(
+      `insert into contract_comments (contract_id, comment_id, user_id, created_time, data)
+              values ($1, $2, $3, $4, $5)`,
+      [contractId, comment.id, creator.id, millisToTs(now), comment]
+    )
+    .catch((e) => {
+      log.error(e)
+      throw new APIError(500, 'Failed to create comment')
+    })
+  broadcastNewComment(contractId, contract.visibility, creator, comment)
 
   return {
     result: comment,
     continue: async () => {
       if (isApi) {
         await pg.tx((tx) =>
-          runTxn(tx, {
+          runTxnInBetQueue(tx, {
             category: 'BOT_COMMENT_FEE',
             token: 'M$',
             fromId: creator.id,
@@ -139,35 +135,35 @@ export const createCommentOnContractInternal = async (
           })
         )
       }
-      if (replyToBetId) return
+      let updatedComment = comment
+      if (!replyToBetId) {
+        log('finding most recent bet')
+        const bet = await getMostRecentCommentableBet(
+          pg,
+          buildArray([contract.id, contract.siblingContractId]),
+          creator.id,
+          now,
+          replyToAnswerId
+        )
 
-      const bet = await getMostRecentCommentableBet(
-        pg,
-        contract.id,
-        creator.id,
-        now,
-        replyToAnswerId
-      )
-      const bettor = bet && (await getUser(bet.userId))
+        const position = await getLargestPosition(pg, contract.id, creator.id)
 
-      const position = await getLargestPosition(pg, contract.id, creator.id)
-
-      const updatedComment = removeUndefinedProps({
-        ...comment,
-        commentorPositionShares: position?.shares,
-        commentorPositionOutcome: position?.outcome,
-        commentorPositionAnswerId: position?.answer_id,
-        commentorPositionProb:
-          position && contract.mechanism === 'cpmm-1'
-            ? contract.prob
-            : undefined,
-        ...denormalizeBet(bet, bettor),
-      })
-
-      await db
-        .from('contract_comments')
-        .update({ data: updatedComment })
-        .eq('comment_id', comment.id)
+        updatedComment = removeUndefinedProps({
+          ...comment,
+          commentorPositionShares: position?.shares,
+          commentorPositionOutcome: position?.outcome,
+          commentorPositionAnswerId: position?.answer_id,
+          commentorPositionProb:
+            position && contract.mechanism === 'cpmm-1'
+              ? contract.prob
+              : undefined,
+          ...denormalizeBet(bet, contract),
+        })
+        await pg.none(
+          `update contract_comments set data = $1 where comment_id = $2`,
+          [updatedComment, comment.id]
+        )
+      }
 
       await onCreateCommentOnContract({
         contract,
@@ -180,17 +176,27 @@ export const createCommentOnContractInternal = async (
 }
 const denormalizeBet = (
   bet: Bet | undefined,
-  bettor: DisplayUser | undefined | null
+  contract: Contract | undefined
 ) => {
   return {
     betAmount: bet?.amount,
     betOutcome: bet?.outcome,
     betAnswerId: bet?.answerId,
-    bettorName: bettor?.name,
-    bettorUsername: bettor?.username,
+    bettorId: bet?.userId,
     betOrderAmount: bet?.orderAmount,
     betLimitProb: bet?.limitProb,
     betId: bet?.id,
+
+    betToken:
+      !bet || !contract
+        ? undefined
+        : bet.contractId === contract.id
+        ? contract.token
+        : bet.contractId === contract.siblingContractId
+        ? contract.token === 'MANA'
+          ? 'CASH'
+          : 'MANA'
+        : undefined,
   }
 }
 
@@ -201,14 +207,21 @@ export const validateComment = async (
   html: string | undefined,
   markdown: string | undefined
 ) => {
+  const pg = createSupabaseDirectClient()
   const you = await getUser(userId)
-  const contract = await getContract(contractId)
+  const contract = await getContract(pg, contractId)
 
   if (!you) throw new APIError(401, 'Your account was not found')
   if (you.isBannedFromPosting) throw new APIError(403, 'You are banned')
   if (you.userDeleted) throw new APIError(403, 'Your account is deleted')
 
   if (!contract) throw new APIError(404, 'Contract not found')
+  if (contract.token !== 'MANA') {
+    throw new APIError(
+      400,
+      `Can't comment on cash contract. Please do comment on the sibling mana contract ${contract.siblingContractId}`
+    )
+  }
 
   const contentJson = content || anythingToRichText({ html, markdown })
 
@@ -227,7 +240,7 @@ export const validateComment = async (
 
 async function getMostRecentCommentableBet(
   pg: SupabaseDirectClient,
-  contractId: string,
+  contractIds: string[],
   userId: string,
   commentCreatedTime: number,
   answerOutcome?: string
@@ -237,7 +250,7 @@ async function getMostRecentCommentableBet(
     .map(
       `with prior_user_comments_with_bets as (
       select created_time, data->>'betId' as bet_id from contract_comments
-      where contract_id = $1 and user_id = $2
+      where contract_id in ($1:list) and user_id = $2
       and created_time < millis_to_ts($3)
       and data ->> 'betId' is not null
       and created_time > millis_to_ts($3) - interval $5
@@ -251,20 +264,19 @@ async function getMostRecentCommentableBet(
       as cutoff
     )
     select * from contract_bets
-      where contract_id = $1
+      where contract_id in ($1:list)
       and user_id = $2
       and ($4 is null or answer_id = $4)
       and created_time < millis_to_ts($3)
       and created_time > (select cutoff from cutoff_time)
-      and not is_ante
       and not is_redemption
       order by created_time desc
       limit 1
     `,
-      [contractId, userId, commentCreatedTime, answerOutcome, maxAge],
+      [contractIds, userId, commentCreatedTime, answerOutcome, maxAge],
       convertBet
     )
-    .catch((e) => console.error('Failed to get bet: ' + e))
+    .catch((e) => log.error('Failed to get bet: ' + e))
   return first(bet ?? [])
 }
 
@@ -286,5 +298,5 @@ async function getLargestPosition(
     select * from user_positions order by shares desc limit 1`,
       [contractId, userId]
     )
-    .catch((e) => console.error('Failed to get position: ' + e))
+    .catch((e) => log.error('Failed to get position: ' + e))
 }

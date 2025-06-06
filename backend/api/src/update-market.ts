@@ -1,10 +1,5 @@
 import { APIError, APIHandler } from 'api/helpers/endpoint'
-import {
-  log,
-  getContractSupabase,
-  revalidateContractStaticProps,
-} from 'shared/utils'
-import * as admin from 'firebase-admin'
+import { log, revalidateContractStaticProps, getContract } from 'shared/utils'
 import { trackPublicEvent } from 'shared/analytics'
 import { throwErrorIfNotMod } from 'shared/helpers/auth'
 import { removeUndefinedProps } from 'common/util/object'
@@ -13,9 +8,10 @@ import { buildArray } from 'common/util/array'
 import { anythingToRichText } from 'shared/tiptap'
 import { isEmpty } from 'lodash'
 import { isAdminId } from 'common/envs/constants'
-import { rerankContractMetricsManually } from 'shared/helpers/user-contract-metrics'
-import { broadcastUpdatedContract } from 'shared/websockets/helpers'
 import { createSupabaseDirectClient } from 'shared/supabase/init'
+import { updateContract } from 'shared/supabase/contracts'
+import { Contract } from 'common/contract'
+import { JSONContent } from '@tiptap/core'
 
 export const updateMarket: APIHandler<'market/:contractId/update'> = async (
   body,
@@ -32,7 +28,7 @@ export const updateMarket: APIHandler<'market/:contractId/update'> = async (
     sort,
     question,
     coverImageUrl,
-    isSpicePayout,
+    display,
 
     description: raw,
     descriptionHtml: html,
@@ -41,47 +37,87 @@ export const updateMarket: APIHandler<'market/:contractId/update'> = async (
   } = fields
 
   const description = anythingToRichText({ raw, html, markdown, jsonString })
-
-  const contract = await getContractSupabase(contractId)
+  const pg = createSupabaseDirectClient()
+  const contract = await getContract(pg, contractId)
   if (!contract) throw new APIError(404, `Contract ${contractId} not found`)
-  if (contract.creatorId !== auth.uid) await throwErrorIfNotMod(auth.uid)
-  if (isSpicePayout !== undefined) {
-    if (!isAdminId(auth.uid)) {
-      throw new APIError(400, 'Only admins choose prize markets')
-    }
+  if (contract.creatorId !== auth.uid) throwErrorIfNotMod(auth.uid)
+
+  if (contract.isResolved && closeTime !== undefined) {
+    throw new APIError(403, 'Cannot update closeTime for resolved contracts')
   }
 
-  await trackPublicEvent(
-    auth.uid,
-    'update market',
-    removeUndefinedProps({
-      contractId,
-      visibility,
-      closeTime,
-      addAnswersMode,
-    })
-  )
+  if (
+    contract.siblingContractId &&
+    (description != undefined || question != undefined) &&
+    !isAdminId(auth.uid) &&
+    contract.creatorId !== auth.uid
+  ) {
+    throw new APIError(
+      403,
+      'Only Manifold team or the question creator can update title/description of sweepcash questions'
+    )
+  }
 
-  await firestore.doc(`contracts/${contractId}`).update(
-    removeUndefinedProps({
-      question,
-      coverImageUrl,
-      closeTime,
-      visibility,
-      unlistedById: visibility === 'unlisted' ? auth.uid : undefined,
-      addAnswersMode,
-      sort,
-      description,
-      isSpicePayout,
-    })
-  )
+  const update = removeUndefinedProps({
+    question,
+    coverImageUrl,
+    closeTime,
+    visibility,
+    unlistedById: visibility === 'unlisted' ? auth.uid : undefined,
+    addAnswersMode,
+    sort,
+    description,
+    display,
+    lastUpdatedTime: Date.now(),
+  })
+  await updateContract(pg, contractId, {
+    ...update,
+    coverImageUrl: update.coverImageUrl || undefined,
+  })
 
   log(`updated fields: ${Object.keys(fields).join(', ')}`)
 
+  return {
+    result: { success: true },
+    continue: async () =>
+      updateMarketContinuation(
+        contract,
+        auth.uid,
+        visibility,
+        closeTime,
+        addAnswersMode,
+        question,
+        description
+      ),
+  }
+}
+
+// Note: the contract data passed, which should not be the new data, is saved to the contract_edits table
+export const updateMarketContinuation = async (
+  contract: Contract,
+  userId: string,
+  visibility: string | undefined,
+  closeTime: number | undefined,
+  addAnswersMode: string | undefined,
+  question: string | undefined,
+  description: JSONContent | undefined
+) => {
+  log(`Revalidating contract ${contract.id}.`)
+  await revalidateContractStaticProps(contract)
+  await trackPublicEvent(
+    userId,
+    'update market',
+    removeUndefinedProps({
+      contractId: contract.id,
+      visibility,
+      closeTime,
+      addAnswersMode,
+    })
+  )
   if (question || closeTime || visibility || description) {
     await recordContractEdit(
       contract,
-      auth.uid,
+      userId,
       buildArray([
         question && 'question',
         closeTime && 'closeTime',
@@ -90,45 +126,4 @@ export const updateMarket: APIHandler<'market/:contractId/update'> = async (
       ])
     )
   }
-
-  const continuation = async () => {
-    broadcastUpdatedContract(contract)
-    log(`Revalidating contract ${contract.id}.`)
-    await revalidateContractStaticProps(contract)
-    if (visibility) {
-      await rerankContractMetricsManually(
-        contract.id,
-        contract.isRanked != false && visibility === 'public',
-        contract.resolutionTime
-      )
-    }
-    log(`Updating lastUpdatedTime for contract ${contract.id}.`)
-    await firestore.collection('contracts').doc(contract.id).update({
-      lastUpdatedTime: Date.now(),
-    })
-
-    //TODO: Now that we don't have private contracts, do we really need to update visibilities?
-    if (visibility) {
-      await updateContractSubcollectionsVisibility(contract.id, visibility)
-    }
-  }
-
-  return {
-    result: { success: true },
-    continue: continuation,
-  }
-}
-
-const firestore = admin.firestore()
-
-async function updateContractSubcollectionsVisibility(
-  contractId: string,
-  newVisibility: 'public' | 'unlisted'
-) {
-  const pg = createSupabaseDirectClient()
-
-  await pg.none(
-    `update contract_bets set data = data || $1 where contract_id = $2`,
-    [JSON.stringify({ visibility: newVisibility }), contractId]
-  )
 }

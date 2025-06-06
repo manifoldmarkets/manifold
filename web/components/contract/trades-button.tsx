@@ -1,8 +1,8 @@
 import { UserIcon } from '@heroicons/react/outline'
 import clsx from 'clsx'
-import { Contract, CPMMBinaryContract } from 'common/contract'
+import { Contract, BinaryContract } from 'common/contract'
 import { useState } from 'react'
-import { useBets } from 'web/hooks/use-bets-supabase'
+
 import { MODAL_CLASS, Modal, SCROLLABLE_MODAL_CLASS } from '../layout/modal'
 import { Row } from '../layout/row'
 import { LoadingIndicator } from '../widgets/loading-indicator'
@@ -11,92 +11,168 @@ import { BetsTabContent } from './contract-tabs'
 import { UserPositionsTable } from 'web/components/contract/user-positions-table'
 import { UncontrolledTabs } from 'web/components/layout/tabs'
 import { Col } from 'web/components/layout/col'
-import { useContractVoters } from 'web/hooks/use-votes'
 import { Avatar } from '../widgets/avatar'
 import { UserLink } from '../widgets/user-link'
 import { track } from 'web/lib/service/analytics'
 import { Answer } from 'common/answer'
-import { useUniqueBettorCountOnAnswer } from 'web/hooks/use-answers'
+import { useUniqueBettorCountOnAnswer } from 'web/hooks/use-unique-bettor-count-on-answer'
 import { Button, ColorType } from 'web/components/buttons/button'
 import { UserHovercard } from '../user/user-hovercard'
+import { useBountyAwardCount } from 'web/hooks/use-bounties'
+import { FaUser } from 'react-icons/fa6'
+import { shortenNumber } from 'common/util/formatNumber'
+import { useBetsOnce } from 'client-common/hooks/use-bets'
+import { api } from 'web/lib/api/api'
+import { useAPIGetter } from 'web/hooks/use-api-getter'
 
 export function TradesButton(props: {
   contract: Contract
   answer?: Answer
   className?: string
   color?: ColorType
+  size?: 'sm' | 'md'
 }) {
-  const { contract, color, answer, className } = props
-  const { uniqueBettorCount: uniqueTraders } = contract
-  const uniqueAnswerBettorCount = useUniqueBettorCountOnAnswer(
-    contract.id,
-    answer?.id
-  )
+  const { contract, color, answer, className, size } = props
+
   const [modalOpen, setModalOpen] = useState<boolean>(false)
 
   const isPoll = contract.outcomeType === 'POLL'
   const isBounty = contract.outcomeType === 'BOUNTIED_QUESTION'
 
+  const tooltipText = isPoll ? 'Voters' : isBounty ? 'Rewards given' : 'Traders'
+
   return (
     <>
-      <Button
-        size={'2xs'}
-        color={color ?? 'gray-white'}
-        className={clsx(className)}
-        onClick={(e) => {
-          track('click feed card traders button', { contractId: contract.id })
-          e.preventDefault()
-          setModalOpen(true)
-        }}
-      >
-        <Tooltip
-          text={isPoll ? 'Voters' : isBounty ? 'Rewards given' : 'Traders'}
-          placement="top"
-          noTap
+      {!size || size == 'md' ? (
+        <Button
+          size={'2xs'}
+          color={color ?? 'gray-white'}
+          className={clsx(className)}
+          onClick={(e) => {
+            track('click feed card traders button', {
+              contractId: contract.id,
+            })
+            e.preventDefault()
+            setModalOpen(true)
+          }}
         >
-          <Row className="relative items-center  gap-1.5 text-sm">
-            <UserIcon className="h-5 w-5" />
-            {isBounty
-              ? contract.bountyTxns.length || ''
-              : answer
-              ? uniqueAnswerBettorCount
-              : uniqueTraders || ''}
-          </Row>
-        </Tooltip>
-      </Button>
-      <Modal
-        open={modalOpen}
-        setOpen={setModalOpen}
-        className={clsx(MODAL_CLASS)}
-        size={'lg'}
-      >
-        {modalOpen && (
-          <div className={clsx(SCROLLABLE_MODAL_CLASS, 'scrollbar-hide')}>
-            {isPoll ? (
-              <VotesModalContent contract={contract} />
-            ) : (
-              <BetsModalContent
+          <Tooltip text={tooltipText} placement="top" noTap>
+            <Row className="relative items-center gap-1.5 text-sm">
+              <UserIcon className="text-ink-500 h-5 w-5" />
+              <TradesNumber contract={contract} answer={answer} />
+            </Row>
+          </Tooltip>
+        </Button>
+      ) : (
+        <button
+          className={clsx(className)}
+          onClick={(e) => {
+            track('click answer traders button', {
+              contractId: contract.id,
+            })
+            e.preventDefault()
+            setModalOpen(true)
+          }}
+        >
+          <Tooltip text={tooltipText} placement="bottom" noTap>
+            <Row className="relative items-center gap-0.5">
+              <FaUser className=" h-2.5 w-2.5" />
+              <TradesNumber
                 contract={contract}
-                answerDetails={
-                  answer
-                    ? {
-                        answer,
-                        totalPositions: uniqueAnswerBettorCount,
-                      }
-                    : undefined
-                }
+                answer={answer}
+                className="text-ink-600"
               />
-            )}
-          </div>
-        )}
-      </Modal>
+            </Row>
+          </Tooltip>
+        </button>
+      )}
+      <TradesModal
+        contract={contract}
+        modalOpen={modalOpen}
+        setModalOpen={setModalOpen}
+        answer={answer}
+      />
     </>
+  )
+}
+
+export function TradesNumber(props: {
+  contract: Contract
+  answer?: Answer
+  shorten?: boolean
+  className?: string
+}) {
+  const { contract, answer, shorten, className } = props
+
+  const isBounty = contract.outcomeType === 'BOUNTIED_QUESTION'
+
+  const { uniqueBettorCount: uniqueTraders } = contract
+  const uniqueAnswerBettorCount = useUniqueBettorCountOnAnswer(
+    contract.id,
+    answer?.id
+  )
+  const uniqueBountyRewardCount = useBountyAwardCount(contract)
+  const tradesNumber = isBounty
+    ? uniqueBountyRewardCount
+    : answer
+    ? uniqueAnswerBettorCount
+    : uniqueTraders || ''
+  if (shorten) {
+    return <div className={className}>{shortenNumber(+tradesNumber)}</div>
+  }
+  return <div className={className}>{tradesNumber}</div>
+}
+
+export function TradesModal(props: {
+  contract: Contract
+  modalOpen: boolean
+  answer?: Answer
+  setModalOpen: (open: boolean) => void
+}) {
+  const { contract, modalOpen, setModalOpen, answer } = props
+
+  const isPoll = contract.outcomeType === 'POLL'
+
+  const uniqueAnswerBettorCount = useUniqueBettorCountOnAnswer(
+    contract.id,
+    answer?.id
+  )
+
+  return (
+    <Modal
+      open={modalOpen}
+      setOpen={setModalOpen}
+      className={clsx(MODAL_CLASS)}
+      size={'lg'}
+    >
+      {modalOpen && (
+        <div className={clsx(SCROLLABLE_MODAL_CLASS, 'scrollbar-hide')}>
+          {isPoll ? (
+            <VotesModalContent contract={contract} />
+          ) : (
+            <BetsModalContent
+              contract={contract}
+              answerDetails={
+                answer
+                  ? {
+                      answer,
+                      totalPositions: uniqueAnswerBettorCount,
+                    }
+                  : undefined
+              }
+            />
+          )}
+        </div>
+      )}
+    </Modal>
   )
 }
 
 function VotesModalContent(props: { contract: Contract }) {
   const { contract } = props
-  const voters = useContractVoters(contract.id)
+  const { data: voters } = useAPIGetter('get-contract-voters', {
+    contractId: contract.id,
+  })
 
   return (
     <Col className="mt-4 gap-3">
@@ -133,10 +209,9 @@ function BetsModalContent(props: {
 }) {
   const { contract, answerDetails } = props
   const answer = answerDetails?.answer
-  const bets = useBets({
+  const bets = useBetsOnce((params) => api('bets', params), {
     contractId: contract.id,
     answerId: answer?.id,
-    filterAntes: true,
     filterRedemptions: true,
   })
 
@@ -147,7 +222,7 @@ function BetsModalContent(props: {
           title: 'Holders',
           content: (
             <UserPositionsTable
-              contract={contract as CPMMBinaryContract}
+              contract={contract as BinaryContract}
               answerDetails={answerDetails}
             />
           ),

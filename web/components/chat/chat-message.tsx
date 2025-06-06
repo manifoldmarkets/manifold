@@ -11,9 +11,8 @@ import { MultipleOrSingleAvatars } from 'web/components/multiple-or-single-avata
 import { Modal, MODAL_CLASS } from 'web/components/layout/modal'
 import { UserAvatarAndBadge } from 'web/components/widgets/user-link'
 import Link from 'next/link'
-import DropdownMenu from 'web/components/comments/dropdown-menu'
+import DropdownMenu from 'web/components/widgets/dropdown-menu'
 import { DotsHorizontalIcon, ReplyIcon } from '@heroicons/react/solid'
-import { manifoldLoveUserId } from 'common/love/constants'
 import { UserHovercard } from '../user/user-hovercard'
 import { DisplayUser } from 'common/api/user-types'
 
@@ -78,7 +77,9 @@ export const ChatMessageItem = memo(function ChatMessageItem(props: {
                     onClick: () => onReplyClick(chat),
                   },
                 ]}
-                icon={<DotsHorizontalIcon className="text-ink-400 h-4 w-4" />}
+                buttonContent={
+                  <DotsHorizontalIcon className="text-ink-400 h-4 w-4" />
+                }
               />
             )}
           </Row>
@@ -128,10 +129,7 @@ export const SystemChatMessageItem = memo(
     const chat = last(chats)
     const [showUsers, setShowUsers] = useState(false)
     if (!chat) return null
-    const hideAvatar =
-      chat.visibility === 'system_status' &&
-      chat.userId === manifoldLoveUserId &&
-      chats.length === 1
+    const hideAvatar = chat.visibility === 'system_status' && chats.length === 1
     const totalUsers = otherUsers?.length || 1
     return (
       <Row className={clsx('flex-row-reverse items-center gap-1')}>

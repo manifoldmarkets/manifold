@@ -1,15 +1,12 @@
 import { APIError, APIHandler } from 'api/helpers/endpoint'
 import { getContractSupabase, getUser, log } from 'shared/utils'
-import {
-  createSupabaseClient,
-  createSupabaseDirectClient,
-} from 'shared/supabase/init'
-import { getComment } from 'shared/supabase/contract_comments'
+import { getComment } from 'shared/supabase/contract-comments'
 import { createCommentOnContractInternal } from 'api/create-comment'
 import { ContractComment } from 'common/comment'
 import { removeUndefinedProps } from 'common/util/object'
 import { trackPublicEvent } from 'shared/analytics'
 import { JSONContent } from '@tiptap/core'
+import { createSupabaseDirectClient } from 'shared/supabase/init'
 
 export const post: APIHandler<'post'> = async (props, auth) => {
   const { contractId, content, betId: passedBetId, commentId } = props
@@ -21,6 +18,7 @@ export const post: APIHandler<'post'> = async (props, auth) => {
   if (!poster) throw new APIError(404, 'Your account was not found')
   if (poster.isBannedFromPosting || poster.userDeleted)
     throw new APIError(403, 'Deleted/banned users not allowed to post')
+  const pg = createSupabaseDirectClient()
 
   let comment: ContractComment
   let betId = passedBetId
@@ -46,8 +44,7 @@ export const post: APIHandler<'post'> = async (props, auth) => {
   } else {
     // TODO: should we mark the comment as `isRepost`?
     if (!commentId) throw new APIError(400, 'Must specify at least a commentId')
-    const db = createSupabaseClient()
-    const existingComment = await getComment(db, commentId)
+    const existingComment = await getComment(pg, commentId)
     if (existingComment.userId !== auth.uid) {
       const commenter = await getUser(existingComment.userId)
       if (commenter?.isBannedFromPosting || commenter?.userDeleted)
@@ -57,7 +54,7 @@ export const post: APIHandler<'post'> = async (props, auth) => {
       throw new APIError(400, 'Cannot post hidden comments')
     if (existingComment.replyToCommentId) {
       const parentComment = await getComment(
-        db,
+        pg,
         existingComment.replyToCommentId
       )
       if (parentComment.hidden)
@@ -82,8 +79,6 @@ export const post: APIHandler<'post'> = async (props, auth) => {
     content: !!content,
     isContentOwner: comment.userId === auth.uid,
   })
-
-  const pg = createSupabaseDirectClient()
 
   const result = await pg.one(
     `

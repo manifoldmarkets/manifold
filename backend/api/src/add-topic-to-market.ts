@@ -1,61 +1,52 @@
-import {
-  createSupabaseClient,
-  createSupabaseDirectClient,
-} from 'shared/supabase/init'
+import { createSupabaseDirectClient } from 'shared/supabase/init'
+import { from, renderSql, select, where } from 'shared/supabase/sql-builder'
 import { APIError, type APIHandler } from './helpers/endpoint'
-import { convertContract } from 'common/supabase/contracts'
 import {
   addGroupToContract,
   removeGroupFromContract,
   canUserAddGroupToMarket,
 } from 'shared/update-group-contracts-internal'
 import { MAX_GROUPS_PER_MARKET } from 'common/group'
-import { revalidateContractStaticProps } from 'shared/utils'
+import { getContract, revalidateContractStaticProps } from 'shared/utils'
 import { upsertGroupEmbedding } from 'shared/helpers/embeddings'
 import { isAdminId, isModId } from 'common/envs/constants'
 import {
   UNRANKED_GROUP_ID,
   UNSUBSIDIZED_GROUP_ID,
 } from 'common/supabase/groups'
-import { rerankContractMetricsManually } from 'shared/helpers/user-contract-metrics'
 
 export const addOrRemoveTopicFromContract: APIHandler<
   'market/:contractId/group'
 > = async (props, auth) => {
   const { contractId, groupId, remove } = props
 
-  const db = createSupabaseClient()
+  const pg = createSupabaseDirectClient()
 
-  const { data: membership } = await db
-    .from('group_members')
-    .select()
-    .eq('member_id', auth.uid)
-    .eq('group_id', groupId)
-    .single()
+  const membership = await pg.oneOrNone(
+    `select * from group_members where member_id = $1 and group_id = $2`,
+    [auth.uid, groupId]
+  )
 
-  const groupQuery = await db.from('groups').select().eq('id', groupId).single()
+  const group = await pg.oneOrNone(`select * from groups where id = $1`, [
+    groupId,
+  ])
 
-  const contractQuery = await db
-    .from('contracts')
-    .select('data, importance_score, view_count')
-    .eq('id', contractId)
-    .single()
+  const contract = await getContract(pg, contractId)
 
-  if (groupQuery.error) throw new APIError(404, 'Group cannot be found')
-  if (contractQuery.error) throw new APIError(404, 'Contract cannot be found')
-  const group = groupQuery.data
-  const contract = convertContract(contractQuery.data)
+  if (!group) throw new APIError(404, 'Group cannot be found')
+  if (!contract) throw new APIError(404, 'Contract cannot be found')
 
-  if (contract.visibility == 'private') {
-    throw new APIError(403, `tags of private contracts can't be changed`)
-  }
-  if (group.privacy_status == 'private') {
-    throw new APIError(403, `private groups can't be tagged or untagged`)
-  }
+  const { count: existingCount } = await pg.one(
+    renderSql(
+      select('count(*)'),
+      from('group_contracts'),
+      where('contract_id = ${contractId}', { contractId })
+    )
+  )
 
   if (
     !remove &&
-    (contract.groupLinks?.length ?? 0) > MAX_GROUPS_PER_MARKET &&
+    (existingCount ?? 0) > MAX_GROUPS_PER_MARKET &&
     !isModId(auth.uid) &&
     !isAdminId(auth.uid) &&
     ![UNSUBSIDIZED_GROUP_ID, UNRANKED_GROUP_ID].includes(groupId)
@@ -70,7 +61,7 @@ export const addOrRemoveTopicFromContract: APIHandler<
     userId: auth.uid,
     group,
     contract,
-    membership: membership ?? undefined,
+    membership,
   })
 
   if (!canUpdate) {
@@ -78,20 +69,13 @@ export const addOrRemoveTopicFromContract: APIHandler<
   }
 
   if (remove) {
-    await removeGroupFromContract(contract, group, auth.uid)
+    await removeGroupFromContract(pg, contract, group, auth.uid)
   } else {
-    await addGroupToContract(contract, group, auth.uid)
+    await addGroupToContract(pg, contract, group, auth.uid)
   }
 
   const continuation = async () => {
     await revalidateContractStaticProps(contract)
-    if (group.id === UNRANKED_GROUP_ID) {
-      await rerankContractMetricsManually(
-        contract.id,
-        remove && contract.visibility === 'public',
-        contract.resolutionTime
-      )
-    }
     await upsertGroupEmbedding(createSupabaseDirectClient(), groupId)
   }
 

@@ -34,22 +34,107 @@ export const getTimeUntil = (year: number) => {
   }
 }
 
-export const Clock = (props: { year: number }) => {
-  const { year } = props
-  const [timeUntil, setTimeUntil] = useState(getTimeUntil(year))
+export const getTimeUntilFromMs = (ms: number) => {
+  const currentTime = dayjs()
+  const eventTime = dayjs(ms)
+  const difference = eventTime.diff(currentTime)
+
+  const years = Math.floor(dayjs.duration(difference).asYears())
+  const months = Math.floor(dayjs.duration(difference).asMonths()) % 12
+  const days = Math.floor(dayjs.duration(difference).asDays()) % 30
+  const hours = Math.floor(dayjs.duration(difference).asHours()) % 24
+  const minutes = Math.floor(dayjs.duration(difference).asMinutes()) % 60
+  const seconds = Math.floor(dayjs.duration(difference).asSeconds()) % 60
+
+  return {
+    years,
+    months,
+    days,
+    hours,
+    minutes,
+    seconds,
+  }
+}
+
+export const Clock = (props: {
+  year?: number
+  ms?: number
+  className?: string
+  size?: 'xs' | 'sm' | 'md' | 'lg'
+  url?: string
+}) => {
+  const { year, ms, className, size = 'lg', url } = props
+  const [timeUntil, setTimeUntil] = useState(
+    ms !== undefined
+      ? getTimeUntilFromMs(ms)
+      : year !== undefined
+      ? getTimeUntil(year)
+      : getTimeUntil(0)
+  )
   const isClient = useIsClient()
   useEffect(() => {
     const timer = setInterval(() => {
-      setTimeUntil(getTimeUntil(year))
+      if (ms !== undefined) {
+        setTimeUntil(getTimeUntilFromMs(ms))
+      } else if (year !== undefined) {
+        setTimeUntil(getTimeUntil(year))
+      }
     }, 1000)
 
     return () => {
       clearInterval(timer)
     }
-  }, [year])
-  const dotClass = ' h-1 w-1 sm:h-1.5 sm:w-1.5 rounded-sm'
+  }, [year, ms])
+
+  // Sizing configuration based on size prop
+  const sizeConfig = {
+    xs: {
+      clockText: 'text-xs sm:text-sm',
+      dotSize: 'h-0.5 w-0.5 sm:h-1 sm:w-1',
+      dotGap: 'gap-1 sm:gap-1.5',
+      padding: 'p-1 sm:p-1.5',
+      displayHeight: { mobile: 15, desktop: 20 },
+      unitText: 'text-[8px] sm:text-xs',
+      columnGap: 'gap-0.5 sm:gap-1',
+      ringSize: 'ring-1',
+    },
+    sm: {
+      clockText: 'text-sm sm:text-base',
+      dotSize: 'h-0.5 w-0.5 sm:h-1 sm:w-1',
+      dotGap: 'gap-1.5 sm:gap-2',
+      padding: 'p-2 sm:p-2.5',
+      displayHeight: { mobile: 20, desktop: 30 },
+      unitText: 'text-[9px] sm:text-xs',
+      columnGap: 'gap-0.5 sm:gap-1.5',
+      ringSize: 'ring-1',
+    },
+    md: {
+      clockText: 'text-base sm:text-2xl',
+      dotSize: 'h-1 w-1 sm:h-1.5 sm:w-1.5',
+      dotGap: 'gap-2 sm:gap-3',
+      padding: 'p-3 sm:p-3.5',
+      displayHeight: { mobile: 25, desktop: 40 },
+      unitText: 'text-[10px] sm:text-sm',
+      columnGap: 'gap-1 sm:gap-2',
+      ringSize: 'ring-1',
+    },
+    lg: {
+      clockText: 'text-xl sm:text-7xl',
+      dotSize: 'h-1 w-1 sm:h-1.5 sm:w-1.5',
+      dotGap: 'gap-2.5 sm:gap-4',
+      padding: 'p-4 sm:p-4',
+      displayHeight: { mobile: 30, desktop: 60 },
+      unitText: 'text-xs sm:text-sm',
+      columnGap: 'gap-1.5 sm:gap-3',
+      ringSize: 'ring-2',
+    },
+  }
+
+  const config = sizeConfig[size]
+  const dotClass = clsx(config.dotSize, 'rounded-sm')
+
   const colon = (
-    <Col className={'h-full justify-center  gap-2.5 sm:gap-4'}>
+    <Col className={clsx('h-full justify-center', config.dotGap)}>
       <div style={{ backgroundColor: 'red' }} className={dotClass} />
       <div
         style={{ backgroundColor: 'red' }}
@@ -57,44 +142,86 @@ export const Clock = (props: { year: number }) => {
       />
     </Col>
   )
+
   return (
-    <Row className={'gap-1 text-xl sm:text-7xl'}>
+    <Row className={clsx(config.clockText, 'w-full gap-1', className)}>
       <Row
         style={{ color: 'red' }}
-        className={
-          'justify-center gap-1.5 rounded-lg bg-gray-900 p-4 ring-8 ring-gray-300 sm:gap-3 sm:pl-10 sm:pr-6'
-        }
+        className={clsx(
+          'w-full justify-center rounded-lg bg-gray-900 ring ring-gray-300',
+          config.padding,
+          config.columnGap,
+          config.ringSize
+        )}
       >
-        <TimeUnit value={timeUntil.years.toString()} unit={'years'} />
+        <TimeUnit
+          value={timeUntil.years.toString()}
+          unit={'years'}
+          displayHeight={config.displayHeight}
+          unitTextClass={config.unitText}
+        />
         {colon}
-        <TimeUnit value={timeUntil.months.toString()} unit={'months'} />
+        <TimeUnit
+          value={timeUntil.months.toString()}
+          unit={'months'}
+          displayHeight={config.displayHeight}
+          unitTextClass={config.unitText}
+        />
         {colon}
-        <TimeUnit value={timeUntil.days.toString()} unit={'days'} />
+        <TimeUnit
+          value={timeUntil.days.toString()}
+          unit={'days'}
+          displayHeight={config.displayHeight}
+          unitTextClass={config.unitText}
+        />
         {colon}
-        <TimeUnit value={timeUntil.hours.toString()} unit={'hours'} />
+        <TimeUnit
+          value={timeUntil.hours.toString()}
+          unit={'hours'}
+          displayHeight={config.displayHeight}
+          unitTextClass={config.unitText}
+        />
         {colon}
-        <TimeUnit unit={'minutes'} value={timeUntil.minutes.toString()} />
+        <TimeUnit
+          unit={'minutes'}
+          value={timeUntil.minutes.toString()}
+          displayHeight={config.displayHeight}
+          unitTextClass={config.unitText}
+        />
         {colon}
         {/* We want to show the -- for the changing seconds */}
         <TimeUnit
           unit={'seconds'}
           value={isClient ? timeUntil.seconds : null}
+          displayHeight={config.displayHeight}
+          unitTextClass={config.unitText}
         />
       </Row>
     </Row>
   )
 }
-const TimeUnit = (props: { value: number | string | null; unit: string }) => {
-  const { value, unit } = props
+
+const TimeUnit = (props: {
+  value: number | string | null
+  unit: string
+  displayHeight?: { mobile: number; desktop: number }
+  unitTextClass?: string
+}) => {
+  const {
+    value,
+    unit,
+    displayHeight = { mobile: 30, desktop: 60 },
+    unitTextClass = 'text-xs font-bold sm:text-sm',
+  } = props
   return (
     <Col className={'items-center'}>
       <div className={'sm:hidden'}>
-        <Display height={30} value={value} />
+        <Display height={displayHeight.mobile} value={value} />
       </div>
       <div className={'hidden sm:block'}>
-        <Display height={60} value={value} />
+        <Display height={displayHeight.desktop} value={value} />
       </div>
-      <span className={'text-xs font-bold sm:text-sm'}>{unit}</span>
+      <span className={unitTextClass}>{unit}</span>
     </Col>
   )
 }

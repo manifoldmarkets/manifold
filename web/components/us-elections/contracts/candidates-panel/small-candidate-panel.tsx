@@ -13,40 +13,45 @@ import { Col } from '../../../layout/col'
 import { SmallCandidateBar } from './small-candidate-bar'
 import { getCandidateColor } from './candidates-panel'
 import { removeTextInParentheses } from './candidate-bar'
-import { useUserContractBets } from 'web/hooks/use-user-bets'
+import { useUserContractBets } from 'client-common/hooks/use-user-bets'
 import { groupBy } from 'lodash'
+import { api } from 'web/lib/api/api'
+import { useIsPageVisible } from 'web/hooks/use-page-visible'
 
 // just the bars
 export function SmallCandidatePanel(props: {
   contract: MultiContract
   maxAnswers?: number
   excludeAnswers?: string[]
+  panelClassName?: string
 }) {
-  const { contract, maxAnswers = Infinity, excludeAnswers } = props
+  const {
+    contract,
+    maxAnswers = Infinity,
+    excludeAnswers,
+    panelClassName,
+  } = props
   const { resolutions, outcomeType } = contract
 
   const shouldAnswersSumToOne =
     'shouldAnswersSumToOne' in contract ? contract.shouldAnswersSumToOne : true
   const user = useUser()
-  const answers = contract.answers
-    .filter(
-      (a) =>
-        outcomeType === 'MULTIPLE_CHOICE' || ('number' in a && a.number !== 0)
-    )
-    .map((a) => ({ ...a, prob: getAnswerProbability(contract, a.id) }))
+  const answers =
+    outcomeType !== 'MULTIPLE_CHOICE'
+      ? []
+      : contract.answers.map((a) => ({
+          ...a,
+          prob: getAnswerProbability(contract, a.id),
+        }))
 
   const sortByProb = true
   const displayedAnswers = sortBy(answers, [
     // Winners for shouldAnswersSumToOne
     (answer) => (resolutions ? -1 * resolutions[answer.id] : answer),
     // Winners for independent binary
-    (answer) =>
-      'resolution' in answer && answer.resolution
-        ? -answer.subsidyPool
-        : -Infinity,
+    (answer) => (answer.resolution ? -answer.subsidyPool : -Infinity),
     // then by prob or index
-    (answer) =>
-      !sortByProb && 'index' in answer ? answer.index : -1 * answer.prob,
+    (answer) => (!sortByProb ? answer.index : -1 * answer.prob),
   ])
     .filter(
       (a) =>
@@ -61,11 +66,16 @@ export function SmallCandidatePanel(props: {
   const showNoAnswers =
     answers.length === 0 || (shouldAnswersSumToOne && answers.length === 1)
 
-  const userBets = useUserContractBets(user?.id, contract.id)
+  const userBets = useUserContractBets(
+    user?.id,
+    contract.id,
+    (params) => api('bets', params),
+    useIsPageVisible
+  )
   const userBetsByAnswer = groupBy(userBets, (bet) => bet.answerId)
 
   return (
-    <Col className="mx-[2px] gap-2">
+    <Col className={clsx('mx-[2px] gap-2', panelClassName)}>
       {showNoAnswers ? (
         <div className="text-ink-500 pb-4">No answers yet</div>
       ) : (
@@ -73,7 +83,7 @@ export function SmallCandidatePanel(props: {
           {displayedAnswers.map((answer) => (
             <SmallCandidateAnswer
               key={answer.id}
-              answer={answer as Answer}
+              answer={answer}
               contract={contract}
               user={user}
               userBets={userBetsByAnswer[answer.id]}

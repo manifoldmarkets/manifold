@@ -1,41 +1,37 @@
 import { Col } from 'web/components/layout/col'
 import { Row } from 'web/components/layout/row'
-import { useFirebasePublicContract } from 'web/hooks/use-contract-supabase'
 import { PolicyContractType } from 'web/public/data/policy-data'
 import { MobilePolicy, Policy } from './conditional-market'
 import { CANDIDATE_DATA } from '../../ candidates/candidate-data'
 import Image from 'next/image'
+import { useLiveContract } from 'web/hooks/use-contract'
 
 export function ConditionalMarkets(props: {
   rawPolicyContracts: PolicyContractType[]
 }) {
   const policyContracts = props.rawPolicyContracts.map((policy) => {
-    const bidenContract = policy.bidenContract
+    const harrisContract = policy.harrisContract
       ? // eslint-disable-next-line react-hooks/rules-of-hooks
-        useFirebasePublicContract(
-          policy.bidenContract.visibility,
-          policy.bidenContract.id
-        )
-      : policy.bidenContract
+        useLiveContract(policy.harrisContract) ?? policy.harrisContract
+      : null
     const trumpContract = policy.trumpContract
       ? // eslint-disable-next-line react-hooks/rules-of-hooks
-        useFirebasePublicContract(
-          policy.trumpContract.visibility,
-          policy.trumpContract.id
-        )
-      : policy.trumpContract
+        useLiveContract(policy.trumpContract) ?? policy.trumpContract
+      : null
 
     return {
       title: policy.title,
-      bidenContract,
+      harrisContract,
       trumpContract,
     }
   })
 
-  const { shortName: joeShortName, photo: joePhoto } =
-    CANDIDATE_DATA['Joe Biden'] ?? {}
   const { shortName: trumpShortName, photo: trumpPhoto } =
     CANDIDATE_DATA['Donald Trump'] ?? {}
+
+  const { shortName: harrisShortName, photo: harrisPhoto } =
+    CANDIDATE_DATA['Kamala Harris'] ?? {}
+
   return (
     <Col>
       <Col className="rounded-lg ">
@@ -44,17 +40,17 @@ export function ConditionalMarkets(props: {
             What will happen if...
           </Col>
           <Row className="hidden text-xs sm:flex">
-            <Row className="bg-azure-700 w-[120px] items-center justify-start gap-0.5 rounded-tl-lg text-white">
+            <Row className="bg-azure-700 w-[130px] items-center justify-start gap-0.5 rounded-tl-lg text-white">
               <Image
-                src={joePhoto}
-                alt={joeShortName}
+                src={harrisPhoto}
+                alt={harrisShortName}
                 width={40}
                 height={40}
                 className="h-10 w-10 object-fill "
               />
-              Biden wins
+              Harris wins
             </Row>
-            <Row className="bg-sienna-700 w-[120px] items-center justify-start gap-0.5 rounded-tr-lg text-white">
+            <Row className="bg-sienna-700 w-[130px] items-center justify-start gap-0.5 rounded-tr-lg text-white">
               <Image
                 src={trumpPhoto}
                 alt={trumpShortName}
@@ -68,26 +64,21 @@ export function ConditionalMarkets(props: {
         </Row>
         <div className="sm:bg-canvas-0 rounded-l-lg sm:pl-4">
           {policyContracts.map((policy, index) => (
-            <>
-              <MobilePolicy
-                key={policy.title}
-                policy={policy}
-                className={'sm:hidden'}
-              />
+            <Col key={policy.title}>
+              <MobilePolicy policy={policy} className={'sm:hidden'} />
               <Policy
-                key={policy.title}
                 policy={policy}
                 className={'hidden sm:flex'}
                 isFirst={index == 0}
                 isLast={index == policyContracts.length - 1}
               />
-            </>
+            </Col>
           ))}
         </div>
         <Row className=" w-full justify-end text-xs ">
           <Row className="hidden  sm:flex">
-            <Row className="bg-azure-700 h-2 w-[120px] items-center justify-start gap-0.5 rounded-bl-lg text-white" />
-            <Row className="bg-sienna-700 h-2 w-[120px] items-center justify-start gap-0.5 rounded-br-lg text-white" />
+            <Row className="bg-azure-700 h-2 w-[130px] items-center justify-start gap-0.5 rounded-bl-lg text-white" />
+            <Row className="bg-sienna-700 h-2 w-[130px] items-center justify-start gap-0.5 rounded-br-lg text-white" />
           </Row>
         </Row>
       </Col>

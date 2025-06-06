@@ -4,6 +4,7 @@ import { LoadingIndicator } from 'web/components/widgets/loading-indicator'
 
 export type SizeType = '2xs' | 'xs' | 'sm' | 'md' | 'lg' | 'xl' | '2xl'
 export type ColorType =
+  | 'amber'
   | 'amber-outline'
   | 'green'
   | 'green-outline'
@@ -18,11 +19,18 @@ export type ColorType =
   | 'gray-outline'
   | 'gradient'
   | 'gradient-pink'
+  | 'gradient-amber'
+  | 'pink'
   | 'gray-white'
   | 'yellow-outline'
   | 'gold'
   | 'none'
   | 'white-outline'
+  | 'purple'
+  | 'purple-outline'
+  | 'violet'
+  | 'azure'
+  | 'sienna'
 
 const sizeClasses = {
   '2xs': 'px-2 py-1 text-xs',
@@ -39,14 +47,15 @@ export const baseButtonClasses =
 
 const solid = 'disabled:bg-ink-300 text-white'
 export const outline =
-  'ring-2 ring-current hover:ring-transparent disabled:ring-ink-300 disabled:text-ink-300 hover:text-ink-0 disabled:bg-inherit'
+  'ring-1 ring-current hover:ring-transparent disabled:ring-ink-300 disabled:text-ink-300 hover:text-ink-0 disabled:bg-inherit'
 const gradient = [solid, 'bg-gradient-to-r hover:saturate-150 disabled:bg-none']
 
 export function buttonClass(size: SizeType, color: ColorType) {
   return clsx(
     baseButtonClasses,
     sizeClasses[size],
-    color === 'amber-outline' && [outline, 'text-amber-500 hover:bg-amber-500'],
+    color === 'amber-outline' && [outline, 'text-amber-600 hover:bg-amber-500'],
+    color === 'amber' && [solid, 'bg-amber-600 hover:bg-amber-700'],
     color === 'green' && [solid, 'bg-teal-500 hover:bg-teal-600'],
     color === 'green-outline' && [outline, 'text-teal-500 hover:bg-teal-500'],
     color === 'red' && [solid, 'bg-scarlet-500 hover:bg-scarlet-600'],
@@ -60,24 +69,37 @@ export function buttonClass(size: SizeType, color: ColorType) {
       'text-yellow-500 hover:bg-yellow-500',
     ],
     color === 'blue' && [solid, 'bg-blue-400 hover:bg-blue-500'],
+    color === 'purple' && [solid, 'bg-purple-500 hover:bg-purple-700'],
+    color === 'purple-outline' && [
+      outline,
+      'dark:hover:text-white dark:text-purple-400 text-purple-600 dark:hover:bg-purple-500 hover:bg-purple-500',
+    ],
+    color === 'violet' && [solid, 'bg-violet-500 hover:bg-violet-700'],
     color === 'sky-outline' && [outline, 'text-sky-500 hover:bg-sky-500'],
     color === 'indigo' && [solid, 'bg-primary-500 hover:bg-primary-600'],
     color === 'indigo-outline' && [
       outline,
-      'text-primary-500 hover:bg-primary-500',
+      'text-primary-600 hover:bg-primary-600',
     ],
     color === 'gray' &&
       'bg-ink-300 text-ink-900 disabled:bg-ink-200 disabled:text-ink-500 hover:bg-ink-200 dark:enabled:hover:bg-ink-400 hover:text-ink-1000',
     color === 'gray-outline' && [outline, 'text-ink-600 hover:bg-ink-500'],
     color === 'gradient' && [gradient, 'from-primary-500 to-blue-400'],
     color === 'gradient-pink' && [gradient, 'from-primary-500 to-fuchsia-500'],
+    color === 'pink' && [solid, 'bg-fuchsia-500 hover:bg-fuchsia-600'],
     color === 'gray-white' &&
       'text-ink-600 hover:bg-ink-200 disabled:text-ink-300 disabled:bg-transparent',
     color === 'gold' && [
       gradient,
       'enabled:!bg-gradient-to-br from-yellow-400 via-yellow-100 to-yellow-300 dark:from-yellow-600 dark:via-yellow-200 dark:to-yellow-400 !text-gray-900',
     ],
-    color === 'white-outline' && [outline, 'text-white hover:bg-white']
+    color === 'white-outline' && [outline, 'text-white hover:bg-white'],
+    color === 'azure' && [solid, 'bg-azure-500 hover:bg-azure-700'],
+    color === 'sienna' && [solid, 'bg-sienna-500 hover:bg-sienna-700'],
+    color === 'gradient-amber' && [
+      gradient,
+      'from-amber-700 via-amber-600 to-amber-700 hover:from-amber-800 hover:via-amber-700 hover:to-amber-800',
+    ]
   )
 }
 
@@ -113,7 +135,7 @@ export const Button = forwardRef(function Button(
       {loading && (
         <LoadingIndicator
           className="mr-2 w-fit self-stretch"
-          size={size === '2xs' || size === 'xs' ? 'sm' : 'md'}
+          size={size === '2xs' || size === 'xs' || size === 'sm' ? 'sm' : 'md'}
           spinnerClassName="!w-[unset] aspect-square"
         />
       )}

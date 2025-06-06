@@ -42,7 +42,7 @@ export function Unwrap(props: { goToNextPage: () => void }) {
         )}
       >
         <div className="font-mono text-xl">MANIFOLD WRAPPED</div>
-        <div className="text-8xl font-semibold">2023</div>
+        <div className="text-8xl font-semibold">2024</div>
       </Col>
       <div
         className={clsx(

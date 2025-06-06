@@ -1,4 +1,4 @@
-import { Contract } from 'common/contract'
+import { Contract, twombaContractPath } from 'common/contract'
 import { getSeoDescription, getContractOGProps } from 'common/contract-seo'
 import { removeUndefinedProps } from 'common/util/object'
 import { SEO } from '../SEO'
@@ -9,7 +9,7 @@ export function ContractSEO(props: {
   points?: string
 }) {
   const { contract, points } = props
-  const { question, creatorUsername, slug } = contract
+  const { question } = contract
 
   const seoDesc = getSeoDescription(contract)
   const ogCardProps = removeUndefinedProps({
@@ -21,8 +21,9 @@ export function ContractSEO(props: {
     <SEO
       title={question}
       description={seoDesc}
-      url={`/${creatorUsername}/${slug}`}
+      url={twombaContractPath(contract)}
       ogProps={{ props: ogCardProps, endpoint: 'market' }}
+      shouldIgnore={contract.visibility !== 'public'}
     />
   )
 }

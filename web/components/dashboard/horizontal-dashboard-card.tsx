@@ -1,22 +1,16 @@
 import clsx from 'clsx'
 import Link from 'next/link'
 import Router from 'next/router'
-import { useEffect, useState } from 'react'
-
-import { AD_WAIT_SECONDS } from 'common/boost'
 import { Contract, contractPath, isBinaryMulti } from 'common/contract'
 import { ContractCardView } from 'common/events'
-import { ClaimButton } from 'web/components/ad/claim-ad-button'
 import { BinaryMultiAnswersPanel } from 'web/components/answers/binary-multi-answers-panel'
 import {
   ContractStatusLabel,
   VisibilityIcon,
 } from 'web/components/contract/contracts-table'
-import { useAdTimer } from 'web/hooks/use-ad-timer'
-import { useFirebasePublicContract } from 'web/hooks/use-contract-supabase'
+import { useLiveContract } from 'web/hooks/use-contract'
 import { useIsVisible } from 'web/hooks/use-is-visible'
 import { track } from 'web/lib/service/analytics'
-import { getAdCanPayFunds } from 'web/lib/supabase/ads'
 import { getMarketMovementInfo } from 'web/lib/supabase/feed-timeline/feed-market-movement-display'
 import { FeedBinaryChart } from '../feed/feed-chart'
 import { Col } from '../layout/col'
@@ -25,6 +19,9 @@ import { PollPanel } from '../poll/poll-panel'
 import { ClickFrame } from '../widgets/click-frame'
 import { SmallAnswerBars } from '../answers/small-answer'
 import { BinaryBetButton } from '../us-elections/contracts/conditional-market/conditional-market'
+import { capitalize } from 'lodash'
+import { SWEEPIES_NAME } from 'common/envs/constants'
+import { SweepiesCoin } from 'web/public/custom-components/sweepiesCoin'
 
 export function HorizontalDashboardCard(props: {
   contract: Contract
@@ -49,9 +46,7 @@ export function HorizontalDashboardCard(props: {
     size = 'md',
   } = props
 
-  const contract =
-    useFirebasePublicContract(props.contract.visibility, props.contract.id) ??
-    props.contract
+  const contract = useLiveContract(props.contract)
 
   const { closeTime, outcomeType, mechanism } = contract
   const isBinaryMc = isBinaryMulti(contract)
@@ -61,7 +56,6 @@ export function HorizontalDashboardCard(props: {
 
   // Note: if we ever make cards taller than viewport, we'll need to pass a lower threshold to the useIsVisible hook
 
-  const [visible, setVisible] = useState(false)
   const { ref } = useIsVisible(
     () => {
       track('view market card', {
@@ -70,27 +64,10 @@ export function HorizontalDashboardCard(props: {
         slug: contract.slug,
         isPromoted: !!promotedData,
       } as ContractCardView)
-      setVisible(true)
     },
     false,
-    true,
-    () => {
-      setVisible(false)
-    }
+    true
   )
-
-  const adSecondsLeft =
-    // eslint-disable-next-line react-hooks/rules-of-hooks
-    promotedData && useAdTimer(contract.id, AD_WAIT_SECONDS, visible)
-  const [canAdPay, setCanAdPay] = useState(true)
-  const adId = promotedData?.adId
-  useEffect(() => {
-    if (adId) {
-      getAdCanPayFunds(adId).then((canPay) => {
-        setCanAdPay(canPay)
-      })
-    }
-  }, [adId])
 
   const { startTime, ignore } = getMarketMovementInfo(contract)
 
@@ -102,10 +79,15 @@ export function HorizontalDashboardCard(props: {
       isPromoted: !!promotedData,
     })
 
+  const isCashContract = contract.token == 'CASH'
+
   return (
     <ClickFrame
       className={clsx(
-        'group relative flex w-full cursor-pointer flex-col justify-between gap-0.5 rounded-xl px-4',
+        'mt-3',
+        isCashContract &&
+          'ml-[1px] ring-1 ring-amber-200 hover:ring-amber-400 dark:ring-amber-400 hover:dark:ring-amber-200',
+        'group relative flex w-full cursor-pointer flex-col justify-between gap-0.5 rounded-xl px-4 py-2',
         size === 'sm'
           ? 'bg-canvas-50'
           : size === 'md'
@@ -120,6 +102,19 @@ export function HorizontalDashboardCard(props: {
       }}
       ref={ref}
     >
+      {isCashContract && (
+        <div
+          className={clsx(
+            'absolute right-3 top-0 z-40 -translate-y-1/2 transform bg-amber-200 text-amber-700',
+            'rounded-full px-2 py-0.5 text-xs font-semibold'
+          )}
+        >
+          <span>
+            <SweepiesCoin className="-mt-0.5" /> {capitalize(SWEEPIES_NAME)}{' '}
+            Market
+          </span>
+        </div>
+      )}
       <Col className={clsx('w-full pt-2', size === 'xs' ? '' : 'gap-1.5 ')}>
         {/* Title is link to contract for open in new tab and a11y */}
         <Link
@@ -159,11 +154,10 @@ export function HorizontalDashboardCard(props: {
 
           {isBinaryMc &&
             contract.mechanism === 'cpmm-multi-1' &&
-            contract.outcomeType !== 'NUMBER' && (
-              <BinaryMultiAnswersPanel
-                contract={contract}
-                answers={contract.answers}
-              />
+            contract.outcomeType !== 'NUMBER' &&
+            contract.outcomeType !== 'MULTI_NUMERIC' &&
+            contract.outcomeType !== 'DATE' && (
+              <BinaryMultiAnswersPanel contract={contract} />
             )}
 
           {isBinaryCpmm && (showGraph || !ignore) && (
@@ -172,16 +166,6 @@ export function HorizontalDashboardCard(props: {
               className="mb-8 mt-2"
               startDate={startTime ? startTime : contract.createdTime}
             />
-          )}
-          {promotedData && canAdPay && (
-            <Col className={clsx('w-full items-center')}>
-              <ClaimButton
-                {...promotedData}
-                onClaim={() => Router.push(path)}
-                disabled={adSecondsLeft !== undefined && adSecondsLeft > 0}
-                className={'z-10 my-2 whitespace-nowrap'}
-              />
-            </Col>
           )}
         </div>
       </Col>

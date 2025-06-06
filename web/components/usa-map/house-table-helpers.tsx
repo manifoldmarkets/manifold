@@ -5,32 +5,37 @@ import { Answer } from 'common/answer'
 import { getAnswerProbability } from 'common/calculate'
 import {
   CPMMMultiContract,
-  isBinaryMulti,
   MAX_CPMM_PROB,
   MIN_CPMM_PROB,
+  isBinaryMulti,
 } from 'common/contract'
-import { formatPercent, formatPercentShort } from 'common/util/format'
+import {
+  formatPercent,
+  formatPercentShort,
+  formatWithToken,
+} from 'common/util/format'
 import { removeUndefinedProps } from 'common/util/object'
 import { useEffect, useState } from 'react'
 import toast from 'react-hot-toast'
-import { useUnfilledBetsAndBalanceByUserId } from 'web/hooks/use-bets'
 import { useFocus } from 'web/hooks/use-focus'
 import { useUser } from 'web/hooks/use-user'
-import { APIError, api } from 'web/lib/firebase/api'
+import { APIError, api } from 'web/lib/api/api'
 import { isAndroid, isIOS } from 'web/lib/util/device'
-import { BinaryOutcomes, MultiBetProps } from '../bet/bet-panel'
+import { BinaryOutcomes } from '../bet/bet-panel'
 import { Button } from '../buttons/button'
 import { Col } from '../layout/col'
 import { MODAL_CLASS, Modal } from '../layout/modal'
 import { Row } from '../layout/row'
 
 import { computeCpmmBet } from 'common/new-bet'
-import { formatMoney } from 'common/util/format'
 import { firebaseLogin } from 'web/lib/firebase/users'
 import { BuyAmountInput } from '../widgets/amount-input'
 
+import { TRADE_TERM } from 'common/envs/constants'
 import { getFormattedMappedValue } from 'common/pseudo-numeric'
+import { capitalize } from 'lodash'
 import { InfoTooltip } from 'web/components/widgets/info-tooltip'
+import { useIsAdvancedTrader } from 'web/hooks/use-is-advanced-trader'
 import { track, withTracking } from 'web/lib/service/analytics'
 import { YourOrders } from '../bet/order-book'
 import { WarningConfirmationButton } from '../buttons/warning-confirmation-button'
@@ -42,7 +47,9 @@ import {
   REP_LIGHT_HEX,
   hexToRgb,
 } from './state-election-map'
-import { useIsAdvancedTrader } from 'web/hooks/use-is-advanced-trader'
+import { MultiBetProps } from 'client-common/lib/bet'
+import { useUnfilledBetsAndBalanceByUserId } from 'client-common/hooks/use-bets'
+import { useIsPageVisible } from 'web/hooks/use-page-visible'
 
 export const HouseStatus = (props: {
   contract: CPMMMultiContract
@@ -110,7 +117,7 @@ export const HouseBettor = (props: {
           setOpen(true)
         }}
       >
-        Bet
+        {capitalize(TRADE_TERM)}
       </Button>
     </>
   )
@@ -130,7 +137,7 @@ export function HouseBetPanel(props: {
         contract={contract}
         multiProps={{
           answers: contract.answers,
-          answerToBuy: answer as Answer,
+          answerToBuy: answer,
         }}
         initialOutcome={outcome}
         // singularView={outcome}
@@ -190,7 +197,12 @@ export const BuyPanelBody = (props: {
   const user = useUser()
 
   const { unfilledBets: allUnfilledBets, balanceByUserId } =
-    useUnfilledBetsAndBalanceByUserId(contract.id)
+    useUnfilledBetsAndBalanceByUserId(
+      contract.id,
+      (params) => api('bets', params),
+      (params) => api('users/by-id/balance', params),
+      useIsPageVisible
+    )
 
   const unfilledBetsMatchingAnswer = allUnfilledBets.filter(
     (b) => b.answerId === multiProps?.answerToBuy?.id
@@ -246,7 +258,7 @@ export const BuyPanelBody = (props: {
       })
     )
       .then((r) => {
-        console.log('placed bet. Result:', r)
+        console.log(`placed ${TRADE_TERM}. Result:`, r)
         setIsSubmitting(false)
         setBetAmount(undefined)
         if (onBuySuccess) onBuySuccess()
@@ -261,12 +273,12 @@ export const BuyPanelBody = (props: {
         if (e instanceof APIError) {
           const message = e.message.toString()
           if (message.includes('could not serialize access')) {
-            setError('Error placing bet')
-            console.error('Error placing bet', e)
+            setError(`Error placing ${TRADE_TERM}`)
+            console.error(`Error placing ${TRADE_TERM}`, e)
           } else setError(message)
         } else {
           console.error(e)
-          setError('Error placing bet')
+          setError(`Error placing ${TRADE_TERM}`)
         }
         setIsSubmitting(false)
         return undefined
@@ -288,8 +300,7 @@ export const BuyPanelBody = (props: {
       })
     )
   }
-  const betDisabled =
-    isSubmitting || !betAmount || !!error || outcome === undefined
+  const betDisabled = isSubmitting || !betAmount || outcome === undefined
 
   const cpmmState = {
     pool: {
@@ -329,11 +340,16 @@ export const BuyPanelBody = (props: {
   const highProbMove =
     (betAmount ?? 0) > 10 && probChange > 0.299 && bankrollFraction <= 1
 
+  const isCashContract = contract.token === 'CASH'
+
   const warning = highBankrollSpend
     ? `You might not want to spend ${formatPercent(
         bankrollFraction
-      )} of your balance on a single trade. \n\nCurrent balance: ${formatMoney(
-        user?.balance ?? 0
+      )} of your balance on a single trade. \n\nCurrent balance: ${formatWithToken(
+        {
+          amount: user?.balance ?? 0,
+          token: isCashContract ? 'CASH' : 'M$',
+        }
       )}`
     : highProbMove
     ? `Are you sure you want to move the market to ${displayedAfter}?`
@@ -355,7 +371,7 @@ export const BuyPanelBody = (props: {
         )}
 
         <Row className={clsx('text-ink-700 mb-2 items-center space-x-3')}>
-          Bet amount
+          {capitalize(TRADE_TERM)} amount
         </Row>
 
         <Row
@@ -390,16 +406,21 @@ export const BuyPanelBody = (props: {
               disabled={betDisabled}
               size="xl"
               color={outcome === 'NO' ? '#6989c8' : '#d16762'}
-              actionLabel={`Bet ${
+              actionLabel={`${capitalize(TRADE_TERM)} ${
                 outcome === 'NO' ? 'Democratic' : 'Republican'
-              } to win ${formatMoney(currentPayout)}`}
+              } to win ${formatWithToken({
+                amount: currentPayout,
+                token: isCashContract ? 'CASH' : 'M$',
+              })}`}
               inModal={!!onClose}
             />
           ) : (
             <Button
               color={outcome === 'NO' ? 'red' : 'green'}
               size="xl"
-              onClick={withTracking(firebaseLogin, 'login from bet panel')}
+              onClick={withTracking(firebaseLogin, 'login from bet panel', {
+                token: contract.token,
+              })}
               className="flex-grow"
             >
               Sign up to predict
@@ -413,7 +434,10 @@ export const BuyPanelBody = (props: {
               <span className="text-ink-700 mt-4 whitespace-nowrap text-sm">
                 Your balance{' '}
                 <span className="text-ink-700 font-semibold">
-                  {formatMoney(user.balance)}
+                  {formatWithToken({
+                    amount: user.balance,
+                    token: isCashContract ? 'CASH' : 'M$',
+                  })}
                 </span>
               </span>
             </div>
@@ -443,7 +467,7 @@ export const BuyPanelBody = (props: {
             )}
 
             <InfoTooltip
-              text={`Your bet will move the probability of ${
+              text={`Your ${TRADE_TERM} will move the probability of ${
                 outcome == 'YES' ? 'Republican' : 'Democratic'
               } from ${getFormattedMappedValue(
                 contract,

@@ -1,24 +1,24 @@
-import {
-  Contract,
-  CPMMBinaryContract,
-  CPMMMultiContract,
-} from 'common/contract'
+import { Contract, BinaryContract, CPMMMultiContract } from 'common/contract'
 import { User } from 'common/user'
 import { useState } from 'react'
 import { firebaseLogin } from 'web/lib/firebase/users'
 import { BetDialog, MultiBetDialog } from '../bet/bet-dialog'
 import { Button } from '../buttons/button'
-import { Col } from '../layout/col'
 import { MODAL_CLASS, Modal } from '../layout/modal'
 import { Row } from '../layout/row'
 import { NumericResolutionPanel } from '../numeric-resolution-panel'
 import { ResolutionPanel } from '../resolution-panel'
 import { isClosed } from './contracts-table'
-import { AnswersResolvePanel } from '../answers/answer-resolve-panel'
+import {
+  AnswersResolvePanel,
+  IndependentAnswersResolvePanel,
+} from '../answers/answer-resolve-panel'
 import { useUser } from 'web/hooks/use-user'
-import clsx from 'clsx'
 import { track } from 'web/lib/service/analytics'
 import { PollPanel } from '../poll/poll-panel'
+import { TRADE_TERM } from 'common/envs/constants'
+import { capitalize } from 'lodash'
+import { BinaryOutcomes } from '../bet/bet-panel'
 
 export function Action(props: { contract: Contract }) {
   const { contract } = props
@@ -70,8 +70,12 @@ const VoteButton = (props: { contract: Contract }) => {
   return <></>
 }
 
-export function BetButton(props: { contract: Contract; user?: User | null }) {
-  const { contract } = props
+export function BetButton(props: {
+  contract: Contract
+  user?: User | null
+  initialOutcome?: BinaryOutcomes
+}) {
+  const { contract, initialOutcome } = props
   const user = useUser()
   const [open, setOpen] = useState(false)
   const [openMC, setOpenMC] = useState(false)
@@ -88,7 +92,10 @@ export function BetButton(props: { contract: Contract; user?: User | null }) {
           onClick={(e) => {
             e.preventDefault()
             e.stopPropagation()
-            track('bet intent', { location: 'contract table' })
+            track('bet intent', {
+              location: 'contract table',
+              token: contract.token,
+            })
             if (!user) {
               firebaseLogin()
               return
@@ -100,7 +107,7 @@ export function BetButton(props: { contract: Contract; user?: User | null }) {
             }
           }}
         >
-          Bet
+          {capitalize(TRADE_TERM)}
         </Button>
         {openMC && (
           <MultiBetDialog
@@ -111,10 +118,11 @@ export function BetButton(props: { contract: Contract; user?: User | null }) {
         )}
         {open && (
           <BetDialog
-            contract={contract as CPMMBinaryContract}
+            contract={contract as BinaryContract}
             open={open}
             setOpen={setOpen}
             trackingLocation="contract table"
+            initialOutcome={initialOutcome}
           />
         )}
       </>
@@ -152,10 +160,13 @@ export function ResolveButton(props: { contract: Contract }) {
           Resolve
         </Button>
         {open && (
-          <Modal open={open} setOpen={setOpen} size="md">
-            <Col className={clsx(MODAL_CLASS, 'items-stretch !gap-0')}>
-              <SmallResolutionPanel contract={contract} setOpen={setOpen} />
-            </Col>
+          <Modal
+            open={open}
+            setOpen={setOpen}
+            className={MODAL_CLASS}
+            size="md"
+          >
+            <SmallResolutionPanel contract={contract} setOpen={setOpen} />
           </Modal>
         )}
       </>
@@ -182,14 +193,18 @@ export function SmallResolutionPanel(props: {
       onClose={() => setOpen(false)}
       inModal
     />
+  ) : outcomeType === 'MULTIPLE_CHOICE' && !contract.shouldAnswersSumToOne ? (
+    <IndependentAnswersResolvePanel
+      contract={contract as CPMMMultiContract}
+      onClose={() => setOpen(false)}
+      show={true}
+    />
   ) : outcomeType === 'MULTIPLE_CHOICE' ? (
-    <Col className="w-full">
-      <AnswersResolvePanel
-        contract={contract as CPMMMultiContract}
-        onClose={() => setOpen(false)}
-        inModal
-      />
-    </Col>
+    <AnswersResolvePanel
+      contract={contract as CPMMMultiContract}
+      onClose={() => setOpen(false)}
+      inModal
+    />
   ) : (
     <></>
   )

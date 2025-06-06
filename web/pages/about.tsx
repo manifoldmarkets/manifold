@@ -1,197 +1,99 @@
-import { useState } from 'react'
-import Link from 'next/link'
-import {
-  MailIcon,
-  NewspaperIcon,
-  QuestionMarkCircleIcon,
-} from '@heroicons/react/outline'
-import {
-  TbBrandAndroid,
-  TbBrandApple,
-  TbBrandDiscord,
-  TbBrandTwitter,
-} from 'react-icons/tb'
-
-import { APPLE_APP_URL, GOOGLE_PLAY_APP_URL } from 'common/envs/constants'
-import { MobileAppsQRCodeDialog } from 'web/components/buttons/mobile-apps-qr-code-button'
+import { TRADE_TERM } from 'common/envs/constants'
+import { capitalize } from 'lodash'
+import { AboutManifold } from 'web/components/about-manifold'
+import { ExplainerPanel } from 'web/components/explainer-panel'
 import { Col } from 'web/components/layout/col'
 import { Page } from 'web/components/layout/page'
 import { ManifoldLogo } from 'web/components/nav/manifold-logo'
-import { PrivacyTermsLab } from 'web/components/privacy-terms'
 import { SEO } from 'web/components/SEO'
 import { Title } from 'web/components/widgets/title'
-import { useIsMobile } from 'web/hooks/use-is-mobile'
-import { useUser } from 'web/hooks/use-user'
-import { getNativePlatform } from 'web/lib/native/is-native'
-import { isIOS } from 'web/lib/util/device'
-import { ExplainerPanel } from 'web/components/explainer-panel'
 import { LabCard } from './lab'
+import { Socials } from 'web/components/socials'
 
 export default function AboutPage() {
-  const { isNative, platform } = getNativePlatform()
-
-  const isMobile = useIsMobile()
-  const [isModalOpen, setIsModalOpen] = useState(false)
-
-  const appCallback = isMobile
-    ? { href: isIOS() ? APPLE_APP_URL : GOOGLE_PLAY_APP_URL }
-    : ({
-        href: '#',
-        onClick: (e: any) => {
-          e.preventDefault()
-          setIsModalOpen(true)
-        },
-      } as { href: string }) // typechecker is dumb
-
-  const user = useUser()
-
   return (
-    <Page trackPageView={'about page'}>
+    <Page trackPageView={'about page'} className="!col-span-7">
       <SEO
         title="About"
-        description="Manifold is a social prediction game. Bet on news, politics, tech, & AI with play money. Or create your own prediction market."
+        description={`Manifold is a prediction market platform. Users place ${TRADE_TERM}s on an upcoming event which creates a probability of how likely it will happen. ${capitalize(
+          TRADE_TERM
+        )} on current events, politics, tech, & AI with play money. Or create your own prediction market for others to trade on!`}
       />
 
-      <Col className="p-4">
+      <Col className=" p-4">
         <Title className="hidden sm:flex">About</Title>
         <ManifoldLogo className="mb-4 flex sm:hidden" />
+        <Col className="gap-4">
+          <div>
+            <AboutManifold className="text-lg" />
+          </div>
 
-        <div className="mb-4 text-lg">
-          Manifold is a social prediction game. Bet on politics, tech, sports,
-          and more with play money. Or create your own prediction market on any
-          topic you care about!
-        </div>
+          <ExplainerPanel className={'max-w-full'} showWhatIsManifold={false} />
 
-        <iframe
-          src="https://www.youtube.com/embed/DB5TfX7eaVY?start=9"
-          className="mb-4 h-80 w-full max-w-2xl"
-        ></iframe>
+          <div>
+            <h2 className={'text-ink-600 mb-2 text-xl'}>Intro video</h2>
+            <div className="mb-1 text-lg">
+              Everything you need to know in 7 minutes presented by an animated
+              corgi:
+            </div>
+            <iframe
+              src="https://www.youtube.com/embed/DB5TfX7eaVY?start=9"
+              className="mb-4 h-80 w-full max-w-2xl"
+            ></iframe>
+          </div>
 
-        <Col className="mt-8 w-full">
-          <ExplainerPanel className={'max-w-full'} />
+          <div>
+            <h2 className={'text-ink-600 mb-2 text-xl'}>Our mission</h2>
+            <div className="mb-1 text-lg">
+              <li>
+                Provide the most accurate, real-time predictions on any event.
+              </li>
+              <li>
+                Combat misleading news by incentivising traders to be fast and
+                correct.
+              </li>
+              <li>
+                Help people make more informed decisions by improving their
+                model of the future.
+              </li>
+            </div>
+          </div>
+
+          <Socials className="mb-2" />
+
+          <div>
+            <h2 className={'text-ink-600 mb-2 text-xl'}>
+              Still have questions?
+            </h2>
+
+            <div className="mt-4 grid gap-x-2 md:grid-cols-3">
+              <LabCard
+                title="FAQ"
+                href="https://docs.manifold.markets/faq"
+                target="_blank"
+                description="Answers to common questions"
+              />
+
+              <LabCard
+                title="Community guidelines"
+                href="https://manifoldmarkets.notion.site/New-WIP-Community-Guidelines-2b986d33f0c646478d4921667c272f21"
+                target="_blank"
+                description="Rules, norms, and expectations"
+              />
+
+              <LabCard
+                title="Sitemap"
+                href="/sitemap"
+                description="I can't find something"
+              />
+            </div>
+            <div className="text-lg">
+              If you need help with a specific market please tag @mods in a
+              comment for help!
+            </div>
+          </div>
         </Col>
-
-        <MobileAppsQRCodeDialog
-          isModalOpen={isModalOpen}
-          setIsModalOpen={setIsModalOpen}
-        />
-
-        <div className="my-6 grid grid-cols-2 justify-between sm:grid-cols-3 md:flex">
-          {!isNative && (
-            <SocialLink
-              Icon={!isMobile || isIOS() ? TbBrandApple : TbBrandAndroid}
-              {...appCallback}
-            >
-              Mobile App
-            </SocialLink>
-          )}
-          <SocialLink
-            Icon={TbBrandDiscord}
-            href="https://discord.com/invite/eHQBNBqXuh"
-            target="_blank"
-          >
-            Discord
-          </SocialLink>
-          <SocialLink
-            Icon={NewspaperIcon}
-            href="https://news.manifold.markets"
-            target="_blank"
-          >
-            Newsletter
-          </SocialLink>
-          <SocialLink
-            Icon={TbBrandTwitter}
-            href="https://twitter.com/ManifoldMarkets"
-            target="_blank"
-          >
-            Twitter
-          </SocialLink>
-          <SocialLink
-            Icon={MailIcon}
-            href="mailto:info@manifold.markets"
-            target="_blank"
-          >
-            Email
-          </SocialLink>
-          <SocialLink
-            Icon={QuestionMarkCircleIcon}
-            href="https://docs.manifold.markets/faq"
-            target="_blank"
-          >
-            FAQ
-          </SocialLink>
-        </div>
-
-        <div className="mt-4 grid gap-x-2 md:grid-cols-3">
-          {user && (!isNative || (isNative && platform !== 'ios')) && (
-            <LabCard title="💰 Get mana" href="/add-funds" />
-          )}
-          {user && <LabCard title="🤗‍ Refer a friend" href="/referrals" />}
-          {user && <LabCard title="💸 Send mana" href="/payments" />}
-          <LabCard title="🎯 Calibration & track record" href="/calibration" />
-          <LabCard title="🏁 Leagues" href="/leagues" />
-          <LabCard title="🏆 Leaderboards" href="/leaderboards" />
-          <LabCard
-            title="📜 Community guidelines"
-            href="https://manifoldmarkets.notion.site/New-WIP-Community-Guidelines-2b986d33f0c646478d4921667c272f21"
-          />
-          <LabCard
-            title="👑 Creator Partner Program"
-            href="/partner-explainer"
-          />
-
-          <LabCard
-            title="🦋 Changelog"
-            href="https://manifoldmarkets.notion.site/Changelog-da5b4fe95872484f8fa4ee5cc71806d8"
-          />
-
-          {(!isNative || (isNative && platform !== 'ios')) && (
-            <LabCard title="🫀 Charity" href="/charity" />
-          )}
-
-          <LabCard title="📺 TV" href="/tv" />
-          <LabCard title="️🔖 Dashboards" href="/dashboard" />
-          <LabCard title="⚡️ Site activity" href="/live" />
-          {/* <LabCard title="️🧪 Lab" href="/lab" /> */}
-          <LabCard
-            title="❤️ Manifold.love"
-            href="https://manifold.love"
-            target="_blank"
-          />
-          <LabCard
-            title="️💘 Bet on Love"
-            href="https://www.youtube.com/watch?v=mEF0S1qOsFI"
-            target="_blank"
-          />
-          <LabCard
-            title="️🎊 Manifest"
-            href="https://www.manifest.is/"
-            target="_blank"
-          />
-        </div>
       </Col>
-      <PrivacyTermsLab />
     </Page>
-  )
-}
-
-const SocialLink = (props: {
-  href: string
-  onClick?: () => void
-  Icon: any
-  children: React.ReactNode
-  target?: string
-}) => {
-  const { href, onClick, Icon, children, target } = props
-  return (
-    <Link
-      href={href}
-      onClick={onClick}
-      target={target}
-      className="bg-canvas-0 text-ink-800 hover:text-primary-800 hover:bg-primary-100 flex items-center justify-center gap-1.5 whitespace-nowrap rounded p-2 font-semibold transition-colors"
-    >
-      <Icon className="h-6 w-6" />
-      {children}
-    </Link>
   )
 }

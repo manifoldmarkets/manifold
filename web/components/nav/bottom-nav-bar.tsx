@@ -1,31 +1,34 @@
-import { Dialog, Transition } from '@headlessui/react'
 import {
-  HomeIcon,
-  NewspaperIcon,
+  CloseButton,
+  Dialog,
+  DialogBackdrop,
+  DialogPanel,
+  Transition,
+  TransitionChild,
+} from '@headlessui/react'
+import {
   QuestionMarkCircleIcon,
   SearchIcon,
   UserCircleIcon,
 } from '@heroicons/react/outline'
 import { MenuAlt3Icon, XIcon } from '@heroicons/react/solid'
 import clsx from 'clsx'
-import Link from 'next/link'
-import { Fragment, useState } from 'react'
-import { BiSearchAlt2 } from 'react-icons/bi'
 import { User } from 'common/user'
+import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { GiCapitol } from 'react-icons/gi'
-import { UnseenMessagesBubble } from 'web/components/messaging/messages-icon'
+import { Fragment, useState } from 'react'
 import { NotificationsIcon } from 'web/components/notifications-icon'
 import { useIsIframe } from 'web/hooks/use-is-iframe'
 import { useUser } from 'web/hooks/use-user'
 import { firebaseLogin } from 'web/lib/firebase/users'
 import { trackCallback } from 'web/lib/service/analytics'
 import { Col } from '../layout/col'
+import { Row } from '../layout/row'
 import { Avatar } from '../widgets/avatar'
-import { CoinNumber } from '../widgets/manaCoinNumber'
+import { TokenNumber } from '../widgets/token-number'
 import Sidebar from './sidebar'
 import { NavItem } from './sidebar-item'
-import { Row } from '../layout/row'
+import { IoCompassOutline } from 'react-icons/io5'
 
 export const BOTTOM_NAV_BAR_HEIGHT = 58
 
@@ -33,31 +36,27 @@ const itemClass =
   'sm:hover:bg-ink-200 block w-full py-1 px-3 text-center sm:hover:text-primary-700 transition-colors'
 const selectedItemClass = 'bg-ink-100 text-primary-700'
 const touchItemClass = 'bg-primary-100'
+const iconClassName = 'mx-auto my-1 h-7 w-7'
 
 function getNavigation(user: User) {
   return [
     {
-      name: 'Home',
+      name: 'Browse',
       href: '/home',
-      icon: HomeIcon,
+      icon: SearchIcon,
     },
     {
-      name: 'Browse',
-      href: '/browse?fy=1&f=open',
-      icon: BiSearchAlt2,
+      name: 'Explore',
+      href: '/explore',
+      icon: IoCompassOutline,
+      iconClassName: '!h-[1.9rem] !w-[1.9rem] !mb-[0.19rem] !mt-[0.13rem]',
     },
-    // {
-    //   name: 'Politics',
-    //   href: '/politics',
-    //   icon: GiCapitol,
-    //   prefetch: false,
-    // },
     {
       name: 'Profile',
       href: `/${user.username}`,
     },
     {
-      name: 'Notifs',
+      name: 'Inbox',
       href: `/notifications`,
       icon: NotificationsIcon,
     },
@@ -65,26 +64,24 @@ function getNavigation(user: User) {
 }
 
 const signedOutNavigation = () => [
+  { name: 'Browse', href: '/browse', icon: SearchIcon, alwaysShowName: true },
   {
-    name: 'Politics',
-    href: '/politics',
-    icon: GiCapitol,
-    alwaysShowName: true,
+    name: 'Explore',
+    href: '/explore',
+    icon: IoCompassOutline,
+    iconClassName: '!h-[1.9rem] !w-[1.9rem] !mb-[0.19rem] !mt-[0.13rem]',
     // prefetch: false, // should we not prefetch this?
   },
-  { name: 'News', href: '/news', icon: NewspaperIcon, alwaysShowName: true },
-  { name: 'Browse', href: '/browse', icon: SearchIcon, alwaysShowName: true },
+  // { name: 'News', href: '/news', icon: NewspaperIcon, alwaysShowName: true },
   {
     name: 'About',
     href: '/about',
     icon: QuestionMarkCircleIcon,
-    alwaysShowName: true,
   },
   {
     name: 'Sign in',
     onClick: firebaseLogin,
     icon: UserCircleIcon,
-    alwaysShowName: true,
   },
 ]
 
@@ -124,8 +121,8 @@ export function BottomNavBar() {
             )}
             onClick={() => setSidebarOpen(true)}
           >
-            <UnseenMessagesBubble />
-            <MenuAlt3Icon className="mx-auto my-2 h-8 w-8" aria-hidden="true" />
+            <MenuAlt3Icon className={iconClassName} aria-hidden="true" />
+            More
           </div>
           <MobileSidebar
             sidebarOpen={sidebarOpen}
@@ -163,24 +160,26 @@ function NavBarItem(props: {
         onTouchStart={() => setTouched(true)}
         onTouchEnd={() => setTouched(false)}
       >
-        <Col className="mx-auto items-center">
+        <Col className="relative mx-auto h-full w-full items-center">
           <Avatar size="sm" avatarUrl={user.avatarUrl} noLink />
           <Row className="gap-1">
-            <Row className="w-[40px] justify-end rounded-l-full">
-              <CoinNumber
-                amount={user?.balance}
-                numberType="short"
-                className="text-primary-600"
-              />
-            </Row>
-            <Row className="w-[40px] rounded-r-full">
-              <CoinNumber
-                amount={user?.spiceBalance}
-                numberType="short"
+            <TokenNumber
+              amount={user?.balance}
+              className="text-violet-600 dark:text-violet-400"
+              numberType="short"
+              isInline
+              coinClassName="!top-[0.15em]"
+            />
+            {user?.cashBalance >= 1 && (
+              <TokenNumber
+                amount={user?.cashBalance}
                 className="text-amber-600 dark:text-amber-400"
-                isSpice
+                coinType="sweepies"
+                numberType="short"
+                isInline
+                coinClassName="!top-[0.15em]"
               />
-            </Row>
+            )}
           </Row>
         </Col>
       </Link>
@@ -198,9 +197,11 @@ function NavBarItem(props: {
         onTouchStart={() => setTouched(true)}
         onTouchEnd={() => setTouched(false)}
       >
-        {item.icon && <item.icon className="mx-auto my-2 h-8 w-8" />}
+        {item.icon && (
+          <item.icon className={clsx(iconClassName, item.iconClassName)} />
+        )}
         {children}
-        {item.alwaysShowName && item.name}
+        {item.name}
       </button>
     )
   }
@@ -221,9 +222,11 @@ function NavBarItem(props: {
       onTouchStart={() => setTouched(true)}
       onTouchEnd={() => setTouched(false)}
     >
-      {item.icon && <item.icon className="mx-auto my-2 h-8 w-8" />}
+      {item.icon && (
+        <item.icon className={clsx(iconClassName, item.iconClassName)} />
+      )}
       {children}
-      {item.alwaysShowName && item.name}
+      {item.name}
     </Link>
   )
 }
@@ -236,13 +239,13 @@ export function MobileSidebar(props: {
   const { sidebarOpen, setSidebarOpen } = props
   return (
     <div>
-      <Transition.Root show={sidebarOpen} as={Fragment}>
+      <Transition show={sidebarOpen} as={Fragment}>
         <Dialog
           as="div"
           className="fixed inset-0 z-50 flex justify-end"
           onClose={setSidebarOpen}
         >
-          <Transition.Child
+          <TransitionChild
             as={Fragment}
             enter="transition-opacity ease-linear duration-300"
             enterFrom="opacity-0"
@@ -252,9 +255,9 @@ export function MobileSidebar(props: {
             leaveTo="opacity-0"
           >
             {/* background cover */}
-            <Dialog.Overlay className="bg-canvas-100/75 fixed inset-0" />
-          </Transition.Child>
-          <Transition.Child
+            <DialogBackdrop className="bg-canvas-100/75 fixed inset-0" />
+          </TransitionChild>
+          <TransitionChild
             as={Fragment}
             enter="transition ease-in-out duration-300 transform"
             enterFrom="translate-x-full"
@@ -263,18 +266,15 @@ export function MobileSidebar(props: {
             leaveFrom="translate-x-0"
             leaveTo="translate-x-full"
           >
-            <div className="bg-canvas-0 relative w-full max-w-xs">
+            <DialogPanel className="bg-canvas-0 relative w-full max-w-xs">
               <Sidebar className="mx-2 overflow-y-auto" isMobile />
-              <button
-                className="hover:text-primary-600 focus:text-primary-600 text-ink-500 absolute left-0 top-0 z-50 -translate-x-full outline-none"
-                onClick={() => setSidebarOpen(false)}
-              >
+              <CloseButton className="hover:text-primary-600 focus:text-primary-600 text-ink-500 absolute left-0 top-0 z-50 -translate-x-full outline-none">
                 <XIcon className="m-2 h-8 w-8" />
-              </button>
-            </div>
-          </Transition.Child>
+              </CloseButton>
+            </DialogPanel>
+          </TransitionChild>
         </Dialog>
-      </Transition.Root>
+      </Transition>
     </div>
   )
 }

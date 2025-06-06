@@ -6,7 +6,8 @@ import { buttonClass } from './button'
 import Link from 'next/link'
 import { NewQuestionParams } from 'web/components/new-contract/new-contract-panel'
 import { getLinkTarget } from 'web/components/widgets/linkify'
-import { getPrecision } from 'common/multi-numeric'
+import { getPrecision } from 'common/src/number'
+import { randomString } from 'common/util/random'
 
 export function DuplicateContractButton(props: { contract: Contract }) {
   const { contract } = props
@@ -24,7 +25,7 @@ export function DuplicateContractButton(props: { contract: Contract }) {
 }
 
 // Pass along the Uri to create a new contract
-function duplicateContractHref(contract: Contract) {
+export function duplicateContractHref(contract: Contract) {
   const descriptionString = JSON.stringify(contract.description)
   // Don't set a closeTime that's in the past
   const closeTime =
@@ -32,10 +33,24 @@ function duplicateContractHref(contract: Contract) {
   const params = {
     q: contract.question,
     closeTime,
-    description: descriptionString,
     outcomeType: contract.outcomeType,
     visibility: contract.visibility,
   } as NewQuestionParams
+
+  // Not sure what description length is the true cutoff, but this seems to work
+  if (descriptionString.length < 10000) {
+    params.description = descriptionString
+  } else {
+    params.description = JSON.stringify({
+      type: 'paragraph',
+      content: [
+        {
+          type: 'text',
+          text: `This contract's description is too long to duplicate.`,
+        },
+      ],
+    })
+  }
 
   if (contract.outcomeType === 'PSEUDO_NUMERIC') {
     params.min = contract.min
@@ -56,10 +71,23 @@ function duplicateContractHref(contract: Contract) {
     )
   }
 
-  if (contract.outcomeType === 'MULTIPLE_CHOICE') {
+  if (
+    contract.outcomeType === 'MULTIPLE_CHOICE' ||
+    contract.outcomeType === 'MULTI_NUMERIC' ||
+    contract.outcomeType === 'DATE'
+  ) {
     params.answers = contract.answers
       .filter((a) => !a.isOther)
       .map((a) => a.text)
+  }
+  if (
+    contract.outcomeType === 'MULTI_NUMERIC' ||
+    contract.outcomeType === 'DATE'
+  ) {
+    params.midpoints = contract.answers.map((a) => a.midpoint!)
+  }
+  if (contract.outcomeType === 'MULTI_NUMERIC') {
+    params.unit = contract.unit
   }
 
   if (contract.mechanism === 'cpmm-multi-1') {
@@ -67,9 +95,12 @@ function duplicateContractHref(contract: Contract) {
     params.shouldAnswersSumToOne = contract.shouldAnswersSumToOne
   }
 
-  if (contract.groupLinks && contract.groupLinks.length > 0) {
-    params.groupIds = contract.groupLinks.map((gl) => gl.groupId)
+  if (contract.groupSlugs && contract.groupSlugs.length > 0) {
+    params.groupSlugs = contract.groupSlugs
   }
+
+  // lets you duplicate a contract multiple times
+  params.rand = randomString(6)
 
   return `/create?params=` + encodeURIComponent(JSON.stringify(params))
 }

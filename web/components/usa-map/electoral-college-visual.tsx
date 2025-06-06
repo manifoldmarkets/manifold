@@ -1,6 +1,6 @@
 import { DATA } from './usa-map-data'
 import { Row } from 'web/components/layout/row'
-import { probToColor } from './state-election-map'
+import { ALSO_DEMOCRATIC, probToColor } from './state-election-map'
 import { Col } from 'web/components/layout/col'
 import { ChevronDownIcon } from '@heroicons/react/solid'
 import { HIGHLIGHTED_OUTLINE_COLOR, SELECTED_OUTLINE_COLOR } from './usa-map'
@@ -10,6 +10,8 @@ import {
   MapContractsDictionary,
   StateElectionMarket,
 } from 'web/public/data/elections-data'
+import { getAnswerProbability, getDisplayProbability } from 'common/calculate'
+import { BinaryContract } from 'common/contract'
 
 export function ElectoralCollegeVisual(props: {
   sortedContractsDictionary: MapContractsDictionary
@@ -89,58 +91,66 @@ export function ElectoralCollegeVisual(props: {
   )
 }
 
+export function sortByProbability(
+  unsortedContractsDictionary: MapContractsDictionary
+): MapContractsDictionary {
+  return Object.entries(unsortedContractsDictionary)
+    .map(([state, contract]) => ({
+      state,
+      contract,
+      probability: contract
+        ? getDisplayProbability(contract as BinaryContract)
+        : 0,
+    }))
+    .sort((a, b) => b.probability - a.probability)
+    .reduce((sortedData, data) => {
+      sortedData[data.state] = data.contract
+      return sortedData
+    }, {} as MapContractsDictionary)
+}
+
 export function sortByDemocraticDiff(
   unsortedContractsDictionary: MapContractsDictionary,
   data?: StateElectionMarket[]
 ): MapContractsDictionary {
   return Object.entries(unsortedContractsDictionary)
     .map(([state, contract]) => {
-      if (contract?.mechanism !== 'cpmm-multi-1')
-        return { state, contract, ratio: 0 }
-      const democraticAnswer = contract?.answers.find(
-        (answer) =>
-          answer.text === 'Democratic Party' ||
-          answer.text.includes('Democratic Party')
-      )
-      const republicanAnswer = contract?.answers.find(
-        (answer) =>
-          answer.text === 'Republican Party' ||
-          answer.text.includes('Republican Party')
-      )
-      let otherDem = null
-      let otherRep = null
-      if (
-        data &&
-        data.filter((d) => d.state === state) &&
-        data.filter((d) => d.state === state)[0].otherParty
-      ) {
-        const otherAnswer = contract?.answers.find(
-          (answer) => answer.text == 'Other'
+      let diff = 0
+
+      if (contract?.mechanism === 'cpmm-multi-1') {
+        // ... existing CPMM multi logic ...
+        const democraticAnswer = contract.answers.find(
+          (answer) =>
+            answer.text === 'Democratic Party' ||
+            answer.text.includes('Democratic Party')
         )
-        if (
-          data.filter((d) => d.state === state)[0].otherParty ==
-          'Democratic Party'
-        ) {
-          otherDem = otherAnswer
-        }
-        if (
-          data.filter((d) => d.state === state)[0].otherParty ==
-          'Republican Party'
-        ) {
-          otherRep = otherAnswer
-        }
-      }
-      const diff =
-        democraticAnswer && republicanAnswer
-          ? democraticAnswer.prob +
-            (otherDem ? otherDem.prob : 0) -
-            (republicanAnswer.prob + (otherRep ? otherRep.prob : 0))
+
+        const democraticIndependentAnswerProb =
+          contract.answers.find((answer) =>
+            ALSO_DEMOCRATIC.includes(answer.text)
+          )?.prob ?? 0
+
+        diff = democraticAnswer
+          ? getAnswerProbability(contract, democraticAnswer.id) +
+            democraticIndependentAnswerProb
           : 0
+
+        const x = data?.find((d) => d.state === state)
+        if (x?.otherParty == 'Democratic Party') {
+          const other = contract.answers.find((a) => a.isOther)?.id
+          if (other) diff += getAnswerProbability(contract, other)
+        }
+      } else if (contract?.mechanism === 'cpmm-1') {
+        // Binary contract logic
+        const republicanProb = getDisplayProbability(contract as BinaryContract)
+        diff = 1 - (republicanProb ?? 0)
+      }
+
       return { state, contract, diff }
     })
-    .sort((a, b) => b.diff! - a.diff!)
+    .sort((a, b) => b.diff - a.diff)
     .reduce((sortedData, data) => {
-      sortedData[data.state] = data?.contract
+      sortedData[data.state] = data.contract
       return sortedData
     }, {} as MapContractsDictionary)
 }

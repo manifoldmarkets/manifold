@@ -2,9 +2,9 @@ import { PencilIcon } from '@heroicons/react/solid'
 import clsx from 'clsx'
 import dayjs from 'dayjs'
 import { Row } from '../layout/row'
-import { Contract } from 'web/lib/firebase/contracts'
+import { Contract } from 'common/contract'
 import { DateTimeTooltip } from '../widgets/datetime-tooltip'
-import { fromNow } from 'web/lib/util/time'
+import { fromNow } from 'client-common/lib/time'
 import { useState } from 'react'
 import { Button } from 'web/components/buttons/button'
 import { Modal } from 'web/components/layout/modal'
@@ -15,45 +15,59 @@ import { Input } from '../widgets/input'
 import { Avatar } from '../widgets/avatar'
 import { UserLink } from '../widgets/user-link'
 import { NO_CLOSE_TIME_TYPES } from 'common/contract'
-import { updateMarket } from 'web/lib/firebase/api'
+import { updateMarket } from 'web/lib/api/api'
 import { FaClock } from 'react-icons/fa6'
 import { MdLockClock } from 'react-icons/md'
 import { UserHovercard } from '../user/user-hovercard'
 import { useDisplayUserById } from 'web/hooks/use-user-supabase'
 
-export function AuthorInfo(props: { contract: Contract }) {
-  const { contract } = props
-  const { creatorId, creatorName, creatorUsername, creatorAvatarUrl } = contract
-  const resolver = useDisplayUserById(contract.resolverId)
+export function AuthorInfo(props: {
+  creatorId: string
+  creatorName: string
+  creatorUsername: string
+  creatorAvatarUrl?: string
+  creatorCreatedTime?: number
+  token: string
+  resolverId?: string
+}) {
+  const {
+    creatorId,
+    creatorName,
+    creatorUsername,
+    creatorAvatarUrl,
+    creatorCreatedTime,
+    token,
+    resolverId,
+  } = props
+  const resolver = useDisplayUserById(resolverId)
   return (
-    <Row className="grow flex-wrap items-center gap-2">
-      <UserHovercard userId={creatorId}>
+    <Row className="grow flex-wrap items-center gap-4">
+      <UserHovercard userId={creatorId} className="flex items-center gap-2">
         <Avatar
           username={creatorUsername}
           avatarUrl={creatorAvatarUrl}
           size={'xs'}
         />
-      </UserHovercard>
-      <UserHovercard userId={creatorId}>
+
         <UserLink
           user={{
             id: creatorId,
             name: creatorName,
             username: creatorUsername,
+            createdTime: creatorCreatedTime,
           }}
           className={'mr-1'}
         />
       </UserHovercard>
-      {contract.isResolved &&
-        contract.resolverId! !== contract.creatorId &&
-        resolver && (
-          <>
-            <span className={'ml-1'}>resolved by </span>
-            <UserHovercard userId={resolver.id}>
-              <UserLink user={resolver} />
-            </UserHovercard>
-          </>
-        )}
+
+      {resolver && resolver.id !== creatorId && token !== 'CASH' && (
+        <span>
+          resolved by{' '}
+          <UserHovercard userId={resolver.id}>
+            <UserLink user={resolver} />
+          </UserHovercard>
+        </span>
+      )}
     </Row>
   )
 }
@@ -107,7 +121,7 @@ export function CloseDate(props: {
     dayjs.duration(900, 'year')
   )
   const neverCloses =
-    !closeTime ??
+    !closeTime ||
     (NO_CLOSE_TIME_TYPES.includes(contract.outcomeType) &&
       dayjs(closeTime).isAfter(almostForeverTime))
 

@@ -11,7 +11,7 @@ import { Notification } from 'common/notification'
 import { getNotificationPreference } from 'common/user-notification-preferences'
 import { usePrivateUser, useUser } from 'web/hooks/use-user'
 import { followMarket, unfollowMarket } from '../buttons/follow-market-button'
-import DropdownMenu, { DropdownItem } from '../comments/dropdown-menu'
+import DropdownMenu, { DropdownItem } from '../widgets/dropdown-menu'
 import { Spacer } from '../layout/spacer'
 import {
   changeSetting,
@@ -29,9 +29,9 @@ export default function NotificationDropdown(props: {
     return (
       <DropdownMenu
         items={notificationDropdownItems}
-        icon={
+        buttonContent={
           <DotsVerticalIcon
-            className={clsx('my-1 h-4 w-4 md:invisible md:group-hover:visible')}
+            className={clsx('h-4 w-4 md:invisible md:group-hover:visible')}
           />
         }
         menuWidth="w-52"
@@ -79,7 +79,6 @@ function useNotificationPreferenceItem(notification: Notification) {
           changeSetting({
             setting: 'browser',
             newValue: !inAppEnabled,
-            privateUser: privateUser,
             subscriptionTypeKey: subType,
           }),
       } as DropdownItem,
@@ -106,10 +105,10 @@ function useNotificationFollowItem(notification: Notification) {
       onClick: () => {
         if (isFollowing) {
           setIsFollowing(false)
-          unfollowMarket(sourceContractId, sourceContractSlug, user)
+          unfollowMarket(sourceContractId, sourceContractSlug)
         } else {
           setIsFollowing(true)
-          followMarket(sourceContractId, sourceContractSlug, user)
+          followMarket(sourceContractId, sourceContractSlug)
         }
       },
     } as DropdownItem,

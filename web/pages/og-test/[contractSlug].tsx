@@ -36,7 +36,7 @@ function OriginalGangstaTestPage(props: ContractParams) {
     <div className="flex h-screen w-screen flex-col items-center justify-center">
       <div className="text-ink-900 mb-2 mt-6 text-xl">social preview image</div>
       <img
-        src={buildOgUrl(ogCardProps as any, 'market')}
+        src={buildOgUrl(ogCardProps as any, 'market', 'http://localhost:3000')}
         height={315}
         width={600}
         alt=""

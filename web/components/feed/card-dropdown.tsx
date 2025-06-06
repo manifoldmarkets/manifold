@@ -1,7 +1,7 @@
 import clsx from 'clsx'
 
 import { buildArray } from 'common/util/array'
-import DropdownMenu, { DropdownItem } from '../comments/dropdown-menu'
+import DropdownMenu, { DropdownItem } from '../widgets/dropdown-menu'
 import { useIsFollowing } from 'web/hooks/use-follows'
 import { useUser } from 'web/hooks/use-user'
 import {
@@ -9,8 +9,7 @@ import {
   MinusCircleIcon,
   PlusCircleIcon,
 } from '@heroicons/react/solid'
-import { onFollowClick } from '../buttons/follow-button'
-import { updateUserDisinterestEmbedding } from 'web/lib/firebase/api'
+import { updateUserDisinterestEmbedding } from 'web/lib/api/api'
 import { Contract } from 'common/contract'
 import toast from 'react-hot-toast'
 import { TiVolume, TiVolumeMute } from 'react-icons/ti'
@@ -27,7 +26,7 @@ export function FeedDropdown(props: {
   const user = useUser()
   const creatorId = itemCreatorId ?? contract.creatorId
   const creator = useDisplayUserById(creatorId)
-  const { isFollowing, setIsFollowing } = useIsFollowing(user?.id, creatorId)
+  const { isFollowing, toggleFollow } = useIsFollowing(user?.id, creatorId)
 
   const markUninteresting = async () => {
     await updateUserDisinterestEmbedding({
@@ -53,7 +52,7 @@ export function FeedDropdown(props: {
       ) : (
         <PlusCircleIcon className="h-5 w-5" aria-hidden />
       ),
-      onClick: () => onFollowClick(creatorId, isFollowing, setIsFollowing),
+      onClick: toggleFollow,
     },
     user && {
       name: interesting ? 'Show less of this' : 'Undo show less of this',
@@ -71,7 +70,7 @@ export function FeedDropdown(props: {
   return (
     <DropdownMenu
       items={feedCardOptions}
-      icon={<DotsVerticalIcon className={clsx('h-5 w-5')} />}
+      buttonContent={<DotsVerticalIcon className={clsx('h-5 w-5')} />}
       menuWidth={'w-60'}
       menuItemsClass="bg-canvas-50"
     />

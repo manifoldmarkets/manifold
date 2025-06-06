@@ -1,47 +1,51 @@
 'use client'
-import { formatMoney } from 'common/util/format'
-import { useEffect, useState } from 'react'
-import { useUser } from 'web/hooks/use-user'
-import { checkoutURL } from 'web/lib/service/stripe'
-import { Button } from './buttons/button'
-import { Modal } from './layout/modal'
-import { getNativePlatform } from 'web/lib/native/is-native'
-import { Tabs } from './layout/tabs'
-import { IOS_PRICES, WEB_PRICES } from 'web/pages/add-funds'
-import { BETTING_STREAK_BONUS_MAX, REFERRAL_AMOUNT } from 'common/economy'
-import Link from 'next/link'
-import { APIError, api, validateIapReceipt } from 'web/lib/firebase/api'
-import { useNativeMessages } from 'web/hooks/use-native-messages'
-import { Row } from 'web/components/layout/row'
-import { ChoicesToggleGroup } from './widgets/choices-toggle-group'
-import { sum } from 'lodash'
-import { AlertBox } from './widgets/alert-box'
-import { AD_REDEEM_REWARD } from 'common/boost'
-import { Txn } from 'common/txn'
-import { DAY_MS } from 'common/util/time'
-import { postMessageToNative } from 'web/lib/native/post-message'
-import { buildArray } from 'common/util/array'
-import { AmountInput } from './widgets/amount-input'
-import { run } from 'common/supabase/utils'
-import { db } from 'web/lib/supabase/db'
-import { convertTxn } from 'common/supabase/txns'
-import { CoinNumber } from './widgets/manaCoinNumber'
-import { ManaCoin } from 'web/public/custom-components/manaCoin'
+import clsx from 'clsx'
+import { WebPriceInDollars, PaymentAmount } from 'common/economy'
 import { ENV_CONFIG } from 'common/envs/constants'
 
+import { Txn } from 'common/txn'
+import { DAY_MS } from 'common/util/time'
+import { sum } from 'lodash'
+import Image from 'next/image'
+import { useEffect, useState } from 'react'
+import { Row } from 'web/components/layout/row'
+import { usePrivateUser, useUser } from 'web/hooks/use-user'
+import { APIError, api } from 'web/lib/api/api'
+import { Button } from './buttons/button'
+import { Modal } from './layout/modal'
+import { AmountInput } from './widgets/amount-input'
+import { Col } from './layout/col'
+import { shortenNumber } from 'common/util/formatNumber'
+import { TokenNumber } from './widgets/token-number'
+import { FundsSelector } from 'web/components/gidx/funds-selector'
+import { firebaseLogin, User } from 'web/lib/firebase/users'
+import { checkoutURL } from 'web/lib/service/stripe'
+
+const BUY_MANA_GRAPHICS = [
+  '/buy-mana-graphics/10k.png',
+  '/buy-mana-graphics/25k.png',
+  '/buy-mana-graphics/100k.png',
+  '/buy-mana-graphics/1M.png',
+]
+
+// TODO: this should send stripe a redirect to the proper market/create page
 export function AddFundsModal(props: {
   open: boolean
   setOpen(open: boolean): void
 }) {
   const { open, setOpen } = props
+  // TODO: check if they're registered already in gidx & get their status
+  // const res = useAPIGetter('get-monitor-status-gidx', {})
 
   return (
     <Modal
       open={open}
       setOpen={setOpen}
+      size="lg"
       className="bg-canvas-0 text-ink-1000 rounded-md p-8"
     >
-      <Tabs
+      <BuyManaTab />
+      {/* <Tabs
         trackingName="buy modal tabs"
         className="[&_svg]:hidden" // hide carousel switcher
         tabs={buildArray(
@@ -59,116 +63,126 @@ export function AddFundsModal(props: {
             ),
           }
         )}
-      />
+      /> */}
     </Modal>
   )
 }
 
-export function BuyManaTab(props: { onClose: () => void }) {
-  const { onClose } = props
+export function BuyManaTab() {
   const user = useUser()
-  const { isNative, platform } = getNativePlatform()
-  const prices = isNative && platform === 'ios' ? IOS_PRICES : WEB_PRICES
-  const [amountSelected, setAmountSelected] = useState<number>(
-    prices[formatMoney(25000)]
+  const privateUser = usePrivateUser()
+  const [loadingPrice, setLoadingPrice] = useState<WebPriceInDollars | null>(
+    null
   )
-  const [loading, setLoading] = useState(false)
-  const [error, setError] = useState<string | null>(null)
-  const handleIapReceipt = async (type: string, data: any) => {
-    if (type === 'iapReceipt') {
-      const { receipt } = data
-      try {
-        await validateIapReceipt({ receipt: receipt })
-        console.log('iap receipt validated')
-        onClose()
-      } catch (e) {
-        console.log('iap receipt validation error', e)
-        setError('Error validating receipt')
-      }
-    } else if (type === 'iapError') {
-      setError('Error during purchase! Try again.')
-    }
-    setLoading(false)
-  }
-  useNativeMessages(['iapReceipt', 'iapError'], handleIapReceipt)
-
-  const [url, setUrl] = useState('https://manifold.markets')
-  useEffect(() => setUrl(window.location.href), [])
-
-  const totalPurchased = use24hrUsdPurchases(user?.id || '')
-  const pastLimit = totalPurchased >= 2500
 
   return (
-    <>
-      <div className="my-4">
-        Buy <ManaCoin /> mana to trade in your favorite questions.
-      </div>
-
-      <div className="text-ink-500 mb-2 text-sm">Amount</div>
+    <Col className={'gap-2'}>
       <FundsSelector
-        fundAmounts={prices}
-        selected={amountSelected}
-        onSelect={setAmountSelected}
+        onSelectPriceInDollars={(dollarAmount) => {
+          if (!user || !privateUser) return firebaseLogin()
+          setLoadingPrice(dollarAmount)
+        }}
+        loadingPrice={loadingPrice}
       />
-
-      <div className="mt-6">
-        <div className="text-ink-500 mb-1 text-sm">Price USD</div>
-        <div className="text-xl">${amountSelected / 100}</div>
-      </div>
-
-      {pastLimit && (
-        <AlertBox title="Purchase limit" className="my-4">
-          You have reached your daily purchase limit. Please try again tomorrow.
-        </AlertBox>
-      )}
-
-      <div className="mt-2 flex gap-2">
-        {isNative && platform === 'ios' ? (
-          <Button
-            color={'gradient'}
-            loading={loading}
-            disabled={pastLimit}
-            onClick={() => {
-              setError(null)
-              setLoading(true)
-              postMessageToNative('checkout', { amount: amountSelected })
-            }}
-          >
-            Checkout
-          </Button>
-        ) : (
-          <form
-            action={checkoutURL(user?.id || '', amountSelected, url)}
-            method="POST"
-          >
-            <Button type="submit" color="gradient" disabled={pastLimit}>
-              Checkout
-            </Button>
-          </form>
-        )}
-      </div>
-      <Row className="text-error mt-2 text-sm">{error}</Row>
-    </>
+    </Col>
   )
 }
 
-export const OtherWaysToGetMana = () => {
+export function PriceTile(props: {
+  amounts: PaymentAmount
+  index: number
+  loadingPrice: WebPriceInDollars | null
+  disabled: boolean
+  user: User | null | undefined
+  onClick: () => void
+}) {
+  const { loadingPrice, onClick, amounts, index, user } = props
+  const { mana, priceInDollars, bonusInDollars } = amounts
+
+  const isCurrentlyLoading = loadingPrice === priceInDollars
+  const disabled = props.disabled || (loadingPrice && !isCurrentlyLoading)
+
+  const onClickHandler = (e: React.MouseEvent) => {
+    if (!user) {
+      e.preventDefault()
+      firebaseLogin()
+      return
+    }
+    onClick()
+  }
+
+  const imgSrc =
+    BUY_MANA_GRAPHICS[Math.min(index, BUY_MANA_GRAPHICS.length - 1)]
+  const tile = (
+    <button
+      className={clsx(
+        ' bg-canvas-0 group relative flex h-fit w-full flex-col items-center rounded text-center shadow transition-all ',
+        disabled
+          ? 'pointer-events-none cursor-not-allowed opacity-50'
+          : 'opacity-90 ring-2 ring-opacity-0 hover:opacity-100 hover:ring-opacity-100',
+        'ring-indigo-600',
+        isCurrentlyLoading && 'pointer-events-none animate-pulse cursor-wait'
+      )}
+      type={'submit'}
+      onClick={onClickHandler}
+    >
+      <Col className={' w-full items-center rounded-t px-4 pb-2 pt-4'}>
+        <Image
+          src={imgSrc}
+          alt={`${shortenNumber(mana)} mana`}
+          className="100%"
+          width={120}
+          height={120}
+        />
+
+        <div
+          className={clsx(
+            'text-ink-1000 text-lg font-semibold',
+            imgSrc == '/buy-mana-graphics/10k.png' ||
+              imgSrc == '/buy-mana-graphics/25k.png'
+              ? '-mt-6'
+              : '-mt-3'
+          )}
+        >
+          Ṁ{shortenNumber(mana)}{' '}
+        </div>
+        {bonusInDollars > 0 && (
+          <Row
+            className={clsx(
+              `mx-auto items-center justify-center gap-1 whitespace-nowrap text-sm text-amber-600 dark:text-amber-400 `
+            )}
+          >
+            <span>+</span>
+            <TokenNumber
+              coinType="sweepies"
+              className="text-lg font-bold"
+              amount={bonusInDollars}
+              numberType="short"
+            />{' '}
+            <span>free</span>
+          </Row>
+        )}
+      </Col>
+
+      <div
+        className={clsx(
+          'w-full rounded-b px-4 py-1 text-lg font-semibold text-white sm:text-xl',
+          'bg-indigo-600'
+        )}
+      >
+        Buy ${priceInDollars}
+      </div>
+    </button>
+  )
+  const [url, setUrl] = useState('https://manifold.markets')
+  useEffect(() => setUrl(window.location.href), [])
   return (
-    <ul className="border-ink-100 border-t">
-      <Item>
-        🚀 Browse feed for <CoinNumber amount={AD_REDEEM_REWARD} isInline />{' '}
-        from each boosted question
-      </Item>
-      <Item>
-        🔥 Streak bonus (up to{' '}
-        <CoinNumber amount={BETTING_STREAK_BONUS_MAX} isInline /> per day)
-      </Item>
-      <Item url="/referrals">
-        👋 Refer a friend for{' '}
-        <CoinNumber amount={REFERRAL_AMOUNT} isSpice isInline /> after their
-        first trade
-      </Item>
-    </ul>
+    <form
+      action={checkoutURL(user?.id || '', amounts.priceInDollars, url)}
+      method="POST"
+    >
+      {tile}
+    </form>
   )
 }
 
@@ -220,58 +234,16 @@ export const SpiceToManaForm = (props: {
   )
 }
 
-const Item = (props: { children: React.ReactNode; url?: string }) => {
-  const { children, url } = props
-  return (
-    <li className="border-ink-100 border-b">
-      {url ? (
-        <Link href={url}>
-          <div className="hover:bg-primary-100 py-3">{children}</div>
-        </Link>
-      ) : (
-        <div className="py-3">{children}</div>
-      )}
-    </li>
-  )
-}
-
-export function FundsSelector(props: {
-  fundAmounts: { [key: number]: number }
-  selected: number
-  onSelect: (selected: number) => void
-}) {
-  const { selected, onSelect, fundAmounts } = props
-
-  return (
-    <ChoicesToggleGroup
-      className="self-start"
-      currentChoice={selected}
-      choicesMap={fundAmounts}
-      setChoice={onSelect as any}
-    />
-  )
-}
-
-const use24hrUsdPurchases = (userId: string) => {
+export const use24hrUsdPurchasesInDollars = (userId: string) => {
   const [purchases, setPurchases] = useState<Txn[]>([])
 
   useEffect(() => {
-    run(
-      db
-        .from('txns')
-        .select()
-        .eq('category', 'MANA_PURCHASE')
-        .eq('to_id', userId)
-    ).then((res) => {
-      setPurchases(res.data.map(convertTxn))
-    })
+    api('txns', {
+      category: 'MANA_PURCHASE',
+      toId: userId,
+      after: Date.now() - DAY_MS,
+    }).then(setPurchases)
   }, [userId])
 
-  return (
-    sum(
-      purchases
-        .filter((t) => t.createdTime > Date.now() - DAY_MS)
-        .map((t) => t.amount)
-    ) / 1000
-  )
+  return sum(purchases.map((t) => t.data?.paidInCents)) / 100
 }

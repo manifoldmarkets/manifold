@@ -1,4 +1,4 @@
-import { bidForLeague } from 'web/lib/firebase/api'
+import { bidForLeague } from 'web/lib/api/api'
 import { Button } from '../buttons/button'
 import { Col } from '../layout/col'
 import { Row } from '../layout/row'

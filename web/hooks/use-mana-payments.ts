@@ -1,10 +1,9 @@
 import { useEffect, useState } from 'react'
 import { ManaPayTxn } from 'common/txn'
-import { db } from 'web/lib/supabase/db'
-import { run } from 'common/supabase/utils'
 import { sortBy, uniqBy } from 'lodash'
-import { useEvent } from 'web/hooks/use-event'
-import { convertTxn } from 'common/supabase/txns'
+import { useEvent } from 'client-common/hooks/use-event'
+import { buildArray } from 'common/util/array'
+import { api } from 'web/lib/api/api'
 
 export const useManaPayments = (userId?: string) => {
   const [manaPayments, setManaPayments] = useState<ManaPayTxn[] | undefined>(
@@ -13,16 +12,13 @@ export const useManaPayments = (userId?: string) => {
   const load = useEvent(() => {
     if (!userId) return
 
-    const query = db
-      .from('txns')
-      .select()
-      .eq('category', 'MANA_PAYMENT')
-      .or(`from_id.eq.${userId}, to_id.eq.${userId}`)
-      .order('created_time', { ascending: false } as any)
-      .limit(100)
-    run(query).then(({ data }) => {
-      const payments = (data.map(convertTxn) as ManaPayTxn[]) ?? []
-      setManaPayments((p) => uniqBy((p ?? []).concat(payments), 'id'))
+    Promise.all([
+      api('txns', { category: 'MANA_PAYMENT', fromId: userId }),
+      api('txns', { category: 'MANA_PAYMENT', toId: userId }),
+    ]).then(([from, to]) => {
+      setManaPayments(
+        (p) => uniqBy(buildArray(p, from, to), 'id') as ManaPayTxn[]
+      )
     })
   })
 
@@ -38,15 +34,10 @@ export const useAllManaPayments = () => {
     undefined
   )
   const load = useEvent(() => {
-    const query = db
-      .from('txns')
-      .select()
-      .eq('category', 'MANA_PAYMENT')
-      .order('created_time', { ascending: false } as any)
-      .limit(100)
-    run(query).then(({ data }) => {
-      const payments = (data.map(convertTxn) as ManaPayTxn[]) ?? []
-      setManaPayments((p) => uniqBy((p ?? []).concat(payments), 'id'))
+    api('txns', { category: 'MANA_PAYMENT' }).then((payments) => {
+      setManaPayments(
+        (p) => uniqBy(buildArray(p, payments), 'id') as ManaPayTxn[]
+      )
     })
   })
 

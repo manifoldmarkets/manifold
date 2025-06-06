@@ -1,71 +1,99 @@
 import { onCreateMarket } from 'api/helpers/on-create-market'
-import { getNewLiquidityProvision } from 'common/add-liquidity'
-import { getCpmmInitialLiquidity } from 'common/antes'
 import {
   createBinarySchema,
   createBountySchema,
-  createMultiNumericSchema,
+  createNumberSchema,
   createMultiSchema,
   createNumericSchema,
   createPollSchema,
   toLiteMarket,
+  createMultiNumericSchema,
+  createMultiDateSchema,
 } from 'common/api/market-types'
 import { ValidatedAPIParams } from 'common/api/schema'
 import {
-  CPMMBinaryContract,
-  CPMMMultiContract,
-  CPMMNumericContract,
   Contract,
-  MULTI_NUMERIC_CREATION_ENABLED,
   NO_CLOSE_TIME_TYPES,
   OutcomeType,
   add_answers_mode,
+  contractUrl,
+  nativeContractColumnsArray,
+  NUMBER_CREATION_ENABLED,
+  PollVoterVisibility,
 } from 'common/contract'
-import { getAnte, getTieredCost } from 'common/economy'
+import { getAnte } from 'common/economy'
 import { MAX_GROUPS_PER_MARKET } from 'common/group'
-import { manifoldLoveUserId } from 'common/love/constants'
-import { getMultiNumericAnswerBucketRangeNames } from 'common/multi-numeric'
 import { getNewContract } from 'common/new-contract'
 import { getPseudoProbability } from 'common/pseudo-numeric'
 import { STONK_INITIAL_PROB } from 'common/stonk'
 import { removeUndefinedProps } from 'common/util/object'
 import { randomString } from 'common/util/random'
 import { slugify } from 'common/util/slugify'
-import * as admin from 'firebase-admin'
-import { FieldValue, Transaction } from 'firebase-admin/firestore'
-import { getCloseDate } from 'shared/helpers/openai-utils'
-import { generateContractEmbeddings } from 'shared/supabase/contracts'
+import { getCloseDate } from 'shared/helpers/ai-close-date'
+import {
+  generateContractEmbeddings,
+  getContractsDirect,
+} from 'shared/supabase/contracts'
 import {
   SupabaseDirectClient,
-  SupabaseTransaction,
-  createSupabaseClient,
   createSupabaseDirectClient,
+  pgp,
 } from 'shared/supabase/init'
-import { insertLiquidity } from 'shared/supabase/liquidity'
 import { anythingToRichText } from 'shared/tiptap'
-import { runTxn, runTxnFromBank } from 'shared/txn/run-txn'
+import { runTxnOutsideBetQueue } from 'shared/txn/run-txn'
 import {
   addGroupToContract,
   canUserAddGroupToMarket,
 } from 'shared/update-group-contracts-internal'
-import { getUser, getUserByUsername, htmlToRichText, log } from 'shared/utils'
-import { broadcastNewContract } from 'shared/websockets/helpers'
-import { z } from 'zod'
+import { contractColumnsToSelect, htmlToRichText, log } from 'shared/utils'
+import {
+  broadcastNewAnswer,
+  broadcastNewContract,
+} from 'shared/websockets/helpers'
 import { APIError, AuthedUser, type APIHandler } from './helpers/endpoint'
-import { bulkInsertAnswers } from 'shared/supabase/answers'
-
-type Body = ValidatedAPIParams<'market'> & {
-  specialLiquidityPerAnswer?: number
-}
-
-const firestore = admin.firestore()
+import { Row } from 'common/supabase/utils'
+import { bulkInsertQuery } from 'shared/supabase/utils'
+import { z } from 'zod'
+import { answerToRow } from 'shared/supabase/answers'
+import { convertAnswer } from 'common/supabase/contracts'
+import { generateAntes } from 'shared/create-contract-helpers'
+import { betsQueue } from 'shared/helpers/fn-queue'
+import { convertUser } from 'common/supabase/users'
+import { camelCase, first } from 'lodash'
+import { getMultiNumericAnswerBucketRangeNames } from 'common/number'
+type Body = ValidatedAPIParams<'market'>
 
 export const createMarket: APIHandler<'market'> = async (body, auth) => {
-  const market = await createMarketHelper(body, auth)
+  const pg = createSupabaseDirectClient()
+  const { groupIds } = body
+  const groups = groupIds
+    ? await Promise.all(
+        groupIds.map(async (gId) => getGroupCheckPermissions(pg, gId, auth.uid))
+      )
+    : null
+
+  const { contract: market, user } = await createMarketHelper(body, auth)
+  // TODO upload answer images to GCP if provided
+  if (groups) {
+    await Promise.allSettled(
+      groups.map(async (g) => {
+        await addGroupToContract(pg, market, g)
+      })
+    )
+  }
+  // Should have the embedding ready for the related contracts cache
   return {
     result: toLiteMarket(market),
     continue: async () => {
-      await onCreateMarket(market, firestore)
+      const embedding = await generateContractEmbeddings(market, pg).catch(
+        (e) =>
+          log.error(`Failed to generate embeddings, returning ${market.id} `, e)
+      )
+      broadcastNewContract(market, user)
+      if ('answers' in market) {
+        market.answers.forEach(broadcastNewAnswer)
+      }
+      await onCreateMarket(market, embedding)
     },
   }
 }
@@ -79,7 +107,6 @@ export async function createMarketHelper(body: Body, auth: AuthedUser) {
     descriptionJson,
     closeTime: closeTimeRaw,
     outcomeType,
-    groupIds,
     extraLiquidity,
     isTwitchContract,
     utcOffset,
@@ -92,57 +119,34 @@ export async function createMarketHelper(body: Body, auth: AuthedUser) {
     shouldAnswersSumToOne,
     totalBounty,
     isAutoBounty,
-    loverUserId1,
-    loverUserId2,
-    matchCreatorId,
-    isLove,
     visibility,
-    specialLiquidityPerAnswer,
-    marketTier,
+    idempotencyKey,
+    sportsStartTimestamp,
+    sportsEventId,
+    sportsLeague,
+    answerShortTexts,
+    answerImageUrls,
+    takerAPIOrdersDisabled,
+    liquidityTier,
+    unit,
+    midpoints,
+    timezone,
+    voterVisibility,
   } = validateMarketBody(body)
 
-  if (outcomeType === 'BOUNTIED_QUESTION') {
-    throw new APIError(400, 'Bountied questions are not currently enabled.')
-  }
-
   const userId = auth.uid
-  const user = await getUser(userId)
-  if (!user) throw new APIError(401, 'Your account was not found')
 
-  if (visibility !== 'public') {
-    throw new APIError(403, 'Only public markets can be created.')
-  }
-  // if (!isVerified(user)) {
-  //   throw new APIError(
-  //     403,
-  //     'You must verify your phone number to create a market.'
-  //   )
-  // }
-
-  if (loverUserId1 || loverUserId2) {
-    if (auth.uid !== manifoldLoveUserId) {
-      throw new Error('Only Manifold Love account can create love contracts.')
-    }
-  }
-
-  const groups = groupIds
-    ? await Promise.all(
-        groupIds.map(async (gId) =>
-          getGroupCheckPermissions(gId, visibility, userId, { isLove })
-        )
-      )
-    : null
-
-  const contractRef = firestore.collection('contracts').doc()
+  const pg = createSupabaseDirectClient()
 
   const hasOtherAnswer = addAnswersMode !== 'DISABLED' && shouldAnswersSumToOne
   const numAnswers = (answers?.length ?? 0) + (hasOtherAnswer ? 1 : 0)
-  const unmodifiedAnte =
-    (specialLiquidityPerAnswer ??
-      totalBounty ??
-      getAnte(outcomeType, numAnswers)) + (extraLiquidity ?? 0)
 
-  if (unmodifiedAnte < 1) throw new APIError(400, 'Ante must be at least 1')
+  const ante =
+    outcomeType === 'BOUNTIED_QUESTION' && totalBounty
+      ? totalBounty
+      : getAnte(outcomeType, numAnswers, liquidityTier)
+  const totalMarketCost = ante + (extraLiquidity ?? 0)
+  if (ante < 1) throw new APIError(400, 'Ante must be at least 1')
 
   const closeTime = await getCloseTimestamp(
     closeTimeRaw,
@@ -151,33 +155,41 @@ export async function createMarketHelper(body: Body, auth: AuthedUser) {
     utcOffset
   )
 
-  const pg = createSupabaseDirectClient()
+  if (closeTime && closeTime < Date.now())
+    throw new APIError(400, 'Question must close in the future')
 
-  const totalMarketCost = marketTier
-    ? getTieredCost(unmodifiedAnte, marketTier, outcomeType)
-    : unmodifiedAnte
-  const ante = Math.min(unmodifiedAnte, totalMarketCost)
+  const duplicateSubmissionUrl = await getDuplicateSubmissionUrl(
+    idempotencyKey,
+    pg
+  )
+  if (duplicateSubmissionUrl) {
+    throw new APIError(
+      400,
+      'Contract has already been created at ' + duplicateSubmissionUrl
+    )
+  }
 
-  const contract = await pg.tx(async (tx) => {
-    const user = await getUser(userId, tx)
-    if (!user) throw new APIError(401, 'Your account was not found')
-    if (user.isBannedFromPosting) throw new APIError(403, 'You are banned')
+  return await betsQueue.enqueueFn(async () => {
+    return pg.tx(async (tx) => {
+      const proposedSlug = slugify(question)
 
-    if (totalMarketCost > user.balance)
-      throw new APIError(403, `Balance must be at least ${totalMarketCost}.`)
+      const userAndSlugResult = await tx.multi(
+        `select * from users where id = $1 limit 1;
+        select 1 from contracts where slug = $2 limit 1;`,
+        [userId, proposedSlug]
+      )
+      const user = first(userAndSlugResult[0].map(convertUser))
+      if (!user) throw new APIError(401, 'Your account was not found')
+      if (user.isBannedFromPosting) throw new APIError(403, 'You are banned')
 
-    let answerLoverUserIds: string[] = []
-    if (isLove && answers) {
-      answerLoverUserIds = await getLoveAnswerUserIds(answers)
-      console.log('answerLoverUserIds', answerLoverUserIds)
-    }
+      if (totalMarketCost > user.balance)
+        throw new APIError(403, `Balance must be at least ${totalMarketCost}.`)
 
-    const contract = await firestore.runTransaction(async (trans) => {
-      const slug = await getSlug(trans, question)
+      const slug = getSlug(!!first(userAndSlugResult[1]), proposedSlug)
 
       const contract = getNewContract(
         removeUndefinedProps({
-          id: contractRef.id,
+          id: idempotencyKey ?? randomString(),
           slug,
           creator: user,
           question,
@@ -201,106 +213,89 @@ export async function createMarketHelper(body: Body, auth: AuthedUser) {
           max: max ?? 0,
           isLogScale: isLogScale ?? false,
           answers: answers ?? [],
+          answerShortTexts,
+          answerImageUrls,
           addAnswersMode,
           shouldAnswersSumToOne,
-          loverUserId1,
-          loverUserId2,
-          matchCreatorId,
-          isLove,
-          answerLoverUserIds,
-          specialLiquidityPerAnswer,
           isAutoBounty,
-          marketTier,
+          token: 'MANA',
+          sportsStartTimestamp,
+          sportsEventId,
+          sportsLeague,
+          takerAPIOrdersDisabled,
+          unit: unit ?? '',
+          midpoints: midpoints,
+          timezone: timezone,
+          voterVisibility: voterVisibility as PollVoterVisibility | undefined,
         })
       )
+      const nativeKeys = nativeContractColumnsArray.map(camelCase)
+      const nativeValues = nativeKeys
+        .filter((col) => col in contract)
+        .map((col) => contract[col as keyof Contract])
 
-      trans.create(contractRef, contract)
+      const contractDataToInsert = Object.fromEntries(
+        Object.entries(contract).filter(([key]) => !nativeKeys.includes(key))
+      )
+      const insertAnswersQuery =
+        contract.mechanism === 'cpmm-multi-1'
+          ? bulkInsertQuery('answers', contract.answers.map(answerToRow), true)
+          : 'select 1 where false'
+      const contractQuery = pgp.as.format(
+        `insert into contracts 
+        (id, ${contractColumnsToSelect})
+         values ($1, $2, ${nativeValues.map((_, i) => `$${i + 3}`)});`,
+        [contract.id, JSON.stringify(contractDataToInsert), ...nativeValues]
+      )
+      const result = await tx.multi(
+        `${contractQuery};
+       ${insertAnswersQuery};`
+      )
 
-      return contract
-    })
-
-    await runCreateMarketTxn({
-      contractId: contract.id,
-      userId,
-      amountSuppliedByUser: ante,
-      amountSuppliedByHouse: 0,
-      transaction: tx,
-    })
-
-    return contract
-  })
-
-  log('created contract ', {
-    userUserName: user.username,
-    userId: user.id,
-    question,
-    ante: ante || 0,
-  })
-
-  if (answers && contract.mechanism === 'cpmm-multi-1')
-    await createAnswers(pg, contract)
-
-  if (groups) {
-    await Promise.all(
-      groups.map(async (g) => {
-        await addGroupToContract(contract, g)
+      if (result[1].length > 0 && contract.mechanism === 'cpmm-multi-1') {
+        contract.answers = result[1].map(convertAnswer)
+      }
+      await runTxnOutsideBetQueue(tx, {
+        fromId: userId,
+        fromType: 'USER',
+        toId: contract.id,
+        toType: 'CONTRACT',
+        amount: ante,
+        token: 'M$',
+        category: 'CREATE_CONTRACT_ANTE',
       })
-    )
-  }
 
-  await generateAntes(
-    pg,
-    userId,
-    contract,
-    outcomeType,
-    ante,
-    totalMarketCost,
-    contractRef
-  )
+      log('created contract ', {
+        userUserName: user.username,
+        userId: user.id,
+        question,
+        ante: ante || 0,
+      })
 
-  await generateContractEmbeddings(contract, pg)
+      await generateAntes(
+        tx,
+        userId,
+        contract,
+        outcomeType,
+        ante,
+        totalMarketCost
+      )
 
-  broadcastNewContract(contract, user)
-  return contract
+      return { contract, user }
+    })
+  }, [userId])
 }
 
-const runCreateMarketTxn = async (args: {
-  contractId: string
-  userId: string
-  amountSuppliedByUser: number
-  amountSuppliedByHouse: number
-  transaction: SupabaseTransaction
-}) => {
-  const {
-    contractId,
-    userId,
-    amountSuppliedByUser,
-    amountSuppliedByHouse,
-    transaction,
-  } = args
-
-  if (amountSuppliedByUser > 0) {
-    await runTxn(transaction, {
-      fromId: userId,
-      fromType: 'USER',
-      toId: contractId,
-      toType: 'CONTRACT',
-      amount: amountSuppliedByUser,
-      token: 'M$',
-      category: 'CREATE_CONTRACT_ANTE',
-    })
+async function getDuplicateSubmissionUrl(
+  idempotencyKey: string | undefined,
+  pg: SupabaseDirectClient
+): Promise<string | undefined> {
+  if (!idempotencyKey) return undefined
+  const contracts = await getContractsDirect([idempotencyKey], pg)
+  if (contracts.length > 0) {
+    return contractUrl(contracts[0])
   }
-
-  if (amountSuppliedByHouse > 0) {
-    await runTxnFromBank(transaction, {
-      amount: amountSuppliedByHouse,
-      category: 'CREATE_CONTRACT_ANTE',
-      toId: contractId,
-      toType: 'CONTRACT',
-      fromType: 'BANK',
-      token: 'M$',
-    })
-  }
+  return undefined
 }
 
 async function getCloseTimestamp(
@@ -319,23 +314,10 @@ async function getCloseTimestamp(
       Date.now() + 7 * 24 * 60 * 60 * 1000
 }
 
-const getSlug = async (trans: Transaction, question: string) => {
-  const proposedSlug = slugify(question)
-
-  const preexistingContract = await getContractFromSlug(trans, proposedSlug)
-
+const getSlug = (preexistingContract: boolean, proposedSlug: string) => {
   return preexistingContract
     ? proposedSlug + '-' + randomString()
     : proposedSlug
-}
-
-async function getContractFromSlug(trans: Transaction, slug: string) {
-  const contractsRef = firestore.collection('contracts')
-  const query = contractsRef.where('slug', '==', slug)
-
-  const snap = await trans.get(query)
-
-  return snap.empty ? undefined : (snap.docs[0].data() as Contract)
 }
 
 function validateMarketBody(body: Body) {
@@ -351,11 +333,13 @@ function validateMarketBody(body: Body) {
     visibility = 'public',
     isTwitchContract,
     utcOffset,
-    loverUserId1,
-    loverUserId2,
-    matchCreatorId,
-    isLove,
-    marketTier,
+    extraLiquidity,
+    liquidityTier,
+    idempotencyKey,
+    sportsStartTimestamp,
+    sportsEventId,
+    sportsLeague,
+    takerAPIOrdersDisabled,
   } = body
 
   if (groupIds && groupIds.length > MAX_GROUPS_PER_MARKET)
@@ -369,17 +353,21 @@ function validateMarketBody(body: Body) {
     initialProb: number | undefined,
     isLogScale: boolean | undefined,
     answers: string[] | undefined,
+    answerShortTexts: string[] | undefined,
+    answerImageUrls: string[] | undefined,
     addAnswersMode: add_answers_mode | undefined,
     shouldAnswersSumToOne: boolean | undefined,
     totalBounty: number | undefined,
     isAutoBounty: boolean | undefined,
-    extraLiquidity: number | undefined,
-    specialLiquidityPerAnswer: number | undefined
+    unit: string | undefined,
+    midpoints: number[] | undefined,
+    timezone: string | undefined,
+    voterVisibility: PollVoterVisibility | undefined
 
   if (outcomeType === 'PSEUDO_NUMERIC') {
     const parsed = validateMarketType(outcomeType, createNumericSchema, body)
 
-    ;({ min, max, isLogScale, extraLiquidity } = parsed)
+    ;({ min, max, isLogScale } = parsed)
     const { initialValue } = parsed
 
     if (max - min <= 0.01)
@@ -404,24 +392,20 @@ function validateMarketBody(body: Body) {
   if (outcomeType === 'BINARY') {
     const parsed = validateMarketType(outcomeType, createBinarySchema, body)
 
-    ;({ initialProb, extraLiquidity } = parsed)
+    ;({ initialProb } = parsed)
   }
   if (outcomeType === 'NUMBER') {
-    if (!MULTI_NUMERIC_CREATION_ENABLED)
+    if (!NUMBER_CREATION_ENABLED)
       throw new APIError(
         400,
         'Creating numeric markets is not currently enabled.'
       )
-    ;({ min, max } = validateMarketType(
-      outcomeType,
-      createMultiNumericSchema,
-      body
-    ))
+    ;({ min, max } = validateMarketType(outcomeType, createNumberSchema, body))
     if (min >= max)
       throw new APIError(400, 'Numeric markets must have min < max.')
     const { precision } = validateMarketType(
       outcomeType,
-      createMultiNumericSchema,
+      createNumberSchema,
       body
     )
     answers = getMultiNumericAnswerBucketRangeNames(min, max, precision)
@@ -431,11 +415,47 @@ function validateMarketBody(body: Body) {
         'Numeric markets must have at least 2 answer buckets.'
       )
   }
+  if (outcomeType === 'MULTI_NUMERIC') {
+    ;({ answers, midpoints, unit, shouldAnswersSumToOne } = validateMarketType(
+      outcomeType,
+      createMultiNumericSchema,
+      body
+    ))
+    if (answers.length < 2)
+      throw new APIError(
+        400,
+        'Numeric markets must have at least 2 answer buckets.'
+      )
+    if (answers.length !== midpoints.length)
+      throw new APIError(
+        400,
+        'Number of answers must match number of midpoints.'
+      )
+  }
+  if (outcomeType === 'DATE') {
+    ;({ answers, midpoints, shouldAnswersSumToOne, timezone } =
+      validateMarketType(outcomeType, createMultiDateSchema, body))
+    if (answers.length < 2)
+      throw new APIError(
+        400,
+        'Numeric markets must have at least 2 answer buckets.'
+      )
+    if (answers.length !== midpoints.length)
+      throw new APIError(
+        400,
+        'Number of answers must match number of midpoints.'
+      )
+  }
 
   if (outcomeType === 'MULTIPLE_CHOICE') {
-    ;({ answers, addAnswersMode, shouldAnswersSumToOne, extraLiquidity } =
-      validateMarketType(outcomeType, createMultiSchema, body))
-    if (answers.length < 2 && addAnswersMode === 'DISABLED' && !isLove)
+    ;({
+      answers,
+      answerShortTexts,
+      answerImageUrls,
+      addAnswersMode,
+      shouldAnswersSumToOne,
+    } = validateMarketType(outcomeType, createMultiSchema, body))
+    if (answers.length < 2 && addAnswersMode === 'DISABLED')
       throw new APIError(
         400,
         'Multiple choice markets must have at least 2 answers if adding answers is disabled.'
@@ -451,7 +471,11 @@ function validateMarketBody(body: Body) {
   }
 
   if (outcomeType === 'POLL') {
-    ;({ answers } = validateMarketType(outcomeType, createPollSchema, body))
+    ;({ answers, voterVisibility } = validateMarketType(
+      outcomeType,
+      createPollSchema,
+      body
+    ))
   }
 
   return {
@@ -476,12 +500,18 @@ function validateMarketBody(body: Body) {
     shouldAnswersSumToOne,
     totalBounty,
     isAutoBounty,
-    loverUserId1,
-    loverUserId2,
-    matchCreatorId,
-    isLove,
-    specialLiquidityPerAnswer,
-    marketTier,
+    liquidityTier,
+    idempotencyKey,
+    sportsStartTimestamp,
+    sportsEventId,
+    sportsLeague,
+    answerShortTexts,
+    answerImageUrls,
+    takerAPIOrdersDisabled,
+    unit,
+    midpoints,
+    timezone,
+    voterVisibility,
   }
 }
 
@@ -500,45 +530,41 @@ function validateMarketType<T extends z.ZodType>(
 }
 
 async function getGroupCheckPermissions(
+  pg: SupabaseDirectClient,
   groupId: string,
-  visibility: string,
-  userId: string,
-  options: { isLove?: boolean } = {}
+  userId: string
 ) {
-  const { isLove } = options
-  const db = createSupabaseClient()
+  const result = await pg.oneOrNone<
+    Row<'groups'> & { member_role: string | null }
+  >(
+    `
+    select g.*, gm.role as member_role
+    from groups g
+    left join group_members gm on g.id = gm.group_id and gm.member_id = $2
+    where g.id = $1
+  `,
+    [groupId, userId]
+  )
 
-  const groupQuery = await db.from('groups').select().eq('id', groupId).limit(1)
-  if (groupQuery.error) throw new APIError(500, groupQuery.error.message)
-  if (!groupQuery.data.length) {
+  if (!result) {
     throw new APIError(404, 'No group exists with the given group ID.')
   }
-  const group = groupQuery.data[0]
 
-  const membershipQuery = await db
-    .from('group_members')
-    .select()
-    .eq('member_id', userId)
-    .eq('group_id', groupId)
-    .limit(1)
-  const membership = membershipQuery.data?.[0]
-
-  if (
-    (group.privacy_status == 'private' && visibility != 'private') ||
-    (group.privacy_status != 'private' && visibility == 'private')
-  ) {
-    throw new APIError(
-      403,
-      `Both "${group.name}" and market must be of the same private visibility.`
-    )
-  }
+  const { member_role, ...group } = result
+  const membership = member_role
+    ? {
+        role: member_role,
+        group_id: group.id,
+        member_id: userId,
+        created_time: null,
+      }
+    : undefined
 
   if (
     !canUserAddGroupToMarket({
       userId,
       group,
       membership,
-      isLove,
     })
   ) {
     throw new APIError(
@@ -548,125 +574,4 @@ async function getGroupCheckPermissions(
   }
 
   return group
-}
-
-async function createAnswers(
-  pg: SupabaseDirectClient,
-  contract: CPMMMultiContract | CPMMNumericContract
-) {
-  const { isLove } = contract
-  let { answers } = contract
-
-  if (isLove) {
-    // Add loverUserId to the answer.
-    answers = await Promise.all(
-      answers.map(async (a) => {
-        // Parse username from answer text.
-        const matches = a.text.match(/@(\w+)/)
-        const loverUsername = matches ? matches[1] : null
-        if (!loverUsername) return a
-        const loverUserId = (await getUserByUsername(loverUsername))?.id
-        if (!loverUserId) return a
-        return {
-          ...a,
-          loverUserId,
-        }
-      })
-    )
-  }
-
-  await bulkInsertAnswers(pg, answers)
-}
-
-async function getLoveAnswerUserIds(answers: string[]) {
-  // Get the loverUserId from the answer text.
-  return await Promise.all(
-    answers.map(async (answerText) => {
-      // Parse username from answer text.
-      const matches = answerText.match(/@(\w+)/)
-      console.log('matches', matches)
-      const loverUsername = matches ? matches[1] : null
-      if (!loverUsername)
-        throw new APIError(500, 'No lover username found ' + answerText)
-      const user = await getUserByUsername(loverUsername)
-      if (!user)
-        throw new APIError(500, 'No user found with username ' + answerText)
-      return user.id
-    })
-  )
-}
-
-async function generateAntes(
-  pg: SupabaseDirectClient,
-  providerId: string,
-  contract: Contract,
-  outcomeType: OutcomeType,
-  ante: number,
-  totalMarketCost: number,
-  contractRef: FirebaseFirestore.DocumentReference
-) {
-  if (
-    contract.outcomeType === 'MULTIPLE_CHOICE' &&
-    contract.mechanism === 'cpmm-multi-1' &&
-    !contract.shouldAnswersSumToOne
-  ) {
-    const { answers } = contract
-    for (const answer of answers) {
-      const ante = Math.sqrt(answer.poolYes * answer.poolNo)
-
-      const lp = getCpmmInitialLiquidity(
-        providerId,
-        contract,
-        ante,
-        contract.createdTime,
-        answer.id
-      )
-
-      await insertLiquidity(pg, lp)
-    }
-  } else if (
-    outcomeType === 'BINARY' ||
-    outcomeType === 'PSEUDO_NUMERIC' ||
-    outcomeType === 'STONK' ||
-    outcomeType === 'MULTIPLE_CHOICE' ||
-    outcomeType === 'NUMBER'
-  ) {
-    const lp = getCpmmInitialLiquidity(
-      providerId,
-      contract as CPMMBinaryContract | CPMMMultiContract,
-      ante,
-      contract.createdTime
-    )
-
-    await insertLiquidity(pg, lp)
-  }
-  const drizzledAmount = totalMarketCost - ante
-  if (
-    drizzledAmount > 0 &&
-    (contract.mechanism === 'cpmm-1' || contract.mechanism === 'cpmm-multi-1')
-  ) {
-    return await pg.tx(async (tx) => {
-      await runTxn(tx, {
-        fromId: providerId,
-        amount: drizzledAmount,
-        toId: contract.id,
-        toType: 'CONTRACT',
-        category: 'ADD_SUBSIDY',
-        token: 'M$',
-        fromType: 'USER',
-      })
-      const newLiquidityProvision = getNewLiquidityProvision(
-        providerId,
-        drizzledAmount,
-        contract
-      )
-
-      await insertLiquidity(tx, newLiquidityProvision)
-
-      contractRef.update({
-        subsidyPool: FieldValue.increment(drizzledAmount),
-        totalLiquidity: FieldValue.increment(drizzledAmount),
-      })
-    })
-  }
 }

@@ -1,14 +1,10 @@
 import { z } from 'zod'
 import { APIError, authEndpoint, validate } from './helpers/endpoint'
-import {
-  createSupabaseClient,
-  createSupabaseDirectClient,
-} from 'shared/supabase/init'
+import { createSupabaseDirectClient } from 'shared/supabase/init'
 import { contentSchema } from 'common/api/zod-types'
 import { createMarketReviewedNotification } from 'shared/create-notification'
-import { User } from 'common/user'
-import { Contract } from 'common/contract'
 import { parseJsonContentToText } from 'common/util/parse'
+import { getContract, getUser } from 'shared/utils'
 
 const schema = z
   .object({
@@ -20,49 +16,35 @@ const schema = z
 
 export const leavereview = authEndpoint(async (req, auth) => {
   const { marketId, review, rating } = validate(schema, req.body)
-  const db = createSupabaseClient()
+  const pg = createSupabaseDirectClient()
 
-  const { data, error } = await db
-    .from('contracts')
-    .select('*')
-    .eq('id', marketId)
-    .single()
+  const contract = await getContract(pg, marketId)
 
-  if (error) {
+  if (!contract) {
     throw new APIError(404, `No market found with id ${marketId}`)
   }
 
-  const creatorId = data.creator_id
-  if (!creatorId) {
-    throw new APIError(500, `Market has no creator`)
-  }
+  const { creatorId } = contract
 
-  if (creatorId === auth.uid) {
+  if (contract.creatorId === auth.uid) {
     throw new APIError(403, `You can't review your own market`)
   }
 
-  const userData = await db
-    .from('users')
-    .select('data')
-    .eq('id', auth.uid)
-    .single()
-
-  if (userData.error) {
-    throw new APIError(500, `Error fetching creator`)
+  const reviewer = await getUser(auth.uid, pg)
+  if (!reviewer) {
+    throw new APIError(404, `No user found with id ${auth.uid}`)
   }
-  const reviewer = userData.data.data as User
   if (reviewer.isBannedFromPosting) {
     throw new APIError(403, `You are banned`)
   }
 
-  await db.from('reviews').upsert({
-    market_id: marketId,
-    reviewer_id: auth.uid,
-    vendor_id: creatorId,
-    rating,
-    content: review,
-  })
-  const contract = data.data as Contract
+  await pg.query(
+    `insert into reviews (market_id, reviewer_id, vendor_id, rating, content)
+     values ($1, $2, $3, $4, $5)
+     on conflict (market_id, reviewer_id) do update
+     set rating = $4, content = $5`,
+    [marketId, auth.uid, creatorId, rating, review]
+  )
 
   await createMarketReviewedNotification(
     creatorId,
@@ -70,7 +52,7 @@ export const leavereview = authEndpoint(async (req, auth) => {
     contract,
     rating,
     parseJsonContentToText(review ?? ''),
-    createSupabaseDirectClient()
+    pg
   )
 
   return { success: true }

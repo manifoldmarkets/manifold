@@ -1,4 +1,4 @@
-import { api } from 'web/lib/firebase/api'
+import { api } from 'web/lib/api/api'
 
 export const getSeenContractIds = async (
   contractIds: string[],

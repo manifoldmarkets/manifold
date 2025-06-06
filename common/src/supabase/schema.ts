@@ -11,61 +11,82 @@ export type Database = {
     Tables: {
       answers: {
         Row: {
+          color: string | null
           contract_id: string | null
           created_time: string | null
-          data: Json
-          fs_updated_time: string | null
           id: string
           index: number | null
+          is_other: boolean
           pool_no: number | null
           pool_yes: number | null
           prob: number | null
           prob_change_day: number | null
           prob_change_month: number | null
           prob_change_week: number | null
+          resolution: string | null
+          resolution_probability: number | null
+          resolution_time: string | null
+          resolver_id: string | null
           subsidy_pool: number | null
           text: string | null
           text_fts: unknown | null
           total_liquidity: number | null
           user_id: string | null
+          image_url: string | null
+          short_text: string | null
+          midpoint: number | null
         }
         Insert: {
+          color?: string | null
           contract_id?: string | null
           created_time?: string | null
-          data: Json
-          fs_updated_time?: string | null
           id?: string
           index?: number | null
+          is_other?: boolean
           pool_no?: number | null
           pool_yes?: number | null
           prob?: number | null
           prob_change_day?: number | null
           prob_change_month?: number | null
           prob_change_week?: number | null
+          resolution?: string | null
+          resolution_probability?: number | null
+          resolution_time?: string | null
+          resolver_id?: string | null
           subsidy_pool?: number | null
           text?: string | null
           text_fts?: unknown | null
           total_liquidity?: number | null
           user_id?: string | null
+          image_url?: string | null
+          short_text?: string | null
+          midpoint?: number | null
         }
         Update: {
+          color?: string | null
           contract_id?: string | null
           created_time?: string | null
-          data?: Json
-          fs_updated_time?: string | null
           id?: string
           index?: number | null
+          is_other?: boolean
           pool_no?: number | null
           pool_yes?: number | null
           prob?: number | null
           prob_change_day?: number | null
           prob_change_month?: number | null
           prob_change_week?: number | null
+          resolution?: string | null
+          resolution_probability?: number | null
+          resolution_time?: string | null
+          resolver_id?: string | null
           subsidy_pool?: number | null
           text?: string | null
           text_fts?: unknown | null
           total_liquidity?: number | null
           user_id?: string | null
+          image_url?: string | null
+          short_text?: string | null
+          midpoint?: number | null
         }
         Relationships: []
       }
@@ -117,10 +138,7 @@ export type Database = {
           text: string | null
           thumbnail_url: string | null
           up_votes: number
-          user_avatar_url: string | null
           user_id: string | null
-          user_name: string | null
-          user_username: string | null
         }
         Insert: {
           answer_id?: string | null
@@ -139,10 +157,7 @@ export type Database = {
           text?: string | null
           thumbnail_url?: string | null
           up_votes?: number
-          user_avatar_url?: string | null
           user_id?: string | null
-          user_name?: string | null
-          user_username?: string | null
         }
         Update: {
           answer_id?: string | null
@@ -161,10 +176,7 @@ export type Database = {
           text?: string | null
           thumbnail_url?: string | null
           up_votes?: number
-          user_avatar_url?: string | null
           user_id?: string | null
-          user_name?: string | null
-          user_username?: string | null
         }
         Relationships: []
       }
@@ -192,27 +204,6 @@ export type Database = {
         }
         Relationships: []
       }
-      contract_answers: {
-        Row: {
-          answer_id: string
-          contract_id: string
-          data: Json
-          fs_updated_time: string
-        }
-        Insert: {
-          answer_id: string
-          contract_id: string
-          data: Json
-          fs_updated_time: string
-        }
-        Update: {
-          answer_id?: string
-          contract_id?: string
-          data?: Json
-          fs_updated_time?: string
-        }
-        Relationships: []
-      }
       contract_bets: {
         Row: {
           amount: number | null
@@ -221,17 +212,18 @@ export type Database = {
           contract_id: string
           created_time: string
           data: Json
-          is_ante: boolean | null
+          expires_at: string | null
           is_api: boolean | null
-          is_challenge: boolean | null
+          is_cancelled: boolean | null
+          is_filled: boolean | null
           is_redemption: boolean | null
+          loan_amount: number | null
           outcome: string | null
           prob_after: number | null
           prob_before: number | null
           shares: number | null
           updated_time: string
           user_id: string
-          visibility: string | null
         }
         Insert: {
           amount?: number | null
@@ -240,17 +232,18 @@ export type Database = {
           contract_id: string
           created_time?: string
           data: Json
-          is_ante?: boolean | null
+          expires_at?: string | null
           is_api?: boolean | null
-          is_challenge?: boolean | null
+          is_cancelled?: boolean | null
+          is_filled?: boolean | null
           is_redemption?: boolean | null
+          loan_amount?: number | null
           outcome?: string | null
           prob_after?: number | null
           prob_before?: number | null
           shares?: number | null
           updated_time?: string
           user_id: string
-          visibility?: string | null
         }
         Update: {
           amount?: number | null
@@ -259,19 +252,66 @@ export type Database = {
           contract_id?: string
           created_time?: string
           data?: Json
-          is_ante?: boolean | null
+          expires_at?: string | null
           is_api?: boolean | null
-          is_challenge?: boolean | null
+          is_cancelled?: boolean | null
+          is_filled?: boolean | null
           is_redemption?: boolean | null
+          loan_amount?: number | null
           outcome?: string | null
           prob_after?: number | null
           prob_before?: number | null
           shares?: number | null
           updated_time?: string
           user_id?: string
-          visibility?: string | null
         }
         Relationships: []
+      }
+      contract_boosts: {
+        Row: {
+          contract_id: string
+          end_time: string
+          id: number
+          start_time: string
+          user_id: string
+        }
+        Insert: {
+          contract_id: string
+          end_time: string
+          id?: never
+          start_time: string
+          user_id: string
+        }
+        Update: {
+          contract_id?: string
+          end_time?: string
+          id?: never
+          start_time?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'contract_boosts_contract_id_fkey'
+            columns: ['contract_id']
+            isOneToOne: false
+            referencedRelation: 'contracts'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'contract_boosts_user_id_fkey'
+            columns: ['user_id']
+            isOneToOne: false
+            referencedRelation: 'user_referrals_profit'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'contract_boosts_user_id_fkey'
+            columns: ['user_id']
+            isOneToOne: false
+            referencedRelation: 'users'
+            referencedColumns: ['id']
+          }
+        ]
       }
       contract_comment_edits: {
         Row: {
@@ -306,9 +346,9 @@ export type Database = {
           contract_id: string
           created_time: string
           data: Json
-          fs_updated_time: string | null
-          is_api: boolean
+          downvotes: number | null
           likes: number
+          upvotes: number | null
           user_id: string
           visibility: string | null
         }
@@ -317,9 +357,9 @@ export type Database = {
           contract_id: string
           created_time: string
           data: Json
-          fs_updated_time?: string | null
-          is_api?: boolean
+          downvotes?: number | null
           likes?: number
+          upvotes?: number | null
           user_id: string
           visibility?: string | null
         }
@@ -328,9 +368,9 @@ export type Database = {
           contract_id?: string
           created_time?: string
           data?: Json
-          fs_updated_time?: string | null
-          is_api?: boolean
+          downvotes?: number | null
           likes?: number
+          upvotes?: number | null
           user_id?: string
           visibility?: string | null
         }
@@ -387,21 +427,18 @@ export type Database = {
       contract_follows: {
         Row: {
           contract_id: string
-          data: Json
+          created_time: string
           follow_id: string
-          fs_updated_time: string
         }
         Insert: {
           contract_id: string
-          data: Json
+          created_time?: string
           follow_id: string
-          fs_updated_time: string
         }
         Update: {
           contract_id?: string
-          data?: Json
+          created_time?: string
           follow_id?: string
-          fs_updated_time?: string
         }
         Relationships: []
       }
@@ -409,22 +446,80 @@ export type Database = {
         Row: {
           contract_id: string
           data: Json
-          fs_updated_time: string | null
           liquidity_id: string
         }
         Insert: {
           contract_id: string
           data: Json
-          fs_updated_time?: string | null
           liquidity_id: string
         }
         Update: {
           contract_id?: string
           data?: Json
-          fs_updated_time?: string | null
           liquidity_id?: string
         }
         Relationships: []
+      }
+      contract_movement_notifications: {
+        Row: {
+          answer_id: string | null
+          contract_id: string
+          created_time: string
+          destination: string
+          id: number
+          user_id: string
+          new_val: number
+          new_val_start_time: string
+          prev_val: number
+          prev_val_start_time: string
+        }
+        Insert: {
+          answer_id?: string | null
+          contract_id: string
+          created_time?: string
+          destination: string
+          id?: never
+          user_id: string
+          new_val: number
+          new_val_start_time?: string
+          prev_val: number
+          prev_val_start_time?: string
+        }
+        Update: {
+          answer_id?: string | null
+          contract_id?: string
+          created_time?: string
+          destination?: string
+          id?: never
+          user_id?: string
+          new_val?: number
+          new_val_start_time?: string
+          prev_val?: number
+          prev_val_start_time?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'fk_contract_id'
+            columns: ['contract_id']
+            isOneToOne: false
+            referencedRelation: 'contracts'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'fk_user_id'
+            columns: ['user_id']
+            isOneToOne: false
+            referencedRelation: 'user_referrals_profit'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'fk_user_id'
+            columns: ['user_id']
+            isOneToOne: false
+            referencedRelation: 'users'
+            referencedColumns: ['id']
+          }
+        ]
       }
       contracts: {
         Row: {
@@ -432,22 +527,21 @@ export type Database = {
           conversion_score: number
           created_time: string | null
           creator_id: string | null
+          daily_score: number
           data: Json
           deleted: boolean | null
           description_fts: unknown | null
-          freshness_score: number | null
-          fs_updated_time: string
+          freshness_score: number
           group_slugs: string[] | null
           id: string
-          importance_score: number | null
-          is_politics: boolean | null
+          importance_score: number
           is_spice_payout: boolean | null
           last_bet_time: string | null
           last_comment_time: string | null
           last_updated_time: string | null
           mechanism: string | null
           outcome_type: string | null
-          popularity_score: number | null
+          popularity_score: number
           question: string | null
           question_fts: unknown | null
           question_nostop_fts: unknown | null
@@ -455,30 +549,33 @@ export type Database = {
           resolution_probability: number | null
           resolution_time: string | null
           slug: string | null
-          view_count: number | null
+          tier: string | null
+          token: string
+          unique_bettor_count: number
+          view_count: number
           visibility: string | null
+          boosted: boolean | null
         }
         Insert: {
           close_time?: string | null
           conversion_score?: number
           created_time?: string | null
           creator_id?: string | null
+          daily_score?: number
           data: Json
           deleted?: boolean | null
           description_fts?: unknown | null
-          freshness_score?: number | null
-          fs_updated_time: string
+          freshness_score?: number
           group_slugs?: string[] | null
           id: string
-          importance_score?: number | null
-          is_politics?: boolean | null
+          importance_score?: number
           is_spice_payout?: boolean | null
           last_bet_time?: string | null
           last_comment_time?: string | null
           last_updated_time?: string | null
           mechanism?: string | null
           outcome_type?: string | null
-          popularity_score?: number | null
+          popularity_score?: number
           question?: string | null
           question_fts?: unknown | null
           question_nostop_fts?: unknown | null
@@ -486,30 +583,33 @@ export type Database = {
           resolution_probability?: number | null
           resolution_time?: string | null
           slug?: string | null
-          view_count?: number | null
+          tier?: string | null
+          token?: string
+          unique_bettor_count?: number
+          view_count?: number
           visibility?: string | null
+          boosted?: boolean | null
         }
         Update: {
           close_time?: string | null
           conversion_score?: number
           created_time?: string | null
           creator_id?: string | null
+          daily_score?: number
           data?: Json
           deleted?: boolean | null
           description_fts?: unknown | null
-          freshness_score?: number | null
-          fs_updated_time?: string
+          freshness_score?: number
           group_slugs?: string[] | null
           id?: string
-          importance_score?: number | null
-          is_politics?: boolean | null
+          importance_score?: number
           is_spice_payout?: boolean | null
           last_bet_time?: string | null
           last_comment_time?: string | null
           last_updated_time?: string | null
           mechanism?: string | null
           outcome_type?: string | null
-          popularity_score?: number | null
+          popularity_score?: number
           question?: string | null
           question_fts?: unknown | null
           question_nostop_fts?: unknown | null
@@ -517,8 +617,12 @@ export type Database = {
           resolution_probability?: number | null
           resolution_time?: string | null
           slug?: string | null
-          view_count?: number | null
+          tier?: string | null
+          token?: string
+          unique_bettor_count?: number
+          view_count?: number
           visibility?: string | null
+          boosted?: boolean | null
         }
         Relationships: []
       }
@@ -549,6 +653,132 @@ export type Database = {
           user_id?: string
           views?: number
           volume?: number
+        }
+        Relationships: []
+      }
+      daily_stats: {
+        Row: {
+          activation: number | null
+          active_d1_to_d3: number | null
+          avg_user_actions: number | null
+          bet_amount: number | null
+          bet_count: number | null
+          cash_bet_amount: number | null
+          comment_count: number | null
+          contract_count: number | null
+          d1: number | null
+          d1_bet_3_day_average: number | null
+          d1_bet_average: number | null
+          dau: number | null
+          engaged_users: number | null
+          feed_conversion: number | null
+          m1: number | null
+          mau: number | null
+          nd1: number | null
+          nw1: number | null
+          sales: number | null
+          cash_sales: number | null
+          signups: number | null
+          signups_real: number | null
+          start_date: string
+          w1: number | null
+          dav: number | null
+          wav: number | null
+          mav: number | null
+          wau: number | null
+          topic_daus: Json | null
+          cash_bet_count: number | null
+          cash_d1: number | null
+          cash_w1: number | null
+          cash_m1: number | null
+          cash_dau: number | null
+          cash_wau: number | null
+          cash_mau: number | null
+          cash_comment_count: number | null
+          cash_contract_count: number | null
+          cash_avg_user_actions: number | null
+        }
+        Insert: {
+          activation?: number | null
+          active_d1_to_d3?: number | null
+          avg_user_actions?: number | null
+          bet_amount?: number | null
+          bet_count?: number | null
+          cash_bet_amount?: number | null
+          comment_count?: number | null
+          contract_count?: number | null
+          d1?: number | null
+          d1_bet_3_day_average?: number | null
+          d1_bet_average?: number | null
+          dau?: number | null
+          engaged_users?: number | null
+          feed_conversion?: number | null
+          m1?: number | null
+          mau?: number | null
+          nd1?: number | null
+          nw1?: number | null
+          sales?: number | null
+          cash_sales?: number | null
+          signups?: number | null
+          signups_real?: number | null
+          start_date: string
+          w1?: number | null
+          dav?: number | null
+          wav?: number | null
+          mav?: number | null
+          wau?: number | null
+          topic_daus?: Json | null
+          cash_bet_count?: number | null
+          cash_d1?: number | null
+          cash_w1?: number | null
+          cash_m1?: number | null
+          cash_dau?: number | null
+          cash_wau?: number | null
+          cash_mau?: number | null
+          cash_comment_count?: number | null
+          cash_contract_count?: number | null
+          cash_avg_user_actions?: number | null
+        }
+        Update: {
+          activation?: number | null
+          active_d1_to_d3?: number | null
+          avg_user_actions?: number | null
+          bet_amount?: number | null
+          bet_count?: number | null
+          cash_bet_amount?: number | null
+          comment_count?: number | null
+          contract_count?: number | null
+          d1?: number | null
+          d1_bet_3_day_average?: number | null
+          d1_bet_average?: number | null
+          dau?: number | null
+          engaged_users?: number | null
+          feed_conversion?: number | null
+          m1?: number | null
+          dav?: number | null
+          wav?: number | null
+          mav?: number | null
+          mau?: number | null
+          nd1?: number | null
+          nw1?: number | null
+          sales?: number | null
+          cash_sales?: number | null
+          signups?: number | null
+          signups_real?: number | null
+          start_date?: string
+          w1?: number | null
+          wau?: number | null
+          topic_daus?: Json | null
+          cash_bet_count?: number | null
+          cash_d1?: number | null
+          cash_w1?: number | null
+          cash_m1?: number | null
+          cash_dau?: number | null
+          cash_wau?: number | null
+          cash_mau?: number | null
+          cash_comment_count?: number | null
+          cash_contract_count?: number | null
+          cash_avg_user_actions?: number | null
         }
         Relationships: []
       }
@@ -603,13 +833,6 @@ export type Database = {
             columns: ['group_id']
             isOneToOne: false
             referencedRelation: 'groups'
-            referencedColumns: ['id']
-          },
-          {
-            foreignKeyName: 'public_dashboard_groups_group_id_fkey'
-            columns: ['group_id']
-            isOneToOne: false
-            referencedRelation: 'groups_rbac'
             referencedColumns: ['id']
           }
         ]
@@ -668,26 +891,48 @@ export type Database = {
             foreignKeyName: 'dashboards_creator_id_fkey'
             columns: ['creator_id']
             isOneToOne: false
-            referencedRelation: 'user_groups'
-            referencedColumns: ['id']
-          },
-          {
-            foreignKeyName: 'dashboards_creator_id_fkey'
-            columns: ['creator_id']
-            isOneToOne: false
-            referencedRelation: 'user_referrals'
-            referencedColumns: ['id']
-          },
-          {
-            foreignKeyName: 'dashboards_creator_id_fkey'
-            columns: ['creator_id']
-            isOneToOne: false
             referencedRelation: 'user_referrals_profit'
             referencedColumns: ['id']
           },
           {
             foreignKeyName: 'dashboards_creator_id_fkey'
             columns: ['creator_id']
+            isOneToOne: false
+            referencedRelation: 'users'
+            referencedColumns: ['id']
+          }
+        ]
+      }
+      delete_after_reading: {
+        Row: {
+          created_time: string
+          data: Json | null
+          id: number
+          user_id: string
+        }
+        Insert: {
+          created_time?: string
+          data?: Json | null
+          id?: never
+          user_id: string
+        }
+        Update: {
+          created_time?: string
+          data?: Json | null
+          id?: never
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'delete_after_reading_user_id_fkey'
+            columns: ['user_id']
+            isOneToOne: false
+            referencedRelation: 'user_referrals_profit'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'delete_after_reading_user_id_fkey'
+            columns: ['user_id']
             isOneToOne: false
             referencedRelation: 'users'
             referencedColumns: ['id']
@@ -725,19 +970,109 @@ export type Database = {
         Row: {
           api_key: string
           discord_user_id: string
-          user_id: string | null
+          user_id: string
         }
         Insert: {
           api_key: string
           discord_user_id: string
-          user_id?: string | null
+          user_id: string
         }
         Update: {
           api_key?: string
           discord_user_id?: string
-          user_id?: string | null
+          user_id?: string
         }
         Relationships: []
+      }
+      gidx_receipts: {
+        Row: {
+          amount: number | null
+          callback_data: Json | null
+          created_time: string
+          currency: string | null
+          id: number
+          merchant_session_id: string | null
+          merchant_transaction_id: string
+          payment_amount_type: string | null
+          payment_data: Json | null
+          payment_method_type: string | null
+          payment_status_code: string | null
+          payment_status_message: string | null
+          reason_codes: string[] | null
+          service_type: string | null
+          session_id: string
+          session_score: number | null
+          status: string | null
+          status_code: number | null
+          transaction_status_code: string | null
+          transaction_status_message: string | null
+          txn_id: string | null
+          user_id: string | null
+        }
+        Insert: {
+          amount?: number | null
+          callback_data?: Json | null
+          created_time?: string
+          currency?: string | null
+          id?: never
+          merchant_session_id?: string | null
+          merchant_transaction_id: string
+          payment_amount_type?: string | null
+          payment_data?: Json | null
+          payment_method_type?: string | null
+          payment_status_code?: string | null
+          payment_status_message?: string | null
+          reason_codes?: string[] | null
+          service_type?: string | null
+          session_id: string
+          session_score?: number | null
+          status?: string | null
+          status_code?: number | null
+          transaction_status_code?: string | null
+          transaction_status_message?: string | null
+          txn_id?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          amount?: number | null
+          callback_data?: Json | null
+          created_time?: string
+          currency?: string | null
+          id?: never
+          merchant_session_id?: string | null
+          merchant_transaction_id?: string
+          payment_amount_type?: string | null
+          payment_data?: Json | null
+          payment_method_type?: string | null
+          payment_status_code?: string | null
+          payment_status_message?: string | null
+          reason_codes?: string[] | null
+          service_type?: string | null
+          session_id?: string
+          session_score?: number | null
+          status?: string | null
+          status_code?: number | null
+          transaction_status_code?: string | null
+          transaction_status_message?: string | null
+          txn_id?: string | null
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'gidx_receipts_user_id_fkey'
+            columns: ['user_id']
+            isOneToOne: false
+            referencedRelation: 'user_referrals_profit'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'gidx_receipts_user_id_fkey'
+            columns: ['user_id']
+            isOneToOne: false
+            referencedRelation: 'users'
+            referencedColumns: ['id']
+          }
+        ]
       }
       group_contracts: {
         Row: {
@@ -754,24 +1089,17 @@ export type Database = {
         }
         Relationships: [
           {
-            foreignKeyName: 'group_contracts_group_id_fke'
+            foreignKeyName: 'group_contracts_group_id_fkey'
             columns: ['group_id']
             isOneToOne: false
             referencedRelation: 'group_role'
             referencedColumns: ['group_id']
           },
           {
-            foreignKeyName: 'group_contracts_group_id_fke'
+            foreignKeyName: 'group_contracts_group_id_fkey'
             columns: ['group_id']
             isOneToOne: false
             referencedRelation: 'groups'
-            referencedColumns: ['id']
-          },
-          {
-            foreignKeyName: 'group_contracts_group_id_fke'
-            columns: ['group_id']
-            isOneToOne: false
-            referencedRelation: 'groups_rbac'
             referencedColumns: ['id']
           }
         ]
@@ -806,12 +1134,49 @@ export type Database = {
             isOneToOne: true
             referencedRelation: 'groups'
             referencedColumns: ['id']
+          }
+        ]
+      }
+      group_groups: {
+        Row: {
+          bottom_id: string
+          top_id: string
+        }
+        Insert: {
+          bottom_id: string
+          top_id: string
+        }
+        Update: {
+          bottom_id?: string
+          top_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'group_groups_bottom_id_fkey'
+            columns: ['bottom_id']
+            isOneToOne: false
+            referencedRelation: 'group_role'
+            referencedColumns: ['group_id']
           },
           {
-            foreignKeyName: 'public_group_embeddings_group_id_fkey'
-            columns: ['group_id']
-            isOneToOne: true
-            referencedRelation: 'groups_rbac'
+            foreignKeyName: 'group_groups_bottom_id_fkey'
+            columns: ['bottom_id']
+            isOneToOne: false
+            referencedRelation: 'groups'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'group_groups_top_id_fkey'
+            columns: ['top_id']
+            isOneToOne: false
+            referencedRelation: 'group_role'
+            referencedColumns: ['group_id']
+          },
+          {
+            foreignKeyName: 'group_groups_top_id_fkey'
+            columns: ['top_id']
+            isOneToOne: false
+            referencedRelation: 'groups'
             referencedColumns: ['id']
           }
         ]
@@ -864,13 +1229,6 @@ export type Database = {
             isOneToOne: false
             referencedRelation: 'groups'
             referencedColumns: ['id']
-          },
-          {
-            foreignKeyName: 'public_group_invites_group_id_fkey'
-            columns: ['group_id']
-            isOneToOne: false
-            referencedRelation: 'groups_rbac'
-            referencedColumns: ['id']
           }
         ]
       }
@@ -907,20 +1265,15 @@ export type Database = {
             isOneToOne: false
             referencedRelation: 'groups'
             referencedColumns: ['id']
-          },
-          {
-            foreignKeyName: 'public_group_members_group_id_fkey'
-            columns: ['group_id']
-            isOneToOne: false
-            referencedRelation: 'groups_rbac'
-            referencedColumns: ['id']
           }
         ]
       }
       groups: {
         Row: {
+          about: Json | null
+          banner_url: string | null
+          created_time: string
           creator_id: string | null
-          data: Json
           id: string
           importance_score: number | null
           name: string
@@ -930,8 +1283,10 @@ export type Database = {
           total_members: number | null
         }
         Insert: {
+          about?: Json | null
+          banner_url?: string | null
+          created_time?: string
           creator_id?: string | null
-          data: Json
           id?: string
           importance_score?: number | null
           name: string
@@ -941,8 +1296,10 @@ export type Database = {
           total_members?: number | null
         }
         Update: {
+          about?: Json | null
+          banner_url?: string | null
+          created_time?: string
           creator_id?: string | null
-          data?: Json
           id?: string
           importance_score?: number | null
           name?: string
@@ -953,38 +1310,44 @@ export type Database = {
         }
         Relationships: []
       }
-      incoming_writes: {
+      kyc_bonus_rewards: {
         Row: {
-          data: Json | null
-          doc_id: string
-          event_id: string | null
-          id: number
-          parent_id: string | null
-          table_id: string
-          ts: string
-          write_kind: string
+          claim_time: string | null
+          claimed: boolean | null
+          created_time: string | null
+          reward_amount: number
+          user_id: string
         }
         Insert: {
-          data?: Json | null
-          doc_id: string
-          event_id?: string | null
-          id?: never
-          parent_id?: string | null
-          table_id: string
-          ts: string
-          write_kind: string
+          claim_time?: string | null
+          claimed?: boolean | null
+          created_time?: string | null
+          reward_amount: number
+          user_id: string
         }
         Update: {
-          data?: Json | null
-          doc_id?: string
-          event_id?: string | null
-          id?: never
-          parent_id?: string | null
-          table_id?: string
-          ts?: string
-          write_kind?: string
+          claim_time?: string | null
+          claimed?: boolean | null
+          created_time?: string | null
+          reward_amount?: number
+          user_id?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: 'kyc_bonus_rewards_user_id_fkey'
+            columns: ['user_id']
+            isOneToOne: true
+            referencedRelation: 'user_referrals_profit'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'kyc_bonus_rewards_user_id_fkey'
+            columns: ['user_id']
+            isOneToOne: true
+            referencedRelation: 'users'
+            referencedColumns: ['id']
+          }
+        ]
       }
       league_chats: {
         Row: {
@@ -1021,9 +1384,9 @@ export type Database = {
           cohort: string
           created_time: string
           division: number
+          id: string
           mana_earned: number
           mana_earned_breakdown: Json
-          'Primary Key': string
           rank_snapshot: number | null
           season: number
           user_id: string
@@ -1032,9 +1395,9 @@ export type Database = {
           cohort: string
           created_time?: string
           division: number
+          id?: string
           mana_earned?: number
           mana_earned_breakdown?: Json
-          'Primary Key'?: string
           rank_snapshot?: number | null
           season: number
           user_id: string
@@ -1043,9 +1406,9 @@ export type Database = {
           cohort?: string
           created_time?: string
           division?: number
+          id?: string
           mana_earned?: number
           mana_earned_breakdown?: Json
-          'Primary Key'?: string
           rank_snapshot?: number | null
           season?: number
           user_id?: string
@@ -1403,80 +1766,68 @@ export type Database = {
         }
         Relationships: []
       }
-      txn_summary_stats: {
-        Row: {
-          category: string
-          created_time: string
-          end_time: string
-          from_type: string
-          id: number
-          quest_type: string | null
-          start_time: string
-          to_type: string
-          token: string
-          total_amount: number
-        }
-        Insert: {
-          category: string
-          created_time?: string
-          end_time: string
-          from_type: string
-          id?: never
-          quest_type?: string | null
-          start_time: string
-          to_type: string
-          token: string
-          total_amount: number
-        }
-        Update: {
-          category?: string
-          created_time?: string
-          end_time?: string
-          from_type?: string
-          id?: never
-          quest_type?: string | null
-          start_time?: string
-          to_type?: string
-          token?: string
-          total_amount?: number
-        }
-        Relationships: []
-      }
       mana_supply_stats: {
         Row: {
+          amm_cash_liquidity: number
           amm_liquidity: number
           balance: number
+          cash_balance: number
+          cash_investment_value: number
           created_time: string
           end_time: string
+          full_investment_value: number | null
+          full_loan_total: number | null
+          full_mana_balance: number | null
+          full_spice_balance: number | null
+          full_total_mana_value: number | null
           id: number
           investment_value: number
           loan_total: number
           spice_balance: number
           start_time: string
+          total_cash_value: number
           total_value: number
         }
         Insert: {
+          amm_cash_liquidity?: number
           amm_liquidity: number
           balance: number
+          cash_balance?: number
+          cash_investment_value?: number
           created_time?: string
           end_time: string
+          full_investment_value?: number | null
+          full_loan_total?: number | null
+          full_mana_balance?: number | null
+          full_spice_balance?: number | null
+          full_total_mana_value?: number | null
           id?: never
           investment_value: number
           loan_total: number
           spice_balance: number
           start_time: string
+          total_cash_value?: number
           total_value: number
         }
         Update: {
+          amm_cash_liquidity?: number
           amm_liquidity?: number
           balance?: number
+          cash_balance?: number
+          cash_investment_value?: number
           created_time?: string
           end_time?: string
+          full_investment_value?: number | null
+          full_loan_total?: number | null
+          full_mana_balance?: number | null
+          full_spice_balance?: number | null
+          full_total_mana_value?: number | null
           id?: never
           investment_value?: number
           loan_total?: number
           spice_balance?: number
           start_time?: string
+          total_cash_value?: number
           total_value?: number
         }
         Relationships: []
@@ -1531,9 +1882,7 @@ export type Database = {
           amount: number
           created_time: string | null
           creator_id: string
-          data: Json | null
           expires_time: string | null
-          fs_updated_time: string | null
           id: string
           max_uses: number | null
           message: string | null
@@ -1542,9 +1891,7 @@ export type Database = {
           amount: number
           created_time?: string | null
           creator_id: string
-          data?: Json | null
           expires_time?: string | null
-          fs_updated_time?: string | null
           id?: string
           max_uses?: number | null
           message?: string | null
@@ -1553,9 +1900,7 @@ export type Database = {
           amount?: number
           created_time?: string | null
           creator_id?: string
-          data?: Json | null
           expires_time?: string | null
-          fs_updated_time?: string | null
           id?: string
           max_uses?: number | null
           message?: string | null
@@ -1597,48 +1942,6 @@ export type Database = {
             isOneToOne: false
             referencedRelation: 'contracts'
             referencedColumns: ['id']
-          },
-          {
-            foreignKeyName: 'market_ads_market_id_fkey'
-            columns: ['market_id']
-            isOneToOne: false
-            referencedRelation: 'contracts_rbac'
-            referencedColumns: ['id']
-          },
-          {
-            foreignKeyName: 'market_ads_market_id_fkey'
-            columns: ['market_id']
-            isOneToOne: false
-            referencedRelation: 'contracts_view'
-            referencedColumns: ['id']
-          },
-          {
-            foreignKeyName: 'market_ads_market_id_fkey'
-            columns: ['market_id']
-            isOneToOne: false
-            referencedRelation: 'listed_open_contracts'
-            referencedColumns: ['id']
-          },
-          {
-            foreignKeyName: 'market_ads_market_id_fkey'
-            columns: ['market_id']
-            isOneToOne: false
-            referencedRelation: 'public_contracts'
-            referencedColumns: ['id']
-          },
-          {
-            foreignKeyName: 'market_ads_market_id_fkey'
-            columns: ['market_id']
-            isOneToOne: false
-            referencedRelation: 'public_open_contracts'
-            referencedColumns: ['id']
-          },
-          {
-            foreignKeyName: 'market_ads_market_id_fkey'
-            columns: ['market_id']
-            isOneToOne: false
-            referencedRelation: 'trending_contracts'
-            referencedColumns: ['id']
           }
         ]
       }
@@ -1647,6 +1950,7 @@ export type Database = {
           comment_id: string
           contract_id: string
           created_time: string
+          mod_note: string | null
           report_id: number
           status: Database['public']['Enums']['status_type']
           user_id: string
@@ -1655,6 +1959,7 @@ export type Database = {
           comment_id: string
           contract_id: string
           created_time?: string
+          mod_note?: string | null
           report_id?: number
           status?: Database['public']['Enums']['status_type']
           user_id: string
@@ -1663,6 +1968,7 @@ export type Database = {
           comment_id?: string
           contract_id?: string
           created_time?: string
+          mod_note?: string | null
           report_id?: number
           status?: Database['public']['Enums']['status_type']
           user_id?: string
@@ -1725,7 +2031,6 @@ export type Database = {
           fs_updated_time: string | null
           post_id: string
           user_id: string | null
-          visibility: string | null
         }
         Insert: {
           comment_id?: string
@@ -1734,7 +2039,6 @@ export type Database = {
           fs_updated_time?: string | null
           post_id: string
           user_id?: string | null
-          visibility?: string | null
         }
         Update: {
           comment_id?: string
@@ -1743,7 +2047,6 @@ export type Database = {
           fs_updated_time?: string | null
           post_id?: string
           user_id?: string | null
-          visibility?: string | null
         }
         Relationships: []
       }
@@ -1752,28 +2055,28 @@ export type Database = {
           created_time: string | null
           creator_id: string | null
           data: Json
-          fs_updated_time: string | null
           group_id: string | null
           id: string
           visibility: string | null
+          importance_score: number | null
         }
         Insert: {
           created_time?: string | null
           creator_id?: string | null
           data: Json
-          fs_updated_time?: string | null
           group_id?: string | null
           id?: string
           visibility?: string | null
+          importance_score?: number | null
         }
         Update: {
           created_time?: string | null
           creator_id?: string | null
           data?: Json
-          fs_updated_time?: string | null
           group_id?: string | null
           id?: string
           visibility?: string | null
+          importance_score?: number | null
         }
         Relationships: [
           {
@@ -1788,13 +2091,6 @@ export type Database = {
             columns: ['group_id']
             isOneToOne: false
             referencedRelation: 'groups'
-            referencedColumns: ['id']
-          },
-          {
-            foreignKeyName: 'public_old_posts_group_id_fkey'
-            columns: ['group_id']
-            isOneToOne: false
-            referencedRelation: 'groups_rbac'
             referencedColumns: ['id']
           }
         ]
@@ -2006,21 +2302,18 @@ export type Database = {
       private_users: {
         Row: {
           data: Json
-          fs_updated_time: string
           id: string
           weekly_portfolio_email_sent: boolean | null
           weekly_trending_email_sent: boolean | null
         }
         Insert: {
           data: Json
-          fs_updated_time: string
           id: string
           weekly_portfolio_email_sent?: boolean | null
           weekly_trending_email_sent?: boolean | null
         }
         Update: {
           data?: Json
-          fs_updated_time?: string
           id?: string
           weekly_portfolio_email_sent?: boolean | null
           weekly_trending_email_sent?: boolean | null
@@ -2117,6 +2410,51 @@ export type Database = {
         }
         Relationships: []
       }
+      redemption_status: {
+        Row: {
+          created_time: string
+          id: number
+          session_id: string
+          status: string
+          transaction_id: string
+          txn_id: string
+          user_id: string
+        }
+        Insert: {
+          created_time?: string
+          id?: never
+          session_id: string
+          status: string
+          transaction_id: string
+          txn_id: string
+          user_id: string
+        }
+        Update: {
+          created_time?: string
+          id?: never
+          session_id?: string
+          status?: string
+          transaction_id?: string
+          txn_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'redemption_status_user_id_fkey'
+            columns: ['user_id']
+            isOneToOne: false
+            referencedRelation: 'user_referrals_profit'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'redemption_status_user_id_fkey'
+            columns: ['user_id']
+            isOneToOne: false
+            referencedRelation: 'users'
+            referencedColumns: ['id']
+          }
+        ]
+      }
       reports: {
         Row: {
           content_id: string
@@ -2128,6 +2466,7 @@ export type Database = {
           parent_id: string | null
           parent_type: string | null
           user_id: string
+          dismissed_by_user_id: string | null
         }
         Insert: {
           content_id: string
@@ -2139,6 +2478,7 @@ export type Database = {
           parent_id?: string | null
           parent_type?: string | null
           user_id: string
+          dismissed_by_user_id?: string | null
         }
         Update: {
           content_id?: string
@@ -2150,22 +2490,9 @@ export type Database = {
           parent_id?: string | null
           parent_type?: string | null
           user_id?: string
+          dismissed_by_user_id?: string | null
         }
         Relationships: [
-          {
-            foreignKeyName: 'reports_content_owner_id_fkey'
-            columns: ['content_owner_id']
-            isOneToOne: false
-            referencedRelation: 'user_groups'
-            referencedColumns: ['id']
-          },
-          {
-            foreignKeyName: 'reports_content_owner_id_fkey'
-            columns: ['content_owner_id']
-            isOneToOne: false
-            referencedRelation: 'user_referrals'
-            referencedColumns: ['id']
-          },
           {
             foreignKeyName: 'reports_content_owner_id_fkey'
             columns: ['content_owner_id']
@@ -2178,20 +2505,6 @@ export type Database = {
             columns: ['content_owner_id']
             isOneToOne: false
             referencedRelation: 'users'
-            referencedColumns: ['id']
-          },
-          {
-            foreignKeyName: 'reports_user_id_fkey'
-            columns: ['user_id']
-            isOneToOne: false
-            referencedRelation: 'user_groups'
-            referencedColumns: ['id']
-          },
-          {
-            foreignKeyName: 'reports_user_id_fkey'
-            columns: ['user_id']
-            isOneToOne: false
-            referencedRelation: 'user_referrals'
             referencedColumns: ['id']
           },
           {
@@ -2261,6 +2574,27 @@ export type Database = {
         }
         Relationships: []
       }
+      sent_emails: {
+        Row: {
+          created_time: string
+          email_template_id: string
+          id: number
+          user_id: string
+        }
+        Insert: {
+          created_time?: string
+          email_template_id: string
+          id?: never
+          user_id: string
+        }
+        Update: {
+          created_time?: string
+          email_template_id?: string
+          id?: never
+          user_id?: string
+        }
+        Relationships: []
+      }
       stats: {
         Row: {
           daily_values: number[] | null
@@ -2276,27 +2610,18 @@ export type Database = {
         }
         Relationships: []
       }
-      tombstones: {
+      system_trading_status: {
         Row: {
-          doc_id: string
-          fs_deleted_at: string
-          id: number
-          parent_id: string | null
-          table_id: string
+          status: boolean
+          token: string
         }
         Insert: {
-          doc_id: string
-          fs_deleted_at: string
-          id?: never
-          parent_id?: string | null
-          table_id: string
+          status: boolean
+          token: string
         }
         Update: {
-          doc_id?: string
-          fs_deleted_at?: string
-          id?: never
-          parent_id?: string | null
-          table_id?: string
+          status?: boolean
+          token?: string
         }
         Relationships: []
       }
@@ -2315,18 +2640,6 @@ export type Database = {
           created_at?: string
           embedding?: string
           topic?: string
-        }
-        Relationships: []
-      }
-      total_profit: {
-        Row: {
-          sum: number | null
-        }
-        Insert: {
-          sum?: number | null
-        }
-        Update: {
-          sum?: number | null
         }
         Relationships: []
       }
@@ -2369,6 +2682,45 @@ export type Database = {
         }
         Relationships: []
       }
+      txn_summary_stats: {
+        Row: {
+          category: string
+          created_time: string
+          end_time: string
+          from_type: string
+          id: number
+          quest_type: string | null
+          start_time: string
+          to_type: string
+          token: string
+          total_amount: number
+        }
+        Insert: {
+          category: string
+          created_time?: string
+          end_time: string
+          from_type: string
+          id?: never
+          quest_type?: string | null
+          start_time: string
+          to_type: string
+          token: string
+          total_amount: number
+        }
+        Update: {
+          category?: string
+          created_time?: string
+          end_time?: string
+          from_type?: string
+          id?: never
+          quest_type?: string | null
+          start_time?: string
+          to_type?: string
+          token?: string
+          total_amount?: number
+        }
+        Relationships: []
+      }
       txns: {
         Row: {
           amount: number
@@ -2377,10 +2729,10 @@ export type Database = {
           data: Json
           from_id: string
           from_type: string
-          fs_updated_time: string | null
           id: string
           to_id: string
-          to_type: string | null
+          to_type: string
+          token: string
         }
         Insert: {
           amount: number
@@ -2389,10 +2741,10 @@ export type Database = {
           data: Json
           from_id: string
           from_type: string
-          fs_updated_time?: string | null
           id?: string
           to_id: string
-          to_type?: string | null
+          to_type: string
+          token?: string
         }
         Update: {
           amount?: number
@@ -2401,10 +2753,34 @@ export type Database = {
           data?: Json
           from_id?: string
           from_type?: string
-          fs_updated_time?: string | null
           id?: string
           to_id?: string
-          to_type?: string | null
+          to_type?: string
+          token?: string
+        }
+        Relationships: []
+      }
+      user_comment_view_events: {
+        Row: {
+          comment_id: string
+          contract_id: string
+          created_time: string
+          id: number
+          user_id: string
+        }
+        Insert: {
+          comment_id: string
+          contract_id: string
+          created_time?: string
+          id?: never
+          user_id: string
+        }
+        Update: {
+          comment_id?: string
+          contract_id?: string
+          created_time?: string
+          id?: never
+          user_id?: string
         }
         Relationships: []
       }
@@ -2452,7 +2828,6 @@ export type Database = {
           answer_id: string | null
           contract_id: string
           data: Json
-          fs_updated_time: string | null
           has_no_shares: boolean | null
           has_shares: boolean | null
           has_yes_shares: boolean | null
@@ -2461,13 +2836,11 @@ export type Database = {
           total_shares_no: number | null
           total_shares_yes: number | null
           user_id: string
-          profit_adjustment: number | null
         }
         Insert: {
           answer_id?: string | null
           contract_id: string
           data: Json
-          fs_updated_time?: string | null
           has_no_shares?: boolean | null
           has_shares?: boolean | null
           has_yes_shares?: boolean | null
@@ -2476,13 +2849,11 @@ export type Database = {
           total_shares_no?: number | null
           total_shares_yes?: number | null
           user_id: string
-          profit_adjustment?: number | null
         }
         Update: {
           answer_id?: string | null
           contract_id?: string
           data?: Json
-          fs_updated_time?: string | null
           has_no_shares?: boolean | null
           has_shares?: boolean | null
           has_yes_shares?: boolean | null
@@ -2491,7 +2862,6 @@ export type Database = {
           total_shares_no?: number | null
           total_shares_yes?: number | null
           user_id?: string
-          profit_adjustment?: number | null
         }
         Relationships: []
       }
@@ -2593,7 +2963,7 @@ export type Database = {
           data: Json
           id: number
           name: string
-          ts: string | null
+          ts: string
           user_id: string | null
         }
         Insert: {
@@ -2603,7 +2973,7 @@ export type Database = {
           data: Json
           id?: never
           name: string
-          ts?: string | null
+          ts?: string
           user_id?: string | null
         }
         Update: {
@@ -2613,7 +2983,7 @@ export type Database = {
           data?: Json
           id?: never
           name?: string
-          ts?: string | null
+          ts?: string
           user_id?: string | null
         }
         Relationships: []
@@ -2636,22 +3006,64 @@ export type Database = {
         }
         Relationships: []
       }
+      user_monitor_status: {
+        Row: {
+          created_time: string | null
+          data: Json
+          fraud_confidence_score: number | null
+          id: number
+          identity_confidence_score: number | null
+          reason_codes: string[] | null
+          user_id: string
+        }
+        Insert: {
+          created_time?: string | null
+          data: Json
+          fraud_confidence_score?: number | null
+          id?: never
+          identity_confidence_score?: number | null
+          reason_codes?: string[] | null
+          user_id: string
+        }
+        Update: {
+          created_time?: string | null
+          data?: Json
+          fraud_confidence_score?: number | null
+          id?: never
+          identity_confidence_score?: number | null
+          reason_codes?: string[] | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'user_monitor_status_user_id_fkey'
+            columns: ['user_id']
+            isOneToOne: false
+            referencedRelation: 'user_referrals_profit'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'user_monitor_status_user_id_fkey'
+            columns: ['user_id']
+            isOneToOne: false
+            referencedRelation: 'users'
+            referencedColumns: ['id']
+          }
+        ]
+      }
       user_notifications: {
         Row: {
           data: Json
-          fs_updated_time: string
           notification_id: string
           user_id: string
         }
         Insert: {
           data: Json
-          fs_updated_time: string
           notification_id: string
           user_id: string
         }
         Update: {
           data?: Json
-          fs_updated_time?: string
           notification_id?: string
           user_id?: string
         }
@@ -2660,72 +3072,90 @@ export type Database = {
       user_portfolio_history: {
         Row: {
           balance: number | null
+          cash_balance: number
+          cash_investment_value: number
           id: number
           investment_value: number | null
           loan_total: number | null
+          profit: number | null
           spice_balance: number
+          total_cash_deposits: number
           total_deposits: number | null
           ts: string | null
           user_id: string
-          profit: number | null
         }
         Insert: {
           balance?: number | null
+          cash_balance?: number
+          cash_investment_value?: number
           id?: never
           investment_value?: number | null
           loan_total?: number | null
+          profit?: number | null
           spice_balance?: number
+          total_cash_deposits?: number
           total_deposits?: number | null
           ts?: string | null
           user_id: string
-          profit?: number | null
         }
         Update: {
           balance?: number | null
+          cash_balance?: number
+          cash_investment_value?: number
           id?: never
           investment_value?: number | null
           loan_total?: number | null
+          profit?: number | null
           spice_balance?: number
+          total_cash_deposits?: number
           total_deposits?: number | null
           ts?: string | null
           user_id?: string
-          profit?: number | null
         }
         Relationships: []
       }
       user_portfolio_history_latest: {
         Row: {
           balance: number
+          cash_balance: number
+          cash_investment_value: number
           investment_value: number
           last_calculated: string
           loan_total: number | null
+          profit: number | null
           spice_balance: number
+          total_cash_deposits: number
           total_deposits: number
           ts: string
           user_id: string
-          profit: number | null
         }
         Insert: {
           balance: number
+          cash_balance?: number
+          cash_investment_value?: number
           investment_value: number
           last_calculated: string
           loan_total?: number | null
+          profit?: number | null
           spice_balance?: number
+          total_cash_deposits?: number
           total_deposits: number
           ts: string
           user_id: string
-          profit?: number | null
         }
         Update: {
           balance?: number
+          cash_balance?: number
+          cash_investment_value?: number
           investment_value?: number
           last_calculated?: string
           loan_total?: number | null
+          profit?: number | null
           spice_balance?: number
+          total_cash_deposits?: number
           total_deposits?: number
           ts?: string
           user_id?: string
-          profit?: number | null
         }
         Relationships: []
       }
@@ -2757,6 +3187,7 @@ export type Database = {
           content_type: string
           created_time: string
           reaction_id: string
+          reaction_type: string
           user_id: string
         }
         Insert: {
@@ -2765,6 +3196,7 @@ export type Database = {
           content_type: string
           created_time?: string
           reaction_id?: string
+          reaction_type?: string
           user_id: string
         }
         Update: {
@@ -2773,6 +3205,7 @@ export type Database = {
           content_type?: string
           created_time?: string
           reaction_id?: string
+          reaction_type?: string
           user_id?: string
         }
         Relationships: []
@@ -2873,37 +3306,40 @@ export type Database = {
       users: {
         Row: {
           balance: number
-          created_time: string | null
+          cash_balance: number
+          created_time: string
           data: Json
           id: string
           name: string
           name_username_vector: unknown | null
-          resolved_profit_adjustment: number | null
           spice_balance: number
+          total_cash_deposits: number
           total_deposits: number
           username: string
         }
         Insert: {
           balance?: number
-          created_time?: string | null
+          cash_balance?: number
+          created_time?: string
           data: Json
           id?: string
           name: string
           name_username_vector?: unknown | null
-          resolved_profit_adjustment?: number | null
           spice_balance?: number
+          total_cash_deposits?: number
           total_deposits?: number
           username: string
         }
         Update: {
           balance?: number
-          created_time?: string | null
+          cash_balance?: number
+          created_time?: string
           data?: Json
           id?: string
           name?: string
           name_username_vector?: unknown | null
-          resolved_profit_adjustment?: number | null
           spice_balance?: number
+          total_cash_deposits?: number
           total_deposits?: number
           username?: string
         }
@@ -2930,216 +3366,20 @@ export type Database = {
         }
         Relationships: []
       }
-      weekly_update: {
-        Row: {
-          contract_metrics: Json
-          created_time: string
-          id: string
-          profit: number
-          range_end: string
-          user_id: string
-        }
-        Insert: {
-          contract_metrics: Json
-          created_time?: string
-          id?: string
-          profit: number
-          range_end: string
-          user_id: string
-        }
-        Update: {
-          contract_metrics?: Json
-          created_time?: string
-          id?: string
-          profit?: number
-          range_end?: string
-          user_id?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: 'weekly_update_user_id_fkey'
-            columns: ['user_id']
-            isOneToOne: false
-            referencedRelation: 'user_groups'
-            referencedColumns: ['id']
-          },
-          {
-            foreignKeyName: 'weekly_update_user_id_fkey'
-            columns: ['user_id']
-            isOneToOne: false
-            referencedRelation: 'user_referrals'
-            referencedColumns: ['id']
-          },
-          {
-            foreignKeyName: 'weekly_update_user_id_fkey'
-            columns: ['user_id']
-            isOneToOne: false
-            referencedRelation: 'user_referrals_profit'
-            referencedColumns: ['id']
-          },
-          {
-            foreignKeyName: 'weekly_update_user_id_fkey'
-            columns: ['user_id']
-            isOneToOne: false
-            referencedRelation: 'users'
-            referencedColumns: ['id']
-          }
-        ]
-      }
     }
     Views: {
-      contract_bets_rbac: {
+      final_pp_balances: {
         Row: {
           amount: number | null
-          answer_id: string | null
-          bet_id: string | null
-          contract_id: string | null
-          created_time: string | null
-          data: Json | null
-          is_ante: boolean | null
-          is_api: boolean | null
-          is_challenge: boolean | null
-          is_redemption: boolean | null
-          outcome: string | null
-          prob_after: number | null
-          prob_before: number | null
-          shares: number | null
-          updated_time: string | null
           user_id: string | null
-          visibility: string | null
         }
         Insert: {
           amount?: number | null
-          answer_id?: string | null
-          bet_id?: string | null
-          contract_id?: string | null
-          created_time?: string | null
-          data?: Json | null
-          is_ante?: boolean | null
-          is_api?: boolean | null
-          is_challenge?: boolean | null
-          is_redemption?: boolean | null
-          outcome?: string | null
-          prob_after?: number | null
-          prob_before?: number | null
-          shares?: number | null
-          updated_time?: string | null
           user_id?: string | null
-          visibility?: string | null
         }
         Update: {
           amount?: number | null
-          answer_id?: string | null
-          bet_id?: string | null
-          contract_id?: string | null
-          created_time?: string | null
-          data?: Json | null
-          is_ante?: boolean | null
-          is_api?: boolean | null
-          is_challenge?: boolean | null
-          is_redemption?: boolean | null
-          outcome?: string | null
-          prob_after?: number | null
-          prob_before?: number | null
-          shares?: number | null
-          updated_time?: string | null
           user_id?: string | null
-          visibility?: string | null
-        }
-        Relationships: []
-      }
-      contract_distance: {
-        Row: {
-          distance: number | null
-          id1: string | null
-          id2: string | null
-        }
-        Relationships: []
-      }
-      contracts_rbac: {
-        Row: {
-          close_time: string | null
-          created_time: string | null
-          creator_id: string | null
-          data: Json | null
-          fs_updated_time: string | null
-          id: string | null
-          mechanism: string | null
-          outcome_type: string | null
-          popularity_score: number | null
-          question: string | null
-          question_fts: unknown | null
-          resolution: string | null
-          resolution_probability: number | null
-          resolution_time: string | null
-          slug: string | null
-          visibility: string | null
-        }
-        Insert: {
-          close_time?: string | null
-          created_time?: string | null
-          creator_id?: string | null
-          data?: Json | null
-          fs_updated_time?: string | null
-          id?: string | null
-          mechanism?: string | null
-          outcome_type?: string | null
-          popularity_score?: number | null
-          question?: string | null
-          question_fts?: unknown | null
-          resolution?: string | null
-          resolution_probability?: number | null
-          resolution_time?: string | null
-          slug?: string | null
-          visibility?: string | null
-        }
-        Update: {
-          close_time?: string | null
-          created_time?: string | null
-          creator_id?: string | null
-          data?: Json | null
-          fs_updated_time?: string | null
-          id?: string | null
-          mechanism?: string | null
-          outcome_type?: string | null
-          popularity_score?: number | null
-          question?: string | null
-          question_fts?: unknown | null
-          resolution?: string | null
-          resolution_probability?: number | null
-          resolution_time?: string | null
-          slug?: string | null
-          visibility?: string | null
-        }
-        Relationships: []
-      }
-      contracts_view: {
-        Row: {
-          close_time: number | null
-          created_time: number | null
-          creator_id: string | null
-          id: string | null
-          is_resolved: boolean | null
-          outcome_type: string | null
-          visibility: string | null
-        }
-        Insert: {
-          close_time?: never
-          created_time?: never
-          creator_id?: never
-          id?: string | null
-          is_resolved?: never
-          outcome_type?: never
-          visibility?: never
-        }
-        Update: {
-          close_time?: never
-          created_time?: never
-          creator_id?: never
-          id?: string | null
-          is_resolved?: never
-          outcome_type?: never
-          visibility?: never
         }
         Relationships: []
       }
@@ -3160,477 +3400,6 @@ export type Database = {
         }
         Relationships: []
       }
-      groups_rbac: {
-        Row: {
-          creator_id: string | null
-          data: Json | null
-          id: string | null
-          importance_score: number | null
-          name: string | null
-          name_fts: unknown | null
-          privacy_status: string | null
-          slug: string | null
-          total_members: number | null
-        }
-        Insert: {
-          creator_id?: string | null
-          data?: Json | null
-          id?: string | null
-          importance_score?: number | null
-          name?: string | null
-          name_fts?: unknown | null
-          privacy_status?: string | null
-          slug?: string | null
-          total_members?: number | null
-        }
-        Update: {
-          creator_id?: string | null
-          data?: Json | null
-          id?: string | null
-          importance_score?: number | null
-          name?: string | null
-          name_fts?: unknown | null
-          privacy_status?: string | null
-          slug?: string | null
-          total_members?: number | null
-        }
-        Relationships: []
-      }
-      listed_open_contracts: {
-        Row: {
-          close_time: string | null
-          created_time: string | null
-          creator_id: string | null
-          data: Json | null
-          deleted: boolean | null
-          description_fts: unknown | null
-          freshness_score: number | null
-          fs_updated_time: string | null
-          group_slugs: string[] | null
-          id: string | null
-          importance_score: number | null
-          is_politics: boolean | null
-          last_bet_time: string | null
-          last_comment_time: string | null
-          last_updated_time: string | null
-          mechanism: string | null
-          outcome_type: string | null
-          popularity_score: number | null
-          question: string | null
-          question_fts: unknown | null
-          question_nostop_fts: unknown | null
-          resolution: string | null
-          resolution_probability: number | null
-          resolution_time: string | null
-          slug: string | null
-          visibility: string | null
-        }
-        Insert: {
-          close_time?: string | null
-          created_time?: string | null
-          creator_id?: string | null
-          data?: Json | null
-          deleted?: boolean | null
-          description_fts?: unknown | null
-          freshness_score?: number | null
-          fs_updated_time?: string | null
-          group_slugs?: string[] | null
-          id?: string | null
-          importance_score?: number | null
-          is_politics?: boolean | null
-          last_bet_time?: string | null
-          last_comment_time?: string | null
-          last_updated_time?: string | null
-          mechanism?: string | null
-          outcome_type?: string | null
-          popularity_score?: number | null
-          question?: string | null
-          question_fts?: unknown | null
-          question_nostop_fts?: unknown | null
-          resolution?: string | null
-          resolution_probability?: number | null
-          resolution_time?: string | null
-          slug?: string | null
-          visibility?: string | null
-        }
-        Update: {
-          close_time?: string | null
-          created_time?: string | null
-          creator_id?: string | null
-          data?: Json | null
-          deleted?: boolean | null
-          description_fts?: unknown | null
-          freshness_score?: number | null
-          fs_updated_time?: string | null
-          group_slugs?: string[] | null
-          id?: string | null
-          importance_score?: number | null
-          is_politics?: boolean | null
-          last_bet_time?: string | null
-          last_comment_time?: string | null
-          last_updated_time?: string | null
-          mechanism?: string | null
-          outcome_type?: string | null
-          popularity_score?: number | null
-          question?: string | null
-          question_fts?: unknown | null
-          question_nostop_fts?: unknown | null
-          resolution?: string | null
-          resolution_probability?: number | null
-          resolution_time?: string | null
-          slug?: string | null
-          visibility?: string | null
-        }
-        Relationships: []
-      }
-      private_contract_comments: {
-        Row: {
-          comment_id: string | null
-          contract_id: string | null
-          data: Json | null
-          fs_updated_time: string | null
-        }
-        Relationships: []
-      }
-      public_contract_bets: {
-        Row: {
-          amount: number | null
-          answer_id: string | null
-          bet_id: string | null
-          contract_id: string | null
-          created_time: string | null
-          data: Json | null
-          is_ante: boolean | null
-          is_api: boolean | null
-          is_challenge: boolean | null
-          is_redemption: boolean | null
-          outcome: string | null
-          prob_after: number | null
-          prob_before: number | null
-          shares: number | null
-          updated_time: string | null
-          user_id: string | null
-          visibility: string | null
-        }
-        Insert: {
-          amount?: number | null
-          answer_id?: string | null
-          bet_id?: string | null
-          contract_id?: string | null
-          created_time?: string | null
-          data?: Json | null
-          is_ante?: boolean | null
-          is_api?: boolean | null
-          is_challenge?: boolean | null
-          is_redemption?: boolean | null
-          outcome?: string | null
-          prob_after?: number | null
-          prob_before?: number | null
-          shares?: number | null
-          updated_time?: string | null
-          user_id?: string | null
-          visibility?: string | null
-        }
-        Update: {
-          amount?: number | null
-          answer_id?: string | null
-          bet_id?: string | null
-          contract_id?: string | null
-          created_time?: string | null
-          data?: Json | null
-          is_ante?: boolean | null
-          is_api?: boolean | null
-          is_challenge?: boolean | null
-          is_redemption?: boolean | null
-          outcome?: string | null
-          prob_after?: number | null
-          prob_before?: number | null
-          shares?: number | null
-          updated_time?: string | null
-          user_id?: string | null
-          visibility?: string | null
-        }
-        Relationships: []
-      }
-      public_contracts: {
-        Row: {
-          close_time: string | null
-          created_time: string | null
-          creator_id: string | null
-          data: Json | null
-          deleted: boolean | null
-          description_fts: unknown | null
-          freshness_score: number | null
-          fs_updated_time: string | null
-          group_slugs: string[] | null
-          id: string | null
-          importance_score: number | null
-          is_politics: boolean | null
-          last_bet_time: string | null
-          last_comment_time: string | null
-          last_updated_time: string | null
-          mechanism: string | null
-          outcome_type: string | null
-          popularity_score: number | null
-          question: string | null
-          question_fts: unknown | null
-          question_nostop_fts: unknown | null
-          resolution: string | null
-          resolution_probability: number | null
-          resolution_time: string | null
-          slug: string | null
-          visibility: string | null
-        }
-        Insert: {
-          close_time?: string | null
-          created_time?: string | null
-          creator_id?: string | null
-          data?: Json | null
-          deleted?: boolean | null
-          description_fts?: unknown | null
-          freshness_score?: number | null
-          fs_updated_time?: string | null
-          group_slugs?: string[] | null
-          id?: string | null
-          importance_score?: number | null
-          is_politics?: boolean | null
-          last_bet_time?: string | null
-          last_comment_time?: string | null
-          last_updated_time?: string | null
-          mechanism?: string | null
-          outcome_type?: string | null
-          popularity_score?: number | null
-          question?: string | null
-          question_fts?: unknown | null
-          question_nostop_fts?: unknown | null
-          resolution?: string | null
-          resolution_probability?: number | null
-          resolution_time?: string | null
-          slug?: string | null
-          visibility?: string | null
-        }
-        Update: {
-          close_time?: string | null
-          created_time?: string | null
-          creator_id?: string | null
-          data?: Json | null
-          deleted?: boolean | null
-          description_fts?: unknown | null
-          freshness_score?: number | null
-          fs_updated_time?: string | null
-          group_slugs?: string[] | null
-          id?: string | null
-          importance_score?: number | null
-          is_politics?: boolean | null
-          last_bet_time?: string | null
-          last_comment_time?: string | null
-          last_updated_time?: string | null
-          mechanism?: string | null
-          outcome_type?: string | null
-          popularity_score?: number | null
-          question?: string | null
-          question_fts?: unknown | null
-          question_nostop_fts?: unknown | null
-          resolution?: string | null
-          resolution_probability?: number | null
-          resolution_time?: string | null
-          slug?: string | null
-          visibility?: string | null
-        }
-        Relationships: []
-      }
-      public_open_contracts: {
-        Row: {
-          close_time: string | null
-          created_time: string | null
-          creator_id: string | null
-          data: Json | null
-          deleted: boolean | null
-          description_fts: unknown | null
-          freshness_score: number | null
-          fs_updated_time: string | null
-          group_slugs: string[] | null
-          id: string | null
-          importance_score: number | null
-          is_politics: boolean | null
-          last_bet_time: string | null
-          last_comment_time: string | null
-          last_updated_time: string | null
-          mechanism: string | null
-          outcome_type: string | null
-          popularity_score: number | null
-          question: string | null
-          question_fts: unknown | null
-          question_nostop_fts: unknown | null
-          resolution: string | null
-          resolution_probability: number | null
-          resolution_time: string | null
-          slug: string | null
-          visibility: string | null
-        }
-        Insert: {
-          close_time?: string | null
-          created_time?: string | null
-          creator_id?: string | null
-          data?: Json | null
-          deleted?: boolean | null
-          description_fts?: unknown | null
-          freshness_score?: number | null
-          fs_updated_time?: string | null
-          group_slugs?: string[] | null
-          id?: string | null
-          importance_score?: number | null
-          is_politics?: boolean | null
-          last_bet_time?: string | null
-          last_comment_time?: string | null
-          last_updated_time?: string | null
-          mechanism?: string | null
-          outcome_type?: string | null
-          popularity_score?: number | null
-          question?: string | null
-          question_fts?: unknown | null
-          question_nostop_fts?: unknown | null
-          resolution?: string | null
-          resolution_probability?: number | null
-          resolution_time?: string | null
-          slug?: string | null
-          visibility?: string | null
-        }
-        Update: {
-          close_time?: string | null
-          created_time?: string | null
-          creator_id?: string | null
-          data?: Json | null
-          deleted?: boolean | null
-          description_fts?: unknown | null
-          freshness_score?: number | null
-          fs_updated_time?: string | null
-          group_slugs?: string[] | null
-          id?: string | null
-          importance_score?: number | null
-          is_politics?: boolean | null
-          last_bet_time?: string | null
-          last_comment_time?: string | null
-          last_updated_time?: string | null
-          mechanism?: string | null
-          outcome_type?: string | null
-          popularity_score?: number | null
-          question?: string | null
-          question_fts?: unknown | null
-          question_nostop_fts?: unknown | null
-          resolution?: string | null
-          resolution_probability?: number | null
-          resolution_time?: string | null
-          slug?: string | null
-          visibility?: string | null
-        }
-        Relationships: []
-      }
-      trending_contracts: {
-        Row: {
-          close_time: string | null
-          created_time: string | null
-          creator_id: string | null
-          data: Json | null
-          deleted: boolean | null
-          description_fts: unknown | null
-          freshness_score: number | null
-          fs_updated_time: string | null
-          group_slugs: string[] | null
-          id: string | null
-          importance_score: number | null
-          is_politics: boolean | null
-          last_bet_time: string | null
-          last_comment_time: string | null
-          last_updated_time: string | null
-          mechanism: string | null
-          outcome_type: string | null
-          popularity_score: number | null
-          question: string | null
-          question_fts: unknown | null
-          question_nostop_fts: unknown | null
-          resolution: string | null
-          resolution_probability: number | null
-          resolution_time: string | null
-          slug: string | null
-          visibility: string | null
-        }
-        Insert: {
-          close_time?: string | null
-          created_time?: string | null
-          creator_id?: string | null
-          data?: Json | null
-          deleted?: boolean | null
-          description_fts?: unknown | null
-          freshness_score?: number | null
-          fs_updated_time?: string | null
-          group_slugs?: string[] | null
-          id?: string | null
-          importance_score?: number | null
-          is_politics?: boolean | null
-          last_bet_time?: string | null
-          last_comment_time?: string | null
-          last_updated_time?: string | null
-          mechanism?: string | null
-          outcome_type?: string | null
-          popularity_score?: number | null
-          question?: string | null
-          question_fts?: unknown | null
-          question_nostop_fts?: unknown | null
-          resolution?: string | null
-          resolution_probability?: number | null
-          resolution_time?: string | null
-          slug?: string | null
-          visibility?: string | null
-        }
-        Update: {
-          close_time?: string | null
-          created_time?: string | null
-          creator_id?: string | null
-          data?: Json | null
-          deleted?: boolean | null
-          description_fts?: unknown | null
-          freshness_score?: number | null
-          fs_updated_time?: string | null
-          group_slugs?: string[] | null
-          id?: string | null
-          importance_score?: number | null
-          is_politics?: boolean | null
-          last_bet_time?: string | null
-          last_comment_time?: string | null
-          last_updated_time?: string | null
-          mechanism?: string | null
-          outcome_type?: string | null
-          popularity_score?: number | null
-          question?: string | null
-          question_fts?: unknown | null
-          question_nostop_fts?: unknown | null
-          resolution?: string | null
-          resolution_probability?: number | null
-          resolution_time?: string | null
-          slug?: string | null
-          visibility?: string | null
-        }
-        Relationships: []
-      }
-      user_contract_distance: {
-        Row: {
-          contract_id: string | null
-          distance: number | null
-          user_id: string | null
-        }
-        Relationships: []
-      }
-      user_groups: {
-        Row: {
-          avatarurl: string | null
-          groups: string[] | null
-          id: string | null
-          name: string | null
-          username: string | null
-        }
-        Relationships: []
-      }
       user_league_info: {
         Row: {
           cohort: string | null
@@ -3645,21 +3414,12 @@ export type Database = {
         }
         Relationships: []
       }
-      user_referrals: {
-        Row: {
-          data: Json | null
-          id: string | null
-          rank: number | null
-          total_referrals: number | null
-        }
-        Relationships: []
-      }
       user_referrals_profit: {
         Row: {
-          data: Json | null
           id: string | null
           rank: number | null
           total_referrals: number | null
+          total_referred_cash_profit: number | null
           total_referred_profit: number | null
         }
         Relationships: []
@@ -3672,6 +3432,19 @@ export type Database = {
         }
         Returns: string
       }
+      binary_quantize:
+        | {
+            Args: {
+              '': string
+            }
+            Returns: unknown
+          }
+        | {
+            Args: {
+              '': unknown
+            }
+            Returns: unknown
+          }
       calculate_earth_distance_km: {
         Args: {
           lat1: number
@@ -3681,37 +3454,10 @@ export type Database = {
         }
         Returns: number
       }
-      calculate_user_profit_for_2023: {
-        Args: {
-          user_id_input: string
-        }
-        Returns: number
-      }
-      can_access_private_contract: {
-        Args: {
-          this_contract_id: string
-          this_member_id: string
-        }
-        Returns: boolean
-      }
       can_access_private_messages: {
         Args: {
           channel_id: number
           user_id: string
-        }
-        Returns: boolean
-      }
-      can_access_private_post: {
-        Args: {
-          this_post_id: string
-          this_member_id: string
-        }
-        Returns: boolean
-      }
-      check_group_accessibility: {
-        Args: {
-          this_group_id: string
-          this_user_id: string
         }
         Returns: boolean
       }
@@ -3727,73 +3473,6 @@ export type Database = {
           data: Json
         }[]
       }
-      close_contract_embeddings_1: {
-        Args: {
-          input_contract_id: string
-          similarity_threshold: number
-          match_count: number
-        }
-        Returns: {
-          contract_id: string
-          similarity: number
-          data: Json
-        }[]
-      }
-      closest_contract_embeddings: {
-        Args: {
-          input_contract_id: string
-          similarity_threshold: number
-          match_count: number
-          is_admin?: boolean
-        }
-        Returns: {
-          contract_id: string
-          similarity: number
-          data: Json
-        }[]
-      }
-      convert_data_array_to_contract_table: {
-        Args: {
-          data_table: Json[]
-        }
-        Returns: {
-          close_time: string | null
-          conversion_score: number
-          created_time: string | null
-          creator_id: string | null
-          data: Json
-          deleted: boolean | null
-          description_fts: unknown | null
-          freshness_score: number | null
-          fs_updated_time: string
-          group_slugs: string[] | null
-          id: string
-          importance_score: number | null
-          is_politics: boolean | null
-          is_spice_payout: boolean | null
-          last_bet_time: string | null
-          last_comment_time: string | null
-          last_updated_time: string | null
-          mechanism: string | null
-          outcome_type: string | null
-          popularity_score: number | null
-          question: string | null
-          question_fts: unknown | null
-          question_nostop_fts: unknown | null
-          resolution: string | null
-          resolution_probability: number | null
-          resolution_time: string | null
-          slug: string | null
-          view_count: number | null
-          visibility: string | null
-        }[]
-      }
-      convert_data_to_contract: {
-        Args: {
-          data: Json
-        }
-        Returns: Record<string, unknown>
-      }
       count_recent_comments: {
         Args: {
           contract_id: string
@@ -3806,13 +3485,6 @@ export type Database = {
           contract_id: string
           comment_count: number
         }[]
-      }
-      count_users_above_similarity: {
-        Args: {
-          nid: number
-          similarity: number
-        }
-        Returns: number
       }
       creator_leaderboard: {
         Args: {
@@ -3831,6 +3503,12 @@ export type Database = {
           uid: string
         }
         Returns: number
+      }
+      date_to_midnight_pt: {
+        Args: {
+          d: string
+        }
+        Returns: string
       }
       extract_text_from_rich_text_json: {
         Args: {
@@ -3852,92 +3530,12 @@ export type Database = {
         Args: Record<PropertyKey, never>
         Returns: Database['public']['CompositeTypes']['love_question_with_count_type'][]
       }
-      get_contract_metrics_for_contract: {
-        Args: {
-          contractid: string
-        }
-        Returns: {
-          user_id: string
-          contract_metrics: Json
-        }[]
-      }
-      get_contract_metrics_grouped_by_user: {
-        Args: {
-          uids: string[]
-          period: string
-        }
-        Returns: {
-          user_id: string
-          contract_metrics: Json[]
-        }[]
-      }
-      get_contract_metrics_grouped_by_user_ids: {
-        Args: {
-          uids: string[]
-          period: string
-        }
-        Returns: {
-          user_id: string
-          contract_metrics: Json[]
-        }[]
-      }
-      get_contract_metrics_with_contracts:
-        | {
-            Args: {
-              uid: string
-              count: number
-            }
-            Returns: {
-              contract_id: string
-              metrics: Json
-              contract: Json
-            }[]
-          }
-        | {
-            Args: {
-              uid: string
-              count: number
-              start: number
-            }
-            Returns: {
-              contract_id: string
-              metrics: Json
-              contract: Json
-            }[]
-          }
-      get_contract_page_views: {
-        Args: {
-          contract_id: string
-        }
-        Returns: number
-      }
       get_contract_voters: {
         Args: {
           this_contract_id: string
         }
         Returns: {
           data: Json
-        }[]
-      }
-      get_contracts_by_creator_ids: {
-        Args: {
-          creator_ids: string[]
-          created_time: number
-        }
-        Returns: {
-          creator_id: string
-          contracts: Json
-        }[]
-      }
-      get_contracts_in_group_slugs: {
-        Args: {
-          contract_ids: string[]
-          group_slugs: string[]
-          ignore_slugs: string[]
-        }
-        Returns: {
-          data: Json
-          importance_score: number
         }[]
       }
       get_contracts_in_group_slugs_1: {
@@ -3958,19 +3556,6 @@ export type Database = {
         }
         Returns: number
       }
-      get_cpmm_resolved_prob:
-        | {
-            Args: {
-              c: unknown
-            }
-            Returns: number
-          }
-        | {
-            Args: {
-              data: Json
-            }
-            Returns: number
-          }
       get_daily_claimed_boosts: {
         Args: {
           user_id: string
@@ -3978,12 +3563,6 @@ export type Database = {
         Returns: {
           total: number
         }[]
-      }
-      get_document_table_spec: {
-        Args: {
-          table_id: string
-        }
-        Returns: Database['public']['CompositeTypes']['table_spec']
       }
       get_donations_by_charity: {
         Args: Record<PropertyKey, never>
@@ -3993,24 +3572,6 @@ export type Database = {
           total: number
         }[]
       }
-      get_engaged_users: {
-        Args: Record<PropertyKey, never>
-        Returns: {
-          user_id: string
-          username: string
-          name: string
-        }[]
-      }
-      get_exact_match_minus_last_word_query: {
-        Args: {
-          p_query: string
-        }
-        Returns: string
-      }
-      get_fr_questions_with_answer_count: {
-        Args: Record<PropertyKey, never>
-        Returns: Database['public']['CompositeTypes']['love_question_with_count_type'][]
-      }
       get_group_contracts: {
         Args: {
           this_group_id: string
@@ -4019,51 +3580,11 @@ export type Database = {
           data: Json
         }[]
       }
-      get_groups_and_scores_from_user_seen_markets: {
-        Args: {
-          uid: string
-        }
-        Returns: Database['public']['CompositeTypes']['group_with_score_and_bet_flag'][]
-      }
-      get_groups_from_user_seen_markets: {
-        Args: {
-          uid: string
-        }
-        Returns: Database['public']['CompositeTypes']['group_with_bet_flag'][]
-      }
-      get_last_week_long_link: {
-        Args: {
-          this_group_id: string
-        }
-        Returns: string
-      }
       get_love_question_answers_and_lovers: {
         Args: {
           p_question_id: number
         }
         Returns: Database['public']['CompositeTypes']['other_lover_answers_type'][]
-      }
-      get_market_ads: {
-        Args: {
-          uid: string
-        }
-        Returns: {
-          ad_id: string
-          market_id: string
-          ad_funds: number
-          ad_cost_per_view: number
-          market_data: Json
-        }[]
-      }
-      get_monthly_bet_count_and_amount: {
-        Args: {
-          user_id_input: string
-        }
-        Returns: {
-          month: string
-          bet_count: number
-          total_amount: number
-        }[]
       }
       get_non_empty_private_message_channel_ids:
         | {
@@ -4095,22 +3616,21 @@ export type Database = {
           conversion_score: number
           created_time: string | null
           creator_id: string | null
+          daily_score: number
           data: Json
           deleted: boolean | null
           description_fts: unknown | null
-          freshness_score: number | null
-          fs_updated_time: string
+          freshness_score: number
           group_slugs: string[] | null
           id: string
-          importance_score: number | null
-          is_politics: boolean | null
+          importance_score: number
           is_spice_payout: boolean | null
           last_bet_time: string | null
           last_comment_time: string | null
           last_updated_time: string | null
           mechanism: string | null
           outcome_type: string | null
-          popularity_score: number | null
+          popularity_score: number
           question: string | null
           question_fts: unknown | null
           question_nostop_fts: unknown | null
@@ -4118,55 +3638,11 @@ export type Database = {
           resolution_probability: number | null
           resolution_time: string | null
           slug: string | null
-          view_count: number | null
+          tier: string | null
+          token: string
+          unique_bettor_count: number
+          view_count: number
           visibility: string | null
-        }[]
-      }
-      get_notifications: {
-        Args: {
-          uid: string
-          unseen_only: boolean
-          max_num: number
-        }
-        Returns: {
-          data: Json
-          fs_updated_time: string
-          notification_id: string
-          user_id: string
-        }[]
-      }
-      get_open_limit_bets_with_contracts: {
-        Args: {
-          uid: string
-          count: number
-        }
-        Returns: {
-          contract_id: string
-          bets: Json[]
-          contract: Json
-        }[]
-      }
-      get_open_limit_bets_with_contracts_1: {
-        Args: {
-          uid: string
-          count: number
-          politics: boolean
-        }
-        Returns: {
-          contract_id: string
-          bets: Json[]
-          contract: Json
-        }[]
-      }
-      get_open_limit_bets_with_contracts_rls: {
-        Args: {
-          uid: string
-          count: number
-        }
-        Returns: {
-          contract_id: string
-          bets: Json[]
-          contract: Json
         }[]
       }
       get_option_voters: {
@@ -4178,18 +3654,6 @@ export type Database = {
           data: Json
         }[]
       }
-      get_prefix_match_query: {
-        Args: {
-          p_query: string
-        }
-        Returns: string
-      }
-      get_profit: {
-        Args: {
-          portfolio: Json
-        }
-        Returns: number
-      }
       get_rating: {
         Args: {
           user_id: string
@@ -4197,26 +3661,6 @@ export type Database = {
         Returns: {
           count: number
           rating: number
-        }[]
-      }
-      get_rating_info: {
-        Args: {
-          p_vendor_id: string
-        }
-        Returns: {
-          avg_rating: number
-          count: number
-        }[]
-      }
-      get_recently_active_contracts_in_group_slugs: {
-        Args: {
-          group_slugs: string[]
-          ignore_slugs: string[]
-          max: number
-        }
-        Returns: {
-          data: Json
-          importance_score: number
         }[]
       }
       get_recently_active_contracts_in_group_slugs_1: {
@@ -4230,79 +3674,6 @@ export type Database = {
           importance_score: number
         }[]
       }
-      get_recently_active_contracts_in_group_slugs_2: {
-        Args: {
-          group_slugs: string[]
-          ignore_slugs: string[]
-          max: number
-        }
-        Returns: {
-          data: Json
-          importance_score: number
-        }[]
-      }
-      get_related_contracts: {
-        Args: {
-          cid: string
-          lim: number
-          start: number
-        }
-        Returns: Json[]
-      }
-      get_reply_chain_comments_for_comment_ids: {
-        Args: {
-          comment_ids: string[]
-        }
-        Returns: {
-          id: string
-          contract_id: string
-          data: Json
-        }[]
-      }
-      get_reply_chain_comments_matching_contracts: {
-        Args: {
-          contract_ids: string[]
-          past_time_ms: number
-        }
-        Returns: {
-          id: string
-          contract_id: string
-          data: Json
-        }[]
-      }
-      get_sigmoid_rating: {
-        Args: {
-          user_id: string
-        }
-        Returns: {
-          count: number
-          rating: number
-        }[]
-      }
-      get_time: {
-        Args: Record<PropertyKey, never>
-        Returns: number
-      }
-      get_top_market_ads: {
-        Args: {
-          uid: string
-          distance_threshold: number
-        }
-        Returns: {
-          ad_id: string
-          market_id: string
-          ad_funds: number
-          ad_cost_per_view: number
-          market_data: Json
-        }[]
-      }
-      get_unique_bettors_since: {
-        Args: {
-          this_contract_id: string
-          since: number
-        }
-        Returns: number
-      }
       get_user_bet_contracts: {
         Args: {
           this_user_id: string
@@ -4310,30 +3681,6 @@ export type Database = {
         }
         Returns: {
           data: Json
-        }[]
-      }
-      get_user_bets_from_resolved_contracts: {
-        Args: {
-          uid: string
-          count: number
-          start: number
-        }
-        Returns: {
-          contract_id: string
-          bets: Json[]
-          contract: Json
-        }[]
-      }
-      get_user_bets_from_resolved_contracts_rbac: {
-        Args: {
-          uid: string
-          count: number
-          start: number
-        }
-        Returns: {
-          contract_id: string
-          bets: Json[]
-          contract: Json
         }[]
       }
       get_user_group_id_for_current_user: {
@@ -4350,54 +3697,13 @@ export type Database = {
           ts: number
         }[]
       }
-      get_user_portfolio_at_2023_end: {
+      get_user_topic_interests_2: {
         Args: {
           p_user_id: string
-        }
-        Returns: {
-          user_id: string
-          ts: string
-          investment_value: number
-          balance: number
-          total_deposits: number
-          loan_total: number
-          id: number
-        }[]
-      }
-      get_user_portfolio_at_2023_start: {
-        Args: {
-          p_user_id: string
-        }
-        Returns: {
-          user_id: string
-          ts: string
-          investment_value: number
-          balance: number
-          total_deposits: number
-          loan_total: number
-          id: number
-        }[]
-      }
-      get_user_topic_interests: {
-        Args: {
-          p_user_id: string
-          limit_rows: number
         }
         Returns: {
           group_id: string
-          avg_conversion_score: number
-          groups_count: number
-        }[]
-      }
-      get_user_topic_interests_1: {
-        Args: {
-          p_user_id: string
-          limit_rows: number
-        }
-        Returns: {
-          group_id: string
-          avg_conversion_score: number
-          groups_count: number
+          score: number
         }[]
       }
       get_your_contract_ids:
@@ -4471,12 +3777,54 @@ export type Database = {
         }
         Returns: unknown
       }
+      halfvec_avg: {
+        Args: {
+          '': number[]
+        }
+        Returns: unknown
+      }
+      halfvec_out: {
+        Args: {
+          '': unknown
+        }
+        Returns: unknown
+      }
+      halfvec_send: {
+        Args: {
+          '': unknown
+        }
+        Returns: string
+      }
+      halfvec_typmod_in: {
+        Args: {
+          '': unknown[]
+        }
+        Returns: number
+      }
       has_moderator_or_above_role: {
         Args: {
           this_group_id: string
           this_user_id: string
         }
         Returns: boolean
+      }
+      hnsw_bit_support: {
+        Args: {
+          '': unknown
+        }
+        Returns: unknown
+      }
+      hnsw_halfvec_support: {
+        Args: {
+          '': unknown
+        }
+        Returns: unknown
+      }
+      hnsw_sparsevec_support: {
+        Args: {
+          '': unknown
+        }
+        Returns: unknown
       }
       hnswhandler: {
         Args: {
@@ -4494,24 +3842,10 @@ export type Database = {
         }
         Returns: boolean
       }
-      is_group_admin: {
-        Args: {
-          this_group_id: string
-          this_user_id: string
-        }
-        Returns: boolean
-      }
       is_group_member: {
         Args: {
           this_group_id: string
           this_user_id: string
-        }
-        Returns: boolean
-      }
-      is_private_contract_member: {
-        Args: {
-          this_contract_id: string
-          this_member_id: string
         }
         Returns: boolean
       }
@@ -4521,11 +3855,17 @@ export type Database = {
         }
         Returns: boolean
       }
-      is_valid_contract_2: {
+      ivfflat_bit_support: {
         Args: {
-          ct: unknown
+          '': unknown
         }
-        Returns: boolean
+        Returns: unknown
+      }
+      ivfflat_halfvec_support: {
+        Args: {
+          '': unknown
+        }
+        Returns: unknown
       }
       ivfflathandler: {
         Args: {
@@ -4539,6 +3879,38 @@ export type Database = {
         }
         Returns: string[]
       }
+      l2_norm:
+        | {
+            Args: {
+              '': unknown
+            }
+            Returns: number
+          }
+        | {
+            Args: {
+              '': unknown
+            }
+            Returns: number
+          }
+      l2_normalize:
+        | {
+            Args: {
+              '': string
+            }
+            Returns: string
+          }
+        | {
+            Args: {
+              '': unknown
+            }
+            Returns: unknown
+          }
+        | {
+            Args: {
+              '': unknown
+            }
+            Returns: unknown
+          }
       millis_interval: {
         Args: {
           start_millis: number
@@ -4586,12 +3958,6 @@ export type Database = {
           n: number
         }[]
       }
-      replicate_writes_process_one: {
-        Args: {
-          r: unknown
-        }
-        Returns: boolean
-      }
       sample_resolved_bets: {
         Args: {
           trader_threshold: number
@@ -4602,40 +3968,7 @@ export type Database = {
           is_yes: boolean
         }[]
       }
-      save_user_topic_2: {
-        Args: {
-          p_user_id: string
-          p_topics: string[]
-        }
-        Returns: undefined
-      }
-      save_user_topics: {
-        Args: {
-          p_user_id: string
-          p_topics: string[]
-        }
-        Returns: undefined
-      }
-      save_user_topics_2: {
-        Args: {
-          p_user_id: string
-          p_topics: string[]
-        }
-        Returns: undefined
-      }
       save_user_topics_blank: {
-        Args: {
-          p_user_id: string
-        }
-        Returns: undefined
-      }
-      save_user_topics_blank_2: {
-        Args: {
-          p_user_id: string
-        }
-        Returns: undefined
-      }
-      save_user_topics_blank2: {
         Args: {
           p_user_id: string
         }
@@ -4650,146 +3983,6 @@ export type Database = {
         Returns: {
           contract_id: string
           similarity: number
-        }[]
-      }
-      search_contract_embeddings_1: {
-        Args: {
-          query_embedding: string
-          similarity_threshold: number
-          match_count: number
-        }
-        Returns: {
-          contract_id: string
-          similarity: number
-        }[]
-      }
-      search_contracts_by_group_slugs: {
-        Args: {
-          group_slugs: string[]
-          lim: number
-          start: number
-        }
-        Returns: Json[]
-      }
-      search_contracts_by_group_slugs_1: {
-        Args: {
-          p_group_slugs: string[]
-          lim: number
-          start: number
-        }
-        Returns: Json[]
-      }
-      search_contracts_by_group_slugs_for_creator: {
-        Args: {
-          creator_id: string
-          group_slugs: string[]
-          lim: number
-          start: number
-        }
-        Returns: Json[]
-      }
-      search_contracts_by_group_slugs_for_creator_1: {
-        Args: {
-          creator_id: string
-          p_group_slugs: string[]
-          lim: number
-          start: number
-        }
-        Returns: Json[]
-      }
-      search_contracts_combined: {
-        Args: {
-          term: string
-          contract_filter: string
-          contract_sort: string
-          offset_n: number
-          limit_n: number
-          fuzzy?: boolean
-          groupid?: string
-        }
-        Returns: {
-          data: Json
-        }[]
-      }
-      search_contracts_test: {
-        Args: {
-          term: string
-          contract_filter: string
-          contract_sort: string
-          offset_n: number
-          limit_n: number
-          fuzzy?: boolean
-          group_id?: string
-          creator_id?: string
-        }
-        Returns: string
-      }
-      search_group_embeddings: {
-        Args: {
-          query_embedding: string
-          similarity_threshold: number
-          max_count: number
-          name_similarity_threshold: number
-        }
-        Returns: {
-          name: string
-          group_id: string
-          similarity: number
-        }[]
-      }
-      search_groups: {
-        Args: {
-          query: string
-          count: number
-        }
-        Returns: {
-          creator_id: string | null
-          data: Json
-          id: string
-          importance_score: number | null
-          name: string
-          name_fts: unknown | null
-          privacy_status: string | null
-          slug: string
-          total_members: number | null
-        }[]
-      }
-      search_users: {
-        Args: {
-          query: string
-          count: number
-        }
-        Returns: {
-          balance: number
-          created_time: string | null
-          data: Json
-          fs_updated_time: string
-          id: string
-          name: string
-          name_username_vector: unknown | null
-          resolved_profit_adjustment: number | null
-          spice_balance: number
-          total_deposits: number
-          username: string
-        }[]
-      }
-      search_users_2: {
-        Args: {
-          query: string
-          count: number
-        }
-        Returns: {
-          balance: number
-          created_time: string | null
-          data: Json
-          fs_updated_time: string
-          id: string
-          name: string
-          name_username_vector: unknown | null
-          resolved_profit_adjustment: number | null
-          spice_balance: number
-          total_deposits: number
-          username: string
         }[]
       }
       set_limit: {
@@ -4808,33 +4001,27 @@ export type Database = {
         }
         Returns: string[]
       }
+      sparsevec_out: {
+        Args: {
+          '': unknown
+        }
+        Returns: unknown
+      }
+      sparsevec_send: {
+        Args: {
+          '': unknown
+        }
+        Returns: string
+      }
+      sparsevec_typmod_in: {
+        Args: {
+          '': unknown[]
+        }
+        Returns: number
+      }
       test: {
         Args: Record<PropertyKey, never>
         Returns: undefined
-      }
-      test_empty_search_contracts: {
-        Args: {
-          contract_filter: string
-          contract_sort: string
-          offset_n: number
-          limit_n: number
-          group_id?: string
-          creator_id?: string
-        }
-        Returns: string
-      }
-      test_search_contracts: {
-        Args: {
-          term: string
-          contract_filter: string
-          contract_sort: string
-          offset_n: number
-          limit_n: number
-          fuzzy?: boolean
-          group_id?: string
-          creator_id?: string
-        }
-        Returns: string
       }
       to_jsonb: {
         Args: {
@@ -4842,48 +4029,6 @@ export type Database = {
         }
         Returns: Json
       }
-      top_creators_for_user: {
-        Args: {
-          uid: string
-          excluded_ids: string[]
-          limit_n: number
-        }
-        Returns: {
-          user_id: string
-          n: number
-        }[]
-      }
-      top_news:
-        | {
-            Args: {
-              uid: string
-            }
-            Returns: {
-              title: string
-              description: string
-            }[]
-          }
-        | {
-            Args: {
-              uid: string
-              similarity: number
-            }
-            Returns: {
-              title: string
-              description: string
-            }[]
-          }
-        | {
-            Args: {
-              uid: string
-              similarity: number
-              n: number
-            }
-            Returns: {
-              title: string
-              description: string
-            }[]
-          }
       ts_to_millis:
         | {
             Args: {
@@ -4897,38 +4042,25 @@ export type Database = {
             }
             Returns: number
           }
-      user_top_news: {
-        Args: {
-          uid: string
-          similarity: number
-          n: number
-        }
-        Returns: {
-          id: number
-          created_time: string
-          title: string
-          url: string
-          published_time: string
-          author: string
-          description: string
-          image_url: string
-          source_id: string
-          source_name: string
-          contract_ids: string[]
-        }[]
-      }
       vector_avg: {
         Args: {
           '': number[]
         }
         Returns: string
       }
-      vector_dims: {
-        Args: {
-          '': string
-        }
-        Returns: number
-      }
+      vector_dims:
+        | {
+            Args: {
+              '': string
+            }
+            Returns: number
+          }
+        | {
+            Args: {
+              '': unknown
+            }
+            Returns: number
+          }
       vector_norm: {
         Args: {
           '': string
@@ -4957,37 +4089,16 @@ export type Database = {
     Enums: {
       status_type: 'new' | 'under review' | 'resolved' | 'needs admin'
     }
-
     CompositeTypes: {
-      contract_ids: {
-        contract_id: string
-      }
-      contract_score: {
-        contract_id: string
-      }
-      group_with_bet_flag: {
-        id: string
-        data: Json
-        has_bet: boolean
-      }
-      group_with_score_and_bet_flag: {
-        id: string
-        data: Json
-        importance_score: number
-        has_bet: boolean
-      }
-      jsonb_data: {
-        data: Json
-      }
       love_question_with_count_type: {
-        id: number
-        creator_id: string
-        created_time: string
-        question: string
-        importance_score: number
-        answer_type: string
-        multiple_choice_options: Json
-        answer_count: number
+        id: number | null
+        creator_id: string | null
+        created_time: string | null
+        question: string | null
+        importance_score: number | null
+        answer_type: string | null
+        multiple_choice_options: Json | null
+        answer_count: number | null
       }
       other_lover_answers_type: {
         question_id: number | null
@@ -4999,10 +4110,6 @@ export type Database = {
         gender: string | null
         city: string | null
         data: Json | null
-      }
-      table_spec: {
-        parent_id_col_name: string | null
-        id_col_name: string | null
       }
     }
   }
@@ -5088,4 +4195,19 @@ export type Enums<
   ? Database[PublicEnumNameOrOptions['schema']]['Enums'][EnumName]
   : PublicEnumNameOrOptions extends keyof PublicSchema['Enums']
   ? PublicSchema['Enums'][PublicEnumNameOrOptions]
+  : never
+
+export type CompositeTypes<
+  PublicCompositeTypeNameOrOptions extends
+    | keyof PublicSchema['CompositeTypes']
+    | { schema: keyof Database },
+  CompositeTypeName extends PublicCompositeTypeNameOrOptions extends {
+    schema: keyof Database
+  }
+    ? keyof Database[PublicCompositeTypeNameOrOptions['schema']]['CompositeTypes']
+    : never = never
+> = PublicCompositeTypeNameOrOptions extends { schema: keyof Database }
+  ? Database[PublicCompositeTypeNameOrOptions['schema']]['CompositeTypes'][CompositeTypeName]
+  : PublicCompositeTypeNameOrOptions extends keyof PublicSchema['CompositeTypes']
+  ? PublicSchema['CompositeTypes'][PublicCompositeTypeNameOrOptions]
   : never

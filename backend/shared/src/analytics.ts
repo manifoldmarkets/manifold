@@ -51,6 +51,9 @@ export const trackPublicEvent = async (
 export const getIp = (req: Request) => {
   const xForwarded = req.headers['x-forwarded-for']
   const xForwardedIp = Array.isArray(xForwarded) ? xForwarded[0] : xForwarded
-
-  return xForwardedIp ?? req.socket.remoteAddress ?? req.ip
+  const ip = xForwardedIp ?? req.socket.remoteAddress ?? req.ip
+  if (ip.includes(',')) {
+    return ip.split(',')[0].trim()
+  }
+  return ip
 }

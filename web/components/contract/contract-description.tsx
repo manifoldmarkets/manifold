@@ -1,6 +1,6 @@
-import { useState } from 'react'
-import { Contract, MAX_DESCRIPTION_LENGTH } from 'common/contract'
-import { useAdmin } from 'web/hooks/use-admin'
+import { useState, useEffect } from 'react'
+import { MAX_DESCRIPTION_LENGTH } from 'common/contract'
+import { useAdminOrMod } from 'web/hooks/use-admin'
 import { useUser } from 'web/hooks/use-user'
 import { Row } from '../layout/row'
 import { TextEditor, useTextEditor } from 'web/components/widgets/editor'
@@ -8,48 +8,88 @@ import { Button } from '../buttons/button'
 import { CollapsibleContent } from '../widgets/collapsible-content'
 import { PencilIcon, PlusIcon } from '@heroicons/react/solid'
 import { JSONContent } from '@tiptap/core'
-import { updateMarket } from 'web/lib/firebase/api'
+import { updateMarket } from 'web/lib/api/api'
 import { toast } from 'react-hot-toast'
+import { LogoIcon } from '../icons/logo-icon'
+import clsx from 'clsx'
 
-export function ContractDescription(props: { contract: Contract }) {
-  const { contract } = props
+export function ContractDescription(props: {
+  contractId: string // the description is stored on this contract
+  creatorId: string
+  isSweeps: boolean
+  description: string | JSONContent
+}) {
+  const { contractId, creatorId, isSweeps, description } = props
 
-  const isAdmin = useAdmin()
+  const isModOrAdmin = useAdminOrMod()
   const user = useUser()
-  const isCreator = user?.id === contract.creatorId
+  const isCreator = user?.id === creatorId
 
   return (
-    <div className="mt-2">
-      {isCreator || isAdmin ? (
-        <EditableDescription contract={contract} />
-      ) : (
-        <CollapsibleContent
-          content={contract.description}
-          stateKey={`isCollapsed-contract-${contract.id}`}
-          hideCollapse={!user}
-        />
-      )}
-    </div>
+    <>
+      <div className="mb-2 mt-6">
+        {isCreator || isModOrAdmin ? (
+          <EditableDescription
+            contractId={contractId}
+            description={description}
+          />
+        ) : (
+          <CollapsibleContent
+            mediaSize="md"
+            content={description}
+            stateKey={`isCollapsed-contract-${contractId}`}
+            hideCollapse={!user}
+          />
+        )}
+
+        <div
+          className={clsx(
+            !isSweeps && 'hidden',
+            'text-ink-600 bg-canvas-50 flex items-center justify-center space-x-2 rounded-md px-4 py-2 italic'
+          )}
+        >
+          <LogoIcon className="h-5 w-5 text-indigo-600" />
+          <span>This question is managed and resolved by Manifold.</span>
+          <LogoIcon className="h-5 w-5 text-indigo-600" />
+        </div>
+      </div>
+    </>
   )
 }
 
-function EditableDescription(props: { contract: Contract }) {
-  const { contract } = props
+function EditableDescription(props: {
+  contractId: string
+  description: string | JSONContent
+}) {
+  const { contractId, description } = props
   const [editing, setEditing] = useState(false)
 
   const editor = useTextEditor({
+    size: 'md',
     max: MAX_DESCRIPTION_LENGTH,
-    defaultValue: contract.description,
+    defaultValue: description,
   })
 
-  const emptyDescription = editor?.isEmpty
+  useEffect(() => {
+    if (!editor || editing) return
+
+    const currentContent = editor.getJSON()
+    const newContent =
+      typeof description === 'string' ? description : description
+
+    if (JSON.stringify(currentContent) !== JSON.stringify(newContent)) {
+      editor.commands.setContent(newContent)
+    }
+  }, [description, editor, editing])
+
+  const isDescriptionEmpty = JSONEmpty(description)
   const [saving, setSaving] = useState(false)
 
   async function saveDescription() {
     if (!editor) return
     setSaving(true)
     await updateMarket({
-      contractId: contract.id,
+      contractId: contractId,
       descriptionJson: JSON.stringify(editor.getJSON()),
     })
       .catch((e) => {
@@ -80,10 +120,11 @@ function EditableDescription(props: { contract: Contract }) {
     </>
   ) : (
     <>
-      {!emptyDescription && (
+      {!isDescriptionEmpty && (
         <CollapsibleContent
-          content={contract.description}
-          stateKey={`isCollapsed-contract-${contract.id}`}
+          content={description}
+          mediaSize="md"
+          stateKey={`isCollapsed-contract-${contractId}`}
         />
       )}
       <Row className="justify-end">
@@ -95,7 +136,7 @@ function EditableDescription(props: { contract: Contract }) {
             editor?.commands.focus('end')
           }}
         >
-          {emptyDescription ? (
+          {isDescriptionEmpty ? (
             <>
               <PlusIcon className="mr-1 inline h-4 w-4" /> Add description
             </>
@@ -113,12 +154,12 @@ function EditableDescription(props: { contract: Contract }) {
 export function JSONEmpty(text: string | JSONContent) {
   if (!text) return true
   if (typeof text === 'string') {
-    return text === ''
+    return text.trim() === ''
   } else if ('content' in text) {
     return !(
-      !!text.content &&
+      text.content &&
       text.content.length > 0 &&
-      (!!text.content[0].content || !!text.content[0].attrs)
+      text.content.some((node) => node.content || node.attrs)
     )
   }
   return true

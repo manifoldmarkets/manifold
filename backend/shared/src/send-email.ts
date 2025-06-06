@@ -47,6 +47,7 @@ export const sendTemplateEmail = async (
     'o:tag': templateId,
     'o:tracking': true,
   }
+  log(`Sending template email ${templateId} to ${to} with subject ${subject}`)
   const mg = initMailgun().messages()
   const result = await tryOrLogError(mg.send(data))
   if (result != null) {

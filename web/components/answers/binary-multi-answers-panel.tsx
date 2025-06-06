@@ -1,5 +1,5 @@
 import { Answer } from 'common/answer'
-import { CPMMMultiContract, MultiContract } from 'common/contract'
+import { CPMMMultiContract, getMainBinaryMCAnswer } from 'common/contract'
 import { Button, SizeType } from 'web/components/buttons/button'
 import { useState } from 'react'
 import { formatPercent } from 'common/util/format'
@@ -10,33 +10,31 @@ import {
   canEditAnswer,
 } from './answers-panel'
 import { BuyPanelBody } from 'web/components/bet/bet-panel'
-import { VERSUS_COLORS, getVersusColor } from '../charts/contract/choice'
+import { getAnswerColor } from '../charts/contract/choice'
 import { useUser } from 'web/hooks/use-user'
 import { PencilIcon } from '@heroicons/react/solid'
+import { Row } from '../layout/row'
 
 export function BinaryMultiAnswersPanel(props: {
   contract: CPMMMultiContract
-  answers: Answer[]
   feedReason?: string
 }) {
-  const { feedReason, contract, answers } = props
+  const { feedReason, contract } = props
+  const answers = contract.answers
 
-  const [colorLeft, colorRight] = answers.map(
-    (a, i) => a.color ?? VERSUS_COLORS[i]
-  )
   const [outcome, setOutcome] = useState<'YES' | 'NO' | undefined>(undefined)
 
   if (contract.isResolved) {
     return (
       <>
-        {answers.map((answer, i) => (
+        {answers.map((answer) => (
           <AnswerComponent
             shouldShowLimitOrderChart={false}
             key={answer.id}
             user={null}
             answer={answer}
-            contract={contract as MultiContract}
-            color={i === 0 ? colorLeft : colorRight}
+            contract={contract}
+            color={getAnswerColor(answer)}
             feedReason={feedReason}
           />
         ))}
@@ -54,7 +52,7 @@ export function BinaryMultiAnswersPanel(props: {
               setOutcome={setOutcome}
               key={answer.id}
               answer={answer}
-              color={i === 0 ? colorLeft : colorRight}
+              color={getAnswerColor(answer)}
             />
           ))}
         </div>
@@ -88,6 +86,7 @@ const BetButton = (props: {
         style={{ backgroundColor: color }}
         className={'flex flex-1 items-center justify-between gap-1 text-white'}
         onClick={() => {
+          // TODO: Twomba tracking bet terminology
           track('bet intent', { location: 'answer panel' })
           setOutcome(outcome)
         }}
@@ -111,10 +110,11 @@ function BinaryMultiChoiceBetPanel(props: {
   const { answer, contract, closePanel, outcome, setOutcome } = props
 
   const [editing, setEditing] = useState(false)
-  const color = getVersusColor(answer)
+  const color = getAnswerColor(answer)
   const user = useUser()
   const canEdit = canEditAnswer(answer, contract, user)
-
+  const mainAnswer = getMainBinaryMCAnswer(contract)!
+  const otherAnswer = contract.answers.find((a) => a.id !== mainAnswer.id)!
   return (
     <BuyPanelBody
       contract={contract}
@@ -123,36 +123,49 @@ function BinaryMultiChoiceBetPanel(props: {
         answerToBuy: contract.answers[0],
         answerText: answer.text,
       }}
+      pseudonym={{
+        YES: {
+          pseudonymName: mainAnswer.text,
+          pseudonymColor: 'azure',
+        },
+        NO: {
+          pseudonymName: otherAnswer.text,
+          pseudonymColor: 'sienna',
+        },
+      }}
       outcome={outcome}
       setOutcome={setOutcome}
       onBuySuccess={() => setTimeout(closePanel, 500)}
       onClose={closePanel}
       location={'contract page answer'}
-      panelClassName="!bg-canvas-50 gap-2"
+      className="bg-canvas-50"
     >
-      <div className={'group mr-6 text-2xl'}>
-        {answer.text}
-        {canEdit && user && (
-          <>
-            <Button
-              color="gray-white"
-              className="visible group-hover:visible sm:invisible"
-              size="xs"
-              onClick={() => setEditing(true)}
-            >
-              <PencilIcon className="text-primary-700 h-4 w-4" />
-            </Button>
-            <EditAnswerModal
-              open={editing}
-              setOpen={setEditing}
-              contract={contract}
-              answer={answer}
-              color={color}
-              user={user}
-            />
-          </>
-        )}
-      </div>
+      <Row className="items-baseline justify-between">
+        <div className={'group mr-6 text-2xl'}>
+          {answer.text}
+          {canEdit && user && (
+            <div>
+              <Button
+                color="gray-white"
+                className="visible group-hover:visible sm:invisible"
+                size="xs"
+                onClick={() => setEditing(true)}
+              >
+                <PencilIcon className="text-primary-700 h-4 w-4" />
+              </Button>
+              <EditAnswerModal
+                open={editing}
+                setOpen={setEditing}
+                contract={contract}
+                answer={answer}
+                color={color}
+                user={user}
+              />
+            </div>
+          )}
+        </div>
+        <span className="text-2xl">{formatPercent(answer.prob)}</span>
+      </Row>
     </BuyPanelBody>
   )
 }

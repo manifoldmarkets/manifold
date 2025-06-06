@@ -2,10 +2,10 @@ import clsx from 'clsx'
 import { Contract } from 'common/contract'
 import { getShareUrl } from 'common/util/share'
 import { useState } from 'react'
-import { useUser } from 'web/hooks/use-user'
 import { Modal } from '../layout/modal'
 import { QRCode } from '../widgets/qr-code'
 import { Button } from './button'
+import { useUser } from 'web/hooks/use-user'
 
 export function ShareQRButton(props: {
   contract: Contract
@@ -14,7 +14,6 @@ export function ShareQRButton(props: {
   const { contract, className } = props
   const user = useUser()
   const shareUrl = getShareUrl(contract, user?.username)
-
   const [open, setOpen] = useState(false)
 
   return (

@@ -4,14 +4,15 @@ import { DAY_MS } from 'common/util/time'
 import { first, groupBy, last, sumBy } from 'lodash'
 import { filterDefined } from 'common/util/array'
 import { getAnswerColor } from 'web/components/charts/contract/choice'
-import { useBets } from 'web/hooks/use-bets-supabase'
 import { DisplayUser } from 'common/api/user-types'
 import { ChartPosition } from 'common/chart-position'
 import { getContractBetMetrics } from 'common/calculate'
+import { useBetsOnce } from 'client-common/hooks/use-bets'
+import { api } from 'web/lib/api/api'
 
 export const useChartPositions = (contract: Contract) => {
   const [displayUser, setDisplayUser] = useState<DisplayUser>()
-  const usersBets = useBets({
+  const usersBets = useBetsOnce((params) => api('bets', params), {
     contractId: contract.id,
     userId: displayUser?.id,
     filterRedemptions: true,
@@ -40,12 +41,7 @@ export const useChartPositions = (contract: Contract) => {
               (bet) => bet.createdTime >= time[0] && bet.createdTime < time[1]
             )
             const a = answers.find((a) => a.id === answerId)
-            const color = a
-              ? getAnswerColor(
-                  a,
-                  answers.map((a) => a.text)
-                )
-              : undefined
+            const color = a ? getAnswerColor(a) : undefined
             const firstBet = first(bets)
             const lastBet = last(bets)
             if (!firstBet || !lastBet) return undefined

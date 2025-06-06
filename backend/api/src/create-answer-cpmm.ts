@@ -1,14 +1,10 @@
-import * as admin from 'firebase-admin'
 import { groupBy, partition, sumBy } from 'lodash'
-import { CPMMMultiContract, add_answers_mode } from 'common/contract'
+import { CPMMMultiContract } from 'common/contract'
 import { User } from 'common/user'
-import { CandidateBet, getBetDownToOneMultiBetInfo } from 'common/new-bet'
+import { getBetDownToOneMultiBetInfo } from 'common/new-bet'
 import { Answer, getMaximumAnswers } from 'common/answer'
 import { APIError, APIHandler } from './helpers/endpoint'
-import { getTieredAnswerCost } from 'common/economy'
 import { randomString } from 'common/util/random'
-import { getUnfilledBetsAndUserBalances, updateMakers } from './place-bet'
-import { FieldValue } from 'firebase-admin/firestore'
 import {
   addCpmmMultiLiquidityAnswersSumToOne,
   getCpmmProbability,
@@ -17,15 +13,13 @@ import { isAdminId } from 'common/envs/constants'
 import { floatingEqual } from 'common/util/math'
 import { noFees } from 'common/fees'
 import { getCpmmInitialLiquidity } from 'common/antes'
-import { addUserToContractFollowers } from 'shared/follow-market'
 import { getContractSupabase, getUser, log } from 'shared/utils'
 import { createNewAnswerOnContractNotification } from 'shared/create-notification'
 import { removeUndefinedProps } from 'common/util/object'
 import {
-  SERIAL,
+  createSupabaseDirectClient,
   SupabaseDirectClient,
   SupabaseTransaction,
-  createSupabaseDirectClient,
 } from 'shared/supabase/init'
 import { incrementBalance } from 'shared/supabase/users'
 import {
@@ -37,52 +31,57 @@ import { convertBet } from 'common/supabase/bets'
 import { betsQueue } from 'shared/helpers/fn-queue'
 import { insertLiquidity } from 'shared/supabase/liquidity'
 import {
-  broadcastNewAnswer,
-  broadcastUpdatedAnswer,
-} from 'shared/websockets/helpers'
-import {
   getAnswersForContract,
   insertAnswer,
   updateAnswer,
+  updateAnswers,
 } from 'shared/supabase/answers'
-
+import { getAnswerCostFromLiquidity } from 'common/tier'
+import { updateContract } from 'shared/supabase/contracts'
+import { FieldVal } from 'shared/supabase/utils'
+import { runTransactionWithRetries } from 'shared/transact-with-retries'
+import { Bet, getNewBetId, LimitBet, maker } from 'common/bet'
+import { followContractInternal } from 'api/follow-contract'
+import { ContractMetric } from 'common/contract-metric'
+import { getContractMetrics } from 'shared/helpers/user-contract-metrics'
+import { filterDefined } from 'common/util/array'
+import { getUnfilledBetsAndUserBalances, updateMakers } from 'api/helpers/bets'
 export const createAnswerCPMM: APIHandler<'market/:contractId/answer'> = async (
   props,
   auth
 ) => {
   const { contractId, text } = props
   return await betsQueue.enqueueFn(
-    () => createAnswerCpmmMain(contractId, text, auth.uid),
+    () => createAnswerCpmmFull(contractId, text, auth.uid),
     [contractId, auth.uid]
   )
 }
-
-export const createAnswerCpmmMain = async (
+const createAnswerCpmmFull = async (
   contractId: string,
   text: string,
-  creatorId: string,
-  options: {
-    overrideAddAnswersMode?: add_answers_mode
-    specialLiquidityPerAnswer?: number
-    loverUserId?: string
-  } = {}
+  userId: string
 ) => {
-  const { overrideAddAnswersMode, specialLiquidityPerAnswer, loverUserId } =
-    options
   log('Received ' + contractId + ' ' + text)
+  const contract = await verifyContract(contractId, userId)
+  return await createAnswerCpmmMain(contract, text, userId)
+}
 
+const verifyContract = async (contractId: string, creatorId: string) => {
   const contract = await getContractSupabase(contractId)
   if (!contract) throw new APIError(404, 'Contract not found')
+  if (contract.token !== 'MANA') {
+    throw new APIError(403, 'Cannot add answers to sweepstakes question')
+  }
   if (contract.mechanism !== 'cpmm-multi-1')
     throw new APIError(403, 'Requires a cpmm multiple choice contract')
   if (contract.outcomeType === 'NUMBER')
     throw new APIError(403, 'Cannot create new answers for numeric contracts')
 
-  const { closeTime, shouldAnswersSumToOne } = contract
+  const { closeTime } = contract
   if (closeTime && Date.now() > closeTime)
     throw new APIError(403, 'Trading is closed')
 
-  const addAnswersMode = overrideAddAnswersMode ?? contract.addAnswersMode
+  const addAnswersMode = contract.addAnswersMode
 
   if (!addAnswersMode || addAnswersMode === 'DISABLED') {
     throw new APIError(400, 'Adding answers is disabled')
@@ -96,28 +95,36 @@ export const createAnswerCpmmMain = async (
     throw new APIError(403, 'Only the creator or an admin can create an answer')
   }
 
-  const pg = createSupabaseDirectClient()
+  return contract
+}
 
-  const answerCost = getTieredAnswerCost(contract.marketTier)
+const createAnswerCpmmMain = async (
+  contract: Awaited<ReturnType<typeof verifyContract>>,
+  text: string,
+  creatorId: string
+) => {
+  const { shouldAnswersSumToOne } = contract
 
-  let needToDoSketchyFirebaseRevert = false // for updating contract liquidity
-  const { newAnswer, updatedAnswers, user } = await pg
-    .tx({ mode: SERIAL }, async (pgTrans) => {
+  const answerCost = getAnswerCostFromLiquidity(
+    contract.totalLiquidity,
+    contract.answers.length
+  )
+
+  const { newAnswer, user } = await runTransactionWithRetries(
+    async (pgTrans) => {
       const user = await getUser(creatorId, pgTrans)
       if (!user) throw new APIError(401, 'Your account was not found')
       if (user.isBannedFromPosting) throw new APIError(403, 'You are banned')
 
-      if (user.balance < answerCost && !specialLiquidityPerAnswer)
+      if (user.balance < answerCost)
         throw new APIError(403, 'Insufficient balance, need M' + answerCost)
 
-      if (!specialLiquidityPerAnswer) {
-        await incrementBalance(pgTrans, user.id, {
-          balance: -answerCost,
-          totalDeposits: -answerCost,
-        })
-      }
+      await incrementBalance(pgTrans, user.id, {
+        balance: -answerCost,
+        totalDeposits: -answerCost,
+      })
 
-      const answers = await getAnswersForContract(pgTrans, contractId)
+      const answers = await getAnswersForContract(pgTrans, contract.id)
       const unresolvedAnswers = answers.filter((a) => !a.resolution)
       const maxAnswers = getMaximumAnswers(shouldAnswersSumToOne)
       if (unresolvedAnswers.length >= maxAnswers) {
@@ -127,22 +134,10 @@ export const createAnswerCpmmMain = async (
         )
       }
 
-      let poolYes = answerCost
-      let poolNo = answerCost
-      let totalLiquidity = answerCost
-      let prob = 0.5
-
-      if (specialLiquidityPerAnswer) {
-        if (shouldAnswersSumToOne)
-          throw new APIError(
-            500,
-            "Can't specify specialLiquidityPerAnswer and shouldAnswersSumToOne"
-          )
-        prob = 0.02
-        poolYes = specialLiquidityPerAnswer
-        poolNo = specialLiquidityPerAnswer / (1 / prob - 1)
-        totalLiquidity = specialLiquidityPerAnswer
-      }
+      const poolYes = answerCost
+      const poolNo = answerCost
+      const totalLiquidity = answerCost
+      const prob = 0.5
 
       const id = randomString()
       const n = answers.length
@@ -150,7 +145,7 @@ export const createAnswerCpmmMain = async (
       const newAnswer: Answer = removeUndefinedProps({
         id,
         index: n,
-        contractId,
+        contractId: contract.id,
         createdTime,
         userId: user.id,
         text,
@@ -161,12 +156,11 @@ export const createAnswerCpmmMain = async (
         totalLiquidity,
         subsidyPool: 0,
         probChanges: { day: 0, week: 0, month: 0 },
-        loverUserId,
       })
 
       const updatedAnswers: Answer[] = []
       if (shouldAnswersSumToOne) {
-        const updatedAnswers = await createAnswerAndSumAnswersToOne(
+        await createAnswerAndSumAnswersToOne(
           pgTrans,
           user,
           contract,
@@ -174,58 +168,39 @@ export const createAnswerCpmmMain = async (
           newAnswer,
           answerCost
         )
+        const updatedAnswers = await getAnswersForContract(pgTrans, contract.id)
         await convertOtherAnswerShares(pgTrans, updatedAnswers, newAnswer.id)
       } else {
         await insertAnswer(pgTrans, newAnswer)
       }
 
-      if (!specialLiquidityPerAnswer) {
-        await firestore.doc(`contracts/${contractId}`).update({
-          totalLiquidity: FieldValue.increment(answerCost),
-        })
-        needToDoSketchyFirebaseRevert = true
+      await updateContract(pgTrans, contract.id, {
+        totalLiquidity: FieldVal.increment(answerCost),
+      })
 
-        const lp = getCpmmInitialLiquidity(
-          user.id,
-          contract,
-          answerCost,
-          createdTime,
-          newAnswer.id
-        )
+      const lp = getCpmmInitialLiquidity(
+        user.id,
+        contract,
+        answerCost,
+        createdTime,
+        newAnswer.id
+      )
 
-        await insertLiquidity(pgTrans, lp)
-      }
+      await insertLiquidity(pgTrans, lp)
 
       return { newAnswer, updatedAnswers, user }
-    })
-    // end of pgTrans
-    .catch(async (e) => {
-      if (needToDoSketchyFirebaseRevert) {
-        try {
-          await firestore.doc(`contracts/${contractId}`).update({
-            totalLiquidity: FieldValue.increment(-answerCost),
-          })
-        } catch (e) {
-          log.error(
-            `Failed to revert contract liquidity by ${answerCost}. Must manually reconcile!`
-          )
-          throw e
-        }
-      }
-      throw e
-    })
+    }
+  )
 
   const continuation = async () => {
-    broadcastNewAnswer(contract, newAnswer)
-    updatedAnswers.forEach((a) => broadcastUpdatedAnswer(contract, a))
-
     await createNewAnswerOnContractNotification(
       newAnswer.id,
       user,
       text,
       contract
     )
-    await addUserToContractFollowers(contractId, creatorId)
+    const pg = createSupabaseDirectClient()
+    await followContractInternal(pg, contract.id, true, creatorId)
   }
   return { result: { newAnswerId: newAnswer.id }, continue: continuation }
 }
@@ -249,8 +224,6 @@ async function createAnswerAndSumAnswersToOne(
       '"Other" answer not found, and is required for adding new answers.'
     )
   }
-
-  const contractDoc = firestore.doc(`contracts/${contract.id}`)
 
   // 1. Create a mana budget including answerCost, and shares from Other.
   // 2. Keep track of excess Yes and No shares of Other. Other has been divided
@@ -319,8 +292,8 @@ async function createAnswerAndSumAnswersToOne(
     newAnswer,
     updatedOtherAnswer,
   ]
-  const { unfilledBets, balanceByUserId } =
-    await getUnfilledBetsAndUserBalances(pgTrans, contractDoc)
+  const { unfilledBets, balanceByUserId, contractMetrics } =
+    await getUnfilledBetsAndUserBalances(pgTrans, contract, user.id)
 
   // Cancel limit orders on Other answer.
   const [unfilledBetsOnOther, unfilledBetsExcludingOther] = partition(
@@ -347,10 +320,6 @@ async function createAnswerAndSumAnswersToOne(
     ),
   })
 
-  await insertAnswer(pgTrans, newAnswer)
-
-  await updateAnswer(pgTrans, otherAnswer.id, updatedOtherAnswerProps)
-
   const poolsByAnswer = Object.fromEntries(
     betResults.map((r) => [
       r.answer.id,
@@ -373,51 +342,58 @@ async function createAnswerAndSumAnswersToOne(
     extraMana
   )
 
-  const updatedAnswers: Answer[] = []
+  const answerUpdates: Pick<Answer, 'id' | 'poolNo' | 'poolYes' | 'prob'>[] = []
+  const allOrdersToCancel: LimitBet[] = []
+  const makerIDsByTakerBetId: Record<string, maker[]> = {}
+  let allUpdatedMetrics: ContractMetric[] = []
   for (const result of betResults) {
     const { answer, bet, makers, ordersToCancel } = result
 
-    const betRow = await insertBet(
+    const { insertedBet: betRow, updatedMetrics } = await insertBet(
       {
         userId: user.id,
         isApi: false,
         ...bet,
       },
-      pgTrans
+      pgTrans,
+      contractMetrics
     )
-
+    allUpdatedMetrics = updatedMetrics
     const pool = newPoolsByAnswer[answer.id]
     const { YES: poolYes, NO: poolNo } = pool
     const prob = getCpmmProbability(pool, 0.5)
-    log('Updating answer ', {
-      answerText: answer.text,
+    answerUpdates.push({
+      id: answer.id,
       poolYes,
       poolNo,
       prob,
     })
-    const updated = await updateAnswer(pgTrans, answer.id, {
-      poolYes,
-      poolNo,
-      prob,
-    })
-    updatedAnswers.push(updated)
+    if (makers) {
+      makerIDsByTakerBetId[betRow.bet_id] = makers
+    }
 
-    await updateMakers(makers, betRow.bet_id, pgTrans)
-    await cancelLimitOrders(
-      pgTrans,
-      ordersToCancel.map((b) => b.id)
-    )
+    allOrdersToCancel.push(...ordersToCancel)
   }
-
-  await cancelLimitOrders(
-    pgTrans,
-    unfilledBetsOnOther.map((b) => b.id)
+  const { bulkUpdateLimitOrdersQuery } = await updateMakers(
+    makerIDsByTakerBetId,
+    contract,
+    allUpdatedMetrics,
+    pgTrans
   )
+  await pgTrans.none(bulkUpdateLimitOrdersQuery)
+  log('inserting new answer')
+  await insertAnswer(pgTrans, newAnswer)
+  log('updating index and liquidity of Other')
+  await updateAnswer(pgTrans, otherAnswer.id, updatedOtherAnswerProps)
 
-  return updatedAnswers
+  for (const answer of answerUpdates) {
+    log('Updating answer ', answer)
+  }
+  await updateAnswers(pgTrans, contract.id, answerUpdates)
+
+  allOrdersToCancel.push(...unfilledBetsOnOther)
+  await cancelLimitOrders(pgTrans, allOrdersToCancel)
 }
-
-const firestore = admin.firestore()
 
 async function convertOtherAnswerShares(
   pgTrans: SupabaseDirectClient,
@@ -437,6 +413,7 @@ async function convertOtherAnswerShares(
   )
 
   const betsByUserId = groupBy(bets, (b) => b.userId)
+  const newBets: Bet[] = []
 
   // Gain YES shares in new answer for each YES share in Other.
   for (const [userId, bets] of Object.entries(betsByUserId)) {
@@ -445,9 +422,8 @@ async function convertOtherAnswerShares(
       (b) => b.shares * (b.outcome === 'YES' ? 1 : -1)
     )
     if (!floatingEqual(position, 0) && position > 0) {
-      const freeYesSharesBet: CandidateBet & {
-        userId: string
-      } = {
+      const freeYesSharesBet: Bet = {
+        id: getNewBetId(),
         contractId,
         userId,
         answerId: newAnswer.id,
@@ -461,18 +437,14 @@ async function convertOtherAnswerShares(
         probAfter: newAnswer.prob,
         createdTime: now,
         fees: noFees,
-        isAnte: false,
         isRedemption: true,
-        isChallenge: false,
-        visibility: bets[0].visibility,
         isApi: false,
       }
-      await insertBet(freeYesSharesBet, pgTrans)
+      newBets.push(freeYesSharesBet)
     }
   }
 
   // Convert NO shares in Other answer to YES shares in all other answers (excluding new answer).
-  const newBets: (CandidateBet & { userId: string })[] = []
   for (const [userId, bets] of Object.entries(betsByUserId)) {
     const now = Date.now()
     const noPosition = sumBy(
@@ -480,9 +452,8 @@ async function convertOtherAnswerShares(
       (b) => b.shares * (b.outcome === 'YES' ? -1 : 1)
     )
     if (!floatingEqual(noPosition, 0) && noPosition > 0) {
-      const convertNoSharesBet: CandidateBet & {
-        userId: string
-      } = {
+      const convertNoSharesBet: Bet = {
+        id: getNewBetId(),
         contractId,
         userId,
         answerId: otherAnswer.id,
@@ -496,10 +467,7 @@ async function convertOtherAnswerShares(
         probAfter: otherAnswer.prob,
         createdTime: now,
         fees: noFees,
-        isAnte: false,
         isRedemption: true,
-        isChallenge: false,
-        visibility: bets[0].visibility,
         isApi: false,
       }
       newBets.push(convertNoSharesBet)
@@ -508,9 +476,8 @@ async function convertOtherAnswerShares(
         (a) => a.id !== newAnswer.id && a.id !== otherAnswer.id
       )
       for (const answer of previousAnswers) {
-        const gainYesSharesBet: CandidateBet & {
-          userId: string
-        } = {
+        const gainYesSharesBet: Bet = {
+          id: getNewBetId(),
           contractId,
           userId,
           answerId: answer.id,
@@ -524,16 +491,21 @@ async function convertOtherAnswerShares(
           probAfter: answer.prob,
           createdTime: now,
           fees: noFees,
-          isAnte: false,
           isRedemption: true,
-          isChallenge: false,
-          visibility: bets[0].visibility,
           isApi: false,
         }
         newBets.push(gainYesSharesBet)
       }
     }
   }
-  await bulkInsertBets(newBets, pgTrans)
+  const contractMetrics = await getContractMetrics(
+    pgTrans,
+    newBets.map((b) => b.userId),
+    contractId,
+    filterDefined(newBets.map((b) => b.answerId)),
+    true
+  )
+
+  await bulkInsertBets(pgTrans, newBets, contractMetrics)
   return answers
 }

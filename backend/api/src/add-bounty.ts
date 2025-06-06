@@ -2,6 +2,7 @@ import { createBountyAddedNotification } from 'shared/create-notification'
 import { runAddBountyTxn } from 'shared/txn/run-bounty-txn'
 import { getContract } from 'shared/utils'
 import { type APIHandler } from './helpers/endpoint'
+import { createSupabaseDirectClient } from 'shared/supabase/init'
 
 export const addBounty: APIHandler<'market/:contractId/add-bounty'> = async (
   props,
@@ -9,7 +10,6 @@ export const addBounty: APIHandler<'market/:contractId/add-bounty'> = async (
 ) => {
   const { contractId, amount } = props
 
-  // run as transaction to prevent race conditions
   const txn = await runAddBountyTxn({
     fromId: auth.uid,
     fromType: 'USER',
@@ -20,7 +20,8 @@ export const addBounty: APIHandler<'market/:contractId/add-bounty'> = async (
     category: 'BOUNTY_ADDED',
   })
 
-  const contract = await getContract(contractId)
+  const pg = createSupabaseDirectClient()
+  const contract = await getContract(pg, contractId)
   if (contract && contract.creatorId !== auth.uid) {
     await createBountyAddedNotification(
       contract.creatorId,

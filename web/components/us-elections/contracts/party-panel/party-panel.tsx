@@ -15,52 +15,174 @@ import {
 import { CreatorAndAnswerLabel } from 'web/components/answers/answer-components'
 import { MultiBettor } from 'web/components/answers/answer-components'
 import { CPMMMultiContract } from 'common/contract'
-import { PercentChangeToday } from '../candidates-panel/candidate-bar'
-import { useUserContractBets } from 'web/hooks/use-user-bets'
+import {
+  BubblePercentChange,
+  PercentChangeToday,
+} from '../candidates-panel/candidate-bar'
 import { groupBy, sumBy } from 'lodash'
 import { floatingEqual } from 'common/util/math'
 import { UserPosition } from '../candidates-panel/candidates-user-position'
+import { ProbabilityNeedle } from 'web/components/us-elections/probability-needle'
+import { SizedContainer } from 'web/components/sized-container'
+import { Spacer } from 'web/components/layout/spacer'
+import Image from 'next/image'
+import { IoIosPerson } from 'react-icons/io'
+import { useUserContractBets } from 'client-common/hooks/use-user-bets'
+import { api } from 'web/lib/api/api'
+import { useIsPageVisible } from 'web/hooks/use-page-visible'
 
 // just the bars
 export function PartyPanel(props: {
   contract: MultiContract
   maxAnswers?: number
+  includeNeedle?: boolean
+  includeHead?: boolean
 }) {
-  const { contract, maxAnswers = Infinity } = props
+  const { contract, maxAnswers = Infinity, includeNeedle, includeHead } = props
   const { resolutions, outcomeType } = contract
 
   const shouldAnswersSumToOne =
     'shouldAnswersSumToOne' in contract ? contract.shouldAnswersSumToOne : true
   const user = useUser()
-  const answers = contract.answers
-    .filter(
-      (a) =>
-        outcomeType === 'MULTIPLE_CHOICE' || ('number' in a && a.number !== 0)
-    )
-    .map((a) => ({ ...a, prob: getAnswerProbability(contract, a.id) }))
+
+  const answers =
+    outcomeType !== 'MULTIPLE_CHOICE'
+      ? []
+      : contract.answers.map((a) => ({
+          ...a,
+          prob: getAnswerProbability(contract, a.id),
+        }))
 
   const sortByProb = true
   const displayedAnswers = sortBy(answers, [
     // Winners for shouldAnswersSumToOne
     (answer) => (resolutions ? -1 * resolutions[answer.id] : answer),
     // Winners for independent binary
-    (answer) =>
-      'resolution' in answer && answer.resolution
-        ? -answer.subsidyPool
-        : -Infinity,
+    (answer) => (answer.resolution ? -answer.subsidyPool : -Infinity),
     // then by prob or index
-    (answer) =>
-      !sortByProb && 'index' in answer ? answer.index : -1 * answer.prob,
+    (answer) => (!sortByProb ? answer.index : -1 * answer.prob),
   ]).slice(0, maxAnswers)
   // Note: Hide answers if there is just one "Other" answer.
   const showNoAnswers =
     answers.length === 0 || (shouldAnswersSumToOne && answers.length === 1)
 
-  const userBets = useUserContractBets(user?.id, contract.id)
+  const userBets = useUserContractBets(
+    user?.id,
+    contract.id,
+    (params) => api('bets', params),
+    useIsPageVisible
+  )
   const userBetsByAnswer = groupBy(userBets, (bet) => bet.answerId)
 
+  // Calculate Republican to Democratic ratio
+  const republicanAnswer = answers.find((a) =>
+    a.text.includes('Republican Party')
+  )
+  const democraticAnswer = answers.find((a) =>
+    a.text.includes('Democratic Party')
+  )
+
+  const republicanProb = getAnswerProbability(contract, republicanAnswer!.id)
+  const democraticProb = getAnswerProbability(contract, democraticAnswer!.id)
+
+  let democratToRepublicanRatio = 0
+  if (republicanAnswer && democraticAnswer) {
+    const totalProb = republicanProb + democraticProb
+    democratToRepublicanRatio = democraticProb / totalProb
+  }
+
+  if (includeNeedle) {
+    return (
+      <Col className="mx-[2px] gap-2">
+        <div className="relative hidden md:flex md:items-center md:justify-between">
+          <div
+            style={{ overflow: 'hidden' }}
+            className="absolute -bottom-4 -left-[18px]"
+          >
+            <Image
+              height={250}
+              width={250} // Double the width to ensure the image is not stretched
+              src="/political-candidates/trump-right.png"
+              alt={'trump'}
+              className="h-full rounded-bl-lg"
+            />
+          </div>
+          <div
+            style={{ overflow: 'hidden' }}
+            className="absolute -bottom-4 -right-[18px]"
+          >
+            <Image
+              height={250}
+              width={250} // Double the width to ensure the image is not stretched
+              src="/political-candidates/kamala-left.png"
+              alt={'trump'}
+              className="h-full rounded-br-lg"
+            />
+          </div>
+          {!!republicanAnswer && (
+            <PartyAnswerSnippet
+              contract={contract}
+              answer={republicanAnswer}
+              color={getPartyColor(republicanAnswer.text)}
+              userBets={userBetsByAnswer[republicanAnswer.id]}
+              user={user}
+              className="absolute left-[90px]"
+            />
+          )}
+          <SizedContainer className="mx-auto h-[210px] w-1/2 lg:w-2/5 xl:w-1/2">
+            {(width, height) => (
+              <ProbabilityNeedle
+                percentage={democratToRepublicanRatio}
+                width={width}
+                height={height}
+              />
+            )}
+          </SizedContainer>
+          {!!democraticAnswer && (
+            <PartyAnswerSnippet
+              contract={contract}
+              answer={democraticAnswer}
+              color={getPartyColor(democraticAnswer.text)}
+              userBets={userBetsByAnswer[democraticAnswer.id]}
+              user={user}
+              className="absolute right-[90px]"
+            />
+          )}
+        </div>
+        <SizedContainer className="h-[210px] w-full md:hidden">
+          {(width, height) => (
+            <ProbabilityNeedle
+              percentage={democratToRepublicanRatio}
+              width={width}
+              height={height}
+            />
+          )}
+        </SizedContainer>
+        <Col className="gap-2 md:hidden">
+          {showNoAnswers ? (
+            <div className="text-ink-500 pb-4">No answers yet</div>
+          ) : (
+            <>
+              {displayedAnswers.map((answer) => (
+                <PartyAnswer
+                  key={answer.id}
+                  answer={answer}
+                  contract={contract}
+                  color={getPartyColor(answer.text)}
+                  user={user}
+                  userBets={userBetsByAnswer[answer.id]}
+                  includeHead={includeHead}
+                />
+              ))}
+            </>
+          )}
+        </Col>
+      </Col>
+    )
+  }
+
   return (
-    <Col className="mx-[2px] gap-2">
+    <Col className="gap-2">
       {showNoAnswers ? (
         <div className="text-ink-500 pb-4">No answers yet</div>
       ) : (
@@ -68,11 +190,12 @@ export function PartyPanel(props: {
           {displayedAnswers.map((answer) => (
             <PartyAnswer
               key={answer.id}
-              answer={answer as Answer}
+              answer={answer}
               contract={contract}
               color={getPartyColor(answer.text)}
               user={user}
               userBets={userBetsByAnswer[answer.id]}
+              includeHead={includeHead}
             />
           ))}
         </>
@@ -98,8 +221,18 @@ function PartyAnswer(props: {
   selected?: boolean
   userBets?: Bet[]
   user?: User | null
+  includeHead?: boolean
 }) {
-  const { answer, contract, onHover, selected, color, userBets, user } = props
+  const {
+    answer,
+    contract,
+    onHover,
+    selected,
+    color,
+    userBets,
+    user,
+    includeHead,
+  } = props
 
   const prob = getAnswerProbability(contract, answer.id)
 
@@ -118,6 +251,28 @@ function PartyAnswer(props: {
   const hasBets = userBets && !floatingEqual(sharesSum, 0)
 
   const isCpmm = contract.mechanism === 'cpmm-multi-1'
+
+  const isDemocraticParty = answer.text == 'Democratic Party'
+  const isRepublicanParty = answer.text == 'Republican Party'
+  const isOther = answer.text == 'Other'
+
+  const head =
+    isOther || (!isDemocraticParty && !isRepublicanParty) ? (
+      <IoIosPerson className="text-ink-700 absolute -bottom-6 -left-4 h-16 w-16 rounded-bl" />
+    ) : (
+      <Image
+        height={80}
+        width={80} // Double the width to ensure the image is not stretched
+        src={
+          isDemocraticParty
+            ? '/political-candidates/harris.png'
+            : '/political-candidates/trump.png'
+        }
+        alt={''}
+        className={clsx('absolute -bottom-3.5 -left-3 h-14 w-14 rounded-bl')}
+      />
+    )
+
   return (
     <Col className={'w-full'}>
       <AnswerBar
@@ -130,24 +285,27 @@ function PartyAnswer(props: {
           selected && 'ring-primary-600 ring-2'
         )}
         label={
-          <Col>
-            <CreatorAndAnswerLabel
-              text={answer.text}
-              createdTime={answer.createdTime}
-              className={clsx('items-center !leading-none ')}
-            />
-            {!resolution && hasBets && isCpmm && user && (
-              <UserPosition
-                contract={contract as CPMMMultiContract}
-                answer={answer as Answer}
-                userBets={userBets}
-                user={user}
-                className="text-ink-700 dark:text-ink-800 text-xs hover:underline"
-                greenArrowClassName="text-teal-600 dark:text-teal-300"
-                redArrowClassName="text-scarlet-600 dark:text-scarlet-400"
+          <Row className="relative h-8">
+            {!!includeHead && head}
+            <Col className={clsx(includeHead ? 'ml-12' : '')}>
+              <CreatorAndAnswerLabel
+                text={answer.text}
+                createdTime={answer.createdTime}
+                className={clsx('items-center !leading-none ')}
               />
-            )}
-          </Col>
+              {!resolution && hasBets && isCpmm && user && (
+                <UserPosition
+                  contract={contract as CPMMMultiContract}
+                  answer={answer}
+                  userBets={userBets}
+                  user={user}
+                  className="text-ink-700 dark:text-ink-800 text-left text-xs hover:underline"
+                  greenArrowClassName="text-teal-600 dark:text-teal-300"
+                  redArrowClassName="text-scarlet-600 dark:text-scarlet-400"
+                />
+              )}
+            </Col>
+          </Row>
         }
         end={
           <Row className={'items-center gap-1 sm:gap-2'}>
@@ -160,11 +318,77 @@ function PartyAnswer(props: {
             </div>
             <MultiBettor
               contract={contract as CPMMMultiContract}
-              answer={answer as Answer}
+              answer={answer}
             />
           </Row>
         }
       />
+    </Col>
+  )
+}
+
+function PartyAnswerSnippet(props: {
+  contract: MultiContract
+  answer: Answer
+  color: string
+  userBets?: Bet[]
+  user?: User | null
+  className?: string
+}) {
+  const { answer, contract, userBets, user, className } = props
+
+  const { resolution } = contract
+  const sharesSum = sumBy(userBets, (bet) =>
+    bet.outcome === 'YES' ? bet.shares : -bet.shares
+  )
+
+  const hasBets = userBets && !floatingEqual(sharesSum, 0)
+
+  const isCpmm = contract.mechanism === 'cpmm-multi-1'
+
+  const isDemocraticParty = answer.text == 'Democratic Party'
+
+  return (
+    <Col
+      className={clsx(
+        className,
+
+        isDemocraticParty ? 'items-end text-right' : ''
+      )}
+    >
+      <div className="text-ink-700">{answer.text}</div>
+      <Spacer h={1} />
+      <Row className={isDemocraticParty ? 'flex-row-reverse' : ''}>
+        <AnswerStatus
+          className="!text-5xl"
+          contract={contract}
+          answer={answer}
+        />
+        <BubblePercentChange
+          probChange={answer.probChanges.day}
+          className="whitespace-nowrap text-sm"
+        />
+      </Row>
+
+      <Spacer h={2} />
+      <div className="relative">
+        <MultiBettor
+          contract={contract as CPMMMultiContract}
+          answer={answer}
+          buttonClassName="w-20"
+        />
+        {!resolution && hasBets && isCpmm && user && (
+          <UserPosition
+            contract={contract as CPMMMultiContract}
+            answer={answer}
+            userBets={userBets}
+            user={user}
+            className="text-ink-500 dark:text-ink-700 absolute -bottom-[22px] left-0 text-xs hover:underline"
+            greenArrowClassName="text-teal-600 dark:text-teal-300"
+            redArrowClassName="text-scarlet-600 dark:text-scarlet-400"
+          />
+        )}
+      </div>
     </Col>
   )
 }

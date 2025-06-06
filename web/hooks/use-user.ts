@@ -1,12 +1,16 @@
 'use client'
+import {
+  useWebsocketPrivateUser as useWebsocketPrivateUserCommon,
+  useWebsocketUser as useWebsocketUserCommon,
+} from 'client-common/hooks/use-websocket-user'
 import { PrivateUser } from 'common/user'
 import { useContext, useEffect, useState } from 'react'
 import { AuthContext } from 'web/components/auth-context'
-import { db } from 'web/lib/supabase/db'
+import { api } from 'web/lib/api/api'
 import { getShouldBlockDestiny } from 'web/lib/supabase/groups'
-import { useLiveUpdates } from './use-persistent-supabase-polling'
-import { convertUser } from 'common/supabase/users'
-import { run } from 'common/supabase/utils'
+import { getPrivateUserSafe } from 'web/lib/supabase/users'
+import { useIsPageVisible } from './use-page-visible'
+import { db } from 'web/lib/supabase/db'
 
 export const useUser = () => {
   const authUser = useContext(AuthContext)
@@ -23,29 +27,20 @@ export const useIsAuthorized = () => {
   return authUser?.authLoaded || authUser === null ? !!authUser : undefined
 }
 
-export const usePollUser = (userId: string | undefined) => {
-  return useLiveUpdates(
-    async () => {
-      const { data } = await run(
-        db
-          .from('users')
-          .select()
-          .eq('id', userId ?? '_')
-      )
-
-      return convertUser(data[0])
-    },
-    { listen: !!userId, keys: [userId] }
+export const useWebsocketUser = (userId: string | undefined) => {
+  const isPageVisible = useIsPageVisible()
+  return useWebsocketUserCommon(userId, isPageVisible, () =>
+    api('user/by-id/:id', { id: userId ?? '_' })
   )
 }
 
-export const usePollUserBalances = (userIds: string[]) => {
-  return useLiveUpdates(async () => {
-    const { data } = await run(
-      db.from('users').select('id, balance').in('id', userIds)
-    )
-    return data
-  })
+export const useWebsocketPrivateUser = (userId: string | undefined) => {
+  const isPageVisible = useIsPageVisible()
+  return useWebsocketPrivateUserCommon(
+    userId,
+    isPageVisible,
+    getPrivateUserSafe
+  )
 }
 
 export const isBlocked = (

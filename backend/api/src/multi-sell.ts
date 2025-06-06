@@ -1,19 +1,16 @@
-import * as admin from 'firebase-admin'
 import * as crypto from 'crypto'
 import { APIError, type APIHandler } from './helpers/endpoint'
 import { onCreateBets } from 'api/on-create-bet'
-import {
-  getUnfilledBetsAndUserBalances,
-  processNewBetResult,
-} from 'api/place-bet'
-import { getContractSupabase, getUser, log } from 'shared/utils'
-import { groupBy, mapValues, sum, sumBy } from 'lodash'
+import { executeNewBetResult } from 'api/place-bet'
+import { getContract, getUser, log } from 'shared/utils'
+import { groupBy, keyBy, mapValues, sumBy } from 'lodash'
 import { getCpmmMultiSellSharesInfo } from 'common/sell-bet'
-import { incrementBalance } from 'shared/supabase/users'
-import { runEvilTransaction } from 'shared/evil-transaction'
+import { runTransactionWithRetries } from 'shared/transact-with-retries'
 import { convertBet } from 'common/supabase/bets'
 import { betsQueue } from 'shared/helpers/fn-queue'
-import { getAnswersForContract } from 'shared/supabase/answers'
+import { getContractMetrics } from 'shared/helpers/user-contract-metrics'
+import { getUnfilledBetsAndUserBalances } from 'api/helpers/bets'
+import { isSummary } from 'common/contract-metric'
 
 export const multiSell: APIHandler<'multi-sell'> = async (props, auth, req) => {
   return await betsQueue.enqueueFn(
@@ -23,38 +20,31 @@ export const multiSell: APIHandler<'multi-sell'> = async (props, auth, req) => {
 }
 
 const multiSellMain: APIHandler<'multi-sell'> = async (props, auth) => {
-  const { contractId, answerIds } = props
+  const { contractId, answerIds, deterministic } = props
   const { uid } = auth
   const isApi = auth.creds.kind === 'key'
-
-  const contract = await getContractSupabase(contractId)
-  if (!contract) throw new APIError(404, 'Contract not found')
-  const { closeTime, mechanism } = contract
-  if (closeTime && Date.now() > closeTime)
-    throw new APIError(403, 'Trading is closed.')
-  if (mechanism != 'cpmm-multi-1' || !('shouldAnswersSumToOne' in contract)) {
-    throw new APIError(400, 'Contract type/mechanism not supported')
-  }
 
   const user = await getUser(uid)
   if (!user) throw new APIError(401, 'Your account was not found')
 
-  const results = await runEvilTransaction(async (pgTrans, fbTrans) => {
-    const contractDoc = firestore.doc(`contracts/${contractId}`)
+  const results = await runTransactionWithRetries(async (pgTrans) => {
+    const contract = await getContract(pgTrans, contractId)
+    if (!contract) throw new APIError(404, 'Contract not found')
+    const { closeTime, isResolved, mechanism } = contract
+    if (closeTime && Date.now() > closeTime)
+      throw new APIError(403, 'Trading is closed.')
+    if (isResolved) throw new APIError(403, 'Market is resolved.')
+    if (mechanism != 'cpmm-multi-1' || !('shouldAnswersSumToOne' in contract))
+      throw new APIError(400, 'Contract type/mechanism not supported')
 
-    log(
-      `Checking for limit orders and bets in sellshares for user ${uid} on contract id ${contractId}.`
+    const answersToSell = contract.answers.filter((a) =>
+      answerIds.includes(a.id)
     )
-
-    const answers = await getAnswersForContract(pgTrans, contractId)
-    const answersToSell = answers.filter((a) => answerIds.includes(a.id))
     if (!answersToSell) throw new APIError(404, 'Answers not found')
-    if ('resolution' in answersToSell && answersToSell.resolution)
-      throw new APIError(403, 'Answer is resolved and cannot be bet on')
 
     const unfilledBetsAndBalances = await Promise.all(
       answersToSell.map((answer) =>
-        getUnfilledBetsAndUserBalances(pgTrans, contractDoc, answer.id)
+        getUnfilledBetsAndUserBalances(pgTrans, contract, uid, answer.id)
       )
     )
     const unfilledBets = unfilledBetsAndBalances.flatMap((b) => b.unfilledBets)
@@ -62,17 +52,33 @@ const multiSellMain: APIHandler<'multi-sell'> = async (props, auth) => {
     unfilledBetsAndBalances.forEach((b) => {
       balancesByUserId = { ...balancesByUserId, ...b.balanceByUserId }
     })
+    const allMyMetrics = await getContractMetrics(
+      pgTrans,
+      [uid],
+      contractId,
+      contract.answers.map((a) => a.id),
+      true
+    )
+    const contractMetrics = [
+      ...(unfilledBetsAndBalances.flatMap((b) => b.contractMetrics) ?? []),
+      ...allMyMetrics,
+    ]
 
     const userBets = await pgTrans.map(
-      `select * from contract_bets where user_id = $1 and answer_id in ($2:list)`,
-      [uid, answersToSell.map((a) => a.id)],
+      `select * from contract_bets
+        where user_id = $1 and contract_id = $2 and answer_id in ($3:list)`,
+      [uid, contractId, answersToSell.map((a) => a.id)],
       convertBet
     )
 
     const loanAmountByAnswerId = mapValues(
-      groupBy(userBets, 'answerId'),
-      (bets) => sumBy(bets, (bet) => bet.loanAmount ?? 0)
+      keyBy(
+        allMyMetrics.filter((m) => !isSummary(m)),
+        'answerId'
+      ),
+      (m) => m.loan ?? 0
     )
+
     const nonRedemptionBetsByAnswerId = groupBy(
       userBets.filter((bet) => bet.shares !== 0),
       (bet) => bet.answerId
@@ -88,57 +94,60 @@ const multiSellMain: APIHandler<'multi-sell'> = async (props, auth) => {
         `You specified an answer to sell in which you have 0 shares.`
       )
 
-    const betGroupId = crypto.randomBytes(12).toString('hex')
     const betResults = getCpmmMultiSellSharesInfo(
       contract,
-      answers,
       nonRedemptionBetsByAnswerId,
       unfilledBets,
       balancesByUserId,
       loanAmountByAnswerId
     )
+    const results = []
     log(`Calculated new bet information for ${user.username} - auth ${uid}.`)
-    const bets = await Promise.all(
-      betResults.map((newBetResult) =>
-        processNewBetResult(
-          newBetResult,
-          contractDoc,
-          contract,
-          user,
-          isApi,
-          pgTrans,
-          fbTrans,
-          undefined,
-          betGroupId
-        )
+    const betGroupId = crypto.randomBytes(12).toString('hex')
+    for (const newBetResult of betResults) {
+      const result = await executeNewBetResult(
+        pgTrans,
+        newBetResult,
+        contract,
+        user,
+        isApi,
+        contractMetrics,
+        balancesByUserId,
+        undefined,
+        betGroupId,
+        deterministic,
+        false
       )
-    )
-    const loanPaid = sum(Object.values(loanAmountByAnswerId))
-    if (loanPaid > 0 && bets.length > 0) {
-      await incrementBalance(pgTrans, uid, {
-        balance: -loanPaid,
-      })
+      results.push(result)
     }
-    return bets
+    return results
   })
 
   log(`Main transaction finished - auth ${uid}.`)
 
   const continuation = async () => {
     const fullBets = results.flatMap((result) => result.fullBets)
-    const allOrdersToCancel = results.flatMap(
-      (result) => result.allOrdersToCancel
+    const updatedMakers = results.flatMap((result) => result.updatedMakers)
+    const cancelledLimitOrders = results.flatMap(
+      (result) => result.cancelledLimitOrders
     )
     const makers = results.flatMap((result) => result.makers ?? [])
     const user = results[0].user
-    await onCreateBets(
+    await onCreateBets({
       fullBets,
-      contract,
+      contract: results[0].contract,
       user,
-      allOrdersToCancel,
+      cancelledLimitOrders,
       makers,
-      undefined
-    )
+      streakIncremented: results.some((b) => b.streakIncremented),
+      bonusTxn: results.find((r) => r.bonusTxn)?.bonusTxn,
+      reloadMetrics: true,
+      updatedMetrics: [],
+      userUpdates: undefined,
+      contractUpdate: undefined,
+      answerUpdates: undefined,
+      updatedMakers,
+    })
   }
 
   return {
@@ -150,5 +159,3 @@ const multiSellMain: APIHandler<'multi-sell'> = async (props, auth) => {
     continue: continuation,
   }
 }
-
-const firestore = admin.firestore()

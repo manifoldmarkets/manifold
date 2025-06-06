@@ -1,5 +1,5 @@
 import { z } from 'zod'
-import { authEndpoint } from './helpers/endpoint'
+import { APIError, authEndpoint } from './helpers/endpoint'
 import { createSupabaseClient } from 'shared/supabase/init'
 import { run } from 'common/supabase/utils'
 import { createFollowOrMarketSubsidizedNotification } from 'shared/create-notification'
@@ -25,6 +25,8 @@ export const followUserInternal = async (
   them: string,
   follow: boolean
 ) => {
+  if (me === them) throw new APIError(400, 'You cannot follow yourself')
+
   const db = createSupabaseClient()
 
   const query = follow

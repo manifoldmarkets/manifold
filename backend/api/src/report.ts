@@ -6,7 +6,7 @@ import { createSupabaseClient } from 'shared/supabase/init'
 const schema: z.ZodSchema<ReportProps> = z
   .object({
     contentOwnerId: z.string(),
-    contentType: z.enum(['user', 'comment', 'contract']),
+    contentType: z.enum(['user', 'comment', 'contract', 'post']),
     contentId: z.string(),
     description: z.string().optional(),
     parentId: z.string().optional(),

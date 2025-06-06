@@ -2,7 +2,7 @@ import { CheckCircleIcon, XCircleIcon } from '@heroicons/react/solid'
 import { Contract } from 'common/contract'
 import { Group } from 'common/group'
 import toast from 'react-hot-toast'
-import { api } from 'web/lib/firebase/api'
+import { api } from 'web/lib/api/api'
 import { AddMarketToGroupModal } from './add-market-modal'
 import { useUser } from 'web/hooks/use-user'
 import { useGroupFromSlug, useGroupRole } from 'web/hooks/use-group-supabase'
@@ -12,7 +12,6 @@ import { getAddContractToGroupPermission } from 'web/components/topics/topic-opt
 import { User } from 'common/user'
 
 export type AddContractToGroupPermissionType =
-  | 'private' // user can add a private contract (only new, only belongs in group)
   | 'new' // user can add a new contract
   | 'any' // user can add a new or existing contract
   | 'none' // user cannot add any contract

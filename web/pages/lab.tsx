@@ -4,6 +4,7 @@ import Link from 'next/link'
 import Masonry from 'react-masonry-css'
 import { SEO } from 'web/components/SEO'
 import { Page } from 'web/components/layout/page'
+import { Row } from 'web/components/layout/row'
 import { Card } from 'web/components/widgets/card'
 import { Subtitle } from 'web/components/widgets/subtitle'
 import { Title } from 'web/components/widgets/title'
@@ -113,14 +114,18 @@ export const LabCard = (props: {
   href: string
   onClick?: () => void
   target?: string
+  icon?: React.ReactNode
 }) => {
-  const { title, description, href, onClick, target } = props
+  const { title, description, href, onClick, target, icon } = props
 
   return (
     <Link href={href} onClick={onClick} target={target} className="mb-4 block">
-      <Card className="flex flex-col gap-2 px-4 py-3">
+      <Card className="hover:text-primary-800 hover:bg-primary-100 flex flex-col gap-2 px-4 py-3">
         <div className="flex items-center justify-between">
-          <div className="text-lg font-semibold">{title}</div>
+          <Row className="items-center gap-2 text-lg font-semibold">
+            {icon}
+            {title}
+          </Row>
           {target && (
             <ExternalLinkIcon className="ml-auto inline-block h-4 w-4" />
           )}

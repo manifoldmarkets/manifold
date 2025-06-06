@@ -5,9 +5,10 @@ import { getLabelFromValue } from './search-dropdown-helpers'
 
 import { useState } from 'react'
 import { FaSortAmountDownAlt } from 'react-icons/fa'
-import { FaFileContract, FaFilter, FaSliders } from 'react-icons/fa6'
+import { FaDroplet, FaFileContract, FaFilter, FaSliders } from 'react-icons/fa6'
 import { IconButton } from 'web/components/buttons/button'
 import { Carousel } from 'web/components/widgets/carousel'
+
 import { MODAL_CLASS, Modal } from '../layout/modal'
 import { Row } from '../layout/row'
 import {
@@ -19,11 +20,13 @@ import {
   DEFAULT_CONTRACT_TYPES,
   DEFAULT_FILTER,
   DEFAULT_FILTERS,
-  DEFAULT_POLL_SORTS,
   DEFAULT_SORT,
   DEFAULT_SORTS,
   FILTERS,
+  FILTER_KEY,
+  FOR_YOU_KEY,
   Filter,
+  GROUP_IDS_KEY,
   POLL_SORTS,
   PREDICTION_MARKET_PROB_SORTS,
   PREDICTION_MARKET_SORTS,
@@ -32,23 +35,46 @@ import {
   Sort,
   bountySorts,
   predictionMarketSorts,
-} from '../supabase-search'
-import { AdditionalFilterPill, FilterPill } from './filter-pills'
-import { SpiceCoin } from 'web/public/custom-components/spiceCoin'
+} from '../search'
+import { SweepsToggle } from '../sweeps/sweeps-toggle'
+import { useSweepstakes } from '../sweepstakes-provider'
+import {
+  AdditionalFilterPill,
+  FilterDropdownPill,
+  FilterPill,
+  minimalistIndigoSelectedClass,
+  unselectedClass,
+} from './filter-pills'
+import { useUser } from 'web/hooks/use-user'
+import { LIQUIDITY_KEY } from '../search'
+import { formatMoney } from 'common/util/format'
+import { liquidityTiers } from 'common/tier'
+
+export const LIQUIDITY_TIER_LABELS = liquidityTiers.map((tier) => ({
+  label: formatMoney(tier) + '+',
+  value: tier.toString(),
+}))
 
 export function ContractFilters(props: {
   className?: string
   params: SearchParams
   updateParams: (params: Partial<SearchParams>) => void
+  topicSlug?: string
+  hideSweepsToggle?: boolean
 }) {
-  const { className, params, updateParams } = props
+  const { className, params, updateParams, hideSweepsToggle, topicSlug } = props
+  const user = useUser()
 
   const {
     s: sort,
     f: filter,
     ct: contractType,
-    p: isPrizeMarketString,
+    sw: isSweepiesString,
+    li: liquidity,
+    hb: hasBets,
   } = params
+  const isSweeps = isSweepiesString === '1'
+  const { setPrefersPlay } = useSweepstakes()
 
   const selectFilter = (selection: Filter) => {
     if (selection === filter) return
@@ -84,9 +110,19 @@ export function ContractFilters(props: {
     track('select contract type', { contractType: selection })
   }
 
-  const togglePrizeMarket = () => {
+  const selectLiquidityFilter = (selection: string) => {
+    if (selection === liquidity) {
+      updateParams({ [LIQUIDITY_KEY]: '' })
+    } else {
+      updateParams({ [LIQUIDITY_KEY]: selection })
+      track('select liquidity tier', { tier: selection })
+    }
+  }
+
+  const toggleSweepies = () => {
+    setPrefersPlay(isSweeps)
     updateParams({
-      p: isPrizeMarketString == '1' ? '0' : '1',
+      sw: isSweeps ? '0' : '1',
     })
   }
 
@@ -95,70 +131,157 @@ export function ContractFilters(props: {
     sort === 'close-date' ||
     contractType === 'BOUNTIED_QUESTION'
 
-  const filterLabel = getLabelFromValue(FILTERS, filter)
+  const liquidityFilter = LIQUIDITY_TIER_LABELS.find(
+    (tier) => tier.value === liquidity
+  )
   const sortLabel = getLabelFromValue(SORTS, sort)
   const contractTypeLabel = getLabelFromValue(CONTRACT_TYPES, contractType)
 
-  const sortItems =
-    contractType == 'BOUNTIED_QUESTION'
-      ? DEFAULT_BOUNTY_SORTS
-      : contractType == 'POLL'
-      ? DEFAULT_POLL_SORTS
-      : DEFAULT_SORTS
+  const extraSortOptions =
+    contractType == 'BOUNTIED_QUESTION' ? DEFAULT_BOUNTY_SORTS : []
 
   const [openFilterModal, setOpenFilterModal] = useState(false)
 
-  const nonDefaultFilter =
-    !DEFAULT_FILTERS.some((s) => s == filter) && filter !== DEFAULT_FILTER
   const nonDefaultSort =
     !DEFAULT_SORTS.some((s) => s == sort) && sort !== DEFAULT_SORT
   const nonDefaultContractType =
     !DEFAULT_CONTRACT_TYPES.some((ct) => ct == contractType) &&
     contractType !== DEFAULT_CONTRACT_TYPE
 
+  const forYou =
+    params[FOR_YOU_KEY] === '1' && !params[GROUP_IDS_KEY] && filter !== 'news'
+
   return (
     <Col className={clsx('mb-1 mt-2 items-stretch gap-1 ', className)}>
-      <Carousel labelsParentClassName="-ml-1.5 gap-1 items-center">
-        <IconButton size="2xs" onClick={() => setOpenFilterModal(true)}>
-          <FaSliders className="h-4 w-4" />
-        </IconButton>
-        {nonDefaultFilter && (
-          <AdditionalFilterPill
-            type="filter"
-            onXClick={() => selectFilter(DEFAULT_FILTER)}
+      <Carousel fadeEdges labelsParentClassName="gap-1 items-center">
+        {isSweeps && !hideSweepsToggle && (
+          <SweepsToggle
+            sweepsEnabled={true}
+            isPlay={!isSweeps}
+            onClick={toggleSweepies}
+            isSmall
+          />
+        )}
+
+        <Row className="bg-ink-100 dark:bg-ink-300 items-center rounded-full ">
+          <button
+            key="score"
+            className={clsx(
+              'flex cursor-pointer select-none flex-row items-center whitespace-nowrap rounded-full px-3 py-0.5 text-sm outline-none transition-colors',
+              sort == 'score' ? minimalistIndigoSelectedClass : unselectedClass,
+              className
+            )}
+            onClick={() => {
+              if (sort === 'score') {
+                selectSort('freshness-score')
+              } else {
+                selectSort('score')
+              }
+            }}
           >
-            {filterLabel}
-          </AdditionalFilterPill>
+            Best
+          </button>
+          <button
+            key="freshness-score"
+            className={clsx(
+              'flex cursor-pointer select-none flex-row items-center whitespace-nowrap rounded-full px-3 py-0.5 text-sm outline-none transition-colors',
+              sort == 'freshness-score'
+                ? minimalistIndigoSelectedClass
+                : unselectedClass,
+              className
+            )}
+            onClick={() => {
+              if (sort === 'freshness-score') {
+                selectSort('score')
+              } else {
+                selectSort('freshness-score')
+              }
+            }}
+          >
+            Hot
+          </button>
+          <button
+            key="newest"
+            className={clsx(
+              'flex cursor-pointer select-none flex-row items-center whitespace-nowrap rounded-full px-3 py-0.5 text-sm outline-none transition-colors',
+              sort == 'newest'
+                ? minimalistIndigoSelectedClass
+                : unselectedClass,
+              className
+            )}
+            onClick={() => {
+              if (sort === 'newest') {
+                selectSort('score')
+              } else {
+                selectSort('newest')
+              }
+            }}
+          >
+            New
+          </button>
+        </Row>
+        {extraSortOptions.map((sortValue) => (
+          <FilterPill
+            key={sortValue}
+            selected={sortValue === sort}
+            onSelect={() => {
+              if (sort === sortValue) {
+                selectSort(DEFAULT_SORT)
+              } else {
+                selectSort(sortValue as Sort)
+              }
+            }}
+          >
+            {getLabelFromValue(SORTS, sortValue)}
+          </FilterPill>
+        ))}
+
+        <FilterDropdownPill
+          selectFilter={selectFilter}
+          currentFilter={filter}
+        />
+        {user && (
+          <FilterPill
+            selected={hasBets === '1'}
+            onSelect={() => {
+              updateParams({
+                hb: hasBets === '1' ? '0' : '1',
+              })
+            }}
+          >
+            Your bets
+          </FilterPill>
         )}
         {nonDefaultSort && (
-          <AdditionalFilterPill
-            type="sort"
-            onXClick={() => selectSort(DEFAULT_SORT)}
-          >
+          <AdditionalFilterPill onXClick={() => selectSort(DEFAULT_SORT)}>
             {sortLabel}
+          </AdditionalFilterPill>
+        )}
+        {liquidityFilter && (
+          <AdditionalFilterPill
+            onXClick={() => selectLiquidityFilter(liquidityFilter.value)}
+          >
+            {liquidityFilter.label}
           </AdditionalFilterPill>
         )}
         {nonDefaultContractType && (
           <AdditionalFilterPill
-            type="contractType"
             onXClick={() => selectContractType(DEFAULT_CONTRACT_TYPE)}
           >
             {contractTypeLabel}
           </AdditionalFilterPill>
         )}
-        <FilterPill
-          selected={isPrizeMarketString === '1'}
-          onSelect={togglePrizeMarket}
-          type="spice"
-          className="gap-1"
-        >
-          <div className="flex w-4 items-center">
-            <SpiceCoin
-              className={isPrizeMarketString !== '1' ? 'opacity-50' : ''}
-            />
-          </div>
-          Prize
-        </FilterPill>
+        {forYou && (
+          <AdditionalFilterPill
+            onXClick={() => {
+              updateParams({
+                [FOR_YOU_KEY]: '0',
+              })
+            }}
+          >
+            For you
+          </AdditionalFilterPill>
+        )}
         {!hideFilter &&
           DEFAULT_FILTERS.map((filterValue) => (
             <FilterPill
@@ -171,27 +294,10 @@ export function ContractFilters(props: {
                   selectFilter(filterValue as Filter)
                 }
               }}
-              type="filter"
             >
               {getLabelFromValue(FILTERS, filterValue)}
             </FilterPill>
           ))}
-        {sortItems.map((sortValue) => (
-          <FilterPill
-            key={sortValue}
-            selected={sortValue === sort}
-            onSelect={() => {
-              if (sort === sortValue) {
-                selectSort(DEFAULT_SORT)
-              } else {
-                selectSort(sortValue as Sort)
-              }
-            }}
-            type="sort"
-          >
-            {getLabelFromValue(SORTS, sortValue)}
-          </FilterPill>
-        ))}
         {DEFAULT_CONTRACT_TYPES.map((contractValue) => (
           <FilterPill
             key={contractValue}
@@ -203,11 +309,13 @@ export function ContractFilters(props: {
                 selectContractType(contractValue as ContractTypeType)
               }
             }}
-            type="contractType"
           >
             {getLabelFromValue(CONTRACT_TYPES, contractValue)}
           </FilterPill>
         ))}
+        <IconButton size="2xs" onClick={() => setOpenFilterModal(true)}>
+          <FaSliders className="h-4 w-4" />
+        </IconButton>
       </Carousel>
       <FilterModal
         open={openFilterModal}
@@ -216,8 +324,12 @@ export function ContractFilters(props: {
         selectFilter={selectFilter}
         selectSort={selectSort}
         selectContractType={selectContractType}
-        togglePrizeMarket={togglePrizeMarket}
+        selectLiquidityTier={selectLiquidityFilter}
+        toggleSweepies={toggleSweepies}
         hideFilter={hideFilter}
+        updateParams={updateParams}
+        forYou={forYou}
+        topicSlug={topicSlug}
       />
     </Col>
   )
@@ -230,8 +342,12 @@ function FilterModal(props: {
   selectFilter: (selection: Filter) => void
   selectSort: (selection: Sort) => void
   selectContractType: (selection: ContractTypeType) => void
-  togglePrizeMarket: () => void
+  selectLiquidityTier: (selection: string) => void
+  toggleSweepies: () => void
   hideFilter: boolean
+  updateParams: (params: Partial<SearchParams>) => void
+  forYou: boolean
+  topicSlug?: string
 }) {
   const {
     open,
@@ -240,15 +356,22 @@ function FilterModal(props: {
     selectFilter,
     selectContractType,
     selectSort,
-    togglePrizeMarket,
+    selectLiquidityTier,
+    toggleSweepies,
     hideFilter,
+    updateParams,
+    forYou,
+    topicSlug,
   } = props
   const {
     s: sort,
     f: filter,
     ct: contractType,
-    p: isPrizeMarketString,
+    sw: isSweepiesString,
+    li: liquidityTier,
   } = params
+
+  const user = useUser()
 
   const sortItems =
     contractType == 'BOUNTIED_QUESTION'
@@ -258,9 +381,10 @@ function FilterModal(props: {
       : contractType === 'ALL' || contractType === 'BINARY'
       ? PREDICTION_MARKET_PROB_SORTS
       : PREDICTION_MARKET_SORTS
+
   return (
     <Modal open={open} setOpen={setOpen}>
-      <Col className={clsx(MODAL_CLASS, 'text-ink-600 text-sm')}>
+      <Col className={clsx(MODAL_CLASS, 'text-ink-600 !items-stretch text-sm')}>
         {!hideFilter && (
           <Col className="gap-2">
             <Row className="items-center gap-1 font-semibold">
@@ -268,18 +392,6 @@ function FilterModal(props: {
               Filters
             </Row>
             <Row className="flex-wrap gap-1">
-              <FilterPill
-                selected={isPrizeMarketString === '1'}
-                onSelect={togglePrizeMarket}
-                type="spice"
-              >
-                <Row className="items-center gap-1">
-                  <SpiceCoin
-                    className={isPrizeMarketString !== '1' ? 'opacity-50' : ''}
-                  />
-                  Prize
-                </Row>
-              </FilterPill>
               {!hideFilter &&
                 FILTERS.map(({ label: filterLabel, value: filterValue }) => (
                   <FilterPill
@@ -292,11 +404,48 @@ function FilterModal(props: {
                         selectFilter(filterValue as Filter)
                       }
                     }}
-                    type="filter"
                   >
                     {filterLabel}
                   </FilterPill>
                 ))}
+              <FilterPill
+                selected={isSweepiesString === '1'}
+                onSelect={toggleSweepies}
+              >
+                Sweepstakes
+              </FilterPill>
+              {user && (
+                <FilterPill
+                  disabled={!!topicSlug}
+                  selected={forYou}
+                  onSelect={() => {
+                    updateParams({
+                      [FOR_YOU_KEY]: forYou ? '0' : '1',
+                      [GROUP_IDS_KEY]: '', // Clear any topic selection when toggling For You
+                      [FILTER_KEY]: filter === 'news' ? 'open' : filter,
+                    })
+                  }}
+                >
+                  For you
+                </FilterPill>
+              )}
+            </Row>
+            <Row className="items-center gap-1 font-semibold">
+              <FaDroplet className="h-4 w-4" />
+              Liquidity filters
+            </Row>
+            <Row className="flex-wrap gap-1">
+              {LIQUIDITY_TIER_LABELS.slice(1, LIQUIDITY_TIER_LABELS.length).map(
+                ({ label, value }) => (
+                  <FilterPill
+                    key={value}
+                    selected={value === liquidityTier}
+                    onSelect={() => selectLiquidityTier(value)}
+                  >
+                    {label}
+                  </FilterPill>
+                )
+              )}
             </Row>
           </Col>
         )}
@@ -317,7 +466,6 @@ function FilterModal(props: {
                     selectSort(sortValue as Sort)
                   }
                 }}
-                type="sort"
               >
                 {sortLabel}
               </FilterPill>
@@ -342,7 +490,6 @@ function FilterModal(props: {
                       selectContractType(contractTypeValue as ContractTypeType)
                     }
                   }}
-                  type="contractType"
                 >
                   {contractTypeLabel}
                 </FilterPill>
@@ -352,5 +499,60 @@ function FilterModal(props: {
         </Col>
       </Col>
     </Modal>
+  )
+}
+
+function ToggleButton(props: {
+  onClick: () => void
+  selected: boolean
+  children: React.ReactNode
+}) {
+  const { onClick, selected, children } = props
+  return (
+    <button
+      className={clsx(
+        'flex h-full items-center rounded px-3 transition-colors',
+        selected
+          ? 'bg-indigo-600 text-white'
+          : 'dark:bg-ink-300 dark:text-ink-600 text-ink-500 bg-ink-200 hover:bg-ink-300 dark:hover:bg-ink-400'
+      )}
+      onClick={onClick}
+    >
+      {children}
+    </button>
+  )
+}
+
+export function BestHotToggle(props: {
+  sort: Sort
+  onChange: (params: Partial<SearchParams>) => void
+}) {
+  const { sort, onChange } = props
+
+  return (
+    <Row className="h-8 gap-1 rounded text-sm">
+      <ToggleButton
+        onClick={() => {
+          if (sort === 'score') {
+            onChange({ s: 'freshness-score' })
+          }
+          onChange({ s: 'score' })
+        }}
+        selected={sort == 'score'}
+      >
+        Best
+      </ToggleButton>
+      <ToggleButton
+        onClick={() => {
+          if (sort === 'freshness-score') {
+            onChange({ s: 'score' })
+          }
+          onChange({ s: 'freshness-score' })
+        }}
+        selected={sort == 'freshness-score'}
+      >
+        Hot
+      </ToggleButton>
+    </Row>
   )
 }

@@ -2,20 +2,19 @@
 import { FlagIcon } from '@heroicons/react/outline'
 import { Row } from 'web/components/layout/row'
 import { useEffect, useState } from 'react'
-import { api } from 'web/lib/firebase/api'
-import { ModReport } from 'common/mod-report'
+import { api } from 'web/lib/api/api'
 
 export function ReportsIcon(props: { className?: string }) {
   const { className } = props
   const [newReportsCount, setNewReportsCount] = useState(0)
 
   const fetchNewReportsCount = async () => {
-    const response = await api('get-mod-reports', {})
+    const response = await api('get-mod-reports', {
+      statuses: ['new'],
+      count: true,
+    })
     if (response.status === 'success') {
-      const newReports = response.reports.filter(
-        (report: ModReport) => report.status === 'new'
-      )
-      setNewReportsCount(newReports.length)
+      setNewReportsCount(response.count ?? 0)
     } else {
       console.error('Failed to fetch reports:', response)
     }
@@ -23,9 +22,6 @@ export function ReportsIcon(props: { className?: string }) {
 
   useEffect(() => {
     fetchNewReportsCount()
-    const intervalId = setInterval(fetchNewReportsCount, 10000)
-
-    return () => clearInterval(intervalId)
   }, [])
 
   return (

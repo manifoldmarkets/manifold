@@ -1,15 +1,9 @@
-import * as admin from 'firebase-admin'
 import { sumBy } from 'lodash'
-import {
-  CPMMMultiContract,
-  Contract,
-  CPMMNumericContract,
-  canCancelContract,
-} from 'common/contract'
-import { log, getUser } from 'shared/utils'
+import { HOUSE_LIQUIDITY_PROVIDER_ID } from 'common/antes'
+import { Contract, MarketContract, MultiContract } from 'common/contract'
+import { getContract, getUser, isProd, log } from 'shared/utils'
 import { APIError, type APIHandler, validate } from './helpers/endpoint'
 import { resolveMarketHelper } from 'shared/resolve-market-helpers'
-import { Answer } from 'common/answer'
 import { throwErrorIfNotMod } from 'shared/helpers/auth'
 import { ValidatedAPIParams } from 'common/api/schema'
 import {
@@ -17,11 +11,10 @@ import {
   resolveMultiSchema,
   resolvePseudoNumericSchema,
 } from 'common/api/market-types'
-import { resolveLoveMarketOtherAnswers } from 'shared/love/love-markets'
-import { setAdjustProfitFromResolvedMarkets } from 'shared/helpers/user-contract-metrics'
 import { betsQueue } from 'shared/helpers/fn-queue'
-import { getAnswersForContract } from 'shared/supabase/answers'
 import { createSupabaseDirectClient } from 'shared/supabase/init'
+import { broadcastUserUpdates } from 'shared/supabase/users'
+import { SWEEPSTAKES_MOD_IDS } from 'common/envs/constants'
 
 export const resolveMarket: APIHandler<'market/:contractId/resolve'> = async (
   props,
@@ -34,35 +27,37 @@ export const resolveMarket: APIHandler<'market/:contractId/resolve'> = async (
   )
 }
 
-const resolveMarketMain: APIHandler<'market/:contractId/resolve'> = async (
-  props,
-  auth
-) => {
+export const resolveMarketMain: APIHandler<
+  'market/:contractId/resolve'
+> = async (props, auth) => {
   const db = createSupabaseDirectClient()
 
   const { contractId } = props
-  const contractDoc = firestore.doc(`contracts/${contractId}`)
-  const contractSnap = await contractDoc.get()
-  if (!contractSnap.exists)
-    throw new APIError(404, 'No contract exists with the provided ID')
-  const contract = contractSnap.data() as Contract
-
-  let answers: Answer[] = []
-  if (contract.mechanism === 'cpmm-multi-1') {
-    // Denormalize answers.
-    answers = await getAnswersForContract(db, contractId)
-    contract.answers = answers
-  }
+  const contract = await getContract(db, contractId)
+  if (!contract) throw new APIError(404, 'Contract not found')
 
   const { creatorId, outcomeType } = contract
   if (outcomeType === 'STONK') {
     throw new APIError(403, 'STONK contracts cannot be resolved')
   }
+
   const caller = await getUser(auth.uid)
   if (!caller) throw new APIError(400, 'Caller not found')
   if (caller.isBannedFromPosting || caller.userDeleted)
     throw new APIError(403, 'Deleted or banned user cannot resolve markets')
-  if (creatorId !== auth.uid) await throwErrorIfNotMod(auth.uid)
+  if (creatorId !== auth.uid) throwErrorIfNotMod(auth.uid)
+
+  if (
+    isProd() &&
+    contract.token === 'CASH' &&
+    auth.uid !== HOUSE_LIQUIDITY_PROVIDER_ID &&
+    !SWEEPSTAKES_MOD_IDS.includes(auth.uid)
+  ) {
+    throw new APIError(
+      403,
+      'Only the Manifold account and approved mods can resolve sweepcash markets'
+    )
+  }
 
   if (contract.resolution) throw new APIError(403, 'Contract already resolved')
 
@@ -73,20 +68,10 @@ const resolveMarketMain: APIHandler<'market/:contractId/resolve'> = async (
 
   if ('answerId' in resolutionParams && 'answers' in contract) {
     const { answerId } = resolutionParams
-    const answer = answers.find((a) => a.id === answerId)
-    if (answer && 'resolution' in answer && answer.resolution) {
+    const answer = contract.answers.find((a) => a.id === answerId)
+    if (answer?.resolution) {
       throw new APIError(403, `${answerId} answer is already resolved`)
     }
-  }
-
-  if (
-    resolutionParams.outcome === 'CANCEL' &&
-    !canCancelContract(auth.uid, contract)
-  ) {
-    throw new APIError(
-      403,
-      'Only admins/mods can cancel markets, unless the market was created in the last 15 minutes'
-    )
   }
 
   log('Resolving market ', {
@@ -95,31 +80,16 @@ const resolveMarketMain: APIHandler<'market/:contractId/resolve'> = async (
     resolutionParams,
   })
 
-  if (
-    contract.isLove &&
-    contract.mechanism === 'cpmm-multi-1' &&
-    resolutionParams.outcome === 'YES' &&
-    'answerId' in resolutionParams
-  ) {
-    // For Love Markets:
-    // When resolving one answer YES, first resolve all other answers.
-    await resolveLoveMarketOtherAnswers(
-      contract,
-      caller,
-      creator,
-      resolutionParams
-    )
-
-    // Refresh answers.
-    const answers = await getAnswersForContract(db, contractId)
-    contract.answers = answers
-  }
-
-  await resolveMarketHelper(contract, caller, creator, resolutionParams)
+  const { userUpdates } = await resolveMarketHelper(
+    contract as MarketContract,
+    caller,
+    creator,
+    resolutionParams
+  )
   return {
     result: { message: 'success' },
     continue: async () => {
-      await setAdjustProfitFromResolvedMarkets(contract.id)
+      broadcastUserUpdates(userUpdates)
     },
   }
 }
@@ -129,26 +99,26 @@ function getResolutionParams(
   props: ValidatedAPIParams<'market/:contractId/resolve'>
 ) {
   const { outcomeType } = contract
+  const isMultiChoice = contract.mechanism === 'cpmm-multi-1'
+
   if (
     outcomeType === 'BINARY' ||
-    (outcomeType === 'MULTIPLE_CHOICE' &&
-      contract.mechanism === 'cpmm-multi-1' &&
-      !contract.shouldAnswersSumToOne)
+    (isMultiChoice && !contract.shouldAnswersSumToOne)
   ) {
     const binaryParams = validate(resolveBinarySchema, props)
-    if (binaryParams.answerId && outcomeType !== 'MULTIPLE_CHOICE') {
+    if (binaryParams.answerId && !isMultiChoice) {
       throw new APIError(
         400,
         'answerId field is only allowed for multiple choice markets'
       )
     }
-    if (outcomeType === 'MULTIPLE_CHOICE' && !binaryParams.answerId) {
+    if (isMultiChoice && !binaryParams.answerId) {
       throw new APIError(
         400,
         'answerId field is required for multiple choice markets'
       )
     }
-    if (binaryParams.answerId && outcomeType === 'MULTIPLE_CHOICE')
+    if (binaryParams.answerId && isMultiChoice)
       validateAnswerCpmm(contract, binaryParams.answerId)
     return {
       ...binaryParams,
@@ -160,10 +130,7 @@ function getResolutionParams(
       ...validate(resolvePseudoNumericSchema, props),
       resolutions: undefined,
     }
-  } else if (
-    (outcomeType === 'MULTIPLE_CHOICE' || outcomeType === 'NUMBER') &&
-    contract.mechanism === 'cpmm-multi-1'
-  ) {
+  } else if (isMultiChoice || outcomeType === 'NUMBER') {
     const cpmmMultiParams = validate(resolveMultiSchema, props)
     const { outcome } = cpmmMultiParams
     if (outcome === 'CANCEL') {
@@ -204,14 +171,9 @@ function getResolutionParams(
   throw new APIError(400, `Invalid outcome type: ${outcomeType}`)
 }
 
-function validateAnswerCpmm(
-  contract: CPMMMultiContract | CPMMNumericContract,
-  answerId: string
-) {
+function validateAnswerCpmm(contract: MultiContract, answerId: string) {
   const validIds = contract.answers.map((a) => a.id)
   if (!validIds.includes(answerId)) {
     throw new APIError(403, `${answerId} is not a valid answer ID`)
   }
 }
-
-const firestore = admin.firestore()

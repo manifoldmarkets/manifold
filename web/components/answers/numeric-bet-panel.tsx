@@ -6,9 +6,9 @@ import { Button, IconButton } from 'web/components/buttons/button'
 import { useEffect, useMemo, useState } from 'react'
 import { capitalize, debounce, find, first, minBy, sumBy } from 'lodash'
 import clsx from 'clsx'
-import { formatMoney, formatPercent } from 'common/util/format'
+import { formatPercent } from 'common/util/format'
 import { RangeSlider } from 'web/components/widgets/slider'
-import { api } from 'web/lib/firebase/api'
+import { api } from 'web/lib/api/api'
 import { addObjects, removeUndefinedProps } from 'common/util/object'
 import { filterDefined } from 'common/util/array'
 import { BuyAmountInput } from 'web/components/widgets/amount-input'
@@ -18,16 +18,15 @@ import { toast } from 'react-hot-toast'
 import { isAndroid, isIOS } from 'web/lib/util/device'
 import {
   getRangeContainingValue,
-  formatExpectedValue,
-  getExpectedValue,
+  formatNumberExpectedValue,
+  getNumberExpectedValue,
   answerTextToRange,
   getExpectedValuesArray,
   NEW_GRAPH_COLOR,
   answerToRange,
   getPrecision,
-} from 'common/multi-numeric'
+} from 'common/src/number'
 import { calculateCpmmMultiArbitrageYesBets } from 'common/calculate-cpmm-arbitrage'
-import { useUnfilledBetsAndBalanceByUserId } from 'web/hooks/use-bets'
 import { QuickBetAmountsRow } from 'web/components/bet/bet-panel'
 import { scaleLinear } from 'd3-scale'
 import { DoubleDistributionChart } from 'web/components/charts/generic-charts'
@@ -36,27 +35,31 @@ import { SizedContainer } from 'web/components/sized-container'
 import { getFeeTotal, noFees } from 'common/fees'
 import { FeeDisplay } from '../bet/fees'
 import { XIcon } from '@heroicons/react/solid'
-import { useMultiNumericContract } from 'web/hooks/use-multi-numeric-contract'
+import { useLiveContract } from 'web/hooks/use-contract'
+import { MoneyDisplay } from '../bet/money-display'
+import { TRADE_TERM } from 'common/envs/constants'
+import { useUnfilledBetsAndBalanceByUserId } from 'client-common/hooks/use-bets'
+import { useIsPageVisible } from 'web/hooks/use-page-visible'
 
 export const NumericBetPanel = (props: {
   contract: CPMMNumericContract
   labels?: {
     lower: string
-    about: string
     higher: string
   }
-  mode?: 'less than' | 'more than' | 'about right'
+  mode?: 'less than' | 'more than'
 }) => {
   const {
     labels = {
       lower: 'Lower',
-      about: 'About right',
       higher: 'Higher',
     },
   } = props
-  const contract = useMultiNumericContract(props.contract)
+  const contract = useLiveContract(props.contract)
   const { answers, min: minimum, max: maximum } = contract
-  const [expectedValue, setExpectedValue] = useState(getExpectedValue(contract))
+  const [expectedValue, setExpectedValue] = useState(
+    getNumberExpectedValue(contract)
+  )
   const [betAmount, setBetAmount] = useState<number | undefined>(10)
   const [range, setRange] = useState<[number, number]>([minimum, maximum])
   const [debouncedRange, setDebouncedRange] = useState<[number, number]>([
@@ -64,9 +67,9 @@ export const NumericBetPanel = (props: {
     maximum,
   ])
   const [debouncedAmount, setDebouncedAmount] = useState(betAmount)
-  const [mode, setMode] = useState<
-    'less than' | 'more than' | 'about right' | undefined
-  >(props.mode)
+  const [mode, setMode] = useState<'less than' | 'more than' | undefined>(
+    props.mode
+  )
   useEffect(() => {
     if (props.mode) changeMode(props.mode)
   }, [props.mode])
@@ -76,7 +79,10 @@ export const NumericBetPanel = (props: {
   const [inputRef, focusAmountInput] = useFocus()
   const [isSubmitting, setIsSubmitting] = useState(false)
   const { unfilledBets, balanceByUserId } = useUnfilledBetsAndBalanceByUserId(
-    contract.id
+    contract.id,
+    (params) => api('bets', params),
+    (params) => api('users/by-id/balance', params),
+    useIsPageVisible
   )
   const stringifiedAnswers = JSON.stringify(answers)
 
@@ -84,19 +90,13 @@ export const NumericBetPanel = (props: {
     ? `${range[0]} ≤ val < ${range[1]}`
     : mode === 'less than'
     ? `${capitalize(labels.lower)} than ` +
-      formatExpectedValue(range[1], contract)
+      formatNumberExpectedValue(range[1], contract)
     : mode === 'more than'
-    ? formatExpectedValue(range[0], contract) + ` or ${labels.higher}`
+    ? formatNumberExpectedValue(range[0], contract) + ` or ${labels.higher}`
     : `${range[0]} ≤ val < ${range[1]}`
 
   const modeColor =
-    mode === 'less than'
-      ? 'red'
-      : mode === 'more than'
-      ? 'green'
-      : mode === 'about right'
-      ? 'blue'
-      : 'gray-outline'
+    mode === 'less than' || mode === 'more than' ? 'purple' : 'gray-outline'
 
   const roundToEpsilon = (num: number) => Number(num.toFixed(2))
   const shouldIncludeAnswer = (a: Answer) => {
@@ -107,7 +107,7 @@ export const NumericBetPanel = (props: {
 
   const placeBet = async () => {
     if (!betAmount) {
-      setError('Please enter a bet amount')
+      setError(`Please enter a ${TRADE_TERM} amount`)
       return
     }
     setIsSubmitting(true)
@@ -123,8 +123,8 @@ export const NumericBetPanel = (props: {
           })
         ),
         {
-          loading: 'Placing bet...',
-          success: 'Bet placed!',
+          loading: `Placing ${TRADE_TERM}...`,
+          success: `${capitalize(TRADE_TERM)} placed!`,
           error: (e) => e.message,
         }
       )
@@ -169,18 +169,11 @@ export const NumericBetPanel = (props: {
     debounceRange(range)
   }
 
-  const changeMode = (newMode: 'less than' | 'more than' | 'about right') => {
-    const newExpectedValue = getExpectedValue(contract)
+  const changeMode = (newMode: 'less than' | 'more than') => {
+    const newExpectedValue = getNumberExpectedValue(contract)
     setExpectedValue(newExpectedValue)
     const midPointBucket = getRangeContainingValue(newExpectedValue, contract)
-    if (newMode === 'about right') {
-      const quarterRange = (maximum - minimum) / 4
-      const quarterAbove = Math.min(newExpectedValue + quarterRange, maximum)
-      const quarterBelow = Math.max(newExpectedValue - quarterRange, minimum)
-      const start = getRangeContainingValue(quarterBelow, contract)
-      const end = getRangeContainingValue(quarterAbove, contract)
-      setRange([start[0], end[1]])
-    } else if (newMode === 'less than') {
+    if (newMode === 'less than') {
       setRange([minimum, midPointBucket[1]])
     } else if (newMode === 'more than') {
       setRange([midPointBucket[0], maximum])
@@ -233,7 +226,9 @@ export const NumericBetPanel = (props: {
         (a) => find(updatedAnswers, (update) => update.id === a.id) ?? a
       ),
     }
-    const potentialExpectedValue = getExpectedValue(potentialContractState)
+    const potentialExpectedValue = getNumberExpectedValue(
+      potentialContractState
+    )
     // console.log('potentialPayout', potentialPayout)
 
     return {
@@ -252,6 +247,7 @@ export const NumericBetPanel = (props: {
     mode,
   ])
   const step = getPrecision(minimum, maximum, answers.length)
+  const isCashContract = contract.token === 'CASH'
 
   return (
     <Col className={'gap-2'}>
@@ -295,10 +291,10 @@ export const NumericBetPanel = (props: {
           </Row>
           <Col className={'mb-2 gap-2'}>
             <SizedContainer
-              className={clsx('h-[150px] w-full pb-3 pl-2 pr-10 sm:h-[200px]')}
+              className={clsx('h-[150px] w-full pb-3 pr-6 sm:h-[200px]')}
             >
               {(w, h) => (
-                <MultiNumericDistributionChart
+                <NumberDistributionChart
                   newColor={NEW_GRAPH_COLOR}
                   contract={contract}
                   updatedContract={potentialContractState}
@@ -311,7 +307,7 @@ export const NumericBetPanel = (props: {
             <RangeSlider
               step={step}
               color={'indigo'}
-              className={'mr-8 h-4 items-end'}
+              className={'-ml-1 mr-4 h-4 items-end'}
               highValue={range[1]}
               lowValue={range[0]}
               setValues={onChangeRange}
@@ -332,14 +328,6 @@ export const NumericBetPanel = (props: {
             {capitalize(labels.lower)}
           </Button>
           <Button
-            color={'blue'}
-            size={'xl'}
-            className={'grow'}
-            onClick={() => changeMode('about right')}
-          >
-            {capitalize(labels.about)}
-          </Button>
-          <Button
             color={'green'}
             size={'xl'}
             className={'grow'}
@@ -352,11 +340,7 @@ export const NumericBetPanel = (props: {
         <Col
           className={clsx(
             'mt-2 gap-4 rounded-md px-3 py-2',
-            mode === 'less than'
-              ? 'bg-scarlet-50'
-              : mode === 'more than'
-              ? 'bg-teal-50'
-              : 'bg-blue-50 dark:bg-blue-900/30'
+            'bg-purple-50 dark:bg-purple-900/30'
           )}
         >
           <Row className={'justify-between'}>
@@ -397,19 +381,21 @@ export const NumericBetPanel = (props: {
               disabled={isSubmitting}
               inputRef={inputRef}
               showSlider={isAdvancedTrader}
-              marketTier={contract.marketTier}
             />
             <Col className={'mt-0.5'}>
               <Row className={'gap-1'}>
-                <span className={'text-ink-700'}>Max payout:</span>
-                {formatMoney(potentialPayout)}
-                <span className=" text-green-500">
+                <span className={'text-ink-700'}>To win:</span>
+                <MoneyDisplay
+                  amount={potentialPayout}
+                  isCashContract={isCashContract}
+                />
+                <span className="text-green-500">
                   {'+' + currentReturnPercent}
                 </span>
               </Row>
               <Row className={'gap-1'}>
                 <span className={'text-ink-700'}>New expected value:</span>
-                {formatExpectedValue(potentialExpectedValue, contract)}
+                {formatNumberExpectedValue(potentialExpectedValue, contract)}
               </Row>
             </Col>
           </Row>
@@ -422,7 +408,13 @@ export const NumericBetPanel = (props: {
               onClick={placeBet}
               disabled={isSubmitting}
             >
-              Bet {formatMoney(betAmount ?? 0)} on {betLabel}
+              {capitalize(TRADE_TERM)}&nbsp;
+              <MoneyDisplay
+                amount={betAmount ?? 0}
+                isCashContract={isCashContract}
+              />
+              &nbsp;on&nbsp;
+              {betLabel}
             </Button>
           </Row>
           {fees && (
@@ -437,7 +429,7 @@ export const NumericBetPanel = (props: {
   )
 }
 
-export const MultiNumericDistributionChart = (props: {
+export const NumberDistributionChart = (props: {
   contract: CPMMNumericContract
   updatedContract?: CPMMNumericContract
   width: number
@@ -456,10 +448,13 @@ export const MultiNumericDistributionChart = (props: {
     height,
   } = props
   const { min, max } = contract
-  const data = useMemo(() => getExpectedValuesArray(contract), [contract])
+  const data = useMemo(
+    () => getExpectedValuesArray(contract),
+    [contract.answers]
+  )
   const otherData = useMemo(
     () => (updatedContract ? getExpectedValuesArray(updatedContract) : []),
-    [updatedContract]
+    [updatedContract?.answers]
   )
   const maxY = Math.max(...data.map((d) => d.y))
   const otherMaxY = Math.max(...otherData.map((d) => d.y))

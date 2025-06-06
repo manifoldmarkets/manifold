@@ -1,15 +1,17 @@
 import { Modal } from 'web/components/layout/modal'
 import { Col } from 'web/components/layout/col'
-
-import { PrivateUser, User } from 'common/user'
+import { PrivateUser, User, humanish } from 'common/user'
 import { useEffect, useState } from 'react'
 import { Button } from 'web/components/buttons/button'
-import { updatePrivateUser } from 'web/lib/firebase/users'
 import { postMessageToNative } from 'web/lib/native/post-message'
 import dayjs from 'dayjs'
 import { formatMoney } from 'common/util/format'
 import { PUSH_NOTIFICATION_BONUS } from 'common/economy'
-import { getIsNative } from 'web/lib/native/is-native'
+import { api } from 'web/lib/api/api'
+import { useNativeMessages } from 'web/hooks/use-native-messages'
+import { nativeToWebMessageType } from 'common/native-message'
+import { MesageTypeMap } from 'common/native-message'
+import { useEvent } from 'client-common/hooks/use-event'
 
 export function PushNotificationsModal(props: {
   privateUser: PrivateUser
@@ -17,21 +19,40 @@ export function PushNotificationsModal(props: {
   totalNotifications: number
 }) {
   const { privateUser, user, totalNotifications } = props
-  const [isOpen, setOpen] = useState(false)
-  const [showSettingsDescription, setShowSettingsDescription] = useState(false)
-  const showSystemNotificationsPrompt = () => {
+  const [open, setOpen] = useState(false)
+  const [showHowToEnableInSettings, setShowHowToEnableInSettings] =
+    useState(false)
+
+  const showEnableSystemNotificationsPrompt = () => {
     postMessageToNative('promptEnablePushNotifications', {})
   }
 
+  const handleNativeMessage = useEvent(
+    async (type: nativeToWebMessageType, data: MesageTypeMap[typeof type]) => {
+      const { status } =
+        data as MesageTypeMap['pushNotificationPermissionStatus']
+      if (status === 'undetermined' && privateUser.pushToken) {
+        setOpen(true)
+      }
+    }
+  )
+  useNativeMessages(['pushNotificationPermissionStatus'], handleNativeMessage)
+
   useEffect(() => {
-    if (!getIsNative() || privateUser.pushToken) return
+    if (privateUser.pushToken) {
+      postMessageToNative('tryToGetPushTokenWithoutPrompt', {})
+    }
+  }, [privateUser.pushToken])
+
+  useEffect(() => {
+    if (privateUser.pushToken) return
 
     // They said 'sure' to our prompt, but they haven't given us system permissions yet
     if (
       privateUser.interestedInPushNotifications &&
       !privateUser.rejectedPushNotificationsOn
     ) {
-      showSystemNotificationsPrompt()
+      showEnableSystemNotificationsPrompt()
       return
     }
 
@@ -60,9 +81,6 @@ export function PushNotificationsModal(props: {
     const shouldShowOurNotificationPrompt = totalNotifications >= 10
     const openTimer = setTimeout(() => {
       setOpen(shouldShowOurNotificationPrompt)
-      updatePrivateUser(privateUser.id, {
-        lastPromptedToEnablePushNotifications: Date.now(),
-      })
     }, 1000)
     return () => clearTimeout(openTimer)
   }, [
@@ -72,39 +90,50 @@ export function PushNotificationsModal(props: {
   ])
 
   useEffect(() => {
-    postMessageToNative('tryToGetPushTokenWithoutPrompt', {})
-  }, [showSettingsDescription])
+    if (open) {
+      api('me/private/update', {
+        lastPromptedToEnablePushNotifications: Date.now(),
+      })
+    }
+  }, [open])
 
-  if (!getIsNative()) return <div />
+  const bonusEligible = humanish(user) && !privateUser.pushToken
 
   return (
-    <Modal open={isOpen} setOpen={setOpen}>
+    <Modal open={open} setOpen={setOpen}>
       <Col className="bg-canvas-0 text-ink-1000 w-full justify-start gap-3 rounded-md px-8 py-6">
         <span className="text-primary-700 mb-2 text-2xl font-semibold">
-          Enable push notifications, earn{' '}
-          <span className={'text-teal-500'}>
-            {formatMoney(PUSH_NOTIFICATION_BONUS)}
-          </span>
+          Enable push notifications
+          {bonusEligible && (
+            <>
+              , earn{' '}
+              <span className={'text-teal-500'}>
+                {formatMoney(PUSH_NOTIFICATION_BONUS)}
+              </span>
+            </>
+          )}
         </span>
-        {!showSettingsDescription && (
+        {!showHowToEnableInSettings && (
           <span className={'text-ink-700'}>
             Get the most out of Manifold: replies, breaking market news, and
             direct messages.
           </span>
         )}
-        {showSettingsDescription ? (
+        {showHowToEnableInSettings ? (
           <Col className={'justify-between gap-2'}>
             <Col className={'gap-1 text-lg'}>
               <span>1. Go to your settings</span>
               <span>3. Search & tap Manifold</span>
               <span>2. Tap Notifications</span>
               <span>4. Tap Allow Notifications</span>
-              <span>
-                5. We'll send you{' '}
-                <span className={'font-semibold text-teal-500'}>
-                  {formatMoney(PUSH_NOTIFICATION_BONUS)}!
+              {bonusEligible && (
+                <span>
+                  5. We'll send you{' '}
+                  <span className={'font-semibold text-teal-500'}>
+                    {formatMoney(PUSH_NOTIFICATION_BONUS)}!
+                  </span>
                 </span>
-              </span>
+              )}
             </Col>
             <Button
               size={'xl'}
@@ -124,9 +153,16 @@ export function PushNotificationsModal(props: {
               size={'lg'}
               className={'mt-4 !font-medium'}
               onClick={() => {
-                updatePrivateUser(privateUser.id, {
-                  interestedInPushNotifications: false,
+                api('update-notif-settings', {
+                  type: 'opt_out_all',
+                  medium: 'mobile',
+                  enabled: true,
                 })
+                if (privateUser.pushToken) {
+                  api('me/private/update', {
+                    pushToken: 'delete',
+                  })
+                }
                 setOpen(false)
               }}
               color={'gray-white'}
@@ -137,22 +173,31 @@ export function PushNotificationsModal(props: {
               size={'lg'}
               className={'mt-4'}
               onClick={() => {
-                updatePrivateUser(privateUser.id, {
-                  interestedInPushNotifications: true,
+                api('update-notif-settings', {
+                  type: 'opt_out_all',
+                  medium: 'mobile',
+                  enabled: false,
                 })
                 if (!!privateUser.rejectedPushNotificationsOn) {
-                  setShowSettingsDescription(true)
+                  postMessageToNative('tryToGetPushTokenWithoutPrompt', {})
+                  setShowHowToEnableInSettings(true)
                   return
                 }
-                showSystemNotificationsPrompt()
+                showEnableSystemNotificationsPrompt()
                 setOpen(false)
               }}
             >
               <span>
-                Enable notifications for{' '}
-                <span className={'ml-1 text-teal-400'}>
-                  {formatMoney(PUSH_NOTIFICATION_BONUS)}
-                </span>
+                Enable notifications
+                {bonusEligible && (
+                  <>
+                    {' '}
+                    for{' '}
+                    <span className={'ml-1 text-teal-400'}>
+                      {formatMoney(PUSH_NOTIFICATION_BONUS)}
+                    </span>
+                  </>
+                )}
               </span>
             </Button>
           </Col>

@@ -1,5 +1,5 @@
 import { JSONContent } from '@tiptap/core'
-import { useContract } from 'web/hooks/use-contract-supabase'
+import { useContract } from 'web/hooks/use-contract'
 import { useDisplayUserById } from 'web/hooks/use-user-supabase'
 import { JSONEmpty } from '../contract/contract-description'
 import { ContractMention } from '../contract/contract-mention'

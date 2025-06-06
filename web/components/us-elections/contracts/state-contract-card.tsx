@@ -35,6 +35,7 @@ export function StateContractCard(props: {
   customTitle?: string
   titleSize?: 'lg'
   barColor?: string
+  includeHead?: boolean
 }) {
   const {
     promotedData,
@@ -45,6 +46,7 @@ export function StateContractCard(props: {
     titleSize,
     contract,
     setTargetState,
+    includeHead,
   } = props
 
   const path = contractPath(contract)
@@ -76,7 +78,7 @@ export function StateContractCard(props: {
           {/* Title is link to contract for open in new tab and a11y */}
           <Link
             className={clsx(
-              'group-hover:text-primary-700 grow items-start font-semibold transition-colors group-hover:underline sm:text-lg ',
+              'hover:text-primary-700 grow items-start font-semibold transition-colors hover:underline sm:text-lg ',
               titleSize === 'lg' && ' sm:text-3xl'
             )}
             href={path}
@@ -92,7 +94,11 @@ export function StateContractCard(props: {
       </Col>
 
       <div className="w-full overflow-hidden pt-2">
-        <PartyPanel contract={contract as MultiContract} maxAnswers={3} />
+        <PartyPanel
+          contract={contract as MultiContract}
+          maxAnswers={3}
+          includeHead={includeHead}
+        />
       </div>
     </ClickFrame>
   )

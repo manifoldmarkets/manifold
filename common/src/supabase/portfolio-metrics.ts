@@ -23,11 +23,9 @@ export async function getPortfolioHistory(
 
 export async function getCurrentPortfolio(userId: string, db: SupabaseClient) {
   const query = db
-    .from('user_portfolio_history')
+    .from('user_portfolio_history_latest')
     .select('*')
     .eq('user_id', userId)
-    .order('ts', { ascending: false })
-    .limit(1)
 
   const { data } = await run(query)
   const [d] = data
@@ -48,6 +46,10 @@ export const convertPortfolioHistory = (
     balance: +(row.balance ?? 0),
     spiceBalance: +row.spice_balance,
     loanTotal: +(row.loan_total ?? 0),
-    profit: row.profit,
+    profit: row.profit ? Number(row.profit) : undefined,
+    cashInvestmentValue: row.cash_investment_value ?? 0,
+    totalCashDeposits: row.total_cash_deposits ?? 0,
+    cashBalance: row.cash_balance ?? 0,
+    userId: row.user_id,
   } as PortfolioMetrics
 }

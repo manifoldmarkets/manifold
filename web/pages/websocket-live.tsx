@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { usePagination } from 'web/hooks/use-pagination'
-import { useApiSubscription } from 'web/hooks/use-api-subscription'
+import { useApiSubscription } from 'client-common/hooks/use-api-subscription'
 import { PaginationNextPrev } from 'web/components/widgets/pagination'
 import { Page } from 'web/components/layout/page'
 import { SEO } from 'web/components/SEO'

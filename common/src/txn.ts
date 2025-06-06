@@ -8,6 +8,7 @@ type AnyTxnType =
   | Donation
   | Tip
   | LootBoxPurchase
+  | AdminReward
   | Manalink
   | Referral
   | UniqueBettorBonus
@@ -16,16 +17,13 @@ type AnyTxnType =
   | CharityFee
   | ManaPurchase
   | SignupBonus
-  | CertMint
-  | CertTransfer
-  | CertPayMana
-  | CertDividend
-  | CertBurn
   | ContractOldResolutionPayout
   | ContractProduceSpice
   | ContractUndoProduceSpice
   | ConsumeSpice
   | ConsumeSpiceDone
+  | ConvertCash
+  | ConvertCashDone
   | QfPayment
   | QfAddPool
   | QfDividend
@@ -49,11 +47,20 @@ type AnyTxnType =
   | ContractUndoOldResolutionPayout
   | ContractAnte
   | AddSubsidy
+  | RemoveSubsidy
   | ReclaimMana
   | ManachanTweet
   | BotCommentFee
   | AirDrop
+  | ManifestAirDrop
   | ExtraPurchasedMana
+  | ManifoldTopUp
+  | CashBonus
+  | CashOutPending
+  | KycBonus
+  | ProfitFee
+  | UndoResolutionFee
+  | ContractBoostPurchase
 
 export type AnyTxnCategory = AnyTxnType['category']
 
@@ -70,21 +77,16 @@ export type Txn<T extends AnyTxnType = AnyTxnType> = {
   toType: SourceType
 
   amount: number
-  token: 'M$' | 'SHARE' | 'SPICE'
+  token: 'M$' | 'SHARE' | 'SPICE' | 'CASH' // if you add a new type, update the check in txn table schema
 
   category: AnyTxnType['category']
 
-  // Any extra data
-  data?: { [key: string]: any }
-
-  // Human-readable description
+  /** Human-readable description. In data->>'description' in the db */
   description?: string
-} & T
 
-type CertId = {
-  // TODO: should certIds be in data?
-  certId: string
-}
+  /** Any extra data. For legacy reasons, in data->'data' in the db */
+  data?: { [key: string]: any }
+} & T
 
 type LootBoxPurchase = {
   category: 'LOOTBOX_PURCHASE'
@@ -93,47 +95,11 @@ type LootBoxPurchase = {
   token: 'M$'
 }
 
-type CertMint = {
-  category: 'CERT_MINT'
-  fromType: 'BANK'
-  toType: 'USER'
-  token: 'SHARE'
-}
-
-// TODO: want some kind of ID that ties these together?
-type CertTransfer = {
-  category: 'CERT_TRANSFER'
-  fromType: 'USER' | 'CONTRACT'
-  toType: 'USER' | 'CONTRACT'
-  token: 'SHARE'
-}
-
-type CertPayMana = {
-  category: 'CERT_PAY_MANA'
-  fromType: 'USER' | 'CONTRACT'
-  toType: 'USER' | 'CONTRACT'
-  token: 'M$'
-}
-
-type CertDividend = {
-  category: 'CERT_DIVIDEND'
-  fromType: 'USER'
-  toType: 'USER'
-  token: 'M$'
-}
-
-type CertBurn = {
-  category: 'CERT_BURN'
-  fromType: 'USER'
-  toType: 'BANK'
-  token: 'SHARE'
-}
-
 type Donation = {
   fromType: 'USER'
   toType: 'CHARITY'
   category: 'CHARITY'
-  token: 'SPICE' | 'M$'
+  token: 'SPICE' | 'M$' | 'CASH'
 }
 
 type Tip = {
@@ -195,7 +161,7 @@ type CharityFee = {
   fromType: 'USER'
   toType: 'BANK'
   category: 'CHARITY_FEE'
-  token: 'SPICE'
+  token: 'SPICE' | 'CASH'
   data: {
     charityId: string
   }
@@ -219,6 +185,57 @@ type ManaPurchase = {
         // TODO: backfill this.
         paidInCents?: number
       }
+    | {
+        transactionId: string
+        type: 'gidx'
+        sessionId: string
+        paidInCents: number
+      }
+}
+type CashBonus = {
+  fromId: 'EXTERNAL'
+  fromType: 'BANK'
+  toType: 'USER'
+  category: 'CASH_BONUS'
+  data:
+    | {
+        transactionId: string
+        type: 'gidx'
+        sessionId: string
+        paidInCents: number
+      }
+    | {
+        iapTransactionId: string
+        type: 'apple'
+        paidInCents: number
+      }
+}
+
+type CashOutPending = {
+  fromType: 'USER'
+  toType: 'BANK'
+  token: 'CASH'
+  category: 'CASH_OUT'
+  data:
+    | {
+        sessionId: string
+        transactionId: string
+        type: 'gidx'
+        payoutInDollars: number
+      }
+    | {
+        merchantSessionId: string
+        transactionId: string
+        type: 'manual'
+        payoutInDollars: number
+      }
+}
+
+type KycBonus = {
+  category: 'KYC_BONUS'
+  fromType: 'BANK'
+  toType: 'USER'
+  token: 'CASH'
 }
 
 type SignupBonus = {
@@ -231,7 +248,7 @@ type ContractOldResolutionPayout = {
   fromType: 'CONTRACT'
   toType: 'USER'
   category: 'CONTRACT_RESOLUTION_PAYOUT'
-  token: 'M$'
+  token: 'M$' | 'CASH'
   data: {
     /** @deprecated - we use CONTRACT_UNDO_RESOLUTION_PAYOUT **/
     reverted?: boolean
@@ -261,7 +278,7 @@ type ConsumeSpice = {
   category: 'CONSUME_SPICE'
   token: 'SPICE'
   data: {
-    siblingId: string
+    insertTime: number
   }
 }
 type ConsumeSpiceDone = {
@@ -270,7 +287,28 @@ type ConsumeSpiceDone = {
   category: 'CONSUME_SPICE_DONE'
   token: 'M$'
   data: {
-    siblingId: string
+    insertTime: number
+  }
+}
+
+// these come in pairs to convert cash to mana
+type ConvertCash = {
+  fromType: 'USER'
+  toType: 'BANK'
+  category: 'CONVERT_CASH'
+  token: 'CASH'
+  data: {
+    insertTime: number
+  }
+}
+
+type ConvertCashDone = {
+  fromType: 'BANK'
+  toType: 'USER'
+  category: 'CONVERT_CASH_DONE'
+  token: 'M$'
+  data: {
+    insertTime: number
   }
 }
 
@@ -278,14 +316,14 @@ type ContractAnte = {
   fromType: 'USER' | 'BANK'
   toType: 'CONTRACT'
   category: 'CREATE_CONTRACT_ANTE'
-  token: 'M$'
+  token: 'M$' | 'CASH'
 }
 
 type ContractUndoOldResolutionPayout = {
   fromType: 'USER'
   toType: 'CONTRACT'
   category: 'CONTRACT_UNDO_RESOLUTION_PAYOUT'
-  token: 'M$'
+  token: 'M$' | 'CASH'
   data: {
     revertsTxnId: string
   }
@@ -426,7 +464,7 @@ type ManaPay = {
   category: 'MANA_PAYMENT'
   fromType: 'USER'
   toType: 'USER'
-  token: 'M$'
+  token: 'M$' | 'SPICE' | 'CASH'
   data: {
     visibility: 'public' | 'private'
     message: string
@@ -459,7 +497,14 @@ type AddSubsidy = {
   category: 'ADD_SUBSIDY'
   fromType: 'USER'
   toType: 'CONTRACT'
-  token: 'M$'
+  token: 'M$' | 'CASH'
+}
+
+type RemoveSubsidy = {
+  category: 'REMOVE_SUBSIDY'
+  fromType: 'CONTRACT'
+  toType: 'USER'
+  token: 'M$' | 'CASH'
 }
 
 type ReclaimMana = {
@@ -487,6 +532,13 @@ type AirDrop = {
   category: 'AIR_DROP'
   fromType: 'BANK'
   toType: 'USER'
+  token: 'M$' | 'CASH'
+}
+
+type ManifestAirDrop = {
+  category: 'MANIFEST_AIR_DROP'
+  fromType: 'BANK'
+  toType: 'USER'
   token: 'M$'
 }
 
@@ -497,7 +549,60 @@ type ExtraPurchasedMana = {
   token: 'M$'
 }
 
+type ManifoldTopUp = {
+  category: 'MANIFOLD_TOP_UP'
+  fromType: 'BANK'
+  toType: 'USER'
+  token: 'M$'
+}
+
+type ProfitFee = {
+  category: 'CONTRACT_RESOLUTION_FEE'
+  fromType: 'USER'
+  toType: 'BANK'
+  token: 'M$' | 'CASH'
+  data: {
+    contractId: string
+    payoutStartTime: number
+    answerId?: string
+  }
+}
+
+type UndoResolutionFee = {
+  category: 'UNDO_CONTRACT_RESOLUTION_FEE'
+  fromType: 'BANK'
+  toType: 'USER'
+  token: 'M$' | 'CASH'
+  data: {
+    revertsTxnId: string
+    contractId: string
+  }
+}
+
+type AdminReward = {
+  category: 'ADMIN_REWARD'
+  fromType: 'BANK'
+  toType: 'USER'
+  token: 'M$'
+  data: {
+    reportId: number
+    updateType: string
+  }
+}
+
+type ContractBoostPurchase = {
+  category: 'CONTRACT_BOOST_PURCHASE'
+  fromType: 'USER'
+  toType: 'BANK'
+  token: 'M$'
+  data: {
+    contractId: string
+    boostId: string
+  }
+}
+
 export type AddSubsidyTxn = Txn & AddSubsidy
+export type RemoveSubsidyTxn = Txn & RemoveSubsidy
 export type DonationTxn = Txn & Donation
 export type TipTxn = Txn & Tip
 export type ManalinkTxn = Txn & Manalink
@@ -508,12 +613,6 @@ export type CancelUniqueBettorBonusTxn = Txn & CancelUniqueBettorBonus
 export type CharityFeeTxn = Txn & CharityFee
 export type ManaPurchaseTxn = Txn & ManaPurchase
 export type SignupBonusTxn = Txn & SignupBonus
-export type CertTxn = Txn & CertId
-export type CertMintTxn = CertTxn & CertMint
-export type CertTransferTxn = CertTxn & CertTransfer
-export type CertPayManaTxn = CertTxn & CertPayMana
-export type CertDividendTxn = CertTxn & CertDividend
-export type CertBurnTxn = CertTxn & CertBurn
 export type ContractOldResolutionPayoutTxn = Txn & ContractOldResolutionPayout
 export type ContractUndoOldResolutionPayoutTxn = Txn &
   ContractUndoOldResolutionPayout
@@ -521,7 +620,8 @@ export type ContractProduceSpiceTxn = Txn & ContractProduceSpice
 export type ContractUndoProduceSpiceTxn = Txn & ContractUndoProduceSpice
 export type ConsumeSpiceTxn = Txn & ConsumeSpice
 export type ConsumeSpiceDoneTxn = Txn & ConsumeSpiceDone
-
+export type ConvertCashTxn = Txn & ConvertCash
+export type ConvertCashDoneTxn = Txn & ConvertCashDone
 export type QfTxn = Txn & QfId
 export type QfPaymentTxn = QfTxn & QfPayment
 export type QfAddPoolTxn = QfTxn & QfAddPool
@@ -548,4 +648,12 @@ export type ReclaimManaTxn = Txn & ReclaimMana
 export type ManachanTweetTxn = Txn & ManachanTweet
 export type BotCommentFeeTxn = Txn & BotCommentFee
 export type AirDropTxn = Txn & AirDrop
+export type ManifestAirDropTxn = Txn & ManifestAirDrop
 export type ExtraPurchasedManaTxn = Txn & ExtraPurchasedMana
+export type ManifoldTopUpTxn = Txn & ManifoldTopUp
+export type KycBonusTxn = Txn & KycBonus
+export type CashOutPendingTxn = Txn & CashOutPending
+export type ProfitFeeTxn = Txn & ProfitFee
+export type UndoResolutionFeeTxn = Txn & UndoResolutionFee
+export type AdminRewardTxn = Txn & AdminReward
+export type ContractBoostPurchaseTxn = Txn & ContractBoostPurchase

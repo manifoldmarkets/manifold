@@ -1,29 +1,32 @@
-import { DOMAIN, ENV_CONFIG, LOVE_DOMAIN } from 'common/envs/constants'
+import { DOMAIN, ENV_CONFIG } from 'common/envs/constants'
 import { Bet } from 'common/bet'
 import { getProbability } from 'common/calculate'
 import {
   Contract,
-  contractPath,
+  ContractToken,
   MultiContract,
   renderResolution,
 } from 'common/contract'
 import { PrivateUser, User } from 'common/user'
-import { formatLargeNumber, formatMoney } from 'common/util/format'
+import {
+  formatLargeNumber,
+  formatMoney,
+  formatSweepies,
+  SWEEPIES_MONIKER,
+} from 'common/util/format'
 import { formatNumericProbability } from 'common/pseudo-numeric'
 import { sendTemplateEmail, sendTextEmail } from './send-email'
-import { contractUrl, getUser, log } from 'shared/utils'
+import { contractUrl, getPrivateUser, getUser, log } from 'shared/utils'
 import { getContractOGProps } from 'common/contract-seo'
 import {
   notification_reason_types,
   NotificationReason,
 } from 'common/notification'
-import { Dictionary } from 'lodash'
+import { chunk, Dictionary } from 'lodash'
 import { getNotificationDestinationsForUser } from 'common/user-notification-preferences'
 import { buildOgUrl } from 'common/util/og'
 import { removeUndefinedProps } from 'common/util/object'
-import { getLoveOgImageUrl } from 'common/love/og-image'
-import { createSupabaseClient } from 'shared/supabase/init'
-import { getLoverRow } from 'common/love/lover'
+import { createSupabaseDirectClient } from 'shared/supabase/init'
 import { HOUR_MS } from 'common/util/time'
 
 export type PerContractInvestmentsData = {
@@ -34,6 +37,7 @@ export type PerContractInvestmentsData = {
   currentValue: number
   pastValue: number
   profit: number
+  token: ContractToken
 }
 
 export type OverallPerformanceData = {
@@ -47,13 +51,20 @@ export type OverallPerformanceData = {
   league_rank: string
 }
 
-export const emailMoneyFormat = (amount: number) => {
+export const formatMoneyEmail = (
+  amount: number,
+  token: ContractToken = 'MANA'
+) => {
+  if (token === 'CASH') {
+    return formatSweepies(amount).replace(SWEEPIES_MONIKER, 'S')
+  }
   return formatMoney(amount).replace(ENV_CONFIG.moneyMoniker, 'M')
 }
 
-export const sendMarketResolutionEmail = async (
+export const getMarketResolutionEmail = (
   reason: NotificationReason,
   privateUser: PrivateUser,
+  userName: string,
   investment: number,
   payout: number,
   creator: User,
@@ -68,10 +79,7 @@ export const sendMarketResolutionEmail = async (
     privateUser,
     reason
   )
-  if (!privateUser || !privateUser.email || !sendToEmail) return
-
-  const user = await getUser(privateUser.id)
-  if (!user) return
+  if (!privateUser.email || !sendToEmail) return
 
   const outcome = toDisplayResolution(
     contract,
@@ -81,22 +89,26 @@ export const sendMarketResolutionEmail = async (
     answerId
   )
 
-  const subject = `Resolved ${outcome}: ${contract.question}`
-
   const creatorPayoutText =
     creatorPayout >= 1 && privateUser.id === creator.id
-      ? ` (plus ${emailMoneyFormat(creatorPayout)} in commissions)`
+      ? ` (plus ${formatMoneyEmail(
+          creatorPayout,
+          contract.token
+        )} in commissions)`
       : ''
 
   const correctedInvestment =
     Number.isNaN(investment) || investment < 0 ? 0 : investment
 
-  const displayedInvestment = emailMoneyFormat(correctedInvestment)
-  const displayedPayout = emailMoneyFormat(payout)
+  const displayedInvestment = formatMoneyEmail(
+    correctedInvestment,
+    contract.token
+  )
+  const displayedPayout = formatMoneyEmail(payout, contract.token)
 
   const templateData: market_resolved_template = {
-    userId: user.id,
-    name: user.name,
+    userId: privateUser.id,
+    name: userName,
     creatorName: creator.name,
     question: contract.question,
     outcome,
@@ -107,14 +119,12 @@ export const sendMarketResolutionEmail = async (
   }
 
   // Modify template here:
-  // https://app.mailgun.com/app/sending/domains/mg.manifold.markets/templates/edit/market-resolved/initial
+  // https://app.mailgun.com/app/sending/domains/mg.manifold.markets/templates/edit/market-resolved-bulk/initial
 
-  return await sendTemplateEmail(
-    privateUser.email,
-    subject,
-    correctedInvestment === 0 ? 'market-resolved-no-bets' : 'market-resolved',
-    templateData
-  )
+  return {
+    entry: [privateUser.email, templateData] as EmailAndTemplateEntry,
+    correctedInvestment,
+  }
 }
 
 type market_resolved_template = {
@@ -129,28 +139,27 @@ type market_resolved_template = {
   unsubscribeUrl: string
 }
 
-const toDisplayResolution = (
+export const toDisplayResolution = (
   contract: Contract,
   resolution: string,
   resolutionProbability?: number,
   resolutions?: { [outcome: string]: number },
   answerId?: string
 ) => {
-  if (contract.outcomeType === 'CERT') {
-    return resolution + ' (CERT)'
-  }
+  const isMultiChoice =
+    contract.outcomeType === 'MULTIPLE_CHOICE' ||
+    contract.outcomeType === 'MULTI_NUMERIC' ||
+    contract.outcomeType === 'DATE'
+  if (resolution === 'CANCEL') return 'N/A'
+
   if (contract.outcomeType === 'BINARY') {
     const prob = resolutionProbability ?? getProbability(contract)
     return renderResolution(resolution, prob)
   }
 
   if (contract.outcomeType === 'PSEUDO_NUMERIC') {
-    const { resolution, resolutionValue } = contract
-
-    if (resolution === 'CANCEL') return 'N/A'
-
-    return resolutionValue
-      ? formatLargeNumber(resolutionValue)
+    return contract.resolutionValue
+      ? formatLargeNumber(contract.resolutionValue)
       : formatNumericProbability(
           resolutionProbability ?? getProbability(contract),
           contract
@@ -160,10 +169,20 @@ const toDisplayResolution = (
     return formatNumericProbability(getProbability(contract), contract)
   }
 
-  const isIndependentMulti =
-    contract.outcomeType === 'MULTIPLE_CHOICE' &&
-    contract.mechanism === 'cpmm-multi-1' &&
-    !contract.shouldAnswersSumToOne
+  if (contract.outcomeType === 'NUMBER') {
+    if (!resolutions) return 'Invalid resolution data'
+
+    const resolvedAnswerIds = Object.keys(resolutions)
+    const resolvedAnswers = contract.answers.filter((a) =>
+      resolvedAnswerIds.includes(a.id)
+    )
+    if (resolvedAnswers.length > 0) {
+      return resolvedAnswers.map((a) => a.text).join(', ')
+    }
+    return 'MULTI'
+  }
+
+  const isIndependentMulti = isMultiChoice && !contract.shouldAnswersSumToOne
   if (isIndependentMulti && answerId) {
     const answer = contract.answers.find((a) => a.id === answerId)
     if (answer) {
@@ -175,13 +194,12 @@ const toDisplayResolution = (
   }
   if ((resolution === 'MKT' && resolutions) || resolution === 'CHOOSE_MULTIPLE')
     return 'MULTI'
-  if (resolution === 'CANCEL') return 'N/A'
 
   const answer = (contract as MultiContract).answers.find(
     (a) => a.id === resolution
   )
   if (answer) return answer.text
-  return `#${resolution}`
+  return resolution
 }
 
 export const sendWelcomeEmail = async (
@@ -211,6 +229,52 @@ export const sendWelcomeEmail = async (
       'o:deliverytime': new Date(Date.now() + 2 * HOUR_MS).toUTCString(),
     }
   )
+}
+
+export type EmailAndTemplateData = { name: string; [key: string]: string }
+export type EmailAndTemplateEntry = [string, EmailAndTemplateData]
+
+export const sendBulkEmails = async (
+  subject: string,
+  template: string,
+  recipients: EmailAndTemplateEntry[],
+  from = `Manifold <no-reply@manifold.markets>`
+) => {
+  // Mailgun has a limit of 1000 recipients per batch
+  const emailChunks = chunk(recipients, 1000)
+  for (const chunk of emailChunks) {
+    const mailgunDomain = 'mg.manifold.markets'
+    const mailgunApiKey = process.env.MAILGUN_KEY as string
+    const url = `https://api.mailgun.net/v3/${mailgunDomain}/messages`
+    const data = new URLSearchParams()
+    data.append('from', from)
+    data.append('subject', subject)
+    data.append('template', template)
+    chunk.forEach(([recipientEmail, details]) => {
+      data.append('to', `${details.name} <${recipientEmail}>`)
+    })
+    data.append(
+      'recipient-variables',
+      JSON.stringify(Object.fromEntries(chunk))
+    )
+
+    try {
+      const response = await fetch(url, {
+        method: 'POST',
+        headers: {
+          Authorization: `Basic ${btoa(`api:${mailgunApiKey}`)}`,
+          'Content-Type': 'application/x-www-form-urlencoded',
+        },
+        body: data,
+      })
+      const json = await response.json()
+      log('Sent bulk emails for subject: ' + subject, json)
+    } catch (error) {
+      log.error('Error sending emails for subject: ' + subject, {
+        error,
+      })
+    }
+  }
 }
 
 export const sendPersonalFollowupEmail = async (
@@ -276,6 +340,35 @@ export const sendCreatorGuideEmail = async (
   )
 }
 
+export const sendUnactivatedNewUserEmail = async (
+  user: User,
+  templateId: string
+) => {
+  const pg = createSupabaseDirectClient()
+  const privateUser = await getPrivateUser(user.id, pg)
+  if (!privateUser || !privateUser.email) return
+
+  const { name } = user
+  const firstName = name.split(' ')[0]
+  const { unsubscribeUrl, sendToEmail } = getNotificationDestinationsForUser(
+    privateUser,
+    'onboarding_flow'
+  )
+  if (!sendToEmail) return
+  return await sendTemplateEmail(
+    privateUser.email,
+    `Help improve Manifold + win $100 Amazon gift card`,
+    templateId,
+    {
+      name: firstName,
+      unsubscribeUrl,
+    },
+    {
+      from: 'Ian from Manifold <ian@manifold.markets>',
+    }
+  )
+}
+
 export const sendThankYouEmail = async (
   user: User,
   privateUser: PrivateUser
@@ -305,12 +398,12 @@ export const sendThankYouEmail = async (
 }
 
 export const sendMarketCloseEmail = async (
-  reason: notification_reason_types,
   user: User,
   privateUser: PrivateUser,
   contract: Contract
 ) => {
   if (!privateUser.email) return
+  if (contract.token === 'CASH') return
 
   const { username, name, id: userId } = user
   const firstName = name.split(' ')[0]
@@ -330,21 +423,20 @@ export const sendMarketCloseEmail = async (
       unsubscribeUrl: '',
       userId,
       name: firstName,
-      volume: emailMoneyFormat(volume),
+      volume: formatMoneyEmail(volume, contract.token),
     }
   )
 }
 
-export const sendNewCommentEmail = async (
+export const getNewCommentEmail = (
   reason: NotificationReason,
   privateUser: PrivateUser,
+  userName: string,
   commentCreator: User,
   contract: Contract,
   commentText: string,
   commentId: string,
-  bet?: Bet,
-  answerText?: string,
-  answerId?: string
+  bet?: Bet
 ) => {
   const { sendToEmail, unsubscribeUrl } = getNotificationDestinationsForUser(
     privateUser,
@@ -352,7 +444,6 @@ export const sendNewCommentEmail = async (
   )
   if (!privateUser || !privateUser.email || !sendToEmail) return
 
-  const { question } = contract
   const marketUrl = `https://${DOMAIN}/${contract.creatorUsername}/${contract.slug}#${commentId}`
 
   const { name: commentorName, avatarUrl: commentorAvatarUrl } = commentCreator
@@ -360,13 +451,11 @@ export const sendNewCommentEmail = async (
   let betDescription = ''
   if (bet) {
     const { amount } = bet
-    betDescription = `${amount < 0 ? 'sold' : 'bought'} ${emailMoneyFormat(
-      Math.abs(amount)
+    betDescription = `${amount < 0 ? 'sold' : 'bought'} ${formatMoneyEmail(
+      Math.abs(amount),
+      contract.token
     )}`
   }
-
-  const subject = `Comment on ${question}`
-  const from = `${commentorName} on Manifold <no-reply@manifold.markets>`
 
   if (bet) {
     betDescription = `${betDescription} of ${toDisplayResolution(
@@ -374,11 +463,10 @@ export const sendNewCommentEmail = async (
       bet.outcome
     )}`
   }
-  return await sendTemplateEmail(
+  return [
     privateUser.email,
-    subject,
-    'market-comment',
     {
+      name: userName,
       commentorName,
       commentorAvatarUrl: commentorAvatarUrl ?? '',
       comment: commentText,
@@ -386,8 +474,7 @@ export const sendNewCommentEmail = async (
       unsubscribeUrl,
       betDescription,
     },
-    { from }
-  )
+  ] as EmailAndTemplateEntry
 }
 
 export const sendNewAnswerEmail = async (
@@ -431,12 +518,16 @@ export const sendNewAnswerEmail = async (
 }
 
 export const sendInterestingMarketsEmail = async (
-  user: User,
+  userName: string,
   privateUser: PrivateUser,
-  contractsToSend: Contract[],
-  deliveryTime?: string
+  contractsToSend: Contract[]
 ) => {
-  if (!privateUser || !privateUser.email) return
+  if (!privateUser || !privateUser.email) {
+    log.error('No private user or email to send interesting markets email to', {
+      userName,
+    })
+    return
+  }
 
   const { unsubscribeUrl, sendToEmail } = getNotificationDestinationsForUser(
     privateUser,
@@ -444,8 +535,7 @@ export const sendInterestingMarketsEmail = async (
   )
   if (!sendToEmail) return
 
-  const { name } = user
-  const firstName = name.split(' ')[0]
+  const firstName = userName.split(' ')[0]
 
   await sendTemplateEmail(
     privateUser.email,
@@ -454,7 +544,6 @@ export const sendInterestingMarketsEmail = async (
     {
       name: firstName,
       unsubscribeUrl,
-
       question1Title: contractsToSend[0].question,
       question1Link: contractUrl(contractsToSend[0]),
       question1ImgSrc: imageSourceUrl(contractsToSend[0]),
@@ -473,8 +562,7 @@ export const sendInterestingMarketsEmail = async (
       question6Title: contractsToSend[5].question,
       question6Link: contractUrl(contractsToSend[5]),
       question6ImgSrc: imageSourceUrl(contractsToSend[5]),
-    },
-    deliveryTime ? { 'o:deliverytime': deliveryTime } : undefined
+    }
   )
 }
 
@@ -534,10 +622,9 @@ function imageSourceUrl(contract: Contract) {
     'market'
   )
 }
-
-export const sendNewFollowedMarketEmail = async (
+export const getNewFollowedMarketEmail = (
   reason: notification_reason_types,
-  userId: string,
+  userName: string,
   privateUser: PrivateUser,
   contract: Contract
 ) => {
@@ -546,19 +633,12 @@ export const sendNewFollowedMarketEmail = async (
     reason
   )
   if (!privateUser.email || !sendToEmail) return
-  const user = await getUser(privateUser.id)
-  if (!user) return
-
-  const { name } = user
-  const firstName = name.split(' ')[0]
+  const firstName = userName.split(' ')[0]
   const creatorName = contract.creatorName
 
   const questionImgSrc = imageSourceUrl(contract)
-  console.log('questionImgSrc', questionImgSrc)
-  return await sendTemplateEmail(
+  return [
     privateUser.email,
-    `${creatorName} asked ${contract.question}`,
-    'new-market-from-followed-user',
     {
       name: firstName,
       creatorName,
@@ -567,10 +647,7 @@ export const sendNewFollowedMarketEmail = async (
       questionUrl: contractUrl(contract),
       questionImgSrc,
     },
-    {
-      from: `${creatorName} on Manifold <no-reply@manifold.markets>`,
-    }
-  )
+  ] as EmailAndTemplateEntry
 }
 
 export const sendNewPrivateMarketEmail = async (
@@ -612,7 +689,7 @@ export const sendNewPrivateMarketEmail = async (
   )
 }
 export const sendNewUniqueBettorsEmail = async (
-  reason: notification_reason_types,
+  reason: NotificationReason,
   privateUser: PrivateUser,
   contract: Contract,
   totalPredictors: number,
@@ -643,9 +720,9 @@ export const sendNewUniqueBettorsEmail = async (
     name: firstName,
     creatorName,
     totalPredictors: totalPredictors.toString(),
-    bonusString: emailMoneyFormat(bonusAmount),
     marketTitle: contract.question,
     marketUrl: contractUrl(contract),
+    bonusString: bonusAmount.toString(),
     unsubscribeUrl,
     newPredictors: newPredictors.length.toString(),
   }
@@ -658,7 +735,7 @@ export const sendNewUniqueBettorsEmail = async (
       const { amount } = bet
       templateData[`bet${i + 1}Description`] = `${
         amount < 0 ? 'sold' : 'bought'
-      } ${emailMoneyFormat(Math.abs(amount))}`
+      } ${formatMoneyEmail(Math.abs(amount), contract.token)}`
     }
   })
 
@@ -666,7 +743,7 @@ export const sendNewUniqueBettorsEmail = async (
     privateUser.email,
     subject,
     // This template accepts 5 unique bettors
-    'new-unique-bettors',
+    'new-unique-traders',
     templateData,
     {
       from: `Manifold <no-reply@manifold.markets>`,
@@ -674,8 +751,8 @@ export const sendNewUniqueBettorsEmail = async (
   )
 }
 
-export const sendWeeklyPortfolioUpdateEmail = async (
-  user: User,
+export const getWeeklyPortfolioUpdateEmail = (
+  userName: string,
   privateUser: PrivateUser,
   investments: PerContractInvestmentsData[],
   overallPerformance: OverallPerformanceData,
@@ -690,8 +767,7 @@ export const sendWeeklyPortfolioUpdateEmail = async (
 
   if (!sendToEmail) return
 
-  const { name } = user
-  const firstName = name.split(' ')[0]
+  const firstName = userName.split(' ')[0]
   const templateData: Record<string, string> = {
     name: firstName,
     unsubscribeUrl,
@@ -703,126 +779,104 @@ export const sendWeeklyPortfolioUpdateEmail = async (
       templateData[`question${i + 1}Title`] = investment.questionTitle
       templateData[`question${i + 1}Url`] = investment.questionUrl
       templateData[`question${i + 1}Prob`] = investment.questionProb
-      templateData[`question${i + 1}Change`] = emailMoneyFormat(
-        investment.profit
+      templateData[`question${i + 1}Change`] = formatMoneyEmail(
+        investment.profit,
+        investment.token
       )
       templateData[`question${i + 1}ChangeStyle`] = investment.profitStyle
       templateData[`question${i + 1}Display`] = 'display: table-row'
     } else templateData[`question${i + 1}Display`] = 'display: none'
   }
 
-  await sendTemplateEmail(
+  return [
     privateUser.email,
-    // 'iansphilips@gmail.com',
-    `Here's your weekly portfolio update!`,
-    'portfolio-update',
-    templateData
-  )
-  log('Sent portfolio update email to', privateUser.email)
+    // Math.random() > 0.5 ? 'iansphilips@gmail.com' : 'boawishbone@gmail.com',
+    templateData,
+  ] as EmailAndTemplateEntry
 }
 
-export const sendNewMatchEmail = async (
-  reason: NotificationReason,
-  privateUser: PrivateUser,
-  contract: Contract,
-  creatorName: string,
-  matchedWithUser: User
-) => {
-  const { sendToEmail, unsubscribeUrl } = getNotificationDestinationsForUser(
-    privateUser,
-    reason
-  )
-  if (!privateUser.email || !sendToEmail) return
-  const user = await getUser(privateUser.id)
-  if (!user) return
-
-  const { name } = user
-  const firstName = name.split(' ')[0]
-  const lover = await getLoverRow(matchedWithUser.id, createSupabaseClient())
-  const loveOgImageUrl = getLoveOgImageUrl(matchedWithUser, lover)
-  const questionImgSrc = imageSourceUrl(contract)
-  return await sendTemplateEmail(
-    privateUser.email,
-    `You have a new match!`,
-    'new-match',
-    {
-      name: firstName,
-      creatorName,
-      unsubscribeUrl,
-      questionTitle: contract.question,
-      questionUrl: `https://${LOVE_DOMAIN}${contractPath(contract)}`,
-      userUrl: `https://${LOVE_DOMAIN}/${matchedWithUser.username}`,
-      matchedUsersName: matchedWithUser.name,
-      userImgSrc: loveOgImageUrl,
-      questionImgSrc,
-    },
-    {
-      from: `manifold.love <no-reply@manifold.markets>`,
-    }
-  )
-}
-export const sendNewMessageEmail = async (
-  reason: NotificationReason,
-  privateUser: PrivateUser,
-  fromUser: User,
-  toUser: User,
-  channelId: number,
-  subject: string
-) => {
-  const { sendToEmail, unsubscribeUrl } = getNotificationDestinationsForUser(
-    privateUser,
-    reason
-  )
-  if (!privateUser.email || !sendToEmail) return
-  const firstName = toUser.name.split(' ')[0]
-  const lover = await getLoverRow(fromUser.id, createSupabaseClient())
-  const loveOgImageUrl = getLoveOgImageUrl(fromUser, lover)
-
-  return await sendTemplateEmail(
-    privateUser.email,
-    subject,
-    'new-message',
-    {
-      name: firstName,
-      messagesUrl: `https://${LOVE_DOMAIN}/messages/${channelId}`,
-      creatorName: fromUser.name,
-      userImgSrc: loveOgImageUrl,
-      unsubscribeUrl,
-    },
-    {
-      from: `manifold.love <no-reply@manifold.markets>`,
-    }
-  )
+export type MarketMovementEmailData = {
+  questionTitle: string
+  questionUrl: string
+  prob: string
+  probChangeStyle: string
+  startProb: number
+  endProb: number
+  answerText?: string
 }
 
-export const sendNewEndorsementEmail = async (
-  reason: NotificationReason,
+export const getMarketMovementEmail = (
+  userName: string,
   privateUser: PrivateUser,
-  fromUser: User,
-  onUser: User,
-  subject: string,
-  text: string
+  marketMovements: MarketMovementEmailData[],
+  movementsToSend: number
 ) => {
-  const { sendToEmail, unsubscribeUrl } = getNotificationDestinationsForUser(
+  if (!privateUser || !privateUser.email) return
+
+  const { unsubscribeUrl, sendToEmail } = getNotificationDestinationsForUser(
     privateUser,
-    reason
+    'market_movements'
   )
-  if (!privateUser.email || !sendToEmail) return
-  const firstName = onUser.name.split(' ')[0]
-  return await sendTemplateEmail(
-    privateUser.email,
-    subject,
-    'new-endorsement',
-    {
-      name: firstName,
-      endorsementUrl: `https://${LOVE_DOMAIN}/${onUser.username}`,
-      creatorName: fromUser.name,
-      creatorAvatarUrl: fromUser.avatarUrl,
-      endorsementText: text,
-      unsubscribeUrl,
-    },
-    {
-      from: `manifold.love <no-reply@manifold.markets>`,
+
+  if (!sendToEmail) return
+
+  const firstName = userName.split(' ')[0]
+  const templateData: Record<string, string> = {
+    name: firstName,
+    unsubscribeUrl,
+  }
+
+  for (let i = 0; i < movementsToSend; i++) {
+    const movement = marketMovements[i]
+    if (movement) {
+      templateData[`question${i + 1}Title`] = movement.questionTitle
+      templateData[`question${i + 1}Url`] = movement.questionUrl
+      templateData[`question${i + 1}Prob`] = movement.prob
+      const arrowColor =
+        movement.endProb > movement.startProb
+          ? '#14b8a6' /* green-500 */
+          : '#ef4444' /* red-500 */
+      templateData[
+        `question${i + 1}ArrowStyle`
+      ] = `color: ${arrowColor}; font-weight: bold;`
+      templateData[`question${i + 1}InitialProb`] = `${Math.round(
+        movement.startProb * 100
+      )}%`
+      templateData[`question${i + 1}ChangeStyle`] = movement.probChangeStyle
+      templateData[`question${i + 1}Display`] = 'display: table-row'
+
+      // Add answer text to the template data if available
+      if (movement.answerText) {
+        // When answer exists
+        templateData[`question${i + 1}AnswerText`] = movement.answerText
+        templateData[`question${i + 1}AnswerDisplay`] = 'table-row'
+
+        // Show probability on answer row when answer exists
+        templateData[`question${i + 1}AnswerProbStyle`] = 'display: inline'
+
+        // Hide probability on question row when answer exists
+        templateData[`question${i + 1}ProbStyle`] = 'display: none'
+      } else {
+        // When no answer exists
+        templateData[`question${i + 1}AnswerText`] = ''
+        templateData[`question${i + 1}AnswerDisplay`] = 'none'
+
+        // Hide probability on answer row when no answer
+        templateData[`question${i + 1}AnswerProbStyle`] = 'display: none'
+
+        // Show probability on question row when no answer
+        templateData[`question${i + 1}ProbStyle`] = 'display: inline'
+      }
+    } else {
+      // When question doesn't exist
+      templateData[`question${i + 1}Display`] = 'display: none'
+      templateData[`question${i + 1}AnswerDisplay`] = 'none'
+      templateData[`question${i + 1}Title`] = ''
+      templateData[`question${i + 1}AnswerText`] = ''
+      templateData[`question${i + 1}ProbStyle`] = 'display: none'
+      templateData[`question${i + 1}AnswerProbStyle`] = 'display: none'
     }
-  )
+  }
+
+  return [privateUser.email, templateData] as EmailAndTemplateEntry
 }

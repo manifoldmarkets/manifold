@@ -1,7 +1,20 @@
-import { SupabaseClient, createSupabaseClient } from 'shared/supabase/init'
-import { Column, Row, run, selectJson } from 'common/supabase/utils'
+import {
+  createSupabaseDirectClient,
+  SupabaseDirectClient,
+} from 'shared/supabase/init'
+import { Column } from 'common/supabase/utils'
 import { toLiteMarket } from 'common/api/market-types'
-import { APIError, type APIHandler } from './helpers/endpoint'
+import { type APIHandler } from './helpers/endpoint'
+import {
+  join,
+  orderBy,
+  select,
+  where,
+  limit as lim,
+  renderSql,
+  from,
+} from 'shared/supabase/sql-builder'
+import { buildArray } from 'common/util/array'
 
 const SORT_COLUMNS = {
   'created-time': 'created_time',
@@ -12,22 +25,17 @@ const SORT_COLUMNS = {
 
 // mqp: this pagination approach is technically incorrect if multiple contracts
 // have the exact same createdTime, but that's very unlikely
-const getBeforeValue = async <T extends Column<'public_contracts'>>(
-  db: SupabaseClient,
+const getBeforeValue = async <T extends Column<'contracts'>>(
+  pg: SupabaseDirectClient,
   beforeId: string | undefined,
   sortColumn: T
 ) => {
   if (beforeId) {
-    const { data } = await run(
-      db.from('public_contracts').select(sortColumn).eq('id', beforeId)
+    return pg.oneOrNone(
+      `select ${sortColumn} from contracts where id = $1`,
+      [beforeId],
+      (r) => (r ? new Date(r[sortColumn]).toISOString() : undefined)
     )
-    if (!data?.length) {
-      throw new APIError(
-        400,
-        'Contract specified in before parameter not found.'
-      )
-    }
-    return (data[0] as any)[sortColumn] as Row<'public_contracts'>[T]
   } else {
     return undefined
   }
@@ -42,31 +50,24 @@ export const getMarkets: APIHandler<'markets'> = async ({
   sort,
   order,
 }) => {
-  const db = createSupabaseClient()
+  const pg = createSupabaseDirectClient()
   const sortColumn = SORT_COLUMNS[sort ?? 'created-time']
-  const q = selectJson(db, 'public_contracts')
-  q.order(sortColumn, {
-    ascending: order === 'asc',
-    nullsFirst: false,
-  } as any)
-  if (before) {
-    const beforeVal = await getBeforeValue(db, before, sortColumn)
-    q.lt(sortColumn, beforeVal)
-  }
-  if (userId) {
-    q.eq('creator_id', userId)
-  }
-  if (groupId) {
-    // TODO: use the sql builder instead and use a join
-    const { data, error } = await db
-      .from('groups')
-      .select('slug')
-      .eq('id', groupId)
-      .single()
-    if (error) throw new APIError(404, `Group with id ${groupId} not found`)
-    q.contains('group_slugs', [data.slug])
-  }
-  q.limit(limit)
-  const { data } = await run(q)
-  return data.map((r) => toLiteMarket(r.data))
+  const beforeVal = before
+    ? await getBeforeValue(pg, before, sortColumn)
+    : undefined
+
+  const q = buildArray(
+    select('contracts.data'),
+    from('contracts'),
+    where(`visibility = 'public'`),
+    groupId &&
+      join('group_contracts on group_contracts.contract_id = contracts.id'),
+    groupId && where('group_contracts.group_id = ${groupId}', { groupId }),
+    userId && where('creator_id = ${userId}', { userId }),
+    beforeVal !== undefined && where(`${sortColumn} < $1`, [beforeVal]),
+    orderBy(`${sortColumn} ${order ?? 'desc'} nulls last`),
+    limit && lim(limit)
+  )
+  const query = renderSql(q)
+  return await pg.map(query, [], (r) => toLiteMarket(r.data))
 }

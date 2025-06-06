@@ -5,33 +5,66 @@ import { scaleBand, scaleLinear, scaleOrdinal } from 'd3-scale'
 import { stack } from 'd3-shape'
 import { axisBottom, axisRight } from 'd3-axis'
 import { max } from 'd3-array'
-import { uniq } from 'lodash'
+import { unzip, zip, pick } from 'lodash'
 import { renderToString } from 'react-dom/server'
 import { Col } from 'web/components/layout/col'
 import { formatWithCommas } from 'common/util/format'
-
-const colors = [
-  '#60d775',
-  '#FFDFBA',
-  '#BAFFC9',
-  '#BAE1FF',
-  '#D4A5A5',
-  '#A5D4D4',
-  '#D4D4A5',
-  '#D4A5C2',
-  '#FFB7B7',
-  '#B7FFB7',
-]
+import { Title } from 'web/components/widgets/title'
 
 type DateAndCategoriesToTotals = { date: string } & {
   [key: string]: number
 }
-const categoryToColor = new Map<string, string>()
+
+const categoryToLabel = {
+  total_value: 'total mana (-loans)',
+  balance: 'mana balance',
+  spice_balance: 'spice balance',
+  investment_value: 'invested',
+  loan_total: 'loans',
+  amm_liquidity: 'amm liquidity',
+  total_cash_value: 'total sweepcash',
+  cash_balance: 'sweepcash balance',
+  cash_investment_value: 'invested',
+  amm_cash_liquidity: 'amm liquidity',
+}
+
+const categoryToColor = {
+  total_value: 'inherit',
+  balance: '#925cf0',
+  spice_balance: '#FFA620',
+  investment_value: '#30A0C6',
+  loan_total: '#FF80B0',
+  amm_liquidity: '#20D020',
+  total_cash_value: 'inherit',
+  cash_balance: '#FFD700',
+  cash_investment_value: '#30A0C6',
+  amm_cash_liquidity: '#20D020',
+}
+
+const [categories, colors] = zip(...Object.entries(categoryToColor)) as [
+  string[],
+  string[]
+]
+const colorScale = scaleOrdinal<string>().domain(categories).range(colors)
 
 export const ManaSupplySummary = (props: {
   manaSupplyStats: rowFor<'mana_supply_stats'>[]
 }) => {
   const { manaSupplyStats } = props
+  const [manaData] = orderAndGroupData(manaSupplyStats)
+
+  return (
+    <>
+      <Title>Mana supply over time</Title>
+      <StackedChart data={manaData} />
+    </>
+  )
+}
+
+const StackedChart = (props: {
+  data: ({ date: string } & Partial<rowFor<'mana_supply_stats'>>)[]
+}) => {
+  const { data } = props
   const svgRef = useRef<SVGSVGElement>(null)
   const tooltipRef = useRef<HTMLDivElement>(null)
   const xAxisRef = useRef<SVGGElement>(null)
@@ -41,15 +74,7 @@ export const ManaSupplySummary = (props: {
   const height = 500
   const innerWidth = width - margin.left - margin.right
   const innerHeight = height - margin.top - margin.bottom
-  const { data, xScale, stackGen, colorScale, yScale, keys } = useMemo(() => {
-    const data = orderAndGroupData(manaSupplyStats)
-    const uniqueCategories = uniq(Object.keys(manaSupplyStats[0]))
-    for (let i = 0; i < uniqueCategories.length; i++) {
-      categoryToColor.set(uniqueCategories[i], colors[i])
-    }
-    const colorScale = scaleOrdinal<string>()
-      .domain(uniqueCategories)
-      .range(colors)
+  const { xScale, layers, yScale, keys } = useMemo(() => {
     const xScale = scaleBand()
       .domain(data.map((d) => d.date))
       .range([0, innerWidth])
@@ -58,15 +83,18 @@ export const ManaSupplySummary = (props: {
     const yScale = scaleLinear().range([innerHeight, 0])
 
     const keys = Array.from(
-      new Set(data.flatMap((d) => Object.keys(d)).filter((k) => k !== 'date'))
+      new Set(data.flatMap((d) => Object.keys(d)))
+    ).filter(
+      (key) => !['date', 'total_value', 'total_cash_value'].includes(key)
     )
+
     const stackGen = stack<{ [key: string]: number }>().keys(keys)
-    const layers = stackGen(data)
+    const layers = stackGen(data as any)
     const maxY = max(layers, (layer) => max(layer, (d) => d[1] as number)) || 0
     xScale.domain(data.map((d) => d.date))
     yScale.domain([0, maxY]).nice()
-    return { data, xScale, yScale, keys, colorScale, stackGen }
-  }, [manaSupplyStats.length])
+    return { data, xScale, yScale, keys, colorScale, layers }
+  }, [data.length])
 
   useEffect(() => {
     if (xScale && xAxisRef.current) {
@@ -89,7 +117,7 @@ export const ManaSupplySummary = (props: {
         <g transform="translate(10,20)">
           {data.length > 0 &&
             keys.length > 0 &&
-            stackGen?.(data).map((layer, i) => (
+            layers.map((layer, i) => (
               <g key={`layer-${i}`} fill={colorScale(keys[i])}>
                 {layer.map((d, j) => (
                   <rect
@@ -104,17 +132,7 @@ export const ManaSupplySummary = (props: {
                         .style('opacity', 1)
                         .style('z-index', 1000)
                         .html(
-                          renderToString(
-                            <StackedChartTooltip
-                              totalValue={
-                                manaSupplyStats.find(
-                                  (ms) => ms.start_time === datum.date
-                                )!.total_value as number
-                              }
-                              categoryToColor={categoryToColor}
-                              data={datum}
-                            />
-                          )
+                          renderToString(<StackedChartTooltip data={datum} />)
                         )
                     }}
                     onMouseMove={(event) => {
@@ -140,14 +158,11 @@ export const ManaSupplySummary = (props: {
         ref={tooltipRef}
         style={{
           position: 'absolute',
-          textAlign: 'left',
           width: 'auto',
           height: 'auto',
           padding: '8px',
-          font: '12px sans-serif',
-          background: 'black',
-          borderRadius: '8px',
           pointerEvents: 'none',
+          opacity: 0,
         }}
       ></div>
     </div>
@@ -155,31 +170,36 @@ export const ManaSupplySummary = (props: {
 }
 
 const orderAndGroupData = (data: rowFor<'mana_supply_stats'>[]) => {
-  return data.map((datum) => {
-    const {
-      id: _,
-      created_time: __,
-      end_time: ___,
-      start_time,
-      total_value: ____,
-      ...rest
-    } = datum
-
-    return {
-      ...rest,
-      date: start_time,
-    } as any as DateAndCategoriesToTotals
-  })
+  return unzip(
+    data.map((datum) => [
+      {
+        date: datum.start_time,
+        ...pick(datum, [
+          'total_value',
+          'balance',
+          'spice_balance',
+          'investment_value',
+          'loan_total',
+          'amm_liquidity',
+        ]),
+      },
+      {
+        date: datum.start_time,
+        ...pick(datum, [
+          'total_cash_value',
+          'cash_balance',
+          'cash_investment_value',
+          'amm_cash_liquidity',
+        ]),
+      },
+    ])
+  )
 }
 
-const StackedChartTooltip = (props: {
-  data: DateAndCategoriesToTotals
-  totalValue: number
-  categoryToColor: Map<string, string>
-}) => {
-  const { data, totalValue, categoryToColor } = props
+const StackedChartTooltip = (props: { data: DateAndCategoriesToTotals }) => {
+  const { data } = props
   return (
-    <Col className={'max-w-xs gap-1 text-lg text-white'}>
+    <Col className="bg-canvas-0 border-ink-900 max-w-xs gap-1 rounded-lg border p-2 text-sm">
       {new Date(Date.parse(data.date)).toLocaleString('en-us', {
         month: 'short',
         day: 'numeric',
@@ -187,15 +207,17 @@ const StackedChartTooltip = (props: {
         hour: 'numeric',
       })}
       <br />
-      <span>total (-loans): {formatWithCommas(totalValue)}</span>
       {Object.keys(data)
         .filter((k) => k !== 'date')
         .map((key) => (
           <span
-            style={{ color: categoryToColor.get(key) }}
-            key={key + data[key]}
+            style={{
+              color: categoryToColor[key as keyof typeof categoryToColor],
+            }}
+            key={key}
           >
-            {key}: {formatWithCommas(data[key])}
+            {categoryToLabel[key as keyof typeof categoryToLabel]}:{' '}
+            {formatWithCommas(data[key])}
           </span>
         ))}
     </Col>

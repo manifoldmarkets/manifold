@@ -1,22 +1,22 @@
-import { debounce, sortBy, sum } from 'lodash'
-import { useState, useMemo } from 'react'
 import { charities } from 'common/charity'
+import { formatMoneyUSD } from 'common/util/format'
+import { searchInAny } from 'common/util/parse'
+import { debounce, sortBy, sum } from 'lodash'
+import Link from 'next/link'
+import { useMemo, useState } from 'react'
 import { CharityCard } from 'web/components/charity/charity-card'
 import { Col } from 'web/components/layout/col'
-import { Spacer } from 'web/components/layout/spacer'
 import { Page } from 'web/components/layout/page'
+import { Spacer } from 'web/components/layout/spacer'
+import { SEO } from 'web/components/SEO'
+import { Input } from 'web/components/widgets/input'
 import { Title } from 'web/components/widgets/title'
 import {
   getDonationsByCharity,
   getMostRecentDonation,
 } from 'web/lib/supabase/txns'
-import { formatCents } from 'common/util/format'
-import { searchInAny } from 'common/util/parse'
-import Link from 'next/link'
-import { SEO } from 'web/components/SEO'
-import { Input } from 'web/components/widgets/input'
 import { DisplayUser, getUserById } from 'web/lib/supabase/users'
-import { SpiceCoin } from 'web/public/custom-components/spiceCoin'
+import { SweepiesCoin } from 'web/public/custom-components/sweepiesCoin'
 
 export async function getStaticProps() {
   try {
@@ -27,8 +27,8 @@ export async function getStaticProps() {
     return {
       props: {
         totalsByCharity,
-        mostRecentCharityId: mostRecentDonation.to_id,
-        mostRecentDonor: await getUserById(mostRecentDonation.from_id!),
+        mostRecentCharityId: mostRecentDonation.toId,
+        mostRecentDonor: await getUserById(mostRecentDonation.fromId!),
       },
       revalidate: 60,
     }
@@ -119,7 +119,7 @@ export default function Charity(props: {
           <Title>Manifold for Charity</Title>
 
           <div className="text-ink-500">
-            Convert your <SpiceCoin /> prize points into real charitable
+            Convert your <SweepiesCoin /> sweepcash into real charitable
             donations.
           </div>
 
@@ -127,7 +127,7 @@ export default function Charity(props: {
             stats={[
               {
                 name: 'Raised by Manifold users',
-                stat: formatCents(totalRaised),
+                stat: formatMoneyUSD(totalRaised),
               },
               {
                 name: 'Most recent donor',

@@ -33,7 +33,6 @@ export function DashboardSetTopics(props: {
             location={'create page'}
             key={group.id}
             topic={group}
-            isPrivate={group.privacyStatus === 'private'}
             className="bg-ink-100"
           >
             <button
@@ -49,6 +48,7 @@ export function DashboardSetTopics(props: {
       </Row>
 
       <TopicSelector
+        addingToContract={true}
         selectedIds={selectedGroups.map((g) => g.id)}
         setSelectedGroup={(group) =>
           setSelectedGroups([...selectedGroups, group])

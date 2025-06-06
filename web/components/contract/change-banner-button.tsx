@@ -10,11 +10,11 @@ import { useUser } from 'web/hooks/use-user'
 import { useAdmin } from 'web/hooks/use-admin'
 import toast from 'react-hot-toast'
 import { useMutation } from 'web/hooks/use-mutation'
-import { uploadImage } from 'web/lib/firebase/storage'
+import { uploadPublicImage } from 'web/lib/firebase/storage'
 import { FileUploadButton } from '../buttons/file-upload-button'
 import { LoadingIndicator } from '../widgets/loading-indicator'
 import { TbCameraPlus } from 'react-icons/tb'
-import { updateMarket } from 'web/lib/firebase/api'
+import { updateMarket } from 'web/lib/api/api'
 
 export function ChangeBannerButton(props: {
   contract?: Contract
@@ -151,7 +151,6 @@ const ChangeCoverImageButton = (props: {
   return (
     <FileUploadButton
       onFiles={uploadMutation.mutate}
-      className={buttonClass('md', 'indigo')}
       disabled={uploadMutation.isLoading}
     >
       {uploadMutation.isLoading && (
@@ -164,5 +163,5 @@ const ChangeCoverImageButton = (props: {
 
 const fileHandler = async (files: File[]) => {
   if (!files.length) throw new Error('No files selected')
-  return await uploadImage('default', files[0])
+  return await uploadPublicImage('default', files[0])
 }

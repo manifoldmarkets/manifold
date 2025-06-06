@@ -1,5 +1,12 @@
 import clsx from 'clsx'
-import { Notification, ReactionNotificationTypes } from 'common/notification'
+import {
+  combineAndSumIncomeNotifications,
+  combineReactionNotifications,
+  ContractResolutionData,
+  Notification,
+  NotificationGroup,
+  ReactionNotificationTypes,
+} from 'common/notification'
 import { PrivateUser, User } from 'common/user'
 import { groupBy, sortBy } from 'lodash'
 import { useRouter } from 'next/router'
@@ -9,34 +16,38 @@ import { Page } from 'web/components/layout/page'
 import { Row } from 'web/components/layout/row'
 import { QueryUncontrolledTabs } from 'web/components/layout/tabs'
 import { NotificationSettings } from 'web/components/notification-settings'
-import { combineAndSumIncomeNotifications } from 'web/components/notifications/income-summary-notifications'
 import {
-  combineReactionNotifications,
-  NOTIFICATIONS_PER_PAGE,
   NUM_SUMMARY_LINES,
   ParentNotificationHeader,
   QuestionOrGroupLink,
 } from 'web/components/notifications/notification-helpers'
-import { markAllNotifications } from 'web/lib/firebase/api'
+import { api, markAllNotifications } from 'web/lib/api/api'
 import { NotificationItem } from 'web/components/notifications/notification-types'
 import { PushNotificationsModal } from 'web/components/push-notifications-modal'
 import { SEO } from 'web/components/SEO'
 import { ShowMoreLessButton } from 'web/components/widgets/collapsible-content'
 import { Pagination } from 'web/components/widgets/pagination'
 import { Title } from 'web/components/widgets/title'
-import {
-  NotificationGroup,
-  useGroupedNotifications,
-} from 'web/hooks/use-notifications'
 import { useIsPageVisible } from 'web/hooks/use-page-visible'
 import { useRedirectIfSignedOut } from 'web/hooks/use-redirect-if-signed-out'
-import { usePrivateUser, useIsAuthorized, useUser } from 'web/hooks/use-user'
+import { usePrivateUser, useUser } from 'web/hooks/use-user'
 import { XIcon } from '@heroicons/react/outline'
-import { updatePrivateUser } from 'web/lib/firebase/users'
-import { getNativePlatform } from 'web/lib/native/is-native'
 import { AppBadgesOrGetAppButton } from 'web/components/buttons/app-badges-or-get-app-button'
 import { LoadingIndicator } from 'web/components/widgets/loading-indicator'
 import { track } from 'web/lib/service/analytics'
+import { useNativeInfo } from 'web/components/native-message-provider'
+import {
+  NOTIFICATIONS_PER_PAGE,
+  useGroupedNotifications,
+} from 'client-common/hooks/use-notifications'
+import { usePersistentLocalState } from 'web/hooks/use-persistent-local-state'
+import { useUnseenPrivateMessageChannels } from 'web/hooks/use-private-messages'
+import { PrivateMessagesList } from '../components/messaging/private-messages-list'
+import { maybePluralize } from 'common/util/format'
+import dayjs from 'dayjs'
+import { postMessageToNative } from 'web/lib/native/post-message'
+import { useEvent } from 'client-common/hooks/use-event'
+import { ChevronDownIcon, ChevronUpIcon } from '@heroicons/react/solid'
 
 export default function NotificationsPage() {
   const privateUser = usePrivateUser()
@@ -44,7 +55,7 @@ export default function NotificationsPage() {
   useRedirectIfSignedOut()
 
   const [navigateToSection, setNavigateToSection] = useState<string>()
-  const { isNative } = getNativePlatform()
+  const { isNative } = useNativeInfo()
   const router = useRouter()
   useEffect(() => {
     if (!router.isReady) return
@@ -60,9 +71,9 @@ export default function NotificationsPage() {
   return (
     <Page trackPageView={'notifications page'}>
       <div className="w-full">
+        {shouldShowBanner && <NotificationsAppBanner />}
         <Title className="hidden lg:block">Notifications</Title>
         <SEO title="Notifications" description="Manifold user notifications" />
-        {shouldShowBanner && <NotificationsAppBanner userId={privateUser.id} />}
         {privateUser && user && router.isReady ? (
           <NotificationsContent
             user={user}
@@ -75,8 +86,7 @@ export default function NotificationsPage() {
   )
 }
 
-function NotificationsAppBanner(props: { userId: string }) {
-  const { userId } = props
+function NotificationsAppBanner() {
   return (
     <Row className="bg-primary-100 relative mb-2 justify-between rounded-md px-4 py-2 text-sm">
       <Row className={'text-ink-600 items-center gap-3 text-sm sm:text-base'}>
@@ -86,7 +96,7 @@ function NotificationsAppBanner(props: { userId: string }) {
       <button
         onClick={() => {
           track('close app banner')
-          updatePrivateUser(userId, {
+          api('me/private/update', {
             hasSeenAppBannerInNotificationsOn: Date.now(),
           })
         }}
@@ -105,14 +115,75 @@ function NotificationsContent(props: {
   const { privateUser, user, section } = props
   const {
     groupedNotifications,
+    pinnedNotifications,
     mostRecentNotification,
-    groupedBalanceChangeNotifications,
     groupedNewMarketNotifications,
     groupedMentionNotifications,
-  } = useGroupedNotifications(user)
+    markAllAsSeen,
+  } = useGroupedNotifications(
+    user,
+    (params) => api('get-notifications', params),
+    usePersistentLocalState
+  )
+  const resolution = groupedNotifications?.some(
+    (ng) =>
+      ng.notifications.some(
+        (n) => n.reason === 'resolutions_on_watched_markets'
+      ) ||
+      ng.notifications.some((n) => {
+        if (n.reason === 'resolutions_on_watched_markets_with_shares_in') {
+          const { data } = n
+          const d =
+            data && 'userPayout' in data
+              ? (data as ContractResolutionData)
+              : {
+                  userPayout: 0,
+                  userInvestment: 0,
+                }
+          const profit = d.userPayout - d.userInvestment
+          return profit > -1
+        }
+        return false
+      })
+  )
+  const { isNative } = useNativeInfo()
+  const lastPushModalSeenTime =
+    privateUser.lastPromptedToEnablePushNotifications
+
+  const checkIfShouldPromptStoreReview = useEvent(() => {
+    const shownPushModalToday = lastPushModalSeenTime
+      ? dayjs(lastPushModalSeenTime).isSame(dayjs(), 'day')
+      : false
+
+    const yearAgo = dayjs().subtract(1, 'years').valueOf()
+    const recentlyReviewed = privateUser.lastAppReviewTime
+      ? privateUser.lastAppReviewTime > yearAgo
+      : false
+    const shouldCheckReviewAbility =
+      isNative && resolution && !recentlyReviewed && !shownPushModalToday
+
+    if (shouldCheckReviewAbility) {
+      postMessageToNative('hasReviewActionRequested', {})
+    }
+  })
+
+  useEffect(() => {
+    setTimeout(() => {
+      // Give the push notification modal time to show and the user to see their notifs
+      checkIfShouldPromptStoreReview()
+    }, 3000)
+  }, [
+    isNative,
+    resolution,
+    lastPushModalSeenTime,
+    privateUser.lastAppReviewTime,
+  ])
+
   const [unseenNewMarketNotifs, setNewMarketNotifsAsSeen] = useState(
     groupedNewMarketNotifications?.filter((n) => !n.isSeen).length ?? 0
   )
+
+  const { unseenChannels } = useUnseenPrivateMessageChannels(false)
 
   return (
     <div className="relative mt-2 h-full w-full">
@@ -121,9 +192,9 @@ function NotificationsContent(props: {
           trackingName={'notification tabs'}
           labelClassName={'relative pb-2 pt-1 '}
           className={'mb-0 sm:mb-2'}
-          onClick={(title) =>
-            title === 'Following' ? setNewMarketNotifsAsSeen(0) : null
-          }
+          onClick={(title) => {
+            if (title === 'Following') setNewMarketNotifsAsSeen(0)
+          }}
           labelsParentClassName={'gap-3'}
           tabs={[
             {
@@ -132,7 +203,9 @@ function NotificationsContent(props: {
                 <NotificationsList
                   privateUser={privateUser}
                   groupedNotifications={groupedNotifications}
+                  pinnedNotifications={pinnedNotifications}
                   mostRecentNotification={mostRecentNotification}
+                  markAllAsSeen={markAllAsSeen}
                 />
               ),
             },
@@ -152,31 +225,44 @@ function NotificationsContent(props: {
                 <NotificationsList
                   groupedNotifications={groupedNewMarketNotifications}
                   emptyTitle={
-                    'You don’t have any new question notifications from followed users, yet. Try following some users to see more.'
+                    "You don't have any new question notifications from followed users, yet. Try following some users to see more."
                   }
+                  markAllAsSeen={markAllAsSeen}
                 />
               ),
+            },
+            {
+              title: 'Messages',
+              inlineTabIcon:
+                unseenChannels.length > 0 ? (
+                  <div
+                    className={
+                      'text-ink-0 bg-primary-400 ml-2 min-w-[15px] rounded-full px-2 text-xs'
+                    }
+                  >
+                    {unseenChannels.length}
+                  </div>
+                ) : undefined,
+              content: <PrivateMessagesList />,
             },
             {
               title: 'Mentions',
               content: (
                 <NotificationsList
                   groupedNotifications={groupedMentionNotifications}
-                />
-              ),
-            },
-            {
-              title: 'Mana',
-              content: (
-                <NotificationsList
-                  groupedNotifications={groupedBalanceChangeNotifications}
+                  markAllAsSeen={markAllAsSeen}
                 />
               ),
             },
             {
               queryString: 'Settings',
               title: 'Settings',
-              content: <NotificationSettings navigateToSection={section} />,
+              content: (
+                <NotificationSettings
+                  navigateToSection={section}
+                  privateUser={privateUser}
+                />
+              ),
             },
           ]}
         />
@@ -194,11 +280,13 @@ function RenderNotificationGroups(props: {
   const { notificationGroups, page, setPage, totalItems } = props
 
   const grayLine = <div className="bg-ink-300 mx-2 box-border h-[1.5px]" />
+  const alwaysGroupTypes = ['market_movements']
   return (
     <>
       {notificationGroups.map((notification) => (
         <Fragment key={notification.groupedById}>
-          {notification.notifications.length === 1 ? (
+          {notification.notifications.length === 1 &&
+          !alwaysGroupTypes.includes(notification.notifications[0].reason) ? (
             <>
               <NotificationItem
                 notification={notification.notifications[0]}
@@ -232,56 +320,97 @@ function RenderNotificationGroups(props: {
 
 export function NotificationsList(props: {
   groupedNotifications: NotificationGroup[] | undefined
+  pinnedNotifications?: Notification[]
   privateUser?: PrivateUser
   mostRecentNotification?: Notification
   emptyTitle?: string
+  markAllAsSeen?: () => void
 }) {
   const {
     privateUser,
     emptyTitle,
     groupedNotifications,
     mostRecentNotification,
+    markAllAsSeen,
+    pinnedNotifications,
   } = props
-  const isAuthorized = useIsAuthorized()
   const [page, setPage] = useState(0)
   const user = useUser()
+  const [pinnedExpanded, setPinnedExpanded] = usePersistentLocalState(
+    true,
+    'pinned-notifications-expanded'
+  )
 
   const paginatedGroupedNotifications = useMemo(() => {
     const start = page * NOTIFICATIONS_PER_PAGE
     const end = start + NOTIFICATIONS_PER_PAGE
     return groupedNotifications?.slice(start, end)
-  }, [groupedNotifications, page])
+  }, [JSON.stringify(groupedNotifications), page])
 
   const isPageVisible = useIsPageVisible()
+  const { isNative } = useNativeInfo()
 
-  // Mark all notifications as seen. Rerun as new notifications come in.
   useEffect(() => {
     if (!privateUser || !isPageVisible) return
-    if (isAuthorized) markAllNotifications({ seen: true })
-    groupedNotifications
-      ?.map((ng) => ng.notifications)
-      .flat()
-      .forEach((n) => (!n.isSeen ? (n.isSeen = true) : null))
-  }, [privateUser, isPageVisible, mostRecentNotification?.id, isAuthorized])
+    markAllNotifications({ seen: true })
+    markAllAsSeen?.()
+  }, [
+    privateUser?.id,
+    isPageVisible,
+    mostRecentNotification?.id,
+    markAllAsSeen,
+  ])
 
   return (
-    <Col className={'min-h-[100vh] gap-0 text-sm'}>
-      {groupedNotifications === undefined ||
-      paginatedGroupedNotifications === undefined ? (
-        <LoadingIndicator />
-      ) : paginatedGroupedNotifications.length === 0 ? (
-        <div className={'mt-2'}>
-          {emptyTitle ? emptyTitle : `You don't have any notifications, yet.`}
-        </div>
-      ) : (
-        <RenderNotificationGroups
-          notificationGroups={paginatedGroupedNotifications}
-          totalItems={groupedNotifications.length}
-          page={page}
-          setPage={setPage}
-        />
+    <Col className="gap-2">
+      {pinnedNotifications && pinnedNotifications.length > 0 && (
+        <Col className="gap-1 rounded-md border-2 border-indigo-500 p-2">
+          <Row
+            className={clsx(
+              'bg-primary-100',
+              'cursor-pointer items-center justify-between px-3 py-2'
+            )}
+            onClick={() => setPinnedExpanded(!pinnedExpanded)}
+          >
+            <span>
+              {pinnedNotifications.length}{' '}
+              {maybePluralize('comment', pinnedNotifications.length)} that may
+              need your attention
+            </span>
+            {pinnedExpanded ? (
+              <ChevronUpIcon className="h-5 w-5" />
+            ) : (
+              <ChevronDownIcon className="h-5 w-5" />
+            )}
+          </Row>
+          {pinnedExpanded &&
+            pinnedNotifications.map((notification) => (
+              <NotificationItem
+                key={notification.id}
+                notification={notification}
+              />
+            ))}
+        </Col>
       )}
-      {privateUser && groupedNotifications && user && (
+
+      {groupedNotifications === undefined && user && <LoadingIndicator />}
+      {groupedNotifications &&
+        groupedNotifications.length === 0 &&
+        (!pinnedNotifications || pinnedNotifications.length === 0) && (
+          <div className="text-ink-500 mt-4 text-center">
+            {emptyTitle ? emptyTitle : `You don't have any notifications yet.`}
+          </div>
+        )}
+      {paginatedGroupedNotifications &&
+        paginatedGroupedNotifications.length > 0 && (
+          <RenderNotificationGroups
+            notificationGroups={paginatedGroupedNotifications}
+            totalItems={groupedNotifications?.length ?? 0}
+            page={page}
+            setPage={setPage}
+          />
+        )}
+      {privateUser && groupedNotifications && user && isNative && (
         <PushNotificationsModal
           user={user}
           privateUser={privateUser}
@@ -351,12 +480,17 @@ function NotificationGroupItem(props: {
             <>Welcome to Manifold!</>
           ) : questNotifs ? (
             <>
-              {notifications.length} quest
-              {notifications.length > 1 ? 's' : ''} completed
+              {notifications.length}{' '}
+              {maybePluralize('quest', notifications.length)} completed
+            </>
+          ) : notifications[0].reason === 'market_movements' ? (
+            <>
+              {notifications.length} notable 24-hour market{' '}
+              {maybePluralize('movement', notifications.length)}
             </>
           ) : sourceTitle || sourceContractTitle ? (
             <>
-              {uniques} user{uniques > 1 ? `s` : ``} on{' '}
+              {uniques} {maybePluralize('user', uniques)} on{' '}
               <QuestionOrGroupLink
                 notification={notifications[0]}
                 truncatedLength={'xl'}
@@ -364,7 +498,7 @@ function NotificationGroupItem(props: {
             </>
           ) : (
             <>
-              Other activity from {uniques} user{uniques > 1 ? 's' : ''}
+              Other activity from {uniques} {maybePluralize('user', uniques)}
             </>
           )}
         </ParentNotificationHeader>

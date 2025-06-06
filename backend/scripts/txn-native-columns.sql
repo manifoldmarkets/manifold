@@ -33,7 +33,3 @@ create trigger txns_populate before insert
 or
 update on txns for each row
 execute function txns_populate_cols ();
-
-update txns
-set
-  fs_updated_time = fs_updated_time;

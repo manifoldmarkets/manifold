@@ -10,6 +10,10 @@ export type ChatMessage = {
   createdTime: number
   visibility: ChatVisibility
 }
+export type PrivateChatMessage = Omit<ChatMessage, 'id'> & {
+  id: number
+  createdTimeTs: string
+}
 
 export const convertPublicChatMessage = (row: Row<'chat_messages'>) =>
   convertSQLtoTS<'chat_messages', ChatMessage>(row, {

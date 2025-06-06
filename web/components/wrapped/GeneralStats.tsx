@@ -2,7 +2,7 @@ import clsx from 'clsx'
 import { User } from 'common/user'
 import { formatMoney } from 'common/util/format'
 import { useEffect, useState } from 'react'
-import { MonthlyBetsType } from 'web/hooks/use-wrapped-2023'
+import { MonthlyBetsType } from 'web/hooks/use-wrapped-2024'
 import { Spacer } from '../layout/spacer'
 import { LoadingIndicator } from '../widgets/loading-indicator'
 import { NavButtons } from './NavButtons'
@@ -83,10 +83,10 @@ export function GeneralStats(props: {
           )}
         >
           This year you spent{' '}
-          <span className="font-bold text-green-300">
+          <span className="font-bold text-purple-300">
             {formatMoney(amountBetThisYear)}
           </span>{' '}
-          betting on things you believed in!
+          trading on things you believed in!
         </div>
         <Spacer h={4} />
         <div
@@ -99,12 +99,12 @@ export function GeneralStats(props: {
               : 'invisible'
           )}
         >
-          You bet the most in{' '}
-          <span className={clsx('highlight-black font-bold text-green-300')}>
+          You traded the most in{' '}
+          <span className={clsx('highlight-black font-bold text-purple-300')}>
             {monthName}
           </span>
           , spending{' '}
-          <span className="font-bold text-green-300">
+          <span className="font-bold text-purple-300">
             {formatMoney(monthWithMostBet.total_amount)}
           </span>{' '}
           mana!

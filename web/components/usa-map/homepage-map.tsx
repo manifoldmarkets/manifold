@@ -8,8 +8,7 @@ import { ReactNode, useState } from 'react'
 import { Col } from 'web/components/layout/col'
 import { Row } from 'web/components/layout/row'
 import { Spacer } from 'web/components/layout/spacer'
-import { useAnswersCpmm } from 'web/hooks/use-answers'
-import { useFirebasePublicContract } from 'web/hooks/use-contract-supabase'
+import { useLiveContract } from 'web/hooks/use-contract'
 import {
   ElectoralCollegeVisual,
   sortByDemocraticDiff,
@@ -32,27 +31,38 @@ import {
   swingStates,
 } from 'web/public/data/elections-data'
 import { HouseTable } from './house-table'
+import { useSweepstakes } from '../sweepstakes-provider'
 
 type MapMode = 'presidency' | 'senate' | 'house' | 'governor'
 
 export function HomepageMap(props: {
   rawPresidencyStateContracts: MapContractsDictionary
+  rawPresidencySwingCashContracts: MapContractsDictionary
   rawSenateStateContracts: MapContractsDictionary
   rawGovernorStateContracts: MapContractsDictionary
   houseContract: MultiContract
 }) {
   const {
     rawPresidencyStateContracts,
+    rawPresidencySwingCashContracts,
     rawSenateStateContracts,
     rawGovernorStateContracts,
     houseContract,
   } = props
 
+  const { prefersPlay } = useSweepstakes()
+
   const presidencyContractsDictionary = Object.keys(
     rawPresidencyStateContracts
   ).reduce((acc, key) => {
     // eslint-disable-next-line react-hooks/rules-of-hooks
-    acc[key] = useLiveContract(rawPresidencyStateContracts[key]!)
+    const currentContract =
+      !prefersPlay && rawPresidencySwingCashContracts[key]
+        ? rawPresidencySwingCashContracts[key]
+        : rawPresidencyStateContracts[key]
+    // eslint-disable-next-line react-hooks/rules-of-hooks
+    acc[key] = useLiveContract(currentContract!)
+
     return acc
   }, {} as MapContractsDictionary)
 
@@ -142,6 +152,7 @@ export function HomepageMap(props: {
               targetState={targetState}
               setTargetState={setTargetState}
               customTitleFunction={extractStateFromPresidentContract}
+              includeHead
             />
           ) : (
             <SwingStateContract
@@ -345,19 +356,4 @@ function MapTabButton(props: {
       </div>
     </button>
   )
-}
-
-function useLiveContract(inputContract: Contract): Contract {
-  const contract =
-    useFirebasePublicContract(inputContract.visibility, inputContract.id) ??
-    inputContract
-
-  if (contract.mechanism === 'cpmm-multi-1') {
-    // eslint-disable-next-line react-hooks/rules-of-hooks
-    const answers = useAnswersCpmm(contract.id)
-    if (answers) {
-      contract.answers = answers
-    }
-  }
-  return contract
 }

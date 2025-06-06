@@ -1,8 +1,8 @@
-import { initAdmin } from 'shared/init-admin'
-initAdmin()
-
-import { drizzleLiquidity } from 'functions/scheduled/drizzle-liquidity'
+import { drizzleLiquidity } from 'scheduler/jobs/drizzle-liquidity'
+import { runScript } from 'run-script'
 
 if (require.main === module) {
-  drizzleLiquidity().then(() => process.exit())
+  runScript(async () => {
+    await drizzleLiquidity()
+  })
 }

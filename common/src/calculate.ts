@@ -1,8 +1,10 @@
 import {
+  first,
   get,
   groupBy,
   mapValues,
   maxBy,
+  orderBy,
   partition,
   sortBy,
   sum,
@@ -22,17 +24,19 @@ import {
   BinaryContract,
   Contract,
   CPMMContract,
-  CPMMMultiContract,
-  CPMMNumericContract,
+  MarketContract,
   MultiContract,
   PseudoNumericContract,
   StonkContract,
 } from './contract'
-import { floatingEqual } from './util/math'
+import { floatingEqual, floatingGreaterEqual } from './util/math'
 import { ContractMetric } from 'common/contract-metric'
 import { Answer } from './answer'
 import { DAY_MS } from 'common/util/time'
-import { computeInvestmentValueCustomProb } from 'common/calculate-metrics'
+import {
+  computeInvestmentValueCustomProb,
+  MarginalBet,
+} from 'common/calculate-metrics'
 
 export function getProbability(
   contract: BinaryContract | PseudoNumericContract | StonkContract
@@ -86,7 +90,7 @@ export function getAnswerProbability(
 }
 
 export function getInitialAnswerProbability(
-  contract: MultiContract | CPMMNumericContract,
+  contract: MultiContract,
   answer: Answer
 ) {
   if (!contract.shouldAnswersSumToOne) {
@@ -95,7 +99,7 @@ export function getInitialAnswerProbability(
     if (contract.addAnswersMode === 'DISABLED') {
       return 1 / contract.answers.length
     } else {
-      const answers = contract.answers as Answer[]
+      const answers = contract.answers
       const initialTime = answers.find((a) => a.isOther)?.createdTime
 
       if (answer.createdTime === initialTime) {
@@ -160,11 +164,22 @@ export function resolvedPayout(contract: Contract, bet: Bet) {
 }
 
 function getCpmmInvested(yourBets: Bet[]) {
-  const totalShares: { [outcome: string]: number } = {}
-  const totalSpent: { [outcome: string]: number } = {}
+  const { totalSpent } = calculateTotalSpentAndShares(yourBets)
+  return sum(Object.values(totalSpent))
+}
 
-  const sortedBets = sortBy(yourBets, 'createdTime')
-  const sharePurchases = sortedBets.map((bet) => [bet]).flat()
+export function calculateTotalSpentAndShares(
+  bets: MarginalBet[],
+  initialTotalSpent: { [outcome: string]: number } = { YES: 0, NO: 0 },
+  initialTotalShares: { [outcome: string]: number } = { YES: 0, NO: 0 }
+) {
+  const totalShares: { [outcome: string]: number } = { ...initialTotalShares }
+  const totalSpent: { [outcome: string]: number } = { ...initialTotalSpent }
+
+  const sharePurchases = sortBy(bets, [
+    'createdTime',
+    (bet) => (bet.isRedemption ? 1 : 0),
+  ])
 
   for (const purchase of sharePurchases) {
     const { outcome, shares, amount } = purchase
@@ -173,17 +188,17 @@ function getCpmmInvested(yourBets: Bet[]) {
     const spent = totalSpent[outcome] ?? 0
     const position = totalShares[outcome] ?? 0
 
-    if (amount >= 0) {
+    if (floatingGreaterEqual(amount, 0)) {
       totalShares[outcome] = position + shares
       totalSpent[outcome] = spent + amount
-    } else if (amount < 0) {
-      const averagePrice = position === 0 ? 0 : spent / position
+    } else {
+      const averagePrice = floatingEqual(position, 0) ? 0 : spent / position
       totalShares[outcome] = position + shares
       totalSpent[outcome] = spent + averagePrice * shares
     }
   }
 
-  return sum(Object.values(totalSpent))
+  return { totalSpent, totalShares }
 }
 
 export function getSimpleCpmmInvested(yourBets: Bet[]) {
@@ -210,7 +225,7 @@ function getCpmmOrDpmProfit(
 ) {
   const resolution = answer?.resolution ?? contract.resolution
 
-  let totalInvested = 0
+  let totalAmountInvested = 0
   let payout = 0
   let saleValue = 0
   let redeemed = 0
@@ -221,7 +236,7 @@ function getCpmmOrDpmProfit(
     if (isRedemption) {
       redeemed += -1 * amount
     } else if (amount > 0) {
-      totalInvested += amount
+      totalAmountInvested += amount
     } else {
       saleValue -= amount
     }
@@ -231,13 +246,15 @@ function getCpmmOrDpmProfit(
       : calculatePayout(contract, bet, 'MKT')
   }
 
-  const profit = payout + saleValue + redeemed - totalInvested
-  const profitPercent = totalInvested === 0 ? 0 : (profit / totalInvested) * 100
+  const profit = payout + saleValue + redeemed - totalAmountInvested
+  const profitPercent =
+    totalAmountInvested === 0 ? 0 : (profit / totalAmountInvested) * 100
 
   return {
     profit,
     profitPercent,
-    totalInvested,
+    totalAmountInvested,
+    totalAmountSold: saleValue + redeemed,
     payout,
   }
 }
@@ -252,15 +269,23 @@ export function getProfitMetrics(contract: Contract, yourBets: Bet[]) {
         return getCpmmOrDpmProfit(contract, bets, answer)
       }
     )
-    const profit = sumBy(profitMetricsPerAnswer, 'profit')
-    const totalInvested = sumBy(profitMetricsPerAnswer, 'totalInvested')
+    const profit = sumBy(profitMetricsPerAnswer, (m) => m.profit)
+    const totalAmountInvested = sumBy(
+      profitMetricsPerAnswer,
+      (m) => m.totalAmountInvested
+    )
     const profitPercent =
-      totalInvested === 0 ? 0 : (profit / totalInvested) * 100
-    const payout = sumBy(profitMetricsPerAnswer, 'payout')
+      totalAmountInvested === 0 ? 0 : (profit / totalAmountInvested) * 100
+    const payout = sumBy(profitMetricsPerAnswer, (m) => m.payout)
+    const totalAmountSold = sumBy(
+      profitMetricsPerAnswer,
+      (m) => m.totalAmountSold
+    )
     return {
       profit,
       profitPercent,
-      totalInvested,
+      totalAmountInvested,
+      totalAmountSold,
       payout,
     }
   }
@@ -310,23 +335,30 @@ export const getContractBetMetrics = (
   contract: Contract,
   yourBets: Bet[],
   answerId?: string
-) => {
+): Omit<ContractMetric, 'id' | 'from' | 'userId' | 'loan'> => {
   const { mechanism } = contract
   const isCpmmMulti = mechanism === 'cpmm-multi-1'
-  const { profit, profitPercent, payout } = getProfitMetrics(contract, yourBets)
-  const invested = getInvested(contract, yourBets)
-  const loan = sumBy(yourBets, 'loanAmount')
+  const {
+    profit,
+    profitPercent,
+    payout,
+    totalAmountInvested,
+    totalAmountSold,
+  } = getProfitMetrics(contract, yourBets)
+  const { totalSpent } = calculateTotalSpentAndShares(yourBets)
+  const invested = sum(Object.values(totalSpent))
 
   const { totalShares, hasShares, hasYesShares, hasNoShares } =
     getCpmmShares(yourBets)
-  const lastBetTime = Math.max(...yourBets.map((b) => b.createdTime))
+  const lastBet = first(orderBy(yourBets, (b) => b.createdTime, 'desc'))
+  const lastBetTime = lastBet?.createdTime
+  const lastProb = lastBet?.probAfter
   const maxSharesOutcome = hasShares
     ? maxBy(Object.keys(totalShares), (outcome) => totalShares[outcome])
     : null
 
   return {
     invested,
-    loan,
     payout,
     profit,
     profitPercent,
@@ -334,12 +366,17 @@ export const getContractBetMetrics = (
     hasShares: isCpmmMulti ? getCpmmMultiShares(yourBets).hasShares : hasShares,
     hasYesShares,
     hasNoShares,
-    maxSharesOutcome,
-    lastBetTime,
+    maxSharesOutcome: maxSharesOutcome ?? null,
+    lastBetTime: lastBetTime ?? 0,
+    lastProb: lastProb ?? null,
     answerId: answerId ?? null,
+    totalAmountSold,
+    totalAmountInvested,
+    totalSpent,
+    contractId: contract.id,
   }
 }
-export const getContractBetMetricsPerAnswer = (
+export const getContractBetMetricsPerAnswerWithoutLoans = (
   contract: Contract,
   bets: Bet[],
   answers?: Answer[]
@@ -414,7 +451,7 @@ export const getContractBetMetricsPerAnswer = (
 }
 
 const calculatePeriodProfit = (
-  contract: CPMMContract | CPMMMultiContract | CPMMNumericContract,
+  contract: MarketContract,
   bets: Bet[],
   period: 'day' | 'week' | 'month',
   answer?: Answer

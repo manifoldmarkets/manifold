@@ -1,11 +1,15 @@
 import { createSupabaseDirectClient } from 'shared/supabase/init'
 import { z } from 'zod'
 import { APIError, authEndpoint, validate } from './helpers/endpoint'
-import * as admin from 'firebase-admin'
 import { PollOption } from 'common/poll-option'
-import { PollContract } from 'common/contract'
 import { createVotedOnPollNotification } from 'shared/create-notification'
-import { getUser } from 'shared/utils'
+import {
+  getContract,
+  getUser,
+  revalidateContractStaticProps,
+} from 'shared/utils'
+import { updateContract } from 'shared/supabase/contracts'
+import { pollQueue } from 'shared/helpers/fn-queue'
 
 const schema = z
   .object({
@@ -16,49 +20,55 @@ const schema = z
 
 export const castpollvote = authEndpoint(async (req, auth) => {
   const { contractId, voteId } = validate(schema, req.body)
-  const pg = createSupabaseDirectClient()
+  return await pollQueue.enqueueFn(
+    () => castPollVoteMain(contractId, voteId, auth.uid),
+    [contractId]
+  )
+})
 
-  const contractRef = firestore.collection('contracts').doc(contractId)
-  const contractSnap = await contractRef.get()
-  if (!contractSnap.exists) throw new APIError(404, 'Contract cannot be found')
-  const contract = contractSnap.data() as PollContract
-  if (contract.outcomeType !== 'POLL') {
-    throw new APIError(403, 'This contract is not a poll')
+const castPollVoteMain = async (
+  contractId: string,
+  voteId: string,
+  userId: string
+) => {
+  const user = await getUser(userId)
+  if (!user) {
+    throw new APIError(404, 'User not found')
   }
-
-  const user = await getUser(auth.uid)
   if (user?.isBannedFromPosting) {
     throw new APIError(403, 'You are banned and cannot vote')
   }
+  const pg = createSupabaseDirectClient()
+  const res = await pg.tx(async (t) => {
+    const contract = await getContract(t, contractId)
+    if (!contract) {
+      throw new APIError(404, 'Contract not found')
+    }
 
-  const options: PollOption[] = contract.options
+    if (contract.outcomeType !== 'POLL') {
+      throw new APIError(403, 'This contract is not a poll')
+    }
+    const options: PollOption[] = contract.options
+    // Find the option to update
+    const optionToUpdate = options.find((o) => o.id === voteId)
 
-  // Find the option to update
-  const optionToUpdate = options.find((o) => o.id === voteId)
-
-  return pg.tx(async (t) => {
-    const totalVoters = await t.manyOrNone(
-      `select * from votes where contract_id = $1`,
-      [contractId, voteId]
+    const hasVoted = await t.oneOrNone(
+      `select 1 as exists from votes where contract_id = $1 and user_id = $2`,
+      [contractId, userId],
+      (r) => r?.exists
     )
 
-    const idVoters = totalVoters.filter((v) => v.id == voteId)
-
-    if (totalVoters.some((v) => v.user_id === auth.uid)) {
+    if (hasVoted) {
       throw new APIError(403, 'You have already voted on this poll')
     }
 
-    // Update the votes field
-    if (optionToUpdate) {
-      optionToUpdate.votes = idVoters.length + 1
-    }
-
     // Write the updated options back to the document
-    await admin.firestore().runTransaction(async (transaction) => {
-      transaction.update(contractRef, {
-        options: options,
-        uniqueBettorCount: totalVoters.length + 1,
-      })
+    await updateContract(t, contractId, {
+      options: options.map((o) => ({
+        ...o,
+        votes: o.id === voteId ? o.votes + 1 : o.votes,
+      })),
+      uniqueBettorCount: contract.uniqueBettorCount + 1,
     })
 
     // create the vote row
@@ -66,16 +76,20 @@ export const castpollvote = authEndpoint(async (req, auth) => {
       `insert into votes(id, contract_id, user_id)
         values ($1, $2, $3)
         returning id`,
-      [voteId, contractId, auth.uid]
+      [voteId, contractId, userId]
     )
-
-    await createVotedOnPollNotification(
-      auth.uid,
-      optionToUpdate?.text ?? '',
-      contract
-    )
-    return { status: 'success', voteId: id }
+    return { id, optionToUpdate, contract }
   })
-})
+  await createVotedOnPollNotification(
+    user,
+    res.optionToUpdate?.text ?? '',
+    res.contract
+  )
 
-const firestore = admin.firestore()
+  return {
+    result: { status: 'success', voteId: res.id },
+    continue: async () => {
+      await revalidateContractStaticProps(res.contract)
+    },
+  }
+}

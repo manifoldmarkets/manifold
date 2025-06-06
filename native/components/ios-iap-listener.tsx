@@ -34,13 +34,13 @@ export const IosIapListener = (props: {
 
   useEffect(() => {
     if (currentPurchaseError || initConnectionError) {
-      console.log('error with products:', products)
+      console.error('error with products:', products)
       if (currentPurchaseError) {
-        console.log('current purchase error', currentPurchaseError)
-        console.log('currentPurchase:', currentPurchase)
+        console.error('current purchase error', currentPurchaseError)
+        console.error('currentPurchase:', currentPurchase)
         setDidGetPurchaseError('currentPurchaseError')
       } else if (initConnectionError) {
-        console.log('init connection error', initConnectionError)
+        console.error('init connection error', initConnectionError)
         setDidGetPurchaseError('initConnectionError')
       }
 
@@ -70,6 +70,15 @@ export const IosIapListener = (props: {
           const receipt = currentPurchase.transactionReceipt
           console.log('finishTransaction receipt', receipt)
           if (didGetPurchaseError) {
+            console.error(
+              'didGetPurchaseError',
+              'current purchase:',
+              currentPurchase,
+              'error:',
+              currentPurchaseError,
+              'initConnectionError:',
+              initConnectionError
+            )
           }
 
           communicateWithWebview('iapReceipt', { receipt })
@@ -87,6 +96,7 @@ export const IosIapListener = (props: {
   }, [currentPurchase, finishTransaction])
 
   const handleBuyProduct = async (sku: Sku) => {
+    setDidGetPurchaseError(null)
     try {
       await requestPurchase({ sku })
     } catch (error) {
@@ -107,7 +117,7 @@ export const IosIapListener = (props: {
 
   useEffect(() => {
     console.log('iap connected', connected)
-    if (connected) {
+    if (connected && !products.length) {
       getProducts({
         skus: SKUS,
       }).catch((e) => {
@@ -125,6 +135,8 @@ export const IosIapListener = (props: {
     if (sku) {
       console.log('found sku', sku)
       handleBuyProduct(sku.productId)
+    } else {
+      console.error('no sku found for', usdAmount)
     }
     setCheckoutAmount(null)
   }, [checkoutAmount])

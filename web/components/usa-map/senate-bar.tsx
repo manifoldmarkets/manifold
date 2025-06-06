@@ -60,6 +60,7 @@ export function SenateBar(props: {
               contract,
               senate2024.filter((s) => s.state === stateKey)[0]
             )
+
             return (
               <StateBar
                 key={stateKey}

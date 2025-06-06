@@ -1,20 +1,17 @@
-import * as admin from 'firebase-admin'
-import { Contract } from 'common/contract'
-
 import { isAdminId } from 'common/envs/constants'
 import { APIError, type APIHandler } from './helpers/endpoint'
-import { log } from 'shared/utils'
+import { getContract, log } from 'shared/utils'
+import { createSupabaseDirectClient } from 'shared/supabase/init'
+import { updateContract } from 'shared/supabase/contracts'
 
 export const closeMarket: APIHandler<'market/:contractId/close'> = async (
   props,
   auth
 ) => {
   const { contractId, closeTime } = props
-  const contractDoc = firestore.doc(`contracts/${contractId}`)
-  const contractSnap = await contractDoc.get()
-  if (!contractSnap.exists)
-    throw new APIError(404, 'No contract exists with the provided ID')
-  const contract = contractSnap.data() as Contract
+  const pg = createSupabaseDirectClient()
+  const contract = await getContract(pg, contractId)
+  if (!contract) throw new APIError(404, 'Contract not found')
   const { creatorId } = contract
 
   if (creatorId !== auth.uid && !isAdminId(auth.uid))
@@ -31,16 +28,9 @@ export const closeMarket: APIHandler<'market/:contractId/close'> = async (
         'Alternatively, do not provide a close time to close immediately.'
     )
 
-  const updatedContract = {
-    ...contract,
+  await updateContract(pg, contractId, {
     closeTime: closeTime ? closeTime : now,
-  }
-
-  await contractDoc.update(updatedContract)
+  })
 
   log('contract ' + contractId + ' closed')
-
-  // return updatedContract
 }
-
-const firestore = admin.firestore()

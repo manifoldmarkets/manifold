@@ -10,6 +10,7 @@ export type NavItem = {
   href?: string
   onClick?: () => void
   icon?: React.ComponentType<{ className?: string }>
+  iconClassName?: string
   external?: boolean
   alwaysShowName?: boolean
   prefetch?: boolean
@@ -26,7 +27,8 @@ export function SidebarItem(props: { item: NavItem; currentPage?: string }) {
     queryCleanedHref.split('/').length > 2
       ? '/' + queryCleanedHref.split('/')[1]
       : queryCleanedHref
-  const isCurrentPage = currentBasePath === segmentCleanedHref
+  const isCurrentPage =
+    currentBasePath === segmentCleanedHref && !item.href?.startsWith('https://')
 
   const onClick = () => {
     track('sidebar: ' + item.name)
@@ -50,7 +52,7 @@ export function SidebarItem(props: { item: NavItem; currentPage?: string }) {
               ? 'text-ink-600'
               : 'text-ink-500 group-hover:text-ink-600',
             '  -ml-1 mr-3 h-6 w-6 flex-shrink-0',
-            item.name == 'US Politics' ? '-mt-1' : ''
+            item.iconClassName
           )}
           aria-hidden="true"
         />
@@ -67,6 +69,9 @@ export function SidebarItem(props: { item: NavItem; currentPage?: string }) {
         aria-current={isCurrentPage ? 'page' : undefined}
         onClick={onClick}
         className={sidebarClass}
+        target={
+          item.external || !item.href.startsWith('/') ? '_blank' : undefined
+        }
       >
         {sidebarItem}
       </Link>

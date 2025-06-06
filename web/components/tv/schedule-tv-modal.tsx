@@ -9,7 +9,7 @@ import { Row } from 'web/components/layout/row'
 import { Input } from 'web/components/widgets/input'
 import { Title } from 'web/components/widgets/title'
 import { useUser } from 'web/hooks/use-user'
-import { deleteTV, setTV } from 'web/lib/firebase/api'
+import { deleteTV, setTV } from 'web/lib/api/api'
 import { useAdmin, useTrusted } from 'web/hooks/use-admin'
 import { removeUndefinedProps } from 'common/util/object'
 import ShortToggle from 'web/components/widgets/short-toggle'
@@ -18,7 +18,7 @@ import { LoadingIndicator } from '../widgets/loading-indicator'
 
 export function ScheduleTVModal(props: {
   open: boolean
-  setOpen(open: boolean): void
+  setOpen: (open: boolean) => void
   stream?: ScheduleItem
   slug?: string
 }) {
@@ -144,14 +144,9 @@ export function ScheduleTVModal(props: {
             value={streamId}
             onChange={(e) => {
               const text = e.target.value
-              const processed = processYoutubeUrl(text)
-              if (processed.length === 11 && !text.includes('twitch')) {
-                setStreamId(processed)
-                setSource('youtube')
-              } else {
-                setStreamId(processUrl(text))
-                setSource('twitch')
-              }
+              const { streamId, source } = parseUrl(text)
+              setStreamId(streamId)
+              setSource(source)
             }}
           />
         </Row>
@@ -252,4 +247,30 @@ const processYoutubeUrl = (url: string) => {
 
 const processUrl = (url: string) => {
   return url.split('?')[0].split('/').pop() ?? ''
+}
+
+const parseUrl = (url: string) => {
+  let source = ''
+  let streamId = ''
+
+  if (url.includes('youtube.com') || url.includes('youtu.be')) {
+    source = 'youtube'
+    const match = url.match(
+      /(?:youtu\.be\/|youtube\.com\/(?:embed\/|v\/|watch\?v=|watch\?.+&v=))([^&?]+)/
+    )
+    streamId = match ? match[1] : ''
+  } else if (url.includes('twitch.tv')) {
+    source = 'twitch'
+    const match = url.match(/(?:twitch\.tv\/)([\w]+)/)
+    streamId = match ? match[1] : ''
+  } else if (url.includes('twitter.com') || url.includes('x.com')) {
+    source = 'twitter'
+    const match = url.match(
+      /(?:twitter\.com\/\w+\/status\/|x\.com\/\w+\/status\/)(\d+)/
+    )
+    streamId = match ? match[1] : ''
+  }
+  console.log(source, streamId)
+
+  return { source, streamId }
 }
