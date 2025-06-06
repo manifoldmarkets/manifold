@@ -91,7 +91,6 @@ const uploadImage = async (
   return await promise
 }
 
-
 export const uploadAudio = async (
   file: File,
   prefix: string,
@@ -146,6 +145,7 @@ export const uploadAudio = async (
     console.error('Error uploading audio:', error)
     throw error
   }
+}
 
 export const uploadPrivateImage = async (
   userId: string,
@@ -156,5 +156,4 @@ export const uploadPrivateImage = async (
   const path = `private-images/${userId}/${fileName}`
   const storageRef = ref(privateStorage, path)
   return await uploadImage(file, storageRef, onProgress)
-
 }

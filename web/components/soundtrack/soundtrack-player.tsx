@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useState } from 'react'
 import * as Tone from 'tone'
 import { Bet } from 'common/bet'
 import { Button } from 'web/components/buttons/button'
@@ -6,11 +6,12 @@ import {
   soundsByUserId,
   soundUrlToUserId,
 } from 'web/components/soundtrack/sound-recorder'
-import { useEvent } from 'web/hooks/use-event'
+import { useEvent } from 'client-common/hooks/use-event'
 import { Row } from 'web/components/layout/row'
 import { RefreshIcon } from '@heroicons/react/solid'
 import { getTransport, GrainPlayer } from 'tone'
-import { useRealtimeBets } from 'web/hooks/use-bets-supabase'
+import { useApiSubscription } from 'client-common/hooks/use-api-subscription'
+import { first } from 'lodash'
 
 type ToneMap = Record<
   string,
@@ -132,37 +133,36 @@ export const SoundtrackPlayer = () => {
         console.error('Sound fetch error:', error)
       }
     }
-    setToneMap(newToneMap)
     setLoading(false)
     console.log('loaded sounds', newToneMap)
     getTransport().start()
   }
-  const { rows: realtimeBets } = useRealtimeBets({
-    limit: 10,
-    filterRedemptions: true,
-    order: 'desc',
-  })
-  useEffect(() => {
-    if (!realtimeBets) return
-    const newBets = realtimeBets.filter(
-      (b) => !oldBets.some((ob) => ob.id === b.id)
-    )
-    setOldBets(realtimeBets)
-    newBets.forEach((bet) => {
-      onNewBet(bet)
-    })
-  }, [realtimeBets?.length])
-  // useApiSubscription({
-  //   enabled,
-  //   topics: ['global/new-bet'],
-  //   onBroadcast: (msg) => {
-  //     const bet = first(msg.data.bets as Bet[]) as Bet
-  //     onNewBet(bet)
-  //   },
-  //   onError: (err) => {
-  //     console.error('Error in bets soundtrack subscription', err)
-  //   },
+  // const { rows: realtimeBets } = useRealtimeBets({
+  //   limit: 10,
+  //   filterRedemptions: true,
+  //   order: 'desc',
   // })
+  // useEffect(() => {
+  //   if (!realtimeBets) return
+  //   const newBets = realtimeBets.filter(
+  //     (b) => !oldBets.some((ob) => ob.id === b.id)
+  //   )
+  //   setOldBets(realtimeBets)
+  //   newBets.forEach((bet) => {
+  //     onNewBet(bet)
+  //   })
+  // }, [realtimeBets?.length])
+  useApiSubscription({
+    enabled,
+    topics: ['global/new-bet'],
+    onBroadcast: (msg) => {
+      const bet = first(msg.data.bets as Bet[]) as Bet
+      onNewBet(bet)
+    },
+    onError: (err) => {
+      console.error('Error in bets soundtrack subscription', err)
+    },
+  })
   return (
     <Row>
       <Button color={'gray-white'} loading={loading} onClick={loadSounds}>

@@ -1,7 +1,7 @@
 import { useEffect } from 'react'
 import { ref, listAll, getDownloadURL } from 'firebase/storage'
 import { storage } from 'web/lib/firebase/init'
-import { usePersistentInMemoryState } from 'web/hooks/use-persistent-in-memory-state'
+import { usePersistentInMemoryState } from 'client-common/hooks/use-persistent-in-memory-state'
 
 const useUserSounds = () => {
   const [sounds, setSounds] = usePersistentInMemoryState<string[]>(
