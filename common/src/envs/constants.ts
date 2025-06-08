@@ -204,6 +204,7 @@ export const MOD_IDS = [
   'Gg7t9vPD4WPD1iPgj9RUFLYTxgH2', // nikki
   'XNrWcIrA22hpv20fHn4ApoTPsh63', // bagelfan
   '0k1suGSJKVUnHbCPEhHNpgZPkUP2', // Sinclair
+  'sCOvPc5J2sOacn0DYjwL7OAMzcV2', // bens
 ]
 
 export const SWEEPSTAKES_MOD_IDS = [
