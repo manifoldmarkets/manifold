@@ -53,7 +53,6 @@ export default function NotificationsPage() {
   const privateUser = usePrivateUser()
   const user = useUser()
   useRedirectIfSignedOut()
-
   const [navigateToSection, setNavigateToSection] = useState<string>()
   const { isNative } = useNativeInfo()
   const router = useRouter()

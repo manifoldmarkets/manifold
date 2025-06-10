@@ -68,10 +68,15 @@ export function useNotifications(
             allNotifications.filter((n) => n.isSeen).map((n) => n.id)
           )
 
+          const readIds = uniq(
+            allNotifications.filter((n) => n.markedAsRead).map((n) => n.id)
+          )
+
           const updatedNotifications = uniqBy(allNotifications, 'id').map(
             (n) => ({
               ...n,
               isSeen: seenIds.includes(n.id) || n.isSeen,
+              markedAsRead: readIds.includes(n.id) || n.markedAsRead,
             })
           )
 
