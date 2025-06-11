@@ -3,6 +3,7 @@ import * as cors from 'cors'
 import * as express from 'express'
 import { ErrorRequestHandler, RequestHandler } from 'express'
 import { log, metrics } from 'shared/utils'
+import * as compression from 'compression'
 import { withMonitoringContext } from 'shared/monitoring/context'
 import { APIError, pathWithPrefix } from 'common/api/utils'
 import { API, type APIPath } from 'common/api/schema'
@@ -98,6 +99,7 @@ export const apiErrorHandler: ErrorRequestHandler = (
 }
 
 export const app = express()
+app.use(compression())
 app.use(requestMonitoring)
 
 app.options('*', allowCorsUnrestricted)
