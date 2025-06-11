@@ -15,6 +15,7 @@ import { addOldRoutes } from './old-routes'
 
 export const allowCorsUnrestricted: RequestHandler = cors({
   origin: '*',
+  maxAge: 86400, // 24 hours
 })
 
 function cacheController(policy?: string): RequestHandler {
