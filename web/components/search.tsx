@@ -820,8 +820,25 @@ export const useSearchResults = (props: {
     `${persistPrefix}-supabase-contract-search`
   )
   const [loading, setLoading] = useState(false)
+  const [lastSearchParams, setLastSearchParams] =
+    usePersistentInMemoryState<SearchParams | null>(
+      null,
+      `${persistPrefix}-last-search-params`
+    )
 
   const requestId = useRef(0)
+
+  // Helper function to check if search parameters have meaningfully changed
+  const searchParamsChanged = (
+    current: SearchParams,
+    previous: SearchParams | null
+  ): boolean => {
+    if (!previous) return true
+
+    return (Object.keys(current) as (keyof SearchParams)[]).some(
+      (key) => current[key] !== previous[key]
+    )
+  }
 
   const querySearchResults = useEvent(
     async (freshQuery?: boolean, contractsOnly?: boolean) => {
@@ -885,6 +902,12 @@ export const useSearchResults = (props: {
               posts: uniqBy(buildArray(state.posts, posts), 'id'),
               shouldLoadMore,
             })
+
+            // Store the search params that were used for this query
+            if (freshQuery) {
+              setLastSearchParams(searchParams)
+            }
+
             clearTimeout(timeoutId)
             setLoading(false)
             return shouldLoadMore
@@ -1011,6 +1034,12 @@ export const useSearchResults = (props: {
               posts: freshPosts,
               shouldLoadMore,
             })
+
+            // Store the search params that were used for this query
+            if (freshQuery) {
+              setLastSearchParams(searchParams)
+            }
+
             clearTimeout(timeoutId)
             setLoading(false)
 
@@ -1034,9 +1063,16 @@ export const useSearchResults = (props: {
     50,
     [isReady]
   )
-  useDebouncedEffect(() => querySearchResults(true), 50, [
-    JSON.stringify(searchParams),
-  ])
+  useDebouncedEffect(
+    () => {
+      // Only do a fresh query if search parameters have meaningfully changed
+      if (searchParamsChanged(searchParams, lastSearchParams)) {
+        querySearchResults(true)
+      }
+    },
+    50,
+    [JSON.stringify(searchParams)]
+  )
 
   const contracts = state.contracts
     ? uniqBy(
