@@ -153,7 +153,7 @@ export const API = (_apiTypeCheck = {
   'get-contract': {
     method: 'GET',
     visibility: 'undocumented',
-    authed: true,
+    authed: false,
     cache: LIGHT_CACHE_STRATEGY,
     returns: {} as Contract,
     props: z
@@ -322,7 +322,6 @@ export const API = (_apiTypeCheck = {
     method: 'GET',
     visibility: 'undocumented',
     authed: true,
-    cache: LIGHT_CACHE_STRATEGY,
     returns: {} as { status: string },
     props: z
       .object({
@@ -908,7 +907,6 @@ export const API = (_apiTypeCheck = {
   'request-loan': {
     method: 'GET',
     visibility: 'undocumented',
-    cache: LIGHT_CACHE_STRATEGY,
     authed: true,
     props: z.object({}),
     returns: {} as { payout: number },
@@ -991,7 +989,6 @@ export const API = (_apiTypeCheck = {
     method: 'GET',
     visibility: 'public',
     authed: true,
-    cache: LIGHT_CACHE_STRATEGY,
     props: z.object({}),
     returns: {} as PrivateUser,
   },
@@ -1304,7 +1301,6 @@ export const API = (_apiTypeCheck = {
     method: 'GET',
     visibility: 'undocumented',
     authed: true,
-    cache: LIGHT_CACHE_STRATEGY,
     returns: {
       full: [] as Group[],
       lite: [] as LiteGroup[],
@@ -1315,7 +1311,6 @@ export const API = (_apiTypeCheck = {
     method: 'GET',
     visibility: 'undocumented',
     authed: true,
-    cache: LIGHT_CACHE_STRATEGY,
     returns: [] as { topic: Topic; contracts: Contract[] }[],
     props: z.object({}),
   },
@@ -1480,7 +1475,6 @@ export const API = (_apiTypeCheck = {
     method: 'GET',
     visibility: 'undocumented',
     authed: true,
-    cache: LIGHT_CACHE_STRATEGY,
     props: z.object({
       channelId: z.coerce.number().optional(),
       createdTime: z.string().optional(),
@@ -1496,7 +1490,6 @@ export const API = (_apiTypeCheck = {
     method: 'GET',
     visibility: 'undocumented',
     authed: true,
-    cache: LIGHT_CACHE_STRATEGY,
     props: z.object({
       channelId: z.coerce.number(),
       limit: z.coerce.number(),
@@ -1508,7 +1501,6 @@ export const API = (_apiTypeCheck = {
     method: 'GET',
     visibility: 'undocumented',
     authed: true,
-    cache: LIGHT_CACHE_STRATEGY,
     props: z.object({
       channelIds: z.array(z.coerce.number()),
     }),
@@ -1555,7 +1547,6 @@ export const API = (_apiTypeCheck = {
     method: 'GET',
     visibility: 'undocumented',
     authed: true,
-    cache: LIGHT_CACHE_STRATEGY,
     returns: [] as Notification[],
     props: z
       .object({
@@ -1587,7 +1578,6 @@ export const API = (_apiTypeCheck = {
     method: 'GET',
     visibility: 'public',
     authed: true,
-    cache: LIGHT_CACHE_STRATEGY,
     props: z
       .object({
         statuses: z.array(
@@ -1771,7 +1761,6 @@ export const API = (_apiTypeCheck = {
   'get-best-comments': {
     method: 'GET',
     visibility: 'undocumented',
-    cache: LIGHT_CACHE_STRATEGY,
     authed: true,
     returns: {} as { comments: ContractComment[]; contracts: Contract[] },
     props: z.object({
@@ -1785,7 +1774,6 @@ export const API = (_apiTypeCheck = {
     method: 'GET',
     visibility: 'public',
     authed: true,
-    cache: LIGHT_CACHE_STRATEGY,
     returns: {} as { redeemablePrizeCash: number },
     props: z.object({}),
   },
@@ -1801,7 +1789,6 @@ export const API = (_apiTypeCheck = {
     method: 'GET',
     visibility: 'undocumented',
     authed: true,
-    cache: LIGHT_CACHE_STRATEGY,
     returns: [] as PendingCashoutStatusData[],
     props: z
       .object({
@@ -1899,7 +1886,6 @@ export const API = (_apiTypeCheck = {
     method: 'GET',
     visibility: 'public',
     authed: true,
-    cache: LIGHT_CACHE_STRATEGY,
     props: z.object({ userId: z.string() }),
     returns: [] as { month: string; bet_count: number; total_amount: number }[],
   },
@@ -1907,7 +1893,6 @@ export const API = (_apiTypeCheck = {
     method: 'GET',
     visibility: 'public',
     authed: true,
-    cache: LIGHT_CACHE_STRATEGY,
     props: z.object({ userId: z.string() }),
     returns: [] as {
       profit: number
@@ -1975,7 +1960,6 @@ export const API = (_apiTypeCheck = {
     method: 'GET',
     visibility: 'public',
     authed: true,
-    cache: LIGHT_CACHE_STRATEGY,
     returns: {} as { categories: TaskCategory[] },
     props: z.object({}).strict(),
   },
@@ -1998,7 +1982,6 @@ export const API = (_apiTypeCheck = {
     method: 'GET',
     visibility: 'public',
     authed: true,
-    cache: LIGHT_CACHE_STRATEGY,
     returns: {} as { tasks: Task[] },
     props: z.object({}).strict(),
   },
@@ -2006,7 +1989,6 @@ export const API = (_apiTypeCheck = {
     method: 'GET',
     visibility: 'public',
     authed: true,
-    cache: LIGHT_CACHE_STRATEGY,
     returns: {} as { isSportsInterested: boolean },
     props: z.object({}).strict(),
   },
@@ -2044,7 +2026,6 @@ export const API = (_apiTypeCheck = {
     method: 'GET',
     visibility: 'public',
     authed: true,
-    cache: LIGHT_CACHE_STRATEGY,
     returns: {} as { schedule: any[] },
     props: z.object({}).strict(),
   },
@@ -2141,7 +2122,6 @@ export const API = (_apiTypeCheck = {
     method: 'GET',
     visibility: 'public',
     authed: true,
-    cache: LIGHT_CACHE_STRATEGY,
     props: z
       .object({
         contractId: z.string(),
@@ -2153,7 +2133,6 @@ export const API = (_apiTypeCheck = {
     method: 'GET',
     visibility: 'public',
     authed: true,
-    cache: LIGHT_CACHE_STRATEGY,
     props: z.object({ contractId: z.string(), optionId: z.string() }),
     returns: [] as DisplayUser[],
   },
@@ -2315,7 +2294,6 @@ export const API = (_apiTypeCheck = {
     method: 'GET',
     visibility: 'public',
     authed: true,
-    cache: LIGHT_CACHE_STRATEGY,
     returns: [] as MarketDraft[],
     props: z.object({}).strict(),
   },
