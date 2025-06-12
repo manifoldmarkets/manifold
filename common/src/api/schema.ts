@@ -905,7 +905,7 @@ export const API = (_apiTypeCheck = {
     props: z.object({ amount: z.number().positive().finite().safe() }).strict(),
   },
   'request-loan': {
-    method: 'GET',
+    method: 'POST',
     visibility: 'undocumented',
     authed: true,
     props: z.object({}),
