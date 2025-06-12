@@ -12,7 +12,7 @@ import {
   getTierIndexFromLiquidity,
   getTierIndexFromLiquidityAndAnswers,
 } from 'common/src/tier'
-import { formatMoney, shortFormatNumber } from 'common/util/format'
+import { shortFormatNumber } from 'common/util/format'
 import { BsDroplet, BsDropletFill, BsDropletHalf } from 'react-icons/bs'
 import clsx from 'clsx'
 
@@ -115,23 +115,25 @@ export const liquidityColumn = {
   content: (props: { contract: Contract }) => {
     const { contract } = props
 
-    // Check if contract has totalLiquidity field and it's above default tier
+    const hasAnswers = contract.mechanism === 'cpmm-multi-1'
     const totalLiquidity =
       'totalLiquidity' in contract ? contract.totalLiquidity : 0
-    const liquidityTier =
-      'answers' in contract
-        ? getTierIndexFromLiquidityAndAnswers(
-            totalLiquidity,
-            contract.answers.length
-          )
-        : getTierIndexFromLiquidity(totalLiquidity)
+    const liquidityTier = hasAnswers
+      ? getTierIndexFromLiquidityAndAnswers(
+          totalLiquidity,
+          contract.answers.length
+        ) - 1
+      : getTierIndexFromLiquidity(totalLiquidity)
 
-    // if (liquidityTier < 2) {
-    //   return <div />
-    // }
-
+    const shownLiquidity = hasAnswers
+      ? totalLiquidity / contract.answers.length
+      : totalLiquidity
     return (
-      <Tooltip text={`Total liquidity: ${formatMoney(totalLiquidity)}`}>
+      <Tooltip
+        text={`Total liquidity: ${shortFormatNumber(totalLiquidity)} ${
+          hasAnswers ? `(per answer: ${shortFormatNumber(shownLiquidity)})` : ''
+        }`}
+      >
         <Row className="text-ink-500 items-center justify-start gap-0.5">
           {liquidityTier < 1 ? (
             <BsDroplet className={clsx('h-3.5 w-3.5')} />
@@ -141,7 +143,7 @@ export const liquidityColumn = {
             <BsDropletFill className={clsx('h-3.5 w-3.5')} />
           )}
           <span className="text-ink-700 block sm:hidden">
-            {shortFormatNumber(totalLiquidity)}
+            {shortFormatNumber(shownLiquidity)}
           </span>
         </Row>
       </Tooltip>
