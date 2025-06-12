@@ -74,7 +74,7 @@ export function PostRow(props: {
             <Tooltip
               text={`${post.uniqueUsers} unique users commented or reacted`}
             >
-              <Row className="text-ink-700 w-[2.1rem] items-center justify-start gap-0.5">
+              <Row className="text-ink-700 w-[4.62rem] items-center justify-start gap-0.5">
                 <UserIcon className={'text-ink-400 h-4 w-4 shrink-0'} />
                 {post.uniqueUsers}
               </Row>

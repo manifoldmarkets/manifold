@@ -8,6 +8,13 @@ import { ContractStatusLabel } from './contracts-table'
 import { useHasContractMetrics } from 'web/hooks/use-saved-contract-metrics'
 import { Tooltip } from '../widgets/tooltip'
 import { BoostedTooltip } from './boost-column'
+import {
+  getTierIndexFromLiquidity,
+  getTierIndexFromLiquidityAndAnswers,
+} from 'common/src/tier'
+import { formatMoney, shortFormatNumber } from 'common/util/format'
+import { BsDroplet, BsDropletFill, BsDropletHalf } from 'react-icons/bs'
+import clsx from 'clsx'
 
 export type ColumnFormat = {
   header: string
@@ -101,6 +108,46 @@ export const boostedColumn = {
     )
   },
   width: 'w-6',
+}
+
+export const liquidityColumn = {
+  header: 'Liquidity',
+  content: (props: { contract: Contract }) => {
+    const { contract } = props
+
+    // Check if contract has totalLiquidity field and it's above default tier
+    const totalLiquidity =
+      'totalLiquidity' in contract ? contract.totalLiquidity : 0
+    const liquidityTier =
+      'answers' in contract
+        ? getTierIndexFromLiquidityAndAnswers(
+            totalLiquidity,
+            contract.answers.length
+          )
+        : getTierIndexFromLiquidity(totalLiquidity)
+
+    // if (liquidityTier < 2) {
+    //   return <div />
+    // }
+
+    return (
+      <Tooltip text={`Total liquidity: ${formatMoney(totalLiquidity)}`}>
+        <Row className="text-ink-500 items-center justify-start gap-0.5">
+          {liquidityTier < 1 ? (
+            <BsDroplet className={clsx('h-3.5 w-3.5')} />
+          ) : liquidityTier < 2 ? (
+            <BsDropletHalf className={clsx('h-3.5 w-3.5')} />
+          ) : (
+            <BsDropletFill className={clsx('h-3.5 w-3.5')} />
+          )}
+          <span className="text-ink-700 block sm:hidden">
+            {shortFormatNumber(totalLiquidity)}
+          </span>
+        </Row>
+      </Tooltip>
+    )
+  },
+  width: 'sm:w-[40px] w-[70px]',
 }
 
 export const actionColumn = {
