@@ -47,7 +47,6 @@ import {
   OutcomeLabel,
   ProbPercentLabel,
 } from 'web/components/outcome-label'
-import { SEARCH_TYPE_KEY } from 'web/components/search'
 import { Avatar } from 'web/components/widgets/avatar'
 import { useReview } from 'web/hooks/use-review'
 import { SpiceCoin } from 'web/public/custom-components/spiceCoin'
@@ -1734,7 +1733,7 @@ function FollowFromReferralNotification(props: {
           }
         />
       }
-      link={`/browse?${SEARCH_TYPE_KEY}=Users`}
+      link={`/home`}
       subtitle={`Tap here to find more people to follow, or to unfollow them.`}
     >
       <>
@@ -1775,7 +1774,7 @@ function FollowSuggestionNotification(props: {
           }
         />
       }
-      link={`/browse?${SEARCH_TYPE_KEY}=Users`}
+      link={`/home`}
       subtitle={`Or, tap here to find other people to follow!`}
     >
       <>
