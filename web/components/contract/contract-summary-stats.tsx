@@ -54,7 +54,6 @@ export function ContractSummaryStats(props: {
           <Tooltip
             text={outcomeType == 'POLL' ? 'Voters' : 'Traders'}
             placement="bottom"
-            noTap
             className="flex flex-row items-center gap-0.5"
             tooltipClassName="z-40"
           >
@@ -69,7 +68,6 @@ export function ContractSummaryStats(props: {
                 token: isCashContract ? 'CASH' : 'M$',
               })}`}
               placement="bottom"
-              noTap
               className="flex flex-row items-center gap-0.5"
               tooltipClassName="z-40"
             >

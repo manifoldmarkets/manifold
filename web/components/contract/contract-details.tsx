@@ -142,7 +142,6 @@ export function CloseDate(props: {
               text={closeTime <= Date.now() ? 'Closed on ' : 'Closes on '}
               time={closeTime}
               placement="bottom-end"
-              noTap
               className="flex flex-nowrap items-center gap-1 whitespace-nowrap"
             >
               {dayjs().isBefore(closeTime) ? (

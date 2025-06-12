@@ -4,7 +4,7 @@ import { Contract } from 'common/contract'
 import { formatWithToken, shortFormatNumber } from 'common/util/format'
 
 import { Tooltip } from '../widgets/tooltip'
-import { GiWaterDrop } from 'react-icons/gi'
+import { BsDropletFill } from 'react-icons/bs'
 
 export function LiquidityTooltip(props: {
   contract: Contract
@@ -26,11 +26,10 @@ export function LiquidityTooltip(props: {
         token: isCashContract ? 'CASH' : 'M$',
       })} in liquidity subsidies`}
       placement={placement}
-      noTap
       className={clsx('flex flex-row items-center gap-0.5', className)}
       tooltipClassName="z-40"
     >
-      <GiWaterDrop className={iconClassName} />
+      <BsDropletFill className={iconClassName} />
       {shortFormatNumber(amount)}
     </Tooltip>
   )
