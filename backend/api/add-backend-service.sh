@@ -73,6 +73,8 @@ gcloud compute backend-services create ${BACKEND_NAME} \
     --timeout 86400 \
     --enable-cdn \
     --cache-mode "USE_ORIGIN_HEADERS" \
+    --compression-mode "AUTOMATIC" \
+    --no-serve-while-stale \
     --health-checks ${HEALTH_CHECK_NAME} \
     --enable-logging
 #    --ip-address-selection-policy "IPV4_ONLY" \
