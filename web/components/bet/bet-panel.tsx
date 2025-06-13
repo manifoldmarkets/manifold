@@ -6,7 +6,7 @@ import {
 } from '@heroicons/react/outline'
 import clsx from 'clsx'
 import { capitalize, uniq } from 'lodash'
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useRef } from 'react'
 import toast from 'react-hot-toast'
 
 import {
@@ -122,8 +122,8 @@ export function BuyPanel(
   const isStonk = contract.outcomeType === 'STONK'
 
   const [outcome, setOutcome] = useState<BinaryOutcomes>(initialOutcome)
-
   const [isPanelBodyVisible, setIsPanelBodyVisible] = useState(false)
+  const cancelDismissTimerRef = useRef<(() => void) | null>(null)
 
   useEffect(() => {
     if (initialOutcome) {
@@ -146,6 +146,10 @@ export function BuyPanel(
 
       setOutcome(choice)
       setIsPanelBodyVisible(true)
+      // Cancel dismiss timer if user is switching outcomes
+      if (cancelDismissTimerRef.current) {
+        cancelDismissTimerRef.current()
+      }
     }
   }
   return (
@@ -187,6 +191,7 @@ export function BuyPanel(
                 }
           }
           pseudonym={pseudonym}
+          cancelDismissTimerRef={cancelDismissTimerRef}
         >
           {children}
         </BuyPanelBody>
@@ -200,6 +205,7 @@ export const BuyPanelBody = (
     outcome?: BinaryOutcomes
     setOutcome: (outcome: 'YES' | 'NO') => void
     onClose?: () => void
+    cancelDismissTimerRef?: React.MutableRefObject<(() => void) | null>
   }
 ) => {
   const {
@@ -215,6 +221,7 @@ export const BuyPanelBody = (
     feedReason,
     className,
     children,
+    cancelDismissTimerRef,
   } = props
 
   const user = useUser()
@@ -297,6 +304,10 @@ export const BuyPanelBody = (
     undefined
   )
 
+  // Timeout reference for dismiss timer
+  const [dismissTimeoutRef, setDismissTimeoutRef] =
+    useState<NodeJS.Timeout | null>(null)
+
   const isCpmmMulti = contract.mechanism === 'cpmm-multi-1'
   if (isCpmmMulti && !multiProps) {
     throw new Error('multiProps must be defined for cpmm-multi-1')
@@ -350,9 +361,10 @@ export const BuyPanelBody = (
       if (finalBetDetails) {
         setLastBetDetails(finalBetDetails)
         setIsSharing(false)
-        setTimeout(() => {
+        const timeoutId = setTimeout(() => {
           callOnBuySuccess()
         }, WAIT_TO_DISMISS)
+        setDismissTimeoutRef(timeoutId)
       } else {
         setLastBetDetails(null)
         callOnBuySuccess()
@@ -383,6 +395,8 @@ export const BuyPanelBody = (
 
   function onBetChange(newAmount: number | undefined) {
     setBetAmount(newAmount)
+    // Cancel dismiss timer if user is still interacting with the bet panel
+    cancelDismissTimerFn()
   }
 
   const callOnBuySuccess = useEvent(() => {
@@ -478,9 +492,10 @@ export const BuyPanelBody = (
         setLastBetDetails(fullBet)
         setIsSharing(false)
         // TODO: we could remove the timeout and just not dismiss the modal
-        setTimeout(() => {
+        const timeoutId = setTimeout(() => {
           callOnBuySuccess()
         }, WAIT_TO_DISMISS)
+        setDismissTimeoutRef(timeoutId)
         track(
           'bet',
           removeUndefinedProps({
@@ -636,6 +651,30 @@ export const BuyPanelBody = (
     }
   })
 
+  // Cancel dismiss timer function
+  const cancelDismissTimerFn = useEvent(() => {
+    if (dismissTimeoutRef) {
+      clearTimeout(dismissTimeoutRef)
+      setDismissTimeoutRef(null)
+    }
+  })
+
+  // Clean up timeout on unmount
+  useEffect(() => {
+    return () => {
+      if (dismissTimeoutRef) {
+        clearTimeout(dismissTimeoutRef)
+      }
+    }
+  }, [dismissTimeoutRef])
+
+  // Set up the cancel function to be accessible from parent
+  useEffect(() => {
+    if (cancelDismissTimerRef) {
+      cancelDismissTimerRef.current = cancelDismissTimerFn
+    }
+  }, [cancelDismissTimerRef, cancelDismissTimerFn])
+
   return (
     <>
       <Col className={clsx(className, 'relative rounded-xl px-4 py-2')}>
@@ -654,6 +693,8 @@ export const BuyPanelBody = (
                 choicesMap={choicesMap}
                 setChoice={(outcome) => {
                   setOutcome(outcome as 'YES' | 'NO')
+                  // Cancel dismiss timer if user is switching outcomes
+                  cancelDismissTimerFn()
                 }}
               />
             </Row>
