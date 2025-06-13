@@ -10,7 +10,7 @@ export const getTopicShareUrl = (
   groupSlug: string,
   username: string | undefined
 ) =>
-  `https://${ENV_CONFIG.domain}/browse/${groupSlug}${
+  `https://${ENV_CONFIG.domain}/topic/${groupSlug}${
     username ? referralQuery(username) : ''
   }`
 

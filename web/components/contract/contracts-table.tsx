@@ -29,6 +29,7 @@ import {
   traderColumn,
   ColumnFormat,
   boostedColumn,
+  liquidityColumn,
 } from './contract-table-col-formats'
 import { UserHovercard } from '../user/user-hovercard'
 import { getFormattedNumberExpectedValue } from 'common/src/number'
@@ -57,7 +58,13 @@ export function ContractsTable(props: {
     contracts,
     onContractClick,
     highlightContractIds,
-    columns = [boostedColumn, traderColumn, probColumn, actionColumn],
+    columns = [
+      boostedColumn,
+      traderColumn,
+      probColumn,
+      liquidityColumn,
+      actionColumn,
+    ],
     hideAvatar,
     contractAnswers,
     showPosition,

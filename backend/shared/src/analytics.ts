@@ -52,8 +52,8 @@ export const getIp = (req: Request) => {
   const xForwarded = req.headers['x-forwarded-for']
   const xForwardedIp = Array.isArray(xForwarded) ? xForwarded[0] : xForwarded
   const ip = xForwardedIp ?? req.socket.remoteAddress ?? req.ip
-  if (ip.includes(',')) {
+  if (ip?.includes(',')) {
     return ip.split(',')[0].trim()
   }
-  return ip
+  return ip ?? ''
 }

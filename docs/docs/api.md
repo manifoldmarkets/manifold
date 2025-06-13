@@ -519,7 +519,7 @@ Response type: Array of `LiteMarket`.
 
 ### `GET /v0/market/[marketId]/prob`
 
-Get the current probability (or probabilities for multiple choice markets) for a market without caching.
+Get the current probability (or probabilities for multiple choice markets) for a market with max 1s cache.
 
 Parameters:
 
@@ -554,7 +554,7 @@ Example response:
 
 ### `GET /v0/market-probs`
 
-Get the current probabilities for multiple markets in a single request.
+Get the current probabilities for multiple markets in a single request with max 1s cache.
 
 Parameters:
 
