@@ -90,6 +90,13 @@ export const resolveMarketHelper = async (
       answerId
     )
     const isIndieMC = c.mechanism === 'cpmm-multi-1' && !c.shouldAnswersSumToOne
+    const isLinkedMC = c.mechanism === 'cpmm-multi-1' && c.shouldAnswersSumToOne
+    if (isLinkedMC && outcome === 'CANCEL') {
+      throw new APIError(
+        403,
+        'Resolving linked multi-choice markets to N/A is temporarily disabled.'
+      )
+    }
 
     unresolvedContract = c as MarketContract
     if (unresolvedContract.isResolved) {
