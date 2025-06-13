@@ -86,6 +86,7 @@
             border-radius: 4px;
             transition: background-color 0.3s;
             margin-right: 10px;
+            margin-top: 20px;
         }
 
         .action-button:hover {
@@ -105,34 +106,41 @@
             background-color: #c0392b;
         }
 
-        #results {
-            margin-top: 20px;
-            background-color: #ecf0f1;
+        .round-section {
+            background-color: #f8f9fa;
+            border-radius: 8px;
             padding: 15px;
-            border-radius: 4px;
+            margin-bottom: 20px;
+            border: 1px solid #e9ecef;
         }
 
-        .result-round {
-            background-color: #fff;
-            border-radius: 4px;
+        .info-display {
+            background-color: #e3f2fd;
             padding: 10px;
-            margin-bottom: 10px;
-            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+            border-radius: 4px;
+            margin: 10px 0;
+            font-size: 18px;
         }
 
-        .result-round h3 {
-            margin-top: 0;
-            color: #2c3e50;
-        }
-
-        .result-item {
-            display: flex;
-            justify-content: space-between;
-            margin-bottom: 5px;
-        }
-
-        .result-label {
+        .info-display .value {
             font-weight: bold;
+            color: #1565c0;
+        }
+
+        .betting-info {
+            background-color: #fff3cd;
+            padding: 10px;
+            border-radius: 4px;
+            margin: 15px 0;
+            border: 1px solid #ffeaa7;
+        }
+
+        .pot-info {
+            background-color: #d4edda;
+            padding: 10px;
+            border-radius: 4px;
+            margin: 15px 0;
+            border: 1px solid #c3e6cb;
         }
     </style>
 </head>
@@ -150,67 +158,89 @@
         </div>
         <h2>Rounds</h2>
         <div id="rounds">
-            <div>
+            <div class="round-section">
                 <h3>Pre-flop</h3>
+                <div class="info-display" id="rockSize0">
+                    Rock Size (bet per rock): <span class="value">$2</span>
+                </div>
                 <label>Rocks:</label>
                 <div class="button-group" id="rocks0"></div>
                 <label>Players in next round:</label>
                 <div class="button-group" id="players0"></div>
+                <div class="betting-info" id="totalBet0">
+                    Total Bet: <span class="value">$0</span>
+                </div>
+                <div class="pot-info" id="newPot0">
+                    New Pot: <span class="value">$4</span>
+                </div>
             </div>
         </div>
         <button onclick="nextRound()" id="nextRoundButton" class="action-button">Next Round</button>
         <button onclick="resetGame()" class="action-button reset">Reset Game</button>
-        <div id="results"></div>
     </div>
 
     <script>
         let rounds = [{ rocks: 0, players: 4 }];
-        let initialPot = 0;
+        let pots = [0]; // Track pot at the start of each round
 
-        function updateResults() {
+        function calculatePotAtRoundStart(roundIndex) {
             const initialPlayers = parseInt(document.getElementById('players').value);
             const ante = parseInt(document.getElementById('ante').value);
-            initialPot = initialPlayers * ante;
-            let pot = initialPot;
-            let results = `<h2>Results</h2>`;
+            let pot = initialPlayers * ante;
 
-            let roundResults = [];
-
-            rounds.forEach((round, index) => {
+            for (let i = 0; i < roundIndex; i++) {
                 const betSize = Math.floor(pot / 2);
-                let roundResult = `<div class="result-round">`;
-                roundResult += `<h3>${index === 0 ? 'Pre-flop' : index === 1 ? 'Flop' : index === 2 ? 'Turn' : 'River'}</h3>`;
-                roundResult += `<div class="result-item"><span class="result-label">Initial pot:</span> <span>$${pot}</span></div>`;
-                roundResult += `<div class="result-item"><span class="result-label">Bet size:</span> <span>$${betSize}</span></div>`;
-                roundResult += `<div class="result-item"><span class="result-label">Rocks:</span> <span>${round.rocks}</span></div>`;
-                roundResult += `<div class="result-item"><span class="result-label">Players in this round:</span> <span>${index === 0 ? initialPlayers : rounds[index - 1].players}</span></div>`;
-                pot += round.players * round.rocks * betSize;
-                roundResult += `<div class="result-item"><span class="result-label">Final pot:</span> <span>$${pot}</span></div>`;
-                if (index < rounds.length - 1) {
-                    roundResult += `<div class="result-item"><span class="result-label">Players in next round:</span> <span>${round.players}</span></div>`;
-                }
-                roundResult += `</div>`;
-                roundResults.push(roundResult);
-            });
+                const playersInNextRound = rounds[i].players;
+                pot += rounds[i].rocks * betSize * playersInNextRound;
+            }
 
-            roundResults.reverse().forEach(result => {
-                results += result;
-            });
+            return pot;
+        }
 
-            document.getElementById('results').innerHTML = results;
+        function updateRoundDisplay(index) {
+            const pot = calculatePotAtRoundStart(index);
+            const rockSize = Math.floor(pot / 2);
+            const totalBet = rounds[index].rocks * rockSize;
+            const playersInRound = rounds[index].players;
+            const newPot = pot + (totalBet * playersInRound);
+
+            // Update Rock Size
+            const rockSizeElement = document.getElementById(`rockSize${index}`);
+            if (rockSizeElement) {
+                rockSizeElement.querySelector('.value').textContent = `$${rockSize}`;
+            }
+
+            // Update Total Bet
+            const totalBetElement = document.getElementById(`totalBet${index}`);
+            if (totalBetElement) {
+                totalBetElement.querySelector('.value').textContent = `$${totalBet}`;
+            }
+
+            // Update New Pot
+            const newPotElement = document.getElementById(`newPot${index}`);
+            if (newPotElement) {
+                newPotElement.querySelector('.value').textContent = `$${newPot}`;
+            }
+        }
+
+        function updateAllRounds() {
+            for (let i = 0; i < rounds.length; i++) {
+                updateRoundDisplay(i);
+            }
         }
 
         function updateRocks(index, value) {
             rounds[index].rocks = value;
             updateButtonStyles('rocks' + index, value);
-            updateResults();
+            updateAllRounds();
         }
 
         function updatePlayers(index, value) {
             rounds[index].players = value;
             updateButtonStyles('players' + index, value);
             updateRocksButtons(index, value);
-            updateResults();
+            // Update all rounds starting from the next round since player count affects subsequent rounds
+            updateAllRounds();
         }
 
         function updateButtonStyles(groupId, selectedValue) {
@@ -247,17 +277,27 @@
                 rounds.push({ rocks: 0, players: prevPlayers });
                 const roundNames = ['Flop', 'Turn', 'River'];
                 const roundDiv = document.createElement('div');
+                roundDiv.className = 'round-section';
                 roundDiv.innerHTML = `
                     <h3>${roundNames[index - 1]}</h3>
+                    <div class="info-display" id="rockSize${index}">
+                        Rock Size (bet per rock): <span class="value">$0</span>
+                    </div>
                     <label>Rocks:</label>
                     <div class="button-group" id="rocks${index}"></div>
                     <label>Players in next round:</label>
                     <div class="button-group" id="players${index}"></div>
+                    <div class="betting-info" id="totalBet${index}">
+                        Total Bet: <span class="value">$0</span>
+                    </div>
+                    <div class="pot-info" id="newPot${index}">
+                        New Pot: <span class="value">$0</span>
+                    </div>
                 `;
                 document.getElementById('rounds').appendChild(roundDiv);
                 createButtonGroup(`rocks${index}`, prevPlayers, updateRocks, 0);
                 createButtonGroup(`players${index}`, parseInt(document.getElementById('players').value), updatePlayers, prevPlayers);
-                updateResults();
+                updateAllRounds();
 
                 if (rounds.length === 4) {
                     document.getElementById('nextRoundButton').disabled = true;
@@ -270,7 +310,7 @@
 
             rounds = [{ rocks: 0, players: currentPlayers }];
 
-            const roundDivs = document.querySelectorAll('#rounds > div');
+            const roundDivs = document.querySelectorAll('#rounds > .round-section');
             for (let i = 1; i < roundDivs.length; i++) {
                 roundDivs[i].remove();
             }
@@ -280,7 +320,7 @@
 
             document.getElementById('nextRoundButton').disabled = false;
 
-            updateResults();
+            updateAllRounds();
         }
 
         document.getElementById('players').addEventListener('change', function () {
@@ -290,14 +330,15 @@
                 createButtonGroup(`players${index}`, newValue, updatePlayers, round.players);
                 updateRocksButtons(index, round.players);
             });
-            updateResults();
+            updateAllRounds();
         });
-        document.getElementById('ante').addEventListener('change', updateResults);
+
+        document.getElementById('ante').addEventListener('change', updateAllRounds);
 
         const initialPlayers = parseInt(document.getElementById('players').value);
         createButtonGroup('rocks0', initialPlayers, updateRocks, 0);
         createButtonGroup('players0', initialPlayers, updatePlayers, initialPlayers);
-        updateResults();
+        updateAllRounds();
     </script>
 </body>
 
