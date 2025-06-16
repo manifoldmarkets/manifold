@@ -1729,36 +1729,6 @@ export const API = (_apiTypeCheck = {
       fileUrl: z.string(),
     }),
   },
-  'identity-callback-gidx': {
-    method: 'POST',
-    visibility: 'undocumented',
-    authed: false,
-    returns: {} as { Accepted: boolean },
-    props: z.object({
-      MerchantCustomerID: z.string(),
-      NotificationType: z.string(),
-    }),
-  },
-  'payment-callback-gidx': {
-    method: 'POST',
-    visibility: 'undocumented',
-    authed: false,
-    returns: {} as { MerchantTransactionID: string },
-    props: z
-      .object({
-        MerchantTransactionID: z.string(),
-        TransactionStatusCode: z.coerce.number(),
-        TransactionStatusMessage: z.string(),
-        StatusCode: z.coerce.number(),
-        SessionID: z.string(),
-        MerchantSessionID: z.string(),
-        SessionScore: z.coerce.number(),
-        ReasonCodes: z.array(z.string()).optional(),
-        ServiceType: z.string(),
-        StatusMessage: z.string(),
-      })
-      .strict(),
-  },
   'get-best-comments': {
     method: 'GET',
     visibility: 'undocumented',
@@ -1770,21 +1740,6 @@ export const API = (_apiTypeCheck = {
       ignoreContractIds: z.array(z.string()).optional(),
       justLikes: z.coerce.number().optional(),
     }),
-  },
-  'get-redeemable-prize-cash': {
-    method: 'GET',
-    visibility: 'public',
-    authed: true,
-    returns: {} as { redeemablePrizeCash: number },
-    props: z.object({}),
-  },
-  'get-total-redeemable-prize-cash': {
-    method: 'GET',
-    visibility: 'public',
-    authed: false,
-    cache: LIGHT_CACHE_STRATEGY,
-    returns: {} as { total: number },
-    props: z.object({}),
   },
   'get-cashouts': {
     method: 'GET',
@@ -1798,23 +1753,6 @@ export const API = (_apiTypeCheck = {
         userId: z.string().optional(),
       })
       .strict(),
-  },
-  'get-kyc-stats': {
-    method: 'GET',
-    visibility: 'public',
-    authed: false,
-    cache: LIGHT_CACHE_STRATEGY,
-    props: z.object({}),
-    returns: {} as {
-      initialVerifications: {
-        count: number
-        day: string
-      }[]
-      phoneVerifications: {
-        count: number
-        day: string
-      }[]
-    },
   },
   txns: {
     method: 'GET',

@@ -85,15 +85,12 @@ import { getTxnSummaryStats } from 'api/get-txn-summary-stats'
 import { getManaSummaryStats } from 'api/get-mana-summary-stats'
 import { register } from 'api/gidx/register'
 import { uploadDocument } from 'api/gidx/upload-document'
-import { identityCallbackGIDX, paymentCallbackGIDX } from 'api/gidx/callback'
 import { getVerificationStatus } from 'api/gidx/get-verification-status'
 import { getCurrentPrivateUser } from './get-current-private-user'
 import { updatePrivateUser } from './update-private-user'
 import { setPushToken } from './push-token'
 import { updateNotifSettings } from './update-notif-settings'
 import { getVerificationDocuments } from 'api/gidx/get-verification-documents'
-import { getRedeemablePrizeCash } from './get-redeemable-prize-cash'
-import { getTotalRedeemablePrizeCash } from './get-total-redeemable-prize-cash'
 import { getMonitorStatus } from 'api/gidx/get-monitor-status'
 import { getBestComments } from 'api/get-best-comments'
 import { recordCommentView } from 'api/record-comment-view'
@@ -114,7 +111,6 @@ import { getUserLimitOrdersWithContracts } from 'api/get-user-limit-orders-with-
 import { getInterestingGroupsFromViews } from 'api/get-interesting-groups-from-views'
 import { completeCashoutSession } from 'api/gidx/complete-cashout-session'
 import { getCashouts } from './get-cashouts'
-import { getKYCStats } from './get-kyc-stats'
 import { getTxns } from './get-txns'
 import { refreshAllClients } from './refresh-all-clients'
 import { getLeaderboard } from './get-leaderboard'
@@ -309,16 +305,11 @@ export const handlers: { [k in APIPath]: APIHandler<k> } = {
   'complete-cashout-request': completeCashoutRequest,
   'get-verification-status-gidx': getVerificationStatus,
   'upload-document-gidx': uploadDocument,
-  'identity-callback-gidx': identityCallbackGIDX,
-  'payment-callback-gidx': paymentCallbackGIDX,
   'get-verification-documents-gidx': getVerificationDocuments,
-  'get-redeemable-prize-cash': getRedeemablePrizeCash,
-  'get-total-redeemable-prize-cash': getTotalRedeemablePrizeCash,
   'get-monitor-status-gidx': getMonitorStatus,
   'get-best-comments': getBestComments,
   'record-comment-view': recordCommentView,
   'get-cashouts': getCashouts,
-  'get-kyc-stats': getKYCStats,
   txns: getTxns,
   'toggle-system-trading-status': toggleSystemTradingStatus,
   leaderboard: getLeaderboard,
