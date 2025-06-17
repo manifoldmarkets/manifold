@@ -10,10 +10,14 @@ export const getFixedCancelPayouts = (
   contractMetrics: ContractMetric[],
   liquidities: LiquidityProvision[]
 ): PayoutInfo => {
-  const traderPayouts = contractMetrics.map((metric) => ({
-    userId: metric.userId,
-    payout: metric.invested,
-  }))
+  const traderPayouts = contractMetrics.map((metric) => {
+    const payout =
+      (metric.totalAmountInvested ?? 0) - (metric.totalAmountSold ?? 0)
+    return {
+      userId: metric.userId,
+      payout,
+    }
+  })
 
   const liquidityPayouts = liquidities.map((liquidity) => ({
     userId: liquidity.userId,
