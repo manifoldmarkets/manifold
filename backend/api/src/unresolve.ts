@@ -29,6 +29,10 @@ import { convertTxn } from 'common/supabase/txns'
 import { HOUSE_LIQUIDITY_PROVIDER_ID } from 'common/antes'
 import { getCpmmProbability } from 'common/calculate-cpmm'
 import { removeUndefinedProps } from 'common/util/object'
+import {
+  bulkUpdateContractMetrics,
+  getContractMetricsForContract,
+} from 'shared/helpers/user-contract-metrics'
 
 const TXNS_PR_MERGED_ON = 1675693800000 // #PR 1476
 
@@ -292,6 +296,18 @@ const undoResolution = async (
     await updateContract(pg, contractId, updatedAttrs)
     await recordContractEdit(contract, userId, Object.keys(updatedAttrs))
   }
+  if (!answerId) {
+    const contractMetrics = await getContractMetricsForContract(
+      pg,
+      contract.id,
+      null
+    )
+    const updateMetrics = contractMetrics.map((metric) => ({
+      ...metric,
+      profit: metric.previousProfit ?? metric.profit,
+    }))
+    await bulkUpdateContractMetrics(updateMetrics, pg)
+  }
   if (contract.mechanism === 'cpmm-multi-1' && !answerId) {
     // remove resolutionTime and resolverId from all answers in the contract
     const newAnswers = await pg.map(
@@ -314,6 +330,16 @@ const undoResolution = async (
     )
     broadcastUpdatedAnswers(contractId, newAnswers)
   } else if (answerId) {
+    const contractMetrics = await getContractMetricsForContract(
+      pg,
+      contract.id,
+      [answerId]
+    )
+    const updateMetrics = contractMetrics.map((metric) => ({
+      ...metric,
+      profit: metric.previousProfit ?? metric.profit,
+    }))
+    await bulkUpdateContractMetrics(updateMetrics, pg)
     const answer = await pg.one(
       `
       update answers

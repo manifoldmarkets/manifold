@@ -5,8 +5,8 @@ import {
 } from 'common/calculate-metrics'
 import { bulkUpsert, bulkUpsertQuery } from 'shared/supabase/utils'
 import {
-  SupabaseDirectClient,
   createSupabaseDirectClient,
+  SupabaseDirectClient,
 } from 'shared/supabase/init'
 import { ContractMetric } from 'common/contract-metric'
 import { Tables } from 'common/supabase/utils'
@@ -124,7 +124,7 @@ export const getContractMetrics = async (
   answerIds: string[],
   includeNullAnswer: boolean
 ) => {
-  const metrics = await pg.map<ContractMetric>(
+  return await pg.map<ContractMetric>(
     `select data from user_contract_metrics
        where contract_id = $1
          and user_id = any ($2)
@@ -135,5 +135,18 @@ export const getContractMetrics = async (
     [contractId, userIds, answerIds.length > 0 ? answerIds : null],
     (row) => row.data as ContractMetric
   )
-  return metrics
+}
+export const getContractMetricsForContract = async (
+  pg: SupabaseDirectClient,
+  contractId: string,
+  answerIds: string[] | null
+) => {
+  return await pg.map<ContractMetric>(
+    `select data from user_contract_metrics
+       where contract_id = $1
+         and ($2 is null or answer_id = any ($2))
+    `,
+    [contractId, answerIds?.length ? answerIds : null],
+    (row) => row.data as ContractMetric
+  )
 }

@@ -335,6 +335,7 @@ export const calculateProfitMetricsAtProbOrCancel = <
     hasNoShares,
     hasYesShares,
     invested,
+    profit: previousProfit,
   } = um
   const soldOut = !hasNoShares && !hasYesShares
   const payout =
@@ -357,6 +358,7 @@ export const calculateProfitMetricsAtProbOrCancel = <
     payout,
     profit,
     profitPercent,
+    previousProfit,
   }
 }
 
