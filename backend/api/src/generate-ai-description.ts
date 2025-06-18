@@ -57,6 +57,7 @@ export const generateAIDescription: APIHandler<'generate-ai-description'> =
         }
         Guidelines:
         - Keep descriptions concise but informative, focusing on objective facts rather than opinions
+        - Avoid fluff, write for a high IQ audience that hates AI slop. 
         - Incorporate any relevant information from the user's description into your own description
         - If the user supplied answers, provide any relevant background information for each answer
         - If the market is personal, (i.e. I will attend the most parties, or I will get a girlfriend) word resolution criteria in the first person
@@ -68,12 +69,13 @@ export const generateAIDescription: APIHandler<'generate-ai-description'> =
         - If the market has a precondition, such as 'If I attend, will I enjoy the party?', or 'If Biden runs, will he win?', markets should resolve N/A if the precondition is not met
         - Format the response as markdown
         - Also include a "Background" section that includes information readers/traders may want to know if it's relevant to the user's question AND it's not common knowledge. Keep it concise.
-        - Only include a "Considerations" section if there are unexpected considerations that traders may want to know about. E.g. if the question is about something that has never happened before, etc. ${
+        - Only include a "Considerations" section if there are unexpected aspects of the question that traders may not know about E.g. if the question is about something that has never happened before, if the county uses ranked-choice voting, etc. Do NOT add fluff like 'candidates represent a range of positions and different issues matter to voters.' That's not unexpected information. ${
           addAnswersMode === 'DISABLED' &&
           outcomeKey === 'DEPENDENT_MULTIPLE_CHOICE'
             ? 'E.g. if the answers are not exhaustive, traders should be warned that the market may resolve N/A.'
             : ''
         }
+        - Remember, the audience is sick of seeing AI slop, be concise and to the point.
         - Format each separate section with a #### header
         - Use your web search tool to gather relevant, up-to-date information related to the user's prompt to inform the description if necesaary. Include information from it in the description that traders or other readers may want to know if it's relevant to the user's question, but keep it concise.
 
