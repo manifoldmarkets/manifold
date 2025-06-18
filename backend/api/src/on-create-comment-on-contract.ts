@@ -283,7 +283,7 @@ ${answer.text}`
       : `If the creator is about to resolve an answer and detailing their reasoning, do not issue a clarification.`
   const prompt = `SYSTEM: You are analyzing a ${
     commentsContext ? 'comment thread' : 'comment'
-  } on a prediction market on Manidfold Markets (that is managed by a creator) to determine if the creator's latest comment clarifies the resolution criteria.
+  } on a prediction market on Manifold Markets (that is managed by a creator) to determine if the creator's latest comment clarifies the resolution criteria.
 
 CONTEXT:
 Market question: ${contract.question}
@@ -306,13 +306,14 @@ SYSTEM: Please analyze if the creator's latest comment ${
   Here's info about how resolving a market works in Manifold Markets:
   ${ResolvingMarketsExplanation}
 
+  The main point of a clarification is that traders understand what creator meant when creating the question, and how it will be resolved. Consider whether the provided comment might change anyone's anticipation about market outcome, as a major factor to determine if the comment is a clarification.
   ONLY choose to issue a clarification if you are CERTAIN that the creator's comment is unambiguously changing the resolution criteria as outlined in the description/question.
   By default, do not issue clarifications. Be conservative.
   Do not issue clarifications if a reasonable interpretation of the description already handles the creator's comment. 
   Do not issue clarifications for everything the creator says, only clarifications on how the market will resolve.
-  Creators may close markets during periods of uncertainty about how a market will resolve, or if they don't want to put their liquidity up for grabs for live trading. Do not issue clarifications for minor close time changes. If the creator is announcing they won't support live trading, that is realtively notable and may desever a clarification. If the creator says they're waiting to resolve for some reason, extending the resolution time in a major way, that may deserve a clarification.
-  Do not attempt to interpret images/videos/google drive/doc/any other links as clarifications by themselves. The creator will say something if it's intended to be a clarification.
-  A clarification will most likely be a response to a question from a user about how the market will resolve in x case. Ignore lighthearted commentary and banter.
+  Creators may close markets during periods of uncertainty about how a market will resolve, or if they don't want to put their liquidity up for grabs for live trading. Do not issue clarifications for minor close time changes. If the creator is announcing they won't support live trading, that is relatively notable and may deserve a clarification. If the creator says they're waiting to resolve for some reason, extending the resolution time in a major way, that may deserve a clarification.
+  If you do not see the comment information - as happens, for example, with images/videos/Google Drive/Documents/any other links - do not interpret that as a clarification. The creator themselves will clarify as needed.
+  A clarification will most likely be a response to a question from a user about how the market will resolve in x case. Liberally ignore lighthearted commentary and banter.
   ${resolutionNote}
   If the creator says that they're going to update the description themselves, or they indicate their comment ${
     commentsContext ? '(or their comments in the thread)' : ''
