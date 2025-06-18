@@ -639,11 +639,7 @@ const useBetData = (props: {
       ? uniqBy(newBetsWithoutRedemptions, 'betGroupId').length
       : newBetsWithoutRedemptions.length)
   const bets = useMemo(
-    () =>
-      uniqBy(
-        isNumber || isMultiNumeric ? newBets : newBetsWithoutRedemptions,
-        'id'
-      ),
+    () => uniqBy(isNumber ? newBets : newBetsWithoutRedemptions, 'id'),
     [newBets.length]
   )
   const yourNewBets = newBets.filter((bet) => userId && bet.userId === userId)

@@ -129,7 +129,9 @@ export function betShouldBeFiltered(bet: Bet, options?: APIParams<'bets'>) {
     // if redemption filter is true, and bet is redemption
     (options.filterRedemptions && bet.isRedemption) ||
     // if open-limit kind exists, and bet is not filled/cancelled
-    (options.kinds === 'open-limit' && (bet.isFilled || bet.isCancelled))
+    (options.kinds === 'open-limit' && (bet.isFilled || bet.isCancelled)) ||
+    // if commentRepliesOnly is true, and bet is not a comment reply
+    (options.commentRepliesOnly && !bet.replyToCommentId)
 
   return shouldBeFiltered
 }

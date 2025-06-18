@@ -11,6 +11,7 @@ import {
   traderColumn,
   probColumn,
   actionColumn,
+  liquidityColumn,
 } from './contract-table-col-formats'
 import { buildArray } from 'common/util/array'
 
@@ -63,6 +64,7 @@ export function CombinedResults(props: CombinedResultsProps) {
   const contractDisplayColumns = buildArray([
     !hasBets && boostedColumn,
     traderColumn,
+    liquidityColumn,
     probColumn,
     !hideActions && actionColumn,
   ])

@@ -31,7 +31,12 @@ export function getTierIndexFromLiquidityAndAnswers(
     tierIndex >= 0;
     tierIndex--
   ) {
-    if (liquidityPerAnswer >= answerCostTiers[tierIndex]) {
+    if (numAnswers > 1 && liquidityPerAnswer >= answerCostTiers[tierIndex]) {
+      return tierIndex
+    }
+    // This handles the case of an MC answer created with 1k liquidity and only one starting answer
+    // That is a 'plus' market and new answers should just cost 100.
+    else if (liquidityPerAnswer > answerCostTiers[tierIndex]) {
       return tierIndex
     }
   }

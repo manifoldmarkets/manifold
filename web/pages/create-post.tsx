@@ -19,17 +19,39 @@ import { useAdmin } from 'web/hooks/use-admin'
 import { BackButton } from 'web/components/contract/back-button'
 import { Visibility } from 'common/contract'
 import { InfoTooltip } from 'web/components/widgets/info-tooltip'
+import { removeUndefinedProps } from 'common/util/object'
 
-export default function CreatePostPage() {
+export async function getServerSideProps(context: any) {
+  return {
+    props: removeUndefinedProps({
+      title: context.query?.title,
+      content: context.query?.text,
+    }),
+  }
+}
+
+export default function CreatePostPage(props: {
+  title?: string
+  content?: string
+}) {
   return (
     <Page trackPageView={'create post page'}>
-      <CreatePostForm />
+      <CreatePostForm
+        defaultTitle={props.title}
+        defaultContent={props.content}
+      />
     </Page>
   )
 }
 
-export function CreatePostForm(props: { group?: Group }) {
-  const [title, setTitle] = useState('')
+export function CreatePostForm(props: {
+  group?: Group
+  defaultContent?: string
+  defaultTitle?: string
+}) {
+  const { group, defaultContent, defaultTitle } = props
+
+  const [title, setTitle] = useState(defaultTitle || '')
   const [postVisibility, setPostVisibility] = useState<Visibility>('public')
 
   const [error, setError] = useState('')
@@ -37,11 +59,10 @@ export function CreatePostForm(props: { group?: Group }) {
   const [isAnnouncement, setIsAnnouncement] = useState(false)
   const [isChangeLog, setIsChangeLog] = useState(false)
 
-  const { group } = props
-
   const editor = useTextEditor({
     key: `post ${group?.id || ''}`,
     size: 'lg',
+    defaultValue: defaultContent,
   })
 
   const isValid = editor && title.length > 0 && !editor.isEmpty

@@ -110,7 +110,7 @@ export const updatePostComment: APIHandler<'update-post-comment'> = async (
 ) => {
   const { commentId, postId, hidden } = props
 
-  const { updatedComment } = await _editPostCommentInternal(
+  const { updatedComment, post } = await _editPostCommentInternal(
     { commentId, postId, hidden },
     auth.uid
   )
@@ -119,5 +119,8 @@ export const updatePostComment: APIHandler<'update-post-comment'> = async (
 
   return {
     comment: updatedComment,
+    continue: async () => {
+      await revalidatePost(post!)
+    },
   }
 }

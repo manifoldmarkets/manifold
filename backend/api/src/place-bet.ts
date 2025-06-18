@@ -443,35 +443,36 @@ export const executeNewBetResult = async (
     const otherBetsToInsert = filterDefined(
       otherBetResults.map((result) => {
         const { answer, bet, cpmmState, ordersToCancel, makers } = result
-        const { probBefore, probAfter } = bet
-        const smallEnoughToIgnore =
-          probBefore < 0.001 &&
-          probAfter < 0.001 &&
-          Math.abs(probAfter - probBefore) < 0.00001
+        // const { probBefore, probAfter } = bet
+        // const smallEnoughToIgnore =
+        //   probBefore < 0.001 &&
+        //   probAfter < 0.001 &&
+        //   Math.abs(probAfter - probBefore) < 0.00001
 
-        if (deterministic || !smallEnoughToIgnore || Math.random() < 0.01) {
-          const candidateBet = removeUndefinedProps({
-            id: getNewBetId(),
-            userId: user.id,
-            isApi,
-            betGroupId,
-            ...bet,
-          })
+        // if (deterministic || !smallEnoughToIgnore || Math.random() < 0.01) {
+        const candidateBet = removeUndefinedProps({
+          id: getNewBetId(),
+          userId: user.id,
+          isApi,
+          betGroupId,
+          ...bet,
+        })
 
-          const { YES: poolYes, NO: poolNo } = cpmmState.pool
-          const prob = getCpmmProbability(cpmmState.pool, 0.5)
-          answerUpdates.push({
-            id: answer.id,
-            poolYes,
-            poolNo,
-            prob,
-          })
-          makersByTakerBetId[candidateBet.id] = makers
-          return candidateBet
-        }
-
+        const { YES: poolYes, NO: poolNo } = cpmmState.pool
+        const prob = getCpmmProbability(cpmmState.pool, 0.5)
+        answerUpdates.push({
+          id: answer.id,
+          poolYes,
+          poolNo,
+          prob,
+        })
+        makersByTakerBetId[candidateBet.id] = makers
         allOrdersToCancel.push(...ordersToCancel)
-        return undefined
+        return candidateBet
+        // }
+
+        // allOrdersToCancel.push(...ordersToCancel)
+        // return undefined
       })
     )
     betsToInsert.push(...otherBetsToInsert)

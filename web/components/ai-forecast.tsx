@@ -63,8 +63,6 @@ function getTooltipDescription(cardTitle: string): string | null {
       'Each of the three human judges will conduct two hour long text-based interviews with each of the four candidates. The computer would have passed the Turing test if it fooled two of the three judges.',
     CodeForces:
       'CodeForces is a competitive programming platform with challenging algorithmic problems that test reasoning, efficiency, and mathematical thinking.',
-    'ASL-3':
-      'Defined as systems that substantially increase the risk of catastrophic misuse compared to non-AI baselines (e.g. search engines or textbooks) OR that show low-level autonomous capabilities.',
   }
 
   // Find the first matching key term in the title
@@ -105,9 +103,9 @@ export type AICapabilityCard = {
 export const AI_CAPABILITY_CARDS: AICapabilityCard[] = [
   // Monthly markets
   {
-    title: 'Best Chatbot Arena Model in May',
+    title: 'Best Chatbot Arena Model in June',
     description: 'Highest ranked model on lmsys',
-    marketId: 'tttALhsqsR',
+    marketId: 'tpRCOOIQ9z',
     type: 'monthly',
     displayType: 'top-three-mcq',
   },
@@ -122,21 +120,21 @@ export const AI_CAPABILITY_CARDS: AICapabilityCard[] = [
   },
   {
     title: 'Claude Sonnet',
-    description: 'Claude 3.7+ Sonnet released by EOY',
-    marketId: 'sNONOgzE5y',
+    description: 'Claude 4.0+ Sonnet released',
+    marketId: 'Sz6hINy00y',
     type: 'releases',
     displayType: 'date',
   },
   {
     title: 'Claude Opus',
-    description: 'Claude 3.0+ Opus released by EOY',
-    marketId: '820ZdsLAs9',
+    description: 'Claude 4.0+ Opus released',
+    marketId: 'SgCqCNQEd0',
     type: 'releases',
     displayType: 'date',
   },
   {
     title: 'Gemini 3 Pro',
-    description: 'Gemini 3 Pro released by EOY',
+    description: 'Gemini 3 Pro released',
     marketId: '8uNZSPpZU2',
     type: 'releases',
     displayType: 'date',
@@ -251,13 +249,6 @@ export const AI_CAPABILITY_CARDS: AICapabilityCard[] = [
     title: 'Hacking',
     description: 'AI independently hacks a system',
     marketId: 's82955uAnR',
-    type: 'misuse',
-    displayType: 'binary-odds',
-  },
-  {
-    title: 'ASL-3 LLM Released',
-    description: 'ASL-3 defined by Anthropic',
-    marketId: 'IBqB2krzjBLt9gG1UqM0',
     type: 'misuse',
     displayType: 'binary-odds',
   },
@@ -960,9 +951,6 @@ function CapabilityCard({
                   {type === 'misuse' &&
                     title.includes('Hacking') &&
                     'Probability of AI compromising systems by end of 2025'}
-                  {type === 'misuse' &&
-                    title.includes('ASL-3') &&
-                    'Model defined as ASL-3 released by end of 2025'}
                   {type === 'long-term' &&
                     title.includes('Romantic') &&
                     'At least 1/1000 Americans talks weekly with one by 2028'}

@@ -189,6 +189,8 @@ export async function calculateImportanceScore(
         Week: breakdown.thisWeekScoreComponent?.toFixed(2) || '',
         Ranked: breakdown.rankedScore?.toFixed(2) || '',
         Boost: breakdown.boostScore?.toFixed(2) || '',
+        'Total Traders': contract.uniqueBettorCount || '',
+        Resolved: contract.isResolved ? 'Yes' : 'No',
       }
     })
 
@@ -331,7 +333,8 @@ export const computeContractScores = (
   const thisWeekScore = likesWeek + tradersWeek
   const wasCreatedToday = contract.createdTime > now - DAY_MS
 
-  const { createdTime, closeTime, isResolved, outcomeType } = contract
+  const { createdTime, closeTime, isResolved, outcomeType, resolutionTime } =
+    contract
   const commentScore = commentsToday
     ? normalize(Math.log10(1 + commentsToday), Math.log10(50))
     : 0
@@ -369,6 +372,38 @@ export const computeContractScores = (
     const todayProb = clamp(prob, 0.01, 0.99)
     logOddsChange = Math.abs(logit(yesterdayProb) - logit(todayProb))
     dailyScore = Math.log(thisWeekScore + 1) * logOddsChange
+  }
+
+  if (isResolved && resolutionTime) {
+    const timeSinceResolution = now - resolutionTime
+    const daysSinceResolution = timeSinceResolution / DAY_MS
+
+    if (daysSinceResolution > 7) {
+      // For markets resolved over a week ago, importance is based purely on trader count
+      // Use the total unique bettor count from the contract
+      const traderScore = clamp(
+        normalize(
+          Math.log10(contract.uniqueBettorCount + 1),
+          Math.log10(20_000)
+        ),
+        0,
+        1
+      )
+      const importanceScore = traderScore * MIN_IMPORTANCE_SCORE
+
+      return {
+        todayScore,
+        thisWeekScore,
+        freshnessScore: 0,
+        dailyScore: 0,
+        importanceScore,
+        logOddsChange: 0,
+        rawMarketImportanceBreakdown: {
+          contractId: contract.id,
+          resolvedTraderBonus: traderScore,
+        },
+      }
+    }
   }
 
   const volume24HoursComponent =
@@ -540,9 +575,10 @@ export async function calculatePostImportanceScore(
 
     const weekActivityTotal = commentsWeek + likesWeek
 
-    const rawScore = todayActivity * 2 + weekActivityTotal
+    const rawScore =
+      normalize(todayActivity, 100) * 2 + normalize(weekActivityTotal, 250)
 
-    const newImportanceScore = normalize(rawScore, 100)
+    const newImportanceScore = normalize(rawScore, 3)
 
     // Only update if the score has changed significantly
     const epsilon = 0.01

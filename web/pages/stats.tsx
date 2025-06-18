@@ -46,17 +46,14 @@ export const getStaticProps = async () => {
       ignoreCategories: ['RECLAIM_MANA'],
       limitDays: 100,
     })
-    const { total: totalRedeemable } = await api(
-      'get-total-redeemable-prize-cash',
-      {}
-    )
+
     return {
       props: {
         stats,
         fromBankSummary,
         toBankSummary,
         manaSupplyOverTime,
-        totalRedeemable,
+        totalRedeemable: 0,
       },
       revalidate: 60 * 60, // One hour
     }

@@ -77,6 +77,30 @@ pathMatchers:
           - pathTemplateMatch: /v0/bet-points
           - pathTemplateMatch: /v0/get-site-activity
           - pathTemplateMatch: /get-boost-analytics
+          - pathTemplateMatch: /v0/answer/*
+          - pathTemplateMatch: /v0/market/*/answers
+          - pathTemplateMatch: /v0/user-comments
+          - pathTemplateMatch: /get-interesting-groups-from-views
+          - pathTemplateMatch: /unique-bet-group-count
+          - pathTemplateMatch: /v0/group/*
+          - pathTemplateMatch: /v0/group/*/groups
+          - pathTemplateMatch: /v0/group/*/dashboards
+          - pathTemplateMatch: /v0/group/by-id/*
+          - pathTemplateMatch: /v0/group/by-id/*/groups
+          - pathTemplateMatch: /v0/group/by-id/*/markets
+          - pathTemplateMatch: /v0/market/*/lite
+          - pathTemplateMatch: /v0/slug/*
+          - pathTemplateMatch: /search-contract-positions
+          - pathTemplateMatch: /fetch-link-preview
+          - pathTemplateMatch: /v0/get-partner-stats
+          - pathTemplateMatch: /v0/get-posts
+          - pathTemplateMatch: /get-mana-supply
+          - pathTemplateMatch: /get-txn-summary-stats
+          - pathTemplateMatch: /get-mana-summary-stats
+          - pathTemplateMatch: /v0/get-user-contract-metrics-with-contracts
+          - pathTemplateMatch: /v0/check-sports-event
+          - pathTemplateMatch: /v0/comment-reactions
+          - pathTemplateMatch: /v0/get-season-info
 # redeploy this by running:
 # gcloud compute url-maps import api-lb --source=url-map-config.yaml --project mantic-markets  --global
 # (or for dev, --project dev-mantic-markets)

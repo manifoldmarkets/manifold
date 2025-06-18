@@ -26,6 +26,7 @@ export type ContractMetric = {
   totalAmountInvested: number // This is the sum of all positive amounts
   profit: number
   profitPercent: number
+  previousProfit?: number
   from:
     | {
         // Monthly is not updated atm bc it's not used

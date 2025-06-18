@@ -3,6 +3,7 @@ import { api, banUser } from 'web/lib/api/api'
 async function superBanUser(userId: string) {
   let marketsStatus = "could not be unlisted nor N/A'd due to an unknown error"
   let commentsStatus = 'could not be hidden due to an unknown error'
+  const posts = await api('get-posts', { userId })
 
   try {
     await banUser({ userId })
@@ -28,15 +29,6 @@ async function superBanUser(userId: string) {
       commentsStatus = 'successfully hidden'
     } else {
       commentsStatus = 'were not found'
-    }
-  }
-  const posts = await api('get-posts', { userId })
-  if (posts.length > 0) {
-    for (const post of posts) {
-      await api('update-post', {
-        id: post.id,
-        visibility: 'unlisted',
-      })
     }
   }
 

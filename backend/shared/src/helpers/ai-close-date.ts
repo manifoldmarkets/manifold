@@ -34,9 +34,7 @@ export const getCloseDate = async (question: string, utcOffset?: number) => {
     Question: ${question}
     Now: ${now}
     End date:`
-    response = await promptGemini(prompt, {
-      model: 'gemini-2.0-flash',
-    })
+    response = await promptGemini(prompt)
   } catch (e: any) {
     log.error('Error generating close date', { e })
     return undefined

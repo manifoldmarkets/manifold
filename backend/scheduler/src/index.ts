@@ -21,16 +21,15 @@ function loadTemplate(filename: string) {
 }
 const indexTemplate = loadTemplate('index.hbs')
 
-const app = express()
-app.use(express.json())
-
-METRIC_WRITER.start()
-
-const server = app.listen(PORT, async () => {
+async function start() {
   await initSecrets()
 
+  const app = express()
+  app.use(express.json())
+
+  METRIC_WRITER.start()
+
   const prod = isProd()
-  log.info(`Running in ${prod ? 'prod' : 'dev'} listening on port ${PORT}.`)
   app.use(
     basicAuth({
       users: { admin: process.env.SCHEDULER_AUTH_PASSWORD ?? '' },
@@ -45,7 +44,7 @@ const server = app.listen(PORT, async () => {
   const jobsByName = Object.fromEntries(jobs.map((j) => [j.name, j]))
   log.info(`Loaded ${jobs.length} job(s).`, { names: Object.keys(jobsByName) })
 
-  app.get('/', async (_req, res) => {
+  app.get('/', (_req: express.Request, res: express.Response) => {
     const now = Date.now()
     const timeZone = 'America/Los_Angeles'
     const jobsData = jobs.map((j) => {
@@ -94,7 +93,7 @@ const server = app.listen(PORT, async () => {
       (j) => j.name
     )
     res.set('Content-Type', 'text/html')
-    return res.status(200).send(
+    res.status(200).send(
       indexTemplate({
         env: isProd() ? 'Prod' : 'Dev',
         jobs: sortedJobsData,
@@ -102,37 +101,57 @@ const server = app.listen(PORT, async () => {
     )
   })
 
-  app.post('/jobs/:name/trigger', async (req, res) => {
-    const job = jobsByName[req.params.name]
-    if (job == null) {
-      res.status(400).json({ success: false, err: 'Invalid job name.' })
+  app.post(
+    '/jobs/:name/trigger',
+    (req: express.Request, res: express.Response) => {
+      const job = jobsByName[req.params.name]
+      if (job == null) {
+        res.status(400).json({ success: false, err: 'Invalid job name.' })
+        return
+      }
+      job.trigger()
+      res.status(200).json({ success: true })
     }
-    job.trigger()
-    return res.status(200).json({ success: true })
+  )
+
+  app.post(
+    '/jobs/:name/pause',
+    (req: express.Request, res: express.Response) => {
+      const job = jobsByName[req.params.name]
+      if (job == null) {
+        res.status(400).json({ success: false, err: 'Invalid job name.' })
+        return
+      }
+      job.pause()
+      res.status(200).json({ success: true })
+    }
+  )
+
+  app.post(
+    '/jobs/:name/resume',
+    (req: express.Request, res: express.Response) => {
+      const job = jobsByName[req.params.name]
+      if (job == null) {
+        res.status(400).json({ success: false, err: 'Invalid job name.' })
+        return
+      }
+      job.resume()
+      res.status(200).json({ success: true })
+    }
+  )
+
+  const server = app.listen(PORT, () => {
+    log.info(
+      `Running in ${isProd() ? 'prod' : 'dev'} listening on port ${PORT}.`
+    )
   })
 
-  app.post('/jobs/:name/pause', async (req, res) => {
-    const job = jobsByName[req.params.name]
-    if (job == null) {
-      res.status(400).json({ success: false, err: 'Invalid job name.' })
-    }
-    job.pause()
-    return res.status(200).json({ success: true })
+  process.on('SIGTERM', () => {
+    log.info('Received SIGTERM.')
+    server.close((err?: Error) => {
+      process.exit(err ? 1 : 0)
+    })
   })
+}
 
-  app.post('/jobs/:name/resume', async (req, res) => {
-    const job = jobsByName[req.params.name]
-    if (job == null) {
-      res.status(400).json({ success: false, err: 'Invalid job name.' })
-    }
-    job.resume()
-    return res.status(200).json({ success: true })
-  })
-})
-
-process.on('SIGTERM', () => {
-  log.info('Received SIGTERM.')
-  server.close((err) => {
-    process.exit(err ? 1 : 0)
-  })
-})
+start()

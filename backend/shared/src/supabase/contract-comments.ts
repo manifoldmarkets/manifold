@@ -37,6 +37,7 @@ export async function getCommentsDirect(
     replyToCommentId?: string
     commentId?: string
     afterTime?: number
+    order?: 'likes' | 'newest' | 'oldest'
   }
 ) {
   const {
@@ -47,6 +48,7 @@ export async function getCommentsDirect(
     replyToCommentId,
     commentId,
     afterTime,
+    order = 'newest',
   } = filters
 
   const params: any[] = [
@@ -58,18 +60,24 @@ export async function getCommentsDirect(
     commentId,
     afterTime ? millisToTs(afterTime) : null,
   ]
+  const orderBy =
+    order === 'likes'
+      ? 'cc.likes desc'
+      : !order || order === 'newest'
+      ? 'cc.created_time desc'
+      : 'cc.created_time asc'
 
   return await pg.map(
     `
-        select cc.data from contract_comments cc
+        select cc.data, cc.likes from contract_comments cc
           join contracts c on cc.contract_id = c.id
         where c.visibility = 'public'
-          and cc.contract_id = $3 -- contractId (must be present here)
-          -- userId ($4) is ignored in this branch
-          and ($5 is null or cc.data->>'replyToCommentId' = $5) -- replyToCommentId
-          and ($6 is null or cc.comment_id = $6)           -- commentId
-          and ($7 is null or cc.created_time > $7)        -- afterTime
-        order by cc.created_time desc
+          and ($3 is null or contract_id = $3)
+          and ($4 is null or user_id = $4)
+          and ($5 is null or cc.data->>'replyToCommentId' = $5) 
+          and ($6 is null or cc.comment_id = $6)          
+          and ($7 is null or cc.created_time > $7)        
+        order by ${orderBy}
         limit $1
         offset $2
     `,

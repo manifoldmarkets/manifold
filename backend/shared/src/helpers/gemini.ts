@@ -4,7 +4,7 @@ import { APIError } from 'common/api/utils'
 
 export const models = {
   flash: 'gemini-2.0-flash' as const,
-  pro: 'gemini-2.5-pro-preview-03-25' as const,
+  pro: 'gemini-2.5-pro-preview-06-05' as const,
 }
 
 export type model_types = (typeof models)[keyof typeof models]

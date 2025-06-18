@@ -142,6 +142,8 @@ export const fetchContractBetDataAndValidate = async (
   if (contract.mechanism === 'none' || contract.mechanism === 'qf')
     throw new APIError(400, 'This is not a market')
 
+  if (contract.mechanism === 'cpmm-multi-1') contract.answers = answers
+
   const { closeTime, isResolved } = contract
   if (closeTime && Date.now() > closeTime)
     throw new APIError(403, 'Trading is closed.')
