@@ -42,7 +42,8 @@ export function Page(props: {
       <FirstStreakModalManager />
       <Col
         className={clsx(
-          !hideBottomBar && 'pb-[58px] lg:pb-0', // bottom bar padding
+          !hideBottomBar &&
+            'pb-[calc(58px+env(safe-area-max-inset-bottom))] lg:pb-[env(safe-area-max-inset-bottom)]',
           'text-ink-1000 mx-auto min-h-screen w-full max-w-[1440px] lg:grid lg:grid-cols-12'
         )}
       >
