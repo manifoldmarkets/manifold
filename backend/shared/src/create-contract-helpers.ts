@@ -1,11 +1,6 @@
 import { getNewLiquidityProvision } from 'common/add-liquidity'
 import { getCpmmInitialLiquidity } from 'common/antes'
-import {
-  BinaryContract,
-  Contract,
-  CPMMMultiContract,
-  OutcomeType,
-} from 'common/contract'
+import { BinaryContract, Contract, CPMMMultiContract } from 'common/contract'
 import { updateContract } from './supabase/contracts'
 import { SupabaseDirectClient } from './supabase/init'
 import { insertLiquidity } from './supabase/liquidity'
@@ -16,7 +11,6 @@ export async function generateAntes(
   pg: SupabaseDirectClient,
   providerId: string,
   contract: Contract,
-  outcomeType: OutcomeType,
   ante: number,
   totalMarketCost: number
 ) {

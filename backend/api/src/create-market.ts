@@ -21,7 +21,7 @@ import {
   NUMBER_CREATION_ENABLED,
   PollVoterVisibility,
 } from 'common/contract'
-import { getAnte } from 'common/economy'
+import { FREE_MARKET_USER_ID, getAnte } from 'common/economy'
 import { MAX_GROUPS_PER_MARKET } from 'common/group'
 import { getNewContract } from 'common/new-contract'
 import { getPseudoProbability } from 'common/pseudo-numeric'
@@ -45,7 +45,12 @@ import {
   addGroupToContract,
   canUserAddGroupToMarket,
 } from 'shared/update-group-contracts-internal'
-import { contractColumnsToSelect, htmlToRichText, log } from 'shared/utils'
+import {
+  contractColumnsToSelect,
+  htmlToRichText,
+  isProd,
+  log,
+} from 'shared/utils'
 import {
   broadcastNewAnswer,
   broadcastNewContract,
@@ -61,6 +66,10 @@ import { betsQueue } from 'shared/helpers/fn-queue'
 import { convertUser } from 'common/supabase/users'
 import { camelCase, first } from 'lodash'
 import { getMultiNumericAnswerBucketRangeNames } from 'common/number'
+import {
+  DEV_HOUSE_LIQUIDITY_PROVIDER_ID,
+  HOUSE_LIQUIDITY_PROVIDER_ID,
+} from 'common/antes'
 type Body = ValidatedAPIParams<'market'>
 
 export const createMarket: APIHandler<'market'> = async (body, auth) => {
@@ -182,8 +191,20 @@ export async function createMarketHelper(body: Body, auth: AuthedUser) {
       if (!user) throw new APIError(401, 'Your account was not found')
       if (user.isBannedFromPosting) throw new APIError(403, 'You are banned')
 
-      if (totalMarketCost > user.balance)
+      const isFree = userId === FREE_MARKET_USER_ID && totalMarketCost <= 100
+      if (!isFree && totalMarketCost > user.balance)
         throw new APIError(403, `Balance must be at least ${totalMarketCost}.`)
+      if (isFree) {
+        const contractsToday = await tx.oneOrNone(
+          `select count(*) from contracts where creator_id = $1 and created_time > now() - interval '1 day'`,
+          [userId]
+        )
+        if (contractsToday && contractsToday.count >= 5)
+          throw new APIError(
+            403,
+            'Tumblingnomics has reached its breaking point. No more free markets today.'
+          )
+      }
 
       const slug = getSlug(!!first(userAndSlugResult[1]), proposedSlug)
 
@@ -255,8 +276,12 @@ export async function createMarketHelper(body: Body, auth: AuthedUser) {
       if (result[1].length > 0 && contract.mechanism === 'cpmm-multi-1') {
         contract.answers = result[1].map(convertAnswer)
       }
+      const house = isProd()
+        ? HOUSE_LIQUIDITY_PROVIDER_ID
+        : DEV_HOUSE_LIQUIDITY_PROVIDER_ID
+      const providerId = isFree ? house : userId
       await runTxnOutsideBetQueue(tx, {
-        fromId: userId,
+        fromId: providerId,
         fromType: 'USER',
         toId: contract.id,
         toType: 'CONTRACT',
@@ -272,14 +297,7 @@ export async function createMarketHelper(body: Body, auth: AuthedUser) {
         ante: ante || 0,
       })
 
-      await generateAntes(
-        tx,
-        userId,
-        contract,
-        outcomeType,
-        ante,
-        totalMarketCost
-      )
+      await generateAntes(tx, providerId, contract, ante, totalMarketCost)
 
       return { contract, user }
     })

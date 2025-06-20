@@ -17,6 +17,7 @@ import {
   contractPath,
 } from 'common/contract'
 import {
+  FREE_MARKET_USER_ID,
   getAnte,
   getUniqueBettorBonusAmount,
   MINIMUM_BOUNTY,
@@ -434,10 +435,11 @@ export function ContractParamsForm(props: {
     outcomeType === 'MULTI_NUMERIC' || outcomeType === 'DATE'
       ? midpoints.length !== answers.length
       : false
+  const isFree = creator.id === FREE_MARKET_USER_ID && ante <= 100
 
   const isValid =
     isValidQuestion &&
-    ante <= balance &&
+    (isFree ? true : ante <= balance) &&
     isValidDate &&
     isValidTopics &&
     (outcomeType !== 'PSEUDO_NUMERIC' ||
@@ -1087,7 +1089,7 @@ export function ContractParamsForm(props: {
         />
       </Row>
       <CostSection
-        balance={balance}
+        balance={isFree ? 100 : balance}
         numAnswers={numAnswers}
         outcomeType={outcomeType}
         liquidityTier={liquidityTier}
