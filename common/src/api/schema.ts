@@ -186,6 +186,13 @@ export const API = (_apiTypeCheck = {
     returns: {} as { success: boolean },
     props: z.object({ commentPath: z.string() }).strict(),
   },
+  'delete-comment': {
+    method: 'POST',
+    visibility: 'public',
+    authed: true,
+    returns: {} as { success: boolean },
+    props: z.object({ commentPath: z.string() }).strict(),
+  },
   'pin-comment': {
     method: 'POST',
     visibility: 'undocumented',
