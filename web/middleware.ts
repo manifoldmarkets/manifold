@@ -6,8 +6,16 @@ export async function middleware(req: NextRequest) {
 
   // Handle play parameter removal for all requests
   if (url.searchParams.has('play')) {
+    const playValue = url.searchParams.get('play')
     url.searchParams.delete('play')
-    return NextResponse.redirect(url, 308)
+
+    if (playValue === 'false') {
+      // Redirect to path with --cash suffix and no query parameters
+      const newUrl = new URL(url.pathname + '--cash', url.origin)
+      return NextResponse.redirect(newUrl, 308)
+    } else {
+      return NextResponse.redirect(url, 308)
+    }
   }
 
   // Only run API proxy logic for API requests
