@@ -12,6 +12,7 @@ import { updateUser } from 'shared/supabase/users'
 import { broadcastUpdatedUser } from 'shared/websockets/helpers'
 import { generateAvatarUrl } from 'shared/helpers/generate-and-update-avatar-urls'
 import { getStorageBucket } from 'shared/create-user-main'
+import { TopLevelPost } from 'common/top-level-post'
 
 export const updateMe: APIHandler<'me/update'> = async (props, auth) => {
   const update = cloneDeep(props)
@@ -115,6 +116,22 @@ const updateUserDenormalizedFields = async (
     (row) => row.comment_id
   )
   log(`Updated ${commentIds.length} comments.`)
+
+  const postUpdate: Partial<TopLevelPost> = removeUndefinedProps({
+    creatorName: update.name,
+    creatorUsername: update.username,
+    creatorAvatarUrl: update.avatarUrl,
+  })
+
+  const postIds = await pg.map(
+    `update old_posts
+     set data = data || $2
+     where creator_id = $1
+     returning id`,
+    [userId, JSON.stringify(postUpdate)],
+    (row) => row.id
+  )
+  log(`Updated ${postIds.length} posts.`)
 
   log('Done denormalizing!')
 }
