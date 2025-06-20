@@ -40,6 +40,10 @@ export const Avatar = memo(
 
     const isUserFresh = createdTime ? isFresh(createdTime) : false
 
+    // Check if the avatar URL is a GIF and exclude it
+    const isGif = avatarUrl?.toLowerCase().includes('.gif')
+    const shouldShowImage = avatarUrl && !isGif
+
     const onClick = (e: MouseEvent) => {
       if (!noLink && username) {
         if (preventDefault) {
@@ -54,7 +58,7 @@ export const Avatar = memo(
     // item with a fake grey user circle guy even if you aren't signed in
     return (
       <div className={isUserFresh ? 'relative' : ''}>
-        {avatarUrl ? (
+        {shouldShowImage ? (
           <Image
             width={sizeInPx}
             height={sizeInPx}
