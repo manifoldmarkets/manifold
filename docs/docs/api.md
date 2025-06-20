@@ -760,6 +760,19 @@ Parameters:
 
 Response type: A `Bet`.
 
+```bash
+curl -X POST https://api.manifold.markets/v0/bet \
+  -H 'Authorization: Key YOUR_API_KEY' \
+  -H 'Content-Type: application/json' \
+  -d '{
+    "amount": 75,
+    "contractId": "CONTRACT_ID_HERE",
+    "outcome": "YES",
+    "limitProb": 0.70,
+    "expiresAt": 1735689600000
+  }'
+```
+
 ### `POST /v0/bet/cancel/[id]`
 
 Cancel a limit order.
