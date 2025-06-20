@@ -111,6 +111,14 @@ export const EditProfile = (props: {
       return
     }
 
+    // Prevent GIF uploads
+    if (file.type === 'image/gif' || file.name.toLowerCase().endsWith('.gif')) {
+      alert(
+        'GIF files are not allowed for profile pictures. Please select a different image format.'
+      )
+      return
+    }
+
     setAvatarLoading(true)
     await toast.promise(
       uploadPublicImage(user.username, file).then(async (url) => {
