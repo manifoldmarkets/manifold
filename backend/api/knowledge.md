@@ -84,13 +84,20 @@ export const myAuthenticatedEndpoint: APIHandler<
 - Use the `createSupabaseDirectClient` function from `shared/supabase/init` for database operations.
 - For environment-specific IDs and constants, check common/antes.ts first as it contains important platform-wide constants like HOUSE_LIQUIDITY_PROVIDER_ID.
 
-
 ## Sports Markets
 
 - Each sports event can have at most one MANA market and one CASH market
 - If creation of the MANA market fails (e.g., due to duplicate sportsEventId), do not attempt to create the CASH market
 - The MANA market is considered the "source of truth" - the CASH market should only exist if there is a corresponding MANA market
 - Prefer lightweight check endpoints over complex validation in create/update endpoints when the check might be useful in other contexts
+
+## Boosts
+
+- The `contract_boosts` table supports boosting both contracts and posts
+- Either `contract_id` or `post_id` must be specified, but not both
+- The `purchase-boost` endpoint accepts either `contractId` or `postId` parameter
+- Boosted content gets higher importance scores and appears more prominently on the homepage
+- Boosts last for 24 hours and can be paid for with mana or cash
 
   This uses the pg promise library, where you pass raw sql strings like so:
 

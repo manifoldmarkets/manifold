@@ -147,7 +147,7 @@ import {
   getContractOptionVoters,
   getContractVoters,
 } from './get-contract-voters'
-import { purchaseContractBoost } from './purchase-contract-boost'
+import { purchaseContractBoost } from './purchase-boost'
 import {
   generateAINumericRanges,
   regenerateNumericMidpoints,
@@ -338,7 +338,7 @@ export const handlers: { [k in APIPath]: APIHandler<k> } = {
   'mark-all-notifications-new': markallnotificationsnew,
   'get-contract-voters': getContractVoters,
   'get-contract-option-voters': getContractOptionVoters,
-  'purchase-contract-boost': purchaseContractBoost,
+  'purchase-boost': purchaseContractBoost,
   'generate-ai-numeric-ranges': generateAINumericRanges,
   'regenerate-numeric-midpoints': regenerateNumericMidpoints,
   'infer-numeric-unit': inferNumericUnit,

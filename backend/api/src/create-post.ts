@@ -42,6 +42,7 @@ export const createPost: APIHandler<'create-post'> = async (props, auth) => {
       visibility: visibility ?? 'public',
       isAnnouncement,
       isChangeLog,
+      boosted: false,
       importanceScore: NEW_MARKET_IMPORTANCE_SCORE,
     })
 

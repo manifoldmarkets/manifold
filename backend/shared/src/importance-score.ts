@@ -105,7 +105,7 @@ export async function calculateImportanceScore(
     ...(await getContractVoters(pg, weekAgo, contractIds)),
   }
   const activeBoosts = await pg.manyOrNone<Row<'contract_boosts'>>(
-    `select * from contract_boosts where start_time <= now() and end_time > now() and funded`
+    `select * from contract_boosts where start_time <= now() and end_time > now() and funded and contract_id is not null`
   )
 
   const contractsWithUpdates: Contract[] = []
@@ -560,6 +560,11 @@ export async function calculatePostImportanceScore(
     posts.map((p) => p.id)
   )
 
+  // Get active post boosts
+  const activePostBoosts = await pg.manyOrNone<Row<'contract_boosts'>>(
+    `select * from contract_boosts where start_time <= now() and end_time > now() and funded and post_id is not null`
+  )
+
   const postsWithUpdates: { id: string; importance_score: number }[] = []
 
   for (const post of posts) {
@@ -572,13 +577,21 @@ export async function calculatePostImportanceScore(
     const likesWeek = weeklyPostLikeCounts[postId] ?? 0 // This is total for the week up to 'weekAgo'
 
     const todayActivity = commentsToday + likesToday
-
     const weekActivityTotal = commentsWeek + likesWeek
 
-    const rawScore =
-      normalize(todayActivity, 100) * 2 + normalize(weekActivityTotal, 250)
+    // Check if this post is boosted
+    const isBoosted = activePostBoosts.some((b) => b.post_id === postId)
+    const boostScore = isBoosted ? 3 : 0
 
-    const newImportanceScore = normalize(rawScore, 3)
+    const rawScore =
+      normalize(todayActivity, 100) * 2 +
+      normalize(weekActivityTotal, 250) +
+      boostScore
+
+    const newImportanceScore = Math.max(
+      normalize(rawScore, 3),
+      isBoosted ? 0.9 : 0
+    )
 
     // Only update if the score has changed significantly
     const epsilon = 0.01

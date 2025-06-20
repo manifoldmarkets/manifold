@@ -6,7 +6,7 @@ export async function getPost(
   postId: string
 ): Promise<TopLevelPost | null> {
   const row = await pg.oneOrNone(
-    `SELECT data, importance_score FROM old_posts WHERE id = $1`,
+    `SELECT data, importance_score, boosted FROM old_posts WHERE id = $1`,
     [postId],
     convertPost
   )

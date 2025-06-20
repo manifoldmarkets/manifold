@@ -269,25 +269,34 @@ export type Database = {
       }
       contract_boosts: {
         Row: {
-          contract_id: string
+          contract_id: string | null
+          post_id: string | null
           end_time: string
           id: number
           start_time: string
           user_id: string
+          created_time: string
+          funded: boolean
         }
         Insert: {
-          contract_id: string
+          contract_id?: string | null
+          post_id?: string | null
           end_time: string
           id?: never
           start_time: string
           user_id: string
+          created_time?: string
+          funded?: boolean
         }
         Update: {
-          contract_id?: string
+          contract_id?: string | null
+          post_id?: string | null
           end_time?: string
           id?: never
           start_time?: string
           user_id?: string
+          created_time?: string
+          funded?: boolean
         }
         Relationships: [
           {

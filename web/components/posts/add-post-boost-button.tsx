@@ -3,7 +3,7 @@ import { Button } from '../buttons/button'
 import { Modal } from '../layout/modal'
 import { Col } from '../layout/col'
 import { Row } from '../layout/row'
-import { Contract } from 'common/contract'
+import { TopLevelPost } from 'common/top-level-post'
 import { useUser } from 'web/hooks/use-user'
 import { api } from 'web/lib/api/api'
 import { AddFundsModal } from '../add-funds-modal'
@@ -14,75 +14,46 @@ import dayjs from 'dayjs'
 import { Input } from '../widgets/input'
 import { HOUR_MS } from 'common/util/time'
 import { formatMoney } from 'common/util/format'
-import { BoostAnalytics } from './boost-analytics'
 import { useAdminOrMod } from 'web/hooks/use-admin'
 
-export function AddBoostButton(props: {
-  contract: Contract
-  className?: string
-}) {
-  const { contract, className } = props
+export function AddPostBoostButton(props: { post: TopLevelPost }) {
+  const { post } = props
   const [showPurchase, setShowPurchase] = useState(false)
-  const [showAnalytics, setShowAnalytics] = useState(false)
   const user = useUser()
 
   if (!user) return null
 
-  const disabled =
-    contract.isResolved ||
-    (contract.closeTime ?? Infinity) < Date.now() ||
-    contract.visibility !== 'public'
+  const disabled = post.visibility !== 'public'
 
   if (disabled) return null
-
-  const handleButtonClick = () => {
-    if (contract.boosted) {
-      setShowAnalytics(true)
-    } else {
-      setShowPurchase(true)
-    }
-  }
-
+  const { boosted } = post
   return (
     <>
       <Button
-        onClick={handleButtonClick}
-        color={contract.boosted ? 'indigo-outline' : 'gradient-pink'}
-        size="sm"
-        className={className}
+        onClick={() => setShowPurchase(true)}
+        color={boosted ? 'indigo-outline' : 'gradient-pink'}
+        className={'w-28'}
         data-boost-button
       >
         <BsRocketTakeoff className="mr-1 h-5 w-5" />
-        {contract.boosted ? 'Boosted' : 'Boost'}
+        {boosted ? 'Boosted' : 'Boost'}
       </Button>
 
-      <BoostPurchaseModal
+      <PostBoostPurchaseModal
         open={showPurchase}
         setOpen={setShowPurchase}
-        contract={contract}
+        post={post}
       />
-
-      {showAnalytics && (
-        <Modal open={showAnalytics} setOpen={setShowAnalytics} size="md">
-          <Col className="bg-canvas-0 gap-4 rounded-lg p-6">
-            <Row className="items-center gap-2 text-xl font-semibold">
-              <BsRocketTakeoff className="h-6 w-6" />
-              Boost Analytics
-            </Row>
-            <BoostAnalytics contract={contract} />
-          </Col>
-        </Modal>
-      )}
     </>
   )
 }
 
-function BoostPurchaseModal(props: {
+function PostBoostPurchaseModal(props: {
   open: boolean
   setOpen: (open: boolean) => void
-  contract: Contract
+  post: TopLevelPost
 }) {
-  const { open, setOpen, contract } = props
+  const { open, setOpen, post } = props
   const [loading, setLoading] = useState<string>()
   const [fundsModalOpen, setFundsModalOpen] = useState(false)
   const now = Date.now()
@@ -98,7 +69,7 @@ function BoostPurchaseModal(props: {
     setLoading(paymentMethod)
     try {
       const result = (await api('purchase-boost', {
-        contractId: contract.id,
+        postId: post.id,
         startTime,
         method: paymentMethod,
       })) as { success: boolean; checkoutUrl?: string }
@@ -109,7 +80,7 @@ function BoostPurchaseModal(props: {
       }
 
       toast.success(
-        'Market boosted! It will be featured on the homepage for 24 hours.'
+        'Post boosted! It will be featured on the homepage for 24 hours.'
       )
       setOpen(false)
     } catch (e) {
@@ -123,14 +94,14 @@ function BoostPurchaseModal(props: {
     setLoading('admin-free')
     try {
       const result = (await api('purchase-boost', {
-        contractId: contract.id,
+        postId: post.id,
         startTime,
         method: 'admin-free',
       })) as { success: boolean }
 
       if (result.success) {
         toast.success(
-          'Market boosted for free! It will be featured on the homepage for 24 hours.'
+          'Post boosted for free! It will be featured on the homepage for 24 hours.'
         )
         setOpen(false)
       }
@@ -147,11 +118,11 @@ function BoostPurchaseModal(props: {
         <Col className="bg-canvas-0 gap-4 rounded-lg p-6">
           <Row className="items-center gap-2 text-xl font-semibold">
             <BsRocketTakeoff className="h-6 w-6" />
-            Boost this market
+            Boost this post
           </Row>
 
           <div className="text-ink-600">
-            Boost this market's visibility on the homepage{' '}
+            Boost this post's visibility on the homepage{' '}
             {Math.abs(startTime - now) < HOUR_MS
               ? 'for the next 24 hours'
               : `from ${dayjs(startTime).format('MMM D')} to ${dayjs(startTime)

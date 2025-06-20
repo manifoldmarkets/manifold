@@ -9,6 +9,7 @@ import { UserIcon } from '@heroicons/react/solid'
 import { Tooltip } from '../widgets/tooltip'
 import { UserHovercard } from '../user/user-hovercard'
 import { EyeOffIcon } from '@heroicons/react/outline'
+import { BoostedTooltip } from '../contract/boost-column'
 
 export function PostRow(props: {
   post: TopLevelPost
@@ -71,14 +72,21 @@ export function PostRow(props: {
           <Row
             className={clsx('w-full items-center justify-end gap-8 sm:w-fit')}
           >
-            <Tooltip
-              text={`${post.uniqueUsers} unique users commented or reacted`}
-            >
-              <Row className="text-ink-700 w-[4.62rem] items-center justify-start gap-0.5">
-                <UserIcon className={'text-ink-400 h-4 w-4 shrink-0'} />
-                {post.uniqueUsers}
-              </Row>
-            </Tooltip>
+            <Row>
+              <BoostedTooltip
+                boosted={post.boosted}
+                placement={'top'}
+                className="mr-3 w-4"
+              />
+              <Tooltip
+                text={`${post.uniqueUsers} unique users commented or reacted`}
+              >
+                <Row className="text-ink-700 w-[6.5rem] items-center justify-start gap-0.5 sm:w-[4.62rem]">
+                  <UserIcon className={'text-ink-400 h-4 w-4 shrink-0'} />
+                  {post.uniqueUsers}
+                </Row>
+              </Tooltip>
+            </Row>
             <div className="w-12 text-cyan-600">POST</div>
             <div className="invisible w-12"></div>
           </Row>

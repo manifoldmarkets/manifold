@@ -8,6 +8,7 @@ create table if not exists
     id text primary key default uuid_generate_v4 () not null,
     visibility text,
     importance_score numeric default 0 not null,
+    boosted boolean default false not null
   );
 
 -- Foreign Keys

@@ -40,6 +40,7 @@ import { BackButton } from 'web/components/contract/back-button'
 import { report as reportContent } from 'web/lib/api/api'
 import { IoWarning } from 'react-icons/io5'
 import { FollowPostButton } from 'web/components/buttons/follow-post-button'
+import { AddPostBoostButton } from 'web/components/posts/add-post-boost-button'
 
 export async function getStaticProps(props: { params: { slug: string } }) {
   const { slug } = props.params
@@ -82,7 +83,6 @@ export default function PostPage(props: {
   useSaveReferral(currentUser, {
     defaultReferrerUsername: post?.creatorUsername,
   })
-
   useEffect(() => {
     setPost(props.post)
   }, [props.post])
@@ -274,6 +274,9 @@ export default function PostPage(props: {
             />
           </div>
         </div>
+        <Row>
+          <AddPostBoostButton post={post} />
+        </Row>
         <Spacer h={4} />
         <PostCommentsActivity post={post} comments={comments} />
       </Col>

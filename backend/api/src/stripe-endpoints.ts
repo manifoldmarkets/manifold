@@ -12,6 +12,8 @@ import { updateUser } from 'shared/supabase/users'
 import { WEB_PRICES } from 'common/economy'
 import { getContract } from 'shared/utils'
 import { boostContractImmediately } from 'shared/supabase/contracts'
+import { getPost } from 'shared/supabase/posts'
+import { boostPostImmediately } from './purchase-boost'
 
 export type StripeSession = Stripe.Event.Data.Object & {
   id: string
@@ -20,6 +22,7 @@ export type StripeSession = Stripe.Event.Data.Object & {
     priceInDollars?: string
     boostId?: string
     contractId?: string
+    postId?: string
   }
 }
 
@@ -102,7 +105,10 @@ export const stripewebhook = async (req: Request, res: Response) => {
 
   if (event.type === 'checkout.session.completed') {
     const session = event.data.object as StripeSession
-    if (session.metadata.boostId && session.metadata.contractId) {
+    if (
+      session.metadata.boostId &&
+      (session.metadata.contractId || session.metadata.postId)
+    ) {
       await handleBoostPayment(session)
     } else {
       await issueMoneys(session)
@@ -210,8 +216,8 @@ const issueMoneys = async (session: StripeSession) => {
 }
 
 const handleBoostPayment = async (session: StripeSession) => {
-  const { boostId, contractId, userId } = session.metadata
-  if (!boostId || !contractId || !userId) {
+  const { boostId, contractId, postId, userId } = session.metadata
+  if (!boostId || (!contractId && !postId) || !userId) {
     log.error('Invalid boost payment metadata', session.metadata)
     throw new APIError(400, 'Invalid boost payment metadata')
   }
@@ -222,23 +228,38 @@ const handleBoostPayment = async (session: StripeSession) => {
     tx.one(
       `update contract_boosts 
          set funded = true 
-         where id = $1 and contract_id = $2 and user_id = $3
+         where id = $1 and user_id = $2 and (
+           (contract_id = $3 and post_id is null) or 
+           (post_id = $4 and contract_id is null)
+         )
          returning *`,
-      [boostId, contractId, userId]
+      [boostId, userId, contractId ?? null, postId ?? null]
     )
   )
 
   if (new Date(boost.start_time) <= new Date()) {
-    const contract = await getContract(pg, contractId)
-    if (!contract) throw new APIError(404, 'Contract not found')
-    await boostContractImmediately(pg, contract)
+    if (contractId) {
+      const contract = await getContract(pg, contractId)
+      if (!contract) throw new APIError(404, 'Contract not found')
+      await boostContractImmediately(pg, contract)
+    }
+    if (postId) {
+      const post = await getPost(pg, postId)
+      if (!post) throw new APIError(404, 'Post not found')
+      await boostPostImmediately(pg, post)
+    }
   }
 
-  await trackPublicEvent(userId, 'contract boost purchased', {
-    contractId,
-    boostId,
-    paymentMethod: 'cash',
-  })
+  await trackPublicEvent(
+    userId,
+    `${contractId ? 'contract' : 'post'} boost purchased`,
+    {
+      contractId,
+      postId,
+      boostId,
+      paymentMethod: 'cash',
+    }
+  )
 }
 
 const firestore = admin.firestore()

@@ -596,7 +596,8 @@ type ContractBoostPurchase = {
   toType: 'BANK'
   token: 'M$'
   data: {
-    contractId: string
+    contractId?: string
+    postId?: string
     boostId: string
   }
 }

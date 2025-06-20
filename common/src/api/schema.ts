@@ -2074,17 +2074,26 @@ export const API = (_apiTypeCheck = {
     props: z.object({ contractId: z.string(), optionId: z.string() }),
     returns: [] as DisplayUser[],
   },
-  'purchase-contract-boost': {
+  'purchase-boost': {
     method: 'POST',
     visibility: 'public',
     authed: true,
     props: z
       .object({
-        contractId: z.string(),
+        contractId: z.string().optional(),
+        postId: z.string().optional(),
         startTime: z.number().positive().finite().safe(),
         method: z.enum(['mana', 'cash', 'admin-free']),
       })
-      .strict(),
+      .strict()
+      .refine(
+        (data) =>
+          (data.contractId && !data.postId) ||
+          (!data.contractId && data.postId),
+        {
+          message: 'Either contractId or postId must be provided, but not both',
+        }
+      ),
     returns: {} as { success: boolean; checkoutUrl?: string },
   },
   'generate-ai-numeric-ranges': {
