@@ -435,6 +435,7 @@ export function ContractParamsForm(props: {
     outcomeType === 'MULTI_NUMERIC' || outcomeType === 'DATE'
       ? midpoints.length !== answers.length
       : false
+
   const isFree = creator.id === FREE_MARKET_USER_ID && ante <= 100
 
   const isValid =
