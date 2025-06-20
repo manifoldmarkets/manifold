@@ -165,4 +165,4 @@ export const PROFIT_FEE_FRACTION = 0.1
 export const BOOST_COST_MANA = 10000
 export const DEV_BOOST_STRIPE_PRICE_ID = 'price_1QuI5BGdoFKoCJW7lMjCIuKW'
 export const PROD_BOOST_STRIPE_PRICE_ID = 'price_1QuItEGdoFKoCJW7t9qtiGoD'
-export const FREE_MARKET_USER_ID = '6hHpzvRG0pMq8PNJs7RZj2qlZGn2'
+export const FREE_MARKET_USER_ID = 'rQPOELuW5zaapaNPnBYQBMoonk92' // Tumbles
