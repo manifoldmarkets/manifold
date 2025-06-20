@@ -8,17 +8,15 @@ import {
 import { ContractMetric } from 'common/contract-metric'
 import { getContractParams } from 'common/contract-params'
 import { base64toPoints } from 'common/edge/og'
-import { CASH_SUFFIX } from 'common/envs/constants'
-import { getContract, getContractFromSlug } from 'common/supabase/contracts'
+import { getContractFromSlug } from 'common/supabase/contracts'
 import { removeUndefinedProps } from 'common/util/object'
-import { pick, sortBy, uniqBy } from 'lodash'
+import { sortBy, uniqBy } from 'lodash'
 import { ContractBetsTable } from 'web/components/bet/contract-bets-table'
 import { YourOrders } from 'web/components/bet/order-book'
 import { ContractPageContent } from 'web/components/contract/contract-page'
 import { ContractSEO } from 'web/components/contract/contract-seo'
 import { Col } from 'web/components/layout/col'
 import { Page } from 'web/components/layout/page'
-import { useSweepstakes } from 'web/components/sweepstakes-provider'
 import { Title } from 'web/components/widgets/title'
 import { useIsIframe } from 'web/hooks/use-is-iframe'
 import { useIsPageVisible } from 'web/hooks/use-page-visible'
@@ -31,7 +29,7 @@ import ContractEmbedPage from '../embed/[username]/[contractSlug]'
 export async function getStaticProps(ctx: {
   params: { username: string; contractSlug: string }
 }) {
-  const { username, contractSlug } = ctx.params
+  const { contractSlug } = ctx.params
   const adminDb = await initSupabaseAdmin()
   const contract = await getContractFromSlug(adminDb, contractSlug)
 
@@ -51,42 +49,12 @@ export async function getStaticProps(ctx: {
     }
   }
 
-  if (contract.token === 'CASH') {
-    const manaContract = contract.siblingContractId
-      ? await getContract(adminDb, contract.siblingContractId)
-      : null
-    const slug = manaContract?.slug ?? contractSlug.replace(CASH_SUFFIX, '')
-
-    return {
-      redirect: {
-        destination: `/${username}/${slug}?play=false`,
-        permanent: false,
-      },
-    }
-  }
-
   const props = await getContractParams(contract, adminDb)
 
-  // Fetch sibling contract if it exists
-  let cash = undefined
-  if (contract.siblingContractId) {
-    const cashContract = await getContract(adminDb, contract.siblingContractId)
-    if (cashContract) {
-      const params = await getContractParams(cashContract, adminDb)
-      cash = pick(params, [
-        'contract',
-        'lastBetTime',
-        'pointsString',
-        'multiPointsString',
-        'totalPositions',
-        'totalBets',
-      ])
-    }
-  }
   return {
     props: {
       state: 'authed',
-      params: removeUndefinedProps({ ...props, cash }),
+      params: removeUndefinedProps(props),
     },
   }
 }
@@ -110,37 +78,21 @@ export default function ContractPage(props: MaybeAuthedContractParams) {
 }
 
 function NonPrivateContractPage(props: { contractParams: ContractParams }) {
-  const { contract, pointsString, cash } = props.contractParams
-  const { prefersPlay } = useSweepstakes()
+  const { contract, pointsString } = props.contractParams
 
   const points = pointsString ? base64toPoints(pointsString) : []
-  const cashPoints = cash
-    ? cash.pointsString
-      ? base64toPoints(cash.pointsString)
-      : []
-    : null
 
   const inIframe = useIsIframe()
   if (!contract) {
     return <Custom404 customText="Unable to fetch question" />
   }
   if (inIframe) {
-    return (
-      <ContractEmbedPage
-        contract={contract}
-        points={points}
-        cashContract={cash ? cash.contract : null}
-        cashPoints={cashPoints}
-      />
-    )
+    return <ContractEmbedPage contract={contract} points={points} />
   }
 
   return (
     <Page trackPageView={false} className="xl:col-span-10">
-      <ContractSEO
-        contract={!prefersPlay && cash?.contract ? cash.contract : contract}
-        points={pointsString}
-      />
+      <ContractSEO contract={contract} points={pointsString} />
       <ContractPageContent key={contract.id} {...props.contractParams} />
     </Page>
   )

@@ -7,7 +7,7 @@ import { Answer } from './answer'
 import { getLiquidity } from './calculate-cpmm'
 import { ContractComment } from './comment'
 import { ContractMetric } from './contract-metric'
-import { CASH_SUFFIX, ENV_CONFIG } from './envs/constants'
+import { ENV_CONFIG } from './envs/constants'
 import { Fees } from './fees'
 import { PollOption } from './poll-option'
 import { formatMoney, formatPercent } from './util/format'
@@ -454,18 +454,6 @@ export function contractPath(contract: {
   return `/${contract.creatorUsername}/${contract.slug}`
 }
 
-export function twombaContractPath(contract: {
-  creatorUsername: string
-  slug: string
-  token?: ContractToken
-}) {
-  const isCashContract = contract.token == 'CASH'
-  const cleanedSlug = contract.slug.replace(new RegExp(`${CASH_SUFFIX}$`), '')
-  return `/${contract.creatorUsername}/${cleanedSlug}${
-    isCashContract ? '?play=false' : '?play=true'
-  }`
-}
-
 export type CashType = {
   contract: Contract
   lastBetTime?: number
@@ -489,7 +477,6 @@ export type ContractParams = {
   topics: Topic[]
   dashboards: { slug: string; title: string }[]
   pinnedComments: ContractComment[]
-  cash?: CashType
 }
 
 export type MaybeAuthedContractParams =

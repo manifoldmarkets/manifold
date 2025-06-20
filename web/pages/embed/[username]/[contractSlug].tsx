@@ -8,13 +8,13 @@ import {
 import {
   CPMMMultiContract,
   Contract,
+  contractPath,
   getMainBinaryMCAnswer,
   isBinaryMulti,
-  twombaContractPath,
 } from 'common/contract'
 import { getMultiBetPoints, getSingleBetPoints } from 'common/contract-params'
 import { DOMAIN, TRADE_TERM } from 'common/envs/constants'
-import { getContract, getContractFromSlug } from 'common/supabase/contracts'
+import { getContractFromSlug } from 'common/supabase/contracts'
 import { formatMoney } from 'common/util/format'
 import { getShareUrl } from 'common/util/share'
 import Image from 'next/image'
@@ -83,14 +83,6 @@ export async function getStaticProps(props: {
 
   const points = await getHistoryData(contract)
 
-  let cashContract = null
-  let cashPoints = null
-  if (contract.siblingContractId) {
-    cashContract = await getContract(db, contract.siblingContractId)
-    if (cashContract) {
-      cashPoints = await getHistoryData(cashContract)
-    }
-  }
   let multiPoints = null
   if (
     contract.outcomeType === 'MULTI_NUMERIC' ||
@@ -109,7 +101,7 @@ export async function getStaticProps(props: {
     )
   }
   return {
-    props: { contract, points, multiPoints, cashContract, cashPoints },
+    props: { contract, points, multiPoints },
   }
 }
 
@@ -121,21 +113,14 @@ export default function ContractEmbedPage(props: {
   contract: Contract
   points: Points | null
   multiPoints?: MultiBase64Points | null
-  cashContract: Contract | null
-  cashPoints: Points | null
 }) {
   const [showQRCode, setShowQRCode] = useState(false)
-  const [isCash, setIsCash] = useState(false)
-  const { cashContract, points, cashPoints } = props
+  const { points } = props
   const multiPoints = props.multiPoints
     ? unserializeBase64Multi(props.multiPoints)
     : null
 
   const contract = useLiveContract(props.contract)
-  const liveCashContract = cashContract
-    ? // eslint-disable-next-line react-hooks/rules-of-hooks
-      useLiveContract(cashContract)
-    : null
 
   const router = useRouter()
 
@@ -143,9 +128,6 @@ export default function ContractEmbedPage(props: {
     if (router.isReady) {
       if (router.query.qr !== undefined) {
         setShowQRCode(true)
-      }
-      if (router.query.play !== undefined) {
-        setIsCash(router.query.play === 'false')
       }
     }
   }, [router.isReady, router.query])
@@ -160,17 +142,17 @@ export default function ContractEmbedPage(props: {
       })
   }, [contract?.creatorId, contract?.id, contract?.slug])
 
-  if (!contract || (isCash && !liveCashContract)) {
+  if (!contract) {
     return <Custom404 />
   }
 
   return (
     <>
       <NoSEO />
-      <ContractSEO contract={isCash ? liveCashContract! : contract} />
+      <ContractSEO contract={contract} />
       <ContractSmolView
-        contract={isCash ? liveCashContract! : contract}
-        points={isCash ? cashPoints : points}
+        contract={contract}
+        points={points}
         multiPoints={multiPoints}
         showQRCode={showQRCode}
       />
@@ -287,7 +269,7 @@ function ContractSmolView(props: {
   const isMultiNumeric = outcomeType === 'MULTI_NUMERIC'
   const isDate = outcomeType === 'DATE'
 
-  const href = `https://${DOMAIN}${twombaContractPath(contract)}`
+  const href = `https://${DOMAIN}${contractPath(contract)}`
   const user = useUser()
   const shareUrl = getShareUrl(contract, user?.username)
 

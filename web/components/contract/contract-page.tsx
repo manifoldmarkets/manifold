@@ -57,18 +57,13 @@ import { useRelatedMarkets } from 'web/hooks/use-related-contracts'
 import { useReview } from 'web/hooks/use-review'
 import { useSaveCampaign } from 'web/hooks/use-save-campaign'
 import { useSaveContractVisitsLocally } from 'web/hooks/use-save-visits'
-import {
-  useSavedContractMetrics,
-  useTopContractMetrics,
-} from 'web/hooks/use-saved-contract-metrics'
+import { useSavedContractMetrics } from 'web/hooks/use-saved-contract-metrics'
 import { useTracking } from 'web/hooks/use-tracking'
 import { usePrivateUser, useUser } from 'web/hooks/use-user'
 import { track } from 'web/lib/service/analytics'
 import { scrollIntoViewCentered } from 'web/lib/util/scroll'
 import { SpiceCoin } from 'web/public/custom-components/spiceCoin'
 import { YourTrades } from 'web/pages/[username]/[contractSlug]'
-import { useSweepstakes } from '../sweepstakes-provider'
-import { useRouter } from 'next/router'
 import { precacheAnswers } from 'web/hooks/use-answers'
 import { useIsPageVisible } from 'web/hooks/use-page-visible'
 import { api } from 'web/lib/api/api'
@@ -78,6 +73,7 @@ import { FollowMarketButton } from '../buttons/follow-market-button'
 import { useSaveReferral } from 'web/hooks/use-save-referral'
 import { base64toPoints } from 'common/edge/og'
 import { useDisplayUserById } from 'web/hooks/use-user-supabase'
+import Link from 'next/link'
 
 export function ContractPageContent(props: ContractParams) {
   const {
@@ -89,77 +85,18 @@ export function ContractPageContent(props: ContractParams) {
     topics,
     dashboards,
     pinnedComments,
-    cash,
   } = props
 
-  // sync query state with context
-  const { prefersPlay } = useSweepstakes()
-  const router = useRouter()
-  const livePlayContract = useLiveContract(props.contract)
-  const sweepsIsPossible = !!livePlayContract.siblingContractId
-  const [isPlay, setIsPlay] = useState<boolean | undefined>(prefersPlay)
-  const liveCashContract = props.cash
-    ? // eslint-disable-next-line react-hooks/rules-of-hooks
-      useLiveContract(props.cash.contract)
-    : null
-
-  const liveContract =
-    !isPlay && liveCashContract ? liveCashContract : livePlayContract
+  // Just use the contract that was navigated to directly
+  const liveContract = useLiveContract(props.contract)
   const user = useUser()
   useSaveReferral(user, {
     defaultReferrerUsername: props.contract.creatorUsername,
     contractId: props.contract.id,
   })
-  // Read and set play state from the query
-  useEffect(() => {
-    if (!router.isReady) return
-    const playQuery = router.query.play
-    const queryIndicatesSweeps = playQuery === 'false'
-    const queryIndicatesPlay =
-      playQuery === 'true' ||
-      (playQuery === undefined &&
-        !sweepsIsPossible &&
-        prefersPlay === undefined)
-    if (queryIndicatesSweeps) {
-      if (sweepsIsPossible && isPlay) {
-        setIsPlay(false)
-      } else if (!sweepsIsPossible && !isPlay) {
-        setIsPlay(true)
-      }
-    } else if (queryIndicatesPlay && !isPlay) {
-      setIsPlay(true)
-    }
-  }, [isPlay, router.query, prefersPlay])
-
-  const setIsPlayAndQuery = (isPlay: boolean) => {
-    setIsPlay(isPlay)
-    setPlayStateInQuery(isPlay)
-  }
-
-  const setPlayStateInQuery = (play: boolean) => {
-    const newQuery = { ...router.query, play: play.toString() }
-
-    if (JSON.stringify(newQuery) !== JSON.stringify(router.query)) {
-      router.replace(
-        {
-          query: newQuery,
-          hash: router.asPath.split('#')[1],
-        },
-        undefined,
-        { shallow: true }
-      )
-    }
-  }
 
   const myContractMetrics = useSavedContractMetrics(liveContract)
-  const topContractMetrics = useTopContractMetrics({
-    playContract: livePlayContract,
-    cashContract: liveCashContract,
-    prefersPlay: isPlay ?? false,
-    // TODO: do we really need this? leaderboards are below the fold. If we do, should add for cash as well
-    defaultTopManaTraders: props.topContractMetrics,
-    defaultTopCashTraders: [],
-  })
+  const topContractMetrics = props.topContractMetrics
 
   const privateUser = usePrivateUser()
   const blockedUserIds = privateUser?.blockedUserIds ?? []
@@ -182,39 +119,23 @@ export function ContractPageContent(props: ContractParams) {
     if ('answers' in props.contract) {
       precacheAnswers(props.contract.answers)
     }
-    if (props.cash?.contract && 'answers' in props.cash.contract) {
-      precacheAnswers(props.cash.contract.answers)
-    }
   }, [])
 
-  const playBetData = useBetData({
-    contractId: props.contract.id,
-    outcomeType: props.contract.outcomeType,
+  const { bets, totalBets, yourNewBets, betPoints } = useBetData({
+    contractId: liveContract.id,
+    outcomeType: liveContract.outcomeType,
     userId: user?.id,
     lastBetTime: props.lastBetTime,
     totalBets: props.totalBets,
-    pointsString,
-    multiPointsString,
+    pointsString: pointsString,
+    multiPointsString: multiPointsString,
   })
-
-  const cashBetData = useBetData({
-    contractId: cash?.contract.id ?? '_',
-    outcomeType: cash?.contract.outcomeType,
-    userId: user?.id,
-    lastBetTime: cash?.lastBetTime,
-    totalBets: cash?.totalBets ?? 0,
-    pointsString: cash?.pointsString,
-    multiPointsString: cash?.multiPointsString,
-  })
-
-  const { bets, totalBets, yourNewBets, betPoints } =
-    cash && !isPlay ? cashBetData : playBetData
 
   const { isResolved, outcomeType, resolution, closeTime, creatorId } =
     liveContract
-  const { coverImageUrl } = livePlayContract
+  const { coverImageUrl } = liveContract
 
-  const description = livePlayContract.description
+  const description = liveContract.description
 
   const isAdmin = useAdmin()
   const isMod = useTrusted()
@@ -300,7 +221,7 @@ export function ContractPageContent(props: ContractParams) {
                   priority
                 />
                 <ChangeBannerButton
-                  contract={livePlayContract}
+                  contract={liveContract}
                   className="absolute right-4 top-12"
                 />
               </div>
@@ -337,9 +258,7 @@ export function ContractPageContent(props: ContractParams) {
               </Row>
               {(headerStuck || !coverImageUrl) && (
                 <HeaderActions
-                  setIsPlay={setIsPlayAndQuery}
-                  playContract={livePlayContract}
-                  currentContract={liveContract}
+                  contract={liveContract}
                   initialHideGraph={initialHideGraph}
                   hideGraph={hideGraph}
                   setHideGraph={setHideGraph}
@@ -354,9 +273,7 @@ export function ContractPageContent(props: ContractParams) {
                 <BackButton className="pr-8" />
               </div>
               <HeaderActions
-                setIsPlay={setIsPlayAndQuery}
-                playContract={livePlayContract}
-                currentContract={liveContract}
+                contract={liveContract}
                 initialHideGraph={initialHideGraph}
                 hideGraph={hideGraph}
                 setHideGraph={setHideGraph}
@@ -374,7 +291,7 @@ export function ContractPageContent(props: ContractParams) {
                     className="mr-1"
                   />
                   <EditableQuestionTitle
-                    contract={livePlayContract}
+                    contract={liveContract}
                     canEdit={isAdmin || isCreator || isMod}
                   />
                 </div>
@@ -496,12 +413,25 @@ export function ContractPageContent(props: ContractParams) {
                 <CreatorSharePanel contract={liveContract} />
               </>
             )}
-            <ContractDescription
-              contractId={props.contract.id}
-              creatorId={props.contract.creatorId}
-              isSweeps={isCashContract}
-              description={description}
-            />
+            {liveContract.token === 'CASH' ? (
+              <span className="bg-canvas-50 rounded-md p-4">
+                See parent question for description and comments:{' '}
+                <Link
+                  href={`/${
+                    liveContract.creatorUsername
+                  }/${liveContract.slug.replace('--cash', '')}`}
+                >
+                  {liveContract.question}
+                </Link>
+              </span>
+            ) : (
+              <ContractDescription
+                contractId={props.contract.id}
+                creatorId={props.contract.creatorId}
+                isSweeps={isCashContract}
+                description={description}
+              />
+            )}
             <Row className="mb-4 items-center gap-2">
               <MarketTopics
                 contract={props.contract}
@@ -553,9 +483,7 @@ export function ContractPageContent(props: ContractParams) {
                 bets={bets}
                 totalBets={totalBets}
                 comments={comments}
-                totalPositions={
-                  !isPlay && cash ? cash.totalPositions : props.totalPositions
-                }
+                totalPositions={props.totalPositions}
                 replyTo={replyTo}
                 setReplyTo={setReplyTo}
                 blockedUserIds={blockedUserIds}

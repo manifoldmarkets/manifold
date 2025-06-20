@@ -37,38 +37,29 @@ import { ChangeBannerButton } from './change-banner-button'
 import { GoGraph } from 'react-icons/go'
 
 export function HeaderActions(props: {
-  playContract: Contract
-  setIsPlay: (isPlay: boolean) => void
-  currentContract: Contract
+  contract: Contract
   initialHideGraph: boolean
   hideGraph: boolean
   setHideGraph: (hideGraph: boolean) => void
 }) {
-  const {
-    playContract,
-    currentContract,
-    initialHideGraph,
-    hideGraph,
-    setHideGraph,
-    setIsPlay,
-  } = props
+  const { contract, initialHideGraph, hideGraph, setHideGraph } = props
   const user = useUser()
   const privateUser = usePrivateUser()
-  const isCreator = user?.id === playContract.creatorId
+  const isCreator = user?.id === contract.creatorId
 
   const [detailsOpen, setDetailsOpen] = useState(false)
   const [repostOpen, setRepostOpen] = useState(false)
   const [reportOpen, setReportOpen] = useState(false)
   const [liquidityOpen, setLiquidityOpen] = useState(false)
 
-  const duplicateHref = duplicateContractHref(playContract)
+  const duplicateHref = duplicateContractHref(contract)
 
   const isBlocked =
-    privateUser && privateUser.blockedContractIds?.includes(playContract.id)
+    privateUser && privateUser.blockedContractIds?.includes(contract.id)
 
   const onBlock = async () => {
     await toast.promise(
-      api('market/:contractId/block', { contractId: playContract.id }),
+      api('market/:contractId/block', { contractId: contract.id }),
       {
         loading: 'Blocking...',
         success: `You'll no longer see this question in your feed nor search.`,
@@ -77,13 +68,13 @@ export function HeaderActions(props: {
     )
   }
   const onUnblock = async () => {
-    await api('market/:contractId/unblock', { contractId: playContract.id })
+    await api('market/:contractId/unblock', { contractId: contract.id })
   }
 
   const markUninteresting = async () => {
     await updateUserDisinterestEmbedding({
-      contractId: playContract.id,
-      creatorId: playContract.creatorId,
+      contractId: contract.id,
+      creatorId: contract.creatorId,
     })
     toast(`We won't show you content like that again`, {
       icon: <TiVolumeMute className={'h-5 w-5 text-teal-500'} />,
@@ -91,14 +82,13 @@ export function HeaderActions(props: {
   }
 
   const contractOpenAndPublic =
-    !currentContract.isResolved &&
-    (currentContract.closeTime ?? Infinity) > Date.now() &&
-    currentContract.visibility == 'public'
+    !contract.isResolved &&
+    (contract.closeTime ?? Infinity) > Date.now() &&
+    contract.visibility == 'public'
 
   const addLiquidityEnabled =
     user &&
-    (currentContract.mechanism == 'cpmm-1' ||
-      currentContract.mechanism == 'cpmm-multi-1') &&
+    (contract.mechanism == 'cpmm-1' || contract.mechanism == 'cpmm-multi-1') &&
     contractOpenAndPublic
 
   const [following, setFollowing] = useState<boolean>()
@@ -108,7 +98,7 @@ export function HeaderActions(props: {
     db.from('contract_follows')
       .select('contract_id')
       .eq('follow_id', user.id)
-      .eq('contract_id', currentContract.id)
+      .eq('contract_id', contract.id)
       .then((res) => {
         setFollowing((res.data?.length ?? 0) > 0)
       })
@@ -132,10 +122,10 @@ export function HeaderActions(props: {
             name: following ? 'Unwatch' : 'Watch',
             onClick: async () => {
               if (following) {
-                await unfollowMarket(playContract.id, playContract.slug)
+                await unfollowMarket(contract.id, contract.slug)
                 setFollowing(false)
               } else {
-                await followMarket(playContract.id, playContract.slug)
+                await followMarket(contract.id, contract.slug)
                 setFollowing(true)
               }
               if (!user.hasSeenContractFollowModal) {
@@ -242,40 +232,35 @@ export function HeaderActions(props: {
 
   return (
     <Row className="mr-4 shrink-0 items-center [&>*]:flex">
-      {!playContract.coverImageUrl && isCreator && (
-        <ChangeBannerButton
-          contract={playContract}
-          className="ml-3 first:ml-0"
-        />
+      {!contract.coverImageUrl && isCreator && (
+        <ChangeBannerButton contract={contract} className="ml-3 first:ml-0" />
       )}
-      <FollowMarketIconButton contract={currentContract} user={user} />
+      <FollowMarketIconButton contract={contract} user={user} />
       <CopyLinkOrShareButton
-        url={getShareUrl(currentContract, user?.username)}
+        url={getShareUrl(contract, user?.username)}
         tooltip="Copy question share link"
         className="text-ink-500 hover:text-ink-600"
         size="xs"
         eventTrackingName="copy market link"
-        trackingInfo={{ contractId: currentContract.id }}
+        trackingInfo={{ contractId: contract.id }}
       />
       <DropdownMenu items={dropdownItems} />
       <ContractInfoDialog
-        playContract={playContract}
-        statsContract={currentContract}
+        contract={contract}
         user={user}
-        setIsPlay={setIsPlay}
         open={detailsOpen}
         setOpen={setDetailsOpen}
       />
       {repostOpen && (
         <RepostModal
-          playContract={playContract}
+          playContract={contract}
           open={repostOpen}
           setOpen={setRepostOpen}
         />
       )}
       {addLiquidityEnabled && (
         <AddLiquidityModal
-          contract={currentContract}
+          contract={contract}
           isOpen={liquidityOpen}
           setOpen={setLiquidityOpen}
         />
@@ -285,9 +270,9 @@ export function HeaderActions(props: {
         label={'contract'}
         setIsModalOpen={setReportOpen}
         report={{
-          contentId: playContract.id,
+          contentId: contract.id,
           contentType: 'contract',
-          contentOwnerId: playContract.creatorId,
+          contentOwnerId: contract.creatorId,
         }}
       />
       <FollowMarketModal

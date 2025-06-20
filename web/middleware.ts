@@ -2,22 +2,44 @@ import { NextResponse, type NextRequest } from 'next/server'
 import { PROD_CONFIG } from 'common/envs/prod'
 
 export async function middleware(req: NextRequest) {
-  const path = req.nextUrl.pathname.replace('/api/', '')
+  const url = req.nextUrl
 
-  if (pathsToSkip.includes(path)) {
-    return NextResponse.next()
+  // Handle play parameter removal for all requests
+  if (url.searchParams.has('play')) {
+    url.searchParams.delete('play')
+    return NextResponse.redirect(url, 308)
   }
 
-  return new Response('Permanent Redirect', {
-    status: 308,
-    headers: {
-      location: getProxiedRequestUrl(req, path),
-    },
-  })
+  // Only run API proxy logic for API requests
+  if (url.pathname.startsWith('/api/')) {
+    const path = req.nextUrl.pathname.replace('/api/', '')
+
+    if (pathsToSkip.includes(path)) {
+      return NextResponse.next()
+    }
+
+    return new Response('Permanent Redirect', {
+      status: 308,
+      headers: {
+        location: getProxiedRequestUrl(req, path),
+      },
+    })
+  }
+
+  // For non-API requests, just continue normally
+  return NextResponse.next()
 }
 
 export const config = {
-  matcher: ['/api/v0/:path*'],
+  matcher: [
+    // API proxy
+    '/api/v0/:path*',
+    // Contract pages - be specific about the format
+    // This matches /username/contract-slug but not / or /browse etc
+    '/([^/]+)/([^/]+)',
+    // Embed pages
+    '/embed/([^/]+)/([^/]+)',
+  ],
 }
 
 const pathsToSkip = ['v0/deployment-id', 'v0/revalidate']

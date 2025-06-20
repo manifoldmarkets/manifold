@@ -28,14 +28,14 @@ import { InfoTooltip } from '../widgets/info-tooltip'
 import ShortToggle from '../widgets/short-toggle'
 import { Table } from '../widgets/table'
 import { ContractHistoryButton } from './contract-edit-history-button'
-import { SweepsToggle } from '../sweeps/sweeps-toggle'
 import { useSweepstakes } from '../sweepstakes-provider'
+import Link from 'next/link'
+import { linkClass } from '../widgets/site-link'
 export const Stats = (props: {
   contract: Contract
-  setIsPlay: (isPlay: boolean) => void
   user?: User | null | undefined
 }) => {
-  const { contract, user, setIsPlay } = props
+  const { contract, user } = props
   const { creatorId } = contract
   const shouldAnswersSumToOne =
     contract.mechanism === 'cpmm-multi-1'
@@ -338,24 +338,19 @@ export const Stats = (props: {
         {sweepsEnabled && !isNonBetPollOrBountiedQuestion && (
           <tr>
             <td>Sweepstakes</td>
-            <td>
-              <SweepsToggle
-                sweepsEnabled={sweepsEnabled}
-                isPlay={isPlay}
-                onClick={() => {
-                  if (prefersPlay && isPlay) {
-                    setPrefersPlay(false)
-                    setIsPlay(false)
-                  } else if (!prefersPlay && !isPlay) {
-                    setPrefersPlay(true)
-                    setIsPlay(true)
-                  } else if (prefersPlay && !isPlay) {
-                    setIsPlay(true)
-                  } else if (!prefersPlay && isPlay) {
-                    setIsPlay(false)
-                  }
-                }}
-              />
+            <td className={linkClass}>
+              <Link
+                href={
+                  contract.token === 'CASH'
+                    ? `/${contract.creatorUsername}/${contract.slug.replace(
+                        '--cash',
+                        ''
+                      )}`
+                    : `/${contract.creatorUsername}/${contract.slug}--cash`
+                }
+              >
+                {contract.token === 'CASH' ? 'True' : 'False'}
+              </Link>
             </td>
           </tr>
         )}
@@ -535,14 +530,12 @@ export const CheckOrSwitch = (props: {
 }
 
 export function ContractInfoDialog(props: {
-  playContract: Contract
-  statsContract: Contract
+  contract: Contract
   user: User | null | undefined
-  setIsPlay: (isPlay: boolean) => void
   open: boolean
   setOpen: (open: boolean) => void
 }) {
-  const { playContract, statsContract, user, open, setOpen, setIsPlay } = props
+  const { contract, user, open, setOpen } = props
   const isAdmin = useAdmin()
   const isTrusted = useTrusted()
 
@@ -552,19 +545,19 @@ export function ContractInfoDialog(props: {
       setOpen={setOpen}
       className="bg-canvas-0 flex flex-col gap-4 rounded p-6"
     >
-      <Stats contract={statsContract} user={user} setIsPlay={setIsPlay} />
+      <Stats contract={contract} user={user} />
 
       {!!user && (
         <>
           <Row className="my-2 flex-wrap gap-2">
-            <ContractHistoryButton contract={playContract} />
-            <ShareQRButton contract={playContract} />
-            <ShareIRLButton contract={playContract} />
-            <ShareEmbedButton contract={statsContract} />
+            <ContractHistoryButton contract={contract} />
+            <ShareQRButton contract={contract} />
+            <ShareIRLButton contract={contract} />
+            <ShareEmbedButton contract={contract} />
           </Row>
           <Row className="flex-wrap gap-2">
             {isAdmin || isTrusted ? (
-              <SuperBanControl userId={playContract.creatorId} />
+              <SuperBanControl userId={contract.creatorId} />
             ) : null}
           </Row>
         </>

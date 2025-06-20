@@ -12,9 +12,9 @@ import {
   MAX_QUESTION_LENGTH,
   NUMBER_BUCKETS_MAX,
   NON_BETTING_OUTCOMES,
-  twombaContractPath,
   Visibility,
   PollVoterVisibility,
+  contractPath,
 } from 'common/contract'
 import {
   getAnte,
@@ -651,7 +651,7 @@ export function ContractParamsForm(props: {
 
       // Await to clear form data from localstorage after navigate, since market is created.
       // Don't clear before navigate, because looks like a bug.
-      const path = twombaContractPath(newContract)
+      const path = contractPath(newContract)
       await router.push(path)
       resetProperties()
     } catch (e) {
