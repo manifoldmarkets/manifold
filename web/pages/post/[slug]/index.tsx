@@ -274,7 +274,7 @@ export default function PostPage(props: {
             />
           </div>
         </div>
-        <Row>
+        <Row className="my-2">
           <AddPostBoostButton post={post} />
         </Row>
         <Spacer h={4} />
