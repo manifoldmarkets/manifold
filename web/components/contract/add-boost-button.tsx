@@ -15,6 +15,7 @@ import { Input } from '../widgets/input'
 import { HOUR_MS } from 'common/util/time'
 import { formatMoney } from 'common/util/format'
 import { BoostAnalytics } from './boost-analytics'
+import { useAdminOrMod } from 'web/hooks/use-admin'
 
 export function AddBoostButton(props: {
   contract: Contract
@@ -87,6 +88,7 @@ function BoostPurchaseModal(props: {
   const now = Date.now()
   const [startTime, setStartTime] = useState(now)
   const user = useUser()
+  const isAdminOrMod = useAdminOrMod()
 
   if (!user) return null
 
@@ -113,6 +115,28 @@ function BoostPurchaseModal(props: {
     } catch (e) {
       console.error(e)
       toast.error(e instanceof Error ? e.message : 'Error purchasing boost')
+    }
+    setLoading(undefined)
+  }
+
+  const handleAdminFreeBoost = async () => {
+    setLoading('admin-free')
+    try {
+      const result = (await api('purchase-contract-boost', {
+        contractId: contract.id,
+        startTime,
+        method: 'admin-free',
+      })) as { success: boolean }
+
+      if (result.success) {
+        toast.success(
+          'Market boosted for free! It will be featured on the homepage for 24 hours.'
+        )
+        setOpen(false)
+      }
+    } catch (e) {
+      console.error(e)
+      toast.error(e instanceof Error ? e.message : 'Error applying free boost')
     }
     setLoading(undefined)
   }
@@ -176,6 +200,22 @@ function BoostPurchaseModal(props: {
               Pay $100
             </Button>
           </Row>
+
+          {isAdminOrMod && (
+            <Row className="gap-2">
+              <Button
+                color="indigo-outline"
+                onClick={handleAdminFreeBoost}
+                loading={loading === 'admin-free'}
+                disabled={!!loading}
+                className="flex-1"
+              >
+                <BsRocketTakeoff className="mr-1 h-5 w-5" />
+                Free Admin Boost
+              </Button>
+            </Row>
+          )}
+
           {notEnoughFunds && (
             <div className="text-ink-600 flex items-center gap-2 text-sm">
               <span className="text-error">Insufficient balance</span>

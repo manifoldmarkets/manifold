@@ -18,6 +18,7 @@ import { trackPublicEvent } from 'shared/analytics'
 import Stripe from 'stripe'
 import { contractUrl } from 'common/contract'
 import { boostContractImmediately } from 'shared/supabase/contracts'
+import { isAdminId, isModId } from 'common/envs/constants'
 
 const MAX_ACTIVE_BOOSTS = 5
 
@@ -42,6 +43,12 @@ export const purchaseContractBoost: APIHandler<
     throw new APIError(404, 'Contract not found')
   }
   const fundViaCash = method === 'cash'
+  const freeAdminBoost = method === 'admin-free'
+
+  // Check if user is admin/mod for free boost
+  if (freeAdminBoost && !isAdminId(userId) && !isModId(userId)) {
+    throw new APIError(403, 'Only admins and mods can use free boosts')
+  }
 
   // Check if there's already an active boost
   const activeBoost = await pg.manyOrNone<Row<'contract_boosts'>>(
@@ -110,7 +117,7 @@ export const purchaseContractBoost: APIHandler<
       },
     }
   } else {
-    // Start transaction
+    // Start transaction for mana payment
     await pg.tx(async (tx) => {
       const boost = await tx.one(
         `insert into contract_boosts (contract_id, user_id, start_time, end_time, funded)
@@ -118,22 +125,21 @@ export const purchaseContractBoost: APIHandler<
        returning id`,
         [contractId, userId, startTime, startTime + DAY_MS]
       )
-
-      // Charge mana
-      const txnData: TxnData = {
-        category: 'CONTRACT_BOOST_PURCHASE',
-        fromType: 'USER',
-        toType: 'BANK',
-        token: 'M$',
-        data: { contractId, boostId: boost.id },
-        amount: BOOST_COST_MANA,
-        fromId: userId,
-        toId: isProd()
-          ? HOUSE_LIQUIDITY_PROVIDER_ID
-          : DEV_HOUSE_LIQUIDITY_PROVIDER_ID,
-      } as ContractBoostPurchaseTxn
-
-      await runTxnInBetQueue(tx, txnData)
+      if (!freeAdminBoost) {
+        const txnData: TxnData = {
+          category: 'CONTRACT_BOOST_PURCHASE',
+          fromType: 'USER',
+          toType: 'BANK',
+          token: 'M$',
+          data: { contractId, boostId: boost.id },
+          amount: BOOST_COST_MANA,
+          fromId: userId,
+          toId: isProd()
+            ? HOUSE_LIQUIDITY_PROVIDER_ID
+            : DEV_HOUSE_LIQUIDITY_PROVIDER_ID,
+        } as ContractBoostPurchaseTxn
+        await runTxnInBetQueue(tx, txnData)
+      }
     })
   }
 
