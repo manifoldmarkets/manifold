@@ -412,6 +412,7 @@ export const API = (_apiTypeCheck = {
         afterTime: z.coerce.number().optional(),
         order: z.enum(['asc', 'desc']).optional(),
         kinds: z.enum(['open-limit']).optional(),
+        minAmount: z.coerce.number().positive().optional(),
         // undocumented fields. idk what a good api interface would be
         filterRedemptions: coerceBoolean.optional(),
         includeZeroShareRedemptions: coerceBoolean.optional(),
