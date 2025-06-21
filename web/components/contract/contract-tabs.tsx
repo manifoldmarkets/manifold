@@ -30,9 +30,11 @@ import { shortFormatNumber, maybePluralize } from 'common/util/format'
 import { MINUTE_MS } from 'common/util/time'
 import { UserPositionsTable } from 'web/components/contract/user-positions-table'
 import { LoadingIndicator } from 'web/components/widgets/loading-indicator'
-import { Pagination } from 'web/components/widgets/pagination'
 import { Tooltip } from 'web/components/widgets/tooltip'
-import { VisibilityObserver } from 'web/components/widgets/visibility-observer'
+import {
+  VisibilityObserver,
+  LoadMoreUntilNotVisible,
+} from 'web/components/widgets/visibility-observer'
 import { useEvent } from 'client-common/hooks/use-event'
 import { useLiquidity } from 'web/hooks/use-liquidity'
 import { useUser } from 'web/hooks/use-user'
@@ -550,13 +552,9 @@ export const BetsTabContent = memo(function BetsTabContent(props: {
   const { outcomeType } = contract
   const [olderBets, setOlderBets] = useState<Bet[]>([])
 
-  const [page, setPage] = useState(0)
-  const [minAmountFilterIndex, setMinAmountFilterIndex] = usePersistentInMemoryState(
-    0,
-    `bet-amount-filter-${contract.id}`
-  )
+  const [minAmountFilterIndex, setMinAmountFilterIndex] =
+    usePersistentInMemoryState(0, `bet-amount-filter-${contract.id}`)
   const isNumber = outcomeType === 'NUMBER'
-  const ITEMS_PER_PAGE = 50 * (isNumber ? contract.answers.length : 1)
 
   // Min amount filter options
   const minAmountOptions = [
@@ -568,16 +566,14 @@ export const BetsTabContent = memo(function BetsTabContent(props: {
   const selectedMinAmount = minAmountOptions[minAmountFilterIndex].value
 
   // Filter initial bets on client side, server will filter olderBets
-  const filteredInitialBets = selectedMinAmount 
-    ? props.bets.filter(bet => Math.abs(bet.amount) >= selectedMinAmount)
+  const filteredInitialBets = selectedMinAmount
+    ? props.bets.filter((bet) => Math.abs(bet.amount) >= selectedMinAmount)
     : props.bets
 
   const bets = [...filteredInitialBets, ...olderBets]
   listenToOrderUpdates(contract.id, setOlderBets, true)
 
   const oldestBet = minBy(bets, (b) => b.createdTime)
-  const start = page * ITEMS_PER_PAGE
-  const end = start + ITEMS_PER_PAGE
 
   const lps = useLiquidity(contract.id) ?? []
   const visibleLps = lps.filter(
@@ -614,29 +610,39 @@ export const BetsTabContent = memo(function BetsTabContent(props: {
   const totalItems = totalBets + visibleLps.length
   const totalLoadedItems = bets.length + visibleLps.length
 
-  const limit = (items.length - (page + 1) * ITEMS_PER_PAGE) * -1
-  const shouldLoadMore = limit > 0 && totalLoadedItems < totalItems
+  const shouldLoadMore = totalLoadedItems < totalItems
   const [now] = useState(Date.now())
   const oldestBetTime = oldestBet?.createdTime ?? now
-  useEffect(() => {
-    if (!shouldLoadMore) return
-    api('bets', {
-      contractId: contract.id,
-      beforeTime: oldestBetTime,
-      limit,
-      filterRedemptions: !isNumber,
-      includeZeroShareRedemptions: isNumber,
-      minAmount: selectedMinAmount,
-    })
-      .then((olderBets) => {
-        setOlderBets((bets) => uniqBy([...bets, ...olderBets], (b) => b.id))
-      })
-      .catch((err) => {
-        console.error(err)
-      })
-  }, [contract.id, limit, oldestBetTime, shouldLoadMore, selectedMinAmount])
 
-  const pageItems = sortBy(items, (item) =>
+  const loadMore = useEvent(async () => {
+    if (!shouldLoadMore) return false
+
+    try {
+      const newBets = await api('bets', {
+        contractId: contract.id,
+        beforeTime: oldestBetTime,
+        limit: 50,
+        filterRedemptions: !isNumber,
+        includeZeroShareRedemptions: isNumber,
+        minAmount: selectedMinAmount,
+      })
+
+      if (newBets.length > 0) {
+        setOlderBets((bets) => uniqBy([...bets, ...newBets], (b) => b.id))
+        return true
+      }
+      return false
+    } catch (err) {
+      console.error(err)
+      return false
+    }
+  })
+  useEffect(() => {
+    setOlderBets([])
+    loadMore()
+  }, [selectedMinAmount])
+
+  const allItems = sortBy(items, (item) =>
     item.type === 'bet'
       ? -item.bet.createdTime
       : item.type === 'liquidity'
@@ -644,20 +650,20 @@ export const BetsTabContent = memo(function BetsTabContent(props: {
       : item.type === 'betGroup'
       ? -item.bets[0].createdTime
       : undefined
-  ).slice(start, end)
+  )
 
   const scrollRef = useRef<HTMLDivElement>(null)
   const isCashContract = contract.token === 'CASH'
 
-  // Determine how many loading rows to show (up to ITEMS_PER_PAGE)
+  // Determine how many loading rows to show
   const numLoadingRows = shouldLoadMore
-    ? Math.min(ITEMS_PER_PAGE, Math.max(0, totalBets - pageItems.length))
+    ? Math.min(10, Math.max(0, totalBets - allItems.length))
     : 0
 
   return (
     <>
       <div ref={scrollRef} />
-      
+
       {/* Minimum bet amount filter */}
       <Row className="mb-4 justify-end">
         <Row className="items-center gap-1">
@@ -672,7 +678,6 @@ export const BetsTabContent = memo(function BetsTabContent(props: {
                 const newIndex = parseInt(value)
                 setMinAmountFilterIndex(newIndex)
                 setOlderBets([]) // Clear older bets to refetch with new filter
-                setPage(0) // Reset to first page
                 track('change-bet-amount-filter', {
                   contractSlug: contract.slug,
                   contractName: contract.question,
@@ -696,7 +701,7 @@ export const BetsTabContent = memo(function BetsTabContent(props: {
       </Row>
 
       <Col className="mb-4 items-start gap-7">
-        {pageItems.map((item) =>
+        {allItems.map((item) =>
           item.type === 'bet' ? (
             <FeedBet
               onReply={setReplyToBet}
@@ -724,21 +729,13 @@ export const BetsTabContent = memo(function BetsTabContent(props: {
         )}
         {/* Render skeleton loading rows */}
         {shouldLoadMore &&
+          !minAmountFilterIndex &&
           Array(numLoadingRows)
             .fill(0)
             .map((_, i) => <LoadingBetRow key={`loading-${i}`} />)}
       </Col>
-      <Pagination
-        page={page}
-        pageSize={ITEMS_PER_PAGE}
-        totalItems={totalItems}
-        setPage={(page) => {
-          setPage(page)
-          scrollRef.current?.scrollIntoView({
-            block: 'center',
-          })
-        }}
-      />
+
+      <LoadMoreUntilNotVisible loadMore={loadMore} />
     </>
   )
 })
