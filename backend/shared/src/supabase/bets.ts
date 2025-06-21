@@ -49,6 +49,7 @@ export const getBetsWithFilter = async (
     kinds,
     count,
     points,
+    minAmount,
   } = options
 
   const conditions = buildArray(
@@ -87,7 +88,12 @@ export const getBetsWithFilter = async (
     filterRedemptions && where('is_redemption = false'),
 
     !includeZeroShareRedemptions &&
-      where(`(shares != 0 or is_redemption = false or loan_amount != 0)`)
+      where(`(shares != 0 or is_redemption = false or loan_amount != 0)`),
+
+    minAmount !== undefined &&
+      where(`abs((contract_bets.data->>'amount')::numeric) >= ${minAmount}`, {
+        minAmount,
+      })
   )
   const selection = count
     ? select('count(contract_bets.*)')

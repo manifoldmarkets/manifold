@@ -551,9 +551,28 @@ export const BetsTabContent = memo(function BetsTabContent(props: {
   const [olderBets, setOlderBets] = useState<Bet[]>([])
 
   const [page, setPage] = useState(0)
+  const [minAmountFilterIndex, setMinAmountFilterIndex] = usePersistentInMemoryState(
+    0,
+    `bet-amount-filter-${contract.id}`
+  )
   const isNumber = outcomeType === 'NUMBER'
   const ITEMS_PER_PAGE = 50 * (isNumber ? contract.answers.length : 1)
-  const bets = [...props.bets, ...olderBets]
+
+  // Min amount filter options
+  const minAmountOptions = [
+    { label: 'Any amount', value: undefined },
+    { label: 'M$100+', value: 100 },
+    { label: 'M$1,000+', value: 1000 },
+    { label: 'M$10,000+', value: 10000 },
+  ]
+  const selectedMinAmount = minAmountOptions[minAmountFilterIndex].value
+
+  // Filter initial bets on client side, server will filter olderBets
+  const filteredInitialBets = selectedMinAmount 
+    ? props.bets.filter(bet => Math.abs(bet.amount) >= selectedMinAmount)
+    : props.bets
+
+  const bets = [...filteredInitialBets, ...olderBets]
   listenToOrderUpdates(contract.id, setOlderBets, true)
 
   const oldestBet = minBy(bets, (b) => b.createdTime)
@@ -607,6 +626,7 @@ export const BetsTabContent = memo(function BetsTabContent(props: {
       limit,
       filterRedemptions: !isNumber,
       includeZeroShareRedemptions: isNumber,
+      minAmount: selectedMinAmount,
     })
       .then((olderBets) => {
         setOlderBets((bets) => uniqBy([...bets, ...olderBets], (b) => b.id))
@@ -614,7 +634,7 @@ export const BetsTabContent = memo(function BetsTabContent(props: {
       .catch((err) => {
         console.error(err)
       })
-  }, [contract.id, limit, oldestBetTime, shouldLoadMore])
+  }, [contract.id, limit, oldestBetTime, shouldLoadMore, selectedMinAmount])
 
   const pageItems = sortBy(items, (item) =>
     item.type === 'bet'
@@ -637,6 +657,44 @@ export const BetsTabContent = memo(function BetsTabContent(props: {
   return (
     <>
       <div ref={scrollRef} />
+      
+      {/* Minimum bet amount filter */}
+      <Row className="mb-4 justify-end">
+        <Row className="items-center gap-1">
+          <span className="text-ink-400 text-sm">Min amount:</span>
+          <DropdownMenu
+            items={generateFilterDropdownItems(
+              minAmountOptions.map((option, i) => ({
+                label: option.label,
+                value: i.toString(),
+              })),
+              (value: string) => {
+                const newIndex = parseInt(value)
+                setMinAmountFilterIndex(newIndex)
+                setOlderBets([]) // Clear older bets to refetch with new filter
+                setPage(0) // Reset to first page
+                track('change-bet-amount-filter', {
+                  contractSlug: contract.slug,
+                  contractName: contract.question,
+                  minAmount: minAmountOptions[newIndex].value,
+                })
+              }
+            )}
+            buttonContent={
+              <Row className="text-ink-600 w-28 items-center text-sm">
+                <span className="whitespace-nowrap">
+                  {minAmountOptions[minAmountFilterIndex].label}
+                </span>
+                <ChevronDownIcon className="h-4 w-4" />
+              </Row>
+            }
+            menuWidth={'w-36'}
+            selectedItemName={minAmountOptions[minAmountFilterIndex].label}
+            closeOnClick
+          />
+        </Row>
+      </Row>
+
       <Col className="mb-4 items-start gap-7">
         {pageItems.map((item) =>
           item.type === 'bet' ? (
