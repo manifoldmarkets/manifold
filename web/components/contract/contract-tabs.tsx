@@ -581,7 +581,8 @@ export const BetsTabContent = memo(function BetsTabContent(props: {
       !l.isAnte &&
       l.userId !== HOUSE_LIQUIDITY_PROVIDER_ID &&
       l.userId !== DEV_HOUSE_LIQUIDITY_PROVIDER_ID &&
-      l.amount > 0
+      l.amount > 0 &&
+      !minAmountFilterIndex
   )
   const betsByBetGroupId = isNumber
     ? groupBy(bets, (bet) => bet.betGroupId ?? bet.id)
