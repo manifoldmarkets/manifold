@@ -573,25 +573,26 @@ function DotMenu(props: {
               }
             },
           },
-          isMod && !comment.deleted && {
-            name: 'Delete',
-            icon: <TrashIcon className="h-5 w-5 text-red-600" />,
-            onClick: async () => {
-              const commentPath = `contracts/${playContract.id}/comments/${comment.id}`
-              const wasDeleted = comment.deleted
-              updateComment({ deleted: true })
+          isMod &&
+            !comment.deleted && {
+              name: 'Delete',
+              icon: <TrashIcon className="h-5 w-5 text-red-600" />,
+              onClick: async () => {
+                const commentPath = `contracts/${playContract.id}/comments/${comment.id}`
+                const wasDeleted = comment.deleted
+                updateComment({ deleted: true })
 
-              try {
-                await api('hide-comment', { commentPath, action: 'delete' })
-                toast.success('Comment deleted')
-              } catch (e) {
-                toast.error('Error deleting comment')
-                console.error(e)
-                // undo optimistic update
-                updateComment({ deleted: wasDeleted })
-              }
-            },
-          }
+                try {
+                  await api('hide-comment', { commentPath, action: 'delete' })
+                  toast.success('Comment deleted')
+                } catch (e) {
+                  toast.error('Error deleting comment')
+                  console.error(e)
+                  // undo optimistic update
+                  updateComment({ deleted: wasDeleted })
+                }
+              },
+            }
         )}
       />
       {annotating && (
