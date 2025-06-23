@@ -76,7 +76,8 @@ export async function getCommentsDirect(
           and ($4 is null or user_id = $4)
           and ($5 is null or cc.data->>'replyToCommentId' = $5) 
           and ($6 is null or cc.comment_id = $6)          
-          and ($7 is null or cc.created_time > $7)        
+          and ($7 is null or cc.created_time > $7)
+          and (cc.data->>'deleted' is null or cc.data->>'deleted' = 'false')        
         order by ${orderBy}
         limit $1
         offset $2
@@ -119,6 +120,7 @@ export async function getPostAndContractComments(
             c.visibility = 'public'
             AND cc.user_id = $3                   -- userId (must be present here)
             AND ($4 IS NULL OR cc.created_time > $4) -- afterTime
+            AND (cc.data->>'deleted' IS NULL OR cc.data->>'deleted' = 'false')
             
         UNION ALL
 
