@@ -60,11 +60,6 @@ export const FeedComment = memo(function FeedComment(props: {
   const [comment, updateComment] = usePartialUpdater(props.comment)
   useEffect(() => updateComment(props.comment), [props.comment])
 
-  // Don't render deleted comments at all
-  if (comment.deleted) {
-    return null
-  }
-
   const groupedBets = useMemo(() => {
     // Sort the bets by createdTime
     const sortedBets = orderBy(bets, 'createdTime', 'asc')
@@ -120,6 +115,10 @@ export const FeedComment = memo(function FeedComment(props: {
     }
   }, [highlighted])
 
+  // Don't render deleted comments at all
+  if (comment.deleted) {
+    return null
+  }
   return (
     <Col className="group">
       {!commenterAndBettorMatch(comment) && (
@@ -281,11 +280,6 @@ export const ParentFeedComment = memo(function ParentFeedComment(props: {
     isPinned,
   } = props
 
-  // Don't render deleted comments at all
-  if (comment.deleted) {
-    return null
-  }
-
   const { ref } = useIsVisible(
     () =>
       track('view comment thread', {
@@ -294,6 +288,11 @@ export const ParentFeedComment = memo(function ParentFeedComment(props: {
       } as CommentView),
     false
   )
+
+  // Don't render deleted comments at all
+  if (comment.deleted) {
+    return null
+  }
 
   return (
     <FeedComment
