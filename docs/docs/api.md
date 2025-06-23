@@ -963,6 +963,21 @@ Parameters:
 
 [Requires Auth](#authentication).
 
+Example request
+
+```bash
+curl -X POST https://api.manifold.markets/v0/bet \
+  -H 'Authorization: Key YOUR_API_KEY' \
+  -H 'Content-Type: application/json' \
+  -d '{
+    "amount": 10,
+    "contractId": "CONTRACT_ID_HERE",
+    "outcome": "YES",
+    "limitProb": 0.70,
+    "expiresMillisAfter": 86400000
+  }'
+```
+
 Response type: A `Bet`.
 
 ### `POST /v0/bet/cancel/[id]`
