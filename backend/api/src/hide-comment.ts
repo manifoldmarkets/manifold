@@ -11,7 +11,7 @@ import { APIError, type APIHandler } from './helpers/endpoint'
 import { trackPublicEvent } from 'shared/analytics'
 
 export const hideComment: APIHandler<'hide-comment'> = async (
-  { commentPath },
+  { commentPath, action = 'hide' },
   auth
 ) => {
   // Comment path is of the form /[username]/[contractId]/comment/[commentId] because firebase
@@ -36,36 +36,60 @@ export const hideComment: APIHandler<'hide-comment'> = async (
   if (!contract) throw new APIError(404, 'Contract not found')
 
   const isContractCreator = contract.creatorId === auth.uid
+  const isAdmin = isAdminId(auth.uid)
+  const isMod = isModId(auth.uid)
 
-  if (!isAdminId(auth.uid) && !isContractCreator && !isModId(auth.uid)) {
-    throw new APIError(
-      403,
-      'Only the market creator or mod can hide/unhide comments'
-    )
+  // For delete action, only admins and mods can delete (not contract creators)
+  if (action === 'delete') {
+    if (!isAdmin && !isMod) {
+      throw new APIError(
+        403,
+        'Only admins and mods can delete comments'
+      )
+    }
+  } else {
+    // For hide action, contract creators, admins, and mods can hide
+    if (!isAdmin && !isContractCreator && !isMod) {
+      throw new APIError(
+        403,
+        'Only the market creator, admin, or mod can hide/unhide comments'
+      )
+    }
   }
 
   const comment = await getComment(pg, commentId)
-  const hide = !comment.hidden
-  if ((isAdminId(comment.userId) || isModId(comment.userId)) && hide) {
-    throw new APIError(403, 'You cannot hide comments from admins or mods')
+  
+  if ((isAdminId(comment.userId) || isModId(comment.userId)) && (action === 'delete' || !comment.hidden)) {
+    throw new APIError(403, 'You cannot hide or delete comments from admins or mods')
   }
 
-  // update the comment
-  await updateData(pg, 'contract_comments', 'comment_id', {
-    comment_id: commentId,
-    hidden: hide,
-    hiddenTime: hide ? Date.now() : undefined,
-    hiderId: auth.uid,
-  })
+  // Update the comment based on action
+  if (action === 'delete') {
+    const shouldDelete = !comment.deleted
+    await updateData(pg, 'contract_comments', 'comment_id', {
+      comment_id: commentId,
+      deleted: shouldDelete,
+      deletedTime: shouldDelete ? Date.now() : undefined,
+      deleterId: auth.uid,
+    })
+  } else {
+    const hide = !comment.hidden
+    await updateData(pg, 'contract_comments', 'comment_id', {
+      comment_id: commentId,
+      hidden: hide,
+      hiddenTime: hide ? Date.now() : undefined,
+      hiderId: auth.uid,
+    })
+  }
 
   await revalidateContractStaticProps(contract)
   return {
     result: { success: true },
     continue: async () => {
-      await trackPublicEvent(auth.uid, 'hide_comment', {
+      await trackPublicEvent(auth.uid, action === 'delete' ? 'delete_comment' : 'hide_comment', {
         contractId,
         commentId,
-        hidden: hide,
+        [action === 'delete' ? 'deleted' : 'hidden']: action === 'delete' ? !comment.deleted : !comment.hidden,
         userId: auth.uid,
       })
     },

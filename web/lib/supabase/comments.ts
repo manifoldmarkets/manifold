@@ -32,6 +32,7 @@ export async function getCommentThread(commentId: string) {
           .select()
           .eq('contract_id', comment.contractId)
           .not('data->>replyToCommentId', 'is', null)
+          .not('data->>deleted', 'eq', 'true')
           .in('data->>replyToCommentId', [comment.replyToCommentId])
           .order('created_time', { ascending: true })
       ),
@@ -47,6 +48,7 @@ export async function getCommentThread(commentId: string) {
       .select()
       .eq('contract_id', comment.contractId)
       .not('data->>replyToCommentId', 'is', null)
+      .not('data->>deleted', 'eq', 'true')
       .in('data->>replyToCommentId', [commentId])
       .order('created_time', { ascending: true })
   )
@@ -60,6 +62,7 @@ export async function getAllCommentRows(limit: number) {
     db
       .from('contract_comments')
       .select('*')
+      .not('data->>deleted', 'eq', 'true')
       .order('created_time', {
         ascending: false,
       })
@@ -74,6 +77,7 @@ export async function getCommentRows(contractId: string) {
       .from('contract_comments')
       .select()
       .eq('contract_id', contractId)
+      .not('data->>deleted', 'eq', 'true')
       .order('created_time', { ascending: false })
   )
   return data
@@ -89,6 +93,7 @@ export async function getNewCommentRows(
     .select()
     .eq('contract_id', contractId)
     .gt('created_time', afterTime)
+    .not('data->>deleted', 'eq', 'true')
     .order('created_time', { ascending: false })
 
   if (userId) q = q.eq('user_id', userId)
@@ -109,6 +114,7 @@ export async function getRecentCommentsOnContracts(
           .from('contract_comments')
           .select()
           .in('contract_id', ids)
+          .not('data->>deleted', 'eq', 'true')
           .limit(limit)
           .order('created_time', { ascending: false })
       )
