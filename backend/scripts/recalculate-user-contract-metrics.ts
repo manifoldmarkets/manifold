@@ -12,7 +12,6 @@ const FIX_PERIODS = false
 const UPDATE_PORTFOLIO_HISTORIES = false
 const MIGRATE_LOAN_DATA = false
 const USING_BETS = false
-const FIXED_DEPRECATION_WARNING = false
 if (require.main === module) {
   runScript(async ({ pg }) => {
     if (MIGRATE_PROFIT_DATA) {
@@ -40,7 +39,7 @@ if (require.main === module) {
     //       [startTime],
     //       (row) => [row.id, row.created_time]
     //     )
-    if (USING_BETS && FIXED_DEPRECATION_WARNING) {
+    if (USING_BETS) {
       await recalculateUsingBets(allUserIds)
       return
     }

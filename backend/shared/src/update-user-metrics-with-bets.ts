@@ -4,21 +4,15 @@ import {
   SupabaseDirectClient,
 } from 'shared/supabase/init'
 import { log } from 'shared/utils'
-import { groupBy, sortBy, sumBy, uniq } from 'lodash'
-import { Contract, CPMMMultiContract } from 'common/contract'
+import { chunk, groupBy, sortBy, sumBy, uniq } from 'lodash'
 import { calculateMetricsByContractAndAnswer } from 'common/calculate-metrics'
-import { bulkUpdateContractMetrics } from 'shared/helpers/user-contract-metrics'
-import { buildArray } from 'common/util/array'
 import { hasSignificantDeepChanges } from 'common/util/object'
-import { Bet } from 'common/bet'
-import { getAnswersForContractsDirect } from 'shared/supabase/answers'
 import { convertBet } from 'common/supabase/bets'
 import { ContractMetric } from 'common/contract-metric'
+import { bulkUpdateContractMetrics } from 'shared/helpers/user-contract-metrics'
+import { buildArray } from 'common/util/array'
+import { getContractsDirect } from './supabase/contracts'
 
-/** @deprecated between the time the bets are loaded and the metrics are written,
- * the user could place a sell bet that repays a loan, which would not be
- * applied to the updated metrics when written. It should check for any sale bets
- * and rerun the metrics calculation. **/
 export async function updateUserMetricsWithBets(
   userIds?: string[],
   since?: number
@@ -29,7 +23,7 @@ export async function updateUserMetricsWithBets(
   const pg = createSupabaseDirectClient()
 
   log('Loading active users...')
-  const activeUserIds = userIds?.length
+  const allActiveUserIds = userIds?.length
     ? userIds
     : await pg.map(
         `select distinct user_id from contract_bets`,
@@ -37,110 +31,117 @@ export async function updateUserMetricsWithBets(
         (r) => r.user_id as string
       )
 
-  log(`Loaded ${activeUserIds.length} active users.`)
+  log(`Loaded ${allActiveUserIds.length} active users.`)
 
-  log('Loading bets...')
+  let userIdsToProcess = allActiveUserIds
+  const allUsersToRetry: string[] = []
 
-  // We need to update metrics for contracts that resolved up through a week ago,
-  // so we can calculate the daily/weekly profit on them
-  const metricRelevantBets = await getUnresolvedOrRecentlyResolvedBets(
-    pg,
-    activeUserIds,
-    useSince ? since : weekAgo
-  )
-  log(
-    `Loaded ${sumBy(
-      Object.values(metricRelevantBets),
-      (bets) => bets.length
-    )} bets.`
-  )
+  while (userIdsToProcess.length > 0) {
+    const userBatches = chunk(userIdsToProcess, 100)
+    for (const userBatch of userBatches) {
+      const betLoadTime = Date.now()
+      log('Loading bets...')
 
-  log('Loading contracts...')
-  const allBets = Object.values(metricRelevantBets).flat()
-  const contracts = await getRelevantContracts(pg, allBets)
-  log('Loading answers...')
-  const answersByContractId = await getAnswersForContractsDirect(
-    pg,
-    contracts.filter((c) => c.mechanism === 'cpmm-multi-1').map((c) => c.id)
-  )
-  log(`Loaded ${contracts.length} contracts and their answers.`)
+      // We need to update metrics for contracts that resolved up through a week ago,
+      // so we can calculate the daily/weekly profit on them
+      const metricRelevantBets = await getUnresolvedOrRecentlyResolvedBets(
+        pg,
+        userBatch,
+        useSince ? since : weekAgo
+      )
+      log(
+        `Loaded ${sumBy(
+          Object.values(metricRelevantBets),
+          (bets) => bets.length
+        )} bets for ${userBatch.length} users.`
+      )
 
-  const contractsById = Object.fromEntries(contracts.map((c) => [c.id, c]))
+      log('Loading contracts...')
+      const allBets = Object.values(metricRelevantBets).flat()
+      const betContractIds = uniq(allBets.map((b) => b.contractId))
+      const [contracts, currentContractMetrics] = await Promise.all([
+        getContractsDirect(betContractIds, pg),
+        pg.map(
+          `select data from user_contract_metrics
+          where user_id in ($1:list)
+          and contract_id in ($2:list)
+          `,
+          [userBatch, betContractIds],
+          (r) => r.data as ContractMetric
+        ),
+      ])
+      const contractsById = Object.fromEntries(contracts.map((c) => [c.id, c]))
+      log(`Loaded ${contracts.length} contracts and their answers.`)
+      log(`Loaded ${currentContractMetrics.length} current contract metrics.`)
 
-  for (const [contractId, answers] of Object.entries(answersByContractId)) {
-    // Denormalize answers onto the contract.
-    // eslint-disable-next-line no-extra-semi
-    ;(contractsById[contractId] as CPMMMultiContract).answers = answers
-  }
+      const currentMetricsByUserId = groupBy(
+        currentContractMetrics,
+        (m) => m.userId
+      )
 
-  log('Loading current contract metrics...')
-  const currentContractMetrics = await pg.map(
-    `select data from user_contract_metrics
-            where user_id in ($1:list)
-            and contract_id in ($2:list)
-            `,
-    [activeUserIds, contracts.map((c) => c.id)],
-    (r) => r.data as ContractMetric
-  )
-  log(`Loaded ${currentContractMetrics.length} current contract metrics.`)
+      const contractMetricUpdates: ContractMetric[] = []
 
-  const currentMetricsByUserId = groupBy(
-    currentContractMetrics,
-    (m) => m.userId
-  )
-
-  const contractMetricUpdates = []
-
-  log('Computing metric updates...')
-  for (const userId of activeUserIds) {
-    const userMetricRelevantBets = metricRelevantBets[userId] ?? []
-    const metricRelevantBetsByContract = groupBy(
-      userMetricRelevantBets,
-      (b) => b.contractId
-    )
-    const currentMetricsForUser = currentMetricsByUserId[userId] ?? []
-    const freshMetrics = calculateMetricsByContractAndAnswer(
-      metricRelevantBetsByContract,
-      contractsById,
-      userId,
-      currentMetricsForUser
-    )
-    contractMetricUpdates.push(
-      ...freshMetrics.filter((freshMetric) => {
-        const currentMetric = currentMetricsForUser.find(
-          (m) =>
-            freshMetric.contractId === m.contractId &&
-            freshMetric.answerId === m.answerId
+      log('Computing metric updates...')
+      for (const userId of userBatch) {
+        const userMetricRelevantBets = metricRelevantBets[userId] ?? []
+        const metricRelevantBetsByContract = groupBy(
+          userMetricRelevantBets,
+          (b) => b.contractId
         )
-        if (!currentMetric) return true
-        return hasSignificantDeepChanges(currentMetric, freshMetric, 0.1)
-      })
-    )
+        const currentMetricsForUser = currentMetricsByUserId[userId] ?? []
+        const freshMetrics = calculateMetricsByContractAndAnswer(
+          metricRelevantBetsByContract,
+          contractsById,
+          userId,
+          currentMetricsForUser
+        )
+        contractMetricUpdates.push(
+          ...freshMetrics.filter((freshMetric) => {
+            const currentMetric = currentMetricsForUser.find(
+              (m) =>
+                freshMetric.contractId === m.contractId &&
+                freshMetric.answerId === m.answerId
+            )
+            if (!currentMetric) return true
+            return hasSignificantDeepChanges(currentMetric, freshMetric, 0.1)
+          })
+        )
+      }
+      log(`Computed ${contractMetricUpdates.length} metric updates.`)
+      const userIdsWithUpdates = uniq(
+        contractMetricUpdates.map((m) => m.userId)
+      )
+      const justBetUserIds = await pg.map(
+        `select distinct user_id from contract_bets where user_id in ($1:list) and created_time >= $2`,
+        [userIdsWithUpdates, new Date(betLoadTime).toISOString()],
+        (r) => r.user_id as string
+      )
+
+      if (justBetUserIds.length > 0) {
+        log(
+          `Found ${justBetUserIds.length} users with new bets. Retrying them later.`
+        )
+        allUsersToRetry.push(...justBetUserIds)
+      }
+
+      const updatesToWrite = contractMetricUpdates.filter(
+        (m) => !justBetUserIds.includes(m.userId)
+      )
+
+      log(`Writing ${updatesToWrite.length} updates and inserts...`)
+      await Promise.all(
+        buildArray(
+          updatesToWrite.length > 0 &&
+            bulkUpdateContractMetrics(updatesToWrite)
+              .catch((e) => log.error('Error upserting contract metrics', e))
+              .then(() => log('Finished updating contract metrics.'))
+        )
+      )
+    }
+    userIdsToProcess = uniq(allUsersToRetry)
+    allUsersToRetry.length = 0
   }
-  log(`Computed ${contractMetricUpdates.length} metric updates.`)
-
-  log('Writing updates and inserts...')
-  await Promise.all(
-    buildArray(
-      contractMetricUpdates.length > 0 &&
-        bulkUpdateContractMetrics(contractMetricUpdates)
-          .catch((e) => log.error('Error upserting contract metrics', e))
-          .then(() => log('Finished updating contract metrics.'))
-    )
-  )
-
-  // await revalidateStaticProps('/leaderboards')
-
   log('Done.')
-}
-
-const getRelevantContracts = async (pg: SupabaseDirectClient, bets: Bet[]) => {
-  const betContractIds = uniq(bets.map((b) => b.contractId))
-  return await pg.map(
-    `select data from contracts where id in ($1:list)`,
-    [betContractIds],
-    (r) => r.data as Contract
-  )
 }
 
 const getUnresolvedOrRecentlyResolvedBets = async (
