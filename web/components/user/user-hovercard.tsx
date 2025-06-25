@@ -100,6 +100,10 @@ const FetchUserHovercardContent = forwardRef(
     const { data: lastActiveData } = useAPIGetter('get-user-last-active-time', {
       userId,
     })
+    const lastActiveTime = Math.max(
+      lastActiveData?.lastActiveTime ?? 0,
+      user?.lastBetTime ?? 0
+    )
 
     return user ? (
       <div
@@ -161,21 +165,19 @@ const FetchUserHovercardContent = forwardRef(
           </Col>
         </div>
 
-        {isMod && (
-          <div className="py-1">
-            <div className="text-ink-700 block px-4 py-2 text-sm">
-              <span className="font-semibold">Last active:</span>{' '}
-              {lastActiveData?.lastActiveTime ? (
-                <RelativeTimestampNoTooltip
-                  time={lastActiveData.lastActiveTime}
-                  className="text-ink-700"
-                />
-              ) : (
-                'Never'
-              )}
-            </div>
+        <div className="py-1">
+          <div className="text-ink-700 block px-4 py-2 text-sm">
+            <span className="font-semibold">Last active:</span>{' '}
+            {lastActiveTime !== 0 ? (
+              <RelativeTimestampNoTooltip
+                time={lastActiveTime}
+                className="text-ink-700"
+              />
+            ) : (
+              'Never'
+            )}
           </div>
-        )}
+        </div>
       </div>
     ) : null
   }

@@ -1,19 +1,12 @@
 import { APIHandler } from 'api/helpers/endpoint'
 import { createSupabaseDirectClient } from 'shared/supabase/init'
-import { isAdminId } from 'common/envs/constants'
 
-export const getUserLastActiveTime: APIHandler<'get-user-last-active-time'> = async (
-  body,
-  auth
-) => {
+export const getUserLastActiveTime: APIHandler<
+  'get-user-last-active-time'
+> = async (body) => {
   const { userId } = body
   const pg = createSupabaseDirectClient()
-  
-  // Only allow users to query their own data or admin users
-  if (auth.uid !== userId && !isAdminId(auth.uid)) {
-    return { lastActiveTime: null }
-  }
-  
+
   const result = await pg.oneOrNone(
     `select greatest(
        coalesce(ts_to_millis(last_card_view_ts), 0),
@@ -33,8 +26,8 @@ export const getUserLastActiveTime: APIHandler<'get-user-last-active-time'> = as
      limit 1`,
     [userId]
   )
-  
-  return { 
-    lastActiveTime: result?.last_active_time || null 
+
+  return {
+    lastActiveTime: result?.last_active_time || null,
   }
 }
