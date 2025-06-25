@@ -62,6 +62,7 @@ import {
   useContractBets,
 } from 'client-common/hooks/use-bets'
 import { useIsPageVisible } from 'web/hooks/use-page-visible'
+import { useSpecificComment } from 'web/hooks/use-specific-comment'
 
 export function ContractTabs(props: {
   staticContract: Contract
@@ -242,7 +243,7 @@ export const CommentsTabContent = memo(function CommentsTabContent(props: {
 
   // Listen for new comments
   const newComments = useSubscribeNewComments(staticContract.id)
-  const comments = uniqBy(
+  const baseComments = uniqBy(
     [
       ...(newComments ?? []),
       ...(newFetchedComments ?? []),
@@ -252,11 +253,21 @@ export const CommentsTabContent = memo(function CommentsTabContent(props: {
     'id'
   ).filter((c) => !blockedUserIds.includes(c.userId))
 
+  // Fetch specific comment if highlighted and not already loaded
+  const { specificComment, loading: specificCommentLoading } =
+    useSpecificComment(highlightCommentId, baseComments)
+
+  // Include the specific comment in the final comments list
+  const comments = uniqBy(
+    [...(specificComment ? [specificComment] : []), ...baseComments],
+    'id'
+  ).filter((c) => !blockedUserIds.includes(c.userId))
+
   const commentExistsLocally = comments.some((c) => c.id === highlightCommentId)
   const isLoadingHighlightedComment =
     highlightCommentId &&
     !commentExistsLocally &&
-    (commentsLoading || newCommentsLoading)
+    (commentsLoading || newCommentsLoading || specificCommentLoading)
 
   const [parentCommentsToRender, setParentCommentsToRender] = useState(
     props.comments.filter((c) => !c.replyToCommentId).length
