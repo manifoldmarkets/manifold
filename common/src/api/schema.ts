@@ -184,10 +184,12 @@ export const API = (_apiTypeCheck = {
     visibility: 'public',
     authed: true,
     returns: {} as { success: boolean },
-    props: z.object({ 
-      commentPath: z.string(),
-      action: z.enum(['hide', 'delete']).optional().default('hide')
-    }).strict(),
+    props: z
+      .object({
+        commentPath: z.string(),
+        action: z.enum(['hide', 'delete']).optional().default('hide'),
+      })
+      .strict(),
   },
   'pin-comment': {
     method: 'POST',
@@ -2376,6 +2378,18 @@ export const API = (_apiTypeCheck = {
       })
       .strict(),
     returns: {} as { success: boolean },
+  },
+  'get-user-last-active-time': {
+    method: 'GET',
+    authed: false,
+    visibility: 'undocumented',
+    cache: DEFAULT_CACHE_STRATEGY,
+    props: z
+      .object({
+        userId: z.string(),
+      })
+      .strict(),
+    returns: {} as { lastActiveTime: number | null },
   },
 } as const)
 
