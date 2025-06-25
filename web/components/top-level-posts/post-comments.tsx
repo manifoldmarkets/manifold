@@ -32,6 +32,7 @@ import {
   LinkIcon,
   EyeIcon,
   PencilIcon,
+  FlagIcon,
 } from '@heroicons/react/outline'
 import DropdownMenu, {
   DropdownItem,
@@ -49,6 +50,7 @@ import { useTextEditor } from 'web/components/widgets/editor'
 import { MAX_COMMENT_LENGTH } from 'common/comment'
 import { safeLocalStorage } from 'web/lib/util/local'
 import { User } from 'common/user'
+import { ReportModal } from 'web/components/buttons/report-button'
 
 const roundThreadColor = 'border-ink-100 dark:border-ink-200'
 
@@ -205,6 +207,7 @@ export function PostCommentItem(props: {
   )
   const [isEditing, setIsEditing] = useState(false)
   const [commentState, setCommentState] = useState(comment)
+  const [isReportModalOpen, setIsReportModalOpen] = useState(false)
 
   useEffect(() => {
     if (router.asPath.endsWith(`#${comment.id}`)) {
@@ -241,6 +244,12 @@ export function PostCommentItem(props: {
         toast.success('Link copied to clipboard')
       },
     },
+    user &&
+      user.id !== userId && {
+        name: 'Report',
+        icon: <FlagIcon className="h-5 w-5" />,
+        onClick: () => setIsReportModalOpen(true),
+      },
     isAdminOrMod && {
       name: optimisticallyHidden ? 'Unhide comment' : 'Hide comment',
       icon: optimisticallyHidden ? (
@@ -366,6 +375,20 @@ export function PostCommentItem(props: {
           open={isEditing}
           setOpen={setIsEditing}
           user={user}
+        />
+      )}
+      {isReportModalOpen && (
+        <ReportModal
+          report={{
+            contentOwnerId: comment.userId,
+            contentId: comment.id,
+            contentType: 'comment',
+            parentId: post.id,
+            parentType: 'post',
+          }}
+          setIsModalOpen={setIsReportModalOpen}
+          isModalOpen={isReportModalOpen}
+          label={'Comment'}
         />
       )}
     </Col>

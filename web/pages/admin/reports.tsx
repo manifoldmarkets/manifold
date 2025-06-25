@@ -222,6 +222,46 @@ const convertReports = async (
               text: comment.content,
             }
           }
+          // Reported comment on a post
+        } else if (
+          contentType === 'comment' &&
+          parentType === 'post' &&
+          parentId
+        ) {
+          try {
+            const { data: postRow, error: postError } = await db
+              .from('old_posts')
+              .select('*')
+              .eq('id', parentId)
+              .single()
+
+            if (!postError && postRow) {
+              const post = convertPost(postRow)
+              const { data: commentRow, error: commentError } = await db
+                .from('old_post_comments')
+                .select('*')
+                .eq('comment_id', contentId)
+                .single()
+
+              if (!commentError && commentRow) {
+                const comment = {
+                  ...(commentRow.data as any),
+                  id: commentRow.comment_id,
+                  createdTime: commentRow.created_time && Date.parse(commentRow.created_time),
+                }
+                partialReport = {
+                  slug: `/post/${post.slug}#${comment.id}`,
+                  text: comment.content,
+                }
+              }
+            }
+          } catch (error) {
+            console.error(
+              `Error fetching post comment ${contentId} for report:`,
+              error
+            )
+            partialReport = null
+          }
         } else if (contentType === 'user') {
           const reportedUser = await getUserById(contentId)
           partialReport = {
