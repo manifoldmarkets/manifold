@@ -231,7 +231,6 @@ export const API = (_apiTypeCheck = {
       })
       .strict(),
   },
-
   bet: {
     method: 'POST',
     visibility: 'public',

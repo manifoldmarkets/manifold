@@ -43,7 +43,11 @@ export function useCommentOnContract(commentId: string) {
     undefined
   )
   useEffect(() => {
-    getComment(commentId).then(setComment)
+    if (commentId !== '') {
+      getComment(commentId).then(setComment)
+    } else {
+      setComment(null)
+    }
   }, [commentId])
   return comment
 }

@@ -62,7 +62,7 @@ import {
   useContractBets,
 } from 'client-common/hooks/use-bets'
 import { useIsPageVisible } from 'web/hooks/use-page-visible'
-import { useSpecificComment } from 'web/hooks/use-specific-comment'
+import { useCommentOnContract } from 'web/hooks/use-comments'
 
 export function ContractTabs(props: {
   staticContract: Contract
@@ -254,8 +254,9 @@ export const CommentsTabContent = memo(function CommentsTabContent(props: {
   ).filter((c) => !blockedUserIds.includes(c.userId))
 
   // Fetch specific comment if highlighted and not already loaded
-  const { specificComment, loading: specificCommentLoading } =
-    useSpecificComment(highlightCommentId, baseComments)
+  const specificComment = useCommentOnContract(highlightCommentId ?? '')
+  const specificCommentLoading =
+    highlightCommentId && specificComment === undefined
 
   // Include the specific comment in the final comments list
   const comments = uniqBy(

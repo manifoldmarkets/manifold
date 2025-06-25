@@ -155,8 +155,7 @@ export const ReadChartAnnotationModal = (props: {
   const { chartAnnotation, open, setOpen } = props
   const { event_time, creator_id, comment_id, user_id, prob_change } =
     chartAnnotation
-  // eslint-disable-next-line react-hooks/rules-of-hooks
-  const comment = comment_id ? useCommentOnContract(comment_id) : undefined
+  const comment = useCommentOnContract(comment_id ?? '')
   const author = useDisplayUserById(user_id || creator_id || undefined)
 
   return (
