@@ -50,12 +50,11 @@ const requestMonitoring: RequestHandler = (req, res, next) => {
     } else if (!ignoredEndpoints.some((e) => endpoint.startsWith(e))) {
       log(`${method} ${url}`)
     }
-    metrics.inc('http/request_count', { endpoint, baseEndpoint, method })
+    metrics.inc('http/request_count', { baseEndpoint, method })
     res.on('close', () => {
       const endTs = hrtime.bigint()
       const latencyMs = Number(endTs - startTs) / 1e6 // Convert to milliseconds
       metrics.push('http/request_latency', latencyMs, {
-        endpoint,
         method,
         baseEndpoint,
       })

@@ -32,25 +32,22 @@ export const pgp = pgPromise({
       if (mctx?.baseEndpoint) {
         metrics.push('pg/transaction_duration', duration, {
           baseEndpoint: mctx.baseEndpoint,
-          endpoint: mctx.endpoint,
-          query,
           successStr,
         })
       } else if (mctx?.job) {
         metrics.push('pg/transaction_duration', duration, {
           job: mctx.job,
-          query,
           successStr,
         })
       } else {
-        metrics.push('pg/transaction_duration', duration, { query, successStr })
+        metrics.push('pg/transaction_duration', duration, { successStr })
       }
     }
   },
   query() {
     const ctx = getMonitoringContext()
-    if (ctx?.endpoint) {
-      metrics.inc('pg/query_count', { endpoint: ctx.endpoint })
+    if (ctx?.baseEndpoint) {
+      metrics.inc('pg/query_count', { baseEndpoint: ctx.baseEndpoint })
     } else if (ctx?.job) {
       metrics.inc('pg/query_count', { job: ctx.job })
     } else {
