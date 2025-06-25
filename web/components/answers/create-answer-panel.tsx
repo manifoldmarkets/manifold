@@ -4,7 +4,7 @@ import { MultiSort } from 'common/answer'
 import { MultiContract, SORTS } from 'common/contract'
 import { getAnswerCostFromLiquidity } from 'common/tier'
 import { useLayoutEffect, useRef, useState } from 'react'
-import { FaSearch, FaSearchPlus } from 'react-icons/fa'
+import { FaSearch } from 'react-icons/fa'
 import { api } from 'web/lib/api/api'
 import { withTracking } from 'web/lib/service/analytics'
 import { Button } from '../buttons/button'
@@ -67,6 +67,7 @@ export function SearchCreateAnswerPanel(props: {
   const canAddAnswer = props.canAddAnswer
 
   const [isSubmitting, setIsSubmitting] = useState(false)
+  const [isAddingAnswer, setIsAddingAnswer] = useState(false)
 
   const canSubmit = text && !isSubmitting
 
@@ -84,6 +85,15 @@ export function SearchCreateAnswerPanel(props: {
 
       setIsSubmitting(false)
       setSort('new')
+    }
+  }
+
+  const handleAddAnswerClick = () => {
+    if (!text) {
+      setIsAddingAnswer(true)
+      inputRef.current?.focus()
+    } else {
+      submitAnswer()
     }
   }
 
@@ -106,22 +116,32 @@ export function SearchCreateAnswerPanel(props: {
           <Input
             value={text}
             ref={inputRef}
-            onChange={(e) => setText(e.target.value)}
+            onChange={(e) => {
+              setText(e.target.value)
+              if (isAddingAnswer) {
+                setIsAddingAnswer(false)
+              }
+            }}
             className="!bg-canvas-50 !h-8 w-full flex-grow !rounded-full !pl-7 !text-sm"
             placeholder={
-              canAddAnswer ? 'Search or Add answers' : 'Search answers'
+              isAddingAnswer
+                ? 'Enter new answer'
+                : canAddAnswer
+                ? 'Search or add answer'
+                : 'Search answers'
             }
-            onBlur={() => !text && setIsSearchOpen?.(false)}
+            onBlur={() => {
+              if (!text) {
+                setIsSearchOpen?.(false)
+                setIsAddingAnswer(false)
+              }
+            }}
           />
-          {canAddAnswer ? (
-            <FaSearchPlus className="text-ink-400 dark:text-ink-500 absolute left-2 top-2 h-4 w-4 " />
-          ) : (
-            <FaSearch className="text-ink-400 dark:text-ink-500 absolute left-2 top-2 h-4 w-4" />
-          )}
+          <FaSearch className="text-ink-400 dark:text-ink-500 absolute left-2 top-2 h-4 w-4" />
           {(text || canAddAnswer) && (
             <Row
               ref={buttonsRef}
-              className="absolute right-1 top-0.5 items-center gap-0.5"
+              className="absolute right-1 top-0.5 h-7 items-center gap-0.5 "
             >
               {text && (
                 <button
@@ -132,24 +152,28 @@ export function SearchCreateAnswerPanel(props: {
                 </button>
               )}
 
-              {canAddAnswer && text && (
+              {canAddAnswer && (
                 <Button
-                  className="!rounded-full"
+                  className=" !rounded-full"
                   size="2xs"
+                  color={text ? 'indigo' : 'indigo-outline'}
                   loading={isSubmitting}
-                  disabled={!canSubmit}
-                  onClick={withTracking(submitAnswer, 'submit answer')}
+                  onClick={withTracking(handleAddAnswerClick, 'submit answer')}
                 >
-                  <span className="font-semibold">Add</span>
-                  <span className="text-ink-200 dark:text-ink-800 ml-1">
-                    <MoneyDisplay
-                      amount={getAnswerCostFromLiquidity(
-                        contract.totalLiquidity,
-                        contract.answers.length
-                      )}
-                      isCashContract={isCashContract}
-                    />
-                  </span>
+                  <span className="">Add</span>
+                  {text ? (
+                    <span className="text-ink-200 dark:text-ink-800 ml-1">
+                      <MoneyDisplay
+                        amount={getAnswerCostFromLiquidity(
+                          contract.totalLiquidity,
+                          contract.answers.length
+                        )}
+                        isCashContract={isCashContract}
+                      />
+                    </span>
+                  ) : (
+                    <span className="ml-1">answer</span>
+                  )}
                 </Button>
               )}
             </Row>
