@@ -8,6 +8,7 @@ This directory contains the implementation of various API endpoints for the Mani
 - The `routes.ts` file serves as the main router, connecting endpoint handlers to their respective routes.
 - We use Supabase for database operations.
 - Authentication is handled using the `APIHandler` type, which automatically manages user authentication based on the schema definition.
+- The API VM is run on GCP as a single instance with 4 cores. One core is a write instance that handles all routes that write to the DB. The other cores are read-only instances and handle routes specified in `backend/api/url-map-config.yaml`.
 
 ## Mana/Sweepstakes Market Relationships
 
