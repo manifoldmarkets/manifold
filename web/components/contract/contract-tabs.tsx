@@ -666,9 +666,9 @@ export const BetsTabContent = memo(function BetsTabContent(props: {
       <div ref={scrollRef} />
 
       {/* Minimum bet amount filter */}
-      <Row className="mb-4 justify-end">
+      <Row className="mb-2">
         <Row className="items-center gap-1">
-          <span className="text-ink-400 text-sm">Min amount:</span>
+          <span className="text-ink-500 text-sm">Min amount:</span>
           <DropdownMenu
             items={generateFilterDropdownItems(
               minAmountOptions.map((option, i) => ({
@@ -687,7 +687,7 @@ export const BetsTabContent = memo(function BetsTabContent(props: {
               }
             )}
             buttonContent={
-              <Row className="text-ink-600 w-28 items-center text-sm">
+              <Row className="text-ink-700 w-28 items-center text-sm">
                 <span className="whitespace-nowrap">
                   {minAmountOptions[minAmountFilterIndex].label}
                 </span>
