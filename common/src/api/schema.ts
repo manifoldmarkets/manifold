@@ -231,18 +231,7 @@ export const API = (_apiTypeCheck = {
       })
       .strict(),
   },
-  'get-comment': {
-    method: 'GET',
-    visibility: 'public',
-    authed: false,
-    cache: LIGHT_CACHE_STRATEGY,
-    returns: {} as { comment: ContractComment | null },
-    props: z
-      .object({
-        commentId: z.string(),
-      })
-      .strict(),
-  },
+
   bet: {
     method: 'POST',
     visibility: 'public',

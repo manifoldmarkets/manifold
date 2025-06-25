@@ -26,7 +26,7 @@ import { pinComment } from './pin-comment'
 import { getManagrams } from './get-managrams'
 import { getGroups } from './get-groups'
 import { getComments } from './get-comments'
-import { getComment } from './get-comment'
+
 import { getBetPointsBetween, getBets } from './get-bets'
 import { getLiteUser, getUser } from './get-user'
 import { getUsers } from './get-users'
@@ -196,7 +196,7 @@ export const handlers: { [k in APIPath]: APIHandler<k> } = {
   'hide-comment': hideComment,
   'pin-comment': pinComment,
   comments: getComments,
-  'get-comment': getComment,
+
   market: createMarket,
   'market/:contractId/group': addOrRemoveTopicFromContract,
   'market/:contractId/groups': getContractTopics,
