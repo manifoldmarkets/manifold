@@ -15,6 +15,25 @@ const SWITCHBOARD = new Switchboard()
 // if a connection doesn't ping for this long, we assume the other side is toast
 const CONNECTION_TIMEOUT_MS = 60 * 1000
 
+// Categorize topics to avoid unbounded metric cardinality
+function getTopicCategory(topic: string): string {
+  if (topic.startsWith('answer/')) {
+    return 'answer'
+  } else if (topic.startsWith('contract/')) {
+    return 'contract'
+  } else if (topic.startsWith('user/')) {
+    return 'user'  
+  } else if (topic.startsWith('private-user/')) {
+    return 'private-user'
+  } else if (topic === 'global' || topic.startsWith('global/')) {
+    return 'global'
+  } else if (topic.startsWith('post/')) {
+    return 'post'
+  } else {
+    return 'other'
+  }
+}
+
 export class MessageParseError extends Error {
   details?: unknown
   constructor(message: string, details?: unknown) {
@@ -114,7 +133,9 @@ export function broadcastMulti(topics: string[], data: BroadcastPayload) {
   for (const topic of topics) {
     const msg = { type: 'broadcast', topic, data }
     sendToSubscribers(topic, msg)
-    metrics.inc('ws/broadcasts_sent', { topic })
+    // Categorize topics to avoid unbounded cardinality
+    const topicCategory = getTopicCategory(topic)
+    metrics.inc('ws/broadcasts_sent', { category: topicCategory })
   }
 }
 
