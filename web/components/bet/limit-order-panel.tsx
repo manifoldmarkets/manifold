@@ -77,7 +77,7 @@ export default function LimitOrderPanel(props: {
   expiration?: number
   onLimitOrderClick?: (params: {
     outcome: 'YES' | 'NO'
-    amount: number
+    shares: number
     limitProb: number
     originalBet: LimitBet
   }) => void

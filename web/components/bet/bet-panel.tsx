@@ -703,21 +703,40 @@ export const BuyPanelBody = (
   }, [cancelDismissTimerRef, cancelDismissTimerFn])
 
   // Handle clicking on limit orders to prefill bet panel
-  const handleLimitOrderClick = useEvent((params: {
-    outcome: 'YES' | 'NO'
-    amount: number
-    limitProb: number
-    originalBet: LimitBet
-  }) => {
-    const { outcome: fillOutcome, amount: fillAmount } = params
-    
-    // Set the opposite outcome and amount
-    setOutcome(fillOutcome)
-    setBetAmount(fillAmount)
-    
-    // Cancel any existing dismiss timer
-    cancelDismissTimerFn()
-  })
+  const handleLimitOrderClick = useEvent(
+    (params: {
+      outcome: 'YES' | 'NO'
+      shares: number
+      limitProb: number
+      originalBet: LimitBet
+    }) => {
+      const { outcome: fillOutcome, shares } = params
+
+      const oppositeOutcome = fillOutcome === 'YES' ? 'NO' : 'YES'
+
+      // Set the opposite outcome and amount
+      setOutcome(oppositeOutcome)
+
+      const amount = calculateCpmmAmountToBuyShares(
+        contract,
+        shares,
+        oppositeOutcome,
+        unfilledBets,
+        balanceByUserId,
+        multiProps?.answerToBuy
+      )
+
+      if (amount && isFinite(amount)) {
+        setBetAmount(amount)
+        setError(undefined) // Clear potential previous errors
+      } else {
+        toast.error('Could not calculate bet amount to fill this order')
+      }
+
+      // Cancel any existing dismiss timer
+      cancelDismissTimerFn()
+    }
+  )
 
   return (
     <>

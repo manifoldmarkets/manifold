@@ -63,7 +63,7 @@ export function LimitOrdersTable(props: {
   className?: string
   onLimitOrderClick?: (params: {
     outcome: 'YES' | 'NO'
-    amount: number
+    shares: number
     limitProb: number
     originalBet: DetailedBet
   }) => void
@@ -259,20 +259,19 @@ export function LimitOrdersTable(props: {
   // Handle clicking on a limit order to fill it
   const handleLimitOrderClick = (bet: DetailedBet) => {
     if (!onLimitOrderClick || isYourBets) return // Don't allow clicking own bets
-    
-    // Calculate the opposite outcome and appropriate amount
-    const oppositeOutcome = bet.outcome === 'YES' ? 'NO' : 'YES'
-    
+
+    const { outcome, limitProb, remainingAmount } = bet
+    if (outcome !== 'YES' && outcome !== 'NO') return
     // For a limit order at price P with remaining amount R:
-    // - If it's a YES order, someone else needs to bet NO
-    // - If it's a NO order, someone else needs to bet YES
-    // The amount to bet is approximately the remaining amount
-    // but we'll let the betting logic handle exact calculations
-    const fillAmount = Math.max(1, Math.floor(bet.remainingAmount))
-    
+    // The number of shares to fill is R / price.
+    const price = outcome === 'YES' ? limitProb : 1 - limitProb
+    if (price <= 0) return
+
+    const sharesToFill = remainingAmount / price
+
     onLimitOrderClick({
-      outcome: oppositeOutcome,
-      amount: fillAmount,
+      outcome: outcome,
+      shares: sharesToFill,
       limitProb: bet.limitProb,
       originalBet: bet,
     })
@@ -468,30 +467,32 @@ export function LimitOrdersTable(props: {
                   className={clsx(
                     isFilledOrCancelled && 'text-ink-600',
                     bet.isCancelled && 'line-through',
-                    !isYourBets && 
-                    !isFilledOrCancelled && 
-                    !isExpired && 
-                    isOpen && 
-                    bet.remainingAmount > 1 && 
-                    onLimitOrderClick && 
-                    'cursor-pointer hover:underline hover:text-primary-600',
+                    !isYourBets &&
+                      !isFilledOrCancelled &&
+                      !isExpired &&
+                      isOpen &&
+                      bet.remainingAmount > 1 &&
+                      onLimitOrderClick &&
+                      'hover:text-primary-600 cursor-pointer hover:underline'
                   )}
                   onClick={() => {
-                    if (!isYourBets && 
-                        !isFilledOrCancelled && 
-                        !isExpired && 
-                        isOpen && 
-                        bet.remainingAmount > 1 && 
-                        onLimitOrderClick) {
+                    if (
+                      !isYourBets &&
+                      !isFilledOrCancelled &&
+                      !isExpired &&
+                      isOpen &&
+                      bet.remainingAmount > 1 &&
+                      onLimitOrderClick
+                    ) {
                       handleLimitOrderClick(bet)
                     }
                   }}
                   title={
-                    !isYourBets && 
-                    !isFilledOrCancelled && 
-                    !isExpired && 
-                    isOpen && 
-                    bet.remainingAmount > 1 && 
+                    !isYourBets &&
+                    !isFilledOrCancelled &&
+                    !isExpired &&
+                    isOpen &&
+                    bet.remainingAmount > 1 &&
                     onLimitOrderClick
                       ? `Click to fill this ${bet.outcome} order`
                       : undefined
@@ -509,25 +510,25 @@ export function LimitOrdersTable(props: {
                 </div>
               </div>
 
-                              <div className="col-span-3 flex justify-end sm:col-span-2 sm:gap-1">
-                  {isYourBets && (isFilledOrCancelled || isExpired) && isOpen && (
-                    <IconButton size="2xs" onClick={() => setShowLimitModal(bet)}>
-                      <Tooltip text="Reload order with same parameters">
-                        <span className="text-ink-500">
-                          <DocumentDuplicateIcon className="h-4 w-4" />
-                        </span>
-                      </Tooltip>
-                    </IconButton>
-                  )}
-                  {isYourBets && !isFilledOrCancelled && !isExpired && isOpen && (
-                    <IconButton size="2xs" onClick={() => setShowLimitModal(bet)}>
-                      <Tooltip text="Place a new order with same parameters">
-                        <span className="text-ink-500">
-                          <DocumentDuplicateIcon className="h-4 w-4" />
-                        </span>
-                      </Tooltip>
-                    </IconButton>
-                  )}
+              <div className="col-span-3 flex justify-end sm:col-span-2 sm:gap-1">
+                {isYourBets && (isFilledOrCancelled || isExpired) && isOpen && (
+                  <IconButton size="2xs" onClick={() => setShowLimitModal(bet)}>
+                    <Tooltip text="Reload order with same parameters">
+                      <span className="text-ink-500">
+                        <DocumentDuplicateIcon className="h-4 w-4" />
+                      </span>
+                    </Tooltip>
+                  </IconButton>
+                )}
+                {isYourBets && !isFilledOrCancelled && !isExpired && isOpen && (
+                  <IconButton size="2xs" onClick={() => setShowLimitModal(bet)}>
+                    <Tooltip text="Place a new order with same parameters">
+                      <span className="text-ink-500">
+                        <DocumentDuplicateIcon className="h-4 w-4" />
+                      </span>
+                    </Tooltip>
+                  </IconButton>
+                )}
 
                 <IconButton
                   size="2xs"

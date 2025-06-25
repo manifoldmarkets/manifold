@@ -124,7 +124,7 @@ export function OrderTable(props: {
   showAnswers?: boolean
   onLimitOrderClick?: (params: {
     outcome: 'YES' | 'NO'
-    amount: number
+    shares: number
     limitProb: number
     originalBet: LimitBet
   }) => void
@@ -273,7 +273,7 @@ function OrderRow(props: {
   isYou: boolean
   onLimitOrderClick?: (params: {
     outcome: 'YES' | 'NO'
-    amount: number
+    shares: number
     limitProb: number
     originalBet: LimitBet
   }) => void
@@ -299,14 +299,19 @@ function OrderRow(props: {
   // Handle clicking on limit order to fill it
   const handleLimitOrderClick = () => {
     if (!onLimitOrderClick || isYou || filled || cancelled || expired) return
-    
-    const oppositeOutcome = outcome === 'YES' ? 'NO' : 'YES'
+    if (outcome !== 'YES' && outcome !== 'NO') return
+
     const remainingAmount = orderAmount - amount
-    const fillAmount = Math.max(1, Math.floor(remainingAmount))
-    
+    // For a limit order at price P with remaining amount R:
+    // The number of shares to fill is R / price.
+    const price = outcome === 'YES' ? limitProb : 1 - limitProb
+    if (price <= 0) return
+
+    const sharesToFill = remainingAmount / price
+
     onLimitOrderClick({
-      outcome: oppositeOutcome,
-      amount: fillAmount,
+      outcome: outcome,
+      shares: sharesToFill,
       limitProb,
       originalBet: bet,
     })
@@ -353,20 +358,16 @@ function OrderRow(props: {
       </td>
       <td
         className={clsx(
-          !isYou && 
-          !filled && 
-          !cancelled && 
-          !expired && 
-          onLimitOrderClick && 
-          'cursor-pointer hover:underline hover:text-primary-600'
+          !isYou &&
+            !filled &&
+            !cancelled &&
+            !expired &&
+            onLimitOrderClick &&
+            'hover:text-primary-600 cursor-pointer hover:underline'
         )}
         onClick={handleLimitOrderClick}
         title={
-          !isYou && 
-          !filled && 
-          !cancelled && 
-          !expired && 
-          onLimitOrderClick
+          !isYou && !filled && !cancelled && !expired && onLimitOrderClick
             ? `Click to fill this ${outcome} order`
             : undefined
         }
@@ -442,7 +443,7 @@ export function CollatedOrderTable(props: {
   }
   onLimitOrderClick?: (params: {
     outcome: 'YES' | 'NO'
-    amount: number
+    shares: number
     limitProb: number
     originalBet: LimitBet
   }) => void
@@ -498,7 +499,7 @@ function CollapsedOrderRow(props: {
   bets: LimitBet[]
   onLimitOrderClick?: (params: {
     outcome: 'YES' | 'NO'
-    amount: number
+    shares: number
     limitProb: number
     originalBet: LimitBet
   }) => void
@@ -532,16 +533,20 @@ function CollapsedOrderRow(props: {
   // Handle clicking on the total amount to fill orders
   const handleTotalClick = () => {
     if (!onLimitOrderClick || bets.length === 0) return
-    
-    const firstBet = bets[0] // Use first bet as representative
-    const oppositeOutcome = outcome === 'YES' ? 'NO' : 'YES'
-    const fillAmount = Math.max(1, Math.floor(total))
-    
+    if (outcome !== 'YES' && outcome !== 'NO') return
+
+    // For a limit order at price P with remaining amount R:
+    // The number of shares to fill is R / price.
+    const price = outcome === 'YES' ? limitProb : 1 - limitProb
+    if (price <= 0) return
+
+    const sharesToFill = total / price
+
     onLimitOrderClick({
-      outcome: oppositeOutcome,
-      amount: fillAmount,
+      outcome,
+      shares: sharesToFill,
       limitProb,
-      originalBet: firstBet,
+      originalBet: bets[0],
     })
   }
 
@@ -567,12 +572,12 @@ function CollapsedOrderRow(props: {
         />
       </div>
 
-      <div 
+      <div
         className={clsx(
-          "self-center pr-1 text-right",
-          onLimitOrderClick && 
-          total > 1 && 
-          'cursor-pointer hover:underline hover:text-primary-600'
+          'self-center pr-1 text-right',
+          onLimitOrderClick &&
+            total > 1 &&
+            'hover:text-primary-600 cursor-pointer hover:underline'
         )}
         onClick={onLimitOrderClick && total > 1 ? handleTotalClick : undefined}
         title={
@@ -679,7 +684,7 @@ export function OrderBookPanel(props: {
   }
   onLimitOrderClick?: (params: {
     outcome: 'YES' | 'NO'
-    amount: number
+    shares: number
     limitProb: number
     originalBet: LimitBet
   }) => void
