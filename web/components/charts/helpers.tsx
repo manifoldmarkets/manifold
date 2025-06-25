@@ -270,39 +270,28 @@ export const AnnotationMarker = (props: {
 }) => {
   const { x, y0, y1, onLeave, onHover, isHovered, id } = props
 
-  const scale = 0.04
-  const pinBottomPointX = x - 10
-  const pinTopCenterY = y0 - 18
-  const pinPath = `M87.084,192c-0.456-5.272-0.688-10.6-0.688-16C86.404,78.8,162.34,0,256.004,0s169.6,78.8,169.6,176
-	c0,5.392-0.232,10.728-0.688,16h0.688c0,96.184-169.6,320-169.6,320s-169.6-223.288-169.6-320H87.084z`
-
-  const transform = `translate(${pinBottomPointX}, ${pinTopCenterY}) scale(${scale})` // Adjust these values based on the actual size of your SVG
-
   return (
     <g onMouseEnter={() => onHover(id)} onMouseLeave={onLeave}>
-      <line
-        strokeWidth={isHovered ? 3 : 2}
-        strokeDasharray={isHovered ? undefined : '5, 5'}
-        className={
-          isHovered
-            ? 'dark:stroke-primary-300 stroke-primary-500 z-20'
-            : 'stroke-ink-300 dark:stroke-ink-600'
-        }
-        x1={x}
-        x2={x}
-        y1={y0 - 20}
-        y2={y1}
-      />
-      <path
-        transform={transform}
-        d={pinPath}
+      {/* Simple circle dot directly on the chart line */}
+      <circle
+        cx={x}
+        cy={y1}
+        r={isHovered ? 6 : 4}
         className={clsx(
           isHovered
-            ? 'dark:fill-primary-300 fill-primary-500 z-20'
-            : 'fill-ink-300 dark:fill-ink-600'
+            ? 'dark:fill-primary-300 fill-primary-500 dark:stroke-primary-100 stroke-primary-600'
+            : 'fill-ink-400 dark:fill-ink-500 stroke-white dark:stroke-ink-200'
         )}
-        z={isHovered ? 20 : 0}
         strokeWidth={isHovered ? 2 : 1}
+        style={{ cursor: 'pointer' }}
+      />
+      {/* Invisible larger circle for easier hover detection */}
+      <circle
+        cx={x}
+        cy={y1}
+        r={10}
+        fill="transparent"
+        style={{ cursor: 'pointer' }}
       />
     </g>
   )
