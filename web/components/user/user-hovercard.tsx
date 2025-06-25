@@ -7,7 +7,6 @@ import { Avatar } from '../widgets/avatar'
 import { FollowButton } from '../buttons/follow-button'
 import { StackedUserNames } from '../widgets/user-link'
 import { Linkify } from '../widgets/linkify'
-import { RelativeTimestampNoTooltip } from '../relative-timestamp'
 import dayjs from 'dayjs'
 import { Col } from '../layout/col'
 import { FullUser } from 'common/api/user-types'
@@ -33,6 +32,30 @@ export type UserHovercardProps = {
   children: React.ReactNode
   userId: string
   className?: string | undefined
+}
+
+function formatLastActive(lastActiveTime: number) {
+  if (lastActiveTime === 0) return 'Never'
+
+  const now = dayjs()
+  const lastActiveDate = dayjs(lastActiveTime)
+  const days = now.diff(lastActiveDate, 'day')
+
+  if (days === 0) return 'today'
+  if (days === 1) return 'yesterday'
+  if (days <= 7) return `${days} days ago`
+  if (days <= 30) {
+    const weeks = Math.floor(days / 7)
+    if (weeks === 1) return '1 week ago'
+    return `${weeks} weeks ago`
+  }
+  if (days <= 365) {
+    const months = Math.floor(days / 30)
+    if (months === 1) return '1 month ago'
+    if (months <= 12) return `${months} months ago`
+    return 'in the last year'
+  }
+  return 'over a year'
 }
 
 export function UserHovercard({
@@ -168,14 +191,7 @@ const FetchUserHovercardContent = forwardRef(
         <div className="py-1">
           <div className="text-ink-700 block px-4 py-2 text-sm">
             <span className="font-semibold">Last active:</span>{' '}
-            {lastActiveTime !== 0 ? (
-              <RelativeTimestampNoTooltip
-                time={lastActiveTime}
-                className="text-ink-700"
-              />
-            ) : (
-              'Never'
-            )}
+            {formatLastActive(lastActiveTime)}
           </div>
         </div>
       </div>
