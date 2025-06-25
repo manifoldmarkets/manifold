@@ -2,7 +2,7 @@ import { JSONContent } from '@tiptap/core'
 import { ContractComment } from 'common/comment'
 import { FLAT_COMMENT_FEE } from 'common/fees'
 import { removeUndefinedProps } from 'common/util/object'
-import { getContract, getUser, log } from 'shared/utils'
+import { getContract, getUser, getPrivateUser, log } from 'shared/utils'
 import { APIError, type APIHandler, AuthedUser } from './helpers/endpoint'
 import { anythingToRichText } from 'shared/tiptap'
 import {
@@ -221,6 +221,17 @@ export const validateComment = async (
       400,
       `Can't comment on cash contract. Please do comment on the sibling mana contract ${contract.siblingContractId}`
     )
+  }
+
+  // Check if commenter is blocked by contract creator or has blocked contract creator
+  const privateUser = await getPrivateUser(userId)
+  if (!privateUser) throw new APIError(401, 'Private user data not found')
+
+  if (privateUser.blockedUserIds.includes(contract.creatorId)) {
+    throw new APIError(403, `You have blocked the creator of this contract`)
+  }
+  if (privateUser.blockedByUserIds.includes(contract.creatorId)) {
+    throw new APIError(403, `You have been blocked by the creator of this contract`)
   }
 
   const contentJson = content || anythingToRichText({ html, markdown })
