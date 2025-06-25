@@ -61,6 +61,12 @@ export function LimitOrdersTable(props: {
   includeCancelled: boolean
   filter: BetFilter
   className?: string
+  onLimitOrderClick?: (params: {
+    outcome: 'YES' | 'NO'
+    amount: number
+    limitProb: number
+    originalBet: DetailedBet
+  }) => void
 }) {
   const {
     user,
@@ -71,6 +77,7 @@ export function LimitOrdersTable(props: {
     includeFilled,
     includeCancelled,
     filter,
+    onLimitOrderClick,
   } = props
 
   const { data, loading } = useAPIGetter(
@@ -248,6 +255,29 @@ export function LimitOrdersTable(props: {
   const openContractModal = (contractId: string) =>
     setContractModalId(contractId)
   const closeContractModal = () => setContractModalId(null)
+
+  // Handle clicking on a limit order to fill it
+  const handleLimitOrderClick = (bet: DetailedBet) => {
+    if (!onLimitOrderClick || isYourBets) return // Don't allow clicking own bets
+    
+    // Calculate the opposite outcome and appropriate amount
+    const oppositeOutcome = bet.outcome === 'YES' ? 'NO' : 'YES'
+    
+    // For a limit order at price P with remaining amount R:
+    // - If it's a YES order, someone else needs to bet NO
+    // - If it's a NO order, someone else needs to bet YES
+    // The amount to bet is approximately the remaining amount
+    // but we'll let the betting logic handle exact calculations
+    const fillAmount = Math.max(1, Math.floor(bet.remainingAmount))
+    
+    onLimitOrderClick({
+      outcome: oppositeOutcome,
+      amount: fillAmount,
+      limitProb: bet.limitProb,
+      originalBet: bet,
+    })
+  }
+
   if (loading) {
     return (
       <Col className="divide-ink-300 mt-6 divide-y">
@@ -437,8 +467,35 @@ export function LimitOrdersTable(props: {
                 <div
                   className={clsx(
                     isFilledOrCancelled && 'text-ink-600',
-                    bet.isCancelled && 'line-through'
+                    bet.isCancelled && 'line-through',
+                    !isYourBets && 
+                    !isFilledOrCancelled && 
+                    !isExpired && 
+                    isOpen && 
+                    bet.remainingAmount > 1 && 
+                    onLimitOrderClick && 
+                    'cursor-pointer hover:underline hover:text-primary-600',
                   )}
+                  onClick={() => {
+                    if (!isYourBets && 
+                        !isFilledOrCancelled && 
+                        !isExpired && 
+                        isOpen && 
+                        bet.remainingAmount > 1 && 
+                        onLimitOrderClick) {
+                      handleLimitOrderClick(bet)
+                    }
+                  }}
+                  title={
+                    !isYourBets && 
+                    !isFilledOrCancelled && 
+                    !isExpired && 
+                    isOpen && 
+                    bet.remainingAmount > 1 && 
+                    onLimitOrderClick
+                      ? `Click to fill this ${bet.outcome} order`
+                      : undefined
+                  }
                 >
                   {Math.floor(bet.remainingAmount)}/
                   {Math.floor(bet.orderAmount)}
@@ -452,25 +509,25 @@ export function LimitOrdersTable(props: {
                 </div>
               </div>
 
-              <div className="col-span-3 flex justify-end sm:col-span-2 sm:gap-1">
-                {isYourBets && (isFilledOrCancelled || isExpired) && isOpen && (
-                  <IconButton size="2xs" onClick={() => setShowLimitModal(bet)}>
-                    <Tooltip text="Reload order with same parameters">
-                      <span className="text-ink-500">
-                        <DocumentDuplicateIcon className="h-4 w-4" />
-                      </span>
-                    </Tooltip>
-                  </IconButton>
-                )}
-                {isYourBets && !isFilledOrCancelled && !isExpired && isOpen && (
-                  <IconButton size="2xs" onClick={() => setShowLimitModal(bet)}>
-                    <Tooltip text="Place a new order with same parameters">
-                      <span className="text-ink-500">
-                        <DocumentDuplicateIcon className="h-4 w-4" />
-                      </span>
-                    </Tooltip>
-                  </IconButton>
-                )}
+                              <div className="col-span-3 flex justify-end sm:col-span-2 sm:gap-1">
+                  {isYourBets && (isFilledOrCancelled || isExpired) && isOpen && (
+                    <IconButton size="2xs" onClick={() => setShowLimitModal(bet)}>
+                      <Tooltip text="Reload order with same parameters">
+                        <span className="text-ink-500">
+                          <DocumentDuplicateIcon className="h-4 w-4" />
+                        </span>
+                      </Tooltip>
+                    </IconButton>
+                  )}
+                  {isYourBets && !isFilledOrCancelled && !isExpired && isOpen && (
+                    <IconButton size="2xs" onClick={() => setShowLimitModal(bet)}>
+                      <Tooltip text="Place a new order with same parameters">
+                        <span className="text-ink-500">
+                          <DocumentDuplicateIcon className="h-4 w-4" />
+                        </span>
+                      </Tooltip>
+                    </IconButton>
+                  )}
 
                 <IconButton
                   size="2xs"

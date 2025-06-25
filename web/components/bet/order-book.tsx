@@ -122,8 +122,14 @@ export function OrderTable(props: {
     | MultiContract
   isYou?: boolean
   showAnswers?: boolean
+  onLimitOrderClick?: (params: {
+    outcome: 'YES' | 'NO'
+    amount: number
+    limitProb: number
+    originalBet: LimitBet
+  }) => void
 }) {
-  const { limitBets, contract, isYou, showAnswers } = props
+  const { limitBets, contract, isYou, showAnswers, onLimitOrderClick } = props
   const answers =
     showAnswers && contract.mechanism === 'cpmm-multi-1'
       ? contract.answers.filter((a) =>
@@ -196,6 +202,7 @@ export function OrderTable(props: {
                       bet={bet}
                       contract={contract}
                       isYou={!!isYou}
+                      onLimitOrderClick={onLimitOrderClick}
                     />
                   ))}
                 </tbody>
@@ -246,6 +253,7 @@ export function OrderTable(props: {
               bet={bet}
               contract={contract}
               isYou={!!isYou}
+              onLimitOrderClick={onLimitOrderClick}
             />
           ))}
         </tbody>
@@ -263,8 +271,14 @@ function OrderRow(props: {
     | MultiContract
   bet: LimitBet
   isYou: boolean
+  onLimitOrderClick?: (params: {
+    outcome: 'YES' | 'NO'
+    amount: number
+    limitProb: number
+    originalBet: LimitBet
+  }) => void
 }) {
-  const { contract, bet, isYou } = props
+  const { contract, bet, isYou, onLimitOrderClick } = props
   const { orderAmount, amount, limitProb, outcome } = bet
   const isPseudoNumeric = contract.outcomeType === 'PSEUDO_NUMERIC'
   const isBinaryMC = isBinaryMulti(contract)
@@ -281,6 +295,22 @@ function OrderRow(props: {
   const expired = bet.expiresAt && bet.expiresAt < Date.now()
   const filled = bet.amount >= bet.orderAmount
   const cancelled = bet.isCancelled
+
+  // Handle clicking on limit order to fill it
+  const handleLimitOrderClick = () => {
+    if (!onLimitOrderClick || isYou || filled || cancelled || expired) return
+    
+    const oppositeOutcome = outcome === 'YES' ? 'NO' : 'YES'
+    const remainingAmount = orderAmount - amount
+    const fillAmount = Math.max(1, Math.floor(remainingAmount))
+    
+    onLimitOrderClick({
+      outcome: oppositeOutcome,
+      amount: fillAmount,
+      limitProb,
+      originalBet: bet,
+    })
+  }
 
   return (
     <tr>
@@ -321,7 +351,26 @@ function OrderRow(props: {
           ? formatPercent(getBinaryMCProb(limitProb, outcome))
           : formatPercent(limitProb)}
       </td>
-      <td>
+      <td
+        className={clsx(
+          !isYou && 
+          !filled && 
+          !cancelled && 
+          !expired && 
+          onLimitOrderClick && 
+          'cursor-pointer hover:underline hover:text-primary-600'
+        )}
+        onClick={handleLimitOrderClick}
+        title={
+          !isYou && 
+          !filled && 
+          !cancelled && 
+          !expired && 
+          onLimitOrderClick
+            ? `Click to fill this ${outcome} order`
+            : undefined
+        }
+      >
         <MoneyDisplay
           amount={orderAmount - amount}
           isCashContract={isCashContract}
@@ -391,8 +440,14 @@ export function CollatedOrderTable(props: {
       pseudonymColor: string
     }
   }
+  onLimitOrderClick?: (params: {
+    outcome: 'YES' | 'NO'
+    amount: number
+    limitProb: number
+    originalBet: LimitBet
+  }) => void
 }) {
-  const { contract, side, pseudonym } = props
+  const { contract, side, pseudonym, onLimitOrderClick } = props
   const limitBets = props.limitBets.filter(
     (b) => !b.expiresAt || b.expiresAt > Date.now()
   )
@@ -424,6 +479,7 @@ export function CollatedOrderTable(props: {
             key={prob}
             limitProb={Number(prob)}
             bets={bets}
+            onLimitOrderClick={onLimitOrderClick}
           />
         ))}
       </div>
@@ -440,8 +496,14 @@ function CollapsedOrderRow(props: {
     | MultiContract
   limitProb: number
   bets: LimitBet[]
+  onLimitOrderClick?: (params: {
+    outcome: 'YES' | 'NO'
+    amount: number
+    limitProb: number
+    originalBet: LimitBet
+  }) => void
 }) {
-  const { contract, limitProb, bets } = props
+  const { contract, limitProb, bets, onLimitOrderClick } = props
   const { outcome } = bets[0]
   const isPseudoNumeric = contract.outcomeType === 'PSEUDO_NUMERIC'
   const isBinaryMC = isBinaryMulti(contract)
@@ -467,6 +529,22 @@ function CollapsedOrderRow(props: {
 
   const [collapsed, setCollapsed] = useState(true)
 
+  // Handle clicking on the total amount to fill orders
+  const handleTotalClick = () => {
+    if (!onLimitOrderClick || bets.length === 0) return
+    
+    const firstBet = bets[0] // Use first bet as representative
+    const oppositeOutcome = outcome === 'YES' ? 'NO' : 'YES'
+    const fillAmount = Math.max(1, Math.floor(total))
+    
+    onLimitOrderClick({
+      outcome: oppositeOutcome,
+      amount: fillAmount,
+      limitProb,
+      originalBet: firstBet,
+    })
+  }
+
   return (
     <>
       <div className="self-center">
@@ -489,7 +567,20 @@ function CollapsedOrderRow(props: {
         />
       </div>
 
-      <div className="self-center pr-1 text-right">
+      <div 
+        className={clsx(
+          "self-center pr-1 text-right",
+          onLimitOrderClick && 
+          total > 1 && 
+          'cursor-pointer hover:underline hover:text-primary-600'
+        )}
+        onClick={onLimitOrderClick && total > 1 ? handleTotalClick : undefined}
+        title={
+          onLimitOrderClick && total > 1
+            ? `Click to fill these ${outcome} orders`
+            : undefined
+        }
+      >
         <MoneyDisplay
           amount={total}
           numberType="short"
@@ -586,8 +677,14 @@ export function OrderBookPanel(props: {
       pseudonymColor: string
     }
   }
+  onLimitOrderClick?: (params: {
+    outcome: 'YES' | 'NO'
+    amount: number
+    limitProb: number
+    originalBet: LimitBet
+  }) => void
 }) {
-  const { contract, answer, showTitle, pseudonym } = props
+  const { contract, answer, showTitle, pseudonym, onLimitOrderClick } = props
   const limitBets = props.limitBets.filter(
     (b) => (!b.expiresAt || b.expiresAt > Date.now()) && !b.silent
   )
@@ -626,12 +723,14 @@ export function OrderBookPanel(props: {
           contract={contract}
           side="YES"
           pseudonym={pseudonym}
+          onLimitOrderClick={onLimitOrderClick}
         />
         <CollatedOrderTable
           limitBets={noBets}
           contract={contract}
           side="NO"
           pseudonym={pseudonym}
+          onLimitOrderClick={onLimitOrderClick}
         />
       </Row>
 

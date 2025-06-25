@@ -75,6 +75,12 @@ export default function LimitOrderPanel(props: {
   }
   initialProb?: number
   expiration?: number
+  onLimitOrderClick?: (params: {
+    outcome: 'YES' | 'NO'
+    amount: number
+    limitProb: number
+    originalBet: LimitBet
+  }) => void
 }) {
   const {
     contract,
@@ -86,6 +92,7 @@ export default function LimitOrderPanel(props: {
     onBuySuccess,
     pseudonym,
     expiration,
+    onLimitOrderClick,
   } = props
   const { pseudonymName, pseudonymColor } =
     pseudonym?.[outcome as 'YES' | 'NO'] ?? {}

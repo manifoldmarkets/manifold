@@ -100,6 +100,9 @@ type BuyPanelProps = {
   children?: React.ReactNode
   alwaysShowOutcomeSwitcher?: boolean
   className?: string
+  prefillAmount?: number
+  prefillOutcome?: BinaryOutcomes
+  onPrefillConsumed?: () => void
 }
 
 export function BuyPanel(
@@ -116,6 +119,9 @@ export function BuyPanel(
     children,
     pseudonym,
     className,
+    prefillAmount,
+    prefillOutcome,
+    onPrefillConsumed,
   } = props
 
   const isPseudoNumeric = contract.outcomeType === 'PSEUDO_NUMERIC'
@@ -131,6 +137,14 @@ export function BuyPanel(
       setIsPanelBodyVisible(true)
     }
   }, [initialOutcome])
+
+  // Handle prefill
+  useEffect(() => {
+    if (prefillOutcome && prefillAmount) {
+      setOutcome(prefillOutcome)
+      setIsPanelBodyVisible(true)
+    }
+  }, [prefillOutcome, prefillAmount])
 
   function onOutcomeChoice(choice: 'YES' | 'NO') {
     if (outcome === choice && !initialOutcome) {
@@ -222,6 +236,9 @@ export const BuyPanelBody = (
     className,
     children,
     cancelDismissTimerRef,
+    prefillAmount,
+    prefillOutcome,
+    onPrefillConsumed,
   } = props
 
   const user = useUser()
@@ -274,6 +291,16 @@ export const BuyPanelBody = (
   const [betAmount, setBetAmount] = useState<number | undefined>(
     initialBetAmount
   )
+
+  // Handle prefill
+  useEffect(() => {
+    if (prefillAmount && prefillOutcome && outcome === prefillOutcome) {
+      setBetAmount(prefillAmount)
+      if (onPrefillConsumed) {
+        onPrefillConsumed()
+      }
+    }
+  }, [prefillAmount, prefillOutcome, outcome, onPrefillConsumed])
 
   const [error, setError] = useState<string | undefined>()
   const [isSubmitting, setIsSubmitting] = useState(false)
@@ -675,6 +702,23 @@ export const BuyPanelBody = (
     }
   }, [cancelDismissTimerRef, cancelDismissTimerFn])
 
+  // Handle clicking on limit orders to prefill bet panel
+  const handleLimitOrderClick = useEvent((params: {
+    outcome: 'YES' | 'NO'
+    amount: number
+    limitProb: number
+    originalBet: LimitBet
+  }) => {
+    const { outcome: fillOutcome, amount: fillAmount } = params
+    
+    // Set the opposite outcome and amount
+    setOutcome(fillOutcome)
+    setBetAmount(fillAmount)
+    
+    // Cancel any existing dismiss timer
+    cancelDismissTimerFn()
+  })
+
   return (
     <>
       <Col className={clsx(className, 'relative rounded-xl px-4 py-2')}>
@@ -908,6 +952,7 @@ export const BuyPanelBody = (
               balanceByUserId={balanceByUserId}
               outcome={outcome}
               pseudonym={props.pseudonym}
+              onLimitOrderClick={handleLimitOrderClick}
             />
           </>
         )}
@@ -1157,6 +1202,7 @@ export const BuyPanelBody = (
           )}
           answer={multiProps?.answerToBuy}
           pseudonym={props.pseudonym}
+          onLimitOrderClick={handleLimitOrderClick}
         />
       )}
     </>
