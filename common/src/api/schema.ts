@@ -2377,6 +2377,16 @@ export const API = (_apiTypeCheck = {
       .strict(),
     returns: {} as { success: boolean },
   },
+  'get-user-last-active-time': {
+    method: 'GET',
+    visibility: 'undocumented',
+    authed: true,
+    cache: LIGHT_CACHE_STRATEGY,
+    props: z.object({
+      userId: z.string(),
+    }).strict(),
+    returns: {} as { lastActiveTime: number | null },
+  },
 } as const)
 
 export type APIPath = keyof typeof API

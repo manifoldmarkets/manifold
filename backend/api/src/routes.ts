@@ -175,6 +175,7 @@ import { dismissUserReport } from './dismiss-user-report'
 import { followPost } from './follow-post'
 import { editPostComment, updatePostComment } from './edit-post-comment'
 import { getUserComments } from './get-comments'
+import { getUserLastActiveTime } from './get-user-last-active-time'
 export const handlers: { [k in APIPath]: APIHandler<k> } = {
   'refresh-all-clients': refreshAllClients,
   bet: placeBet,
@@ -360,4 +361,5 @@ export const handlers: { [k in APIPath]: APIHandler<k> } = {
   'follow-post': followPost,
   'edit-post-comment': editPostComment,
   'user-comments': getUserComments,
+  'get-user-last-active-time': getUserLastActiveTime,
 } as const

@@ -11,8 +11,8 @@ import { RelativeTimestampNoTooltip } from '../relative-timestamp'
 import dayjs from 'dayjs'
 import { Col } from '../layout/col'
 import { FullUser } from 'common/api/user-types'
-import { TRADE_TERM } from 'common/envs/constants'
 import { SimpleCopyTextButton } from 'web/components/buttons/copy-link-button'
+import { useAPIGetter } from 'web/hooks/use-api-getter'
 import {
   autoUpdate,
   flip,
@@ -97,6 +97,9 @@ const FetchUserHovercardContent = forwardRef(
     const followingIds = useFollows(userId)
     const followerIds = useFollowers(userId)
     const isMod = useAdminOrMod()
+    const { data: lastActiveData } = useAPIGetter('get-user-last-active-time', {
+      userId,
+    })
 
     return user ? (
       <div
@@ -161,10 +164,10 @@ const FetchUserHovercardContent = forwardRef(
         {isMod && (
           <div className="py-1">
             <div className="text-ink-700 block px-4 py-2 text-sm">
-              <span className="font-semibold">Last {TRADE_TERM}:</span>{' '}
-              {user.lastBetTime ? (
+              <span className="font-semibold">Last active:</span>{' '}
+              {lastActiveData?.lastActiveTime ? (
                 <RelativeTimestampNoTooltip
-                  time={user.lastBetTime}
+                  time={lastActiveData.lastActiveTime}
                   className="text-ink-700"
                 />
               ) : (
