@@ -4,10 +4,19 @@ import { APIError } from 'common/api/utils'
 
 export const models = {
   flash: 'gemini-2.0-flash' as const,
+  flashThinking: 'gemini-2.5-flash' as const,
   pro: 'gemini-2.5-pro-preview-06-05' as const,
 }
 
 export type model_types = (typeof models)[keyof typeof models]
+
+export const promptGeminiParsingJson = async <T>(
+  prompt: string,
+  options: { system?: string; model?: model_types } = {}
+): Promise<T> => {
+  const response = await promptGemini(prompt, options)
+  return parseGeminiResponseAsJson(response)
+}
 
 export const promptGemini = async (
   prompt: string,

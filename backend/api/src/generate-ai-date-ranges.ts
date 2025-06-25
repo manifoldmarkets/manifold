@@ -1,6 +1,5 @@
 import { APIHandler } from './helpers/endpoint'
 import { track } from 'shared/analytics'
-import { models, promptClaudeParsingJson } from 'shared/helpers/claude'
 import { log } from 'shared/utils'
 import { rateLimitByUser } from './helpers/rate-limit'
 import { HOUR_MS } from 'common/util/time'
@@ -8,6 +7,7 @@ import {
   assertMidpointsAreAscending,
   assertMidpointsAreUnique,
 } from './generate-ai-numeric-ranges'
+import { promptGeminiParsingJson, models } from 'shared/helpers/gemini'
 // Shared guidelines for both threshold and bucket ranges
 // Base system prompt template that both threshold and bucket prompts will use
 
@@ -124,12 +124,12 @@ export const generateAIDateRanges: APIHandler<'generate-ai-date-ranges'> =
 
       // Generate both bucket and threshold ranges in parallel
       const [buckets, thresholds] = await Promise.all([
-        promptClaudeParsingJson<DateRangeResponse>(prompt, {
-          model: models.sonnet,
+        promptGeminiParsingJson<DateRangeResponse>(prompt, {
+          model: models.flash,
           system: bucketSystemPrompt,
         }),
-        promptClaudeParsingJson<DateRangeResponse>(prompt, {
-          model: models.sonnet,
+        promptGeminiParsingJson<DateRangeResponse>(prompt, {
+          model: models.flash,
           system: thresholdSystemPrompt,
         }),
       ])
@@ -183,8 +183,8 @@ export const regenerateDateMidpoints: APIHandler<'regenerate-date-midpoints'> =
 
       Return ONLY an array of midpoint dates, one for each range, without any other text or formatting.`
 
-      const result = await promptClaudeParsingJson<string[]>(prompt, {
-        model: models.sonnet,
+      const result = await promptGeminiParsingJson<string[]>(prompt, {
+        model: models.flash,
       })
       log('claudeResponse', result)
 
