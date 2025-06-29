@@ -97,6 +97,7 @@ export const BOT_USERNAMES = [
   'Anatolii',
   'JeremyK',
   'Botmageddon',
+  'GenAIBot',
   'SmartBot',
   'ShifraGazsi',
   'NiciusBot',
