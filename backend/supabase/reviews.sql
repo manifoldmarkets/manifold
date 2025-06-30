@@ -14,3 +14,21 @@ create table if not exists
 drop index if exists reviews_pkey;
 
 create unique index reviews_pkey on public.reviews using btree (reviewer_id, market_id);
+
+-- Enable Row Level Security
+alter table reviews enable row level security;
+
+-- Policy: Users can only read reviews (public read access)
+create policy "Reviews are publicly readable" on reviews
+  for select using (true);
+
+-- Policy: Only authenticated users can insert/update their own reviews
+create policy "Users can insert their own reviews" on reviews
+  for insert with check (auth.uid()::text = reviewer_id);
+
+create policy "Users can update their own reviews" on reviews
+  for update using (auth.uid()::text = reviewer_id);
+
+-- Policy: No public delete access (only through API with proper checks)
+create policy "No public delete access" on reviews
+  for delete using (false);
