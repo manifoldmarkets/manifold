@@ -26,6 +26,10 @@ export const ReviewPanel = (props: {
   onSubmit: (rating: Rating) => void
   resolverUser: DisplayUser | undefined
   currentUser: User | null | undefined
+  existingReview?: {
+    rating: Rating
+    content?: any
+  }
 }) => {
   const {
     marketId,
@@ -35,8 +39,9 @@ export const ReviewPanel = (props: {
     onSubmit,
     resolverUser,
     currentUser,
+    existingReview,
   } = props
-  const [rating, setRating] = useState<Rating>(0)
+  const [rating, setRating] = useState<Rating>(existingReview?.rating ?? 0)
   const tipChoices = {
     [formatMoney(0)]: 0,
     [formatMoney(25)]: 25,
@@ -54,6 +59,7 @@ export const ReviewPanel = (props: {
   const editor = useTextEditor({
     size: 'sm',
     placeholder: 'Add details (optional)',
+    defaultValue: existingReview?.content,
   })
 
   const canTip =
@@ -129,7 +135,9 @@ export const ReviewPanel = (props: {
     <GradientContainer className={className}>
       <Col className="gap-4">
         <Col className="items-center gap-2">
-          <h2 className="text-primary-500 text-xl">Rate {author}</h2>
+          <h2 className="text-primary-500 text-xl">
+            {existingReview ? 'Update your rating of' : 'Rate'} {author}
+          </h2>
           <span className="text-sm italic">
             Did they honestly resolve the question?
           </span>
@@ -169,7 +177,7 @@ export const ReviewPanel = (props: {
             loading={isSubmitting}
             onClick={handleSubmit}
           >
-            Submit
+            {existingReview ? 'Update' : 'Submit'}
           </Button>
         </Row>
       </Col>

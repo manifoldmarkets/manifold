@@ -58,6 +58,14 @@ export function DangerZone(props: {
     mechanism !== 'none' &&
     !hasReviewed
 
+  const canUpdateReview =
+    !!user &&
+    !isCreator &&
+    isResolved &&
+    outcomeType !== 'STONK' &&
+    mechanism !== 'none' &&
+    hasReviewed
+
   const canDelete =
     isCreator &&
     isResolved &&
@@ -107,7 +115,7 @@ export function DangerZone(props: {
   const highlightResolver = isClosed && !showResolver
 
   if (!user) return null
-  if (!canReview && !canDelete && !canResolve && !canUnresolve) return null
+  if (!canReview && !canUpdateReview && !canDelete && !canResolve && !canUnresolve) return null
 
   return (
     <Row className="my-2 w-full flex-wrap justify-end gap-2">
@@ -119,6 +127,17 @@ export function DangerZone(props: {
           onClick={() => setShowReview(true)}
         >
           Review
+        </Button>
+      )}
+
+      {canUpdateReview && !showReview && (
+        <Button
+          color="gray"
+          size="2xs"
+          className="self-end"
+          onClick={() => setShowReview(true)}
+        >
+          Update Review
         </Button>
       )}
 
