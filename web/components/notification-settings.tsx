@@ -144,6 +144,7 @@ const yourMarkets: NotificationSectionData = {
     'vote_on_your_contract',
     'your_poll_closed',
     'review_on_your_market',
+    'review_updated_on_your_market',
     'market_follows',
   ],
 }
