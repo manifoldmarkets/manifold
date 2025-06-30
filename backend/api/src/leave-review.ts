@@ -2,7 +2,7 @@ import { z } from 'zod'
 import { APIError, authEndpoint, validate } from './helpers/endpoint'
 import { createSupabaseDirectClient } from 'shared/supabase/init'
 import { contentSchema } from 'common/api/zod-types'
-import { createMarketReviewedNotification } from 'shared/create-notification'
+import { createMarketReviewedNotification, createMarketReviewUpdatedNotification } from 'shared/create-notification'
 import { parseJsonContentToText } from 'common/util/parse'
 import { getContract, getUser } from 'shared/utils'
 
@@ -38,6 +38,11 @@ export const leavereview = authEndpoint(async (req, auth) => {
     throw new APIError(403, `You are banned`)
   }
 
+  const existingReview = await pg.oneOrNone(
+    `select * from reviews where market_id = $1 and reviewer_id = $2`,
+    [marketId, auth.uid]
+  )
+
   await pg.query(
     `insert into reviews (market_id, reviewer_id, vendor_id, rating, content)
      values ($1, $2, $3, $4, $5)
@@ -46,14 +51,25 @@ export const leavereview = authEndpoint(async (req, auth) => {
     [marketId, auth.uid, creatorId, rating, review]
   )
 
-  await createMarketReviewedNotification(
-    creatorId,
-    reviewer,
-    contract,
-    rating,
-    parseJsonContentToText(review ?? ''),
-    pg
-  )
+  if (existingReview) {
+    await createMarketReviewUpdatedNotification(
+      creatorId,
+      reviewer,
+      contract,
+      rating,
+      parseJsonContentToText(review ?? ''),
+      pg
+    )
+  } else {
+    await createMarketReviewedNotification(
+      creatorId,
+      reviewer,
+      contract,
+      rating,
+      parseJsonContentToText(review ?? ''),
+      pg
+    )
+  }
 
   return { success: true }
 })

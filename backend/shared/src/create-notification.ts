@@ -1419,6 +1419,52 @@ export const createMarketReviewedNotification = async (
     await insertNotificationToSupabase(notification, pg)
   }
 }
+
+export const createMarketReviewUpdatedNotification = async (
+  userId: string,
+  reviewer: User,
+  contract: Contract,
+  rating: number,
+  review: string,
+  pg: SupabaseDirectClient
+) => {
+  const privateUser = await getPrivateUser(userId)
+  if (!privateUser) return
+  const id = nanoid(6)
+  const reason = 'review_updated_on_your_market'
+  const { sendToBrowser } = getNotificationDestinationsForUser(
+    privateUser,
+    reason
+  )
+  if (sendToBrowser) {
+    const notification: Notification = {
+      id,
+      userId: privateUser.id,
+      reason,
+      createdTime: Date.now(),
+      isSeen: false,
+      sourceId: id,
+      sourceType: 'market_review',
+      sourceUpdateType: 'updated',
+      sourceUserName: reviewer.name,
+      sourceUserUsername: reviewer.username,
+      sourceUserAvatarUrl: reviewer.avatarUrl,
+      sourceContractId: contract.id,
+      sourceContractSlug: contract.slug,
+      sourceContractTitle: contract.question,
+      sourceContractCreatorUsername: contract.creatorUsername,
+      sourceTitle: contract.question,
+      sourceSlug: contract.slug,
+      sourceText: '',
+      data: {
+        rating,
+        review,
+      } as ReviewNotificationData,
+    }
+    await insertNotificationToSupabase(notification, pg)
+  }
+}
+
 export const createBetReplyToCommentNotification = async (
   userId: string,
   contract: Contract,

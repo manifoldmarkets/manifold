@@ -307,6 +307,10 @@ export const NOTIFICATION_DESCRIPTIONS: notification_descriptions = {
     simple: 'Reviews on your questions',
     detailed: 'When a user reviews your question after resolution',
   },
+  review_updated_on_your_market: {
+    simple: 'Review updates on your questions',
+    detailed: 'When a user updates their review on your question',
+  },
   new_match: {
     simple: 'New matches',
     detailed: 'When you match with another user',
