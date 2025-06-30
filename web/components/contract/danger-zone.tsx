@@ -115,7 +115,14 @@ export function DangerZone(props: {
   const highlightResolver = isClosed && !showResolver
 
   if (!user) return null
-  if (!canReview && !canUpdateReview && !canDelete && !canResolve && !canUnresolve) return null
+  if (
+    !canReview &&
+    !canUpdateReview &&
+    !canDelete &&
+    !canResolve &&
+    !canUnresolve
+  )
+    return null
 
   return (
     <Row className="my-2 w-full flex-wrap justify-end gap-2">
