@@ -436,6 +436,15 @@ export function NotificationItem(props: {
         isChildOfGroup={isChildOfGroup}
       />
     )
+  } else if (reason === 'review_updated_on_your_market') {
+    return (
+      <ReviewUpdatedNotification
+        notification={notification}
+        highlighted={highlighted}
+        setHighlighted={setHighlighted}
+        isChildOfGroup={isChildOfGroup}
+      />
+    )
   } else if (reason === 'airdrop') {
     return (
       <AirdropNotification
@@ -2307,6 +2316,55 @@ function AIDescriptionUpdateNotification(props: {
           <PrimaryNotificationLink text={sourceContractTitle} />
         </span>
       </div>
+    </NotificationFrame>
+  )
+}
+
+function ReviewUpdatedNotification(props: {
+  notification: Notification
+  highlighted: boolean
+  setHighlighted: (highlighted: boolean) => void
+  isChildOfGroup?: boolean
+}) {
+  const { notification, highlighted, setHighlighted, isChildOfGroup } = props
+  const { rating, review } = notification.data as ReviewNotificationData
+  return (
+    <NotificationFrame
+      notification={notification}
+      isChildOfGroup={isChildOfGroup}
+      highlighted={highlighted}
+      setHighlighted={setHighlighted}
+      link={getSourceUrl(notification)}
+      icon={
+        <AvatarNotificationIcon notification={notification} symbol={'✏️'} />
+      }
+      subtitle={review}
+    >
+      <span>
+        <NotificationUserLink
+          userId={notification.sourceId}
+          name={notification.sourceUserName}
+          username={notification.sourceUserUsername}
+          className=""
+        />{' '}
+        updated their review to{' '}
+        <span
+          className={clsx(
+            rating > 3
+              ? 'rounded-md bg-gradient-to-br from-amber-100 to-amber-400 px-2 dark:text-gray-500'
+              : ''
+          )}
+        >
+          {rating} star{rating > 1 ? 's' : ''}
+        </span>
+        {!isChildOfGroup && (
+          <span>
+            {' '}
+            on{' '}
+            <PrimaryNotificationLink text={notification.sourceContractTitle} />
+          </span>
+        )}
+      </span>
     </NotificationFrame>
   )
 }

@@ -371,6 +371,10 @@ export function ContractPageContent(props: ContractParams) {
                   }}
                   resolverUser={resolverUser}
                   currentUser={user}
+                  existingReview={userReview ? {
+                    rating: userReview.rating as Rating,
+                    content: userReview.content
+                  } : undefined}
                 />
                 <button
                   className="text-ink-400 hover:text-ink-600 absolute right-0 top-0 p-4"
