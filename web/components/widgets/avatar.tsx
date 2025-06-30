@@ -40,10 +40,8 @@ export const Avatar = memo(
 
     const isUserFresh = createdTime ? isFresh(createdTime) : false
 
-    // Check if the avatar URL is a GIF or WebP (potentially animated) and exclude it
-    const isAnimatedFormat = avatarUrl
-      ?.toLowerCase()
-      .match(/\.(gif|webp)(\?|$)/)
+    // Check if the avatar URL is a GIF (potentially animated) and exclude it
+    const isAnimatedFormat = avatarUrl?.toLowerCase().match(/\.gif(\?|$)/)
     const shouldShowImage = avatarUrl && !isAnimatedFormat
 
     const onClick = (e: MouseEvent) => {

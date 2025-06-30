@@ -111,14 +111,10 @@ export const EditProfile = (props: {
       return
     }
 
-    // Prevent GIF and WebP uploads (potentially animated)
-    if (
-      file.type === 'image/gif' ||
-      file.type === 'image/webp' ||
-      file.name.toLowerCase().match(/\.(gif|webp)$/)
-    ) {
+    // Prevent GIF uploads (potentially animated)
+    if (file.type === 'image/gif' || file.name.toLowerCase().match(/\.gif$/)) {
       alert(
-        'GIF and WebP files are not allowed for profile pictures as they may contain animations. Please select a JPG or PNG image.'
+        'GIF files are not allowed for profile pictures as they may contain animations.'
       )
       return
     }
