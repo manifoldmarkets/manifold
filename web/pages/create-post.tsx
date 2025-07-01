@@ -10,7 +10,7 @@ import { useUser } from 'web/hooks/use-user'
 import { linkClass } from 'web/components/widgets/site-link'
 import clsx from 'clsx'
 import Link from 'next/link'
-import { api } from 'web/lib/api/api'
+import { api, APIError } from 'web/lib/api/api'
 import { Page } from 'web/components/layout/page'
 import { DAY_MS } from 'common/util/time'
 import ShortToggle from 'web/components/widgets/short-toggle'
@@ -83,8 +83,16 @@ export function CreatePostForm(props: {
     }
 
     const result = await api('create-post', newPost).catch((e) => {
-      console.log(e)
-      setError('There was an error creating the post, please try again')
+      if (e instanceof APIError) {
+        if (e.message.includes('validating request')) {
+          const details = e.details as { field: string; error: string }[]
+          const detail = details[0]
+          setError(`${detail.field}: ${detail.error}`)
+        } else setError(e.message)
+      } else {
+        console.error(e)
+        setError('There was an error creating the post, please try again')
+      }
       return e
     })
     if (result.post) {

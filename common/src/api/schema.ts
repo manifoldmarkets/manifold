@@ -2306,7 +2306,7 @@ export const API = (_apiTypeCheck = {
     returns: {} as { post: TopLevelPost },
     props: z
       .object({
-        title: z.string().min(1).max(120),
+        title: z.string().min(1).max(160),
         content: contentSchema,
         isAnnouncement: z.boolean().optional(),
         visibility: z.enum(['public', 'unlisted']).optional(),
