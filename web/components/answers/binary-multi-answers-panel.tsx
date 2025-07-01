@@ -159,7 +159,6 @@ function BinaryMultiChoiceBetPanel(props: {
                 contract={contract}
                 answer={answer}
                 color={color}
-                user={user}
               />
             </div>
           )}
