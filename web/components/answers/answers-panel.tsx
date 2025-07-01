@@ -4,6 +4,7 @@ import {
   ChevronDownIcon,
   DotsVerticalIcon,
   PencilIcon,
+  RefreshIcon,
   ScaleIcon,
 } from '@heroicons/react/outline'
 import { UserIcon } from '@heroicons/react/solid'
@@ -364,14 +365,11 @@ export const EditAnswerModal = (props: {
   contract: Contract
   answer: Answer
   color: string
-  user: User
 }) => {
-  const { answer, user, color, contract, open, setOpen } = props
+  const { answer, color, contract, open, setOpen } = props
   const [isSubmitting, setIsSubmitting] = useState(false)
-  const [isUnresolving, setIsUnresolving] = useState(false)
 
   const [text, setText] = useState(answer.text)
-  const [unresolveText, setUnresolveText] = useState('')
   const [error, setError] = useState<string | null>(null)
   const editAnswer = async () => {
     if (isSubmitting) return
@@ -444,47 +442,67 @@ export const EditAnswerModal = (props: {
           )}
         />
 
-        {(isModId(user.id) ||
-          isAdminId(user.id) ||
-          contract.creatorId === user.id) &&
-          answer.resolutionTime && (
-            <>
-              <span className={'font-semibold'}>Unresolve</span>
-              <Row className={'gap-1'}>
-                <Input
-                  value={unresolveText}
-                  placeholder={'Type UNRESOLVE to unresolve'}
-                  onChange={(e) => setUnresolveText(e.target.value)}
-                  className="w-full"
-                  disabled={isUnresolving}
-                />
-                <Button
-                  size={'xs'}
-                  color={'red'}
-                  loading={isUnresolving}
-                  onClick={async () => {
-                    setIsUnresolving(true)
-                    api('unresolve', {
-                      contractId: contract.id,
-                      answerId: answer.id,
-                    })
-                      .then(() => {
-                        setIsUnresolving(false)
-                        setUnresolveText('')
-                        setOpen(false)
-                      })
-                      .catch((e) => {
-                        setIsUnresolving(false)
-                        setError(e.message)
-                      })
-                  }}
-                  disabled={unresolveText !== 'UNRESOLVE' || isUnresolving}
-                >
-                  Unresolve
-                </Button>
-              </Row>
-            </>
-          )}
+        {error ? <span className="text-red-500">{error}</span> : null}
+      </Col>
+    </Modal>
+  )
+}
+
+export const UnresolveAnswerModal = (props: {
+  open: boolean
+  setOpen: (show: boolean) => void
+  contract: Contract
+  answer: Answer
+}) => {
+  const { answer, contract, open, setOpen } = props
+  const [isUnresolving, setIsUnresolving] = useState(false)
+  const [unresolveText, setUnresolveText] = useState('')
+  const [error, setError] = useState<string | null>(null)
+
+  const unresolveAnswer = async () => {
+    if (isUnresolving) return
+    setIsUnresolving(true)
+
+    try {
+      await api('unresolve', {
+        contractId: contract.id,
+        answerId: answer.id,
+      })
+      toast.success('Answer unresolved')
+      setIsUnresolving(false)
+      setUnresolveText('')
+      setOpen(false)
+    } catch (e) {
+      setIsUnresolving(false)
+      setError(e instanceof Error ? e.message : 'Failed to unresolve answer')
+    }
+  }
+
+  return (
+    <Modal open={open} setOpen={setOpen}>
+      <Col className={clsx('bg-canvas-50 gap-2 rounded-md p-4')}>
+        <span className={'font-semibold'}>Unresolve Answer</span>
+        <span className={'text-ink-600 text-sm'}>
+          Type "UNRESOLVE" to confirm unresolving this answer.
+        </span>
+        <Row className={'gap-1'}>
+          <Input
+            value={unresolveText}
+            placeholder={'Type UNRESOLVE to unresolve'}
+            onChange={(e) => setUnresolveText(e.target.value)}
+            className="w-full"
+            disabled={isUnresolving}
+          />
+          <Button
+            size={'xs'}
+            color={'red'}
+            loading={isUnresolving}
+            onClick={unresolveAnswer}
+            disabled={unresolveText !== 'UNRESOLVE' || isUnresolving}
+          >
+            Unresolve
+          </Button>
+        </Row>
         {error ? <span className="text-red-500">{error}</span> : null}
       </Col>
     </Modal>
@@ -592,6 +610,7 @@ export function Answer(props: {
 
   const prob = getAnswerProbability(contract, answer.id)
   const [editingAnswer, setEditingAnswer] = useState<Answer>()
+  const [unresolveModalOpen, setUnresolveModalOpen] = useState(false)
 
   const { resolution, resolutions } = contract
   const resolvedProb =
@@ -688,7 +707,16 @@ export function Answer(props: {
       icon: <ScaleIcon className="h-4 w-4" />,
       name: getOrderBookButtonLabel(unfilledBets),
       onClick: () => setLimitBetModalOpen(true),
-    }
+    },
+    user &&
+      (isModId(user.id) ||
+        isAdminId(user.id) ||
+        contract.creatorId === user.id) &&
+      answer.resolutionTime && {
+        icon: <RefreshIcon className="h-4 w-4" />,
+        name: 'Unresolve',
+        onClick: () => setUnresolveModalOpen(true),
+      }
   )
 
   return (
@@ -793,7 +821,14 @@ export function Answer(props: {
           contract={contract}
           answer={editingAnswer}
           color={color}
-          user={user}
+        />
+      )}
+      {unresolveModalOpen && (
+        <UnresolveAnswerModal
+          open={unresolveModalOpen}
+          setOpen={setUnresolveModalOpen}
+          contract={contract}
+          answer={answer}
         />
       )}
       {tradesModalOpen && (
