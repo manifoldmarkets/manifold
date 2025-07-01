@@ -74,7 +74,7 @@ export function BrowsePageContent() {
         useUrlParams
         isWholePage
         headerClassName={'pt-0 px-2'}
-        defaultFilter="open"
+        defaultFilter="all"
         defaultSort="score"
         defaultForYou={DEFAULT_FOR_YOU ? '1' : '0'}
         initialTopics={initialTopics}
