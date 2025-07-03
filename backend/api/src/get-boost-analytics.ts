@@ -1,7 +1,13 @@
 import { APIHandler } from 'api/helpers/endpoint'
 import { createSupabaseDirectClient } from 'shared/supabase/init'
 import { sumBy } from 'lodash'
-import { from, select, where, renderSql } from 'shared/supabase/sql-builder'
+import {
+  from,
+  select,
+  where,
+  renderSql,
+  join,
+} from 'shared/supabase/sql-builder'
 
 export const getBoostAnalytics: APIHandler<'get-boost-analytics'> = async (
   body
@@ -10,9 +16,10 @@ export const getBoostAnalytics: APIHandler<'get-boost-analytics'> = async (
   const pg = createSupabaseDirectClient()
 
   const adQuery = renderSql(
-    select('*'),
-    from('contract_boosts'),
-    where('contract_id = ${contractId}', { contractId })
+    select('cb.*, u.name as creator_name, u.username as creator_username'),
+    from('contract_boosts cb'),
+    join('users u on cb.user_id = u.id'),
+    where('cb.contract_id = ${contractId}', { contractId })
   )
 
   const viewQuery = renderSql(
@@ -38,6 +45,8 @@ export const getBoostAnalytics: APIHandler<'get-boost-analytics'> = async (
     boostPeriods: adData.map((ad) => ({
       startTime: ad.start_time,
       endTime: ad.end_time,
+      creatorName: ad.creator_name,
+      creatorUsername: ad.creator_username,
     })),
   }
 }

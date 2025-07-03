@@ -1278,6 +1278,8 @@ export const API = (_apiTypeCheck = {
       boostPeriods: {
         startTime: string
         endTime: string
+        creatorName: string
+        creatorUsername: string
       }[]
     },
   },

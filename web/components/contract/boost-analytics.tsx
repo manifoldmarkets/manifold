@@ -4,10 +4,13 @@ import { Col } from '../layout/col'
 import { Row } from '../layout/row'
 import dayjs from 'dayjs'
 import { useAPIGetter } from 'web/hooks/use-api-getter'
+import Link from 'next/link'
 
 type BoostPeriod = {
   startTime: string
-  endTime: string | null
+  endTime: string
+  creatorName?: string
+  creatorUsername?: string
 }
 
 type BoostAnalytics = {
@@ -39,11 +42,25 @@ export function BoostAnalytics(props: { contract: Contract }) {
 
   const formatBoostPeriod = (period: BoostPeriod) => {
     const start = dayjs(period.startTime).format('MMM D')
-    if (!period.endTime) {
-      return `Started ${start} (active)`
-    }
+    const creatorElement =
+      period.creatorName && period.creatorUsername ? (
+        <span>
+          {' by '}
+          <Link
+            href={`/${period.creatorUsername}`}
+            className="text-primary-700 hover:underline"
+          >
+            {period.creatorName}
+          </Link>
+        </span>
+      ) : null
     const end = dayjs(period.endTime).format('MMM D')
-    return `${start} - ${end}`
+    return (
+      <span>
+        {start} - {end}
+        {creatorElement}
+      </span>
+    )
   }
 
   return (
