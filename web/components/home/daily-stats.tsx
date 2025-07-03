@@ -17,7 +17,7 @@ export function DailyStats(props: {
   return (
     <Row className={clsx('items-center gap-2 sm:gap-3', className)}>
       <QuestsOrStreak user={user} />
-      <DailyLeagueStat user={user} />
+      <DailyLeagueStat userId={user?.id} />
       <DailyProfit user={user} />
       {user && <DailyLoan user={user} />}
     </Row>

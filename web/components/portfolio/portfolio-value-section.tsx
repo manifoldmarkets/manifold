@@ -22,6 +22,7 @@ import { getPortfolioValues } from '../portfolio-helpers'
 import { useSweepstakes } from '../sweepstakes-provider'
 import { SPICE_TO_MANA_CONVERSION_RATE } from 'common/envs/constants'
 import { filterDefined } from 'common/util/array'
+import { DailyLeagueStat } from '../home/daily-league-stat'
 
 export type PortfolioHoveredGraphType =
   | 'balance'
@@ -300,6 +301,7 @@ function TwombaPortfolioValueSkeleton(props: {
     portfolioFocus,
     setPortfolioFocus,
     hideSweepsToggle,
+    userId,
   } = props
 
   function togglePortfolioFocus(toggleTo: PortfolioMode) {
@@ -352,7 +354,7 @@ function TwombaPortfolioValueSkeleton(props: {
                 net worth
               </span>
             </span>
-            <Row className="mt-2 gap-2">
+            <Row className="-mr-4 mt-2 gap-2">
               <PortfolioGraphNumber
                 prefersPlay={prefersPlay}
                 numberType={'balance'}
@@ -412,6 +414,13 @@ function TwombaPortfolioValueSkeleton(props: {
                     : 'bg-canvas-50 text-ink-1000'
                 )}
                 onClick={() => togglePortfolioFocus('profit')}
+              />
+              <DailyLeagueStat
+                userId={userId}
+                className={clsx(
+                  'group cursor-pointer select-none rounded px-2 py-1 transition-colors',
+                  'bg-canvas-50 text-ink-1000 opacity-[0.75] hover:opacity-100'
+                )}
               />
             </Row>
           </Col>
