@@ -67,7 +67,8 @@
           "data": [
             {
               "scheme": "https",
-              "host": "manifold.markets"
+              "host": "manifold.markets",
+              "pathPrefix": "/"
             }
           ],
           "category": ["BROWSABLE", "DEFAULT"]
