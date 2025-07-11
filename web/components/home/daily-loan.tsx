@@ -83,14 +83,7 @@ export function DailyLoan(props: {
   }
   if (showChest) {
     return (
-      <Col
-        className={clsx(
-          className,
-          'items-center',
-          dailyStatsClass,
-          receivedLoanToday || notEligibleForLoan ? '' : 'hover:bg-canvas-100'
-        )}
-      >
+      <>
         <Tooltip
           text={
             receivedLoanToday
@@ -101,7 +94,18 @@ export function DailyLoan(props: {
           }
           placement={'bottom'}
         >
-          <button disabled={loaning} onClick={getLoan}>
+          <button
+            disabled={loaning}
+            onClick={getLoan}
+            className={clsx(
+              className,
+              'items-center',
+              dailyStatsClass,
+              receivedLoanToday || notEligibleForLoan
+                ? ''
+                : 'hover:bg-canvas-100'
+            )}
+          >
             <Row
               className={clsx(
                 'items-center justify-center whitespace-nowrap px-1'
@@ -125,7 +129,7 @@ export function DailyLoan(props: {
             setOpen={setShowLoansModal}
           />
         )}
-      </Col>
+      </>
     )
   }
   return (

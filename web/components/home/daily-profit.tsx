@@ -58,36 +58,32 @@ export const DailyProfit = function DailyProfit(props: {
 
   return (
     <>
-      <div className={clsx(dailyStatsClass)}>
-        <Row className="gap-2">
-          <button
-            onClick={withTracking(() => {
-              setOpenMana(true)
-            }, DAILY_PROFIT_CLICK_EVENT)}
-          >
-            <Row>
-              <TokenNumber
-                amount={data ? manaNetWorth : undefined}
-                // numberType="short"
-                isInline
-              />
-
-              {!floatingEqual(manaProfit, 0) && (
-                <span
-                  className={clsx(
-                    'ml-1 mt-1 text-xs',
-                    manaProfit >= 0 ? 'text-teal-600' : 'text-scarlet-600'
-                  )}
-                >
-                  {manaProfit >= 0 ? '+' : '-'}
-                  {shortFormatNumber(Math.abs(manaProfit))}
-                </span>
+      <button
+        onClick={withTracking(() => {
+          setOpenMana(true)
+        }, DAILY_PROFIT_CLICK_EVENT)}
+        className={dailyStatsClass}
+      >
+        <Row>
+          <TokenNumber
+            amount={data ? manaNetWorth : undefined}
+            // numberType="short"
+            isInline
+          />
+          {!floatingEqual(manaProfit, 0) && (
+            <span
+              className={clsx(
+                'ml-1 mt-1 text-xs',
+                manaProfit >= 0 ? 'text-teal-600' : 'text-scarlet-600'
               )}
-            </Row>
-          </button>
+            >
+              {manaProfit >= 0 ? '+' : '-'}
+              {shortFormatNumber(Math.abs(manaProfit))}
+            </span>
+          )}
         </Row>
         <div className="text-ink-600 text-center text-xs ">Net worth</div>
-      </div>
+      </button>
 
       <DailyProfitModal
         setOpen={setOpenMana}
