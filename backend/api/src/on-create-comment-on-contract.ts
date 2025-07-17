@@ -336,7 +336,7 @@ Only return the raw JSON object without any markdown code blocks, backticks, add
 
   try {
     const response = await promptGemini(prompt, {
-      model: 'gemini-2.5-pro-preview-06-05',
+      model: 'gemini-2.5-pro',
     })
     log('Clarification response:', {
       question: contract.question,
