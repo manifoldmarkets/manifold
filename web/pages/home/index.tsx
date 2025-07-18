@@ -31,7 +31,7 @@ export default function Home() {
           className={clsx(
             'focus:ring-primary-500 fixed  right-3 z-20 inline-flex items-center rounded-full border  border-transparent  p-4 shadow-sm focus:outline-none focus:ring-2 focus:ring-offset-2 lg:hidden',
             'disabled:bg-ink-300 text-ink-0 from-primary-500 hover:from-primary-700 to-blue-500 hover:to-blue-700 enabled:bg-gradient-to-r',
-            'bottom-[64px]'
+            'bottom-[calc(64px+env(safe-area-inset-bottom))]'
           )}
           onClick={() => {
             Router.push('/create')
