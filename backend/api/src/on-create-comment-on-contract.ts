@@ -73,6 +73,7 @@ export const onCreateCommentOnContract = async (props: {
 
 const conscientiousCreatorIds = [
   'hqdXgp0jK2YMMhPs067eFK4afEH3', // Eliza
+  'y1hb6k7txdZPV5mgyxPFApZ7nQl2', // IsaacKing
 ]
 
 const getReplyInfo = async (
