@@ -1,46 +1,45 @@
+import {
+  DotsHorizontalIcon,
+  EyeOffIcon,
+  PencilIcon,
+} from '@heroicons/react/solid'
+import { PostComment } from 'common/comment'
+import { getPostShareUrl, TopLevelPost } from 'common/src/top-level-post'
+import { richTextToString } from 'common/util/parse'
+import { useEffect, useState } from 'react'
+import toast from 'react-hot-toast'
+import { IoWarning } from 'react-icons/io5'
+import { Button } from 'web/components/buttons/button'
+import { CopyLinkOrShareButton } from 'web/components/buttons/copy-link-button'
+import { FollowPostButton } from 'web/components/buttons/follow-post-button'
+import { BackButton } from 'web/components/contract/back-button'
+import { ReactButton } from 'web/components/contract/react-button'
+import { Col } from 'web/components/layout/col'
 import { Page } from 'web/components/layout/page'
+import { Row } from 'web/components/layout/row'
 import { Spacer } from 'web/components/layout/spacer'
+import { AddPostBoostButton } from 'web/components/posts/add-post-boost-button'
+import { SEO } from 'web/components/SEO'
+import {
+  PostCommentsActivity,
+  useNewPostComments,
+} from 'web/components/top-level-posts/post-comments'
+import DropdownMenu from 'web/components/widgets/dropdown-menu'
 import {
   Content,
   TextEditor,
   useTextEditor,
 } from 'web/components/widgets/editor'
-import {
-  EyeOffIcon,
-  PencilIcon,
-  DotsHorizontalIcon,
-} from '@heroicons/react/solid'
-import { Button } from 'web/components/buttons/button'
-import { useState, useEffect } from 'react'
-import { Row } from 'web/components/layout/row'
-import { Col } from 'web/components/layout/col'
-import Custom404 from 'web/pages/404'
-import { UserAvatarAndBadge } from 'web/components/widgets/user-link'
-import { SEO } from 'web/components/SEO'
-import { richTextToString } from 'common/util/parse'
-import { CopyLinkOrShareButton } from 'web/components/buttons/copy-link-button'
-import { DisplayUser, getUserById } from 'web/lib/supabase/users'
-import { getPostShareUrl, TopLevelPost } from 'common/src/top-level-post'
-import { useUser } from 'web/hooks/use-user'
-import { api } from 'web/lib/api/api'
-import { getCommentsOnPost } from 'web/lib/supabase/comments'
-import { PostComment } from 'common/comment'
-import {
-  PostCommentsActivity,
-  useNewPostComments,
-} from 'web/components/top-level-posts/post-comments'
 import { ExpandingInput } from 'web/components/widgets/expanding-input'
+import { UserAvatarAndBadge } from 'web/components/widgets/user-link'
 import { useAdminOrMod } from 'web/hooks/use-admin'
-import toast from 'react-hot-toast'
-import { ReactButton } from 'web/components/contract/react-button'
-import { getPostBySlug } from 'web/lib/supabase/posts'
 import { useSaveReferral } from 'web/hooks/use-save-referral'
-import DropdownMenu from 'web/components/widgets/dropdown-menu'
-import { BackButton } from 'web/components/contract/back-button'
-import { report as reportContent } from 'web/lib/api/api'
-import { IoWarning } from 'react-icons/io5'
-import { FollowPostButton } from 'web/components/buttons/follow-post-button'
-import { AddPostBoostButton } from 'web/components/posts/add-post-boost-button'
+import { useUser } from 'web/hooks/use-user'
+import { api, report as reportContent } from 'web/lib/api/api'
+import { getCommentsOnPost } from 'web/lib/supabase/comments'
+import { getPostBySlug } from 'web/lib/supabase/posts'
+import { DisplayUser, getUserById } from 'web/lib/supabase/users'
+import Custom404 from 'web/pages/404'
 
 export async function getStaticProps(props: { params: { slug: string } }) {
   const { slug } = props.params
@@ -157,7 +156,7 @@ export default function PostPage(props: {
         url={'/post/' + post.slug}
         shouldIgnore={post.visibility === 'unlisted'}
       />
-      <Col className="mx-auto w-full max-w-2xl p-4">
+      <Col className="mx-auto w-full max-w-2xl px-2 py-4">
         {!editing && (
           <Col>
             <Row>
@@ -264,7 +263,7 @@ export default function PostPage(props: {
             </Row>
           </Col>
         )}
-        <div className="bg-canvas-0 rounded-lg px-6 py-4 sm:py-0">
+        <div className="bg-canvas-0 rounded-lg py-4 sm:py-0">
           <div className="flex w-full flex-col py-2">
             <RichEditPost
               post={post}
