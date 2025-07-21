@@ -24,7 +24,9 @@
           "project": "react-native",
           "url": "https://sentry.io/"
         }
-      ]
+      ],
+      ["expo-web-browser"],
+      ["expo-apple-authentication"]
     ],
     "splash": {
       "image": "./assets/splash.png",
@@ -53,6 +55,7 @@
           "category": ["BROWSABLE", "DEFAULT"]
         }
       ],
+      "edgeToEdgeEnabled": true,
       "googleServicesFile": "./google-services.json",
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
