@@ -1,15 +1,7 @@
-import React, { useEffect, useState } from 'react'
-import {
-  Alert,
-  StyleSheet,
-  View,
-  Platform,
-  ActivityIndicator,
-  Image,
-  TouchableOpacity,
-  Modal,
-  TouchableWithoutFeedback,
-} from 'react-native'
+import { signInWithCredential } from '@firebase/auth'
+import { ENV_CONFIG } from 'common/envs/constants'
+import { log } from 'components/logger'
+import { Text } from 'components/text'
 import {
   AppleAuthenticationButton,
   AppleAuthenticationButtonStyle,
@@ -18,6 +10,7 @@ import {
   isAvailableAsync,
   signInAsync,
 } from 'expo-apple-authentication'
+import * as Google from 'expo-auth-session/providers/google'
 import { CryptoDigestAlgorithm, digestStringAsync } from 'expo-crypto'
 import {
   GoogleAuthProvider,
@@ -25,13 +18,20 @@ import {
   updateEmail,
   updateProfile,
 } from 'firebase/auth'
-import { signInWithCredential } from '@firebase/auth'
-import { auth } from '../init'
+import React, { useEffect, useState } from 'react'
+import {
+  ActivityIndicator,
+  Alert,
+  Image,
+  Modal,
+  Platform,
+  StyleSheet,
+  TouchableOpacity,
+  TouchableWithoutFeedback,
+  View,
+} from 'react-native'
 import WebView from 'react-native-webview'
-import * as Google from 'expo-auth-session/providers/google'
-import { ENV_CONFIG } from 'common/envs/constants'
-import { Text } from 'components/text'
-import { log } from 'components/logger'
+import { auth } from '../init'
 
 export const AuthPage = (props: {
   webview: React.RefObject<WebView | undefined>
@@ -299,7 +299,6 @@ const styles = StyleSheet.create({
     textDecorationLine: 'underline',
   },
 })
-
 function Eula() {
   const [expanded, setExpanded] = useState<'privacy' | 'tos' | null>()
   const [open, setOpen] = useState(false)
@@ -339,7 +338,9 @@ function Eula() {
             {expanded === 'tos' && (
               <WebView
                 style={{ height: 500, width: 300 }}
-                source={{ uri: 'https://docs.manifold.markets/terms-and-conditions' }}
+                source={{
+                  uri: 'https://docs.manifold.markets/terms-and-conditions',
+                }}
               />
             )}
             {expanded === 'privacy' && (

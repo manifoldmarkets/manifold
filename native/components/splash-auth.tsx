@@ -1,11 +1,9 @@
-import WebView from 'react-native-webview'
-import { ImageSourcePropType, StyleSheet, Text, View } from 'react-native'
-import React, { useEffect, useState } from 'react'
-import NetInfo, { NetInfoState } from '@react-native-community/netinfo'
 import { User as FirebaseUser } from '@firebase/auth'
-import { Splash } from 'components/splash'
 import { AuthPage } from 'components/auth-page'
-import { useIsConnected } from '../lib/use-is-connected'
+import { Splash } from 'components/splash'
+import React, { useEffect } from 'react'
+import { ImageSourcePropType } from 'react-native'
+import WebView from 'react-native-webview'
 
 export const SplashAuth = (props: {
   webview: React.RefObject<WebView | undefined>
@@ -31,11 +29,9 @@ export const SplashAuth = (props: {
       alert("You're offline. Please reconnect to the internet to use Manifold.")
     }
   }, [isConnected])
-
   if (!isConnected) {
     return <Splash height={height} width={width} source={source} />
   }
-
   if (!hasLoadedWebView)
     return <Splash height={height} width={width} source={source} />
   else if (hasLoadedWebView && !fbUser)

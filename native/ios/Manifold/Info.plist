@@ -30,6 +30,7 @@
         <key>CFBundleURLSchemes</key>
         <array>
           <string>com.markets.manifold</string>
+          <string>com.markets.manifold</string>
         </array>
       </dict>
       <dict>

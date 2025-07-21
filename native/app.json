@@ -4,6 +4,7 @@
     "slug": "manifold-markets",
     "owner": "iansp",
     "scheme": "com.markets.manifold",
+    "newArchEnabled": false,
     "jsEngine": "hermes",
     "version": "2.0.64",
     "orientation": "portrait",

@@ -1,21 +1,21 @@
-import WebView, { WebViewProps } from 'react-native-webview'
+import { IS_NATIVE_KEY, PLATFORM_KEY } from 'common/native-message'
+import { log } from 'components/logger'
+import { Splash } from 'components/splash'
+import { RefObject, useState } from 'react'
 import {
   Platform,
   RefreshControl,
+  StatusBar as RNStatusBar,
   ScrollView,
   StyleSheet,
   View,
-  StatusBar as RNStatusBar,
 } from 'react-native'
+import WebView, { WebViewProps } from 'react-native-webview'
 import {
   WebViewErrorEvent,
   WebViewRenderProcessGoneEvent,
   WebViewTerminatedEvent,
 } from 'react-native-webview/lib/WebViewTypes'
-import { Splash } from 'components/splash'
-import { log } from 'components/logger'
-import { IS_NATIVE_KEY, PLATFORM_KEY } from 'common/native-message'
-import { RefObject, useState } from 'react'
 
 const PREVENT_ZOOM_SET_NATIVE = `(function() {
   const meta = document.createElement('meta'); 
@@ -47,6 +47,7 @@ export const CustomWebview = (props: {
     handleMessageFromWebview,
     handleExternalLink,
   } = props
+
   const [refreshing, setRefreshing] = useState(false)
   const [refresherEnabled, setEnableRefresher] = useState(true)
   //Code to get scroll position
@@ -110,6 +111,7 @@ export const CustomWebview = (props: {
             onLoadEnd={() => {
               console.log('WebView onLoadEnd for url:', urlToLoad)
               setHasLoadedWebView(true)
+              setRefreshing(false)
             }}
             source={{ uri: urlToLoad }}
             ref={webview}

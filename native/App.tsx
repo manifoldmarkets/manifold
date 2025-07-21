@@ -199,10 +199,8 @@ const App = () => {
       })
 
     return () => {
-      notificationResponseListener.current &&
-        Notifications.removeNotificationSubscription(
-          notificationResponseListener.current
-        )
+      if (notificationResponseListener.current)
+        notificationResponseListener.current.remove()
     }
   }, [])
 
@@ -211,12 +209,11 @@ const App = () => {
       log('Initial url:', url, '- has loaded webview:', hasLoadedWebView)
       if (url) setUrlWithNativeQuery(url)
     })
-    BackHandler.addEventListener('hardwareBackPress', handleBackButtonPress)
-    return () =>
-      BackHandler.removeEventListener(
-        'hardwareBackPress',
-        handleBackButtonPress
-      )
+    const backHandler = BackHandler.addEventListener(
+      'hardwareBackPress',
+      handleBackButtonPress
+    )
+    return () => backHandler.remove()
   }, [])
 
   const handleLastNotificationResponse = async (
