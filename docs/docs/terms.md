@@ -1,6 +1,6 @@
 # Terms of Service
 
-Last updated May 19th, 2025
+Last updated July 21st, 2025
 
 **1. AGREEMENT TO TERMS**
 
@@ -91,8 +91,6 @@ As a user of the Site, you agree not to:
 ● Engage in unauthorized framing of or linking to the Site.
 
 ● Upload or transmit (or attempt to upload or to transmit) viruses, Trojan horses, or other material, including excessive use of capital letters and spamming (continuous posting of repetitive text), that interferes with any party's uninterrupted use and enjoyment of the Site or modifies, impairs, disrupts, alters, or interferes with the use, features, functions, operation, or maintenance of the Site.
-
-● Engage in any automated use of the system, such as using scripts to send comments or messages, or using any data mining, robots, or similar data gathering and extraction tools.
 
 ● Delete the copyright or other proprietary rights notice from any Content.
 
