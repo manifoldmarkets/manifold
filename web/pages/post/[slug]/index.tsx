@@ -156,7 +156,7 @@ export default function PostPage(props: {
         url={'/post/' + post.slug}
         shouldIgnore={post.visibility === 'unlisted'}
       />
-      <Col className="mx-auto w-full max-w-2xl px-2 py-4">
+      <Col className="mx-auto w-full max-w-2xl px-4 py-4 ">
         {!editing && (
           <Col>
             <Row>
@@ -264,7 +264,7 @@ export default function PostPage(props: {
           </Col>
         )}
         <div className="bg-canvas-0 rounded-lg py-4 sm:py-0">
-          <div className="flex w-full flex-col py-2">
+          <div className="flex w-full flex-col py-4">
             <RichEditPost
               post={post}
               onUpdate={setPost}
