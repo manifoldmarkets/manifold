@@ -1,21 +1,20 @@
-import { convertAnswer, convertContract } from 'common/supabase/contracts'
-import { createSupabaseDirectClient } from './supabase/init'
-import { contractColumnsToSelect, isProd, log } from './utils'
-import { HOUR_MS } from 'common/util/time'
-import { orderBy } from 'lodash'
-import { Contract } from 'common/contract'
 import { Answer } from 'common/answer'
+import { Contract } from 'common/contract'
+import { Notification } from 'common/notification'
+import { convertAnswer, convertContract } from 'common/supabase/contracts'
+import { Row } from 'common/supabase/utils'
 import { PrivateUser } from 'common/user'
 import { getNotificationDestinationsForUser } from 'common/user-notification-preferences'
-import { createMarketMovementNotification } from './create-notification'
-import { Row } from 'common/supabase/utils'
-import { SupabaseDirectClient } from './supabase/init'
-import { bulkInsert } from 'shared/supabase/utils'
 import { removeUndefinedProps } from 'common/util/object'
-import { createPushNotifications } from 'shared/create-push-notifications'
-import { truncateText } from './send-unseen-notifications'
-import { Notification } from 'common/notification'
 import { nanoid } from 'common/util/random'
+import { HOUR_MS } from 'common/util/time'
+import { orderBy } from 'lodash'
+import { createPushNotifications } from 'shared/create-push-notifications'
+import { bulkInsert } from 'shared/supabase/utils'
+import { createMarketMovementNotification } from './create-notification'
+import { truncateText } from './send-unseen-notifications'
+import { createSupabaseDirectClient, SupabaseDirectClient } from './supabase/init'
+import { contractColumnsToSelect, isProd, log } from './utils'
 
 const pastPeriodHoursAgoStart = 24
 const TEST_USER_ID = 'AJwLWoo3xue32XIiAVrL5SyR1WB2'
@@ -118,8 +117,8 @@ export async function sendMarketMovementNotifications(debug = false) {
       let avgAfter = 0
       let currentProb = 0
       for (const answer of contractAnswers) {
-        const { prob, resolutionTime } = answer
-        if (resolutionTime) continue
+        const { prob, resolutionTime, isOther } = answer
+        if (resolutionTime || isOther) continue
         const key = contract.id + answer.id
         const pastAvgProb = pastAvgProbs[key]
         if (!pastAvgProb) continue
