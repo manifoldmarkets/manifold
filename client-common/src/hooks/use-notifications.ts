@@ -1,11 +1,11 @@
 import {
-  BalanceChangeNotificationTypes,
   CommentNotificationData,
   Notification,
   notification_source_types,
   NotificationGroup,
   NotificationReason,
 } from 'common/notification'
+import { User } from 'common/user'
 import {
   concat,
   Dictionary,
@@ -16,7 +16,6 @@ import {
   uniqBy,
 } from 'lodash'
 import { useEffect, useMemo } from 'react'
-import { User } from 'common/user'
 
 import { useApiSubscription } from 'client-common/hooks/use-api-subscription'
 import { APIParams, APIResponse } from 'common/api/schema'
@@ -62,7 +61,11 @@ export function useNotifications(
       }
       api(params).then((newData) => {
         setNotifications((oldData) => {
-          const allNotifications = concat(newData, oldData ?? [])
+          // Prioritize oldData to preserve local markedAsRead state
+          const allNotifications = uniqBy(
+            concat(oldData ?? [], newData),
+            (n) => n.id
+          )
 
           const seenIds = uniq(
             allNotifications.filter((n) => n.isSeen).map((n) => n.id)
