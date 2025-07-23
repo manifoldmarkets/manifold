@@ -7,43 +7,43 @@ import {
   contractPath,
   dayProbChange,
 } from 'common/contract'
+import { getMaxSharesOutcome } from 'common/contract-metric'
 import {
   ENV_CONFIG,
   SPICE_MARKET_TOOLTIP,
   SWEEPIES_MARKET_TOOLTIP,
 } from 'common/envs/constants'
+import { getFormattedExpectedDate } from 'common/multi-date'
+import { getFormattedExpectedValue } from 'common/multi-numeric'
 import { getFormattedMappedValue } from 'common/pseudo-numeric'
-import { formatMoney, formatPercentShort } from 'common/util/format'
-import Link from 'next/link'
-import { useUser } from 'web/hooks/use-user'
-import { getTextColor } from './text-color'
-import { ContractMinibar } from '../charts/minibar'
-import { Row } from '../layout/row'
-import { BinaryContractOutcomeLabel } from '../outcome-label'
-import { Avatar } from '../widgets/avatar'
-import { useLiveContract } from 'web/hooks/use-contract'
-import { Col } from '../layout/col'
-import {
-  actionColumn,
-  probColumn,
-  traderColumn,
-  ColumnFormat,
-  boostedColumn,
-  liquidityColumn,
-} from './contract-table-col-formats'
-import { UserHovercard } from '../user/user-hovercard'
+import { Answer } from 'common/src/answer'
 import { getFormattedNumberExpectedValue } from 'common/src/number'
+import { formatMoney, formatPercentShort } from 'common/util/format'
 import { removeEmojis } from 'common/util/string'
+import Link from 'next/link'
+import { FaArrowDown, FaArrowUp } from 'react-icons/fa6'
+import { useLiveContract } from 'web/hooks/use-contract'
+import { useSavedContractMetrics } from 'web/hooks/use-saved-contract-metrics'
+import { useUser } from 'web/hooks/use-user'
 import { track } from 'web/lib/service/analytics'
-import { Tooltip } from '../widgets/tooltip'
 import { SpiceCoin } from 'web/public/custom-components/spiceCoin'
 import { SweepiesCoin } from 'web/public/custom-components/sweepiesCoin'
-import { getFormattedExpectedValue } from 'common/multi-numeric'
-import { getFormattedExpectedDate } from 'common/multi-date'
-import { Answer } from 'common/src/answer'
-import { FaArrowDown, FaArrowUp } from 'react-icons/fa6'
-import { useSavedContractMetrics } from 'web/hooks/use-saved-contract-metrics'
-import { getMaxSharesOutcome } from 'common/contract-metric'
+import { ContractMinibar } from '../charts/minibar'
+import { Col } from '../layout/col'
+import { Row } from '../layout/row'
+import { BinaryContractOutcomeLabel } from '../outcome-label'
+import { UserHovercard } from '../user/user-hovercard'
+import { Avatar } from '../widgets/avatar'
+import { Tooltip } from '../widgets/tooltip'
+import {
+  actionColumn,
+  boostedColumn,
+  ColumnFormat,
+  liquidityColumn,
+  probColumn,
+  traderColumn,
+} from './contract-table-col-formats'
+import { getTextColor } from './text-color'
 
 export function ContractsTable(props: {
   contracts: Contract[]
@@ -191,6 +191,7 @@ export function ContractRow(props: {
   showPosition?: boolean
 }) {
   const contract = useLiveContract(props.contract)
+  const isPoll = contract.outcomeType === 'POLL'
 
   const {
     columns,
@@ -262,7 +263,9 @@ export function ContractRow(props: {
                 key={contract.id + column.header}
                 className={clsx(faded && 'text-ink-500', 'flex', column.width)}
               >
-                {column.content({ contract })}
+                {isPoll && column.header === 'Liquidity'
+                  ? null
+                  : column.content({ contract })}
               </div>
             ))}
           </Row>
