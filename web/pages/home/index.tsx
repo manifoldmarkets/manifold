@@ -1,18 +1,16 @@
 import { PencilAltIcon } from '@heroicons/react/solid'
-import Router from 'next/router'
 import clsx from 'clsx'
+import Router from 'next/router'
 import { SEO } from 'web/components/SEO'
 import { DailyStats } from 'web/components/home/daily-stats'
 import { Page } from 'web/components/layout/page'
+import { DowntimeBanner } from 'web/components/nav/banner'
+import { Welcome } from 'web/components/onboarding/welcome'
+import { useRedirectIfSignedOut } from 'web/hooks/use-redirect-if-signed-out'
+import { useSaveReferral } from 'web/hooks/use-save-referral'
 import { useUser } from 'web/hooks/use-user'
 import { track } from 'web/lib/service/analytics'
 import { BrowsePageContent } from '../browse'
-import { useRedirectIfSignedOut } from 'web/hooks/use-redirect-if-signed-out'
-import { DowntimeBanner } from 'web/components/nav/banner'
-import { Welcome } from 'web/components/onboarding/welcome'
-import { LiveGeneratedFeed } from 'web/components/feed/live-generated-feed'
-import { ExploreContent } from '../explore'
-import { useSaveReferral } from 'web/hooks/use-save-referral'
 export default function Home() {
   const user = useUser()
   useSaveReferral(user)
@@ -42,8 +40,8 @@ export default function Home() {
         </button>
       )}
       {/* Preload feed */}
-      {user && <LiveGeneratedFeed userId={user.id} hidden />}
-      {user && <ExploreContent render={false} />}
+      {/* {user && <LiveGeneratedFeed userId={user.id} hidden />} */}
+      {/* {user && <ExploreContent render={false} />} */}
     </Page>
   )
 }
