@@ -1,8 +1,8 @@
 import { Visibility } from './contract'
 
 import { JSONContent } from '@tiptap/core'
-import { convertSQLtoTS, Row } from './supabase/utils'
 import { ENV_CONFIG } from './envs/constants'
+import { convertSQLtoTS, Row } from './supabase/utils'
 import { referralQuery } from './util/share'
 
 export type TopLevelPost = {
@@ -39,6 +39,8 @@ export type TopLevelPost = {
   importanceScore: number
   /** @deprecated - not deprecated, only available via the get-posts endpoint*/
   uniqueUsers?: number
+  /** @deprecated - not deprecated, only available via the get-posts endpoint*/
+  lastCommentTime?: number | null
 }
 
 export const convertPost = (sqlPost: Row<'old_posts'>) =>

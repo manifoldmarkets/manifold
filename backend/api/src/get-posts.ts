@@ -1,17 +1,17 @@
 import { APIHandler } from 'api/helpers/endpoint'
-import { createSupabaseDirectClient } from 'shared/supabase/init'
 import { convertPost, TopLevelPost } from 'common/top-level-post'
+import { buildArray } from 'common/util/array'
+import { createSupabaseDirectClient } from 'shared/supabase/init'
 import {
-  select,
   from,
-  where,
-  orderBy,
-  limit as limitSql,
-  renderSql,
   groupBy,
   leftJoin,
+  limit as limitSql,
+  orderBy,
+  renderSql,
+  select,
+  where,
 } from 'shared/supabase/sql-builder'
-import { buildArray } from 'common/util/array'
 export const getPosts: APIHandler<'get-posts'> = async (props, auth) => {
   const {
     sortBy = 'created_time',
@@ -26,7 +26,7 @@ export const getPosts: APIHandler<'get-posts'> = async (props, auth) => {
 
   const sqlParts = buildArray(
     select(
-      'op.*, count(distinct opc.user_id) as comment_count, count(distinct r.user_id) as reaction_count'
+      'op.*, count(distinct opc.user_id) as comment_count, count(distinct r.user_id) as reaction_count, max(opc.created_time) as last_comment_time'
     ),
     from('old_posts op'),
     leftJoin('old_post_comments opc on op.id = opc.post_id'),
@@ -51,6 +51,9 @@ export const getPosts: APIHandler<'get-posts'> = async (props, auth) => {
     ...convertPost(d),
     reactionCount: d.reaction_count,
     commentCount: d.comment_count,
+    lastCommentTime: d.last_comment_time
+      ? Date.parse(d.last_comment_time)
+      : null,
     uniqueUsers: d.reaction_count + d.comment_count,
   })) as TopLevelPost[]
 }

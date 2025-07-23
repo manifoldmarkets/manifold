@@ -1,31 +1,28 @@
+import { ChatIcon } from '@heroicons/react/outline'
+import { DotsHorizontalIcon, EyeOffIcon } from '@heroicons/react/solid'
+import { fromNow } from 'client-common/lib/time'
 import clsx from 'clsx'
 import { TopLevelPost } from 'common/top-level-post'
-import Link from 'next/link'
-import { Avatar } from '../widgets/avatar'
-import { Col } from '../layout/col'
-import { Row } from '../layout/row'
-import { UserLink } from '../widgets/user-link'
-import { track } from 'web/lib/service/analytics'
-import { useEffect, useState } from 'react'
+import { buildArray } from 'common/util/array'
 import { richTextToString } from 'common/util/parse'
-import { Linkify } from '../widgets/linkify'
-import { fromNow } from 'client-common/lib/time'
-import { api } from 'web/lib/api/api'
-import { Button } from '../buttons/button'
+import Link from 'next/link'
+import { useEffect, useState } from 'react'
 import toast from 'react-hot-toast'
-import { EyeOffIcon } from '@heroicons/react/solid'
-import { ChatIcon } from '@heroicons/react/outline'
 import { useAdminOrMod } from 'web/hooks/use-admin'
 import { useUser } from 'web/hooks/use-user'
-import { ReactButton } from '../contract/react-button'
+import { api } from 'web/lib/api/api'
+import { track } from 'web/lib/service/analytics'
 import { getNumPostComments } from 'web/lib/supabase/comments'
+import { ReactButton } from '../contract/react-button'
+import { Col } from '../layout/col'
+import { Row } from '../layout/row'
+import { Avatar } from '../widgets/avatar'
+import DropdownMenu from '../widgets/dropdown-menu'
+import { Linkify } from '../widgets/linkify'
+import { UserLink } from '../widgets/user-link'
 
-export function PostCard(props: {
-  post: TopLevelPost
-  onPostClick?: (post: TopLevelPost) => void
-}) {
-  const { post, onPostClick } = props
-  const [isLoading, setIsLoading] = useState(false)
+export function PostCard(props: { post: TopLevelPost }) {
+  const { post } = props
   const isAdminOrMod = useAdminOrMod()
   const currentUser = useUser()
   const [commentCount, setCommentCount] = useState<number | null>(null)
@@ -34,9 +31,7 @@ export function PostCard(props: {
     getNumPostComments(post.id).then(setCommentCount)
   }, [post.id])
 
-  const handleSetUnlisted = async (e: React.MouseEvent<HTMLButtonElement>) => {
-    e.preventDefault()
-    setIsLoading(true)
+  const handleSetUnlisted = async () => {
     try {
       // We need to pass title and content, otherwise they might be wiped by the update.
       // The backend API merges the provided fields with the existing post data.
@@ -53,10 +48,17 @@ export function PostCard(props: {
       console.error('Error updating post visibility:', error)
       const errorMessage = (error as any)?.message || 'Failed to update post'
       toast.error(errorMessage)
-    } finally {
-      setIsLoading(false)
     }
   }
+
+  // Create dropdown menu items for admin/mod users
+  const dropdownItems = buildArray(
+    isAdminOrMod && {
+      name: post.visibility === 'unlisted' ? 'List' : 'Unlist',
+      icon: <EyeOffIcon className="h-5 w-5" />,
+      onClick: handleSetUnlisted,
+    }
+  )
 
   return (
     <Col
@@ -81,9 +83,22 @@ export function PostCard(props: {
               }}
             />
           </Row>
-          <span className="text-ink-400 text-sm">
-            Created {fromNow(post.createdTime)}
-          </span>
+          <Row className="items-center gap-2">
+            {post.lastCommentTime && (
+              <span className="text-ink-400 text-sm">
+                Active {fromNow(post.lastCommentTime)}
+              </span>
+            )}
+            {isAdminOrMod && dropdownItems.length > 0 && (
+              <DropdownMenu
+                items={dropdownItems}
+                buttonContent={<DotsHorizontalIcon className="h-5 w-5" />}
+                menuWidth="w-40"
+                buttonClass="px-1 py-0 hover:bg-ink-100 rounded"
+                className="z-10"
+              />
+            )}
+          </Row>
         </Row>
         <div className="text-md text-ink-900 mb-1 font-medium">
           {post.visibility === 'unlisted' && <EyeOffIcon className="h-4 w-4" />}
@@ -128,46 +143,18 @@ export function PostCard(props: {
             }
           />
         </div>
-        {isAdminOrMod && (
-          <Button
-            size="xs"
-            color="gray-outline"
-            className="z-10"
-            onClick={handleSetUnlisted}
-            loading={isLoading}
-            disabled={isLoading}
-          >
-            Make Unlisted
-          </Button>
-        )}
       </Row>
-      {onPostClick ? (
-        <a
-          className="absolute bottom-0 left-0 right-0 top-0"
-          onClick={(e) => {
-            // Let the browser handle the link click (opens in new tab).
-            if (e.ctrlKey || e.metaKey) return
 
-            e.preventDefault()
-            track('select post card', {
-              slug: post.slug,
-              postId: post.id,
-            })
-            onPostClick(post)
-          }}
-        />
-      ) : (
-        <Link
-          href={`/post/${post.slug}`}
-          onClick={() => {
-            track('select post card', {
-              slug: post.slug,
-              postId: post.id,
-            })
-          }}
-          className="absolute bottom-0 left-0 right-0 top-0"
-        />
-      )}
+      <Link
+        href={`/post/${post.slug}`}
+        onClick={() => {
+          track('select post card', {
+            slug: post.slug,
+            postId: post.id,
+          })
+        }}
+        className="absolute bottom-0 left-0 right-0 top-0"
+      />
     </Col>
   )
 }
@@ -175,10 +162,9 @@ export function PostCard(props: {
 export function PostCardList(props: {
   posts: TopLevelPost[]
   highlightCards?: string[]
-  onPostClick?: (post: TopLevelPost) => void
   limit?: number
 }) {
-  const { posts, onPostClick, highlightCards, limit } = props
+  const { posts, limit } = props
 
   const [shownPosts, setShownPosts] = useState<TopLevelPost[]>(posts)
   useEffect(() => {
@@ -193,7 +179,7 @@ export function PostCardList(props: {
     <div className="w-full">
       {shownPosts.map((post) => (
         <div className="mb-1" key={post.id}>
-          <PostCard key={post.id} post={post} onPostClick={onPostClick} />
+          <PostCard key={post.id} post={post} />
         </div>
       ))}
       {limit && limit != 0 && posts.length > limit && (
