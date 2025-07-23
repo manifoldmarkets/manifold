@@ -12,7 +12,6 @@ import { useLiveContract } from 'web/hooks/use-contract'
 import { getNumberExpectedValue } from 'common/src/number'
 import { getExpectedValue, formatExpectedValue } from 'common/src/multi-numeric'
 import { Clock } from 'web/components/clock/clock'
-import { TimelineCard, TimelineItemData } from 'web/components/timeline'
 import { NumericBetPanel } from 'web/components/answers/numeric-bet-panel'
 import { ClickFrame } from 'web/components/widgets/click-frame'
 import Link from 'next/link'
@@ -1025,105 +1024,6 @@ function CapabilityCard({
   )
 }
 
-// For model releases: Displays model releases on a timeline
-interface ModelReleasesTimelineProps {
-  cards: AICapabilityCard[]
-  contracts: Contract[]
-}
-
-// Helper function for model release timeline that uses real date data
-function getEstimatedReleaseDate(
-  contract: Contract | null,
-  title: string,
-  index: number
-): Date {
-  // If we have a contract and it's a date market (outcomeType: 'DATE')
-  if (
-    contract &&
-    contract.outcomeType === 'DATE' &&
-    contract.mechanism === 'cpmm-multi-1'
-  ) {
-    try {
-      // Import the required functions from multi-date.ts
-      const { getExpectedDate } = require('common/src/multi-date')
-
-      // Get the expected date from the market
-      const expectedMillis = getExpectedDate(contract as any)
-
-      // Return a Date object from the milliseconds timestamp
-      if (expectedMillis && !isNaN(expectedMillis)) {
-        return new Date(expectedMillis)
-      }
-    } catch (e) {
-      console.error('Error getting date from contract:', e)
-    }
-  }
-
-  // Fallback date if missing data
-  return new Date(2026, 0, 15) // January 15, 2026
-}
-
-// Timeline component for model releases
-function ModelReleasesTimeline({
-  cards,
-  contracts,
-}: ModelReleasesTimelineProps) {
-  // Process contracts first - get live contracts at the component level
-  const contractsWithLive = useMemo(() => {
-    return cards.map((card) => {
-      const contract = contracts.find((c) => c.id === card.marketId) || null
-      return { card, contract }
-    })
-  }, [cards, contracts])
-
-  const contractsWithLiveData = contractsWithLive.map(({ card, contract }) => {
-    // eslint-disable-next-line react-hooks/rules-of-hooks
-    const liveContract = contract ? useLiveContract(contract) : null
-    return { card, contract, liveContract }
-  })
-
-  // Prepare timeline items with release dates and model info
-  const timelineItems = useMemo(() => {
-    return contractsWithLiveData.map(
-      ({ card, contract, liveContract }, index) => {
-        // Use the date from the contract if it's a date market
-        const releaseDate = getEstimatedReleaseDate(
-          liveContract && liveContract.outcomeType === 'DATE'
-            ? liveContract
-            : contract,
-          card.title,
-          index
-        )
-
-        return {
-          title: card.title,
-          path: contract ? contractPath(contract) : `#${card.marketId}`,
-          releaseDate,
-          icon: (
-            <AIModelIcon title={card.title} className="h-4 w-4 sm:h-6 sm:w-6" />
-          ),
-        } as TimelineItemData
-      }
-    )
-  }, [contractsWithLiveData])
-
-  if (timelineItems.length === 0) {
-    return (
-      <div className="text-ink-500 py-4 text-center">
-        No model releases to display
-      </div>
-    )
-  }
-
-  return (
-    <TimelineCard
-      items={timelineItems}
-      lineColor="bg-fuchsia-700 dark:bg-fuchsia-500"
-      backgroundColor="bg-fuchsia-50 dark:bg-fuchsia-800/20"
-    />
-  )
-}
-
 // Props for the featured graph section
 export interface FeaturedGraphProps {
   contract: BinaryContract | null
@@ -1321,7 +1221,6 @@ export function AIForecast({
   // Define the order of sections to ensure proper rendering
   const orderedSections: SectionType[] = [
     'monthly',
-    'releases',
     'benchmark',
     'featured-graph',
     'misuse',
@@ -1346,16 +1245,15 @@ export function AIForecast({
           )}
            */}
 
-          {/* Insert 2025 Predictions header after releases and before benchmark */}
-          {orderedSections[index - 1] === 'releases' &&
-            type === 'benchmark' && (
-              <>
-                <div className="mx-auto my-8 h-px w-3/4 bg-gray-200 dark:bg-gray-700"></div>
-                <h2 className="text-primary-600 mb-2 text-xl font-semibold sm:text-2xl">
-                  Predictions for 2025
-                </h2>
-              </>
-            )}
+          {/* Insert 2025 Predictions header after monthly and before benchmark */}
+          {orderedSections[index - 1] === 'monthly' && type === 'benchmark' && (
+            <>
+              <div className="mx-auto my-8 h-px w-3/4 bg-gray-200 dark:bg-gray-700"></div>
+              <h2 className="text-primary-600 mb-2 text-xl font-semibold sm:text-2xl">
+                Predictions for 2025
+              </h2>
+            </>
+          )}
 
           {/* Insert Long Term Predictions header between misuse and prizes */}
           {orderedSections[index - 1] === 'misuse' && type === 'prize' && (
@@ -1367,13 +1265,7 @@ export function AIForecast({
             </>
           )}
 
-          {type === 'releases' ? (
-            // Display releases on a timeline
-            <ModelReleasesTimeline
-              cards={capabilityCardsByType[type] || []}
-              contracts={contracts}
-            />
-          ) : type === 'featured-graph' ? (
+          {type === 'featured-graph' ? (
             // Display the featured market graph
             <FeaturedMarketGraph contract={featuredContract} />
           ) : (
