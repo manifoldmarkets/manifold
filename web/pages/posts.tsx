@@ -1,19 +1,20 @@
-import { Col } from 'web/components/layout/col'
-import { Row } from 'web/components/layout/row'
-import { Page } from 'web/components/layout/page'
-import { Title } from 'web/components/widgets/title'
-import { LoadingIndicator } from 'web/components/widgets/loading-indicator'
+import { PencilIcon } from '@heroicons/react/outline'
+import clsx from 'clsx'
 import { TopLevelPost } from 'common/top-level-post'
+import { unauthedApi } from 'common/util/api'
+import Link from 'next/link'
+import { useRouter } from 'next/router'
+import { useEffect, useState } from 'react'
+import { Button, buttonClass } from 'web/components/buttons/button'
+import { Col } from 'web/components/layout/col'
+import { Page } from 'web/components/layout/page'
+import { Row } from 'web/components/layout/row'
 import { PostCard } from 'web/components/top-level-posts/post-card'
+import { LoadingIndicator } from 'web/components/widgets/loading-indicator'
+import { Title } from 'web/components/widgets/title'
+import { useAPIGetter } from 'web/hooks/use-api-getter'
 import { useUser } from 'web/hooks/use-user'
 import { track } from 'web/lib/service/analytics'
-import { buttonClass } from 'web/components/buttons/button'
-import Link from 'next/link'
-import { useState, useEffect } from 'react'
-import { Button } from 'web/components/buttons/button'
-import { unauthedApi } from 'common/util/api'
-import { useRouter } from 'next/router'
-import { useAPIGetter } from 'web/hooks/use-api-getter'
 
 export async function getStaticProps() {
   const bestPosts = await unauthedApi('get-posts', {
@@ -44,7 +45,7 @@ export default function PostsPage(props: { bestPosts: TopLevelPost[] }) {
     } else if (viewType === 'changelog' && !filter) {
       setViewType('best')
     }
-  }, [router.isReady, router.query.filter, viewType])
+  }, [router.isReady, router.query.filter])
 
   const shouldFetchDifferentPosts =
     viewType === 'latest' || viewType === 'changelog'
@@ -64,7 +65,7 @@ export default function PostsPage(props: { bestPosts: TopLevelPost[] }) {
     <Page trackPageView={'posts page'}>
       <Col className=" px-2 py-3">
         <Row className="my-4 items-start justify-between sm:mt-0">
-          <Col>
+          <Col className="w-full">
             <Title className="mx-4 !mb-0 sm:mx-0">
               {viewType === 'latest'
                 ? 'Latest Posts'
@@ -105,18 +106,19 @@ export default function PostsPage(props: { bestPosts: TopLevelPost[] }) {
               >
                 Changelog
               </Button>
+              {user && (
+                <Col className="w-full">
+                  <Link
+                    href={'/create-post'}
+                    onClick={() => track('latest posts click create post')}
+                    className={clsx(buttonClass('xs', 'indigo'), 'self-end')}
+                  >
+                    <PencilIcon className="mr-1 h-4 w-4" />
+                    New Post
+                  </Link>
+                </Col>
+              )}
             </Row>
-          </Col>
-          <Col>
-            {user && (
-              <Link
-                href={'/create-post'}
-                onClick={() => track('latest posts click create post')}
-                className={buttonClass('md', 'indigo')}
-              >
-                Create Post
-              </Link>
-            )}
           </Col>
         </Row>
         {loading ? <LoadingIndicator /> : <Posts posts={posts ?? []} />}
