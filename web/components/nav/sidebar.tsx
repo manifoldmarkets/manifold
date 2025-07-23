@@ -1,39 +1,40 @@
 import {
+  ChatIcon,
   DeviceMobileIcon,
+  LoginIcon,
   LogoutIcon,
   MoonIcon,
-  SunIcon,
   QuestionMarkCircleIcon,
-  LoginIcon,
   SearchIcon,
   StarIcon,
+  SunIcon,
 } from '@heroicons/react/outline'
 // import { PiTelevisionSimple } from 'react-icons/pi'
-import TrophyIcon from 'web/lib/icons/trophy-icon.svg'
 import clsx from 'clsx'
 import { useState } from 'react'
+import TrophyIcon from 'web/lib/icons/trophy-icon.svg'
 
 import { buildArray } from 'common/util/array'
+import { DAY_MS } from 'common/util/time'
+import { AppRouterInstance } from 'next/dist/shared/lib/app-router-context.shared-runtime'
 import { usePathname, useRouter } from 'next/navigation'
+import { IoCompassOutline } from 'react-icons/io5'
 import { AppBadgesOrGetAppButton } from 'web/components/buttons/app-badges-or-get-app-button'
 import { CreateQuestionButton } from 'web/components/buttons/create-question-button'
 import { NotificationsIcon } from 'web/components/notifications-icon'
+import { useAdminOrMod } from 'web/hooks/use-admin'
 import { useTheme } from 'web/hooks/use-theme'
 import { useUser } from 'web/hooks/use-user'
 import { firebaseLogin, firebaseLogout } from 'web/lib/firebase/users'
 import { withTracking } from 'web/lib/service/analytics'
 import { MobileAppsQRCodeDialog } from '../buttons/mobile-apps-qr-code-button'
 import { SidebarSignUpButton } from '../buttons/sign-up-button'
+import { Col } from '../layout/col'
+import { AddFundsButton } from '../profile/add-funds-button'
+import { ReportsIcon } from '../reports-icon'
 import { ManifoldLogo } from './manifold-logo'
 import { ProfileSummary } from './profile-summary'
 import { NavItem, SidebarItem } from './sidebar-item'
-import { ReportsIcon } from '../reports-icon'
-import { AddFundsButton } from '../profile/add-funds-button'
-import { Col } from '../layout/col'
-import { DAY_MS } from 'common/util/time'
-import { useAdminOrMod } from 'web/hooks/use-admin'
-import { AppRouterInstance } from 'next/dist/shared/lib/app-router-context.shared-runtime'
-import { IoCompassOutline } from 'react-icons/io5'
 
 export default function Sidebar(props: {
   className?: string
@@ -150,13 +151,18 @@ const getDesktopNav = (
       //   href: '/tv',
       //   icon: PiTelevisionSimple,
       // },
-
       {
         name: 'Notifications',
         href: `/notifications`,
         icon: NotificationsIcon,
       },
       { name: 'Leagues', href: '/leagues', icon: TrophyIcon },
+      {
+        name: 'Forum',
+        href: '/posts',
+        icon: ChatIcon,
+      },
+
       options.isAdminOrMod && {
         name: 'Reports',
         href: '/reports',
