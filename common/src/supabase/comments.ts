@@ -12,7 +12,7 @@ export async function getRecentTopLevelCommentsAndReplies(
       .select('data')
       .eq('contract_id', contractId)
       .is('data->>replyToCommentId', null)
-      .not('data->>deleted', 'eq', 'true')
+      .or('data->>deleted.eq.false,data->>deleted.is.null')
       .order('created_time', { ascending: false } as any)
       .limit(approximateTotalComments)
   )
@@ -22,7 +22,7 @@ export async function getRecentTopLevelCommentsAndReplies(
       .select('data')
       .eq('contract_id', contractId)
       .not('data->>replyToCommentId', 'is', null)
-      .not('data->>deleted', 'eq', 'true')
+      .or('data->>deleted.eq.false,data->>deleted.is.null')
       .in(
         'data->>replyToCommentId',
         parents.map((p) => (p.data as ContractComment).id)
