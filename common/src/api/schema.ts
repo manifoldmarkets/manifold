@@ -1,21 +1,8 @@
-import { z } from 'zod'
-import {
-  Group,
-  MAX_ID_LENGTH,
-  MySearchGroupShape,
-  LiteGroup,
-  SearchGroupParams,
-  SearchGroupShape,
-  Topic,
-} from 'common/group'
-import {
-  createMarketProps,
-  resolveMarketProps,
-  type LiteMarket,
-  FullMarket,
-  updateMarketProps,
-} from './market-types'
-import { type Answer } from 'common/answer'
+import { MAX_ANSWER_LENGTH, type Answer } from 'common/answer'
+import { coerceBoolean, contentSchema } from 'common/api/zod-types'
+import { AnyBalanceChangeType } from 'common/balance-change'
+import type { Bet, LimitBet } from 'common/bet'
+import { ChatMessage, PrivateChatMessage } from 'common/chat-message'
 import {
   Comment,
   CommentWithTotalReplies,
@@ -23,59 +10,71 @@ import {
   PostComment,
   type ContractComment,
 } from 'common/comment'
-import { CandidateBet } from 'common/new-bet'
-import type { Bet, LimitBet } from 'common/bet'
-import { coerceBoolean, contentSchema } from 'common/api/zod-types'
 import { AIGeneratedMarket, Contract, MarketContract } from 'common/contract'
-import type { Txn, ManaPayTxn } from 'common/txn'
-import { LiquidityProvision } from 'common/liquidity-provision'
-import { DisplayUser, FullUser } from './user-types'
-import { League } from 'common/leagues'
-import { searchProps } from './market-search-types'
-import { MAX_ANSWER_LENGTH } from 'common/answer'
-import { type LinkPreview } from 'common/link-preview'
-import { Headline } from 'common/news'
-import { Row } from 'common/supabase/utils'
-import { AnyBalanceChangeType } from 'common/balance-change'
 import { Dashboard } from 'common/dashboard'
-import { ChatMessage, PrivateChatMessage } from 'common/chat-message'
-import { PrivateUser, User } from '../user'
-import { ManaSupply } from 'common/stats'
-import { Repost } from 'common/repost'
-import { PERIODS } from 'common/period'
 import { SWEEPS_MIN_BET } from 'common/economy'
+import {
+  Group,
+  LiteGroup,
+  MAX_ID_LENGTH,
+  MySearchGroupShape,
+  SearchGroupParams,
+  SearchGroupShape,
+  Topic,
+} from 'common/group'
+import { League } from 'common/leagues'
+import { type LinkPreview } from 'common/link-preview'
+import { LiquidityProvision } from 'common/liquidity-provision'
+import { CandidateBet } from 'common/new-bet'
+import { Headline } from 'common/news'
+import { PERIODS } from 'common/period'
 import {
   LivePortfolioMetrics,
   PortfolioMetrics,
 } from 'common/portfolio-metrics'
+import { Repost } from 'common/repost'
+import { ManaSupply } from 'common/stats'
+import { Row } from 'common/supabase/utils'
+import type { ManaPayTxn, Txn } from 'common/txn'
+import { z } from 'zod'
 import { ModReport } from '../mod-report'
+import { PrivateUser, User } from '../user'
+import { searchProps } from './market-search-types'
+import {
+  FullMarket,
+  createMarketProps,
+  resolveMarketProps,
+  updateMarketProps,
+  type LiteMarket,
+} from './market-types'
+import { DisplayUser, FullUser } from './user-types'
 
-import { RegistrationReturnType } from 'common/reason-codes'
+import { ContractMetric } from 'common/contract-metric'
 import {
   CheckoutSession,
   GIDXDocument,
   GPSProps,
   PaymentDetail,
-  checkoutParams,
-  verificationParams,
-  cashoutRequestParams,
   PendingCashoutStatusData,
   cashoutParams,
+  cashoutRequestParams,
+  checkoutParams,
+  verificationParams,
 } from 'common/gidx/gidx'
-import { notification_preference } from 'common/user-notification-preferences'
-import { PrivateMessageChannel } from 'common/supabase/private-messages'
 import { Notification } from 'common/notification'
+import { RegistrationReturnType } from 'common/reason-codes'
 import { NON_POINTS_BETS_LIMIT } from 'common/supabase/bets'
-import { ContractMetric } from 'common/contract-metric'
+import { PrivateMessageChannel } from 'common/supabase/private-messages'
+import { notification_preference } from 'common/user-notification-preferences'
 
 import { JSONContent } from '@tiptap/core'
-import { Task, TaskCategory } from 'common/todo'
-import { ChartAnnotation } from 'common/supabase/chart-annotations'
-import { Dictionary } from 'lodash'
-import { Reaction } from 'common/reaction'
-import { YEAR_MS } from 'common/util/time'
 import { MarketDraft } from 'common/drafts'
+import { Reaction } from 'common/reaction'
+import { ChartAnnotation } from 'common/supabase/chart-annotations'
+import { Task, TaskCategory } from 'common/todo'
 import { TopLevelPost } from 'common/top-level-post'
+import { YEAR_MS } from 'common/util/time'
+import { Dictionary } from 'lodash'
 // mqp: very unscientific, just balancing our willingness to accept load
 // with user willingness to put up with stale data
 export const DEFAULT_CACHE_STRATEGY =
@@ -1425,7 +1424,7 @@ export const API = (_apiTypeCheck = {
     props: z
       .object({
         sortBy: z
-          .enum(['created_time', 'importance_score'])
+          .enum(['created_time', 'importance_score', 'new-comments'])
           .optional()
           .default('created_time'),
         term: z.string().optional(),

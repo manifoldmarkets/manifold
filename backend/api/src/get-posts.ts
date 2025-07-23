@@ -41,7 +41,11 @@ export const getPosts: APIHandler<'get-posts'> = async (props, auth) => {
         `to_tsvector('english', op.data->>'title') @@ websearch_to_tsquery('english', $2)`
       ),
     groupBy('op.id'),
-    orderBy(`op.${sortBy} DESC`),
+    orderBy(
+      sortBy === 'new-comments'
+        ? 'last_comment_time DESC NULLS LAST'
+        : `op.${sortBy} DESC`
+    ),
     limitSql(limit, offset)
   )
 

@@ -84,11 +84,9 @@ export function PostCard(props: { post: TopLevelPost }) {
             />
           </Row>
           <Row className="items-center gap-2">
-            {post.lastCommentTime && (
-              <span className="text-ink-400 text-sm">
-                Active {fromNow(post.lastCommentTime)}
-              </span>
-            )}
+            <span className="text-ink-400 text-sm">
+              Active {fromNow(post.lastCommentTime ?? post.createdTime)}
+            </span>
             {isAdminOrMod && dropdownItems.length > 0 && (
               <DropdownMenu
                 items={dropdownItems}

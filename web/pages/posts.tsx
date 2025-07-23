@@ -33,9 +33,9 @@ export default function PostsPage(props: { bestPosts: TopLevelPost[] }) {
   const user = useUser()
   const router = useRouter()
 
-  const [viewType, setViewType] = useState<'latest' | 'best' | 'changelog'>(
-    'best'
-  )
+  const [viewType, setViewType] = useState<
+    'latest' | 'best' | 'changelog' | 'new-comments'
+  >('best')
 
   useEffect(() => {
     if (!router.isReady) return
@@ -47,12 +47,17 @@ export default function PostsPage(props: { bestPosts: TopLevelPost[] }) {
     }
   }, [router.isReady, router.query.filter])
 
-  const shouldFetchDifferentPosts =
-    viewType === 'latest' || viewType === 'changelog'
+  // cache delivers best posts
+  const shouldFetchDifferentPosts = viewType !== 'best'
   const { data: differentPosts, loading } = useAPIGetter(
     'get-posts',
     {
-      sortBy: 'created_time',
+      sortBy:
+        viewType === 'new-comments'
+          ? 'new-comments'
+          : viewType === 'changelog' || viewType === 'latest'
+          ? 'created_time'
+          : 'importance_score',
       isChangeLog: viewType === 'changelog',
     },
     undefined,
@@ -66,14 +71,22 @@ export default function PostsPage(props: { bestPosts: TopLevelPost[] }) {
       <Col className=" px-2 py-3">
         <Row className="my-4 items-start justify-between sm:mt-0">
           <Col className="w-full">
-            <Title className="mx-4 !mb-0 sm:mx-0">
-              {viewType === 'latest'
-                ? 'Latest Posts'
-                : viewType === 'best'
-                ? 'Best Posts'
-                : 'Changelog Posts'}
-            </Title>
-            <Row className="mx-4 mt-2 gap-2 sm:mx-0">
+            <Row className="items-center justify-between">
+              <Title className="mx-4 !mb-0 sm:mx-0"> Posts</Title>
+              {user && (
+                <Col className="mr-1 self-end sm:hidden">
+                  <Link
+                    href={'/create-post'}
+                    onClick={() => track('latest posts click create post')}
+                    className={clsx(buttonClass('xs', 'indigo'), 'self-end')}
+                  >
+                    <PencilIcon className="mr-1 h-4 w-4" />
+                    New Post
+                  </Link>
+                </Col>
+              )}
+            </Row>
+            <Row className="mx-4 mt-4 gap-2 sm:mx-0">
               <Button
                 size="xs"
                 color={viewType === 'best' ? 'indigo' : 'gray-outline'}
@@ -92,7 +105,18 @@ export default function PostsPage(props: { bestPosts: TopLevelPost[] }) {
                   router.push('/posts', undefined, { shallow: true })
                 }}
               >
-                Latest
+                New
+              </Button>
+              <Button
+                size="xs"
+                className="whitespace-nowrap"
+                color={viewType === 'new-comments' ? 'indigo' : 'gray-outline'}
+                onClick={() => {
+                  setViewType('new-comments')
+                  router.push('/posts', undefined, { shallow: true })
+                }}
+              >
+                New Comments
               </Button>
               <Button
                 size="xs"
@@ -107,7 +131,7 @@ export default function PostsPage(props: { bestPosts: TopLevelPost[] }) {
                 Changelog
               </Button>
               {user && (
-                <Col className="w-full">
+                <Col className="hidden w-full sm:flex">
                   <Link
                     href={'/create-post'}
                     onClick={() => track('latest posts click create post')}
