@@ -19,3 +19,9 @@ create table if not exists
 drop index if exists user_portfolio_history_latest_pkey;
 
 create unique index user_portfolio_history_latest_pkey on public.user_portfolio_history_latest using btree (user_id);
+
+alter table user_portfolio_history_latest enable row level security;
+
+create policy "public read" on user_portfolio_history_latest for
+    select
+    using (true);
