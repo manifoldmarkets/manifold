@@ -1,7 +1,9 @@
 import {
-  SupabaseDirectClient,
-  SupabaseDirectClientTimeout,
-} from 'shared/supabase/init'
+  BountiedQuestionContract,
+  Contract,
+  isMarketRanked,
+} from 'common/contract'
+import { floatingEqual, logit } from 'common/util/math'
 import {
   DAY_MS,
   HOUR_MS,
@@ -10,21 +12,19 @@ import {
   WEEK_MS,
   YEAR_MS,
 } from 'common/util/time'
-import { log, prefixedContractColumnsToSelect } from 'shared/utils'
-import {
-  BountiedQuestionContract,
-  Contract,
-  isMarketRanked,
-} from 'common/contract'
-import { getRecentContractLikes } from 'shared/supabase/likes'
 import { clamp, sortBy } from 'lodash'
-import { floatingEqual, logit } from 'common/util/math'
+import {
+  SupabaseDirectClient,
+  SupabaseDirectClientTimeout,
+} from 'shared/supabase/init'
+import { getRecentContractLikes } from 'shared/supabase/likes'
+import { log, prefixedContractColumnsToSelect } from 'shared/utils'
 
 import { BOT_USERNAMES } from 'common/envs/constants'
-import { bulkUpdate } from 'shared/supabase/utils'
 import { convertContract } from 'common/supabase/contracts'
 import { Row } from 'common/supabase/utils'
 import { convertPost } from 'common/top-level-post'
+import { bulkUpdate } from 'shared/supabase/utils'
 
 export const IMPORTANCE_MINUTE_INTERVAL = 2
 export const MIN_IMPORTANCE_SCORE = 0.1
@@ -521,7 +521,7 @@ export async function calculatePostImportanceScore(
   const weekAgo = now - WEEK_MS
 
   const posts = await pg.map(
-    `SELECT DISTINCT p.id, p.data, p.importance_score
+    `SELECT DISTINCT p.id, p.data, p.importance_score, p.boosted
      FROM old_posts p
      LEFT JOIN old_post_comments c ON p.id = c.post_id
      LEFT JOIN user_reactions r ON p.id = r.content_id AND r.content_type = 'post'
@@ -565,7 +565,11 @@ export async function calculatePostImportanceScore(
     `select * from contract_boosts where start_time <= now() and end_time > now() and funded and post_id is not null`
   )
 
-  const postsWithUpdates: { id: string; importance_score: number }[] = []
+  const postsWithUpdates: {
+    id: string
+    importance_score: number
+    boosted: boolean
+  }[] = []
 
   for (const post of posts) {
     const postId = post.id
@@ -593,12 +597,16 @@ export async function calculatePostImportanceScore(
       isBoosted ? 0.9 : 0
     )
 
-    // Only update if the score has changed significantly
+    // Update if the score has changed significantly OR if the boosted status has changed
     const epsilon = 0.01
-    if (Math.abs(newImportanceScore - currentImportanceScore) > epsilon) {
+    if (
+      Math.abs(newImportanceScore - currentImportanceScore) > epsilon ||
+      isBoosted !== post.boosted
+    ) {
       postsWithUpdates.push({
         id: postId,
         importance_score: clamp(newImportanceScore, 0, 1),
+        boosted: isBoosted,
       })
     }
   }
