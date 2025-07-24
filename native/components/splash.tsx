@@ -1,39 +1,31 @@
-import {
-  ActivityIndicator,
-  Image,
-  ImageSourcePropType,
-  StyleSheet,
-} from 'react-native'
-export const Splash = (props: {
-  width: number
-  height: number
-  source: ImageSourcePropType
-}) => {
-  const { width, height, source } = props
-
+import { ActivityIndicator, Image, StyleSheet, View } from 'react-native'
+import { AuthPageStyles } from './auth-page'
+export const Splash = () => {
   const styles = StyleSheet.create({
-    image: {
-      height,
-      width,
-      flex: 1,
-      justifyContent: 'center',
-      resizeMode: 'cover',
-    },
     activityIndicator: {
-      position: 'absolute',
-      left: width / 2 - 20,
-      bottom: 100,
+      height: AuthPageStyles.authContent.height,
+    },
+    container: {
+      ...AuthPageStyles.container,
+    },
+    centerFlex: {
+      ...AuthPageStyles.centerFlex,
     },
   })
 
   return (
-    <>
-      <Image style={styles.image} source={source} />
-      <ActivityIndicator
-        style={styles.activityIndicator}
-        size={'large'}
-        color={'white'}
-      />
-    </>
+    <View style={styles.container}>
+      <View style={styles.centerFlex}>
+        <Image
+          source={require('../assets/logo.png')}
+          style={AuthPageStyles.flappy}
+        />
+        <ActivityIndicator
+          style={styles.activityIndicator}
+          size={'large'}
+          color={'white'}
+        />
+      </View>
+    </View>
   )
 }

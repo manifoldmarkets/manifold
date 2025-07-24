@@ -1,15 +1,7 @@
-import React, { useEffect, useState } from 'react'
-import {
-  Alert,
-  StyleSheet,
-  View,
-  Platform,
-  ActivityIndicator,
-  Image,
-  TouchableOpacity,
-  Modal,
-  TouchableWithoutFeedback,
-} from 'react-native'
+import { signInWithCredential } from '@firebase/auth'
+import { ENV_CONFIG } from 'common/envs/constants'
+import { log } from 'components/logger'
+import { Text } from 'components/text'
 import {
   AppleAuthenticationButton,
   AppleAuthenticationButtonStyle,
@@ -18,6 +10,7 @@ import {
   isAvailableAsync,
   signInAsync,
 } from 'expo-apple-authentication'
+import * as Google from 'expo-auth-session/providers/google'
 import { CryptoDigestAlgorithm, digestStringAsync } from 'expo-crypto'
 import {
   GoogleAuthProvider,
@@ -25,20 +18,25 @@ import {
   updateEmail,
   updateProfile,
 } from 'firebase/auth'
-import { signInWithCredential } from '@firebase/auth'
-import { auth } from '../init'
+import React, { useEffect, useState } from 'react'
+import {
+  ActivityIndicator,
+  Alert,
+  Image,
+  Modal,
+  Platform,
+  StyleSheet,
+  TouchableOpacity,
+  TouchableWithoutFeedback,
+  View,
+} from 'react-native'
 import WebView from 'react-native-webview'
-import * as Google from 'expo-auth-session/providers/google'
-import { ENV_CONFIG } from 'common/envs/constants'
-import { Text } from 'components/text'
-import { log } from 'components/logger'
+import { auth } from '../init'
 
 export const AuthPage = (props: {
   webview: React.RefObject<WebView | undefined>
-  height: number
-  width: number
 }) => {
-  const { webview, height, width } = props
+  const { webview } = props
   const [loading, setLoading] = useState(false)
   const [_, response, promptAsync] = Google.useIdTokenAuthRequest(
     // @ts-ignore
@@ -139,37 +137,30 @@ export const AuthPage = (props: {
     }
   }
 
-  const computedStyles = StyleSheet.create({
-    container: {
-      flex: 1,
-      justifyContent: 'center',
-      backgroundColor: '#4337C9',
-      height,
-      width,
-      position: 'absolute',
-      zIndex: 1000,
-    },
-  })
   return (
-    <View style={computedStyles.container}>
-      <View style={styles.centerFlex}>
+    <View style={AuthPageStyles.container}>
+      <View style={AuthPageStyles.centerFlex}>
         <Image
           source={require('../assets/logo.png')}
-          style={{ height: 200, resizeMode: 'contain' }}
+          style={AuthPageStyles.flappy}
         />
         {loading ? (
-          <ActivityIndicator size="large" color="#0000ff" />
+          <ActivityIndicator
+            style={{ height: AuthPageStyles.authContent.height }}
+            size="large"
+            color="#0000ff"
+          />
         ) : (
-          <View style={styles.authContent}>
+          <View style={AuthPageStyles.authContent}>
             <TouchableOpacity
-              style={styles.googleButton}
+              style={AuthPageStyles.googleButton}
               onPress={async () => {
                 setLoading(true)
                 await promptAsync({ showInRecents: true })
                 setLoading(false)
               }}
             >
-              <View style={styles.googleButtonContent}>
+              <View style={AuthPageStyles.googleButtonContent}>
                 <Image
                   source={require('../assets/square-google.png')}
                   style={{
@@ -178,7 +169,10 @@ export const AuthPage = (props: {
                     resizeMode: 'contain',
                   }}
                 />
-                <Text style={styles.googleText} maxFontSizeMultiplier={1}>
+                <Text
+                  style={AuthPageStyles.googleText}
+                  maxFontSizeMultiplier={1}
+                >
                   Sign in with Google
                 </Text>
               </View>
@@ -227,7 +221,17 @@ function useAppleAuthentication() {
   return authenticationLoaded
 }
 
-const styles = StyleSheet.create({
+export const AuthPageStyles = StyleSheet.create({
+  container: {
+    flex: 1,
+    justifyContent: 'center',
+    backgroundColor: '#4337C9',
+  },
+  flappy: {
+    height: 175,
+    resizeMode: 'contain',
+    marginTop: 180,
+  },
   googleButton: {
     backgroundColor: 'white',
     borderRadius: 5,
@@ -253,7 +257,9 @@ const styles = StyleSheet.create({
   },
   authContent: {
     width: 300,
+    paddingTop: 20,
     padding: 35,
+    height: 180,
     alignItems: 'center',
   },
   modalView: {
@@ -299,24 +305,25 @@ const styles = StyleSheet.create({
     textDecorationLine: 'underline',
   },
 })
-
 function Eula() {
   const [expanded, setExpanded] = useState<'privacy' | 'tos' | null>()
   const [open, setOpen] = useState(false)
 
   return (
     <>
-      <View style={styles.eulaContainer}>
-        <Text style={styles.text}>By signing up, you agree to our</Text>
+      <View style={AuthPageStyles.eulaContainer}>
+        <Text style={AuthPageStyles.text}>By signing up, you agree to our</Text>
         <TouchableOpacity
           onPress={() => {
             setOpen(true)
             setExpanded('privacy')
           }}
         >
-          <Text style={[styles.clickable, styles.text]}>Privacy Policy</Text>
+          <Text style={[AuthPageStyles.clickable, AuthPageStyles.text]}>
+            Privacy Policy
+          </Text>
         </TouchableOpacity>
-        <Text style={styles.text}> & </Text>
+        <Text style={AuthPageStyles.text}> & </Text>
 
         <TouchableOpacity
           onPress={() => {
@@ -324,7 +331,9 @@ function Eula() {
             setExpanded('tos')
           }}
         >
-          <Text style={[styles.clickable, styles.text]}>ToS</Text>
+          <Text style={[AuthPageStyles.clickable, AuthPageStyles.text]}>
+            ToS
+          </Text>
         </TouchableOpacity>
       </View>
       <Modal
@@ -334,12 +343,14 @@ function Eula() {
         onRequestClose={() => setOpen(false)}
         style={{ flex: 1 }}
       >
-        <View style={styles.centerFlex}>
-          <View style={styles.modalView}>
+        <View style={AuthPageStyles.centerFlex}>
+          <View style={AuthPageStyles.modalView}>
             {expanded === 'tos' && (
               <WebView
                 style={{ height: 500, width: 300 }}
-                source={{ uri: 'https://docs.manifold.markets/terms-and-conditions' }}
+                source={{
+                  uri: 'https://docs.manifold.markets/terms-and-conditions',
+                }}
               />
             )}
             {expanded === 'privacy' && (
@@ -355,7 +366,7 @@ function Eula() {
               setExpanded(null)
             }}
           >
-            <View style={styles.modalOverlay} />
+            <View style={AuthPageStyles.modalOverlay} />
           </TouchableWithoutFeedback>
         </View>
       </Modal>

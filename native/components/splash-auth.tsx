@@ -1,30 +1,16 @@
-import WebView from 'react-native-webview'
-import { ImageSourcePropType, StyleSheet, Text, View } from 'react-native'
-import React, { useEffect, useState } from 'react'
-import NetInfo, { NetInfoState } from '@react-native-community/netinfo'
 import { User as FirebaseUser } from '@firebase/auth'
-import { Splash } from 'components/splash'
 import { AuthPage } from 'components/auth-page'
-import { useIsConnected } from '../lib/use-is-connected'
+import { Splash } from 'components/splash'
+import React, { useEffect } from 'react'
+import WebView from 'react-native-webview'
 
 export const SplashAuth = (props: {
   webview: React.RefObject<WebView | undefined>
-  height: number
-  width: number
-  source: ImageSourcePropType
   hasLoadedWebView: boolean
   fbUser: FirebaseUser | null
   isConnected: boolean
 }) => {
-  const {
-    isConnected,
-    hasLoadedWebView,
-    fbUser,
-    webview,
-    width,
-    height,
-    source,
-  } = props
+  const { isConnected, hasLoadedWebView, fbUser, webview } = props
 
   useEffect(() => {
     if (!isConnected) {
@@ -32,13 +18,14 @@ export const SplashAuth = (props: {
     }
   }, [isConnected])
 
-  if (!isConnected) {
-    return <Splash height={height} width={width} source={source} />
+  if (!isConnected || !hasLoadedWebView) {
+    return <Splash />
   }
 
-  if (!hasLoadedWebView)
-    return <Splash height={height} width={width} source={source} />
-  else if (hasLoadedWebView && !fbUser)
-    return <AuthPage webview={webview} height={height} width={width} />
-  else return <></>
+  if (!fbUser) {
+    return <AuthPage webview={webview} />
+  }
+
+  // This shouldn't happen as App.tsx handles this case
+  return null
 }

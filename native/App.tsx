@@ -1,48 +1,46 @@
-import { app, auth, ENV } from './init'
-import React, { useCallback, useEffect, useRef, useState } from 'react'
-import WebView from 'react-native-webview'
-import 'expo-dev-client'
+import Clipboard from '@react-native-clipboard/clipboard'
 import { EXTERNAL_REDIRECTS, isAdminId } from 'common/envs/constants'
+import * as ExpoClipboard from 'expo-clipboard'
+import 'expo-dev-client'
 import * as Notifications from 'expo-notifications'
+import * as WebBrowser from 'expo-web-browser'
+import { User as FirebaseUser } from 'firebase/auth'
+import React, { useCallback, useEffect, useRef, useState } from 'react'
 import {
-  Platform,
   BackHandler,
   NativeEventEmitter,
-  StyleSheet,
-  SafeAreaView,
-  Dimensions,
+  Platform,
   Share,
+  StyleSheet,
 } from 'react-native'
-import Clipboard from '@react-native-clipboard/clipboard'
-import * as ExpoClipboard from 'expo-clipboard'
-import { User as FirebaseUser } from 'firebase/auth'
-import * as WebBrowser from 'expo-web-browser'
+import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context'
+import WebView from 'react-native-webview'
+import { app, auth, ENV } from './init'
 // @ts-ignore
-import * as LinkingManager from 'react-native/Libraries/Linking/NativeLinkingManager'
-import * as Linking from 'expo-linking'
+import { ReadexPro_400Regular, useFonts } from '@expo-google-fonts/readex-pro'
+import * as Sentry from '@sentry/react-native'
 import { setFirebaseUserViaJson } from 'common/firebase-auth'
-import { StatusBar } from 'expo-status-bar'
-import { IosIapListener } from 'components/ios-iap-listener'
-import { withIAPContext } from 'react-native-iap'
-import { getSourceUrl, Notification } from 'common/notification'
 import {
   MesageTypeMap,
   nativeToWebMessage,
   nativeToWebMessageType,
   webToNativeMessage,
 } from 'common/native-message'
-import { CustomWebview } from 'components/custom-webview'
-import { ExportLogsButton, log } from 'components/logger'
-import { ReadexPro_400Regular, useFonts } from '@expo-google-fonts/readex-pro'
-import Constants from 'expo-constants'
 import { NativeShareData } from 'common/native-share-data'
-import { clearData, getData, storeData } from 'lib/auth'
+import { getSourceUrl, Notification } from 'common/notification'
+import { CustomWebview } from 'components/custom-webview'
+import { log } from 'components/logger'
 import { SplashAuth } from 'components/splash-auth'
-import { useIsConnected } from 'lib/use-is-connected'
-import { checkLocationPermission, getLocation } from 'lib/location'
-import * as Sentry from '@sentry/react-native'
-import * as StoreReview from 'expo-store-review'
+import Constants from 'expo-constants'
+import * as Linking from 'expo-linking'
 import { MaybeNotificationResponse, Subscription } from 'expo-notifications'
+import { StatusBar } from 'expo-status-bar'
+import * as StoreReview from 'expo-store-review'
+import { clearData, getData, storeData } from 'lib/auth'
+import { checkLocationPermission, getLocation } from 'lib/location'
+import { useIsConnected } from 'lib/use-is-connected'
+// @ts-ignore
+import * as LinkingManager from 'react-native/Libraries/Linking/NativeLinkingManager'
 
 Sentry.init({
   dsn: 'https://2353d2023dad4bc192d293c8ce13b9a1@o4504040581496832.ingest.us.sentry.io/4504040585494528',
@@ -141,9 +139,6 @@ const App = () => {
     setUrlToLoad(newUrl)
   }
 
-  // IAP
-  const [checkoutAmount, setCheckoutAmount] = useState<number | null>(null)
-
   const handlePushNotification = async (
     response: Notifications.NotificationResponse
   ) => {
@@ -204,10 +199,8 @@ const App = () => {
       })
 
     return () => {
-      notificationResponseListener.current &&
-        Notifications.removeNotificationSubscription(
-          notificationResponseListener.current
-        )
+      if (notificationResponseListener.current)
+        notificationResponseListener.current.remove()
     }
   }, [])
 
@@ -216,12 +209,11 @@ const App = () => {
       log('Initial url:', url, '- has loaded webview:', hasLoadedWebView)
       if (url) setUrlWithNativeQuery(url)
     })
-    BackHandler.addEventListener('hardwareBackPress', handleBackButtonPress)
-    return () =>
-      BackHandler.removeEventListener(
-        'hardwareBackPress',
-        handleBackButtonPress
-      )
+    const backHandler = BackHandler.addEventListener(
+      'hardwareBackPress',
+      handleBackButtonPress
+    )
+    return () => backHandler.remove()
   }, [])
 
   const handleLastNotificationResponse = async (
@@ -334,11 +326,8 @@ const App = () => {
   const handleMessageFromWebview = async ({ nativeEvent }: any) => {
     const { data } = nativeEvent
     const { type, data: payload } = JSON.parse(data) as webToNativeMessage
-    if (type === 'checkout') {
-      setCheckoutAmount(payload.amount)
-    }
     // We handle auth with a custom screen, so if the user sees a login button on the client, we're out of sync
-    else if (type === 'loginClicked') {
+    if (type === 'loginClicked') {
       await signOutUsers('Error on sign out before sign in')
     } else if (type === 'tryToGetPushTokenWithoutPrompt') {
       getExistingPushNotificationStatus().then(async (status) => {
@@ -493,8 +482,6 @@ const App = () => {
 
   const isConnected = useIsConnected()
   const fullyLoaded = hasLoadedWebView && fbUser && isConnected
-  const width = Dimensions.get('window').width //full width
-  const height = Dimensions.get('window').height //full height
   const styles = StyleSheet.create({
     container: {
       display: fullyLoaded ? 'flex' : 'none',
@@ -521,42 +508,34 @@ const App = () => {
 
   return (
     <>
-      <SplashAuth
-        height={height}
-        width={width}
-        source={require('./assets/splash.png')}
-        webview={webview}
-        hasLoadedWebView={hasLoadedWebView}
-        fbUser={fbUser}
-        isConnected={isConnected}
-      />
-      {Platform.OS === 'ios' && fullyLoaded && (
-        <IosIapListener
-          checkoutAmount={checkoutAmount}
-          setCheckoutAmount={setCheckoutAmount}
-          communicateWithWebview={communicateWithWebview}
-        />
-      )}
-
-      <SafeAreaView style={styles.container}>
-        <StatusBar
-          animated={true}
-          style={theme === 'dark' ? 'light' : 'dark'}
-          hidden={false}
-        />
-        <CustomWebview
-          urlToLoad={urlToLoad}
+      <SafeAreaProvider>
+        <SplashAuth
           webview={webview}
-          resetWebView={resetWebView}
-          width={width}
-          height={height}
-          setHasLoadedWebView={setHasLoadedWebView}
-          handleMessageFromWebview={handleMessageFromWebview}
-          handleExternalLink={handleExternalLink}
+          hasLoadedWebView={hasLoadedWebView}
+          fbUser={fbUser}
+          isConnected={isConnected}
         />
-      </SafeAreaView>
+        <SafeAreaView
+          style={styles.container}
+          edges={['top', 'bottom', 'left', 'right']}
+        >
+          <StatusBar
+            animated={true}
+            style={theme === 'dark' ? 'light' : 'dark'}
+            hidden={false}
+          />
+          <CustomWebview
+            urlToLoad={urlToLoad}
+            webview={webview}
+            resetWebView={resetWebView}
+            setHasLoadedWebView={setHasLoadedWebView}
+            handleMessageFromWebview={handleMessageFromWebview}
+            handleExternalLink={handleExternalLink}
+          />
+        </SafeAreaView>
+      </SafeAreaProvider>
       {/*<ExportLogsButton />*/}
     </>
   )
 }
-export default Sentry.wrap(withIAPContext(App))
+export default Sentry.wrap(App)
