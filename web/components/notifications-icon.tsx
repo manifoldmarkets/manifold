@@ -1,25 +1,33 @@
 'use client'
-import { BellIcon } from '@heroicons/react/outline'
-import { Row } from 'web/components/layout/row'
-import { useEffect } from 'react'
-import { usePrivateUser } from 'web/hooks/use-user'
-import { PrivateUser } from 'common/user'
-import { usePathname } from 'next/navigation'
-import { usePersistentLocalState } from 'web/hooks/use-persistent-local-state'
+// import { BellIcon } from '@heroicons/react/outline'
 import {
   NOTIFICATIONS_PER_PAGE,
   useGroupedUnseenNotifications,
 } from 'client-common/hooks/use-notifications'
-import { api } from 'web/lib/api/api'
+import { PrivateUser } from 'common/user'
+import { usePathname } from 'next/navigation'
+import { useEffect } from 'react'
+import {
+  IoNotificationsOutline as BellIcon,
+  IoNotifications as BellIconSolid,
+} from 'react-icons/io5'
+import { Row } from 'web/components/layout/row'
+import { usePersistentLocalState } from 'web/hooks/use-persistent-local-state'
 import { useUnseenPrivateMessageChannels } from 'web/hooks/use-private-messages'
+import { usePrivateUser } from 'web/hooks/use-user'
+import { api } from 'web/lib/api/api'
 
-export function NotificationsIcon(props: { className?: string }) {
+export function NotificationsIcon(props: {
+  className?: string
+  solid?: boolean
+}) {
   const privateUser = usePrivateUser()
-  const { className } = props
+  const { className, solid } = props
+  const Icon = solid ? BellIconSolid : BellIcon
   return (
     <Row className="relative justify-center">
       {privateUser && <UnseenNotificationsBubble privateUser={privateUser} />}
-      <BellIcon className={className} />
+      <Icon className={className} />
     </Row>
   )
 }
