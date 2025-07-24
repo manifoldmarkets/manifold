@@ -6,7 +6,7 @@
     "scheme": "com.markets.manifold",
     "newArchEnabled": false,
     "jsEngine": "hermes",
-    "version": "2.0.64",
+    "version": "2.0.65",
     "orientation": "portrait",
     "icon": "./assets/logo.png",
     "userInterfaceStyle": "light",
@@ -64,7 +64,7 @@
         "backgroundColor": "#4337C9"
       },
       "package": "com.markets.manifold",
-      "versionCode": 64
+      "versionCode": 65
     },
     "ios": {
       "infoPlist": {
@@ -78,7 +78,7 @@
         "applinks:manifold.markets",
         "webcredentials:manifold.markets"
       ],
-      "buildNumber": "1.0.64"
+      "buildNumber": "1.0.65"
     }
   }
 }

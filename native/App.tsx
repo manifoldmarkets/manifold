@@ -11,10 +11,10 @@ import {
   Dimensions,
   NativeEventEmitter,
   Platform,
-  SafeAreaView,
   Share,
   StyleSheet,
 } from 'react-native'
+import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context'
 import WebView from 'react-native-webview'
 import { app, auth, ENV } from './init'
 // @ts-ignore
@@ -40,6 +40,7 @@ import * as StoreReview from 'expo-store-review'
 import { clearData, getData, storeData } from 'lib/auth'
 import { checkLocationPermission, getLocation } from 'lib/location'
 import { useIsConnected } from 'lib/use-is-connected'
+// @ts-ignore
 import * as LinkingManager from 'react-native/Libraries/Linking/NativeLinkingManager'
 
 Sentry.init({
@@ -520,23 +521,28 @@ const App = () => {
         isConnected={isConnected}
       />
 
-      <SafeAreaView style={styles.container}>
-        <StatusBar
-          animated={true}
-          style={theme === 'dark' ? 'light' : 'dark'}
-          hidden={false}
-        />
-        <CustomWebview
-          urlToLoad={urlToLoad}
-          webview={webview}
-          resetWebView={resetWebView}
-          width={width}
-          height={height}
-          setHasLoadedWebView={setHasLoadedWebView}
-          handleMessageFromWebview={handleMessageFromWebview}
-          handleExternalLink={handleExternalLink}
-        />
-      </SafeAreaView>
+      <SafeAreaProvider>
+        <SafeAreaView
+          style={styles.container}
+          edges={['top', 'bottom', 'left', 'right']}
+        >
+          <StatusBar
+            animated={true}
+            style={theme === 'dark' ? 'light' : 'dark'}
+            hidden={false}
+          />
+          <CustomWebview
+            urlToLoad={urlToLoad}
+            webview={webview}
+            resetWebView={resetWebView}
+            width={width}
+            height={height}
+            setHasLoadedWebView={setHasLoadedWebView}
+            handleMessageFromWebview={handleMessageFromWebview}
+            handleExternalLink={handleExternalLink}
+          />
+        </SafeAreaView>
+      </SafeAreaProvider>
       {/*<ExportLogsButton />*/}
     </>
   )

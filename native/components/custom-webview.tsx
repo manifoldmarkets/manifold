@@ -5,7 +5,6 @@ import { RefObject, useState } from 'react'
 import {
   Platform,
   RefreshControl,
-  StatusBar as RNStatusBar,
   ScrollView,
   StyleSheet,
   View,
@@ -147,7 +146,7 @@ const styles = StyleSheet.create({
   webView: {
     display: 'flex',
     overflow: 'hidden',
-    marginTop: isIOS ? 0 : RNStatusBar.currentHeight ?? 0,
+    marginTop: 0,
     marginBottom: 0,
   },
 })

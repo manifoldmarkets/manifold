@@ -54,6 +54,7 @@
     "react-dom": "19.0.0",
     "react-native": "0.79.5",
     "react-native-logs": "^5.1.0",
+    "react-native-safe-area-context": "5.5.2",
     "react-native-web": "^0.20.0",
     "react-native-webview": "13.12.5",
     "zod": "3.23.8"
