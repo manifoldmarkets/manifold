@@ -6,25 +6,26 @@ import WebView from 'react-native-webview'
 
 export const SplashAuth = (props: {
   webview: React.RefObject<WebView | undefined>
-  height: number
-  width: number
   hasLoadedWebView: boolean
   fbUser: FirebaseUser | null
   isConnected: boolean
 }) => {
-  const { isConnected, hasLoadedWebView, fbUser, webview, width, height } =
-    props
+  const { isConnected, hasLoadedWebView, fbUser, webview } = props
 
   useEffect(() => {
     if (!isConnected) {
       alert("You're offline. Please reconnect to the internet to use Manifold.")
     }
   }, [isConnected])
-  if (!isConnected) {
-    return <Splash height={height} width={width} />
+
+  if (!isConnected || !hasLoadedWebView) {
+    return <Splash />
   }
-  if (!hasLoadedWebView) return <Splash height={height} width={width} />
-  else if (hasLoadedWebView && !fbUser)
-    return <AuthPage webview={webview} height={height} width={width} />
-  else return <></>
+
+  if (!fbUser) {
+    return <AuthPage webview={webview} />
+  }
+
+  // This shouldn't happen as App.tsx handles this case
+  return null
 }

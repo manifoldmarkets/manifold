@@ -35,10 +35,8 @@ import { auth } from '../init'
 
 export const AuthPage = (props: {
   webview: React.RefObject<WebView | undefined>
-  height: number
-  width: number
 }) => {
-  const { webview, height, width } = props
+  const { webview } = props
   const [loading, setLoading] = useState(false)
   const [_, response, promptAsync] = Google.useIdTokenAuthRequest(
     // @ts-ignore
@@ -139,15 +137,8 @@ export const AuthPage = (props: {
     }
   }
 
-  const computedStyles = StyleSheet.create({
-    container: {
-      ...AuthPageStyles.container,
-      height,
-      width,
-    },
-  })
   return (
-    <View style={computedStyles.container}>
+    <View style={AuthPageStyles.container}>
       <View style={AuthPageStyles.centerFlex}>
         <Image
           source={require('../assets/logo.png')}
@@ -235,8 +226,6 @@ export const AuthPageStyles = StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
     backgroundColor: '#4337C9',
-    position: 'absolute',
-    zIndex: 1000,
   },
   flappy: {
     height: 175,

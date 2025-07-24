@@ -15,6 +15,7 @@ import {
   WebViewRenderProcessGoneEvent,
   WebViewTerminatedEvent,
 } from 'react-native-webview/lib/WebViewTypes'
+import { AuthPageStyles } from './auth-page'
 
 const PREVENT_ZOOM_SET_NATIVE = `(function() {
   const meta = document.createElement('meta'); 
@@ -30,8 +31,6 @@ export const CustomWebview = (props: {
   urlToLoad: string
   webview: RefObject<WebView>
   resetWebView: () => void
-  width: number
-  height: number
   setHasLoadedWebView: (loaded: boolean) => void
   handleMessageFromWebview: (m: any) => Promise<void>
   handleExternalLink: (url: string) => void
@@ -40,8 +39,6 @@ export const CustomWebview = (props: {
     urlToLoad,
     webview,
     resetWebView,
-    width,
-    height,
     setHasLoadedWebView,
     handleMessageFromWebview,
     handleExternalLink,
@@ -86,7 +83,7 @@ export const CustomWebview = (props: {
             source={{ uri: urlToLoad }}
             ref={webview}
             onError={(e) => handleWebviewError(e, resetWebView)}
-            renderError={(e) => handleRenderError(e, width, height)}
+            renderError={(e) => handleRenderError(e)}
             onOpenWindow={(e) => handleExternalLink(e.nativeEvent.targetUrl)}
             onRenderProcessGone={(e) => handleWebviewKilled(e, resetWebView)}
             onContentProcessDidTerminate={(e) =>
@@ -115,7 +112,7 @@ export const CustomWebview = (props: {
             source={{ uri: urlToLoad }}
             ref={webview}
             onError={(e) => handleWebviewError(e, resetWebView)}
-            renderError={(e) => handleRenderError(e, width, height)}
+            renderError={(e) => handleRenderError(e)}
             onOpenWindow={(e) => handleExternalLink(e.nativeEvent.targetUrl)}
             onRenderProcessGone={(e) => handleWebviewKilled(e, resetWebView)}
             onContentProcessDidTerminate={(e) =>
@@ -185,17 +182,13 @@ const handleWebviewError = (e: WebViewErrorEvent, callback: () => void) => {
   callback()
 }
 
-const handleRenderError = (
-  e: string | undefined,
-  width: number,
-  height: number
-) => {
+const handleRenderError = (e: string | undefined) => {
   log('error on render webview', e)
 
   // Renders this view while we resolve the error
   return (
-    <View style={{ height, width }}>
-      <Splash height={height} width={width} />
+    <View style={AuthPageStyles.container}>
+      <Splash />
     </View>
   )
 }

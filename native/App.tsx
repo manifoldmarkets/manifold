@@ -8,7 +8,6 @@ import { User as FirebaseUser } from 'firebase/auth'
 import React, { useCallback, useEffect, useRef, useState } from 'react'
 import {
   BackHandler,
-  Dimensions,
   NativeEventEmitter,
   Platform,
   Share,
@@ -483,8 +482,6 @@ const App = () => {
 
   const isConnected = useIsConnected()
   const fullyLoaded = hasLoadedWebView && fbUser && isConnected
-  const width = Dimensions.get('window').width //full width
-  const height = Dimensions.get('window').height //full height
   const styles = StyleSheet.create({
     container: {
       display: fullyLoaded ? 'flex' : 'none',
@@ -511,16 +508,13 @@ const App = () => {
 
   return (
     <>
-      <SplashAuth
-        height={height}
-        width={width}
-        webview={webview}
-        hasLoadedWebView={hasLoadedWebView}
-        fbUser={fbUser}
-        isConnected={isConnected}
-      />
-
       <SafeAreaProvider>
+        <SplashAuth
+          webview={webview}
+          hasLoadedWebView={hasLoadedWebView}
+          fbUser={fbUser}
+          isConnected={isConnected}
+        />
         <SafeAreaView
           style={styles.container}
           edges={['top', 'bottom', 'left', 'right']}
@@ -534,8 +528,6 @@ const App = () => {
             urlToLoad={urlToLoad}
             webview={webview}
             resetWebView={resetWebView}
-            width={width}
-            height={height}
             setHasLoadedWebView={setHasLoadedWebView}
             handleMessageFromWebview={handleMessageFromWebview}
             handleExternalLink={handleExternalLink}
