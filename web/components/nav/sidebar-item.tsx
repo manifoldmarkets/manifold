@@ -10,6 +10,7 @@ export type NavItem = {
   href?: string
   onClick?: () => void
   icon?: React.ComponentType<{ className?: string }>
+  solidIcon?: React.ComponentType<{ className?: string }>
   iconClassName?: string
   external?: boolean
   alwaysShowName?: boolean

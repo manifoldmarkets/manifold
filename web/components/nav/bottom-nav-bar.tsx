@@ -11,12 +11,20 @@ import {
   SearchIcon,
   UserCircleIcon,
 } from '@heroicons/react/outline'
-import { MenuAlt3Icon, XIcon } from '@heroicons/react/solid'
+import {
+  MenuAlt3Icon,
+  QuestionMarkCircleIcon as QuestionMarkCircleIconSolid,
+  // SearchIcon as SearchIconSolid,
+  UserCircleIcon as UserCircleIconSolid,
+  XIcon,
+} from '@heroicons/react/solid'
 import clsx from 'clsx'
 import { User } from 'common/user'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { Fragment, useState } from 'react'
+import { FaSearch as SearchIconSolid } from 'react-icons/fa'
+import { IoCompass, IoCompassOutline } from 'react-icons/io5'
 import { NotificationsIcon } from 'web/components/notifications-icon'
 import { useIsIframe } from 'web/hooks/use-is-iframe'
 import { useUser } from 'web/hooks/use-user'
@@ -28,15 +36,24 @@ import { Avatar } from '../widgets/avatar'
 import { TokenNumber } from '../widgets/token-number'
 import Sidebar from './sidebar'
 import { NavItem } from './sidebar-item'
-import { IoCompassOutline } from 'react-icons/io5'
 
 export const BOTTOM_NAV_BAR_HEIGHT = 58
 
 const itemClass =
   'sm:hover:bg-ink-200 block w-full py-1 px-3 text-center sm:hover:text-primary-700 transition-colors'
-const selectedItemClass = 'bg-ink-100 text-primary-700'
-const touchItemClass = 'bg-primary-100'
-const iconClassName = 'mx-auto my-1 h-7 w-7'
+const selectedItemClass = 'text-primary-700'
+const touchItemClass = 'touch-press-effect'
+const iconClassName = 'mx-auto my-1 h-[1.6rem] w-[1.6rem]'
+const exploreIconClassName =
+  ' h-[1.8rem] w-[1.8rem] !mb-[0.19rem] !mt-[0.135rem]'
+
+// Wrapper components for NotificationsIcon to work with the navigation system
+const NotificationsIconOutline = (props: { className?: string }) => (
+  <NotificationsIcon {...props} solid={false} />
+)
+const NotificationsIconSolid = (props: { className?: string }) => (
+  <NotificationsIcon {...props} solid={true} />
+)
 
 function getNavigation(user: User) {
   return [
@@ -44,12 +61,14 @@ function getNavigation(user: User) {
       name: 'Browse',
       href: '/home',
       icon: SearchIcon,
+      solidIcon: SearchIconSolid,
     },
     {
       name: 'Explore',
       href: '/explore',
       icon: IoCompassOutline,
-      iconClassName: '!h-[1.9rem] !w-[1.9rem] !mb-[0.19rem] !mt-[0.13rem]',
+      solidIcon: IoCompass,
+      iconClassName: exploreIconClassName,
     },
     {
       name: 'Profile',
@@ -58,18 +77,26 @@ function getNavigation(user: User) {
     {
       name: 'Inbox',
       href: `/notifications`,
-      icon: NotificationsIcon,
+      icon: NotificationsIconOutline,
+      solidIcon: NotificationsIconSolid,
     },
   ]
 }
 
 const signedOutNavigation = () => [
-  { name: 'Browse', href: '/browse', icon: SearchIcon, alwaysShowName: true },
+  {
+    name: 'Browse',
+    href: '/browse',
+    icon: SearchIcon,
+    solidIcon: SearchIconSolid,
+    alwaysShowName: true,
+  },
   {
     name: 'Explore',
     href: '/explore',
     icon: IoCompassOutline,
-    iconClassName: '!h-[1.9rem] !w-[1.9rem] !mb-[0.19rem] !mt-[0.13rem]',
+    solidIcon: IoCompass,
+    iconClassName: exploreIconClassName,
     // prefetch: false, // should we not prefetch this?
   },
   // { name: 'News', href: '/news', icon: NewspaperIcon, alwaysShowName: true },
@@ -77,11 +104,13 @@ const signedOutNavigation = () => [
     name: 'About',
     href: '/about',
     icon: QuestionMarkCircleIcon,
+    solidIcon: QuestionMarkCircleIconSolid,
   },
   {
     name: 'Sign in',
     onClick: firebaseLogin,
     icon: UserCircleIcon,
+    solidIcon: UserCircleIconSolid,
   },
 ]
 
@@ -146,6 +175,8 @@ function NavBarItem(props: {
   const [touched, setTouched] = useState(false)
 
   if (item.name === 'Profile' && user) {
+    const isOnUserProfile = currentPage === `/${user.username}`
+
     return (
       <Link
         prefetch={item?.prefetch ?? true}
@@ -153,7 +184,7 @@ function NavBarItem(props: {
         className={clsx(
           itemClass,
           touched && touchItemClass,
-          currentPage === `/${user.username}` && selectedItemClass,
+          isOnUserProfile && selectedItemClass,
           className
         )}
         onClick={track}
@@ -161,25 +192,22 @@ function NavBarItem(props: {
         onTouchEnd={() => setTouched(false)}
       >
         <Col className="relative mx-auto h-full w-full items-center">
-          <Avatar size="sm" avatarUrl={user.avatarUrl} noLink />
-          <Row className="gap-1">
+          <div
+            className={clsx(
+              'rounded-full',
+              isOnUserProfile && 'ring-2 ring-violet-600'
+            )}
+          >
+            <Avatar size="sm" avatarUrl={user.avatarUrl} noLink />
+          </div>
+          <Row className="mt-0.5 gap-1">
             <TokenNumber
               amount={user?.balance}
               className="text-violet-600 dark:text-violet-400"
               numberType="short"
               isInline
-              coinClassName="!top-[0.15em]"
+              coinClassName="!top-[0.1rem]"
             />
-            {user?.cashBalance >= 1 && (
-              <TokenNumber
-                amount={user?.cashBalance}
-                className="text-amber-600 dark:text-amber-400"
-                coinType="sweepies"
-                numberType="short"
-                isInline
-                coinClassName="!top-[0.15em]"
-              />
-            )}
           </Row>
         </Col>
       </Link>
@@ -209,6 +237,11 @@ function NavBarItem(props: {
   const currentBasePath = currentPage?.split('/')[1] ?? ''
   const itemPath = item.href.split('/')[1]
   const isCurrentPage = currentBasePath === itemPath
+
+  // Use solid icon if available and page is active
+  const IconComponent =
+    isCurrentPage && item.solidIcon ? item.solidIcon : item.icon
+
   return (
     <Link
       href={item.href}
@@ -222,8 +255,8 @@ function NavBarItem(props: {
       onTouchStart={() => setTouched(true)}
       onTouchEnd={() => setTouched(false)}
     >
-      {item.icon && (
-        <item.icon className={clsx(iconClassName, item.iconClassName)} />
+      {IconComponent && (
+        <IconComponent className={clsx(iconClassName, item.iconClassName)} />
       )}
       {children}
       {item.name}

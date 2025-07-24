@@ -241,3 +241,51 @@ text {
 .text-6xl .coin-offset {
   --coin-top-offset: calc(0em);
 }
+
+/* Touch animation: shrink then grow back */
+@keyframes bounce-press {
+  0% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(0.92);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+
+.touch-bounce {
+  animation: bounce-press 0.2s ease-in-out;
+}
+
+/* Alternative with active state for continuous press */
+.touch-scale-down {
+  transform: scale(0.95);
+  transition: transform 0.1s ease-in-out;
+}
+
+/* Combined effect: bounce then hold */
+@keyframes touch-press-bounce {
+  0% {
+    transform: scale(1);
+  }
+  25% {
+    transform: scale(0.92);
+  }
+  50% {
+    transform: scale(0.97);
+  }
+  100% {
+    transform: scale(0.95);
+  }
+}
+
+.touch-press-effect {
+  animation: touch-press-bounce 0.15s ease-out forwards;
+}
+
+.touch-release {
+  transform: scale(1);
+  transition: transform 0.1s ease-out;
+}
