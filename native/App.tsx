@@ -1,24 +1,7 @@
-import Clipboard from '@react-native-clipboard/clipboard'
-import { EXTERNAL_REDIRECTS, isAdminId } from 'common/envs/constants'
-import * as ExpoClipboard from 'expo-clipboard'
-import 'expo-dev-client'
-import * as Notifications from 'expo-notifications'
-import * as WebBrowser from 'expo-web-browser'
-import { User as FirebaseUser } from 'firebase/auth'
-import React, { useCallback, useEffect, useRef, useState } from 'react'
-import {
-  BackHandler,
-  NativeEventEmitter,
-  Platform,
-  Share,
-  StyleSheet,
-} from 'react-native'
-import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context'
-import WebView from 'react-native-webview'
-import { app, auth, ENV } from './init'
-// @ts-ignore
 import { ReadexPro_400Regular, useFonts } from '@expo-google-fonts/readex-pro'
+import Clipboard from '@react-native-clipboard/clipboard'
 import * as Sentry from '@sentry/react-native'
+import { EXTERNAL_REDIRECTS, isAdminId } from 'common/envs/constants'
 import { setFirebaseUserViaJson } from 'common/firebase-auth'
 import {
   MesageTypeMap,
@@ -31,16 +14,23 @@ import { getSourceUrl, Notification } from 'common/notification'
 import { CustomWebview } from 'components/custom-webview'
 import { log } from 'components/logger'
 import { SplashAuth } from 'components/splash-auth'
+import * as ExpoClipboard from 'expo-clipboard'
 import Constants from 'expo-constants'
+import 'expo-dev-client'
 import * as Linking from 'expo-linking'
-import { MaybeNotificationResponse, Subscription } from 'expo-notifications'
+import * as Notifications from 'expo-notifications'
 import { StatusBar } from 'expo-status-bar'
 import * as StoreReview from 'expo-store-review'
+import * as WebBrowser from 'expo-web-browser'
+import { User as FirebaseUser } from 'firebase/auth'
 import { clearData, getData, storeData } from 'lib/auth'
 import { checkLocationPermission, getLocation } from 'lib/location'
 import { useIsConnected } from 'lib/use-is-connected'
-// @ts-ignore
-import * as LinkingManager from 'react-native/Libraries/Linking/NativeLinkingManager'
+import React, { useCallback, useEffect, useRef, useState } from 'react'
+import { BackHandler, Platform, Share, StyleSheet } from 'react-native'
+import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context'
+import WebView from 'react-native-webview'
+import { app, auth, ENV } from './init'
 
 Sentry.init({
   dsn: 'https://2353d2023dad4bc192d293c8ce13b9a1@o4504040581496832.ingest.us.sentry.io/4504040585494528',
@@ -55,11 +45,20 @@ Sentry.init({
 
 const BASE_URI =
   ENV === 'DEV' ? 'https://dev.manifold.markets/' : 'https://manifold.markets/'
-const isIOS = Platform.OS === 'ios'
+
+// Set up notification handler before component
+Notifications.setNotificationHandler({
+  handleNotification: async () => ({
+    shouldPlaySound: true,
+    shouldSetBadge: false,
+    shouldShowBanner: true,
+    shouldShowList: true,
+  }),
+})
+
 const App = () => {
   // Init
   const webview = useRef<WebView>(null)
-  const notificationResponseListener = useRef<Subscription>()
   useFonts({ ReadexPro_400Regular })
 
   // This tracks if the webview has loaded its first page
@@ -85,6 +84,7 @@ const App = () => {
 
   useEffect(() => {
     signInUserFromStorage()
+    clearData('lastNotificationIds') // no longer used, clear them from local storage
   }, [])
 
   // Sends the saved user to the web client to make the log in process faster
@@ -108,10 +108,7 @@ const App = () => {
     url.search = params.toString()
     return url.toString()
   })
-  const linkedUrl = Linking.useURL()
-  const eventEmitter = new NativeEventEmitter(
-    isIOS ? LinkingManager.default : null
-  )
+  const linkedUrl = Linking.useLinkingURL()
 
   // UI
   const [backgroundColor, setBackgroundColor] = useState('rgba(255,255,255,1)')
@@ -153,15 +150,7 @@ const App = () => {
     const notification = response.notification.request.content
       .data as Notification
     if (notification == undefined) return
-    const lastNotificationIds = await getData<string[]>('lastNotificationIds')
-    if (
-      lastNotificationIds?.length &&
-      lastNotificationIds.some((id) => id === notification.id)
-    ) {
-      log('skipping lastNotificationResponse', notification.id)
-      return
-    }
-    log('handling notification', notification)
+    log('handling notification', notification.reason)
 
     // Resolve the destination URL from the notification.
     const destination = getSourceUrl(notification)
@@ -169,46 +158,15 @@ const App = () => {
     // If the webview is already loaded and listening, forward the message so
     // the web client can mark the notification as seen, etc.
     if (hasLoadedWebView && listeningToNative.current) {
-      // Send multiple times in case the client JavaScript isn\'t ready yet
-      // (mirrors the logic in sendWebviewAuthInfo).
-      const timeouts = [0, 200, 800]
-      timeouts.forEach((timeout) =>
-        setTimeout(
-          () => communicateWithWebview('notification', notification),
-          timeout
-        )
-      )
+      communicateWithWebview('notification', notification)
     }
 
     // Always set the URL so that, even if the message is missed, the webview
     // navigates to the correct page when it becomes active.
     setEndpointWithNativeQuery(destination)
-
-    storeData('lastNotificationIds', [
-      ...(lastNotificationIds || []),
-      notification.id,
-    ])
   }
 
   useEffect(() => {
-    // This listener is fired whenever a user taps on or interacts with a notification (works when app is foregrounded)
-    notificationResponseListener.current =
-      Notifications.addNotificationResponseReceivedListener((response) => {
-        log('notification response', response)
-        handlePushNotification(response)
-      })
-
-    return () => {
-      if (notificationResponseListener.current)
-        notificationResponseListener.current.remove()
-    }
-  }, [])
-
-  useEffect(() => {
-    Linking.getInitialURL().then((url) => {
-      log('Initial url:', url, '- has loaded webview:', hasLoadedWebView)
-      if (url) setUrlWithNativeQuery(url)
-    })
     const backHandler = BackHandler.addEventListener(
       'hardwareBackPress',
       handleBackButtonPress
@@ -216,28 +174,22 @@ const App = () => {
     return () => backHandler.remove()
   }, [])
 
-  const handleLastNotificationResponse = async (
-    lastNotif: MaybeNotificationResponse
-  ) => {
+  const lastNotifResponse = Notifications.useLastNotificationResponse()
+  useEffect(() => {
     if (
-      lastNotif &&
-      lastNotif.notification.request.content.data &&
-      lastNotif.actionIdentifier === Notifications.DEFAULT_ACTION_IDENTIFIER
+      lastNotifResponse &&
+      lastNotifResponse.notification.request.content.data &&
+      lastNotifResponse.actionIdentifier ===
+        Notifications.DEFAULT_ACTION_IDENTIFIER
     ) {
       log(
         'processing lastNotificationResponse',
-        lastNotif.notification.request.content.data
+        lastNotifResponse.notification.request.content.data.reason
       )
-      handlePushNotification(lastNotif)
-      // Clearing the last notification response doesn't seem to persist across app restarts, so we store the id
+      handlePushNotification(lastNotifResponse)
       Notifications.clearLastNotificationResponseAsync()
     }
-  }
-
-  const lastNotificationResponse = Notifications.useLastNotificationResponse()
-  useEffect(() => {
-    handleLastNotificationResponse(lastNotificationResponse)
-  }, [lastNotificationResponse])
+  }, [lastNotifResponse])
 
   // Handle deep links
   useEffect(() => {
@@ -257,12 +209,6 @@ const App = () => {
       if (hasLoadedWebView && listeningToNative.current)
         communicateWithWebview('link', { url })
       else setEndpointWithNativeQuery(url)
-      // If we don't clear the url, we'll reopen previously opened links
-      const clearUrlCacheEvent = {
-        hostname: 'manifold.markets',
-        url: 'blank',
-      }
-      eventEmitter.emit('url', clearUrlCacheEvent)
     }
   }, [linkedUrl])
 
@@ -384,7 +330,7 @@ const App = () => {
         const fbUserAndPrivateUser = JSON.parse(payload)
         if (fbUserAndPrivateUser && fbUserAndPrivateUser.fbUser) {
           const fbUser = fbUserAndPrivateUser.fbUser as FirebaseUser
-          log('Signing in fb user from webview cache')
+          // log('Signing in fb user from webview cache')
           // We don't actually use the firebase auth for anything right now, but in case we do in the future...
           await setFirebaseUserViaJson(fbUser, app)
           await storeData('user', fbUser)
@@ -458,12 +404,12 @@ const App = () => {
     type: T,
     data: MesageTypeMap[T]
   ) => {
-    log(
-      'Sending message to webview:',
-      type,
-      'is listening:',
-      listeningToNative.current
-    )
+    // log(
+    //   'Sending message to webview:',
+    //   type,
+    //   'is listening:',
+    //   listeningToNative.current
+    // )
     webview.current?.postMessage(
       JSON.stringify({
         type,
@@ -481,14 +427,15 @@ const App = () => {
   }
 
   const isConnected = useIsConnected()
-  const fullyLoaded = hasLoadedWebView && fbUser && isConnected
+  const fullyLoaded =
+    hasLoadedWebView && fbUser && isConnected && listeningToNative.current
   const styles = StyleSheet.create({
     container: {
-      display: fullyLoaded ? 'flex' : 'none',
+      display: 'flex',
       flex: 1,
       justifyContent: 'center',
       overflow: 'hidden',
-      backgroundColor: backgroundColor,
+      backgroundColor: fullyLoaded ? backgroundColor : '#4337C9',
     },
   })
 
@@ -507,35 +454,34 @@ const App = () => {
   )
 
   return (
-    <>
-      <SafeAreaProvider>
+    <SafeAreaProvider>
+      <SafeAreaView
+        style={styles.container}
+        edges={['top', 'bottom', 'left', 'right']}
+      >
+        <StatusBar
+          animated={true}
+          style={theme === 'dark' ? 'light' : 'dark'}
+          hidden={false}
+        />
         <SplashAuth
           webview={webview}
           hasLoadedWebView={hasLoadedWebView}
           fbUser={fbUser}
           isConnected={isConnected}
         />
-        <SafeAreaView
-          style={styles.container}
-          edges={['top', 'bottom', 'left', 'right']}
-        >
-          <StatusBar
-            animated={true}
-            style={theme === 'dark' ? 'light' : 'dark'}
-            hidden={false}
-          />
-          <CustomWebview
-            urlToLoad={urlToLoad}
-            webview={webview}
-            resetWebView={resetWebView}
-            setHasLoadedWebView={setHasLoadedWebView}
-            handleMessageFromWebview={handleMessageFromWebview}
-            handleExternalLink={handleExternalLink}
-          />
-        </SafeAreaView>
-      </SafeAreaProvider>
+        <CustomWebview
+          display={!!fullyLoaded}
+          urlToLoad={urlToLoad}
+          webview={webview}
+          resetWebView={resetWebView}
+          setHasLoadedWebView={setHasLoadedWebView}
+          handleMessageFromWebview={handleMessageFromWebview}
+          handleExternalLink={handleExternalLink}
+        />
+      </SafeAreaView>
       {/*<ExportLogsButton />*/}
-    </>
+    </SafeAreaProvider>
   )
 }
 export default Sentry.wrap(App)

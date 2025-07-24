@@ -34,6 +34,7 @@ export const CustomWebview = (props: {
   setHasLoadedWebView: (loaded: boolean) => void
   handleMessageFromWebview: (m: any) => Promise<void>
   handleExternalLink: (url: string) => void
+  display: boolean
 }) => {
   const {
     urlToLoad,
@@ -42,6 +43,7 @@ export const CustomWebview = (props: {
     setHasLoadedWebView,
     handleMessageFromWebview,
     handleExternalLink,
+    display,
   } = props
 
   const [refreshing, setRefreshing] = useState(false)
@@ -56,10 +58,12 @@ export const CustomWebview = (props: {
       setEnableRefresher(false)
     }
   }
+
   return (
-    <>
+    <View style={{ flex: display ? 1 : 0, height: display ? 'auto' : 0 }}>
       {Platform.OS === 'android' ? (
         <ScrollView
+          style={{ display: display ? 'flex' : 'none' }}
           contentContainerStyle={[styles.container, { position: 'relative' }]}
           refreshControl={
             <RefreshControl
@@ -128,7 +132,7 @@ export const CustomWebview = (props: {
           />
         </View>
       )}
-    </>
+    </View>
   )
 }
 

@@ -224,13 +224,14 @@ function useAppleAuthentication() {
 export const AuthPageStyles = StyleSheet.create({
   container: {
     flex: 1,
+    display: 'flex',
     justifyContent: 'center',
     backgroundColor: '#4337C9',
   },
   flappy: {
     height: 175,
     resizeMode: 'contain',
-    marginTop: 180,
+    marginTop: 150,
   },
   googleButton: {
     backgroundColor: 'white',
@@ -260,6 +261,7 @@ export const AuthPageStyles = StyleSheet.create({
     paddingTop: 20,
     padding: 35,
     height: 180,
+    minHeight: 180,
     alignItems: 'center',
   },
   modalView: {
