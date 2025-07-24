@@ -141,35 +141,35 @@ export const AuthPage = (props: {
 
   const computedStyles = StyleSheet.create({
     container: {
-      flex: 1,
-      justifyContent: 'center',
-      backgroundColor: '#4337C9',
+      ...AuthPageStyles.container,
       height,
       width,
-      position: 'absolute',
-      zIndex: 1000,
     },
   })
   return (
     <View style={computedStyles.container}>
-      <View style={styles.centerFlex}>
+      <View style={AuthPageStyles.centerFlex}>
         <Image
           source={require('../assets/logo.png')}
-          style={{ height: 200, resizeMode: 'contain' }}
+          style={AuthPageStyles.flappy}
         />
         {loading ? (
-          <ActivityIndicator size="large" color="#0000ff" />
+          <ActivityIndicator
+            style={{ height: AuthPageStyles.authContent.height }}
+            size="large"
+            color="#0000ff"
+          />
         ) : (
-          <View style={styles.authContent}>
+          <View style={AuthPageStyles.authContent}>
             <TouchableOpacity
-              style={styles.googleButton}
+              style={AuthPageStyles.googleButton}
               onPress={async () => {
                 setLoading(true)
                 await promptAsync({ showInRecents: true })
                 setLoading(false)
               }}
             >
-              <View style={styles.googleButtonContent}>
+              <View style={AuthPageStyles.googleButtonContent}>
                 <Image
                   source={require('../assets/square-google.png')}
                   style={{
@@ -178,7 +178,10 @@ export const AuthPage = (props: {
                     resizeMode: 'contain',
                   }}
                 />
-                <Text style={styles.googleText} maxFontSizeMultiplier={1}>
+                <Text
+                  style={AuthPageStyles.googleText}
+                  maxFontSizeMultiplier={1}
+                >
                   Sign in with Google
                 </Text>
               </View>
@@ -227,7 +230,19 @@ function useAppleAuthentication() {
   return authenticationLoaded
 }
 
-const styles = StyleSheet.create({
+export const AuthPageStyles = StyleSheet.create({
+  container: {
+    flex: 1,
+    justifyContent: 'center',
+    backgroundColor: '#4337C9',
+    position: 'absolute',
+    zIndex: 1000,
+  },
+  flappy: {
+    height: 175,
+    resizeMode: 'contain',
+    marginTop: 180,
+  },
   googleButton: {
     backgroundColor: 'white',
     borderRadius: 5,
@@ -253,7 +268,9 @@ const styles = StyleSheet.create({
   },
   authContent: {
     width: 300,
+    paddingTop: 20,
     padding: 35,
+    height: 180,
     alignItems: 'center',
   },
   modalView: {
@@ -305,17 +322,19 @@ function Eula() {
 
   return (
     <>
-      <View style={styles.eulaContainer}>
-        <Text style={styles.text}>By signing up, you agree to our</Text>
+      <View style={AuthPageStyles.eulaContainer}>
+        <Text style={AuthPageStyles.text}>By signing up, you agree to our</Text>
         <TouchableOpacity
           onPress={() => {
             setOpen(true)
             setExpanded('privacy')
           }}
         >
-          <Text style={[styles.clickable, styles.text]}>Privacy Policy</Text>
+          <Text style={[AuthPageStyles.clickable, AuthPageStyles.text]}>
+            Privacy Policy
+          </Text>
         </TouchableOpacity>
-        <Text style={styles.text}> & </Text>
+        <Text style={AuthPageStyles.text}> & </Text>
 
         <TouchableOpacity
           onPress={() => {
@@ -323,7 +342,9 @@ function Eula() {
             setExpanded('tos')
           }}
         >
-          <Text style={[styles.clickable, styles.text]}>ToS</Text>
+          <Text style={[AuthPageStyles.clickable, AuthPageStyles.text]}>
+            ToS
+          </Text>
         </TouchableOpacity>
       </View>
       <Modal
@@ -333,8 +354,8 @@ function Eula() {
         onRequestClose={() => setOpen(false)}
         style={{ flex: 1 }}
       >
-        <View style={styles.centerFlex}>
-          <View style={styles.modalView}>
+        <View style={AuthPageStyles.centerFlex}>
+          <View style={AuthPageStyles.modalView}>
             {expanded === 'tos' && (
               <WebView
                 style={{ height: 500, width: 300 }}
@@ -356,7 +377,7 @@ function Eula() {
               setExpanded(null)
             }}
           >
-            <View style={styles.modalOverlay} />
+            <View style={AuthPageStyles.modalOverlay} />
           </TouchableWithoutFeedback>
         </View>
       </Modal>

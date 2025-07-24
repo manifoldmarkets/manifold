@@ -514,7 +514,6 @@ const App = () => {
       <SplashAuth
         height={height}
         width={width}
-        source={require('./assets/splash.png')}
         webview={webview}
         hasLoadedWebView={hasLoadedWebView}
         fbUser={fbUser}

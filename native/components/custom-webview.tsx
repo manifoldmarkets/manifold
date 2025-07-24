@@ -195,11 +195,7 @@ const handleRenderError = (
   // Renders this view while we resolve the error
   return (
     <View style={{ height, width }}>
-      <Splash
-        height={height}
-        width={width}
-        source={require('../assets/splash.png')}
-      />
+      <Splash height={height} width={width} />
     </View>
   )
 }
