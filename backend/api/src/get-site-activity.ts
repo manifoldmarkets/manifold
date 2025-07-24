@@ -1,14 +1,12 @@
+import { JSONContent } from '@tiptap/core'
 import { APIHandler } from 'api/helpers/endpoint'
-import { createSupabaseDirectClient } from 'shared/supabase/init'
+import { CommentWithTotalReplies } from 'common/comment'
+import { convertBet } from 'common/supabase/bets'
 import { convertContract } from 'common/supabase/contracts'
 import { filterDefined } from 'common/util/array'
-import { uniqBy } from 'lodash'
-import { convertBet } from 'common/supabase/bets'
-import { CommentWithTotalReplies } from 'common/comment'
-import { mapValues, uniq } from 'lodash'
-import { keyBy } from 'lodash'
+import { keyBy, mapValues, uniq, uniqBy } from 'lodash'
+import { createSupabaseDirectClient } from 'shared/supabase/init'
 import { contractColumnsToSelect } from 'shared/utils'
-import { JSONContent } from '@tiptap/core'
 // todo: personalization based on followed users & topics
 // TODO: maybe run comments by gemini to make sure they're interesting
 export const getSiteActivity: APIHandler<'get-site-activity'> = async (
@@ -117,6 +115,7 @@ export const getSiteActivity: APIHandler<'get-site-activity'> = async (
     AND cb.user_id != ALL($1)
     AND cb.contract_id != ALL($2)
     AND not cb.is_api
+    AND NOT cb.is_redemption
     ${hasTopicFilter ? 'AND gc.group_id = ANY($6)' : ''}
     ${
       onlyFollowedTopics && followedTopicIds.length > 0
