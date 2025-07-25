@@ -1,8 +1,8 @@
-import { convertContractComment } from 'common/supabase/comments'
-import { SupabaseDirectClient } from 'shared/supabase/init'
 import { APIError } from 'common/api/utils'
-import { millisToTs } from 'common/supabase/utils'
 import { ContractComment, PostComment } from 'common/comment'
+import { convertContractComment } from 'common/supabase/comments'
+import { millisToTs } from 'common/supabase/utils'
+import { SupabaseDirectClient } from 'shared/supabase/init'
 
 export async function getCommentSafe(
   pg: SupabaseDirectClient,
@@ -25,6 +25,143 @@ export async function getComment(pg: SupabaseDirectClient, commentId: string) {
     throw new APIError(404, 'Comment not found')
   }
   return comment
+}
+
+export async function getCommentThreads(
+  pg: SupabaseDirectClient,
+  filters: {
+    contractId: string
+    limit: number
+    page: number
+  }
+) {
+  const { contractId, limit, page } = filters
+
+  const allComments = await pg.map(
+    `
+    with parent_comments as (
+      select cc.data, cc.likes, cc.comment_id from contract_comments cc
+      where cc.contract_id = $1
+      and (cc.data->>'replyToCommentId' is null)
+      and (cc.data->>'deleted' is null or cc.data->>'deleted' = 'false')
+      order by cc.created_time desc
+      limit $2
+      offset $3
+    )
+    select * from parent_comments
+    union all
+    select cc.data, cc.likes, cc.comment_id from contract_comments cc
+    where cc.contract_id = $1
+    and (cc.data->>'replyToCommentId' in (select comment_id from parent_comments))
+    and (cc.data->>'deleted' is null or cc.data->>'deleted' = 'false')
+    `,
+    [contractId, limit, page * limit],
+    convertContractComment
+  )
+
+  const parentComments = allComments.filter((c) => !c.replyToCommentId)
+  const replyComments = allComments.filter((c) => c.replyToCommentId)
+  console.log('parentComments', parentComments.length)
+  console.log('replyComments', replyComments.length)
+
+  return { parentComments, replyComments }
+}
+
+export async function getCommentThread(
+  pg: SupabaseDirectClient,
+  commentId: string,
+  contractId: string
+) {
+  const comment = await pg.oneOrNone(
+    `
+      select cc.data, cc.likes from contract_comments cc
+      where cc.comment_id = $1 and cc.contract_id = $2
+    `,
+    [commentId, contractId],
+    convertContractComment
+  )
+  if (!comment) {
+    return {
+      parentComment: null,
+      replyComments: [],
+      parentComments: [],
+      nextParentComments: [],
+      nextReplyComments: [],
+    }
+  }
+
+  const parentId = comment.replyToCommentId ?? comment.id
+  const parentComment =
+    comment.replyToCommentId && comment.replyToCommentId !== comment.id
+      ? await pg.oneOrNone(
+          `
+      select cc.data, cc.likes from contract_comments cc
+      where cc.comment_id = $1 and cc.contract_id = $2
+    `,
+          [parentId, contractId],
+          convertContractComment
+        )
+      : comment
+
+  if (!parentComment) {
+    return {
+      parentComment: null,
+      replyComments: [],
+      parentComments: [],
+      nextParentComments: [],
+      nextReplyComments: [],
+    }
+  }
+
+  const results = await pg.multi(
+    `
+      select cc.data, cc.likes from contract_comments cc
+      where cc.contract_id = $1
+      and (cc.data->>'replyToCommentId' = $2)
+      and (cc.data->>'deleted' is null or cc.data->>'deleted' = 'false')
+      order by cc.created_time asc;
+      select cc.data, cc.likes from contract_comments cc
+      where cc.contract_id = $1
+      and (cc.data->>'replyToCommentId' is null)
+      and (cc.data->>'deleted' is null or cc.data->>'deleted' = 'false')
+      and cc.created_time > $3
+      order by cc.created_time desc;
+      select cc.data, cc.likes from contract_comments cc
+      where cc.contract_id = $1
+      and (cc.data->>'replyToCommentId' is null)
+      and (cc.data->>'deleted' is null or cc.data->>'deleted' = 'false')
+      and cc.created_time < $3
+      order by cc.created_time desc
+      limit 3;
+    `,
+    [contractId, parentId, millisToTs(parentComment.createdTime)]
+  )
+  const replyComments = results[0].map(convertContractComment)
+  const parentComments = results[1].map(convertContractComment)
+  const nextParentComments = results[2].map(convertContractComment)
+
+  const nextReplyComments =
+    nextParentComments.length > 0
+      ? await pg.map(
+          `
+      select cc.data, cc.likes from contract_comments cc
+      where cc.contract_id = $1
+      and (cc.data->>'replyToCommentId' in ($2:csv))
+      and (cc.data->>'deleted' is null or cc.data->>'deleted' = 'false')
+      order by cc.created_time asc
+    `,
+          [contractId, nextParentComments.map((c) => c.id)],
+          convertContractComment
+        )
+      : []
+
+  return {
+    parentComment,
+    replyComments,
+    parentComments,
+    nextParentComments,
+    nextReplyComments,
+  }
 }
 
 export async function getCommentsDirect(

@@ -7,7 +7,6 @@ import { MODAL_CLASS, Modal, SCROLLABLE_MODAL_CLASS } from '../layout/modal'
 import { Row } from '../layout/row'
 import { LoadingIndicator } from '../widgets/loading-indicator'
 import { Tooltip } from '../widgets/tooltip'
-import { BetsTabContent } from './contract-tabs'
 import { UserPositionsTable } from 'web/components/contract/user-positions-table'
 import { UncontrolledTabs } from 'web/components/layout/tabs'
 import { Col } from 'web/components/layout/col'
@@ -24,6 +23,7 @@ import { shortenNumber } from 'common/util/formatNumber'
 import { useBetsOnce } from 'client-common/hooks/use-bets'
 import { api } from 'web/lib/api/api'
 import { useAPIGetter } from 'web/hooks/use-api-getter'
+import { BetsTabContent } from 'web/components/contract/bets-tab-content'
 
 export function TradesButton(props: {
   contract: Contract
