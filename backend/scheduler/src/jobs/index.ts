@@ -1,43 +1,44 @@
-import { createJob } from './helpers'
-import { updateContractMetricsCore } from 'shared/update-contract-metrics-core'
-import { sendOnboardingNotificationsInternal } from 'shared/onboarding-helpers'
-import { updateUserMetricPeriods } from 'shared/update-user-metric-periods'
-import { cleanOldNotifications } from './clean-old-notifications'
-import { updateCashStatsCore, updateStatsCore } from './update-stats'
-import { calculateConversionScore } from 'shared/conversion-score'
-import { autoAwardBounty } from './auto-award-bounty'
-import { resetPgStats } from './reset-pg-stats'
 import { calculateUserTopicInterests } from 'shared/calculate-user-topic-interests'
+import { checkPushNotificationReceipts } from 'shared/check-push-receipts'
+import { calculateConversionScore } from 'shared/conversion-score'
+import { downsamplePortfolioHistory } from 'shared/downsample-portfolio-history'
+import { expireLimitOrders } from 'shared/expire-limit-orders'
+import { calculateGroupImportanceScore } from 'shared/group-importance-score'
+import { IMPORTANCE_MINUTE_INTERVAL } from 'shared/importance-score'
+import { sendOnboardingNotificationsInternal } from 'shared/onboarding-helpers'
+import { sendMarketMovementNotifications } from 'shared/send-market-movement-notifications'
+import { sendUnseenMarketMovementNotifications } from 'shared/send-unseen-notifications'
+import { updateContractMetricsCore } from 'shared/update-contract-metrics-core'
 import {
   CREATOR_UPDATE_FREQUENCY,
   updateCreatorMetricsCore,
 } from 'shared/update-creator-metrics-core'
-import { sendPortfolioUpdateEmailsToAllUsers } from 'shared/weekly-portfolio-emails'
+import { updateUserMetricPeriods } from 'shared/update-user-metric-periods'
+import { updateUserPortfolioHistoriesCore } from 'shared/update-user-portfolio-histories-core'
+import { isProd } from 'shared/utils'
 import { sendWeeklyMarketsEmails } from 'shared/weekly-markets-emails'
-import { resetWeeklyEmailsFlags } from './reset-weekly-emails-flags'
-import { calculateGroupImportanceScore } from 'shared/group-importance-score'
-import { checkPushNotificationReceipts } from 'shared/check-push-receipts'
-import { sendStreakExpirationNotification } from './streak-expiration-notice'
-import { expireLimitOrders } from 'shared/expire-limit-orders'
+import { sendPortfolioUpdateEmailsToAllUsers } from 'shared/weekly-portfolio-emails'
+import { autoAwardBounty } from './auto-award-bounty'
+import { autoLeaguesCycle } from './auto-leagues-cycle'
+import { cleanOldNotifications } from './clean-old-notifications'
 import { denormalizeAnswers } from './denormalize-answers'
-import { incrementStreakForgiveness } from './increment-streak-forgiveness'
-import { sendMarketCloseEmails } from './send-market-close-emails'
-import { pollPollResolutions } from './poll-poll-resolutions'
-import { IMPORTANCE_MINUTE_INTERVAL } from 'shared/importance-score'
-import { scoreContracts } from './score-contracts'
-import { updateLeagueRanks } from './update-league-ranks'
-import { updateLeague } from './update-league'
 import { drizzleLiquidity } from './drizzle-liquidity'
+import { createJob } from './helpers'
+import { incrementStreakForgiveness } from './increment-streak-forgiveness'
+import { pollPollResolutions } from './poll-poll-resolutions'
 import { resetBettingStreaksInternal } from './reset-betting-streaks'
+import { resetPgStats } from './reset-pg-stats'
 import {
   resetDailyQuestStatsInternal,
   resetWeeklyQuestStatsInternal,
 } from './reset-quests-stats'
-import { updateUserPortfolioHistoriesCore } from 'shared/update-user-portfolio-histories-core'
-import { isProd } from 'shared/utils'
-import { sendMarketMovementNotifications } from 'shared/send-market-movement-notifications'
-import { sendUnseenMarketMovementNotifications } from 'shared/send-unseen-notifications'
-import { autoLeaguesCycle } from './auto-leagues-cycle'
+import { resetWeeklyEmailsFlags } from './reset-weekly-emails-flags'
+import { scoreContracts } from './score-contracts'
+import { sendMarketCloseEmails } from './send-market-close-emails'
+import { sendStreakExpirationNotification } from './streak-expiration-notice'
+import { updateLeague } from './update-league'
+import { updateLeagueRanks } from './update-league-ranks'
+import { updateStatsCore } from './update-stats'
 
 export function createJobs() {
   return [
@@ -156,11 +157,6 @@ export function createJobs() {
       () => updateStatsCore(7)
     ),
     createJob(
-      'update-cash-stats',
-      '0 20 4 * * *', // on 4:20am daily
-      () => updateCashStatsCore(7)
-    ),
-    createJob(
       'onboarding-notification',
       '0 0 11 * * *', // 11 AM daily
       sendOnboardingNotificationsInternal
@@ -204,6 +200,11 @@ export function createJobs() {
       'reset-weekly-quests-stats',
       '0 0 0 * * 1', // every Monday at midnight
       resetWeeklyQuestStatsInternal
+    ),
+    createJob(
+      'downsample-portfolio-history',
+      '0 50 4 * * *', // every day at 4:50am
+      downsamplePortfolioHistory
     ),
     // Monthly jobs:
     createJob(
