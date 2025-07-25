@@ -5,13 +5,13 @@ import { ChartAnnotation } from 'common/supabase/chart-annotations'
 import { sum } from 'lodash'
 import { Answer } from './answer'
 import { getLiquidity } from './calculate-cpmm'
+import { MultiBase64Points } from './chart'
 import { ContractComment } from './comment'
 import { ContractMetric } from './contract-metric'
 import { ENV_CONFIG } from './envs/constants'
 import { Fees } from './fees'
 import { PollOption } from './poll-option'
 import { formatMoney, formatPercent } from './util/format'
-import { MultiBase64Points } from './chart'
 import { DAY_MS } from './util/time'
 
 /************************************************
@@ -469,6 +469,7 @@ export type ContractParams = {
   pointsString?: string
   multiPointsString?: MultiBase64Points
   comments: ContractComment[]
+  totalComments: number
   totalPositions: number
   totalBets: number
   topContractMetrics: ContractMetric[]

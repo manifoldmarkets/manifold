@@ -1,14 +1,7 @@
 import { StarIcon, XIcon } from '@heroicons/react/solid'
+import { useContractBets } from 'client-common/hooks/use-bets'
+import { getMultiBetPointsFromBets } from 'client-common/lib/choice'
 import clsx from 'clsx'
-import {
-  isBinaryMulti,
-  tradingAllowed,
-  type Contract,
-  type ContractParams,
-} from 'common/contract'
-import { mergeWith, uniqBy } from 'lodash'
-import Image from 'next/image'
-import { useEffect, useMemo, useRef, useState } from 'react'
 import { Answer } from 'common/answer'
 import { Bet } from 'common/bet'
 import {
@@ -17,29 +10,40 @@ import {
   MultiPoints,
   unserializeBase64Multi,
 } from 'common/chart'
+import {
+  isBinaryMulti,
+  tradingAllowed,
+  type Contract,
+  type ContractParams,
+} from 'common/contract'
+import { shouldHideGraph } from 'common/contract-params'
+import { base64toPoints } from 'common/edge/og'
 import { HOUSE_BOT_USERNAME, SPICE_MARKET_TOOLTIP } from 'common/envs/constants'
 import { DAY_MS } from 'common/util/time'
+import { mergeWith, uniqBy } from 'lodash'
+import Image from 'next/image'
+import Link from 'next/link'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { UserBetsSummary } from 'web/components/bet/user-bet-summary'
 import { ScrollToTopButton } from 'web/components/buttons/scroll-to-top-button'
 import { SidebarSignUpButton } from 'web/components/buttons/sign-up-button'
-import { getMultiBetPointsFromBets } from 'client-common/lib/choice'
 import { BackButton } from 'web/components/contract/back-button'
 import { ChangeBannerButton } from 'web/components/contract/change-banner-button'
 import { ContractDescription } from 'web/components/contract/contract-description'
 import { AuthorInfo } from 'web/components/contract/contract-details'
 import { ContractLeaderboard } from 'web/components/contract/contract-leaderboard'
 import { ContractOverview } from 'web/components/contract/contract-overview'
+import { ContractSummaryStats } from 'web/components/contract/contract-summary-stats'
 import { ContractTabs } from 'web/components/contract/contract-tabs'
 import { VisibilityIcon } from 'web/components/contract/contracts-table'
 import { DangerZone } from 'web/components/contract/danger-zone'
 import { EditableQuestionTitle } from 'web/components/contract/editable-question-title'
+import { HeaderActions } from 'web/components/contract/header-actions'
 import { MarketTopics } from 'web/components/contract/market-topics'
 import {
   RelatedContractsGrid,
   SidebarRelatedContractsList,
 } from 'web/components/contract/related-contracts-widget'
-import { ContractSummaryStats } from 'web/components/contract/contract-summary-stats'
-import { HeaderActions } from 'web/components/contract/header-actions'
 import { ExplainerPanel } from 'web/components/explainer-panel'
 import { Col } from 'web/components/layout/col'
 import { Row } from 'web/components/layout/row'
@@ -50,30 +54,26 @@ import { Rating, ReviewPanel } from 'web/components/reviews/stars'
 import { GradientContainer } from 'web/components/widgets/gradient-container'
 import { Tooltip } from 'web/components/widgets/tooltip'
 import { useAdmin, useTrusted } from 'web/hooks/use-admin'
-import { useContractBets } from 'client-common/hooks/use-bets'
+import { precacheAnswers } from 'web/hooks/use-answers'
 import { useLiveContract } from 'web/hooks/use-contract'
 import { useHeaderIsStuck } from 'web/hooks/use-header-is-stuck'
+import { useIsPageVisible } from 'web/hooks/use-page-visible'
 import { useRelatedMarkets } from 'web/hooks/use-related-contracts'
 import { useReview } from 'web/hooks/use-review'
 import { useSaveCampaign } from 'web/hooks/use-save-campaign'
+import { useSaveReferral } from 'web/hooks/use-save-referral'
 import { useSaveContractVisitsLocally } from 'web/hooks/use-save-visits'
 import { useSavedContractMetrics } from 'web/hooks/use-saved-contract-metrics'
 import { useTracking } from 'web/hooks/use-tracking'
 import { usePrivateUser, useUser } from 'web/hooks/use-user'
+import { useDisplayUserById } from 'web/hooks/use-user-supabase'
+import { api } from 'web/lib/api/api'
 import { track } from 'web/lib/service/analytics'
 import { scrollIntoViewCentered } from 'web/lib/util/scroll'
-import { SpiceCoin } from 'web/public/custom-components/spiceCoin'
 import { YourTrades } from 'web/pages/[username]/[contractSlug]'
-import { precacheAnswers } from 'web/hooks/use-answers'
-import { useIsPageVisible } from 'web/hooks/use-page-visible'
-import { api } from 'web/lib/api/api'
-import { shouldHideGraph } from 'common/contract-params'
-import { CreatorSharePanel, NonCreatorSharePanel } from './creator-share-panel'
+import { SpiceCoin } from 'web/public/custom-components/spiceCoin'
 import { FollowMarketButton } from '../buttons/follow-market-button'
-import { useSaveReferral } from 'web/hooks/use-save-referral'
-import { base64toPoints } from 'common/edge/og'
-import { useDisplayUserById } from 'web/hooks/use-user-supabase'
-import Link from 'next/link'
+import { CreatorSharePanel, NonCreatorSharePanel } from './creator-share-panel'
 
 export function ContractPageContent(props: ContractParams) {
   const {
@@ -85,6 +85,7 @@ export function ContractPageContent(props: ContractParams) {
     topics,
     dashboards,
     pinnedComments,
+    totalComments,
   } = props
 
   // Just use the contract that was navigated to directly
@@ -498,6 +499,7 @@ export function ContractPageContent(props: ContractParams) {
                 activeIndex={activeTabIndex}
                 setActiveIndex={setActiveTabIndex}
                 pinnedComments={pinnedComments}
+                totalComments={totalComments}
               />
             </div>
             {showExplainerPanel && (

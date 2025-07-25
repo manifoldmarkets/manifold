@@ -1,9 +1,11 @@
+import { Bet } from 'common/bet'
 import {
   getInitialAnswerProbability,
   getInitialProbability,
 } from 'common/calculate'
-import { Contract, ContractParams, MultiContract } from 'common/contract'
 import { binAvg, maxMinBin, serializeMultiPoints } from 'common/chart'
+import { Contract, ContractParams, MultiContract } from 'common/contract'
+import { getChartAnnotations } from 'common/supabase/chart-annotations'
 import {
   getPinnedComments,
   getRecentTopLevelCommentsAndReplies,
@@ -13,23 +15,23 @@ import {
   getTopContractMetrics,
 } from 'common/supabase/contract-metrics'
 import { getTopicsOnContract } from 'common/supabase/groups'
-import { removeUndefinedProps } from 'common/util/object'
-import { pointsToBase64 } from 'common/util/og'
 import { SupabaseClient } from 'common/supabase/utils'
 import { buildArray } from 'common/util/array'
+import { removeUndefinedProps } from 'common/util/object'
+import { pointsToBase64 } from 'common/util/og'
 import { groupBy, mapValues, omit, orderBy, sortBy } from 'lodash'
-import { Bet } from 'common/bet'
-import { getChartAnnotations } from 'common/supabase/chart-annotations'
-import { unauthedApi } from './util/api'
+import { getNumContractComments } from 'web/lib/supabase/comments'
 import {
   ANSWERS_TO_HIDE_GRAPH,
   getDefaultSort,
   getSortedAnswers,
   sortAnswers,
 } from './answer'
-import { getDashboardsToDisplayOnContract } from './supabase/dashboards'
 import { getBetPointsBetween, getTotalBetCount } from './bets'
 import { MarketContract } from './contract'
+import { getDashboardsToDisplayOnContract } from './supabase/dashboards'
+import { unauthedApi } from './util/api'
+
 export async function getContractParams(
   contract: Contract,
   db: SupabaseClient
@@ -50,6 +52,7 @@ export async function getContractParams(
     allBetPoints,
     comments,
     pinnedComments,
+    totalComments,
     topContractMetrics,
     totalPositions,
     relatedContracts,
@@ -80,6 +83,7 @@ export async function getContractParams(
       : [],
     getRecentTopLevelCommentsAndReplies(db, contract.id, 25),
     getPinnedComments(db, contract.id),
+    getNumContractComments(contract.id),
     contract.resolution ? getTopContractMetrics(contract.id, 10, db) : [],
     isCpmm1 || isMulti ? getContractMetricsCount(contract.id, db) : 0,
     unauthedApi('get-related-markets', {
@@ -112,7 +116,6 @@ export async function getContractParams(
 
   const lastBet: Bet | undefined = lastBetArray[0]
   const lastBetTime = lastBet?.createdTime
-
   return removeUndefinedProps({
     outcomeType: contract.outcomeType,
     contract,
@@ -120,6 +123,7 @@ export async function getContractParams(
     pointsString,
     multiPointsString,
     comments,
+    totalComments,
     totalPositions,
     totalBets,
     topContractMetrics,

@@ -28,6 +28,7 @@ export function ContractTabs(props: {
   totalBets: number
   totalPositions: number
   pinnedComments: ContractComment[]
+  totalComments: number
 }) {
   const {
     staticContract,
@@ -46,7 +47,7 @@ export function ContractTabs(props: {
   const highlightedCommentId = useHashInUrlPageRouter('')
 
   const [totalPositions, setTotalPositions] = useState(props.totalPositions)
-  const [totalComments, setTotalComments] = useState(comments.length)
+  const [totalComments, setTotalComments] = useState(props.totalComments)
 
   const commentsTitle =
     (totalComments > 0 ? `${shortFormatNumber(totalComments)} ` : '') +
@@ -88,7 +89,8 @@ export function ContractTabs(props: {
               liveContract={liveContract}
               comments={comments}
               pinnedComments={pinnedComments}
-              setCommentsLength={setTotalComments}
+              setTotalComments={setTotalComments}
+              totalComments={totalComments}
               blockedUserIds={blockedUserIds}
               replyTo={replyTo}
               clearReply={() => setReplyTo?.(undefined)}

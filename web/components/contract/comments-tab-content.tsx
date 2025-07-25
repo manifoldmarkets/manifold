@@ -35,7 +35,8 @@ export const CommentsTabContent = memo(function CommentsTabContent(props: {
   liveContract: Contract // you trade on this
   comments: ContractComment[]
   blockedUserIds: string[]
-  setCommentsLength?: (length: number) => void
+  setTotalComments?: (length: number) => void
+  totalComments: number
   replyTo?: Answer | Bet
   clearReply?: () => void
   className?: string
@@ -48,7 +49,8 @@ export const CommentsTabContent = memo(function CommentsTabContent(props: {
     liveContract,
     comments: staticComments,
     blockedUserIds,
-    setCommentsLength,
+    setTotalComments,
+    totalComments,
     replyTo,
     clearReply,
     className,
@@ -238,8 +240,10 @@ export const CommentsTabContent = memo(function CommentsTabContent(props: {
     : {}
 
   useEffect(() => {
-    setCommentsLength?.(allComments.length)
-  }, [allComments.length])
+    if (allComments.length > totalComments) {
+      setTotalComments?.(allComments.length)
+    }
+  }, [allComments.length, totalComments])
 
   const pinnedComments = uniqBy(
     staticPinnedComments.concat(

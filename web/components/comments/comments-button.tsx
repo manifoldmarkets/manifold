@@ -1,20 +1,20 @@
-import { useState } from 'react'
 import { ChatIcon } from '@heroicons/react/outline'
 import clsx from 'clsx'
 import { Contract } from 'common/contract'
-import { Modal, SCROLLABLE_MODAL_CLASS } from '../layout/modal'
-import { Col } from '../layout/col'
-import { usePrivateUser } from 'web/hooks/use-user'
-import { track } from 'web/lib/service/analytics'
-import { Tooltip } from '../widgets/tooltip'
 import { User } from 'common/user'
+import { useState } from 'react'
+import { Button } from 'web/components/buttons/button'
+import { CommentsTabContent } from 'web/components/contract/comments-tab-content'
 import {
   useCommentsOnContract,
   useNumContractComments,
 } from 'web/hooks/use-comments'
-import { Button } from 'web/components/buttons/button'
+import { usePrivateUser } from 'web/hooks/use-user'
+import { track } from 'web/lib/service/analytics'
+import { Col } from '../layout/col'
+import { Modal, SCROLLABLE_MODAL_CLASS } from '../layout/modal'
 import { Row } from '../layout/row'
-import { CommentsTabContent } from 'web/components/contract/comments-tab-content'
+import { Tooltip } from '../widgets/tooltip'
 
 export function CommentsButton(props: {
   contract: Contract
@@ -54,6 +54,7 @@ export function CommentsButton(props: {
               contract={contract}
               open={open}
               setOpen={setOpen}
+              totalComments={totalComments}
             />
           )}
         </Row>
@@ -67,8 +68,9 @@ function CommentsDialog(props: {
   open: boolean
   setOpen: (open: boolean) => void
   highlightCommentId?: string
+  totalComments: number
 }) {
-  const { contract, highlightCommentId, open, setOpen } = props
+  const { contract, highlightCommentId, open, setOpen, totalComments } = props
   const comments = useCommentsOnContract(contract.id) ?? []
 
   const privateUser = usePrivateUser()
@@ -93,6 +95,7 @@ function CommentsDialog(props: {
           blockedUserIds={blockedUserIds}
           highlightCommentId={highlightCommentId}
           pinnedComments={[]}
+          totalComments={totalComments}
         />
       </Col>
     </Modal>

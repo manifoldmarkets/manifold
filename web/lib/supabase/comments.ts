@@ -1,9 +1,9 @@
-import { run } from 'common/supabase/utils'
-import { db } from './db'
-import { chunk } from 'lodash'
-import { convertContractComment } from 'common/supabase/comments'
-import { filterDefined } from 'common/util/array'
 import { PostComment } from 'common/comment'
+import { convertContractComment } from 'common/supabase/comments'
+import { run } from 'common/supabase/utils'
+import { filterDefined } from 'common/util/array'
+import { chunk } from 'lodash'
+import { db } from './db'
 
 export async function getComment(commentId: string) {
   const res = await db
