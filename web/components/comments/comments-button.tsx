@@ -4,7 +4,6 @@ import clsx from 'clsx'
 import { Contract } from 'common/contract'
 import { Modal, SCROLLABLE_MODAL_CLASS } from '../layout/modal'
 import { Col } from '../layout/col'
-import { CommentsTabContent } from '../contract/contract-tabs'
 import { usePrivateUser } from 'web/hooks/use-user'
 import { track } from 'web/lib/service/analytics'
 import { Tooltip } from '../widgets/tooltip'
@@ -15,6 +14,7 @@ import {
 } from 'web/hooks/use-comments'
 import { Button } from 'web/components/buttons/button'
 import { Row } from '../layout/row'
+import { CommentsTabContent } from 'web/components/contract/comments-tab-content'
 
 export function CommentsButton(props: {
   contract: Contract

@@ -952,6 +952,41 @@ export const API = (_apiTypeCheck = {
       })
       .strict(),
   },
+  'comment-threads': {
+    method: 'GET',
+    visibility: 'public',
+    authed: false,
+    props: z
+      .object({
+        contractId: z.string(),
+        limit: z.coerce.number().gte(0).lte(100).default(10),
+        page: z.coerce.number().gte(0).default(0),
+      })
+      .strict(),
+    cache: DEFAULT_CACHE_STRATEGY,
+    returns: {} as {
+      replyComments: ContractComment[]
+      parentComments: ContractComment[]
+    },
+  },
+  'comment-thread': {
+    method: 'GET',
+    visibility: 'public',
+    authed: false,
+    props: z
+      .object({
+        contractId: z.string(),
+        commentId: z.string(),
+      })
+      .strict(),
+    returns: {} as {
+      parentComment: ContractComment | null
+      replyComments: ContractComment[]
+      parentComments: ContractComment[]
+      nextParentComments: ContractComment[]
+      nextReplyComments: ContractComment[]
+    },
+  },
   me: {
     method: 'GET',
     visibility: 'public',
