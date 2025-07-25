@@ -61,8 +61,8 @@ export async function getPinnedComments(
       .from('contract_comments')
       .select('data')
       .eq('contract_id', contractId)
-      .eq('data->>pinned', true)
-      .not('data->>deleted', 'eq', 'true')
+      .eq('data->>pinned', 'true')
+      .or('data->>deleted.eq.false,data->>deleted.is.null')
       .order('created_time', { ascending: false })
   )
 
