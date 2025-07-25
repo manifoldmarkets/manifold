@@ -971,6 +971,7 @@ export const API = (_apiTypeCheck = {
   },
   'comment-thread': {
     method: 'GET',
+    cache: LIGHT_CACHE_STRATEGY,
     visibility: 'public',
     authed: false,
     props: z
