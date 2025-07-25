@@ -1,4 +1,14 @@
 'use client'
+import { Menu, MenuButton, MenuItem, MenuItems } from '@headlessui/react'
+import { CogIcon } from '@heroicons/react/outline'
+import {
+  ArrowSmDownIcon,
+  ArrowSmUpIcon,
+  ChevronDownIcon,
+} from '@heroicons/react/solid'
+import { useContractBets } from 'client-common/hooks/use-bets'
+import { useEvent } from 'client-common/hooks/use-event'
+import { usePersistentInMemoryState } from 'client-common/hooks/use-persistent-in-memory-state'
 import clsx from 'clsx'
 import { LimitBet } from 'common/bet'
 import { getContractBetNullMetrics } from 'common/calculate'
@@ -12,41 +22,34 @@ import { ContractMetric, getMaxSharesOutcome } from 'common/contract-metric'
 import { SWEEPIES_MARKET_TOOLTIP } from 'common/envs/constants'
 import { buildArray } from 'common/util/array'
 import { formatWithToken } from 'common/util/format'
+import { floatingEqual } from 'common/util/math'
 import { searchInAny } from 'common/util/parse'
-import { Dictionary, sortBy, sum, uniqBy, mapValues } from 'lodash'
+import { Dictionary, mapValues, sortBy, sum, uniqBy } from 'lodash'
 import Link from 'next/link'
 import { useEffect, useMemo, useState } from 'react'
-import { BetsSummary } from 'web/components/bet/user-bet-summary'
 import { ContractBetsTable } from 'web/components/bet/contract-bets-table'
 import { OrderTable } from 'web/components/bet/order-book'
+import { BetsSummary } from 'web/components/bet/user-bet-summary'
 import { PillButton } from 'web/components/buttons/pill-button'
 import { Input } from 'web/components/widgets/input'
-import { useContractBets } from 'client-common/hooks/use-bets'
-import { useEvent } from 'client-common/hooks/use-event'
-import { usePersistentInMemoryState } from 'client-common/hooks/use-persistent-in-memory-state'
+import { useIsMobile } from 'web/hooks/use-is-mobile'
+import { useIsPageVisible } from 'web/hooks/use-page-visible'
 import { usePersistentLocalState } from 'web/hooks/use-persistent-local-state'
 import { usePersistentQueryState } from 'web/hooks/use-persistent-query-state'
 import { useIsAuthorized, useUser } from 'web/hooks/use-user'
 import { api } from 'web/lib/api/api'
 import { User } from 'web/lib/firebase/users'
 import { SweepiesCoin } from 'web/public/custom-components/sweepiesCoin'
+import { ContractStatusLabel } from '../contract/contracts-table'
+import { Col } from '../layout/col'
+import { Row } from '../layout/row'
+import { BinaryOutcomeLabel, MultiOutcomeLabel } from '../outcome-label'
+import { RelativeTimestamp } from '../relative-timestamp'
 import { useSweepstakes } from '../sweepstakes-provider'
 import { LoadingIndicator } from '../widgets/loading-indicator'
 import { Tooltip } from '../widgets/tooltip'
-import { floatingEqual } from 'common/util/math'
-import { Col } from '../layout/col'
-import { Row } from '../layout/row'
-import { useIsPageVisible } from 'web/hooks/use-page-visible'
-import { LimitOrdersTable } from './limit-orders-table'
-import { Menu, MenuButton, MenuItem, MenuItems } from '@headlessui/react'
-import { ChevronDownIcon } from '@heroicons/react/solid'
-import { ContractStatusLabel } from '../contract/contracts-table'
-import { BinaryOutcomeLabel, MultiOutcomeLabel } from '../outcome-label'
-import { RelativeTimestamp } from '../relative-timestamp'
-import { CogIcon } from '@heroicons/react/outline'
-import { useIsMobile } from 'web/hooks/use-is-mobile'
-import { ArrowSmDownIcon, ArrowSmUpIcon } from '@heroicons/react/solid'
 import { LoadMoreUntilNotVisible } from '../widgets/visibility-observer'
+import { LimitOrdersTable } from './limit-orders-table'
 
 type BetSort =
   | 'newest'
@@ -110,6 +113,7 @@ export function UserBetsTable(props: { user: User }) {
   }
 
   const getMetrics = useEvent(() =>
+    // NOTE: this only returns the currently used contract props to save on bandwidth
     api('get-user-contract-metrics-with-contracts', {
       userId: user.id,
       offset: 0,

@@ -2046,6 +2046,7 @@ export const API = (_apiTypeCheck = {
     authed: false,
     returns: {} as {
       metricsByContract: Dictionary<ContractMetric[]>
+      // NOTE: this only returns the currently used contract props to save on bandwidth
       contracts: MarketContract[]
     },
     props: z
