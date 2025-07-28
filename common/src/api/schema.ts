@@ -2421,7 +2421,7 @@ export const API = (_apiTypeCheck = {
     method: 'GET',
     authed: false,
     visibility: 'undocumented',
-    cache: DEFAULT_CACHE_STRATEGY,
+    cache: 'public, max-age=3600, stale-while-revalidate=10',
     props: z
       .object({
         userId: z.string(),
