@@ -278,7 +278,6 @@ export const VERIFIED_USERNAMES = [
   'liron',
   'LarsDoucet',
   'PeterWildeford',
-  'SethWalder',
   'SneakySly',
   'ConorSen',
   'transmissions11',
