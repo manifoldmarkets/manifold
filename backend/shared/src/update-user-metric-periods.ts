@@ -1,21 +1,21 @@
+import {
+  calculateMetricsByContractAndAnswer,
+  isEmptyMetric,
+} from 'common/calculate-metrics'
+import { Contract, CPMMMultiContract } from 'common/contract'
+import { ContractMetric } from 'common/contract-metric'
+import { convertBet } from 'common/supabase/bets'
+import { convertAnswer, convertContract } from 'common/supabase/contracts'
+import { filterDefined } from 'common/util/array'
+import { hasSignificantDeepChanges } from 'common/util/object'
 import { DAY_MS } from 'common/util/time'
+import { chunk, groupBy, sortBy, sumBy, uniq, uniqBy } from 'lodash'
 import {
   createSupabaseDirectClient,
   SupabaseDirectClient,
 } from 'shared/supabase/init'
 import { contractColumnsToSelect, isProd, log } from 'shared/utils'
-import { chunk, groupBy, sortBy, sumBy, uniq, uniqBy } from 'lodash'
-import { Contract, CPMMMultiContract } from 'common/contract'
-import {
-  calculateMetricsByContractAndAnswer,
-  isEmptyMetric,
-} from 'common/calculate-metrics'
-import { filterDefined } from 'common/util/array'
-import { hasSignificantDeepChanges } from 'common/util/object'
-import { convertBet } from 'common/supabase/bets'
-import { ContractMetric } from 'common/contract-metric'
 import { bulkUpdateDataQuery, bulkUpdateQuery } from './supabase/utils'
-import { convertAnswer, convertContract } from 'common/supabase/contracts'
 
 const CHUNK_SIZE = isProd() ? 400 : 10
 export async function updateUserMetricPeriods(
@@ -80,6 +80,11 @@ export async function updateUserMetricPeriods(
   const contractsById: Record<string, Contract> = {}
   for (const activeUserIds of chunks) {
     log(`Loading bets for ${activeUserIds.length} users`)
+    // TODO: we could calculate changes for all contracts where the user hasn't bet in the past 24 hours by
+    // using their current metrics and the prob changes of the contracts/answers. Then we'd
+    // only have to load the bets for the contracts that they've bet on in the past 24 hours.
+    // To calculte those easy changes, youd' just take their yes/no shares in each contract-answer
+    // and multiply by the prob change of the contract-answer.
     const metricRelevantBets = await getUnresolvedOrRecentlyResolvedBets(
       pg,
       activeUserIds,
