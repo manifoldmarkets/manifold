@@ -1,13 +1,13 @@
-import { APIHandler } from './helpers/endpoint'
-import { track } from 'shared/analytics'
-import { log } from 'shared/utils'
-import { rateLimitByUser } from './helpers/rate-limit'
 import { HOUR_MS } from 'common/util/time'
+import { track } from 'shared/analytics'
+import { models, promptGeminiParsingJson } from 'shared/helpers/gemini'
+import { log } from 'shared/utils'
 import {
   assertMidpointsAreAscending,
   assertMidpointsAreUnique,
 } from './generate-ai-numeric-ranges'
-import { promptGeminiParsingJson, models } from 'shared/helpers/gemini'
+import { APIHandler } from './helpers/endpoint'
+import { rateLimitByUser } from './helpers/rate-limit'
 // Shared guidelines for both threshold and bucket ranges
 // Base system prompt template that both threshold and bucket prompts will use
 
@@ -178,10 +178,14 @@ export const regenerateDateMidpoints: APIHandler<'regenerate-date-midpoints'> =
       Generate appropriate midpoint dates for each range.
       RULES:
       - The midpoints should be the exact middle date of the range.
-
+      Here are examples of the answers and their midpoints:
       ${tab === 'buckets' ? bucketExamples : thresholdExamples}
-
-      Return ONLY an array of midpoint dates, one for each range, without any other text or formatting.`
+      I want you to generate midpoints given the answers, drawing on the examples above.
+      Unlike the above examples, however, I do not want the answers, I just want the midpoints.
+      Only return dates, never words, i.e. do not return 'never', just pick a date that fits the range.
+      Return ONLY an array of midpoint dates, one for each range, without any other text or formatting.
+      DO NOT return the answer array, JUST THE MIDPOINTS.
+      `
 
       const result = await promptGeminiParsingJson<string[]>(prompt, {
         model: models.flash,
