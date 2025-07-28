@@ -8,11 +8,6 @@ import { Button } from 'web/components/buttons/button'
 import { firebaseLogin, loginWithApple } from 'web/lib/firebase/users'
 import { useEffect, useState } from 'react'
 
-// Niavely check if the user agent is an apple device
-function isAppleDevice() {
-  return /Mac|iPhone|iPad|iPod/.test(navigator.userAgent)
-}
-
 function GoogleIcon() {
   return (
     <svg
@@ -59,9 +54,7 @@ export default function LoginPage() {
   useRedirectIfSignedIn()
 
   useEffect(() => {
-    if (isAppleDevice()) {
-      setShowAppleLogin(true)
-    }
+    setShowAppleLogin(true)
   }, [])
 
   return (
