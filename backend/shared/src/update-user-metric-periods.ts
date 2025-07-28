@@ -81,6 +81,7 @@ export async function updateUserMetricPeriods(
   const contractsById: Record<string, Contract> = {}
 
   for (const activeUserIds of chunks) {
+
     log(`Processing ${activeUserIds.length} users`)
 
     // First, find contracts that users have bet on recently
