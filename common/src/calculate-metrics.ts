@@ -1,3 +1,4 @@
+import { ContractMetric, isSummary } from 'common/contract-metric'
 import {
   cloneDeep,
   Dictionary,
@@ -9,17 +10,16 @@ import {
   sumBy,
   uniq,
 } from 'lodash'
+import { Bet, LimitBet } from './bet'
 import {
   calculateTotalSpentAndShares,
   getContractBetMetricsPerAnswerWithoutLoans,
 } from './calculate'
-import { Bet, LimitBet } from './bet'
-import { Contract, MultiContract } from './contract'
 import { computeFills, CpmmState, getCpmmProbability } from './calculate-cpmm'
-import { removeUndefinedProps } from './util/object'
-import { floatingEqual, logit } from './util/math'
-import { ContractMetric, isSummary } from 'common/contract-metric'
+import { Contract, MultiContract } from './contract'
 import { noFees } from './fees'
+import { floatingEqual, logit } from './util/math'
+import { removeUndefinedProps } from './util/object'
 
 export const computeInvestmentValueCustomProb = (
   bets: Bet[],
@@ -571,4 +571,79 @@ export const calculateUpdatedMetricsForContracts = (
   }
 
   return { metricsByContract }
+}
+
+export const calculateMetricsFromProbabilityChanges = (
+  userMetrics: ContractMetric[],
+  contractsById: Record<string, Contract>
+): ContractMetric[] => {
+  return userMetrics.map((metric) => {
+    const contract = contractsById[metric.contractId]
+    if (!contract) return metric
+
+    let newProb: number
+    if (contract.mechanism === 'cpmm-multi-1' && metric.answerId) {
+      const answer = contract.answers.find((a) => a.id === metric.answerId)
+      if (!answer) return metric
+      newProb = answer.prob
+    } else if (contract.mechanism === 'cpmm-1') {
+      newProb = contract.prob
+    } else {
+      return metric
+    }
+
+    // Calculate new metrics based on probability change
+    const updatedMetric = calculateProfitMetricsAtProbOrCancel(newProb, metric)
+
+    // Calculate period profit changes (from calculatePeriodProfit logic)
+    const calculatePeriodChange = (period: 'day' | 'week' | 'month') => {
+      let probChange: number
+      if (contract.mechanism === 'cpmm-multi-1' && metric.answerId) {
+        const answer = contract.answers.find((a) => a.id === metric.answerId)
+        probChange = answer?.probChanges[period] ?? 0
+      } else if (contract.mechanism === 'cpmm-1') {
+        probChange = contract.probChanges?.[period] ?? 0
+      } else {
+        probChange = 0
+      }
+
+      const prevProb = newProb - probChange
+      const { totalShares, totalAmountInvested = 0 } = metric
+
+      // Calculate value change based on shares and probability change
+      const yesShares = totalShares.YES ?? 0
+      const noShares = totalShares.NO ?? 0
+
+      const prevValue = yesShares * prevProb + noShares * (1 - prevProb)
+      const currentValue = yesShares * newProb + noShares * (1 - newProb)
+      const valueChange = currentValue - prevValue
+
+      const profit = valueChange
+      const invested =
+        totalAmountInvested > 0
+          ? totalAmountInvested
+          : Math.abs(totalAmountInvested) || 1
+      const profitPercent = (profit / invested) * 100
+
+      return {
+        profit,
+        profitPercent,
+        invested: totalAmountInvested,
+        prevValue,
+        value: currentValue,
+      }
+    }
+
+    // Update the from field with period changes
+    const from = {
+      day: calculatePeriodChange('day'),
+      week: calculatePeriodChange('week'),
+      month: calculatePeriodChange('month'),
+    }
+
+    return {
+      ...updatedMetric,
+      from,
+    }
+  })
 }
