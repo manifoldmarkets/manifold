@@ -16,6 +16,7 @@ import { convertBet } from 'common/supabase/bets'
 import { ContractMetric } from 'common/contract-metric'
 import { bulkUpdateDataQuery, bulkUpdateQuery } from './supabase/utils'
 import { convertAnswer, convertContract } from 'common/supabase/contracts'
+import { Answer } from 'common/answer'
 
 const CHUNK_SIZE = isProd() ? 400 : 10
 export async function updateUserMetricPeriods(
@@ -28,6 +29,7 @@ export async function updateUserMetricPeriods(
   const eightDays = DAY_MS * 8
   const since = customSince ?? now - eightDays
   const daysAgo = Math.round((now - since) / DAY_MS)
+  const oneDayAgo = now - DAY_MS
   const pg = createSupabaseDirectClient()
 
   log('Loading active contract ids...')
@@ -78,70 +80,89 @@ export async function updateUserMetricPeriods(
   const chunks = chunk(allActiveUserIds, CHUNK_SIZE)
   const metricsByUser: Record<string, ContractMetric[]> = {}
   const contractsById: Record<string, Contract> = {}
+  
   for (const activeUserIds of chunks) {
-    log(`Loading bets for ${activeUserIds.length} users`)
+    log(`Loading recent bet data for ${activeUserIds.length} users`)
+    
+    // Find contracts where each user has bet in the past 24 hours
+    const recentBetsByUser = await pg.map(
+      `
+      select user_id, contract_id
+      from contract_bets
+      where user_id in ($1:list)
+      and created_time > $2
+      `,
+      [activeUserIds as string[], new Date(oneDayAgo).toISOString()],
+      (r) => ({ userId: r.user_id as string, contractId: r.contract_id as string })
+    )
+    
+    const recentBetContractsByUser = groupBy(recentBetsByUser, 'userId')
+    const allRecentBetContractIds = uniq(recentBetsByUser.map(r => r.contractId))
+    
+    // Load bets only for contracts where users have bet recently
     const metricRelevantBets = await getUnresolvedOrRecentlyResolvedBets(
       pg,
       activeUserIds,
-      since
+      since,
+      allRecentBetContractIds // Only get bets for recently active contracts
     )
+    
     log(
       `Loaded ${sumBy(
         Object.values(metricRelevantBets),
         (bets) => bets.length
-      )} bets.`
+      )} bets for recently active contracts.`
     )
 
     const allBets = Object.values(metricRelevantBets).flat()
-    const contractIds = uniq(allBets.map((b) => b.contractId))
-    if (contractIds.length === 0) continue
-    const newContractIds: string[] = contractIds.filter(
-      (c) => !contractsById[c]
-    )
-    log('Loading contracts, answers, users, and current contract metrics...')
-    // We could cache the contracts and answers to query for less data
-    const results = await pg.multi(
+    const betContractIds = uniq(allBets.map((b) => b.contractId))
+    
+    // Get current metrics for all users and all their contracts
+    log('Loading current contract metrics and contracts with prob changes...')
+    const currentMetricsResult = await pg.multi(
       `
-      ${
-        newContractIds.length > 0
-          ? `select ${contractColumnsToSelect} from contracts where id in ($1:list);`
-          : 'select 1 where false;'
-      }
-      ${
-        newContractIds.length > 0
-          ? `select * from answers where contract_id in ($1:list);`
-          : 'select 1 where false;'
-      }
-
       select id, data from user_contract_metrics
-      where user_id in ($2:list)
-      and contract_id in ($3:list);
+      where user_id in ($1:list);
+      
+      select ${contractColumnsToSelect} from contracts 
+      where id in (
+        select distinct contract_id from user_contract_metrics 
+        where user_id in ($1:list)
+      );
+      
+      select * from answers 
+      where contract_id in (
+        select distinct contract_id from user_contract_metrics 
+        where user_id in ($1:list)
+      );
     `,
-      [newContractIds, activeUserIds, contractIds]
+      [activeUserIds as string[]]
     )
-    const contracts = results[0].map(convertContract)
-    const answers = results[1].map(convertAnswer)
-    contracts.forEach((c) => {
+    
+    const allCurrentMetrics = currentMetricsResult[0].map(
+      (r) => ({ id: r.id, ...r.data } as ContractMetric)
+    )
+    const allContracts = currentMetricsResult[1].map(convertContract)
+    const allAnswers = currentMetricsResult[2].map(convertAnswer)
+    
+    // Build contracts with answers
+    allContracts.forEach((c) => {
       if (c.mechanism === 'cpmm-multi-1')
         contractsById[c.id] = {
           ...c,
-          answers: answers.filter((a) => a.contractId === c.id),
+          answers: allAnswers.filter((a) => a.contractId === c.id),
         } as CPMMMultiContract
       else contractsById[c.id] = c
     })
 
-    const currentContractMetrics = results[2].map(
-      (r) => ({ id: r.id, ...r.data } as ContractMetric)
-    )
-
     log(
-      `Loaded ${contracts.length} contracts,
-       ${answers.length} answers,
-       and ${currentContractMetrics.length} contract metrics.`
+      `Loaded ${allContracts.length} contracts,
+       ${allAnswers.length} answers,
+       and ${allCurrentMetrics.length} total contract metrics.`
     )
 
     const currentMetricsByUserId = groupBy(
-      currentContractMetrics,
+      allCurrentMetrics,
       (m) => m.userId
     )
 
@@ -152,26 +173,51 @@ export async function updateUserMetricPeriods(
 
     log('Computing metric updates...')
     for (const userId of activeUserIds) {
-      const userMetricRelevantBets = metricRelevantBets[userId] ?? []
-
+      const userRecentBetContracts = new Set(
+        (recentBetContractsByUser[userId as string] || []).map(r => r.contractId)
+      )
+      const currentMetricsForUser = currentMetricsByUserId[userId as string] ?? []
+      
+      // Split metrics into two groups: those with recent bets and those without
+      const metricsWithRecentBets = currentMetricsForUser.filter(m => 
+        userRecentBetContracts.has(m.contractId)
+      )
+      const metricsWithoutRecentBets = currentMetricsForUser.filter(m => 
+        !userRecentBetContracts.has(m.contractId)
+      )
+      
+      // For contracts with recent bets, calculate normally using bets
+      const userMetricRelevantBets = metricRelevantBets[userId as string] ?? []
       const metricRelevantBetsByContract = groupBy(
         userMetricRelevantBets,
         (b) => b.contractId
       )
-      const currentMetricsForUser = currentMetricsByUserId[userId] ?? []
-      const freshMetrics = calculateMetricsByContractAndAnswer(
+      
+      const freshMetricsFromBets = calculateMetricsByContractAndAnswer(
         metricRelevantBetsByContract,
         contractsById,
         userId,
-        currentMetricsForUser
+        metricsWithRecentBets
       )
-      metricsByUser[userId] = uniqBy(
-        [...freshMetrics, ...currentMetricsForUser],
+      
+      // For contracts without recent bets, calculate using prob changes
+      const freshMetricsFromProbChanges = calculateMetricsUsingProbChanges(
+        metricsWithoutRecentBets,
+        contractsById,
+        allAnswers
+      )
+      
+      // Combine all metrics
+      const allFreshMetrics = [...freshMetricsFromBets, ...freshMetricsFromProbChanges]
+      
+      metricsByUser[userId as string] = uniqBy(
+        [...allFreshMetrics, ...currentMetricsForUser],
         (m) => m.contractId + m.answerId
       )
+      
       contractMetricUpdates.push(
         ...filterDefined(
-          freshMetrics.map((freshMetric) => {
+          allFreshMetrics.map((freshMetric) => {
             const currentMetric = currentMetricsForUser.find(
               (m) =>
                 freshMetric.contractId === m.contractId &&
@@ -236,11 +282,99 @@ export async function updateUserMetricPeriods(
   return { metricsByUser, contractsById }
 }
 
+// New function to calculate metrics using probability changes
+const calculateMetricsUsingProbChanges = (
+  currentMetrics: ContractMetric[],
+  contractsById: Record<string, Contract>,
+  allAnswers: Answer[]
+): ContractMetric[] => {
+  return currentMetrics.map(metric => {
+    const contract = contractsById[metric.contractId]
+    if (!contract) return metric
+    
+    // Calculate value change based on probability changes
+    let valueChange = 0
+    
+    if (contract.mechanism === 'cpmm-1') {
+      // Binary/Pseudo-numeric contract
+      const probChange = contract.probChanges?.day || 0
+      const yesShares = metric.totalShares?.YES || 0
+      const noShares = metric.totalShares?.NO || 0
+      
+      // YES shares gain value when prob increases, NO shares gain when prob decreases
+      valueChange = (yesShares * probChange) + (noShares * -probChange)
+    } else if (contract.mechanism === 'cpmm-multi-1') {
+      // Multi-choice contract
+      const contractAnswers = allAnswers.filter(a => a.contractId === contract.id)
+      
+      if (metric.answerId) {
+        // Individual answer metric
+        const answer = contractAnswers.find(a => a.id === metric.answerId)
+        if (answer) {
+          const probChange = answer.probChanges?.day || 0
+          const yesShares = metric.totalShares?.YES || 0
+          const noShares = metric.totalShares?.NO || 0
+          
+          valueChange = (yesShares * probChange) + (noShares * -probChange)
+        }
+      } else {
+        // Summary metric - sum changes across all answers user has positions in
+        contractAnswers.forEach(answer => {
+          const answerMetric = currentMetrics.find(m => 
+            m.contractId === contract.id && m.answerId === answer.id
+          )
+          if (answerMetric) {
+            const probChange = answer.probChanges?.day || 0
+            const yesShares = answerMetric.totalShares?.YES || 0
+            const noShares = answerMetric.totalShares?.NO || 0
+            
+            valueChange += (yesShares * probChange) + (noShares * -probChange)
+          }
+        })
+      }
+    }
+    
+    // Update the metric with new values
+    const newPayout = metric.payout + valueChange
+    const newProfit = newPayout + metric.totalAmountSold - metric.totalAmountInvested
+    const newProfitPercent = metric.totalAmountInvested === 0 
+      ? 0 
+      : (newProfit / metric.totalAmountInvested) * 100
+    
+    // Update the 'from' field with period changes
+    const currentFrom = metric.from || {}
+    const updatedFrom = {
+      ...currentFrom,
+      day: {
+        ...currentFrom.day,
+        profit: newProfit,
+        profitPercent: newProfitPercent,
+        invested: metric.totalAmountInvested,
+        prevValue: currentFrom.day?.value || metric.payout,
+        value: newPayout,
+      }
+    }
+    
+    return {
+      ...metric,
+      payout: newPayout,
+      profit: newProfit,
+      profitPercent: newProfitPercent,
+      from: updatedFrom,
+    }
+  })
+}
+
 const getUnresolvedOrRecentlyResolvedBets = async (
   pg: SupabaseDirectClient,
   userIds: string[],
-  since: number
+  since: number,
+  contractIds?: string[] // New parameter to limit which contracts to get bets for
 ) => {
+  const contractFilter = contractIds && contractIds.length > 0 
+    ? 'and cb.contract_id in ($3:list)'
+    : ''
+  
   const bets = await pg.map(
     `
     select cb.amount, cb.shares, cb.outcome, cb.loan_amount, cb.user_id, cb.answer_id, cb.contract_id, cb.created_time, cb.is_redemption
@@ -251,8 +385,11 @@ const getUnresolvedOrRecentlyResolvedBets = async (
       cb.user_id in ($1:list)
       and (c.resolution_time is null or c.resolution_time > $2)
       and (a is null or a.resolution_time is null or a.resolution_time > $2)
+      ${contractFilter}
     `,
-    [userIds, new Date(since).toISOString()],
+    contractIds && contractIds.length > 0 
+      ? [userIds, new Date(since).toISOString(), contractIds]
+      : [userIds, new Date(since).toISOString()],
     convertBet
   )
 
