@@ -1,24 +1,25 @@
+import { LimitBet } from 'common/bet'
+import { computeElasticity } from 'common/calculate-metrics'
+import { Contract, CPMM } from 'common/contract'
+import { convertAnswer, convertContract } from 'common/supabase/contracts'
+import { hasChanges } from 'common/util/object'
+import { DAY_MS, MONTH_MS, WEEK_MS } from 'common/util/time'
+import { chunk, groupBy, mapValues } from 'lodash'
 import {
   createSupabaseDirectClient,
   SupabaseDirectClient,
 } from 'shared/supabase/init'
 import { contractColumnsToSelect, log } from 'shared/utils'
-import { DAY_MS, MONTH_MS, WEEK_MS } from 'common/util/time'
-import { Contract, CPMM } from 'common/contract'
-import { computeElasticity } from 'common/calculate-metrics'
-import { hasChanges } from 'common/util/object'
-import { chunk, groupBy, mapValues } from 'lodash'
-import { LimitBet } from 'common/bet'
-import { bulkUpdateData } from './supabase/utils'
-import { convertAnswer, convertContract } from 'common/supabase/contracts'
 import { bulkUpdateAnswers } from './supabase/answers'
+import { bulkUpdateData } from './supabase/utils'
 
-export async function updateContractMetricsCore() {
+export async function updateContractMetricsCore(wholeMonth: boolean = false) {
   const pg = createSupabaseDirectClient()
   log('Loading contract data...')
+  const timeFrame = wholeMonth ? '1 year' : '1 month'
   const where = `
-  where (c.resolution_time is null and c.last_bet_time > now() - interval '1 month')
-  or c.resolution_time > now() - interval '1 month'`
+  where (c.resolution_time is null and c.last_bet_time > now() - interval '${timeFrame}')
+  or c.resolution_time > now() - interval '${timeFrame}'`
   const results = await pg.multi(
     `
     select ${contractColumnsToSelect} from contracts c
@@ -62,11 +63,13 @@ export async function updateContractMetricsCore() {
     )
 
     log('Loading historic contract probabilities...')
-    const [dayAgoProbs, weekAgoProbs, monthAgoProbs] = await Promise.all(
-      [dayAgo, weekAgo, monthAgo].map((t) =>
-        getBetProbsAt(pg, t, contractIds, sumToOneContractIds)
-      )
-    )
+    const [dayAgoProbs, weekAgoProbs, monthAgoProbs] = await Promise.all([
+      getBetProbsAt(pg, dayAgo, contractIds, sumToOneContractIds),
+      getBetProbsAt(pg, weekAgo, contractIds, sumToOneContractIds),
+      wholeMonth
+        ? getBetProbsAt(pg, monthAgo, contractIds, sumToOneContractIds)
+        : Promise.resolve({} as { [key: string]: number }),
+    ])
 
     log('Loading volume...')
     const volumeAndCount = await getVolumeAndCountSince(pg, dayAgo, contractIds)
@@ -95,7 +98,9 @@ export async function updateContractMetricsCore() {
         const prob = resProb ?? poolProb
         const dayAgoProb = dayAgoProbs[id] ?? poolProb
         const weekAgoProb = weekAgoProbs[id] ?? poolProb
-        const monthAgoProb = monthAgoProbs[id] ?? poolProb
+        const monthAgoProb =
+          (wholeMonth ? monthAgoProbs[id] : contract.probChanges.month) ??
+          poolProb
         cpmmFields = {
           prob,
           probChanges: {
@@ -121,7 +126,10 @@ export async function updateContractMetricsCore() {
           const key = contract.id + answer.id
           const dayAgoProb = dayAgoProbs[key] ?? poolProb
           const weekAgoProb = weekAgoProbs[key] ?? poolProb
-          const monthAgoProb = monthAgoProbs[key] ?? poolProb
+          const monthAgoProb =
+            (wholeMonth ? monthAgoProbs[key] : answer.probChanges.month) ??
+            poolProb
+
           const answerCpmmFields = {
             probChanges: {
               day: resTime && resTime <= dayAgo ? 0 : prob - dayAgoProb,

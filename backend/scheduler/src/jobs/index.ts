@@ -56,7 +56,12 @@ export function createJobs() {
     createJob(
       'update-contract-metrics',
       '0 */21 * * * *', // every 21 minutes - (on the 3rd minute of every hour)
-      updateContractMetricsCore
+      () => updateContractMetricsCore(false)
+    ),
+    createJob(
+      'update-contract-metrics-full',
+      '0 30 5 * * *', // every day at 5:30am
+      () => updateContractMetricsCore(true)
     ),
     createJob(
       'update-creator-metrics',
