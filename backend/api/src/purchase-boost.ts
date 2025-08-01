@@ -1,29 +1,29 @@
-import { APIError, APIHandler } from './helpers/endpoint'
-import {
-  createSupabaseDirectClient,
-  SupabaseDirectClient,
-} from 'shared/supabase/init'
-import { DAY_MS } from 'common/util/time'
 import {
   DEV_HOUSE_LIQUIDITY_PROVIDER_ID,
   HOUSE_LIQUIDITY_PROVIDER_ID,
 } from 'common/antes'
-import { getContract, isProd } from 'shared/utils'
-import { runTxnInBetQueue, TxnData } from 'shared/txn/run-txn'
-import { ContractBoostPurchaseTxn } from 'common/txn'
-import { Row } from 'common/supabase/utils'
+import { Contract, contractUrl } from 'common/contract'
 import {
   BOOST_COST_MANA,
   DEV_BOOST_STRIPE_PRICE_ID,
   PROD_BOOST_STRIPE_PRICE_ID,
 } from 'common/economy'
-import { trackPublicEvent } from 'shared/analytics'
-import Stripe from 'stripe'
-import { contractUrl } from 'common/contract'
-import { boostContractImmediately } from 'shared/supabase/contracts'
 import { isAdminId, isModId } from 'common/envs/constants'
-import { getPost } from 'shared/supabase/posts'
+import { Row } from 'common/supabase/utils'
 import { TopLevelPost } from 'common/top-level-post'
+import { ContractBoostPurchaseTxn } from 'common/txn'
+import { DAY_MS } from 'common/util/time'
+import { trackPublicEvent } from 'shared/analytics'
+import { boostContractImmediately } from 'shared/supabase/contracts'
+import {
+  createSupabaseDirectClient,
+  SupabaseDirectClient,
+} from 'shared/supabase/init'
+import { getPost } from 'shared/supabase/posts'
+import { runTxnInBetQueue, TxnData } from 'shared/txn/run-txn'
+import { getContract, isProd } from 'shared/utils'
+import Stripe from 'stripe'
+import { APIError, APIHandler } from './helpers/endpoint'
 
 const MAX_ACTIVE_BOOSTS = 5
 
@@ -44,8 +44,8 @@ export const purchaseContractBoost: APIHandler<'purchase-boost'> = async (
   const pg = createSupabaseDirectClient()
 
   // Validate that either contract or post exists and user can see it
-  let contract = null
-  let post = null
+  let contract: Contract | undefined = undefined
+  let post: TopLevelPost | null = null
   let contentUrl = ''
   let contentSlug = ''
 
