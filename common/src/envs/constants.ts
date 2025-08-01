@@ -259,6 +259,7 @@ export const VERIFIED_USERNAMES = [
   'CateHall',
   'RobertSKMiles',
   'TarekMansour',
+  'realDonaldTrump',
   'DylanMatthews',
   'RobinHanson',
   'KevinRoose18ac',
