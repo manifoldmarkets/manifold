@@ -1,6 +1,6 @@
 # prereq: first do `yarn build` to compile typescript & etc.
 
-FROM node:19-alpine
+FROM node:20-alpine
 WORKDIR /usr/src/app
 
 # Install PM2 globally
