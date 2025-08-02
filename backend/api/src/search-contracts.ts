@@ -1,29 +1,31 @@
-import { z } from 'zod'
+import { searchProps } from 'common/api/market-search-types'
+import { toLiteMarket } from 'common/api/market-types'
+import { Contract } from 'common/contract'
+import { convertContract } from 'common/supabase/contracts'
+import { orderBy, uniqBy } from 'lodash'
+import { getGroupIdFromSlug } from 'shared/supabase/groups'
 import {
   createSupabaseDirectClient,
   SupabaseDirectClient,
 } from 'shared/supabase/init'
-import { type APIHandler } from './helpers/endpoint'
 import {
-  getSearchContractSQL,
-  getForYouSQL,
-  sortFields,
   basicSearchSQL,
+  getForYouSQL,
+  getSearchContractSQL,
   SearchTypes,
+  sortFields,
 } from 'shared/supabase/search-contracts'
-import { getGroupIdFromSlug } from 'shared/supabase/groups'
-import { orderBy, uniqBy } from 'lodash'
-import { convertContract } from 'common/supabase/contracts'
 import { log } from 'shared/utils'
-import { toLiteMarket } from 'common/api/market-types'
-import { searchProps } from 'common/api/market-search-types'
+import { z } from 'zod'
+import { type APIHandler } from './helpers/endpoint'
 
 export const searchMarketsLite: APIHandler<'search-markets'> = async (
   props,
   auth
 ) => {
+  const { includeLiteAnswers } = props
   const contracts = await search(props, auth?.uid)
-  return contracts.map(toLiteMarket)
+  return contracts.map((c) => toLiteMarket(c, includeLiteAnswers))
 }
 
 export const searchMarketsFull: APIHandler<'search-markets-full'> = async (
@@ -147,11 +149,12 @@ const search = async (
       contractsWithMatchingAnswers,
       contractsWithStopwords,
       contractDescriptionMatches,
-    ] = results.map((result, i) =>
-      result.map((r: any) => ({
-        data: convertContract(r),
-        searchType: searchTypes[i],
-      }))
+    ] = results.map(
+      (result, i) =>
+        result.map((r: any) => ({
+          data: convertContract(r),
+          searchType: searchTypes[i],
+        })) as { data: Contract; searchType: SearchTypes }[]
     )
 
     const contractsOfSimilarRelevance = orderBy(
@@ -166,14 +169,18 @@ const search = async (
       sortFields[sort].order.includes('DESC') ? 'desc' : 'asc'
     )
 
-    return uniqBy(
-      [
-        ...contractsWithStopwords,
-        ...contractsOfSimilarRelevance,
-        ...contractDescriptionMatches,
-      ].map((c) => c.data),
-      'id'
-    ).slice(0, limit)
+    return orderBy(
+      uniqBy(
+        [
+          ...contractsWithStopwords, // most obviously relevant
+          ...contractsOfSimilarRelevance, // next most relevant
+          ...contractDescriptionMatches, // least obviously relevant
+        ].map((c) => c.data),
+        'id'
+      ).slice(0, limit),
+      (c) => sortFields[sort].sortCallback(c),
+      sortFields[sort].order.includes('DESC') ? 'desc' : 'asc'
+    )
   }
 }
 

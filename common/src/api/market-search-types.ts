@@ -1,4 +1,5 @@
 import { z } from 'zod'
+import { coerceBoolean } from './zod-types'
 
 export const FIRESTORE_DOC_REF_ID_REGEX = /^[a-zA-Z0-9_-]{1,}$/
 
@@ -37,7 +38,7 @@ export const searchProps = z
         z.literal('prob-descending'),
         z.literal('prob-ascending'),
       ])
-      .default('most-popular'),
+      .default('score'),
     contractType: z
       .union([
         z.literal('ALL'),
@@ -78,9 +79,10 @@ export const searchProps = z
         z.literal('ALL'),
         z.literal('CASH_AND_MANA'),
       ])
-      .default('ALL'),
+      .default('MANA'),
     gids: z.string().optional(),
     liquidity: z.coerce.number().optional(),
     hasBets: z.union([z.literal('1'), z.literal('0')]).optional(),
+    includeLiteAnswers: coerceBoolean.optional(),
   })
   .strict()

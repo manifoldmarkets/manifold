@@ -1,17 +1,18 @@
-import { hrtime } from 'node:process'
+import { API, type APIPath } from 'common/api/schema'
+import { APIError, pathWithPrefix } from 'common/api/utils'
+import { randomString } from 'common/util/random'
+import { assertUnreachable } from 'common/util/types'
+import * as compression from 'compression'
 import * as cors from 'cors'
 import * as express from 'express'
 import { ErrorRequestHandler, RequestHandler } from 'express'
-import { log, metrics } from 'shared/utils'
-import * as compression from 'compression'
+import { hrtime } from 'node:process'
 import { withMonitoringContext } from 'shared/monitoring/context'
-import { APIError, pathWithPrefix } from 'common/api/utils'
-import { API, type APIPath } from 'common/api/schema'
-import { assertUnreachable } from 'common/util/types'
+import { log, metrics } from 'shared/utils'
 import { typedEndpoint } from './helpers/endpoint'
-import { randomString } from 'common/util/random'
-import { handlers } from './routes'
+import { handleMcpRequest } from './mcp'
 import { addOldRoutes } from './old-routes'
+import { handlers } from './routes'
 
 export const allowCorsUnrestricted: RequestHandler = cors({
   origin: '*',
@@ -128,4 +129,8 @@ Object.entries(handlers).forEach(([path, handler]) => {
     assertUnreachable(api, 'Unsupported API method')
   }
 })
+
+// Add MCP POST endpoint
+app.post('/v0/mcp', express.json(), allowCorsUnrestricted, handleMcpRequest)
+
 addOldRoutes(app)

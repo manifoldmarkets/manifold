@@ -11,14 +11,14 @@ import {
 import { MINIMUM_BOUNTY } from 'common/economy'
 import { DOMAIN } from 'common/envs/constants'
 import { MAX_ID_LENGTH } from 'common/group'
+import { MAX_MULTI_NUMERIC_ANSWERS } from 'common/multi-numeric'
 import { getMappedValue } from 'common/pseudo-numeric'
+import { liquidityTiers } from 'common/tier'
 import { removeUndefinedProps } from 'common/util/object'
 import { richTextToString } from 'common/util/parse'
+import { randomStringRegex } from 'common/util/random'
 import { z } from 'zod'
 import { coerceBoolean, contentSchema } from './zod-types'
-import { randomStringRegex } from 'common/util/random'
-import { MAX_MULTI_NUMERIC_ANSWERS } from 'common/multi-numeric'
-import { liquidityTiers } from 'common/tier'
 
 export type LiteMarket = {
   // Unique identifier for this market
@@ -92,7 +92,10 @@ export type FullMarket = LiteMarket & {
   groupSlugs?: string[]
 }
 
-export function toLiteMarket(contract: Contract): LiteMarket {
+export function toLiteMarket(
+  contract: Contract,
+  includeLiteAnswers?: boolean
+): LiteMarket {
   const {
     id,
     creatorId,
@@ -137,6 +140,14 @@ export function toLiteMarket(contract: Contract): LiteMarket {
     const { min, max, isLogScale } = contract
     numericValues = { value, min, max, isLogScale }
   }
+  const answers =
+    includeLiteAnswers && contract.mechanism === 'cpmm-multi-1'
+      ? contract.answers?.map((answer) => ({
+          id: answer.id,
+          text: answer.text,
+          probability: getAnswerProbability(contract, answer.id),
+        }))
+      : undefined
 
   return removeUndefinedProps({
     id,
@@ -172,6 +183,7 @@ export function toLiteMarket(contract: Contract): LiteMarket {
     ...numericValues,
     token,
     siblingContractId,
+    answers,
 
     // Manifold love props.
     loverUserId1,

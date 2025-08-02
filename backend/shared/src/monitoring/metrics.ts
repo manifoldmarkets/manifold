@@ -1,4 +1,4 @@
-import { isEqual, flatten } from 'lodash'
+import { flatten, isEqual } from 'lodash'
 
 // see https://cloud.google.com/monitoring/api/ref_v3/rest/v3/projects.metricDescriptors#MetricKind
 export type MetricKind = 'GAUGE' | 'CUMULATIVE'
@@ -88,6 +88,10 @@ export const CUSTOM_METRICS = {
     valueKind: 'int64Value',
   },
   'vercel/revalidations_failed': {
+    metricKind: 'CUMULATIVE',
+    valueKind: 'int64Value',
+  },
+  'mcp/request_count': {
     metricKind: 'CUMULATIVE',
     valueKind: 'int64Value',
   },
