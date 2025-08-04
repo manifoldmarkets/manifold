@@ -102,9 +102,9 @@ export type AICapabilityCard = {
 export const AI_CAPABILITY_CARDS: AICapabilityCard[] = [
   // Monthly markets
   {
-    title: 'Best Chatbot Arena Model in July',
+    title: 'Best Chatbot Arena Model in August',
     description: 'Highest ranked model on lmsys',
-    marketId: 'pA2tZq8dcc',
+    marketId: 'cyRUS5pZgc',
     type: 'monthly',
     displayType: 'top-three-mcq',
   },
@@ -178,16 +178,16 @@ export const AI_CAPABILITY_CARDS: AICapabilityCard[] = [
 
   // Benchmarks
   {
-    title: 'IMO Gold',
-    description: 'AI gets gold on IMO by EOY',
-    marketId: 'tu2ouer9zq',
-    type: 'benchmark',
-    displayType: 'binary-odds',
-  },
-  {
     title: "Humanity's Last Exam",
     description: "Highest score on Humanity's last exam by EOY",
     marketId: 'tzsZCn85RQ',
+    type: 'benchmark',
+    displayType: 'numeric',
+  },
+  {
+    title: 'Frontier Math',
+    description: 'top performance on frontier math',
+    marketId: 'LNdOg08SsU',
     type: 'benchmark',
     displayType: 'numeric',
   },
@@ -199,11 +199,11 @@ export const AI_CAPABILITY_CARDS: AICapabilityCard[] = [
     displayType: 'top-one-mcq',
   },
   {
-    title: 'Frontier Math',
-    description: 'top performance on frontier math',
-    marketId: 'LNdOg08SsU',
+    title: 'IMO Gold',
+    description: 'AI gets gold on IMO by EOY',
+    marketId: 'tu2ouer9zq',
     type: 'benchmark',
-    displayType: 'numeric',
+    displayType: 'binary-odds',
   },
   {
     title: 'Pokemon',
