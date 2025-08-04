@@ -37,6 +37,7 @@ function getServer(): Server {
       {
         name: 'search-markets',
         description: 'Search for prediction markets with optional filters',
+        title: 'Search Markets',
         inputSchema: {
           type: 'object',
           properties: {
@@ -84,6 +85,7 @@ function getServer(): Server {
       },
       {
         name: 'get-market',
+        title: 'Get Market',
         description: 'Get detailed information about a specific market',
         inputSchema: {
           type: 'object',
@@ -95,6 +97,7 @@ function getServer(): Server {
       },
       {
         name: 'get-user',
+        title: 'Get User',
         description: 'Get user information by username',
         inputSchema: {
           type: 'object',
@@ -106,6 +109,7 @@ function getServer(): Server {
       },
       {
         name: 'get-bets',
+        title: 'Get Bets',
         description:
           'Get bets from markets or for users with various filtering options',
         inputSchema: {
@@ -185,6 +189,7 @@ function getServer(): Server {
       },
       {
         name: 'search-users',
+        title: 'Search Users',
         description: 'Search for users by username or display name',
         inputSchema: {
           type: 'object',
