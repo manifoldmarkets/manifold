@@ -81,7 +81,6 @@ export async function updateUserMetricPeriods(
   const contractsById: Record<string, Contract> = {}
 
   for (const activeUserIds of chunks) {
-
     log(`Processing ${activeUserIds.length} users`)
 
     // First, find contracts that users have bet on recently
@@ -131,6 +130,9 @@ export async function updateUserMetricPeriods(
       (c) => !contractsById[c]
     )
     log('Loading contracts, answers, users, and current contract metrics...')
+    const contractIdsWithBets = allContractIds.filter(
+      (c) => !contractIdsWithoutBets.includes(c)
+    )
     // We could cache the contracts and answers to query for less data
     const results = await pg.multi(
       `
@@ -145,15 +147,15 @@ export async function updateUserMetricPeriods(
           : 'select 1 where false;'
       }
 
-      select id, data from user_contract_metrics
-      where user_id in ($2:list)
-      and contract_id in ($3:list)
+      ${
+        contractIdsWithBets.length > 0
+          ? `select id, data from user_contract_metrics
+              where user_id in ($2:list)
+              and contract_id in ($3:list)`
+          : `select 1 where false;`
+      }
     `,
-      [
-        newContractIds,
-        activeUserIds,
-        allContractIds.filter((c) => !contractIdsWithoutBets.includes(c)),
-      ]
+      [newContractIds, activeUserIds, contractIdsWithBets]
     )
     const contracts = results[0].map(convertContract)
     const answers = results[1].map(convertAnswer)
@@ -285,7 +287,7 @@ export async function updateUserMetricPeriods(
         )
     }
   }
-  log('Finished updating user period metrics')
+  log('Finished running user metrics period update')
   return { metricsByUser, contractsById }
 }
 
