@@ -1,34 +1,31 @@
 import { Contract, isSportsContract } from 'common/contract'
-import { PROD_MANIFOLD_LOVE_GROUP_SLUG } from 'common/envs/constants'
-import { GROUP_SCORE_PRIOR } from 'common/feed'
-import { tsToMillis } from 'common/supabase/utils'
-import { answerCostTiers, getTierIndexFromLiquidity } from 'common/tier'
-import { PrivateUser } from 'common/user'
-import { buildArray, filterDefined } from 'common/util/array'
-import {
-  constructPrefixTsQueryNormalized,
-  normalizeHyphens,
-} from 'shared/helpers/search'
-import { getContractPrivacyWhereSQLFilter } from 'shared/supabase/contracts'
 import { createSupabaseDirectClient } from 'shared/supabase/init'
 import {
   from,
   groupBy,
   join,
   leftJoin,
+  limit as sqlLimit,
   limit as lim,
   orderBy,
   renderSql,
   select,
-  limit as sqlLimit,
   where,
   withClause,
 } from 'shared/supabase/sql-builder'
+import { getContractPrivacyWhereSQLFilter } from 'shared/supabase/contracts'
+import { PROD_MANIFOLD_LOVE_GROUP_SLUG } from 'common/envs/constants'
+import { constructPrefixTsQuery } from 'shared/helpers/search'
+import { buildArray, filterDefined } from 'common/util/array'
 import {
   buildUserInterestsCache,
   userIdsToAverageTopicConversionScores,
 } from 'shared/topic-interests'
 import { contractColumnsToSelectWithPrefix, log } from 'shared/utils'
+import { PrivateUser } from 'common/user'
+import { GROUP_SCORE_PRIOR } from 'common/feed'
+import { tsToMillis } from 'common/supabase/utils'
+import { answerCostTiers, getTierIndexFromLiquidity } from 'common/tier'
 
 const DEFAULT_THRESHOLD = 1000
 type TokenInputType = 'CASH' | 'MANA' | 'ALL' | 'CASH_AND_MANA'
@@ -226,9 +223,7 @@ export function getSearchContractSQL(
   const answersSubQuery = renderSql(
     select('distinct a.contract_id'),
     from('answers a'),
-    where(`a.text_fts @@ websearch_to_tsquery('english_extended', $1)`, [
-      normalizeHyphens(term),
-    ])
+    where(`a.text_fts @@ websearch_to_tsquery('english_extended', $1)`, [term])
   )
 
   const groupsFilter =
@@ -287,22 +282,22 @@ export function getSearchContractSQL(
       searchType === 'prefix' &&
         where(
           `question_fts @@ to_tsquery('english_extended', $1)`,
-          constructPrefixTsQueryNormalized(term)
+          constructPrefixTsQuery(term)
         ),
       searchType === 'without-stopwords' &&
         where(
           `question_fts @@ websearch_to_tsquery('english_extended', $1)`,
-          normalizeHyphens(term)
+          term
         ),
       searchType === 'with-stopwords' &&
         where(
           `question_nostop_fts @@ websearch_to_tsquery('english_nostop_with_prefix', $1)`,
-          normalizeHyphens(term)
+          term
         ),
       searchType === 'description' &&
         where(
           `description_fts @@ websearch_to_tsquery('english_extended', $1)`,
-          normalizeHyphens(term)
+          term
         ),
     ],
 
