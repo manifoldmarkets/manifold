@@ -263,7 +263,3 @@ export const parseLeaguePath = (
     highlightedUserId,
   }
 }
-
-export const IS_BIDDING_PERIOD = Date.now() < 1691726400000 // August 11 0:00 PT
-export const MIN_LEAGUE_BID = 50
-export const MIN_BID_INCREASE_FACTOR = 1.2
