@@ -16,6 +16,7 @@ import { getBets } from './get-bets'
 import { getMarket } from './get-market'
 import { getUser } from './get-user'
 import { searchMarketsLite } from './search-contracts'
+import { searchUsers } from './search-users'
 
 function getServer(): Server {
   const server = new Server(
@@ -182,6 +183,31 @@ function getServer(): Server {
           required: [],
         },
       },
+      {
+        name: 'search-users',
+        description: 'Search for users by username or display name',
+        inputSchema: {
+          type: 'object',
+          properties: {
+            term: {
+              type: 'string',
+              description: 'Search query for username or display name',
+            },
+            limit: {
+              type: 'number',
+              minimum: 0,
+              maximum: 1000,
+              description: 'Max number of results (default: 500)',
+            },
+            page: {
+              type: 'number',
+              minimum: 0,
+              description: 'Page number for pagination (default: 0)',
+            },
+          },
+          required: ['term'],
+        },
+      },
     ],
   }))
 
@@ -200,6 +226,7 @@ function getServer(): Server {
             limit: params.limit,
             filter: params.filter,
             sort: params.sort,
+            creatorId: params.creatorId,
             contractType: params.contractType,
             offset: params.offset,
             token: 'MANA' as const,
@@ -293,6 +320,31 @@ function getServer(): Server {
             throw new McpError(
               ErrorCode.InternalError,
               `Get bets error: ${error.message}`
+            )
+          }
+        }
+
+        case 'search-users': {
+          const params = API['search-users'].props.parse(args)
+
+          try {
+            const users = await searchUsers(
+              params,
+              undefined, // auth not required for this endpoint
+              {} as Request // minimal request object since it's not used
+            )
+            return {
+              content: [
+                {
+                  type: 'text',
+                  text: JSON.stringify(users, null, 2),
+                },
+              ],
+            }
+          } catch (error: any) {
+            throw new McpError(
+              ErrorCode.InternalError,
+              `Search users error: ${error.message}`
             )
           }
         }
