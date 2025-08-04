@@ -1,45 +1,45 @@
-import { useEffect, useMemo, useState } from 'react'
-import { groupBy, sortBy } from 'lodash'
 import { ClockIcon } from '@heroicons/react/outline'
+import { groupBy, sortBy } from 'lodash'
 import { useRouter } from 'next/router'
+import { useEffect, useMemo, useState } from 'react'
 
-import {
-  DIVISION_NAMES,
-  getLeaguePath,
-  league_user_info,
-  parseLeaguePath,
-  getSeasonMonth,
-  getSeasonCountdownEnd,
-  getSeasonDates,
-  getMaxDivisionBySeason,
-  getDemotionAndPromotionCountBySeason,
-} from 'common/leagues'
-import { toLabel } from 'common/util/adjective-animal'
-import { Col } from 'web/components/layout/col'
-import { Page } from 'web/components/layout/page'
-import { Row } from 'web/components/layout/row'
-import { Select } from 'web/components/widgets/select'
-import { Title } from 'web/components/widgets/title'
-import { useUser } from 'web/hooks/use-user'
 import { usePersistentInMemoryState } from 'client-common/hooks/use-persistent-in-memory-state'
-import { getLeagueRows } from 'web/lib/supabase/leagues'
-import { CohortTable } from 'web/components/leagues/cohort-table'
-import { PrizesModal } from 'web/components/leagues/prizes-modal'
-import { LeagueFeed } from 'web/components/leagues/league-feed'
-import { QueryUncontrolledTabs } from 'web/components/layout/tabs'
-import { SEO } from 'web/components/SEO'
-import { Countdown } from 'web/components/widgets/countdown'
 import {
   formatTime,
   getCountdownStringHoursMinutes,
 } from 'client-common/lib/time'
+import { APIResponse } from 'common/api/schema'
+import {
+  DIVISION_NAMES,
+  getDemotionAndPromotionCountBySeason,
+  getLeaguePath,
+  getMaxDivisionBySeason,
+  getSeasonCountdownEnd,
+  getSeasonDates,
+  getSeasonMonth,
+  league_user_info,
+  parseLeaguePath,
+} from 'common/leagues'
+import { toLabel } from 'common/util/adjective-animal'
+import { DAY_MS } from 'common/util/time'
+import Link from 'next/link'
+import { Col } from 'web/components/layout/col'
+import { Page } from 'web/components/layout/page'
+import { Row } from 'web/components/layout/row'
+import { QueryUncontrolledTabs } from 'web/components/layout/tabs'
+import { CohortTable } from 'web/components/leagues/cohort-table'
+import { LeagueFeed } from 'web/components/leagues/league-feed'
+import { PrizesModal } from 'web/components/leagues/prizes-modal'
+import { SEO } from 'web/components/SEO'
+import { Countdown } from 'web/components/widgets/countdown'
 import { InfoTooltip } from 'web/components/widgets/info-tooltip'
 import { LoadingIndicator } from 'web/components/widgets/loading-indicator'
+import { Select } from 'web/components/widgets/select'
+import { Title } from 'web/components/widgets/title'
 import { useEffectCheckEquality } from 'web/hooks/use-effect-check-equality'
-import Link from 'next/link'
-import { DAY_MS } from 'common/util/time'
+import { useUser } from 'web/hooks/use-user'
 import { api } from 'web/lib/api/api'
-import { APIResponse } from 'common/api/schema'
+import { getLeagueRows } from 'web/lib/supabase/leagues'
 
 export async function getStaticPaths() {
   return { paths: [], fallback: 'blocking' }
@@ -126,7 +126,6 @@ export default function Leagues(props: LeaguesProps) {
     (division) => division
   ).reverse()
   const defaultDivision = getMaxDivisionBySeason(season)
-
   const [division, setDivision] = useState<number>(defaultDivision)
   const divisionCohorts = divisionToCohorts[defaultDivision]
   const [cohort, setCohort] = useState(
