@@ -15,7 +15,7 @@
     "alias": "tsc-alias"
   },
   "engines": {
-    "node": ">=16.0.0"
+    "node": ">=20.0.0"
   },
   "dependencies": {
     "@amplitude/node": "1.10.2",
