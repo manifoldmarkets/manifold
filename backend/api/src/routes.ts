@@ -119,7 +119,11 @@ import { refreshAllClients } from './refresh-all-clients'
 import { removeLiquidity } from './remove-liquidity'
 import { resolveMarket } from './resolve-market'
 import { saveTwitchCredentials } from './save-twitch-credentials'
-import { searchMarketsFull, searchMarketsLite } from './search-contracts'
+import {
+  getRecentMarkets,
+  searchMarketsFull,
+  searchMarketsLite,
+} from './search-contracts'
 import { searchGroups, searchMyGroups } from './search-groups'
 import { searchUsers } from './search-users'
 import { sellShares } from './sell-shares'
@@ -241,6 +245,7 @@ export const handlers: { [k in APIPath]: APIHandler<k> } = {
   markets: getMarkets,
   'search-markets': searchMarketsLite,
   'search-markets-full': searchMarketsFull,
+  'recent-markets': getRecentMarkets,
   managram: managram,
   managrams: getManagrams,
   manalink: createManalink,

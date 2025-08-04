@@ -859,6 +859,13 @@ export const API = (_apiTypeCheck = {
     returns: [] as Contract[],
     props: searchProps,
   },
+  'recent-markets': {
+    method: 'GET',
+    visibility: 'undocumented',
+    authed: true, // authed and no cache means users won't accidentally see results from other users
+    returns: [] as Contract[],
+    props: searchProps,
+  },
   managram: {
     method: 'POST',
     visibility: 'public',

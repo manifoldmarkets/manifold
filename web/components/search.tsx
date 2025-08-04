@@ -1,48 +1,48 @@
 'use client'
-import clsx from 'clsx'
-import { Contract } from 'common/contract'
-import { LiteGroup } from 'common/group'
-import { capitalize, groupBy, minBy, orderBy, sample, uniqBy } from 'lodash'
-import { ReactNode, useEffect, useRef, useState } from 'react'
-import { AddContractToGroupButton } from 'web/components/topics/add-contract-to-group-modal'
-import { useDebouncedEffect } from 'web/hooks/use-debounced-effect'
 import { useEvent } from 'client-common/hooks/use-event'
 import { usePersistentInMemoryState } from 'client-common/hooks/use-persistent-in-memory-state'
-import { usePersistentQueriesState } from 'web/hooks/use-persistent-query-state'
-import { track } from 'web/lib/service/analytics'
-import { Col } from './layout/col'
-import { Row } from './layout/row'
+import clsx from 'clsx'
 import { FullUser } from 'common/api/user-types'
+import { Contract } from 'common/contract'
+import { LiteGroup } from 'common/group'
 import { CONTRACTS_PER_SEARCH_PAGE } from 'common/supabase/contracts'
 import { buildArray } from 'common/util/array'
+import { capitalize, groupBy, minBy, orderBy, sample, uniqBy } from 'lodash'
+import { ReactNode, useEffect, useRef, useState } from 'react'
 import { Button } from 'web/components/buttons/button'
+import { AddContractToGroupButton } from 'web/components/topics/add-contract-to-group-modal'
+import { useDebouncedEffect } from 'web/hooks/use-debounced-effect'
 import { usePersistentLocalState } from 'web/hooks/use-persistent-local-state'
+import { usePersistentQueriesState } from 'web/hooks/use-persistent-query-state'
 import { api, searchGroups } from 'web/lib/api/api'
+import { track } from 'web/lib/service/analytics'
 import { searchUsers } from 'web/lib/supabase/users'
+import { Col } from './layout/col'
+import { Row } from './layout/row'
 
-import { LoadingContractRow } from './contract/contracts-table'
-import { ContractFilters } from './search/contract-filters'
-import { UserResults } from './search/user-results'
-import { BrowseTopicPills } from './topics/browse-topic-pills'
-import { LoadMoreUntilNotVisible } from 'web/components/widgets/visibility-observer'
-import { BinaryDigit } from 'common/tier'
-import { useIsMobile } from 'web/hooks/use-is-mobile'
-import { Spacer } from './layout/spacer'
-import { useSweepstakes } from './sweepstakes-provider'
-import { SEARCH_TOPICS_TO_SUBTOPICS } from 'common/topics'
-import { Carousel } from './widgets/carousel'
-import { isEqual } from 'lodash'
-import { SearchInput } from './search/search-input'
-import { removeEmojis } from 'common/util/string'
-import { useIsPageVisible } from 'web/hooks/use-page-visible'
-import { TopLevelPost } from 'common/top-level-post'
-import { CombinedResults } from './contract/combined-results'
-import { APIParams } from 'common/api/schema'
-import { useUser } from 'web/hooks/use-user'
-import { useAPIGetter } from 'web/hooks/use-api-getter'
+import { APIParams, APIResponse } from 'common/api/schema'
 import { getFollowedGroupsCount } from 'common/supabase/groups'
-import { db } from 'web/lib/supabase/db'
+import { BinaryDigit } from 'common/tier'
+import { TopLevelPost } from 'common/top-level-post'
+import { SEARCH_TOPICS_TO_SUBTOPICS } from 'common/topics'
+import { removeEmojis } from 'common/util/string'
 import { DAY_MS } from 'common/util/time'
+import { isEqual } from 'lodash'
+import { LoadMoreUntilNotVisible } from 'web/components/widgets/visibility-observer'
+import { useAPIGetter } from 'web/hooks/use-api-getter'
+import { useIsMobile } from 'web/hooks/use-is-mobile'
+import { useIsPageVisible } from 'web/hooks/use-page-visible'
+import { useUser } from 'web/hooks/use-user'
+import { db } from 'web/lib/supabase/db'
+import { CombinedResults } from './contract/combined-results'
+import { LoadingContractRow } from './contract/contracts-table'
+import { Spacer } from './layout/spacer'
+import { ContractFilters } from './search/contract-filters'
+import { SearchInput } from './search/search-input'
+import { UserResults } from './search/user-results'
+import { useSweepstakes } from './sweepstakes-provider'
+import { BrowseTopicPills } from './topics/browse-topic-pills'
+import { Carousel } from './widgets/carousel'
 
 const USERS_PER_PAGE = 100
 const TOPICS_PER_PAGE = 100
@@ -912,8 +912,16 @@ export const useSearchResults = (props: {
             setLoading(false)
             return shouldLoadMore
           }
-          const searchPromises: Promise<any>[] = [
-            api('search-markets-full', {
+          const endpoint =
+            topicSlug === 'recent' ? 'recent-markets' : 'search-markets-full'
+          const searchPromises: Promise<
+            | APIResponse<'recent-markets'>
+            | APIResponse<'search-markets-full'>
+            | APIResponse<'get-posts'>
+            | APIResponse<'search-users'>
+            | APIResponse<'search-groups'>
+          >[] = [
+            api(endpoint, {
               term: query,
               filter,
               sort,
@@ -956,10 +964,10 @@ export const useSearchResults = (props: {
             const newContracts = results[0] as Contract[]
             let postResultIndex = 1
             const newUsers = includeUsersAndTopics
-              ? results[postResultIndex++]
+              ? (results[postResultIndex++] as FullUser[])
               : undefined
             const newTopics = includeUsersAndTopics
-              ? results[postResultIndex++]
+              ? (results[postResultIndex++] as APIResponse<'search-groups'>)
               : undefined
 
             const newPostsResults =

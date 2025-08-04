@@ -35,6 +35,13 @@ export const searchMarketsFull: APIHandler<'search-markets-full'> = async (
   return await search(props, auth?.uid)
 }
 
+export const getRecentMarkets: APIHandler<'recent-markets'> = async (
+  props,
+  auth
+) => {
+  return await search(props, auth.uid)
+}
+
 const search = async (
   props: z.infer<typeof searchProps>,
   userId: string | undefined
