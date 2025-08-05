@@ -1,19 +1,24 @@
+import { Answer } from 'common/answer'
 import { Contract } from 'common/contract'
 import { TopLevelPost } from 'common/top-level-post'
-import { ContractRow } from './contracts-table'
-import { PostRow } from '../posts/post-row'
-import { SearchParams, SORT_KEY } from '../search'
-import { Key } from 'react'
-import { sortBy } from 'lodash'
-import { Answer } from 'common/answer'
-import {
-  boostedColumn,
-  traderColumn,
-  probColumn,
-  actionColumn,
-  liquidityColumn,
-} from './contract-table-col-formats'
 import { buildArray } from 'common/util/array'
+import { sortBy } from 'lodash'
+import { Key } from 'react'
+import { PostRow } from '../posts/post-row'
+import {
+  SearchParams,
+  SORT_KEY,
+  SORTS_MIXING_POSTS_AND_MARKETS,
+  TOPIC_FILTER_KEY,
+} from '../search'
+import {
+  actionColumn,
+  boostedColumn,
+  liquidityColumn,
+  probColumn,
+  traderColumn,
+} from './contract-table-col-formats'
+import { ContractRow } from './contracts-table'
 
 type CombinedResultsProps = {
   contracts: Contract[]
@@ -50,14 +55,19 @@ export function CombinedResults(props: CombinedResultsProps) {
     hasBets,
   } = props
 
-  const sort = searchParams[SORT_KEY]
+  const sort =
+    searchParams[TOPIC_FILTER_KEY] === 'recent'
+      ? undefined
+      : searchParams[SORT_KEY]
   let combinedItems: (Contract | TopLevelPost)[] = []
-  combinedItems = sortBy([...contracts, ...posts], (item) => {
-    if (sort === 'newest') return -item.createdTime
-    if (sort === 'score') return -item.importanceScore
-    return 0
-  })
-
+  combinedItems =
+    sort && SORTS_MIXING_POSTS_AND_MARKETS.includes(sort)
+      ? sortBy([...contracts, ...posts], (item) => {
+          if (sort === 'newest') return -item.createdTime
+          if (sort === 'score') return -item.importanceScore
+          return 0
+        })
+      : [...contracts, ...posts]
   if (!combinedItems.length) return null
 
   // Define columns for ContractRow, similar to how ContractsTable did

@@ -65,6 +65,8 @@ export const SORTS = [
   { label: '🎲 Random!', value: 'random' },
 ] as const
 
+export const SORTS_MIXING_POSTS_AND_MARKETS = ['score', 'newest']
+
 export const predictionMarketSorts = new Set([
   'daily-score',
   '24-hour-vol',
@@ -858,7 +860,7 @@ export const useSearchResults = (props: {
       } = searchParams
 
       const shouldSearchPostsWithContracts =
-        (sort === 'score' || sort === 'newest') &&
+        SORTS_MIXING_POSTS_AND_MARKETS.includes(sort) &&
         (!contractsOnly || !!state.posts?.length) &&
         !topicSlug &&
         forYou === '0' &&
