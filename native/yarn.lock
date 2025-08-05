@@ -2296,10 +2296,10 @@
   dependencies:
     merge-options "^3.0.4"
 
-"@react-native-clipboard/clipboard@^1.14.1":
-  version "1.14.1"
-  resolved "https://registry.yarnpkg.com/@react-native-clipboard/clipboard/-/clipboard-1.14.1.tgz#835f82fc86881a0808a8405f2576617bb5383554"
-  integrity sha512-SM3el0A28SwoeJljVNhF217o0nI4E7RfalLmuRQcT1/7tGcxUjgFa3jyrEndYUct8/uxxK5EUNGUu1YEDqzxqw==
+"@react-native-clipboard/clipboard@1.16.3":
+  version "1.16.3"
+  resolved "https://registry.yarnpkg.com/@react-native-clipboard/clipboard/-/clipboard-1.16.3.tgz#7807a90fd9984bf4d3a96faf2eee20457984a9bd"
+  integrity sha512-cMIcvoZKIrShzJHEaHbTAp458R9WOv0fB6UyC7Ek4Qk561Ow/DrzmmJmH/rAZg21Z6ixJ4YSdFDC14crqIBmCQ==
 
 "@react-native-community/netinfo@11.4.1":
   version "11.4.1"
@@ -2311,6 +2311,14 @@
   resolved "https://registry.yarnpkg.com/@react-native/assets-registry/-/assets-registry-0.79.5.tgz#90a178ec6646a22eb4218285cc2df7fd82603e34"
   integrity sha512-N4Kt1cKxO5zgM/BLiyzuuDNquZPiIgfktEQ6TqJ/4nKA8zr4e8KJgU6Tb2eleihDO4E24HmkvGc73naybKRz/w==
 
+"@react-native/babel-plugin-codegen@0.79.0-rc.4":
+  version "0.79.0-rc.4"
+  resolved "https://registry.yarnpkg.com/@react-native/babel-plugin-codegen/-/babel-plugin-codegen-0.79.0-rc.4.tgz#33c77e094f6cbe95fade349dad11958f44341abb"
+  integrity sha512-vhYfoFdzz1D/bDAuGThtNia9bUpjtCo73IWfndNoKj+84SOGTtrKaZ/jOpXs5uMskpe1D4xaHuOHHFbzp/0E8g==
+  dependencies:
+    "@babel/traverse" "^7.25.3"
+    "@react-native/codegen" "0.79.0-rc.4"
+
 "@react-native/babel-plugin-codegen@0.79.5":
   version "0.79.5"
   resolved "https://registry.yarnpkg.com/@react-native/babel-plugin-codegen/-/babel-plugin-codegen-0.79.5.tgz#a2a9fd04fbb28ac75694952c234b159de25b2c52"
@@ -2318,6 +2326,57 @@
   dependencies:
     "@babel/traverse" "^7.25.3"
     "@react-native/codegen" "0.79.5"
+
+"@react-native/babel-preset@0.79.0-rc.4":
+  version "0.79.0-rc.4"
+  resolved "https://registry.yarnpkg.com/@react-native/babel-preset/-/babel-preset-0.79.0-rc.4.tgz#1b46167b9d8127c2b3a6affb61dba6b425575ffe"
+  integrity sha512-0vyO3Ix2N0sI43w0XNJ2zzSWzX7no/JMrXnVzJEm9IhNHsuMmKaXQdRvijDZroepDINIbb6vaIWwzeWkqhiPAA==
+  dependencies:
+    "@babel/core" "^7.25.2"
+    "@babel/plugin-proposal-export-default-from" "^7.24.7"
+    "@babel/plugin-syntax-dynamic-import" "^7.8.3"
+    "@babel/plugin-syntax-export-default-from" "^7.24.7"
+    "@babel/plugin-syntax-nullish-coalescing-operator" "^7.8.3"
+    "@babel/plugin-syntax-optional-chaining" "^7.8.3"
+    "@babel/plugin-transform-arrow-functions" "^7.24.7"
+    "@babel/plugin-transform-async-generator-functions" "^7.25.4"
+    "@babel/plugin-transform-async-to-generator" "^7.24.7"
+    "@babel/plugin-transform-block-scoping" "^7.25.0"
+    "@babel/plugin-transform-class-properties" "^7.25.4"
+    "@babel/plugin-transform-classes" "^7.25.4"
+    "@babel/plugin-transform-computed-properties" "^7.24.7"
+    "@babel/plugin-transform-destructuring" "^7.24.8"
+    "@babel/plugin-transform-flow-strip-types" "^7.25.2"
+    "@babel/plugin-transform-for-of" "^7.24.7"
+    "@babel/plugin-transform-function-name" "^7.25.1"
+    "@babel/plugin-transform-literals" "^7.25.2"
+    "@babel/plugin-transform-logical-assignment-operators" "^7.24.7"
+    "@babel/plugin-transform-modules-commonjs" "^7.24.8"
+    "@babel/plugin-transform-named-capturing-groups-regex" "^7.24.7"
+    "@babel/plugin-transform-nullish-coalescing-operator" "^7.24.7"
+    "@babel/plugin-transform-numeric-separator" "^7.24.7"
+    "@babel/plugin-transform-object-rest-spread" "^7.24.7"
+    "@babel/plugin-transform-optional-catch-binding" "^7.24.7"
+    "@babel/plugin-transform-optional-chaining" "^7.24.8"
+    "@babel/plugin-transform-parameters" "^7.24.7"
+    "@babel/plugin-transform-private-methods" "^7.24.7"
+    "@babel/plugin-transform-private-property-in-object" "^7.24.7"
+    "@babel/plugin-transform-react-display-name" "^7.24.7"
+    "@babel/plugin-transform-react-jsx" "^7.25.2"
+    "@babel/plugin-transform-react-jsx-self" "^7.24.7"
+    "@babel/plugin-transform-react-jsx-source" "^7.24.7"
+    "@babel/plugin-transform-regenerator" "^7.24.7"
+    "@babel/plugin-transform-runtime" "^7.24.7"
+    "@babel/plugin-transform-shorthand-properties" "^7.24.7"
+    "@babel/plugin-transform-spread" "^7.24.7"
+    "@babel/plugin-transform-sticky-regex" "^7.24.7"
+    "@babel/plugin-transform-typescript" "^7.25.2"
+    "@babel/plugin-transform-unicode-regex" "^7.24.7"
+    "@babel/template" "^7.25.0"
+    "@react-native/babel-plugin-codegen" "0.79.0-rc.4"
+    babel-plugin-syntax-hermes-parser "0.25.1"
+    babel-plugin-transform-flow-enums "^0.0.2"
+    react-refresh "^0.14.0"
 
 "@react-native/babel-preset@0.79.5":
   version "0.79.5"
@@ -2369,6 +2428,17 @@
     babel-plugin-syntax-hermes-parser "0.25.1"
     babel-plugin-transform-flow-enums "^0.0.2"
     react-refresh "^0.14.0"
+
+"@react-native/codegen@0.79.0-rc.4":
+  version "0.79.0-rc.4"
+  resolved "https://registry.yarnpkg.com/@react-native/codegen/-/codegen-0.79.0-rc.4.tgz#e2b59a8da5b7da7558d1abdb1b7333975af1a5e5"
+  integrity sha512-62J5LVV0LBqyqSV1REin2+ciWamctlYMFyy216Gko/+aqMdoYVX/bM14pdPmqtPZRoMEgWQCgmfw+xc0yx9aPQ==
+  dependencies:
+    glob "^7.1.1"
+    hermes-parser "0.25.1"
+    invariant "^2.2.4"
+    nullthrows "^1.1.1"
+    yargs "^17.6.2"
 
 "@react-native/codegen@0.79.5":
   version "0.79.5"
@@ -3043,7 +3113,34 @@ babel-preset-current-node-syntax@^1.0.0:
     "@babel/plugin-syntax-private-property-in-object" "^7.14.5"
     "@babel/plugin-syntax-top-level-await" "^7.14.5"
 
-babel-preset-expo@13.2.3, babel-preset-expo@~13.2.3:
+babel-preset-expo@~13.0.0:
+  version "13.0.0"
+  resolved "https://registry.yarnpkg.com/babel-preset-expo/-/babel-preset-expo-13.0.0.tgz#49662765a175994fd70ea89d1f7f6ea2147e5c98"
+  integrity sha512-4NfamKh+BKu6v0VUtZ2wFuZ9VdaDnYOC+vsAHhUF3ks1jzFLo9TwBqsrkhD129DIHfdhVJnRJah2KRCXEjcrVQ==
+  dependencies:
+    "@babel/helper-module-imports" "^7.25.9"
+    "@babel/plugin-proposal-decorators" "^7.12.9"
+    "@babel/plugin-proposal-export-default-from" "^7.24.7"
+    "@babel/plugin-syntax-export-default-from" "^7.24.7"
+    "@babel/plugin-transform-export-namespace-from" "^7.25.9"
+    "@babel/plugin-transform-flow-strip-types" "^7.25.2"
+    "@babel/plugin-transform-modules-commonjs" "^7.24.8"
+    "@babel/plugin-transform-object-rest-spread" "^7.24.7"
+    "@babel/plugin-transform-parameters" "^7.24.7"
+    "@babel/plugin-transform-private-methods" "^7.24.7"
+    "@babel/plugin-transform-private-property-in-object" "^7.24.7"
+    "@babel/plugin-transform-runtime" "^7.24.7"
+    "@babel/preset-react" "^7.22.15"
+    "@babel/preset-typescript" "^7.23.0"
+    "@react-native/babel-preset" "0.79.0-rc.4"
+    babel-plugin-react-native-web "~0.19.13"
+    babel-plugin-syntax-hermes-parser "^0.25.1"
+    babel-plugin-transform-flow-enums "^0.0.2"
+    debug "^4.3.4"
+    react-refresh "^0.14.2"
+    resolve-from "^5.0.0"
+
+babel-preset-expo@~13.2.3:
   version "13.2.3"
   resolved "https://registry.yarnpkg.com/babel-preset-expo/-/babel-preset-expo-13.2.3.tgz#d96d2df314a9e20d5218a0642e6541c4735f3a34"
   integrity sha512-wQJn92lqj8GKR7Ojg/aW4+GkqI6ZdDNTDyOqhhl7A9bAqk6t0ukUOWLDXQb4p0qKJjMDV1F6gNWasI2KUbuVTQ==
@@ -3862,13 +3959,6 @@ expo-notifications@~0.31.4:
     badgin "^1.1.5"
     expo-application "~6.1.5"
     expo-constants "~17.1.7"
-
-expo-random@~14.0.1:
-  version "14.0.1"
-  resolved "https://registry.yarnpkg.com/expo-random/-/expo-random-14.0.1.tgz#aedc6a3b6ff86c74a85989d77d20e0f1762ed669"
-  integrity sha512-gX2mtR9o+WelX21YizXUCD/y+a4ZL+RDthDmFkHxaYbdzjSYTn8u/igoje/l3WEO+/RYspmqUFa8w/ckNbt6Vg==
-  dependencies:
-    base64-js "^1.3.0"
 
 expo-sharing@~13.1.5:
   version "13.1.5"
@@ -5705,10 +5795,10 @@ react-native-logs@^5.1.0:
   resolved "https://registry.yarnpkg.com/react-native-logs/-/react-native-logs-5.1.0.tgz#03e73c0789254d13bd1c6dac4874f0ecfee53b37"
   integrity sha512-bnTDoML/xH2V16ica6q4OJN7LIT0yz9mgeiAR1l3lvMTV6qfPGpiyy1G39mNfVorGIh3KbMLd6Av8dE2Pc33yA==
 
-react-native-safe-area-context@5.5.2:
-  version "5.5.2"
-  resolved "https://registry.yarnpkg.com/react-native-safe-area-context/-/react-native-safe-area-context-5.5.2.tgz#a3c0e99385a45e31ef24d24358aa622cc9e1a069"
-  integrity sha512-t4YVbHa9uAGf+pHMabGrb0uHrD5ogAusSu842oikJ3YKXcYp6iB4PTGl0EZNkUIR3pCnw/CXKn42OCfhsS0JIw==
+react-native-safe-area-context@5.4.0:
+  version "5.4.0"
+  resolved "https://registry.yarnpkg.com/react-native-safe-area-context/-/react-native-safe-area-context-5.4.0.tgz#04b51940408c114f75628a12a93569d30c525454"
+  integrity sha512-JaEThVyJcLhA+vU0NU8bZ0a1ih6GiF4faZ+ArZLqpYbL6j7R3caRqj+mE3lEtKCuHgwjLg3bCxLL1GPUJZVqUA==
 
 react-native-web@^0.20.0:
   version "0.20.0"

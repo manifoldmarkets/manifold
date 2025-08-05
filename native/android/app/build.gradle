@@ -94,8 +94,8 @@ android {
         applicationId 'com.markets.manifold'
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
-        versionCode 66
-        versionName "2.0.66"
+        versionCode 68
+        versionName "2.0.68"
     }
     signingConfigs {
         debug {

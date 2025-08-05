@@ -19,6 +19,7 @@ import Constants from 'expo-constants'
 import 'expo-dev-client'
 import * as Linking from 'expo-linking'
 import * as Notifications from 'expo-notifications'
+import * as SplashScreen from 'expo-splash-screen'
 import { StatusBar } from 'expo-status-bar'
 import * as StoreReview from 'expo-store-review'
 import * as WebBrowser from 'expo-web-browser'
@@ -36,6 +37,9 @@ Sentry.init({
   dsn: 'https://2353d2023dad4bc192d293c8ce13b9a1@o4504040581496832.ingest.us.sentry.io/4504040585494528',
   debug: ENV === 'DEV',
 })
+
+// Prevent splash screen from auto-hiding
+SplashScreen.preventAutoHideAsync()
 // NOTE: you must change NEXT_PUBLIC_API_URL in dev.sh to match your local IP address. ie:
 // "cross-env NEXT_PUBLIC_API_URL=192.168.1.229:8088 \
 // Then, set the native url in the app on the user settings page: http://192.168.1.229:3000/
@@ -429,6 +433,22 @@ const App = () => {
   const isConnected = useIsConnected()
   const fullyLoaded =
     hasLoadedWebView && fbUser && isConnected && listeningToNative.current
+
+  // Hide splash screen when app is fully loaded
+  useEffect(() => {
+    const hideSplashScreen = async () => {
+      if (hasLoadedWebView) {
+        try {
+          await SplashScreen.hideAsync()
+          log('Splash screen hidden - app fully loaded')
+        } catch (error) {
+          log('Error hiding splash screen:', error)
+        }
+      }
+    }
+    hideSplashScreen()
+  }, [hasLoadedWebView])
+
   const styles = StyleSheet.create({
     container: {
       display: 'flex',

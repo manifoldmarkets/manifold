@@ -60,7 +60,13 @@ export const CustomWebview = (props: {
   }
 
   return (
-    <View style={{ flex: display ? 1 : 0, height: display ? 'auto' : 0 }}>
+    <View
+      style={{
+        flex: display ? 1 : 0,
+        height: display ? 'auto' : 1,
+        opacity: display ? 1 : 0,
+      }}
+    >
       {Platform.OS === 'android' ? (
         <ScrollView
           style={{ display: display ? 'flex' : 'none' }}
@@ -158,7 +164,7 @@ const sharedWebViewProps: WebViewProps = {
   showsVerticalScrollIndicator: false,
   pullToRefreshEnabled: true,
   overScrollMode: 'never',
-  decelerationRate: 'normal',
+  decelerationRate: 0.998,
   allowsBackForwardNavigationGestures: true,
   sharedCookiesEnabled: true,
   mediaPlaybackRequiresUserAction: true,
