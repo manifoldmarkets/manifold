@@ -1,16 +1,16 @@
-import { Col } from 'web/components/layout/col'
-import { InfoTooltip } from 'web/components/widgets/info-tooltip'
-import { Row } from 'web/components/layout/row'
-import { Input } from 'web/components/widgets/input'
-import { useState, useCallback, useEffect } from 'react'
-import { Button } from '../buttons/button'
-import { api, APIError } from 'web/lib/api/api'
 import { XIcon } from '@heroicons/react/solid'
-import { usePersistentLocalState } from 'web/hooks/use-persistent-local-state'
-import { ControlledTabs } from '../layout/tabs'
-import { debounce } from 'lodash'
 import { MAX_MULTI_NUMERIC_ANSWERS } from 'common/multi-numeric'
 import { formatMoney } from 'common/util/format'
+import { debounce } from 'lodash'
+import { useCallback, useEffect, useState } from 'react'
+import { Col } from 'web/components/layout/col'
+import { Row } from 'web/components/layout/row'
+import { InfoTooltip } from 'web/components/widgets/info-tooltip'
+import { Input } from 'web/components/widgets/input'
+import { usePersistentLocalState } from 'web/hooks/use-persistent-local-state'
+import { api, APIError } from 'web/lib/api/api'
+import { Button } from '../buttons/button'
+import { ControlledTabs } from '../layout/tabs'
 export const MultiNumericDateSection = (props: {
   submitState: 'EDITING' | 'LOADING' | 'DONE'
   question: string
@@ -128,7 +128,7 @@ export const MultiNumericDateSection = (props: {
   const handleRangeBlur = () => {
     setError('')
     setRegenerateError('')
-    if (!minMaxError && question) {
+    if (!minMaxError && question && !answers.length) {
       generateRanges()
     }
   }
