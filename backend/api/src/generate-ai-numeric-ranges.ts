@@ -1,10 +1,9 @@
-import { APIError, APIHandler } from './helpers/endpoint'
-import { track } from 'shared/analytics'
-import { parseClaudeResponseAsJson } from 'shared/helpers/claude'
-import { log } from 'shared/utils'
-import { rateLimitByUser } from './helpers/rate-limit'
 import { HOUR_MS } from 'common/util/time'
-import { models, promptGemini } from 'shared/helpers/gemini'
+import { track } from 'shared/analytics'
+import { models, promptClaudeParsingJson } from 'shared/helpers/claude'
+import { log } from 'shared/utils'
+import { APIError, APIHandler } from './helpers/endpoint'
+import { rateLimitByUser } from './helpers/rate-limit'
 
 const baseSystemPrompt = (style: 'threshold' | 'bucket') => {
   const belowAbovePrompt =
@@ -31,6 +30,8 @@ const baseSystemPrompt = (style: 'threshold' | 'bucket') => {
       midpoints: array of corresponding midpoint numbers
     }
     ${style === 'threshold' ? thresholdExamples : bucketExamples}
+
+    - Remember, DO NOT return more than 12 answers.
 `
 }
 
@@ -44,24 +45,19 @@ export const generateAINumericRanges: APIHandler<'generate-ai-numeric-ranges'> =
 
       const bucketSystemPrompt = baseSystemPrompt('bucket')
 
-      const [thresholdResponse, bucketResponse] = await Promise.all([
-        promptGemini(prompt, {
-          model: models.flash,
+      const [thresholds, buckets] = await Promise.all([
+        promptClaudeParsingJson<RangeResponse>(prompt, {
+          model: models.haiku,
           system: thresholdSystemPrompt,
         }),
-        promptGemini(prompt, {
-          model: models.flash,
+        promptClaudeParsingJson<RangeResponse>(prompt, {
+          model: models.haiku,
           system: bucketSystemPrompt,
         }),
       ])
 
-      log('thresholdResponse', thresholdResponse)
-      log('bucketResponse', bucketResponse)
-
-      const thresholds = parseClaudeResponseAsJson(
-        thresholdResponse
-      ) as RangeResponse
-      const buckets = parseClaudeResponseAsJson(bucketResponse) as RangeResponse
+      log('thresholds', thresholds)
+      log('buckets', buckets)
 
       assertMidpointsAreUnique(thresholds.midpoints)
       assertMidpointsAreAscending(thresholds.midpoints)
@@ -104,12 +100,10 @@ export const regenerateNumericMidpoints: APIHandler<'regenerate-numeric-midpoint
 
       Return ONLY an array of midpoint numbers, one for each range, in the same order as the ranges, without any other text or formatting.`
 
-      const claudeResponse = await promptGemini(prompt, {
-        model: models.flash,
+      const result = await promptClaudeParsingJson<number[]>(prompt, {
+        model: models.haiku,
       })
-      log('claudeResponse', claudeResponse)
-
-      const result = parseClaudeResponseAsJson(claudeResponse)
+      log('claudeResponse', result)
 
       track(auth.uid, 'regenerate-numeric-midpoints', {
         answers,

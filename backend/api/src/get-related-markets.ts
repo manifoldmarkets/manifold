@@ -1,16 +1,16 @@
+import { Contract } from 'common/contract'
+import { HOUR_MS } from 'common/util/time'
+import { getContractsDirect } from 'shared/supabase/contracts'
 import {
   createSupabaseDirectClient,
   SupabaseDirectClient,
 } from 'shared/supabase/init'
-import { Contract } from 'common/contract'
 import { log } from 'shared/utils'
-import { getContractsDirect } from 'shared/supabase/contracts'
-import { HOUR_MS } from 'common/util/time'
 
+import { APIHandler } from 'api/helpers/endpoint'
 import { orderBy } from 'lodash'
 import { TOPIC_SIMILARITY_THRESHOLD } from 'shared/helpers/embeddings'
-import { APIHandler } from 'api/helpers/endpoint'
-import { promptGemini, parseGeminiResponseAsJson } from 'shared/helpers/gemini'
+import { parseAIResponseAsJson, promptGemini } from 'shared/helpers/gemini'
 
 type cacheType = {
   marketIdsFromEmbeddings: string[]
@@ -68,7 +68,7 @@ Return a JSON array containing ONLY the IDs of markets to KEEP (those that are d
 `
 
       const response = await promptGemini(prompt)
-      const marketsToKeep = parseGeminiResponseAsJson(response)
+      const marketsToKeep = parseAIResponseAsJson(response)
 
       if (Array.isArray(marketsToKeep) && marketsToKeep.length > 0) {
         marketsFromEmbeddings = marketsFromEmbeddings.filter((market) =>

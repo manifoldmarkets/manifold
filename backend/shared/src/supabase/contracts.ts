@@ -1,4 +1,4 @@
-import { SupabaseDirectClient } from 'shared/supabase/init'
+import { APIError } from 'common/api/utils'
 import {
   Contract,
   CPMMMultiContract,
@@ -6,14 +6,14 @@ import {
 } from 'common/contract'
 import { isAdminId } from 'common/envs/constants'
 import { convertAnswer, convertContract } from 'common/supabase/contracts'
-import { generateEmbeddings } from 'shared/helpers/openai-utils'
-import { APIError } from 'common/api/utils'
-import { broadcastUpdatedContract } from 'shared/websockets/helpers'
-import { updateData, DataUpdate, update } from './utils'
-import { camelCase, mapValues, sortBy } from 'lodash'
-import { contractColumnsToSelect, log } from 'shared/utils'
 import { Tables } from 'common/supabase/utils'
-import { promptGemini, parseGeminiResponseAsJson } from 'shared/helpers/gemini'
+import { camelCase, mapValues, sortBy } from 'lodash'
+import { parseAIResponseAsJson, promptGemini } from 'shared/helpers/gemini'
+import { generateEmbeddings } from 'shared/helpers/openai-utils'
+import { SupabaseDirectClient } from 'shared/supabase/init'
+import { contractColumnsToSelect, log } from 'shared/utils'
+import { broadcastUpdatedContract } from 'shared/websockets/helpers'
+import { DataUpdate, update, updateData } from './utils'
 // used for API to allow slug as param
 export const getContractIdFromSlug = async (
   pg: SupabaseDirectClient,
@@ -176,7 +176,7 @@ Respond with a JSON object containing:
     const response = await promptGemini(contract.question, {
       system: systemPrompt,
     })
-    const result = parseGeminiResponseAsJson(response)
+    const result = parseAIResponseAsJson(response)
     return result.isSelfReferential
   } catch (error) {
     log.error('Error checking for self-referential market:', {

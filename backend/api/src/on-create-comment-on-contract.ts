@@ -1,35 +1,35 @@
-import { compact } from 'lodash'
-import { isProd, log, revalidateStaticProps } from 'shared/utils'
-import { ContractComment } from 'common/comment'
+import { JSONContent } from '@tiptap/core'
+import { followContractInternal } from 'api/follow-contract'
+import { DEV_HOUSE_LIQUIDITY_PROVIDER_ID } from 'common/antes'
 import { Bet } from 'common/bet'
-import {
-  replied_users_info,
-  createAIDescriptionUpdateNotification,
-} from 'shared/create-notification'
-import { createCommentOnContractNotification } from 'shared/notifications/create-new-contract-comment-notif'
+import { ContractComment } from 'common/comment'
+import { Contract, contractPath } from 'common/contract'
+import { User } from 'common/user'
 import {
   parseJsonContentToText,
   parseMentions,
   richTextToString,
 } from 'common/util/parse'
-import { Contract, contractPath } from 'common/contract'
-import { User } from 'common/user'
+import { cloneDeep, compact } from 'lodash'
+import { track } from 'shared/analytics'
+import { insertModReport } from 'shared/create-mod-report'
+import {
+  createAIDescriptionUpdateNotification,
+  replied_users_info,
+} from 'shared/create-notification'
+import { models, promptClaude } from 'shared/helpers/claude'
+import { parseAIResponseAsJson, promptGemini } from 'shared/helpers/gemini'
+import { createCommentOnContractNotification } from 'shared/notifications/create-new-contract-comment-notif'
+import { getAnswer } from 'shared/supabase/answers'
+import { getCommentsDirect } from 'shared/supabase/contract-comments'
+import { updateContract } from 'shared/supabase/contracts'
 import {
   createSupabaseDirectClient,
   SupabaseDirectClient,
 } from 'shared/supabase/init'
-import { insertModReport } from 'shared/create-mod-report'
-import { updateContract } from 'shared/supabase/contracts'
-import { followContractInternal } from 'api/follow-contract'
-import { getAnswer } from 'shared/supabase/answers'
 import { anythingToRichText } from 'shared/tiptap'
-import { getCommentsDirect } from 'shared/supabase/contract-comments'
+import { isProd, log, revalidateStaticProps } from 'shared/utils'
 import { updateMarketContinuation } from './update-market'
-import { JSONContent } from '@tiptap/core'
-import { cloneDeep } from 'lodash'
-import { track } from 'shared/analytics'
-import { DEV_HOUSE_LIQUIDITY_PROVIDER_ID } from 'common/antes'
-import { parseGeminiResponseAsJson, promptGemini } from 'shared/helpers/gemini'
 
 type ClarificationResponse = {
   isClarification: boolean
@@ -335,8 +335,8 @@ NOTE: If the creator explicitly states that their comment is not a clarification
 Only return the raw JSON object without any markdown code blocks, backticks, additional formatting, or anything else.`
 
   try {
-    const response = await promptGemini(prompt, {
-      model: 'gemini-2.5-pro',
+    const response = await promptClaude(prompt, {
+      model: models.sonnet4,
     })
     log('Clarification response:', {
       question: contract.question,
@@ -348,7 +348,7 @@ Only return the raw JSON object without any markdown code blocks, backticks, add
       log.error('No response from ai clarification')
       return
     }
-    const clarification = parseGeminiResponseAsJson(
+    const clarification = parseAIResponseAsJson(
       response
     ) as ClarificationResponse
 
@@ -463,7 +463,7 @@ export const checkCommentNeedsResponse = async (
 
   try {
     const response = await promptGemini(prompt)
-    const result = parseGeminiResponseAsJson(response)
+    const result = parseAIResponseAsJson(response)
     return result as { needsResponse: boolean; reason: string }
   } catch (error) {
     log.error(`Error checking if comment needs response: ${error}`)

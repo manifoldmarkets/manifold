@@ -1,8 +1,8 @@
+import { HOUR_MS } from 'common/util/time'
+import { promptClaude } from 'shared/helpers/claude'
 import { APIHandler } from './helpers/endpoint'
 import { rateLimitByUser } from './helpers/rate-limit'
-import { HOUR_MS } from 'common/util/time'
-// import { promptClaude, models } from 'shared/helpers/claude'
-import { models, promptGemini } from 'shared/helpers/gemini'
+// import { models, promptGemini } from 'shared/helpers/gemini'
 
 export const generateConciseTitle: APIHandler<'generate-concise-title'> =
   rateLimitByUser(
@@ -41,13 +41,13 @@ Example transformations:
       const prompt = `Question: "${question}"
 Your concise version, without any other text or commentary:`
 
-      // const response = await promptClaude(prompt, {
-      //   system,
-      // })
-      const response = await promptGemini(prompt, {
-        model: models.flash,
+      const response = await promptClaude(prompt, {
         system,
       })
+      // const response = await promptGemini(prompt, {
+      //   model: models.flash,
+      //   system,
+      // })
 
       let trimmedResponse = response.trim()
       if (trimmedResponse.startsWith('"') && trimmedResponse.endsWith('"')) {

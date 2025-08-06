@@ -1,6 +1,6 @@
 import { GoogleGenerativeAI } from '@google/generative-ai'
-import { log } from 'shared/utils'
 import { APIError } from 'common/api/utils'
+import { log } from 'shared/utils'
 
 export const models = {
   flash: 'gemini-2.0-flash' as const,
@@ -15,7 +15,7 @@ export const promptGeminiParsingJson = async <T>(
   options: { system?: string; model?: model_types } = {}
 ): Promise<T> => {
   const response = await promptGemini(prompt, options)
-  return parseGeminiResponseAsJson(response)
+  return parseAIResponseAsJson(response)
 }
 
 export const promptGemini = async (
@@ -49,7 +49,7 @@ export const promptGemini = async (
 }
 
 // Helper function to clean Gemini responses from markdown formatting
-const removeJsonTicksFromGeminiResponse = (response: string): string => {
+const removeJsonTicksFromAIResponse = (response: string): string => {
   // Remove markdown code block formatting if present
   const jsonBlockRegex = /```(?:json)?\s*([\s\S]*?)```/
   const match = response.match(jsonBlockRegex)
@@ -63,8 +63,8 @@ const removeJsonTicksFromGeminiResponse = (response: string): string => {
 }
 
 // Helper function to ensure the response is valid JSON
-export const parseGeminiResponseAsJson = (response: string): any => {
-  const cleanedResponse = removeJsonTicksFromGeminiResponse(response)
+export const parseAIResponseAsJson = (response: string): any => {
+  const cleanedResponse = removeJsonTicksFromAIResponse(response)
 
   try {
     // Try to parse as is

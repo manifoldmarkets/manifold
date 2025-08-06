@@ -1,9 +1,9 @@
-import { APIError, APIHandler } from './helpers/endpoint'
-import { track } from 'shared/analytics'
-import { rateLimitByUser } from './helpers/rate-limit'
 import { HOUR_MS } from 'common/util/time'
-import { promptGemini, parseGeminiResponseAsJson } from 'shared/helpers/gemini'
+import { track } from 'shared/analytics'
+import { parseAIResponseAsJson, promptGemini } from 'shared/helpers/gemini'
 import { log } from 'shared/utils'
+import { APIError, APIHandler } from './helpers/endpoint'
+import { rateLimitByUser } from './helpers/rate-limit'
 
 export const inferNumericUnit: APIHandler<'infer-numeric-unit'> =
   rateLimitByUser(
@@ -32,7 +32,7 @@ export const inferNumericUnit: APIHandler<'infer-numeric-unit'> =
       }
       `
         const response = await promptGemini(prompt, { system: systemPrompt })
-        const result = parseGeminiResponseAsJson(response)
+        const result = parseAIResponseAsJson(response)
         log.info('Inferred unit:', { result })
 
         track(auth.uid, 'infer-numeric-unit', {
