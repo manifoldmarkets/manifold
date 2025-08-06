@@ -25,7 +25,7 @@ export const searchMarketsLite: APIHandler<'search-markets'> = async (
 ) => {
   const { includeLiteAnswers } = props
   const contracts = await search(props, auth?.uid)
-  return contracts.map((c) => toLiteMarket(c, includeLiteAnswers))
+  return contracts.map((c) => toLiteMarket(c, { includeLiteAnswers }))
 }
 
 export const searchMarketsFull: APIHandler<'search-markets-full'> = async (

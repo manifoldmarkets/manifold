@@ -1,9 +1,9 @@
 import { OutcomeType } from 'common/contract'
 import {
   answerCostTiers,
-  liquidityTiers,
   getTierIndexFromLiquidity,
   getTierIndexFromLiquidityAndAnswers,
+  liquidityTiers,
 } from './tier'
 
 export const DEFAULT_CASH_ANTE = 50
@@ -50,9 +50,6 @@ export const getUniqueBettorBonusAmount = (
   liquidity: number,
   numAnswers: number
 ) => {
-  if (!numAnswers) {
-    return uniqueBettorBonusAmounts[getTierIndexFromLiquidity(liquidity)]
-  }
   return uniqueBettorBonusAmounts[
     getTierIndexFromLiquidityAndAnswers(liquidity, numAnswers)
   ]

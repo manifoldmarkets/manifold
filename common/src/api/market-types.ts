@@ -13,7 +13,10 @@ import { DOMAIN } from 'common/envs/constants'
 import { MAX_ID_LENGTH } from 'common/group'
 import { MAX_MULTI_NUMERIC_ANSWERS } from 'common/multi-numeric'
 import { getMappedValue } from 'common/pseudo-numeric'
-import { liquidityTiers } from 'common/tier'
+import {
+  getTierIndexFromLiquidityAndAnswers,
+  liquidityTiers,
+} from 'common/tier'
 import { removeUndefinedProps } from 'common/util/object'
 import { richTextToString } from 'common/util/parse'
 import { randomStringRegex } from 'common/util/random'
@@ -43,6 +46,11 @@ export type LiteMarket = {
   probability?: number
   p?: number
   totalLiquidity?: number
+  answers?: {
+    id: string
+    text: string
+    probability: number
+  }[]
   // For pseudo-numeric
   value?: number
   min?: number
@@ -94,7 +102,7 @@ export type FullMarket = LiteMarket & {
 
 export function toLiteMarket(
   contract: Contract,
-  includeLiteAnswers?: boolean
+  props: { includeLiteAnswers?: boolean } = { includeLiteAnswers: false }
 ): LiteMarket {
   const {
     id,
@@ -126,6 +134,7 @@ export function toLiteMarket(
     token,
     siblingContractId,
   } = contract
+  const { includeLiteAnswers } = props
 
   const { p, totalLiquidity } = contract as any
 
@@ -245,6 +254,97 @@ export function toFullMarket(contract: Contract): FullMarket {
       typeof description === 'string'
         ? description
         : richTextToString(description),
+  }
+}
+
+export type UltraLiteMarket = {
+  // Unique identifier for this market
+  id: string
+
+  // Attributes about the creator
+  creatorId: string
+  creatorUsername: string
+  creatorName: string
+  createdTime: string
+
+  question: string
+  url: string
+  outcomeType: string
+
+  probability?: number
+  liquidityTier?: string
+  answers?: {
+    id: string
+    text: string
+    probability: number
+  }[]
+  // For pseudo-numeric
+  value?: number
+
+  volume: number
+  volume24Hours: number
+
+  isResolved: boolean
+  resolution?: string
+  resolutionTime?: string
+
+  uniqueBettorCount: number
+}
+export function toUltraLiteMarket(liteMarket: LiteMarket): UltraLiteMarket {
+  const {
+    id,
+    creatorId,
+    creatorName,
+    creatorUsername,
+    answers,
+    question,
+    probability,
+    totalLiquidity,
+    outcomeType,
+    volume,
+    volume24Hours,
+    isResolved,
+    resolution,
+    resolutionTime,
+    uniqueBettorCount,
+    url,
+    createdTime,
+  } = liteMarket
+  const tier = totalLiquidity
+    ? getTierIndexFromLiquidityAndAnswers(totalLiquidity, answers?.length ?? 0)
+    : undefined
+  let liquidityTier = 'n/a'
+  if (tier !== undefined) {
+    if (tier === 0) {
+      liquidityTier = 'low'
+    } else if (tier === 1) {
+      liquidityTier = 'medium'
+    } else if (tier === 2) {
+      liquidityTier = 'high'
+    } else if (tier > 2) {
+      liquidityTier = 'very high'
+    }
+  }
+  return {
+    id,
+    url,
+    creatorId,
+    creatorName,
+    creatorUsername,
+    answers,
+    question,
+    probability,
+    liquidityTier,
+    outcomeType,
+    volume: Math.round(volume),
+    volume24Hours: Math.round(volume24Hours),
+    isResolved,
+    resolution,
+    resolutionTime: resolutionTime
+      ? new Date(resolutionTime).toISOString()
+      : undefined,
+    createdTime: new Date(createdTime).toISOString(),
+    uniqueBettorCount,
   }
 }
 

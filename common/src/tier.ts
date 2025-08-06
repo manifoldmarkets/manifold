@@ -25,6 +25,9 @@ export function getTierIndexFromLiquidityAndAnswers(
   liquidity: number,
   numAnswers: number
 ): number {
+  if (!numAnswers) {
+    return getTierIndexFromLiquidity(liquidity)
+  }
   const liquidityPerAnswer = liquidity / numAnswers
   for (
     let tierIndex = answerCostTiers.length - 1;

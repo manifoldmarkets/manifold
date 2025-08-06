@@ -7,13 +7,22 @@ import {
   ListToolsRequestSchema,
   McpError,
 } from '@modelcontextprotocol/sdk/types.js'
+import {
+  LiteMarket,
+  toLiteMarket,
+  toUltraLiteMarket,
+  UltraLiteMarket,
+} from 'common/api/market-types'
 import { API } from 'common/api/schema'
+import { APIError } from 'common/api/utils'
 import { NON_POINTS_BETS_LIMIT } from 'common/supabase/bets'
+import { removeUndefinedProps } from 'common/util/object'
+import { richTextToString } from 'common/util/parse'
 import { Request, Response } from 'express'
-import { log, metrics } from 'shared/utils'
+import { createSupabaseDirectClient } from 'shared/supabase/init'
+import { getContract, log, metrics } from 'shared/utils'
 import { z } from 'zod'
 import { getBets } from './get-bets'
-import { getMarket } from './get-market'
 import { getUser } from './get-user'
 import { searchMarketsLite } from './search-contracts'
 import { searchUsers } from './search-users'
@@ -220,6 +229,20 @@ function getServer(): Server {
   server.setRequestHandler(CallToolRequestSchema, async (request) => {
     const { name, arguments: args } = request.params
     metrics.inc('mcp/request_count', { name })
+
+    const chancifyUltraLiteMarket = (market: UltraLiteMarket) => {
+      return removeUndefinedProps({
+        ...market,
+        probability: market.probability
+          ? `${Math.round(market.probability * 100)}% chance`
+          : undefined,
+        answers: market.answers?.map((answer) => ({
+          text: answer.text,
+          probability: `${Math.round(answer.probability * 100)}% chance`,
+        })),
+      })
+    }
+
     try {
       switch (name) {
         case 'search-markets': {
@@ -241,16 +264,20 @@ function getServer(): Server {
           }
 
           try {
-            const markets = await searchMarketsLite(
+            const markets = (await searchMarketsLite(
               searchParams,
               undefined, // auth not required for this endpoint
               {} as Request // minimal request object since it's not used
-            )
+            )) as LiteMarket[]
+
+            const marketsWithProbabilities = markets
+              .map(toUltraLiteMarket)
+              .map(chancifyUltraLiteMarket)
             return {
               content: [
                 {
                   type: 'text',
-                  text: JSON.stringify(markets, null, 2),
+                  text: JSON.stringify(marketsWithProbabilities, null, 2),
                 },
               ],
             }
@@ -266,12 +293,24 @@ function getServer(): Server {
           const { id } = API['market/:id'].props.parse(args)
 
           try {
-            const market = await getMarket({ id })
+            const pg = createSupabaseDirectClient()
+            const contract = await getContract(pg, id)
+            if (!contract) throw new APIError(404, 'Contract not found')
+            const market = toLiteMarket(contract, {
+              includeLiteAnswers: true,
+            })
+            const marketWithProbability = removeUndefinedProps({
+              ...chancifyUltraLiteMarket(toUltraLiteMarket(market)),
+              description:
+                typeof contract.description === 'string'
+                  ? contract.description
+                  : richTextToString(contract.description),
+            })
             return {
               content: [
                 {
                   type: 'text',
-                  text: JSON.stringify(market, null, 2),
+                  text: JSON.stringify(marketWithProbability, null, 2),
                 },
               ],
             }
