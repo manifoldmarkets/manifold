@@ -1,10 +1,10 @@
+import { Bet } from 'common/bet'
 import { ContractToken, OutcomeType } from 'common/contract'
+import { groupBy } from 'lodash'
 import { groupPath } from './group'
+import { league_user_info } from './leagues'
 import { PAST_BET } from './user'
 import { notification_preference } from './user-notification-preferences'
-import { Bet } from 'common/bet'
-import { league_user_info } from './leagues'
-import { groupBy } from 'lodash'
 
 export type NotificationGroup = {
   notifications: Notification[]
@@ -61,7 +61,6 @@ export type notification_source_types =
   | 'group'
   | 'user'
   | 'bonus' // strictly unique bettor bonuses atm
-  | 'challenge'
   | 'betting_streak_bonus'
   | 'betting_streak_expiring'
   | 'loan'
@@ -499,7 +498,10 @@ export function getSourceUrl(notification: Notification) {
 
   if (sourceType === 'weekly_portfolio_update')
     return `/week/${sourceUserUsername}/${sourceSlug}`
-  if (reason === 'market_follows')
+  if (
+    reason === 'market_follows' ||
+    reason === 'unique_bettors_on_your_contract'
+  )
     return `/${sourceContractCreatorUsername}/${sourceContractSlug}`
   if (sourceType === 'follow') return `/${sourceUserUsername}`
   if (sourceType === 'group' && sourceSlug) return `${groupPath(sourceSlug)}`
@@ -513,11 +515,6 @@ export function getSourceUrl(notification: Notification) {
   // User referral:
   if (sourceType === 'user' && !sourceContractSlug)
     return `/${sourceUserUsername}`
-  if (
-    sourceType === 'challenge' ||
-    ReactionNotificationTypes.includes(sourceType)
-  )
-    return `${sourceSlug}`
   if (sourceContractCreatorUsername && sourceContractSlug) {
     return `/${sourceContractCreatorUsername}/${sourceContractSlug}#${getSourceIdForLinkComponent(
       sourceId ?? '',
