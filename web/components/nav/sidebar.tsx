@@ -19,6 +19,7 @@ import { DAY_MS } from 'common/util/time'
 import { AppRouterInstance } from 'next/dist/shared/lib/app-router-context.shared-runtime'
 import { usePathname, useRouter } from 'next/navigation'
 import { IoCompassOutline } from 'react-icons/io5'
+import { PiTelevisionSimple } from 'react-icons/pi'
 import { AppBadgesOrGetAppButton } from 'web/components/buttons/app-badges-or-get-app-button'
 import { CreateQuestionButton } from 'web/components/buttons/create-question-button'
 import { NotificationsIcon } from 'web/components/notifications-icon'
@@ -32,6 +33,7 @@ import { SidebarSignUpButton } from '../buttons/sign-up-button'
 import { Col } from '../layout/col'
 import { AddFundsButton } from '../profile/add-funds-button'
 import { ReportsIcon } from '../reports-icon'
+import { LiveTVIcon } from '../tv-icon'
 import { ManifoldLogo } from './manifold-logo'
 import { ProfileSummary } from './profile-summary'
 import { NavItem, SidebarItem } from './sidebar-item'
@@ -56,7 +58,7 @@ export default function Sidebar(props: {
 
   const isNewUser = !!user && user.createdTime > Date.now() - DAY_MS
 
-  const isLiveTV = false
+  const isLiveTV = true
 
   const navOptions = isMobile
     ? getMobileNav(() => setIsAddFundsModalOpen(!isAddFundsModalOpen), {
@@ -137,6 +139,7 @@ const getDesktopNav = (
   openDownloadApp: () => void,
   options: { isNewUser: boolean; isLiveTV?: boolean; isAdminOrMod: boolean }
 ) => {
+  const { isLiveTV } = options
   if (loggedIn)
     return buildArray(
       { name: 'Browse', href: '/home', icon: SearchIcon },
@@ -146,11 +149,11 @@ const getDesktopNav = (
         icon: IoCompassOutline,
         iconClassName: '!h-[1.6rem] !w-[1.6rem] !mr-[0.65rem]',
       },
-      // {
-      //   name: 'TV',
-      //   href: '/tv',
-      //   icon: PiTelevisionSimple,
-      // },
+      {
+        name: 'TV',
+        href: '/tv',
+        icon: isLiveTV ? LiveTVIcon : PiTelevisionSimple,
+      },
       {
         name: 'Notifications',
         href: `/notifications`,
@@ -181,7 +184,7 @@ const getMobileNav = (
   toggleModal: () => void,
   options: { isNewUser: boolean; isLiveTV?: boolean; isAdminOrMod: boolean }
 ) => {
-  const { isAdminOrMod } = options
+  const { isAdminOrMod, isLiveTV } = options
 
   return buildArray<NavItem>(
     { name: 'Leagues', href: '/leagues', icon: TrophyIcon },
@@ -190,7 +193,11 @@ const getMobileNav = (
       href: '/referrals',
       icon: StarIcon,
     },
-    // { name: 'TV', href: '/tv', icon: PiTelevisionSimple },
+    {
+      name: 'TV',
+      href: '/tv',
+      icon: isLiveTV ? LiveTVIcon : PiTelevisionSimple,
+    },
     isAdminOrMod && {
       name: 'Reports',
       href: '/reports',

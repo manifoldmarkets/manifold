@@ -6,9 +6,7 @@ export function LiveTVIcon(props: { className?: string }) {
 
   return (
     <Row className="relative justify-center">
-      <div className="text-ink-0 absolute -mt-1 ml-3.5 min-w-[15px] rounded-full bg-red-500 p-[2px] text-center text-[10px] leading-3 lg:left-0 lg:-mt-1 lg:ml-2">
-        •
-      </div>
+      <div className="absolute -mt-1 ml-1 min-h-[15px] min-w-[15px] rounded-full bg-indigo-500 p-[1px] lg:left-0.5 lg:-mt-1 lg:ml-2"></div>
       <PiTelevisionSimpleBold className={className} />
     </Row>
   )
