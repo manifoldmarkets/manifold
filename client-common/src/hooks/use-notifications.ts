@@ -6,15 +6,7 @@ import {
   NotificationReason,
 } from 'common/notification'
 import { User } from 'common/user'
-import {
-  concat,
-  Dictionary,
-  first,
-  groupBy,
-  sortBy,
-  uniq,
-  uniqBy,
-} from 'lodash'
+import { Dictionary, first, groupBy, sortBy } from 'lodash'
 import { useEffect, useMemo } from 'react'
 
 import { useApiSubscription } from 'client-common/hooks/use-api-subscription'
@@ -61,28 +53,38 @@ export function useNotifications(
       }
       api(params).then((newData) => {
         setNotifications((oldData) => {
-          // Prioritize oldData to preserve local markedAsRead state
-          const allNotifications = uniqBy(
-            concat(oldData ?? [], newData),
-            (n) => n.id
-          )
+          // Merge server data with locally cached data.
+          // For boolean flags: true wins; otherwise prefer server value when present.
+          const combineFlag = (
+            a: boolean | undefined,
+            b: boolean | undefined
+          ): boolean | undefined => {
+            if (a === true || b === true) return true
+            if (a === false || b === false) return false
+            return undefined
+          }
 
-          const seenIds = uniq(
-            allNotifications.filter((n) => n.isSeen).map((n) => n.id)
-          )
+          const byId = new Map<string, Notification>()
+          // Seed with server data
+          for (const n of newData) byId.set(n.id, n)
+          // Merge in local data, preserving "seen/read" if they were set locally
+          for (const o of oldData ?? []) {
+            const existing = byId.get(o.id)
+            if (existing) {
+              byId.set(o.id, {
+                ...existing,
+                isSeen: existing.isSeen || o.isSeen,
+                markedAsRead: combineFlag(
+                  existing.markedAsRead,
+                  o.markedAsRead
+                ),
+              })
+            } else {
+              byId.set(o.id, o)
+            }
+          }
 
-          const readIds = uniq(
-            allNotifications.filter((n) => n.markedAsRead).map((n) => n.id)
-          )
-
-          const updatedNotifications = uniqBy(allNotifications, 'id').map(
-            (n) => ({
-              ...n,
-              isSeen: seenIds.includes(n.id) || n.isSeen,
-              markedAsRead: readIds.includes(n.id) || n.markedAsRead,
-            })
-          )
-
+          const updatedNotifications = Array.from(byId.values())
           const newLatestCreatedTime = Math.max(
             ...updatedNotifications.map((n) => n.createdTime),
             latestCreatedTime ?? 0
