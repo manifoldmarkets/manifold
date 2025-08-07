@@ -19,7 +19,6 @@ import { DAY_MS } from 'common/util/time'
 import { AppRouterInstance } from 'next/dist/shared/lib/app-router-context.shared-runtime'
 import { usePathname, useRouter } from 'next/navigation'
 import { IoCompassOutline } from 'react-icons/io5'
-import { PiTelevisionSimple } from 'react-icons/pi'
 import { AppBadgesOrGetAppButton } from 'web/components/buttons/app-badges-or-get-app-button'
 import { CreateQuestionButton } from 'web/components/buttons/create-question-button'
 import { NotificationsIcon } from 'web/components/notifications-icon'
@@ -58,7 +57,7 @@ export default function Sidebar(props: {
 
   const isNewUser = !!user && user.createdTime > Date.now() - DAY_MS
 
-  const isLiveTV = true
+  const isLiveTV = false
 
   const navOptions = isMobile
     ? getMobileNav(() => setIsAddFundsModalOpen(!isAddFundsModalOpen), {
@@ -149,10 +148,10 @@ const getDesktopNav = (
         icon: IoCompassOutline,
         iconClassName: '!h-[1.6rem] !w-[1.6rem] !mr-[0.65rem]',
       },
-      {
+      isLiveTV && {
         name: 'TV',
         href: '/tv',
-        icon: isLiveTV ? LiveTVIcon : PiTelevisionSimple,
+        icon: LiveTVIcon,
       },
       {
         name: 'Notifications',
@@ -193,10 +192,10 @@ const getMobileNav = (
       href: '/referrals',
       icon: StarIcon,
     },
-    {
+    isLiveTV && {
       name: 'TV',
       href: '/tv',
-      icon: isLiveTV ? LiveTVIcon : PiTelevisionSimple,
+      icon: LiveTVIcon,
     },
     isAdminOrMod && {
       name: 'Reports',
