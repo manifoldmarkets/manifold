@@ -38,10 +38,9 @@ export const generateSuggestions = async (
   `
 
   const response = await promptAI<AIGeneratedMarket[]>(combinedPrompt, {
-    model: aiModels.gpt5,
+    model: aiModels.sonnet3,
     webSearch: true,
     parseAsJson: true,
-    reasoning: { effort: 'low' },
   })
 
   // Parse the JSON response

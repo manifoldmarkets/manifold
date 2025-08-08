@@ -62,7 +62,11 @@ export async function promptAI<T = unknown>(
       webSearch,
     })
   } else if (provider === 'claude') {
-    rawResponse = await promptClaude(prompt, { model: model as any, system })
+    rawResponse = await promptClaude(prompt, {
+      model: model as any,
+      system,
+      webSearch,
+    })
   } else {
     rawResponse = await promptGemini(prompt, { model: model as any, system })
   }

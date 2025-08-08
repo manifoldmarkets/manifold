@@ -13,9 +13,9 @@ export type model_types = (typeof models)[keyof typeof models]
 
 export const promptClaudeStream = async function* (
   prompt: string,
-  options: { system?: string; model?: model_types } = {}
+  options: { system?: string; model?: model_types; webSearch?: boolean } = {}
 ): AsyncGenerator<string, void, unknown> {
-  const { model = models.sonnet3, system } = options
+  const { model = models.sonnet3, system, webSearch } = options
 
   const apiKey = process.env.ANTHROPIC_API_KEY
 
@@ -31,6 +31,15 @@ export const promptClaudeStream = async function* (
       max_tokens: 4096,
       temperature: 0,
       system,
+      tools: webSearch
+        ? ([
+            {
+              type: 'web_search_20250305',
+              name: 'web_search',
+              max_uses: 5,
+            },
+          ] as any)
+        : undefined,
       messages: [
         {
           role: 'user',
@@ -52,7 +61,7 @@ export const promptClaudeStream = async function* (
 
 export const promptClaude = async (
   prompt: string,
-  options: { system?: string; model?: model_types } = {}
+  options: { system?: string; model?: model_types; webSearch?: boolean } = {}
 ) => {
   let fullResponse = ''
   for await (const chunk of promptClaudeStream(prompt, options)) {
@@ -63,7 +72,7 @@ export const promptClaude = async (
 
 export const promptClaudeParsingJson = async <T>(
   prompt: string,
-  options: { system?: string; model?: model_types } = {}
+  options: { system?: string; model?: model_types; webSearch?: boolean } = {}
 ): Promise<T> => {
   const response = await promptClaude(prompt, options)
   return parseAIResponseAsJson(response)

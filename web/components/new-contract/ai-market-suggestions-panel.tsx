@@ -117,7 +117,7 @@ export function AIMarketSuggestionsPanel(props: {
           {loadingSuggestions || loadingMore ? (
             <Row className="items-center gap-2">
               <LoadingIndicator />
-              <span>Hang on, this can take 10-15 seconds!</span>
+              <span>Hang on, this can take around a minute!</span>
             </Row>
           ) : prompt === lastGeneratedPrompt ? (
             'Generate more'
