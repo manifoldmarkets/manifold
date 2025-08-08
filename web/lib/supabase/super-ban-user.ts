@@ -24,6 +24,7 @@ async function superBanUser(userId: string) {
       for (const comment of commentsToHide) {
         await api('hide-comment', {
           commentPath: `contracts/${comment.contractId}/comments/${comment.id}`,
+          action: 'delete',
         })
       }
       commentsStatus = 'successfully hidden'
