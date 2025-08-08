@@ -172,6 +172,10 @@ export const MultiNumericRangeSection = (props: {
     tab: 'thresholds' | 'buckets'
   ) => {
     setRegenerateError('')
+    if (answers.every((answer) => answer.trim() === '')) {
+      console.log('no answers to regenerate midpoints for')
+      return
+    }
     // Only regenerate midpoints if we have min and max
     if (min === undefined || max === undefined) return
 

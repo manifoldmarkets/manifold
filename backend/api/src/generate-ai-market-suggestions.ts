@@ -1,13 +1,13 @@
-import { APIError, APIHandler, AuthedUser } from './helpers/endpoint'
-import { AIGeneratedMarket } from 'common/contract'
-import { log } from 'shared/utils'
 import { formattingPrompt, guidelinesPrompt } from 'common/ai-creation-prompts'
-import { anythingToRichText } from 'shared/tiptap'
-import { track } from 'shared/analytics'
-import { rateLimitByUser } from './helpers/rate-limit'
-import { HOUR_MS } from 'common/util/time'
-import { promptOpenAIWebSearchParseJson } from 'shared/helpers/openai-utils'
 import { APIParams } from 'common/api/schema'
+import { AIGeneratedMarket } from 'common/contract'
+import { HOUR_MS } from 'common/util/time'
+import { track } from 'shared/analytics'
+import { aiModels, promptAI } from 'shared/helpers/prompt-ai'
+import { anythingToRichText } from 'shared/tiptap'
+import { log } from 'shared/utils'
+import { APIError, APIHandler, AuthedUser } from './helpers/endpoint'
+import { rateLimitByUser } from './helpers/rate-limit'
 
 export const generateSuggestions = async (
   props: APIParams<'generate-ai-market-suggestions'>,
@@ -37,9 +37,11 @@ export const generateSuggestions = async (
     ONLY return a valid JSON array of market objects and do NOT include any other text.
   `
 
-  const response = await promptOpenAIWebSearchParseJson<AIGeneratedMarket[]>(
-    combinedPrompt
-  )
+  const response = await promptAI<AIGeneratedMarket[]>(combinedPrompt, {
+    model: aiModels.gpt5,
+    webSearch: true,
+    parseAsJson: true,
+  })
 
   // Parse the JSON response
   let parsedMarkets: AIGeneratedMarket[] = []

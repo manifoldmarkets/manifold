@@ -1,16 +1,16 @@
 import { APIHandler } from 'api/helpers/endpoint'
+import { ContractComment } from 'common/comment'
+import { convertContractComment } from 'common/supabase/comments'
+import { parseJsonContentToText } from 'common/util/parse'
+import { uniq } from 'lodash'
+import { aiModels, promptAI } from 'shared/helpers/prompt-ai'
+import { getContractsDirect } from 'shared/supabase/contracts'
+import { createSupabaseDirectClient } from 'shared/supabase/init'
 import {
   buildUserInterestsCache,
   userIdsToAverageTopicConversionScores,
 } from 'shared/topic-interests'
-import { createSupabaseDirectClient } from 'shared/supabase/init'
-import { convertContractComment } from 'common/supabase/comments'
-import { parseJsonContentToText } from 'common/util/parse'
-import { getContractsDirect } from 'shared/supabase/contracts'
-import { uniq } from 'lodash'
-import { ContractComment } from 'common/comment'
 import { rateLimitByUser } from './helpers/rate-limit'
-import { promptGemini } from 'shared/helpers/gemini'
 
 export const getBestComments: APIHandler<'get-best-comments'> = rateLimitByUser(
   async (props, auth) => {
@@ -152,7 +152,9 @@ export const getBestComments: APIHandler<'get-best-comments'> = rateLimitByUser(
           Only return to me the comment ID, (ie don't say here is my top comment, just give me the ID)
         `
 
-        const batchMsgContent = await promptGemini(batchPrompt)
+        const batchMsgContent = await promptAI(batchPrompt, {
+          model: aiModels.flash,
+        })
         const batchCommentIds = batchMsgContent
           ? batchMsgContent
               .split(',')
@@ -195,7 +197,7 @@ export const getBestComments: APIHandler<'get-best-comments'> = rateLimitByUser(
       So, what are the highest quality ~${limit} comment IDs separated by commas, in order
       of descending quality? (ie don't say here are my top comments, just give me the IDs)
     `
-    const chosenComments = await promptGemini(prompt)
+    const chosenComments = await promptAI(prompt, { model: aiModels.flash })
     const commentIds = chosenComments
       ? chosenComments
           .split(',')

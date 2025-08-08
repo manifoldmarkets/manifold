@@ -1,14 +1,14 @@
-import { APIError, APIHandler } from './helpers/endpoint'
-import { log } from 'shared/utils'
-import { track } from 'shared/analytics'
-import { anythingToRichText } from 'shared/tiptap'
-import { promptOpenAIWithWebSearch } from 'shared/helpers/openai-utils'
 import {
   addAnswersModeDescription,
   outcomeTypeDescriptions,
   resolutionCriteriaPrompt,
 } from 'common/ai-creation-prompts'
 import { HOUR_MS } from 'common/util/time'
+import { track } from 'shared/analytics'
+import { aiModels, promptAI } from 'shared/helpers/prompt-ai'
+import { anythingToRichText } from 'shared/tiptap'
+import { log } from 'shared/utils'
+import { APIError, APIHandler } from './helpers/endpoint'
 import { rateLimitByUser } from './helpers/rate-limit'
 
 export const generateAIDescription: APIHandler<'generate-ai-description'> =
@@ -84,7 +84,10 @@ export const generateAIDescription: APIHandler<'generate-ai-description'> =
 
         Only return the markdown description, nothing else.
         `
-        const gptResponse = await promptOpenAIWithWebSearch(prompt)
+        const gptResponse = await promptAI(prompt, {
+          model: aiModels.gpt5,
+          webSearch: true,
+        })
 
         track(auth.uid, 'generate-ai-description', {
           question: question.substring(0, 100),

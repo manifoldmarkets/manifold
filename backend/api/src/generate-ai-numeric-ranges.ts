@@ -1,6 +1,6 @@
 import { HOUR_MS } from 'common/util/time'
 import { track } from 'shared/analytics'
-import { models, promptClaudeParsingJson } from 'shared/helpers/claude'
+import { aiModels, promptAI } from 'shared/helpers/prompt-ai'
 import { log } from 'shared/utils'
 import { APIError, APIHandler } from './helpers/endpoint'
 import { rateLimitByUser } from './helpers/rate-limit'
@@ -46,13 +46,15 @@ export const generateAINumericRanges: APIHandler<'generate-ai-numeric-ranges'> =
       const bucketSystemPrompt = baseSystemPrompt('bucket')
 
       const [thresholds, buckets] = await Promise.all([
-        promptClaudeParsingJson<RangeResponse>(prompt, {
-          model: models.haiku,
+        promptAI<RangeResponse>(prompt, {
+          model: aiModels.gpt5mini,
           system: thresholdSystemPrompt,
+          parseAsJson: true,
         }),
-        promptClaudeParsingJson<RangeResponse>(prompt, {
-          model: models.haiku,
+        promptAI<RangeResponse>(prompt, {
+          model: aiModels.gpt5mini,
           system: bucketSystemPrompt,
+          parseAsJson: true,
         }),
       ])
 
@@ -84,6 +86,10 @@ export const regenerateNumericMidpoints: APIHandler<'regenerate-numeric-midpoint
   rateLimitByUser(
     async (props, auth) => {
       const { question, description, answers, min, max, unit, tab } = props
+      log('midpoints from answers', { answers })
+      if (answers.every((answer) => answer.trim() === '')) {
+        throw new APIError(400, 'No ranges provided')
+      }
       const prompt = `${userPrompt(
         question,
         min,
@@ -100,8 +106,9 @@ export const regenerateNumericMidpoints: APIHandler<'regenerate-numeric-midpoint
 
       Return ONLY an array of midpoint numbers, one for each range, in the same order as the ranges, without any other text or formatting.`
 
-      const result = await promptClaudeParsingJson<number[]>(prompt, {
-        model: models.haiku,
+      const result = await promptAI<number[]>(prompt, {
+        model: aiModels.gpt5mini,
+        parseAsJson: true,
       })
       log('claudeResponse', result)
 

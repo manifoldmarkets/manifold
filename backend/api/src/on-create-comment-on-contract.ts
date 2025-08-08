@@ -17,8 +17,7 @@ import {
   createAIDescriptionUpdateNotification,
   replied_users_info,
 } from 'shared/create-notification'
-import { models, promptClaude } from 'shared/helpers/claude'
-import { parseAIResponseAsJson, promptGemini } from 'shared/helpers/gemini'
+import { aiModels, promptAI } from 'shared/helpers/prompt-ai'
 import { createCommentOnContractNotification } from 'shared/notifications/create-new-contract-comment-notif'
 import { getAnswer } from 'shared/supabase/answers'
 import { getCommentsDirect } from 'shared/supabase/contract-comments'
@@ -335,22 +334,20 @@ NOTE: If the creator explicitly states that their comment is not a clarification
 Only return the raw JSON object without any markdown code blocks, backticks, additional formatting, or anything else.`
 
   try {
-    const response = await promptClaude(prompt, {
-      model: models.sonnet4,
+    const clarification = await promptAI<ClarificationResponse>(prompt, {
+      model: aiModels.gpt5,
+      parseAsJson: true,
     })
     log('Clarification response:', {
       question: contract.question,
       contractId: contract.id,
       slug: contract.slug,
-      response,
+      clarification,
     })
-    if (!response) {
+    if (!clarification) {
       log.error('No response from ai clarification')
       return
     }
-    const clarification = parseAIResponseAsJson(
-      response
-    ) as ClarificationResponse
 
     if (clarification.isClarification && clarification.description) {
       const dateParts = new Date()
@@ -462,9 +459,11 @@ export const checkCommentNeedsResponse = async (
   Only return the JSON object, no other text.`
 
   try {
-    const response = await promptGemini(prompt)
-    const result = parseAIResponseAsJson(response)
-    return result as { needsResponse: boolean; reason: string }
+    const result = await promptAI<{ needsResponse: boolean; reason: string }>(
+      prompt,
+      { model: aiModels.gpt5mini, parseAsJson: true }
+    )
+    return result
   } catch (error) {
     log.error(`Error checking if comment needs response: ${error}`)
     // Default to false if there's an error

@@ -161,6 +161,10 @@ export const MultiNumericDateSection = (props: {
     tab: 'thresholds' | 'buckets'
   ) => {
     setRegenerateError('')
+    if (answers.every((answer) => answer.trim() === '')) {
+      console.log('no answers to regenerate midpoints for')
+      return
+    }
     try {
       // Call regenerate-date-midpoints without tab parameter
       const result = await api('regenerate-date-midpoints', {

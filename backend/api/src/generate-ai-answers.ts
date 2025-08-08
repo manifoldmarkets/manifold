@@ -1,13 +1,13 @@
-import { APIError, APIHandler } from './helpers/endpoint'
-import { track } from 'shared/analytics'
-import { promptOpenAIWebSearchParseJson } from 'shared/helpers/openai-utils'
 import {
   addAnswersModeDescription,
   multiChoiceOutcomeTypeDescriptions,
 } from 'common/ai-creation-prompts'
-import { log } from 'shared/utils'
-import { rateLimitByUser } from './helpers/rate-limit'
 import { HOUR_MS } from 'common/util/time'
+import { track } from 'shared/analytics'
+import { aiModels, promptAI } from 'shared/helpers/prompt-ai'
+import { log } from 'shared/utils'
+import { APIError, APIHandler } from './helpers/endpoint'
+import { rateLimitByUser } from './helpers/rate-limit'
 
 export const generateAIAnswers: APIHandler<'generate-ai-answers'> =
   rateLimitByUser(
@@ -52,10 +52,14 @@ Example output:
 }
   `
 
-        const result = await promptOpenAIWebSearchParseJson<{
+        const result = await promptAI<{
           answers: string[]
           addAnswersMode: 'DISABLED' | 'ONLY_CREATOR' | 'ANYONE'
-        }>(userPrompt)
+        }>(userPrompt, {
+          model: aiModels.gpt5,
+          webSearch: true,
+          parseAsJson: true,
+        })
         log('GPT-4.1 response', result)
 
         track(auth.uid, 'generate-ai-answers', {

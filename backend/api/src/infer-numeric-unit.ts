@@ -1,6 +1,6 @@
 import { HOUR_MS } from 'common/util/time'
 import { track } from 'shared/analytics'
-import { parseAIResponseAsJson, promptGemini } from 'shared/helpers/gemini'
+import { aiModels, promptAI } from 'shared/helpers/prompt-ai'
 import { log } from 'shared/utils'
 import { APIError, APIHandler } from './helpers/endpoint'
 import { rateLimitByUser } from './helpers/rate-limit'
@@ -31,8 +31,11 @@ export const inferNumericUnit: APIHandler<'infer-numeric-unit'> =
           : ''
       }
       `
-        const response = await promptGemini(prompt, { system: systemPrompt })
-        const result = parseAIResponseAsJson(response)
+        const result = await promptAI<{ unit: string }>(prompt, {
+          model: aiModels.flash,
+          system: systemPrompt,
+          parseAsJson: true,
+        })
         log.info('Inferred unit:', { result })
 
         track(auth.uid, 'infer-numeric-unit', {

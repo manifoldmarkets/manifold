@@ -8,8 +8,8 @@ import { isAdminId } from 'common/envs/constants'
 import { convertAnswer, convertContract } from 'common/supabase/contracts'
 import { Tables } from 'common/supabase/utils'
 import { camelCase, mapValues, sortBy } from 'lodash'
-import { parseAIResponseAsJson, promptGemini } from 'shared/helpers/gemini'
 import { generateEmbeddings } from 'shared/helpers/openai-utils'
+import { aiModels, promptAI } from 'shared/helpers/prompt-ai'
 import { SupabaseDirectClient } from 'shared/supabase/init'
 import { contractColumnsToSelect, log } from 'shared/utils'
 import { broadcastUpdatedContract } from 'shared/websockets/helpers'
@@ -173,11 +173,15 @@ Respond with a JSON object containing:
 }`
 
   try {
-    const response = await promptGemini(contract.question, {
-      system: systemPrompt,
-    })
-    const result = parseAIResponseAsJson(response)
-    return result.isSelfReferential
+    const result = await promptAI<{ isSelfReferential?: boolean }>(
+      contract.question,
+      {
+        model: aiModels.flash,
+        system: systemPrompt,
+        parseAsJson: true,
+      }
+    )
+    return !!result.isSelfReferential
   } catch (error) {
     log.error('Error checking for self-referential market:', {
       error: error instanceof Error ? error.message : String(error),

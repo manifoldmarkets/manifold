@@ -1,11 +1,15 @@
-import OpenAI from 'openai'
-import * as dayjs from 'dayjs'
-import { log } from 'shared/utils'
-import * as utc from 'dayjs/plugin/utc'
 import { APIError } from 'common/api/utils'
-import { buildArray } from 'common/util/array'
+// import { buildArray } from 'common/util/array'
+import * as dayjs from 'dayjs'
+import * as utc from 'dayjs/plugin/utc'
+import OpenAI from 'openai'
+import { log } from 'shared/utils'
+import { parseAIResponseAsJson } from './gemini'
 dayjs.extend(utc)
-export type MODELS = 'o3-mini' | 'gpt-4o' | 'gpt-4.1-2025-04-14' | 'o4-mini'
+export const models = {
+  gpt5: 'gpt-5',
+  gpt5mini: 'gpt-5-mini',
+} as const
 
 export const generateEmbeddings = async (question: string) => {
   const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY })
@@ -46,64 +50,61 @@ export const generateImage = async (q: string) => {
     .catch((err) => (console.log(err), undefined))
 }
 
+const defaultOptions: {
+  system?: string
+  model: (typeof models)[keyof typeof models]
+  reasoning?: { effort: 'low' | 'medium' | 'high' }
+  webSearch?: boolean
+} = {
+  model: models.gpt5,
+}
+
 export const promptOpenAI = async (
   prompt: string,
-  model: MODELS,
-  options: { system?: string } = {}
+  options: typeof defaultOptions = defaultOptions
 ) => {
-  const { system } = options
   const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY })
 
-  const result = await openai.chat.completions
+  const { system, model, reasoning, webSearch } = options
+
+  const result = await openai.responses
     .create({
       model,
-      messages: buildArray(
-        system && {
-          role: 'system',
-          content: system,
-        },
-        { role: 'user', content: prompt }
-      ),
+      input: prompt,
+      ...(system ? { instructions: system } : {}),
+      ...(webSearch
+        ? {
+            tools: [
+              {
+                type: 'web_search_preview_2025_03_11',
+                search_context_size: 'high',
+              },
+            ],
+            tool_choice: 'auto',
+          }
+        : {}),
+      ...(reasoning ? { reasoning: { effort: reasoning.effort } } : {}),
+      text: {
+        // @ts-expect-error - verbosity is not typed
+        verbosity: 'low',
+      },
     })
     .catch((err) => (console.log(err), undefined))
 
   if (!result) throw new APIError(500, 'No result from OpenAI')
 
-  const message = result.choices[0].message.content
-  log('GPT4 returned message:', message)
+  const message = (result as any).output_text as string | undefined
+  log('OpenAI Responses returned message:', message)
   if (!message) throw new APIError(500, 'No result from OpenAI')
   return message
 }
 
-export const promptOpenAIWithWebSearch = async (
+export const promptOpenAIParsingAsJson = async (
   prompt: string,
-  model: MODELS = 'gpt-4.1-2025-04-14'
+  options: typeof defaultOptions = defaultOptions
 ) => {
-  const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY })
-
-  try {
-    const result = await openai.responses.create({
-      model,
-      input: prompt,
-      tools: [{ type: 'web_search_preview', search_context_size: 'high' }], // Provide the tool definition
-      tool_choice: 'required',
-    })
-
-    const message = result.output_text
-    log('OpenAI with tools returned message:', message)
-    if (!message) throw new Error('No message returned from OpenAI') // Changed to Error
-
-    // Return the entire message object (could contain content or tool_calls)
-    return message
-  } catch (err: any) {
-    log.error('Error calling OpenAI with tools:', err?.message ?? err)
-    // Propagate the error or return a specific error indicator
-    // Throwing an APIError might be suitable depending on usage context
-    throw new APIError(
-      500,
-      `OpenAI API error: ${err?.message ?? 'Unknown error'}`
-    )
-  }
+  const res = await promptOpenAI(prompt, options)
+  return parseAIResponseAsJson(res)
 }
 
 export const removeJsonTicksFromResponse = (response: string): string => {
@@ -119,39 +120,10 @@ export const removeJsonTicksFromResponse = (response: string): string => {
   return response.trim()
 }
 
-// Helper function to ensure the response is valid JSON, adapted from claude.ts
-export const parseOpenAIResponseAsJson = (response: string): any => {
-  const cleanedResponse = removeJsonTicksFromResponse(response)
-
-  try {
-    // Try to parse as is
-    return JSON.parse(cleanedResponse)
-  } catch (error) {
-    // If parsing fails, try to handle common issues
-
-    // Check if it's an array wrapped in extra text
-    const arrayStart = cleanedResponse.indexOf('[')
-    const arrayEnd = cleanedResponse.lastIndexOf(']')
-
-    if (arrayStart !== -1 && arrayEnd !== -1 && arrayEnd > arrayStart) {
-      const potentialArray = cleanedResponse.substring(arrayStart, arrayEnd + 1)
-      try {
-        return JSON.parse(potentialArray)
-      } catch (e) {
-        // If still fails, throw the original error
-        throw error
-      }
-    }
-
-    // If we can't fix it, throw the original error
-    throw error
-  }
-}
-
 export const promptOpenAIWebSearchParseJson = async <T>(
   prompt: string,
-  model: MODELS = 'gpt-4.1-2025-04-14'
+  options: typeof defaultOptions = defaultOptions
 ): Promise<T> => {
-  const response = await promptOpenAIWithWebSearch(prompt, model)
-  return parseOpenAIResponseAsJson(response)
+  const response = await promptOpenAI(prompt, { ...options, webSearch: true })
+  return parseAIResponseAsJson(response)
 }

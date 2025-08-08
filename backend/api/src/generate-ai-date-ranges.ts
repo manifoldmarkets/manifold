@@ -1,6 +1,6 @@
 import { HOUR_MS } from 'common/util/time'
 import { track } from 'shared/analytics'
-import { models, promptClaudeParsingJson } from 'shared/helpers/claude'
+import { aiModels, promptAI } from 'shared/helpers/prompt-ai'
 import { log } from 'shared/utils'
 import {
   assertMidpointsAreAscending,
@@ -126,13 +126,15 @@ export const generateAIDateRanges: APIHandler<'generate-ai-date-ranges'> =
 
       // Generate both bucket and threshold ranges in parallel
       const [buckets, thresholds] = await Promise.all([
-        promptClaudeParsingJson<DateRangeResponse>(prompt, {
-          model: models.sonnet3,
+        promptAI<DateRangeResponse>(prompt, {
+          model: aiModels.gpt5mini,
           system: bucketSystemPrompt,
+          parseAsJson: true,
         }),
-        promptClaudeParsingJson<DateRangeResponse>(prompt, {
-          model: models.sonnet3,
+        promptAI<DateRangeResponse>(prompt, {
+          model: aiModels.gpt5mini,
           system: thresholdSystemPrompt,
+          parseAsJson: true,
         }),
       ])
 
@@ -189,8 +191,9 @@ export const regenerateDateMidpoints: APIHandler<'regenerate-date-midpoints'> =
       DO NOT return the answer array, JUST THE MIDPOINTS.
       `
 
-      const result = await promptClaudeParsingJson<string[]>(prompt, {
-        model: models.sonnet3,
+      const result = await promptAI<string[]>(prompt, {
+        model: aiModels.sonnet3,
+        parseAsJson: true,
       })
       log('claudeResponse', result)
 

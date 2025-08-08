@@ -10,7 +10,7 @@ import { log } from 'shared/utils'
 import { APIHandler } from 'api/helpers/endpoint'
 import { orderBy } from 'lodash'
 import { TOPIC_SIMILARITY_THRESHOLD } from 'shared/helpers/embeddings'
-import { parseAIResponseAsJson, promptGemini } from 'shared/helpers/gemini'
+import { aiModels, promptAI } from 'shared/helpers/prompt-ai'
 
 type cacheType = {
   marketIdsFromEmbeddings: string[]
@@ -67,8 +67,10 @@ ${JSON.stringify(relatedMarketsData)}
 Return a JSON array containing ONLY the IDs of markets to KEEP (those that are different enough).
 `
 
-      const response = await promptGemini(prompt)
-      const marketsToKeep = parseAIResponseAsJson(response)
+      const marketsToKeep = await promptAI<string[]>(prompt, {
+        model: aiModels.flash,
+        parseAsJson: true,
+      })
 
       if (Array.isArray(marketsToKeep) && marketsToKeep.length > 0) {
         marketsFromEmbeddings = marketsFromEmbeddings.filter((market) =>

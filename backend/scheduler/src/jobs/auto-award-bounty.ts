@@ -1,11 +1,11 @@
-import { sortBy, sumBy } from 'lodash'
-import { BountiedQuestionContract } from 'common/contract'
 import { getAutoBountyPayoutPerHour } from 'common/bounty'
-import { createSupabaseDirectClient } from 'shared/supabase/init'
+import { BountiedQuestionContract } from 'common/contract'
+import { sortBy, sumBy } from 'lodash'
 import { awardBounty } from 'shared/bounty'
-import { promptOpenAI } from 'shared/helpers/openai-utils'
-import { log, revalidateContractStaticProps } from 'shared/utils'
+import { aiModels, promptAI } from 'shared/helpers/prompt-ai'
 import { updateContract } from 'shared/supabase/contracts'
+import { createSupabaseDirectClient } from 'shared/supabase/init'
+import { log, revalidateContractStaticProps } from 'shared/utils'
 
 export const autoAwardBounty = async () => {
   const pg = createSupabaseDirectClient()
@@ -79,7 +79,7 @@ Description: ${JSON.stringify(contract.description)}
 The following comments have been submitted:
 
 ` + sortedComments.map((c) => `${c.likes} likes:\n${c.content}`).join('\n\n')
-    const resultMessage = await promptOpenAI(prompt, 'o4-mini')
+    const resultMessage = await promptAI(prompt, { model: aiModels.gpt5 })
     if (resultMessage) {
       await updateContract(pg, contract.id, {
         gptCommentSummary: resultMessage,

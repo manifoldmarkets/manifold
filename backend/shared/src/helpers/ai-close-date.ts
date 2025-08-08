@@ -1,7 +1,7 @@
 import * as dayjs from 'dayjs'
 import * as utc from 'dayjs/plugin/utc'
 import { log } from 'shared/utils'
-import { promptGemini } from './gemini'
+import { aiModels, promptAI } from './prompt-ai'
 dayjs.extend(utc)
 
 export const getCloseDate = async (question: string, utcOffset?: number) => {
@@ -34,7 +34,7 @@ export const getCloseDate = async (question: string, utcOffset?: number) => {
     Question: ${question}
     Now: ${now}
     End date:`
-    response = await promptGemini(prompt)
+    response = await promptAI(prompt, { model: aiModels.sonnet3 })
   } catch (e: any) {
     log.error('Error generating close date', { e })
     return undefined
