@@ -12,7 +12,8 @@ const baseSystemPrompt = (style: 'threshold' | 'bucket') => {
       : ''
   return `
     You are a helpful AI assistant that generates ${style} numeric ranges for prediction market questions.
-    
+    Today is ${new Date().toISOString()}.
+
     GUIDLINES:
     - Generate 2-12 ranges that cover the entire span from min to max
     - Err on the side of fewer (4-6) ranges when possible

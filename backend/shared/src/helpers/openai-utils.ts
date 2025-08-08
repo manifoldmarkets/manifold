@@ -76,7 +76,7 @@ export const promptOpenAI = async (
         ? {
             tools: [
               {
-                type: 'web_search_preview_2025_03_11',
+                type: 'web_search_preview',
                 search_context_size: 'high',
               },
             ],
@@ -85,7 +85,7 @@ export const promptOpenAI = async (
         : {}),
       ...(reasoning ? { reasoning: { effort: reasoning.effort } } : {}),
       text: {
-        // @ts-expect-error - verbosity is not typed
+        // @ts-expect-error - sdk thinks it's not an option
         verbosity: 'low',
       },
     })

@@ -41,6 +41,7 @@ export const generateSuggestions = async (
     model: aiModels.gpt5,
     webSearch: true,
     parseAsJson: true,
+    reasoning: { effort: 'low' },
   })
 
   // Parse the JSON response
