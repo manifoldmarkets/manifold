@@ -2,16 +2,16 @@ import { Notification } from 'common/notification'
 
 import { getContract, getPrivateUser, getUser } from 'shared/utils'
 
-import { getNotificationDestinationsForUser } from 'common/user-notification-preferences'
 import { Reaction } from 'common/reaction'
+import { getNotificationDestinationsForUser } from 'common/user-notification-preferences'
 import { createSupabaseDirectClient } from 'shared/supabase/init'
 
-import { richTextToString } from 'common/util/parse'
-import { insertNotificationToSupabase } from 'shared/supabase/notifications'
-import { getCommentSafe } from 'shared/supabase/contract-comments'
-import { getPost } from 'shared/supabase/posts'
 import { APIError } from 'common/api/utils'
 import { PostComment } from 'common/comment'
+import { richTextToString } from 'common/util/parse'
+import { getCommentSafe } from 'shared/supabase/contract-comments'
+import { insertNotificationToSupabase } from 'shared/supabase/notifications'
+import { getPost } from 'shared/supabase/posts'
 
 export const createLikeNotification = async (
   reaction: Reaction,
@@ -118,7 +118,7 @@ export const createLikeNotification = async (
       text = richTextToString(comment?.content)
     }
 
-    const id = `${reaction.user_id}-${reaction_id}`
+    const id = `${reaction.user_id}-${content_id}-like`
     const notification: Notification = {
       id,
       userId: content_owner_id,
