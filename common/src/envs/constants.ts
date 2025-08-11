@@ -174,6 +174,8 @@ export const BOT_USERNAMES = [
   'abot',
   'GoodheartLabsBot',
   'Evansbot',
+  'dcxStep',
+  'JDVance1'
 ]
 
 export const MOD_IDS = [
@@ -267,6 +269,7 @@ export const VERIFIED_USERNAMES = [
   'AndersSandberg',
   'JosephWeisenthal',
   'LawrenceLessig',
+  'realDonaldTrump',
   'NatFriedman',
   'patrissimo',
   'postjawline',
