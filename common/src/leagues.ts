@@ -68,6 +68,8 @@ export const getDivisionNumber = (division: string) => {
   return num
 }
 
+export const MASTERS_DEMOTION_PERCENT = 0.4
+
 export const getDemotionAndPromotionCount = (division: number) => {
   if (division === 0) {
     return { demotion: 0, promotion: 0, doublePromotion: 0 }
@@ -88,7 +90,8 @@ export const getDemotionAndPromotionCount = (division: number) => {
     return { demotion: 10, promotion: 2, doublePromotion: 0 }
   }
   if (division === 6) {
-    return { demotion: 19, promotion: 0, doublePromotion: 0 }
+    // Masters demotion count is computed dynamically as a percentage of cohort size.
+    return { demotion: 0, promotion: 0, doublePromotion: 0 }
   }
   throw new Error(`Invalid division: ${division}`)
 }
@@ -161,13 +164,18 @@ export const getDivisionChange = (
     return 0
   }
 
+  const demotionCount =
+    division === getDivisionNumber('Masters')
+      ? Math.round(cohortSize * MASTERS_DEMOTION_PERCENT)
+      : demotion
+
   if (rank <= doublePromotion) {
     return 2
   }
   if (rank <= promotion) {
     return 1
   }
-  if (rank > cohortSize - demotion) {
+  if (rank > cohortSize - demotionCount) {
     return -1
   }
   return 0

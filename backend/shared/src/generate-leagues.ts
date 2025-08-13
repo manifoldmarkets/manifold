@@ -8,6 +8,9 @@ import {
   getSeasonDates,
   league_user_info,
   MAX_COHORT_SIZE,
+  getDivisionNumber,
+  MASTERS_DEMOTION_PERCENT,
+  getDemotionAndPromotionCount,
 } from 'common/leagues'
 import { getCurrentPortfolio } from './helpers/portfolio'
 import { createLeagueChangedNotifications } from 'shared/create-notification'
@@ -49,7 +52,37 @@ export async function generateNextSeason(
   const usersByDivision = generateDivisions(rows, activeUserIdsSet)
   log(`usersByDivision`, { usersByDivision })
 
-  const userCohorts = generateCohorts(usersByDivision)
+  const nextSeasonMastersCount =
+    usersByDivision[getDivisionNumber('Masters')]?.length ?? 0
+  let totalMastersDemotions = 0
+  if (nextSeasonMastersCount > 0) {
+    const mastersCohortSize = getCohortSize(getDivisionNumber('Masters'))
+    const mastersNumCohorts = Math.ceil(
+      nextSeasonMastersCount / mastersCohortSize
+    )
+    const mastersUsersPerCohort = Math.ceil(
+      nextSeasonMastersCount / Math.max(1, mastersNumCohorts)
+    )
+    const mastersCohortsWithOneLess =
+      mastersUsersPerCohort * mastersNumCohorts - nextSeasonMastersCount
+    for (let i = 0; i < mastersNumCohorts; i++) {
+      const size =
+        i < mastersCohortsWithOneLess
+          ? mastersUsersPerCohort - 1
+          : mastersUsersPerCohort
+      totalMastersDemotions += Math.round(size * MASTERS_DEMOTION_PERCENT)
+    }
+  }
+  const promotionsPerDiamondCohort =
+    getDemotionAndPromotionCount(getDivisionNumber('Diamond')).promotion || 2
+  const targetDiamondCohorts = Math.max(
+    1,
+    Math.round(totalMastersDemotions / Math.max(1, promotionsPerDiamondCohort))
+  )
+
+  const userCohorts = generateCohorts(usersByDivision, {
+    targetDiamondCohorts,
+  })
   log(`user cohorts`, { userCohorts })
 
   const leagueInserts = Object.entries(userCohorts).map(
@@ -109,7 +142,10 @@ const generateDivisions = (
   return usersByNewDivision
 }
 
-const generateCohorts = (usersByDivision: { [division: number]: string[] }) => {
+const generateCohorts = (
+  usersByDivision: { [division: number]: string[] },
+  options?: { targetDiamondCohorts?: number }
+) => {
   const userCohorts: {
     [userId: string]: { division: number; cohort: string }
   } = {}
@@ -119,7 +155,18 @@ const generateCohorts = (usersByDivision: { [division: number]: string[] }) => {
     const divisionUserIds = usersByDivision[divisionStr]
     const division = Number(divisionStr)
     const cohortSize = getCohortSize(division)
-    const numCohorts = Math.ceil(divisionUserIds.length / cohortSize)
+    let numCohorts = Math.ceil(divisionUserIds.length / cohortSize)
+
+    // Override Diamond cohort count to target sustainable Masters size
+    if (division === getDivisionNumber('Diamond')) {
+      const desired = options?.targetDiamondCohorts
+      if (desired && desired > 0) {
+        numCohorts = Math.max(
+          1,
+          Math.min(desired, Math.max(1, divisionUserIds.length))
+        )
+      }
+    }
     const usersPerCohort = Math.ceil(divisionUserIds.length / numCohorts)
     const cohortsWithOneLess =
       usersPerCohort * numCohorts - divisionUserIds.length
