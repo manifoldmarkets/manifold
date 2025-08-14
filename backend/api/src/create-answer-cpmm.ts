@@ -1,4 +1,4 @@
-import { groupBy, partition, sumBy } from 'lodash'
+import { groupBy, partition, sum, sumBy } from 'lodash'
 import { CPMMMultiContract } from 'common/contract'
 import { User } from 'common/user'
 import { getBetDownToOneMultiBetInfo } from 'common/new-bet'
@@ -407,18 +407,29 @@ async function convertOtherAnswerShares(
   const otherAnswer = answers.find((a) => a.isOther)!
 
   const bets = await pgTrans.map(
-    `select * from contract_bets where contract_id = $1 and answer_id = $2`,
+    `select * from contract_bets where contract_id = $1 and answer_id = $2
+            or (contract_id = $1 and
+                answer_id != $2 and 
+                is_redemption and 
+                data->>'betGroupId' = any (
+                    select data->>'betGroupId' from contract_bets 
+                    where contract_id = $1 and answer_id = $2 and not is_redemption
+                    and data->>'betGroupId' is not null
+                )
+              )
+`,
     [contractId, otherAnswer.id],
     convertBet
   )
+  const betsOnOther = bets.filter((b) => b.answerId === otherAnswer.id)
 
-  const betsByUserId = groupBy(bets, (b) => b.userId)
+  const otherBetsByUserId = groupBy(betsOnOther, (b) => b.userId)
   const newBets: Bet[] = []
 
   // Gain YES shares in new answer for each YES share in Other.
-  for (const [userId, bets] of Object.entries(betsByUserId)) {
+  for (const [userId, userOtherBets] of Object.entries(otherBetsByUserId)) {
     const position = sumBy(
-      bets,
+      userOtherBets,
       (b) => b.shares * (b.outcome === 'YES' ? 1 : -1)
     )
     if (!floatingEqual(position, 0) && position > 0) {
@@ -445,13 +456,51 @@ async function convertOtherAnswerShares(
   }
 
   // Convert NO shares in Other answer to YES shares in all other answers (excluding new answer).
-  for (const [userId, bets] of Object.entries(betsByUserId)) {
+  for (const [userId, userOtherBets] of Object.entries(otherBetsByUserId)) {
     const now = Date.now()
     const noPosition = sumBy(
-      bets,
+      userOtherBets,
       (b) => b.shares * (b.outcome === 'YES' ? -1 : 1)
     )
     if (!floatingEqual(noPosition, 0) && noPosition > 0) {
+      const totalNoAmount = sumBy(userOtherBets, (b) => b.amount)
+      const amountsByAnswerId: Record<string, number> = {}
+      for (const otherBet of userOtherBets) {
+        const otherAmount = otherBet.amount
+        const otherShares = otherBet.shares
+        const groupedNonOtherBets = bets.filter(
+          (b) =>
+            b.betGroupId === otherBet.betGroupId &&
+            b.userId === userId &&
+            b.answerId !== otherAnswer.id
+        )
+        let totalYesAmount = 0
+        const yesAmountsByAnswerId: Record<string, number> = {}
+        for (const nonOtherBet of groupedNonOtherBets) {
+          if (!nonOtherBet.answerId) continue
+          const averagePrice = Math.sqrt(
+            nonOtherBet.probBefore * nonOtherBet.probAfter
+          )
+          const yesAmount = otherShares * averagePrice
+          yesAmountsByAnswerId[nonOtherBet.answerId] = yesAmount
+          totalYesAmount += yesAmount
+        }
+        // The yes amounts don't add up to the total amount spent on Other,
+        // so we need to scale them proportionally.
+        for (const [answerId, yesAmount] of Object.entries(
+          yesAmountsByAnswerId
+        )) {
+          amountsByAnswerId[answerId] =
+            (yesAmount / totalYesAmount) * otherAmount
+        }
+      }
+      if (sum(Object.values(amountsByAnswerId)) > totalNoAmount) {
+        log.error('answer amounts greater than amount spent on other', {
+          totalNoAmount,
+          amountsByAnswerId,
+        })
+        throw new APIError(500, 'Amounts for answer redemption bets too large')
+      }
       const convertNoSharesBet: Bet = {
         id: getNewBetId(),
         contractId,
@@ -459,7 +508,7 @@ async function convertOtherAnswerShares(
         answerId: otherAnswer.id,
         outcome: 'NO',
         shares: -noPosition,
-        amount: 0,
+        amount: -totalNoAmount,
         isCancelled: false,
         isFilled: true,
         loanAmount: 0,
@@ -476,6 +525,10 @@ async function convertOtherAnswerShares(
         (a) => a.id !== newAnswer.id && a.id !== otherAnswer.id
       )
       for (const answer of previousAnswers) {
+        const amount = amountsByAnswerId[answer.id]
+        if (!amount) {
+          throw new APIError(500, 'Missing amount for answer redemption bets')
+        }
         const gainYesSharesBet: Bet = {
           id: getNewBetId(),
           contractId,
@@ -483,7 +536,7 @@ async function convertOtherAnswerShares(
           answerId: answer.id,
           outcome: 'YES',
           shares: noPosition,
-          amount: 0,
+          amount,
           isCancelled: false,
           isFilled: true,
           loanAmount: 0,
