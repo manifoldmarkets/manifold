@@ -342,9 +342,12 @@ function LeaguesInnerPage(props: {
 }) {
   const { seasonRows, season, division, cohort, highlightedUserId } = props
   const cohorts = groupBy(seasonRows, 'cohort')
-
   const { demotion, promotion, doublePromotion } =
-    getDemotionAndPromotionCountBySeason(season, division)
+    getDemotionAndPromotionCountBySeason(
+      season,
+      division,
+      cohorts[cohort]?.length ?? 0
+    )
 
   return (
     <>

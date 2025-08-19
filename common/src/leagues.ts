@@ -68,7 +68,13 @@ export const getDivisionNumber = (division: string) => {
   return num
 }
 
-export const getDemotionAndPromotionCount = (division: number) => {
+export const MASTERS_DEMOTION_PERCENT = 0.6
+export const LAST_SEASON_WITH_MASTERS_DEMOTION_HARDCODED = 27
+
+export const getDemotionAndPromotionCount = (
+  division: number,
+  usersInMastersForMasterCalculation: number
+) => {
   if (division === 0) {
     return { demotion: 0, promotion: 0, doublePromotion: 0 }
   }
@@ -88,15 +94,28 @@ export const getDemotionAndPromotionCount = (division: number) => {
     return { demotion: 10, promotion: 2, doublePromotion: 0 }
   }
   if (division === 6) {
-    return { demotion: 19, promotion: 0, doublePromotion: 0 }
+    // Masters demotion count is computed dynamically as a percentage of cohort size.
+    return {
+      demotion: Math.round(
+        usersInMastersForMasterCalculation * MASTERS_DEMOTION_PERCENT
+      ),
+      promotion: 0,
+      doublePromotion: 0,
+    }
   }
   throw new Error(`Invalid division: ${division}`)
 }
 
 export const getDemotionAndPromotionCountBySeason = (
   season: number,
-  division: number
+  division: number,
+  // Users number is ignored except for masters calculation.
+  usersInMastersForMasterCalculation: number
 ) => {
+  if (season > 14 && season <= LAST_SEASON_WITH_MASTERS_DEMOTION_HARDCODED) {
+    if (division === 6)
+      return { demotion: 19, promotion: 0, doublePromotion: 0 }
+  }
   if (season === 14) {
     if (division === 6) {
       return { demotion: 18, promotion: 0, doublePromotion: 0 }
@@ -113,6 +132,8 @@ export const getDemotionAndPromotionCountBySeason = (
   if (season > 8 && season < 13) {
     if (division === 5)
       return { demotion: 12, promotion: 3, doublePromotion: 0 }
+    if (division === 6)
+      return { demotion: 19, promotion: 0, doublePromotion: 0 }
   }
   if (season === 8) {
     if (division === 6)
@@ -143,8 +164,13 @@ export const getDemotionAndPromotionCountBySeason = (
     if (division === 3) return { demotion: 5, promotion: 6, doublePromotion: 0 }
     if (division === 4) return { demotion: 5, promotion: 5, doublePromotion: 0 }
     if (division === 5) return { demotion: 6, promotion: 5, doublePromotion: 0 }
+    if (division === 6)
+      return { demotion: 19, promotion: 0, doublePromotion: 0 }
   }
-  return getDemotionAndPromotionCount(division)
+  return getDemotionAndPromotionCount(
+    division,
+    usersInMastersForMasterCalculation
+  )
 }
 
 export const getDivisionChange = (
@@ -153,8 +179,10 @@ export const getDivisionChange = (
   manaEarned: number,
   cohortSize: number
 ) => {
-  const { demotion, promotion, doublePromotion } =
-    getDemotionAndPromotionCount(division)
+  const { demotion, promotion, doublePromotion } = getDemotionAndPromotionCount(
+    division,
+    cohortSize
+  )
 
   // Require 100 mana earned to advance from Bronze.
   if (division === 1 && manaEarned < 100) {
