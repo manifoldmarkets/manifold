@@ -1,22 +1,22 @@
-import { groupBy, shuffle } from 'lodash'
-import { pgp, SupabaseDirectClient } from './supabase/init'
-import { genNewAdjectiveAnimal } from 'common/util/adjective-animal'
 import { BOT_USERNAMES, OPTED_OUT_OF_LEAGUES } from 'common/envs/constants'
 import {
   getCohortSize,
+  getDemotionAndPromotionCount,
   getDivisionChange,
+  getDivisionNumber,
   getSeasonDates,
   league_user_info,
-  MAX_COHORT_SIZE,
-  getDivisionNumber,
   MASTERS_DEMOTION_PERCENT,
-  getDemotionAndPromotionCount,
+  MAX_COHORT_SIZE,
 } from 'common/leagues'
-import { getCurrentPortfolio } from './helpers/portfolio'
+import { genNewAdjectiveAnimal } from 'common/util/adjective-animal'
+import { groupBy, shuffle } from 'lodash'
 import { createLeagueChangedNotifications } from 'shared/create-notification'
+import { getCurrentPortfolio } from './helpers/portfolio'
+import { pgp, SupabaseDirectClient } from './supabase/init'
+import { getEffectiveCurrentSeason } from './supabase/leagues'
 import { bulkInsert } from './supabase/utils'
 import { log } from './utils'
-import { getEffectiveCurrentSeason } from './supabase/leagues'
 
 export async function generateNextSeason(
   pg: SupabaseDirectClient,
@@ -52,37 +52,7 @@ export async function generateNextSeason(
   const usersByDivision = generateDivisions(rows, activeUserIdsSet)
   log(`usersByDivision`, { usersByDivision })
 
-  const nextSeasonMastersCount =
-    usersByDivision[getDivisionNumber('Masters')]?.length ?? 0
-  let totalMastersDemotions = 0
-  if (nextSeasonMastersCount > 0) {
-    const mastersCohortSize = getCohortSize(getDivisionNumber('Masters'))
-    const mastersNumCohorts = Math.ceil(
-      nextSeasonMastersCount / mastersCohortSize
-    )
-    const mastersUsersPerCohort = Math.ceil(
-      nextSeasonMastersCount / Math.max(1, mastersNumCohorts)
-    )
-    const mastersCohortsWithOneLess =
-      mastersUsersPerCohort * mastersNumCohorts - nextSeasonMastersCount
-    for (let i = 0; i < mastersNumCohorts; i++) {
-      const size =
-        i < mastersCohortsWithOneLess
-          ? mastersUsersPerCohort - 1
-          : mastersUsersPerCohort
-      totalMastersDemotions += Math.round(size * MASTERS_DEMOTION_PERCENT)
-    }
-  }
-  const promotionsPerDiamondCohort =
-    getDemotionAndPromotionCount(getDivisionNumber('Diamond')).promotion || 2
-  const targetDiamondCohorts = Math.max(
-    1,
-    Math.round(totalMastersDemotions / Math.max(1, promotionsPerDiamondCohort))
-  )
-
-  const userCohorts = generateCohorts(usersByDivision, {
-    targetDiamondCohorts,
-  })
+  const userCohorts = generateCohorts(usersByDivision)
   log(`user cohorts`, { userCohorts })
 
   const leagueInserts = Object.entries(userCohorts).map(
@@ -142,10 +112,39 @@ const generateDivisions = (
   return usersByNewDivision
 }
 
-const generateCohorts = (
-  usersByDivision: { [division: number]: string[] },
-  options?: { targetDiamondCohorts?: number }
-) => {
+const generateCohorts = (usersByDivision: { [division: number]: string[] }) => {
+  const nextSeasonMastersCount =
+    usersByDivision[getDivisionNumber('Masters')]?.length ?? 0
+  let totalMastersDemotions = 0
+  if (nextSeasonMastersCount > 0) {
+    const mastersCohortSize = getCohortSize(getDivisionNumber('Masters'))
+    const mastersNumCohorts = Math.ceil(
+      nextSeasonMastersCount / mastersCohortSize
+    )
+    log(`mastersNumCohorts`, { mastersNumCohorts })
+    const mastersUsersPerCohort = Math.ceil(
+      nextSeasonMastersCount / Math.max(1, mastersNumCohorts)
+    )
+    log(`mastersUsersPerCohort`, { mastersUsersPerCohort })
+    const mastersCohortsWithOneLess =
+      mastersUsersPerCohort * mastersNumCohorts - nextSeasonMastersCount
+    log(`mastersCohortsWithOneLess`, { mastersCohortsWithOneLess })
+    for (let i = 0; i < mastersNumCohorts; i++) {
+      const size =
+        i < mastersCohortsWithOneLess
+          ? mastersUsersPerCohort - 1
+          : mastersUsersPerCohort
+      totalMastersDemotions += Math.round(size * MASTERS_DEMOTION_PERCENT)
+    }
+    log(`totalMastersDemotions`, { totalMastersDemotions })
+  }
+  const promotionsPerDiamondCohort =
+    getDemotionAndPromotionCount(getDivisionNumber('Diamond'), 0).promotion || 2
+  const targetDiamondCohorts = Math.max(
+    1,
+    Math.round(totalMastersDemotions / Math.max(1, promotionsPerDiamondCohort))
+  )
+
   const userCohorts: {
     [userId: string]: { division: number; cohort: string }
   } = {}
@@ -159,11 +158,10 @@ const generateCohorts = (
 
     // Override Diamond cohort count to target sustainable Masters size
     if (division === getDivisionNumber('Diamond')) {
-      const desired = options?.targetDiamondCohorts
-      if (desired && desired > 0) {
+      if (targetDiamondCohorts > 0) {
         numCohorts = Math.max(
           1,
-          Math.min(desired, Math.max(1, divisionUserIds.length))
+          Math.min(targetDiamondCohorts, Math.max(1, divisionUserIds.length))
         )
       }
     }
