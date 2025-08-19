@@ -431,8 +431,7 @@ const App = () => {
   }
 
   const isConnected = useIsConnected()
-  const fullyLoaded =
-    hasLoadedWebView && fbUser && isConnected && listeningToNative.current
+  const fullyLoaded = hasLoadedWebView && fbUser && isConnected
 
   // Hide splash screen when app is fully loaded
   useEffect(() => {

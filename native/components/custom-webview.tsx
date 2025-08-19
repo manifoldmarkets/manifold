@@ -61,15 +61,12 @@ export const CustomWebview = (props: {
 
   return (
     <View
-      style={{
-        flex: display ? 1 : 0,
-        height: display ? 'auto' : 1,
-        opacity: display ? 1 : 0,
-      }}
+      style={display ? styles.rootVisible : styles.rootHidden}
+      pointerEvents={display ? 'auto' : 'none'}
     >
       {Platform.OS === 'android' ? (
         <ScrollView
-          style={{ display: display ? 'flex' : 'none' }}
+          style={{ flex: 1 }}
           contentContainerStyle={[styles.container, { position: 'relative' }]}
           refreshControl={
             <RefreshControl
@@ -143,6 +140,18 @@ export const CustomWebview = (props: {
 }
 
 const styles = StyleSheet.create({
+  rootVisible: {
+    flex: 1,
+    opacity: 1,
+  },
+  rootHidden: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    opacity: 0,
+  },
   container: {
     display: 'flex',
     flex: 1,
