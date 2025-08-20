@@ -980,6 +980,221 @@ curl -X POST https://api.manifold.markets/v0/bet \
 
 Response type: A `Bet`.
 
+### `POST /v0/multi-bet`
+
+Place multiple YES bets on a sums-to-one multiple choice market, targeting the same number of shares on each selected answer.
+
+This is only available on `cpmm-multi-1` markets with `shouldAnswersSumToOne=true` and requires at least two answers in the market. The provided `amount` is spent across the selected answers to purchase equal shares per answer at execution time. If a `limitProb` is provided, each leg will only execute up to that price; any unfilled remainder stays as open limit orders until `expiresAt` or cancellation.
+
+Parameters:
+
+- `contractId`: The ID of the market to bet on.
+- `answerIds`: Array of answer IDs to buy on. Minimum length 2. Market must have `shouldAnswersSumToOne=true`.
+- `amount`: Total amount to spend across the selected answers.
+- `limitProb`: Optional. A number from `0.01` to `0.99` with two decimal places (whole percentage points). Acts as a per-leg limit price.
+- `expiresAt`: Optional. Unix timestamp (ms). Any unfilled portion will be canceled at this time.
+
+Notes:
+
+- Only `YES` is supported; `outcome` is implicitly `YES`.
+- The API returns only the primary bets on the selected answers. Internal arbitrage trades created to keep probabilities summing to 100% are not included in the response.
+
+Example request:
+
+```bash
+curl -X POST https://api.manifold.markets/v0/multi-bet \
+  -H 'Authorization: Key YOUR_API_KEY' \
+  -H 'Content-Type: application/json' \
+  -d '{
+    "contractId":"tQudZcEtlp",
+    "amount":100,
+    "answerIds":["Ncus9Qtty2","CAqyQ8AOSn","Pc86OAUEsn"]
+   }'
+```
+
+Example response (array of bets, one per selected answer):
+
+```json
+[
+  {
+    "orderAmount": 100.00000000000003,
+    "amount": 33.333333333333286,
+    "shares": 125.88308682212488,
+    "isFilled": true,
+    "fills": [
+      {
+        "matchedBetId": null,
+        "shares": 110.27413685175395,
+        "amount": 33.333333333333286,
+        "timestamp": 1755718208318,
+        "fees": {
+          "creatorFee": 0,
+          "platformFee": 0,
+          "liquidityFee": 0
+        }
+      },
+      {
+        "matchedBetId": null,
+        "shares": 15.313505455862867,
+        "amount": 0,
+        "timestamp": 1755718208324,
+        "fees": {
+          "creatorFee": 0,
+          "platformFee": 0,
+          "liquidityFee": 0
+        }
+      },
+      {
+        "matchedBetId": null,
+        "shares": 0.29544451450806264,
+        "amount": 0,
+        "timestamp": 1755718208329,
+        "fees": {
+          "creatorFee": 0,
+          "platformFee": 0,
+          "liquidityFee": 0
+        }
+      }
+    ],
+    "contractId": "tQudZcEtlp",
+    "outcome": "YES",
+    "isCancelled": false,
+    "loanAmount": 0,
+    "answerId": "Ncus9Qtty2",
+    "probBefore": 0.2568360631674096,
+    "probAfter": 0.2721147216493064,
+    "createdTime": 1755718208333,
+    "fees": {
+      "creatorFee": 0,
+      "platformFee": 0,
+      "liquidityFee": 0
+    },
+    "isRedemption": false,
+    "visibility": "public",
+    "betId": "zl2cULd0yq5N",
+    "betGroupId": "05bd5240dfca66b2556b77e8"
+  },
+  {
+    "orderAmount": 100.00000000000003,
+    "amount": 33.3333333333334,
+    "shares": 125.88308682212511,
+    "isFilled": true,
+    "fills": [
+      {
+        "matchedBetId": null,
+        "shares": 110.27413685175412,
+        "amount": 33.3333333333334,
+        "timestamp": 1755718208318,
+        "fees": {
+          "creatorFee": 0,
+          "platformFee": 0,
+          "liquidityFee": 0
+        }
+      },
+      {
+        "matchedBetId": null,
+        "shares": 15.31350545586281,
+        "amount": 0,
+        "timestamp": 1755718208324,
+        "fees": {
+          "creatorFee": 0,
+          "platformFee": 0,
+          "liquidityFee": 0
+        }
+      },
+      {
+        "matchedBetId": null,
+        "shares": 0.2954445145081763,
+        "amount": 0,
+        "timestamp": 1755718208330,
+        "fees": {
+          "creatorFee": 0,
+          "platformFee": 0,
+          "liquidityFee": 0
+        }
+      }
+    ],
+    "contractId": "tQudZcEtlp",
+    "outcome": "YES",
+    "isCancelled": false,
+    "loanAmount": 0,
+    "answerId": "CAqyQ8AOSn",
+    "probBefore": 0.2568360631674102,
+    "probAfter": 0.27211472164930733,
+    "createdTime": 1755718208333,
+    "fees": {
+      "creatorFee": 0,
+      "platformFee": 0,
+      "liquidityFee": 0
+    },
+    "isRedemption": false,
+    "visibility": "public",
+    "betId": "hAnEpO2dOspd",
+    "betGroupId": "05bd5240dfca66b2556b77e8"
+  },
+  {
+    "orderAmount": 100.00000000000003,
+    "amount": 33.33333333333334,
+    "shares": 125.88308682212511,
+    "isFilled": true,
+    "fills": [
+      {
+        "matchedBetId": null,
+        "shares": 110.27413685175384,
+        "amount": 33.33333333333334,
+        "timestamp": 1755718208318,
+        "fees": {
+          "creatorFee": 0,
+          "platformFee": 0,
+          "liquidityFee": 0
+        }
+      },
+      {
+        "matchedBetId": null,
+        "shares": 15.313505455863208,
+        "amount": 0,
+        "timestamp": 1755718208324,
+        "fees": {
+          "creatorFee": 0,
+          "platformFee": 0,
+          "liquidityFee": 0
+        }
+      },
+      {
+        "matchedBetId": null,
+        "shares": 0.29544451450806264,
+        "amount": 0,
+        "timestamp": 1755718208330,
+        "fees": {
+          "creatorFee": 0,
+          "platformFee": 0,
+          "liquidityFee": 0
+        }
+      }
+    ],
+    "contractId": "tQudZcEtlp",
+    "outcome": "YES",
+    "isCancelled": false,
+    "loanAmount": 0,
+    "answerId": "Pc86OAUEsn",
+    "probBefore": 0.25683606316740987,
+    "probAfter": 0.27211472164930683,
+    "createdTime": 1755718208333,
+    "fees": {
+      "creatorFee": 0,
+      "platformFee": 0,
+      "liquidityFee": 0
+    },
+    "isRedemption": false,
+    "visibility": "public",
+    "betId": "p9L5NPO09tCz",
+    "betGroupId": "05bd5240dfca66b2556b77e8"
+  }
+]
+```
+
+Response type: Array of `Bet`-like objects (same fields as a `Bet`) with additional `betId` and `betGroupId`.
+
 ### `POST /v0/bet/cancel/[id]`
 
 Cancel a limit order.

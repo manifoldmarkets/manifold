@@ -1,18 +1,18 @@
 import { groupBy, sumBy } from 'lodash'
 import { Answer } from './answer'
+import { Bet } from './bet'
+import {
+  calculateCpmmMultiSumsToOneSale,
+  getCpmmProbability,
+} from './calculate-cpmm'
 import {
   calculateCpmmMultiArbitrageBet,
   calculateCpmmMultiArbitrageSellYesEqually,
   calculateCpmmMultiArbitrageYesBets,
 } from './calculate-cpmm-arbitrage'
-import {
-  calculateCpmmMultiSumsToOneSale,
-  getCpmmProbability,
-} from './calculate-cpmm'
 import { getFeeTotal, getTakerFee, noFees } from './fees'
 import { getMultiNumericAnswerBucketRanges } from './number'
 import { getNewSellBetInfo } from './sell-bet'
-import { Bet } from './bet'
 
 describe('calculateCpmmMultiArbitrageBet', () => {
   it('should sum to 1 after bet', async () => {
@@ -320,6 +320,87 @@ describe('calculateCpmmMultiArbitrageYesBets', () => {
       expect(
         Math.abs(afterSaleAnswerYesShares[i] - preBuyYesShares[i]) < 0.01
       ).toBeTruthy()
+    }
+  })
+
+  it('does not spend more than passed amount across multi-buy answers', async () => {
+    const answers: Answer[] = getNumericAnswers(0, 100, 10)
+    const betAmount = 100
+    const { newBetResults } = calculateCpmmMultiArbitrageYesBets(
+      answers,
+      answers.slice(0, 3),
+      betAmount,
+      undefined,
+      [],
+      {},
+      noFees
+    )
+    const totalUserAmount = sumBy(
+      newBetResults.flatMap((r) => r.takers),
+      (t) => t.amount
+    )
+    expect(totalUserAmount).toBeLessThanOrEqual(betAmount + 1e-9)
+  })
+
+  it('does not overfill maker limit orders in multi-buy', async () => {
+    const answers: Answer[] = getNumericAnswers(0, 100, 10)
+    const [a0, a1] = answers
+    // Create two small NO limit orders on two answers at low limitProb so they match YES takers
+    const now = Date.now()
+    const makeLimit = (
+      id: string,
+      answer: Answer,
+      userId: string,
+      orderAmount: number
+    ) => ({
+      id,
+      userId,
+      contractId: 'c1',
+      answerId: answer.id,
+      createdTime: now,
+      amount: 0,
+      loanAmount: 0,
+      outcome: 'NO',
+      shares: 0,
+      probBefore: answer.prob,
+      probAfter: answer.prob,
+      fees: noFees,
+      isRedemption: false,
+      visibility: 'public',
+      orderAmount,
+      limitProb: 0.05,
+      isFilled: false,
+      isCancelled: false,
+      fills: [],
+    })
+    const makerA = makeLimit('makerA1', a0, 'makerA', 5)
+    const makerB = makeLimit('makerB1', a1, 'makerB', 7)
+    const unfilledBets = [makerA, makerB]
+    const balanceByUserId = { makerA: 1e6, makerB: 1e6 }
+
+    const { newBetResults, otherBetResults } =
+      calculateCpmmMultiArbitrageYesBets(
+        answers,
+        answers.slice(0, 3),
+        100,
+        undefined,
+        unfilledBets,
+        balanceByUserId,
+        noFees
+      )
+
+    const allMakers = [
+      ...newBetResults.flatMap((r) => r.makers),
+      ...otherBetResults.flatMap((r) => r.makers),
+    ]
+    const byBetId = groupBy(allMakers, (m) => m.bet.id)
+    const orderAmountById: Record<string, number> = {
+      [makerA.id]: makerA.orderAmount,
+      [makerB.id]: makerB.orderAmount,
+    }
+    for (const [betId, makers] of Object.entries(byBetId)) {
+      const filled = sumBy(makers, (m) => m.amount)
+      expect(filled).toBeLessThanOrEqual(orderAmountById[betId] + 1e-9)
     }
   })
 })

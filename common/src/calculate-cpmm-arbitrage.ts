@@ -1,3 +1,4 @@
+import { MAX_CPMM_PROB, MIN_CPMM_PROB } from 'common/contract'
 import { Dictionary, first, groupBy, mapValues, sum, sumBy } from 'lodash'
 import { Answer } from './answer'
 import { Bet, LimitBet, maker } from './bet'
@@ -6,11 +7,10 @@ import {
   computeFills,
   getCpmmProbability,
 } from './calculate-cpmm'
+import { Fees, getFeesSplit, getTakerFee, noFees, sumAllFees } from './fees'
 import { binarySearch } from './util/algos'
 import { floatingEqual } from './util/math'
-import { Fees, getFeesSplit, getTakerFee, noFees, sumAllFees } from './fees'
 import { addObjects } from './util/object'
-import { MAX_CPMM_PROB, MIN_CPMM_PROB } from 'common/contract'
 
 const DEBUG = false
 export type ArbitrageBetArray = ReturnType<typeof combineBetsOnSameAnswers>
@@ -139,7 +139,49 @@ export function calculateCpmmMultiArbitrageYesBets(
 
 export type PreliminaryBetResults = ReturnType<typeof computeFills> & {
   answer: Answer
+  // iteration index within a multi-buy cycle; 0 is paid with user's amount,
+  // >0 iterations are funded by arbitrage extraMana and should be free for the taker.
+  iteration?: number
 }
+
+// Mutate working state to reflect maker fills and cancellations, so subsequent legs
+// cannot reuse the same maker order capacity or balances.
+const applyMakersToWorkingState = (
+  makers: maker[],
+  ordersToCancel: LimitBet[],
+  workingUnfilledBetsByAnswer: Dictionary<LimitBet[]>,
+  workingBalanceByUserId: { [userId: string]: number }
+) => {
+  for (const maker of makers) {
+    const { bet, amount, shares } = maker
+    if (!bet.answerId) {
+      throw new Error('Multi-bet has no answerId')
+    }
+    if (amount > 0) {
+      const prev = workingBalanceByUserId[bet.userId]
+      if (prev !== undefined) workingBalanceByUserId[bet.userId] = prev - amount
+    }
+    // Update the bet's filled amount in-place inside our working unfilled bets map
+    const arr = workingUnfilledBetsByAnswer[bet.answerId] ?? []
+    const idx = arr.findIndex((b) => b.id === bet.id)
+    if (idx >= 0) {
+      const updated = { ...arr[idx] }
+      updated.amount = (updated.amount ?? 0) + amount
+      updated.shares = (updated.shares ?? 0) + shares
+      arr[idx] = updated
+      workingUnfilledBetsByAnswer[bet.answerId] = arr
+    }
+  }
+  if (ordersToCancel.length) {
+    const cancelIds = new Set(ordersToCancel.map((b) => b.id))
+    for (const [answerId, arr] of Object.entries(workingUnfilledBetsByAnswer)) {
+      workingUnfilledBetsByAnswer[answerId] = arr.filter(
+        (b) => !cancelIds.has(b.id)
+      )
+    }
+  }
+}
+
 function calculateCpmmMultiArbitrageBetsYes(
   initialAnswers: Answer[],
   initialAnswersToBuy: Answer[],
@@ -149,12 +191,15 @@ function calculateCpmmMultiArbitrageBetsYes(
   balanceByUserId: { [userId: string]: number },
   collectedFees: Fees
 ) {
-  const unfilledBetsByAnswer = groupBy(unfilledBets, (bet) => bet.answerId)
+  // Maintain mutable snapshots of unfilled orders and maker balances across the whole multi-buy
+  let workingUnfilledBetsByAnswer = groupBy(unfilledBets, (bet) => bet.answerId)
+  let workingBalanceByUserId = { ...balanceByUserId }
   const noBetResults: PreliminaryBetResults[] = []
   const yesBetResults: PreliminaryBetResults[] = []
 
   let updatedAnswers = initialAnswers
   let amountToBet = initialBetAmount
+  let iteration = 0
   while (amountToBet > 0.01) {
     const answersToBuy = updatedAnswers.filter((a) =>
       initialAnswersToBuy.map((an) => an.id).includes(a.id)
@@ -169,8 +214,8 @@ function calculateCpmmMultiArbitrageBetsYes(
           { pool: { YES: poolYes, NO: poolNo }, p: 0.5, collectedFees },
           yesShares,
           'YES',
-          unfilledBetsByAnswer[id] ?? [],
-          balanceByUserId
+          workingUnfilledBetsByAnswer[id] ?? [],
+          workingBalanceByUserId
         )
       )
 
@@ -178,21 +223,33 @@ function calculateCpmmMultiArbitrageBetsYes(
       return totalYesAmount - amountToBet
     })
 
-    const { noBuyResults, yesBets, newUpdatedAnswers } =
-      getBetResultsAndUpdatedAnswers(
-        answersToBuy,
-        yesAmounts,
-        updatedAnswers,
-        limitProb,
-        unfilledBets,
-        balanceByUserId,
-        collectedFees
-      )
+    const {
+      noBuyResults,
+      yesBets,
+      newUpdatedAnswers,
+      updatedUnfilledBetsByAnswer,
+      updatedBalanceByUserId,
+    } = getBetResultsAndUpdatedAnswers(
+      answersToBuy,
+      yesAmounts,
+      updatedAnswers,
+      limitProb,
+      // Flatten working unfilled bets for API; it will reconstruct its own map
+      Object.values(workingUnfilledBetsByAnswer).flat(),
+      workingBalanceByUserId,
+      collectedFees
+    )
+    // Annotate iteration index so we can mark taker fills as free beyond the first.
+    yesBets.forEach((r) => ((r as PreliminaryBetResults).iteration = iteration))
+    noBuyResults.noBetResults.forEach((r) => (r.iteration = iteration))
+    workingUnfilledBetsByAnswer = updatedUnfilledBetsByAnswer
+    workingBalanceByUserId = updatedBalanceByUserId
     updatedAnswers = newUpdatedAnswers
 
     amountToBet = noBuyResults.extraMana
     noBetResults.push(...noBuyResults.noBetResults)
     yesBetResults.push(...yesBets)
+    iteration++
   }
 
   const noBetResultsOnBoughtAnswer = combineBetsOnSameAnswers(
@@ -240,7 +297,13 @@ export const getBetResultsAndUpdatedAnswers = (
   collectedFees: Fees,
   answerIdsWithFees?: string[]
 ) => {
-  const unfilledBetsByAnswer = groupBy(unfilledBets, (bet) => bet.answerId)
+  // Working maps that will be updated as we simulate each leg to avoid reusing capacity.
+  const workingUnfilledBetsByAnswer = groupBy(
+    unfilledBets,
+    (bet) => bet.answerId
+  )
+  const workingBalanceByUserId = { ...balanceByUserId }
+
   const yesBetResultsAndUpdatedAnswers = answersToBuy.map((answerToBuy, i) => {
     const pool = { YES: answerToBuy.poolYes, NO: answerToBuy.poolNo }
     const yesBetResult = {
@@ -249,13 +312,21 @@ export const getBetResultsAndUpdatedAnswers = (
         'YES',
         yesAmounts[i],
         limitProb,
-        unfilledBetsByAnswer[answerToBuy.id] ?? [],
-        balanceByUserId,
+        workingUnfilledBetsByAnswer[answerToBuy.id] ?? [],
+        workingBalanceByUserId,
         undefined,
         answerIdsWithFees && !answerIdsWithFees?.includes(answerToBuy.id)
       ),
       answer: answerToBuy,
     }
+
+    // Apply the fills to mutate working state for subsequent legs
+    applyMakersToWorkingState(
+      yesBetResult.makers,
+      yesBetResult.ordersToCancel,
+      workingUnfilledBetsByAnswer,
+      workingBalanceByUserId
+    )
 
     const { cpmmState } = yesBetResult
     const { pool: newPool, p } = cpmmState
@@ -280,11 +351,21 @@ export const getBetResultsAndUpdatedAnswers = (
           (newAnswerState) => newAnswerState.id === answer.id
         ) ?? answer
     ),
-    unfilledBets,
-    balanceByUserId,
+    // Flatten current working snapshot so NO legs see already-used capacity
+    Object.values(workingUnfilledBetsByAnswer).flat(),
+    workingBalanceByUserId,
     collectedFees,
     answerIdsWithFees
   )
+  // Apply NO leg maker fills to working state as well
+  for (const noBet of noBuyResults.noBetResults) {
+    applyMakersToWorkingState(
+      noBet.makers,
+      noBet.ordersToCancel,
+      workingUnfilledBetsByAnswer,
+      workingBalanceByUserId
+    )
+  }
   // Update new answer states from bets placed on all answers
   const newUpdatedAnswers = noBuyResults.noBetResults.map((noBetResult) => {
     const { cpmmState } = noBetResult
@@ -303,6 +384,9 @@ export const getBetResultsAndUpdatedAnswers = (
     newUpdatedAnswers,
     yesBets,
     noBuyResults,
+    // Also return updated state so callers can carry it across iterations
+    updatedUnfilledBetsByAnswer: workingUnfilledBetsByAnswer,
+    updatedBalanceByUserId: workingBalanceByUserId,
   }
 }
 
@@ -324,19 +408,30 @@ export const combineBetsOnSameAnswers = (
       (acc, b) => addObjects(acc, b.totalFees),
       extraFees
     )
+    // Make extra taker fills beyond the user's paid iteration free by zeroing their amounts and fees,
+    // while still summing shares so probabilities update correctly.
+    const takers = betsForAnswer.flatMap((r) => r.takers)
+    const adjustedTakers = fillsFollowingFirstAreFree
+      ? (() => {
+          const cloned = takers.map((t) => ({ ...t }))
+          let idx = 0
+          for (const r of betsForAnswer) {
+            const count = r.takers.length
+            const slice = cloned.slice(idx, idx + count)
+            if ((r.iteration ?? 0) > 0) {
+              for (const t of slice) {
+                t.amount = 0
+                t.fees = noFees
+              }
+            }
+            idx += count
+          }
+          return cloned
+        })()
+      : takers
     return {
       ...bet,
-      takers: fillsFollowingFirstAreFree
-        ? [
-            {
-              ...bet.takers[0],
-              shares: sumBy(
-                betsForAnswer.flatMap((r) => r.takers),
-                'shares'
-              ),
-            },
-          ]
-        : betsForAnswer.flatMap((r) => r.takers),
+      takers: adjustedTakers,
       makers: betsForAnswer.flatMap((r) => r.makers),
       ordersToCancel: betsForAnswer.flatMap((r) => r.ordersToCancel),
       outcome,
@@ -679,7 +774,7 @@ const buyYesSharesInOtherAnswersThenNoInAnswer = (
       answer,
     }
   })
-
+  //{"id": "tQudZcEtlp", "slug": "whos-gonna-win-gn8sCuyRpl", "volume": 0, "answers": [{"id": "Ncus9Qtty2", "prob": 0.16666666666666666, "text": "a", "index": 0, "poolNo": 100, "userId": "6hHpzvRG0pMq8PNJs7RZj2qlZGn2", "isOther": false, "poolYes": 500, "contractId": "tQudZcEtlp", "createdTime": 1755714659074, "probChanges": {"day": 0, "week": 0, "month": 0}, "subsidyPool": 0, "totalLiquidity": 223.60679774997897}, {"id": "CAqyQ8AOSn", "prob": 0.16666666666666666, "text": "b", "index": 1, "poolNo": 100, "userId": "6hHpzvRG0pMq8PNJs7RZj2qlZGn2", "isOther": false, "poolYes": 500, "contractId": "tQudZcEtlp", "createdTime": 1755714659074, "probChanges": {"day": 0, "week": 0, "month": 0}, "subsidyPool": 0, "totalLiquidity": 223.60679774997897}, {"id": "Pc86OAUEsn", "prob": 0.16666666666666666, "text": "c", "index": 2, "poolNo": 100, "userId": "6hHpzvRG0pMq8PNJs7RZj2qlZGn2", "isOther": false, "poolYes": 500, "contractId": "tQudZcEtlp", "createdTime": 1755714659074, "probChanges": {"day": 0, "week": 0, "month": 0}, "subsidyPool": 0, "totalLiquidity": 223.60679774997897}, {"id": "dn0gpUIzpq", "prob": 0.16666666666666666, "text": "d", "index": 3, "poolNo": 100, "userId": "6hHpzvRG0pMq8PNJs7RZj2qlZGn2", "isOther": false, "poolYes": 500, "contractId": "tQudZcEtlp", "createdTime": 1755714659074, "probChanges": {"day": 0, "week": 0, "month": 0}, "subsidyPool": 0, "totalLiquidity": 223.60679774997897}, {"id": "uq5uZd5O0A", "prob": 0.16666666666666666, "text": "e", "index": 4, "poolNo": 100, "userId": "6hHpzvRG0pMq8PNJs7RZj2qlZGn2", "isOther": false, "poolYes": 500, "contractId": "tQudZcEtlp", "createdTime": 1755714659074, "probChanges": {"day": 0, "week": 0, "month": 0}, "subsidyPool": 0, "totalLiquidity": 223.60679774997897}, {"id": "ACNE8CLyyS", "prob": 0.16666666666666666, "text": "Other", "index": 5, "poolNo": 100, "userId": "6hHpzvRG0pMq8PNJs7RZj2qlZGn2", "isOther": true, "poolYes": 500, "contractId": "tQudZcEtlp", "createdTime": 1755714659074, "probChanges": {"day": 0, "week": 0, "month": 0}, "subsidyPool": 0, "totalLiquidity": 223.60679774997897}], "isRanked": false, "question": "Who's gonna win?", "closeTime": 1767254340000, "creatorId": "6hHpzvRG0pMq8PNJs7RZj2qlZGn2", "mechanism": "cpmm-multi-1", "elasticity": 4.99, "groupSlugs": ["nonpredictive"], "isResolved": false, "visibility": "public", "createdTime": 1755714659073, "creatorName": "Ian Bobby", "description": {"type": "doc", "content": [{"type": "paragraph"}]}, "outcomeType": "MULTIPLE_CHOICE", "subsidyPool": 0, "collectedFees": {"creatorFee": 0, "platformFee": 0, "liquidityFee": 0}, "volume24Hours": 0, "addAnswersMode": "ANYONE", "totalLiquidity": 1000, "creatorUsername": "IanPhilip", "lastUpdatedTime": 1755714659519, "popularityScore": 0, "creatorAvatarUrl": "https://firebasestorage.googleapis.com/v0/b/dev-mantic-markets.appspot.com/o/user-images%2FIanPhilip%2FEyIU8AZ2RC.png?alt=media&token=ff41c9e8-21d5-412d-ac19-854a90cce076", "uniqueBettorCount": 0, "creatorCreatedTime": 1668811545000, "uniqueBettorCountDay": 0, "shouldAnswersSumToOne": true}
   let noBetAmount = betAmount - totalYesAmount
   if (floatingArbitrageEqual(noBetAmount, 0)) {
     noBetAmount = 0
@@ -731,17 +826,18 @@ export const buyNoSharesUntilAnswersSumToOne = (
   collectedFees: Fees,
   answerIdsWithFees?: string[]
 ) => {
-  const unfilledBetsByAnswer = groupBy(unfilledBets, (bet) => bet.answerId)
+  const baseUnfilledBetsByAnswer = groupBy(unfilledBets, (bet) => bet.answerId)
 
   let maxNoShares = 10
   do {
     const result = buyNoSharesInAnswers(
       answers,
-      unfilledBetsByAnswer,
-      balanceByUserId,
+      { ...baseUnfilledBetsByAnswer },
+      { ...balanceByUserId },
       maxNoShares,
       collectedFees,
-      answerIdsWithFees
+      answerIdsWithFees,
+      false // don't mutate orders during binary search
     )
     const newPools = result.noBetResults.map((r) => r.cpmmState.pool)
     const probSum = sumBy(newPools, (pool) => getCpmmProbability(pool, 0.5))
@@ -752,11 +848,12 @@ export const buyNoSharesUntilAnswersSumToOne = (
   const noShares = binarySearch(0, maxNoShares, (noShares) => {
     const result = buyNoSharesInAnswers(
       answers,
-      unfilledBetsByAnswer,
-      balanceByUserId,
+      { ...baseUnfilledBetsByAnswer },
+      { ...balanceByUserId },
       noShares,
       collectedFees,
-      answerIdsWithFees
+      answerIdsWithFees,
+      false // don't mutate orders during binary search
     )
     const newPools = result.noBetResults.map((r) => r.cpmmState.pool)
     const diff = 1 - sumBy(newPools, (pool) => getCpmmProbability(pool, 0.5))
@@ -765,11 +862,12 @@ export const buyNoSharesUntilAnswersSumToOne = (
 
   return buyNoSharesInAnswers(
     answers,
-    unfilledBetsByAnswer,
-    balanceByUserId,
+    baseUnfilledBetsByAnswer,
+    { ...balanceByUserId },
     noShares,
     collectedFees,
-    answerIdsWithFees
+    answerIdsWithFees,
+    true // mutate orders in final execution
   )
 }
 
@@ -779,37 +877,51 @@ const buyNoSharesInAnswers = (
   balanceByUserId: { [userId: string]: number },
   noShares: number,
   collectedFees: Fees,
-  answerIdsWithFees?: string[]
+  answerIdsWithFees?: string[],
+  updateOrders: boolean = true
 ) => {
-  const noAmounts = answers.map(({ id, poolYes, poolNo }) =>
-    calculateAmountToBuySharesFixedP(
-      { pool: { YES: poolYes, NO: poolNo }, p: 0.5, collectedFees },
+  // Sequentially compute each answer's NO leg, updating state to avoid reusing capacity.
+  let totalNoAmount = 0
+  const noBetResults: PreliminaryBetResults[] = []
+  for (const answer of answers) {
+    const { id, poolYes, poolNo } = answer
+    const pool = { YES: poolYes, NO: poolNo }
+    const noAmount = calculateAmountToBuySharesFixedP(
+      { pool, p: 0.5, collectedFees },
       noShares,
       'NO',
       unfilledBetsByAnswer[id] ?? [],
       balanceByUserId,
       !answerIdsWithFees?.includes(id)
     )
-  )
-  const totalNoAmount = sum(noAmounts)
+    totalNoAmount += noAmount
 
-  const noBetResults = noAmounts.map((noAmount, i) => {
-    const answer = answers[i]
-    const pool = { YES: answer.poolYes, NO: answer.poolNo }
-    return {
+    const res = {
       ...computeFills(
         { pool, p: 0.5, collectedFees },
         'NO',
         noAmount,
         undefined,
-        unfilledBetsByAnswer[answer.id] ?? [],
+        unfilledBetsByAnswer[id] ?? [],
         balanceByUserId,
         undefined,
-        !answerIdsWithFees?.includes(answer.id)
+        !answerIdsWithFees?.includes(id)
       ),
       answer,
     }
-  })
+
+    // Apply maker usage to state so later answers don't reuse.
+    if (updateOrders) {
+      applyMakersToWorkingState(
+        res.makers,
+        res.ordersToCancel,
+        unfilledBetsByAnswer,
+        balanceByUserId
+      )
+    }
+
+    noBetResults.push(res)
+  }
   // Identity: No shares in all other answers is equal to noShares * (n-1) mana
   const redeemedAmount = noShares * (answers.length - 1)
   // Fees on arbitrage bets are returned

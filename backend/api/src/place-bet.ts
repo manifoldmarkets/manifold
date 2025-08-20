@@ -1,21 +1,46 @@
-import { first, isEqual, maxBy, sumBy } from 'lodash'
-import { APIError, AuthedUser, type APIHandler } from './helpers/endpoint'
+import {
+  fetchContractBetDataAndValidate,
+  getMakerIdsFromBetResult,
+  getRoundedLimitProb,
+  getUniqueBettorBonusQuery,
+  getUserBalancesAndMetrics,
+  updateMakers,
+} from 'api/helpers/bets'
+import { onCreateBets } from 'api/on-create-bet'
+import { Answer } from 'common/answer'
+import { ValidatedAPIParams } from 'common/api/schema'
+import { Bet, getNewBetId, LimitBet, maker } from 'common/bet'
+import { CpmmState, getCpmmProbability } from 'common/calculate-cpmm'
 import { CPMM_MIN_POOL_QTY, MarketContract } from 'common/contract'
-import { User } from 'common/user'
+import { ContractMetric } from 'common/contract-metric'
+import { FLAT_TRADE_FEE } from 'common/fees'
 import {
   BetInfo,
   CandidateBet,
   getBinaryCpmmBetInfo,
   getNewMultiCpmmBetInfo,
 } from 'common/new-bet'
-import { removeUndefinedProps } from 'common/util/object'
-import { Bet, getNewBetId, LimitBet, maker } from 'common/bet'
+import { convertBet } from 'common/supabase/bets'
+import { convertContract } from 'common/supabase/contracts'
+import { convertTxn } from 'common/supabase/txns'
+import { UniqueBettorBonusTxn } from 'common/txn'
+import { User } from 'common/user'
+import { filterDefined } from 'common/util/array'
 import { EPSILON, floatingEqual } from 'common/util/math'
-import { log } from 'shared/utils'
-import { Answer } from 'common/answer'
-import { CpmmState, getCpmmProbability } from 'common/calculate-cpmm'
-import { ValidatedAPIParams } from 'common/api/schema'
-import { onCreateBets } from 'api/on-create-bet'
+import { removeUndefinedProps } from 'common/util/object'
+import { first, isEqual, maxBy, sumBy } from 'lodash'
+import { betsQueue, ordersQueue } from 'shared/helpers/fn-queue'
+import {
+  bulkUpdateContractMetricsQuery,
+  bulkUpdateUserMetricsWithNewBetsOnly,
+  getContractMetrics,
+} from 'shared/helpers/user-contract-metrics'
+import { partialAnswerToRow } from 'shared/supabase/answers'
+import {
+  bulkInsertBetsQuery,
+  cancelLimitOrdersQuery,
+  insertZeroAmountLimitBet,
+} from 'shared/supabase/bets'
 import {
   createSupabaseDirectClient,
   SupabaseTransaction,
@@ -26,40 +51,15 @@ import {
   incrementStreakQuery,
   UserUpdate,
 } from 'shared/supabase/users'
-import { convertBet } from 'common/supabase/bets'
-import {
-  bulkInsertBetsQuery,
-  cancelLimitOrdersQuery,
-  insertZeroAmountLimitBet,
-} from 'shared/supabase/bets'
-import { betsQueue, ordersQueue } from 'shared/helpers/fn-queue'
-import { FLAT_TRADE_FEE } from 'common/fees'
-import { redeemShares } from './redeem-shares'
-import { partialAnswerToRow } from 'shared/supabase/answers'
-import { filterDefined } from 'common/util/array'
-import { convertContract } from 'common/supabase/contracts'
-import { UniqueBettorBonusTxn } from 'common/txn'
-import {
-  bulkUpdateContractMetricsQuery,
-  bulkUpdateUserMetricsWithNewBetsOnly,
-  getContractMetrics,
-} from 'shared/helpers/user-contract-metrics'
-import { ContractMetric } from 'common/contract-metric'
+import { bulkUpdateQuery, updateDataQuery } from 'shared/supabase/utils'
+import { runTransactionWithRetries } from 'shared/transact-with-retries'
+import { log } from 'shared/utils'
 import {
   broadcastUpdatedAnswers,
   broadcastUpdatedContract,
 } from 'shared/websockets/helpers'
-import { bulkUpdateQuery, updateDataQuery } from 'shared/supabase/utils'
-import { convertTxn } from 'common/supabase/txns'
-import {
-  fetchContractBetDataAndValidate,
-  getMakerIdsFromBetResult,
-  getRoundedLimitProb,
-  getUniqueBettorBonusQuery,
-  getUserBalancesAndMetrics,
-  updateMakers,
-} from 'api/helpers/bets'
-import { runTransactionWithRetries } from 'shared/transact-with-retries'
+import { APIError, AuthedUser, type APIHandler } from './helpers/endpoint'
+import { redeemShares } from './redeem-shares'
 
 export const placeBet: APIHandler<'bet'> = async (props, auth) => {
   const isApi = auth.creds.kind === 'key'
@@ -333,7 +333,8 @@ export const executeNewBetResult = async (
   betGroupId?: string,
   deterministic?: boolean,
   firstBetInMultiBet?: boolean,
-  silent?: boolean
+  silent?: boolean,
+  isMultiBet?: boolean
 ) => {
   const {
     newBet,
@@ -397,7 +398,6 @@ export const executeNewBetResult = async (
       updatedMakers: [],
     }
   }
-  const isNumberContract = contract.outcomeType === 'NUMBER'
   const apiFee = isApi ? FLAT_TRADE_FEE : 0
   const betsToInsert: Bet[] = [candidateBet]
   const allOrdersToCancel: LimitBet[] = filterDefined(ordersToCancel ?? [])
@@ -421,7 +421,7 @@ export const executeNewBetResult = async (
     contract.mechanism === 'cpmm-multi-1' && contract.shouldAnswersSumToOne
   let bonusTxnQuery = 'select 1 where false'
   if (
-    (!isNumberContract || firstBetInMultiBet) &&
+    (!isMultiBet || firstBetInMultiBet) &&
     !contractMetrics.find(
       (m) =>
         m.userId === user.id &&
@@ -478,7 +478,7 @@ export const executeNewBetResult = async (
     betsToInsert.push(...otherBetsToInsert)
   }
   const isUniqueBettor =
-    (!isNumberContract || firstBetInMultiBet) &&
+    (!isMultiBet || firstBetInMultiBet) &&
     !contractMetrics.find((m) => m.userId === user.id)
   const lastBetTime =
     maxBy(betsToInsert, (b) => b.createdTime)?.createdTime ?? Date.now()
@@ -512,7 +512,7 @@ export const executeNewBetResult = async (
   }
 
   const metrics =
-    isNumberContract && !firstBetInMultiBet
+    isMultiBet && !firstBetInMultiBet
       ? await getContractMetrics(
           pgTrans,
           [user.id],
@@ -612,7 +612,7 @@ export const executeNewBetResult = async (
     | undefined
 
   // On normal contracts, we do this in on-create-bet
-  if (isNumberContract) {
+  if (isMultiBet) {
     broadcastUserUpdates(userUpdates)
     broadcastUpdatedContract(newContract.visibility, contractUpdate)
     broadcastUpdatedAnswers(newContract.id, answerUpdates)

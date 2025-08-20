@@ -1,16 +1,16 @@
-import * as crypto from 'crypto'
-import { APIError, type APIHandler } from './helpers/endpoint'
-import { getNewMultiCpmmBetsInfo } from 'common/new-bet'
-import { ValidatedAPIParams } from 'common/api/schema'
-import { onCreateBets } from 'api/on-create-bet'
-import { executeNewBetResult } from 'api/place-bet'
-import { log } from 'shared/utils'
-import { runTransactionWithRetries } from 'shared/transact-with-retries'
-import { betsQueue } from 'shared/helpers/fn-queue'
 import {
   fetchContractBetDataAndValidate,
   getRoundedLimitProb,
 } from 'api/helpers/bets'
+import { onCreateBets } from 'api/on-create-bet'
+import { executeNewBetResult } from 'api/place-bet'
+import { ValidatedAPIParams } from 'common/api/schema'
+import { getNewMultiCpmmBetsInfo } from 'common/new-bet'
+import * as crypto from 'crypto'
+import { betsQueue } from 'shared/helpers/fn-queue'
+import { runTransactionWithRetries } from 'shared/transact-with-retries'
+import { log } from 'shared/utils'
+import { APIError, type APIHandler } from './helpers/endpoint'
 
 export const placeMultiBet: APIHandler<'multi-bet'> = async (props, auth) => {
   const isApi = auth.creds.kind === 'key'
@@ -97,7 +97,9 @@ export const placeMultiBetMain = async (
         undefined,
         betGroupId,
         deterministic,
-        i === 0
+        i === 0,
+        false,
+        true
       )
       results.push(result)
     }
