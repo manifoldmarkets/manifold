@@ -1,11 +1,11 @@
 import Link from 'next/link'
 
-import { Col } from '../layout/col'
-import { useLeagueInfo } from 'web/hooks/use-leagues'
-import { DIVISION_NAMES } from 'common/leagues'
-import { dailyStatsClass } from 'web/components/home/daily-stats'
 import clsx from 'clsx'
+import { DIVISION_NAMES, getLeaguePath } from 'common/leagues'
+import { dailyStatsClass } from 'web/components/home/daily-stats'
+import { useLeagueInfo } from 'web/hooks/use-leagues'
 import { track } from 'web/lib/service/analytics'
+import { Col } from '../layout/col'
 
 export const DailyLeagueStat = (props: {
   userId: string | null | undefined
@@ -21,7 +21,12 @@ export const DailyLeagueStat = (props: {
   return (
     <Link
       prefetch={false}
-      href="/leagues"
+      href={getLeaguePath(
+        info.season,
+        info.division,
+        info.cohort,
+        userId ?? undefined
+      )}
       onClick={() => track('click daily leagues button')}
     >
       <Col
