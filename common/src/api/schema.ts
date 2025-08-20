@@ -1293,7 +1293,7 @@ export const API = (_apiTypeCheck = {
       })
       .strict(),
   },
-  'unlist-and-cancel-user-contracts': {
+  'super-ban-user': {
     method: 'POST',
     visibility: 'undocumented',
     authed: true,

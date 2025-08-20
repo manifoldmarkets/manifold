@@ -128,8 +128,8 @@ import { searchGroups, searchMyGroups } from './search-groups'
 import { searchUsers } from './search-users'
 import { sellShares } from './sell-shares'
 import { setnews } from './set-news'
+import { superBanUser } from './super-ban-user'
 import { toggleSystemTradingStatus } from './toggle-system-status'
-import { unlistAndCancelUserContracts } from './unlist-and-cancel-user-contracts'
 import { unresolve } from './unresolve'
 import { updateMe } from './update-me'
 import { updateModReport } from './update-mod-report'
@@ -280,7 +280,7 @@ export const handlers: { [k in APIPath]: APIHandler<k> } = {
   'request-loan': requestLoan,
   'get-related-markets': getRelatedMarkets,
   'get-related-markets-by-group': getRelatedMarketsByGroup,
-  'unlist-and-cancel-user-contracts': unlistAndCancelUserContracts,
+  'super-ban-user': superBanUser,
   'get-boost-analytics': getBoostAnalytics,
   'set-news': setnews,
   'search-groups': searchGroups,
