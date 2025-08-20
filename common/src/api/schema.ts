@@ -269,7 +269,7 @@ export const API = (_apiTypeCheck = {
   },
   'multi-bet': {
     method: 'POST',
-    visibility: 'undocumented',
+    visibility: 'public',
     authed: true,
     returns: [] as (CandidateBet & { betId: string })[],
     props: z
@@ -285,7 +285,7 @@ export const API = (_apiTypeCheck = {
   },
   'multi-sell': {
     method: 'POST',
-    visibility: 'undocumented',
+    visibility: 'public',
     authed: true,
     returns: [] as (CandidateBet & { betId: string })[],
     props: z
