@@ -1,7 +1,10 @@
-import dayjs from 'dayjs'
-import { capitalize, clamp } from 'lodash'
-import { useEffect, useRef, useState } from 'react'
-import { LimitBet } from 'common/bet'
+import { SelectorIcon } from '@heroicons/react/solid'
+import { useEvent } from 'client-common/hooks/use-event'
+import { getLimitBetReturns, MultiBetProps } from 'client-common/lib/bet'
+import clsx from 'clsx'
+import { APIParams } from 'common/api/schema'
+import { APIError } from 'common/api/utils'
+import { Bet, LimitBet } from 'common/bet'
 import { getProbability } from 'common/calculate'
 import {
   getBinaryMCProb,
@@ -9,37 +12,33 @@ import {
   MarketContract,
   MultiContract,
 } from 'common/contract'
+import { TRADE_TERM } from 'common/envs/constants'
+import { CandidateBet } from 'common/new-bet'
+import { getPseudoProbability } from 'common/pseudo-numeric'
 import { formatOutcomeLabel, formatPercent } from 'common/util/format'
+import { removeUndefinedProps } from 'common/util/object'
 import { DAY_MS, HOUR_MS, MINUTE_MS, MONTH_MS, WEEK_MS } from 'common/util/time'
+import dayjs from 'dayjs'
+import { capitalize, clamp } from 'lodash'
+import { useEffect, useRef, useState } from 'react'
+import { LuShare } from 'react-icons/lu'
 import { Input } from 'web/components/widgets/input'
+import { usePersistentLocalState } from 'web/hooks/use-persistent-local-state'
+import { api } from 'web/lib/api/api'
 import { firebaseLogin, User } from 'web/lib/firebase/users'
+import { track, withTracking } from 'web/lib/service/analytics'
 import { Button } from '../buttons/button'
+import { getAnswerColor } from '../charts/contract/choice'
 import { Col } from '../layout/col'
 import { Row } from '../layout/row'
 import { BinaryOutcomeLabel, PseudoNumericOutcomeLabel } from '../outcome-label'
 import { BuyAmountInput } from '../widgets/amount-input'
-import { getPseudoProbability } from 'common/pseudo-numeric'
-import { track, withTracking } from 'web/lib/service/analytics'
-import { APIError } from 'common/api/utils'
-import { removeUndefinedProps } from 'common/util/object'
-import { api } from 'web/lib/api/api'
-import clsx from 'clsx'
-import { getAnswerColor } from '../charts/contract/choice'
-import { MoneyDisplay } from './money-display'
-import { TRADE_TERM } from 'common/envs/constants'
-import { sliderColors } from '../widgets/slider'
-import { ProbabilitySlider } from '../widgets/probability-input'
-import { usePersistentLocalState } from 'web/hooks/use-persistent-local-state'
-import { APIParams } from 'common/api/schema'
-import { getLimitBetReturns, MultiBetProps } from 'client-common/lib/bet'
 import DropdownMenu from '../widgets/dropdown-menu'
-import { SelectorIcon } from '@heroicons/react/solid'
 import { InfoTooltip } from '../widgets/info-tooltip'
-import { LuShare } from 'react-icons/lu'
+import { ProbabilitySlider } from '../widgets/probability-input'
+import { sliderColors } from '../widgets/slider'
+import { MoneyDisplay } from './money-display'
 import { ShareBetModal } from './share-bet'
-import { Bet } from 'common/bet'
-import { useEvent } from 'client-common/hooks/use-event'
-import { CandidateBet } from 'common/new-bet'
 
 const expirationOptions = [
   { label: 'Never expires', value: 0 },
@@ -208,6 +207,20 @@ export default function LimitOrderPanel(props: {
     setBetAmount(newAmount)
   }
 
+  const setLimitProbIntClamped = (val: number | undefined) => {
+    if (val === undefined) {
+      setLimitProbInt(undefined)
+      return
+    }
+    if (isPseudoNumeric) {
+      const minVal = contract.min
+      const maxVal = contract.max
+      setLimitProbInt(clamp(val, minVal, maxVal))
+    } else {
+      setLimitProbInt(clamp(val, 1, 99))
+    }
+  }
+
   async function submitBet() {
     if (!user || betDisabled) return
 
@@ -334,17 +347,15 @@ export default function LimitOrderPanel(props: {
           <label className="font-sm md:font-lg relative w-full">
             <Input
               type="number"
-              min={0}
-              max={100}
+              min={isPseudoNumeric ? contract.min : 1}
+              max={isPseudoNumeric ? contract.max : 99}
               step={1}
               className="h-[60px] w-full !text-xl"
               value={limitProbInt ?? ''}
               onChange={(e) => {
                 const val =
                   e.target.value === '' ? undefined : Number(e.target.value)
-                if (val === undefined || (val >= 0 && val <= 100)) {
-                  setLimitProbInt(val)
-                }
+                setLimitProbIntClamped(val)
               }}
             />
             <Row className="absolute right-2 top-3.5 gap-1.5 sm:gap-2">
@@ -352,7 +363,7 @@ export default function LimitOrderPanel(props: {
                 className="hover:bg-ink-200 bg-canvas-100 rounded-md px-2 py-1.5 text-sm sm:px-3"
                 onClick={() => {
                   if (limitProbInt !== undefined) {
-                    setLimitProbInt(limitProbInt - 5)
+                    setLimitProbIntClamped(limitProbInt - 5)
                   }
                 }}
               >
@@ -362,7 +373,7 @@ export default function LimitOrderPanel(props: {
                 className="hover:bg-ink-200 bg-canvas-100 rounded-md px-2 py-1.5 text-sm sm:px-3"
                 onClick={() => {
                   if (limitProbInt !== undefined) {
-                    setLimitProbInt(limitProbInt - 1)
+                    setLimitProbIntClamped(limitProbInt - 1)
                   }
                 }}
               >
@@ -372,7 +383,7 @@ export default function LimitOrderPanel(props: {
                 className="hover:bg-ink-200 bg-canvas-100 rounded-md px-2 py-1.5 text-sm sm:px-3"
                 onClick={() => {
                   if (limitProbInt !== undefined) {
-                    setLimitProbInt(limitProbInt + 1)
+                    setLimitProbIntClamped(limitProbInt + 1)
                   }
                 }}
               >
@@ -382,7 +393,7 @@ export default function LimitOrderPanel(props: {
                 className="hover:bg-ink-200 bg-canvas-100 rounded-md px-2 py-1.5 text-sm sm:px-3"
                 onClick={() => {
                   if (limitProbInt !== undefined) {
-                    setLimitProbInt(limitProbInt + 5)
+                    setLimitProbIntClamped(limitProbInt + 5)
                   }
                 }}
               >
@@ -394,7 +405,7 @@ export default function LimitOrderPanel(props: {
 
         <ProbabilitySlider
           prob={limitProbInt}
-          onProbChange={setLimitProbInt}
+          onProbChange={setLimitProbIntClamped}
           disabled={isSubmitting}
           color={pseudonymColor}
           outcome={isBinaryMC ? 'YES' : outcome}
