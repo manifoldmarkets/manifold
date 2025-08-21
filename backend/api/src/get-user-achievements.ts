@@ -132,8 +132,8 @@ export const getUserAchievements: APIHandler<'get-user-achievements'> = async ({
         coalesce(trades.total_trades_count, 0) as total_trades_count,
         coalesce(markets_created.total_markets_created, 0) as total_markets_created,
         coalesce(account_age.account_age_years, 0) as account_age_years,
-        coalesce(trade_stats.profitable_trades_count, 0) as profitable_trades_count,
-        coalesce(trade_stats.unprofitable_trades_count, 0) as unprofitable_trades_count,
+        coalesce(trade_stats.profitable_trades_count, 0) as profitable_markets_count,
+        coalesce(trade_stats.unprofitable_trades_count, 0) as unprofitable_markets_count,
         coalesce(trade_stats.largest_profitable_trade_value, 0) as largest_profitable_trade_value,
         coalesce(trade_stats.largest_unprofitable_trade_value, 0) as largest_unprofitable_trade_value,
         coalesce(streak.current_betting_streak, 0) as current_betting_streak,
@@ -182,8 +182,8 @@ export const getUserAchievements: APIHandler<'get-user-achievements'> = async ({
     totalTradesCount: Number(result?.total_trades_count ?? 0),
     totalMarketsCreated: Number(result?.total_markets_created ?? 0),
     accountAgeYears: Number(result?.account_age_years ?? 0),
-    profitableTradesCount: Number(result?.profitable_trades_count ?? 0),
-    unprofitableTradesCount: Number(result?.unprofitable_trades_count ?? 0),
+    profitableMarketsCount: Number(result?.profitable_markets_count ?? 0),
+    unprofitableMarketsCount: Number(result?.unprofitable_markets_count ?? 0),
     largestProfitableTradeValue: Number(
       result?.largest_profitable_trade_value ?? 0
     ),

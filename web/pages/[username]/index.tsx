@@ -572,8 +572,8 @@ function AchievementsSection(props: { userId: string }) {
     totalTradesCount: number
     totalMarketsCreated: number
     accountAgeYears: number
-    profitableTradesCount: number
-    unprofitableTradesCount: number
+    profitableMarketsCount: number
+    unprofitableMarketsCount: number
     largestProfitableTradeValue: number
     largestUnprofitableTradeValue: number
     currentBettingStreak: number
@@ -646,12 +646,12 @@ function AchievementsSection(props: { userId: string }) {
           value={formatMoney(data.totalLiquidityCreatedMarkets, 'MANA')}
         />
         <AchievementsStatCard
-          label="Profitable trades"
-          value={formatWithCommas(data.profitableTradesCount)}
+          label="Profitable markets"
+          value={formatWithCommas(data.profitableMarketsCount)}
         />
         <AchievementsStatCard
-          label="Unprofitable trades"
-          value={formatWithCommas(data.unprofitableTradesCount)}
+          label="Unprofitable markets"
+          value={formatWithCommas(data.unprofitableMarketsCount)}
         />
         <AchievementsStatCard
           label="Largest profitable trade"

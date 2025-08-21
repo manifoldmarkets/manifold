@@ -2004,8 +2004,8 @@ export const API = (_apiTypeCheck = {
       totalTradesCount: number
       totalMarketsCreated: number
       accountAgeYears: number
-      profitableTradesCount: number
-      unprofitableTradesCount: number
+      profitableMarketsCount: number
+      unprofitableMarketsCount: number
       largestProfitableTradeValue: number
       largestUnprofitableTradeValue: number
       currentBettingStreak: number
