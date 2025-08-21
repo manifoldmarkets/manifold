@@ -43,6 +43,19 @@ import { updateStatsCore } from './update-stats'
 export function createJobs() {
   return [
     createJob(
+      'refresh-achievement-mvs',
+      '0 */15 * * * *', // every 15 minutes
+      async () => {
+        const { createSupabaseDirectClient } = await import(
+          'shared/supabase/init'
+        )
+        const pg = createSupabaseDirectClient()
+        await pg.none(
+          'REFRESH MATERIALIZED VIEW CONCURRENTLY mv_user_achievement_stats'
+        )
+      }
+    ),
+    createJob(
       'auto-leagues-cycle',
       '0 */10 * * * *', // every 10 minutes
       autoLeaguesCycle

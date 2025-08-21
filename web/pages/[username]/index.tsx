@@ -582,6 +582,34 @@ function AchievementsSection(props: { userId: string }) {
     highestInvestedMana: number
     highestNetworthMana: number
     highestLoanMana: number
+    ranks: {
+      volume: { rank: number | null; percentile: number | null }
+      trades: { rank: number | null; percentile: number | null }
+      marketsCreated: { rank: number | null; percentile: number | null }
+      comments: { rank: number | null; percentile: number | null }
+      seasonsMasters: { rank: number | null; percentile: number | null }
+      seasonsRank1ByCohort: { rank: number | null; percentile: number | null }
+      seasonsRank1Masters: { rank: number | null; percentile: number | null }
+      largestLeagueSeasonEarnings: {
+        rank: number | null
+        percentile: number | null
+      }
+      liquidity: { rank: number | null; percentile: number | null }
+      profitableMarkets: { rank: number | null; percentile: number | null }
+      unprofitableMarkets: { rank: number | null; percentile: number | null }
+      largestProfitableTrade: {
+        rank: number | null
+        percentile: number | null
+      }
+      largestUnprofitableTrade: {
+        rank: number | null
+        percentile: number | null
+      }
+      highestBalance: { rank: number | null; percentile: number | null }
+      highestInvested: { rank: number | null; percentile: number | null }
+      highestNetworth: { rank: number | null; percentile: number | null }
+      highestLoan: { rank: number | null; percentile: number | null }
+    }
   } | null>(null)
 
   useEffect(() => {
@@ -628,6 +656,8 @@ function AchievementsSection(props: { userId: string }) {
         <AchievementsStatCard
           label="Total volume (MANA)"
           value={formatMoney(data.totalVolumeMana, 'MANA')}
+          rank={data.ranks?.volume?.rank ?? null}
+          percentile={data.ranks?.volume?.percentile ?? null}
         />
         <AchievementsStatCard
           label="Total referrals"
@@ -644,22 +674,32 @@ function AchievementsSection(props: { userId: string }) {
         <AchievementsStatCard
           label="Total liquidity on created markets"
           value={formatMoney(data.totalLiquidityCreatedMarkets, 'MANA')}
+          rank={data.ranks?.liquidity?.rank ?? null}
+          percentile={data.ranks?.liquidity?.percentile ?? null}
         />
         <AchievementsStatCard
           label="Profitable markets"
           value={formatWithCommas(data.profitableMarketsCount)}
+          rank={data.ranks?.profitableMarkets?.rank ?? null}
+          percentile={data.ranks?.profitableMarkets?.percentile ?? null}
         />
         <AchievementsStatCard
           label="Unprofitable markets"
           value={formatWithCommas(data.unprofitableMarketsCount)}
+          rank={data.ranks?.unprofitableMarkets?.rank ?? null}
+          percentile={data.ranks?.unprofitableMarkets?.percentile ?? null}
         />
         <AchievementsStatCard
           label="Largest profitable trade"
           value={formatMoney(data.largestProfitableTradeValue, 'MANA')}
+          rank={data.ranks?.largestProfitableTrade?.rank ?? null}
+          percentile={data.ranks?.largestProfitableTrade?.percentile ?? null}
         />
         <AchievementsStatCard
           label="Largest unprofitable trade"
           value={formatMoney(data.largestUnprofitableTradeValue, 'MANA')}
+          rank={data.ranks?.largestUnprofitableTrade?.rank ?? null}
+          percentile={data.ranks?.largestUnprofitableTrade?.percentile ?? null}
         />
         <AchievementsStatCard
           label="Seasons Gold+"
@@ -676,46 +716,70 @@ function AchievementsSection(props: { userId: string }) {
         <AchievementsStatCard
           label="Seasons Masters"
           value={formatWithCommas(data.seasonsMasters)}
+          rank={data.ranks?.seasonsMasters?.rank ?? null}
+          percentile={data.ranks?.seasonsMasters?.percentile ?? null}
         />
         <AchievementsStatCard
           label="Seasons finished Rank 1"
           value={formatWithCommas(data.seasonsRank1ByCohort)}
+          rank={data.ranks?.seasonsRank1ByCohort?.rank ?? null}
+          percentile={data.ranks?.seasonsRank1ByCohort?.percentile ?? null}
         />
         <AchievementsStatCard
           label="Seasons finished Rank 1 (Masters)"
           value={formatWithCommas(data.seasonsRank1Masters)}
+          rank={data.ranks?.seasonsRank1Masters?.rank ?? null}
+          percentile={data.ranks?.seasonsRank1Masters?.percentile ?? null}
         />
         <AchievementsStatCard
           label="Largest league season earnings"
           value={formatMoney(data.largestLeagueSeasonEarnings, 'MANA')}
+          rank={data.ranks?.largestLeagueSeasonEarnings?.rank ?? null}
+          percentile={
+            data.ranks?.largestLeagueSeasonEarnings?.percentile ?? null
+          }
         />
         <AchievementsStatCard
           label="Highest balance"
           value={formatMoney(data.highestBalanceMana, 'MANA')}
+          rank={data.ranks?.highestBalance?.rank ?? null}
+          percentile={data.ranks?.highestBalance?.percentile ?? null}
         />
         <AchievementsStatCard
           label="Highest net worth"
           value={formatMoney(data.highestNetworthMana, 'MANA')}
+          rank={data.ranks?.highestNetworth?.rank ?? null}
+          percentile={data.ranks?.highestNetworth?.percentile ?? null}
         />
         <AchievementsStatCard
           label="Highest invested"
           value={formatMoney(data.highestInvestedMana, 'MANA')}
+          rank={data.ranks?.highestInvested?.rank ?? null}
+          percentile={data.ranks?.highestInvested?.percentile ?? null}
         />
         <AchievementsStatCard
           label="Highest loaned"
           value={formatMoney(data.highestLoanMana, 'MANA')}
+          rank={data.ranks?.highestLoan?.rank ?? null}
+          percentile={data.ranks?.highestLoan?.percentile ?? null}
         />
         <AchievementsStatCard
           label="Comments made"
           value={formatWithCommas(data.numberOfComments)}
+          rank={data.ranks?.comments?.rank ?? null}
+          percentile={data.ranks?.comments?.percentile ?? null}
         />
         <AchievementsStatCard
           label="Total trades"
           value={formatWithCommas(data.totalTradesCount)}
+          rank={data.ranks?.trades?.rank ?? null}
+          percentile={data.ranks?.trades?.percentile ?? null}
         />
         <AchievementsStatCard
           label="Markets created"
           value={formatWithCommas(data.totalMarketsCreated)}
+          rank={data.ranks?.marketsCreated?.rank ?? null}
+          percentile={data.ranks?.marketsCreated?.percentile ?? null}
         />
         <AchievementsStatCard
           label="Account age (years)"
@@ -730,12 +794,21 @@ function AchievementsSection(props: { userId: string }) {
   )
 }
 
-function AchievementsStatCard(props: { label: string; value: string }) {
-  const { label, value } = props
+function AchievementsStatCard(props: {
+  label: string
+  value: string
+  rank?: number | null
+  percentile?: number | null
+}) {
+  const { label, value, rank, percentile } = props
   return (
     <Col className="bg-canvas-0 border-ink-200 min-w-[14rem] flex-1 rounded-md border p-4">
       <div className="text-ink-600 text-sm">{label}</div>
       <div className="text-ink-900 text-xl font-semibold">{value}</div>
+      <div className="text-ink-600 mt-1 text-xs">
+        Rank: {rank ?? 'N/A'} • Percentile:{' '}
+        {percentile != null ? `${percentile.toFixed(1)}%` : 'N/A'}
+      </div>
     </Col>
   )
 }

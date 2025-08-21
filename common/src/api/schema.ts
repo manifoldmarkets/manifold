@@ -2014,6 +2014,34 @@ export const API = (_apiTypeCheck = {
       highestInvestedMana: number
       highestNetworthMana: number
       highestLoanMana: number
+      ranks: {
+        volume: { rank: number | null; percentile: number | null }
+        trades: { rank: number | null; percentile: number | null }
+        marketsCreated: { rank: number | null; percentile: number | null }
+        comments: { rank: number | null; percentile: number | null }
+        seasonsMasters: { rank: number | null; percentile: number | null }
+        seasonsRank1ByCohort: { rank: number | null; percentile: number | null }
+        seasonsRank1Masters: { rank: number | null; percentile: number | null }
+        largestLeagueSeasonEarnings: {
+          rank: number | null
+          percentile: number | null
+        }
+        liquidity: { rank: number | null; percentile: number | null }
+        profitableMarkets: { rank: number | null; percentile: number | null }
+        unprofitableMarkets: { rank: number | null; percentile: number | null }
+        largestProfitableTrade: {
+          rank: number | null
+          percentile: number | null
+        }
+        largestUnprofitableTrade: {
+          rank: number | null
+          percentile: number | null
+        }
+        highestBalance: { rank: number | null; percentile: number | null }
+        highestInvested: { rank: number | null; percentile: number | null }
+        highestNetworth: { rank: number | null; percentile: number | null }
+        highestLoan: { rank: number | null; percentile: number | null }
+      }
     },
     props: z
       .object({
