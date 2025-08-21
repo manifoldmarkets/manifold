@@ -62,6 +62,7 @@ import { db } from 'web/lib/supabase/db'
 import { getAverageUserRating, getUserRating } from 'web/lib/supabase/reviews'
 import Custom404 from 'web/pages/404'
 import { UserPayments } from 'web/pages/payments'
+import { formatMoney, formatWithCommas } from 'common/util/format'
 
 export const getStaticProps = async (props: {
   params: {
@@ -427,6 +428,17 @@ function UserProfile(props: {
                 ),
               },
               {
+                title: 'Achievements',
+                prerender: true,
+                stackedTabIcon: <TrophyIcon className="h-5" />,
+                content: (
+                  <>
+                    <Spacer h={4} />
+                    <AchievementsSection userId={user.id} />
+                  </>
+                ),
+              },
+              {
                 title: 'Balance log',
                 stackedTabIcon: <ViewListIcon className="h-5" />,
                 content: <BalanceChangeTable user={user} />,
@@ -535,6 +547,196 @@ function ProfilePublicStats(props: {
         setIsOpen={setFollowsOpen}
       />
     </Row>
+  )
+}
+
+function AchievementsSection(props: { userId: string }) {
+  const { userId } = props
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
+  const [data, setData] = useState<{
+    userId: string
+    totalProfitMana: number
+    creatorTraders: number
+    totalReferrals: number
+    totalReferredProfitMana: number
+    totalVolumeMana: number
+    seasonsGoldOrHigher: number
+    seasonsPlatinumOrHigher: number
+    seasonsDiamondOrHigher: number
+    seasonsMasters: number
+    seasonsRank1ByCohort: number
+    seasonsRank1Masters: number
+    numberOfComments: number
+    totalLiquidityCreatedMarkets: number
+    totalTradesCount: number
+    totalMarketsCreated: number
+    accountAgeYears: number
+    profitableTradesCount: number
+    unprofitableTradesCount: number
+    largestProfitableTradeValue: number
+    largestUnprofitableTradeValue: number
+    currentBettingStreak: number
+    largestLeagueSeasonEarnings: number
+    highestBalanceMana: number
+    highestInvestedMana: number
+    highestNetworthMana: number
+    highestLoanMana: number
+  } | null>(null)
+
+  useEffect(() => {
+    let isMounted = true
+    setLoading(true)
+    setError(null)
+    unauthedApi('get-user-achievements', { userId })
+      .then((resp) => {
+        if (!isMounted) return
+        setData(resp)
+      })
+      .catch((e) => {
+        if (!isMounted) return
+        setError(e?.message ?? 'Failed to load achievements')
+      })
+      .finally(() => {
+        if (!isMounted) return
+        setLoading(false)
+      })
+    return () => {
+      isMounted = false
+    }
+  }, [userId])
+
+  if (loading) {
+    return (
+      <Row className="text-ink-600 items-center gap-2">
+        <span>Loading achievements…</span>
+      </Row>
+    )
+  }
+  if (error) {
+    return <div className="text-error">{error}</div>
+  }
+  if (!data) return null
+
+  return (
+    <Col className="gap-3">
+      <Row className="flex-wrap gap-3">
+        <AchievementsStatCard
+          label="Total profit (MANA)"
+          value={formatMoney(data.totalProfitMana, 'MANA')}
+        />
+        <AchievementsStatCard
+          label="Total volume (MANA)"
+          value={formatMoney(data.totalVolumeMana, 'MANA')}
+        />
+        <AchievementsStatCard
+          label="Total referrals"
+          value={formatWithCommas(data.totalReferrals)}
+        />
+        <AchievementsStatCard
+          label="Referred profit (MANA)"
+          value={formatMoney(data.totalReferredProfitMana, 'MANA')}
+        />
+        <AchievementsStatCard
+          label="Creator traders"
+          value={formatWithCommas(data.creatorTraders)}
+        />
+        <AchievementsStatCard
+          label="Total liquidity on created markets"
+          value={formatMoney(data.totalLiquidityCreatedMarkets, 'MANA')}
+        />
+        <AchievementsStatCard
+          label="Profitable trades"
+          value={formatWithCommas(data.profitableTradesCount)}
+        />
+        <AchievementsStatCard
+          label="Unprofitable trades"
+          value={formatWithCommas(data.unprofitableTradesCount)}
+        />
+        <AchievementsStatCard
+          label="Largest profitable trade"
+          value={formatMoney(data.largestProfitableTradeValue, 'MANA')}
+        />
+        <AchievementsStatCard
+          label="Largest unprofitable trade"
+          value={formatMoney(data.largestUnprofitableTradeValue, 'MANA')}
+        />
+        <AchievementsStatCard
+          label="Seasons Gold+"
+          value={formatWithCommas(data.seasonsGoldOrHigher)}
+        />
+        <AchievementsStatCard
+          label="Seasons Platinum+"
+          value={formatWithCommas(data.seasonsPlatinumOrHigher)}
+        />
+        <AchievementsStatCard
+          label="Seasons Diamond+"
+          value={formatWithCommas(data.seasonsDiamondOrHigher)}
+        />
+        <AchievementsStatCard
+          label="Seasons Masters"
+          value={formatWithCommas(data.seasonsMasters)}
+        />
+        <AchievementsStatCard
+          label="Seasons finished Rank 1"
+          value={formatWithCommas(data.seasonsRank1ByCohort)}
+        />
+        <AchievementsStatCard
+          label="Seasons finished Rank 1 (Masters)"
+          value={formatWithCommas(data.seasonsRank1Masters)}
+        />
+        <AchievementsStatCard
+          label="Largest league season earnings"
+          value={formatMoney(data.largestLeagueSeasonEarnings, 'MANA')}
+        />
+        <AchievementsStatCard
+          label="Highest balance"
+          value={formatMoney(data.highestBalanceMana, 'MANA')}
+        />
+        <AchievementsStatCard
+          label="Highest net worth"
+          value={formatMoney(data.highestNetworthMana, 'MANA')}
+        />
+        <AchievementsStatCard
+          label="Highest invested"
+          value={formatMoney(data.highestInvestedMana, 'MANA')}
+        />
+        <AchievementsStatCard
+          label="Highest loaned"
+          value={formatMoney(data.highestLoanMana, 'MANA')}
+        />
+        <AchievementsStatCard
+          label="Comments made"
+          value={formatWithCommas(data.numberOfComments)}
+        />
+        <AchievementsStatCard
+          label="Total trades"
+          value={formatWithCommas(data.totalTradesCount)}
+        />
+        <AchievementsStatCard
+          label="Markets created"
+          value={formatWithCommas(data.totalMarketsCreated)}
+        />
+        <AchievementsStatCard
+          label="Account age (years)"
+          value={data.accountAgeYears.toFixed(2)}
+        />
+        <AchievementsStatCard
+          label="Current daily streak"
+          value={formatWithCommas(data.currentBettingStreak)}
+        />
+      </Row>
+    </Col>
+  )
+}
+
+function AchievementsStatCard(props: { label: string; value: string }) {
+  const { label, value } = props
+  return (
+    <Col className="bg-canvas-0 border-ink-200 min-w-[14rem] flex-1 rounded-md border p-4">
+      <div className="text-ink-600 text-sm">{label}</div>
+      <div className="text-ink-900 text-xl font-semibold">{value}</div>
+    </Col>
   )
 }
 

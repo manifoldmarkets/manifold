@@ -1981,6 +1981,46 @@ export const API = (_apiTypeCheck = {
     returns: {} as { isSportsInterested: boolean },
     props: z.object({}).strict(),
   },
+  'get-user-achievements': {
+    method: 'GET',
+    visibility: 'public',
+    authed: false,
+    cache: LIGHT_CACHE_STRATEGY,
+    returns: {} as {
+      userId: string
+      totalProfitMana: number
+      creatorTraders: number
+      totalReferrals: number
+      totalReferredProfitMana: number
+      totalVolumeMana: number
+      seasonsGoldOrHigher: number
+      seasonsPlatinumOrHigher: number
+      seasonsDiamondOrHigher: number
+      seasonsMasters: number
+      seasonsRank1ByCohort: number
+      seasonsRank1Masters: number
+      numberOfComments: number
+      totalLiquidityCreatedMarkets: number
+      totalTradesCount: number
+      totalMarketsCreated: number
+      accountAgeYears: number
+      profitableTradesCount: number
+      unprofitableTradesCount: number
+      largestProfitableTradeValue: number
+      largestUnprofitableTradeValue: number
+      currentBettingStreak: number
+      largestLeagueSeasonEarnings: number
+      highestBalanceMana: number
+      highestInvestedMana: number
+      highestNetworthMana: number
+      highestLoanMana: number
+    },
+    props: z
+      .object({
+        userId: z.string(),
+      })
+      .strict(),
+  },
   'get-site-activity': {
     method: 'GET',
     visibility: 'public',
