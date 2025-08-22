@@ -1997,8 +1997,6 @@ export const API = (_apiTypeCheck = {
       seasonsPlatinumOrHigher: number
       seasonsDiamondOrHigher: number
       seasonsMasters: number
-      seasonsRank1ByCohort: number
-      seasonsRank1Masters: number
       numberOfComments: number
       totalLiquidityCreatedMarkets: number
       totalTradesCount: number
@@ -2020,8 +2018,6 @@ export const API = (_apiTypeCheck = {
         marketsCreated: { rank: number | null; percentile: number | null }
         comments: { rank: number | null; percentile: number | null }
         seasonsMasters: { rank: number | null; percentile: number | null }
-        seasonsRank1ByCohort: { rank: number | null; percentile: number | null }
-        seasonsRank1Masters: { rank: number | null; percentile: number | null }
         largestLeagueSeasonEarnings: {
           rank: number | null
           percentile: number | null

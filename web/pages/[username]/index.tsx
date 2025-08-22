@@ -78,7 +78,6 @@ import {
   TbSparkles,
   TbDiamond,
   TbCrown,
-  TbCircleNumber1,
   TbAward,
   TbCoins,
   TbWallet,
@@ -108,8 +107,6 @@ const ACHIEVEMENT_ICONS: Record<string, IconType> = {
   seasonsPlatinumOrHigher: TbSparkles,
   seasonsDiamondOrHigher: TbDiamond,
   seasonsMasters: TbCrown,
-  seasonsRank1ByCohort: TbCircleNumber1,
-  seasonsRank1Masters: TbAward,
   largestLeagueSeasonEarnings: TbCoins,
   highestBalanceMana: TbWallet,
   highestNetworthMana: TbMountain,
@@ -623,8 +620,6 @@ function AchievementsSection(props: { userId: string }) {
     seasonsPlatinumOrHigher: number
     seasonsDiamondOrHigher: number
     seasonsMasters: number
-    seasonsRank1ByCohort: number
-    seasonsRank1Masters: number
     numberOfComments: number
     totalLiquidityCreatedMarkets: number
     totalTradesCount: number
@@ -646,8 +641,6 @@ function AchievementsSection(props: { userId: string }) {
       marketsCreated: { rank: number | null; percentile: number | null }
       comments: { rank: number | null; percentile: number | null }
       seasonsMasters: { rank: number | null; percentile: number | null }
-      seasonsRank1ByCohort: { rank: number | null; percentile: number | null }
-      seasonsRank1Masters: { rank: number | null; percentile: number | null }
       largestLeagueSeasonEarnings: {
         rank: number | null
         percentile: number | null
@@ -819,22 +812,7 @@ function AchievementsSection(props: { userId: string }) {
       rank: r(data.ranks?.seasonsMasters),
       percentile: p(data.ranks?.seasonsMasters),
     },
-    {
-      id: 'seasonsRank1ByCohort',
-      title: 'Cohort Champion',
-      desc: 'Seasons finished Rank #1 in cohort.',
-      value: formatWithCommas(data.seasonsRank1ByCohort),
-      rank: r(data.ranks?.seasonsRank1ByCohort),
-      percentile: p(data.ranks?.seasonsRank1ByCohort),
-    },
-    {
-      id: 'seasonsRank1Masters',
-      title: 'Beat The Game',
-      desc: 'Seasons finished Rank #1 in Masters.',
-      value: formatWithCommas(data.seasonsRank1Masters),
-      rank: r(data.ranks?.seasonsRank1Masters),
-      percentile: p(data.ranks?.seasonsRank1Masters),
-    },
+
     {
       id: 'largestLeagueSeasonEarnings',
       title: 'Sensational Season',
