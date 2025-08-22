@@ -1,101 +1,87 @@
-import { Contract } from 'common/contract'
-import { getPrivateUser, getUser, isProd } from 'shared/utils'
-import { createMarketClosedNotification } from 'shared/create-notification'
-import { DAY_MS } from 'common/util/time'
-import { convertContract } from 'common/supabase/contracts'
-import { createSupabaseDirectClient } from 'shared/supabase/init'
-import { bulkUpdate, bulkUpdateData } from 'shared/supabase/utils'
 import { HOUSE_LIQUIDITY_PROVIDER_ID } from 'common/antes'
+import { Contract } from 'common/contract'
+import { convertContract } from 'common/supabase/contracts'
+import { DAY_MS } from 'common/util/time'
+import { createMarketClosedNotification } from 'shared/create-notification'
+import { updateContract } from 'shared/supabase/contracts'
+import { createSupabaseDirectClient } from 'shared/supabase/init'
+import { getUserAndPrivateUserOrThrow, isProd, log } from 'shared/utils'
 
 const SEND_NOTIFICATIONS_EVERY_DAYS = 5
-
 export async function sendMarketCloseEmails() {
   if (!isProd()) {
-    console.log('Not prod, not sending emails')
+    log('Not prod, not sending emails')
     return
   }
+  const manifoldLoveUserId = 'tRZZ6ihugZQLXPf6aPRneGpWLmz1'
 
   const pg = createSupabaseDirectClient()
-  const contracts = await pg.tx(async (tx) => {
-    const contracts = await tx.map(
-      `select * from contracts where
+  const contracts = await pg.map(
+    `select * from contracts where
       resolution_time is null and close_time < now()
-      and outcome_type not in ('POLL', 'BOUNTIED_QUESTION')`,
-      [],
-      convertContract
-    )
-    console.log(`Found ${contracts.length} closed contracts`)
-    const needsNotification = contracts.filter((contract) =>
-      shouldSendFirstOrFollowUpCloseNotification(contract)
-    )
-    console.log(`Found ${needsNotification.length} notifications to send`)
+      and outcome_type not in ('POLL', 'BOUNTIED_QUESTION')
+      and creator_id != $1`,
+    [manifoldLoveUserId],
+    convertContract
+  )
 
-    await bulkUpdateData(
-      pg,
-      'contracts',
-      needsNotification.map((c) => ({
-        id: c.id,
-        closeEmailsSent: (c.closeEmailsSent ?? 0) + 1,
-      }))
-    )
-    return needsNotification
+  log(`Found ${contracts.length} closed contracts`)
+
+  // Determine which contracts need a close email now (catch up after downtime)
+  const eligibleContracts = contracts.filter((contract) => {
+    const shouldHaveSent = expectedCloseEmailsCount(contract)
+    const alreadySent = contract.closeEmailsSent ?? 0
+    return alreadySent < shouldHaveSent
   })
 
-  for (const contract of contracts) {
-    console.log(
-      'sending close email for',
-      contract.slug,
-      'closed',
-      contract.closeTime
-    )
+  log(`Found ${eligibleContracts.length} notifications to send`)
+  for (const contract of eligibleContracts) {
+    const shouldHaveSent = expectedCloseEmailsCount(contract)
+    // Send the most recent pending period, then catch-up the counter
+    const periodIndexToSend = Math.max(0, shouldHaveSent - 1)
 
-    // TODO: set up a more sensible way to keep track of these?
     const sendToId =
       contract.token === 'CASH'
         ? HOUSE_LIQUIDITY_PROVIDER_ID
         : contract.creatorId
+    const userAndPrivateUser = await getUserAndPrivateUserOrThrow(sendToId)
+    const { user, privateUser } = userAndPrivateUser
 
-    const user = await getUser(sendToId)
-    if (!user) continue
-
-    const privateUser = await getPrivateUser(user.id)
-    if (!privateUser) continue
-
-    await createMarketClosedNotification(
-      contract,
-      user,
-      privateUser,
-      contract.id + '-closed-at-' + contract.closeTime
-    )
+    // Make idempotency key unique per 5-day period since close
+    const idempotencyKey =
+      contract.id +
+      '-closed-at-' +
+      contract.closeTime +
+      '-period-' +
+      periodIndexToSend
+    try {
+      await pg.tx(async (tx) => {
+        await createMarketClosedNotification(
+          contract,
+          user,
+          privateUser,
+          idempotencyKey
+        )
+        // Only mark as sent after successful notification/email send
+        // Catch up immediately to the expected count to avoid sending one per hour
+        await updateContract(tx, contract.id, {
+          closeEmailsSent: shouldHaveSent,
+        })
+      })
+    } catch (e) {
+      console.error('Failed sending close email for', contract.id, e)
+    }
   }
 }
 
-// The downside of this approach is if this function goes down for the entire
-// day of a multiple of the time period after the market has closed, it won't
-// keep sending them notifications bc when it comes back online the time period will have passed
-function shouldSendFirstOrFollowUpCloseNotification(contract: Contract) {
-  if (contract.outcomeType == 'BOUNTIED_QUESTION') return false
-  if (!contract.closeEmailsSent || contract.closeEmailsSent === 0) return true
-  const { closedMultipleOfNDaysAgo, fullTimePeriodsSinceClose } =
-    marketClosedMultipleOfNDaysAgo(contract)
-  return (
-    contract.closeEmailsSent > 0 &&
-    closedMultipleOfNDaysAgo &&
-    contract.closeEmailsSent === fullTimePeriodsSinceClose
-  )
-}
-
-function marketClosedMultipleOfNDaysAgo(contract: Contract) {
+// Send one email immediately on close, then every N days after.
+// If the scheduler was down, we catch up by comparing how many emails should have
+// been sent vs how many were recorded as sent.
+function expectedCloseEmailsCount(contract: Contract) {
   const now = Date.now()
   const closeTime = contract.closeTime
-  if (!closeTime)
-    return { closedMultipleOfNDaysAgo: false, fullTimePeriodsSinceClose: 0 }
+  if (!closeTime) return 0
   const daysSinceClose = Math.floor((now - closeTime) / DAY_MS)
-  return {
-    closedMultipleOfNDaysAgo:
-      daysSinceClose % SEND_NOTIFICATIONS_EVERY_DAYS == 0,
-    fullTimePeriodsSinceClose: Math.floor(
-      daysSinceClose / SEND_NOTIFICATIONS_EVERY_DAYS
-    ),
-  }
+  // +1 accounts for the initial email at day 0
+  return Math.floor(daysSinceClose / SEND_NOTIFICATIONS_EVERY_DAYS) + 1
 }
