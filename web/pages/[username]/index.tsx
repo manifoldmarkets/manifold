@@ -618,198 +618,381 @@ function AchievementsSection(props: { userId: string }) {
     setError(null)
     unauthedApi('get-user-achievements', { userId })
       .then((resp) => {
-        if (!isMounted) return
-        setData(resp)
+        if (isMounted) setData(resp)
       })
       .catch((e) => {
-        if (!isMounted) return
-        setError(e?.message ?? 'Failed to load achievements')
+        if (isMounted) setError(e?.message ?? 'Failed to load achievements')
       })
       .finally(() => {
-        if (!isMounted) return
-        setLoading(false)
+        if (isMounted) setLoading(false)
       })
     return () => {
       isMounted = false
     }
   }, [userId])
 
-  if (loading) {
+  if (loading)
     return (
       <Row className="text-ink-600 items-center gap-2">
-        <span>Loading achievements…</span>
+        Loading achievements…
       </Row>
     )
-  }
-  if (error) {
-    return <div className="text-error">{error}</div>
-  }
+  if (error) return <div className="text-error">{error}</div>
   if (!data) return null
 
+  type Rankish =
+    | { rank: number | null; percentile: number | null }
+    | null
+    | undefined
+
+  const p = (r?: Rankish) => r?.percentile ?? null
+  const r = (r?: Rankish) => r?.rank ?? null
+
+  const ACHS = [
+    {
+      id: 'totalProfitMana',
+      title: 'Profit Legend',
+      desc: 'Total profit earned (MANA).',
+      value: formatMoney(data.totalProfitMana, 'MANA'),
+      rank: null,
+      percentile: null,
+    },
+    {
+      id: 'totalVolumeMana',
+      title: 'Any Whales?',
+      desc: 'Total trading volume (MANA).',
+      value: formatMoney(data.totalVolumeMana, 'MANA'),
+      rank: r(data.ranks?.volume),
+      percentile: p(data.ranks?.volume),
+    },
+    {
+      id: 'totalReferrals',
+      title: 'Hype Conductor',
+      desc: 'Friends you brought to Manifold.',
+      value: formatWithCommas(data.totalReferrals),
+      rank: null,
+      percentile: null,
+    },
+    {
+      id: 'totalReferredProfitMana',
+      title: 'Proud Parent',
+      desc: 'Profit earned by your referrals (MANA).',
+      value: formatMoney(data.totalReferredProfitMana, 'MANA'),
+      rank: null,
+      percentile: null,
+    },
+    {
+      id: 'creatorTraders',
+      title: 'Fan Favorite',
+      desc: 'Unique traders on your markets.',
+      value: formatWithCommas(data.creatorTraders),
+      rank: null,
+      percentile: null,
+    },
+    {
+      id: 'totalLiquidityCreatedMarkets',
+      title: 'Liquidity Backer',
+      desc: 'Mana you’ve provided as liquidity.',
+      value: formatMoney(data.totalLiquidityCreatedMarkets, 'MANA'),
+      rank: r(data.ranks?.liquidity),
+      percentile: p(data.ranks?.liquidity),
+    },
+    {
+      id: 'profitableMarketsCount',
+      title: 'Market Maven',
+      desc: 'Number of markets you made a profit on.',
+      value: formatWithCommas(data.profitableMarketsCount),
+      rank: r(data.ranks?.profitableMarkets),
+      percentile: p(data.ranks?.profitableMarkets),
+    },
+    {
+      id: 'unprofitableMarketsCount',
+      title: 'Learning Labs',
+      desc: 'Number of markets you lost mana on.',
+      value: formatWithCommas(data.unprofitableMarketsCount),
+      rank: r(data.ranks?.unprofitableMarkets),
+      percentile: p(data.ranks?.unprofitableMarkets),
+    },
+    {
+      id: 'largestProfitableTradeValue',
+      title: 'Biggest Win',
+      desc: 'Largest profit made on a single market.',
+      value: formatMoney(data.largestProfitableTradeValue, 'MANA'),
+      rank: r(data.ranks?.largestProfitableTrade),
+      percentile: p(data.ranks?.largestProfitableTrade),
+    },
+    {
+      id: 'largestUnprofitableTradeValue',
+      title: 'Wealth Redistributor',
+      desc: 'Largest loss made on a single market.',
+      value: formatMoney(data.largestUnprofitableTradeValue, 'MANA'),
+      rank: r(data.ranks?.largestUnprofitableTrade),
+      percentile: p(data.ranks?.largestUnprofitableTrade),
+    },
+    {
+      id: 'seasonsGoldOrHigher',
+      title: 'Gleaming Gold',
+      desc: 'Seasons finished Gold or higher.',
+      value: formatWithCommas(data.seasonsGoldOrHigher),
+      rank: null,
+      percentile: null,
+    },
+    {
+      id: 'seasonsPlatinumOrHigher',
+      title: 'Positively Platinum',
+      desc: 'Seasons finished Platinum or higher.',
+      value: formatWithCommas(data.seasonsPlatinumOrHigher),
+      rank: null,
+      percentile: null,
+    },
+    {
+      id: 'seasonsDiamondOrHigher',
+      title: 'Diamond Hands',
+      desc: 'Seasons finished Diamond or higher.',
+      value: formatWithCommas(data.seasonsDiamondOrHigher),
+      rank: null,
+      percentile: null,
+    },
+    {
+      id: 'seasonsMasters',
+      title: 'Master Mind',
+      desc: 'Seasons finished Masters.',
+      value: formatWithCommas(data.seasonsMasters),
+      rank: r(data.ranks?.seasonsMasters),
+      percentile: p(data.ranks?.seasonsMasters),
+    },
+    {
+      id: 'seasonsRank1ByCohort',
+      title: 'Cohort Champion',
+      desc: 'Seasons finished Rank #1 in cohort.',
+      value: formatWithCommas(data.seasonsRank1ByCohort),
+      rank: r(data.ranks?.seasonsRank1ByCohort),
+      percentile: p(data.ranks?.seasonsRank1ByCohort),
+    },
+    {
+      id: 'seasonsRank1Masters',
+      title: 'Beat The Game',
+      desc: 'Seasons finished Rank #1 in Masters.',
+      value: formatWithCommas(data.seasonsRank1Masters),
+      rank: r(data.ranks?.seasonsRank1Masters),
+      percentile: p(data.ranks?.seasonsRank1Masters),
+    },
+    {
+      id: 'largestLeagueSeasonEarnings',
+      title: 'Sensational Season',
+      desc: 'Largest earnings in a single season.',
+      value: formatMoney(data.largestLeagueSeasonEarnings, 'MANA'),
+      rank: r(data.ranks?.largestLeagueSeasonEarnings),
+      percentile: p(data.ranks?.largestLeagueSeasonEarnings),
+    },
+    {
+      id: 'highestBalanceMana',
+      title: 'Scared?',
+      desc: 'Highest balance reached.',
+      value: formatMoney(data.highestBalanceMana, 'MANA'),
+      rank: r(data.ranks?.highestBalance),
+      percentile: p(data.ranks?.highestBalance),
+    },
+    {
+      id: 'highestNetworthMana',
+      title: 'Peak Net Worth',
+      desc: 'Highest net worth reached.',
+      value: formatMoney(data.highestNetworthMana, 'MANA'),
+      rank: r(data.ranks?.highestNetworth),
+      percentile: p(data.ranks?.highestNetworth),
+    },
+    {
+      id: 'highestInvestedMana',
+      title: 'All-In Arc',
+      desc: `Highest amount of mana you've had invested at once.`,
+      value: formatMoney(data.highestInvestedMana, 'MANA'),
+      rank: r(data.ranks?.highestInvested),
+      percentile: p(data.ranks?.highestInvested),
+    },
+    {
+      id: 'highestLoanMana',
+      title: '@Tumbles Wannabe',
+      desc: 'Highest loan used.',
+      value: formatMoney(data.highestLoanMana, 'MANA'),
+      rank: r(data.ranks?.highestLoan),
+      percentile: p(data.ranks?.highestLoan),
+    },
+    {
+      id: 'numberOfComments',
+      title: 'Chatterbox',
+      desc: 'Comments you’ve posted.',
+      value: formatWithCommas(data.numberOfComments),
+      rank: r(data.ranks?.comments),
+      percentile: p(data.ranks?.comments),
+    },
+    {
+      id: 'totalTradesCount',
+      title: 'High Frequency Trader',
+      desc: 'Total trades executed (excludes API trades).',
+      value: formatWithCommas(data.totalTradesCount),
+      rank: r(data.ranks?.trades),
+      percentile: p(data.ranks?.trades),
+    },
+    {
+      id: 'totalMarketsCreated',
+      title: 'Doing The Hard Part',
+      desc: 'Number of markets you’ve created.',
+      value: formatWithCommas(data.totalMarketsCreated),
+      rank: r(data.ranks?.marketsCreated),
+      percentile: p(data.ranks?.marketsCreated),
+    },
+    {
+      id: 'accountAgeYears',
+      title: 'Veteran',
+      desc: 'Account age in years.',
+      value: data.accountAgeYears.toFixed(2),
+      rank: null,
+      percentile: null,
+    },
+    {
+      id: 'currentBettingStreak',
+      title: 'Daily Streak',
+      desc: 'Current consecutive days trading.',
+      value: formatWithCommas(data.currentBettingStreak),
+      rank: null,
+      percentile: null,
+    },
+  ] as const
+
+  const bucketOf = (percentile: number | null) => {
+    if (percentile == null) return 'All users'
+    if (percentile <= 0.1) return 'Top 0.1%'
+    if (percentile <= 1) return 'Top 1%'
+    if (percentile <= 5) return 'Top 5%'
+    if (percentile <= 25) return 'Top 25%'
+    if (percentile <= 50) return 'Top 50%'
+    return 'All users'
+  }
+
+  const bucketOrder = [
+    'Top 0.1%',
+    'Top 1%',
+    'Top 5%',
+    'Top 25%',
+    'Top 50%',
+    'All users',
+  ] as const
+  const byBucket: Record<
+    (typeof bucketOrder)[number],
+    (typeof ACHS)[number][]
+  > = {
+    'Top 0.1%': [],
+    'Top 1%': [],
+    'Top 5%': [],
+    'Top 25%': [],
+    'Top 50%': [],
+    'All users': [],
+  }
+
+  ACHS.forEach((a) => {
+    byBucket[bucketOf(a.percentile)].push(a as any)
+  })
+
   return (
-    <Col className="gap-3">
-      <Row className="flex-wrap gap-3">
-        <AchievementsStatCard
-          label="Total profit (MANA)"
-          value={formatMoney(data.totalProfitMana, 'MANA')}
-        />
-        <AchievementsStatCard
-          label="Total volume (MANA)"
-          value={formatMoney(data.totalVolumeMana, 'MANA')}
-          rank={data.ranks?.volume?.rank ?? null}
-          percentile={data.ranks?.volume?.percentile ?? null}
-        />
-        <AchievementsStatCard
-          label="Total referrals"
-          value={formatWithCommas(data.totalReferrals)}
-        />
-        <AchievementsStatCard
-          label="Referred profit (MANA)"
-          value={formatMoney(data.totalReferredProfitMana, 'MANA')}
-        />
-        <AchievementsStatCard
-          label="Creator traders"
-          value={formatWithCommas(data.creatorTraders)}
-        />
-        <AchievementsStatCard
-          label="Total liquidity on created markets"
-          value={formatMoney(data.totalLiquidityCreatedMarkets, 'MANA')}
-          rank={data.ranks?.liquidity?.rank ?? null}
-          percentile={data.ranks?.liquidity?.percentile ?? null}
-        />
-        <AchievementsStatCard
-          label="Profitable markets"
-          value={formatWithCommas(data.profitableMarketsCount)}
-          rank={data.ranks?.profitableMarkets?.rank ?? null}
-          percentile={data.ranks?.profitableMarkets?.percentile ?? null}
-        />
-        <AchievementsStatCard
-          label="Unprofitable markets"
-          value={formatWithCommas(data.unprofitableMarketsCount)}
-          rank={data.ranks?.unprofitableMarkets?.rank ?? null}
-          percentile={data.ranks?.unprofitableMarkets?.percentile ?? null}
-        />
-        <AchievementsStatCard
-          label="Largest profitable trade"
-          value={formatMoney(data.largestProfitableTradeValue, 'MANA')}
-          rank={data.ranks?.largestProfitableTrade?.rank ?? null}
-          percentile={data.ranks?.largestProfitableTrade?.percentile ?? null}
-        />
-        <AchievementsStatCard
-          label="Largest unprofitable trade"
-          value={formatMoney(data.largestUnprofitableTradeValue, 'MANA')}
-          rank={data.ranks?.largestUnprofitableTrade?.rank ?? null}
-          percentile={data.ranks?.largestUnprofitableTrade?.percentile ?? null}
-        />
-        <AchievementsStatCard
-          label="Seasons Gold+"
-          value={formatWithCommas(data.seasonsGoldOrHigher)}
-        />
-        <AchievementsStatCard
-          label="Seasons Platinum+"
-          value={formatWithCommas(data.seasonsPlatinumOrHigher)}
-        />
-        <AchievementsStatCard
-          label="Seasons Diamond+"
-          value={formatWithCommas(data.seasonsDiamondOrHigher)}
-        />
-        <AchievementsStatCard
-          label="Seasons Masters"
-          value={formatWithCommas(data.seasonsMasters)}
-          rank={data.ranks?.seasonsMasters?.rank ?? null}
-          percentile={data.ranks?.seasonsMasters?.percentile ?? null}
-        />
-        <AchievementsStatCard
-          label="Seasons finished Rank 1"
-          value={formatWithCommas(data.seasonsRank1ByCohort)}
-          rank={data.ranks?.seasonsRank1ByCohort?.rank ?? null}
-          percentile={data.ranks?.seasonsRank1ByCohort?.percentile ?? null}
-        />
-        <AchievementsStatCard
-          label="Seasons finished Rank 1 (Masters)"
-          value={formatWithCommas(data.seasonsRank1Masters)}
-          rank={data.ranks?.seasonsRank1Masters?.rank ?? null}
-          percentile={data.ranks?.seasonsRank1Masters?.percentile ?? null}
-        />
-        <AchievementsStatCard
-          label="Largest league season earnings"
-          value={formatMoney(data.largestLeagueSeasonEarnings, 'MANA')}
-          rank={data.ranks?.largestLeagueSeasonEarnings?.rank ?? null}
-          percentile={
-            data.ranks?.largestLeagueSeasonEarnings?.percentile ?? null
-          }
-        />
-        <AchievementsStatCard
-          label="Highest balance"
-          value={formatMoney(data.highestBalanceMana, 'MANA')}
-          rank={data.ranks?.highestBalance?.rank ?? null}
-          percentile={data.ranks?.highestBalance?.percentile ?? null}
-        />
-        <AchievementsStatCard
-          label="Highest net worth"
-          value={formatMoney(data.highestNetworthMana, 'MANA')}
-          rank={data.ranks?.highestNetworth?.rank ?? null}
-          percentile={data.ranks?.highestNetworth?.percentile ?? null}
-        />
-        <AchievementsStatCard
-          label="Highest invested"
-          value={formatMoney(data.highestInvestedMana, 'MANA')}
-          rank={data.ranks?.highestInvested?.rank ?? null}
-          percentile={data.ranks?.highestInvested?.percentile ?? null}
-        />
-        <AchievementsStatCard
-          label="Highest loaned"
-          value={formatMoney(data.highestLoanMana, 'MANA')}
-          rank={data.ranks?.highestLoan?.rank ?? null}
-          percentile={data.ranks?.highestLoan?.percentile ?? null}
-        />
-        <AchievementsStatCard
-          label="Comments made"
-          value={formatWithCommas(data.numberOfComments)}
-          rank={data.ranks?.comments?.rank ?? null}
-          percentile={data.ranks?.comments?.percentile ?? null}
-        />
-        <AchievementsStatCard
-          label="Total trades"
-          value={formatWithCommas(data.totalTradesCount)}
-          rank={data.ranks?.trades?.rank ?? null}
-          percentile={data.ranks?.trades?.percentile ?? null}
-        />
-        <AchievementsStatCard
-          label="Markets created"
-          value={formatWithCommas(data.totalMarketsCreated)}
-          rank={data.ranks?.marketsCreated?.rank ?? null}
-          percentile={data.ranks?.marketsCreated?.percentile ?? null}
-        />
-        <AchievementsStatCard
-          label="Account age (years)"
-          value={data.accountAgeYears.toFixed(2)}
-        />
-        <AchievementsStatCard
-          label="Current daily streak"
-          value={formatWithCommas(data.currentBettingStreak)}
-        />
-      </Row>
+    <Col className="gap-6">
+      {bucketOrder.map((bucket) => {
+        const items = byBucket[bucket]
+        if (!items.length) return null
+        return (
+          <Col key={bucket} className="gap-3">
+            <div className="text-ink-800 flex items-center gap-2 text-sm font-semibold uppercase tracking-wider">
+              {bucket}
+              <span className="bg-ink-200 h-px flex-1" />
+            </div>
+
+            <div className="grid grid-cols-1 gap-5 md:grid-cols-2 lg:grid-cols-3">
+              {items.map((a) => (
+                <AchievementBadgeCard
+                  key={a.id}
+                  title={a.title}
+                  description={a.desc}
+                  value={a.value}
+                  rank={a.rank}
+                  percentile={a.percentile}
+                  bucket={bucket}
+                />
+              ))}
+            </div>
+          </Col>
+        )
+      })}
     </Col>
   )
 }
 
-function AchievementsStatCard(props: {
-  label: string
+function AchievementBadgeCard(props: {
+  title: string
+  description: string
   value: string
-  rank?: number | null
-  percentile?: number | null
+  rank: number | null
+  percentile: number | null
+  bucket: 'Top 0.1%' | 'Top 1%' | 'Top 5%' | 'Top 25%' | 'Top 50%' | 'All users'
 }) {
-  const { label, value, rank, percentile } = props
+  const { title, description, value, rank, percentile, bucket } = props
+
+  const bucketStyle: Record<typeof props.bucket, string> = {
+    'Top 0.1%': 'from-fuchsia-500 to-indigo-500',
+    'Top 1%': 'from-indigo-500 to-sky-500',
+    'Top 5%': 'from-sky-500 to-teal-500',
+    'Top 25%': 'from-emerald-500 to-lime-500',
+    'Top 50%': 'from-slate-500 to-zinc-500',
+    'All users': 'from-zinc-400 to-zinc-600',
+  }
+
   return (
-    <Col className="bg-canvas-0 border-ink-200 min-w-[14rem] flex-1 rounded-md border p-4">
-      <div className="text-ink-600 text-sm">{label}</div>
-      <div className="text-ink-900 text-xl font-semibold">{value}</div>
-      <div className="text-ink-600 mt-1 text-xs">
-        Rank: {rank ?? 'N/A'} • Percentile:{' '}
-        {percentile != null ? `${percentile.toFixed(1)}%` : 'N/A'}
+    <div
+      className="border-ink-200 group relative aspect-[11/12] min-h-[280px] rounded-xl border p-[1px] transition-shadow hover:shadow-lg"
+      aria-label={title}
+    >
+      {/* gradient ring */}
+      <div
+        className={clsx(
+          'h-full rounded-xl bg-gradient-to-br',
+          bucketStyle[bucket]
+        )}
+      >
+        <div className="bg-canvas-0 flex h-full flex-col items-center rounded-[11px] px-4 pt-6">
+          <div className="bg-ink-1000/5 ring-ink-300/50 flex  h-24 w-24 items-center justify-center rounded-lg ring-1">
+            <svg
+              viewBox="0 0 24 24"
+              className="h-8 w-8 opacity-80"
+              aria-hidden="true"
+            >
+              <path
+                d="M12 2l3 6 6 .9-4.5 4.1 1.2 6-5.7-3.1-5.7 3.1 1.2-6L3 8.9 9 8l3-6z"
+                fill="currentColor"
+              />
+            </svg>
+          </div>
+          <div className=" pt-5 text-center">
+            <div className="text-ink-900  text-lg font-semibold">{title}</div>
+            <div className="text-ink-600 text-sm ">{description}</div>
+            <div className="text-ink-900 text-lg mt-3">{value}</div>
+          </div>
+
+          {/* side hover tooltip */}
+          <div className="pointer-events-none absolute left-full top-4 z-20 hidden pl-3 group-hover:block">
+            <div className="bg-canvas-0 text-ink-900 border-ink-200 w-64 rounded-md border p-3 shadow-xl">
+              <div className="text-ink-600 text-xs uppercase tracking-wider">
+                {bucket}
+              </div>
+              <div className="mt-1 text-lg font-semibold">
+                {percentile != null ? `${percentile.toFixed(1)}%` : 'N/A'}
+              </div>
+              <div className="text-ink-600 mt-1 text-sm">
+                Rank: {rank ?? 'N/A'}
+              </div>
+              <div className="text-ink-600 text-sm">Value: {value}</div>
+            </div>
+          </div>
+        </div>
       </div>
-    </Col>
+    </div>
   )
 }
 
