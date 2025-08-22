@@ -358,6 +358,39 @@ export const getUserAchievements: APIHandler<'get-user-achievements'> = async ({
     highestLoan: { rank: null, percentile: null },
   }
 
+  const rawRanks = (result?.ranks_json as any) ?? defaultRanks
+  let ranks = rawRanks
+  if (hasMV) {
+    const { n } = await pg.one(
+      'select count(*)::int as n from mv_user_achievement_stats'
+    )
+    const N = Number(n ?? 0)
+    const conv = (e?: { rank: number | null; percentile: number | null }) =>
+      e?.rank && N > 0
+        ? { rank: e.rank, percentile: (e.rank / N) * 100 }
+        : { rank: e?.rank ?? null, percentile: null }
+
+    ranks = {
+      volume: conv(rawRanks.volume),
+      trades: conv(rawRanks.trades),
+      marketsCreated: conv(rawRanks.marketsCreated),
+      comments: conv(rawRanks.comments),
+      seasonsMasters: conv(rawRanks.seasonsMasters),
+      seasonsRank1ByCohort: conv(rawRanks.seasonsRank1ByCohort),
+      seasonsRank1Masters: conv(rawRanks.seasonsRank1Masters),
+      largestLeagueSeasonEarnings: conv(rawRanks.largestLeagueSeasonEarnings),
+      liquidity: conv(rawRanks.liquidity),
+      profitableMarkets: conv(rawRanks.profitableMarkets),
+      unprofitableMarkets: conv(rawRanks.unprofitableMarkets),
+      largestProfitableTrade: conv(rawRanks.largestProfitableTrade),
+      largestUnprofitableTrade: conv(rawRanks.largestUnprofitableTrade),
+      highestBalance: conv(rawRanks.highestBalance),
+      highestInvested: conv(rawRanks.highestInvested),
+      highestNetworth: conv(rawRanks.highestNetworth),
+      highestLoan: conv(rawRanks.highestLoan),
+    }
+  }
+
   return {
     userId,
     totalProfitMana: Number(result?.total_profit_mana ?? 0),
@@ -394,6 +427,6 @@ export const getUserAchievements: APIHandler<'get-user-achievements'> = async ({
     highestInvestedMana: Number(result?.highest_invested_mana ?? 0),
     highestNetworthMana: Number(result?.highest_networth_mana ?? 0),
     highestLoanMana: Number(result?.highest_loan_mana ?? 0),
-    ranks: (result?.ranks_json as any) ?? defaultRanks,
+    ranks,
   }
 }

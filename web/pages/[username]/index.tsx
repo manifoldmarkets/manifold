@@ -1034,7 +1034,12 @@ function AchievementBadgeCard(props: {
                 {bucket}
               </div>
               <div className="mt-1 text-lg font-semibold">
-                {percentile != null ? `${percentile.toFixed(1)}%` : 'N/A'}
+                {percentile != null
+                  ? `In the top ${(() => {
+                      const s = Number(percentile.toFixed(2)).toString()
+                      return s
+                    })()}% of users`
+                  : 'N/A'}
               </div>
               <div className="text-ink-600 mt-1 text-sm">
                 Rank: {rank ?? 'N/A'}
