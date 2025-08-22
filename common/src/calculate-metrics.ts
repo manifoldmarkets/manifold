@@ -173,7 +173,7 @@ export const calculateMetricsByContractAndAnswer = (
   const newMetrics = Object.entries(betsByContractId).flatMap(
     ([contractId, bets]) => {
       const contract: Contract = contractsById[contractId]
-      return calculateUserMetricsWithouLoans(contract, bets, userId)
+      return calculateUserMetricsWithoutLoans(contract, bets, userId)
     }
   )
   // Find loan amounts from current metrics and paste them into the new metrics
@@ -200,7 +200,7 @@ export const isEmptyMetric = (m: ContractMetric) => {
   )
 }
 
-export const calculateUserMetricsWithouLoans = (
+export const calculateUserMetricsWithoutLoans = (
   contract: Contract,
   bets: Bet[],
   userId: string

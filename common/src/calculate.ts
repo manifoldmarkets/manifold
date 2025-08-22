@@ -1,4 +1,10 @@
 import {
+  computeInvestmentValueCustomProb,
+  MarginalBet,
+} from 'common/calculate-metrics'
+import { ContractMetric } from 'common/contract-metric'
+import { DAY_MS } from 'common/util/time'
+import {
   first,
   get,
   groupBy,
@@ -10,6 +16,7 @@ import {
   sum,
   sumBy,
 } from 'lodash'
+import { Answer } from './answer'
 import { Bet } from './bet'
 import {
   calculateCpmmPurchase,
@@ -30,13 +37,6 @@ import {
   StonkContract,
 } from './contract'
 import { floatingEqual, floatingGreaterEqual } from './util/math'
-import { ContractMetric } from 'common/contract-metric'
-import { Answer } from './answer'
-import { DAY_MS } from 'common/util/time'
-import {
-  computeInvestmentValueCustomProb,
-  MarginalBet,
-} from 'common/calculate-metrics'
 
 export function getProbability(
   contract: BinaryContract | PseudoNumericContract | StonkContract
@@ -471,16 +471,21 @@ const calculatePeriodProfit = (
     contract,
     prevProb
   )
-  const currentBetsValue = computeInvestmentValueCustomProb(
+  const currentPreviousBetsValue = computeInvestmentValueCustomProb(
     previousBets,
     contract,
     prob
   )
-
+  const { invested: previousInvested } = getContractBetMetrics(
+    contract,
+    previousBets
+  )
   const { profit: recentProfit, invested: recentInvested } =
     getContractBetMetrics(contract, recentBets)
-
-  const profit = currentBetsValue - previousBetsValue + recentProfit
+  const previousProfit = previousBetsValue - previousInvested
+  const currentProfit =
+    currentPreviousBetsValue - previousInvested + recentProfit
+  const profit = currentProfit - previousProfit
   const invested = previousBetsValue + recentInvested
   const profitPercent = invested === 0 ? 0 : 100 * (profit / invested)
 
@@ -489,7 +494,7 @@ const calculatePeriodProfit = (
     profitPercent,
     invested,
     prevValue: previousBetsValue,
-    value: currentBetsValue,
+    value: currentPreviousBetsValue,
   }
 }
 

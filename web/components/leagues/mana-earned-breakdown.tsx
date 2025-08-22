@@ -1,30 +1,30 @@
-import { uniq, keyBy, groupBy, sortBy, mapValues } from 'lodash'
-import Link from 'next/link'
-import clsx from 'clsx'
 import { ChevronDownIcon, ChevronUpIcon } from '@heroicons/react/outline'
+import clsx from 'clsx'
+import { groupBy, keyBy, mapValues, sortBy, uniq } from 'lodash'
+import Link from 'next/link'
 
+import { Bet } from 'common/bet'
+import { calculateUserMetricsWithoutLoans } from 'common/calculate-metrics'
+import { Contract, contractPath } from 'common/contract'
+import { ContractMetric } from 'common/contract-metric'
 import { getSeasonDates } from 'common/leagues'
 import { formatMoney } from 'common/util/format'
-import { Row } from '../layout/row'
 import { usePublicContracts } from 'web/hooks/use-contract'
 import { Col } from '../layout/col'
 import { Modal, MODAL_CLASS } from '../layout/modal'
+import { Row } from '../layout/row'
+import { ProfitBadge } from '../profit-badge'
 import { LoadingIndicator } from '../widgets/loading-indicator'
 import { UserAvatarAndBadge } from '../widgets/user-link'
-import { Contract, contractPath } from 'common/contract'
-import { Bet } from 'common/bet'
-import { calculateUserMetricsWithouLoans } from 'common/calculate-metrics'
-import { ProfitBadge } from '../profit-badge'
-import { ContractMetric } from 'common/contract-metric'
 
-import ShortToggle from '../widgets/short-toggle'
-import { useState } from 'react'
-import { ContractBetsTable } from 'web/components/bet/contract-bets-table'
+import { useBetsOnce } from 'client-common/hooks/use-bets'
 import { DisplayUser } from 'common/api/user-types'
 import { TRADE_TERM } from 'common/envs/constants'
 import { capitalize } from 'lodash'
-import { useBetsOnce } from 'client-common/hooks/use-bets'
+import { useState } from 'react'
+import { ContractBetsTable } from 'web/components/bet/contract-bets-table'
 import { api } from 'web/lib/api/api'
+import ShortToggle from '../widgets/short-toggle'
 
 export const ManaEarnedBreakdown = (props: {
   user: DisplayUser
@@ -75,7 +75,7 @@ export const ManaEarnedBreakdown = (props: {
     mapValues(betsByContract, (bets, contractId) => {
       const contract = contractsById[contractId]
       return contract
-        ? calculateUserMetricsWithouLoans(contract, bets, user.id).find(
+        ? calculateUserMetricsWithoutLoans(contract, bets, user.id).find(
             (cm) => !cm.answerId
           )
         : undefined
