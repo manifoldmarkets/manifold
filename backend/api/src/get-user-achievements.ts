@@ -158,11 +158,11 @@ export const getUserAchievements: APIHandler<'get-user-achievements'> = async ({
         json_build_object(
           'volume', json_build_object('rank', (select volume_rank from mv_ach_volume where user_id = (select uid from base)), 'percentile', null),
           'trades', json_build_object('rank', (select trades_rank from mv_ach_trades where user_id = (select uid from base)), 'percentile', null),
-          'marketsCreated', json_build_object('rank', (select markets_created_rank from mv_ach_markets_created where user_id = (select uid from base)), 'percentile', null),
+          'marketsCreated', json_build_object('rank', (select markets_created_rank from mv_ach_creator_contracts where user_id = (select uid from base)), 'percentile', null),
           'comments', json_build_object('rank', (select comments_rank from mv_ach_comments where user_id = (select uid from base)), 'percentile', null),
           'seasonsMasters', json_build_object('rank', (select seasons_masters_rank from mv_ach_leagues where user_id = (select uid from base)), 'percentile', null),
           'largestLeagueSeasonEarnings', json_build_object('rank', (select largest_league_season_earnings_rank from mv_ach_leagues where user_id = (select uid from base)), 'percentile', null),
-          'liquidity', json_build_object('rank', (select liquidity_rank from mv_ach_liquidity where user_id = (select uid from base)), 'percentile', null),
+          'liquidity', json_build_object('rank', (select liquidity_rank from mv_ach_creator_contracts where user_id = (select uid from base)), 'percentile', null),
           'profitableMarkets', json_build_object('rank', (select profitable_markets_rank from mv_ach_pnl where user_id = (select uid from base)), 'percentile', null),
           'unprofitableMarkets', json_build_object('rank', (select unprofitable_markets_rank from mv_ach_pnl where user_id = (select uid from base)), 'percentile', null),
           'largestProfitableTrade', json_build_object('rank', (select largest_profitable_trade_rank from mv_ach_pnl where user_id = (select uid from base)), 'percentile', null),
@@ -171,8 +171,8 @@ export const getUserAchievements: APIHandler<'get-user-achievements'> = async ({
           'highestInvested', json_build_object('rank', (select highest_invested_rank from mv_ach_portfolio_maxes where user_id = (select uid from base)), 'percentile', null),
           'highestNetworth', json_build_object('rank', (select highest_networth_rank from mv_ach_portfolio_maxes where user_id = (select uid from base)), 'percentile', null),
           'highestLoan', json_build_object('rank', (select highest_loan_rank from mv_ach_portfolio_maxes where user_id = (select uid from base)), 'percentile', null),
-          'modTickets', json_build_object('rank', (select mod_tickets_rank from mv_ach_mod_tickets where user_id = (select uid from base)), 'percentile', null),
-          'charityDonated', json_build_object('rank', (select charity_donated_rank from mv_ach_charity_donated where user_id = (select uid from base)), 'percentile', null)
+          'modTickets', json_build_object('rank', (select mod_tickets_rank from mv_ach_txns_achievements where user_id = (select uid from base)), 'percentile', null),
+          'charityDonated', json_build_object('rank', (select charity_donated_rank from mv_ach_txns_achievements where user_id = (select uid from base)), 'percentile', null)
         ) as ranks_json
       from base
       left join portfolio on true
@@ -339,13 +339,13 @@ export const getUserAchievements: APIHandler<'get-user-achievements'> = async ({
         json_build_object(
           'volume', json_build_object('rank', (select volume_rank from mv), 'percentile', (select volume_percentile from mv)),
           'trades', json_build_object('rank', (select trades_rank from mv), 'percentile', (select trades_percentile from mv)),
-          'marketsCreated', json_build_object('rank', (select markets_created_rank from mv), 'percentile', (select markets_created_percentile from mv)),
+          'marketsCreated', json_build_object('rank', (select markets_created_rank from mv_ach_creator_contracts where user_id = (select uid from base)), 'percentile', null),
           'comments', json_build_object('rank', (select comments_rank from mv), 'percentile', (select comments_percentile from mv)),
           'seasonsMasters', json_build_object('rank', (select seasons_masters_rank from mv), 'percentile', (select seasons_masters_percentile from mv)),
           'seasonsRank1ByCohort', json_build_object('rank', (select seasons_rank1_by_cohort_rank from mv), 'percentile', (select seasons_rank1_by_cohort_percentile from mv)),
           'seasonsRank1Masters', json_build_object('rank', (select seasons_rank1_masters_rank from mv), 'percentile', (select seasons_rank1_masters_percentile from mv)),
           'largestLeagueSeasonEarnings', json_build_object('rank', (select largest_league_season_earnings_rank from mv), 'percentile', (select largest_league_season_earnings_percentile from mv)),
-          'liquidity', json_build_object('rank', (select liquidity_rank from mv), 'percentile', (select liquidity_percentile from mv)),
+          'liquidity', json_build_object('rank', (select liquidity_rank from mv_ach_creator_contracts where user_id = (select uid from base)), 'percentile', null),
           'profitableMarkets', json_build_object('rank', (select profitable_markets_rank from mv), 'percentile', (select profitable_markets_percentile from mv)),
           'unprofitableMarkets', json_build_object('rank', (select unprofitable_markets_rank from mv), 'percentile', (select unprofitable_markets_percentile from mv)),
           'largestProfitableTrade', json_build_object('rank', (select largest_profitable_trade_rank from mv), 'percentile', (select largest_profitable_trade_percentile from mv)),
@@ -354,8 +354,8 @@ export const getUserAchievements: APIHandler<'get-user-achievements'> = async ({
           'highestInvested', json_build_object('rank', (select highest_invested_rank from mv), 'percentile', (select highest_invested_percentile from mv)),
           'highestNetworth', json_build_object('rank', (select highest_networth_rank from mv), 'percentile', (select highest_networth_percentile from mv)),
           'highestLoan', json_build_object('rank', (select highest_loan_rank from mv), 'percentile', (select highest_loan_percentile from mv)),
-          'modTickets', json_build_object('rank', (select mod_tickets_rank from mv), 'percentile', (select mod_tickets_percentile from mv)),
-          'charityDonated', json_build_object('rank', (select charity_donated_rank from mv), 'percentile', (select charity_donated_percentile from mv))
+          'modTickets', json_build_object('rank', (select mod_tickets_rank from mv_ach_txns_achievements where user_id = (select uid from base)), 'percentile', null),
+          'charityDonated', json_build_object('rank', (select charity_donated_rank from mv_ach_txns_achievements where user_id = (select uid from base)), 'percentile', null)
         ) as ranks_json
       from base
       left join portfolio on true

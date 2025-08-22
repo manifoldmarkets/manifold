@@ -535,61 +535,6 @@ with
 
 create unique index if not exists mv_ach_trades_user_id_idx on public.mv_ach_trades (user_id);
 
--- Markets Created
-create materialized view if not exists
-  mv_ach_markets_created as
-with
-  mana_contracts as (
-    select
-      id,
-      creator_id,
-      (data ->> 'uniqueBettorCount')::int as unique_bettors
-    from
-      contracts
-    where
-      token = 'MANA'
-  ),
-  markets_created as (
-    select
-      mc.creator_id as user_id,
-      count(*) filter (
-        where
-          mc.unique_bettors >= 2
-      ) as total_markets_created
-    from
-      mana_contracts mc
-    group by
-      mc.creator_id
-  ),
-  all_users as (
-    select
-      id as user_id
-    from
-      users
-  )
-select
-  u.user_id,
-  coalesce(m.total_markets_created, 0) as total_markets_created,
-  rank() over (
-    order by
-      coalesce(m.total_markets_created, 0) desc
-  ) as markets_created_rank,
-  (
-    (
-      (count(*) over ()) - rank() over (
-        order by
-          coalesce(m.total_markets_created, 0) desc
-      ) + 1
-    )::numeric / (count(*) over ())
-  ) * 100 as markets_created_percentile
-from
-  all_users u
-  left join markets_created m on m.user_id = u.user_id
-with
-  no data;
-
-create unique index if not exists mv_ach_markets_created_user_id_idx on public.mv_ach_markets_created (user_id);
-
 -- Comments (liked-only)
 create materialized view if not exists
   mv_ach_comments as
@@ -708,58 +653,6 @@ with
   no data;
 
 create unique index if not exists mv_ach_leagues_user_id_idx on public.mv_ach_leagues (user_id);
-
--- Liquidity
-create materialized view if not exists
-  mv_ach_liquidity as
-with
-  mana_contracts as (
-    select
-      id,
-      creator_id,
-      (data ->> 'totalLiquidity')::numeric as total_liq
-    from
-      contracts
-    where
-      token = 'MANA'
-  ),
-  liquidity as (
-    select
-      mc.creator_id as user_id,
-      coalesce(sum(mc.total_liq), 0) as total_liquidity_created_markets
-    from
-      mana_contracts mc
-    group by
-      mc.creator_id
-  ),
-  all_users as (
-    select
-      id as user_id
-    from
-      users
-  )
-select
-  u.user_id,
-  coalesce(lq.total_liquidity_created_markets, 0) as total_liquidity_created_markets,
-  rank() over (
-    order by
-      coalesce(lq.total_liquidity_created_markets, 0) desc
-  ) as liquidity_rank,
-  (
-    (
-      (count(*) over ()) - rank() over (
-        order by
-          coalesce(lq.total_liquidity_created_markets, 0) desc
-      ) + 1
-    )::numeric / (count(*) over ())
-  ) * 100 as liquidity_percentile
-from
-  all_users u
-  left join liquidity lq on lq.user_id = u.user_id
-with
-  no data;
-
-create unique index if not exists mv_ach_liquidity_user_id_idx on public.mv_ach_liquidity (user_id);
 
 -- PnL-like (profitable/unprofitable counts and largest trades)
 create materialized view if not exists
@@ -946,18 +839,31 @@ with
 
 create unique index if not exists mv_ach_portfolio_maxes_user_id_idx on public.mv_ach_portfolio_maxes (user_id);
 
--- Mod tickets resolved
+-- Combined: Txns-based achievements (mod tickets resolved + charity donated)
 create materialized view if not exists
-  mv_ach_mod_tickets as
+  mv_ach_txns_achievements as
 with
-  mt as (
+  txns_agg as (
     select
       to_id as user_id,
-      count(*) as mod_tickets_resolved
+      sum(
+        case
+          when category = 'ADMIN_REWARD' then 1
+          else 0
+        end
+      ) as mod_tickets_resolved,
+      sum(
+        case
+          when category = 'CHARITY'
+          and (
+            token = 'SPICE'
+            or token = 'M$'
+          ) then amount
+          else 0
+        end
+      ) as charity_donated_mana
     from
       txns
-    where
-      category = 'ADMIN_REWARD'
     group by
       to_id
   ),
@@ -969,45 +875,67 @@ with
   )
 select
   u.user_id,
-  coalesce(mt.mod_tickets_resolved, 0) as mod_tickets_resolved,
+  coalesce(t.mod_tickets_resolved, 0) as mod_tickets_resolved,
+  coalesce(t.charity_donated_mana, 0) as charity_donated_mana,
   rank() over (
     order by
-      coalesce(mt.mod_tickets_resolved, 0) desc
+      coalesce(t.mod_tickets_resolved, 0) desc
   ) as mod_tickets_rank,
   (
     (
       (count(*) over ()) - rank() over (
         order by
-          coalesce(mt.mod_tickets_resolved, 0) desc
+          coalesce(t.mod_tickets_resolved, 0) desc
       ) + 1
     )::numeric / (count(*) over ())
-  ) * 100 as mod_tickets_percentile
+  ) * 100 as mod_tickets_percentile,
+  rank() over (
+    order by
+      coalesce(t.charity_donated_mana, 0) desc
+  ) as charity_donated_rank,
+  (
+    (
+      (count(*) over ()) - rank() over (
+        order by
+          coalesce(t.charity_donated_mana, 0) desc
+      ) + 1
+    )::numeric / (count(*) over ())
+  ) * 100 as charity_donated_percentile
 from
   all_users u
-  left join mt on mt.user_id = u.user_id
+  left join txns_agg t on t.user_id = u.user_id
 with
   no data;
 
-create unique index if not exists mv_ach_mod_tickets_user_id_idx on public.mv_ach_mod_tickets (user_id);
+create unique index if not exists mv_ach_txns_achievements_user_id_idx on public.mv_ach_txns_achievements (user_id);
 
--- Charity donated
+-- Combined: Creator-contract achievements (markets created + liquidity)
 create materialized view if not exists
-  mv_ach_charity_donated as
+  mv_ach_creator_contracts as
 with
-  ch as (
+  mana_contracts as (
     select
-      to_id as user_id,
-      sum(amount) filter (
-        where
-          token = 'SPICE'
-          or token = 'M$'
-      ) as charity_donated_mana
+      id,
+      creator_id,
+      (data ->> 'uniqueBettorCount')::int as unique_bettors,
+      (data ->> 'totalLiquidity')::numeric as total_liq
     from
-      txns
+      contracts
     where
-      category = 'CHARITY'
+      token = 'MANA'
+  ),
+  creator_agg as (
+    select
+      creator_id as user_id,
+      count(*) filter (
+        where
+          unique_bettors >= 2
+      ) as total_markets_created,
+      coalesce(sum(total_liq), 0) as total_liquidity_created_markets
+    from
+      mana_contracts
     group by
-      to_id
+      creator_id
   ),
   all_users as (
     select
@@ -1017,23 +945,36 @@ with
   )
 select
   u.user_id,
-  coalesce(ch.charity_donated_mana, 0) as charity_donated_mana,
+  coalesce(ca.total_markets_created, 0) as total_markets_created,
+  coalesce(ca.total_liquidity_created_markets, 0) as total_liquidity_created_markets,
   rank() over (
     order by
-      coalesce(ch.charity_donated_mana, 0) desc
-  ) as charity_donated_rank,
+      coalesce(ca.total_markets_created, 0) desc
+  ) as markets_created_rank,
   (
     (
       (count(*) over ()) - rank() over (
         order by
-          coalesce(ch.charity_donated_mana, 0) desc
+          coalesce(ca.total_markets_created, 0) desc
       ) + 1
     )::numeric / (count(*) over ())
-  ) * 100 as charity_donated_percentile
+  ) * 100 as markets_created_percentile,
+  rank() over (
+    order by
+      coalesce(ca.total_liquidity_created_markets, 0) desc
+  ) as liquidity_rank,
+  (
+    (
+      (count(*) over ()) - rank() over (
+        order by
+          coalesce(ca.total_liquidity_created_markets, 0) desc
+      ) + 1
+    )::numeric / (count(*) over ())
+  ) * 100 as liquidity_percentile
 from
   all_users u
-  left join ch on ch.user_id = u.user_id
+  left join creator_agg ca on ca.user_id = u.user_id
 with
   no data;
 
-create unique index if not exists mv_ach_charity_donated_user_id_idx on public.mv_ach_charity_donated (user_id);
+create unique index if not exists mv_ach_creator_contracts_user_id_idx on public.mv_ach_creator_contracts (user_id);
