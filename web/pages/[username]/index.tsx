@@ -709,8 +709,8 @@ function AchievementsSection(props: { userId: string }) {
   const ACHS = [
     {
       id: 'totalProfitMana',
-      title: 'Profit Legend',
-      desc: 'Total profit earned (MANA).',
+      title: 'But Was It Realised?',
+      desc: 'Highest total profit recorded.',
       value: formatMoney(data.totalProfitMana, 'MANA'),
       rank: null,
       percentile: null,
@@ -718,14 +718,14 @@ function AchievementsSection(props: { userId: string }) {
     {
       id: 'totalVolumeMana',
       title: 'Any Whales?',
-      desc: 'Total trading volume (MANA).',
+      desc: 'Total trading volume.',
       value: formatMoney(data.totalVolumeMana, 'MANA'),
       rank: r(data.ranks?.volume),
       percentile: p(data.ranks?.volume),
     },
     {
       id: 'totalReferrals',
-      title: 'Hype Conductor',
+      title: 'Manifold Hype Man',
       desc: 'Friends you brought to Manifold.',
       value: formatWithCommas(data.totalReferrals),
       rank: null,
@@ -734,7 +734,7 @@ function AchievementsSection(props: { userId: string }) {
     {
       id: 'totalReferredProfitMana',
       title: 'Proud Parent',
-      desc: 'Profit earned by your referrals (MANA).',
+      desc: 'Profit earned by your referrals.',
       value: formatMoney(data.totalReferredProfitMana, 'MANA'),
       rank: null,
       percentile: null,
@@ -749,8 +749,8 @@ function AchievementsSection(props: { userId: string }) {
     },
     {
       id: 'totalLiquidityCreatedMarkets',
-      title: 'Liquidity Backer',
-      desc: 'Mana you’ve provided as liquidity.',
+      title: 'No Slippage Here',
+      desc: 'Total liquidity across all your created markets.',
       value: formatMoney(data.totalLiquidityCreatedMarkets, 'MANA'),
       rank: r(data.ranks?.liquidity),
       percentile: p(data.ranks?.liquidity),
@@ -765,7 +765,7 @@ function AchievementsSection(props: { userId: string }) {
     },
     {
       id: 'unprofitableMarketsCount',
-      title: 'Learning Labs',
+      title: `Ineffective Altruism`,
       desc: 'Number of markets you lost mana on.',
       value: formatWithCommas(data.unprofitableMarketsCount),
       rank: r(data.ranks?.unprofitableMarkets),
@@ -861,7 +861,7 @@ function AchievementsSection(props: { userId: string }) {
     },
     {
       id: 'highestInvestedMana',
-      title: 'All-In Arc',
+      title: 'Leeeeroooy Jenkins',
       desc: `Highest amount of mana you've had invested at once.`,
       value: formatMoney(data.highestInvestedMana, 'MANA'),
       rank: r(data.ranks?.highestInvested),
@@ -870,7 +870,7 @@ function AchievementsSection(props: { userId: string }) {
     {
       id: 'highestLoanMana',
       title: '@Tumbles Wannabe',
-      desc: 'Highest loan used.',
+      desc: 'Highest outstanding loan.',
       value: formatMoney(data.highestLoanMana, 'MANA'),
       rank: r(data.ranks?.highestLoan),
       percentile: p(data.ranks?.highestLoan),
@@ -886,7 +886,7 @@ function AchievementsSection(props: { userId: string }) {
     {
       id: 'totalTradesCount',
       title: 'High Frequency Trader',
-      desc: 'Total trades executed (excludes API trades).',
+      desc: 'Total number of trades executed (excludes API trades).',
       value: formatWithCommas(data.totalTradesCount),
       rank: r(data.ranks?.trades),
       percentile: p(data.ranks?.trades),
@@ -901,7 +901,7 @@ function AchievementsSection(props: { userId: string }) {
     },
     {
       id: 'accountAgeYears',
-      title: 'Veteran',
+      title: 'Age Is Just A Number',
       desc: 'Account age in years.',
       value: data.accountAgeYears.toFixed(2),
       rank: null,
