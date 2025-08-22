@@ -1019,7 +1019,7 @@ function AchievementBadgeCard(props: {
       >
         <div className="bg-canvas-0 flex h-full flex-col items-center rounded-[11px] px-4 pt-6">
           <div className=" ring-ink-300/50 flex  h-24 w-24 items-center justify-center rounded-lg ring-1">
-            <Icon className="h-12 w-12 " />
+            <Icon className="h-10 w-10 " />
           </div>
           <div className=" pt-5 text-center">
             <div className="text-ink-900  text-lg font-semibold">{title}</div>
