@@ -88,6 +88,8 @@ import {
   TbFilePlus,
   TbCalendar,
   TbFlame,
+  TbShieldCheck,
+  TbHeartHandshake,
   TbPigMoney,
 } from 'react-icons/tb'
 import { GiWhaleTail } from 'react-icons/gi'
@@ -116,7 +118,9 @@ const ACHIEVEMENT_ICONS: Record<string, IconType> = {
   totalTradesCount: TbBolt,
   totalMarketsCreated: TbFilePlus,
   accountAgeYears: TbCalendar,
-  currentBettingStreak: TbFlame,
+  longestBettingStreak: TbFlame,
+  modTicketsResolved: TbShieldCheck,
+  charityDonatedMana: TbHeartHandshake,
 }
 
 export const getStaticProps = async (props: {
@@ -629,7 +633,9 @@ function AchievementsSection(props: { userId: string }) {
     unprofitableMarketsCount: number
     largestProfitableTradeValue: number
     largestUnprofitableTradeValue: number
-    currentBettingStreak: number
+    longestBettingStreak: number
+    modTicketsResolved: number
+    charityDonatedMana: number
     largestLeagueSeasonEarnings: number
     highestBalanceMana: number
     highestInvestedMana: number
@@ -660,6 +666,8 @@ function AchievementsSection(props: { userId: string }) {
       highestInvested: { rank: number | null; percentile: number | null }
       highestNetworth: { rank: number | null; percentile: number | null }
       highestLoan: { rank: number | null; percentile: number | null }
+      modTickets: { rank: number | null; percentile: number | null }
+      charityDonated: { rank: number | null; percentile: number | null }
     }
   } | null>(null)
 
@@ -886,12 +894,28 @@ function AchievementsSection(props: { userId: string }) {
       percentile: null,
     },
     {
-      id: 'currentBettingStreak',
-      title: 'Daily Streak',
-      desc: 'Current consecutive days trading.',
-      value: formatWithCommas(data.currentBettingStreak),
+      id: 'longestBettingStreak',
+      title: 'Longest Daily Streak',
+      desc: 'Longest consecutive days trading.',
+      value: formatWithCommas(data.longestBettingStreak),
       rank: null,
       percentile: null,
+    },
+    {
+      id: 'modTicketsResolved',
+      title: 'Helpful Moderator',
+      desc: 'Mod tickets you’ve resolved.',
+      value: formatWithCommas(data.modTicketsResolved),
+      rank: r(data.ranks?.modTickets),
+      percentile: p(data.ranks?.modTickets),
+    },
+    {
+      id: 'charityDonatedMana',
+      title: 'Giver',
+      desc: 'Total mana donated to charity.',
+      value: formatMoney(data.charityDonatedMana, 'MANA'),
+      rank: r(data.ranks?.charityDonated),
+      percentile: p(data.ranks?.charityDonated),
     },
   ] as const
 

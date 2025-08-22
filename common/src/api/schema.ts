@@ -2006,12 +2006,14 @@ export const API = (_apiTypeCheck = {
       unprofitableMarketsCount: number
       largestProfitableTradeValue: number
       largestUnprofitableTradeValue: number
-      currentBettingStreak: number
+      longestBettingStreak: number
       largestLeagueSeasonEarnings: number
       highestBalanceMana: number
       highestInvestedMana: number
       highestNetworthMana: number
       highestLoanMana: number
+      modTicketsResolved: number
+      charityDonatedMana: number
       ranks: {
         volume: { rank: number | null; percentile: number | null }
         trades: { rank: number | null; percentile: number | null }
@@ -2037,6 +2039,8 @@ export const API = (_apiTypeCheck = {
         highestInvested: { rank: number | null; percentile: number | null }
         highestNetworth: { rank: number | null; percentile: number | null }
         highestLoan: { rank: number | null; percentile: number | null }
+        modTickets: { rank: number | null; percentile: number | null }
+        charityDonated: { rank: number | null; percentile: number | null }
       }
     },
     props: z

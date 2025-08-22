@@ -46,6 +46,11 @@ export const getUserAchievements: APIHandler<'get-user-achievements'> = async ({
         from user_referrals_profit
         where id = (select uid from base)
       ),
+      charity as (
+        select coalesce(sum(amount) filter (where token = 'SPICE' or token = 'M$'), 0) as charity_donated_mana
+        from txns
+        where category = 'CHARITY' and to_id = (select uid from base)
+      ),
       volume as (
         select
           sum(case when c.token = 'MANA' then (coalesce((ucm.data->>'totalAmountSold')::numeric,0) + coalesce((ucm.data->>'totalAmountInvested')::numeric,0)) else 0 end) as total_volume_mana
@@ -87,6 +92,7 @@ export const getUserAchievements: APIHandler<'get-user-achievements'> = async ({
           and coalesce(b.is_filled, true)
           and not coalesce(b.is_cancelled, false)
           and c.token = 'MANA'
+          and (b.is_api is null or b.is_api = false)
       ),
       markets_created as (
         select count(*) as total_markets_created
@@ -116,10 +122,11 @@ export const getUserAchievements: APIHandler<'get-user-achievements'> = async ({
           and ucm.answer_id is null
           and c.token = 'MANA'
       ),
-      streak as (
-        select coalesce((data->>'currentBettingStreak')::int, 0) as current_betting_streak
-        from users
-        where id = (select uid from base)
+      longest_streak as (
+        select coalesce(max((tx.data->'data'->>'currentBettingStreak')::int), 0) as longest_betting_streak
+        from txns tx
+        where tx.to_id = (select uid from base)
+          and tx.category = 'BETTING_STREAK_BONUS'
       )
       select
         (select uid from base) as user_id,
@@ -142,11 +149,12 @@ export const getUserAchievements: APIHandler<'get-user-achievements'> = async ({
         coalesce(trade_stats.unprofitable_trades_count, 0) as unprofitable_markets_count,
         coalesce(trade_stats.largest_profitable_trade_value, 0) as largest_profitable_trade_value,
         coalesce(trade_stats.largest_unprofitable_trade_value, 0) as largest_unprofitable_trade_value,
-        coalesce(streak.current_betting_streak, 0) as current_betting_streak,
+        coalesce(longest_streak.longest_betting_streak, 0) as longest_betting_streak,
         coalesce(portfolio_maxes.highest_balance_mana, 0) as highest_balance_mana,
         coalesce(portfolio_maxes.highest_invested_mana, 0) as highest_invested_mana,
         coalesce(portfolio_maxes.highest_networth_mana, 0) as highest_networth_mana,
         coalesce(portfolio_maxes.highest_loan_mana, 0) as highest_loan_mana,
+        coalesce(charity.charity_donated_mana, 0) as charity_donated_mana,
         json_build_object(
           'volume', json_build_object('rank', (select volume_rank from mv_ach_volume where user_id = (select uid from base)), 'percentile', null),
           'trades', json_build_object('rank', (select trades_rank from mv_ach_trades where user_id = (select uid from base)), 'percentile', null),
@@ -162,13 +170,16 @@ export const getUserAchievements: APIHandler<'get-user-achievements'> = async ({
           'highestBalance', json_build_object('rank', (select highest_balance_rank from mv_ach_portfolio_maxes where user_id = (select uid from base)), 'percentile', null),
           'highestInvested', json_build_object('rank', (select highest_invested_rank from mv_ach_portfolio_maxes where user_id = (select uid from base)), 'percentile', null),
           'highestNetworth', json_build_object('rank', (select highest_networth_rank from mv_ach_portfolio_maxes where user_id = (select uid from base)), 'percentile', null),
-          'highestLoan', json_build_object('rank', (select highest_loan_rank from mv_ach_portfolio_maxes where user_id = (select uid from base)), 'percentile', null)
+          'highestLoan', json_build_object('rank', (select highest_loan_rank from mv_ach_portfolio_maxes where user_id = (select uid from base)), 'percentile', null),
+          'modTickets', json_build_object('rank', (select mod_tickets_rank from mv_ach_mod_tickets where user_id = (select uid from base)), 'percentile', null),
+          'charityDonated', json_build_object('rank', (select charity_donated_rank from mv_ach_charity_donated where user_id = (select uid from base)), 'percentile', null)
         ) as ranks_json
       from base
       left join portfolio on true
       left join portfolio_maxes on true
       left join creators on true
       left join referrals on true
+      left join charity on true
       left join volume on true
       left join leagues_cte on true
       left join league_ranks on true
@@ -178,7 +189,7 @@ export const getUserAchievements: APIHandler<'get-user-achievements'> = async ({
       left join markets_created on true
       left join account_age on true
       left join trade_stats on true
-      left join streak on true`
+      left join longest_streak on true`
 
   const queryWithMV = `with base as (
         select $1::text as uid
@@ -211,6 +222,11 @@ export const getUserAchievements: APIHandler<'get-user-achievements'> = async ({
         from user_referrals_profit
         where id = (select uid from base)
       ),
+      charity as (
+        select coalesce(sum(amount) filter (where token = 'SPICE' or token = 'M$'), 0) as charity_donated_mana
+        from txns
+        where category = 'CHARITY' and to_id = (select uid from base)
+      ),
       volume as (
         select
           sum(case when c.token = 'MANA' then (coalesce((ucm.data->>'totalAmountSold')::numeric,0) + coalesce((ucm.data->>'totalAmountInvested')::numeric,0)) else 0 end) as total_volume_mana
@@ -235,8 +251,12 @@ export const getUserAchievements: APIHandler<'get-user-achievements'> = async ({
       ),
       comments as (
         select
-          (select count(*) from contract_comments where user_id = (select uid from base)) +
-          (select count(*) from old_post_comments where user_id = (select uid from base)) as number_of_comments
+          coalesce((
+            select count(distinct r.content_id) from user_reactions r
+            where r.content_owner_id = (select uid from base)
+              and r.content_type = 'comment'
+              and r.reaction_type = 'like'
+          ), 0) as number_of_comments
       ),
       liquidity as (
         select coalesce(sum((c.data->>'totalLiquidity')::numeric), 0) as total_liquidity_created_markets
@@ -252,12 +272,14 @@ export const getUserAchievements: APIHandler<'get-user-achievements'> = async ({
           and coalesce(b.is_filled, true)
           and not coalesce(b.is_cancelled, false)
           and c.token = 'MANA'
+          and (b.is_api is null or b.is_api = false)
       ),
       markets_created as (
         select count(*) as total_markets_created
         from contracts c
         where c.creator_id = (select uid from base)
           and c.token = 'MANA'
+          and (c.data->>'uniqueBettorCount')::int >= 2
       ),
       account_age as (
         select round(
@@ -281,10 +303,11 @@ export const getUserAchievements: APIHandler<'get-user-achievements'> = async ({
           and ucm.answer_id is null
           and c.token = 'MANA'
       ),
-      streak as (
-        select coalesce((data->>'currentBettingStreak')::int, 0) as current_betting_streak
-        from users
-        where id = (select uid from base)
+      longest_streak as (
+        select coalesce(max((tx.data->'data'->>'currentBettingStreak')::int), 0) as longest_betting_streak
+        from txns tx
+        where tx.to_id = (select uid from base)
+          and tx.category = 'BETTING_STREAK_BONUS'
       )
       select
         (select uid from base) as user_id,
@@ -307,11 +330,12 @@ export const getUserAchievements: APIHandler<'get-user-achievements'> = async ({
         coalesce(trade_stats.unprofitable_trades_count, 0) as unprofitable_markets_count,
         coalesce(trade_stats.largest_profitable_trade_value, 0) as largest_profitable_trade_value,
         coalesce(trade_stats.largest_unprofitable_trade_value, 0) as largest_unprofitable_trade_value,
-        coalesce(streak.current_betting_streak, 0) as current_betting_streak,
+        coalesce(longest_streak.longest_betting_streak, 0) as longest_betting_streak,
         coalesce(portfolio_maxes.highest_balance_mana, 0) as highest_balance_mana,
         coalesce(portfolio_maxes.highest_invested_mana, 0) as highest_invested_mana,
         coalesce(portfolio_maxes.highest_networth_mana, 0) as highest_networth_mana,
         coalesce(portfolio_maxes.highest_loan_mana, 0) as highest_loan_mana,
+        coalesce(charity.charity_donated_mana, 0) as charity_donated_mana,
         json_build_object(
           'volume', json_build_object('rank', (select volume_rank from mv), 'percentile', (select volume_percentile from mv)),
           'trades', json_build_object('rank', (select trades_rank from mv), 'percentile', (select trades_percentile from mv)),
@@ -329,13 +353,16 @@ export const getUserAchievements: APIHandler<'get-user-achievements'> = async ({
           'highestBalance', json_build_object('rank', (select highest_balance_rank from mv), 'percentile', (select highest_balance_percentile from mv)),
           'highestInvested', json_build_object('rank', (select highest_invested_rank from mv), 'percentile', (select highest_invested_percentile from mv)),
           'highestNetworth', json_build_object('rank', (select highest_networth_rank from mv), 'percentile', (select highest_networth_percentile from mv)),
-          'highestLoan', json_build_object('rank', (select highest_loan_rank from mv), 'percentile', (select highest_loan_percentile from mv))
+          'highestLoan', json_build_object('rank', (select highest_loan_rank from mv), 'percentile', (select highest_loan_percentile from mv)),
+          'modTickets', json_build_object('rank', (select mod_tickets_rank from mv), 'percentile', (select mod_tickets_percentile from mv)),
+          'charityDonated', json_build_object('rank', (select charity_donated_rank from mv), 'percentile', (select charity_donated_percentile from mv))
         ) as ranks_json
       from base
       left join portfolio on true
       left join portfolio_maxes on true
       left join creators on true
       left join referrals on true
+      left join charity on true
       left join volume on true
       left join leagues_cte on true
       left join league_ranks on true
@@ -345,7 +372,7 @@ export const getUserAchievements: APIHandler<'get-user-achievements'> = async ({
       left join markets_created on true
       left join account_age on true
       left join trade_stats on true
-      left join streak on true`
+      left join longest_streak on true`
 
   const queryWithoutMV = `with base as (
         select $1::text as uid
@@ -375,6 +402,11 @@ export const getUserAchievements: APIHandler<'get-user-achievements'> = async ({
         from user_referrals_profit
         where id = (select uid from base)
       ),
+      charity as (
+        select coalesce(sum(amount) filter (where token = 'SPICE' or token = 'M$'), 0) as charity_donated_mana
+        from txns
+        where category = 'CHARITY' and to_id = (select uid from base)
+      ),
       volume as (
         select
           sum(case when c.token = 'MANA' then (coalesce((ucm.data->>'totalAmountSold')::numeric,0) + coalesce((ucm.data->>'totalAmountInvested')::numeric,0)) else 0 end) as total_volume_mana
@@ -399,8 +431,12 @@ export const getUserAchievements: APIHandler<'get-user-achievements'> = async ({
       ),
       comments as (
         select
-          (select count(*) from contract_comments where user_id = (select uid from base)) +
-          (select count(*) from old_post_comments where user_id = (select uid from base)) as number_of_comments
+          coalesce((
+            select count(distinct r.content_id) from user_reactions r
+            where r.content_owner_id = (select uid from base)
+              and r.content_type = 'comment'
+              and r.reaction_type = 'like'
+          ), 0) as number_of_comments
       ),
       liquidity as (
         select coalesce(sum((c.data->>'totalLiquidity')::numeric), 0) as total_liquidity_created_markets
@@ -422,6 +458,7 @@ export const getUserAchievements: APIHandler<'get-user-achievements'> = async ({
         from contracts c
         where c.creator_id = (select uid from base)
           and c.token = 'MANA'
+          and (c.data->>'uniqueBettorCount')::int >= 2
       ),
       account_age as (
         select round(
@@ -445,10 +482,11 @@ export const getUserAchievements: APIHandler<'get-user-achievements'> = async ({
           and ucm.answer_id is null
           and c.token = 'MANA'
       ),
-      streak as (
-        select coalesce((data->>'currentBettingStreak')::int, 0) as current_betting_streak
-        from users
-        where id = (select uid from base)
+      longest_streak as (
+        select coalesce(max((tx.data->'data'->>'currentBettingStreak')::int), 0) as longest_betting_streak
+        from txns tx
+        where tx.to_id = (select uid from base)
+          and tx.category = 'BETTING_STREAK_BONUS'
       )
       select
         (select uid from base) as user_id,
@@ -471,17 +509,19 @@ export const getUserAchievements: APIHandler<'get-user-achievements'> = async ({
         coalesce(trade_stats.unprofitable_trades_count, 0) as unprofitable_markets_count,
         coalesce(trade_stats.largest_profitable_trade_value, 0) as largest_profitable_trade_value,
         coalesce(trade_stats.largest_unprofitable_trade_value, 0) as largest_unprofitable_trade_value,
-        coalesce(streak.current_betting_streak, 0) as current_betting_streak,
+        coalesce(longest_streak.longest_betting_streak, 0) as longest_betting_streak,
         coalesce(portfolio_maxes.highest_balance_mana, 0) as highest_balance_mana,
         coalesce(portfolio_maxes.highest_invested_mana, 0) as highest_invested_mana,
         coalesce(portfolio_maxes.highest_networth_mana, 0) as highest_networth_mana,
         coalesce(portfolio_maxes.highest_loan_mana, 0) as highest_loan_mana,
+        coalesce(charity.charity_donated_mana, 0) as charity_donated_mana,
         null::jsonb as ranks_json
       from base
       left join portfolio on true
       left join portfolio_maxes on true
       left join creators on true
       left join referrals on true
+      left join charity on true
       left join volume on true
       left join leagues_cte on true
       left join league_ranks on true
@@ -491,7 +531,7 @@ export const getUserAchievements: APIHandler<'get-user-achievements'> = async ({
       left join markets_created on true
       left join account_age on true
       left join trade_stats on true
-      left join streak on true`
+      left join longest_streak on true`
 
   const result = await pg.oneOrNone(
     hasPerMV ? queryWithPerMV : hasMV ? queryWithMV : queryWithoutMV,
@@ -584,11 +624,13 @@ export const getUserAchievements: APIHandler<'get-user-achievements'> = async ({
     largestUnprofitableTradeValue: Number(
       result?.largest_unprofitable_trade_value ?? 0
     ),
-    currentBettingStreak: Number(result?.current_betting_streak ?? 0),
+    longestBettingStreak: Number(result?.longest_betting_streak ?? 0),
     highestBalanceMana: Number(result?.highest_balance_mana ?? 0),
     highestInvestedMana: Number(result?.highest_invested_mana ?? 0),
     highestNetworthMana: Number(result?.highest_networth_mana ?? 0),
     highestLoanMana: Number(result?.highest_loan_mana ?? 0),
+    modTicketsResolved: Number(result?.mod_tickets_resolved ?? 0),
+    charityDonatedMana: Number(result?.charity_donated_mana ?? 0),
     ranks,
   }
 }

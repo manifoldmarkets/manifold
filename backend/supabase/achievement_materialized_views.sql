@@ -39,42 +39,38 @@ with
       coalesce(b.is_redemption, false) = false
       and coalesce(b.is_filled, true) = true
       and coalesce(b.is_cancelled, false) = false
+      and (
+        b.is_api is null
+        or b.is_api = false
+      )
     group by
       b.user_id
   ),
   markets_created as (
     select
       mc.creator_id as user_id,
-      count(*) as total_markets_created
+      count(*) filter (
+        where
+          (mc.data ->> 'uniqueBettorCount')::int >= 2
+      ) as total_markets_created
     from
-      mana_contracts mc
+      contracts mc
+    where
+      mc.token = 'MANA'
     group by
       mc.creator_id
   ),
   comments as (
     select
-      user_id,
-      sum(cnt) as number_of_comments
+      r.content_owner_id as user_id,
+      count(distinct r.content_id) as number_of_comments
     from
-      (
-        select
-          cc.user_id,
-          count(*) as cnt
-        from
-          contract_comments cc
-        group by
-          cc.user_id
-        union all
-        select
-          opc.user_id,
-          count(*) as cnt
-        from
-          old_post_comments opc
-        group by
-          opc.user_id
-      ) s
+      user_reactions r
+    where
+      r.content_type = 'comment'
+      and r.reaction_type = 'like'
     group by
-      user_id
+      r.content_owner_id
   ),
   leagues_agg as (
     select
@@ -143,6 +139,32 @@ with
     group by
       user_id
   ),
+  mod_tickets as (
+    select
+      to_id as user_id,
+      count(*) as mod_tickets_resolved
+    from
+      txns
+    where
+      category = 'ADMIN_REWARD'
+    group by
+      to_id
+  ),
+  charity as (
+    select
+      to_id as user_id,
+      sum(amount) filter (
+        where
+          token = 'SPICE'
+          or token = 'M$'
+      ) as charity_donated_mana
+    from
+      txns
+    where
+      category = 'CHARITY'
+    group by
+      to_id
+  ),
   all_users as (
     select
       id as user_id
@@ -169,6 +191,8 @@ select
   coalesce(pm.highest_invested_mana, 0) as highest_invested_mana,
   coalesce(pm.highest_networth_mana, 0) as highest_networth_mana,
   coalesce(pm.highest_loan_mana, 0) as highest_loan_mana,
+  coalesce(mt.mod_tickets_resolved, 0) as mod_tickets_resolved,
+  coalesce(ch.charity_donated_mana, 0) as charity_donated_mana,
   -- Ranks (desc unless noted)
   rank() over (
     order by
@@ -349,7 +373,31 @@ select
           coalesce(pm.highest_loan_mana, 0) desc
       ) + 1
     )::numeric / (count(*) over ())
-  ) * 100 as highest_loan_percentile
+  ) * 100 as highest_loan_percentile,
+  rank() over (
+    order by
+      coalesce(mt.mod_tickets_resolved, 0) desc
+  ) as mod_tickets_rank,
+  (
+    (
+      (count(*) over ()) - rank() over (
+        order by
+          coalesce(mt.mod_tickets_resolved, 0) desc
+      ) + 1
+    )::numeric / (count(*) over ())
+  ) * 100 as mod_tickets_percentile,
+  rank() over (
+    order by
+      coalesce(ch.charity_donated_mana, 0) desc
+  ) as charity_donated_rank,
+  (
+    (
+      (count(*) over ()) - rank() over (
+        order by
+          coalesce(ch.charity_donated_mana, 0) desc
+      ) + 1
+    )::numeric / (count(*) over ())
+  ) * 100 as charity_donated_percentile
 from
   all_users u
   left join volume v on v.user_id = u.user_id
@@ -360,6 +408,8 @@ from
   left join liquidity lq on lq.user_id = u.user_id
   left join ucm_pnl pnl on pnl.user_id = u.user_id
   left join portfolio_maxes pm on pm.user_id = u.user_id
+  left join mod_tickets mt on mt.user_id = u.user_id
+  left join charity ch on ch.user_id = u.user_id
 with
   no data;
 
@@ -449,6 +499,10 @@ with
       coalesce(b.is_redemption, false) = false
       and coalesce(b.is_filled, true) = true
       and coalesce(b.is_cancelled, false) = false
+      and (
+        b.is_api is null
+        or b.is_api = false
+      )
     group by
       b.user_id
   ),
@@ -488,7 +542,8 @@ with
   mana_contracts as (
     select
       id,
-      creator_id
+      creator_id,
+      (data ->> 'uniqueBettorCount')::int as unique_bettors
     from
       contracts
     where
@@ -497,7 +552,10 @@ with
   markets_created as (
     select
       mc.creator_id as user_id,
-      count(*) as total_markets_created
+      count(*) filter (
+        where
+          mc.unique_bettors >= 2
+      ) as total_markets_created
     from
       mana_contracts mc
     group by
@@ -532,34 +590,21 @@ with
 
 create unique index if not exists mv_ach_markets_created_user_id_idx on public.mv_ach_markets_created (user_id);
 
--- Comments
+-- Comments (liked-only)
 create materialized view if not exists
   mv_ach_comments as
 with
-  comments as (
+  liked_comments as (
     select
-      user_id,
-      sum(cnt) as number_of_comments
+      content_owner_id as user_id,
+      count(distinct content_id) as liked_comments
     from
-      (
-        select
-          cc.user_id,
-          count(*) as cnt
-        from
-          contract_comments cc
-        group by
-          cc.user_id
-        union all
-        select
-          opc.user_id,
-          count(*) as cnt
-        from
-          old_post_comments opc
-        group by
-          opc.user_id
-      ) s
+      user_reactions
+    where
+      content_type = 'comment'
+      and reaction_type = 'like'
     group by
-      user_id
+      content_owner_id
   ),
   all_users as (
     select
@@ -569,22 +614,22 @@ with
   )
 select
   u.user_id,
-  coalesce(c.number_of_comments, 0) as number_of_comments,
+  coalesce(lc.liked_comments, 0) as number_of_comments,
   rank() over (
     order by
-      coalesce(c.number_of_comments, 0) desc
+      coalesce(lc.liked_comments, 0) desc
   ) as comments_rank,
   (
     (
       (count(*) over ()) - rank() over (
         order by
-          coalesce(c.number_of_comments, 0) desc
+          coalesce(lc.liked_comments, 0) desc
       ) + 1
     )::numeric / (count(*) over ())
   ) * 100 as comments_percentile
 from
   all_users u
-  left join comments c on c.user_id = u.user_id
+  left join liked_comments lc on lc.user_id = u.user_id
 with
   no data;
 
@@ -900,3 +945,95 @@ with
   no data;
 
 create unique index if not exists mv_ach_portfolio_maxes_user_id_idx on public.mv_ach_portfolio_maxes (user_id);
+
+-- Mod tickets resolved
+create materialized view if not exists
+  mv_ach_mod_tickets as
+with
+  mt as (
+    select
+      to_id as user_id,
+      count(*) as mod_tickets_resolved
+    from
+      txns
+    where
+      category = 'ADMIN_REWARD'
+    group by
+      to_id
+  ),
+  all_users as (
+    select
+      id as user_id
+    from
+      users
+  )
+select
+  u.user_id,
+  coalesce(mt.mod_tickets_resolved, 0) as mod_tickets_resolved,
+  rank() over (
+    order by
+      coalesce(mt.mod_tickets_resolved, 0) desc
+  ) as mod_tickets_rank,
+  (
+    (
+      (count(*) over ()) - rank() over (
+        order by
+          coalesce(mt.mod_tickets_resolved, 0) desc
+      ) + 1
+    )::numeric / (count(*) over ())
+  ) * 100 as mod_tickets_percentile
+from
+  all_users u
+  left join mt on mt.user_id = u.user_id
+with
+  no data;
+
+create unique index if not exists mv_ach_mod_tickets_user_id_idx on public.mv_ach_mod_tickets (user_id);
+
+-- Charity donated
+create materialized view if not exists
+  mv_ach_charity_donated as
+with
+  ch as (
+    select
+      to_id as user_id,
+      sum(amount) filter (
+        where
+          token = 'SPICE'
+          or token = 'M$'
+      ) as charity_donated_mana
+    from
+      txns
+    where
+      category = 'CHARITY'
+    group by
+      to_id
+  ),
+  all_users as (
+    select
+      id as user_id
+    from
+      users
+  )
+select
+  u.user_id,
+  coalesce(ch.charity_donated_mana, 0) as charity_donated_mana,
+  rank() over (
+    order by
+      coalesce(ch.charity_donated_mana, 0) desc
+  ) as charity_donated_rank,
+  (
+    (
+      (count(*) over ()) - rank() over (
+        order by
+          coalesce(ch.charity_donated_mana, 0) desc
+      ) + 1
+    )::numeric / (count(*) over ())
+  ) * 100 as charity_donated_percentile
+from
+  all_users u
+  left join ch on ch.user_id = u.user_id
+with
+  no data;
+
+create unique index if not exists mv_ach_charity_donated_user_id_idx on public.mv_ach_charity_donated (user_id);
