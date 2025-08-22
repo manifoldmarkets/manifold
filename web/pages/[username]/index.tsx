@@ -63,6 +63,64 @@ import { getAverageUserRating, getUserRating } from 'web/lib/supabase/reviews'
 import Custom404 from 'web/pages/404'
 import { UserPayments } from 'web/pages/payments'
 import { formatMoney, formatWithCommas } from 'common/util/format'
+import type { IconType } from 'react-icons'
+import {
+  TbCoin,
+  TbUserPlus,
+  TbChartLine,
+  TbUsers,
+  TbDroplet,
+  TbCircleCheck,
+  TbTrendingDown,
+  TbTrophy,
+  TbArrowDownRight,
+  TbMedal,
+  TbSparkles,
+  TbDiamond,
+  TbCrown,
+  TbCircleNumber1,
+  TbAward,
+  TbCoins,
+  TbWallet,
+  TbMountain,
+  TbBuildingBank,
+  TbMessageDots,
+  TbBolt,
+  TbFilePlus,
+  TbCalendar,
+  TbFlame,
+  TbPigMoney,
+} from 'react-icons/tb'
+import { GiWhaleTail } from 'react-icons/gi'
+
+const ACHIEVEMENT_ICONS: Record<string, IconType> = {
+  totalProfitMana: TbCoin,
+  totalVolumeMana: GiWhaleTail,
+  totalReferrals: TbUserPlus,
+  totalReferredProfitMana: TbChartLine,
+  creatorTraders: TbUsers,
+  totalLiquidityCreatedMarkets: TbDroplet,
+  profitableMarketsCount: TbCircleCheck,
+  unprofitableMarketsCount: TbTrendingDown,
+  largestProfitableTradeValue: TbTrophy,
+  largestUnprofitableTradeValue: TbArrowDownRight,
+  seasonsGoldOrHigher: TbMedal,
+  seasonsPlatinumOrHigher: TbSparkles,
+  seasonsDiamondOrHigher: TbDiamond,
+  seasonsMasters: TbCrown,
+  seasonsRank1ByCohort: TbCircleNumber1,
+  seasonsRank1Masters: TbAward,
+  largestLeagueSeasonEarnings: TbCoins,
+  highestBalanceMana: TbWallet,
+  highestNetworthMana: TbMountain,
+  highestInvestedMana: TbPigMoney,
+  highestLoanMana: TbBuildingBank,
+  numberOfComments: TbMessageDots,
+  totalTradesCount: TbBolt,
+  totalMarketsCreated: TbFilePlus,
+  accountAgeYears: TbCalendar,
+  currentBettingStreak: TbFlame,
+}
 
 export const getStaticProps = async (props: {
   params: {
@@ -914,6 +972,7 @@ function AchievementsSection(props: { userId: string }) {
                   value={a.value}
                   rank={a.rank}
                   percentile={a.percentile}
+                  icon={ACHIEVEMENT_ICONS[a.id]}
                   bucket={bucket}
                 />
               ))}
@@ -932,8 +991,10 @@ function AchievementBadgeCard(props: {
   rank: number | null
   percentile: number | null
   bucket: 'Top 0.1%' | 'Top 1%' | 'Top 5%' | 'Top 25%' | 'Top 50%' | 'All users'
+  icon?: IconType
 }) {
-  const { title, description, value, rank, percentile, bucket } = props
+  const { title, description, value, rank, percentile, bucket, icon } = props
+  const Icon = icon ?? TbAward
 
   const bucketStyle: Record<typeof props.bucket, string> = {
     'Top 0.1%': 'from-fuchsia-500 to-indigo-500',
@@ -957,22 +1018,13 @@ function AchievementBadgeCard(props: {
         )}
       >
         <div className="bg-canvas-0 flex h-full flex-col items-center rounded-[11px] px-4 pt-6">
-          <div className="bg-ink-1000/5 ring-ink-300/50 flex  h-24 w-24 items-center justify-center rounded-lg ring-1">
-            <svg
-              viewBox="0 0 24 24"
-              className="h-8 w-8 opacity-80"
-              aria-hidden="true"
-            >
-              <path
-                d="M12 2l3 6 6 .9-4.5 4.1 1.2 6-5.7-3.1-5.7 3.1 1.2-6L3 8.9 9 8l3-6z"
-                fill="currentColor"
-              />
-            </svg>
+          <div className=" ring-ink-300/50 flex  h-24 w-24 items-center justify-center rounded-lg ring-1">
+            <Icon className="h-12 w-12 " />
           </div>
           <div className=" pt-5 text-center">
             <div className="text-ink-900  text-lg font-semibold">{title}</div>
             <div className="text-ink-600 text-sm ">{description}</div>
-            <div className="text-ink-900 text-lg mt-3">{value}</div>
+            <div className="text-ink-900 mt-3 text-lg">{value}</div>
           </div>
 
           {/* side hover tooltip */}
