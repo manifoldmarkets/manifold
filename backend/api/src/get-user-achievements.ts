@@ -46,6 +46,11 @@ export const getUserAchievements: APIHandler<'get-user-achievements'> = async ({
         from user_referrals_profit
         where id = (select uid from base)
       ),
+      mod_tickets as (
+        select count(*) as mod_tickets_resolved
+        from txns
+        where category = 'ADMIN_REWARD' and to_id = (select uid from base)
+      ),
       charity as (
         select coalesce(sum(case when token = 'M$' then amount / 100.0 else 0 end), 0)
              + coalesce(sum(case when token = 'CASH' then amount else 0 end), 0)
@@ -156,6 +161,7 @@ export const getUserAchievements: APIHandler<'get-user-achievements'> = async ({
         coalesce(portfolio_maxes.highest_invested_mana, 0) as highest_invested_mana,
         coalesce(portfolio_maxes.highest_networth_mana, 0) as highest_networth_mana,
         coalesce(portfolio_maxes.highest_loan_mana, 0) as highest_loan_mana,
+        coalesce(mod_tickets.mod_tickets_resolved, 0) as mod_tickets_resolved,
         coalesce(charity.charity_donated_mana, 0) as charity_donated_mana,
         json_build_object(
           'volume', json_build_object('rank', (select volume_rank from mv_ach_volume where user_id = (select uid from base)), 'percentile', null),
@@ -181,6 +187,7 @@ export const getUserAchievements: APIHandler<'get-user-achievements'> = async ({
       left join portfolio_maxes on true
       left join creators on true
       left join referrals on true
+      left join mod_tickets on true
       left join charity on true
       left join volume on true
       left join leagues_cte on true
@@ -223,6 +230,11 @@ export const getUserAchievements: APIHandler<'get-user-achievements'> = async ({
         select total_referrals, total_referred_profit as total_referred_profit_mana
         from user_referrals_profit
         where id = (select uid from base)
+      ),
+      mod_tickets as (
+        select count(*) as mod_tickets_resolved
+        from txns
+        where category = 'ADMIN_REWARD' and to_id = (select uid from base)
       ),
       charity as (
         select coalesce(sum(case when token = 'M$' then amount / 100.0 else 0 end), 0)
@@ -339,6 +351,7 @@ export const getUserAchievements: APIHandler<'get-user-achievements'> = async ({
         coalesce(portfolio_maxes.highest_invested_mana, 0) as highest_invested_mana,
         coalesce(portfolio_maxes.highest_networth_mana, 0) as highest_networth_mana,
         coalesce(portfolio_maxes.highest_loan_mana, 0) as highest_loan_mana,
+        coalesce(mod_tickets.mod_tickets_resolved, 0) as mod_tickets_resolved,
         coalesce(charity.charity_donated_mana, 0) as charity_donated_mana,
         json_build_object(
           'volume', json_build_object('rank', (select volume_rank from mv), 'percentile', (select volume_percentile from mv)),
@@ -366,6 +379,7 @@ export const getUserAchievements: APIHandler<'get-user-achievements'> = async ({
       left join portfolio_maxes on true
       left join creators on true
       left join referrals on true
+      left join mod_tickets on true
       left join charity on true
       left join volume on true
       left join leagues_cte on true
@@ -405,6 +419,11 @@ export const getUserAchievements: APIHandler<'get-user-achievements'> = async ({
         select total_referrals, total_referred_profit as total_referred_profit_mana
         from user_referrals_profit
         where id = (select uid from base)
+      ),
+      mod_tickets as (
+        select count(*) as mod_tickets_resolved
+        from txns
+        where category = 'ADMIN_REWARD' and to_id = (select uid from base)
       ),
       charity as (
         select coalesce(sum(case when token = 'M$' then amount / 100.0 else 0 end), 0)
@@ -520,6 +539,7 @@ export const getUserAchievements: APIHandler<'get-user-achievements'> = async ({
         coalesce(portfolio_maxes.highest_invested_mana, 0) as highest_invested_mana,
         coalesce(portfolio_maxes.highest_networth_mana, 0) as highest_networth_mana,
         coalesce(portfolio_maxes.highest_loan_mana, 0) as highest_loan_mana,
+        coalesce(mod_tickets.mod_tickets_resolved, 0) as mod_tickets_resolved,
         coalesce(charity.charity_donated_mana, 0) as charity_donated_mana,
         null::jsonb as ranks_json
       from base
@@ -527,6 +547,7 @@ export const getUserAchievements: APIHandler<'get-user-achievements'> = async ({
       left join portfolio_maxes on true
       left join creators on true
       left join referrals on true
+      left join mod_tickets on true
       left join charity on true
       left join volume on true
       left join leagues_cte on true

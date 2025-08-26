@@ -865,28 +865,32 @@ create unique index if not exists mv_ach_portfolio_maxes_user_id_idx on public.m
 create materialized view if not exists
   mv_ach_txns_achievements as
 with
-  txns_agg as (
+  mod_tickets_agg as (
+    select
+      to_id as user_id,
+      count(*) as mod_tickets_resolved
+    from
+      txns
+    where
+      category = 'ADMIN_REWARD'
+    group by
+      to_id
+  ),
+  charity_agg as (
     select
       from_id as user_id,
       sum(
         case
-          when category = 'ADMIN_REWARD' then 1
-          else 0
-        end
-      ) as mod_tickets_resolved,
-      sum(
-        case
-          when category = 'CHARITY'
-          and token = 'M$' then amount / 100.0
-          when category = 'CHARITY'
-          and token = 'CASH' then amount
-          when category = 'CHARITY'
-          and token = 'SPICE' then amount / 1000.0
+          when token = 'M$' then amount / 100.0
+          when token = 'CASH' then amount
+          when token = 'SPICE' then amount / 1000.0
           else 0
         end
       ) as charity_donated_mana
     from
       txns
+    where
+      category = 'CHARITY'
     group by
       from_id
   ),
@@ -898,35 +902,36 @@ with
   )
 select
   u.user_id,
-  coalesce(t.mod_tickets_resolved, 0) as mod_tickets_resolved,
-  coalesce(t.charity_donated_mana, 0) as charity_donated_mana,
+  coalesce(m.mod_tickets_resolved, 0) as mod_tickets_resolved,
+  coalesce(c.charity_donated_mana, 0) as charity_donated_mana,
   rank() over (
     order by
-      coalesce(t.mod_tickets_resolved, 0) desc
+      coalesce(m.mod_tickets_resolved, 0) desc
   ) as mod_tickets_rank,
   (
     (
       (count(*) over ()) - rank() over (
         order by
-          coalesce(t.mod_tickets_resolved, 0) desc
+          coalesce(m.mod_tickets_resolved, 0) desc
       ) + 1
     )::numeric / (count(*) over ())
   ) * 100 as mod_tickets_percentile,
   rank() over (
     order by
-      coalesce(t.charity_donated_mana, 0) desc
+      coalesce(c.charity_donated_mana, 0) desc
   ) as charity_donated_rank,
   (
     (
       (count(*) over ()) - rank() over (
         order by
-          coalesce(t.charity_donated_mana, 0) desc
+          coalesce(c.charity_donated_mana, 0) desc
       ) + 1
     )::numeric / (count(*) over ())
   ) * 100 as charity_donated_percentile
 from
   all_users u
-  left join txns_agg t on t.user_id = u.user_id
+  left join mod_tickets_agg m on m.user_id = u.user_id
+  left join charity_agg c on c.user_id = u.user_id
 with
   no data;
 
