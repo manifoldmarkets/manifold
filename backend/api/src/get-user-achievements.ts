@@ -47,9 +47,11 @@ export const getUserAchievements: APIHandler<'get-user-achievements'> = async ({
         where id = (select uid from base)
       ),
       charity as (
-        select coalesce(sum(amount) filter (where token = 'SPICE' or token = 'M$'), 0) as charity_donated_mana
+        select coalesce(sum(case when token = 'M$' then amount / 100.0 else 0 end), 0)
+             + coalesce(sum(case when token = 'CASH' then amount else 0 end), 0)
+             + coalesce(sum(case when token = 'SPICE' then amount / 1000.0 else 0 end), 0) as charity_donated_mana
         from txns
-        where category = 'CHARITY' and to_id = (select uid from base)
+        where category = 'CHARITY' and from_id = (select uid from base)
       ),
       volume as (
         select
@@ -223,9 +225,11 @@ export const getUserAchievements: APIHandler<'get-user-achievements'> = async ({
         where id = (select uid from base)
       ),
       charity as (
-        select coalesce(sum(amount) filter (where token = 'SPICE' or token = 'M$'), 0) as charity_donated_mana
+        select coalesce(sum(case when token = 'M$' then amount / 100.0 else 0 end), 0)
+             + coalesce(sum(case when token = 'CASH' then amount else 0 end), 0)
+             + coalesce(sum(case when token = 'SPICE' then amount / 1000.0 else 0 end), 0) as charity_donated_mana
         from txns
-        where category = 'CHARITY' and to_id = (select uid from base)
+        where category = 'CHARITY' and from_id = (select uid from base)
       ),
       volume as (
         select
@@ -403,9 +407,11 @@ export const getUserAchievements: APIHandler<'get-user-achievements'> = async ({
         where id = (select uid from base)
       ),
       charity as (
-        select coalesce(sum(amount) filter (where token = 'SPICE' or token = 'M$'), 0) as charity_donated_mana
+        select coalesce(sum(case when token = 'M$' then amount / 100.0 else 0 end), 0)
+             + coalesce(sum(case when token = 'CASH' then amount else 0 end), 0)
+             + coalesce(sum(case when token = 'SPICE' then amount / 1000.0 else 0 end), 0) as charity_donated_mana
         from txns
-        where category = 'CHARITY' and to_id = (select uid from base)
+        where category = 'CHARITY' and from_id = (select uid from base)
       ),
       volume as (
         select

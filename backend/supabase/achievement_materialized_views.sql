@@ -152,18 +152,40 @@ with
   ),
   charity as (
     select
-      to_id as user_id,
-      sum(amount) filter (
-        where
-          token = 'SPICE'
-          or token = 'M$'
+      from_id as user_id,
+      (
+        coalesce(
+          sum(
+            case
+              when token = 'M$' then amount / 100.0
+              else 0
+            end
+          ),
+          0
+        ) + coalesce(
+          sum(
+            case
+              when token = 'CASH' then amount
+              else 0
+            end
+          ),
+          0
+        ) + coalesce(
+          sum(
+            case
+              when token = 'SPICE' then amount / 1000.0
+              else 0
+            end
+          ),
+          0
+        )
       ) as charity_donated_mana
     from
       txns
     where
       category = 'CHARITY'
     group by
-      to_id
+      from_id
   ),
   all_users as (
     select
@@ -845,7 +867,7 @@ create materialized view if not exists
 with
   txns_agg as (
     select
-      to_id as user_id,
+      from_id as user_id,
       sum(
         case
           when category = 'ADMIN_REWARD' then 1
@@ -855,17 +877,18 @@ with
       sum(
         case
           when category = 'CHARITY'
-          and (
-            token = 'SPICE'
-            or token = 'M$'
-          ) then amount
+          and token = 'M$' then amount / 100.0
+          when category = 'CHARITY'
+          and token = 'CASH' then amount
+          when category = 'CHARITY'
+          and token = 'SPICE' then amount / 1000.0
           else 0
         end
       ) as charity_donated_mana
     from
       txns
     group by
-      to_id
+      from_id
   ),
   all_users as (
     select

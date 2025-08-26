@@ -62,7 +62,11 @@ import { db } from 'web/lib/supabase/db'
 import { getAverageUserRating, getUserRating } from 'web/lib/supabase/reviews'
 import Custom404 from 'web/pages/404'
 import { UserPayments } from 'web/pages/payments'
-import { formatMoney, formatWithCommas } from 'common/util/format'
+import {
+  formatMoney,
+  formatWithCommas,
+  formatMoneyUSD,
+} from 'common/util/format'
 import type { IconType } from 'react-icons'
 import {
   TbCoin,
@@ -912,8 +916,8 @@ function AchievementsSection(props: { userId: string }) {
     {
       id: 'charityDonatedMana',
       title: 'Giver',
-      desc: 'Total mana donated to charity.',
-      value: formatMoney(data.charityDonatedMana, 'MANA'),
+      desc: 'Total donated to charity (USD).',
+      value: formatMoneyUSD(data.charityDonatedMana, true),
       rank: r(data.ranks?.charityDonated),
       percentile: p(data.ranks?.charityDonated),
     },
