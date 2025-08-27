@@ -973,6 +973,14 @@ function AchievementsSection(props: { userId: string }) {
       {bucketOrder.map((bucket) => {
         const items = byBucket[bucket]
         if (!items.length) return null
+        const sorted = items.slice().sort((a, b) => {
+          const ra = a.rank ?? Infinity
+          const rb = b.rank ?? Infinity
+          if (ra !== rb) return ra - rb
+          const pa = a.percentile ?? Infinity
+          const pb = b.percentile ?? Infinity
+          return pa - pb
+        })
         return (
           <Col key={bucket} className="gap-3">
             <div className="text-ink-800 flex items-center gap-2 text-sm font-semibold uppercase tracking-wider">
@@ -981,7 +989,7 @@ function AchievementsSection(props: { userId: string }) {
             </div>
 
             <div className="grid grid-cols-1 gap-5 md:grid-cols-2 lg:grid-cols-3">
-              {items.map((a) => (
+              {sorted.map((a) => (
                 <AchievementBadgeCard
                   key={a.id}
                   title={a.title}
