@@ -610,6 +610,8 @@ export const getUserAchievements: APIHandler<'get-user-achievements'> = async ({
     highestLoan: { rank: null, percentile: null },
     accountAge: { rank: null, percentile: null },
     longestBettingStreak: { rank: null, percentile: null },
+    modTickets: { rank: null, percentile: null },
+    charityDonated: { rank: null, percentile: null },
   }
 
   const rawRanks = (result?.ranks_json as any) ?? defaultRanks
@@ -653,6 +655,8 @@ export const getUserAchievements: APIHandler<'get-user-achievements'> = async ({
       highestLoan: conv(rawRanks.highestLoan),
       accountAge: conv(rawRanks.accountAge),
       longestBettingStreak: conv(rawRanks.longestBettingStreak),
+      modTickets: conv(rawRanks.modTickets),
+      charityDonated: conv(rawRanks.charityDonated),
     }
   }
 
