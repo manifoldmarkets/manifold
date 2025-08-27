@@ -2015,10 +2015,23 @@ export const API = (_apiTypeCheck = {
       modTicketsResolved: number
       charityDonatedMana: number
       ranks: {
+        totalProfit: { rank: number | null; percentile: number | null }
+        creatorTraders: { rank: number | null; percentile: number | null }
+        totalReferrals: { rank: number | null; percentile: number | null }
+        totalReferredProfit: { rank: number | null; percentile: number | null }
         volume: { rank: number | null; percentile: number | null }
         trades: { rank: number | null; percentile: number | null }
         marketsCreated: { rank: number | null; percentile: number | null }
         comments: { rank: number | null; percentile: number | null }
+        seasonsGoldOrHigher: { rank: number | null; percentile: number | null }
+        seasonsPlatinumOrHigher: {
+          rank: number | null
+          percentile: number | null
+        }
+        seasonsDiamondOrHigher: {
+          rank: number | null
+          percentile: number | null
+        }
         seasonsMasters: { rank: number | null; percentile: number | null }
         largestLeagueSeasonEarnings: {
           rank: number | null
@@ -2039,6 +2052,8 @@ export const API = (_apiTypeCheck = {
         highestInvested: { rank: number | null; percentile: number | null }
         highestNetworth: { rank: number | null; percentile: number | null }
         highestLoan: { rank: number | null; percentile: number | null }
+        accountAge: { rank: number | null; percentile: number | null }
+        longestBettingStreak: { rank: number | null; percentile: number | null }
         modTickets: { rank: number | null; percentile: number | null }
         charityDonated: { rank: number | null; percentile: number | null }
       }

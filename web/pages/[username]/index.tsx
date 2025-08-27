@@ -617,6 +617,44 @@ function AchievementsSection(props: { userId: string }) {
   const { userId } = props
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  type RanksType = {
+    totalProfit: { rank: number | null; percentile: number | null }
+    creatorTraders: { rank: number | null; percentile: number | null }
+    totalReferrals: { rank: number | null; percentile: number | null }
+    totalReferredProfit: { rank: number | null; percentile: number | null }
+    volume: { rank: number | null; percentile: number | null }
+    trades: { rank: number | null; percentile: number | null }
+    marketsCreated: { rank: number | null; percentile: number | null }
+    comments: { rank: number | null; percentile: number | null }
+    seasonsGoldOrHigher: { rank: number | null; percentile: number | null }
+    seasonsPlatinumOrHigher: { rank: number | null; percentile: number | null }
+    seasonsDiamondOrHigher: { rank: number | null; percentile: number | null }
+    seasonsMasters: { rank: number | null; percentile: number | null }
+    largestLeagueSeasonEarnings: {
+      rank: number | null
+      percentile: number | null
+    }
+    liquidity: { rank: number | null; percentile: number | null }
+    profitableMarkets: { rank: number | null; percentile: number | null }
+    unprofitableMarkets: { rank: number | null; percentile: number | null }
+    largestProfitableTrade: {
+      rank: number | null
+      percentile: number | null
+    }
+    largestUnprofitableTrade: {
+      rank: number | null
+      percentile: number | null
+    }
+    highestBalance: { rank: number | null; percentile: number | null }
+    highestInvested: { rank: number | null; percentile: number | null }
+    highestNetworth: { rank: number | null; percentile: number | null }
+    highestLoan: { rank: number | null; percentile: number | null }
+    accountAge: { rank: number | null; percentile: number | null }
+    longestBettingStreak: { rank: number | null; percentile: number | null }
+    modTickets: { rank: number | null; percentile: number | null }
+    charityDonated: { rank: number | null; percentile: number | null }
+  }
+
   const [data, setData] = useState<{
     userId: string
     totalProfitMana: number
@@ -645,34 +683,7 @@ function AchievementsSection(props: { userId: string }) {
     highestInvestedMana: number
     highestNetworthMana: number
     highestLoanMana: number
-    ranks: {
-      volume: { rank: number | null; percentile: number | null }
-      trades: { rank: number | null; percentile: number | null }
-      marketsCreated: { rank: number | null; percentile: number | null }
-      comments: { rank: number | null; percentile: number | null }
-      seasonsMasters: { rank: number | null; percentile: number | null }
-      largestLeagueSeasonEarnings: {
-        rank: number | null
-        percentile: number | null
-      }
-      liquidity: { rank: number | null; percentile: number | null }
-      profitableMarkets: { rank: number | null; percentile: number | null }
-      unprofitableMarkets: { rank: number | null; percentile: number | null }
-      largestProfitableTrade: {
-        rank: number | null
-        percentile: number | null
-      }
-      largestUnprofitableTrade: {
-        rank: number | null
-        percentile: number | null
-      }
-      highestBalance: { rank: number | null; percentile: number | null }
-      highestInvested: { rank: number | null; percentile: number | null }
-      highestNetworth: { rank: number | null; percentile: number | null }
-      highestLoan: { rank: number | null; percentile: number | null }
-      modTickets: { rank: number | null; percentile: number | null }
-      charityDonated: { rank: number | null; percentile: number | null }
-    }
+    ranks: RanksType
   } | null>(null)
 
   useEffect(() => {
@@ -717,8 +728,8 @@ function AchievementsSection(props: { userId: string }) {
       title: 'But Was It Realised?',
       desc: 'Highest total profit recorded.',
       value: formatMoney(data.totalProfitMana, 'MANA'),
-      rank: null,
-      percentile: null,
+      rank: r(data.ranks?.totalProfit),
+      percentile: p(data.ranks?.totalProfit),
     },
     {
       id: 'totalVolumeMana',
@@ -733,24 +744,24 @@ function AchievementsSection(props: { userId: string }) {
       title: 'Manifold Hype Man',
       desc: 'Friends you brought to Manifold.',
       value: formatWithCommas(data.totalReferrals),
-      rank: null,
-      percentile: null,
+      rank: r(data.ranks?.totalReferrals),
+      percentile: p(data.ranks?.totalReferrals),
     },
     {
       id: 'totalReferredProfitMana',
       title: 'Proud Parent',
       desc: 'Profit earned by your referrals.',
       value: formatMoney(data.totalReferredProfitMana, 'MANA'),
-      rank: null,
-      percentile: null,
+      rank: r(data.ranks?.totalReferredProfit),
+      percentile: p(data.ranks?.totalReferredProfit),
     },
     {
       id: 'creatorTraders',
       title: 'Fan Favorite',
       desc: 'Unique traders on your markets.',
       value: formatWithCommas(data.creatorTraders),
-      rank: null,
-      percentile: null,
+      rank: r(data.ranks?.creatorTraders),
+      percentile: p(data.ranks?.creatorTraders),
     },
     {
       id: 'totalLiquidityCreatedMarkets',
@@ -797,24 +808,24 @@ function AchievementsSection(props: { userId: string }) {
       title: 'Gleaming Gold',
       desc: 'Seasons finished Gold or higher.',
       value: formatWithCommas(data.seasonsGoldOrHigher),
-      rank: null,
-      percentile: null,
+      rank: r(data.ranks?.seasonsGoldOrHigher),
+      percentile: p(data.ranks?.seasonsGoldOrHigher),
     },
     {
       id: 'seasonsPlatinumOrHigher',
       title: 'Positively Platinum',
       desc: 'Seasons finished Platinum or higher.',
       value: formatWithCommas(data.seasonsPlatinumOrHigher),
-      rank: null,
-      percentile: null,
+      rank: r(data.ranks?.seasonsPlatinumOrHigher),
+      percentile: p(data.ranks?.seasonsPlatinumOrHigher),
     },
     {
       id: 'seasonsDiamondOrHigher',
       title: 'Diamond Hands',
       desc: 'Seasons finished Diamond or higher.',
       value: formatWithCommas(data.seasonsDiamondOrHigher),
-      rank: null,
-      percentile: null,
+      rank: r(data.ranks?.seasonsDiamondOrHigher),
+      percentile: p(data.ranks?.seasonsDiamondOrHigher),
     },
     {
       id: 'seasonsMasters',
@@ -894,16 +905,16 @@ function AchievementsSection(props: { userId: string }) {
       title: 'Age Is Just A Number',
       desc: 'Account age in years.',
       value: data.accountAgeYears.toFixed(2),
-      rank: null,
-      percentile: null,
+      rank: r(data.ranks?.accountAge),
+      percentile: p(data.ranks?.accountAge),
     },
     {
       id: 'longestBettingStreak',
       title: 'Longest Daily Streak',
       desc: 'Longest consecutive days trading.',
       value: formatWithCommas(data.longestBettingStreak),
-      rank: null,
-      percentile: null,
+      rank: r(data.ranks?.longestBettingStreak),
+      percentile: p(data.ranks?.longestBettingStreak),
     },
     {
       id: 'modTicketsResolved',

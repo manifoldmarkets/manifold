@@ -164,10 +164,17 @@ export const getUserAchievements: APIHandler<'get-user-achievements'> = async ({
         coalesce(mod_tickets.mod_tickets_resolved, 0) as mod_tickets_resolved,
         coalesce(charity.charity_donated_mana, 0) as charity_donated_mana,
         json_build_object(
+          'totalProfit', json_build_object('rank', (select total_profit_rank from mv_ach_total_profit where user_id = (select uid from base)), 'percentile', null),
+          'creatorTraders', json_build_object('rank', (select creator_traders_rank from mv_ach_creator_traders where user_id = (select uid from base)), 'percentile', null),
+          'totalReferrals', json_build_object('rank', (select total_referrals_rank from mv_ach_referrals where user_id = (select uid from base)), 'percentile', null),
+          'totalReferredProfit', json_build_object('rank', (select total_referred_profit_rank from mv_ach_referrals where user_id = (select uid from base)), 'percentile', null),
           'volume', json_build_object('rank', (select volume_rank from mv_ach_volume where user_id = (select uid from base)), 'percentile', null),
           'trades', json_build_object('rank', (select trades_rank from mv_ach_trades where user_id = (select uid from base)), 'percentile', null),
           'marketsCreated', json_build_object('rank', (select markets_created_rank from mv_ach_creator_contracts where user_id = (select uid from base)), 'percentile', null),
           'comments', json_build_object('rank', (select comments_rank from mv_ach_comments where user_id = (select uid from base)), 'percentile', null),
+          'seasonsGoldOrHigher', json_build_object('rank', (select seasons_gold_or_higher_rank from mv_ach_leagues where user_id = (select uid from base)), 'percentile', null),
+          'seasonsPlatinumOrHigher', json_build_object('rank', (select seasons_platinum_or_higher_rank from mv_ach_leagues where user_id = (select uid from base)), 'percentile', null),
+          'seasonsDiamondOrHigher', json_build_object('rank', (select seasons_diamond_or_higher_rank from mv_ach_leagues where user_id = (select uid from base)), 'percentile', null),
           'seasonsMasters', json_build_object('rank', (select seasons_masters_rank from mv_ach_leagues where user_id = (select uid from base)), 'percentile', null),
           'largestLeagueSeasonEarnings', json_build_object('rank', (select largest_league_season_earnings_rank from mv_ach_leagues where user_id = (select uid from base)), 'percentile', null),
           'liquidity', json_build_object('rank', (select liquidity_rank from mv_ach_creator_contracts where user_id = (select uid from base)), 'percentile', null),
@@ -179,6 +186,8 @@ export const getUserAchievements: APIHandler<'get-user-achievements'> = async ({
           'highestInvested', json_build_object('rank', (select highest_invested_rank from mv_ach_portfolio_maxes where user_id = (select uid from base)), 'percentile', null),
           'highestNetworth', json_build_object('rank', (select highest_networth_rank from mv_ach_portfolio_maxes where user_id = (select uid from base)), 'percentile', null),
           'highestLoan', json_build_object('rank', (select highest_loan_rank from mv_ach_portfolio_maxes where user_id = (select uid from base)), 'percentile', null),
+          'accountAge', json_build_object('rank', (select account_age_rank from mv_ach_account_age where user_id = (select uid from base)), 'percentile', null),
+          'longestBettingStreak', json_build_object('rank', (select longest_betting_streak_rank from mv_ach_txns_achievements where user_id = (select uid from base)), 'percentile', null),
           'modTickets', json_build_object('rank', (select mod_tickets_rank from mv_ach_txns_achievements where user_id = (select uid from base)), 'percentile', null),
           'charityDonated', json_build_object('rank', (select charity_donated_rank from mv_ach_txns_achievements where user_id = (select uid from base)), 'percentile', null)
         ) as ranks_json
@@ -354,10 +363,17 @@ export const getUserAchievements: APIHandler<'get-user-achievements'> = async ({
         coalesce(mod_tickets.mod_tickets_resolved, 0) as mod_tickets_resolved,
         coalesce(charity.charity_donated_mana, 0) as charity_donated_mana,
         json_build_object(
+          'totalProfit', json_build_object('rank', (select total_profit_rank from mv_ach_total_profit where user_id = (select uid from base)), 'percentile', null),
+          'creatorTraders', json_build_object('rank', (select creator_traders_rank from mv_ach_creator_traders where user_id = (select uid from base)), 'percentile', null),
+          'totalReferrals', json_build_object('rank', (select total_referrals_rank from mv_ach_referrals where user_id = (select uid from base)), 'percentile', null),
+          'totalReferredProfit', json_build_object('rank', (select total_referred_profit_rank from mv_ach_referrals where user_id = (select uid from base)), 'percentile', null),
           'volume', json_build_object('rank', (select volume_rank from mv), 'percentile', (select volume_percentile from mv)),
           'trades', json_build_object('rank', (select trades_rank from mv), 'percentile', (select trades_percentile from mv)),
           'marketsCreated', json_build_object('rank', (select markets_created_rank from mv_ach_creator_contracts where user_id = (select uid from base)), 'percentile', null),
           'comments', json_build_object('rank', (select comments_rank from mv), 'percentile', (select comments_percentile from mv)),
+          'seasonsGoldOrHigher', json_build_object('rank', (select seasons_gold_or_higher_rank from mv), 'percentile', (select seasons_gold_or_higher_percentile from mv)),
+          'seasonsPlatinumOrHigher', json_build_object('rank', (select seasons_platinum_or_higher_rank from mv), 'percentile', (select seasons_platinum_or_higher_percentile from mv)),
+          'seasonsDiamondOrHigher', json_build_object('rank', (select seasons_diamond_or_higher_rank from mv), 'percentile', (select seasons_diamond_or_higher_percentile from mv)),
           'seasonsMasters', json_build_object('rank', (select seasons_masters_rank from mv), 'percentile', (select seasons_masters_percentile from mv)),
           'seasonsRank1ByCohort', json_build_object('rank', (select seasons_rank1_by_cohort_rank from mv), 'percentile', (select seasons_rank1_by_cohort_percentile from mv)),
           'seasonsRank1Masters', json_build_object('rank', (select seasons_rank1_masters_rank from mv), 'percentile', (select seasons_rank1_masters_percentile from mv)),
@@ -371,6 +387,8 @@ export const getUserAchievements: APIHandler<'get-user-achievements'> = async ({
           'highestInvested', json_build_object('rank', (select highest_invested_rank from mv), 'percentile', (select highest_invested_percentile from mv)),
           'highestNetworth', json_build_object('rank', (select highest_networth_rank from mv), 'percentile', (select highest_networth_percentile from mv)),
           'highestLoan', json_build_object('rank', (select highest_loan_rank from mv), 'percentile', (select highest_loan_percentile from mv)),
+          'accountAge', json_build_object('rank', (select account_age_rank from mv_ach_account_age where user_id = (select uid from base)), 'percentile', null),
+          'longestBettingStreak', json_build_object('rank', (select longest_betting_streak_rank from mv_ach_txns_achievements where user_id = (select uid from base)), 'percentile', null),
           'modTickets', json_build_object('rank', (select mod_tickets_rank from mv_ach_txns_achievements where user_id = (select uid from base)), 'percentile', null),
           'charityDonated', json_build_object('rank', (select charity_donated_rank from mv_ach_txns_achievements where user_id = (select uid from base)), 'percentile', null)
         ) as ranks_json
@@ -566,10 +584,17 @@ export const getUserAchievements: APIHandler<'get-user-achievements'> = async ({
   )
 
   const defaultRanks = {
+    totalProfit: { rank: null, percentile: null },
+    creatorTraders: { rank: null, percentile: null },
+    totalReferrals: { rank: null, percentile: null },
+    totalReferredProfit: { rank: null, percentile: null },
     volume: { rank: null, percentile: null },
     trades: { rank: null, percentile: null },
     marketsCreated: { rank: null, percentile: null },
     comments: { rank: null, percentile: null },
+    seasonsGoldOrHigher: { rank: null, percentile: null },
+    seasonsPlatinumOrHigher: { rank: null, percentile: null },
+    seasonsDiamondOrHigher: { rank: null, percentile: null },
     seasonsMasters: { rank: null, percentile: null },
     seasonsRank1ByCohort: { rank: null, percentile: null },
     seasonsRank1Masters: { rank: null, percentile: null },
@@ -583,6 +608,8 @@ export const getUserAchievements: APIHandler<'get-user-achievements'> = async ({
     highestInvested: { rank: null, percentile: null },
     highestNetworth: { rank: null, percentile: null },
     highestLoan: { rank: null, percentile: null },
+    accountAge: { rank: null, percentile: null },
+    longestBettingStreak: { rank: null, percentile: null },
   }
 
   const rawRanks = (result?.ranks_json as any) ?? defaultRanks
@@ -600,10 +627,17 @@ export const getUserAchievements: APIHandler<'get-user-achievements'> = async ({
         : { rank: e?.rank ?? null, percentile: null }
 
     ranks = {
+      totalProfit: conv(rawRanks.totalProfit),
+      creatorTraders: conv(rawRanks.creatorTraders),
+      totalReferrals: conv(rawRanks.totalReferrals),
+      totalReferredProfit: conv(rawRanks.totalReferredProfit),
       volume: conv(rawRanks.volume),
       trades: conv(rawRanks.trades),
       marketsCreated: conv(rawRanks.marketsCreated),
       comments: conv(rawRanks.comments),
+      seasonsGoldOrHigher: conv(rawRanks.seasonsGoldOrHigher),
+      seasonsPlatinumOrHigher: conv(rawRanks.seasonsPlatinumOrHigher),
+      seasonsDiamondOrHigher: conv(rawRanks.seasonsDiamondOrHigher),
       seasonsMasters: conv(rawRanks.seasonsMasters),
       seasonsRank1ByCohort: conv(rawRanks.seasonsRank1ByCohort),
       seasonsRank1Masters: conv(rawRanks.seasonsRank1Masters),
@@ -617,6 +651,8 @@ export const getUserAchievements: APIHandler<'get-user-achievements'> = async ({
       highestInvested: conv(rawRanks.highestInvested),
       highestNetworth: conv(rawRanks.highestNetworth),
       highestLoan: conv(rawRanks.highestLoan),
+      accountAge: conv(rawRanks.accountAge),
+      longestBettingStreak: conv(rawRanks.longestBettingStreak),
     }
   }
 
