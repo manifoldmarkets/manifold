@@ -956,38 +956,38 @@ function AchievementsSection(props: { userId: string }) {
     }
   })
 
-  const bucketOf = (percentile: number | null) => {
-    if (percentile == null) return 'All users'
-    if (percentile <= 0.1) return 'Top 0.1%'
-    if (percentile <= 1) return 'Top 1%'
-    if (percentile <= 5) return 'Top 5%'
-    if (percentile <= 25) return 'Top 25%'
-    if (percentile <= 50) return 'Top 50%'
-    return 'All users'
+  const bucketOf = (rank: number | null) => {
+    if (rank == null) return 'All Users'
+    if (rank <= 50) return 'Top 50'
+    if (rank <= 200) return 'Top 200'
+    if (rank <= 1000) return 'Top 1000'
+    if (rank <= 5000) return 'Top 5000'
+    if (rank <= 20000) return 'Top 20,000'
+    return 'All Users'
   }
 
   const bucketOrder = [
-    'Top 0.1%',
-    'Top 1%',
-    'Top 5%',
-    'Top 25%',
-    'Top 50%',
-    'All users',
+    'Top 50',
+    'Top 200',
+    'Top 1000',
+    'Top 5000',
+    'Top 20,000',
+    'All Users',
   ] as const
   const byBucket: Record<
     (typeof bucketOrder)[number],
     (typeof ACHS)[number][]
   > = {
-    'Top 0.1%': [],
-    'Top 1%': [],
-    'Top 5%': [],
-    'Top 25%': [],
-    'Top 50%': [],
-    'All users': [],
+    'Top 50': [],
+    'Top 200': [],
+    'Top 1000': [],
+    'Top 5000': [],
+    'Top 20,000': [],
+    'All Users': [],
   }
 
   ACHS.forEach((a) => {
-    byBucket[bucketOf(a.percentile)].push(a as any)
+    byBucket[bucketOf(a.rank)].push(a as any)
   })
 
   return (
@@ -1037,19 +1037,25 @@ function AchievementBadgeCard(props: {
   value: string
   rank: number | null
   percentile: number | null
-  bucket: 'Top 0.1%' | 'Top 1%' | 'Top 5%' | 'Top 25%' | 'Top 50%' | 'All users'
+  bucket:
+    | 'Top 50'
+    | 'Top 200'
+    | 'Top 1000'
+    | 'Top 5000'
+    | 'Top 20,000'
+    | 'All Users'
   icon?: IconType
 }) {
   const { title, description, value, rank, percentile, bucket, icon } = props
   const Icon = icon ?? TbAward
 
   const bucketStyle: Record<typeof props.bucket, string> = {
-    'Top 0.1%': 'from-fuchsia-500 to-indigo-500',
-    'Top 1%': 'from-indigo-500 to-sky-500',
-    'Top 5%': 'from-sky-500 to-teal-500',
-    'Top 25%': 'from-emerald-500 to-lime-500',
-    'Top 50%': 'from-slate-500 to-zinc-500',
-    'All users': 'from-zinc-400 to-zinc-600',
+    'Top 50': 'from-fuchsia-500 to-indigo-500',
+    'Top 200': 'from-indigo-500 to-sky-500',
+    'Top 1000': 'from-sky-500 to-teal-500',
+    'Top 5000': 'from-emerald-500 to-lime-500',
+    'Top 20,000': 'from-slate-500 to-zinc-500',
+    'All Users': 'from-zinc-400 to-zinc-600',
   }
 
   return (
