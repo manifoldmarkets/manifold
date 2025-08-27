@@ -8,11 +8,13 @@ import { richTextToString } from 'common/util/parse'
 import Link from 'next/link'
 import { useEffect, useState } from 'react'
 import toast from 'react-hot-toast'
+import { IoWarning } from 'react-icons/io5'
 import { useAdminOrMod } from 'web/hooks/use-admin'
 import { useUser } from 'web/hooks/use-user'
 import { api } from 'web/lib/api/api'
 import { track } from 'web/lib/service/analytics'
 import { getNumPostComments } from 'web/lib/supabase/comments'
+import { superBanUser } from 'web/lib/supabase/super-ban-user'
 import { ReactButton } from '../contract/react-button'
 import { Col } from '../layout/col'
 import { Row } from '../layout/row'
@@ -51,12 +53,25 @@ export function PostCard(props: { post: TopLevelPost }) {
     }
   }
 
+  const handleSuperban = async () => {
+    toast.promise(superBanUser(post.creatorId), {
+      loading: 'Superbanning user...',
+      success: (message) => message,
+      error: (error) => error.message,
+    })
+  }
+
   // Create dropdown menu items for admin/mod users
   const dropdownItems = buildArray(
     isAdminOrMod && {
       name: post.visibility === 'unlisted' ? 'List' : 'Unlist',
       icon: <EyeOffIcon className="h-5 w-5" />,
       onClick: handleSetUnlisted,
+    },
+    isAdminOrMod && {
+      name: 'Superban',
+      icon: <IoWarning className="h-5 w-5" />,
+      onClick: handleSuperban,
     }
   )
 
