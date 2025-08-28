@@ -183,6 +183,7 @@ import { purchaseContractBoost } from './purchase-boost'
 import { referUser } from './refer-user'
 import { updatePost } from './update-post'
 import { validateiap } from './validate-iap'
+import { getUserAchievements } from './get-user-achievements'
 
 export const handlers: { [k in APIPath]: APIHandler<k> } = {
   'refresh-all-clients': refreshAllClients,
@@ -373,4 +374,5 @@ export const handlers: { [k in APIPath]: APIHandler<k> } = {
   'edit-post-comment': editPostComment,
   'user-comments': getUserComments,
   'get-user-last-active-time': getUserLastActiveTime,
+  'get-user-achievements': getUserAchievements,
 } as const
