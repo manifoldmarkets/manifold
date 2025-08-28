@@ -900,7 +900,7 @@ function AchievementsSection(props: { userId: string }) {
     {
       id: 'numberOfComments',
       title: 'Chatterbox',
-      desc: 'Comments you’ve posted.',
+      desc: 'Number of comments you’ve posted with at least 1 like.',
       fmt: () => formatWithCommas(data.numberOfComments),
     },
     {
@@ -930,7 +930,7 @@ function AchievementsSection(props: { userId: string }) {
     {
       id: 'modTicketsResolved',
       title: 'Helpful Moderator',
-      desc: 'Mod tickets you’ve resolved.',
+      desc: 'Mod tickets you’ve resolved (only counting since mod mana rewards were introduced).',
       fmt: () => formatWithCommas(data.modTicketsResolved),
     },
     {

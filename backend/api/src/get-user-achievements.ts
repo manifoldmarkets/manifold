@@ -23,8 +23,8 @@ export const getUserAchievements: APIHandler<'get-user-achievements'> = async ({
       ),
       portfolio as (
         select
-          coalesce(profit, balance + spice_balance + investment_value - total_deposits) as total_profit_mana
-        from user_portfolio_history_latest
+          max(coalesce(profit, balance + investment_value - total_deposits)) as total_profit_mana
+        from user_portfolio_history
         where user_id = (select uid from base)
       ),
       portfolio_maxes as (
@@ -217,8 +217,8 @@ export const getUserAchievements: APIHandler<'get-user-achievements'> = async ({
       ),
       portfolio as (
         select
-          coalesce(profit, balance + spice_balance + investment_value - total_deposits) as total_profit_mana
-        from user_portfolio_history_latest
+          max(coalesce(profit, balance + investment_value - total_deposits)) as total_profit_mana
+        from user_portfolio_history
         where user_id = (select uid from base)
       ),
       portfolio_maxes as (

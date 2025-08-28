@@ -282,8 +282,14 @@ with
         where
           coalesce(ucm.profit, 0) < 0
       ) as unprofitable_markets_count,
-      max(ucm.profit) as largest_profitable_trade_value,
-      min(ucm.profit) as largest_unprofitable_trade_value
+      max(ucm.profit) filter (
+        where
+          coalesce(ucm.profit, 0) > 0
+      ) as largest_profitable_trade_value,
+      min(ucm.profit) filter (
+        where
+          coalesce(ucm.profit, 0) < 0
+      ) as largest_unprofitable_trade_value
     from
       user_contract_metrics ucm
       join mana_contracts mc on mc.id = ucm.contract_id
@@ -610,19 +616,23 @@ from
 
 create unique index if not exists mv_ach_creator_contracts_user_id_idx on public.mv_ach_creator_contracts (user_id);
 
--- Total profit (current portfolio profit)
+-- Total profit (highest historical portfolio profit)
 create materialized view if not exists
   mv_ach_total_profit as
 with
-  portfolio as (
+  portfolio_max_profit as (
     select
       user_id,
-      coalesce(
-        profit,
-        balance + spice_balance + investment_value - total_deposits
+      max(
+        coalesce(
+          profit,
+          balance + investment_value - total_deposits
+        )
       ) as total_profit_mana
     from
-      user_portfolio_history_latest
+      user_portfolio_history
+    group by
+      user_id
   ),
   all_users as (
     select
@@ -632,22 +642,22 @@ with
   )
 select
   u.user_id,
-  coalesce(p.total_profit_mana, 0) as total_profit_mana,
+  coalesce(pmp.total_profit_mana, 0) as total_profit_mana,
   rank() over (
     order by
-      coalesce(p.total_profit_mana, 0) desc
+      coalesce(pmp.total_profit_mana, 0) desc
   ) as total_profit_rank,
   (
     (
       (count(*) over ()) - rank() over (
         order by
-          coalesce(p.total_profit_mana, 0) desc
+          coalesce(pmp.total_profit_mana, 0) desc
       ) + 1
     )::numeric / (count(*) over ())
   ) * 100 as total_profit_percentile
 from
   all_users u
-  left join portfolio p on p.user_id = u.user_id;
+  left join portfolio_max_profit pmp on pmp.user_id = u.user_id;
 
 create unique index if not exists mv_ach_total_profit_user_id_idx on public.mv_ach_total_profit (user_id);
 
