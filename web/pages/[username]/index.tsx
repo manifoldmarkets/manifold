@@ -919,7 +919,15 @@ function AchievementsSection(props: { userId: string }) {
       id: 'accountAgeYears',
       title: 'Age Is Just A Number',
       desc: 'Account age in years.',
-      fmt: () => data.accountAgeYears.toFixed(2),
+      fmt: () => {
+        const yearsFloat = data.accountAgeYears
+        const totalMonths = Math.round(yearsFloat * 12)
+        const years = Math.floor(totalMonths / 12)
+        const months = totalMonths % 12
+        const yLabel = years === 1 ? 'year' : 'years'
+        const mLabel = months === 1 ? 'month' : 'months'
+        return `${years} ${yLabel} ${months} ${mLabel}`
+      },
     },
     {
       id: 'longestBettingStreak',
