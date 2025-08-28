@@ -174,6 +174,7 @@ export const BOT_USERNAMES = [
   'abot',
   'GoodheartLabsBot',
   'Evansbot',
+  'PugBot',
 ]
 
 export const MOD_IDS = [
