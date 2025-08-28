@@ -1082,20 +1082,17 @@ function AchievementBadgeCard(props: {
 
           {/* side hover tooltip */}
           <div className="pointer-events-none absolute left-full top-4 z-20 hidden pl-3 group-hover:block">
-            <div className="bg-canvas-0 text-ink-900 border-ink-200 w-64 rounded-md border p-3 shadow-xl">
-              <div className="text-ink-600 text-xs uppercase tracking-wider">
-                {bucket}
-              </div>
+            <div className="bg-canvas-50 text-ink-900 border-ink-200 w-64 rounded-md border p-3 shadow-xl">
               <div className="mt-1 text-lg font-semibold">
+                Rank: {rank ?? 'N/A'}
+              </div>
+              <div className="text-ink-600 my-1 text-sm">
                 {percentile != null
                   ? `In the top ${(() => {
                       const s = Number(percentile.toFixed(2)).toString()
                       return s
-                    })()}% of users`
+                    })()}% of all users`
                   : 'N/A'}
-              </div>
-              <div className="text-ink-600 mt-1 text-sm">
-                Rank: {rank ?? 'N/A'}
               </div>
               <div className="text-ink-600 text-sm">Value: {value}</div>
             </div>
