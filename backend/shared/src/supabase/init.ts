@@ -1,14 +1,14 @@
-import * as pgPromise from 'pg-promise'
-import { createClient } from 'common/supabase/utils'
-export { type SupabaseClient } from 'common/supabase/utils'
 import { DEV_CONFIG } from 'common/envs/dev'
 import { PROD_CONFIG } from 'common/envs/prod'
-import { metrics, log, isProd } from '../utils'
+import { createClient } from 'common/supabase/utils'
+import { HOUR_MS } from 'common/util/time'
+import * as pgPromise from 'pg-promise'
 import { IDatabase, ITask } from 'pg-promise'
 import { IClient } from 'pg-promise/typescript/pg-subset'
-import { HOUR_MS } from 'common/util/time'
-import { METRICS_INTERVAL_MS } from 'shared/monitoring/metric-writer'
 import { getMonitoringContext } from 'shared/monitoring/context'
+import { METRICS_INTERVAL_MS } from 'shared/monitoring/metric-writer'
+import { isProd, log, metrics } from '../utils'
+export { type SupabaseClient } from 'common/supabase/utils'
 
 export const pgp = pgPromise({
   error(err: any, e: pgPromise.IEventContext) {
@@ -106,18 +106,19 @@ export function createSupabaseClient() {
 
 // Use one connection to avoid WARNING: Creating a duplicate database object for the same connection.
 let pgpDirect: SupabaseDirectClientTimeout | null = null
-export function createSupabaseDirectClient(
-  instanceId?: string,
+export function createSupabaseDirectClient(opts?: {
+  instanceId?: string
   password?: string
-): SupabaseDirectClientTimeout {
+  idleInTxnTimeout?: number
+}): SupabaseDirectClientTimeout {
   if (pgpDirect) return pgpDirect
-  instanceId = instanceId ?? getInstanceId()
+  const instanceId = opts?.instanceId ?? getInstanceId()
   if (!instanceId) {
     throw new Error(
       "Can't connect to Supabase; no process.env.SUPABASE_INSTANCE_ID and no instance ID in config."
     )
   }
-  password = password ?? process.env.SUPABASE_PASSWORD
+  const password = opts?.password ?? process.env.SUPABASE_PASSWORD
   if (!password) {
     throw new Error(
       "Can't connect to Supabase; no process.env.SUPABASE_PASSWORD."
@@ -142,7 +143,7 @@ export function createSupabaseDirectClient(
     // that last for approx. an hour. See: https://docs.google.com/spreadsheets/d/1GrXMQtPXRL3j3dSza7rwI4fRmFjabk0x1sJYoTRKpoE/edit?gid=801504140#gid=801504140
     // Although we don't yet know the cause, setting this timeout will limit the damage
     // from these connections. We should figure out the cause ASAP.
-    idle_in_transaction_session_timeout: 60_000, // 1 minute
+    idle_in_transaction_session_timeout: opts?.idleInTxnTimeout ?? 60_000, // 1 minute
     max: 40,
   })
   const pool = client.$pool

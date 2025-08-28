@@ -3,7 +3,7 @@ import { log } from 'shared/utils'
 
 const TESTING = false
 export async function downsamplePortfolioHistory() {
-  const db = createSupabaseDirectClient()
+  const db = createSupabaseDirectClient({ idleInTxnTimeout: 180_000 })
   log('Starting portfolio history downsampling')
   const userIds = TESTING
     ? ['rZe5vReIBSYJpUymsFBWW1aUyp13']
