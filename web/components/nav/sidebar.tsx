@@ -57,7 +57,7 @@ export default function Sidebar(props: {
 
   const isNewUser = !!user && user.createdTime > Date.now() - DAY_MS
 
-  const isLiveTV = true
+  const isLiveTV = false
 
   const navOptions = isMobile
     ? getMobileNav(() => setIsAddFundsModalOpen(!isAddFundsModalOpen), {
