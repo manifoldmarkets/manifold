@@ -99,6 +99,7 @@ export async function updateLeague(
       const contract = contractsById[contractId]
       if (
         contract &&
+        contract.creatorId !== userId &&
         contract.token === 'MANA' &&
         contract.visibility === 'public' &&
         contract.isRanked !== false &&
