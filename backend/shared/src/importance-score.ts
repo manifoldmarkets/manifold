@@ -436,10 +436,13 @@ export const computeContractScores = (
 
   const importanceScore =
     outcomeType === 'BOUNTIED_QUESTION'
-      ? bountiedImportanceScore(contract, newness, commentScore)
+      ? bountiedImportanceScore(contract, newness, commentScore, isBoosted)
       : outcomeType === 'POLL'
-      ? Math.max(normalize(rawPollImportance, 5), isBoosted ? 0.9 : 0)
-      : Math.max(normalize(computedRawMarketImportance, 5), isBoosted ? 0.9 : 0)
+      ? Math.max(normalize(rawPollImportance, 5), isBoosted ? 0.92 : 0)
+      : Math.max(
+          normalize(computedRawMarketImportance, 5),
+          isBoosted ? 0.92 : 0
+        )
 
   // Calculate freshness components
   const todayRatio = todayScore / (thisWeekScore - todayScore + 1)
@@ -493,17 +496,20 @@ export const computeContractScores = (
 const bountiedImportanceScore = (
   contract: BountiedQuestionContract,
   newness: number,
-  commentScore: number
+  commentScore: number,
+  isBoosted: boolean
 ) => {
   const { totalBounty, bountyLeft } = contract
 
   const bountyScore = normalize(Math.log10(totalBounty + 1), 5)
   const bountyLeftScore = normalize(Math.log10(bountyLeft + 1), 5)
+  const boostScore = isBoosted ? 3 : 0
 
   const rawImportance =
-    3 * commentScore + newness + bountyScore + bountyLeftScore
+    3 * commentScore + newness + bountyScore + bountyLeftScore + boostScore
 
-  return 0.1 * normalize(rawImportance, 6)
+  const scaled = 0.1 * normalize(rawImportance, 6)
+  return Math.max(scaled, isBoosted ? 0.92 : 0)
 }
 
 const sigmoid = (x: number) => 1 / (1 + Math.exp(-x))
@@ -594,7 +600,7 @@ export async function calculatePostImportanceScore(
 
     const newImportanceScore = Math.max(
       normalize(rawScore, 3),
-      isBoosted ? 0.9 : 0
+      isBoosted ? 0.92 : 0
     )
 
     // Update if the score has changed significantly OR if the boosted status has changed
