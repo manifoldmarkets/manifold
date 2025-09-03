@@ -99,6 +99,7 @@ export async function updateLeague(
       const contract = contractsById[contractId]
       if (
         contract &&
+        contract.creatorId !== userId &&
         contract.token === 'MANA' &&
         contract.visibility === 'public' &&
         contract.isRanked !== false &&
@@ -122,13 +123,41 @@ export async function updateLeague(
     })
   }
 
-  const amountByUserId = groupBy(
-    userProfit.map((u) => ({
-      ...u,
-      amount: +u.amount,
-    })),
-    'user_id'
+  // Include mana earned from unique trader bonuses during the season.
+  const uniqueTraderBonuses = await pg.manyOrNone<{
+    user_id: string
+    amount: number
+  }>(
+    `select txns.to_id as user_id, sum(txns.amount)::numeric as amount
+    from txns
+    join contracts on contracts.id = (txns.data->'data'->>'contractId')
+    where txns.category = 'UNIQUE_BETTOR_BONUS'
+      and txns.token = 'M$'
+      and txns.created_time > millis_to_ts($1)
+      and txns.created_time < millis_to_ts($2)
+      and txns.to_id = any($3)
+      and contracts.created_time >= (txns.created_time - interval '31 days')
+      and contracts.created_time <= txns.created_time
+    group by txns.to_id`,
+    [seasonStart, seasonEnd, userIds]
   )
+
+  const userUniqueBonuses: {
+    user_id: string
+    amount: number
+    category: 'UNIQUE_BETTOR_BONUS'
+  }[] = uniqueTraderBonuses.map((r) => ({
+    user_id: r.user_id,
+    amount: +r.amount,
+    category: 'UNIQUE_BETTOR_BONUS',
+  }))
+
+  const combined = [
+    ...userProfit.map((u) => ({ ...u, amount: +u.amount })),
+    ...userUniqueBonuses,
+  ]
+
+  const amountByUserId = groupBy(combined, 'user_id')
   const manaEarnedUpdates = []
   for (const [userId, manaEarned] of Object.entries(amountByUserId)) {
     const keys = manaEarned.map((a) => a.category)

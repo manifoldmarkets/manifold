@@ -34,14 +34,8 @@ export const ManaEarnedBreakdown = (props: {
   mana_earned: number
   mana_earned_breakdown: { [key: string]: number }
 }) => {
-  const {
-    user,
-    season,
-    showDialog,
-    setShowDialog,
-    mana_earned,
-    // mana_earned_breakdown,
-  } = props
+  const { user, season, showDialog, setShowDialog, mana_earned_breakdown } =
+    props
 
   // const breakdown = {
   //   PROFIT: mana_earned_breakdown.profit,
@@ -106,7 +100,13 @@ export const ManaEarnedBreakdown = (props: {
           <span className="text-primary-700 mb-2 text-lg">
             Profit on trades placed this season:
           </span>
-          {formatMoney(mana_earned)}
+          {formatMoney(mana_earned_breakdown?.profit ?? 0)}
+        </Row>
+        <Row className="items-baseline justify-between">
+          <span className="text-primary-700 mb-2 text-lg">
+            Mana earned from Unique Trader Bonuses:
+          </span>
+          {formatMoney(mana_earned_breakdown?.UNIQUE_BETTOR_BONUS ?? 0)}
         </Row>
         <span className="text-ink-600 text-sm">
           Only counts profit on trades placed on/after{' '}
