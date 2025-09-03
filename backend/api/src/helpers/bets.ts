@@ -1,36 +1,36 @@
-import {
-  pgp,
-  SupabaseDirectClient,
-  SupabaseTransaction,
-} from 'shared/supabase/init'
-import { Contract, MarketContract } from 'common/contract'
-import { groupBy, mapValues, orderBy, sumBy, uniq, uniqBy } from 'lodash'
-import { LimitBet, maker } from 'common/bet'
-import { ContractMetric, isSummary } from 'common/contract-metric'
-import { MarginalBet } from 'common/calculate-metrics'
-import { floatingEqual } from 'common/util/math'
-import { bulkUpdateUserMetricsWithNewBetsOnly } from 'shared/helpers/user-contract-metrics'
-import { log } from 'shared/monitoring/log'
+import { NewBetResult } from 'api/place-bet'
 import { redeemShares } from 'api/redeem-shares'
-import { convertBet } from 'common/supabase/bets'
+import { Answer } from 'common/answer'
 import { APIError } from 'common/api/utils'
-import { User } from 'common/user'
-import { CandidateBet } from 'common/new-bet'
+import { LimitBet, maker } from 'common/bet'
+import { MarginalBet } from 'common/calculate-metrics'
+import { Contract, MarketContract } from 'common/contract'
+import { ContractMetric, isSummary } from 'common/contract-metric'
+import { getUniqueBettorBonusAmount } from 'common/economy'
 import {
   BANNED_TRADING_USER_IDS,
   BOT_USERNAMES,
   PARTNER_USER_IDS,
 } from 'common/envs/constants'
-import { Answer } from 'common/answer'
-import { getUniqueBettorBonusAmount } from 'common/economy'
-import { removeUndefinedProps } from 'common/util/object'
+import { CandidateBet } from 'common/new-bet'
+import { convertBet } from 'common/supabase/bets'
+import { convertAnswer, convertContract } from 'common/supabase/contracts'
+import { convertUser } from 'common/supabase/users'
 import { UniqueBettorBonusTxn } from 'common/txn'
+import { User } from 'common/user'
+import { floatingEqual } from 'common/util/math'
+import { removeUndefinedProps } from 'common/util/object'
+import { groupBy, mapValues, orderBy, sumBy, uniq, uniqBy } from 'lodash'
+import { bulkUpdateUserMetricsWithNewBetsOnly } from 'shared/helpers/user-contract-metrics'
+import { log } from 'shared/monitoring/log'
+import {
+  pgp,
+  SupabaseDirectClient,
+  SupabaseTransaction,
+} from 'shared/supabase/init'
 import { getInsertQuery } from 'shared/supabase/utils'
 import { txnToRow } from 'shared/txn/run-txn'
 import { contractColumnsToSelect } from 'shared/utils'
-import { convertUser } from 'common/supabase/users'
-import { convertAnswer, convertContract } from 'common/supabase/contracts'
-import { NewBetResult } from 'api/place-bet'
 
 export const fetchContractBetDataAndValidate = async (
   pgTrans: SupabaseTransaction | SupabaseDirectClient,
@@ -142,7 +142,8 @@ export const fetchContractBetDataAndValidate = async (
   if (contract.mechanism === 'none' || contract.mechanism === 'qf')
     throw new APIError(400, 'This is not a market')
 
-  if (contract.mechanism === 'cpmm-multi-1') contract.answers = answers
+  if (contract.mechanism === 'cpmm-multi-1')
+    contract.answers = uniqBy([...answers, ...contract.answers], 'id')
 
   const { closeTime, isResolved } = contract
   if (closeTime && Date.now() > closeTime)
