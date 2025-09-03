@@ -102,35 +102,14 @@ export type AICapabilityCard = {
 export const AI_CAPABILITY_CARDS: AICapabilityCard[] = [
   // Monthly markets
   {
-    title: 'Best Chatbot Arena Model in August',
+    title: 'Best Chatbot Arena Model in September',
     description: 'Highest ranked model on lmsys',
-    marketId: 'cyRUS5pZgc',
+    marketId: '09ZqASZUzO',
     type: 'monthly',
     displayType: 'top-three-mcq',
   },
 
   // Releases
-  {
-    title: 'GPT-5',
-    description: 'GPT-5 model released by EOY',
-    marketId: 'c29Q6uhyhp',
-    type: 'releases',
-    displayType: 'date',
-  },
-  {
-    title: 'Claude Sonnet',
-    description: 'Claude 4.0+ Sonnet released',
-    marketId: 'Sz6hINy00y',
-    type: 'releases',
-    displayType: 'date',
-  },
-  {
-    title: 'Claude Opus',
-    description: 'Claude 4.0+ Opus released',
-    marketId: 'SgCqCNQEd0',
-    type: 'releases',
-    displayType: 'date',
-  },
   {
     title: 'Gemini 3 Pro',
     description: 'Gemini 3 Pro released',
