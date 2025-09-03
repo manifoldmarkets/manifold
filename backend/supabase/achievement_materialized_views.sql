@@ -52,61 +52,15 @@ from
 create unique index if not exists mv_ach_volume_user_id_idx on public.mv_ach_volume (user_id);
 
 -- Trades
-create materialized view if not exists
-  mv_ach_trades as
-with
-  mana_contracts as (
-    select
-      id
-    from
-      contracts
-    where
-      token = 'MANA'
-  ),
-  trades as (
-    select
-      b.user_id,
-      count(*) as total_trades_count
-    from
-      contract_bets b
-      join mana_contracts mc on mc.id = b.contract_id
-    where
-      coalesce(b.is_redemption, false) = false
-      and coalesce(b.is_filled, true) = true
-      and coalesce(b.is_cancelled, false) = false
-      and (
-        b.is_api is null
-        or b.is_api = false
-      )
-    group by
-      b.user_id
-  ),
-  all_users as (
-    select
-      id as user_id
-    from
-      users
-  )
-select
-  u.user_id,
-  coalesce(t.total_trades_count, 0) as total_trades_count,
-  rank() over (
-    order by
-      coalesce(t.total_trades_count, 0) desc
-  ) as trades_rank,
-  (
-    (
-      (count(*) over ()) - rank() over (
-        order by
-          coalesce(t.total_trades_count, 0) desc
-      ) + 1
-    )::numeric / (count(*) over ())
-  ) * 100 as trades_percentile
-from
-  all_users u
-  left join trades t on t.user_id = u.user_id;
+create table if not exists
+  ach_trades (
+    user_id text primary key,
+    total_trades_count integer not null default 0,
+    trades_rank integer,
+    last_updated timestamp with time zone not null default to_timestamp(0)
+  );
 
-create unique index if not exists mv_ach_trades_user_id_idx on public.mv_ach_trades (user_id);
+create unique index if not exists ach_trades_user_id_idx on public.ach_trades (user_id);
 
 -- Comments (liked-only)
 create materialized view if not exists
@@ -364,87 +318,24 @@ from
 
 create unique index if not exists mv_ach_pnl_user_id_idx on public.mv_ach_pnl (user_id);
 
--- Portfolio maxes
-create materialized view if not exists
-  mv_ach_portfolio_maxes as
-with
-  portfolio_maxes as (
-    select
-      user_id,
-      max(balance) as highest_balance_mana,
-      max(investment_value) as highest_invested_mana,
-      max(balance + investment_value) as highest_networth_mana,
-      max(loan_total) as highest_loan_mana
-    from
-      user_portfolio_history
-    group by
-      user_id
-  ),
-  all_users as (
-    select
-      id as user_id
-    from
-      users
-  )
-select
-  u.user_id,
-  coalesce(pm.highest_balance_mana, 0) as highest_balance_mana,
-  coalesce(pm.highest_invested_mana, 0) as highest_invested_mana,
-  coalesce(pm.highest_networth_mana, 0) as highest_networth_mana,
-  coalesce(pm.highest_loan_mana, 0) as highest_loan_mana,
-  rank() over (
-    order by
-      coalesce(pm.highest_balance_mana, 0) desc
-  ) as highest_balance_rank,
-  (
-    (
-      (count(*) over ()) - rank() over (
-        order by
-          coalesce(pm.highest_balance_mana, 0) desc
-      ) + 1
-    )::numeric / (count(*) over ())
-  ) * 100 as highest_balance_percentile,
-  rank() over (
-    order by
-      coalesce(pm.highest_invested_mana, 0) desc
-  ) as highest_invested_rank,
-  (
-    (
-      (count(*) over ()) - rank() over (
-        order by
-          coalesce(pm.highest_invested_mana, 0) desc
-      ) + 1
-    )::numeric / (count(*) over ())
-  ) * 100 as highest_invested_percentile,
-  rank() over (
-    order by
-      coalesce(pm.highest_networth_mana, 0) desc
-  ) as highest_networth_rank,
-  (
-    (
-      (count(*) over ()) - rank() over (
-        order by
-          coalesce(pm.highest_networth_mana, 0) desc
-      ) + 1
-    )::numeric / (count(*) over ())
-  ) * 100 as highest_networth_percentile,
-  rank() over (
-    order by
-      coalesce(pm.highest_loan_mana, 0) desc
-  ) as highest_loan_rank,
-  (
-    (
-      (count(*) over ()) - rank() over (
-        order by
-          coalesce(pm.highest_loan_mana, 0) desc
-      ) + 1
-    )::numeric / (count(*) over ())
-  ) * 100 as highest_loan_percentile
-from
-  all_users u
-  left join portfolio_maxes pm on pm.user_id = u.user_id;
+-- Replace heavy MV with incremental table + views
+create table if not exists
+  ach_portfolio_maxes (
+    user_id text primary key,
+    highest_balance_mana numeric not null default 0,
+    highest_invested_mana numeric not null default 0,
+    highest_networth_mana numeric not null default 0,
+    highest_loan_mana numeric not null default 0,
+    total_profit_mana numeric not null default 0,
+    highest_balance_rank integer,
+    highest_invested_rank integer,
+    highest_networth_rank integer,
+    highest_loan_rank integer,
+    total_profit_rank integer,
+    last_updated timestamp with time zone not null default to_timestamp(0)
+  );
 
-create unique index if not exists mv_ach_portfolio_maxes_user_id_idx on public.mv_ach_portfolio_maxes (user_id);
+create unique index if not exists ach_portfolio_maxes_user_id_idx on public.ach_portfolio_maxes (user_id);
 
 -- Combined: Txns-based achievements (mod tickets resolved + charity donated + longest streak)
 create materialized view if not exists
@@ -615,51 +506,6 @@ from
   left join creator_agg ca on ca.user_id = u.user_id;
 
 create unique index if not exists mv_ach_creator_contracts_user_id_idx on public.mv_ach_creator_contracts (user_id);
-
--- Total profit (highest historical portfolio profit)
-create materialized view if not exists
-  mv_ach_total_profit as
-with
-  portfolio_max_profit as (
-    select
-      user_id,
-      max(
-        coalesce(
-          profit,
-          balance + investment_value - total_deposits
-        )
-      ) as total_profit_mana
-    from
-      user_portfolio_history
-    group by
-      user_id
-  ),
-  all_users as (
-    select
-      id as user_id
-    from
-      users
-  )
-select
-  u.user_id,
-  coalesce(pmp.total_profit_mana, 0) as total_profit_mana,
-  rank() over (
-    order by
-      coalesce(pmp.total_profit_mana, 0) desc
-  ) as total_profit_rank,
-  (
-    (
-      (count(*) over ()) - rank() over (
-        order by
-          coalesce(pmp.total_profit_mana, 0) desc
-      ) + 1
-    )::numeric / (count(*) over ())
-  ) * 100 as total_profit_percentile
-from
-  all_users u
-  left join portfolio_max_profit pmp on pmp.user_id = u.user_id;
-
-create unique index if not exists mv_ach_total_profit_user_id_idx on public.mv_ach_total_profit (user_id);
 
 -- Referrals (count and referred profit)
 create materialized view if not exists
