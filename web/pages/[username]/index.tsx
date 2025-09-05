@@ -908,31 +908,31 @@ function AchievementsSection(props: { userId: string }) {
 
   const bucketOf = (rank: number | null) => {
     if (rank == null) return 'All Users'
-    if (rank <= 50) return 'Top 50'
-    if (rank <= 200) return 'Top 200'
-    if (rank <= 1000) return 'Top 1000'
-    if (rank <= 5000) return 'Top 5000'
-    if (rank <= 20000) return 'Top 20,000'
+    if (rank <= 50) return 'Top 50 Users'
+    if (rank <= 200) return 'Top 200 Users'
+    if (rank <= 1000) return 'Top 1000 Users'
+    if (rank <= 5000) return 'Top 5000 Users'
+    if (rank <= 20000) return 'Top 20,000 Users'
     return 'All Users'
   }
 
   const bucketOrder = [
-    'Top 50',
-    'Top 200',
-    'Top 1000',
-    'Top 5000',
-    'Top 20,000',
+    'Top 50 Users',
+    'Top 200 Users',
+    'Top 1000 Users',
+    'Top 5000 Users',
+    'Top 20,000 Users',
     'All Users',
   ] as const
   const byBucket: Record<
     (typeof bucketOrder)[number],
     (typeof ACHS)[number][]
   > = {
-    'Top 50': [],
-    'Top 200': [],
-    'Top 1000': [],
-    'Top 5000': [],
-    'Top 20,000': [],
+    'Top 50 Users': [],
+    'Top 200 Users': [],
+    'Top 1000 Users': [],
+    'Top 5000 Users': [],
+    'Top 20,000 Users': [],
     'All Users': [],
   }
 
@@ -971,12 +971,27 @@ function AchievementsSection(props: { userId: string }) {
                   percentile={a.percentile}
                   imageSrc={(() => {
                     const IMAGE_BY_ID: Record<string, string> = {
+                      accountAgeYears:
+                        '/achievement-badges/accountAgeYears.png',
+                      charityDonatedMana:
+                        '/achievement-badges/charityDonatedMana.png',
+                      creatorTraders: '/achievement-badges/creatorTraders.png',
                       highestLoanMana:
                         '/achievement-badges/highestLoanMana.png',
                       highestNetworthMana:
                         '/achievement-badges/highestNetworthMana.png',
+                      largestUnprofitableTradeValue:
+                        '/achievement-badges/largestUnprofitableTradeValue.png',
+                      modTicketsResolved:
+                        '/achievement-badges/modTicketsResolved.png',
                       numberOfComments:
                         '/achievement-badges/numberOfComments.png',
+                      seasonsMasters: '/achievement-badges/seasonsMasters.png',
+                      seasonsPlatinumOrHigher:
+                        '/achievement-badges/seasonsPlatinumOrHigher.png',
+                      totalReferrals: '/achievement-badges/totalReferrals.png',
+                      totalReferredProfitMana:
+                        '/achievement-badges/totalReferredProfitMana.png',
                       totalVolumeMana:
                         '/achievement-badges/totalVolumeMana.png',
                       unprofitableMarketsCount:
@@ -1005,11 +1020,11 @@ function AchievementBadgeCard(props: {
   rank: number | null
   percentile: number | null
   bucket:
-    | 'Top 50'
-    | 'Top 200'
-    | 'Top 1000'
-    | 'Top 5000'
-    | 'Top 20,000'
+    | 'Top 50 Users'
+    | 'Top 200 Users'
+    | 'Top 1000 Users'
+    | 'Top 5000 Users'
+    | 'Top 20,000 Users'
     | 'All Users'
   imageSrc?: string
 }) {
@@ -1017,11 +1032,11 @@ function AchievementBadgeCard(props: {
     props
 
   const bucketStyle: Record<typeof props.bucket, string> = {
-    'Top 50': 'from-fuchsia-500 to-indigo-500',
-    'Top 200': 'from-indigo-500 to-sky-500',
-    'Top 1000': 'from-sky-500 to-teal-500',
-    'Top 5000': 'from-emerald-500 to-lime-500',
-    'Top 20,000': 'from-slate-500 to-zinc-500',
+    'Top 50 Users': 'from-fuchsia-500 to-indigo-500',
+    'Top 200 Users': 'from-indigo-500 to-sky-500',
+    'Top 1000 Users': 'from-sky-500 to-teal-500',
+    'Top 5000 Users': 'from-emerald-500 to-lime-500',
+    'Top 20,000 Users': 'from-slate-500 to-zinc-500',
     'All Users': 'from-zinc-400 to-zinc-600',
   }
 
@@ -1066,7 +1081,9 @@ function AchievementBadgeCard(props: {
               <div className="text-ink-600 my-1 text-sm">
                 {percentile != null
                   ? `In the top ${(() => {
-                      const s = Number(percentile.toFixed(2)).toString()
+                      const s = Number(
+                        Math.max(percentile, 0.01).toFixed(2)
+                      ).toString()
                       return s
                     })()}% of all users`
                   : 'N/A'}
