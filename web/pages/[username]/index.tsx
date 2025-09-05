@@ -14,6 +14,7 @@ import { unauthedApi } from 'common/util/api'
 import { buildArray } from 'common/util/array'
 import { removeUndefinedProps } from 'common/util/object'
 import Head from 'next/head'
+import Image from 'next/image'
 import Link from 'next/link'
 import { useRouter } from 'next/router'
 import { useEffect, useState } from 'react'
@@ -67,65 +68,6 @@ import {
   formatWithCommas,
   formatMoneyUSD,
 } from 'common/util/format'
-import type { IconType } from 'react-icons'
-import {
-  TbCoin,
-  TbUserPlus,
-  TbChartLine,
-  TbUsers,
-  TbDroplet,
-  TbCircleCheck,
-  TbTrendingDown,
-  TbTrophy,
-  TbArrowDownRight,
-  TbMedal,
-  TbSparkles,
-  TbDiamond,
-  TbCrown,
-  TbAward,
-  TbCoins,
-  TbWallet,
-  TbMountain,
-  TbBuildingBank,
-  TbMessageDots,
-  TbBolt,
-  TbFilePlus,
-  TbCalendar,
-  TbFlame,
-  TbShieldCheck,
-  TbHeartHandshake,
-  TbPigMoney,
-} from 'react-icons/tb'
-import { GiWhaleTail } from 'react-icons/gi'
-
-const ACHIEVEMENT_ICONS: Record<string, IconType> = {
-  totalProfitMana: TbCoin,
-  totalVolumeMana: GiWhaleTail,
-  totalReferrals: TbUserPlus,
-  totalReferredProfitMana: TbChartLine,
-  creatorTraders: TbUsers,
-  totalLiquidityCreatedMarkets: TbDroplet,
-  profitableMarketsCount: TbCircleCheck,
-  unprofitableMarketsCount: TbTrendingDown,
-  largestProfitableTradeValue: TbTrophy,
-  largestUnprofitableTradeValue: TbArrowDownRight,
-  seasonsGoldOrHigher: TbMedal,
-  seasonsPlatinumOrHigher: TbSparkles,
-  seasonsDiamondOrHigher: TbDiamond,
-  seasonsMasters: TbCrown,
-  largestLeagueSeasonEarnings: TbCoins,
-  highestBalanceMana: TbWallet,
-  highestNetworthMana: TbMountain,
-  highestInvestedMana: TbPigMoney,
-  highestLoanMana: TbBuildingBank,
-  numberOfComments: TbMessageDots,
-  totalTradesCount: TbBolt,
-  totalMarketsCreated: TbFilePlus,
-  accountAgeYears: TbCalendar,
-  longestBettingStreak: TbFlame,
-  modTicketsResolved: TbShieldCheck,
-  charityDonatedMana: TbHeartHandshake,
-}
 
 export const getStaticProps = async (props: {
   params: {
@@ -938,7 +880,7 @@ function AchievementsSection(props: { userId: string }) {
     {
       id: 'modTicketsResolved',
       title: 'Helpful Moderator',
-      desc: 'Mod tickets you’ve resolved (only counting since mod mana rewards were introduced).',
+      desc: 'Mod tickets you’ve resolved (since mod rewards were introduced).',
       fmt: () => formatWithCommas(data.modTicketsResolved),
     },
     {
@@ -1018,7 +960,7 @@ function AchievementsSection(props: { userId: string }) {
               <span className="bg-ink-200 h-px flex-1" />
             </div>
 
-            <div className="grid grid-cols-1 gap-5 md:grid-cols-2 lg:grid-cols-3">
+            <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
               {sorted.map((a) => (
                 <AchievementBadgeCard
                   key={a.id}
@@ -1027,7 +969,24 @@ function AchievementsSection(props: { userId: string }) {
                   value={a.value}
                   rank={a.rank}
                   percentile={a.percentile}
-                  icon={ACHIEVEMENT_ICONS[a.id]}
+                  imageSrc={(() => {
+                    const IMAGE_BY_ID: Record<string, string> = {
+                      highestLoanMana:
+                        '/achievement-badges/highestLoanMana.png',
+                      highestNetworthMana:
+                        '/achievement-badges/highestNetworthMana.png',
+                      numberOfComments:
+                        '/achievement-badges/numberOfComments.png',
+                      totalVolumeMana:
+                        '/achievement-badges/totalVolumeMana.png',
+                      unprofitableMarketsCount:
+                        '/achievement-badges/unprofitableMarketsCount.png',
+                    }
+                    return (
+                      IMAGE_BY_ID[a.id] ||
+                      '/achievement-badges/seasonsPlatinumOrHigher.png'
+                    )
+                  })()}
                   bucket={bucket}
                 />
               ))}
@@ -1052,10 +1011,10 @@ function AchievementBadgeCard(props: {
     | 'Top 5000'
     | 'Top 20,000'
     | 'All Users'
-  icon?: IconType
+  imageSrc?: string
 }) {
-  const { title, description, value, rank, percentile, bucket, icon } = props
-  const Icon = icon ?? TbAward
+  const { title, description, value, rank, percentile, bucket, imageSrc } =
+    props
 
   const bucketStyle: Record<typeof props.bucket, string> = {
     'Top 50': 'from-fuchsia-500 to-indigo-500',
@@ -1068,7 +1027,7 @@ function AchievementBadgeCard(props: {
 
   return (
     <div
-      className="border-ink-200 group relative aspect-[11/12] min-h-[280px] rounded-xl border p-[1px] transition-shadow hover:shadow-lg"
+      className="border-ink-200 group relative rounded-xl border p-[1px] transition-shadow hover:shadow-lg"
       aria-label={title}
     >
       {/* gradient ring */}
@@ -1078,13 +1037,23 @@ function AchievementBadgeCard(props: {
           bucketStyle[bucket]
         )}
       >
-        <div className="bg-canvas-0 flex h-full flex-col items-center rounded-[11px] px-4 pt-6">
-          <div className=" ring-ink-300/50 flex  h-24 w-24 items-center justify-center rounded-lg ring-1">
-            <Icon className="h-10 w-10 " />
+        <div className="bg-canvas-0 flex h-full flex-col items-center space-y-3 rounded-[11px] px-4 pb-6 pt-6">
+          <div className=" ring-ink-300/50 flex h-32 w-32 items-center justify-center overflow-hidden rounded-full ring-1">
+            {imageSrc ? (
+              <Image
+                src={imageSrc}
+                alt={title}
+                width={128}
+                height={128}
+                className="h-32 w-32 scale-125 rounded-full object-contain"
+              />
+            ) : null}
           </div>
-          <div className=" pt-5 text-center">
+          <div className="pt-4 text-center">
             <div className="text-ink-900  text-lg font-semibold">{title}</div>
-            <div className="text-ink-600 text-sm ">{description}</div>
+            <div className="text-ink-600 mt-1 text-sm leading-snug">
+              {description}
+            </div>
             <div className="text-ink-900 mt-3 text-lg">{value}</div>
           </div>
 
