@@ -1,6 +1,6 @@
 # Manifold
 
-This [monorepo][] has basically everything involved in running and operating Manifold.
+This [monorepo][monorepo] has basically everything involved in running and operating Manifold.
 
 ## Getting started
 
@@ -14,9 +14,9 @@ See [`web/README.md`][web-readme] for more details on hacking on the web client.
 
 ## General architecture
 
-Manifold's public API and web app are hosted by [Vercel][vercel]. Our data has been stored in Firebase's database [Cloud Firestore][cloud-firestore] but we have almost enitrely migrated it to SQL hosted on [Supabase][supabase].
+Manifold's public API and web app are hosted by [Vercel][vercel]. Our data has been stored in Firebase's database [Cloud Firestore][cloud-firestore] but we have almost entirely migrated it to SQL hosted on [Supabase][supabase].
 
-We often use supabase directly on the client to get the data. However, for complicated operations (like buying shares) we have a separate internal HTTP API deployed in a docker container in google cloud. This is seperate from the public-facing api hosted via Vercel; see [`functions/README.md`][functions-readme] for more details.
+We often use supabase directly on the client to get the data. However, for complicated operations (like buying shares) we have a separate internal HTTP API deployed in a docker container in google cloud. This is separate from the public-facing api hosted via Vercel; see [`functions/README.md`][functions-readme] for more details.
 
 ## Directory overview
 
@@ -46,5 +46,3 @@ If you need additional access to any infrastructure in order to work on somethin
 [cloud-functions]: https://firebase.google.com/docs/functions
 [small-prs]: https://google.github.io/eng-practices/review/developer/small-cls.html
 [discord]: https://discord.gg/3Zuth9792G
-
-[![Mutable.ai Auto Wiki](https://img.shields.io/badge/Auto_Wiki-Mutable.ai-blue)](https://wiki.mutable.ai/manifoldmarkets/manifold)
