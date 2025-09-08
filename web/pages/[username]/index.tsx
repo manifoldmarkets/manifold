@@ -560,7 +560,6 @@ function AchievementsSection(props: { userId: string }) {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   type RanksType = {
-    totalProfit: { rank: number | null; percentile: number | null }
     creatorTraders: { rank: number | null; percentile: number | null }
     totalReferrals: { rank: number | null; percentile: number | null }
     totalReferredProfit: { rank: number | null; percentile: number | null }
@@ -587,10 +586,6 @@ function AchievementsSection(props: { userId: string }) {
       rank: number | null
       percentile: number | null
     }
-    highestBalance: { rank: number | null; percentile: number | null }
-    highestInvested: { rank: number | null; percentile: number | null }
-    highestNetworth: { rank: number | null; percentile: number | null }
-    highestLoan: { rank: number | null; percentile: number | null }
     accountAge: { rank: number | null; percentile: number | null }
     longestBettingStreak: { rank: number | null; percentile: number | null }
     modTickets: { rank: number | null; percentile: number | null }
@@ -599,7 +594,6 @@ function AchievementsSection(props: { userId: string }) {
 
   const [data, setData] = useState<{
     userId: string
-    totalProfitMana: number
     creatorTraders: number
     totalReferrals: number
     totalReferredProfitMana: number
@@ -621,10 +615,6 @@ function AchievementsSection(props: { userId: string }) {
     modTicketsResolved: number
     charityDonatedMana: number
     largestLeagueSeasonEarnings: number
-    highestBalanceMana: number
-    highestInvestedMana: number
-    highestNetworthMana: number
-    highestLoanMana: number
     ranks: RanksType
   } | null>(null)
 
@@ -666,7 +656,6 @@ function AchievementsSection(props: { userId: string }) {
 
   // Rank key per achievement id
   const rankKeyById: Record<string, keyof RanksType> = {
-    totalProfitMana: 'totalProfit',
     totalVolumeMana: 'volume',
     totalReferrals: 'totalReferrals',
     totalReferredProfitMana: 'totalReferredProfit',
@@ -681,10 +670,6 @@ function AchievementsSection(props: { userId: string }) {
     seasonsDiamondOrHigher: 'seasonsDiamondOrHigher',
     seasonsMasters: 'seasonsMasters',
     largestLeagueSeasonEarnings: 'largestLeagueSeasonEarnings',
-    highestBalanceMana: 'highestBalance',
-    highestNetworthMana: 'highestNetworth',
-    highestInvestedMana: 'highestInvested',
-    highestLoanMana: 'highestLoan',
     numberOfComments: 'comments',
     totalTradesCount: 'trades',
     totalMarketsCreated: 'marketsCreated',
@@ -696,7 +681,6 @@ function AchievementsSection(props: { userId: string }) {
 
   // Raw numeric values by id for zero-handling
   const valueById: Record<string, number> = {
-    totalProfitMana: data.totalProfitMana,
     totalVolumeMana: data.totalVolumeMana,
     totalReferrals: data.totalReferrals,
     totalReferredProfitMana: data.totalReferredProfitMana,
@@ -711,10 +695,6 @@ function AchievementsSection(props: { userId: string }) {
     seasonsDiamondOrHigher: data.seasonsDiamondOrHigher,
     seasonsMasters: data.seasonsMasters,
     largestLeagueSeasonEarnings: data.largestLeagueSeasonEarnings,
-    highestBalanceMana: data.highestBalanceMana,
-    highestNetworthMana: data.highestNetworthMana,
-    highestInvestedMana: data.highestInvestedMana,
-    highestLoanMana: data.highestLoanMana,
     numberOfComments: data.numberOfComments,
     totalTradesCount: data.totalTradesCount,
     totalMarketsCreated: data.totalMarketsCreated,
@@ -725,12 +705,6 @@ function AchievementsSection(props: { userId: string }) {
   }
 
   const defs = [
-    {
-      id: 'totalProfitMana',
-      title: 'But Was It Realised?',
-      desc: 'Highest total profit recorded.',
-      fmt: () => formatMoney(data.totalProfitMana, 'MANA'),
-    },
     {
       id: 'totalVolumeMana',
       title: 'Any Whales?',
@@ -815,30 +789,7 @@ function AchievementsSection(props: { userId: string }) {
       desc: 'Largest earnings in a single season.',
       fmt: () => formatMoney(data.largestLeagueSeasonEarnings, 'MANA'),
     },
-    {
-      id: 'highestBalanceMana',
-      title: 'Scared?',
-      desc: 'Highest balance reached.',
-      fmt: () => formatMoney(data.highestBalanceMana, 'MANA'),
-    },
-    {
-      id: 'highestNetworthMana',
-      title: 'Peak Net Worth',
-      desc: 'Highest net worth reached.',
-      fmt: () => formatMoney(data.highestNetworthMana, 'MANA'),
-    },
-    {
-      id: 'highestInvestedMana',
-      title: 'Leeeeroooy Jenkins',
-      desc: `Highest amount of mana you've had invested at once.`,
-      fmt: () => formatMoney(data.highestInvestedMana, 'MANA'),
-    },
-    {
-      id: 'highestLoanMana',
-      title: '@Tumbles Wannabe',
-      desc: 'Highest outstanding loan.',
-      fmt: () => formatMoney(data.highestLoanMana, 'MANA'),
-    },
+
     {
       id: 'numberOfComments',
       title: 'Chatterbox',
@@ -976,14 +927,6 @@ function AchievementsSection(props: { userId: string }) {
                       charityDonatedMana:
                         '/achievement-badges/charityDonatedMana.png',
                       creatorTraders: '/achievement-badges/creatorTraders.png',
-                      highestBalanceMana:
-                        '/achievement-badges/highestBalanceMana.png',
-                      highestInvestedMana:
-                        '/achievement-badges/highestInvestedMana.png',
-                      highestLoanMana:
-                        '/achievement-badges/highestLoanMana.png',
-                      highestNetworthMana:
-                        '/achievement-badges/highestNetworthMana.png',
                       largestProfitableTradeValue:
                         '/achievement-badges/largestProfitableTradeValue.png',
                       largestLeagueSeasonEarnings:
@@ -1009,8 +952,6 @@ function AchievementsSection(props: { userId: string }) {
                         '/achievement-badges/totalLiquidityCreatedMarkets.png',
                       totalMarketsCreated:
                         '/achievement-badges/totalMarketsCreated.png',
-                      totalProfitMana:
-                        '/achievement-badges/totalProfitMana.png',
                       totalReferrals: '/achievement-badges/totalReferrals.png',
                       totalReferredProfitMana:
                         '/achievement-badges/totalReferredProfitMana.png',
@@ -1023,7 +964,7 @@ function AchievementsSection(props: { userId: string }) {
                     }
                     return (
                       IMAGE_BY_ID[a.id] ||
-                      '/achievement-badges/totalProfitMana.png'
+                      '/achievement-badges/totalVolumeMana.png'
                     )
                   })()}
                   bucket={bucket}

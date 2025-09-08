@@ -21,16 +21,7 @@ export const getUserAchievements: APIHandler<'get-user-achievements'> = async ({
   const queryWithPerMV = `with base as (
         select $1::text as uid
       ),
-      portfolio as (
-        select total_profit_mana
-        from ach_portfolio_maxes
-        where user_id = (select uid from base)
-      ),
-      portfolio_maxes as (
-        select highest_balance_mana, highest_invested_mana, highest_networth_mana, highest_loan_mana
-        from ach_portfolio_maxes
-        where user_id = (select uid from base)
-      ),
+      
       creators as (
         select (data->'creatorTraders'->>'allTime')::int as creator_traders
         from users
@@ -126,7 +117,6 @@ export const getUserAchievements: APIHandler<'get-user-achievements'> = async ({
       )
       select
         (select uid from base) as user_id,
-        coalesce(portfolio.total_profit_mana, 0) as total_profit_mana,
         coalesce(creators.creator_traders, 0) as creator_traders,
         coalesce(referrals.total_referrals, 0) as total_referrals,
         coalesce(referrals.total_referred_profit_mana, 0) as total_referred_profit_mana,
@@ -146,14 +136,9 @@ export const getUserAchievements: APIHandler<'get-user-achievements'> = async ({
         coalesce(trade_stats.largest_profitable_trade_value, 0) as largest_profitable_trade_value,
         coalesce(trade_stats.largest_unprofitable_trade_value, 0) as largest_unprofitable_trade_value,
         coalesce(longest_streak.longest_betting_streak, 0) as longest_betting_streak,
-        coalesce(portfolio_maxes.highest_balance_mana, 0) as highest_balance_mana,
-        coalesce(portfolio_maxes.highest_invested_mana, 0) as highest_invested_mana,
-        coalesce(portfolio_maxes.highest_networth_mana, 0) as highest_networth_mana,
-        coalesce(portfolio_maxes.highest_loan_mana, 0) as highest_loan_mana,
         coalesce(mod_tickets.mod_tickets_resolved, 0) as mod_tickets_resolved,
         coalesce(charity.charity_donated_mana, 0) as charity_donated_mana,
         json_build_object(
-          'totalProfit', json_build_object('rank', (select total_profit_rank from ach_portfolio_maxes where user_id = (select uid from base)), 'percentile', null),
           'creatorTraders', json_build_object('rank', (select creator_traders_rank from mv_ach_creator_traders where user_id = (select uid from base)), 'percentile', null),
           'totalReferrals', json_build_object('rank', (select total_referrals_rank from mv_ach_referrals where user_id = (select uid from base)), 'percentile', null),
           'totalReferredProfit', json_build_object('rank', (select total_referred_profit_rank from mv_ach_referrals where user_id = (select uid from base)), 'percentile', null),
@@ -171,18 +156,13 @@ export const getUserAchievements: APIHandler<'get-user-achievements'> = async ({
           'unprofitableMarkets', json_build_object('rank', (select unprofitable_markets_rank from mv_ach_pnl where user_id = (select uid from base)), 'percentile', null),
           'largestProfitableTrade', json_build_object('rank', (select largest_profitable_trade_rank from mv_ach_pnl where user_id = (select uid from base)), 'percentile', null),
           'largestUnprofitableTrade', json_build_object('rank', (select largest_unprofitable_trade_rank from mv_ach_pnl where user_id = (select uid from base)), 'percentile', null),
-          'highestBalance', json_build_object('rank', (select highest_balance_rank from ach_portfolio_maxes where user_id = (select uid from base)), 'percentile', null),
-          'highestInvested', json_build_object('rank', (select highest_invested_rank from ach_portfolio_maxes where user_id = (select uid from base)), 'percentile', null),
-          'highestNetworth', json_build_object('rank', (select highest_networth_rank from ach_portfolio_maxes where user_id = (select uid from base)), 'percentile', null),
-          'highestLoan', json_build_object('rank', (select highest_loan_rank from ach_portfolio_maxes where user_id = (select uid from base)), 'percentile', null),
           'accountAge', json_build_object('rank', (select account_age_rank from mv_ach_account_age where user_id = (select uid from base)), 'percentile', null),
           'longestBettingStreak', json_build_object('rank', (select longest_betting_streak_rank from mv_ach_txns_achievements where user_id = (select uid from base)), 'percentile', null),
           'modTickets', json_build_object('rank', (select mod_tickets_rank from mv_ach_txns_achievements where user_id = (select uid from base)), 'percentile', null),
           'charityDonated', json_build_object('rank', (select charity_donated_rank from mv_ach_txns_achievements where user_id = (select uid from base)), 'percentile', null)
         ) as ranks_json
       from base
-      left join portfolio on true
-      left join portfolio_maxes on true
+      
       left join creators on true
       left join referrals on true
       left join mod_tickets on true
@@ -204,21 +184,7 @@ export const getUserAchievements: APIHandler<'get-user-achievements'> = async ({
       mv as (
         select * from mv_user_achievement_stats where user_id = (select uid from base)
       ),
-      portfolio as (
-        select
-          max(coalesce(profit, balance + investment_value - total_deposits)) as total_profit_mana
-        from user_portfolio_history
-        where user_id = (select uid from base)
-      ),
-      portfolio_maxes as (
-        select
-          max(balance) as highest_balance_mana,
-          max(investment_value) as highest_invested_mana,
-          max(balance + investment_value) as highest_networth_mana,
-          max(loan_total) as highest_loan_mana
-        from user_portfolio_history
-        where user_id = (select uid from base)
-      ),
+      
       creators as (
         select (data->'creatorTraders'->>'allTime')::int as creator_traders
         from users
@@ -325,7 +291,6 @@ export const getUserAchievements: APIHandler<'get-user-achievements'> = async ({
       )
       select
         (select uid from base) as user_id,
-        coalesce(portfolio.total_profit_mana, 0) as total_profit_mana,
         coalesce(creators.creator_traders, 0) as creator_traders,
         coalesce(referrals.total_referrals, 0) as total_referrals,
         coalesce(referrals.total_referred_profit_mana, 0) as total_referred_profit_mana,
@@ -345,14 +310,9 @@ export const getUserAchievements: APIHandler<'get-user-achievements'> = async ({
         coalesce(trade_stats.largest_profitable_trade_value, 0) as largest_profitable_trade_value,
         coalesce(trade_stats.largest_unprofitable_trade_value, 0) as largest_unprofitable_trade_value,
         coalesce(longest_streak.longest_betting_streak, 0) as longest_betting_streak,
-        coalesce(portfolio_maxes.highest_balance_mana, 0) as highest_balance_mana,
-        coalesce(portfolio_maxes.highest_invested_mana, 0) as highest_invested_mana,
-        coalesce(portfolio_maxes.highest_networth_mana, 0) as highest_networth_mana,
-        coalesce(portfolio_maxes.highest_loan_mana, 0) as highest_loan_mana,
         coalesce(mod_tickets.mod_tickets_resolved, 0) as mod_tickets_resolved,
         coalesce(charity.charity_donated_mana, 0) as charity_donated_mana,
         json_build_object(
-          'totalProfit', json_build_object('rank', (select total_profit_rank from ach_portfolio_maxes where user_id = (select uid from base)), 'percentile', null),
           'creatorTraders', json_build_object('rank', (select creator_traders_rank from mv_ach_creator_traders where user_id = (select uid from base)), 'percentile', null),
           'totalReferrals', json_build_object('rank', (select total_referrals_rank from mv_ach_referrals where user_id = (select uid from base)), 'percentile', null),
           'totalReferredProfit', json_build_object('rank', (select total_referred_profit_rank from mv_ach_referrals where user_id = (select uid from base)), 'percentile', null),
@@ -370,18 +330,13 @@ export const getUserAchievements: APIHandler<'get-user-achievements'> = async ({
           'unprofitableMarkets', json_build_object('rank', (select unprofitable_markets_rank from mv), 'percentile', (select unprofitable_markets_percentile from mv)),
           'largestProfitableTrade', json_build_object('rank', (select largest_profitable_trade_rank from mv), 'percentile', (select largest_profitable_trade_percentile from mv)),
           'largestUnprofitableTrade', json_build_object('rank', (select largest_unprofitable_trade_rank from mv), 'percentile', (select largest_unprofitable_trade_percentile from mv)),
-          'highestBalance', json_build_object('rank', (select highest_balance_rank from mv), 'percentile', (select highest_balance_percentile from mv)),
-          'highestInvested', json_build_object('rank', (select highest_invested_rank from mv), 'percentile', (select highest_invested_percentile from mv)),
-          'highestNetworth', json_build_object('rank', (select highest_networth_rank from mv), 'percentile', (select highest_networth_percentile from mv)),
-          'highestLoan', json_build_object('rank', (select highest_loan_rank from mv), 'percentile', (select highest_loan_percentile from mv)),
           'accountAge', json_build_object('rank', (select account_age_rank from mv_ach_account_age where user_id = (select uid from base)), 'percentile', null),
           'longestBettingStreak', json_build_object('rank', (select longest_betting_streak_rank from mv_ach_txns_achievements where user_id = (select uid from base)), 'percentile', null),
           'modTickets', json_build_object('rank', (select mod_tickets_rank from mv_ach_txns_achievements where user_id = (select uid from base)), 'percentile', null),
           'charityDonated', json_build_object('rank', (select charity_donated_rank from mv_ach_txns_achievements where user_id = (select uid from base)), 'percentile', null)
         ) as ranks_json
       from base
-      left join portfolio on true
-      left join portfolio_maxes on true
+      
       left join creators on true
       left join referrals on true
       left join mod_tickets on true
@@ -400,21 +355,7 @@ export const getUserAchievements: APIHandler<'get-user-achievements'> = async ({
   const queryWithoutMV = `with base as (
         select $1::text as uid
       ),
-      portfolio as (
-        select
-          coalesce(profit, balance + spice_balance + investment_value - total_deposits) as total_profit_mana
-        from user_portfolio_history_latest
-        where user_id = (select uid from base)
-      ),
-      portfolio_maxes as (
-        select
-          max(balance) as highest_balance_mana,
-          max(investment_value) as highest_invested_mana,
-          max(balance + investment_value) as highest_networth_mana,
-          max(loan_total) as highest_loan_mana
-        from user_portfolio_history
-        where user_id = (select uid from base)
-      ),
+      
       creators as (
         select (data->'creatorTraders'->>'allTime')::int as creator_traders
         from users
@@ -520,7 +461,6 @@ export const getUserAchievements: APIHandler<'get-user-achievements'> = async ({
       )
       select
         (select uid from base) as user_id,
-        coalesce(portfolio.total_profit_mana, 0) as total_profit_mana,
         coalesce(creators.creator_traders, 0) as creator_traders,
         coalesce(referrals.total_referrals, 0) as total_referrals,
         coalesce(referrals.total_referred_profit_mana, 0) as total_referred_profit_mana,
@@ -540,16 +480,11 @@ export const getUserAchievements: APIHandler<'get-user-achievements'> = async ({
         coalesce(trade_stats.largest_profitable_trade_value, 0) as largest_profitable_trade_value,
         coalesce(trade_stats.largest_unprofitable_trade_value, 0) as largest_unprofitable_trade_value,
         coalesce(longest_streak.longest_betting_streak, 0) as longest_betting_streak,
-        coalesce(portfolio_maxes.highest_balance_mana, 0) as highest_balance_mana,
-        coalesce(portfolio_maxes.highest_invested_mana, 0) as highest_invested_mana,
-        coalesce(portfolio_maxes.highest_networth_mana, 0) as highest_networth_mana,
-        coalesce(portfolio_maxes.highest_loan_mana, 0) as highest_loan_mana,
         coalesce(mod_tickets.mod_tickets_resolved, 0) as mod_tickets_resolved,
         coalesce(charity.charity_donated_mana, 0) as charity_donated_mana,
         null::jsonb as ranks_json
       from base
-      left join portfolio on true
-      left join portfolio_maxes on true
+      
       left join creators on true
       left join referrals on true
       left join mod_tickets on true
@@ -571,7 +506,6 @@ export const getUserAchievements: APIHandler<'get-user-achievements'> = async ({
   )
 
   const defaultRanks = {
-    totalProfit: { rank: null, percentile: null },
     creatorTraders: { rank: null, percentile: null },
     totalReferrals: { rank: null, percentile: null },
     totalReferredProfit: { rank: null, percentile: null },
@@ -589,10 +523,6 @@ export const getUserAchievements: APIHandler<'get-user-achievements'> = async ({
     unprofitableMarkets: { rank: null, percentile: null },
     largestProfitableTrade: { rank: null, percentile: null },
     largestUnprofitableTrade: { rank: null, percentile: null },
-    highestBalance: { rank: null, percentile: null },
-    highestInvested: { rank: null, percentile: null },
-    highestNetworth: { rank: null, percentile: null },
-    highestLoan: { rank: null, percentile: null },
     accountAge: { rank: null, percentile: null },
     longestBettingStreak: { rank: null, percentile: null },
     modTickets: { rank: null, percentile: null },
@@ -614,7 +544,6 @@ export const getUserAchievements: APIHandler<'get-user-achievements'> = async ({
         : { rank: e?.rank ?? null, percentile: null }
 
     ranks = {
-      totalProfit: conv(rawRanks.totalProfit),
       creatorTraders: conv(rawRanks.creatorTraders),
       totalReferrals: conv(rawRanks.totalReferrals),
       totalReferredProfit: conv(rawRanks.totalReferredProfit),
@@ -632,10 +561,6 @@ export const getUserAchievements: APIHandler<'get-user-achievements'> = async ({
       unprofitableMarkets: conv(rawRanks.unprofitableMarkets),
       largestProfitableTrade: conv(rawRanks.largestProfitableTrade),
       largestUnprofitableTrade: conv(rawRanks.largestUnprofitableTrade),
-      highestBalance: conv(rawRanks.highestBalance),
-      highestInvested: conv(rawRanks.highestInvested),
-      highestNetworth: conv(rawRanks.highestNetworth),
-      highestLoan: conv(rawRanks.highestLoan),
       accountAge: conv(rawRanks.accountAge),
       longestBettingStreak: conv(rawRanks.longestBettingStreak),
       modTickets: conv(rawRanks.modTickets),
@@ -645,7 +570,6 @@ export const getUserAchievements: APIHandler<'get-user-achievements'> = async ({
 
   return {
     userId,
-    totalProfitMana: Number(result?.total_profit_mana ?? 0),
     creatorTraders: Number(result?.creator_traders ?? 0),
     totalReferrals: Number(result?.total_referrals ?? 0),
     totalReferredProfitMana: Number(result?.total_referred_profit_mana ?? 0),
@@ -673,10 +597,6 @@ export const getUserAchievements: APIHandler<'get-user-achievements'> = async ({
       result?.largest_unprofitable_trade_value ?? 0
     ),
     longestBettingStreak: Number(result?.longest_betting_streak ?? 0),
-    highestBalanceMana: Number(result?.highest_balance_mana ?? 0),
-    highestInvestedMana: Number(result?.highest_invested_mana ?? 0),
-    highestNetworthMana: Number(result?.highest_networth_mana ?? 0),
-    highestLoanMana: Number(result?.highest_loan_mana ?? 0),
     modTicketsResolved: Number(result?.mod_tickets_resolved ?? 0),
     charityDonatedMana: Number(result?.charity_donated_mana ?? 0),
     ranks,

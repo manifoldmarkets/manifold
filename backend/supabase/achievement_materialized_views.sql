@@ -318,25 +318,6 @@ from
 
 create unique index if not exists mv_ach_pnl_user_id_idx on public.mv_ach_pnl (user_id);
 
--- Replace heavy MV with incremental table + views
-create table if not exists
-  ach_portfolio_maxes (
-    user_id text primary key,
-    highest_balance_mana numeric not null default 0,
-    highest_invested_mana numeric not null default 0,
-    highest_networth_mana numeric not null default 0,
-    highest_loan_mana numeric not null default 0,
-    total_profit_mana numeric not null default 0,
-    highest_balance_rank integer,
-    highest_invested_rank integer,
-    highest_networth_rank integer,
-    highest_loan_rank integer,
-    total_profit_rank integer,
-    last_updated timestamp with time zone not null default to_timestamp(0)
-  );
-
-create unique index if not exists ach_portfolio_maxes_user_id_idx on public.ach_portfolio_maxes (user_id);
-
 -- Combined: Txns-based achievements (mod tickets resolved + charity donated + longest streak)
 create materialized view if not exists
   mv_ach_txns_achievements as

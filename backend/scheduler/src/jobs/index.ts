@@ -40,7 +40,6 @@ import { updateLeague } from './update-league'
 import { updateLeagueRanks } from './update-league-ranks'
 import { updateStatsCore } from './update-stats'
 import { updateAchTrades } from './update-ach-trades'
-import { updateAchPortfolioMaxes } from './update-ach-portfolio-maxes'
 import {
   refreshAchAccountAge,
   refreshAchComments,
@@ -157,11 +156,6 @@ export function createJobs() {
       'update-ach-trades',
       '0 10 2 * * *', // 2:10 AM daily
       updateAchTrades
-    ),
-    createJob(
-      'update-ach-portfolio-maxes',
-      '0 20 2 * * *', // 2:20 AM daily
-      updateAchPortfolioMaxes
     ),
     createJob(
       'refresh-ach-volume',

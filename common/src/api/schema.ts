@@ -1988,7 +1988,6 @@ export const API = (_apiTypeCheck = {
     cache: LIGHT_CACHE_STRATEGY,
     returns: {} as {
       userId: string
-      totalProfitMana: number
       creatorTraders: number
       totalReferrals: number
       totalReferredProfitMana: number
@@ -2008,14 +2007,9 @@ export const API = (_apiTypeCheck = {
       largestUnprofitableTradeValue: number
       longestBettingStreak: number
       largestLeagueSeasonEarnings: number
-      highestBalanceMana: number
-      highestInvestedMana: number
-      highestNetworthMana: number
-      highestLoanMana: number
       modTicketsResolved: number
       charityDonatedMana: number
       ranks: {
-        totalProfit: { rank: number | null; percentile: number | null }
         creatorTraders: { rank: number | null; percentile: number | null }
         totalReferrals: { rank: number | null; percentile: number | null }
         totalReferredProfit: { rank: number | null; percentile: number | null }
@@ -2048,10 +2042,6 @@ export const API = (_apiTypeCheck = {
           rank: number | null
           percentile: number | null
         }
-        highestBalance: { rank: number | null; percentile: number | null }
-        highestInvested: { rank: number | null; percentile: number | null }
-        highestNetworth: { rank: number | null; percentile: number | null }
-        highestLoan: { rank: number | null; percentile: number | null }
         accountAge: { rank: number | null; percentile: number | null }
         longestBettingStreak: { rank: number | null; percentile: number | null }
         modTickets: { rank: number | null; percentile: number | null }
