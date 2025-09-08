@@ -41,6 +41,17 @@ import { updateLeagueRanks } from './update-league-ranks'
 import { updateStatsCore } from './update-stats'
 import { updateAchTrades } from './update-ach-trades'
 import { updateAchPortfolioMaxes } from './update-ach-portfolio-maxes'
+import {
+  refreshAchAccountAge,
+  refreshAchComments,
+  refreshAchCreatorContracts,
+  refreshAchCreatorTraders,
+  refreshAchLeagues,
+  refreshAchPnl,
+  refreshAchReferrals,
+  refreshAchTxns,
+  refreshAchVolume,
+} from './refresh-achievement-mvs'
 
 export function createJobs() {
   return [
@@ -141,6 +152,7 @@ export function createJobs() {
       '0 30 2 * * *', // 230 AM daily
       cleanOldNotifications
     ),
+    // Achievement MV refreshes (nightly, staggered ~10 mins apart)
     createJob(
       'update-ach-trades',
       '0 10 2 * * *', // 2:10 AM daily
@@ -150,6 +162,51 @@ export function createJobs() {
       'update-ach-portfolio-maxes',
       '0 20 2 * * *', // 2:20 AM daily
       updateAchPortfolioMaxes
+    ),
+    createJob(
+      'refresh-ach-volume',
+      '0 30 2 * * *', // 2:30 AM
+      refreshAchVolume
+    ),
+    createJob(
+      'refresh-ach-comments',
+      '0 40 2 * * *', // 2:40 AM
+      refreshAchComments
+    ),
+    createJob(
+      'refresh-ach-creator-contracts',
+      '0 50 2 * * *', // 2:50 AM
+      refreshAchCreatorContracts
+    ),
+    createJob(
+      'refresh-ach-referrals',
+      '0 0 3 * * *', // 3:00 AM
+      refreshAchReferrals
+    ),
+    createJob(
+      'refresh-ach-creator-traders',
+      '0 10 3 * * *', // 3:10 AM
+      refreshAchCreatorTraders
+    ),
+    createJob(
+      'refresh-ach-leagues',
+      '0 20 3 * * *', // 3:20 AM
+      refreshAchLeagues
+    ),
+    createJob(
+      'refresh-ach-pnl',
+      '0 30 3 * * *', // 3:30 AM
+      refreshAchPnl
+    ),
+    createJob(
+      'refresh-ach-txns',
+      '0 40 3 * * *', // 3:40 AM
+      refreshAchTxns
+    ),
+    createJob(
+      'refresh-ach-account-age',
+      '0 50 3 * * *', // 3:50 AM
+      refreshAchAccountAge
     ),
     createJob(
       'update-user-metric-periods',
