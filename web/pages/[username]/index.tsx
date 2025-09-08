@@ -976,22 +976,46 @@ function AchievementsSection(props: { userId: string }) {
                       charityDonatedMana:
                         '/achievement-badges/charityDonatedMana.png',
                       creatorTraders: '/achievement-badges/creatorTraders.png',
+                      highestBalanceMana:
+                        '/achievement-badges/highestBalanceMana.png',
+                      highestInvestedMana:
+                        '/achievement-badges/highestInvestedMana.png',
                       highestLoanMana:
                         '/achievement-badges/highestLoanMana.png',
                       highestNetworthMana:
                         '/achievement-badges/highestNetworthMana.png',
+                      largestProfitableTradeValue:
+                        '/achievement-badges/largestProfitableTradeValue.png',
+                      largestLeagueSeasonEarnings:
+                        '/achievement-badges/largestLeagueSeasonEarnings.png',
                       largestUnprofitableTradeValue:
                         '/achievement-badges/largestUnprofitableTradeValue.png',
+                      longestBettingStreak:
+                        '/achievement-badges/longestBettingStreak.png',
                       modTicketsResolved:
                         '/achievement-badges/modTicketsResolved.png',
                       numberOfComments:
                         '/achievement-badges/numberOfComments.png',
+                      profitableMarketsCount:
+                        '/achievement-badges/profitableMarketsCount.png',
+                      seasonsDiamondOrHigher:
+                        '/achievement-badges/seasonsDiamondOrHigher.png',
+                      seasonsGoldOrHigher:
+                        '/achievement-badges/seasonsGoldOrHigher.png',
                       seasonsMasters: '/achievement-badges/seasonsMasters.png',
                       seasonsPlatinumOrHigher:
                         '/achievement-badges/seasonsPlatinumOrHigher.png',
+                      totalLiquidityCreatedMarkets:
+                        '/achievement-badges/totalLiquidityCreatedMarkets.png',
+                      totalMarketsCreated:
+                        '/achievement-badges/totalMarketsCreated.png',
+                      totalProfitMana:
+                        '/achievement-badges/totalProfitMana.png',
                       totalReferrals: '/achievement-badges/totalReferrals.png',
                       totalReferredProfitMana:
                         '/achievement-badges/totalReferredProfitMana.png',
+                      totalTradesCount:
+                        '/achievement-badges/totalTradesCount.png',
                       totalVolumeMana:
                         '/achievement-badges/totalVolumeMana.png',
                       unprofitableMarketsCount:
@@ -999,7 +1023,7 @@ function AchievementsSection(props: { userId: string }) {
                     }
                     return (
                       IMAGE_BY_ID[a.id] ||
-                      '/achievement-badges/seasonsPlatinumOrHigher.png'
+                      '/achievement-badges/totalProfitMana.png'
                     )
                   })()}
                   bucket={bucket}
