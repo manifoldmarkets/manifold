@@ -567,7 +567,6 @@ function AchievementsSection(props: { userId: string }) {
     trades: { rank: number | null; percentile: number | null }
     marketsCreated: { rank: number | null; percentile: number | null }
     comments: { rank: number | null; percentile: number | null }
-    seasonsGoldOrHigher: { rank: number | null; percentile: number | null }
     seasonsPlatinumOrHigher: { rank: number | null; percentile: number | null }
     seasonsDiamondOrHigher: { rank: number | null; percentile: number | null }
     seasonsMasters: { rank: number | null; percentile: number | null }
@@ -598,7 +597,6 @@ function AchievementsSection(props: { userId: string }) {
     totalReferrals: number
     totalReferredProfitMana: number
     totalVolumeMana: number
-    seasonsGoldOrHigher: number
     seasonsPlatinumOrHigher: number
     seasonsDiamondOrHigher: number
     seasonsMasters: number
@@ -665,7 +663,6 @@ function AchievementsSection(props: { userId: string }) {
     unprofitableMarketsCount: 'unprofitableMarkets',
     largestProfitableTradeValue: 'largestProfitableTrade',
     largestUnprofitableTradeValue: 'largestUnprofitableTrade',
-    seasonsGoldOrHigher: 'seasonsGoldOrHigher',
     seasonsPlatinumOrHigher: 'seasonsPlatinumOrHigher',
     seasonsDiamondOrHigher: 'seasonsDiamondOrHigher',
     seasonsMasters: 'seasonsMasters',
@@ -690,7 +687,6 @@ function AchievementsSection(props: { userId: string }) {
     unprofitableMarketsCount: data.unprofitableMarketsCount,
     largestProfitableTradeValue: data.largestProfitableTradeValue,
     largestUnprofitableTradeValue: data.largestUnprofitableTradeValue,
-    seasonsGoldOrHigher: data.seasonsGoldOrHigher,
     seasonsPlatinumOrHigher: data.seasonsPlatinumOrHigher,
     seasonsDiamondOrHigher: data.seasonsDiamondOrHigher,
     seasonsMasters: data.seasonsMasters,
@@ -758,12 +754,6 @@ function AchievementsSection(props: { userId: string }) {
       title: 'Wealth Redistributor',
       desc: 'Largest loss made on a single market.',
       fmt: () => formatMoney(data.largestUnprofitableTradeValue, 'MANA'),
-    },
-    {
-      id: 'seasonsGoldOrHigher',
-      title: 'Gleaming Gold',
-      desc: 'Seasons finished Gold or higher.',
-      fmt: () => formatWithCommas(data.seasonsGoldOrHigher),
     },
     {
       id: 'seasonsPlatinumOrHigher',
@@ -943,8 +933,6 @@ function AchievementsSection(props: { userId: string }) {
                         '/achievement-badges/profitableMarketsCount.png',
                       seasonsDiamondOrHigher:
                         '/achievement-badges/seasonsDiamondOrHigher.png',
-                      seasonsGoldOrHigher:
-                        '/achievement-badges/seasonsGoldOrHigher.png',
                       seasonsMasters: '/achievement-badges/seasonsMasters.png',
                       seasonsPlatinumOrHigher:
                         '/achievement-badges/seasonsPlatinumOrHigher.png',

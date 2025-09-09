@@ -43,7 +43,6 @@ export const getUserAchievements: APIHandler<'get-user-achievements'> = async ({
       ),
       leagues_cte as (
         select
-          count(*) filter (where division >= 3) as seasons_gold_or_higher,
           count(*) filter (where division >= 4) as seasons_platinum_or_higher,
           count(*) filter (where division >= 5) as seasons_diamond_or_higher,
           count(*) filter (where division = 6) as seasons_masters
@@ -111,7 +110,6 @@ export const getUserAchievements: APIHandler<'get-user-achievements'> = async ({
         coalesce(referrals.total_referrals, 0) as total_referrals,
         coalesce(referrals.total_referred_profit_mana, 0) as total_referred_profit_mana,
         coalesce(volume.total_volume_mana, 0) as total_volume_mana,
-        coalesce(leagues_cte.seasons_gold_or_higher, 0) as seasons_gold_or_higher,
         coalesce(leagues_cte.seasons_platinum_or_higher, 0) as seasons_platinum_or_higher,
         coalesce(leagues_cte.seasons_diamond_or_higher, 0) as seasons_diamond_or_higher,
         coalesce(leagues_cte.seasons_masters, 0) as seasons_masters,
@@ -136,7 +134,6 @@ export const getUserAchievements: APIHandler<'get-user-achievements'> = async ({
           'trades', json_build_object('rank', (select trades_rank from ach_trades where user_id = (select uid from base)), 'percentile', null),
           'marketsCreated', json_build_object('rank', (select markets_created_rank from mv_ach_creator_contracts where user_id = (select uid from base)), 'percentile', null),
           'comments', json_build_object('rank', (select comments_rank from mv_ach_comments where user_id = (select uid from base)), 'percentile', null),
-          'seasonsGoldOrHigher', json_build_object('rank', (select seasons_gold_or_higher_rank from mv_ach_leagues where user_id = (select uid from base)), 'percentile', null),
           'seasonsPlatinumOrHigher', json_build_object('rank', (select seasons_platinum_or_higher_rank from mv_ach_leagues where user_id = (select uid from base)), 'percentile', null),
           'seasonsDiamondOrHigher', json_build_object('rank', (select seasons_diamond_or_higher_rank from mv_ach_leagues where user_id = (select uid from base)), 'percentile', null),
           'seasonsMasters', json_build_object('rank', (select seasons_masters_rank from mv_ach_leagues where user_id = (select uid from base)), 'percentile', null),
@@ -178,7 +175,6 @@ export const getUserAchievements: APIHandler<'get-user-achievements'> = async ({
     trades: { rank: null, percentile: null },
     marketsCreated: { rank: null, percentile: null },
     comments: { rank: null, percentile: null },
-    seasonsGoldOrHigher: { rank: null, percentile: null },
     seasonsPlatinumOrHigher: { rank: null, percentile: null },
     seasonsDiamondOrHigher: { rank: null, percentile: null },
     seasonsMasters: { rank: null, percentile: null },
@@ -210,7 +206,6 @@ export const getUserAchievements: APIHandler<'get-user-achievements'> = async ({
     trades: conv(rawRanks.trades),
     marketsCreated: conv(rawRanks.marketsCreated),
     comments: conv(rawRanks.comments),
-    seasonsGoldOrHigher: conv(rawRanks.seasonsGoldOrHigher),
     seasonsPlatinumOrHigher: conv(rawRanks.seasonsPlatinumOrHigher),
     seasonsDiamondOrHigher: conv(rawRanks.seasonsDiamondOrHigher),
     seasonsMasters: conv(rawRanks.seasonsMasters),
@@ -232,7 +227,6 @@ export const getUserAchievements: APIHandler<'get-user-achievements'> = async ({
     totalReferrals: Number(result?.total_referrals ?? 0),
     totalReferredProfitMana: Number(result?.total_referred_profit_mana ?? 0),
     totalVolumeMana: Number(result?.total_volume_mana ?? 0),
-    seasonsGoldOrHigher: Number(result?.seasons_gold_or_higher ?? 0),
     seasonsPlatinumOrHigher: Number(result?.seasons_platinum_or_higher ?? 0),
     seasonsDiamondOrHigher: Number(result?.seasons_diamond_or_higher ?? 0),
     seasonsMasters: Number(result?.seasons_masters ?? 0),
