@@ -1,4 +1,11 @@
 import { APIHandler } from 'api/helpers/endpoint'
+// NOTE: Duplication warning
+// This handler builds the achievements response using several materialized views
+// defined in backend/supabase/achievement_materialized_views.sql.
+// If you add/remove/rename achievement fields here, ALSO update that SQL file
+// and the API return type in common/src/api/schema.ts ('get-user-achievements').
+// Long-term, consider consolidating a single SQL view (e.g. mv_ach_user_stats)
+// that outputs raw values + ranks to minimize TS/SQL drift.
 import { createSupabaseDirectClient } from 'shared/supabase/init'
 
 // Returns flat achievement-style statistics for a given user (no ranks)
