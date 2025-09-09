@@ -1,3 +1,12 @@
+-- NOTE: Duplication warning
+-- This file defines the schema and ranks used by achievements materialized views.
+-- The backend handler at backend/api/src/get-user-achievements.ts assembles
+-- the returned fields and also references these mat views for ranks.
+-- If you add/remove/rename any achievement fields here, you MUST update:
+--   1) backend/api/src/get-user-achievements.ts (SQL selections + ranks mapping)
+--   2) common/src/api/schema.ts ('get-user-achievements' return type)
+-- Consider consolidating into a single view (e.g. mv_ach_user_stats) that
+-- returns both raw values and ranks to reduce duplication in the TS handler.
 -- Volume
 create materialized view if not exists
   mv_ach_volume as

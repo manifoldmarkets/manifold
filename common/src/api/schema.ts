@@ -1992,7 +1992,6 @@ export const API = (_apiTypeCheck = {
       totalReferrals: number
       totalReferredProfitMana: number
       totalVolumeMana: number
-      seasonsGoldOrHigher: number
       seasonsPlatinumOrHigher: number
       seasonsDiamondOrHigher: number
       seasonsMasters: number
@@ -2017,7 +2016,6 @@ export const API = (_apiTypeCheck = {
         trades: { rank: number | null; percentile: number | null }
         marketsCreated: { rank: number | null; percentile: number | null }
         comments: { rank: number | null; percentile: number | null }
-        seasonsGoldOrHigher: { rank: number | null; percentile: number | null }
         seasonsPlatinumOrHigher: {
           rank: number | null
           percentile: number | null
