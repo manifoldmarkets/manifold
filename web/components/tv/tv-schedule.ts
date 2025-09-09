@@ -2,6 +2,7 @@ import { useApiSubscription } from 'client-common/hooks/use-api-subscription'
 import { Row } from 'common/supabase/utils'
 import dayjs from 'dayjs'
 import { useEffect, useState } from 'react'
+import { usePersistentLocalState } from 'web/hooks/use-persistent-local-state'
 import { db } from 'web/lib/supabase/db'
 
 export type ScheduleItem = Row<'tv_schedule'>
@@ -10,7 +11,10 @@ export const useTVSchedule = (
   defaultSchedule: ScheduleItem[] = [],
   defaultScheduleId: string | null = null
 ) => {
-  const [schedule, setSchedule] = useState(defaultSchedule)
+  const [schedule, setSchedule] = usePersistentLocalState(
+    defaultSchedule,
+    'tv-schedule'
+  )
 
   useEffect(() => {
     const fetchSchedule = async () => {
@@ -27,7 +31,7 @@ export const useTVSchedule = (
       }
 
       const { data } = await query
-      if (data) setSchedule(data as ScheduleItem[])
+      setSchedule(data as ScheduleItem[])
     }
 
     void fetchSchedule()
