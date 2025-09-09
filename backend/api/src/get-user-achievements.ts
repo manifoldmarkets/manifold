@@ -25,6 +25,7 @@ export const getUserAchievements: APIHandler<'get-user-achievements'> = async ({
         select count(*) as mod_tickets_resolved
         from txns
         where category = 'ADMIN_REWARD' and to_id = (select uid from base)
+        and data -> 'data' ->> 'updateType' = 'resolved'
       ),
       charity as (
         select coalesce(sum(case when token = 'M$' then amount / 100.0 else 0 end), 0)
