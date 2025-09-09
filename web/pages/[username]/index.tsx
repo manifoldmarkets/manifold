@@ -858,13 +858,13 @@ function AchievementsSection(props: { userId: string }) {
   })
 
   const bucketOf = (rank: number | null) => {
-    if (rank == null) return 'All Users'
+    if (rank == null) return 'To Earn'
     if (rank <= 50) return 'Top 50 Users'
     if (rank <= 200) return 'Top 200 Users'
     if (rank <= 1000) return 'Top 1000 Users'
     if (rank <= 5000) return 'Top 5000 Users'
     if (rank <= 20000) return 'Top 20,000 Users'
-    return 'All Users'
+    return 'To Earn'
   }
 
   const bucketOrder = [
@@ -873,7 +873,7 @@ function AchievementsSection(props: { userId: string }) {
     'Top 1000 Users',
     'Top 5000 Users',
     'Top 20,000 Users',
-    'All Users',
+    'To Earn',
   ] as const
   const byBucket: Record<
     (typeof bucketOrder)[number],
@@ -884,7 +884,7 @@ function AchievementsSection(props: { userId: string }) {
     'Top 1000 Users': [],
     'Top 5000 Users': [],
     'Top 20,000 Users': [],
-    'All Users': [],
+    'To Earn': [],
   }
 
   ACHS.forEach((a) => {
@@ -990,7 +990,7 @@ function AchievementBadgeCard(props: {
     | 'Top 1000 Users'
     | 'Top 5000 Users'
     | 'Top 20,000 Users'
-    | 'All Users'
+    | 'To Earn'
   imageSrc?: string
 }) {
   const { title, description, value, rank, percentile, bucket, imageSrc } =
@@ -1002,7 +1002,7 @@ function AchievementBadgeCard(props: {
     'Top 1000 Users': 'from-sky-500 to-teal-500',
     'Top 5000 Users': 'from-emerald-500 to-lime-500',
     'Top 20,000 Users': 'from-slate-500 to-zinc-500',
-    'All Users': 'from-zinc-400 to-zinc-600',
+    'To Earn': 'from-zinc-400 to-zinc-600',
   }
 
   return (
@@ -1010,6 +1010,13 @@ function AchievementBadgeCard(props: {
       className="border-ink-200 group relative rounded-xl border p-[1px] transition-shadow hover:shadow-lg"
       aria-label={title}
     >
+      {rank != null && rank <= 20000 && (
+        <div className="absolute right-0 top-0 z-20">
+          <div className="bg-primary-500 text-ink-0 rounded-bl-lg px-2 py-1 text-xs font-semibold shadow-sm">
+            #{rank}
+          </div>
+        </div>
+      )}
       {/* gradient ring */}
       <div
         className={clsx(
@@ -1018,7 +1025,12 @@ function AchievementBadgeCard(props: {
         )}
       >
         <div className="bg-canvas-0 flex h-full flex-col items-center space-y-3 rounded-[11px] px-4 pb-6 pt-6">
-          <div className=" ring-ink-300/50 flex h-32 w-32 items-center justify-center overflow-hidden rounded-full ring-1">
+          <div
+            className={clsx(
+              ' ring-ink-300/50 flex h-32 w-32 items-center justify-center overflow-hidden rounded-full ring-1',
+              bucket === 'To Earn' && 'opacity-40 grayscale'
+            )}
+          >
             {imageSrc ? (
               <Image
                 src={imageSrc}
@@ -1029,7 +1041,12 @@ function AchievementBadgeCard(props: {
               />
             ) : null}
           </div>
-          <div className="pt-4 text-center">
+          <div
+            className={clsx(
+              'pt-4 text-center',
+              bucket === 'To Earn' && 'opacity-40'
+            )}
+          >
             <div className="text-ink-900  text-lg font-semibold">{title}</div>
             <div className="text-ink-600 mt-1 text-sm leading-snug">
               {description}
