@@ -31,7 +31,7 @@ export const useTVSchedule = (
       }
 
       const { data } = await query
-      setSchedule(data as ScheduleItem[])
+      setSchedule((data ?? []) as ScheduleItem[])
     }
 
     void fetchSchedule()
