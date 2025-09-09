@@ -33,6 +33,7 @@ import { Col } from '../layout/col'
 import { AddFundsButton } from '../profile/add-funds-button'
 import { ReportsIcon } from '../reports-icon'
 import { LiveTVIcon } from '../tv-icon'
+import { useTVIsLive } from '../tv/tv-schedule'
 import { ManifoldLogo } from './manifold-logo'
 import { ProfileSummary } from './profile-summary'
 import { NavItem, SidebarItem } from './sidebar-item'
@@ -57,7 +58,7 @@ export default function Sidebar(props: {
 
   const isNewUser = !!user && user.createdTime > Date.now() - DAY_MS
 
-  const isLiveTV = true
+  const isLiveTV = useTVIsLive(10)
 
   const navOptions = isMobile
     ? getMobileNav(() => setIsAddFundsModalOpen(!isAddFundsModalOpen), {

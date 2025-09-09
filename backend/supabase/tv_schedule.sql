@@ -17,3 +17,13 @@ create table if not exists
 drop index if exists tv_schedule_pkey;
 
 create unique index tv_schedule_pkey on public.tv_schedule using btree (id);
+
+alter table tv_schedule enable row level security;
+
+-- Policies
+drop policy if exists "public read" on tv_schedule;
+
+create policy "public read" on tv_schedule for
+    select
+    using (true);
+

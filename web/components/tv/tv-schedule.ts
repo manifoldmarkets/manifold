@@ -1,24 +1,10 @@
-import dayjs from 'dayjs'
-import { useEffect, useState } from 'react'
 import { useApiSubscription } from 'client-common/hooks/use-api-subscription'
 import { Row } from 'common/supabase/utils'
+import dayjs from 'dayjs'
+import { useEffect, useState } from 'react'
 import { db } from 'web/lib/supabase/db'
 
 export type ScheduleItem = Row<'tv_schedule'>
-
-export const filterSchedule = (
-  schedule: ScheduleItem[] | null,
-  scheduleId: string | null
-) => {
-  return (schedule ?? [])
-    .filter(
-      (s) =>
-        dayjs(s.end_time ?? '')
-          .add(1, 'hour')
-          .isAfter(dayjs()) || s.id.toString() === scheduleId
-    )
-    .sort((a, b) => dayjs(a.start_time).diff(dayjs(b.start_time)))
-}
 
 export const useTVSchedule = (
   defaultSchedule: ScheduleItem[] = [],
@@ -27,14 +13,43 @@ export const useTVSchedule = (
   const [schedule, setSchedule] = useState(defaultSchedule)
 
   useEffect(() => {
-    setSchedule(filterSchedule(defaultSchedule, defaultScheduleId))
-  }, [defaultSchedule, defaultScheduleId])
+    const fetchSchedule = async () => {
+      const cutoff = dayjs().subtract(1, 'hour').toISOString()
+      let query = db
+        .from('tv_schedule')
+        .select('*')
+        .order('start_time', { ascending: true })
+
+      if (defaultScheduleId) {
+        query = query.or(`end_time.gt.${cutoff},id.eq.${defaultScheduleId}`)
+      } else {
+        query = query.gt('end_time', cutoff)
+      }
+
+      const { data } = await query
+      if (data) setSchedule(data as ScheduleItem[])
+    }
+
+    void fetchSchedule()
+  }, [defaultScheduleId])
 
   useApiSubscription({
     topics: ['tv_schedule'],
     onBroadcast: async () => {
-      const { data } = await db.from('tv_schedule').select('*')
-      if (data) setSchedule(filterSchedule(data, defaultScheduleId))
+      const cutoff = dayjs().subtract(1, 'hour').toISOString()
+      let query = db
+        .from('tv_schedule')
+        .select('*')
+        .order('start_time', { ascending: true })
+
+      if (defaultScheduleId) {
+        query = query.or(`end_time.gt.${cutoff},id.eq.${defaultScheduleId}`)
+      } else {
+        query = query.gt('end_time', cutoff)
+      }
+
+      const { data } = await query
+      if (data) setSchedule(data as ScheduleItem[])
     },
   })
 
@@ -77,4 +92,37 @@ export const getActiveStream = (
     return justEnded[0]
 
   return undefined
+}
+
+// Returns true if there exists a featured schedule item whose [start_time, end_time]
+// intersects with the window [now - windowMinutes, now + windowMinutes].
+export const hasFeaturedEventNearNow = (
+  schedule: ScheduleItem[],
+  windowMinutes = 10
+) => {
+  const now = dayjs()
+  const windowStart = now.subtract(windowMinutes, 'minute')
+  const windowEnd = now.add(windowMinutes, 'minute')
+  return schedule.some((s) => {
+    if (!s.is_featured) return false
+    const start = dayjs(s.start_time)
+    const end = dayjs(s.end_time ?? s.start_time)
+    // Intersect if start <= windowEnd AND end >= windowStart
+    return !start.isAfter(windowEnd) && !end.isBefore(windowStart)
+  })
+}
+
+// Hook that updates on a timer so the value flips without a broadcast.
+export const useTVIsLive = (windowMinutes = 10) => {
+  const schedule = useTVSchedule()
+  const [tick, setTick] = useState(0)
+
+  useEffect(() => {
+    const id = setInterval(() => setTick((t) => t + 1), 30_000)
+    return () => clearInterval(id)
+  }, [])
+
+  // recompute on each render triggered by schedule updates or tick
+  void tick
+  return hasFeaturedEventNearNow(schedule, windowMinutes)
 }
