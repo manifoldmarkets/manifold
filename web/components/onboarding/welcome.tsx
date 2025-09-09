@@ -1,38 +1,37 @@
 /* eslint-disable react/jsx-key */
-import { useEffect, useState } from 'react'
 import Image from 'next/image'
+import { useEffect, useState } from 'react'
 
 import { STARTING_BALANCE } from 'common/economy'
-import { User } from 'common/user'
-import { buildArray } from 'common/util/array'
-import { formatMoney } from 'common/util/format'
-import { Button } from 'web/components/buttons/button'
-import { useUser } from 'web/hooks/use-user'
-import { Col } from '../layout/col'
-import { Modal } from '../layout/modal'
-import { Row } from '../layout/row'
-import { run } from 'common/supabase/utils'
-import { db } from 'web/lib/supabase/db'
+import { TRADE_TERM } from 'common/envs/constants'
 import { Group } from 'common/group'
+import { convertGroup } from 'common/supabase/groups'
+import { run } from 'common/supabase/utils'
 import {
   GROUP_SLUGS_TO_HIDE_FROM_WELCOME_FLOW,
   WELCOME_FLOW_TOPICS,
 } from 'common/topics'
-import { intersection, orderBy, uniq, uniqBy } from 'lodash'
-import { track } from 'web/lib/service/analytics'
-import { Input } from '../widgets/input'
-import { cleanDisplayName, cleanUsername } from 'common/util/clean-username'
-import { api, updateUser, followTopic, followUser } from 'web/lib/api/api'
-import { randomString } from 'common/util/random'
-import { unfollowTopic } from 'web/lib/supabase/groups'
-import { PillButton } from 'web/components/buttons/pill-button'
+import { User } from 'common/user'
 import { unauthedApi } from 'common/util/api'
-import { getSavedContractVisitsLocally } from 'web/hooks/use-save-visits'
-import { capitalize } from 'lodash'
-import { TRADE_TERM } from 'common/envs/constants'
-import { convertGroup } from 'common/supabase/groups'
-import { setCachedReferralInfoForUser } from 'web/lib/firebase/users'
+import { buildArray } from 'common/util/array'
+import { cleanDisplayName, cleanUsername } from 'common/util/clean-username'
+import { formatMoney } from 'common/util/format'
+import { randomString } from 'common/util/random'
 import { removeEmojis } from 'common/util/string'
+import { capitalize, intersection, orderBy, uniq, uniqBy } from 'lodash'
+import { Button } from 'web/components/buttons/button'
+import { PillButton } from 'web/components/buttons/pill-button'
+import { getSavedContractVisitsLocally } from 'web/hooks/use-save-visits'
+import { useUser } from 'web/hooks/use-user'
+import { api, followTopic, followUser, updateUser } from 'web/lib/api/api'
+import { setCachedReferralInfoForUser } from 'web/lib/firebase/users'
+import { track } from 'web/lib/service/analytics'
+import { db } from 'web/lib/supabase/db'
+import { unfollowTopic } from 'web/lib/supabase/groups'
+import { Col } from '../layout/col'
+import { Modal } from '../layout/modal'
+import { Row } from '../layout/row'
+import { Input } from '../widgets/input'
 
 export const DEFAULT_FOR_YOU = false
 const SHOW_TOPICS = true
@@ -439,7 +438,11 @@ function TopicsPage(props: {
         <Button onClick={goBack} color={'gray-white'}>
           Previous
         </Button>
-        <Button onClick={closeDialog} loading={isLoading}>
+        <Button
+          color={selectedTopics.length > 2 ? 'indigo' : 'indigo-outline'}
+          onClick={closeDialog}
+          loading={isLoading}
+        >
           Finish
         </Button>
       </Row>
