@@ -14,6 +14,7 @@ import { unauthedApi } from 'common/util/api'
 import { buildArray } from 'common/util/array'
 import { removeUndefinedProps } from 'common/util/object'
 import Head from 'next/head'
+import Image from 'next/image'
 import Link from 'next/link'
 import { useRouter } from 'next/router'
 import { useEffect, useState } from 'react'
@@ -62,6 +63,11 @@ import { db } from 'web/lib/supabase/db'
 import { getAverageUserRating, getUserRating } from 'web/lib/supabase/reviews'
 import Custom404 from 'web/pages/404'
 import { UserPayments } from 'web/pages/payments'
+import {
+  formatMoney,
+  formatWithCommas,
+  formatMoneyUSD,
+} from 'common/util/format'
 
 export const getStaticProps = async (props: {
   params: {
@@ -427,6 +433,17 @@ function UserProfile(props: {
                 ),
               },
               {
+                title: 'Achievements',
+                prerender: true,
+                stackedTabIcon: <TrophyIcon className="h-5" />,
+                content: (
+                  <>
+                    <Spacer h={4} />
+                    <AchievementsSection userId={user.id} />
+                  </>
+                ),
+              },
+              {
                 title: 'Balance log',
                 stackedTabIcon: <ViewListIcon className="h-5" />,
                 content: <BalanceChangeTable user={user} />,
@@ -535,6 +552,513 @@ function ProfilePublicStats(props: {
         setIsOpen={setFollowsOpen}
       />
     </Row>
+  )
+}
+
+function AchievementsSection(props: { userId: string }) {
+  const { userId } = props
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
+  type RanksType = {
+    creatorTraders: { rank: number | null; percentile: number | null }
+    totalReferrals: { rank: number | null; percentile: number | null }
+    totalReferredProfit: { rank: number | null; percentile: number | null }
+    volume: { rank: number | null; percentile: number | null }
+    trades: { rank: number | null; percentile: number | null }
+    marketsCreated: { rank: number | null; percentile: number | null }
+    comments: { rank: number | null; percentile: number | null }
+    seasonsGoldOrHigher: { rank: number | null; percentile: number | null }
+    seasonsPlatinumOrHigher: { rank: number | null; percentile: number | null }
+    seasonsDiamondOrHigher: { rank: number | null; percentile: number | null }
+    seasonsMasters: { rank: number | null; percentile: number | null }
+    largestLeagueSeasonEarnings: {
+      rank: number | null
+      percentile: number | null
+    }
+    liquidity: { rank: number | null; percentile: number | null }
+    profitableMarkets: { rank: number | null; percentile: number | null }
+    unprofitableMarkets: { rank: number | null; percentile: number | null }
+    largestProfitableTrade: {
+      rank: number | null
+      percentile: number | null
+    }
+    largestUnprofitableTrade: {
+      rank: number | null
+      percentile: number | null
+    }
+    accountAge: { rank: number | null; percentile: number | null }
+    longestBettingStreak: { rank: number | null; percentile: number | null }
+    modTickets: { rank: number | null; percentile: number | null }
+    charityDonated: { rank: number | null; percentile: number | null }
+  }
+
+  const [data, setData] = useState<{
+    userId: string
+    creatorTraders: number
+    totalReferrals: number
+    totalReferredProfitMana: number
+    totalVolumeMana: number
+    seasonsGoldOrHigher: number
+    seasonsPlatinumOrHigher: number
+    seasonsDiamondOrHigher: number
+    seasonsMasters: number
+    numberOfComments: number
+    totalLiquidityCreatedMarkets: number
+    totalTradesCount: number
+    totalMarketsCreated: number
+    accountAgeYears: number
+    profitableMarketsCount: number
+    unprofitableMarketsCount: number
+    largestProfitableTradeValue: number
+    largestUnprofitableTradeValue: number
+    longestBettingStreak: number
+    modTicketsResolved: number
+    charityDonatedMana: number
+    largestLeagueSeasonEarnings: number
+    ranks: RanksType
+  } | null>(null)
+
+  useEffect(() => {
+    let isMounted = true
+    setLoading(true)
+    setError(null)
+    unauthedApi('get-user-achievements', { userId })
+      .then((resp) => {
+        if (isMounted) setData(resp)
+      })
+      .catch((e) => {
+        if (isMounted) setError(e?.message ?? 'Failed to load achievements')
+      })
+      .finally(() => {
+        if (isMounted) setLoading(false)
+      })
+    return () => {
+      isMounted = false
+    }
+  }, [userId])
+
+  if (loading)
+    return (
+      <Row className="text-ink-600 items-center gap-2">
+        Loading achievements…
+      </Row>
+    )
+  if (error) return <div className="text-error">{error}</div>
+  if (!data) return null
+
+  type Rankish =
+    | { rank: number | null; percentile: number | null }
+    | null
+    | undefined
+
+  const _p = (r?: Rankish) => r?.percentile ?? null
+  const _r = (r?: Rankish) => r?.rank ?? null
+
+  // Rank key per achievement id
+  const rankKeyById: Record<string, keyof RanksType> = {
+    totalVolumeMana: 'volume',
+    totalReferrals: 'totalReferrals',
+    totalReferredProfitMana: 'totalReferredProfit',
+    creatorTraders: 'creatorTraders',
+    totalLiquidityCreatedMarkets: 'liquidity',
+    profitableMarketsCount: 'profitableMarkets',
+    unprofitableMarketsCount: 'unprofitableMarkets',
+    largestProfitableTradeValue: 'largestProfitableTrade',
+    largestUnprofitableTradeValue: 'largestUnprofitableTrade',
+    seasonsGoldOrHigher: 'seasonsGoldOrHigher',
+    seasonsPlatinumOrHigher: 'seasonsPlatinumOrHigher',
+    seasonsDiamondOrHigher: 'seasonsDiamondOrHigher',
+    seasonsMasters: 'seasonsMasters',
+    largestLeagueSeasonEarnings: 'largestLeagueSeasonEarnings',
+    numberOfComments: 'comments',
+    totalTradesCount: 'trades',
+    totalMarketsCreated: 'marketsCreated',
+    accountAgeYears: 'accountAge',
+    longestBettingStreak: 'longestBettingStreak',
+    modTicketsResolved: 'modTickets',
+    charityDonatedMana: 'charityDonated',
+  }
+
+  // Raw numeric values by id for zero-handling
+  const valueById: Record<string, number> = {
+    totalVolumeMana: data.totalVolumeMana,
+    totalReferrals: data.totalReferrals,
+    totalReferredProfitMana: data.totalReferredProfitMana,
+    creatorTraders: data.creatorTraders,
+    totalLiquidityCreatedMarkets: data.totalLiquidityCreatedMarkets,
+    profitableMarketsCount: data.profitableMarketsCount,
+    unprofitableMarketsCount: data.unprofitableMarketsCount,
+    largestProfitableTradeValue: data.largestProfitableTradeValue,
+    largestUnprofitableTradeValue: data.largestUnprofitableTradeValue,
+    seasonsGoldOrHigher: data.seasonsGoldOrHigher,
+    seasonsPlatinumOrHigher: data.seasonsPlatinumOrHigher,
+    seasonsDiamondOrHigher: data.seasonsDiamondOrHigher,
+    seasonsMasters: data.seasonsMasters,
+    largestLeagueSeasonEarnings: data.largestLeagueSeasonEarnings,
+    numberOfComments: data.numberOfComments,
+    totalTradesCount: data.totalTradesCount,
+    totalMarketsCreated: data.totalMarketsCreated,
+    accountAgeYears: data.accountAgeYears,
+    longestBettingStreak: data.longestBettingStreak,
+    modTicketsResolved: data.modTicketsResolved,
+    charityDonatedMana: data.charityDonatedMana,
+  }
+
+  const defs = [
+    {
+      id: 'totalVolumeMana',
+      title: 'Any Whales?',
+      desc: 'Total trading volume.',
+      fmt: () => formatMoney(data.totalVolumeMana, 'MANA'),
+    },
+    {
+      id: 'totalReferrals',
+      title: 'Manifold Hype Man',
+      desc: 'Friends you brought to Manifold.',
+      fmt: () => formatWithCommas(data.totalReferrals),
+    },
+    {
+      id: 'totalReferredProfitMana',
+      title: 'Proud Parent',
+      desc: 'Profit earned by your referrals.',
+      fmt: () => formatMoney(data.totalReferredProfitMana, 'MANA'),
+    },
+    {
+      id: 'creatorTraders',
+      title: 'Fan Favorite',
+      desc: 'Unique traders on your markets.',
+      fmt: () => formatWithCommas(data.creatorTraders),
+    },
+    {
+      id: 'totalLiquidityCreatedMarkets',
+      title: 'No Slippage Here',
+      desc: 'Total liquidity across all your created markets.',
+      fmt: () => formatMoney(data.totalLiquidityCreatedMarkets, 'MANA'),
+    },
+    {
+      id: 'profitableMarketsCount',
+      title: 'Market Maven',
+      desc: 'Number of markets you made a profit on.',
+      fmt: () => formatWithCommas(data.profitableMarketsCount),
+    },
+    {
+      id: 'unprofitableMarketsCount',
+      title: 'Ineffective Altruism',
+      desc: 'Number of markets you lost mana on.',
+      fmt: () => formatWithCommas(data.unprofitableMarketsCount),
+    },
+    {
+      id: 'largestProfitableTradeValue',
+      title: 'Biggest Win',
+      desc: 'Largest profit made on a single market.',
+      fmt: () => formatMoney(data.largestProfitableTradeValue, 'MANA'),
+    },
+    {
+      id: 'largestUnprofitableTradeValue',
+      title: 'Wealth Redistributor',
+      desc: 'Largest loss made on a single market.',
+      fmt: () => formatMoney(data.largestUnprofitableTradeValue, 'MANA'),
+    },
+    {
+      id: 'seasonsGoldOrHigher',
+      title: 'Gleaming Gold',
+      desc: 'Seasons finished Gold or higher.',
+      fmt: () => formatWithCommas(data.seasonsGoldOrHigher),
+    },
+    {
+      id: 'seasonsPlatinumOrHigher',
+      title: 'Positively Platinum',
+      desc: 'Seasons finished Platinum or higher.',
+      fmt: () => formatWithCommas(data.seasonsPlatinumOrHigher),
+    },
+    {
+      id: 'seasonsDiamondOrHigher',
+      title: 'Diamond Hands',
+      desc: 'Seasons finished Diamond or higher.',
+      fmt: () => formatWithCommas(data.seasonsDiamondOrHigher),
+    },
+    {
+      id: 'seasonsMasters',
+      title: 'Master Mind',
+      desc: 'Seasons finished Masters.',
+      fmt: () => formatWithCommas(data.seasonsMasters),
+    },
+    {
+      id: 'largestLeagueSeasonEarnings',
+      title: 'Sensational Season',
+      desc: 'Largest earnings in a single season.',
+      fmt: () => formatMoney(data.largestLeagueSeasonEarnings, 'MANA'),
+    },
+
+    {
+      id: 'numberOfComments',
+      title: 'Chatterbox',
+      desc: 'Number of comments you’ve posted with at least 1 like.',
+      fmt: () => formatWithCommas(data.numberOfComments),
+    },
+    {
+      id: 'totalTradesCount',
+      title: 'High Frequency Trader',
+      desc: 'Total number of trades executed (excludes API trades).',
+      fmt: () => formatWithCommas(data.totalTradesCount),
+    },
+    {
+      id: 'totalMarketsCreated',
+      title: 'Doing The Hard Part',
+      desc: 'Number of markets you’ve created.',
+      fmt: () => formatWithCommas(data.totalMarketsCreated),
+    },
+    {
+      id: 'accountAgeYears',
+      title: 'Age Is Just A Number',
+      desc: 'Account age in years.',
+      fmt: () => {
+        const yearsFloat = data.accountAgeYears
+        const totalMonths = Math.round(yearsFloat * 12)
+        const years = Math.floor(totalMonths / 12)
+        const months = totalMonths % 12
+        const yLabel = years === 1 ? 'year' : 'years'
+        const mLabel = months === 1 ? 'month' : 'months'
+        return `${years} ${yLabel} ${months} ${mLabel}`
+      },
+    },
+    {
+      id: 'longestBettingStreak',
+      title: 'Longest Daily Streak',
+      desc: 'Longest consecutive days trading.',
+      fmt: () => formatWithCommas(data.longestBettingStreak),
+    },
+    {
+      id: 'modTicketsResolved',
+      title: 'Helpful Moderator',
+      desc: 'Mod tickets you’ve resolved (since mod rewards were introduced).',
+      fmt: () => formatWithCommas(data.modTicketsResolved),
+    },
+    {
+      id: 'charityDonatedMana',
+      title: 'Giver',
+      desc: 'Total donated to charity (USD).',
+      fmt: () => formatMoneyUSD(data.charityDonatedMana, true),
+    },
+  ] as const
+
+  const ACHS = defs.map(({ id, title, desc, fmt }) => {
+    const key = rankKeyById[id]
+    const raw = valueById[id] ?? 0
+    const rk = key ? data.ranks?.[key]?.rank ?? null : null
+    const pc = key ? data.ranks?.[key]?.percentile ?? null : null
+    return {
+      id,
+      title,
+      desc,
+      value: fmt(),
+      rank: raw === 0 ? null : rk,
+      percentile: raw === 0 ? null : pc,
+    }
+  })
+
+  const bucketOf = (rank: number | null) => {
+    if (rank == null) return 'All Users'
+    if (rank <= 50) return 'Top 50 Users'
+    if (rank <= 200) return 'Top 200 Users'
+    if (rank <= 1000) return 'Top 1000 Users'
+    if (rank <= 5000) return 'Top 5000 Users'
+    if (rank <= 20000) return 'Top 20,000 Users'
+    return 'All Users'
+  }
+
+  const bucketOrder = [
+    'Top 50 Users',
+    'Top 200 Users',
+    'Top 1000 Users',
+    'Top 5000 Users',
+    'Top 20,000 Users',
+    'All Users',
+  ] as const
+  const byBucket: Record<
+    (typeof bucketOrder)[number],
+    (typeof ACHS)[number][]
+  > = {
+    'Top 50 Users': [],
+    'Top 200 Users': [],
+    'Top 1000 Users': [],
+    'Top 5000 Users': [],
+    'Top 20,000 Users': [],
+    'All Users': [],
+  }
+
+  ACHS.forEach((a) => {
+    byBucket[bucketOf(a.rank)].push(a as any)
+  })
+
+  return (
+    <Col className="gap-6">
+      {bucketOrder.map((bucket) => {
+        const items = byBucket[bucket]
+        if (!items.length) return null
+        const sorted = items.slice().sort((a, b) => {
+          const ra = a.rank ?? Infinity
+          const rb = b.rank ?? Infinity
+          if (ra !== rb) return ra - rb
+          const pa = a.percentile ?? Infinity
+          const pb = b.percentile ?? Infinity
+          return pa - pb
+        })
+        return (
+          <Col key={bucket} className="gap-3">
+            <div className="text-ink-800 flex items-center gap-2 text-sm font-semibold uppercase tracking-wider">
+              {bucket}
+              <span className="bg-ink-200 h-px flex-1" />
+            </div>
+
+            <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
+              {sorted.map((a) => (
+                <AchievementBadgeCard
+                  key={a.id}
+                  title={a.title}
+                  description={a.desc}
+                  value={a.value}
+                  rank={a.rank}
+                  percentile={a.percentile}
+                  imageSrc={(() => {
+                    const IMAGE_BY_ID: Record<string, string> = {
+                      accountAgeYears:
+                        '/achievement-badges/accountAgeYears.png',
+                      charityDonatedMana:
+                        '/achievement-badges/charityDonatedMana.png',
+                      creatorTraders: '/achievement-badges/creatorTraders.png',
+                      largestProfitableTradeValue:
+                        '/achievement-badges/largestProfitableTradeValue.png',
+                      largestLeagueSeasonEarnings:
+                        '/achievement-badges/largestLeagueSeasonEarnings.png',
+                      largestUnprofitableTradeValue:
+                        '/achievement-badges/largestUnprofitableTradeValue.png',
+                      longestBettingStreak:
+                        '/achievement-badges/longestBettingStreak.png',
+                      modTicketsResolved:
+                        '/achievement-badges/modTicketsResolved.png',
+                      numberOfComments:
+                        '/achievement-badges/numberOfComments.png',
+                      profitableMarketsCount:
+                        '/achievement-badges/profitableMarketsCount.png',
+                      seasonsDiamondOrHigher:
+                        '/achievement-badges/seasonsDiamondOrHigher.png',
+                      seasonsGoldOrHigher:
+                        '/achievement-badges/seasonsGoldOrHigher.png',
+                      seasonsMasters: '/achievement-badges/seasonsMasters.png',
+                      seasonsPlatinumOrHigher:
+                        '/achievement-badges/seasonsPlatinumOrHigher.png',
+                      totalLiquidityCreatedMarkets:
+                        '/achievement-badges/totalLiquidityCreatedMarkets.png',
+                      totalMarketsCreated:
+                        '/achievement-badges/totalMarketsCreated.png',
+                      totalReferrals: '/achievement-badges/totalReferrals.png',
+                      totalReferredProfitMana:
+                        '/achievement-badges/totalReferredProfitMana.png',
+                      totalTradesCount:
+                        '/achievement-badges/totalTradesCount.png',
+                      totalVolumeMana:
+                        '/achievement-badges/totalVolumeMana.png',
+                      unprofitableMarketsCount:
+                        '/achievement-badges/unprofitableMarketsCount.png',
+                    }
+                    return (
+                      IMAGE_BY_ID[a.id] ||
+                      '/achievement-badges/totalVolumeMana.png'
+                    )
+                  })()}
+                  bucket={bucket}
+                />
+              ))}
+            </div>
+          </Col>
+        )
+      })}
+    </Col>
+  )
+}
+
+function AchievementBadgeCard(props: {
+  title: string
+  description: string
+  value: string
+  rank: number | null
+  percentile: number | null
+  bucket:
+    | 'Top 50 Users'
+    | 'Top 200 Users'
+    | 'Top 1000 Users'
+    | 'Top 5000 Users'
+    | 'Top 20,000 Users'
+    | 'All Users'
+  imageSrc?: string
+}) {
+  const { title, description, value, rank, percentile, bucket, imageSrc } =
+    props
+
+  const bucketStyle: Record<typeof props.bucket, string> = {
+    'Top 50 Users': 'from-fuchsia-500 to-indigo-500',
+    'Top 200 Users': 'from-indigo-500 to-sky-500',
+    'Top 1000 Users': 'from-sky-500 to-teal-500',
+    'Top 5000 Users': 'from-emerald-500 to-lime-500',
+    'Top 20,000 Users': 'from-slate-500 to-zinc-500',
+    'All Users': 'from-zinc-400 to-zinc-600',
+  }
+
+  return (
+    <div
+      className="border-ink-200 group relative rounded-xl border p-[1px] transition-shadow hover:shadow-lg"
+      aria-label={title}
+    >
+      {/* gradient ring */}
+      <div
+        className={clsx(
+          'h-full rounded-xl bg-gradient-to-br',
+          bucketStyle[bucket]
+        )}
+      >
+        <div className="bg-canvas-0 flex h-full flex-col items-center space-y-3 rounded-[11px] px-4 pb-6 pt-6">
+          <div className=" ring-ink-300/50 flex h-32 w-32 items-center justify-center overflow-hidden rounded-full ring-1">
+            {imageSrc ? (
+              <Image
+                src={imageSrc}
+                alt={title}
+                width={128}
+                height={128}
+                className="h-32 w-32 scale-125 rounded-full object-contain"
+              />
+            ) : null}
+          </div>
+          <div className="pt-4 text-center">
+            <div className="text-ink-900  text-lg font-semibold">{title}</div>
+            <div className="text-ink-600 mt-1 text-sm leading-snug">
+              {description}
+            </div>
+            <div className="text-ink-900 mt-3 text-lg">{value}</div>
+          </div>
+
+          {/* side hover tooltip */}
+          <div className="pointer-events-none absolute left-full top-4 z-20 hidden pl-3 group-hover:block">
+            <div className="bg-canvas-50 text-ink-900 border-ink-200 w-64 rounded-md border p-3 shadow-xl">
+              <div className="mt-1 text-lg font-semibold">
+                Rank: {rank ?? 'N/A'}
+              </div>
+              <div className="text-ink-600 my-1 text-sm">
+                {percentile != null
+                  ? `In the top ${(() => {
+                      const s = Number(
+                        Math.max(percentile, 0.01).toFixed(2)
+                      ).toString()
+                      return s
+                    })()}% of all users`
+                  : 'N/A'}
+              </div>
+              <div className="text-ink-600 text-sm">Value: {value}</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
   )
 }
 

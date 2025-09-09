@@ -1981,6 +1981,79 @@ export const API = (_apiTypeCheck = {
     returns: {} as { isSportsInterested: boolean },
     props: z.object({}).strict(),
   },
+  'get-user-achievements': {
+    method: 'GET',
+    visibility: 'public',
+    authed: false,
+    cache: LIGHT_CACHE_STRATEGY,
+    returns: {} as {
+      userId: string
+      creatorTraders: number
+      totalReferrals: number
+      totalReferredProfitMana: number
+      totalVolumeMana: number
+      seasonsGoldOrHigher: number
+      seasonsPlatinumOrHigher: number
+      seasonsDiamondOrHigher: number
+      seasonsMasters: number
+      numberOfComments: number
+      totalLiquidityCreatedMarkets: number
+      totalTradesCount: number
+      totalMarketsCreated: number
+      accountAgeYears: number
+      profitableMarketsCount: number
+      unprofitableMarketsCount: number
+      largestProfitableTradeValue: number
+      largestUnprofitableTradeValue: number
+      longestBettingStreak: number
+      largestLeagueSeasonEarnings: number
+      modTicketsResolved: number
+      charityDonatedMana: number
+      ranks: {
+        creatorTraders: { rank: number | null; percentile: number | null }
+        totalReferrals: { rank: number | null; percentile: number | null }
+        totalReferredProfit: { rank: number | null; percentile: number | null }
+        volume: { rank: number | null; percentile: number | null }
+        trades: { rank: number | null; percentile: number | null }
+        marketsCreated: { rank: number | null; percentile: number | null }
+        comments: { rank: number | null; percentile: number | null }
+        seasonsGoldOrHigher: { rank: number | null; percentile: number | null }
+        seasonsPlatinumOrHigher: {
+          rank: number | null
+          percentile: number | null
+        }
+        seasonsDiamondOrHigher: {
+          rank: number | null
+          percentile: number | null
+        }
+        seasonsMasters: { rank: number | null; percentile: number | null }
+        largestLeagueSeasonEarnings: {
+          rank: number | null
+          percentile: number | null
+        }
+        liquidity: { rank: number | null; percentile: number | null }
+        profitableMarkets: { rank: number | null; percentile: number | null }
+        unprofitableMarkets: { rank: number | null; percentile: number | null }
+        largestProfitableTrade: {
+          rank: number | null
+          percentile: number | null
+        }
+        largestUnprofitableTrade: {
+          rank: number | null
+          percentile: number | null
+        }
+        accountAge: { rank: number | null; percentile: number | null }
+        longestBettingStreak: { rank: number | null; percentile: number | null }
+        modTickets: { rank: number | null; percentile: number | null }
+        charityDonated: { rank: number | null; percentile: number | null }
+      }
+    },
+    props: z
+      .object({
+        userId: z.string(),
+      })
+      .strict(),
+  },
   'get-site-activity': {
     method: 'GET',
     visibility: 'public',
