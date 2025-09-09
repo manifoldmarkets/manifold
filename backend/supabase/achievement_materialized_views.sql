@@ -330,6 +330,7 @@ with
       txns
     where
       category = 'ADMIN_REWARD'
+      and data -> 'data' ->> 'updateType' = 'resolved'
     group by
       to_id
   ),
