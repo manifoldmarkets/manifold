@@ -8,6 +8,7 @@ import { useUser } from 'web/hooks/use-user'
 import { api } from 'web/lib/api/api'
 import toast from 'react-hot-toast'
 import { useState as useReactState } from 'react'
+import { TokenNumber } from 'web/components/widgets/token-number'
 
 type ShopItem = {
   id: string
@@ -42,6 +43,13 @@ const SHOP_ITEMS: ShopItem[] = [
     imageUrl: '/promo/promo-2.png',
   },
 ]
+
+const PRINTFUL_PRICE_MANA: Record<number, number> = {
+  // Unisex t-shirt with embroidered logo
+  392193718: 50000,
+  // Structured Twill Cap with Embroidered Logo
+  392192064: 60000,
+}
 
 const ShopPage: NextPage = () => {
   const user = useUser()
@@ -82,11 +90,11 @@ const ShopPage: NextPage = () => {
         <Row className="items-baseline justify-between">
           <h1 className="text-2xl font-semibold">Mana Shop</h1>
           <div className="text-ink-700">
-            Balance: M${balance.toLocaleString()}
+            Balance: <TokenNumber amount={balance} isInline />
           </div>
         </Row>
 
-        <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
+        <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-3">
           {remote?.map((p) => (
             <PrintfulItemCard
               key={`printful-${p.id}`}
@@ -111,7 +119,7 @@ const ShopPage: NextPage = () => {
               </div>
               <div className="text-ink-600 mt-3 text-sm">{item.title}</div>
               <div className="text-lg font-medium">
-                M${item.price.toLocaleString()}
+                <TokenNumber amount={item.price} isInline />
               </div>
 
               <ConfirmationButton
@@ -155,11 +163,11 @@ const ShopPage: NextPage = () => {
                   <div className="text-md font-medium">Confirm purchase</div>
                   <div className="text-ink-700 text-sm">{item.title}</div>
                   <div className="text-sm">
-                    Price: M${item.price.toLocaleString()}
+                    Price: <TokenNumber amount={item.price} isInline />
                   </div>
                   <div className="text-sm">
-                    Balance change: M${balance.toLocaleString()} → M$
-                    {(balance - item.price).toLocaleString()}
+                    Balance change: <TokenNumber amount={balance} isInline /> →{' '}
+                    <TokenNumber amount={balance - item.price} isInline />
                   </div>
                 </Col>
               </ConfirmationButton>
@@ -257,8 +265,7 @@ function PrintfulItemCard(props: {
   setLoadingId: (id: string | null) => void
 }) {
   const { p, balance, userPresent, loadingId, setLoadingId } = props
-  const firstPrice = p.variants.find((v) => v.retail_price)
-  const basePrice = firstPrice ? Number(firstPrice.retail_price) : 0
+  const priceMana = PRINTFUL_PRICE_MANA[p.id]
   const sizes = Array.from(
     new Set(p.variants.map((v) => v.size).filter(Boolean))
   ) as string[]
@@ -301,9 +308,6 @@ function PrintfulItemCard(props: {
   const matchingVariant =
     findExact ?? findByColor ?? findBySize ?? p.variants[0]
 
-  const price = matchingVariant?.retail_price
-    ? Number(matchingVariant.retail_price)
-    : basePrice
   const gallery = dedupe(
     (matchingVariant?.images ?? []).concat(
       matchingVariant?.preview ? [matchingVariant.preview] : []
@@ -323,8 +327,7 @@ function PrintfulItemCard(props: {
       </div>
       <div className="text-ink-600 mt-3 text-sm">{p.title}</div>
       <div className="text-lg font-medium">
-        {matchingVariant?.currency ?? firstPrice?.currency ?? 'USD'}{' '}
-        {matchingVariant?.retail_price ?? firstPrice?.retail_price ?? '—'}
+        {priceMana == null ? '—' : <TokenNumber amount={priceMana} isInline />}
       </div>
 
       <ConfirmationButton
@@ -338,7 +341,7 @@ function PrintfulItemCard(props: {
           label: 'Confirm',
           color: 'indigo',
           isSubmitting: loadingId === `pf-${p.id}`,
-          disabled: !selectedSize,
+          disabled: !selectedSize || priceMana == null,
         }}
         onOpenChanged={(open) => {
           if (!open) return
@@ -352,7 +355,11 @@ function PrintfulItemCard(props: {
             toast.error('Please sign in to purchase')
             return false
           }
-          if (balance < price) {
+          if (priceMana == null) {
+            toast.error('Price unavailable')
+            return false
+          }
+          if (balance < priceMana) {
             toast.error('Insufficient balance')
             return false
           }
@@ -361,7 +368,7 @@ function PrintfulItemCard(props: {
             // For now still burn mana only; when we fulfill, include variant id
             await api('purchase-shop-item', {
               itemId: `printful:${p.id}:${matchingVariant?.id ?? 'base'}`,
-              price,
+              price: priceMana,
             })
             toast.success('Purchase successful')
             return true
@@ -466,15 +473,21 @@ function PrintfulItemCard(props: {
           )}
           <div className="text-sm">
             Price:{' '}
-            {(matchingVariant?.currency ?? firstPrice?.currency ?? 'USD') +
-              ' ' +
-              (matchingVariant?.retail_price ??
-                firstPrice?.retail_price ??
-                '—')}
+            {priceMana == null ? (
+              '—'
+            ) : (
+              <TokenNumber amount={priceMana} isInline />
+            )}
           </div>
           <div className="text-sm">
-            Balance change: M${balance.toLocaleString()} → M$
-            {(balance - price).toLocaleString()}
+            {priceMana == null ? (
+              'Balance change: —'
+            ) : (
+              <>
+                Balance change: <TokenNumber amount={balance} isInline /> →{' '}
+                <TokenNumber amount={balance - priceMana} isInline />
+              </>
+            )}
           </div>
         </Col>
       </ConfirmationButton>
