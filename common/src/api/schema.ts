@@ -2232,6 +2232,31 @@ export const API = (_apiTypeCheck = {
       })
       .strict(),
   },
+  'get-shop-orders': {
+    method: 'GET',
+    visibility: 'public',
+    authed: true,
+    returns: {} as { orders: import('../shop/types').ShopOrder[] },
+    props: z.object({}).strict(),
+  },
+  'checkout-shop-cart': {
+    method: 'POST',
+    visibility: 'public',
+    authed: true,
+    returns: {} as { success: boolean; processed: number; skipped: number },
+    props: z
+      .object({
+        items: z
+          .array(
+            z.object({
+              key: z.string(),
+              quantity: z.number().int().positive().finite().safe(),
+            })
+          )
+          .min(1),
+      })
+      .strict(),
+  },
   'generate-ai-numeric-ranges': {
     method: 'POST',
     visibility: 'public',

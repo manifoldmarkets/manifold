@@ -5,17 +5,23 @@ import { Row } from 'web/components/layout/row'
 import { Page } from 'web/components/layout/page'
 import { ConfirmationButton } from 'web/components/buttons/confirmation-button'
 import { useUser } from 'web/hooks/use-user'
-import { api } from 'web/lib/api/api'
 import toast from 'react-hot-toast'
 import { useState as useReactState } from 'react'
 import { TokenNumber } from 'web/components/widgets/token-number'
-import { getEnabledConfigs } from 'common/src/shop/items'
+import {
+  getEnabledConfigs,
+  getConfigForPrintfulProduct,
+} from 'common/src/shop/items'
+import { useCart } from 'web/hooks/use-cart'
+import type { CartItem } from 'web/hooks/use-cart'
+import { IoCartOutline } from 'react-icons/io5'
 
 type ShopItem = {
   id: string
   title: string
   price: number
   imageUrl: string
+  perUserLimit?: number
 }
 
 const DIGITAL_ITEMS: ShopItem[] = getEnabledConfigs()
@@ -25,6 +31,7 @@ const DIGITAL_ITEMS: ShopItem[] = getEnabledConfigs()
     title: c.title,
     price: c.price,
     imageUrl: c.images?.[0] ?? '/logo.png',
+    perUserLimit: c.perUserLimit,
   }))
 
 const PHYSICAL_OTHER_ITEMS: ShopItem[] = getEnabledConfigs()
@@ -34,6 +41,7 @@ const PHYSICAL_OTHER_ITEMS: ShopItem[] = getEnabledConfigs()
     title: c.title,
     price: c.price,
     imageUrl: c.images?.[0] ?? '/logo.png',
+    perUserLimit: c.perUserLimit,
   }))
 
 const PRINTFUL_PRICE_MANA: Record<number, number> = Object.fromEntries(
@@ -45,7 +53,9 @@ const PRINTFUL_PRICE_MANA: Record<number, number> = Object.fromEntries(
 const ShopPage: NextPage = () => {
   const user = useUser()
   const balance = user?.balance ?? 0
-  const [loadingId, setLoadingId] = useState<string | null>(null)
+  const [loadingId] = useState<string | null>(null)
+  const { items: cartItems, addItem } = useCart()
+  // const [cartOpen, setCartOpen] = useState(false)
 
   const [remote, setRemote] = useState<
     | {
@@ -79,11 +89,29 @@ const ShopPage: NextPage = () => {
   return (
     <Page trackPageView="shop">
       <Col className="mx-auto max-w-6xl gap-6 p-4 sm:p-6">
-        <Row className="items-baseline justify-between">
+        <Row className="items-center justify-between">
           <h1 className="text-2xl font-semibold">Mana Shop</h1>
-          <div className="text-ink-700">
-            Balance: <TokenNumber amount={balance} isInline />
-          </div>
+          <Row className="items-center gap-2 sm:gap-3">
+            <div className="text-ink-700 text-sm sm:text-base">
+              Balance: <TokenNumber amount={balance} isInline />
+            </div>
+            <a
+              href="/shop/orders"
+              className="text-ink-900 hover:bg-ink-100 hidden items-center rounded-md border px-3 py-1.5 text-sm sm:inline-flex"
+            >
+              Orders
+            </a>
+            <a
+              href="/shop/checkout"
+              className="bg-primary-600 text-ink-0 hover:bg-primary-700 inline-flex items-center gap-1.5 rounded-md px-3 py-1.5 text-sm"
+            >
+              <IoCartOutline className="h-4 w-4" />
+              <span>Cart</span>
+              {cartItems.length > 0 && (
+                <span className="text-xs">{cartItems.length}</span>
+              )}
+            </a>
+          </Row>
         </Row>
 
         <div className="mt-2">
@@ -110,39 +138,41 @@ const ShopPage: NextPage = () => {
 
                 <ConfirmationButton
                   openModalBtn={{
-                    label: 'Buy',
+                    label: 'Add to Cart',
                     color: 'indigo',
                     className: 'mt-3 w-full',
                   }}
                   cancelBtn={{ label: 'Cancel' }}
                   submitBtn={{
-                    label: 'Confirm',
+                    label: 'Add to Cart',
                     color: 'indigo',
                     isSubmitting: loadingId === item.id,
                   }}
                   onSubmitWithSuccess={async () => {
-                    if (!user) {
-                      toast.error('Please sign in to purchase')
+                    if (item.perUserLimit && item.perUserLimit <= 0) {
+                      toast.error('This item is not currently available')
                       return false
                     }
-                    if (balance < item.price) {
-                      toast.error('Insufficient balance')
+                    const inCart = cartItems
+                      .filter((ci) => ci.key === `digital:${item.id}`)
+                      .reduce((a, b) => a + b.quantity, 0)
+                    if (item.perUserLimit && inCart >= item.perUserLimit) {
+                      toast.error(`Limit ${item.perUserLimit} per user`)
                       return false
                     }
-                    try {
-                      setLoadingId(item.id)
-                      await api('purchase-shop-item', {
-                        itemId: item.id,
-                        price: item.price,
-                      })
-                      toast.success('Purchase successful')
-                      return true
-                    } catch (e: any) {
-                      toast.error(e?.message ?? 'Purchase failed')
+                    if (item.perUserLimit && inCart >= item.perUserLimit) {
+                      toast.error(`Limit ${item.perUserLimit} per user`)
                       return false
-                    } finally {
-                      setLoadingId(null)
                     }
+                    addItem({
+                      key: `digital:${item.id}`,
+                      title: item.title,
+                      imageUrl: item.imageUrl,
+                      price: item.price,
+                      quantity: 1,
+                    })
+                    toast.success('Added to cart')
+                    return true
                   }}
                 >
                   <Col className="gap-2">
@@ -187,9 +217,7 @@ const ShopPage: NextPage = () => {
                 key={`printful-${p.id}`}
                 p={p}
                 balance={balance}
-                userPresent={!!user}
-                loadingId={loadingId}
-                setLoadingId={setLoadingId}
+                addToCart={(ci: CartItem) => addItem(ci)}
               />
             ))}
 
@@ -212,39 +240,37 @@ const ShopPage: NextPage = () => {
 
                 <ConfirmationButton
                   openModalBtn={{
-                    label: 'Buy',
+                    label: 'Add to Cart',
                     color: 'indigo',
                     className: 'mt-3 w-full',
                   }}
                   cancelBtn={{ label: 'Cancel' }}
                   submitBtn={{
-                    label: 'Confirm',
+                    label: 'Add to Cart',
                     color: 'indigo',
                     isSubmitting: loadingId === item.id,
                   }}
                   onSubmitWithSuccess={async () => {
-                    if (!user) {
-                      toast.error('Please sign in to purchase')
+                    if (item.perUserLimit && item.perUserLimit <= 0) {
+                      toast.error('This item is not currently available')
                       return false
                     }
-                    if (balance < item.price) {
-                      toast.error('Insufficient balance')
+                    const inCart = cartItems
+                      .filter((ci) => ci.key === `other:${item.id}`)
+                      .reduce((a, b) => a + b.quantity, 0)
+                    if (item.perUserLimit && inCart >= item.perUserLimit) {
+                      toast.error(`Limit ${item.perUserLimit} per user`)
                       return false
                     }
-                    try {
-                      setLoadingId(item.id)
-                      await api('purchase-shop-item', {
-                        itemId: item.id,
-                        price: item.price,
-                      })
-                      toast.success('Purchase successful')
-                      return true
-                    } catch (e: any) {
-                      toast.error(e?.message ?? 'Purchase failed')
-                      return false
-                    } finally {
-                      setLoadingId(null)
-                    }
+                    addItem({
+                      key: `other:${item.id}`,
+                      title: item.title,
+                      imageUrl: item.imageUrl,
+                      price: item.price,
+                      quantity: 1,
+                    })
+                    toast.success('Added to cart')
+                    return true
                   }}
                 >
                   <Col className="gap-2">
@@ -349,11 +375,9 @@ function PrintfulItemCard(props: {
     }[]
   }
   balance: number
-  userPresent: boolean
-  loadingId: string | null
-  setLoadingId: (id: string | null) => void
+  addToCart: (item: CartItem) => void
 }) {
-  const { p, balance, userPresent, loadingId, setLoadingId } = props
+  const { p, balance, addToCart } = props
   const priceMana = PRINTFUL_PRICE_MANA[p.id]
   const sizes = Array.from(
     new Set(p.variants.map((v) => v.size).filter(Boolean))
@@ -429,7 +453,7 @@ function PrintfulItemCard(props: {
         submitBtn={{
           label: 'Add to Cart',
           color: 'indigo',
-          isSubmitting: loadingId === `pf-${p.id}`,
+          isSubmitting: false,
           disabled: !selectedSize || priceMana == null,
         }}
         onOpenChanged={(open) => {
@@ -440,33 +464,45 @@ function PrintfulItemCard(props: {
           setSelectedSize(undefined)
         }}
         onSubmitWithSuccess={async () => {
-          if (!userPresent) {
-            toast.error('Please sign in to purchase')
+          if (priceMana == null || !matchingVariant) return false
+          const cfg = getConfigForPrintfulProduct(p.id)
+          const limit = cfg?.perUserLimit
+          if (limit && limit <= 0) {
+            toast.error('This item is not currently available')
             return false
           }
-          if (priceMana == null) {
-            toast.error('Price unavailable')
+          const inCart = (
+            typeof window !== 'undefined'
+              ? JSON.parse(localStorage.getItem('shop_cart_v1') || '[]')
+              : []
+          )
+            .filter(
+              (ci: any) =>
+                typeof ci?.key === 'string' &&
+                ci.key.startsWith(`printful:${p.id}:`)
+            )
+            .reduce((a: number, b: any) => a + (b.quantity ?? 0), 0)
+          if (limit && inCart >= limit) {
+            toast.error(`Limit ${limit} per user`)
             return false
           }
-          if (balance < priceMana) {
-            toast.error('Insufficient balance')
-            return false
-          }
-          try {
-            setLoadingId(`pf-${p.id}`)
-            // For now still burn mana only; when we fulfill, include variant id
-            await api('purchase-shop-item', {
-              itemId: `printful:${p.id}:${matchingVariant?.id ?? 'base'}`,
-              price: priceMana,
-            })
-            toast.success('Purchase successful')
-            return true
-          } catch (e: any) {
-            toast.error(e?.message ?? 'Purchase failed')
-            return false
-          } finally {
-            setLoadingId(null)
-          }
+          addToCart({
+            key: `printful:${p.id}:${matchingVariant.id}`,
+            title: `${p.title}${selectedSize ? ` (${selectedSize})` : ''}${
+              selectedColor ? ` - ${selectedColor}` : ''
+            }`,
+            imageUrl: (matchingVariant as any)?.preview ?? p.imageUrl,
+            price: priceMana,
+            quantity: 1,
+            meta: {
+              productId: p.id,
+              variantId: matchingVariant.id,
+              size: selectedSize,
+              color: selectedColor,
+            },
+          })
+          toast.success('Added to cart')
+          return true
         }}
       >
         <Col className="gap-3">
@@ -568,6 +604,13 @@ function PrintfulItemCard(props: {
               <TokenNumber amount={priceMana} isInline />
             )}
           </div>
+          {(() => {
+            const cfg = getConfigForPrintfulProduct(p.id)
+            const limit = cfg?.perUserLimit
+            return limit ? (
+              <div className="text-ink-600 text-xs">Limit {limit} per user</div>
+            ) : null
+          })()}
           <div className="text-sm">
             {priceMana == null ? (
               'Balance change: —'
