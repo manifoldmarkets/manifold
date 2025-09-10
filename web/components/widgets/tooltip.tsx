@@ -13,9 +13,9 @@ import {
 } from '@floating-ui/react'
 import { Transition } from '@headlessui/react'
 import clsx from 'clsx'
+import { ReactNode, useEffect, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
 import { LuInfo } from 'react-icons/lu'
-import { ReactNode, useRef, useState, useEffect } from 'react'
 
 // See https://floating-ui.com/docs/react-dom
 
@@ -125,7 +125,7 @@ export function Tooltip({
             ref={refs.setFloating}
             style={floatingStyles}
             className={clsx(
-              'text-ink-0 bg-ink-700 z-20 w-max max-w-xs whitespace-normal rounded px-2 py-1 text-center text-sm font-medium',
+              'text-ink-0 bg-ink-700 z-50 w-max max-w-xs whitespace-normal rounded px-2 py-1 text-center text-sm font-medium',
               tooltipClassName
             )}
             suppressHydrationWarning={suppressHydrationWarning}
