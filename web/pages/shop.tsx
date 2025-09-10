@@ -18,8 +18,17 @@ type ShopItem = {
   imageUrl: string
 }
 
-const SHOP_ITEMS: ShopItem[] = getEnabledConfigs()
-  .filter((c) => c.type !== 'printful')
+const DIGITAL_ITEMS: ShopItem[] = getEnabledConfigs()
+  .filter((c) => c.type === 'digital')
+  .map((c) => ({
+    id: c.id,
+    title: c.title,
+    price: c.price,
+    imageUrl: c.images?.[0] ?? '/logo.png',
+  }))
+
+const PHYSICAL_OTHER_ITEMS: ShopItem[] = getEnabledConfigs()
+  .filter((c) => c.type === 'other')
   .map((c) => ({
     id: c.id,
     title: c.title,
@@ -64,7 +73,8 @@ const ShopPage: NextPage = () => {
       .catch(() => setRemote([]))
   }, [])
 
-  const items = useMemo(() => SHOP_ITEMS, [])
+  const digitalItems = useMemo(() => DIGITAL_ITEMS, [])
+  const physicalOtherItems = useMemo(() => PHYSICAL_OTHER_ITEMS, [])
 
   return (
     <Page trackPageView="shop">
@@ -76,85 +86,182 @@ const ShopPage: NextPage = () => {
           </div>
         </Row>
 
-        <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-3">
-          {remote?.map((p) => (
-            <PrintfulItemCard
-              key={`printful-${p.id}`}
-              p={p}
-              balance={balance}
-              userPresent={!!user}
-              loadingId={loadingId}
-              setLoadingId={setLoadingId}
-            />
-          ))}
-          {items.map((item) => (
-            <Col
-              key={item.id}
-              className="bg-canvas-0 border-ink-200 rounded-lg border p-4 shadow-sm"
-            >
-              <div className="bg-ink-100 aspect-square w-full overflow-hidden rounded-md">
-                <img
-                  src={item.imageUrl}
-                  alt={item.title}
-                  className="h-full w-full object-cover"
-                />
-              </div>
-              <div className="text-ink-600 mt-3 text-sm">{item.title}</div>
-              <div className="text-lg font-medium">
-                <TokenNumber amount={item.price} isInline />
-              </div>
-
-              <ConfirmationButton
-                openModalBtn={{
-                  label: 'Buy',
-                  color: 'indigo',
-                  className: 'mt-3 w-full',
-                }}
-                cancelBtn={{ label: 'Cancel' }}
-                submitBtn={{
-                  label: 'Confirm',
-                  color: 'indigo',
-                  isSubmitting: loadingId === item.id,
-                }}
-                onSubmitWithSuccess={async () => {
-                  if (!user) {
-                    toast.error('Please sign in to purchase')
-                    return false
-                  }
-                  if (balance < item.price) {
-                    toast.error('Insufficient balance')
-                    return false
-                  }
-                  try {
-                    setLoadingId(item.id)
-                    await api('purchase-shop-item', {
-                      itemId: item.id,
-                      price: item.price,
-                    })
-                    toast.success('Purchase successful')
-                    return true
-                  } catch (e: any) {
-                    toast.error(e?.message ?? 'Purchase failed')
-                    return false
-                  } finally {
-                    setLoadingId(null)
-                  }
-                }}
+        <div className="mt-2">
+          <h2 className="text-ink-700 mb-3 text-lg font-medium">
+            Manifold Digital Items
+          </h2>
+          <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-3">
+            {digitalItems.map((item) => (
+              <Col
+                key={item.id}
+                className="bg-canvas-0 border-ink-200 rounded-lg border p-4 shadow-sm"
               >
-                <Col className="gap-2">
-                  <div className="text-md font-medium">Confirm purchase</div>
-                  <div className="text-ink-700 text-sm">{item.title}</div>
-                  <div className="text-sm">
-                    Price: <TokenNumber amount={item.price} isInline />
-                  </div>
-                  <div className="text-sm">
-                    Balance change: <TokenNumber amount={balance} isInline /> →{' '}
-                    <TokenNumber amount={balance - item.price} isInline />
+                <div className="bg-ink-100 aspect-square w-full overflow-hidden rounded-md">
+                  <img
+                    src={item.imageUrl}
+                    alt={item.title}
+                    className="h-full w-full object-cover"
+                  />
+                </div>
+                <div className="text-ink-600 mt-3 text-sm">{item.title}</div>
+                <div className="text-lg font-medium">
+                  <TokenNumber amount={item.price} isInline />
+                </div>
+
+                <ConfirmationButton
+                  openModalBtn={{
+                    label: 'Buy',
+                    color: 'indigo',
+                    className: 'mt-3 w-full',
+                  }}
+                  cancelBtn={{ label: 'Cancel' }}
+                  submitBtn={{
+                    label: 'Confirm',
+                    color: 'indigo',
+                    isSubmitting: loadingId === item.id,
+                  }}
+                  onSubmitWithSuccess={async () => {
+                    if (!user) {
+                      toast.error('Please sign in to purchase')
+                      return false
+                    }
+                    if (balance < item.price) {
+                      toast.error('Insufficient balance')
+                      return false
+                    }
+                    try {
+                      setLoadingId(item.id)
+                      await api('purchase-shop-item', {
+                        itemId: item.id,
+                        price: item.price,
+                      })
+                      toast.success('Purchase successful')
+                      return true
+                    } catch (e: any) {
+                      toast.error(e?.message ?? 'Purchase failed')
+                      return false
+                    } finally {
+                      setLoadingId(null)
+                    }
+                  }}
+                >
+                  <Col className="gap-2">
+                    <div className="text-md font-medium">Confirm purchase</div>
+                    <div className="text-ink-700 text-sm">{item.title}</div>
+                    <div className="text-sm">
+                      Price: <TokenNumber amount={item.price} isInline />
+                    </div>
+                    <div className="text-sm">
+                      Balance change: <TokenNumber amount={balance} isInline />{' '}
+                      → <TokenNumber amount={balance - item.price} isInline />
+                    </div>
+                  </Col>
+                </ConfirmationButton>
+              </Col>
+            ))}
+          </div>
+        </div>
+
+        <div className="mt-6">
+          <h2 className="text-ink-700 mb-3 text-lg font-medium">
+            Physical Items
+          </h2>
+          <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-3">
+            {remote === null &&
+              Array.from({ length: 3 }).map((_, i) => (
+                <Col
+                  key={`pf-skel-${i}`}
+                  className="bg-canvas-0 border-ink-200 rounded-lg border p-4 shadow-sm"
+                >
+                  <div className="animate-pulse">
+                    <div className="bg-ink-100 aspect-square w-full rounded-md" />
+                    <div className="bg-ink-100 mt-3 h-4 w-3/5 rounded" />
+                    <div className="bg-ink-100 mt-2 h-6 w-1/3 rounded" />
+                    <div className="bg-ink-100 mt-3 h-9 w-full rounded" />
                   </div>
                 </Col>
-              </ConfirmationButton>
-            </Col>
-          ))}
+              ))}
+
+            {remote?.map((p) => (
+              <PrintfulItemCard
+                key={`printful-${p.id}`}
+                p={p}
+                balance={balance}
+                userPresent={!!user}
+                loadingId={loadingId}
+                setLoadingId={setLoadingId}
+              />
+            ))}
+
+            {physicalOtherItems.map((item) => (
+              <Col
+                key={item.id}
+                className="bg-canvas-0 border-ink-200 rounded-lg border p-4 shadow-sm"
+              >
+                <div className="bg-ink-100 aspect-square w-full overflow-hidden rounded-md">
+                  <img
+                    src={item.imageUrl}
+                    alt={item.title}
+                    className="h-full w-full object-cover"
+                  />
+                </div>
+                <div className="text-ink-600 mt-3 text-sm">{item.title}</div>
+                <div className="text-lg font-medium">
+                  <TokenNumber amount={item.price} isInline />
+                </div>
+
+                <ConfirmationButton
+                  openModalBtn={{
+                    label: 'Buy',
+                    color: 'indigo',
+                    className: 'mt-3 w-full',
+                  }}
+                  cancelBtn={{ label: 'Cancel' }}
+                  submitBtn={{
+                    label: 'Confirm',
+                    color: 'indigo',
+                    isSubmitting: loadingId === item.id,
+                  }}
+                  onSubmitWithSuccess={async () => {
+                    if (!user) {
+                      toast.error('Please sign in to purchase')
+                      return false
+                    }
+                    if (balance < item.price) {
+                      toast.error('Insufficient balance')
+                      return false
+                    }
+                    try {
+                      setLoadingId(item.id)
+                      await api('purchase-shop-item', {
+                        itemId: item.id,
+                        price: item.price,
+                      })
+                      toast.success('Purchase successful')
+                      return true
+                    } catch (e: any) {
+                      toast.error(e?.message ?? 'Purchase failed')
+                      return false
+                    } finally {
+                      setLoadingId(null)
+                    }
+                  }}
+                >
+                  <Col className="gap-2">
+                    <div className="text-md font-medium">Confirm purchase</div>
+                    <div className="text-ink-700 text-sm">{item.title}</div>
+                    <div className="text-sm">
+                      Price: <TokenNumber amount={item.price} isInline />
+                    </div>
+                    <div className="text-sm">
+                      Balance change: <TokenNumber amount={balance} isInline />{' '}
+                      → <TokenNumber amount={balance - item.price} isInline />
+                    </div>
+                  </Col>
+                </ConfirmationButton>
+              </Col>
+            ))}
+          </div>
         </div>
       </Col>
     </Page>
@@ -299,7 +406,7 @@ function PrintfulItemCard(props: {
     gallery[0] ?? (matchingVariant as any)?.preview ?? p.imageUrl
 
   return (
-    <Col className="bg-canvas-0 border-ink-200 rounded-lg border p-4 shadow-sm">
+    <Col className="bg-canvas-0 border-ink-200 gap-2 rounded-lg border p-4 shadow-sm">
       <div className="bg-ink-100 aspect-square w-full overflow-hidden rounded-md">
         <img
           src={p.imageUrl}
@@ -316,11 +423,11 @@ function PrintfulItemCard(props: {
         openModalBtn={{
           label: 'Buy',
           color: 'indigo',
-          className: 'mt-3 w-full',
+          className: 'mt-2 w-full',
         }}
         cancelBtn={{ label: 'Cancel' }}
         submitBtn={{
-          label: 'Confirm',
+          label: 'Add to Cart',
           color: 'indigo',
           isSubmitting: loadingId === `pf-${p.id}`,
           disabled: !selectedSize || priceMana == null,
