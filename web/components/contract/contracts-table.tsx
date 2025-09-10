@@ -246,7 +246,8 @@ export function ContractRow(props: {
             contract={contract}
             className={clsx(
               'w-full',
-              !showPosition && 'sm:w-[calc(100%-12rem)]'
+              !showPosition && 'sm:w-[calc(100%-12rem)]',
+              contract.visibility === 'unlisted' && 'text-ink-600'
             )}
             hideAvatar={hideAvatar}
           />
@@ -544,6 +545,7 @@ function ContractQuestion(props: {
             </Tooltip>
           </span>
         )}
+        <VisibilityIcon className="mr-1" contract={contract} />
         {removeEmojis(contract.question)}
       </span>
     </Row>
