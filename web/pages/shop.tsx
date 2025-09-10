@@ -9,6 +9,7 @@ import { api } from 'web/lib/api/api'
 import toast from 'react-hot-toast'
 import { useState as useReactState } from 'react'
 import { TokenNumber } from 'web/components/widgets/token-number'
+import { getEnabledConfigs } from 'common/src/shop/items'
 
 type ShopItem = {
   id: string
@@ -17,39 +18,20 @@ type ShopItem = {
   imageUrl: string
 }
 
-const SHOP_ITEMS: ShopItem[] = [
-  {
-    id: 'digital-sticker-pack',
-    title: 'Digital Sticker Pack',
-    price: 100,
-    imageUrl: '/logo.png',
-  },
-  {
-    id: 'profile-frame',
-    title: 'Profile Frame',
-    price: 250,
-    imageUrl: '/favicon.ico',
-  },
-  {
-    id: 'username-glow',
-    title: 'Username Glow',
-    price: 500,
-    imageUrl: '/promo/promo-1.png',
-  },
-  {
-    id: 'supporter-badge',
-    title: 'Supporter Badge',
-    price: 1000,
-    imageUrl: '/promo/promo-2.png',
-  },
-]
+const SHOP_ITEMS: ShopItem[] = getEnabledConfigs()
+  .filter((c) => c.type !== 'printful')
+  .map((c) => ({
+    id: c.id,
+    title: c.title,
+    price: c.price,
+    imageUrl: c.images?.[0] ?? '/logo.png',
+  }))
 
-const PRINTFUL_PRICE_MANA: Record<number, number> = {
-  // Unisex t-shirt with embroidered logo
-  392193718: 50000,
-  // Structured Twill Cap with Embroidered Logo
-  392192064: 60000,
-}
+const PRINTFUL_PRICE_MANA: Record<number, number> = Object.fromEntries(
+  getEnabledConfigs()
+    .filter((c) => c.type === 'printful')
+    .map((c) => [c.printfulProductId as number, c.price])
+)
 
 const ShopPage: NextPage = () => {
   const user = useUser()
