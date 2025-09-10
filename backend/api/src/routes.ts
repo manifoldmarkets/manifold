@@ -180,6 +180,7 @@ import {
   saveMarketDraft,
 } from './market-drafts'
 import { purchaseContractBoost } from './purchase-boost'
+import { purchaseShopItem } from './purchase-shop-item'
 import { referUser } from './refer-user'
 import { updatePost } from './update-post'
 import { validateiap } from './validate-iap'
@@ -352,6 +353,7 @@ export const handlers: { [k in APIPath]: APIHandler<k> } = {
   'get-contract-voters': getContractVoters,
   'get-contract-option-voters': getContractOptionVoters,
   'purchase-boost': purchaseContractBoost,
+  'purchase-shop-item': purchaseShopItem,
   'generate-ai-numeric-ranges': generateAINumericRanges,
   'regenerate-numeric-midpoints': regenerateNumericMidpoints,
   'infer-numeric-unit': inferNumericUnit,

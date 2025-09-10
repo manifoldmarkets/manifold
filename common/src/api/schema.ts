@@ -2220,6 +2220,18 @@ export const API = (_apiTypeCheck = {
       ),
     returns: {} as { success: boolean; checkoutUrl?: string },
   },
+  'purchase-shop-item': {
+    method: 'POST',
+    visibility: 'public',
+    authed: true,
+    returns: {} as { success: boolean },
+    props: z
+      .object({
+        itemId: z.string(),
+        price: z.number().positive().finite().safe(),
+      })
+      .strict(),
+  },
   'generate-ai-numeric-ranges': {
     method: 'POST',
     visibility: 'public',
