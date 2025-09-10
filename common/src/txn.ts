@@ -44,6 +44,7 @@ type AnyTxnType =
   | Loan
   | PushNotificationBonus
   | LikePurchase
+  | ShopPurchase
   | ContractUndoOldResolutionPayout
   | ContractAnte
   | AddSubsidy
@@ -493,6 +494,17 @@ type LikePurchase = {
   token: 'M$'
 }
 
+type ShopPurchase = {
+  category: 'SHOP_PURCHASE'
+  fromType: 'USER'
+  toType: 'BANK'
+  token: 'M$'
+  data?: {
+    itemId?: string
+    variantId?: string | number
+  }
+}
+
 type AddSubsidy = {
   category: 'ADD_SUBSIDY'
   fromType: 'USER'
@@ -645,6 +657,7 @@ export type ManaPayTxn = Txn & ManaPay
 export type LoanTxn = Txn & Loan
 export type PushNotificationBonusTxn = Txn & PushNotificationBonus
 export type LikePurchaseTxn = Txn & LikePurchase
+export type ShopPurchaseTxn = Txn & ShopPurchase
 export type ReclaimManaTxn = Txn & ReclaimMana
 export type ManachanTweetTxn = Txn & ManachanTweet
 export type BotCommentFeeTxn = Txn & BotCommentFee

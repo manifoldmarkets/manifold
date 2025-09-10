@@ -284,7 +284,7 @@ function PrintfulItemCard(props: {
     colors[0]
   )
   const [selectedSize, setSelectedSize] = useReactState<string | undefined>(
-    sizes[0]
+    undefined
   )
 
   const findExact = p.variants.find(
@@ -338,16 +338,14 @@ function PrintfulItemCard(props: {
           label: 'Confirm',
           color: 'indigo',
           isSubmitting: loadingId === `pf-${p.id}`,
+          disabled: !selectedSize,
         }}
         onOpenChanged={(open) => {
           if (!open) return
           // Reset to first available on open so user starts from a valid selection
           setSelectedColor(colors[0])
-          // Prefer a size that exists for the default color
-          const defaultColorSizes = sizesForColor(colors[0])
-          setSelectedSize(
-            (defaultColorSizes[0] ?? sizes[0]) as string | undefined
-          )
+          // Leave size unselected by default
+          setSelectedSize(undefined)
         }}
         onSubmitWithSuccess={async () => {
           if (!userPresent) {
@@ -419,10 +417,9 @@ function PrintfulItemCard(props: {
                     key={c}
                     onClick={() => {
                       setSelectedColor(c)
-                      // If current size is not available for this color, pick the first available
                       const avail = sizesForColor(c)
                       if (selectedSize && !avail.includes(selectedSize)) {
-                        setSelectedSize(avail[0])
+                        setSelectedSize(undefined)
                       }
                     }}
                     className={

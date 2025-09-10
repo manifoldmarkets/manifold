@@ -18,7 +18,7 @@ export const purchaseShopItem: APIHandler<'purchase-shop-item'> = async (
 
   await pg.tx(async (tx) => {
     const txn: TxnData = {
-      category: 'LIKE_PURCHASE',
+      category: 'SHOP_PURCHASE',
       fromType: 'USER',
       toType: 'BANK',
       token: 'M$',
