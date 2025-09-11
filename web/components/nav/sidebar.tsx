@@ -188,6 +188,7 @@ const getMobileNav = (
 
   return buildArray<NavItem>(
     { name: 'Leagues', href: '/leagues', icon: TrophyIcon },
+    { name: 'Forum', href: '/posts', icon: ChatIcon },
     {
       name: 'Share with friends',
       href: '/referrals',
