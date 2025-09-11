@@ -20,11 +20,14 @@ import {
 } from 'common/user'
 import { formatMoney, formatMoneyUSD } from 'common/util/format'
 import { floatingEqual } from 'common/util/math'
+import { removeUndefinedProps } from 'common/util/object'
 import { WeeklyPortfolioUpdate } from 'common/weekly-portfolio-update'
 import { sortBy } from 'lodash'
 import Link from 'next/link'
 import { useState } from 'react'
+import toast from 'react-hot-toast'
 import { BsBank } from 'react-icons/bs'
+import { FaArrowTrendDown, FaArrowTrendUp } from 'react-icons/fa6'
 import { Col } from 'web/components/layout/col'
 import { Row } from 'web/components/layout/row'
 import { MultiUserReactionModal } from 'web/components/multi-user-reaction-link'
@@ -49,13 +52,15 @@ import {
 } from 'web/components/outcome-label'
 import { Avatar } from 'web/components/widgets/avatar'
 import { useReview } from 'web/hooks/use-review'
+import { api } from 'web/lib/api/api'
 import { SpiceCoin } from 'web/public/custom-components/spiceCoin'
 import { Button } from '../buttons/button'
 import { Modal } from '../layout/modal'
 import { Rating, ReviewPanel } from '../reviews/stars'
-import { TokenNumber } from '../widgets/token-number'
 import { Linkify } from '../widgets/linkify'
 import { linkClass } from '../widgets/site-link'
+import { TokenNumber } from '../widgets/token-number'
+import { NewPostFromFollowedUserNotification } from './followed-post-notification'
 import {
   AvatarNotificationIcon,
   NOTIFICATION_ICON_SIZE,
@@ -66,11 +71,6 @@ import {
   PrimaryNotificationLink,
   QuestionOrGroupLink,
 } from './notification-helpers'
-import { FaArrowTrendUp, FaArrowTrendDown } from 'react-icons/fa6'
-import { api } from 'web/lib/api/api'
-import { removeUndefinedProps } from 'common/util/object'
-import toast from 'react-hot-toast'
-import { NewPostFromFollowedUserNotification } from './followed-post-notification'
 
 export function NotificationItem(props: {
   notification: Notification
@@ -1674,10 +1674,10 @@ function ReferralProgramNotification(props: {
   setHighlighted: (highlighted: boolean) => void
   isChildOfGroup?: boolean
 }) {
+  return null
   // const { notification, highlighted, setHighlighted } = props
   // const [showModal, setShowModal] = useState(false)
   // const user = useUser()
-  return null
   // return (
   //   <NotificationFrame
   //     notification={notification}

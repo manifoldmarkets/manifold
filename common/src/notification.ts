@@ -472,16 +472,10 @@ export function getSourceIdForLinkComponent(
   sourceType?: notification_source_types
 ) {
   switch (sourceType) {
-    case 'answer':
-      return `answer-${sourceId}`
     case 'comment':
       return sourceId
-    case 'contract':
-      return ''
-    case 'bet':
-      return ''
     default:
-      return sourceId
+      return ''
   }
 }
 
