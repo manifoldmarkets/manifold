@@ -48,6 +48,20 @@ export function useCart() {
   const removeItem = (key: string) =>
     setItems((prev) => prev.filter((p) => p.key !== key))
 
+  const removeOne = (key: string) =>
+    setItems((prev) => {
+      const idx = prev.findIndex((p) => p.key === key)
+      if (idx === -1) return prev
+      const next = [...prev]
+      const row = next[idx]
+      if ((row?.quantity ?? 1) > 1) {
+        next[idx] = { ...row, quantity: (row.quantity ?? 1) - 1 }
+      } else {
+        next.splice(idx, 1)
+      }
+      return next
+    })
+
   const setQuantity = (key: string, quantity: number) =>
     setItems((prev) =>
       prev.map((p) =>
@@ -57,5 +71,14 @@ export function useCart() {
 
   const clear = () => setItems([])
 
-  return { items, addItem, removeItem, setQuantity, clear, total, ready }
+  return {
+    items,
+    addItem,
+    removeItem,
+    removeOne,
+    setQuantity,
+    clear,
+    total,
+    ready,
+  }
 }

@@ -6,6 +6,7 @@ import { Page } from 'web/components/layout/page'
 import { ConfirmationButton } from 'web/components/buttons/confirmation-button'
 import { useUser } from 'web/hooks/use-user'
 import toast from 'react-hot-toast'
+import { api } from 'web/lib/api/api'
 import { useState as useReactState } from 'react'
 import { TokenNumber } from 'web/components/widgets/token-number'
 import {
@@ -53,9 +54,8 @@ const PRINTFUL_PRICE_MANA: Record<number, number> = Object.fromEntries(
 const ShopPage: NextPage = () => {
   const user = useUser()
   const balance = user?.balance ?? 0
-  const [loadingId] = useState<string | null>(null)
   const { items: cartItems, addItem } = useCart()
-  // const [cartOpen, setCartOpen] = useState(false)
+  const [orderCounts, setOrderCounts] = useState<Record<string, number>>({})
 
   const [remote, setRemote] = useState<
     | {
@@ -82,6 +82,22 @@ const ShopPage: NextPage = () => {
       .then((d) => setRemote(d.products))
       .catch(() => setRemote([]))
   }, [])
+
+  useEffect(() => {
+    if (!user) {
+      setOrderCounts({})
+      return
+    }
+    api('get-shop-orders', {})
+      .then((res) => {
+        const counts: Record<string, number> = {}
+        for (const o of res.orders ?? []) {
+          counts[o.itemId] = (counts[o.itemId] ?? 0) + o.quantity
+        }
+        setOrderCounts(counts)
+      })
+      .catch(() => setOrderCounts({}))
+  }, [user?.id])
 
   const digitalItems = useMemo(() => DIGITAL_ITEMS, [])
   const physicalOtherItems = useMemo(() => PHYSICAL_OTHER_ITEMS, [])
@@ -120,74 +136,15 @@ const ShopPage: NextPage = () => {
           </h2>
           <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-3">
             {digitalItems.map((item) => (
-              <Col
+              <SimpleItemCard
                 key={item.id}
-                className="bg-canvas-0 border-ink-200 rounded-lg border p-4 shadow-sm"
-              >
-                <div className="bg-ink-100 aspect-square w-full overflow-hidden rounded-md">
-                  <img
-                    src={item.imageUrl}
-                    alt={item.title}
-                    className="h-full w-full object-cover"
-                  />
-                </div>
-                <div className="text-ink-600 mt-3 text-sm">{item.title}</div>
-                <div className="text-lg font-medium">
-                  <TokenNumber amount={item.price} isInline />
-                </div>
-
-                <ConfirmationButton
-                  openModalBtn={{
-                    label: 'Add to Cart',
-                    color: 'indigo',
-                    className: 'mt-3 w-full',
-                  }}
-                  cancelBtn={{ label: 'Cancel' }}
-                  submitBtn={{
-                    label: 'Add to Cart',
-                    color: 'indigo',
-                    isSubmitting: loadingId === item.id,
-                  }}
-                  onSubmitWithSuccess={async () => {
-                    if (item.perUserLimit && item.perUserLimit <= 0) {
-                      toast.error('This item is not currently available')
-                      return false
-                    }
-                    const inCart = cartItems
-                      .filter((ci) => ci.key === `digital:${item.id}`)
-                      .reduce((a, b) => a + b.quantity, 0)
-                    if (item.perUserLimit && inCart >= item.perUserLimit) {
-                      toast.error(`Limit ${item.perUserLimit} per user`)
-                      return false
-                    }
-                    if (item.perUserLimit && inCart >= item.perUserLimit) {
-                      toast.error(`Limit ${item.perUserLimit} per user`)
-                      return false
-                    }
-                    addItem({
-                      key: `digital:${item.id}`,
-                      title: item.title,
-                      imageUrl: item.imageUrl,
-                      price: item.price,
-                      quantity: 1,
-                    })
-                    toast.success('Added to cart')
-                    return true
-                  }}
-                >
-                  <Col className="gap-2">
-                    <div className="text-md font-medium">Confirm purchase</div>
-                    <div className="text-ink-700 text-sm">{item.title}</div>
-                    <div className="text-sm">
-                      Price: <TokenNumber amount={item.price} isInline />
-                    </div>
-                    <div className="text-sm">
-                      Balance change: <TokenNumber amount={balance} isInline />{' '}
-                      → <TokenNumber amount={balance - item.price} isInline />
-                    </div>
-                  </Col>
-                </ConfirmationButton>
-              </Col>
+                kind="digital"
+                item={item}
+                balance={balance}
+                cartItems={cartItems}
+                addItem={addItem}
+                orderCounts={orderCounts}
+              />
             ))}
           </div>
         </div>
@@ -222,70 +179,15 @@ const ShopPage: NextPage = () => {
             ))}
 
             {physicalOtherItems.map((item) => (
-              <Col
+              <SimpleItemCard
                 key={item.id}
-                className="bg-canvas-0 border-ink-200 rounded-lg border p-4 shadow-sm"
-              >
-                <div className="bg-ink-100 aspect-square w-full overflow-hidden rounded-md">
-                  <img
-                    src={item.imageUrl}
-                    alt={item.title}
-                    className="h-full w-full object-cover"
-                  />
-                </div>
-                <div className="text-ink-600 mt-3 text-sm">{item.title}</div>
-                <div className="text-lg font-medium">
-                  <TokenNumber amount={item.price} isInline />
-                </div>
-
-                <ConfirmationButton
-                  openModalBtn={{
-                    label: 'Add to Cart',
-                    color: 'indigo',
-                    className: 'mt-3 w-full',
-                  }}
-                  cancelBtn={{ label: 'Cancel' }}
-                  submitBtn={{
-                    label: 'Add to Cart',
-                    color: 'indigo',
-                    isSubmitting: loadingId === item.id,
-                  }}
-                  onSubmitWithSuccess={async () => {
-                    if (item.perUserLimit && item.perUserLimit <= 0) {
-                      toast.error('This item is not currently available')
-                      return false
-                    }
-                    const inCart = cartItems
-                      .filter((ci) => ci.key === `other:${item.id}`)
-                      .reduce((a, b) => a + b.quantity, 0)
-                    if (item.perUserLimit && inCart >= item.perUserLimit) {
-                      toast.error(`Limit ${item.perUserLimit} per user`)
-                      return false
-                    }
-                    addItem({
-                      key: `other:${item.id}`,
-                      title: item.title,
-                      imageUrl: item.imageUrl,
-                      price: item.price,
-                      quantity: 1,
-                    })
-                    toast.success('Added to cart')
-                    return true
-                  }}
-                >
-                  <Col className="gap-2">
-                    <div className="text-md font-medium">Confirm purchase</div>
-                    <div className="text-ink-700 text-sm">{item.title}</div>
-                    <div className="text-sm">
-                      Price: <TokenNumber amount={item.price} isInline />
-                    </div>
-                    <div className="text-sm">
-                      Balance change: <TokenNumber amount={balance} isInline />{' '}
-                      → <TokenNumber amount={balance - item.price} isInline />
-                    </div>
-                  </Col>
-                </ConfirmationButton>
-              </Col>
+                kind="other"
+                item={item}
+                balance={balance}
+                cartItems={cartItems}
+                addItem={addItem}
+                orderCounts={orderCounts}
+              />
             ))}
           </div>
         </div>
@@ -335,28 +237,90 @@ function colorToCss(c: string | undefined) {
 function colorToSwatch(c: string | undefined) {
   if (!c) return 'transparent'
   const lower = c.toLowerCase().trim()
-  // Treat as split color only if explicitly contains '/' or ends with ' black' or ' white'
-  if (lower.includes('/')) {
-    const parts = lower
-      .split('/')
-      .map((p) => p.trim())
-      .filter(Boolean)
-    if (parts.length >= 2) {
-      const first = colorToCss(parts[0])
-      const last = colorToCss(parts[parts.length - 1])
-      return `linear-gradient(90deg, ${first} 0%, ${first} 50%, ${last} 50%, ${last} 100%)`
-    }
-  }
-  if (/(\sblack$|\swhite$)/.test(lower)) {
-    const tokens = lower.split(/\s+/)
-    const first = colorToCss(tokens[0])
-    const last = colorToCss(tokens[tokens.length - 1])
-    return `linear-gradient(90deg, ${first} 0%, ${first} 50%, ${last} 50%, ${last} 100%)`
-  }
   return colorToCss(lower)
 }
 
 export default ShopPage
+
+function SimpleItemCard(props: {
+  kind: 'digital' | 'other'
+  item: ShopItem
+  balance: number
+  cartItems: CartItem[]
+  addItem: (ci: CartItem) => void
+  orderCounts: Record<string, number>
+}) {
+  const { kind, item, balance, cartItems, addItem, orderCounts } = props
+  const inCart = cartItems
+    .filter((ci) => ci.key === `${kind}:${item.id}`)
+    .reduce((a, b) => a + b.quantity, 0)
+  const existing = orderCounts[item.id] ?? 0
+  const atLimit = !!item.perUserLimit && existing + inCart >= item.perUserLimit
+  return (
+    <Col className="bg-canvas-0 border-ink-200 rounded-lg border p-4 shadow-sm">
+      <div className="bg-ink-100 aspect-square w-full overflow-hidden rounded-md">
+        <img
+          src={item.imageUrl}
+          alt={item.title}
+          className="h-full w-full object-cover"
+        />
+      </div>
+      <div className="text-ink-600 mt-3 text-sm">{item.title}</div>
+      <div className="text-lg font-medium">
+        <TokenNumber amount={item.price} isInline />
+      </div>
+
+      <ConfirmationButton
+        openModalBtn={{
+          label: atLimit ? 'Purchased' : 'Buy',
+          color: 'indigo',
+          className: 'mt-3 w-full',
+          disabled: atLimit,
+        }}
+        cancelBtn={{ label: 'Cancel' }}
+        submitBtn={{ label: 'Add to Cart', color: 'indigo' }}
+        onSubmitWithSuccess={async () => {
+          if (item.perUserLimit && item.perUserLimit <= 0) {
+            toast.error('This item is not currently available')
+            return false
+          }
+          const inCartNow = cartItems
+            .filter((ci) => ci.key === `${kind}:${item.id}`)
+            .reduce((a, b) => a + b.quantity, 0)
+          const existingNow = orderCounts[item.id] ?? 0
+          if (
+            item.perUserLimit &&
+            existingNow + inCartNow >= item.perUserLimit
+          ) {
+            toast.error(`Limit ${item.perUserLimit} per user`)
+            return false
+          }
+          addItem({
+            key: `${kind}:${item.id}`,
+            title: item.title,
+            imageUrl: item.imageUrl,
+            price: item.price,
+            quantity: 1,
+          })
+          toast.success('Added to cart')
+          return true
+        }}
+      >
+        <Col className="gap-2">
+          <div className="text-md font-medium">Confirm purchase</div>
+          <div className="text-ink-700 text-sm">{item.title}</div>
+          <div className="text-sm">
+            Price: <TokenNumber amount={item.price} isInline />
+          </div>
+          <div className="text-sm">
+            Balance change: <TokenNumber amount={balance} isInline /> →{' '}
+            <TokenNumber amount={balance - item.price} isInline />
+          </div>
+        </Col>
+      </ConfirmationButton>
+    </Col>
+  )
+}
 
 function PrintfulItemCard(props: {
   p: {
@@ -505,7 +469,7 @@ function PrintfulItemCard(props: {
           return true
         }}
       >
-        <Col className="gap-3">
+        <Col className="gap-2">
           <div className="bg-ink-100 aspect-square w-full overflow-hidden rounded-md">
             <img
               src={modalPreview}
@@ -661,5 +625,3 @@ function isSizeToken(token: string): boolean {
   ])
   return set.has(t)
 }
-
-// sizesForColor defined inside component where variants are available

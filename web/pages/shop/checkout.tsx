@@ -9,15 +9,13 @@ import { api } from 'web/lib/api/api'
 import toast from 'react-hot-toast'
 
 const CheckoutPage: NextPage = () => {
-  const { items, clear, removeItem, setQuantity } = useCart()
+  const { items, clear, removeOne: removeOneFromCart } = useCart()
   const { digital, other, total, displayItems } = useMemo(() => {
     const digital = items.filter((i) => i.key.startsWith('digital:'))
     const other = items.filter((i) => i.key.startsWith('other:'))
-    // const printful = items.filter((i) => i.key.startsWith('printful:'))
     const displayItems = items.flatMap((i) =>
       Array.from({ length: i.quantity }).map((_, idx) => ({
         ...i,
-        // unique key per unit for rendering
         key: `${i.key}#${idx}`,
       }))
     )
@@ -48,10 +46,7 @@ const CheckoutPage: NextPage = () => {
 
   const removeOne = (displayKey: string) => {
     const baseKey = displayKey.split('#')[0]
-    const orig = items.find((it) => it.key === baseKey)
-    if (!orig) return
-    if (orig.quantity <= 1) removeItem(baseKey)
-    else setQuantity(baseKey, orig.quantity - 1)
+    removeOneFromCart(baseKey)
   }
 
   return (

@@ -21,7 +21,7 @@ export const SHOP_ITEM_CONFIGS: ShopItemConfig[] = [
     title: 'Digital Sticker Pack',
     price: 100,
     description: 'A pack of fun stickers to use across the site.',
-    perUserLimit: 5,
+    perUserLimit: 1,
     images: ['/logo.png'],
     enabled: true,
   },
