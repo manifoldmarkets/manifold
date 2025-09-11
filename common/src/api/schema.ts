@@ -2257,6 +2257,40 @@ export const API = (_apiTypeCheck = {
       })
       .strict(),
   },
+  'checkout-printful': {
+    method: 'POST',
+    visibility: 'public',
+    authed: true,
+    returns: {} as { success: true; printfulOrderId: string },
+    props: z
+      .object({
+        recipient: z
+          .object({
+            name: z.string().min(1),
+            email: z.string().email(),
+            address1: z.string().min(1),
+            address2: z.string().optional(),
+            city: z.string().min(1),
+            state_code: z.string().min(1),
+            country_code: z.string().min(2).max(2),
+            zip: z.string().min(1),
+            phone: z.string().optional(),
+          })
+          .strict(),
+        items: z
+          .array(
+            z.object({
+              productId: z.number().int(), // Printful sync_product id
+              variantId: z.number().int(), // Printful sync_variant id
+              quantity: z.number().int().positive(),
+              size: z.string().optional(),
+              color: z.string().optional(),
+            })
+          )
+          .min(1),
+      })
+      .strict(),
+  },
   'generate-ai-numeric-ranges': {
     method: 'POST',
     visibility: 'public',
