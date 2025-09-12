@@ -7,11 +7,17 @@ import {
   ViewListIcon,
 } from '@heroicons/react/outline'
 import clsx from 'clsx'
+import { RanksType } from 'common/achievements'
 import { DIVISION_NAMES, getLeaguePath } from 'common/leagues'
 import { getUserForStaticProps } from 'common/supabase/users'
 import { isUserLikelySpammer } from 'common/user'
 import { unauthedApi } from 'common/util/api'
 import { buildArray } from 'common/util/array'
+import {
+  formatMoney,
+  formatMoneyUSD,
+  formatWithCommas,
+} from 'common/util/format'
 import { removeUndefinedProps } from 'common/util/object'
 import Head from 'next/head'
 import Image from 'next/image'
@@ -51,6 +57,7 @@ import { linkClass } from 'web/components/widgets/site-link'
 import { Title } from 'web/components/widgets/title'
 import { StackedUserNames, UserLink } from 'web/components/widgets/user-link'
 import { useAdminOrMod } from 'web/hooks/use-admin'
+import { useAPIGetter } from 'web/hooks/use-api-getter'
 import { useFollowers, useFollows } from 'web/hooks/use-follows'
 import { useHeaderIsStuck } from 'web/hooks/use-header-is-stuck'
 import { useIsMobile } from 'web/hooks/use-is-mobile'
@@ -63,11 +70,6 @@ import { db } from 'web/lib/supabase/db'
 import { getAverageUserRating, getUserRating } from 'web/lib/supabase/reviews'
 import Custom404 from 'web/pages/404'
 import { UserPayments } from 'web/pages/payments'
-import {
-  formatMoney,
-  formatWithCommas,
-  formatMoneyUSD,
-} from 'common/util/format'
 
 export const getStaticProps = async (props: {
   params: {
@@ -557,83 +559,10 @@ function ProfilePublicStats(props: {
 
 function AchievementsSection(props: { userId: string }) {
   const { userId } = props
-  const [loading, setLoading] = useState(true)
-  const [error, setError] = useState<string | null>(null)
-  type RanksType = {
-    creatorTraders: { rank: number | null; percentile: number | null }
-    totalReferrals: { rank: number | null; percentile: number | null }
-    totalReferredProfit: { rank: number | null; percentile: number | null }
-    volume: { rank: number | null; percentile: number | null }
-    trades: { rank: number | null; percentile: number | null }
-    marketsCreated: { rank: number | null; percentile: number | null }
-    comments: { rank: number | null; percentile: number | null }
-    seasonsPlatinumOrHigher: { rank: number | null; percentile: number | null }
-    seasonsDiamondOrHigher: { rank: number | null; percentile: number | null }
-    seasonsMasters: { rank: number | null; percentile: number | null }
-    largestLeagueSeasonEarnings: {
-      rank: number | null
-      percentile: number | null
-    }
-    liquidity: { rank: number | null; percentile: number | null }
-    profitableMarkets: { rank: number | null; percentile: number | null }
-    unprofitableMarkets: { rank: number | null; percentile: number | null }
-    largestProfitableTrade: {
-      rank: number | null
-      percentile: number | null
-    }
-    largestUnprofitableTrade: {
-      rank: number | null
-      percentile: number | null
-    }
-    accountAge: { rank: number | null; percentile: number | null }
-    longestBettingStreak: { rank: number | null; percentile: number | null }
-    modTickets: { rank: number | null; percentile: number | null }
-    charityDonated: { rank: number | null; percentile: number | null }
-  }
 
-  const [data, setData] = useState<{
-    userId: string
-    creatorTraders: number
-    totalReferrals: number
-    totalReferredProfitMana: number
-    totalVolumeMana: number
-    seasonsPlatinumOrHigher: number
-    seasonsDiamondOrHigher: number
-    seasonsMasters: number
-    numberOfComments: number
-    totalLiquidityCreatedMarkets: number
-    totalTradesCount: number
-    totalMarketsCreated: number
-    accountAgeYears: number
-    profitableMarketsCount: number
-    unprofitableMarketsCount: number
-    largestProfitableTradeValue: number
-    largestUnprofitableTradeValue: number
-    longestBettingStreak: number
-    modTicketsResolved: number
-    charityDonatedMana: number
-    largestLeagueSeasonEarnings: number
-    ranks: RanksType
-  } | null>(null)
-
-  useEffect(() => {
-    let isMounted = true
-    setLoading(true)
-    setError(null)
-    unauthedApi('get-user-achievements', { userId })
-      .then((resp) => {
-        if (isMounted) setData(resp)
-      })
-      .catch((e) => {
-        if (isMounted) setError(e?.message ?? 'Failed to load achievements')
-      })
-      .finally(() => {
-        if (isMounted) setLoading(false)
-      })
-    return () => {
-      isMounted = false
-    }
-  }, [userId])
+  const { data, loading, error } = useAPIGetter('get-user-achievements', {
+    userId,
+  })
 
   if (loading)
     return (
@@ -641,16 +570,8 @@ function AchievementsSection(props: { userId: string }) {
         Loading achievements…
       </Row>
     )
-  if (error) return <div className="text-error">{error}</div>
+  if (error) return <div className="text-error">{error.message}</div>
   if (!data) return null
-
-  type Rankish =
-    | { rank: number | null; percentile: number | null }
-    | null
-    | undefined
-
-  const _p = (r?: Rankish) => r?.percentile ?? null
-  const _r = (r?: Rankish) => r?.rank ?? null
 
   // Rank key per achievement id
   const rankKeyById: Record<string, keyof RanksType> = {
@@ -674,30 +595,6 @@ function AchievementsSection(props: { userId: string }) {
     longestBettingStreak: 'longestBettingStreak',
     modTicketsResolved: 'modTickets',
     charityDonatedMana: 'charityDonated',
-  }
-
-  // Raw numeric values by id for zero-handling
-  const valueById: Record<string, number> = {
-    totalVolumeMana: data.totalVolumeMana,
-    totalReferrals: data.totalReferrals,
-    totalReferredProfitMana: data.totalReferredProfitMana,
-    creatorTraders: data.creatorTraders,
-    totalLiquidityCreatedMarkets: data.totalLiquidityCreatedMarkets,
-    profitableMarketsCount: data.profitableMarketsCount,
-    unprofitableMarketsCount: data.unprofitableMarketsCount,
-    largestProfitableTradeValue: data.largestProfitableTradeValue,
-    largestUnprofitableTradeValue: data.largestUnprofitableTradeValue,
-    seasonsPlatinumOrHigher: data.seasonsPlatinumOrHigher,
-    seasonsDiamondOrHigher: data.seasonsDiamondOrHigher,
-    seasonsMasters: data.seasonsMasters,
-    largestLeagueSeasonEarnings: data.largestLeagueSeasonEarnings,
-    numberOfComments: data.numberOfComments,
-    totalTradesCount: data.totalTradesCount,
-    totalMarketsCreated: data.totalMarketsCreated,
-    accountAgeYears: data.accountAgeYears,
-    longestBettingStreak: data.longestBettingStreak,
-    modTicketsResolved: data.modTicketsResolved,
-    charityDonatedMana: data.charityDonatedMana,
   }
 
   const defs = [
@@ -834,7 +731,7 @@ function AchievementsSection(props: { userId: string }) {
 
   const ACHS = defs.map(({ id, title, desc, fmt }) => {
     const key = rankKeyById[id]
-    const raw = valueById[id] ?? 0
+    const raw = data[id] ?? 0
     const rk = key ? data.ranks?.[key]?.rank ?? null : null
     const pc = key ? data.ranks?.[key]?.percentile ?? null : null
     return {
