@@ -73,6 +73,16 @@ export const purchaseContractBoost: APIHandler<'purchase-boost'> = async (
     throw new APIError(403, 'Only admins and mods can use free boosts')
   }
 
+  // If paying with mana (or admin-free), block when MANA is disabled site-wide
+  if (!fundViaCash) {
+    const systemStatus = await pg.oneOrNone(
+      `select status from system_trading_status where token = 'MANA'`
+    )
+    if (!systemStatus?.status) {
+      throw new APIError(403, `Trading with MANA is currently disabled.`)
+    }
+  }
+
   // Check if there's already an active boost for the same time period
   const activeBoost = await pg.manyOrNone<Row<'contract_boosts'>>(
     `select * from contract_boosts 

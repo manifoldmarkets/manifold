@@ -26,6 +26,18 @@ export const addContractLiquidity = async (
     const contract = await getContract(tx, contractId)
     if (!contract) throw new APIError(404, 'Contract not found')
 
+    // Block adding liquidity when trading for the relevant token is disabled site-wide
+    const systemStatus = await tx.oneOrNone(
+      `select status from system_trading_status where token = $1`,
+      [contract.token]
+    )
+    if (!systemStatus?.status) {
+      throw new APIError(
+        403,
+        `Trading with ${contract.token} is currently disabled.`
+      )
+    }
+
     if (
       contract.mechanism !== 'cpmm-1' &&
       contract.mechanism !== 'cpmm-multi-1'
