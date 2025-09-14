@@ -32,6 +32,19 @@ export const managram: APIHandler<'managram'> = async (props, auth) => {
 
   const pg = createSupabaseDirectClient()
 
+  // Block managrams when trading for the relevant token is disabled site-wide
+  const systemToken = token === 'M$' ? 'MANA' : 'CASH'
+  const systemStatus = await pg.oneOrNone(
+    `select status from system_trading_status where token = $1`,
+    [systemToken]
+  )
+  if (!systemStatus?.status) {
+    throw new APIError(
+      403,
+      `Trading with ${systemToken} is currently disabled.`
+    )
+  }
+
   const fromUser = await betsQueue.enqueueFn(async () => {
     // Run as transaction to prevent race conditions.
     return await pg.tx(async (tx) => {
