@@ -24,7 +24,6 @@ import {
   SupabaseTransaction,
   createSupabaseDirectClient,
 } from 'shared/supabase/init'
-import { UserUpdate, bulkIncrementBalancesQuery } from 'shared/supabase/users'
 import { FieldVal } from 'shared/supabase/utils'
 import { TxnData, insertTxns } from 'shared/txn/run-txn'
 import { getContract, isProd, log } from 'shared/utils'
