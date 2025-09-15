@@ -19,11 +19,13 @@ import {
   getContractMetricsForContract,
 } from 'shared/helpers/user-contract-metrics'
 import { recordContractEdit } from 'shared/record-contract-edit'
+import { checkForNegativeBalancesAndPayouts } from 'shared/resolve-market-helpers'
 import { updateContract } from 'shared/supabase/contracts'
 import {
   SupabaseTransaction,
   createSupabaseDirectClient,
 } from 'shared/supabase/init'
+import { UserUpdate, bulkIncrementBalancesQuery } from 'shared/supabase/users'
 import { FieldVal } from 'shared/supabase/utils'
 import { TxnData, insertTxns } from 'shared/txn/run-txn'
 import { getContract, isProd, log } from 'shared/utils'
@@ -36,9 +38,6 @@ export const unresolve: APIHandler<'unresolve'> = async (
   auth,
   request
 ) => {
-  if (!isModId(auth.uid) && !isAdminId(auth.uid)) {
-    throw new APIError(403, 'Unresolving is only allowed for mods and admins')
-  }
   return await betsQueue.enqueueFn(
     () => unresolveMain(props, auth, request),
     [props.contractId, auth.uid]
@@ -232,7 +231,14 @@ const undoResolution = async (
   //   txns.push(txn)
   // }
 
-  await bulkIncrementBalances(pg, balanceUpdates)
+  if (balanceUpdates.length > 0) {
+    const balanceUpdatesQuery = bulkIncrementBalancesQuery(balanceUpdates)
+    const userUpdates = await pg.many<UserUpdate>(balanceUpdatesQuery)
+    if (!isAdminId(userId) && !isModId(userId)) {
+      checkForNegativeBalancesAndPayouts(userUpdates, balanceUpdates)
+    }
+  }
+
   await insertTxns(pg, txns)
 
   log('reverted txns')

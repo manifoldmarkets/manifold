@@ -1,8 +1,10 @@
-import { mapValues, groupBy, sum, sumBy, keyBy, uniqBy } from 'lodash'
+import { APIError } from 'common//api/utils'
+import { Answer } from 'common/answer'
 import {
-  HOUSE_LIQUIDITY_PROVIDER_ID,
   DEV_HOUSE_LIQUIDITY_PROVIDER_ID,
+  HOUSE_LIQUIDITY_PROVIDER_ID,
 } from 'common/antes'
+import { calculateUpdatedMetricsForContracts } from 'common/calculate-metrics'
 import {
   Contract,
   contractPath,
@@ -10,50 +12,48 @@ import {
   CPMMMultiContract,
   MarketContract,
 } from 'common/contract'
+import { ContractMetric } from 'common/contract-metric'
+import { PROFIT_FEE_FRACTION } from 'common/economy'
+import { isAdminId, isModId } from 'common/envs/constants'
 import { LiquidityProvision } from 'common/liquidity-provision'
-import { Txn, CancelUniqueBettorBonusTxn } from 'common/txn'
-import { User } from 'common/user'
-import { removeUndefinedProps } from 'common/util/object'
-import { createContractResolvedNotifications } from './create-notification'
-import { bulkUpdateContractMetricsQuery } from './helpers/user-contract-metrics'
-import {
-  TxnData,
-  runTxnOutsideBetQueueIgnoringBalance,
-  txnToRow,
-} from './txn/run-txn'
-import {
-  revalidateStaticProps,
-  isProd,
-  log,
-  getContractAndMetricsAndLiquidities,
-} from './utils'
 import {
   getLoanPayouts,
   getPayouts,
   groupPayoutsByUser,
   Payout,
 } from 'common/payouts'
-import { APIError } from 'common//api/utils'
+import { convertTxn } from 'common/supabase/txns'
+import { CancelUniqueBettorBonusTxn, Txn } from 'common/txn'
+import { User } from 'common/user'
+import { removeUndefinedProps } from 'common/util/object'
+import { groupBy, keyBy, mapValues, sum, sumBy, uniqBy } from 'lodash'
 import { trackPublicEvent } from 'shared/analytics'
 import { recordContractEdit } from 'shared/record-contract-edit'
+import { createContractResolvedNotifications } from './create-notification'
+import { bulkUpdateContractMetricsQuery } from './helpers/user-contract-metrics'
+import { updateAnswer, updateAnswers } from './supabase/answers'
 import {
+  createSupabaseDirectClient,
   SERIAL_MODE,
   SupabaseTransaction,
-  createSupabaseDirectClient,
 } from './supabase/init'
-import { Answer } from 'common/answer'
-import { isAdminId, isModId } from 'common/envs/constants'
-import { convertTxn } from 'common/supabase/txns'
-import { updateAnswer, updateAnswers } from './supabase/answers'
-import { bulkInsertQuery, updateDataQuery } from './supabase/utils'
 import { bulkIncrementBalancesQuery, UserUpdate } from './supabase/users'
+import { bulkInsertQuery, updateDataQuery } from './supabase/utils'
+import {
+  runTxnOutsideBetQueueIgnoringBalance,
+  TxnData,
+  txnToRow,
+} from './txn/run-txn'
+import {
+  getContractAndMetricsAndLiquidities,
+  isProd,
+  log,
+  revalidateStaticProps,
+} from './utils'
 import {
   broadcastUpdatedContract,
   broadcastUpdatedMetrics,
 } from './websockets/helpers'
-import { ContractMetric } from 'common/contract-metric'
-import { calculateUpdatedMetricsForContracts } from 'common/calculate-metrics'
-import { PROFIT_FEE_FRACTION } from 'common/economy'
 
 export type ResolutionParams = {
   outcome: string
@@ -219,18 +219,6 @@ export const resolveMarketHelper = async (
 
     log('negative payouts', { negativePayouts })
 
-    if (
-      outcome === 'CANCEL' &&
-      !isAdminId(resolver.id) &&
-      !isModId(resolver.id) &&
-      negativePayouts.length > 0
-    ) {
-      throw new APIError(
-        403,
-        'Negative payouts too large for resolution. Contact admin or mod.'
-      )
-    }
-
     if (updateAnswerAttrs && answerId) {
       const props = removeUndefinedProps(updateAnswerAttrs)
       await updateAnswer(tx, answerId, props)
@@ -261,13 +249,8 @@ export const resolveMarketHelper = async (
       token === 'CASH'
         ? assessProfitFees(traderPayouts, updatedContractMetrics, answerId)
         : []
-    const { balanceUpdatesQuery, insertTxnsQuery } = getPayUsersQueries(
-      payouts,
-      contractId,
-      answerId,
-      token,
-      payoutFees
-    )
+    const { balanceUpdatesQuery, insertTxnsQuery, balanceUpdates } =
+      getPayUsersQueries(payouts, contractId, answerId, token, payoutFees)
     const contractUpdateQuery = updateDataQuery(
       'contracts',
       'id',
@@ -282,6 +265,13 @@ export const resolveMarketHelper = async (
       ${updateMetricsQuery}; -- 4
       `)
     const userUpdates = results[0] as UserUpdate[]
+    if (
+      outcome === 'CANCEL' &&
+      !isAdminId(resolver.id) &&
+      !isModId(resolver.id)
+    ) {
+      checkForNegativeBalancesAndPayouts(userUpdates, balanceUpdates)
+    }
 
     // TODO: we may want to support clawing back trader bonuses on MC markets too
     if (!answerId && outcome === 'CANCEL') {
@@ -524,7 +514,7 @@ export const getPayUsersQueries = (
   const balanceUpdatesQuery = bulkIncrementBalancesQuery(balanceUpdates)
   const insertTxnsQuery = bulkInsertQuery('txns', txns.map(txnToRow), false)
 
-  return { balanceUpdatesQuery, insertTxnsQuery }
+  return { balanceUpdatesQuery, insertTxnsQuery, balanceUpdates }
 }
 
 const checkAndMergePayouts = (payouts: Payout[]) => {
@@ -571,4 +561,29 @@ const assessProfitFees = (
       }
     })
     .filter((p) => p.payout !== 0)
+}
+
+export const checkForNegativeBalancesAndPayouts = (
+  userUpdates: UserUpdate[],
+  balanceDeltas: {
+    id: string
+    balance?: number
+  }[]
+) => {
+  const negativeBalanceUsers = userUpdates.filter(
+    (user) => user.balance !== undefined && user.balance < 0
+  )
+  // Only throw error if the balance update itself is below -1000
+  const significantNegativeUpdatesOnNegativeBalanceUsers =
+    negativeBalanceUsers.filter((user) => {
+      const delta = balanceDeltas.find((d) => d.id === user.id)
+      return delta && delta.balance !== undefined && delta.balance < -1000
+    })
+
+  if (significantNegativeUpdatesOnNegativeBalanceUsers.length > 0) {
+    throw new APIError(
+      400,
+      `Negative balances & payouts too large as a result. Please tag @mods for help resolving this market.`
+    )
+  }
 }
