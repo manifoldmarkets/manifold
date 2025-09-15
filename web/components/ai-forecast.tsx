@@ -40,12 +40,8 @@ const ENDPOINT = 'ai'
 // Function to get the appropriate description for tooltip based on card title
 function getTooltipDescription(cardTitle: string): string | null {
   const keyTerms: Record<string, string> = {
-    AiderBench:
-      'To evaluate an LLM’s editing skill, aider uses benchmarks that assess a model’s ability to consistently follow the system prompt to successfully edit code. The benchmark requires the LLM to edit source files to complete 225 coding exercises in many popular programming languages such as C++, Go, Java, JavaScript, Python and Rust.',
     'Chatbot Arena':
       'Chatbot Arena is an open platform for crowdsourced AI benchmarking, where users vote on different model outputs.',
-    'IMO Gold':
-      'The International Mathematical Olympiad (IMO) is the world championship mathematics competition for high school students. Getting a gold medal requires a high score on extremely challenging math problems.',
     'Frontier Math':
       'Advanced mathematical problems at the cutting edge of research that have traditionally been very difficult for AI systems to solve.',
     'SWE Bench':
@@ -178,9 +174,9 @@ export const AI_CAPABILITY_CARDS: AICapabilityCard[] = [
     displayType: 'top-one-mcq',
   },
   {
-    title: 'IMO Gold',
-    description: 'AI gets gold on IMO by EOY',
-    marketId: 'tu2ouer9zq',
+    title: 'AI Books Flights',
+    description: 'Chinese Frontier Math',
+    marketId: 'dd5ZLhSOQc',
     type: 'benchmark',
     displayType: 'binary-odds',
   },
@@ -909,8 +905,8 @@ function CapabilityCard({
                 type === 'long-term') && (
                 <p className="text-ink-600 mt-1 w-full px-1 text-left text-xs sm:mt-3 sm:text-sm">
                   {type === 'benchmark' &&
-                    title.includes('IMO Gold') &&
-                    'LLM gets IMO gold'}
+                    title.includes('AI Books') &&
+                    'An LLM successfully book flights for Zvi'}
                   {type === 'benchmark' &&
                     title.includes('Pokemon') &&
                     'LLM becomes a Pokemon Master with minimal assistance'}
