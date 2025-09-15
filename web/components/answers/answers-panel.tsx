@@ -8,16 +8,17 @@ import {
   ScaleIcon,
 } from '@heroicons/react/outline'
 import { UserIcon } from '@heroicons/react/solid'
+import { useUnfilledBets } from 'client-common/hooks/use-bets'
 import clsx from 'clsx'
 import {
+  Answer,
+  MultiSort,
   OTHER_TOOLTIP_TEXT,
-  getMaximumAnswers,
-  sortAnswers,
-  type Answer,
-  type MultiSort,
   getAllResolved,
-  getSortedAnswers,
+  getMaximumAnswers,
   getShouldAnswersSumToOne,
+  getSortedAnswers,
+  sortAnswers,
 } from 'common/answer'
 import { LimitBet } from 'common/bet'
 import { getAnswerProbability } from 'common/calculate'
@@ -28,10 +29,13 @@ import {
   contractPath,
   tradingAllowed,
 } from 'common/contract'
+import { ContractMetric, isSummary } from 'common/contract-metric'
 import { isAdminId, isModId } from 'common/envs/constants'
 import { User } from 'common/user'
+import { buildArray } from 'common/util/array'
+import { floatingEqual } from 'common/util/math'
 import { searchInAny } from 'common/util/parse'
-import { groupBy, sumBy } from 'lodash'
+import { debounce, groupBy, sumBy } from 'lodash'
 import Link from 'next/link'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { CirclePicker } from 'react-color'
@@ -54,6 +58,7 @@ import { useIsAdvancedTrader } from 'web/hooks/use-is-advanced-trader'
 import { useIsClient } from 'web/hooks/use-is-client'
 import { useIsPageVisible } from 'web/hooks/use-page-visible'
 import { usePersistentLocalState } from 'web/hooks/use-persistent-local-state'
+import { useAllSavedContractMetrics } from 'web/hooks/use-saved-contract-metrics'
 import { usePrivateUser, useUser } from 'web/hooks/use-user'
 import { useDisplayUserByIdOrAnswer } from 'web/hooks/use-user-supabase'
 import { api, editAnswerCpmm, updateMarket } from 'web/lib/api/api'
@@ -63,10 +68,11 @@ import {
   getOrderBookButtonLabel,
 } from '../bet/order-book'
 import { getAnswerColor } from '../charts/contract/choice'
-import DropdownMenu from '../widgets/dropdown-menu'
 import { Col } from '../layout/col'
+import { RelativeTimestamp } from '../relative-timestamp'
 import { UserHovercard } from '../user/user-hovercard'
 import { CustomizeableDropdown } from '../widgets/customizeable-dropdown'
+import DropdownMenu from '../widgets/dropdown-menu'
 import { InfoTooltip } from '../widgets/info-tooltip'
 import {
   AnswerBar,
@@ -76,13 +82,6 @@ import {
   CreatorAndAnswerLabel,
 } from './answer-components'
 import { SearchCreateAnswerPanel } from './create-answer-panel'
-import { debounce } from 'lodash'
-import { RelativeTimestamp } from '../relative-timestamp'
-import { buildArray } from 'common/util/array'
-import { useAllSavedContractMetrics } from 'web/hooks/use-saved-contract-metrics'
-import { floatingEqual } from 'common/util/math'
-import { useUnfilledBets } from 'client-common/hooks/use-bets'
-import { ContractMetric, isSummary } from 'common/contract-metric'
 
 export const SHOW_LIMIT_ORDER_CHARTS_KEY = 'SHOW_LIMIT_ORDER_CHARTS_KEY'
 const MAX_DEFAULT_GRAPHED_ANSWERS = 6
@@ -266,7 +265,7 @@ export function AnswersPanel(props: {
         ) : (
           <Col className="mx-[2px] mt-1 gap-2">
             {answersToShow.map((answer) => (
-              <Answer
+              <AnswerComponent
                 myMetric={allMetrics?.find((m) => m.answerId === answer.id)}
                 shouldShowPositions={shouldShowPositions}
                 className={
@@ -545,7 +544,7 @@ export function SimpleAnswerBars(props: {
       ) : (
         <>
           {displayedAnswers.map((answer) => (
-            <Answer
+            <AnswerComponent
               user={user}
               key={answer.id}
               answer={answer}
@@ -575,7 +574,7 @@ export function SimpleAnswerBars(props: {
   )
 }
 
-export function Answer(props: {
+export function AnswerComponent(props: {
   contract: MultiContract
   answer: Answer
   unfilledBets?: Array<LimitBet>

@@ -11,7 +11,11 @@ import { Answer } from 'common/answer'
 import { ValidatedAPIParams } from 'common/api/schema'
 import { Bet, getNewBetId, LimitBet, maker } from 'common/bet'
 import { CpmmState, getCpmmProbability } from 'common/calculate-cpmm'
-import { CPMM_MIN_POOL_QTY, MarketContract } from 'common/contract'
+import {
+  CPMM_MIN_POOL_QTY,
+  MarketContract,
+  MultiContract,
+} from 'common/contract'
 import { ContractMetric } from 'common/contract-metric'
 import { FLAT_TRADE_FEE } from 'common/fees'
 import {
@@ -415,6 +419,7 @@ export const executeNewBetResult = async (
     poolYes: number
     poolNo: number
     prob: number
+    volume: number
   }[] = []
 
   const sumsToOne =
@@ -465,6 +470,7 @@ export const executeNewBetResult = async (
           poolYes,
           poolNo,
           prob,
+          volume: answer.volume + Math.abs(bet.amount),
         })
         makersByTakerBetId[candidateBet.id] = makers
         allOrdersToCancel.push(...ordersToCancel)
@@ -503,11 +509,16 @@ export const executeNewBetResult = async (
   if (newBet.answerId && newPool) {
     const { YES: poolYes, NO: poolNo } = newPool
     const prob = getCpmmProbability(newPool, 0.5)
+    const answer = (contract as MultiContract).answers.find(
+      (a) => a.id === newBet.answerId
+    )
+    if (!answer) throw new APIError(404, 'Answer not found')
     answerUpdates.push({
       id: newBet.answerId,
       poolYes,
       poolNo,
       prob,
+      volume: answer.volume + Math.abs(newBet.amount),
     })
   }
 

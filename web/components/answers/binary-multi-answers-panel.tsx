@@ -1,19 +1,19 @@
+import { PencilIcon } from '@heroicons/react/solid'
 import { Answer } from 'common/answer'
 import { CPMMMultiContract, getMainBinaryMCAnswer } from 'common/contract'
-import { Button, SizeType } from 'web/components/buttons/button'
-import { useState } from 'react'
 import { formatPercent } from 'common/util/format'
+import { useState } from 'react'
+import { BuyPanelBody } from 'web/components/bet/bet-panel'
+import { Button, SizeType } from 'web/components/buttons/button'
+import { useUser } from 'web/hooks/use-user'
 import { track } from 'web/lib/service/analytics'
+import { getAnswerColor } from '../charts/contract/choice'
+import { Row } from '../layout/row'
 import {
-  Answer as AnswerComponent,
+  AnswerComponent,
   EditAnswerModal,
   canEditAnswer,
 } from './answers-panel'
-import { BuyPanelBody } from 'web/components/bet/bet-panel'
-import { getAnswerColor } from '../charts/contract/choice'
-import { useUser } from 'web/hooks/use-user'
-import { PencilIcon } from '@heroicons/react/solid'
-import { Row } from '../layout/row'
 
 export function BinaryMultiAnswersPanel(props: {
   contract: CPMMMultiContract

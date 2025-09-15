@@ -1,14 +1,14 @@
-import { type SupabaseDirectClient } from 'shared/supabase/init'
-import { convertAnswer } from 'common/supabase/contracts'
-import { groupBy, mapValues, sortBy } from 'lodash'
 import { Answer } from 'common/answer'
-import { bulkUpdate, insert, update } from './utils'
-import { removeUndefinedProps } from 'common/util/object'
+import { convertAnswer } from 'common/supabase/contracts'
 import { millisToTs, Row } from 'common/supabase/utils'
+import { removeUndefinedProps } from 'common/util/object'
+import { groupBy, mapValues, sortBy } from 'lodash'
+import { type SupabaseDirectClient } from 'shared/supabase/init'
 import {
   broadcastNewAnswer,
   broadcastUpdatedAnswers,
 } from 'shared/websockets/helpers'
+import { bulkUpdate, insert, update } from './utils'
 
 export const getAnswer = async (pg: SupabaseDirectClient, id: string) => {
   const row = await pg.oneOrNone(`select * from answers where id = $1`, [id])
@@ -116,6 +116,7 @@ export const answerToRow = (answer: Omit<Answer, 'id'> & { id?: string }) => ({
   image_url: answer.imageUrl,
   short_text: answer.shortText,
   midpoint: answer.midpoint,
+  volume: answer.volume,
 })
 
 // does not convert isOther, loverUserId

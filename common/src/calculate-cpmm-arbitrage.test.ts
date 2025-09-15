@@ -446,6 +446,7 @@ const getAnswer = (index: number, prob: number) => {
     totalLiquidity: 0,
     subsidyPool: 0,
     probChanges: { day: 0, week: 0, month: 0 },
+    volume: 0,
   }
 }
 

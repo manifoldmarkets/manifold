@@ -24,7 +24,8 @@ create table if not exists
     text_fts tsvector generated always as (to_tsvector('english_extended'::regconfig, text)) stored,
     total_liquidity numeric default 0,
     user_id text,
-    midpoint numeric
+    midpoint numeric,
+    volume numeric default 0,
   );
 
 -- Row Level Security

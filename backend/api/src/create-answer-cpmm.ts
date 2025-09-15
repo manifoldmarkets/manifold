@@ -1,51 +1,51 @@
-import { groupBy, partition, sumBy } from 'lodash'
-import { CPMMMultiContract } from 'common/contract'
-import { User } from 'common/user'
-import { getBetDownToOneMultiBetInfo } from 'common/new-bet'
+import { followContractInternal } from 'api/follow-contract'
+import { getUnfilledBetsAndUserBalances, updateMakers } from 'api/helpers/bets'
 import { Answer, getMaximumAnswers } from 'common/answer'
-import { APIError, APIHandler } from './helpers/endpoint'
-import { randomString } from 'common/util/random'
+import { getCpmmInitialLiquidity } from 'common/antes'
+import { Bet, getNewBetId, LimitBet, maker } from 'common/bet'
 import {
   addCpmmMultiLiquidityAnswersSumToOne,
   getCpmmProbability,
 } from 'common/calculate-cpmm'
+import { CPMMMultiContract } from 'common/contract'
+import { ContractMetric } from 'common/contract-metric'
 import { isAdminId } from 'common/envs/constants'
-import { floatingEqual } from 'common/util/math'
 import { noFees } from 'common/fees'
-import { getCpmmInitialLiquidity } from 'common/antes'
-import { getContractSupabase, getUser, log } from 'shared/utils'
-import { createNewAnswerOnContractNotification } from 'shared/create-notification'
-import { removeUndefinedProps } from 'common/util/object'
-import {
-  createSupabaseDirectClient,
-  SupabaseDirectClient,
-  SupabaseTransaction,
-} from 'shared/supabase/init'
-import { incrementBalance } from 'shared/supabase/users'
-import {
-  bulkInsertBets,
-  cancelLimitOrders,
-  insertBet,
-} from 'shared/supabase/bets'
+import { getBetDownToOneMultiBetInfo } from 'common/new-bet'
 import { convertBet } from 'common/supabase/bets'
+import { getAnswerCostFromLiquidity } from 'common/tier'
+import { User } from 'common/user'
+import { filterDefined } from 'common/util/array'
+import { floatingEqual } from 'common/util/math'
+import { removeUndefinedProps } from 'common/util/object'
+import { randomString } from 'common/util/random'
+import { groupBy, partition, sumBy } from 'lodash'
+import { createNewAnswerOnContractNotification } from 'shared/create-notification'
 import { betsQueue } from 'shared/helpers/fn-queue'
-import { insertLiquidity } from 'shared/supabase/liquidity'
+import { getContractMetrics } from 'shared/helpers/user-contract-metrics'
 import {
   getAnswersForContract,
   insertAnswer,
   updateAnswer,
   updateAnswers,
 } from 'shared/supabase/answers'
-import { getAnswerCostFromLiquidity } from 'common/tier'
+import {
+  bulkInsertBets,
+  cancelLimitOrders,
+  insertBet,
+} from 'shared/supabase/bets'
 import { updateContract } from 'shared/supabase/contracts'
+import {
+  createSupabaseDirectClient,
+  SupabaseDirectClient,
+  SupabaseTransaction,
+} from 'shared/supabase/init'
+import { insertLiquidity } from 'shared/supabase/liquidity'
+import { incrementBalance } from 'shared/supabase/users'
 import { FieldVal } from 'shared/supabase/utils'
 import { runTransactionWithRetries } from 'shared/transact-with-retries'
-import { Bet, getNewBetId, LimitBet, maker } from 'common/bet'
-import { followContractInternal } from 'api/follow-contract'
-import { ContractMetric } from 'common/contract-metric'
-import { getContractMetrics } from 'shared/helpers/user-contract-metrics'
-import { filterDefined } from 'common/util/array'
-import { getUnfilledBetsAndUserBalances, updateMakers } from 'api/helpers/bets'
+import { getContractSupabase, getUser, log } from 'shared/utils'
+import { APIError, APIHandler } from './helpers/endpoint'
 export const createAnswerCPMM: APIHandler<'market/:contractId/answer'> = async (
   props,
   auth
@@ -156,6 +156,7 @@ const createAnswerCpmmMain = async (
         totalLiquidity,
         subsidyPool: 0,
         probChanges: { day: 0, week: 0, month: 0 },
+        volume: 0,
       })
 
       const updatedAnswers: Answer[] = []

@@ -16,6 +16,7 @@ export type Answer = {
   prob: number // Computed from poolYes and poolNo.
   totalLiquidity: number // for historical reasons, this the total subsidy amount added in M
   subsidyPool: number // current value of subsidy pool in M
+  volume: number // current volume of the answer in M
 
   // Is this 'Other', the answer that represents all other answers, including answers added in the future.
   isOther?: boolean
@@ -93,7 +94,7 @@ export const sortAnswers = <T extends Answer>(
       } else if (sort === 'prob-desc') {
         return -1 * answer.prob
       } else if (sort === 'liquidity') {
-        return answer.subsidyPool ? -1 * answer.subsidyPool : 0
+        return -1 * answer.volume
       } else if (sort === 'alphabetical') {
         return answer.text.toLowerCase()
       }

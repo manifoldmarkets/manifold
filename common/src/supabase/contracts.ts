@@ -1,12 +1,12 @@
-import { chunk, groupBy, mapValues, sortBy } from 'lodash'
-import { millisToTs, Row, run, SupabaseClient, tsToMillis } from './utils'
-import { Contract } from '../contract'
 import { Answer } from 'common/answer'
 import { Json } from 'common/supabase/schema'
 import {
   removeNullOrUndefinedProps,
   removeUndefinedProps,
 } from 'common/util/object'
+import { chunk, groupBy, mapValues, sortBy } from 'lodash'
+import { Contract } from '../contract'
+import { millisToTs, Row, run, SupabaseClient, tsToMillis } from './utils'
 
 export const CONTRACTS_PER_SEARCH_PAGE = 40
 
@@ -129,6 +129,7 @@ export const convertAnswer = (row: Row<'answers'>): Answer =>
     imageUrl: row.image_url ?? undefined,
     shortText: row.short_text ?? undefined,
     midpoint: row.midpoint ?? undefined,
+    volume: row.volume ?? 0,
   })
 
 export const convertContract = <T extends Contract>(c: {
