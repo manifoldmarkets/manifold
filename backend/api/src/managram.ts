@@ -11,7 +11,7 @@ import { APIError, type APIHandler } from './helpers/endpoint'
 
 import { BURN_MANA_USER_ID } from 'common/economy'
 import { betsQueue } from 'shared/helpers/fn-queue'
-const IS_PAUSED = true
+const IS_PAUSED = false
 
 export const managram: APIHandler<'managram'> = async (props, auth) => {
   const { amount, toIds, message, token, groupId: passedGroupId } = props

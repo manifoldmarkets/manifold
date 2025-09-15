@@ -304,8 +304,8 @@ export const BANNED_TRADING_USER_IDS = [
   'zRMxfUt51RcEIcZkuw6ySiNJYBE3', // BTE alt
   'fnuHBW8dHwZp2TbEt2MKJY9d28V2', // Klob (Caleb)
   'RK6Nd7IBfMVOcLekfqcN9Ys17qJ2', // PeterNjeim
+  // Start of ghost of evan accounts:
   'Vw4wQTRZp3hKTENjWa8OaTs76kg1',
-  // All of ghost of evan accounts:
   'ZWttBVb1BFU54kGE2ff49ebinVG2',
   'Vb0fUDViyCXZvZBp88bJ9aNFjdh2',
   'LUijikhdrfa9FzxQF5hwqRuN36Z2',
@@ -331,6 +331,7 @@ export const BANNED_TRADING_USER_IDS = [
   'ZhV8MUIS9JSTCxp33eavKP2gSgE3',
   'smzdPGfW29XzWkyfJfE0rDr3qYm2',
   'Ddm060TkMrbUqyi4jfMQCoOZMdA3',
+  // End of ghost of evan accounts
 ]
 
 export const PARTNER_USER_IDS: string[] = [
