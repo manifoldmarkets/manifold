@@ -175,7 +175,7 @@ export const AI_CAPABILITY_CARDS: AICapabilityCard[] = [
   },
   {
     title: 'AI Books Flights',
-    description: 'Chinese Frontier Math',
+    description: 'Agents Books Flights',
     marketId: 'dd5ZLhSOQc',
     type: 'benchmark',
     displayType: 'binary-odds',
@@ -906,7 +906,7 @@ function CapabilityCard({
                 <p className="text-ink-600 mt-1 w-full px-1 text-left text-xs sm:mt-3 sm:text-sm">
                   {type === 'benchmark' &&
                     title.includes('AI Books') &&
-                    'An LLM successfully book flights for Zvi'}
+                    'An LLM successfully books flights for Zvi'}
                   {type === 'benchmark' &&
                     title.includes('Pokemon') &&
                     'LLM becomes a Pokemon Master with minimal assistance'}
