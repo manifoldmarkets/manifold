@@ -328,9 +328,7 @@ export const BANNED_TRADING_USER_IDS = [
   '6oYZ83MbxqScz5ANhz0R5QEeolL2',
   'a9ZUA2eGquTxoTCTXjvPxLqAq2X2',
   '6Bf1GgbE7MdiGh4F4NCgkLCF9Mm1',
-  'ZhV8MUIS9JSTCxp33eavKP2gSgE3',
   'smzdPGfW29XzWkyfJfE0rDr3qYm2',
-  'Ddm060TkMrbUqyi4jfMQCoOZMdA3',
   // End of ghost of evan accounts
 ]
 
