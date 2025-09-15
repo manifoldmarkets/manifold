@@ -304,6 +304,33 @@ export const BANNED_TRADING_USER_IDS = [
   'zRMxfUt51RcEIcZkuw6ySiNJYBE3', // BTE alt
   'fnuHBW8dHwZp2TbEt2MKJY9d28V2', // Klob (Caleb)
   'RK6Nd7IBfMVOcLekfqcN9Ys17qJ2', // PeterNjeim
+  'Vw4wQTRZp3hKTENjWa8OaTs76kg1',
+  // All of ghost of evan accounts:
+  'ZWttBVb1BFU54kGE2ff49ebinVG2',
+  'Vb0fUDViyCXZvZBp88bJ9aNFjdh2',
+  'LUijikhdrfa9FzxQF5hwqRuN36Z2',
+  'ZhV8MUIS9JSTCxp33eavKP2gSgE3',
+  '16rOdWFFXFc6idTenMn100azjIr2',
+  'Yc1HwZkeqDN0yVdRD0drVRpQml43',
+  'HZYHxhextKRmr2ys6Cn4yDkta0U2',
+  'Eiz9zq5BcTNRggZuAXOPPfCuzgI3',
+  '4yoKkFh6HFUPnMBwF2NrjlrIQ5a2',
+  'C9roFyyxahOzmPN6zWm4Un2oMyi2',
+  'JXhsE372TkSSJOdtzORFJyivI9V2',
+  'NDn1pN4cPkYrW3A64vWZ7aLZrzw1',
+  'H0VWQhrLxEOnTLpypd8TMstkzY42',
+  'j5nPUVKJQNQVPU3uP2SEBDo1khg1',
+  '2uKT2CCmGJZ2ZVrzp3pj28HHAlm2',
+  'oyrIZrv7nqcdMEj4LTsdJsIsWPq2',
+  'n5H3UfiMgcc4rgbm4i3IOewc1EA3',
+  'fGfp30EWMBUP4CYtBW8ZFTXvsA82',
+  '0jBoNTUqm3RJGddAVlcSaOoHc4m2',
+  '6oYZ83MbxqScz5ANhz0R5QEeolL2',
+  'a9ZUA2eGquTxoTCTXjvPxLqAq2X2',
+  '6Bf1GgbE7MdiGh4F4NCgkLCF9Mm1',
+  'ZhV8MUIS9JSTCxp33eavKP2gSgE3',
+  'smzdPGfW29XzWkyfJfE0rDr3qYm2',
+  'Ddm060TkMrbUqyi4jfMQCoOZMdA3',
 ]
 
 export const PARTNER_USER_IDS: string[] = [
