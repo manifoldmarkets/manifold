@@ -35,17 +35,15 @@ import { getContract, isProd, log } from 'shared/utils'
 import { broadcastUpdatedAnswers } from 'shared/websockets/helpers'
 
 const TXNS_PR_MERGED_ON = 1675693800000 // #PR 1476
-const IS_PAUSED = true
 
 export const unresolve: APIHandler<'unresolve'> = async (
   props,
   auth,
   request
 ) => {
-  if (IS_PAUSED && !isAdminId(auth.uid)) {
-    throw new APIError(403, 'Unresolving is paused')
+  if (!isModId(auth.uid) && !isAdminId(auth.uid)) {
+    throw new APIError(403, 'Unresolving is only allowed for mods and admins')
   }
-
   return await betsQueue.enqueueFn(
     () => unresolveMain(props, auth, request),
     [props.contractId, auth.uid]
