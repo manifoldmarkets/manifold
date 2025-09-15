@@ -1,3 +1,10 @@
+import { APIError, APIHandler } from 'api/helpers/endpoint'
+import { HOUSE_LIQUIDITY_PROVIDER_ID } from 'common/antes'
+import { getCpmmProbability } from 'common/calculate-cpmm'
+import { Contract, MINUTES_ALLOWED_TO_UNRESOLVE } from 'common/contract'
+import { isAdminId, isModId } from 'common/envs/constants'
+import { convertAnswer } from 'common/supabase/contracts'
+import { convertTxn } from 'common/supabase/txns'
 import {
   ContractOldResolutionPayoutTxn,
   ContractProduceSpiceTxn,
@@ -6,41 +13,39 @@ import {
   ProfitFeeTxn,
   UndoResolutionFeeTxn,
 } from 'common/txn'
-import {
-  SupabaseTransaction,
-  createSupabaseDirectClient,
-} from 'shared/supabase/init'
-import { APIError, APIHandler } from 'api/helpers/endpoint'
-import { trackPublicEvent } from 'shared/analytics'
-import { getContract, isProd, log } from 'shared/utils'
-import { MINUTE_MS } from 'common/util/time'
-import { Contract, MINUTES_ALLOWED_TO_UNRESOLVE } from 'common/contract'
-import { recordContractEdit } from 'shared/record-contract-edit'
-import { isAdminId, isModId } from 'common/envs/constants'
-import { TxnData, insertTxns } from 'shared/txn/run-txn'
-import { bulkIncrementBalances } from 'shared/supabase/users'
-import { betsQueue } from 'shared/helpers/fn-queue'
 import { assert } from 'common/util/assert'
-import { broadcastUpdatedAnswers } from 'shared/websockets/helpers'
-import { convertAnswer } from 'common/supabase/contracts'
-import { updateContract } from 'shared/supabase/contracts'
-import { FieldVal } from 'shared/supabase/utils'
-import { convertTxn } from 'common/supabase/txns'
-import { HOUSE_LIQUIDITY_PROVIDER_ID } from 'common/antes'
-import { getCpmmProbability } from 'common/calculate-cpmm'
 import { removeUndefinedProps } from 'common/util/object'
+import { MINUTE_MS } from 'common/util/time'
+import { trackPublicEvent } from 'shared/analytics'
+import { betsQueue } from 'shared/helpers/fn-queue'
 import {
   bulkUpdateContractMetrics,
   getContractMetricsForContract,
 } from 'shared/helpers/user-contract-metrics'
+import { recordContractEdit } from 'shared/record-contract-edit'
+import { updateContract } from 'shared/supabase/contracts'
+import {
+  SupabaseTransaction,
+  createSupabaseDirectClient,
+} from 'shared/supabase/init'
+import { bulkIncrementBalances } from 'shared/supabase/users'
+import { FieldVal } from 'shared/supabase/utils'
+import { TxnData, insertTxns } from 'shared/txn/run-txn'
+import { getContract, isProd, log } from 'shared/utils'
+import { broadcastUpdatedAnswers } from 'shared/websockets/helpers'
 
 const TXNS_PR_MERGED_ON = 1675693800000 // #PR 1476
+const IS_PAUSED = true
 
 export const unresolve: APIHandler<'unresolve'> = async (
   props,
   auth,
   request
 ) => {
+  if (IS_PAUSED && !isAdminId(auth.uid)) {
+    throw new APIError(403, 'Unresolving is paused')
+  }
+
   return await betsQueue.enqueueFn(
     () => unresolveMain(props, auth, request),
     [props.contractId, auth.uid]

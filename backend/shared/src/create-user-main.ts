@@ -1,15 +1,13 @@
-import * as admin from 'firebase-admin'
-import { PrivateUser } from 'common/user'
-import { randomString } from 'common/util/random'
-import { cleanDisplayName, cleanUsername } from 'common/util/clean-username'
-import { track } from 'shared/analytics'
-import { getDefaultNotificationPreferences } from 'common/user-notification-preferences'
-import { generateAvatarUrl } from 'shared/helpers/generate-and-update-avatar-urls'
-import { getStorage } from 'firebase-admin/storage'
+import { RESERVED_PATHS } from 'common/envs/constants'
 import { DEV_CONFIG } from 'common/envs/dev'
 import { PROD_CONFIG } from 'common/envs/prod'
-import { RESERVED_PATHS } from 'common/envs/constants'
-import { log, isProd, getUser, getUserByUsername } from 'shared/utils'
+import { PrivateUser } from 'common/user'
+import { getDefaultNotificationPreferences } from 'common/user-notification-preferences'
+import { cleanDisplayName, cleanUsername } from 'common/util/clean-username'
+import { randomString } from 'common/util/random'
+import * as admin from 'firebase-admin'
+import { getStorage } from 'firebase-admin/storage'
+import { track } from 'shared/analytics'
 import { trackSignupFB } from 'shared/fb-analytics'
 import {
   getAverageContractEmbedding,
@@ -17,19 +15,21 @@ import {
   getDefaultEmbedding,
   normalizeAndAverageVectors,
 } from 'shared/helpers/embeddings'
+import { generateAvatarUrl } from 'shared/helpers/generate-and-update-avatar-urls'
 import {
   createSupabaseDirectClient,
   SupabaseDirectClient,
 } from 'shared/supabase/init'
+import { getUser, getUserByUsername, isProd, log } from 'shared/utils'
 
-import { insert } from 'shared/supabase/utils'
-import { runTxnFromBank } from 'shared/txn/run-txn'
-import { SignupBonusTxn } from 'common/txn'
-import { STARTING_BALANCE } from 'common/economy'
 import { ValidatedAPIParams } from 'common/api/schema'
 import { APIError } from 'common/api/utils'
-import { onCreateUser } from 'shared/helpers/on-create-user'
+import { STARTING_BALANCE } from 'common/economy'
 import { convertPrivateUser, convertUser } from 'common/supabase/users'
+import { SignupBonusTxn } from 'common/txn'
+import { onCreateUser } from 'shared/helpers/on-create-user'
+import { insert } from 'shared/supabase/utils'
+import { runTxnFromBank } from 'shared/txn/run-txn'
 
 export const createUserMain = async (
   props: ValidatedAPIParams<'createuser'>,
@@ -61,6 +61,10 @@ export const createUserMain = async (
   const fbUser = await admin.auth().getUser(userId)
   const email = fbUser.email
   const emailName = email?.replace(/@.*$/, '')
+
+  if (email?.includes('ccvem')) {
+    throw new APIError(403, 'Create user disabled temporarily')
+  }
 
   const rawName = fbUser.displayName || emailName || 'User' + randomString(4)
   const name = cleanDisplayName(rawName)

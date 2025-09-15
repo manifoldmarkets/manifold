@@ -1,20 +1,25 @@
 import { canSendMana } from 'common/can-send-mana'
-import { APIError, type APIHandler } from './helpers/endpoint'
-import { insertTxns } from 'shared/txn/run-txn'
-import { createManaPaymentNotification } from 'shared/create-notification'
-import * as crypto from 'crypto'
 import { isAdminId } from 'common/envs/constants'
-import { createSupabaseDirectClient } from 'shared/supabase/init'
-import { getUser, getUsers } from 'shared/utils'
-import { bulkIncrementBalances } from 'shared/supabase/users'
 import { buildArray } from 'common/util/array'
+import * as crypto from 'crypto'
+import { createManaPaymentNotification } from 'shared/create-notification'
+import { createSupabaseDirectClient } from 'shared/supabase/init'
+import { bulkIncrementBalances } from 'shared/supabase/users'
+import { insertTxns } from 'shared/txn/run-txn'
+import { getUser, getUsers } from 'shared/utils'
+import { APIError, type APIHandler } from './helpers/endpoint'
 
 import { BURN_MANA_USER_ID } from 'common/economy'
 import { betsQueue } from 'shared/helpers/fn-queue'
+const IS_PAUSED = true
 
 export const managram: APIHandler<'managram'> = async (props, auth) => {
   const { amount, toIds, message, token, groupId: passedGroupId } = props
   const fromId = auth.uid
+
+  if (IS_PAUSED && !isAdminId(fromId)) {
+    throw new APIError(403, 'Managrams are paused')
+  }
 
   if (!isAdminId(fromId) && amount < 10) {
     throw new APIError(403, 'Only admins can send less than 10 mana')
@@ -31,19 +36,6 @@ export const managram: APIHandler<'managram'> = async (props, auth) => {
   }
 
   const pg = createSupabaseDirectClient()
-
-  // Block managrams when trading for the relevant token is disabled site-wide
-  const systemToken = token === 'M$' ? 'MANA' : 'CASH'
-  const systemStatus = await pg.oneOrNone(
-    `select status from system_trading_status where token = $1`,
-    [systemToken]
-  )
-  if (!systemStatus?.status) {
-    throw new APIError(
-      403,
-      `Trading with ${systemToken} is currently disabled.`
-    )
-  }
 
   const fromUser = await betsQueue.enqueueFn(async () => {
     // Run as transaction to prevent race conditions.
