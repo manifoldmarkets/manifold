@@ -1,17 +1,17 @@
-import { useState, useEffect } from 'react'
-import { Page } from 'web/components/layout/page'
-import { Title } from 'web/components/widgets/title'
-import { LabCard } from '../lab'
-import { NoSEO } from 'web/components/NoSEO'
-import { useRedirectIfSignedOut } from 'web/hooks/use-redirect-if-signed-out'
-import { useAdmin } from 'web/hooks/use-admin'
-import { api } from 'web/lib/api/api'
+import { useEffect, useState } from 'react'
 import { Button } from 'web/components/buttons/button'
-import { db } from 'web/lib/supabase/db'
-import ShortToggle from 'web/components/widgets/short-toggle'
-import { Row } from 'web/components/layout/row'
-import { handleCreateSportsMarkets } from 'web/lib/admin/create-sports-markets'
 import { ConfirmationButton } from 'web/components/buttons/confirmation-button'
+import { Page } from 'web/components/layout/page'
+import { Row } from 'web/components/layout/row'
+import { NoSEO } from 'web/components/NoSEO'
+import ShortToggle from 'web/components/widgets/short-toggle'
+import { Title } from 'web/components/widgets/title'
+import { useAdmin } from 'web/hooks/use-admin'
+import { useRedirectIfSignedOut } from 'web/hooks/use-redirect-if-signed-out'
+import { handleCreateSportsMarkets } from 'web/lib/admin/create-sports-markets'
+import { api } from 'web/lib/api/api'
+import { db } from 'web/lib/supabase/db'
+import { LabCard } from '../lab'
 
 export default function AdminPage() {
   useRedirectIfSignedOut()
@@ -90,6 +90,7 @@ export default function AdminPage() {
         <LabCard title="🤬 reports" href="/admin/reports" />
         <LabCard title="🎨 design system" href="/styles" />
         <LabCard title="🌑 test new user" href="/admin/test-user" />
+        <LabCard title="👤 update user" href="/admin/update-user" />
         <Row className="gap-2">
           <Button onClick={() => api('refresh-all-clients', {})}>
             Refresh all clients

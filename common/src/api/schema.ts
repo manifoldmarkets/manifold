@@ -1009,6 +1009,7 @@ export const API = (_apiTypeCheck = {
     visibility: 'public',
     authed: true,
     props: z.object({
+      userId: z.string().optional(), // Admin-only: specify user to update
       name: z.string().trim().min(1).optional(),
       username: z.string().trim().min(1).optional(),
       avatarUrl: z.string().optional(),
