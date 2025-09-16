@@ -8,7 +8,7 @@ import { removeUndefinedProps } from 'common/util/object'
 import { cloneDeep } from 'lodash'
 import { trackAuditEvent } from 'shared/audit-events'
 import { getStorageBucket } from 'shared/create-user-main'
-import { throwErrorIfNotMod } from 'shared/helpers/auth'
+import { throwErrorIfNotAdmin } from 'shared/helpers/auth'
 import { generateAvatarUrl } from 'shared/helpers/generate-and-update-avatar-urls'
 import { createSupabaseDirectClient } from 'shared/supabase/init'
 import { updateUser } from 'shared/supabase/users'
@@ -32,7 +32,7 @@ export const updateMe: APIHandler<'me/update'> = async (props, auth) => {
 
   // If admin update, check admin permissions
   if (isAdminUpdate) {
-    throwErrorIfNotMod(auth.uid)
+    throwErrorIfNotAdmin(auth.uid)
   } else {
     if (user.userDeleted) throw new APIError(403, 'Your account is deleted')
     // Only check bans for self-updates, allow admins to update banned users
