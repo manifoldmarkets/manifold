@@ -1,10 +1,8 @@
+import { NextFunction, Request, Response } from 'express'
 import * as admin from 'firebase-admin'
 import { z } from 'zod'
-import { Request, Response, NextFunction } from 'express'
 
-import { PrivateUser } from 'common/user'
 import { APIError } from 'common//api/utils'
-export { APIError } from 'common//api/utils'
 import {
   API,
   APIPath,
@@ -12,8 +10,9 @@ import {
   APISchema,
   ValidatedAPIParams,
 } from 'common/api/schema'
-import { log } from 'shared/utils'
-import { getPrivateUserByKey } from 'shared/utils'
+import { PrivateUser } from 'common/user'
+import { getUnbannedPrivateUserByKey, log } from 'shared/utils'
+export { APIError } from 'common//api/utils'
 
 export type Json = Record<string, unknown> | Json[]
 export type JsonHandler<T extends Json> = (
@@ -80,7 +79,7 @@ export const lookupUser = async (creds: Credentials): Promise<AuthedUser> => {
     }
     case 'key': {
       const key = creds.data
-      const privateUser = await getPrivateUserByKey(key)
+      const privateUser = await getUnbannedPrivateUserByKey(key)
       if (!privateUser) {
         throw new APIError(401, `No private user exists with API key ${key}.`)
       }

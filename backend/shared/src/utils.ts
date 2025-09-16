@@ -271,7 +271,7 @@ export const getPrivateUserSupabase = (userId: string) => {
   )
 }
 
-export const getPrivateUserByKey = async (
+export const getUnbannedPrivateUserByKey = async (
   apiKey: string,
   pg: SupabaseDirectClient = createSupabaseDirectClient()
 ) => {
