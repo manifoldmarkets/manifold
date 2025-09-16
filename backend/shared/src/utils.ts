@@ -3,34 +3,33 @@ import { APIError, getCloudRunServiceUrl } from 'common/api/utils'
 import {
   Contract,
   contractPath,
-  nativeContractColumnsArray,
   MarketContract,
+  nativeContractColumnsArray,
 } from 'common/contract'
+import { ContractMetric } from 'common/contract-metric'
+import {
+  ENV_CONFIG,
+  GROUP_SLUGS_TO_IGNORE_IN_MARKETS_EMAIL,
+} from 'common/envs/constants'
+import { convertAnswer, convertContract } from 'common/supabase/contracts'
+import { convertLiquidity } from 'common/supabase/liquidity'
+import { convertPrivateUser, convertUser } from 'common/supabase/users'
+import { Row, tsToMillis } from 'common/supabase/utils'
 import { PrivateUser } from 'common/user'
 import { extensions } from 'common/util/parse'
+import * as dayjs from 'dayjs'
+import * as timezone from 'dayjs/plugin/timezone'
+import * as utc from 'dayjs/plugin/utc'
 import * as admin from 'firebase-admin'
 import { first, uniq } from 'lodash'
+import { log } from 'shared/monitoring/log'
+import { metrics } from 'shared/monitoring/metrics'
 import {
   createSupabaseDirectClient,
   SupabaseDirectClient,
   SupabaseTransaction,
 } from 'shared/supabase/init'
-import {
-  ENV_CONFIG,
-  GROUP_SLUGS_TO_IGNORE_IN_MARKETS_EMAIL,
-} from 'common/envs/constants'
-import { convertPrivateUser, convertUser } from 'common/supabase/users'
-import { convertAnswer, convertContract } from 'common/supabase/contracts'
-import { Row, tsToMillis } from 'common/supabase/utils'
-import { log } from 'shared/monitoring/log'
-import { metrics } from 'shared/monitoring/metrics'
-import { convertLiquidity } from 'common/supabase/liquidity'
-import { ContractMetric } from 'common/contract-metric'
-export { metrics }
-export { log }
-import * as dayjs from 'dayjs'
-import * as utc from 'dayjs/plugin/utc'
-import * as timezone from 'dayjs/plugin/timezone'
+export { log, metrics }
 dayjs.extend(utc)
 dayjs.extend(timezone)
 
@@ -277,7 +276,11 @@ export const getPrivateUserByKey = async (
   pg: SupabaseDirectClient = createSupabaseDirectClient()
 ) => {
   return await pg.oneOrNone(
-    `select * from private_users where data->>'apiKey' = $1 limit 1`,
+    `select pu.* from private_users pu
+            join users u on pu.id = u.id
+            where pu.data->>'apiKey' = $1
+            and coalesce(u.data->>'isBannedFromPosting', 'false') = 'false'
+            limit 1`,
     [apiKey],
     convertPrivateUser
   )
