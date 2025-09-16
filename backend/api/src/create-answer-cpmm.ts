@@ -46,16 +46,15 @@ import { FieldVal } from 'shared/supabase/utils'
 import { runTransactionWithRetries } from 'shared/transact-with-retries'
 import { getContractSupabase, getUser, log } from 'shared/utils'
 import { APIError, APIHandler } from './helpers/endpoint'
-export const createAnswerCPMM: APIHandler<'market/:contractId/answer'> = async (
-  props,
-  auth
-) => {
-  const { contractId, text } = props
-  return await betsQueue.enqueueFn(
-    () => createAnswerCpmmFull(contractId, text, auth.uid),
-    [contractId, auth.uid]
-  )
-}
+import { onlyUnbannedUsers } from './helpers/rate-limit'
+export const createAnswerCPMM: APIHandler<'market/:contractId/answer'> =
+  onlyUnbannedUsers(async (props, auth) => {
+    const { contractId, text } = props
+    return await betsQueue.enqueueFn(
+      () => createAnswerCpmmFull(contractId, text, auth.uid),
+      [contractId, auth.uid]
+    )
+  })
 const createAnswerCpmmFull = async (
   contractId: string,
   text: string,
@@ -114,7 +113,6 @@ const createAnswerCpmmMain = async (
     async (pgTrans) => {
       const user = await getUser(creatorId, pgTrans)
       if (!user) throw new APIError(401, 'Your account was not found')
-      if (user.isBannedFromPosting) throw new APIError(403, 'You are banned')
 
       if (user.balance < answerCost)
         throw new APIError(403, 'Insufficient balance, need M' + answerCost)

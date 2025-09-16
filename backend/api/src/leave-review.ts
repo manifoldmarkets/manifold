@@ -1,10 +1,13 @@
-import { z } from 'zod'
-import { APIError, authEndpoint, validate } from './helpers/endpoint'
-import { createSupabaseDirectClient } from 'shared/supabase/init'
 import { contentSchema } from 'common/api/zod-types'
-import { createMarketReviewedNotification, createMarketReviewUpdatedNotification } from 'shared/create-notification'
 import { parseJsonContentToText } from 'common/util/parse'
+import {
+  createMarketReviewedNotification,
+  createMarketReviewUpdatedNotification,
+} from 'shared/create-notification'
+import { createSupabaseDirectClient } from 'shared/supabase/init'
 import { getContract, getUser } from 'shared/utils'
+import { z } from 'zod'
+import { APIError, authEndpointUnbanned, validate } from './helpers/endpoint'
 
 const schema = z
   .object({
@@ -14,7 +17,7 @@ const schema = z
   })
   .strict()
 
-export const leavereview = authEndpoint(async (req, auth) => {
+export const leavereview = authEndpointUnbanned(async (req, auth) => {
   const { marketId, review, rating } = validate(schema, req.body)
   const pg = createSupabaseDirectClient()
 
@@ -33,9 +36,6 @@ export const leavereview = authEndpoint(async (req, auth) => {
   const reviewer = await getUser(auth.uid, pg)
   if (!reviewer) {
     throw new APIError(404, `No user found with id ${auth.uid}`)
-  }
-  if (reviewer.isBannedFromPosting) {
-    throw new APIError(403, `You are banned`)
   }
 
   const existingReview = await pg.oneOrNone(

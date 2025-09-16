@@ -1,35 +1,47 @@
 import { onCreateMarket } from 'api/helpers/on-create-market'
 import {
+  DEV_HOUSE_LIQUIDITY_PROVIDER_ID,
+  HOUSE_LIQUIDITY_PROVIDER_ID,
+} from 'common/antes'
+import {
   createBinarySchema,
   createBountySchema,
-  createNumberSchema,
+  createMultiDateSchema,
+  createMultiNumericSchema,
   createMultiSchema,
+  createNumberSchema,
   createNumericSchema,
   createPollSchema,
   toLiteMarket,
-  createMultiNumericSchema,
-  createMultiDateSchema,
 } from 'common/api/market-types'
 import { ValidatedAPIParams } from 'common/api/schema'
 import {
   Contract,
   NO_CLOSE_TIME_TYPES,
+  NUMBER_CREATION_ENABLED,
   OutcomeType,
+  PollVoterVisibility,
   add_answers_mode,
   contractUrl,
   nativeContractColumnsArray,
-  NUMBER_CREATION_ENABLED,
-  PollVoterVisibility,
 } from 'common/contract'
 import { FREE_MARKET_USER_ID, getAnte } from 'common/economy'
 import { MAX_GROUPS_PER_MARKET } from 'common/group'
 import { getNewContract } from 'common/new-contract'
+import { getMultiNumericAnswerBucketRangeNames } from 'common/number'
 import { getPseudoProbability } from 'common/pseudo-numeric'
 import { STONK_INITIAL_PROB } from 'common/stonk'
+import { convertAnswer } from 'common/supabase/contracts'
+import { convertUser } from 'common/supabase/users'
+import { Row } from 'common/supabase/utils'
 import { removeUndefinedProps } from 'common/util/object'
 import { randomString } from 'common/util/random'
 import { slugify } from 'common/util/slugify'
+import { camelCase, first } from 'lodash'
+import { generateAntes } from 'shared/create-contract-helpers'
 import { getCloseDate } from 'shared/helpers/ai-close-date'
+import { betsQueue } from 'shared/helpers/fn-queue'
+import { answerToRow } from 'shared/supabase/answers'
 import {
   generateContractEmbeddings,
   getContractsDirect,
@@ -39,6 +51,7 @@ import {
   createSupabaseDirectClient,
   pgp,
 } from 'shared/supabase/init'
+import { bulkInsertQuery } from 'shared/supabase/utils'
 import { anythingToRichText } from 'shared/tiptap'
 import { runTxnOutsideBetQueue } from 'shared/txn/run-txn'
 import {
@@ -55,57 +68,52 @@ import {
   broadcastNewAnswer,
   broadcastNewContract,
 } from 'shared/websockets/helpers'
-import { APIError, AuthedUser, type APIHandler } from './helpers/endpoint'
-import { Row } from 'common/supabase/utils'
-import { bulkInsertQuery } from 'shared/supabase/utils'
 import { z } from 'zod'
-import { answerToRow } from 'shared/supabase/answers'
-import { convertAnswer } from 'common/supabase/contracts'
-import { generateAntes } from 'shared/create-contract-helpers'
-import { betsQueue } from 'shared/helpers/fn-queue'
-import { convertUser } from 'common/supabase/users'
-import { camelCase, first } from 'lodash'
-import { getMultiNumericAnswerBucketRangeNames } from 'common/number'
-import {
-  DEV_HOUSE_LIQUIDITY_PROVIDER_ID,
-  HOUSE_LIQUIDITY_PROVIDER_ID,
-} from 'common/antes'
+import { APIError, AuthedUser, type APIHandler } from './helpers/endpoint'
+import { onlyUnbannedUsers } from './helpers/rate-limit'
 type Body = ValidatedAPIParams<'market'>
 
-export const createMarket: APIHandler<'market'> = async (body, auth) => {
-  const pg = createSupabaseDirectClient()
-  const { groupIds } = body
-  const groups = groupIds
-    ? await Promise.all(
-        groupIds.map(async (gId) => getGroupCheckPermissions(pg, gId, auth.uid))
-      )
-    : null
+export const createMarket: APIHandler<'market'> = onlyUnbannedUsers(
+  async (body, auth) => {
+    const pg = createSupabaseDirectClient()
+    const { groupIds } = body
+    const groups = groupIds
+      ? await Promise.all(
+          groupIds.map(async (gId) =>
+            getGroupCheckPermissions(pg, gId, auth.uid)
+          )
+        )
+      : null
 
-  const { contract: market, user } = await createMarketHelper(body, auth)
-  // TODO upload answer images to GCP if provided
-  if (groups) {
-    await Promise.allSettled(
-      groups.map(async (g) => {
-        await addGroupToContract(pg, market, g)
-      })
-    )
-  }
-  // Should have the embedding ready for the related contracts cache
-  return {
-    result: toLiteMarket(market),
-    continue: async () => {
-      const embedding = await generateContractEmbeddings(market, pg).catch(
-        (e) =>
-          log.error(`Failed to generate embeddings, returning ${market.id} `, e)
+    const { contract: market, user } = await createMarketHelper(body, auth)
+    // TODO upload answer images to GCP if provided
+    if (groups) {
+      await Promise.allSettled(
+        groups.map(async (g) => {
+          await addGroupToContract(pg, market, g)
+        })
       )
-      broadcastNewContract(market, user)
-      if ('answers' in market) {
-        market.answers.forEach(broadcastNewAnswer)
-      }
-      await onCreateMarket(market, embedding)
-    },
+    }
+    // Should have the embedding ready for the related contracts cache
+    return {
+      result: toLiteMarket(market),
+      continue: async () => {
+        const embedding = await generateContractEmbeddings(market, pg).catch(
+          (e) =>
+            log.error(
+              `Failed to generate embeddings, returning ${market.id} `,
+              e
+            )
+        )
+        broadcastNewContract(market, user)
+        if ('answers' in market) {
+          market.answers.forEach(broadcastNewAnswer)
+        }
+        await onCreateMarket(market, embedding)
+      },
+    }
   }
-}
+)
 
 export async function createMarketHelper(body: Body, auth: AuthedUser) {
   const {
@@ -189,7 +197,6 @@ export async function createMarketHelper(body: Body, auth: AuthedUser) {
       )
       const user = first(userAndSlugResult[0].map(convertUser))
       if (!user) throw new APIError(401, 'Your account was not found')
-      if (user.isBannedFromPosting) throw new APIError(403, 'You are banned')
 
       const isFree = userId === FREE_MARKET_USER_ID && totalMarketCost <= 100
       if (!isFree && totalMarketCost > user.balance)

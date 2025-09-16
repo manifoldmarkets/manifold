@@ -1,6 +1,7 @@
 import { APIError, APIHandler } from 'api/helpers/endpoint'
 import { APIPath } from 'common/api/schema'
 import { HOUR_MS } from 'common/util/time'
+import { getUser } from 'shared/utils'
 
 type RateLimitOptions = {
   maxCalls?: number // Maximum number of calls allowed in the time window
@@ -53,6 +54,23 @@ export const rateLimitByUser = <N extends APIPath>(
 
     limitData.timestamps.push(now)
     limitData.count++
+
+    return f(props, auth, req)
+  }
+}
+
+export const onlyUnbannedUsers = <N extends APIPath>(f: APIHandler<N>) => {
+  return async (props: any, auth: any, req: any) => {
+    const user = await getUser(auth.uid)
+    if (!user) {
+      throw new APIError(404, 'User not found')
+    }
+    if (user.isBannedFromPosting) {
+      throw new APIError(403, 'You are banned from posting')
+    }
+    if (user.userDeleted) {
+      throw new APIError(403, 'Your account has been deleted')
+    }
 
     return f(props, auth, req)
   }

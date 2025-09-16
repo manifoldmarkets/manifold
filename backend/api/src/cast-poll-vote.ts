@@ -1,15 +1,15 @@
-import { createSupabaseDirectClient } from 'shared/supabase/init'
-import { z } from 'zod'
-import { APIError, authEndpoint, validate } from './helpers/endpoint'
 import { PollOption } from 'common/poll-option'
 import { createVotedOnPollNotification } from 'shared/create-notification'
+import { pollQueue } from 'shared/helpers/fn-queue'
+import { updateContract } from 'shared/supabase/contracts'
+import { createSupabaseDirectClient } from 'shared/supabase/init'
 import {
   getContract,
   getUser,
   revalidateContractStaticProps,
 } from 'shared/utils'
-import { updateContract } from 'shared/supabase/contracts'
-import { pollQueue } from 'shared/helpers/fn-queue'
+import { z } from 'zod'
+import { APIError, authEndpointUnbanned, validate } from './helpers/endpoint'
 
 const schema = z
   .object({
@@ -18,7 +18,7 @@ const schema = z
   })
   .strict()
 
-export const castpollvote = authEndpoint(async (req, auth) => {
+export const castpollvote = authEndpointUnbanned(async (req, auth) => {
   const { contractId, voteId } = validate(schema, req.body)
   return await pollQueue.enqueueFn(
     () => castPollVoteMain(contractId, voteId, auth.uid),
@@ -34,9 +34,6 @@ const castPollVoteMain = async (
   const user = await getUser(userId)
   if (!user) {
     throw new APIError(404, 'User not found')
-  }
-  if (user?.isBannedFromPosting) {
-    throw new APIError(403, 'You are banned and cannot vote')
   }
   const pg = createSupabaseDirectClient()
   const res = await pg.tx(async (t) => {

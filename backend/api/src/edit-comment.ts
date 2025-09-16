@@ -1,13 +1,13 @@
-import { APIError, authEndpoint, validate } from 'api/helpers/endpoint'
-import { z } from 'zod'
 import { validateComment } from 'api/create-comment'
-import { createSupabaseDirectClient } from 'shared/supabase/init'
+import { APIError, authEndpointUnbanned, validate } from 'api/helpers/endpoint'
 import { contentSchema } from 'common/api/zod-types'
-import { isAdminId } from 'common/envs/constants'
-import { revalidateStaticProps } from 'shared/utils'
 import { contractPath } from 'common/contract'
+import { isAdminId } from 'common/envs/constants'
 import { getComment } from 'shared/supabase/contract-comments'
+import { createSupabaseDirectClient } from 'shared/supabase/init'
 import { updateData } from 'shared/supabase/utils'
+import { revalidateStaticProps } from 'shared/utils'
+import { z } from 'zod'
 
 const editSchema = z
   .object({
@@ -18,7 +18,7 @@ const editSchema = z
     markdown: z.string().optional(),
   })
   .strict()
-export const editcomment = authEndpoint(async (req, auth) => {
+export const editcomment = authEndpointUnbanned(async (req, auth) => {
   const { commentId, contractId, content, html, markdown } = validate(
     editSchema,
     req.body

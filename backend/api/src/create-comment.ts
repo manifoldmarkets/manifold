@@ -1,47 +1,50 @@
 import { JSONContent } from '@tiptap/core'
+import { Bet } from 'common/bet'
 import { ContractComment } from 'common/comment'
+import { type Contract } from 'common/contract'
 import { FLAT_COMMENT_FEE } from 'common/fees'
+import { convertBet } from 'common/supabase/bets'
+import { millisToTs } from 'common/supabase/utils'
+import { buildArray } from 'common/util/array'
 import { removeUndefinedProps } from 'common/util/object'
-import { getContract, getUser, log } from 'shared/utils'
-import { APIError, type APIHandler, AuthedUser } from './helpers/endpoint'
-import { anythingToRichText } from 'shared/tiptap'
+import { first } from 'lodash'
 import {
   createSupabaseDirectClient,
   SupabaseDirectClient,
 } from 'shared/supabase/init'
-import { first } from 'lodash'
-import { onCreateCommentOnContract } from './on-create-comment-on-contract'
-import { millisToTs } from 'common/supabase/utils'
-import { convertBet } from 'common/supabase/bets'
-import { Bet } from 'common/bet'
+import { anythingToRichText } from 'shared/tiptap'
 import { runTxnInBetQueue } from 'shared/txn/run-txn'
+import { getContract, getUser, log } from 'shared/utils'
 import { broadcastNewComment } from 'shared/websockets/helpers'
-import { buildArray } from 'common/util/array'
-import { type Contract } from 'common/contract'
+import { APIError, type APIHandler, AuthedUser } from './helpers/endpoint'
+import { onlyUnbannedUsers } from './helpers/rate-limit'
+import { onCreateCommentOnContract } from './on-create-comment-on-contract'
 
 export const MAX_COMMENT_JSON_LENGTH = 20000
 
 // For now, only supports creating a new top-level comment on a contract.
 // Replies, posts, chats are not supported yet.
-export const createComment: APIHandler<'comment'> = async (props, auth) => {
-  const {
-    contractId,
-    content,
-    html,
-    markdown,
-    replyToCommentId,
-    replyToAnswerId,
-    replyToBetId,
-  } = props
-  return createCommentOnContractInternal(contractId, auth, {
-    content,
-    html,
-    markdown,
-    replyToCommentId,
-    replyToAnswerId,
-    replyToBetId,
-  })
-}
+export const createComment: APIHandler<'comment'> = onlyUnbannedUsers(
+  async (props, auth) => {
+    const {
+      contractId,
+      content,
+      html,
+      markdown,
+      replyToCommentId,
+      replyToAnswerId,
+      replyToBetId,
+    } = props
+    return createCommentOnContractInternal(contractId, auth, {
+      content,
+      html,
+      markdown,
+      replyToCommentId,
+      replyToAnswerId,
+      replyToBetId,
+    })
+  }
+)
 
 export const createCommentOnContractInternal = async (
   contractId: string,
@@ -212,7 +215,6 @@ export const validateComment = async (
   const contract = await getContract(pg, contractId)
 
   if (!you) throw new APIError(401, 'Your account was not found')
-  if (you.isBannedFromPosting) throw new APIError(403, 'You are banned')
   if (you.userDeleted) throw new APIError(403, 'Your account is deleted')
 
   if (!contract) throw new APIError(404, 'Contract not found')
