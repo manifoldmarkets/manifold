@@ -1,17 +1,19 @@
-import { useSortedPrivateMessageMemberships } from 'web/hooks/use-private-messages'
-import { useUser } from 'web/hooks/use-user'
-import { Col } from '../layout/col'
-import { LoadingIndicator } from '../widgets/loading-indicator'
-import Link from 'next/link'
-import { Row } from '../layout/row'
-import { RelativeTimestamp } from '../relative-timestamp'
 import clsx from 'clsx'
-import NewMessageButton from './new-message-button'
-import { usePrivateMessages } from 'web/hooks/use-private-messages'
 import { parseJsonContentToText } from 'common/util/parse'
-import { MultipleOrSingleAvatars } from '../multiple-or-single-avatars'
-import { BannedBadge } from '../widgets/user-link'
+import Link from 'next/link'
+import {
+  usePrivateMessages,
+  useSortedPrivateMessageMemberships,
+} from 'web/hooks/use-private-messages'
+import { useUser } from 'web/hooks/use-user'
 import { useUsersInStore } from 'web/hooks/use-user-supabase'
+import { Col } from '../layout/col'
+import { Row } from '../layout/row'
+import { MultipleOrSingleAvatars } from '../multiple-or-single-avatars'
+import { RelativeTimestamp } from '../relative-timestamp'
+import { LoadingIndicator } from '../widgets/loading-indicator'
+import { BannedBadge } from '../widgets/user-link'
+import NewMessageButton from './new-message-button'
 
 // New component for each chat item
 function ChatItem({
@@ -29,10 +31,23 @@ function ChatItem({
     `${channel.channel_id}`,
     100
   )
-  const messages = usePrivateMessages(channel.channel_id, 1, userId)
+  const messages = usePrivateMessages(channel.channel_id, 50, userId)
   const chat = messages?.[0]
   const numOthers = otherUsers?.length ?? 0
   const isBanned = otherUsers?.length == 1 && otherUsers[0].isBannedFromPosting
+
+  // Check if everyone has left the channel (no other active members)
+  const everyoneHasLeft = numOthers === 0 && chat
+
+  // Determine if this was originally a 1-on-1 or group chat by checking message history
+  const uniqueOtherSenders = messages
+    ? [
+        ...new Set(
+          messages.filter((m) => m.userId !== userId).map((m) => m.userId)
+        ),
+      ].length
+    : 0
+  const wasOneOnOne = uniqueOtherSenders === 1
 
   return (
     <Link
@@ -50,14 +65,23 @@ function ChatItem({
         <Col className="w-full">
           <Row className="items-center justify-between">
             <span className="font-semibold">
-              {otherUsers && (
-                <span>
-                  {otherUsers
-                    .map((user) => user.name.split(' ')[0].trim())
-                    .slice(0, 2)
-                    .join(', ')}
-                  {otherUsers.length > 2 && ` & ${otherUsers.length - 2} more`}
+              {everyoneHasLeft ? (
+                <span className="text-ink-400 italic">
+                  {wasOneOnOne
+                    ? 'They left the chat'
+                    : 'Everyone has left the chat'}
                 </span>
+              ) : (
+                otherUsers && (
+                  <span>
+                    {otherUsers
+                      .map((user) => user.name.split(' ')[0].trim())
+                      .slice(0, 2)
+                      .join(', ')}
+                    {otherUsers.length > 2 &&
+                      ` & ${otherUsers.length - 2} more`}
+                  </span>
+                )
               )}
               {isBanned && <BannedBadge />}
             </span>

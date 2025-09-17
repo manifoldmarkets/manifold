@@ -1,56 +1,56 @@
-import { Page } from 'web/components/layout/page'
+import { DotsVerticalIcon } from '@heroicons/react/solid'
+import clsx from 'clsx'
+import { ChatMessage } from 'common/chat-message'
+import { PrivateMessageChannel } from 'common/supabase/private-messages'
+import { User } from 'common/user'
+import { buildArray, filterDefined } from 'common/util/array'
+import { DAY_MS, YEAR_MS } from 'common/util/time'
+import { uniq } from 'lodash'
 import { useRouter } from 'next/router'
+import { useEffect, useState } from 'react'
+import toast from 'react-hot-toast'
+import { FaUserFriends, FaUserMinus } from 'react-icons/fa'
+import { GiSpeakerOff } from 'react-icons/gi'
+import {
+  ChatMessageItem,
+  SystemChatMessageItem,
+} from 'web/components/chat/chat-message'
+import { ReplyToUserInfo } from 'web/components/comments/comment'
+import { CommentInputTextArea } from 'web/components/comments/comment-input'
+import { BackButton } from 'web/components/contract/back-button'
+import { Col } from 'web/components/layout/col'
+import { Modal, MODAL_CLASS } from 'web/components/layout/modal'
+import { Page } from 'web/components/layout/page'
+import { Row } from 'web/components/layout/row'
+import { MultipleOrSingleAvatars } from 'web/components/multiple-or-single-avatars'
+import DropdownMenu from 'web/components/widgets/dropdown-menu'
+import { useTextEditor } from 'web/components/widgets/editor'
+import { LoadingIndicator } from 'web/components/widgets/loading-indicator'
+import {
+  BannedBadge,
+  UserAvatarAndBadge,
+} from 'web/components/widgets/user-link'
+import { useIsMobile } from 'web/hooks/use-is-mobile'
 import {
   usePrivateMessages,
   useSortedPrivateMessageMemberships,
 } from 'web/hooks/use-private-messages'
-import { Col } from 'web/components/layout/col'
-import { User } from 'common/user'
-import { useEffect, useState } from 'react'
-import { track } from 'web/lib/service/analytics'
-import { firebaseLogin } from 'web/lib/firebase/users'
-import { uniq } from 'lodash'
+import { useRedirectIfSignedOut } from 'web/hooks/use-redirect-if-signed-out'
 import { useUser } from 'web/hooks/use-user'
-import { useTextEditor } from 'web/components/widgets/editor'
+import { useUsersInStore } from 'web/hooks/use-user-supabase'
 import {
   api,
   leavePrivateMessageChannel,
   sendUserPrivateMessage,
   updatePrivateMessageChannel,
 } from 'web/lib/api/api'
-import {
-  ChatMessageItem,
-  SystemChatMessageItem,
-} from 'web/components/chat/chat-message'
-import { CommentInputTextArea } from 'web/components/comments/comment-input'
-import { LoadingIndicator } from 'web/components/widgets/loading-indicator'
-import { DAY_MS, YEAR_MS } from 'common/util/time'
-import { useUsersInStore } from 'web/hooks/use-user-supabase'
-import { BackButton } from 'web/components/contract/back-button'
-import { Row } from 'web/components/layout/row'
-import clsx from 'clsx'
-import { useRedirectIfSignedOut } from 'web/hooks/use-redirect-if-signed-out'
-import { MultipleOrSingleAvatars } from 'web/components/multiple-or-single-avatars'
-import { Modal, MODAL_CLASS } from 'web/components/layout/modal'
-import {
-  BannedBadge,
-  UserAvatarAndBadge,
-} from 'web/components/widgets/user-link'
-import DropdownMenu from 'web/components/widgets/dropdown-menu'
-import { DotsVerticalIcon } from '@heroicons/react/solid'
-import { FaUserFriends, FaUserMinus } from 'react-icons/fa'
-import { buildArray, filterDefined } from 'common/util/array'
-import { GiSpeakerOff } from 'react-icons/gi'
-import toast from 'react-hot-toast'
+import { firebaseLogin } from 'web/lib/firebase/users'
 import { getNativePlatform } from 'web/lib/native/is-native'
-import { ReplyToUserInfo } from 'web/components/comments/comment'
-import { useIsMobile } from 'web/hooks/use-is-mobile'
+import { track } from 'web/lib/service/analytics'
 import {
   useGroupedMessages,
   usePaginatedScrollingMessages,
 } from 'web/lib/supabase/chat-messages'
-import { PrivateMessageChannel } from 'common/supabase/private-messages'
-import { ChatMessage } from 'common/chat-message'
 
 export default function PrivateMessagesPage() {
   const router = useRouter()
@@ -89,8 +89,12 @@ export function PrivateMessagesContent(props: {
 
   return (
     <>
-      {user && loaded && thisChannel && memberIds ? (
-        <PrivateChat channel={thisChannel} user={user} memberIds={memberIds} />
+      {user && loaded && thisChannel ? (
+        <PrivateChat
+          channel={thisChannel}
+          user={user}
+          memberIds={memberIds ?? []}
+        />
       ) : (
         <LoadingIndicator />
       )}
@@ -136,6 +140,18 @@ export const PrivateChat = (props: {
     otherUsers?.filter((user) => memberIds.includes(user.id)) ?? []
   )
   const router = useRouter()
+
+  // Determine if this was originally a 1-on-1 or group chat by checking message history
+  const uniqueOtherSenders = realtimeMessages
+    ? [
+        ...new Set(
+          realtimeMessages
+            .filter((m) => m.userId !== user.id)
+            .map((m) => m.userId)
+        ),
+      ].length
+    : 0
+  const wasOneOnOne = uniqueOtherSenders === 1
 
   const { topVisibleRef, showMessages, messages, innerDiv, outerDiv } =
     usePaginatedScrollingMessages(
@@ -206,20 +222,26 @@ export const PrivateChat = (props: {
           avatars={members ?? []}
           onClick={() => setShowUsers(true)}
         />
-        {members && (
-          <span
-            className={'ml-1 cursor-pointer hover:underline'}
-            onClick={() => setShowUsers(true)}
-          >
-            {members
-              .map((user) => user.name.split(' ')[0].trim())
-              .slice(0, 2)
-              .join(', ')}
-            {members.length > 2 && ` & ${members.length - 2} more`}
+        {members && members.length > 0 ? (
+          <>
+            <span
+              className={'ml-1 cursor-pointer hover:underline'}
+              onClick={() => setShowUsers(true)}
+            >
+              {members
+                .map((user) => user.name.split(' ')[0].trim())
+                .slice(0, 2)
+                .join(', ')}
+              {members.length > 2 && ` & ${members.length - 2} more`}
+            </span>
+            {members.length == 1 && members[0].isBannedFromPosting && (
+              <BannedBadge />
+            )}
+          </>
+        ) : (
+          <span className="text-ink-400 ml-1 italic">
+            {wasOneOnOne ? 'They left the chat' : 'Everyone has left the chat'}
           </span>
-        )}
-        {members?.length == 1 && members[0].isBannedFromPosting && (
-          <BannedBadge />
         )}
         <DropdownMenu
           className={'ml-auto [&_button]:p-4'}
