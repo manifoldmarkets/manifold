@@ -1,22 +1,22 @@
-import { Json } from 'common/supabase/schema'
-import { SupabaseDirectClient } from 'shared/supabase/init'
-import { ChatVisibility } from 'common/chat-message'
-import { User } from 'common/user'
-import { first } from 'lodash'
-import { log } from 'shared/monitoring/log'
-import { HOUR_MS } from 'common/util/time'
-import { getPrivateUser, getUser } from 'shared/utils'
 import { JSONContent } from '@tiptap/core'
 import { APIError } from 'common/api/utils'
-import { broadcast } from 'shared/websockets/server'
-import { track } from 'shared/analytics'
-import { getNotificationDestinationsForUser } from 'common/user-notification-preferences'
+import { ChatVisibility } from 'common/chat-message'
 import { Notification } from 'common/notification'
-import { createPushNotifications } from 'shared/create-push-notifications'
-import * as dayjs from 'dayjs'
-import * as utc from 'dayjs/plugin/utc'
-import * as timezone from 'dayjs/plugin/timezone'
+import { Json } from 'common/supabase/schema'
+import { User } from 'common/user'
+import { getNotificationDestinationsForUser } from 'common/user-notification-preferences'
 import { nanoid } from 'common/util/random'
+import { HOUR_MS } from 'common/util/time'
+import * as dayjs from 'dayjs'
+import * as timezone from 'dayjs/plugin/timezone'
+import * as utc from 'dayjs/plugin/utc'
+import { first } from 'lodash'
+import { track } from 'shared/analytics'
+import { createPushNotifications } from 'shared/create-push-notifications'
+import { log } from 'shared/monitoring/log'
+import { SupabaseDirectClient } from 'shared/supabase/init'
+import { getPrivateUser, getUser } from 'shared/utils'
+import { broadcast } from 'shared/websockets/server'
 dayjs.extend(utc)
 dayjs.extend(timezone)
 export const leaveChatContent = (userName: string) => ({
@@ -108,6 +108,15 @@ export const createPrivateUserMessageMain = async (
     user_id: creator.id,
   }
 
+  await pg.none(
+    `update private_user_message_channel_members
+      set status = 'joined'
+       where channel_id = $1
+         and user_id = $2
+         and status != 'joined'`,
+    [channelId, creator.id]
+  )
+
   const otherUserIds = await pg.map<string>(
     `select user_id from private_user_message_channel_members
         where channel_id = $1 and user_id != $2
@@ -119,27 +128,10 @@ export const createPrivateUserMessageMain = async (
   otherUserIds.concat(creator.id).forEach((otherUserId) => {
     broadcast(`private-user-messages/${otherUserId}`, {})
   })
-  let bothHaveLoverProfiles = false
-  const hasLoverProfile = await pg.oneOrNone(
-    'select 1 from lovers where user_id = $1',
-    [creator.id]
-  )
-  if (hasLoverProfile) {
-    const otherUserId = first(otherUserIds)
-
-    if (otherUserId && otherUserIds.length === 1) {
-      const otherHasLoverProfile = await pg.oneOrNone(
-        'select 1 from lovers where user_id = $1',
-        [otherUserId]
-      )
-      bothHaveLoverProfiles = !!otherHasLoverProfile
-    }
-  }
 
   track(creator.id, 'send private message', {
     channelId,
     otherUserIds,
-    bothHaveLoverProfiles,
   })
 
   return { status: 'success', privateMessage }
