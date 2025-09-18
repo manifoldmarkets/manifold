@@ -1,5 +1,5 @@
-import { notification_preferences } from './user-notification-preferences'
 import { ENV_CONFIG } from './envs/constants'
+import { notification_preferences } from './user-notification-preferences'
 import { DAY_MS, HOUR_MS } from './util/time'
 
 export type User = {
@@ -84,6 +84,7 @@ export type User = {
 export type PrivateUser = {
   id: string // same as User.id
   email?: string
+  old_e_mail?: string // saved from deleted users
   manaBonusSent?: boolean
   initialDeviceToken?: string
   initialIpAddress?: string
