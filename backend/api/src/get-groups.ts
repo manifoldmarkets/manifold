@@ -1,6 +1,5 @@
-import { uniqBy } from 'lodash'
-import { type APIHandler } from './helpers/endpoint'
 import { convertGroup } from 'common/supabase/groups'
+import { uniqBy } from 'lodash'
 import { createSupabaseDirectClient } from 'shared/supabase/init'
 import {
   from,
@@ -10,6 +9,7 @@ import {
   select,
   where,
 } from 'shared/supabase/sql-builder'
+import { type APIHandler } from './helpers/endpoint'
 
 export const getGroups: APIHandler<'groups'> = async (props) => {
   const { availableToUserId, beforeTime, limit } = props
@@ -18,7 +18,7 @@ export const getGroups: APIHandler<'groups'> = async (props) => {
     renderSql(
       select('*'),
       from('groups'),
-      where('privacy_status', 'public'),
+      where('privacy_status = $1', ['public']),
       beforeTime && where('created_time < ts_to_millis($1)', [beforeTime]),
       orderBy('created_time', 'desc'),
       limitClause(limit)
