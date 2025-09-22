@@ -3,6 +3,7 @@ import clsx from 'clsx'
 import { TopLevelPost } from 'common/top-level-post'
 import { unauthedApi } from 'common/util/api'
 import Link from 'next/link'
+import { usePathname } from 'next/navigation'
 import { useRouter } from 'next/router'
 import { useEffect, useState } from 'react'
 import { Button, buttonClass } from 'web/components/buttons/button'
@@ -13,6 +14,7 @@ import { PostCard } from 'web/components/top-level-posts/post-card'
 import { LoadingIndicator } from 'web/components/widgets/loading-indicator'
 import { Title } from 'web/components/widgets/title'
 import { useAPIGetter } from 'web/hooks/use-api-getter'
+import { useDefinedSearchParams } from 'web/hooks/use-defined-search-params'
 import { useUser } from 'web/hooks/use-user'
 import { track } from 'web/lib/service/analytics'
 
@@ -32,20 +34,44 @@ export default function PostsPage(props: { bestPosts: TopLevelPost[] }) {
   const { bestPosts } = props
   const user = useUser()
   const router = useRouter()
+  const pathName = usePathname()
+  const { searchParams, createQueryString } = useDefinedSearchParams()
 
+  // Map URL filter values to viewType
+  const getViewTypeFromFilter = (
+    filter: string | null
+  ): 'latest' | 'best' | 'changelog' | 'new-comments' => {
+    switch (filter) {
+      case 'latest':
+        return 'latest'
+      case 'changelog':
+        return 'changelog'
+      case 'new-comments':
+        return 'new-comments'
+      default:
+        return 'best'
+    }
+  }
+
+  // Map viewType to URL filter values
+  const getFilterFromViewType = (
+    viewType: 'latest' | 'best' | 'changelog' | 'new-comments'
+  ): string => {
+    return viewType === 'best' ? 'best' : viewType
+  }
+
+  const currentFilter = searchParams.get('filter')
   const [viewType, setViewType] = useState<
     'latest' | 'best' | 'changelog' | 'new-comments'
-  >('best')
+  >(getViewTypeFromFilter(currentFilter))
 
   useEffect(() => {
     if (!router.isReady) return
-    const filter = router.query.filter as string | undefined
-    if (filter === 'changelog') {
-      if (viewType !== 'changelog') setViewType('changelog')
-    } else if (viewType === 'changelog' && !filter) {
-      setViewType('best')
+    const urlViewType = getViewTypeFromFilter(currentFilter)
+    if (viewType !== urlViewType) {
+      setViewType(urlViewType)
     }
-  }, [router.isReady, router.query.filter])
+  }, [router.isReady, currentFilter])
 
   // cache delivers best posts
   const shouldFetchDifferentPosts = viewType !== 'best'
@@ -91,8 +117,12 @@ export default function PostsPage(props: { bestPosts: TopLevelPost[] }) {
                 size="xs"
                 color={viewType === 'best' ? 'indigo' : 'gray-outline'}
                 onClick={() => {
-                  setViewType('best')
-                  router.push('/posts', undefined, { shallow: true })
+                  const newFilter = getFilterFromViewType('best')
+                  router.replace(
+                    pathName + '?' + createQueryString('filter', newFilter),
+                    undefined,
+                    { shallow: true }
+                  )
                 }}
               >
                 Best
@@ -101,8 +131,12 @@ export default function PostsPage(props: { bestPosts: TopLevelPost[] }) {
                 size="xs"
                 color={viewType === 'latest' ? 'indigo' : 'gray-outline'}
                 onClick={() => {
-                  setViewType('latest')
-                  router.push('/posts', undefined, { shallow: true })
+                  const newFilter = getFilterFromViewType('latest')
+                  router.replace(
+                    pathName + '?' + createQueryString('filter', newFilter),
+                    undefined,
+                    { shallow: true }
+                  )
                 }}
               >
                 New
@@ -112,8 +146,12 @@ export default function PostsPage(props: { bestPosts: TopLevelPost[] }) {
                 className="whitespace-nowrap"
                 color={viewType === 'new-comments' ? 'indigo' : 'gray-outline'}
                 onClick={() => {
-                  setViewType('new-comments')
-                  router.push('/posts', undefined, { shallow: true })
+                  const newFilter = getFilterFromViewType('new-comments')
+                  router.replace(
+                    pathName + '?' + createQueryString('filter', newFilter),
+                    undefined,
+                    { shallow: true }
+                  )
                 }}
               >
                 New Comments
@@ -122,10 +160,12 @@ export default function PostsPage(props: { bestPosts: TopLevelPost[] }) {
                 size="xs"
                 color={viewType === 'changelog' ? 'indigo' : 'gray-outline'}
                 onClick={() => {
-                  setViewType('changelog')
-                  router.push('/posts?filter=changelog', undefined, {
-                    shallow: true,
-                  })
+                  const newFilter = getFilterFromViewType('changelog')
+                  router.replace(
+                    pathName + '?' + createQueryString('filter', newFilter),
+                    undefined,
+                    { shallow: true }
+                  )
                 }}
               >
                 Changelog
