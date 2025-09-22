@@ -1131,6 +1131,7 @@ export const API = (_apiTypeCheck = {
     props: z
       .object({
         limit: z.coerce.number().gte(0).lte(1000).default(500),
+        order: z.enum(['asc', 'desc']).optional().default('desc'),
         before: z.string().optional(),
       })
       .strict(),

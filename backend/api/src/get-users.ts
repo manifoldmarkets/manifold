@@ -1,23 +1,27 @@
 import { toUserAPIResponse } from 'common/api/user-types'
+import { convertUser } from 'common/supabase/users'
 import { createSupabaseDirectClient } from 'shared/supabase/init'
-import { APIError, type APIHandler } from './helpers/endpoint'
 import {
-  select,
   from,
   limit as limitClause,
   orderBy,
-  where,
   renderSql,
+  select,
+  where,
 } from 'shared/supabase/sql-builder'
-import { convertUser } from 'common/supabase/users'
+import { APIError, type APIHandler } from './helpers/endpoint'
 
-export const getUsers: APIHandler<'users'> = async ({ limit, before }) => {
+export const getUsers: APIHandler<'users'> = async ({
+  limit,
+  before,
+  order,
+}) => {
   const pg = createSupabaseDirectClient()
 
   const q = [
     select('*'),
     from('users'),
-    orderBy('created_time', 'desc'),
+    orderBy('created_time ' + order),
     limitClause(limit),
   ]
 
