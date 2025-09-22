@@ -19,7 +19,7 @@ export const getGroups: APIHandler<'groups'> = async (props) => {
       select('*'),
       from('groups'),
       where('privacy_status = $1', ['public']),
-      beforeTime && where('created_time < ts_to_millis($1)', [beforeTime]),
+      beforeTime && where('created_time < millis_to_ts($1)', [beforeTime]),
       orderBy('created_time', 'desc'),
       limitClause(limit)
     ),
