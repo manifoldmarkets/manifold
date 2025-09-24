@@ -1,9 +1,12 @@
 import clsx from 'clsx'
 import { CPMMContract, MultiContract } from 'common/contract'
+import { ContractMetric } from 'common/contract-metric'
 import { getStonkDisplayShares } from 'common/stonk'
 import { User } from 'common/user'
 import { formatShares } from 'common/util/format'
 import { useState } from 'react'
+import { useAnswer } from 'web/hooks/use-answers'
+import { useSavedContractMetrics } from 'web/hooks/use-saved-contract-metrics'
 import { Button } from '../buttons/button'
 import { Col } from '../layout/col'
 import { Modal } from '../layout/modal'
@@ -12,9 +15,6 @@ import { OutcomeLabel } from '../outcome-label'
 import { Title } from '../widgets/title'
 import { MoneyDisplay } from './money-display'
 import { SellPanel } from './sell-panel'
-import { ContractMetric } from 'common/contract-metric'
-import { useSavedContractMetrics } from 'web/hooks/use-saved-contract-metrics'
-import { useAnswer } from 'web/hooks/use-answers'
 
 export function SellRow(props: {
   contract: CPMMContract
@@ -115,6 +115,7 @@ export function SellSharesModal(props: {
       pseudonymColor: string
     }
   }
+  sellForUserId?: string // Admin-only: sell for another user
 }) {
   const {
     className,
@@ -126,6 +127,7 @@ export function SellSharesModal(props: {
     setOpen,
     answerId,
     binaryPseudonym,
+    sellForUserId,
   } = props
   const isStonk = contract.outcomeType === 'STONK'
   const isCashContract = contract.token === 'CASH'
@@ -134,14 +136,20 @@ export function SellSharesModal(props: {
   return (
     <Modal open={true} setOpen={setOpen}>
       <Col className={clsx('bg-canvas-0 rounded-md px-8 py-6', className)}>
-        <Title>Sell position</Title>
+        <Title>
+          {sellForUserId ? 'Admin: Sell user position' : 'Sell position'}
+        </Title>
 
         <div className="mb-6">
           {isStonk ? (
-            <>You have {getStonkDisplayShares(contract, shares)} shares of </>
+            <>
+              {sellForUserId ? 'User has' : 'You have'}{' '}
+              {getStonkDisplayShares(contract, shares)} shares of{' '}
+            </>
           ) : (
             <>
-              You have {formatShares(shares, isCashContract)} shares worth{' '}
+              {sellForUserId ? 'User has' : 'You have'}{' '}
+              {formatShares(shares, isCashContract)} shares worth{' '}
               <MoneyDisplay amount={shares} isCashContract={isCashContract} />{' '}
               if this {answerId ? 'answer' : 'question'} resolves{' '}
             </>
@@ -165,6 +173,7 @@ export function SellSharesModal(props: {
           onSellSuccess={() => setOpen(false)}
           answerId={answerId}
           binaryPseudonym={binaryPseudonym}
+          sellForUserId={sellForUserId}
         />
       </Col>
     </Modal>

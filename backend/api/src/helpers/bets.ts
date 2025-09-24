@@ -42,7 +42,8 @@ export const fetchContractBetDataAndValidate = async (
     outcome: 'YES' | 'NO'
   },
   uid: string,
-  isApi: boolean
+  isApi: boolean,
+  isAdminTrade: boolean = false
 ) => {
   const startTime = Date.now()
   const { amount, contractId, outcome } = body
@@ -161,7 +162,10 @@ export const fetchContractBetDataAndValidate = async (
   if (amount !== undefined && balance < amount)
     throw new APIError(403, 'Insufficient balance.')
 
-  if (BANNED_TRADING_USER_IDS.includes(user.id) || user.userDeleted) {
+  if (
+    (BANNED_TRADING_USER_IDS.includes(user.id) || user.userDeleted) &&
+    !isAdminTrade
+  ) {
     throw new APIError(403, 'You are banned or deleted. And not #blessed.')
   }
   if (contract.outcomeType === 'STONK' && isApi) {

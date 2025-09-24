@@ -10,26 +10,29 @@ import {
 } from 'common/contract'
 import { ContractMetric, getMaxSharesOutcome } from 'common/contract-metric'
 import { TRADE_TERM } from 'common/envs/constants'
+import { noFees } from 'common/fees'
 import { User } from 'common/user'
+import { formatPercent } from 'common/util/format'
+import { useState } from 'react'
+import { LuShare } from 'react-icons/lu'
 import { BinaryMultiSellRow } from 'web/components/answers/answer-components'
 import { MultiNumericSellPanel } from 'web/components/answers/numeric-sell-panel'
 import { SellRow } from 'web/components/bet/sell-row'
+import { useAdmin } from 'web/hooks/use-admin'
 import { useSavedContractMetrics } from 'web/hooks/use-saved-contract-metrics'
+import { useUser } from 'web/hooks/use-user'
+import { useDisplayUserById } from 'web/hooks/use-user-supabase'
+import { Button } from '../buttons/button'
 import { getWinningTweet, TweetButton } from '../buttons/tweet-button'
+import { getPseudonym } from '../charts/contract/choice'
 import { Col } from '../layout/col'
 import { Row } from '../layout/row'
 import { NoLabel, YesLabel } from '../outcome-label'
 import { ProfitBadge } from '../profit-badge'
 import { InfoTooltip } from '../widgets/info-tooltip'
 import { MoneyDisplay } from './money-display'
-import { useUser } from 'web/hooks/use-user'
+import { SellSharesModal } from './sell-row'
 import { ShareBetModal } from './share-bet'
-import { useState } from 'react'
-import { Button } from '../buttons/button'
-import { LuShare } from 'react-icons/lu'
-import { getPseudonym } from '../charts/contract/choice'
-import { formatPercent } from 'common/util/format'
-import { useDisplayUserById } from 'web/hooks/use-user-supabase'
 
 export function UserBetsSummary(props: {
   contract: Contract
@@ -62,6 +65,7 @@ export function BetsSummary(props: {
   const { contract, metric, className, includeSellButton, areYourBets } = props
   const { resolution, outcomeType } = contract
   const [showShareModal, setShowShareModal] = useState(false)
+  const [showAdminSellModal, setShowAdminSellModal] = useState(false)
 
   const { payout, invested, totalShares = {}, profit, profitPercent } = metric
 
@@ -78,6 +82,7 @@ export function BetsSummary(props: {
   const prob = contract.mechanism === 'cpmm-1' ? getProbability(contract) : 0
   const expectation = prob * yesWinnings + (1 - prob) * noWinnings
   const user = useUser()
+  const isAdmin = useAdmin()
   const bettor = useDisplayUserById(metric.userId)
 
   if (metric.invested === 0 && metric.profit === 0) return null
@@ -274,6 +279,41 @@ export function BetsSummary(props: {
                     username: bettor.username,
                     avatarUrl: bettor.avatarUrl,
                   }}
+                />
+              )}
+            </>
+          )}
+        {/* Admin sell button - only show for admins viewing other users' bets */}
+        {isAdmin &&
+          user &&
+          bettor &&
+          !areYourBets &&
+          !resolution &&
+          maxSharesOutcome &&
+          (yesWinnings > 1 || noWinnings > 1) &&
+          contract.mechanism === 'cpmm-1' && (
+            <>
+              <Button
+                className="h-10"
+                size={'lg'}
+                color={'red-outline'}
+                onClick={() => setShowAdminSellModal(true)}
+              >
+                Admin Sell
+              </Button>
+              {showAdminSellModal && (
+                <SellSharesModal
+                  contract={{
+                    ...(contract as CPMMContract),
+                    collectedFees:
+                      (contract as CPMMContract).collectedFees ?? noFees,
+                  }}
+                  metric={metric}
+                  user={user}
+                  shares={Math.abs(position)}
+                  sharesOutcome={maxSharesOutcome as 'YES' | 'NO'}
+                  setOpen={setShowAdminSellModal}
+                  sellForUserId={metric.userId}
                 />
               )}
             </>

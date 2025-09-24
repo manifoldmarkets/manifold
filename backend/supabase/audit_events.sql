@@ -3,6 +3,7 @@ create table if not exists
   audit_events (
     comment_id text,
     contract_id text,
+    bet_id text,
     created_time timestamp with time zone default now() not null,
     data jsonb,
     id bigint primary key generated always as identity not null,

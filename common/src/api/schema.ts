@@ -356,6 +356,7 @@ export const API = (_apiTypeCheck = {
         answerId: z.string().optional(), // Required for multi binary markets
         deterministic: z.boolean().optional(),
         deps: z.array(z.string()).optional(),
+        sellForUserId: z.string().optional(), // Admin-only: sell for another user
       })
       .strict(),
   },

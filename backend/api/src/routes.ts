@@ -168,6 +168,7 @@ import { getReactions } from './get-reactions'
 import { getSeasonInfo } from './get-season-info'
 import { getSiteActivity } from './get-site-activity'
 import { getSportsGames } from './get-sports-games'
+import { getUserAchievements } from './get-user-achievements'
 import { getUserContractMetricsWithContracts } from './get-user-contract-metrics-with-contracts'
 import { getUserLastActiveTime } from './get-user-last-active-time'
 import { inferNumericUnit } from './infer-numeric-unit'
@@ -183,7 +184,6 @@ import { purchaseContractBoost } from './purchase-boost'
 import { referUser } from './refer-user'
 import { updatePost } from './update-post'
 import { validateiap } from './validate-iap'
-import { getUserAchievements } from './get-user-achievements'
 
 export const handlers: { [k in APIPath]: APIHandler<k> } = {
   'refresh-all-clients': refreshAllClients,

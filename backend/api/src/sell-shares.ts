@@ -1,23 +1,25 @@
-import { APIError, type APIHandler } from './helpers/endpoint'
-import { MarketContract } from 'common/contract'
-import { getCpmmMultiSellBetInfo, getCpmmSellBetInfo } from 'common/sell-bet'
-import { floatingLesserEqual } from 'common/util/math'
-import { executeNewBetResult } from './place-bet'
-import { onCreateBets } from 'api/on-create-bet'
-import { log } from 'shared/utils'
-import { runTransactionWithRetries } from 'shared/transact-with-retries'
-import { betsQueue } from 'shared/helpers/fn-queue'
-import { createSupabaseDirectClient } from 'shared/supabase/init'
-import { LimitBet } from 'common/bet'
-import { Answer } from 'common/answer'
-import { ContractMetric } from 'common/contract-metric'
 import {
   fetchContractBetDataAndValidate,
   getMakerIdsFromBetResult,
   getUserBalancesAndMetrics,
 } from 'api/helpers/bets'
+import { onCreateBets } from 'api/on-create-bet'
+import { Answer } from 'common/answer'
+import { LimitBet } from 'common/bet'
+import { MarketContract } from 'common/contract'
+import { ContractMetric } from 'common/contract-metric'
+import { getCpmmMultiSellBetInfo, getCpmmSellBetInfo } from 'common/sell-bet'
+import { floatingLesserEqual } from 'common/util/math'
 import { randomString } from 'common/util/random'
 import { isEqual } from 'lodash'
+import { trackPublicAuditBetEvent } from 'shared/audit-events'
+import { throwErrorIfNotAdmin } from 'shared/helpers/auth'
+import { betsQueue } from 'shared/helpers/fn-queue'
+import { createSupabaseDirectClient } from 'shared/supabase/init'
+import { runTransactionWithRetries } from 'shared/transact-with-retries'
+import { log } from 'shared/utils'
+import { APIError, type APIHandler } from './helpers/endpoint'
+import { executeNewBetResult } from './place-bet'
 
 const calculateSellResult = (
   contract: MarketContract,
@@ -105,8 +107,12 @@ export const sellShares: APIHandler<'market/:contractId/sell'> = async (
   auth,
   req
 ) => {
-  const userId = auth.uid
-  const { contractId, deps } = props
+  const { contractId, deps, sellForUserId } = props
+  // Check admin permissions when selling for another user
+  if (sellForUserId) {
+    throwErrorIfNotAdmin(auth.uid)
+  }
+  const userId = sellForUserId || auth.uid
   const fullDeps = [userId, contractId, ...(deps ?? [])]
   return await betsQueue.enqueueFn(
     () => sellSharesMain(props, auth, req),
@@ -118,8 +124,15 @@ const sellSharesMain: APIHandler<'market/:contractId/sell'> = async (
   props,
   auth
 ) => {
-  const { contractId, shares, outcome, answerId, deterministic } = props
-  const uid = auth.uid
+  const {
+    contractId,
+    shares,
+    outcome,
+    answerId,
+    deterministic,
+    sellForUserId,
+  } = props
+  const uid = sellForUserId || auth.uid
   const isApi = auth.creds.kind === 'key'
   const pg = createSupabaseDirectClient()
   const oppositeOutcome = outcome === 'YES' ? 'NO' : 'YES'
@@ -135,7 +148,8 @@ const sellSharesMain: APIHandler<'market/:contractId/sell'> = async (
     pg,
     { ...props, amount: undefined, outcome: oppositeOutcome },
     uid,
-    isApi
+    isApi,
+    !!sellForUserId
   )
   const simulatedResult = calculateSellResult(
     contract,
@@ -145,9 +159,7 @@ const sellSharesMain: APIHandler<'market/:contractId/sell'> = async (
     answerId,
     outcome,
     shares,
-    contractMetrics.find(
-      (m) => m.answerId == answerId && m.userId === auth.uid
-    )!
+    contractMetrics.find((m) => m.answerId == answerId && m.userId === uid)!
   )
   const simulatedMakerIds = getMakerIdsFromBetResult(simulatedResult)
 
@@ -179,9 +191,7 @@ const sellSharesMain: APIHandler<'market/:contractId/sell'> = async (
       answerId,
       outcome,
       shares,
-      contractMetrics.find(
-        (m) => m.answerId == answerId && m.userId === auth.uid
-      )!
+      contractMetrics.find((m) => m.answerId == answerId && m.userId === uid)!
     )
     log(`Calculated sale information for ${user.username} - auth ${uid}.`)
     const actualMakerIds = getMakerIdsFromBetResult(newBetResult)
@@ -211,6 +221,15 @@ const sellSharesMain: APIHandler<'market/:contractId/sell'> = async (
   })
 
   const { newBet, betId } = result
+  trackPublicAuditBetEvent(
+    auth.uid,
+    'admin_sell_shares',
+    props.contractId,
+    betId,
+    {
+      sellForUserId,
+    }
+  )
 
   const continuation = async () => {
     await onCreateBets(result)

@@ -1,3 +1,4 @@
+import { useUnfilledBetsAndBalanceByUserId } from 'client-common/hooks/use-bets'
 import clsx from 'clsx'
 import { Answer } from 'common/answer'
 import { APIError } from 'common/api/utils'
@@ -9,9 +10,11 @@ import {
   CPMMNumericContract,
   MultiContract,
 } from 'common/contract'
+import { ContractMetric } from 'common/contract-metric'
 import { TRADE_TERM } from 'common/envs/constants'
 import { Fees, getFeeTotal } from 'common/fees'
 import { getFormattedMappedValue, getMappedValue } from 'common/pseudo-numeric'
+import { getSaleResult, getSaleResultMultiSumsToOne } from 'common/sell-bet'
 import { getSharesFromStonkShares, getStonkDisplayShares } from 'common/stonk'
 import { User } from 'common/user'
 import {
@@ -20,8 +23,10 @@ import {
   formatShares,
   formatWithToken,
 } from 'common/util/format'
-import { useState, useRef } from 'react'
+import { uniq } from 'lodash'
+import { useRef, useState } from 'react'
 import toast from 'react-hot-toast'
+import { useIsPageVisible } from 'web/hooks/use-page-visible'
 import { api } from 'web/lib/api/api'
 import { track } from 'web/lib/service/analytics'
 import { WarningConfirmationButton } from '../buttons/warning-confirmation-button'
@@ -30,11 +35,6 @@ import { Row } from '../layout/row'
 import { Spacer } from '../layout/spacer'
 import { AmountInput } from '../widgets/amount-input'
 import { MoneyDisplay } from './money-display'
-import { ContractMetric } from 'common/contract-metric'
-import { uniq } from 'lodash'
-import { useUnfilledBetsAndBalanceByUserId } from 'client-common/hooks/use-bets'
-import { useIsPageVisible } from 'web/hooks/use-page-visible'
-import { getSaleResult, getSaleResultMultiSumsToOne } from 'common/sell-bet'
 
 export function SellPanel(props: {
   contract: CPMMContract | MultiContract
@@ -54,6 +54,7 @@ export function SellPanel(props: {
       pseudonymColor: string
     }
   }
+  sellForUserId?: string // Admin-only: sell for another user
 }) {
   const {
     contract,
@@ -63,6 +64,7 @@ export function SellPanel(props: {
     user,
     onSellSuccess,
     answerId,
+    sellForUserId,
   } = props
   const { outcomeType } = contract
   const isPseudoNumeric = outcomeType === 'PSEUDO_NUMERIC'
@@ -152,6 +154,7 @@ export function SellPanel(props: {
       contractId: contract.id,
       answerId,
       deps: uniq(betDeps.current?.map((b) => b.userId)),
+      sellForUserId,
     })
       .then(() => {
         setIsSubmitting(false)
