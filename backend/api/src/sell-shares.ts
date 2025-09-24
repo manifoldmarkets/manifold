@@ -221,15 +221,17 @@ const sellSharesMain: APIHandler<'market/:contractId/sell'> = async (
   })
 
   const { newBet, betId } = result
-  trackPublicAuditBetEvent(
-    auth.uid,
-    'admin_sell_shares',
-    props.contractId,
-    betId,
-    {
-      sellForUserId,
-    }
-  )
+  if (sellForUserId) {
+    trackPublicAuditBetEvent(
+      auth.uid,
+      'admin_sell_shares',
+      props.contractId,
+      betId,
+      {
+        sellForUserId,
+      }
+    )
+  }
 
   const continuation = async () => {
     await onCreateBets(result)
