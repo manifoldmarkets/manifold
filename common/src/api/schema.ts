@@ -1978,13 +1978,6 @@ export const API = (_apiTypeCheck = {
     returns: {} as { tasks: Task[] },
     props: z.object({}).strict(),
   },
-  'is-sports-interested': {
-    method: 'GET',
-    visibility: 'public',
-    authed: true,
-    returns: {} as { isSportsInterested: boolean },
-    props: z.object({}).strict(),
-  },
   'get-user-achievements': {
     method: 'GET',
     visibility: 'public',

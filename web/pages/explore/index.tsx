@@ -1,38 +1,37 @@
-import { Page } from 'web/components/layout/page'
-import { SEO } from 'web/components/SEO'
-import { QueryUncontrolledTabs, Tab } from 'web/components/layout/tabs'
-import { Col } from 'web/components/layout/col'
-import { MdTimer } from 'react-icons/md'
-import { GiAmericanFootballHelmet } from 'react-icons/gi'
-import { BiBasketball } from 'react-icons/bi'
-import { MdSportsSoccer } from 'react-icons/md'
-import { useSaveScroll } from 'web/hooks/use-save-scroll'
-import { useUser } from 'web/hooks/use-user'
+import { DragDropContext, Draggable, Droppable } from '@hello-pangea/dnd'
+import { usePersistentInMemoryState } from 'client-common/hooks/use-persistent-in-memory-state'
+import { APIParams } from 'common/api/schema'
+import { Contract, isSportsContract } from 'common/contract'
+import { ENV } from 'common/envs/constants'
+import { tsToMillis } from 'common/supabase/utils'
+import { User } from 'common/user'
 import { buildArray } from 'common/util/array'
-import { LiveGeneratedFeed } from 'web/components/feed/live-generated-feed'
+import { sortBy, uniqBy } from 'lodash'
+import { useEffect, useState } from 'react'
+import { BiBasketball } from 'react-icons/bi'
+import { FaBaseballBall } from 'react-icons/fa'
+import { FaFire, FaGripLinesVertical, FaHockeyPuck } from 'react-icons/fa6'
+import { GiAmericanFootballHelmet } from 'react-icons/gi'
+import { MdSportsSoccer, MdTimer } from 'react-icons/md'
 import {
   FeedContractCard,
   LoadingCards,
 } from 'web/components/contract/feed-contract-card'
-import { uniqBy, sortBy } from 'lodash'
-import { APIParams } from 'common/api/schema'
-import { FaFire, FaGripLinesVertical, FaHockeyPuck } from 'react-icons/fa6'
-import { DragDropContext, Droppable, Draggable } from '@hello-pangea/dnd'
-import { usePersistentLocalState } from 'web/hooks/use-persistent-local-state'
+import { LiveGeneratedFeed } from 'web/components/feed/live-generated-feed'
+import { Col } from 'web/components/layout/col'
+import { Page } from 'web/components/layout/page'
 import { Row } from 'web/components/layout/row'
-import { useEffect, useState } from 'react'
+import { QueryUncontrolledTabs, Tab } from 'web/components/layout/tabs'
+import { SEO } from 'web/components/SEO'
 import { SiteActivity } from 'web/components/site-activity'
-import { LoadMoreUntilNotVisible } from 'web/components/widgets/visibility-observer'
-import { usePersistentInMemoryState } from 'client-common/hooks/use-persistent-in-memory-state'
-import { api } from 'web/lib/api/api'
 import { LoadingIndicator } from 'web/components/widgets/loading-indicator'
-import { User } from 'common/user'
-import { FaBaseballBall } from 'react-icons/fa'
-import { Contract, isSportsContract } from 'common/contract'
-import { tsToMillis } from 'common/supabase/utils'
-import { ENV } from 'common/envs/constants'
-import { Comments } from '../comments'
+import { LoadMoreUntilNotVisible } from 'web/components/widgets/visibility-observer'
+import { usePersistentLocalState } from 'web/hooks/use-persistent-local-state'
 import { useSaveReferral } from 'web/hooks/use-save-referral'
+import { useSaveScroll } from 'web/hooks/use-save-scroll'
+import { useUser } from 'web/hooks/use-user'
+import { api } from 'web/lib/api/api'
+import { Comments } from '../comments'
 const isProd = ENV === 'PROD'
 const NFL_ID = 'TNQwmbE5p6dnKx2e6Qlp'
 const NBA_ID = 'i0v3cXwuxmO9fpcInVYb'
@@ -47,30 +46,11 @@ export function ExploreContent(props: { render: boolean }) {
   const user = useUser()
   useSaveReferral(user)
 
-  const [isSportsInterested, setIsSportsInterested] = usePersistentLocalState<
-    boolean | undefined
-  >(undefined, 'is-sports-interested')
-  const getIsSportsInterested = async () => {
-    const { isSportsInterested } = await api('is-sports-interested', {})
-    setIsSportsInterested(isSportsInterested)
-  }
-
-  useEffect(() => {
-    if (user && isSportsInterested === undefined) {
-      getIsSportsInterested()
-    }
-  }, [user?.id])
-  const sportsFirst = isSportsInterested
-
   if (!render) return null
-  if (user === undefined || (user && isSportsInterested === undefined)) {
+  if (user === undefined) {
     return <LoadingIndicator />
   }
   const baseTabs: Tab[] = buildArray(
-    sportsFirst && {
-      title: 'Sports',
-      content: <SportsTabs />,
-    },
     {
       title: 'Activity',
       content: (
@@ -91,7 +71,7 @@ export function ExploreContent(props: { render: boolean }) {
       title: 'Discussion',
       content: <Comments />,
     },
-    !sportsFirst && { title: 'Sports', content: <SportsTabs /> }
+    { title: 'Sports', content: <SportsTabs /> }
   )
 
   return <OrganizableMarketsPage user={user} tabs={baseTabs} />

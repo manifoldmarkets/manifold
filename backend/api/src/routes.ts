@@ -172,7 +172,6 @@ import { getUserAchievements } from './get-user-achievements'
 import { getUserContractMetricsWithContracts } from './get-user-contract-metrics-with-contracts'
 import { getUserLastActiveTime } from './get-user-last-active-time'
 import { inferNumericUnit } from './infer-numeric-unit'
-import { isSportsInterested } from './is-sports-bettor'
 import { markNotificationRead } from './mark-all-notifications'
 import { markallnotificationsnew } from './mark-all-notifications-new'
 import {
@@ -341,7 +340,6 @@ export const handlers: { [k in APIPath]: APIHandler<k> } = {
   'update-category': updateCategory,
   'get-tasks': getTasks,
   'get-site-activity': getSiteActivity,
-  'is-sports-interested': isSportsInterested,
   'get-sports-games': getSportsGames,
   'get-market-props': getMarketProps,
   'get-user-contract-metrics-with-contracts':
