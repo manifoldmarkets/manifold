@@ -117,9 +117,6 @@ const ShopPage: NextPage = () => {
         <Row className="items-center justify-between">
           <h1 className="text-2xl font-semibold">Mana Shop</h1>
           <Row className="items-center gap-2 sm:gap-3">
-            <div className="text-ink-700 text-sm sm:text-base">
-              Balance: <TokenNumber amount={balance} isInline />
-            </div>
             <a
               href="/shop/orders"
               className="text-ink-900 hover:bg-ink-100 hidden items-center rounded-md border px-3 py-1.5 text-sm sm:inline-flex"
@@ -141,7 +138,7 @@ const ShopPage: NextPage = () => {
 
         <div className="mt-2">
           <h2 className="text-ink-700 mb-3 text-lg font-medium">
-            Manifold Digital Items
+            Digital Accessories
           </h2>
           <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-3">
             {digitalItems.map((item) => (
@@ -166,9 +163,7 @@ const ShopPage: NextPage = () => {
         </div>
 
         <div className="mt-6">
-          <h2 className="text-ink-700 mb-3 text-lg font-medium">
-            Physical Items
-          </h2>
+          <h2 className="text-ink-700 mb-3 text-lg font-medium">Merch</h2>
           <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-3">
             {remote === null &&
               Array.from({ length: 3 }).map((_, i) => (
@@ -396,32 +391,49 @@ function SimpleItemCard(props: {
           disabled: atLimit,
         }}
         cancelBtn={{ label: 'Cancel' }}
-        submitBtn={{ label: 'Add to Cart', color: 'indigo' }}
+        submitBtn={{
+          label: kind === 'digital' ? 'Buy now' : 'Add to Cart',
+          color: 'indigo',
+        }}
         onSubmitWithSuccess={async () => {
           if (item.perUserLimit && item.perUserLimit <= 0) {
             toast.error('This item is not currently available')
             return false
           }
-          const inCartNow = cartItems
-            .filter((ci) => ci.key === `${kind}:${item.id}`)
-            .reduce((a, b) => a + b.quantity, 0)
-          const existingNow = orderCounts[item.id] ?? 0
-          if (
-            item.perUserLimit &&
-            existingNow + inCartNow >= item.perUserLimit
-          ) {
-            toast.error(`Limit ${item.perUserLimit} per user`)
-            return false
+          if (kind === 'digital') {
+            try {
+              await api('checkout-shop-cart', {
+                items: [{ key: `${kind}:${item.id}`, quantity: 1 }],
+              })
+              toast.success('Purchase complete')
+              return true
+            } catch (e) {
+              toast.error('Purchase failed')
+              return false
+            }
+          } else {
+            // physical/other -> add to cart
+            const inCartNow = cartItems
+              .filter((ci) => ci.key === `${kind}:${item.id}`)
+              .reduce((a, b) => a + b.quantity, 0)
+            const existingNow = orderCounts[item.id] ?? 0
+            if (
+              item.perUserLimit &&
+              existingNow + inCartNow >= item.perUserLimit
+            ) {
+              toast.error(`Limit ${item.perUserLimit} per user`)
+              return false
+            }
+            addItem({
+              key: `${kind}:${item.id}`,
+              title: item.title,
+              imageUrl: item.imageUrl,
+              price: currentDynamicPrice,
+              quantity: 1,
+            })
+            toast.success('Added to cart')
+            return true
           }
-          addItem({
-            key: `${kind}:${item.id}`,
-            title: item.title,
-            imageUrl: item.imageUrl,
-            price: currentDynamicPrice,
-            quantity: 1,
-          })
-          toast.success('Added to cart')
-          return true
         }}
       >
         <Col className="gap-2">
@@ -530,7 +542,7 @@ function PrintfulItemCard(props: {
 
       <ConfirmationButton
         openModalBtn={{
-          label: 'Buy',
+          label: 'See Options',
           color: 'indigo',
           className: 'mt-2 w-full',
         }}
