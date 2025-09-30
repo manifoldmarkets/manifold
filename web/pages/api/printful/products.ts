@@ -19,11 +19,80 @@ type PrintfulVariant = {
   sku?: string
 }
 
+// Simple in-memory cache (per server instance)
+let CACHE: { data: any; ts: number } | null = null
+const CACHE_TTL_MS = 10 * 60 * 1000 // 10 minutes
+const DETAIL_CONCURRENCY = 3
+
+async function sleep(ms: number) {
+  return new Promise((res) => setTimeout(res, ms))
+}
+
+async function fetchWithRetry(
+  url: string,
+  init: RequestInit,
+  attempts = 3,
+  backoffMs = 500
+) {
+  let lastErr: any
+  for (let i = 0; i < attempts; i++) {
+    const resp = await fetch(url, init)
+    if (resp.ok) return resp
+    // Respect 429/Retry-After if present
+    if (resp.status === 429) {
+      const retryAfter = Number(resp.headers.get('retry-after'))
+      await sleep((retryAfter ? retryAfter * 1000 : backoffMs) * (i + 1))
+      lastErr = new Error(`429 Too Many Requests: ${url}`)
+      continue
+    }
+    // For 5xx, back off and retry
+    if (resp.status >= 500) {
+      lastErr = new Error(`${resp.status} ${resp.statusText}`)
+      await sleep(backoffMs * (i + 1))
+      continue
+    }
+    // For other errors, stop and return
+    return resp
+  }
+  throw lastErr ?? new Error('Failed after retries')
+}
+
+async function mapLimit<T, R>(
+  items: T[],
+  limit: number,
+  fn: (item: T, idx: number) => Promise<R>
+): Promise<R[]> {
+  const results: R[] = new Array(items.length)
+  let i = 0
+  let active = 0
+  return new Promise((resolve, reject) => {
+    const next = () => {
+      if (i >= items.length && active === 0) return resolve(results)
+      while (active < limit && i < items.length) {
+        const idx = i++
+        active++
+        fn(items[idx], idx)
+          .then((r) => (results[idx] = r))
+          .catch(reject)
+          .finally(() => {
+            active--
+            next()
+          })
+      }
+    }
+    next()
+  })
+}
+
 export default async function handler(
   req: NextApiRequest,
   res: NextApiResponse
 ) {
-  res.setHeader('Cache-Control', 'no-store')
+  // Edge/browser caching: allow CDN cache but keep it fresh
+  res.setHeader(
+    'Cache-Control',
+    'public, s-maxage=600, stale-while-revalidate=1800'
+  )
   if (req.method !== 'GET') {
     res.setHeader('Allow', 'GET')
     return res.status(405).json({ message: 'Method Not Allowed' })
@@ -35,9 +104,16 @@ export default async function handler(
   }
 
   try {
-    const listResp = await fetch('https://api.printful.com/store/products', {
-      headers: { Authorization: `Bearer ${apiKey}` },
-    })
+    // Serve cached if fresh
+    if (CACHE && Date.now() - CACHE.ts < CACHE_TTL_MS) {
+      res.setHeader('X-Cache', 'HIT')
+      return res.status(200).json(CACHE.data)
+    }
+
+    const listResp = await fetchWithRetry(
+      'https://api.printful.com/store/products',
+      { headers: { Authorization: `Bearer ${apiKey}` } }
+    )
     if (!listResp.ok) {
       const text = await listResp.text()
       return res
@@ -48,87 +124,87 @@ export default async function handler(
     const products: PrintfulProduct[] = listJson.result ?? []
 
     // Fetch details to get variants/prices
-    const detailed = await Promise.all(
-      products.map(async (p) => {
-        const d = await fetch(
-          `https://api.printful.com/store/products/${p.id}`,
-          { headers: { Authorization: `Bearer ${apiKey}` } }
-        )
-        if (!d.ok) return { product: p, variants: [] as PrintfulVariant[] }
-        const dj = await d.json()
-        const variants: PrintfulVariant[] = dj.result?.sync_variants ?? []
+    const detailed = await mapLimit(products, DETAIL_CONCURRENCY, async (p) => {
+      const d = await fetchWithRetry(
+        `https://api.printful.com/store/products/${p.id}`,
+        { headers: { Authorization: `Bearer ${apiKey}` } }
+      )
+      if (!d.ok) return { product: p, variants: [] as PrintfulVariant[] }
+      const dj = await d.json()
+      const variants: PrintfulVariant[] = dj.result?.sync_variants ?? []
 
-        // Enrich each variant with size/color/preview, with robust fallbacks
-        const enriched = await Promise.all(
-          variants.map(async (v) => {
-            try {
-              const sv = await fetch(
-                `https://api.printful.com/store/variants/${v.id}`,
-                { headers: { Authorization: `Bearer ${apiKey}` } }
-              )
-              if (!sv.ok) {
-                return addHeuristics(v)
-              }
-              const svj = await sv.json()
-              const size: string | undefined =
-                svj.result?.variant?.size ?? svj.result?.product?.size
-              const color: string | undefined =
-                svj.result?.variant?.color ??
-                svj.result?.product?.color ??
-                svj.result?.variant?.color_name
-              const fileArr: {
-                type?: string
-                preview_url?: string
-                thumbnail_url?: string
-                url?: string
-              }[] = [
-                ...(svj.result?.variant?.files ?? []),
-                ...(svj.result?.product?.files ?? []),
-                ...(svj.result?.files ?? []),
-                ...(v.files ?? []),
-              ].filter((f) => (f as any).type === 'preview')
-              const allPreviews = dedupeUrls(
-                fileArr
-                  .map((f) => f.preview_url || f.thumbnail_url || f.url)
-                  .filter((u): u is string => Boolean(u))
-              )
-              const preview = selectBestPreview(allPreviews)
-              return {
-                ...v,
-                size: size ?? parseSize(v.name),
-                color: color ?? parseColor(v.name, (v as any).sku),
-                preview,
-                images: allPreviews,
-                sku: (v as any).sku,
-              }
-            } catch {
+      // Enrich each variant with size/color/preview, with robust fallbacks
+      const enriched = await mapLimit(
+        variants,
+        DETAIL_CONCURRENCY,
+        async (v) => {
+          try {
+            const sv = await fetchWithRetry(
+              `https://api.printful.com/store/variants/${v.id}`,
+              { headers: { Authorization: `Bearer ${apiKey}` } }
+            )
+            if (!sv.ok) {
               return addHeuristics(v)
             }
-          })
-        )
-
-        // Backfill: if a variant has no preview/images, borrow from siblings with same color
-        const imagesByColor: Record<string, string[]> = {}
-        for (const ev of enriched) {
-          if (ev.color && ev.images && ev.images.length > 0) {
-            imagesByColor[ev.color] = dedupeUrls(
-              (imagesByColor[ev.color] ?? []).concat(ev.images)
+            const svj = await sv.json()
+            const size: string | undefined =
+              svj.result?.variant?.size ?? svj.result?.product?.size
+            const color: string | undefined =
+              svj.result?.variant?.color ??
+              svj.result?.product?.color ??
+              svj.result?.variant?.color_name
+            const fileArr: {
+              type?: string
+              preview_url?: string
+              thumbnail_url?: string
+              url?: string
+            }[] = [
+              ...(svj.result?.variant?.files ?? []),
+              ...(svj.result?.product?.files ?? []),
+              ...(svj.result?.files ?? []),
+              ...(v.files ?? []),
+            ].filter((f) => (f as any).type === 'preview')
+            const allPreviews = dedupeUrls(
+              fileArr
+                .map((f) => f.preview_url || f.thumbnail_url || f.url)
+                .filter((u): u is string => Boolean(u))
             )
+            const preview = selectBestPreview(allPreviews)
+            return {
+              ...v,
+              size: size ?? parseSize(v.name),
+              color: color ?? parseColor(v.name, (v as any).sku),
+              preview,
+              images: allPreviews,
+              sku: (v as any).sku,
+            }
+          } catch {
+            return addHeuristics(v)
           }
         }
-        const backfilled = enriched.map((ev) => {
-          let imgs = ev.images ?? []
-          if ((imgs.length === 0 || !imgs[0]) && ev.color) {
-            const pool = imagesByColor[ev.color]
-            if (pool && pool.length > 0) imgs = pool
-          }
-          const prev = ev.preview ?? selectBestPreview(imgs)
-          return { ...ev, images: imgs, preview: prev }
-        })
+      )
 
-        return { product: p, variants: backfilled }
+      // Backfill: if a variant has no preview/images, borrow from siblings with same color
+      const imagesByColor: Record<string, string[]> = {}
+      for (const ev of enriched) {
+        if (ev.color && ev.images && ev.images.length > 0) {
+          imagesByColor[ev.color] = dedupeUrls(
+            (imagesByColor[ev.color] ?? []).concat(ev.images)
+          )
+        }
+      }
+      const backfilled = enriched.map((ev) => {
+        let imgs = ev.images ?? []
+        if ((imgs.length === 0 || !imgs[0]) && ev.color) {
+          const pool = imagesByColor[ev.color]
+          if (pool && pool.length > 0) imgs = pool
+        }
+        const prev = ev.preview ?? selectBestPreview(imgs)
+        return { ...ev, images: imgs, preview: prev }
       })
-    )
+
+      return { product: p, variants: backfilled }
+    })
 
     const simplified = detailed.map(({ product, variants }) => {
       const allVariantImages = dedupeUrls(
@@ -153,8 +229,16 @@ export default async function handler(
       }
     })
 
-    return res.status(200).json({ products: simplified })
+    const payload = { products: simplified }
+    CACHE = { data: payload, ts: Date.now() }
+    res.setHeader('X-Cache', 'MISS')
+    return res.status(200).json(payload)
   } catch (e: any) {
+    // Serve stale cache on errors
+    if (CACHE) {
+      res.setHeader('X-Cache', 'STALE')
+      return res.status(200).json(CACHE.data)
+    }
     return res.status(500).json({ message: e?.message ?? 'Unknown error' })
   }
 }
