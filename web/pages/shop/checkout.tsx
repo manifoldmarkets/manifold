@@ -1,5 +1,5 @@
 import { NextPage } from 'next'
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { Page } from 'web/components/layout/page'
 import { Col } from 'web/components/layout/col'
 import { Row } from 'web/components/layout/row'
@@ -33,8 +33,16 @@ const CheckoutPage: NextPage = () => {
     state_code: '',
     country_code: 'US',
     zip: '',
-    phone: '',
   })
+  const [countries, setCountries] = useState<
+    { code: string; name: string; states: { code: string; name: string }[] }[]
+  >([])
+  const requiresState = ['US', 'CA', 'AU', 'JP'].includes(
+    recipient.country_code
+  )
+  const statesForCountry = (countries.find(
+    (c) => c.code === recipient.country_code
+  )?.states ?? []) as { code: string; name: string }[]
   const hasPrintful = printful.length > 0
   const shippingValid = !hasPrintful
     ? true
@@ -43,7 +51,7 @@ const CheckoutPage: NextPage = () => {
           recipient.email &&
           recipient.address1 &&
           recipient.city &&
-          recipient.state_code &&
+          (!requiresState || recipient.state_code) &&
           recipient.country_code &&
           recipient.country_code.length === 2 &&
           recipient.zip
@@ -89,6 +97,14 @@ const CheckoutPage: NextPage = () => {
     removeOneFromCart(baseKey)
   }
 
+  // Load countries/subdivisions from our cached API
+  useEffect(() => {
+    fetch('/api/printful/geo')
+      .then((r) => r.json())
+      .then((d) => setCountries(d.countries ?? []))
+      .catch(() => setCountries([]))
+  }, [])
+
   return (
     <Page trackPageView="shop-checkout">
       <Col className="mx-auto w-full max-w-3xl gap-6 p-4 sm:p-6">
@@ -109,7 +125,7 @@ const CheckoutPage: NextPage = () => {
               const size = i.meta?.size as string | undefined
               const color = i.meta?.color as string | undefined
               return (
-                <Row key={i.key} className="w-full justify-between gap-4 p-4 ">
+                <Row key={i.key} className="w-full justify-between gap-4 py-3 ">
                   <Row className="items-start gap-3">
                     <div className="bg-ink-100 h-16 w-16 overflow-hidden rounded">
                       {i.imageUrl ? (
@@ -150,7 +166,7 @@ const CheckoutPage: NextPage = () => {
             })
           )}
           {items.length > 0 && (
-            <Row className="items-center justify-between  p-4">
+            <Row className="items-center justify-between py-2">
               <div className="text-ink-700 text-sm">Subtotal</div>
               <div className="text-lg font-medium">
                 <TokenNumber amount={total} isInline />
@@ -160,99 +176,168 @@ const CheckoutPage: NextPage = () => {
         </Col>
 
         {hasPrintful && (
-          <Col className="w-full gap-3 rounded-md border p-4">
+          <Col className="w-full gap-4 p-0">
             <div className="text-md font-medium">Shipping information</div>
-            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-              <input
-                className="rounded border p-2 text-sm"
-                placeholder="Full name"
-                value={recipient.name}
-                onChange={(e) =>
-                  setRecipient({ ...recipient, name: e.target.value })
-                }
-              />
-              <input
-                className="rounded border p-2 text-sm"
-                placeholder="Email"
-                value={recipient.email}
-                onChange={(e) =>
-                  setRecipient({ ...recipient, email: e.target.value })
-                }
-              />
-              <input
-                className="rounded border p-2 text-sm sm:col-span-2"
-                placeholder="Address line 1"
-                value={recipient.address1}
-                onChange={(e) =>
-                  setRecipient({ ...recipient, address1: e.target.value })
-                }
-              />
-              <input
-                className="rounded border p-2 text-sm sm:col-span-2"
-                placeholder="Address line 2 (optional)"
-                value={recipient.address2}
-                onChange={(e) =>
-                  setRecipient({ ...recipient, address2: e.target.value })
-                }
-              />
-              <input
-                className="rounded border p-2 text-sm"
-                placeholder="City"
-                value={recipient.city}
-                onChange={(e) =>
-                  setRecipient({ ...recipient, city: e.target.value })
-                }
-              />
-              <input
-                className="rounded border p-2 text-sm"
-                placeholder="State / Region"
-                value={recipient.state_code}
-                onChange={(e) =>
-                  setRecipient({ ...recipient, state_code: e.target.value })
-                }
-              />
-              <input
-                className="rounded border p-2 text-sm"
-                placeholder="Country code (e.g., US)"
-                value={recipient.country_code}
-                onChange={(e) =>
-                  setRecipient({
-                    ...recipient,
-                    country_code: e.target.value.toUpperCase(),
-                  })
-                }
-              />
-              <input
-                className="rounded border p-2 text-sm"
-                placeholder="ZIP / Postal code"
-                value={recipient.zip}
-                onChange={(e) =>
-                  setRecipient({ ...recipient, zip: e.target.value })
-                }
-              />
-              <input
-                className="rounded border p-2 text-sm sm:col-span-2"
-                placeholder="Phone (optional)"
-                value={recipient.phone}
-                onChange={(e) =>
-                  setRecipient({ ...recipient, phone: e.target.value })
-                }
-              />
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+              <Col>
+                <label className="text-ink-700 mb-1 text-sm font-medium">
+                  Full name <span className="text-red-600">*</span>
+                </label>
+                <input
+                  className="border-ink-300 focus:border-primary-500 focus:ring-primary-500 rounded-md border bg-transparent p-2 text-sm focus:outline-none focus:ring-2"
+                  value={recipient.name}
+                  onChange={(e) =>
+                    setRecipient({ ...recipient, name: e.target.value })
+                  }
+                  aria-required
+                />
+              </Col>
+              <Col>
+                <label className="text-ink-700 mb-1 text-sm font-medium">
+                  Email <span className="text-red-600">*</span>
+                </label>
+                <input
+                  className="border-ink-300 focus:border-primary-500 focus:ring-primary-500 rounded-md border bg-transparent p-2 text-sm focus:outline-none focus:ring-2"
+                  value={recipient.email}
+                  onChange={(e) =>
+                    setRecipient({ ...recipient, email: e.target.value })
+                  }
+                  aria-required
+                />
+              </Col>
+              <Col className="sm:col-span-2">
+                <label className="text-ink-700 mb-1 text-sm font-medium">
+                  Address line 1 <span className="text-red-600">*</span>
+                </label>
+                <input
+                  className="border-ink-300 focus:border-primary-500 focus:ring-primary-500 rounded-md border bg-transparent p-2 text-sm focus:outline-none focus:ring-2"
+                  value={recipient.address1}
+                  onChange={(e) =>
+                    setRecipient({ ...recipient, address1: e.target.value })
+                  }
+                  aria-required
+                />
+              </Col>
+              <Col className="sm:col-span-2">
+                <label className="text-ink-700 mb-1 text-sm font-medium">
+                  Address line 2 (optional)
+                </label>
+                <input
+                  className="border-ink-300 focus:border-primary-500 focus:ring-primary-500 rounded-md border bg-transparent p-2 text-sm focus:outline-none focus:ring-2"
+                  value={recipient.address2}
+                  onChange={(e) =>
+                    setRecipient({ ...recipient, address2: e.target.value })
+                  }
+                />
+              </Col>
+              <Col>
+                <label className="text-ink-700 mb-1 text-sm font-medium">
+                  Country <span className="text-red-600">*</span>
+                </label>
+                <select
+                  className="border-ink-300 focus:border-primary-500 focus:ring-primary-500 rounded-md border bg-transparent p-2 text-sm focus:outline-none focus:ring-2"
+                  value={recipient.country_code}
+                  onChange={(e) =>
+                    setRecipient({
+                      ...recipient,
+                      country_code: e.target.value.toUpperCase(),
+                      state_code: '',
+                    })
+                  }
+                >
+                  {countries.map((c) => (
+                    <option
+                      key={c.code}
+                      value={c.code}
+                      className="bg-canvas-0 text-ink-900"
+                    >
+                      {c.name}
+                    </option>
+                  ))}
+                </select>
+              </Col>
+              <Col>
+                <label className="text-ink-700 mb-1 text-sm font-medium">
+                  City <span className="text-red-600">*</span>
+                </label>
+                <input
+                  className="border-ink-300 focus:border-primary-500 focus:ring-primary-500 rounded-md border bg-transparent p-2 text-sm focus:outline-none focus:ring-2"
+                  value={recipient.city}
+                  onChange={(e) =>
+                    setRecipient({ ...recipient, city: e.target.value })
+                  }
+                  aria-required
+                />
+              </Col>
+              <Col>
+                <label className="text-ink-700 mb-1 text-sm font-medium">
+                  State / Region / Prefecture{' '}
+                  {requiresState && <span className="text-red-600">*</span>}
+                </label>
+                {requiresState ? (
+                  <select
+                    className="border-ink-300 focus:border-primary-500 focus:ring-primary-500 rounded-md border bg-transparent p-2 text-sm focus:outline-none focus:ring-2"
+                    value={recipient.state_code}
+                    onChange={(e) =>
+                      setRecipient({
+                        ...recipient,
+                        state_code: e.target.value.toUpperCase(),
+                      })
+                    }
+                  >
+                    <option value="" className="bg-canvas-0 text-ink-900">
+                      Select state/region
+                    </option>
+                    {statesForCountry.map((s) => (
+                      <option
+                        key={s.code}
+                        value={s.code}
+                        className="bg-canvas-0 text-ink-900"
+                      >
+                        {s.name}
+                      </option>
+                    ))}
+                  </select>
+                ) : (
+                  <input
+                    className="border-ink-300 focus:border-primary-500 focus:ring-primary-500 rounded-md border bg-transparent p-2 text-sm focus:outline-none focus:ring-2"
+                    value={recipient.state_code}
+                    onChange={(e) =>
+                      setRecipient({ ...recipient, state_code: e.target.value })
+                    }
+                  />
+                )}
+              </Col>
+              {/* Country handled above as select */}
+              <Col>
+                <label className="text-ink-700 mb-1 text-sm font-medium">
+                  ZIP / Postal code <span className="text-red-600">*</span>
+                </label>
+                <input
+                  className="border-ink-300 focus:border-primary-500 focus:ring-primary-500 rounded-md border bg-transparent p-2 text-sm focus:outline-none focus:ring-2"
+                  value={recipient.zip}
+                  onChange={(e) =>
+                    setRecipient({ ...recipient, zip: e.target.value })
+                  }
+                  aria-required
+                />
+              </Col>
+              {/* Phone omitted; Printful accepts email for updates, phone is optional */}
             </div>
           </Col>
         )}
 
-        <Row className="justify-end gap-2">
+        <Row className="justify-end gap-2 pt-2">
           <a
             href="/shop"
-            className="bg-ink-100 hover:bg-ink-200 rounded px-3 py-2 text-sm"
+            className="hover:bg-ink-100 rounded px-3 py-2 text-sm"
           >
             Back
           </a>
           <button
             onClick={checkout}
             disabled={hasPrintful && !shippingValid}
-            className="bg-primary-600 hover:bg-primary-700 disabled:bg-ink-300 text-ink-0 rounded px-3 py-2 text-sm"
+            className="bg-primary-600 hover:bg-primary-700 disabled:bg-ink-300 text-ink-0 rounded px-4 py-2 text-sm"
           >
             Pay now
           </button>
