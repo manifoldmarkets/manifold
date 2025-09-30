@@ -47,6 +47,7 @@ import { EditCommentModal } from './edit-comment-modal'
 import { type Answer } from 'common/answer'
 import { useAnswer, useLiveAnswer } from 'web/hooks/use-answers'
 import { GiveAwardModal } from './give-award-modal'
+import { useUserAwardInventory } from 'web/hooks/use-user-award-inventory'
 
 export function FeedCommentHeader(props: {
   comment: ContractComment
@@ -494,6 +495,7 @@ function DotMenu(props: {
   const [editingComment, setEditingComment] = useState(false)
   const [awarding, setAwarding] = useState(false)
   const [annotating, setAnnotating] = useState(false)
+  const { inventory, refresh } = useUserAwardInventory()
   return (
     <>
       <ReportModal
@@ -667,6 +669,8 @@ function DotMenu(props: {
           contractId={playContract.id}
           commentId={comment.id}
           recipientId={comment.userId}
+          inventory={inventory}
+          refreshInventory={refresh}
         />
       )}
     </>

@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { Modal } from 'web/components/layout/modal'
 import { Col } from 'web/components/layout/col'
 import { Row } from 'web/components/layout/row'
@@ -6,7 +6,6 @@ import { Button } from 'web/components/buttons/button'
 import { Tooltip } from 'web/components/widgets/tooltip'
 import { toast } from 'react-hot-toast'
 import { api } from 'web/lib/api/api'
-import { useEffect } from 'react'
 import Link from 'next/link'
 
 export function GiveAwardModal(props: {
@@ -15,66 +14,79 @@ export function GiveAwardModal(props: {
   contractId: string
   commentId: string
   recipientId: string
+  inventory: { plus: number; premium: number; crystal: number } | null
+  refreshInventory: () => void
 }) {
-  const { open, setOpen, contractId, commentId } = props
+  const { open, setOpen, contractId, commentId, inventory, refreshInventory } =
+    props
   const [awardType, setAwardType] = useState<
     'plus' | 'premium' | 'crystal' | null
   >(null)
-  const [inv, setInv] = useState<{
-    plus: number
-    premium: number
-    crystal: number
-  } | null>(null)
+
+  // Reset selection when modal opens
   useEffect(() => {
-    if (!open) return
-    let cancelled = false
-    api('get-user-award-inventory', {}).then((res) => {
-      if (!cancelled) setInv(res)
-    })
-    return () => {
-      cancelled = true
+    if (!open) {
+      setAwardType(null)
+      return
     }
-  }, [open])
+    // Refresh inventory when modal opens to get latest data
+    refreshInventory()
+  }, [open, refreshInventory])
+
+  // Auto-select first owned award
   useEffect(() => {
-    if (!open || !inv) return
+    if (!open || !inventory) return
     const current = awardType
-    if (!current || inv[current] <= 0) {
+    if (!current || inventory[current] <= 0) {
       const first = (['plus', 'premium', 'crystal'] as const).find(
-        (t) => inv[t] > 0
+        (t) => inventory[t] > 0
       )
       setAwardType(first ?? null)
     }
-  }, [inv, open])
+  }, [inventory, open])
   const onConfirm = async () => {
-    if (!awardType || !inv || inv[awardType] <= 0) return
+    if (!awardType || !inventory || inventory[awardType] <= 0) return
     try {
       await api('give-comment-award', { contractId, commentId, awardType })
       toast.success('Award sent!')
+      refreshInventory() // Refresh after giving award
       setOpen(false)
     } catch (e: any) {
       toast.error(e?.message ?? 'Failed to send award')
     }
   }
-  const canConfirm = !!inv && !!awardType && inv[awardType] > 0
+  const canConfirm = !!inventory && !!awardType && inventory[awardType] > 0
   return (
-    <Modal open={open} setOpen={setOpen} size="sm" className="bg-canvas-0">
+    <Modal
+      open={open}
+      setOpen={setOpen}
+      size="sm"
+      className="bg-canvas-0 rounded-lg p-6"
+    >
       <Col className="gap-3 p-3">
-        <div className="text-lg font-semibold">Give award</div>
+        <Row className="items-center justify-between">
+          <div className="text-lg font-semibold">Give award</div>
+          <Link href="/shop" className="text-primary-600 text-sm underline">
+            Purchase awards
+          </Link>
+        </Row>
         <Row className="gap-3">
           <button
             className={
               'border-ink-300 rounded-md border p-2' +
               (awardType === 'plus' ? ' ring-primary-500 ring-2' : '') +
-              (inv != null && inv.plus <= 0
+              (inventory != null && inventory.plus <= 0
                 ? ' cursor-not-allowed opacity-50'
                 : '')
             }
-            onClick={() => inv && inv.plus > 0 && setAwardType('plus')}
-            disabled={inv != null && inv.plus <= 0}
+            onClick={() =>
+              inventory && inventory.plus > 0 && setAwardType('plus')
+            }
+            disabled={inventory != null && inventory.plus <= 0}
           >
             <Tooltip
               text={`Comment award (cost 500; author gets 50)${
-                inv ? ` — You have ${inv.plus}` : ''
+                inventory ? ` — You have ${inventory.plus}` : ''
               }`}
             >
               <img
@@ -83,9 +95,9 @@ export function GiveAwardModal(props: {
                 className="h-12 w-12"
               />
             </Tooltip>
-            {inv != null && (
+            {inventory != null && (
               <div className="text-ink-600 mt-1 text-center text-xs">
-                x{inv.plus}
+                x{inventory.plus}
               </div>
             )}
           </button>
@@ -93,16 +105,18 @@ export function GiveAwardModal(props: {
             className={
               'border-ink-300 rounded-md border p-2' +
               (awardType === 'premium' ? ' ring-primary-500 ring-2' : '') +
-              (inv != null && inv.premium <= 0
+              (inventory != null && inventory.premium <= 0
                 ? ' cursor-not-allowed opacity-50'
                 : '')
             }
-            onClick={() => inv && inv.premium > 0 && setAwardType('premium')}
-            disabled={inv != null && inv.premium <= 0}
+            onClick={() =>
+              inventory && inventory.premium > 0 && setAwardType('premium')
+            }
+            disabled={inventory != null && inventory.premium <= 0}
           >
             <Tooltip
               text={`Premium comment award (cost 2,500; author gets 250)${
-                inv ? ` — You have ${inv.premium}` : ''
+                inventory ? ` — You have ${inventory.premium}` : ''
               }`}
             >
               <img
@@ -111,9 +125,9 @@ export function GiveAwardModal(props: {
                 className="h-12 w-12"
               />
             </Tooltip>
-            {inv != null && (
+            {inventory != null && (
               <div className="text-ink-600 mt-1 text-center text-xs">
-                x{inv.premium}
+                x{inventory.premium}
               </div>
             )}
           </button>
@@ -121,16 +135,18 @@ export function GiveAwardModal(props: {
             className={
               'border-ink-300 rounded-md border p-2' +
               (awardType === 'crystal' ? ' ring-primary-500 ring-2' : '') +
-              (inv != null && inv.crystal <= 0
+              (inventory != null && inventory.crystal <= 0
                 ? ' cursor-not-allowed opacity-50'
                 : '')
             }
-            onClick={() => inv && inv.crystal > 0 && setAwardType('crystal')}
-            disabled={inv != null && inv.crystal <= 0}
+            onClick={() =>
+              inventory && inventory.crystal > 0 && setAwardType('crystal')
+            }
+            disabled={inventory != null && inventory.crystal <= 0}
           >
             <Tooltip
               text={`Crystal comment award (cost 10,000; author gets 1,000)${
-                inv ? ` — You have ${inv.crystal}` : ''
+                inventory ? ` — You have ${inventory.crystal}` : ''
               }`}
             >
               <img
@@ -139,24 +155,15 @@ export function GiveAwardModal(props: {
                 className="h-12 w-12"
               />
             </Tooltip>
-            {inv != null && (
+            {inventory != null && (
               <div className="text-ink-600 mt-1 text-center text-xs">
-                x{inv.crystal}
+                x{inventory.crystal}
               </div>
             )}
           </button>
         </Row>
-        <Row className="items-center justify-between">
-          {inv && inv.plus + inv.premium + inv.crystal === 0 && (
-            <div className="text-ink-600 text-sm">
-              You don’t own any awards yet.
-            </div>
-          )}
-          <Link href="/shop" className="text-primary-600 text-sm underline">
-            Buy more in shop
-          </Link>
-        </Row>
-        <Row className="justify-end gap-2">
+
+        <Row className="justify-end gap-2 pt-2">
           <Button color="gray-white" onClick={() => setOpen(false)}>
             Cancel
           </Button>
