@@ -18,26 +18,12 @@ export function useUserEntitlements(userId?: string) {
         cancelled = true
       }
     }
-    console.log('Fetching entitlements for userId:', userId)
     api('get-user-entitlements', { userId })
       .then((res) => {
-        console.log('Entitlements response:', res)
-        console.log(
-          'Individual entitlements:',
-          res.entitlements.map((e) => e.entitlementId)
-        )
-        if (!cancelled) {
-          console.log(
-            'Setting entitlements state for userId:',
-            userId,
-            res.entitlements
-          )
-          setEnts(res.entitlements)
-          console.log('State set, should trigger re-render')
-        }
+        if (!cancelled) setEnts(res.entitlements)
       })
       .catch((error) => {
-        console.error('Entitlements API error:', error)
+        console.error('Failed to fetch user entitlements:', error)
         if (!cancelled) setEnts([])
       })
     return () => {
