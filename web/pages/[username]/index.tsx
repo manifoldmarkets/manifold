@@ -309,6 +309,7 @@ function UserProfile(props: {
               <ImageWithBlurredShadow
                 image={
                   <Avatar
+                    userId={user.id}
                     username={user.username}
                     avatarUrl={user.avatarUrl}
                     size={'lg'}

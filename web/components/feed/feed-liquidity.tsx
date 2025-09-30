@@ -36,6 +36,7 @@ export function FeedLiquidity(props: {
     <Row className={clsx('items-stretch gap-2', className)}>
       {isSelf ? (
         <Avatar
+          userId={user.id}
           avatarUrl={user.avatarUrl}
           username={user.username}
           size={avatarSize}
@@ -43,6 +44,7 @@ export function FeedLiquidity(props: {
       ) : showUser && bettor ? (
         <UserHovercard userId={userId}>
           <Avatar
+            userId={userId}
             avatarUrl={bettor.avatarUrl}
             username={bettor.username}
             size={avatarSize}

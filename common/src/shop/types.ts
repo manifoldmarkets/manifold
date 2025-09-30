@@ -23,3 +23,7 @@ export type ShopOrder = {
   createdTime: string
   deliveredTime?: string
 }
+
+// Cosmetics/Entitlements
+export const GOLDEN_CROWN_ID = 'golden-crown'
+export type EntitlementId = typeof GOLDEN_CROWN_ID | string

@@ -182,6 +182,8 @@ import {
 import { purchaseContractBoost } from './purchase-boost'
 import { purchaseShopItem } from './purchase-shop-item'
 import { getShopOrders } from './get-shop-orders'
+import { getUserEntitlements } from './get-user-entitlements'
+import { updateUserEntitlement } from './update-user-entitlement'
 import { checkoutShopCart } from './checkout-shop-cart'
 import { checkoutPrintful } from './checkout-printful'
 import { referUser } from './refer-user'
@@ -360,6 +362,8 @@ export const handlers: { [k in APIPath]: APIHandler<k> } = {
   'get-shop-orders': getShopOrders,
   'checkout-shop-cart': checkoutShopCart,
   'checkout-printful': checkoutPrintful,
+  'get-user-entitlements': getUserEntitlements,
+  'update-user-entitlement': updateUserEntitlement,
   'generate-ai-numeric-ranges': generateAINumericRanges,
   'regenerate-numeric-midpoints': regenerateNumericMidpoints,
   'infer-numeric-unit': inferNumericUnit,

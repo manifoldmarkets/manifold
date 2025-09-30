@@ -513,6 +513,7 @@ function ContractQuestion(props: {
       {!hideAvatar && (
         <UserHovercard userId={contract.creatorId}>
           <Avatar
+            userId={contract.creatorId}
             username={contract.creatorUsername}
             avatarUrl={contract.creatorAvatarUrl}
             createdTime={contract.creatorCreatedTime}

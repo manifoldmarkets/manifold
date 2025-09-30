@@ -85,6 +85,7 @@ export function PostCard(props: { post: TopLevelPost }) {
         <Row className="items-center justify-between">
           <Row className="items-center gap-2 text-sm">
             <Avatar
+              userId={post.creatorId}
               username={post.creatorUsername}
               avatarUrl={post.creatorAvatarUrl}
               size={'2xs'}

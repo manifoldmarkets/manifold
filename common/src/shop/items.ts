@@ -26,6 +26,17 @@ export const SHOP_ITEM_CONFIGS: ShopItemConfig[] = [
     enabled: true,
   },
   {
+    id: 'golden-crown',
+    type: 'digital',
+    title: 'Golden Crown',
+    price: 2000,
+    description:
+      'Adds a gold ring and crown icon to your avatar across the site.',
+    perUserLimit: 1,
+    images: ['/promo/promo-2.png'],
+    enabled: true,
+  },
+  {
     id: 'profile-frame',
     type: 'digital',
     title: 'Profile Frame',

@@ -101,6 +101,13 @@ export const checkoutShopCart: APIHandler<'checkout-shop-cart'> = async (
         [userId, l.itemId, l.price, l.quantity, txnResult.id, { key: l.key }]
       )
       processed += l.quantity
+      // Grant entitlement for digital cosmetic items (1:1 by itemId)
+      await tx.none(
+        `insert into user_entitlements (user_id, entitlement_id)
+           values ($1, $2)
+         on conflict (user_id, entitlement_id) do nothing`,
+        [userId, l.itemId]
+      )
     }
   })
 

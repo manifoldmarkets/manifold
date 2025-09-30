@@ -669,6 +669,7 @@ const CommentLog = memo(function FeedComment(props: {
         <UserHovercard userId={userId}>
           <Row className="items-center gap-2 font-semibold">
             <Avatar
+              userId={userId}
               avatarUrl={userAvatarUrl}
               username={userUsername}
               size="xs"

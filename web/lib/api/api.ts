@@ -261,3 +261,5 @@ export function createChartAnnotation(params: {
 export function deleteChartAnnotation(params: { id: number }) {
   return call(getApiUrl('delete-chart-annotation'), 'POST', params)
 }
+
+export const getUserEntitlements = curriedAPI('get-user-entitlements')

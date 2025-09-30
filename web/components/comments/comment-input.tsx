@@ -107,7 +107,12 @@ export function CommentInput(props: {
     </div>
   ) : (
     <Row className={clsx(className, 'mb-2 w-full gap-1 sm:gap-2')}>
-      <Avatar avatarUrl={user?.avatarUrl} username={user?.username} size="sm" />
+      <Avatar
+        userId={user?.id}
+        avatarUrl={user?.avatarUrl}
+        username={user?.username}
+        size="sm"
+      />
       <CommentInputTextArea
         editor={editor}
         autoFocus={autoFocus}

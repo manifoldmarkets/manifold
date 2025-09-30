@@ -57,6 +57,7 @@ export function UserAvatarAndBadge(props: {
     <UserHovercard userId={user.id}>
       <Row className={clsx('items-center gap-2', className)}>
         <Avatar
+          userId={user.id}
           avatarUrl={avatarUrl}
           username={username}
           size={'sm'}
@@ -80,6 +81,7 @@ export function UserAvatar(props: {
     <UserHovercard userId={user.id}>
       <Row className={clsx('items-center gap-2', className)}>
         <Avatar
+          userId={user.id}
           avatarUrl={avatarUrl}
           username={username}
           size={size}

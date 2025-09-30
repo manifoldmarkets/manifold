@@ -62,6 +62,7 @@ export const FeedBet = memo(function FeedBet(props: {
           {showUser ? (
             <UserHovercard userId={userId}>
               <Avatar
+                userId={userId}
                 size={avatarSize}
                 avatarUrl={user?.avatarUrl}
                 username={user?.username}

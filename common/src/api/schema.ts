@@ -2239,6 +2239,35 @@ export const API = (_apiTypeCheck = {
     returns: {} as { orders: import('../shop/types').ShopOrder[] },
     props: z.object({}).strict(),
   },
+  'get-user-entitlements': {
+    method: 'GET',
+    visibility: 'public',
+    authed: false,
+    returns: {} as {
+      entitlements: {
+        entitlementId: string
+        grantedTime: string
+        expiresTime?: string | null
+        metadata?: Record<string, any>
+      }[]
+    },
+    props: z.object({ userId: z.string().optional() }).strict(),
+  },
+  'update-user-entitlement': {
+    method: 'POST',
+    visibility: 'undocumented',
+    authed: true,
+    returns: {} as { success: boolean },
+    props: z
+      .object({
+        userId: z.string().optional(),
+        entitlementId: z.string(),
+        grant: z.boolean().optional().default(true),
+        expiresTime: z.string().optional(),
+        metadata: z.any().optional(),
+      })
+      .strict(),
+  },
   'checkout-shop-cart': {
     method: 'POST',
     visibility: 'public',
