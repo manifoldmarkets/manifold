@@ -56,14 +56,18 @@ export function UserAvatarAndBadge(props: {
   return (
     <UserHovercard userId={user.id}>
       <Row className={clsx('items-center gap-2', className)}>
-        <Avatar
-          userId={user.id}
-          avatarUrl={avatarUrl}
-          username={username}
-          size={'sm'}
-          noLink={noLink}
-        />
-        <UserLink short={short} user={user} noLink={noLink} />
+        <div className="flex-shrink-0 overflow-visible">
+          <Avatar
+            userId={user.id}
+            avatarUrl={avatarUrl}
+            username={username}
+            size={'sm'}
+            noLink={noLink}
+          />
+        </div>
+        <div className="min-w-0 flex-1 overflow-hidden">
+          <UserLink short={short} user={user} noLink={noLink} />
+        </div>
       </Row>
     </UserHovercard>
   )

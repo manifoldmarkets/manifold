@@ -685,7 +685,7 @@ const PositionRow = memo(function PositionRow(props: {
       <UserHovercard userId={userId}>
         <Row
           className={clsx(
-            'max-w-[7rem] shrink items-center gap-2 overflow-hidden sm:max-w-none'
+            'max-w-[7rem] shrink items-center gap-2 overflow-visible sm:max-w-none'
           )}
         >
           <UserAvatarAndBadge

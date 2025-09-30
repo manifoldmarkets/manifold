@@ -59,7 +59,7 @@ export function Leaderboard<T extends LeaderboardEntry>(props: {
                   </td>
                   <td>
                     <UserAvatarAndBadge
-                      className="overflow-hidden max-[400px]:max-w-[160px] sm:max-w-[200px] xl:max-w-none"
+                      className="max-[400px]:max-w-[160px] sm:max-w-[200px] xl:max-w-none"
                       user={{ id: entry.userId, ...entry }}
                     />
                   </td>
