@@ -556,8 +556,7 @@ function BetsTable(props: {
     week: (c) => -(metricsByContractId[c.id].from?.week.profit ?? 0),
     closeTime: (c) =>
       // This is in fact the intuitive sort direction.
-      (filter === 'open' ? -1 : 1) *
-      (c.resolutionTime ?? c.closeTime ?? Infinity),
+      -1 * (c.resolutionTime ?? c.closeTime ?? Infinity),
     dayPctChange: (c) =>
       -(metricsByContractId[c.id].from?.day.profitPercent ?? 0),
     costBasis: (c) => -(metricsByContractId[c.id].invested ?? 0),
@@ -784,7 +783,8 @@ function BetsTable(props: {
                           </span>
                           {sortOption.field === 'closeTime' && closeDate ? (
                             <span className="text-ink-500 ml-1 whitespace-nowrap">
-                              • closes in
+                              •{' '}
+                              {closeDate < Date.now() ? 'closed' : 'closes in'}{' '}
                               <RelativeTimestamp
                                 time={closeDate}
                                 className="text-ink-500"
