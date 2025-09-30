@@ -187,6 +187,8 @@ import { updateUserEntitlement } from './update-user-entitlement'
 import { getShopItemCounts } from './get-shop-item-counts'
 import { getVeryRichBadge } from './get-very-rich-badge'
 import { giveCommentAward } from './give-comment-award'
+import { getCommentAwards } from './get-comment-awards'
+import { getUserAwardInventory } from './get-user-award-inventory'
 import { checkoutShopCart } from './checkout-shop-cart'
 import { checkoutPrintful } from './checkout-printful'
 import { referUser } from './refer-user'
@@ -370,6 +372,8 @@ export const handlers: { [k in APIPath]: APIHandler<k> } = {
   'get-shop-item-counts': getShopItemCounts,
   'get-very-rich-badge': getVeryRichBadge,
   'give-comment-award': giveCommentAward,
+  'get-comment-awards': getCommentAwards,
+  'get-user-award-inventory': getUserAwardInventory,
   'generate-ai-numeric-ranges': generateAINumericRanges,
   'regenerate-numeric-midpoints': regenerateNumericMidpoints,
   'infer-numeric-unit': inferNumericUnit,

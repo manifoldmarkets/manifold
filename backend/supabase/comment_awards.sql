@@ -13,3 +13,5 @@ create table if not exists
 create index if not exists comment_awards_comment_idx on public.comment_awards (comment_id);
 
 create index if not exists comment_awards_receiver_idx on public.comment_awards (receiver_user_id);
+
+create unique index if not exists comment_awards_unique_giver_per_comment on public.comment_awards (comment_id, giver_user_id);

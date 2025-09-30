@@ -21,6 +21,7 @@ import { UserHovercard } from '../user/user-hovercard'
 import Link from 'next/link'
 import { CommentReplyHeader, FeedCommentHeader } from './comment-header'
 import { CommentActions } from './comment-actions'
+import { useCommentAwards } from 'web/hooks/use-comment-awards'
 
 export type ReplyToUserInfo = { id: string; username: string }
 
@@ -106,6 +107,7 @@ export const FeedComment = memo(function FeedComment(props: {
   }, [bets?.length])
 
   const { userUsername, userAvatarUrl, userId } = comment
+  const awards = useCommentAwards(playContract.id, [comment.id])[comment.id]
   const ref = useRef<HTMLDivElement>(null)
   const isBetParent = !!bets?.length
 
@@ -192,9 +194,11 @@ export const FeedComment = memo(function FeedComment(props: {
             inTimeline={inTimeline}
             isParent={isParent}
             isPinned={isPinned}
+            awards={awards}
           />
 
           <HideableContent comment={comment} />
+
           <Row>
             {children}
             <CommentActions

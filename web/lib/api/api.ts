@@ -269,3 +269,6 @@ export const getShopItemCounts = curriedAPI('get-shop-item-counts')
 export const getVeryRichBadge = curriedAPI('get-very-rich-badge')
 
 export const giveCommentAward = curriedAPI('give-comment-award')
+
+export const getCommentAwards = curriedAPI('get-comment-awards')
+export const getUserAwardInventory = curriedAPI('get-user-award-inventory')

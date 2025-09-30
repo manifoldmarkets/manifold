@@ -2,13 +2,12 @@ import {
   DotsHorizontalIcon,
   EyeOffIcon,
   FlagIcon,
-  LinkIcon,
   PencilIcon,
   PlusCircleIcon,
   TrashIcon,
   XCircleIcon,
 } from '@heroicons/react/solid'
-import { ThumbDownIcon } from '@heroicons/react/outline'
+import { ThumbDownIcon, LinkIcon } from '@heroicons/react/outline'
 import clsx from 'clsx'
 import { Bet } from 'common/bet'
 import { ContractComment } from 'common/comment'
@@ -26,8 +25,6 @@ import { useIsMobile } from 'web/hooks/use-is-mobile'
 import { usePrivateUser, useUser } from 'web/hooks/use-user'
 import { useDisplayUserById } from 'web/hooks/use-user-supabase'
 import { api } from 'web/lib/api/api'
-import { PaymentsModal } from 'web/pages/payments'
-import TipJar from 'web/public/custom-components/tipJar'
 import { AnnotateChartModal } from '../annotate-chart'
 import { MoneyDisplay } from '../bet/money-display'
 import { ReportModal } from '../buttons/report-button'
@@ -35,7 +32,6 @@ import { CommentOnAnswer } from '../feed/comment-on-answer'
 import {
   CopyLinkDateTimeComponent,
   copyLinkToComment,
-  getCommentLink,
 } from '../feed/copy-link-date-time'
 import { Col } from '../layout/col'
 import { Row } from '../layout/row'
@@ -50,6 +46,7 @@ import DropdownMenu from '../widgets/dropdown-menu'
 import { EditCommentModal } from './edit-comment-modal'
 import { type Answer } from 'common/answer'
 import { useAnswer, useLiveAnswer } from 'web/hooks/use-answers'
+import { GiveAwardModal } from './give-award-modal'
 
 export function FeedCommentHeader(props: {
   comment: ContractComment
@@ -62,9 +59,17 @@ export function FeedCommentHeader(props: {
   isParent?: boolean
   isPinned?: boolean
   className?: string
+  awards?: { plus?: number; premium?: number; crystal?: number }
 }) {
-  const { comment, playContract, menuProps, inTimeline, isPinned, className } =
-    props
+  const {
+    comment,
+    playContract,
+    menuProps,
+    inTimeline,
+    isPinned,
+    className,
+    awards,
+  } = props
 
   const {
     userUsername,
@@ -95,8 +100,8 @@ export function FeedCommentHeader(props: {
   const isLimitBet = betOrderAmount !== undefined && betLimitProb !== undefined
   return (
     <Col className={clsx('text-ink-600 text-sm', className)}>
-      <Row className="items-start justify-between">
-        <span className="items-center gap-x-1">
+      <Row className="items-start">
+        <span className="flex-1 items-center gap-x-1">
           <UserHovercard userId={userId}>
             <UserLink
               user={{
@@ -145,7 +150,7 @@ export function FeedCommentHeader(props: {
             </span>
           )}
           {/* Hide my status if replying to a bet, it's too much clutter*/}
-          {!isReplyToBet && !inTimeline && (
+          {!isReplyToBet && !inTimeline && betAmount !== undefined && (
             <span className="text-ink-500">
               <CommentStatus contract={playContract} comment={comment} />
               {bought} {money}
@@ -180,6 +185,41 @@ export function FeedCommentHeader(props: {
           )}
         </span>
         <Row className="gap-1">
+          {awards &&
+            ((awards.plus ?? 0) > 0 ||
+              (awards.premium ?? 0) > 0 ||
+              (awards.crystal ?? 0) > 0) && (
+              <Row className="gap-1">
+                {(awards.plus ?? 0) > 0 && (
+                  <Tooltip text={`Comment award × ${awards.plus}`}>
+                    <img
+                      src="/market-tiers/Plus.svg"
+                      alt="Plus"
+                      className="h-4 w-4"
+                    />
+                  </Tooltip>
+                )}
+                {(awards.premium ?? 0) > 0 && (
+                  <Tooltip text={`Premium comment award × ${awards.premium}`}>
+                    <img
+                      src="/market-tiers/Premium.svg"
+                      alt="Premium"
+                      className="h-4 w-4"
+                    />
+                  </Tooltip>
+                )}
+                {(awards.crystal ?? 0) > 0 && (
+                  <Tooltip text={`Crystal comment award × ${awards.crystal}`}>
+                    <img
+                      src="/market-tiers/Crystal.svg"
+                      alt="Crystal"
+                      className="h-4 w-4"
+                    />
+                  </Tooltip>
+                )}
+              </Row>
+            )}
+
           {!inTimeline && menuProps && (
             <DotMenu
               comment={comment}
@@ -452,7 +492,7 @@ function DotMenu(props: {
   const isMod = useAdminOrMod()
   const isContractCreator = privateUser?.id === playContract.creatorId
   const [editingComment, setEditingComment] = useState(false)
-  const [tipping, setTipping] = useState(false)
+  const [awarding, setAwarding] = useState(false)
   const [annotating, setAnnotating] = useState(false)
   return (
     <>
@@ -490,9 +530,15 @@ function DotMenu(props: {
           },
           user &&
             comment.userId !== user.id && {
-              name: 'Tip',
-              icon: <TipJar size={20} color="currentcolor" />,
-              onClick: () => setTipping(true),
+              name: 'Give award',
+              icon: (
+                <img
+                  src="/market-tiers/Plus.svg"
+                  alt="Plus"
+                  className="h-5 w-5"
+                />
+              ),
+              onClick: () => setAwarding(true),
             },
           user &&
             comment.userId !== user.id && {
@@ -614,25 +660,13 @@ function DotMenu(props: {
           setOpen={setEditingComment}
         />
       )}
-      {user && tipping && (
-        <PaymentsModal
-          fromUser={user}
-          toUser={{
-            id: comment.userId,
-            name: comment.userName,
-            username: comment.userUsername,
-            avatarUrl: comment.userAvatarUrl ?? '',
-          }}
-          setShow={setTipping}
-          show={tipping}
-          groupId={comment.id}
-          defaultMessage={`Tip for comment on ${
-            playContract.question
-          } ${getCommentLink(
-            playContract.creatorUsername,
-            playContract.slug,
-            comment.id
-          )}`}
+      {user && awarding && (
+        <GiveAwardModal
+          open={awarding}
+          setOpen={setAwarding}
+          contractId={playContract.id}
+          commentId={comment.id}
+          recipientId={comment.userId}
         />
       )}
     </>

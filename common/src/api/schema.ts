@@ -2289,6 +2289,31 @@ export const API = (_apiTypeCheck = {
       })
       .strict(),
   },
+  'get-comment-awards': {
+    method: 'GET',
+    visibility: 'public',
+    authed: false,
+    returns: {} as {
+      awardsByComment: {
+        [commentId: string]: {
+          plus: number
+          premium: number
+          crystal: number
+          awardedByMe?: boolean
+        }
+      }
+    },
+    props: z
+      .object({ contractId: z.string(), commentIds: z.array(z.string()) })
+      .strict(),
+  },
+  'get-user-award-inventory': {
+    method: 'GET',
+    visibility: 'public',
+    authed: true,
+    returns: {} as { plus: number; premium: number; crystal: number },
+    props: z.object({}).strict(),
+  },
 
   'get-very-rich-badge': {
     method: 'GET',
