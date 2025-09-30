@@ -184,6 +184,7 @@ import { purchaseShopItem } from './purchase-shop-item'
 import { getShopOrders } from './get-shop-orders'
 import { getUserEntitlements } from './get-user-entitlements'
 import { updateUserEntitlement } from './update-user-entitlement'
+import { getShopItemCounts } from './get-shop-item-counts'
 import { checkoutShopCart } from './checkout-shop-cart'
 import { checkoutPrintful } from './checkout-printful'
 import { referUser } from './refer-user'
@@ -364,6 +365,7 @@ export const handlers: { [k in APIPath]: APIHandler<k> } = {
   'checkout-printful': checkoutPrintful,
   'get-user-entitlements': getUserEntitlements,
   'update-user-entitlement': updateUserEntitlement,
+  'get-shop-item-counts': getShopItemCounts,
   'generate-ai-numeric-ranges': generateAINumericRanges,
   'regenerate-numeric-midpoints': regenerateNumericMidpoints,
   'infer-numeric-unit': inferNumericUnit,

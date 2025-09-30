@@ -2268,6 +2268,14 @@ export const API = (_apiTypeCheck = {
       })
       .strict(),
   },
+
+  'get-shop-item-counts': {
+    method: 'GET',
+    visibility: 'public',
+    authed: false,
+    returns: {} as { counts: { [itemId: string]: number } },
+    props: z.object({}).strict(),
+  },
   'checkout-shop-cart': {
     method: 'POST',
     visibility: 'public',

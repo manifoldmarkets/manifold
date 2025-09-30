@@ -10,6 +10,7 @@ export type ShopItemConfigBase = {
   price: number
   description?: string
   perUserLimit?: number
+  globalLimit?: number
   images?: string[]
   enabled?: boolean
 }
@@ -28,11 +29,12 @@ export const SHOP_ITEM_CONFIGS: ShopItemConfig[] = [
   {
     id: 'golden-crown',
     type: 'digital',
-    title: 'Golden Crown',
-    price: 2000,
+    title: 'Golden Crown Border',
+    price: 500000,
     description:
       'Adds a gold ring and crown icon to your avatar across the site.',
     perUserLimit: 1,
+    globalLimit: 10,
     images: ['/promo/promo-2.png'],
     enabled: true,
   },

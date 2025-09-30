@@ -15,7 +15,10 @@ import {
 } from 'common/src/shop/items'
 import { useCart } from 'web/hooks/use-cart'
 import type { CartItem } from 'web/hooks/use-cart'
+import { useShopItemCounts } from 'web/hooks/use-shop-item-counts'
 import { IoCartOutline } from 'react-icons/io5'
+import { TbCrown } from 'react-icons/tb'
+import { Avatar } from 'web/components/widgets/avatar'
 
 type ShopItem = {
   id: string
@@ -23,6 +26,7 @@ type ShopItem = {
   price: number
   imageUrl: string
   perUserLimit?: number
+  globalLimit?: number
 }
 
 const DIGITAL_ITEMS: ShopItem[] = getEnabledConfigs()
@@ -33,6 +37,7 @@ const DIGITAL_ITEMS: ShopItem[] = getEnabledConfigs()
     price: c.price,
     imageUrl: c.images?.[0] ?? '/logo.png',
     perUserLimit: c.perUserLimit,
+    globalLimit: c.globalLimit,
   }))
 
 const PHYSICAL_OTHER_ITEMS: ShopItem[] = getEnabledConfigs()
@@ -43,6 +48,7 @@ const PHYSICAL_OTHER_ITEMS: ShopItem[] = getEnabledConfigs()
     price: c.price,
     imageUrl: c.images?.[0] ?? '/logo.png',
     perUserLimit: c.perUserLimit,
+    globalLimit: c.globalLimit,
   }))
 
 const PRINTFUL_PRICE_MANA: Record<number, number> = Object.fromEntries(
@@ -56,6 +62,8 @@ const ShopPage: NextPage = () => {
   const balance = user?.balance ?? 0
   const { items: cartItems, addItem } = useCart()
   const [orderCounts, setOrderCounts] = useState<Record<string, number>>({})
+  const { counts: globalCounts, loading: globalCountsLoading } =
+    useShopItemCounts()
 
   const [remote, setRemote] = useState<
     | {
@@ -144,6 +152,13 @@ const ShopPage: NextPage = () => {
                 cartItems={cartItems}
                 addItem={addItem}
                 orderCounts={orderCounts}
+                globalCounts={globalCounts}
+                globalCountsLoading={globalCountsLoading}
+                currentUser={{
+                  id: user?.id,
+                  username: user?.username,
+                  avatarUrl: user?.avatarUrl,
+                }}
               />
             ))}
           </div>
@@ -187,6 +202,13 @@ const ShopPage: NextPage = () => {
                 cartItems={cartItems}
                 addItem={addItem}
                 orderCounts={orderCounts}
+                globalCounts={globalCounts}
+                globalCountsLoading={globalCountsLoading}
+                currentUser={{
+                  id: user?.id,
+                  username: user?.username,
+                  avatarUrl: user?.avatarUrl,
+                }}
               />
             ))}
           </div>
@@ -249,30 +271,86 @@ function SimpleItemCard(props: {
   cartItems: CartItem[]
   addItem: (ci: CartItem) => void
   orderCounts: Record<string, number>
+  globalCounts: Record<string, number>
+  globalCountsLoading: boolean
+  currentUser?: { id?: string; username?: string; avatarUrl?: string }
 }) {
-  const { kind, item, balance, cartItems, addItem, orderCounts } = props
+  const {
+    kind,
+    item,
+    balance,
+    cartItems,
+    addItem,
+    orderCounts,
+    globalCounts,
+    globalCountsLoading,
+    currentUser,
+  } = props
   const inCart = cartItems
     .filter((ci) => ci.key === `${kind}:${item.id}`)
     .reduce((a, b) => a + b.quantity, 0)
   const existing = orderCounts[item.id] ?? 0
-  const atLimit = !!item.perUserLimit && existing + inCart >= item.perUserLimit
+  const atUserLimit =
+    !!item.perUserLimit && existing + inCart >= item.perUserLimit
+
+  // Check global limit
+  const globalCount = globalCounts[item.id] ?? 0
+  const globalLimit = item.globalLimit
+  const atGlobalLimit = !!globalLimit && globalCount >= globalLimit
+  const remaining = globalLimit ? globalLimit - globalCount : undefined
+
+  const atLimit = atUserLimit || atGlobalLimit
   return (
     <Col className="bg-canvas-0 border-ink-200 rounded-lg border p-4 shadow-sm">
       <div className="bg-ink-100 aspect-square w-full overflow-hidden rounded-md">
-        <img
-          src={item.imageUrl}
-          alt={item.title}
-          className="h-full w-full object-cover"
-        />
+        {item.id === 'golden-crown' && (
+          <Row className="relative h-full w-full items-center justify-center">
+            {/* Gold ring preview */}
+            <div className="relative">
+              <Avatar
+                username={currentUser?.username}
+                avatarUrl={currentUser?.avatarUrl}
+                size="xl"
+                noLink
+                className="ring-2 ring-yellow-400"
+              />
+              {/* Crown overlay scaled for xl avatar */}
+              <div className="absolute -right-6 -top-4">
+                <TbCrown className="h-11 w-11 rotate-45 text-yellow-400" />
+              </div>
+            </div>
+          </Row>
+        )}
+        {item.id !== 'golden-crown' && (
+          <img
+            src={item.imageUrl}
+            alt={item.title}
+            className="h-full w-full object-cover"
+          />
+        )}
       </div>
-      <div className="text-ink-600 mt-3 text-sm">{item.title}</div>
+      <Row className="items-center justify-between">
+        <div className="text-ink-600 mt-3 text-sm">{item.title}</div>
+        {globalLimit && !globalCountsLoading && (
+          <div
+            className={`mt-3 text-xs ${
+              atGlobalLimit ? 'text-red-600' : 'text-amber-600'
+            }`}
+          >
+            {atGlobalLimit ? 'Sold out' : `${remaining} remaining`}
+          </div>
+        )}
+        {globalCountsLoading && globalLimit && (
+          <div className="text-ink-400 mt-3 text-xs">Loading...</div>
+        )}
+      </Row>
       <div className="text-lg font-medium">
         <TokenNumber amount={item.price} isInline />
       </div>
 
       <ConfirmationButton
         openModalBtn={{
-          label: atLimit ? 'Purchased' : 'Buy',
+          label: atGlobalLimit ? 'Sold Out' : atUserLimit ? 'Purchased' : 'Buy',
           color: 'indigo',
           className: 'mt-3 w-full',
           disabled: atLimit,

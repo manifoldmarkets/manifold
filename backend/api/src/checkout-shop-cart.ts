@@ -53,15 +53,36 @@ export const checkoutShopCart: APIHandler<'checkout-shop-cart'> = async (
     )
   for (const [itemId, requestedQty] of requestedByItem.entries()) {
     const cfg = configById.get(itemId)
+
+    // Check per-user limit
     const limit = cfg?.perUserLimit
-    if (!limit) continue
-    const existingRow = await pg.oneOrNone<{ q: string }>(
-      `select coalesce(sum(quantity), 0) as q from shop_orders where user_id = $1 and item_id = $2`,
-      [userId, itemId]
-    )
-    const existingQty = Number(existingRow?.q ?? 0)
-    if (existingQty + requestedQty > limit) {
-      throw new APIError(403, `Limit ${limit} per user for ${itemId}`)
+    if (limit) {
+      const existingRow = await pg.oneOrNone<{ q: string }>(
+        `select coalesce(sum(quantity), 0) as q from shop_orders where user_id = $1 and item_id = $2`,
+        [userId, itemId]
+      )
+      const existingQty = Number(existingRow?.q ?? 0)
+      if (existingQty + requestedQty > limit) {
+        throw new APIError(403, `Limit ${limit} per user for ${itemId}`)
+      }
+    }
+
+    // Check global limit
+    const globalLimit = cfg?.globalLimit
+    if (globalLimit) {
+      const globalRow = await pg.oneOrNone<{ count: string }>(
+        `select count(*) as count from user_entitlements where entitlement_id = $1`,
+        [itemId]
+      )
+      const currentGlobalCount = Number(globalRow?.count ?? 0)
+      if (currentGlobalCount + requestedQty > globalLimit) {
+        throw new APIError(
+          403,
+          `Only ${globalLimit} available globally for ${itemId}, ${
+            globalLimit - currentGlobalCount
+          } remaining`
+        )
+      }
     }
   }
 
