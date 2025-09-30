@@ -2276,6 +2276,19 @@ export const API = (_apiTypeCheck = {
     returns: {} as { counts: { [itemId: string]: number } },
     props: z.object({}).strict(),
   },
+  'give-comment-award': {
+    method: 'POST',
+    visibility: 'public',
+    authed: true,
+    returns: {} as { success: true },
+    props: z
+      .object({
+        commentId: z.string(),
+        contractId: z.string(),
+        awardType: z.enum(['plus', 'premium', 'crystal']),
+      })
+      .strict(),
+  },
 
   'get-very-rich-badge': {
     method: 'GET',

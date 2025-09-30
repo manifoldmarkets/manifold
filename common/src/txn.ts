@@ -45,6 +45,8 @@ type AnyTxnType =
   | PushNotificationBonus
   | LikePurchase
   | ShopPurchase
+  | CommentAwardPurchase
+  | CommentAwardPayout
   | ContractUndoOldResolutionPayout
   | ContractAnte
   | AddSubsidy
@@ -492,6 +494,31 @@ type LikePurchase = {
   fromType: 'USER'
   toType: 'BANK'
   token: 'M$'
+}
+
+type CommentAwardPurchase = {
+  category: 'COMMENT_AWARD_PURCHASE'
+  fromType: 'USER'
+  toType: 'BANK'
+  token: 'M$'
+  data: {
+    commentId: string
+    contractId: string
+    awardType: 'plus' | 'premium' | 'crystal'
+  }
+}
+
+type CommentAwardPayout = {
+  category: 'COMMENT_AWARD_PAYOUT'
+  fromType: 'BANK'
+  toType: 'USER'
+  token: 'M$'
+  data: {
+    commentId: string
+    contractId: string
+    awardType: 'plus' | 'premium' | 'crystal'
+    fromUserId: string
+  }
 }
 
 type ShopPurchase = {

@@ -39,6 +39,34 @@ export const SHOP_ITEM_CONFIGS: ShopItemConfig[] = [
     images: ['/promo/promo-2.png'],
     enabled: true,
   },
+  {
+    id: 'award-plus',
+    type: 'digital',
+    title: 'Comment award',
+    price: 500,
+    description:
+      'Give a small award to a comment (giver pays, 50 M$ to author).',
+    images: ['/market-tiers/Plus.svg'],
+    enabled: true,
+  },
+  {
+    id: 'award-premium',
+    type: 'digital',
+    title: 'Premium comment award',
+    price: 2500,
+    description: 'Give a premium award (giver pays, 250 M$ to author).',
+    images: ['/market-tiers/Premium.svg'],
+    enabled: true,
+  },
+  {
+    id: 'award-crystal',
+    type: 'digital',
+    title: 'Crystal comment award',
+    price: 10000,
+    description: 'Give a crystal award (giver pays, 1000 M$ to author).',
+    images: ['/market-tiers/Crystal.svg'],
+    enabled: true,
+  },
   // Physical goods via Printful
   {
     id: 'printful-shirt',
