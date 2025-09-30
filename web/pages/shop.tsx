@@ -18,6 +18,7 @@ import type { CartItem } from 'web/hooks/use-cart'
 import { useShopItemCounts } from 'web/hooks/use-shop-item-counts'
 import { IoCartOutline } from 'react-icons/io5'
 import { TbCrown } from 'react-icons/tb'
+import { BsFire } from 'react-icons/bs'
 import { Avatar } from 'web/components/widgets/avatar'
 
 type ShopItem = {
@@ -263,6 +264,29 @@ function colorToSwatch(c: string | undefined) {
 }
 
 export default ShopPage
+function VeryRichSpent(props: { userId: string }) {
+  const { userId } = props
+  const [amount, setAmount] = useState<number | null>(null)
+  useEffect(() => {
+    let cancelled = false
+    import('web/lib/api/api').then(({ getVeryRichBadge }) => {
+      getVeryRichBadge({ userId }).then((res: any) => {
+        if (!cancelled) setAmount(res.amountSpentMana ?? 0)
+      })
+    })
+    return () => {
+      cancelled = true
+    }
+  }, [userId])
+  if (amount == null) return null
+  return (
+    <div className="text-ink-600 text-sm">
+      You’ve already burned <TokenNumber amount={amount} isInline /> on this
+      badge. You can buy again to burn more mana and increase the price by{' '}
+      <TokenNumber amount={100000} isInline /> for all users.
+    </div>
+  )
+}
 
 function SimpleItemCard(props: {
   kind: 'digital' | 'other'
@@ -300,6 +324,11 @@ function SimpleItemCard(props: {
   const remaining = globalLimit ? globalLimit - globalCount : undefined
 
   const atLimit = atUserLimit || atGlobalLimit
+  const isVeryRich = item.id === 'very-rich-badge'
+  const purchasedCount = globalCounts[item.id] ?? 0
+  const currentDynamicPrice = isVeryRich
+    ? 100000 + purchasedCount * 100000
+    : item.price
   return (
     <Col className="bg-canvas-0 border-ink-200 rounded-lg border p-4 shadow-sm">
       <div className="bg-ink-100 aspect-square w-full overflow-hidden rounded-md">
@@ -321,7 +350,12 @@ function SimpleItemCard(props: {
             </div>
           </Row>
         )}
-        {item.id !== 'golden-crown' && (
+        {item.id === 'very-rich-badge' && (
+          <Row className="h-full w-full items-center justify-center">
+            <BsFire className="h-24 w-24 text-orange-500" />
+          </Row>
+        )}
+        {item.id !== 'golden-crown' && item.id !== 'very-rich-badge' && (
           <img
             src={item.imageUrl}
             alt={item.title}
@@ -345,12 +379,18 @@ function SimpleItemCard(props: {
         )}
       </Row>
       <div className="text-lg font-medium">
-        <TokenNumber amount={item.price} isInline />
+        <TokenNumber amount={currentDynamicPrice} isInline />
       </div>
 
       <ConfirmationButton
         openModalBtn={{
-          label: atGlobalLimit ? 'Sold Out' : atUserLimit ? 'Purchased' : 'Buy',
+          label: isVeryRich
+            ? 'Buy more'
+            : atGlobalLimit
+            ? 'Sold Out'
+            : atUserLimit
+            ? 'Purchased'
+            : 'Buy',
           color: 'indigo',
           className: 'mt-3 w-full',
           disabled: atLimit,
@@ -377,7 +417,7 @@ function SimpleItemCard(props: {
             key: `${kind}:${item.id}`,
             title: item.title,
             imageUrl: item.imageUrl,
-            price: item.price,
+            price: currentDynamicPrice,
             quantity: 1,
           })
           toast.success('Added to cart')
@@ -388,11 +428,14 @@ function SimpleItemCard(props: {
           <div className="text-md font-medium">Confirm purchase</div>
           <div className="text-ink-700 text-sm">{item.title}</div>
           <div className="text-sm">
-            Price: <TokenNumber amount={item.price} isInline />
+            Price: <TokenNumber amount={currentDynamicPrice} isInline />
           </div>
+          {isVeryRich && currentUser?.id && (
+            <VeryRichSpent userId={currentUser.id} />
+          )}
           <div className="text-sm">
             Balance change: <TokenNumber amount={balance} isInline /> →{' '}
-            <TokenNumber amount={balance - item.price} isInline />
+            <TokenNumber amount={balance - currentDynamicPrice} isInline />
           </div>
         </Col>
       </ConfirmationButton>

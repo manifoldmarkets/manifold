@@ -7,22 +7,21 @@ export const getShopItemCounts: APIHandler<
 > = async () => {
   const pg = createSupabaseDirectClient()
 
-  // Get all items that have global limits
-  const itemsWithLimits = getEnabledConfigs().filter(
-    (item) => item.globalLimit !== undefined
-  )
-  const itemIds = itemsWithLimits.map((item) => item.id)
+  // Count all enabled digital items (used for global caps and dynamic pricing)
+  const itemIds = getEnabledConfigs()
+    .filter((item) => item.type === 'digital')
+    .map((item) => item.id)
 
   if (itemIds.length === 0) {
     return { counts: {} }
   }
 
-  // Count current owners for each item with a global limit
+  // Count total purchases from shop_orders for digital items
   const rows = await pg.manyOrNone(
-    `select entitlement_id, count(*) as count
-     from user_entitlements
-     where entitlement_id = ANY($1)
-     group by entitlement_id`,
+    `select item_id, coalesce(sum(quantity), 0) as count
+       from shop_orders
+      where item_type = 'digital' and item_id = ANY($1)
+      group by item_id`,
     [itemIds]
   )
 
@@ -35,7 +34,7 @@ export const getShopItemCounts: APIHandler<
 
   // Update with actual counts
   rows.forEach((row: any) => {
-    counts[row.entitlement_id] = parseInt(row.count)
+    counts[row.item_id] = parseInt(row.count)
   })
 
   return { counts }

@@ -38,7 +38,15 @@ export const checkoutShopCart: APIHandler<'checkout-shop-cart'> = async (
       skipped++
       continue
     }
-    const price = cfg.price
+    let price = cfg.price
+    // Dynamic pricing for very-rich-badge: base 500k + 100k per prior purchase
+    if (rest === 'very-rich-badge') {
+      const row = await pg.oneOrNone<{ count: string }>(
+        `select count(*) as count from shop_orders where item_id = 'very-rich-badge'`
+      )
+      const purchased = Number(row?.count ?? 0)
+      price = 100000 + purchased * 100000
+    }
     lines.push({ key, itemId: rest, quantity, price })
     total += price * quantity
   }
@@ -56,7 +64,7 @@ export const checkoutShopCart: APIHandler<'checkout-shop-cart'> = async (
 
     // Check per-user limit
     const limit = cfg?.perUserLimit
-    if (limit) {
+    if (limit && itemId !== 'very-rich-badge') {
       const existingRow = await pg.oneOrNone<{ q: string }>(
         `select coalesce(sum(quantity), 0) as q from shop_orders where user_id = $1 and item_id = $2`,
         [userId, itemId]
@@ -117,9 +125,17 @@ export const checkoutShopCart: APIHandler<'checkout-shop-cart'> = async (
     for (const l of lines) {
       await tx.none(
         `insert into shop_orders
-         (user_id, item_id, item_type, price_mana, quantity, txn_id, status, delivered_time, created_time, metadata)
-         values ($1, $2, 'digital', $3, $4, $5, 'DELIVERED', now(), now(), $6)`,
-        [userId, l.itemId, l.price, l.quantity, txnResult.id, { key: l.key }]
+         (user_id, item_id, item_type, price_mana, amount_spent_mana, quantity, txn_id, status, delivered_time, created_time, metadata)
+         values ($1, $2, 'digital', $3, $4, $5, $6, 'DELIVERED', now(), now(), $7)`,
+        [
+          userId,
+          l.itemId,
+          l.price,
+          l.price * l.quantity,
+          l.quantity,
+          txnResult.id,
+          { key: l.key },
+        ]
       )
       processed += l.quantity
       // Grant entitlement for digital cosmetic items (1:1 by itemId)

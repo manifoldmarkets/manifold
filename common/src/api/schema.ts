@@ -2276,6 +2276,14 @@ export const API = (_apiTypeCheck = {
     returns: {} as { counts: { [itemId: string]: number } },
     props: z.object({}).strict(),
   },
+
+  'get-very-rich-badge': {
+    method: 'GET',
+    visibility: 'public',
+    authed: false,
+    returns: {} as { amountSpentMana: number },
+    props: z.object({ userId: z.string().optional() }).strict(),
+  },
   'checkout-shop-cart': {
     method: 'POST',
     visibility: 'public',

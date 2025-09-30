@@ -27,6 +27,17 @@ export const SHOP_ITEM_CONFIGS: ShopItemConfig[] = [
     enabled: true,
   },
   {
+    id: 'very-rich-badge',
+    type: 'digital',
+    title: `"I'm Very Rich" Badge`,
+    // Base price; actual price is dynamic in checkout based on global count
+    price: 100000,
+    description:
+      'A flex badge. Each purchase increases the next price by 100,000 M$.',
+    images: ['/logo.png'],
+    enabled: true,
+  },
+  {
     id: 'golden-crown',
     type: 'digital',
     title: 'Golden Crown Border',

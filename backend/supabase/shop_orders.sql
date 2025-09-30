@@ -6,6 +6,7 @@ create table if not exists
     item_id text not null,
     item_type text not null check (item_type in ('digital', 'printful', 'other')),
     price_mana bigint not null,
+    amount_spent_mana bigint null,
     quantity int not null default 1,
     txn_id text null,
     printful_order_id text null,

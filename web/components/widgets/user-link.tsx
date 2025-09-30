@@ -27,6 +27,8 @@ import { GiBurningSkull } from 'react-icons/gi'
 import { HiOutlineBuildingLibrary } from 'react-icons/hi2'
 import { User } from 'common/user'
 import { LuSprout } from 'react-icons/lu'
+import { useEffect, useState } from 'react'
+import { BsFire } from 'react-icons/bs'
 export const isFresh = (createdTime: number) =>
   createdTime > Date.now() - DAY_MS * 14
 
@@ -215,6 +217,8 @@ export function UserBadge(props: {
   if (marketCreator) {
     badges.push(<MarketCreatorBadge key="creator" />)
   }
+  // Very Rich badge render (async hover tooltip shows amount spent)
+  badges.push(<VeryRichBadge key="very-rich" userId={userId} />)
   return <>{badges}</>
 }
 
@@ -301,6 +305,31 @@ function MarketCreatorBadge() {
   return (
     <Tooltip text="Question Creator" placement="right">
       <ScalesIcon className="h-4 w-4 text-amber-400" aria-hidden="true" />
+    </Tooltip>
+  )
+}
+
+function VeryRichBadge(props: { userId: string }) {
+  const { userId } = props
+  const [amount, setAmount] = useState<number | null>(null)
+  useEffect(() => {
+    let cancelled = false
+    import('web/lib/api/api').then(({ getVeryRichBadge }) => {
+      getVeryRichBadge({ userId }).then((res: any) => {
+        if (!cancelled) setAmount(res.amountSpentMana ?? 0)
+      })
+    })
+    return () => {
+      cancelled = true
+    }
+  }, [userId])
+  if (amount == null || amount <= 0) return null
+  return (
+    <Tooltip
+      text={`I am very rich, I burned ${amount.toLocaleString()} mana to buy this badge`}
+      placement="right"
+    >
+      <BsFire className="h-3 w-3 text-orange-500" aria-hidden />
     </Tooltip>
   )
 }
