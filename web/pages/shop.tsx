@@ -20,6 +20,9 @@ import { IoCartOutline } from 'react-icons/io5'
 import { TbCrown } from 'react-icons/tb'
 import { BsFire } from 'react-icons/bs'
 import { Avatar } from 'web/components/widgets/avatar'
+import { clearEntitlementsCache } from 'web/hooks/use-user-entitlements'
+import { clearVeryRichBadgeCache } from 'web/hooks/use-very-rich-badge'
+import { clearAwardInventoryCache } from 'web/hooks/use-user-award-inventory'
 
 type ShopItem = {
   id: string
@@ -406,8 +409,24 @@ function SimpleItemCard(props: {
                 items: [{ key: `${kind}:${item.id}`, quantity: 1 }],
               })
               toast.success('Purchase complete')
+
+              // Clear cache so new purchase shows immediately
+              if (currentUser?.id) {
+                if (item.id === 'golden-crown') {
+                  clearEntitlementsCache(currentUser.id)
+                } else if (item.id === 'very-rich-badge') {
+                  clearVeryRichBadgeCache(currentUser.id)
+                } else if (
+                  item.id === 'award-plus' ||
+                  item.id === 'award-premium' ||
+                  item.id === 'award-crystal'
+                ) {
+                  clearAwardInventoryCache()
+                }
+              }
+
               return true
-            } catch (e) {
+            } catch (_e) {
               toast.error('Purchase failed')
               return false
             }
