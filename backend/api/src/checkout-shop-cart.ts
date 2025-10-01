@@ -62,16 +62,31 @@ export const checkoutShopCart: APIHandler<'checkout-shop-cart'> = async (
   for (const [itemId, requestedQty] of requestedByItem.entries()) {
     const cfg = configById.get(itemId)
 
-    // Check per-user limit
+    // Check per-user limit (monthly for streak-forgiveness, lifetime for others)
     const limit = cfg?.perUserLimit
     if (limit && itemId !== 'very-rich-badge') {
-      const existingRow = await pg.oneOrNone<{ q: string }>(
-        `select coalesce(sum(quantity), 0) as q from shop_orders where user_id = $1 and item_id = $2`,
-        [userId, itemId]
-      )
-      const existingQty = Number(existingRow?.q ?? 0)
+      let existingQty = 0
+      if (itemId === 'streak-forgiveness') {
+        // Monthly limit: check purchases in the last 30 days
+        const existingRow = await pg.oneOrNone<{ q: string }>(
+          `select coalesce(sum(quantity), 0) as q from shop_orders 
+           where user_id = $1 and item_id = $2 
+           and created_time > now() - interval '30 days'`,
+          [userId, itemId]
+        )
+        existingQty = Number(existingRow?.q ?? 0)
+      } else {
+        // Lifetime limit for other items
+        const existingRow = await pg.oneOrNone<{ q: string }>(
+          `select coalesce(sum(quantity), 0) as q from shop_orders where user_id = $1 and item_id = $2`,
+          [userId, itemId]
+        )
+        existingQty = Number(existingRow?.q ?? 0)
+      }
       if (existingQty + requestedQty > limit) {
-        throw new APIError(403, `Limit ${limit} per user for ${itemId}`)
+        const limitType =
+          itemId === 'streak-forgiveness' ? 'per month' : 'per user'
+        throw new APIError(403, `Limit ${limit} ${limitType} for ${itemId}`)
       }
     }
 
@@ -138,13 +153,27 @@ export const checkoutShopCart: APIHandler<'checkout-shop-cart'> = async (
         ]
       )
       processed += l.quantity
-      // Grant entitlement for digital cosmetic items (1:1 by itemId)
-      await tx.none(
-        `insert into user_entitlements (user_id, entitlement_id)
-           values ($1, $2)
-         on conflict (user_id, entitlement_id) do nothing`,
-        [userId, l.itemId]
-      )
+
+      // Handle special item logic
+      if (l.itemId === 'streak-forgiveness') {
+        // Increment user's streakForgiveness by the quantity purchased
+        await tx.none(
+          `update users set data = jsonb_set(
+            coalesce(data, '{}'::jsonb),
+            '{streakForgiveness}',
+            to_jsonb((coalesce((data->>'streakForgiveness')::int, 0) + $2))
+          ) where id = $1`,
+          [userId, l.quantity]
+        )
+      } else {
+        // Grant entitlement for digital cosmetic items (1:1 by itemId)
+        await tx.none(
+          `insert into user_entitlements (user_id, entitlement_id)
+             values ($1, $2)
+           on conflict (user_id, entitlement_id) do nothing`,
+          [userId, l.itemId]
+        )
+      }
     }
   })
 

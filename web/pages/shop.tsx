@@ -1,5 +1,5 @@
 import { NextPage } from 'next'
-import { useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import { Col } from 'web/components/layout/col'
 import { Row } from 'web/components/layout/row'
 import { Page } from 'web/components/layout/page'
@@ -19,6 +19,7 @@ import { useShopItemCounts } from 'web/hooks/use-shop-item-counts'
 import { IoCartOutline } from 'react-icons/io5'
 import { TbCrown } from 'react-icons/tb'
 import { BsFire } from 'react-icons/bs'
+import { IoSnowOutline } from 'react-icons/io5'
 import { Avatar } from 'web/components/widgets/avatar'
 import { clearEntitlementsCache } from 'web/hooks/use-user-entitlements'
 import { clearVeryRichBadgeCache } from 'web/hooks/use-very-rich-badge'
@@ -66,6 +67,9 @@ const ShopPage: NextPage = () => {
   const balance = user?.balance ?? 0
   const { items: cartItems, addItem } = useCart()
   const [orderCounts, setOrderCounts] = useState<Record<string, number>>({})
+  const [lastPurchaseTimes, setLastPurchaseTimes] = useState<
+    Record<string, number>
+  >({})
   const { counts: globalCounts, loading: globalCountsLoading } =
     useShopItemCounts()
 
@@ -95,21 +99,39 @@ const ShopPage: NextPage = () => {
       .catch(() => setRemote([]))
   }, [])
 
-  useEffect(() => {
+  const refreshOrderCounts = useCallback(() => {
     if (!user) {
       setOrderCounts({})
+      setLastPurchaseTimes({})
       return
     }
     api('get-shop-orders', {})
       .then((res) => {
         const counts: Record<string, number> = {}
+        const times: Record<string, number> = {}
         for (const o of res.orders ?? []) {
           counts[o.itemId] = (counts[o.itemId] ?? 0) + o.quantity
+          // Track the most recent purchase time for each item
+          const createdTime =
+            typeof o.createdTime === 'number'
+              ? o.createdTime
+              : new Date(o.createdTime).getTime()
+          if (!times[o.itemId] || createdTime > times[o.itemId]) {
+            times[o.itemId] = createdTime
+          }
         }
         setOrderCounts(counts)
+        setLastPurchaseTimes(times)
       })
-      .catch(() => setOrderCounts({}))
-  }, [user?.id])
+      .catch(() => {
+        setOrderCounts({})
+        setLastPurchaseTimes({})
+      })
+  }, [user])
+
+  useEffect(() => {
+    refreshOrderCounts()
+  }, [refreshOrderCounts])
 
   const digitalItems = useMemo(() => DIGITAL_ITEMS, [])
   const physicalOtherItems = useMemo(() => PHYSICAL_OTHER_ITEMS, [])
@@ -153,6 +175,7 @@ const ShopPage: NextPage = () => {
                 cartItems={cartItems}
                 addItem={addItem}
                 orderCounts={orderCounts}
+                lastPurchaseTimes={lastPurchaseTimes}
                 globalCounts={globalCounts}
                 globalCountsLoading={globalCountsLoading}
                 currentUser={{
@@ -160,6 +183,7 @@ const ShopPage: NextPage = () => {
                   username: user?.username,
                   avatarUrl: user?.avatarUrl,
                 }}
+                refreshOrderCounts={refreshOrderCounts}
               />
             ))}
           </div>
@@ -201,6 +225,7 @@ const ShopPage: NextPage = () => {
                 cartItems={cartItems}
                 addItem={addItem}
                 orderCounts={orderCounts}
+                lastPurchaseTimes={lastPurchaseTimes}
                 globalCounts={globalCounts}
                 globalCountsLoading={globalCountsLoading}
                 currentUser={{
@@ -208,6 +233,7 @@ const ShopPage: NextPage = () => {
                   username: user?.username,
                   avatarUrl: user?.avatarUrl,
                 }}
+                refreshOrderCounts={refreshOrderCounts}
               />
             ))}
           </div>
@@ -279,9 +305,22 @@ function VeryRichSpent(props: { userId: string }) {
   if (amount == null) return null
   return (
     <div className="text-ink-600 text-sm">
-      You’ve already burned <TokenNumber amount={amount} isInline /> on this
+      You've already burned <TokenNumber amount={amount} isInline /> on this
       badge. You can buy again to burn more mana and increase the price by{' '}
       <TokenNumber amount={100000} isInline /> for all users.
+    </div>
+  )
+}
+
+function CurrentStreakForgiveness() {
+  const fullUser = useUser()
+  const streakForgiveness = fullUser?.streakForgiveness ?? 0
+  return (
+    <div className="text-ink-600 text-sm">
+      You currently have{' '}
+      <span className="font-semibold">{streakForgiveness}</span> streak
+      forgiveness token{streakForgiveness !== 1 ? 's' : ''}. This will give you{' '}
+      {streakForgiveness + 1} total.
     </div>
   )
 }
@@ -293,9 +332,11 @@ function SimpleItemCard(props: {
   cartItems: CartItem[]
   addItem: (ci: CartItem) => void
   orderCounts: Record<string, number>
+  lastPurchaseTimes: Record<string, number>
   globalCounts: Record<string, number>
   globalCountsLoading: boolean
   currentUser?: { id?: string; username?: string; avatarUrl?: string }
+  refreshOrderCounts: () => void
 }) {
   const {
     kind,
@@ -304,9 +345,11 @@ function SimpleItemCard(props: {
     cartItems,
     addItem,
     orderCounts,
+    lastPurchaseTimes,
     globalCounts,
     globalCountsLoading,
     currentUser,
+    refreshOrderCounts,
   } = props
   const inCart = cartItems
     .filter((ci) => ci.key === `${kind}:${item.id}`)
@@ -314,6 +357,20 @@ function SimpleItemCard(props: {
   const existing = orderCounts[item.id] ?? 0
   const atUserLimit =
     !!item.perUserLimit && existing + inCart >= item.perUserLimit
+
+  // Calculate days remaining for monthly limits
+  const isStreakForgiveness = item.id === 'streak-forgiveness'
+  const lastPurchaseTime = lastPurchaseTimes[item.id]
+  let daysUntilCanPurchase = 0
+  if (isStreakForgiveness && lastPurchaseTime && atUserLimit) {
+    const now = Date.now()
+    const thirtyDaysMs = 30 * 24 * 60 * 60 * 1000
+    const timeSincePurchase = now - lastPurchaseTime
+    const timeUntilCanPurchase = thirtyDaysMs - timeSincePurchase
+    daysUntilCanPurchase = Math.ceil(
+      timeUntilCanPurchase / (24 * 60 * 60 * 1000)
+    )
+  }
 
   // Check global limit
   const globalCount = globalCounts[item.id] ?? 0
@@ -353,13 +410,20 @@ function SimpleItemCard(props: {
             <BsFire className="h-24 w-24 text-orange-500" />
           </Row>
         )}
-        {item.id !== 'golden-crown' && item.id !== 'very-rich-badge' && (
-          <img
-            src={item.imageUrl}
-            alt={item.title}
-            className="h-full w-full object-cover"
-          />
+        {item.id === 'streak-forgiveness' && (
+          <Row className="h-full w-full items-center justify-center">
+            <IoSnowOutline className="h-24 w-24 text-blue-400" />
+          </Row>
         )}
+        {item.id !== 'golden-crown' &&
+          item.id !== 'very-rich-badge' &&
+          item.id !== 'streak-forgiveness' && (
+            <img
+              src={item.imageUrl}
+              alt={item.title}
+              className="h-full w-full object-cover"
+            />
+          )}
       </div>
       <Row className="items-center justify-between">
         <div className="text-ink-600 mt-3 text-sm">{item.title}</div>
@@ -386,6 +450,8 @@ function SimpleItemCard(props: {
             ? 'Buy more'
             : atGlobalLimit
             ? 'Sold Out'
+            : atUserLimit && isStreakForgiveness && daysUntilCanPurchase > 0
+            ? `${daysUntilCanPurchase}d left`
             : atUserLimit
             ? 'Purchased'
             : 'Buy',
@@ -409,6 +475,9 @@ function SimpleItemCard(props: {
                 items: [{ key: `${kind}:${item.id}`, quantity: 1 }],
               })
               toast.success('Purchase complete')
+
+              // Refresh order counts immediately
+              refreshOrderCounts()
 
               // Clear cache so new purchase shows immediately
               if (currentUser?.id) {
@@ -464,6 +533,7 @@ function SimpleItemCard(props: {
           {isVeryRich && currentUser?.id && (
             <VeryRichSpent userId={currentUser.id} />
           )}
+          {item.id === 'streak-forgiveness' && <CurrentStreakForgiveness />}
           <div className="text-sm">
             Balance change: <TokenNumber amount={balance} isInline /> →{' '}
             <TokenNumber amount={balance - currentDynamicPrice} isInline />

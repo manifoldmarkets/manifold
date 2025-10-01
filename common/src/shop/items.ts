@@ -67,6 +67,17 @@ export const SHOP_ITEM_CONFIGS: ShopItemConfig[] = [
     images: ['/market-tiers/Crystal.svg'],
     enabled: true,
   },
+  {
+    id: 'streak-forgiveness',
+    type: 'digital',
+    title: 'Streak Forgiveness',
+    price: 10000,
+    description:
+      'Protects your prediction streak from being broken if you miss a day.',
+    perUserLimit: 1,
+    images: ['/logo.png'],
+    enabled: true,
+  },
   // Physical goods via Printful
   {
     id: 'printful-shirt',
