@@ -26,6 +26,7 @@ import {
   FaArrowTrendDown,
   FaArrowTrendUp,
   FaBackward,
+  FaStore,
 } from 'react-icons/fa6'
 import { contractPathWithoutContract } from 'common/contract'
 import { linkClass } from 'web/components/widgets/site-link'
@@ -509,6 +510,9 @@ const TxnBalanceChangeRow = (props: {
     UNDO_CONTRACT_RESOLUTION_FEE: 'bg-canvas-100',
     ADMIN_REWARD:
       'bg-gradient-to-br from-pink-300 via-purple-300 to-primary-400',
+    SHOP_PURCHASE: 'bg-purple-500',
+    COMMENT_AWARD_PURCHASE: 'bg-orange-500',
+    COMMENT_AWARD_PAYOUT: 'bg-teal-600',
   }
 
   return (
@@ -556,6 +560,12 @@ const TxnBalanceChangeRow = (props: {
               '🏦'
             ) : type === 'MANA_PURCHASE' ? (
               '🤑'
+            ) : type === 'SHOP_PURCHASE' ? (
+              <FaStore className={'h-5 w-5 text-white'} />
+            ) : type === 'COMMENT_AWARD_PURCHASE' ? (
+              '⭐'
+            ) : type === 'COMMENT_AWARD_PAYOUT' ? (
+              '🎁'
             ) : [
                 'UNIQUE_BETTOR_BONUS',
                 'CASH_BONUS',
