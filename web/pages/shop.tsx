@@ -4,6 +4,7 @@ import { Col } from 'web/components/layout/col'
 import { Row } from 'web/components/layout/row'
 import { Page } from 'web/components/layout/page'
 import { ConfirmationButton } from 'web/components/buttons/confirmation-button'
+import { Button } from 'web/components/buttons/button'
 import { useUser } from 'web/hooks/use-user'
 import toast from 'react-hot-toast'
 import { api } from 'web/lib/api/api'
@@ -20,10 +21,15 @@ import { IoCartOutline } from 'react-icons/io5'
 import { TbCrown } from 'react-icons/tb'
 import { BsFire } from 'react-icons/bs'
 import { IoSnowOutline } from 'react-icons/io5'
+import { ArrowUpIcon } from '@heroicons/react/solid'
 import { Avatar } from 'web/components/widgets/avatar'
-import { clearEntitlementsCache } from 'web/hooks/use-user-entitlements'
+import {
+  clearEntitlementsCache,
+  useUserEntitlements,
+} from 'web/hooks/use-user-entitlements'
 import { clearVeryRichBadgeCache } from 'web/hooks/use-very-rich-badge'
 import { clearAwardInventoryCache } from 'web/hooks/use-user-award-inventory'
+import { clearPampuSkinCache } from 'web/hooks/use-has-pampu-skin'
 
 type ShopItem = {
   id: string
@@ -425,6 +431,29 @@ function SimpleItemCard(props: {
     currentUser,
     refreshOrderCounts,
   } = props
+
+  // Get entitlements to check PAMPU skin equipped status
+  const entitlements = useUserEntitlements(currentUser?.id)
+  const pampuSkinEnt = entitlements?.find(
+    (e) => e.entitlementId === 'pampu-skin'
+  )
+  const isPampuOwned = !!pampuSkinEnt
+  const [isTogglingPampu, setIsTogglingPampu] = useState(false)
+  // Use local state to immediately reflect changes
+  const [localEquippedState, setLocalEquippedState] = useState<boolean | null>(
+    null
+  )
+  const isPampuEquipped =
+    localEquippedState !== null
+      ? localEquippedState
+      : pampuSkinEnt?.metadata?.equipped === true
+
+  // Sync local state when entitlements change
+  useEffect(() => {
+    if (pampuSkinEnt && localEquippedState === null) {
+      setLocalEquippedState(pampuSkinEnt.metadata?.equipped === true)
+    }
+  }, [pampuSkinEnt, localEquippedState])
   const inCart = cartItems
     .filter((ci) => ci.key === `${kind}:${item.id}`)
     .reduce((a, b) => a + b.quantity, 0)
@@ -499,9 +528,19 @@ function SimpleItemCard(props: {
             <IoSnowOutline className="h-24 w-24 text-blue-400" />
           </Row>
         )}
+        {item.id === 'pampu-skin' && (
+          <Row className="h-full w-full items-center justify-center p-4">
+            {/* Recreate the PAMPU button */}
+            <div className="flex w-full items-center justify-center rounded-lg bg-teal-500 px-6 py-4 text-xl font-semibold text-white shadow-md transition-colors hover:bg-teal-600">
+              PAMPU
+              <ArrowUpIcon className="ml-2 h-5 w-5" />
+            </div>
+          </Row>
+        )}
         {item.id !== 'golden-crown' &&
           item.id !== 'very-rich-badge' &&
-          item.id !== 'streak-forgiveness' && (
+          item.id !== 'streak-forgiveness' &&
+          item.id !== 'pampu-skin' && (
             <img
               src={item.imageUrl}
               alt={item.title}
@@ -547,109 +586,146 @@ function SimpleItemCard(props: {
         <TokenNumber amount={currentDynamicPrice} isInline />
       </div>
 
-      <ConfirmationButton
-        openModalBtn={{
-          label: atGlobalLimit
-            ? 'Sold Out'
-            : isVeryRich && hoursUntilCanPurchase > 0
-            ? hoursUntilCanPurchase >= 24
-              ? `${Math.ceil(hoursUntilCanPurchase / 24)}d cooldown`
-              : `${hoursUntilCanPurchase}h cooldown`
-            : isVeryRich
-            ? 'Buy more'
-            : atUserLimit && isStreakForgiveness && daysUntilCanPurchase > 0
-            ? `${daysUntilCanPurchase}d cooldown`
-            : atUserLimit
-            ? 'Purchased'
-            : 'Buy',
-          color: 'indigo',
-          className: 'mt-3 w-full',
-          disabled: atLimit || (isVeryRich && hoursUntilCanPurchase > 0),
-        }}
-        cancelBtn={{ label: 'Cancel' }}
-        submitBtn={{
-          label: kind === 'digital' ? 'Buy now' : 'Add to Cart',
-          color: 'indigo',
-        }}
-        onSubmitWithSuccess={async () => {
-          if (item.perUserLimit && item.perUserLimit <= 0) {
-            toast.error('This item is not currently available')
-            return false
-          }
-          if (kind === 'digital') {
+      {/* Special handling for PAMPU skin - show Equip/Unequip if owned */}
+      {item.id === 'pampu-skin' && isPampuOwned ? (
+        <Button
+          color={isPampuEquipped ? 'red' : 'indigo'}
+          className="mt-3 w-full"
+          disabled={isTogglingPampu}
+          onClick={async () => {
+            if (!currentUser?.id) return
+            setIsTogglingPampu(true)
+            const newEquippedState = !isPampuEquipped
+            // Optimistically update UI
+            setLocalEquippedState(newEquippedState)
             try {
-              await api('checkout-shop-cart', {
-                items: [{ key: `${kind}:${item.id}`, quantity: 1 }],
-              })
-              toast.success('Purchase complete')
-
-              // Refresh order counts immediately
-              refreshOrderCounts()
-
-              // Clear cache so new purchase shows immediately
-              if (currentUser?.id) {
-                if (item.id === 'golden-crown') {
-                  clearEntitlementsCache(currentUser.id)
-                } else if (item.id === 'very-rich-badge') {
-                  clearVeryRichBadgeCache(currentUser.id)
-                } else if (
-                  item.id === 'award-plus' ||
-                  item.id === 'award-premium' ||
-                  item.id === 'award-crystal'
-                ) {
-                  clearAwardInventoryCache()
-                }
-              }
-
-              return true
+              await api('toggle-pampu-skin', { equipped: newEquippedState })
+              clearPampuSkinCache(currentUser.id)
+              clearEntitlementsCache(currentUser.id)
+              toast.success(
+                newEquippedState
+                  ? 'PAMPU skin equipped!'
+                  : 'PAMPU skin unequipped'
+              )
             } catch (_e) {
-              toast.error('Purchase failed')
+              // Revert on error
+              setLocalEquippedState(!newEquippedState)
+              toast.error('Failed to toggle PAMPU skin')
+            } finally {
+              setIsTogglingPampu(false)
+            }
+          }}
+        >
+          {isPampuEquipped ? 'Unequip' : 'Equip'}
+        </Button>
+      ) : (
+        <ConfirmationButton
+          openModalBtn={{
+            label: atGlobalLimit
+              ? 'Sold Out'
+              : isVeryRich && hoursUntilCanPurchase > 0
+              ? hoursUntilCanPurchase >= 24
+                ? `${Math.ceil(hoursUntilCanPurchase / 24)}d cooldown`
+                : `${hoursUntilCanPurchase}h cooldown`
+              : isVeryRich
+              ? 'Buy more'
+              : atUserLimit && isStreakForgiveness && daysUntilCanPurchase > 0
+              ? `${daysUntilCanPurchase}d cooldown`
+              : atUserLimit
+              ? 'Purchased'
+              : 'Buy',
+            color: 'indigo',
+            className: 'mt-3 w-full',
+            disabled: atLimit || (isVeryRich && hoursUntilCanPurchase > 0),
+          }}
+          cancelBtn={{ label: 'Cancel' }}
+          submitBtn={{
+            label: kind === 'digital' ? 'Buy now' : 'Add to Cart',
+            color: 'indigo',
+          }}
+          onSubmitWithSuccess={async () => {
+            if (item.perUserLimit && item.perUserLimit <= 0) {
+              toast.error('This item is not currently available')
               return false
             }
-          } else {
-            // physical/other -> add to cart
-            const inCartNow = cartItems
-              .filter((ci) => ci.key === `${kind}:${item.id}`)
-              .reduce((a, b) => a + b.quantity, 0)
-            const existingNow = orderCounts[item.id] ?? 0
-            if (
-              item.perUserLimit &&
-              existingNow + inCartNow >= item.perUserLimit
-            ) {
-              toast.error(`Limit ${item.perUserLimit} per user`)
-              return false
+            if (kind === 'digital') {
+              try {
+                await api('checkout-shop-cart', {
+                  items: [{ key: `${kind}:${item.id}`, quantity: 1 }],
+                })
+                toast.success('Purchase complete')
+
+                // Refresh order counts immediately
+                refreshOrderCounts()
+
+                // Clear cache so new purchase shows immediately
+                if (currentUser?.id) {
+                  if (item.id === 'golden-crown') {
+                    clearEntitlementsCache(currentUser.id)
+                  } else if (item.id === 'very-rich-badge') {
+                    clearVeryRichBadgeCache(currentUser.id)
+                  } else if (
+                    item.id === 'award-plus' ||
+                    item.id === 'award-premium' ||
+                    item.id === 'award-crystal'
+                  ) {
+                    clearAwardInventoryCache()
+                  } else if (item.id === 'pampu-skin') {
+                    clearPampuSkinCache(currentUser.id)
+                    clearEntitlementsCache(currentUser.id)
+                  }
+                }
+
+                return true
+              } catch (_e) {
+                toast.error('Purchase failed')
+                return false
+              }
+            } else {
+              // physical/other -> add to cart
+              const inCartNow = cartItems
+                .filter((ci) => ci.key === `${kind}:${item.id}`)
+                .reduce((a, b) => a + b.quantity, 0)
+              const existingNow = orderCounts[item.id] ?? 0
+              if (
+                item.perUserLimit &&
+                existingNow + inCartNow >= item.perUserLimit
+              ) {
+                toast.error(`Limit ${item.perUserLimit} per user`)
+                return false
+              }
+              addItem({
+                key: `${kind}:${item.id}`,
+                title: item.title,
+                imageUrl: item.imageUrl,
+                price: currentDynamicPrice,
+                quantity: 1,
+              })
+              toast.success('Added to cart')
+              return true
             }
-            addItem({
-              key: `${kind}:${item.id}`,
-              title: item.title,
-              imageUrl: item.imageUrl,
-              price: currentDynamicPrice,
-              quantity: 1,
-            })
-            toast.success('Added to cart')
-            return true
-          }
-        }}
-      >
-        <Col className="gap-2">
-          <div className="text-md font-medium">Confirm purchase</div>
-          <div className="text-ink-700 text-sm">{item.title}</div>
-          <div className="text-sm">
-            Price: <TokenNumber amount={currentDynamicPrice} isInline />
-          </div>
-          {isVeryRich && currentUser?.id && (
-            <VeryRichSpent userId={currentUser.id} />
-          )}
-          {item.id === 'golden-crown' && currentUser?.id && (
-            <GoldenCrownDuration userId={currentUser.id} />
-          )}
-          {item.id === 'streak-forgiveness' && <CurrentStreakForgiveness />}
-          <div className="text-sm">
-            Balance change: <TokenNumber amount={balance} isInline /> →{' '}
-            <TokenNumber amount={balance - currentDynamicPrice} isInline />
-          </div>
-        </Col>
-      </ConfirmationButton>
+          }}
+        >
+          <Col className="gap-2">
+            <div className="text-md font-medium">Confirm purchase</div>
+            <div className="text-ink-700 text-sm">{item.title}</div>
+            <div className="text-sm">
+              Price: <TokenNumber amount={currentDynamicPrice} isInline />
+            </div>
+            {isVeryRich && currentUser?.id && (
+              <VeryRichSpent userId={currentUser.id} />
+            )}
+            {item.id === 'golden-crown' && currentUser?.id && (
+              <GoldenCrownDuration userId={currentUser.id} />
+            )}
+            {item.id === 'streak-forgiveness' && <CurrentStreakForgiveness />}
+            <div className="text-sm">
+              Balance change: <TokenNumber amount={balance} isInline /> →{' '}
+              <TokenNumber amount={balance - currentDynamicPrice} isInline />
+            </div>
+          </Col>
+        </ConfirmationButton>
+      )}
     </Col>
   )
 }

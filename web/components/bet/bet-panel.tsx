@@ -48,6 +48,7 @@ import { InfoTooltip } from 'web/components/widgets/info-tooltip'
 import { useFocus } from 'web/hooks/use-focus'
 import { useIsAdvancedTrader } from 'web/hooks/use-is-advanced-trader'
 import { usePrivateUser, useUser } from 'web/hooks/use-user'
+import { useHasPampuSkin } from 'web/hooks/use-has-pampu-skin'
 import { track, withTracking } from 'web/lib/service/analytics'
 import { isAndroid, isIOS } from 'web/lib/util/device'
 import { WarningConfirmationButton } from '../buttons/warning-confirmation-button'
@@ -121,6 +122,10 @@ export function BuyPanel(
   const isPseudoNumeric = contract.outcomeType === 'PSEUDO_NUMERIC'
   const isStonk = contract.outcomeType === 'STONK'
 
+  // Get user to check for PAMPU skin
+  const user = useUser()
+  const hasPampuSkin = useHasPampuSkin(user?.id)
+
   const [outcome, setOutcome] = useState<BinaryOutcomes>(initialOutcome)
   const [isPanelBodyVisible, setIsPanelBodyVisible] = useState(false)
   const cancelDismissTimerRef = useRef<(() => void) | null>(null)
@@ -166,10 +171,16 @@ export function BuyPanel(
                 onOutcomeChoice(choice)
               }}
               yesLabel={
-                isPseudoNumeric ? 'HIGHER' : isStonk ? STONK_YES : 'YES'
+                isPseudoNumeric
+                  ? 'HIGHER'
+                  : isStonk
+                  ? STONK_YES
+                  : hasPampuSkin
+                  ? 'PAMPU'
+                  : 'YES'
               }
               noLabel={isPseudoNumeric ? 'LOWER' : isStonk ? STONK_NO : 'NO'}
-              includeWordBet={!isStonk}
+              includeWordBet={!isStonk && !hasPampuSkin}
             />
           </Row>
         </Col>

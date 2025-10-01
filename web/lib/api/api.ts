@@ -264,6 +264,8 @@ export function deleteChartAnnotation(params: { id: number }) {
 
 export const getUserEntitlements = curriedAPI('get-user-entitlements')
 
+export const togglePampuSkin = curriedAPI('toggle-pampu-skin')
+
 export const getShopItemCounts = curriedAPI('get-shop-item-counts')
 
 export const getVeryRichBadge = curriedAPI('get-very-rich-badge')

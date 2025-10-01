@@ -76,6 +76,17 @@ export const SHOP_ITEM_CONFIGS: ShopItemConfig[] = [
     images: ['/logo.png'],
     enabled: true,
   },
+  {
+    id: 'pampu-skin',
+    type: 'digital',
+    title: 'PAMPU Yes Bet Button Skin',
+    price: 25000,
+    description:
+      'Changes your YES buttons to PAMPU across the site. Pure cosmetic flex.',
+    perUserLimit: 1,
+    images: ['/logo.png'],
+    enabled: true,
+  },
   // Physical goods via Printful
   {
     id: 'printful-shirt',

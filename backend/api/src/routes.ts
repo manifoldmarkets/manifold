@@ -185,6 +185,7 @@ import { getShopOrders } from './get-shop-orders'
 import { getUserEntitlements } from './get-user-entitlements'
 import { updateUserEntitlement } from './update-user-entitlement'
 import { getShopItemCounts } from './get-shop-item-counts'
+import { togglePampuSkin } from './toggle-pampu-skin'
 import { getVeryRichBadge } from './get-very-rich-badge'
 import { giveCommentAward } from './give-comment-award'
 import { getCommentAwards } from './get-comment-awards'
@@ -370,6 +371,7 @@ export const handlers: { [k in APIPath]: APIHandler<k> } = {
   'get-user-entitlements': getUserEntitlements,
   'update-user-entitlement': updateUserEntitlement,
   'get-shop-item-counts': getShopItemCounts,
+  'toggle-pampu-skin': togglePampuSkin,
   'get-very-rich-badge': getVeryRichBadge,
   'give-comment-award': giveCommentAward,
   'get-comment-awards': getCommentAwards,

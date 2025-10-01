@@ -207,12 +207,23 @@ export const checkoutShopCart: APIHandler<'checkout-shop-cart'> = async (
           )
         } else {
           // Non-expiring items
-          await tx.none(
-            `insert into user_entitlements (user_id, entitlement_id)
-               values ($1, $2)
-             on conflict (user_id, entitlement_id) do nothing`,
-            [userId, l.itemId]
-          )
+          // For pampu-skin, set equipped: true in metadata on purchase
+          if (l.itemId === 'pampu-skin') {
+            await tx.none(
+              `insert into user_entitlements (user_id, entitlement_id, metadata)
+                 values ($1, $2, $3)
+               on conflict (user_id, entitlement_id) 
+               do update set metadata = EXCLUDED.metadata`,
+              [userId, l.itemId, { equipped: true }]
+            )
+          } else {
+            await tx.none(
+              `insert into user_entitlements (user_id, entitlement_id)
+                 values ($1, $2)
+               on conflict (user_id, entitlement_id) do nothing`,
+              [userId, l.itemId]
+            )
+          }
         }
       }
     }

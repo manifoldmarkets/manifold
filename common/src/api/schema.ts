@@ -2253,6 +2253,13 @@ export const API = (_apiTypeCheck = {
     },
     props: z.object({ userId: z.string().optional() }).strict(),
   },
+  'toggle-pampu-skin': {
+    method: 'POST',
+    visibility: 'public',
+    authed: true,
+    returns: {} as { success: boolean; equipped: boolean },
+    props: z.object({ equipped: z.boolean() }).strict(),
+  },
   'update-user-entitlement': {
     method: 'POST',
     visibility: 'undocumented',
