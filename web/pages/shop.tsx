@@ -291,23 +291,49 @@ export default ShopPage
 function VeryRichSpent(props: { userId: string }) {
   const { userId } = props
   const [amount, setAmount] = useState<number | null>(null)
+  const [expiresTime, setExpiresTime] = useState<string | null>(null)
+
   useEffect(() => {
     let cancelled = false
-    import('web/lib/api/api').then(({ getVeryRichBadge }) => {
-      getVeryRichBadge({ userId }).then((res: any) => {
-        if (!cancelled) setAmount(res.amountSpentMana ?? 0)
-      })
+    Promise.all([
+      import('web/lib/api/api').then(({ getVeryRichBadge }) =>
+        getVeryRichBadge({ userId })
+      ),
+      import('web/lib/api/api').then(({ getUserEntitlements }) =>
+        getUserEntitlements({ userId })
+      ),
+    ]).then(([badgeRes, entsRes]: [any, any]) => {
+      if (!cancelled) {
+        setAmount(badgeRes.amountSpentMana ?? 0)
+        const veryRichEnt = entsRes.entitlements?.find(
+          (e: any) => e.entitlementId === 'very-rich-badge'
+        )
+        setExpiresTime(veryRichEnt?.expiresTime ?? null)
+      }
     })
     return () => {
       cancelled = true
     }
   }, [userId])
+
   if (amount == null) return null
+
+  const getDaysRemaining = () => {
+    if (!expiresTime) return null
+    const now = Date.now()
+    const expires = new Date(expiresTime).getTime()
+    const daysLeft = Math.ceil((expires - now) / (1000 * 60 * 60 * 24))
+    return daysLeft > 0 ? daysLeft : null
+  }
+
+  const daysRemaining = getDaysRemaining()
+
   return (
     <div className="text-ink-600 text-sm">
-      You've already burned <TokenNumber amount={amount} isInline /> on this
-      badge. You can buy again to burn more mana and increase the price by{' '}
-      <TokenNumber amount={100000} isInline /> for all users.
+      You've already burned <TokenNumber amount={amount} isInline /> to support
+      Manifold{daysRemaining && ` (${daysRemaining}d remaining)`}. You can buy
+      again to burn more mana, add 30 days to your badge duration, and increase
+      the price by <TokenNumber amount={10000} isInline /> for all users.
     </div>
   )
 }
@@ -321,6 +347,54 @@ function CurrentStreakForgiveness() {
       <span className="font-semibold">{streakForgiveness}</span> streak
       forgiveness token{streakForgiveness !== 1 ? 's' : ''}. This will give you{' '}
       {streakForgiveness + 1} total.
+    </div>
+  )
+}
+
+function GoldenCrownDuration(props: { userId: string }) {
+  const { userId } = props
+  const [expiresTime, setExpiresTime] = useState<string | null>(null)
+
+  useEffect(() => {
+    let cancelled = false
+    import('web/lib/api/api').then(({ getUserEntitlements }) => {
+      getUserEntitlements({ userId }).then((res: any) => {
+        if (!cancelled) {
+          const crownEnt = res.entitlements?.find(
+            (e: any) => e.entitlementId === 'golden-crown'
+          )
+          setExpiresTime(crownEnt?.expiresTime ?? null)
+        }
+      })
+    })
+    return () => {
+      cancelled = true
+    }
+  }, [userId])
+
+  const getDaysRemaining = () => {
+    if (!expiresTime) return null
+    const now = Date.now()
+    const expires = new Date(expiresTime).getTime()
+    const daysLeft = Math.ceil((expires - now) / (1000 * 60 * 60 * 24))
+    return daysLeft > 0 ? daysLeft : null
+  }
+
+  const daysRemaining = getDaysRemaining()
+
+  if (!daysRemaining && daysRemaining !== 0) return null
+
+  return (
+    <div className="text-ink-600 text-sm">
+      {daysRemaining > 0 ? (
+        <>
+          You currently have the Golden Crown Border with{' '}
+          <span className="font-semibold">{daysRemaining}d</span> remaining.
+          This purchase will add 30 more days.
+        </>
+      ) : (
+        <>This will give you the Golden Crown Border for 30 days.</>
+      )}
     </div>
   )
 }
@@ -358,10 +432,13 @@ function SimpleItemCard(props: {
   const atUserLimit =
     !!item.perUserLimit && existing + inCart >= item.perUserLimit
 
-  // Calculate days remaining for monthly limits
+  // Calculate hours/days remaining for cooldowns
   const isStreakForgiveness = item.id === 'streak-forgiveness'
+  const isVeryRich = item.id === 'very-rich-badge'
   const lastPurchaseTime = lastPurchaseTimes[item.id]
   let daysUntilCanPurchase = 0
+  let hoursUntilCanPurchase = 0
+
   if (isStreakForgiveness && lastPurchaseTime && atUserLimit) {
     const now = Date.now()
     const thirtyDaysMs = 30 * 24 * 60 * 60 * 1000
@@ -372,6 +449,14 @@ function SimpleItemCard(props: {
     )
   }
 
+  if (isVeryRich && lastPurchaseTime) {
+    const now = Date.now()
+    const oneDayMs = 24 * 60 * 60 * 1000
+    const timeSincePurchase = now - lastPurchaseTime
+    const timeUntilCanPurchase = oneDayMs - timeSincePurchase
+    hoursUntilCanPurchase = Math.ceil(timeUntilCanPurchase / (60 * 60 * 1000))
+  }
+
   // Check global limit
   const globalCount = globalCounts[item.id] ?? 0
   const globalLimit = item.globalLimit
@@ -379,14 +464,13 @@ function SimpleItemCard(props: {
   const remaining = globalLimit ? globalLimit - globalCount : undefined
 
   const atLimit = atUserLimit || atGlobalLimit
-  const isVeryRich = item.id === 'very-rich-badge'
   const purchasedCount = globalCounts[item.id] ?? 0
   const currentDynamicPrice = isVeryRich
-    ? 100000 + purchasedCount * 100000
+    ? 50000 + purchasedCount * 10000
     : item.price
   return (
     <Col className="bg-canvas-0 border-ink-200 rounded-lg border p-4 shadow-sm">
-      <div className="bg-ink-100 aspect-square w-full overflow-hidden rounded-md">
+      <div className="bg-ink-100 relative aspect-square w-full overflow-hidden rounded-md">
         {item.id === 'golden-crown' && (
           <Row className="relative h-full w-full items-center justify-center">
             {/* Gold ring preview */}
@@ -424,6 +508,25 @@ function SimpleItemCard(props: {
               className="h-full w-full object-cover"
             />
           )}
+        {/* Duration badge for expiring items */}
+        {(item.id === 'golden-crown' || item.id === 'very-rich-badge') && (
+          <div className="bg-ink-800 absolute right-2 top-2 flex items-center gap-1 rounded px-2 py-1 text-xs text-white">
+            <svg
+              className="h-3 w-3"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"
+              />
+            </svg>
+            <span>30d</span>
+          </div>
+        )}
       </div>
       <Row className="items-center justify-between">
         <div className="text-ink-600 mt-3 text-sm">{item.title}</div>
@@ -446,18 +549,22 @@ function SimpleItemCard(props: {
 
       <ConfirmationButton
         openModalBtn={{
-          label: isVeryRich
-            ? 'Buy more'
-            : atGlobalLimit
+          label: atGlobalLimit
             ? 'Sold Out'
+            : isVeryRich && hoursUntilCanPurchase > 0
+            ? hoursUntilCanPurchase >= 24
+              ? `${Math.ceil(hoursUntilCanPurchase / 24)}d cooldown`
+              : `${hoursUntilCanPurchase}h cooldown`
+            : isVeryRich
+            ? 'Buy more'
             : atUserLimit && isStreakForgiveness && daysUntilCanPurchase > 0
-            ? `${daysUntilCanPurchase}d left`
+            ? `${daysUntilCanPurchase}d cooldown`
             : atUserLimit
             ? 'Purchased'
             : 'Buy',
           color: 'indigo',
           className: 'mt-3 w-full',
-          disabled: atLimit,
+          disabled: atLimit || (isVeryRich && hoursUntilCanPurchase > 0),
         }}
         cancelBtn={{ label: 'Cancel' }}
         submitBtn={{
@@ -532,6 +639,9 @@ function SimpleItemCard(props: {
           </div>
           {isVeryRich && currentUser?.id && (
             <VeryRichSpent userId={currentUser.id} />
+          )}
+          {item.id === 'golden-crown' && currentUser?.id && (
+            <GoldenCrownDuration userId={currentUser.id} />
           )}
           {item.id === 'streak-forgiveness' && <CurrentStreakForgiveness />}
           <div className="text-sm">

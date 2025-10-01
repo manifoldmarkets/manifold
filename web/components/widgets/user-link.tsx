@@ -312,23 +312,48 @@ function MarketCreatorBadge() {
 function VeryRichBadge(props: { userId: string }) {
   const { userId } = props
   const [amount, setAmount] = useState<number | null>(null)
+  const [expiresTime, setExpiresTime] = useState<string | null>(null)
+
   useEffect(() => {
     let cancelled = false
-    import('web/lib/api/api').then(({ getVeryRichBadge }) => {
-      getVeryRichBadge({ userId }).then((res: any) => {
-        if (!cancelled) setAmount(res.amountSpentMana ?? 0)
-      })
+    Promise.all([
+      import('web/lib/api/api').then(({ getVeryRichBadge }) =>
+        getVeryRichBadge({ userId })
+      ),
+      import('web/lib/api/api').then(({ getUserEntitlements }) =>
+        getUserEntitlements({ userId })
+      ),
+    ]).then(([badgeRes, entsRes]: [any, any]) => {
+      if (!cancelled) {
+        setAmount(badgeRes.amountSpentMana ?? 0)
+        const veryRichEnt = entsRes.entitlements?.find(
+          (e: any) => e.entitlementId === 'very-rich-badge'
+        )
+        setExpiresTime(veryRichEnt?.expiresTime ?? null)
+      }
     })
     return () => {
       cancelled = true
     }
   }, [userId])
+
   if (amount == null || amount <= 0) return null
+
+  const getDaysRemaining = () => {
+    if (!expiresTime) return null
+    const now = Date.now()
+    const expires = new Date(expiresTime).getTime()
+    const daysLeft = Math.ceil((expires - now) / (1000 * 60 * 60 * 24))
+    return daysLeft > 0 ? daysLeft : null
+  }
+
+  const daysRemaining = getDaysRemaining()
+  const tooltipText = `I've burned ${amount.toLocaleString()} mana to support Manifold${
+    daysRemaining ? ` (${daysRemaining}d left)` : ''
+  }`
+
   return (
-    <Tooltip
-      text={`I am very rich, I burned ${amount.toLocaleString()} mana to buy this badge`}
-      placement="right"
-    >
+    <Tooltip text={tooltipText} placement="right">
       <BsFire className="h-3 w-3 text-orange-500" aria-hidden />
     </Tooltip>
   )

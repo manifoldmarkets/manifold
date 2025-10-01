@@ -9,6 +9,7 @@ import { LuSprout } from 'react-icons/lu'
 import { TbCrown } from 'react-icons/tb'
 import { GOLDEN_CROWN_ID } from 'common/src/shop/types'
 import { useUserEntitlements } from 'web/hooks/use-user-entitlements'
+import { Tooltip } from './tooltip'
 
 export type AvatarSizeType = '2xs' | 'xs' | 'sm' | 'md' | 'lg' | 'xl'
 export const Avatar = memo(
@@ -32,8 +33,18 @@ export const Avatar = memo(
       createdTime,
     } = props
     const entitlements = useUserEntitlements(userId)
-    const hasGoldenCrown =
-      !!userId && entitlements?.some((e) => e.entitlementId === GOLDEN_CROWN_ID)
+    const goldenCrownEnt = entitlements?.find(
+      (e) => e.entitlementId === GOLDEN_CROWN_ID
+    )
+    const hasGoldenCrown = !!userId && !!goldenCrownEnt
+
+    const getCrownDaysRemaining = () => {
+      if (!goldenCrownEnt?.expiresTime) return null
+      const now = Date.now()
+      const expires = new Date(goldenCrownEnt.expiresTime).getTime()
+      const daysLeft = Math.ceil((expires - now) / (1000 * 60 * 60 * 24))
+      return daysLeft > 0 ? daysLeft : null
+    }
 
     const [avatarUrl, setAvatarUrl] = useState(props.avatarUrl)
     useEffect(() => setAvatarUrl(props.avatarUrl), [props.avatarUrl])
@@ -112,9 +123,18 @@ export const Avatar = memo(
           </div>
         )}
         {hasGoldenCrown && (
-          <div className="absolute -right-2 -top-[0.41rem] rotate-45">
-            <TbCrown className="h-4 w-4 text-yellow-400" />
-          </div>
+          <Tooltip
+            text={
+              getCrownDaysRemaining()
+                ? `Golden Crown (${getCrownDaysRemaining()}d left)`
+                : 'Golden Crown'
+            }
+            placement="top"
+          >
+            <div className="absolute -right-2 -top-[0.41rem] rotate-45">
+              <TbCrown className="h-4 w-4 text-yellow-400" />
+            </div>
+          </Tooltip>
         )}
       </div>
     )

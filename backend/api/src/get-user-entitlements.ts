@@ -11,7 +11,8 @@ export const getUserEntitlements: APIHandler<'get-user-entitlements'> = async (
   const rows = await pg.manyOrNone(
     `select entitlement_id, granted_time, expires_time, metadata
        from user_entitlements
-      where user_id = $1`,
+      where user_id = $1
+        and (expires_time is null or expires_time > now())`,
     [targetId]
   )
   return {
