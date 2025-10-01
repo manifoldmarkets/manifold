@@ -1496,6 +1496,52 @@ function UserLikeNotification(props: {
   const { notification, highlighted, setHighlighted, isChildOfGroup } = props
   const [open, setOpen] = useState(false)
   const { sourceUserName, sourceType, sourceText } = notification
+
+  // Special handling for comment awards
+  if (sourceType === 'comment_award') {
+    const { awardType, payoutAmount, awardIcon, awardName } =
+      notification.data || {}
+    return (
+      <NotificationFrame
+        notification={notification}
+        isChildOfGroup={isChildOfGroup}
+        highlighted={highlighted}
+        setHighlighted={setHighlighted}
+        icon={
+          <div className="relative">
+            <AvatarNotificationIcon notification={notification} symbol={''} />
+            {awardIcon && (
+              <img
+                src={awardIcon}
+                alt={awardType}
+                className="absolute -bottom-1 -right-1 h-4 w-4"
+              />
+            )}
+          </div>
+        }
+        link={getSourceUrl(notification)}
+        subtitle={<Linkify text={sourceText} />}
+      >
+        <PrimaryNotificationLink text={sourceUserName} /> gave you{' '}
+        {awardName ? (
+          <>
+            a <span className="font-semibold">{awardName}</span>
+          </>
+        ) : (
+          'an award'
+        )}{' '}
+        (+
+        <span className="text-teal-600">{formatMoney(payoutAmount || 0)}</span>)
+        on your comment{' '}
+        {!isChildOfGroup && (
+          <>
+            on <QuestionOrGroupLink notification={notification} />
+          </>
+        )}
+      </NotificationFrame>
+    )
+  }
+
   const relatedNotifications: Notification[] = notification.data
     ?.relatedNotifications ?? [notification]
   const reactorsText =

@@ -69,6 +69,7 @@ export type notification_source_types =
   | 'signup_bonus'
   | 'comment_like'
   | 'contract_like'
+  | 'comment_award'
   | 'weekly_portfolio_update'
   | 'quest_reward'
   | 'league_change'
@@ -534,6 +535,7 @@ export const ReactionNotificationTypes: Partial<notification_source_types>[] = [
   'contract_like',
   'post_like',
   'post_comment_like',
+  'comment_award',
 ]
 
 export const BalanceChangeNotificationTypes: NotificationReason[] = [

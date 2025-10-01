@@ -6,8 +6,7 @@ import {
   DEV_HOUSE_LIQUIDITY_PROVIDER_ID,
   HOUSE_LIQUIDITY_PROVIDER_ID,
 } from 'common/antes'
-import { nanoid } from 'common/util/random'
-import { insertNotificationToSupabase } from 'shared/supabase/notifications'
+import { createCommentAwardNotification } from 'shared/notifications/create-comment-award-notif'
 
 const AWARD_PRICE: Record<'plus' | 'premium' | 'crystal', number> = {
   plus: 500,
@@ -80,24 +79,18 @@ export const giveCommentAward: APIHandler<'give-comment-award'> = async (
        values ($1, $2, $3, $4, $5, $6)`,
       [commentId, contractId, giverId, receiverId, awardType, payout]
     )
-
-    // Notify receiver
-    const notification = {
-      id: nanoid(10),
-      userId: receiverId,
-      reason: 'generic',
-      createdTime: Date.now(),
-      data: {
-        type: 'comment-award',
-        contractId,
-        commentId,
-        awardType,
-        amount: payout,
-        fromUserId: giverId,
-      },
-    } as any
-    await insertNotificationToSupabase(notification, tx)
   })
+
+  // Notify receiver (outside transaction)
+  await createCommentAwardNotification(
+    pg,
+    commentId,
+    contractId,
+    awardType,
+    payout,
+    giverId,
+    receiverId
+  )
 
   return { success: true }
 }
