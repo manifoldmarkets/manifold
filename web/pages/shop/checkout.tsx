@@ -167,7 +167,7 @@ const CheckoutPage: NextPage = () => {
           )}
           {items.length > 0 && (
             <Row className="items-center justify-between py-2">
-              <div className="text-ink-700 text-sm">Subtotal</div>
+              <div className="text-ink-700 text-sm">Total</div>
               <div className="text-lg font-medium">
                 <TokenNumber amount={total} isInline />
               </div>

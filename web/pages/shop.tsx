@@ -10,10 +10,7 @@ import toast from 'react-hot-toast'
 import { api } from 'web/lib/api/api'
 import { useState as useReactState } from 'react'
 import { TokenNumber } from 'web/components/widgets/token-number'
-import {
-  getEnabledConfigs,
-  getConfigForPrintfulProduct,
-} from 'common/src/shop/items'
+import { getEnabledConfigs } from 'common/src/shop/items'
 import { useCart } from 'web/hooks/use-cart'
 import type { CartItem } from 'web/hooks/use-cart'
 import { IoCartOutline } from 'react-icons/io5'
@@ -35,6 +32,7 @@ type ShopItem = {
   title: string
   price: number
   imageUrl: string
+  description?: string
   perUserLimit?: number
 }
 
@@ -45,6 +43,7 @@ const DIGITAL_ITEMS: ShopItem[] = getEnabledConfigs()
     title: c.title,
     price: c.price,
     imageUrl: c.images?.[0] ?? '/logo.png',
+    description: c.description,
     perUserLimit: c.perUserLimit,
   }))
 
@@ -55,6 +54,7 @@ const PHYSICAL_OTHER_ITEMS: ShopItem[] = getEnabledConfigs()
     title: c.title,
     price: c.price,
     imageUrl: c.images?.[0] ?? '/logo.png',
+    description: c.description,
     perUserLimit: c.perUserLimit,
   }))
 
@@ -72,6 +72,9 @@ const ShopPage: NextPage = () => {
   const [lastPurchaseTimes, setLastPurchaseTimes] = useState<
     Record<string, number>
   >({})
+  const [lastPrintfulOrderAt, setLastPrintfulOrderAt] = useState<number | null>(
+    null
+  )
 
   const [remote, setRemote] = useState<
     | {
@@ -103,12 +106,14 @@ const ShopPage: NextPage = () => {
     if (!user) {
       setOrderCounts({})
       setLastPurchaseTimes({})
+      setLastPrintfulOrderAt(null)
       return
     }
     api('get-shop-orders', {})
       .then((res) => {
         const counts: Record<string, number> = {}
         const times: Record<string, number> = {}
+        let latestPrintful: number | null = null
         for (const o of res.orders ?? []) {
           counts[o.itemId] = (counts[o.itemId] ?? 0) + o.quantity
           // Track the most recent purchase time for each item
@@ -119,13 +124,23 @@ const ShopPage: NextPage = () => {
           if (!times[o.itemId] || createdTime > times[o.itemId]) {
             times[o.itemId] = createdTime
           }
+          const itemType = (o.itemType ?? (o as any).item_type) as
+            | string
+            | undefined
+          if (itemType === 'printful') {
+            if (latestPrintful == null || createdTime > latestPrintful) {
+              latestPrintful = createdTime
+            }
+          }
         }
         setOrderCounts(counts)
         setLastPurchaseTimes(times)
+        setLastPrintfulOrderAt(latestPrintful)
       })
       .catch(() => {
         setOrderCounts({})
         setLastPurchaseTimes({})
+        setLastPrintfulOrderAt(null)
       })
   }, [user])
 
@@ -210,6 +225,7 @@ const ShopPage: NextPage = () => {
                 key={`printful-${p.id}`}
                 p={p}
                 balance={balance}
+                lastPrintfulOrderAt={lastPrintfulOrderAt ?? undefined}
                 addToCart={(ci: CartItem) => addItem(ci)}
               />
             ))}
@@ -597,20 +613,13 @@ function SimpleItemCard(props: {
           }}
         >
           <Col className="gap-2">
-            <div className="text-md font-medium">Confirm purchase</div>
-            <div className="text-ink-700 text-sm">{item.title}</div>
-            <div className="text-sm">
-              Price: <TokenNumber amount={currentDynamicPrice} isInline />
-            </div>
-            {(item.id === 'golden-crown' || item.id === 'very-rich-badge') && (
-              <div className="text-ink-600 text-sm">
-                This item lasts 30 days.
-              </div>
+            <div className="text-md">{item.title}</div>
+            {item.description && (
+              <div className="text-ink-600 text-sm">{item.description}</div>
             )}
             {item.id === 'streak-forgiveness' && <CurrentStreakForgiveness />}
             <div className="text-sm">
-              Balance change: <TokenNumber amount={balance} isInline /> →{' '}
-              <TokenNumber amount={balance - currentDynamicPrice} isInline />
+              Price: <TokenNumber amount={currentDynamicPrice} isInline />
             </div>
           </Col>
         </ConfirmationButton>
@@ -636,9 +645,10 @@ function PrintfulItemCard(props: {
     }[]
   }
   balance: number
+  lastPrintfulOrderAt?: number
   addToCart: (item: CartItem) => void
 }) {
-  const { p, balance, addToCart } = props
+  const { p, balance, addToCart, lastPrintfulOrderAt } = props
   const priceMana = PRINTFUL_PRICE_MANA[p.id]
   const sizes = Array.from(
     new Set(p.variants.map((v) => v.size).filter(Boolean))
@@ -690,9 +700,35 @@ function PrintfulItemCard(props: {
   const modalPreview =
     gallery[0] ?? (matchingVariant as any)?.preview ?? p.imageUrl
 
+  // Compute monthly cooldown
+  let isPrintfulCooldown = false
+  let cooldownLabel: string | undefined
+  if (lastPrintfulOrderAt) {
+    const msSince = Date.now() - lastPrintfulOrderAt
+    const ms30d = 30 * 24 * 60 * 60 * 1000
+    const msLeft = ms30d - msSince
+    if (msLeft > 0) {
+      isPrintfulCooldown = true
+      const days = Math.ceil(msLeft / (24 * 60 * 60 * 1000))
+      cooldownLabel = `${days}d cooldown`
+    }
+  }
+
+  // Compute cart fullness: max 3 printful items total
+  const cartItemsNow =
+    typeof window !== 'undefined'
+      ? JSON.parse(localStorage.getItem('shop_cart_v1') || '[]')
+      : []
+  const totalPrintfulInCart = cartItemsNow
+    .filter(
+      (ci: any) => typeof ci?.key === 'string' && ci.key.startsWith('printful:')
+    )
+    .reduce((a: number, b: any) => a + (b.quantity ?? 0), 0)
+  const isPrintfulCartFull = totalPrintfulInCart >= 3
+
   return (
-    <Col className=" border-ink-200 gap-2 rounded-lg border p-4 shadow-sm">
-      <div className=" aspect-square w-full overflow-hidden rounded-md">
+    <Col className="bg-canvas-0 border-ink-200 gap-2 rounded-lg border p-4 shadow-sm">
+      <div className="bg-ink-100 aspect-square w-full overflow-hidden rounded-md">
         <img
           src={p.imageUrl}
           alt={p.title}
@@ -706,16 +742,25 @@ function PrintfulItemCard(props: {
 
       <ConfirmationButton
         openModalBtn={{
-          label: 'See Options',
+          label: isPrintfulCooldown
+            ? cooldownLabel || 'Cooldown'
+            : isPrintfulCartFull
+            ? 'Cart is full'
+            : 'See Options',
           color: 'indigo',
           className: 'mt-2 w-full',
+          disabled: isPrintfulCooldown || isPrintfulCartFull,
         }}
         cancelBtn={{ label: 'Cancel' }}
         submitBtn={{
-          label: 'Add to Cart',
+          label: isPrintfulCartFull ? 'Cart full' : 'Add to Cart',
           color: 'indigo',
           isSubmitting: false,
-          disabled: !selectedSize || priceMana == null,
+          disabled:
+            (sizes.length > 0 && !selectedSize) ||
+            priceMana == null ||
+            isPrintfulCooldown ||
+            isPrintfulCartFull,
         }}
         onOpenChanged={(open) => {
           if (!open) return
@@ -726,12 +771,6 @@ function PrintfulItemCard(props: {
         }}
         onSubmitWithSuccess={async () => {
           if (priceMana == null || !matchingVariant) return false
-          const cfg = getConfigForPrintfulProduct(p.id)
-          const limit = cfg?.perUserLimit
-          if (limit && limit <= 0) {
-            toast.error('This item is not currently available')
-            return false
-          }
           const inCart = (
             typeof window !== 'undefined'
               ? JSON.parse(localStorage.getItem('shop_cart_v1') || '[]')
@@ -739,12 +778,11 @@ function PrintfulItemCard(props: {
           )
             .filter(
               (ci: any) =>
-                typeof ci?.key === 'string' &&
-                ci.key.startsWith(`printful:${p.id}:`)
+                typeof ci?.key === 'string' && ci.key.startsWith('printful:')
             )
             .reduce((a: number, b: any) => a + (b.quantity ?? 0), 0)
-          if (limit && inCart >= limit) {
-            toast.error(`Limit ${limit} per user`)
+          if (inCart >= 3) {
+            toast.error('Cart is full (max 3 physical items)')
             return false
           }
           addToCart({
@@ -865,23 +903,12 @@ function PrintfulItemCard(props: {
               <TokenNumber amount={priceMana} isInline />
             )}
           </div>
-          {(() => {
-            const cfg = getConfigForPrintfulProduct(p.id)
-            const limit = cfg?.perUserLimit
-            return limit ? (
-              <div className="text-ink-600 text-xs">Limit {limit} per user</div>
-            ) : null
-          })()}
-          <div className="text-sm">
-            {priceMana == null ? (
-              'Balance change: —'
-            ) : (
-              <>
-                Balance change: <TokenNumber amount={balance} isInline /> →{' '}
-                <TokenNumber amount={balance - priceMana} isInline />
-              </>
-            )}
-          </div>
+          {isPrintfulCooldown && (
+            <div className="text-ink-600 text-xs">{cooldownLabel}</div>
+          )}
+          {isPrintfulCartFull && (
+            <div className="text-ink-600 text-xs">Cart is full (max 3)</div>
+          )}
         </Col>
       </ConfirmationButton>
     </Col>

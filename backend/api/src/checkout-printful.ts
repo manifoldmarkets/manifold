@@ -15,10 +15,34 @@ export const checkoutPrintful: APIHandler<'checkout-printful'> = async (
   if (!userId) throw new APIError(401, 'You must be signed in')
   if (!items || items.length === 0) throw new APIError(400, 'No items')
 
+  // Enforce max 3 physical items per order
+  const totalQty = items.reduce((sum, it) => sum + (it.quantity ?? 0), 0)
+  if (totalQty > 3) {
+    throw new APIError(
+      403,
+      'You can include at most 3 physical items per order'
+    )
+  }
+
   const apiKey = process.env.PRINTFUL_KEY
   if (!apiKey) throw new APIError(500, 'PRINTFUL_KEY is not configured')
 
   const pg = createSupabaseDirectClient()
+
+  // Enforce 1 physical-goods order per 30 days
+  const recentOrder = await pg.oneOrNone<{ exists: boolean }>(
+    `select exists(
+        select 1 from shop_orders
+        where user_id = $1 and item_type = 'printful' and created_time > now() - interval '30 days'
+      ) as exists`,
+    [userId]
+  )
+  if (recentOrder?.exists) {
+    throw new APIError(
+      403,
+      'You can place only one physical goods order every 30 days'
+    )
+  }
 
   const make = async (url: string, body?: any) => {
     const resp = await fetch(`https://api.printful.com${url}`, {

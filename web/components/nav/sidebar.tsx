@@ -18,7 +18,7 @@ import { buildArray } from 'common/util/array'
 import { DAY_MS } from 'common/util/time'
 import { AppRouterInstance } from 'next/dist/shared/lib/app-router-context.shared-runtime'
 import { usePathname, useRouter } from 'next/navigation'
-import { IoCompassOutline } from 'react-icons/io5'
+import { IoCompassOutline, IoCartOutline } from 'react-icons/io5'
 import { AppBadgesOrGetAppButton } from 'web/components/buttons/app-badges-or-get-app-button'
 import { CreateQuestionButton } from 'web/components/buttons/create-question-button'
 import { NotificationsIcon } from 'web/components/notifications-icon'
@@ -148,6 +148,7 @@ const getDesktopNav = (
         icon: IoCompassOutline,
         iconClassName: '!h-[1.6rem] !w-[1.6rem] !mr-[0.65rem]',
       },
+      { name: 'Shop', href: '/shop', icon: IoCartOutline },
       isLiveTV && {
         name: 'TV',
         href: '/tv',
@@ -174,6 +175,7 @@ const getDesktopNav = (
 
   return buildArray(
     { name: 'Browse', href: '/', icon: SearchIcon },
+    { name: 'Shop', href: '/shop', icon: IoCartOutline },
     { name: 'About', href: '/about', icon: QuestionMarkCircleIcon },
     { name: 'App', onClick: openDownloadApp, icon: DeviceMobileIcon }
   )
@@ -187,6 +189,7 @@ const getMobileNav = (
 
   return buildArray<NavItem>(
     { name: 'Leagues', href: '/leagues', icon: TrophyIcon },
+    { name: 'Shop', href: '/shop', icon: IoCartOutline },
     {
       name: 'Share with friends',
       href: '/referrals',
