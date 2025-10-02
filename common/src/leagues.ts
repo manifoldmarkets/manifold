@@ -34,19 +34,20 @@ export type League = {
 }
 
 export const getSeasonMonth = (season: number) => {
-  return getSeasonDates(season).start.toLocaleString('default', {
+  return getApproximateSeasonDates(season).start.toLocaleString('default', {
     month: 'long',
   })
 }
 
-export const getSeasonDates = (season: number) => {
+// NOTE: This function calculates approximate dates for display purposes.
+// The ACTUAL season boundaries used for scoring are determined by:
+// - Start time: Previous season's end_time from leagues_season_end_times (or calculated if season 1)
+// - End time: Current season's end_time from leagues_season_end_times
+// See getSeasonStartAndEnd() in backend/shared for the authoritative implementation.
+export const getApproximateSeasonDates = (season: number) => {
   const start = new Date(LEAGUES_START)
   start.setMonth(start.getMonth() + season - 1)
 
-  // NOTE: The exact season end time used for backend logic (rollover, payouts)
-  // is now stored in the leagues_season_end_times table in the database.
-  // This function now calculates an approximate end date primarily for display purposes
-  // or as a fallback if the database row doesn't exist.
   const approxEnd = new Date(LEAGUES_START)
   approxEnd.setMonth(approxEnd.getMonth() + season)
   // Add a day, just to be safely after the potential random close time.

@@ -1,6 +1,6 @@
 import { Bet } from 'common/bet'
 import { getProfitMetrics } from 'common/calculate'
-import { filterBetsForLeagueScoring, getSeasonDates } from 'common/leagues'
+import { filterBetsForLeagueScoring } from 'common/leagues'
 import { convertContract } from 'common/supabase/contracts'
 import { groupBy, keyBy, sum, zipObject } from 'lodash'
 import {
@@ -9,7 +9,7 @@ import {
 } from 'shared/supabase/init'
 import {
   getEffectiveCurrentSeason,
-  getSeasonEndTimeRow,
+  getSeasonStartAndEnd,
 } from 'shared/supabase/leagues'
 import { bulkUpdate } from 'shared/supabase/utils'
 import { contractColumnsToSelectWithPrefix, log } from 'shared/utils'
@@ -21,15 +21,17 @@ export async function updateLeague(
   const pg = tx ?? createSupabaseDirectClient()
 
   const season = manualSeason ?? (await getEffectiveCurrentSeason())
-  let seasonInfo = await getSeasonEndTimeRow(pg, season)
-  if (!seasonInfo) {
-    log('Season info not found. Exiting.')
+  const boundaries = await getSeasonStartAndEnd(pg, season)
+  if (!boundaries) {
+    log('Season boundaries not found. Exiting.')
     return
   }
-  const { start } = getSeasonDates(season)
-  log(`Season start: ${start}`)
-  const seasonStart = start.getTime()
-  const seasonEnd = seasonInfo.end_time
+  const { seasonStart, seasonEnd } = boundaries
+  log(
+    `Season ${season}: ${new Date(seasonStart).toISOString()} to ${new Date(
+      seasonEnd
+    ).toISOString()}`
+  )
 
   if (Date.now() > seasonEnd) {
     log('Season has ended. Exiting.')

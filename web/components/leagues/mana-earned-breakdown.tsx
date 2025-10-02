@@ -7,7 +7,10 @@ import { Bet } from 'common/bet'
 import { calculateUserMetricsWithoutLoans } from 'common/calculate-metrics'
 import { Contract, contractPath } from 'common/contract'
 import { ContractMetric } from 'common/contract-metric'
-import { filterBetsForLeagueScoring, getSeasonDates } from 'common/leagues'
+import {
+  filterBetsForLeagueScoring,
+  getApproximateSeasonDates,
+} from 'common/leagues'
 import { formatMoney } from 'common/util/format'
 import { usePublicContracts } from 'web/hooks/use-contract'
 import { Col } from '../layout/col'
@@ -23,6 +26,7 @@ import { TRADE_TERM } from 'common/envs/constants'
 import { capitalize } from 'lodash'
 import { useState } from 'react'
 import { ContractBetsTable } from 'web/components/bet/contract-bets-table'
+import { useAPIGetter } from 'web/hooks/use-api-getter'
 import { api } from 'web/lib/api/api'
 import ShortToggle from '../widgets/short-toggle'
 
@@ -45,7 +49,17 @@ export const ManaEarnedBreakdown = (props: {
   //     (mana_earned_breakdown.AD_REDEEM ?? 0),
   // } as { [key: string]: number }
 
-  const { start, approxEnd: end } = getSeasonDates(season)
+  // Get the authoritative season boundaries from the database
+  const { data: seasonInfo } = useAPIGetter('get-season-info', { season })
+  // Use proper start time from API, fall back to approximate if not loaded yet
+  const { start: approxStart, approxEnd } = getApproximateSeasonDates(season)
+  const start = seasonInfo?.startTime
+    ? new Date(seasonInfo.startTime)
+    : approxStart
+
+  // For end time: use API value if available (will be null for active seasons),
+  // otherwise fall back to approximate end for display
+  const end = seasonInfo?.endTime ? new Date(seasonInfo.endTime) : approxEnd
   const loadingBets = useBetsOnce((params) => api('bets', params), {
     userId: user.id,
     afterTime: start.getTime(),

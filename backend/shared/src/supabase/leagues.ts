@@ -1,8 +1,9 @@
 import { APIError } from 'common/api/utils'
+import { getApproximateSeasonDates } from 'common/leagues'
 import { convertLeague } from 'common/supabase/leagues'
 import { type SupabaseClient, run } from 'common/supabase/utils'
-import { createSupabaseDirectClient, SupabaseDirectClient } from './init'
 import { log } from '../utils' // Assuming log exists
+import { createSupabaseDirectClient, SupabaseDirectClient } from './init'
 
 export async function getLeaguesForUser(
   db: SupabaseClient,
@@ -107,4 +108,52 @@ export const getEffectiveCurrentSeason = async (): Promise<number> => {
     'leagues_season_end_times table appears empty. Defaulting to season 1.'
   )
   return 1
+}
+
+export type SeasonBoundaries = {
+  seasonStart: number
+  seasonEnd: number
+  status: SeasonStatus
+}
+
+/**
+ * Gets the authoritative start and end times for a season.
+ *
+ * - Season start: Previous season's end_time (or calculated date for season 1)
+ * - Season end: Current season's end_time from leagues_season_end_times table
+ */
+export const getSeasonStartAndEnd = async (
+  pg: SupabaseDirectClient,
+  season: number
+): Promise<SeasonBoundaries | null> => {
+  const seasonInfo = await getSeasonEndTimeRow(pg, season)
+  if (!seasonInfo) {
+    return null
+  }
+
+  let seasonStart: number
+
+  if (season === 1) {
+    // First season starts at the league start time
+    const { start } = getApproximateSeasonDates(1)
+    seasonStart = start.getTime()
+  } else {
+    // All other seasons start exactly when the previous season ends
+    const prevSeasonInfo = await getSeasonEndTimeRow(pg, season - 1)
+    if (!prevSeasonInfo) {
+      log.error(
+        `Previous season ${
+          season - 1
+        } not found in leagues_season_end_times. Cannot determine start time for season ${season}.`
+      )
+      return null
+    }
+    seasonStart = prevSeasonInfo.end_time
+  }
+
+  return {
+    seasonStart,
+    seasonEnd: seasonInfo.end_time,
+    status: seasonInfo.status,
+  }
 }

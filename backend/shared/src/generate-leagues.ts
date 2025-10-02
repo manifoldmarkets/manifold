@@ -4,7 +4,6 @@ import {
   getDemotionAndPromotionCount,
   getDivisionChange,
   getDivisionNumber,
-  getSeasonDates,
   league_user_info,
   MASTERS_DEMOTION_PERCENT,
   MAX_COHORT_SIZE,
@@ -14,7 +13,10 @@ import { groupBy, shuffle } from 'lodash'
 import { createLeagueChangedNotifications } from 'shared/create-notification'
 import { getCurrentPortfolio } from './helpers/portfolio'
 import { pgp, SupabaseDirectClient } from './supabase/init'
-import { getEffectiveCurrentSeason } from './supabase/leagues'
+import {
+  getEffectiveCurrentSeason,
+  getSeasonStartAndEnd,
+} from './supabase/leagues'
 import { bulkInsert } from './supabase/utils'
 import { log } from './utils'
 
@@ -24,7 +26,12 @@ export async function generateNextSeason(
 ) {
   log(`Generating season ${season}`)
   const prevSeason = season - 1
-  const startDate = getSeasonDates(prevSeason).start
+  const prevBoundaries = await getSeasonStartAndEnd(pg, prevSeason)
+  if (!prevBoundaries) {
+    log(`Error: Season ${prevSeason} not found in leagues_season_end_times`)
+    return
+  }
+  const startDate = new Date(prevBoundaries.seasonStart)
   // const startDate = new Date('2025-01-01')
   const rows = await pg.manyOrNone<league_user_info>(
     `select * from user_league_info
@@ -212,7 +219,12 @@ export const insertBots = async (pg: SupabaseDirectClient, season: number) => {
   // console.log('alreadyAssignedBotIds', alreadyAssignedBotIds)
 
   const botUsernamesExcludingAcc = BOT_USERNAMES.filter((u) => u !== 'acc')
-  const startDate = getSeasonDates(prevSeason).start
+  const prevBoundaries = await getSeasonStartAndEnd(pg, prevSeason)
+  if (!prevBoundaries) {
+    log(`Error: Season ${prevSeason} not found in leagues_season_end_times`)
+    return
+  }
+  const startDate = new Date(prevBoundaries.seasonStart)
   const botIds = await pg.map(
     `with active_user_ids as (
         select distinct user_id

@@ -11,11 +11,11 @@ import {
 import { APIResponse } from 'common/api/schema'
 import {
   DIVISION_NAMES,
+  getApproximateSeasonDates,
   getDemotionAndPromotionCountBySeason,
   getLeaguePath,
   getMaxDivisionBySeason,
   getSeasonCountdownEnd,
-  getSeasonDates,
   getSeasonMonth,
   league_user_info,
   parseLeaguePath,
@@ -200,7 +200,7 @@ export default function Leagues(props: LeaguesProps) {
   const MARKER = '★'
   const seasonStatus = seasonInfo?.status
   const countdownEnd = getSeasonCountdownEnd(season)
-  const { approxEnd: seasonEnd } = getSeasonDates(season)
+  const { approxEnd: seasonEnd } = getApproximateSeasonDates(season)
   const closingPeriod =
     seasonStatus === 'active' && seasonEnd.getTime() < Date.now() + DAY_MS
   const randomPeriodEnd = new Date(countdownEnd.getTime() + DAY_MS)

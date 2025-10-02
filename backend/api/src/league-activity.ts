@@ -1,16 +1,16 @@
 import { z } from 'zod'
 
-import { authEndpoint, validate } from './helpers/endpoint'
+import { Bet } from 'common/bet'
+import { ContractComment } from 'common/comment'
+import { Contract } from 'common/contract'
+import { uniq } from 'lodash'
 import {
   SupabaseDirectClient,
   createSupabaseDirectClient,
 } from 'shared/supabase/init'
-import { getSeasonDates } from 'common/leagues'
-import { uniq } from 'lodash'
-import { Contract } from 'common/contract'
-import { ContractComment } from 'common/comment'
-import { Bet } from 'common/bet'
+import { getSeasonStartAndEnd } from 'shared/supabase/leagues'
 import { log } from 'shared/utils'
+import { authEndpoint, validate } from './helpers/endpoint'
 
 const bodySchema = z
   .object({
@@ -39,7 +39,12 @@ export const getLeagueActivity = async (
     (row: { user_id: string }) => row.user_id
   )
 
-  const { start, approxEnd: end } = getSeasonDates(season)
+  const boundaries = await getSeasonStartAndEnd(pg, season)
+  if (!boundaries) {
+    log.error(`Season ${season} not found in leagues_season_end_times`)
+    return { contracts: [], bets: [], comments: [] }
+  }
+  const { seasonStart: start, seasonEnd: end } = boundaries
 
   const bets = await pg.map<Bet>(
     `select
