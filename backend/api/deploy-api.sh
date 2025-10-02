@@ -80,7 +80,7 @@ GROUP_PAGE_URL="https://console.cloud.google.com/compute/instanceGroups/details/
 # how to handle iptables correctly, right now it seems like there is some problem
 # where container OS versions >= 113 drop TCP packets, maybe due to an issue related
 # to upgrading from iptables-legacy to iptables-nft
-# UPDATE 2025-10-02: cos-109-lts no longer exists, upgraded to cos-113-lts to test
+# UPDATE 2025-10-02: cos-109-lts no longer exists, upgraded to cos-121-lts to test
 
 # ian: GambleId requires a static IP address for the API
 STATIC_IP_NAME="${SERVICE_NAME}-static-ip"
