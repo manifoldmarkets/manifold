@@ -1,7 +1,25 @@
+import { Bet } from './bet'
+import { Contract } from './contract'
 import { LeagueChangeData } from './notification'
 import { Row } from './supabase/utils'
+import { HOUR_MS } from './util/time'
 
 export const LEAGUES_START = new Date('2023-05-01T00:00:00-07:00') // Pacific Daylight Time (PDT) as time zone offset
+
+/**
+ * Filters bets to only include those that count for league scoring.
+ * For a user's own markets, only bets placed 1+ hour after market creation are counted.
+ * For other users' markets, all bets count.
+ */
+export const filterBetsForLeagueScoring = (
+  bets: Bet[],
+  contract: Contract,
+  userId: string
+) => {
+  return contract.creatorId === userId
+    ? bets.filter((bet) => bet.createdTime >= contract.createdTime + HOUR_MS)
+    : bets
+}
 
 export type League = {
   season: number

@@ -7,7 +7,7 @@ import { Bet } from 'common/bet'
 import { calculateUserMetricsWithoutLoans } from 'common/calculate-metrics'
 import { Contract, contractPath } from 'common/contract'
 import { ContractMetric } from 'common/contract-metric'
-import { getSeasonDates } from 'common/leagues'
+import { filterBetsForLeagueScoring, getSeasonDates } from 'common/leagues'
 import { formatMoney } from 'common/util/format'
 import { usePublicContracts } from 'web/hooks/use-contract'
 import { Col } from '../layout/col'
@@ -68,10 +68,17 @@ export const ManaEarnedBreakdown = (props: {
     contracts &&
     mapValues(betsByContract, (bets, contractId) => {
       const contract = contractsById[contractId]
-      return contract
-        ? calculateUserMetricsWithoutLoans(contract, bets, user.id).find(
-            (cm) => !cm.answerId
-          )
+      if (!contract) return undefined
+
+      // Filter bets: if it's user's own market, only count bets placed 1+ hour after creation
+      const relevantBets = filterBetsForLeagueScoring(bets, contract, user.id)
+
+      return relevantBets.length > 0
+        ? calculateUserMetricsWithoutLoans(
+            contract,
+            relevantBets,
+            user.id
+          ).find((cm) => !cm.answerId)
         : undefined
     })
 
@@ -165,11 +172,21 @@ export const ManaEarnedBreakdown = (props: {
               const bets = betsByContract[contract.id]
               const metrics = metricsByContract[contract.id]
               if (!bets || !metrics) return null
+
+              // Filter bets: if it's user's own market, only show bets placed 1+ hour after creation
+              const relevantBets = filterBetsForLeagueScoring(
+                bets,
+                contract,
+                user.id
+              )
+
+              if (relevantBets.length === 0) return null
+
               return (
                 <ContractBetsEntry
                   key={contract.id}
                   contract={contract}
-                  bets={bets}
+                  bets={relevantBets}
                   metrics={metrics}
                 />
               )

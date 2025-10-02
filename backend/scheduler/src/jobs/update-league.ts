@@ -1,18 +1,18 @@
-import { groupBy, keyBy, sum, uniq, zipObject } from 'lodash'
-import { log } from 'shared/utils'
 import { Bet } from 'common/bet'
+import { getProfitMetrics } from 'common/calculate'
+import { filterBetsForLeagueScoring, getSeasonDates } from 'common/leagues'
+import { convertContract } from 'common/supabase/contracts'
+import { groupBy, keyBy, sum, zipObject } from 'lodash'
 import {
   SupabaseDirectClient,
   createSupabaseDirectClient,
 } from 'shared/supabase/init'
-import { bulkUpdate } from 'shared/supabase/utils'
-import { getSeasonDates } from 'common/leagues'
-import { getProfitMetrics } from 'common/calculate'
-import { convertContract } from 'common/supabase/contracts'
 import {
   getEffectiveCurrentSeason,
   getSeasonEndTimeRow,
 } from 'shared/supabase/leagues'
+import { bulkUpdate } from 'shared/supabase/utils'
+import { contractColumnsToSelectWithPrefix, log } from 'shared/utils'
 
 export async function updateLeague(
   manualSeason?: number,
@@ -36,56 +36,38 @@ export async function updateLeague(
     return
   }
 
-  log('Loading users...')
-  const userIds = await pg.map(
+  log('Loading users, bets, and contracts...')
+  const results = await pg.multi(
     `select users.id from users
     join leagues on leagues.user_id = users.id
-    where leagues.season = $1`,
-    [season],
-    (r) => r.id as string
+    where leagues.season = $1;
+    select cb.data
+    from contract_bets as cb
+    where created_time > millis_to_ts($2)
+      and created_time < millis_to_ts($3);
+    select distinct on (contracts.id) ${contractColumnsToSelectWithPrefix(
+      'contracts'
+    )}
+    from contracts
+    join contract_bets cb on contracts.id = cb.contract_id
+    where cb.created_time > millis_to_ts($2)
+      and cb.created_time < millis_to_ts($3)
+      and contracts.token = 'MANA'
+      and contracts.visibility = 'public'
+      and coalesce((contracts.data->'isRanked')::boolean, true) = true;`,
+    [season, seasonStart, seasonEnd]
   )
-  log(`Loaded ${userIds.length} user ids.`)
 
-  // // Earned fees from bets in your markets during the season.
-  // const creatorFees = await pg.manyOrNone<{
-  //   user_id: string
-  //   category: string
-  //   amount: number
-  // }>(
-  //   `select
-  //     contracts.creator_id as user_id,
-  //     'CREATOR_FEE' as category,
-  //     sum((cb.data->'fees'->>'creatorFee')::numeric) as amount
-  //   from contract_bets cb
-  //   join contracts on contracts.id = cb.contract_id
-  //   where
-  //     cb.created_time > millis_to_ts($2)
-  //     and cb.created_time < millis_to_ts($3)
-  //   group by contracts.creator_id
-  //   `,
-  //   [season, seasonStart, seasonEnd]
-  // )
+  const userIds = results[0].map((r: any) => r.id as string)
+  const bets = results[1].map((r: any) => r.data as Bet)
+  const contracts = results[2].map(convertContract)
 
-  log('Loading bets...')
-  const betData = await pg.manyOrNone<{ data: Bet }>(
-    `select cb.data
-    from
-      contract_bets as cb
-    where
-      created_time > millis_to_ts($1)
-      and created_time < millis_to_ts($2)
-    `,
-    [seasonStart, seasonEnd]
-  )
-  const bets = betData.map((b) => b.data)
   const betsByUserId = groupBy(bets, (b) => b.userId)
-  log(`Loaded ${bets.length} bets.`)
-
-  log('Loading contracts...')
-  const contracts = await getRelevantContracts(pg, bets)
   const contractsById = keyBy(contracts, 'id')
 
-  log(`Loaded ${contracts.length} contracts.`)
+  log(
+    `Loaded ${userIds.length} user ids, ${bets.length} bets, ${contracts.length} contracts.`
+  )
 
   log('Computing metric updates...')
   const userProfit: { user_id: string; amount: number; category: 'profit' }[] =
@@ -99,21 +81,29 @@ export async function updateLeague(
       const contract = contractsById[contractId]
       if (
         contract &&
-        contract.creatorId !== userId &&
         contract.token === 'MANA' &&
         contract.visibility === 'public' &&
         contract.isRanked !== false &&
         !EXCLUDED_CONTRACT_SLUGS.has(contract.slug)
       ) {
-        const { profit } = getProfitMetrics(contract, contractBets)
-        if (isNaN(profit)) {
-          log.error(
-            `Profit is NaN! contract ${contract.slug} (${contract.id}) userId ${userId}`
-          )
-          continue
-        }
+        // Filter bets: if it's user's own market, only count bets placed 1+ hour after creation
+        const relevantBets = filterBetsForLeagueScoring(
+          contractBets,
+          contract,
+          userId
+        )
 
-        totalProfit += profit
+        if (relevantBets.length > 0) {
+          const { profit } = getProfitMetrics(contract, relevantBets)
+          if (isNaN(profit)) {
+            log.error(
+              `Profit is NaN! contract ${contract.slug} (${contract.id}) userId ${userId}`
+            )
+            continue
+          }
+
+          totalProfit += profit
+        }
       }
     }
     userProfit.push({
@@ -177,20 +167,6 @@ export async function updateLeague(
 
   await bulkUpdate(pg, 'leagues', ['user_id', 'season'], manaEarnedUpdates)
   log('Done.')
-}
-
-const getRelevantContracts = async (pg: SupabaseDirectClient, bets: Bet[]) => {
-  const betContractIds = uniq(bets.map((b) => b.contractId))
-  if (betContractIds.length === 0) return []
-  return await pg.map(
-    `select * from contracts
-    where id in ($1:list)
-    and token = 'MANA'
-    and visibility = 'public'
-    and coalesce((data->'isRanked')::boolean, true) = true`,
-    [betContractIds],
-    convertContract
-  )
 }
 
 const EXCLUDED_CONTRACT_SLUGS = new Set([
