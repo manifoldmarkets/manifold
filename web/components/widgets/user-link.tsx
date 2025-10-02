@@ -28,7 +28,6 @@ import { HiOutlineBuildingLibrary } from 'react-icons/hi2'
 import { User } from 'common/user'
 import { LuSprout } from 'react-icons/lu'
 import { useEffect, useState } from 'react'
-import { BsFire } from 'react-icons/bs'
 export const isFresh = (createdTime: number) =>
   createdTime > Date.now() - DAY_MS * 14
 
@@ -354,7 +353,7 @@ function VeryRichBadge(props: { userId: string }) {
 
   return (
     <Tooltip text={tooltipText} placement="right">
-      <BsFire className="h-3 w-3 text-orange-500" aria-hidden />
+      <Foldy className="h-3 w-3 stroke-yellow-500cha" aria-hidden />
     </Tooltip>
   )
 }

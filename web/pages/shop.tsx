@@ -18,9 +18,9 @@ import { useCart } from 'web/hooks/use-cart'
 import type { CartItem } from 'web/hooks/use-cart'
 import { IoCartOutline } from 'react-icons/io5'
 import { TbCrown } from 'react-icons/tb'
-import { BsFire } from 'react-icons/bs'
 import { IoSnowOutline } from 'react-icons/io5'
 import { ArrowUpIcon } from '@heroicons/react/solid'
+import Foldy from 'web/public/logo.svg'
 import { Avatar } from 'web/components/widgets/avatar'
 import {
   clearEntitlementsCache,
@@ -415,7 +415,7 @@ function SimpleItemCard(props: {
         )}
         {item.id === 'very-rich-badge' && (
           <Row className="h-full w-full items-center justify-center">
-            <BsFire className="h-24 w-24 text-orange-500" />
+            <Foldy className="h-24 w-24 stroke-yellow-500 " aria-hidden />
           </Row>
         )}
         {item.id === 'streak-forgiveness' && (
