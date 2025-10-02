@@ -1087,7 +1087,7 @@ export function MarketResolvedNotification(props: {
         <Modal open={openRateModal} setOpen={setOpenRateModal}>
           <ReviewPanel
             title={notification.sourceContractTitle ?? ''}
-            resolverUser={undefined}
+            creatorUser={undefined}
             currentUser={undefined}
             marketId={notification.sourceId}
             author={notification.sourceUserName}

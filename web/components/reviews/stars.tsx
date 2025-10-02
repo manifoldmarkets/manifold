@@ -1,20 +1,20 @@
 import { StarIcon as StarOutline } from '@heroicons/react/outline'
 import { StarIcon } from '@heroicons/react/solid'
 import clsx from 'clsx'
+import { DisplayUser } from 'common/api/user-types'
+import { User } from 'common/user'
+import { formatMoney } from 'common/util/format'
 import { range } from 'lodash'
 import { useState } from 'react'
 import toast from 'react-hot-toast'
-import { leaveReview, api } from 'web/lib/api/api'
+import { api, leaveReview } from 'web/lib/api/api'
 import { Button } from '../buttons/button'
 import { Col } from '../layout/col'
+import { Row } from '../layout/row'
+import { AmountInput } from '../widgets/amount-input'
+import { ChoicesToggleGroup } from '../widgets/choices-toggle-group'
 import { TextEditor, useTextEditor } from '../widgets/editor'
 import { GradientContainer } from '../widgets/gradient-container'
-import { ChoicesToggleGroup } from '../widgets/choices-toggle-group'
-import { AmountInput } from '../widgets/amount-input'
-import { User } from 'common/user'
-import { DisplayUser } from 'common/api/user-types'
-import { Row } from '../layout/row'
-import { formatMoney } from 'common/util/format'
 
 export type Rating = 0 | 1 | 2 | 3 | 4 | 5
 
@@ -24,7 +24,7 @@ export const ReviewPanel = (props: {
   author: string
   className?: string
   onSubmit: (rating: Rating) => void
-  resolverUser: DisplayUser | undefined
+  creatorUser: DisplayUser | undefined
   currentUser: User | null | undefined
   existingReview?: {
     rating: Rating
@@ -37,7 +37,7 @@ export const ReviewPanel = (props: {
     author,
     className,
     onSubmit,
-    resolverUser,
+    creatorUser,
     currentUser,
     existingReview,
   } = props
@@ -62,8 +62,7 @@ export const ReviewPanel = (props: {
     defaultValue: existingReview?.content,
   })
 
-  const canTip =
-    currentUser && resolverUser && currentUser.id !== resolverUser.id
+  const canTip = currentUser && creatorUser && currentUser.id !== creatorUser.id
 
   const handleTipChoice = (choice: number | string | boolean) => {
     if (typeof choice === 'number' || choice === 'custom') {
@@ -97,19 +96,19 @@ export const ReviewPanel = (props: {
       await leaveReview(reviewData)
       toast.success('Review saved!')
       // 2. If tip is selected, send the managram
-      if (tipAmountToSend && tipAmountToSend > 0 && resolverUser) {
+      if (tipAmountToSend && tipAmountToSend > 0 && creatorUser) {
         await toast
           .promise(
             api('managram', {
-              toIds: [resolverUser.id],
+              toIds: [creatorUser.id],
               amount: tipAmountToSend,
               message: `Tip for ${title}`,
               token: 'M$',
             }),
             {
-              loading: `Sending tip to ${resolverUser.name}...`,
+              loading: `Sending tip to ${creatorUser.name}...`,
               success: `Sent ${formatMoney(tipAmountToSend)} tip to ${
-                resolverUser.name
+                creatorUser.name
               }!`,
               error: (tipError: any) =>
                 `Failed to send tip: ${tipError?.message ?? 'Unknown error'}`,
@@ -155,7 +154,7 @@ export const ReviewPanel = (props: {
 
         {canTip && (
           <Col className="w-full gap-2 ">
-            <h3 className="text-ink-800 ml-1">Tip {resolverUser?.name}?</h3>
+            <h3 className="text-ink-800 ml-1">Tip {creatorUser?.name}?</h3>
             <ChoicesToggleGroup
               currentChoice={tipChoice}
               choicesMap={tipChoices}

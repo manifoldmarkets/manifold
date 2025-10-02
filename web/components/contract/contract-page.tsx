@@ -182,8 +182,7 @@ export function ContractPageContent(props: ContractParams) {
 
   const isSpiceMarket = !!liveContract.isSpicePayout
   const isCashContract = liveContract.token === 'CASH'
-  const resolverId = liveContract.resolverId
-  const resolverUser = useDisplayUserById(resolverId)
+  const creatorUser = useDisplayUserById(props.contract.creatorId)
   return (
     <>
       <Row className="w-full items-start justify-center gap-8">
@@ -370,7 +369,7 @@ export function ContractPageContent(props: ContractParams) {
                     setJustNowReview(rating)
                     setShowReview(false)
                   }}
-                  resolverUser={resolverUser}
+                  creatorUser={creatorUser}
                   currentUser={user}
                   existingReview={
                     userReview
