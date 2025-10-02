@@ -16,7 +16,6 @@ import {
 } from 'common/src/shop/items'
 import { useCart } from 'web/hooks/use-cart'
 import type { CartItem } from 'web/hooks/use-cart'
-import { useShopItemCounts } from 'web/hooks/use-shop-item-counts'
 import { IoCartOutline } from 'react-icons/io5'
 import { TbCrown } from 'react-icons/tb'
 import { BsFire } from 'react-icons/bs'
@@ -37,7 +36,6 @@ type ShopItem = {
   price: number
   imageUrl: string
   perUserLimit?: number
-  globalLimit?: number
 }
 
 const DIGITAL_ITEMS: ShopItem[] = getEnabledConfigs()
@@ -48,7 +46,6 @@ const DIGITAL_ITEMS: ShopItem[] = getEnabledConfigs()
     price: c.price,
     imageUrl: c.images?.[0] ?? '/logo.png',
     perUserLimit: c.perUserLimit,
-    globalLimit: c.globalLimit,
   }))
 
 const PHYSICAL_OTHER_ITEMS: ShopItem[] = getEnabledConfigs()
@@ -59,7 +56,6 @@ const PHYSICAL_OTHER_ITEMS: ShopItem[] = getEnabledConfigs()
     price: c.price,
     imageUrl: c.images?.[0] ?? '/logo.png',
     perUserLimit: c.perUserLimit,
-    globalLimit: c.globalLimit,
   }))
 
 const PRINTFUL_PRICE_MANA: Record<number, number> = Object.fromEntries(
@@ -76,8 +72,6 @@ const ShopPage: NextPage = () => {
   const [lastPurchaseTimes, setLastPurchaseTimes] = useState<
     Record<string, number>
   >({})
-  const { counts: globalCounts, loading: globalCountsLoading } =
-    useShopItemCounts()
 
   const [remote, setRemote] = useState<
     | {
@@ -182,8 +176,6 @@ const ShopPage: NextPage = () => {
                 addItem={addItem}
                 orderCounts={orderCounts}
                 lastPurchaseTimes={lastPurchaseTimes}
-                globalCounts={globalCounts}
-                globalCountsLoading={globalCountsLoading}
                 currentUser={{
                   id: user?.id,
                   username: user?.username,
@@ -232,8 +224,6 @@ const ShopPage: NextPage = () => {
                 addItem={addItem}
                 orderCounts={orderCounts}
                 lastPurchaseTimes={lastPurchaseTimes}
-                globalCounts={globalCounts}
-                globalCountsLoading={globalCountsLoading}
                 currentUser={{
                   id: user?.id,
                   username: user?.username,
@@ -294,55 +284,6 @@ function colorToSwatch(c: string | undefined) {
 }
 
 export default ShopPage
-function VeryRichSpent(props: { userId: string }) {
-  const { userId } = props
-  const [amount, setAmount] = useState<number | null>(null)
-  const [expiresTime, setExpiresTime] = useState<string | null>(null)
-
-  useEffect(() => {
-    let cancelled = false
-    Promise.all([
-      import('web/lib/api/api').then(({ getVeryRichBadge }) =>
-        getVeryRichBadge({ userId })
-      ),
-      import('web/lib/api/api').then(({ getUserEntitlements }) =>
-        getUserEntitlements({ userId })
-      ),
-    ]).then(([badgeRes, entsRes]: [any, any]) => {
-      if (!cancelled) {
-        setAmount(badgeRes.amountSpentMana ?? 0)
-        const veryRichEnt = entsRes.entitlements?.find(
-          (e: any) => e.entitlementId === 'very-rich-badge'
-        )
-        setExpiresTime(veryRichEnt?.expiresTime ?? null)
-      }
-    })
-    return () => {
-      cancelled = true
-    }
-  }, [userId])
-
-  if (amount == null) return null
-
-  const getDaysRemaining = () => {
-    if (!expiresTime) return null
-    const now = Date.now()
-    const expires = new Date(expiresTime).getTime()
-    const daysLeft = Math.ceil((expires - now) / (1000 * 60 * 60 * 24))
-    return daysLeft > 0 ? daysLeft : null
-  }
-
-  const daysRemaining = getDaysRemaining()
-
-  return (
-    <div className="text-ink-600 text-sm">
-      You've already burned <TokenNumber amount={amount} isInline /> to support
-      Manifold{daysRemaining && ` (${daysRemaining}d remaining)`}. You can buy
-      again to burn more mana, add 30 days to your badge duration, and increase
-      the price by <TokenNumber amount={10000} isInline /> for all users.
-    </div>
-  )
-}
 
 function CurrentStreakForgiveness() {
   const fullUser = useUser()
@@ -357,54 +298,6 @@ function CurrentStreakForgiveness() {
   )
 }
 
-function GoldenCrownDuration(props: { userId: string }) {
-  const { userId } = props
-  const [expiresTime, setExpiresTime] = useState<string | null>(null)
-
-  useEffect(() => {
-    let cancelled = false
-    import('web/lib/api/api').then(({ getUserEntitlements }) => {
-      getUserEntitlements({ userId }).then((res: any) => {
-        if (!cancelled) {
-          const crownEnt = res.entitlements?.find(
-            (e: any) => e.entitlementId === 'golden-crown'
-          )
-          setExpiresTime(crownEnt?.expiresTime ?? null)
-        }
-      })
-    })
-    return () => {
-      cancelled = true
-    }
-  }, [userId])
-
-  const getDaysRemaining = () => {
-    if (!expiresTime) return null
-    const now = Date.now()
-    const expires = new Date(expiresTime).getTime()
-    const daysLeft = Math.ceil((expires - now) / (1000 * 60 * 60 * 24))
-    return daysLeft > 0 ? daysLeft : null
-  }
-
-  const daysRemaining = getDaysRemaining()
-
-  if (!daysRemaining && daysRemaining !== 0) return null
-
-  return (
-    <div className="text-ink-600 text-sm">
-      {daysRemaining > 0 ? (
-        <>
-          You currently have the Golden Crown Border with{' '}
-          <span className="font-semibold">{daysRemaining}d</span> remaining.
-          This purchase will add 30 more days.
-        </>
-      ) : (
-        <>This will give you the Golden Crown Border for 30 days.</>
-      )}
-    </div>
-  )
-}
-
 function SimpleItemCard(props: {
   kind: 'digital' | 'other'
   item: ShopItem
@@ -413,8 +306,6 @@ function SimpleItemCard(props: {
   addItem: (ci: CartItem) => void
   orderCounts: Record<string, number>
   lastPurchaseTimes: Record<string, number>
-  globalCounts: Record<string, number>
-  globalCountsLoading: boolean
   currentUser?: { id?: string; username?: string; avatarUrl?: string }
   refreshOrderCounts: () => void
 }) {
@@ -426,8 +317,6 @@ function SimpleItemCard(props: {
     addItem,
     orderCounts,
     lastPurchaseTimes,
-    globalCounts,
-    globalCountsLoading,
     currentUser,
     refreshOrderCounts,
   } = props
@@ -463,10 +352,8 @@ function SimpleItemCard(props: {
 
   // Calculate hours/days remaining for cooldowns
   const isStreakForgiveness = item.id === 'streak-forgiveness'
-  const isVeryRich = item.id === 'very-rich-badge'
   const lastPurchaseTime = lastPurchaseTimes[item.id]
   let daysUntilCanPurchase = 0
-  let hoursUntilCanPurchase = 0
 
   if (isStreakForgiveness && lastPurchaseTime && atUserLimit) {
     const now = Date.now()
@@ -478,28 +365,36 @@ function SimpleItemCard(props: {
     )
   }
 
-  if (isVeryRich && lastPurchaseTime) {
-    const now = Date.now()
-    const oneDayMs = 24 * 60 * 60 * 1000
-    const timeSincePurchase = now - lastPurchaseTime
-    const timeUntilCanPurchase = oneDayMs - timeSincePurchase
-    hoursUntilCanPurchase = Math.ceil(timeUntilCanPurchase / (60 * 60 * 1000))
+  const isExpiringCosmetic =
+    item.id === 'golden-crown' || item.id === 'very-rich-badge'
+  const thisEnt = isExpiringCosmetic
+    ? entitlements?.find((e) => e.entitlementId === item.id)
+    : undefined
+  // Compute expiry using entitlement, or fall back to last purchase + 30d
+  const now = Date.now()
+  const thirtyDaysMs = 30 * 24 * 60 * 60 * 1000
+  let expiresMs: number | undefined
+  if (thisEnt?.expiresTime) {
+    expiresMs = new Date(thisEnt.expiresTime as any).getTime()
+  } else if (isExpiringCosmetic && lastPurchaseTime) {
+    expiresMs = lastPurchaseTime + thirtyDaysMs
+  }
+  let expiringCooldownLabel: string | undefined
+  if (expiresMs && expiresMs > now) {
+    const msLeft = Math.max(0, expiresMs - now)
+    const days = Math.floor(msLeft / (24 * 60 * 60 * 1000))
+    const hours = Math.floor(
+      (msLeft % (24 * 60 * 60 * 1000)) / (60 * 60 * 1000)
+    )
+    expiringCooldownLabel =
+      days > 0 ? `${days}d left` : `${Math.max(1, hours)}h left`
   }
 
-  // Check global limit
-  const globalCount = globalCounts[item.id] ?? 0
-  const globalLimit = item.globalLimit
-  const atGlobalLimit = !!globalLimit && globalCount >= globalLimit
-  const remaining = globalLimit ? globalLimit - globalCount : undefined
-
-  const atLimit = atUserLimit || atGlobalLimit
-  const purchasedCount = globalCounts[item.id] ?? 0
-  const currentDynamicPrice = isVeryRich
-    ? 50000 + purchasedCount * 10000
-    : item.price
+  const atLimit = atUserLimit
+  const currentDynamicPrice = item.price
   return (
-    <Col className="bg-canvas-0 border-ink-200 rounded-lg border p-4 shadow-sm">
-      <div className="bg-ink-100 relative aspect-square w-full overflow-hidden rounded-md">
+    <Col className=" border-ink-200 rounded-lg border p-4 shadow-sm">
+      <div className=" relative aspect-square w-full overflow-hidden rounded-md">
         {item.id === 'golden-crown' && (
           <Row className="relative h-full w-full items-center justify-center">
             {/* Gold ring preview */}
@@ -541,15 +436,29 @@ function SimpleItemCard(props: {
           item.id !== 'very-rich-badge' &&
           item.id !== 'streak-forgiveness' &&
           item.id !== 'pampu-skin' && (
-            <img
-              src={item.imageUrl}
-              alt={item.title}
-              className="h-full w-full object-cover"
-            />
+            <>
+              {item.id === 'award-plus' ||
+              item.id === 'award-premium' ||
+              item.id === 'award-crystal' ? (
+                <Row className="h-full w-full items-center justify-center p-8">
+                  <img
+                    src={item.imageUrl}
+                    alt={item.title}
+                    className="h-24 w-24 object-contain"
+                  />
+                </Row>
+              ) : (
+                <img
+                  src={item.imageUrl}
+                  alt={item.title}
+                  className="h-full w-full object-cover"
+                />
+              )}
+            </>
           )}
         {/* Duration badge for expiring items */}
         {(item.id === 'golden-crown' || item.id === 'very-rich-badge') && (
-          <div className="bg-ink-800 absolute right-2 top-2 flex items-center gap-1 rounded px-2 py-1 text-xs text-white">
+          <div className="absolute right-2 top-2 flex items-center gap-1 rounded bg-black/80 px-2 py-1 text-xs font-semibold text-white shadow-lg backdrop-blur-sm">
             <svg
               className="h-3 w-3"
               fill="none"
@@ -569,18 +478,6 @@ function SimpleItemCard(props: {
       </div>
       <Row className="items-center justify-between">
         <div className="text-ink-600 mt-3 text-sm">{item.title}</div>
-        {globalLimit && !globalCountsLoading && (
-          <div
-            className={`mt-3 text-xs ${
-              atGlobalLimit ? 'text-red-600' : 'text-amber-600'
-            }`}
-          >
-            {atGlobalLimit ? 'Sold out' : `${remaining} remaining`}
-          </div>
-        )}
-        {globalCountsLoading && globalLimit && (
-          <div className="text-ink-400 mt-3 text-xs">Loading...</div>
-        )}
       </Row>
       <div className="text-lg font-medium">
         <TokenNumber amount={currentDynamicPrice} isInline />
@@ -621,22 +518,15 @@ function SimpleItemCard(props: {
       ) : (
         <ConfirmationButton
           openModalBtn={{
-            label: atGlobalLimit
-              ? 'Sold Out'
-              : isVeryRich && hoursUntilCanPurchase > 0
-              ? hoursUntilCanPurchase >= 24
-                ? `${Math.ceil(hoursUntilCanPurchase / 24)}d cooldown`
-                : `${hoursUntilCanPurchase}h cooldown`
-              : isVeryRich
-              ? 'Buy more'
-              : atUserLimit && isStreakForgiveness && daysUntilCanPurchase > 0
-              ? `${daysUntilCanPurchase}d cooldown`
-              : atUserLimit
-              ? 'Purchased'
-              : 'Buy',
+            label:
+              expiringCooldownLabel ??
+              (atUserLimit && isStreakForgiveness && daysUntilCanPurchase > 0
+                ? `${daysUntilCanPurchase}d cooldown`
+                : 'Buy'),
             color: 'indigo',
             className: 'mt-3 w-full',
-            disabled: atLimit || (isVeryRich && hoursUntilCanPurchase > 0),
+            disabled:
+              atLimit || (expiresMs !== undefined && expiresMs > Date.now()),
           }}
           cancelBtn={{ label: 'Cancel' }}
           submitBtn={{
@@ -712,11 +602,10 @@ function SimpleItemCard(props: {
             <div className="text-sm">
               Price: <TokenNumber amount={currentDynamicPrice} isInline />
             </div>
-            {isVeryRich && currentUser?.id && (
-              <VeryRichSpent userId={currentUser.id} />
-            )}
-            {item.id === 'golden-crown' && currentUser?.id && (
-              <GoldenCrownDuration userId={currentUser.id} />
+            {(item.id === 'golden-crown' || item.id === 'very-rich-badge') && (
+              <div className="text-ink-600 text-sm">
+                This item lasts 30 days.
+              </div>
             )}
             {item.id === 'streak-forgiveness' && <CurrentStreakForgiveness />}
             <div className="text-sm">
@@ -802,8 +691,8 @@ function PrintfulItemCard(props: {
     gallery[0] ?? (matchingVariant as any)?.preview ?? p.imageUrl
 
   return (
-    <Col className="bg-canvas-0 border-ink-200 gap-2 rounded-lg border p-4 shadow-sm">
-      <div className="bg-ink-100 aspect-square w-full overflow-hidden rounded-md">
+    <Col className=" border-ink-200 gap-2 rounded-lg border p-4 shadow-sm">
+      <div className=" aspect-square w-full overflow-hidden rounded-md">
         <img
           src={p.imageUrl}
           alt={p.title}

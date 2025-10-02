@@ -20,10 +20,8 @@ export const SHOP_ITEM_CONFIGS: ShopItemConfig[] = [
     id: 'very-rich-badge',
     type: 'digital',
     title: 'Manifold Supporter Badge',
-    // Base price; actual price is dynamic in checkout based on global count
-    price: 50000,
-    description:
-      'Support Manifold! Each purchase increases the next price by 10,000 M$.',
+    price: 100000,
+    description: 'Support Manifold! Lasts 30 days.',
     images: ['/logo.png'],
     enabled: true,
   },
@@ -31,9 +29,8 @@ export const SHOP_ITEM_CONFIGS: ShopItemConfig[] = [
     id: 'golden-crown',
     type: 'digital',
     title: 'Golden Crown Border',
-    price: 75000,
-    description:
-      'Adds a gold ring and crown icon to your avatar across the site.',
+    price: 100000,
+    description: 'Adds a gold ring and crown icon for 30 days.',
     images: ['/promo/promo-2.png'],
     enabled: true,
   },

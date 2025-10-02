@@ -38,15 +38,7 @@ export const checkoutShopCart: APIHandler<'checkout-shop-cart'> = async (
       skipped++
       continue
     }
-    let price = cfg.price
-    // Dynamic pricing for very-rich-badge: base 50k + 10k per prior purchase
-    if (rest === 'very-rich-badge') {
-      const row = await pg.oneOrNone<{ count: string }>(
-        `select count(*) as count from shop_orders where item_id = 'very-rich-badge'`
-      )
-      const purchased = Number(row?.count ?? 0)
-      price = 50000 + purchased * 10000
-    }
+    const price = cfg.price
     lines.push({ key, itemId: rest, quantity, price })
     total += price * quantity
   }
@@ -62,24 +54,20 @@ export const checkoutShopCart: APIHandler<'checkout-shop-cart'> = async (
   for (const [itemId, requestedQty] of requestedByItem.entries()) {
     const cfg = configById.get(itemId)
 
-    // Check 1-day cooldown for very-rich-badge
-    if (itemId === 'very-rich-badge') {
-      const lastPurchase = await pg.oneOrNone<{ created_time: Date }>(
-        `select created_time from shop_orders 
-         where user_id = $1 and item_id = 'very-rich-badge' 
-         order by created_time desc limit 1`,
-        [userId]
+    // For expiring cosmetic items, disallow purchase while active
+    if (itemId === 'very-rich-badge' || itemId === 'golden-crown') {
+      const active = await pg.oneOrNone<{ exists: boolean }>(
+        `select exists(
+            select 1 from user_entitlements 
+            where user_id = $1 and entitlement_id = $2 and coalesce(expires_time, now()) > now()
+         ) as exists`,
+        [userId, itemId]
       )
-      if (lastPurchase) {
-        const hoursSinceLastPurchase =
-          (Date.now() - new Date(lastPurchase.created_time).getTime()) /
-          (1000 * 60 * 60)
-        if (hoursSinceLastPurchase < 24) {
-          throw new APIError(
-            403,
-            'You can only purchase the Manifold Supporter Badge once per day'
-          )
-        }
+      if (active?.exists) {
+        throw new APIError(
+          403,
+          `You already own ${itemId} and it has not yet expired`
+        )
       }
     }
 
@@ -111,23 +99,6 @@ export const checkoutShopCart: APIHandler<'checkout-shop-cart'> = async (
       }
     }
 
-    // Check global limit
-    const globalLimit = cfg?.globalLimit
-    if (globalLimit) {
-      const globalRow = await pg.oneOrNone<{ count: string }>(
-        `select count(*) as count from user_entitlements where entitlement_id = $1`,
-        [itemId]
-      )
-      const currentGlobalCount = Number(globalRow?.count ?? 0)
-      if (currentGlobalCount + requestedQty > globalLimit) {
-        throw new APIError(
-          403,
-          `Only ${globalLimit} available globally for ${itemId}, ${
-            globalLimit - currentGlobalCount
-          } remaining`
-        )
-      }
-    }
   }
 
   // Check balance
@@ -189,20 +160,12 @@ export const checkoutShopCart: APIHandler<'checkout-shop-cart'> = async (
       } else {
         // Grant entitlement for digital cosmetic items (1:1 by itemId)
         // Set 30-day expiration for supporter badge and golden crown
-        const expiringItems = ['very-rich-badge', 'golden-crown']
-
-        if (expiringItems.includes(l.itemId)) {
-          // For expiring items, add 30 days to existing expiration (or from now if expired/new)
+        if (l.itemId === 'very-rich-badge' || l.itemId === 'golden-crown') {
           await tx.none(
             `insert into user_entitlements (user_id, entitlement_id, expires_time)
                values ($1, $2, now() + interval '30 days')
              on conflict (user_id, entitlement_id) 
-             do update set expires_time = 
-               CASE 
-                 WHEN user_entitlements.expires_time > now() 
-                 THEN user_entitlements.expires_time + interval '30 days'
-                 ELSE now() + interval '30 days'
-               END`,
+             do update set expires_time = now() + interval '30 days'`,
             [userId, l.itemId]
           )
         } else {
