@@ -115,12 +115,15 @@ const CheckoutPage: NextPage = () => {
     removeOneFromCart(baseKey)
   }
 
-  // Load countries/subdivisions from our cached API
+  // Load countries/subdivisions from our cached API (backend endpoint)
   useEffect(() => {
-    fetch('/api/printful/geo')
-      .then((r) => r.json())
-      .then((d) => setCountries(d.countries ?? []))
-      .catch(() => setCountries([]))
+    api('get-printful-geo', {})
+      .then((d) => setCountries((d as any).countries ?? []))
+      .catch((e) => {
+        console.error('Failed to load countries', e)
+        setCountries([])
+        toast.error('Failed to load countries')
+      })
   }, [])
 
   return (

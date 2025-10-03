@@ -2382,6 +2382,42 @@ export const API = (_apiTypeCheck = {
       })
       .strict(),
   },
+  'get-printful-geo': {
+    method: 'GET',
+    visibility: 'public',
+    authed: false,
+    returns: {} as {
+      countries: {
+        code: string
+        name: string
+        states: { code: string; name: string }[]
+      }[]
+    },
+    props: z.object({}).strict(),
+  },
+  'get-printful-products': {
+    method: 'GET',
+    visibility: 'public',
+    authed: false,
+    returns: {} as {
+      products: {
+        id: number
+        title: string
+        imageUrl: string
+        variants: {
+          id: number
+          name: string
+          retail_price?: string
+          currency?: string
+          size?: string
+          color?: string
+          preview?: string
+          images?: string[]
+        }[]
+      }[]
+    },
+    props: z.object({}).strict(),
+  },
   'generate-ai-numeric-ranges': {
     method: 'POST',
     visibility: 'public',

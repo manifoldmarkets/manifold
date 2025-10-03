@@ -196,6 +196,9 @@ import { referUser } from './refer-user'
 import { updatePost } from './update-post'
 import { validateiap } from './validate-iap'
 import { getUserAchievements } from './get-user-achievements'
+import { getPrintfulGeo } from './printful/get-geo'
+import { getPrintfulProducts } from './printful/get-products'
+
 
 export const handlers: { [k in APIPath]: APIHandler<k> } = {
   'refresh-all-clients': refreshAllClients,
@@ -399,4 +402,6 @@ export const handlers: { [k in APIPath]: APIHandler<k> } = {
   'user-comments': getUserComments,
   'get-user-last-active-time': getUserLastActiveTime,
   'get-user-achievements': getUserAchievements,
+  'get-printful-geo': getPrintfulGeo,
+  'get-printful-products': getPrintfulProducts,
 } as const

@@ -97,9 +97,8 @@ const ShopPage: NextPage = () => {
   >(null)
 
   useEffect(() => {
-    fetch('/api/printful/products')
-      .then((r) => r.json())
-      .then((d) => setRemote(d.products))
+    api('get-printful-products', {})
+      .then((d) => setRemote((d as any).products))
       .catch((e) => {
         console.error('Failed to load Printful products', e)
         setRemote([])
