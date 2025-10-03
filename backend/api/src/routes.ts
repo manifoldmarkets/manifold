@@ -199,7 +199,6 @@ import { getUserAchievements } from './get-user-achievements'
 import { getPrintfulGeo } from './printful/get-geo'
 import { getPrintfulProducts } from './printful/get-products'
 
-
 export const handlers: { [k in APIPath]: APIHandler<k> } = {
   'refresh-all-clients': refreshAllClients,
   bet: placeBet,

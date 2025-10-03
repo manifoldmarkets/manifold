@@ -24,7 +24,8 @@ const OrdersPage: NextPage = () => {
       try {
         const res = await api('get-shop-orders', {})
         setOrders(res.orders)
-      } catch {
+      } catch (e) {
+        console.error('Failed to load shop orders', e)
         setOrders([])
       }
     })()
