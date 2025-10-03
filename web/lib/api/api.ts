@@ -25,10 +25,6 @@ export async function api<P extends APIPath>(
   return apiWithAuth(path, auth, params)
 }
 
-// helper function for the old apis so we don't have to migrate them
-function curriedAPI<P extends APIPath>(path: P) {
-  return (params: APIParams<P>) => api(path, params)
-}
 
 export function createUser(params: any) {
   return call(getApiUrl('createuser'), 'POST', params)
@@ -79,7 +75,8 @@ export function updateUserDisinterestEmbedding(params: {
   return call(getApiUrl('update-user-disinterest-embedding'), 'POST', params)
 }
 
-export const searchContracts = curriedAPI('search-markets-full')
+export const searchContracts = (params: APIParams<'search-markets-full'>) =>
+  api('search-markets-full', params)
 
 export function deleteMarket(params: { contractId: string }) {
   return call(getApiUrl('delete-market'), 'POST', params) as Promise<{
@@ -110,7 +107,8 @@ export function followTopic(params: { groupId: string }) {
   return call(getApiUrl('follow-topic'), 'POST', params)
 }
 
-export const searchGroups = curriedAPI('search-groups')
+export const searchGroups = (params: APIParams<'search-groups'>) =>
+  api('search-groups', params)
 
 export function leagueActivity(params: { season: number; cohort: string }) {
   return call(getApiUrl('league-activity'), 'POST', params) as Promise<{
@@ -208,9 +206,11 @@ export function deleteDashboard(params: { dashboardId: string }) {
   return call(getApiUrl('delete-dashboard'), 'POST', params)
 }
 
-export const updateMarket = curriedAPI('market/:contractId/update')
+export const updateMarket = (params: APIParams<'market/:contractId/update'>) =>
+  api('market/:contractId/update', params)
 
-export const updateUser = curriedAPI('me/update')
+export const updateUser = (params: APIParams<'me/update'>) =>
+  api('me/update', params)
 
 export function banUser(params: { userId: string; unban?: boolean }) {
   return call(getApiUrl('ban-user'), 'POST', params)
@@ -262,15 +262,24 @@ export function deleteChartAnnotation(params: { id: number }) {
   return call(getApiUrl('delete-chart-annotation'), 'POST', params)
 }
 
-export const getUserEntitlements = curriedAPI('get-user-entitlements')
+export const getUserEntitlements = (
+  params: APIParams<'get-user-entitlements'>
+) => api('get-user-entitlements', params)
 
-export const togglePampuSkin = curriedAPI('toggle-pampu-skin')
+export const togglePampuSkin = (params: APIParams<'toggle-pampu-skin'>) =>
+  api('toggle-pampu-skin', params)
 
-export const getShopItemCounts = curriedAPI('get-shop-item-counts')
+export const getShopItemCounts = (params: APIParams<'get-shop-item-counts'>) =>
+  api('get-shop-item-counts', params)
 
-export const getVeryRichBadge = curriedAPI('get-very-rich-badge')
+export const getVeryRichBadge = (params: APIParams<'get-very-rich-badge'>) =>
+  api('get-very-rich-badge', params)
 
-export const giveCommentAward = curriedAPI('give-comment-award')
+export const giveCommentAward = (params: APIParams<'give-comment-award'>) =>
+  api('give-comment-award', params)
 
-export const getCommentAwards = curriedAPI('get-comment-awards')
-export const getUserAwardInventory = curriedAPI('get-user-award-inventory')
+export const getCommentAwards = (params: APIParams<'get-comment-awards'>) =>
+  api('get-comment-awards', params)
+export const getUserAwardInventory = (
+  params: APIParams<'get-user-award-inventory'>
+) => api('get-user-award-inventory', params)
