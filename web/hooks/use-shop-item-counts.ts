@@ -1,26 +1,18 @@
-import { useEffect, useState } from 'react'
-import { api } from 'web/lib/api/api'
+import { useEffect } from 'react'
+import { useAPIGetter } from 'web/hooks/use-api-getter'
 
 export function useShopItemCounts() {
-  const [counts, setCounts] = useState<{ [itemId: string]: number }>({})
-  const [loading, setLoading] = useState(true)
+  const { data, loading, refresh } = useAPIGetter(
+    'get-shop-item-counts',
+    {},
+    undefined,
+    'shop-item-counts'
+  )
 
   useEffect(() => {
-    // Don't make API calls if no items have global limits
-    const hasGlobalLimits = Object.keys({}).length > 0 // Will be populated once backend is running
-
-    api('get-shop-item-counts', {})
-      .then((res) => {
-        setCounts(res.counts || {})
-        setLoading(false)
-      })
-      .catch((error) => {
-        console.error('Failed to fetch shop item counts:', error)
-        // Fail gracefully - just don't show counts
-        setCounts({})
-        setLoading(false)
-      })
+    const id = setInterval(() => refresh(), 5 * 60 * 1000)
+    return () => clearInterval(id)
   }, [])
 
-  return { counts, loading }
+  return { counts: (data as any)?.counts ?? {}, loading }
 }

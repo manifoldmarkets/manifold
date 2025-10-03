@@ -1,5 +1,6 @@
-import { useEffect, useState } from 'react'
+import { useEffect } from 'react'
 import { api } from 'web/lib/api/api'
+import { usePersistentLocalState } from 'web/hooks/use-persistent-local-state'
 
 export type UserEntitlement = {
   entitlementId: string
@@ -9,32 +10,6 @@ export type UserEntitlement = {
 }
 
 const STORAGE_KEY = 'user-entitlements-cache'
-const CACHE_DURATION = 5 * 60 * 1000 // 5 minutes
-
-function getCachedEntitlements(userId: string): UserEntitlement[] | null {
-  if (typeof window === 'undefined') return null
-  try {
-    const cached = localStorage.getItem(`${STORAGE_KEY}-${userId}`)
-    if (!cached) return null
-    const { data, timestamp } = JSON.parse(cached)
-    if (Date.now() - timestamp > CACHE_DURATION) return null
-    return data
-  } catch {
-    return null
-  }
-}
-
-function setCachedEntitlements(userId: string, data: UserEntitlement[]) {
-  if (typeof window === 'undefined') return
-  try {
-    localStorage.setItem(
-      `${STORAGE_KEY}-${userId}`,
-      JSON.stringify({ data, timestamp: Date.now() })
-    )
-  } catch {
-    // Ignore storage errors
-  }
-}
 
 export function clearEntitlementsCache(userId: string) {
   if (typeof window === 'undefined') return
@@ -46,10 +21,10 @@ export function clearEntitlementsCache(userId: string) {
 }
 
 export function useUserEntitlements(userId?: string) {
-  const [ents, setEnts] = useState<UserEntitlement[] | undefined>(() => {
-    if (!userId) return undefined
-    return getCachedEntitlements(userId) ?? undefined
-  })
+  const key = `${STORAGE_KEY}-${userId ?? 'anon'}`
+  const [ents, setEnts] = usePersistentLocalState<
+    UserEntitlement[] | undefined
+  >(undefined, key)
 
   useEffect(() => {
     let cancelled = false
@@ -60,23 +35,16 @@ export function useUserEntitlements(userId?: string) {
       }
     }
 
-    // Try cache first
-    const cached = getCachedEntitlements(userId)
-    if (cached) {
-      setEnts(cached)
-    }
-
     // Always fetch fresh data
     api('get-user-entitlements', { userId })
       .then((res) => {
         if (!cancelled) {
           setEnts(res.entitlements)
-          setCachedEntitlements(userId, res.entitlements)
         }
       })
       .catch((error) => {
         console.error('Failed to fetch user entitlements:', error)
-        if (!cancelled && !cached) setEnts([])
+        if (!cancelled && ents == null) setEnts([])
       })
     return () => {
       cancelled = true

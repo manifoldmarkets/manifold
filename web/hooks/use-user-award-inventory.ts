@@ -1,8 +1,8 @@
-import { useEffect, useState, useCallback } from 'react'
+import { useEffect, useCallback } from 'react'
 import { api } from 'web/lib/api/api'
+import { usePersistentLocalState } from 'web/hooks/use-persistent-local-state'
 
 const STORAGE_KEY = 'award-inventory-cache'
-const CACHE_DURATION = 5 * 60 * 1000 // 5 minutes
 
 type AwardInventory = {
   plus: number
@@ -10,52 +10,43 @@ type AwardInventory = {
   crystal: number
 }
 
-function getCachedInventory(): AwardInventory | null {
-  if (typeof window === 'undefined') return null
-  try {
-    const cached = localStorage.getItem(STORAGE_KEY)
-    if (!cached) return null
-    const { data, timestamp } = JSON.parse(cached)
-    if (Date.now() - timestamp > CACHE_DURATION) return null
-    return data
-  } catch {
-    return null
-  }
+function storageKeyFor(userId?: string) {
+  return userId ? `${STORAGE_KEY}-${userId}` : STORAGE_KEY
 }
 
-function setCachedInventory(data: AwardInventory) {
+export function clearAwardInventoryCache(userId?: string) {
   if (typeof window === 'undefined') return
   try {
-    localStorage.setItem(
-      STORAGE_KEY,
-      JSON.stringify({ data, timestamp: Date.now() })
-    )
-  } catch {
-    // Ignore storage errors
-  }
-}
-
-export function clearAwardInventoryCache() {
-  if (typeof window === 'undefined') return
-  try {
+    if (userId) {
+      localStorage.removeItem(storageKeyFor(userId))
+      return
+    }
     localStorage.removeItem(STORAGE_KEY)
+    const toRemove: string[] = []
+    for (let i = 0; i < localStorage.length; i++) {
+      const k = localStorage.key(i)
+      if (!k) continue
+      if (k.startsWith(`${STORAGE_KEY}-`)) toRemove.push(k)
+    }
+    for (const k of toRemove) localStorage.removeItem(k)
   } catch {
     // Ignore storage errors
   }
 }
 
-export function useUserAwardInventory() {
-  const [inventory, setInventory] = useState<AwardInventory | null>(() => {
-    return getCachedInventory()
-  })
-  const [loading, setLoading] = useState(true)
+export function useUserAwardInventory(userId?: string) {
+  const [inventory, setInventory] =
+    usePersistentLocalState<AwardInventory | null>(null, storageKeyFor(userId))
+  const [loading, setLoading] = usePersistentLocalState<boolean>(
+    true,
+    `${storageKeyFor(userId)}-loading`
+  )
 
   const fetchInventory = useCallback(() => {
     setLoading(true)
     api('get-user-award-inventory', {})
       .then((res) => {
         setInventory(res)
-        setCachedInventory(res)
         setLoading(false)
       })
       .catch(() => {
@@ -64,13 +55,6 @@ export function useUserAwardInventory() {
   }, [])
 
   useEffect(() => {
-    // If we have cache, use it immediately
-    const cached = getCachedInventory()
-    if (cached) {
-      setInventory(cached)
-      setLoading(false)
-    }
-    // Always fetch fresh data in the background
     fetchInventory()
   }, [fetchInventory])
 

@@ -25,7 +25,6 @@ export async function api<P extends APIPath>(
   return apiWithAuth(path, auth, params)
 }
 
-
 export function createUser(params: any) {
   return call(getApiUrl('createuser'), 'POST', params)
 }

@@ -1,4 +1,5 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useMemo } from 'react'
+import { usePersistentLocalState } from 'web/hooks/use-persistent-local-state'
 
 export type CartItem = {
   key: string // stable key for dedupe e.g. digital:id or printful:productId:variantId
@@ -12,23 +13,10 @@ export type CartItem = {
 const STORAGE_KEY = 'shop_cart_v1'
 
 export function useCart() {
-  const [items, setItems] = useState<CartItem[]>([])
-  const [ready, setReady] = useState(false)
-
-  useEffect(() => {
-    try {
-      const raw = localStorage.getItem(STORAGE_KEY)
-      if (raw) setItems(JSON.parse(raw))
-    } catch {}
-    setReady(true)
-  }, [])
-
-  useEffect(() => {
-    if (!ready) return
-    try {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(items))
-    } catch {}
-  }, [items, ready])
+  const [items, setItems, ready] = usePersistentLocalState<CartItem[]>(
+    [],
+    STORAGE_KEY
+  )
 
   const total = useMemo(
     () => items.reduce((sum, it) => sum + it.price * it.quantity, 0),

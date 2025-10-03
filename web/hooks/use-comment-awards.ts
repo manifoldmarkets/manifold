@@ -1,23 +1,20 @@
-import { useEffect, useState } from 'react'
-import { api } from 'web/lib/api/api'
+import { useEffect } from 'react'
+import { useAPIGetter } from 'web/hooks/use-api-getter'
 
 export function useCommentAwards(contractId: string, commentIds: string[]) {
-  const [awardsByComment, setAwardsByComment] = useState<
-    Record<
-      string,
-      { plus: number; premium: number; crystal: number; awardedByMe?: boolean }
-    >
-  >({})
+  const key = `comment-awards-${contractId}-${JSON.stringify(commentIds)}`
+  const enabled = Boolean(contractId && commentIds.length > 0)
+  const { data, refresh } = useAPIGetter(
+    'get-comment-awards',
+    enabled ? { contractId, commentIds } : (undefined as any),
+    ['commentIds'],
+    key,
+    enabled
+  )
   useEffect(() => {
-    if (!contractId || commentIds.length === 0) return
-    let cancelled = false
-    api('get-comment-awards', { contractId, commentIds }).then((res) => {
-      if (!cancelled) setAwardsByComment(res.awardsByComment || {})
-    })
-    return () => {
-      cancelled = true
-    }
-  }, [contractId, JSON.stringify(commentIds)])
-  return awardsByComment
+    if (!enabled) return
+    const id = setInterval(() => refresh(), 5 * 60 * 1000)
+    return () => clearInterval(id)
+  }, [enabled, contractId])
+  return (data as any)?.awardsByComment ?? {}
 }
-

@@ -1,33 +1,8 @@
-import { useEffect, useState } from 'react'
+import { useEffect } from 'react'
 import { useUserEntitlements } from './use-user-entitlements'
+import { usePersistentLocalState } from 'web/hooks/use-persistent-local-state'
 
 const STORAGE_KEY = 'has-pampu-skin-cache'
-const CACHE_DURATION = 5 * 60 * 1000 // 5 minutes
-
-function getCachedPampuSkin(userId: string): boolean | null {
-  if (typeof window === 'undefined') return null
-  try {
-    const cached = localStorage.getItem(`${STORAGE_KEY}-${userId}`)
-    if (!cached) return null
-    const { data, timestamp } = JSON.parse(cached)
-    if (Date.now() - timestamp > CACHE_DURATION) return null
-    return data
-  } catch {
-    return null
-  }
-}
-
-function setCachedPampuSkin(userId: string, hasSkin: boolean) {
-  if (typeof window === 'undefined') return
-  try {
-    localStorage.setItem(
-      `${STORAGE_KEY}-${userId}`,
-      JSON.stringify({ data: hasSkin, timestamp: Date.now() })
-    )
-  } catch {
-    // Ignore storage errors
-  }
-}
 
 export function clearPampuSkinCache(userId: string) {
   if (typeof window === 'undefined') return
@@ -40,11 +15,10 @@ export function clearPampuSkinCache(userId: string) {
 
 export function useHasPampuSkin(userId?: string): boolean {
   const entitlements = useUserEntitlements(userId)
-  const [hasSkin, setHasSkin] = useState<boolean>(() => {
-    if (!userId) return false
-    const cached = getCachedPampuSkin(userId)
-    return cached ?? false
-  })
+  const [hasSkin, setHasSkin] = usePersistentLocalState<boolean>(
+    false,
+    `${STORAGE_KEY}-${userId ?? 'anon'}`
+  )
 
   useEffect(() => {
     if (!userId || !entitlements) {
@@ -58,7 +32,6 @@ export function useHasPampuSkin(userId?: string): boolean {
     )
     const isEquipped = pampuSkinEnt?.metadata?.equipped === true
     setHasSkin(isEquipped)
-    setCachedPampuSkin(userId, isEquipped)
   }, [userId, entitlements])
 
   return hasSkin
