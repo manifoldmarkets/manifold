@@ -28,6 +28,7 @@ import { HiOutlineBuildingLibrary } from 'react-icons/hi2'
 import { User } from 'common/user'
 import { LuSprout } from 'react-icons/lu'
 import { useEffect, useState } from 'react'
+import { api } from 'web/lib/api/api'
 export const isFresh = (createdTime: number) =>
   createdTime > Date.now() - DAY_MS * 14
 
@@ -316,12 +317,8 @@ function VeryRichBadge(props: { userId: string }) {
   useEffect(() => {
     let cancelled = false
     Promise.all([
-      import('web/lib/api/api').then(({ getVeryRichBadge }) =>
-        getVeryRichBadge({ userId })
-      ),
-      import('web/lib/api/api').then(({ getUserEntitlements }) =>
-        getUserEntitlements({ userId })
-      ),
+      api('get-very-rich-badge', { userId }),
+      api('get-user-entitlements', { userId }),
     ]).then(([badgeRes, entsRes]: [any, any]) => {
       if (!cancelled) {
         setAmount(badgeRes.amountSpentMana ?? 0)
@@ -353,7 +350,7 @@ function VeryRichBadge(props: { userId: string }) {
 
   return (
     <Tooltip text={tooltipText} placement="right">
-      <Foldy className="h-3 w-3 stroke-yellow-500cha" aria-hidden />
+      <Foldy className="stroke-yellow-500cha h-3 w-3" aria-hidden />
     </Tooltip>
   )
 }
