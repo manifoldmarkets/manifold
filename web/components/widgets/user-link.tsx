@@ -339,7 +339,7 @@ function VeryRichBadge(props: { userId: string }) {
     if (!expiresTime) return null
     const now = Date.now()
     const expires = new Date(expiresTime).getTime()
-    const daysLeft = Math.ceil((expires - now) / (1000 * 60 * 60 * 24))
+    const daysLeft = Math.ceil((expires - now) / DAY_MS)
     return daysLeft > 0 ? daysLeft : null
   }
 
