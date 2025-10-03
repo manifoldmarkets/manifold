@@ -66,6 +66,7 @@ import { RegistrationReturnType } from 'common/reason-codes'
 import { NON_POINTS_BETS_LIMIT } from 'common/supabase/bets'
 import { PrivateMessageChannel } from 'common/supabase/private-messages'
 import { notification_preference } from 'common/user-notification-preferences'
+import type { ShopOrder } from '../shop/types'
 
 import { JSONContent } from '@tiptap/core'
 import { MarketDraft } from 'common/drafts'
@@ -2236,7 +2237,7 @@ export const API = (_apiTypeCheck = {
     method: 'GET',
     visibility: 'public',
     authed: true,
-    returns: {} as { orders: import('../shop/types').ShopOrder[] },
+    returns: {} as { orders: ShopOrder[] },
     props: z.object({}).strict(),
   },
   'get-user-entitlements': {

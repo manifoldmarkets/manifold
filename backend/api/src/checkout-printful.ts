@@ -13,7 +13,6 @@ export const checkoutPrintful: APIHandler<'checkout-printful'> = async (
 ) => {
   const userId = auth.uid
   if (!userId) throw new APIError(401, 'You must be signed in')
-  if (!items || items.length === 0) throw new APIError(400, 'No items')
 
   // Enforce max 3 physical items per order
   const totalQty = items.reduce((sum, it) => sum + (it.quantity ?? 0), 0)

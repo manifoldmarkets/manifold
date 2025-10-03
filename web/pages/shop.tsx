@@ -224,7 +224,6 @@ const ShopPage: NextPage = () => {
               <PrintfulItemCard
                 key={`printful-${p.id}`}
                 p={p}
-                balance={balance}
                 lastPrintfulOrderAt={lastPrintfulOrderAt ?? undefined}
                 addToCart={(ci: CartItem) => addItem(ci)}
               />
@@ -328,7 +327,6 @@ function SimpleItemCard(props: {
   const {
     kind,
     item,
-    balance,
     cartItems,
     addItem,
     orderCounts,
@@ -644,11 +642,10 @@ function PrintfulItemCard(props: {
       images?: string[]
     }[]
   }
-  balance: number
   lastPrintfulOrderAt?: number
   addToCart: (item: CartItem) => void
 }) {
-  const { p, balance, addToCart, lastPrintfulOrderAt } = props
+  const { p, addToCart, lastPrintfulOrderAt } = props
   const priceMana = PRINTFUL_PRICE_MANA[p.id]
   const sizes = Array.from(
     new Set(p.variants.map((v) => v.size).filter(Boolean))
