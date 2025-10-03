@@ -67,13 +67,15 @@ export const filtersByQueryType: Record<string, FilterCallback<any>> = {
     data.find((item) => item.id === id),
   users: (data: DisplayUser[], id: string) =>
     id.split(',').map((userId) => data.find((u) => u.id === userId) ?? null),
+  'comment-awards': (data: { commentId: string }[], id: string) =>
+    data.find((item) => item.commentId === id),
 }
 
 export type BatchQueryParams = { ids: Set<string>; userId?: string }
 export type QueryHandler<T> = (params: BatchQueryParams) => Promise<T>
 export type QueryHandlers = {
   [queryType: string]: QueryHandler<
-    Contract[] | Reaction[] | string[] | DisplayUser[]
+    Contract[] | Reaction[] | string[] | DisplayUser[] | any[]
   >
 }
 
@@ -87,7 +89,8 @@ export const useBatchedGetter = <T>(
     | 'contract-metrics'
     | 'post-comment-likes'
     | 'user'
-    | 'users',
+    | 'users'
+    | 'comment-awards',
   id: string,
   initialValue: T,
   enabled = true,

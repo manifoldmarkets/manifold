@@ -1,20 +1,50 @@
-import { useEffect } from 'react'
-import { useAPIGetter } from 'web/hooks/use-api-getter'
+import { useMemo } from 'react'
+import { useBatchedGetter } from 'client-common/hooks/use-batched-getter'
+import { api } from 'web/lib/api/api'
 
 export function useCommentAwards(contractId: string, commentIds: string[]) {
-  const key = `comment-awards-${contractId}-${JSON.stringify(commentIds)}`
   const enabled = Boolean(contractId && commentIds.length > 0)
-  const { data, refresh } = useAPIGetter(
-    'get-comment-awards',
-    enabled ? { contractId, commentIds } : (undefined as any),
-    ['commentIds'],
-    key,
+  const id = commentIds.join(',')
+  const tuple = useBatchedGetter(
+    {
+      'comment-awards': async ({ ids }) => {
+        const allIds = Array.from(ids)
+        const res = await api('get-comment-awards', {
+          contractId,
+          commentIds: allIds,
+        })
+        // Flatten to an array mapping for filter
+        const arr = allIds.map((cid) => ({
+          commentId: cid,
+          ...(res.awardsByComment?.[cid] ?? {
+            plus: 0,
+            premium: 0,
+            crystal: 0,
+          }),
+        }))
+        return arr as any
+      },
+    },
+    'comment-awards',
+    id,
+    {},
     enabled
-  )
-  useEffect(() => {
-    if (!enabled) return
-    const id = setInterval(() => refresh(), 5 * 60 * 1000)
-    return () => clearInterval(id)
-  }, [enabled, contractId])
-  return (data as any)?.awardsByComment ?? {}
+  ) as unknown as [
+    {
+      commentId: string
+      plus: number
+      premium: number
+      crystal: number
+      awardedByMe?: boolean
+    }
+  ]
+  const result = tuple?.[0]
+
+  return useMemo(() => {
+    const map: Record<string, any> = {}
+    if (result && commentIds.includes(result.commentId)) {
+      map[result.commentId] = result
+    }
+    return map
+  }, [JSON.stringify(commentIds), result])
 }
