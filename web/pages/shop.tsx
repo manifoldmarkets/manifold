@@ -100,7 +100,11 @@ const ShopPage: NextPage = () => {
     fetch('/api/printful/products')
       .then((r) => r.json())
       .then((d) => setRemote(d.products))
-      .catch(() => setRemote([]))
+      .catch((e) => {
+        console.error('Failed to load Printful products', e)
+        setRemote([])
+        toast.error('Failed to load merchandise')
+      })
   }, [])
 
   const refreshOrderCounts = useCallback(() => {
@@ -325,6 +329,25 @@ function SimpleItemCard(props: {
   currentUser?: { id?: string; username?: string; avatarUrl?: string }
   refreshOrderCounts: () => void
 }) {
+  const formatError = (e: unknown) => {
+    const raw =
+      typeof e === 'string'
+        ? e
+        : (e as any)?.message || (e as any)?.error || (e as any)?.data?.message
+    const msg = String(raw || '')
+    if (/one physical goods order every 30 days/i.test(msg))
+      return 'You can order physical merch once every 30 days.'
+    if (/at most 3 physical items per order|cart is full/i.test(msg))
+      return 'Cart limit reached: max 3 physical items.'
+    const mMonthly = msg.match(/limit\s+(\d+)\s+per\s+month/i)
+    if (mMonthly) return `Limit ${mMonthly[1]} per month for this item.`
+    const mUser = msg.match(/limit\s+(\d+)\s+per\s+user/i)
+    if (mUser) return `Limit ${mUser[1]} total per user for this item.`
+    if (/already own .* has not yet expired/i.test(msg))
+      return "You already own this item and it's still active."
+    if (/insufficient balance/i.test(msg)) return 'Insufficient balance.'
+    return msg || 'Something went wrong'
+  }
   const {
     kind,
     item,
@@ -518,7 +541,7 @@ function SimpleItemCard(props: {
             } catch (_e) {
               // Revert on error
               setLocalEquippedState(!newEquippedState)
-              toast.error('Failed to toggle PAMPU skin')
+              toast.error(formatError(_e))
             } finally {
               setIsTogglingPampu(false)
             }
@@ -578,8 +601,8 @@ function SimpleItemCard(props: {
                 }
 
                 return true
-              } catch (_e) {
-                toast.error('Purchase failed')
+              } catch (e: any) {
+                toast.error(formatError(e))
                 return false
               }
             } else {

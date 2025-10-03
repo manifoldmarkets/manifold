@@ -88,7 +88,25 @@ const CheckoutPage: NextPage = () => {
       }
       clear()
     } catch (e: any) {
-      toast.error(e?.message ?? 'Checkout failed')
+      const raw =
+        typeof e === 'string' ? e : e?.message || e?.error || e?.data?.message
+      const msg = String(raw || '')
+      let friendly = msg || 'Checkout failed'
+      if (/one physical goods order every 30 days/i.test(msg))
+        friendly = 'You can order physical merch once every 30 days.'
+      else if (/at most 3 physical items per order|cart is full/i.test(msg))
+        friendly = 'Cart limit reached: max 3 physical items.'
+      else if (/already own .* has not yet expired/i.test(msg))
+        friendly = "You already own this item and it's still active."
+      else if (/insufficient balance/i.test(msg))
+        friendly = 'Insufficient balance.'
+      else {
+        const mMonthly = msg.match(/limit\s+(\d+)\s+per\s+month/i)
+        if (mMonthly) friendly = `Limit ${mMonthly[1]} per month for this item.`
+        const mUser = msg.match(/limit\s+(\d+)\s+per\s+user/i)
+        if (mUser) friendly = `Limit ${mUser[1]} total per user for this item.`
+      }
+      toast.error(friendly)
     }
   }
 
