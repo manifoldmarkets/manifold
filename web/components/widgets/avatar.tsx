@@ -8,7 +8,8 @@ import { isFresh } from './user-link'
 import { LuSprout } from 'react-icons/lu'
 import { TbCrown } from 'react-icons/tb'
 import { GOLDEN_CROWN_ID } from 'common/src/shop/types'
-import { useUserEntitlements } from 'web/hooks/use-user-entitlements'
+import { useBatchedGetter } from 'client-common/hooks/use-batched-getter'
+import { api } from 'web/lib/api/api'
 import { Tooltip } from './tooltip'
 
 export type AvatarSizeType = '2xs' | 'xs' | 'sm' | 'md' | 'lg' | 'xl'
@@ -32,16 +33,49 @@ export const Avatar = memo(
       preventDefault,
       createdTime,
     } = props
-    const entitlements = useUserEntitlements(userId)
-    const goldenCrownEnt = entitlements?.find(
-      (e) => e.entitlementId === GOLDEN_CROWN_ID
-    )
-    const hasGoldenCrown = !!userId && !!goldenCrownEnt
+    const [goldenCrownEnt] = useBatchedGetter(
+      {
+        // Batch handler: fetch entitlements for all requested user ids
+        users: async ({ ids }) => {
+          const data = await api('get-user-entitlements-batch', {
+            userIds: Array.from(ids),
+          })
+          // Flatten into DisplayUser-like array with id and entitlements
+          return data.items.map((it) => ({
+            id: it.userId,
+            entitlements: it.entitlements,
+          })) as any
+        },
+      },
+      'users',
+      userId ?? '',
+      null,
+      Boolean(userId)
+    ) as unknown as [
+      { entitlementId: string; expiresTime?: string | null } | null
+    ]
+
+    const hasGoldenCrown =
+      !!userId && !!goldenCrownEnt && (goldenCrownEnt as any).entitlementId
+        ? (goldenCrownEnt as any).entitlementId === GOLDEN_CROWN_ID
+        : Array.isArray((goldenCrownEnt as any)?.entitlements)
+        ? (goldenCrownEnt as any).entitlements.some(
+            (e: any) => e.entitlementId === GOLDEN_CROWN_ID
+          )
+        : false
 
     const getCrownDaysRemaining = () => {
-      if (!goldenCrownEnt?.expiresTime) return null
+      // Extract expires from the batched shape
+      const expiresStr =
+        (goldenCrownEnt as any)?.expiresTime ??
+        (Array.isArray((goldenCrownEnt as any)?.entitlements)
+          ? (goldenCrownEnt as any).entitlements.find(
+              (e: any) => e.entitlementId === GOLDEN_CROWN_ID
+            )?.expiresTime
+          : undefined)
+      if (!expiresStr) return null
       const now = Date.now()
-      const expires = new Date(goldenCrownEnt.expiresTime).getTime()
+      const expires = new Date(expiresStr).getTime()
       const daysLeft = Math.ceil((expires - now) / (1000 * 60 * 60 * 24))
       return daysLeft > 0 ? daysLeft : null
     }

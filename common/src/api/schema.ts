@@ -2418,6 +2418,23 @@ export const API = (_apiTypeCheck = {
     },
     props: z.object({}).strict(),
   },
+  'get-user-entitlements-batch': {
+    method: 'GET',
+    visibility: 'public',
+    authed: false,
+    returns: {} as {
+      items: {
+        userId: string
+        entitlements: {
+          entitlementId: string
+          grantedTime: string
+          expiresTime?: string | null
+          metadata?: Record<string, any>
+        }[]
+      }[]
+    },
+    props: z.object({ userIds: z.array(z.string()).min(1) }).strict(),
+  },
   'generate-ai-numeric-ranges': {
     method: 'POST',
     visibility: 'public',
