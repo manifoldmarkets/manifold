@@ -91,6 +91,62 @@ const uploadImage = async (
   return await promise
 }
 
+export const uploadAudio = async (
+  file: File,
+  prefix: string,
+  onProgress?: (progress: number, isRunning: boolean) => void
+) => {
+  try {
+    const storageRef = ref(storage, `user-audios/${prefix}/${file.name}`)
+    if (file.size > 20 * 1024 ** 2) {
+      throw new Error('File is over 20 MB')
+    }
+
+    const uploadTask = uploadBytesResumable(storageRef, file, {
+      cacheControl: `public, max-age=${ONE_YEAR_SECS}`,
+    })
+
+    let resolvePromise: (url: string) => void
+    let rejectPromise: (reason?: any) => void
+
+    const promise = new Promise<string>((resolve, reject) => {
+      resolvePromise = resolve
+      rejectPromise = reject
+    })
+
+    const unsubscribe = uploadTask.on(
+      'state_changed',
+      (snapshot) => {
+        const progress = snapshot.bytesTransferred / snapshot.totalBytes
+        const isRunning = snapshot.state === 'running'
+        if (onProgress) onProgress(progress, isRunning)
+      },
+      (error) => {
+        console.error('Upload failed:', error)
+        rejectPromise(error)
+        unsubscribe()
+      },
+      () => {
+        getDownloadURL(uploadTask.snapshot.ref)
+          .then((downloadURL) => {
+            resolvePromise(downloadURL)
+          })
+          .catch((error) => {
+            console.error('Failed to get download URL:', error)
+            rejectPromise(error)
+          })
+
+        unsubscribe()
+      }
+    )
+
+    return await promise
+  } catch (error) {
+    console.error('Error uploading audio:', error)
+    throw error
+  }
+}
+
 export const uploadPrivateImage = async (
   userId: string,
   file: File,
