@@ -22,8 +22,8 @@ export function clearEntitlementsCache(userId: string) {
 
 export function useUserEntitlements(userId?: string) {
   const key = `${STORAGE_KEY}-${userId ?? 'anon'}`
-  const [ents, setEnts] = usePersistentLocalState<
-    UserEntitlement[] | undefined
+  const [ents, setEnts, ready] = usePersistentLocalState<
+    UserEntitlement[] | undefined | { data?: unknown }
   >(undefined, key)
 
   useEffect(() => {
@@ -35,6 +35,13 @@ export function useUserEntitlements(userId?: string) {
       }
     }
 
+    // Migrate older cached shape { data, timestamp } -> array
+    if (ready && ents && !Array.isArray(ents)) {
+      const maybeArr = (ents as any)?.data
+      if (Array.isArray(maybeArr)) setEnts(maybeArr)
+      else setEnts(undefined)
+    }
+
     // Always fetch fresh data
     api('get-user-entitlements', { userId })
       .then((res) => {
@@ -44,11 +51,11 @@ export function useUserEntitlements(userId?: string) {
       })
       .catch((error) => {
         console.error('Failed to fetch user entitlements:', error)
-        if (!cancelled && ents == null) setEnts([])
+        if (!cancelled && (ents == null || !Array.isArray(ents))) setEnts([])
       })
     return () => {
       cancelled = true
     }
-  }, [userId])
-  return ents
+  }, [userId, ready])
+  return Array.isArray(ents) ? ents : undefined
 }
