@@ -23,3 +23,13 @@ create index if not exists shop_orders_user_created_idx on public.shop_orders (u
 create index if not exists shop_orders_printful_id_idx on public.shop_orders (printful_order_id);
 
 create index if not exists shop_orders_status_idx on public.shop_orders (status);
+
+-- Row Level Security
+alter table public.shop_orders enable row level security;
+
+-- Policies
+drop policy if exists "public read" on public.shop_orders;
+
+create policy "public read" on public.shop_orders for
+select
+  using (true);

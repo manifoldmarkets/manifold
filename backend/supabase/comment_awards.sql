@@ -15,3 +15,13 @@ create index if not exists comment_awards_comment_idx on public.comment_awards (
 create index if not exists comment_awards_receiver_idx on public.comment_awards (receiver_user_id);
 
 create unique index if not exists comment_awards_unique_giver_per_comment on public.comment_awards (comment_id, giver_user_id);
+
+-- Row Level Security
+alter table public.comment_awards enable row level security;
+
+-- Policies
+drop policy if exists "public read" on public.comment_awards;
+
+create policy "public read" on public.comment_awards for
+select
+  using (true);
