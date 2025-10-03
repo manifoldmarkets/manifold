@@ -1,4 +1,5 @@
 import { NextPage } from 'next'
+import { DAY_MS, HOUR_MS, MONTH_MS } from 'common/util/time'
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { Col } from 'web/components/layout/col'
 import { Row } from 'web/components/layout/row'
@@ -371,12 +372,10 @@ function SimpleItemCard(props: {
 
   if (isStreakForgiveness && lastPurchaseTime && atUserLimit) {
     const now = Date.now()
-    const thirtyDaysMs = 30 * 24 * 60 * 60 * 1000
+    const thirtyDaysMs = MONTH_MS
     const timeSincePurchase = now - lastPurchaseTime
     const timeUntilCanPurchase = thirtyDaysMs - timeSincePurchase
-    daysUntilCanPurchase = Math.ceil(
-      timeUntilCanPurchase / (24 * 60 * 60 * 1000)
-    )
+    daysUntilCanPurchase = Math.ceil(timeUntilCanPurchase / DAY_MS)
   }
 
   const isExpiringCosmetic =
@@ -386,7 +385,7 @@ function SimpleItemCard(props: {
     : undefined
   // Compute expiry using entitlement, or fall back to last purchase + 30d
   const now = Date.now()
-  const thirtyDaysMs = 30 * 24 * 60 * 60 * 1000
+  const thirtyDaysMs = MONTH_MS
   let expiresMs: number | undefined
   if (thisEnt?.expiresTime) {
     expiresMs = new Date(thisEnt.expiresTime as any).getTime()
@@ -396,10 +395,8 @@ function SimpleItemCard(props: {
   let expiringCooldownLabel: string | undefined
   if (expiresMs && expiresMs > now) {
     const msLeft = Math.max(0, expiresMs - now)
-    const days = Math.floor(msLeft / (24 * 60 * 60 * 1000))
-    const hours = Math.floor(
-      (msLeft % (24 * 60 * 60 * 1000)) / (60 * 60 * 1000)
-    )
+    const days = Math.floor(msLeft / DAY_MS)
+    const hours = Math.floor((msLeft % DAY_MS) / HOUR_MS)
     expiringCooldownLabel =
       days > 0 ? `${days}d left` : `${Math.max(1, hours)}h left`
   }
@@ -702,11 +699,11 @@ function PrintfulItemCard(props: {
   let cooldownLabel: string | undefined
   if (lastPrintfulOrderAt) {
     const msSince = Date.now() - lastPrintfulOrderAt
-    const ms30d = 30 * 24 * 60 * 60 * 1000
+    const ms30d = MONTH_MS
     const msLeft = ms30d - msSince
     if (msLeft > 0) {
       isPrintfulCooldown = true
-      const days = Math.ceil(msLeft / (24 * 60 * 60 * 1000))
+      const days = Math.ceil(msLeft / DAY_MS)
       cooldownLabel = `${days}d cooldown`
     }
   }

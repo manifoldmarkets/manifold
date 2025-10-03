@@ -1,8 +1,9 @@
 import type { NextApiRequest, NextApiResponse } from 'next'
+import { DAY_MS } from 'common/util/time'
 
 // In-memory cache per server instance
 let CACHE: { data: any; ts: number } | null = null
-const TTL_MS = 24 * 60 * 60 * 1000 // 24 hours
+const TTL_MS = DAY_MS // 24 hours
 
 export default async function handler(
   req: NextApiRequest,
