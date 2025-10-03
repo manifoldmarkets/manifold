@@ -10,6 +10,7 @@ export type ShopItemConfigBase = {
   price: number
   description?: string
   perUserLimit?: number
+  perUserLimitPeriod?: 'lifetime' | 'monthly'
   globalLimit?: number
   images?: string[]
   enabled?: boolean
@@ -73,6 +74,7 @@ export const SHOP_ITEM_CONFIGS: ShopItemConfig[] = [
     description:
       'Protects your prediction streak from being broken if you miss a day.',
     perUserLimit: 1,
+    perUserLimitPeriod: 'monthly',
     images: ['/logo.png'],
     enabled: true,
   },

@@ -15,7 +15,6 @@ export const checkoutShopCart: APIHandler<'checkout-shop-cart'> = async (
 ) => {
   const userId = auth.uid
   if (!userId) throw new APIError(401, 'You must be signed in')
-  if (items.length === 0) throw new APIError(400, 'No items to checkout')
 
   const pg = createSupabaseDirectClient()
 
@@ -71,45 +70,24 @@ export const checkoutShopCart: APIHandler<'checkout-shop-cart'> = async (
       }
     }
 
-    // Check per-user limit (monthly for streak-forgiveness, lifetime for others)
     const limit = cfg?.perUserLimit
     if (limit && itemId !== 'very-rich-badge') {
-      let existingQty = 0
-      if (itemId === 'streak-forgiveness') {
-        // Monthly limit: check purchases in the last 30 days
-        const existingRow = await pg.oneOrNone<{ q: string }>(
-          `select coalesce(sum(quantity), 0) as q from shop_orders 
-           where user_id = $1 and item_id = $2 
-           and created_time > now() - interval '30 days'`,
-          [userId, itemId]
-        )
-        existingQty = Number(existingRow?.q ?? 0)
-      } else {
-        // Lifetime limit for other items
-        const existingRow = await pg.oneOrNone<{ q: string }>(
-          `select coalesce(sum(quantity), 0) as q from shop_orders where user_id = $1 and item_id = $2`,
-          [userId, itemId]
-        )
-        existingQty = Number(existingRow?.q ?? 0)
-      }
+      const period = (cfg as any)?.perUserLimitPeriod ?? 'lifetime'
+      const existingRow = await pg.oneOrNone<{ q: string }>(
+        period === 'monthly'
+          ? `select coalesce(sum(quantity), 0) as q from shop_orders 
+             where user_id = $1 and item_id = $2 
+             and created_time > now() - interval '30 days'`
+          : `select coalesce(sum(quantity), 0) as q from shop_orders where user_id = $1 and item_id = $2`,
+        [userId, itemId]
+      )
+      const existingQty = Number(existingRow?.q ?? 0)
       if (existingQty + requestedQty > limit) {
-        const limitType =
-          itemId === 'streak-forgiveness' ? 'per month' : 'per user'
+        const limitType = period === 'monthly' ? 'per month' : 'per user'
         throw new APIError(403, `Limit ${limit} ${limitType} for ${itemId}`)
       }
     }
-
   }
-
-  // Check balance
-  const userRow = await pg.oneOrNone(
-    `select balance from users where id = $1`,
-    [userId]
-  )
-  if (!userRow) throw new APIError(404, 'User not found')
-  const balance: number = Number(userRow.balance ?? 0)
-  if (total > balance)
-    throw new APIError(403, 'Insufficient balance to complete checkout')
 
   let processed = 0
   await pg.tx(async (tx) => {
