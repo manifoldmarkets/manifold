@@ -261,10 +261,6 @@ export function deleteChartAnnotation(params: { id: number }) {
   return call(getApiUrl('delete-chart-annotation'), 'POST', params)
 }
 
-export const getUserEntitlements = (
-  params: APIParams<'get-user-entitlements'>
-) => api('get-user-entitlements', params)
-
 export const togglePampuSkin = (params: APIParams<'toggle-pampu-skin'>) =>
   api('toggle-pampu-skin', params)
 

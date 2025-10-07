@@ -184,7 +184,6 @@ import { purchaseShopItem } from './purchase-shop-item'
 import { getShopOrders } from './get-shop-orders'
 import { getUserEntitlements } from './get-user-entitlements'
 import { getUserEntitlementsBatch } from './get-user-entitlements-batch'
-import { updateUserEntitlement } from './update-user-entitlement'
 import { getShopItemCounts } from './get-shop-item-counts'
 import { togglePampuSkin } from './toggle-pampu-skin'
 import { getVeryRichBadge } from './get-very-rich-badge'
@@ -373,7 +372,6 @@ export const handlers: { [k in APIPath]: APIHandler<k> } = {
   'checkout-printful': checkoutPrintful,
   'get-user-entitlements': getUserEntitlements,
   'get-user-entitlements-batch': getUserEntitlementsBatch,
-  'update-user-entitlement': updateUserEntitlement,
   'get-shop-item-counts': getShopItemCounts,
   'toggle-pampu-skin': togglePampuSkin,
   'get-very-rich-badge': getVeryRichBadge,
