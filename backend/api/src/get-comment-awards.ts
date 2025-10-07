@@ -2,17 +2,17 @@ import { APIHandler } from './helpers/endpoint'
 import { createSupabaseDirectClient } from 'shared/supabase/init'
 
 export const getCommentAwards: APIHandler<'get-comment-awards'> = async (
-  { contractId, commentIds },
+  { contractId: _contractId, commentIds },
   auth
 ) => {
   const pg = createSupabaseDirectClient()
   const rows = await pg.manyOrNone(
     `select comment_id, award_type, count(*)::int as count,
-            bool_or(giver_user_id = $2) as awarded_by_me
+            bool_or(giver_user_id = $1) as awarded_by_me
        from comment_awards
-      where contract_id = $1 and comment_id = any($3)
+      where comment_id = any($2)
       group by comment_id, award_type`,
-    [contractId, auth?.uid ?? null, commentIds]
+    [auth?.uid ?? null, commentIds]
   )
   const awardsByComment: Record<
     string,
@@ -35,4 +35,3 @@ export const getCommentAwards: APIHandler<'get-comment-awards'> = async (
   }
   return { awardsByComment }
 }
-
