@@ -2,6 +2,7 @@ import { Notification } from 'common/notification'
 import { getContract, getPrivateUser, getUser } from 'shared/utils'
 import { getNotificationDestinationsForUser } from 'common/user-notification-preferences'
 import { SupabaseDirectClient } from 'shared/supabase/init'
+import { insertNotificationToSupabase } from 'shared/supabase/notifications'
 import { richTextToString } from 'common/util/parse'
 import { getCommentSafe } from 'shared/supabase/contract-comments'
 
@@ -71,11 +72,5 @@ export const createCommentAwardNotification = async (
     },
   }
 
-  return await pg.none(
-    `insert into user_notifications
-     (user_id, notification_id, data)
-     values ($1, $2, $3)
-     on conflict (user_id, notification_id) do nothing`,
-    [receiverId, id, notification]
-  )
+  return await insertNotificationToSupabase(notification, pg)
 }
