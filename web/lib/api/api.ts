@@ -264,9 +264,6 @@ export function deleteChartAnnotation(params: { id: number }) {
 export const togglePampuSkin = (params: APIParams<'toggle-pampu-skin'>) =>
   api('toggle-pampu-skin', params)
 
-export const getShopItemCounts = (params: APIParams<'get-shop-item-counts'>) =>
-  api('get-shop-item-counts', params)
-
 export const getVeryRichBadge = (params: APIParams<'get-very-rich-badge'>) =>
   api('get-very-rich-badge', params)
 

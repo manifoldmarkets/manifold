@@ -2250,13 +2250,6 @@ export const API = (_apiTypeCheck = {
     props: z.object({ equipped: z.boolean() }).strict(),
   },
 
-  'get-shop-item-counts': {
-    method: 'GET',
-    visibility: 'public',
-    authed: false,
-    returns: {} as { counts: { [itemId: string]: number } },
-    props: z.object({}).strict(),
-  },
   'give-comment-award': {
     method: 'POST',
     visibility: 'public',

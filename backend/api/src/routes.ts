@@ -183,7 +183,6 @@ import { purchaseContractBoost } from './purchase-boost'
 import { getShopOrders } from './get-shop-orders'
 import { getUserEntitlements } from './get-user-entitlements'
 import { getUserEntitlementsBatch } from './get-user-entitlements-batch'
-import { getShopItemCounts } from './get-shop-item-counts'
 import { togglePampuSkin } from './toggle-pampu-skin'
 import { getVeryRichBadge } from './get-very-rich-badge'
 import { giveCommentAward } from './give-comment-award'
@@ -370,7 +369,6 @@ export const handlers: { [k in APIPath]: APIHandler<k> } = {
   'checkout-printful': checkoutPrintful,
   'get-user-entitlements': getUserEntitlements,
   'get-user-entitlements-batch': getUserEntitlementsBatch,
-  'get-shop-item-counts': getShopItemCounts,
   'toggle-pampu-skin': togglePampuSkin,
   'get-very-rich-badge': getVeryRichBadge,
   'give-comment-award': giveCommentAward,
