@@ -180,7 +180,6 @@ import {
   saveMarketDraft,
 } from './market-drafts'
 import { purchaseContractBoost } from './purchase-boost'
-import { purchaseShopItem } from './purchase-shop-item'
 import { getShopOrders } from './get-shop-orders'
 import { getUserEntitlements } from './get-user-entitlements'
 import { getUserEntitlementsBatch } from './get-user-entitlements-batch'
@@ -366,7 +365,6 @@ export const handlers: { [k in APIPath]: APIHandler<k> } = {
   'get-contract-voters': getContractVoters,
   'get-contract-option-voters': getContractOptionVoters,
   'purchase-boost': purchaseContractBoost,
-  'purchase-shop-item': purchaseShopItem,
   'get-shop-orders': getShopOrders,
   'checkout-shop-cart': checkoutShopCart,
   'checkout-printful': checkoutPrintful,

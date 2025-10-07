@@ -2221,18 +2221,6 @@ export const API = (_apiTypeCheck = {
       ),
     returns: {} as { success: boolean; checkoutUrl?: string },
   },
-  'purchase-shop-item': {
-    method: 'POST',
-    visibility: 'public',
-    authed: true,
-    returns: {} as { success: boolean },
-    props: z
-      .object({
-        itemId: z.string(),
-        price: z.number().positive().finite().safe(),
-      })
-      .strict(),
-  },
   'get-shop-orders': {
     method: 'GET',
     visibility: 'public',
@@ -2260,21 +2248,6 @@ export const API = (_apiTypeCheck = {
     authed: true,
     returns: {} as { success: boolean; equipped: boolean },
     props: z.object({ equipped: z.boolean() }).strict(),
-  },
-  'update-user-entitlement': {
-    method: 'POST',
-    visibility: 'undocumented',
-    authed: true,
-    returns: {} as { success: boolean },
-    props: z
-      .object({
-        userId: z.string().optional(),
-        entitlementId: z.string(),
-        grant: z.boolean().optional().default(true),
-        expiresTime: z.string().optional(),
-        metadata: z.any().optional(),
-      })
-      .strict(),
   },
 
   'get-shop-item-counts': {
