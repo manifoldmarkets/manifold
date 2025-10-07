@@ -11,11 +11,12 @@ create table if not exists
 alter table user_notifications enable row level security;
 
 -- Policies
-drop policy if exists "public read" on user_notifications;
+drop policy if exists "self read" on user_notifications;
 
-create policy "public read" on user_notifications for
-select
-  using (true);
+create policy "self read" on user_notifications for
+    select
+    using ((user_id = firebase_uid ()));
+
 
 -- Indexes
 drop index if exists user_notifications_notification_id;
