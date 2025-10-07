@@ -1,4 +1,4 @@
-import { APIError, APIHandler } from './helpers/endpoint'
+import { APIHandler } from './helpers/endpoint'
 import { createSupabaseDirectClient } from 'shared/supabase/init'
 import { ShopOrder } from 'common/shop/types'
 
@@ -21,7 +21,6 @@ export const getShopOrders: APIHandler<'get-shop-orders'> = async (
   auth
 ) => {
   const userId = auth.uid
-  if (!userId) throw new APIError(401, 'You must be signed in')
   const pg = createSupabaseDirectClient()
 
   const rows = await pg.manyOrNone(

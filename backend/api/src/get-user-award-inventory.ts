@@ -1,11 +1,10 @@
-import { APIError, APIHandler } from './helpers/endpoint'
+import { APIHandler } from './helpers/endpoint'
 import { createSupabaseDirectClient } from 'shared/supabase/init'
 
 export const getUserAwardInventory: APIHandler<
   'get-user-award-inventory'
 > = async (props, auth) => {
   const userId = auth.uid
-  if (!userId) throw new APIError(401, 'You must be signed in')
   const pg = createSupabaseDirectClient()
 
   const purchased = await pg.oneOrNone<{
@@ -47,4 +46,3 @@ export const getUserAwardInventory: APIHandler<
   }
   return inv
 }
-
