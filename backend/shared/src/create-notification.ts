@@ -1,3 +1,9 @@
+import { Answer } from 'common/answer'
+import { Bet, LimitBet } from 'common/bet'
+import { ContractComment } from 'common/comment'
+import { Contract, MarketContract, PollContract } from 'common/contract'
+import { ContractMetric } from 'common/contract-metric'
+import { LeagueChangeNotificationData } from 'common/leagues'
 import {
   BetFillData,
   BetReplyNotificationData,
@@ -12,6 +18,11 @@ import {
   ReviewNotificationData,
   UniqueBettorData,
 } from 'common/notification'
+import { answerToMidpoint, getRangeContainingValues } from 'common/number'
+import { QuestType } from 'common/quest'
+import { convertBet } from 'common/supabase/bets'
+import { convertPrivateUser, convertUser } from 'common/supabase/users'
+import { QuestRewardTxn, UniqueBettorBonusTxn } from 'common/txn'
 import {
   MANIFOLD_AVATAR_URL,
   MANIFOLD_USER_NAME,
@@ -19,9 +30,18 @@ import {
   PrivateUser,
   User,
 } from 'common/user'
-import { Contract, MarketContract } from 'common/contract'
-import { getPrivateUser, getUser, log } from 'shared/utils'
-import { ContractComment } from 'common/comment'
+import {
+  getNotificationDestinationsForUser,
+  notification_preference,
+  userIsBlocked,
+  userOptedOutOfBrowserNotifications,
+} from 'common/user-notification-preferences'
+import { formatMoney } from 'common/util/format'
+import { floatingEqual } from 'common/util/math'
+import { removeUndefinedProps } from 'common/util/object'
+import { richTextToString } from 'common/util/parse'
+import { mapAsync } from 'common/util/promise'
+import { nanoid } from 'common/util/random'
 import {
   forEach,
   groupBy,
@@ -34,50 +54,30 @@ import {
   sumBy,
   uniq,
 } from 'lodash'
-import { Bet, LimitBet } from 'common/bet'
-import { Answer } from 'common/answer'
-import { removeUndefinedProps } from 'common/util/object'
-import { mapAsync } from 'common/util/promise'
+import { hasUserSeenMarket } from 'shared/helpers/seen-markets'
 import {
-  sendBulkEmails,
-  sendMarketCloseEmail,
-  getMarketResolutionEmail,
-  sendNewUniqueBettorsEmail,
-  EmailAndTemplateEntry,
-  toDisplayResolution,
-  formatMoneyEmail,
-} from './emails'
-import {
-  getNotificationDestinationsForUser,
-  notification_preference,
-  userIsBlocked,
-  userOptedOutOfBrowserNotifications,
-} from 'common/user-notification-preferences'
-import { createPushNotifications } from './create-push-notifications'
-import { QuestType } from 'common/quest'
-import { QuestRewardTxn, UniqueBettorBonusTxn } from 'common/txn'
-import { formatMoney } from 'common/util/format'
+  getUniqueBettorIds,
+  getUniqueBettorIdsForAnswer,
+} from 'shared/supabase/contracts'
 import {
   createSupabaseDirectClient,
   SupabaseDirectClient,
 } from 'shared/supabase/init'
 import {
-  getUniqueBettorIds,
-  getUniqueBettorIdsForAnswer,
-} from 'shared/supabase/contracts'
-import { richTextToString } from 'common/util/parse'
-import { LeagueChangeNotificationData } from 'common/leagues'
-import { hasUserSeenMarket } from 'shared/helpers/seen-markets'
-import {
   bulkInsertNotifications,
   insertNotificationToSupabase,
 } from 'shared/supabase/notifications'
-import { convertPrivateUser, convertUser } from 'common/supabase/users'
-import { convertBet } from 'common/supabase/bets'
-import { getRangeContainingValues, answerToMidpoint } from 'common/number'
-import { floatingEqual } from 'common/util/math'
-import { ContractMetric } from 'common/contract-metric'
-import { nanoid } from 'common/util/random'
+import { getPrivateUser, getUser, log } from 'shared/utils'
+import { createPushNotifications } from './create-push-notifications'
+import {
+  EmailAndTemplateEntry,
+  formatMoneyEmail,
+  getMarketResolutionEmail,
+  sendBulkEmails,
+  sendMarketCloseEmail,
+  sendNewUniqueBettorsEmail,
+  toDisplayResolution,
+} from './emails'
 
 export * from './notifications/create-follow-or-market-subsidized-notification'
 export * from './notifications/create-new-answer-on-contract-notification'
@@ -1154,17 +1154,23 @@ export const createBountyCanceledNotification = async (
 export const createVotedOnPollNotification = async (
   voter: User,
   sourceText: string,
-  sourceContract: Contract
+  sourceContract: PollContract
 ) => {
   const pg = createSupabaseDirectClient()
-
-  const privateUsers = await pg.map(
-    `select * from private_users where id in
+  const privateUsers =
+    sourceContract.voterVisibility === 'everyone'
+      ? await pg.map(
+          `select * from private_users where id in
            (select follow_id from contract_follows where contract_id = $1)
            and id != $2`,
-    [sourceContract.id, voter.id],
-    convertPrivateUser
-  )
+          [sourceContract.id, voter.id],
+          convertPrivateUser
+        )
+      : await pg.map(
+          `select * from private_users where id = $1 and id != $2`,
+          [sourceContract.creatorId, voter.id],
+          convertPrivateUser
+        )
   const followerIds = privateUsers.map((user) => user.id)
   const bulkNotifications: Notification[] = []
   const constructNotification = (
