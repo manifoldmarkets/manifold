@@ -1,3 +1,4 @@
+import { keyBy } from 'lodash'
 import { Bet } from './bet'
 import { Contract } from './contract'
 import { LeagueChangeData } from './notification'
@@ -19,6 +20,68 @@ export const filterBetsForLeagueScoring = (
   return contract.creatorId === userId
     ? bets.filter((bet) => bet.createdTime >= contract.createdTime + HOUR_MS)
     : bets
+}
+
+/**
+ * Adjusts bets to exclude portions that filled against the user's own limit orders.
+ * When a bet fills against your own limit order, that portion creates artificial
+ * league profit/loss swings and should not count toward league scoring.
+ */
+export const excludeSelfTrades = (bets: Bet[], userId: string): Bet[] => {
+  // Build a map of bet IDs to user IDs for quick lookup
+  const betIdToUserId = keyBy(bets, 'id')
+
+  const adjustedBets: Bet[] = []
+
+  for (const bet of bets) {
+    // Only process bets that have fills
+    if (!bet.fills || bet.fills.length === 0) {
+      adjustedBets.push(bet)
+      continue
+    }
+
+    // Find fills that matched against the user's own bets
+    const selfTradeFills = bet.fills.filter(
+      (fill) =>
+        fill.matchedBetId !== null &&
+        betIdToUserId[fill.matchedBetId]?.userId === userId
+    )
+
+    // If there are no self-trade fills, keep the bet as-is
+    if (selfTradeFills.length === 0) {
+      adjustedBets.push(bet)
+      continue
+    }
+
+    // Calculate the amount and shares from self-trades
+    const selfTradeAmount = selfTradeFills.reduce(
+      (sum, fill) => sum + fill.amount,
+      0
+    )
+    const selfTradeShares = selfTradeFills.reduce(
+      (sum, fill) => sum + fill.shares,
+      0
+    )
+
+    // Adjust the bet by excluding self-trade portions
+    const adjustedAmount = bet.amount - selfTradeAmount
+    const adjustedShares = bet.shares - selfTradeShares
+
+    // Only include the bet if there's remaining non-self-trade portion
+    // Use a small epsilon to handle floating point precision
+    if (Math.abs(adjustedAmount) > 0.001 && Math.abs(adjustedShares) > 0.001) {
+      adjustedBets.push({
+        ...bet,
+        amount: adjustedAmount,
+        shares: adjustedShares,
+        // Keep fills for transparency, but note they include self-trades
+        // The adjusted amount/shares is what matters for profit calculation
+      })
+    }
+    // If the entire bet was against own limit orders, we exclude it entirely
+  }
+
+  return adjustedBets
 }
 
 export type League = {

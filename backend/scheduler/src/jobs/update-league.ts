@@ -1,6 +1,6 @@
 import { Bet } from 'common/bet'
 import { getProfitMetrics } from 'common/calculate'
-import { filterBetsForLeagueScoring } from 'common/leagues'
+import { excludeSelfTrades, filterBetsForLeagueScoring } from 'common/leagues'
 import { convertContract } from 'common/supabase/contracts'
 import { groupBy, keyBy, sum, zipObject } from 'lodash'
 import {
@@ -88,9 +88,12 @@ export async function updateLeague(
         contract.isRanked !== false &&
         !EXCLUDED_CONTRACT_SLUGS.has(contract.slug)
       ) {
+        // Adjust bets to exclude portions that filled against user's own limit orders
+        const nonSelfTradeBets = excludeSelfTrades(contractBets, userId)
+
         // Filter bets: if it's user's own market, only count bets placed 1+ hour after creation
         const relevantBets = filterBetsForLeagueScoring(
-          contractBets,
+          nonSelfTradeBets,
           contract,
           userId
         )

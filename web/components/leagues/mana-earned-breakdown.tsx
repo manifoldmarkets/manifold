@@ -8,6 +8,7 @@ import { calculateUserMetricsWithoutLoans } from 'common/calculate-metrics'
 import { Contract, contractPath } from 'common/contract'
 import { ContractMetric } from 'common/contract-metric'
 import {
+  excludeSelfTrades,
   filterBetsForLeagueScoring,
   getApproximateSeasonDates,
 } from 'common/leagues'
@@ -85,7 +86,15 @@ export const ManaEarnedBreakdown = (props: {
       if (!contract) return undefined
 
       // Filter bets: if it's user's own market, only count bets placed 1+ hour after creation
-      const relevantBets = filterBetsForLeagueScoring(bets, contract, user.id)
+      // Adjust bets to exclude portions that filled against user's own limit orders
+      const nonSelfTradeBets = excludeSelfTrades(bets, user.id)
+
+      // Filter bets: if it's user's own market, only count bets placed 1+ hour after creation
+      const relevantBets = filterBetsForLeagueScoring(
+        nonSelfTradeBets,
+        contract,
+        user.id
+      )
 
       return relevantBets.length > 0
         ? calculateUserMetricsWithoutLoans(
@@ -188,8 +197,12 @@ export const ManaEarnedBreakdown = (props: {
               if (!bets || !metrics) return null
 
               // Filter bets: if it's user's own market, only show bets placed 1+ hour after creation
+              // Adjust bets to exclude portions that filled against user's own limit orders
+              const nonSelfTradeBets = excludeSelfTrades(bets, user.id)
+
+              // Filter bets: if it's user's own market, only show bets placed 1+ hour after creation
               const relevantBets = filterBetsForLeagueScoring(
-                bets,
+                nonSelfTradeBets,
                 contract,
                 user.id
               )
