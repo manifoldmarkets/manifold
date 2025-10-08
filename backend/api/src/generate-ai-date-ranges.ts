@@ -21,7 +21,7 @@ const baseDateSystemPrompt = (type: 'buckets' | 'thresholds') => {
     You are a helpful AI assistant that generates date ranges for prediction market questions.
     
     GUIDLINES:
-    - Generate 2-12 ranges that cover the entire span from start to end
+    - Generate 2-12 (Maximum 12) ranges that cover the entire span from start to end
     - Err on the side of fewer (3-5) ranges when possible
     - Do NOT generate more than 12 ranges
     - Today's date is ${new Date().toISOString()}
@@ -52,9 +52,9 @@ EXAMPLES:
     "midpoints": ["2025-07-02", "2026-07-02", "2027-07-02", "2028-07-02"]
   }
 
-  Question: When will the next US recession begin? (min: Q1 2025, max: Q4 2026)
+  Question: When will the next US recession begin? (min: Jan 2025, max: Dec 2026)
   {
-    "answers": ["Q1 2025", "Q2 2025", "Q3 2025", "Q4 2025", "Q1 2026", "Q2 2026", "Q3 2026", "Q4 2026"],
+    "answers": ["Jan-Mar 2025", "Apr-Jun 2025", "Jul-Sep 2025", "Oct-Dec 2025", "Jan-Mar 2026", "Apr-Jun 2026", "Jul-Sep 2026", "Oct-Dec 2026"],
     "midpoints": ["2025-02-14", "2025-05-14", "2025-08-14", "2025-11-14", "2026-02-14", "2026-05-14", "2026-08-14", "2026-11-14"]
   }
 
@@ -79,9 +79,9 @@ EXAMPLES:
     "midpoints": ["2025-07-02", "2026-07-02", "2027-07-02", "2028-07-02"]
   }
 
-  Question: When will the next US recession begin? (min: Q1 2025, max: Q4 2026)
+  Question: When will the next US recession begin? (min: Jan 2025, max: Dec 2026)
   {
-    "answers": ["Before Q1 2025", "Before Q2 2025", "Before Q3 2025", "Before Q4 2025", "Before Q1 2026", "Before Q2 2026", "Before Q3 2026", "Before Q4 2026"],
+    "answers": ["Before Apr 2025", "Before Jul 2025", "Before Oct 2025", "Before Jan 2026", "Before Apr 2026", "Before Jul 2026", "Before Oct 2026", "Before Jan 2027"],
     "midpoints": ["2025-02-14", "2025-05-14", "2025-08-14", "2025-11-14", "2026-02-14", "2026-05-14", "2026-08-14", "2026-11-14"]
   }
 
@@ -127,12 +127,12 @@ export const generateAIDateRanges: APIHandler<'generate-ai-date-ranges'> =
       // Generate both bucket and threshold ranges in parallel
       const [buckets, thresholds] = await Promise.all([
         promptAI<DateRangeResponse>(prompt, {
-          model: aiModels.gpt5mini,
+          model: aiModels.sonnet45,
           system: bucketSystemPrompt,
           parseAsJson: true,
         }),
         promptAI<DateRangeResponse>(prompt, {
-          model: aiModels.gpt5mini,
+          model: aiModels.sonnet45,
           system: thresholdSystemPrompt,
           parseAsJson: true,
         }),
@@ -192,7 +192,7 @@ export const regenerateDateMidpoints: APIHandler<'regenerate-date-midpoints'> =
       `
 
       const result = await promptAI<string[]>(prompt, {
-        model: aiModels.sonnet3,
+        model: aiModels.sonnet4,
         parseAsJson: true,
       })
       log('claudeResponse', result)

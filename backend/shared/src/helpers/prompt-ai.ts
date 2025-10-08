@@ -68,7 +68,11 @@ export async function promptAI<T = unknown>(
       webSearch,
     })
   } else {
-    rawResponse = await promptGemini(prompt, { model: model as any, system })
+    rawResponse = await promptGemini(prompt, {
+      model: model as any,
+      system,
+      webSearch,
+    })
   }
 
   if ('parseAsJson' in options && options.parseAsJson) {

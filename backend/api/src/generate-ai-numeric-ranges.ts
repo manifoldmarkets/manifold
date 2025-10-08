@@ -15,7 +15,7 @@ const baseSystemPrompt = (style: 'threshold' | 'bucket') => {
     Today is ${new Date().toISOString()}.
 
     GUIDLINES:
-    - Generate 2-12 ranges that cover the entire span from min to max
+    - Generate 2-12 (Maximum 12) ranges that cover the entire span from min to max
     - Err on the side of fewer (4-6) ranges when possible
     - Favor human-friendly ranges like:
       * Round numbers
@@ -48,12 +48,12 @@ export const generateAINumericRanges: APIHandler<'generate-ai-numeric-ranges'> =
 
       const [thresholds, buckets] = await Promise.all([
         promptAI<RangeResponse>(prompt, {
-          model: aiModels.gpt5mini,
+          model: aiModels.sonnet4,
           system: thresholdSystemPrompt,
           parseAsJson: true,
         }),
         promptAI<RangeResponse>(prompt, {
-          model: aiModels.gpt5mini,
+          model: aiModels.sonnet4,
           system: bucketSystemPrompt,
           parseAsJson: true,
         }),
@@ -108,7 +108,7 @@ export const regenerateNumericMidpoints: APIHandler<'regenerate-numeric-midpoint
       Return ONLY an array of midpoint numbers, one for each range, in the same order as the ranges, without any other text or formatting.`
 
       const result = await promptAI<number[]>(prompt, {
-        model: aiModels.gpt5mini,
+        model: aiModels.sonnet4,
         parseAsJson: true,
       })
       log('claudeResponse', result)

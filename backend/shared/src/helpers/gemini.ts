@@ -12,7 +12,7 @@ export type model_types = (typeof models)[keyof typeof models]
 
 export const promptGeminiParsingJson = async <T>(
   prompt: string,
-  options: { system?: string; model?: model_types } = {}
+  options: { system?: string; model?: model_types; webSearch?: boolean } = {}
 ): Promise<T> => {
   const response = await promptGemini(prompt, options)
   return parseAIResponseAsJson(response)
@@ -20,9 +20,9 @@ export const promptGeminiParsingJson = async <T>(
 
 export const promptGemini = async (
   prompt: string,
-  options: { system?: string; model?: model_types } = {}
+  options: { system?: string; model?: model_types; webSearch?: boolean } = {}
 ) => {
-  const { model = models.flash, system } = options
+  const { model = models.flash, system, webSearch = false } = options
 
   const apiKey = process.env.GEMINI_API_KEY
 
@@ -31,7 +31,14 @@ export const promptGemini = async (
   }
 
   const genAI = new GoogleGenerativeAI(apiKey)
-  const geminiModel = genAI.getGenerativeModel({ model })
+
+  // Configure model with optional Google Search grounding
+  const modelConfig: any = { model }
+  if (webSearch) {
+    modelConfig.tools = [{ googleSearch: {} }]
+  }
+
+  const geminiModel = genAI.getGenerativeModel(modelConfig)
 
   try {
     // Combine system prompt and user prompt if system is provided
@@ -80,7 +87,7 @@ export const parseAIResponseAsJson = (response: string): any => {
       const potentialArray = cleanedResponse.substring(arrayStart, arrayEnd + 1)
       try {
         return JSON.parse(potentialArray)
-      } catch (e) {
+      } catch (_e) {
         // If still fails, throw the original error
         throw error
       }

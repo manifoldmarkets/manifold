@@ -85,7 +85,7 @@ export const generateAIDescription: APIHandler<'generate-ai-description'> =
         Only return the markdown description, nothing else.
         `
         const gptResponse = await promptAI(prompt, {
-          model: aiModels.gpt5,
+          model: aiModels.flashThinking,
           webSearch: true,
         })
 
