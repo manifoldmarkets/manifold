@@ -1,9 +1,9 @@
 ---
-description:
+description: General knowledge about the repo
 alwaysApply: false
 ---
 
-Hello this is a short guide to coding on Manifold! It was written to provide context to Claude, so he can know how to code for us.
+Hello this is a short guide to coding on Manifold! It was written to provide context to LLMs, so they can know how to code for us.
 
 Our code is all Typescript and split into a few packages. At the top level, there are 3 code directories:
 

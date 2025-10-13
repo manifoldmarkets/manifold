@@ -46,6 +46,7 @@ SplashScreen.preventAutoHideAsync()
 
 // If you're changing native code: uncomment the line below
 // const BASE_URI = 'http://192.168.1.229:3000/'
+// const BASE_URI = 'http://192.168.1.99:3001/'
 
 const BASE_URI =
   ENV === 'DEV' ? 'https://dev.manifold.markets/' : 'https://manifold.markets/'
@@ -200,11 +201,11 @@ const App = () => {
     if (!linkedUrl || linkedUrl === 'blank') return
     const { hostname, path } = Linking.parse(linkedUrl)
     if (path !== 'blank' && hostname) {
-      const pathIncludeParams = linkedUrl.split('manifold.markets')[1]
-      const url = pathIncludeParams != '/' ? pathIncludeParams : '/home'
+      const pathIncludingParams = linkedUrl.split('manifold.markets')[1]
+      const url = pathIncludingParams != '/' ? pathIncludingParams : '/home'
       log(
         'Linked url',
-        linkedUrl,
+        url,
         ', has loaded webview:',
         hasLoadedWebView,
         ', path:',
