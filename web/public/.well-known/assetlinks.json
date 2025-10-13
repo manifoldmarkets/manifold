@@ -7,7 +7,8 @@
       "namespace": "android_app",
       "package_name": "com.markets.manifold",
       "sha256_cert_fingerprints": [
-        "7A:C2:76:06:DD:30:1C:38:E3:5D:BB:DA:A1:EC:39:DF:0F:9D:EC:16:79:CB:FD:E1:1A:11:D2:29:74:A1:3E:15"
+        "7A:C2:76:06:DD:30:1C:38:E3:5D:BB:DA:A1:EC:39:DF:0F:9D:EC:16:79:CB:FD:E1:1A:11:D2:29:74:A1:3E:15",
+        "FA:C6:17:45:DC:09:03:78:6F:B9:ED:E6:2A:96:2B:39:9F:73:48:F0:BB:6F:89:9B:83:32:66:75:91:03:3B:9C"
       ]
     }
   }
