@@ -4,6 +4,7 @@ import Link from 'next/link'
 import {
   usePrivateMessages,
   useSortedPrivateMessageMemberships,
+  useUnseenPrivateMessageChannels,
 } from 'web/hooks/use-private-messages'
 import { useUser } from 'web/hooks/use-user'
 import { useUsersInStore } from 'web/hooks/use-user-supabase'
@@ -20,10 +21,12 @@ function ChatItem({
   channel,
   memberIds,
   userId,
+  isUnseen,
 }: {
   channel: any
   memberIds: string[]
   userId: string
+  isUnseen: boolean
 }) {
   const otherMemberIds = memberIds.filter((id) => id !== userId)
   const otherUsers = useUsersInStore(
@@ -52,19 +55,27 @@ function ChatItem({
   return (
     <Link
       href={`/messages/${channel.channel_id}`}
-      className="hover:bg-canvas-0 rounded p-2 transition-colors"
+      className={clsx(
+        'hover:bg-canvas-0 rounded p-2 transition-colors',
+        isUnseen && 'bg-primary-50 dark:bg-primary-900/10'
+      )}
     >
       <Row className="items-center gap-3 rounded-md">
-        <MultipleOrSingleAvatars
-          size="md"
-          spacing={numOthers === 2 ? 0.3 : 0.15}
-          startLeft={numOthers === 2 ? 2.2 : 1.2}
-          avatars={otherUsers ?? []}
-          className={numOthers > 1 ? '-ml-2' : ''}
-        />
+        <div className="relative">
+          <MultipleOrSingleAvatars
+            size="md"
+            spacing={numOthers === 2 ? 0.3 : 0.15}
+            startLeft={numOthers === 2 ? 2.2 : 1.2}
+            avatars={otherUsers ?? []}
+            className={numOthers > 1 ? '-ml-2' : ''}
+          />
+          {isUnseen && (
+            <div className="bg-primary-500 border-canvas-50 absolute -right-1 -top-1 h-3 w-3 rounded-full border-2" />
+          )}
+        </div>
         <Col className="w-full">
           <Row className="items-center justify-between">
-            <span className="font-semibold">
+            <span className={clsx('font-semibold', isUnseen && 'font-bold')}>
               {everyoneHasLeft ? (
                 <span className="text-ink-400 italic">
                   {wasOneOnOne
@@ -93,7 +104,9 @@ function ChatItem({
             <span
               className={clsx(
                 'line-clamp-1 h-5 text-sm',
-                'text-ink-500 dark:text-ink-600'
+                isUnseen
+                  ? 'text-ink-700 dark:text-ink-400 font-medium'
+                  : 'text-ink-500 dark:text-ink-600'
               )}
             >
               {chat && (
@@ -116,6 +129,8 @@ export function PrivateMessagesList() {
     user?.id,
     100
   )
+  const { unseenChannels } = useUnseenPrivateMessageChannels(false)
+  const unseenChannelIds = new Set(unseenChannels.map((c) => c.channel_id))
 
   if (!channels) return <LoadingIndicator />
 
@@ -134,6 +149,7 @@ export function PrivateMessagesList() {
             channel={channel}
             memberIds={memberIdsByChannelId[channel.channel_id] ?? []}
             userId={user?.id ?? ''}
+            isUnseen={unseenChannelIds.has(channel.channel_id)}
           />
         ))
       )}
