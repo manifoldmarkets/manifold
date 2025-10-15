@@ -77,7 +77,7 @@ We're using Expo to help with android and ios builds. You can find more informat
 
 ### OTA updates
 
-`eas update --branch default` to publish an over-the-air update to production
+`eas update --branch default` to publish an over-the-air update to production. I'm pretty sure this only updates apps with the same: `buildNumber`, `versionCode`, `version`
 
 ### Adding Environment Variables
 
