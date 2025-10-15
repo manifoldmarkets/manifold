@@ -2,6 +2,7 @@
 
 ENV=${1:-dev}
 DEBUG=${2:-false}
+API_PORT=${3:-8088}
 
 # Set environment based on whether "prod" is in the ENV string
 if [[ "$ENV" == *"prod"* ]]; then
@@ -47,10 +48,10 @@ if [[ "$ENV" == native:* ]]; then
     tmux kill-session -t $SESSION_NAME 2>/dev/null
 
     # Create new session with API server
-    tmux new-session -d -s $SESSION_NAME "NEXT_PUBLIC_FIREBASE_ENV=${NEXT_ENV} yarn --cwd=backend/api $API_COMMAND"
+    tmux new-session -d -s $SESSION_NAME "PORT=${API_PORT} NEXT_PUBLIC_FIREBASE_ENV=${NEXT_ENV} yarn --cwd=backend/api $API_COMMAND"
     
     # Split window horizontally and start Expo
-    tmux split-window -h "NEXT_PUBLIC_API_URL=${LOCAL_IP}:8088 NEXT_PUBLIC_FIREBASE_ENV=${NEXT_ENV} yarn --cwd=native start:${FIREBASE_PROJECT}"
+    tmux split-window -h "NEXT_PUBLIC_API_URL=${LOCAL_IP}:${API_PORT} NEXT_PUBLIC_FIREBASE_ENV=${NEXT_ENV} yarn --cwd=native start:${FIREBASE_PROJECT}"
     
     # Select the Expo pane (for input)
     tmux select-pane -t 1
@@ -61,9 +62,10 @@ else
 npx concurrently \
     -n API,NEXT,TS \
     -c white,magenta,cyan \
-    "cross-env NEXT_PUBLIC_FIREBASE_ENV=${NEXT_ENV} \
-                      yarn --cwd=backend/api $API_COMMAND" \
-    "cross-env NEXT_PUBLIC_API_URL=${LOCAL_IP}:8088 \
+    "cross-env PORT=${API_PORT} \
+              NEXT_PUBLIC_FIREBASE_ENV=${NEXT_ENV} \
+              yarn --cwd=backend/api $API_COMMAND" \
+    "cross-env NEXT_PUBLIC_API_URL=${LOCAL_IP}:${API_PORT} \
               NEXT_PUBLIC_FIREBASE_ENV=${NEXT_ENV} \
               yarn --cwd=web serve" \
     "cross-env yarn --cwd=web ts-watch"
