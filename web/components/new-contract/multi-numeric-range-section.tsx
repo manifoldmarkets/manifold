@@ -21,7 +21,7 @@ export const MultiNumericRangeSection = (props: {
   setMaxString: (value: string) => void
   min: number | undefined
   max: number | undefined
-  description?: string
+  getDescription?: () => string
   answers: string[]
   paramsKey: string
   setAnswers: (answers: string[]) => void
@@ -37,7 +37,7 @@ export const MultiNumericRangeSection = (props: {
     paramsKey,
     submitState,
     question,
-    description,
+    getDescription,
     answers,
     midpoints,
     setAnswers,
@@ -81,6 +81,7 @@ export const MultiNumericRangeSection = (props: {
   const [maxAnswersReached, setMaxAnswersReached] = useState<boolean>(false)
 
   const selectedTab = shouldAnswersSumToOne ? 'buckets' : 'thresholds'
+  const hasRealAnswers = answers.some((answer) => answer.trim() !== '')
 
   // Check if max answers limit is reached
   useEffect(() => {
@@ -97,7 +98,7 @@ export const MultiNumericRangeSection = (props: {
     try {
       const result = await api('generate-ai-numeric-ranges', {
         question,
-        description,
+        description: getDescription?.(),
         min,
         max,
         unit,
@@ -185,7 +186,7 @@ export const MultiNumericRangeSection = (props: {
         answers,
         min,
         max,
-        description,
+        description: getDescription?.(),
         unit,
         tab: selectedTab,
       })
@@ -387,7 +388,7 @@ export const MultiNumericRangeSection = (props: {
                 !unit
               }
             >
-              {answers.length > 0 ? 'Regenerate ranges' : 'Generate ranges'}
+              {hasRealAnswers ? 'Regenerate ranges' : 'Generate ranges'}
             </Button>
           </Row>
         </Col>
@@ -406,7 +407,7 @@ export const MultiNumericRangeSection = (props: {
             !unit
           }
         >
-          {answers.length > 0 ? 'Regenerate ranges' : 'Generate ranges'}
+          {hasRealAnswers ? 'Regenerate ranges' : 'Generate ranges'}
         </Button>
       </Row>
       {error && (

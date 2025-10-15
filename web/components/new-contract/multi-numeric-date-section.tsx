@@ -18,7 +18,7 @@ export const MultiNumericDateSection = (props: {
   setMinString: (value: string) => void
   maxString: string
   setMaxString: (value: string) => void
-  description?: string
+  getDescription?: () => string
   answers: string[]
   paramsKey: string
   setAnswers: (answers: string[]) => void
@@ -32,7 +32,7 @@ export const MultiNumericDateSection = (props: {
     paramsKey,
     submitState,
     question,
-    description,
+    getDescription,
     answers,
     midpoints,
     setAnswers,
@@ -71,6 +71,7 @@ export const MultiNumericDateSection = (props: {
   const [maxAnswersReached, setMaxAnswersReached] = useState<boolean>(false)
 
   const selectedTab = shouldAnswersSumToOne ? 'buckets' : 'thresholds'
+  const hasRealAnswers = answers.some((answer) => answer.trim() !== '')
 
   // Check if max answers limit is reached
   useEffect(() => {
@@ -87,7 +88,7 @@ export const MultiNumericDateSection = (props: {
     try {
       const result = await api('generate-ai-date-ranges', {
         question,
-        description,
+        description: getDescription?.(),
         min: minString,
         max: maxString,
       })
@@ -172,7 +173,7 @@ export const MultiNumericDateSection = (props: {
         answers,
         min,
         max,
-        description,
+        description: getDescription?.(),
         tab,
       })
 
@@ -352,7 +353,7 @@ export const MultiNumericDateSection = (props: {
                 minMaxError
               }
             >
-              {answers.length > 0
+              {hasRealAnswers
                 ? 'Regenerate date ranges'
                 : 'Generate date ranges'}
             </Button>
@@ -372,9 +373,7 @@ export const MultiNumericDateSection = (props: {
             minMaxError
           }
         >
-          {answers.length > 0
-            ? 'Regenerate date ranges'
-            : 'Generate date ranges'}
+          {hasRealAnswers ? 'Regenerate date ranges' : 'Generate date ranges'}
         </Button>
       </Row>
       {error && (

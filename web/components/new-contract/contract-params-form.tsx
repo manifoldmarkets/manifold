@@ -1,30 +1,54 @@
-import dayjs from 'dayjs'
-import router from 'next/router'
-import { useEffect, useState, useCallback } from 'react'
 import { generateJSON, JSONContent } from '@tiptap/core'
+import dayjs from 'dayjs'
 import { debounce } from 'lodash'
+import router from 'next/router'
+import { useCallback, useEffect, useState } from 'react'
 
+import { useEvent } from 'client-common/hooks/use-event'
+import {
+  removePersistentInMemoryState,
+  usePersistentInMemoryState,
+} from 'client-common/hooks/use-persistent-in-memory-state'
 import {
   add_answers_mode,
   Contract,
+  contractPath,
   CreateableOutcomeType,
   MAX_DESCRIPTION_LENGTH,
   MAX_QUESTION_LENGTH,
-  NUMBER_BUCKETS_MAX,
   NON_BETTING_OUTCOMES,
-  Visibility,
+  NUMBER_BUCKETS_MAX,
   PollVoterVisibility,
-  contractPath,
+  Visibility,
 } from 'common/contract'
+import { MarketDraft } from 'common/drafts'
 import {
   FREE_MARKET_USER_ID,
   getAnte,
   getUniqueBettorBonusAmount,
   MINIMUM_BOUNTY,
 } from 'common/economy'
+import { Group, MAX_GROUPS_PER_MARKET } from 'common/group'
+import { getMultiNumericAnswerBucketRangeNames } from 'common/src/number'
+import { STONK_NO, STONK_YES } from 'common/stonk'
+import { getAnswerCostFromLiquidity, liquidityTiers } from 'common/tier'
+import { User } from 'common/user'
+import { filterDefined } from 'common/util/array'
+import { formatWithToken } from 'common/util/format'
+import { removeUndefinedProps } from 'common/util/object'
+import { extensions, richTextToString } from 'common/util/parse'
+import { randomString } from 'common/util/random'
+import { toast } from 'react-hot-toast'
+import { BiUndo } from 'react-icons/bi'
+import { compareTwoStrings } from 'string-similarity'
 import { MultipleChoiceAnswers } from 'web/components/answers/multiple-choice-answers'
 import { Button } from 'web/components/buttons/button'
 import { Row } from 'web/components/layout/row'
+import { CloseTimeSection } from 'web/components/new-contract/close-time-section'
+import { CostSection } from 'web/components/new-contract/cost-section'
+import { PseudoNumericRangeSection } from 'web/components/new-contract/pseudo-numeric-range-section'
+import { SimilarContractsSection } from 'web/components/new-contract/similar-contracts-section'
+import { TopicSelectorSection } from 'web/components/new-contract/topic-selector-section'
 import {
   getEditorLocalStorageKey,
   TextEditor,
@@ -33,11 +57,6 @@ import {
 import { ExpandingInput } from 'web/components/widgets/expanding-input'
 import { InfoTooltip } from 'web/components/widgets/info-tooltip'
 import ShortToggle from 'web/components/widgets/short-toggle'
-import { Group, MAX_GROUPS_PER_MARKET } from 'common/group'
-import { STONK_NO, STONK_YES } from 'common/stonk'
-import { User } from 'common/user'
-import { removeUndefinedProps } from 'common/util/object'
-import { extensions, richTextToString } from 'common/util/parse'
 import {
   setPersistentLocalState,
   usePersistentLocalState,
@@ -51,34 +70,15 @@ import { track } from 'web/lib/service/analytics'
 import { getGroup, getGroupFromSlug } from 'web/lib/supabase/group'
 import { safeLocalStorage } from 'web/lib/util/local'
 import { Col } from '../layout/col'
-import { BuyAmountInput } from '../widgets/amount-input'
-import { getContractTypeFromValue } from './create-contract-types'
-import { NewQuestionParams } from './new-contract-panel'
-import { filterDefined } from 'common/util/array'
-import {
-  removePersistentInMemoryState,
-  usePersistentInMemoryState,
-} from 'client-common/hooks/use-persistent-in-memory-state'
-import { compareTwoStrings } from 'string-similarity'
-import { CostSection } from 'web/components/new-contract/cost-section'
-import { CloseTimeSection } from 'web/components/new-contract/close-time-section'
-import { TopicSelectorSection } from 'web/components/new-contract/topic-selector-section'
-import { PseudoNumericRangeSection } from 'web/components/new-contract/pseudo-numeric-range-section'
-import { SimilarContractsSection } from 'web/components/new-contract/similar-contracts-section'
-import { MultiNumericRangeSection } from './multi-numeric-range-section'
-import { NumberRangeSection } from './number-range-section'
-import { getMultiNumericAnswerBucketRangeNames } from 'common/src/number'
-import { randomString } from 'common/util/random'
-import { formatWithToken } from 'common/util/format'
-import { BiUndo } from 'react-icons/bi'
-import { getAnswerCostFromLiquidity, liquidityTiers } from 'common/tier'
-import { MultiNumericDateSection } from './multi-numeric-date-section'
 import { Modal, MODAL_CLASS } from '../layout/modal'
 import { RelativeTimestamp } from '../relative-timestamp'
-import { MarketDraft } from 'common/drafts'
-import { toast } from 'react-hot-toast'
-import { useEvent } from 'client-common/hooks/use-event'
+import { BuyAmountInput } from '../widgets/amount-input'
 import { ChoicesToggleGroup } from '../widgets/choices-toggle-group'
+import { getContractTypeFromValue } from './create-contract-types'
+import { MultiNumericDateSection } from './multi-numeric-date-section'
+import { MultiNumericRangeSection } from './multi-numeric-range-section'
+import { NewQuestionParams } from './new-contract-panel'
+import { NumberRangeSection } from './number-range-section'
 
 export const seeResultsAnswer = 'See results'
 export function ContractParamsForm(props: {
@@ -500,6 +500,19 @@ export function ContractParamsForm(props: {
     editor?.commands.setContent(JSON.parse(params.description))
   }, [params?.description, editor])
 
+  // Helper to safely get HTML from editor, handling edge cases
+  const getEditorHTML = useCallback(() => {
+    if (!editor) return ''
+    try {
+      return editor.getHTML()
+    } catch (e) {
+      console.error('Error getting editor HTML:', e)
+      // If there's an error, return empty and clear corrupted localStorage
+      safeLocalStorage?.removeItem(editorKey)
+      return ''
+    }
+  }, [editor, paramsKey])
+
   const resetProperties = () => {
     // This has to work when you navigate away so we can't do:
     // editor?.commands.clearContent(true)
@@ -721,7 +734,7 @@ export function ContractParamsForm(props: {
 
       const result = await api('generate-ai-description', {
         question,
-        description: editor?.getHTML(),
+        description: getEditorHTML(),
         answers,
         outcomeType,
         shouldAnswersSumToOne,
@@ -747,7 +760,7 @@ export function ContractParamsForm(props: {
     try {
       const result = await api('generate-ai-answers', {
         question,
-        description: editor?.getHTML(),
+        description: getEditorHTML(),
         shouldAnswersSumToOne,
         answers,
       })
@@ -771,7 +784,7 @@ export function ContractParamsForm(props: {
     try {
       const result = await api('infer-numeric-unit', {
         question,
-        description: editor?.getHTML(),
+        description: getEditorHTML(),
       })
       if (result.unit) {
         setUnit(result.unit)
@@ -937,7 +950,7 @@ export function ContractParamsForm(props: {
           paramsKey={paramsKey}
           submitState={submitState}
           question={question}
-          description={editor?.getHTML()}
+          getDescription={getEditorHTML}
           answers={answers}
           setAnswers={setAnswers}
           midpoints={midpoints}
@@ -960,7 +973,7 @@ export function ContractParamsForm(props: {
           paramsKey={paramsKey}
           submitState={submitState}
           question={question}
-          description={editor?.getHTML()}
+          getDescription={getEditorHTML}
           answers={answers}
           setAnswers={setAnswers}
           midpoints={midpoints}
