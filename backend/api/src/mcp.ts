@@ -57,6 +57,8 @@ function getServer(): Server {
                 'ALL',
                 'BINARY',
                 'MULTIPLE_CHOICE',
+                'DEPENDENT_MULTIPLE_CHOICE',
+                'INDEPENDENT_MULTIPLE_CHOICE',
                 'POLL',
                 'MULTI_NUMERIC',
                 'DATE',

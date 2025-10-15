@@ -44,6 +44,8 @@ export const searchProps = z
         z.literal('ALL'),
         z.literal('BINARY'),
         z.literal('MULTIPLE_CHOICE'),
+        z.literal('DEPENDENT_MULTIPLE_CHOICE'),
+        z.literal('INDEPENDENT_MULTIPLE_CHOICE'),
         z.literal('FREE_RESPONSE'),
         z.literal('PSEUDO_NUMERIC'),
         z.literal('BOUNTIED_QUESTION'),

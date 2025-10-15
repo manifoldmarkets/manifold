@@ -119,6 +119,8 @@ export const CONTRACT_TYPES = [
   { label: 'Any type', value: 'ALL' },
   { label: 'Yes/No', value: 'BINARY' },
   { label: 'Multiple Choice', value: 'MULTIPLE_CHOICE' },
+  { label: 'Set', value: 'INDEPENDENT_MULTIPLE_CHOICE' },
+  { label: 'Dependent MC', value: 'DEPENDENT_MULTIPLE_CHOICE' },
   { label: 'Numeric', value: 'PSEUDO_NUMERIC' },
   { label: 'Bounty', value: 'BOUNTIED_QUESTION' },
   { label: 'Stock', value: 'STONK' },

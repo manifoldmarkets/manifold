@@ -499,7 +499,7 @@ Parameters:
 - `term`: The search query in question. Can be empty string.
 - `sort`: Optional. One of `most-popular` (default), `newest`, `score`, `daily-score`, `freshness-score`, `24-hour-vol`, `liquidity`, `subsidy`, `last-updated`, `close-date`, `start-time`, `resolve-date`, `random`, `bounty-amount`, `prob-descending`, or `prob-ascending`.
 - `filter`: Optional. Closing state. One of `all` (default), `open`, `closed`, `resolved`, `news`, `closing-90-days`, `closing-week`, `closing-month`, or `closing-day`.
-- `contractType`: Optional. `ALL` (default), `BINARY` (yes/no), `MULTIPLE_CHOICE`, `BOUNTY`, `POLL`, or ... (see code)
+- `contractType`: Optional. `ALL` (default), `BINARY` (yes/no), `MULTIPLE_CHOICE` (both dependent and independent), `DEPENDENT_MULTIPLE_CHOICE` (traditional multiple choice where only one answer can be correct), `INDEPENDENT_MULTIPLE_CHOICE` (set markets where multiple answers can be YES simultaneously), `BOUNTY`, `POLL`, or ... (see code)
 - `topicSlug`: Optional. Only include questions with the topic tag with this slug.
 - `creatorId`: Optional. Only include questions created by the user with this id.
 - `limit`: Optional. Number of contracts to return from 0 to 1000. Default 100.
