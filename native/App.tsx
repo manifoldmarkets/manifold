@@ -154,11 +154,20 @@ const App = () => {
     // Perhaps this isn't current if the webview is killed for memory collection? Not sure
     const notification = response.notification.request.content
       .data as Notification
-    if (notification == undefined) return
+    if (!notification || !notification.reason) {
+      log('Ignoring notification with missing data:', notification)
+      return
+    }
     log('handling notification', notification.reason)
 
     // Resolve the destination URL from the notification.
     const destination = getSourceUrl(notification)
+
+    // Don't navigate if we don't have a valid destination
+    if (!destination) {
+      log('No valid destination from notification, skipping navigation')
+      return
+    }
 
     // If the webview is already loaded and listening, forward the message so
     // the web client can mark the notification as seen, etc.
@@ -199,10 +208,29 @@ const App = () => {
   // Handle deep links
   useEffect(() => {
     if (!linkedUrl || linkedUrl === 'blank') return
-    const { hostname, path } = Linking.parse(linkedUrl)
+    const { hostname, path, queryParams } = Linking.parse(linkedUrl)
     if (path !== 'blank' && hostname) {
-      const pathIncludingParams = linkedUrl.split('manifold.markets')[1]
-      const url = pathIncludingParams != '/' ? pathIncludingParams : '/home'
+      // Extract path and query params properly regardless of URL scheme
+      let url = path || '/home'
+
+      // Ensure path has leading slash
+      if (url && !url.startsWith('/')) {
+        url = '/' + url
+      }
+
+      // Add query parameters if they exist
+      if (queryParams && Object.keys(queryParams).length > 0) {
+        const queryString = new URLSearchParams(
+          queryParams as Record<string, string>
+        ).toString()
+        url = `${url}?${queryString}`
+      }
+
+      // Normalize: if root path, redirect to home
+      if (url === '/' || url === '') {
+        url = '/home'
+      }
+
       log(
         'Linked url',
         url,
