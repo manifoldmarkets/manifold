@@ -483,6 +483,24 @@ export const executeNewBetResult = async (
     )
     betsToInsert.push(...otherBetsToInsert)
   }
+
+  // Multi-cpmm-1 contract: add main bet's answer update
+  if (newBet.answerId && newPool) {
+    const { YES: poolYes, NO: poolNo } = newPool
+    const prob = getCpmmProbability(newPool, 0.5)
+    const answer = (contract as MultiContract).answers.find(
+      (a) => a.id === newBet.answerId
+    )
+    if (!answer) throw new APIError(404, 'Answer not found')
+    answerUpdates.push({
+      id: newBet.answerId,
+      poolYes,
+      poolNo,
+      prob,
+      volume: answer.volume + Math.abs(newBet.amount),
+    })
+  }
+
   const isUniqueBettor =
     (!isMultiBet || firstBetInMultiBet) &&
     !contractMetrics.find((m) => m.userId === user.id)
@@ -503,24 +521,25 @@ export const executeNewBetResult = async (
             prob:
               newPool && newP ? getCpmmProbability(newPool, newP) : undefined,
           }
+        : contract.mechanism === 'cpmm-multi-1' &&
+          answerUpdates.length > 0 &&
+          contract.answers.length > 0
+        ? {
+            answers: contract.answers.map((answer) => {
+              const update = answerUpdates.find((au) => au.id === answer.id)
+              return update
+                ? {
+                    ...answer,
+                    poolYes: update.poolYes,
+                    poolNo: update.poolNo,
+                    prob: update.prob,
+                    volume: update.volume,
+                  }
+                : answer
+            }),
+          }
         : {}),
     })
-  // Multi-cpmm-1 contract
-  if (newBet.answerId && newPool) {
-    const { YES: poolYes, NO: poolNo } = newPool
-    const prob = getCpmmProbability(newPool, 0.5)
-    const answer = (contract as MultiContract).answers.find(
-      (a) => a.id === newBet.answerId
-    )
-    if (!answer) throw new APIError(404, 'Answer not found')
-    answerUpdates.push({
-      id: newBet.answerId,
-      poolYes,
-      poolNo,
-      prob,
-      volume: answer.volume + Math.abs(newBet.amount),
-    })
-  }
 
   const metrics =
     isMultiBet && !firstBetInMultiBet
