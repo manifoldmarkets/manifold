@@ -828,5 +828,5 @@ $function$;
 
 create
 or replace function public.ts_to_millis (ts timestamp without time zone) returns bigint language sql immutable parallel SAFE as $function$
-select extract(epoch from ts)::bigint * 1000
+select (extract(epoch from ts) * 1000)::bigint
 $function$;
