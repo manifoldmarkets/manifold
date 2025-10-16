@@ -74,9 +74,7 @@ export const PROD_CONFIG: EnvConfig = {
     'tlmGNz9kjXc2EteizMORes4qvWl2', // Stephen
     'IPTOzEqrpkWmEzh6hwvAyY9PqFb2', // Manifold
     'AJwLWoo3xue32XIiAVrL5SyR1WB2', // Ian
-    'uglwf3YKOZNGjjEXKc5HampOFRE2', // D4vid
-    '62TNqzdBx7X2q621HltsJm8UFht2', // Marshall
-    'z0cH5XmIM9XgWFOBAILQWt0fTHr1', // Rachel W
+    'KHX2ThSFtLQlau58hrjtCX7OL2h2', // stefanie
     'cA1JupYR5AR8btHUs2xvkui7jA93', // Genzy
     'vuI5upWB8yU00rP7yxj95J2zd952', // Manifold Politics
     '8lZo8X5lewh4hnCoreI7iSc0GxK2', // Manifold AI
