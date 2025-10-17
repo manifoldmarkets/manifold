@@ -480,6 +480,17 @@ function validateMarketBody(body: Body) {
       addAnswersMode,
       shouldAnswersSumToOne,
     } = validateMarketType(outcomeType, createMultiSchema, body))
+    const hasOtherAnswer =
+      addAnswersMode !== 'DISABLED' && shouldAnswersSumToOne
+    const numAnswers = answers.length + (hasOtherAnswer ? 1 : 0)
+    // Unfortunately this is a requirement because if we don't add an answer,
+    // then the market creation cost will just be lost. If we just set totalLiquidity to 0,
+    // then the answer costs will be calculated based on 0, which is not what we want.
+    if (numAnswers < 1)
+      throw new APIError(
+        400,
+        'Multiple choice markets must have at least 1 answer.'
+      )
     if (answers.length < 2 && addAnswersMode === 'DISABLED')
       throw new APIError(
         400,

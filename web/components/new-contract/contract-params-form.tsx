@@ -407,8 +407,11 @@ export function ContractParamsForm(props: {
     outcomeType === 'POLL' ||
     outcomeType === 'MULTI_NUMERIC' ||
     outcomeType === 'DATE'
+  const minAnswers = outcomeType === 'POLL' ? 2 : 1
   const isValidMultipleChoice =
-    !hasAnswers || answers.every((answer) => answer.trim().length > 0)
+    !hasAnswers ||
+    (numAnswers >= minAnswers &&
+      answers.every((answer) => answer.trim().length > 0))
 
   const isValidDate =
     // closeTime must be in the future
@@ -465,9 +468,19 @@ export function ContractParamsForm(props: {
     if (!isValidDate) {
       setErrorText('Close date must be in the future')
     } else if (!isValidMultipleChoice) {
-      setErrorText(
-        `All ${outcomeType === 'POLL' ? 'options' : 'answers'} must have text`
-      )
+      if (hasAnswers && numAnswers < minAnswers) {
+        const type = outcomeType === 'POLL' ? 'Poll' : 'Multiple choice'
+        const label = outcomeType === 'POLL' ? 'option' : 'answer'
+        setErrorText(
+          `${type} questions must have at least ${minAnswers} ${label}${
+            minAnswers > 1 ? 's' : ''
+          }`
+        )
+      } else {
+        setErrorText(
+          `All ${outcomeType === 'POLL' ? 'options' : 'answers'} must have text`
+        )
+      }
     } else if (!isValidTopics) {
       // can happen in rare cases when duplicating old question
       setErrorText(
@@ -485,6 +498,10 @@ export function ContractParamsForm(props: {
     isValidMultipleChoice,
     isValidQuestion,
     isValidTopics,
+    hasAnswers,
+    answers.length,
+    outcomeType,
+    minAnswers,
   ])
 
   const editorKey = 'create market' + paramsKey
