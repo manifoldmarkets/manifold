@@ -212,6 +212,7 @@ export async function createMarketHelper(body: Body, auth: AuthedUser) {
             'Tumblingnomics has reached its breaking point. No more free markets today.'
           )
       }
+      const isCursedUser = user.name === 'Rima Akter'
 
       const slug = getSlug(!!first(userAndSlugResult[1]), proposedSlug)
 
@@ -235,7 +236,7 @@ export async function createMarketHelper(body: Body, auth: AuthedUser) {
           initialProb: initialProb ?? 50,
           ante,
           closeTime,
-          visibility,
+          visibility: isCursedUser ? 'unlisted' : visibility,
           isTwitchContract,
           min: min ?? 0,
           max: max ?? 0,

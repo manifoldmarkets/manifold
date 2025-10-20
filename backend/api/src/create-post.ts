@@ -1,16 +1,16 @@
-import { removeUndefinedProps } from 'common/util/object'
-import { APIError, APIHandler } from './helpers/endpoint'
+import { isAdminId } from 'common/envs/constants'
+import { NEW_MARKET_IMPORTANCE_SCORE } from 'common/new-contract'
 import { TopLevelPost } from 'common/top-level-post'
-import { getUser } from 'shared/utils'
-import { slugify } from 'common/util/slugify'
+import { removeUndefinedProps } from 'common/util/object'
 import { nanoid, randomString } from 'common/util/random'
+import { slugify } from 'common/util/slugify'
+import { createNewPostFromFollowedUserNotification } from 'shared/notifications/create-new-post-notif'
 import {
   createSupabaseDirectClient,
   SupabaseTransaction,
 } from 'shared/supabase/init'
-import { createNewPostFromFollowedUserNotification } from 'shared/notifications/create-new-post-notif'
-import { isAdminId } from 'common/envs/constants'
-import { NEW_MARKET_IMPORTANCE_SCORE } from 'common/new-contract'
+import { getUser } from 'shared/utils'
+import { APIError, APIHandler } from './helpers/endpoint'
 
 export const createPost: APIHandler<'create-post'> = async (props, auth) => {
   const pg = createSupabaseDirectClient()
@@ -26,6 +26,8 @@ export const createPost: APIHandler<'create-post'> = async (props, auth) => {
   const creator = await getUser(auth.uid)
   if (!creator) throw new APIError(401, 'Your account was not found')
 
+  const isCursedUser = creator.name === 'Rima Akter'
+
   return pg.tx(async (tx) => {
     const slug = await getSlug(tx, title)
 
@@ -39,7 +41,7 @@ export const createPost: APIHandler<'create-post'> = async (props, auth) => {
       creatorName: creator.name,
       creatorUsername: creator.username,
       creatorAvatarUrl: creator.avatarUrl,
-      visibility: visibility ?? 'public',
+      visibility: (isCursedUser ? 'unlisted' : visibility) ?? 'public',
       isAnnouncement,
       isChangeLog,
       boosted: false,
