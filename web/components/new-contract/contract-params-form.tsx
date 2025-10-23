@@ -465,7 +465,11 @@ export function ContractParamsForm(props: {
     setErrorText('')
     if (isValid) return
 
-    if (!isValidDate) {
+    if (!isValidQuestion) {
+      setErrorText(
+        `Question must be between 1 and ${MAX_QUESTION_LENGTH} characters`
+      )
+    } else if (!isValidDate) {
       setErrorText('Close date must be in the future')
     } else if (!isValidMultipleChoice) {
       if (hasAnswers && numAnswers < minAnswers) {
@@ -486,11 +490,12 @@ export function ContractParamsForm(props: {
       setErrorText(
         `A question can can have at most up to ${MAX_GROUPS_PER_MARKET} topic tags.`
       )
-    }
-    if (!isValidQuestion) {
-      setErrorText(
-        `Question must be between 1 and ${MAX_QUESTION_LENGTH} characters`
-      )
+    } else if (outcomeType === 'MULTI_NUMERIC') {
+      if (!minMaxValid) {
+        setErrorText('Please enter valid low and high values')
+      } else if (unit === '') {
+        setErrorText('Please enter a metric/unit')
+      }
     }
   }, [
     isValid,
@@ -502,6 +507,8 @@ export function ContractParamsForm(props: {
     answers.length,
     outcomeType,
     minAnswers,
+    minMaxValid,
+    unit,
   ])
 
   const editorKey = 'create market' + paramsKey

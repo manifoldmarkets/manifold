@@ -231,9 +231,7 @@ export const MultiNumericRangeSection = (props: {
   }
   useEffect(() => {
     if (question.toLowerCase().includes('when')) {
-      setDateError(
-        'Exact dates are not yet supported, you can try "how many days/weeks/months/years" etc.'
-      )
+      setDateError('Date questions are better supported by the date question')
     } else {
       setDateError('')
     }
