@@ -4,9 +4,7 @@ import { removeUndefinedProps } from 'common/util/object'
 import { parseAIResponseAsJson } from './gemini'
 
 export const models = {
-  sonnet3: 'claude-3-7-sonnet-latest' as const,
-  haiku: 'claude-3-5-haiku-latest' as const,
-  sonnet4: 'claude-sonnet-4-20250514' as const,
+  haiku: 'claude-haiku-4-5-20251001' as const,
   sonnet45: 'claude-sonnet-4-5' as const,
 }
 
@@ -16,7 +14,7 @@ export const promptClaudeStream = async function* (
   prompt: string,
   options: { system?: string; model?: model_types; webSearch?: boolean } = {}
 ): AsyncGenerator<string, void, unknown> {
-  const { model = models.sonnet3, system, webSearch } = options
+  const { model = models.haiku, system, webSearch } = options
 
   const apiKey = process.env.ANTHROPIC_API_KEY
 
