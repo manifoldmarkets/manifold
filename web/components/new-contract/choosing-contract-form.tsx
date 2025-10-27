@@ -12,18 +12,14 @@ import { CreateContractStateType } from './new-contract-panel'
 
 export function ChoosingContractForm(props: {
   outcomeType: CreateableOutcomeType | undefined
-  setOutcomeType: (outcomeType: CreateableOutcomeType) => void
+  setOutcomeType: (
+    outcomeType: CreateableOutcomeType,
+    shouldAnswersSumToOne: boolean
+  ) => void
   shouldAnswersSumToOne: boolean | undefined
-  setShouldAnswersSumToOne: (shouldAnswersSumToOne: boolean) => void
   setState: (state: CreateContractStateType) => void
 }) {
-  const {
-    outcomeType,
-    setOutcomeType,
-    shouldAnswersSumToOne,
-    setShouldAnswersSumToOne,
-    setState,
-  } = props
+  const { outcomeType, setOutcomeType, shouldAnswersSumToOne, setState } = props
 
   return (
     <Col>
@@ -48,8 +44,7 @@ export function ChoosingContractForm(props: {
               onClick={() => {
                 const { outcomeType, shouldSumToOne } =
                   getOutcomeTypeAndSumsToOne(value)
-                setShouldAnswersSumToOne(shouldSumToOne)
-                setOutcomeType(outcomeType)
+                setOutcomeType(outcomeType, shouldSumToOne)
                 setState('filling contract params')
               }}
             />
