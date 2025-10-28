@@ -98,6 +98,7 @@ export default function AboutPage() {
               href="https://docs.manifold.markets/api"
               target="_blank"
             />
+            <LabCard title="📰 Press kit" href="/press" />
           </div>
         </div>
         <div>
