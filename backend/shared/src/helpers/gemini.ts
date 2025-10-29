@@ -3,7 +3,7 @@ import { APIError } from 'common/api/utils'
 import { log } from 'shared/utils'
 
 export const models = {
-  flash: 'gemini-2.0-flash' as const,
+  flash: 'gemini-2.5-flash-lite' as const,
   flashThinking: 'gemini-2.5-flash' as const,
   pro: 'gemini-2.5-pro' as const,
 }

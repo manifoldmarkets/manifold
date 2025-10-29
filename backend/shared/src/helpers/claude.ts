@@ -4,6 +4,7 @@ import { removeUndefinedProps } from 'common/util/object'
 import { parseAIResponseAsJson } from './gemini'
 
 export const models = {
+  sonnet3: 'claude-3-7-sonnet-latest' as const,
   haiku: 'claude-haiku-4-5-20251001' as const,
   sonnet45: 'claude-sonnet-4-5' as const,
 }
