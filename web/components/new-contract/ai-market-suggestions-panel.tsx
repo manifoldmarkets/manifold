@@ -1,18 +1,18 @@
-import { useState, useCallback } from 'react'
+import { XIcon } from '@heroicons/react/solid'
+import { usePersistentInMemoryState } from 'client-common/hooks/use-persistent-in-memory-state'
+import type { AIGeneratedMarket } from 'common/contract'
+import { useCallback, useState } from 'react'
+import { toast } from 'react-hot-toast'
+import { usePersistentLocalState } from 'web/hooks/use-persistent-local-state'
 import { api, APIError } from 'web/lib/api/api'
+import { track } from 'web/lib/service/analytics'
 import { Button } from '../buttons/button'
 import { Col } from '../layout/col'
+import { Row } from '../layout/row'
+import { Content } from '../widgets/editor'
 import { ExpandingInput } from '../widgets/expanding-input'
 import { LoadingIndicator } from '../widgets/loading-indicator'
-import { Row } from '../layout/row'
-import { XIcon } from '@heroicons/react/solid'
-import type { AIGeneratedMarket } from 'common/contract'
-import { Content } from '../widgets/editor'
-import { usePersistentInMemoryState } from 'client-common/hooks/use-persistent-in-memory-state'
-import { usePersistentLocalState } from 'web/hooks/use-persistent-local-state'
 import { ALL_CONTRACT_TYPES } from './create-contract-types'
-import { track } from 'web/lib/service/analytics'
-import { toast } from 'react-hot-toast'
 
 export function AIMarketSuggestionsPanel(props: {
   onSelectSuggestion: (suggestion: AIGeneratedMarket) => void
@@ -117,7 +117,7 @@ export function AIMarketSuggestionsPanel(props: {
           {loadingSuggestions || loadingMore ? (
             <Row className="items-center gap-2">
               <LoadingIndicator />
-              <span>Hang on, this can take around a minute!</span>
+              <span>Hang on, this can take 20-30 seconds!</span>
             </Row>
           ) : prompt === lastGeneratedPrompt ? (
             'Generate more'
