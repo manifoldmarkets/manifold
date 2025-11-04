@@ -47,16 +47,24 @@ export default function PressPage() {
     {
       title: 'Moderator',
       description: 'Community moderators',
-      icon: <ShieldCheckIcon className="h-5 w-5 text-purple-700 dark:text-purple-400" />,
-      largeIcon: <ShieldCheckIcon className="h-32 w-32 text-purple-700 dark:text-purple-400" />,
+      icon: (
+        <ShieldCheckIcon className="h-5 w-5 text-purple-700 dark:text-purple-400" />
+      ),
+      largeIcon: (
+        <ShieldCheckIcon className="h-32 w-32 text-purple-700 dark:text-purple-400" />
+      ),
       iconDesc: 'ShieldCheckIcon (Heroicons)',
       color: 'Purple-700',
     },
     {
       title: 'MVP',
       description: 'Most Valuable Players',
-      icon: <BsFillArrowThroughHeartFill className="h-5 w-5 text-purple-700 dark:text-purple-400" />,
-      largeIcon: <BsFillArrowThroughHeartFill className="h-32 w-32 text-purple-700 dark:text-purple-400" />,
+      icon: (
+        <BsFillArrowThroughHeartFill className="h-5 w-5 text-purple-700 dark:text-purple-400" />
+      ),
+      largeIcon: (
+        <BsFillArrowThroughHeartFill className="h-32 w-32 text-purple-700 dark:text-purple-400" />
+      ),
       iconDesc: 'BsFillArrowThroughHeartFill',
       color: 'Purple-700',
     },
@@ -80,7 +88,9 @@ export default function PressPage() {
       title: 'Institutional Partner',
       description: 'Institutional partners',
       icon: <HiOutlineBuildingLibrary className="text-primary-700 h-5 w-5" />,
-      largeIcon: <HiOutlineBuildingLibrary className="text-primary-700 h-32 w-32" />,
+      largeIcon: (
+        <HiOutlineBuildingLibrary className="text-primary-700 h-32 w-32" />
+      ),
       iconDesc: 'HiOutlineBuildingLibrary',
       color: 'Primary-700',
     },
@@ -133,27 +143,43 @@ export default function PressPage() {
         </p>
         <div className="bg-primary-100 border-primary-300 text-primary-800 mb-6 rounded-lg border p-4">
           <p className="text-sm">
-            <strong>Note:</strong> This page is optimized for light mode viewing and screenshot capture.
+            <strong>Note:</strong> This page is optimized for light mode viewing
+            and screenshot capture.
           </p>
         </div>
 
         {/* MANIFOLD Brand Wordmark */}
         <div className="bg-canvas-0 mb-8 flex flex-col gap-6 rounded-lg border p-8">
           <div className="flex flex-col gap-4">
-            <h3 className="text-ink-800 text-lg font-semibold">Primary Wordmark</h3>
+            <h3 className="text-ink-800 text-lg font-semibold">
+              Primary Wordmark
+            </h3>
             <div className="flex items-center justify-center gap-1 py-12 md:gap-2">
-              <LogoIcon className="h-12 w-12 stroke-indigo-700 md:h-24 md:w-24" strokeWidth="0.6" />
-              <div className="text-3xl font-thin text-indigo-700 md:text-6xl">MANIFOLD</div>
+              <LogoIcon
+                className="h-12 w-12 stroke-indigo-700 md:h-24 md:w-24"
+                strokeWidth="0.6"
+              />
+              <div className="text-3xl font-thin text-indigo-700 md:text-6xl">
+                MANIFOLD
+              </div>
             </div>
             <p className="text-ink-500 text-center text-sm">
-              Reference size - Logo: h-10 w-10, Text: text-xl font-thin, Gap: gap-0.5
+              Reference size - Logo: h-10 w-10, Text: text-xl font-thin, Gap:
+              gap-0.5
             </p>
           </div>
           <div className="flex flex-col gap-4">
-            <h3 className="text-ink-800 text-lg font-semibold">White Wordmark (for dark backgrounds)</h3>
+            <h3 className="text-ink-800 text-lg font-semibold">
+              White Wordmark (for dark backgrounds)
+            </h3>
             <div className="flex items-center justify-center gap-1 bg-black py-12 md:gap-2">
-              <LogoIcon className="h-12 w-12 stroke-white md:h-24 md:w-24" strokeWidth="0.6" />
-              <div className="text-3xl font-thin text-white md:text-6xl">MANIFOLD</div>
+              <LogoIcon
+                className="h-12 w-12 stroke-white md:h-24 md:w-24"
+                strokeWidth="0.6"
+              />
+              <div className="text-3xl font-thin text-white md:text-6xl">
+                MANIFOLD
+              </div>
             </div>
             <p className="text-ink-500 text-center text-sm">
               Same proportions on dark background
@@ -207,13 +233,19 @@ export default function PressPage() {
                 />
                 <div className="bg-canvas-50 rounded-lg border p-4">
                   <p className="text-ink-600 text-sm">
-                    <strong>Wordmark Usage:</strong> The "MANIFOLD" wordmark uses{' '}
-                    <strong>Figtree Thin (weight 300)</strong>. For proper sizing, use{' '}
-                    <code className="bg-ink-100 rounded px-1">font-thin</code> and scale
-                    proportionally with the logo. Desktop: <code className="bg-ink-100 rounded px-1">text-6xl</code>{' '}
-                    (60px), Mobile: <code className="bg-ink-100 rounded px-1">text-3xl</code> (30px).
-                    Maintain a <code className="bg-ink-100 rounded px-1">gap-2</code> (8px) between logo and text on desktop,
-                    <code className="bg-ink-100 rounded px-1">gap-1</code> (4px) on mobile.
+                    <strong>Wordmark Usage:</strong> The "MANIFOLD" wordmark
+                    uses <strong>Figtree Thin (weight 300)</strong>. For proper
+                    sizing, use{' '}
+                    <code className="bg-ink-100 rounded px-1">font-thin</code>{' '}
+                    and scale proportionally with the logo. Desktop:{' '}
+                    <code className="bg-ink-100 rounded px-1">text-6xl</code>{' '}
+                    (60px), Mobile:{' '}
+                    <code className="bg-ink-100 rounded px-1">text-3xl</code>{' '}
+                    (30px). Maintain a{' '}
+                    <code className="bg-ink-100 rounded px-1">gap-2</code> (8px)
+                    between logo and text on desktop,
+                    <code className="bg-ink-100 rounded px-1">gap-1</code> (4px)
+                    on mobile.
                   </p>
                 </div>
                 <FontExample
@@ -284,11 +316,17 @@ export default function PressPage() {
         {/* User Badges Section */}
         <Section title="User Badges & Modifiers">
           <div className="bg-canvas-0 mb-6 rounded-lg border p-6">
-            <h3 className="text-ink-800 mb-4 text-lg font-semibold">Role Badges</h3>
+            <h3 className="text-ink-800 mb-4 text-lg font-semibold">
+              Role Badges
+            </h3>
             <p className="text-ink-600 mb-4 text-sm">
-              These badges appear next to usernames to indicate special roles or status.
-              Icons are from Heroicons, React Icons libraries, and custom SVGs.
-              <strong> Click any badge to display it large for screenshotting.</strong>
+              These badges appear next to usernames to indicate special roles or
+              status. Icons are from Heroicons, React Icons libraries, and
+              custom SVGs.
+              <strong>
+                {' '}
+                Click any badge to display it large for screenshotting.
+              </strong>
             </p>
 
             <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
@@ -296,14 +334,18 @@ export default function PressPage() {
                 <BadgeExample
                   key={badge.title}
                   badge={badge}
-                  onClick={() => setSelectedBadge(selectedBadge?.title === badge.title ? null : badge)}
+                  onClick={() =>
+                    setSelectedBadge(
+                      selectedBadge?.title === badge.title ? null : badge
+                    )
+                  }
                 />
               ))}
             </div>
 
             {/* Large Badge Display */}
             {selectedBadge && (
-              <div className="mt-6 flex flex-col items-center justify-center rounded-lg border-2 border-primary-500 bg-white p-12">
+              <div className="border-primary-500 mt-6 flex flex-col items-center justify-center rounded-lg border-2 bg-white p-12">
                 <div className="mb-4 flex items-center justify-center">
                   {selectedBadge.largeIcon}
                 </div>
@@ -324,7 +366,9 @@ export default function PressPage() {
           </div>
 
           <div className="bg-canvas-0 rounded-lg border p-6">
-            <h3 className="text-ink-800 mb-4 text-lg font-semibold">Achievement Badges</h3>
+            <h3 className="text-ink-800 mb-4 text-lg font-semibold">
+              Achievement Badges
+            </h3>
             <p className="text-ink-600 mb-4 text-sm">
               User achievement badges for milestones and accomplishments.
             </p>
@@ -424,9 +468,12 @@ export default function PressPage() {
 
           {/* Loan Chest */}
           <div className="bg-canvas-0 rounded-lg border p-6">
-            <h3 className="text-ink-800 mb-4 text-lg font-semibold">Daily Loan Chest</h3>
+            <h3 className="text-ink-800 mb-4 text-lg font-semibold">
+              Daily Loan Chest
+            </h3>
             <p className="text-ink-600 mb-4 text-sm">
-              The loan chest appears in the UI to allow users to collect daily loans on their trades.
+              The loan chest appears in the UI to allow users to collect daily
+              loans on their trades.
             </p>
             <div className="grid grid-cols-2 gap-6 md:grid-cols-2">
               {/* Available Loan State */}
@@ -459,11 +506,18 @@ export default function PressPage() {
             </div>
             <div className="bg-canvas-50 mt-4 rounded-lg border p-4">
               <p className="text-ink-600 text-sm">
-                <strong>Icons:</strong> From <code className="bg-ink-100 rounded px-1">react-icons/gi</code>
+                <strong>Icons:</strong> From{' '}
+                <code className="bg-ink-100 rounded px-1">react-icons/gi</code>
               </p>
               <ul className="text-ink-600 mt-2 list-inside list-disc space-y-1 text-sm">
-                <li><code className="bg-ink-100 rounded px-1">GiTwoCoins</code> - Available loan state (text-yellow-300)</li>
-                <li><code className="bg-ink-100 rounded px-1">GiOpenChest</code> - Collected/empty state (text-yellow-900)</li>
+                <li>
+                  <code className="bg-ink-100 rounded px-1">GiTwoCoins</code> -
+                  Available loan state (text-yellow-300)
+                </li>
+                <li>
+                  <code className="bg-ink-100 rounded px-1">GiOpenChest</code> -
+                  Collected/empty state (text-yellow-900)
+                </li>
               </ul>
             </div>
           </div>
@@ -473,10 +527,12 @@ export default function PressPage() {
         <Section title="Mock Market - Full Page Style (for Screenshots)">
           <div className="bg-canvas-0 rounded-lg border p-6">
             <p className="text-ink-600 mb-4 text-center">
-              Create custom market previews for screenshots and promotional materials
+              Create custom market previews for screenshots and promotional
+              materials
             </p>
             <p className="text-ink-600 mb-6 text-center text-sm">
-              <strong>Tip:</strong> On binary markets, you can drag the points on the chart up and down to customize the chart history!
+              <strong>Tip:</strong> On binary markets, you can drag the points
+              on the chart up and down to customize the chart history!
             </p>
             <MockMarket />
           </div>
@@ -511,7 +567,9 @@ export default function PressPage() {
               <div>
                 <h3 className="mb-2 font-semibold">Color Usage</h3>
                 <ul className="text-ink-600 list-inside list-disc space-y-1">
-                  <li>Teal (Yes) represents affirmative actions and outcomes</li>
+                  <li>
+                    Teal (Yes) represents affirmative actions and outcomes
+                  </li>
                   <li>Scarlet (No) represents negative actions and outcomes</li>
                   <li>
                     Indigo is the primary brand color for general UI elements
@@ -522,22 +580,41 @@ export default function PressPage() {
                 <h3 className="mb-2 font-semibold">Design Style Conventions</h3>
                 <ul className="text-ink-600 list-inside list-disc space-y-1">
                   <li>
-                    <strong>Border Radius:</strong> Use <code className="bg-ink-100 rounded px-1">rounded-md</code> (0.375rem / 6px) for buttons and most UI elements
+                    <strong>Border Radius:</strong> Use{' '}
+                    <code className="bg-ink-100 rounded px-1">rounded-md</code>{' '}
+                    (0.375rem / 6px) for buttons and most UI elements
                   </li>
                   <li>
-                    <strong>Border Radius (Cards):</strong> Use <code className="bg-ink-100 rounded px-1">rounded-lg</code> (0.5rem / 8px) for cards and containers
+                    <strong>Border Radius (Cards):</strong> Use{' '}
+                    <code className="bg-ink-100 rounded px-1">rounded-lg</code>{' '}
+                    (0.5rem / 8px) for cards and containers
                   </li>
                   <li>
-                    <strong>Border Radius (Pills):</strong> Use <code className="bg-ink-100 rounded px-1">rounded-full</code> for pill-shaped elements like tags
+                    <strong>Border Radius (Pills):</strong> Use{' '}
+                    <code className="bg-ink-100 rounded px-1">
+                      rounded-full
+                    </code>{' '}
+                    for pill-shaped elements like tags
                   </li>
                   <li>
-                    <strong>Button Sizing:</strong> Standard buttons use <code className="bg-ink-100 rounded px-1">px-6 py-2.5</code> with <code className="bg-ink-100 rounded px-1">text-base</code> (16px) and <code className="bg-ink-100 rounded px-1">font-semibold</code>
+                    <strong>Button Sizing:</strong> Standard buttons use{' '}
+                    <code className="bg-ink-100 rounded px-1">px-6 py-2.5</code>{' '}
+                    with{' '}
+                    <code className="bg-ink-100 rounded px-1">text-base</code>{' '}
+                    (16px) and{' '}
+                    <code className="bg-ink-100 rounded px-1">
+                      font-semibold
+                    </code>
                   </li>
                   <li>
-                    <strong>Shadows:</strong> Cards use <code className="bg-ink-100 rounded px-1">shadow-md</code> for elevation
+                    <strong>Shadows:</strong> Cards use{' '}
+                    <code className="bg-ink-100 rounded px-1">shadow-md</code>{' '}
+                    for elevation
                   </li>
                   <li>
-                    <strong>Spacing:</strong> Use consistent gap spacing - <code className="bg-ink-100 rounded px-1">gap-3</code> (0.75rem) between related elements
+                    <strong>Spacing:</strong> Use consistent gap spacing -{' '}
+                    <code className="bg-ink-100 rounded px-1">gap-3</code>{' '}
+                    (0.75rem) between related elements
                   </li>
                 </ul>
               </div>
@@ -606,9 +683,12 @@ function YesNoButtonShowcase() {
             </button>
           </div>
           <Row className="justify-center gap-4">
-            <div className="group relative" style={{ width: simpleWidth, height: simpleHeight }}>
+            <div
+              className="group relative"
+              style={{ width: simpleWidth, height: simpleHeight }}
+            >
               <button
-                className="bg-teal-500 hover:bg-teal-600 h-full w-full rounded-lg font-semibold text-white transition-colors"
+                className="h-full w-full rounded-lg bg-teal-500 font-semibold text-white transition-colors hover:bg-teal-600"
                 style={{ fontSize: `${getSimpleFontSize()}px` }}
               >
                 YES
@@ -685,14 +765,29 @@ function YesNoButtonShowcase() {
             </button>
           </div>
           <Row className="justify-center gap-4">
-            <div className="group relative" style={{ width: arrowWidth, height: arrowHeight }}>
+            <div
+              className="group relative"
+              style={{ width: arrowWidth, height: arrowHeight }}
+            >
               <button
-                className="bg-teal-500 hover:bg-teal-600 flex h-full w-full items-center justify-center gap-1 rounded-md font-semibold text-white transition-colors"
+                className="flex h-full w-full items-center justify-center gap-1 rounded-md bg-teal-500 font-semibold text-white transition-colors hover:bg-teal-600"
                 style={{ fontSize: `${getArrowFontSize()}px` }}
               >
                 <span>Bet YES</span>
-                <svg className="h-4 w-4" fill="currentColor" viewBox="0 0 20 20" style={{ width: `${getArrowFontSize() * 0.8}px`, height: `${getArrowFontSize() * 0.8}px` }}>
-                  <path fillRule="evenodd" d="M5.293 7.707a1 1 0 010-1.414l4-4a1 1 0 011.414 0l4 4a1 1 0 01-1.414 1.414L11 5.414V17a1 1 0 11-2 0V5.414L6.707 7.707a1 1 0 01-1.414 0z" clipRule="evenodd" />
+                <svg
+                  className="h-4 w-4"
+                  fill="currentColor"
+                  viewBox="0 0 20 20"
+                  style={{
+                    width: `${getArrowFontSize() * 0.8}px`,
+                    height: `${getArrowFontSize() * 0.8}px`,
+                  }}
+                >
+                  <path
+                    fillRule="evenodd"
+                    d="M5.293 7.707a1 1 0 010-1.414l4-4a1 1 0 011.414 0l4 4a1 1 0 01-1.414 1.414L11 5.414V17a1 1 0 11-2 0V5.414L6.707 7.707a1 1 0 01-1.414 0z"
+                    clipRule="evenodd"
+                  />
                 </svg>
               </button>
               {/* Right resize handle */}
@@ -744,8 +839,20 @@ function YesNoButtonShowcase() {
                 style={{ fontSize: `${getArrowFontSize()}px` }}
               >
                 <span>Bet NO</span>
-                <svg className="h-4 w-4" fill="currentColor" viewBox="0 0 20 20" style={{ width: `${getArrowFontSize() * 0.8}px`, height: `${getArrowFontSize() * 0.8}px` }}>
-                  <path fillRule="evenodd" d="M14.707 10.293a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 111.414-1.414L9 12.586V5a1 1 0 012 0v7.586l2.293-2.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                <svg
+                  className="h-4 w-4"
+                  fill="currentColor"
+                  viewBox="0 0 20 20"
+                  style={{
+                    width: `${getArrowFontSize() * 0.8}px`,
+                    height: `${getArrowFontSize() * 0.8}px`,
+                  }}
+                >
+                  <path
+                    fillRule="evenodd"
+                    d="M14.707 10.293a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 111.414-1.414L9 12.586V5a1 1 0 012 0v7.586l2.293-2.293a1 1 0 011.414 0z"
+                    clipRule="evenodd"
+                  />
                 </svg>
               </button>
             </div>
@@ -762,7 +869,9 @@ function YesNoButtonShowcase() {
 }
 
 function MockMarket() {
-  const [marketType, setMarketType] = useState<'binary' | 'multiple'>('multiple')
+  const [marketType, setMarketType] = useState<'binary' | 'multiple'>(
+    'multiple'
+  )
   const [question, setQuestion] = useState(
     'Who will win the 2025 MLB World Series MVP?'
   )
@@ -780,9 +889,12 @@ function MockMarket() {
 
   // Chart data points (y values, 0-100 representing probability)
   const [chartPoints, setChartPoints] = useState([
-    70, 72, 66, 76, 62, 60, 56, 35, 41, 45, 49, 39, 43, 37, 41, 31, 27, 19, 47, 51, 59
+    70, 72, 66, 76, 62, 60, 56, 35, 41, 45, 49, 39, 43, 37, 41, 31, 27, 19, 47,
+    51, 59,
   ])
-  const [draggedPointIndex, setDraggedPointIndex] = useState<number | null>(null)
+  const [draggedPointIndex, setDraggedPointIndex] = useState<number | null>(
+    null
+  )
 
   // Multiple choice answers
   const [answers, setAnswers] = useState([
@@ -830,7 +942,10 @@ function MockMarket() {
     const height = rect.height
 
     // Convert Y position to probability (0-100)
-    const newProb = Math.max(0, Math.min(100, 100 - ((y - 20) / (height * 0.8)) * 100))
+    const newProb = Math.max(
+      0,
+      Math.min(100, 100 - ((y - 20) / (height * 0.8)) * 100)
+    )
 
     const newPoints = [...chartPoints]
     newPoints[draggedPointIndex] = Math.round(newProb)
@@ -870,7 +985,7 @@ function MockMarket() {
           className={`rounded-lg px-6 py-2 font-medium transition-colors ${
             marketType === 'binary'
               ? 'bg-primary-500 text-white'
-              : 'bg-canvas-0 text-ink-600 border hover:border-primary-300'
+              : 'bg-canvas-0 text-ink-600 hover:border-primary-300 border'
           }`}
         >
           Binary Market
@@ -885,7 +1000,7 @@ function MockMarket() {
           className={`rounded-lg px-6 py-2 font-medium transition-colors ${
             marketType === 'multiple'
               ? 'bg-primary-500 text-white'
-              : 'bg-canvas-0 text-ink-600 border hover:border-primary-300'
+              : 'bg-canvas-0 text-ink-600 hover:border-primary-300 border'
           }`}
         >
           Multiple Choice
@@ -902,7 +1017,7 @@ function MockMarket() {
             type="text"
             value={question}
             onChange={(e) => setQuestion(e.target.value)}
-            className="border-ink-300 bg-canvas-0 text-ink-1000 focus:border-primary-500 w-full rounded-lg border px-3 py-2 focus:outline-none focus:ring-1 focus:ring-primary-500"
+            className="border-ink-300 bg-canvas-0 text-ink-1000 focus:border-primary-500 focus:ring-primary-500 w-full rounded-lg border px-3 py-2 focus:outline-none focus:ring-1"
           />
         </div>
 
@@ -943,7 +1058,7 @@ function MockMarket() {
                 type="text"
                 value={volume}
                 onChange={(e) => setVolume(e.target.value)}
-                className="border-ink-300 bg-canvas-0 text-ink-1000 focus:border-primary-500 w-full rounded-lg border px-3 py-2 focus:outline-none focus:ring-1 focus:ring-primary-500"
+                className="border-ink-300 bg-canvas-0 text-ink-1000 focus:border-primary-500 focus:ring-primary-500 w-full rounded-lg border px-3 py-2 focus:outline-none focus:ring-1"
               />
             </div>
             <div>
@@ -954,7 +1069,7 @@ function MockMarket() {
                 type="text"
                 value={traders}
                 onChange={(e) => setTraders(e.target.value)}
-                className="border-ink-300 bg-canvas-0 text-ink-1000 focus:border-primary-500 w-full rounded-lg border px-3 py-2 focus:outline-none focus:ring-1 focus:ring-primary-500"
+                className="border-ink-300 bg-canvas-0 text-ink-1000 focus:border-primary-500 focus:ring-primary-500 w-full rounded-lg border px-3 py-2 focus:outline-none focus:ring-1"
               />
             </div>
             <div>
@@ -965,7 +1080,7 @@ function MockMarket() {
                 type="text"
                 value={likes}
                 onChange={(e) => setLikes(e.target.value)}
-                className="border-ink-300 bg-canvas-0 text-ink-1000 focus:border-primary-500 w-full rounded-lg border px-3 py-2 focus:outline-none focus:ring-1 focus:ring-primary-500"
+                className="border-ink-300 bg-canvas-0 text-ink-1000 focus:border-primary-500 focus:ring-primary-500 w-full rounded-lg border px-3 py-2 focus:outline-none focus:ring-1"
               />
             </div>
             <div>
@@ -976,7 +1091,7 @@ function MockMarket() {
                 type="text"
                 value={date}
                 onChange={(e) => setDate(e.target.value)}
-                className="border-ink-300 bg-canvas-0 text-ink-1000 focus:border-primary-500 w-full rounded-lg border px-3 py-2 focus:outline-none focus:ring-1 focus:ring-primary-500"
+                className="border-ink-300 bg-canvas-0 text-ink-1000 focus:border-primary-500 focus:ring-primary-500 w-full rounded-lg border px-3 py-2 focus:outline-none focus:ring-1"
               />
             </div>
             <div>
@@ -987,7 +1102,7 @@ function MockMarket() {
                 type="text"
                 value={changeAmount}
                 onChange={(e) => setChangeAmount(e.target.value)}
-                className="border-ink-300 bg-canvas-0 text-ink-1000 focus:border-primary-500 w-full rounded-lg border px-3 py-2 focus:outline-none focus:ring-1 focus:ring-primary-500"
+                className="border-ink-300 bg-canvas-0 text-ink-1000 focus:border-primary-500 focus:ring-primary-500 w-full rounded-lg border px-3 py-2 focus:outline-none focus:ring-1"
               />
             </div>
             <div>
@@ -996,8 +1111,10 @@ function MockMarket() {
               </label>
               <select
                 value={changeDirection}
-                onChange={(e) => setChangeDirection(e.target.value as 'up' | 'down')}
-                className="border-ink-300 bg-canvas-0 text-ink-1000 focus:border-primary-500 w-full rounded-lg border px-3 py-2 focus:outline-none focus:ring-1 focus:ring-primary-500"
+                onChange={(e) =>
+                  setChangeDirection(e.target.value as 'up' | 'down')
+                }
+                className="border-ink-300 bg-canvas-0 text-ink-1000 focus:border-primary-500 focus:ring-primary-500 w-full rounded-lg border px-3 py-2 focus:outline-none focus:ring-1"
               >
                 <option value="up">Up</option>
                 <option value="down">Down</option>
@@ -1015,7 +1132,7 @@ function MockMarket() {
                 type="text"
                 value={volume}
                 onChange={(e) => setVolume(e.target.value)}
-                className="border-ink-300 bg-canvas-0 text-ink-1000 focus:border-primary-500 w-full rounded-lg border px-3 py-2 focus:outline-none focus:ring-1 focus:ring-primary-500"
+                className="border-ink-300 bg-canvas-0 text-ink-1000 focus:border-primary-500 focus:ring-primary-500 w-full rounded-lg border px-3 py-2 focus:outline-none focus:ring-1"
               />
             </div>
             <div>
@@ -1026,7 +1143,7 @@ function MockMarket() {
                 type="text"
                 value={traders}
                 onChange={(e) => setTraders(e.target.value)}
-                className="border-ink-300 bg-canvas-0 text-ink-1000 focus:border-primary-500 w-full rounded-lg border px-3 py-2 focus:outline-none focus:ring-1 focus:ring-primary-500"
+                className="border-ink-300 bg-canvas-0 text-ink-1000 focus:border-primary-500 focus:ring-primary-500 w-full rounded-lg border px-3 py-2 focus:outline-none focus:ring-1"
               />
             </div>
             <div>
@@ -1063,7 +1180,7 @@ function MockMarket() {
                     newAnswers[index].text = e.target.value
                     setAnswers(newAnswers)
                   }}
-                  className="border-ink-300 bg-canvas-0 text-ink-1000 focus:border-primary-500 flex-1 rounded-lg border px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-primary-500"
+                  className="border-ink-300 bg-canvas-0 text-ink-1000 focus:border-primary-500 focus:ring-primary-500 flex-1 rounded-lg border px-3 py-2 text-sm focus:outline-none focus:ring-1"
                 />
                 <input
                   type="number"
@@ -1073,7 +1190,7 @@ function MockMarket() {
                     newAnswers[index].prob = parseInt(e.target.value) || 0
                     setAnswers(newAnswers)
                   }}
-                  className="border-ink-300 bg-canvas-0 text-ink-1000 focus:border-primary-500 w-20 rounded-lg border px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-primary-500"
+                  className="border-ink-300 bg-canvas-0 text-ink-1000 focus:border-primary-500 focus:ring-primary-500 w-20 rounded-lg border px-3 py-2 text-sm focus:outline-none focus:ring-1"
                 />
                 <span className="text-ink-600 text-sm">%</span>
               </div>
@@ -1091,7 +1208,10 @@ function MockMarket() {
           {/* Header with avatar and question */}
           <div className="flex items-start gap-3 p-6 pb-4">
             <div className="bg-primary-100 flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-full">
-              <LogoIcon className="h-8 w-8 stroke-primary-700" strokeWidth="0.6" />
+              <LogoIcon
+                className="stroke-primary-700 h-8 w-8"
+                strokeWidth="0.6"
+              />
             </div>
             <div className="min-w-0 flex-1">
               <div className="text-ink-600 mb-1 text-sm">Manifold Markets</div>
@@ -1107,18 +1227,40 @@ function MockMarket() {
               <div className="px-4 pb-4">
                 {/* Probability with change indicator */}
                 <div className="mb-3 flex items-baseline gap-2">
-                  <div className="text-5xl font-bold text-ink-900">
+                  <div className="text-ink-900 text-5xl font-bold">
                     {probability}%
                   </div>
                   <div className="text-ink-600 text-base">chance</div>
-                  <div className={`ml-1 flex items-center gap-0.5 text-sm ${changeDirection === 'down' ? 'text-scarlet-500' : 'text-teal-500'}`}>
+                  <div
+                    className={`ml-1 flex items-center gap-0.5 text-sm ${
+                      changeDirection === 'down'
+                        ? 'text-scarlet-500'
+                        : 'text-teal-500'
+                    }`}
+                  >
                     {changeDirection === 'down' ? (
-                      <svg className="h-3 w-3" fill="currentColor" viewBox="0 0 20 20">
-                        <path fillRule="evenodd" d="M14.707 10.293a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 111.414-1.414L9 12.586V5a1 1 0 012 0v7.586l2.293-2.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                      <svg
+                        className="h-3 w-3"
+                        fill="currentColor"
+                        viewBox="0 0 20 20"
+                      >
+                        <path
+                          fillRule="evenodd"
+                          d="M14.707 10.293a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 111.414-1.414L9 12.586V5a1 1 0 012 0v7.586l2.293-2.293a1 1 0 011.414 0z"
+                          clipRule="evenodd"
+                        />
                       </svg>
                     ) : (
-                      <svg className="h-3 w-3" fill="currentColor" viewBox="0 0 20 20">
-                        <path fillRule="evenodd" d="M5.293 7.707a1 1 0 010-1.414l4-4a1 1 0 011.414 0l4 4a1 1 0 01-1.414 1.414L11 5.414V17a1 1 0 11-2 0V5.414L6.707 7.707a1 1 0 01-1.414 0z" clipRule="evenodd" />
+                      <svg
+                        className="h-3 w-3"
+                        fill="currentColor"
+                        viewBox="0 0 20 20"
+                      >
+                        <path
+                          fillRule="evenodd"
+                          d="M5.293 7.707a1 1 0 010-1.414l4-4a1 1 0 011.414 0l4 4a1 1 0 01-1.414 1.414L11 5.414V17a1 1 0 11-2 0V5.414L6.707 7.707a1 1 0 01-1.414 0z"
+                          clipRule="evenodd"
+                        />
                       </svg>
                     )}
                     <span className="font-medium">{changeAmount}</span>
@@ -1128,26 +1270,66 @@ function MockMarket() {
                 {/* Stats row */}
                 <div className="text-ink-600 mb-4 flex items-center gap-4 text-sm">
                   <div className="flex items-center gap-1">
-                    <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
+                    <svg
+                      className="h-4 w-4"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"
+                      />
                     </svg>
                     <span>{likes}</span>
                   </div>
                   <div className="flex items-center gap-1">
-                    <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+                    <svg
+                      className="h-4 w-4"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"
+                      />
                     </svg>
                     <span>{traders}</span>
                   </div>
                   <div className="flex items-center gap-1">
-                    <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
+                    <svg
+                      className="h-4 w-4"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"
+                      />
                     </svg>
                     <span>M{volume}</span>
                   </div>
                   <div className="flex items-center gap-1">
-                    <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    <svg
+                      className="h-4 w-4"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"
+                      />
                     </svg>
                     <span>{date}</span>
                   </div>
@@ -1155,7 +1337,7 @@ function MockMarket() {
 
                 {/* Chart */}
                 <div className="relative mb-3">
-                  <div className="bg-teal-50 relative h-64 overflow-hidden rounded-lg">
+                  <div className="relative h-64 overflow-hidden rounded-lg bg-teal-50">
                     <svg
                       className="h-full w-full cursor-crosshair"
                       viewBox="0 0 800 256"
@@ -1165,9 +1347,23 @@ function MockMarket() {
                       onMouseLeave={handleChartMouseUp}
                     >
                       <defs>
-                        <linearGradient id="chartGradient" x1="0" x2="0" y1="0" y2="1">
-                          <stop offset="0%" stopColor="#14b8a6" stopOpacity="0.2" />
-                          <stop offset="100%" stopColor="#14b8a6" stopOpacity="0.05" />
+                        <linearGradient
+                          id="chartGradient"
+                          x1="0"
+                          x2="0"
+                          y1="0"
+                          y2="1"
+                        >
+                          <stop
+                            offset="0%"
+                            stopColor="#14b8a6"
+                            stopOpacity="0.2"
+                          />
+                          <stop
+                            offset="100%"
+                            stopColor="#14b8a6"
+                            stopOpacity="0.05"
+                          />
                         </linearGradient>
                       </defs>
 
@@ -1202,7 +1398,12 @@ function MockMarket() {
                             strokeWidth="2"
                             className="cursor-grab active:cursor-grabbing"
                             onMouseDown={() => handleChartMouseDown(index)}
-                            style={{ cursor: draggedPointIndex === index ? 'grabbing' : 'grab' }}
+                            style={{
+                              cursor:
+                                draggedPointIndex === index
+                                  ? 'grabbing'
+                                  : 'grab',
+                            }}
                           />
                         )
                       })}
@@ -1210,27 +1411,42 @@ function MockMarket() {
 
                     {/* Manifold watermark */}
                     <div className="pointer-events-none absolute bottom-2 left-3 flex items-center gap-1.5 opacity-40">
-                      <LogoIcon className="h-4 w-4 stroke-ink-600" strokeWidth="0.6" />
+                      <LogoIcon
+                        className="stroke-ink-600 h-4 w-4"
+                        strokeWidth="0.6"
+                      />
                       <span className="text-ink-600 text-xs">MANIFOLD</span>
                     </div>
 
                     {/* Time period buttons */}
                     <div className="absolute right-2 top-2 flex items-center gap-1 rounded-lg bg-white/80 px-2 py-1 text-xs font-medium backdrop-blur-sm">
-                      <button className="text-ink-500 hover:text-ink-800 px-1.5 py-0.5">1H</button>
-                      <button className="text-ink-500 hover:text-ink-800 px-1.5 py-0.5">6H</button>
-                      <button className="text-ink-500 hover:text-ink-800 px-1.5 py-0.5">1D</button>
-                      <button className="text-ink-500 hover:text-ink-800 px-1.5 py-0.5">1W</button>
-                      <button className="text-ink-500 hover:text-ink-800 px-1.5 py-0.5">1M</button>
-                      <button className="bg-teal-500 rounded px-1.5 py-0.5 text-white">ALL</button>
+                      <button className="text-ink-500 hover:text-ink-800 px-1.5 py-0.5">
+                        1H
+                      </button>
+                      <button className="text-ink-500 hover:text-ink-800 px-1.5 py-0.5">
+                        6H
+                      </button>
+                      <button className="text-ink-500 hover:text-ink-800 px-1.5 py-0.5">
+                        1D
+                      </button>
+                      <button className="text-ink-500 hover:text-ink-800 px-1.5 py-0.5">
+                        1W
+                      </button>
+                      <button className="text-ink-500 hover:text-ink-800 px-1.5 py-0.5">
+                        1M
+                      </button>
+                      <button className="rounded bg-teal-500 px-1.5 py-0.5 text-white">
+                        ALL
+                      </button>
                     </div>
 
                     {/* 100% label */}
-                    <div className="pointer-events-none absolute right-2 top-10 text-xs font-medium text-ink-600">
+                    <div className="text-ink-600 pointer-events-none absolute right-2 top-10 text-xs font-medium">
                       100%
                     </div>
 
                     {/* 0% label */}
-                    <div className="pointer-events-none absolute bottom-2 right-2 text-xs font-medium text-ink-600">
+                    <div className="text-ink-600 pointer-events-none absolute bottom-2 right-2 text-xs font-medium">
                       0%
                     </div>
                   </div>
@@ -1247,16 +1463,32 @@ function MockMarket() {
 
               {/* Bet Buttons */}
               <div className="flex gap-3 px-4 pb-4">
-                <button className="bg-teal-500 hover:bg-teal-600 flex flex-1 items-center justify-center gap-1 rounded-md px-6 py-2.5 text-base font-semibold text-white transition-colors">
+                <button className="flex flex-1 items-center justify-center gap-1 rounded-md bg-teal-500 px-6 py-2.5 text-base font-semibold text-white transition-colors hover:bg-teal-600">
                   <span>Bet YES</span>
-                  <svg className="h-4 w-4" fill="currentColor" viewBox="0 0 20 20">
-                    <path fillRule="evenodd" d="M5.293 7.707a1 1 0 010-1.414l4-4a1 1 0 011.414 0l4 4a1 1 0 01-1.414 1.414L11 5.414V17a1 1 0 11-2 0V5.414L6.707 7.707a1 1 0 01-1.414 0z" clipRule="evenodd" />
+                  <svg
+                    className="h-4 w-4"
+                    fill="currentColor"
+                    viewBox="0 0 20 20"
+                  >
+                    <path
+                      fillRule="evenodd"
+                      d="M5.293 7.707a1 1 0 010-1.414l4-4a1 1 0 011.414 0l4 4a1 1 0 01-1.414 1.414L11 5.414V17a1 1 0 11-2 0V5.414L6.707 7.707a1 1 0 01-1.414 0z"
+                      clipRule="evenodd"
+                    />
                   </svg>
                 </button>
                 <button className="bg-scarlet-500 hover:bg-scarlet-600 flex flex-1 items-center justify-center gap-1 rounded-md px-6 py-2.5 text-base font-semibold text-white transition-colors">
                   <span>Bet NO</span>
-                  <svg className="h-4 w-4" fill="currentColor" viewBox="0 0 20 20">
-                    <path fillRule="evenodd" d="M14.707 10.293a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 111.414-1.414L9 12.586V5a1 1 0 012 0v7.586l2.293-2.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                  <svg
+                    className="h-4 w-4"
+                    fill="currentColor"
+                    viewBox="0 0 20 20"
+                  >
+                    <path
+                      fillRule="evenodd"
+                      d="M14.707 10.293a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 111.414-1.414L9 12.586V5a1 1 0 012 0v7.586l2.293-2.293a1 1 0 011.414 0z"
+                      clipRule="evenodd"
+                    />
                   </svg>
                 </button>
               </div>
@@ -1268,14 +1500,14 @@ function MockMarket() {
                 {answers.map((answer, index) => (
                   <div
                     key={index}
-                    className="relative flex items-center overflow-hidden rounded-lg border border-ink-200 bg-canvas-0 transition-all hover:border-primary-300 hover:shadow-sm"
+                    className="border-ink-200 bg-canvas-0 hover:border-primary-300 relative flex items-center overflow-hidden rounded-lg border transition-all hover:shadow-sm"
                   >
                     {/* Color fill bar behind everything */}
                     <div
                       className="absolute inset-y-0 left-0 transition-all"
                       style={{
                         width: `${answer.prob}%`,
-                        backgroundColor: getAnswerColor(index)
+                        backgroundColor: getAnswerColor(index),
                       }}
                     />
 
@@ -1297,7 +1529,7 @@ function MockMarket() {
 
                       {/* Bet buttons on the right */}
                       <div className="flex items-center gap-2 px-3 py-3">
-                        <button className="text-teal-500 hover:bg-teal-500 hover:text-ink-0 rounded-md border border-current px-3 py-1.5 text-xs font-semibold transition-colors">
+                        <button className="hover:text-ink-0 rounded-md border border-current px-3 py-1.5 text-xs font-semibold text-teal-500 transition-colors hover:bg-teal-500">
                           Yes
                         </button>
                         <button className="text-scarlet-500 hover:bg-scarlet-500 hover:text-ink-0 rounded-md border border-current px-3 py-1.5 text-xs font-semibold transition-colors">
@@ -1350,7 +1582,8 @@ function MockMarket() {
       </div>
 
       <p className="text-ink-500 text-center text-sm">
-        Switch between market types and adjust the controls, then screenshot the preview
+        Switch between market types and adjust the controls, then screenshot the
+        preview
       </p>
     </div>
   )
@@ -1380,7 +1613,7 @@ function MiniMockMarket() {
             type="text"
             value={question}
             onChange={(e) => setQuestion(e.target.value)}
-            className="border-ink-300 bg-canvas-0 text-ink-1000 focus:border-primary-500 w-full rounded-lg border px-3 py-2 focus:outline-none focus:ring-1 focus:ring-primary-500"
+            className="border-ink-300 bg-canvas-0 text-ink-1000 focus:border-primary-500 focus:ring-primary-500 w-full rounded-lg border px-3 py-2 focus:outline-none focus:ring-1"
           />
         </div>
         <div>
@@ -1391,7 +1624,7 @@ function MiniMockMarket() {
             type="text"
             value={creatorName}
             onChange={(e) => setCreatorName(e.target.value)}
-            className="border-ink-300 bg-canvas-0 text-ink-1000 focus:border-primary-500 w-full rounded-lg border px-3 py-2 focus:outline-none focus:ring-1 focus:ring-primary-500"
+            className="border-ink-300 bg-canvas-0 text-ink-1000 focus:border-primary-500 focus:ring-primary-500 w-full rounded-lg border px-3 py-2 focus:outline-none focus:ring-1"
           />
         </div>
         <div>
@@ -1428,7 +1661,7 @@ function MiniMockMarket() {
             type="text"
             value={volume}
             onChange={(e) => setVolume(e.target.value)}
-            className="border-ink-300 bg-canvas-0 text-ink-1000 focus:border-primary-500 w-full rounded-lg border px-3 py-2 focus:outline-none focus:ring-1 focus:ring-primary-500"
+            className="border-ink-300 bg-canvas-0 text-ink-1000 focus:border-primary-500 focus:ring-primary-500 w-full rounded-lg border px-3 py-2 focus:outline-none focus:ring-1"
           />
         </div>
         <div>
@@ -1439,7 +1672,7 @@ function MiniMockMarket() {
             type="text"
             value={traders}
             onChange={(e) => setTraders(e.target.value)}
-            className="border-ink-300 bg-canvas-0 text-ink-1000 focus:border-primary-500 w-full rounded-lg border px-3 py-2 focus:outline-none focus:ring-1 focus:ring-primary-500"
+            className="border-ink-300 bg-canvas-0 text-ink-1000 focus:border-primary-500 focus:ring-primary-500 w-full rounded-lg border px-3 py-2 focus:outline-none focus:ring-1"
           />
         </div>
       </div>
@@ -1453,7 +1686,10 @@ function MiniMockMarket() {
           {/* Market Header */}
           <div className="flex items-start gap-3 p-4">
             <div className="bg-primary-100 flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full">
-              <LogoIcon className="h-6 w-6 stroke-primary-700" strokeWidth="0.6" />
+              <LogoIcon
+                className="stroke-primary-700 h-6 w-6"
+                strokeWidth="0.6"
+              />
             </div>
             <div className="min-w-0 flex-1">
               <div className="text-ink-700 mb-1 text-sm font-medium">
@@ -1469,7 +1705,7 @@ function MiniMockMarket() {
           <div className="px-4 pb-3">
             <div className="relative h-16 overflow-hidden rounded-lg">
               <div
-                className="bg-teal-500 absolute inset-y-0 left-0 flex items-center justify-start px-4 transition-all"
+                className="absolute inset-y-0 left-0 flex items-center justify-start bg-teal-500 px-4 transition-all"
                 style={{ width: `${probability}%` }}
               >
                 <span className="text-lg font-bold text-white">
@@ -1524,7 +1760,7 @@ function MiniMockMarket() {
               </div>
             </div>
             <Row className="gap-2">
-              <button className="bg-teal-500 hover:bg-teal-600 rounded px-4 py-1.5 text-sm font-semibold text-white transition-colors">
+              <button className="rounded bg-teal-500 px-4 py-1.5 text-sm font-semibold text-white transition-colors hover:bg-teal-600">
                 YES
               </button>
               <button className="bg-scarlet-500 hover:bg-scarlet-600 rounded px-4 py-1.5 text-sm font-semibold text-white transition-colors">
@@ -1569,7 +1805,8 @@ function AssetCard(props: {
 
   // Make white logos bigger on dark backgrounds, and determine padding
   const isWhiteLogo = props.title.includes('White')
-  const isCurrencyIcon = props.title.includes('Mana') || props.title.includes('Manachan')
+  const isCurrencyIcon =
+    props.title.includes('Mana') || props.title.includes('Manachan')
   const imageScale = isWhiteLogo ? 'w-full h-full' : 'max-h-full max-w-full'
 
   // Determine padding: no padding if noPadding prop is true, or if it's a currency icon
@@ -1577,7 +1814,9 @@ function AssetCard(props: {
 
   return (
     <div className="bg-canvas-0 group relative flex flex-col overflow-hidden rounded-lg border transition-shadow hover:shadow-md">
-      <div className={`flex aspect-square items-center justify-center ${padding} ${props.bgColor}`}>
+      <div
+        className={`flex aspect-square items-center justify-center ${padding} ${props.bgColor}`}
+      >
         <img
           src={props.src}
           alt={props.title}
@@ -1669,10 +1908,12 @@ function BadgeExample(props: { badge: BadgeInfo; onClick: () => void }) {
   return (
     <button
       onClick={onClick}
-      className="border-ink-200 hover:border-primary-500 hover:shadow-md cursor-pointer rounded-lg border p-4 text-left transition-all"
+      className="border-ink-200 hover:border-primary-500 cursor-pointer rounded-lg border p-4 text-left transition-all hover:shadow-md"
     >
       <div className="mb-2 flex items-center gap-2">
-        <div className="flex h-8 w-8 items-center justify-center">{badge.icon}</div>
+        <div className="flex h-8 w-8 items-center justify-center">
+          {badge.icon}
+        </div>
         <h4 className="text-ink-800 font-semibold">{badge.title}</h4>
       </div>
       <p className="text-ink-600 mb-2 text-sm">{badge.description}</p>
