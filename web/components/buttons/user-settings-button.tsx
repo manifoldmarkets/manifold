@@ -1,33 +1,33 @@
-import { usePrivateUser } from 'web/hooks/use-user'
-import { Button } from 'web/components/buttons/button'
-import { Modal } from 'web/components/layout/modal'
-import { useEffect, useState } from 'react'
-import { Col } from 'web/components/layout/col'
-import { User } from 'common/user'
+import { CogIcon, DotsHorizontalIcon } from '@heroicons/react/outline'
 import clsx from 'clsx'
-import { DotsHorizontalIcon } from '@heroicons/react/outline'
-import { CogIcon } from '@heroicons/react/outline'
-import { useAdmin, useTrusted } from 'web/hooks/use-admin'
-import { QueryUncontrolledTabs } from 'web/components/layout/tabs'
-import { BlockUser } from 'web/components/profile/block-user'
-import { ReportUser } from 'web/components/profile/report-user'
-import { Title } from 'web/components/widgets/title'
-import { Row } from '../layout/row'
 import {
   supabasePrivateUserConsolePath,
   supabaseUserConsolePath,
 } from 'common/envs/constants'
+import { User } from 'common/user'
+import { buildArray } from 'common/util/array'
+import { useRouter } from 'next/router'
+import { useEffect, useState } from 'react'
+import { Button } from 'web/components/buttons/button'
 import { SimpleCopyTextButton } from 'web/components/buttons/copy-link-button'
 import {
   Referrals,
   useReferralCount,
 } from 'web/components/buttons/referrals-button'
+import { Col } from 'web/components/layout/col'
+import { Modal } from 'web/components/layout/modal'
+import { QueryUncontrolledTabs } from 'web/components/layout/tabs'
+import { BlockUser } from 'web/components/profile/block-user'
+import { ReportUser } from 'web/components/profile/report-user'
+import { Title } from 'web/components/widgets/title'
+import { useAdmin, useTrusted } from 'web/hooks/use-admin'
+import { usePrivateUser } from 'web/hooks/use-user'
 import { banUser } from 'web/lib/api/api'
-import SuperBanControl from '../SuperBanControl'
-import { buildArray } from 'common/util/array'
-import { AccountSettings } from '../profile/settings'
+import { Row } from '../layout/row'
+import { AdminPrivateUserData } from '../profile/admin-private-user-data'
 import { EditProfile } from '../profile/edit-profile'
-import { useRouter } from 'next/router'
+import { AccountSettings } from '../profile/settings'
+import SuperBanControl from '../SuperBanControl'
 
 export function UserSettingButton(props: { user: User }) {
   const { user } = props
@@ -184,6 +184,10 @@ export function UserSettingButton(props: { user: User }) {
                         ),
                       },
                     ],
+                isAdmin && {
+                  title: 'Admin',
+                  content: <AdminPrivateUserData userId={userId} />,
+                },
                 {
                   title: `${numReferrals} Referrals`,
                   content: <Referrals user={user} />,

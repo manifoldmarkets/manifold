@@ -105,6 +105,7 @@ import { getTxns } from './get-txns'
 import { getLiteUser, getUser } from './get-user'
 import { getUserPortfolio } from './get-user-portfolio'
 import { getUserPortfolioHistory } from './get-user-portfolio-history'
+import { getUserPrivateData } from './get-user-private-data'
 import { getUsers } from './get-users'
 import { getUserBalancesByIds, getUsersByIds } from './get-users-by-ids'
 import { completeCashoutRequest } from './gidx/complete-cashout-request'
@@ -258,6 +259,7 @@ export const handlers: { [k in APIPath]: APIHandler<k> } = {
   'me/delete': deleteMe,
   'me/private': getCurrentPrivateUser,
   'me/private/update': updatePrivateUser,
+  'get-user-private-data': getUserPrivateData,
   'user/by-id/:id': getUser,
   'user/by-id/:id/lite': getLiteUser,
   'user/:username': getUser,
