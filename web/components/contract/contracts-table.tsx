@@ -565,7 +565,11 @@ export function VisibilityIcon(props: {
   )
 
   if (contract.visibility === 'unlisted')
-    return <EyeOffIcon className={iconClassName} />
+    return (
+      <Tooltip text="Not publicly discoverable & not eligible for leagues">
+        <EyeOffIcon className={iconClassName} />
+      </Tooltip>
+    )
 
   return <></>
 }
