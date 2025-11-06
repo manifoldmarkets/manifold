@@ -13,3 +13,4 @@ export class ValidationError {
     this.details = details
   }
 }
+

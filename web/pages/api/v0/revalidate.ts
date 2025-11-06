@@ -1,7 +1,7 @@
 import type { NextApiRequest, NextApiResponse } from 'next'
+import { validate } from 'web/lib/api/validator'
+import { ValidationError } from 'web/lib/api/validator-types'
 import { z } from 'zod'
-import { ValidationError } from './_types'
-import { validate } from './_validate'
 
 const queryParams = z
   .object({
