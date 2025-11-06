@@ -4,9 +4,7 @@ const API_DOCS_URL = 'https://docs.manifold.markets/api'
 module.exports = {
   productionBrowserSourceMaps: true,
   reactStrictMode: true,
-  eslint: {
-    ignoreDuringBuilds: true, // we lint in CI
-  },
+  // eslint config moved - run `next lint` separately in CI
   modularizeImports: {
     '@heroicons/react/solid/?(((\\w*)?/?)*)': {
       transform: '@heroicons/react/solid/{{ matches.[1] }}/{{member}}',
@@ -22,11 +20,6 @@ module.exports = {
   transpilePackages: ['common'],
   experimental: {
     scrollRestoration: true,
-    turbo: {
-      rules: {
-        '*.svg': { loaders: ['@svgr/webpack'], as: '*.js' },
-      },
-    },
   },
   images: {
     dangerouslyAllowSVG: true,
@@ -43,20 +36,21 @@ module.exports = {
     ],
   },
   webpack: (config) => {
+    // Find and remove the default SVG rule
+    const fileLoaderRule = config.module.rules.find(
+      (rule) => rule.test instanceof RegExp && rule.test.test('.svg')
+    )
+
+    if (fileLoaderRule) {
+      fileLoaderRule.exclude = /\.svg$/
+    }
+
+    // Add SVGR loader for SVG files
     config.module.rules.push({
       test: /\.svg$/,
-      use: [
-        {
-          loader: '@svgr/webpack',
-          options: {
-            svgoConfig: {
-              plugins: [{ name: 'removeViewBox', active: false }],
-              floatPrecision: 2,
-            },
-          },
-        },
-      ],
+      use: ['@svgr/webpack'],
     })
+
     return config
   },
   async redirects() {
@@ -175,28 +169,28 @@ module.exports = {
         permanent: true,
       },
       {
-        source: '/home:slug*',
+        source: '/home/:newsSlug*',
         has: [
           {
             type: 'query',
             key: 'tab',
-            value: '(?<slug>.*)',
+            value: '(?<tab>.*)',
           },
         ],
         permanent: false,
-        destination: '/news/:slug',
+        destination: '/news/:tab',
       },
       {
-        source: '/news:slug*',
+        source: '/news/:newsSlug*',
         has: [
           {
             type: 'query',
             key: 'tab',
-            value: '(?<slug>.*)',
+            value: '(?<tab>.*)',
           },
         ],
         permanent: false,
-        destination: '/news/:slug',
+        destination: '/news/:tab',
       },
       {
         source: '/:username/portfolio',
@@ -210,11 +204,11 @@ module.exports = {
             type: 'query',
             key: 'topic',
             // Using a named capture group to capture the value of 'topic'
-            value: '(?<slug>.*)',
+            value: '(?<topic>.*)',
           },
         ],
         permanent: true,
-        destination: '/browse/:slug', // Using the captured value here
+        destination: '/browse/:topic', // Using the captured value here
       },
       // NOTE: add any external redirects at common/envs/constants.ts and update native apps.
     ]

@@ -70,10 +70,10 @@ import { useDisplayUserById } from 'web/hooks/use-user-supabase'
 import { api } from 'web/lib/api/api'
 import { track } from 'web/lib/service/analytics'
 import { scrollIntoViewCentered } from 'web/lib/util/scroll'
-import { YourTrades } from 'web/pages/[username]/[contractSlug]'
 import { SpiceCoin } from 'web/public/custom-components/spiceCoin'
 import { FollowMarketButton } from '../buttons/follow-market-button'
 import { CreatorSharePanel, NonCreatorSharePanel } from './creator-share-panel'
+import { YourTrades } from './your-trades'
 
 export function ContractPageContent(props: ContractParams) {
   const {
