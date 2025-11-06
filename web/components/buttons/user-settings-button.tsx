@@ -6,6 +6,7 @@ import {
 } from 'common/envs/constants'
 import { User } from 'common/user'
 import { buildArray } from 'common/util/array'
+import { DAY_MS } from 'common/util/time'
 import { useRouter } from 'next/router'
 import { useEffect, useState } from 'react'
 import { Button } from 'web/components/buttons/button'
@@ -28,6 +29,7 @@ import { AdminPrivateUserData } from '../profile/admin-private-user-data'
 import { EditProfile } from '../profile/edit-profile'
 import { AccountSettings } from '../profile/settings'
 import SuperBanControl from '../SuperBanControl'
+import { Input } from '../widgets/input'
 
 export function UserSettingButton(props: { user: User }) {
   const { user } = props
@@ -35,6 +37,8 @@ export function UserSettingButton(props: { user: User }) {
   const currentPrivateUser = usePrivateUser()
   const [isModalOpen, setIsModalOpen] = useState(false)
   const [tabIndex, setTabIndex] = useState(0)
+  const [showBanModal, setShowBanModal] = useState(false)
+  const [banDays, setBanDays] = useState<number | undefined>(undefined)
   const isAdmin = useAdmin()
   const isTrusted = useTrusted()
   const numReferrals = useReferralCount(user)
@@ -95,18 +99,42 @@ export function UserSettingButton(props: { user: User }) {
               {(isAdmin || isTrusted) && (
                 <Row className="gap-2">
                   <SuperBanControl userId={userId} />
-                  <Button
-                    color={'red'}
-                    size="xs"
-                    onClick={() => {
-                      banUser({
-                        userId,
-                        unban: user.isBannedFromPosting ?? false,
-                      })
-                    }}
-                  >
-                    {user.isBannedFromPosting ? 'Banned' : 'Ban User'}
-                  </Button>
+                  {user.isBannedFromPosting ? (
+                    <Button
+                      color={'red'}
+                      size="xs"
+                      onClick={() => {
+                        banUser({
+                          userId,
+                          unban: true,
+                        })
+                      }}
+                    >
+                      Unban User
+                    </Button>
+                  ) : (
+                    <>
+                      <Button
+                        color={'red'}
+                        size="xs"
+                        onClick={() => {
+                          banUser({
+                            userId,
+                            unban: false,
+                          })
+                        }}
+                      >
+                        Ban User
+                      </Button>
+                      <Button
+                        color={'gray-white'}
+                        size="xs"
+                        onClick={() => setShowBanModal(true)}
+                      >
+                        Temp Ban
+                      </Button>
+                    </>
+                  )}
                 </Row>
               )}
             </div>
@@ -197,6 +225,52 @@ export function UserSettingButton(props: { user: User }) {
             />
           </Col>
         </div>
+      </Modal>
+
+      <Modal open={showBanModal} setOpen={setShowBanModal}>
+        <Col className="bg-canvas-0 gap-4 rounded-md p-6">
+          <Title>Temporarily Ban User</Title>
+          <Col className="gap-2">
+            <span className="text-ink-700">Ban {name} for how many days?</span>
+            <Row className="w-fit items-center gap-2">
+              <Input
+                type="number"
+                min="1"
+                value={banDays}
+                onChange={(e) =>
+                  setBanDays(
+                    e.target.value ? parseInt(e.target.value) : undefined
+                  )
+                }
+                className="border-ink-300 w-24 rounded border px-3 py-2"
+                autoFocus
+              />
+              <span className="text-ink-600">days</span>
+            </Row>
+          </Col>
+          <Row className="gap-2">
+            <Button
+              disabled={!banDays}
+              color="red"
+              onClick={() => {
+                const unbanTime = banDays
+                  ? Date.now() + banDays * DAY_MS
+                  : undefined
+                banUser({
+                  userId,
+                  unban: false,
+                  unbanTime,
+                })
+                setShowBanModal(false)
+              }}
+            >
+              Confirm Ban
+            </Button>
+            <Button color="gray-white" onClick={() => setShowBanModal(false)}>
+              Cancel
+            </Button>
+          </Row>
+        </Col>
       </Modal>
     </>
   )

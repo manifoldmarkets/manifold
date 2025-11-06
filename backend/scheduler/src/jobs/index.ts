@@ -26,20 +26,6 @@ import { drizzleLiquidity } from './drizzle-liquidity'
 import { createJob } from './helpers'
 import { incrementStreakForgiveness } from './increment-streak-forgiveness'
 import { pollPollResolutions } from './poll-poll-resolutions'
-import { resetBettingStreaksInternal } from './reset-betting-streaks'
-import { resetPgStats } from './reset-pg-stats'
-import {
-  resetDailyQuestStatsInternal,
-  resetWeeklyQuestStatsInternal,
-} from './reset-quests-stats'
-import { resetWeeklyEmailsFlags } from './reset-weekly-emails-flags'
-import { scoreContracts } from './score-contracts'
-import { sendMarketCloseEmails } from './send-market-close-emails'
-import { sendStreakExpirationNotification } from './streak-expiration-notice'
-import { updateLeague } from './update-league'
-import { updateLeagueRanks } from './update-league-ranks'
-import { updateStatsCore } from './update-stats'
-import { updateAchTrades } from './update-ach-trades'
 import {
   refreshAchAccountAge,
   refreshAchComments,
@@ -51,6 +37,20 @@ import {
   refreshAchTxns,
   refreshAchVolume,
 } from './refresh-achievement-mvs'
+import { resetBettingStreaksInternal } from './reset-betting-streaks'
+import { resetPgStats } from './reset-pg-stats'
+import {
+  resetDailyQuestStatsInternal,
+  resetWeeklyQuestStatsInternal,
+} from './reset-quests-stats'
+import { resetWeeklyEmailsFlags } from './reset-weekly-emails-flags'
+import { scoreContracts } from './score-contracts'
+import { sendMarketCloseEmails } from './send-market-close-emails'
+import { sendStreakExpirationNotification } from './streak-expiration-notice'
+import { unbanUsers } from './unban-users'
+import { updateLeague } from './update-league'
+import { updateLeagueRanks } from './update-league-ranks'
+import { updateStatsCore } from './update-stats'
 
 export function createJobs() {
   return [
@@ -124,6 +124,11 @@ export function createJobs() {
       'expire-limit-orders',
       '0 */1 * * * *', // every minute
       expireLimitOrders
+    ),
+    createJob(
+      'unban-users',
+      '0 0 * * * *', // every hour
+      unbanUsers
     ),
     createJob(
       'score-contracts',

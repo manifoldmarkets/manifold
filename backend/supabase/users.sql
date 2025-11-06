@@ -17,7 +17,8 @@ create table if not exists
     spice_balance numeric default 0 not null,
     total_cash_deposits numeric default 0 not null,
     total_deposits numeric default 0 not null,
-    username text not null
+    username text not null,
+    unban_time timestamp with time zone
   );
 
 -- Row Level Security
@@ -58,3 +59,9 @@ create index users_name_idx on public.users using btree (name);
 drop index if exists users_pkey;
 
 create unique index users_pkey on public.users using btree (id);
+
+drop index if exists users_unban_time_idx;
+
+create index users_unban_time_idx on public.users using btree (unban_time)
+where
+  (unban_time is not null);

@@ -1,14 +1,14 @@
-import { auth } from '../firebase/users'
-import { getApiUrl } from 'common/api/utils'
 import { JSONContent } from '@tiptap/core'
-import { Group } from 'common/group'
-import { ContractComment } from 'common/comment'
-import { ReportProps } from 'common/report'
-import { BaseDashboard, DashboardItem } from 'common/dashboard'
-import { Bet } from 'common/bet'
-import { APIParams, APIPath } from 'common/api/schema'
-import { Contract } from 'common/contract'
 import { apiWithAuth, callWithAuth } from 'client-common/lib/api'
+import { APIParams, APIPath } from 'common/api/schema'
+import { getApiUrl } from 'common/api/utils'
+import { Bet } from 'common/bet'
+import { ContractComment } from 'common/comment'
+import { Contract } from 'common/contract'
+import { BaseDashboard, DashboardItem } from 'common/dashboard'
+import { Group } from 'common/group'
+import { ReportProps } from 'common/report'
+import { auth } from '../firebase/users'
 export { APIError } from 'common/api/utils'
 
 export async function call(
@@ -212,7 +212,11 @@ export const updateMarket = curriedAPI('market/:contractId/update')
 
 export const updateUser = curriedAPI('me/update')
 
-export function banUser(params: { userId: string; unban?: boolean }) {
+export function banUser(params: {
+  userId: string
+  unban?: boolean
+  unbanTime?: number
+}) {
   return call(getApiUrl('ban-user'), 'POST', params)
 }
 export function createPrivateMessageChannelWithUsers(params: {
