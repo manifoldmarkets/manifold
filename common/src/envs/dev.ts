@@ -40,5 +40,6 @@ export const DEV_CONFIG: EnvConfig = {
     '6hHpzvRG0pMq8PNJs7RZj2qlZGn2', // Ian
     'MxyCh2xvsFMFywwjg3Az0w4xP5B3', // Dev Manifold
     '2cO953kN1sTBpfbhPVnTjRNqLJh2', // Sinclair
+    'TabB6gJMYEUfaNWNS8i84PvMi2r2', // Genzy (Tod)
   ],
 }
