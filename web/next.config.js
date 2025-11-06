@@ -35,6 +35,14 @@ module.exports = {
       { hostname: '*.giphy.com' },
     ],
   },
+  turbopack: {
+    rules: {
+      '*.svg': {
+        loaders: ['@svgr/webpack'],
+        as: '*.js',
+      },
+    },
+  },
   webpack: (config) => {
     // Find and remove the default SVG rule
     const fileLoaderRule = config.module.rules.find(
