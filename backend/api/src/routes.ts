@@ -183,9 +183,17 @@ import { purchaseContractBoost } from './purchase-boost'
 import { referUser } from './refer-user'
 import { updatePost } from './update-post'
 import { validateiap } from './validate-iap'
+import { adminRecoverUser } from './admin-recover-user'
+import { adminGetUserInfo } from './admin-get-user-info'
+import { adminDeleteUser } from './admin-delete-user'
+import { anonymizeUser } from './anonymize-user'
 
 export const handlers: { [k in APIPath]: APIHandler<k> } = {
   'refresh-all-clients': refreshAllClients,
+  'recover-user': adminRecoverUser,
+  'get-user-info': adminGetUserInfo,
+  'admin-delete-user': adminDeleteUser,
+  'anonymize-user': anonymizeUser,
   bet: placeBet,
   'multi-bet': placeMultiBet,
   'follow-contract': followContract,

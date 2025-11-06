@@ -94,6 +94,15 @@ export function UserSettingButton(props: { user: User }) {
               <Title className={'!mb-0'}>{name}</Title>
               {(isAdmin || isTrusted) && (
                 <Row className="gap-2">
+                  {isAdmin && (
+                    <Button
+                      color="green"
+                      size="xs"
+                      onClick={() => router.push(`/admin/user-info?userId=${userId}`)}
+                    >
+                      Manage Account
+                    </Button>
+                  )}
                   <SuperBanControl userId={userId} />
                   <Button
                     color={'red'}
