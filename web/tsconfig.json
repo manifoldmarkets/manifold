@@ -1,11 +1,7 @@
 {
   "compilerOptions": {
     "target": "es6",
-    "lib": [
-      "dom",
-      "dom.iterable",
-      "esnext"
-    ],
+    "lib": ["dom", "dom.iterable", "esnext"],
     "allowJs": true,
     "skipLibCheck": true,
     "strict": true,
@@ -19,15 +15,9 @@
     "jsx": "react-jsx",
     "incremental": true,
     "paths": {
-      "common/*": [
-        "../common/src/*"
-      ],
-      "web/*": [
-        "./*"
-      ],
-      "client-common/*": [
-        "../client-common/src/*"
-      ]
+      "common/*": ["../common/src/*"],
+      "web/*": ["./*"],
+      "client-common/*": ["../client-common/src/*"]
     },
     "plugins": [
       {
@@ -36,9 +26,7 @@
     ]
   },
   "watchOptions": {
-    "excludeDirectories": [
-      ".next"
-    ]
+    "excludeDirectories": [".next"]
   },
   "include": [
     "next-env.d.ts",
@@ -48,7 +36,5 @@
     "../client-common/src/**/*.ts",
     ".next/types/**/*.ts"
   ],
-  "exclude": [
-    "node_modules"
-  ]
+  "exclude": ["node_modules"]
 }
