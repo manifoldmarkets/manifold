@@ -1,7 +1,7 @@
-import { NextResponse, type NextRequest } from 'next/server'
 import { PROD_CONFIG } from 'common/envs/prod'
+import { NextResponse, type NextRequest } from 'next/server'
 
-export async function middleware(req: NextRequest) {
+export async function proxy(req: NextRequest) {
   const url = req.nextUrl
 
   // Handle play parameter removal for all requests

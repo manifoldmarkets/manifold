@@ -76,6 +76,7 @@ export const PROD_CONFIG: EnvConfig = {
     'AJwLWoo3xue32XIiAVrL5SyR1WB2', // Ian
     'KHX2ThSFtLQlau58hrjtCX7OL2h2', // stefanie
     'cA1JupYR5AR8btHUs2xvkui7jA93', // Genzy
+    '799tbR05zWe23KnLg5esZaHmuxi2', // Manifold Mod
     'vuI5upWB8yU00rP7yxj95J2zd952', // Manifold Politics
     '8lZo8X5lewh4hnCoreI7iSc0GxK2', // Manifold AI
     'mwaVAaKkabODsH8g5VrtbshsXz03', // Ian's alt

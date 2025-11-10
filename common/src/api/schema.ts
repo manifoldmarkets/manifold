@@ -1114,6 +1114,15 @@ export const API = (_apiTypeCheck = {
       })
       .strict(),
   },
+  'get-user-private-data': {
+    method: 'GET',
+    visibility: 'public',
+    authed: true,
+    props: z.object({
+      userId: z.string(),
+    }),
+    returns: {} as PrivateUser,
+  },
   'user/:username': {
     method: 'GET',
     visibility: 'public',

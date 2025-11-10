@@ -289,3 +289,18 @@ text {
   transform: scale(1);
   transition: transform 0.1s ease-out;
 }
+
+/* Fix for iOS 26 Safari fixed position bug */
+/* Prevents viewport displacement when address bar shrinks */
+/* See: https://stackoverflow.com/questions/79753701 */
+@media (max-width: 1024px) {
+  html {
+    height: 100dvh;
+    overflow: hidden;
+  }
+  body {
+    height: 100dvh;
+    overscroll-behavior: contain;
+    overflow: scroll;
+  }
+}

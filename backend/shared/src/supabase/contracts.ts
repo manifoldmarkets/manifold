@@ -176,7 +176,7 @@ Respond with a JSON object containing:
     const result = await promptAI<{ isSelfReferential?: boolean }>(
       contract.question,
       {
-        model: aiModels.flash,
+        model: aiModels.haiku,
         system: systemPrompt,
         parseAsJson: true,
       }

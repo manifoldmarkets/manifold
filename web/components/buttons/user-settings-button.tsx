@@ -1,33 +1,35 @@
-import { usePrivateUser } from 'web/hooks/use-user'
-import { Button } from 'web/components/buttons/button'
-import { Modal } from 'web/components/layout/modal'
-import { useEffect, useState } from 'react'
-import { Col } from 'web/components/layout/col'
-import { User } from 'common/user'
+import { CogIcon, DotsHorizontalIcon } from '@heroicons/react/outline'
 import clsx from 'clsx'
-import { DotsHorizontalIcon } from '@heroicons/react/outline'
-import { CogIcon } from '@heroicons/react/outline'
-import { useAdmin, useTrusted } from 'web/hooks/use-admin'
-import { QueryUncontrolledTabs } from 'web/components/layout/tabs'
-import { BlockUser } from 'web/components/profile/block-user'
-import { ReportUser } from 'web/components/profile/report-user'
-import { Title } from 'web/components/widgets/title'
-import { Row } from '../layout/row'
 import {
   supabasePrivateUserConsolePath,
   supabaseUserConsolePath,
 } from 'common/envs/constants'
+import { User } from 'common/user'
+import { buildArray } from 'common/util/array'
+import { DAY_MS } from 'common/util/time'
+import { useRouter } from 'next/router'
+import { useEffect, useState } from 'react'
+import { Button } from 'web/components/buttons/button'
 import { SimpleCopyTextButton } from 'web/components/buttons/copy-link-button'
 import {
   Referrals,
   useReferralCount,
 } from 'web/components/buttons/referrals-button'
+import { Col } from 'web/components/layout/col'
+import { Modal } from 'web/components/layout/modal'
+import { QueryUncontrolledTabs } from 'web/components/layout/tabs'
+import { BlockUser } from 'web/components/profile/block-user'
+import { ReportUser } from 'web/components/profile/report-user'
+import { Title } from 'web/components/widgets/title'
+import { useAdmin, useTrusted } from 'web/hooks/use-admin'
+import { usePrivateUser } from 'web/hooks/use-user'
 import { banUser } from 'web/lib/api/api'
-import SuperBanControl from '../SuperBanControl'
-import { buildArray } from 'common/util/array'
-import { AccountSettings } from '../profile/settings'
+import { Row } from '../layout/row'
+import { AdminPrivateUserData } from '../profile/admin-private-user-data'
 import { EditProfile } from '../profile/edit-profile'
-import { useRouter } from 'next/router'
+import { AccountSettings } from '../profile/settings'
+import SuperBanControl from '../SuperBanControl'
+import { Input } from '../widgets/input'
 
 export function UserSettingButton(props: { user: User }) {
   const { user } = props
@@ -35,6 +37,8 @@ export function UserSettingButton(props: { user: User }) {
   const currentPrivateUser = usePrivateUser()
   const [isModalOpen, setIsModalOpen] = useState(false)
   const [tabIndex, setTabIndex] = useState(0)
+  const [showBanModal, setShowBanModal] = useState(false)
+  const [banDays, setBanDays] = useState<number | undefined>(undefined)
   const isAdmin = useAdmin()
   const isTrusted = useTrusted()
   const numReferrals = useReferralCount(user)
@@ -104,18 +108,42 @@ export function UserSettingButton(props: { user: User }) {
                     </Button>
                   )}
                   <SuperBanControl userId={userId} />
-                  <Button
-                    color={'red'}
-                    size="xs"
-                    onClick={() => {
-                      banUser({
-                        userId,
-                        unban: user.isBannedFromPosting ?? false,
-                      })
-                    }}
-                  >
-                    {user.isBannedFromPosting ? 'Banned' : 'Ban User'}
-                  </Button>
+                  {user.isBannedFromPosting ? (
+                    <Button
+                      color={'red'}
+                      size="xs"
+                      onClick={() => {
+                        banUser({
+                          userId,
+                          unban: true,
+                        })
+                      }}
+                    >
+                      Unban User
+                    </Button>
+                  ) : (
+                    <>
+                      <Button
+                        color={'red'}
+                        size="xs"
+                        onClick={() => {
+                          banUser({
+                            userId,
+                            unban: false,
+                          })
+                        }}
+                      >
+                        Ban User
+                      </Button>
+                      <Button
+                        color={'gray-white'}
+                        size="xs"
+                        onClick={() => setShowBanModal(true)}
+                      >
+                        Temp Ban
+                      </Button>
+                    </>
+                  )}
                 </Row>
               )}
             </div>
@@ -193,6 +221,10 @@ export function UserSettingButton(props: { user: User }) {
                         ),
                       },
                     ],
+                isAdmin && {
+                  title: 'Admin',
+                  content: <AdminPrivateUserData userId={userId} />,
+                },
                 {
                   title: `${numReferrals} Referrals`,
                   content: <Referrals user={user} />,
@@ -202,6 +234,52 @@ export function UserSettingButton(props: { user: User }) {
             />
           </Col>
         </div>
+      </Modal>
+
+      <Modal open={showBanModal} setOpen={setShowBanModal}>
+        <Col className="bg-canvas-0 gap-4 rounded-md p-6">
+          <Title>Temporarily Ban User</Title>
+          <Col className="gap-2">
+            <span className="text-ink-700">Ban {name} for how many days?</span>
+            <Row className="w-fit items-center gap-2">
+              <Input
+                type="number"
+                min="1"
+                value={banDays}
+                onChange={(e) =>
+                  setBanDays(
+                    e.target.value ? parseInt(e.target.value) : undefined
+                  )
+                }
+                className="border-ink-300 w-24 rounded border px-3 py-2"
+                autoFocus
+              />
+              <span className="text-ink-600">days</span>
+            </Row>
+          </Col>
+          <Row className="gap-2">
+            <Button
+              disabled={!banDays}
+              color="red"
+              onClick={() => {
+                const unbanTime = banDays
+                  ? Date.now() + banDays * DAY_MS
+                  : undefined
+                banUser({
+                  userId,
+                  unban: false,
+                  unbanTime,
+                })
+                setShowBanModal(false)
+              }}
+            >
+              Confirm Ban
+            </Button>
+            <Button color="gray-white" onClick={() => setShowBanModal(false)}>
+              Cancel
+            </Button>
+          </Row>
+        </Col>
       </Modal>
     </>
   )

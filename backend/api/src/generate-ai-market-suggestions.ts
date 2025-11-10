@@ -38,7 +38,7 @@ export const generateSuggestions = async (
   `
 
   const response = await promptAI<AIGeneratedMarket[]>(combinedPrompt, {
-    model: aiModels.sonnet4,
+    model: aiModels.haiku,
     webSearch: true,
     parseAsJson: true,
   })

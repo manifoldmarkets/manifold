@@ -127,12 +127,12 @@ export const generateAIDateRanges: APIHandler<'generate-ai-date-ranges'> =
       // Generate both bucket and threshold ranges in parallel
       const [buckets, thresholds] = await Promise.all([
         promptAI<DateRangeResponse>(prompt, {
-          model: aiModels.sonnet45,
+          model: aiModels.haiku,
           system: bucketSystemPrompt,
           parseAsJson: true,
         }),
         promptAI<DateRangeResponse>(prompt, {
-          model: aiModels.sonnet45,
+          model: aiModels.haiku,
           system: thresholdSystemPrompt,
           parseAsJson: true,
         }),
@@ -192,7 +192,7 @@ export const regenerateDateMidpoints: APIHandler<'regenerate-date-midpoints'> =
       `
 
       const result = await promptAI<string[]>(prompt, {
-        model: aiModels.sonnet4,
+        model: aiModels.haiku,
         parseAsJson: true,
       })
       log('claudeResponse', result)

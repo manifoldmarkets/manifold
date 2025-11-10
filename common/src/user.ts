@@ -73,6 +73,8 @@ export type User = {
   hasSeenContractFollowModal?: boolean
   seenStreakModal?: boolean
   isBannedFromPosting?: boolean
+  /** @deprecated Not deprecated, only updated in native column though */
+  unbanTime?: number
   userDeleted?: boolean
   optOutBetWarnings?: boolean
   signupBonusPaid?: number

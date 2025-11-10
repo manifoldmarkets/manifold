@@ -1,15 +1,18 @@
-import { APIError, APIHandler } from './helpers/endpoint'
-import { followUserInternal } from './follow-user'
-import { FieldVal } from 'shared/supabase/utils'
+import { isAdminId, isModId } from 'common/envs/constants'
 import { createSupabaseDirectClient } from 'shared/supabase/init'
 import { updatePrivateUser } from 'shared/supabase/users'
+import { FieldVal } from 'shared/supabase/utils'
+import { followUserInternal } from './follow-user'
+import { APIError, APIHandler } from './helpers/endpoint'
 
 export const blockUser: APIHandler<'user/by-id/:id/block'> = async (
   { id },
   auth
 ) => {
   if (auth.uid === id) throw new APIError(400, 'You cannot block yourself')
-
+  if (isAdminId(id) || isModId(id)) {
+    throw new APIError(400, 'You cannot block an admin or mod')
+  }
   const pg = createSupabaseDirectClient()
   await pg.tx(async (tx) => {
     await updatePrivateUser(tx, auth.uid, {

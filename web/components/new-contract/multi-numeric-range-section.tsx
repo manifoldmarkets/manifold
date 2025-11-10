@@ -2,6 +2,7 @@ import { XIcon } from '@heroicons/react/solid'
 import { MAX_MULTI_NUMERIC_ANSWERS } from 'common/multi-numeric'
 import { formatMoney } from 'common/util/format'
 import { debounce } from 'lodash'
+import Link from 'next/link'
 import { useCallback, useEffect, useState } from 'react'
 import { Col } from 'web/components/layout/col'
 import { Row } from 'web/components/layout/row'
@@ -231,7 +232,9 @@ export const MultiNumericRangeSection = (props: {
   }
   useEffect(() => {
     if (question.toLowerCase().includes('when')) {
-      setDateError('Date questions are better supported by the date question')
+      setDateError(
+        'Date questions are better supported by the date question type.'
+      )
     } else {
       setDateError('')
     }
@@ -327,7 +330,15 @@ export const MultiNumericRangeSection = (props: {
     <Col>
       <Row className={'flex-wrap gap-x-4'}>
         {dateError && (
-          <div className="text-scarlet-500 text-sm">{dateError}</div>
+          <div className="text-scarlet-500 text-sm">
+            {dateError}{' '}
+            <Link
+              href="/create?type=date"
+              className="text-primary-700 hover:underline"
+            >
+              Switch to date question
+            </Link>
+          </div>
         )}
         <Col className="mb-2 items-start">
           <Row className=" items-baseline gap-1 px-1 py-2">
