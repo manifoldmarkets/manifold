@@ -29,7 +29,7 @@ export const adminGetUserInfo: APIHandler<'get-user-info'> = async (
   try {
     const firebaseUser = await admin.auth().getUser(userId)
     firebaseEmail = firebaseUser.email
-  } catch (error) {
+  } catch (_error) {
     // Firebase user might not exist or be inaccessible
     firebaseEmail = undefined
   }
