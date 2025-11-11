@@ -1,5 +1,5 @@
 import clsx from 'clsx'
-import { CreateableOutcomeType, NUMBER_CREATION_ENABLED } from 'common/contract'
+import { CreateableOutcomeType } from 'common/contract'
 import { ReactNode, useState } from 'react'
 import { Col } from '../layout/col'
 import { Row } from '../layout/row'
@@ -30,31 +30,29 @@ export function ChoosingContractForm(props: {
       <div className="text-lg">Or, create manually from a template:</div>
       <Spacer h={4} />
       <Col className="gap-2">
-        {[
-          ...Object.values(ALL_CONTRACT_TYPES).filter(({ value }) =>
-            NUMBER_CREATION_ENABLED ? true : value !== 'NUMBER'
-          ),
-        ].map(({ label, name, descriptor, example, value, visual }) => {
-          return (
-            <OutcomeButton
-              key={value + name}
-              label={label}
-              descriptor={descriptor}
-              example={example}
-              value={value}
-              visual={visual}
-              outcomeType={outcomeType}
-              shouldAnswersSumToOne={shouldAnswersSumToOne}
-              onClick={() => {
-                const { outcomeType, shouldSumToOne } =
-                  getOutcomeTypeAndSumsToOne(value)
-                setShouldAnswersSumToOne(shouldSumToOne)
-                setOutcomeType(outcomeType)
-                setState('filling contract params')
-              }}
-            />
-          )
-        })}
+        {[...Object.values(ALL_CONTRACT_TYPES)].map(
+          ({ label, name, descriptor, example, value, visual }) => {
+            return (
+              <OutcomeButton
+                key={value + name}
+                label={label}
+                descriptor={descriptor}
+                example={example}
+                value={value}
+                visual={visual}
+                outcomeType={outcomeType}
+                shouldAnswersSumToOne={shouldAnswersSumToOne}
+                onClick={() => {
+                  const { outcomeType, shouldSumToOne } =
+                    getOutcomeTypeAndSumsToOne(value)
+                  setShouldAnswersSumToOne(shouldSumToOne)
+                  setOutcomeType(outcomeType)
+                  setState('filling contract params')
+                }}
+              />
+            )
+          }
+        )}
       </Col>
     </Col>
   )
