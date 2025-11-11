@@ -91,7 +91,10 @@ export default function AdminPage() {
         <LabCard title="🎨 design system" href="/styles" />
         <LabCard title="🌑 test new user" href="/admin/test-user" />
         <LabCard title="👤 update user" href="/admin/update-user" />
-        <LabCard title="👤 user info & account management" href="/admin/user-info" />
+        <LabCard
+          title="👤 user info & account management"
+          href="/admin/user-info"
+        />
         <Row className="gap-2">
           <Button onClick={() => api('refresh-all-clients', {})}>
             Refresh all clients

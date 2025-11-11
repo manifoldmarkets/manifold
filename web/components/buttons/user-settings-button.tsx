@@ -102,7 +102,9 @@ export function UserSettingButton(props: { user: User }) {
                     <Button
                       color="green"
                       size="xs"
-                      onClick={() => router.push(`/admin/user-info?userId=${userId}`)}
+                      onClick={() =>
+                        router.push(`/admin/user-info?userId=${userId}`)
+                      }
                     >
                       Manage Account
                     </Button>

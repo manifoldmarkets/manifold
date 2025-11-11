@@ -12,7 +12,11 @@ import { Title } from 'web/components/widgets/title'
 import { useAdmin } from 'web/hooks/use-admin'
 import { useRedirectIfSignedOut } from 'web/hooks/use-redirect-if-signed-out'
 import { api } from 'web/lib/api/api'
-import { DisplayUser, searchUsers, getFullUserById } from 'web/lib/supabase/users'
+import {
+  DisplayUser,
+  searchUsers,
+  getFullUserById,
+} from 'web/lib/supabase/users'
 import { ConfirmActionModal } from 'web/components/admin/ConfirmActionModal'
 import { useRouter } from 'next/router'
 
@@ -134,7 +138,9 @@ export default function AdminUserInfoPage() {
     } catch (error) {
       console.error('Error recovering user:', error)
       toast.error(
-        error instanceof Error ? error.message : 'Failed to recover user account'
+        error instanceof Error
+          ? error.message
+          : 'Failed to recover user account'
       )
     } finally {
       setIsSubmitting(false)
@@ -213,7 +219,7 @@ export default function AdminUserInfoPage() {
 
         <Col className="gap-6">
           {/* Info Section */}
-          <div className="border-ink-200 bg-blue-50 rounded-lg border p-4">
+          <div className="border-ink-200 rounded-lg border bg-blue-50 p-4">
             <h3 className="mb-2 font-semibold text-blue-900">
               Account Management Information
             </h3>
@@ -347,13 +353,17 @@ export default function AdminUserInfoPage() {
                 ) : userInfo ? (
                   <div className="space-y-2">
                     <div>
-                      <span className="text-ink-600 text-sm">Initial Device Token: </span>
+                      <span className="text-ink-600 text-sm">
+                        Initial Device Token:{' '}
+                      </span>
                       <span className="font-mono text-sm">
                         {userInfo.initialDeviceToken || 'None'}
                       </span>
                     </div>
                     <div>
-                      <span className="text-ink-600 text-sm">Initial IP Address: </span>
+                      <span className="text-ink-600 text-sm">
+                        Initial IP Address:{' '}
+                      </span>
                       <span className="font-mono text-sm">
                         {userInfo.initialIpAddress || 'None'}
                       </span>
@@ -452,12 +462,12 @@ export default function AdminUserInfoPage() {
                     </div>
 
                     {!userInfo.oldEmail && (
-                      <div className="bg-orange-50 border-orange-200 mt-3 rounded border p-3">
+                      <div className="mt-3 rounded border border-orange-200 bg-orange-50 p-3">
                         <p className="text-sm text-orange-800">
                           <strong>⚠️ No old_e_mail found.</strong> You must
-                          manually enter an email address below. Use the Firebase
-                          Auth email shown above or verify the correct email in
-                          the Firebase console.
+                          manually enter an email address below. Use the
+                          Firebase Auth email shown above or verify the correct
+                          email in the Firebase console.
                         </p>
                       </div>
                     )}
@@ -541,12 +551,12 @@ export default function AdminUserInfoPage() {
 
                 {/* Button Status Explanations */}
                 <div className="text-ink-600 space-y-1 text-xs">
-                  {(!selectedUser.userDeleted &&
-                    !selectedUser.isBannedFromPosting) && (
-                    <p className="text-gray-500">
-                      • Recover is disabled (account is not deleted)
-                    </p>
-                  )}
+                  {!selectedUser.userDeleted &&
+                    !selectedUser.isBannedFromPosting && (
+                      <p className="text-gray-500">
+                        • Recover is disabled (account is not deleted)
+                      </p>
+                    )}
                   {selectedUser.userDeleted && (
                     <p className="text-gray-500">
                       • Delete is disabled (account is already deleted)
