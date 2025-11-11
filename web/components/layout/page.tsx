@@ -1,13 +1,13 @@
 import clsx from 'clsx'
 import { ReactNode } from 'react'
-import { BottomNavBar } from '../nav/bottom-nav-bar'
-import Sidebar from '../nav/sidebar'
 import { Toaster } from 'react-hot-toast'
 import { useIsMobile } from 'web/hooks/use-is-mobile'
-import { Col } from './col'
+import { useTracking } from 'web/hooks/use-tracking'
 import { GoogleOneTapLogin } from 'web/lib/firebase/google-onetap-login'
 import { ConfettiOnDemand } from '../confetti-on-demand'
-import { useTracking } from 'web/hooks/use-tracking'
+import { BottomNavBar } from '../nav/bottom-nav-bar'
+import Sidebar from '../nav/sidebar'
+import { Col } from './col'
 
 import { Footer } from '../footer'
 import { FirstStreakModalManager } from '../profile/first-streak-modal'
@@ -43,7 +43,8 @@ export function Page(props: {
       <Col
         className={clsx(
           !hideBottomBar && 'pb-[58px] lg:pb-0', // bottom bar padding
-          'text-ink-1000 mx-auto min-h-screen w-full max-w-[1440px] lg:grid lg:grid-cols-12'
+          'text-ink-1000 mx-auto min-h-screen w-full max-w-[1440px] lg:grid lg:grid-cols-12',
+          isMobile && 'page-scroll-container' // Add scrollable container on mobile
         )}
       >
         <Toaster

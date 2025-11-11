@@ -1,22 +1,24 @@
+import { ENV_CONFIG, TRADE_TERM } from 'common/envs/constants'
+import { capitalize } from 'lodash'
 import type { AppProps } from 'next/app'
+import { Figtree } from 'next/font/google'
 import Head from 'next/head'
+import { useRouter } from 'next/router'
 import Script from 'next/script'
 import { useEffect, useState } from 'react'
 import { AuthProvider, AuthUser } from 'web/components/auth-context'
 import { NativeMessageProvider } from 'web/components/native-message-provider'
-import { useHasLoaded } from 'web/hooks/use-has-loaded'
-import '../styles/globals.css'
-import { getIsNative } from 'web/lib/native/is-native'
-import { Figtree } from 'next/font/google'
-import { GoogleOneTapSetup } from 'web/lib/firebase/google-onetap-login'
-import { useRefreshAllClients } from 'web/hooks/use-refresh-all-clients'
-import { postMessageToNative } from 'web/lib/native/post-message'
-import { ENV_CONFIG, TRADE_TERM } from 'common/envs/constants'
 import { Sweepstakes } from 'web/components/sweepstakes-provider'
-import { capitalize } from 'lodash'
+import { useHasLoaded } from 'web/hooks/use-has-loaded'
+import { useIOSBodyFix } from 'web/hooks/use-ios-body-fix'
+import { useMobileScrollRestoration } from 'web/hooks/use-mobile-scroll-restoration'
+import { useRefreshAllClients } from 'web/hooks/use-refresh-all-clients'
 import { ThemeProvider } from 'web/hooks/use-theme'
+import { GoogleOneTapSetup } from 'web/lib/firebase/google-onetap-login'
+import { getIsNative } from 'web/lib/native/is-native'
+import { postMessageToNative } from 'web/lib/native/post-message'
 import { DevtoolsDetector, setupDevtoolsDetector } from 'web/lib/util/devtools'
-import { useRouter } from 'next/router'
+import '../styles/globals.css'
 // See https://nextjs.org/docs/basic-features/font-optimization#google-fonts
 // and if you add a font, you must add it to tailwind config as well for it to work.
 
@@ -98,6 +100,8 @@ function MyApp({ Component, pageProps }: AppProps<ManifoldPageProps>) {
   useEffect(printBuildInfo, [])
   useHasLoaded()
   useRefreshAllClients()
+  useIOSBodyFix()
+  useMobileScrollRestoration()
 
   // ian: Required by GambleId
   const devToolsOpen = false //useDevtoolsDetector()
@@ -158,7 +162,7 @@ function MyApp({ Component, pageProps }: AppProps<ManifoldPageProps>) {
         />
         <meta
           name="viewport"
-          content="width=device-width, initial-scale=1,maximum-scale=1, user-scalable=no"
+          content="width=device-width, initial-scale=1, minimum-scale=1, maximum-scale=1, viewport-fit=cover user-scalable=no"
         />
         <meta name="apple-itunes-app" content="app-id=6444136749" />
         {/* set safari overscroll/address bar to canvas-0. TODO: change based on site theme preference */}

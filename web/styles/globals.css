@@ -290,17 +290,22 @@ text {
   transition: transform 0.1s ease-out;
 }
 
-/* Fix for iOS 26 Safari fixed position bug */
-/* Prevents viewport displacement when address bar shrinks */
-/* See: https://stackoverflow.com/questions/79753701 */
+/* Page container needs to be scrollable when body is fixed */
 @media (max-width: 1024px) {
-  html {
-    height: 100dvh;
-    overflow: hidden;
+  .page-scroll-container {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 58px; /* Height of bottom nav bar */
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+    min-height: auto !important; /* Override min-height when fixed */
+    overflow-x: hidden;
   }
-  body {
-    height: 100dvh;
-    overscroll-behavior: contain;
-    overflow: scroll;
+
+  /* Ensure bottom nav stays on top */
+  nav.fixed.bottom-0 {
+    z-index: 50;
   }
 }
