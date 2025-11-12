@@ -41,6 +41,15 @@ export function useMobileScrollRestoration() {
 
       const savedPosition = scrollPositions.current[url]
 
+      // Prevent Next.js from scrolling window during restoration
+      const preventNextJsScroll = () => {
+        if (window.scrollY !== 0) {
+          window.scrollTo(0, 0)
+        }
+      }
+
+      window.addEventListener('scroll', preventNextJsScroll)
+
       // Wait for the scroll container to be ready with retry mechanism
       const attemptScrollRestore = (retries = 0, maxRetries = 20) => {
         const scrollContainer = document.querySelector(
@@ -53,27 +62,24 @@ export function useMobileScrollRestoration() {
 
           requestAnimationFrame(() => {
             scrollContainer.scrollTop = savedPosition || 0
-            isRestoringRef.current = false
+            // Stop preventing window scroll after a short delay
+            setTimeout(() => {
+              window.removeEventListener('scroll', preventNextJsScroll)
+              isRestoringRef.current = false
+            }, 100)
           })
         } else if (retries < maxRetries) {
           // Container not ready yet, retry very quickly
           setTimeout(() => attemptScrollRestore(retries + 1, maxRetries), 5)
         } else {
           // Give up after max retries
+          window.removeEventListener('scroll', preventNextJsScroll)
           isRestoringRef.current = false
         }
       }
 
       // Try to restore immediately (synchronously)
       attemptScrollRestore()
-    }
-
-    // Prevent Next.js scroll restoration from interfering
-    // Keep window scroll at 0 since body is fixed on mobile
-    const preventWindowScroll = () => {
-      if (window.scrollY !== 0) {
-        window.scrollTo(0, 0)
-      }
     }
 
     // Listen to scroll events on the container
@@ -89,7 +95,6 @@ export function useMobileScrollRestoration() {
 
     router.events.on('routeChangeStart', handleRouteChangeStart)
     router.events.on('routeChangeComplete', handleRouteChangeComplete)
-    window.addEventListener('scroll', preventWindowScroll)
 
     return () => {
       if (scrollContainer) {
@@ -98,7 +103,6 @@ export function useMobileScrollRestoration() {
       debouncedSaveScroll.cancel()
       router.events.off('routeChangeStart', handleRouteChangeStart)
       router.events.off('routeChangeComplete', handleRouteChangeComplete)
-      window.removeEventListener('scroll', preventWindowScroll)
     }
   }, [router.events, router.asPath, isMobile])
 }
