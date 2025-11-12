@@ -1,5 +1,5 @@
 import clsx from 'clsx'
-import { ReactNode } from 'react'
+import { ReactNode, useEffect, useState } from 'react'
 import { Toaster } from 'react-hot-toast'
 import { useIsMobile } from 'web/hooks/use-is-mobile'
 import { useTracking } from 'web/hooks/use-tracking'
@@ -35,6 +35,14 @@ export function Page(props: {
   if (trackPageView) useTracking(`view ${trackPageView}`, trackPageProps)
   const isMobile = useIsMobile()
 
+  const [isIOS, setIsIOS] = useState(false)
+  useEffect(() => {
+    // Only use scroll container on iOS
+    const iosCheck =
+      /iPad|iPhone|iPod/.test(navigator.userAgent) && !(window as any).MSStream
+    setIsIOS(iosCheck)
+  }, [])
+
   return (
     <>
       <ConfettiOnDemand />
@@ -44,7 +52,7 @@ export function Page(props: {
         className={clsx(
           !hideBottomBar && 'pb-[58px] lg:pb-0', // bottom bar padding
           'text-ink-1000 mx-auto min-h-screen w-full max-w-[1440px] lg:grid lg:grid-cols-12',
-          isMobile && 'page-scroll-container' // Add scrollable container on mobile
+          isMobile && isIOS && 'page-scroll-container' // Add scrollable container only on iOS
         )}
       >
         <Toaster

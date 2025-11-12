@@ -15,8 +15,12 @@ export function useMobileScrollRestoration() {
   const isMobile = useIsMobile()
 
   useEffect(() => {
-    // Only run on mobile
+    // Only run on iOS mobile (Android uses native scroll)
     if (!isMobile) return
+
+    const isIOS =
+      /iPad|iPhone|iPod/.test(navigator.userAgent) && !(window as any).MSStream
+    if (!isIOS) return
 
     // Continuously save scroll position as user scrolls
     const saveScrollPosition = () => {

@@ -17,12 +17,6 @@ export function useIOSBodyFix() {
       document.body.style.height = '100%'
       document.body.style.top = '0'
       document.body.style.left = '0'
-    } else {
-      // On other mobile browsers, set overflow hidden
-      document.body.style.overflow = 'hidden'
-      document.body.style.height = '100%'
-      document.documentElement.style.height = '100%'
-      document.documentElement.style.overflow = 'hidden'
     }
 
     // Handle window resize to restore normal behavior on desktop
