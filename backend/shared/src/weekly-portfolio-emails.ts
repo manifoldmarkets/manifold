@@ -144,7 +144,13 @@ export async function sendPortfolioUpdateEmailsToAllUsers() {
         .map((contractId) =>
           allWeeklyMoversContracts.find((c) => c.id === contractId)
         )
-    )
+    ).filter((contract) => {
+      // Exclude markets that resolved more than 7 days ago
+      if (contract.resolutionTime) {
+        return Date.now() - contract.resolutionTime < 7 * DAY_MS
+      }
+      return true
+    })
 
     // Compute weekly movers stats
     const investmentValueDifferences = sortBy(
