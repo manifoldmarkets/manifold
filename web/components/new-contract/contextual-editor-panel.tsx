@@ -43,21 +43,37 @@ export function ContextualEditorPanel(props: {
   const { formState, onUpdate, balance } = props
 
   const { outcomeType, answers, liquidityTier } = formState
+  const isPoll = outcomeType === 'POLL'
 
   return (
     <Col className="bg-canvas-0 ring-ink-100 gap-4 overflow-y-auto rounded-lg p-4 shadow-md ring-1">
-      {/* Liquidity & Cost */}
-      {balance !== undefined && (
-        <Col className="gap-3">
-          <span className="text-ink-700 text-sm font-semibold">Liquidity</span>
-          <CostSection
-            balance={balance}
-            outcomeType={outcomeType as any}
-            liquidityTier={liquidityTier}
-            setLiquidityTier={(tier) => onUpdate('liquidityTier', tier)}
-            numAnswers={answers.length > 0 ? answers.length : undefined}
-          />
+      {isPoll ? (
+        <Col className="gap-2">
+          <span className="text-ink-700 text-sm font-semibold">About polls</span>
+          <p className="text-ink-600 text-sm">
+            This is a poll, people can select an answer but they cannot bet. You
+            may want to add a "see results" answer, because one is not added
+            automatically.
+          </p>
         </Col>
+      ) : (
+        <>
+          {/* Liquidity & Cost */}
+          {balance !== undefined && (
+            <Col className="gap-3">
+              <span className="text-ink-700 text-sm font-semibold">
+                Liquidity
+              </span>
+              <CostSection
+                balance={balance}
+                outcomeType={outcomeType as any}
+                liquidityTier={liquidityTier}
+                setLiquidityTier={(tier) => onUpdate('liquidityTier', tier)}
+                numAnswers={answers.length > 0 ? answers.length : undefined}
+              />
+            </Col>
+          )}
+        </>
       )}
     </Col>
   )

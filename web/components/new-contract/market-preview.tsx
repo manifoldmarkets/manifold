@@ -65,13 +65,15 @@ export type PreviewContractData = {
 function getLiquidityDisplayText(
   liquidityTier: number | undefined,
   numAnswers: number
-): string {
+): React.ReactNode {
   if (!liquidityTier) return 'Medium liquidity'
 
   const bonus = getUniqueBettorBonusAmount(liquidityTier, numAnswers)
-  return `${formatMoney(liquidityTier)} liquidity, ${formatMoney(
-    bonus
-  )} unique trader bonus`
+  return (
+    <>
+      {formatMoney(liquidityTier)} liquidity, earn <span className="text-ink-900 font-semibold">{formatMoney(bonus)}</span> for every unique trader
+    </>
+  )
 }
 
 export function MarketPreview(props: {
@@ -306,7 +308,7 @@ export function MarketPreview(props: {
                 text={
                   visibility === 'unlisted'
                     ? 'Click to make public'
-                    : 'Click to make unlisted'
+                    : <>Click to make unlisted<br />(not discoverable without a link)</>
                 }
                 noTap
               >
@@ -555,8 +557,8 @@ export function MarketPreview(props: {
               {isEditable && onProbabilityChange && (
                 <input
                   type="range"
-                  min="1"
-                  max="99"
+                  min="5"
+                  max="95"
                   value={probability}
                   onChange={(e) =>
                     onProbabilityChange(parseFloat(e.target.value))
@@ -573,7 +575,7 @@ export function MarketPreview(props: {
                 <>
                   <button
                     onClick={() => {
-                      const newProb = Math.min(99, probability + 1)
+                      const newProb = Math.min(95, probability + 1)
                       onProbabilityChange(newProb)
                     }}
                     className="flex-1 rounded-lg bg-teal-500 px-4 py-3 text-center font-semibold text-white transition-colors hover:bg-teal-600"
@@ -582,7 +584,7 @@ export function MarketPreview(props: {
                   </button>
                   <button
                     onClick={() => {
-                      const newProb = Math.max(1, probability - 1)
+                      const newProb = Math.max(5, probability - 1)
                       onProbabilityChange(newProb)
                     }}
                     className="bg-scarlet-500 hover:bg-scarlet-600 flex-1 rounded-lg px-4 py-3 text-center font-semibold text-white transition-colors"
@@ -840,25 +842,73 @@ export function MarketPreview(props: {
           </Col>
         )}
 
-        {isPoll && answers.length > 0 && (
+        {isPoll && (
           <Col className="gap-2">
-            {answers.map((answer, i) => (
-              <div
-                key={i}
-                className="bg-ink-100 hover:bg-ink-200 rounded px-4 py-2 text-sm transition-colors"
-              >
-                {answer.text || (
-                  <span className="text-ink-400">Answer {i + 1}</span>
-                )}
-              </div>
-            ))}
-          </Col>
-        )}
+            {answers.length > 0 ? (
+              <>
+                {answers.map((answer, i) => (
+                  <div key={i} className="bg-canvas-0 border-ink-200 rounded-lg border p-3">
+                    <Row className="items-center gap-3">
+                      {/* Answer text/input - grows to fill space */}
+                      {isEditable && onEditAnswers ? (
+                        <ExpandingInput
+                          className="flex-1 min-w-0"
+                          placeholder={`Option ${i + 1}`}
+                          value={answer.text}
+                          onChange={(e) => {
+                            const newAnswers = [...answers]
+                            newAnswers[i] = { ...newAnswers[i], text: e.target.value }
+                            onEditAnswers(newAnswers.map(a => a.text))
+                          }}
+                          rows={1}
+                          maxLength={MAX_ANSWER_LENGTH}
+                        />
+                      ) : (
+                        <span className="text-ink-900 flex-1 text-sm font-semibold">
+                          {answer.text || `Option ${i + 1}`}
+                        </span>
+                      )}
 
-        {isPoll && answers.length === 0 && (
-          <div className="text-ink-400 border-ink-200 rounded border-2 border-dashed p-6 text-center text-sm">
-            Add at least 2 options for your poll
-          </div>
+                      {/* X button to remove - far right */}
+                      {isEditable && onEditAnswers && answers.length > 1 && (
+                        <button
+                          onClick={(e) => {
+                            e.preventDefault()
+                            e.stopPropagation()
+                            const newAnswers = answers.filter((_, idx) => idx !== i)
+                            onEditAnswers(newAnswers.map(a => a.text))
+                          }}
+                          className="hover:bg-canvas-50 border-ink-300 text-ink-700 bg-canvas-0 focus:ring-primary-500 rounded-full border p-1 shadow-sm focus:outline-none focus:ring-2 focus:ring-offset-2"
+                        >
+                          <XIcon className="h-5 w-5" aria-hidden="true" />
+                        </button>
+                      )}
+                    </Row>
+                  </div>
+                ))}
+
+                {/* Add answer button */}
+                {isEditable && onEditAnswers && (
+                  <button
+                    onClick={(e) => {
+                      e.preventDefault()
+                      e.stopPropagation()
+                      onEditAnswers([...answers.map(a => a.text), ''])
+                    }}
+                    disabled={answers.length >= MAX_ANSWERS}
+                    className="text-primary-600 hover:text-primary-700 disabled:text-ink-400 flex items-center gap-1 text-sm font-medium disabled:cursor-not-allowed"
+                  >
+                    <PlusIcon className="h-4 w-4" />
+                    Add option
+                  </button>
+                )}
+              </>
+            ) : (
+              <div className="text-ink-400 border-ink-200 rounded border-2 border-dashed p-6 text-center text-sm">
+                Add at least 2 options for your poll
+              </div>
+            )}
+          </Col>
         )}
 
         {isPseudoNumeric && min !== undefined && max !== undefined && (
@@ -1627,12 +1677,14 @@ export function MarketPreview(props: {
 
       {/* Footer Info */}
       <Row className="text-ink-500 items-center gap-3 text-xs">
-        <Row className="items-center gap-1">
-          <span>{getLiquidityDisplayText(liquidityTier, answers.length)}</span>
-          {answers.length > 0 && (isMultipleChoice || isNumeric || isDate) && (
-            <InfoTooltip text="Adding more answers later may reduce the bonus." />
-          )}
-        </Row>
+        {!isPoll && (
+          <Row className="items-center gap-1">
+            <span>{getLiquidityDisplayText(liquidityTier, answers.length)}</span>
+            {answers.length > 0 && (isMultipleChoice || isNumeric || isDate) && (
+              <InfoTooltip text="Adding more answers later may reduce the bonus." />
+            )}
+          </Row>
+        )}
         {min !== undefined && max !== undefined && (
           <>
             <span>·</span>

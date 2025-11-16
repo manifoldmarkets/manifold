@@ -1,14 +1,16 @@
 'use client'
 import { Page } from 'web/components/layout/page'
-import { NewQuestionParams } from 'web/components/new-contract/new-contract-panel'
-import { NewContractPanelV2 } from 'web/components/new-contract/new-contract-panel-v2'
+import {
+  NewContractPanelOld,
+  NewQuestionParams,
+} from 'web/components/new-contract/new-contract-panel-old'
 import { Title } from 'web/components/widgets/title'
 import { useRedirectIfSignedOut } from 'web/hooks/use-redirect-if-signed-out'
 import { useUser } from 'web/hooks/use-user'
 import { useDefinedSearchParams } from 'web/hooks/use-defined-search-params'
 import { useEffect, useState } from 'react'
 
-export default function CreateV2() {
+export default function CreateOld() {
   useRedirectIfSignedOut()
 
   const user = useUser()
@@ -43,7 +45,7 @@ export default function CreateV2() {
 
   if (user.isBannedFromPosting)
     return (
-      <Page trackPageView={'banned from create page v2'}>
+      <Page trackPageView={'banned from create page'}>
         <div className="mx-auto w-full max-w-2xl">
           <div className="rounded-lg px-6 py-4 sm:py-0">
             <Title>Create a question</Title>
@@ -54,8 +56,8 @@ export default function CreateV2() {
     )
 
   return (
-    <Page trackPageView={'create page v2'}>
-      <NewContractPanelV2 params={params} creator={user} />
+    <Page trackPageView={'create page'}>
+      <NewContractPanelOld params={params} creator={user} />
     </Page>
   )
 }
