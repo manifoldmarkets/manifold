@@ -8,7 +8,7 @@ import {
   ALL_CONTRACT_TYPES,
   getOutcomeTypeAndSumsToOne,
 } from './create-contract-types'
-import { CreateContractStateType } from './new-contract-panel-old'
+import { CreateContractStateType } from './new-contract-panel'
 
 export function ChoosingContractForm(props: {
   outcomeType: CreateableOutcomeType | undefined

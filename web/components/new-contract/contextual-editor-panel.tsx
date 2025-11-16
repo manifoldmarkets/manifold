@@ -18,13 +18,14 @@ export type FormState = {
   shouldAnswersSumToOne?: boolean
   addAnswersMode?: 'DISABLED' | 'ONLY_CREATOR' | 'ANYONE'
   probability?: number
-  totalBounty?: number
   min?: number
   max?: number
   minString?: string
   maxString?: string
   unit?: string
   midpoints?: number[]
+  isAnnouncement?: boolean
+  isChangeLog?: boolean
 }
 
 export type ValidationErrors = {

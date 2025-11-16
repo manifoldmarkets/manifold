@@ -86,21 +86,6 @@ export const PREDICTIVE_CONTRACT_TYPES = {
 } as const
 
 export const NON_PREDICTIVE_CONTRACT_TYPES = {
-  // BOUNTIED_QUESTION: {
-  //   label: 'Bounty',
-  //   value: 'BOUNTIED_QUESTION',
-  //   name: 'bounty',
-  //   descriptor: `A question that anyone can answer for a bounty. The bounty you put up can be distributed however you'd like.`,
-  //   example: `Recommend me sci-fi books, ${formatMoney(
-  //     100
-  //   )} for each good submission.`,
-  //   visual: (
-  //     <Col className="relative my-auto h-12 w-12 text-teal-400">
-  //       <GiReceiveMoney className="h-12 w-12" />
-  //     </Col>
-  //   ),
-  //   className: 'hover:ring-teal-500/50',
-  // },
   POLL: {
     label: 'Poll',
     value: 'POLL',
@@ -114,6 +99,25 @@ export const NON_PREDICTIVE_CONTRACT_TYPES = {
     ),
     className: 'hover:!ring-orange-500/50',
     outcomeType: 'POLL',
+  },
+  // Note: Legacy naming - BOUNTIED_QUESTION is the database/API type for discussion posts.
+  // Originally supported bounties, but now just a simple discussion post with no betting/voting.
+  // The type name can't easily be changed without a migration.
+  BOUNTIED_QUESTION: {
+    label: 'Discussion Post',
+    value: 'BOUNTIED_QUESTION',
+    name: 'discussion post',
+    descriptor: `A post for discussion and comments. No betting or voting.`,
+    example: `What are your thoughts on the new AI developments?`,
+    visual: (
+      <Col className="relative my-auto h-12 w-12 text-ink-400">
+        <svg className="h-12 w-12" fill="currentColor" viewBox="0 0 20 20">
+          <path fillRule="evenodd" d="M18 10c0 3.866-3.582 7-8 7a8.841 8.841 0 01-4.083-.98L2 17l1.338-3.123C2.493 12.767 2 11.434 2 10c0-3.866 3.582-7 8-7s8 3.134 8 7zM7 9H5v2h2V9zm8 0h-2v2h2V9zM9 9h2v2H9V9z" clipRule="evenodd" />
+        </svg>
+      </Col>
+    ),
+    className: 'hover:!ring-ink-500/50',
+    outcomeType: 'BOUNTIED_QUESTION',
   },
 } as const
 

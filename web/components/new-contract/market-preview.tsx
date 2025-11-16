@@ -1,8 +1,7 @@
 import { useState, useEffect } from 'react'
 import clsx from 'clsx'
-import { Contract } from 'common/contract'
+import { Contract, CreateableOutcomeType } from 'common/contract'
 import { User } from 'common/user'
-import { BinaryResolutionOrChance } from 'web/components/contract/contract-price'
 import { Col } from 'web/components/layout/col'
 import { Row } from 'web/components/layout/row'
 import { Avatar } from 'web/components/widgets/avatar'
@@ -26,6 +25,8 @@ import { InfoTooltip } from '../widgets/info-tooltip'
 import { ExpandingInput } from '../widgets/expanding-input'
 import { MAX_ANSWERS, MAX_ANSWER_LENGTH } from 'common/answer'
 import { Button } from '../buttons/button'
+import { suggestMarketType } from './market-type-suggestions'
+import { MarketTypeSuggestionBanner } from './market-type-suggestion-banner'
 
 export type PreviewContractData = {
   question: string
@@ -54,7 +55,6 @@ export type PreviewContractData = {
   maxString?: string // For DATE markets
   midpoints?: number[] // For MULTI_NUMERIC and DATE markets
   unit?: string
-  totalBounty?: number
 
   // Multiple choice specific
   shouldAnswersSumToOne?: boolean
@@ -107,6 +107,15 @@ export function MarketPreview(props: {
   ) => void
   onGenerateNumericRanges?: () => void
   onProbabilityChange?: (probability: number) => void
+  onOpenCloseDateModal?: () => void
+  onGenerateDescription?: () => void
+  isGeneratingDescription?: boolean
+  onSwitchMarketType?: (
+    type: CreateableOutcomeType,
+    shouldSumToOne?: boolean,
+    addAnswersMode?: 'DISABLED' | 'ONLY_CREATOR' | 'ANYONE',
+    removeOtherAnswer?: boolean
+  ) => void
 }) {
   const {
     data,
@@ -131,8 +140,13 @@ export function MarketPreview(props: {
     onNumericRangeChange,
     onGenerateNumericRanges,
     onProbabilityChange,
+    onOpenCloseDateModal,
+    onGenerateDescription,
+    isGeneratingDescription = false,
+    onSwitchMarketType,
   } = props
   const [isTopicsModalOpen, setIsTopicsModalOpen] = useState(false)
+  const [dismissedSuggestion, setDismissedSuggestion] = useState(false)
 
   // Notify parent when topics modal opens/closes
   const handleSetTopicsModal = (open: boolean) => {
@@ -159,7 +173,8 @@ export function MarketPreview(props: {
     min,
     max,
     unit,
-    totalBounty,
+    shouldAnswersSumToOne,
+    addAnswersMode,
   } = data
 
   // Create a mock contract for rendering components
@@ -276,19 +291,18 @@ export function MarketPreview(props: {
   const isBinary = outcomeType === 'BINARY'
   const isMultipleChoice = outcomeType === 'MULTIPLE_CHOICE'
   const isPoll = outcomeType === 'POLL'
-  const isBountiedQuestion = outcomeType === 'BOUNTIED_QUESTION'
   const isNumeric = outcomeType === 'MULTI_NUMERIC' || outcomeType === 'NUMBER'
   const isDate = outcomeType === 'DATE'
   const isPseudoNumeric = outcomeType === 'PSEUDO_NUMERIC'
 
   return (
     <Col
-      className={clsx(
-        'bg-canvas-0 ring-ink-100 relative gap-3 rounded-lg p-4 shadow-md ring-1',
-        'transition-all duration-200',
-        className
-      )}
-    >
+        className={clsx(
+          'bg-canvas-0 ring-ink-100 relative gap-3 rounded-lg p-3 shadow-md ring-1 sm:p-4',
+          'transition-all duration-200',
+          className
+        )}
+      >
       {/* Creator Info */}
       <Row className="items-center justify-between gap-2">
         <Row className="items-center gap-2">
@@ -337,19 +351,38 @@ export function MarketPreview(props: {
         {/* Close Date Input */}
         {isEditable && setCloseDate && (
           <Row className="items-center gap-1">
-            <span className="text-ink-600 text-xs">Closes:</span>
-            <Input
-              type="date"
-              className="dark:date-range-input-white text-xs"
-              onChange={(e) => {
-                if (e.target.value) {
-                  setCloseDate(new Date(e.target.value))
-                }
-              }}
-              min={dayjs().format('YYYY-MM-DD')}
-              max="9999-12-31"
-              value={closeDate ? dayjs(closeDate).format('YYYY-MM-DD') : ''}
-            />
+            {onOpenCloseDateModal ? (
+              <>
+                <span className="text-ink-600 text-xs">
+                  {closeDate ? 'Closes:' : ''}
+                </span>
+                <button
+                  onClick={() => onOpenCloseDateModal()}
+                  className="text-ink-600 hover:text-ink-700 flex items-center gap-1 text-xs transition-colors"
+                >
+                  <span>
+                    {closeDate ? dayjs(closeDate).format('MMM D, YYYY') : 'close date'}
+                  </span>
+                  <span>📅</span>
+                </button>
+              </>
+            ) : (
+              <>
+                <span className="text-ink-600 text-xs">Closes:</span>
+                <Input
+                  type="date"
+                  className="dark:date-range-input-white cursor-pointer text-xs"
+                  onChange={(e) => {
+                    if (e.target.value) {
+                      setCloseDate(new Date(e.target.value))
+                    }
+                  }}
+                  min={dayjs().format('YYYY-MM-DD')}
+                  max="9999-12-31"
+                  value={closeDate ? dayjs(closeDate).format('YYYY-MM-DD') : ''}
+                />
+              </>
+            )}
           </Row>
         )}
       </Row>
@@ -383,6 +416,7 @@ export function MarketPreview(props: {
           className="text-ink-1000 placeholder:text-ink-400 border-ink-300 hover:ring-primary-500 focus:ring-primary-500 focus:border-primary-500 bg-canvas-0 w-full resize-none overflow-hidden rounded-md border px-4 py-3 text-lg font-semibold shadow-sm transition-colors hover:ring-1 focus:outline-none focus:ring-1 sm:text-xl"
           rows={1}
           maxLength={120}
+          autoFocus
         />
       ) : (
         <div className="text-ink-1000 text-lg font-semibold sm:text-xl">
@@ -394,9 +428,31 @@ export function MarketPreview(props: {
         </div>
       )}
 
+      {/* Market Type Suggestion Banner */}
+      {isEditable && !dismissedSuggestion && onSwitchMarketType && question && (
+        <>
+          {(() => {
+            const suggestion = suggestMarketType(
+              question,
+              outcomeType,
+              answers?.map((a) => a.text),
+              addAnswersMode,
+              shouldAnswersSumToOne
+            )
+            return suggestion ? (
+              <MarketTypeSuggestionBanner
+                suggestion={suggestion}
+                onSwitchType={onSwitchMarketType}
+                onDismiss={() => setDismissedSuggestion(true)}
+              />
+            ) : null
+          })()}
+        </>
+      )}
+
       {/* Date Range Inputs - Below Question for DATE markets */}
       {isDate && isEditable && onDateRangeChange && (
-        <Col className="bg-ink-50 border-ink-200 -mx-4 -mb-1 gap-2 rounded-lg border px-4 py-3">
+        <Col className="-mx-4 -mb-1 gap-2 rounded-lg px-4 py-3">
           <Col className="gap-0.5">
             <Row className="items-baseline gap-1">
               <span className="text-ink-700 text-sm font-medium">
@@ -460,7 +516,7 @@ export function MarketPreview(props: {
 
       {/* Numeric Range Inputs - Below Question for MULTI_NUMERIC markets */}
       {isNumeric && isEditable && onNumericRangeChange && (
-        <Col className="bg-ink-50 border-ink-200 -mx-4 -mb-1 gap-2 rounded-lg border px-4 py-3">
+        <Col className="-mx-4 -mb-1 gap-2 rounded-lg px-4 py-3">
           <Col className="gap-0.5">
             <Row className="items-baseline gap-1">
               <span className="text-ink-700 text-sm font-medium">
@@ -547,64 +603,6 @@ export function MarketPreview(props: {
 
       {/* Outcome Type Specific Content */}
       <Col className="gap-3">
-        {isBinary && mockContract.mechanism === 'cpmm-1' && (
-          <>
-            <Col className="items-center gap-2">
-              <BinaryResolutionOrChance
-                contract={mockContract as any}
-                className="text-4xl sm:text-5xl md:text-6xl lg:text-6xl"
-              />
-              {isEditable && onProbabilityChange && (
-                <input
-                  type="range"
-                  min="5"
-                  max="95"
-                  value={probability}
-                  onChange={(e) =>
-                    onProbabilityChange(parseFloat(e.target.value))
-                  }
-                  className="h-1.5 w-32 cursor-pointer appearance-none rounded-lg sm:h-2 sm:w-40 md:h-2.5 md:w-48 lg:h-2.5 lg:w-48"
-                  style={{
-                    background: `linear-gradient(to right, rgb(34 197 94) 0%, rgb(34 197 94) ${probability}%, rgb(239 68 68) ${probability}%, rgb(239 68 68) 100%)`,
-                  }}
-                />
-              )}
-            </Col>
-            <Row className="gap-2">
-              {isEditable && onProbabilityChange ? (
-                <>
-                  <button
-                    onClick={() => {
-                      const newProb = Math.min(95, probability + 1)
-                      onProbabilityChange(newProb)
-                    }}
-                    className="flex-1 rounded-lg bg-teal-500 px-4 py-3 text-center font-semibold text-white transition-colors hover:bg-teal-600"
-                  >
-                    Bet Yes
-                  </button>
-                  <button
-                    onClick={() => {
-                      const newProb = Math.max(5, probability - 1)
-                      onProbabilityChange(newProb)
-                    }}
-                    className="bg-scarlet-500 hover:bg-scarlet-600 flex-1 rounded-lg px-4 py-3 text-center font-semibold text-white transition-colors"
-                  >
-                    Bet No
-                  </button>
-                </>
-              ) : (
-                <>
-                  <div className="flex-1 cursor-not-allowed rounded-lg bg-teal-500 px-4 py-3 text-center font-semibold text-white opacity-60 hover:bg-teal-600">
-                    Bet Yes
-                  </div>
-                  <div className="bg-scarlet-500 hover:bg-scarlet-600 flex-1 cursor-not-allowed rounded-lg px-4 py-3 text-center font-semibold text-white opacity-60">
-                    Bet No
-                  </div>
-                </>
-              )}
-            </Row>
-          </>
-        )}
 
         {isMultipleChoice && (
           <Col className="gap-2">
@@ -649,13 +647,13 @@ export function MarketPreview(props: {
                       <Row className="gap-2">
                         <button
                           tabIndex={-1}
-                          className="cursor-not-allowed rounded bg-teal-500 px-3 py-1 text-xs font-semibold text-white opacity-60 hover:bg-teal-600"
+                          className="cursor-not-allowed rounded bg-teal-500 px-3 py-1 text-xs font-semibold text-white opacity-85 hover:bg-teal-600"
                         >
                           YES
                         </button>
                         <button
                           tabIndex={-1}
-                          className="bg-scarlet-500 hover:bg-scarlet-600 cursor-not-allowed rounded px-3 py-1 text-xs font-semibold text-white opacity-60"
+                          className="bg-scarlet-500 hover:bg-scarlet-600 cursor-not-allowed rounded px-3 py-1 text-xs font-semibold text-white opacity-85"
                         >
                           NO
                         </button>
@@ -680,35 +678,37 @@ export function MarketPreview(props: {
                     </Row>
 
                     {/* Mobile layout: stacked */}
-                    <Col className="gap-2 sm:hidden">
-                      {/* Answer text/input - full width */}
-                      {isEditable && onEditAnswers ? (
-                        <ExpandingInput
-                          className="w-full"
-                          placeholder={`Answer ${i + 1}`}
-                          value={answer.text}
-                          onChange={(e) => {
-                            const newAnswers = [...answers]
-                            newAnswers[i] = {
-                              ...newAnswers[i],
-                              text: e.target.value,
-                            }
-                            onEditAnswers(newAnswers.map((a) => a.text))
-                          }}
-                          rows={1}
-                          maxLength={MAX_ANSWER_LENGTH}
-                        />
-                      ) : (
-                        <span className="text-ink-900 text-sm font-semibold">
-                          {answer.text || `Answer ${i + 1}`}
-                        </span>
-                      )}
+                    <Row className="items-center gap-2 sm:hidden">
+                      {/* Probability - on the left, smaller */}
+                      <span className="text-ink-700 shrink-0 text-sm font-semibold">
+                        {Math.round(mcProbs[i] * 100)}%
+                      </span>
 
-                      {/* Probability and remove button */}
-                      <Row className="items-center justify-between">
-                        <span className="text-ink-700 text-lg font-semibold">
-                          {Math.round(mcProbs[i] * 100)}%
-                        </span>
+                      {/* Answer text/input - with relative positioning for X button */}
+                      <div className="relative flex-1">
+                        {isEditable && onEditAnswers ? (
+                          <ExpandingInput
+                            className="w-full"
+                            placeholder={`Answer ${i + 1}`}
+                            value={answer.text}
+                            onChange={(e) => {
+                              const newAnswers = [...answers]
+                              newAnswers[i] = {
+                                ...newAnswers[i],
+                                text: e.target.value,
+                              }
+                              onEditAnswers(newAnswers.map((a) => a.text))
+                            }}
+                            rows={1}
+                            maxLength={MAX_ANSWER_LENGTH}
+                          />
+                        ) : (
+                          <span className="text-ink-900 text-sm font-semibold">
+                            {answer.text || `Answer ${i + 1}`}
+                          </span>
+                        )}
+
+                        {/* X button - positioned in top-right corner */}
                         {isEditable && onEditAnswers && answers.length > 1 && (
                           <button
                             onClick={(e) => {
@@ -719,13 +719,13 @@ export function MarketPreview(props: {
                               )
                               onEditAnswers(newAnswers.map((a) => a.text))
                             }}
-                            className="hover:bg-canvas-50 border-ink-300 text-ink-700 bg-canvas-0 focus:ring-primary-500 rounded-full border p-1 shadow-sm focus:outline-none focus:ring-2 focus:ring-offset-2"
+                            className="hover:bg-canvas-50 border-ink-300 text-ink-700 bg-canvas-0 focus:ring-primary-500 absolute -right-1 -top-1 rounded-full border p-0.5 shadow-sm focus:outline-none focus:ring-2 focus:ring-offset-2"
                           >
-                            <XIcon className="h-5 w-5" aria-hidden="true" />
+                            <XIcon className="h-3 w-3" aria-hidden="true" />
                           </button>
                         )}
-                      </Row>
-                    </Col>
+                      </div>
+                    </Row>
                   </div>
                 ))}
 
@@ -751,24 +751,20 @@ export function MarketPreview(props: {
                           <span className="text-ink-900 text-sm font-semibold">
                             Other
                           </span>
-                          <Tooltip text="Bet on all answers that aren't listed yet. A bet on Other automatically includes any answer added in the future.">
-                            <span className="text-ink-400 cursor-help text-xs">
-                              ⓘ
-                            </span>
-                          </Tooltip>
+                          <InfoTooltip text="Bet on all answers that aren't listed yet. A bet on Other automatically includes any answer added in the future." />
                         </Row>
 
                         {/* YES/NO buttons - inline on right (hidden on mobile) */}
                         <Row className="hidden gap-2 sm:flex">
                           <button
                             tabIndex={-1}
-                            className="cursor-not-allowed rounded bg-teal-500 px-3 py-1 text-xs font-semibold text-white opacity-60 hover:bg-teal-600"
+                            className="cursor-not-allowed rounded bg-teal-500 px-3 py-1 text-xs font-semibold text-white opacity-85 hover:bg-teal-600"
                           >
                             YES
                           </button>
                           <button
                             tabIndex={-1}
-                            className="bg-scarlet-500 hover:bg-scarlet-600 cursor-not-allowed rounded px-3 py-1 text-xs font-semibold text-white opacity-60"
+                            className="bg-scarlet-500 hover:bg-scarlet-600 cursor-not-allowed rounded px-3 py-1 text-xs font-semibold text-white opacity-85"
                           >
                             NO
                           </button>
@@ -936,15 +932,15 @@ export function MarketPreview(props: {
                 {answers.length > 0 &&
                 data.midpoints &&
                 data.midpoints.length > 0 ? (
-                  <div className="bg-ink-100 border-ink-200 rounded-lg border p-3">
-                    <Row className="items-center justify-between gap-2 text-xs">
-                      <span className="text-ink-600 flex-shrink-0">
+                  <div className="bg-ink-100 border-ink-200 rounded-lg border p-2 sm:p-3">
+                    <Row className="items-center justify-center gap-1 text-xs sm:justify-between sm:gap-2">
+                      <span className="text-ink-600 min-w-0 shrink text-[10px] sm:text-xs">
                         Min: {min}
                         {unit ? ` ${unit}` : ''}
                       </span>
-                      <span className="text-ink-400">→</span>
-                      <Col className="flex-shrink-0 items-center gap-0.5">
-                        <span className="text-ink-900 font-semibold">
+                      <span className="text-ink-400 shrink-0">→</span>
+                      <Col className="shrink-0 items-center gap-0.5">
+                        <span className="text-ink-900 text-[11px] font-semibold sm:text-xs">
                           {(() => {
                             // Calculate expected value from probabilities and midpoints
                             const probs = mcProbs.slice(0, answers.length)
@@ -988,26 +984,26 @@ export function MarketPreview(props: {
                           })()}
                           {unit ? ` ${unit}` : ''}
                         </span>
-                        <span className="text-ink-500 text-[10px] uppercase">
+                        <span className="text-ink-500 text-[9px] uppercase sm:text-[10px]">
                           Expected
                         </span>
                       </Col>
-                      <span className="text-ink-400">→</span>
-                      <span className="text-ink-600 flex-shrink-0">
+                      <span className="text-ink-400 shrink-0">→</span>
+                      <span className="text-ink-600 min-w-0 shrink text-[10px] sm:text-xs">
                         Max: {max}
                         {unit ? ` ${unit}` : ''}
                       </span>
                     </Row>
                   </div>
                 ) : (
-                  <div className="bg-ink-100 border-ink-200 rounded-lg border p-3">
-                    <Row className="text-ink-600 justify-between text-xs">
-                      <span>
+                  <div className="bg-ink-100 border-ink-200 rounded-lg border p-2 sm:p-3">
+                    <Row className="text-ink-600 justify-center gap-1 text-[10px] sm:justify-between sm:gap-2 sm:text-xs">
+                      <span className="min-w-0 shrink">
                         Min: {min}
                         {unit ? ` ${unit}` : ''}
                       </span>
-                      <span>→</span>
-                      <span>
+                      <span className="shrink-0">→</span>
+                      <span className="min-w-0 shrink">
                         Max: {max}
                         {unit ? ` ${unit}` : ''}
                       </span>
@@ -1104,13 +1100,13 @@ export function MarketPreview(props: {
                           <Row className="gap-2">
                             <button
                               tabIndex={-1}
-                              className="cursor-not-allowed rounded bg-teal-500 px-3 py-1 text-xs font-semibold text-white opacity-60 hover:bg-teal-600"
+                              className="cursor-not-allowed rounded bg-teal-500 px-3 py-1 text-xs font-semibold text-white opacity-85 hover:bg-teal-600"
                             >
                               YES
                             </button>
                             <button
                               tabIndex={-1}
-                              className="bg-scarlet-500 hover:bg-scarlet-600 cursor-not-allowed rounded px-3 py-1 text-xs font-semibold text-white opacity-60"
+                              className="bg-scarlet-500 hover:bg-scarlet-600 cursor-not-allowed rounded px-3 py-1 text-xs font-semibold text-white opacity-85"
                             >
                               NO
                             </button>
@@ -1136,16 +1132,18 @@ export function MarketPreview(props: {
                           )}
                         </Row>
 
-                        {/* Mobile layout: stacked */}
-                        <Col className="gap-2 sm:hidden">
-                          {/* Answer text/input - full width */}
-                          {isEditable ? (
-                            <Row className="items-center gap-2">
-                              <span className="text-ink-600 text-sm">
-                                {i + 1}.
-                              </span>
+                        {/* Mobile layout: compact */}
+                        <Row className="items-center gap-2 sm:hidden">
+                          {/* Probability - on the left, smaller */}
+                          <span className="text-ink-700 shrink-0 text-sm font-semibold">
+                            {Math.round((mcProbs[i] || 0.5) * 100)}%
+                          </span>
+
+                          {/* Answer text/input - with relative positioning for X button */}
+                          <div className="relative flex-1">
+                            {isEditable ? (
                               <Input
-                                className="flex-1"
+                                className="w-full"
                                 value={answer.text || ''}
                                 onChange={(e) => {
                                   if (onEditAnswers) {
@@ -1158,18 +1156,13 @@ export function MarketPreview(props: {
                                 }}
                                 placeholder={`Range ${i + 1}`}
                               />
-                            </Row>
-                          ) : (
-                            <span className="text-ink-900 text-sm font-semibold">
-                              {answer.text || `Range ${i + 1}`}
-                            </span>
-                          )}
+                            ) : (
+                              <span className="text-ink-900 text-sm font-semibold">
+                                {answer.text || `Range ${i + 1}`}
+                              </span>
+                            )}
 
-                          {/* Probability and remove button */}
-                          <Row className="items-center justify-between">
-                            <span className="text-ink-700 text-lg font-semibold">
-                              {Math.round((mcProbs[i] || 0.5) * 100)}%
-                            </span>
+                            {/* X button - positioned in top-right corner */}
                             {isEditable && answers.length > 2 && (
                               <button
                                 onClick={() => {
@@ -1182,13 +1175,13 @@ export function MarketPreview(props: {
                                     )
                                   }
                                 }}
-                                className="hover:bg-canvas-50 border-ink-300 text-ink-700 bg-canvas-0 focus:ring-primary-500 rounded-full border p-1 shadow-sm focus:outline-none focus:ring-2 focus:ring-offset-2"
+                                className="hover:bg-canvas-50 border-ink-300 text-ink-700 bg-canvas-0 focus:ring-primary-500 absolute -right-1 -top-1 rounded-full border p-0.5 shadow-sm focus:outline-none focus:ring-2 focus:ring-offset-2"
                               >
-                                <XIcon className="h-5 w-5" aria-hidden="true" />
+                                <XIcon className="h-3 w-3" aria-hidden="true" />
                               </button>
                             )}
-                          </Row>
-                        </Col>
+                          </div>
+                        </Row>
                       </div>
                     ))}
                     {isEditable && (
@@ -1266,18 +1259,18 @@ export function MarketPreview(props: {
                 data.midpoints &&
                 data.midpoints.length > 0 &&
                 data.midpoints.every((m) => m > 0) ? (
-                  <div className="bg-ink-100 border-ink-200 rounded-lg border p-3">
-                    <Row className="items-center justify-between gap-2 text-xs">
-                      <span className="text-ink-600 flex-shrink-0">
-                        📅{' '}
+                  <div className="bg-ink-100 border-ink-200 rounded-lg border p-2 sm:p-3">
+                    <Row className="items-center justify-center gap-1 text-xs sm:justify-between sm:gap-2">
+                      <span className="text-ink-600 min-w-0 shrink text-[10px] sm:text-xs">
+                        <span className="hidden sm:inline">📅 </span>
                         {new Intl.DateTimeFormat('en-US', {
                           month: 'short',
                           year: 'numeric',
                         }).format(Math.min(...data.midpoints))}
                       </span>
-                      <span className="text-ink-400">→</span>
-                      <Col className="flex-shrink-0 items-center gap-0.5">
-                        <span className="text-ink-900 font-semibold">
+                      <span className="text-ink-400 shrink-0">→</span>
+                      <Col className="shrink-0 items-center gap-0.5">
+                        <span className="text-ink-900 text-[11px] font-semibold sm:text-xs">
                           {new Intl.DateTimeFormat('en-US', {
                             month: 'short',
                             day: 'numeric',
@@ -1326,13 +1319,13 @@ export function MarketPreview(props: {
                             })()
                           )}
                         </span>
-                        <span className="text-ink-500 text-[10px] uppercase">
+                        <span className="text-ink-500 text-[9px] uppercase sm:text-[10px]">
                           Expected
                         </span>
                       </Col>
-                      <span className="text-ink-400">→</span>
-                      <span className="text-ink-600 flex-shrink-0">
-                        📅{' '}
+                      <span className="text-ink-400 shrink-0">→</span>
+                      <span className="text-ink-600 min-w-0 shrink text-[10px] sm:text-xs">
+                        <span className="hidden sm:inline">📅 </span>
                         {new Intl.DateTimeFormat('en-US', {
                           month: 'short',
                           year: 'numeric',
@@ -1341,11 +1334,17 @@ export function MarketPreview(props: {
                     </Row>
                   </div>
                 ) : (
-                  <div className="bg-ink-100 border-ink-200 rounded-lg border p-3">
-                    <Row className="text-ink-600 justify-between text-xs">
-                      <span>📅 {data.minString}</span>
-                      <span>→</span>
-                      <span>📅 {data.maxString}</span>
+                  <div className="bg-ink-100 border-ink-200 rounded-lg border p-2 sm:p-3">
+                    <Row className="text-ink-600 justify-center gap-1 text-[10px] sm:justify-between sm:gap-2 sm:text-xs">
+                      <span className="min-w-0 shrink">
+                        <span className="hidden sm:inline">📅 </span>
+                        {data.minString}
+                      </span>
+                      <span className="shrink-0">→</span>
+                      <span className="min-w-0 shrink">
+                        <span className="hidden sm:inline">📅 </span>
+                        {data.maxString}
+                      </span>
                     </Row>
                   </div>
                 )}
@@ -1444,13 +1443,13 @@ export function MarketPreview(props: {
                           <Row className="gap-2">
                             <button
                               tabIndex={-1}
-                              className="cursor-not-allowed rounded bg-teal-500 px-3 py-1 text-xs font-semibold text-white opacity-60 hover:bg-teal-600"
+                              className="cursor-not-allowed rounded bg-teal-500 px-3 py-1 text-xs font-semibold text-white opacity-85 hover:bg-teal-600"
                             >
                               YES
                             </button>
                             <button
                               tabIndex={-1}
-                              className="bg-scarlet-500 hover:bg-scarlet-600 cursor-not-allowed rounded px-3 py-1 text-xs font-semibold text-white opacity-60"
+                              className="bg-scarlet-500 hover:bg-scarlet-600 cursor-not-allowed rounded px-3 py-1 text-xs font-semibold text-white opacity-85"
                             >
                               NO
                             </button>
@@ -1476,16 +1475,18 @@ export function MarketPreview(props: {
                           )}
                         </Row>
 
-                        {/* Mobile layout: stacked */}
-                        <Col className="gap-2 sm:hidden">
-                          {/* Answer text/input - full width */}
-                          {isEditable ? (
-                            <Row className="items-center gap-2">
-                              <span className="text-ink-600 text-sm">
-                                {i + 1}.
-                              </span>
+                        {/* Mobile layout: compact */}
+                        <Row className="items-center gap-2 sm:hidden">
+                          {/* Probability - on the left, smaller */}
+                          <span className="text-ink-700 shrink-0 text-sm font-semibold">
+                            {Math.round((mcProbs[i] || 0.5) * 100)}%
+                          </span>
+
+                          {/* Answer text/input - with relative positioning for X button */}
+                          <div className="relative flex-1">
+                            {isEditable ? (
                               <Input
-                                className="flex-1"
+                                className="w-full"
                                 value={answer.text || ''}
                                 onChange={(e) => {
                                   if (onEditAnswers) {
@@ -1498,18 +1499,13 @@ export function MarketPreview(props: {
                                 }}
                                 placeholder={`Range ${i + 1}`}
                               />
-                            </Row>
-                          ) : (
-                            <span className="text-ink-900 text-sm font-semibold">
-                              {answer.text || `Range ${i + 1}`}
-                            </span>
-                          )}
+                            ) : (
+                              <span className="text-ink-900 text-sm font-semibold">
+                                {answer.text || `Range ${i + 1}`}
+                              </span>
+                            )}
 
-                          {/* Probability and remove button */}
-                          <Row className="items-center justify-between">
-                            <span className="text-ink-700 text-lg font-semibold">
-                              {Math.round((mcProbs[i] || 0.5) * 100)}%
-                            </span>
+                            {/* X button - positioned in top-right corner */}
                             {isEditable && answers.length > 2 && (
                               <button
                                 onClick={() => {
@@ -1522,13 +1518,13 @@ export function MarketPreview(props: {
                                     )
                                   }
                                 }}
-                                className="hover:bg-canvas-50 border-ink-300 text-ink-700 bg-canvas-0 focus:ring-primary-500 rounded-full border p-1 shadow-sm focus:outline-none focus:ring-2 focus:ring-offset-2"
+                                className="hover:bg-canvas-50 border-ink-300 text-ink-700 bg-canvas-0 focus:ring-primary-500 absolute -right-1 -top-1 rounded-full border p-0.5 shadow-sm focus:outline-none focus:ring-2 focus:ring-offset-2"
                               >
-                                <XIcon className="h-5 w-5" aria-hidden="true" />
+                                <XIcon className="h-3 w-3" aria-hidden="true" />
                               </button>
                             )}
-                          </Row>
-                        </Col>
+                          </div>
+                        </Row>
                       </div>
                     ))}
                     {isEditable && (
@@ -1601,27 +1597,97 @@ export function MarketPreview(props: {
           </Col>
         )}
 
-        {isBountiedQuestion && (
-          <Row className="items-center gap-2 rounded bg-teal-50 p-3">
-            <span className="text-2xl text-teal-700">💰</span>
-            <Col className="gap-0.5">
-              <span className="text-ink-900 font-semibold">
-                {formatMoney(totalBounty || 0)} bounty
-              </span>
-              <span className="text-ink-600 text-xs">
-                Award to the best answer
-              </span>
+
+        {/* Binary Probability Controls */}
+        {isBinary && isEditable && onProbabilityChange && (
+          <Row className="items-center justify-center gap-1 sm:gap-3">
+            {/* Left side: -5, -1 buttons */}
+            <Row className="gap-0.5 opacity-60 sm:gap-1">
+              <button
+                onClick={() =>
+                  onProbabilityChange(Math.max(5, (probability ?? 50) - 5))
+                }
+                className="hover:bg-ink-200 hover:opacity-100 dark:hover:bg-ink-600 border-ink-300 dark:border-ink-600 text-ink-700 dark:text-ink-100 bg-ink-100 dark:bg-ink-700 flex h-6 w-8 items-center justify-center rounded-full border text-xs font-semibold transition-all sm:w-10"
+              >
+                -5
+              </button>
+              <button
+                onClick={() =>
+                  onProbabilityChange(Math.max(5, (probability ?? 50) - 1))
+                }
+                className="hover:bg-ink-200 hover:opacity-100 dark:hover:bg-ink-600 border-ink-300 dark:border-ink-600 text-ink-700 dark:text-ink-100 bg-ink-100 dark:bg-ink-700 flex h-6 w-8 items-center justify-center rounded-full border text-xs font-semibold transition-all sm:w-10"
+              >
+                -1
+              </button>
+            </Row>
+
+            {/* Center: percentage display and slider */}
+            <Col className="items-center gap-2">
+              <Row className="items-center gap-1">
+                <div className="text-ink-900 text-2xl font-bold sm:text-3xl md:text-4xl">
+                  {probability}%{' '}
+                  <span className="text-ink-600 text-sm font-normal sm:text-base">
+                    chance
+                  </span>
+                </div>
+                <InfoTooltip text="Sets the starting odds for traders, and determines how liquidity is dispersed" />
+              </Row>
+              <input
+                type="range"
+                min="5"
+                max="95"
+                value={probability}
+                onChange={(e) =>
+                  onProbabilityChange(parseFloat(e.target.value))
+                }
+                className="h-1 w-[140px] cursor-pointer appearance-none rounded-lg opacity-60 sm:w-[180px]"
+                style={{
+                  background: `linear-gradient(to right, rgb(34 197 94) 0%, rgb(34 197 94) ${probability}%, rgb(239 68 68) ${probability}%, rgb(239 68 68) 100%)`,
+                }}
+              />
             </Col>
+
+            {/* Right side: +1, +5 buttons */}
+            <Row className="gap-0.5 opacity-60 sm:gap-1">
+              <button
+                onClick={() =>
+                  onProbabilityChange(Math.min(95, (probability ?? 50) + 1))
+                }
+                className="hover:bg-ink-200 hover:opacity-100 dark:hover:bg-ink-600 border-ink-300 dark:border-ink-600 text-ink-700 dark:text-ink-100 bg-ink-100 dark:bg-ink-700 flex h-6 w-8 items-center justify-center rounded-full border text-xs font-semibold transition-all sm:w-10"
+              >
+                +1
+              </button>
+              <button
+                onClick={() =>
+                  onProbabilityChange(Math.min(95, (probability ?? 50) + 5))
+                }
+                className="hover:bg-ink-200 hover:opacity-100 dark:hover:bg-ink-600 border-ink-300 dark:border-ink-600 text-ink-700 dark:text-ink-100 bg-ink-100 dark:bg-ink-700 flex h-6 w-8 items-center justify-center rounded-full border text-xs font-semibold transition-all sm:w-10"
+              >
+                +5
+              </button>
+            </Row>
           </Row>
         )}
 
         {/* Description Editor */}
         {isEditable && descriptionEditor ? (
-          <Col className="gap-2">
+          <div className="relative">
             <div className="text-ink-600 text-sm">
               <TextEditor editor={descriptionEditor} simple />
             </div>
-          </Col>
+            {onGenerateDescription && (
+              <Button
+                color="indigo-outline"
+                size="xs"
+                loading={isGeneratingDescription}
+                onClick={onGenerateDescription}
+                disabled={!question || isGeneratingDescription}
+                className="absolute bottom-2 right-2"
+              >
+                Generate with AI
+              </Button>
+            )}
+          </div>
         ) : !isEditable && description ? (
           <Col className="gap-2">
             <div className="text-ink-600 line-clamp-3 text-sm">
@@ -1694,29 +1760,7 @@ export function MarketPreview(props: {
             </span>
           </>
         )}
-        {isNumeric &&
-          answers.length > 0 &&
-          data.midpoints &&
-          data.midpoints.length > 0 && (
-            <>
-              <span>·</span>
-              <span className="flex items-center gap-1 rounded-full bg-teal-100 px-2 py-0.5 font-medium text-teal-700">
-                <svg
-                  className="h-3 w-3"
-                  fill="currentColor"
-                  viewBox="0 0 20 20"
-                >
-                  <path
-                    fillRule="evenodd"
-                    d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z"
-                    clipRule="evenodd"
-                  />
-                </svg>
-                Numeric ranges
-              </span>
-            </>
-          )}
       </Row>
-    </Col>
+      </Col>
   )
 }

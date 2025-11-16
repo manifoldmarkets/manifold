@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
 import { Col } from 'web/components/layout/col'
 import { Row } from 'web/components/layout/row'
 import { CreateableOutcomeType } from 'common/contract'
@@ -16,17 +16,6 @@ export function ProminentTypeSelector(props: {
 }) {
   const { currentType, currentShouldAnswersSumToOne, onSelectType } = props
   const [isExpanded, setIsExpanded] = useState(!currentType) // Start expanded if no type selected
-  const [showAllTypes, setShowAllTypes] = useState(false)
-  const [expandWithAllTypes, setExpandWithAllTypes] = useState(false) // Track if we should show all when expanding
-
-  // Sync showAllTypes when expanding based on expandWithAllTypes
-  useEffect(() => {
-    if (isExpanded && expandWithAllTypes) {
-      setShowAllTypes(true)
-    } else if (isExpanded && !expandWithAllTypes) {
-      setShowAllTypes(false)
-    }
-  }, [isExpanded, expandWithAllTypes])
 
   // Primary types to always show
   const PRIMARY_TYPES = ['BINARY', 'DEPENDENT_MULTIPLE_CHOICE'] as const
@@ -71,9 +60,7 @@ export function ProminentTypeSelector(props: {
                 key={key}
                 onClick={() => {
                   if (isSelected) {
-                    // Clicking selected primary type - expand showing only primary types
-                    setExpandWithAllTypes(false)
-                    setShowAllTypes(false)
+                    // Clicking selected type - expand showing all types
                     setIsExpanded(true)
                   } else {
                     handleSelect(key as keyof typeof ALL_CONTRACT_TYPES)
@@ -114,8 +101,6 @@ export function ProminentTypeSelector(props: {
             <button
               onClick={() => {
                 // Clicking selected non-primary type - expand showing all types
-                setExpandWithAllTypes(true)
-                setShowAllTypes(true)
                 setIsExpanded(true)
               }}
               className={clsx(
@@ -135,8 +120,6 @@ export function ProminentTypeSelector(props: {
             <button
               onClick={() => {
                 // Clicking More - expand showing all types
-                setExpandWithAllTypes(true)
-                setShowAllTypes(true)
                 setIsExpanded(true)
               }}
               className="border-ink-200 bg-canvas-0 hover:border-ink-300 flex flex-1 items-center justify-center gap-0.5 rounded-lg border-2 px-2 py-1.5 transition-colors sm:gap-1 sm:px-3"
@@ -181,136 +164,140 @@ export function ProminentTypeSelector(props: {
           )}
         </Row>
 
-        {/* Show all types when expanded, or just primary types if collapsed */}
-        {showAllTypes ? (
-          <>
-            {/* All types in one grid */}
-            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
-              {Object.entries(ALL_CONTRACT_TYPES).map(([key, type]) => {
-                const isSelected = currentValueKey === key
-                return (
+        {/* Always show all types */}
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
+          {Object.entries(ALL_CONTRACT_TYPES).map(([key, type]) => {
+            // Skip BOUNTIED_QUESTION as it will be combined with POLL
+            if (key === 'BOUNTIED_QUESTION') return null
+
+            const isSelected = currentValueKey === key
+
+            // Special combined tile for POLL / Discussion Post
+            if (key === 'POLL') {
+              const pollType = ALL_CONTRACT_TYPES.POLL
+              const discussionType = ALL_CONTRACT_TYPES.BOUNTIED_QUESTION
+              const isPollSelected = currentValueKey === 'POLL'
+              const isDiscussionSelected =
+                currentValueKey === 'BOUNTIED_QUESTION'
+
+              return (
+                <div
+                  key={key}
+                  className="flex flex-col gap-0 overflow-hidden rounded-xl border-2 border-ink-200"
+                >
+                  {/* Poll button - top half */}
                   <button
-                    key={key}
-                    onClick={() =>
-                      handleSelect(key as keyof typeof ALL_CONTRACT_TYPES)
-                    }
+                    onClick={() => handleSelect('POLL')}
                     className={clsx(
-                      'group relative flex flex-col gap-2 rounded-xl border-2 p-4 text-left transition-all sm:gap-3 sm:p-5',
-                      'hover:shadow-lg active:scale-[0.98] sm:hover:scale-[1.02]',
-                      isSelected
-                        ? 'border-primary-500 bg-primary-50 shadow-md'
-                        : 'border-ink-200 bg-canvas-0 hover:border-primary-300'
+                      'group relative flex flex-col gap-2 p-4 text-left transition-all sm:gap-2 sm:p-4',
+                      'hover:shadow-md active:scale-[0.99]',
+                      isPollSelected
+                        ? 'bg-primary-50'
+                        : 'bg-canvas-0 hover:bg-primary-50/30'
                     )}
                   >
-                    {isSelected && (
-                      <div className="bg-primary-500 absolute right-2 top-2 rounded-full px-2 py-0.5 text-xs font-semibold text-white sm:right-3 sm:top-3">
+                    {isPollSelected && (
+                      <div className="bg-primary-500 absolute right-2 top-2 rounded-full px-2 py-0.5 text-xs font-semibold text-white">
                         Selected
                       </div>
                     )}
-
-                    <Row className="items-center gap-2 sm:gap-3">
-                      <div
-                        className={clsx(
-                          'text-3xl transition-transform group-hover:scale-110 sm:text-4xl',
-                          isSelected
-                            ? 'text-primary-600'
-                            : 'text-ink-400 group-hover:text-primary-500'
-                        )}
-                      >
-                        {type.visual}
+                    <Row className="items-center gap-2 sm:gap-2">
+                      <div className="text-2xl text-orange-300 sm:text-3xl">
+                        {pollType.visual}
                       </div>
-                      <div className="flex-1">
-                        <h3 className="text-ink-900 text-base font-bold sm:text-lg">
-                          {type.label}
-                        </h3>
-                      </div>
+                      <h3 className="text-ink-900 text-sm font-bold sm:text-base">
+                        {pollType.label}
+                      </h3>
                     </Row>
-
-                    <p className="text-ink-600 text-xs leading-relaxed sm:text-sm">
-                      {type.descriptor}
-                    </p>
-
-                    <p className="text-ink-500 border-ink-200 border-t pt-2 text-xs italic">
-                      Example: {type.example}
+                    <p className="text-ink-600 text-xs leading-relaxed">
+                      {pollType.descriptor}
                     </p>
                   </button>
-                )
-              })}
-            </div>
-            <button
-              onClick={() => setShowAllTypes(false)}
-              className="text-ink-600 hover:text-ink-800 mx-auto text-sm font-semibold underline"
-            >
-              Hide additional types
-            </button>
-          </>
-        ) : (
-          <>
-            {/* Primary types only */}
-            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-              {Object.entries(ALL_CONTRACT_TYPES)
-                .filter(([key]) => PRIMARY_TYPES.includes(key as any))
-                .map(([key, type]) => {
-                  const isSelected = currentValueKey === key
-                  return (
-                    <button
-                      key={key}
-                      onClick={() =>
-                        handleSelect(key as keyof typeof ALL_CONTRACT_TYPES)
-                      }
-                      className={clsx(
-                        'group relative flex flex-col gap-2 rounded-xl border-2 p-4 text-left transition-all sm:gap-3 sm:p-5',
-                        'hover:shadow-lg active:scale-[0.98] sm:hover:scale-[1.02]',
-                        isSelected
-                          ? 'border-primary-500 bg-primary-50 shadow-md'
-                          : 'border-ink-200 bg-canvas-0 hover:border-primary-300'
-                      )}
-                    >
-                      {isSelected && (
-                        <div className="bg-primary-500 absolute right-2 top-2 rounded-full px-2 py-0.5 text-xs font-semibold text-white sm:right-3 sm:top-3">
-                          Selected
-                        </div>
-                      )}
 
-                      <Row className="items-center gap-2 sm:gap-3">
-                        <div
-                          className={clsx(
-                            'text-3xl transition-transform group-hover:scale-110 sm:text-4xl',
-                            isSelected
-                              ? 'text-primary-600'
-                              : 'text-ink-400 group-hover:text-primary-500'
-                          )}
-                        >
-                          {type.visual}
-                        </div>
-                        <div className="flex-1">
-                          <h3 className="text-ink-900 text-base font-bold sm:text-lg">
-                            {type.label}
-                          </h3>
-                        </div>
-                      </Row>
+                  {/* Divider */}
+                  <div className="border-ink-200 border-t" />
 
-                      <p className="text-ink-600 text-xs leading-relaxed sm:text-sm">
-                        {type.descriptor}
-                      </p>
+                  {/* Discussion Post button - bottom half */}
+                  <button
+                    onClick={() => handleSelect('BOUNTIED_QUESTION')}
+                    className={clsx(
+                      'group relative flex flex-col gap-2 p-4 text-left transition-all sm:gap-2 sm:p-4',
+                      'hover:shadow-md active:scale-[0.99]',
+                      isDiscussionSelected
+                        ? 'bg-primary-50'
+                        : 'bg-canvas-0 hover:bg-primary-50/30'
+                    )}
+                  >
+                    {isDiscussionSelected && (
+                      <div className="bg-primary-500 absolute right-2 top-2 rounded-full px-2 py-0.5 text-xs font-semibold text-white">
+                        Selected
+                      </div>
+                    )}
+                    <Row className="items-center gap-2 sm:gap-2">
+                      <div className="text-ink-400 text-2xl sm:text-3xl">
+                        {discussionType.visual}
+                      </div>
+                      <h3 className="text-ink-900 text-sm font-bold sm:text-base">
+                        {discussionType.label}
+                      </h3>
+                    </Row>
+                    <p className="text-ink-600 text-xs leading-relaxed">
+                      {discussionType.descriptor}
+                    </p>
+                  </button>
+                </div>
+              )
+            }
 
-                      <p className="text-ink-500 border-ink-200 border-t pt-2 text-xs italic">
-                        Example: {type.example}
-                      </p>
-                    </button>
-                  )
-                })}
-            </div>
+            return (
+              <button
+                key={key}
+                onClick={() =>
+                  handleSelect(key as keyof typeof ALL_CONTRACT_TYPES)
+                }
+                className={clsx(
+                  'group relative flex flex-col gap-2 rounded-xl border-2 p-4 text-left transition-all sm:gap-3 sm:p-5',
+                  'hover:shadow-lg active:scale-[0.98] sm:hover:scale-[1.02]',
+                  isSelected
+                    ? 'border-primary-500 bg-primary-50 shadow-md'
+                    : 'border-ink-200 bg-canvas-0 hover:border-primary-300'
+                )}
+              >
+                {isSelected && (
+                  <div className="bg-primary-500 absolute right-2 top-2 rounded-full px-2 py-0.5 text-xs font-semibold text-white sm:right-3 sm:top-3">
+                    Selected
+                  </div>
+                )}
 
-            {/* See all types button */}
-            <button
-              onClick={() => setShowAllTypes(true)}
-              className="text-primary-600 hover:text-primary-700 mx-auto text-sm font-semibold underline"
-            >
-              See all types
-            </button>
-          </>
-        )}
+                <Row className="items-center gap-2 sm:gap-3">
+                  <div
+                    className={clsx(
+                      'text-3xl transition-transform group-hover:scale-110 sm:text-4xl',
+                      isSelected
+                        ? 'text-primary-600'
+                        : 'text-ink-400 group-hover:text-primary-500'
+                    )}
+                  >
+                    {type.visual}
+                  </div>
+                  <div className="flex-1">
+                    <h3 className="text-ink-900 text-base font-bold sm:text-lg">
+                      {type.label}
+                    </h3>
+                  </div>
+                </Row>
+
+                <p className="text-ink-600 text-xs leading-relaxed sm:text-sm">
+                  {type.descriptor}
+                </p>
+
+                <p className="text-ink-500 border-ink-200 border-t pt-2 text-xs italic">
+                  Example: {type.example}
+                </p>
+              </button>
+            )
+          })}
+        </div>
       </Col>
     </div>
   )
