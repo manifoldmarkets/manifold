@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from 'react'
 import clsx from 'clsx'
 import { User } from 'common/user'
-import { CreateableOutcomeType } from 'common/contract'
+import { CreateableOutcomeType, add_answers_mode } from 'common/contract'
 import { JSONContent } from '@tiptap/core'
 import { Col } from '../layout/col'
 import { Row } from '../layout/row'
@@ -15,7 +15,6 @@ import {
 import { formatMoney } from 'common/util/format'
 import { api, getSimilarGroupsToContract } from 'web/lib/api/api'
 import { track } from 'web/lib/service/analytics'
-import { NewQuestionParams } from './new-contract-panel'
 import Router from 'next/router'
 import { usePersistentLocalState } from 'web/hooks/use-persistent-local-state'
 import { getAnte } from 'common/economy'
@@ -40,13 +39,69 @@ import { debounce } from 'lodash'
 
 const MAX_DESCRIPTION_LENGTH = 16000
 
+// Type definitions for URL params and contract creation
+export type NewQuestionParams = {
+  groupIds?: string[]
+  groupSlugs?: string[]
+  q: string
+  description: string
+  closeTime: number
+  outcomeType?: CreateableOutcomeType
+  visibility: string
+  // Params for PSEUDO_NUMERIC outcomeType
+  min?: number
+  max?: number
+  isLogScale?: boolean
+  initValue?: number
+  answers?: string[]
+  addAnswersMode?: add_answers_mode
+  shouldAnswersSumToOne?: boolean
+  precision?: number
+  sportsStartTimestamp?: string
+  sportsEventId?: string
+  sportsLeague?: string
+  unit?: string
+  midpoints?: number[]
+  rand?: string
+  overrideKey?: string
+}
+
+export type CreateContractStateType =
+  | 'choosing contract'
+  | 'filling contract params'
+  | 'ai chat'
+
 export function NewContractPanel(props: {
   creator: User
   params?: NewQuestionParams
 }) {
   const { creator, params } = props
 
-  // Initialize form state with defaults
+  // Get completely empty form state
+  const getEmptyFormState = (): FormState => ({
+    question: '',
+    outcomeType: 'BINARY',
+    description: undefined,
+    answers: [],
+    closeDate: undefined,
+    closeHoursMinutes: '23:59',
+    neverCloses: false,
+    selectedGroups: [],
+    visibility: 'public',
+    liquidityTier: 100,
+    shouldAnswersSumToOne: true,
+    addAnswersMode: 'DISABLED',
+    probability: 50,
+    totalBounty: 100,
+    min: undefined,
+    max: undefined,
+    minString: '',
+    maxString: '',
+    unit: '',
+    midpoints: [],
+  })
+
+  // Initialize form state with defaults (from params if provided)
   const getDefaultFormState = (): FormState => ({
     question: params?.q || '',
     outcomeType: (params?.outcomeType as any) || 'BINARY', // Default to binary market
@@ -71,7 +126,7 @@ export function NewContractPanel(props: {
     minString: params?.min?.toString() || '',
     maxString: params?.max?.toString() || '',
     unit: params?.unit || '',
-    midpoints: [],
+    midpoints: params?.midpoints || [],
   })
 
   const [formState, setFormState] = usePersistentLocalState<FormState>(
@@ -114,12 +169,14 @@ export function NewContractPanel(props: {
   const [isGeneratingNumericRanges, setIsGeneratingNumericRanges] =
     useState(false)
 
+  const [isGeneratingDescription, setIsGeneratingDescription] = useState(false)
+
   // Create description editor with dynamic placeholder based on market type
   const getDescriptionPlaceholder = () => {
     if (formState.outcomeType === 'POLL') {
       return 'Describe what this poll is about...'
     }
-    return 'Write something like... This market resolves YES when X condition(s) are met, otherwise it resolves NO. It may resolve NO early if Y condition(s) are met'
+    return 'This market will resolve YES if X or Y happens. If Z happens, it resolves NO early.'
   }
 
   const descriptionEditor = useTextEditor({
@@ -135,6 +192,19 @@ export function NewContractPanel(props: {
       descriptionEditor.commands.setContent(formState.description)
     }
   }, []) // Only on mount
+
+  // Override persistent state when params are provided (e.g., from duplicate market)
+  useEffect(() => {
+    if (params?.rand) {
+      // rand param indicates this is a duplicate/template, override localStorage
+      const newState = getDefaultFormState()
+      setFormState(newState)
+      // Also set the description in the editor
+      if (descriptionEditor && newState.description) {
+        descriptionEditor.commands.setContent(newState.description)
+      }
+    }
+  }, [params?.rand])
 
   // Update placeholder when outcome type changes
   useEffect(() => {
@@ -163,7 +233,7 @@ export function NewContractPanel(props: {
 
   // Reset all form fields
   const handleReset = () => {
-    setFormState(getDefaultFormState())
+    setFormState(getEmptyFormState())
     setHasManuallyEditedCloseDate(false)
     setShowResetConfirmation(false)
     if (descriptionEditor) {
@@ -376,6 +446,32 @@ export function NewContractPanel(props: {
     } finally {
       setIsGeneratingAnswers(false)
     }
+  }
+
+  const generateAIDescription = async () => {
+    if (!formState.question) return
+    setIsGeneratingDescription(true)
+    try {
+      const description = descriptionEditor
+        ? richTextToString(descriptionEditor.getJSON())
+        : ''
+      const result = await api('generate-ai-description', {
+        question: formState.question,
+        description,
+        answers: formState.answers,
+        outcomeType: formState.outcomeType ?? undefined,
+        shouldAnswersSumToOne: formState.shouldAnswersSumToOne ?? false,
+        addAnswersMode: formState.addAnswersMode,
+      })
+      if (result.description && descriptionEditor) {
+        const endPos = descriptionEditor.state.doc.content.size
+        descriptionEditor.commands.setTextSelection(endPos)
+        descriptionEditor.commands.insertContent(result.description)
+      }
+    } catch (e) {
+      console.error('Error generating description:', e)
+    }
+    setIsGeneratingDescription(false)
   }
 
   // Debounced handler for regenerating DATE midpoints when answers are edited
@@ -696,14 +792,9 @@ export function NewContractPanel(props: {
                   <Col className="gap-0.5">
                     <span className="text-ink-600 text-xs">
                       {formState.shouldAnswersSumToOne
-                        ? 'only one answer will resolve YES'
+                        ? 'After one answer resolves YES, all others resolve NO, and not sooner'
                         : 'each answer can resolve YES or NO at any time, independently of other answers'}
                     </span>
-                    {formState.shouldAnswersSumToOne && (
-                      <span className="text-ink-500 text-xs">
-                        all other answers resolve NO after one resolves YES, and not sooner
-                      </span>
-                    )}
                   </Col>
                 </Row>
               </Col>
@@ -731,6 +822,7 @@ export function NewContractPanel(props: {
                     Anyone: 'ANYONE',
                   }}
                   setChoice={(c) => updateField('addAnswersMode', c as any)}
+                  className="w-fit"
                 />
               </Col>
             </Row>
@@ -764,6 +856,7 @@ export function NewContractPanel(props: {
             }}
             selectedGroups={formState.selectedGroups}
             onUpdateGroups={(groups) => updateField('selectedGroups', groups)}
+            onOpenCloseDateModal={() => setIsCloseDateModalOpen(true)}
             onToggleVisibility={() => {
               updateField(
                 'visibility',
@@ -945,6 +1038,26 @@ export function NewContractPanel(props: {
               }
             }}
             onProbabilityChange={(prob) => updateField('probability', prob)}
+            onGenerateDescription={generateAIDescription}
+            isGeneratingDescription={isGeneratingDescription}
+            onSwitchMarketType={(
+              type,
+              shouldSumToOne,
+              addAnswersMode,
+              removeOtherAnswer
+            ) => {
+              handleTypeChange(type, shouldSumToOne ?? true)
+              if (addAnswersMode !== undefined) {
+                updateField('addAnswersMode', addAnswersMode)
+              }
+              if (removeOtherAnswer && formState.answers) {
+                // Remove the "other" answer from the list
+                const filteredAnswers = formState.answers.filter(
+                  (answer) => answer.toLowerCase().trim() !== 'other'
+                )
+                updateField('answers', filteredAnswers)
+              }
+            }}
             isEditable
           />
 
@@ -1076,8 +1189,21 @@ export function NewContractPanel(props: {
             {(formState.outcomeType === 'MULTIPLE_CHOICE' ||
               formState.outcomeType === 'POLL') && (
               <button
+                onClick={() => {
+                  // Focus the first answer input by placeholder
+                  const textarea = document.querySelector(
+                    `textarea[placeholder="Answer 1"], textarea[placeholder="Option 1"]`
+                  ) as HTMLTextAreaElement | null
+
+                  if (textarea) {
+                    textarea.scrollIntoView({ behavior: 'smooth', block: 'center' })
+                    setTimeout(() => {
+                      textarea.focus()
+                    }, 100)
+                  }
+                }}
                 className={clsx(
-                  'flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-sm font-medium transition-colors',
+                  'flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-sm font-medium transition-colors hover:opacity-80',
                   formState.answers.filter((a) => a.trim().length > 0).length >
                     2
                     ? 'border-teal-500 bg-teal-50 text-teal-700'
@@ -1113,6 +1239,29 @@ export function NewContractPanel(props: {
                     <CheckCircleIcon className="h-4 w-4" />
                   )}
                 Date ranges
+              </button>
+            )}
+
+            {/* Numeric ranges pill for MULTI_NUMERIC markets */}
+            {formState.outcomeType === 'MULTI_NUMERIC' && (
+              <button
+                className={clsx(
+                  'flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-sm font-medium transition-colors',
+                  formState.min !== undefined &&
+                    formState.max !== undefined &&
+                    formState.answers.length > 0
+                    ? 'border-teal-500 bg-teal-50 text-teal-700'
+                    : formState.min !== undefined && formState.max !== undefined
+                    ? 'border-amber-500 bg-amber-50 text-amber-700 dark:border-amber-400 dark:bg-amber-950 dark:text-amber-300'
+                    : 'border-red-500 bg-red-50 text-red-700 dark:border-red-400 dark:bg-red-950 dark:text-red-300'
+                )}
+              >
+                {formState.min !== undefined &&
+                  formState.max !== undefined &&
+                  formState.answers.length > 0 && (
+                    <CheckCircleIcon className="h-4 w-4" />
+                  )}
+                Numeric ranges
               </button>
             )}
 
@@ -1159,6 +1308,29 @@ export function NewContractPanel(props: {
           onGenerateAnswers={generateAnswers}
           isGeneratingAnswers={isGeneratingAnswers}
         />
+
+        {/* Footer */}
+        <div className="text-ink-500 mt-6 flex items-center justify-center gap-3 pb-32 text-xs lg:pb-20">
+          <span>© Manifold Markets, Inc.</span>
+          <span>•</span>
+          <a
+            href="https://manifold.markets/terms"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="hover:text-ink-700 underline"
+          >
+            Terms
+          </a>
+          <span>•</span>
+          <a
+            href="https://manifold.markets/privacy"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="hover:text-ink-700 underline"
+          >
+            Privacy
+          </a>
+        </div>
       </Col>
 
       {/* Bottom Action Bar - Mobile */}
@@ -1218,25 +1390,16 @@ export function NewContractPanel(props: {
       </Row>
 
       {/* Desktop Action Bar */}
-      <div className="hidden lg:block">
-        <Row
-          className={clsx(
-            'bg-canvas-0 border-ink-200 fixed bottom-0 z-20 border-t p-4 shadow-lg',
-            'left-0 right-0 lg:left-[16.67%]' // Offset by sidebar width (2/12 of grid)
-          )}
-        >
-          <Col className="mx-auto w-full max-w-5xl gap-2">
+      <div className="pointer-events-none fixed bottom-0 left-0 right-0 z-10 hidden lg:block">
+        <div className="mx-auto grid w-full max-w-[1440px] grid-cols-12">
+          <div className="col-span-2" /> {/* Spacer for sidebar */}
+          <Col className="bg-canvas-0 border-ink-200 pointer-events-auto col-span-7 gap-2 border-t p-4 shadow-lg">
             {submitError && (
               <div className="bg-scarlet-50 text-scarlet-700 rounded-lg px-4 py-2 text-sm">
                 {submitError}
               </div>
             )}
-            <Row className="items-center justify-end gap-3">
-              {!validation.isValid && (
-                <div className="text-ink-600 text-sm">
-                  {Object.values(validation.errors)[0]}
-                </div>
-              )}
+            <Row className="gap-3">
               {!showResetConfirmation ? (
                 <Button
                   color="gray-outline"
@@ -1262,6 +1425,7 @@ export function NewContractPanel(props: {
               <Button
                 color="green"
                 size="lg"
+                className="flex-1"
                 onClick={handleSubmit}
                 disabled={!canSubmit}
                 loading={isSubmitting}
@@ -1269,12 +1433,14 @@ export function NewContractPanel(props: {
                 Create Question for {formatMoney(cost)}
               </Button>
             </Row>
+            {!validation.isValid && (
+              <div className="text-ink-600 text-center text-sm">
+                {Object.values(validation.errors)[0]}
+              </div>
+            )}
           </Col>
-        </Row>
+        </div>
       </div>
-
-      {/* Spacer for fixed bottom bar + mobile nav */}
-      <div className="h-40 lg:h-24" />
 
       {/* Type Switcher Modal */}
       <TypeSwitcherModal

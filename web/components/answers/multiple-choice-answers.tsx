@@ -97,26 +97,30 @@ export function MultipleChoiceAnswers(props: {
   return (
     <Col className="gap-2">
       {answers.slice(0, answers.length).map((answer, i) => (
-        <Row className="items-center gap-2 align-middle" key={i}>
-          {i + 1}.{' '}
-          <AnswerInput
-            id={`answer-input-${i}`}
-            value={answer}
-            onChange={(e) => setAnswer(i, e.target.value)}
-            onUp={() => focusPrevAnswer(i)}
-            onDown={() => focusNextAnswer(i)}
-            onDelete={() => removeAnswer(i)}
-            placeholder={placeholder ?? `Option ${i + 1}`}
-          />
-          {canRemoveAnswers && (
-            <button
-              onClick={() => removeAnswer(i)}
-              type="button"
-              className="hover:bg-canvas-50 border-ink-300 text-ink-700 bg-canvas-0 focus:ring-primary-500 inline-flex items-center rounded-full border p-1 text-xs font-medium shadow-sm focus:outline-none focus:ring-2 focus:ring-offset-2"
-            >
-              <XIcon className="h-5 w-5" aria-hidden="true" />
-            </button>
-          )}
+        <Row className="items-center gap-2 align-middle sm:flex-row" key={i}>
+          <span className="text-ink-600 shrink-0 text-sm sm:text-base">
+            {i + 1}.
+          </span>
+          <div className="relative w-full">
+            <AnswerInput
+              id={`answer-input-${i}`}
+              value={answer}
+              onChange={(e) => setAnswer(i, e.target.value)}
+              onUp={() => focusPrevAnswer(i)}
+              onDown={() => focusNextAnswer(i)}
+              onDelete={() => removeAnswer(i)}
+              placeholder={placeholder ?? `Option ${i + 1}`}
+            />
+            {canRemoveAnswers && (
+              <button
+                onClick={() => removeAnswer(i)}
+                type="button"
+                className="hover:bg-canvas-50 border-ink-300 text-ink-700 bg-canvas-0 focus:ring-primary-500 absolute -right-1 -top-1 inline-flex items-center rounded-full border p-0.5 text-xs font-medium shadow-sm focus:outline-none focus:ring-2 focus:ring-offset-2 sm:static sm:p-1"
+              >
+                <XIcon className="h-3 w-3 sm:h-5 sm:w-5" aria-hidden="true" />
+              </button>
+            )}
+          </div>
         </Row>
       ))}
 
@@ -231,7 +235,7 @@ const AnswerInput = (props: {
   return (
     <ExpandingInput
       id={id}
-      className="ml-2 w-full"
+      className="w-full sm:ml-2"
       disabled={disabled}
       placeholder={placeholder}
       value={value}

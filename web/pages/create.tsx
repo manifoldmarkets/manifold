@@ -1,7 +1,9 @@
 'use client'
 import { Page } from 'web/components/layout/page'
-import { NewQuestionParams } from 'web/components/new-contract/new-contract-panel-old'
-import { NewContractPanel } from 'web/components/new-contract/new-contract-panel'
+import {
+  NewQuestionParams,
+  NewContractPanel,
+} from 'web/components/new-contract/new-contract-panel'
 import { Title } from 'web/components/widgets/title'
 import { useRedirectIfSignedOut } from 'web/hooks/use-redirect-if-signed-out'
 import { useUser } from 'web/hooks/use-user'
@@ -54,7 +56,7 @@ export default function Create() {
     )
 
   return (
-    <Page trackPageView={'create page'}>
+    <Page trackPageView={'create page'} hideFooter>
       <NewContractPanel params={params} creator={user} />
     </Page>
   )
