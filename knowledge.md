@@ -5,6 +5,8 @@ Our code is all Typescript and split into a few packages. At the top level, ther
 - common
 - web
 - backend
+- mani (unused)
+- native (minimal react-native app that opens a browser to serve our app on iOS and Android)
 
 Common has lots of type definitions for our data structures, like Contract and User. It also contains many useful utility functions. We try not to add package dependencies to common.
 
