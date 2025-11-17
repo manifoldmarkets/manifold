@@ -206,24 +206,22 @@ export function toFullMarket(contract: Contract): FullMarket {
   const liteMarket = toLiteMarket(contract)
   const { outcomeType } = contract
   const answers =
-    outcomeType === 'MULTIPLE_CHOICE' && contract.answers
+    contract.mechanism === 'cpmm-multi-1'
       ? contract.answers.map((answer) =>
           augmentAnswerWithProbability(contract, answer)
         )
       : undefined
 
   let multiValues = {}
-  if (outcomeType === 'MULTIPLE_CHOICE') {
-    if (contract.mechanism === 'cpmm-multi-1') {
-      multiValues = {
-        shouldAnswersSumToOne: contract.shouldAnswersSumToOne,
-        addAnswersMode: contract.addAnswersMode,
-      }
-    } else {
-      multiValues = {
-        shouldAnswersSumToOne: true,
-        addAnswersMode: 'DISABLED',
-      }
+  if (contract.mechanism === 'cpmm-multi-1') {
+    multiValues = {
+      shouldAnswersSumToOne: contract.shouldAnswersSumToOne,
+      addAnswersMode: contract.addAnswersMode,
+    }
+  } else if (outcomeType === 'MULTIPLE_CHOICE') {
+    multiValues = {
+      shouldAnswersSumToOne: true,
+      addAnswersMode: 'DISABLED',
     }
   }
   const options =
