@@ -3,3 +3,4 @@
 out/
 public/**/*.json
 public/**/*.html
+next-env.d.ts
