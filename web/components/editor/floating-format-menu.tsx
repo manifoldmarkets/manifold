@@ -1,7 +1,7 @@
 import {
-  LinkIcon,
-  EyeOffIcon,
   CheckIcon,
+  EyeOffIcon,
+  LinkIcon,
   TrashIcon,
 } from '@heroicons/react/solid'
 import { Editor } from '@tiptap/core'
@@ -12,6 +12,7 @@ import { useState } from 'react'
 import BoldIcon from 'web/lib/icons/bold-icon.svg'
 import ItalicIcon from 'web/lib/icons/italic-icon.svg'
 import TypeIcon from 'web/lib/icons/type-icon.svg'
+import { isAndroid } from 'web/lib/util/device'
 
 // see https://tiptap.dev/guide/menus
 
@@ -35,10 +36,20 @@ export function FloatingFormatMenu(props: {
 
   const unsetLink = () => editor.chain().focus().unsetLink().run()
 
+  // On Android, adjust the menu position to appear above the native text selection menu
+  const tippyOptions = isAndroid()
+    ? // const tippyOptions = true
+      {
+        offset: [0, 5] as [number, number],
+        placement: 'bottom' as const,
+      }
+    : {}
+
   return (
     <BubbleMenu
       editor={editor}
       className="text-ink-0 bg-ink-700 flex gap-2 rounded-sm p-1"
+      tippyOptions={tippyOptions}
     >
       {url === null ? (
         <>
