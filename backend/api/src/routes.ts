@@ -105,6 +105,7 @@ import { getTxns } from './get-txns'
 import { getLiteUser, getUser } from './get-user'
 import { getUserPortfolio } from './get-user-portfolio'
 import { getUserPortfolioHistory } from './get-user-portfolio-history'
+import { getUserPrivateData } from './get-user-private-data'
 import { getUsers } from './get-users'
 import { getUserBalancesByIds, getUsersByIds } from './get-users-by-ids'
 import { completeCashoutRequest } from './gidx/complete-cashout-request'
@@ -183,9 +184,17 @@ import { purchaseContractBoost } from './purchase-boost'
 import { referUser } from './refer-user'
 import { updatePost } from './update-post'
 import { validateiap } from './validate-iap'
+import { adminRecoverUser } from './admin-recover-user'
+import { adminGetUserInfo } from './admin-get-user-info'
+import { adminDeleteUser } from './admin-delete-user'
+import { anonymizeUser } from './anonymize-user'
 
 export const handlers: { [k in APIPath]: APIHandler<k> } = {
   'refresh-all-clients': refreshAllClients,
+  'recover-user': adminRecoverUser,
+  'get-user-info': adminGetUserInfo,
+  'admin-delete-user': adminDeleteUser,
+  'anonymize-user': anonymizeUser,
   bet: placeBet,
   'multi-bet': placeMultiBet,
   'follow-contract': followContract,
@@ -258,6 +267,7 @@ export const handlers: { [k in APIPath]: APIHandler<k> } = {
   'me/delete': deleteMe,
   'me/private': getCurrentPrivateUser,
   'me/private/update': updatePrivateUser,
+  'get-user-private-data': getUserPrivateData,
   'user/by-id/:id': getUser,
   'user/by-id/:id/lite': getLiteUser,
   'user/:username': getUser,

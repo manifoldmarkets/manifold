@@ -59,7 +59,7 @@ export const generateAIAnswers: APIHandler<'generate-ai-answers'> =
           answers: string[]
           addAnswersMode: 'DISABLED' | 'ONLY_CREATOR' | 'ANYONE'
         }>(userPrompt, {
-          model: aiModels.sonnet45,
+          model: aiModels.haiku,
           webSearch: true,
           parseAsJson: true,
         })

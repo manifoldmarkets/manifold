@@ -1,14 +1,14 @@
 import { XIcon } from '@heroicons/react/solid'
 import { MAX_ANSWERS, MAX_ANSWER_LENGTH } from 'common/answer'
+import { formatMoney } from 'common/util/format'
+import { last } from 'lodash'
+import { Button } from '../buttons/button'
 import { Col } from '../layout/col'
 import { Row } from '../layout/row'
+import { seeResultsAnswer } from '../new-contract/contract-params-form'
+import { ChoicesToggleGroup } from '../widgets/choices-toggle-group'
 import { ExpandingInput } from '../widgets/expanding-input'
 import { InfoTooltip } from '../widgets/info-tooltip'
-import { ChoicesToggleGroup } from '../widgets/choices-toggle-group'
-import { Button } from '../buttons/button'
-import { formatMoney } from 'common/util/format'
-import { seeResultsAnswer } from '../new-contract/contract-params-form'
-import { last } from 'lodash'
 
 export function MultipleChoiceAnswers(props: {
   answers: string[]
@@ -90,9 +90,7 @@ export function MultipleChoiceAnswers(props: {
   const canRemoveAnswers =
     outcomeType === 'POLL'
       ? numAnswers > 2
-      : (!shouldAnswersSumToOne && numAnswers > 1) ||
-        numAnswers > 2 ||
-        (numAnswers > 1 && addAnswersMode !== 'DISABLED')
+      : numAnswers > 2 || (numAnswers > 1 && addAnswersMode !== 'DISABLED')
 
   return (
     <Col className="gap-2">

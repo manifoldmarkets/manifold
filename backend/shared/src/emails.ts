@@ -225,7 +225,7 @@ export const sendWelcomeEmail = async (
       unsubscribeUrl,
     },
     {
-      from: 'David from Manifold <david@manifold.markets>',
+      from: 'Stefanie from Manifold <stefanie@manifold.markets>',
       'o:deliverytime': new Date(Date.now() + 2 * HOUR_MS).toUTCString(),
     }
   )
@@ -335,7 +335,7 @@ export const sendCreatorGuideEmail = async (
       unsubscribeUrl,
     },
     {
-      from: 'David from Manifold <david@manifold.markets>',
+      from: 'Stefanie from Manifold <stefanie@manifold.markets>',
     }
   )
 }
@@ -392,7 +392,7 @@ export const sendThankYouEmail = async (
       unsubscribeUrl,
     },
     {
-      from: 'David from Manifold <david@manifold.markets>',
+      from: 'Stefanie from Manifold <stefanie@manifold.markets>',
     }
   )
 }

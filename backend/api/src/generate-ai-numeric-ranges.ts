@@ -48,12 +48,12 @@ export const generateAINumericRanges: APIHandler<'generate-ai-numeric-ranges'> =
 
       const [thresholds, buckets] = await Promise.all([
         promptAI<RangeResponse>(prompt, {
-          model: aiModels.sonnet4,
+          model: aiModels.haiku,
           system: thresholdSystemPrompt,
           parseAsJson: true,
         }),
         promptAI<RangeResponse>(prompt, {
-          model: aiModels.sonnet4,
+          model: aiModels.haiku,
           system: bucketSystemPrompt,
           parseAsJson: true,
         }),
@@ -108,7 +108,7 @@ export const regenerateNumericMidpoints: APIHandler<'regenerate-numeric-midpoint
       Return ONLY an array of midpoint numbers, one for each range, in the same order as the ranges, without any other text or formatting.`
 
       const result = await promptAI<number[]>(prompt, {
-        model: aiModels.sonnet4,
+        model: aiModels.haiku,
         parseAsJson: true,
       })
       log('claudeResponse', result)

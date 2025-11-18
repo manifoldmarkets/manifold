@@ -289,3 +289,23 @@ text {
   transform: scale(1);
   transition: transform 0.1s ease-out;
 }
+
+/* Page container needs to be scrollable when body is fixed */
+@media (max-width: 1024px) {
+  .page-scroll-container {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 58px; /* Height of bottom nav bar */
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+    min-height: auto !important; /* Override min-height when fixed */
+    overflow-x: hidden;
+  }
+
+  /* Ensure bottom nav stays on top */
+  nav.fixed.bottom-0 {
+    z-index: 50;
+  }
+}

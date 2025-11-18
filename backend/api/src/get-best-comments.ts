@@ -153,7 +153,7 @@ export const getBestComments: APIHandler<'get-best-comments'> = rateLimitByUser(
         `
 
         const batchMsgContent = await promptAI(batchPrompt, {
-          model: aiModels.flash,
+          model: aiModels.haiku,
         })
         const batchCommentIds = batchMsgContent
           ? batchMsgContent

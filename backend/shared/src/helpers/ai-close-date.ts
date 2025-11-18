@@ -31,7 +31,8 @@ export const getCloseDate = async (question: string, utcOffset?: number) => {
      End date: 31/12/2025 11:59 pm
      (Note how the end date is the minute before the end of 2025, ie in 2025.)
 
-    Here's their question, and remember: ONLY return the end date in the form: DD/MM/YYYY h:mm a and make sure it's after the current date.
+    Here's their question, and remember: ONLY return the end date in the form: DD/MM/YYYY h:mm.
+    Make absolutely SURE it's AFTER the current date (${now}).
 
     Question: ${question}
     Now: ${now}

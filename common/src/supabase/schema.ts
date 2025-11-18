@@ -3328,6 +3328,7 @@ export type Database = {
           total_cash_deposits: number
           total_deposits: number
           username: string
+          unban_time: string | null
         }
         Insert: {
           balance?: number
@@ -3341,6 +3342,7 @@ export type Database = {
           total_cash_deposits?: number
           total_deposits?: number
           username: string
+          unban_time?: string | null
         }
         Update: {
           balance?: number
@@ -3354,6 +3356,7 @@ export type Database = {
           total_cash_deposits?: number
           total_deposits?: number
           username?: string
+          unban_time?: string | null
         }
         Relationships: []
       }

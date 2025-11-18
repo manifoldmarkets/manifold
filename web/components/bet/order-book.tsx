@@ -1,6 +1,9 @@
 import { ChevronDownIcon, ChevronUpIcon } from '@heroicons/react/outline'
+import { usePersistentInMemoryState } from 'client-common/hooks/use-persistent-in-memory-state'
+import { getCountdownString } from 'client-common/lib/time'
 import clsx from 'clsx'
 import { Answer } from 'common/answer'
+import { DisplayUser } from 'common/api/user-types'
 import { LimitBet } from 'common/bet'
 import {
   BinaryContract,
@@ -13,18 +16,18 @@ import {
 } from 'common/contract'
 import { getFormattedMappedValue } from 'common/pseudo-numeric'
 import { formatPercent } from 'common/util/format'
-import { groupBy, keyBy, sortBy, sumBy } from 'lodash'
+import { groupBy, keyBy, sortBy, sumBy, uniq } from 'lodash'
 import { useState } from 'react'
-import { usePersistentInMemoryState } from 'client-common/hooks/use-persistent-in-memory-state'
 import { useUser } from 'web/hooks/use-user'
 import { useDisplayUserById, useUsers } from 'web/hooks/use-user-supabase'
 import { api } from 'web/lib/api/api'
-import { getCountdownString } from 'client-common/lib/time'
 import { Button } from '../buttons/button'
+import { getPseudonym } from '../charts/contract/choice'
 import { DepthChart } from '../charts/contract/depth-chart'
 import { Col } from '../layout/col'
 import { Modal } from '../layout/modal'
 import { Row } from '../layout/row'
+import { MultipleOrSingleAvatars } from '../multiple-or-single-avatars'
 import {
   BinaryOutcomeLabel,
   NoLabel,
@@ -39,11 +42,8 @@ import { InfoTooltip } from '../widgets/info-tooltip'
 import { Subtitle } from '../widgets/subtitle'
 import { Table } from '../widgets/table'
 import { Tooltip } from '../widgets/tooltip'
-import { MoneyDisplay } from './money-display'
-import { MultipleOrSingleAvatars } from '../multiple-or-single-avatars'
-import { DisplayUser } from 'common/api/user-types'
 import { UserLink } from '../widgets/user-link'
-import { getPseudonym } from '../charts/contract/choice'
+import { MoneyDisplay } from './money-display'
 
 export function YourOrders(props: {
   contract:
@@ -448,7 +448,7 @@ function CollapsedOrderRow(props: {
 
   const total = sumBy(bets, (b) => b.orderAmount - b.amount)
 
-  const allUsers = useUsers(bets.map((b) => b.userId))?.filter(
+  const allUsers = useUsers(uniq(bets.map((b) => b.userId)))?.filter(
     (a) => a != null
   ) as DisplayUser[] | undefined
   const usersById = keyBy(allUsers, (u) => u.id)
@@ -499,7 +499,7 @@ function CollapsedOrderRow(props: {
 
       {!collapsed &&
         bets.map((b) => {
-          const u = usersById[b.userId]
+          const u = usersById[b.userId] as DisplayUser | undefined
           return (
             <div
               className="bg-canvas-50 col-span-3 flex justify-between p-1"
@@ -507,8 +507,8 @@ function CollapsedOrderRow(props: {
             >
               <div className="flex items-center gap-2">
                 <Avatar
-                  avatarUrl={u.avatarUrl}
-                  username={u.username}
+                  avatarUrl={u?.avatarUrl}
+                  username={u?.username}
                   size="xs"
                 />
                 <UserLink user={u} short />

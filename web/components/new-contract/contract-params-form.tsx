@@ -251,7 +251,8 @@ export function ContractParamsForm(props: {
       outcomeType === 'MULTIPLE_CHOICE' ||
       outcomeType === 'BOUNTIED_QUESTION' ||
       outcomeType === 'POLL' ||
-      outcomeType === 'STONK'
+      outcomeType === 'STONK' ||
+      currentQuestion.toLowerCase().startsWith('how many')
     ) {
       if (suggestedTitle) setSuggestedTitle(undefined)
       return
@@ -265,6 +266,8 @@ export function ContractParamsForm(props: {
         setSuggestedTitle(
           result.title !== currentQuestion ? result.title : undefined
         )
+      } else {
+        setSuggestedTitle(undefined)
       }
     } catch (e) {
       console.error('Error generating title:', e)

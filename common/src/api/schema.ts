@@ -121,6 +121,57 @@ export const API = (_apiTypeCheck = {
       .strict(),
     returns: {} as { status: boolean },
   },
+  'recover-user': {
+    method: 'POST',
+    visibility: 'undocumented',
+    authed: true,
+    props: z
+      .object({
+        userId: z.string(),
+        email: z.string().optional(), // Optional manual email override
+      })
+      .strict(),
+    returns: {} as { success: boolean },
+  },
+  'get-user-info': {
+    method: 'GET',
+    visibility: 'undocumented',
+    authed: true,
+    props: z
+      .object({
+        userId: z.string(),
+      })
+      .strict(),
+    returns: {} as {
+      supabaseEmail?: string
+      oldEmail?: string
+      firebaseEmail?: string
+      initialDeviceToken?: string
+      initialIpAddress?: string
+    },
+  },
+  'admin-delete-user': {
+    method: 'POST',
+    visibility: 'undocumented',
+    authed: true,
+    props: z
+      .object({
+        userId: z.string(),
+      })
+      .strict(),
+    returns: {} as { success: boolean },
+  },
+  'anonymize-user': {
+    method: 'POST',
+    visibility: 'undocumented',
+    authed: true,
+    props: z
+      .object({
+        userId: z.string(),
+      })
+      .strict(),
+    returns: {} as { success: boolean; newUsername: string; newName: string },
+  },
   comment: {
     method: 'POST',
     visibility: 'public',
@@ -1062,6 +1113,15 @@ export const API = (_apiTypeCheck = {
         lastAppReviewTime: z.number().optional(),
       })
       .strict(),
+  },
+  'get-user-private-data': {
+    method: 'GET',
+    visibility: 'public',
+    authed: true,
+    props: z.object({
+      userId: z.string(),
+    }),
+    returns: {} as PrivateUser,
   },
   'user/:username': {
     method: 'GET',

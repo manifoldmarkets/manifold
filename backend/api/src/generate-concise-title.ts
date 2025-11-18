@@ -8,6 +8,13 @@ export const generateConciseTitle: APIHandler<'generate-concise-title'> =
     async (props) => {
       const { question } = props
       const system = `Make this prediction market question more concise while preserving its core meaning. Keep the same level of precision and specificity, but make it more concise.
+
+CRITICAL: You must ONLY output either:
+1. The concise title (if you can make it more concise), OR
+2. An empty string (if already concise, too short, invalid, or unclear)
+
+NEVER provide explanations, commentary, meta-responses, or any text other than the concise title itself. If the input is not a valid prediction market question, is unclear, or is already optimal, return ''.
+
 Guidelines:
 - Use declarative, active voice statements ending with question marks
 - Use English words rather than symbols/notations, e.g. 'More than' instead of '>'
@@ -16,12 +23,12 @@ Guidelines:
 - Keep important distinctions between market types (date, numeric, multiple choice, and binary), i.e if the market is forecasting 'when' something might happen, keep that distinction
 - Remove unnecessary words, phrases, notations, e.g. "will", etc.
 - Keep it concise
-- Do not return anything other than the active voice, concise title, unless the question is already concise and declarative, in which case return a blank string
-- Do not suggest a longer title than the original. If you can't make it more concise, just return a blank string
+- Do not suggest a longer title than the original. If you can't make it more concise, just return ''
 - Do NOT introduce jargon, niche acronyms, or anything that makes the title shorter but also more confusing, i.e. 'SWE' for 'software engineer', or 'S&P breaker' for 'stock market circuit breaker'
 - Keep personal markets personal, e.g. "Will I go to the gym this week?" should NOT be changed to impersonal forms like "Personal gym attendance this week"
 - Don't change the meaning of the question: include important and relevant parts of the question:
   - i.e. 'announce' in 'announce a ceasefire in 2025' is important and distinct from 'ceasefire in 2025'
+- If the input is confusing, meta, invalid, or not a prediction market question, return '' (do NOT explain why)
 
 Example transformations:
 "Will a ceasefire between Russia and Ukraine be declared within 90 days of Trump entering the office of the presidency?" => "Russia-Ukraine ceasefire in Trump's first 90 days?"
@@ -32,9 +39,10 @@ Example transformations:
 "Will I go to the gym this week?" => "I go to the gym this week?"
 "Will I get a girlfriend this year?" => "I get a girlfriend this year?"
 "Will I think getting an art MFA was worth it?" => "I'll think getting an art MFA was worth it?"
-"AI negatively affects US doctors financially by EOY2025?" => '' (no change - already active voice, concise, and declarative)
-"Substack publications at 5M+ paid subscribers by 2025?" => '' (no change - already concise and declarative)
-"'A Minecraft Movie' (2025) Rotten Tomatoes critics score?" => '' (no change - already concise and declarative)
+"AI negatively affects US doctors financially by EOY2025?" => ''
+"Substack publications at 5M+ paid subscribers by Jan 1st 2025?" => ''
+"'A Minecraft Movie' (2025) Rotten Tomatoes critics score?" => ''
+"How do I resolve this market?" => ''
 `
 
       const prompt = `Question: "${question}"

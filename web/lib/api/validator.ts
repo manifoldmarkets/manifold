@@ -1,5 +1,5 @@
 import { z } from 'zod'
-import { ValidationError } from './_types'
+import { ValidationError } from './validator-types'
 
 export const validate = <T extends z.ZodTypeAny>(schema: T, val: unknown) => {
   const result = schema.safeParse(val)
