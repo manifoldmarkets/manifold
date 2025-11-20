@@ -77,7 +77,7 @@ import { ChoicesToggleGroup } from '../widgets/choices-toggle-group'
 import { getContractTypeFromValue } from './create-contract-types'
 import { MultiNumericDateSection } from './multi-numeric-date-section'
 import { MultiNumericRangeSection } from './multi-numeric-range-section'
-import { NewQuestionParams } from './new-contract-panel'
+import { NewQuestionParams } from './contract-types'
 import { NumberRangeSection } from './number-range-section'
 
 export const seeResultsAnswer = 'See results'

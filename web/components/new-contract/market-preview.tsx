@@ -27,6 +27,7 @@ import { MAX_ANSWERS, MAX_ANSWER_LENGTH } from 'common/answer'
 import { Button } from '../buttons/button'
 import { suggestMarketType } from './market-type-suggestions'
 import { MarketTypeSuggestionBanner } from './market-type-suggestion-banner'
+import { useIsMobile } from 'web/hooks/use-is-mobile'
 
 export type PreviewContractData = {
   question: string
@@ -147,6 +148,7 @@ export function MarketPreview(props: {
   } = props
   const [isTopicsModalOpen, setIsTopicsModalOpen] = useState(false)
   const [dismissedSuggestion, setDismissedSuggestion] = useState(false)
+  const isMobile = useIsMobile()
 
   // Notify parent when topics modal opens/closes
   const handleSetTopicsModal = (open: boolean) => {
@@ -313,7 +315,9 @@ export function MarketPreview(props: {
           />
           <UserLink
             user={user}
-            className="text-ink-600 hidden text-sm sm:inline"
+            short={isMobile}
+            maxLength={9}
+            className="text-ink-600 text-sm"
           />
           {isEditable && onToggleVisibility ? (
             <>
@@ -1607,7 +1611,7 @@ export function MarketPreview(props: {
                 onClick={() =>
                   onProbabilityChange(Math.max(5, (probability ?? 50) - 5))
                 }
-                className="hover:bg-ink-200 hover:opacity-100 dark:hover:bg-ink-600 border-ink-300 dark:border-ink-600 text-ink-700 dark:text-ink-100 bg-ink-100 dark:bg-ink-700 flex h-6 w-8 items-center justify-center rounded-full border text-xs font-semibold transition-all sm:w-10"
+                className="bg-ink-100 hover:bg-ink-200 border-ink-300 text-ink-700 hover:opacity-100 flex h-6 w-8 items-center justify-center rounded-full border text-xs font-semibold transition-all sm:w-10"
               >
                 -5
               </button>
@@ -1615,7 +1619,7 @@ export function MarketPreview(props: {
                 onClick={() =>
                   onProbabilityChange(Math.max(5, (probability ?? 50) - 1))
                 }
-                className="hover:bg-ink-200 hover:opacity-100 dark:hover:bg-ink-600 border-ink-300 dark:border-ink-600 text-ink-700 dark:text-ink-100 bg-ink-100 dark:bg-ink-700 flex h-6 w-8 items-center justify-center rounded-full border text-xs font-semibold transition-all sm:w-10"
+                className="bg-ink-100 hover:bg-ink-200 border-ink-300 text-ink-700 hover:opacity-100 flex h-6 w-8 items-center justify-center rounded-full border text-xs font-semibold transition-all sm:w-10"
               >
                 -1
               </button>
@@ -1653,7 +1657,7 @@ export function MarketPreview(props: {
                 onClick={() =>
                   onProbabilityChange(Math.min(95, (probability ?? 50) + 1))
                 }
-                className="hover:bg-ink-200 hover:opacity-100 dark:hover:bg-ink-600 border-ink-300 dark:border-ink-600 text-ink-700 dark:text-ink-100 bg-ink-100 dark:bg-ink-700 flex h-6 w-8 items-center justify-center rounded-full border text-xs font-semibold transition-all sm:w-10"
+                className="bg-ink-100 hover:bg-ink-200 border-ink-300 text-ink-700 hover:opacity-100 flex h-6 w-8 items-center justify-center rounded-full border text-xs font-semibold transition-all sm:w-10"
               >
                 +1
               </button>
@@ -1661,7 +1665,7 @@ export function MarketPreview(props: {
                 onClick={() =>
                   onProbabilityChange(Math.min(95, (probability ?? 50) + 5))
                 }
-                className="hover:bg-ink-200 hover:opacity-100 dark:hover:bg-ink-600 border-ink-300 dark:border-ink-600 text-ink-700 dark:text-ink-100 bg-ink-100 dark:bg-ink-700 flex h-6 w-8 items-center justify-center rounded-full border text-xs font-semibold transition-all sm:w-10"
+                className="bg-ink-100 hover:bg-ink-200 border-ink-300 text-ink-700 hover:opacity-100 flex h-6 w-8 items-center justify-center rounded-full border text-xs font-semibold transition-all sm:w-10"
               >
                 +5
               </button>
