@@ -6,7 +6,7 @@ import { CostSection } from './cost-section'
 
 export type FormState = {
   question: string
-  outcomeType: CreateableOutcomeType | null
+  outcomeType: CreateableOutcomeType | 'DISCUSSION_POST' | null
   description?: JSONContent
   answers: string[]
   closeDate?: string

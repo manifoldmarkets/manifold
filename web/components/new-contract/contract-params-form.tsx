@@ -83,10 +83,12 @@ import { NumberRangeSection } from './number-range-section'
 export const seeResultsAnswer = 'See results'
 export function ContractParamsForm(props: {
   creator: User
-  outcomeType: CreateableOutcomeType
+  outcomeType: CreateableOutcomeType | 'DISCUSSION_POST'
   params?: Partial<NewQuestionParams>
 }) {
-  const { creator, params, outcomeType } = props
+  const { creator, params } = props
+  // Type narrow outcomeType - DISCUSSION_POST shouldn't use this old form, but TypeScript needs the type
+  const outcomeType = props.outcomeType as CreateableOutcomeType
 
   const [liquidityTier, setLiquidityTier] = usePersistentLocalState<number>(
     liquidityTiers[0],

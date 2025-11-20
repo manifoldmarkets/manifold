@@ -10,9 +10,12 @@ import clsx from 'clsx'
 import { ChevronDownIcon, ChevronUpIcon } from '@heroicons/react/solid'
 
 export function ProminentTypeSelector(props: {
-  currentType: CreateableOutcomeType | null
+  currentType: CreateableOutcomeType | 'DISCUSSION_POST' | null
   currentShouldAnswersSumToOne?: boolean
-  onSelectType: (type: CreateableOutcomeType, shouldSumToOne: boolean) => void
+  onSelectType: (
+    type: CreateableOutcomeType | 'DISCUSSION_POST',
+    shouldSumToOne: boolean
+  ) => void
 }) {
   const { currentType, currentShouldAnswersSumToOne, onSelectType } = props
   const [isExpanded, setIsExpanded] = useState(!currentType) // Start expanded if no type selected
@@ -167,23 +170,22 @@ export function ProminentTypeSelector(props: {
         {/* Always show all types */}
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
           {Object.entries(ALL_CONTRACT_TYPES).map(([key, type]) => {
-            // Skip BOUNTIED_QUESTION as it will be combined with POLL
-            if (key === 'BOUNTIED_QUESTION') return null
+            // Skip DISCUSSION_POST as it will be combined with POLL
+            if (key === 'DISCUSSION_POST') return null
 
             const isSelected = currentValueKey === key
 
             // Special combined tile for POLL / Discussion Post
             if (key === 'POLL') {
               const pollType = ALL_CONTRACT_TYPES.POLL
-              const discussionType = ALL_CONTRACT_TYPES.BOUNTIED_QUESTION
+              const discussionType = ALL_CONTRACT_TYPES.DISCUSSION_POST
               const isPollSelected = currentValueKey === 'POLL'
-              const isDiscussionSelected =
-                currentValueKey === 'BOUNTIED_QUESTION'
+              const isDiscussionSelected = currentValueKey === 'DISCUSSION_POST'
 
               return (
                 <div
                   key={key}
-                  className="flex flex-col gap-0 overflow-hidden rounded-xl border-2 border-ink-200"
+                  className="border-ink-200 flex flex-col gap-0 overflow-hidden rounded-xl border-2"
                 >
                   {/* Poll button - top half */}
                   <button
@@ -219,7 +221,7 @@ export function ProminentTypeSelector(props: {
 
                   {/* Discussion Post button - bottom half */}
                   <button
-                    onClick={() => handleSelect('BOUNTIED_QUESTION')}
+                    onClick={() => handleSelect('DISCUSSION_POST')}
                     className={clsx(
                       'group relative flex flex-col gap-2 p-4 text-left transition-all sm:gap-2 sm:p-4',
                       'hover:shadow-md active:scale-[0.99]',

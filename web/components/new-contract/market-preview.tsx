@@ -38,7 +38,7 @@ export type PreviewContractData = {
     | 'STONK'
     | 'NUMBER'
     | 'POLL'
-    | 'BOUNTIED_QUESTION'
+    | 'DISCUSSION_POST'
     | 'MULTI_NUMERIC'
     | 'DATE'
   description?: JSONContent
@@ -195,7 +195,7 @@ export function MarketPreview(props: {
     closeTime,
     isResolved: false,
     mechanism:
-      outcomeType === 'POLL' || outcomeType === 'BOUNTIED_QUESTION'
+      outcomeType === 'POLL' || outcomeType === 'DISCUSSION_POST'
         ? 'none'
         : outcomeType === 'MULTIPLE_CHOICE'
         ? 'cpmm-multi-1'

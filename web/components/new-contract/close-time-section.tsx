@@ -12,7 +12,7 @@ export const CloseTimeSection = (props: {
   setCloseDate: (closeDate: string | undefined) => void
   closeHoursMinutes: string | undefined
   setCloseHoursMinutes: (closeHoursMinutes: string | undefined) => void
-  outcomeType: CreateableOutcomeType
+  outcomeType: CreateableOutcomeType | 'DISCUSSION_POST'
   submitState: 'EDITING' | 'LOADING' | 'DONE'
   setNeverCloses: (neverCloses: boolean) => void
   neverCloses: boolean
@@ -46,7 +46,7 @@ export const CloseTimeSection = (props: {
   if (outcomeType == 'POLL') {
     closeDateMap['Never'] = NEVER
   }
-  if (outcomeType == 'STONK' || outcomeType == 'BOUNTIED_QUESTION') {
+  if (outcomeType == 'STONK' || outcomeType == 'DISCUSSION_POST') {
     return null
   }
   return (

@@ -11,8 +11,8 @@ import {
 import { CreateContractStateType } from './new-contract-panel'
 
 export function ChoosingContractForm(props: {
-  outcomeType: CreateableOutcomeType | undefined
-  setOutcomeType: (outcomeType: CreateableOutcomeType) => void
+  outcomeType: CreateableOutcomeType | 'DISCUSSION_POST' | undefined
+  setOutcomeType: (outcomeType: CreateableOutcomeType | 'DISCUSSION_POST') => void
   shouldAnswersSumToOne: boolean | undefined
   setShouldAnswersSumToOne: (shouldAnswersSumToOne: boolean) => void
   setState: (state: CreateContractStateType) => void
@@ -66,12 +66,13 @@ function OutcomeButton(props: {
     | CreateableOutcomeType
     | 'INDEPENDENT_MULTIPLE_CHOICE'
     | 'DEPENDENT_MULTIPLE_CHOICE'
+    | 'DISCUSSION_POST'
     | 'DATE'
   visual: ReactNode
   className?: string
   backgroundColor?: string
   selectClassName?: string
-  outcomeType: CreateableOutcomeType | undefined
+  outcomeType: CreateableOutcomeType | 'DISCUSSION_POST' | undefined
   shouldAnswersSumToOne: boolean | undefined
   onClick: () => void
 }) {

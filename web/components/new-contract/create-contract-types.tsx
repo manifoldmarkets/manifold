@@ -100,12 +100,9 @@ export const NON_PREDICTIVE_CONTRACT_TYPES = {
     className: 'hover:!ring-orange-500/50',
     outcomeType: 'POLL',
   },
-  // Note: Legacy naming - BOUNTIED_QUESTION is the database/API type for discussion posts.
-  // Originally supported bounties, but now just a simple discussion post with no betting/voting.
-  // The type name can't easily be changed without a migration.
-  BOUNTIED_QUESTION: {
+  DISCUSSION_POST: {
     label: 'Discussion Post',
-    value: 'BOUNTIED_QUESTION',
+    value: 'DISCUSSION_POST',
     name: 'discussion post',
     descriptor: `A post for discussion and comments. No betting or voting.`,
     example: `What are your thoughts on the new AI developments?`,
@@ -117,7 +114,7 @@ export const NON_PREDICTIVE_CONTRACT_TYPES = {
       </Col>
     ),
     className: 'hover:!ring-ink-500/50',
-    outcomeType: 'BOUNTIED_QUESTION',
+    outcomeType: 'DISCUSSION_POST',
   },
 } as const
 
@@ -138,13 +135,14 @@ export function getContractTypeFromValue(
 export const getOutcomeTypeAndSumsToOne = (
   value: keyof typeof ALL_CONTRACT_TYPES
 ): {
-  outcomeType: CreateableOutcomeType
+  outcomeType: CreateableOutcomeType | 'DISCUSSION_POST'
   shouldSumToOne: boolean
 } => {
   const contractType =
     ALL_CONTRACT_TYPES[value as keyof typeof ALL_CONTRACT_TYPES]
+  const outcomeType = contractType.outcomeType
   return {
-    outcomeType: contractType.outcomeType,
+    outcomeType: (outcomeType === 'DISCUSSION_POST' ? 'DISCUSSION_POST' : outcomeType) as CreateableOutcomeType | 'DISCUSSION_POST',
     shouldSumToOne:
       'shouldSumToOne' in contractType ? contractType.shouldSumToOne : false,
   }

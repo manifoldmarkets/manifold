@@ -32,7 +32,7 @@ export type NewQuestionParams = {
   q: string
   description: string
   closeTime: number
-  outcomeType?: CreateableOutcomeType
+  outcomeType?: CreateableOutcomeType | 'DISCUSSION_POST'
   visibility: string
   // Params for PSEUDO_NUMERIC outcomeType
   min?: number
@@ -187,7 +187,7 @@ export function NewContractPanelOld(props: {
 }
 
 function CreateStepTracker(props: {
-  outcomeType: CreateableOutcomeType | undefined
+  outcomeType: CreateableOutcomeType | 'DISCUSSION_POST' | undefined
   shouldAnswersSumToOne: boolean | undefined
   setState: (state: CreateContractStateType) => void
   state: CreateContractStateType

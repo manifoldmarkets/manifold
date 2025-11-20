@@ -37,6 +37,9 @@ import { richTextToString } from 'common/util/parse'
 import { RelativeTimestamp } from '../relative-timestamp'
 import { debounce } from 'lodash'
 import { useAdmin } from 'web/hooks/use-admin'
+import { FaQuestion, FaUsers } from 'react-icons/fa'
+import { ExpandSection } from '../explainer-panel'
+import { WEEK_MS } from 'common/util/time'
 
 const MAX_DESCRIPTION_LENGTH = 16000
 
@@ -108,7 +111,7 @@ export function NewContractPanel(props: {
 
   const [formState, setFormState] = usePersistentLocalState<FormState>(
     getDefaultFormState(),
-    'new-contract-form-v2'
+    'new-contract-form'
   )
 
   const [isSubmitting, setIsSubmitting] = useState(false)
@@ -157,7 +160,7 @@ export function NewContractPanel(props: {
   }
 
   const descriptionEditor = useTextEditor({
-    key: 'new-contract-v2-description',
+    key: 'new-contract-description',
     size: 'md',
     max: MAX_DESCRIPTION_LENGTH,
     placeholder: getDescriptionPlaceholder(),
@@ -333,7 +336,7 @@ export function NewContractPanel(props: {
   // Helper: Get submit button text based on outcome type
   // Avoids duplication between mobile and desktop action bars
   const getSubmitButtonText = () => {
-    if (formState.outcomeType === 'BOUNTIED_QUESTION') {
+    if (formState.outcomeType === 'DISCUSSION_POST') {
       return 'Create Post'
     }
     return `Create for ${formatMoney(cost)}`
@@ -343,7 +346,7 @@ export function NewContractPanel(props: {
   const getAISuggestedCloseDate = useEvent(async (question: string) => {
     const shouldHaveCloseDate =
       formState.outcomeType !== 'POLL' &&
-      formState.outcomeType !== 'BOUNTIED_QUESTION'
+      formState.outcomeType !== 'DISCUSSION_POST'
 
     if (
       !question ||
@@ -569,7 +572,7 @@ export function NewContractPanel(props: {
 
   // Handle type change
   const handleTypeChange = (
-    newType: CreateableOutcomeType,
+    newType: CreateableOutcomeType | 'DISCUSSION_POST',
     shouldSumToOne: boolean
   ) => {
     setFormState((prev) => ({
@@ -693,8 +696,8 @@ export function NewContractPanel(props: {
 
       // Call API - use create-post for discussion posts, market API for everything else
       let result
-      if (formState.outcomeType === 'BOUNTIED_QUESTION') {
-        // Discussion posts use simple create-post API (no betting/markets)
+      if (formState.outcomeType === 'DISCUSSION_POST') {
+        // Discussion posts use create-post API (no betting/markets)
         const postPayload = {
           title: formState.question.trim(),
           content: formState.description || { type: 'doc', content: [] },
@@ -704,16 +707,18 @@ export function NewContractPanel(props: {
           isChangeLog: formState.isChangeLog || false,
         }
         result = await api('create-post', postPayload)
-        // Clear form state
-        localStorage.removeItem('new-contract-form-v2')
         // Redirect to new post
-        Router.push(`/post/${result.post.slug}`)
+        await Router.push(`/post/${result.post.slug}`)
+        // Clear form state and editor autosave after successful navigation
+        localStorage.removeItem('new-contract-form')
+        localStorage.removeItem('text new-contract-description')
       } else {
         result = await api('market', payload)
-        // Clear form state
-        localStorage.removeItem('new-contract-form-v2')
         // Redirect to new market
-        Router.push(`/${creator.username}/${result.slug}`)
+        await Router.push(`/${creator.username}/${result.slug}`)
+        // Clear form state and editor autosave after successful navigation
+        localStorage.removeItem('new-contract-form')
+        localStorage.removeItem('text new-contract-description')
       }
     } catch (error: any) {
       console.error('Error creating market:', error)
@@ -776,9 +781,8 @@ export function NewContractPanel(props: {
         onSelectType={handleTypeChange}
       />
 
-      {/* Discussion Post Form - Simple post creation (no betting/markets)
-          Note: Uses 'BOUNTIED_QUESTION' outcomeType (legacy database name) */}
-      {formState.outcomeType === 'BOUNTIED_QUESTION' ? (
+      {/* Discussion Post Form - Simple post creation (no betting/markets) */}
+      {formState.outcomeType === 'DISCUSSION_POST' ? (
         <Col className="mx-auto w-full max-w-2xl gap-4 p-6">
           <Col className="gap-2">
             <label className="text-ink-900 text-sm font-semibold">
@@ -1397,6 +1401,11 @@ export function NewContractPanel(props: {
             isGeneratingAnswers={isGeneratingAnswers}
           />
 
+          {/* Explainer Panel for new users */}
+          {creator.createdTime > Date.now() - WEEK_MS && (
+            <ExplainerPanel className="mt-8" />
+          )}
+
           {/* Footer */}
           <div className="text-ink-500 mt-6 flex items-center justify-center gap-3 pb-32 text-xs lg:pb-20">
             <span>© Manifold Markets, Inc.</span>
@@ -1671,3 +1680,68 @@ function DraftsModal(props: DraftsModalProps) {
     </Modal>
   )
 }
+
+// Explainer Panel Components for new users
+const ExplainerPanel = (props: { className?: string }) => {
+  const { className } = props
+  const handleSectionClick = (sectionTitle: string) => {
+    track('create explainer section click', { sectionTitle })
+  }
+  return (
+    <Col className={clsx('mt-6', className)}>
+      <h2 className={clsx('text-ink-600 mb-2 text-xl')}>What is this?</h2>
+      <ResolutionPanel onClick={handleSectionClick} />
+      <TraderPanel onClick={handleSectionClick} />
+    </Col>
+  )
+}
+
+const ResolutionPanel = ({
+  onClick,
+}: {
+  onClick: (sectionTitle: string) => void
+}) => (
+  <ExpandSection
+    title={
+      <Row className="items-start">
+        <FaQuestion className="mr-2 mt-[0.25em] flex-shrink-0 align-text-bottom" />{' '}
+        Who decides on the answer?
+      </Row>
+    }
+    onClick={() => onClick('Who decides on the answer?')}
+  >
+    <div className="pb-2">You do!</div>
+    <div className="pb-2">
+      Isn't this a conflict of interest? If the creator resolves their question
+      dishonestly, that will likely be the last question they get traders on.
+    </div>
+    <div className="pb-2">
+      Traders are attracted to markets with clear resolution criteria and
+      trustworthy creators. On top of that, mods can step in and re-resolve the
+      market if it's clear the creator is being dishonest.
+    </div>
+  </ExpandSection>
+)
+
+const TraderPanel = ({
+  onClick,
+}: {
+  onClick: (sectionTitle: string) => void
+}) => (
+  <ExpandSection
+    title={
+      <Row className="items-start">
+        <FaUsers className="mr-2 mt-[0.25em] flex-shrink-0 align-text-bottom" />{' '}
+        Who will weigh in?
+      </Row>
+    }
+    onClick={() => onClick('Who will weigh in?')}
+  >
+    <div className="pb-2">Our thousands of daily, active traders.</div>
+    <div className="pb-2">
+      The traders that have insight into your question will push the probability
+      towards the correct answer. The traders that are correct earn more mana
+      (our play-money currency), and influence the probability more.
+    </div>
+  </ExpandSection>
+)
