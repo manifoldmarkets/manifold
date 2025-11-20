@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from 'react'
 import clsx from 'clsx'
 import { User } from 'common/user'
-import { CreateableOutcomeType, add_answers_mode } from 'common/contract'
+import { CreateableOutcomeType } from 'common/contract'
 import { JSONContent } from '@tiptap/core'
 import { Col } from '../layout/col'
 import { Row } from '../layout/row'
@@ -40,32 +40,9 @@ import { useAdmin } from 'web/hooks/use-admin'
 
 const MAX_DESCRIPTION_LENGTH = 16000
 
-// Type definitions for URL params and contract creation
-export type NewQuestionParams = {
-  groupIds?: string[]
-  groupSlugs?: string[]
-  q: string
-  description: string
-  closeTime: number
-  outcomeType?: CreateableOutcomeType
-  visibility: string
-  // Params for PSEUDO_NUMERIC outcomeType
-  min?: number
-  max?: number
-  isLogScale?: boolean
-  initValue?: number
-  answers?: string[]
-  addAnswersMode?: add_answers_mode
-  shouldAnswersSumToOne?: boolean
-  precision?: number
-  sportsStartTimestamp?: string
-  sportsEventId?: string
-  sportsLeague?: string
-  unit?: string
-  midpoints?: number[]
-  rand?: string
-  overrideKey?: string
-}
+// Import and re-export type from shared types file to maintain backward compatibility
+import { NewQuestionParams } from './contract-types'
+export type { NewQuestionParams } from './contract-types'
 
 export type CreateContractStateType =
   | 'choosing contract'
@@ -804,20 +781,20 @@ export function NewContractPanel(props: {
       {formState.outcomeType === 'BOUNTIED_QUESTION' ? (
         <Col className="mx-auto w-full max-w-2xl gap-4 p-6">
           <Col className="gap-2">
-            <label className="text-ink-900 text-sm font-semibold">
+            <label className="text-ink-900 dark:text-ink-100 text-sm font-semibold">
               Title <span className="text-scarlet-500">*</span>
             </label>
             <input
               type="text"
               value={formState.question}
               onChange={(e) => updateField('question', e.target.value)}
-              className="border-ink-300 focus:border-primary-500 w-full rounded-md border px-3 py-2 outline-none"
+              className="bg-canvas-0 text-ink-900 dark:text-ink-100 border-ink-300 dark:border-ink-700 focus:border-primary-500 w-full rounded-md border px-3 py-2 outline-none"
               placeholder="Enter post title..."
             />
           </Col>
 
           <Col className="gap-2">
-            <label className="text-ink-900 text-sm font-semibold">
+            <label className="text-ink-900 dark:text-ink-100 text-sm font-semibold">
               Content <span className="text-scarlet-500">*</span>
             </label>
             <TextEditor editor={descriptionEditor} simple />
@@ -1451,7 +1428,7 @@ export function NewContractPanel(props: {
           keeps all logic in one place. Only differences: size (md vs lg) and layout. */}
       <Row
         className={clsx(
-          'bg-canvas-0 border-ink-200 fixed left-0 right-0 z-20 border-t px-3 py-2 shadow-lg',
+          'bg-canvas-0 border-ink-200 fixed left-0 right-0 z-20 border-t px-3 py-2',
           'lg:hidden' // Hide on desktop, show only on mobile
         )}
         style={{ bottom: `${BOTTOM_NAV_BAR_HEIGHT}px` }}
@@ -1508,7 +1485,7 @@ export function NewContractPanel(props: {
       <div className="pointer-events-none fixed bottom-0 left-0 right-0 z-10 hidden lg:block">
         <div className="mx-auto grid w-full max-w-[1440px] grid-cols-12">
           <div className="col-span-2" /> {/* Spacer for sidebar */}
-          <Col className="bg-canvas-0 border-ink-200 pointer-events-auto col-span-7 gap-2 border-t p-4 shadow-lg">
+          <Col className="bg-canvas-0 border-ink-200 pointer-events-auto col-span-7 gap-2 border-t p-4">
             {submitError && (
               <div className="bg-scarlet-50 text-scarlet-700 rounded-lg px-4 py-2 text-sm">
                 {submitError}

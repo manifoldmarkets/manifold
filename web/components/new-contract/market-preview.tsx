@@ -27,6 +27,7 @@ import { MAX_ANSWERS, MAX_ANSWER_LENGTH } from 'common/answer'
 import { Button } from '../buttons/button'
 import { suggestMarketType } from './market-type-suggestions'
 import { MarketTypeSuggestionBanner } from './market-type-suggestion-banner'
+import { useIsMobile } from 'web/hooks/use-is-mobile'
 
 export type PreviewContractData = {
   question: string
@@ -147,6 +148,7 @@ export function MarketPreview(props: {
   } = props
   const [isTopicsModalOpen, setIsTopicsModalOpen] = useState(false)
   const [dismissedSuggestion, setDismissedSuggestion] = useState(false)
+  const isMobile = useIsMobile()
 
   // Notify parent when topics modal opens/closes
   const handleSetTopicsModal = (open: boolean) => {
@@ -313,7 +315,9 @@ export function MarketPreview(props: {
           />
           <UserLink
             user={user}
-            className="text-ink-600 hidden text-sm sm:inline"
+            short={isMobile}
+            maxLength={9}
+            className="text-ink-600 text-sm"
           />
           {isEditable && onToggleVisibility ? (
             <>
