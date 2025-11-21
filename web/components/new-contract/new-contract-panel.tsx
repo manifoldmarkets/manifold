@@ -1,418 +1,1718 @@
-import { ChevronRightIcon } from '@heroicons/react/solid'
+import { useState, useEffect, useCallback } from 'react'
 import clsx from 'clsx'
-import { usePathname } from 'next/navigation'
-import { useRouter } from 'next/router'
-import { ReactNode, useEffect, useState } from 'react'
-
-import { DocumentTextIcon } from '@heroicons/react/outline'
-import {
-  AIGeneratedMarket,
-  CreateableOutcomeType,
-  add_answers_mode,
-} from 'common/contract'
 import { User } from 'common/user'
-import { WEEK_MS } from 'common/util/time'
-import { capitalize } from 'lodash'
-import { FaMagic, FaQuestion, FaUsers } from 'react-icons/fa'
-import { ExpandSection } from 'web/components/explainer-panel'
-import { useDefinedSearchParams } from 'web/hooks/use-defined-search-params'
-import { track } from 'web/lib/service/analytics'
-import { Button } from '../buttons/button'
+import { CreateableOutcomeType } from 'common/contract'
+import { JSONContent } from '@tiptap/core'
 import { Col } from '../layout/col'
 import { Row } from '../layout/row'
-import { Spacer } from '../layout/spacer'
-import { AIMarketSuggestionsPanel } from './ai-market-suggestions-panel'
-import { ChoosingContractForm } from './choosing-contract-form'
-import { ContractParamsForm } from './contract-params-form'
+import { Button } from '../buttons/button'
+import { MarketPreview, PreviewContractData } from './market-preview'
+import { ContextualEditorPanel, FormState } from './contextual-editor-panel'
 import {
-  ALL_CONTRACT_TYPES,
-  getContractTypeFromValue,
-  getOutcomeTypeAndSumsToOne,
-} from './create-contract-types'
+  validateContractForm,
+  ContractFormState,
+} from 'web/lib/validation/contract-validation'
+import { formatMoney } from 'common/util/format'
+import { api, getSimilarGroupsToContract } from 'web/lib/api/api'
+import { track } from 'web/lib/service/analytics'
+import Router from 'next/router'
+import { usePersistentLocalState } from 'web/hooks/use-persistent-local-state'
+import { getAnte } from 'common/economy'
+import { TextEditor, useTextEditor } from 'web/components/widgets/editor'
+import { TypeSwitcherModal } from './type-switcher-modal'
+import { ProminentTypeSelector } from './prominent-type-selector'
+import dayjs from 'dayjs'
+import { useEvent } from 'client-common/hooks/use-event'
+import ShortToggle from '../widgets/short-toggle'
+import { ChoicesToggleGroup } from '../widgets/choices-toggle-group'
+import { InfoTooltip } from '../widgets/info-tooltip'
+import { CheckCircleIcon } from '@heroicons/react/solid'
+import { Tooltip } from '../widgets/tooltip'
+import { Modal } from '../layout/modal'
+import { CloseTimeSection } from './close-time-section'
+import { BOTTOM_NAV_BAR_HEIGHT } from '../nav/bottom-nav-bar'
+import { MarketDraft } from 'common/drafts'
+import { toast } from 'react-hot-toast'
+import { richTextToString } from 'common/util/parse'
+import { RelativeTimestamp } from '../relative-timestamp'
+import { debounce } from 'lodash'
+import { useAdmin } from 'web/hooks/use-admin'
+import { FaQuestion, FaUsers } from 'react-icons/fa'
+import { ExpandSection } from '../explainer-panel'
+import { WEEK_MS } from 'common/util/time'
 
-export type NewQuestionParams = {
-  groupIds?: string[]
-  groupSlugs?: string[]
-  q: string
-  description: string
-  closeTime: number
-  outcomeType?: CreateableOutcomeType
-  visibility: string
-  // Params for PSEUDO_NUMERIC outcomeType
-  min?: number
-  max?: number
-  isLogScale?: boolean
-  initValue?: number
-  answers?: string[]
-  addAnswersMode?: add_answers_mode
-  shouldAnswersSumToOne?: boolean
-  precision?: number
-  sportsStartTimestamp?: string
-  sportsEventId?: string
-  sportsLeague?: string
-  unit?: string
-  midpoints?: number[]
-  rand?: string
-  overrideKey?: string
-}
+const MAX_DESCRIPTION_LENGTH = 16000
+
+// Import and re-export type from shared types file to maintain backward compatibility
+import { NewQuestionParams } from './contract-types'
+export type { NewQuestionParams } from './contract-types'
 
 export type CreateContractStateType =
   | 'choosing contract'
   | 'filling contract params'
   | 'ai chat'
 
-// Helper to convert between URL type param and outcomeType + shouldAnswersSumToOne
-type QuestionTypeKey = keyof typeof ALL_CONTRACT_TYPES
-
-function getTypeFromUrl(typeParam: string | null): {
-  outcomeType: CreateableOutcomeType | undefined
-  shouldAnswersSumToOne: boolean | undefined
-} {
-  if (!typeParam)
-    return { outcomeType: undefined, shouldAnswersSumToOne: undefined }
-
-  const upperType = typeParam.toUpperCase() as QuestionTypeKey
-  if (upperType in ALL_CONTRACT_TYPES) {
-    const { outcomeType, shouldSumToOne } =
-      getOutcomeTypeAndSumsToOne(upperType)
-    return { outcomeType, shouldAnswersSumToOne: shouldSumToOne }
-  }
-
-  return { outcomeType: undefined, shouldAnswersSumToOne: undefined }
-}
-
-function getUrlFromType(
-  outcomeType: CreateableOutcomeType | undefined,
-  shouldAnswersSumToOne: boolean | undefined
-): string | null {
-  if (!outcomeType) return null
-
-  if (outcomeType === 'MULTIPLE_CHOICE') {
-    return shouldAnswersSumToOne
-      ? 'dependent_multiple_choice'
-      : 'independent_multiple_choice'
-  }
-
-  // Find matching type in ALL_CONTRACT_TYPES
-  const matchingType = Object.entries(ALL_CONTRACT_TYPES).find(
-    ([_, config]) => {
-      if (config.outcomeType !== outcomeType) return false
-      if ('shouldSumToOne' in config) {
-        return config.shouldSumToOne === shouldAnswersSumToOne
-      }
-      return true
-    }
-  )
-
-  return matchingType ? matchingType[0].toLowerCase() : null
-}
-
-// Allow user to create a new contract
 export function NewContractPanel(props: {
   creator: User
   params?: NewQuestionParams
 }) {
-  const { creator } = props
-  const router = useRouter()
-  const pathName = usePathname()
-  const { searchParams } = useDefinedSearchParams()
+  const { creator, params } = props
+  const isAdmin = useAdmin()
 
-  // Get type from URL
-  const urlType = searchParams.get('type')
-  const typeFromUrl = getTypeFromUrl(urlType)
-
-  // Initialize params with URL type if present, or props.params
-  const [params, setParams] = useState<Partial<NewQuestionParams> | undefined>(
-    () => {
-      if (props.params?.outcomeType) {
-        return props.params
-      } else if (typeFromUrl.outcomeType) {
-        return {
-          ...props.params,
-          outcomeType: typeFromUrl.outcomeType,
-          shouldAnswersSumToOne: typeFromUrl.shouldAnswersSumToOne,
-        }
-      }
-      return props.params
-    }
-  )
-
-  const [state, setState] = useState<CreateContractStateType>(() => {
-    if (props.params?.outcomeType || typeFromUrl.outcomeType) {
-      return 'filling contract params'
-    }
-    return 'choosing contract'
+  // Get completely empty form state
+  const getEmptyFormState = (): FormState => ({
+    question: '',
+    outcomeType: 'BINARY',
+    description: undefined,
+    answers: [],
+    closeDate: undefined,
+    closeHoursMinutes: '23:59',
+    neverCloses: false,
+    selectedGroups: [],
+    visibility: 'public',
+    liquidityTier: 100,
+    shouldAnswersSumToOne: true,
+    addAnswersMode: 'DISABLED',
+    probability: 50,
+    min: undefined,
+    max: undefined,
+    minString: '',
+    maxString: '',
+    unit: '',
+    midpoints: [],
   })
 
-  // Update params when props.params changes (for duplicate functionality)
+  // Initialize form state with defaults (from params if provided)
+  const getDefaultFormState = (): FormState => ({
+    question: params?.q || '',
+    outcomeType: (params?.outcomeType as any) || 'BINARY', // Default to binary market
+    description: params?.description
+      ? JSON.parse(params.description)
+      : undefined,
+    answers: params?.answers || [],
+    closeDate: params?.closeTime
+      ? new Date(params.closeTime).toISOString().split('T')[0]
+      : undefined,
+    closeHoursMinutes: '23:59',
+    neverCloses: false,
+    selectedGroups: [],
+    visibility: (params?.visibility as 'public' | 'unlisted') || 'public',
+    liquidityTier: 100, // Default to tier 0 (100 mana)
+    shouldAnswersSumToOne: params?.shouldAnswersSumToOne ?? true,
+    addAnswersMode: params?.addAnswersMode || 'DISABLED',
+    probability: 50,
+    min: params?.min,
+    max: params?.max,
+    minString: params?.min?.toString() || '',
+    maxString: params?.max?.toString() || '',
+    unit: params?.unit || '',
+    midpoints: params?.midpoints || [],
+  })
+
+  const [formState, setFormState] = usePersistentLocalState<FormState>(
+    getDefaultFormState(),
+    'new-contract-form'
+  )
+
+  const [isSubmitting, setIsSubmitting] = useState(false)
+  const [submitError, setSubmitError] = useState<string>()
+  const [isTypeSwitcherOpen, setIsTypeSwitcherOpen] = useState(false)
+  const [hasManuallyEditedCloseDate, setHasManuallyEditedCloseDate] =
+    useState(false)
+  const [showResetConfirmation, setShowResetConfirmation] = useState(false)
+  const [isCloseDateModalOpen, setIsCloseDateModalOpen] = useState(false)
+  const [triggerTopicsModalOpen, setTriggerTopicsModalOpen] = useState(false)
+  const [drafts, setDrafts] = useState<MarketDraft[]>([])
+  const [showDraftsModal, setShowDraftsModal] = useState(false)
+  const [isSavingDraft, setIsSavingDraft] = useState(false)
+
+  // Cache for DATE market ranges (to avoid regenerating on toggle)
+  const [dateBuckets, setDateBuckets] = useState<{
+    answers: string[]
+    midpoints: number[]
+  }>({ answers: [], midpoints: [] })
+  const [dateThresholds, setDateThresholds] = useState<{
+    answers: string[]
+    midpoints: number[]
+  }>({ answers: [], midpoints: [] })
+  const [isGeneratingDateRanges, setIsGeneratingDateRanges] = useState(false)
+
+  // Cache for MULTI_NUMERIC market ranges (to avoid regenerating on toggle)
+  const [numericBuckets, setNumericBuckets] = useState<{
+    answers: string[]
+    midpoints: number[]
+  }>({ answers: [], midpoints: [] })
+  const [numericThresholds, setNumericThresholds] = useState<{
+    answers: string[]
+    midpoints: number[]
+  }>({ answers: [], midpoints: [] })
+  const [isGeneratingNumericRanges, setIsGeneratingNumericRanges] =
+    useState(false)
+
+  const [isGeneratingDescription, setIsGeneratingDescription] = useState(false)
+
+  // Create description editor with dynamic placeholder based on market type
+  const getDescriptionPlaceholder = () => {
+    if (formState.outcomeType === 'POLL') {
+      return 'Describe what this poll is about...'
+    }
+    return 'This market will resolve YES if this happens... If that happens, it resolves NO early.'
+  }
+
+  const descriptionEditor = useTextEditor({
+    key: 'new-contract-description',
+    size: 'md',
+    max: MAX_DESCRIPTION_LENGTH,
+    placeholder: getDescriptionPlaceholder(),
+  })
+
+  // Sync editor content with form state
   useEffect(() => {
-    if (props.params && Object.keys(props.params).length > 0) {
-      setParams(props.params)
-      setState(
-        props.params.outcomeType
-          ? 'filling contract params'
-          : 'choosing contract'
+    if (descriptionEditor && formState.description) {
+      descriptionEditor.commands.setContent(formState.description)
+    }
+  }, []) // Only on mount
+
+  // Override persistent state when params are provided (e.g., from duplicate market)
+  useEffect(() => {
+    if (params?.rand) {
+      // rand param indicates this is a duplicate/template, override localStorage
+      const newState = getDefaultFormState()
+      setFormState(newState)
+      // Also set the description in the editor
+      if (descriptionEditor && newState.description) {
+        descriptionEditor.commands.setContent(newState.description)
+      }
+    }
+  }, [params?.rand])
+
+  // Update placeholder when outcome type changes
+  useEffect(() => {
+    if (descriptionEditor) {
+      const newPlaceholder = getDescriptionPlaceholder()
+      descriptionEditor.extensionManager.extensions.forEach(
+        (extension: any) => {
+          if (extension.name === 'placeholder') {
+            extension.options.placeholder = newPlaceholder
+          }
+        }
       )
+      descriptionEditor.view.dispatch(descriptionEditor.state.tr)
     }
-  }, [props.params])
+  }, [formState.outcomeType])
 
-  // Update state when URL type parameter changes (for back/forward navigation)
   useEffect(() => {
-    const typeFromUrl = getTypeFromUrl(searchParams.get('type'))
-
-    if (typeFromUrl.outcomeType) {
-      // URL has a type - show that type
-      setParams((prev) => ({
-        ...(prev ?? {}),
-        outcomeType: typeFromUrl.outcomeType,
-        shouldAnswersSumToOne: typeFromUrl.shouldAnswersSumToOne,
-      }))
-      setState('filling contract params')
-    } else if (!searchParams.get('type') && !props.params?.outcomeType) {
-      // No type in URL and no params from props - go back to choosing
-      setParams((prev) => {
-        if (!prev) return prev
-        const {
-          outcomeType: _outcomeType,
-          shouldAnswersSumToOne: _shouldAnswersSumToOne,
-          ...rest
-        } = prev
-        return Object.keys(rest).length > 0 ? rest : undefined
-      })
-      setState('choosing contract')
+    if (descriptionEditor) {
+      const content = descriptionEditor.getJSON()
+      updateField('description', content)
     }
-  }, [searchParams, props.params?.outcomeType])
+  }, [descriptionEditor?.state.doc])
 
-  const setKeyOnParams = (key: keyof NewQuestionParams, value: any) => {
-    setParams((prev) => ({ ...(prev ?? {}), [key]: value }))
+  // Update form state
+  const updateField = (field: string, value: any) => {
+    setFormState((prev) => ({ ...prev, [field]: value }))
   }
 
-  // Update URL when outcomeType changes
-  const setOutcomeTypeWithUrl = (
-    outcomeType: CreateableOutcomeType,
-    shouldAnswersSumToOne: boolean
-  ) => {
-    setKeyOnParams('outcomeType', outcomeType)
-    setKeyOnParams('shouldAnswersSumToOne', shouldAnswersSumToOne)
-
-    const urlType = getUrlFromType(outcomeType, shouldAnswersSumToOne)
-    if (urlType) {
-      // Preserve existing params (like duplicate question params) and add/update type
-      const newParams = new URLSearchParams(searchParams as any)
-      newParams.set('type', urlType)
-      const newUrl = pathName + '?' + newParams.toString()
-      router.push(newUrl, undefined, { shallow: true })
+  // Reset all form fields
+  const handleReset = () => {
+    setFormState(getEmptyFormState())
+    setHasManuallyEditedCloseDate(false)
+    setShowResetConfirmation(false)
+    if (descriptionEditor) {
+      descriptionEditor.commands.clearContent()
     }
+    track('reset form v2')
   }
 
-  // Clear all URL parameters and local state when going back to choosing
-  const clearTypeAndGoBackToChoosing = () => {
-    // Clear all params from local state
-    setParams(undefined)
+  // Helper to check if description has actual content
+  const hasDescription = (description: JSONContent | undefined): boolean => {
+    if (!description || !description.content) return false
 
-    // Clear all URL parameters (use push to preserve history)
-    router.push(pathName, undefined, { shallow: true })
+    // Check if content array is empty
+    if (description.content.length === 0) return false
 
-    // Set state to choosing
-    setState('choosing contract')
-  }
+    // Check if content only contains empty paragraphs
+    const hasActualContent = description.content.some((node: any) => {
+      // If node has text content, it's not empty
+      if (node.text && node.text.trim().length > 0) return true
 
-  // Add function to handle AI suggestions
-  const handleAISuggestion = (m: AIGeneratedMarket) => {
-    const { outcomeType, shouldSumToOne } = getOutcomeTypeAndSumsToOne(
-      m.outcomeType
-    )
-    setParams({
-      q: m.question,
-      outcomeType,
-      answers: m.answers,
-      description: JSON.stringify(m.description),
-      closeTime: new Date(m.closeDate).getTime(),
-      visibility: 'public',
-      shouldAnswersSumToOne: shouldSumToOne,
-      addAnswersMode: m.addAnswersMode,
-      overrideKey: '',
+      // If node has nested content, check recursively
+      if (node.content && node.content.length > 0) {
+        return node.content.some(
+          (child: any) => child.text && child.text.trim().length > 0
+        )
+      }
+
+      // If it's not a paragraph (e.g., image, video), count it as content
+      if (node.type && node.type !== 'paragraph') return true
+
+      return false
     })
-    setOutcomeTypeWithUrl(outcomeType, shouldSumToOne)
-    setState('filling contract params')
+
+    return hasActualContent
+  }
+
+  // Load drafts on mount
+  useEffect(() => {
+    loadDrafts()
+  }, [])
+
+  const loadDrafts = async () => {
+    try {
+      const drafts = await api('get-market-drafts', {})
+      setDrafts(drafts)
+    } catch (error) {
+      console.error('Error loading drafts:', error)
+    }
+  }
+
+  const saveDraftToDb = async () => {
+    // Don't save if no outcome type is selected
+    if (!formState.outcomeType) {
+      toast.error('Please select a question type before saving')
+      return
+    }
+
+    // Don't save empty drafts - require at least a question or description
+    const hasQuestion = formState.question.trim().length > 0
+    const hasDescription = formState.description &&
+      descriptionEditor &&
+      !descriptionEditor.isEmpty
+    const hasAnswers = formState.answers.some((a) => a.trim().length > 0)
+
+    if (!hasQuestion && !hasDescription && !hasAnswers) {
+      toast.error('Add a question, description, or answers before saving')
+      return
+    }
+
+    setIsSavingDraft(true)
+    try {
+      const draft = {
+        question: formState.question,
+        description: formState.description,
+        outcomeType: formState.outcomeType,
+        answers: formState.answers,
+        closeDate: formState.closeDate,
+        closeHoursMinutes: formState.closeHoursMinutes,
+        visibility: formState.visibility,
+        selectedGroups: formState.selectedGroups,
+        savedAt: Date.now(),
+      }
+      await api('save-market-draft', { data: draft as any })
+      toast.success('Draft saved')
+      await loadDrafts()
+    } catch (error) {
+      console.error('Error saving draft:', error)
+      toast.error('Error saving draft')
+    } finally {
+      setIsSavingDraft(false)
+    }
+  }
+
+  const loadDraftFromDb = async (draft: MarketDraft) => {
+    try {
+      setFormState({
+        ...formState,
+        question: draft.data.question,
+        description: draft.data.description,
+        outcomeType: draft.data.outcomeType as any,
+        answers: draft.data.answers,
+        closeDate: draft.data.closeDate,
+        closeHoursMinutes: draft.data.closeHoursMinutes,
+        visibility: draft.data.visibility,
+        selectedGroups: draft.data.selectedGroups,
+      })
+      if (draft.data.description && descriptionEditor) {
+        descriptionEditor.commands.setContent(draft.data.description)
+      }
+      setShowDraftsModal(false)
+      toast.success('Draft loaded')
+    } catch (error) {
+      console.error('Error loading draft:', error)
+    }
+  }
+
+  const deleteDraft = async (id: number) => {
+    try {
+      await api('delete-market-draft', { id })
+      await loadDrafts()
+      toast.success('Draft deleted')
+    } catch (error) {
+      console.error('Error deleting draft:', error)
+    }
+  }
+
+  // Validate form
+  const validation = validateContractForm(formState as ContractFormState)
+
+  // Helper: Get submit button text based on outcome type
+  // Avoids duplication between mobile and desktop action bars
+  const getSubmitButtonText = () => {
+    if (formState.outcomeType === 'DISCUSSION_POST') {
+      return 'Create Post'
+    }
+    return `Create for ${formatMoney(cost)}`
+  }
+
+  // Auto-extract close date from question
+  const getAISuggestedCloseDate = useEvent(async (question: string) => {
+    const shouldHaveCloseDate =
+      formState.outcomeType !== 'POLL' &&
+      formState.outcomeType !== 'DISCUSSION_POST'
+
+    if (
+      !question ||
+      question.length < 20 ||
+      !shouldHaveCloseDate ||
+      hasManuallyEditedCloseDate
+    ) {
+      return
+    }
+
+    try {
+      const result = await api('get-close-date', {
+        question,
+        utcOffset: new Date().getTimezoneOffset() * -1,
+      })
+
+      if (result?.closeTime && !hasManuallyEditedCloseDate) {
+        const dateStr = dayjs(result.closeTime).format('YYYY-MM-DD')
+        const time = dayjs(result.closeTime).format('HH:mm')
+        updateField('closeDate', dateStr)
+        updateField('closeHoursMinutes', time)
+      }
+    } catch (e) {
+      console.error('Error getting suggested close date:', e)
+    }
+  })
+
+  // Auto-suggest topics from question
+  const findTopicsAndSimilarQuestions = useEvent(async (question: string) => {
+    if (!question || question.length < 10) {
+      return
+    }
+
+    try {
+      const result = await getSimilarGroupsToContract({ question })
+      if (result?.groups && result.groups.length > 0) {
+        // Only auto-add if user hasn't manually selected topics
+        if (formState.selectedGroups.length === 0) {
+          updateField('selectedGroups', result.groups.slice(0, 3))
+        }
+      }
+    } catch (e) {
+      console.error('Error getting suggested topics:', e)
+    }
+  })
+
+  // Trigger auto-suggestions when question changes
+  useEffect(() => {
+    if (formState.question && formState.question.length >= 20) {
+      const timer = setTimeout(() => {
+        getAISuggestedCloseDate(formState.question)
+        findTopicsAndSimilarQuestions(formState.question)
+      }, 1000) // Debounce for 1 second
+
+      return () => clearTimeout(timer)
+    }
+  }, [formState.question])
+
+  // AI-powered answer generation for Multiple Choice
+  const [isGeneratingAnswers, setIsGeneratingAnswers] = useState(false)
+
+  const generateAnswers = async () => {
+    if (!formState.question || formState.outcomeType !== 'MULTIPLE_CHOICE')
+      return
+
+    setIsGeneratingAnswers(true)
+    try {
+      const description = descriptionEditor
+        ? richTextToString(descriptionEditor.getJSON())
+        : ''
+      const result = await api('generate-ai-answers', {
+        question: formState.question,
+        description,
+        shouldAnswersSumToOne: formState.shouldAnswersSumToOne ?? false,
+        answers: formState.answers,
+      })
+
+      if (result?.answers && result.answers.length > 0) {
+        // Append new answers to existing ones
+        updateField('answers', [...formState.answers, ...result.answers])
+      }
+      if (result?.addAnswersMode) {
+        updateField('addAnswersMode', result.addAnswersMode)
+      }
+    } catch (e) {
+      console.error('Error generating answers:', e)
+      toast.error('Failed to generate answers')
+    } finally {
+      setIsGeneratingAnswers(false)
+    }
+  }
+
+  const generateAIDescription = async () => {
+    if (!formState.question) return
+    setIsGeneratingDescription(true)
+    try {
+      const description = descriptionEditor
+        ? richTextToString(descriptionEditor.getJSON())
+        : ''
+      const result = await api('generate-ai-description', {
+        question: formState.question,
+        description,
+        answers: formState.answers,
+        outcomeType: formState.outcomeType ?? undefined,
+        shouldAnswersSumToOne: formState.shouldAnswersSumToOne ?? false,
+        addAnswersMode: formState.addAnswersMode,
+      })
+      if (result.description && descriptionEditor) {
+        const endPos = descriptionEditor.state.doc.content.size
+        descriptionEditor.commands.setTextSelection(endPos)
+        descriptionEditor.commands.insertContent(result.description)
+      }
+    } catch (e) {
+      console.error('Error generating description:', e)
+    }
+    setIsGeneratingDescription(false)
+  }
+
+  // Debounced handler for regenerating DATE midpoints when answers are edited
+  const regenerateDateMidpoints = async (answers: string[]) => {
+    if (
+      formState.outcomeType !== 'DATE' ||
+      !formState.question ||
+      !formState.minString ||
+      !formState.maxString
+    )
+      return
+    if (answers.every((a) => a.trim() === '')) return
+
+    try {
+      const result = await api('regenerate-date-midpoints', {
+        question: formState.question,
+        answers,
+        min: formState.minString,
+        max: formState.maxString,
+        description: descriptionEditor
+          ? richTextToString(descriptionEditor.getJSON())
+          : '',
+        tab: formState.shouldAnswersSumToOne ? 'buckets' : 'thresholds',
+      })
+
+      updateField('midpoints', result.midpoints)
+
+      // Update cache for current mode
+      if (formState.shouldAnswersSumToOne) {
+        setDateBuckets({ answers, midpoints: result.midpoints })
+      } else {
+        setDateThresholds({ answers, midpoints: result.midpoints })
+      }
+    } catch (e) {
+      console.error('Error regenerating date midpoints:', e)
+    }
+  }
+
+  const debouncedRegenerateDateMidpoints = useCallback(
+    debounce((answers: string[]) => regenerateDateMidpoints(answers), 1500),
+    [
+      formState.question,
+      formState.minString,
+      formState.maxString,
+      formState.shouldAnswersSumToOne,
+    ]
+  )
+
+  // Debounced handler for regenerating MULTI_NUMERIC midpoints when answers are edited
+  const regenerateNumericMidpoints = async (answers: string[]) => {
+    if (
+      formState.outcomeType !== 'MULTI_NUMERIC' ||
+      !formState.question ||
+      formState.min === undefined ||
+      formState.max === undefined
+    )
+      return
+    if (answers.every((a) => a.trim() === '')) return
+
+    try {
+      const result = await api('regenerate-numeric-midpoints', {
+        question: formState.question,
+        answers,
+        min: formState.min,
+        max: formState.max,
+        unit: formState.unit || '',
+        description: descriptionEditor
+          ? richTextToString(descriptionEditor.getJSON())
+          : '',
+        tab: formState.shouldAnswersSumToOne ? 'buckets' : 'thresholds',
+      })
+
+      updateField('midpoints', result.midpoints)
+
+      // Update cache for current mode
+      if (formState.shouldAnswersSumToOne) {
+        setNumericBuckets({ answers, midpoints: result.midpoints })
+      } else {
+        setNumericThresholds({ answers, midpoints: result.midpoints })
+      }
+    } catch (e) {
+      console.error('Error regenerating numeric midpoints:', e)
+    }
+  }
+
+  const debouncedRegenerateNumericMidpoints = useCallback(
+    debounce((answers: string[]) => regenerateNumericMidpoints(answers), 1500),
+    [
+      formState.question,
+      formState.min,
+      formState.max,
+      formState.unit,
+      formState.shouldAnswersSumToOne,
+    ]
+  )
+
+  // Calculate cost
+  const numAnswers = formState.answers.length
+  const cost = getAnte(
+    formState.outcomeType as any,
+    numAnswers > 0 ? numAnswers : undefined,
+    formState.liquidityTier
+  )
+
+  const canSubmit =
+    validation.isValid && !isSubmitting && creator.balance >= cost
+
+  // Handle type change
+  const handleTypeChange = (
+    newType: CreateableOutcomeType | 'DISCUSSION_POST',
+    shouldSumToOne: boolean
+  ) => {
+    setFormState((prev) => ({
+      ...prev,
+      outcomeType: newType,
+      shouldAnswersSumToOne: shouldSumToOne,
+      // Clear all market-specific data for discussion posts
+      answers:
+        newType === 'DISCUSSION_POST'
+          ? []
+          : newType === 'MULTIPLE_CHOICE' || newType === 'POLL'
+          ? prev.answers.length > 0
+            ? prev.answers
+            : ['', '', '']
+          : newType === 'MULTI_NUMERIC' || newType === 'DATE'
+          ? [] // Start with empty answers for numeric/date, will be generated
+          : [],
+      // Set addAnswersMode to DISABLED by default for MC/Poll, clear for discussion posts
+      addAnswersMode:
+        newType === 'DISCUSSION_POST'
+          ? 'DISABLED'
+          : newType === 'MULTIPLE_CHOICE'
+          ? 'DISABLED'
+          : prev.addAnswersMode,
+      // Preserve numeric-specific fields for numeric types, clear for others (including discussion posts)
+      min:
+        newType === 'MULTI_NUMERIC' ||
+        newType === 'DATE' ||
+        newType === 'PSEUDO_NUMERIC'
+          ? prev.min
+          : undefined,
+      max:
+        newType === 'MULTI_NUMERIC' ||
+        newType === 'DATE' ||
+        newType === 'PSEUDO_NUMERIC'
+          ? prev.max
+          : undefined,
+      minString:
+        newType === 'MULTI_NUMERIC' ||
+        newType === 'DATE' ||
+        newType === 'PSEUDO_NUMERIC'
+          ? prev.minString
+          : '',
+      maxString:
+        newType === 'MULTI_NUMERIC' ||
+        newType === 'DATE' ||
+        newType === 'PSEUDO_NUMERIC'
+          ? prev.maxString
+          : '',
+      unit: newType === 'MULTI_NUMERIC' ? prev.unit : undefined,
+      midpoints:
+        newType === 'MULTI_NUMERIC' || newType === 'DATE' ? prev.midpoints : [],
+    }))
+
+    // Focus the question input after type change
+    setTimeout(() => {
+      const input = document.getElementById('market-preview-title-input')
+      if (input) {
+        input.focus()
+      }
+    }, 100)
+  }
+
+  // Handle submission
+  const handleSubmit = async () => {
+    if (!canSubmit) return
+
+    setIsSubmitting(true)
+    setSubmitError(undefined)
+
+    try {
+      // Build API payload - include ALL fields like original form
+      const closeTime = formState.neverCloses
+        ? undefined
+        : formState.closeDate
+        ? new Date(
+            formState.closeDate + 'T' + (formState.closeHoursMinutes || '23:59')
+          ).getTime()
+        : undefined
+
+      const payload: any = {
+        question: formState.question.trim(),
+        outcomeType: formState.outcomeType,
+        description: formState.description || '',
+        initialProb: formState.probability || 50, // Use form state probability for binary markets
+        closeTime,
+        visibility: formState.visibility,
+        groupIds: formState.selectedGroups.map((g) => g.id),
+        liquidityTier: formState.liquidityTier,
+        utcOffset: new Date().getTimezoneOffset(),
+        timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+      }
+
+      // Add type-specific fields
+      if (formState.outcomeType === 'MULTIPLE_CHOICE') {
+        payload.answers = formState.answers.filter((a) => a.trim().length > 0)
+        payload.shouldAnswersSumToOne = formState.shouldAnswersSumToOne
+        payload.addAnswersMode = formState.addAnswersMode
+      } else if (formState.outcomeType === 'POLL') {
+        payload.answers = formState.answers.filter((a) => a.trim().length > 0)
+      } else if (formState.outcomeType === 'PSEUDO_NUMERIC') {
+        payload.min = formState.min
+        payload.max = formState.max
+      } else if (formState.outcomeType === 'MULTI_NUMERIC') {
+        payload.answers = formState.answers.filter((a) => a.trim().length > 0)
+        payload.midpoints = formState.midpoints
+        payload.min = formState.min
+        payload.max = formState.max
+        payload.unit = formState.unit?.trim()
+        payload.shouldAnswersSumToOne = formState.shouldAnswersSumToOne
+        payload.addAnswersMode = 'DISABLED' // Numeric markets don't allow adding answers
+      } else if (formState.outcomeType === 'DATE') {
+        payload.answers = formState.answers.filter((a) => a.trim().length > 0)
+        payload.midpoints = formState.midpoints
+        payload.min = formState.minString // Date markets use string dates
+        payload.max = formState.maxString // Date markets use string dates
+        payload.shouldAnswersSumToOne = formState.shouldAnswersSumToOne
+        payload.addAnswersMode = 'DISABLED' // Date markets don't allow adding answers
+      }
+
+      track('create market v2', {
+        outcomeType: formState.outcomeType,
+        hasDescription: !!formState.description,
+        numAnswers: formState.answers.length,
+        liquidityTier: formState.liquidityTier,
+      })
+
+      // Call API - use create-post for discussion posts, market API for everything else
+      let result
+      if (formState.outcomeType === 'DISCUSSION_POST') {
+        // Discussion posts use create-post API (no betting/markets)
+        const postPayload: any = {
+          title: formState.question.trim(),
+          content: formState.description || { type: 'doc', content: [] },
+          visibility: formState.visibility,
+        }
+
+        // Admin-only fields
+        if (isAdmin && formState.isAnnouncement) {
+          postPayload.isAnnouncement = true
+        }
+        if (isAdmin && formState.isChangeLog) {
+          postPayload.isChangeLog = true
+        }
+
+        result = await api('create-post', postPayload)
+        // Redirect to new post
+        await Router.push(`/post/${result.post.slug}`)
+      } else {
+        result = await api('market', payload)
+        // Redirect to new market
+        await Router.push(`/${creator.username}/${result.slug}`)
+      }
+
+      // Clear form state and editor autosave after successful navigation
+      localStorage.removeItem('new-contract-form')
+      localStorage.removeItem('text new-contract-description')
+    } catch (error: any) {
+      console.error('Error creating market:', error)
+      setSubmitError(error.message || 'Failed to create market')
+      setIsSubmitting(false)
+    }
+  }
+
+  // Convert form state to preview data
+  const previewData: PreviewContractData = {
+    question: formState.question,
+    outcomeType: formState.outcomeType as any,
+    description: formState.description,
+    probability: formState.probability,
+    answers: formState.answers.map((text) => ({ text })),
+    closeTime: formState.closeDate
+      ? new Date(formState.closeDate + 'T23:59').getTime()
+      : undefined,
+    visibility: formState.visibility,
+    liquidityTier: formState.liquidityTier,
+    min: formState.min,
+    max: formState.max,
+    minString: formState.minString,
+    maxString: formState.maxString,
+    midpoints: formState.midpoints,
+    unit: formState.unit,
+    shouldAnswersSumToOne: formState.shouldAnswersSumToOne,
+    addAnswersMode: formState.addAnswersMode,
   }
 
   return (
-    <Col
-      className={clsx(
-        'text-ink-1000 bg-canvas-0 mx-auto w-full max-w-2xl transition-colors'
-      )}
-    >
-      <CreateStepTracker
-        outcomeType={params?.outcomeType}
-        shouldAnswersSumToOne={params?.shouldAnswersSumToOne}
-        setState={setState}
-        state={state}
-        clearTypeAndGoBackToChoosing={clearTypeAndGoBackToChoosing}
+    <Col className="min-h-screen">
+      {/* Header */}
+      <Row className="bg-canvas-0 border-ink-200 items-center justify-between border-b px-4 py-3 shadow-sm">
+        <Row className="items-center gap-3">
+          <button
+            onClick={() => Router.back()}
+            className="text-ink-600 hover:text-ink-800 transition-colors lg:hidden"
+          >
+            ←
+          </button>
+          <h1 className="text-ink-900 text-xl font-semibold">
+            Create a Question
+          </h1>
+        </Row>
+        <Button
+          color="gray-outline"
+          size="sm"
+          disabled={drafts.length === 0}
+          onClick={() => setShowDraftsModal(true)}
+        >
+          Drafts ({drafts.length})
+        </Button>
+      </Row>
+
+      {/* Prominent Type Selector */}
+      <ProminentTypeSelector
+        currentType={formState.outcomeType}
+        currentShouldAnswersSumToOne={formState.shouldAnswersSumToOne}
+        onSelectType={handleTypeChange}
       />
-      <Col className={clsx('px-6 py-2')}>
-        {state == 'choosing contract' && (
-          <>
-            <span className="mb-3 text-lg">Create from an idea:</span>
-            <Button
-              className="hover:ring-primary-200 bg-primary-600/5 cursor-pointer rounded-lg px-4 py-2 text-left transition-all hover:ring-2"
-              color="none"
-              onClick={() => setState('ai chat')}
-            >
-              <Row className="w-full items-center justify-start gap-8">
-                <FaMagic className="h-10 w-10 text-fuchsia-500" />
-                <Col className="w-full items-start gap-0.5">
-                  <div className="py-0.5 font-semibold sm:text-lg">
-                    AI-assisted creation
-                  </div>
-                  <span className="text-sm">
-                    Get high-quality questions with clear resolution criteria
-                    from your prompt
-                  </span>
-                </Col>
-              </Row>
-            </Button>
-            <Spacer h={4} />
-            <ChoosingContractForm
-              outcomeType={params?.outcomeType}
-              setOutcomeType={(outcomeType, shouldAnswersSumToOne) => {
-                setOutcomeTypeWithUrl(outcomeType, shouldAnswersSumToOne)
-              }}
-              shouldAnswersSumToOne={params?.shouldAnswersSumToOne}
-              setState={setState}
+
+      {/* Discussion Post Form - Simple post creation (no betting/markets) */}
+      {formState.outcomeType === 'DISCUSSION_POST' ? (
+        <Col className="mx-auto w-full max-w-2xl gap-4 p-6">
+          <Col className="gap-2">
+            <label className="text-ink-900 text-sm font-semibold">
+              Title <span className="text-scarlet-500">*</span>
+            </label>
+            <input
+              type="text"
+              value={formState.question}
+              onChange={(e) => updateField('question', e.target.value)}
+              className="bg-canvas-0 text-ink-900 border-ink-300 focus:border-primary-500 w-full rounded-md border px-3 py-2 outline-none"
+              placeholder="Enter post title..."
             />
-            <Spacer h={2} />
-            <Button
-              className="hover:ring-primary-200 bg-primary-600/5 cursor-pointer rounded-lg px-4 py-2 text-left transition-all hover:ring-2"
-              color="none"
-              onClick={() => router.push('/create-post')}
-            >
-              <Row className="4 w-full justify-start  gap-3">
-                <DocumentTextIcon className="h-14 w-14 self-center text-cyan-600" />
-                <Col className="w-full items-start gap-0.5">
-                  <div className="text-base font-semibold sm:text-lg">
-                    Discussion Post
-                  </div>
-                  <span className=" text-left text-sm  ">
-                    Share groups of markets, updates, ideas, or stories with the
-                    community.
-                  </span>
+          </Col>
+
+          <Col className="gap-2">
+            <label className="text-ink-900 text-sm font-semibold">
+              Content <span className="text-scarlet-500">*</span>
+            </label>
+            <TextEditor editor={descriptionEditor} simple />
+          </Col>
+
+          {/* Admin-only options */}
+          {isAdmin && (
+            <Col className="gap-3">
+              <Row className="items-center gap-2">
+                <ShortToggle
+                  on={formState.isAnnouncement || false}
+                  setOn={(on) => updateField('isAnnouncement', on)}
+                  colorMode="warning"
+                />
+                <span className="text-ink-700 text-sm">
+                  Announcement (sends a notification to all users)
+                </span>
+              </Row>
+
+              <Row className="items-center gap-2">
+                <ShortToggle
+                  on={formState.isChangeLog || false}
+                  setOn={(on) => updateField('isChangeLog', on)}
+                />
+                <span className="text-ink-700 text-sm">
+                  Changelog (shows up on the changelog page)
+                </span>
+              </Row>
+            </Col>
+          )}
+
+          {/* Visibility toggle */}
+          <Row className="items-center gap-2">
+            <ShortToggle
+              on={formState.visibility === 'public'}
+              setOn={(on) =>
+                updateField('visibility', on ? 'public' : 'unlisted')
+              }
+            />
+            <span className="text-ink-700 text-sm">Publicly listed</span>
+            <InfoTooltip text="If disabled, only people with the link can see this post" />
+          </Row>
+        </Col>
+      ) : (
+        /* Market Creation UI */
+        <Col className="mx-auto w-full max-w-3xl gap-6 p-3 sm:p-6">
+          {/* Multiple Choice Settings - Above Preview */}
+          {formState.outcomeType === 'MULTIPLE_CHOICE' && (
+            <Col className="bg-canvas-0 ring-ink-100 gap-4 rounded-lg p-4 shadow-md ring-1">
+              {/* Side-by-side layout on larger screens */}
+              <Row className="flex-col gap-4 sm:flex-row">
+                {/* Answer Behavior Toggle */}
+                <Col className="flex-1 gap-2">
+                  <Row className="items-center gap-2">
+                    <span className="text-ink-900 text-sm font-semibold">
+                      Only one answer can resolve YES
+                    </span>
+                    <InfoTooltip text="Should answers sum to 100%? If yes, only one answer can resolve YES. If no, multiple answers can resolve YES independently." />
+                  </Row>
+                  <Row className="items-start gap-3">
+                    <ShortToggle
+                      on={formState.shouldAnswersSumToOne ?? true}
+                      setOn={(value) =>
+                        updateField('shouldAnswersSumToOne', value)
+                      }
+                    />
+                    <Col className="gap-0.5">
+                      <span className="text-ink-600 text-xs">
+                        {formState.shouldAnswersSumToOne
+                          ? 'After one answer resolves YES, all others resolve NO, and not sooner'
+                          : 'each answer can resolve YES or NO at any time, independently of other answers'}
+                      </span>
+                    </Col>
+                  </Row>
+                </Col>
+
+                {/* Who Can Add Answers */}
+                <Col className="flex-1 gap-2">
+                  <Row className="items-center gap-2">
+                    <span className="text-ink-900 text-sm font-semibold">
+                      Who can add new answers later?
+                    </span>
+                    <InfoTooltip
+                      text={
+                        'Determines who will be able to add new answers after question creation.' +
+                        (formState.shouldAnswersSumToOne
+                          ? ' If enabled, then an "Other" answer will be included.'
+                          : '')
+                      }
+                    />
+                  </Row>
+                  <ChoicesToggleGroup
+                    currentChoice={formState.addAnswersMode || 'DISABLED'}
+                    choicesMap={{
+                      'No one': 'DISABLED',
+                      You: 'ONLY_CREATOR',
+                      Anyone: 'ANYONE',
+                    }}
+                    setChoice={(c) => updateField('addAnswersMode', c as any)}
+                    className="w-fit"
+                  />
                 </Col>
               </Row>
-            </Button>
-            {creator.createdTime > Date.now() - WEEK_MS && <ExplainerPanel />}
-          </>
-        )}
-        {state === 'ai chat' && (
-          <AIMarketSuggestionsPanel onSelectSuggestion={handleAISuggestion} />
-        )}
-        {state == 'filling contract params' && params?.outcomeType && (
-          <ContractParamsForm
-            outcomeType={params.outcomeType}
-            creator={creator}
-            params={params}
+            </Col>
+          )}
+
+          {/* Preview */}
+          <div className="relative">
+            <MarketPreview
+              data={previewData}
+              user={creator}
+              onEditQuestion={(q) => updateField('question', q)}
+              onEditDescription={(desc) => updateField('description', desc)}
+              descriptionEditor={descriptionEditor}
+              closeDate={
+                formState.closeDate ? new Date(formState.closeDate) : undefined
+              }
+              setCloseDate={(date) => {
+                updateField('closeDate', date.toISOString().split('T')[0])
+                setHasManuallyEditedCloseDate(true)
+              }}
+              closeHoursMinutes={formState.closeHoursMinutes}
+              setCloseHoursMinutes={(time) => {
+                updateField('closeHoursMinutes', time)
+                setHasManuallyEditedCloseDate(true)
+              }}
+              neverCloses={formState.neverCloses}
+              setNeverCloses={(never) => {
+                updateField('neverCloses', never)
+                setHasManuallyEditedCloseDate(true)
+              }}
+              selectedGroups={formState.selectedGroups}
+              onUpdateGroups={(groups) => updateField('selectedGroups', groups)}
+              onOpenCloseDateModal={() => setIsCloseDateModalOpen(true)}
+              onToggleVisibility={() => {
+                updateField(
+                  'visibility',
+                  formState.visibility === 'public' ? 'unlisted' : 'public'
+                )
+              }}
+              onEditAnswers={(answers) => {
+                updateField('answers', answers)
+                // For DATE markets, regenerate midpoints after editing
+                if (formState.outcomeType === 'DATE') {
+                  debouncedRegenerateDateMidpoints(answers)
+                }
+                // For MULTI_NUMERIC markets, regenerate midpoints after editing
+                if (formState.outcomeType === 'MULTI_NUMERIC') {
+                  debouncedRegenerateNumericMidpoints(answers)
+                }
+              }}
+              onToggleShouldAnswersSumToOne={() => {
+                const newValue = !formState.shouldAnswersSumToOne
+                updateField('shouldAnswersSumToOne', newValue)
+
+                // For DATE markets, use cached ranges for instant toggle
+                if (formState.outcomeType === 'DATE') {
+                  if (newValue) {
+                    // Switching to buckets - use cached data
+                    if (dateBuckets.answers.length > 0) {
+                      updateField('answers', dateBuckets.answers)
+                      updateField('midpoints', dateBuckets.midpoints)
+                    }
+                  } else {
+                    // Switching to thresholds - use cached data
+                    if (dateThresholds.answers.length > 0) {
+                      updateField('answers', dateThresholds.answers)
+                      updateField('midpoints', dateThresholds.midpoints)
+                    }
+                  }
+                }
+
+                // For MULTI_NUMERIC markets, use cached ranges for instant toggle
+                if (formState.outcomeType === 'MULTI_NUMERIC') {
+                  if (newValue) {
+                    // Switching to buckets - use cached data
+                    if (numericBuckets.answers.length > 0) {
+                      updateField('answers', numericBuckets.answers)
+                      updateField('midpoints', numericBuckets.midpoints)
+                    }
+                  } else {
+                    // Switching to thresholds - use cached data
+                    if (numericThresholds.answers.length > 0) {
+                      updateField('answers', numericThresholds.answers)
+                      updateField('midpoints', numericThresholds.midpoints)
+                    }
+                  }
+                }
+              }}
+              onOpenTopicsModal={(open) => {
+                if (!open) {
+                  // Reset trigger when modal closes
+                  setTriggerTopicsModalOpen(false)
+                }
+              }}
+              triggerTopicsModalOpen={triggerTopicsModalOpen}
+              isGeneratingDateRanges={isGeneratingDateRanges}
+              onDateRangeChange={(field, value) => updateField(field, value)}
+              onGenerateDateRanges={async () => {
+                if (
+                  !formState.question ||
+                  !formState.minString ||
+                  !formState.maxString
+                )
+                  return
+                setIsGeneratingDateRanges(true)
+                try {
+                  const result = await api('generate-ai-date-ranges', {
+                    question: formState.question,
+                    description: '',
+                    min: formState.minString,
+                    max: formState.maxString,
+                  })
+
+                  // Cache both buckets and thresholds
+                  setDateBuckets({
+                    answers: result.buckets.answers,
+                    midpoints: result.buckets.midpoints,
+                  })
+                  setDateThresholds({
+                    answers: result.thresholds.answers,
+                    midpoints: result.thresholds.midpoints,
+                  })
+
+                  // Use buckets or thresholds based on shouldAnswersSumToOne
+                  if (formState.shouldAnswersSumToOne) {
+                    updateField('answers', result.buckets.answers)
+                    updateField('midpoints', result.buckets.midpoints)
+                  } else {
+                    updateField('answers', result.thresholds.answers)
+                    updateField('midpoints', result.thresholds.midpoints)
+                  }
+
+                  // Set close date to the maximum date from the range (maxString)
+                  // The API will parse maxString to a date, so we can use that as the close date
+                  if (formState.maxString) {
+                    try {
+                      // Try to parse the maxString as a date
+                      // If it's just a year like "2030", dayjs will parse it as Jan 1, 2030
+                      // So we should add time to ensure it covers the full period
+                      const parsedDate = dayjs(formState.maxString)
+
+                      // If maxString is just a year, set close date to end of that year
+                      // Otherwise use the parsed date plus some buffer
+                      const isJustYear = /^\d{4}$/.test(
+                        formState.maxString.trim()
+                      )
+                      const closeDate = isJustYear
+                        ? parsedDate.endOf('year')
+                        : parsedDate.add(1, 'month') // Add buffer for non-year formats
+
+                      updateField('closeDate', closeDate.format('YYYY-MM-DD'))
+                      updateField('closeHoursMinutes', '23:59')
+                      setHasManuallyEditedCloseDate(true) // Prevent auto-override
+                    } catch (e) {
+                      console.error(
+                        'Error parsing maxString for close date:',
+                        e
+                      )
+                    }
+                  }
+                } catch (e) {
+                  console.error('Error generating date ranges:', e)
+                } finally {
+                  setIsGeneratingDateRanges(false)
+                }
+              }}
+              isGeneratingNumericRanges={isGeneratingNumericRanges}
+              onNumericRangeChange={(field, value) => updateField(field, value)}
+              onGenerateNumericRanges={async () => {
+                if (
+                  !formState.question ||
+                  formState.min === undefined ||
+                  formState.max === undefined
+                )
+                  return
+                setIsGeneratingNumericRanges(true)
+                try {
+                  const result = await api('generate-ai-numeric-ranges', {
+                    question: formState.question,
+                    description: '',
+                    min: formState.min,
+                    max: formState.max,
+                    unit: formState.unit || '',
+                  })
+
+                  // Cache both buckets and thresholds
+                  setNumericBuckets({
+                    answers: result.buckets.answers,
+                    midpoints: result.buckets.midpoints,
+                  })
+                  setNumericThresholds({
+                    answers: result.thresholds.answers,
+                    midpoints: result.thresholds.midpoints,
+                  })
+
+                  // Use buckets or thresholds based on shouldAnswersSumToOne
+                  if (formState.shouldAnswersSumToOne) {
+                    updateField('answers', result.buckets.answers)
+                    updateField('midpoints', result.buckets.midpoints)
+                  } else {
+                    updateField('answers', result.thresholds.answers)
+                    updateField('midpoints', result.thresholds.midpoints)
+                  }
+
+                  // Auto-set close date using binary-style logic (1 year from now)
+                  if (!hasManuallyEditedCloseDate) {
+                    const oneYearFromNow = dayjs().add(1, 'year')
+                    updateField(
+                      'closeDate',
+                      oneYearFromNow.format('YYYY-MM-DD')
+                    )
+                    updateField('closeHoursMinutes', '23:59')
+                  }
+                } catch (e) {
+                  console.error('Error generating numeric ranges:', e)
+                } finally {
+                  setIsGeneratingNumericRanges(false)
+                }
+              }}
+              onProbabilityChange={(prob) => updateField('probability', prob)}
+              onGenerateDescription={generateAIDescription}
+              isGeneratingDescription={isGeneratingDescription}
+              onGenerateAnswers={generateAnswers}
+              isGeneratingAnswers={isGeneratingAnswers}
+              onSwitchMarketType={(
+                type,
+                shouldSumToOne,
+                addAnswersMode,
+                removeOtherAnswer
+              ) => {
+                handleTypeChange(type, shouldSumToOne ?? true)
+                if (addAnswersMode !== undefined) {
+                  updateField('addAnswersMode', addAnswersMode)
+                }
+                if (removeOtherAnswer && formState.answers) {
+                  // Remove the "other" answer from the list
+                  const filteredAnswers = formState.answers.filter(
+                    (answer) => answer.toLowerCase().trim() !== 'other'
+                  )
+                  updateField('answers', filteredAnswers)
+                }
+              }}
+              isEditable
+            />
+
+            {/* Overlay when no market type selected */}
+            {!formState.outcomeType && (
+              <div className="bg-ink-900/60 absolute inset-0 flex items-center justify-center rounded-lg backdrop-blur-sm">
+                <div className="text-canvas-0 text-center text-xl font-semibold">
+                  Select a question type to begin
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* Completion Checklist */}
+          {formState.outcomeType && (
+            <Row className="flex-wrap gap-2">
+              {/* Title - Red when blank, green when filled */}
+              <Tooltip
+                text={
+                  !formState.question || formState.question.trim().length === 0
+                    ? 'You need a title'
+                    : ''
+                }
+              >
+                <button
+                  onClick={() => {
+                    const titleInput = document.getElementById(
+                      'market-preview-title-input'
+                    )
+                    titleInput?.focus()
+                  }}
+                  className={clsx(
+                    'flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-sm font-medium transition-colors hover:opacity-80',
+                    formState.question && formState.question.trim().length > 0
+                      ? 'border-teal-500 bg-teal-50 text-teal-700'
+                      : 'border-red-500 bg-red-50 text-red-700 dark:border-red-400 dark:bg-red-950 dark:text-red-300'
+                  )}
+                >
+                  {formState.question &&
+                    formState.question.trim().length > 0 && (
+                      <CheckCircleIcon className="h-4 w-4" />
+                    )}
+                  Title
+                </button>
+              </Tooltip>
+
+              {/* Description - Red when blank, green when filled */}
+              <Tooltip
+                text={
+                  !hasDescription(formState.description)
+                    ? 'Markets with clear resolution criteria get more traders'
+                    : ''
+                }
+              >
+                <button
+                  onClick={() => {
+                    descriptionEditor?.commands.focus()
+                  }}
+                  className={clsx(
+                    'flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-sm font-medium transition-colors hover:opacity-80',
+                    hasDescription(formState.description)
+                      ? 'border-teal-500 bg-teal-50 text-teal-700'
+                      : 'border-red-500 bg-red-50 text-red-700 dark:border-red-400 dark:bg-red-950 dark:text-red-300'
+                  )}
+                >
+                  {hasDescription(formState.description) && (
+                    <CheckCircleIcon className="h-4 w-4" />
+                  )}
+                  Description
+                </button>
+              </Tooltip>
+
+              {/* Close Date (not required for POLL) */}
+              {formState.outcomeType !== 'POLL' && (
+                <Tooltip
+                  text={
+                    !formState.closeDate && !formState.neverCloses
+                      ? 'You need a close date'
+                      : formState.closeDate && !hasManuallyEditedCloseDate
+                      ? `Close date is ${dayjs(formState.closeDate).format(
+                          'MMM D, YYYY'
+                        )} set automatically based on your title`
+                      : ''
+                  }
+                >
+                  <button
+                    onClick={() => setIsCloseDateModalOpen(true)}
+                    className={clsx(
+                      'flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-sm font-medium transition-colors hover:opacity-80',
+                      formState.neverCloses
+                        ? 'border-teal-500 bg-teal-50 text-teal-700'
+                        : formState.closeDate && hasManuallyEditedCloseDate
+                        ? 'border-teal-500 bg-teal-50 text-teal-700'
+                        : formState.closeDate && !hasManuallyEditedCloseDate
+                        ? 'border-amber-500 bg-amber-50 text-amber-700 dark:border-amber-400 dark:bg-amber-950 dark:text-amber-300'
+                        : 'border-red-500 bg-red-50 text-red-700 dark:border-red-400 dark:bg-red-950 dark:text-red-300'
+                    )}
+                  >
+                    {(formState.neverCloses ||
+                      (formState.closeDate && hasManuallyEditedCloseDate)) && (
+                      <CheckCircleIcon className="h-4 w-4" />
+                    )}
+                    Close date
+                  </button>
+                </Tooltip>
+              )}
+
+              {/* Topics - Yellow when only 1, green when 2+ */}
+              <button
+                onClick={() => {
+                  setTriggerTopicsModalOpen(true)
+                }}
+                className={clsx(
+                  'flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-sm font-medium transition-colors hover:opacity-80',
+                  formState.selectedGroups.length >= 2
+                    ? 'border-teal-500 bg-teal-50 text-teal-700'
+                    : formState.selectedGroups.length === 1
+                    ? 'border-amber-500 bg-amber-50 text-amber-700 dark:border-amber-400 dark:bg-amber-950 dark:text-amber-300'
+                    : 'border-ink-300 bg-ink-100 text-ink-500'
+                )}
+              >
+                {formState.selectedGroups.length >= 2 && (
+                  <CheckCircleIcon className="h-4 w-4" />
+                )}
+                Topics
+              </button>
+
+              {/* Answers (for MULTIPLE_CHOICE and POLL) */}
+              {(formState.outcomeType === 'MULTIPLE_CHOICE' ||
+                formState.outcomeType === 'POLL') && (
+                <button
+                  onClick={() => {
+                    // Focus the first answer input by placeholder
+                    const textarea = document.querySelector(
+                      `textarea[placeholder="Answer 1"], textarea[placeholder="Option 1"]`
+                    ) as HTMLTextAreaElement | null
+
+                    if (textarea) {
+                      textarea.scrollIntoView({
+                        behavior: 'smooth',
+                        block: 'center',
+                      })
+                      setTimeout(() => {
+                        textarea.focus()
+                      }, 100)
+                    }
+                  }}
+                  className={clsx(
+                    'flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-sm font-medium transition-colors hover:opacity-80',
+                    formState.answers.filter((a) => a.trim().length > 0)
+                      .length > 2
+                      ? 'border-teal-500 bg-teal-50 text-teal-700'
+                      : formState.answers.filter((a) => a.trim().length > 0)
+                          .length === 2
+                      ? 'border-amber-500 bg-amber-50 text-amber-700 dark:border-amber-400 dark:bg-amber-950 dark:text-amber-300'
+                      : 'border-red-500 bg-red-50 text-red-700 dark:border-red-400 dark:bg-red-950 dark:text-red-300'
+                  )}
+                >
+                  {formState.answers.filter((a) => a.trim().length > 0).length >
+                    2 && <CheckCircleIcon className="h-4 w-4" />}
+                  Answers
+                </button>
+              )}
+
+              {/* Date ranges pill for DATE markets */}
+              {formState.outcomeType === 'DATE' && (
+                <button
+                  className={clsx(
+                    'flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-sm font-medium transition-colors',
+                    formState.minString &&
+                      formState.maxString &&
+                      formState.answers.length > 0
+                      ? 'border-teal-500 bg-teal-50 text-teal-700'
+                      : formState.minString && formState.maxString
+                      ? 'border-amber-500 bg-amber-50 text-amber-700 dark:border-amber-400 dark:bg-amber-950 dark:text-amber-300'
+                      : 'border-red-500 bg-red-50 text-red-700 dark:border-red-400 dark:bg-red-950 dark:text-red-300'
+                  )}
+                >
+                  {formState.minString &&
+                    formState.maxString &&
+                    formState.answers.length > 0 && (
+                      <CheckCircleIcon className="h-4 w-4" />
+                    )}
+                  Date ranges
+                </button>
+              )}
+
+              {/* Numeric ranges pill for MULTI_NUMERIC markets */}
+              {formState.outcomeType === 'MULTI_NUMERIC' && (
+                <button
+                  className={clsx(
+                    'flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-sm font-medium transition-colors',
+                    formState.min !== undefined &&
+                      formState.max !== undefined &&
+                      formState.answers.length > 0
+                      ? 'border-teal-500 bg-teal-50 text-teal-700'
+                      : formState.min !== undefined &&
+                        formState.max !== undefined
+                      ? 'border-amber-500 bg-amber-50 text-amber-700 dark:border-amber-400 dark:bg-amber-950 dark:text-amber-300'
+                      : 'border-red-500 bg-red-50 text-red-700 dark:border-red-400 dark:bg-red-950 dark:text-red-300'
+                  )}
+                >
+                  {formState.min !== undefined &&
+                    formState.max !== undefined &&
+                    formState.answers.length > 0 && (
+                      <CheckCircleIcon className="h-4 w-4" />
+                    )}
+                  Numeric ranges
+                </button>
+              )}
+
+              {/* Visibility Status */}
+              <Tooltip
+                text={
+                  formState.visibility === 'public' ? (
+                    <>
+                      Click to make unlisted
+                      <br />
+                      (not discoverable without a link)
+                    </>
+                  ) : (
+                    'Click to make public'
+                  )
+                }
+              >
+                <button
+                  onClick={() => {
+                    updateField(
+                      'visibility',
+                      formState.visibility === 'public' ? 'unlisted' : 'public'
+                    )
+                  }}
+                  className={clsx(
+                    'flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-sm font-medium transition-colors hover:opacity-80',
+                    formState.visibility === 'public'
+                      ? 'border-teal-500 bg-teal-50 text-teal-700'
+                      : 'border-amber-500 bg-amber-50 text-amber-700 dark:border-amber-400 dark:bg-amber-950 dark:text-amber-300'
+                  )}
+                >
+                  {formState.visibility === 'public' && (
+                    <CheckCircleIcon className="h-4 w-4" />
+                  )}
+                  {formState.visibility === 'public'
+                    ? 'Market will be visible'
+                    : 'Market will be unlisted'}
+                </button>
+              </Tooltip>
+            </Row>
+          )}
+
+          {/* Market Settings Below Preview */}
+          <ContextualEditorPanel
+            formState={formState}
+            onUpdate={updateField}
+            validationErrors={validation.errors}
+            balance={creator.balance}
+            submitState={isSubmitting ? 'LOADING' : 'EDITING'}
+            onGenerateAnswers={generateAnswers}
+            isGeneratingAnswers={isGeneratingAnswers}
           />
+
+          {/* Explainer Panel for new users */}
+          {creator.createdTime > Date.now() - WEEK_MS && (
+            <ExplainerPanel className="mt-8" />
+          )}
+
+          {/* Footer */}
+          <div className="text-ink-500 mt-6 flex items-center justify-center gap-3 pb-32 text-xs lg:pb-20">
+            <span>© Manifold Markets, Inc.</span>
+            <span>•</span>
+            <a
+              href="https://manifold.markets/terms"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="hover:text-ink-700 underline"
+            >
+              Terms
+            </a>
+            <span>•</span>
+            <a
+              href="https://manifold.markets/privacy"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="hover:text-ink-700 underline"
+            >
+              Privacy
+            </a>
+          </div>
+        </Col>
+      )}
+
+      {/* Bottom Action Bar - Mobile
+          TODO: Could extract mobile + desktop bars into a shared <ActionBar> component
+          to reduce duplication, but would require creating a new file. Current approach
+          keeps all logic in one place. Only differences: size (md vs lg) and layout. */}
+      <Row
+        className={clsx(
+          'bg-canvas-0 border-ink-200 fixed left-0 right-0 z-20 border-t px-3 py-2',
+          'lg:hidden' // Hide on desktop, show only on mobile
         )}
-      </Col>
+        style={{ bottom: `${BOTTOM_NAV_BAR_HEIGHT}px` }}
+      >
+        <Col className="mx-auto w-full max-w-7xl gap-2">
+          {submitError && (
+            <div className="bg-scarlet-50 text-scarlet-700 rounded-lg px-3 py-1.5 text-xs">
+              {submitError}
+            </div>
+          )}
+          <Row className="gap-2">
+            {!showResetConfirmation ? (
+              <Button
+                color="gray-outline"
+                size="md"
+                onClick={() => setShowResetConfirmation(true)}
+              >
+                Reset
+              </Button>
+            ) : (
+              <Button color="red" size="md" onClick={handleReset}>
+                Confirm
+              </Button>
+            )}
+            <Button
+              color="gray-outline"
+              size="md"
+              onClick={saveDraftToDb}
+              disabled={isSavingDraft}
+              loading={isSavingDraft}
+            >
+              Draft
+            </Button>
+            <Button
+              color="green"
+              size="md"
+              className="flex-1"
+              onClick={handleSubmit}
+              disabled={!canSubmit}
+              loading={isSubmitting}
+            >
+              {getSubmitButtonText()}
+            </Button>
+          </Row>
+          {!validation.isValid && (
+            <div className="text-ink-600 text-center text-xs">
+              {Object.values(validation.errors)[0]}
+            </div>
+          )}
+        </Col>
+      </Row>
+
+      {/* Desktop Action Bar */}
+      <div className="pointer-events-none fixed bottom-0 left-0 right-0 z-10 hidden lg:block">
+        <div className="mx-auto grid w-full max-w-[1440px] grid-cols-12">
+          <div className="col-span-2" /> {/* Spacer for sidebar */}
+          <Col className="bg-canvas-0 border-ink-200 pointer-events-auto col-span-7 gap-2 border-t p-4">
+            {submitError && (
+              <div className="bg-scarlet-50 text-scarlet-700 rounded-lg px-4 py-2 text-sm">
+                {submitError}
+              </div>
+            )}
+            <Row className="gap-3">
+              {!showResetConfirmation ? (
+                <Button
+                  color="gray-outline"
+                  size="lg"
+                  onClick={() => setShowResetConfirmation(true)}
+                >
+                  Reset
+                </Button>
+              ) : (
+                <Button color="red" size="lg" onClick={handleReset}>
+                  Confirm Reset
+                </Button>
+              )}
+              <Button
+                color="gray-outline"
+                size="lg"
+                onClick={saveDraftToDb}
+                disabled={isSavingDraft}
+                loading={isSavingDraft}
+              >
+                Save Draft
+              </Button>
+              <Button
+                color="green"
+                size="lg"
+                className="flex-1"
+                onClick={handleSubmit}
+                disabled={!canSubmit}
+                loading={isSubmitting}
+              >
+                {getSubmitButtonText()}
+              </Button>
+            </Row>
+            {!validation.isValid && (
+              <div className="text-ink-600 text-center text-sm">
+                {Object.values(validation.errors)[0]}
+              </div>
+            )}
+          </Col>
+        </div>
+      </div>
+
+      {/* Type Switcher Modal */}
+      <TypeSwitcherModal
+        isOpen={isTypeSwitcherOpen}
+        setIsOpen={setIsTypeSwitcherOpen}
+        currentType={formState.outcomeType as any}
+        currentShouldAnswersSumToOne={formState.shouldAnswersSumToOne}
+        onSelectType={handleTypeChange}
+      />
+
+      {/* Close Date Modal */}
+      <Modal open={isCloseDateModalOpen} setOpen={setIsCloseDateModalOpen}>
+        <Col className="bg-canvas-0 gap-4 rounded-lg p-6">
+          <h2 className="text-primary-700 text-xl font-semibold">
+            Set Close Date
+          </h2>
+          <CloseTimeSection
+            closeDate={formState.closeDate}
+            setCloseDate={(date) => {
+              updateField('closeDate', date)
+              setHasManuallyEditedCloseDate(true)
+            }}
+            closeHoursMinutes={formState.closeHoursMinutes}
+            setCloseHoursMinutes={(time) =>
+              updateField('closeHoursMinutes', time)
+            }
+            outcomeType={formState.outcomeType as any}
+            submitState={isSubmitting ? 'LOADING' : 'EDITING'}
+            setNeverCloses={(neverCloses) => {
+              updateField('neverCloses', neverCloses)
+              setHasManuallyEditedCloseDate(true)
+            }}
+            neverCloses={formState.neverCloses}
+            initTime="23:59"
+          />
+          <Button
+            color="indigo"
+            onClick={() => setIsCloseDateModalOpen(false)}
+            className="mt-4"
+          >
+            Done
+          </Button>
+        </Col>
+      </Modal>
+
+      {/* Drafts Modal */}
+      <DraftsModal
+        showDraftsModal={showDraftsModal}
+        setShowDraftsModal={setShowDraftsModal}
+        drafts={drafts}
+        loadDraftFromDb={loadDraftFromDb}
+        deleteDraft={deleteDraft}
+      />
     </Col>
   )
 }
 
-function CreateStepTracker(props: {
-  outcomeType: CreateableOutcomeType | undefined
-  shouldAnswersSumToOne: boolean | undefined
-  setState: (state: CreateContractStateType) => void
-  state: CreateContractStateType
-  clearTypeAndGoBackToChoosing: () => void
-}) {
+// Drafts Modal Component
+interface DraftsModalProps {
+  showDraftsModal: boolean
+  setShowDraftsModal: (show: boolean) => void
+  drafts: MarketDraft[]
+  loadDraftFromDb: (draft: MarketDraft) => void
+  deleteDraft: (id: number) => void
+}
+
+function DraftsModal(props: DraftsModalProps) {
   const {
-    outcomeType,
-    shouldAnswersSumToOne,
-    setState,
-    state,
-    clearTypeAndGoBackToChoosing,
+    showDraftsModal,
+    setShowDraftsModal,
+    drafts,
+    loadDraftFromDb,
+    deleteDraft,
   } = props
-  const outcomeKey =
-    outcomeType == 'MULTIPLE_CHOICE'
-      ? shouldAnswersSumToOne
-        ? 'DEPENDENT_MULTIPLE_CHOICE'
-        : 'INDEPENDENT_MULTIPLE_CHOICE'
-      : outcomeType
+
   return (
-    <Row
-      className={clsx(
-        'text-ink-400 bg-canvas-0 border-1 border-ink-200 sticky z-10 w-full items-center gap-1 border-b pb-2 pt-4',
-        'top-0 px-6'
-      )}
-    >
-      <CreateStepButton
-        onClick={() => {
-          clearTypeAndGoBackToChoosing()
-        }}
-      >
-        Choose question type
-      </CreateStepButton>
-      <ChevronRightIcon className={clsx('h-5 w-5')} />
-      {state === 'ai chat' ? (
-        <CreateStepButton
-          disabled={false}
-          onClick={() => {
-            clearTypeAndGoBackToChoosing()
-          }}
-        >
-          AI Assistant
-        </CreateStepButton>
-      ) : (
-        <CreateStepButton
-          disabled={!outcomeType}
-          onClick={() => {
-            if (outcomeType) {
-              setState('filling contract params')
-            }
-          }}
-        >
-          {outcomeKey
-            ? capitalize(
-                getContractTypeFromValue(
-                  outcomeKey as CreateableOutcomeType,
-                  'name'
-                )
-              )
-            : ''}
-        </CreateStepButton>
-      )}
-    </Row>
+    <Modal open={showDraftsModal} setOpen={setShowDraftsModal} size="md">
+      <Col className="bg-canvas-0 max-h-[70vh] overflow-auto rounded p-6">
+        <h3 className="mb-4 text-xl font-semibold">Saved Drafts</h3>
+        {drafts.length === 0 ? (
+          <p className="text-ink-600">No saved drafts</p>
+        ) : (
+          <div className="space-y-3">
+            {drafts.map((draft) => (
+              <div
+                key={draft.id}
+                className="border-ink-200 hover:bg-canvas-50 rounded-lg border p-4 transition-colors"
+              >
+                <Row className="items-start justify-between gap-3">
+                  <Col className="flex-1 gap-2">
+                    <h4 className="text-ink-900 font-semibold">
+                      {draft.data.question || 'Untitled'}
+                    </h4>
+                    <div className="text-ink-500 text-xs">
+                      <RelativeTimestamp
+                        time={new Date(draft.createdAt).getTime()}
+                      />
+                    </div>
+                  </Col>
+                  <Row className="gap-2">
+                    <Button
+                      size="xs"
+                      color="indigo"
+                      onClick={() => loadDraftFromDb(draft)}
+                    >
+                      Load
+                    </Button>
+                    <Button
+                      size="xs"
+                      color="red-outline"
+                      onClick={() => deleteDraft(draft.id)}
+                    >
+                      Delete
+                    </Button>
+                  </Row>
+                </Row>
+                <Col className="text-ink-600 mt-2 gap-1 text-sm">
+                  <p>Type: {draft.data.outcomeType}</p>
+                  {draft.data.answers.length > 0 && (
+                    <p>
+                      Answers: {draft.data.answers.slice(0, 5).join(', ')}
+                      {draft.data.answers.length > 5 && '...'}
+                    </p>
+                  )}
+                  {draft.data.description && (
+                    <p className="line-clamp-2">
+                      Description: {richTextToString(draft.data.description)}
+                    </p>
+                  )}
+                </Col>
+              </div>
+            ))}
+          </div>
+        )}
+      </Col>
+    </Modal>
   )
 }
 
-function CreateStepButton(props: {
-  onClick: () => void
-  className?: string
-  children: ReactNode
-  disabled?: boolean
-}) {
-  const { onClick, children, className, disabled } = props
-  return (
-    <button
-      className={clsx(
-        className,
-        'disabled:text-ink-400 text-primary-600 enabled:hover:text-primary-800 transition-all  disabled:cursor-not-allowed'
-      )}
-      onClick={onClick}
-      disabled={disabled}
-    >
-      {children}
-    </button>
-  )
-}
-
+// Explainer Panel Components for new users
 const ExplainerPanel = (props: { className?: string }) => {
   const { className } = props
   const handleSectionClick = (sectionTitle: string) => {
     track('create explainer section click', { sectionTitle })
   }
   return (
-    <Col className={clsx('mt-4', className)}>
+    <Col className={clsx('mt-6', className)}>
       <h2 className={clsx('text-ink-600 mb-2 text-xl')}>What is this?</h2>
       <ResolutionPanel onClick={handleSectionClick} />
       <TraderPanel onClick={handleSectionClick} />

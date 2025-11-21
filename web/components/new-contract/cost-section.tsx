@@ -29,11 +29,6 @@ export const CostSection = (props: {
   return (
     <Col className="items-start px-1">
       {!CREATEABLE_NON_PREDICTIVE_OUTCOME_TYPES.includes(outcomeType) && (
-        <label className="mb-1 gap-2">
-          <span>Liquidity</span>
-        </label>
-      )}
-      {!CREATEABLE_NON_PREDICTIVE_OUTCOME_TYPES.includes(outcomeType) && (
         <PriceSection
           liquidityTier={liquidityTier}
           setLiquidityTier={setLiquidityTier}
