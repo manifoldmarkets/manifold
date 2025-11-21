@@ -273,6 +273,18 @@ export function NewContractPanel(props: {
       return
     }
 
+    // Don't save empty drafts - require at least a question or description
+    const hasQuestion = formState.question.trim().length > 0
+    const hasDescription = formState.description &&
+      descriptionEditor &&
+      !descriptionEditor.isEmpty
+    const hasAnswers = formState.answers.some((a) => a.trim().length > 0)
+
+    if (!hasQuestion && !hasDescription && !hasAnswers) {
+      toast.error('Add a question, description, or answers before saving')
+      return
+    }
+
     setIsSavingDraft(true)
     try {
       const draft = {
@@ -579,19 +591,25 @@ export function NewContractPanel(props: {
       ...prev,
       outcomeType: newType,
       shouldAnswersSumToOne: shouldSumToOne,
-      // Add default answers for Multiple Choice and Poll if they don't exist
+      // Clear all market-specific data for discussion posts
       answers:
-        newType === 'MULTIPLE_CHOICE' || newType === 'POLL'
+        newType === 'DISCUSSION_POST'
+          ? []
+          : newType === 'MULTIPLE_CHOICE' || newType === 'POLL'
           ? prev.answers.length > 0
             ? prev.answers
             : ['', '', '']
           : newType === 'MULTI_NUMERIC' || newType === 'DATE'
           ? [] // Start with empty answers for numeric/date, will be generated
           : [],
-      // Set addAnswersMode to DISABLED by default for MC/Poll
+      // Set addAnswersMode to DISABLED by default for MC/Poll, clear for discussion posts
       addAnswersMode:
-        newType === 'MULTIPLE_CHOICE' ? 'DISABLED' : prev.addAnswersMode,
-      // Preserve numeric-specific fields for numeric types, clear for others
+        newType === 'DISCUSSION_POST'
+          ? 'DISABLED'
+          : newType === 'MULTIPLE_CHOICE'
+          ? 'DISABLED'
+          : prev.addAnswersMode,
+      // Preserve numeric-specific fields for numeric types, clear for others (including discussion posts)
       min:
         newType === 'MULTI_NUMERIC' ||
         newType === 'DATE' ||
@@ -698,28 +716,32 @@ export function NewContractPanel(props: {
       let result
       if (formState.outcomeType === 'DISCUSSION_POST') {
         // Discussion posts use create-post API (no betting/markets)
-        const postPayload = {
+        const postPayload: any = {
           title: formState.question.trim(),
           content: formState.description || { type: 'doc', content: [] },
-          groupId: formState.selectedGroups[0]?.id, // Posts can only be in one group
           visibility: formState.visibility,
-          isAnnouncement: formState.isAnnouncement || false,
-          isChangeLog: formState.isChangeLog || false,
         }
+
+        // Admin-only fields
+        if (isAdmin && formState.isAnnouncement) {
+          postPayload.isAnnouncement = true
+        }
+        if (isAdmin && formState.isChangeLog) {
+          postPayload.isChangeLog = true
+        }
+
         result = await api('create-post', postPayload)
         // Redirect to new post
         await Router.push(`/post/${result.post.slug}`)
-        // Clear form state and editor autosave after successful navigation
-        localStorage.removeItem('new-contract-form')
-        localStorage.removeItem('text new-contract-description')
       } else {
         result = await api('market', payload)
         // Redirect to new market
         await Router.push(`/${creator.username}/${result.slug}`)
-        // Clear form state and editor autosave after successful navigation
-        localStorage.removeItem('new-contract-form')
-        localStorage.removeItem('text new-contract-description')
       }
+
+      // Clear form state and editor autosave after successful navigation
+      localStorage.removeItem('new-contract-form')
+      localStorage.removeItem('text new-contract-description')
     } catch (error: any) {
       console.error('Error creating market:', error)
       setSubmitError(error.message || 'Failed to create market')
@@ -1122,6 +1144,8 @@ export function NewContractPanel(props: {
               onProbabilityChange={(prob) => updateField('probability', prob)}
               onGenerateDescription={generateAIDescription}
               isGeneratingDescription={isGeneratingDescription}
+              onGenerateAnswers={generateAnswers}
+              isGeneratingAnswers={isGeneratingAnswers}
               onSwitchMarketType={(
                 type,
                 shouldSumToOne,

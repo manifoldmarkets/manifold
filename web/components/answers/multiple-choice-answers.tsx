@@ -217,7 +217,7 @@ export function MultipleChoiceAnswers(props: {
   )
 }
 
-const AnswerInput = (props: {
+export const AnswerInput = (props: {
   id?: string
   disabled?: boolean
   value?: string
@@ -226,14 +226,15 @@ const AnswerInput = (props: {
   onDown?: () => void
   onDelete?: () => void
   placeholder?: string
+  className?: string
 }) => {
-  const { id, disabled, value, onChange, onUp, onDown, onDelete, placeholder } =
+  const { id, disabled, value, onChange, onUp, onDown, onDelete, placeholder, className } =
     props
 
   return (
     <ExpandingInput
       id={id}
-      className="w-full sm:ml-2"
+      className={className || "w-full sm:ml-2"}
       disabled={disabled}
       placeholder={placeholder}
       value={value}
@@ -255,6 +256,8 @@ const AnswerInput = (props: {
           onDown?.()
         }
         if (e.key == 'Backspace' && value === '' && !e.shiftKey && !e.altKey) {
+          e.preventDefault()
+          e.stopPropagation()
           onDelete?.()
           onUp?.()
         }

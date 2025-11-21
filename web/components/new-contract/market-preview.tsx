@@ -22,8 +22,8 @@ import { PlusIcon, EyeIcon, EyeOffIcon, XIcon } from '@heroicons/react/solid'
 import { Modal } from '../layout/modal'
 import { ContractTopicsList } from '../topics/contract-topics-list'
 import { InfoTooltip } from '../widgets/info-tooltip'
-import { ExpandingInput } from '../widgets/expanding-input'
-import { MAX_ANSWERS, MAX_ANSWER_LENGTH } from 'common/answer'
+import { MAX_ANSWERS } from 'common/answer'
+import { AnswerInput } from '../answers/multiple-choice-answers'
 import { Button } from '../buttons/button'
 import { suggestMarketType } from './market-type-suggestions'
 import { MarketTypeSuggestionBanner } from './market-type-suggestion-banner'
@@ -72,7 +72,9 @@ function getLiquidityDisplayText(
   const bonus = getUniqueBettorBonusAmount(liquidityTier, numAnswers)
   return (
     <>
-      {formatMoney(liquidityTier)} liquidity, earn <span className="text-ink-900 font-semibold">{formatMoney(bonus)}</span> for every unique trader
+      {formatMoney(liquidityTier)} liquidity, earn{' '}
+      <span className="text-ink-900 font-semibold">{formatMoney(bonus)}</span>{' '}
+      for every unique trader
     </>
   )
 }
@@ -111,6 +113,8 @@ export function MarketPreview(props: {
   onOpenCloseDateModal?: () => void
   onGenerateDescription?: () => void
   isGeneratingDescription?: boolean
+  onGenerateAnswers?: () => void
+  isGeneratingAnswers?: boolean
   onSwitchMarketType?: (
     type: CreateableOutcomeType,
     shouldSumToOne?: boolean,
@@ -144,6 +148,8 @@ export function MarketPreview(props: {
     onOpenCloseDateModal,
     onGenerateDescription,
     isGeneratingDescription = false,
+    onGenerateAnswers,
+    isGeneratingAnswers = false,
     onSwitchMarketType,
   } = props
   const [isTopicsModalOpen, setIsTopicsModalOpen] = useState(false)
@@ -299,12 +305,12 @@ export function MarketPreview(props: {
 
   return (
     <Col
-        className={clsx(
-          'bg-canvas-0 ring-ink-100 relative gap-3 rounded-lg p-3 shadow-md ring-1 sm:p-4',
-          'transition-all duration-200',
-          className
-        )}
-      >
+      className={clsx(
+        'bg-canvas-0 ring-ink-100 relative gap-3 rounded-lg p-3 shadow-md ring-1 sm:p-4',
+        'transition-all duration-200',
+        className
+      )}
+    >
       {/* Creator Info */}
       <Row className="items-center justify-between gap-2">
         <Row className="items-center gap-2">
@@ -324,9 +330,15 @@ export function MarketPreview(props: {
               <span className="text-ink-400 text-sm">·</span>
               <Tooltip
                 text={
-                  visibility === 'unlisted'
-                    ? 'Click to make public'
-                    : <>Click to make unlisted<br />(not discoverable without a link)</>
+                  visibility === 'unlisted' ? (
+                    'Click to make public'
+                  ) : (
+                    <>
+                      Click to make unlisted
+                      <br />
+                      (not discoverable without a link)
+                    </>
+                  )
                 }
                 noTap
               >
@@ -365,7 +377,9 @@ export function MarketPreview(props: {
                   className="text-ink-600 hover:text-ink-700 flex items-center gap-1 text-xs transition-colors"
                 >
                   <span>
-                    {closeDate ? dayjs(closeDate).format('MMM D, YYYY') : 'close date'}
+                    {closeDate
+                      ? dayjs(closeDate).format('MMM D, YYYY')
+                      : 'close date'}
                   </span>
                   <span>📅</span>
                 </button>
@@ -607,7 +621,6 @@ export function MarketPreview(props: {
 
       {/* Outcome Type Specific Content */}
       <Col className="gap-3">
-
         {isMultipleChoice && (
           <Col className="gap-2">
             {answers.length > 0 ? (
@@ -626,7 +639,8 @@ export function MarketPreview(props: {
 
                       {/* Answer text/input - grows to fill space */}
                       {isEditable && onEditAnswers ? (
-                        <ExpandingInput
+                        <AnswerInput
+                          id={`mc-answer-${i}`}
                           className="min-w-0 flex-1"
                           placeholder={`Answer ${i + 1}`}
                           value={answer.text}
@@ -638,8 +652,43 @@ export function MarketPreview(props: {
                             }
                             onEditAnswers(newAnswers.map((a) => a.text))
                           }}
-                          rows={1}
-                          maxLength={MAX_ANSWER_LENGTH}
+                          onUp={() => {
+                            // Focus previous answer
+                            if (i > 0) {
+                              document
+                                .getElementById(`mc-answer-${i - 1}`)
+                                ?.focus()
+                            }
+                          }}
+                          onDown={() => {
+                            // If on last answer, add new one
+                            if (
+                              i === answers.length - 1 &&
+                              answers.length < MAX_ANSWERS
+                            ) {
+                              onEditAnswers([...answers.map((a) => a.text), ''])
+                              setTimeout(
+                                () =>
+                                  document
+                                    .getElementById(`mc-answer-${i + 1}`)
+                                    ?.focus(),
+                                0
+                              )
+                            } else if (i < answers.length - 1) {
+                              // Focus next answer
+                              document
+                                .getElementById(`mc-answer-${i + 1}`)
+                                ?.focus()
+                            }
+                          }}
+                          onDelete={() => {
+                            if (answers.length > 2) {
+                              const newAnswers = answers.filter(
+                                (_, idx) => idx !== i
+                              )
+                              onEditAnswers(newAnswers.map((a) => a.text))
+                            }
+                          }}
                         />
                       ) : (
                         <span className="text-ink-900 flex-1 text-sm font-semibold">
@@ -651,20 +700,20 @@ export function MarketPreview(props: {
                       <Row className="gap-2">
                         <button
                           tabIndex={-1}
-                          className="cursor-not-allowed rounded bg-teal-500 px-3 py-1 text-xs font-semibold text-white opacity-85 hover:bg-teal-600"
+                          className="opacity-85 cursor-not-allowed rounded bg-teal-500 px-3 py-1 text-xs font-semibold text-white hover:bg-teal-600"
                         >
                           YES
                         </button>
                         <button
                           tabIndex={-1}
-                          className="bg-scarlet-500 hover:bg-scarlet-600 cursor-not-allowed rounded px-3 py-1 text-xs font-semibold text-white opacity-85"
+                          className="bg-scarlet-500 hover:bg-scarlet-600 opacity-85 cursor-not-allowed rounded px-3 py-1 text-xs font-semibold text-white"
                         >
                           NO
                         </button>
                       </Row>
 
                       {/* X button to remove - far right */}
-                      {isEditable && onEditAnswers && answers.length > 1 && (
+                      {isEditable && onEditAnswers && answers.length > 2 && (
                         <button
                           onClick={(e) => {
                             e.preventDefault()
@@ -673,6 +722,16 @@ export function MarketPreview(props: {
                               (_, idx) => idx !== i
                             )
                             onEditAnswers(newAnswers.map((a) => a.text))
+                            // Focus previous answer after deletion
+                            setTimeout(
+                              () =>
+                                document
+                                  .getElementById(
+                                    `mc-answer-${Math.max(0, i - 1)}`
+                                  )
+                                  ?.focus(),
+                              0
+                            )
                           }}
                           className="hover:bg-canvas-50 border-ink-300 text-ink-700 bg-canvas-0 focus:ring-primary-500 rounded-full border p-1 shadow-sm focus:outline-none focus:ring-2 focus:ring-offset-2"
                         >
@@ -691,7 +750,8 @@ export function MarketPreview(props: {
                       {/* Answer text/input - with relative positioning for X button */}
                       <div className="relative flex-1">
                         {isEditable && onEditAnswers ? (
-                          <ExpandingInput
+                          <AnswerInput
+                            id={`mc-answer-mobile-${i}`}
                             className="w-full"
                             placeholder={`Answer ${i + 1}`}
                             value={answer.text}
@@ -703,8 +763,48 @@ export function MarketPreview(props: {
                               }
                               onEditAnswers(newAnswers.map((a) => a.text))
                             }}
-                            rows={1}
-                            maxLength={MAX_ANSWER_LENGTH}
+                            onUp={() => {
+                              // Focus previous answer
+                              if (i > 0) {
+                                document
+                                  .getElementById(`mc-answer-mobile-${i - 1}`)
+                                  ?.focus()
+                              }
+                            }}
+                            onDown={() => {
+                              // If on last answer, add new one
+                              if (
+                                i === answers.length - 1 &&
+                                answers.length < MAX_ANSWERS
+                              ) {
+                                onEditAnswers([
+                                  ...answers.map((a) => a.text),
+                                  '',
+                                ])
+                                setTimeout(
+                                  () =>
+                                    document
+                                      .getElementById(
+                                        `mc-answer-mobile-${i + 1}`
+                                      )
+                                      ?.focus(),
+                                  0
+                                )
+                              } else if (i < answers.length - 1) {
+                                // Focus next answer
+                                document
+                                  .getElementById(`mc-answer-mobile-${i + 1}`)
+                                  ?.focus()
+                              }
+                            }}
+                            onDelete={() => {
+                              if (answers.length > 2) {
+                                const newAnswers = answers.filter(
+                                  (_, idx) => idx !== i
+                                )
+                                onEditAnswers(newAnswers.map((a) => a.text))
+                              }
+                            }}
                           />
                         ) : (
                           <span className="text-ink-900 text-sm font-semibold">
@@ -713,7 +813,7 @@ export function MarketPreview(props: {
                         )}
 
                         {/* X button - positioned in top-right corner */}
-                        {isEditable && onEditAnswers && answers.length > 1 && (
+                        {isEditable && onEditAnswers && answers.length > 2 && (
                           <button
                             onClick={(e) => {
                               e.preventDefault()
@@ -722,6 +822,16 @@ export function MarketPreview(props: {
                                 (_, idx) => idx !== i
                               )
                               onEditAnswers(newAnswers.map((a) => a.text))
+                              // Focus previous answer after deletion
+                              setTimeout(
+                                () =>
+                                  document
+                                    .getElementById(
+                                      `mc-answer-mobile-${Math.max(0, i - 1)}`
+                                    )
+                                    ?.focus(),
+                                0
+                              )
                             }}
                             className="hover:bg-canvas-50 border-ink-300 text-ink-700 bg-canvas-0 focus:ring-primary-500 absolute -right-1 -top-1 rounded-full border p-0.5 shadow-sm focus:outline-none focus:ring-2 focus:ring-offset-2"
                           >
@@ -762,13 +872,13 @@ export function MarketPreview(props: {
                         <Row className="hidden gap-2 sm:flex">
                           <button
                             tabIndex={-1}
-                            className="cursor-not-allowed rounded bg-teal-500 px-3 py-1 text-xs font-semibold text-white opacity-85 hover:bg-teal-600"
+                            className="opacity-85 cursor-not-allowed rounded bg-teal-500 px-3 py-1 text-xs font-semibold text-white hover:bg-teal-600"
                           >
                             YES
                           </button>
                           <button
                             tabIndex={-1}
-                            className="bg-scarlet-500 hover:bg-scarlet-600 cursor-not-allowed rounded px-3 py-1 text-xs font-semibold text-white opacity-85"
+                            className="bg-scarlet-500 hover:bg-scarlet-600 opacity-85 cursor-not-allowed rounded px-3 py-1 text-xs font-semibold text-white"
                           >
                             NO
                           </button>
@@ -780,59 +890,79 @@ export function MarketPreview(props: {
                     </div>
                   )}
 
-                {/* Add answer button */}
-                {isEditable &&
-                  onEditAnswers &&
-                  answers.length < MAX_ANSWERS && (
-                    <button
-                      type="button"
-                      onClick={(e) => {
-                        e.preventDefault()
-                        e.stopPropagation()
-                        onEditAnswers([...answers.map((a) => a.text), ''])
-                      }}
-                      className="text-primary-600 hover:text-primary-700 disabled:text-ink-400 flex items-center gap-1 text-sm font-medium disabled:cursor-not-allowed"
-                    >
-                      <PlusIcon className="h-4 w-4" />
-                      Add answer
-                      {(() => {
-                        // Calculate marginal cost for adding one more answer
-                        const currentCost =
-                          data.liquidityTier && answers.length > 0
-                            ? (() => {
-                                const tierIndex = [
-                                  100, 1000, 10000, 100000,
-                                ].indexOf(data.liquidityTier)
-                                const answerCostTiers = [25, 100, 250, 1000]
-                                return Math.max(
-                                  answers.length * answerCostTiers[tierIndex],
-                                  data.liquidityTier
-                                )
-                              })()
-                            : 0
-                        const newCost =
-                          data.liquidityTier && answers.length > 0
-                            ? (() => {
-                                const tierIndex = [
-                                  100, 1000, 10000, 100000,
-                                ].indexOf(data.liquidityTier)
-                                const answerCostTiers = [25, 100, 250, 1000]
-                                return Math.max(
-                                  (answers.length + 1) *
-                                    answerCostTiers[tierIndex],
-                                  data.liquidityTier
-                                )
-                              })()
-                            : 0
-                        const marginalCost = newCost - currentCost
-                        return marginalCost > 0 ? (
-                          <span className="text-ink-500 text-xs">
-                            +{formatMoney(marginalCost)}
-                          </span>
-                        ) : null
-                      })()}
-                    </button>
-                  )}
+                {/* Action buttons row */}
+                {isEditable && onEditAnswers && (
+                  <Row className="gap-3">
+                    {/* Generate with AI button */}
+                    {data.question && onGenerateAnswers && (
+                      <Button
+                        color="indigo-outline"
+                        size="xs"
+                        loading={isGeneratingAnswers}
+                        onClick={(e) => {
+                          e.preventDefault()
+                          e.stopPropagation()
+                          onGenerateAnswers()
+                        }}
+                        disabled={!data.question || isGeneratingAnswers}
+                      >
+                        Generate AI Answers
+                      </Button>
+                    )}
+
+                    {/* Add answer button */}
+                    {answers.length < MAX_ANSWERS && (
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.preventDefault()
+                          e.stopPropagation()
+                          onEditAnswers([...answers.map((a) => a.text), ''])
+                        }}
+                        className="text-primary-600 hover:text-primary-700 disabled:text-ink-400 flex items-center gap-1 text-sm font-medium disabled:cursor-not-allowed"
+                      >
+                        <PlusIcon className="h-4 w-4" />
+                        Add answer
+                        {(() => {
+                          // Calculate marginal cost for adding one more answer
+                          const currentCost =
+                            data.liquidityTier && answers.length > 0
+                              ? (() => {
+                                  const tierIndex = [
+                                    100, 1000, 10000, 100000,
+                                  ].indexOf(data.liquidityTier)
+                                  const answerCostTiers = [25, 100, 250, 1000]
+                                  return Math.max(
+                                    answers.length * answerCostTiers[tierIndex],
+                                    data.liquidityTier
+                                  )
+                                })()
+                              : 0
+                          const newCost =
+                            data.liquidityTier && answers.length > 0
+                              ? (() => {
+                                  const tierIndex = [
+                                    100, 1000, 10000, 100000,
+                                  ].indexOf(data.liquidityTier)
+                                  const answerCostTiers = [25, 100, 250, 1000]
+                                  return Math.max(
+                                    (answers.length + 1) *
+                                      answerCostTiers[tierIndex],
+                                    data.liquidityTier
+                                  )
+                                })()
+                              : 0
+                          const marginalCost = newCost - currentCost
+                          return marginalCost > 0 ? (
+                            <span className="text-ink-500 text-xs">
+                              +{formatMoney(marginalCost)}
+                            </span>
+                          ) : null
+                        })()}
+                      </button>
+                    )}
+                  </Row>
+                )}
               </>
             ) : (
               <div className="text-ink-400 border-ink-200 rounded border-2 border-dashed p-6 text-center text-sm">
@@ -847,21 +977,63 @@ export function MarketPreview(props: {
             {answers.length > 0 ? (
               <>
                 {answers.map((answer, i) => (
-                  <div key={i} className="bg-canvas-0 border-ink-200 rounded-lg border p-3">
+                  <div
+                    key={i}
+                    className="bg-canvas-0 border-ink-200 rounded-lg border p-3"
+                  >
                     <Row className="items-center gap-3">
                       {/* Answer text/input - grows to fill space */}
                       {isEditable && onEditAnswers ? (
-                        <ExpandingInput
-                          className="flex-1 min-w-0"
+                        <AnswerInput
+                          id={`poll-option-${i}`}
+                          className="min-w-0 flex-1"
                           placeholder={`Option ${i + 1}`}
                           value={answer.text}
                           onChange={(e) => {
                             const newAnswers = [...answers]
-                            newAnswers[i] = { ...newAnswers[i], text: e.target.value }
-                            onEditAnswers(newAnswers.map(a => a.text))
+                            newAnswers[i] = {
+                              ...newAnswers[i],
+                              text: e.target.value,
+                            }
+                            onEditAnswers(newAnswers.map((a) => a.text))
                           }}
-                          rows={1}
-                          maxLength={MAX_ANSWER_LENGTH}
+                          onUp={() => {
+                            // Focus previous answer
+                            if (i > 0) {
+                              document
+                                .getElementById(`poll-option-${i - 1}`)
+                                ?.focus()
+                            }
+                          }}
+                          onDown={() => {
+                            // If on last answer, add new one
+                            if (
+                              i === answers.length - 1 &&
+                              answers.length < MAX_ANSWERS
+                            ) {
+                              onEditAnswers([...answers.map((a) => a.text), ''])
+                              setTimeout(
+                                () =>
+                                  document
+                                    .getElementById(`poll-option-${i + 1}`)
+                                    ?.focus(),
+                                0
+                              )
+                            } else if (i < answers.length - 1) {
+                              // Focus next answer
+                              document
+                                .getElementById(`poll-option-${i + 1}`)
+                                ?.focus()
+                            }
+                          }}
+                          onDelete={() => {
+                            if (answers.length > 2) {
+                              const newAnswers = answers.filter(
+                                (_, idx) => idx !== i
+                              )
+                              onEditAnswers(newAnswers.map((a) => a.text))
+                            }
+                          }}
                         />
                       ) : (
                         <span className="text-ink-900 flex-1 text-sm font-semibold">
@@ -870,13 +1042,25 @@ export function MarketPreview(props: {
                       )}
 
                       {/* X button to remove - far right */}
-                      {isEditable && onEditAnswers && answers.length > 1 && (
+                      {isEditable && onEditAnswers && answers.length > 2 && (
                         <button
                           onClick={(e) => {
                             e.preventDefault()
                             e.stopPropagation()
-                            const newAnswers = answers.filter((_, idx) => idx !== i)
-                            onEditAnswers(newAnswers.map(a => a.text))
+                            const newAnswers = answers.filter(
+                              (_, idx) => idx !== i
+                            )
+                            onEditAnswers(newAnswers.map((a) => a.text))
+                            // Focus previous answer after deletion
+                            setTimeout(
+                              () =>
+                                document
+                                  .getElementById(
+                                    `poll-option-${Math.max(0, i - 1)}`
+                                  )
+                                  ?.focus(),
+                              0
+                            )
                           }}
                           className="hover:bg-canvas-50 border-ink-300 text-ink-700 bg-canvas-0 focus:ring-primary-500 rounded-full border p-1 shadow-sm focus:outline-none focus:ring-2 focus:ring-offset-2"
                         >
@@ -893,7 +1077,7 @@ export function MarketPreview(props: {
                     onClick={(e) => {
                       e.preventDefault()
                       e.stopPropagation()
-                      onEditAnswers([...answers.map(a => a.text), ''])
+                      onEditAnswers([...answers.map((a) => a.text), ''])
                     }}
                     disabled={answers.length >= MAX_ANSWERS}
                     className="text-primary-600 hover:text-primary-700 disabled:text-ink-400 flex items-center gap-1 text-sm font-medium disabled:cursor-not-allowed"
@@ -1104,13 +1288,13 @@ export function MarketPreview(props: {
                           <Row className="gap-2">
                             <button
                               tabIndex={-1}
-                              className="cursor-not-allowed rounded bg-teal-500 px-3 py-1 text-xs font-semibold text-white opacity-85 hover:bg-teal-600"
+                              className="opacity-85 cursor-not-allowed rounded bg-teal-500 px-3 py-1 text-xs font-semibold text-white hover:bg-teal-600"
                             >
                               YES
                             </button>
                             <button
                               tabIndex={-1}
-                              className="bg-scarlet-500 hover:bg-scarlet-600 cursor-not-allowed rounded px-3 py-1 text-xs font-semibold text-white opacity-85"
+                              className="bg-scarlet-500 hover:bg-scarlet-600 opacity-85 cursor-not-allowed rounded px-3 py-1 text-xs font-semibold text-white"
                             >
                               NO
                             </button>
@@ -1447,13 +1631,13 @@ export function MarketPreview(props: {
                           <Row className="gap-2">
                             <button
                               tabIndex={-1}
-                              className="cursor-not-allowed rounded bg-teal-500 px-3 py-1 text-xs font-semibold text-white opacity-85 hover:bg-teal-600"
+                              className="opacity-85 cursor-not-allowed rounded bg-teal-500 px-3 py-1 text-xs font-semibold text-white hover:bg-teal-600"
                             >
                               YES
                             </button>
                             <button
                               tabIndex={-1}
-                              className="bg-scarlet-500 hover:bg-scarlet-600 cursor-not-allowed rounded px-3 py-1 text-xs font-semibold text-white opacity-85"
+                              className="bg-scarlet-500 hover:bg-scarlet-600 opacity-85 cursor-not-allowed rounded px-3 py-1 text-xs font-semibold text-white"
                             >
                               NO
                             </button>
@@ -1601,7 +1785,6 @@ export function MarketPreview(props: {
           </Col>
         )}
 
-
         {/* Binary Probability Controls */}
         {isBinary && isEditable && onProbabilityChange && (
           <Row className="items-center justify-center gap-1 sm:gap-3">
@@ -1611,7 +1794,8 @@ export function MarketPreview(props: {
                 onClick={() =>
                   onProbabilityChange(Math.max(5, (probability ?? 50) - 5))
                 }
-                className="bg-ink-100 hover:bg-ink-200 border-ink-300 text-ink-700 hover:opacity-100 flex h-6 w-8 items-center justify-center rounded-full border text-xs font-semibold transition-all sm:w-10"
+                tabIndex={-1}
+                className="bg-ink-100 hover:bg-ink-200 border-ink-300 text-ink-700 flex h-6 w-8 items-center justify-center rounded-full border text-xs font-semibold transition-all hover:opacity-100 sm:w-10"
               >
                 -5
               </button>
@@ -1619,7 +1803,8 @@ export function MarketPreview(props: {
                 onClick={() =>
                   onProbabilityChange(Math.max(5, (probability ?? 50) - 1))
                 }
-                className="bg-ink-100 hover:bg-ink-200 border-ink-300 text-ink-700 hover:opacity-100 flex h-6 w-8 items-center justify-center rounded-full border text-xs font-semibold transition-all sm:w-10"
+                tabIndex={-1}
+                className="bg-ink-100 hover:bg-ink-200 border-ink-300 text-ink-700 flex h-6 w-8 items-center justify-center rounded-full border text-xs font-semibold transition-all hover:opacity-100 sm:w-10"
               >
                 -1
               </button>
@@ -1657,7 +1842,8 @@ export function MarketPreview(props: {
                 onClick={() =>
                   onProbabilityChange(Math.min(95, (probability ?? 50) + 1))
                 }
-                className="bg-ink-100 hover:bg-ink-200 border-ink-300 text-ink-700 hover:opacity-100 flex h-6 w-8 items-center justify-center rounded-full border text-xs font-semibold transition-all sm:w-10"
+                tabIndex={-1}
+                className="bg-ink-100 hover:bg-ink-200 border-ink-300 text-ink-700 flex h-6 w-8 items-center justify-center rounded-full border text-xs font-semibold transition-all hover:opacity-100 sm:w-10"
               >
                 +1
               </button>
@@ -1665,7 +1851,8 @@ export function MarketPreview(props: {
                 onClick={() =>
                   onProbabilityChange(Math.min(95, (probability ?? 50) + 5))
                 }
-                className="bg-ink-100 hover:bg-ink-200 border-ink-300 text-ink-700 hover:opacity-100 flex h-6 w-8 items-center justify-center rounded-full border text-xs font-semibold transition-all sm:w-10"
+                tabIndex={-1}
+                className="bg-ink-100 hover:bg-ink-200 border-ink-300 text-ink-700 flex h-6 w-8 items-center justify-center rounded-full border text-xs font-semibold transition-all hover:opacity-100 sm:w-10"
               >
                 +5
               </button>
@@ -1749,10 +1936,13 @@ export function MarketPreview(props: {
       <Row className="text-ink-500 items-center gap-3 text-xs">
         {!isPoll && (
           <Row className="items-center gap-1">
-            <span>{getLiquidityDisplayText(liquidityTier, answers.length)}</span>
-            {answers.length > 0 && (isMultipleChoice || isNumeric || isDate) && (
-              <InfoTooltip text="Adding more answers later may reduce the bonus." />
-            )}
+            <span>
+              {getLiquidityDisplayText(liquidityTier, answers.length)}
+            </span>
+            {answers.length > 0 &&
+              (isMultipleChoice || isNumeric || isDate) && (
+                <InfoTooltip text="Adding more answers later may reduce the bonus." />
+              )}
           </Row>
         )}
         {min !== undefined && max !== undefined && (
@@ -1765,6 +1955,6 @@ export function MarketPreview(props: {
           </>
         )}
       </Row>
-      </Col>
+    </Col>
   )
 }
