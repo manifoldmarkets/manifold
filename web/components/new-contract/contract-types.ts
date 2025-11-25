@@ -7,7 +7,7 @@ export type NewQuestionParams = {
   q: string
   description: string
   closeTime: number
-  outcomeType?: CreateableOutcomeType | 'DISCUSSION_POST'
+  outcomeType?: CreateableOutcomeType
   visibility: string
   // Params for PSEUDO_NUMERIC outcomeType
   min?: number

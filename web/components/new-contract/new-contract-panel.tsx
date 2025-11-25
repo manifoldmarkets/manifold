@@ -18,7 +18,7 @@ import { track } from 'web/lib/service/analytics'
 import Router from 'next/router'
 import { usePersistentLocalState } from 'web/hooks/use-persistent-local-state'
 import { getAnte } from 'common/economy'
-import { TextEditor, useTextEditor } from 'web/components/widgets/editor'
+import { useTextEditor } from 'web/components/widgets/editor'
 import { TypeSwitcherModal } from './type-switcher-modal'
 import { ProminentTypeSelector } from './prominent-type-selector'
 import dayjs from 'dayjs'
@@ -36,7 +36,6 @@ import { toast } from 'react-hot-toast'
 import { richTextToString } from 'common/util/parse'
 import { RelativeTimestamp } from '../relative-timestamp'
 import { debounce } from 'lodash'
-import { useAdmin } from 'web/hooks/use-admin'
 import { FaQuestion, FaUsers } from 'react-icons/fa'
 import { ExpandSection } from '../explainer-panel'
 import { WEEK_MS } from 'common/util/time'
@@ -57,7 +56,6 @@ export function NewContractPanel(props: {
   params?: NewQuestionParams
 }) {
   const { creator, params } = props
-  const isAdmin = useAdmin()
 
   // Get completely empty form state
   const getEmptyFormState = (): FormState => ({
@@ -348,17 +346,12 @@ export function NewContractPanel(props: {
   // Helper: Get submit button text based on outcome type
   // Avoids duplication between mobile and desktop action bars
   const getSubmitButtonText = () => {
-    if (formState.outcomeType === 'DISCUSSION_POST') {
-      return 'Create Post'
-    }
     return `Create for ${formatMoney(cost)}`
   }
 
   // Auto-extract close date from question
   const getAISuggestedCloseDate = useEvent(async (question: string) => {
-    const shouldHaveCloseDate =
-      formState.outcomeType !== 'POLL' &&
-      formState.outcomeType !== 'DISCUSSION_POST'
+    const shouldHaveCloseDate = formState.outcomeType !== 'POLL'
 
     if (
       !question ||
@@ -584,7 +577,7 @@ export function NewContractPanel(props: {
 
   // Handle type change
   const handleTypeChange = (
-    newType: CreateableOutcomeType | 'DISCUSSION_POST',
+    newType: CreateableOutcomeType,
     shouldSumToOne: boolean
   ) => {
     setFormState((prev) => ({
@@ -593,23 +586,17 @@ export function NewContractPanel(props: {
       shouldAnswersSumToOne: shouldSumToOne,
       // Clear all market-specific data for discussion posts
       answers:
-        newType === 'DISCUSSION_POST'
-          ? []
-          : newType === 'MULTIPLE_CHOICE' || newType === 'POLL'
+        newType === 'MULTIPLE_CHOICE' || newType === 'POLL'
           ? prev.answers.length > 0
             ? prev.answers
             : ['', '', '']
           : newType === 'MULTI_NUMERIC' || newType === 'DATE'
           ? [] // Start with empty answers for numeric/date, will be generated
           : [],
-      // Set addAnswersMode to DISABLED by default for MC/Poll, clear for discussion posts
+      // Set addAnswersMode to DISABLED by default for MC/Poll
       addAnswersMode:
-        newType === 'DISCUSSION_POST'
-          ? 'DISABLED'
-          : newType === 'MULTIPLE_CHOICE'
-          ? 'DISABLED'
-          : prev.addAnswersMode,
-      // Preserve numeric-specific fields for numeric types, clear for others (including discussion posts)
+        newType === 'MULTIPLE_CHOICE' ? 'DISABLED' : prev.addAnswersMode,
+      // Preserve numeric-specific fields for numeric types, clear for others
       min:
         newType === 'MULTI_NUMERIC' ||
         newType === 'DATE' ||
@@ -712,32 +699,11 @@ export function NewContractPanel(props: {
         liquidityTier: formState.liquidityTier,
       })
 
-      // Call API - use create-post for discussion posts, market API for everything else
-      let result
-      if (formState.outcomeType === 'DISCUSSION_POST') {
-        // Discussion posts use create-post API (no betting/markets)
-        const postPayload: any = {
-          title: formState.question.trim(),
-          content: formState.description || { type: 'doc', content: [] },
-          visibility: formState.visibility,
-        }
+      // Call API to create market
+      const result = await api('market', payload)
 
-        // Admin-only fields
-        if (isAdmin && formState.isAnnouncement) {
-          postPayload.isAnnouncement = true
-        }
-        if (isAdmin && formState.isChangeLog) {
-          postPayload.isChangeLog = true
-        }
-
-        result = await api('create-post', postPayload)
-        // Redirect to new post
-        await Router.push(`/post/${result.post.slug}`)
-      } else {
-        result = await api('market', payload)
-        // Redirect to new market
-        await Router.push(`/${creator.username}/${result.slug}`)
-      }
+      // Redirect to new market
+      await Router.push(`/${creator.username}/${result.slug}`)
 
       // Clear form state and editor autosave after successful navigation
       localStorage.removeItem('new-contract-form')
@@ -803,70 +769,8 @@ export function NewContractPanel(props: {
         onSelectType={handleTypeChange}
       />
 
-      {/* Discussion Post Form - Simple post creation (no betting/markets) */}
-      {formState.outcomeType === 'DISCUSSION_POST' ? (
-        <Col className="mx-auto w-full max-w-2xl gap-4 p-6">
-          <Col className="gap-2">
-            <label className="text-ink-900 text-sm font-semibold">
-              Title <span className="text-scarlet-500">*</span>
-            </label>
-            <input
-              type="text"
-              value={formState.question}
-              onChange={(e) => updateField('question', e.target.value)}
-              className="bg-canvas-0 text-ink-900 border-ink-300 focus:border-primary-500 w-full rounded-md border px-3 py-2 outline-none"
-              placeholder="Enter post title..."
-            />
-          </Col>
-
-          <Col className="gap-2">
-            <label className="text-ink-900 text-sm font-semibold">
-              Content <span className="text-scarlet-500">*</span>
-            </label>
-            <TextEditor editor={descriptionEditor} simple />
-          </Col>
-
-          {/* Admin-only options */}
-          {isAdmin && (
-            <Col className="gap-3">
-              <Row className="items-center gap-2">
-                <ShortToggle
-                  on={formState.isAnnouncement || false}
-                  setOn={(on) => updateField('isAnnouncement', on)}
-                  colorMode="warning"
-                />
-                <span className="text-ink-700 text-sm">
-                  Announcement (sends a notification to all users)
-                </span>
-              </Row>
-
-              <Row className="items-center gap-2">
-                <ShortToggle
-                  on={formState.isChangeLog || false}
-                  setOn={(on) => updateField('isChangeLog', on)}
-                />
-                <span className="text-ink-700 text-sm">
-                  Changelog (shows up on the changelog page)
-                </span>
-              </Row>
-            </Col>
-          )}
-
-          {/* Visibility toggle */}
-          <Row className="items-center gap-2">
-            <ShortToggle
-              on={formState.visibility === 'public'}
-              setOn={(on) =>
-                updateField('visibility', on ? 'public' : 'unlisted')
-              }
-            />
-            <span className="text-ink-700 text-sm">Publicly listed</span>
-            <InfoTooltip text="If disabled, only people with the link can see this post" />
-          </Row>
-        </Col>
-      ) : (
-        /* Market Creation UI */
-        <Col className="mx-auto w-full max-w-3xl gap-6 p-3 sm:p-6">
+      {/* Market Creation UI */}
+      <Col className="mx-auto w-full max-w-3xl gap-6 p-3 sm:p-6">
           {/* Multiple Choice Settings - Above Preview */}
           {formState.outcomeType === 'MULTIPLE_CHOICE' && (
             <Col className="bg-canvas-0 ring-ink-100 gap-4 rounded-lg p-4 shadow-md ring-1">
@@ -1453,7 +1357,6 @@ export function NewContractPanel(props: {
             </a>
           </div>
         </Col>
-      )}
 
       {/* Bottom Action Bar - Mobile
           TODO: Could extract mobile + desktop bars into a shared <ActionBar> component

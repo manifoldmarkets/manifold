@@ -13,9 +13,9 @@ import { Button } from 'web/components/buttons/button'
 export function TypeSwitcherModal(props: {
   isOpen: boolean
   setIsOpen: (isOpen: boolean) => void
-  currentType: CreateableOutcomeType | 'DISCUSSION_POST'
+  currentType: CreateableOutcomeType
   currentShouldAnswersSumToOne?: boolean
-  onSelectType: (type: CreateableOutcomeType | 'DISCUSSION_POST', shouldSumToOne: boolean) => void
+  onSelectType: (type: CreateableOutcomeType, shouldSumToOne: boolean) => void
 }) {
   const {
     isOpen,

@@ -28,6 +28,7 @@ import { Button } from '../buttons/button'
 import { suggestMarketType } from './market-type-suggestions'
 import { MarketTypeSuggestionBanner } from './market-type-suggestion-banner'
 import { useIsMobile } from 'web/hooks/use-is-mobile'
+import { ProbabilitySlider } from '../widgets/probability-input'
 
 export type PreviewContractData = {
   question: string
@@ -38,7 +39,6 @@ export type PreviewContractData = {
     | 'STONK'
     | 'NUMBER'
     | 'POLL'
-    | 'DISCUSSION_POST'
     | 'MULTI_NUMERIC'
     | 'DATE'
   description?: JSONContent
@@ -201,7 +201,7 @@ export function MarketPreview(props: {
     closeTime,
     isResolved: false,
     mechanism:
-      outcomeType === 'POLL' || outcomeType === 'DISCUSSION_POST'
+      outcomeType === 'POLL'
         ? 'none'
         : outcomeType === 'MULTIPLE_CHOICE'
         ? 'cpmm-multi-1'
@@ -1785,79 +1785,13 @@ export function MarketPreview(props: {
           </Col>
         )}
 
-        {/* Binary Probability Controls */}
-        {isBinary && isEditable && onProbabilityChange && (
-          <Row className="items-center justify-center gap-1 sm:gap-3">
-            {/* Left side: -5, -1 buttons */}
-            <Row className="gap-0.5 opacity-60 sm:gap-1">
-              <button
-                onClick={() =>
-                  onProbabilityChange(Math.max(5, (probability ?? 50) - 5))
-                }
-                tabIndex={-1}
-                className="bg-ink-100 hover:bg-ink-200 border-ink-300 text-ink-700 flex h-6 w-8 items-center justify-center rounded-full border text-xs font-semibold transition-all hover:opacity-100 sm:w-10"
-              >
-                -5
-              </button>
-              <button
-                onClick={() =>
-                  onProbabilityChange(Math.max(5, (probability ?? 50) - 1))
-                }
-                tabIndex={-1}
-                className="bg-ink-100 hover:bg-ink-200 border-ink-300 text-ink-700 flex h-6 w-8 items-center justify-center rounded-full border text-xs font-semibold transition-all hover:opacity-100 sm:w-10"
-              >
-                -1
-              </button>
-            </Row>
-
-            {/* Center: percentage display and slider */}
-            <Col className="items-center gap-2">
-              <Row className="items-center gap-1">
-                <div className="text-ink-900 text-2xl font-bold sm:text-3xl md:text-4xl">
-                  {probability}%{' '}
-                  <span className="text-ink-600 text-sm font-normal sm:text-base">
-                    chance
-                  </span>
-                </div>
-                <InfoTooltip text="Sets the starting odds for traders, and determines how liquidity is dispersed" />
-              </Row>
-              <input
-                type="range"
-                min="5"
-                max="95"
-                value={probability}
-                onChange={(e) =>
-                  onProbabilityChange(parseFloat(e.target.value))
-                }
-                className="h-1 w-[140px] cursor-pointer appearance-none rounded-lg opacity-60 sm:w-[180px]"
-                style={{
-                  background: `linear-gradient(to right, rgb(34 197 94) 0%, rgb(34 197 94) ${probability}%, rgb(239 68 68) ${probability}%, rgb(239 68 68) 100%)`,
-                }}
-              />
-            </Col>
-
-            {/* Right side: +1, +5 buttons */}
-            <Row className="gap-0.5 opacity-60 sm:gap-1">
-              <button
-                onClick={() =>
-                  onProbabilityChange(Math.min(95, (probability ?? 50) + 1))
-                }
-                tabIndex={-1}
-                className="bg-ink-100 hover:bg-ink-200 border-ink-300 text-ink-700 flex h-6 w-8 items-center justify-center rounded-full border text-xs font-semibold transition-all hover:opacity-100 sm:w-10"
-              >
-                +1
-              </button>
-              <button
-                onClick={() =>
-                  onProbabilityChange(Math.min(95, (probability ?? 50) + 5))
-                }
-                tabIndex={-1}
-                className="bg-ink-100 hover:bg-ink-200 border-ink-300 text-ink-700 flex h-6 w-8 items-center justify-center rounded-full border text-xs font-semibold transition-all hover:opacity-100 sm:w-10"
-              >
-                +5
-              </button>
-            </Row>
-          </Row>
+        {/* Binary Probability Display */}
+        {isBinary && (
+          <BinaryProbabilitySection
+            probability={probability}
+            isEditable={isEditable}
+            onProbabilityChange={onProbabilityChange}
+          />
         )}
 
         {/* Description Editor */}
@@ -1956,5 +1890,127 @@ export function MarketPreview(props: {
         )}
       </Row>
     </Col>
+  )
+}
+
+// Binary Probability Section Component
+function BinaryProbabilitySection(props: {
+  probability: number
+  isEditable: boolean
+  onProbabilityChange?: (newProb: number) => void
+}) {
+  const { probability, isEditable, onProbabilityChange } = props
+  const [isModalOpen, setIsModalOpen] = useState(false)
+  const [localProb, setLocalProb] = useState(probability)
+
+  useEffect(() => {
+    setLocalProb(probability)
+  }, [probability])
+
+  const handleProbChange = (newProb: number) => {
+    const clamped = Math.max(5, Math.min(95, newProb))
+    setLocalProb(clamped)
+    onProbabilityChange?.(clamped)
+  }
+
+  return (
+    <>
+      <Row className="items-center gap-2">
+        <span className="text-ink-700 text-2xl">
+          {probability}%{' '}
+          <span className="text-base">chance</span>
+        </span>
+        {isEditable && onProbabilityChange && (
+          <button
+            onClick={() => setIsModalOpen(true)}
+            className="text-ink-500 hover:text-ink-700 text-xs"
+          >
+            modify
+          </button>
+        )}
+      </Row>
+
+      {/* Probability Adjustment Modal */}
+      <Modal open={isModalOpen} setOpen={setIsModalOpen}>
+        <Col className="bg-canvas-0 gap-4 rounded-lg p-6">
+          <Col className="gap-1">
+            <h2 className="text-primary-700 text-xl font-semibold">
+              Set Starting Probability
+            </h2>
+            <p className="text-ink-600 text-sm">
+              Your best guess at the probability that this market resolves YES. Determines how liquidity is dispersed. If you don't know, leave it at 50%.
+            </p>
+          </Col>
+
+          <Col className="gap-2">
+            <div className="text-ink-600">Probability (%)</div>
+            <Row>
+              <label className="font-sm md:font-lg relative w-full">
+                <Input
+                  type="number"
+                  min={5}
+                  max={95}
+                  step={1}
+                  className="h-[60px] w-full !text-xl"
+                  value={localProb}
+                  onChange={(e) => {
+                    const val = e.target.value === '' ? 50 : Number(e.target.value)
+                    handleProbChange(val)
+                  }}
+                />
+                <Row className="absolute right-2 top-3.5 gap-1.5 sm:gap-2">
+                  <button
+                    className="hover:bg-ink-200 bg-canvas-100 rounded-md px-2 py-1.5 text-sm sm:px-3"
+                    onClick={() => handleProbChange(localProb - 5)}
+                    tabIndex={-1}
+                  >
+                    -5
+                  </button>
+                  <button
+                    className="hover:bg-ink-200 bg-canvas-100 rounded-md px-2 py-1.5 text-sm sm:px-3"
+                    onClick={() => handleProbChange(localProb - 1)}
+                    tabIndex={-1}
+                  >
+                    -1
+                  </button>
+                  <button
+                    className="hover:bg-ink-200 bg-canvas-100 rounded-md px-2 py-1.5 text-sm sm:px-3"
+                    onClick={() => handleProbChange(localProb + 1)}
+                    tabIndex={-1}
+                  >
+                    +1
+                  </button>
+                  <button
+                    className="hover:bg-ink-200 bg-canvas-100 rounded-md px-2 py-1.5 text-sm sm:px-3"
+                    onClick={() => handleProbChange(localProb + 5)}
+                    tabIndex={-1}
+                  >
+                    +5
+                  </button>
+                </Row>
+              </label>
+            </Row>
+
+            <ProbabilitySlider
+              prob={localProb}
+              onProbChange={(newProb) => {
+                if (newProb !== undefined) {
+                  handleProbChange(newProb)
+                }
+              }}
+              disabled={false}
+            />
+          </Col>
+
+          <Button
+            color="indigo"
+            onClick={() => setIsModalOpen(false)}
+            className="mt-4"
+          >
+            Done
+          </Button>
+        </Col>
+      </Modal>
+    </>
   )
 }

@@ -100,22 +100,6 @@ export const NON_PREDICTIVE_CONTRACT_TYPES = {
     className: 'hover:!ring-orange-500/50',
     outcomeType: 'POLL',
   },
-  DISCUSSION_POST: {
-    label: 'Discussion Post',
-    value: 'DISCUSSION_POST',
-    name: 'discussion post',
-    descriptor: `A post for discussion and comments. No betting or voting.`,
-    example: `What are your thoughts on the new AI developments?`,
-    visual: (
-      <Col className="relative my-auto h-12 w-12 text-ink-400">
-        <svg className="h-12 w-12" fill="currentColor" viewBox="0 0 20 20">
-          <path fillRule="evenodd" d="M18 10c0 3.866-3.582 7-8 7a8.841 8.841 0 01-4.083-.98L2 17l1.338-3.123C2.493 12.767 2 11.434 2 10c0-3.866 3.582-7 8-7s8 3.134 8 7zM7 9H5v2h2V9zm8 0h-2v2h2V9zM9 9h2v2H9V9z" clipRule="evenodd" />
-        </svg>
-      </Col>
-    ),
-    className: 'hover:!ring-ink-500/50',
-    outcomeType: 'DISCUSSION_POST',
-  },
 } as const
 
 export const ALL_CONTRACT_TYPES = {
@@ -135,14 +119,14 @@ export function getContractTypeFromValue(
 export const getOutcomeTypeAndSumsToOne = (
   value: keyof typeof ALL_CONTRACT_TYPES
 ): {
-  outcomeType: CreateableOutcomeType | 'DISCUSSION_POST'
+  outcomeType: CreateableOutcomeType
   shouldSumToOne: boolean
 } => {
   const contractType =
     ALL_CONTRACT_TYPES[value as keyof typeof ALL_CONTRACT_TYPES]
   const outcomeType = contractType.outcomeType
   return {
-    outcomeType: (outcomeType === 'DISCUSSION_POST' ? 'DISCUSSION_POST' : outcomeType) as CreateableOutcomeType | 'DISCUSSION_POST',
+    outcomeType: outcomeType as CreateableOutcomeType,
     shouldSumToOne:
       'shouldSumToOne' in contractType ? contractType.shouldSumToOne : false,
   }

@@ -10,10 +10,10 @@ import clsx from 'clsx'
 import { ChevronDownIcon, ChevronUpIcon } from '@heroicons/react/solid'
 
 export function ProminentTypeSelector(props: {
-  currentType: CreateableOutcomeType | 'DISCUSSION_POST' | null
+  currentType: CreateableOutcomeType | null
   currentShouldAnswersSumToOne?: boolean
   onSelectType: (
-    type: CreateableOutcomeType | 'DISCUSSION_POST',
+    type: CreateableOutcomeType,
     shouldSumToOne: boolean
   ) => void
 }) {
@@ -170,86 +170,7 @@ export function ProminentTypeSelector(props: {
         {/* Always show all types */}
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
           {Object.entries(ALL_CONTRACT_TYPES).map(([key, type]) => {
-            // Skip DISCUSSION_POST as it will be combined with POLL
-            if (key === 'DISCUSSION_POST') return null
-
             const isSelected = currentValueKey === key
-
-            // Special combined tile for POLL / Discussion Post
-            if (key === 'POLL') {
-              const pollType = ALL_CONTRACT_TYPES.POLL
-              const discussionType = ALL_CONTRACT_TYPES.DISCUSSION_POST
-              const isPollSelected = currentValueKey === 'POLL'
-              const isDiscussionSelected = currentValueKey === 'DISCUSSION_POST'
-
-              return (
-                <div
-                  key={key}
-                  className="border-ink-200 flex flex-col gap-0 overflow-hidden rounded-xl border-2"
-                >
-                  {/* Poll button - top half */}
-                  <button
-                    onClick={() => handleSelect('POLL')}
-                    className={clsx(
-                      'group relative flex flex-col gap-2 p-4 text-left transition-all sm:gap-2 sm:p-4',
-                      'hover:shadow-md active:scale-[0.99]',
-                      isPollSelected
-                        ? 'bg-primary-50'
-                        : 'bg-canvas-0 hover:bg-primary-50/30'
-                    )}
-                  >
-                    {isPollSelected && (
-                      <div className="bg-primary-500 absolute right-2 top-2 rounded-full px-2 py-0.5 text-xs font-semibold text-white">
-                        Selected
-                      </div>
-                    )}
-                    <Row className="items-center gap-2 sm:gap-2">
-                      <div className="text-2xl text-orange-300 sm:text-3xl">
-                        {pollType.visual}
-                      </div>
-                      <h3 className="text-ink-900 text-sm font-bold sm:text-base">
-                        {pollType.label}
-                      </h3>
-                    </Row>
-                    <p className="text-ink-600 text-xs leading-relaxed">
-                      {pollType.descriptor}
-                    </p>
-                  </button>
-
-                  {/* Divider */}
-                  <div className="border-ink-200 border-t" />
-
-                  {/* Discussion Post button - bottom half */}
-                  <button
-                    onClick={() => handleSelect('DISCUSSION_POST')}
-                    className={clsx(
-                      'group relative flex flex-col gap-2 p-4 text-left transition-all sm:gap-2 sm:p-4',
-                      'hover:shadow-md active:scale-[0.99]',
-                      isDiscussionSelected
-                        ? 'bg-primary-50'
-                        : 'bg-canvas-0 hover:bg-primary-50/30'
-                    )}
-                  >
-                    {isDiscussionSelected && (
-                      <div className="bg-primary-500 absolute right-2 top-2 rounded-full px-2 py-0.5 text-xs font-semibold text-white">
-                        Selected
-                      </div>
-                    )}
-                    <Row className="items-center gap-2 sm:gap-2">
-                      <div className="text-ink-400 text-2xl sm:text-3xl">
-                        {discussionType.visual}
-                      </div>
-                      <h3 className="text-ink-900 text-sm font-bold sm:text-base">
-                        {discussionType.label}
-                      </h3>
-                    </Row>
-                    <p className="text-ink-600 text-xs leading-relaxed">
-                      {discussionType.descriptor}
-                    </p>
-                  </button>
-                </div>
-              )
-            }
 
             return (
               <button

@@ -14,7 +14,7 @@ export type MarketTypeSuggestion = {
  */
 export function suggestMarketType(
   question: string,
-  currentType: CreateableOutcomeType | 'DISCUSSION_POST',
+  currentType: CreateableOutcomeType,
   answers?: string[],
   addAnswersMode?: 'DISABLED' | 'ONLY_CREATOR' | 'ANYONE',
   shouldAnswersSumToOne?: boolean
