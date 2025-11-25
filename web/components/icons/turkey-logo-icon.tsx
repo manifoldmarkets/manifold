@@ -9,4 +9,3 @@ export const TurkeyLogoIcon = (props: ImgHTMLAttributes<HTMLImageElement>) => (
     {...props}
   />
 )
-
