@@ -241,3 +241,28 @@ export const ManaForeverBanner = () => {
     </Banner>
   )
 }
+
+export const BlackFridayBanner = () => {
+  const [showBanner, hideBanner] = useBanner('black-friday-2025')
+  if (!showBanner) return null
+  return (
+    <Banner
+      className="items-center bg-gradient-to-r from-gray-900 to-black py-3 transition-colors"
+      link="/add-funds"
+      target="_self"
+      setShowBanner={hideBanner}
+    >
+      <Row className="items-center gap-2">
+        <span className="text-lg">🛍️</span>
+        <div className="font-medium text-white">
+          <span className="font-bold text-amber-400">Black Friday Sale:</span>{' '}
+          25% off mana using code{' '}
+          <span className="rounded bg-amber-400 px-2 py-0.5 font-mono font-bold text-gray-900">
+            BLKFRI
+          </span>
+        </div>
+        <ArrowRightIcon className="ml-1 h-4 w-4 text-amber-400" />
+      </Row>
+    </Banner>
+  )
+}
