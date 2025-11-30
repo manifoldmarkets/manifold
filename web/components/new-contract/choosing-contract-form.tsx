@@ -1,5 +1,5 @@
 import clsx from 'clsx'
-import { CreateableOutcomeType, NUMBER_CREATION_ENABLED } from 'common/contract'
+import { CreateableOutcomeType } from 'common/contract'
 import { ReactNode, useState } from 'react'
 import { Col } from '../layout/col'
 import { Row } from '../layout/row'
@@ -12,44 +12,47 @@ import { CreateContractStateType } from './new-contract-panel'
 
 export function ChoosingContractForm(props: {
   outcomeType: CreateableOutcomeType | undefined
-  setOutcomeType: (
-    outcomeType: CreateableOutcomeType,
-    shouldAnswersSumToOne: boolean
-  ) => void
+  setOutcomeType: (outcomeType: CreateableOutcomeType) => void
   shouldAnswersSumToOne: boolean | undefined
+  setShouldAnswersSumToOne: (shouldAnswersSumToOne: boolean) => void
   setState: (state: CreateContractStateType) => void
 }) {
-  const { outcomeType, setOutcomeType, shouldAnswersSumToOne, setState } = props
+  const {
+    outcomeType,
+    setOutcomeType,
+    shouldAnswersSumToOne,
+    setShouldAnswersSumToOne,
+    setState,
+  } = props
 
   return (
     <Col>
       <div className="text-lg">Or, create manually from a template:</div>
       <Spacer h={4} />
       <Col className="gap-2">
-        {[
-          ...Object.values(ALL_CONTRACT_TYPES).filter(({ value }) =>
-            NUMBER_CREATION_ENABLED ? true : value !== 'NUMBER'
-          ),
-        ].map(({ label, name, descriptor, example, value, visual }) => {
-          return (
-            <OutcomeButton
-              key={value + name}
-              label={label}
-              descriptor={descriptor}
-              example={example}
-              value={value}
-              visual={visual}
-              outcomeType={outcomeType}
-              shouldAnswersSumToOne={shouldAnswersSumToOne}
-              onClick={() => {
-                const { outcomeType, shouldSumToOne } =
-                  getOutcomeTypeAndSumsToOne(value)
-                setOutcomeType(outcomeType, shouldSumToOne)
-                setState('filling contract params')
-              }}
-            />
-          )
-        })}
+        {[...Object.values(ALL_CONTRACT_TYPES)].map(
+          ({ label, name, descriptor, example, value, visual }) => {
+            return (
+              <OutcomeButton
+                key={value + name}
+                label={label}
+                descriptor={descriptor}
+                example={example}
+                value={value}
+                visual={visual}
+                outcomeType={outcomeType}
+                shouldAnswersSumToOne={shouldAnswersSumToOne}
+                onClick={() => {
+                  const { outcomeType, shouldSumToOne } =
+                    getOutcomeTypeAndSumsToOne(value)
+                  setShouldAnswersSumToOne(shouldSumToOne)
+                  setOutcomeType(outcomeType)
+                  setState('filling contract params')
+                }}
+              />
+            )
+          }
+        )}
       </Col>
     </Col>
   )
