@@ -53,8 +53,8 @@ export function ProminentTypeSelector(props: {
     )
 
     return (
-      <div className="bg-canvas-0 border-ink-200 border-b p-2 sm:p-3">
-        <Row className="items-center gap-2">
+      <div className="bg-canvas-0 border-ink-200 border-b">
+        <Row className="mx-auto w-full max-w-3xl items-center gap-2 p-2 sm:p-3">
           {/* Always show the two primary types */}
           {primaryTypes.map(([key, type]) => {
             const isSelected = currentValueKey === key
@@ -92,9 +92,10 @@ export function ProminentTypeSelector(props: {
                 >
                   {type.label}
                 </span>
-                {isSelected && (
-                  <ChevronDownIcon className="text-ink-400 hidden h-3 w-3 sm:inline sm:h-4 sm:w-4" />
-                )}
+                <ChevronDownIcon className={clsx(
+                  "text-ink-400 h-3 w-3 sm:h-4 sm:w-4 hidden sm:block",
+                  isSelected ? "sm:opacity-100" : "sm:opacity-0"
+                )} />
               </button>
             )
           })}
