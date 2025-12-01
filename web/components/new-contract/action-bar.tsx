@@ -9,6 +9,7 @@ export interface ActionBarProps {
   onSubmit: () => void
   onReset: () => void
   onSaveDraft: () => void
+  onViewDrafts: () => void
 
   // Submit button state
   isSubmitting: boolean
@@ -16,6 +17,7 @@ export interface ActionBarProps {
 
   // Draft state
   isSavingDraft: boolean
+  draftsCount: number
 
   // Reset confirmation
   showResetConfirmation: boolean
@@ -33,9 +35,11 @@ export function ActionBar(props: ActionBarProps) {
     onSubmit,
     onReset,
     onSaveDraft,
+    onViewDrafts,
     isSubmitting,
     submitButtonText,
     isSavingDraft,
+    draftsCount,
     showResetConfirmation,
     setShowResetConfirmation,
     submitAttemptCount,
@@ -72,7 +76,7 @@ export function ActionBar(props: ActionBarProps) {
         {submitButtonText}
       </Button>
 
-      {/* Reset and Draft Buttons - Split 1:1 */}
+      {/* Reset, View Drafts, and Save Draft Buttons - Split 1:1:1 */}
       <Row className={clsx(variant === 'mobile' ? 'gap-2' : 'gap-3')}>
         {!showResetConfirmation ? (
           <Button
@@ -93,6 +97,15 @@ export function ActionBar(props: ActionBarProps) {
             Confirm Reset
           </Button>
         )}
+        <Button
+          color="gray-outline"
+          size={buttonSize}
+          className="flex-1"
+          onClick={onViewDrafts}
+          disabled={draftsCount === 0}
+        >
+          View Drafts
+        </Button>
         <Button
           color="gray-outline"
           size={buttonSize}

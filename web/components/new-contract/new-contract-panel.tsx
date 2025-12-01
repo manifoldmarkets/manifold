@@ -122,6 +122,7 @@ export function NewContractPanel(props: {
   const [drafts, setDrafts] = useState<MarketDraft[]>([])
   const [showDraftsModal, setShowDraftsModal] = useState(false)
   const [isSavingDraft, setIsSavingDraft] = useState(false)
+  const [deletingDraftId, setDeletingDraftId] = useState<number | null>(null)
 
   // Cache for DATE market ranges (to avoid regenerating on toggle)
   const [dateBuckets, setDateBuckets] = useState<{
@@ -251,8 +252,10 @@ export function NewContractPanel(props: {
     try {
       const drafts = await api('get-market-drafts', {})
       setDrafts(drafts)
+      return drafts
     } catch (error) {
       console.error('Error loading drafts:', error)
+      return []
     }
   }
 
@@ -322,12 +325,33 @@ export function NewContractPanel(props: {
   }
 
   const deleteDraft = async (id: number) => {
+    // Prevent double-click by checking if we're already deleting this draft
+    if (deletingDraftId === id) return
+
+    setDeletingDraftId(id)
     try {
       await api('delete-market-draft', { id })
-      await loadDrafts()
+      const updatedDrafts = await loadDrafts()
       toast.success('Draft deleted')
-    } catch (error) {
-      console.error('Error deleting draft:', error)
+
+      // Auto-close modal if no drafts remain
+      if (updatedDrafts.length === 0) {
+        setShowDraftsModal(false)
+      }
+    } catch (error: any) {
+      // Silently handle "not found" errors (draft was already deleted)
+      if (error?.message?.includes('not found') || error?.message?.includes('unauthorized')) {
+        // Just reload drafts to sync state
+        const updatedDrafts = await loadDrafts()
+        if (updatedDrafts.length === 0) {
+          setShowDraftsModal(false)
+        }
+      } else {
+        console.error('Error deleting draft:', error)
+        toast.error('Failed to delete draft')
+      }
+    } finally {
+      setDeletingDraftId(null)
     }
   }
 
@@ -774,14 +798,6 @@ export function NewContractPanel(props: {
             Create a Question
           </h1>
         </Row>
-        <Button
-          color="gray-outline"
-          size="sm"
-          disabled={drafts.length === 0}
-          onClick={() => setShowDraftsModal(true)}
-        >
-          Drafts ({drafts.length})
-        </Button>
       </Row>
 
       {/* Prominent Type Selector */}
@@ -1153,9 +1169,11 @@ export function NewContractPanel(props: {
             onSubmit={handleSubmit}
             onReset={handleReset}
             onSaveDraft={saveDraftToDb}
+            onViewDrafts={() => setShowDraftsModal(true)}
             isSubmitting={isSubmitting}
             submitButtonText={getSubmitButtonText()}
             isSavingDraft={isSavingDraft}
+            draftsCount={drafts.length}
             showResetConfirmation={showResetConfirmation}
             setShowResetConfirmation={setShowResetConfirmation}
             submitAttemptCount={submitAttemptCount}
@@ -1173,9 +1191,11 @@ export function NewContractPanel(props: {
               onSubmit={handleSubmit}
               onReset={handleReset}
               onSaveDraft={saveDraftToDb}
+              onViewDrafts={() => setShowDraftsModal(true)}
               isSubmitting={isSubmitting}
               submitButtonText={getSubmitButtonText()}
               isSavingDraft={isSavingDraft}
+              draftsCount={drafts.length}
               showResetConfirmation={showResetConfirmation}
               setShowResetConfirmation={setShowResetConfirmation}
               submitAttemptCount={submitAttemptCount}
@@ -1236,6 +1256,7 @@ export function NewContractPanel(props: {
         drafts={drafts}
         loadDraftFromDb={loadDraftFromDb}
         deleteDraft={deleteDraft}
+        deletingDraftId={deletingDraftId}
       />
     </Col>
   )
@@ -1248,6 +1269,7 @@ interface DraftsModalProps {
   drafts: MarketDraft[]
   loadDraftFromDb: (draft: MarketDraft) => void
   deleteDraft: (id: number) => void
+  deletingDraftId: number | null
 }
 
 function DraftsModal(props: DraftsModalProps) {
@@ -1257,6 +1279,7 @@ function DraftsModal(props: DraftsModalProps) {
     drafts,
     loadDraftFromDb,
     deleteDraft,
+    deletingDraftId,
   } = props
 
   return (
@@ -1288,6 +1311,7 @@ function DraftsModal(props: DraftsModalProps) {
                       size="xs"
                       color="indigo"
                       onClick={() => loadDraftFromDb(draft)}
+                      disabled={deletingDraftId === draft.id}
                     >
                       Load
                     </Button>
@@ -1295,6 +1319,8 @@ function DraftsModal(props: DraftsModalProps) {
                       size="xs"
                       color="red-outline"
                       onClick={() => deleteDraft(draft.id)}
+                      disabled={deletingDraftId === draft.id}
+                      loading={deletingDraftId === draft.id}
                     >
                       Delete
                     </Button>
