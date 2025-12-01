@@ -2,7 +2,6 @@ import { useState, useEffect, useCallback } from 'react'
 import clsx from 'clsx'
 import { User } from 'common/user'
 import { CreateableOutcomeType } from 'common/contract'
-import { JSONContent } from '@tiptap/core'
 import { Col } from '../layout/col'
 import { Row } from '../layout/row'
 import { Button } from '../buttons/button'
@@ -11,6 +10,7 @@ import { ContextualEditorPanel, FormState } from './contextual-editor-panel'
 import {
   validateContractForm,
   ContractFormState,
+  ValidationErrors,
 } from 'web/lib/validation/contract-validation'
 import { formatMoney } from 'common/util/format'
 import { api, getSimilarGroupsToContract } from 'web/lib/api/api'
@@ -21,13 +21,13 @@ import { getAnte } from 'common/economy'
 import { useTextEditor } from 'web/components/widgets/editor'
 import { TypeSwitcherModal } from './type-switcher-modal'
 import { ProminentTypeSelector } from './prominent-type-selector'
+import { ActionBar } from './action-bar'
+import { scrollToFirstError } from './utils/scroll-to-error'
 import dayjs from 'dayjs'
 import { useEvent } from 'client-common/hooks/use-event'
 import ShortToggle from '../widgets/short-toggle'
 import { ChoicesToggleGroup } from '../widgets/choices-toggle-group'
 import { InfoTooltip } from '../widgets/info-tooltip'
-import { CheckCircleIcon } from '@heroicons/react/solid'
-import { Tooltip } from '../widgets/tooltip'
 import { Modal } from '../layout/modal'
 import { CloseTimeSection } from './close-time-section'
 import { BOTTOM_NAV_BAR_HEIGHT } from '../nav/bottom-nav-bar'
@@ -113,7 +113,6 @@ export function NewContractPanel(props: {
   )
 
   const [isSubmitting, setIsSubmitting] = useState(false)
-  const [submitError, setSubmitError] = useState<string>()
   const [isTypeSwitcherOpen, setIsTypeSwitcherOpen] = useState(false)
   const [hasManuallyEditedCloseDate, setHasManuallyEditedCloseDate] =
     useState(false)
@@ -149,12 +148,16 @@ export function NewContractPanel(props: {
 
   const [isGeneratingDescription, setIsGeneratingDescription] = useState(false)
 
+  // Error tracking for field-level validation
+  const [submitAttemptCount, setSubmitAttemptCount] = useState(0)
+  const [fieldErrors, setFieldErrors] = useState<ValidationErrors>({})
+
   // Create description editor with dynamic placeholder based on market type
   const getDescriptionPlaceholder = () => {
     if (formState.outcomeType === 'POLL') {
       return 'Describe what this poll is about...'
     }
-    return 'This market will resolve YES if this happens... If that happens, it resolves NO early.'
+    return 'Optional: Provide context or details about your market...'
   }
 
   const descriptionEditor = useTextEditor({
@@ -211,6 +214,23 @@ export function NewContractPanel(props: {
     setFormState((prev) => ({ ...prev, [field]: value }))
   }
 
+  // Update field and clear its error when user starts fixing it
+  const updateFieldWithErrorClear = useCallback(
+    (field: string, value: any) => {
+      updateField(field, value)
+
+      // Clear error for this field if it exists
+      if (fieldErrors[field]) {
+        setFieldErrors((prev) => {
+          const next = { ...prev }
+          delete next[field]
+          return next
+        })
+      }
+    },
+    [fieldErrors]
+  )
+
   // Reset all form fields
   const handleReset = () => {
     setFormState(getEmptyFormState())
@@ -220,34 +240,6 @@ export function NewContractPanel(props: {
       descriptionEditor.commands.clearContent()
     }
     track('reset form v2')
-  }
-
-  // Helper to check if description has actual content
-  const hasDescription = (description: JSONContent | undefined): boolean => {
-    if (!description || !description.content) return false
-
-    // Check if content array is empty
-    if (description.content.length === 0) return false
-
-    // Check if content only contains empty paragraphs
-    const hasActualContent = description.content.some((node: any) => {
-      // If node has text content, it's not empty
-      if (node.text && node.text.trim().length > 0) return true
-
-      // If node has nested content, check recursively
-      if (node.content && node.content.length > 0) {
-        return node.content.some(
-          (child: any) => child.text && child.text.trim().length > 0
-        )
-      }
-
-      // If it's not a paragraph (e.g., image, video), count it as content
-      if (node.type && node.type !== 'paragraph') return true
-
-      return false
-    })
-
-    return hasActualContent
   }
 
   // Load drafts on mount
@@ -389,7 +381,8 @@ export function NewContractPanel(props: {
       if (result?.groups && result.groups.length > 0) {
         // Only auto-add if user hasn't manually selected topics
         if (formState.selectedGroups.length === 0) {
-          updateField('selectedGroups', result.groups.slice(0, 3))
+          // Limit to 5 to respect MAX_GROUPS_PER_MARKET
+          updateField('selectedGroups', result.groups.slice(0, 5))
         }
       }
     } catch (e) {
@@ -571,9 +564,6 @@ export function NewContractPanel(props: {
     formState.liquidityTier
   )
 
-  const canSubmit =
-    validation.isValid && !isSubmitting && creator.balance >= cost
-
   // Handle type change
   const handleTypeChange = (
     newType: CreateableOutcomeType,
@@ -636,10 +626,32 @@ export function NewContractPanel(props: {
 
   // Handle submission
   const handleSubmit = async () => {
-    if (!canSubmit) return
+    // Prevent double-submission
+    if (isSubmitting) return
+
+    // Check validation and show field-level errors if invalid
+    if (!validation.isValid) {
+      setFieldErrors(validation.errors)
+
+      const errorKeys = Object.keys(validation.errors)
+      const isOnlyCloseDateError = errorKeys.length === 1 && errorKeys[0] === 'closeDate'
+
+      // Auto-open close date modal only if it's the ONLY error (don't shake button)
+      if (isOnlyCloseDateError) {
+        setIsCloseDateModalOpen(true)
+      } else {
+        // Increment submit attempt count (triggers shake animation) for other errors
+        setSubmitAttemptCount((prev) => prev + 1)
+      }
+
+      scrollToFirstError(validation.errors)
+      return
+    }
+
+    // Clear any previous field errors
+    setFieldErrors({})
 
     setIsSubmitting(true)
-    setSubmitError(undefined)
 
     try {
       // Build API payload - include ALL fields like original form
@@ -655,17 +667,17 @@ export function NewContractPanel(props: {
         question: formState.question.trim(),
         outcomeType: formState.outcomeType,
         description: formState.description || '',
-        initialProb: formState.probability || 50, // Use form state probability for binary markets
         closeTime,
         visibility: formState.visibility,
         groupIds: formState.selectedGroups.map((g) => g.id),
         liquidityTier: formState.liquidityTier,
         utcOffset: new Date().getTimezoneOffset(),
-        timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
       }
 
       // Add type-specific fields
-      if (formState.outcomeType === 'MULTIPLE_CHOICE') {
+      if (formState.outcomeType === 'BINARY') {
+        payload.initialProb = formState.probability || 50
+      } else if (formState.outcomeType === 'MULTIPLE_CHOICE') {
         payload.answers = formState.answers.filter((a) => a.trim().length > 0)
         payload.shouldAnswersSumToOne = formState.shouldAnswersSumToOne
         payload.addAnswersMode = formState.addAnswersMode
@@ -675,20 +687,23 @@ export function NewContractPanel(props: {
         payload.min = formState.min
         payload.max = formState.max
       } else if (formState.outcomeType === 'MULTI_NUMERIC') {
-        payload.answers = formState.answers.filter((a) => a.trim().length > 0)
-        payload.midpoints = formState.midpoints
+        const filteredAnswers = formState.answers.filter((a) => a.trim().length > 0)
+        payload.answers = filteredAnswers
+        // Slice midpoints to match filtered answers length (in case user deleted some buckets)
+        payload.midpoints = formState.midpoints?.slice(0, filteredAnswers.length)
         payload.min = formState.min
         payload.max = formState.max
         payload.unit = formState.unit?.trim()
         payload.shouldAnswersSumToOne = formState.shouldAnswersSumToOne
         payload.addAnswersMode = 'DISABLED' // Numeric markets don't allow adding answers
       } else if (formState.outcomeType === 'DATE') {
-        payload.answers = formState.answers.filter((a) => a.trim().length > 0)
-        payload.midpoints = formState.midpoints
-        payload.min = formState.minString // Date markets use string dates
-        payload.max = formState.maxString // Date markets use string dates
+        const filteredAnswers = formState.answers.filter((a) => a.trim().length > 0)
+        payload.answers = filteredAnswers
+        // Slice midpoints to match filtered answers length (in case user deleted some buckets)
+        payload.midpoints = formState.midpoints?.slice(0, filteredAnswers.length)
         payload.shouldAnswersSumToOne = formState.shouldAnswersSumToOne
         payload.addAnswersMode = 'DISABLED' // Date markets don't allow adding answers
+        payload.timezone = Intl.DateTimeFormat().resolvedOptions().timeZone
       }
 
       track('create market v2', {
@@ -701,15 +716,20 @@ export function NewContractPanel(props: {
       // Call API to create market
       const result = await api('market', payload)
 
-      // Redirect to new market
-      await Router.push(`/${creator.username}/${result.slug}`)
-
-      // Clear form state and editor autosave after successful navigation
+      // Clear form state and editor autosave
       localStorage.removeItem('new-contract-form')
       localStorage.removeItem('text new-contract-description')
+
+      // Redirect to new market
+      if (result && result.slug) {
+        // Don't reset isSubmitting - we're navigating away from this page
+        await Router.push(`/${creator.username}/${result.slug}`)
+      } else {
+        throw new Error('Market created but no slug returned')
+      }
     } catch (error: any) {
       console.error('Error creating market:', error)
-      setSubmitError(error.message || 'Failed to create market')
+      toast.error(error.message || 'Failed to create market')
       setIsSubmitting(false)
     }
   }
@@ -722,7 +742,10 @@ export function NewContractPanel(props: {
     probability: formState.probability,
     answers: formState.answers.map((text) => ({ text })),
     closeTime: formState.closeDate
-      ? new Date(formState.closeDate + 'T23:59').getTime()
+      ? (() => {
+          const time = new Date(formState.closeDate + 'T23:59').getTime()
+          return isNaN(time) ? undefined : time
+        })()
       : undefined,
     visibility: formState.visibility,
     liquidityTier: formState.liquidityTier,
@@ -835,8 +858,10 @@ export function NewContractPanel(props: {
           <MarketPreview
             data={previewData}
             user={creator}
-            onEditQuestion={(q) => updateField('question', q)}
-            onEditDescription={(desc) => updateField('description', desc)}
+            onEditQuestion={(q) => updateFieldWithErrorClear('question', q)}
+            onEditDescription={(desc) =>
+              updateFieldWithErrorClear('description', desc)
+            }
             descriptionEditor={descriptionEditor}
             closeDate={
               formState.closeDate ? new Date(formState.closeDate) : undefined
@@ -865,7 +890,7 @@ export function NewContractPanel(props: {
               )
             }}
             onEditAnswers={(answers) => {
-              updateField('answers', answers)
+              updateFieldWithErrorClear('answers', answers)
               // For DATE markets, regenerate midpoints after editing
               if (formState.outcomeType === 'DATE') {
                 debouncedRegenerateDateMidpoints(answers)
@@ -1061,6 +1086,7 @@ export function NewContractPanel(props: {
                 updateField('answers', filteredAnswers)
               }
             }}
+            fieldErrors={submitAttemptCount > 0 ? fieldErrors : {}}
             isEditable
           />
 
@@ -1073,241 +1099,6 @@ export function NewContractPanel(props: {
             </div>
           )}
         </div>
-
-        {/* Completion Checklist */}
-        {formState.outcomeType && (
-          <Row className="flex-wrap gap-2">
-            {/* Title - Red when blank, green when filled */}
-            <Tooltip
-              text={
-                !formState.question || formState.question.trim().length === 0
-                  ? 'You need a title'
-                  : ''
-              }
-            >
-              <button
-                onClick={() => {
-                  const titleInput = document.getElementById(
-                    'market-preview-title-input'
-                  )
-                  titleInput?.focus()
-                }}
-                className={clsx(
-                  'flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-sm font-medium transition-colors hover:opacity-80',
-                  formState.question && formState.question.trim().length > 0
-                    ? 'border-teal-500 bg-teal-50 text-teal-700'
-                    : 'border-red-500 bg-red-50 text-red-700 dark:border-red-400 dark:bg-red-950 dark:text-red-300'
-                )}
-              >
-                {formState.question && formState.question.trim().length > 0 && (
-                  <CheckCircleIcon className="h-4 w-4" />
-                )}
-                Title
-              </button>
-            </Tooltip>
-
-            {/* Description - Red when blank, green when filled */}
-            <Tooltip
-              text={
-                !hasDescription(formState.description)
-                  ? 'Markets with clear resolution criteria get more traders'
-                  : ''
-              }
-            >
-              <button
-                onClick={() => {
-                  descriptionEditor?.commands.focus()
-                }}
-                className={clsx(
-                  'flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-sm font-medium transition-colors hover:opacity-80',
-                  hasDescription(formState.description)
-                    ? 'border-teal-500 bg-teal-50 text-teal-700'
-                    : 'border-red-500 bg-red-50 text-red-700 dark:border-red-400 dark:bg-red-950 dark:text-red-300'
-                )}
-              >
-                {hasDescription(formState.description) && (
-                  <CheckCircleIcon className="h-4 w-4" />
-                )}
-                Description
-              </button>
-            </Tooltip>
-
-            {/* Close Date (not required for POLL) */}
-            {formState.outcomeType !== 'POLL' && (
-              <Tooltip
-                text={
-                  !formState.closeDate && !formState.neverCloses
-                    ? 'You need a close date'
-                    : formState.closeDate && !hasManuallyEditedCloseDate
-                    ? `Close date is ${dayjs(formState.closeDate).format(
-                        'MMM D, YYYY'
-                      )} set automatically based on your title`
-                    : ''
-                }
-              >
-                <button
-                  onClick={() => setIsCloseDateModalOpen(true)}
-                  className={clsx(
-                    'flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-sm font-medium transition-colors hover:opacity-80',
-                    formState.neverCloses
-                      ? 'border-teal-500 bg-teal-50 text-teal-700'
-                      : formState.closeDate && hasManuallyEditedCloseDate
-                      ? 'border-teal-500 bg-teal-50 text-teal-700'
-                      : formState.closeDate && !hasManuallyEditedCloseDate
-                      ? 'border-amber-500 bg-amber-50 text-amber-700 dark:border-amber-400 dark:bg-amber-950 dark:text-amber-300'
-                      : 'border-red-500 bg-red-50 text-red-700 dark:border-red-400 dark:bg-red-950 dark:text-red-300'
-                  )}
-                >
-                  {(formState.neverCloses ||
-                    (formState.closeDate && hasManuallyEditedCloseDate)) && (
-                    <CheckCircleIcon className="h-4 w-4" />
-                  )}
-                  Close date
-                </button>
-              </Tooltip>
-            )}
-
-            {/* Topics - Yellow when only 1, green when 2+ */}
-            <button
-              onClick={() => {
-                setTriggerTopicsModalOpen(true)
-              }}
-              className={clsx(
-                'flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-sm font-medium transition-colors hover:opacity-80',
-                formState.selectedGroups.length >= 2
-                  ? 'border-teal-500 bg-teal-50 text-teal-700'
-                  : formState.selectedGroups.length === 1
-                  ? 'border-amber-500 bg-amber-50 text-amber-700 dark:border-amber-400 dark:bg-amber-950 dark:text-amber-300'
-                  : 'border-ink-300 bg-ink-100 text-ink-500'
-              )}
-            >
-              {formState.selectedGroups.length >= 2 && (
-                <CheckCircleIcon className="h-4 w-4" />
-              )}
-              Topics
-            </button>
-
-            {/* Answers (for MULTIPLE_CHOICE and POLL) */}
-            {(formState.outcomeType === 'MULTIPLE_CHOICE' ||
-              formState.outcomeType === 'POLL') && (
-              <button
-                onClick={() => {
-                  // Focus the first answer input by placeholder
-                  const textarea = document.querySelector(
-                    `textarea[placeholder="Answer 1"], textarea[placeholder="Option 1"]`
-                  ) as HTMLTextAreaElement | null
-
-                  if (textarea) {
-                    textarea.scrollIntoView({
-                      behavior: 'smooth',
-                      block: 'center',
-                    })
-                    setTimeout(() => {
-                      textarea.focus()
-                    }, 100)
-                  }
-                }}
-                className={clsx(
-                  'flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-sm font-medium transition-colors hover:opacity-80',
-                  formState.answers.filter((a) => a.trim().length > 0).length >
-                    2
-                    ? 'border-teal-500 bg-teal-50 text-teal-700'
-                    : formState.answers.filter((a) => a.trim().length > 0)
-                        .length === 2
-                    ? 'border-amber-500 bg-amber-50 text-amber-700 dark:border-amber-400 dark:bg-amber-950 dark:text-amber-300'
-                    : 'border-red-500 bg-red-50 text-red-700 dark:border-red-400 dark:bg-red-950 dark:text-red-300'
-                )}
-              >
-                {formState.answers.filter((a) => a.trim().length > 0).length >
-                  2 && <CheckCircleIcon className="h-4 w-4" />}
-                Answers
-              </button>
-            )}
-
-            {/* Date ranges pill for DATE markets */}
-            {formState.outcomeType === 'DATE' && (
-              <button
-                className={clsx(
-                  'flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-sm font-medium transition-colors',
-                  formState.minString &&
-                    formState.maxString &&
-                    formState.answers.length > 0
-                    ? 'border-teal-500 bg-teal-50 text-teal-700'
-                    : formState.minString && formState.maxString
-                    ? 'border-amber-500 bg-amber-50 text-amber-700 dark:border-amber-400 dark:bg-amber-950 dark:text-amber-300'
-                    : 'border-red-500 bg-red-50 text-red-700 dark:border-red-400 dark:bg-red-950 dark:text-red-300'
-                )}
-              >
-                {formState.minString &&
-                  formState.maxString &&
-                  formState.answers.length > 0 && (
-                    <CheckCircleIcon className="h-4 w-4" />
-                  )}
-                Date ranges
-              </button>
-            )}
-
-            {/* Numeric ranges pill for MULTI_NUMERIC markets */}
-            {formState.outcomeType === 'MULTI_NUMERIC' && (
-              <button
-                className={clsx(
-                  'flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-sm font-medium transition-colors',
-                  formState.min !== undefined &&
-                    formState.max !== undefined &&
-                    formState.answers.length > 0
-                    ? 'border-teal-500 bg-teal-50 text-teal-700'
-                    : formState.min !== undefined && formState.max !== undefined
-                    ? 'border-amber-500 bg-amber-50 text-amber-700 dark:border-amber-400 dark:bg-amber-950 dark:text-amber-300'
-                    : 'border-red-500 bg-red-50 text-red-700 dark:border-red-400 dark:bg-red-950 dark:text-red-300'
-                )}
-              >
-                {formState.min !== undefined &&
-                  formState.max !== undefined &&
-                  formState.answers.length > 0 && (
-                    <CheckCircleIcon className="h-4 w-4" />
-                  )}
-                Numeric ranges
-              </button>
-            )}
-
-            {/* Visibility Status */}
-            <Tooltip
-              text={
-                formState.visibility === 'public' ? (
-                  <>
-                    Click to make unlisted
-                    <br />
-                    (not discoverable without a link)
-                  </>
-                ) : (
-                  'Click to make public'
-                )
-              }
-            >
-              <button
-                onClick={() => {
-                  updateField(
-                    'visibility',
-                    formState.visibility === 'public' ? 'unlisted' : 'public'
-                  )
-                }}
-                className={clsx(
-                  'flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-sm font-medium transition-colors hover:opacity-80',
-                  formState.visibility === 'public'
-                    ? 'border-teal-500 bg-teal-50 text-teal-700'
-                    : 'border-amber-500 bg-amber-50 text-amber-700 dark:border-amber-400 dark:bg-amber-950 dark:text-amber-300'
-                )}
-              >
-                {formState.visibility === 'public' && (
-                  <CheckCircleIcon className="h-4 w-4" />
-                )}
-                {formState.visibility === 'public'
-                  ? 'Market will be visible'
-                  : 'Market will be unlisted'}
-              </button>
-            </Tooltip>
-          </Row>
-        )}
 
         {/* Market Settings Below Preview */}
         <ContextualEditorPanel
@@ -1326,7 +1117,7 @@ export function NewContractPanel(props: {
         )}
 
         {/* Footer */}
-        <div className="text-ink-500 mt-6 flex items-center justify-center gap-3 pb-6 text-sm lg:pb-32">
+        <div className="text-ink-500 mt-6 flex items-center justify-center gap-3 pb-16 text-sm lg:pb-40">
           <span>© Manifold Markets, Inc.</span>
           <span>•</span>
           <a
@@ -1349,115 +1140,48 @@ export function NewContractPanel(props: {
         </div>
       </Col>
 
-      {/* Bottom Action Bar - Mobile
-          TODO: Could extract mobile + desktop bars into a shared <ActionBar> component
-          to reduce duplication, but would require creating a new file. Current approach
-          keeps all logic in one place. Only differences: size (md vs lg) and layout. */}
-      <Row
+      {/* Bottom Action Bar - Mobile */}
+      <div
         className={clsx(
           'bg-canvas-0 border-ink-200 fixed left-0 right-0 z-20 border-t px-3 py-2',
           'lg:hidden' // Hide on desktop, show only on mobile
         )}
         style={{ bottom: `${BOTTOM_NAV_BAR_HEIGHT}px` }}
       >
-        <Col className="mx-auto w-full max-w-7xl gap-2">
-          {submitError && (
-            <div className="bg-scarlet-50 text-scarlet-700 rounded-lg px-3 py-1.5 text-xs">
-              {submitError}
-            </div>
-          )}
-          <Row className="gap-2">
-            {!showResetConfirmation ? (
-              <Button
-                color="gray-outline"
-                size="md"
-                onClick={() => setShowResetConfirmation(true)}
-              >
-                Reset
-              </Button>
-            ) : (
-              <Button color="red" size="md" onClick={handleReset}>
-                Confirm
-              </Button>
-            )}
-            <Button
-              color="gray-outline"
-              size="md"
-              onClick={saveDraftToDb}
-              disabled={isSavingDraft}
-              loading={isSavingDraft}
-            >
-              Draft
-            </Button>
-            <Button
-              color="green"
-              size="md"
-              className="flex-1"
-              onClick={handleSubmit}
-              disabled={!canSubmit}
-              loading={isSubmitting}
-            >
-              {getSubmitButtonText()}
-            </Button>
-          </Row>
-          {!validation.isValid && (
-            <div className="text-ink-600 text-center text-xs">
-              {Object.values(validation.errors)[0]}
-            </div>
-          )}
-        </Col>
-      </Row>
+        <div className="mx-auto w-full max-w-7xl">
+          <ActionBar
+            onSubmit={handleSubmit}
+            onReset={handleReset}
+            onSaveDraft={saveDraftToDb}
+            isSubmitting={isSubmitting}
+            submitButtonText={getSubmitButtonText()}
+            isSavingDraft={isSavingDraft}
+            showResetConfirmation={showResetConfirmation}
+            setShowResetConfirmation={setShowResetConfirmation}
+            submitAttemptCount={submitAttemptCount}
+            variant="mobile"
+          />
+        </div>
+      </div>
 
       {/* Desktop Action Bar */}
       <div className="pointer-events-none fixed bottom-0 left-0 right-0 z-10 hidden lg:block">
         <div className="mx-auto grid w-full max-w-[1440px] grid-cols-12">
           <div className="col-span-2" /> {/* Spacer for sidebar */}
-          <Col className="bg-canvas-0 border-ink-200 pointer-events-auto col-span-7 gap-2 border-t p-4">
-            {submitError && (
-              <div className="bg-scarlet-50 text-scarlet-700 rounded-lg px-4 py-2 text-sm">
-                {submitError}
-              </div>
-            )}
-            <Row className="gap-3">
-              {!showResetConfirmation ? (
-                <Button
-                  color="gray-outline"
-                  size="lg"
-                  onClick={() => setShowResetConfirmation(true)}
-                >
-                  Reset
-                </Button>
-              ) : (
-                <Button color="red" size="lg" onClick={handleReset}>
-                  Confirm Reset
-                </Button>
-              )}
-              <Button
-                color="gray-outline"
-                size="lg"
-                onClick={saveDraftToDb}
-                disabled={isSavingDraft}
-                loading={isSavingDraft}
-              >
-                Save Draft
-              </Button>
-              <Button
-                color="green"
-                size="lg"
-                className="flex-1"
-                onClick={handleSubmit}
-                disabled={!canSubmit}
-                loading={isSubmitting}
-              >
-                {getSubmitButtonText()}
-              </Button>
-            </Row>
-            {!validation.isValid && (
-              <div className="text-ink-600 text-center text-sm">
-                {Object.values(validation.errors)[0]}
-              </div>
-            )}
-          </Col>
+          <div className="bg-canvas-0 border-ink-200 pointer-events-auto col-span-7 border-t p-4">
+            <ActionBar
+              onSubmit={handleSubmit}
+              onReset={handleReset}
+              onSaveDraft={saveDraftToDb}
+              isSubmitting={isSubmitting}
+              submitButtonText={getSubmitButtonText()}
+              isSavingDraft={isSavingDraft}
+              showResetConfirmation={showResetConfirmation}
+              setShowResetConfirmation={setShowResetConfirmation}
+              submitAttemptCount={submitAttemptCount}
+              variant="desktop"
+            />
+          </div>
         </div>
       </div>
 

@@ -83,13 +83,16 @@ export function validateContractForm(
   // Close date validation
   if (
     !neverCloses &&
-    closeDate &&
     outcomeType !== 'STONK' &&
     outcomeType !== 'BOUNTIED_QUESTION'
   ) {
-    const closeTime = new Date(closeDate + 'T23:59').getTime()
-    if (closeTime <= Date.now()) {
-      errors.closeDate = 'Close date must be in the future'
+    if (!closeDate) {
+      errors.closeDate = 'Please select a close date'
+    } else {
+      const closeTime = new Date(closeDate + 'T23:59').getTime()
+      if (closeTime <= Date.now()) {
+        errors.closeDate = 'Close date must be in the future'
+      }
     }
   }
 
@@ -124,6 +127,19 @@ export function validateContractForm(
 
       if (!answers || answers.length < MIN_ANSWERS) {
         errors.answers = `At least ${MIN_ANSWERS} answers are required`
+      } else {
+        const nonEmptyAnswers = answers.filter((a) => a.trim().length > 0)
+
+        // Check midpoints are generated and match the number of non-empty answers
+        if (
+          !state.midpoints ||
+          state.midpoints.length < nonEmptyAnswers.length ||
+          state.midpoints.some((m) => !m || isNaN(m))
+        ) {
+          errors.answers = 'Please wait for numeric buckets to generate'
+        } else if (nonEmptyAnswers.length < MIN_ANSWERS) {
+          errors.answers = `At least ${MIN_ANSWERS} non-empty answers are required`
+        }
       }
       break
 
@@ -135,6 +151,19 @@ export function validateContractForm(
 
       if (!answers || answers.length < MIN_ANSWERS) {
         errors.answers = `At least ${MIN_ANSWERS} answers are required`
+      } else {
+        const nonEmptyAnswers = answers.filter((a) => a.trim().length > 0)
+
+        // Check midpoints are generated and match the number of non-empty answers
+        if (
+          !state.midpoints ||
+          state.midpoints.length < nonEmptyAnswers.length ||
+          state.midpoints.some((m) => !m || isNaN(m))
+        ) {
+          errors.answers = 'Please wait for date buckets to generate'
+        } else if (nonEmptyAnswers.length < MIN_ANSWERS) {
+          errors.answers = `At least ${MIN_ANSWERS} non-empty answers are required`
+        }
       }
       break
 

@@ -18,7 +18,7 @@ import { Input } from 'web/components/widgets/input'
 import dayjs from 'dayjs'
 import { Group } from 'common/group'
 import { TopicTag } from '../topics/topic-tag'
-import { PlusIcon, EyeIcon, EyeOffIcon, XIcon } from '@heroicons/react/solid'
+import { PlusIcon, EyeIcon, EyeOffIcon, XIcon, PencilIcon } from '@heroicons/react/solid'
 import { Modal } from '../layout/modal'
 import { ContractTopicsList } from '../topics/contract-topics-list'
 import { InfoTooltip } from '../widgets/info-tooltip'
@@ -29,6 +29,7 @@ import { suggestMarketType } from './market-type-suggestions'
 import { MarketTypeSuggestionBanner } from './market-type-suggestion-banner'
 import { useIsMobile } from 'web/hooks/use-is-mobile'
 import { ProbabilitySlider } from '../widgets/probability-input'
+import { ValidationErrors } from 'web/lib/validation/contract-validation'
 
 export type PreviewContractData = {
   question: string
@@ -121,6 +122,7 @@ export function MarketPreview(props: {
     addAnswersMode?: 'DISABLED' | 'ONLY_CREATOR' | 'ANYONE',
     removeOtherAnswer?: boolean
   ) => void
+  fieldErrors?: ValidationErrors
 }) {
   const {
     data,
@@ -151,6 +153,7 @@ export function MarketPreview(props: {
     onGenerateAnswers,
     isGeneratingAnswers = false,
     onSwitchMarketType,
+    fieldErrors = {},
   } = props
   const [isTopicsModalOpen, setIsTopicsModalOpen] = useState(false)
   const [dismissedSuggestion, setDismissedSuggestion] = useState(false)
@@ -431,7 +434,12 @@ export function MarketPreview(props: {
             }
           }}
           placeholder="What's your question?"
-          className="text-ink-1000 placeholder:text-ink-400 border-ink-300 hover:ring-primary-500 focus:ring-primary-500 focus:border-primary-500 bg-canvas-0 w-full resize-none overflow-hidden rounded-md border px-4 py-3 text-lg font-semibold shadow-sm transition-colors hover:ring-1 focus:outline-none focus:ring-1 sm:text-xl"
+          className={clsx(
+            "text-ink-1000 placeholder:text-ink-400 bg-canvas-0 w-full resize-none overflow-hidden rounded-md border px-4 py-3 text-lg font-semibold shadow-sm transition-colors focus:outline-none sm:text-xl",
+            fieldErrors.question
+              ? "border-red-500 ring-2 ring-red-200 hover:ring-red-300 focus:ring-red-300 focus:border-red-500"
+              : "border-ink-300 hover:ring-primary-500 hover:ring-1 focus:ring-primary-500 focus:ring-1 focus:border-primary-500"
+          )}
           rows={1}
           maxLength={120}
           autoFocus
@@ -511,6 +519,7 @@ export function MarketPreview(props: {
                 noTap={!!(question && data.minString && data.maxString)}
               >
                 <Button
+                  id="generate-date-ranges-button"
                   color="indigo-outline"
                   size="xs"
                   onClick={onGenerateDateRanges}
@@ -521,6 +530,9 @@ export function MarketPreview(props: {
                     isGeneratingDateRanges
                   }
                   loading={isGeneratingDateRanges}
+                  className={clsx(
+                    fieldErrors.answers && 'ring-2 ring-red-500'
+                  )}
                 >
                   {answers.length > 0
                     ? 'Regenerate date ranges'
@@ -598,6 +610,7 @@ export function MarketPreview(props: {
                 }
               >
                 <Button
+                  id="generate-numeric-ranges-button"
                   color="indigo-outline"
                   size="xs"
                   onClick={onGenerateNumericRanges}
@@ -608,6 +621,9 @@ export function MarketPreview(props: {
                     isGeneratingNumericRanges
                   }
                   loading={isGeneratingNumericRanges}
+                  className={clsx(
+                    fieldErrors.answers && 'ring-2 ring-red-500'
+                  )}
                 >
                   {answers.length > 0
                     ? 'Regenerate numeric ranges'
@@ -622,7 +638,12 @@ export function MarketPreview(props: {
       {/* Outcome Type Specific Content */}
       <Col className="gap-3">
         {isMultipleChoice && (
-          <Col className="gap-2">
+          <Col
+            className={clsx(
+              'gap-2 rounded-lg transition-all',
+              fieldErrors.answers ? 'ring-2 ring-red-200 p-3' : ''
+            )}
+          >
             {answers.length > 0 ? (
               <>
                 {answers.map((answer, i) => (
@@ -973,7 +994,12 @@ export function MarketPreview(props: {
         )}
 
         {isPoll && (
-          <Col className="gap-2">
+          <Col
+            className={clsx(
+              'gap-2 rounded-lg transition-all',
+              fieldErrors.answers ? 'ring-2 ring-red-200 p-3' : ''
+            )}
+          >
             {answers.length > 0 ? (
               <>
                 {answers.map((answer, i) => (
@@ -1244,7 +1270,12 @@ export function MarketPreview(props: {
 
                 {/* Show answer ranges - Editable with preview */}
                 {answers.length > 0 && (
-                  <Col className="gap-2">
+                  <Col
+                    className={clsx(
+                      'gap-2 rounded-lg transition-all',
+                      fieldErrors.answers ? 'ring-2 ring-red-200 p-3' : ''
+                    )}
+                  >
                     {answers.map((answer, i) => (
                       <div
                         key={i}
@@ -1276,6 +1307,7 @@ export function MarketPreview(props: {
                                   }
                                 }}
                                 placeholder={`Range ${i + 1}`}
+                                error={!!fieldErrors.answers}
                               />
                             </>
                           ) : (
@@ -1443,85 +1475,115 @@ export function MarketPreview(props: {
             {data.minString && data.maxString ? (
               <>
                 {/* Date Range Display - Market-like with Expected Date */}
-                {answers.length > 0 &&
-                data.midpoints &&
-                data.midpoints.length > 0 &&
-                data.midpoints.every((m) => m > 0) ? (
-                  <div className="bg-ink-100 border-ink-200 rounded-lg border p-2 sm:p-3">
-                    <Row className="items-center justify-center gap-1 text-xs sm:justify-between sm:gap-2">
-                      <span className="text-ink-600 min-w-0 shrink text-[10px] sm:text-xs">
-                        <span className="hidden sm:inline">📅 </span>
-                        {new Intl.DateTimeFormat('en-US', {
-                          month: 'short',
-                          year: 'numeric',
-                        }).format(Math.min(...data.midpoints))}
-                      </span>
-                      <span className="text-ink-400 shrink-0">→</span>
-                      <Col className="shrink-0 items-center gap-0.5">
-                        <span className="text-ink-900 text-[11px] font-semibold sm:text-xs">
+                {(() => {
+                  // Helper to validate timestamp
+                  const isValidTimestamp = (ts: number) =>
+                    !isNaN(ts) && isFinite(ts) && ts > 0
+
+                  const minDate =
+                    data.midpoints && data.midpoints.length > 0
+                      ? Math.min(...data.midpoints)
+                      : null
+                  const maxDate =
+                    data.midpoints && data.midpoints.length > 0
+                      ? Math.max(...data.midpoints)
+                      : null
+
+                  // Calculate expected date
+                  const expectedDate = (() => {
+                    if (
+                      !answers.length ||
+                      !data.midpoints ||
+                      !data.midpoints.length
+                    )
+                      return null
+
+                    const probs = mcProbs.slice(0, answers.length)
+                    const midpoints = data.midpoints
+
+                    if (!probs.length || !midpoints.length) return null
+
+                    let result: number
+                    if (data.shouldAnswersSumToOne) {
+                      // Buckets: simple weighted average
+                      result = probs.reduce(
+                        (sum, p, i) => sum + p * (midpoints[i] || 0),
+                        0
+                      )
+                    } else {
+                      // Thresholds: discrete probabilities
+                      const discreteProbs = [probs[0]]
+                      for (let i = 1; i < probs.length; i++) {
+                        discreteProbs.push(probs[i] - probs[i - 1])
+                      }
+
+                      let expected = 0
+                      for (let i = 0; i < probs.length; i++) {
+                        expected += (midpoints[i] || 0) * discreteProbs[i]
+                      }
+
+                      // Add tail probability
+                      const afterLastProb = 1 - probs[probs.length - 1]
+                      if (afterLastProb > 0 && midpoints.length > 1) {
+                        const timePeriod =
+                          midpoints[midpoints.length - 1] -
+                          midpoints[midpoints.length - 2]
+                        const beyondLast =
+                          midpoints[midpoints.length - 1] + timePeriod
+                        expected += beyondLast * afterLastProb
+                      }
+
+                      result = expected
+                    }
+
+                    return isValidTimestamp(result) ? result : null
+                  })()
+
+                  // Only show if all dates are valid
+                  return minDate &&
+                    maxDate &&
+                    expectedDate &&
+                    isValidTimestamp(minDate) &&
+                    isValidTimestamp(maxDate) &&
+                    isValidTimestamp(expectedDate) ? (
+                    <div className="bg-ink-100 border-ink-200 rounded-lg border p-2 sm:p-3">
+                      <Row className="items-center justify-center gap-1 text-xs sm:justify-between sm:gap-2">
+                        <span className="text-ink-600 min-w-0 shrink text-[10px] sm:text-xs">
+                          <span className="hidden sm:inline">📅 </span>
                           {new Intl.DateTimeFormat('en-US', {
                             month: 'short',
-                            day: 'numeric',
                             year: 'numeric',
-                          }).format(
-                            (() => {
-                              // Calculate expected date from probabilities and midpoints
-                              const probs = mcProbs.slice(0, answers.length)
-                              const midpoints = data.midpoints || []
-
-                              if (!probs.length || !midpoints.length)
-                                return Date.now()
-
-                              if (data.shouldAnswersSumToOne) {
-                                // Buckets: simple weighted average
-                                return probs.reduce(
-                                  (sum, p, i) => sum + p * midpoints[i],
-                                  0
-                                )
-                              } else {
-                                // Thresholds: discrete probabilities
-                                const discreteProbs = [probs[0]]
-                                for (let i = 1; i < probs.length; i++) {
-                                  discreteProbs.push(probs[i] - probs[i - 1])
-                                }
-
-                                let expected = 0
-                                for (let i = 0; i < probs.length; i++) {
-                                  expected += midpoints[i] * discreteProbs[i]
-                                }
-
-                                // Add tail probability
-                                const afterLastProb =
-                                  1 - probs[probs.length - 1]
-                                if (afterLastProb > 0 && midpoints.length > 1) {
-                                  const timePeriod =
-                                    midpoints[midpoints.length - 1] -
-                                    midpoints[midpoints.length - 2]
-                                  const beyondLast =
-                                    midpoints[midpoints.length - 1] + timePeriod
-                                  expected += beyondLast * afterLastProb
-                                }
-
-                                return expected
-                              }
-                            })()
-                          )}
+                          }).format(minDate)}
                         </span>
-                        <span className="text-ink-500 text-[9px] uppercase sm:text-[10px]">
-                          Expected
+                        <span className="text-ink-400 shrink-0">→</span>
+                        <Col className="shrink-0 items-center gap-0.5">
+                          <span className="text-ink-900 text-[11px] font-semibold sm:text-xs">
+                            {new Intl.DateTimeFormat('en-US', {
+                              month: 'short',
+                              day: 'numeric',
+                              year: 'numeric',
+                            }).format(expectedDate)}
+                          </span>
+                          <span className="text-ink-500 text-[9px] uppercase sm:text-[10px]">
+                            Expected
+                          </span>
+                        </Col>
+                        <span className="text-ink-400 shrink-0">→</span>
+                        <span className="text-ink-600 min-w-0 shrink text-[10px] sm:text-xs">
+                          <span className="hidden sm:inline">📅 </span>
+                          {new Intl.DateTimeFormat('en-US', {
+                            month: 'short',
+                            year: 'numeric',
+                          }).format(maxDate)}
                         </span>
-                      </Col>
-                      <span className="text-ink-400 shrink-0">→</span>
-                      <span className="text-ink-600 min-w-0 shrink text-[10px] sm:text-xs">
-                        <span className="hidden sm:inline">📅 </span>
-                        {new Intl.DateTimeFormat('en-US', {
-                          month: 'short',
-                          year: 'numeric',
-                        }).format(Math.max(...data.midpoints))}
-                      </span>
-                    </Row>
-                  </div>
-                ) : (
+                      </Row>
+                    </div>
+                  ) : null
+                })()}
+                {(!answers.length ||
+                  !data.midpoints ||
+                  !data.midpoints.length ||
+                  !data.midpoints.every((m) => m > 0)) && (
                   <div className="bg-ink-100 border-ink-200 rounded-lg border p-2 sm:p-3">
                     <Row className="text-ink-600 justify-center gap-1 text-[10px] sm:justify-between sm:gap-2 sm:text-xs">
                       <span className="min-w-0 shrink">
@@ -1587,7 +1649,12 @@ export function MarketPreview(props: {
                     <span>Generating date ranges...</span>
                   </div>
                 ) : answers.length > 0 ? (
-                  <Col className="gap-2">
+                  <Col
+                    className={clsx(
+                      'gap-2 rounded-lg transition-all',
+                      fieldErrors.answers ? 'ring-2 ring-red-200 p-3' : ''
+                    )}
+                  >
                     {answers.map((answer, i) => (
                       <div
                         key={i}
@@ -1619,6 +1686,7 @@ export function MarketPreview(props: {
                                   }
                                 }}
                                 placeholder={`Range ${i + 1}`}
+                                error={!!fieldErrors.answers}
                               />
                             </>
                           ) : (
@@ -1797,7 +1865,14 @@ export function MarketPreview(props: {
         {/* Description Editor */}
         {isEditable && descriptionEditor ? (
           <div className="relative">
-            <div className="text-ink-600 text-sm">
+            <div
+              className={clsx(
+                'text-ink-600 rounded-md text-sm transition-all',
+                fieldErrors.description
+                  ? 'ring-2 ring-red-200'
+                  : ''
+              )}
+            >
               <TextEditor editor={descriptionEditor} simple />
             </div>
             {onGenerateDescription && (
@@ -1923,9 +1998,9 @@ function BinaryProbabilitySection(props: {
         {isEditable && onProbabilityChange && (
           <button
             onClick={() => setIsModalOpen(true)}
-            className="text-ink-500 hover:text-ink-700 text-xs"
+            className="text-ink-500 hover:text-ink-700"
           >
-            modify
+            <PencilIcon className="h-4 w-4" />
           </button>
         )}
       </Row>

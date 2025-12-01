@@ -350,6 +350,17 @@ module.exports = {
             transitionTimingFunction: 'cubic-bezier(1, 1, 0.8, 0)',
           },
         },
+        'shake': {
+          '0%, 100%': {
+            transform: 'translateX(0)',
+          },
+          '10%, 30%, 50%, 70%, 90%': {
+            transform: 'translateX(-8px)',
+          },
+          '20%, 40%, 60%, 80%': {
+            transform: 'translateX(8px)',
+          },
+        },
       },
       animation: {
         progress: 'progress linear forwards',
@@ -382,6 +393,7 @@ module.exports = {
         'fade-out': 'fade-out 1s',
         'grow-up': 'grow-up 1s',
         'slide-up-and-fade': 'slide-up-and-fade 150ms',
+        'shake': 'shake 0.5s ease-in-out',
       },
       colors: {
         ink: {
