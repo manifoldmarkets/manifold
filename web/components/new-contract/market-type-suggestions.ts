@@ -19,11 +19,8 @@ export function suggestMarketType(
   addAnswersMode?: 'DISABLED' | 'ONLY_CREATOR' | 'ANYONE',
   shouldAnswersSumToOne?: boolean
 ): MarketTypeSuggestion | null {
-  const lowerQuestion = question.toLowerCase().trim()
-
-  if (!lowerQuestion) return null
-
   // "Other" option suggestion for MULTIPLE_CHOICE markets with shouldAnswersSumToOne
+  // Check this first, before returning null for empty questions, since it doesn't need a question
   if (
     currentType === 'MULTIPLE_CHOICE' &&
     shouldAnswersSumToOne === true &&
@@ -47,6 +44,10 @@ export function suggestMarketType(
       }
     }
   }
+
+  const lowerQuestion = question.toLowerCase().trim()
+
+  if (!lowerQuestion) return null
 
   // DATE market suggestions
   const datePatterns = [

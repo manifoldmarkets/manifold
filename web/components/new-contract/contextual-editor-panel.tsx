@@ -3,6 +3,7 @@ import { Col } from 'web/components/layout/col'
 import { CreateableOutcomeType } from 'common/contract'
 import { Group } from 'common/group'
 import { CostSection } from './cost-section'
+import clsx from 'clsx'
 
 export type FormState = {
   question: string
@@ -41,13 +42,21 @@ export function ContextualEditorPanel(props: {
   balance?: number
   submitState?: 'EDITING' | 'LOADING' | 'DONE'
 }) {
-  const { formState, onUpdate, balance } = props
+  const { formState, onUpdate, balance, validationErrors } = props
 
   const { outcomeType, answers, liquidityTier } = formState
   const isPoll = outcomeType === 'POLL'
+  const hasBalanceError = !!validationErrors.balance
 
   return (
-    <Col className="bg-canvas-0 ring-ink-100 gap-4 overflow-y-auto rounded-lg p-4 shadow-md ring-1">
+    <Col
+      className={clsx(
+        'gap-4 overflow-y-auto rounded-lg border-0 p-4 shadow-none outline-none ring-offset-0 focus:outline-none focus:ring-offset-0 focus-within:outline-none focus-visible:outline-none',
+        hasBalanceError
+          ? 'ring-2 ring-red-500 dark:ring-red-600 focus-within:ring-2 focus-within:ring-red-500 dark:focus-within:ring-red-600'
+          : 'ring-1 ring-transparent'
+      )}
+    >
       {isPoll ? (
         <Col className="gap-2">
           <span className="text-ink-700 text-sm font-semibold">About polls</span>

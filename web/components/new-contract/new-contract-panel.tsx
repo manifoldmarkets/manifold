@@ -340,7 +340,10 @@ export function NewContractPanel(props: {
       }
     } catch (error: any) {
       // Silently handle "not found" errors (draft was already deleted)
-      if (error?.message?.includes('not found') || error?.message?.includes('unauthorized')) {
+      if (
+        error?.message?.includes('not found') ||
+        error?.message?.includes('unauthorized')
+      ) {
         // Just reload drafts to sync state
         const updatedDrafts = await loadDrafts()
         if (updatedDrafts.length === 0) {
@@ -588,6 +591,14 @@ export function NewContractPanel(props: {
     formState.liquidityTier
   )
 
+  // Add balance validation
+  const hasInsufficientBalance = cost > creator.balance
+  if (hasInsufficientBalance && !validation.errors.balance) {
+    validation.errors.balance = `Insufficient balance. You need ${formatMoney(
+      cost
+    )} but only have ${formatMoney(creator.balance)}`
+  }
+
   // Handle type change
   const handleTypeChange = (
     newType: CreateableOutcomeType,
@@ -658,7 +669,8 @@ export function NewContractPanel(props: {
       setFieldErrors(validation.errors)
 
       const errorKeys = Object.keys(validation.errors)
-      const isOnlyCloseDateError = errorKeys.length === 1 && errorKeys[0] === 'closeDate'
+      const isOnlyCloseDateError =
+        errorKeys.length === 1 && errorKeys[0] === 'closeDate'
 
       // Auto-open close date modal only if it's the ONLY error (don't shake button)
       if (isOnlyCloseDateError) {
@@ -711,20 +723,30 @@ export function NewContractPanel(props: {
         payload.min = formState.min
         payload.max = formState.max
       } else if (formState.outcomeType === 'MULTI_NUMERIC') {
-        const filteredAnswers = formState.answers.filter((a) => a.trim().length > 0)
+        const filteredAnswers = formState.answers.filter(
+          (a) => a.trim().length > 0
+        )
         payload.answers = filteredAnswers
         // Slice midpoints to match filtered answers length (in case user deleted some buckets)
-        payload.midpoints = formState.midpoints?.slice(0, filteredAnswers.length)
+        payload.midpoints = formState.midpoints?.slice(
+          0,
+          filteredAnswers.length
+        )
         payload.min = formState.min
         payload.max = formState.max
         payload.unit = formState.unit?.trim()
         payload.shouldAnswersSumToOne = formState.shouldAnswersSumToOne
         payload.addAnswersMode = 'DISABLED' // Numeric markets don't allow adding answers
       } else if (formState.outcomeType === 'DATE') {
-        const filteredAnswers = formState.answers.filter((a) => a.trim().length > 0)
+        const filteredAnswers = formState.answers.filter(
+          (a) => a.trim().length > 0
+        )
         payload.answers = filteredAnswers
         // Slice midpoints to match filtered answers length (in case user deleted some buckets)
-        payload.midpoints = formState.midpoints?.slice(0, filteredAnswers.length)
+        payload.midpoints = formState.midpoints?.slice(
+          0,
+          filteredAnswers.length
+        )
         payload.shouldAnswersSumToOne = formState.shouldAnswersSumToOne
         payload.addAnswersMode = 'DISABLED' // Date markets don't allow adding answers
         payload.timezone = Intl.DateTimeFormat().resolvedOptions().timeZone
@@ -1127,13 +1149,31 @@ export function NewContractPanel(props: {
           isGeneratingAnswers={isGeneratingAnswers}
         />
 
+        {/* Desktop Action Bar - Floating below liquidity section */}
+        <div className="hidden rounded-lg p-4 ring-1 ring-transparent lg:block">
+          <ActionBar
+            onSubmit={handleSubmit}
+            onReset={handleReset}
+            onSaveDraft={saveDraftToDb}
+            onViewDrafts={() => setShowDraftsModal(true)}
+            isSubmitting={isSubmitting}
+            submitButtonText={getSubmitButtonText()}
+            isSavingDraft={isSavingDraft}
+            draftsCount={drafts.length}
+            showResetConfirmation={showResetConfirmation}
+            setShowResetConfirmation={setShowResetConfirmation}
+            submitAttemptCount={submitAttemptCount}
+            variant="desktop"
+          />
+        </div>
+
         {/* Explainer Panel for new users */}
         {creator.createdTime > Date.now() - WEEK_MS && (
           <ExplainerPanel className="mt-8" />
         )}
 
         {/* Footer */}
-        <div className="text-ink-500 mt-6 flex items-center justify-center gap-3 pb-16 text-sm lg:pb-40">
+        <div className="text-ink-500 mt-6 flex items-center justify-center gap-3 pb-0 text-sm">
           <span>© Manifold Markets, Inc.</span>
           <span>•</span>
           <a
@@ -1179,29 +1219,6 @@ export function NewContractPanel(props: {
             submitAttemptCount={submitAttemptCount}
             variant="mobile"
           />
-        </div>
-      </div>
-
-      {/* Desktop Action Bar */}
-      <div className="pointer-events-none fixed bottom-0 left-0 right-0 z-10 hidden lg:block">
-        <div className="mx-auto grid w-full max-w-[1440px] grid-cols-12">
-          <div className="col-span-2" /> {/* Spacer for sidebar */}
-          <div className="bg-canvas-0 border-ink-200 pointer-events-auto col-span-7 border-t p-4">
-            <ActionBar
-              onSubmit={handleSubmit}
-              onReset={handleReset}
-              onSaveDraft={saveDraftToDb}
-              onViewDrafts={() => setShowDraftsModal(true)}
-              isSubmitting={isSubmitting}
-              submitButtonText={getSubmitButtonText()}
-              isSavingDraft={isSavingDraft}
-              draftsCount={drafts.length}
-              showResetConfirmation={showResetConfirmation}
-              setShowResetConfirmation={setShowResetConfirmation}
-              submitAttemptCount={submitAttemptCount}
-              variant="desktop"
-            />
-          </div>
         </div>
       </div>
 

@@ -62,6 +62,48 @@ export function ActionBar(props: ActionBarProps) {
 
   return (
     <Col className="gap-2">
+      {/* Reset, View Drafts, and Save Draft Buttons - Split 1:1:1 */}
+      <Row className={clsx(variant === 'mobile' ? 'gap-2' : 'gap-3')}>
+        {!showResetConfirmation ? (
+          <Button
+            color="gray-outline"
+            size={buttonSize}
+            className="flex-1 max-[357px]:px-2 max-[357px]:text-xs"
+            onClick={() => setShowResetConfirmation(true)}
+          >
+            Reset
+          </Button>
+        ) : (
+          <Button
+            color="red"
+            size={buttonSize}
+            className="flex-1 max-[357px]:px-2 max-[357px]:text-xs"
+            onClick={onReset}
+          >
+            Confirm Reset
+          </Button>
+        )}
+        <Button
+          color="gray-outline"
+          size={buttonSize}
+          className="flex-1 max-[357px]:px-2 max-[357px]:text-xs"
+          onClick={onViewDrafts}
+          disabled={draftsCount === 0}
+        >
+          View Drafts
+        </Button>
+        <Button
+          color="gray-outline"
+          size={buttonSize}
+          className="flex-1 max-[357px]:px-2 max-[357px]:text-xs"
+          onClick={onSaveDraft}
+          disabled={isSavingDraft}
+          loading={isSavingDraft}
+        >
+          Save Draft
+        </Button>
+      </Row>
+
       {/* Create Button - Full Width */}
       <Button
         color="green"
@@ -75,48 +117,6 @@ export function ActionBar(props: ActionBarProps) {
       >
         {submitButtonText}
       </Button>
-
-      {/* Reset, View Drafts, and Save Draft Buttons - Split 1:1:1 */}
-      <Row className={clsx(variant === 'mobile' ? 'gap-2' : 'gap-3')}>
-        {!showResetConfirmation ? (
-          <Button
-            color="gray-outline"
-            size={buttonSize}
-            className="flex-1"
-            onClick={() => setShowResetConfirmation(true)}
-          >
-            Reset
-          </Button>
-        ) : (
-          <Button
-            color="red"
-            size={buttonSize}
-            className="flex-1"
-            onClick={onReset}
-          >
-            Confirm Reset
-          </Button>
-        )}
-        <Button
-          color="gray-outline"
-          size={buttonSize}
-          className="flex-1"
-          onClick={onViewDrafts}
-          disabled={draftsCount === 0}
-        >
-          View Drafts
-        </Button>
-        <Button
-          color="gray-outline"
-          size={buttonSize}
-          className="flex-1"
-          onClick={onSaveDraft}
-          disabled={isSavingDraft}
-          loading={isSavingDraft}
-        >
-          Save Draft
-        </Button>
-      </Row>
     </Col>
   )
 }

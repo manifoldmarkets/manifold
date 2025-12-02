@@ -231,6 +231,14 @@ export const AnswerInput = (props: {
   const { id, disabled, value, onChange, onUp, onDown, onDelete, placeholder, className } =
     props
 
+  const handleFocus = (e: React.FocusEvent<HTMLTextAreaElement>) => {
+    // On mobile, scroll the input into view when keyboard appears
+    // Delay to allow keyboard animation to complete
+    setTimeout(() => {
+      e.target.scrollIntoView({ behavior: 'smooth', block: 'center' })
+    }, 300)
+  }
+
   return (
     <ExpandingInput
       id={id}
@@ -239,6 +247,7 @@ export const AnswerInput = (props: {
       placeholder={placeholder}
       value={value}
       onChange={onChange}
+      onFocus={handleFocus}
       onKeyDown={(e) => {
         if (e.key == 'ArrowUp' && !e.shiftKey && !e.altKey) {
           e.preventDefault()

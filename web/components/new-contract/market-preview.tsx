@@ -10,7 +10,6 @@ import { VisibilityIcon } from 'web/components/contract/contracts-table'
 import { formatMoney } from 'common/util/format'
 import { removeEmojis } from 'common/util/string'
 import { JSONContent } from '@tiptap/core'
-import { getUniqueBettorBonusAmount } from 'common/economy'
 import { Tooltip } from 'web/components/widgets/tooltip'
 import { Content, TextEditor } from 'web/components/widgets/editor'
 import { Editor } from '@tiptap/react'
@@ -61,23 +60,6 @@ export type PreviewContractData = {
   // Multiple choice specific
   shouldAnswersSumToOne?: boolean
   addAnswersMode?: 'DISABLED' | 'ONLY_CREATOR' | 'ANYONE'
-}
-
-// Helper function to format liquidity display text
-function getLiquidityDisplayText(
-  liquidityTier: number | undefined,
-  numAnswers: number
-): React.ReactNode {
-  if (!liquidityTier) return 'Medium liquidity'
-
-  const bonus = getUniqueBettorBonusAmount(liquidityTier, numAnswers)
-  return (
-    <>
-      {formatMoney(liquidityTier)} liquidity, earn{' '}
-      <span className="text-ink-900 font-semibold">{formatMoney(bonus)}</span>{' '}
-      for every unique trader
-    </>
-  )
 }
 
 export function MarketPreview(props: {
@@ -180,7 +162,6 @@ export function MarketPreview(props: {
     answers = [],
     closeTime,
     visibility,
-    liquidityTier,
     min,
     max,
     unit,
@@ -437,7 +418,7 @@ export function MarketPreview(props: {
           className={clsx(
             "text-ink-1000 placeholder:text-ink-400 bg-canvas-0 w-full resize-none overflow-hidden rounded-md border px-4 py-3 text-lg font-semibold shadow-sm transition-colors focus:outline-none sm:text-xl",
             fieldErrors.question
-              ? "border-red-500 ring-2 ring-red-200 hover:ring-red-300 focus:ring-red-300 focus:border-red-500"
+              ? "border-0 ring-2 ring-red-500 dark:ring-red-600 focus:ring-2 focus:ring-red-500 dark:focus:ring-red-600 hover:ring-red-500 dark:hover:ring-red-600"
               : "border-ink-300 hover:ring-primary-500 hover:ring-1 focus:ring-primary-500 focus:ring-1 focus:border-primary-500"
           )}
           rows={1}
@@ -531,7 +512,7 @@ export function MarketPreview(props: {
                   }
                   loading={isGeneratingDateRanges}
                   className={clsx(
-                    fieldErrors.answers && 'ring-2 ring-red-500'
+                    fieldErrors.answers && 'ring-2 ring-red-500 dark:ring-red-600'
                   )}
                 >
                   {answers.length > 0
@@ -622,7 +603,7 @@ export function MarketPreview(props: {
                   }
                   loading={isGeneratingNumericRanges}
                   className={clsx(
-                    fieldErrors.answers && 'ring-2 ring-red-500'
+                    fieldErrors.answers && 'ring-2 ring-red-500 dark:ring-red-600'
                   )}
                 >
                   {answers.length > 0
@@ -641,7 +622,7 @@ export function MarketPreview(props: {
           <Col
             className={clsx(
               'gap-2 rounded-lg transition-all',
-              fieldErrors.answers ? 'ring-2 ring-red-200 p-3' : ''
+              fieldErrors.answers ? 'ring-2 ring-red-500 dark:ring-red-600 focus-within:ring-2 focus-within:ring-red-500 dark:focus-within:ring-red-600 p-3' : ''
             )}
           >
             {answers.length > 0 ? (
@@ -997,7 +978,7 @@ export function MarketPreview(props: {
           <Col
             className={clsx(
               'gap-2 rounded-lg transition-all',
-              fieldErrors.answers ? 'ring-2 ring-red-200 p-3' : ''
+              fieldErrors.answers ? 'ring-2 ring-red-500 dark:ring-red-600 focus-within:ring-2 focus-within:ring-red-500 dark:focus-within:ring-red-600 p-3' : ''
             )}
           >
             {answers.length > 0 ? (
@@ -1869,7 +1850,7 @@ export function MarketPreview(props: {
               className={clsx(
                 'text-ink-600 rounded-md text-sm transition-all',
                 fieldErrors.description
-                  ? 'ring-2 ring-red-200'
+                  ? 'ring-2 ring-red-500 dark:ring-red-600 focus-within:ring-2 focus-within:ring-red-500 dark:focus-within:ring-red-600'
                   : ''
               )}
             >
@@ -1942,28 +1923,14 @@ export function MarketPreview(props: {
       )}
 
       {/* Footer Info */}
-      <Row className="text-ink-500 items-center gap-3 text-xs">
-        {!isPoll && (
-          <Row className="items-center gap-1">
-            <span>
-              {getLiquidityDisplayText(liquidityTier, answers.length)}
-            </span>
-            {answers.length > 0 &&
-              (isMultipleChoice || isNumeric || isDate) && (
-                <InfoTooltip text="Adding more answers later may reduce the bonus." />
-              )}
-          </Row>
-        )}
-        {min !== undefined && max !== undefined && (
-          <>
-            <span>·</span>
-            <span>
-              Range: {min} - {max}
-              {unit ? ` ${unit}` : ''}
-            </span>
-          </>
-        )}
-      </Row>
+      {min !== undefined && max !== undefined && (
+        <Row className="text-ink-500 items-center gap-3 text-xs">
+          <span>
+            Range: {min} - {max}
+            {unit ? ` ${unit}` : ''}
+          </span>
+        </Row>
+      )}
     </Col>
   )
 }

@@ -12,7 +12,8 @@ import { Button } from 'web/components/buttons/button'
 
 import { TokenNumber } from '../widgets/token-number'
 import { liquidityTiers } from 'common/tier'
-import { getAnte } from 'common/economy'
+import { getAnte, getUniqueBettorBonusAmount } from 'common/economy'
+import { formatMoney } from 'common/util/format'
 
 export const CostSection = (props: {
   balance: number
@@ -61,10 +62,17 @@ function PriceSection(props: {
 }) {
   const { liquidityTier, setLiquidityTier, numAnswers, outcomeType } = props
 
+  const bonus = getUniqueBettorBonusAmount(liquidityTier, numAnswers ?? 0)
+
   return (
     <Col className="w-full gap-2">
       <div className="text-ink-600 text-sm">
-        More liquidity attracts more traders but has a higher cost.
+        More liquidity attracts more traders but has a higher cost.{' '}
+        <span className="text-ink-700">
+          {formatMoney(liquidityTier)} liquidity, earn{' '}
+          <span className="text-ink-900 font-semibold">{formatMoney(bonus)}</span>{' '}
+          for every unique trader
+        </span>
       </div>
       <div className="grid w-full grid-cols-2 gap-2 sm:grid-cols-4">
         {liquidityTiers.map((tier) => (
