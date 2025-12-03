@@ -238,11 +238,24 @@ export function NewContractPanel(props: {
     [fieldErrors]
   )
 
+  // Helper to clear specific error
+  const clearError = (errorKey: string) => {
+    if (fieldErrors[errorKey]) {
+      setFieldErrors((prev) => {
+        const next = { ...prev }
+        delete next[errorKey]
+        return next
+      })
+    }
+  }
+
   // Reset all form fields
   const handleReset = () => {
     setFormState(getEmptyFormState())
     setHasManuallyEditedCloseDate(false)
     setShowResetConfirmation(false)
+    setFieldErrors({})
+    setSubmitAttemptCount(0)
     if (descriptionEditor) {
       descriptionEditor.commands.clearContent()
     }
@@ -508,6 +521,8 @@ export function NewContractPanel(props: {
       if (result?.answers && result.answers.length > 0) {
         // Append new answers to existing ones
         updateField('answers', [...formState.answers, ...result.answers])
+        // Clear answers error when generating answers
+        clearError('answers')
       }
       if (result?.addAnswersMode) {
         updateField('addAnswersMode', result.addAnswersMode)
@@ -582,8 +597,9 @@ export function NewContractPanel(props: {
       } else {
         setDateThresholds({ answers, midpoints: result.midpoints })
       }
-    } catch (e) {
+    } catch (e: any) {
       console.error('Error regenerating date midpoints:', e)
+      toast.error(e.message || 'Failed to regenerate date ranges')
     }
   }
 
@@ -629,8 +645,9 @@ export function NewContractPanel(props: {
       } else {
         setNumericThresholds({ answers, midpoints: result.midpoints })
       }
-    } catch (e) {
+    } catch (e: any) {
       console.error('Error regenerating numeric midpoints:', e)
+      toast.error(e.message || 'Failed to regenerate numeric ranges')
     }
   }
 
@@ -711,6 +728,9 @@ export function NewContractPanel(props: {
       midpoints:
         newType === 'MULTI_NUMERIC' || newType === 'DATE' ? prev.midpoints : [],
     }))
+
+    // Clear all field errors when switching market types
+    setFieldErrors({})
 
     // Focus the question input after type change
     setTimeout(() => {
@@ -1046,7 +1066,11 @@ export function NewContractPanel(props: {
             }}
             triggerTopicsModalOpen={triggerTopicsModalOpen}
             isGeneratingDateRanges={isGeneratingDateRanges}
-            onDateRangeChange={(field, value) => updateField(field, value)}
+            onDateRangeChange={(field, value) => {
+              updateField(field, value)
+              // Clear range error when date range fields are updated
+              clearError('range')
+            }}
             onGenerateDateRanges={async () => {
               if (
                 !formState.question ||
@@ -1082,6 +1106,10 @@ export function NewContractPanel(props: {
                   updateField('midpoints', result.thresholds.midpoints)
                 }
 
+                // Clear both range and answers errors when generating ranges
+                clearError('range')
+                clearError('answers')
+
                 // Set close date to the maximum date from the range (maxString)
                 // The API will parse maxString to a date, so we can use that as the close date
                 if (formState.maxString) {
@@ -1114,7 +1142,11 @@ export function NewContractPanel(props: {
               }
             }}
             isGeneratingNumericRanges={isGeneratingNumericRanges}
-            onNumericRangeChange={(field, value) => updateField(field, value)}
+            onNumericRangeChange={(field, value) => {
+              updateField(field, value)
+              // Clear range error when numeric range fields are updated
+              clearError('range')
+            }}
             onGenerateNumericRanges={async () => {
               if (
                 !formState.question ||
@@ -1150,6 +1182,10 @@ export function NewContractPanel(props: {
                   updateField('answers', result.thresholds.answers)
                   updateField('midpoints', result.thresholds.midpoints)
                 }
+
+                // Clear both range and answers errors when generating ranges
+                clearError('range')
+                clearError('answers')
 
                 // Auto-set close date using binary-style logic (1 year from now)
                 if (!hasManuallyEditedCloseDate) {
