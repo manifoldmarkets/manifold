@@ -46,7 +46,7 @@ export const CloseTimeSection = (props: {
   if (outcomeType == 'POLL') {
     closeDateMap['Never'] = NEVER
   }
-  if (outcomeType == 'STONK' || outcomeType == 'BOUNTIED_QUESTION') {
+  if (outcomeType == 'STONK') {
     return null
   }
   return (

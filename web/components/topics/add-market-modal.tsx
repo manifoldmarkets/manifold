@@ -8,9 +8,11 @@ import { SelectMarkets } from '../contract-select-modal'
 import { Col } from '../layout/col'
 import { Modal, SCROLLABLE_MODAL_CLASS } from '../layout/modal'
 import { UncontrolledTabs } from '../layout/tabs'
-import { NewContractPanel } from '../new-contract/new-contract-panel'
+import {
+  NewContractPanel,
+  NewQuestionParams,
+} from '../new-contract/new-contract-panel'
 import { AddContractToGroupPermissionType } from './add-contract-to-group-modal'
-import { NewQuestionParams } from 'web/components/new-contract/new-contract-panel'
 import { DAY_MS } from 'common/util/time'
 
 export function AddMarketToGroupModal(props: {
