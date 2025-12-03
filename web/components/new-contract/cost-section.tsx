@@ -70,7 +70,9 @@ function PriceSection(props: {
         More liquidity attracts more traders but has a higher cost.{' '}
         <span className="text-ink-700">
           {formatMoney(liquidityTier)} liquidity, earn{' '}
-          <span className="text-ink-900 font-semibold">{formatMoney(bonus)}</span>{' '}
+          <span className="text-ink-900 font-semibold">
+            {formatMoney(bonus)}
+          </span>{' '}
           for every unique trader
         </span>
       </div>

@@ -12,10 +12,7 @@ import { ChevronDownIcon, ChevronUpIcon } from '@heroicons/react/solid'
 export function ProminentTypeSelector(props: {
   currentType: CreateableOutcomeType | null
   currentShouldAnswersSumToOne?: boolean
-  onSelectType: (
-    type: CreateableOutcomeType,
-    shouldSumToOne: boolean
-  ) => void
+  onSelectType: (type: CreateableOutcomeType, shouldSumToOne: boolean) => void
 }) {
   const { currentType, currentShouldAnswersSumToOne, onSelectType } = props
   const [isExpanded, setIsExpanded] = useState(!currentType) // Start expanded if no type selected
@@ -92,10 +89,12 @@ export function ProminentTypeSelector(props: {
                 >
                   {type.label}
                 </span>
-                <ChevronDownIcon className={clsx(
-                  "text-ink-400 h-3 w-3 sm:h-4 sm:w-4 hidden sm:block",
-                  isSelected ? "sm:opacity-100" : "sm:opacity-0"
-                )} />
+                <ChevronDownIcon
+                  className={clsx(
+                    'text-ink-400 hidden h-3 w-3 sm:block sm:h-4 sm:w-4',
+                    isSelected ? 'sm:opacity-100' : 'sm:opacity-0'
+                  )}
+                />
               </button>
             )
           })}

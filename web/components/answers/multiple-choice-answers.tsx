@@ -228,8 +228,17 @@ export const AnswerInput = (props: {
   placeholder?: string
   className?: string
 }) => {
-  const { id, disabled, value, onChange, onUp, onDown, onDelete, placeholder, className } =
-    props
+  const {
+    id,
+    disabled,
+    value,
+    onChange,
+    onUp,
+    onDown,
+    onDelete,
+    placeholder,
+    className,
+  } = props
 
   const handleFocus = (e: React.FocusEvent<HTMLTextAreaElement>) => {
     // On mobile, scroll the input into view when keyboard appears
@@ -242,7 +251,7 @@ export const AnswerInput = (props: {
   return (
     <ExpandingInput
       id={id}
-      className={className || "w-full sm:ml-2"}
+      className={className || 'w-full sm:ml-2'}
       disabled={disabled}
       placeholder={placeholder}
       value={value}

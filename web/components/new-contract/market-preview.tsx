@@ -17,7 +17,13 @@ import { Input } from 'web/components/widgets/input'
 import dayjs from 'dayjs'
 import { Group } from 'common/group'
 import { TopicTag } from '../topics/topic-tag'
-import { PlusIcon, EyeIcon, EyeOffIcon, XIcon, PencilIcon } from '@heroicons/react/solid'
+import {
+  PlusIcon,
+  EyeIcon,
+  EyeOffIcon,
+  XIcon,
+  PencilIcon,
+} from '@heroicons/react/solid'
 import { Modal } from '../layout/modal'
 import { ContractTopicsList } from '../topics/contract-topics-list'
 import { InfoTooltip } from '../widgets/info-tooltip'
@@ -180,7 +186,7 @@ export function MarketPreview(props: {
     if (!selector) return
 
     // Try each selector in the comma-separated list
-    const selectors = selector.split(',').map(s => s.trim())
+    const selectors = selector.split(',').map((s) => s.trim())
     let element: Element | null = null
 
     for (const sel of selectors) {
@@ -455,10 +461,10 @@ export function MarketPreview(props: {
           }}
           placeholder="What's your question?"
           className={clsx(
-            "text-ink-1000 placeholder:text-ink-400 bg-canvas-0 w-full resize-none overflow-hidden rounded-md border px-4 py-3 text-lg font-semibold shadow-sm transition-colors focus:outline-none sm:text-xl",
+            'text-ink-1000 placeholder:text-ink-400 bg-canvas-0 w-full resize-none overflow-hidden rounded-md border px-4 py-3 text-lg font-semibold shadow-sm transition-colors focus:outline-none sm:text-xl',
             fieldErrors.question
-              ? "border-0 ring-2 ring-red-500 dark:ring-red-600 focus:ring-2 focus:ring-red-500 dark:focus:ring-red-600 hover:ring-red-500 dark:hover:ring-red-600"
-              : "border-ink-300 hover:ring-primary-500 hover:ring-1 focus:ring-primary-500 focus:ring-1 focus:border-primary-500"
+              ? 'border-0 ring-2 ring-red-500 hover:ring-red-500 focus:ring-2 focus:ring-red-500 dark:ring-red-600 dark:hover:ring-red-600 dark:focus:ring-red-600'
+              : 'border-ink-300 hover:ring-primary-500 focus:ring-primary-500 focus:border-primary-500 hover:ring-1 focus:ring-1'
           )}
           rows={1}
           maxLength={120}
@@ -481,7 +487,9 @@ export function MarketPreview(props: {
           <SimilarContractsSection
             similarContracts={similarContracts}
             setSimilarContracts={setSimilarContracts}
-            setDismissedSimilarContractTitles={setDismissedSimilarContractTitles}
+            setDismissedSimilarContractTitles={
+              setDismissedSimilarContractTitles
+            }
             outcomeType={outcomeType}
             question={question || ''}
           />
@@ -570,7 +578,8 @@ export function MarketPreview(props: {
                   }
                   loading={isGeneratingDateRanges}
                   className={clsx(
-                    fieldErrors.answers && 'ring-2 ring-red-500 dark:ring-red-600'
+                    fieldErrors.answers &&
+                      'ring-2 ring-red-500 dark:ring-red-600'
                   )}
                 >
                   {answers.length > 0
@@ -667,7 +676,8 @@ export function MarketPreview(props: {
                   }
                   loading={isGeneratingNumericRanges}
                   className={clsx(
-                    fieldErrors.answers && 'ring-2 ring-red-500 dark:ring-red-600'
+                    fieldErrors.answers &&
+                      'ring-2 ring-red-500 dark:ring-red-600'
                   )}
                 >
                   {answers.length > 0
@@ -687,7 +697,9 @@ export function MarketPreview(props: {
             id="answers-section"
             className={clsx(
               'gap-2 rounded-lg transition-all',
-              fieldErrors.answers ? 'ring-2 ring-red-500 dark:ring-red-600 focus-within:ring-2 focus-within:ring-red-500 dark:focus-within:ring-red-600 p-3' : ''
+              fieldErrors.answers
+                ? 'p-3 ring-2 ring-red-500 focus-within:ring-2 focus-within:ring-red-500 dark:ring-red-600 dark:focus-within:ring-red-600'
+                : ''
             )}
           >
             {answers.length > 0 ? (
@@ -1043,7 +1055,9 @@ export function MarketPreview(props: {
           <Col
             className={clsx(
               'gap-2 rounded-lg transition-all',
-              fieldErrors.answers ? 'ring-2 ring-red-500 dark:ring-red-600 focus-within:ring-2 focus-within:ring-red-500 dark:focus-within:ring-red-600 p-3' : ''
+              fieldErrors.answers
+                ? 'p-3 ring-2 ring-red-500 focus-within:ring-2 focus-within:ring-red-500 dark:ring-red-600 dark:focus-within:ring-red-600'
+                : ''
             )}
           >
             {answers.length > 0 ? (
@@ -1319,7 +1333,7 @@ export function MarketPreview(props: {
                   <Col
                     className={clsx(
                       'gap-2 rounded-lg transition-all',
-                      fieldErrors.answers ? 'ring-2 ring-red-200 p-3' : ''
+                      fieldErrors.answers ? 'p-3 ring-2 ring-red-200' : ''
                     )}
                   >
                     {answers.map((answer, i) => (
@@ -1698,7 +1712,7 @@ export function MarketPreview(props: {
                   <Col
                     className={clsx(
                       'gap-2 rounded-lg transition-all',
-                      fieldErrors.answers ? 'ring-2 ring-red-200 p-3' : ''
+                      fieldErrors.answers ? 'p-3 ring-2 ring-red-200' : ''
                     )}
                   >
                     {answers.map((answer, i) => (
@@ -1915,7 +1929,7 @@ export function MarketPreview(props: {
               className={clsx(
                 'text-ink-600 rounded-md text-sm transition-all',
                 fieldErrors.description
-                  ? 'ring-2 ring-red-500 dark:ring-red-600 focus-within:ring-2 focus-within:ring-red-500 dark:focus-within:ring-red-600'
+                  ? 'ring-2 ring-red-500 focus-within:ring-2 focus-within:ring-red-500 dark:ring-red-600 dark:focus-within:ring-red-600'
                   : ''
               )}
             >
@@ -2024,8 +2038,7 @@ function BinaryProbabilitySection(props: {
     <>
       <Row className="items-center gap-2">
         <span className="text-ink-700 text-2xl">
-          {probability}%{' '}
-          <span className="text-base">chance</span>
+          {probability}% <span className="text-base">chance</span>
         </span>
         {isEditable && onProbabilityChange && (
           <button
@@ -2045,7 +2058,9 @@ function BinaryProbabilitySection(props: {
               Set Starting Probability
             </h2>
             <p className="text-ink-600 text-sm">
-              Your best guess at the probability that this market resolves YES. Determines how liquidity is dispersed. If you don't know, leave it at 50%.
+              Your best guess at the probability that this market resolves YES.
+              Determines how liquidity is dispersed. If you don't know, leave it
+              at 50%.
             </p>
           </Col>
 
@@ -2061,7 +2076,8 @@ function BinaryProbabilitySection(props: {
                   className="h-[60px] w-full !text-xl"
                   value={localProb}
                   onChange={(e) => {
-                    const val = e.target.value === '' ? 50 : Number(e.target.value)
+                    const val =
+                      e.target.value === '' ? 50 : Number(e.target.value)
                     handleProbChange(val)
                   }}
                 />

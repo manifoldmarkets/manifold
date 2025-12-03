@@ -101,7 +101,15 @@ export function UserLink(props: {
   hideBadge?: boolean
   marketCreator?: boolean
 }) {
-  const { user, className, short, maxLength, noLink, hideBadge, marketCreator } = props
+  const {
+    user,
+    className,
+    short,
+    maxLength,
+    noLink,
+    hideBadge,
+    marketCreator,
+  } = props
 
   if (!user || !user.name || !user.username) {
     // skeleton
@@ -114,7 +122,7 @@ export function UserLink(props: {
   const fresh = createdTime ? isFresh(createdTime) : false
   const shortName = short ? shortenName(name, maxLength) : name
   const children = (
-    <span className="inline-flex flex-row items-center gap-1 flex-nowrap">
+    <span className="inline-flex flex-row flex-nowrap items-center gap-1">
       <span className="max-w-[200px] truncate">{shortName}</span>
       {!hideBadge && (
         <UserBadge
@@ -129,7 +137,10 @@ export function UserLink(props: {
   if (noLink) {
     return (
       <div
-        className={clsx('inline-flex flex-row items-center gap-1 flex-nowrap', className)}
+        className={clsx(
+          'inline-flex flex-row flex-nowrap items-center gap-1',
+          className
+        )}
       >
         {children}
       </div>
@@ -140,7 +151,7 @@ export function UserLink(props: {
       href={`/${username}`}
       className={clsx(
         linkClass,
-        'inline-flex flex-row items-center gap-1 flex-nowrap',
+        'inline-flex flex-row flex-nowrap items-center gap-1',
         className
       )}
       onClick={(e) => e.stopPropagation()}

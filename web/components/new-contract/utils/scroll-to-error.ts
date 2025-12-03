@@ -6,7 +6,8 @@ import { ValidationErrors } from 'web/lib/validation/contract-validation'
 const FIELD_SELECTORS: Record<string, string> = {
   question: '#market-preview-title-input',
   description: '.ProseMirror',
-  answers: '#answer-input-0, #generate-date-ranges-button, #generate-numeric-ranges-button, textarea[placeholder="Answer 1"], textarea[placeholder="Option 1"]',
+  answers:
+    '#answer-input-0, #generate-date-ranges-button, #generate-numeric-ranges-button, textarea[placeholder="Answer 1"], textarea[placeholder="Option 1"]',
   range: 'input[type="number"][name="min"], input[type="number"][name="max"]',
   totalBounty: 'input[name="bounty"]',
   closeDate: 'input[type="date"]',
@@ -36,7 +37,7 @@ export function scrollToFirstError(errors: ValidationErrors): void {
   }
 
   // Try each selector in the comma-separated list
-  const selectors = selector.split(',').map(s => s.trim())
+  const selectors = selector.split(',').map((s) => s.trim())
   let element: Element | null = null
 
   for (const sel of selectors) {

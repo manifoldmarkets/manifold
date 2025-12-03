@@ -108,10 +108,7 @@ export function ActionBar(props: ActionBarProps) {
       <Button
         color="green"
         size={buttonSize}
-        className={clsx(
-          'w-full',
-          shouldShake && 'animate-shake'
-        )}
+        className={clsx('w-full', shouldShake && 'animate-shake')}
         onClick={onSubmit}
         loading={isSubmitting}
       >

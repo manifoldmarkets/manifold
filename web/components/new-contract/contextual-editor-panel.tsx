@@ -51,15 +51,17 @@ export function ContextualEditorPanel(props: {
   return (
     <Col
       className={clsx(
-        'gap-4 overflow-y-auto rounded-lg border-0 p-4 shadow-none outline-none ring-offset-0 focus:outline-none focus:ring-offset-0 focus-within:outline-none focus-visible:outline-none',
+        'gap-4 overflow-y-auto rounded-lg border-0 p-4 shadow-none outline-none ring-offset-0 focus-within:outline-none focus:outline-none focus:ring-offset-0 focus-visible:outline-none',
         hasBalanceError
-          ? 'ring-2 ring-red-500 dark:ring-red-600 focus-within:ring-2 focus-within:ring-red-500 dark:focus-within:ring-red-600'
+          ? 'ring-2 ring-red-500 focus-within:ring-2 focus-within:ring-red-500 dark:ring-red-600 dark:focus-within:ring-red-600'
           : 'ring-1 ring-transparent'
       )}
     >
       {isPoll ? (
         <Col className="gap-2">
-          <span className="text-ink-700 text-sm font-semibold">About polls</span>
+          <span className="text-ink-700 text-sm font-semibold">
+            About polls
+          </span>
           <p className="text-ink-600 text-sm">
             This is a poll, people can select an answer but they cannot bet. You
             may want to add a "see results" answer, because one is not added

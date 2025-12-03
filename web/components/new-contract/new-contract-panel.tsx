@@ -13,7 +13,11 @@ import {
   ValidationErrors,
 } from 'web/lib/validation/contract-validation'
 import { formatMoney } from 'common/util/format'
-import { api, getSimilarGroupsToContract, searchContracts } from 'web/lib/api/api'
+import {
+  api,
+  getSimilarGroupsToContract,
+  searchContracts,
+} from 'web/lib/api/api'
 import { track } from 'web/lib/service/analytics'
 import Router from 'next/router'
 import { usePersistentLocalState } from 'web/hooks/use-persistent-local-state'
@@ -302,9 +306,10 @@ export function NewContractPanel(props: {
         })
 
         // Filter to contracts with >25% similarity
-        const similar = contracts?.filter(
-          (c) => compareTwoStrings(c.question, question) > 0.25
-        ) || []
+        const similar =
+          contracts?.filter(
+            (c) => compareTwoStrings(c.question, question) > 0.25
+          ) || []
 
         setSimilarContracts(similar)
       } catch (error) {
@@ -1224,7 +1229,9 @@ export function NewContractPanel(props: {
             }}
             similarContracts={similarContracts}
             setSimilarContracts={setSimilarContracts}
-            setDismissedSimilarContractTitles={setDismissedSimilarContractTitles}
+            setDismissedSimilarContractTitles={
+              setDismissedSimilarContractTitles
+            }
             fieldErrors={submitAttemptCount > 0 ? fieldErrors : {}}
             isEditable
           />
