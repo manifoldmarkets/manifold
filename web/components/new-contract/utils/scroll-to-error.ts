@@ -6,7 +6,7 @@ import { ValidationErrors } from 'web/lib/validation/contract-validation'
 const FIELD_SELECTORS: Record<string, string> = {
   question: '#market-preview-title-input',
   description: '.ProseMirror',
-  answers: '#generate-date-ranges-button, #generate-numeric-ranges-button, textarea[placeholder="Answer 1"], textarea[placeholder="Option 1"]',
+  answers: '#answer-input-0, #generate-date-ranges-button, #generate-numeric-ranges-button, textarea[placeholder="Answer 1"], textarea[placeholder="Option 1"]',
   range: 'input[type="number"][name="min"], input[type="number"][name="max"]',
   totalBounty: 'input[name="bounty"]',
   closeDate: 'input[type="date"]',

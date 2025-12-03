@@ -29,6 +29,7 @@ import { MarketTypeSuggestionBanner } from './market-type-suggestion-banner'
 import { useIsMobile } from 'web/hooks/use-is-mobile'
 import { ProbabilitySlider } from '../widgets/probability-input'
 import { ValidationErrors } from 'web/lib/validation/contract-validation'
+import { SimilarContractsSection } from './similar-contracts-section'
 
 export type PreviewContractData = {
   question: string
@@ -104,6 +105,11 @@ export function MarketPreview(props: {
     addAnswersMode?: 'DISABLED' | 'ONLY_CREATOR' | 'ANYONE',
     removeOtherAnswer?: boolean
   ) => void
+  similarContracts?: Contract[]
+  setSimilarContracts?: (contracts: Contract[]) => void
+  setDismissedSimilarContractTitles?: (
+    func: (titles: string[]) => string[]
+  ) => void
   fieldErrors?: ValidationErrors
 }) {
   const {
@@ -135,6 +141,9 @@ export function MarketPreview(props: {
     onGenerateAnswers,
     isGeneratingAnswers = false,
     onSwitchMarketType,
+    similarContracts = [],
+    setSimilarContracts,
+    setDismissedSimilarContractTitles,
     fieldErrors = {},
   } = props
   const [isTopicsModalOpen, setIsTopicsModalOpen] = useState(false)
@@ -153,6 +162,36 @@ export function MarketPreview(props: {
       handleSetTopicsModal(true)
     }
   }, [triggerTopicsModalOpen])
+
+  // Scroll to first error field when validation errors appear
+  useEffect(() => {
+    if (!fieldErrors || Object.keys(fieldErrors).length === 0) return
+
+    const firstErrorKey = Object.keys(fieldErrors)[0]
+
+    // Map error keys to element selectors
+    const errorElementMap: Record<string, string> = {
+      question: '#market-preview-title-input',
+      answers: '#answers-section',
+      range: '#date-range-section, #numeric-range-section',
+    }
+
+    const selector = errorElementMap[firstErrorKey]
+    if (!selector) return
+
+    // Try each selector in the comma-separated list
+    const selectors = selector.split(',').map(s => s.trim())
+    let element: Element | null = null
+
+    for (const sel of selectors) {
+      element = document.querySelector(sel)
+      if (element) break
+    }
+
+    if (element) {
+      element.scrollIntoView({ behavior: 'smooth', block: 'center' })
+    }
+  }, [fieldErrors])
 
   const {
     question,
@@ -435,6 +474,19 @@ export function MarketPreview(props: {
         </div>
       )}
 
+      {/* Similar Contracts Warning */}
+      {similarContracts.length > 0 &&
+        setSimilarContracts &&
+        setDismissedSimilarContractTitles && (
+          <SimilarContractsSection
+            similarContracts={similarContracts}
+            setSimilarContracts={setSimilarContracts}
+            setDismissedSimilarContractTitles={setDismissedSimilarContractTitles}
+            outcomeType={outcomeType}
+            question={question || ''}
+          />
+        )}
+
       {/* Market Type Suggestion Banner */}
       {isEditable && !dismissedSuggestion && onSwitchMarketType && question && (
         <>
@@ -459,7 +511,13 @@ export function MarketPreview(props: {
 
       {/* Date Range Inputs - Below Question for DATE markets */}
       {isDate && isEditable && onDateRangeChange && (
-        <Col className="-mx-4 -mb-1 gap-2 rounded-lg px-4 py-3">
+        <Col
+          id="date-range-section"
+          className={clsx(
+            '-mx-4 -mb-1 gap-2 rounded-lg px-4 py-3 transition-all',
+            fieldErrors.range ? 'ring-2 ring-red-500 dark:ring-red-600' : ''
+          )}
+        >
           <Col className="gap-0.5">
             <Row className="items-baseline gap-1">
               <span className="text-ink-700 text-sm font-medium">
@@ -527,7 +585,13 @@ export function MarketPreview(props: {
 
       {/* Numeric Range Inputs - Below Question for MULTI_NUMERIC markets */}
       {isNumeric && isEditable && onNumericRangeChange && (
-        <Col className="-mx-4 -mb-1 gap-2 rounded-lg px-4 py-3">
+        <Col
+          id="numeric-range-section"
+          className={clsx(
+            '-mx-4 -mb-1 gap-2 rounded-lg px-4 py-3 transition-all',
+            fieldErrors.range ? 'ring-2 ring-red-500 dark:ring-red-600' : ''
+          )}
+        >
           <Col className="gap-0.5">
             <Row className="items-baseline gap-1">
               <span className="text-ink-700 text-sm font-medium">
@@ -620,6 +684,7 @@ export function MarketPreview(props: {
       <Col className="gap-3">
         {isMultipleChoice && (
           <Col
+            id="answers-section"
             className={clsx(
               'gap-2 rounded-lg transition-all',
               fieldErrors.answers ? 'ring-2 ring-red-500 dark:ring-red-600 focus-within:ring-2 focus-within:ring-red-500 dark:focus-within:ring-red-600 p-3' : ''
