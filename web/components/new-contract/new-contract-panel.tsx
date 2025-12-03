@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from 'react'
 import clsx from 'clsx'
 import { User } from 'common/user'
-import { CreateableOutcomeType } from 'common/contract'
+import { CreateableOutcomeType, Contract } from 'common/contract'
 import { Col } from '../layout/col'
 import { Row } from '../layout/row'
 import { Button } from '../buttons/button'
@@ -13,7 +13,7 @@ import {
   ValidationErrors,
 } from 'web/lib/validation/contract-validation'
 import { formatMoney } from 'common/util/format'
-import { api, getSimilarGroupsToContract } from 'web/lib/api/api'
+import { api, getSimilarGroupsToContract, searchContracts } from 'web/lib/api/api'
 import { track } from 'web/lib/service/analytics'
 import Router from 'next/router'
 import { usePersistentLocalState } from 'web/hooks/use-persistent-local-state'
@@ -36,6 +36,7 @@ import { toast } from 'react-hot-toast'
 import { richTextToString } from 'common/util/parse'
 import { RelativeTimestamp } from '../relative-timestamp'
 import { debounce } from 'lodash'
+import { compareTwoStrings } from 'string-similarity'
 import { FaQuestion, FaUsers } from 'react-icons/fa'
 import { ExpandSection } from '../explainer-panel'
 import { WEEK_MS } from 'common/util/time'
@@ -123,6 +124,11 @@ export function NewContractPanel(props: {
   const [showDraftsModal, setShowDraftsModal] = useState(false)
   const [isSavingDraft, setIsSavingDraft] = useState(false)
   const [deletingDraftId, setDeletingDraftId] = useState<number | null>(null)
+
+  // Similar/duplicate contracts detection
+  const [similarContracts, setSimilarContracts] = useState<Contract[]>([])
+  const [dismissedSimilarContractTitles, setDismissedSimilarContractTitles] =
+    useState<string[]>([])
 
   // Cache for DATE market ranges (to avoid regenerating on toggle)
   const [dateBuckets, setDateBuckets] = useState<{
@@ -258,6 +264,57 @@ export function NewContractPanel(props: {
       return []
     }
   }
+
+  // Search for similar contracts to warn about duplicates
+  const searchSimilarContracts = useCallback(
+    async (question: string) => {
+      const trimmed = question.toLowerCase().trim()
+      if (trimmed === '') {
+        setSimilarContracts([])
+        return
+      }
+
+      // Don't search if user already dismissed this question
+      if (dismissedSimilarContractTitles.includes(trimmed)) {
+        return
+      }
+
+      try {
+        const contracts = await searchContracts({
+          term: question,
+          contractType: formState.outcomeType || undefined,
+          filter: 'open',
+          limit: 10,
+          sort: 'most-popular',
+        })
+
+        // Filter to contracts with >25% similarity
+        const similar = contracts?.filter(
+          (c) => compareTwoStrings(c.question, question) > 0.25
+        ) || []
+
+        setSimilarContracts(similar)
+      } catch (error) {
+        console.error('Error searching for similar contracts:', error)
+      }
+    },
+    [dismissedSimilarContractTitles, formState.outcomeType]
+  )
+
+  // Debounced search
+  const debouncedSearchSimilar = useCallback(
+    debounce((question: string) => searchSimilarContracts(question), 500),
+    [searchSimilarContracts]
+  )
+
+  // Search when question changes
+  useEffect(() => {
+    if (formState.question) {
+      debouncedSearchSimilar(formState.question)
+    } else {
+      setSimilarContracts([])
+    }
+  }, [formState.question, debouncedSearchSimilar])
 
   const saveDraftToDb = async () => {
     // Don't save if no outcome type is selected
@@ -479,9 +536,14 @@ export function NewContractPanel(props: {
         addAnswersMode: formState.addAnswersMode,
       })
       if (result.description && descriptionEditor) {
+        // Remove any <thinking> tags and their content from AI output
+        const cleanedDescription = result.description.replace(
+          /<thinking>[\s\S]*?<\/thinking>/gi,
+          ''
+        )
         const endPos = descriptionEditor.state.doc.content.size
         descriptionEditor.commands.setTextSelection(endPos)
-        descriptionEditor.commands.insertContent(result.description)
+        descriptionEditor.commands.insertContent(cleanedDescription)
       }
     } catch (e) {
       console.error('Error generating description:', e)
@@ -1124,6 +1186,9 @@ export function NewContractPanel(props: {
                 updateField('answers', filteredAnswers)
               }
             }}
+            similarContracts={similarContracts}
+            setSimilarContracts={setSimilarContracts}
+            setDismissedSimilarContractTitles={setDismissedSimilarContractTitles}
             fieldErrors={submitAttemptCount > 0 ? fieldErrors : {}}
             isEditable
           />
