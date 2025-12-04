@@ -19,10 +19,13 @@ import { filterDefined } from 'common/util/array'
 import { floatingEqual } from 'common/util/math'
 import { removeUndefinedProps } from 'common/util/object'
 import { randomString } from 'common/util/random'
-import { groupBy, partition, sumBy } from 'lodash'
+import { groupBy, partition, sumBy, uniq } from 'lodash'
 import { createNewAnswerOnContractNotification } from 'shared/create-notification'
 import { betsQueue } from 'shared/helpers/fn-queue'
-import { getContractMetrics } from 'shared/helpers/user-contract-metrics'
+import {
+  bulkUpdateContractMetricsQuery,
+  getContractMetrics,
+} from 'shared/helpers/user-contract-metrics'
 import {
   getAnswersForContract,
   insertAnswer,
@@ -31,6 +34,7 @@ import {
 } from 'shared/supabase/answers'
 import {
   bulkInsertBets,
+  bulkInsertBetsQuery,
   cancelLimitOrders,
   insertBet,
 } from 'shared/supabase/bets'
@@ -41,12 +45,19 @@ import {
   SupabaseTransaction,
 } from 'shared/supabase/init'
 import { insertLiquidity } from 'shared/supabase/liquidity'
-import { incrementBalance } from 'shared/supabase/users'
+import {
+  broadcastUserUpdates,
+  bulkIncrementBalancesQuery,
+  incrementBalance,
+  UserUpdate,
+} from 'shared/supabase/users'
 import { FieldVal } from 'shared/supabase/utils'
 import { runTransactionWithRetries } from 'shared/transact-with-retries'
 import { getContractSupabase, getUser, log } from 'shared/utils'
+import { broadcastUpdatedMetrics } from 'shared/websockets/helpers'
 import { APIError, APIHandler } from './helpers/endpoint'
 import { onlyUnbannedUsers } from './helpers/rate-limit'
+import { redeemShares } from './redeem-shares'
 export const createAnswerCPMM: APIHandler<'market/:contractId/answer'> =
   onlyUnbannedUsers(async (props, auth) => {
     const { contractId, text } = props
@@ -168,7 +179,12 @@ const createAnswerCpmmMain = async (
           answerCost
         )
         const updatedAnswers = await getAnswersForContract(pgTrans, contract.id)
-        await convertOtherAnswerShares(pgTrans, updatedAnswers, newAnswer.id)
+        await convertOtherAnswerShares(
+          pgTrans,
+          contract,
+          updatedAnswers,
+          newAnswer.id
+        )
       } else {
         await insertAnswer(pgTrans, newAnswer)
       }
@@ -396,6 +412,7 @@ async function createAnswerAndSumAnswersToOne(
 
 async function convertOtherAnswerShares(
   pgTrans: SupabaseDirectClient,
+  contract: CPMMMultiContract,
   answers: Answer[],
   newAnswerId: string
 ) {
@@ -505,6 +522,47 @@ async function convertOtherAnswerShares(
     true
   )
 
-  await bulkInsertBets(pgTrans, newBets, contractMetrics)
+  const { updatedMetrics } = await bulkInsertBets(
+    pgTrans,
+    newBets,
+    contractMetrics
+  )
+
+  // Redeem shares for users who may now have both YES and NO on the same answers
+  // This happens when a user had NO on Other AND NO on other answers - the conversion
+  // gives them YES shares on previous answers, creating YES+NO pairs that should redeem
+  const userIds = uniq(newBets.map((b) => b.userId))
+  const {
+    betsToInsert: redemptionBets,
+    updatedMetrics: redemptionUpdatedMetrics,
+    balanceUpdates,
+  } = await redeemShares(pgTrans, userIds, contract, newBets, updatedMetrics)
+
+  if (redemptionBets.length > 0) {
+    log('Redeeming shares after convertOtherAnswerShares', {
+      redemptionBetsCount: redemptionBets.length,
+      balanceUpdatesCount: balanceUpdates.length,
+    })
+
+    // Insert redemption bets, update metrics, and update balances in one query
+    // Note: We use the query builders instead of bulkInsertBets to avoid
+    // double-updating metrics (redeemShares already calculated the final metrics)
+    const insertBetsQuery = bulkInsertBetsQuery(redemptionBets)
+    const metricsQuery = bulkUpdateContractMetricsQuery(
+      redemptionUpdatedMetrics
+    )
+    const balanceQuery = bulkIncrementBalancesQuery(balanceUpdates)
+
+    const results = await pgTrans.multi(
+      `${insertBetsQuery}; ${metricsQuery}; ${balanceQuery}`
+    )
+
+    const userUpdates = results[2] as UserUpdate[]
+    if (userUpdates.length > 0) {
+      broadcastUserUpdates(userUpdates)
+    }
+    broadcastUpdatedMetrics(redemptionUpdatedMetrics)
+  }
+
   return answers
 }
