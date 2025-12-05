@@ -556,14 +556,9 @@ export function NewContractPanel(props: {
         addAnswersMode: formState.addAnswersMode,
       })
       if (result.description && descriptionEditor) {
-        // Remove any <thinking> tags and their content from AI output
-        const cleanedDescription = result.description.replace(
-          /<thinking>[\s\S]*?<\/thinking>/gi,
-          ''
-        )
         const endPos = descriptionEditor.state.doc.content.size
         descriptionEditor.commands.setTextSelection(endPos)
-        descriptionEditor.commands.insertContent(cleanedDescription)
+        descriptionEditor.commands.insertContent(result.description)
       }
     } catch (e) {
       console.error('Error generating description:', e)

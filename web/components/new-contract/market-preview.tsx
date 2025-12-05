@@ -332,6 +332,12 @@ export function MarketPreview(props: {
   const isDate = outcomeType === 'DATE'
   const isPseudoNumeric = outcomeType === 'PSEUDO_NUMERIC'
 
+  // For MULTIPLE_CHOICE, minimum answers depends on addAnswersMode
+  // When users can add answers later, only 1 answer is required
+  const minAnswersForMC =
+    isMultipleChoice && addAnswersMode !== 'DISABLED' ? 1 : 2
+  const canRemoveMCAnswer = answers.length > minAnswersForMC
+
   return (
     <Col
       className={clsx(
@@ -761,7 +767,7 @@ export function MarketPreview(props: {
                             }
                           }}
                           onDelete={() => {
-                            if (answers.length > 2) {
+                            if (canRemoveMCAnswer) {
                               const newAnswers = answers.filter(
                                 (_, idx) => idx !== i
                               )
@@ -792,7 +798,7 @@ export function MarketPreview(props: {
                       </Row>
 
                       {/* X button to remove - far right */}
-                      {isEditable && onEditAnswers && answers.length > 2 && (
+                      {isEditable && onEditAnswers && canRemoveMCAnswer && (
                         <button
                           onClick={(e) => {
                             e.preventDefault()
@@ -877,7 +883,7 @@ export function MarketPreview(props: {
                               }
                             }}
                             onDelete={() => {
-                              if (answers.length > 2) {
+                              if (canRemoveMCAnswer) {
                                 const newAnswers = answers.filter(
                                   (_, idx) => idx !== i
                                 )
@@ -892,7 +898,7 @@ export function MarketPreview(props: {
                         )}
 
                         {/* X button - positioned in top-right corner */}
-                        {isEditable && onEditAnswers && answers.length > 2 && (
+                        {isEditable && onEditAnswers && canRemoveMCAnswer && (
                           <button
                             onClick={(e) => {
                               e.preventDefault()

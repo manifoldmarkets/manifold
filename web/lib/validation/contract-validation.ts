@@ -98,7 +98,30 @@ export function validateContractForm(
 
   // Type-specific validation
   switch (outcomeType) {
-    case 'MULTIPLE_CHOICE':
+    case 'MULTIPLE_CHOICE': {
+      // When addAnswersMode is enabled, users can add answers later, so we only
+      // require 1 answer. When disabled, we require at least 2 answers.
+      const nonEmptyAnswers = answers
+        ? answers.filter((a) => a.trim().length > 0)
+        : []
+      const minRequired = state.addAnswersMode === 'DISABLED' ? MIN_ANSWERS : 1
+
+      if (!answers || answers.length < minRequired) {
+        errors.answers = `At least ${minRequired} answer${minRequired > 1 ? 's are' : ' is'} required`
+      } else if (nonEmptyAnswers.length < minRequired) {
+        errors.answers = `At least ${minRequired} non-empty answer${minRequired > 1 ? 's are' : ' is'} required`
+      }
+
+      // Check for duplicate answers
+      if (nonEmptyAnswers.length > 0) {
+        const uniqueAnswers = new Set(nonEmptyAnswers)
+        if (uniqueAnswers.size < nonEmptyAnswers.length) {
+          warnings.answers = 'Some answers are duplicates'
+        }
+      }
+      break
+    }
+
     case 'POLL':
       if (!answers || answers.length < MIN_ANSWERS) {
         errors.answers = `At least ${MIN_ANSWERS} answers are required`
