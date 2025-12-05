@@ -1447,7 +1447,7 @@ Parameters:
   - For example, if you request the 10 most recent bets and then perform a second query with `after=[the id of the 1st bet]`, you will receive up to 10 new bets, if available.
 - `beforeTime`: Optional. Include only bets created before this timestamp.
 - `afterTime`: Optional. Include only bets created after this timestamp.
-- `kinds`: Optional. Specifies subsets of bets to return. Possible kinds: `open-limit` (open limit orders, including ones on closed and reolved markets).
+- `kinds`: Optional. Specifies subsets of bets to return. Possible kinds: `open-limit` (open limit orders, including ones on closed and resolved markets).
 - `order`: Optional. `asc` or `desc` (default). The sorting order for returned bets.
 
 Example request:
