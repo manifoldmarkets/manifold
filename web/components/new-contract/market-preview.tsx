@@ -332,6 +332,22 @@ export function MarketPreview(props: {
   const isDate = outcomeType === 'DATE'
   const isPseudoNumeric = outcomeType === 'PSEUDO_NUMERIC'
 
+  // Determine if we can remove an answer based on addAnswersMode and shouldAnswersSumToOne
+  // - DISABLED (or undefined): need 2 user answers, so can only remove if > 2
+  // - Enabled with shouldAnswersSumToOne (has Other): can go to 0 user answers
+  // - Enabled without shouldAnswersSumToOne (no Other): need at least 1 user answer
+  const addAnswersModeEnabled =
+    addAnswersMode === 'ONLY_CREATOR' || addAnswersMode === 'ANYONE'
+  const hasOtherAnswer =
+    isMultipleChoice && addAnswersModeEnabled && shouldAnswersSumToOne === true
+  const canRemoveMCAnswer =
+    isMultipleChoice &&
+    (!addAnswersModeEnabled
+      ? answers.length > 2
+      : hasOtherAnswer
+        ? answers.length > 0
+        : answers.length > 1)
+
   return (
     <Col
       className={clsx(
@@ -702,7 +718,7 @@ export function MarketPreview(props: {
                 : ''
             )}
           >
-            {answers.length > 0 ? (
+            {answers.length > 0 || addAnswersModeEnabled ? (
               <>
                 {answers.map((answer, i) => (
                   <div
@@ -761,7 +777,7 @@ export function MarketPreview(props: {
                             }
                           }}
                           onDelete={() => {
-                            if (answers.length > 2) {
+                            if (canRemoveMCAnswer) {
                               const newAnswers = answers.filter(
                                 (_, idx) => idx !== i
                               )
@@ -792,7 +808,7 @@ export function MarketPreview(props: {
                       </Row>
 
                       {/* X button to remove - far right */}
-                      {isEditable && onEditAnswers && answers.length > 2 && (
+                      {isEditable && onEditAnswers && canRemoveMCAnswer && (
                         <button
                           onClick={(e) => {
                             e.preventDefault()
@@ -877,7 +893,7 @@ export function MarketPreview(props: {
                               }
                             }}
                             onDelete={() => {
-                              if (answers.length > 2) {
+                              if (canRemoveMCAnswer) {
                                 const newAnswers = answers.filter(
                                   (_, idx) => idx !== i
                                 )
@@ -892,7 +908,7 @@ export function MarketPreview(props: {
                         )}
 
                         {/* X button - positioned in top-right corner */}
-                        {isEditable && onEditAnswers && answers.length > 2 && (
+                        {isEditable && onEditAnswers && canRemoveMCAnswer && (
                           <button
                             onClick={(e) => {
                               e.preventDefault()

@@ -89,12 +89,18 @@ export const generateAIDescription: APIHandler<'generate-ai-description'> =
           webSearch: true,
         })
 
+        // Remove any <thinking> tags and their content from AI output
+        const cleanedResponse = gptResponse.replace(
+          /<thinking>[\s\S]*?<\/thinking>/gi,
+          ''
+        )
+
         track(auth.uid, 'generate-ai-description', {
           question: question.substring(0, 100),
           hasExistingDescription: !!description,
         })
 
-        return { description: anythingToRichText({ markdown: gptResponse }) }
+        return { description: anythingToRichText({ markdown: cleanedResponse }) }
       } catch (e) {
         log.error('Failed to generate description:', { e })
         throw new APIError(
