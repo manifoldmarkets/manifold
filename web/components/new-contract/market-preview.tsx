@@ -332,11 +332,21 @@ export function MarketPreview(props: {
   const isDate = outcomeType === 'DATE'
   const isPseudoNumeric = outcomeType === 'PSEUDO_NUMERIC'
 
-  // For MULTIPLE_CHOICE, minimum answers depends on addAnswersMode
-  // When users can add answers later, only 1 answer is required
-  const minAnswersForMC =
-    isMultipleChoice && addAnswersMode !== 'DISABLED' ? 1 : 2
-  const canRemoveMCAnswer = answers.length > minAnswersForMC
+  // Determine if we can remove an answer based on addAnswersMode and shouldAnswersSumToOne
+  // - DISABLED (or undefined): need 2 user answers, so can only remove if > 2
+  // - Enabled with shouldAnswersSumToOne (has Other): can go to 0 user answers
+  // - Enabled without shouldAnswersSumToOne (no Other): need at least 1 user answer
+  const addAnswersModeEnabled =
+    addAnswersMode === 'ONLY_CREATOR' || addAnswersMode === 'ANYONE'
+  const hasOtherAnswer =
+    isMultipleChoice && addAnswersModeEnabled && shouldAnswersSumToOne === true
+  const canRemoveMCAnswer =
+    isMultipleChoice &&
+    (!addAnswersModeEnabled
+      ? answers.length > 2
+      : hasOtherAnswer
+        ? answers.length > 0
+        : answers.length > 1)
 
   return (
     <Col
@@ -708,7 +718,7 @@ export function MarketPreview(props: {
                 : ''
             )}
           >
-            {answers.length > 0 ? (
+            {answers.length > 0 || addAnswersModeEnabled ? (
               <>
                 {answers.map((answer, i) => (
                   <div

@@ -99,17 +99,29 @@ export function validateContractForm(
   // Type-specific validation
   switch (outcomeType) {
     case 'MULTIPLE_CHOICE': {
-      // When addAnswersMode is enabled, users can add answers later, so we only
-      // require 1 answer. When disabled, we require at least 2 answers.
       const nonEmptyAnswers = answers
         ? answers.filter((a) => a.trim().length > 0)
         : []
-      const minRequired = state.addAnswersMode === 'DISABLED' ? MIN_ANSWERS : 1
 
-      if (!answers || answers.length < minRequired) {
-        errors.answers = `At least ${minRequired} answer${minRequired > 1 ? 's are' : ' is'} required`
-      } else if (nonEmptyAnswers.length < minRequired) {
-        errors.answers = `At least ${minRequired} non-empty answer${minRequired > 1 ? 's are' : ' is'} required`
+      // Backend rules:
+      // 1. If addAnswersMode is DISABLED (or undefined): need 2 user answers
+      // 2. If addAnswersMode is enabled: need 1 total (user answers + Other if applicable)
+      const addAnswersModeEnabled =
+        state.addAnswersMode === 'ONLY_CREATOR' ||
+        state.addAnswersMode === 'ANYONE'
+
+      if (!addAnswersModeEnabled) {
+        // Must have 2 user answers
+        if (nonEmptyAnswers.length < MIN_ANSWERS) {
+          errors.answers = `At least ${MIN_ANSWERS} answers are required`
+        }
+      } else {
+        // addAnswersMode is enabled - "Other" is added when shouldAnswersSumToOne
+        const hasOtherAnswer = state.shouldAnswersSumToOne === true
+        const totalAnswers = nonEmptyAnswers.length + (hasOtherAnswer ? 1 : 0)
+        if (totalAnswers < 1) {
+          errors.answers = 'At least 1 answer is required'
+        }
       }
 
       // Check for duplicate answers
