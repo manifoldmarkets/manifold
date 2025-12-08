@@ -21,6 +21,23 @@ import { noFees } from './fees'
 import { floatingEqual, logit } from './util/math'
 import { removeUndefinedProps } from './util/object'
 
+/**
+ * Calculate payout from both YES and NO shares at a given probability.
+ * Since YES + NO shares can be redeemed for 1 mana, having both shares
+ * means you have guaranteed value from the min(yesShares, noShares) pairs
+ * plus the expected value of remaining shares.
+ *
+ * This simplifies to: yesShares * prob + noShares * (1 - prob)
+ */
+export const calculatePayoutFromShares = (
+  totalShares: { [outcome: string]: number },
+  prob: number
+) => {
+  const yesShares = totalShares['YES'] ?? 0
+  const noShares = totalShares['NO'] ?? 0
+  return yesShares * prob + noShares * (1 - prob)
+}
+
 export const computeInvestmentValueCustomProb = (
   bets: Bet[],
   contract: Contract,
@@ -276,12 +293,8 @@ export const calculateUserMetricsWithNewBetsOnly = (
     ? 'NO'
     : 'YES'
   const lastBet = orderBy(newBets, (b) => b.createdTime, 'desc')[0]
-  const payout = soldOut
-    ? 0
-    : maxSharesOutcome
-    ? totalShares[maxSharesOutcome] *
-      (maxSharesOutcome === 'NO' ? 1 - lastBet.probAfter : lastBet.probAfter)
-    : 0
+  // Calculate payout from both YES and NO shares - they can be redeemed together for 1 mana each
+  const payout = calculatePayoutFromShares(totalShares, lastBet.probAfter)
   const totalAmountSold =
     (um.totalAmountSold ?? 0) +
     sumBy(
@@ -328,25 +341,17 @@ export const calculateProfitMetricsAtProbOrCancel = <
   um: T
 ) => {
   const {
-    maxSharesOutcome,
     totalAmountSold = 0,
     totalAmountInvested = 0,
     totalShares,
-    hasNoShares,
-    hasYesShares,
     invested,
     profit: previousProfit,
   } = um
-  const soldOut = !hasNoShares && !hasYesShares
+  // Calculate payout from both YES and NO shares - they can be redeemed together for 1 mana each
   const payout =
     newState === 'CANCEL'
       ? invested
-      : soldOut
-      ? 0
-      : maxSharesOutcome
-      ? totalShares[maxSharesOutcome] *
-        (maxSharesOutcome === 'NO' ? 1 - newState : newState)
-      : 0
+      : calculatePayoutFromShares(totalShares, newState)
   const profit =
     newState === 'CANCEL' ? 0 : payout + totalAmountSold - totalAmountInvested
   const profitPercent = floatingEqual(totalAmountInvested, 0)
