@@ -16,7 +16,7 @@ import { bulkUpdateData } from './supabase/utils'
 export async function updateContractMetricsCore(wholeMonth: boolean = false) {
   const pg = createSupabaseDirectClient()
   log('Loading contract data...')
-  const timeFrame = wholeMonth ? '1 year' : '1 month'
+  const timeFrame = wholeMonth ? '32 days' : '8 days'
   const where = `
   where (c.resolution_time is null and c.last_bet_time > now() - interval '${timeFrame}')
   or c.resolution_time > now() - interval '${timeFrame}'`
