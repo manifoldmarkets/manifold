@@ -1,10 +1,10 @@
 import {
-  getCpmmProbability,
-  calculateCpmmShares,
-  calculateCpmmPurchase,
-  getCpmmOutcomeProbabilityAfterBet,
   addCpmmLiquidity,
-  type CpmmState,
+  calculateCpmmPurchase,
+  calculateCpmmShares,
+  CpmmState,
+  getCpmmOutcomeProbabilityAfterBet,
+  getCpmmProbability,
   removeCpmmLiquidity,
 } from './calculate-cpmm'
 import { noFees } from './fees'
