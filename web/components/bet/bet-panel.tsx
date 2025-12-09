@@ -6,9 +6,18 @@ import {
 } from '@heroicons/react/outline'
 import clsx from 'clsx'
 import { capitalize, uniq } from 'lodash'
-import { useEffect, useState, useRef } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import toast from 'react-hot-toast'
 
+import {
+  useContractBets,
+  useUnfilledBetsAndBalanceByUserId,
+} from 'client-common/hooks/use-bets'
+import { useEvent } from 'client-common/hooks/use-event'
+import { getLimitBetReturns, MultiBetProps } from 'client-common/lib/bet'
+import { APIParams } from 'common/api/schema'
+import { Bet, LimitBet } from 'common/bet'
+import { calculateCpmmAmountToBuyShares } from 'common/calculate-cpmm'
 import {
   isBinaryMulti,
   MarketContract,
@@ -18,6 +27,18 @@ import {
   MIN_STONK_PROB,
   MultiContract,
 } from 'common/contract'
+import { TRADE_TERM } from 'common/envs/constants'
+import {
+  getVerificationStatus,
+  PROMPT_USER_VERIFICATION_MESSAGES,
+} from 'common/gidx/user'
+import { CandidateBet } from 'common/new-bet'
+import { getFormattedMappedValue } from 'common/pseudo-numeric'
+import { getStonkDisplayShares, STONK_NO, STONK_YES } from 'common/stonk'
+import {
+  getTierIndexFromLiquidity,
+  getTierIndexFromLiquidityAndAnswers,
+} from 'common/tier'
 import {
   formatLargeNumber,
   formatMoney,
@@ -25,57 +46,40 @@ import {
   formatPercent,
   formatWithToken,
 } from 'common/util/format'
-import { api, APIError } from 'web/lib/api/api'
-import { firebaseLogin } from 'web/lib/firebase/users'
-import { Col } from '../layout/col'
-import { Row } from '../layout/row'
-import { AmountInput, BuyAmountInput } from '../widgets/amount-input'
-import { LimitBet } from 'common/bet'
-import { TRADE_TERM } from 'common/envs/constants'
-import {
-  getVerificationStatus,
-  PROMPT_USER_VERIFICATION_MESSAGES,
-} from 'common/gidx/user'
-import { getFormattedMappedValue } from 'common/pseudo-numeric'
-import { getStonkDisplayShares, STONK_NO, STONK_YES } from 'common/stonk'
-import {
-  getTierIndexFromLiquidity,
-  getTierIndexFromLiquidityAndAnswers,
-} from 'common/tier'
 import { floatingEqual } from 'common/util/math'
 import { removeUndefinedProps } from 'common/util/object'
+import { LuShare } from 'react-icons/lu'
 import { InfoTooltip } from 'web/components/widgets/info-tooltip'
 import { useFocus } from 'web/hooks/use-focus'
 import { useIsAdvancedTrader } from 'web/hooks/use-is-advanced-trader'
+import { useIsMobile } from 'web/hooks/use-is-mobile'
+import { useIsPageVisible } from 'web/hooks/use-page-visible'
+import { usePersistentLocalState } from 'web/hooks/use-persistent-local-state'
 import { usePrivateUser, useUser } from 'web/hooks/use-user'
+import { api, APIError } from 'web/lib/api/api'
+import { firebaseLogin } from 'web/lib/firebase/users'
 import { track, withTracking } from 'web/lib/service/analytics'
 import { isAndroid, isIOS } from 'web/lib/util/device'
+import { Button } from '../buttons/button'
 import { WarningConfirmationButton } from '../buttons/warning-confirmation-button'
 import { getAnswerColor } from '../charts/contract/choice'
 import { LocationMonitor } from '../gidx/location-monitor'
+import { Col } from '../layout/col'
+import { Row } from '../layout/row'
+import { AmountInput, BuyAmountInput } from '../widgets/amount-input'
 import { ChoicesToggleGroup } from '../widgets/choices-toggle-group'
+import { sliderColors } from '../widgets/slider'
+import { Tooltip } from '../widgets/tooltip'
 import LimitOrderPanel from './limit-order-panel'
 import { MoneyDisplay } from './money-display'
-import { OrderBookPanel, YourOrders } from './order-book'
-import { YesNoSelector } from './yes-no-selector'
-import { sliderColors } from '../widgets/slider'
 import {
-  useContractBets,
-  useUnfilledBetsAndBalanceByUserId,
-} from 'client-common/hooks/use-bets'
-import { useIsPageVisible } from 'web/hooks/use-page-visible'
-import { CandidateBet } from 'common/new-bet'
-import { APIParams } from 'common/api/schema'
-import { Button } from '../buttons/button'
-import { usePersistentLocalState } from 'web/hooks/use-persistent-local-state'
-import { getLimitBetReturns, MultiBetProps } from 'client-common/lib/bet'
-import { Tooltip } from '../widgets/tooltip'
-import { useIsMobile } from 'web/hooks/use-is-mobile'
+  calculateOrderFillParams,
+  OrderBookPanel,
+  OrderClickData,
+  YourOrders,
+} from './order-book'
 import { ShareBetModal } from './share-bet'
-import { Bet } from 'common/bet'
-import { LuShare } from 'react-icons/lu'
-import { useEvent } from 'client-common/hooks/use-event'
-import { calculateCpmmAmountToBuyShares } from 'common/calculate-cpmm'
+import { YesNoSelector } from './yes-no-selector'
 
 const WAIT_TO_DISMISS = 3000
 export type BinaryOutcomes = 'YES' | 'NO' | undefined
@@ -380,6 +384,23 @@ export const BuyPanelBody = (
   const [betTypeSetting, setBetTypeSetting] = useState<'Market' | 'Limit'>(
     'Market'
   )
+
+  // State for prefilled limit order from order book click
+  const [prefillLimitOrder, setPrefillLimitOrder] = useState<{
+    outcome: 'YES' | 'NO'
+    limitProb: number
+    amount: number
+    timestamp: number // unique identifier for each click
+  } | null>(null)
+
+  // Handle order book click to prefill limit order
+  const handleOrderClick = useEvent((clickedOrder: OrderClickData) => {
+    const fillParams = calculateOrderFillParams(clickedOrder)
+    setPrefillLimitOrder({ ...fillParams, timestamp: Date.now() })
+    setOutcome(fillParams.outcome)
+    setBetTypeSetting('Limit')
+    toast('Expiration set to immediate', { icon: '⏱️' })
+  })
 
   useEffect(() => {
     if (!isAdvancedTrader && betTypeSetting === 'Limit') {
@@ -900,7 +921,7 @@ export const BuyPanelBody = (
         ) : (
           <>
             <LimitOrderPanel
-              betAmount={betAmount}
+              betAmount={prefillLimitOrder?.amount ?? betAmount}
               contract={contract}
               multiProps={multiProps}
               user={user}
@@ -908,6 +929,9 @@ export const BuyPanelBody = (
               balanceByUserId={balanceByUserId}
               outcome={outcome}
               pseudonym={props.pseudonym}
+              initialProb={prefillLimitOrder?.limitProb}
+              expiration={prefillLimitOrder ? 1 : undefined}
+              prefillTimestamp={prefillLimitOrder?.timestamp}
             />
           </>
         )}
@@ -1157,6 +1181,7 @@ export const BuyPanelBody = (
           )}
           answer={multiProps?.answerToBuy}
           pseudonym={props.pseudonym}
+          onOrderClick={handleOrderClick}
         />
       )}
     </>

@@ -21,6 +21,7 @@ import { DAY_MS, HOUR_MS, MINUTE_MS, MONTH_MS, WEEK_MS } from 'common/util/time'
 import dayjs from 'dayjs'
 import { capitalize, clamp } from 'lodash'
 import { useEffect, useRef, useState } from 'react'
+import toast from 'react-hot-toast'
 import { LuShare } from 'react-icons/lu'
 import { Input } from 'web/components/widgets/input'
 import { usePersistentLocalState } from 'web/hooks/use-persistent-local-state'
@@ -74,6 +75,7 @@ export default function LimitOrderPanel(props: {
   }
   initialProb?: number
   expiration?: number
+  prefillTimestamp?: number
 }) {
   const {
     contract,
@@ -146,7 +148,8 @@ export default function LimitOrderPanel(props: {
         setSelectedExpiration(matchingOption.value)
       }
     }
-  }, [expiration, setSelectedExpiration])
+    // Include prefillTimestamp so clicking the same order again resets expiration
+  }, [expiration, setSelectedExpiration, props.prefillTimestamp])
 
   const addCustomExpiration = selectedExpiration === -1
   const expiresAt = addCustomExpiration
@@ -171,6 +174,28 @@ export default function LimitOrderPanel(props: {
   const [limitProbInt, setLimitProbInt] = useState<number | undefined>(
     Math.round(initialProb * 100)
   )
+
+  // Track the last applied prefill timestamp to avoid re-applying or resetting
+  const lastAppliedPrefillTimestamp = useRef<number | null>(null)
+
+  // Update betAmount and limitProbInt when prefill props change (for prefill from order book)
+  // Only apply when it's a NEW prefill (different timestamp), not when clearing
+  useEffect(() => {
+    const newAmount = props.betAmount
+    const newProb = props.initialProb
+    const newTimestamp = props.prefillTimestamp
+
+    // Check if this is a new prefill (has timestamp and it's different from last applied)
+    const isNewPrefill =
+      newTimestamp !== undefined &&
+      newTimestamp !== lastAppliedPrefillTimestamp.current
+
+    if (isNewPrefill && newAmount !== undefined && newProb !== undefined) {
+      setBetAmount(newAmount)
+      setLimitProbInt(Math.round(newProb * 100))
+      lastAppliedPrefillTimestamp.current = newTimestamp
+    }
+  }, [props.betAmount, props.initialProb, props.prefillTimestamp])
 
   const hasLimitBet = !!limitProbInt && !!betAmount
 
@@ -245,7 +270,9 @@ export default function LimitOrderPanel(props: {
         } as APIParams<'bet'>)
       )
       console.log(`placed ${TRADE_TERM}. Result:`, bet)
-
+      if (expiresMillisAfter === 1) {
+        toast.success('Order will expire immediately after placement')
+      }
       const fullBet: Bet = {
         ...(bet as CandidateBet<LimitBet>),
         id: bet.betId,
