@@ -144,6 +144,10 @@ import { getTasks } from './get-tasks'
 import { updateCategory } from './update-category'
 import { updateTask } from './update-task'
 
+import { adminDeleteUser } from './admin-delete-user'
+import { adminGetUserInfo } from './admin-get-user-info'
+import { adminRecoverUser } from './admin-recover-user'
+import { anonymizeUser } from './anonymize-user'
 import { createPost } from './create-post'
 import { createPostComment } from './create-post-comment'
 import { dismissUserReport } from './dismiss-user-report'
@@ -173,7 +177,10 @@ import { getUserAchievements } from './get-user-achievements'
 import { getUserContractMetricsWithContracts } from './get-user-contract-metrics-with-contracts'
 import { getUserLastActiveTime } from './get-user-last-active-time'
 import { inferNumericUnit } from './infer-numeric-unit'
-import { markNotificationRead } from './mark-all-notifications'
+import {
+  markNotificationRead,
+  markNotificationsRead,
+} from './mark-all-notifications'
 import { markallnotificationsnew } from './mark-all-notifications-new'
 import {
   deleteMarketDraft,
@@ -184,10 +191,6 @@ import { purchaseContractBoost } from './purchase-boost'
 import { referUser } from './refer-user'
 import { updatePost } from './update-post'
 import { validateiap } from './validate-iap'
-import { adminRecoverUser } from './admin-recover-user'
-import { adminGetUserInfo } from './admin-get-user-info'
-import { adminDeleteUser } from './admin-delete-user'
-import { anonymizeUser } from './anonymize-user'
 
 export const handlers: { [k in APIPath]: APIHandler<k> } = {
   'refresh-all-clients': refreshAllClients,
@@ -377,6 +380,7 @@ export const handlers: { [k in APIPath]: APIHandler<k> } = {
   'delete-market-draft': deleteMarketDraft,
   'get-season-info': getSeasonInfo,
   'mark-notification-read': markNotificationRead,
+  'mark-notifications-read': markNotificationsRead,
   'dismiss-user-report': dismissUserReport,
   'follow-post': followPost,
   'edit-post-comment': editPostComment,

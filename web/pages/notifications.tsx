@@ -1,3 +1,10 @@
+import { XIcon } from '@heroicons/react/outline'
+import { ChevronDownIcon, ChevronUpIcon } from '@heroicons/react/solid'
+import { useEvent } from 'client-common/hooks/use-event'
+import {
+  NOTIFICATIONS_PER_PAGE,
+  useGroupedNotifications,
+} from 'client-common/hooks/use-notifications'
 import clsx from 'clsx'
 import {
   combineAndSumIncomeNotifications,
@@ -8,46 +15,39 @@ import {
   ReactionNotificationTypes,
 } from 'common/notification'
 import { PrivateUser, User } from 'common/user'
+import { maybePluralize } from 'common/util/format'
+import dayjs from 'dayjs'
 import { groupBy, sortBy } from 'lodash'
 import { useRouter } from 'next/router'
 import { Fragment, ReactNode, useEffect, useMemo, useState } from 'react'
+import { AppBadgesOrGetAppButton } from 'web/components/buttons/app-badges-or-get-app-button'
 import { Col } from 'web/components/layout/col'
 import { Page } from 'web/components/layout/page'
 import { Row } from 'web/components/layout/row'
 import { QueryUncontrolledTabs } from 'web/components/layout/tabs'
+import { useNativeInfo } from 'web/components/native-message-provider'
 import { NotificationSettings } from 'web/components/notification-settings'
 import {
   NUM_SUMMARY_LINES,
   ParentNotificationHeader,
   QuestionOrGroupLink,
 } from 'web/components/notifications/notification-helpers'
-import { api, markAllNotifications } from 'web/lib/api/api'
 import { NotificationItem } from 'web/components/notifications/notification-types'
 import { PushNotificationsModal } from 'web/components/push-notifications-modal'
 import { SEO } from 'web/components/SEO'
 import { ShowMoreLessButton } from 'web/components/widgets/collapsible-content'
+import { LoadingIndicator } from 'web/components/widgets/loading-indicator'
 import { Pagination } from 'web/components/widgets/pagination'
 import { Title } from 'web/components/widgets/title'
 import { useIsPageVisible } from 'web/hooks/use-page-visible'
-import { useRedirectIfSignedOut } from 'web/hooks/use-redirect-if-signed-out'
-import { usePrivateUser, useUser } from 'web/hooks/use-user'
-import { XIcon } from '@heroicons/react/outline'
-import { AppBadgesOrGetAppButton } from 'web/components/buttons/app-badges-or-get-app-button'
-import { LoadingIndicator } from 'web/components/widgets/loading-indicator'
-import { track } from 'web/lib/service/analytics'
-import { useNativeInfo } from 'web/components/native-message-provider'
-import {
-  NOTIFICATIONS_PER_PAGE,
-  useGroupedNotifications,
-} from 'client-common/hooks/use-notifications'
 import { usePersistentLocalState } from 'web/hooks/use-persistent-local-state'
 import { useUnseenPrivateMessageChannels } from 'web/hooks/use-private-messages'
-import { PrivateMessagesList } from '../components/messaging/private-messages-list'
-import { maybePluralize } from 'common/util/format'
-import dayjs from 'dayjs'
+import { useRedirectIfSignedOut } from 'web/hooks/use-redirect-if-signed-out'
+import { usePrivateUser, useUser } from 'web/hooks/use-user'
+import { api, markAllNotifications } from 'web/lib/api/api'
 import { postMessageToNative } from 'web/lib/native/post-message'
-import { useEvent } from 'client-common/hooks/use-event'
-import { ChevronDownIcon, ChevronUpIcon } from '@heroicons/react/solid'
+import { track } from 'web/lib/service/analytics'
+import { PrivateMessagesList } from '../components/messaging/private-messages-list'
 
 export default function NotificationsPage() {
   const privateUser = usePrivateUser()
@@ -376,11 +376,24 @@ export function NotificationsList(props: {
               {maybePluralize('comment', pinnedNotifications.length)} that may
               need your attention
             </span>
-            {pinnedExpanded ? (
-              <ChevronUpIcon className="h-5 w-5" />
-            ) : (
-              <ChevronDownIcon className="h-5 w-5" />
-            )}
+            <Row className="items-center gap-2">
+              <button
+                className="text-primary-700 hover:text-primary-900 text-sm font-medium"
+                onClick={(e) => {
+                  e.stopPropagation()
+                  api('mark-notifications-read', {
+                    notificationIds: pinnedNotifications.map((n) => n.id),
+                  })
+                }}
+              >
+                Clear all
+              </button>
+              {pinnedExpanded ? (
+                <ChevronUpIcon className="h-5 w-5" />
+              ) : (
+                <ChevronDownIcon className="h-5 w-5" />
+              )}
+            </Row>
           </Row>
           {pinnedExpanded &&
             pinnedNotifications.map((notification) => (

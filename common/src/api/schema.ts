@@ -2425,6 +2425,17 @@ export const API = (_apiTypeCheck = {
       })
       .strict(),
   },
+  'mark-notifications-read': {
+    method: 'POST',
+    visibility: 'private',
+    authed: true,
+    returns: {} as { success: boolean },
+    props: z
+      .object({
+        notificationIds: z.array(z.string()),
+      })
+      .strict(),
+  },
   'dismiss-user-report': {
     method: 'POST',
     visibility: 'public',
