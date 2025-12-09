@@ -1,25 +1,29 @@
+import { MenuSeparator } from '@headlessui/react'
 import {
   EyeIcon,
   EyeOffIcon,
   InformationCircleIcon,
 } from '@heroicons/react/solid'
-import { Contract } from 'common/contract'
+import { Contract, contractPath } from 'common/contract'
+import { ENV_CONFIG } from 'common/envs/constants'
 import { getShareUrl } from 'common/util/share'
 import { useEffect, useState } from 'react'
 import { toast } from 'react-hot-toast'
 import { BiRepost } from 'react-icons/bi'
 import { CgBlock, CgUnblock } from 'react-icons/cg'
 import { FaDroplet } from 'react-icons/fa6'
+import { GoGraph } from 'react-icons/go'
 import { IoDuplicate } from 'react-icons/io5'
 import { MdOutlineReport } from 'react-icons/md'
 import { TiVolumeMute } from 'react-icons/ti'
-import { MenuSeparator } from '@headlessui/react'
 import { CopyLinkOrShareButton } from 'web/components/buttons/copy-link-button'
 import { RepostModal } from 'web/components/comments/repost-modal'
 import { usePrivateUser, useUser } from 'web/hooks/use-user'
 import { api, updateUserDisinterestEmbedding } from 'web/lib/api/api'
 import { trackCallback, withTracking } from 'web/lib/service/analytics'
 import { db } from 'web/lib/supabase/db'
+import { PaymentsModal } from 'web/pages/payments'
+import TipJar from 'web/public/custom-components/tipJar'
 import { duplicateContractHref } from '../buttons/duplicate-contract-button'
 import {
   followMarket,
@@ -27,14 +31,13 @@ import {
   unfollowMarket,
 } from '../buttons/follow-market-button'
 import { ReportModal } from '../buttons/report-button'
-import DropdownMenu from '../widgets/dropdown-menu'
 import { Row } from '../layout/row'
+import DropdownMenu from '../widgets/dropdown-menu'
 import { getLinkTarget } from '../widgets/linkify'
-import { AddLiquidityModal } from './liquidity-modal'
+import { ChangeBannerButton } from './change-banner-button'
 import { ContractInfoDialog } from './contract-info-dialog'
 import { FollowMarketModal } from './follow-market-modal'
-import { ChangeBannerButton } from './change-banner-button'
-import { GoGraph } from 'react-icons/go'
+import { AddLiquidityModal } from './liquidity-modal'
 
 export function HeaderActions(props: {
   contract: Contract
@@ -51,6 +54,7 @@ export function HeaderActions(props: {
   const [repostOpen, setRepostOpen] = useState(false)
   const [reportOpen, setReportOpen] = useState(false)
   const [liquidityOpen, setLiquidityOpen] = useState(false)
+  const [tippingOpen, setTippingOpen] = useState(false)
 
   const duplicateHref = duplicateContractHref(contract)
 
@@ -145,6 +149,15 @@ export function HeaderActions(props: {
               setRepostOpen(true)
             },
             icon: <BiRepost className="h-5 w-5" />,
+          },
+        ]
+      : []),
+    ...(user && !isCreator
+      ? [
+          {
+            name: 'Tip',
+            onClick: () => setTippingOpen(true),
+            icon: <TipJar size={20} color="currentcolor" />,
           },
         ]
       : []),
@@ -275,6 +288,23 @@ export function HeaderActions(props: {
           contentOwnerId: contract.creatorId,
         }}
       />
+      {user && !isCreator && (
+        <PaymentsModal
+          fromUser={user}
+          toUser={{
+            id: contract.creatorId,
+            name: contract.creatorName,
+            username: contract.creatorUsername,
+            avatarUrl: contract.creatorAvatarUrl ?? '',
+          }}
+          setShow={setTippingOpen}
+          show={tippingOpen}
+          groupId={contract.id}
+          defaultMessage={`Thanks for making this market! "${
+            contract.question
+          }" https://${ENV_CONFIG.domain}${contractPath(contract)}`}
+        />
+      )}
       <FollowMarketModal
         open={followingOpen}
         setOpen={setFollowingOpen}

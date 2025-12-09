@@ -2,7 +2,7 @@ export default function TipJar({
   size = 18,
   color = '#66667C',
   strokeWidth = 1.5,
-  fill = 'none',
+  fill = '#66667C',
 }) {
   return (
     <svg
