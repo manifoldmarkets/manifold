@@ -33,7 +33,7 @@ import { getAnswerColor } from '../charts/contract/choice'
 import { Col } from '../layout/col'
 import { Row } from '../layout/row'
 import { BinaryOutcomeLabel, PseudoNumericOutcomeLabel } from '../outcome-label'
-import { BuyAmountInput } from '../widgets/amount-input'
+import { AmountInput, BuyAmountInput } from '../widgets/amount-input'
 import DropdownMenu from '../widgets/dropdown-menu'
 import { InfoTooltip } from '../widgets/info-tooltip'
 import { ProbabilitySlider } from '../widgets/probability-input'
@@ -130,6 +130,12 @@ export default function LimitOrderPanel(props: {
 
   const [isSharing, setIsSharing] = useState(false)
   const [lastBetDetails, setLastBetDetails] = useState<Bet | null>(null)
+
+  // State for editing payout
+  const [isEditingPayout, setIsEditingPayout] = useState(false)
+  const [editablePayout, setEditablePayout] = useState<number | undefined>(
+    undefined
+  )
 
   const callOnBuySuccess = useEvent(() => {
     if (onBuySuccess && !isSharing) {
@@ -245,6 +251,39 @@ export default function LimitOrderPanel(props: {
       setLimitProbInt(clamp(val, 1, 99))
     }
   }
+
+  const handlePayoutEdited = useEvent(() => {
+    if (
+      !outcome ||
+      !limitProb ||
+      !editablePayout ||
+      isNaN(editablePayout) ||
+      editablePayout <= 0
+    ) {
+      setIsEditingPayout(false)
+      return
+    }
+
+    try {
+      // For limit orders, the price is fixed at limitProb
+      // For YES: amount = payout * limitProb
+      // For NO: amount = payout * (1 - limitProb)
+      const effectiveProb = outcome === 'YES' ? limitProb : 1 - limitProb
+      const amount = Math.round(editablePayout * effectiveProb * 100) / 100
+
+      if (amount && isFinite(amount) && amount > 0) {
+        setBetAmount(amount)
+        setError(undefined)
+      } else {
+        toast.error('Could not calculate bet for that payout amount')
+      }
+    } catch (err) {
+      console.error('Error calculating bet amount from payout:', err)
+      toast.error('Error calculating bet amount')
+    } finally {
+      setIsEditingPayout(false)
+    }
+  })
 
   async function submitBet() {
     if (!user || betDisabled) return
@@ -537,12 +576,39 @@ export default function LimitOrderPanel(props: {
             </Row>
             <div>
               <span className="mr-2 whitespace-nowrap">
-                <MoneyDisplay
-                  amount={currentPayout}
-                  isCashContract={isCashContract}
-                />
+                {isEditingPayout ? (
+                  <AmountInput
+                    inputClassName="w-32"
+                    onBlur={handlePayoutEdited}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') {
+                        handlePayoutEdited()
+                      } else if (e.key === 'Escape') {
+                        setIsEditingPayout(false)
+                      }
+                    }}
+                    autoFocus
+                    min={1}
+                    step={1}
+                    amount={editablePayout}
+                    onChangeAmount={setEditablePayout}
+                  />
+                ) : (
+                  <span
+                    className="cursor-pointer hover:underline"
+                    onClick={() => {
+                      setEditablePayout(Math.floor(currentPayout))
+                      setIsEditingPayout(true)
+                    }}
+                  >
+                    <MoneyDisplay
+                      amount={currentPayout}
+                      isCashContract={isCashContract}
+                    />
+                  </span>
+                )}
               </span>
-              ({returnPercent})
+              {!isEditingPayout && <>({returnPercent})</>}
             </div>
           </Row>
         )}

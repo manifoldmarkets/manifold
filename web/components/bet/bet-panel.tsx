@@ -659,7 +659,7 @@ export const BuyPanelBody = (
       )
 
       if (amount && isFinite(amount) && amount > 0) {
-        setBetAmount(amount)
+        setBetAmount(Math.round(amount * 100) / 100)
         setError(undefined) // Clear potential previous errors
       } else {
         toast.error('Could not calculate bet for that payout amount')
