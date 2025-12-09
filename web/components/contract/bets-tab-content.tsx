@@ -1,26 +1,31 @@
-import { memo, useEffect, useRef, useState } from 'react'
-import { Contract, CPMMNumericContract, MarketContract } from 'common/contract'
-import { Bet } from 'common/bet'
-import { usePersistentInMemoryState } from 'client-common/hooks/use-persistent-in-memory-state'
+import { Menu, MenuItem, MenuItems, Transition } from '@headlessui/react'
+import { ChevronDownIcon, PencilIcon, XIcon } from '@heroicons/react/solid'
 import { listenToOrderUpdates } from 'client-common/hooks/use-bets'
-import { groupBy, minBy, sortBy, uniqBy } from 'lodash'
-import { useLiquidity } from 'web/hooks/use-liquidity'
+import { useEvent } from 'client-common/hooks/use-event'
+import { usePersistentInMemoryState } from 'client-common/hooks/use-persistent-in-memory-state'
+import clsx from 'clsx'
 import {
   DEV_HOUSE_LIQUIDITY_PROVIDER_ID,
   HOUSE_LIQUIDITY_PROVIDER_ID,
 } from 'common/antes'
-import { useEvent } from 'client-common/hooks/use-event'
-import { api } from 'web/lib/api/api'
-import { Row } from 'web/components/layout/row'
-import DropdownMenu from 'web/components/widgets/dropdown-menu'
-import generateFilterDropdownItems from 'web/components/search/search-dropdown-helpers'
-import { track } from 'web/lib/service/analytics'
-import { ChevronDownIcon } from '@heroicons/react/solid'
-import { Col } from 'web/components/layout/col'
+import { DisplayUser } from 'common/api/user-types'
+import { Bet } from 'common/bet'
+import { Contract, CPMMNumericContract, MarketContract } from 'common/contract'
+import { groupBy, minBy, sortBy, uniqBy } from 'lodash'
+import { Fragment, memo, useEffect, useRef, useState } from 'react'
 import { FeedBet } from 'web/components/feed/feed-bets'
-import { MultiNumericBetGroup } from 'web/components/feed/feed-multi-numeric-bet-group'
 import { FeedLiquidity } from 'web/components/feed/feed-liquidity'
+import { MultiNumericBetGroup } from 'web/components/feed/feed-multi-numeric-bet-group'
+import { Col } from 'web/components/layout/col'
+import { Row } from 'web/components/layout/row'
+import generateFilterDropdownItems from 'web/components/search/search-dropdown-helpers'
+import { Avatar } from 'web/components/widgets/avatar'
+import DropdownMenu from 'web/components/widgets/dropdown-menu'
+import { Input } from 'web/components/widgets/input'
 import { LoadMoreUntilNotVisible } from 'web/components/widgets/visibility-observer'
+import { useLiquidity } from 'web/hooks/use-liquidity'
+import { api } from 'web/lib/api/api'
+import { track } from 'web/lib/service/analytics'
 
 export const BetsTabContent = memo(function BetsTabContent(props: {
   contract: Contract
@@ -36,6 +41,53 @@ export const BetsTabContent = memo(function BetsTabContent(props: {
     usePersistentInMemoryState(0, `bet-amount-filter-${contract.id}`)
   const isNumber = outcomeType === 'NUMBER'
 
+  // User filter state
+  const [selectedUser, setSelectedUser] = useState<DisplayUser | undefined>()
+  const [userSearchTerm, setUserSearchTerm] = useState('')
+  const [isEditingUserFilter, setIsEditingUserFilter] = useState(false)
+  const [highlightedIndex, setHighlightedIndex] = useState(-1)
+  const [searchedUsers, setSearchedUsers] = useState<DisplayUser[]>([])
+  const userSearchInputRef = useRef<HTMLInputElement>(null)
+  const searchRequestId = useRef(0)
+
+  useEffect(() => {
+    setHighlightedIndex(-1)
+    if (!userSearchTerm) {
+      setSearchedUsers([])
+      return
+    }
+    const requestId = ++searchRequestId.current
+    api('search-contract-positions', {
+      contractId: contract.id,
+      term: userSearchTerm,
+      limit: 5,
+    }).then((results) => {
+      // Ignore stale responses
+      if (requestId === searchRequestId.current) {
+        setSearchedUsers(results)
+      }
+    })
+  }, [userSearchTerm, contract.id])
+  useEffect(() => {
+    if (isEditingUserFilter && userSearchInputRef.current) {
+      userSearchInputRef.current.focus()
+    }
+  }, [isEditingUserFilter])
+
+  const selectUser = (user: DisplayUser) => {
+    setSelectedUser(user)
+    setUserSearchTerm('')
+    setIsEditingUserFilter(false)
+    setHighlightedIndex(-1)
+    setOlderBets([])
+    track('select-bet-user-filter', {
+      contractSlug: contract.slug,
+      contractName: contract.question,
+      userId: user.id,
+      userName: user.name,
+    })
+  }
+
   // Min amount filter options
   const minAmountOptions = [
     { label: 'Any amount', value: undefined },
@@ -46,9 +98,12 @@ export const BetsTabContent = memo(function BetsTabContent(props: {
   const selectedMinAmount = minAmountOptions[minAmountFilterIndex].value
 
   // Filter initial bets on client side, server will filter olderBets
-  const filteredInitialBets = selectedMinAmount
-    ? props.bets.filter((bet) => Math.abs(bet.amount) >= selectedMinAmount)
-    : props.bets
+  const filteredInitialBets = props.bets.filter((bet) => {
+    if (selectedMinAmount && Math.abs(bet.amount) < selectedMinAmount)
+      return false
+    if (selectedUser && bet.userId !== selectedUser.id) return false
+    return true
+  })
 
   const bets = [...filteredInitialBets, ...olderBets]
   listenToOrderUpdates(contract.id, setOlderBets, true)
@@ -62,7 +117,8 @@ export const BetsTabContent = memo(function BetsTabContent(props: {
       l.userId !== HOUSE_LIQUIDITY_PROVIDER_ID &&
       l.userId !== DEV_HOUSE_LIQUIDITY_PROVIDER_ID &&
       l.amount > 0 &&
-      !minAmountFilterIndex
+      !minAmountFilterIndex &&
+      !selectedUser // Hide liquidity when filtering by user
   )
   const betsByBetGroupId = isNumber
     ? groupBy(bets, (bet) => bet.betGroupId ?? bet.id)
@@ -106,6 +162,7 @@ export const BetsTabContent = memo(function BetsTabContent(props: {
         filterRedemptions: !isNumber,
         includeZeroShareRedemptions: isNumber,
         minAmount: selectedMinAmount,
+        userId: selectedUser?.id,
       })
 
       if (newBets.length > 0) {
@@ -121,7 +178,7 @@ export const BetsTabContent = memo(function BetsTabContent(props: {
   useEffect(() => {
     setOlderBets([])
     loadMore()
-  }, [selectedMinAmount])
+  }, [selectedMinAmount, selectedUser?.id])
 
   const allItems = sortBy(items, (item) =>
     item.type === 'bet'
@@ -145,8 +202,9 @@ export const BetsTabContent = memo(function BetsTabContent(props: {
     <>
       <div ref={scrollRef} />
 
-      {/* Minimum bet amount filter */}
-      <Row className="mb-2">
+      {/* Filters row */}
+      <Row className="mb-2 flex-wrap gap-4">
+        {/* Minimum bet amount filter */}
         <Row className="items-center gap-1">
           <span className="text-ink-500 text-sm">Min amount:</span>
           <DropdownMenu
@@ -178,6 +236,152 @@ export const BetsTabContent = memo(function BetsTabContent(props: {
             selectedItemName={minAmountOptions[minAmountFilterIndex].label}
             closeOnClick
           />
+        </Row>
+
+        {/* User filter */}
+        <Row className="h-8 items-center gap-1">
+          <span className="text-ink-500 text-sm">Traders:</span>
+          {selectedUser ? (
+            <Row className="bg-ink-100 items-center gap-1 rounded-full py-0.5 pl-1 pr-2">
+              <Avatar
+                username={selectedUser.username}
+                avatarUrl={selectedUser.avatarUrl}
+                size="2xs"
+                noLink
+              />
+              <span className="text-ink-700 text-sm">{selectedUser.name}</span>
+              <button
+                onClick={() => {
+                  setSelectedUser(undefined)
+                  setOlderBets([])
+                  track('clear-bet-user-filter', {
+                    contractSlug: contract.slug,
+                    contractName: contract.question,
+                  })
+                }}
+                className="hover:bg-ink-200 ml-1 rounded-full p-0.5"
+              >
+                <XIcon className="text-ink-500 h-3 w-3" />
+              </button>
+            </Row>
+          ) : isEditingUserFilter ? (
+            <div className="relative">
+              <Row className="items-center gap-1">
+                <Input
+                  ref={userSearchInputRef}
+                  type="text"
+                  placeholder="Search traders"
+                  className="h-8 w-36 text-sm"
+                  value={userSearchTerm}
+                  onChange={(e) => setUserSearchTerm(e.target.value)}
+                  onBlur={() => {
+                    // Delay to allow click on menu item
+                    setTimeout(() => {
+                      if (!userSearchTerm) {
+                        setIsEditingUserFilter(false)
+                      }
+                    }, 200)
+                  }}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Escape') {
+                      setUserSearchTerm('')
+                      setIsEditingUserFilter(false)
+                      setHighlightedIndex(-1)
+                    } else if (e.key === 'ArrowDown') {
+                      e.preventDefault()
+                      const maxIndex = (searchedUsers?.length ?? 0) - 1
+                      setHighlightedIndex((prev) =>
+                        prev < maxIndex ? prev + 1 : 0
+                      )
+                    } else if (e.key === 'ArrowUp') {
+                      e.preventDefault()
+                      const maxIndex = (searchedUsers?.length ?? 0) - 1
+                      setHighlightedIndex((prev) =>
+                        prev > 0 ? prev - 1 : maxIndex
+                      )
+                    } else if (e.key === 'Enter') {
+                      e.preventDefault()
+                      if (
+                        highlightedIndex >= 0 &&
+                        searchedUsers &&
+                        searchedUsers[highlightedIndex]
+                      ) {
+                        selectUser(searchedUsers[highlightedIndex])
+                      }
+                    }
+                  }}
+                />
+                <button
+                  onClick={() => {
+                    setUserSearchTerm('')
+                    setIsEditingUserFilter(false)
+                  }}
+                  className="hover:bg-ink-200 rounded-full p-1"
+                >
+                  <XIcon className="text-ink-500 h-4 w-4" />
+                </button>
+              </Row>
+              <Menu as="div" className="relative z-20">
+                {userSearchTerm.length > 0 &&
+                  searchedUsers &&
+                  searchedUsers.length > 0 && (
+                    <Transition
+                      show={
+                        userSearchTerm.length > 0 &&
+                        !!searchedUsers &&
+                        searchedUsers.length > 0
+                      }
+                      as={Fragment}
+                      enter="transition ease-out duration-100"
+                      enterFrom="transform opacity-0 scale-95"
+                      enterTo="transform opacity-100 scale-100"
+                      leave="transition ease-in duration-75"
+                      leaveFrom="transform opacity-100 scale-100"
+                      leaveTo="transform opacity-0 scale-95"
+                    >
+                      <MenuItems
+                        static
+                        className="divide-ink-100 bg-canvas-0 ring-ink-1000 absolute left-0 mt-1 w-48 origin-top-left cursor-pointer divide-y rounded-md shadow-lg ring-1 ring-opacity-5 focus:outline-none"
+                      >
+                        <div className="py-1">
+                          {searchedUsers.map((user, index) => (
+                            <MenuItem key={user.id}>
+                              <button
+                                className={clsx(
+                                  'group flex w-full items-center px-3 py-2 text-sm',
+                                  highlightedIndex === index
+                                    ? 'bg-primary-100 text-ink-900'
+                                    : 'hover:bg-ink-100 hover:text-ink-900'
+                                )}
+                                onClick={() => selectUser(user)}
+                                onMouseEnter={() => setHighlightedIndex(index)}
+                              >
+                                <Avatar
+                                  username={user.username}
+                                  avatarUrl={user.avatarUrl}
+                                  size="xs"
+                                  className="mr-2"
+                                  noLink
+                                />
+                                <span className="truncate">{user.name}</span>
+                              </button>
+                            </MenuItem>
+                          ))}
+                        </div>
+                      </MenuItems>
+                    </Transition>
+                  )}
+              </Menu>
+            </div>
+          ) : (
+            <button
+              onClick={() => setIsEditingUserFilter(true)}
+              className="text-ink-700 hover:bg-ink-100 flex items-center gap-1 rounded px-1 py-0.5 text-sm"
+            >
+              <span>All</span>
+              <PencilIcon className="text-ink-400 mb-0.5 h-3.5 w-3.5" />
+            </button>
+          )}
         </Row>
       </Row>
 
@@ -211,6 +415,7 @@ export const BetsTabContent = memo(function BetsTabContent(props: {
         {/* Render skeleton loading rows */}
         {shouldLoadMore &&
           !minAmountFilterIndex &&
+          !selectedUser &&
           Array(numLoadingRows)
             .fill(0)
             .map((_, i) => <LoadingBetRow key={`loading-${i}`} />)}
