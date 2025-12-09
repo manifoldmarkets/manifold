@@ -1,8 +1,8 @@
 import { SuggestionProps } from '@tiptap/suggestion'
 import clsx from 'clsx'
 import { forwardRef, useEffect, useImperativeHandle, useState } from 'react'
-import { Avatar } from '../../widgets/avatar'
 import { DisplayUser } from 'web/lib/supabase/users'
+import { Avatar } from '../../widgets/avatar'
 
 // copied from https://tiptap.dev/api/nodes/mention#usage
 export const MentionList = forwardRef(
@@ -48,7 +48,7 @@ export const MentionList = forwardRef(
           users.map((user, i) => (
             <button
               className={clsx(
-                'flex h-8 w-full cursor-pointer select-none items-center gap-2 truncate px-4',
+                'flex h-8 w-full max-w-[20rem] cursor-pointer select-none items-center gap-2 truncate  px-4 sm:max-w-[25rem]',
                 selectedIndex === i
                   ? 'text-ink-0 bg-primary-500'
                   : 'text-ink-900'
@@ -57,7 +57,8 @@ export const MentionList = forwardRef(
               key={user.id}
             >
               <Avatar avatarUrl={user.avatarUrl} size="xs" noLink />
-              {user.username}
+              {user.name}{' '}
+              <span className="text-ink-700 truncate">@{user.username}</span>
             </button>
           ))
         )}
