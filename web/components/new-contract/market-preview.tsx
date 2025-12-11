@@ -364,8 +364,8 @@ export function MarketPreview(props: {
     (!addAnswersModeEnabled
       ? answers.length > 2
       : hasOtherAnswer
-        ? answers.length > 0
-        : answers.length > 1)
+      ? answers.length > 0
+      : answers.length > 1)
 
   return (
     <Col
