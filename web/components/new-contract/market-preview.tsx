@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef, useCallback } from 'react'
 import clsx from 'clsx'
 import { Contract, CreateableOutcomeType } from 'common/contract'
 import { User } from 'common/user'
@@ -154,6 +154,7 @@ export function MarketPreview(props: {
   } = props
   const [isTopicsModalOpen, setIsTopicsModalOpen] = useState(false)
   const [dismissedSuggestion, setDismissedSuggestion] = useState(false)
+  const questionTextareaRef = useRef<HTMLTextAreaElement>(null)
   const isMobile = useIsMobile()
 
   // Notify parent when topics modal opens/closes
@@ -213,6 +214,25 @@ export function MarketPreview(props: {
     shouldAnswersSumToOne,
     addAnswersMode,
   } = data
+
+  // Auto-resize question textarea to fit content
+  const resizeQuestionTextarea = useCallback(() => {
+    const textarea = questionTextareaRef.current
+    if (textarea) {
+      textarea.style.height = 'auto'
+      textarea.style.height = textarea.scrollHeight + 'px'
+    }
+  }, [])
+
+  // Resize on mount, when question changes, and on window resize
+  useEffect(() => {
+    resizeQuestionTextarea()
+  }, [question, resizeQuestionTextarea])
+
+  useEffect(() => {
+    window.addEventListener('resize', resizeQuestionTextarea)
+    return () => window.removeEventListener('resize', resizeQuestionTextarea)
+  }, [resizeQuestionTextarea])
 
   // Create a mock contract for rendering components
   const mockContract: any = {
@@ -320,8 +340,7 @@ export function MarketPreview(props: {
       const equalProb = 1 / answers.length
       mcProbs = answers.map(() => equalProb)
     } else {
-      // For thresholds, probabilities should increase cumulatively
-      mcProbs = answers.map((_, i) => (i + 1) / (answers.length + 1))
+      mcProbs = answers.map(() => 0.5)
     }
   }
 
@@ -331,6 +350,22 @@ export function MarketPreview(props: {
   const isNumeric = outcomeType === 'MULTI_NUMERIC' || outcomeType === 'NUMBER'
   const isDate = outcomeType === 'DATE'
   const isPseudoNumeric = outcomeType === 'PSEUDO_NUMERIC'
+
+  // Determine if we can remove an answer based on addAnswersMode and shouldAnswersSumToOne
+  // - DISABLED (or undefined): need 2 user answers, so can only remove if > 2
+  // - Enabled with shouldAnswersSumToOne (has Other): can go to 0 user answers
+  // - Enabled without shouldAnswersSumToOne (no Other): need at least 1 user answer
+  const addAnswersModeEnabled =
+    addAnswersMode === 'ONLY_CREATOR' || addAnswersMode === 'ANYONE'
+  const hasOtherAnswer =
+    isMultipleChoice && addAnswersModeEnabled && shouldAnswersSumToOne === true
+  const canRemoveMCAnswer =
+    isMultipleChoice &&
+    (!addAnswersModeEnabled
+      ? answers.length > 2
+      : hasOtherAnswer
+        ? answers.length > 0
+        : answers.length > 1)
 
   return (
     <Col
@@ -437,21 +472,14 @@ export function MarketPreview(props: {
       {/* Question */}
       {isEditable && onEditQuestion ? (
         <textarea
+          ref={questionTextareaRef}
           id="market-preview-title-input"
           value={question || ''}
           onChange={(e) => {
             // Remove any line breaks from the input
             const cleanedValue = e.target.value.replace(/[\r\n]/g, '')
             onEditQuestion(cleanedValue)
-            // Auto-resize textarea to fit content
-            e.target.style.height = 'auto'
-            e.target.style.height = e.target.scrollHeight + 'px'
-          }}
-          onInput={(e) => {
-            // Also handle on input for better responsiveness
-            const target = e.target as HTMLTextAreaElement
-            target.style.height = 'auto'
-            target.style.height = target.scrollHeight + 'px'
+            resizeQuestionTextarea()
           }}
           onKeyDown={(e) => {
             // Prevent Enter key from creating line breaks
@@ -702,7 +730,7 @@ export function MarketPreview(props: {
                 : ''
             )}
           >
-            {answers.length > 0 ? (
+            {answers.length > 0 || addAnswersModeEnabled ? (
               <>
                 {answers.map((answer, i) => (
                   <div
@@ -761,7 +789,7 @@ export function MarketPreview(props: {
                             }
                           }}
                           onDelete={() => {
-                            if (answers.length > 2) {
+                            if (canRemoveMCAnswer) {
                               const newAnswers = answers.filter(
                                 (_, idx) => idx !== i
                               )
@@ -792,7 +820,7 @@ export function MarketPreview(props: {
                       </Row>
 
                       {/* X button to remove - far right */}
-                      {isEditable && onEditAnswers && answers.length > 2 && (
+                      {isEditable && onEditAnswers && canRemoveMCAnswer && (
                         <button
                           onClick={(e) => {
                             e.preventDefault()
@@ -877,7 +905,7 @@ export function MarketPreview(props: {
                               }
                             }}
                             onDelete={() => {
-                              if (answers.length > 2) {
+                              if (canRemoveMCAnswer) {
                                 const newAnswers = answers.filter(
                                   (_, idx) => idx !== i
                                 )
@@ -892,7 +920,7 @@ export function MarketPreview(props: {
                         )}
 
                         {/* X button - positioned in top-right corner */}
-                        {isEditable && onEditAnswers && answers.length > 2 && (
+                        {isEditable && onEditAnswers && canRemoveMCAnswer && (
                           <button
                             onClick={(e) => {
                               e.preventDefault()

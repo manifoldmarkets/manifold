@@ -556,14 +556,9 @@ export function NewContractPanel(props: {
         addAnswersMode: formState.addAnswersMode,
       })
       if (result.description && descriptionEditor) {
-        // Remove any <thinking> tags and their content from AI output
-        const cleanedDescription = result.description.replace(
-          /<thinking>[\s\S]*?<\/thinking>/gi,
-          ''
-        )
         const endPos = descriptionEditor.state.doc.content.size
         descriptionEditor.commands.setTextSelection(endPos)
-        descriptionEditor.commands.insertContent(cleanedDescription)
+        descriptionEditor.commands.insertContent(result.description)
       }
     } catch (e) {
       console.error('Error generating description:', e)
@@ -744,6 +739,21 @@ export function NewContractPanel(props: {
         input.focus()
       }
     }, 100)
+  }
+
+  // Handle addAnswersMode change - ensure at least 2 answer slots when switching to DISABLED
+  const handleAddAnswersModeChange = (
+    newMode: 'DISABLED' | 'ONLY_CREATOR' | 'ANYONE'
+  ) => {
+    setFormState((prev) => {
+      // When switching to DISABLED, ensure at least 2 answer slots exist
+      if (newMode === 'DISABLED' && prev.answers.length < 2) {
+        const slotsNeeded = 2 - prev.answers.length
+        const newAnswers = [...prev.answers, ...Array(slotsNeeded).fill('')]
+        return { ...prev, addAnswersMode: newMode, answers: newAnswers }
+      }
+      return { ...prev, addAnswersMode: newMode }
+    })
   }
 
   // Handle submission
@@ -970,7 +980,11 @@ export function NewContractPanel(props: {
                     You: 'ONLY_CREATOR',
                     Anyone: 'ANYONE',
                   }}
-                  setChoice={(c) => updateField('addAnswersMode', c as any)}
+                  setChoice={(c) =>
+                    handleAddAnswersModeChange(
+                      c as 'DISABLED' | 'ONLY_CREATOR' | 'ANYONE'
+                    )
+                  }
                   className="w-fit"
                 />
               </Col>

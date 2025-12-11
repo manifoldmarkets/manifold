@@ -80,6 +80,9 @@ export function duplicateContractHref(contract: Contract) {
       .filter((a) => !a.isOther)
       .map((a) => a.text)
   }
+  if (contract.outcomeType === 'POLL') {
+    params.answers = contract.options.map((o) => o.text)
+  }
   if (
     contract.outcomeType === 'MULTI_NUMERIC' ||
     contract.outcomeType === 'DATE'
