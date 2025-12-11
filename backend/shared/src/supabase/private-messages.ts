@@ -5,15 +5,15 @@ import { Notification } from 'common/notification'
 import { Json } from 'common/supabase/schema'
 import { User } from 'common/user'
 import { getNotificationDestinationsForUser } from 'common/user-notification-preferences'
+import { richTextToString } from 'common/util/parse'
 import { nanoid } from 'common/util/random'
-import { HOUR_MS } from 'common/util/time'
+import { MINUTE_MS } from 'common/util/time'
 import * as dayjs from 'dayjs'
 import * as timezone from 'dayjs/plugin/timezone'
 import * as utc from 'dayjs/plugin/utc'
 import { first } from 'lodash'
 import { track } from 'shared/analytics'
 import { createPushNotifications } from 'shared/create-push-notifications'
-import { log } from 'shared/monitoring/log'
 import { SupabaseDirectClient } from 'shared/supabase/init'
 import { getPrivateUser, getUser } from 'shared/utils'
 import { broadcast } from 'shared/websockets/server'
@@ -99,7 +99,7 @@ export const createPrivateUserMessageMain = async (
   if (!authorized)
     throw new APIError(403, 'You are not authorized to post to this channel')
 
-  await notifyOtherUserInChannelIfInactive(channelId, creator, pg)
+  await notifyOtherUserInChannelIfInactive(channelId, creator, content, pg)
   await insertPrivateMessage(content, channelId, creator.id, visibility, pg)
 
   const privateMessage = {
@@ -139,6 +139,7 @@ export const createPrivateUserMessageMain = async (
 const notifyOtherUserInChannelIfInactive = async (
   channelId: number,
   creator: User,
+  content: JSONContent,
   pg: SupabaseDirectClient
 ) => {
   const otherUserIds = await pg.manyOrNone<{ user_id: string }>(
@@ -154,38 +155,39 @@ const notifyOtherUserInChannelIfInactive = async (
   const otherUserId = first(otherUserIds)
   if (!otherUserId) return
 
-  const startOfDay = dayjs()
-    .tz('America/Los_Angeles')
-    .startOf('day')
-    .toISOString()
-  const previousMessagesThisDayBetweenTheseUsers = await pg.one(
+  const otherUser = await getUser(otherUserId.user_id)
+  if (!otherUser) return
+
+  // Always send push notification for channel 1 (iand and ian's alt BoaWishbone )
+  if (channelId === 1) {
+    await createNewMessageNotification(creator, otherUser, channelId, content)
+    return
+  }
+
+  const previousMessagesRecentlyBetweenTheseUsers = await pg.one(
     `select count(*) from private_user_messages
             where channel_id = $1
             and user_id = $2
-            and created_time > $3
+            and created_time > now() - interval '12 hours'
             `,
-    [channelId, creator.id, startOfDay]
+    [channelId, creator.id]
   )
-  log('previous messages this day', previousMessagesThisDayBetweenTheseUsers)
-  if (previousMessagesThisDayBetweenTheseUsers.count > 0) return
+  if (previousMessagesRecentlyBetweenTheseUsers.count > 0) return
 
   const lastUserEvent = await pg.oneOrNone(
     `select coalesce(ts_to_millis(max(greatest(ucv.last_page_view_ts, ucv.last_promoted_view_ts, ucv.last_card_view_ts))),0) as ts
      from user_contract_views ucv where ucv.user_id = $1`,
     [otherUserId.user_id]
   )
-  log('last user contract view for user ' + otherUserId.user_id, lastUserEvent)
-  if (lastUserEvent && lastUserEvent.ts > Date.now() - HOUR_MS) return
+  if (lastUserEvent && lastUserEvent.ts > Date.now() - 5 * MINUTE_MS) return
 
-  const otherUser = await getUser(otherUserId.user_id)
-  if (!otherUser) return
-
-  await createNewMessageNotification(creator, otherUser, channelId)
+  await createNewMessageNotification(creator, otherUser, channelId, content)
 }
 const createNewMessageNotification = async (
   fromUser: User,
   toUser: User,
-  channelId: number
+  channelId: number,
+  content: JSONContent
 ) => {
   const privateUser = await getPrivateUser(toUser.id)
   if (!privateUser) return
@@ -195,7 +197,7 @@ const createNewMessageNotification = async (
     privateUser,
     reason
   )
-  const sourceText = `${fromUser.name} sent you a message!`
+  const sourceText = richTextToString(content).slice(0, 200)
   const id = nanoid(6)
   const notification: Notification = {
     id,
