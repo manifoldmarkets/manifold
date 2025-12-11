@@ -320,8 +320,7 @@ export function MarketPreview(props: {
       const equalProb = 1 / answers.length
       mcProbs = answers.map(() => equalProb)
     } else {
-      // For thresholds, probabilities should increase cumulatively
-      mcProbs = answers.map((_, i) => (i + 1) / (answers.length + 1))
+      mcProbs = answers.map(() => 0.5)
     }
   }
 
