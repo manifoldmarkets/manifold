@@ -51,24 +51,27 @@ export const leavereview = authEndpointUnbanned(async (req, auth) => {
     [marketId, auth.uid, creatorId, rating, review]
   )
 
-  if (existingReview) {
-    await createMarketReviewUpdatedNotification(
-      creatorId,
-      reviewer,
-      contract,
-      rating,
-      parseJsonContentToText(review ?? ''),
-      pg
-    )
-  } else {
-    await createMarketReviewedNotification(
-      creatorId,
-      reviewer,
-      contract,
-      rating,
-      parseJsonContentToText(review ?? ''),
-      pg
-    )
+  // Don't notify users of 1 or 2 star reviews
+  if (rating >= 3) {
+    if (existingReview) {
+      await createMarketReviewUpdatedNotification(
+        creatorId,
+        reviewer,
+        contract,
+        rating,
+        parseJsonContentToText(review ?? ''),
+        pg
+      )
+    } else {
+      await createMarketReviewedNotification(
+        creatorId,
+        reviewer,
+        contract,
+        rating,
+        parseJsonContentToText(review ?? ''),
+        pg
+      )
+    }
   }
 
   return { success: true }

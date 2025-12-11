@@ -21,6 +21,7 @@ import { DAY_MS, HOUR_MS, MINUTE_MS, MONTH_MS, WEEK_MS } from 'common/util/time'
 import dayjs from 'dayjs'
 import { capitalize, clamp } from 'lodash'
 import { useEffect, useRef, useState } from 'react'
+import toast from 'react-hot-toast'
 import { LuShare } from 'react-icons/lu'
 import { Input } from 'web/components/widgets/input'
 import { usePersistentLocalState } from 'web/hooks/use-persistent-local-state'
@@ -32,7 +33,7 @@ import { getAnswerColor } from '../charts/contract/choice'
 import { Col } from '../layout/col'
 import { Row } from '../layout/row'
 import { BinaryOutcomeLabel, PseudoNumericOutcomeLabel } from '../outcome-label'
-import { BuyAmountInput } from '../widgets/amount-input'
+import { AmountInput, BuyAmountInput } from '../widgets/amount-input'
 import DropdownMenu from '../widgets/dropdown-menu'
 import { InfoTooltip } from '../widgets/info-tooltip'
 import { ProbabilitySlider } from '../widgets/probability-input'
@@ -74,6 +75,7 @@ export default function LimitOrderPanel(props: {
   }
   initialProb?: number
   expiration?: number
+  prefillTimestamp?: number
 }) {
   const {
     contract,
@@ -129,6 +131,12 @@ export default function LimitOrderPanel(props: {
   const [isSharing, setIsSharing] = useState(false)
   const [lastBetDetails, setLastBetDetails] = useState<Bet | null>(null)
 
+  // State for editing payout
+  const [isEditingPayout, setIsEditingPayout] = useState(false)
+  const [editablePayout, setEditablePayout] = useState<number | undefined>(
+    undefined
+  )
+
   const callOnBuySuccess = useEvent(() => {
     if (onBuySuccess && !isSharing) {
       onBuySuccess()
@@ -146,7 +154,8 @@ export default function LimitOrderPanel(props: {
         setSelectedExpiration(matchingOption.value)
       }
     }
-  }, [expiration, setSelectedExpiration])
+    // Include prefillTimestamp so clicking the same order again resets expiration
+  }, [expiration, setSelectedExpiration, props.prefillTimestamp])
 
   const addCustomExpiration = selectedExpiration === -1
   const expiresAt = addCustomExpiration
@@ -171,6 +180,28 @@ export default function LimitOrderPanel(props: {
   const [limitProbInt, setLimitProbInt] = useState<number | undefined>(
     Math.round(initialProb * 100)
   )
+
+  // Track the last applied prefill timestamp to avoid re-applying or resetting
+  const lastAppliedPrefillTimestamp = useRef<number | null>(null)
+
+  // Update betAmount and limitProbInt when prefill props change (for prefill from order book)
+  // Only apply when it's a NEW prefill (different timestamp), not when clearing
+  useEffect(() => {
+    const newAmount = props.betAmount
+    const newProb = props.initialProb
+    const newTimestamp = props.prefillTimestamp
+
+    // Check if this is a new prefill (has timestamp and it's different from last applied)
+    const isNewPrefill =
+      newTimestamp !== undefined &&
+      newTimestamp !== lastAppliedPrefillTimestamp.current
+
+    if (isNewPrefill && newAmount !== undefined && newProb !== undefined) {
+      setBetAmount(newAmount)
+      setLimitProbInt(Math.round(newProb * 100))
+      lastAppliedPrefillTimestamp.current = newTimestamp
+    }
+  }, [props.betAmount, props.initialProb, props.prefillTimestamp])
 
   const hasLimitBet = !!limitProbInt && !!betAmount
 
@@ -221,6 +252,39 @@ export default function LimitOrderPanel(props: {
     }
   }
 
+  const handlePayoutEdited = useEvent(() => {
+    if (
+      !outcome ||
+      !limitProb ||
+      !editablePayout ||
+      isNaN(editablePayout) ||
+      editablePayout <= 0
+    ) {
+      setIsEditingPayout(false)
+      return
+    }
+
+    try {
+      // For limit orders, the price is fixed at limitProb
+      // For YES: amount = payout * limitProb
+      // For NO: amount = payout * (1 - limitProb)
+      const effectiveProb = outcome === 'YES' ? limitProb : 1 - limitProb
+      const amount = Math.round(editablePayout * effectiveProb * 100) / 100
+
+      if (amount && isFinite(amount) && amount > 0) {
+        setBetAmount(amount)
+        setError(undefined)
+      } else {
+        toast.error('Could not calculate bet for that payout amount')
+      }
+    } catch (err) {
+      console.error('Error calculating bet amount from payout:', err)
+      toast.error('Error calculating bet amount')
+    } finally {
+      setIsEditingPayout(false)
+    }
+  })
+
   async function submitBet() {
     if (!user || betDisabled) return
 
@@ -245,7 +309,9 @@ export default function LimitOrderPanel(props: {
         } as APIParams<'bet'>)
       )
       console.log(`placed ${TRADE_TERM}. Result:`, bet)
-
+      if (expiresMillisAfter === 1) {
+        toast.success('Order will expire immediately after placement')
+      }
       const fullBet: Bet = {
         ...(bet as CandidateBet<LimitBet>),
         id: bet.betId,
@@ -510,12 +576,39 @@ export default function LimitOrderPanel(props: {
             </Row>
             <div>
               <span className="mr-2 whitespace-nowrap">
-                <MoneyDisplay
-                  amount={currentPayout}
-                  isCashContract={isCashContract}
-                />
+                {isEditingPayout ? (
+                  <AmountInput
+                    inputClassName="w-32"
+                    onBlur={handlePayoutEdited}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') {
+                        handlePayoutEdited()
+                      } else if (e.key === 'Escape') {
+                        setIsEditingPayout(false)
+                      }
+                    }}
+                    autoFocus
+                    min={1}
+                    step={1}
+                    amount={editablePayout}
+                    onChangeAmount={setEditablePayout}
+                  />
+                ) : (
+                  <span
+                    className="cursor-pointer hover:underline"
+                    onClick={() => {
+                      setEditablePayout(Math.floor(currentPayout))
+                      setIsEditingPayout(true)
+                    }}
+                  >
+                    <MoneyDisplay
+                      amount={currentPayout}
+                      isCashContract={isCashContract}
+                    />
+                  </span>
+                )}
               </span>
-              ({returnPercent})
+              {!isEditingPayout && <>({returnPercent})</>}
             </div>
           </Row>
         )}

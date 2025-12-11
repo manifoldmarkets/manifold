@@ -2,8 +2,8 @@
 import { useEffect, useState } from 'react'
 import { Page } from 'web/components/layout/page'
 import {
-  NewContractPanel,
   NewQuestionParams,
+  NewContractPanel,
 } from 'web/components/new-contract/new-contract-panel'
 import { Title } from 'web/components/widgets/title'
 import { useDefinedSearchParams } from 'web/hooks/use-defined-search-params'
@@ -57,7 +57,7 @@ export default function Create() {
     )
 
   return (
-    <Page trackPageView={'create page'}>
+    <Page trackPageView={'create page'} hideFooter>
       <NewContractPanel params={params} creator={user} />
     </Page>
   )

@@ -1,4 +1,4 @@
-import { constructPrefixTsQuery } from 'shared/helpers/search'
+import { createSupabaseDirectClient } from 'shared/supabase/init'
 import {
   from,
   join,
@@ -9,7 +9,6 @@ import {
   where,
 } from 'shared/supabase/sql-builder'
 import { type APIHandler } from './helpers/endpoint'
-import { createSupabaseDirectClient } from 'shared/supabase/init'
 
 export const searchContractPositions: APIHandler<
   'search-contract-positions'
@@ -22,31 +21,29 @@ export const searchContractPositions: APIHandler<
 }
 
 function getSearchUserSQL(term: string, lim: number, contractId: string) {
+  // Use ILIKE for simple substring matching - works better for names/usernames
+  // since full-text search has issues with stopwords and partial word matching
   const search = renderSql(
     select(
       `users.id, name, username, users.data->>'avatarUrl' as "avatarUrl", users.data->'isBannedFromPosting' as "isBannedFromPosting"`
     ),
     from('users'),
+    join('user_contract_metrics ucm on ucm.user_id = users.id'),
+    where('ucm.contract_id = $1', [contractId]),
+    where('ucm.answer_id is null'),
     term
       ? [
-          where(
-            `name_username_vector @@ websearch_to_tsquery('english', $1)
-             or name_username_vector @@ to_tsquery('english', $2)`,
-            [term, constructPrefixTsQuery(term)]
-          ),
-
+          where(`(name ilike $1 or username ilike $1)`, [`%${term}%`]),
           orderBy(
-            `ts_rank(name_username_vector, websearch_to_tsquery($1)) desc,
-             users.data->>'lastBetTime' desc nulls last`,
-            [term]
+            `
+            case when username ilike $1 then 0 else 1 end,
+            case when name ilike $2 then 0 else 1 end,
+            users.data->>'lastBetTime' desc nulls last
+          `,
+            [`${term}%`, `${term}%`]
           ),
         ]
       : orderBy(`users.data->'creatorTraders'->'allTime' desc nulls last`),
-
-    join('user_contract_metrics ucm on ucm.user_id = users.id'),
-    where('ucm.contract_id = $1', [contractId]),
-    where('ucm.has_shares = true'),
-    where('ucm.answer_id is null'),
     limit(lim)
   )
   return search

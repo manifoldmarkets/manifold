@@ -233,6 +233,21 @@ const checkForClarification = async (
   contract: Contract,
   comment: ContractComment
 ) => {
+  const descriptionText =
+    typeof contract.description === 'string'
+      ? contract.description
+      : richTextToString(contract.description)
+
+  if (
+    descriptionText
+      .toLowerCase()
+      .includes(
+        `there will be no ai clarifications added to this market's description`
+      )
+  ) {
+    return
+  }
+
   let commentsContext = ''
   let answerContext = ''
 
@@ -287,11 +302,7 @@ ${answer.text}`
 CONTEXT:
 Market question: ${contract.question}
 ${closeTimeDetail}
-Market description: ${
-    typeof contract.description === 'string'
-      ? contract.description
-      : richTextToString(contract.description)
-  }
+Market description: ${descriptionText}
 
 ${answerContext}
 ${commentsContext ? `COMMENT THREAD:\n${commentsContext}` : ''}

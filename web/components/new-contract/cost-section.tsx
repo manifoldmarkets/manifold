@@ -12,7 +12,8 @@ import { Button } from 'web/components/buttons/button'
 
 import { TokenNumber } from '../widgets/token-number'
 import { liquidityTiers } from 'common/tier'
-import { getAnte } from 'common/economy'
+import { getAnte, getUniqueBettorBonusAmount } from 'common/economy'
+import { formatMoney } from 'common/util/format'
 
 export const CostSection = (props: {
   balance: number
@@ -28,11 +29,6 @@ export const CostSection = (props: {
   const [fundsModalOpen, setFundsModalOpen] = useState(false)
   return (
     <Col className="items-start px-1">
-      {!CREATEABLE_NON_PREDICTIVE_OUTCOME_TYPES.includes(outcomeType) && (
-        <label className="mb-1 gap-2">
-          <span>Liquidity</span>
-        </label>
-      )}
       {!CREATEABLE_NON_PREDICTIVE_OUTCOME_TYPES.includes(outcomeType) && (
         <PriceSection
           liquidityTier={liquidityTier}
@@ -66,10 +62,19 @@ function PriceSection(props: {
 }) {
   const { liquidityTier, setLiquidityTier, numAnswers, outcomeType } = props
 
+  const bonus = getUniqueBettorBonusAmount(liquidityTier, numAnswers ?? 0)
+
   return (
     <Col className="w-full gap-2">
       <div className="text-ink-600 text-sm">
-        More liquidity attracts more traders but has a higher cost.
+        More liquidity attracts more traders but has a higher cost.{' '}
+        <span className="text-ink-700">
+          {formatMoney(liquidityTier)} liquidity, earn{' '}
+          <span className="text-ink-900 font-semibold">
+            {formatMoney(bonus)}
+          </span>{' '}
+          for every unique trader
+        </span>
       </div>
       <div className="grid w-full grid-cols-2 gap-2 sm:grid-cols-4">
         {liquidityTiers.map((tier) => (

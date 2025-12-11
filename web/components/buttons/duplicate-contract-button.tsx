@@ -4,7 +4,7 @@ import { getMappedValue } from 'common/pseudo-numeric'
 import { trackCallback } from 'web/lib/service/analytics'
 import { buttonClass } from './button'
 import Link from 'next/link'
-import { NewQuestionParams } from 'web/components/new-contract/new-contract-panel'
+import { NewQuestionParams } from 'web/components/new-contract/contract-types'
 import { getLinkTarget } from 'web/components/widgets/linkify'
 import { getPrecision } from 'common/src/number'
 import { randomString } from 'common/util/random'
@@ -79,6 +79,9 @@ export function duplicateContractHref(contract: Contract) {
     params.answers = contract.answers
       .filter((a) => !a.isOther)
       .map((a) => a.text)
+  }
+  if (contract.outcomeType === 'POLL') {
+    params.answers = contract.options.map((o) => o.text)
   }
   if (
     contract.outcomeType === 'MULTI_NUMERIC' ||

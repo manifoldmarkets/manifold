@@ -1,6 +1,7 @@
 import { PencilAltIcon } from '@heroicons/react/solid'
 import clsx from 'clsx'
 import Router from 'next/router'
+
 import { SEO } from 'web/components/SEO'
 import { DailyStats } from 'web/components/home/daily-stats'
 import { Page } from 'web/components/layout/page'

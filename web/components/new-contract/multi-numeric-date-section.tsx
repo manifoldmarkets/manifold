@@ -227,26 +227,33 @@ export const MultiNumericDateSection = (props: {
         <Col className="mt-2 gap-2">
           {bucketAnswers.map((answer, i) => (
             <Row key={i} className="items-center gap-2">
-              {i + 1}.{' '}
-              <Input
-                className="w-full"
-                value={answer}
-                onChange={(e) => {
-                  const newAnswers = [...bucketAnswers]
-                  newAnswers[i] = e.target.value
-                  setBucketAnswers(newAnswers)
-                  debouncedHandleAnswerChanged(newAnswers, 'buckets')
-                }}
-              />
-              {bucketAnswers.length > 2 && (
-                <button
-                  onClick={() => removeAnswer(i, 'buckets')}
-                  type="button"
-                  className="hover:bg-canvas-50 border-ink-300 text-ink-700 bg-canvas-0 focus:ring-primary-500 inline-flex items-center rounded-full border p-1 text-xs font-medium shadow-sm focus:outline-none focus:ring-2 focus:ring-offset-2"
-                >
-                  <XIcon className="h-5 w-5" aria-hidden="true" />
-                </button>
-              )}
+              <span className="text-ink-600 shrink-0 text-sm sm:text-base">
+                {i + 1}.
+              </span>
+              <div className="relative w-full">
+                <Input
+                  className="w-full"
+                  value={answer}
+                  onChange={(e) => {
+                    const newAnswers = [...bucketAnswers]
+                    newAnswers[i] = e.target.value
+                    setBucketAnswers(newAnswers)
+                    debouncedHandleAnswerChanged(newAnswers, 'buckets')
+                  }}
+                />
+                {bucketAnswers.length > 2 && (
+                  <button
+                    onClick={() => removeAnswer(i, 'buckets')}
+                    type="button"
+                    className="hover:bg-canvas-50 border-ink-300 text-ink-700 focus:ring-primary-500 absolute -right-1 -top-1 inline-flex items-center rounded-full border p-0.5 text-xs font-medium shadow-sm focus:outline-none focus:ring-2 focus:ring-offset-2 sm:static sm:p-1"
+                  >
+                    <XIcon
+                      className="h-3 w-3 sm:h-5 sm:w-5"
+                      aria-hidden="true"
+                    />
+                  </button>
+                )}
+              </div>
             </Row>
           ))}
           <Row className="justify-end gap-2">
@@ -254,7 +261,7 @@ export const MultiNumericDateSection = (props: {
               color="none"
               disabled={bucketAnswers.length >= MAX_MULTI_NUMERIC_ANSWERS}
               onClick={addAnswer}
-              className="hover:bg-canvas-50 border-ink-300 text-ink-700 bg-canvas-0 focus:ring-primary-500 inline-flex items-center rounded border px-2.5 py-1.5 text-xs font-medium shadow-sm focus:outline-none focus:ring-2 focus:ring-offset-2"
+              className="hover:bg-canvas-50 border-ink-300 text-ink-700 focus:ring-primary-500 inline-flex items-center rounded border px-2.5 py-1.5 text-xs font-medium shadow-sm focus:outline-none focus:ring-2 focus:ring-offset-2"
             >
               Add bucket
               {marginalCost > 0 ? ` +${formatMoney(marginalCost)}` : ''}
@@ -269,26 +276,33 @@ export const MultiNumericDateSection = (props: {
         <Col className="mt-2 gap-2">
           {thresholdAnswers.map((answer, i) => (
             <Row key={i} className="items-center gap-2">
-              {i + 1}.{' '}
-              <Input
-                className="w-full"
-                value={answer}
-                onChange={(e) => {
-                  const newAnswers = [...thresholdAnswers]
-                  newAnswers[i] = e.target.value
-                  setThresholdAnswers(newAnswers)
-                  debouncedHandleAnswerChanged(newAnswers, 'thresholds')
-                }}
-              />
-              {thresholdAnswers.length > 2 && (
-                <button
-                  onClick={() => removeAnswer(i, 'thresholds')}
-                  type="button"
-                  className="hover:bg-canvas-50 border-ink-300 text-ink-700 bg-canvas-0 focus:ring-primary-500 inline-flex items-center rounded-full border p-1 text-xs font-medium shadow-sm focus:outline-none focus:ring-2 focus:ring-offset-2"
-                >
-                  <XIcon className="h-5 w-5" aria-hidden="true" />
-                </button>
-              )}
+              <span className="text-ink-600 shrink-0 text-sm sm:text-base">
+                {i + 1}.
+              </span>
+              <div className="relative w-full">
+                <Input
+                  className="w-full"
+                  value={answer}
+                  onChange={(e) => {
+                    const newAnswers = [...thresholdAnswers]
+                    newAnswers[i] = e.target.value
+                    setThresholdAnswers(newAnswers)
+                    debouncedHandleAnswerChanged(newAnswers, 'thresholds')
+                  }}
+                />
+                {thresholdAnswers.length > 2 && (
+                  <button
+                    onClick={() => removeAnswer(i, 'thresholds')}
+                    type="button"
+                    className="hover:bg-canvas-50 border-ink-300 text-ink-700 focus:ring-primary-500 absolute -right-1 -top-1 inline-flex items-center rounded-full border p-0.5 text-xs font-medium shadow-sm focus:outline-none focus:ring-2 focus:ring-offset-2 sm:static sm:p-1"
+                  >
+                    <XIcon
+                      className="h-3 w-3 sm:h-5 sm:w-5"
+                      aria-hidden="true"
+                    />
+                  </button>
+                )}
+              </div>
             </Row>
           ))}
           <Row className="justify-end gap-2">
@@ -296,7 +310,7 @@ export const MultiNumericDateSection = (props: {
               color="none"
               disabled={thresholdAnswers.length >= MAX_MULTI_NUMERIC_ANSWERS}
               onClick={addAnswer}
-              className="hover:bg-canvas-50 border-ink-300 text-ink-700 bg-canvas-0 focus:ring-primary-500 inline-flex items-center rounded border px-2.5 py-1.5 text-xs font-medium shadow-sm focus:outline-none focus:ring-2 focus:ring-offset-2"
+              className="hover:bg-canvas-50 border-ink-300 text-ink-700 focus:ring-primary-500 inline-flex items-center rounded border px-2.5 py-1.5 text-xs font-medium shadow-sm focus:outline-none focus:ring-2 focus:ring-offset-2"
             >
               Add threshold
               {marginalCost > 0 ? ` +${formatMoney(marginalCost)}` : ''}
@@ -320,7 +334,7 @@ export const MultiNumericDateSection = (props: {
             <Input
               type="text"
               error={!!error}
-              className="w-full"
+              className="w-full !bg-transparent disabled:!bg-transparent"
               placeholder="Start"
               onClick={(e) => e.stopPropagation()}
               onChange={(e) => setMinString(e.target.value)}
@@ -332,7 +346,7 @@ export const MultiNumericDateSection = (props: {
             <Input
               type="text"
               error={!!error}
-              className="w-full"
+              className="w-full !bg-transparent disabled:!bg-transparent"
               placeholder="End"
               onClick={(e) => e.stopPropagation()}
               onChange={(e) => setMaxString(e.target.value)}

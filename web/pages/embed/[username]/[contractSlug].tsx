@@ -1,4 +1,5 @@
 import clsx from 'clsx'
+import { getBetPoints, getBetPointsBetween } from 'common/bets'
 import {
   HistoryPoint,
   MultiBase64Points,
@@ -16,7 +17,9 @@ import { getMultiBetPoints, getSingleBetPoints } from 'common/contract-params'
 import { DOMAIN, TRADE_TERM } from 'common/envs/constants'
 import { getContractFromSlug } from 'common/supabase/contracts'
 import { formatMoney } from 'common/util/format'
+import { pointsToBase64 } from 'common/util/og'
 import { getShareUrl } from 'common/util/share'
+import { mapValues } from 'lodash'
 import Image from 'next/image'
 import { useRouter } from 'next/router'
 import { useEffect, useState } from 'react'
@@ -27,6 +30,8 @@ import {
   MultiBinaryChart,
 } from 'web/components/charts/contract/binary'
 import { ChoiceContractChart } from 'web/components/charts/contract/choice'
+import { MultiDateContractChart } from 'web/components/charts/contract/multi-date'
+import { MultiNumericContractChart } from 'web/components/charts/contract/multi-numeric'
 import { PseudoNumericContractChart } from 'web/components/charts/contract/pseudo-numeric'
 import { StonkContractChart } from 'web/components/charts/contract/stonk'
 import {
@@ -46,15 +51,10 @@ import { SizedContainer } from 'web/components/sized-container'
 import { Avatar } from 'web/components/widgets/avatar'
 import { QRCode } from 'web/components/widgets/qr-code'
 import { useLiveContract } from 'web/hooks/use-contract'
+import { useUser } from 'web/hooks/use-user'
 import { track } from 'web/lib/service/analytics'
 import { db } from 'web/lib/supabase/db'
 import Custom404 from '../../404'
-import { getBetPoints, getBetPointsBetween } from 'common/bets'
-import { MultiNumericContractChart } from 'web/components/charts/contract/multi-numeric'
-import { MultiDateContractChart } from 'web/components/charts/contract/multi-date'
-import { pointsToBase64 } from 'common/util/og'
-import { mapValues } from 'lodash'
-import { useUser } from 'web/hooks/use-user'
 type Points = HistoryPoint<any>[]
 
 async function getHistoryData(contract: Contract) {
@@ -75,31 +75,46 @@ export async function getStaticProps(props: {
   params: { username: string; contractSlug: string }
 }) {
   const { contractSlug } = props.params
-  // TODO: use admin db
-  const contract = await getContractFromSlug(db, contractSlug)
-  if (contract == null) {
+
+  let contract
+  try {
+    // TODO: use admin db
+    contract = await getContractFromSlug(db, contractSlug)
+  } catch (error) {
+    console.error('DB error fetching contract:', contractSlug, error)
     return { notFound: true, revalidate: 60 }
   }
 
-  const points = await getHistoryData(contract)
-
-  let multiPoints = null
-  if (
-    contract.outcomeType === 'MULTI_NUMERIC' ||
-    contract.outcomeType === 'DATE'
-  ) {
-    const includeRedemptions =
-      contract.mechanism === 'cpmm-multi-1' && contract.shouldAnswersSumToOne
-    const allBetPoints = await getBetPointsBetween(contract, {
-      filterRedemptions: !includeRedemptions,
-      includeZeroShareRedemptions: includeRedemptions,
-      beforeTime: (contract.lastBetTime ?? contract.createdTime) + 1,
-      afterTime: contract.createdTime,
-    })
-    multiPoints = mapValues(getMultiBetPoints(allBetPoints, contract), (v) =>
-      pointsToBase64(v)
-    )
+  if (contract == null) {
+    return { notFound: true }
   }
+
+  let points
+  let multiPoints = null
+  try {
+    points = await getHistoryData(contract)
+
+    if (
+      contract.outcomeType === 'MULTI_NUMERIC' ||
+      contract.outcomeType === 'DATE'
+    ) {
+      const includeRedemptions =
+        contract.mechanism === 'cpmm-multi-1' && contract.shouldAnswersSumToOne
+      const allBetPoints = await getBetPointsBetween(contract, {
+        filterRedemptions: !includeRedemptions,
+        includeZeroShareRedemptions: includeRedemptions,
+        beforeTime: (contract.lastBetTime ?? contract.createdTime) + 1,
+        afterTime: contract.createdTime,
+      })
+      multiPoints = mapValues(getMultiBetPoints(allBetPoints, contract), (v) =>
+        pointsToBase64(v)
+      )
+    }
+  } catch (error) {
+    console.error('DB error fetching contract data:', contractSlug, error)
+    return { notFound: true, revalidate: 60 }
+  }
+
   return {
     props: { contract, points, multiPoints },
   }

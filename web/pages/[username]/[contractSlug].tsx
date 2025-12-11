@@ -17,12 +17,17 @@ export async function getStaticProps(ctx: {
 }) {
   const { contractSlug } = ctx.params
   const adminDb = await initSupabaseAdmin()
-  const contract = await getContractFromSlug(adminDb, contractSlug)
+
+  let contract
+  try {
+    contract = await getContractFromSlug(adminDb, contractSlug)
+  } catch (error) {
+    console.error('DB error fetching contract:', contractSlug, error)
+    return { notFound: true, revalidate: 60 }
+  }
 
   if (!contract) {
-    return {
-      notFound: true,
-    }
+    return { notFound: true }
   }
 
   if (contract.deleted) {
@@ -35,7 +40,13 @@ export async function getStaticProps(ctx: {
     }
   }
 
-  const props = await getContractParams(contract, adminDb)
+  let props
+  try {
+    props = await getContractParams(contract, adminDb)
+  } catch (error) {
+    console.error('DB error fetching contract params:', contractSlug, error)
+    return { notFound: true, revalidate: 60 }
+  }
 
   return {
     props: {

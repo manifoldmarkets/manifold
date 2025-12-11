@@ -30,9 +30,8 @@ import { LuSprout } from 'react-icons/lu'
 export const isFresh = (createdTime: number) =>
   createdTime > Date.now() - DAY_MS * 14
 
-export function shortenName(name: string) {
+export function shortenName(name: string, maxLength: number = 10) {
   const firstName = name.split(' ')[0]
-  const maxLength = 10
   const shortName =
     firstName.length >= 3 && name.length > maxLength
       ? firstName.length < maxLength
@@ -97,11 +96,20 @@ export function UserLink(props: {
     | null
   className?: string
   short?: boolean
+  maxLength?: number
   noLink?: boolean
   hideBadge?: boolean
   marketCreator?: boolean
 }) {
-  const { user, className, short, noLink, hideBadge, marketCreator } = props
+  const {
+    user,
+    className,
+    short,
+    maxLength,
+    noLink,
+    hideBadge,
+    marketCreator,
+  } = props
 
   if (!user || !user.name || !user.username) {
     // skeleton
@@ -112,9 +120,9 @@ export function UserLink(props: {
 
   const { id, name, username, createdTime } = user
   const fresh = createdTime ? isFresh(createdTime) : false
-  const shortName = short ? shortenName(name) : name
+  const shortName = short ? shortenName(name, maxLength) : name
   const children = (
-    <>
+    <span className="inline-flex flex-row flex-nowrap items-center gap-1">
       <span className="max-w-[200px] truncate">{shortName}</span>
       {!hideBadge && (
         <UserBadge
@@ -124,12 +132,15 @@ export function UserLink(props: {
           marketCreator={marketCreator}
         />
       )}
-    </>
+    </span>
   )
   if (noLink) {
     return (
       <div
-        className={clsx('inline-flex flex-row items-center gap-1', className)}
+        className={clsx(
+          'inline-flex flex-row flex-nowrap items-center gap-1',
+          className
+        )}
       >
         {children}
       </div>
@@ -140,7 +151,7 @@ export function UserLink(props: {
       href={`/${username}`}
       className={clsx(
         linkClass,
-        'inline-flex flex-row items-center gap-1',
+        'inline-flex flex-row flex-nowrap items-center gap-1',
         className
       )}
       onClick={(e) => e.stopPropagation()}

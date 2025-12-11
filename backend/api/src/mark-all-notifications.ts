@@ -1,9 +1,9 @@
-import { APIHandler, authEndpoint } from './helpers/endpoint'
 import { createSupabaseDirectClient } from 'shared/supabase/init'
 import {
-  broadcastNotificationsRead,
   broadcastAllNotificationsRead,
+  broadcastNotificationsRead,
 } from 'shared/websockets/helpers'
+import { APIHandler, authEndpoint } from './helpers/endpoint'
 
 export const markallnotifications = authEndpoint(async (_req, auth) => {
   const pg = createSupabaseDirectClient()
@@ -32,6 +32,24 @@ export const markNotificationRead: APIHandler<
   )
 
   broadcastNotificationsRead(auth.uid, [notificationId])
+
+  return { success: true }
+}
+
+export const markNotificationsRead: APIHandler<
+  'mark-notifications-read'
+> = async (props, auth) => {
+  const { notificationIds } = props
+  if (notificationIds.length === 0) return { success: true }
+
+  const pg = createSupabaseDirectClient()
+
+  await pg.none(
+    `update user_notifications set data = jsonb_set(data, '{markedAsRead}', 'true'::jsonb) where notification_id = ANY($1) and user_id = $2`,
+    [notificationIds, auth.uid]
+  )
+
+  broadcastNotificationsRead(auth.uid, notificationIds)
 
   return { success: true }
 }
