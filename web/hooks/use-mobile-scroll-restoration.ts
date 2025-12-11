@@ -40,6 +40,11 @@ export function useMobileScrollRestoration() {
     }
 
     const handleRouteChangeComplete = (url: string) => {
+      // Don't restore scroll if there's a hash in the URL - we want to scroll to that element
+      if (url.includes('#')) {
+        return
+      }
+
       // Restore scroll position for the new route
       isRestoringRef.current = true
 
