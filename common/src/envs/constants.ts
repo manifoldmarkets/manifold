@@ -89,6 +89,7 @@ export const BOT_USERNAMES = [
   'ManifoldBugs',
   'ACXBot',
   'JamesBot',
+  'jimbot',
   'RyanBot',
   'trainbot',
   'runebot',
