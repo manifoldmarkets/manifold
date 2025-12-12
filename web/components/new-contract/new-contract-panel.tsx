@@ -18,6 +18,7 @@ import {
   getSimilarGroupsToContract,
   searchContracts,
 } from 'web/lib/api/api'
+import { useListGroupsBySlug } from 'web/hooks/use-group-supabase'
 import { track } from 'web/lib/service/analytics'
 import Router from 'next/router'
 import { usePersistentLocalState } from 'web/hooks/use-persistent-local-state'
@@ -116,6 +117,20 @@ export function NewContractPanel(props: {
     getDefaultFormState(),
     'new-contract-form'
   )
+
+  // Fetch groups from slugs when duplicating a market
+  const groupsFromSlugs = useListGroupsBySlug(params?.groupSlugs ?? [])
+
+  // When groups are loaded from slugs (duplication), set them in form state
+  useEffect(() => {
+    if (params?.rand && groupsFromSlugs && groupsFromSlugs.length > 0) {
+      // Only update if this is a duplication (has rand param) and groups were resolved
+      setFormState((prev) => ({
+        ...prev,
+        selectedGroups: groupsFromSlugs,
+      }))
+    }
+  }, [params?.rand, groupsFromSlugs])
 
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [isTypeSwitcherOpen, setIsTypeSwitcherOpen] = useState(false)
