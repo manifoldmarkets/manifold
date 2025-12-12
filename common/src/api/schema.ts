@@ -161,6 +161,18 @@ export const API = (_apiTypeCheck = {
       .strict(),
     returns: {} as { success: boolean },
   },
+  'admin-search-users-by-email': {
+    method: 'GET',
+    visibility: 'undocumented',
+    authed: true,
+    props: z
+      .object({
+        email: z.string(),
+        limit: z.coerce.number().gte(1).lte(100).default(10),
+      })
+      .strict(),
+    returns: [] as FullUser[],
+  },
   'anonymize-user': {
     method: 'POST',
     visibility: 'undocumented',

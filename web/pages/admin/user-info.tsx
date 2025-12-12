@@ -12,11 +12,7 @@ import { Title } from 'web/components/widgets/title'
 import { useAdmin } from 'web/hooks/use-admin'
 import { useRedirectIfSignedOut } from 'web/hooks/use-redirect-if-signed-out'
 import { api } from 'web/lib/api/api'
-import {
-  DisplayUser,
-  searchUsers,
-  getFullUserById,
-} from 'web/lib/supabase/users'
+import { DisplayUser, searchUsers, getFullUserById } from 'web/lib/supabase/users'
 import { ConfirmActionModal } from 'web/components/admin/ConfirmActionModal'
 import { useRouter } from 'next/router'
 
@@ -67,11 +63,16 @@ export default function AdminUserInfoPage() {
     }
   }, [router.query.userId, isAdmin])
 
-  // Search for users
+  // Search for users - use email search if query looks like an email
   useEffect(() => {
     const id = ++requestId.current
     if (query.length > 1) {
-      searchUsers(query, 10).then((results) => {
+      const isEmailQuery = query.includes('@')
+      const searchPromise = isEmailQuery
+        ? api('admin-search-users-by-email', { email: query, limit: 10 })
+        : searchUsers(query, 10)
+
+      searchPromise.then((results) => {
         if (id === requestId.current) {
           setSearchResults(results)
         }
@@ -300,13 +301,13 @@ export default function AdminUserInfoPage() {
           <div>
             <h2 className="mb-4 text-lg font-semibold">Search for User</h2>
             <p className="text-ink-600 mb-4 text-sm">
-              Search by username, name, or user ID. Deleted accounts will still
-              appear in search results.
+              Search by username, name, user ID, or email address. Deleted
+              accounts will still appear in search results.
             </p>
             <div className="relative">
               <Input
                 type="text"
-                placeholder="Search by name, username, or ID..."
+                placeholder="Search by name, username, ID, or email..."
                 value={query}
                 onChange={(e) => setQuery(e.target.value)}
                 className="w-full max-w-md"
