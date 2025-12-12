@@ -172,6 +172,23 @@ export const API = (_apiTypeCheck = {
       .strict(),
     returns: {} as { success: boolean; newUsername: string; newName: string },
   },
+  'admin-get-related-users': {
+    method: 'GET',
+    visibility: 'undocumented',
+    authed: true,
+    props: z
+      .object({
+        userId: z.string(),
+      })
+      .strict(),
+    returns: {} as {
+      userId: string
+      matches: Array<{
+        visibleUser: FullUser
+        matchReasons: ('ip' | 'deviceToken')[]
+      }>
+    },
+  },
   comment: {
     method: 'POST',
     visibility: 'public',

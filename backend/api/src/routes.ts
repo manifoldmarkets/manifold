@@ -146,6 +146,7 @@ import { updateTask } from './update-task'
 
 import { adminDeleteUser } from './admin-delete-user'
 import { adminGetUserInfo } from './admin-get-user-info'
+import { adminGetRelatedUsers } from './admin-get-related-users'
 import { adminRecoverUser } from './admin-recover-user'
 import { anonymizeUser } from './anonymize-user'
 import { createPost } from './create-post'
@@ -197,6 +198,7 @@ export const handlers: { [k in APIPath]: APIHandler<k> } = {
   'recover-user': adminRecoverUser,
   'get-user-info': adminGetUserInfo,
   'admin-delete-user': adminDeleteUser,
+  'admin-get-related-users': adminGetRelatedUsers,
   'anonymize-user': anonymizeUser,
   bet: placeBet,
   'multi-bet': placeMultiBet,

@@ -38,6 +38,13 @@ export default function AdminUserInfoPage() {
   } | null>(null)
   const [manualEmail, setManualEmail] = useState('')
   const [isLoadingUserInfo, setIsLoadingUserInfo] = useState(false)
+  const [relatedUsers, setRelatedUsers] = useState<
+    Array<{
+      visibleUser: FullUser
+      matchReasons: ('ip' | 'deviceToken')[]
+    }>
+  >([])
+  const [isLoadingRelatedUsers, setIsLoadingRelatedUsers] = useState(false)
 
   // Confirmation modal states
   const [showRecoverModal, setShowRecoverModal] = useState(false)
@@ -89,9 +96,23 @@ export default function AdminUserInfoPage() {
         .finally(() => {
           setIsLoadingUserInfo(false)
         })
+
+      // Fetch related users (potential alts)
+      setIsLoadingRelatedUsers(true)
+      api('admin-get-related-users', { userId: selectedUser.id })
+        .then((result) => {
+          setRelatedUsers(result.matches)
+        })
+        .catch((error) => {
+          console.error('Error fetching related users:', error)
+        })
+        .finally(() => {
+          setIsLoadingRelatedUsers(false)
+        })
     } else {
       setUserInfo(null)
       setManualEmail('')
+      setRelatedUsers([])
     }
   }, [selectedUser])
 
@@ -473,6 +494,72 @@ export default function AdminUserInfoPage() {
                     )}
                   </div>
                 ) : null}
+              </div>
+
+              {/* Related Accounts (Potential Alts) */}
+              <div className="border-ink-200 mb-4 space-y-3 rounded border p-4">
+                <h3 className="font-semibold">Related Accounts (Potential Alts)</h3>
+                {isLoadingRelatedUsers ? (
+                  <div className="text-ink-600 text-sm">
+                    Searching for related accounts...
+                  </div>
+                ) : relatedUsers.length === 0 ? (
+                  <div className="text-ink-500 text-sm">
+                    No related accounts found (no matching IP or device token).
+                  </div>
+                ) : (
+                  <div className="space-y-2">
+                    <div className="mb-2 rounded border border-amber-200 bg-amber-50 p-2">
+                      <p className="text-sm text-amber-800">
+                        Found {relatedUsers.length} account
+                        {relatedUsers.length !== 1 ? 's' : ''} with matching IP
+                        or device token.
+                      </p>
+                    </div>
+                    {relatedUsers.map(({ visibleUser, matchReasons }) => (
+                      <div
+                        key={visibleUser.id}
+                        className="bg-canvas-50 flex items-center justify-between rounded border p-3"
+                      >
+                        <button
+                          className="flex items-center gap-3 text-left hover:underline"
+                          onClick={() => selectUser(visibleUser)}
+                        >
+                          <Avatar
+                            username={visibleUser.username}
+                            avatarUrl={visibleUser.avatarUrl}
+                            size="sm"
+                          />
+                          <div>
+                            <div className="font-medium">
+                              {visibleUser.name}
+                              {visibleUser.userDeleted && (
+                                <span className="ml-2 text-xs text-red-600">
+                                  [DELETED]
+                                </span>
+                              )}
+                            </div>
+                            <div className="text-ink-600 text-sm">
+                              @{visibleUser.username}
+                            </div>
+                          </div>
+                        </button>
+                        <div className="flex gap-2">
+                          {matchReasons.includes('ip') && (
+                            <span className="rounded bg-red-100 px-2 py-1 text-xs font-medium text-red-800">
+                              Same IP
+                            </span>
+                          )}
+                          {matchReasons.includes('deviceToken') && (
+                            <span className="rounded bg-red-100 px-2 py-1 text-xs font-medium text-red-800">
+                              Same Device
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
               </div>
 
               {/* Manual Email Input */}
