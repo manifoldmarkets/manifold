@@ -4,38 +4,44 @@ import type { Content, JSONContent } from '@tiptap/react'
 import { Editor, EditorContent, Extensions, useEditor } from '@tiptap/react'
 import StarterKit from '@tiptap/starter-kit'
 import clsx from 'clsx'
-import { ReactNode, useCallback, useEffect, useMemo, useRef } from 'react'
-import { DisplayContractMention } from '../editor/contract-mention/contract-mention-extension'
-import { DisplayLink } from '../editor/link-extension'
-import { DisplayMention } from '../editor/user-mention/mention-extension'
-import GridComponent from '../editor/tiptap-grid-cards'
-import { Linkify } from './linkify'
 import Iframe from 'common/util/tiptap-iframe'
 import { TiptapSpoiler } from 'common/util/tiptap-spoiler'
 import { debounce, noop } from 'lodash'
+import { ReactNode, useCallback, useEffect, useMemo, useRef } from 'react'
+import { DisplayContractMention } from '../editor/contract-mention/contract-mention-extension'
+import { EmojiExtension } from '../editor/emoji/emoji-extension'
 import { FloatingFormatMenu } from '../editor/floating-format-menu'
+import { BasicImage, DisplayImage, MediumDisplayImage } from '../editor/image'
+import { DisplayLink } from '../editor/link-extension'
+import { nodeViewMiddleware } from '../editor/nodeview-middleware'
+import { DisplaySpoiler } from '../editor/spoiler'
 import { StickyFormatMenu } from '../editor/sticky-format-menu'
+import GridComponent from '../editor/tiptap-grid-cards'
 import { DisplayTweet } from '../editor/tweet'
 import { Upload, useUploadMutation } from '../editor/upload-extension'
+import {
+  DisplayMention,
+  createDisplayMention,
+} from '../editor/user-mention/mention-extension'
 import { generateReact, insertContent } from '../editor/utils'
-import { EmojiExtension } from '../editor/emoji/emoji-extension'
-import { DisplaySpoiler } from '../editor/spoiler'
-import { nodeViewMiddleware } from '../editor/nodeview-middleware'
-import { BasicImage, DisplayImage, MediumDisplayImage } from '../editor/image'
+import { Linkify } from './linkify'
 
-import { LinkPreviewExtension } from 'web/components/editor/link-preview-extension'
 import { useEvent } from 'client-common/hooks/use-event'
+import { LinkPreviewExtension } from 'web/components/editor/link-preview-extension'
 
-import { Row } from 'web/components/layout/row'
+import { richTextToString } from 'common/util/parse'
 import {
   findLinksInContent,
   insertLinkPreviews,
 } from 'web/components/editor/link-preview-node-view'
+import { Row } from 'web/components/layout/row'
 import { usePersistentLocalState } from 'web/hooks/use-persistent-local-state'
-import { richTextToString } from 'common/util/parse'
 import { safeLocalStorage } from 'web/lib/util/local'
 
-const editorExtensions = (simple = false): Extensions =>
+const editorExtensions = (
+  simple = false,
+  priorityUserIds?: string[]
+): Extensions =>
   nodeViewMiddleware([
     StarterKit.configure({
       heading: simple ? false : { levels: [1, 2, 3, 4] },
@@ -44,7 +50,9 @@ const editorExtensions = (simple = false): Extensions =>
     simple ? DisplayImage : BasicImage,
     EmojiExtension,
     DisplayLink,
-    DisplayMention,
+    priorityUserIds?.length
+      ? createDisplayMention(priorityUserIds)
+      : DisplayMention,
     DisplayContractMention,
     GridComponent,
     Iframe,
@@ -77,9 +85,18 @@ export function useTextEditor(props: {
   extensions?: Extensions
   autofocus?: boolean
   className?: string
+  priorityUserIds?: string[] // user IDs to prioritize in mention suggestions (e.g., contract creator first, then commenters)
 }) {
-  const { placeholder, className, max, defaultValue, size, key, autofocus } =
-    props
+  const {
+    placeholder,
+    className,
+    max,
+    defaultValue,
+    size,
+    key,
+    autofocus,
+    priorityUserIds,
+  } = props
   const simple = size === 'sm'
   const [content, setContent] = usePersistentLocalState<
     JSONContent | undefined
@@ -122,7 +139,7 @@ export function useTextEditor(props: {
           debouncedAddPreviewIfLinkPresent()
         },
     extensions: [
-      ...editorExtensions(simple),
+      ...editorExtensions(simple, priorityUserIds),
       Placeholder.configure({
         placeholder,
         emptyEditorClass:

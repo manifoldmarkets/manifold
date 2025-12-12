@@ -1,31 +1,31 @@
 import { PaperAirplaneIcon } from '@heroicons/react/solid'
 import { Editor } from '@tiptap/react'
+import { useEvent } from 'client-common/hooks/use-event'
 import clsx from 'clsx'
+import { Answer } from 'common/answer'
+import { APIError } from 'common/api/utils'
+import { Bet } from 'common/bet'
+import { ContractComment, MAX_COMMENT_LENGTH } from 'common/comment'
+import { Contract } from 'common/contract'
 import { User } from 'common/user'
 import { useEffect, useState } from 'react'
-import { isBlocked, usePrivateUser, useUser } from 'web/hooks/use-user'
-import { ContractComment, MAX_COMMENT_LENGTH } from 'common/comment'
-import { Avatar } from '../widgets/avatar'
-import { TextEditor, useTextEditor } from '../widgets/editor'
-import { Row } from '../layout/row'
-import { LoadingIndicator } from '../widgets/loading-indicator'
-import { safeLocalStorage } from 'web/lib/util/local'
 import toast from 'react-hot-toast'
 import { BiRepost } from 'react-icons/bi'
 import { Tooltip } from 'web/components/widgets/tooltip'
-import { track } from 'web/lib/service/analytics'
-import { firebaseLogin } from 'web/lib/firebase/users'
-import { useEvent } from 'client-common/hooks/use-event'
-import { APIError } from 'common/api/utils'
-import { Answer } from 'common/answer'
-import { Bet } from 'common/bet'
-import { Contract } from 'common/contract'
+import { useAnswer } from 'web/hooks/use-answers'
+import { isBlocked, usePrivateUser, useUser } from 'web/hooks/use-user'
 import { useDisplayUserById } from 'web/hooks/use-user-supabase'
 import { api } from 'web/lib/api/api'
+import { firebaseLogin } from 'web/lib/firebase/users'
+import { track } from 'web/lib/service/analytics'
+import { safeLocalStorage } from 'web/lib/util/local'
 import { CommentOnAnswer } from '../feed/comment-on-answer'
+import { Row } from '../layout/row'
+import { Avatar } from '../widgets/avatar'
+import { TextEditor, useTextEditor } from '../widgets/editor'
+import { LoadingIndicator } from '../widgets/loading-indicator'
 import { ReplyToUserInfo } from './comment'
 import { ReplyToBetRow } from './comment-header'
-import { useAnswer } from 'web/hooks/use-answers'
 
 export function CommentInput(props: {
   replyToUserInfo?: ReplyToUserInfo
@@ -40,6 +40,7 @@ export function CommentInput(props: {
   commentTypes: CommentType[]
   autoFocus: boolean
   onClearInput?: () => void
+  priorityUserIds?: string[] // user IDs to prioritize in mention suggestions (e.g., contract creator first, then commenters)
 }) {
   const {
     parentCommentId,
@@ -52,6 +53,7 @@ export function CommentInput(props: {
     placeholder = 'What is your prediction?',
     commentTypes,
     onClearInput,
+    priorityUserIds,
   } = props
   const user = useUser()
 
@@ -64,6 +66,7 @@ export function CommentInput(props: {
     max: MAX_COMMENT_LENGTH,
     placeholder,
     className: isSubmitting ? '!text-ink-400' : '',
+    priorityUserIds,
   })
 
   const submitComment = useEvent(async (type: CommentType) => {
@@ -261,6 +264,7 @@ export function ContractCommentInput(props: {
   onSubmit?: (comment: ContractComment) => void
   commentTypes: CommentType[]
   onClearInput?: () => void
+  commenterUserIds?: string[] // user IDs of commenters to prioritize in mentions (after creator)
 }) {
   const {
     playContract,
@@ -273,6 +277,7 @@ export function ContractCommentInput(props: {
     onSubmit,
     commentTypes,
     onClearInput,
+    commenterUserIds,
   } = props
   const user = useUser()
   const privateUser = usePrivateUser()
@@ -357,6 +362,7 @@ export function ContractCommentInput(props: {
         }
         commentTypes={commentTypes}
         onClearInput={onClearInput}
+        priorityUserIds={[playContract.creatorId, ...(commenterUserIds ?? [])]}
       />
     </>
   )
