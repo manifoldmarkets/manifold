@@ -13,6 +13,8 @@ import { createJobs } from './jobs'
 import { MINUTE_MS } from 'common/util/time'
 import { METRIC_WRITER } from 'shared/monitoring/metric-writer'
 
+const LOCAL_ONLY = process.env.LOCAL_ONLY === 'true'
+
 const PORT = (process.env.PORT ? parseInt(process.env.PORT) : null) || 8080
 
 function loadTemplate(filename: string) {
@@ -27,7 +29,9 @@ async function start() {
   const app = express()
   app.use(express.json())
 
-  METRIC_WRITER.start()
+  if (!LOCAL_ONLY) {
+    METRIC_WRITER.start()
+  }
 
   const prod = isProd()
   app.use(

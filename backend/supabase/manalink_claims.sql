@@ -3,7 +3,7 @@ create table if not exists
   manalink_claims (
     manalink_id text not null,
     txn_id text not null,
-    constraint primary key (manalink_id, txn_id)
+    primary key (manalink_id, txn_id)
   );
 
 -- Row Level Security

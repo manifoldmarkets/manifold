@@ -9,7 +9,7 @@ create table if not exists
     likes integer default 0 not null,
     user_id text not null,
     visibility text,
-    constraint primary key (contract_id, comment_id)
+    primary key (contract_id, comment_id)
   );
 
 -- Triggers

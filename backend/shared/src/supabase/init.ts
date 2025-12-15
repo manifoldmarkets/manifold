@@ -112,8 +112,14 @@ export function createSupabaseDirectClient(opts?: {
   idleInTxnTimeout?: number
 }): SupabaseDirectClientTimeout {
   if (pgpDirect) return pgpDirect
+
+  // LOCAL_ONLY mode: connect directly to local Supabase PostgreSQL
+  const localOnly = process.env.LOCAL_ONLY === 'true'
+  const supabaseHost = process.env.SUPABASE_HOST  // e.g., "127.0.0.1"
+  const supabasePort = process.env.SUPABASE_PORT ? parseInt(process.env.SUPABASE_PORT) : 5432
+
   const instanceId = opts?.instanceId ?? getInstanceId()
-  if (!instanceId) {
+  if (!localOnly && !instanceId && !supabaseHost) {
     throw new Error(
       "Can't connect to Supabase; no process.env.SUPABASE_INSTANCE_ID and no instance ID in config."
     )
@@ -124,10 +130,15 @@ export function createSupabaseDirectClient(opts?: {
       "Can't connect to Supabase; no process.env.SUPABASE_PASSWORD."
     )
   }
-  log('Connecting to postgres')
+
+  // Determine host: explicit SUPABASE_HOST overrides, then instanceId-based
+  const host = supabaseHost ?? `db.${getInstanceHostname(instanceId)}`
+  const port = supabaseHost ? supabasePort : 5432
+
+  log(`Connecting to postgres at ${host}:${port}`)
   const client = pgp({
-    host: `db.${getInstanceHostname(instanceId)}`,
-    port: 5432,
+    host,
+    port,
     user: `postgres`,
     password: password,
 
