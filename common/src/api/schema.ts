@@ -171,7 +171,11 @@ export const API = (_apiTypeCheck = {
         limit: z.coerce.number().gte(1).lte(100).default(10),
       })
       .strict(),
-    returns: [] as FullUser[],
+    returns: [] as Array<{
+      user: FullUser
+      matchedEmail: string
+      matchedOnOldEmail: boolean
+    }>,
   },
   'anonymize-user': {
     method: 'POST',

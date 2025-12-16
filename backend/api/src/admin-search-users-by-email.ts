@@ -15,9 +15,12 @@ export const adminSearchUsersByEmail: APIHandler<
   const pg = createSupabaseDirectClient()
 
   // Search both current email and old_e_mail fields in private_users
-  const users = await pg.map(
+  const results = await pg.manyOrNone(
     `
-    select u.*
+    select
+      u.*,
+      pu.data->>'email' as matched_email,
+      pu.data->>'old_e_mail' as matched_old_email
     from users u
     join private_users pu on u.id = pu.id
     where pu.data->>'email' ilike $1
@@ -25,9 +28,12 @@ export const adminSearchUsersByEmail: APIHandler<
     order by u.data->>'lastBetTime' desc nulls last
     limit $2
     `,
-    [`%${email}%`, limit],
-    convertUser
+    [`%${email}%`, limit]
   )
 
-  return users.map(toUserAPIResponse)
+  return (results || []).map((row) => ({
+    user: toUserAPIResponse(convertUser(row)),
+    matchedEmail: row.matched_email || row.matched_old_email,
+    matchedOnOldEmail: !row.matched_email && !!row.matched_old_email,
+  }))
 }

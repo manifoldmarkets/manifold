@@ -22,7 +22,10 @@ export default function AdminUserInfoPage() {
   const router = useRouter()
 
   const [query, setQuery] = useState('')
-  const [searchResults, setSearchResults] = useState<DisplayUser[]>([])
+  const [searchResults, setSearchResults] = useState<
+    Array<DisplayUser & { matchedEmail?: string; matchedOnOldEmail?: boolean }>
+  >([])
+  const [isSearching, setIsSearching] = useState(false)
   const [selectedUser, setSelectedUser] = useState<FullUser | null>(null)
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [userInfo, setUserInfo] = useState<{
@@ -68,17 +71,38 @@ export default function AdminUserInfoPage() {
     const id = ++requestId.current
     if (query.length > 1) {
       const isEmailQuery = query.includes('@')
-      const searchPromise = isEmailQuery
-        ? api('admin-search-users-by-email', { email: query, limit: 10 })
-        : searchUsers(query, 10)
+      setIsSearching(true)
 
-      searchPromise.then((results) => {
-        if (id === requestId.current) {
-          setSearchResults(results)
-        }
-      })
+      if (isEmailQuery) {
+        api('admin-search-users-by-email', { email: query, limit: 10 })
+          .then((results) => {
+            if (id === requestId.current) {
+              setSearchResults(
+                results.map((r) => ({
+                  ...r.user,
+                  matchedEmail: r.matchedEmail,
+                  matchedOnOldEmail: r.matchedOnOldEmail,
+                }))
+              )
+            }
+          })
+          .finally(() => {
+            if (id === requestId.current) setIsSearching(false)
+          })
+      } else {
+        searchUsers(query, 10)
+          .then((results) => {
+            if (id === requestId.current) {
+              setSearchResults(results)
+            }
+          })
+          .finally(() => {
+            if (id === requestId.current) setIsSearching(false)
+          })
+      }
     } else {
       setSearchResults([])
+      setIsSearching(false)
     }
   }, [query])
 
@@ -313,6 +337,12 @@ export default function AdminUserInfoPage() {
                 className="w-full max-w-md"
               />
 
+              {isSearching && query.includes('@') && (
+                <div className="text-ink-600 mt-2 text-sm">
+                  Searching by email...
+                </div>
+              )}
+
               {searchResults.length > 0 && (
                 <div className="bg-canvas-0 border-ink-200 absolute top-full z-10 mt-1 max-h-64 w-full max-w-md overflow-auto rounded-md border shadow-lg">
                   {searchResults.map((user) => (
@@ -326,7 +356,7 @@ export default function AdminUserInfoPage() {
                         avatarUrl={user.avatarUrl}
                         size="sm"
                       />
-                      <div>
+                      <div className="min-w-0 flex-1">
                         <div className="font-medium">
                           {user.name}
                           {(user as any).userDeleted && (
@@ -338,6 +368,12 @@ export default function AdminUserInfoPage() {
                         <div className="text-ink-600 text-sm">
                           @{user.username}
                         </div>
+                        {user.matchedEmail && (
+                          <div className="text-ink-500 truncate text-xs">
+                            {user.matchedOnOldEmail ? 'old_email: ' : 'email: '}
+                            {user.matchedEmail}
+                          </div>
+                        )}
                       </div>
                     </button>
                   ))}
