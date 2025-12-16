@@ -16,6 +16,20 @@ type RelatedMatch = {
   matchReasons: MatchReason[]
 }
 
+// Scoring: deviceToken (3) > IP (2) > referral (1)
+function getMatchScore(matchReasons: MatchReason[]): number {
+  let score = 0
+  if (matchReasons.includes('deviceToken')) score += 3
+  if (matchReasons.includes('ip')) score += 2
+  if (matchReasons.includes('referrer')) score += 1
+  if (matchReasons.includes('referee')) score += 1
+  return score
+}
+
+function sortByMatchScore(matches: RelatedMatch[]): RelatedMatch[] {
+  return [...matches].sort((a, b) => getMatchScore(b.matchReasons) - getMatchScore(a.matchReasons))
+}
+
 function formatTimeDiffBetween(time1: number | undefined, time2: number | undefined) {
   if (!time1 || !time2 || isNaN(time1) || isNaN(time2)) return null
   const ms = Math.abs(time1 - time2)
@@ -54,9 +68,9 @@ function RelatedUserRow(props: {
     setLoadingSub(true)
     try {
       const result = await api('admin-get-related-users', { userId: user.id })
-      // Filter out the root user to avoid circular display
-      const filtered = result.matches.filter(
-        (m: RelatedMatch) => m.visibleUser.id !== rootUserId
+      // Filter out the root user to avoid circular display, then sort by score
+      const filtered = sortByMatchScore(
+        result.matches.filter((m: RelatedMatch) => m.visibleUser.id !== rootUserId)
       )
       setSubMatches(filtered)
       setSubTargetCreatedTime(result.targetCreatedTime)
@@ -162,7 +176,7 @@ export function AdminPrivateUserData(props: { userId: string }) {
   // Exclude notification preferences as requested
   const { initialIpAddress, initialDeviceToken, email } = privateUser
 
-  const relatedUsers = relatedData?.matches ?? []
+  const relatedUsers = sortByMatchScore(relatedData?.matches ?? [])
   const targetCreatedTime = relatedData?.targetCreatedTime
   const displayedUsers = showAllRelated ? relatedUsers : relatedUsers.slice(0, 3)
 
