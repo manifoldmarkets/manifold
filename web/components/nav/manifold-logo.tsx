@@ -75,35 +75,46 @@ export function ManifoldLogo(props: { className?: string; twoLine?: boolean }) {
   return (
     <>
       {showSnow && <Snowfall />}
-      <Link
-        href={user ? '/home' : '/'}
-        onClick={(e) => {
-          const isHomePage =
-            window.location.pathname === '/home' ||
-            window.location.pathname === '/'
-          if (isHomePage) {
-            e.preventDefault()
-            setShowSnow((prev) => !prev)
-          }
-        }}
-        className={clsx(
-          'group flex w-full flex-row items-center gap-0.5 px-1 outline-none',
-          className
-        )}
-      >
-        <Image
-          src="/christmas_manifold_logo.png"
-          alt="Manifold"
-          width={40}
-          height={40}
-          className="h-10 w-10 shrink-0 transition-transform group-hover:rotate-12"
-        />
-        <div
-          className={clsx('text-xl font-thin text-indigo-700 dark:text-white')}
+      <div className="flex items-center gap-2">
+        <Link
+          href={user ? '/home' : '/'}
+          onClick={(e) => {
+            const isHomePage =
+              window.location.pathname === '/home' ||
+              window.location.pathname === '/'
+            if (isHomePage) {
+              e.preventDefault()
+              setShowSnow((prev) => !prev)
+            }
+          }}
+          className={clsx(
+            'group flex w-full flex-row items-center gap-0.5 px-1 outline-none',
+            className
+          )}
         >
-          {ENV == 'DEV' ? 'DEVIFO️LD' : 'MANIF❄️LD'}
-        </div>
-      </Link>
+          <Image
+            src="/christmas_manifold_logo.png"
+            alt="Manifold"
+            width={40}
+            height={40}
+            className="h-10 w-10 shrink-0 transition-transform group-hover:rotate-12"
+          />
+          <div
+            className={clsx('text-xl font-thin text-indigo-700 dark:text-white')}
+          >
+            {ENV == 'DEV' ? 'DEVIFO️LD' : 'MANIF❄️LD'}
+          </div>
+        </Link>
+        {user && (
+          <Link
+            href="/wrapped"
+            className="ml-1 text-2xl transition-transform hover:scale-125 hover:rotate-12 animate-pulse"
+            title="Your 2025 Wrapped!"
+          >
+            🎁
+          </Link>
+        )}
+      </div>
     </>
   )
 }

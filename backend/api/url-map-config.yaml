@@ -64,8 +64,8 @@ pathMatchers:
           - pathTemplateMatch: /v0/generate-ai-market-suggestions
           - pathTemplateMatch: /v0/generate-ai-market-suggestions-2
           - pathTemplateMatch: /get-daily-changed-metrics-and-contracts
-          - pathTemplateMatch: /v0/get-monthly-bets-2024
-          - pathTemplateMatch: /v0/get-max-min-profit-2024
+          - pathTemplateMatch: /v0/get-monthly-bets-2025
+          - pathTemplateMatch: /v0/get-max-min-profit-2025
           - pathTemplateMatch: /get-next-loan-amount
           - pathTemplateMatch: /v0/generate-ai-answers
           - pathTemplateMatch: /v0/generate-ai-description

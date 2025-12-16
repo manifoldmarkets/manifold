@@ -1,8 +1,8 @@
 import { APIHandler } from 'api/helpers/endpoint'
 import { createSupabaseDirectClient } from 'shared/supabase/init'
 
-export const getmaxminprofit2024: APIHandler<
-  'get-max-min-profit-2024'
+export const getmaxminprofit2025: APIHandler<
+  'get-max-min-profit-2025'
 > = async (props) => {
   const { userId } = props
   const pg = createSupabaseDirectClient()
@@ -23,8 +23,8 @@ with filtered_data as (
     where 
         ucm.user_id = $1
         and c.token = 'MANA'
-        and c.resolution_time >= '2024-01-01'::timestamp
-        and c.resolution_time <= '2024-12-31 23:59:59'::timestamp
+        and c.resolution_time >= '2025-01-01'::timestamp
+        and c.resolution_time <= '2025-12-31 23:59:59'::timestamp
 ),
 max_profit as (
     select
@@ -61,3 +61,4 @@ order by profit desc;
 
   return data
 }
+

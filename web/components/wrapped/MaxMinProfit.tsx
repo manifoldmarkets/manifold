@@ -2,7 +2,7 @@ import clsx from 'clsx'
 import { User } from 'common/user'
 import { formatMoney } from 'common/util/format'
 import { useEffect, useState } from 'react'
-import { ProfitType, useMaxAndMinProfit } from 'web/hooks/use-wrapped-2024'
+import { ProfitType, useMaxAndMinProfit } from 'web/hooks/use-wrapped-2025'
 import { Col } from '../layout/col'
 import { Row } from '../layout/row'
 import { NavButtons } from './NavButtons'
@@ -20,7 +20,6 @@ export function MaxMinProfit(props: {
 
   const { maxProfit, minProfit } = useMaxAndMinProfit(user.id)
 
-  //triggers for animation in
   useEffect(() => {
     if (!animateIn) return
     const timeout1 = setTimeout(() => {
@@ -53,9 +52,15 @@ export function MaxMinProfit(props: {
   if (maxProfit === null || minProfit === null) {
     return (
       <>
-        <div className="mx-auto my-auto">
-          You don't have any resolved bets this year!
-        </div>
+        <Col className="mx-auto my-auto items-center gap-4 text-center">
+          <div className="text-6xl">🎅</div>
+          <div className="text-2xl text-white">
+            You don't have any resolved bets this year!
+          </div>
+          <div className="text-lg text-white/60">
+            Santa's checking his list twice...
+          </div>
+        </Col>
         <NavButtons goToPrevPage={goToPrevPage} goToNextPage={onGoToNext} />
       </>
     )
@@ -75,63 +80,65 @@ export function MaxMinProfit(props: {
 
   return (
     <>
-      <div className="relative mx-auto my-auto">
+      <div className="relative mx-auto my-auto px-4">
         <Row
           className={clsx(
-            'h-full max-w-lg',
+            'h-full max-w-lg gap-4',
             animateOut ? 'animate-fade-out' : ''
           )}
         >
-          <div className="grow-y w-7 bg-gradient-to-b from-green-300 via-gray-300 to-red-300" />
-          <Col className="grow-y justify-between">
+          {/* Christmas gradient bar */}
+          <div className="shrink-0 w-3 rounded-full bg-gradient-to-b from-green-400 via-white/50 to-red-400 shadow-lg" />
+          
+          <Col className="justify-between gap-8">
+            {/* Best trade - Gift */}
             <div
               className={clsx(
-                'px-6 text-2xl text-green-300',
+                'transition-all duration-700',
                 'animate-fade-in'
               )}
             >
-              {formatMoney(maxProfit?.profit ?? 0)}
+              <Row className="items-center gap-3 mb-2">
+                <span className="text-4xl">🎁</span>
+                <span className="text-3xl font-bold text-green-400">
+                  {formatMoney(maxProfit?.profit ?? 0)}
+                </span>
+              </Row>
+              <div className="text-xl text-white">
+                Your best gift was trading
+                <BettingDirection profit={maxProfit} /> on{' '}
+                <span className="font-semibold text-green-300">
+                  {maxBetOnAnswer ? maxBetOnAnswer.text : maxContract.question}
+                </span>
+                {maxBetOnAnswer && (
+                  <span className="text-white/70"> on {maxContract.question}</span>
+                )}
+              </div>
             </div>
+
+            {/* Worst trade - Coal */}
             <div
               className={clsx(
-                'px-6 text-2xl text-red-300',
-                animateIn2 ? 'animate-fade-in' : 'invisible'
+                'transition-all duration-700',
+                animateIn2 ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'
               )}
             >
-              {formatMoney(minProfit?.profit ?? 0)}
-            </div>
-          </Col>
-          <Col className="h-full justify-between gap-3">
-            <div
-              className={clsx(
-                'line-clamp-8 px-6 text-2xl',
-                animateOut ? 'animate-fade-out' : 'animate-fade-in'
-              )}
-            >
-              You made the most trading
-              <BettingDirection profit={maxProfit} /> on{' '}
-              <b>
-                {maxBetOnAnswer ? maxBetOnAnswer.text : maxContract.question}
-              </b>{' '}
-              {maxBetOnAnswer && <>on {maxContract.question}</>}
-            </div>
-            <div
-              className={clsx(
-                'line-clamp-8 px-6 text-2xl',
-                animateIn2
-                  ? animateOut
-                    ? 'animate-fade-out'
-                    : 'animate-fade-in'
-                  : 'invisible'
-              )}
-            >
-              You lost the most trading
-              <BettingDirection profit={minProfit} />
-              on{' '}
-              <b>
-                {minBetOnAnswer ? minBetOnAnswer.text : minContract.question}
-              </b>{' '}
-              {minBetOnAnswer && <>on {minContract.question}</>}
+              <Row className="items-center gap-3 mb-2">
+                <span className="text-4xl">🪨</span>
+                <span className="text-3xl font-bold text-red-400">
+                  {formatMoney(minProfit?.profit ?? 0)}
+                </span>
+              </Row>
+              <div className="text-xl text-white">
+                Your lump of coal was trading
+                <BettingDirection profit={minProfit} /> on{' '}
+                <span className="font-semibold text-red-300">
+                  {minBetOnAnswer ? minBetOnAnswer.text : minContract.question}
+                </span>
+                {minBetOnAnswer && (
+                  <span className="text-white/70"> on {minContract.question}</span>
+                )}
+              </div>
             </div>
           </Col>
         </Row>
@@ -149,9 +156,9 @@ function BettingDirection(props: { profit: ProfitType | null | undefined }) {
   return (
     <>
       {hasYesShares ? (
-        <span className="text-green-300"> YES </span>
+        <span className="font-bold text-green-300"> YES </span>
       ) : hasNoShares ? (
-        <span className="text-red-300"> NO </span>
+        <span className="font-bold text-red-300"> NO </span>
       ) : (
         <> </>
       )}

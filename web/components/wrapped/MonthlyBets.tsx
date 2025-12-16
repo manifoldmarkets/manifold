@@ -1,6 +1,6 @@
 import clsx from 'clsx'
 import { useEffect, useState } from 'react'
-import { MonthlyBetsType } from 'web/hooks/use-wrapped-2024'
+import { MonthlyBetsType } from 'web/hooks/use-wrapped-2025'
 import { LoadingIndicator } from '../widgets/loading-indicator'
 import { numberWithCommas } from 'common/util/formatNumber'
 import { Spacer } from '../layout/spacer'
@@ -18,7 +18,6 @@ export function MonthlyBets(props: {
   const [animateMostMonthBetIn, setAnimateMostMonthBetIn] = useState(false)
   const [animateOut, setAnimateOut] = useState(false)
 
-  //triggers for animation in
   useEffect(() => {
     if (!animateCircleIn) return
     const timeout1 = setTimeout(() => {
@@ -61,11 +60,9 @@ export function MonthlyBets(props: {
   const monthWithMaxBets = monthlyBets.reduce((max, current) => {
     return current.bet_count > max.bet_count ? current : max
   })
-  // Create a date object using the UTC constructor to prevent timezone offsets from affecting the month
   const dateOfMaxBets = new Date(monthWithMaxBets.month)
   dateOfMaxBets.setDate(dateOfMaxBets.getDate() + 1)
 
-  // Now you have the month with the highest number of bets
   const monthName = dateOfMaxBets.toLocaleString('default', {
     month: 'long',
     timeZone: 'UTC',
@@ -89,7 +86,7 @@ export function MonthlyBets(props: {
         </div>
         <div
           className={clsx(
-            'px-6 text-2xl',
+            'px-6 text-2xl text-white',
             animateTotalBetIn
               ? animateOut
                 ? 'animate-fade-out'
@@ -98,15 +95,15 @@ export function MonthlyBets(props: {
           )}
         >
           You've traded a total of{' '}
-          <span className="font-bold text-fuchsia-300">
+          <span className="font-bold text-green-300">
             {numberWithCommas(totalBetsThisYear)}
           </span>{' '}
-          times this year!
+          times this year! 🎄
         </div>
         <Spacer h={4} />
         <div
           className={clsx(
-            'px-6 text-2xl ',
+            'px-6 text-2xl text-white',
             animateMostMonthBetIn
               ? animateOut
                 ? 'animate-fade-out'
@@ -115,14 +112,14 @@ export function MonthlyBets(props: {
           )}
         >
           You traded the most in{' '}
-          <span className={clsx('highlight-black font-bold text-fuchsia-300')}>
+          <span className="font-bold text-red-300">
             {monthName}
           </span>
           , with{' '}
-          <span className="font-bold text-fuchsia-300">
+          <span className="font-bold text-green-300">
             {numberWithCommas(monthWithMaxBets.bet_count)}
           </span>{' '}
-          trades!
+          trades! 🎁
         </div>
       </div>
       <NavButtons goToPrevPage={goToPrevPage} goToNextPage={onGoToNext} />
@@ -135,27 +132,28 @@ export const CircleGraph = (props: {
   maxBets: number
 }) => {
   const { monthlyBets, maxBets } = props
-  const radius = 100 // Radius of the circle
-  const maxLength = 50 // Maximum length of the spikes
+  const radius = 100
+  const maxLength = 50
   const svgPadding = 20
   const svgSize = (radius + maxLength + svgPadding) * 2
   const svgCenter = svgSize / 4
 
-  // Calculate the scale factor
   const scaleFactor = maxBets > 0 ? maxLength / maxBets : 0
   const numMonths = monthlyBets.length
+  
   return (
     <svg width={svgSize} height={svgSize} viewBox={`0 0 ${svgSize} ${svgSize}`}>
       <defs>
-        <linearGradient id="lineGradient" x1="0%" y1="0%" x2="100%" y2="0%">
-          <stop offset="0%" stopColor="blue" />
-          <stop offset="100%" stopColor="red" />
+        <linearGradient id="christmasGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+          <stop offset="0%" stopColor="#ef4444" />
+          <stop offset="50%" stopColor="#22c55e" />
+          <stop offset="100%" stopColor="#ef4444" />
         </linearGradient>
       </defs>
 
       {/* Draw the lines for each month */}
       {monthlyBets.map((data, index) => {
-        const angle = (index / numMonths) * Math.PI * 2 - Math.PI / 2 // -90 degrees to start from top
+        const angle = (index / numMonths) * Math.PI * 2 - Math.PI / 2
         const lineLength = data.bet_count * scaleFactor
         const x1 = svgCenter + radius + radius * Math.cos(angle)
         const y1 = svgCenter + radius + radius * Math.sin(angle)
@@ -169,8 +167,9 @@ export const CircleGraph = (props: {
             y1={y1}
             x2={x2}
             y2={y2}
-            stroke={getScaleColor(lineLength)} // Apply the gradient to the stroke
+            stroke={getChristmasColor(index)}
             strokeWidth="50"
+            strokeLinecap="round"
           />
         )
       })}
@@ -178,7 +177,7 @@ export const CircleGraph = (props: {
       {/* Label the months */}
       {monthlyBets.map((_data, index) => {
         const angle = (index / numMonths) * Math.PI * 2 - Math.PI / 2
-        const textRadius = radius - 10 // Place text inside the circle
+        const textRadius = radius - 10
         const x = svgCenter + radius + textRadius * Math.cos(angle)
         const y = svgCenter + radius + textRadius * Math.sin(angle)
 
@@ -190,30 +189,44 @@ export const CircleGraph = (props: {
             dy="0.35em"
             textAnchor="middle"
             fontSize="14"
-            fill="#a28ea4"
-            transform={`rotate(${index * (360 / numMonths)} ${x} ${y})`} // This will rotate the text to be upright
+            fill={index % 2 === 0 ? '#86efac' : '#fca5a5'}
+            fontWeight="bold"
+            transform={`rotate(${index * (360 / numMonths)} ${x} ${y})`}
           >
             {MONTHS[index]}
           </text>
         )
       })}
+      
+      {/* Center decoration */}
+      <text
+        x={svgCenter + radius}
+        y={svgCenter + radius}
+        textAnchor="middle"
+        dominantBaseline="middle"
+        fontSize="40"
+      >
+        ⭐
+      </text>
     </svg>
   )
 }
 
-function getScaleColor(scaledNum: number) {
-  if (scaledNum < 20) {
-    return '#22d3ee'
-  }
-  if (scaledNum < 40) {
-    return '#67e8f9'
-  }
-  if (scaledNum < 60) {
-    return '#a5f3fc'
-  }
-  if (scaledNum < 80) {
-    return '#cffafe'
-  } else {
-    return '#ecfeff'
-  }
+function getChristmasColor(index: number) {
+  // Alternate between Christmas red and green with varying shades
+  const colors = [
+    '#ef4444', // red-500
+    '#22c55e', // green-500
+    '#dc2626', // red-600
+    '#16a34a', // green-600
+    '#f87171', // red-400
+    '#4ade80', // green-400
+    '#b91c1c', // red-700
+    '#15803d', // green-700
+    '#fca5a5', // red-300
+    '#86efac', // green-300
+    '#ef4444', // red-500
+    '#22c55e', // green-500
+  ]
+  return colors[index % colors.length]
 }

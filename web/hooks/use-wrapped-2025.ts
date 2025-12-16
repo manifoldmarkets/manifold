@@ -15,7 +15,7 @@ async function getMonthlyBets(userId: string) {
   const dataMap = new Map<string, MonthlyBetsType>()
 
   try {
-    const data = await api('get-monthly-bets-2024', { userId })
+    const data = await api('get-monthly-bets-2025', { userId })
     data?.forEach((item) => {
       const monthKey = item.month.substring(0, 7)
       dataMap.set(monthKey, item)
@@ -25,7 +25,7 @@ async function getMonthlyBets(userId: string) {
   }
 
   return Array.from({ length: 12 }, (_, month) => {
-    const monthDate = new Date(Date.UTC(2024, month, 1))
+    const monthDate = new Date(Date.UTC(2025, month, 1))
     const formattedMonth = monthDate.toISOString().substring(0, 7)
     const monthData = dataMap.get(formattedMonth)
 
@@ -40,7 +40,7 @@ async function getMonthlyBets(userId: string) {
 export function useMonthlyBets(userId: string) {
   const [monthlyBets, setMonthlyBets] = usePersistentLocalState<
     MonthlyBetsType[] | undefined | null
-  >(undefined, `wrapped-2024-${userId}-monthly-bets`)
+  >(undefined, `wrapped-2025-${userId}-monthly-bets`)
   useEffect(() => {
     getMonthlyBets(userId).then((data) => {
       setMonthlyBets((data as MonthlyBetsType[]) ?? [])
@@ -53,7 +53,7 @@ export function useMonthlyBets(userId: string) {
 export function useTotalProfit(userId: string) {
   const [totalProfit, setTotalProfit] = usePersistentLocalState<
     number | undefined | null
-  >(undefined, `wrapped-2024-${userId}-total-profit`)
+  >(undefined, `wrapped-2025-${userId}-total-profit`)
   useEffect(() => {
     getTotalProfit(userId).then((data) => {
       setTotalProfit(data)
@@ -68,7 +68,7 @@ async function getTotalProfit(userId: string) {
     .from('user_portfolio_history')
     .select('*')
     .eq('user_id', userId)
-    .gte('ts', '2024-01-01')
+    .gte('ts', '2025-01-01')
     .order('ts', { ascending: true })
     .limit(1)
 
@@ -76,7 +76,7 @@ async function getTotalProfit(userId: string) {
     .from('user_portfolio_history')
     .select('*')
     .eq('user_id', userId)
-    .lte('ts', '2024-12-31 23:59:59')
+    .lte('ts', '2025-12-31 23:59:59')
     .order('ts', { ascending: false })
     .limit(1)
 
@@ -102,9 +102,9 @@ function calculateTotalProfit(
   )
 }
 
-async function getMaxMinProfitMetric2024(userId: string) {
+async function getMaxMinProfitMetric2025(userId: string) {
   try {
-    const data = await api('get-max-min-profit-2024', { userId })
+    const data = await api('get-max-min-profit-2025', { userId })
     return data
   } catch (error) {
     console.error('Error fetching max/min profit metrics:', error)
@@ -123,10 +123,10 @@ export type ProfitType = {
 export function useMaxAndMinProfit(userId: string) {
   const [maxProfit, setMaxProfit] = usePersistentLocalState<
     ProfitType | undefined | null
-  >(undefined, `wrapped-2024-${userId}-max-profit`)
+  >(undefined, `wrapped-2025-${userId}-max-profit`)
   const [minProfit, setMinProfit] = usePersistentLocalState<
     ProfitType | undefined | null
-  >(undefined, `wrapped-2024-${userId}-min-profit`)
+  >(undefined, `wrapped-2025-${userId}-min-profit`)
 
   function translateProfitObject(
     profitObject: {
@@ -148,7 +148,7 @@ export function useMaxAndMinProfit(userId: string) {
   }
 
   useEffect(() => {
-    getMaxMinProfitMetric2024(userId).then((data) => {
+    getMaxMinProfitMetric2025(userId).then((data) => {
       const [max, min] = data && data.length > 0 ? data : [null, null]
       setMaxProfit(translateProfitObject(max))
       setMinProfit(translateProfitObject(min))
@@ -157,3 +157,4 @@ export function useMaxAndMinProfit(userId: string) {
 
   return { maxProfit, minProfit }
 }
+

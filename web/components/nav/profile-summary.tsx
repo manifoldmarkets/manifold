@@ -35,7 +35,7 @@ export function ProfileSummary(props: { user: User; className?: string }) {
           <TokenNumber
             amount={user?.balance}
             numberType="animated"
-            className="mr-1 text-violet-600 dark:text-violet-400"
+            className="mr-2 text-violet-600 dark:text-violet-400"
           />
         </div>
         {/* remove this after deprecating sweeps */}
