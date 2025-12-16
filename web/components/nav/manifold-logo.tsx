@@ -100,7 +100,9 @@ export function ManifoldLogo(props: { className?: string; twoLine?: boolean }) {
             className="h-10 w-10 shrink-0 transition-transform group-hover:rotate-12"
           />
           <div
-            className={clsx('text-xl font-thin text-indigo-700 dark:text-white')}
+            className={clsx(
+              'text-xl font-thin text-indigo-700 dark:text-white'
+            )}
           >
             {ENV == 'DEV' ? 'DEVIFO️LD' : 'MANIF❄️LD'}
           </div>
@@ -108,7 +110,7 @@ export function ManifoldLogo(props: { className?: string; twoLine?: boolean }) {
         {user && (
           <Link
             href="/wrapped"
-            className="ml-1 text-2xl transition-transform hover:scale-125 hover:rotate-12 animate-pulse"
+            className="ml-1 animate-pulse text-2xl transition-transform hover:rotate-12 hover:scale-125"
             title="Your 2025 Wrapped!"
           >
             🎁

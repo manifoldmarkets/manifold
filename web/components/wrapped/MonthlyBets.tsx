@@ -112,10 +112,7 @@ export function MonthlyBets(props: {
           )}
         >
           You traded the most in{' '}
-          <span className="font-bold text-red-300">
-            {monthName}
-          </span>
-          , with{' '}
+          <span className="font-bold text-red-300">{monthName}</span>, with{' '}
           <span className="font-bold text-green-300">
             {numberWithCommas(monthWithMaxBets.bet_count)}
           </span>{' '}
@@ -140,11 +137,17 @@ export const CircleGraph = (props: {
 
   const scaleFactor = maxBets > 0 ? maxLength / maxBets : 0
   const numMonths = monthlyBets.length
-  
+
   return (
     <svg width={svgSize} height={svgSize} viewBox={`0 0 ${svgSize} ${svgSize}`}>
       <defs>
-        <linearGradient id="christmasGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+        <linearGradient
+          id="christmasGradient"
+          x1="0%"
+          y1="0%"
+          x2="100%"
+          y2="100%"
+        >
           <stop offset="0%" stopColor="#ef4444" />
           <stop offset="50%" stopColor="#22c55e" />
           <stop offset="100%" stopColor="#ef4444" />
@@ -197,7 +200,7 @@ export const CircleGraph = (props: {
           </text>
         )
       })}
-      
+
       {/* Center decoration */}
       <text
         x={svgCenter + radius}

@@ -157,4 +157,3 @@ export function useMaxAndMinProfit(userId: string) {
 
   return { maxProfit, minProfit }
 }
-

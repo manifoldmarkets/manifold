@@ -88,17 +88,14 @@ export function MaxMinProfit(props: {
           )}
         >
           {/* Christmas gradient bar */}
-          <div className="shrink-0 w-3 rounded-full bg-gradient-to-b from-green-400 via-white/50 to-red-400 shadow-lg" />
-          
+          <div className="w-3 shrink-0 rounded-full bg-gradient-to-b from-green-400 via-white/50 to-red-400 shadow-lg" />
+
           <Col className="justify-between gap-8">
             {/* Best trade - Gift */}
             <div
-              className={clsx(
-                'transition-all duration-700',
-                'animate-fade-in'
-              )}
+              className={clsx('transition-all duration-700', 'animate-fade-in')}
             >
-              <Row className="items-center gap-3 mb-2">
+              <Row className="mb-2 items-center gap-3">
                 <span className="text-4xl">🎁</span>
                 <span className="text-3xl font-bold text-green-400">
                   {formatMoney(maxProfit?.profit ?? 0)}
@@ -111,7 +108,10 @@ export function MaxMinProfit(props: {
                   {maxBetOnAnswer ? maxBetOnAnswer.text : maxContract.question}
                 </span>
                 {maxBetOnAnswer && (
-                  <span className="text-white/70"> on {maxContract.question}</span>
+                  <span className="text-white/70">
+                    {' '}
+                    on {maxContract.question}
+                  </span>
                 )}
               </div>
             </div>
@@ -120,10 +120,12 @@ export function MaxMinProfit(props: {
             <div
               className={clsx(
                 'transition-all duration-700',
-                animateIn2 ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'
+                animateIn2
+                  ? 'translate-y-0 opacity-100'
+                  : 'translate-y-4 opacity-0'
               )}
             >
-              <Row className="items-center gap-3 mb-2">
+              <Row className="mb-2 items-center gap-3">
                 <span className="text-4xl">🪨</span>
                 <span className="text-3xl font-bold text-red-400">
                   {formatMoney(minProfit?.profit ?? 0)}
@@ -136,7 +138,10 @@ export function MaxMinProfit(props: {
                   {minBetOnAnswer ? minBetOnAnswer.text : minContract.question}
                 </span>
                 {minBetOnAnswer && (
-                  <span className="text-white/70"> on {minContract.question}</span>
+                  <span className="text-white/70">
+                    {' '}
+                    on {minContract.question}
+                  </span>
                 )}
               </div>
             </div>
