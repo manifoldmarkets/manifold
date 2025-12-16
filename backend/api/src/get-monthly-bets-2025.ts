@@ -17,6 +17,8 @@ export const getmonthlybets2025: APIHandler<
     WHERE user_id = $1
       AND created_time >= '2025-01-01'::timestamp
       AND created_time <= '2025-12-31 23:59:59'::timestamp
+      AND (is_redemption IS NULL OR is_redemption = false)
+      AND amount != 0
     GROUP BY date_trunc('month', created_time)
     ORDER BY month
     `,
