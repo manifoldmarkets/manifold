@@ -51,7 +51,7 @@ export function UserCommentsList(props: { user: User }) {
           inputMode="search"
           value={inputTerm}
           onChange={(e) => setInputTerm(e.target.value)}
-          placeholder="Search your comments"
+          placeholder={`Search comments`}
           className="w-full"
         />
       </div>
