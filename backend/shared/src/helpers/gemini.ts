@@ -5,7 +5,7 @@ import { log } from 'shared/utils'
 export const models = {
   flash: 'gemini-2.5-flash-lite' as const,
   flashThinking: 'gemini-2.5-flash' as const,
-  pro: 'gemini-2.5-pro' as const,
+  pro: 'gemini-3-pro-preview' as const,
 }
 
 export type model_types = (typeof models)[keyof typeof models]
