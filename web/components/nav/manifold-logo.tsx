@@ -71,6 +71,13 @@ export function ManifoldLogo(props: { className?: string; twoLine?: boolean }) {
   const { className } = props
   const user = useUser()
   const [showSnow, setShowSnow] = useState(false)
+  const [hasClickedWrapped, setHasClickedWrapped] = useState(true) // default true to avoid flash
+
+  useEffect(() => {
+    setHasClickedWrapped(
+      localStorage.getItem('hasClickedWrapped2025') === 'true'
+    )
+  }, [])
 
   return (
     <>
@@ -100,7 +107,9 @@ export function ManifoldLogo(props: { className?: string; twoLine?: boolean }) {
             className="h-10 w-10 shrink-0 transition-transform group-hover:rotate-12"
           />
           <div
-            className={clsx('text-xl font-thin text-indigo-700 dark:text-white')}
+            className={clsx(
+              'text-xl font-thin text-indigo-700 dark:text-white'
+            )}
           >
             {ENV == 'DEV' ? 'DEVIFO️LD' : 'MANIF❄️LD'}
           </div>
@@ -108,8 +117,15 @@ export function ManifoldLogo(props: { className?: string; twoLine?: boolean }) {
         {user && (
           <Link
             href="/wrapped"
-            className="ml-1 text-2xl transition-transform hover:scale-125 hover:rotate-12 animate-pulse"
+            className={clsx(
+              'ml-1 text-2xl transition-transform hover:rotate-12 hover:scale-125',
+              !hasClickedWrapped && 'animate-pulse'
+            )}
             title="Your 2025 Wrapped!"
+            onClick={() => {
+              localStorage.setItem('hasClickedWrapped2025', 'true')
+              setHasClickedWrapped(true)
+            }}
           >
             🎁
           </Link>
