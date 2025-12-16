@@ -41,6 +41,12 @@ function appendQuery(url: string, props: Record<string, any>) {
   return `${base}?${params.toString()}`
 }
 
+// LOCAL_ONLY mode: Store the local user ID for API calls
+let localOnlyUserId: string | null = null
+export function setLocalOnlyUserId(userId: string | null) {
+  localOnlyUserId = userId
+}
+
 export async function baseApiCall(
   url: string,
   method: 'POST' | 'PUT' | 'GET',
@@ -54,6 +60,10 @@ export async function baseApiCall(
   if (user) {
     const token = await user.getIdToken()
     headers.Authorization = `Bearer ${token}`
+  } else if (localOnlyUserId) {
+    // LOCAL_ONLY mode: Use the stored user ID as the Bearer token
+    headers.Authorization = `Bearer ${localOnlyUserId}`
+    headers['X-Local-User'] = localOnlyUserId
   }
   const req = new Request(actualUrl, {
     headers,

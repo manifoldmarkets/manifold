@@ -38,8 +38,10 @@ type JwtCredentials = { kind: 'jwt'; data: admin.auth.DecodedIdToken }
 type KeyCredentials = { kind: 'key'; data: string }
 type Credentials = JwtCredentials | KeyCredentials
 
+// LOCAL_ONLY mode: Skip Firebase auth, accept local user ID
+const LOCAL_ONLY = process.env.LOCAL_ONLY === 'true'
+
 export const parseCredentials = async (req: Request): Promise<Credentials> => {
-  const auth = admin.auth()
   const authHeader = req.get('Authorization')
   if (!authHeader) {
     throw new APIError(401, 'Missing Authorization header.')
@@ -55,6 +57,25 @@ export const parseCredentials = async (req: Request): Promise<Credentials> => {
       if (payload === 'undefined') {
         throw new APIError(401, 'Firebase JWT payload undefined.')
       }
+      // LOCAL_ONLY mode: Accept any Bearer token and extract user ID from X-Local-User header
+      if (LOCAL_ONLY) {
+        const localUserId = req.get('X-Local-User')
+        if (localUserId) {
+          log('LOCAL_ONLY: Using local user ID from X-Local-User header:', localUserId)
+          return {
+            kind: 'jwt',
+            data: { user_id: localUserId } as unknown as admin.auth.DecodedIdToken
+          }
+        }
+        // Fallback: treat the Bearer token itself as the user ID
+        log('LOCAL_ONLY: Using Bearer token as user ID:', payload)
+        return {
+          kind: 'jwt',
+          data: { user_id: payload } as unknown as admin.auth.DecodedIdToken
+        }
+      }
+      // Normal mode: Verify with Firebase
+      const auth = admin.auth()
       try {
         return { kind: 'jwt', data: await auth.verifyIdToken(payload) }
       } catch (err) {
