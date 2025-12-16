@@ -6,7 +6,137 @@ import { Row } from 'web/components/layout/row'
 import { Avatar } from 'web/components/widgets/avatar'
 import { LoadingIndicator } from 'web/components/widgets/loading-indicator'
 import { useAPIGetter } from 'web/hooks/use-api-getter'
+import { api } from 'web/lib/api/api'
 import Link from 'next/link'
+
+type MatchReason = 'ip' | 'deviceToken' | 'referrer' | 'referee'
+
+type RelatedMatch = {
+  visibleUser: FullUser
+  matchReasons: MatchReason[]
+}
+
+function formatTimeDiffBetween(time1: number | undefined, time2: number | undefined) {
+  if (!time1 || !time2 || isNaN(time1) || isNaN(time2)) return null
+  const ms = Math.abs(time1 - time2)
+  const minutes = Math.floor(ms / (1000 * 60))
+  const hours = Math.floor(ms / (1000 * 60 * 60))
+  const days = Math.floor(ms / (1000 * 60 * 60 * 24))
+  if (minutes < 1) return 'same minute'
+  if (minutes < 60) return `${minutes}m apart`
+  if (hours < 24) return `${hours}h apart`
+  if (days < 30) return `${days}d apart`
+  return `${Math.floor(days / 30)}mo apart`
+}
+
+function RelatedUserRow(props: {
+  user: FullUser
+  matchReasons: MatchReason[]
+  timeDiff: string | null
+  rootUserId: string
+  depth?: number
+}) {
+  const { user, matchReasons, timeDiff, rootUserId, depth = 0 } = props
+  const [expanded, setExpanded] = useState(false)
+  const [subMatches, setSubMatches] = useState<RelatedMatch[]>([])
+  const [subTargetCreatedTime, setSubTargetCreatedTime] = useState<number | undefined>()
+  const [loadingSub, setLoadingSub] = useState(false)
+
+  const handleExpand = async (e: React.MouseEvent) => {
+    e.preventDefault()
+    e.stopPropagation()
+
+    if (expanded) {
+      setExpanded(false)
+      return
+    }
+
+    setLoadingSub(true)
+    try {
+      const result = await api('admin-get-related-users', { userId: user.id })
+      // Filter out the root user to avoid circular display
+      const filtered = result.matches.filter(
+        (m: RelatedMatch) => m.visibleUser.id !== rootUserId
+      )
+      setSubMatches(filtered)
+      setSubTargetCreatedTime(result.targetCreatedTime)
+      setExpanded(true)
+    } catch (err) {
+      console.error('Error fetching sub-connections:', err)
+    } finally {
+      setLoadingSub(false)
+    }
+  }
+
+  return (
+    <Col>
+      <div className="bg-canvas-0 hover:bg-canvas-100 flex items-center justify-between gap-2 overflow-hidden rounded border p-2">
+        <Link href={`/${user.username}`} className="flex min-w-0 flex-1 items-center gap-2">
+          <Avatar
+            username={user.username}
+            avatarUrl={user.avatarUrl}
+            size="xs"
+            className="flex-shrink-0"
+          />
+          <div className="min-w-0 text-sm">
+            <span className="font-medium">{user.name}</span>
+            {user.userDeleted && (
+              <span className="ml-1 text-xs text-red-600">[DEL]</span>
+            )}
+            <span className="text-ink-500 ml-1 truncate">@{user.username}</span>
+          </div>
+        </Link>
+        <Row className="flex-shrink-0 items-center gap-1">
+          {matchReasons.includes('referrer') && (
+            <span className="rounded bg-blue-100 px-1.5 py-0.5 text-xs text-blue-800">Referrer</span>
+          )}
+          {matchReasons.includes('referee') && (
+            <span className="rounded bg-green-100 px-1.5 py-0.5 text-xs text-green-800">Referred</span>
+          )}
+          {matchReasons.includes('ip') && (
+            <span className="rounded bg-red-100 px-1.5 py-0.5 text-xs text-red-800">IP</span>
+          )}
+          {matchReasons.includes('deviceToken') && (
+            <span className="rounded bg-red-100 px-1.5 py-0.5 text-xs text-red-800">Device</span>
+          )}
+          {timeDiff && (
+            <span className="text-ink-500 text-xs">{timeDiff}</span>
+          )}
+          {depth < 2 && (
+            <button
+              onClick={handleExpand}
+              className="text-primary-600 hover:text-primary-700 ml-1 text-xs underline"
+            >
+              {loadingSub ? '...' : expanded ? 'hide' : '+'}
+            </button>
+          )}
+        </Row>
+      </div>
+      {expanded && subMatches.length > 0 && (
+        <div className="border-l-2 border-ink-200 ml-4 mt-1 space-y-1 pl-2">
+          {subMatches.slice(0, 5).map((match) => (
+            <RelatedUserRow
+              key={match.visibleUser.id}
+              user={match.visibleUser}
+              matchReasons={match.matchReasons}
+              timeDiff={formatTimeDiffBetween(subTargetCreatedTime, match.visibleUser.createdTime)}
+              rootUserId={rootUserId}
+              depth={depth + 1}
+            />
+          ))}
+          {subMatches.length > 5 && (
+            <div className="text-ink-500 text-xs">
+              +{subMatches.length - 5} more connections
+            </div>
+          )}
+        </div>
+      )}
+      {expanded && subMatches.length === 0 && (
+        <div className="text-ink-500 ml-6 mt-1 text-xs">No additional connections</div>
+      )}
+    </Col>
+  )
+}
 
 export function AdminPrivateUserData(props: { userId: string }) {
   const { userId } = props
@@ -36,18 +166,27 @@ export function AdminPrivateUserData(props: { userId: string }) {
   const targetCreatedTime = relatedData?.targetCreatedTime
   const displayedUsers = showAllRelated ? relatedUsers : relatedUsers.slice(0, 3)
 
-  const formatTimeDiff = (matchCreatedTime: number) => {
-    if (!targetCreatedTime || !matchCreatedTime) return null
-    const ms = Math.abs(targetCreatedTime - matchCreatedTime)
-    const minutes = Math.floor(ms / (1000 * 60))
-    const hours = Math.floor(ms / (1000 * 60 * 60))
-    const days = Math.floor(ms / (1000 * 60 * 60 * 24))
-    if (minutes < 1) return 'same minute'
-    if (minutes < 60) return `${minutes}m apart`
-    if (hours < 24) return `${hours}h apart`
-    if (days < 30) return `${days}d apart`
-    return `${Math.floor(days / 30)}mo apart`
+  // Compute summary stats
+  const stats = {
+    referrer: relatedUsers.filter((m) => m.matchReasons.includes('referrer')).length,
+    referees: relatedUsers.filter((m) => m.matchReasons.includes('referee')).length,
+    refereesWithIp: relatedUsers.filter(
+      (m) => m.matchReasons.includes('referee') && m.matchReasons.includes('ip')
+    ).length,
+    ip: relatedUsers.filter((m) => m.matchReasons.includes('ip')).length,
+    device: relatedUsers.filter((m) => m.matchReasons.includes('deviceToken')).length,
   }
+
+  const summaryParts: string[] = []
+  if (stats.referrer > 0) summaryParts.push(`${stats.referrer} referrer`)
+  if (stats.referees > 0) {
+    const refPart = stats.refereesWithIp > 0
+      ? `${stats.referees} referred (${stats.refereesWithIp} with matching IP)`
+      : `${stats.referees} referred`
+    summaryParts.push(refPart)
+  }
+  if (stats.ip > 0) summaryParts.push(`${stats.ip} matching IP`)
+  if (stats.device > 0) summaryParts.push(`${stats.device} matching device`)
 
   return (
     <Col className="gap-4">
@@ -65,53 +204,26 @@ export function AdminPrivateUserData(props: { userId: string }) {
       </div>
 
       {/* Related Accounts Section */}
-      <div className="border-ink-200 rounded border p-3">
-        <div className="mb-2 font-semibold">Related Accounts (Potential Alts)</div>
+      <div className="border-ink-200 overflow-hidden rounded border p-3">
+        <div className="mb-1 font-semibold">Related Accounts</div>
         {loadingRelated ? (
           <div className="text-ink-500 text-sm">Loading...</div>
         ) : relatedUsers.length === 0 ? (
-          <div className="text-ink-500 text-sm">No matching IP or device token found.</div>
+          <div className="text-ink-500 text-sm">No related accounts found.</div>
         ) : (
           <Col className="gap-2">
             <div className="text-ink-600 text-xs">
-              Found {relatedUsers.length} account{relatedUsers.length !== 1 ? 's' : ''}
+              {summaryParts.join(' · ')}
             </div>
-            {displayedUsers.map(({ visibleUser, matchReasons }: { visibleUser: FullUser; matchReasons: ('ip' | 'deviceToken')[] }) => {
-              const timeDiff = formatTimeDiff(visibleUser.createdTime)
-              return (
-                <Link
-                  key={visibleUser.id}
-                  href={`/${visibleUser.username}`}
-                  className="bg-canvas-0 hover:bg-canvas-100 flex items-center justify-between rounded border p-2"
-                >
-                  <Row className="items-center gap-2">
-                    <Avatar
-                      username={visibleUser.username}
-                      avatarUrl={visibleUser.avatarUrl}
-                      size="xs"
-                    />
-                    <div className="text-sm">
-                      <span className="font-medium">{visibleUser.name}</span>
-                      {visibleUser.userDeleted && (
-                        <span className="ml-1 text-xs text-red-600">[DEL]</span>
-                      )}
-                      <span className="text-ink-500 ml-1">@{visibleUser.username}</span>
-                    </div>
-                  </Row>
-                  <Row className="items-center gap-1">
-                    {matchReasons.includes('ip') && (
-                      <span className="rounded bg-red-100 px-1.5 py-0.5 text-xs text-red-800">IP</span>
-                    )}
-                    {matchReasons.includes('deviceToken') && (
-                      <span className="rounded bg-red-100 px-1.5 py-0.5 text-xs text-red-800">Device</span>
-                    )}
-                    {timeDiff && (
-                      <span className="text-ink-500 ml-1 text-xs">{timeDiff}</span>
-                    )}
-                  </Row>
-                </Link>
-              )
-            })}
+            {displayedUsers.map(({ visibleUser, matchReasons }: RelatedMatch) => (
+              <RelatedUserRow
+                key={visibleUser.id}
+                user={visibleUser}
+                matchReasons={matchReasons}
+                timeDiff={formatTimeDiffBetween(targetCreatedTime, visibleUser.createdTime)}
+                rootUserId={userId}
+              />
+            ))}
             {relatedUsers.length > 3 && (
               <button
                 onClick={() => setShowAllRelated(!showAllRelated)}

@@ -13,26 +13,21 @@ export const adminGetRelatedUsers: APIHandler<'admin-get-related-users'> =
 
     const pg = createSupabaseDirectClient()
 
-    // Get target user's createdTime
+    // Get target user data including referredByUserId
     const targetUser = await pg.oneOrNone(
-      `select created_time from users where id = $1`,
+      `select created_time, data->>'referredByUserId' as referred_by_user_id from users where id = $1`,
       [userId]
     )
 
     const privateUser = await getPrivateUser(userId)
-    if (!privateUser) {
-      return { userId, targetCreatedTime: targetUser?.created_time, matches: [] }
-    }
 
-    const { initialDeviceToken, initialIpAddress } = privateUser
-
-    if (!initialDeviceToken && !initialIpAddress) {
-      return { userId, targetCreatedTime: targetUser?.created_time, matches: [] }
-    }
+    const { initialDeviceToken, initialIpAddress } = privateUser ?? {}
 
     // Find users with matching IP or device token
-    const matchingUsers = await pg.manyOrNone(
-      `
+    const ipDeviceMatches =
+      initialDeviceToken || initialIpAddress
+        ? await pg.manyOrNone(
+            `
       select
         pu.id,
         pu.data->>'initialDeviceToken' as device_token,
@@ -44,30 +39,47 @@ export const adminGetRelatedUsers: APIHandler<'admin-get-related-users'> =
           or ($3::text is not null and pu.data->>'initialIpAddress' = $3)
         )
       `,
-      [userId, initialDeviceToken, initialIpAddress]
-    )
+            [userId, initialDeviceToken ?? null, initialIpAddress ?? null]
+          )
+        : []
 
-    if (!matchingUsers || matchingUsers.length === 0) {
+    // Find referrer (who referred this user)
+    const referrerId = targetUser?.referred_by_user_id
+
+    // Find referees (users this user referred)
+    const referees = await pg.manyOrNone(
+      `select id from users where data->>'referredByUserId' = $1`,
+      [userId]
+    )
+    const refereeIds = referees.map((r) => r.id)
+
+    // Combine all related user IDs
+    const ipDeviceUserIds = ipDeviceMatches.map((u) => u.id)
+    const allRelatedIds = [
+      ...new Set([
+        ...ipDeviceUserIds,
+        ...(referrerId ? [referrerId] : []),
+        ...refereeIds,
+      ]),
+    ]
+
+    if (allRelatedIds.length === 0) {
       return { userId, targetCreatedTime: targetUser?.created_time, matches: [] }
     }
 
-    // Get full user data for matches
-    const matchingUserIds = matchingUsers.map((u) => u.id)
+    // Get full user data for all matches
     const users = await pg.map(
       `select * from users where id = any($1)`,
-      [matchingUserIds],
+      [allRelatedIds],
       convertUser
     )
 
     // Build match results with reasons
     const matches = users.map((user) => {
-      const privateMatch = matchingUsers.find((m) => m.id === user.id)
-      const matchReasons: ('ip' | 'deviceToken')[] = []
+      const privateMatch = ipDeviceMatches.find((m) => m.id === user.id)
+      const matchReasons: ('ip' | 'deviceToken' | 'referrer' | 'referee')[] = []
 
-      if (
-        initialIpAddress &&
-        privateMatch?.ip_address === initialIpAddress
-      ) {
+      if (initialIpAddress && privateMatch?.ip_address === initialIpAddress) {
         matchReasons.push('ip')
       }
       if (
@@ -75,6 +87,12 @@ export const adminGetRelatedUsers: APIHandler<'admin-get-related-users'> =
         privateMatch?.device_token === initialDeviceToken
       ) {
         matchReasons.push('deviceToken')
+      }
+      if (user.id === referrerId) {
+        matchReasons.push('referrer')
+      }
+      if (refereeIds.includes(user.id)) {
+        matchReasons.push('referee')
       }
 
       return {

@@ -40,7 +40,7 @@ export default function AdminUserInfoPage() {
   const [relatedUsers, setRelatedUsers] = useState<
     Array<{
       visibleUser: FullUser
-      matchReasons: ('ip' | 'deviceToken')[]
+      matchReasons: ('ip' | 'deviceToken' | 'referrer' | 'referee')[]
     }>
   >([])
   const [targetCreatedTime, setTargetCreatedTime] = useState<number | undefined>()
@@ -599,7 +599,17 @@ export default function AdminUserInfoPage() {
                             </div>
                           </button>
                           <div className="flex flex-col items-end gap-1">
-                            <div className="flex gap-2">
+                            <div className="flex flex-wrap justify-end gap-1">
+                              {matchReasons.includes('referrer') && (
+                                <span className="rounded bg-blue-100 px-2 py-1 text-xs font-medium text-blue-800">
+                                  Referrer
+                                </span>
+                              )}
+                              {matchReasons.includes('referee') && (
+                                <span className="rounded bg-green-100 px-2 py-1 text-xs font-medium text-green-800">
+                                  Referee
+                                </span>
+                              )}
                               {matchReasons.includes('ip') && (
                                 <span className="rounded bg-red-100 px-2 py-1 text-xs font-medium text-red-800">
                                   Same IP
