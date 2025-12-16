@@ -43,6 +43,7 @@ export default function AdminUserInfoPage() {
       matchReasons: ('ip' | 'deviceToken')[]
     }>
   >([])
+  const [targetCreatedTime, setTargetCreatedTime] = useState<number | undefined>()
   const [isLoadingRelatedUsers, setIsLoadingRelatedUsers] = useState(false)
 
   // Confirmation modal states
@@ -127,6 +128,7 @@ export default function AdminUserInfoPage() {
       api('admin-get-related-users', { userId: selectedUser.id })
         .then((result) => {
           setRelatedUsers(result.matches)
+          setTargetCreatedTime(result.targetCreatedTime)
         })
         .catch((error) => {
           console.error('Error fetching related users:', error)
@@ -138,6 +140,7 @@ export default function AdminUserInfoPage() {
       setUserInfo(null)
       setManualEmail('')
       setRelatedUsers([])
+      setTargetCreatedTime(undefined)
     }
   }, [selectedUser])
 
@@ -553,48 +556,70 @@ export default function AdminUserInfoPage() {
                         or device token.
                       </p>
                     </div>
-                    {relatedUsers.map(({ visibleUser, matchReasons }) => (
-                      <div
-                        key={visibleUser.id}
-                        className="bg-canvas-50 flex items-center justify-between rounded border p-3"
-                      >
-                        <button
-                          className="flex items-center gap-3 text-left hover:underline"
-                          onClick={() => selectUser(visibleUser)}
+                    {relatedUsers.map(({ visibleUser, matchReasons }) => {
+                      const timeDiff = targetCreatedTime && visibleUser.createdTime
+                        ? Math.abs(targetCreatedTime - visibleUser.createdTime)
+                        : null
+                      const formatTimeDiff = (ms: number) => {
+                        const minutes = Math.floor(ms / (1000 * 60))
+                        const hours = Math.floor(ms / (1000 * 60 * 60))
+                        const days = Math.floor(ms / (1000 * 60 * 60 * 24))
+                        if (minutes < 1) return 'same minute'
+                        if (minutes < 60) return `${minutes} min apart`
+                        if (hours < 24) return `${hours} hr apart`
+                        if (days < 30) return `${days} day${days !== 1 ? 's' : ''} apart`
+                        return `${Math.floor(days / 30)} month${Math.floor(days / 30) !== 1 ? 's' : ''} apart`
+                      }
+                      return (
+                        <div
+                          key={visibleUser.id}
+                          className="bg-canvas-50 flex items-center justify-between rounded border p-3"
                         >
-                          <Avatar
-                            username={visibleUser.username}
-                            avatarUrl={visibleUser.avatarUrl}
-                            size="sm"
-                          />
-                          <div>
-                            <div className="font-medium">
-                              {visibleUser.name}
-                              {visibleUser.userDeleted && (
-                                <span className="ml-2 text-xs text-red-600">
-                                  [DELETED]
+                          <button
+                            className="flex items-center gap-3 text-left hover:underline"
+                            onClick={() => selectUser(visibleUser)}
+                          >
+                            <Avatar
+                              username={visibleUser.username}
+                              avatarUrl={visibleUser.avatarUrl}
+                              size="sm"
+                            />
+                            <div>
+                              <div className="font-medium">
+                                {visibleUser.name}
+                                {visibleUser.userDeleted && (
+                                  <span className="ml-2 text-xs text-red-600">
+                                    [DELETED]
+                                  </span>
+                                )}
+                              </div>
+                              <div className="text-ink-600 text-sm">
+                                @{visibleUser.username}
+                              </div>
+                            </div>
+                          </button>
+                          <div className="flex flex-col items-end gap-1">
+                            <div className="flex gap-2">
+                              {matchReasons.includes('ip') && (
+                                <span className="rounded bg-red-100 px-2 py-1 text-xs font-medium text-red-800">
+                                  Same IP
+                                </span>
+                              )}
+                              {matchReasons.includes('deviceToken') && (
+                                <span className="rounded bg-red-100 px-2 py-1 text-xs font-medium text-red-800">
+                                  Same Device
                                 </span>
                               )}
                             </div>
-                            <div className="text-ink-600 text-sm">
-                              @{visibleUser.username}
-                            </div>
+                            {timeDiff !== null && (
+                              <span className="text-ink-500 text-xs">
+                                {formatTimeDiff(timeDiff)}
+                              </span>
+                            )}
                           </div>
-                        </button>
-                        <div className="flex gap-2">
-                          {matchReasons.includes('ip') && (
-                            <span className="rounded bg-red-100 px-2 py-1 text-xs font-medium text-red-800">
-                              Same IP
-                            </span>
-                          )}
-                          {matchReasons.includes('deviceToken') && (
-                            <span className="rounded bg-red-100 px-2 py-1 text-xs font-medium text-red-800">
-                              Same Device
-                            </span>
-                          )}
                         </div>
-                      </div>
-                    ))}
+                      )
+                    })}
                   </div>
                 )}
               </div>

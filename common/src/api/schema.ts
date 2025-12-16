@@ -199,6 +199,7 @@ export const API = (_apiTypeCheck = {
       .strict(),
     returns: {} as {
       userId: string
+      targetCreatedTime?: number
       matches: Array<{
         visibleUser: FullUser
         matchReasons: ('ip' | 'deviceToken')[]

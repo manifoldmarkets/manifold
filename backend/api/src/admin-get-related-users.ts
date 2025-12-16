@@ -11,18 +11,24 @@ export const adminGetRelatedUsers: APIHandler<'admin-get-related-users'> =
 
     throwErrorIfNotAdmin(auth.uid)
 
+    const pg = createSupabaseDirectClient()
+
+    // Get target user's createdTime
+    const targetUser = await pg.oneOrNone(
+      `select created_time from users where id = $1`,
+      [userId]
+    )
+
     const privateUser = await getPrivateUser(userId)
     if (!privateUser) {
-      return { userId, matches: [] }
+      return { userId, targetCreatedTime: targetUser?.created_time, matches: [] }
     }
 
     const { initialDeviceToken, initialIpAddress } = privateUser
 
     if (!initialDeviceToken && !initialIpAddress) {
-      return { userId, matches: [] }
+      return { userId, targetCreatedTime: targetUser?.created_time, matches: [] }
     }
-
-    const pg = createSupabaseDirectClient()
 
     // Find users with matching IP or device token
     const matchingUsers = await pg.manyOrNone(
@@ -42,7 +48,7 @@ export const adminGetRelatedUsers: APIHandler<'admin-get-related-users'> =
     )
 
     if (!matchingUsers || matchingUsers.length === 0) {
-      return { userId, matches: [] }
+      return { userId, targetCreatedTime: targetUser?.created_time, matches: [] }
     }
 
     // Get full user data for matches
@@ -79,6 +85,7 @@ export const adminGetRelatedUsers: APIHandler<'admin-get-related-users'> =
 
     return {
       userId,
+      targetCreatedTime: targetUser?.created_time,
       matches,
     }
   }
