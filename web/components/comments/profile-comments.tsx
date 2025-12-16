@@ -3,12 +3,11 @@ import { ContractComment, PostComment } from 'common/comment'
 import { User } from 'common/user'
 import { groupConsecutive } from 'common/util/array'
 import Link from 'next/link'
-import { useCallback, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import { getCommentLink } from 'web/components/feed/copy-link-date-time'
 import { LoadingIndicator } from 'web/components/widgets/loading-indicator'
 import { linkClass } from 'web/components/widgets/site-link'
 import { UserLink } from 'web/components/widgets/user-link'
-import { useDebouncedEffect } from 'web/hooks/use-debounced-effect'
 import { usePagination } from 'web/hooks/use-pagination'
 import { api } from 'web/lib/api/api'
 import { Col } from '../layout/col'
@@ -35,13 +34,12 @@ export function UserCommentsList(props: { user: User }) {
   const [inputTerm, setInputTerm] = useState('')
   const [searchTerm, setSearchTerm] = useState('')
 
-  useDebouncedEffect(
-    () => {
+  useEffect(() => {
+    const handler = setTimeout(() => {
       setSearchTerm(inputTerm)
-    },
-    300,
-    [inputTerm]
-  )
+    }, 300)
+    return () => clearTimeout(handler)
+  }, [inputTerm])
 
   return (
     <Col className="">

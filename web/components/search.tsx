@@ -11,7 +11,6 @@ import { capitalize, groupBy, minBy, orderBy, sample, uniqBy } from 'lodash'
 import { ReactNode, useEffect, useRef, useState } from 'react'
 import { Button } from 'web/components/buttons/button'
 import { AddContractToGroupButton } from 'web/components/topics/add-contract-to-group-modal'
-import { useDebouncedEffect } from 'web/hooks/use-debounced-effect'
 import { usePersistentLocalState } from 'web/hooks/use-persistent-local-state'
 import { usePersistentQueriesState } from 'web/hooks/use-persistent-query-state'
 import { api, searchGroups } from 'web/lib/api/api'
@@ -1066,25 +1065,24 @@ export const useSearchResults = (props: {
     }
   )
 
-  useDebouncedEffect(
-    () => {
+  useEffect(() => {
+    const handler = setTimeout(() => {
       if (!state.contracts?.length) {
         querySearchResults(true)
       }
-    },
-    50,
-    [isReady]
-  )
-  useDebouncedEffect(
-    () => {
+    }, 50)
+    return () => clearTimeout(handler)
+  }, [isReady])
+
+  useEffect(() => {
+    const handler = setTimeout(() => {
       // Only do a fresh query if search parameters have meaningfully changed
       if (searchParamsChanged(searchParams, lastSearchParams)) {
         querySearchResults(true)
       }
-    },
-    50,
-    [JSON.stringify(searchParams)]
-  )
+    }, 50)
+    return () => clearTimeout(handler)
+  }, [JSON.stringify(searchParams)])
 
   const contracts = state.contracts
     ? uniqBy(

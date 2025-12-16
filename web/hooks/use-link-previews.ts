@@ -1,22 +1,20 @@
 import { LinkPreview } from 'common/link-preview'
-import { useState } from 'react'
-import { useDebouncedEffect } from 'web/hooks/use-debounced-effect'
+import { useEffect, useState } from 'react'
 import { api } from 'web/lib/api/api'
 import { safeLocalStorage } from 'web/lib/util/local'
 
 export const useLinkPreview = (url: string, initial?: LinkPreview) => {
   const [preview, setPreview] = useState(initial)
-  useDebouncedEffect(
-    () => {
+  useEffect(() => {
+    const handler = setTimeout(() => {
       if (url) {
         cachedLinkPreview(url.trim()).then((p) => setPreview(p))
       } else {
         setPreview(undefined)
       }
-    },
-    100,
-    [url]
-  )
+    }, 100)
+    return () => clearTimeout(handler)
+  }, [url])
   return preview
 }
 
