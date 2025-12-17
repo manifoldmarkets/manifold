@@ -242,6 +242,11 @@ export const AnswerInput = (props: {
 
   const handleFocus = (e: React.FocusEvent<HTMLTextAreaElement>) => {
     // On mobile, scroll the input into view when keyboard appears
+    // Only do this on touch devices to avoid annoying desktop scroll behavior
+    const isTouchDevice =
+      'ontouchstart' in window || navigator.maxTouchPoints > 0
+    if (!isTouchDevice) return
+
     // Delay to allow keyboard animation to complete
     setTimeout(() => {
       e.target.scrollIntoView({ behavior: 'smooth', block: 'center' })

@@ -36,6 +36,8 @@ import { useIsMobile } from 'web/hooks/use-is-mobile'
 import { ProbabilitySlider } from '../widgets/probability-input'
 import { ValidationErrors } from 'web/lib/validation/contract-validation'
 import { SimilarContractsSection } from './similar-contracts-section'
+import ShortToggle from '../widgets/short-toggle'
+import { POLL_SEE_RESULTS_ANSWER } from '../answers/answer-constants'
 
 export type PreviewContractData = {
   question: string
@@ -67,6 +69,9 @@ export type PreviewContractData = {
   // Multiple choice specific
   shouldAnswersSumToOne?: boolean
   addAnswersMode?: 'DISABLED' | 'ONLY_CREATOR' | 'ANYONE'
+
+  // Poll specific
+  includeSeeResults?: boolean
 }
 
 export function MarketPreview(props: {
@@ -117,6 +122,7 @@ export function MarketPreview(props: {
     func: (titles: string[]) => string[]
   ) => void
   fieldErrors?: ValidationErrors
+  onToggleIncludeSeeResults?: () => void
 }) {
   const {
     data,
@@ -151,6 +157,7 @@ export function MarketPreview(props: {
     setSimilarContracts,
     setDismissedSimilarContractTitles,
     fieldErrors = {},
+    onToggleIncludeSeeResults,
   } = props
   const [isTopicsModalOpen, setIsTopicsModalOpen] = useState(false)
   const [dismissedSuggestion, setDismissedSuggestion] = useState(false)
@@ -1184,6 +1191,39 @@ export function MarketPreview(props: {
                     </Row>
                   </div>
                 ))}
+
+                {/* "See results" option - non-editable, toggleable */}
+                {isEditable && onToggleIncludeSeeResults && (
+                  <div
+                    className={clsx(
+                      'bg-canvas-50 border-ink-200 rounded-lg border p-3',
+                      !data.includeSeeResults && 'opacity-50'
+                    )}
+                  >
+                    <Row className="items-center gap-3">
+                      <Row
+                        className={clsx(
+                          'flex-1 items-center gap-1',
+                          !data.includeSeeResults && 'line-through opacity-70'
+                        )}
+                      >
+                        <span className="text-ink-700 text-sm font-medium">
+                          {POLL_SEE_RESULTS_ANSWER}
+                        </span>
+                        <InfoTooltip text="Adds an answer to the poll labeled 'See results'. Turns off automatically if you manually add it as an answer." />
+                      </Row>
+                      <Row className="items-center gap-2">
+                        <span className="text-ink-500 text-xs">
+                          {data.includeSeeResults ? 'Included' : 'Excluded'}
+                        </span>
+                        <ShortToggle
+                          on={data.includeSeeResults ?? true}
+                          setOn={() => onToggleIncludeSeeResults()}
+                        />
+                      </Row>
+                    </Row>
+                  </div>
+                )}
 
                 {/* Add answer button */}
                 {isEditable && onEditAnswers && (

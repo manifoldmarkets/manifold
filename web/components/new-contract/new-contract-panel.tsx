@@ -38,6 +38,7 @@ import { RelativeTimestamp } from '../relative-timestamp'
 import { ChoicesToggleGroup } from '../widgets/choices-toggle-group'
 import { InfoTooltip } from '../widgets/info-tooltip'
 import ShortToggle from '../widgets/short-toggle'
+import { POLL_SEE_RESULTS_ANSWER } from '../answers/answer-constants'
 import { ActionBar } from './action-bar'
 import { CloseTimeSection } from './close-time-section'
 import { ContextualEditorPanel, FormState } from './contextual-editor-panel'
@@ -84,6 +85,7 @@ export function NewContractPanel(props: {
     maxString: '',
     unit: '',
     midpoints: [],
+    includeSeeResults: true,
   })
 
   // Initialize form state with defaults (from params if provided)
@@ -111,6 +113,7 @@ export function NewContractPanel(props: {
     maxString: params?.max?.toString() || '',
     unit: params?.unit || '',
     midpoints: params?.midpoints || [],
+    includeSeeResults: true,
   })
 
   const [formState, setFormState] = usePersistentLocalState<FormState>(
@@ -711,6 +714,8 @@ export function NewContractPanel(props: {
           : newType === 'MULTI_NUMERIC' || newType === 'DATE'
           ? [] // Start with empty answers for numeric/date, will be generated
           : [],
+      // Default to including "See results" for polls
+      includeSeeResults: newType === 'POLL' ? true : prev.includeSeeResults,
       // Set addAnswersMode to DISABLED by default for MC/Poll
       addAnswersMode:
         newType === 'MULTIPLE_CHOICE' ? 'DISABLED' : prev.addAnswersMode,
@@ -830,7 +835,12 @@ export function NewContractPanel(props: {
         payload.shouldAnswersSumToOne = formState.shouldAnswersSumToOne
         payload.addAnswersMode = formState.addAnswersMode
       } else if (formState.outcomeType === 'POLL') {
-        payload.answers = formState.answers.filter((a) => a.trim().length > 0)
+        const pollAnswers = formState.answers.filter((a) => a.trim().length > 0)
+        // Add "See results" option if enabled
+        if (formState.includeSeeResults) {
+          pollAnswers.push(POLL_SEE_RESULTS_ANSWER)
+        }
+        payload.answers = pollAnswers
       } else if (formState.outcomeType === 'PSEUDO_NUMERIC') {
         payload.min = formState.min
         payload.max = formState.max
@@ -915,6 +925,7 @@ export function NewContractPanel(props: {
     unit: formState.unit,
     shouldAnswersSumToOne: formState.shouldAnswersSumToOne,
     addAnswersMode: formState.addAnswersMode,
+    includeSeeResults: formState.includeSeeResults,
   }
 
   return (
@@ -1051,6 +1062,17 @@ export function NewContractPanel(props: {
               // For MULTI_NUMERIC markets, regenerate midpoints after editing
               if (formState.outcomeType === 'MULTI_NUMERIC') {
                 debouncedRegenerateNumericMidpoints(answers)
+              }
+              // For POLLs, auto-disable "See results" toggle if user manually adds it
+              if (formState.outcomeType === 'POLL' && formState.includeSeeResults) {
+                const hasManualSeeResults = answers.some(
+                  (a) =>
+                    a.toLowerCase().trim() ===
+                    POLL_SEE_RESULTS_ANSWER.toLowerCase()
+                )
+                if (hasManualSeeResults) {
+                  updateField('includeSeeResults', false)
+                }
               }
             }}
             onToggleShouldAnswersSumToOne={() => {
@@ -1262,6 +1284,9 @@ export function NewContractPanel(props: {
             }
             fieldErrors={submitAttemptCount > 0 ? fieldErrors : {}}
             isEditable
+            onToggleIncludeSeeResults={() =>
+              updateField('includeSeeResults', !formState.includeSeeResults)
+            }
           />
 
           {/* Overlay when no market type selected */}
