@@ -64,6 +64,7 @@ import { followContract } from './follow-contract'
 import { generateAIAnswers } from './generate-ai-answers'
 import { generateAIDescription } from './generate-ai-description'
 import { generateAIMarketSuggestions } from './generate-ai-market-suggestions'
+import { checkPollSuggestion } from './check-poll-suggestion'
 import { getSingleAnswer } from './get-answer'
 import { getBetPointsBetween, getBets } from './get-bets'
 import { getCashouts } from './get-cashouts'
@@ -346,6 +347,7 @@ export const handlers: { [k in APIPath]: APIHandler<k> } = {
   'generate-ai-market-suggestions': generateAIMarketSuggestions,
   'generate-ai-description': generateAIDescription,
   'generate-ai-answers': generateAIAnswers,
+  'check-poll-suggestion': checkPollSuggestion,
   'get-next-loan-amount': getNextLoanAmount,
   'check-sports-event': checkSportsEvent,
   'create-task': createTask,
