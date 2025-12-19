@@ -11,7 +11,7 @@ import { Contract } from 'common/contract'
 import { TRADE_TERM } from 'common/envs/constants'
 import { buildArray } from 'common/util/array'
 import { MINUTE_MS } from 'common/util/time'
-import { groupBy, keyBy, mapValues, sortBy, sumBy, uniqBy } from 'lodash'
+import { groupBy, keyBy, mapValues, sortBy, sumBy, uniq, uniqBy } from 'lodash'
 import { memo, useEffect, useMemo, useReducer, useRef, useState } from 'react'
 import { Button } from 'web/components/buttons/button'
 import { ParentFeedComment } from 'web/components/comments/comment'
@@ -251,6 +251,16 @@ export const CommentsTabContent = memo(function CommentsTabContent(props: {
     ),
     'id'
   )
+
+  // Get unique commenter user IDs for mention prioritization (excluding creator, who's always first)
+  const commenterUserIds = useMemo(
+    () =>
+      uniq(allComments.map((c) => c.userId)).filter(
+        (id) => id !== staticContract.creatorId
+      ),
+    [allComments, staticContract.creatorId]
+  )
+
   const onVisibilityUpdated = useEvent((visible: boolean) => {
     if (visible && !loading) loadMore()
   })
@@ -287,6 +297,7 @@ export const CommentsTabContent = memo(function CommentsTabContent(props: {
         clearReply={clearReply}
         trackingLocation={'contract page'}
         commentTypes={['comment', 'repost']}
+        commenterUserIds={commenterUserIds}
       />
 
       {staticContract.gptCommentSummary && (

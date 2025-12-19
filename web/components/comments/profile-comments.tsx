@@ -1,21 +1,23 @@
-import { useCallback } from 'react'
+import clsx from 'clsx'
 import { ContractComment, PostComment } from 'common/comment'
 import { User } from 'common/user'
 import { groupConsecutive } from 'common/util/array'
-import { UserLink } from 'web/components/widgets/user-link'
-import { Col } from '../layout/col'
-import { RelativeTimestamp } from '../relative-timestamp'
-import { Avatar } from '../widgets/avatar'
-import { Content } from '../widgets/editor'
-import { PaginationNextPrev } from '../widgets/pagination'
 import Link from 'next/link'
+import { useCallback, useState } from 'react'
+import { getCommentLink } from 'web/components/feed/copy-link-date-time'
+import { LoadingIndicator } from 'web/components/widgets/loading-indicator'
+import { linkClass } from 'web/components/widgets/site-link'
+import { UserLink } from 'web/components/widgets/user-link'
+import { useDebouncedEffect } from 'web/hooks/use-debounced-effect'
 import { usePagination } from 'web/hooks/use-pagination'
 import { api } from 'web/lib/api/api'
-import { LoadingIndicator } from 'web/components/widgets/loading-indicator'
-import { getCommentLink } from 'web/components/feed/copy-link-date-time'
-import clsx from 'clsx'
-import { linkClass } from 'web/components/widgets/site-link'
+import { Col } from '../layout/col'
+import { RelativeTimestamp } from '../relative-timestamp'
 import { UserHovercard } from '../user/user-hovercard'
+import { Avatar } from '../widgets/avatar'
+import { Content } from '../widgets/editor'
+import { Input } from '../widgets/input'
+import { PaginationNextPrev } from '../widgets/pagination'
 
 type Key = {
   slug: string
@@ -30,6 +32,40 @@ function contractPath(slug: string) {
 
 export function UserCommentsList(props: { user: User }) {
   const { user } = props
+  const [inputTerm, setInputTerm] = useState('')
+  const [searchTerm, setSearchTerm] = useState('')
+
+  useDebouncedEffect(
+    () => {
+      setSearchTerm(inputTerm)
+    },
+    300,
+    [inputTerm]
+  )
+
+  return (
+    <Col className="">
+      <div className="p-2">
+        <Input
+          type="text"
+          inputMode="search"
+          value={inputTerm}
+          onChange={(e) => setInputTerm(e.target.value)}
+          placeholder={`Search comments`}
+          className="w-full"
+        />
+      </div>
+      <UserCommentsListContent
+        key={searchTerm}
+        user={user}
+        searchTerm={searchTerm}
+      />
+    </Col>
+  )
+}
+
+function UserCommentsListContent(props: { user: User; searchTerm: string }) {
+  const { user, searchTerm } = props
 
   const q = useCallback(
     async (p: { limit: number; offset: number }) => {

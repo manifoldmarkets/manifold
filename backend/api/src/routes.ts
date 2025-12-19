@@ -90,10 +90,10 @@ import { getMarket } from './get-market'
 import { getMarketProb } from './get-market-prob'
 import { getMarketProbs } from './get-market-probs'
 import { getMarketsByIds } from './get-markets'
-import { getmaxminprofit2024 } from './get-max-min-profit-2024'
+import { getmaxminprofit2025 } from './get-max-min-profit-2025'
 import { getMe } from './get-me'
 import { getModReports } from './get-mod-reports'
-import { getmonthlybets2024 } from './get-monthly-bets-2024'
+import { getmonthlybets2025 } from './get-monthly-bets-2025'
 import { getNextLoanAmount } from './get-next-loan-amount'
 import { getPartnerStats } from './get-partner-stats'
 import { getPositions } from './get-positions'
@@ -346,8 +346,6 @@ export const handlers: { [k in APIPath]: APIHandler<k> } = {
   'generate-ai-market-suggestions': generateAIMarketSuggestions,
   'generate-ai-description': generateAIDescription,
   'generate-ai-answers': generateAIAnswers,
-  'get-monthly-bets-2024': getmonthlybets2024,
-  'get-max-min-profit-2024': getmaxminprofit2024,
   'get-next-loan-amount': getNextLoanAmount,
   'check-sports-event': checkSportsEvent,
   'create-task': createTask,
@@ -391,4 +389,6 @@ export const handlers: { [k in APIPath]: APIHandler<k> } = {
   'user-comments': getUserComments,
   'get-user-last-active-time': getUserLastActiveTime,
   'get-user-achievements': getUserAchievements,
+  'get-monthly-bets-2025': getmonthlybets2025,
+  'get-max-min-profit-2025': getmaxminprofit2025,
 } as const

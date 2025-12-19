@@ -12,5 +12,3 @@ export function useDebouncedEffect(
     }
   }, [delay, ...(deps ?? [])])
 }
-
-export default useDebouncedEffect

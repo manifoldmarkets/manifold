@@ -85,15 +85,8 @@ export function HeaderActions(props: {
     })
   }
 
-  const contractOpenAndPublic =
-    !contract.isResolved &&
-    (contract.closeTime ?? Infinity) > Date.now() &&
-    contract.visibility == 'public'
-
-  const addLiquidityEnabled =
-    user &&
-    (contract.mechanism == 'cpmm-1' || contract.mechanism == 'cpmm-multi-1') &&
-    contractOpenAndPublic
+  const addLiquidityPossible =
+    contract.mechanism == 'cpmm-1' || contract.mechanism == 'cpmm-multi-1'
 
   const [following, setFollowing] = useState<boolean>()
   const [followingOpen, setFollowingOpen] = useState(false)
@@ -161,7 +154,7 @@ export function HeaderActions(props: {
           },
         ]
       : []),
-    ...(addLiquidityEnabled
+    ...(addLiquidityPossible
       ? [
           {
             name: 'Liquidity',
@@ -271,7 +264,7 @@ export function HeaderActions(props: {
           setOpen={setRepostOpen}
         />
       )}
-      {addLiquidityEnabled && (
+      {addLiquidityPossible && (
         <AddLiquidityModal
           contract={contract}
           isOpen={liquidityOpen}

@@ -2,7 +2,8 @@ import clsx from 'clsx'
 import { Bet } from 'common/bet'
 import { ContractComment } from 'common/comment'
 import { Contract } from 'common/contract'
-import { useState } from 'react'
+import { uniq } from 'lodash'
+import { useMemo, useState } from 'react'
 import { useEvent } from 'client-common/hooks/use-event'
 import { Button } from '../buttons/button'
 import { Col } from '../layout/col'
@@ -65,6 +66,17 @@ export function FeedCommentThread(props: {
       ? threadComments.length - 2
       : Infinity
   )
+
+  // Get thread participant user IDs for mention prioritization (parent author first, then replies)
+  const threadUserIds = useMemo(
+    () =>
+      uniq([
+        parentComment.userId,
+        ...threadComments.map((c) => c.userId),
+      ]).filter((id) => id !== playContract.creatorId),
+    [parentComment.userId, threadComments, playContract.creatorId]
+  )
+
   return (
     <Col className={clsx('mt-3 items-stretch gap-3', className)}>
       <ParentFeedComment
@@ -138,6 +150,7 @@ export function FeedCommentThread(props: {
             className="w-full min-w-0 grow"
             commentTypes={['comment']}
             autoFocus
+            commenterUserIds={threadUserIds}
           />
         )}
       </div>

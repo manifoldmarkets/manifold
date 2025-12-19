@@ -1969,26 +1969,6 @@ export const API = (_apiTypeCheck = {
       })
       .strict(),
   },
-  'get-monthly-bets-2024': {
-    method: 'GET',
-    visibility: 'public',
-    authed: true,
-    props: z.object({ userId: z.string() }),
-    returns: [] as { month: string; bet_count: number; total_amount: number }[],
-  },
-  'get-max-min-profit-2024': {
-    method: 'GET',
-    visibility: 'public',
-    authed: true,
-    props: z.object({ userId: z.string() }),
-    returns: [] as {
-      profit: number
-      data: Contract
-      answer_id: string | null
-      has_no_shares: boolean
-      has_yes_shares: boolean
-    }[],
-  },
   'get-next-loan-amount': {
     method: 'GET',
     visibility: 'undocumented',
@@ -2572,6 +2552,34 @@ export const API = (_apiTypeCheck = {
       })
       .strict(),
     returns: {} as { lastActiveTime: number | null },
+  },
+  'get-monthly-bets-2025': {
+    method: 'GET',
+    authed: false,
+    visibility: 'undocumented',
+    props: z
+      .object({
+        userId: z.string(),
+      })
+      .strict(),
+    returns: [] as { month: string; bet_count: number; total_amount: number }[],
+  },
+  'get-max-min-profit-2025': {
+    method: 'GET',
+    authed: false,
+    visibility: 'undocumented',
+    props: z
+      .object({
+        userId: z.string(),
+      })
+      .strict(),
+    returns: [] as {
+      profit: number
+      has_yes_shares: boolean
+      has_no_shares: boolean
+      answer_id: string | null
+      data: Contract
+    }[],
   },
 } as const)
 

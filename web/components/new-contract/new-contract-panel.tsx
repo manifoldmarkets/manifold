@@ -1,49 +1,50 @@
-import { useState, useEffect, useCallback } from 'react'
+import { useEvent } from 'client-common/hooks/use-event'
 import clsx from 'clsx'
+import { Contract, CreateableOutcomeType } from 'common/contract'
+import { MarketDraft } from 'common/drafts'
+import { getAnte } from 'common/economy'
 import { User } from 'common/user'
-import { CreateableOutcomeType, Contract } from 'common/contract'
-import { Col } from '../layout/col'
-import { Row } from '../layout/row'
-import { Button } from '../buttons/button'
-import { MarketPreview, PreviewContractData } from './market-preview'
-import { ContextualEditorPanel, FormState } from './contextual-editor-panel'
-import {
-  validateContractForm,
-  ContractFormState,
-  ValidationErrors,
-} from 'web/lib/validation/contract-validation'
 import { formatMoney } from 'common/util/format'
+import { richTextToString } from 'common/util/parse'
+import { WEEK_MS } from 'common/util/time'
+import dayjs from 'dayjs'
+import { debounce } from 'lodash'
+import Router from 'next/router'
+import { useCallback, useEffect, useState } from 'react'
+import { toast } from 'react-hot-toast'
+import { FaQuestion, FaUsers } from 'react-icons/fa'
+import { compareTwoStrings } from 'string-similarity'
+import { useTextEditor } from 'web/components/widgets/editor'
+import { useListGroupsBySlug } from 'web/hooks/use-group-supabase'
+import { usePersistentLocalState } from 'web/hooks/use-persistent-local-state'
 import {
   api,
   getSimilarGroupsToContract,
   searchContracts,
 } from 'web/lib/api/api'
 import { track } from 'web/lib/service/analytics'
-import Router from 'next/router'
-import { usePersistentLocalState } from 'web/hooks/use-persistent-local-state'
-import { getAnte } from 'common/economy'
-import { useTextEditor } from 'web/components/widgets/editor'
-import { TypeSwitcherModal } from './type-switcher-modal'
-import { ProminentTypeSelector } from './prominent-type-selector'
-import { ActionBar } from './action-bar'
-import { scrollToFirstError } from './utils/scroll-to-error'
-import dayjs from 'dayjs'
-import { useEvent } from 'client-common/hooks/use-event'
-import ShortToggle from '../widgets/short-toggle'
+import {
+  ContractFormState,
+  validateContractForm,
+  ValidationErrors,
+} from 'web/lib/validation/contract-validation'
+import { Button } from '../buttons/button'
+import { ExpandSection } from '../explainer-panel'
+import { Col } from '../layout/col'
+import { Modal } from '../layout/modal'
+import { Row } from '../layout/row'
+import { BOTTOM_NAV_BAR_HEIGHT } from '../nav/bottom-nav-bar'
+import { RelativeTimestamp } from '../relative-timestamp'
 import { ChoicesToggleGroup } from '../widgets/choices-toggle-group'
 import { InfoTooltip } from '../widgets/info-tooltip'
-import { Modal } from '../layout/modal'
+import ShortToggle from '../widgets/short-toggle'
+import { ActionBar } from './action-bar'
 import { CloseTimeSection } from './close-time-section'
-import { BOTTOM_NAV_BAR_HEIGHT } from '../nav/bottom-nav-bar'
-import { MarketDraft } from 'common/drafts'
-import { toast } from 'react-hot-toast'
-import { richTextToString } from 'common/util/parse'
-import { RelativeTimestamp } from '../relative-timestamp'
-import { debounce } from 'lodash'
-import { compareTwoStrings } from 'string-similarity'
-import { FaQuestion, FaUsers } from 'react-icons/fa'
-import { ExpandSection } from '../explainer-panel'
-import { WEEK_MS } from 'common/util/time'
+import { ContextualEditorPanel, FormState } from './contextual-editor-panel'
+import { MarketPreview, PreviewContractData } from './market-preview'
+import { ProminentTypeSelector } from './prominent-type-selector'
+import { TypeSwitcherModal } from './type-switcher-modal'
+import { scrollToFirstError } from './utils/scroll-to-error'
 
 const MAX_DESCRIPTION_LENGTH = 16000
 
@@ -116,6 +117,20 @@ export function NewContractPanel(props: {
     getDefaultFormState(),
     'new-contract-form'
   )
+
+  // Fetch groups from slugs when duplicating a market
+  const groupsFromSlugs = useListGroupsBySlug(params?.groupSlugs ?? [])
+
+  // When groups are loaded from slugs (duplication), set them in form state
+  useEffect(() => {
+    if (params?.rand && groupsFromSlugs && groupsFromSlugs.length > 0) {
+      // Only update if this is a duplication (has rand param) and groups were resolved
+      setFormState((prev) => ({
+        ...prev,
+        selectedGroups: groupsFromSlugs,
+      }))
+    }
+  }, [params?.rand, groupsFromSlugs])
 
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [isTypeSwitcherOpen, setIsTypeSwitcherOpen] = useState(false)
@@ -196,7 +211,7 @@ export function NewContractPanel(props: {
         descriptionEditor.commands.setContent(newState.description)
       }
     }
-  }, [params?.rand])
+  }, [params?.rand, descriptionEditor]) // Include descriptionEditor so it re-runs when editor is ready
 
   // Update placeholder when outcome type changes
   useEffect(() => {
@@ -919,15 +934,14 @@ export function NewContractPanel(props: {
         </Row>
       </Row>
 
-      {/* Prominent Type Selector */}
-      <ProminentTypeSelector
-        currentType={formState.outcomeType}
-        currentShouldAnswersSumToOne={formState.shouldAnswersSumToOne}
-        onSelectType={handleTypeChange}
-      />
-
       {/* Market Creation UI */}
-      <Col className="mx-auto w-full max-w-3xl gap-6 p-2 sm:p-3">
+      <Col className="mx-auto w-full max-w-3xl gap-6 p-2">
+        {/* Prominent Type Selector */}
+        <ProminentTypeSelector
+          currentType={formState.outcomeType}
+          currentShouldAnswersSumToOne={formState.shouldAnswersSumToOne}
+          onSelectType={handleTypeChange}
+        />
         {/* Multiple Choice Settings - Above Preview */}
         {formState.outcomeType === 'MULTIPLE_CHOICE' && (
           <Col className="bg-canvas-0 ring-ink-100 gap-4 rounded-lg p-4 shadow-md ring-1">

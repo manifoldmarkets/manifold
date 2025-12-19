@@ -1,8 +1,18 @@
 import clsx from 'clsx'
+import { APIError } from 'common/api/utils'
+import {
+  maximumRemovableLiquidity,
+  removeCpmmLiquidity,
+} from 'common/calculate-cpmm'
 import { type MarketContract } from 'common/contract'
+import { isAdminId } from 'common/envs/constants'
+import { formatMoney, shortFormatNumber } from 'common/util/format'
+import { floatingEqual } from 'common/util/math'
 import { useState } from 'react'
 import toast from 'react-hot-toast'
+import { FeedLiquidity } from 'web/components/feed/feed-liquidity'
 import { useLiquidity } from 'web/hooks/use-liquidity'
+import { useUser } from 'web/hooks/use-user'
 import { api } from 'web/lib/api/api'
 import { track } from 'web/lib/service/analytics'
 import { MoneyDisplay } from '../bet/money-display'
@@ -10,19 +20,9 @@ import { Button } from '../buttons/button'
 import { MODAL_CLASS, Modal } from '../layout/modal'
 import { Row } from '../layout/row'
 import { BuyAmountInput } from '../widgets/amount-input'
-import { Title } from '../widgets/title'
-import { FeedLiquidity } from 'web/components/feed/feed-liquidity'
-import { InfoTooltip } from '../widgets/info-tooltip'
-import { formatMoney, shortFormatNumber } from 'common/util/format'
-import {
-  maximumRemovableLiquidity,
-  removeCpmmLiquidity,
-} from 'common/calculate-cpmm'
-import { isAdminId } from 'common/envs/constants'
-import { useUser } from 'web/hooks/use-user'
-import { APIError } from 'common/api/utils'
 import { ChoicesToggleGroup } from '../widgets/choices-toggle-group'
-import { floatingEqual } from 'common/util/math'
+import { InfoTooltip } from '../widgets/info-tooltip'
+import { Title } from '../widgets/title'
 
 export function AddLiquidityModal(props: {
   contract: MarketContract
@@ -77,7 +77,15 @@ export function AddLiquidityControl(props: {
   const [isLoading, setIsLoading] = useState(false)
 
   const user = useUser()
+  const contractOpenAndPublic =
+    !contract.isResolved &&
+    (contract.closeTime ?? Infinity) > Date.now() &&
+    contract.visibility == 'public'
 
+  const addLiquidityEnabled =
+    user &&
+    (contract.mechanism == 'cpmm-1' || contract.mechanism == 'cpmm-multi-1') &&
+    contractOpenAndPublic
   const [mode, setMode] = useState<'add' | 'remove'>('add')
   const canWithdraw =
     contract.mechanism === 'cpmm-1' &&
@@ -158,7 +166,7 @@ export function AddLiquidityControl(props: {
 
   return (
     <>
-      {canWithdraw && (
+      {canWithdraw && addLiquidityEnabled && (
         <ChoicesToggleGroup
           currentChoice={mode}
           setChoice={(mode) => {
@@ -242,30 +250,33 @@ export function AddLiquidityControl(props: {
           )}
         </div>
       </div>
-
-      <Row className="mb-4">
-        <BuyAmountInput
-          amount={amount}
-          onChange={setAmount}
-          error={error}
-          setError={setError}
-          disabled={false}
-          quickButtonAmountSize="large"
-          token={isCashContract ? 'CASH' : 'M$'}
-          disregardUserBalance={mode === 'remove'}
-          maximumAmount={mode === 'remove' ? maxWithdrawable : undefined}
-        />
-      </Row>
-      <Button
-        onClick={submit}
-        disabled={isLoading || !!error || !amount}
-        color={mode === 'add' ? 'indigo' : 'yellow'}
-        size="sm"
-        className="mb-2 w-full"
-      >
-        {mode === 'add' ? 'Add liquidity' : 'Withdraw liquidity'}
-      </Button>
-      {isLoading && <div className="text-ink-700">Processing...</div>}
+      {addLiquidityEnabled && (
+        <>
+          <Row className="mb-4">
+            <BuyAmountInput
+              amount={amount}
+              onChange={setAmount}
+              error={error}
+              setError={setError}
+              disabled={false}
+              quickButtonAmountSize="large"
+              token={isCashContract ? 'CASH' : 'M$'}
+              disregardUserBalance={mode === 'remove'}
+              maximumAmount={mode === 'remove' ? maxWithdrawable : undefined}
+            />
+          </Row>
+          <Button
+            onClick={submit}
+            disabled={isLoading || !!error || !amount}
+            color={mode === 'add' ? 'indigo' : 'yellow'}
+            size="sm"
+            className="mb-2 w-full"
+          >
+            {mode === 'add' ? 'Add liquidity' : 'Withdraw liquidity'}
+          </Button>
+          {isLoading && <div className="text-ink-700">Processing...</div>}
+        </>
+      )}
     </>
   )
 }
