@@ -4,6 +4,7 @@ import { throwErrorIfNotAdmin } from 'shared/helpers/auth'
 import { convertUser } from 'common/supabase/users'
 import { toUserAPIResponse } from 'common/api/user-types'
 import { getPrivateUser } from 'shared/utils'
+import { tsToMillis } from 'common/supabase/utils'
 
 export const adminGetRelatedUsers: APIHandler<'admin-get-related-users'> =
   async (props, auth) => {
@@ -64,7 +65,7 @@ export const adminGetRelatedUsers: APIHandler<'admin-get-related-users'> =
     ]
 
     if (allRelatedIds.length === 0) {
-      return { userId, targetCreatedTime: targetUser?.created_time, matches: [] }
+      return { userId, targetCreatedTime: targetUser?.created_time ? tsToMillis(targetUser.created_time) : undefined, matches: [] }
     }
 
     // Get full user data for all matches
@@ -103,7 +104,7 @@ export const adminGetRelatedUsers: APIHandler<'admin-get-related-users'> =
 
     return {
       userId,
-      targetCreatedTime: targetUser?.created_time,
+      targetCreatedTime: targetUser?.created_time ? tsToMillis(targetUser.created_time) : undefined,
       matches,
     }
   }
