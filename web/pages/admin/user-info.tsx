@@ -12,7 +12,11 @@ import { Title } from 'web/components/widgets/title'
 import { useAdmin } from 'web/hooks/use-admin'
 import { useRedirectIfSignedOut } from 'web/hooks/use-redirect-if-signed-out'
 import { api } from 'web/lib/api/api'
-import { DisplayUser, searchUsers, getFullUserById } from 'web/lib/supabase/users'
+import {
+  DisplayUser,
+  searchUsers,
+  getFullUserById,
+} from 'web/lib/supabase/users'
 import { ConfirmActionModal } from 'web/components/admin/ConfirmActionModal'
 import { useRouter } from 'next/router'
 
@@ -43,7 +47,9 @@ export default function AdminUserInfoPage() {
       matchReasons: ('ip' | 'deviceToken' | 'referrer' | 'referee')[]
     }>
   >([])
-  const [targetCreatedTime, setTargetCreatedTime] = useState<number | undefined>()
+  const [targetCreatedTime, setTargetCreatedTime] = useState<
+    number | undefined
+  >()
   const [isLoadingRelatedUsers, setIsLoadingRelatedUsers] = useState(false)
 
   // Confirmation modal states
@@ -538,7 +544,9 @@ export default function AdminUserInfoPage() {
 
               {/* Related Accounts (Potential Alts) */}
               <div className="border-ink-200 mb-4 space-y-3 rounded border p-4">
-                <h3 className="font-semibold">Related Accounts (Potential Alts)</h3>
+                <h3 className="font-semibold">
+                  Related Accounts (Potential Alts)
+                </h3>
                 {isLoadingRelatedUsers ? (
                   <div className="text-ink-600 text-sm">
                     Searching for related accounts...
@@ -557,9 +565,12 @@ export default function AdminUserInfoPage() {
                       </p>
                     </div>
                     {relatedUsers.map(({ visibleUser, matchReasons }) => {
-                      const timeDiff = targetCreatedTime && visibleUser.createdTime
-                        ? Math.abs(targetCreatedTime - visibleUser.createdTime)
-                        : null
+                      const timeDiff =
+                        targetCreatedTime && visibleUser.createdTime
+                          ? Math.abs(
+                              targetCreatedTime - visibleUser.createdTime
+                            )
+                          : null
                       const formatTimeDiff = (ms: number) => {
                         const minutes = Math.floor(ms / (1000 * 60))
                         const hours = Math.floor(ms / (1000 * 60 * 60))
@@ -567,8 +578,11 @@ export default function AdminUserInfoPage() {
                         if (minutes < 1) return 'same minute'
                         if (minutes < 60) return `${minutes} min apart`
                         if (hours < 24) return `${hours} hr apart`
-                        if (days < 30) return `${days} day${days !== 1 ? 's' : ''} apart`
-                        return `${Math.floor(days / 30)} month${Math.floor(days / 30) !== 1 ? 's' : ''} apart`
+                        if (days < 30)
+                          return `${days} day${days !== 1 ? 's' : ''} apart`
+                        return `${Math.floor(days / 30)} month${
+                          Math.floor(days / 30) !== 1 ? 's' : ''
+                        } apart`
                       }
                       return (
                         <div
