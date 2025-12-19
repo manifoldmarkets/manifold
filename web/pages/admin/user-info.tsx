@@ -12,11 +12,7 @@ import { Title } from 'web/components/widgets/title'
 import { useAdmin } from 'web/hooks/use-admin'
 import { useRedirectIfSignedOut } from 'web/hooks/use-redirect-if-signed-out'
 import { api } from 'web/lib/api/api'
-import {
-  DisplayUser,
-  searchUsers,
-  getFullUserById,
-} from 'web/lib/supabase/users'
+import { DisplayUser, searchUsers, getFullUserById } from 'web/lib/supabase/users'
 import { ConfirmActionModal } from 'web/components/admin/ConfirmActionModal'
 import { useRouter } from 'next/router'
 
@@ -26,7 +22,10 @@ export default function AdminUserInfoPage() {
   const router = useRouter()
 
   const [query, setQuery] = useState('')
-  const [searchResults, setSearchResults] = useState<DisplayUser[]>([])
+  const [searchResults, setSearchResults] = useState<
+    Array<DisplayUser & { matchedEmail?: string; matchedOnOldEmail?: boolean }>
+  >([])
+  const [isSearching, setIsSearching] = useState(false)
   const [selectedUser, setSelectedUser] = useState<FullUser | null>(null)
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [userInfo, setUserInfo] = useState<{
@@ -38,6 +37,14 @@ export default function AdminUserInfoPage() {
   } | null>(null)
   const [manualEmail, setManualEmail] = useState('')
   const [isLoadingUserInfo, setIsLoadingUserInfo] = useState(false)
+  const [relatedUsers, setRelatedUsers] = useState<
+    Array<{
+      visibleUser: FullUser
+      matchReasons: ('ip' | 'deviceToken' | 'referrer' | 'referee')[]
+    }>
+  >([])
+  const [targetCreatedTime, setTargetCreatedTime] = useState<number | undefined>()
+  const [isLoadingRelatedUsers, setIsLoadingRelatedUsers] = useState(false)
 
   // Confirmation modal states
   const [showRecoverModal, setShowRecoverModal] = useState(false)
@@ -60,17 +67,43 @@ export default function AdminUserInfoPage() {
     }
   }, [router.query.userId, isAdmin])
 
-  // Search for users
+  // Search for users - use email search if query looks like an email
   useEffect(() => {
     const id = ++requestId.current
     if (query.length > 1) {
-      searchUsers(query, 10).then((results) => {
-        if (id === requestId.current) {
-          setSearchResults(results)
-        }
-      })
+      const isEmailQuery = query.includes('@')
+      setIsSearching(true)
+
+      if (isEmailQuery) {
+        api('admin-search-users-by-email', { email: query, limit: 10 })
+          .then((results) => {
+            if (id === requestId.current) {
+              setSearchResults(
+                results.map((r) => ({
+                  ...r.user,
+                  matchedEmail: r.matchedEmail,
+                  matchedOnOldEmail: r.matchedOnOldEmail,
+                }))
+              )
+            }
+          })
+          .finally(() => {
+            if (id === requestId.current) setIsSearching(false)
+          })
+      } else {
+        searchUsers(query, 10)
+          .then((results) => {
+            if (id === requestId.current) {
+              setSearchResults(results)
+            }
+          })
+          .finally(() => {
+            if (id === requestId.current) setIsSearching(false)
+          })
+      }
     } else {
       setSearchResults([])
+      setIsSearching(false)
     }
   }, [query])
 
@@ -89,9 +122,25 @@ export default function AdminUserInfoPage() {
         .finally(() => {
           setIsLoadingUserInfo(false)
         })
+
+      // Fetch related users (potential alts)
+      setIsLoadingRelatedUsers(true)
+      api('admin-get-related-users', { userId: selectedUser.id })
+        .then((result) => {
+          setRelatedUsers(result.matches)
+          setTargetCreatedTime(result.targetCreatedTime)
+        })
+        .catch((error) => {
+          console.error('Error fetching related users:', error)
+        })
+        .finally(() => {
+          setIsLoadingRelatedUsers(false)
+        })
     } else {
       setUserInfo(null)
       setManualEmail('')
+      setRelatedUsers([])
+      setTargetCreatedTime(undefined)
     }
   }, [selectedUser])
 
@@ -279,17 +328,23 @@ export default function AdminUserInfoPage() {
           <div>
             <h2 className="mb-4 text-lg font-semibold">Search for User</h2>
             <p className="text-ink-600 mb-4 text-sm">
-              Search by username, name, or user ID. Deleted accounts will still
-              appear in search results.
+              Search by username, name, user ID, or email address. Deleted
+              accounts will still appear in search results.
             </p>
             <div className="relative">
               <Input
                 type="text"
-                placeholder="Search by name, username, or ID..."
+                placeholder="Search by name, username, ID, or email..."
                 value={query}
                 onChange={(e) => setQuery(e.target.value)}
                 className="w-full max-w-md"
               />
+
+              {isSearching && query.includes('@') && (
+                <div className="text-ink-600 mt-2 text-sm">
+                  Searching by email...
+                </div>
+              )}
 
               {searchResults.length > 0 && (
                 <div className="bg-canvas-0 border-ink-200 absolute top-full z-10 mt-1 max-h-64 w-full max-w-md overflow-auto rounded-md border shadow-lg">
@@ -304,7 +359,7 @@ export default function AdminUserInfoPage() {
                         avatarUrl={user.avatarUrl}
                         size="sm"
                       />
-                      <div>
+                      <div className="min-w-0 flex-1">
                         <div className="font-medium">
                           {user.name}
                           {(user as any).userDeleted && (
@@ -316,6 +371,12 @@ export default function AdminUserInfoPage() {
                         <div className="text-ink-600 text-sm">
                           @{user.username}
                         </div>
+                        {user.matchedEmail && (
+                          <div className="text-ink-500 truncate text-xs">
+                            {user.matchedOnOldEmail ? 'old_email: ' : 'email: '}
+                            {user.matchedEmail}
+                          </div>
+                        )}
                       </div>
                     </button>
                   ))}
@@ -473,6 +534,104 @@ export default function AdminUserInfoPage() {
                     )}
                   </div>
                 ) : null}
+              </div>
+
+              {/* Related Accounts (Potential Alts) */}
+              <div className="border-ink-200 mb-4 space-y-3 rounded border p-4">
+                <h3 className="font-semibold">Related Accounts (Potential Alts)</h3>
+                {isLoadingRelatedUsers ? (
+                  <div className="text-ink-600 text-sm">
+                    Searching for related accounts...
+                  </div>
+                ) : relatedUsers.length === 0 ? (
+                  <div className="text-ink-500 text-sm">
+                    No related accounts found (no matching IP or device token).
+                  </div>
+                ) : (
+                  <div className="space-y-2">
+                    <div className="mb-2 rounded border border-amber-200 bg-amber-50 p-2">
+                      <p className="text-sm text-amber-800">
+                        Found {relatedUsers.length} account
+                        {relatedUsers.length !== 1 ? 's' : ''} with matching IP
+                        or device token.
+                      </p>
+                    </div>
+                    {relatedUsers.map(({ visibleUser, matchReasons }) => {
+                      const timeDiff = targetCreatedTime && visibleUser.createdTime
+                        ? Math.abs(targetCreatedTime - visibleUser.createdTime)
+                        : null
+                      const formatTimeDiff = (ms: number) => {
+                        const minutes = Math.floor(ms / (1000 * 60))
+                        const hours = Math.floor(ms / (1000 * 60 * 60))
+                        const days = Math.floor(ms / (1000 * 60 * 60 * 24))
+                        if (minutes < 1) return 'same minute'
+                        if (minutes < 60) return `${minutes} min apart`
+                        if (hours < 24) return `${hours} hr apart`
+                        if (days < 30) return `${days} day${days !== 1 ? 's' : ''} apart`
+                        return `${Math.floor(days / 30)} month${Math.floor(days / 30) !== 1 ? 's' : ''} apart`
+                      }
+                      return (
+                        <div
+                          key={visibleUser.id}
+                          className="bg-canvas-50 flex items-center justify-between rounded border p-3"
+                        >
+                          <button
+                            className="flex items-center gap-3 text-left hover:underline"
+                            onClick={() => selectUser(visibleUser)}
+                          >
+                            <Avatar
+                              username={visibleUser.username}
+                              avatarUrl={visibleUser.avatarUrl}
+                              size="sm"
+                            />
+                            <div>
+                              <div className="font-medium">
+                                {visibleUser.name}
+                                {visibleUser.userDeleted && (
+                                  <span className="ml-2 text-xs text-red-600">
+                                    [DELETED]
+                                  </span>
+                                )}
+                              </div>
+                              <div className="text-ink-600 text-sm">
+                                @{visibleUser.username}
+                              </div>
+                            </div>
+                          </button>
+                          <div className="flex flex-col items-end gap-1">
+                            <div className="flex flex-wrap justify-end gap-1">
+                              {matchReasons.includes('referrer') && (
+                                <span className="rounded bg-blue-100 px-2 py-1 text-xs font-medium text-blue-800">
+                                  Referrer
+                                </span>
+                              )}
+                              {matchReasons.includes('referee') && (
+                                <span className="rounded bg-green-100 px-2 py-1 text-xs font-medium text-green-800">
+                                  Referee
+                                </span>
+                              )}
+                              {matchReasons.includes('ip') && (
+                                <span className="rounded bg-red-100 px-2 py-1 text-xs font-medium text-red-800">
+                                  Same IP
+                                </span>
+                              )}
+                              {matchReasons.includes('deviceToken') && (
+                                <span className="rounded bg-red-100 px-2 py-1 text-xs font-medium text-red-800">
+                                  Same Device
+                                </span>
+                              )}
+                            </div>
+                            {timeDiff !== null && (
+                              <span className="text-ink-500 text-xs">
+                                {formatTimeDiff(timeDiff)}
+                              </span>
+                            )}
+                          </div>
+                        </div>
+                      )
+                    })}
+                  </div>
+                )}
               </div>
 
               {/* Manual Email Input */}

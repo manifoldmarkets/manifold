@@ -161,6 +161,22 @@ export const API = (_apiTypeCheck = {
       .strict(),
     returns: {} as { success: boolean },
   },
+  'admin-search-users-by-email': {
+    method: 'GET',
+    visibility: 'undocumented',
+    authed: true,
+    props: z
+      .object({
+        email: z.string(),
+        limit: z.coerce.number().gte(1).lte(100).default(10),
+      })
+      .strict(),
+    returns: [] as Array<{
+      user: FullUser
+      matchedEmail: string
+      matchedOnOldEmail: boolean
+    }>,
+  },
   'anonymize-user': {
     method: 'POST',
     visibility: 'undocumented',
@@ -171,6 +187,24 @@ export const API = (_apiTypeCheck = {
       })
       .strict(),
     returns: {} as { success: boolean; newUsername: string; newName: string },
+  },
+  'admin-get-related-users': {
+    method: 'GET',
+    visibility: 'undocumented',
+    authed: true,
+    props: z
+      .object({
+        userId: z.string(),
+      })
+      .strict(),
+    returns: {} as {
+      userId: string
+      targetCreatedTime?: number
+      matches: Array<{
+        visibleUser: FullUser
+        matchReasons: ('ip' | 'deviceToken' | 'referrer' | 'referee')[]
+      }>
+    },
   },
   comment: {
     method: 'POST',
