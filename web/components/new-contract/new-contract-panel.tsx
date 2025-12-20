@@ -1064,7 +1064,10 @@ export function NewContractPanel(props: {
                 debouncedRegenerateNumericMidpoints(answers)
               }
               // For POLLs, auto-disable "See results" toggle if user manually adds it
-              if (formState.outcomeType === 'POLL' && formState.includeSeeResults) {
+              if (
+                formState.outcomeType === 'POLL' &&
+                formState.includeSeeResults
+              ) {
                 const hasManualSeeResults = answers.some(
                   (a) =>
                     a.toLowerCase().trim() ===

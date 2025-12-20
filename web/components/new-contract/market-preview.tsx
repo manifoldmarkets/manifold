@@ -30,7 +30,10 @@ import { InfoTooltip } from '../widgets/info-tooltip'
 import { MAX_ANSWERS } from 'common/answer'
 import { AnswerInput } from '../answers/multiple-choice-answers'
 import { Button } from '../buttons/button'
-import { suggestMarketType, MarketTypeSuggestion } from './market-type-suggestions'
+import {
+  suggestMarketType,
+  MarketTypeSuggestion,
+} from './market-type-suggestions'
 import { MarketTypeSuggestionBanner } from './market-type-suggestion-banner'
 import { useIsMobile } from 'web/hooks/use-is-mobile'
 import { ProbabilitySlider } from '../widgets/probability-input'
@@ -169,7 +172,8 @@ export function MarketPreview(props: {
     reason: string
   } | null>(null)
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  const [isCheckingPollSuggestion, setIsCheckingPollSuggestion] = useState(false) // Could be used for loading indicator
+  const [isCheckingPollSuggestion, setIsCheckingPollSuggestion] =
+    useState(false) // Could be used for loading indicator
   const questionTextareaRef = useRef<HTMLTextAreaElement>(null)
   const isMobile = useIsMobile()
 
@@ -609,8 +613,11 @@ export function MarketPreview(props: {
             ) {
               const suggestion: MarketTypeSuggestion = {
                 suggestedType: 'POLL',
-                reason: aiPollSuggestion.reason || 'This question seems subjective or opinion-based',
-                confidence: aiPollSuggestion.confidence >= 0.85 ? 'high' : 'medium',
+                reason:
+                  aiPollSuggestion.reason ||
+                  'This question seems subjective or opinion-based',
+                confidence:
+                  aiPollSuggestion.confidence >= 0.85 ? 'high' : 'medium',
               }
               return (
                 <MarketTypeSuggestionBanner
