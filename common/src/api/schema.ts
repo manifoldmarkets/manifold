@@ -202,7 +202,8 @@ export const API = (_apiTypeCheck = {
       targetCreatedTime?: number
       matches: Array<{
         visibleUser: FullUser
-        matchReasons: ('ip' | 'deviceToken' | 'referrer' | 'referee')[]
+        matchReasons: ('ip' | 'deviceToken' | 'referrer' | 'referee' | 'managram')[]
+        netManagramAmount?: number
       }>
     },
   },

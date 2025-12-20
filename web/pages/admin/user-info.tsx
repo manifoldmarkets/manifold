@@ -1,3 +1,4 @@
+import { ChevronDownIcon, ChevronUpIcon } from '@heroicons/react/outline'
 import { FullUser } from 'common/api/user-types'
 import { useEffect, useRef, useState } from 'react'
 import { toast } from 'react-hot-toast'
@@ -44,13 +45,15 @@ export default function AdminUserInfoPage() {
   const [relatedUsers, setRelatedUsers] = useState<
     Array<{
       visibleUser: FullUser
-      matchReasons: ('ip' | 'deviceToken' | 'referrer' | 'referee')[]
+      matchReasons: ('ip' | 'deviceToken' | 'referrer' | 'referee' | 'managram')[]
+      netManagramAmount?: number
     }>
   >([])
   const [targetCreatedTime, setTargetCreatedTime] = useState<
     number | undefined
   >()
   const [isLoadingRelatedUsers, setIsLoadingRelatedUsers] = useState(false)
+  const [showAllRelated, setShowAllRelated] = useState(false)
 
   // Confirmation modal states
   const [showRecoverModal, setShowRecoverModal] = useState(false)
@@ -147,6 +150,7 @@ export default function AdminUserInfoPage() {
       setManualEmail('')
       setRelatedUsers([])
       setTargetCreatedTime(undefined)
+      setShowAllRelated(false)
     }
   }, [selectedUser])
 
@@ -560,11 +564,11 @@ export default function AdminUserInfoPage() {
                     <div className="mb-2 rounded border border-amber-200 bg-amber-50 p-2">
                       <p className="text-sm text-amber-800">
                         Found {relatedUsers.length} account
-                        {relatedUsers.length !== 1 ? 's' : ''} with matching IP
-                        or device token.
+                        {relatedUsers.length !== 1 ? 's' : ''} with matching IP,
+                        device token, or managram history.
                       </p>
                     </div>
-                    {relatedUsers.map(({ visibleUser, matchReasons }) => {
+                    {(showAllRelated ? relatedUsers : relatedUsers.slice(0, 3)).map(({ visibleUser, matchReasons, netManagramAmount }) => {
                       const timeDiff =
                         targetCreatedTime && visibleUser.createdTime
                           ? Math.abs(
@@ -634,6 +638,20 @@ export default function AdminUserInfoPage() {
                                   Same Device
                                 </span>
                               )}
+                              {matchReasons.includes('managram') && netManagramAmount !== undefined && (
+                                <span
+                                  className={`rounded px-2 py-1 text-xs font-medium ${
+                                    netManagramAmount > 0
+                                      ? 'bg-green-100 text-green-800'
+                                      : netManagramAmount < 0
+                                      ? 'bg-red-100 text-red-800'
+                                      : 'bg-gray-100 text-gray-800'
+                                  }`}
+                                >
+                                  {netManagramAmount > 0 ? '+' : ''}
+                                  {Math.round(netManagramAmount).toLocaleString()}
+                                </span>
+                              )}
                             </div>
                             {timeDiff !== null && (
                               <span className="text-ink-500 text-xs">
@@ -644,6 +662,24 @@ export default function AdminUserInfoPage() {
                         </div>
                       )
                     })}
+                    {relatedUsers.length > 3 && (
+                      <button
+                        onClick={() => setShowAllRelated(!showAllRelated)}
+                        className="text-primary-600 hover:text-primary-700 flex items-center gap-1 text-sm"
+                      >
+                        {showAllRelated ? (
+                          <>
+                            <ChevronUpIcon className="h-4 w-4" />
+                            Show less
+                          </>
+                        ) : (
+                          <>
+                            <ChevronDownIcon className="h-4 w-4" />
+                            Show all {relatedUsers.length} accounts
+                          </>
+                        )}
+                      </button>
+                    )}
                   </div>
                 )}
               </div>

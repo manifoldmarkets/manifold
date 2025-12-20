@@ -9,20 +9,22 @@ import { useAPIGetter } from 'web/hooks/use-api-getter'
 import { api } from 'web/lib/api/api'
 import Link from 'next/link'
 
-type MatchReason = 'ip' | 'deviceToken' | 'referrer' | 'referee'
+type MatchReason = 'ip' | 'deviceToken' | 'referrer' | 'referee' | 'managram'
 
 type RelatedMatch = {
   visibleUser: FullUser
   matchReasons: MatchReason[]
+  netManagramAmount?: number
 }
 
-// Scoring: deviceToken (3) > IP (2) > referral (1)
+// Scoring: deviceToken (3) > IP (2) > referral (1) > managram (0.5)
 function getMatchScore(matchReasons: MatchReason[]): number {
   let score = 0
   if (matchReasons.includes('deviceToken')) score += 3
   if (matchReasons.includes('ip')) score += 2
   if (matchReasons.includes('referrer')) score += 1
   if (matchReasons.includes('referee')) score += 1
+  if (matchReasons.includes('managram')) score += 0.5
   return score
 }
 
@@ -54,8 +56,9 @@ function RelatedUserRow(props: {
   timeDiff: string | null
   rootUserId: string
   depth?: number
+  netManagramAmount?: number
 }) {
-  const { user, matchReasons, timeDiff, rootUserId, depth = 0 } = props
+  const { user, matchReasons, timeDiff, rootUserId, depth = 0, netManagramAmount } = props
   const [expanded, setExpanded] = useState(false)
   const [subMatches, setSubMatches] = useState<RelatedMatch[]>([])
   const [subTargetCreatedTime, setSubTargetCreatedTime] = useState<
@@ -133,6 +136,20 @@ function RelatedUserRow(props: {
               Device
             </span>
           )}
+          {matchReasons.includes('managram') && netManagramAmount !== undefined && (
+            <span
+              className={`rounded px-1.5 py-0.5 text-xs ${
+                netManagramAmount > 0
+                  ? 'bg-green-100 text-green-800'
+                  : netManagramAmount < 0
+                  ? 'bg-red-100 text-red-800'
+                  : 'bg-gray-100 text-gray-800'
+              }`}
+            >
+              {netManagramAmount > 0 ? '+' : ''}
+              {Math.round(netManagramAmount).toLocaleString()}
+            </span>
+          )}
           {timeDiff && <span className="text-ink-500 text-xs">{timeDiff}</span>}
           {depth < 2 && (
             <button
@@ -157,6 +174,7 @@ function RelatedUserRow(props: {
               )}
               rootUserId={rootUserId}
               depth={depth + 1}
+              netManagramAmount={match.netManagramAmount}
             />
           ))}
           {subMatches.length > 5 && (
@@ -217,6 +235,8 @@ export function AdminPrivateUserData(props: { userId: string }) {
     ip: relatedUsers.filter((m) => m.matchReasons.includes('ip')).length,
     device: relatedUsers.filter((m) => m.matchReasons.includes('deviceToken'))
       .length,
+    managram: relatedUsers.filter((m) => m.matchReasons.includes('managram'))
+      .length,
   }
 
   const summaryParts: string[] = []
@@ -230,6 +250,7 @@ export function AdminPrivateUserData(props: { userId: string }) {
   }
   if (stats.ip > 0) summaryParts.push(`${stats.ip} matching IP`)
   if (stats.device > 0) summaryParts.push(`${stats.device} matching device`)
+  if (stats.managram > 0) summaryParts.push(`${stats.managram} managram`)
 
   return (
     <Col className="gap-4">
@@ -259,7 +280,7 @@ export function AdminPrivateUserData(props: { userId: string }) {
               {summaryParts.join(' · ')}
             </div>
             {displayedUsers.map(
-              ({ visibleUser, matchReasons }: RelatedMatch) => (
+              ({ visibleUser, matchReasons, netManagramAmount }: RelatedMatch) => (
                 <RelatedUserRow
                   key={visibleUser.id}
                   user={visibleUser}
@@ -269,6 +290,7 @@ export function AdminPrivateUserData(props: { userId: string }) {
                     visibleUser.createdTime
                   )}
                   rootUserId={userId}
+                  netManagramAmount={netManagramAmount}
                 />
               )
             )}
