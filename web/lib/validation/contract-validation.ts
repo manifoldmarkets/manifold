@@ -80,11 +80,12 @@ export function validateContractForm(
     }
   }
 
-  // Close date validation
+  // Close date validation (POLLs don't require close dates)
   if (
     !neverCloses &&
     outcomeType !== 'STONK' &&
-    outcomeType !== 'BOUNTIED_QUESTION'
+    outcomeType !== 'BOUNTIED_QUESTION' &&
+    outcomeType !== 'POLL'
   ) {
     if (!closeDate) {
       errors.closeDate = 'Please select a close date'

@@ -27,6 +27,7 @@ export type FormState = {
   midpoints?: number[]
   isAnnouncement?: boolean
   isChangeLog?: boolean
+  includeSeeResults?: boolean // For POLLs - adds "See results" option
 }
 
 export type ValidationErrors = {
@@ -63,9 +64,7 @@ export function ContextualEditorPanel(props: {
             About polls
           </span>
           <p className="text-ink-600 text-sm">
-            This is a poll, people can select an answer but they cannot bet. You
-            may want to add a "see results" answer, because one is not added
-            automatically.
+            This is a poll, people can select an answer but they cannot bet.
           </p>
         </Col>
       ) : (

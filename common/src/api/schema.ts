@@ -1970,6 +1970,22 @@ export const API = (_apiTypeCheck = {
       })
       .strict(),
   },
+  'check-poll-suggestion': {
+    method: 'POST',
+    visibility: 'public',
+    authed: true,
+    returns: {} as {
+      isSubjective: boolean
+      confidence: number
+      reason: string
+    },
+    props: z
+      .object({
+        question: z.string(),
+        answers: z.array(z.string()).optional(),
+      })
+      .strict(),
+  },
   'get-next-loan-amount': {
     method: 'GET',
     visibility: 'undocumented',

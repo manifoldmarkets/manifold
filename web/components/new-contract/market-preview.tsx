@@ -30,12 +30,16 @@ import { InfoTooltip } from '../widgets/info-tooltip'
 import { MAX_ANSWERS } from 'common/answer'
 import { AnswerInput } from '../answers/multiple-choice-answers'
 import { Button } from '../buttons/button'
-import { suggestMarketType } from './market-type-suggestions'
+import { suggestMarketType, MarketTypeSuggestion } from './market-type-suggestions'
 import { MarketTypeSuggestionBanner } from './market-type-suggestion-banner'
 import { useIsMobile } from 'web/hooks/use-is-mobile'
 import { ProbabilitySlider } from '../widgets/probability-input'
 import { ValidationErrors } from 'web/lib/validation/contract-validation'
 import { SimilarContractsSection } from './similar-contracts-section'
+import ShortToggle from '../widgets/short-toggle'
+import { POLL_SEE_RESULTS_ANSWER } from '../answers/answer-constants'
+import { api } from 'web/lib/api/api'
+import { useDebouncedEffect } from 'web/hooks/use-debounced-effect'
 
 export type PreviewContractData = {
   question: string
@@ -67,6 +71,9 @@ export type PreviewContractData = {
   // Multiple choice specific
   shouldAnswersSumToOne?: boolean
   addAnswersMode?: 'DISABLED' | 'ONLY_CREATOR' | 'ANYONE'
+
+  // Poll specific
+  includeSeeResults?: boolean
 }
 
 export function MarketPreview(props: {
@@ -117,6 +124,7 @@ export function MarketPreview(props: {
     func: (titles: string[]) => string[]
   ) => void
   fieldErrors?: ValidationErrors
+  onToggleIncludeSeeResults?: () => void
 }) {
   const {
     data,
@@ -151,9 +159,17 @@ export function MarketPreview(props: {
     setSimilarContracts,
     setDismissedSimilarContractTitles,
     fieldErrors = {},
+    onToggleIncludeSeeResults,
   } = props
   const [isTopicsModalOpen, setIsTopicsModalOpen] = useState(false)
   const [dismissedSuggestion, setDismissedSuggestion] = useState(false)
+  const [aiPollSuggestion, setAiPollSuggestion] = useState<{
+    isSubjective: boolean
+    confidence: number
+    reason: string
+  } | null>(null)
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  const [isCheckingPollSuggestion, setIsCheckingPollSuggestion] = useState(false) // Could be used for loading indicator
   const questionTextareaRef = useRef<HTMLTextAreaElement>(null)
   const isMobile = useIsMobile()
 
@@ -233,6 +249,46 @@ export function MarketPreview(props: {
     window.addEventListener('resize', resizeQuestionTextarea)
     return () => window.removeEventListener('resize', resizeQuestionTextarea)
   }, [resizeQuestionTextarea])
+
+  // Only show AI poll suggestions for newer users (< 100 unique traders on their markets)
+  const isExperiencedCreator = (user.creatorTraders?.allTime ?? 0) >= 100
+
+  // Debounced AI poll suggestion check
+  useDebouncedEffect(
+    () => {
+      // Skip if already a POLL, not editable, question too short, or experienced user
+      if (
+        outcomeType === 'POLL' ||
+        !isEditable ||
+        !question ||
+        question.length < 10 ||
+        isExperiencedCreator
+      ) {
+        setAiPollSuggestion(null)
+        return
+      }
+
+      const checkPollSuggestion = async () => {
+        setIsCheckingPollSuggestion(true)
+        try {
+          const result = await api('check-poll-suggestion', {
+            question,
+            answers: answers?.map((a) => a.text) ?? [],
+          })
+          setAiPollSuggestion(result)
+        } catch (e) {
+          console.error('Error checking poll suggestion:', e)
+          setAiPollSuggestion(null)
+        } finally {
+          setIsCheckingPollSuggestion(false)
+        }
+      }
+
+      checkPollSuggestion()
+    },
+    1500, // 1.5 second debounce
+    [question, outcomeType, isEditable, isExperiencedCreator]
+  )
 
   // Create a mock contract for rendering components
   const mockContract: any = {
@@ -527,20 +583,45 @@ export function MarketPreview(props: {
       {isEditable && !dismissedSuggestion && onSwitchMarketType && question && (
         <>
           {(() => {
-            const suggestion = suggestMarketType(
+            // First check regex-based suggestions
+            const regexSuggestion = suggestMarketType(
               question,
               outcomeType,
               answers?.map((a) => a.text),
               addAnswersMode,
               shouldAnswersSumToOne
             )
-            return suggestion ? (
-              <MarketTypeSuggestionBanner
-                suggestion={suggestion}
-                onSwitchType={onSwitchMarketType}
-                onDismiss={() => setDismissedSuggestion(true)}
-              />
-            ) : null
+            if (regexSuggestion) {
+              return (
+                <MarketTypeSuggestionBanner
+                  suggestion={regexSuggestion}
+                  onSwitchType={onSwitchMarketType}
+                  onDismiss={() => setDismissedSuggestion(true)}
+                />
+              )
+            }
+
+            // Then check AI-based poll suggestion (only if confidence > 0.7)
+            if (
+              aiPollSuggestion?.isSubjective &&
+              aiPollSuggestion.confidence >= 0.7 &&
+              outcomeType !== 'POLL'
+            ) {
+              const suggestion: MarketTypeSuggestion = {
+                suggestedType: 'POLL',
+                reason: aiPollSuggestion.reason || 'This question seems subjective or opinion-based',
+                confidence: aiPollSuggestion.confidence >= 0.85 ? 'high' : 'medium',
+              }
+              return (
+                <MarketTypeSuggestionBanner
+                  suggestion={suggestion}
+                  onSwitchType={onSwitchMarketType}
+                  onDismiss={() => setDismissedSuggestion(true)}
+                />
+              )
+            }
+
+            return null
           })()}
         </>
       )}
@@ -1184,6 +1265,39 @@ export function MarketPreview(props: {
                     </Row>
                   </div>
                 ))}
+
+                {/* "See results" option - non-editable, toggleable */}
+                {isEditable && onToggleIncludeSeeResults && (
+                  <div
+                    className={clsx(
+                      'bg-canvas-50 border-ink-200 rounded-lg border p-3',
+                      !data.includeSeeResults && 'opacity-50'
+                    )}
+                  >
+                    <Row className="items-center gap-3">
+                      <Row
+                        className={clsx(
+                          'flex-1 items-center gap-1',
+                          !data.includeSeeResults && 'line-through opacity-70'
+                        )}
+                      >
+                        <span className="text-ink-700 text-sm font-medium">
+                          {POLL_SEE_RESULTS_ANSWER}
+                        </span>
+                        <InfoTooltip text="Adds an answer to the poll labeled 'See results'. Turns off automatically if you manually add it as an answer." />
+                      </Row>
+                      <Row className="items-center gap-2">
+                        <span className="text-ink-500 text-xs">
+                          {data.includeSeeResults ? 'Included' : 'Excluded'}
+                        </span>
+                        <ShortToggle
+                          on={data.includeSeeResults ?? true}
+                          setOn={() => onToggleIncludeSeeResults()}
+                        />
+                      </Row>
+                    </Row>
+                  </div>
+                )}
 
                 {/* Add answer button */}
                 {isEditable && onEditAnswers && (
