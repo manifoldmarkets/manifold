@@ -45,7 +45,13 @@ export default function AdminUserInfoPage() {
   const [relatedUsers, setRelatedUsers] = useState<
     Array<{
       visibleUser: FullUser
-      matchReasons: ('ip' | 'deviceToken' | 'referrer' | 'referee' | 'managram')[]
+      matchReasons: (
+        | 'ip'
+        | 'deviceToken'
+        | 'referrer'
+        | 'referee'
+        | 'managram'
+      )[]
       netManagramAmount?: number
     }>
   >([])
@@ -568,100 +574,108 @@ export default function AdminUserInfoPage() {
                         device token, or managram history.
                       </p>
                     </div>
-                    {(showAllRelated ? relatedUsers : relatedUsers.slice(0, 3)).map(({ visibleUser, matchReasons, netManagramAmount }) => {
-                      const timeDiff =
-                        targetCreatedTime && visibleUser.createdTime
-                          ? Math.abs(
-                              targetCreatedTime - visibleUser.createdTime
-                            )
-                          : null
-                      const formatTimeDiff = (ms: number) => {
-                        const minutes = Math.floor(ms / (1000 * 60))
-                        const hours = Math.floor(ms / (1000 * 60 * 60))
-                        const days = Math.floor(ms / (1000 * 60 * 60 * 24))
-                        if (minutes < 1) return 'same minute'
-                        if (minutes < 60) return `${minutes} min apart`
-                        if (hours < 24) return `${hours} hr apart`
-                        if (days < 30)
-                          return `${days} day${days !== 1 ? 's' : ''} apart`
-                        return `${Math.floor(days / 30)} month${
-                          Math.floor(days / 30) !== 1 ? 's' : ''
-                        } apart`
-                      }
-                      return (
-                        <div
-                          key={visibleUser.id}
-                          className="bg-canvas-50 flex items-center justify-between rounded border p-3"
-                        >
-                          <button
-                            className="flex items-center gap-3 text-left hover:underline"
-                            onClick={() => selectUser(visibleUser)}
+                    {(showAllRelated
+                      ? relatedUsers
+                      : relatedUsers.slice(0, 3)
+                    ).map(
+                      ({ visibleUser, matchReasons, netManagramAmount }) => {
+                        const timeDiff =
+                          targetCreatedTime && visibleUser.createdTime
+                            ? Math.abs(
+                                targetCreatedTime - visibleUser.createdTime
+                              )
+                            : null
+                        const formatTimeDiff = (ms: number) => {
+                          const minutes = Math.floor(ms / (1000 * 60))
+                          const hours = Math.floor(ms / (1000 * 60 * 60))
+                          const days = Math.floor(ms / (1000 * 60 * 60 * 24))
+                          if (minutes < 1) return 'same minute'
+                          if (minutes < 60) return `${minutes} min apart`
+                          if (hours < 24) return `${hours} hr apart`
+                          if (days < 30)
+                            return `${days} day${days !== 1 ? 's' : ''} apart`
+                          return `${Math.floor(days / 30)} month${
+                            Math.floor(days / 30) !== 1 ? 's' : ''
+                          } apart`
+                        }
+                        return (
+                          <div
+                            key={visibleUser.id}
+                            className="bg-canvas-50 flex items-center justify-between rounded border p-3"
                           >
-                            <Avatar
-                              username={visibleUser.username}
-                              avatarUrl={visibleUser.avatarUrl}
-                              size="sm"
-                            />
-                            <div>
-                              <div className="font-medium">
-                                {visibleUser.name}
-                                {visibleUser.userDeleted && (
-                                  <span className="ml-2 text-xs text-red-600">
-                                    [DELETED]
+                            <button
+                              className="flex items-center gap-3 text-left hover:underline"
+                              onClick={() => selectUser(visibleUser)}
+                            >
+                              <Avatar
+                                username={visibleUser.username}
+                                avatarUrl={visibleUser.avatarUrl}
+                                size="sm"
+                              />
+                              <div>
+                                <div className="font-medium">
+                                  {visibleUser.name}
+                                  {visibleUser.userDeleted && (
+                                    <span className="ml-2 text-xs text-red-600">
+                                      [DELETED]
+                                    </span>
+                                  )}
+                                </div>
+                                <div className="text-ink-600 text-sm">
+                                  @{visibleUser.username}
+                                </div>
+                              </div>
+                            </button>
+                            <div className="flex flex-col items-end gap-1">
+                              <div className="flex flex-wrap justify-end gap-1">
+                                {matchReasons.includes('referrer') && (
+                                  <span className="rounded bg-blue-100 px-2 py-1 text-xs font-medium text-blue-800">
+                                    Referrer
                                   </span>
                                 )}
+                                {matchReasons.includes('referee') && (
+                                  <span className="rounded bg-green-100 px-2 py-1 text-xs font-medium text-green-800">
+                                    Referee
+                                  </span>
+                                )}
+                                {matchReasons.includes('ip') && (
+                                  <span className="rounded bg-red-100 px-2 py-1 text-xs font-medium text-red-800">
+                                    Same IP
+                                  </span>
+                                )}
+                                {matchReasons.includes('deviceToken') && (
+                                  <span className="rounded bg-red-100 px-2 py-1 text-xs font-medium text-red-800">
+                                    Same Device
+                                  </span>
+                                )}
+                                {matchReasons.includes('managram') &&
+                                  netManagramAmount !== undefined && (
+                                    <span
+                                      className={`rounded px-2 py-1 text-xs font-medium ${
+                                        netManagramAmount > 0
+                                          ? 'bg-green-100 text-green-800'
+                                          : netManagramAmount < 0
+                                          ? 'bg-red-100 text-red-800'
+                                          : 'bg-gray-100 text-gray-800'
+                                      }`}
+                                    >
+                                      {netManagramAmount > 0 ? '+' : ''}
+                                      {Math.round(
+                                        netManagramAmount
+                                      ).toLocaleString()}
+                                    </span>
+                                  )}
                               </div>
-                              <div className="text-ink-600 text-sm">
-                                @{visibleUser.username}
-                              </div>
-                            </div>
-                          </button>
-                          <div className="flex flex-col items-end gap-1">
-                            <div className="flex flex-wrap justify-end gap-1">
-                              {matchReasons.includes('referrer') && (
-                                <span className="rounded bg-blue-100 px-2 py-1 text-xs font-medium text-blue-800">
-                                  Referrer
-                                </span>
-                              )}
-                              {matchReasons.includes('referee') && (
-                                <span className="rounded bg-green-100 px-2 py-1 text-xs font-medium text-green-800">
-                                  Referee
-                                </span>
-                              )}
-                              {matchReasons.includes('ip') && (
-                                <span className="rounded bg-red-100 px-2 py-1 text-xs font-medium text-red-800">
-                                  Same IP
-                                </span>
-                              )}
-                              {matchReasons.includes('deviceToken') && (
-                                <span className="rounded bg-red-100 px-2 py-1 text-xs font-medium text-red-800">
-                                  Same Device
-                                </span>
-                              )}
-                              {matchReasons.includes('managram') && netManagramAmount !== undefined && (
-                                <span
-                                  className={`rounded px-2 py-1 text-xs font-medium ${
-                                    netManagramAmount > 0
-                                      ? 'bg-green-100 text-green-800'
-                                      : netManagramAmount < 0
-                                      ? 'bg-red-100 text-red-800'
-                                      : 'bg-gray-100 text-gray-800'
-                                  }`}
-                                >
-                                  {netManagramAmount > 0 ? '+' : ''}
-                                  {Math.round(netManagramAmount).toLocaleString()}
+                              {timeDiff !== null && (
+                                <span className="text-ink-500 text-xs">
+                                  {formatTimeDiff(timeDiff)}
                                 </span>
                               )}
                             </div>
-                            {timeDiff !== null && (
-                              <span className="text-ink-500 text-xs">
-                                {formatTimeDiff(timeDiff)}
-                              </span>
-                            )}
                           </div>
-                        </div>
-                      )
-                    })}
+                        )
+                      }
+                    )}
                     {relatedUsers.length > 3 && (
                       <button
                         onClick={() => setShowAllRelated(!showAllRelated)}

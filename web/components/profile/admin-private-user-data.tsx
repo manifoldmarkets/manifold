@@ -58,7 +58,14 @@ function RelatedUserRow(props: {
   depth?: number
   netManagramAmount?: number
 }) {
-  const { user, matchReasons, timeDiff, rootUserId, depth = 0, netManagramAmount } = props
+  const {
+    user,
+    matchReasons,
+    timeDiff,
+    rootUserId,
+    depth = 0,
+    netManagramAmount,
+  } = props
   const [expanded, setExpanded] = useState(false)
   const [subMatches, setSubMatches] = useState<RelatedMatch[]>([])
   const [subTargetCreatedTime, setSubTargetCreatedTime] = useState<
@@ -136,20 +143,21 @@ function RelatedUserRow(props: {
               Device
             </span>
           )}
-          {matchReasons.includes('managram') && netManagramAmount !== undefined && (
-            <span
-              className={`rounded px-1.5 py-0.5 text-xs ${
-                netManagramAmount > 0
-                  ? 'bg-green-100 text-green-800'
-                  : netManagramAmount < 0
-                  ? 'bg-red-100 text-red-800'
-                  : 'bg-gray-100 text-gray-800'
-              }`}
-            >
-              {netManagramAmount > 0 ? '+' : ''}
-              {Math.round(netManagramAmount).toLocaleString()}
-            </span>
-          )}
+          {matchReasons.includes('managram') &&
+            netManagramAmount !== undefined && (
+              <span
+                className={`rounded px-1.5 py-0.5 text-xs ${
+                  netManagramAmount > 0
+                    ? 'bg-green-100 text-green-800'
+                    : netManagramAmount < 0
+                    ? 'bg-red-100 text-red-800'
+                    : 'bg-gray-100 text-gray-800'
+                }`}
+              >
+                {netManagramAmount > 0 ? '+' : ''}
+                {Math.round(netManagramAmount).toLocaleString()}
+              </span>
+            )}
           {timeDiff && <span className="text-ink-500 text-xs">{timeDiff}</span>}
           {depth < 2 && (
             <button
@@ -280,7 +288,11 @@ export function AdminPrivateUserData(props: { userId: string }) {
               {summaryParts.join(' · ')}
             </div>
             {displayedUsers.map(
-              ({ visibleUser, matchReasons, netManagramAmount }: RelatedMatch) => (
+              ({
+                visibleUser,
+                matchReasons,
+                netManagramAmount,
+              }: RelatedMatch) => (
                 <RelatedUserRow
                   key={visibleUser.id}
                   user={visibleUser}
