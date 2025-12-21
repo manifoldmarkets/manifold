@@ -1,9 +1,9 @@
 /* eslint-disable jsx-a11y/alt-text */
-import { OgCardProps } from 'common/contract-seo'
 import clsx from 'clsx'
-import { ProbGraph } from './graph'
+import { OgCardProps } from 'common/contract-seo'
 import { base64toPoints, Point } from 'common/edge/og'
 import Logo from 'web/public/logo.svg'
+import { ProbGraph } from './graph'
 
 // See https://github.com/vercel/satori#documentation for styling restrictions
 export function OgMarket(props: OgCardProps) {
@@ -43,7 +43,7 @@ export function OgMarket(props: OgCardProps) {
           Manifold
         </span>
       </div>
-      <div className="m-4 mt-1 flex flex-col rounded-lg bg-white px-6 py-4 text-black shadow-lg">
+      <div className="m-4 mt-1 flex flex-col rounded-lg bg-white px-6 py-4 pb-10 text-black shadow-lg">
         {/* Details */}
         <div className="mb-1 flex w-full flex-row justify-between text-sm text-gray-600">
           <div className="flex items-center">
@@ -89,10 +89,8 @@ export function OgMarket(props: OgCardProps) {
             <ProbGraph
               color={numericValue ? '#14bbFF' : '#14b8a6'}
               data={data}
-              // height={80 + 32}
-              // aspectRatio={5.07}
-              height={80}
-              aspectRatio={7.1}
+              height={70}
+              aspectRatio={7.5}
             />
           </div>
         ) : bountyLeft ? (
@@ -101,7 +99,7 @@ export function OgMarket(props: OgCardProps) {
           <div className="flex h-8" />
         )}
         {!topAnswer && (probability || numericValue || resolution) && (
-          <div className="flex w-full flex-row justify-center text-2xl text-white">
+          <div className="absolute bottom-0 mb-4 mt-8 flex w-full flex-row justify-center self-center text-2xl text-white">
             {probabilityAsFloat && !resolution ? (
               <>
                 <div
