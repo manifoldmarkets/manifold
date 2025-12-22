@@ -135,6 +135,7 @@ const issueMoneys = async (session: StripeSession) => {
   log('priceInDollars', priceInDollars, 'deposit', deposit)
 
   // TODO kill firestore collection when we get off stripe. too lazy to do it now
+  const firestore = getFirestore()
   const id = await firestore.runTransaction(async (trans) => {
     const query = await trans.get(
       firestore
@@ -262,4 +263,5 @@ const handleBoostPayment = async (session: StripeSession) => {
   )
 }
 
-const firestore = admin.firestore()
+// Lazy-initialized to avoid crash in LOCAL_ONLY mode (no Firebase)
+const getFirestore = () => admin.firestore()

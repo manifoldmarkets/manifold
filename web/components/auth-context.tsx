@@ -3,7 +3,7 @@ import { createContext, ReactNode, useEffect, useState } from 'react'
 import { pickBy } from 'lodash'
 import { onIdTokenChanged, User as FirebaseUser } from 'firebase/auth'
 import { auth, firebaseLogout } from 'web/lib/firebase/users'
-import { createUser } from 'web/lib/api/api'
+import { createUser, api } from 'web/lib/api/api'
 import { randomString } from 'common/util/random'
 import { identifyUser, setUserProperty } from 'web/lib/service/analytics'
 import { useStateCheckEquality } from 'web/hooks/use-state-check-equality'
@@ -30,6 +30,11 @@ import toast from 'react-hot-toast'
 import { Row } from './layout/row'
 import { TokenNumber } from './widgets/token-number'
 import { updateSupabaseAuth } from 'web/lib/supabase/db'
+import { setLocalOnlyUserId } from 'common/util/api'
+
+// LOCAL_ONLY mode: Skip Firebase auth entirely, use test user from API
+const LOCAL_ONLY = process.env.NEXT_PUBLIC_LOCAL_ONLY === 'true'
+const LOCAL_TEST_USER = process.env.NEXT_PUBLIC_LOCAL_TEST_USER || 'testuser'
 
 // Either we haven't looked up the logged in user yet (undefined), or we know
 // the user is not logged in (null), or we know the user is logged in.
@@ -158,7 +163,51 @@ export function AuthProvider(props: {
     fbUser.getIdToken()
   }
 
+  // LOCAL_ONLY mode: Load test user directly, skip Firebase
   useEffect(() => {
+    if (!LOCAL_ONLY) return
+
+    const loadLocalUser = async () => {
+      try {
+        console.log('LOCAL_ONLY: Loading test user:', LOCAL_TEST_USER)
+        // Use direct fetch since api() requires Firebase auth
+        const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'localhost:8088'
+        const response = await fetch(`http://${apiUrl}/v0/user/${LOCAL_TEST_USER}`)
+        if (!response.ok) {
+          throw new Error(`Failed to fetch user: ${response.status}`)
+        }
+        const userData = await response.json()
+
+        // Create a minimal PrivateUser for local testing
+        const localPrivateUser: PrivateUser = {
+          id: userData.id,
+          notificationPreferences: {} as any,
+          blockedUserIds: [],
+          blockedByUserIds: [],
+          blockedContractIds: [],
+          blockedGroupSlugs: [],
+        }
+
+        setUser(userData as User)
+        setPrivateUser(localPrivateUser)
+        setAuthLoaded(true)
+        // Set the user ID for API calls in LOCAL_ONLY mode
+        setLocalOnlyUserId(userData.id)
+        console.log('LOCAL_ONLY: User loaded successfully:', userData.username)
+      } catch (e) {
+        console.error('LOCAL_ONLY: Failed to load test user:', e)
+        setUser(null)
+        setAuthLoaded(true)
+      }
+    }
+
+    loadLocalUser()
+  }, [])
+
+  // Normal Firebase auth (skipped in LOCAL_ONLY mode)
+  useEffect(() => {
+    if (LOCAL_ONLY) return // Skip Firebase in local mode
+
     return onIdTokenChanged(
       auth,
       async (fbUser) => {

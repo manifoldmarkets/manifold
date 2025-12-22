@@ -34,7 +34,10 @@ export function createClient(
   key: string,
   opts?: SupabaseClientOptionsGeneric<'public'>
 ) {
-  const url = `https://${instanceId}.supabase.co`
+  // LOCAL_ONLY mode: Use local Supabase REST API
+  const localOnly = process.env.LOCAL_ONLY === 'true'
+  const localUrl = process.env.SUPABASE_URL || 'http://127.0.0.1:54321'
+  const url = localOnly ? localUrl : `https://${instanceId}.supabase.co`
   return createClientGeneric(url, key, opts) as SupabaseClient
 }
 

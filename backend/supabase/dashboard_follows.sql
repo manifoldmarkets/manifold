@@ -4,7 +4,7 @@ create table if not exists
     created_time timestamp with time zone default now(),
     dashboard_id text not null,
     follower_id text not null,
-    constraint primary key (dashboard_id, follower_id)
+    primary key (dashboard_id, follower_id)
   );
 
 -- Indexes

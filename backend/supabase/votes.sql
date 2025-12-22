@@ -5,7 +5,7 @@ create table if not exists
     created_time timestamp with time zone default now() not null,
     id text not null,
     user_id text not null,
-    constraint primary key (id, contract_id, user_id)
+    primary key (id, contract_id, user_id)
   );
 
 -- Row Level Security
