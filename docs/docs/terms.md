@@ -108,7 +108,7 @@ As a user of the Site, you agree not to:
 
 ● Except as permitted by applicable law, decipher, decompile, disassemble, or reverse engineer any of the software comprising or in any way making up a part of the Site.
 
-● Except as may be the result of standard search engine or Internet browser usage, use, launch, develop, or distribute any automated system, including without limitation, any spider, robot, cheat utility, scraper, or offline reader that accesses the Site, or using or launching any unauthorized script or other software.
+● Except as may be the result of (a) standard search engine or Internet browser usage, or (b) authorized use of our public API to build bots or automated systems that trade, comment, create markets, or otherwise contribute to the Site in accordance with our API terms and rate limits, use, launch, develop, or distribute any automated system, including without limitation, any spider, cheat utility, scraper, or offline reader that accesses the Site in an unauthorized manner, or using or launching any unauthorized script or other software designed to circumvent security measures, abuse Site resources, or otherwise violate these Terms.
 
 ● Use a buying agent or purchasing agent to make purchases on the Site.
 
