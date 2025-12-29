@@ -1,34 +1,36 @@
-import { useMemo } from 'react'
-import { first, last, minBy, maxBy } from 'lodash'
-import { scaleTime, scaleLinear } from 'd3-scale'
 import clsx from 'clsx'
+import { scaleLinear, scaleTime } from 'd3-scale'
+import { first, last, maxBy, minBy } from 'lodash'
+import { useMemo } from 'react'
 
+import { Bet } from 'common/bet'
 import { getAnswerProbability, getProbability } from 'common/calculate'
+import { HistoryPoint } from 'common/chart'
+import { ChartPosition } from 'common/chart-position'
 import { BinaryContract, CPMMMultiContract } from 'common/contract'
-import {
-  getEndDate,
-  getRightmostVisibleDate,
-  formatPct,
-  ZoomParams,
-  PointerMode,
-} from '../helpers'
+import { YES_GRAPH_COLOR } from 'common/envs/constants'
+import { ChartAnnotation } from 'common/supabase/chart-annotations'
+import { buildArray } from 'common/util/array'
+import { SizedContainer } from 'web/components/sized-container'
+import { ChartAnnotations } from '../chart-annotations'
+import { ChartPositionsCarousel } from '../chart-positions'
 import {
   SingleValueHistoryChart,
   SingleValueStackedHistoryChart,
 } from '../generic-charts'
-import { YES_GRAPH_COLOR } from 'common/envs/constants'
+import {
+  formatPct,
+  getEndDate,
+  getRightmostVisibleDate,
+  PointerMode,
+  ZoomParams,
+} from '../helpers'
+import { getAnswerColor } from './choice'
 import {
   MultiBinaryChartTooltip,
   SingleContractChartTooltip,
   SingleContractPoint,
 } from './single-value'
-import { ChartAnnotation } from 'common/supabase/chart-annotations'
-import { getAnswerColor } from './choice'
-import { HistoryPoint } from 'common/chart'
-import { Bet } from 'common/bet'
-import { SizedContainer } from 'web/components/sized-container'
-import { ChartAnnotations } from '../chart-annotations'
-import { buildArray } from 'common/util/array'
 
 export const GRAPH_Y_DIVISOR = 20
 
@@ -80,6 +82,9 @@ export const BinaryContractChart = (props: {
   setHoveredAnnotation?: (id: number | null) => void
   pointerMode?: PointerMode
   chartAnnotations?: ChartAnnotation[]
+  chartPositions?: ChartPosition[]
+  hoveredChartPosition?: ChartPosition | null
+  setHoveredChartPosition?: (position: ChartPosition | null) => void
   graphColor?: string
   noWatermark?: boolean
   zoomY?: boolean
@@ -96,6 +101,9 @@ export const BinaryContractChart = (props: {
     setHoveredAnnotation,
     pointerMode = 'zoom',
     chartAnnotations,
+    chartPositions,
+    hoveredChartPosition,
+    setHoveredChartPosition,
     graphColor,
     noWatermark,
     zoomY,
@@ -148,6 +156,9 @@ export const BinaryContractChart = (props: {
       setHoveredAnnotation={setHoveredAnnotation}
       pointerMode={pointerMode}
       chartAnnotations={chartAnnotations}
+      chartPositions={chartPositions}
+      hoveredChartPosition={hoveredChartPosition}
+      setHoveredChartPosition={setHoveredChartPosition}
       noWatermark={noWatermark}
     />
   )
@@ -166,6 +177,9 @@ export function SizedBinaryChart(props: {
   setHoveredAnnotation?: (id: number | null) => void
   pointerMode?: PointerMode
   chartAnnotations?: ChartAnnotation[]
+  chartPositions?: ChartPosition[]
+  hoveredChartPosition?: ChartPosition | null
+  setHoveredChartPosition?: (position: ChartPosition | null) => void
   noWatermark?: boolean
   zoomY?: boolean
   startTime?: number
@@ -182,6 +196,9 @@ export function SizedBinaryChart(props: {
     setHoveredAnnotation,
     hoveredAnnotation,
     chartAnnotations,
+    chartPositions,
+    hoveredChartPosition,
+    setHoveredChartPosition,
     noWatermark,
     zoomY,
     startTime,
@@ -209,6 +226,9 @@ export function SizedBinaryChart(props: {
             setHoveredAnnotation={setHoveredAnnotation}
             pointerMode={pointerMode}
             chartAnnotations={chartAnnotations}
+            chartPositions={chartPositions}
+            hoveredChartPosition={hoveredChartPosition}
+            setHoveredChartPosition={setHoveredChartPosition}
             noWatermark={noWatermark}
             zoomY={zoomY}
             startTime={startTime}
@@ -220,6 +240,13 @@ export function SizedBinaryChart(props: {
           annotations={chartAnnotations}
           hoveredAnnotation={hoveredAnnotation}
           setHoveredAnnotation={setHoveredAnnotation}
+        />
+      ) : null}
+      {chartPositions && chartPositions.length > 0 ? (
+        <ChartPositionsCarousel
+          positions={chartPositions}
+          hoveredPosition={hoveredChartPosition}
+          setHoveredPosition={setHoveredChartPosition}
         />
       ) : null}
     </>

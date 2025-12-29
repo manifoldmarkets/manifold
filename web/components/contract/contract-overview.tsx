@@ -235,6 +235,16 @@ export const BinaryOverview = (props: {
     chartAnnotations,
     enableAdd,
   } = useAnnotateChartTools(contract, props.chartAnnotations)
+
+  const currentUser = useUser()
+  const {
+    chartPositions,
+    setHoveredChartPosition,
+    hoveredChartPosition,
+    displayUser,
+    setDisplayUser,
+  } = useChartPositions(contract)
+
   const isMobile = useIsMobile()
   return (
     <>
@@ -268,6 +278,12 @@ export const BinaryOverview = (props: {
           {loading && !isMobile && (
             <LoadingIndicator spinnerColor="border-ink-400" size="sm" />
           )}
+          <UserPositionSearchButton
+            currentUser={currentUser}
+            displayUser={displayUser}
+            contract={contract}
+            setDisplayUser={setDisplayUser}
+          />
           {enableAdd && (
             <EditChartAnnotationsButton
               pointerMode={pointerMode}
@@ -294,6 +310,9 @@ export const BinaryOverview = (props: {
         setHoveredAnnotation={setHoveredAnnotation}
         pointerMode={pointerMode}
         chartAnnotations={chartAnnotations}
+        chartPositions={chartPositions}
+        hoveredChartPosition={hoveredChartPosition}
+        setHoveredChartPosition={setHoveredChartPosition}
         zoomY={zoomY}
       />
       {tradingAllowed(contract) && <BinaryBetPanel contract={contract} />}

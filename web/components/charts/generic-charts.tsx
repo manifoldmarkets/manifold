@@ -740,6 +740,9 @@ export const SingleValueHistoryChart = <P extends HistoryPoint>(props: {
   setHoveredAnnotation?: (id: number | null) => void
   pointerMode?: PointerMode
   chartAnnotations?: ChartAnnotation[]
+  chartPositions?: ChartPosition[]
+  hoveredChartPosition?: ChartPosition | null
+  setHoveredChartPosition?: (position: ChartPosition | null) => void
   hideXAxis?: boolean
   onGraphClick?: () => void
   areaClassName?: string
@@ -763,6 +766,9 @@ export const SingleValueHistoryChart = <P extends HistoryPoint>(props: {
     setHoveredAnnotation,
     pointerMode = 'zoom',
     chartAnnotations = [],
+    chartPositions = [],
+    hoveredChartPosition,
+    setHoveredChartPosition,
     hideXAxis,
     onGraphClick,
     areaClassName,
@@ -906,6 +912,11 @@ export const SingleValueHistoryChart = <P extends HistoryPoint>(props: {
         chartAnnotations={chartAnnotations}
         hoveredAnnotation={hoveredAnnotation}
         onHoverAnnotation={setHoveredAnnotation}
+        chartPositions={chartPositions?.filter(
+          (cp) => xScale(cp.createdTime) < w && xScale(cp.createdTime) > 0
+        )}
+        hoveredChartPosition={hoveredChartPosition}
+        setHoveredChartPosition={setHoveredChartPosition}
         pointerMode={pointerMode}
         hideXAxis={hideXAxis}
         yKind={yKind}
