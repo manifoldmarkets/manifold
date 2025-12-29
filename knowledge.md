@@ -190,6 +190,7 @@ import { useUser } from 'web/hooks/use-user'
 For live updates, we use websockets. In `use-api-subscription.ts`, we have this hook:
 
 ```ts
+import { useApiSubscription } from 'client-common/hooks/use-api-subscription'
 export function useApiSubscription(opts: SubscriptionOptions) {
   useEffect(() => {
     const ws = client

@@ -18,6 +18,7 @@ import { updateUserPortfolioHistoriesCore } from 'shared/update-user-portfolio-h
 import { isProd } from 'shared/utils'
 import { sendWeeklyMarketsEmails } from 'shared/weekly-markets-emails'
 import { sendPortfolioUpdateEmailsToAllUsers } from 'shared/weekly-portfolio-emails'
+import { applyPendingClarifications } from './apply-pending-clarifications'
 import { autoAwardBounty } from './auto-award-bounty'
 import { autoLeaguesCycle } from './auto-leagues-cycle'
 import { cleanOldNotifications } from './clean-old-notifications'
@@ -144,6 +145,11 @@ export function createJobs() {
       'poll-poll-resolutions',
       '0 */1 * * * *', // every minute
       pollPollResolutions
+    ),
+    createJob(
+      'apply-pending-clarifications',
+      '0 */5 * * * *', // every 5 minutes
+      applyPendingClarifications
     ),
     // Daily jobs:
     createJob(

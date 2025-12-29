@@ -1,22 +1,17 @@
-import { JSONContent } from '@tiptap/core'
 import { followContractInternal } from 'api/follow-contract'
-import { DEV_HOUSE_LIQUIDITY_PROVIDER_ID } from 'common/antes'
 import { Bet } from 'common/bet'
 import { ContractComment } from 'common/comment'
 import { Contract, contractPath } from 'common/contract'
+import { PendingClarification } from 'common/pending-clarification'
 import { User } from 'common/user'
 import {
   parseJsonContentToText,
   parseMentions,
   richTextToString,
 } from 'common/util/parse'
-import { cloneDeep, compact } from 'lodash'
-import { track } from 'shared/analytics'
+import { compact } from 'lodash'
 import { insertModReport } from 'shared/create-mod-report'
-import {
-  createAIDescriptionUpdateNotification,
-  replied_users_info,
-} from 'shared/create-notification'
+import { replied_users_info } from 'shared/create-notification'
 import { aiModels, promptAI } from 'shared/helpers/prompt-ai'
 import { createCommentOnContractNotification } from 'shared/notifications/create-new-contract-comment-notif'
 import { getAnswer } from 'shared/supabase/answers'
@@ -27,8 +22,8 @@ import {
   SupabaseDirectClient,
 } from 'shared/supabase/init'
 import { anythingToRichText } from 'shared/tiptap'
-import { isProd, log, revalidateStaticProps } from 'shared/utils'
-import { updateMarketContinuation } from './update-market'
+import { log, revalidateStaticProps } from 'shared/utils'
+import { broadcastNewPendingClarification } from 'shared/websockets/helpers'
 
 type ClarificationResponse = {
   isClarification: boolean
@@ -340,7 +335,8 @@ Format the description in markdown, sticking to just the following:
 - Use bullet points for lists
 
 I will append the title of 'Update from creator' to the beginning of the description. You do not need to include this in your response.
-Be as concise as possible. I will link your clarification to the creator's comment, so when in doubt, err on the side of brevity and let the user check out the comment for more details.
+Be as concise as possible. I will link your clarification to the creator's comment, so when in doubt, err on the side of brevity.
+Do NOT add phrases like "See the linked comment for details" or "See the comment for more information" - the link to the comment is already included automatically.
 NOTE: If the creator explicitly states that their comment is not a clarification, such as saying "these comments are not a clarification," then you must not treat it as clarifying or changing the resolution criteria. In that case, return {"isClarification": false, "description": ""}.
 Only return the raw JSON object without any markdown code blocks, backticks, additional formatting, or anything else.`
 
@@ -362,21 +358,6 @@ Only return the raw JSON object without any markdown code blocks, backticks, add
     }
 
     if (clarification.isClarification && clarification.description) {
-      const dateParts = new Date()
-        .toLocaleDateString('en-US', {
-          timeZone: 'America/Los_Angeles',
-          year: 'numeric',
-          month: '2-digit',
-          day: '2-digit',
-        })
-        .split('/')
-      const date = `${dateParts[2]}-${dateParts[0]}-${dateParts[1]}`
-      const timeZone = new Date()
-        .toLocaleDateString('en-US', { timeZoneName: 'short' })
-        .includes('PDT')
-        ? 'PDT'
-        : 'PST'
-
       const formattedDescription = clarification.description.replace(
         /\n[•\-*] /g,
         '\n   - '
@@ -385,48 +366,39 @@ Only return the raw JSON object without any markdown code blocks, backticks, add
         contract
       )}#${comment.id}))`
 
-      const markdownToAppend = `- Update ${date} (${timeZone}) ${summaryNote}: ${formattedDescription} `
+      // Store the description without date - it will be added when applied
+      const markdown = `${summaryNote}: ${formattedDescription}`
+      const richText = anythingToRichText({ markdown })
 
-      const appendDescription = anythingToRichText({
-        markdown: markdownToAppend,
-      })
-      // Create deep copy of the old description to update history correctly
-      const oldDescription = cloneDeep(contract.description)
-      let newDescription: JSONContent | undefined
-
-      if (typeof oldDescription === 'string') {
-        newDescription = anythingToRichText({
-          markdown: `${oldDescription}${appendDescription}`,
-        })
-      } else {
-        oldDescription.content?.push(
-          { type: 'paragraph' }, // acts as newline
-          ...(appendDescription?.content ?? [])
-        )
-        newDescription = oldDescription
+      if (!richText) {
+        log.error('Failed to convert markdown to rich text')
+        return
       }
-      await updateContract(pg, contract.id, {
-        description: newDescription,
-      })
-      const editorID = isProd()
-        ? '8lZo8X5lewh4hnCoreI7iSc0GxK2' // ManifoldAI user id, lol
-        : DEV_HOUSE_LIQUIDITY_PROVIDER_ID
-      await updateMarketContinuation(
-        contract,
-        editorID,
-        undefined,
-        undefined,
-        undefined,
-        undefined,
-        newDescription
+
+      // Insert pending clarification and get the id back
+      const result = await pg.one<{ id: number; created_time: string }>(
+        `insert into pending_clarifications (contract_id, comment_id, data)
+         values ($1, $2, $3)
+         returning id, created_time`,
+        [contract.id, comment.id, { markdown, richText }]
       )
-      track(editorID, 'ai clarification added', {
+
+      const pendingClarification: PendingClarification = {
+        id: result.id,
+        contractId: contract.id,
+        commentId: comment.id,
+        createdTime: new Date(result.created_time).getTime(),
+        data: { markdown, richText },
+      }
+
+      // Broadcast to frontend so creator sees it immediately
+      broadcastNewPendingClarification(contract.id, pendingClarification)
+
+      log('Pending clarification created:', {
         contractId: contract.id,
         slug: contract.slug,
         question: contract.question,
       })
-
-      await createAIDescriptionUpdateNotification(contract, markdownToAppend)
     }
   } catch (e) {
     log.error('Error checking for clarification:', { e })

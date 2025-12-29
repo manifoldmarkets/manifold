@@ -202,7 +202,13 @@ export const API = (_apiTypeCheck = {
       targetCreatedTime?: number
       matches: Array<{
         visibleUser: FullUser
-        matchReasons: ('ip' | 'deviceToken' | 'referrer' | 'referee' | 'managram')[]
+        matchReasons: (
+          | 'ip'
+          | 'deviceToken'
+          | 'referrer'
+          | 'referee'
+          | 'managram'
+        )[]
         netManagramAmount?: number
       }>
     },
@@ -2597,6 +2603,45 @@ export const API = (_apiTypeCheck = {
       answer_id: string | null
       data: Contract
     }[],
+  },
+  'get-pending-clarifications': {
+    method: 'GET',
+    authed: false,
+    visibility: 'undocumented',
+    props: z
+      .object({
+        contractId: z.string(),
+      })
+      .strict(),
+    returns: [] as {
+      id: number
+      contractId: string
+      commentId: string
+      createdTime: number
+      data: { markdown: string; richText: JSONContent }
+    }[],
+  },
+  'apply-pending-clarification': {
+    method: 'POST',
+    authed: true,
+    visibility: 'undocumented',
+    props: z
+      .object({
+        clarificationId: z.number(),
+      })
+      .strict(),
+    returns: {} as { success: boolean; alreadyApplied?: boolean },
+  },
+  'cancel-pending-clarification': {
+    method: 'POST',
+    authed: true,
+    visibility: 'undocumented',
+    props: z
+      .object({
+        clarificationId: z.number(),
+      })
+      .strict(),
+    returns: {} as { success: boolean },
   },
 } as const)
 

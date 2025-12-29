@@ -1,12 +1,13 @@
-import { broadcast, broadcastMulti } from './server'
-import { Bet, LimitBet } from 'common/bet'
-import { Contract, Visibility } from 'common/contract'
-import { ContractComment, PostComment } from 'common/comment'
-import { User } from 'common/user'
 import { Answer } from 'common/answer'
-import { ChartAnnotation } from 'common/supabase/chart-annotations'
+import { Bet, LimitBet } from 'common/bet'
+import { ContractComment, PostComment } from 'common/comment'
+import { Contract, Visibility } from 'common/contract'
 import { ContractMetric } from 'common/contract-metric'
+import { PendingClarification } from 'common/pending-clarification'
+import { ChartAnnotation } from 'common/supabase/chart-annotations'
+import { User } from 'common/user'
 import { groupBy } from 'lodash'
+import { broadcast, broadcastMulti } from './server'
 
 export function broadcastUpdatedPrivateUser(userId: string) {
   // don't send private user info because it's private and anyone can listen
@@ -157,4 +158,11 @@ export function broadcastAllNotificationsRead(userId: string, since: number) {
     type: 'marked_as_seen',
     since,
   })
+}
+
+export function broadcastNewPendingClarification(
+  contractId: string,
+  clarification: PendingClarification
+) {
+  broadcast(`contract/${contractId}/pending-clarification`, { clarification })
 }

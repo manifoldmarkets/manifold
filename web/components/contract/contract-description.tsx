@@ -1,17 +1,18 @@
-import { useState, useEffect } from 'react'
-import { MAX_DESCRIPTION_LENGTH } from 'common/contract'
-import { useAdminOrMod } from 'web/hooks/use-admin'
-import { useUser } from 'web/hooks/use-user'
-import { Row } from '../layout/row'
-import { TextEditor, useTextEditor } from 'web/components/widgets/editor'
-import { Button } from '../buttons/button'
-import { CollapsibleContent } from '../widgets/collapsible-content'
 import { PencilIcon, PlusIcon } from '@heroicons/react/solid'
 import { JSONContent } from '@tiptap/core'
-import { updateMarket } from 'web/lib/api/api'
-import { toast } from 'react-hot-toast'
-import { LogoIcon } from '../icons/logo-icon'
 import clsx from 'clsx'
+import { MAX_DESCRIPTION_LENGTH } from 'common/contract'
+import { useEffect, useState } from 'react'
+import { toast } from 'react-hot-toast'
+import { TextEditor, useTextEditor } from 'web/components/widgets/editor'
+import { useAdminOrMod } from 'web/hooks/use-admin'
+import { useUser } from 'web/hooks/use-user'
+import { updateMarket } from 'web/lib/api/api'
+import { Button } from '../buttons/button'
+import { LogoIcon } from '../icons/logo-icon'
+import { Row } from '../layout/row'
+import { CollapsibleContent } from '../widgets/collapsible-content'
+import { PendingClarifications } from './pending-clarifications'
 
 export function ContractDescription(props: {
   contractId: string // the description is stored on this contract
@@ -41,6 +42,8 @@ export function ContractDescription(props: {
             hideCollapse={!user}
           />
         )}
+
+        <PendingClarifications contractId={contractId} isCreator={isCreator} />
 
         <div
           className={clsx(

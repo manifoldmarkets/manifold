@@ -48,6 +48,7 @@ import { blockGroup, unblockGroup } from './block-group'
 import { blockMarket, unblockMarket } from './block-market'
 import { blockUser, unblockUser } from './block-user'
 import { cancelBet } from './cancel-bet'
+import { checkPollSuggestion } from './check-poll-suggestion'
 import { checkSportsEvent } from './check-sports-event'
 import { closeMarket } from './close-market'
 import { convertCashToMana } from './convert-cash-to-mana'
@@ -64,7 +65,6 @@ import { followContract } from './follow-contract'
 import { generateAIAnswers } from './generate-ai-answers'
 import { generateAIDescription } from './generate-ai-description'
 import { generateAIMarketSuggestions } from './generate-ai-market-suggestions'
-import { checkPollSuggestion } from './check-poll-suggestion'
 import { getSingleAnswer } from './get-answer'
 import { getBetPointsBetween, getBets } from './get-bets'
 import { getCashouts } from './get-cashouts'
@@ -146,8 +146,8 @@ import { updateCategory } from './update-category'
 import { updateTask } from './update-task'
 
 import { adminDeleteUser } from './admin-delete-user'
-import { adminGetUserInfo } from './admin-get-user-info'
 import { adminGetRelatedUsers } from './admin-get-related-users'
+import { adminGetUserInfo } from './admin-get-user-info'
 import { adminRecoverUser } from './admin-recover-user'
 import { adminSearchUsersByEmail } from './admin-search-users-by-email'
 import { anonymizeUser } from './anonymize-user'
@@ -190,6 +190,11 @@ import {
   getMarketDrafts,
   saveMarketDraft,
 } from './market-drafts'
+import {
+  applyPendingClarification,
+  cancelPendingClarification,
+  getPendingClarifications,
+} from './pending-clarifications'
 import { purchaseContractBoost } from './purchase-boost'
 import { referUser } from './refer-user'
 import { updatePost } from './update-post'
@@ -393,4 +398,7 @@ export const handlers: { [k in APIPath]: APIHandler<k> } = {
   'get-user-achievements': getUserAchievements,
   'get-monthly-bets-2025': getmonthlybets2025,
   'get-max-min-profit-2025': getmaxminprofit2025,
+  'get-pending-clarifications': getPendingClarifications,
+  'apply-pending-clarification': applyPendingClarification,
+  'cancel-pending-clarification': cancelPendingClarification,
 } as const
