@@ -1,7 +1,9 @@
+import { useEvent } from 'client-common/hooks/use-event'
 import clsx from 'clsx'
 import { DistributionPoint, HistoryPoint, Point, ValueKind } from 'common/chart'
 import { ChartPosition } from 'common/chart-position'
 import { CPMMNumericContract } from 'common/contract'
+import { NUMERIC_GRAPH_COLOR } from 'common/numeric-constants'
 import { getAnswerContainingValue, getPrecision } from 'common/src/number'
 import { ChartAnnotation } from 'common/supabase/chart-annotations'
 import {
@@ -20,6 +22,7 @@ import {
   curveStepBefore,
   line,
 } from 'd3-shape'
+import { timeFormat } from 'd3-time-format'
 import { last, mapValues, range } from 'lodash'
 import {
   ReactNode,
@@ -34,7 +37,6 @@ import {
   ReadChartAnnotationModal,
 } from 'web/components/annotate-chart'
 import { DistributionChartTooltip } from 'web/components/charts/contract/number'
-import { useEvent } from 'client-common/hooks/use-event'
 import { roundToNearestFive } from 'web/lib/util/roundToNearestFive'
 import {
   AreaPath,
@@ -48,8 +50,6 @@ import {
   ZoomParams,
 } from './helpers'
 import { ZoomSlider } from './zoom-slider'
-import { NUMERIC_GRAPH_COLOR } from 'common/numeric-constants'
-import { timeFormat } from 'd3-time-format'
 
 const interpolateY = (
   curve: CurveFactory,

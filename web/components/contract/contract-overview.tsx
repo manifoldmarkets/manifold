@@ -1,6 +1,7 @@
 import clsx from 'clsx'
 import { ReactNode, memo, useEffect, useState } from 'react'
 
+import { usePersistentInMemoryState } from 'client-common/hooks/use-persistent-in-memory-state'
 import { Answer, MultiSort, getDefaultSort } from 'common/answer'
 import { Bet } from 'common/bet'
 import { getAutoBountyPayoutPerHour } from 'common/bounty'
@@ -23,13 +24,14 @@ import {
   tradingAllowed,
 } from 'common/contract'
 import { isAdminId, isModId } from 'common/envs/constants'
-import { NEW_GRAPH_COLOR } from 'common/src/number'
 import { Period, periodDurations } from 'common/period'
+import { getIsLive } from 'common/sports-info'
+import { NEW_GRAPH_COLOR } from 'common/src/number'
 import { type ChartAnnotation } from 'common/supabase/chart-annotations'
 import { filterDefined } from 'common/util/array'
 import { formatMoney, formatPercent } from 'common/util/format'
 import { orderBy } from 'lodash'
-import { FaArrowUp, FaArrowDown, FaChartArea } from 'react-icons/fa'
+import { FaArrowDown, FaArrowUp, FaChartArea } from 'react-icons/fa'
 import { BinaryMultiAnswersPanel } from 'web/components/answers/binary-multi-answers-panel'
 import {
   NumberDistributionChart,
@@ -49,7 +51,7 @@ import { SizedContainer } from 'web/components/sized-container'
 import { useAnnotateChartTools } from 'web/hooks/use-chart-annotations'
 import { useChartPositions } from 'web/hooks/use-chart-positions'
 import { useLiveContract } from 'web/hooks/use-contract'
-import { usePersistentInMemoryState } from 'client-common/hooks/use-persistent-in-memory-state'
+import { useIsMobile } from 'web/hooks/use-is-mobile'
 import { useUser } from 'web/hooks/use-user'
 import {
   AnswersResolvePanel,
@@ -62,8 +64,11 @@ import {
   ChartAnnotations,
   EditChartAnnotationsButton,
 } from '../charts/chart-annotations'
+import { ChartPositionsCarousel } from '../charts/chart-positions'
 import { MultiBinaryChart, SizedBinaryChart } from '../charts/contract/binary'
 import { ChoiceContractChart, getAnswerColor } from '../charts/contract/choice'
+import { MultiDateContractChart } from '../charts/contract/multi-date'
+import { MultiNumericContractChart } from '../charts/contract/multi-numeric'
 import { PseudoNumericContractChart } from '../charts/contract/pseudo-numeric'
 import { StonkContractChart } from '../charts/contract/stonk'
 import {
@@ -77,13 +82,9 @@ import { Row } from '../layout/row'
 import { CancelLabel } from '../outcome-label'
 import { PollPanel } from '../poll/poll-panel'
 import { AlertBox } from '../widgets/alert-box'
-import { LoadingIndicator } from '../widgets/loading-indicator'
 import { GradientContainer } from '../widgets/gradient-container'
-import { getIsLive } from 'common/sports-info'
-import { MultiNumericContractChart } from '../charts/contract/multi-numeric'
-import { MultiDateContractChart } from '../charts/contract/multi-date'
+import { LoadingIndicator } from '../widgets/loading-indicator'
 import { Tooltip } from '../widgets/tooltip'
-import { useIsMobile } from 'web/hooks/use-is-mobile'
 
 export const ContractOverview = memo(
   (props: {
@@ -476,6 +477,18 @@ const ChoiceOverview = (props: {
           annotations={chartAnnotations}
           hoveredAnnotation={hoveredAnnotation}
           setHoveredAnnotation={setHoveredAnnotation}
+        />
+      ) : null}
+      {chartPositions?.length > 0 &&
+      !hideGraph &&
+      selectedAnswerIds.length > 0 ? (
+        <ChartPositionsCarousel
+          positions={chartPositions.filter(
+            (cp) => cp.answerId && selectedAnswerIds.includes(cp.answerId)
+          )}
+          hoveredPosition={hoveredChartPosition}
+          setHoveredPosition={setHoveredChartPosition}
+          answers={contract.answers}
         />
       ) : null}
       {!shouldAnswersSumToOne && contract.mechanism === 'cpmm-multi-1' ? (

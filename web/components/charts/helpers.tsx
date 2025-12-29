@@ -1,5 +1,7 @@
+import { useEvent } from 'client-common/hooks/use-event'
 import clsx from 'clsx'
 import { ValueKind } from 'common/chart'
+import { ChartPosition } from 'common/chart-position'
 import { Contract } from 'common/contract'
 import { ENV_CONFIG } from 'common/envs/constants'
 import { ChartAnnotation } from 'common/supabase/chart-annotations'
@@ -21,11 +23,8 @@ import React, {
   useRef,
   useState,
 } from 'react'
-import { useEvent } from 'client-common/hooks/use-event'
 import { useMeasureSize } from 'web/hooks/use-measure-size'
 import { ManaSvg, SpiceSvg, SweepiesSvg } from './mana-spice-chart'
-import { PositionsTooltip } from 'web/components/charts/contract/choice'
-import { ChartPosition } from 'common/chart-position'
 
 // min number of pixels to mouse drag over to trigger zoom
 export const ZOOM_DRAG_THRESHOLD = 16
@@ -195,39 +194,14 @@ export const PositionMarker = (props: {
   x: number
   y0: number
   y1: number
-  onHover: (position: ChartPosition) => void
-  onLeave: () => void
   isHovered: boolean
   chartPosition: ChartPosition
 }) => {
-  const { chartPosition, x, y0, y1, onLeave, onHover, isHovered } = props
-  const { direction, color } = chartPosition
-  const isSale = direction < 0
-  const scale = 1
-  const pinBottomPointX = x - (isSale ? -12 : 12)
-  const pinTopCenterY = y0 - (isSale ? 5 : 17)
-  const transform = `translate(${pinBottomPointX}, ${pinTopCenterY}) scale(${scale}) rotate(${
-    isSale ? 180 : 0
-  })`
+  const { chartPosition, x, y0, y1, isHovered } = props
+  const { color } = chartPosition
+
   return (
     <g>
-      <path
-        transform={transform}
-        d={
-          'm12 6.586-8.707 8.707 1.414 1.414L12 9.414l7.293 7.293 1.414-1.414L12 6.586z'
-        }
-        style={{
-          fill: color,
-        }}
-        className={clsx(
-          isHovered
-            ? 'dark:fill-primary-300 fill-primary-500 z-20'
-            : !color && 'fill-ink-300 dark:fill-ink-600',
-          ' cursor-default'
-        )}
-        z={isHovered ? 20 : 0}
-        strokeWidth={isHovered ? 2 : 1}
-      />
       <line
         strokeWidth={isHovered ? 3 : 2}
         strokeDasharray={isHovered ? undefined : '5, 5'}
@@ -237,23 +211,28 @@ export const PositionMarker = (props: {
         className={clsx(
           isHovered
             ? 'dark:stroke-primary-300 stroke-primary-500 z-20'
-            : !color && 'stroke-ink-300 dark:stroke-ink-600',
-          Math.abs(y1 - y0) < 10 && 'hidden'
+            : !color && 'stroke-ink-300 dark:stroke-ink-600'
         )}
         x1={x}
         x2={x}
-        y1={pinTopCenterY - (isSale ? 15 : 0)}
+        y1={y0}
         y2={y1}
       />
-      <rect
-        fill="transparent"
-        className={'cursor-default'}
-        onMouseEnter={() => onHover(chartPosition)}
-        onMouseLeave={onLeave}
-        x={x - 10}
-        y={pinTopCenterY - (isSale ? 15 : 0)}
-        width={20}
-        height={20}
+      <circle
+        cx={x}
+        cy={y1}
+        r={isHovered ? 5 : 4}
+        style={{
+          fill: color,
+          stroke: color,
+        }}
+        className={clsx(
+          isHovered
+            ? 'dark:fill-primary-300 dark:stroke-primary-300 fill-primary-500 stroke-primary-500'
+            : !color &&
+                'fill-ink-300 stroke-ink-300 dark:fill-ink-600 dark:stroke-ink-600'
+        )}
+        strokeWidth={2}
       />
     </g>
   )
@@ -416,12 +395,6 @@ export const SVGChart = <X, TT extends { x: number; y: number }>(props: {
       onPointerMove={onPointerMove}
       onPointerLeave={onPointerLeave}
     >
-      {chartPositions && (
-        <PositionsTooltip
-          chartPositions={chartPositions}
-          hoveredPosition={hoveredChartPosition}
-        />
-      )}
       {ttParams && Tooltip && (
         <TooltipContainer
           calculatePos={(ttw, tth) =>
@@ -539,9 +512,7 @@ export const SVGChart = <X, TT extends { x: number; y: number }>(props: {
                     x={xScale(p.createdTime)}
                     y0={y0}
                     y1={yAtTime(p.createdTime, p.answerId)}
-                    onHover={(cp) => setHoveredChartPosition?.(cp)}
-                    onLeave={() => setHoveredChartPosition?.(null)}
-                    isHovered={false}
+                    isHovered={hoveredChartPosition?.id === p.id}
                     chartPosition={p}
                   />
                 ))}
