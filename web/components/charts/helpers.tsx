@@ -209,9 +209,10 @@ export const PositionMarker = (props: {
           stroke: color,
         }}
         className={clsx(
-          isHovered
-            ? 'dark:stroke-primary-300 stroke-primary-500 z-20'
-            : !color && 'stroke-ink-300 dark:stroke-ink-600'
+          !color &&
+            (isHovered
+              ? 'dark:stroke-primary-300 stroke-primary-500 z-20'
+              : 'stroke-ink-300 dark:stroke-ink-600')
         )}
         x1={x}
         x2={x}
@@ -227,10 +228,10 @@ export const PositionMarker = (props: {
           stroke: color,
         }}
         className={clsx(
-          isHovered
-            ? 'dark:fill-primary-300 dark:stroke-primary-300 fill-primary-500 stroke-primary-500'
-            : !color &&
-                'fill-ink-300 stroke-ink-300 dark:fill-ink-600 dark:stroke-ink-600'
+          !color &&
+            (isHovered
+              ? 'dark:fill-primary-300 dark:stroke-primary-300 fill-primary-500 stroke-primary-500'
+              : 'fill-ink-300 stroke-ink-300 dark:fill-ink-600 dark:stroke-ink-600')
         )}
         strokeWidth={2}
       />

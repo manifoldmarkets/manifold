@@ -36,8 +36,15 @@ export const useChartPositions = (
 
     return usersBets.map((bet) => {
       const a = answers.find((a) => a.id === bet.answerId)
-      const color = a ? getAnswerColor(a) : undefined
+      // For binary markets: green for buying YES / selling NO, red for selling YES / buying NO
       const isBuy = bet.amount > 0
+      const isBullish =
+        (isBuy && bet.outcome === 'YES') || (!isBuy && bet.outcome === 'NO')
+      const color = a
+        ? getAnswerColor(a)
+        : isBullish
+        ? '#16a34a' // green-600
+        : '#dc2626' // red-600
       const contractMetric = getContractBetMetrics(
         contract,
         [bet],

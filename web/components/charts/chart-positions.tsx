@@ -65,8 +65,7 @@ const ChartPositionCard = (props: {
   const isBuy = amount > 0
   const isCashContract = contract.token === 'CASH'
   const answer = answers?.find((a) => a.id === answerId)
-  // Trend up if: buying YES or selling NO (both push probability up)
-  // Trend down if: selling YES or buying NO (both push probability down)
+  // Trend up: buying YES or selling NO (bullish). Trend down: selling YES or buying NO (bearish)
   const isTrendUp = (isBuy && outcome === 'YES') || (!isBuy && outcome === 'NO')
 
   const ref = useRef<HTMLDivElement>(null)
