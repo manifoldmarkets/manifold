@@ -822,7 +822,14 @@ const PositionRow = memo(function PositionRow(props: {
             {position.lastProb != null && (
               <Row className="justify-between">
                 <span className="text-ink-500">Last trade prob</span>
-                <span>{Math.round(position.lastProb * 100)}%</span>
+                <span>
+                  {Math.round(
+                    (position.maxSharesOutcome === 'NO'
+                      ? 1 - position.lastProb
+                      : position.lastProb) * 100
+                  )}
+                  %
+                </span>
               </Row>
             )}
           </Col>
