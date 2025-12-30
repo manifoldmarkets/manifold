@@ -1,10 +1,10 @@
+import { sumBy } from 'lodash'
 import { Answer } from './answer'
+import { getCpmmLiquidityPoolWeights } from './calculate-cpmm'
 import { CPMMContract } from './contract'
+import { ContractMetric } from './contract-metric'
 import { LiquidityProvision } from './liquidity-provision'
 import { PayoutInfo } from './payouts'
-import { ContractMetric } from './contract-metric'
-import { sumBy } from 'lodash'
-import { getCpmmLiquidityPoolWeights } from './calculate-cpmm'
 
 export const getFixedCancelPayouts = (
   contractMetrics: ContractMetric[],
@@ -61,7 +61,8 @@ export const getMultiFixedPayouts = (
   answers: Answer[],
   resolutions: { [answerId: string]: number },
   contractMetrics: ContractMetric[],
-  liquidities: LiquidityProvision[]
+  liquidities: LiquidityProvision[],
+  contractSubsidyPool: number
 ): PayoutInfo => {
   const traderPayouts = contractMetrics
     .map((metric) => {
@@ -84,7 +85,8 @@ export const getMultiFixedPayouts = (
   const liquidityPayouts = getMultiLiquidityPoolPayouts(
     answers,
     resolutions,
-    liquidities
+    liquidities,
+    contractSubsidyPool
   )
 
   return {
@@ -97,7 +99,8 @@ export const getIndependentMultiYesNoPayouts = (
   answer: Answer,
   outcome: 'YES' | 'NO',
   contractMetrics: ContractMetric[],
-  liquidities: LiquidityProvision[]
+  liquidities: LiquidityProvision[],
+  contractSubsidyPoolShare: number
 ): PayoutInfo => {
   const traderPayouts = contractMetrics
     .filter((metric) => metric.answerId === answer.id)
@@ -113,7 +116,8 @@ export const getIndependentMultiYesNoPayouts = (
   const liquidityPayouts = getIndependentMultiLiquidityPoolPayouts(
     answer,
     resolution,
-    liquidities
+    liquidities,
+    contractSubsidyPoolShare
   )
 
   return {
@@ -142,9 +146,14 @@ export const getLiquidityPoolPayouts = (
 export const getIndependentMultiLiquidityPoolPayouts = (
   answer: Answer,
   resolution: number,
-  liquidities: LiquidityProvision[]
+  liquidities: LiquidityProvision[],
+  contractSubsidyPoolShare: number
 ) => {
-  const payout = resolution * answer.poolYes + (1 - resolution) * answer.poolNo
+  const poolPayout =
+    resolution * answer.poolYes + (1 - resolution) * answer.poolNo
+  // Include undrizzled subsidy pools: answer's own + share of contract's
+  const payout =
+    poolPayout + (answer.subsidyPool ?? 0) + (contractSubsidyPoolShare ?? 0)
   const weightsByUser = getCpmmLiquidityPoolWeights(liquidities)
   return Object.entries(weightsByUser)
     .map(([userId, weight]) => ({
@@ -157,13 +166,17 @@ export const getIndependentMultiLiquidityPoolPayouts = (
 export const getMultiLiquidityPoolPayouts = (
   answers: Answer[],
   resolutions: { [answerId: string]: number },
-  liquidities: LiquidityProvision[]
+  liquidities: LiquidityProvision[],
+  contractSubsidyPool: number
 ) => {
-  const totalPayout = sumBy(answers, (answer) => {
+  const poolPayout = sumBy(answers, (answer) => {
     const weight = resolutions[answer.id] ?? 0
     const { poolYes, poolNo } = answer
     return weight * poolYes + (1 - weight) * poolNo
   })
+  // Include undrizzled subsidy pools, like binary markets do
+  const answerSubsidyPools = sumBy(answers, (a) => a.subsidyPool ?? 0)
+  const totalPayout = poolPayout + contractSubsidyPool + answerSubsidyPools
   const weightsByUser = getCpmmLiquidityPoolWeights(liquidities)
   return Object.entries(weightsByUser)
     .map(([userId, weight]) => ({
@@ -208,7 +221,8 @@ export const getIndependentMultiMktPayouts = (
   answer: Answer,
   contractMetrics: ContractMetric[],
   liquidities: LiquidityProvision[],
-  resolutionProbability: number
+  resolutionProbability: number,
+  contractSubsidyPoolShare: number
 ): PayoutInfo => {
   const outcomeProbs = {
     YES: resolutionProbability,
@@ -228,7 +242,8 @@ export const getIndependentMultiMktPayouts = (
   const liquidityPayouts = getIndependentMultiLiquidityPoolPayouts(
     answer,
     resolutionProbability,
-    liquidities
+    liquidities,
+    contractSubsidyPoolShare
   )
 
   return {

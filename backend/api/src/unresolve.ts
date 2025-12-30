@@ -244,6 +244,18 @@ const undoResolution = async (
   log('reverted txns')
 
   if (contract.isResolved || contract.resolutionTime) {
+    // Restore subsidyPool from the contract state before resolution
+    const preResolutionSubsidyPool = await pg.oneOrNone(
+      `select (data->>'subsidyPool')::numeric as subsidy_pool
+       from contract_edits
+       where contract_id = $1
+         and 'subsidyPool' = any(updated_keys)
+       order by created_time desc
+       limit 1`,
+      [contractId],
+      (r) => r?.subsidy_pool as number | null
+    )
+
     const updatedAttrs = removeUndefinedProps({
       isResolved: false,
       resolutionTime: FieldVal.delete(),
@@ -256,6 +268,7 @@ const undoResolution = async (
         contract.mechanism === 'cpmm-1'
           ? getCpmmProbability(contract.pool, contract.p)
           : undefined,
+      subsidyPool: preResolutionSubsidyPool ?? 0,
     })
     await updateContract(pg, contractId, updatedAttrs)
     await recordContractEdit(contract, userId, Object.keys(updatedAttrs))
@@ -273,19 +286,33 @@ const undoResolution = async (
     await bulkUpdateContractMetrics(updateMetrics, pg)
   }
   if (contract.mechanism === 'cpmm-multi-1' && !answerId) {
-    // remove resolutionTime and resolverId from all answers in the contract
+    // remove resolutionTime and resolverId from all answers in the contract, restore subsidyPool
     const newAnswers = await pg.map(
       `
       with last_bet as (
         select distinct on (answer_id) answer_id, prob_after from contract_bets
         where contract_id = $1
         order by answer_id, created_time desc
+      ),
+      pre_resolution_answers as (
+        select jsonb_array_elements(data->'answers') as answer_data
+        from contract_edits
+        where contract_id = $1
+          and 'subsidyPool' = any(updated_keys)
+        order by created_time desc
+        limit 1
       )
       update answers
       set
         resolution_time = null,
         resolver_id = null,
-        prob = coalesce(last_bet.prob_after,0.5)
+        prob = coalesce(last_bet.prob_after, 0.5),
+        subsidy_pool = coalesce(
+          (select (answer_data->>'subsidyPool')::numeric
+           from pre_resolution_answers
+           where answer_data->>'id' = answers.id),
+          0
+        )
       from last_bet
       where answers.id = last_bet.answer_id
       returning *`,
@@ -304,6 +331,20 @@ const undoResolution = async (
       profit: metric.previousProfit ?? metric.profit,
     }))
     await bulkUpdateContractMetrics(updateMetrics, pg)
+    // Restore subsidyPool from contract_edits if available
+    const preResolutionSubsidyPool = await pg.oneOrNone(
+      `select (answer_data->>'subsidyPool')::numeric as subsidy_pool
+       from (
+         select jsonb_array_elements(data->'answers') as answer_data
+         from contract_edits
+         where contract_id = $2
+         order by created_time desc
+         limit 1
+       ) sub
+       where answer_data->>'id' = $1`,
+      [answerId, contractId],
+      (r) => r?.subsidy_pool as number | null
+    )
     const answer = await pg.one(
       `
       update answers
@@ -320,10 +361,11 @@ const undoResolution = async (
            limit 1),
           0.5
         ),
-        resolver_id = null
+        resolver_id = null,
+        subsidy_pool = $3
       where id = $1
       returning *`,
-      [answerId, contractId],
+      [answerId, contractId, preResolutionSubsidyPool ?? 0],
       convertAnswer
     )
     broadcastUpdatedAnswers(contractId, [answer])

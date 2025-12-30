@@ -1,23 +1,23 @@
-import { sumBy, groupBy, mapValues } from 'lodash'
+import { groupBy, mapValues, sumBy } from 'lodash'
 
+import { Answer } from './answer'
+import { getProbability } from './calculate'
 import {
   Contract,
   CPMMContract,
   CPMMMultiContract,
   tradingAllowed,
 } from './contract'
+import { ContractMetric } from './contract-metric'
 import { LiquidityProvision } from './liquidity-provision'
 import {
   getFixedCancelPayouts,
   getIndependentMultiMktPayouts,
+  getIndependentMultiYesNoPayouts,
   getMktFixedPayouts,
   getMultiFixedPayouts,
   getStandardFixedPayouts,
-  getIndependentMultiYesNoPayouts,
 } from './payouts-fixed'
-import { getProbability } from './calculate'
-import { Answer } from './answer'
-import { ContractMetric } from './contract-metric'
 
 export type Payout = {
   userId: string
@@ -102,7 +102,8 @@ export const getPayouts = (
       contract.answers,
       resolutions,
       contractMetrics,
-      liquidities
+      liquidities,
+      contract.subsidyPool
     )
   }
   throw new Error('getPayouts not implemented')
@@ -153,6 +154,10 @@ export const getIndependentMultiFixedPayouts = (
         .filter((l) => !l.answerId)
         .map((l) => ({ ...l, amount: l.amount / contract.answers.length }))
     )
+  // Divide contract's subsidy pool among UNRESOLVED answers only
+  const unresolvedAnswers = contract.answers.filter((a) => !a.resolution)
+  const numUnresolved = unresolvedAnswers.length || 1 // Avoid division by zero
+  const contractSubsidyPoolShare = (contract.subsidyPool ?? 0) / numUnresolved
   switch (outcome) {
     case 'YES':
     case 'NO':
@@ -160,14 +165,16 @@ export const getIndependentMultiFixedPayouts = (
         answer,
         outcome,
         contractMetrics,
-        filteredLiquidities
+        filteredLiquidities,
+        contractSubsidyPoolShare
       )
     case 'MKT':
       return getIndependentMultiMktPayouts(
         answer,
         contractMetrics,
         filteredLiquidities,
-        resolutionProbability
+        resolutionProbability,
+        contractSubsidyPoolShare
       )
     default:
     case 'CANCEL':

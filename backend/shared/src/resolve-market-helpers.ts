@@ -152,15 +152,26 @@ export const resolveMarketHelper = async (
         allOtherAnswers.every((a) => a.resolution === 'CANCEL') &&
         outcome === 'CANCEL'
       const finalResolution = marketCancelled ? 'CANCEL' : 'MKT'
+      // Decrement contract's subsidyPool by this answer's share (divide by UNRESOLVED answers)
+      const unresolvedAnswers = unresolvedContract.answers.filter(
+        (a) => !a.resolutionTime
+      )
+      const numUnresolved = unresolvedAnswers.length || 1
+      const subsidyPoolShare =
+        (unresolvedContract.subsidyPool ?? 0) / numUnresolved
+      const newContractSubsidyPool =
+        (unresolvedContract.subsidyPool ?? 0) - subsidyPoolShare
       if (allOtherAnswersResolved) {
         updatedContractAttrs = {
           ...updatedContractAttrs,
           resolution: finalResolution,
         }
       } else {
-        updatedContractAttrs = {
+        // Only update subsidyPool when not fully resolved
+        updatedContractAttrs = removeUndefinedProps({
           id: unresolvedContract.id,
-        }
+          subsidyPool: newContractSubsidyPool,
+        })
       }
       updateAnswerAttrs = removeUndefinedProps({
         resolution: outcome,
@@ -220,7 +231,10 @@ export const resolveMarketHelper = async (
     log('negative payouts', { negativePayouts })
 
     if (updateAnswerAttrs && answerId) {
-      const props = removeUndefinedProps(updateAnswerAttrs)
+      const props = removeUndefinedProps({
+        ...updateAnswerAttrs,
+        subsidyPool: 0,
+      })
       await updateAnswer(tx, answerId, props)
     } else if (
       updateAnswerAttrs &&
@@ -232,6 +246,7 @@ export const resolveMarketHelper = async (
           ...updateAnswerAttrs,
           prob: a.prob,
           resolutionProbability: a.resolutionProbability,
+          subsidyPool: 0,
         })
       )
       await updateAnswers(tx, contractId, answerUpdates)
