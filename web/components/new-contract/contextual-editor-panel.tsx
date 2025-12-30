@@ -116,7 +116,7 @@ function PollOptionsSection(props: {
         </p>
       </Col>
 
-      <Col className="mb-4 gap-2">
+      <Col className="gap-2">
         <span className="text-ink-700 text-sm font-semibold">Poll type</span>
         <ChoicesToggleGroup
           className="w-fit"
@@ -135,7 +135,7 @@ function PollOptionsSection(props: {
       </Col>
 
       {pollType === 'multi-select' && (
-        <Col className="-mt-4 gap-2">
+        <Col className="gap-2">
           <Row className="items-center gap-2">
             <span className="text-ink-700 text-sm font-semibold">
               Max votes
@@ -155,7 +155,7 @@ function PollOptionsSection(props: {
                 val === '' ? undefined : parseInt(val, 10)
               )
             }}
-            className="mb-4 w-32"
+            className=" w-32"
           />
         </Col>
       )}

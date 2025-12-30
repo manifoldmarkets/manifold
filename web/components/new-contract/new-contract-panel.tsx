@@ -957,7 +957,7 @@ export function NewContractPanel(props: {
       </Row>
 
       {/* Market Creation UI */}
-      <Col className="mx-auto w-full max-w-3xl gap-6 p-2">
+      <Col className="mx-auto w-full max-w-3xl gap-6 p-2 pb-6 lg:pb-2">
         {/* Prominent Type Selector */}
         <ProminentTypeSelector
           currentType={formState.outcomeType}
