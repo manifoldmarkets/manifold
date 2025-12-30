@@ -746,7 +746,7 @@ const PositionRow = memo(function PositionRow(props: {
       <Row
         className={clsx(
           'items-center justify-between gap-2 px-2 py-3',
-          setGraphUser && 'cursor-pointer'
+          setGraphUser && 'hover:bg-canvas-100 cursor-pointer'
         )}
         onClick={() => {
           if (setGraphUser) {
