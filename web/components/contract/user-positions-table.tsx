@@ -796,19 +796,35 @@ const PositionRow = memo(function PositionRow(props: {
             </Row>
             {position.maxSharesOutcome &&
               position.totalSpent?.[position.maxSharesOutcome] &&
-              position.totalShares[position.maxSharesOutcome] > 0 && (
-                <Row className="justify-between">
-                  <span className="text-ink-500">Avg price</span>
-                  <span>
-                    {Math.round(
-                      (position.totalSpent[position.maxSharesOutcome] /
-                        position.totalShares[position.maxSharesOutcome]) *
-                        100
-                    )}
-                    %
-                  </span>
-                </Row>
-              )}
+              position.totalShares[position.maxSharesOutcome] > 0 &&
+              (() => {
+                const avgPrice =
+                  position.totalSpent[position.maxSharesOutcome] /
+                  position.totalShares[position.maxSharesOutcome]
+                const yesPrice =
+                  position.maxSharesOutcome === 'YES' ? avgPrice : 1 - avgPrice
+                const noPrice = 1 - yesPrice
+                if (position.maxSharesOutcome === 'YES') {
+                  return (
+                    <Row className="justify-between">
+                      <span className="text-ink-500">Avg price</span>
+                      <span>{Math.round(yesPrice * 100)}%</span>
+                    </Row>
+                  )
+                }
+                return (
+                  <>
+                    <Row className="justify-between">
+                      <span className="text-ink-500">Avg price</span>
+                      <span>{Math.round(yesPrice * 100)}%</span>
+                    </Row>
+                    <Row className="justify-between">
+                      <span className="text-ink-500">Avg price (N)</span>
+                      <span>{Math.round(noPrice * 100)}%</span>
+                    </Row>
+                  </>
+                )
+              })()}
             {position.lastBetTime && (
               <Row className="justify-between">
                 <span className="text-ink-500">Last trade</span>
@@ -819,19 +835,24 @@ const PositionRow = memo(function PositionRow(props: {
                 />
               </Row>
             )}
-            {position.lastProb != null && (
-              <Row className="justify-between">
-                <span className="text-ink-500">Last trade prob</span>
-                <span>
-                  {Math.round(
-                    (position.maxSharesOutcome === 'NO'
-                      ? 1 - position.lastProb
-                      : position.lastProb) * 100
-                  )}
-                  %
-                </span>
-              </Row>
-            )}
+            {position.lastProb != null &&
+              (position.maxSharesOutcome === 'YES' ? (
+                <Row className="justify-between">
+                  <span className="text-ink-500">Last trade prob</span>
+                  <span>{Math.round(position.lastProb * 100)}%</span>
+                </Row>
+              ) : (
+                <>
+                  <Row className="justify-between">
+                    <span className="text-ink-500">Last trade prob</span>
+                    <span>{Math.round(position.lastProb * 100)}%</span>
+                  </Row>
+                  <Row className="justify-between">
+                    <span className="text-ink-500">Last trade prob (N)</span>
+                    <span>{Math.round((1 - position.lastProb) * 100)}%</span>
+                  </Row>
+                </>
+              ))}
           </Col>
           <div
             onClick={handleGraphTrades}
