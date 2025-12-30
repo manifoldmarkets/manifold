@@ -23,7 +23,9 @@ export const useChartPositions = (
   const usersBets = useBetsOnce((params) => api('bets', params), {
     contractId: contract.id,
     userId: displayUser?.id,
+    minAmount: 0.001,
     filterRedemptions: true,
+    includeZeroShareRedemptions: false,
     beforeTime: displayUser?.id ? undefined : 1,
     order: 'asc',
   })
