@@ -20,6 +20,7 @@ import {
   NO_CLOSE_TIME_TYPES,
   NUMBER_CREATION_ENABLED,
   OutcomeType,
+  PollType,
   PollVoterVisibility,
   add_answers_mode,
   contractUrl,
@@ -149,6 +150,8 @@ export async function createMarketHelper(body: Body, auth: AuthedUser) {
     midpoints,
     timezone,
     voterVisibility,
+    pollType,
+    maxSelections,
   } = validateMarketBody(body)
 
   const userId = auth.uid
@@ -256,6 +259,8 @@ export async function createMarketHelper(body: Body, auth: AuthedUser) {
           midpoints: midpoints,
           timezone: timezone,
           voterVisibility: voterVisibility as PollVoterVisibility | undefined,
+          pollType: pollType as PollType | undefined,
+          maxSelections: maxSelections,
         })
       )
       const nativeKeys = nativeContractColumnsArray.map(camelCase)
@@ -388,7 +393,9 @@ function validateMarketBody(body: Body) {
     unit: string | undefined,
     midpoints: number[] | undefined,
     timezone: string | undefined,
-    voterVisibility: PollVoterVisibility | undefined
+    voterVisibility: PollVoterVisibility | undefined,
+    pollType: PollType | undefined,
+    maxSelections: number | undefined
 
   if (outcomeType === 'PSEUDO_NUMERIC') {
     const parsed = validateMarketType(outcomeType, createNumericSchema, body)
@@ -508,11 +515,22 @@ function validateMarketBody(body: Body) {
   }
 
   if (outcomeType === 'POLL') {
-    ;({ answers, voterVisibility } = validateMarketType(
+    ;({ answers, voterVisibility, pollType, maxSelections } = validateMarketType(
       outcomeType,
       createPollSchema,
       body
     ))
+    // Validate maxSelections
+    if (
+      maxSelections !== undefined &&
+      answers &&
+      maxSelections > answers.length
+    ) {
+      throw new APIError(
+        400,
+        'maxSelections cannot be greater than the number of options'
+      )
+    }
   }
 
   return {
@@ -549,6 +567,8 @@ function validateMarketBody(body: Body) {
     midpoints,
     timezone,
     voterVisibility,
+    pollType,
+    maxSelections,
   }
 }
 

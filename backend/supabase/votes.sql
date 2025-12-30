@@ -5,6 +5,9 @@ create table if not exists
     created_time timestamp with time zone default now() not null,
     id text not null,
     user_id text not null,
+    -- For ranked-choice voting: 1 = first choice, 2 = second, etc.
+    -- Null for single-vote and multi-select polls
+    rank smallint,
     constraint primary key (id, contract_id, user_id)
   );
 

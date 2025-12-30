@@ -28,6 +28,7 @@ import {
   validateContractForm,
   ValidationErrors,
 } from 'web/lib/validation/contract-validation'
+import { POLL_SEE_RESULTS_ANSWER } from '../answers/answer-constants'
 import { Button } from '../buttons/button'
 import { ExpandSection } from '../explainer-panel'
 import { Col } from '../layout/col'
@@ -38,7 +39,6 @@ import { RelativeTimestamp } from '../relative-timestamp'
 import { ChoicesToggleGroup } from '../widgets/choices-toggle-group'
 import { InfoTooltip } from '../widgets/info-tooltip'
 import ShortToggle from '../widgets/short-toggle'
-import { POLL_SEE_RESULTS_ANSWER } from '../answers/answer-constants'
 import { ActionBar } from './action-bar'
 import { CloseTimeSection } from './close-time-section'
 import { ContextualEditorPanel, FormState } from './contextual-editor-panel'
@@ -716,6 +716,9 @@ export function NewContractPanel(props: {
           : [],
       // Default to including "See results" for polls
       includeSeeResults: newType === 'POLL' ? true : prev.includeSeeResults,
+      // Default poll type to 'single' for polls
+      pollType: newType === 'POLL' ? 'single' : prev.pollType,
+      maxSelections: newType === 'POLL' ? undefined : prev.maxSelections,
       // Set addAnswersMode to DISABLED by default for MC/Poll
       addAnswersMode:
         newType === 'MULTIPLE_CHOICE' ? 'DISABLED' : prev.addAnswersMode,
@@ -841,6 +844,13 @@ export function NewContractPanel(props: {
           pollAnswers.push(POLL_SEE_RESULTS_ANSWER)
         }
         payload.answers = pollAnswers
+        // Add poll type options
+        if (formState.pollType && formState.pollType !== 'single') {
+          payload.pollType = formState.pollType
+        }
+        if (formState.pollType === 'multi-select' && formState.maxSelections) {
+          payload.maxSelections = formState.maxSelections
+        }
       } else if (formState.outcomeType === 'PSEUDO_NUMERIC') {
         payload.min = formState.min
         payload.max = formState.max
@@ -926,6 +936,7 @@ export function NewContractPanel(props: {
     shouldAnswersSumToOne: formState.shouldAnswersSumToOne,
     addAnswersMode: formState.addAnswersMode,
     includeSeeResults: formState.includeSeeResults,
+    pollType: formState.pollType,
   }
 
   return (

@@ -136,7 +136,12 @@ export function leaveReview(params: any) {
   return call(getApiUrl('leave-review'), 'POST', params)
 }
 
-export function castPollVote(params: { contractId: string; voteId: string }) {
+export function castPollVote(
+  params:
+    | { contractId: string; voteId: string }
+    | { contractId: string; voteIds: string[] }
+    | { contractId: string; rankedVoteIds: string[] }
+) {
   return call(getApiUrl('cast-poll-vote'), 'POST', params)
 }
 

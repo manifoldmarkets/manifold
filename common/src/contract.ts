@@ -299,12 +299,15 @@ export type BountiedQuestion = {
 }
 
 export type PollVoterVisibility = 'creator' | 'everyone'
+export type PollType = 'single' | 'multi-select' | 'ranked-choice'
 
 export type Poll = {
   outcomeType: 'POLL'
   options: PollOption[]
   resolutions?: string[]
   voterVisibility?: PollVoterVisibility
+  pollType?: PollType // Default: 'single' for backwards compatibility
+  maxSelections?: number // For multi-select: max options user can pick (defaults to all)
 }
 
 export type Sports = {

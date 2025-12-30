@@ -13,6 +13,7 @@ import {
   MultiNumeric,
   NonBet,
   Poll,
+  PollType,
   PollVoterVisibility,
   PseudoNumeric,
   Stonk,
@@ -72,6 +73,8 @@ export function getNewContract(
 
     // Poll
     voterVisibility: PollVoterVisibility | undefined
+    pollType: PollType | undefined
+    maxSelections: number | undefined
   }
 ) {
   const {
@@ -106,6 +109,8 @@ export function getNewContract(
     midpoints,
     timezone,
     voterVisibility,
+    pollType,
+    maxSelections,
   } = props
   const createdTime = Date.now()
 
@@ -126,7 +131,7 @@ export function getNewContract(
       ),
     STONK: () => getStonkCpmmProps(initialProb, ante),
     BOUNTIED_QUESTION: () => getBountiedQuestionProps(ante, isAutoBounty),
-    POLL: () => getPollProps(answers, voterVisibility),
+    POLL: () => getPollProps(answers, voterVisibility, pollType, maxSelections),
     NUMBER: () => getNumberProps(id, creator.id, min, max, answers, ante),
     MULTI_NUMERIC: () =>
       getMultiNumericProps(
@@ -503,7 +508,9 @@ const getBountiedQuestionProps = (
 
 const getPollProps = (
   answers: string[],
-  voterVisibility: PollVoterVisibility | undefined
+  voterVisibility: PollVoterVisibility | undefined,
+  pollType: PollType | undefined,
+  maxSelections: number | undefined
 ) => {
   const ids = answers.map(() => randomString())
 
@@ -512,6 +519,8 @@ const getPollProps = (
     index: i,
     text: answer,
     votes: 0,
+    // Initialize ranked-choice specific fields
+    ...(pollType === 'ranked-choice' ? { rankedVoteScore: 0 } : {}),
   }))
 
   const system: NonBet & Poll = removeUndefinedProps({
@@ -519,6 +528,8 @@ const getPollProps = (
     outcomeType: 'POLL',
     options: options,
     voterVisibility,
+    pollType,
+    maxSelections,
   })
   return system
 }

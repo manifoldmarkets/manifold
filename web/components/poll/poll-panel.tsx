@@ -1,30 +1,31 @@
+import { ArrowRightIcon, CheckIcon, StarIcon } from '@heroicons/react/solid'
+import clsx from 'clsx'
 import {
   PollContract,
+  PollType,
   PollVoterVisibility,
   contractPath,
 } from 'common/contract'
 import { PollOption } from 'common/poll-option'
-import { useEffect, useState, useMemo } from 'react'
+import { maybePluralize } from 'common/util/format'
+import { sortBy, sumBy } from 'lodash'
+import Link from 'next/link'
+import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useAPIGetter } from 'web/hooks/use-api-getter'
 import { useIsAuthorized, useUser } from 'web/hooks/use-user'
 import { castPollVote } from 'web/lib/api/api'
 import { firebaseLogin } from 'web/lib/firebase/users'
+import { getUserVote } from 'web/lib/supabase/polls'
 import { AnswerBar } from '../answers/answer-components'
 import { Button } from '../buttons/button'
 import { Col } from '../layout/col'
-import { sumBy } from 'lodash'
-import Link from 'next/link'
-import { ArrowRightIcon, StarIcon } from '@heroicons/react/solid'
 import { MODAL_CLASS, Modal, SCROLLABLE_MODAL_CLASS } from '../layout/modal'
-import clsx from 'clsx'
-import { LoadingIndicator } from '../widgets/loading-indicator'
 import { Row } from '../layout/row'
-import { Avatar } from '../widgets/avatar'
-import { UserLink } from '../widgets/user-link'
-import { getUserVote } from 'web/lib/supabase/polls'
-import { Tooltip } from '../widgets/tooltip'
 import { UserHovercard } from '../user/user-hovercard'
-import { maybePluralize } from 'common/util/format'
-import { useAPIGetter } from 'web/hooks/use-api-getter'
+import { Avatar } from '../widgets/avatar'
+import { LoadingIndicator } from '../widgets/loading-indicator'
+import { Tooltip } from '../widgets/tooltip'
+import { UserLink } from '../widgets/user-link'
 
 export function PollPanel(props: {
   contract: PollContract
@@ -32,28 +33,44 @@ export function PollPanel(props: {
   showResults?: boolean
 }) {
   const { contract, maxOptions } = props
-  const { options, closeTime, voterVisibility = 'everyone' } = contract
+  const {
+    options,
+    closeTime,
+    voterVisibility = 'everyone',
+    pollType = 'single',
+    maxSelections,
+  } = contract
   const totalVotes = sumBy(options, (option) => option.votes)
   const votingOpen = !closeTime || closeTime > Date.now()
+
   const [hasVoted, setHasVoted] = useState<boolean | undefined>(undefined)
-  const [userVotedId, setUserVotedId] = useState<string | undefined>(undefined)
+  const [userVotedIds, setUserVotedIds] = useState<string[]>([])
+  const [isSubmitting, setIsSubmitting] = useState(false)
+
+  // For multi-select: track selected options before submission
+  const [selectedIds, setSelectedIds] = useState<string[]>([])
+  // For ranked-choice: track ranked options in order
+  const [rankedIds, setRankedIds] = useState<string[]>([])
 
   const user = useUser()
   const authed = useIsAuthorized()
   const isCreator = user?.id === contract.creatorId
 
+  const effectiveMaxSelections = maxSelections ?? options.length
+
   useEffect(() => {
     if (!user || !authed) {
       setHasVoted(false)
-      setUserVotedId(undefined)
+      setUserVotedIds([])
     } else {
       getUserVote(contract.id, user?.id).then((result) => {
         if (!result) {
           setHasVoted(false)
-          setUserVotedId(undefined)
+          setUserVotedIds([])
         } else {
           setHasVoted(true)
-          setUserVotedId(result)
+          // result could be a single id or array depending on poll type
+          setUserVotedIds(Array.isArray(result) ? result : [result])
         }
       })
     }
@@ -66,23 +83,140 @@ export function PollPanel(props: {
     return false
   }, [hasVoted, votingOpen, isCreator])
 
-  const castVote = (voteId: string) => {
+  // Determine which score to show for ranking
+  const getDisplayScore = useCallback(
+    (option: PollOption) => {
+      if (pollType === 'ranked-choice') {
+        return option.rankedVoteScore ?? 0
+      }
+      return option.votes
+    },
+    [pollType]
+  )
+
+  // Sort options for display when showing results
+  const sortedOptions = useMemo(() => {
+    if (!shouldShowResults) return options
+    if (pollType === 'ranked-choice') {
+      return sortBy(options, (o) => -(o.rankedVoteScore ?? 0))
+    }
+    return sortBy(options, (o) => -o.votes)
+  }, [options, shouldShowResults, pollType])
+
+  const castVote = async () => {
     if (!user) {
       firebaseLogin()
       return
     }
-    setUserVotedId(voteId)
-    castPollVote({ contractId: contract.id, voteId: voteId }).then(() => {
+
+    setIsSubmitting(true)
+
+    try {
+      if (pollType === 'single') {
+        // Single vote handled by clicking on an option
+        return
+      } else if (pollType === 'multi-select') {
+        await castPollVote({ contractId: contract.id, voteIds: selectedIds })
+      } else if (pollType === 'ranked-choice') {
+        await castPollVote({
+          contractId: contract.id,
+          rankedVoteIds: rankedIds,
+        })
+      }
       setHasVoted(true)
-    })
+      setUserVotedIds(pollType === 'ranked-choice' ? rankedIds : selectedIds)
+    } finally {
+      setIsSubmitting(false)
+    }
   }
 
-  const optionsToShow = maxOptions ? options.slice(0, maxOptions) : options
+  const castSingleVote = async (voteId: string) => {
+    if (!user) {
+      firebaseLogin()
+      return
+    }
+    setIsSubmitting(true)
+    setUserVotedIds([voteId])
+    try {
+      await castPollVote({ contractId: contract.id, voteId })
+      setHasVoted(true)
+    } finally {
+      setIsSubmitting(false)
+    }
+  }
+
+  const toggleSelection = (optionId: string) => {
+    if (pollType === 'multi-select') {
+      setSelectedIds((prev) => {
+        if (prev.includes(optionId)) {
+          return prev.filter((id) => id !== optionId)
+        }
+        if (prev.length >= effectiveMaxSelections) {
+          return prev
+        }
+        return [...prev, optionId]
+      })
+    } else if (pollType === 'ranked-choice') {
+      setRankedIds((prev) => {
+        if (prev.includes(optionId)) {
+          return prev.filter((id) => id !== optionId)
+        }
+        return [...prev, optionId]
+      })
+    }
+  }
+
+  const getRankDisplay = (optionId: string) => {
+    const rank = rankedIds.indexOf(optionId)
+    if (rank === -1) return null
+    return rank + 1
+  }
+
+  const optionsToShow = maxOptions
+    ? sortedOptions.slice(0, maxOptions)
+    : sortedOptions
+
+  const canSubmit =
+    (pollType === 'multi-select' && selectedIds.length > 0) ||
+    (pollType === 'ranked-choice' && rankedIds.length > 0)
 
   return (
     <Col className="text-ink-1000 gap-2">
+      {/* Poll type indicator */}
+      {pollType !== 'single' && (
+        <div className="text-ink-500 mb-1 text-sm">
+          {pollType === 'multi-select' && (
+            <>
+              Select up to {effectiveMaxSelections}{' '}
+              {maybePluralize('option', effectiveMaxSelections)}
+            </>
+          )}
+          {pollType === 'ranked-choice' && (
+            <>Rank options in order of preference</>
+          )}
+        </div>
+      )}
+
       {optionsToShow.map((option: PollOption) => {
-        const prob = option.votes === 0 ? 0 : option.votes / totalVotes
+        const prob =
+          pollType === 'ranked-choice'
+            ? totalVotes === 0
+              ? 0
+              : (option.rankedVoteScore ?? 0) /
+                (totalVotes * options.length || 1)
+            : option.votes === 0
+            ? 0
+            : option.votes / totalVotes
+
+        const isSelected =
+          pollType === 'multi-select'
+            ? selectedIds.includes(option.id)
+            : pollType === 'ranked-choice'
+            ? rankedIds.includes(option.id)
+            : false
+
+        const rank =
+          pollType === 'ranked-choice' ? getRankDisplay(option.id) : null
 
         return (
           <AnswerBar
@@ -95,24 +229,52 @@ export function PollPanel(props: {
                 ? 1
                 : undefined
             }
-            label={<div>{option.text}</div>}
+            label={
+              <Row className="items-center gap-2">
+                {/* Show rank number for ranked-choice */}
+                {pollType === 'ranked-choice' && rank && !hasVoted && (
+                  <span className="bg-primary-500 flex h-5 w-5 items-center justify-center rounded-full text-xs font-bold text-white">
+                    {rank}
+                  </span>
+                )}
+                {/* Show checkmark for multi-select */}
+                {pollType === 'multi-select' && isSelected && !hasVoted && (
+                  <CheckIcon className="text-primary-500 h-4 w-4" />
+                )}
+                <div>{option.text}</div>
+              </Row>
+            }
             end={
               <Row className="gap-3">
                 {(hasVoted || !votingOpen || isCreator) && (
                   <SeeVotesButton
                     option={option}
                     contractId={contract.id}
-                    userVotedId={userVotedId}
+                    userVotedIds={userVotedIds}
                     voterVisibility={voterVisibility}
                     isCreator={isCreator}
+                    pollType={pollType}
                   />
                 )}
-                {!hasVoted && votingOpen && (
+                {!hasVoted && votingOpen && pollType === 'single' && (
                   <VoteButton
-                    loading={!!userVotedId && userVotedId === option.id}
-                    onClick={() => castVote(option.id)}
-                    disabled={!!userVotedId}
+                    loading={isSubmitting && userVotedIds[0] === option.id}
+                    onClick={() => castSingleVote(option.id)}
+                    disabled={isSubmitting}
                   />
+                )}
+                {!hasVoted && votingOpen && pollType !== 'single' && (
+                  <Button
+                    size="2xs"
+                    color={isSelected ? 'indigo' : 'indigo-outline'}
+                    className="!ring-1"
+                    onClick={(e) => {
+                      e.preventDefault()
+                      toggleSelection(option.id)
+                    }}
+                  >
+                    {isSelected ? 'Selected' : 'Select'}
+                  </Button>
                 )}
               </Row>
             }
@@ -121,6 +283,24 @@ export function PollPanel(props: {
           />
         )
       })}
+
+      {/* Submit button for multi-select and ranked-choice */}
+      {!hasVoted && votingOpen && pollType !== 'single' && (
+        <Button
+          onClick={castVote}
+          loading={isSubmitting}
+          disabled={!canSubmit || isSubmitting}
+          color="indigo"
+          className="mt-2 w-fit self-end"
+        >
+          Submit{' '}
+          {maybePluralize(
+            'vote',
+            pollType === 'multi-select' ? selectedIds.length : rankedIds.length
+          )}
+        </Button>
+      )}
+
       {optionsToShow.length < options.length && (
         <Link
           className="text-ink-500 hover:text-primary-500"
@@ -137,13 +317,23 @@ export function PollPanel(props: {
 export function SeeVotesButton(props: {
   option: PollOption
   contractId: string
-  userVotedId?: string
+  userVotedIds?: string[]
   voterVisibility: PollVoterVisibility
   isCreator: boolean
+  pollType?: PollType
 }) {
-  const { option, contractId, userVotedId, voterVisibility, isCreator } = props
+  const {
+    option,
+    contractId,
+    userVotedIds = [],
+    voterVisibility,
+    isCreator,
+    pollType = 'single',
+  } = props
   const [open, setOpen] = useState(false)
   const disabled = option.votes === 0
+
+  const isUserVote = userVotedIds.includes(option.id)
 
   const canSeeVoters = useMemo(() => {
     if (voterVisibility === 'everyone') return true
@@ -151,9 +341,15 @@ export function SeeVotesButton(props: {
     return false
   }, [voterVisibility, isCreator])
 
+  // Display score based on poll type
+  const displayValue =
+    pollType === 'ranked-choice'
+      ? `${option.rankedVoteScore ?? 0} pts`
+      : `${option.votes} ${maybePluralize('vote', option.votes)}`
+
   return (
     <>
-      {option.id == userVotedId && (
+      {isUserVote && (
         <Tooltip text="You voted">
           <StarIcon className="h-4 w-4" />
         </Tooltip>
@@ -166,10 +362,7 @@ export function SeeVotesButton(props: {
         }}
         disabled={disabled || !canSeeVoters}
       >
-        <span>{option.votes}</span>{' '}
-        <span className={clsx('text-xs opacity-80')}>
-          {maybePluralize('vote', option.votes)}
-        </span>
+        <span>{displayValue}</span>
       </button>
       <Modal open={open} setOpen={setOpen}>
         <SeeVotesModalContent

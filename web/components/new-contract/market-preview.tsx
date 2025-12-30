@@ -1,48 +1,48 @@
-import { useState, useEffect, useRef, useCallback } from 'react'
+import {
+  EyeIcon,
+  EyeOffIcon,
+  PencilIcon,
+  PlusIcon,
+  XIcon,
+} from '@heroicons/react/solid'
+import { JSONContent } from '@tiptap/core'
+import { Editor } from '@tiptap/react'
 import clsx from 'clsx'
+import { MAX_ANSWERS } from 'common/answer'
 import { Contract, CreateableOutcomeType } from 'common/contract'
+import { Group } from 'common/group'
 import { User } from 'common/user'
+import { formatMoney } from 'common/util/format'
+import { removeEmojis } from 'common/util/string'
+import dayjs from 'dayjs'
+import { useCallback, useEffect, useRef, useState } from 'react'
+import { VisibilityIcon } from 'web/components/contract/contracts-table'
 import { Col } from 'web/components/layout/col'
 import { Row } from 'web/components/layout/row'
 import { Avatar } from 'web/components/widgets/avatar'
-import { UserLink } from 'web/components/widgets/user-link'
-import { VisibilityIcon } from 'web/components/contract/contracts-table'
-import { formatMoney } from 'common/util/format'
-import { removeEmojis } from 'common/util/string'
-import { JSONContent } from '@tiptap/core'
-import { Tooltip } from 'web/components/widgets/tooltip'
 import { Content, TextEditor } from 'web/components/widgets/editor'
-import { Editor } from '@tiptap/react'
 import { Input } from 'web/components/widgets/input'
-import dayjs from 'dayjs'
-import { Group } from 'common/group'
-import { TopicTag } from '../topics/topic-tag'
-import {
-  PlusIcon,
-  EyeIcon,
-  EyeOffIcon,
-  XIcon,
-  PencilIcon,
-} from '@heroicons/react/solid'
-import { Modal } from '../layout/modal'
-import { ContractTopicsList } from '../topics/contract-topics-list'
-import { InfoTooltip } from '../widgets/info-tooltip'
-import { MAX_ANSWERS } from 'common/answer'
+import { Tooltip } from 'web/components/widgets/tooltip'
+import { UserLink } from 'web/components/widgets/user-link'
+import { useDebouncedEffect } from 'web/hooks/use-debounced-effect'
+import { useIsMobile } from 'web/hooks/use-is-mobile'
+import { api } from 'web/lib/api/api'
+import { ValidationErrors } from 'web/lib/validation/contract-validation'
+import { POLL_SEE_RESULTS_ANSWER } from '../answers/answer-constants'
 import { AnswerInput } from '../answers/multiple-choice-answers'
 import { Button } from '../buttons/button'
-import {
-  suggestMarketType,
-  MarketTypeSuggestion,
-} from './market-type-suggestions'
-import { MarketTypeSuggestionBanner } from './market-type-suggestion-banner'
-import { useIsMobile } from 'web/hooks/use-is-mobile'
+import { Modal } from '../layout/modal'
+import { ContractTopicsList } from '../topics/contract-topics-list'
+import { TopicTag } from '../topics/topic-tag'
+import { InfoTooltip } from '../widgets/info-tooltip'
 import { ProbabilitySlider } from '../widgets/probability-input'
-import { ValidationErrors } from 'web/lib/validation/contract-validation'
-import { SimilarContractsSection } from './similar-contracts-section'
 import ShortToggle from '../widgets/short-toggle'
-import { POLL_SEE_RESULTS_ANSWER } from '../answers/answer-constants'
-import { api } from 'web/lib/api/api'
-import { useDebouncedEffect } from 'web/hooks/use-debounced-effect'
+import { MarketTypeSuggestionBanner } from './market-type-suggestion-banner'
+import {
+  MarketTypeSuggestion,
+  suggestMarketType,
+} from './market-type-suggestions'
+import { SimilarContractsSection } from './similar-contracts-section'
 
 export type PreviewContractData = {
   question: string
@@ -77,6 +77,7 @@ export type PreviewContractData = {
 
   // Poll specific
   includeSeeResults?: boolean
+  pollType?: 'single' | 'multi-select' | 'ranked-choice'
 }
 
 export function MarketPreview(props: {
@@ -1273,38 +1274,40 @@ export function MarketPreview(props: {
                   </div>
                 ))}
 
-                {/* "See results" option - non-editable, toggleable */}
-                {isEditable && onToggleIncludeSeeResults && (
-                  <div
-                    className={clsx(
-                      'bg-canvas-50 border-ink-200 rounded-lg border p-3',
-                      !data.includeSeeResults && 'opacity-50'
-                    )}
-                  >
-                    <Row className="items-center gap-3">
-                      <Row
-                        className={clsx(
-                          'flex-1 items-center gap-1',
-                          !data.includeSeeResults && 'line-through opacity-70'
-                        )}
-                      >
-                        <span className="text-ink-700 text-sm font-medium">
-                          {POLL_SEE_RESULTS_ANSWER}
-                        </span>
-                        <InfoTooltip text="Adds an answer to the poll labeled 'See results'. Turns off automatically if you manually add it as an answer." />
+                {/* "See results" option - only for single-vote polls */}
+                {isEditable &&
+                  onToggleIncludeSeeResults &&
+                  (!data.pollType || data.pollType === 'single') && (
+                    <div
+                      className={clsx(
+                        'bg-canvas-50 border-ink-200 rounded-lg border p-3',
+                        !data.includeSeeResults && 'opacity-50'
+                      )}
+                    >
+                      <Row className="items-center gap-3">
+                        <Row
+                          className={clsx(
+                            'flex-1 items-center gap-1',
+                            !data.includeSeeResults && 'line-through opacity-70'
+                          )}
+                        >
+                          <span className="text-ink-700 text-sm font-medium">
+                            {POLL_SEE_RESULTS_ANSWER}
+                          </span>
+                          <InfoTooltip text="Adds an answer to the poll labeled 'See results'. Turns off automatically if you manually add it as an answer." />
+                        </Row>
+                        <Row className="items-center gap-2">
+                          <span className="text-ink-500 text-xs">
+                            {data.includeSeeResults ? 'Included' : 'Excluded'}
+                          </span>
+                          <ShortToggle
+                            on={data.includeSeeResults ?? true}
+                            setOn={() => onToggleIncludeSeeResults()}
+                          />
+                        </Row>
                       </Row>
-                      <Row className="items-center gap-2">
-                        <span className="text-ink-500 text-xs">
-                          {data.includeSeeResults ? 'Included' : 'Excluded'}
-                        </span>
-                        <ShortToggle
-                          on={data.includeSeeResults ?? true}
-                          setOn={() => onToggleIncludeSeeResults()}
-                        />
-                      </Row>
-                    </Row>
-                  </div>
-                )}
+                    </div>
+                  )}
 
                 {/* Add answer button */}
                 {isEditable && onEditAnswers && (

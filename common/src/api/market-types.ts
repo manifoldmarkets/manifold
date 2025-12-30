@@ -428,10 +428,15 @@ export const createBountySchema = z.object({
   isAutoBounty: z.boolean().optional(),
 })
 
+export const POLL_TYPES = ['single', 'multi-select', 'ranked-choice'] as const
+
 export const createPollSchema = z.object({
   outcomeType: z.enum(['POLL']),
   answers: z.array(z.string().trim().min(1)).min(2).max(MAX_ANSWERS),
   voterVisibility: z.enum(['creator', 'everyone']).optional(),
+  pollType: z.enum(POLL_TYPES).default('single').optional(),
+  // For multi-select: max number of options user can select (defaults to all if not specified)
+  maxSelections: z.number().min(1).optional(),
 })
 
 export const createMarketProps = z
