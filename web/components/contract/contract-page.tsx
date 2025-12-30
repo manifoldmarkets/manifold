@@ -56,6 +56,7 @@ import { Tooltip } from 'web/components/widgets/tooltip'
 import { useAdmin, useTrusted } from 'web/hooks/use-admin'
 import { precacheAnswers } from 'web/hooks/use-answers'
 import { useLiveContract } from 'web/hooks/use-contract'
+import { useGraphUserFromUrl } from 'web/hooks/use-graph-user'
 import { useHeaderIsStuck } from 'web/hooks/use-header-is-stuck'
 import { useIsPageVisible } from 'web/hooks/use-page-visible'
 import { useRelatedMarkets } from 'web/hooks/use-related-contracts'
@@ -153,6 +154,12 @@ export function ContractPageContent(props: ContractParams) {
 
   const initialHideGraph = shouldHideGraph(liveContract)
   const [hideGraph, setHideGraph] = useState(initialHideGraph)
+
+  const {
+    graphUser,
+    setGraphUser,
+    ready: graphUserReady,
+  } = useGraphUserFromUrl()
 
   useEffect(() => {
     if (replyTo) {
@@ -335,6 +342,8 @@ export function ContractPageContent(props: ContractParams) {
                   chartAnnotations={chartAnnotations}
                   hideGraph={hideGraph}
                   setHideGraph={setHideGraph}
+                  graphUser={graphUser}
+                  setGraphUser={setGraphUser}
                 />
 
                 <UserBetsSummary
@@ -499,6 +508,8 @@ export function ContractPageContent(props: ContractParams) {
                 setActiveIndex={setActiveTabIndex}
                 pinnedComments={pinnedComments}
                 totalComments={totalComments}
+                setGraphUser={setGraphUser}
+                setHideGraph={setHideGraph}
               />
             </div>
             {showExplainerPanel && (

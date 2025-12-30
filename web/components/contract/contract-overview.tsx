@@ -3,6 +3,7 @@ import { ReactNode, memo, useEffect, useState } from 'react'
 
 import { usePersistentInMemoryState } from 'client-common/hooks/use-persistent-in-memory-state'
 import { Answer, MultiSort, getDefaultSort } from 'common/answer'
+import { DisplayUser } from 'common/api/user-types'
 import { Bet } from 'common/bet'
 import { getAutoBountyPayoutPerHour } from 'common/bounty'
 import { getAnswerProbability } from 'common/calculate'
@@ -97,6 +98,8 @@ export const ContractOverview = memo(
     chartAnnotations: ChartAnnotation[]
     hideGraph: boolean
     setHideGraph: (hide: boolean) => void
+    graphUser?: DisplayUser
+    setGraphUser?: (user: DisplayUser | undefined) => void
   }) => {
     const {
       betPoints,
@@ -108,6 +111,8 @@ export const ContractOverview = memo(
       chartAnnotations,
       hideGraph,
       setHideGraph,
+      graphUser,
+      setGraphUser,
     } = props
 
     switch (contract.outcomeType) {
@@ -118,6 +123,8 @@ export const ContractOverview = memo(
             contract={contract}
             resolutionRating={resolutionRating}
             chartAnnotations={chartAnnotations}
+            graphUser={graphUser}
+            setGraphUser={setGraphUser}
             zoomY
           />
         )
@@ -157,6 +164,8 @@ export const ContractOverview = memo(
             chartAnnotations={chartAnnotations}
             hideGraph={hideGraph}
             setHideGraph={setHideGraph}
+            graphUser={graphUser}
+            setGraphUser={setGraphUser}
             zoomY
           />
         )
@@ -214,8 +223,10 @@ export const BinaryOverview = (props: {
   resolutionRating?: ReactNode
   chartAnnotations: ChartAnnotation[]
   zoomY?: boolean
+  graphUser?: DisplayUser
+  setGraphUser?: (user: DisplayUser | undefined) => void
 }) => {
-  const { contract, resolutionRating, zoomY } = props
+  const { contract, resolutionRating, zoomY, graphUser, setGraphUser } = props
 
   const [showZoomer, setShowZoomer] = useState(false)
   const { currentTimePeriod, setTimePeriod, maxRange, zoomParams } =
@@ -243,7 +254,7 @@ export const BinaryOverview = (props: {
     hoveredChartPosition,
     displayUser,
     setDisplayUser,
-  } = useChartPositions(contract)
+  } = useChartPositions(contract, graphUser, setGraphUser)
 
   const isMobile = useIsMobile()
   return (
@@ -331,6 +342,8 @@ const ChoiceOverview = (props: {
   zoomY?: boolean
   hideGraph: boolean
   setHideGraph: (hide: boolean) => void
+  graphUser?: DisplayUser
+  setGraphUser?: (user: DisplayUser | undefined) => void
 }) => {
   const {
     contract,
@@ -341,6 +354,8 @@ const ChoiceOverview = (props: {
     zoomY,
     hideGraph,
     setHideGraph,
+    graphUser,
+    setGraphUser,
   } = props
 
   const currentUser = useUser()
@@ -394,7 +409,7 @@ const ChoiceOverview = (props: {
     hoveredChartPosition,
     displayUser,
     setDisplayUser,
-  } = useChartPositions(contract)
+  } = useChartPositions(contract, graphUser, setGraphUser)
   const contractPositionAnswerIds = chartPositions.map((cp) => cp.answerId)
   useEffect(() => {
     setSelectedAnswerIds(filterDefined(contractPositionAnswerIds))

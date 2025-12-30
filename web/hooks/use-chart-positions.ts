@@ -7,8 +7,19 @@ import { useMemo, useState } from 'react'
 import { getAnswerColor } from 'web/components/charts/contract/choice'
 import { api } from 'web/lib/api/api'
 
-export const useChartPositions = (contract: Contract) => {
-  const [displayUser, setDisplayUser] = useState<DisplayUser>()
+export const useChartPositions = (
+  contract: Contract,
+  externalDisplayUser?: DisplayUser,
+  externalSetDisplayUser?: (user: DisplayUser | undefined) => void
+) => {
+  const [internalDisplayUser, setInternalDisplayUser] = useState<DisplayUser>()
+
+  // Use external state if provided, otherwise use internal state
+  const displayUser = externalSetDisplayUser
+    ? externalDisplayUser
+    : internalDisplayUser
+  const setDisplayUser = externalSetDisplayUser ?? setInternalDisplayUser
+
   const usersBets = useBetsOnce((params) => api('bets', params), {
     contractId: contract.id,
     userId: displayUser?.id,

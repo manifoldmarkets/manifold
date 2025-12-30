@@ -13,6 +13,7 @@ import {
 import { useIsClient } from 'web/hooks/use-is-client'
 import { Col } from '../layout/col'
 import { Row } from '../layout/row'
+import { Tooltip } from '../widgets/tooltip'
 
 export const ChartPositionsCarousel = (props: {
   positions: ChartPosition[]
@@ -134,13 +135,25 @@ const ChartPositionCard = (props: {
           {answer.text}
         </span>
       )}
-      <span className={'text-ink-500 mt-1 text-xs'}>
-        {isClient &&
-          new Date(createdTime).toLocaleDateString('en-US', {
-            month: 'short',
-            day: 'numeric',
-          })}
-      </span>
+      <Tooltip
+        className="w-fit"
+        text={new Date(createdTime).toLocaleString('en-US', {
+          year: 'numeric',
+          month: 'short',
+          day: 'numeric',
+          hour: 'numeric',
+          minute: '2-digit',
+          second: '2-digit',
+        })}
+      >
+        <span className={'text-ink-500 mt-1 text-xs'}>
+          {isClient &&
+            new Date(createdTime).toLocaleDateString('en-US', {
+              month: 'short',
+              day: 'numeric',
+            })}
+        </span>
+      </Tooltip>
     </Col>
   )
 }

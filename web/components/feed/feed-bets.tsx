@@ -11,10 +11,13 @@ import {
 import { TRADE_TERM } from 'common/envs/constants'
 import { getFormattedMappedValue } from 'common/pseudo-numeric'
 import { BETTOR } from 'common/user'
+import { formatOutcomeLabel, formatPercent } from 'common/util/format'
 import { floatingEqual, floatingLesserEqual } from 'common/util/math'
 import dayjs from 'dayjs'
 import { sumBy, uniq } from 'lodash'
 import { memo, useState } from 'react'
+import { FaArrowTrendUp } from 'react-icons/fa6'
+import { LuShare } from 'react-icons/lu'
 import { Button } from 'web/components/buttons/button'
 import { RepostButton } from 'web/components/comments/repost-modal'
 import { Col } from 'web/components/layout/col'
@@ -34,13 +37,10 @@ import { useUser } from 'web/hooks/use-user'
 import { useDisplayUserById, useUsers } from 'web/hooks/use-user-supabase'
 import { track } from 'web/lib/service/analytics'
 import { MoneyDisplay } from '../bet/money-display'
+import { ShareBetModal } from '../bet/share-bet'
+import { getPseudonym } from '../charts/contract/choice'
 import { UserHovercard } from '../user/user-hovercard'
 import { InfoTooltip } from '../widgets/info-tooltip'
-import { getPseudonym } from '../charts/contract/choice'
-import { LuShare } from 'react-icons/lu'
-import { formatPercent } from 'common/util/format'
-import { ShareBetModal } from '../bet/share-bet'
-import { formatOutcomeLabel } from 'common/util/format'
 
 export const FeedBet = memo(function FeedBet(props: {
   contract: MarketContract
@@ -84,6 +84,65 @@ export const FeedBet = memo(function FeedBet(props: {
     </Col>
   )
 })
+
+export const FeedBetWithGraphAction = memo(
+  function FeedBetWithGraphAction(props: {
+    contract: MarketContract
+    bet: Bet
+    avatarSize?: AvatarSizeType
+    className?: string
+    onReply?: (bet: Bet) => void
+    setGraphUser: (user: DisplayUser | undefined) => void
+    setHideGraph?: (hide: boolean) => void
+  }) {
+    const {
+      contract,
+      bet,
+      avatarSize,
+      className,
+      onReply,
+      setGraphUser,
+      setHideGraph,
+    } = props
+    const { createdTime, userId } = bet
+    const user = useDisplayUserById(userId)
+    const showUser = dayjs(createdTime).isAfter('2022-06-01')
+
+    return (
+      <Col className={'w-full'}>
+        <Row className={'justify-between'}>
+          <Row className={clsx(className, 'items-center gap-2')}>
+            {showUser ? (
+              <UserHovercard userId={userId}>
+                <Avatar
+                  size={avatarSize}
+                  avatarUrl={user?.avatarUrl}
+                  username={user?.username}
+                />
+              </UserHovercard>
+            ) : (
+              <EmptyAvatar className="mx-1" />
+            )}
+            <BetStatusText
+              bet={bet}
+              contract={contract}
+              hideUser={!showUser}
+              className="flex-1"
+            />
+          </Row>
+          <BetActionsWithGraph
+            onReply={onReply}
+            bet={bet}
+            contract={contract}
+            user={user}
+            setGraphUser={setGraphUser}
+            setHideGraph={setHideGraph}
+          />
+        </Row>
+      </Col>
+    )
+  }
+)
 
 export const FeedReplyBet = memo(function FeedReplyBet(props: {
   contract: MarketContract
@@ -330,6 +389,127 @@ function BetActions(props: {
           playContract={contract}
         />
       )}
+      {onReply && (
+        <Tooltip
+          text={`Reply to this ${TRADE_TERM}`}
+          placement="top"
+          className="mr-2"
+        >
+          <Button
+            className={'!p-1'}
+            color={'gray-white'}
+            size={'2xs'}
+            onClick={() => {
+              onReply(bet)
+              track(`reply to ${TRADE_TERM}`, {
+                slug: contract.slug,
+                amount: bet.amount,
+              })
+            }}
+          >
+            <ReplyIcon className=" h-5 w-5" />
+          </Button>
+        </Tooltip>
+      )}
+      <Tooltip text="Share bet" placement="top">
+        <Button
+          className={'!p-1'}
+          color={'gray-white'}
+          size={'2xs'}
+          onClick={() => setIsSharing(true)}
+        >
+          <LuShare className="h-5 w-5" />
+        </Button>
+      </Tooltip>
+
+      {isSharing && bettor && (
+        <ShareBetModal
+          open={isSharing}
+          setOpen={setIsSharing}
+          questionText={contract.question}
+          outcome={formatOutcomeLabel(contract, bet.outcome as 'YES' | 'NO')}
+          answer={
+            contract.mechanism === 'cpmm-multi-1'
+              ? contract.answers?.find((a) => a.id === bet.answerId)?.text
+              : undefined
+          }
+          avgPrice={
+            bet.limitProb !== undefined
+              ? formatPercent(bet.limitProb)
+              : formatPercent(
+                  bet.outcome === 'YES'
+                    ? bet.amount / bet.shares
+                    : 1 - bet.amount / bet.shares
+                )
+          }
+          betAmount={bet.amount}
+          winAmount={
+            bet.limitProb !== undefined && bet.orderAmount !== undefined
+              ? bet.outcome === 'YES'
+                ? bet.orderAmount / bet.limitProb
+                : bet.orderAmount / (1 - bet.limitProb)
+              : bet.shares
+          }
+          bettor={{
+            id: bettor.id,
+            name: bettor.name,
+            username: bettor.username,
+            avatarUrl: bettor.avatarUrl,
+          }}
+          isLimitBet={bet.limitProb !== undefined}
+          orderAmount={bet.orderAmount}
+        />
+      )}
+    </Row>
+  )
+}
+
+function BetActionsWithGraph(props: {
+  onReply?: (bet: Bet) => void
+  bet: Bet
+  contract: MarketContract
+  user: DisplayUser | null | undefined
+  setGraphUser: (user: DisplayUser | undefined) => void
+  setHideGraph?: (hide: boolean) => void
+}) {
+  const {
+    onReply,
+    bet,
+    contract,
+    user: bettor,
+    setGraphUser,
+    setHideGraph,
+  } = props
+  const currentUser = useUser()
+  const [isSharing, setIsSharing] = useState(false)
+
+  const handleGraphTrades = () => {
+    if (!bettor) return
+    // Show the graph if it's hidden
+    setHideGraph?.(false)
+    setGraphUser({
+      id: bettor.id,
+      name: bettor.name,
+      username: bettor.username,
+      avatarUrl: bettor.avatarUrl ?? '',
+    })
+    window.scrollTo({ top: 0, behavior: 'smooth' })
+    track('graph user trades from bets tab', { userId: bettor.id })
+  }
+
+  return (
+    <Row className="items-center gap-1">
+      <Tooltip text="Graph trades" placement="top">
+        <Button
+          className={'!p-1'}
+          color={'gray-white'}
+          size={'2xs'}
+          onClick={handleGraphTrades}
+          disabled={!bettor}
+        >
+          <FaArrowTrendUp className="h-5 w-5" />
+        </Button>
+      </Tooltip>
       {onReply && (
         <Tooltip
           text={`Reply to this ${TRADE_TERM}`}

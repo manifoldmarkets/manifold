@@ -13,7 +13,7 @@ import { Bet } from 'common/bet'
 import { Contract, CPMMNumericContract, MarketContract } from 'common/contract'
 import { groupBy, minBy, sortBy, uniqBy } from 'lodash'
 import { Fragment, memo, useEffect, useRef, useState } from 'react'
-import { FeedBet } from 'web/components/feed/feed-bets'
+import { FeedBet, FeedBetWithGraphAction } from 'web/components/feed/feed-bets'
 import { FeedLiquidity } from 'web/components/feed/feed-liquidity'
 import { MultiNumericBetGroup } from 'web/components/feed/feed-multi-numeric-bet-group'
 import { Col } from 'web/components/layout/col'
@@ -32,8 +32,11 @@ export const BetsTabContent = memo(function BetsTabContent(props: {
   bets: Bet[]
   totalBets: number
   setReplyToBet?: (bet: Bet) => void
+  setGraphUser?: (user: DisplayUser | undefined) => void
+  setHideGraph?: (hide: boolean) => void
 }) {
-  const { contract, setReplyToBet, totalBets } = props
+  const { contract, setReplyToBet, totalBets, setGraphUser, setHideGraph } =
+    props
   const { outcomeType } = contract
   const [olderBets, setOlderBets] = useState<Bet[]>([])
 
@@ -388,12 +391,23 @@ export const BetsTabContent = memo(function BetsTabContent(props: {
       <Col className="mb-4 items-start gap-7">
         {allItems.map((item) =>
           item.type === 'bet' ? (
-            <FeedBet
-              onReply={setReplyToBet}
-              key={item.id}
-              contract={contract as MarketContract}
-              bet={item.bet}
-            />
+            setGraphUser ? (
+              <FeedBetWithGraphAction
+                onReply={setReplyToBet}
+                key={item.id}
+                contract={contract as MarketContract}
+                bet={item.bet}
+                setGraphUser={setGraphUser}
+                setHideGraph={setHideGraph}
+              />
+            ) : (
+              <FeedBet
+                onReply={setReplyToBet}
+                key={item.id}
+                contract={contract as MarketContract}
+                bet={item.bet}
+              />
+            )
           ) : item.type === 'betGroup' ? (
             <MultiNumericBetGroup
               key={item.id}

@@ -1,5 +1,6 @@
 import clsx from 'clsx'
 import { Answer } from 'common/answer'
+import { DisplayUser } from 'common/api/user-types'
 import {
   BinaryContract,
   CPMMContract,
@@ -17,6 +18,7 @@ import {
 import { User } from 'common/user'
 import { first, orderBy, partition, uniqBy } from 'lodash'
 import { memo, ReactNode, useEffect, useState } from 'react'
+import { FaArrowTrendUp } from 'react-icons/fa6'
 import { PillButton } from 'web/components/buttons/pill-button'
 import { Col } from 'web/components/layout/col'
 import { Row } from 'web/components/layout/row'
@@ -36,12 +38,14 @@ import { UserAvatarAndBadge } from 'web/components/widgets/user-link'
 import { useFollows } from 'web/hooks/use-follows'
 import { useIsMobile } from 'web/hooks/use-is-mobile'
 import { useUser } from 'web/hooks/use-user'
+import { api } from 'web/lib/api/api'
 import TriangleDownFillIcon from 'web/lib/icons/triangle-down-fill-icon.svg'
+import { track } from 'web/lib/service/analytics'
 import { db } from 'web/lib/supabase/db'
 import { MoneyDisplay } from '../bet/money-display'
-import { UserHovercard } from '../user/user-hovercard'
-import { Select } from '../widgets/select'
 import { getPseudonym } from '../charts/contract/choice'
+import { RelativeTimestamp } from '../relative-timestamp'
+import { Select } from '../widgets/select'
 
 const ROWS_PER_CALL = 50 // Number of items to fetch per backend call, per side
 const USER_TABLE_PAGE_SIZE = 20 // Number of items displayed per page in the UI
@@ -54,8 +58,16 @@ export const UserPositionsTable = memo(
       answer: Answer
       totalPositions: number
     }
+    setGraphUser?: (user: DisplayUser | undefined) => void
+    setHideGraph?: (hide: boolean) => void
   }) {
-    const { contract, setTotalPositions, answerDetails } = props
+    const {
+      contract,
+      setTotalPositions,
+      answerDetails,
+      setGraphUser,
+      setHideGraph,
+    } = props
     const answer = answerDetails?.answer
     const contractId = contract.id
 
@@ -311,6 +323,8 @@ export const UserPositionsTable = memo(
             page={page}
             setPage={setPage}
             pageSize={USER_TABLE_PAGE_SIZE}
+            setGraphUser={setGraphUser}
+            setHideGraph={setHideGraph}
           />
         </Col>
       )
@@ -402,6 +416,8 @@ export const UserPositionsTable = memo(
             page={page}
             setPage={setPage}
             pageSize={USER_TABLE_PAGE_SIZE}
+            setGraphUser={setGraphUser}
+            setHideGraph={setHideGraph}
           />
         </Col>
       )
@@ -421,6 +437,8 @@ const BinaryUserPositionsTable = memo(
     page: number
     setPage: (page: number) => void
     loading: boolean
+    setGraphUser?: (user: DisplayUser | undefined) => void
+    setHideGraph?: (hide: boolean) => void
     pageSize: number
   }) {
     const {
@@ -434,6 +452,8 @@ const BinaryUserPositionsTable = memo(
       setPage,
       loading,
       pageSize,
+      setGraphUser,
+      setHideGraph,
     } = props
     const currentUser = useUser()
     const followedUsers = useFollows(currentUser?.id)
@@ -585,6 +605,8 @@ const BinaryUserPositionsTable = memo(
                       }
                       invested={position.invested}
                       isCashContract={isCashContract}
+                      setGraphUser={setGraphUser}
+                      setHideGraph={setHideGraph}
                     />
                   )
                 })}
@@ -636,6 +658,8 @@ const BinaryUserPositionsTable = memo(
                       }
                       invested={position.invested}
                       isCashContract={isCashContract}
+                      setGraphUser={setGraphUser}
+                      setHideGraph={setHideGraph}
                     />
                   )
                 })}
@@ -661,6 +685,8 @@ const PositionRow = memo(function PositionRow(props: {
   followedUsers: string[] | undefined
   colorClassName: string
   isCashContract: boolean
+  setGraphUser?: (user: DisplayUser | undefined) => void
+  setHideGraph?: (hide: boolean) => void
 }) {
   const {
     position,
@@ -670,51 +696,146 @@ const PositionRow = memo(function PositionRow(props: {
     numberToShow,
     invested,
     isCashContract,
+    setGraphUser,
+    setHideGraph,
   } = props
   const { userId, userName, userUsername, userAvatarUrl } = position
   const isMobile = useIsMobile(800)
+  const [expanded, setExpanded] = useState(false)
+
+  const handleGraphTrades = () => {
+    if (!setGraphUser) return
+    // Show the graph if it's hidden
+    setHideGraph?.(false)
+    // Fetch user data to ensure we have the avatar URL
+    api('user/by-id/:id/lite', { id: userId })
+      .then((user) => {
+        if (user) {
+          setGraphUser(user)
+        } else {
+          // Fallback to what we have
+          setGraphUser({
+            id: userId,
+            name: userName ?? '',
+            username: userUsername ?? '',
+            avatarUrl: userAvatarUrl ?? '',
+          })
+        }
+      })
+      .catch(() => {
+        // Fallback to what we have
+        setGraphUser({
+          id: userId,
+          name: userName ?? '',
+          username: userUsername ?? '',
+          avatarUrl: userAvatarUrl ?? '',
+        })
+      })
+    window.scrollTo({ top: 0, behavior: 'smooth' })
+    track('graph user trades from positions table', { userId })
+  }
 
   return (
-    <Row
+    <Col
       className={clsx(
-        'border-ink-300 items-center justify-between gap-2 border-b px-2 py-3',
+        'border-ink-300 border-b',
         currentUser?.id === position.userId && 'bg-amber-500/20',
         followedUsers?.includes(position.userId) && 'bg-blue-500/20'
       )}
     >
-      <UserHovercard userId={userId}>
-        <Row
-          className={clsx(
-            'max-w-[7rem] shrink items-center gap-2 overflow-hidden sm:max-w-none'
-          )}
-        >
-          <UserAvatarAndBadge
-            user={{
-              id: userId,
-              name: userName,
-              avatarUrl: userAvatarUrl,
-              username: userUsername,
-            }}
-            short={isMobile}
-          />
-        </Row>
-      </UserHovercard>
-      <Col>
-        <span className={clsx(colorClassName, 'shrink-0', 'text-right')}>
-          {numberToShow}
-        </span>
-        {invested > -99999999 && invested < 9999999999 && (
-          <span
+      <Row
+        className={clsx(
+          'items-center justify-between gap-2 px-2 py-3',
+          setGraphUser && 'cursor-pointer'
+        )}
+        onClick={() => {
+          if (setGraphUser) {
+            setExpanded(!expanded)
+          }
+        }}
+      >
+        <div onClick={(e) => e.stopPropagation()}>
+          <Row
             className={clsx(
-              'text-ink-500 hidden shrink-0 text-right text-xs sm:flex'
+              'max-w-[7rem] shrink items-center gap-2 overflow-hidden sm:max-w-none'
             )}
           >
-            Spent{' '}
-            <MoneyDisplay amount={invested} isCashContract={isCashContract} />
+            <UserAvatarAndBadge
+              user={{
+                id: userId,
+                name: userName,
+                avatarUrl: userAvatarUrl,
+                username: userUsername,
+              }}
+              short={isMobile}
+            />
+          </Row>
+        </div>
+        <Col>
+          <span className={clsx(colorClassName, 'shrink-0', 'text-right')}>
+            {numberToShow}
           </span>
-        )}
-      </Col>
-    </Row>
+          {invested > -99999999 && invested < 9999999999 && (
+            <span
+              className={clsx(
+                'text-ink-500 hidden shrink-0 text-right text-xs sm:flex'
+              )}
+            >
+              Spent{' '}
+              <MoneyDisplay amount={invested} isCashContract={isCashContract} />
+            </span>
+          )}
+        </Col>
+      </Row>
+      {expanded && setGraphUser && (
+        <Col className="bg-canvas-50 gap-2 px-3 py-2">
+          <Col className="gap-1 text-sm">
+            <Row className="justify-between sm:hidden ">
+              <span className="text-ink-500">Spent</span>
+              <MoneyDisplay amount={invested} isCashContract={isCashContract} />
+            </Row>
+            {position.maxSharesOutcome &&
+              position.totalSpent?.[position.maxSharesOutcome] &&
+              position.totalShares[position.maxSharesOutcome] > 0 && (
+                <Row className="justify-between">
+                  <span className="text-ink-500">Avg price</span>
+                  <span>
+                    {Math.round(
+                      (position.totalSpent[position.maxSharesOutcome] /
+                        position.totalShares[position.maxSharesOutcome]) *
+                        100
+                    )}
+                    %
+                  </span>
+                </Row>
+              )}
+            {position.lastBetTime && (
+              <Row className="justify-between">
+                <span className="text-ink-500">Last trade</span>
+                <RelativeTimestamp
+                  shortened
+                  time={position.lastBetTime}
+                  className="text-ink-1000 !ml-0"
+                />
+              </Row>
+            )}
+            {position.lastProb != null && (
+              <Row className="justify-between">
+                <span className="text-ink-500">Last trade prob</span>
+                <span>{Math.round(position.lastProb * 100)}%</span>
+              </Row>
+            )}
+          </Col>
+          <div
+            onClick={handleGraphTrades}
+            className="text-primary-600 hover:bg-primary-100 flex w-fit cursor-pointer items-center gap-2 rounded-md py-1 text-sm font-medium transition-colors"
+          >
+            <FaArrowTrendUp className="h-4 w-4" />
+            Graph trades
+          </div>
+        </Col>
+      )}
+    </Col>
   )
 })
 const LoadingResults = ({ placeholderCount }: { placeholderCount: number }) => {

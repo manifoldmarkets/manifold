@@ -1,6 +1,7 @@
 import { useState } from 'react'
 
 import { Answer } from 'common/answer'
+import { DisplayUser } from 'common/api/user-types'
 import { Bet } from 'common/bet'
 import { ContractComment } from 'common/comment'
 import { BinaryContract, Contract } from 'common/contract'
@@ -29,6 +30,8 @@ export function ContractTabs(props: {
   totalPositions: number
   pinnedComments: ContractComment[]
   totalComments: number
+  setGraphUser?: (user: DisplayUser | undefined) => void
+  setHideGraph?: (hide: boolean) => void
 }) {
   const {
     staticContract,
@@ -42,6 +45,8 @@ export function ContractTabs(props: {
     setActiveIndex,
     totalBets,
     pinnedComments,
+    setGraphUser,
+    setHideGraph,
   } = props
 
   const highlightedCommentId = useHashInUrlPageRouter('')
@@ -108,6 +113,8 @@ export function ContractTabs(props: {
                 key={liveContract.id}
                 contract={liveContract as BinaryContract}
                 setTotalPositions={setTotalPositions}
+                setGraphUser={setGraphUser}
+                setHideGraph={setHideGraph}
               />
             ),
           },
@@ -121,6 +128,8 @@ export function ContractTabs(props: {
                 bets={bets}
                 totalBets={totalBets}
                 setReplyToBet={setReplyTo}
+                setGraphUser={setGraphUser}
+                setHideGraph={setHideGraph}
               />
             </Col>
           ),
