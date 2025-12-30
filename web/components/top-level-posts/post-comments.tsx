@@ -1,54 +1,51 @@
-import { Editor } from '@tiptap/core'
+import {
+  DotsHorizontalIcon,
+  EyeIcon,
+  EyeOffIcon,
+  LinkIcon,
+  PencilIcon,
+  ReplyIcon,
+} from '@heroicons/react/outline'
+import { Editor, JSONContent } from '@tiptap/core'
+import { useApiSubscription } from 'client-common/hooks/use-api-subscription'
 import clsx from 'clsx'
-import { track } from 'web/lib/service/analytics'
-import { PostComment } from 'common/comment'
+import { APIError } from 'common/api/utils'
+import { MAX_COMMENT_LENGTH, PostComment } from 'common/comment'
 import { getPostCommentShareUrl, TopLevelPost } from 'common/top-level-post'
+import { User } from 'common/user'
+import { buildArray } from 'common/util/array'
 import { Dictionary, groupBy, sortBy } from 'lodash'
 import { useRouter } from 'next/router'
 import { useEffect, useRef, useState } from 'react'
-import { Avatar } from 'web/components/widgets/avatar'
+import { toast } from 'react-hot-toast'
+import { IconButton } from 'web/components/buttons/button'
 import {
   CommentInput,
   CommentInputTextArea,
 } from 'web/components/comments/comment-input'
-import { Content } from 'web/components/widgets/editor'
+import { ReactButton } from 'web/components/contract/react-button'
 import { CopyLinkDateTimeComponent } from 'web/components/feed/copy-link-date-time'
 import { Col } from 'web/components/layout/col'
+import { Modal } from 'web/components/layout/modal'
 import { Row } from 'web/components/layout/row'
-import { UserLink } from 'web/components/widgets/user-link'
-import { isBlocked, usePrivateUser, useUser } from 'web/hooks/use-user'
-import { firebaseLogin } from 'web/lib/firebase/users'
-import { scrollIntoViewCentered } from 'web/lib/util/scroll'
-import { toast } from 'react-hot-toast'
-import { APIError } from 'common/api/utils'
-import { api } from 'web/lib/api/api'
-import { useApiSubscription } from 'client-common/hooks/use-api-subscription'
-import { getCommentsOnPost } from 'web/lib/supabase/comments'
 import { UserHovercard } from 'web/components/user/user-hovercard'
-import {
-  ReplyIcon,
-  DotsHorizontalIcon,
-  EyeOffIcon,
-  LinkIcon,
-  EyeIcon,
-  PencilIcon,
-} from '@heroicons/react/outline'
+import { Avatar } from 'web/components/widgets/avatar'
 import DropdownMenu, {
   DropdownItem,
 } from 'web/components/widgets/dropdown-menu'
-import { IconButton } from 'web/components/buttons/button'
-import { Tooltip } from 'web/components/widgets/tooltip'
-import { copyToClipboard } from 'web/lib/util/copy'
-import { buildArray } from 'common/util/array'
-import { useAdminOrMod } from 'web/hooks/use-admin'
-import { ReactButton } from 'web/components/contract/react-button'
-import { JSONContent } from '@tiptap/core'
-import { Modal } from 'web/components/layout/modal'
+import { Content, useTextEditor } from 'web/components/widgets/editor'
 import { Title } from 'web/components/widgets/title'
-import { useTextEditor } from 'web/components/widgets/editor'
-import { MAX_COMMENT_LENGTH } from 'common/comment'
+import { Tooltip } from 'web/components/widgets/tooltip'
+import { UserLink } from 'web/components/widgets/user-link'
+import { useAdminOrMod } from 'web/hooks/use-admin'
+import { isBlocked, usePrivateUser, useUser } from 'web/hooks/use-user'
+import { api } from 'web/lib/api/api'
+import { firebaseLogin } from 'web/lib/firebase/users'
+import { track } from 'web/lib/service/analytics'
+import { getCommentsOnPost } from 'web/lib/supabase/comments'
+import { copyToClipboard } from 'web/lib/util/copy'
 import { safeLocalStorage } from 'web/lib/util/local'
-import { User } from 'common/user'
+import { scrollIntoViewCentered } from 'web/lib/util/scroll'
 
 const roundThreadColor = 'border-ink-100 dark:border-ink-200'
 
@@ -169,6 +166,7 @@ export function PostCommentInput(props: {
       } else {
         toast.error('Error submitting comment. Try again?')
       }
+      throw e
     }
   }
 
