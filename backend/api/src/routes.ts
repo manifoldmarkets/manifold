@@ -88,6 +88,7 @@ import { getLeagues } from './get-leagues'
 import { getManaSupply } from './get-mana-supply'
 import { getManagrams } from './get-managrams'
 import { getMarket } from './get-market'
+import { getMarketContext } from './get-market-context'
 import { getMarketProb } from './get-market-prob'
 import { getMarketProbs } from './get-market-probs'
 import { getMarketsByIds } from './get-markets'
@@ -303,6 +304,7 @@ export const handlers: { [k in APIPath]: APIHandler<k> } = {
   'request-loan': requestLoan,
   'get-related-markets': getRelatedMarkets,
   'get-related-markets-by-group': getRelatedMarketsByGroup,
+  'get-market-context': getMarketContext,
   'super-ban-user': superBanUser,
   'get-boost-analytics': getBoostAnalytics,
   'set-news': setnews,

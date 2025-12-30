@@ -74,6 +74,7 @@ import { scrollIntoViewCentered } from 'web/lib/util/scroll'
 import { SpiceCoin } from 'web/public/custom-components/spiceCoin'
 import { FollowMarketButton } from '../buttons/follow-market-button'
 import { CreatorSharePanel, NonCreatorSharePanel } from './creator-share-panel'
+import { MarketContext } from './market-context'
 import { YourTrades } from './your-trades'
 
 export function ContractPageContent(props: ContractParams) {
@@ -449,7 +450,11 @@ export function ContractPageContent(props: ContractParams) {
                 description={description}
               />
             )}
-            <Row className="mb-4 items-center gap-2">
+            {props.contract.isRanked !== false && (
+              <MarketContext contractId={props.contract.id} />
+            )}
+
+            <Row className="mb-4 mt-2 items-center gap-2">
               <MarketTopics
                 contract={props.contract}
                 dashboards={dashboards}
@@ -457,6 +462,7 @@ export function ContractPageContent(props: ContractParams) {
                 isSpiceMarket={isSpiceMarket}
               />
             </Row>
+
             <Row className="flex-wrap">
               {!isResolved && !isClosed && !isCreator && !!user ? (
                 <NonCreatorSharePanel contract={liveContract}>

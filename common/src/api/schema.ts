@@ -1398,6 +1398,20 @@ export const API = (_apiTypeCheck = {
       })
       .strict(),
   },
+  'get-market-context': {
+    method: 'GET',
+    visibility: 'undocumented',
+    authed: false,
+    cache: 'public, max-age=900, stale-while-revalidate=60',
+    props: z
+      .object({
+        contractId: z.string(),
+      })
+      .strict(),
+    returns: {} as {
+      context: JSONContent | undefined
+    },
+  },
   'super-ban-user': {
     method: 'POST',
     visibility: 'undocumented',

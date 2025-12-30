@@ -35,6 +35,7 @@ export const inferNumericUnit: APIHandler<'infer-numeric-unit'> =
           model: aiModels.flash,
           system: systemPrompt,
           parseAsJson: true,
+          thinkingLevel: 'minimal',
         })
         log.info('Inferred unit:', { result })
 

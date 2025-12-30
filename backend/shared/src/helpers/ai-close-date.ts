@@ -38,7 +38,8 @@ export const getCloseDate = async (question: string, utcOffset?: number) => {
     Now: ${now}
     End date:`
     response = await promptAI(prompt, {
-      model: aiModels.flashThinking,
+      model: aiModels.flash,
+      thinkingLevel: 'low',
     })
   } catch (e: any) {
     log.error('Error generating close date', { e })

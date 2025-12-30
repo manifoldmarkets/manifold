@@ -1,5 +1,5 @@
-import { forwardRef, MouseEventHandler, ReactNode, Ref } from 'react'
 import clsx from 'clsx'
+import { forwardRef, MouseEventHandler, ReactNode, Ref } from 'react'
 import { LoadingIndicator } from 'web/components/widgets/loading-indicator'
 
 export type SizeType = '2xs' | 'xs' | 'sm' | 'md' | 'lg' | 'xl' | '2xl'
@@ -138,7 +138,11 @@ export const Button = forwardRef(function Button(
       {loading && (
         <LoadingIndicator
           className="mr-2 w-fit self-stretch"
-          size={size === '2xs' || size === 'xs' || size === 'sm' ? 'sm' : 'md'}
+          size={
+            size === '2xs' || size === 'xs' || size === 'sm' || size === 'md'
+              ? 'sm'
+              : 'md'
+          }
           spinnerClassName="!w-[unset] aspect-square"
         />
       )}

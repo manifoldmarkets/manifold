@@ -3,16 +3,27 @@ import { APIError } from 'common/api/utils'
 import { log } from 'shared/utils'
 
 export const models = {
-  flash: 'gemini-2.5-flash-lite' as const,
-  flashThinking: 'gemini-2.5-flash' as const,
-  pro: 'gemini-2.5-pro' as const,
+  flash: 'gemini-3-flash-preview' as const,
+  pro: 'gemini-3-pro-preview' as const,
 }
 
 export type model_types = (typeof models)[keyof typeof models]
 
+// Thinking levels for Gemini 3 models
+// 'minimal' and 'medium' are only supported by Gemini 3 Flash
+// Default is 'high' when not specified
+export type GeminiThinkingLevel = 'minimal' | 'low' | 'medium' | 'high'
+
+export type GeminiOptions = {
+  system?: string
+  model?: model_types
+  webSearch?: boolean
+  thinkingLevel?: GeminiThinkingLevel
+}
+
 export const promptGeminiParsingJson = async <T>(
   prompt: string,
-  options: { system?: string; model?: model_types; webSearch?: boolean } = {}
+  options: GeminiOptions = {}
 ): Promise<T> => {
   const response = await promptGemini(prompt, options)
   return parseAIResponseAsJson(response)
@@ -20,9 +31,14 @@ export const promptGeminiParsingJson = async <T>(
 
 export const promptGemini = async (
   prompt: string,
-  options: { system?: string; model?: model_types; webSearch?: boolean } = {}
+  options: GeminiOptions = {}
 ) => {
-  const { model = models.flash, system, webSearch = false } = options
+  const {
+    model = models.flash,
+    system,
+    webSearch = false,
+    thinkingLevel,
+  } = options
 
   const apiKey = process.env.GEMINI_API_KEY
 
@@ -32,10 +48,21 @@ export const promptGemini = async (
 
   const genAI = new GoogleGenerativeAI(apiKey)
 
-  // Configure model with optional Google Search grounding
+  // Configure model with optional Google Search grounding and thinking level
   const modelConfig: any = { model }
   if (webSearch) {
     modelConfig.tools = [{ googleSearch: {} }]
+  }
+
+  // Configure thinking level for Gemini 3 models
+  // Note: 'minimal' and 'medium' are only supported by Gemini 3 Flash
+  if (thinkingLevel) {
+    modelConfig.generationConfig = {
+      ...modelConfig.generationConfig,
+      thinkingConfig: {
+        thinkingLevel: thinkingLevel,
+      },
+    }
   }
 
   const geminiModel = genAI.getGenerativeModel(modelConfig)

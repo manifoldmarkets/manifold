@@ -1,10 +1,13 @@
 import { models as claudeModels, promptClaude } from './claude'
 import {
+  GeminiThinkingLevel,
   models as geminiModels,
   parseAIResponseAsJson,
   promptGemini,
 } from './gemini'
 import { models as openaiModels, promptOpenAI } from './openai-utils'
+
+export type { GeminiThinkingLevel }
 
 type ReasoningEffort = 'low' | 'medium' | 'high'
 
@@ -19,6 +22,10 @@ export type PromptAIOptionsBase = {
   system?: string
   webSearch?: boolean
   reasoning?: { effort: ReasoningEffort }
+  // Gemini-specific thinking level. If not specified but reasoning.effort is,
+  // it will be mapped to an equivalent thinking level for Gemini models.
+  // 'minimal' and 'medium' are only supported by Gemini 3 Flash.
+  thinkingLevel?: GeminiThinkingLevel
 }
 
 export type PromptAIJsonOptions = PromptAIOptionsBase & { parseAsJson: true }
@@ -49,7 +56,7 @@ export async function promptAI<T = unknown>(
     model: (typeof aiModels)[keyof typeof aiModels]
   }
 ): Promise<string | T> {
-  const { model, system, webSearch, reasoning } = options
+  const { model, system, webSearch, reasoning, thinkingLevel } = options
   const provider = getProviderFromModel(model)
 
   let rawResponse: string
@@ -68,10 +75,14 @@ export async function promptAI<T = unknown>(
       webSearch,
     })
   } else {
+    // For Gemini, use explicit thinkingLevel if provided, otherwise map from reasoning.effort
+    const geminiThinkingLevel: GeminiThinkingLevel | undefined =
+      thinkingLevel ?? reasoning?.effort
     rawResponse = await promptGemini(prompt, {
       model: model as any,
       system,
       webSearch,
+      thinkingLevel: geminiThinkingLevel,
     })
   }
 

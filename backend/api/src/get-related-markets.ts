@@ -70,6 +70,7 @@ Return a JSON array containing ONLY the IDs of markets to KEEP (those that are d
       const marketsToKeep = await promptAI<string[]>(prompt, {
         model: aiModels.flash,
         parseAsJson: true,
+        thinkingLevel: 'minimal',
       })
 
       if (Array.isArray(marketsToKeep) && marketsToKeep.length > 0) {
