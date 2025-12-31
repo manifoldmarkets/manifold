@@ -3,7 +3,6 @@ export type PollOption = {
   index: number // Order of the options in the list
   text: string
   votes: number
-  // For ranked-choice voting: sum of points using Borda count
-  // (n points for 1st choice, n-1 for 2nd, etc.)
+  // Borda score for ranked-choice polls (used for display/sorting)
   rankedVoteScore?: number
 }

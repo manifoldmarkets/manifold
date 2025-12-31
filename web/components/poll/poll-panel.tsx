@@ -341,10 +341,13 @@ export function SeeVotesButton(props: {
     return false
   }, [voterVisibility, isCreator])
 
-  // Display score based on poll type
+  // For ranked-choice, display Borda points; otherwise show vote count
   const displayValue =
     pollType === 'ranked-choice'
-      ? `${option.rankedVoteScore ?? 0} pts`
+      ? `${option.rankedVoteScore ?? 0} ${maybePluralize(
+          'pt',
+          option.rankedVoteScore ?? 0
+        )}`
       : `${option.votes} ${maybePluralize('vote', option.votes)}`
 
   return (
