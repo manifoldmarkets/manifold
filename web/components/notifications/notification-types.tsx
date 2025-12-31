@@ -2295,7 +2295,10 @@ function AIDescriptionUpdateNotification(props: {
   isChildOfGroup?: boolean
 }) {
   const { notification, isChildOfGroup, highlighted, setHighlighted } = props
-  const { sourceContractTitle } = notification
+  const { sourceContractTitle, sourceText, data } = notification
+  const isPending = (data as { isPendingClarification?: boolean })
+    ?.isPendingClarification
+
   return (
     <NotificationFrame
       notification={notification}
@@ -2305,16 +2308,32 @@ function AIDescriptionUpdateNotification(props: {
       icon={
         <NotificationIcon
           symbol={'🤖'}
-          symbolBackgroundClass="bg-gradient-to-br from-blue-500 to-blue-200"
+          symbolBackgroundClass={
+            isPending
+              ? 'bg-gradient-to-br from-amber-500 to-amber-200'
+              : 'bg-gradient-to-br from-blue-500 to-blue-200'
+          }
         />
       }
       link={getSourceUrl(notification)}
+      subtitle={sourceText}
     >
       <div className="line-clamp-3">
-        <span>
-          Our AI added a clarification to the description of{' '}
-          <PrimaryNotificationLink text={sourceContractTitle} />
-        </span>
+        {isPending ? (
+          <span>
+            We identified a potential clarification
+            {isChildOfGroup
+              ? ''
+              : ' for ' +
+                <PrimaryNotificationLink text={sourceContractTitle} />}
+            . It will auto-apply in 1 hour if you don't dismiss it.
+          </span>
+        ) : (
+          <span>
+            Our AI added a clarification to the description of{' '}
+            <PrimaryNotificationLink text={sourceContractTitle} />
+          </span>
+        )}
       </div>
     </NotificationFrame>
   )

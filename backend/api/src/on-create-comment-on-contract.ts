@@ -11,7 +11,10 @@ import {
 } from 'common/util/parse'
 import { compact } from 'lodash'
 import { insertModReport } from 'shared/create-mod-report'
-import { replied_users_info } from 'shared/create-notification'
+import {
+  createPendingClarificationNotification,
+  replied_users_info,
+} from 'shared/create-notification'
 import { aiModels, promptAI } from 'shared/helpers/prompt-ai'
 import { createCommentOnContractNotification } from 'shared/notifications/create-new-contract-comment-notif'
 import { getAnswer } from 'shared/supabase/answers'
@@ -393,6 +396,13 @@ Only return the raw JSON object without any markdown code blocks, backticks, add
 
       // Broadcast to frontend so creator sees it immediately
       broadcastNewPendingClarification(contract.id, pendingClarification)
+
+      // Notify creator about pending clarification (just the text, not the preamble)
+      await createPendingClarificationNotification(
+        contract,
+        formattedDescription,
+        pg
+      )
 
       log('Pending clarification created:', {
         contractId: contract.id,

@@ -1807,3 +1807,33 @@ export const createAIDescriptionUpdateNotification = async (
   const pg = createSupabaseDirectClient()
   await insertNotificationToSupabase(notification, pg)
 }
+
+export const createPendingClarificationNotification = async (
+  contract: Contract,
+  clarificationText: string,
+  pg: SupabaseDirectClient
+) => {
+  const notification: Notification = {
+    id: nanoid(6),
+    userId: contract.creatorId,
+    reason: 'admin',
+    createdTime: Date.now(),
+    isSeen: false,
+    sourceId: contract.id,
+    sourceType: 'contract',
+    sourceUpdateType: 'updated',
+    sourceContractId: contract.id,
+    sourceUserName: 'Manifold AI',
+    sourceUserUsername: 'ManifoldAI',
+    sourceUserAvatarUrl: 'https://manifold.markets/logo.svg',
+    sourceText: clarificationText,
+    sourceContractTitle: contract.question,
+    sourceContractCreatorUsername: contract.creatorUsername,
+    sourceContractSlug: contract.slug,
+    data: {
+      isPendingClarification: true,
+    },
+  }
+
+  await insertNotificationToSupabase(notification, pg)
+}
