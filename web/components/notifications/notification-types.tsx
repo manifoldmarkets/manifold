@@ -2322,10 +2322,12 @@ function AIDescriptionUpdateNotification(props: {
         {isPending ? (
           <span>
             We identified a potential clarification
-            {isChildOfGroup
-              ? ''
-              : ' for ' +
-                <PrimaryNotificationLink text={sourceContractTitle} />}
+            {isChildOfGroup ? null : (
+              <>
+                {' for '}
+                <PrimaryNotificationLink text={sourceContractTitle} />
+              </>
+            )}
             . It will auto-apply in 1 hour if you don't dismiss it.
           </span>
         ) : (
