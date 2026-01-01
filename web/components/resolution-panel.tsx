@@ -78,10 +78,36 @@ export function ResolutionPanel(props: {
       onClose()
     } catch (e) {
       if (e instanceof APIError) {
-        setError(e.message.toString())
+        const message = e.message.toString()
+        // Check for serialization errors and display friendly message
+        if (
+          message.toLowerCase().includes('could not serialize access') ||
+          message
+            .toLowerCase()
+            .includes('serialize access due to read/write dependencies')
+        ) {
+          setError(
+            'The server is busy. Please try resolving again in a moment.'
+          )
+        } else {
+          setError(message)
+        }
       } else {
-        console.error(e)
-        setError('Error resolving question')
+        // Also check non-APIError cases (raw database errors)
+        const errorMessage = String(e)
+        if (
+          errorMessage.toLowerCase().includes('could not serialize access') ||
+          errorMessage
+            .toLowerCase()
+            .includes('serialize access due to read/write dependencies')
+        ) {
+          setError(
+            'The server is busy. Please try resolving again in a moment.'
+          )
+        } else {
+          console.error(e)
+          setError('Error resolving question')
+        }
       }
     } finally {
       setIsSubmitting(false)
@@ -262,10 +288,36 @@ export function MiniResolutionPanel(props: {
       )
     } catch (e) {
       if (e instanceof APIError) {
-        setError(e.toString())
+        const message = e.message.toString()
+        // Check for serialization errors and display friendly message
+        if (
+          message.toLowerCase().includes('could not serialize access') ||
+          message
+            .toLowerCase()
+            .includes('serialize access due to read/write dependencies')
+        ) {
+          setError(
+            'The server is busy. Please try resolving again in a moment.'
+          )
+        } else {
+          setError(message)
+        }
       } else {
-        console.error(e)
-        setError('Error resolving question')
+        // Also check non-APIError cases (raw database errors)
+        const errorMessage = String(e)
+        if (
+          errorMessage.toLowerCase().includes('could not serialize access') ||
+          errorMessage
+            .toLowerCase()
+            .includes('serialize access due to read/write dependencies')
+        ) {
+          setError(
+            'The server is busy. Please try resolving again in a moment.'
+          )
+        } else {
+          console.error(e)
+          setError('Error resolving question')
+        }
       }
     }
 

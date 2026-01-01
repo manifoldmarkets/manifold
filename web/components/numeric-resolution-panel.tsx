@@ -58,10 +58,36 @@ export function NumericResolutionPanel(props: {
       })
     } catch (e) {
       if (e instanceof APIError) {
-        setError(e.toString())
+        const message = e.message.toString()
+        // Check for serialization errors and display friendly message
+        if (
+          message.toLowerCase().includes('could not serialize access') ||
+          message
+            .toLowerCase()
+            .includes('serialize access due to read/write dependencies')
+        ) {
+          setError(
+            'The server is busy. Please try resolving again in a moment.'
+          )
+        } else {
+          setError(message)
+        }
       } else {
-        console.error(e)
-        setError('Error resolving market')
+        // Also check non-APIError cases (raw database errors)
+        const errorMessage = String(e)
+        if (
+          errorMessage.toLowerCase().includes('could not serialize access') ||
+          errorMessage
+            .toLowerCase()
+            .includes('serialize access due to read/write dependencies')
+        ) {
+          setError(
+            'The server is busy. Please try resolving again in a moment.'
+          )
+        } else {
+          console.error(e)
+          setError('Error resolving market')
+        }
       }
     }
 
