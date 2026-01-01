@@ -951,7 +951,7 @@ export function NewContractPanel(props: {
             ←
           </button>
           <h1 className="text-ink-900 text-xl font-semibold">
-            Create a Question
+            Create a market
           </h1>
         </Row>
       </Row>

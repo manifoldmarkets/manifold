@@ -49,7 +49,7 @@ export default function Create() {
       <Page trackPageView={'banned from create page'}>
         <div className="mx-auto w-full max-w-2xl">
           <div className="rounded-lg px-6 py-4 sm:py-0">
-            <Title>Create a question</Title>
+            <Title>Create a market</Title>
             <p>Sorry, you are currently banned from creating a question.</p>
           </div>
         </div>

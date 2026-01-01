@@ -15,7 +15,7 @@ const COMMAND_REGEXP = new RegExp(/!([a-zA-Z0-9]+)\s?([\s\S]*)?/);
 
 /* cSpell:enable */
 const MSG_NOT_ENOUGH_MANA_CREATE_MARKET = (username: string, balance: number) =>
-  `Sorry ${username}, the owner of this channel doesn't have enough Mana (M$${Math.floor(balance).toFixed(0)}/M$100) to create a question LUL`;
+  `Sorry ${username}, the owner of this channel doesn't have enough Mana (M$${Math.floor(balance).toFixed(0)}/M$100) to create a market LUL`;
 const MSG_NOT_ENOUGH_MANA_PLACE_BET = (username: string) => `Sorry ${username}, you don't have enough Mana to place that bet`;
 const MSG_SIGNUP = (username: string) => `Hello ${username}! Click here to play: ${MANIFOLD_SIGNUP_URL}!`;
 const MSG_HELP = () => `Check out the full list of commands and how to play here: ${MANIFOLD_SIGNUP_URL}`;

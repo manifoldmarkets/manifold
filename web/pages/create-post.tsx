@@ -201,7 +201,7 @@ export function CreatePostForm(props: {
               href="/create"
               className={clsx(linkClass, 'text-primary-700')}
             >
-              create a question
+              create a market
             </Link>{' '}
             instead?
           </p>

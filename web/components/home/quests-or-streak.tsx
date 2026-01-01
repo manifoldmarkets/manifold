@@ -138,7 +138,7 @@ export function QuestsModal(props: {
           <Row className={'text-primary-700'}>Weekly</Row>
           <QuestRow
             emoji={'📈'}
-            title={`Create a question this week`}
+            title={`Create a market this week`}
             complete={createStatus.currentCount >= createStatus.requiredCount}
             status={`(${createStatus.currentCount}/${createStatus.requiredCount})`}
             reward={QUEST_DETAILS.MARKETS_CREATED.rewardAmount}

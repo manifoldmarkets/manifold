@@ -18,7 +18,7 @@ export const CreateQuestionButton = (props: {
       )}
     >
       <span>
-        Create <span className="lg:hidden xl:inline">a</span> question
+        Create <span className="lg:hidden xl:inline">a</span> market
       </span>
     </Link>
   )

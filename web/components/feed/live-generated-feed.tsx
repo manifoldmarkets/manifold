@@ -130,7 +130,7 @@ export function LiveGeneratedFeed(props: { userId: string; hidden?: boolean }) {
             Browse new questions
           </Link>
           <Link href="/create" className="text-primary-700 hover:underline">
-            Create a question
+            Create a market
           </Link>
         </div>
       )}
