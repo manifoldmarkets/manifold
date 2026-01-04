@@ -383,6 +383,14 @@ export default function AdminUserInfoPage() {
                               [DELETED]
                             </span>
                           )}
+                          {(user as any).isBannedFromPosting && (
+                            <span
+                              className="ml-2 text-xs text-orange-600"
+                              title={(user as any).banReason ?? 'No reason provided'}
+                            >
+                              [BANNED]
+                            </span>
+                          )}
                         </div>
                         <div className="text-ink-600 text-sm">
                           @{user.username}
@@ -618,6 +626,14 @@ export default function AdminUserInfoPage() {
                                   {visibleUser.userDeleted && (
                                     <span className="ml-2 text-xs text-red-600">
                                       [DELETED]
+                                    </span>
+                                  )}
+                                  {visibleUser.isBannedFromPosting && (
+                                    <span
+                                      className="ml-2 text-xs text-orange-600"
+                                      title={(visibleUser as any).banReason ?? 'No reason provided'}
+                                    >
+                                      [BANNED]
                                     </span>
                                   )}
                                 </div>

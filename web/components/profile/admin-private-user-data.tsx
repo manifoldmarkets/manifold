@@ -119,6 +119,9 @@ function RelatedUserRow(props: {
             {user.userDeleted && (
               <span className="ml-1 text-xs text-red-600">[DEL]</span>
             )}
+            {user.isBannedFromPosting && (
+              <span className="ml-1 text-xs text-orange-600">[BAN]</span>
+            )}
             <span className="text-ink-500 ml-1 truncate">@{user.username}</span>
           </div>
         </Link>
