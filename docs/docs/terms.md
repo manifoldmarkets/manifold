@@ -1,6 +1,6 @@
 # Terms of Service
 
-Last updated July 21st, 2025
+Last updated January 4th, 2026
 
 **1. AGREEMENT TO TERMS**
 
@@ -108,7 +108,11 @@ As a user of the Site, you agree not to:
 
 ● Except as permitted by applicable law, decipher, decompile, disassemble, or reverse engineer any of the software comprising or in any way making up a part of the Site.
 
-● Except as may be the result of (a) standard search engine or Internet browser usage, or (b) authorized use of our public API to build bots or automated systems that trade, comment, create markets, or otherwise contribute to the Site in accordance with our API terms and rate limits, use, launch, develop, or distribute any automated system, including without limitation, any spider, cheat utility, scraper, or offline reader that accesses the Site in an unauthorized manner, or using or launching any unauthorized script or other software designed to circumvent security measures, abuse Site resources, or otherwise violate these Terms.
+● **Permitted API and Bot Usage.** You may use our public API to build bots, automated systems, or algorithmic tools that trade, comment, create markets, or otherwise interact with the Site, provided that such usage complies with our API terms, rate limits, and these Terms of Use. Standard search engine and Internet browser usage is also permitted.
+
+● **Prohibited Scraping and Unauthorized Access.** Except through authorized use of our public API, you may not use, launch, develop, or distribute any automated system, including without limitation, any spider, cheat utility, scraper, crawler, or offline reader that accesses the Site. You may not scrape, crawl, or otherwise extract data from the Site through any means other than our public API. Using or launching any unauthorized script or other software designed to circumvent security measures, abuse Site resources, or otherwise violate these Terms is prohibited.
+
+● **AI Training Data Restrictions.** You may not use data obtained from the Site or through our API to train artificial intelligence or machine learning models for commercial purposes without first obtaining a data license from us. This restriction applies to training models that will be sold, licensed, or used to provide commercial services, including large language models, prediction systems, or other AI products. Academic research, personal projects, and non-commercial use are permitted. If you are interested in licensing Manifold data for commercial AI training, please contact us at **data@manifold.markets**.
 
 ● Use a buying agent or purchasing agent to make purchases on the Site.
 
