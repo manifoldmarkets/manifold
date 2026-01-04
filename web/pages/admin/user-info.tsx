@@ -386,7 +386,9 @@ export default function AdminUserInfoPage() {
                           {(user as any).isBannedFromPosting && (
                             <span
                               className="ml-2 text-xs text-orange-600"
-                              title={(user as any).banReason ?? 'No reason provided'}
+                              title={
+                                (user as any).banReason ?? 'No reason provided'
+                              }
                             >
                               [BANNED]
                             </span>
@@ -631,7 +633,10 @@ export default function AdminUserInfoPage() {
                                   {visibleUser.isBannedFromPosting && (
                                     <span
                                       className="ml-2 text-xs text-orange-600"
-                                      title={(visibleUser as any).banReason ?? 'No reason provided'}
+                                      title={
+                                        (visibleUser as any).banReason ??
+                                        'No reason provided'
+                                      }
                                     >
                                       [BANNED]
                                     </span>
