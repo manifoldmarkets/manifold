@@ -62,7 +62,9 @@ function PriceSection(props: {
 }) {
   const { liquidityTier, setLiquidityTier, numAnswers, outcomeType } = props
 
-  const bonus = getUniqueBettorBonusAmount(liquidityTier, numAnswers ?? 0)
+  // Use actual ante (which accounts for extra liquidity from many answers) for bonus calculation
+  const ante = getAnte(outcomeType, numAnswers, liquidityTier)
+  const bonus = getUniqueBettorBonusAmount(ante, numAnswers ?? 0)
 
   return (
     <Col className="w-full gap-2">
