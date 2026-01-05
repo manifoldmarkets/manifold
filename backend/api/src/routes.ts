@@ -45,6 +45,7 @@ import { addLiquidity } from './add-liquidity'
 import { addOrRemoveTopicFromContract } from './add-topic-to-market'
 import { addOrRemoveTopicFromTopic } from './add-topic-to-topic'
 import { awardBounty } from './award-bounty'
+import { banuser } from './ban-user'
 import { blockGroup, unblockGroup } from './block-group'
 import { blockMarket, unblockMarket } from './block-market'
 import { blockUser, unblockUser } from './block-user'
@@ -60,6 +61,7 @@ import { createManalink } from './create-manalink'
 import { createMarket } from './create-market'
 import { deleteGroup } from './delete-group'
 import { deleteMe } from './delete-me'
+import { dismissmodalert } from './dismiss-mod-alert'
 import { donate } from './donate'
 import { fetchLinkPreview } from './fetch-link-preview'
 import { followContract } from './follow-contract'
@@ -308,6 +310,8 @@ export const handlers: { [k in APIPath]: APIHandler<k> } = {
   'get-related-markets': getRelatedMarkets,
   'get-related-markets-by-group': getRelatedMarketsByGroup,
   'get-market-context': getMarketContext,
+  'ban-user': banuser,
+  'dismiss-mod-alert': dismissmodalert,
   'super-ban-user': superBanUser,
   'get-boost-analytics': getBoostAnalytics,
   'set-news': setnews,

@@ -168,6 +168,18 @@ export const fetchContractBetDataAndValidate = async (
   ) {
     throw new APIError(403, 'You are banned or deleted. And not #blessed.')
   }
+
+  // Check new granular trading ban
+  if (!isAdminTrade) {
+    const { isUserBanned, getUserBanMessage } = await import('common/ban-utils')
+    if (isUserBanned(user, 'trading')) {
+      const message = getUserBanMessage(user, 'trading')
+      const errorMsg = message
+        ? `You are banned from trading. Reason: ${message}`
+        : 'You are banned from trading'
+      throw new APIError(403, errorMsg)
+    }
+  }
   if (contract.outcomeType === 'STONK' && isApi) {
     throw new APIError(403, 'API users cannot bet on STONK contracts.')
   }

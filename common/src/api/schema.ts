@@ -1412,6 +1412,47 @@ export const API = (_apiTypeCheck = {
       context: JSONContent | undefined
     },
   },
+  'ban-user': {
+    method: 'POST',
+    visibility: 'undocumented',
+    authed: true,
+    props: z
+      .object({
+        userId: z.string(),
+        unban: z.boolean().optional(),
+        unbanTime: z.number().optional(),
+        bans: z
+          .object({
+            posting: z.boolean().optional(),
+            marketControl: z.boolean().optional(),
+            trading: z.boolean().optional(),
+          })
+          .optional(),
+        unbanTimes: z
+          .object({
+            posting: z.number().optional(),
+            marketControl: z.number().optional(),
+            trading: z.number().optional(),
+          })
+          .optional(),
+        reason: z.string().optional(),
+        modAlert: z
+          .object({
+            message: z.string(),
+          })
+          .optional(),
+        unbanNote: z.string().optional(), // mod notes when removing a ban (not shown to user)
+      })
+      .strict(),
+    returns: {} as { success: boolean },
+  },
+  'dismiss-mod-alert': {
+    method: 'POST',
+    visibility: 'undocumented',
+    authed: true,
+    props: z.object({}).strict(),
+    returns: {} as { success: boolean },
+  },
   'super-ban-user': {
     method: 'POST',
     visibility: 'undocumented',

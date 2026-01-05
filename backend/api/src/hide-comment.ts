@@ -9,6 +9,7 @@ import { createSupabaseDirectClient } from 'shared/supabase/init'
 import { updateData } from 'shared/supabase/utils'
 import { APIError, type APIHandler } from './helpers/endpoint'
 import { trackPublicEvent } from 'shared/analytics'
+import { isUserBanned } from 'common/ban-utils'
 
 export const hideComment: APIHandler<'hide-comment'> = async (
   { commentPath, action = 'hide' },
@@ -26,10 +27,12 @@ export const hideComment: APIHandler<'hide-comment'> = async (
   const pg = createSupabaseDirectClient()
   const user = await getUser(auth.uid)
   if (!user) throw new APIError(404, 'User not found')
-  if (user.isBannedFromPosting || user.userDeleted)
+  if (user.userDeleted)
+    throw new APIError(403, 'Your account has been deleted')
+  if (user.isBannedFromPosting || isUserBanned(user, 'marketControl'))
     throw new APIError(
       403,
-      'You are banned from posting or your account has been deleted'
+      'You are banned from hiding/unhiding comments on your markets'
     )
 
   const contract = await getContract(pg, contractId)

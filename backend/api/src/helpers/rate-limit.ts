@@ -2,6 +2,11 @@ import { APIError, APIHandler } from 'api/helpers/endpoint'
 import { APIPath } from 'common/api/schema'
 import { HOUR_MS } from 'common/util/time'
 import { getUser } from 'shared/utils'
+import {
+  isUserBanned,
+  getUserBanMessage,
+  getBanTypesForAction,
+} from 'common/ban-utils'
 
 type RateLimitOptions = {
   maxCalls?: number // Maximum number of calls allowed in the time window
@@ -70,6 +75,36 @@ export const onlyUnbannedUsers = <N extends APIPath>(f: APIHandler<N>) => {
     }
     if (user.userDeleted) {
       throw new APIError(403, 'Your account has been deleted')
+    }
+
+    return f(props, auth, req)
+  }
+}
+
+// New granular ban check
+export const onlyUsersWhoCanPerformAction = <N extends APIPath>(
+  action: string,
+  f: APIHandler<N>
+) => {
+  return async (props: any, auth: any, req: any) => {
+    const user = await getUser(auth.uid)
+    if (!user) {
+      throw new APIError(404, 'User not found')
+    }
+    if (user.userDeleted) {
+      throw new APIError(403, 'Your account has been deleted')
+    }
+
+    // Check all relevant ban types for this action
+    const banTypes = getBanTypesForAction(action)
+    for (const banType of banTypes) {
+      if (isUserBanned(user, banType)) {
+        const message = getUserBanMessage(user, banType)
+        const errorMsg = message
+          ? `You are banned from ${action}. Reason: ${message}`
+          : `You are banned from ${action}`
+        throw new APIError(403, errorMsg)
+      }
     }
 
     return f(props, auth, req)

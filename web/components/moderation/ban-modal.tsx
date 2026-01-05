@@ -1,0 +1,626 @@
+import { useState, useEffect } from 'react'
+import { toast } from 'react-hot-toast'
+import { ChevronDownIcon, ChevronUpIcon } from '@heroicons/react/outline'
+import { User, UnbanRecord } from 'common/user'
+import {
+  BanType,
+  formatBanTimeRemaining,
+  getActiveBans,
+  getBanTimeRemaining,
+} from 'common/ban-utils'
+import { DAY_MS } from 'common/util/time'
+import { Button } from 'web/components/buttons/button'
+import { Col } from 'web/components/layout/col'
+import { Row } from 'web/components/layout/row'
+import { Modal } from 'web/components/layout/modal'
+import { Input } from 'web/components/widgets/input'
+import { Title } from 'web/components/widgets/title'
+import { api } from 'web/lib/api/api'
+import { getUserById } from 'web/lib/supabase/users'
+
+export function BanModal({
+  user,
+  isOpen,
+  onClose,
+}: {
+  user: User
+  isOpen: boolean
+  onClose: () => void
+}) {
+  const [banTypes, setBanTypes] = useState({
+    posting: false,
+    marketControl: false,
+    trading: false,
+  })
+
+  const [tempBanDays, setTempBanDays] = useState<{
+    posting?: number
+    marketControl?: number
+    trading?: number
+  }>({})
+
+  const [reason, setReason] = useState('')
+  const [modAlertOnly, setModAlertOnly] = useState(false)
+  const [isSubmitting, setIsSubmitting] = useState(false)
+  const [showCurrentBans, setShowCurrentBans] = useState(true)
+  const [showBanHistory, setShowBanHistory] = useState(false)
+  const [modNames, setModNames] = useState<Record<string, string>>({})
+
+  // Unban confirmation modal state
+  const [unbanModalOpen, setUnbanModalOpen] = useState(false)
+  const [unbanBanType, setUnbanBanType] = useState<BanType | null>(null)
+  const [unbanNote, setUnbanNote] = useState('')
+
+  // Fetch mod names for current bans
+  const activeBans = getActiveBans(user)
+  const hasCurrentBansOrAlerts =
+    activeBans.length > 0 || (user.modAlert && !user.modAlert.dismissed)
+
+  useEffect(() => {
+    const modIds = new Set<string>()
+
+    // Collect mod IDs from bans
+    if (user.bans?.posting?.bannedBy) modIds.add(user.bans.posting.bannedBy)
+    if (user.bans?.marketControl?.bannedBy)
+      modIds.add(user.bans.marketControl.bannedBy)
+    if (user.bans?.trading?.bannedBy) modIds.add(user.bans.trading.bannedBy)
+    if (user.modAlert?.createdBy) modIds.add(user.modAlert.createdBy)
+
+    // Collect mod IDs from ban history
+    if (user.banHistory) {
+      for (const record of user.banHistory) {
+        if (record.bannedBy) modIds.add(record.bannedBy)
+        if (record.unbannedBy && record.unbannedBy !== 'system')
+          modIds.add(record.unbannedBy)
+      }
+    }
+
+    // Fetch usernames for all mod IDs
+    const fetchModNames = async () => {
+      const names: Record<string, string> = {}
+      for (const modId of modIds) {
+        try {
+          const modUser = await getUserById(modId)
+          if (modUser) {
+            names[modId] = modUser.username
+          }
+        } catch (e) {
+          // Ignore errors
+        }
+      }
+      setModNames(names)
+    }
+
+    if (modIds.size > 0) {
+      fetchModNames()
+    }
+  }, [user])
+
+  const handleSubmit = async () => {
+    if (!reason.trim()) {
+      toast.error('Please provide a reason')
+      return
+    }
+
+    setIsSubmitting(true)
+    try {
+      const unbanTimes: Record<string, number | undefined> = {}
+      if (tempBanDays.posting) {
+        unbanTimes.posting = Date.now() + tempBanDays.posting * DAY_MS
+      }
+      if (tempBanDays.marketControl) {
+        unbanTimes.marketControl =
+          Date.now() + tempBanDays.marketControl * DAY_MS
+      }
+      if (tempBanDays.trading) {
+        unbanTimes.trading = Date.now() + tempBanDays.trading * DAY_MS
+      }
+
+      await api('ban-user', {
+        userId: user.id,
+        bans: modAlertOnly ? undefined : banTypes,
+        unbanTimes: modAlertOnly ? undefined : unbanTimes,
+        reason: reason.trim(),
+        // Only send mod alert when "mod alert only" is checked, not when banning
+        modAlert: modAlertOnly ? { message: reason.trim() } : undefined,
+      })
+
+      toast.success(modAlertOnly ? 'Mod alert sent' : 'Ban updated successfully')
+      onClose()
+      // Reload page to refresh user data
+      window.location.reload()
+    } catch (error) {
+      toast.error('Failed to update ban: ' + (error as Error).message)
+    } finally {
+      setIsSubmitting(false)
+    }
+  }
+
+  const openUnbanModal = (banType: BanType) => {
+    setUnbanBanType(banType)
+    setUnbanNote('')
+    setUnbanModalOpen(true)
+  }
+
+  const handleUnban = async () => {
+    if (!unbanBanType) return
+    setIsSubmitting(true)
+    try {
+      await api('ban-user', {
+        userId: user.id,
+        bans: { [unbanBanType]: false },
+        unbanNote: unbanNote.trim() || undefined,
+      })
+      toast.success(`Removed ${unbanBanType} ban`)
+      setUnbanModalOpen(false)
+      window.location.reload()
+    } catch (error) {
+      toast.error('Failed to remove ban: ' + (error as Error).message)
+    } finally {
+      setIsSubmitting(false)
+    }
+  }
+
+  const handleClearAlert = async () => {
+    setIsSubmitting(true)
+    try {
+      await api('dismiss-mod-alert', {})
+      toast.success('Cleared mod alert')
+      window.location.reload()
+    } catch (error) {
+      toast.error('Failed to clear alert: ' + (error as Error).message)
+    } finally {
+      setIsSubmitting(false)
+    }
+  }
+
+  const anyBanSelected = Object.values(banTypes).some((v) => v)
+
+  return (
+    <Modal open={isOpen} setOpen={onClose}>
+      <Col className="bg-canvas-0 max-w-2xl gap-4 rounded-md p-6">
+        <Title>Ban User: {user.name}</Title>
+
+        {/* Current Bans/Alerts Section */}
+        {hasCurrentBansOrAlerts && (
+          <div className="border-ink-200 rounded border">
+            <button
+              className="flex w-full items-center justify-between p-3 text-left"
+              onClick={() => setShowCurrentBans(!showCurrentBans)}
+            >
+              <span className="font-semibold">
+                Current Bans/Alerts ({activeBans.length} ban
+                {activeBans.length !== 1 ? 's' : ''}
+                {user.modAlert && !user.modAlert.dismissed ? ', 1 alert' : ''})
+              </span>
+              {showCurrentBans ? (
+                <ChevronUpIcon className="h-5 w-5" />
+              ) : (
+                <ChevronDownIcon className="h-5 w-5" />
+              )}
+            </button>
+            {showCurrentBans && (
+              <div className="border-ink-200 space-y-3 border-t p-3">
+                {activeBans.map((banType) => {
+                  const ban = user.bans?.[banType]
+                  if (!ban) return null
+                  const timeRemaining = getBanTimeRemaining(user, banType)
+                  const modName = ban.bannedBy
+                    ? modNames[ban.bannedBy] || ban.bannedBy
+                    : 'Unknown'
+                  return (
+                    <div
+                      key={banType}
+                      className="rounded border border-red-300 bg-red-50 p-2"
+                    >
+                      <Row className="items-center justify-between">
+                        <span className="font-medium text-red-900">
+                          {banType === 'posting'
+                            ? 'Posting Ban'
+                            : banType === 'marketControl'
+                              ? 'Market Control Ban'
+                              : 'Trading Ban'}
+                        </span>
+                        <Row className="items-center gap-2">
+                          <span className="text-sm text-red-700">
+                            {timeRemaining
+                              ? `Expires in ${formatBanTimeRemaining(timeRemaining)}`
+                              : 'Permanent'}
+                          </span>
+                          <Button
+                            color="gray-outline"
+                            size="2xs"
+                            onClick={() => openUnbanModal(banType)}
+                          >
+                            Remove
+                          </Button>
+                        </Row>
+                      </Row>
+                      <p className="mt-1 text-sm text-red-800">
+                        Reason: {ban.reason}
+                      </p>
+                      <p className="text-ink-500 mt-1 text-xs">
+                        Banned by: @{modName} on{' '}
+                        {new Date(ban.bannedAt).toLocaleDateString()}
+                      </p>
+                    </div>
+                  )
+                })}
+                {user.modAlert && !user.modAlert.dismissed && (
+                  <div className="rounded border border-yellow-300 bg-yellow-50 p-2">
+                    <Row className="items-center justify-between">
+                      <span className="font-medium text-yellow-900">
+                        Active Mod Alert
+                      </span>
+                      <Button
+                        color="gray-outline"
+                        size="2xs"
+                        loading={isSubmitting}
+                        onClick={handleClearAlert}
+                      >
+                        Clear
+                      </Button>
+                    </Row>
+                    <p className="mt-1 text-sm text-yellow-800">
+                      Message: {user.modAlert.message}
+                    </p>
+                    <p className="text-ink-500 mt-1 text-xs">
+                      Sent by: @
+                      {user.modAlert.createdBy
+                        ? modNames[user.modAlert.createdBy] ||
+                          user.modAlert.createdBy
+                        : 'Unknown'}{' '}
+                      on {new Date(user.modAlert.createdAt).toLocaleDateString()}
+                    </p>
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* Mod Alert Only Toggle */}
+        <Row className="items-center gap-2">
+          <input
+            type="checkbox"
+            checked={modAlertOnly}
+            onChange={(e) => setModAlertOnly(e.target.checked)}
+            className="h-4 w-4"
+          />
+          <span className="text-ink-800 text-sm font-medium">
+            Send mod alert without banning
+          </span>
+        </Row>
+
+        {!modAlertOnly && (
+          <>
+            {/* Ban Type Toggles */}
+            <div className="border-ink-200 space-y-3 rounded border p-4">
+              <h3 className="font-semibold">Ban Types</h3>
+
+              <BanTypeToggle
+                label="Posting Ban"
+                description="No commenting, creating posts, or messaging"
+                checked={banTypes.posting}
+                onChange={(checked) =>
+                  setBanTypes({ ...banTypes, posting: checked })
+                }
+                tempDays={tempBanDays.posting}
+                onTempDaysChange={(days) =>
+                  setTempBanDays({ ...tempBanDays, posting: days })
+                }
+              />
+
+              <BanTypeToggle
+                label="Market Control Ban"
+                description="No creating, editing, resolving markets, or hiding comments"
+                checked={banTypes.marketControl}
+                onChange={(checked) =>
+                  setBanTypes({ ...banTypes, marketControl: checked })
+                }
+                tempDays={tempBanDays.marketControl}
+                onTempDaysChange={(days) =>
+                  setTempBanDays({ ...tempBanDays, marketControl: days })
+                }
+              />
+
+              <BanTypeToggle
+                label="Trading Ban"
+                description="No trading, managrams, or liquidity changes"
+                checked={banTypes.trading}
+                onChange={(checked) =>
+                  setBanTypes({ ...banTypes, trading: checked })
+                }
+                tempDays={tempBanDays.trading}
+                onTempDaysChange={(days) =>
+                  setTempBanDays({ ...tempBanDays, trading: days })
+                }
+              />
+            </div>
+          </>
+        )}
+
+        {/* Ban Reason / Mod Alert */}
+        <Col className="gap-2">
+          <label className="text-ink-800 font-medium">
+            {modAlertOnly ? 'Mod Alert Message' : 'Ban Reason (shown to user)'}
+            <span className="text-red-600">*</span>
+          </label>
+          <textarea
+            value={reason}
+            onChange={(e) => setReason(e.target.value)}
+            placeholder={
+              modAlertOnly
+                ? 'Enter message to show user...'
+                : 'Explain why this user is being banned...'
+            }
+            className="border-ink-300 min-h-[100px] rounded border p-2"
+          />
+        </Col>
+
+        {/* Preview */}
+        {(anyBanSelected || modAlertOnly) && reason.trim() && (
+          <div className="rounded border-2 border-red-500 bg-red-50 p-4">
+            <h4 className="mb-2 font-semibold text-red-900">
+              Preview (User will see):
+            </h4>
+            <BanBannerPreview
+              banTypes={banTypes}
+              tempBanDays={tempBanDays}
+              reason={reason}
+              modAlertOnly={modAlertOnly}
+            />
+          </div>
+        )}
+
+        {/* Ban History Section */}
+        {user.banHistory && user.banHistory.length > 0 && (
+          <div className="border-ink-200 rounded border">
+            <button
+              className="flex w-full items-center justify-between p-3 text-left"
+              onClick={() => setShowBanHistory(!showBanHistory)}
+            >
+              <span className="font-semibold">
+                Ban History ({user.banHistory.length} record
+                {user.banHistory.length !== 1 ? 's' : ''})
+              </span>
+              {showBanHistory ? (
+                <ChevronUpIcon className="h-5 w-5" />
+              ) : (
+                <ChevronDownIcon className="h-5 w-5" />
+              )}
+            </button>
+            {showBanHistory && (
+              <div className="border-ink-200 space-y-3 border-t p-3">
+                {[...user.banHistory].reverse().map((record, idx) => (
+                  <BanHistoryRecord
+                    key={idx}
+                    record={record}
+                    modNames={modNames}
+                  />
+                ))}
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* Actions */}
+        <Row className="gap-2">
+          <Button
+            color="red"
+            disabled={!reason.trim() || (!anyBanSelected && !modAlertOnly)}
+            loading={isSubmitting}
+            onClick={handleSubmit}
+          >
+            {modAlertOnly ? 'Send Alert' : 'Apply Ban'}
+          </Button>
+          <Button color="gray-white" onClick={onClose}>
+            Cancel
+          </Button>
+        </Row>
+      </Col>
+
+      {/* Unban Confirmation Modal */}
+      <Modal open={unbanModalOpen} setOpen={setUnbanModalOpen}>
+        <Col className="bg-canvas-0 gap-4 rounded-md p-6">
+          <Title>Remove Ban</Title>
+          <p className="text-ink-700">
+            Remove the{' '}
+            <strong>
+              {unbanBanType === 'posting'
+                ? 'Posting'
+                : unbanBanType === 'marketControl'
+                  ? 'Market Control'
+                  : 'Trading'}
+            </strong>{' '}
+            ban from {user.name}?
+          </p>
+          <Col className="gap-2">
+            <label className="text-ink-700 text-sm font-medium">
+              Mod Note (optional, not shown to user)
+            </label>
+            <textarea
+              value={unbanNote}
+              onChange={(e) => setUnbanNote(e.target.value)}
+              placeholder="Write a note for future reference..."
+              className="border-ink-300 min-h-[80px] rounded border p-2 text-sm"
+            />
+          </Col>
+          <Row className="gap-2">
+            <Button
+              color="green"
+              loading={isSubmitting}
+              onClick={handleUnban}
+            >
+              Remove Ban
+            </Button>
+            <Button
+              color="gray-white"
+              onClick={() => setUnbanModalOpen(false)}
+            >
+              Cancel
+            </Button>
+          </Row>
+        </Col>
+      </Modal>
+    </Modal>
+  )
+}
+
+function BanTypeToggle({
+  label,
+  description,
+  checked,
+  onChange,
+  tempDays,
+  onTempDaysChange,
+}: {
+  label: string
+  description: string
+  checked: boolean
+  onChange: (checked: boolean) => void
+  tempDays?: number
+  onTempDaysChange: (days?: number) => void
+}) {
+  return (
+    <div className="border-ink-300 border-l-4 pl-3">
+      <Row className="mb-1 items-center gap-2">
+        <input
+          type="checkbox"
+          checked={checked}
+          onChange={(e) => onChange(e.target.checked)}
+          className="h-4 w-4"
+        />
+        <span className="font-medium">{label}</span>
+      </Row>
+      <p className="text-ink-600 mb-2 text-sm">{description}</p>
+      {checked && (
+        <Row className="ml-6 items-center gap-2">
+          <span className="text-sm">Temporary ban (days):</span>
+          <Input
+            type="number"
+            min="0"
+            placeholder="Permanent"
+            value={tempDays || ''}
+            onChange={(e) =>
+              onTempDaysChange(e.target.value ? parseInt(e.target.value) : undefined)
+            }
+            className="w-24"
+          />
+          <span className="text-ink-500 text-sm">
+            {tempDays ? `Expires in ${tempDays} days` : 'Permanent ban'}
+          </span>
+        </Row>
+      )}
+    </div>
+  )
+}
+
+function BanBannerPreview({
+  banTypes,
+  tempBanDays,
+  reason,
+  modAlertOnly,
+}: {
+  banTypes: Record<string, boolean>
+  tempBanDays: Record<string, number | undefined>
+  reason: string
+  modAlertOnly: boolean
+}) {
+  const activeBans = Object.entries(banTypes).filter(([_, active]) => active)
+
+  return (
+    <div className="rounded bg-white p-3">
+      <h3 className="mb-2 font-bold text-red-900">
+        {modAlertOnly ? '⚠️ Moderator Alert' : '⛔ Account Restricted'}
+      </h3>
+
+      {!modAlertOnly && activeBans.length > 0 && (
+        <>
+          <p className="mb-2 text-red-800">
+            You have been restricted from:
+          </p>
+          <ul className="mb-3 list-inside list-disc space-y-1 text-red-800">
+            {activeBans.map(([banType]) => (
+              <li key={banType}>
+                <strong>{getBanTypeLabel(banType as BanType)}</strong>
+                {tempBanDays[banType] && (
+                  <span className="text-sm">
+                    {' '}
+                    — Expires in {tempBanDays[banType]} days
+                  </span>
+                )}
+                {!tempBanDays[banType] && (
+                  <span className="text-sm"> — Permanent</span>
+                )}
+              </li>
+            ))}
+          </ul>
+        </>
+      )}
+
+      <div className="border-ink-200 rounded border bg-red-50 p-2">
+        <p className="mb-1 font-semibold text-red-900">Reason:</p>
+        <p className="text-red-800">{reason}</p>
+      </div>
+    </div>
+  )
+}
+
+function getBanTypeLabel(banType: BanType): string {
+  const labels: Record<BanType, string> = {
+    posting: 'Posting (commenting, messaging, creating posts)',
+    marketControl: 'Market Control (creating, editing, resolving markets, hiding comments)',
+    trading: 'Trading (betting, managrams, liquidity)',
+  }
+  return labels[banType]
+}
+
+function BanHistoryRecord({
+  record,
+  modNames,
+}: {
+  record: UnbanRecord
+  modNames: Record<string, string>
+}) {
+  const bannedByName = modNames[record.bannedBy] || record.bannedBy
+  const unbannedByName =
+    record.unbannedBy === 'system'
+      ? 'System (auto-expired)'
+      : modNames[record.unbannedBy] || record.unbannedBy
+
+  return (
+    <div className="bg-canvas-50 rounded border p-2">
+      <Row className="items-center justify-between">
+        <span className="font-medium">
+          {record.banType === 'posting'
+            ? 'Posting Ban'
+            : record.banType === 'marketControl'
+              ? 'Market Control Ban'
+              : 'Trading Ban'}
+        </span>
+        <span className="text-ink-500 text-xs">
+          {record.wasTemporary ? 'Temporary' : 'Permanent'}
+        </span>
+      </Row>
+      <div className="text-ink-600 mt-1 space-y-1 text-xs">
+        <p>
+          <strong>Banned:</strong>{' '}
+          {new Date(record.bannedAt).toLocaleDateString()} by @{bannedByName}
+        </p>
+        <p>
+          <strong>Reason:</strong> {record.banReason}
+        </p>
+        <p>
+          <strong>Unbanned:</strong>{' '}
+          {new Date(record.unbannedAt).toLocaleDateString()} by {unbannedByName}
+        </p>
+        {record.unbanNote && (
+          <p className="text-ink-500 italic">
+            <strong>Mod note:</strong> {record.unbanNote}
+          </p>
+        )}
+      </div>
+    </div>
+  )
+}

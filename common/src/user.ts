@@ -2,6 +2,27 @@ import { ENV_CONFIG } from './envs/constants'
 import { notification_preferences } from './user-notification-preferences'
 import { DAY_MS, HOUR_MS } from './util/time'
 
+export type BanDetails = {
+  bannedAt: number
+  bannedBy: string     // mod user ID
+  reason: string       // displayed to user
+  unbanTime?: number   // undefined = permanent, number = temp ban expiry
+}
+
+export type UnbanRecord = {
+  banType: 'posting' | 'marketControl' | 'trading'
+  // Original ban info
+  bannedAt: number
+  bannedBy: string
+  banReason: string
+  wasTemporary: boolean
+  originalUnbanTime?: number
+  // Unban info
+  unbannedAt: number
+  unbannedBy: string  // mod user ID who removed the ban, or 'system' for auto-expiry
+  unbanNote?: string  // mod notes, not shown to user
+}
+
 export type User = {
   id: string
   createdTime: number
@@ -75,6 +96,25 @@ export type User = {
   isBannedFromPosting?: boolean
   /** @deprecated Not deprecated, only updated in native column though */
   unbanTime?: number
+
+  // NEW GRANULAR BAN SYSTEM
+  bans?: {
+    posting?: BanDetails
+    marketControl?: BanDetails
+    trading?: BanDetails
+  }
+
+  // MOD ALERTS (can exist without bans)
+  modAlert?: {
+    message: string
+    createdAt: number
+    createdBy: string  // mod user ID
+    dismissed?: boolean
+  }
+
+  // BAN HISTORY (tracks past bans that were removed or expired)
+  banHistory?: UnbanRecord[]
+
   userDeleted?: boolean
   optOutBetWarnings?: boolean
   signupBonusPaid?: number
