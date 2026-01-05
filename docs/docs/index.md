@@ -10,3 +10,4 @@ This site hosts Manifold's:
 
 - [API documentation](/api)
 - [FAQ](/faq)
+- [Data dumps & licensing](/data)
