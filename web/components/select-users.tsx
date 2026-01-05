@@ -1,14 +1,13 @@
-import { XIcon } from '@heroicons/react/outline'
+import { XIcon, SearchIcon } from '@heroicons/react/outline'
 import { Fragment, useRef, useEffect, useState } from 'react'
 import clsx from 'clsx'
 import { Menu, MenuItem, MenuItems, Transition } from '@headlessui/react'
 import { Avatar } from 'web/components/widgets/avatar'
 import { Row } from 'web/components/layout/row'
 import { UserLink } from 'web/components/widgets/user-link'
-import { Input } from './widgets/input'
 import { searchUsers, DisplayUser } from 'web/lib/supabase/users'
 import { Col } from 'web/components/layout/col'
-import { Button } from 'web/components/buttons/button'
+import { LoadingIndicator } from './widgets/loading-indicator'
 
 export function SelectUsers(props: {
   setSelectedUsers: (users: DisplayUser[]) => void
@@ -34,6 +33,8 @@ export function SelectUsers(props: {
   } = props
   const [query, setQuery] = useState('')
   const [filteredUsers, setFilteredUsers] = useState<DisplayUser[]>([])
+  const [isSearching, setIsSearching] = useState(false)
+  const inputRef = useRef<HTMLInputElement>(null)
 
   const requestId = useRef(0)
   const queryReady = query.length > 1
@@ -41,6 +42,7 @@ export function SelectUsers(props: {
   useEffect(() => {
     const id = ++requestId.current
     if (queryReady) {
+      setIsSearching(true)
       searchUsers(query, searchLimit ?? 5).then((results) => {
         // if there's a more recent request, forget about this one
         if (id === requestId.current) {
@@ -52,77 +54,105 @@ export function SelectUsers(props: {
               )
             })
           )
+          setIsSearching(false)
         }
       })
     } else {
       setFilteredUsers([])
+      setIsSearching(false)
     }
   }, [query, selectedUsers, ignoreUserIds])
 
   const shouldShow = maxUsers ? selectedUsers.length < maxUsers : true
+
+  const addUser = (user: DisplayUser) => {
+    setQuery('')
+    setSelectedUsers([...selectedUsers, user])
+    inputRef.current?.focus()
+  }
+
+  const removeUser = (userId: string) => {
+    setSelectedUsers(selectedUsers.filter(({ id }) => id !== userId))
+  }
+
   return (
     <Col className={className}>
       {shouldShow && (
         <>
-          <Col className="relative mt-1 w-full rounded-md">
-            <Input
-              type="text"
-              name="user name"
-              id="user name"
-              value={query}
-              onChange={(e) => setQuery(e.target.value)}
-              placeholder="e.g. Ian Philips"
-            />
+          <Col className="relative mt-1 w-full">
+            <div
+              className={clsx(
+                'border-ink-300 dark:border-ink-400 bg-canvas-0 flex items-center gap-2 rounded-lg border px-3 py-2 transition-all',
+                'focus-within:border-primary-500 focus-within:ring-primary-500/20 focus-within:ring-2'
+              )}
+            >
+              <SearchIcon className="text-ink-400 h-5 w-5 flex-shrink-0" />
+              <input
+                ref={inputRef}
+                type="text"
+                name="user name"
+                id="user name"
+                value={query}
+                onChange={(e) => setQuery(e.target.value)}
+                placeholder="Search for people..."
+                className="text-ink-900 placeholder:text-ink-400 w-full border-0 bg-transparent p-0 text-sm focus:outline-none focus:ring-0"
+              />
+            </div>
           </Col>
 
           <Menu
             as="div"
             className={clsx(
               'relative z-10 inline-block w-full text-right',
-              filteredUsers.length > 0 && 'h-56'
+              (filteredUsers.length > 0 || isSearching) && 'h-56'
             )}
           >
-            {queryReady && filteredUsers.length > 0 && (
+            {queryReady && (filteredUsers.length > 0 || isSearching) && (
               <Transition
                 show={queryReady}
                 as={Fragment}
                 enter="transition ease-out duration-100"
-                enterFrom="transform opacity-0 scale-95"
+                enterFrom="transform opacity-0 scale-98"
                 enterTo="transform opacity-100 scale-100"
                 leave="transition ease-in duration-75"
                 leaveFrom="transform opacity-100 scale-100"
-                leaveTo="transform opacity-0 scale-95"
+                leaveTo="transform opacity-0 scale-98"
               >
                 <MenuItems
                   static
-                  className="divide-ink-100 bg-canvas-0 ring-ink-1000 absolute right-0 mt-2 w-full origin-top-right cursor-pointer divide-y rounded-md shadow-lg ring-1 ring-opacity-5 focus:outline-none"
+                  className="bg-canvas-0 ring-ink-200 dark:ring-ink-300 absolute right-0 mt-2 max-h-[220px] w-full origin-top-right overflow-auto rounded-lg py-1 shadow-lg ring-1 focus:outline-none"
                 >
-                  <div className="py-1">
-                    {filteredUsers.map((user) => (
+                  {isSearching ? (
+                    <div className="flex items-center justify-center py-8">
+                      <LoadingIndicator size="sm" />
+                    </div>
+                  ) : (
+                    filteredUsers.map((user) => (
                       <MenuItem key={user.id}>
                         <button
-                          className="hover:bg-ink-50 hover:text-ink-800 data-[focus]:bg-ink-100 data-[focus]:text-ink-900 text-ink-700 group flex w-full items-center px-4 py-2 text-sm"
-                          onClick={() => {
-                            setQuery('')
-                            setSelectedUsers([...selectedUsers, user])
-                          }}
+                          className="hover:bg-primary-50 dark:hover:bg-primary-900/20 data-[focus]:bg-primary-50 dark:data-[focus]:bg-primary-900/20 flex w-full items-center gap-3 px-4 py-2.5 text-left transition-colors"
+                          onClick={() => addUser(user)}
                         >
                           <Avatar
                             username={user.username}
                             avatarUrl={user.avatarUrl}
-                            size={'xs'}
-                            className={'mr-2'}
+                            size="sm"
+                            className="ring-ink-200 dark:ring-ink-400 ring-1"
                           />
-                          {user.name}
-                          {showUserUsername && (
-                            <span className={'text-ink-500 ml-1'}>
-                              @{user.username}
-                            </span>
-                          )}
+                          <div className="min-w-0 flex-1">
+                            <div className="text-ink-900 truncate text-sm font-medium">
+                              {user.name}
+                            </div>
+                            {showUserUsername && (
+                              <div className="text-ink-500 truncate text-xs">
+                                @{user.username}
+                              </div>
+                            )}
+                          </div>
                         </button>
                       </MenuItem>
-                    ))}
-                  </div>
+                    ))
+                  )}
                 </MenuItems>
               </Transition>
             )}
@@ -132,29 +162,30 @@ export function SelectUsers(props: {
       {selectedUsers.length > 0 && (
         <>
           {showSelectedUsersTitle && (
-            <div className={'mb-2'}>'Added members:'</div>
+            <div className="text-ink-500 mb-2 text-xs font-medium uppercase tracking-wide">
+              Added members:
+            </div>
           )}
           <Row className={clsx('mt-2 flex-wrap gap-2', selectedUsersClassName)}>
             {selectedUsers.map((user) => (
-              <Row key={user.id} className={'items-center gap-1'}>
+              <div
+                key={user.id}
+                className="bg-primary-100 dark:bg-primary-900/30 text-primary-700 dark:text-primary-300 flex items-center gap-1.5 rounded-full py-1 pl-1 pr-2 text-sm font-medium"
+              >
                 <Avatar
                   username={user.username}
                   avatarUrl={user.avatarUrl}
-                  size={'sm'}
+                  size="2xs"
+                  className="ring-primary-200 dark:ring-primary-700 ring-1"
                 />
-                <UserLink user={user} className="ml-1" />
-                <Button
-                  onClick={() =>
-                    setSelectedUsers([
-                      ...selectedUsers.filter(({ id }) => id != user.id),
-                    ])
-                  }
-                  color={'gray-white'}
-                  size={'xs'}
+                <UserLink user={user} className="!text-current" />
+                <button
+                  onClick={() => removeUser(user.id)}
+                  className="hover:bg-primary-200 dark:hover:bg-primary-800 -mr-0.5 rounded-full p-0.5 transition-colors"
                 >
-                  <XIcon className="h-5 w-5" aria-hidden="true" />
-                </Button>
-              </Row>
+                  <XIcon className="h-3.5 w-3.5" aria-hidden="true" />
+                </button>
+              </div>
             ))}
           </Row>
         </>
