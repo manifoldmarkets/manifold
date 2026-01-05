@@ -41,7 +41,7 @@ type ViewType = 'best' | 'latest' | 'new-comments' | 'changelog'
 const FILTER_OPTIONS: {
   id: ViewType
   label: string
-  icon: typeof FireIcon
+  icon: typeof TrendingUpIcon
   description: string
 }[] = [
   {
