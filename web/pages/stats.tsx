@@ -416,7 +416,12 @@ function ManaSupplyTab(props: {
   toBankSummary: rowfor<'txn_summary_stats'>[]
   activeUserManaStats: ActiveUserManaStats[]
 }) {
-  const { manaSupplyOverTime, fromBankSummary, toBankSummary, activeUserManaStats } = props
+  const {
+    manaSupplyOverTime,
+    fromBankSummary,
+    toBankSummary,
+    activeUserManaStats,
+  } = props
   const currentSupply = manaSupplyOverTime[manaSupplyOverTime.length - 1]
   const yesterdaySupply = manaSupplyOverTime[manaSupplyOverTime.length - 2]
   const differenceInSupplySinceYesterday =
@@ -582,7 +587,13 @@ export function CustomAnalytics(props: {
   toBankSummary: rowfor<'txn_summary_stats'>[]
   activeUserManaStats?: ActiveUserManaStats[]
 }) {
-  const { stats, manaSupplyOverTime, fromBankSummary, toBankSummary, activeUserManaStats } = props
+  const {
+    stats,
+    manaSupplyOverTime,
+    fromBankSummary,
+    toBankSummary,
+    activeUserManaStats,
+  } = props
   const [localStats, setLocalStats] = useState(stats)
 
   return (
