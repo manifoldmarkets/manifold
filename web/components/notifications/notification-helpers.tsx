@@ -53,9 +53,27 @@ export function PrimaryNotificationLink(props: {
   if (!text) {
     return <></>
   }
+  // Defensive: ensure text is a string (handles cases where an object was incorrectly stored)
+  let textString: string
+  if (typeof text === 'string') {
+    textString = text
+  } else if (typeof text === 'object' && text !== null) {
+    // Try to extract a meaningful string from common object shapes
+    const obj = text as Record<string, unknown>
+    textString =
+      typeof obj.question === 'string'
+        ? obj.question
+        : typeof obj.title === 'string'
+        ? obj.title
+        : typeof obj.text === 'string'
+        ? obj.text
+        : JSON.stringify(text)
+  } else {
+    textString = String(text)
+  }
   return (
     <span className="hover:text-primary-500 font-semibold transition-colors">
-      {truncatedLength ? truncateText(text, truncatedLength ?? 'xl') : text}
+      {truncatedLength ? truncateText(textString, truncatedLength ?? 'xl') : textString}
     </span>
   )
 }

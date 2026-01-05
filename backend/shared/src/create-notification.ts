@@ -1785,6 +1785,12 @@ export const createAIDescriptionUpdateNotification = async (
   contract: Contract,
   updateText: string
 ) => {
+  // Defensive: ensure question is a string (in case of data corruption)
+  const question =
+    typeof contract.question === 'string'
+      ? contract.question
+      : String(contract.question ?? 'Unknown')
+
   const notification: Notification = {
     id: nanoid(6),
     userId: contract.creatorId,
@@ -1799,7 +1805,7 @@ export const createAIDescriptionUpdateNotification = async (
     sourceUserUsername: 'ManifoldAI',
     sourceUserAvatarUrl: 'https://manifold.markets/logo.svg',
     sourceText: updateText.slice(0, 150),
-    sourceContractTitle: contract.question,
+    sourceContractTitle: question,
     sourceContractCreatorUsername: contract.creatorUsername,
     sourceContractSlug: contract.slug,
   }
@@ -1813,6 +1819,12 @@ export const createPendingClarificationNotification = async (
   clarificationText: string,
   pg: SupabaseDirectClient
 ) => {
+  // Defensive: ensure question is a string (in case of data corruption)
+  const question =
+    typeof contract.question === 'string'
+      ? contract.question
+      : String(contract.question ?? 'Unknown')
+
   const notification: Notification = {
     id: nanoid(6),
     userId: contract.creatorId,
@@ -1827,7 +1839,7 @@ export const createPendingClarificationNotification = async (
     sourceUserUsername: 'ManifoldAI',
     sourceUserAvatarUrl: 'https://manifold.markets/logo.svg',
     sourceText: clarificationText,
-    sourceContractTitle: contract.question,
+    sourceContractTitle: question,
     sourceContractCreatorUsername: contract.creatorUsername,
     sourceContractSlug: contract.slug,
     data: {
