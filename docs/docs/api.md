@@ -76,15 +76,9 @@ Feel free to use the API for any purpose you'd like. There is a rate limit of 50
 
 - Comments placed through the API will incur a $M1 transaction fee.
 
-## Trade history dumps
+## Data Downloads & Licensing
 
-For data analysis and backtesting purposes, you can bulk download all markets and bets/trades on the platform since December 2021.
-
-- [Bets data 2024-07-04](https://firebasestorage.googleapis.com/v0/b/mantic-markets.appspot.com/o/trade-dumps%2Fmanifold-dump-bets-04072024.json.zip?alt=media&token=5ff8fd10-8079-4570-9728-7d0be1d4a463) (967MB)
-- [Markets data 2024-07-06](https://firebasestorage.googleapis.com/v0/b/mantic-markets.appspot.com/o/trade-dumps%2Fmanifold-contracts-20240706.json.zip?alt=media&token=ca3ef6b6-fe61-41b4-a789-dcc2d4ea4421) (87MB)
-- [Comments data 2024-07-06](https://firebasestorage.googleapis.com/v0/b/mantic-markets.appspot.com/o/trade-dumps%2Fmanifold-comments-20240706.json.zip?alt=media&token=08f9a2b1-534a-493d-bb01-77cf1f54b9f3) (127MB)
-
-Data dumps last updated: July 6, 2024
+For bulk data downloads (historical markets, trades, comments) and commercial data licensing, see our [Data documentation](./data).
 
 ## Useful resources
 
