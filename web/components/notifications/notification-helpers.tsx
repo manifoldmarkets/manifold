@@ -73,7 +73,9 @@ export function PrimaryNotificationLink(props: {
   }
   return (
     <span className="hover:text-primary-500 font-semibold transition-colors">
-      {truncatedLength ? truncateText(textString, truncatedLength ?? 'xl') : textString}
+      {truncatedLength
+        ? truncateText(textString, truncatedLength ?? 'xl')
+        : textString}
     </span>
   )
 }
