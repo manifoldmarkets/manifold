@@ -2672,6 +2672,24 @@ export const API = (_apiTypeCheck = {
       .strict(),
     returns: {} as { success: boolean },
   },
+  'get-predictle-markets': {
+    method: 'GET',
+    visibility: 'undocumented',
+    authed: false,
+    cache: 'public, max-age=60, stale-while-revalidate=30',
+    props: z.object({}).strict(),
+    returns: {} as {
+      markets: {
+        id: string
+        question: string
+        slug: string
+        creatorUsername: string
+        prob: number
+      }[]
+      correctOrder: Record<string, number>
+      dateString: string
+    },
+  },
 } as const)
 
 export type APIPath = keyof typeof API
