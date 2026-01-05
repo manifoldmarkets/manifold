@@ -1,4 +1,4 @@
-import { ChatIcon } from '@heroicons/react/outline'
+import { ChatIcon, ClockIcon, FireIcon } from '@heroicons/react/outline'
 import { DotsHorizontalIcon, EyeOffIcon } from '@heroicons/react/solid'
 import { fromNow } from 'client-common/lib/time'
 import clsx from 'clsx'
@@ -20,11 +20,14 @@ import { Col } from '../layout/col'
 import { Row } from '../layout/row'
 import { Avatar } from '../widgets/avatar'
 import DropdownMenu from '../widgets/dropdown-menu'
-import { Linkify } from '../widgets/linkify'
 import { UserLink } from '../widgets/user-link'
 
-export function PostCard(props: { post: TopLevelPost }) {
-  const { post } = props
+export function PostCard(props: {
+  post: TopLevelPost
+  featured?: boolean
+  className?: string
+}) {
+  const { post, featured, className } = props
   const isAdminOrMod = useAdminOrMod()
   const currentUser = useUser()
   const [commentCount, setCommentCount] = useState<number | null>(null)
@@ -35,17 +38,11 @@ export function PostCard(props: { post: TopLevelPost }) {
 
   const handleSetUnlisted = async () => {
     try {
-      // We need to pass title and content, otherwise they might be wiped by the update.
-      // The backend API merges the provided fields with the existing post data.
-      // Ensure `post.content` is in the format expected by the API (likely JSONContent).
       await api('update-post', {
         id: post.id,
         visibility: post.visibility === 'unlisted' ? 'public' : 'unlisted',
       })
       toast.success('Post marked as unlisted')
-      // Optionally, trigger a refresh or update local state if needed
-      // For now, the parent component would need to re-fetch or update the post list
-      // to see the change reflected visually beyond a toast.
     } catch (error) {
       console.error('Error updating post visibility:', error)
       const errorMessage = (error as any)?.message || 'Failed to update post'
@@ -61,7 +58,6 @@ export function PostCard(props: { post: TopLevelPost }) {
     })
   }
 
-  // Create dropdown menu items for admin/mod users
   const dropdownItems = buildArray(
     isAdminOrMod && {
       name: post.visibility === 'unlisted' ? 'List' : 'Unlist',
@@ -75,89 +71,142 @@ export function PostCard(props: { post: TopLevelPost }) {
     }
   )
 
+  const contentPreview = richTextToString(post.content)
+  const isLongContent = contentPreview.length > 200
+
   return (
-    <Col
+    <article
       className={clsx(
-        'bg-canvas-50 group relative mx-1 flex gap-2 rounded px-4 py-2'
+        'group relative',
+        'bg-canvas-0 rounded-xl',
+        'border border-ink-200 dark:border-ink-300',
+        'transition-all duration-200 ease-out',
+        'hover:border-primary-300 dark:hover:border-primary-500',
+        'hover:shadow-lg hover:shadow-primary-500/5',
+        featured && 'ring-2 ring-primary-500/20',
+        className
       )}
     >
-      <Col className="w-full gap-1">
-        <Row className="items-center justify-between">
-          <Row className="items-center gap-2 text-sm">
+      {/* Featured badge */}
+      {featured && (
+        <div className="absolute -top-2.5 left-4">
+          <span className="bg-primary-500 inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-xs font-medium text-white shadow-sm">
+            <FireIcon className="h-3 w-3" />
+            Featured
+          </span>
+        </div>
+      )}
+
+      <div className={clsx('p-5', featured && 'pt-6')}>
+        {/* Header */}
+        <Row className="items-start justify-between gap-3">
+          <Row className="min-w-0 flex-1 items-center gap-3">
             <Avatar
               username={post.creatorUsername}
               avatarUrl={post.creatorAvatarUrl}
-              size={'2xs'}
+              size="sm"
+              className="ring-2 ring-canvas-0 dark:ring-ink-100"
             />
-            <UserLink
-              className="text-ink-400 text-sm"
-              user={{
-                id: post.creatorId,
-                name: post.creatorName,
-                username: post.creatorUsername,
-              }}
-            />
+            <Col className="min-w-0 flex-1 gap-0.5">
+              <UserLink
+                className="text-ink-900 text-sm font-medium hover:underline"
+                user={{
+                  id: post.creatorId,
+                  name: post.creatorName,
+                  username: post.creatorUsername,
+                }}
+              />
+              <Row className="text-ink-500 items-center gap-1.5 text-xs">
+                <ClockIcon className="h-3.5 w-3.5" />
+                <span>
+                  {post.lastCommentTime
+                    ? `Active ${fromNow(post.lastCommentTime)}`
+                    : fromNow(post.createdTime)}
+                </span>
+              </Row>
+            </Col>
           </Row>
-          <Row className="items-center gap-2">
-            <span className="text-ink-400 text-sm">
-              Active {fromNow(post.lastCommentTime ?? post.createdTime)}
-            </span>
-            {isAdminOrMod && dropdownItems.length > 0 && (
+
+          {/* Admin dropdown */}
+          {isAdminOrMod && dropdownItems.length > 0 && (
+            <div className="relative z-10">
               <DropdownMenu
                 items={dropdownItems}
-                buttonContent={<DotsHorizontalIcon className="h-5 w-5" />}
+                buttonContent={
+                  <DotsHorizontalIcon className="text-ink-400 hover:text-ink-600 h-5 w-5 transition-colors" />
+                }
                 menuWidth="w-40"
-                buttonClass="px-1 py-0 hover:bg-ink-100 rounded"
-                className="z-10"
+                buttonClass="p-1 hover:bg-ink-100 rounded-lg transition-colors"
               />
+            </div>
+          )}
+        </Row>
+
+        {/* Title */}
+        <div className="mt-4">
+          <Row className="items-start gap-2">
+            {post.visibility === 'unlisted' && (
+              <EyeOffIcon className="text-ink-400 mt-0.5 h-4 w-4 flex-shrink-0" />
+            )}
+            <h3 className="text-ink-900 text-lg font-semibold leading-snug tracking-tight transition-colors group-hover:text-primary-600">
+              {post.title}
+            </h3>
+          </Row>
+        </div>
+
+        {/* Content preview */}
+        <p
+          className={clsx(
+            'text-ink-600 mt-2 text-sm leading-relaxed',
+            isLongContent ? 'line-clamp-3' : 'line-clamp-5'
+          )}
+        >
+          {contentPreview}
+        </p>
+
+        {/* Footer */}
+        <Row className="mt-4 items-center justify-between border-t border-ink-100 pt-4 dark:border-ink-200">
+          <Row className="items-center gap-4">
+            {/* Comment count */}
+            {commentCount !== null && (
+              <Row className="text-ink-500 items-center gap-1.5 text-sm">
+                <ChatIcon className="h-6 w-6" />
+                <span className="tabular-nums">{commentCount}</span>
+              </Row>
             )}
           </Row>
+
+          {/* Like button */}
+          <div
+            onClick={(e) => {
+              e.preventDefault()
+              e.stopPropagation()
+            }}
+            className="relative z-10"
+          >
+            <ReactButton
+              contentId={post.id}
+              contentCreatorId={post.creatorId}
+              user={currentUser}
+              contentType={'post'}
+              contentText={post.title}
+              trackingLocation={'post card'}
+              reactionType={'like'}
+              size={'xs'}
+              color="gray-white"
+              className="group"
+              heartClassName="stroke-ink-700 dark:stroke-ink-400 group-hover:stroke-ink-900 dark:group-hover:stroke-ink-300"
+              userReactedWith={
+                currentUser && post.likedByUserIds?.includes(currentUser.id)
+                  ? 'like'
+                  : 'none'
+              }
+            />
+          </div>
         </Row>
-        <div className="text-md text-ink-900 mb-1 font-medium">
-          {post.visibility === 'unlisted' && <EyeOffIcon className="h-4 w-4" />}
-          {post.title}
-        </div>
-        <Linkify
-          className="text-ink-600 line-clamp-5 text-sm"
-          text={richTextToString(post.content)}
-        />
-      </Col>
-      {/* Action button to make post unlisted */}
-      {/* This button will appear for all users, API will enforce permissions */}
+      </div>
 
-      <Row className="items-center gap-4 self-end">
-        {commentCount !== null && (
-          <Row className="text-ink-600 items-center gap-1">
-            <ChatIcon className="h-6 w-6" />
-            <span className="text-ink-600 text-sm">{commentCount}</span>
-          </Row>
-        )}
-        <div
-          onClick={(e) => {
-            e.preventDefault()
-            e.stopPropagation()
-          }}
-          className="z-10a"
-        >
-          <ReactButton
-            contentId={post.id}
-            contentCreatorId={post.creatorId}
-            user={currentUser}
-            contentType={'post'}
-            contentText={post.title}
-            trackingLocation={'post card'}
-            reactionType={'like'}
-            size={'xs'}
-            className={'z-10'}
-            userReactedWith={
-              currentUser && post.likedByUserIds?.includes(currentUser.id)
-                ? 'like'
-                : 'none'
-            }
-          />
-        </div>
-      </Row>
-
+      {/* Full card link overlay */}
       <Link
         href={`/post/${post.slug}`}
         onClick={() => {
@@ -166,9 +215,9 @@ export function PostCard(props: { post: TopLevelPost }) {
             postId: post.id,
           })
         }}
-        className="absolute bottom-0 left-0 right-0 top-0"
+        className="absolute inset-0 rounded-xl"
       />
-    </Col>
+    </article>
   )
 }
 
@@ -189,19 +238,17 @@ export function PostCardList(props: {
   }, [posts, limit])
 
   return (
-    <div className="w-full">
+    <div className="w-full space-y-3">
       {shownPosts.map((post) => (
-        <div className="mb-1" key={post.id}>
-          <PostCard key={post.id} post={post} />
-        </div>
+        <PostCard key={post.id} post={post} />
       ))}
       {limit && limit != 0 && posts.length > limit && (
-        <div className="flex justify-center">
+        <div className="flex justify-center pt-2">
           <button
-            className="text-primary-700 text-sm font-semibold"
+            className="text-primary-600 hover:text-primary-700 text-sm font-medium transition-colors"
             onClick={() => setShownPosts(posts)}
           >
-            Show all
+            Show all {posts.length} posts
           </button>
         </div>
       )}

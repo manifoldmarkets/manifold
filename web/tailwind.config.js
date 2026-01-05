@@ -311,11 +311,11 @@ module.exports = {
         'fade-in': {
           '0%': {
             opacity: 0,
-            transitionTimingFunction: 'cubic-bezier(1, 1, 0.8, 0)',
+            transform: 'translateY(8px)',
           },
           '100%': {
             opacity: 1,
-            transitionTimingFunction: 'cubic-bezier(1, 1, 0.8, 0)',
+            transform: 'translateY(0)',
           },
         },
         'fade-out': {
@@ -389,7 +389,7 @@ module.exports = {
         'slide-left-out': 'slide-left-out 1s',
         'slide-right-out': 'slide-right-out 1s',
         'slide-right-in': 'slide-right-in 1s',
-        'fade-in': 'fade-in 1s',
+        'fade-in': 'fade-in 0.4s ease-out both',
         'fade-out': 'fade-out 1s',
         'grow-up': 'grow-up 1s',
         'slide-up-and-fade': 'slide-up-and-fade 150ms',
