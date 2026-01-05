@@ -20,7 +20,7 @@ export default function NewMessageButton() {
   return (
     <>
       <Button
-        className="gap-2 shadow-sm hover:shadow transition-shadow"
+        className="gap-2 shadow-sm transition-shadow hover:shadow"
         onClick={() => setOpen(true)}
       >
         <PlusIcon className="h-4 w-4" aria-hidden="true" />
@@ -31,7 +31,10 @@ export default function NewMessageButton() {
   )
 }
 
-function NewMessageModal(props: { open: boolean; setOpen: (open: boolean) => void }) {
+function NewMessageModal(props: {
+  open: boolean
+  setOpen: (open: boolean) => void
+}) {
   const { open, setOpen } = props
   const privateUser = usePrivateUser()
   const router = useRouter()
@@ -133,12 +136,12 @@ function NewMessageModal(props: { open: boolean; setOpen: (open: boolean) => voi
             )}
           >
             <SearchIcon className="text-ink-400 h-5 w-5 flex-shrink-0" />
-            
+
             {/* Selected user chips */}
             {users.map((user) => (
               <div
                 key={user.id}
-                className="bg-primary-100 dark:bg-primary-900/30 text-primary-700 dark:text-primary-300 flex items-center gap-1.5 rounded-full py-1 pl-1 pr-2 text-sm font-medium animate-in fade-in slide-in-from-left-2 duration-150"
+                className="bg-primary-100 dark:bg-primary-900/30 text-primary-700 dark:text-primary-300 animate-in fade-in slide-in-from-left-2 flex items-center gap-1.5 rounded-full py-1 pl-1 pr-2 text-sm font-medium duration-150"
               >
                 <Avatar
                   username={user.username}
@@ -161,7 +164,9 @@ function NewMessageModal(props: { open: boolean; setOpen: (open: boolean) => voi
               type="text"
               value={query}
               onChange={(e) => setQuery(e.target.value)}
-              placeholder={users.length === 0 ? 'Search for people...' : 'Add more...'}
+              placeholder={
+                users.length === 0 ? 'Search for people...' : 'Add more...'
+              }
               className="text-ink-900 placeholder:text-ink-400 min-w-[100px] flex-1 border-0 bg-transparent p-0 text-sm focus:outline-none focus:ring-0"
             />
           </div>

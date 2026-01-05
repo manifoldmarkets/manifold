@@ -74,7 +74,7 @@ function ChatItem({
             className={numOthers > 1 ? '-ml-2' : ''}
           />
           {isUnseen && (
-            <div className="bg-primary-500 absolute -right-0.5 -top-0.5 h-3 w-3 rounded-full ring-2 ring-white dark:ring-gray-900 animate-in zoom-in duration-200" />
+            <div className="bg-primary-500 animate-in zoom-in absolute -right-0.5 -top-0.5 h-3 w-3 rounded-full ring-2 ring-white duration-200 dark:ring-gray-900" />
           )}
         </div>
 
@@ -86,7 +86,7 @@ function ChatItem({
                 'truncate text-[15px] transition-colors',
                 isUnseen
                   ? 'text-ink-900 font-semibold'
-                  : 'text-ink-800 font-medium group-hover:text-ink-900'
+                  : 'text-ink-800 group-hover:text-ink-900 font-medium'
               )}
             >
               {everyoneHasLeft ? (
