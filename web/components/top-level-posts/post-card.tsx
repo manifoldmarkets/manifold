@@ -79,11 +79,11 @@ export function PostCard(props: {
       className={clsx(
         'group relative',
         'bg-canvas-0 rounded-xl',
-        'border border-ink-200 dark:border-ink-300',
+        'border-ink-200 dark:border-ink-300 border',
         'transition-all duration-200 ease-out',
         'hover:border-primary-300 dark:hover:border-primary-500',
-        'hover:shadow-lg hover:shadow-primary-500/5',
-        featured && 'ring-2 ring-primary-500/20',
+        'hover:shadow-primary-500/5 hover:shadow-lg',
+        featured && 'ring-primary-500/20 ring-2',
         className
       )}
     >
@@ -105,7 +105,7 @@ export function PostCard(props: {
               username={post.creatorUsername}
               avatarUrl={post.creatorAvatarUrl}
               size="sm"
-              className="ring-2 ring-canvas-0 dark:ring-ink-100"
+              className="ring-canvas-0 dark:ring-ink-100 ring-2"
             />
             <Col className="min-w-0 flex-1 gap-0.5">
               <UserLink
@@ -148,7 +148,7 @@ export function PostCard(props: {
             {post.visibility === 'unlisted' && (
               <EyeOffIcon className="text-ink-400 mt-0.5 h-4 w-4 flex-shrink-0" />
             )}
-            <h3 className="text-ink-900 text-lg font-semibold leading-snug tracking-tight transition-colors group-hover:text-primary-600">
+            <h3 className="text-ink-900 group-hover:text-primary-600 text-lg font-semibold leading-snug tracking-tight transition-colors">
               {post.title}
             </h3>
           </Row>
@@ -165,7 +165,7 @@ export function PostCard(props: {
         </p>
 
         {/* Footer */}
-        <Row className="mt-4 items-center justify-between border-t border-ink-100 pt-4 dark:border-ink-200">
+        <Row className="border-ink-100 dark:border-ink-200 mt-4 items-center justify-between border-t pt-4">
           <Row className="items-center gap-4">
             {/* Comment count */}
             {commentCount !== null && (
