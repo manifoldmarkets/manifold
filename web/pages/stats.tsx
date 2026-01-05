@@ -46,6 +46,9 @@ export const getStaticProps = async () => {
       ignoreCategories: ['RECLAIM_MANA'],
       limitDays: 100,
     })
+    const activeUserManaStats = await api('get-active-user-mana-stats', {
+      limitDays: 100,
+    })
 
     return {
       props: {
@@ -53,6 +56,7 @@ export const getStaticProps = async () => {
         fromBankSummary,
         toBankSummary,
         manaSupplyOverTime,
+        activeUserManaStats,
         totalRedeemable: 0,
       },
       revalidate: 60 * 60, // One hour
@@ -63,14 +67,26 @@ export const getStaticProps = async () => {
   }
 }
 
+type ActiveUserManaStats = {
+  date: string
+  activeBalance: number
+}
+
 export default function Analytics(props: {
   stats: rowfor<'daily_stats'>[]
   manaSupplyOverTime: rowfor<'mana_supply_stats'>[]
   fromBankSummary: rowfor<'txn_summary_stats'>[]
   toBankSummary: rowfor<'txn_summary_stats'>[]
+  activeUserManaStats: ActiveUserManaStats[]
   totalRedeemable: number
 }) {
-  const { stats, manaSupplyOverTime, fromBankSummary, toBankSummary } = props
+  const {
+    stats,
+    manaSupplyOverTime,
+    fromBankSummary,
+    toBankSummary,
+    activeUserManaStats,
+  } = props
 
   if (!stats) {
     return null
@@ -88,6 +104,7 @@ export default function Analytics(props: {
         manaSupplyOverTime={manaSupplyOverTime}
         fromBankSummary={fromBankSummary}
         toBankSummary={toBankSummary}
+        activeUserManaStats={activeUserManaStats}
       />
     </Page>
   )
@@ -397,8 +414,9 @@ function ManaSupplyTab(props: {
   manaSupplyOverTime: rowfor<'mana_supply_stats'>[]
   fromBankSummary: rowfor<'txn_summary_stats'>[]
   toBankSummary: rowfor<'txn_summary_stats'>[]
+  activeUserManaStats: ActiveUserManaStats[]
 }) {
-  const { manaSupplyOverTime, fromBankSummary, toBankSummary } = props
+  const { manaSupplyOverTime, fromBankSummary, toBankSummary, activeUserManaStats } = props
   const currentSupply = manaSupplyOverTime[manaSupplyOverTime.length - 1]
   const yesterdaySupply = manaSupplyOverTime[manaSupplyOverTime.length - 2]
   const differenceInSupplySinceYesterday =
@@ -435,6 +453,8 @@ function ManaSupplyTab(props: {
   const unaccountedDifference =
     differenceInSupplySinceYesterday - netBankManaTrans
 
+  const latestActiveStats = activeUserManaStats[activeUserManaStats.length - 1]
+
   return (
     <Col>
       <Title>Mana supply</Title>
@@ -445,6 +465,14 @@ function ManaSupplyTab(props: {
         <div>Balances</div>
         <div className="font-semibold">
           {formatMoney(currentSupply.balance)}
+        </div>
+
+        <div>
+          Active Balances{' '}
+          <InfoTooltip text="Sum of balances held by users active in the last 30 days" />
+        </div>
+        <div className="font-semibold">
+          {formatMoney(latestActiveStats?.activeBalance ?? 0)}
         </div>
 
         <div>Investment</div>
@@ -479,6 +507,19 @@ function ManaSupplyTab(props: {
         </div>
       </div>
       <ManaSupplySummary manaSupplyStats={manaSupplyOverTime} />
+      <Spacer h={8} />
+      <Title>Active Balances</Title>
+      <p className="text-ink-500">
+        Sum of mana balances held by users who were active in the last 30 days.
+      </p>
+      {activeUserManaStats.length > 0 && (
+        <DailyChart
+          values={activeUserManaStats.map((s) => ({
+            x: s.date,
+            y: s.activeBalance,
+          }))}
+        />
+      )}
       <Spacer h={8} />
       <Title>Transactions from Manifold</Title>
       <BonusSummary txnSummaryStats={fromBankSummaryMana} days={days} />
@@ -539,8 +580,9 @@ export function CustomAnalytics(props: {
   manaSupplyOverTime: rowfor<'mana_supply_stats'>[]
   fromBankSummary: rowfor<'txn_summary_stats'>[]
   toBankSummary: rowfor<'txn_summary_stats'>[]
+  activeUserManaStats?: ActiveUserManaStats[]
 }) {
-  const { stats, manaSupplyOverTime, fromBankSummary, toBankSummary } = props
+  const { stats, manaSupplyOverTime, fromBankSummary, toBankSummary, activeUserManaStats } = props
   const [localStats, setLocalStats] = useState(stats)
 
   return (
@@ -562,6 +604,7 @@ export function CustomAnalytics(props: {
                 manaSupplyOverTime={manaSupplyOverTime}
                 fromBankSummary={fromBankSummary}
                 toBankSummary={toBankSummary}
+                activeUserManaStats={activeUserManaStats ?? []}
               />
             ),
           },

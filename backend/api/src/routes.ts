@@ -6,6 +6,7 @@ import { getBoostAnalytics } from 'api/get-boost-analytics'
 import { getFeed } from 'api/get-feed'
 import { getInterestingGroupsFromViews } from 'api/get-interesting-groups-from-views'
 import { getManaSummaryStats } from 'api/get-mana-summary-stats'
+import { getActiveUserManaStats } from 'api/get-active-user-mana-stats'
 import { getNotifications } from 'api/get-notifications'
 import {
   getChannelMemberships,
@@ -335,6 +336,7 @@ export const handlers: { [k in APIPath]: APIHandler<k> } = {
   'search-contract-positions': searchContractPositions,
   'get-txn-summary-stats': getTxnSummaryStats,
   'get-mana-summary-stats': getManaSummaryStats,
+  'get-active-user-mana-stats': getActiveUserManaStats,
   'register-gidx': register,
   'get-checkout-session-gidx': getCheckoutSession,
   'complete-checkout-session-gidx': completeCheckoutSession,

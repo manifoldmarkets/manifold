@@ -1791,6 +1791,21 @@ export const API = (_apiTypeCheck = {
       })
       .strict(),
   },
+  'get-active-user-mana-stats': {
+    method: 'GET',
+    visibility: 'undocumented',
+    authed: false,
+    cache: LIGHT_CACHE_STRATEGY,
+    returns: [] as {
+      date: string
+      activeBalance: number
+    }[],
+    props: z
+      .object({
+        limitDays: z.coerce.number(),
+      })
+      .strict(),
+  },
   'register-gidx': {
     method: 'POST',
     visibility: 'undocumented',
