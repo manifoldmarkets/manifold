@@ -332,7 +332,10 @@ function PredicteGame(props: {
 
         {/* Progress dots */}
         {!gameState.completed && (
-          <Row className="gap-2">
+          <Row className="items-center gap-2">
+            <span className="text-xs font-medium text-slate-500 dark:text-slate-400">
+              Guesses
+            </span>
             {[1, 2, 3, 4].map((i) => (
               <div
                 key={i}
@@ -340,7 +343,7 @@ function PredicteGame(props: {
                   'h-3 w-3 rounded-full transition-all',
                   i <= attemptNumber
                     ? 'bg-gradient-to-br from-violet-500 to-fuchsia-500 shadow-md shadow-violet-200 dark:shadow-violet-500/50'
-                    : 'bg-slate-200 dark:bg-slate-600'
+                    : 'bg-slate-300 dark:bg-slate-600'
                 )}
               />
             ))}
@@ -448,9 +451,7 @@ function PredicteGame(props: {
               : 'bg-gradient-to-r from-violet-600 via-fuchsia-500 to-pink-500 shadow-fuchsia-200 hover:scale-[1.02] hover:shadow-xl hover:shadow-fuchsia-200 active:scale-[0.98] dark:shadow-fuchsia-500/30 dark:hover:shadow-fuchsia-500/40'
           )}
         >
-          <span className="relative z-10">
-            🎯 Submit Guess ({4 - attemptNumber} left)
-          </span>
+          <span className="relative z-10">Submit Guess</span>
         </button>
       ) : (
         <Col className="gap-3">
