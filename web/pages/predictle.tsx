@@ -475,10 +475,8 @@ function PredicteGame(props: {
             {gameState.won && (
               <div className="mt-1 text-sm opacity-90">
                 {attemptNumber === 1
-                  ? 'Incredible! First try!'
-                  : attemptNumber === 2
-                  ? 'Amazing! So close to perfect!'
-                  : attemptNumber === 3
+                  ? 'Aced it on the first try!'
+                  : attemptNumber === 2 || attemptNumber === 3
                   ? 'Great job!'
                   : 'You made it!'}
               </div>
