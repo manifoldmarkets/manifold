@@ -8,9 +8,10 @@ import { trackPublicEvent } from 'shared/analytics'
 import { getComment } from 'shared/supabase/contract-comments'
 import { createSupabaseDirectClient } from 'shared/supabase/init'
 import { getContractSupabase, getUser, log } from 'shared/utils'
-import { onlyUnbannedUsers } from './helpers/rate-limit'
+import { onlyUsersWhoCanPerformAction } from './helpers/rate-limit'
 
-export const post: APIHandler<'post'> = onlyUnbannedUsers(
+export const post: APIHandler<'post'> = onlyUsersWhoCanPerformAction(
+  'post',
   async (props, auth) => {
     const { contractId, content, betId: passedBetId, commentId } = props
 

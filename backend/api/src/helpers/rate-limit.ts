@@ -98,6 +98,7 @@ const getActionDisplayName = (action: string): string => {
     managram: 'sending managrams',
     addLiquidity: 'adding liquidity',
     removeLiquidity: 'removing liquidity',
+    boost: 'boosting markets',
     review: 'leaving reviews',
     addTopic: 'adding topics',
     pollVote: 'voting in polls',

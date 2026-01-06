@@ -61,6 +61,7 @@ export function getBanTypesForAction(action: string): BanType[] {
     'managram': ['posting', 'trading'],  // Blocked by either
     'removeLiquidity': ['trading'],
     'addLiquidity': ['trading'],
+    'boost': ['trading'],
     'message': ['posting'],
     'post': ['posting'],
     'editComment': ['posting'],
