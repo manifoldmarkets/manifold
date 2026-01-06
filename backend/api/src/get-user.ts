@@ -3,8 +3,23 @@ import { convertUser, displayUserColumns } from 'common/supabase/users'
 import { createSupabaseDirectClient } from 'shared/supabase/init'
 import { APIError } from 'common/api/utils'
 import { removeNullOrUndefinedProps } from 'common/util/object'
+import { APIHandler } from './helpers/endpoint'
 
-export const getUser = async (props: { id: string } | { username: string }) => {
+// API handler for public user endpoints - uses default 'public' visibility
+export const getUser: APIHandler<'user/by-id/:id'> = async (props) => {
+  return getUserWithVisibility(props, { visibility: 'public' })
+}
+
+// API handler for getting user by username
+export const getUserByUsername: APIHandler<'user/:username'> = async (props) => {
+  return getUserWithVisibility(props, { visibility: 'public' })
+}
+
+// Internal function that can be called with visibility options
+export const getUserWithVisibility = async (
+  props: { id: string } | { username: string },
+  options?: { visibility?: 'public' | 'self' | 'admin' }
+) => {
   const pg = createSupabaseDirectClient()
   const user = await pg.oneOrNone(
     `select * from users
@@ -14,7 +29,7 @@ export const getUser = async (props: { id: string } | { username: string }) => {
   )
   if (!user) throw new APIError(404, 'User not found')
 
-  return toUserAPIResponse(user)
+  return toUserAPIResponse(user, options)
 }
 
 export const getLiteUser = async (

@@ -35,7 +35,7 @@ export const searchUsers: APIHandler<'search-users'> = async (props, auth) => {
   ])
 
   return uniqBy([...followers, ...all], 'id')
-    .map(toUserAPIResponse)
+    .map((u) => toUserAPIResponse(u))
     .slice(0, limit)
 }
 
