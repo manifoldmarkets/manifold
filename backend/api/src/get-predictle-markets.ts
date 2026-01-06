@@ -1,6 +1,7 @@
 import { Contract } from 'common/contract'
 import { createSupabaseDirectClient } from 'shared/supabase/init'
 import { APIHandler } from 'api/helpers/endpoint'
+import { HIDE_FROM_NEW_USER_SLUGS } from 'common/envs/constants'
 
 type PredicleMarket = {
   id: string
@@ -51,6 +52,17 @@ function dateToSeed(dateString: string): number {
   return Math.abs(hash)
 }
 
+// Calculate puzzle number (days since launch, in Pacific Time)
+const LAUNCH_DATE_PT = '2026-01-05'
+function getPuzzleNumber(dateString: string): number {
+  // Both dates are in YYYY-MM-DD format (Pacific Time)
+  const launch = new Date(LAUNCH_DATE_PT + 'T00:00:00')
+  const puzzle = new Date(dateString + 'T00:00:00')
+  const diffTime = puzzle.getTime() - launch.getTime()
+  const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24))
+  return diffDays + 1 // Puzzle #1 on launch day
+}
+
 export const getPredictle: APIHandler<'get-predictle-markets'> = async () => {
   const pg = createSupabaseDirectClient()
 
@@ -76,6 +88,7 @@ export const getPredictle: APIHandler<'get-predictle-markets'> = async () => {
     return {
       ...cached.data,
       dateString: todayDate,
+      puzzleNumber: getPuzzleNumber(todayDate),
     }
   }
 
@@ -83,6 +96,7 @@ export const getPredictle: APIHandler<'get-predictle-markets'> = async () => {
   const seed = dateToSeed(todayDate)
 
   // Fetch high quality open binary markets with > 25 unique bettors
+  // Exclude fun/meme/self-resolving topics
   const markets = await pg.map<Contract>(
     `
     SELECT data
@@ -97,10 +111,11 @@ export const getPredictle: APIHandler<'get-predictle-markets'> = async () => {
       AND token = 'MANA'
       AND (data->>'prob')::numeric > 0.05
       AND (data->>'prob')::numeric < 0.95
+      AND NOT (group_slugs && $1::text[])
     ORDER BY importance_score DESC
     LIMIT 100
     `,
-    [],
+    [HIDE_FROM_NEW_USER_SLUGS],
     (r) => r.data as Contract
   )
 
@@ -144,5 +159,6 @@ export const getPredictle: APIHandler<'get-predictle-markets'> = async () => {
   return {
     ...data,
     dateString: todayDate,
+    puzzleNumber: getPuzzleNumber(todayDate),
   }
 }

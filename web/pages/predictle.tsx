@@ -25,33 +25,28 @@ type GameState = {
   dateString: string
   markets: Market[]
   correctOrder: Record<string, number>
-  attempts: { marketId: string; feedback: ('up' | 'down' | 'correct')[] }[]
+  attempts: { marketId: string; feedback: ('correct' | 'incorrect')[] }[]
   completed: boolean
   won: boolean
 }
 
-type Feedback = 'up' | 'down' | 'correct'
+type Feedback = 'correct' | 'incorrect'
 
 function getFeedbackEmoji(feedback: Feedback): string {
-  switch (feedback) {
-    case 'up':
-      return '⬆️'
-    case 'down':
-      return '⬇️'
-    case 'correct':
-      return '✅'
-  }
+  return feedback === 'correct' ? '✅' : '❌'
 }
 
 function PredicteGame(props: {
   markets: Market[]
   correctOrder: Record<string, number>
   dateString: string
+  puzzleNumber: number
 }) {
   const {
     markets: apiMarkets,
     correctOrder: apiCorrectOrder,
     dateString,
+    puzzleNumber,
   } = props
 
   const [gameState, setGameState, ready] = usePersistentLocalState<GameState>(
@@ -81,17 +76,6 @@ function PredicteGame(props: {
   // Current order of markets (user-arranged)
   const [orderedMarkets, setOrderedMarkets] = useState<Market[]>(markets)
 
-  // Display indices - only update after submit, not during drag
-  const [displayIndices, setDisplayIndices] = useState<Record<string, number>>(
-    () => {
-      const indices: Record<string, number> = {}
-      markets.forEach((m, i) => {
-        indices[m.id] = i + 1
-      })
-      return indices
-    }
-  )
-
   // Initialize or reset game for new day, or migrate old data
   useEffect(() => {
     if (!ready) return
@@ -111,12 +95,6 @@ function PredicteGame(props: {
         won: false,
       })
       setOrderedMarkets(apiMarkets)
-      // Reset display indices
-      const indices: Record<string, number> = {}
-      apiMarkets.forEach((m, i) => {
-        indices[m.id] = i + 1
-      })
-      setDisplayIndices(indices)
     }
   }, [
     ready,
@@ -136,22 +114,76 @@ function PredicteGame(props: {
       gameState.markets?.length > 0
     ) {
       setOrderedMarkets(gameState.markets)
-      // Sync display indices with stored order
-      const indices: Record<string, number> = {}
-      gameState.markets.forEach((m, i) => {
-        indices[m.id] = i + 1
-      })
-      setDisplayIndices(indices)
     }
   }, [ready, gameState.dateString, dateString, gameState.markets])
+
+  // Check if a market is locked (correctly guessed)
+  const isMarketLocked = (marketId: string): boolean => {
+    const feedback = gameState.attempts.find(
+      (a) => a.marketId === marketId
+    )?.feedback
+    return feedback?.[feedback.length - 1] === 'correct'
+  }
 
   const handleDragEnd = (result: any) => {
     if (!result.destination || gameState.completed) return
 
-    const items = Array.from(orderedMarkets)
-    const [reorderedItem] = items.splice(result.source.index, 1)
-    items.splice(result.destination.index, 0, reorderedItem)
-    setOrderedMarkets(items)
+    const sourceIndex = result.source.index
+    const destIndex = result.destination.index
+
+    // Don't allow dragging locked markets (also handled by isDragDisabled)
+    const sourceMarket = orderedMarkets[sourceIndex]
+    if (isMarketLocked(sourceMarket.id)) return
+
+    // Get unlocked positions and markets
+    const unlockedIndices: number[] = []
+    const unlockedMarkets: Market[] = []
+    orderedMarkets.forEach((market, idx) => {
+      if (!isMarketLocked(market.id)) {
+        unlockedIndices.push(idx)
+        unlockedMarkets.push(market)
+      }
+    })
+
+    // Find where source is in the unlocked list
+    const sourceUnlockedIdx = unlockedIndices.indexOf(sourceIndex)
+    if (sourceUnlockedIdx === -1) return
+
+    // Find the target unlocked index based on destination
+    // If dropping on a locked position, find nearest unlocked slot
+    let targetUnlockedIdx: number
+    if (unlockedIndices.includes(destIndex)) {
+      targetUnlockedIdx = unlockedIndices.indexOf(destIndex)
+    } else {
+      // Find the nearest unlocked index to destIndex
+      let nearest = 0
+      let minDist = Math.abs(unlockedIndices[0] - destIndex)
+      for (let i = 1; i < unlockedIndices.length; i++) {
+        const dist = Math.abs(unlockedIndices[i] - destIndex)
+        if (dist < minDist) {
+          minDist = dist
+          nearest = i
+        }
+      }
+      targetUnlockedIdx = nearest
+    }
+
+    if (sourceUnlockedIdx === targetUnlockedIdx) return
+
+    // Reorder the unlocked markets
+    const [movedMarket] = unlockedMarkets.splice(sourceUnlockedIdx, 1)
+    unlockedMarkets.splice(targetUnlockedIdx, 0, movedMarket)
+
+    // Rebuild the full array with locked markets in their fixed positions
+    const newOrder = [...orderedMarkets]
+    let unlockedIdx = 0
+    for (let i = 0; i < newOrder.length; i++) {
+      if (!isMarketLocked(orderedMarkets[i].id)) {
+        newOrder[i] = unlockedMarkets[unlockedIdx++]
+      }
+    }
+
+    setOrderedMarkets(newOrder)
   }
 
   const handleSubmit = () => {
@@ -168,16 +200,8 @@ function PredicteGame(props: {
           gameState.attempts.find((a) => a.marketId === market.id)?.feedback ||
           []
 
-        let newFeedback: Feedback
-        if (currentPosition === correctPosition) {
-          newFeedback = 'correct'
-        } else if (currentPosition > correctPosition) {
-          // Market should be earlier in list (higher prob), so needs to go up
-          newFeedback = 'up'
-        } else {
-          // Market should be later in list (lower prob), so needs to go down
-          newFeedback = 'down'
-        }
+        const newFeedback: Feedback =
+          currentPosition === correctPosition ? 'correct' : 'incorrect'
 
         return {
           marketId: market.id,
@@ -198,16 +222,9 @@ function PredicteGame(props: {
       markets: orderedMarkets, // Save user's current order
       correctOrder,
       attempts: feedback,
-      completed: allCorrect || newAttemptCount >= 4,
+      completed: allCorrect || newAttemptCount >= 5,
       won: allCorrect,
     })
-
-    // Update display indices to reflect new positions after submit
-    const newIndices: Record<string, number> = {}
-    orderedMarkets.forEach((m, i) => {
-      newIndices[m.id] = i + 1
-    })
-    setDisplayIndices(newIndices)
   }
 
   const getMarketFeedback = (marketId: string): Feedback[] => {
@@ -235,12 +252,7 @@ function PredicteGame(props: {
           reorder, then submit to check your answer.
         </p>
         {attemptNumber > 0 && !gameState.completed && (
-          <p className="text-ink-500 text-sm">
-            Attempt {attemptNumber}/4 •{' '}
-            <span className="text-ink-600">
-              ⬆️ = higher probability, ⬇️ = lower probability
-            </span>
-          </p>
+          <p className="text-ink-500 text-sm">Attempt {attemptNumber}/5</p>
         )}
       </Col>
 
@@ -258,7 +270,8 @@ function PredicteGame(props: {
               )}
             >
               <Col className="gap-2">
-                <div className="text-ink-400 flex justify-between px-3 text-xs font-medium uppercase tracking-wider">
+                <div className="text-ink-400 flex items-center gap-1 px-3 text-xs font-medium uppercase tracking-wider">
+                  <span>↑</span>
                   <span>High probability</span>
                 </div>
                 {orderedMarkets.map((market, index) => (
@@ -266,7 +279,9 @@ function PredicteGame(props: {
                     key={market.id}
                     draggableId={market.id}
                     index={index}
-                    isDragDisabled={gameState.completed}
+                    isDragDisabled={
+                      gameState.completed || isMarketLocked(market.id)
+                    }
                   >
                     {(provided, snapshot) => (
                       <div
@@ -276,18 +291,19 @@ function PredicteGame(props: {
                       >
                         <MarketCard
                           market={market}
-                          displayIndex={displayIndices[market.id] ?? index + 1}
                           feedback={getMarketFeedback(market.id)}
                           isDragging={snapshot.isDragging}
                           showProb={gameState.completed}
                           gameOver={gameState.completed}
+                          isLocked={isMarketLocked(market.id)}
                         />
                       </div>
                     )}
                   </Draggable>
                 ))}
                 {provided.placeholder}
-                <div className="text-ink-400 flex justify-between px-3 text-xs font-medium uppercase tracking-wider">
+                <div className="text-ink-400 flex items-center gap-1 px-3 text-xs font-medium uppercase tracking-wider">
+                  <span>↓</span>
                   <span>Low probability</span>
                 </div>
               </Col>
@@ -301,25 +317,32 @@ function PredicteGame(props: {
           onClick={handleSubmit}
           size="xl"
           color="indigo"
-          disabled={attemptNumber >= 4}
+          disabled={attemptNumber >= 5}
         >
-          Submit ({4 - attemptNumber} attempts remaining)
+          Submit ({5 - attemptNumber} attempts remaining)
         </Button>
       ) : (
-        <div
-          className={clsx(
-            'rounded-lg p-4 text-center text-lg font-semibold',
-            gameState.won
-              ? 'bg-teal-100 text-teal-800'
-              : 'bg-amber-100 text-amber-800'
-          )}
-        >
-          {gameState.won
-            ? `🎉 You got it in ${attemptNumber} ${
-                attemptNumber === 1 ? 'try' : 'tries'
-              }!`
-            : `Game over! Better luck tomorrow.`}
-        </div>
+        <Col className="gap-3">
+          <div
+            className={clsx(
+              'rounded-lg p-4 text-center text-lg font-semibold',
+              gameState.won
+                ? 'bg-teal-100 text-teal-800'
+                : 'bg-amber-100 text-amber-800'
+            )}
+          >
+            {gameState.won
+              ? `🎉 You got it in ${attemptNumber} ${
+                  attemptNumber === 1 ? 'try' : 'tries'
+                }!`
+              : `Game over! Better luck tomorrow.`}
+          </div>
+          <ShareButton
+            attempts={gameState.attempts}
+            puzzleNumber={puzzleNumber}
+            markets={orderedMarkets}
+          />
+        </Col>
       )}
 
       <p className="text-ink-400 text-center text-xs">
@@ -332,14 +355,13 @@ function PredicteGame(props: {
 
 function MarketCard(props: {
   market: Market
-  displayIndex: number
   feedback: Feedback[]
   isDragging: boolean
   showProb: boolean
   gameOver: boolean
+  isLocked: boolean
 }) {
-  const { market, displayIndex, feedback, isDragging, showProb, gameOver } =
-    props
+  const { market, feedback, isDragging, showProb, gameOver, isLocked } = props
   const lastFeedback = feedback[feedback.length - 1]
 
   return (
@@ -351,20 +373,10 @@ function MarketCard(props: {
           : lastFeedback === 'correct'
           ? 'border-teal-400 bg-teal-50'
           : 'border-ink-200 hover:border-ink-300',
-        !gameOver && 'cursor-grab active:cursor-grabbing'
+        !gameOver && !isLocked && 'cursor-grab active:cursor-grabbing'
       )}
     >
       <Row className="items-center gap-3">
-        <div
-          className={clsx(
-            'flex h-7 w-7 flex-shrink-0 items-center justify-center rounded-full text-sm font-bold',
-            lastFeedback === 'correct'
-              ? 'bg-teal-500 text-white'
-              : 'bg-ink-100 text-ink-600'
-          )}
-        >
-          {displayIndex}
-        </div>
         <Col className="min-w-0 flex-1 gap-0.5">
           {gameOver ? (
             <Link
@@ -405,6 +417,42 @@ function MarketCard(props: {
   )
 }
 
+function ShareButton(props: {
+  attempts: { marketId: string; feedback: Feedback[] }[]
+  puzzleNumber: number
+  markets: Market[]
+}) {
+  const { attempts, puzzleNumber, markets } = props
+  const [copied, setCopied] = useState(false)
+
+  const generateShareText = () => {
+    // Build feedback lines in the order of markets displayed
+    const feedbackLines = markets.map((market) => {
+      const marketAttempt = attempts.find((a) => a.marketId === market.id)
+      if (!marketAttempt) return ''
+      return marketAttempt.feedback.map(getFeedbackEmoji).join('')
+    })
+
+    return `Predictle #${puzzleNumber}
+${feedbackLines.join('\n')}
+
+Play at https://manifold.markets/predictle`
+  }
+
+  const handleShare = async () => {
+    const text = generateShareText()
+    await navigator.clipboard.writeText(text)
+    setCopied(true)
+    setTimeout(() => setCopied(false), 2000)
+  }
+
+  return (
+    <Button onClick={handleShare} color="indigo-outline" className="w-full">
+      {copied ? 'Copied!' : 'Share results'}
+    </Button>
+  )
+}
+
 export default function PredictlePage() {
   const { data, loading } = useAPIGetter('get-predictle-markets', {})
 
@@ -426,6 +474,7 @@ export default function PredictlePage() {
             markets={data.markets}
             correctOrder={data.correctOrder}
             dateString={data.dateString}
+            puzzleNumber={data.puzzleNumber}
           />
         )}
       </Col>

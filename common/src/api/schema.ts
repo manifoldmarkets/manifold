@@ -2688,6 +2688,7 @@ export const API = (_apiTypeCheck = {
       }[]
       correctOrder: Record<string, number>
       dateString: string
+      puzzleNumber: number
     },
   },
 } as const)
