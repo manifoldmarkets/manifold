@@ -551,7 +551,7 @@ function MarketCard(props: {
                 slug: market.slug,
               })}
               className={clsx(
-                'line-clamp-2 text-sm font-semibold transition-colors',
+                'text-sm font-semibold transition-colors',
                 isCorrect
                   ? 'text-emerald-800 hover:text-emerald-600 dark:text-emerald-300 dark:hover:text-emerald-200'
                   : 'text-slate-800 hover:text-fuchsia-600 dark:text-slate-200 dark:hover:text-fuchsia-400'
@@ -561,7 +561,7 @@ function MarketCard(props: {
               {market.question}
             </Link>
           ) : (
-            <span className="line-clamp-2 text-sm font-semibold text-slate-800 dark:text-slate-200">
+            <span className="text-sm font-semibold text-slate-800 dark:text-slate-200">
               {market.question}
             </span>
           )}
