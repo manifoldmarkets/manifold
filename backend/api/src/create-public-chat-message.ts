@@ -1,3 +1,4 @@
+import { isUserBanned } from 'common/ban-utils'
 import { removeUndefinedProps } from 'common/util/object'
 import { getUser, log } from 'shared/utils'
 import { createSupabaseClient } from 'shared/supabase/init'
@@ -12,8 +13,9 @@ export const createPublicChatMessage: APIHandler<
   const { content, channelId } = body
   const creator = await getUser(auth.uid)
   if (!creator) throw new APIError(401, 'Your account was not found')
-  if (creator.isBannedFromPosting || creator.userDeleted)
-    throw new APIError(403, 'You are banned or deleted.')
+  if (creator.userDeleted) throw new APIError(403, 'Your account is deleted')
+  if (isUserBanned(creator, 'posting') || creator.isBannedFromPosting)
+    throw new APIError(403, 'You are banned from posting')
 
   const chatMessage = removeUndefinedProps({
     content: content as Json,

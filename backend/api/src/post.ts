@@ -1,6 +1,7 @@
 import { JSONContent } from '@tiptap/core'
 import { createCommentOnContractInternal } from 'api/create-comment'
 import { APIError, APIHandler } from 'api/helpers/endpoint'
+import { getActiveBans } from 'common/ban-utils'
 import { ContractComment } from 'common/comment'
 import { removeUndefinedProps } from 'common/util/object'
 import { trackPublicEvent } from 'shared/analytics'
@@ -48,7 +49,10 @@ export const post: APIHandler<'post'> = onlyUnbannedUsers(
       const existingComment = await getComment(pg, commentId)
       if (existingComment.userId !== auth.uid) {
         const commenter = await getUser(existingComment.userId)
-        if (commenter?.isBannedFromPosting || commenter?.userDeleted)
+        const commenterIsBanned = commenter
+          ? getActiveBans(commenter).length > 0 || commenter.isBannedFromPosting
+          : false
+        if (commenterIsBanned || commenter?.userDeleted)
           throw new APIError(400, 'Cannot post deleted/banned user comments')
       }
       if (existingComment.hidden)

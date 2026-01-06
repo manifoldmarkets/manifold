@@ -1,6 +1,7 @@
 import { SupabaseDirectClient } from 'shared/supabase/init'
 import { getPrivateUser, getUser } from 'shared/utils'
 import { APIError } from 'common/api/utils'
+import { isUserBanned } from 'common/ban-utils'
 import { filterDefined } from 'common/util/array'
 import { addUsersToPrivateMessageChannel } from 'shared/supabase/private-messages'
 
@@ -11,7 +12,8 @@ export const createPrivateUserMessageChannelMain = async (
 ) => {
   const creator = await getUser(creatorId)
   if (!creator) throw new APIError(401, 'Your account was not found')
-  if (creator.isBannedFromPosting) throw new APIError(403, 'You are banned')
+  if (isUserBanned(creator, 'posting') || creator.isBannedFromPosting)
+    throw new APIError(403, 'You are banned from messaging')
   const creatorShouldJoinChannel = userIds.includes(creatorId)
   const toPrivateUsers = filterDefined(
     await Promise.all(userIds.map((id) => getPrivateUser(id)))

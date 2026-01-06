@@ -120,16 +120,50 @@ export const banuser: APIHandler<'ban-user'> = async (props, auth) => {
       log('re-enabling username changes for user', userId)
     }
 
+    // Check if user is now permanently banned from all three types
+    // If so, also set the legacy isBannedFromPosting flag for backward compatibility
+    // (leaderboards, SQL queries, etc. that still check the legacy field)
+    const allBanTypes: ('posting' | 'marketControl' | 'trading')[] = [
+      'posting',
+      'marketControl',
+      'trading',
+    ]
+    const isPermanentlyBannedFromAll = allBanTypes.every((banType) => {
+      const ban = updatedBans[banType]
+      return ban && !ban.unbanTime // Has ban and no unban time = permanent
+    })
+
+    // Determine legacy flag update:
+    // - Set to true if permanently banned from all 3 types (sync legacy flag)
+    // - Set to false only if ALL bans are being removed (full unban)
+    // - Otherwise, don't change it (preserve existing legacy state)
+    let legacyBanUpdate: { isBannedFromPosting?: boolean } = {}
+    if (isPermanentlyBannedFromAll) {
+      legacyBanUpdate.isBannedFromPosting = true
+    } else if (!hasBansRemaining) {
+      // Only clear legacy flag when fully unbanned
+      legacyBanUpdate.isBannedFromPosting = false
+    }
+    // Note: if partial bans remain but not all 3, we preserve the existing legacy flag
+
     if (hasBansRemaining) {
       // Update bans and optionally add history
-      const update: any = { bans: updatedBans, ...usernameChangeUpdate }
+      const update: any = {
+        bans: updatedBans,
+        ...usernameChangeUpdate,
+        ...legacyBanUpdate,
+      }
       if (newHistoryRecords.length > 0) {
         update.banHistory = [...(user.banHistory || []), ...newHistoryRecords]
       }
       await updateUser(db, userId, update)
     } else {
       // No bans remaining - need to delete the bans field entirely
-      const update: any = { bans: FieldVal.delete(), ...usernameChangeUpdate }
+      const update: any = {
+        bans: FieldVal.delete(),
+        ...usernameChangeUpdate,
+        ...legacyBanUpdate,
+      }
       if (newHistoryRecords.length > 0) {
         update.banHistory = [...(user.banHistory || []), ...newHistoryRecords]
       }
