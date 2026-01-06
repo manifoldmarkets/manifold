@@ -222,7 +222,7 @@ function PredicteGame(props: {
       markets: orderedMarkets, // Save user's current order
       correctOrder,
       attempts: feedback,
-      completed: allCorrect || newAttemptCount >= 5,
+      completed: allCorrect || newAttemptCount >= 4,
       won: allCorrect,
     })
   }
@@ -252,7 +252,7 @@ function PredicteGame(props: {
           reorder, then submit to check your answer.
         </p>
         {attemptNumber > 0 && !gameState.completed && (
-          <p className="text-ink-500 text-sm">Attempt {attemptNumber}/5</p>
+          <p className="text-ink-500 text-sm">Attempt {attemptNumber}/4</p>
         )}
       </Col>
 
@@ -317,9 +317,9 @@ function PredicteGame(props: {
           onClick={handleSubmit}
           size="xl"
           color="indigo"
-          disabled={attemptNumber >= 5}
+          disabled={attemptNumber >= 4}
         >
-          Submit ({5 - attemptNumber} attempts remaining)
+          Submit ({4 - attemptNumber} attempts remaining)
         </Button>
       ) : (
         <Col className="gap-3">
