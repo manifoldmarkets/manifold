@@ -391,7 +391,9 @@ function PredicteGame(props: {
             <div className="mb-2 text-4xl">{gameState.won ? '🎉' : '😅'}</div>
             <div className="text-xl font-bold">
               {gameState.won
-                ? `Perfect in ${attemptNumber}!`
+                ? attemptNumber === 1
+                  ? 'Perfect!'
+                  : `You got it in ${attemptNumber} tries!`
                 : 'Better luck tomorrow!'}
             </div>
             {gameState.won && (
