@@ -241,21 +241,47 @@ function PredicteGame(props: {
     return <LoadingIndicator />
   }
 
+  const correctCount = orderedMarkets.filter((m) => isMarketLocked(m.id)).length
+
   return (
     <Col className="w-full max-w-xl gap-6">
-      <Col className="gap-2">
-        <h1 className="text-primary-700 text-3xl font-bold tracking-tight">
+      {/* Header */}
+      <Col className="items-center gap-3 text-center">
+        <div className="text-5xl">🔮</div>
+        <h1 className="bg-gradient-to-r from-violet-600 via-fuchsia-500 to-pink-500 bg-clip-text text-4xl font-black tracking-tight text-transparent">
           Predictle
         </h1>
-        <p className="text-ink-600 text-sm">
-          Arrange these markets from highest to lowest probability. Drag to
-          reorder, then submit to check your answer.
+        <p className="max-w-sm text-sm text-slate-600 dark:text-slate-300">
+          Sort these markets from <span className="font-semibold">highest</span>{' '}
+          to <span className="font-semibold">lowest</span> probability
         </p>
+
+        {/* Progress dots */}
+        {!gameState.completed && (
+          <Row className="gap-2">
+            {[1, 2, 3, 4].map((i) => (
+              <div
+                key={i}
+                className={clsx(
+                  'h-3 w-3 rounded-full transition-all',
+                  i <= attemptNumber
+                    ? 'bg-gradient-to-br from-violet-500 to-fuchsia-500 shadow-md shadow-violet-200 dark:shadow-violet-500/50'
+                    : 'bg-slate-200 dark:bg-slate-600'
+                )}
+              />
+            ))}
+          </Row>
+        )}
+
+        {/* Score indicator */}
         {attemptNumber > 0 && !gameState.completed && (
-          <p className="text-ink-500 text-sm">Attempt {attemptNumber}/4</p>
+          <div className="rounded-full bg-emerald-100 px-4 py-1.5 text-sm font-medium text-emerald-700 dark:bg-emerald-500/20 dark:text-emerald-400 dark:ring-1 dark:ring-emerald-500/30">
+            ✓ {correctCount}/5 correct
+          </div>
         )}
       </Col>
 
+      {/* Game area */}
       <DragDropContext onDragEnd={handleDragEnd}>
         <Droppable droppableId="markets">
           {(provided, snapshot) => (
@@ -263,17 +289,17 @@ function PredicteGame(props: {
               {...provided.droppableProps}
               ref={provided.innerRef}
               className={clsx(
-                'rounded-xl border-2 border-dashed p-2 transition-colors',
+                'rounded-2xl border-2 p-3 transition-all duration-200',
                 snapshot.isDraggingOver
-                  ? 'border-primary-400 bg-primary-50'
-                  : 'border-ink-200 bg-canvas-50'
+                  ? 'border-fuchsia-300 bg-fuchsia-50 shadow-lg shadow-fuchsia-100 dark:border-fuchsia-500/50 dark:bg-fuchsia-500/10 dark:shadow-fuchsia-500/20'
+                  : 'border-slate-200 bg-slate-50 dark:border-slate-700 dark:bg-slate-800/50'
               )}
             >
               <Col className="gap-2">
-                <div className="text-ink-400 flex items-center gap-1 px-3 text-xs font-medium uppercase tracking-wider">
-                  <span>↑</span>
-                  <span>High probability</span>
-                </div>
+                <Row className="items-center justify-center gap-2 py-1 text-xs font-bold uppercase tracking-widest text-slate-500 dark:text-slate-400">
+                  <span className="text-base">📈</span>
+                  <span>Higher probability</span>
+                </Row>
                 {orderedMarkets.map((market, index) => (
                   <Draggable
                     key={market.id}
@@ -302,40 +328,59 @@ function PredicteGame(props: {
                   </Draggable>
                 ))}
                 {provided.placeholder}
-                <div className="text-ink-400 flex items-center gap-1 px-3 text-xs font-medium uppercase tracking-wider">
-                  <span>↓</span>
-                  <span>Low probability</span>
-                </div>
+                <Row className="items-center justify-center gap-2 py-1 text-xs font-bold uppercase tracking-widest text-slate-500 dark:text-slate-400">
+                  <span className="text-base">📉</span>
+                  <span>Lower probability</span>
+                </Row>
               </Col>
             </div>
           )}
         </Droppable>
       </DragDropContext>
 
+      {/* Submit / Results */}
       {!gameState.completed ? (
-        <Button
+        <button
           onClick={handleSubmit}
-          size="xl"
-          color="indigo"
           disabled={attemptNumber >= 4}
+          className={clsx(
+            'relative w-full overflow-hidden rounded-xl py-4 text-lg font-bold text-white shadow-lg transition-all',
+            attemptNumber >= 4
+              ? 'cursor-not-allowed bg-gray-400 dark:bg-slate-600'
+              : 'bg-gradient-to-r from-violet-600 via-fuchsia-500 to-pink-500 shadow-fuchsia-200 hover:scale-[1.02] hover:shadow-xl hover:shadow-fuchsia-200 active:scale-[0.98] dark:shadow-fuchsia-500/30 dark:hover:shadow-fuchsia-500/40'
+          )}
         >
-          Submit ({4 - attemptNumber} attempts remaining)
-        </Button>
+          <span className="relative z-10">
+            🎯 Submit Guess ({4 - attemptNumber} left)
+          </span>
+        </button>
       ) : (
         <Col className="gap-3">
           <div
             className={clsx(
-              'rounded-lg p-4 text-center text-lg font-semibold',
+              'rounded-2xl p-6 text-center shadow-lg',
               gameState.won
-                ? 'bg-teal-100 text-teal-800'
-                : 'bg-amber-100 text-amber-800'
+                ? 'bg-gradient-to-br from-emerald-400 to-teal-500 text-white shadow-emerald-200 dark:from-emerald-600 dark:to-teal-600 dark:shadow-emerald-500/30'
+                : 'bg-gradient-to-br from-amber-400 to-orange-500 text-white shadow-amber-200 dark:from-amber-600 dark:to-orange-600 dark:shadow-amber-500/30'
             )}
           >
-            {gameState.won
-              ? `🎉 You got it in ${attemptNumber} ${
-                  attemptNumber === 1 ? 'try' : 'tries'
-                }!`
-              : `Game over! Better luck tomorrow.`}
+            <div className="mb-2 text-4xl">{gameState.won ? '🎉' : '😅'}</div>
+            <div className="text-xl font-bold">
+              {gameState.won
+                ? `Perfect in ${attemptNumber}!`
+                : 'Better luck tomorrow!'}
+            </div>
+            {gameState.won && (
+              <div className="mt-1 text-sm opacity-90">
+                {attemptNumber === 1
+                  ? 'Incredible! First try!'
+                  : attemptNumber === 2
+                  ? 'Amazing! So close to perfect!'
+                  : attemptNumber === 3
+                  ? 'Great job!'
+                  : 'You made it!'}
+              </div>
+            )}
           </div>
           <ShareButton
             attempts={gameState.attempts}
@@ -345,9 +390,9 @@ function PredicteGame(props: {
         </Col>
       )}
 
-      <p className="text-ink-400 text-center text-xs">
-        Come back tomorrow for a new puzzle! Markets update with current
-        probabilities.
+      {/* Footer */}
+      <p className="text-center text-xs text-slate-400 dark:text-slate-500">
+        Predictle #{puzzleNumber} • New puzzle daily at midnight PT
       </p>
     </Col>
   )
@@ -363,53 +408,110 @@ function MarketCard(props: {
 }) {
   const { market, feedback, isDragging, showProb, gameOver, isLocked } = props
   const lastFeedback = feedback[feedback.length - 1]
+  const isCorrect = lastFeedback === 'correct'
 
   return (
     <div
       className={clsx(
-        'bg-canvas-0 group relative rounded-lg border px-4 py-3 shadow-sm transition-all',
+        'group relative rounded-xl border-2 px-4 py-3 transition-all duration-200',
         isDragging
-          ? 'border-primary-500 ring-primary-200 shadow-lg ring-2'
-          : lastFeedback === 'correct'
-          ? 'border-teal-400 bg-teal-50'
-          : 'border-ink-200 hover:border-ink-300',
-        !gameOver && !isLocked && 'cursor-grab active:cursor-grabbing'
+          ? 'scale-105 border-fuchsia-400 bg-fuchsia-50 shadow-xl shadow-fuchsia-200 dark:border-fuchsia-500 dark:bg-fuchsia-500/20 dark:shadow-fuchsia-500/30'
+          : isCorrect
+          ? 'border-emerald-300 bg-emerald-50 dark:border-emerald-500/50 dark:bg-emerald-500/10'
+          : 'border-slate-200 bg-white hover:border-slate-300 hover:shadow-md dark:border-slate-600 dark:bg-slate-800 dark:hover:border-slate-500 dark:hover:bg-slate-700/80 dark:hover:shadow-none',
+        !gameOver && !isLocked && 'cursor-grab active:cursor-grabbing',
+        isLocked &&
+          'ring-2 ring-emerald-200 dark:ring-1 dark:ring-emerald-500/50'
       )}
     >
       <Row className="items-center gap-3">
-        <Col className="min-w-0 flex-1 gap-0.5">
+        {/* Drag handle indicator */}
+        {!gameOver && !isLocked && (
+          <div className="flex flex-col gap-0.5 text-slate-300 transition-colors group-hover:text-slate-400 dark:text-slate-500 dark:group-hover:text-slate-400">
+            <div className="flex gap-0.5">
+              <div className="h-1 w-1 rounded-full bg-current" />
+              <div className="h-1 w-1 rounded-full bg-current" />
+            </div>
+            <div className="flex gap-0.5">
+              <div className="h-1 w-1 rounded-full bg-current" />
+              <div className="h-1 w-1 rounded-full bg-current" />
+            </div>
+            <div className="flex gap-0.5">
+              <div className="h-1 w-1 rounded-full bg-current" />
+              <div className="h-1 w-1 rounded-full bg-current" />
+            </div>
+          </div>
+        )}
+
+        <Col className="min-w-0 flex-1 gap-1">
           {gameOver ? (
             <Link
               href={contractPath({
                 creatorUsername: market.creatorUsername,
                 slug: market.slug,
               })}
-              className="text-ink-900 hover:text-primary-700 line-clamp-2 text-sm font-medium transition-colors"
+              className={clsx(
+                'line-clamp-2 text-sm font-semibold transition-colors',
+                isCorrect
+                  ? 'text-emerald-800 hover:text-emerald-600 dark:text-emerald-300 dark:hover:text-emerald-200'
+                  : 'text-slate-800 hover:text-fuchsia-600 dark:text-slate-200 dark:hover:text-fuchsia-400'
+              )}
               onClick={(e) => e.stopPropagation()}
             >
               {market.question}
             </Link>
           ) : (
-            <span className="text-ink-900 line-clamp-2 text-sm font-medium">
+            <span className="line-clamp-2 text-sm font-semibold text-slate-800 dark:text-slate-200">
               {market.question}
             </span>
           )}
           {showProb && (
-            <span className="text-ink-500 text-xs">
-              {Math.round(market.prob * 100)}% probability
-            </span>
+            <div className="flex items-center gap-2">
+              <div className="h-1.5 flex-1 overflow-hidden rounded-full bg-slate-200 dark:bg-slate-700">
+                <div
+                  className={clsx(
+                    'h-full rounded-full transition-all',
+                    isCorrect
+                      ? 'bg-gradient-to-r from-emerald-400 to-teal-400 dark:from-emerald-500 dark:to-teal-500'
+                      : 'bg-gradient-to-r from-violet-400 to-fuchsia-400 dark:from-violet-500 dark:to-fuchsia-500'
+                  )}
+                  style={{ width: `${Math.round(market.prob * 100)}%` }}
+                />
+              </div>
+              <span
+                className={clsx(
+                  'text-xs font-bold',
+                  isCorrect
+                    ? 'text-emerald-600 dark:text-emerald-400'
+                    : 'text-fuchsia-600 dark:text-fuchsia-400'
+                )}
+              >
+                {Math.round(market.prob * 100)}%
+              </span>
+            </div>
           )}
         </Col>
+
+        {/* Feedback emojis */}
         <Col className="flex-shrink-0 items-end gap-1">
           {feedback.length > 0 && (
-            <Row className="gap-0.5 text-lg">
+            <Row className="gap-1 text-xl">
               {feedback.map((f, i) => (
-                <span key={i}>{getFeedbackEmoji(f)}</span>
+                <span
+                  key={i}
+                  className={clsx(
+                    'transition-transform',
+                    i === feedback.length - 1 && 'animate-bounce'
+                  )}
+                  style={{
+                    animationDuration: '0.5s',
+                    animationIterationCount: 1,
+                  }}
+                >
+                  {getFeedbackEmoji(f)}
+                </span>
               ))}
             </Row>
-          )}
-          {!isDragging && feedback.length === 0 && (
-            <span className="text-ink-300 text-xl">⋮⋮</span>
           )}
         </Col>
       </Row>
@@ -447,9 +549,17 @@ Play at https://manifold.markets/predictle`
   }
 
   return (
-    <Button onClick={handleShare} color="indigo-outline" className="w-full">
-      {copied ? 'Copied!' : 'Share results'}
-    </Button>
+    <button
+      onClick={handleShare}
+      className={clsx(
+        'w-full rounded-xl border-2 py-3 font-bold transition-all',
+        copied
+          ? 'border-emerald-300 bg-emerald-50 text-emerald-600 dark:border-emerald-500/50 dark:bg-emerald-500/20 dark:text-emerald-400'
+          : 'border-violet-200 bg-violet-50 text-violet-600 hover:border-violet-300 hover:bg-violet-100 dark:border-violet-500/50 dark:bg-violet-500/20 dark:text-violet-400 dark:hover:border-violet-400 dark:hover:bg-violet-500/30'
+      )}
+    >
+      {copied ? '✓ Copied to clipboard!' : '📋 Share results'}
+    </button>
   )
 }
 
@@ -457,17 +567,28 @@ export default function PredictlePage() {
   const { data, loading } = useAPIGetter('get-predictle-markets', {})
 
   return (
-    <Page trackPageView="predictle" hideFooter>
+    <Page trackPageView="predictle" hideFooter className="!bg-transparent">
       <SEO
         title="Predictle"
         description="A daily game where you arrange prediction markets by probability. Can you guess the order?"
         url="/predictle"
       />
-      <Col className="mx-auto w-full max-w-xl px-4 py-6">
+      {/* Light mode gradient background */}
+      <div className="fixed inset-0 -z-10 bg-gradient-to-br from-violet-100 via-fuchsia-50 to-amber-50 dark:hidden" />
+      <div className="fixed inset-0 -z-10 bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-violet-200/30 via-transparent to-transparent dark:hidden" />
+      {/* Dark mode gradient background */}
+      <div className="fixed inset-0 -z-10 hidden bg-slate-900 dark:block" />
+      <div className="fixed inset-0 -z-10 hidden bg-gradient-to-br from-violet-900/30 via-slate-900 to-fuchsia-900/20 dark:block" />
+      <div className="fixed inset-0 -z-10 hidden bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-violet-800/20 via-transparent to-transparent dark:block" />
+
+      <Col className="mx-auto w-full max-w-xl px-4 py-8">
         {loading || !data ? (
           <Col className="items-center gap-4 py-12">
+            <div className="text-5xl">🔮</div>
             <LoadingIndicator />
-            <p className="text-ink-500">Loading today's markets...</p>
+            <p className="text-slate-500 dark:text-slate-400">
+              Loading today's puzzle...
+            </p>
           </Col>
         ) : (
           <PredicteGame
