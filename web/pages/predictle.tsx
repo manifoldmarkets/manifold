@@ -14,6 +14,7 @@ import Link from 'next/link'
 import { LoadingIndicator } from 'web/components/widgets/loading-indicator'
 import { useUser } from 'web/hooks/use-user'
 import { api } from 'web/lib/api/api'
+import { track } from 'web/lib/service/analytics'
 
 type Market = {
   id: string
@@ -121,6 +122,38 @@ function PredicteGame(props: {
       setOrderedMarkets(gameState.markets)
     }
   }, [ready, gameState.dateString, dateString, gameState.markets])
+
+  // Track analytics when game is completed
+  const trackedCompletionRef = useRef(false)
+  useEffect(() => {
+    // Reset trackedCompletionRef when it's a new day
+    if (gameState.dateString !== dateString) {
+      trackedCompletionRef.current = false
+    }
+
+    if (
+      ready &&
+      gameState.completed &&
+      !trackedCompletionRef.current &&
+      gameState.dateString === dateString
+    ) {
+      trackedCompletionRef.current = true
+      const attemptCount = gameState.attempts[0]?.feedback.length || 0
+      track('predictle completed', {
+        puzzleNumber,
+        attempts: attemptCount,
+        won: gameState.won,
+      })
+    }
+  }, [
+    ready,
+    gameState.completed,
+    gameState.won,
+    gameState.attempts,
+    gameState.dateString,
+    puzzleNumber,
+    dateString,
+  ])
 
   // Save result to database when game is completed (for logged-in users)
   useEffect(() => {
