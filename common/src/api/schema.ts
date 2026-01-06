@@ -2691,6 +2691,19 @@ export const API = (_apiTypeCheck = {
       puzzleNumber: number
     },
   },
+  'save-predictle-result': {
+    method: 'POST',
+    visibility: 'undocumented',
+    authed: true,
+    props: z
+      .object({
+        puzzleNumber: z.number(),
+        attempts: z.number(), // number of attempts taken
+        won: z.boolean(),
+      })
+      .strict(),
+    returns: {} as { success: boolean },
+  },
 } as const)
 
 export type APIPath = keyof typeof API

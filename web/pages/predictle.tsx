@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useRef } from 'react'
 import { DragDropContext, Droppable, Draggable } from '@hello-pangea/dnd'
 import clsx from 'clsx'
 
@@ -12,6 +12,8 @@ import { Button } from 'web/components/buttons/button'
 import { contractPath } from 'common/contract'
 import Link from 'next/link'
 import { LoadingIndicator } from 'web/components/widgets/loading-indicator'
+import { useUser } from 'web/hooks/use-user'
+import { api } from 'web/lib/api/api'
 
 type Market = {
   id: string
@@ -48,6 +50,9 @@ function PredicteGame(props: {
     dateString,
     puzzleNumber,
   } = props
+
+  const user = useUser()
+  const savedResultRef = useRef(false)
 
   const [gameState, setGameState, ready] = usePersistentLocalState<GameState>(
     {
@@ -116,6 +121,37 @@ function PredicteGame(props: {
       setOrderedMarkets(gameState.markets)
     }
   }, [ready, gameState.dateString, dateString, gameState.markets])
+
+  // Save result to database when game is completed (for logged-in users)
+  useEffect(() => {
+    if (
+      ready &&
+      gameState.completed &&
+      user &&
+      !savedResultRef.current &&
+      gameState.dateString === dateString
+    ) {
+      savedResultRef.current = true
+      const attemptCount = gameState.attempts[0]?.feedback.length || 0
+      api('save-predictle-result', {
+        puzzleNumber,
+        attempts: attemptCount,
+        won: gameState.won,
+      }).catch((e) => {
+        console.error('Failed to save predictle result:', e)
+        savedResultRef.current = false // Allow retry on error
+      })
+    }
+  }, [
+    ready,
+    gameState.completed,
+    gameState.won,
+    gameState.attempts,
+    gameState.dateString,
+    user,
+    puzzleNumber,
+    dateString,
+  ])
 
   // Check if a market is locked (correctly guessed)
   const isMarketLocked = (marketId: string): boolean => {

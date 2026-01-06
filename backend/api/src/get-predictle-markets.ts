@@ -53,15 +53,14 @@ function dateToSeed(dateString: string): number {
   return Math.abs(hash)
 }
 
-// Calculate puzzle number (days since launch, in Pacific Time)
-const LAUNCH_DATE_PT = '2026-01-05'
-function getPuzzleNumber(dateString: string): number {
-  // Both dates are in YYYY-MM-DD format (Pacific Time)
-  const launch = new Date(LAUNCH_DATE_PT + 'T00:00:00')
-  const puzzle = new Date(dateString + 'T00:00:00')
-  const diffTime = puzzle.getTime() - launch.getTime()
-  const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24))
-  return diffDays + 1 // Puzzle #1 on launch day
+// Get puzzle number by counting records in the database
+async function getPuzzleNumber(
+  pg: ReturnType<typeof createSupabaseDirectClient>
+): Promise<number> {
+  const result = await pg.one<{ count: string }>(
+    `SELECT COUNT(*) as count FROM predictle_daily`
+  )
+  return parseInt(result.count, 10) + 1 // +1 for the new puzzle we're about to create
 }
 
 export const getPredictle: APIHandler<'get-predictle-markets'> = async () => {
@@ -86,11 +85,20 @@ export const getPredictle: APIHandler<'get-predictle-markets'> = async () => {
   )
 
   if (cached) {
+    // Fallback for old cached data that might not have puzzleNumber
+    const puzzleNumber =
+      cached.data.puzzleNumber ??
+      (await pg
+        .one<{ count: string }>(
+          `SELECT COUNT(*) as count FROM predictle_daily WHERE date_pt <= $1`,
+          [todayDate]
+        )
+        .then((r) => parseInt(r.count, 10)))
+
     return {
       ...cached.data,
+      puzzleNumber,
       dateString: todayDate,
-      // Use cached puzzleNumber if available, otherwise calculate it
-      puzzleNumber: cached.data.puzzleNumber ?? getPuzzleNumber(todayDate),
     }
   }
 
@@ -146,7 +154,7 @@ export const getPredictle: APIHandler<'get-predictle-markets'> = async () => {
     prob: 'prob' in c ? c.prob : 0.5,
   }))
 
-  const puzzleNumber = getPuzzleNumber(todayDate)
+  const puzzleNumber = await getPuzzleNumber(pg)
 
   const data: PredictleData = {
     markets: predictleMarkets,
