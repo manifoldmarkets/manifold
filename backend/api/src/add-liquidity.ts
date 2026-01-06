@@ -1,4 +1,5 @@
 import { getNewLiquidityProvision } from 'common/add-liquidity'
+import { isUserBanned } from 'common/ban-utils'
 import { APIError, type APIHandler } from './helpers/endpoint'
 import { SUBSIDY_FEE } from 'common/economy'
 import { runTxnInBetQueue } from 'shared/txn/run-txn'
@@ -52,6 +53,10 @@ export const addContractLiquidity = async (
 
     const user = await getUser(userId, tx)
     if (!user) throw new APIError(401, 'Your account was not found')
+    if (user.userDeleted)
+      throw new APIError(403, 'Your account has been deleted')
+    if (isUserBanned(user, 'trading'))
+      throw new APIError(403, 'You are banned from trading, which includes adding liquidity')
 
     if (user.balance < amount) throw new APIError(403, 'Insufficient balance')
 

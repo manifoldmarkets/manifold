@@ -71,10 +71,11 @@ import {
 } from 'shared/websockets/helpers'
 import { z } from 'zod'
 import { APIError, AuthedUser, type APIHandler } from './helpers/endpoint'
-import { onlyUnbannedUsers } from './helpers/rate-limit'
+import { onlyUsersWhoCanPerformAction } from './helpers/rate-limit'
 type Body = ValidatedAPIParams<'market'>
 
-export const createMarket: APIHandler<'market'> = onlyUnbannedUsers(
+export const createMarket: APIHandler<'market'> = onlyUsersWhoCanPerformAction(
+  'createMarket',
   async (body, auth) => {
     const pg = createSupabaseDirectClient()
     const { groupIds } = body

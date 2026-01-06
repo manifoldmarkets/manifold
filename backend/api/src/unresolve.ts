@@ -1,4 +1,5 @@
 import { APIError, APIHandler } from 'api/helpers/endpoint'
+import { isUserBanned } from 'common/ban-utils'
 import { HOUSE_LIQUIDITY_PROVIDER_ID } from 'common/antes'
 import { getCpmmProbability } from 'common/calculate-cpmm'
 import { Contract, MINUTES_ALLOWED_TO_UNRESOLVE } from 'common/contract'
@@ -14,6 +15,7 @@ import { removeUndefinedProps } from 'common/util/object'
 import { MINUTE_MS } from 'common/util/time'
 import { trackPublicEvent } from 'shared/analytics'
 import { betsQueue } from 'shared/helpers/fn-queue'
+import { getUser } from 'shared/utils'
 import {
   bulkUpdateContractMetrics,
   getContractMetricsForContract,
@@ -72,6 +74,14 @@ const verifyUserCanUnresolve = async (
   answerId?: string
 ) => {
   const isMod = isModId(userId) || isAdminId(userId)
+
+  // Check if user is banned from market control
+  const user = await getUser(userId, pg)
+  if (!user) throw new APIError(404, 'User not found')
+  if (user.userDeleted)
+    throw new APIError(403, 'Your account has been deleted')
+  if (isUserBanned(user, 'marketControl') || user.isBannedFromPosting)
+    throw new APIError(403, 'You are banned from unresolving markets')
 
   const { creatorId, mechanism, isSpicePayout, token } = contract
 

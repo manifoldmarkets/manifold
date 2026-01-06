@@ -543,10 +543,11 @@ function DotMenu(props: {
 
               try {
                 await api('hide-comment', { commentPath })
-              } catch (e) {
-                toast.error(
-                  wasHidden ? 'Error unhiding comment' : 'Error hiding comment'
-                )
+              } catch (e: any) {
+                const errorMessage =
+                  e?.message ||
+                  (wasHidden ? 'Error unhiding comment' : 'Error hiding comment')
+                toast.error(errorMessage)
                 console.error(e)
                 // undo optimistic update
                 updateComment({ hidden: wasHidden })

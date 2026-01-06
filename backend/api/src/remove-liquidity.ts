@@ -1,4 +1,5 @@
 import { removeCpmmLiquidity } from 'common/calculate-cpmm'
+import { isUserBanned } from 'common/ban-utils'
 import { formatMoneyWithDecimals } from 'common/util/format'
 import { runTransactionWithRetries } from 'shared/transact-with-retries'
 import { updateContract } from 'shared/supabase/contracts'
@@ -20,11 +21,10 @@ export const removeLiquidity: APIHandler<
 > = async ({ contractId, amount: totalAmount }, auth) => {
   const user = await getUser(auth.uid)
   if (!user) throw new APIError(404, 'User not found')
-  if (user.isBannedFromPosting || user.userDeleted)
-    throw new APIError(
-      403,
-      'You are banned from posting or your account has been deleted'
-    )
+  if (user.userDeleted)
+    throw new APIError(403, 'Your account has been deleted')
+  if (isUserBanned(user, 'trading'))
+    throw new APIError(403, 'You are banned from trading, which includes removing liquidity')
   const liquidity = await runTransactionWithRetries(async (pgTrans) => {
     const contract = await getContract(pgTrans, contractId)
     if (!contract) throw new APIError(404, `Contract not found`)

@@ -1,5 +1,6 @@
 import { sumBy } from 'lodash'
 import { HOUSE_LIQUIDITY_PROVIDER_ID } from 'common/antes'
+import { isUserBanned } from 'common/ban-utils'
 import { Contract, MarketContract, MultiContract } from 'common/contract'
 import { getContract, getUser, isProd, log } from 'shared/utils'
 import { APIError, type APIHandler, validate } from './helpers/endpoint'
@@ -43,8 +44,10 @@ export const resolveMarketMain: APIHandler<
 
   const caller = await getUser(auth.uid)
   if (!caller) throw new APIError(400, 'Caller not found')
-  if (caller.isBannedFromPosting || caller.userDeleted)
-    throw new APIError(403, 'Deleted or banned user cannot resolve markets')
+  if (caller.userDeleted)
+    throw new APIError(403, 'Your account has been deleted')
+  if (isUserBanned(caller, 'marketControl') || caller.isBannedFromPosting)
+    throw new APIError(403, 'You are banned from resolving markets')
   if (creatorId !== auth.uid) throwErrorIfNotMod(auth.uid)
 
   if (
