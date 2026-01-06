@@ -10,9 +10,11 @@ import { useAPIGetter } from 'web/hooks/use-api-getter'
 import { usePersistentLocalState } from 'web/hooks/use-persistent-local-state'
 import { Button } from 'web/components/buttons/button'
 import { contractPath } from 'common/contract'
+import { referralQuery } from 'common/util/share'
 import Link from 'next/link'
 import { LoadingIndicator } from 'web/components/widgets/loading-indicator'
 import { useUser } from 'web/hooks/use-user'
+import { useSaveReferral } from 'web/hooks/use-save-referral'
 import { api } from 'web/lib/api/api'
 import { track } from 'web/lib/service/analytics'
 
@@ -486,6 +488,7 @@ function PredicteGame(props: {
             attempts={gameState.attempts}
             puzzleNumber={puzzleNumber}
             markets={orderedMarkets}
+            username={user?.username}
           />
         </Col>
       )}
@@ -623,8 +626,9 @@ function ShareButton(props: {
   attempts: { marketId: string; feedback: Feedback[] }[]
   puzzleNumber: number
   markets: Market[]
+  username?: string
 }) {
-  const { attempts, puzzleNumber, markets } = props
+  const { attempts, puzzleNumber, markets, username } = props
   const [copied, setCopied] = useState(false)
 
   const generateShareText = () => {
@@ -635,10 +639,14 @@ function ShareButton(props: {
       return marketAttempt.feedback.map(getFeedbackEmoji).join('')
     })
 
+    const url = `https://manifold.markets/predictle${
+      username ? referralQuery(username) : ''
+    }`
+
     return `Predictle #${puzzleNumber}
 ${feedbackLines.join('\n')}
 
-Play at https://manifold.markets/predictle`
+Play at ${url}`
   }
 
   const handleShare = async () => {
@@ -664,6 +672,9 @@ Play at https://manifold.markets/predictle`
 }
 
 export default function PredictlePage() {
+  const user = useUser()
+  useSaveReferral(user)
+
   const { data, loading } = useAPIGetter('get-predictle-markets', {})
 
   return (
