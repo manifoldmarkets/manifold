@@ -10,20 +10,7 @@ export const savePredicleResult: APIHandler<'save-predictle-result'> = async (
 
   const pg = createSupabaseDirectClient()
 
-  // Ensure table exists
-  await pg.none(`
-    CREATE TABLE IF NOT EXISTS predictle_results (
-      id SERIAL PRIMARY KEY,
-      user_id TEXT NOT NULL,
-      puzzle_number INT NOT NULL,
-      attempts INT NOT NULL,
-      won BOOLEAN NOT NULL,
-      created_time TIMESTAMPTZ DEFAULT NOW(),
-      UNIQUE(user_id, puzzle_number)
-    )
-  `)
-
-  // Insert or update the result (in case user somehow submits twice)
+  // Insert or update the result (handles duplicate submissions gracefully)
   await pg.none(
     `INSERT INTO predictle_results (user_id, puzzle_number, attempts, won)
      VALUES ($1, $2, $3, $4)

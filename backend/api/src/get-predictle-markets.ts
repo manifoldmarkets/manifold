@@ -1,6 +1,7 @@
 import { Contract } from 'common/contract'
 import { createSupabaseDirectClient } from 'shared/supabase/init'
 import { APIHandler } from 'api/helpers/endpoint'
+import { APIError } from 'common/api/utils'
 import { HIDE_FROM_NEW_USER_SLUGS } from 'common/envs/constants'
 
 type PredicleMarket = {
@@ -17,8 +18,10 @@ type PredictleData = {
   puzzleNumber: number
 }
 
+const MIN_MARKETS_REQUIRED = 5
+
 // Seeded random number generator for deterministic results
-function seededRandom(seed: number) {
+function seededRandom(seed: number): number {
   const x = Math.sin(seed++) * 10000
   return x - Math.floor(x)
 }
@@ -35,11 +38,10 @@ function shuffleWithSeed<T>(array: T[], seed: number): T[] {
 // Get a date string for today in Pacific Time
 function getTodayDateString(): string {
   const now = new Date()
-  // Format date in Pacific Time
-  const pacificDate = now.toLocaleDateString('en-CA', {
+  // Format date in Pacific Time (YYYY-MM-DD)
+  return now.toLocaleDateString('en-CA', {
     timeZone: 'America/Los_Angeles',
   })
-  return pacificDate // Returns YYYY-MM-DD format
 }
 
 // Convert date string to a seed number
@@ -53,7 +55,7 @@ function dateToSeed(dateString: string): number {
   return Math.abs(hash)
 }
 
-// Get puzzle number by counting records in the database
+// Get puzzle number by counting existing records
 async function getPuzzleNumber(
   pg: ReturnType<typeof createSupabaseDirectClient>
 ): Promise<number> {
@@ -63,51 +65,11 @@ async function getPuzzleNumber(
   return parseInt(result.count, 10) + 1 // +1 for the new puzzle we're about to create
 }
 
-export const getPredictle: APIHandler<'get-predictle-markets'> = async () => {
-  const pg = createSupabaseDirectClient()
-
-  // Get the current date in Pacific Time
-  const todayDate = getTodayDateString()
-
-  // Ensure table exists
-  await pg.none(`
-    CREATE TABLE IF NOT EXISTS predictle_daily (
-      date_pt TEXT PRIMARY KEY,
-      data JSONB NOT NULL,
-      created_time TIMESTAMPTZ DEFAULT NOW()
-    )
-  `)
-
-  // Check for cached data
-  const cached = await pg.oneOrNone<{ data: PredictleData }>(
-    `SELECT data FROM predictle_daily WHERE date_pt = $1`,
-    [todayDate]
-  )
-
-  if (cached) {
-    // Fallback for old cached data that might not have puzzleNumber
-    const puzzleNumber =
-      cached.data.puzzleNumber ??
-      (await pg
-        .one<{ count: string }>(
-          `SELECT COUNT(*) as count FROM predictle_daily WHERE date_pt <= $1`,
-          [todayDate]
-        )
-        .then((r) => parseInt(r.count, 10)))
-
-    return {
-      ...cached.data,
-      puzzleNumber,
-      dateString: todayDate,
-    }
-  }
-
-  // No cache - compute today's markets
-  const seed = dateToSeed(todayDate)
-
-  // Fetch high quality open binary markets with > 25 unique bettors
-  // Exclude fun/meme/self-resolving topics
-  const markets = await pg.map<Contract>(
+// Fetch high quality open binary markets
+async function fetchEligibleMarkets(
+  pg: ReturnType<typeof createSupabaseDirectClient>
+): Promise<Contract[]> {
+  return pg.map<Contract>(
     `
     SELECT data
     FROM contracts
@@ -128,12 +90,21 @@ export const getPredictle: APIHandler<'get-predictle-markets'> = async () => {
     [HIDE_FROM_NEW_USER_SLUGS],
     (r) => r.data as Contract
   )
+}
 
+// Select and prepare markets for today's puzzle
+function prepareMarkets(
+  markets: Contract[],
+  seed: number
+): {
+  predictleMarkets: PredicleMarket[]
+  correctOrder: Record<string, number>
+} {
   // Shuffle with today's seed and pick 5
   const shuffled = shuffleWithSeed(markets, seed)
-  const selectedMarkets = shuffled.slice(0, 5)
+  const selectedMarkets = shuffled.slice(0, MIN_MARKETS_REQUIRED)
 
-  // Sort by probability for the game (high to low)
+  // Sort by probability for the correct order (high to low)
   const sortedByProb = [...selectedMarkets].sort((a, b) => {
     const probA = 'prob' in a ? a.prob : 0.5
     const probB = 'prob' in b ? b.prob : 0.5
@@ -154,7 +125,38 @@ export const getPredictle: APIHandler<'get-predictle-markets'> = async () => {
     prob: 'prob' in c ? c.prob : 0.5,
   }))
 
-  // Get puzzle number and save atomically to avoid race conditions
+  return { predictleMarkets, correctOrder }
+}
+
+export const getPredictle: APIHandler<'get-predictle-markets'> = async () => {
+  const pg = createSupabaseDirectClient()
+  const todayDate = getTodayDateString()
+
+  // Check for cached data first
+  const cached = await pg.oneOrNone<{ data: PredictleData }>(
+    `SELECT data FROM predictle_daily WHERE date_pt = $1`,
+    [todayDate]
+  )
+
+  if (cached && cached.data.puzzleNumber) {
+    return {
+      ...cached.data,
+      dateString: todayDate,
+    }
+  }
+
+  // No cache - compute today's markets
+  const seed = dateToSeed(todayDate)
+  const markets = await fetchEligibleMarkets(pg)
+
+  if (markets.length < MIN_MARKETS_REQUIRED) {
+    throw new APIError(
+      500,
+      `Not enough markets available for today's puzzle. Found ${markets.length}, need ${MIN_MARKETS_REQUIRED}.`
+    )
+  }
+
+  const { predictleMarkets, correctOrder } = prepareMarkets(markets, seed)
   const puzzleNumber = await getPuzzleNumber(pg)
 
   const data: PredictleData = {
@@ -163,8 +165,8 @@ export const getPredictle: APIHandler<'get-predictle-markets'> = async () => {
     puzzleNumber,
   }
 
-  // Try to insert - if conflict, fetch the existing data to ensure we return the correct puzzleNumber
-  const insertResult = await pg.result(
+  // Try to insert - if conflict, fetch the existing data
+  const inserted = await pg.oneOrNone<{ data: PredictleData }>(
     `INSERT INTO predictle_daily (date_pt, data) VALUES ($1, $2)
      ON CONFLICT (date_pt) DO NOTHING
      RETURNING data`,
@@ -172,7 +174,7 @@ export const getPredictle: APIHandler<'get-predictle-markets'> = async () => {
   )
 
   // If insert failed (conflict), fetch the existing record
-  if (insertResult.rowCount === 0) {
+  if (!inserted) {
     const existing = await pg.one<{ data: PredictleData }>(
       `SELECT data FROM predictle_daily WHERE date_pt = $1`,
       [todayDate]
@@ -184,7 +186,7 @@ export const getPredictle: APIHandler<'get-predictle-markets'> = async () => {
   }
 
   return {
-    ...data,
+    ...inserted.data,
     dateString: todayDate,
   }
 }
