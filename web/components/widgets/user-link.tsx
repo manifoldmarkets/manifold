@@ -201,6 +201,19 @@ export function RestrictedBadge({ user }: { user: RestrictedBadgeUser }) {
     return null
   }
 
+  // Check if permanently banned from all three ban types
+  const allBanTypes: ('posting' | 'marketControl' | 'trading')[] = [
+    'posting',
+    'marketControl',
+    'trading',
+  ]
+  const isPermanentlyBannedFromAll =
+    user.bans &&
+    allBanTypes.every((banType) => {
+      const ban = user.bans?.[banType]
+      return ban && !ban.unbanTime // Has ban and no unban time = permanent
+    })
+
   // Build tooltip text showing what they're restricted from
   let tooltipText: string
   if (hasLegacyBan) {
@@ -210,10 +223,12 @@ export function RestrictedBadge({ user }: { user: RestrictedBadgeUser }) {
     tooltipText = `Restricted from: ${restrictions.join('; ')}`
   }
 
+  const badgeText = isPermanentlyBannedFromAll ? 'Banned' : 'Restricted'
+
   return (
     <Tooltip text={tooltipText} placement="bottom">
       <span className="ml-1.5 rounded-full bg-yellow-100 px-2.5 py-0.5 text-xs font-medium text-yellow-800 dark:bg-yellow-700 dark:text-yellow-100">
-        Restricted
+        {badgeText}
       </span>
     </Tooltip>
   )

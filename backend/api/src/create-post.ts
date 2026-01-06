@@ -11,8 +11,11 @@ import {
 } from 'shared/supabase/init'
 import { getUser } from 'shared/utils'
 import { APIError, APIHandler } from './helpers/endpoint'
+import { onlyUsersWhoCanPerformAction } from './helpers/rate-limit'
 
-export const createPost: APIHandler<'create-post'> = async (props, auth) => {
+export const createPost: APIHandler<'create-post'> = onlyUsersWhoCanPerformAction(
+  'post',
+  async (props, auth) => {
   const pg = createSupabaseDirectClient()
 
   const { title, content, isAnnouncement, visibility, isChangeLog } = props
@@ -62,7 +65,7 @@ export const createPost: APIHandler<'create-post'> = async (props, auth) => {
       },
     }
   })
-}
+})
 
 export const getSlug = async (tx: SupabaseTransaction, title: string) => {
   const proposedSlug = slugify(title)

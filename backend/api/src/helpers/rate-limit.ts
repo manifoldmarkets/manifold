@@ -81,6 +81,30 @@ export const onlyUnbannedUsers = <N extends APIPath>(f: APIHandler<N>) => {
   }
 }
 
+// Map action names to human-readable descriptions for error messages
+const getActionDisplayName = (action: string): string => {
+  const actionNames: Record<string, string> = {
+    comment: 'commenting',
+    post: 'posting',
+    message: 'messaging',
+    createMarket: 'creating markets',
+    updateMarket: 'editing markets',
+    resolveMarket: 'resolving markets',
+    editAnswer: 'editing answers',
+    createAnswer: 'creating answers',
+    hideComment: 'hiding comments',
+    trade: 'trading',
+    bet: 'betting',
+    managram: 'sending managrams',
+    addLiquidity: 'adding liquidity',
+    removeLiquidity: 'removing liquidity',
+    review: 'leaving reviews',
+    addTopic: 'adding topics',
+    pollVote: 'voting in polls',
+  }
+  return actionNames[action] || action
+}
+
 // New granular ban check
 export const onlyUsersWhoCanPerformAction = <N extends APIPath>(
   action: string,
@@ -100,9 +124,10 @@ export const onlyUsersWhoCanPerformAction = <N extends APIPath>(
     for (const banType of banTypes) {
       if (isUserBanned(user, banType)) {
         const message = getUserBanMessage(user, banType)
+        const displayName = getActionDisplayName(action)
         const errorMsg = message
-          ? `You are banned from ${action}. Reason: ${message}`
-          : `You are banned from ${action}`
+          ? `You are banned from ${displayName}. Reason: ${message}`
+          : `You are banned from ${displayName}`
         throw new APIError(403, errorMsg)
       }
     }

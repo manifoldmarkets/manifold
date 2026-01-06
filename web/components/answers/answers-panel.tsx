@@ -22,6 +22,7 @@ import {
 } from 'common/answer'
 import { LimitBet } from 'common/bet'
 import { getAnswerProbability } from 'common/calculate'
+import { getActiveBans } from 'common/ban-utils'
 import {
   CPMMMultiContract,
   Contract,
@@ -201,9 +202,13 @@ export function AnswersPanel(props: {
 
   const privateUser = usePrivateUser()
   const unresolvedAnswers = answers.filter((a) => !a.resolution)
+  // Adding answers is blocked by any ban type (posting, marketControl, trading)
+  const userHasAnyBan = user
+    ? getActiveBans(user).length > 0 || user.isBannedFromPosting
+    : false
   const canAddAnswer = Boolean(
     user &&
-      !user.isBannedFromPosting &&
+      !userHasAnyBan &&
       (addAnswersMode === 'ANYONE' ||
         (addAnswersMode === 'ONLY_CREATOR' &&
           user.id === contract.creatorId)) &&

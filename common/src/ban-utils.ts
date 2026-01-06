@@ -53,7 +53,8 @@ export function getBanTypesForAction(action: string): BanType[] {
     'updateMarket': ['marketControl'],
     'resolveMarket': ['marketControl'],
     'editAnswer': ['marketControl'],
-    'createAnswer': ['marketControl'],
+    // Adding answers affects liquidity (trading), market structure (marketControl), and content (posting)
+    'createAnswer': ['posting', 'marketControl', 'trading'],
     'hideComment': ['marketControl'],
     'trade': ['trading'],
     'bet': ['trading'],
@@ -102,9 +103,9 @@ export function getBanTypeDisplayName(banType: BanType): string {
 
 export function getBanTypeDescription(banType: BanType): string {
   const descriptions: Record<BanType, string> = {
-    posting: 'commenting, messaging, creating posts',
-    marketControl: 'creating, editing, resolving markets, hiding comments',
-    trading: 'betting, managrams, or liquidity changes',
+    posting: 'commenting, messaging, creating posts, adding answers',
+    marketControl: 'creating, editing, resolving markets, hiding comments, adding/editing answers',
+    trading: 'betting, managrams, liquidity changes, adding answers',
   }
   return descriptions[banType]
 }
