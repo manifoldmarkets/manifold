@@ -56,6 +56,10 @@ export function BanModal({
   const [unbanBanType, setUnbanBanType] = useState<BanType | null>(null)
   const [unbanNote, setUnbanNote] = useState('')
 
+  // Remove all bans modal state
+  const [removeAllBansModalOpen, setRemoveAllBansModalOpen] = useState(false)
+  const [removeAllBansNote, setRemoveAllBansNote] = useState('')
+
   // Username change restriction - default to true (restrict) when any ban is selected
   // undefined means use default behavior (restrict when banning)
   const [allowUsernameChange, setAllowUsernameChange] = useState<boolean | undefined>(undefined)
@@ -128,9 +132,16 @@ export function BanModal({
         unbanTimes.trading = Date.now() + tempBanDays.trading * DAY_MS
       }
 
+      // Only send ban types that are being added (true), not the ones left unchecked
+      // This allows ban stacking - existing bans are preserved when adding new ones
+      const bansToSend: Record<string, boolean> = {}
+      if (banTypes.posting) bansToSend.posting = true
+      if (banTypes.marketControl) bansToSend.marketControl = true
+      if (banTypes.trading) bansToSend.trading = true
+
       await api('ban-user', {
         userId: user.id,
-        bans: modAlertOnly ? undefined : banTypes,
+        bans: modAlertOnly ? undefined : (Object.keys(bansToSend).length > 0 ? bansToSend : undefined),
         unbanTimes: modAlertOnly ? undefined : unbanTimes,
         reason: reason.trim(),
         // Only send mod alert when "mod alert only" is checked, not when banning
@@ -204,6 +215,24 @@ export function BanModal({
     }
   }
 
+  const handleRemoveAllBans = async () => {
+    setIsSubmitting(true)
+    try {
+      await api('ban-user', {
+        userId: user.id,
+        removeAllBans: true,
+        unbanNote: removeAllBansNote.trim() || undefined,
+      })
+      toast.success('All bans removed')
+      setRemoveAllBansModalOpen(false)
+      window.location.reload()
+    } catch (error) {
+      toast.error('Failed to remove bans: ' + (error as Error).message)
+    } finally {
+      setIsSubmitting(false)
+    }
+  }
+
   const anyBanSelected = Object.values(banTypes).some((v) => v)
 
   return (
@@ -214,21 +243,37 @@ export function BanModal({
         {/* Current Bans/Alerts Section */}
         {hasCurrentBansOrAlerts && (
           <div className="border-ink-200 rounded border">
-            <button
-              className="flex w-full items-center justify-between p-3 text-left"
-              onClick={() => setShowCurrentBans(!showCurrentBans)}
-            >
-              <span className="font-semibold">
-                Current Bans/Alerts ({activeBans.length} ban
-                {activeBans.length !== 1 ? 's' : ''}
-                {user.modAlert && !user.modAlert.dismissed ? ', 1 alert' : ''})
-              </span>
-              {showCurrentBans ? (
-                <ChevronUpIcon className="h-5 w-5" />
-              ) : (
-                <ChevronDownIcon className="h-5 w-5" />
+            <div className="flex w-full items-center gap-2 p-3">
+              <button
+                className="flex flex-1 items-center gap-2 text-left"
+                onClick={() => setShowCurrentBans(!showCurrentBans)}
+              >
+                <span className="font-semibold">
+                  Current Bans/Alerts ({activeBans.length} ban
+                  {activeBans.length !== 1 ? 's' : ''}
+                  {user.modAlert && !user.modAlert.dismissed ? ', 1 alert' : ''})
+                </span>
+                {showCurrentBans ? (
+                  <ChevronUpIcon className="h-5 w-5 shrink-0" />
+                ) : (
+                  <ChevronDownIcon className="h-5 w-5 shrink-0" />
+                )}
+              </button>
+              {activeBans.length >= 1 && (
+                <Button
+                  color="red-outline"
+                  size="2xs"
+                  className="shrink-0"
+                  onClick={(e) => {
+                    e.stopPropagation()
+                    setRemoveAllBansNote('')
+                    setRemoveAllBansModalOpen(true)
+                  }}
+                >
+                  Remove All
+                </Button>
               )}
-            </button>
+            </div>
             {showCurrentBans && (
               <div className="border-ink-200 space-y-3 border-t p-3">
                 {activeBans.map((banType) => {
@@ -346,7 +391,15 @@ export function BanModal({
           <>
             {/* Ban Type Toggles */}
             <div className="border-ink-200 space-y-3 rounded border p-4">
-              <h3 className="font-semibold">Ban Types</h3>
+              <Row className="items-center gap-1">
+                <h3 className="font-semibold">Ban Types</h3>
+                <Tooltip
+                  text="New bans stack with existing bans. Each ban type retains its own reason and expiry time."
+                  placement="top"
+                >
+                  <InformationCircleIcon className="text-ink-500 h-4 w-4" />
+                </Tooltip>
+              </Row>
 
               <BanTypeToggle
                 label="Posting Ban"
@@ -444,6 +497,7 @@ export function BanModal({
               tempBanDays={tempBanDays}
               reason={reason}
               modAlertOnly={modAlertOnly}
+              existingBans={user.bans}
             />
           </div>
         )}
@@ -538,6 +592,50 @@ export function BanModal({
           </Row>
         </Col>
       </Modal>
+
+      {/* Remove All Bans Confirmation Modal */}
+      <Modal open={removeAllBansModalOpen} setOpen={setRemoveAllBansModalOpen}>
+        <Col className="bg-canvas-0 gap-4 rounded-md p-6">
+          <Title>Remove All Bans</Title>
+          <p className="text-ink-700">
+            Remove all {activeBans.length} bans from {user.name}?
+          </p>
+          <p className="text-ink-500 text-sm">
+            This will remove: {activeBans.join(', ')} bans.
+            {isUsernameChangeRestricted && (
+              <span className="block mt-1">
+                Note: @username change restriction will NOT be removed.
+              </span>
+            )}
+          </p>
+          <Col className="gap-2">
+            <label className="text-ink-700 text-sm font-medium">
+              Mod Note (optional, not shown to user)
+            </label>
+            <textarea
+              value={removeAllBansNote}
+              onChange={(e) => setRemoveAllBansNote(e.target.value)}
+              placeholder="Write a note for future reference..."
+              className="border-ink-300 min-h-[80px] rounded border p-2 text-sm"
+            />
+          </Col>
+          <Row className="gap-2">
+            <Button
+              color="green"
+              loading={isSubmitting}
+              onClick={handleRemoveAllBans}
+            >
+              Remove All Bans
+            </Button>
+            <Button
+              color="gray-white"
+              onClick={() => setRemoveAllBansModalOpen(false)}
+            >
+              Cancel
+            </Button>
+          </Row>
+        </Col>
+      </Modal>
     </Modal>
   )
 }
@@ -596,13 +694,40 @@ function BanBannerPreview({
   tempBanDays,
   reason,
   modAlertOnly,
+  existingBans,
 }: {
   banTypes: Record<string, boolean>
   tempBanDays: Record<string, number | undefined>
   reason: string
   modAlertOnly: boolean
+  existingBans?: {
+    posting?: { reason: string; unbanTime?: number }
+    marketControl?: { reason: string; unbanTime?: number }
+    trading?: { reason: string; unbanTime?: number }
+  }
 }) {
-  const activeBans = Object.entries(banTypes).filter(([_, active]) => active)
+  const newBans = Object.entries(banTypes).filter(([_, active]) => active)
+
+  // Get existing bans that aren't being overwritten by new bans
+  const preservedBans: { type: BanType; reason: string; unbanTime?: number }[] = []
+  if (existingBans) {
+    for (const banType of ['posting', 'marketControl', 'trading'] as BanType[]) {
+      const existingBan = existingBans[banType]
+      // Only show if there's an existing ban AND we're not adding a new ban of this type
+      if (existingBan && !banTypes[banType]) {
+        // Check if ban is still active (not expired)
+        if (!existingBan.unbanTime || existingBan.unbanTime > Date.now()) {
+          preservedBans.push({
+            type: banType,
+            reason: existingBan.reason,
+            unbanTime: existingBan.unbanTime,
+          })
+        }
+      }
+    }
+  }
+
+  const hasAnyBans = newBans.length > 0 || preservedBans.length > 0
 
   return (
     <div className="rounded bg-white p-3">
@@ -610,13 +735,14 @@ function BanBannerPreview({
         {modAlertOnly ? '⚠️ Moderator Alert' : '⛔ Account Restricted'}
       </h3>
 
-      {!modAlertOnly && activeBans.length > 0 && (
+      {!modAlertOnly && hasAnyBans && (
         <>
           <p className="mb-2 text-red-800">
             You have been restricted from:
           </p>
           <ul className="mb-3 list-inside list-disc space-y-1 text-red-800">
-            {activeBans.map(([banType]) => (
+            {/* Show new bans being added */}
+            {newBans.map(([banType]) => (
               <li key={banType}>
                 <strong>{getBanTypeLabel(banType as BanType)}</strong>
                 {tempBanDays[banType] && (
@@ -628,16 +754,46 @@ function BanBannerPreview({
                 {!tempBanDays[banType] && (
                   <span className="text-sm"> — Permanent</span>
                 )}
+                <span className="ml-1 text-xs text-red-600">(new)</span>
+              </li>
+            ))}
+            {/* Show existing bans that will be preserved */}
+            {preservedBans.map(({ type, unbanTime }) => (
+              <li key={type} className="text-red-700">
+                <strong>{getBanTypeLabel(type)}</strong>
+                {unbanTime && (
+                  <span className="text-sm">
+                    {' '}
+                    — Expires in {formatBanTimeRemaining(unbanTime - Date.now())}
+                  </span>
+                )}
+                {!unbanTime && (
+                  <span className="text-sm"> — Permanent</span>
+                )}
+                <span className="ml-1 text-xs text-gray-500">(existing)</span>
               </li>
             ))}
           </ul>
         </>
       )}
 
+      {/* Show new reason */}
       <div className="border-ink-200 rounded border bg-red-50 p-2">
         <p className="mb-1 font-semibold text-red-900">Reason:</p>
         <p className="text-red-800">{reason}</p>
       </div>
+
+      {/* Show existing ban reasons if any are preserved */}
+      {preservedBans.length > 0 && (
+        <div className="border-ink-200 mt-2 rounded border bg-orange-50 p-2">
+          <p className="mb-1 font-semibold text-orange-900">Previous reason(s):</p>
+          {preservedBans.map(({ type, reason: existingReason }) => (
+            <p key={type} className="text-orange-800 text-sm">
+              <span className="font-medium">{getBanTypeLabel(type).split(' (')[0]}:</span> {existingReason}
+            </p>
+          ))}
+        </div>
+      )}
     </div>
   )
 }
@@ -649,6 +805,26 @@ function getBanTypeLabel(banType: BanType): string {
     trading: 'Trading (betting, managrams, liquidity)',
   }
   return labels[banType]
+}
+
+function getHistoryBanTypeDisplayName(banType: string): string {
+  // Handle combined ban types like "posting+trading+marketControl"
+  if (banType.includes('+')) {
+    const types = banType.split('+')
+    const names = types.map((t) => {
+      if (t === 'posting') return 'Posting'
+      if (t === 'marketControl') return 'Market Control'
+      if (t === 'trading') return 'Trading'
+      return t
+    })
+    return names.join(' + ') + ' Bans'
+  }
+
+  if (banType === 'posting') return 'Posting Ban'
+  if (banType === 'marketControl') return 'Market Control Ban'
+  if (banType === 'trading') return 'Trading Ban'
+  if (banType === 'usernameChange') return '@username Changes'
+  return banType
 }
 
 function BanHistoryRecord({
@@ -665,23 +841,21 @@ function BanHistoryRecord({
       : modNames[record.unbannedBy] || record.unbannedBy
 
   const isUsernameChangeRecord = record.banType === 'usernameChange'
+  const isCombinedRecord = record.banType.includes('+')
 
   return (
     <div className="bg-canvas-50 rounded border p-2">
       <Row className="items-center justify-between">
         <span className="font-medium">
-          {record.banType === 'posting'
-            ? 'Posting Ban'
-            : record.banType === 'marketControl'
-              ? 'Market Control Ban'
-              : record.banType === 'usernameChange'
-                ? '@username Changes'
-                : 'Trading Ban'}
+          {getHistoryBanTypeDisplayName(record.banType)}
         </span>
-        {!isUsernameChangeRecord && (
+        {!isUsernameChangeRecord && !isCombinedRecord && (
           <span className="text-ink-500 text-xs">
             {record.wasTemporary ? 'Temporary' : 'Permanent'}
           </span>
+        )}
+        {isCombinedRecord && (
+          <span className="text-ink-500 text-xs">Bulk removal</span>
         )}
       </Row>
       <div className="text-ink-600 mt-1 space-y-1 text-xs">

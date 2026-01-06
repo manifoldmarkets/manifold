@@ -9,7 +9,7 @@ import { updateUser } from 'shared/supabase/users'
 import { getUser, log } from 'shared/utils'
 
 export const banuser: APIHandler<'ban-user'> = async (props, auth) => {
-  const { userId, unban, unbanTime, bans, unbanTimes, reason, modAlert, unbanNote, allowUsernameChange } = props
+  const { userId, unban, unbanTime, bans, unbanTimes, reason, modAlert, unbanNote, allowUsernameChange, removeAllBans } = props
   const db = createSupabaseDirectClient()
   throwErrorIfNotMod(auth.uid)
   if (isAdminId(userId)) throw new APIError(403, 'Cannot ban admin')
@@ -45,6 +45,49 @@ export const banuser: APIHandler<'ban-user'> = async (props, auth) => {
     }
     await trackPublicEvent(auth.uid, 'ban user', { userId, legacy: true })
     log('banned user (legacy)', userId)
+    return { success: true }
+  }
+
+  // Handle removing all bans at once (creates a single combined history record)
+  if (removeAllBans) {
+    const activeBanTypes: ('posting' | 'marketControl' | 'trading')[] = []
+    if (user.bans?.posting) activeBanTypes.push('posting')
+    if (user.bans?.marketControl) activeBanTypes.push('marketControl')
+    if (user.bans?.trading) activeBanTypes.push('trading')
+
+    if (activeBanTypes.length === 0) {
+      return { success: true } // No bans to remove
+    }
+
+    // Create a single combined history record for all removed bans
+    const newHistoryRecord: UnbanRecord = {
+      banType: activeBanTypes.join('+') as any, // Combined type like "posting+trading"
+      bannedAt: Math.min(
+        ...activeBanTypes.map((t) => user.bans![t]!.bannedAt)
+      ),
+      bannedBy: user.bans![activeBanTypes[0]]!.bannedBy, // Use first ban's mod
+      banReason: activeBanTypes
+        .map((t) => `${t}: ${user.bans![t]!.reason}`)
+        .join('; '),
+      wasTemporary: activeBanTypes.some((t) => !!user.bans![t]!.unbanTime),
+      unbannedAt: now,
+      unbannedBy: auth.uid,
+      unbanNote: unbanNote,
+    }
+
+    const update: any = {
+      bans: FieldVal.delete(),
+      isBannedFromPosting: false,
+      banHistory: [...(user.banHistory || []), newHistoryRecord],
+    }
+    await updateUser(db, userId, update)
+
+    await trackPublicEvent(auth.uid, 'unban user', {
+      userId,
+      bans: activeBanTypes,
+      removeAll: true,
+    })
+    log('removed all bans', userId, { types: activeBanTypes })
     return { success: true }
   }
 

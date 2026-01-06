@@ -1445,6 +1445,8 @@ export const API = (_apiTypeCheck = {
         // Username change restriction - defaults to restricting when any ban is applied
         // Set to true to allow username changes, false to restrict, undefined to use default behavior
         allowUsernameChange: z.boolean().optional(),
+        // Remove all active bans at once, creates a single combined history record
+        removeAllBans: z.boolean().optional(),
       })
       .strict(),
     returns: {} as { success: boolean },

@@ -35,11 +35,20 @@ export function BanBanner({ user }: { user: User }) {
     }
   }
 
-  // Get ban reason (prefer the most recent one)
-  const banReason =
-    user.bans?.posting?.reason ||
-    user.bans?.marketControl?.reason ||
-    user.bans?.trading?.reason
+  // Group ban reasons - same reason may apply to multiple ban types
+  const reasonToBanTypes: Map<string, BanType[]> = new Map()
+  for (const banType of activeBans) {
+    const ban = user.bans?.[banType]
+    if (ban?.reason) {
+      const existing = reasonToBanTypes.get(ban.reason) || []
+      existing.push(banType)
+      reasonToBanTypes.set(ban.reason, existing)
+    }
+  }
+  // Convert to array for rendering
+  const groupedReasons = Array.from(reasonToBanTypes.entries()).map(
+    ([reason, banTypes]) => ({ reason, banTypes })
+  )
 
   return (
     <Col className="mb-4 gap-3">
@@ -58,10 +67,21 @@ export function BanBanner({ user }: { user: User }) {
                 />
               ))}
             </ul>
-            {banReason && (
+            {groupedReasons.length > 0 && (
               <div className="border-ink-200 mt-2 rounded border bg-white p-3">
-                <p className="font-semibold text-red-900">Reason:</p>
-                <p className="text-red-800">{banReason}</p>
+                <p className="font-semibold text-red-900">
+                  {groupedReasons.length === 1 ? 'Reason:' : 'Reasons:'}
+                </p>
+                {groupedReasons.map(({ reason, banTypes }) => (
+                  <p key={reason} className="text-red-800">
+                    {groupedReasons.length > 1 && (
+                      <span className="font-medium">
+                        {banTypes.map((bt) => getBanTypeDisplayName(bt)).join(' + ')}:{' '}
+                      </span>
+                    )}
+                    {reason}
+                  </p>
+                ))}
               </div>
             )}
           </Col>
