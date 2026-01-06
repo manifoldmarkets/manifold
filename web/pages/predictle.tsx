@@ -124,6 +124,11 @@ function PredicteGame(props: {
 
   // Save result to database when game is completed (for logged-in users)
   useEffect(() => {
+    // Reset savedResultRef when it's a new day
+    if (gameState.dateString !== dateString) {
+      savedResultRef.current = false
+    }
+
     if (
       ready &&
       gameState.completed &&
