@@ -27,6 +27,7 @@ import { GiBurningSkull } from 'react-icons/gi'
 import { HiOutlineBuildingLibrary } from 'react-icons/hi2'
 import { User } from 'common/user'
 import { LuSprout } from 'react-icons/lu'
+import { getActiveBans, getBanTypeDescription } from 'common/ban-utils'
 export const isFresh = (createdTime: number) =>
   createdTime > Date.now() - DAY_MS * 14
 
@@ -169,6 +170,7 @@ function BotBadge() {
   )
 }
 
+/** @deprecated Use RestrictedBadge instead */
 export function BannedBadge() {
   return (
     <Tooltip
@@ -177,6 +179,41 @@ export function BannedBadge() {
     >
       <span className="ml-1.5 rounded-full bg-yellow-100 px-2.5 py-0.5 text-xs font-medium text-yellow-800 dark:bg-yellow-700 dark:text-yellow-100">
         Banned
+      </span>
+    </Tooltip>
+  )
+}
+
+// Works with full User (for granular bans) or DisplayUser (legacy ban only)
+type RestrictedBadgeUser = {
+  isBannedFromPosting?: boolean
+  bans?: User['bans']
+}
+
+export function RestrictedBadge({ user }: { user: RestrictedBadgeUser }) {
+  // Check granular bans if available (full User object)
+  const activeBans = user.bans ? getActiveBans(user as User) : []
+
+  // Also check legacy ban
+  const hasLegacyBan = user.isBannedFromPosting && activeBans.length === 0
+
+  if (activeBans.length === 0 && !hasLegacyBan) {
+    return null
+  }
+
+  // Build tooltip text showing what they're restricted from
+  let tooltipText: string
+  if (hasLegacyBan) {
+    tooltipText = "Can't create comments, messages, or questions"
+  } else {
+    const restrictions = activeBans.map((ban) => getBanTypeDescription(ban))
+    tooltipText = `Restricted from: ${restrictions.join('; ')}`
+  }
+
+  return (
+    <Tooltip text={tooltipText} placement="bottom">
+      <span className="ml-1.5 rounded-full bg-yellow-100 px-2.5 py-0.5 text-xs font-medium text-yellow-800 dark:bg-yellow-700 dark:text-yellow-100">
+        Restricted
       </span>
     </Tooltip>
   )
@@ -317,6 +354,9 @@ export const StackedUserNames = (props: {
   usernameClassName?: string
 }) => {
   const { user, followsYou, usernameClassName, className } = props
+  const activeBans = getActiveBans(user)
+  const hasAnyBan = activeBans.length > 0 || user.isBannedFromPosting
+
   return (
     <Col>
       <div className={'inline-flex flex-row items-center gap-1 pt-1'}>
@@ -332,8 +372,8 @@ export const StackedUserNames = (props: {
           <span className="ml-1.5 rounded-full bg-yellow-100 px-2.5 py-0.5 text-center text-xs font-medium text-yellow-800 dark:bg-yellow-700 dark:text-yellow-100">
             Deleted account
           </span>
-        ) : user.isBannedFromPosting ? (
-          <BannedBadge />
+        ) : hasAnyBan ? (
+          <RestrictedBadge user={user} />
         ) : null}
       </div>
       <Row className={'flex-shrink flex-wrap gap-x-2'}>

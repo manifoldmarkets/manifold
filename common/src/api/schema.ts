@@ -1442,6 +1442,9 @@ export const API = (_apiTypeCheck = {
           })
           .optional(),
         unbanNote: z.string().optional(), // mod notes when removing a ban (not shown to user)
+        // Username change restriction - defaults to restricting when any ban is applied
+        // Set to true to allow username changes, false to restrict, undefined to use default behavior
+        allowUsernameChange: z.boolean().optional(),
       })
       .strict(),
     returns: {} as { success: boolean },

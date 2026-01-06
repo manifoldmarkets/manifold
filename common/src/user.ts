@@ -10,7 +10,7 @@ export type BanDetails = {
 }
 
 export type UnbanRecord = {
-  banType: 'posting' | 'marketControl' | 'trading'
+  banType: 'posting' | 'marketControl' | 'trading' | 'usernameChange'
   // Original ban info
   bannedAt: number
   bannedBy: string
@@ -114,6 +114,12 @@ export type User = {
 
   // BAN HISTORY (tracks past bans that were removed or expired)
   banHistory?: UnbanRecord[]
+
+  // USERNAME CHANGE RESTRICTION
+  // When false, user cannot change their @username
+  // Automatically set to false when any ban is applied (unless mod opts out)
+  // Must be manually re-enabled by a mod
+  canChangeUsername?: boolean  // undefined = allowed, false = restricted
 
   userDeleted?: boolean
   optOutBetWarnings?: boolean

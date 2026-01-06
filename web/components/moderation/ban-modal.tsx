@@ -1,6 +1,10 @@
 import { useState, useEffect } from 'react'
 import { toast } from 'react-hot-toast'
-import { ChevronDownIcon, ChevronUpIcon } from '@heroicons/react/outline'
+import {
+  ChevronDownIcon,
+  ChevronUpIcon,
+  InformationCircleIcon,
+} from '@heroicons/react/outline'
 import { User, UnbanRecord } from 'common/user'
 import {
   BanType,
@@ -15,6 +19,7 @@ import { Row } from 'web/components/layout/row'
 import { Modal } from 'web/components/layout/modal'
 import { Input } from 'web/components/widgets/input'
 import { Title } from 'web/components/widgets/title'
+import { Tooltip } from 'web/components/widgets/tooltip'
 import { api } from 'web/lib/api/api'
 import { getUserById } from 'web/lib/supabase/users'
 
@@ -51,10 +56,17 @@ export function BanModal({
   const [unbanBanType, setUnbanBanType] = useState<BanType | null>(null)
   const [unbanNote, setUnbanNote] = useState('')
 
+  // Username change restriction - default to true (restrict) when any ban is selected
+  // undefined means use default behavior (restrict when banning)
+  const [allowUsernameChange, setAllowUsernameChange] = useState<boolean | undefined>(undefined)
+
   // Fetch mod names for current bans
   const activeBans = getActiveBans(user)
+  const isUsernameChangeRestricted = user.canChangeUsername === false
   const hasCurrentBansOrAlerts =
-    activeBans.length > 0 || (user.modAlert && !user.modAlert.dismissed)
+    activeBans.length > 0 ||
+    (user.modAlert && !user.modAlert.dismissed) ||
+    isUsernameChangeRestricted
 
   useEffect(() => {
     const modIds = new Set<string>()
@@ -123,6 +135,8 @@ export function BanModal({
         reason: reason.trim(),
         // Only send mod alert when "mod alert only" is checked, not when banning
         modAlert: modAlertOnly ? { message: reason.trim() } : undefined,
+        // Username change restriction - only send when not mod alert only
+        allowUsernameChange: modAlertOnly ? undefined : allowUsernameChange,
       })
 
       toast.success(modAlertOnly ? 'Mod alert sent' : 'Ban updated successfully')
@@ -169,6 +183,22 @@ export function BanModal({
       window.location.reload()
     } catch (error) {
       toast.error('Failed to clear alert: ' + (error as Error).message)
+    } finally {
+      setIsSubmitting(false)
+    }
+  }
+
+  const handleReenableUsernameChange = async () => {
+    setIsSubmitting(true)
+    try {
+      await api('ban-user', {
+        userId: user.id,
+        allowUsernameChange: true,
+      })
+      toast.success('Re-enabled @username changes')
+      window.location.reload()
+    } catch (error) {
+      toast.error('Failed to re-enable: ' + (error as Error).message)
     } finally {
       setIsSubmitting(false)
     }
@@ -274,6 +304,26 @@ export function BanModal({
                     </p>
                   </div>
                 )}
+                {isUsernameChangeRestricted && (
+                  <div className="rounded border border-orange-300 bg-orange-50 p-2">
+                    <Row className="items-center justify-between">
+                      <span className="font-medium text-orange-900">
+                        @username Changes Restricted
+                      </span>
+                      <Button
+                        color="gray-outline"
+                        size="2xs"
+                        loading={isSubmitting}
+                        onClick={handleReenableUsernameChange}
+                      >
+                        Re-enable
+                      </Button>
+                    </Row>
+                    <p className="mt-1 text-sm text-orange-800">
+                      This user cannot change their @username.
+                    </p>
+                  </div>
+                )}
               </div>
             )}
           </div>
@@ -337,6 +387,31 @@ export function BanModal({
                 }
               />
             </div>
+
+            {/* Username Change Restriction Notice - only show if not already restricted */}
+            {anyBanSelected && !isUsernameChangeRestricted && (
+              <div className="border-ink-200 rounded border bg-orange-50 p-3">
+                <Row className="items-center gap-2">
+                  <input
+                    type="checkbox"
+                    checked={allowUsernameChange !== true}
+                    onChange={(e) =>
+                      setAllowUsernameChange(e.target.checked ? undefined : true)
+                    }
+                    className="h-4 w-4"
+                  />
+                  <span className="font-medium text-orange-900">
+                    Restrict @username changes
+                  </span>
+                  <Tooltip
+                    text="Any ban will permanently remove this user's ability to change their @username until it is manually re-enabled by a mod."
+                    placement="top"
+                  >
+                    <InformationCircleIcon className="h-4 w-4 text-orange-700" />
+                  </Tooltip>
+                </Row>
+              </div>
+            )}
           </>
         )}
 
@@ -589,6 +664,8 @@ function BanHistoryRecord({
       ? 'System (auto-expired)'
       : modNames[record.unbannedBy] || record.unbannedBy
 
+  const isUsernameChangeRecord = record.banType === 'usernameChange'
+
   return (
     <div className="bg-canvas-50 rounded border p-2">
       <Row className="items-center justify-between">
@@ -597,28 +674,48 @@ function BanHistoryRecord({
             ? 'Posting Ban'
             : record.banType === 'marketControl'
               ? 'Market Control Ban'
-              : 'Trading Ban'}
+              : record.banType === 'usernameChange'
+                ? '@username Changes'
+                : 'Trading Ban'}
         </span>
-        <span className="text-ink-500 text-xs">
-          {record.wasTemporary ? 'Temporary' : 'Permanent'}
-        </span>
+        {!isUsernameChangeRecord && (
+          <span className="text-ink-500 text-xs">
+            {record.wasTemporary ? 'Temporary' : 'Permanent'}
+          </span>
+        )}
       </Row>
       <div className="text-ink-600 mt-1 space-y-1 text-xs">
-        <p>
-          <strong>Banned:</strong>{' '}
-          {new Date(record.bannedAt).toLocaleDateString()} by @{bannedByName}
-        </p>
-        <p>
-          <strong>Reason:</strong> {record.banReason}
-        </p>
-        <p>
-          <strong>Unbanned:</strong>{' '}
-          {new Date(record.unbannedAt).toLocaleDateString()} by {unbannedByName}
-        </p>
-        {record.unbanNote && (
-          <p className="text-ink-500 italic">
-            <strong>Mod note:</strong> {record.unbanNote}
-          </p>
+        {isUsernameChangeRecord ? (
+          <>
+            <p>
+              <strong>Re-enabled:</strong>{' '}
+              {new Date(record.unbannedAt).toLocaleDateString()} by {unbannedByName}
+            </p>
+            {record.unbanNote && (
+              <p className="text-ink-500 italic">
+                <strong>Mod note:</strong> {record.unbanNote}
+              </p>
+            )}
+          </>
+        ) : (
+          <>
+            <p>
+              <strong>Banned:</strong>{' '}
+              {new Date(record.bannedAt).toLocaleDateString()} by @{bannedByName}
+            </p>
+            <p>
+              <strong>Reason:</strong> {record.banReason}
+            </p>
+            <p>
+              <strong>Unbanned:</strong>{' '}
+              {new Date(record.unbannedAt).toLocaleDateString()} by {unbannedByName}
+            </p>
+            {record.unbanNote && (
+              <p className="text-ink-500 italic">
+                <strong>Mod note:</strong> {record.unbanNote}
+              </p>
+            )}
+          </>
         )}
       </div>
     </div>

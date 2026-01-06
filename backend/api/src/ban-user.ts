@@ -9,7 +9,7 @@ import { updateUser } from 'shared/supabase/users'
 import { getUser, log } from 'shared/utils'
 
 export const banuser: APIHandler<'ban-user'> = async (props, auth) => {
-  const { userId, unban, unbanTime, bans, unbanTimes, reason, modAlert, unbanNote } = props
+  const { userId, unban, unbanTime, bans, unbanTimes, reason, modAlert, unbanNote, allowUsernameChange } = props
   const db = createSupabaseDirectClient()
   throwErrorIfNotMod(auth.uid)
   if (isAdminId(userId)) throw new APIError(403, 'Cannot ban admin')
@@ -83,25 +83,59 @@ export const banuser: APIHandler<'ban-user'> = async (props, auth) => {
       }
     }
 
+    const bannedTypes = Object.keys(bans).filter((k) => bans[k as keyof typeof bans])
     const hasBansRemaining = Object.keys(updatedBans).length > 0
+
+    // Handle username change restriction
+    // Default: any new ban restricts username changes (unless mod opts out with allowUsernameChange=true)
+    // If allowUsernameChange is explicitly set, use that value
+    let usernameChangeUpdate: { canChangeUsername?: boolean } = {}
+    if (bannedTypes.length > 0) {
+      // New bans being applied
+      if (allowUsernameChange === true) {
+        // Mod explicitly opted out of restricting username changes - leave as is
+      } else if (allowUsernameChange === false || allowUsernameChange === undefined) {
+        // Default behavior or explicit restriction: disable username changes
+        if (user.canChangeUsername !== false) {
+          usernameChangeUpdate.canChangeUsername = false
+          log('restricting username changes for user', userId)
+        }
+      }
+    }
+
+    // Handle explicit username change permission toggle (can be done without adding bans)
+    if (allowUsernameChange === true && user.canChangeUsername === false) {
+      // Re-enabling username changes - record in history
+      newHistoryRecords.push({
+        banType: 'usernameChange',
+        bannedAt: now, // We don't have the original time, use now as placeholder
+        bannedBy: 'unknown',
+        banReason: 'Username changes were restricted',
+        wasTemporary: false,
+        unbannedAt: now,
+        unbannedBy: auth.uid,
+        unbanNote: unbanNote || 'Mod re-enabled username changes',
+      })
+      usernameChangeUpdate.canChangeUsername = undefined // Remove restriction (delete field)
+      log('re-enabling username changes for user', userId)
+    }
 
     if (hasBansRemaining) {
       // Update bans and optionally add history
-      const update: any = { bans: updatedBans }
+      const update: any = { bans: updatedBans, ...usernameChangeUpdate }
       if (newHistoryRecords.length > 0) {
         update.banHistory = [...(user.banHistory || []), ...newHistoryRecords]
       }
       await updateUser(db, userId, update)
     } else {
       // No bans remaining - need to delete the bans field entirely
-      const update: any = { bans: FieldVal.delete() }
+      const update: any = { bans: FieldVal.delete(), ...usernameChangeUpdate }
       if (newHistoryRecords.length > 0) {
         update.banHistory = [...(user.banHistory || []), ...newHistoryRecords]
       }
       await updateUser(db, userId, update)
     }
 
-    const bannedTypes = Object.keys(bans).filter((k) => bans[k as keyof typeof bans])
     const unbannedTypes = Object.keys(bans).filter((k) => !bans[k as keyof typeof bans])
 
     if (bannedTypes.length > 0) {
@@ -111,6 +145,35 @@ export const banuser: APIHandler<'ban-user'> = async (props, auth) => {
       await trackPublicEvent(auth.uid, 'unban user', { userId, bans: unbannedTypes })
     }
     log('updated user bans', userId, { added: bannedTypes, removed: unbannedTypes })
+  }
+
+  // Handle standalone username change permission toggle (without any ban changes)
+  if (!bans && allowUsernameChange !== undefined) {
+    const newHistoryRecords: UnbanRecord[] = []
+
+    if (allowUsernameChange === true && user.canChangeUsername === false) {
+      // Re-enabling username changes
+      newHistoryRecords.push({
+        banType: 'usernameChange',
+        bannedAt: now,
+        bannedBy: 'unknown',
+        banReason: 'Username changes were restricted',
+        wasTemporary: false,
+        unbannedAt: now,
+        unbannedBy: auth.uid,
+        unbanNote: unbanNote || 'Mod re-enabled username changes',
+      })
+      const update: any = { canChangeUsername: FieldVal.delete() }
+      if (newHistoryRecords.length > 0) {
+        update.banHistory = [...(user.banHistory || []), ...newHistoryRecords]
+      }
+      await updateUser(db, userId, update as any)
+      log('re-enabling username changes for user (standalone)', userId)
+    } else if (allowUsernameChange === false && user.canChangeUsername !== false) {
+      // Restricting username changes without a ban
+      await updateUser(db, userId, { canChangeUsername: false })
+      log('restricting username changes for user (standalone)', userId)
+    }
   }
 
   // Set mod alert (can exist without bans)
