@@ -154,6 +154,7 @@ export const getPredictle: APIHandler<'get-predictle-markets'> = async () => {
     prob: 'prob' in c ? c.prob : 0.5,
   }))
 
+  // Get puzzle number and save atomically to avoid race conditions
   const puzzleNumber = await getPuzzleNumber(pg)
 
   const data: PredictleData = {
@@ -162,12 +163,25 @@ export const getPredictle: APIHandler<'get-predictle-markets'> = async () => {
     puzzleNumber,
   }
 
-  // Cache the result (ignore conflicts if another request beat us)
-  await pg.none(
+  // Try to insert - if conflict, fetch the existing data to ensure we return the correct puzzleNumber
+  const insertResult = await pg.result(
     `INSERT INTO predictle_daily (date_pt, data) VALUES ($1, $2)
-     ON CONFLICT (date_pt) DO NOTHING`,
+     ON CONFLICT (date_pt) DO NOTHING
+     RETURNING data`,
     [todayDate, JSON.stringify(data)]
   )
+
+  // If insert failed (conflict), fetch the existing record
+  if (insertResult.rowCount === 0) {
+    const existing = await pg.one<{ data: PredictleData }>(
+      `SELECT data FROM predictle_daily WHERE date_pt = $1`,
+      [todayDate]
+    )
+    return {
+      ...existing.data,
+      dateString: todayDate,
+    }
+  }
 
   return {
     ...data,
