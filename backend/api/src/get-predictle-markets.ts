@@ -14,6 +14,7 @@ type PredicleMarket = {
 type PredictleData = {
   markets: PredicleMarket[]
   correctOrder: Record<string, number>
+  puzzleNumber: number
 }
 
 // Seeded random number generator for deterministic results
@@ -88,7 +89,8 @@ export const getPredictle: APIHandler<'get-predictle-markets'> = async () => {
     return {
       ...cached.data,
       dateString: todayDate,
-      puzzleNumber: getPuzzleNumber(todayDate),
+      // Use cached puzzleNumber if available, otherwise calculate it
+      puzzleNumber: cached.data.puzzleNumber ?? getPuzzleNumber(todayDate),
     }
   }
 
@@ -144,9 +146,12 @@ export const getPredictle: APIHandler<'get-predictle-markets'> = async () => {
     prob: 'prob' in c ? c.prob : 0.5,
   }))
 
+  const puzzleNumber = getPuzzleNumber(todayDate)
+
   const data: PredictleData = {
     markets: predictleMarkets,
     correctOrder,
+    puzzleNumber,
   }
 
   // Cache the result (ignore conflicts if another request beat us)
@@ -159,6 +164,5 @@ export const getPredictle: APIHandler<'get-predictle-markets'> = async () => {
   return {
     ...data,
     dateString: todayDate,
-    puzzleNumber: getPuzzleNumber(todayDate),
   }
 }
