@@ -672,7 +672,7 @@ export default function PredictlePage() {
     <Page trackPageView="predictle" hideFooter className="!bg-transparent">
       <SEO
         title="Predictle"
-        description="A daily game where you arrange prediction markets by probability. Can you guess the order?"
+        description="A daily game where you arrange prediction markets by probability."
         url="/predictle"
       />
       {/* Light mode gradient background */}
