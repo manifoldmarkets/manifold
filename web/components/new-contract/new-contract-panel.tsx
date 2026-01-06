@@ -510,12 +510,42 @@ export function NewContractPanel(props: {
     }
   })
 
+  // Auto-infer numeric unit from question
+  // skipTypeCheck is used when calling from handleTypeChange where outcomeType hasn't updated yet
+  const inferNumericUnit = useEvent(
+    async (question: string, skipTypeCheck = false) => {
+      if (
+        !question ||
+        question.length < 10 ||
+        (!skipTypeCheck && formState.outcomeType !== 'MULTI_NUMERIC') ||
+        formState.unit // Don't overwrite if unit already set
+      ) {
+        return
+      }
+
+      try {
+        const result = await api('infer-numeric-unit', {
+          question,
+          description: descriptionEditor
+            ? richTextToString(descriptionEditor.getJSON())
+            : '',
+        })
+        if (result?.unit) {
+          updateField('unit', result.unit)
+        }
+      } catch (e) {
+        console.error('Error inferring numeric unit:', e)
+      }
+    }
+  )
+
   // Trigger auto-suggestions when question changes
   useEffect(() => {
     if (formState.question && formState.question.length >= 20) {
       const timer = setTimeout(() => {
         getAISuggestedCloseDate(formState.question)
         findTopicsAndSimilarQuestions(formState.question)
+        inferNumericUnit(formState.question)
       }, 1000) // Debounce for 1 second
 
       return () => clearTimeout(timer)
@@ -754,6 +784,11 @@ export function NewContractPanel(props: {
 
     // Clear all field errors when switching market types
     setFieldErrors({})
+
+    // Auto-infer unit when switching to MULTI_NUMERIC
+    if (newType === 'MULTI_NUMERIC' && formState.question) {
+      inferNumericUnit(formState.question, true)
+    }
 
     // Focus the question input after type change
     setTimeout(() => {
