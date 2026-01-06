@@ -366,7 +366,7 @@ function PredicteGame(props: {
               {...provided.droppableProps}
               ref={provided.innerRef}
               className={clsx(
-                'rounded-2xl border-2 p-3 transition-all duration-200',
+                'overscroll-contain rounded-2xl border-2 p-3 transition-all duration-200',
                 snapshot.isDraggingOver
                   ? 'border-fuchsia-300 bg-fuchsia-50 shadow-lg shadow-fuchsia-100 dark:border-fuchsia-500/50 dark:bg-fuchsia-500/10 dark:shadow-fuchsia-500/20'
                   : 'border-slate-200 bg-slate-50 dark:border-slate-700 dark:bg-slate-800/50'
@@ -403,6 +403,7 @@ function PredicteGame(props: {
                         ref={provided.innerRef}
                         {...provided.draggableProps}
                         {...provided.dragHandleProps}
+                        className="touch-none"
                       >
                         <MarketCard
                           market={market}
