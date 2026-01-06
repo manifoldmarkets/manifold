@@ -457,7 +457,7 @@ export default function PredictlePage() {
   const { data, loading } = useAPIGetter('get-predictle-markets', {})
 
   return (
-    <Page trackPageView="predictle">
+    <Page trackPageView="predictle" hideFooter>
       <SEO
         title="Predictle"
         description="A daily game where you arrange prediction markets by probability. Can you guess the order?"
