@@ -324,7 +324,7 @@ function PredicteGame(props: {
       {/* Header */}
       <Col className="items-center gap-3 text-center">
         <div className="text-5xl">🔮</div>
-        <h1 className="bg-gradient-to-r from-violet-600 via-fuchsia-500 to-pink-500 bg-clip-text text-4xl font-black tracking-tight text-transparent">
+        <h1 className="inline-block bg-gradient-to-r from-violet-600 via-fuchsia-500 to-pink-500 bg-clip-text text-4xl font-black tracking-tight text-transparent [-webkit-background-clip:text]">
           Predictle
         </h1>
         <p className="max-w-sm text-sm text-slate-600 dark:text-slate-300">
@@ -368,7 +368,7 @@ function PredicteGame(props: {
               {...provided.droppableProps}
               ref={provided.innerRef}
               className={clsx(
-                'overscroll-contain rounded-2xl border-2 p-3 transition-all duration-200',
+                'rounded-2xl border-2 p-3 transition-all duration-200',
                 snapshot.isDraggingOver
                   ? 'border-fuchsia-300 bg-fuchsia-50 shadow-lg shadow-fuchsia-100 dark:border-fuchsia-500/50 dark:bg-fuchsia-500/10 dark:shadow-fuchsia-500/20'
                   : 'border-slate-200 bg-slate-50 dark:border-slate-700 dark:bg-slate-800/50'
@@ -405,7 +405,6 @@ function PredicteGame(props: {
                         ref={provided.innerRef}
                         {...provided.draggableProps}
                         {...provided.dragHandleProps}
-                        className="touch-none"
                       >
                         <MarketCard
                           market={market}
@@ -494,7 +493,10 @@ function PredicteGame(props: {
       )}
 
       {/* Footer */}
-      <p className="text-center text-xs text-slate-400 dark:text-slate-500">
+      <p
+        className="text-center text-xs text-slate-400 dark:text-slate-500"
+        style={{ paddingBottom: 'max(1rem, env(safe-area-inset-bottom))' }}
+      >
         Predictle #{puzzleNumber} • New puzzle daily at midnight PT
       </p>
     </Col>
@@ -692,7 +694,10 @@ export default function PredictlePage() {
       <div className="fixed inset-0 -z-10 hidden bg-gradient-to-br from-violet-900/30 via-slate-900 to-fuchsia-900/20 dark:block" />
       <div className="fixed inset-0 -z-10 hidden bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-violet-800/20 via-transparent to-transparent dark:block" />
 
-      <Col className="mx-auto w-full max-w-xl px-4 py-8">
+      <Col
+        className="mx-auto w-full max-w-xl overscroll-y-none px-4 py-8"
+        style={{ paddingBottom: 'max(2rem, env(safe-area-inset-bottom))' }}
+      >
         {loading || !data ? (
           <Col className="items-center gap-4 py-12">
             <div className="text-5xl">🔮</div>
