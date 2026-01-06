@@ -67,7 +67,7 @@ export const DailyProfit = function DailyProfit(props: {
         <Row>
           <TokenNumber
             amount={data ? manaNetWorth : undefined}
-            // numberType="short"
+            numberType="short"
             isInline
           />
           {!floatingEqual(manaProfit, 0) && (

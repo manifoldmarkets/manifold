@@ -332,7 +332,10 @@ function PredicteGame(props: {
 
         {/* Progress dots */}
         {!gameState.completed && (
-          <Row className="gap-2">
+          <Row className="items-center gap-2">
+            <span className="text-xs font-medium text-slate-500 dark:text-slate-400">
+              Guesses
+            </span>
             {[1, 2, 3, 4].map((i) => (
               <div
                 key={i}
@@ -340,7 +343,7 @@ function PredicteGame(props: {
                   'h-3 w-3 rounded-full transition-all',
                   i <= attemptNumber
                     ? 'bg-gradient-to-br from-violet-500 to-fuchsia-500 shadow-md shadow-violet-200 dark:shadow-violet-500/50'
-                    : 'bg-slate-200 dark:bg-slate-600'
+                    : 'bg-slate-300 dark:bg-slate-600'
                 )}
               />
             ))}
@@ -363,7 +366,7 @@ function PredicteGame(props: {
               {...provided.droppableProps}
               ref={provided.innerRef}
               className={clsx(
-                'rounded-2xl border-2 p-3 transition-all duration-200',
+                'overscroll-contain rounded-2xl border-2 p-3 transition-all duration-200',
                 snapshot.isDraggingOver
                   ? 'border-fuchsia-300 bg-fuchsia-50 shadow-lg shadow-fuchsia-100 dark:border-fuchsia-500/50 dark:bg-fuchsia-500/10 dark:shadow-fuchsia-500/20'
                   : 'border-slate-200 bg-slate-50 dark:border-slate-700 dark:bg-slate-800/50'
@@ -400,6 +403,7 @@ function PredicteGame(props: {
                         ref={provided.innerRef}
                         {...provided.draggableProps}
                         {...provided.dragHandleProps}
+                        className="touch-none"
                       >
                         <MarketCard
                           market={market}
@@ -448,9 +452,7 @@ function PredicteGame(props: {
               : 'bg-gradient-to-r from-violet-600 via-fuchsia-500 to-pink-500 shadow-fuchsia-200 hover:scale-[1.02] hover:shadow-xl hover:shadow-fuchsia-200 active:scale-[0.98] dark:shadow-fuchsia-500/30 dark:hover:shadow-fuchsia-500/40'
           )}
         >
-          <span className="relative z-10">
-            🎯 Submit Guess ({4 - attemptNumber} left)
-          </span>
+          <span className="relative z-10">Submit Guess</span>
         </button>
       ) : (
         <Col className="gap-3">
@@ -473,10 +475,8 @@ function PredicteGame(props: {
             {gameState.won && (
               <div className="mt-1 text-sm opacity-90">
                 {attemptNumber === 1
-                  ? 'Incredible! First try!'
-                  : attemptNumber === 2
-                  ? 'Amazing! So close to perfect!'
-                  : attemptNumber === 3
+                  ? 'Aced it on the first try!'
+                  : attemptNumber === 2 || attemptNumber === 3
                   ? 'Great job!'
                   : 'You made it!'}
               </div>
@@ -551,7 +551,7 @@ function MarketCard(props: {
                 slug: market.slug,
               })}
               className={clsx(
-                'line-clamp-2 text-sm font-semibold transition-colors',
+                'text-sm font-semibold transition-colors',
                 isCorrect
                   ? 'text-emerald-800 hover:text-emerald-600 dark:text-emerald-300 dark:hover:text-emerald-200'
                   : 'text-slate-800 hover:text-fuchsia-600 dark:text-slate-200 dark:hover:text-fuchsia-400'
@@ -561,7 +561,7 @@ function MarketCard(props: {
               {market.question}
             </Link>
           ) : (
-            <span className="line-clamp-2 text-sm font-semibold text-slate-800 dark:text-slate-200">
+            <span className="text-sm font-semibold text-slate-800 dark:text-slate-200">
               {market.question}
             </span>
           )}
@@ -670,7 +670,7 @@ export default function PredictlePage() {
     <Page trackPageView="predictle" hideFooter className="!bg-transparent">
       <SEO
         title="Predictle"
-        description="A daily game where you arrange prediction markets by probability. Can you guess the order?"
+        description="A daily game where you arrange prediction markets by probability."
         url="/predictle"
       />
       {/* Light mode gradient background */}
