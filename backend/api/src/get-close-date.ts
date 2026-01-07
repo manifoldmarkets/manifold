@@ -9,12 +9,12 @@ export const getCloseDateEndpoint: APIHandler<'get-close-date'> =
       const { question } = props
       const utcOffset = props.utcOffset ?? new Date().getTimezoneOffset() * -1
 
-      const timestamp = await getCloseDate(question, utcOffset)
-      if (!timestamp) {
+      const result = await getCloseDate(question, utcOffset)
+      if (!result) {
         throw new APIError(500, 'Failed to get close date')
       }
 
-      return { closeTime: timestamp }
+      return { closeTime: result.closeTime, confidence: result.confidence }
     },
     {
       maxCalls: 100,

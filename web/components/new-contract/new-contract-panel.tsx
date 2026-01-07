@@ -141,6 +141,8 @@ export function NewContractPanel(props: {
     useState(false)
   const [showResetConfirmation, setShowResetConfirmation] = useState(false)
   const [isCloseDateModalOpen, setIsCloseDateModalOpen] = useState(false)
+  const [hasLowConfidenceCloseDate, setHasLowConfidenceCloseDate] =
+    useState(false)
   const [triggerTopicsModalOpen, setTriggerTopicsModalOpen] = useState(false)
   const [drafts, setDrafts] = useState<MarketDraft[]>([])
   const [showDraftsModal, setShowDraftsModal] = useState(false)
@@ -484,6 +486,8 @@ export function NewContractPanel(props: {
         const time = dayjs(result.closeTime).format('HH:mm')
         updateField('closeDate', dateStr)
         updateField('closeHoursMinutes', time)
+        // Flag low confidence dates to prompt user confirmation on submit
+        setHasLowConfidenceCloseDate(result.confidence < 75)
       }
     } catch (e) {
       console.error('Error getting suggested close date:', e)
@@ -836,6 +840,12 @@ export function NewContractPanel(props: {
       }
 
       scrollToFirstError(validation.errors)
+      return
+    }
+
+    // If close date was auto-suggested with low confidence, prompt user to confirm
+    if (hasLowConfidenceCloseDate && !hasManuallyEditedCloseDate) {
+      setIsCloseDateModalOpen(true)
       return
     }
 
