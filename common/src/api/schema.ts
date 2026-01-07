@@ -1402,7 +1402,7 @@ export const API = (_apiTypeCheck = {
     method: 'GET',
     visibility: 'undocumented',
     authed: false,
-    cache: 'public, max-age=900, stale-while-revalidate=60',
+    cache: 'public, max-age=3600, stale-while-revalidate=10',
     props: z
       .object({
         contractId: z.string(),
@@ -2724,7 +2724,10 @@ export const API = (_apiTypeCheck = {
         won: boolean
         gameState: {
           orderedMarketIds: string[]
-          attempts: { marketId: string; feedback: ('correct' | 'incorrect')[] }[]
+          attempts: {
+            marketId: string
+            feedback: ('correct' | 'incorrect')[]
+          }[]
         }
       }
     },
