@@ -2,11 +2,7 @@ import { Modal } from 'web/components/layout/modal'
 import { Col } from 'web/components/layout/col'
 import { PLURAL_BETS, User } from 'common/user'
 import { ENV_CONFIG, TRADE_TERM } from 'common/envs/constants'
-import {
-  LOAN_DAILY_RATE,
-  MAX_BALANCE_FOR_LOAN,
-  overLeveraged,
-} from 'common/loans'
+import { LOAN_DAILY_RATE, overLeveraged } from 'common/loans'
 import { useHasReceivedLoanToday } from 'web/hooks/use-has-received-loan'
 import { useIsEligibleForLoans } from 'web/hooks/use-is-eligible-for-loans'
 import { useAPIGetter } from 'web/hooks/use-api-getter'
@@ -35,11 +31,7 @@ export function LoansModal(props: {
         ) : !isEligible || nextLoanAmount < 1 ? (
           <span className={'text-ink-600 text-sm italic'}>
             You're not eligible for a loan right now.{' '}
-            {user.balance >= MAX_BALANCE_FOR_LOAN
-              ? `You must have less than ${formatMoney(
-                  MAX_BALANCE_FOR_LOAN
-                )} to claim a loan.`
-              : !user?.lastBetTime || !latestPortfolio
+            {!user?.lastBetTime || !latestPortfolio
               ? `Make your first ${TRADE_TERM} and come back in an hour to become eligible.`
               : latestPortfolio.investmentValue <= 0
               ? `Your investment value is at or below 0. Place some ${TRADE_TERM}s to become eligible.`
@@ -60,8 +52,7 @@ export function LoansModal(props: {
           <span className={'ml-2'}>
             Each day, get a 0% interest loan of {LOAN_DAILY_RATE * 100}% of your
             investment value (max {formatPercent(MAX_LOAN_NET_WORTH_PERCENT)} of
-            net worth per market). Requires balance under{' '}
-            {formatMoney(MAX_BALANCE_FOR_LOAN)}.
+            net worth per market).
           </span>
           <span className={'text-primary-700 font-medium'}>
             • Do I have to pay back a loan?

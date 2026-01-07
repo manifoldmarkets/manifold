@@ -2,7 +2,7 @@ import { APIError, type APIHandler } from './helpers/endpoint'
 import { createSupabaseDirectClient } from 'shared/supabase/init'
 import { createLoanIncomeNotification } from 'shared/create-notification'
 import { getUser, log } from 'shared/utils'
-import { getUserLoanUpdates, isUserEligibleForLoan, MAX_BALANCE_FOR_LOAN } from 'common/loans'
+import { getUserLoanUpdates, isUserEligibleForLoan } from 'common/loans'
 import * as dayjs from 'dayjs'
 import * as utc from 'dayjs/plugin/utc'
 import * as timezone from 'dayjs/plugin/timezone'
@@ -131,10 +131,6 @@ export const getNextLoanAmountResults = async (userId: string) => {
   const user = await getUser(userId)
   if (!user) {
     throw new APIError(404, `User ${userId} not found`)
-  }
-
-  if (user.balance >= MAX_BALANCE_FOR_LOAN) {
-    throw new APIError(400, `User ${userId} has balance >= ${MAX_BALANCE_FOR_LOAN} mana and is not eligible for a loan`)
   }
 
   const { contracts, updatedMetricsByContract, metrics } =

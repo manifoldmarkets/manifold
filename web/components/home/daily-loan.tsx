@@ -16,7 +16,6 @@ import { dailyStatsClass } from 'web/components/home/daily-stats'
 import { Row } from 'web/components/layout/row'
 import { GiOpenChest, GiTwoCoins } from 'react-icons/gi'
 import { TRADE_TERM } from 'common/envs/constants'
-import { MAX_BALANCE_FOR_LOAN } from 'common/loans'
 import { useAPIGetter } from 'web/hooks/use-api-getter'
 import { LoadingIndicator } from '../widgets/loading-indicator'
 import { DAY_MS } from 'common/util/time'
@@ -42,7 +41,6 @@ export function DailyLoan(props: {
     useHasReceivedLoanToday(user)
   const { data } = useAPIGetter('get-next-loan-amount', { userId: user.id })
   const notEligibleForLoan = (data?.amount ?? 0) < 1
-  const balanceTooHigh = user.balance >= MAX_BALANCE_FOR_LOAN
 
   const receivedLoanToday = receivedTxnLoan || justReceivedLoan
 
@@ -89,8 +87,6 @@ export function DailyLoan(props: {
           text={
             receivedLoanToday
               ? 'Loan already collected'
-              : balanceTooHigh
-              ? 'Balance too high for loan'
               : notEligibleForLoan
               ? 'Not eligible for loan'
               : `Collect a loan on your ${TRADE_TERM}s`
@@ -151,8 +147,6 @@ export function DailyLoan(props: {
         text={
           receivedLoanToday
             ? 'Loan already collected'
-            : balanceTooHigh
-            ? 'Balance too high for loan'
             : notEligibleForLoan
             ? 'Not eligible for loan'
             : `Collect a loan on your ${TRADE_TERM}s`
