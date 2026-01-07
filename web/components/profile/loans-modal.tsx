@@ -2,7 +2,11 @@ import { Modal } from 'web/components/layout/modal'
 import { Col } from 'web/components/layout/col'
 import { PLURAL_BETS, User } from 'common/user'
 import { ENV_CONFIG, TRADE_TERM } from 'common/envs/constants'
-import { LOAN_DAILY_RATE, overLeveraged } from 'common/loans'
+import {
+  LOAN_DAILY_RATE,
+  MAX_BALANCE_FOR_LOAN,
+  overLeveraged,
+} from 'common/loans'
 import { useHasReceivedLoanToday } from 'web/hooks/use-has-received-loan'
 import { useIsEligibleForLoans } from 'web/hooks/use-is-eligible-for-loans'
 import { useAPIGetter } from 'web/hooks/use-api-getter'
@@ -20,18 +24,24 @@ export function LoansModal(props: {
   const nextLoanAmount = data?.amount ?? 0
   return (
     <Modal open={isOpen} setOpen={setOpen}>
-      <Col className="bg-canvas-0 text-ink-1000 items-center gap-4 rounded-md px-8 py-6">
-        <span className={'text-8xl'}>🏦</span>
-        <span className="text-xl">Daily loans on your {PLURAL_BETS}</span>
+      <Col className="bg-canvas-0 text-ink-1000 max-h-[80vh] items-center gap-3 overflow-y-auto rounded-md px-8 py-6">
+        <span className={'text-5xl'}>🏦</span>
+        <span className="text-lg font-semibold">
+          Daily margin loans
+        </span>
         {receivedLoanToday ? (
-          <span className={'text-ink-600 italic'}>
+          <span className={'text-ink-600 text-sm italic'}>
             You have already received your loan today. Come back tomorrow for{' '}
             {nextLoanAmount > 0 && formatMoney(nextLoanAmount)}!
           </span>
         ) : !isEligible || nextLoanAmount < 1 ? (
           <span className={'text-ink-600 text-sm italic'}>
             You're not eligible for a loan right now.{' '}
-            {!user?.lastBetTime || !latestPortfolio
+            {user.balance >= MAX_BALANCE_FOR_LOAN
+              ? `You must have less than ${formatMoney(
+                  MAX_BALANCE_FOR_LOAN
+                )} to claim a loan.`
+              : !user?.lastBetTime || !latestPortfolio
               ? `Make your first ${TRADE_TERM} and come back in an hour to become eligible.`
               : latestPortfolio.investmentValue <= 0
               ? `Your investment value is at or below 0. Place some ${TRADE_TERM}s to become eligible.`
@@ -45,46 +55,29 @@ export function LoansModal(props: {
               : ''}
           </span>
         ) : null}
-        <Col className={'gap-2'}>
-          <span className={'text-primary-700'}>• What are loans?</span>
-          <span className={'ml-2'}>
-            When you {TRADE_TERM} on long-term markets, your funds (mana) are
-            tied up until the outcome is determined, which could take years. To
-            let you continue to place {TRADE_TERM}s, we offer a unique solution:
-            0% interest loans. Each day, you're eligible to receive a loan
-            amounting to {LOAN_DAILY_RATE * 100}% of your total investment
-            value, though no single market's loan can exceed{' '}
-            {formatPercent(MAX_LOAN_NET_WORTH_PERCENT)} of your net worth. If
-            the value of your investment decreases, the loan amount will be{' '}
-            {LOAN_DAILY_RATE * 100}% of the current, lower value.
+        <Col className={'gap-1.5 text-sm'}>
+          <span className={'text-primary-700 font-medium'}>
+            • What are loans?
           </span>
-          <span className={'text-primary-700'}>
+          <span className={'ml-2'}>
+            Each day, get a 0% interest loan of {LOAN_DAILY_RATE * 100}% of your
+            investment value (max {formatPercent(MAX_LOAN_NET_WORTH_PERCENT)} of
+            net worth per market). Requires balance under{' '}
+            {formatMoney(MAX_BALANCE_FOR_LOAN)}.
+          </span>
+          <span className={'text-primary-700 font-medium'}>
             • Do I have to pay back a loan?
           </span>
           <span className={'ml-2'}>
-            Yes, but don't worry! You will automatically pay back loans when the
-            question resolves or you sell your {TRADE_TERM}.
+            Yes, automatically when the question resolves or you sell.
           </span>
-          <span className={'text-primary-700'}>
-            • What is the purpose of loans?
-          </span>
+          <span className={'text-primary-700 font-medium'}>• Example</span>
           <span className={'ml-2'}>
-            Loans make it worthwhile to {TRADE_TERM} on questions that won't
-            resolve for months or years, because your investment won't be locked
-            up as long.
-          </span>
-          <span className={'text-primary-700'}>• What is an example?</span>
-          <span className={'ml-2'}>
-            For example, if you {TRADE_TERM} {ENV_CONFIG.moneyMoniker}1000 on
-            "Will I become a millionaire?", you will get{' '}
-            {ENV_CONFIG.moneyMoniker}
-            {LOAN_DAILY_RATE * 1000} back tomorrow.
-          </span>
-          <span className={'ml-2'}>
-            Previous loans count against your total invested amount. So on the
-            next day, you would get back {LOAN_DAILY_RATE * 100}% of{' '}
-            {ENV_CONFIG.moneyMoniker}(1000 - {LOAN_DAILY_RATE * 1000}) =
-            {formatMoney(LOAN_DAILY_RATE * (1000 - LOAN_DAILY_RATE * 1000))}.
+            {TRADE_TERM.charAt(0).toUpperCase() + TRADE_TERM.slice(1)}{' '}
+            {ENV_CONFIG.moneyMoniker}1000 → get {ENV_CONFIG.moneyMoniker}
+            {LOAN_DAILY_RATE * 1000} back tomorrow, then{' '}
+            {formatMoney(LOAN_DAILY_RATE * (1000 - LOAN_DAILY_RATE * 1000))} the
+            next day.
           </span>
         </Col>
       </Col>

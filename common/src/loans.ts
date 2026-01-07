@@ -4,8 +4,9 @@ import { PortfolioMetrics } from './portfolio-metrics'
 import { ContractMetric, isSummary } from './contract-metric'
 import { filterDefined } from './util/array'
 
-export const LOAN_DAILY_RATE = 0.01
-export const MAX_LOAN_NET_WORTH_PERCENT = 0.05
+export const LOAN_DAILY_RATE = 0.02
+export const MAX_BALANCE_FOR_LOAN = 1000
+export const MAX_LOAN_NET_WORTH_PERCENT = 0.02
 
 const calculateNewLoan = (investedValue: number, loanTotal: number) => {
   const netValue = investedValue - loanTotal
@@ -77,12 +78,12 @@ const getCpmmContractLoanUpdate = (
   let newLoan = calculateNewLoan(loanBasis, loanAmount)
   if (!isFinite(newLoan) || newLoan <= 0) return undefined
 
-  // Limit total loan on a position to 5% of net worth
+  // Limit total loan on a position to 2% of net worth
   const maxLoanForPosition = netWorth * MAX_LOAN_NET_WORTH_PERCENT
   const potentialTotalLoan = loanAmount + newLoan
 
   if (potentialTotalLoan > maxLoanForPosition) {
-    // Adjust the new loan to respect the 5% limit
+    // Adjust the new loan to respect the 2% limit
     newLoan = Math.max(0, maxLoanForPosition - loanAmount)
     if (newLoan <= 0) return undefined
   }
