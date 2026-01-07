@@ -2732,6 +2732,70 @@ export const API = (_apiTypeCheck = {
       }
     },
   },
+  'get-charity-lottery': {
+    method: 'GET',
+    visibility: 'undocumented',
+    authed: false,
+    props: z.object({ lotteryNum: z.coerce.number().optional() }).strict(),
+    cache: DEFAULT_CACHE_STRATEGY,
+    returns: {} as {
+      lottery?: {
+        lotteryNum: number
+        name: string
+        prizeAmountUsd: number
+        closeTime: number
+        winningTicketId: string | null
+        createdTime: number
+      }
+      charityStats: {
+        charityId: string
+        totalTickets: number
+        totalManaSpent: number
+      }[]
+      totalTickets: number
+    },
+  },
+  'buy-charity-lottery-tickets': {
+    method: 'POST',
+    visibility: 'undocumented',
+    authed: true,
+    props: z
+      .object({
+        lotteryNum: z.number(),
+        charityId: z.string(),
+        numTickets: z.number().int().min(1),
+      })
+      .strict(),
+    returns: {} as {
+      ticketId: string
+      numTickets: number
+      manaSpent: number
+    },
+  },
+  'get-charity-lottery-sales': {
+    method: 'GET',
+    visibility: 'undocumented',
+    authed: false,
+    props: z
+      .object({
+        lotteryNum: z.coerce.number(),
+        limit: z.coerce.number().min(1).max(100).default(50),
+        before: z.string().optional(),
+      })
+      .strict(),
+    cache: LIGHT_CACHE_STRATEGY,
+    returns: {} as {
+      sales: {
+        id: string
+        lotteryNum: number
+        charityId: string
+        userId: string
+        numTickets: number
+        manaSpent: number
+        createdTime: number
+      }[]
+    },
+  },
 } as const)
 
 export type APIPath = keyof typeof API

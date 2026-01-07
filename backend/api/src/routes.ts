@@ -204,6 +204,9 @@ import { purchaseContractBoost } from './purchase-boost'
 import { referUser } from './refer-user'
 import { updatePost } from './update-post'
 import { validateiap } from './validate-iap'
+import { getCharityLottery } from './get-charity-lottery'
+import { buyCharityLotteryTickets } from './buy-charity-lottery-tickets'
+import { getCharityLotterySales } from './get-charity-lottery-sales'
 
 export const handlers: { [k in APIPath]: APIHandler<k> } = {
   'refresh-all-clients': refreshAllClients,
@@ -411,4 +414,7 @@ export const handlers: { [k in APIPath]: APIHandler<k> } = {
   'get-predictle-markets': getPredictle,
   'save-predictle-result': savePredicleResult,
   'get-predictle-result': getPredictleResult,
+  'get-charity-lottery': getCharityLottery,
+  'buy-charity-lottery-tickets': buyCharityLotteryTickets,
+  'get-charity-lottery-sales': getCharityLotterySales,
 } as const

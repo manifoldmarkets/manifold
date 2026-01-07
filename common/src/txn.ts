@@ -61,6 +61,7 @@ type AnyTxnType =
   | ProfitFee
   | UndoResolutionFee
   | ContractBoostPurchase
+  | CharityLotteryTicket
 
 export type AnyTxnCategory = AnyTxnType['category']
 
@@ -602,6 +603,19 @@ type ContractBoostPurchase = {
   }
 }
 
+type CharityLotteryTicket = {
+  category: 'CHARITY_LOTTERY_TICKET'
+  fromType: 'USER'
+  toType: 'BANK'
+  token: 'M$'
+  data: {
+    lotteryNum: number
+    charityId: string
+    numTickets: number
+    ticketId: string
+  }
+}
+
 export type AddSubsidyTxn = Txn & AddSubsidy
 export type RemoveSubsidyTxn = Txn & RemoveSubsidy
 export type DonationTxn = Txn & Donation
@@ -658,3 +672,4 @@ export type ProfitFeeTxn = Txn & ProfitFee
 export type UndoResolutionFeeTxn = Txn & UndoResolutionFee
 export type AdminRewardTxn = Txn & AdminReward
 export type ContractBoostPurchaseTxn = Txn & ContractBoostPurchase
+export type CharityLotteryTicketTxn = Txn & CharityLotteryTicket
