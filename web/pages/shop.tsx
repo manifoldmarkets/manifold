@@ -60,9 +60,7 @@ export default function ShopPage() {
         )}
 
         {/* User's active items section */}
-        {user && ownedItemIds.size > 0 && (
-          <OwnedItemsSection user={user} />
-        )}
+        {user && ownedItemIds.size > 0 && <OwnedItemsSection user={user} />}
 
         {/* Available items */}
         <div className="grid grid-cols-2 gap-4">
@@ -82,7 +80,8 @@ export default function ShopPage() {
 
 function OwnedItemsSection(props: { user: User }) {
   const { user } = props
-  const activePurchases = user.shopPurchases?.filter((p) => isPurchaseActive(p)) ?? []
+  const activePurchases =
+    user.shopPurchases?.filter((p) => isPurchaseActive(p)) ?? []
 
   if (activePurchases.length === 0) return null
 
@@ -116,7 +115,8 @@ function OwnedItemsSection(props: { user: User }) {
                   </div>
                 )}
               </Row>
-              {(item.type === 'permanent-toggleable' || item.type === 'time-limited') && (
+              {(item.type === 'permanent-toggleable' ||
+                item.type === 'time-limited') && (
                 <Row className="mt-2">
                   <Button
                     size="xs"
@@ -263,7 +263,7 @@ function HovercardGlowPreview(props: { user: User | null | undefined }) {
 
   return (
     <div className="bg-canvas-50 flex items-center justify-center rounded-lg p-2">
-      <div className="bg-canvas-0 w-44 scale-[0.85] origin-center divide-y divide-ink-300 rounded-md ring-2 ring-violet-400 shadow-[0_0_15px_rgba(167,139,250,0.5)]">
+      <div className="bg-canvas-0 divide-ink-300 w-44 origin-center scale-[0.85] divide-y rounded-md shadow-[0_0_15px_rgba(167,139,250,0.5)] ring-2 ring-violet-400">
         <div className="px-3 py-2">
           <Row className="items-start justify-between">
             <Avatar
@@ -276,14 +276,18 @@ function HovercardGlowPreview(props: { user: User | null | undefined }) {
               Follow
             </div>
           </Row>
-          <div className="mt-1 text-sm font-bold truncate">{displayName}</div>
+          <div className="mt-1 truncate text-sm font-bold">{displayName}</div>
           <div className="text-ink-500 text-xs">@{username}</div>
           <Row className="mt-1 gap-3 text-[10px]">
-            <span><b>0</b> Following</span>
-            <span><b>0</b> Followers</span>
+            <span>
+              <b>0</b> Following
+            </span>
+            <span>
+              <b>0</b> Followers
+            </span>
           </Row>
         </div>
-        <div className="px-3 py-1.5 text-[10px] text-ink-600">
+        <div className="text-ink-600 px-3 py-1.5 text-[10px]">
           <b>Last active:</b> today
         </div>
       </div>
@@ -384,11 +388,14 @@ function ShopItemCard(props: {
       </Card>
 
       <Modal open={showConfirmModal} setOpen={setShowConfirmModal}>
-        <Col className="bg-canvas-0 rounded-md p-6 gap-4">
+        <Col className="bg-canvas-0 gap-4 rounded-md p-6">
           <div className="text-lg font-semibold">Confirm Purchase</div>
           <p className="text-ink-600">
             Are you sure you want to purchase <strong>{item.name}</strong> for{' '}
-            <span className="font-semibold text-teal-600">{formatMoney(item.price)}</span>?
+            <span className="font-semibold text-teal-600">
+              {formatMoney(item.price)}
+            </span>
+            ?
           </p>
 
           {/* Preview in modal too with actual user data */}
@@ -396,10 +403,11 @@ function ShopItemCard(props: {
 
           {item.duration && (
             <p className="text-ink-500 text-sm">
-              This item will expire after {Math.round(item.duration / (24 * 60 * 60 * 1000))} days.
+              This item will expire after{' '}
+              {Math.round(item.duration / (24 * 60 * 60 * 1000))} days.
             </p>
           )}
-          <Row className="gap-2 justify-end">
+          <Row className="justify-end gap-2">
             <Button color="gray" onClick={() => setShowConfirmModal(false)}>
               Cancel
             </Button>

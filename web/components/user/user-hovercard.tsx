@@ -137,7 +137,7 @@ const FetchUserHovercardContent = forwardRef(
         className={clsx(
           'animate-slide-up-and-fade divide-ink-300 bg-canvas-0 text-ink-1000 z-30 w-56 divide-y rounded-md shadow-lg focus:outline-none',
           hasGlow
-            ? 'ring-2 ring-violet-400 shadow-[0_0_15px_rgba(167,139,250,0.5)]'
+            ? 'shadow-[0_0_15px_rgba(167,139,250,0.5)] ring-2 ring-violet-400'
             : 'ring-ink-1000 ring-1 ring-opacity-5'
         )}
       >
