@@ -49,6 +49,7 @@ export default function AboutPage() {
             {user && <LabCard title="🤗‍ Refer a friend" href="/referrals" />}
 
             <LabCard title="🏁 Leagues" href="/leagues" />
+            <LabCard title="🔮 Predictle" href="/predictle" />
             <LabCard title="🏆 Leaderboards" href="/leaderboards" />
 
             {(!isNative || (isNative && platform !== 'ios')) && (

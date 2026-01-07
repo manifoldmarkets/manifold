@@ -8,6 +8,7 @@ import {
   SearchIcon,
   StarIcon,
   SunIcon,
+  SparklesIcon,
 } from '@heroicons/react/outline'
 // import { PiTelevisionSimple } from 'react-icons/pi'
 import clsx from 'clsx'
@@ -175,6 +176,7 @@ const getDesktopNav = (
 
   return buildArray(
     { name: 'Browse', href: '/', icon: SearchIcon },
+    { name: 'Predictle', href: '/predictle', icon: SparklesIcon },
     { name: 'About', href: '/about', icon: QuestionMarkCircleIcon },
     { name: 'App', onClick: openDownloadApp, icon: DeviceMobileIcon }
   )
