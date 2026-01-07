@@ -67,7 +67,8 @@ export function getBanTypesForAction(action: string): BanType[] {
     'editComment': ['posting'],
     'review': ['posting'],
     'addTopic': ['marketControl'],
-    'pollVote': ['posting'],
+    // Poll voting affects market outcome (trading), market structure (marketControl), and is a form of participation (posting)
+    'pollVote': ['posting', 'marketControl', 'trading'],
   }
   return actionMap[action] || []
 }
@@ -104,9 +105,9 @@ export function getBanTypeDisplayName(banType: BanType): string {
 
 export function getBanTypeDescription(banType: BanType): string {
   const descriptions: Record<BanType, string> = {
-    posting: 'commenting, messaging, creating posts, adding answers',
-    marketControl: 'creating, editing, resolving markets, hiding comments, adding/editing answers',
-    trading: 'betting, managrams, liquidity changes, adding answers',
+    posting: 'commenting, messaging, creating posts, adding answers, poll voting',
+    marketControl: 'creating, editing, resolving markets, hiding comments, adding/editing answers, poll voting',
+    trading: 'betting, managrams, liquidity changes, adding answers, poll voting',
   }
   return descriptions[banType]
 }
