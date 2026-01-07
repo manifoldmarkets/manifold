@@ -26,9 +26,7 @@ export function LoansModal(props: {
     <Modal open={isOpen} setOpen={setOpen}>
       <Col className="bg-canvas-0 text-ink-1000 max-h-[80vh] items-center gap-3 overflow-y-auto rounded-md px-8 py-6">
         <span className={'text-5xl'}>🏦</span>
-        <span className="text-lg font-semibold">
-          Daily margin loans
-        </span>
+        <span className="text-lg font-semibold">Daily margin loans</span>
         {receivedLoanToday ? (
           <span className={'text-ink-600 text-sm italic'}>
             You have already received your loan today. Come back tomorrow for{' '}
