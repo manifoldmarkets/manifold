@@ -86,5 +86,5 @@ export const generateAIAnswers: APIHandler<'generate-ai-answers'> =
         throw new APIError(500, 'Failed to generate answers. Please try again.')
       }
     },
-    { maxCalls: 60, windowMs: HOUR_MS }
+    { maxCalls: 100, windowMs: HOUR_MS }
   )
