@@ -498,6 +498,17 @@ export const getContractIdFromSlug = async (
 }
 ```
 
+### Database table conventions
+
+When adding a new database table, don't create one-off tables in TypeScript. Each table should have:
+
+1. Its own SQL file in `backend/supabase/` (e.g. `backend/supabase/my_table.sql`)
+2. Its own initialization script in `backend/scripts/` named `init-<table-name>.ts` (e.g. `backend/scripts/init-my-table.ts`)
+
+This ensures that database schema is properly versioned and can be reproduced consistently.
+
+---
+
 ### Misc coding tips
 
 We have many useful hooks that should be reused rather than rewriting them again. For example, to get the live global bets, you should use
