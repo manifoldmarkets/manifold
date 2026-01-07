@@ -585,13 +585,13 @@ function MarketCard(props: {
               </div>
               <span
                 className={clsx(
-                  'text-xs font-bold',
+                  'whitespace-nowrap text-xs font-bold',
                   isCorrect
                     ? 'text-emerald-600 dark:text-emerald-400'
                     : 'text-fuchsia-600 dark:text-fuchsia-400'
                 )}
               >
-                {Math.round(market.prob * 100)}%
+                {Math.round(market.prob * 100)}% chance
               </span>
             </div>
           )}
