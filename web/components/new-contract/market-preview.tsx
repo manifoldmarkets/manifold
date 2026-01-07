@@ -43,6 +43,7 @@ import {
   suggestMarketType,
 } from './market-type-suggestions'
 import { SimilarContractsSection } from './similar-contracts-section'
+import { detectAmbiguousDates } from 'web/lib/util/date-ambiguity'
 
 export type PreviewContractData = {
   question: string
@@ -583,6 +584,33 @@ export function MarketPreview(props: {
             question={question || ''}
           />
         )}
+
+      {/* Ambiguous Date Warning */}
+      {isEditable && question && (() => {
+        const ambiguousDates = detectAmbiguousDates(question)
+        if (ambiguousDates.length === 0) return null
+        return (
+          <div className="rounded-lg border border-amber-300 bg-amber-50 p-3 text-sm dark:border-amber-800 dark:bg-amber-950">
+            <Row className="items-start gap-2">
+              <div className="flex-1">
+                <div className="mb-1 font-semibold">
+                  <span className="mr-1">📅</span> Ambiguous date format
+                </div>
+                {ambiguousDates.map((match, i) => (
+                  <p key={i} className="mb-1">
+                    "<span className="font-mono">{match.original}</span>" could mean{' '}
+                    <strong>{match.interpretation1}</strong> or{' '}
+                    <strong>{match.interpretation2}</strong>
+                  </p>
+                ))}
+                <p className="text-ink-600 mt-2 text-xs italic">
+                  Consider writing the date as "4 January 2026" to avoid confusion.
+                </p>
+              </div>
+            </Row>
+          </div>
+        )
+      })()}
 
       {/* Market Type Suggestion Banner */}
       {isEditable && !dismissedSuggestion && onSwitchMarketType && question && (
