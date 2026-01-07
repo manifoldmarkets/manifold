@@ -763,7 +763,7 @@ export function MarketPreview(props: {
             />
           </Row>
           {onGenerateNumericRanges && (
-            <Row className="justify-center">
+            <Row className="justify-end">
               <Tooltip
                 text={
                   !question
@@ -2153,15 +2153,6 @@ export function MarketPreview(props: {
         </Modal>
       )}
 
-      {/* Footer Info */}
-      {min !== undefined && max !== undefined && (
-        <Row className="text-ink-500 items-center gap-3 text-xs">
-          <span>
-            Range: {min} - {max}
-            {unit ? ` ${unit}` : ''}
-          </span>
-        </Row>
-      )}
     </Col>
   )
 }

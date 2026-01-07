@@ -1359,6 +1359,18 @@ export function NewContractPanel(props: {
           isGeneratingAnswers={isGeneratingAnswers}
         />
 
+        {/* Visibility Toggle */}
+        <Row className="items-center gap-2 px-4">
+          <span className="text-ink-700 text-sm font-semibold">
+            Publicly listed
+          </span>
+          <ShortToggle
+            on={formState.visibility === 'public'}
+            setOn={(on) => updateField('visibility', on ? 'public' : 'unlisted')}
+          />
+          <InfoTooltip text="Unlisted markets are only discoverable via a direct link" />
+        </Row>
+
         {/* Desktop Action Bar - Floating below liquidity section */}
         <div className="hidden rounded-lg p-4 ring-1 ring-transparent lg:block">
           <ActionBar
