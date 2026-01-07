@@ -27,6 +27,7 @@ import {
   FloatingPortal,
 } from '@floating-ui/react'
 import clsx from 'clsx'
+import { userHasHovercardGlow } from 'common/shop/items'
 
 export type UserHovercardProps = {
   children: React.ReactNode
@@ -128,10 +129,17 @@ const FetchUserHovercardContent = forwardRef(
       user?.lastBetTime ?? 0
     )
 
+    const hasGlow = userHasHovercardGlow(user?.shopPurchases)
+
     return user ? (
       <div
         ref={ref}
-        className="animate-slide-up-and-fade ring-ink-1000 divide-ink-300 bg-canvas-0 text-ink-1000 z-30 w-56 divide-y rounded-md shadow-lg ring-1 ring-opacity-5 focus:outline-none"
+        className={clsx(
+          'animate-slide-up-and-fade divide-ink-300 bg-canvas-0 text-ink-1000 z-30 w-56 divide-y rounded-md shadow-lg focus:outline-none',
+          hasGlow
+            ? 'ring-2 ring-violet-400 shadow-[0_0_15px_rgba(167,139,250,0.5)]'
+            : 'ring-ink-1000 ring-1 ring-opacity-5'
+        )}
       >
         <div className="px-4 py-3">
           <Row className="items-start justify-between">

@@ -9,6 +9,7 @@ import { BinaryContract, StonkContract } from 'common/contract'
 import { User, firebaseLogin } from 'web/lib/firebase/users'
 import { TRADE_TERM } from 'common/envs/constants'
 import { capitalize } from 'lodash'
+import { userHasPampuSkin } from 'common/shop/items'
 
 export function BetButton(props: {
   contract: BinaryContract | StonkContract
@@ -20,6 +21,7 @@ export function BetButton(props: {
   const { contract, labels, user, className, feedReason } = props
   const { closeTime } = contract
   const isClosed = closeTime && closeTime < Date.now()
+  const hasPampu = userHasPampuSkin(user?.shopPurchases)
   const [dialogueThatIsOpen, setDialogueThatIsOpen] = useState<
     string | undefined
   >(undefined)
@@ -47,7 +49,7 @@ export function BetButton(props: {
         onClick={() => handleBetButtonClick('YES')}
         className="mr-2"
       >
-        {labels?.yes ?? `${capitalize(TRADE_TERM)} Yes`}
+        {labels?.yes ?? `${capitalize(TRADE_TERM)} ${hasPampu ? 'Pampu' : 'Yes'}`}
       </Button>
 
       <Button

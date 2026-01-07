@@ -61,6 +61,7 @@ type AnyTxnType =
   | ProfitFee
   | UndoResolutionFee
   | ContractBoostPurchase
+  | ShopPurchase
 
 export type AnyTxnCategory = AnyTxnType['category']
 
@@ -602,6 +603,16 @@ type ContractBoostPurchase = {
   }
 }
 
+type ShopPurchase = {
+  category: 'SHOP_PURCHASE'
+  fromType: 'USER'
+  toType: 'BANK'
+  token: 'M$'
+  data: {
+    itemId: string
+  }
+}
+
 export type AddSubsidyTxn = Txn & AddSubsidy
 export type RemoveSubsidyTxn = Txn & RemoveSubsidy
 export type DonationTxn = Txn & Donation
@@ -658,3 +669,4 @@ export type ProfitFeeTxn = Txn & ProfitFee
 export type UndoResolutionFeeTxn = Txn & UndoResolutionFee
 export type AdminRewardTxn = Txn & AdminReward
 export type ContractBoostPurchaseTxn = Txn & ContractBoostPurchase
+export type ShopPurchaseTxn = Txn & ShopPurchase

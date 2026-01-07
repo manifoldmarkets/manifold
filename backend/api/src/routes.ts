@@ -204,6 +204,9 @@ import { purchaseContractBoost } from './purchase-boost'
 import { referUser } from './refer-user'
 import { updatePost } from './update-post'
 import { validateiap } from './validate-iap'
+import { getShopItems } from './get-shop-items'
+import { shopPurchase } from './shop-purchase'
+import { shopToggle } from './shop-toggle'
 
 export const handlers: { [k in APIPath]: APIHandler<k> } = {
   'refresh-all-clients': refreshAllClients,
@@ -411,4 +414,7 @@ export const handlers: { [k in APIPath]: APIHandler<k> } = {
   'get-predictle-markets': getPredictle,
   'save-predictle-result': savePredicleResult,
   'get-predictle-result': getPredictleResult,
+  'get-shop-items': getShopItems,
+  'shop-purchase': shopPurchase,
+  'shop-toggle': shopToggle,
 } as const

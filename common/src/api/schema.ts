@@ -69,6 +69,8 @@ import { notification_preference } from 'common/user-notification-preferences'
 
 import { JSONContent } from '@tiptap/core'
 import { RanksType } from 'common/achievements'
+import { ShopItem } from 'common/shop/items'
+import { UserShopPurchase } from 'common/user'
 import { MarketDraft } from 'common/drafts'
 import { Reaction } from 'common/reaction'
 import { ChartAnnotation } from 'common/supabase/chart-annotations'
@@ -2728,6 +2730,37 @@ export const API = (_apiTypeCheck = {
         }
       }
     },
+  },
+  // Shop endpoints
+  'get-shop-items': {
+    method: 'GET',
+    visibility: 'public',
+    authed: false,
+    props: z.object({}).strict(),
+    returns: [] as ShopItem[],
+  },
+  'shop-purchase': {
+    method: 'POST',
+    visibility: 'public',
+    authed: true,
+    props: z
+      .object({
+        itemId: z.string(),
+      })
+      .strict(),
+    returns: {} as { success: boolean; purchase: UserShopPurchase },
+  },
+  'shop-toggle': {
+    method: 'POST',
+    visibility: 'public',
+    authed: true,
+    props: z
+      .object({
+        itemId: z.string(),
+        enabled: z.boolean(),
+      })
+      .strict(),
+    returns: {} as { success: boolean },
   },
 } as const)
 
