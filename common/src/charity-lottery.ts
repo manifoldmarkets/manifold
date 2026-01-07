@@ -27,7 +27,7 @@ export interface CharityLotteryStats {
 
 // Bonding curve constants
 export const LOTTERY_BASE_PRICE = 0.1 // 0.10 mana per ticket to start
-export const LOTTERY_SCALE_FACTOR = 500000 // Price doubles at 500,000 tickets
+export const LOTTERY_SCALE_FACTOR = 1000000 // Price doubles at 1,000,000 tickets
 
 // Calculate the cost to buy numTickets starting from currentTickets
 export function calculateLotteryTicketCost(
