@@ -50,7 +50,7 @@ export const getCharityLottery: APIHandler<'get-charity-lottery'> = async (
   )
 
   const totalTickets = charityStats.reduce(
-    (sum, s) => sum + parseInt(s.total_tickets),
+    (sum, s) => sum + parseFloat(s.total_tickets),
     0
   )
 
@@ -65,7 +65,7 @@ export const getCharityLottery: APIHandler<'get-charity-lottery'> = async (
     },
     charityStats: charityStats.map((s) => ({
       charityId: s.charity_id,
-      totalTickets: parseInt(s.total_tickets),
+      totalTickets: parseFloat(s.total_tickets),
       totalManaSpent: parseFloat(s.total_mana_spent),
     })),
     totalTickets,

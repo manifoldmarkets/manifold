@@ -1,6 +1,6 @@
-import { charities, Charity } from 'common/charity'
-import { formatMoney } from 'common/util/format'
-import { sortBy, sum } from 'lodash'
+import { charities } from 'common/charity'
+import { formatMoney, formatMoneyWithDecimals } from 'common/util/format'
+import { sortBy } from 'lodash'
 import { useEffect, useMemo, useState } from 'react'
 import { Col } from 'web/components/layout/col'
 import { Page } from 'web/components/layout/page'
@@ -21,18 +21,20 @@ import { ManaCoin } from 'web/public/custom-components/manaCoin'
 import toast from 'react-hot-toast'
 import clsx from 'clsx'
 
-// Bonding curve constants (must match backend)
-const BASE_PRICE = 0.1
-const SCALE_FACTOR = 500000
+import {
+  calculateTicketsFromMana,
+  getCurrentLotteryTicketPrice,
+} from 'common/charity-lottery'
 
-function calculateTicketCost(currentTickets: number, numTickets: number): number {
-  const n1 = currentTickets
-  const n2 = currentTickets + numTickets
-  return BASE_PRICE * (n2 - n1 + (n2 * n2 - n1 * n1) / (2 * SCALE_FACTOR))
-}
-
-function getCurrentTicketPrice(currentTickets: number): number {
-  return BASE_PRICE * (1 + currentTickets / SCALE_FACTOR)
+// Format tickets with appropriate precision
+function formatTickets(tickets: number): string {
+  if (tickets >= 1000) {
+    return tickets.toLocaleString(undefined, { maximumFractionDigits: 1 })
+  } else if (tickets >= 1) {
+    return tickets.toLocaleString(undefined, { maximumFractionDigits: 2 })
+  } else {
+    return tickets.toLocaleString(undefined, { maximumFractionDigits: 4 })
+  }
 }
 
 // Color palette for the pie chart
@@ -48,7 +50,7 @@ export default function CharityLotteryPage() {
   const { data, refresh } = useAPIGetter('get-charity-lottery', {})
 
   const [selectedCharityId, setSelectedCharityId] = useState<string>('')
-  const [numTickets, setNumTickets] = useState<number>(10)
+  const [manaAmount, setManaAmount] = useState<number>(10)
   const [isSubmitting, setIsSubmitting] = useState(false)
 
   const lottery = data ? data.lottery : undefined
@@ -82,19 +84,20 @@ export default function CharityLotteryPage() {
     return () => clearInterval(interval)
   }, [lottery?.closeTime])
 
-  // Get current tickets for selected charity
+  // Get current tickets for selected charity (for display)
   const selectedCharityStats = charityStats.find(
     (s) => s.charityId === selectedCharityId
   )
   const currentCharityTickets = selectedCharityStats?.totalTickets ?? 0
 
-  // Calculate cost
-  const estimatedCost = useMemo(() => {
-    if (numTickets <= 0) return 0
-    return calculateTicketCost(currentCharityTickets, numTickets)
-  }, [currentCharityTickets, numTickets])
+  // Calculate tickets from mana input using TOTAL tickets (single bonding curve)
+  const numTickets = useMemo(() => {
+    if (manaAmount <= 0) return 0
+    return calculateTicketsFromMana(totalTickets, manaAmount)
+  }, [totalTickets, manaAmount])
 
-  const currentPrice = getCurrentTicketPrice(currentCharityTickets)
+  // Current price based on total tickets across all charities
+  const currentPrice = getCurrentLotteryTicketPrice(totalTickets)
 
   const isClosed = lottery && lottery.closeTime <= Date.now()
 
@@ -102,12 +105,12 @@ export default function CharityLotteryPage() {
     if (!lottery || !selectedCharityId || numTickets <= 0) return
     setIsSubmitting(true)
     try {
-      await api('buy-charity-lottery-tickets', {
+      const result = await api('buy-charity-lottery-tickets', {
         lotteryNum: lottery.lotteryNum,
         charityId: selectedCharityId,
         numTickets,
       })
-      toast.success(`Purchased ${numTickets} tickets!`)
+      toast.success(`Purchased ${formatTickets(result.numTickets)} tickets for ${formatMoney(result.manaSpent)}!`)
       refresh()
     } catch (e) {
       const msg = e instanceof APIError ? e.message : 'Failed to purchase tickets'
@@ -200,27 +203,31 @@ export default function CharityLotteryPage() {
                 <>
                   <Col className="gap-2">
                     <label className="text-ink-600 text-sm font-medium">
-                      Number of tickets
+                      Amount to spend
                     </label>
                     <Row className="items-center gap-2">
-                      <Input
-                        type="number"
-                        min={1}
-                        value={numTickets}
-                        onChange={(e) =>
-                          setNumTickets(Math.max(1, parseInt(e.target.value) || 1))
-                        }
-                        className="w-32"
-                      />
+                      <Row className="items-center gap-1">
+                        <ManaCoin />
+                        <Input
+                          type="number"
+                          min={0.1}
+                          step={1}
+                          value={manaAmount}
+                          onChange={(e) =>
+                            setManaAmount(Math.max(0, parseFloat(e.target.value) || 0))
+                          }
+                          className="w-32"
+                        />
+                      </Row>
                       <Row className="gap-1">
                         {[10, 100, 1000].map((n) => (
                           <Button
                             key={n}
                             size="xs"
                             color="gray-outline"
-                            onClick={() => setNumTickets(n)}
+                            onClick={() => setManaAmount(n)}
                           >
-                            {n}
+                            {formatMoney(n)}
                           </Button>
                         ))}
                       </Row>
@@ -230,18 +237,19 @@ export default function CharityLotteryPage() {
                   <Col className="bg-canvas-0 text-ink-700 rounded-md p-4 text-sm">
                     <Row className="justify-between">
                       <span>Current ticket price:</span>
-                      <span>{formatMoney(currentPrice)}</span>
+                      <span>{formatMoneyWithDecimals(currentPrice)}</span>
+                    </Row>
+                    <Row className="justify-between">
+                      <span>Total tickets sold:</span>
+                      <span>{formatTickets(totalTickets)}</span>
                     </Row>
                     <Row className="justify-between">
                       <span>Tickets for {charities.find(c => c.id === selectedCharityId)?.name}:</span>
-                      <span>{currentCharityTickets.toLocaleString()}</span>
+                      <span>{formatTickets(currentCharityTickets)}</span>
                     </Row>
                     <Row className="border-ink-200 mt-2 justify-between border-t pt-2 font-semibold">
-                      <span>Total cost:</span>
-                      <Row className="items-center gap-1">
-                        <ManaCoin />
-                        {formatMoney(estimatedCost)}
-                      </Row>
+                      <span>You will receive:</span>
+                      <span>{formatTickets(numTickets)} ticket{numTickets !== 1 ? 's' : ''}</span>
                     </Row>
                   </Col>
 
@@ -251,8 +259,7 @@ export default function CharityLotteryPage() {
                     loading={isSubmitting}
                     disabled={!selectedCharityId || numTickets <= 0 || isSubmitting}
                   >
-                    Buy {numTickets} ticket{numTickets !== 1 ? 's' : ''} for{' '}
-                    {formatMoney(estimatedCost)}
+                    Buy {formatTickets(numTickets)} tickets for {formatMoney(manaAmount)}
                   </Button>
                 </>
               )}
@@ -466,7 +473,7 @@ function SaleRow(props: {
         {charityName}
       </td>
       <td className="text-ink-900 px-4 py-3 text-right text-sm font-medium">
-        {sale.numTickets.toLocaleString()}
+        {formatTickets(sale.numTickets)}
       </td>
       <td className="text-ink-700 px-4 py-3 text-right text-sm">
         {formatMoney(sale.manaSpent)}

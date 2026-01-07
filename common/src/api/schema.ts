@@ -2737,7 +2737,6 @@ export const API = (_apiTypeCheck = {
     visibility: 'undocumented',
     authed: false,
     props: z.object({ lotteryNum: z.coerce.number().optional() }).strict(),
-    cache: DEFAULT_CACHE_STRATEGY,
     returns: {} as {
       lottery?: {
         lotteryNum: number
@@ -2763,7 +2762,7 @@ export const API = (_apiTypeCheck = {
       .object({
         lotteryNum: z.number(),
         charityId: z.string(),
-        numTickets: z.number().int().min(1),
+        numTickets: z.number().positive(),
       })
       .strict(),
     returns: {} as {

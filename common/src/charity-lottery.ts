@@ -46,3 +46,24 @@ export function calculateLotteryTicketCost(
 export function getCurrentLotteryTicketPrice(currentTickets: number): number {
   return LOTTERY_BASE_PRICE * (1 + currentTickets / LOTTERY_SCALE_FACTOR)
 }
+
+// Calculate how many tickets you can buy with a given amount of mana
+// Uses quadratic formula to invert the cost function
+export function calculateTicketsFromMana(
+  currentTickets: number,
+  mana: number
+): number {
+  if (mana <= 0) return 0
+
+  const S = LOTTERY_SCALE_FACTOR
+  const B = LOTTERY_BASE_PRICE
+  const n = currentTickets
+
+  // Solving: B * t + B * (2*n*t + t²) / (2*S) = mana
+  // Rearranged to: t² + 2*(S+n)*t - 2*S*mana/B = 0
+  // Using quadratic formula: t = -(S+n) + sqrt((S+n)² + 2*S*mana/B)
+  const discriminant = (S + n) * (S + n) + (2 * S * mana) / B
+  const tickets = -(S + n) + Math.sqrt(discriminant)
+
+  return Math.max(0, tickets)
+}

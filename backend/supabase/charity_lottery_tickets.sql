@@ -5,7 +5,7 @@ create table if not exists
     lottery_num integer not null references charity_lotteries (lottery_num),
     charity_id text not null,
     user_id text not null,
-    num_tickets integer not null,
+    num_tickets numeric not null,
     mana_spent numeric not null,
     created_time timestamp with time zone default now() not null
   );

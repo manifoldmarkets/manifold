@@ -35,14 +35,14 @@ export const buyCharityLotteryTickets: APIHandler<
       throw new APIError(400, 'Lottery has closed')
     }
 
-    // Get current ticket count for this charity in this lottery
+    // Get total ticket count across ALL charities in this lottery (for bonding curve)
     const ticketStats = await tx.oneOrNone<{ total_tickets: string }>(
       `SELECT COALESCE(SUM(num_tickets), 0) as total_tickets 
        FROM charity_lottery_tickets 
-       WHERE lottery_num = $1 AND charity_id = $2`,
-      [lotteryNum, charityId]
+       WHERE lottery_num = $1`,
+      [lotteryNum]
     )
-    const currentTickets = parseInt(ticketStats?.total_tickets ?? '0')
+    const currentTickets = parseFloat(ticketStats?.total_tickets ?? '0')
 
     // Calculate cost
     const manaSpent = calculateLotteryTicketCost(currentTickets, numTickets)
