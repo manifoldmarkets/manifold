@@ -56,18 +56,75 @@ function PredicteGame(props: {
 
   const user = useUser()
   const savedResultRef = useRef(false)
+  const fetchedServerResultRef = useRef(false)
 
-  const [gameState, setGameState, ready] = usePersistentLocalState<GameState>(
-    {
-      dateString: '',
-      markets: [],
-      correctOrder: {},
-      attempts: [],
-      completed: false,
-      won: false,
-    },
-    'predictle-game-state'
-  )
+  const [gameState, setGameState, localReady] =
+    usePersistentLocalState<GameState>(
+      {
+        dateString: '',
+        markets: [],
+        correctOrder: {},
+        attempts: [],
+        completed: false,
+        won: false,
+      },
+      'predictle-game-state'
+    )
+
+  // Track whether we've finished checking server (starts false, set true when done)
+  const [serverResultLoaded, setServerResultLoaded] = useState(false)
+
+  // Fetch server result for logged-in users to check if already completed
+  useEffect(() => {
+    // If no user (logged out), mark server check as done
+    if (user === null) {
+      setServerResultLoaded(true)
+      return
+    }
+    // If user is undefined (still loading), wait
+    if (user === undefined) return
+
+    // User is logged in - fetch server result
+    if (fetchedServerResultRef.current || !localReady) return
+
+    fetchedServerResultRef.current = true
+    api('get-predictle-result', { puzzleNumber })
+      .then((response) => {
+        if (response.hasResult && response.result) {
+          // User already completed this puzzle on server - mark as completed
+          // Build a minimal completed state with correct order
+          const sortedMarkets = [...apiMarkets].sort(
+            (a, b) => apiCorrectOrder[a.id] - apiCorrectOrder[b.id]
+          )
+          // Generate feedback that matches the server result
+          const attempts = sortedMarkets.map((m) => ({
+            marketId: m.id,
+            feedback: Array(response.result!.attempts).fill('correct') as (
+              | 'correct'
+              | 'incorrect'
+            )[],
+          }))
+
+          setGameState({
+            dateString,
+            markets: sortedMarkets,
+            correctOrder: apiCorrectOrder,
+            attempts,
+            completed: true,
+            won: response.result.won,
+          })
+          setOrderedMarkets(sortedMarkets)
+          savedResultRef.current = true // Don't re-save
+        }
+        setServerResultLoaded(true)
+      })
+      .catch((e) => {
+        console.error('Failed to fetch predictle result:', e)
+        setServerResultLoaded(true)
+      })
+  }, [user, localReady, puzzleNumber, apiMarkets, apiCorrectOrder, dateString])
+
+  const ready = localReady && serverResultLoaded
 
   // Use stored markets if they exist for today, otherwise use API markets
   const markets =
@@ -103,6 +160,7 @@ function PredicteGame(props: {
         won: false,
       })
       setOrderedMarkets(apiMarkets)
+      fetchedServerResultRef.current = false // Allow re-fetch for new day
     }
   }, [
     ready,
@@ -157,22 +215,23 @@ function PredicteGame(props: {
     dateString,
   ])
 
-  // Save result to database when game is completed (for logged-in users)
+  // Save result to server when game is completed (for logged-in users)
   useEffect(() => {
-    // Reset savedResultRef when it's a new day
+    // Reset savedResultRef for new day
     if (gameState.dateString !== dateString) {
       savedResultRef.current = false
     }
 
     if (
       ready &&
-      gameState.completed &&
       user &&
+      gameState.completed &&
       !savedResultRef.current &&
       gameState.dateString === dateString
     ) {
       savedResultRef.current = true
       const attemptCount = gameState.attempts[0]?.feedback.length || 0
+
       api('save-predictle-result', {
         puzzleNumber,
         attempts: attemptCount,
@@ -184,11 +243,11 @@ function PredicteGame(props: {
     }
   }, [
     ready,
+    user,
     gameState.completed,
     gameState.won,
     gameState.attempts,
     gameState.dateString,
-    user,
     puzzleNumber,
     dateString,
   ])

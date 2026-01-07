@@ -5,6 +5,8 @@ import { dailyStatsClass } from 'web/components/home/daily-stats'
 import { track } from 'web/lib/service/analytics'
 import { Col } from '../layout/col'
 import { safeLocalStorage } from 'web/lib/util/local'
+import { useAPIGetter } from 'web/hooks/use-api-getter'
+import { useUser } from 'web/hooks/use-user'
 
 // Get today's date string in Pacific Time (matches predictle page logic)
 function getTodayDateStringPT(): string {
@@ -16,13 +18,51 @@ function getTodayDateStringPT(): string {
 
 export const DailyPredictleStat = (props: { className?: string }) => {
   const { className } = props
+  const user = useUser()
+
   const [gameStatus, setGameStatus] = useState<{
     completed: boolean
     won: boolean
     attempts: number
   } | null>(null)
 
+  // Fetch puzzle number for today
+  const { data: predictleData, loading: predictleLoading } = useAPIGetter(
+    'get-predictle-markets',
+    {}
+  )
+  const puzzleNumber = predictleData?.puzzleNumber
+
+  // Fetch server result for logged-in users (only shows completed games)
+  const { data: serverResult, loading: serverLoading } = useAPIGetter(
+    'get-predictle-result',
+    user && puzzleNumber !== undefined ? { puzzleNumber } : undefined
+  )
+
   useEffect(() => {
+    // Wait for puzzle number to load
+    if (predictleLoading || puzzleNumber === undefined) return
+
+    // Wait for user auth to finish loading (undefined = still loading)
+    if (user === undefined) return
+
+    // For logged-in users, wait for server result
+    if (user) {
+      if (serverLoading) return // Still loading server result
+
+      // Server result takes priority over localStorage
+      if (serverResult?.hasResult && serverResult.result) {
+        setGameStatus({
+          completed: true,
+          won: serverResult.result.won,
+          attempts: serverResult.result.attempts,
+        })
+        return
+      }
+      // Server responded with no result - check localStorage for in-progress
+    }
+
+    // Use localStorage (for non-logged-in users or if no server result)
     const stored = safeLocalStorage?.getItem('predictle-game-state')
     if (stored) {
       try {
@@ -41,7 +81,7 @@ export const DailyPredictleStat = (props: { className?: string }) => {
     } else {
       setGameStatus({ completed: false, won: false, attempts: 0 })
     }
-  }, [])
+  }, [user, puzzleNumber, predictleLoading, serverResult, serverLoading])
 
   // Don't render until we've checked localStorage (avoid hydration mismatch)
   if (gameStatus === null) {

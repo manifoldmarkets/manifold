@@ -100,6 +100,7 @@ import { getmonthlybets2025 } from './get-monthly-bets-2025'
 import { getNextLoanAmount } from './get-next-loan-amount'
 import { getPredictle } from './get-predictle-markets'
 import { savePredicleResult } from './save-predictle-result'
+import { getPredictleResult } from './get-predictle-result'
 import { getPartnerStats } from './get-partner-stats'
 import { getPositions } from './get-positions'
 import { getRelatedMarkets } from './get-related-markets'
@@ -409,4 +410,5 @@ export const handlers: { [k in APIPath]: APIHandler<k> } = {
   'cancel-pending-clarification': cancelPendingClarification,
   'get-predictle-markets': getPredictle,
   'save-predictle-result': savePredicleResult,
+  'get-predictle-result': getPredictleResult,
 } as const

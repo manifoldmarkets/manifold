@@ -2704,6 +2704,19 @@ export const API = (_apiTypeCheck = {
       .strict(),
     returns: {} as { success: boolean },
   },
+  'get-predictle-result': {
+    method: 'GET',
+    visibility: 'undocumented',
+    authed: true,
+    props: z.object({ puzzleNumber: z.coerce.number() }).strict(),
+    returns: {} as {
+      hasResult: boolean
+      result?: {
+        attempts: number
+        won: boolean
+      }
+    },
+  },
 } as const)
 
 export type APIPath = keyof typeof API
