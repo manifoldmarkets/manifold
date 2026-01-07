@@ -2698,8 +2698,17 @@ export const API = (_apiTypeCheck = {
     props: z
       .object({
         puzzleNumber: z.number(),
-        attempts: z.number(), // number of attempts taken
         won: z.boolean(),
+        // Full game state for cross-device sync
+        gameState: z.object({
+          orderedMarketIds: z.array(z.string()),
+          attempts: z.array(
+            z.object({
+              marketId: z.string(),
+              feedback: z.array(z.enum(['correct', 'incorrect'])),
+            })
+          ),
+        }),
       })
       .strict(),
     returns: {} as { success: boolean },
@@ -2712,8 +2721,11 @@ export const API = (_apiTypeCheck = {
     returns: {} as {
       hasResult: boolean
       result?: {
-        attempts: number
         won: boolean
+        gameState: {
+          orderedMarketIds: string[]
+          attempts: { marketId: string; feedback: ('correct' | 'incorrect')[] }[]
+        }
       }
     },
   },

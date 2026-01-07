@@ -52,10 +52,12 @@ export const DailyPredictleStat = (props: { className?: string }) => {
 
       // Server result takes priority over localStorage
       if (serverResult?.hasResult && serverResult.result) {
+        const attemptCount =
+          serverResult.result.gameState?.attempts?.[0]?.feedback?.length ?? 0
         setGameStatus({
           completed: true,
           won: serverResult.result.won,
-          attempts: serverResult.result.attempts,
+          attempts: attemptCount,
         })
         return
       }

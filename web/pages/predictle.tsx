@@ -91,30 +91,26 @@ function PredicteGame(props: {
     api('get-predictle-result', { puzzleNumber })
       .then((response) => {
         if (response.hasResult && response.result) {
-          // User already completed this puzzle on server - mark as completed
-          // Build a minimal completed state with correct order
-          const sortedMarkets = [...apiMarkets].sort(
-            (a, b) => apiCorrectOrder[a.id] - apiCorrectOrder[b.id]
-          )
-          // Generate feedback that matches the server result
-          const attempts = sortedMarkets.map((m) => ({
-            marketId: m.id,
-            feedback: Array(response.result!.attempts).fill('correct') as (
-              | 'correct'
-              | 'incorrect'
-            )[],
-          }))
+          // User already completed this puzzle on server - restore full game state
+          const serverGameState = response.result.gameState
 
-          setGameState({
-            dateString,
-            markets: sortedMarkets,
-            correctOrder: apiCorrectOrder,
-            attempts,
-            completed: true,
-            won: response.result.won,
-          })
-          setOrderedMarkets(sortedMarkets)
-          savedResultRef.current = true // Don't re-save
+          // Reconstruct markets from orderedMarketIds
+          const orderedMarketsFromServer = serverGameState.orderedMarketIds
+            .map((id) => apiMarkets.find((m) => m.id === id))
+            .filter((m): m is Market => m !== undefined)
+
+          if (orderedMarketsFromServer.length === apiMarkets.length) {
+            setGameState({
+              dateString,
+              markets: orderedMarketsFromServer,
+              correctOrder: apiCorrectOrder,
+              attempts: serverGameState.attempts,
+              completed: true,
+              won: response.result.won,
+            })
+            setOrderedMarkets(orderedMarketsFromServer)
+            savedResultRef.current = true // Don't re-save
+          }
         }
         setServerResultLoaded(true)
       })
@@ -230,12 +226,14 @@ function PredicteGame(props: {
       gameState.dateString === dateString
     ) {
       savedResultRef.current = true
-      const attemptCount = gameState.attempts[0]?.feedback.length || 0
 
       api('save-predictle-result', {
         puzzleNumber,
-        attempts: attemptCount,
         won: gameState.won,
+        gameState: {
+          orderedMarketIds: gameState.markets.map((m) => m.id),
+          attempts: gameState.attempts,
+        },
       }).catch((e) => {
         console.error('Failed to save predictle result:', e)
         savedResultRef.current = false // Allow retry on error
@@ -247,6 +245,7 @@ function PredicteGame(props: {
     gameState.completed,
     gameState.won,
     gameState.attempts,
+    gameState.markets,
     gameState.dateString,
     puzzleNumber,
     dateString,
