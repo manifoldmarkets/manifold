@@ -132,7 +132,7 @@ export const banuser: APIHandler<'ban-user'> = async (props, auth) => {
     // Handle username change restriction
     // Default: any new ban restricts username changes (unless mod opts out with allowUsernameChange=true)
     // If allowUsernameChange is explicitly set, use that value
-    let usernameChangeUpdate: { canChangeUsername?: boolean } = {}
+    const usernameChangeUpdate: { canChangeUsername?: boolean } = {}
     if (bannedTypes.length > 0) {
       // New bans being applied
       if (allowUsernameChange === true) {
@@ -180,7 +180,7 @@ export const banuser: APIHandler<'ban-user'> = async (props, auth) => {
     // - Set to true if permanently banned from all 3 types (sync legacy flag)
     // - Set to false only if ALL bans are being removed (full unban)
     // - Otherwise, don't change it (preserve existing legacy state)
-    let legacyBanUpdate: { isBannedFromPosting?: boolean } = {}
+    const legacyBanUpdate: { isBannedFromPosting?: boolean } = {}
     if (isPermanentlyBannedFromAll) {
       legacyBanUpdate.isBannedFromPosting = true
     } else if (!hasBansRemaining) {
