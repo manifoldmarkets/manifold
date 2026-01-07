@@ -524,7 +524,7 @@ export const API = (_apiTypeCheck = {
     method: 'GET',
     visibility: 'public',
     authed: false,
-    cache: 'public, max-age=600, stale-while-revalidate=60',
+    cache: 'public, max-age=86400, stale-while-revalidate=3600',
     returns: [] as Bet[],
     props: z
       .object({
