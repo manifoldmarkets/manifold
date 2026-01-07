@@ -679,6 +679,17 @@ export default function PredictlePage() {
 
   const { data, loading } = useAPIGetter('get-predictle-markets', {})
 
+  // Detect iOS for background positioning workaround
+  const [isIOS, setIsIOS] = useState(false)
+  useEffect(() => {
+    setIsIOS(
+      /iPad|iPhone|iPod/.test(navigator.userAgent) && !(window as any).MSStream
+    )
+  }, [])
+
+  // Use absolute positioning on iOS (fixed has rendering bugs), fixed elsewhere
+  const bgPositionClass = isIOS ? 'absolute' : 'fixed'
+
   return (
     <Page trackPageView="predictle" hideFooter className="!bg-transparent">
       <SEO
@@ -686,35 +697,63 @@ export default function PredictlePage() {
         description="A daily game where you arrange prediction markets by probability."
         url="/predictle"
       />
-      {/* Light mode gradient background */}
-      <div className="fixed inset-0 -z-10 bg-gradient-to-br from-violet-100 via-fuchsia-50 to-amber-50 dark:hidden" />
-      <div className="fixed inset-0 -z-10 bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-violet-200/30 via-transparent to-transparent dark:hidden" />
-      {/* Dark mode gradient background */}
-      <div className="fixed inset-0 -z-10 hidden bg-slate-900 dark:block" />
-      <div className="fixed inset-0 -z-10 hidden bg-gradient-to-br from-violet-900/30 via-slate-900 to-fuchsia-900/20 dark:block" />
-      <div className="fixed inset-0 -z-10 hidden bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-violet-800/20 via-transparent to-transparent dark:block" />
+      {/* Wrapper needed for iOS absolute positioning */}
+      <div className={clsx(isIOS && 'relative min-h-screen w-full')}>
+        {/* Light mode gradient background */}
+        <div
+          className={clsx(
+            'pointer-events-none inset-0 -z-10 bg-gradient-to-br from-violet-100 via-fuchsia-50 to-amber-50 dark:hidden',
+            bgPositionClass
+          )}
+        />
+        <div
+          className={clsx(
+            'pointer-events-none inset-0 -z-10 bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-violet-200/30 via-transparent to-transparent dark:hidden',
+            bgPositionClass
+          )}
+        />
+        {/* Dark mode gradient background */}
+        <div
+          className={clsx(
+            'pointer-events-none inset-0 -z-10 hidden bg-slate-900 dark:block',
+            bgPositionClass
+          )}
+        />
+        <div
+          className={clsx(
+            'pointer-events-none inset-0 -z-10 hidden bg-gradient-to-br from-violet-900/30 via-slate-900 to-fuchsia-900/20 dark:block',
+            bgPositionClass
+          )}
+        />
+        <div
+          className={clsx(
+            'pointer-events-none inset-0 -z-10 hidden bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-violet-800/20 via-transparent to-transparent dark:block',
+            bgPositionClass
+          )}
+        />
 
-      <Col
-        className="mx-auto w-full max-w-xl overscroll-y-none px-4 py-8"
-        style={{ paddingBottom: 'max(2rem, env(safe-area-inset-bottom))' }}
-      >
-        {loading || !data ? (
-          <Col className="items-center gap-4 py-12">
-            <div className="text-5xl">🔮</div>
-            <LoadingIndicator />
-            <p className="text-slate-500 dark:text-slate-400">
-              Loading today's puzzle...
-            </p>
-          </Col>
-        ) : (
-          <PredicteGame
-            markets={data.markets}
-            correctOrder={data.correctOrder}
-            dateString={data.dateString}
-            puzzleNumber={data.puzzleNumber}
-          />
-        )}
-      </Col>
+        <Col
+          className="mx-auto w-full max-w-xl px-4 py-8"
+          style={{ paddingBottom: 'max(2rem, env(safe-area-inset-bottom))' }}
+        >
+          {loading || !data ? (
+            <Col className="items-center gap-4 py-12">
+              <div className="text-5xl">🔮</div>
+              <LoadingIndicator />
+              <p className="text-slate-500 dark:text-slate-400">
+                Loading today's puzzle...
+              </p>
+            </Col>
+          ) : (
+            <PredicteGame
+              markets={data.markets}
+              correctOrder={data.correctOrder}
+              dateString={data.dateString}
+              puzzleNumber={data.puzzleNumber}
+            />
+          )}
+        </Col>
+      </div>
     </Page>
   )
 }
