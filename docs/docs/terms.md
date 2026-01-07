@@ -134,6 +134,8 @@ As a user of the Site, you agree not to:
 
 ● Sell or otherwise transfer your profile.
 
+● Use animated images, GIFs, or any moving pictures as your profile avatar or profile picture.
+
 ● Spamming or posting unsolicited commercial content
 
 **9. USER GENERATED CONTRIBUTIONS**
