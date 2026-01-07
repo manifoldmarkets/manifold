@@ -18,6 +18,7 @@ import { UserLink } from 'web/components/widgets/user-link'
 import { RelativeTimestamp } from 'web/components/relative-timestamp'
 import { LoadingIndicator } from 'web/components/widgets/loading-indicator'
 import { ManaCoin } from 'web/public/custom-components/manaCoin'
+import { InfoTooltip } from 'web/components/widgets/info-tooltip'
 import toast from 'react-hot-toast'
 import clsx from 'clsx'
 
@@ -375,7 +376,13 @@ export default function CharityLotteryPage() {
 
                   <Col className="bg-canvas-0 text-ink-700 rounded-md p-4 text-sm">
                     <Row className="justify-between">
-                      <span>Current ticket price:</span>
+                      <Row className="items-center gap-1">
+                        <span>Current ticket price:</span>
+                        <InfoTooltip
+                          text="Tickets are priced on a bonding curve, making it cheaper to buy earlier."
+                          size="sm"
+                        />
+                      </Row>
                       <span>{formatMoneyWithDecimals(currentPrice)}</span>
                     </Row>
                     <Row className="justify-between">
