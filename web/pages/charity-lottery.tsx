@@ -37,6 +37,21 @@ function formatTickets(tickets: number): string {
   }
 }
 
+// Horse charities to exclude from the lottery
+const EXCLUDED_CHARITY_IDS = [
+  'new-vocations',
+  'stable-recovery',
+  'thoroughbred-retirement-foundation',
+  'the-thoroughbred-aftercare-alliance',
+  'old-friends',
+  'new-york-racetrack-chaplaincy',
+  'belmont-child-care-association',
+  'thoroughbred-charities-of-america',
+  'the-jockey-club-safety-net-foundation',
+  'grayson-jockey-club-research-foundation',
+  'mareworthy',
+]
+
 // Color palette for the pie chart
 const COLORS = [
   '#6366f1', // indigo
@@ -369,7 +384,10 @@ function PurchaseForm(props: {
             className="w-full rounded-lg"
           >
             <option value="">Select charity...</option>
-            {sortBy(charities, 'name').map((charity) => (
+            {sortBy(
+              charities.filter((c) => !EXCLUDED_CHARITY_IDS.includes(c.id)),
+              'name'
+            ).map((charity) => (
               <option key={charity.id} value={charity.id}>
                 {charity.name}
               </option>
