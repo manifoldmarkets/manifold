@@ -205,7 +205,6 @@ export const getUserCalibration: APIHandler<'get-user-calibration'> = async (
   // Calculate performance stats
   const contractIds = metrics.map((m) => m.contract_id)
   const totalProfit = sumBy(metrics, 'profit')
-  const profitableMarkets = metrics.filter((m) => m.profit > 0).length
   const totalMarkets = metrics.length
   const totalVolume = volumeResult?.total_volume ?? 0
   const roi = totalVolume > 0 ? (totalProfit / totalVolume) * 100 : 0
@@ -245,11 +244,11 @@ export const getUserCalibration: APIHandler<'get-user-calibration'> = async (
         : Promise.resolve([]),
     ])
 
-  // Calculate win rate
+  // Calculate win rate - only count resolved markets for both numerator and denominator
   const resolvedSet = new Set(resolvedContractIds.map((r) => r.id))
-  const resolvedMarkets = metrics.filter((m) =>
-    resolvedSet.has(m.contract_id)
-  ).length
+  const resolvedMetrics = metrics.filter((m) => resolvedSet.has(m.contract_id))
+  const resolvedMarkets = resolvedMetrics.length
+  const profitableMarkets = resolvedMetrics.filter((m) => m.profit > 0).length
   const winRate =
     resolvedMarkets > 0 ? (profitableMarkets / resolvedMarkets) * 100 : 0
 
