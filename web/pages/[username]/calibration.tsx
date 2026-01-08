@@ -134,18 +134,13 @@ function UserCalibrationContent({ user }: { user: User }) {
         </Col>
       </Row>
 
-      {/* Performance Stats Cards */}
+      {/* Performance Stats - 2 rows of 4 on desktop */}
       <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
         <StatCard
           label="Total Profit"
           value={formatMoney(data.performanceStats.totalProfit, 'MANA')}
           color={data.performanceStats.totalProfit >= 0 ? 'teal' : 'scarlet'}
           tooltip="Net profit across all resolved and unrealized positions"
-        />
-        <StatCard
-          label="Total Volume"
-          value={formatMoney(data.performanceStats.totalVolume, 'MANA')}
-          tooltip="Total amount traded (sum of absolute bet values)"
         />
         <StatCard
           label="ROI"
@@ -158,35 +153,19 @@ function UserCalibrationContent({ user }: { user: User }) {
           value={`${data.performanceStats.winRate.toFixed(1)}%`}
           tooltip="Percentage of resolved markets with positive profit"
         />
-      </div>
-
-      <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
         <StatCard
           label="Markets Traded"
           value={formatWithCommas(data.performanceStats.totalMarkets)}
           tooltip="Total unique markets you've traded on"
         />
-        <StatCard
-          label="Resolved Markets"
-          value={formatWithCommas(data.performanceStats.resolvedMarkets)}
-          tooltip="Markets that have resolved"
-        />
-        <StatCard
-          label="Calibration Score"
-          value={data.calibration.score.toFixed(2)}
-          color={getScoreColor(data.calibration.score)}
-          tooltip="How well calibrated your bets are (-100 worst to 0 perfect)"
-        />
-        <StatCard
-          label="Calibration Grade"
-          value={getGrade(data.calibration.score)}
-          color={getScoreColor(data.calibration.score)}
-          tooltip="Letter grade based on calibration score"
-        />
       </div>
 
-      {/* Advanced Risk Metrics */}
-      <div className="grid grid-cols-2 gap-4 md:grid-cols-3">
+      <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
+        <StatCard
+          label="Total Volume"
+          value={formatMoney(data.performanceStats.totalVolume, 'MANA')}
+          tooltip="Total amount traded (sum of absolute bet values)"
+        />
         <StatCard
           label="Sharpe Ratio"
           value={data.performanceStats.sharpeRatio.toFixed(2)}
@@ -912,26 +891,4 @@ function LoanHistoryChart({
       </g>
     </svg>
   )
-}
-
-// Utility functions
-const getGrade = (score: number) => {
-  if (score > -0.05) return 'S'
-  if (score >= -0.15) return 'A+'
-  if (score >= -0.5) return 'A'
-  if (score >= -1) return 'A-'
-  if (score >= -1.5) return 'B+'
-  if (score >= -2.5) return 'B'
-  if (score >= -4) return 'B-'
-  if (score >= -5.5) return 'C+'
-  if (score >= -7) return 'C'
-  if (score >= -8.5) return 'C-'
-  if (score >= -10) return 'D'
-  return 'F'
-}
-
-const getScoreColor = (score: number): 'teal' | 'amber' | 'scarlet' => {
-  if (score >= -2) return 'teal'
-  if (score >= -5) return 'amber'
-  return 'scarlet'
 }

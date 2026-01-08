@@ -2151,7 +2151,6 @@ export const API = (_apiTypeCheck = {
       calibration: {
         yesPoints: { x: number; y: number }[]
         noPoints: { x: number; y: number }[]
-        score: number
         totalBets: number
       }
       performanceStats: {

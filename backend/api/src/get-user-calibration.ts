@@ -229,26 +229,6 @@ export const getUserCalibration: APIHandler<'get-user-calibration'> = async (
     (p) => noProbBuckets[p] !== undefined && noCountBuckets[p]
   ).map((p) => ({ x: p / 100, y: noProbBuckets[p] }))
 
-  // Calculate calibration score
-  let score = 0
-  let n = 0
-  for (const point of CALIBRATION_POINTS) {
-    const prob = point / 100
-    const yes = yesProbBuckets[point]
-    const no = noProbBuckets[point]
-
-    if (yes !== undefined && yesCountBuckets[point]) {
-      score += yes < prob ? (prob - yes) ** 2 : 0
-      n++
-    }
-    if (no !== undefined && noCountBuckets[point]) {
-      score += no > prob ? (no - prob) ** 2 : 0
-      n++
-    }
-  }
-  const calibrationScore =
-    n > 0 ? (-100 * Math.round((score / n) * 1e4)) / 1e4 : 0
-
   // Calculate performance stats
   const contractIds = metrics.map((m) => m.contract_id)
   const totalProfit = sumBy(metrics, 'profit')
@@ -430,7 +410,6 @@ export const getUserCalibration: APIHandler<'get-user-calibration'> = async (
     calibration: {
       yesPoints,
       noPoints,
-      score: calibrationScore,
       totalBets: betsData.length,
     },
     performanceStats: {
