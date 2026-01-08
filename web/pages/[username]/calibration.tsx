@@ -1,6 +1,6 @@
 import clsx from 'clsx'
 import { range } from 'lodash'
-import { useState } from 'react'
+import { useState, useMemo } from 'react'
 
 import { scaleLinear } from 'd3-scale'
 
@@ -278,27 +278,7 @@ function UserCalibrationContent({ user }: { user: User }) {
 
       {/* Portfolio Performance Graph */}
       {data.portfolioHistory.length > 0 && (
-        <Card className="overflow-hidden">
-          <div className="bg-canvas-50 border-ink-200 border-b p-4">
-            <h2 className="text-ink-900 text-lg font-semibold">
-              Portfolio Performance
-            </h2>
-            <p className="text-ink-500 mt-1 text-sm">
-              Your portfolio value and profit over time
-            </p>
-          </div>
-          <div className="p-6">
-            <SizedContainer className="h-64 w-full">
-              {(w, h) => (
-                <PortfolioChart
-                  data={data.portfolioHistory}
-                  width={w}
-                  height={h}
-                />
-              )}
-            </SizedContainer>
-          </div>
-        </Card>
+        <PortfolioSection portfolioHistory={data.portfolioHistory} />
       )}
 
       {/* Profit by Topic */}
@@ -642,6 +622,75 @@ function UserCalibrationChart({
   )
 }
 
+// Time period options
+const TIME_PERIODS = [
+  { label: 'All', days: null },
+  { label: '1Y', days: 365 },
+  { label: '6M', days: 180 },
+  { label: '3M', days: 90 },
+  { label: '1M', days: 30 },
+  { label: '1W', days: 7 },
+] as const
+
+// Portfolio Section with time period selector
+function PortfolioSection({
+  portfolioHistory,
+}: {
+  portfolioHistory: { timestamp: number; value: number; profit: number }[]
+}) {
+  const [selectedPeriod, setSelectedPeriod] = useState<number | null>(null)
+
+  const filteredData = useMemo(() => {
+    if (selectedPeriod === null) return portfolioHistory
+    const cutoff = Date.now() - selectedPeriod * 24 * 60 * 60 * 1000
+    return portfolioHistory.filter((d) => d.timestamp >= cutoff)
+  }, [portfolioHistory, selectedPeriod])
+
+  return (
+    <Card className="overflow-hidden">
+      <div className="bg-canvas-50 border-ink-200 flex items-center justify-between border-b p-4">
+        <div>
+          <h2 className="text-ink-900 text-lg font-semibold">
+            Portfolio Performance
+          </h2>
+          <p className="text-ink-500 mt-1 text-sm">
+            Your portfolio profit over time
+          </p>
+        </div>
+        <Row className="gap-1">
+          {TIME_PERIODS.map((period) => (
+            <button
+              key={period.label}
+              onClick={() => setSelectedPeriod(period.days)}
+              className={clsx(
+                'rounded-md px-2.5 py-1 text-xs font-medium transition-colors',
+                selectedPeriod === period.days
+                  ? 'bg-primary-500 text-white'
+                  : 'bg-ink-100 text-ink-600 hover:bg-ink-200'
+              )}
+            >
+              {period.label}
+            </button>
+          ))}
+        </Row>
+      </div>
+      <div className="p-6">
+        {filteredData.length > 1 ? (
+          <SizedContainer className="h-64 w-full">
+            {(w, h) => (
+              <PortfolioChart data={filteredData} width={w} height={h} />
+            )}
+          </SizedContainer>
+        ) : (
+          <div className="text-ink-500 py-12 text-center">
+            No data available for this time period
+          </div>
+        )}
+      </div>
+    </Card>
+  )
+}
+
 // Portfolio Chart
 function PortfolioChart({
   data,
@@ -654,7 +703,8 @@ function PortfolioChart({
 }) {
   if (data.length === 0) return null
 
-  const margin = { top: 20, right: 40, bottom: 30, left: 10 }
+  // Increased right margin for Y-axis labels
+  const margin = { top: 20, right: 70, bottom: 40, left: 10 }
   const innerWidth = width - margin.left - margin.right
   const innerHeight = height - margin.top - margin.bottom
 
@@ -664,7 +714,7 @@ function PortfolioChart({
     Math.max(...data.map((d) => d.profit)),
   ]
   // Pad y axis
-  const yPadding = (yExtent[1] - yExtent[0]) * 0.1
+  const yPadding = (yExtent[1] - yExtent[0]) * 0.1 || 100
   yExtent[0] -= yPadding
   yExtent[1] += yPadding
 
@@ -687,6 +737,12 @@ function PortfolioChart({
   const zeroY = yScale(0)
   const lastProfit = data[data.length - 1].profit
   const isPositive = lastProfit >= 0
+
+  // Format dates for X axis
+  const formatDate = (ts: number) => {
+    const date = new Date(ts)
+    return date.toLocaleDateString('en-US', { month: 'short', year: '2-digit' })
+  }
 
   return (
     <svg width={width} height={height}>
@@ -717,20 +773,45 @@ function PortfolioChart({
           strokeWidth={2}
         />
 
-        {/* Y axis labels */}
+        {/* Y axis labels - positioned with more space */}
         <text
-          x={innerWidth + 5}
-          y={yScale(yExtent[1])}
-          className="fill-ink-500 text-xs"
+          x={innerWidth + 8}
+          y={yScale(yExtent[1]) + 4}
+          className="fill-ink-400 text-[11px]"
         >
-          {formatMoney(yExtent[1], 'MANA')}
+          {formatMoney(Math.round(yExtent[1]), 'MANA')}
         </text>
         <text
-          x={innerWidth + 5}
-          y={yScale(yExtent[0])}
-          className="fill-ink-500 text-xs"
+          x={innerWidth + 8}
+          y={zeroY + 4}
+          className="fill-ink-400 text-[11px]"
         >
-          {formatMoney(yExtent[0], 'MANA')}
+          {formatMoney(0, 'MANA')}
+        </text>
+        <text
+          x={innerWidth + 8}
+          y={yScale(yExtent[0]) + 4}
+          className="fill-ink-400 text-[11px]"
+        >
+          {formatMoney(Math.round(yExtent[0]), 'MANA')}
+        </text>
+
+        {/* X axis labels */}
+        <text
+          x={0}
+          y={innerHeight + 20}
+          className="fill-ink-400 text-[11px]"
+          textAnchor="start"
+        >
+          {formatDate(xExtent[0])}
+        </text>
+        <text
+          x={innerWidth}
+          y={innerHeight + 20}
+          className="fill-ink-400 text-[11px]"
+          textAnchor="end"
+        >
+          {formatDate(xExtent[1])}
         </text>
       </g>
     </svg>
