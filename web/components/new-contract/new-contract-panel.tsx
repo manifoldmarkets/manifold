@@ -1376,7 +1376,9 @@ export function NewContractPanel(props: {
           </span>
           <ShortToggle
             on={formState.visibility === 'public'}
-            setOn={(on) => updateField('visibility', on ? 'public' : 'unlisted')}
+            setOn={(on) =>
+              updateField('visibility', on ? 'public' : 'unlisted')
+            }
           />
           <InfoTooltip text="Unlisted markets are only discoverable via a direct link" />
         </Row>
