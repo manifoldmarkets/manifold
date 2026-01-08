@@ -510,15 +510,21 @@ export function getSourceUrl(notification: Notification) {
   if (sourceType === 'user' && !sourceContractSlug)
     return `/${sourceUserUsername}`
   if (sourceContractCreatorUsername && sourceContractSlug) {
-    return `/${sourceContractCreatorUsername}/${sourceContractSlug}#${getSourceIdForLinkComponent(
+    const linkComponent = getSourceIdForLinkComponent(
       sourceId ?? '',
       sourceType
-    )}`
+    )
+    return linkComponent
+      ? `/${sourceContractCreatorUsername}/${sourceContractSlug}#${linkComponent}`
+      : `/${sourceContractCreatorUsername}/${sourceContractSlug}`
   }
   if (sourceSlug) {
-    return `${
-      sourceSlug.startsWith('/') ? sourceSlug : '/' + sourceSlug
-    }#${getSourceIdForLinkComponent(sourceId ?? '', sourceType)}`
+    const slug = sourceSlug.startsWith('/') ? sourceSlug : '/' + sourceSlug
+    const linkComponent = getSourceIdForLinkComponent(
+      sourceId ?? '',
+      sourceType
+    )
+    return linkComponent ? `${slug}#${linkComponent}` : slug
   }
   return ''
 }
