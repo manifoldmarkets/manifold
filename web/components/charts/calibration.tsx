@@ -1,9 +1,12 @@
 import { axisBottom, axisRight } from 'd3-axis'
 import { scaleLinear } from 'd3-scale'
-import { points } from 'web/pages/[username]/calibration'
+import { range } from 'lodash'
 import { SVGChart, formatPct } from './helpers'
 
 type Point = { x: number; y: number }
+
+// Calibration bucket points
+const CALIBRATION_POINTS = [1, 3, 5, ...range(10, 100, 10), 95, 97, 99]
 
 export function CalibrationChart(props: {
   yesPoints: Point[]
@@ -16,7 +19,7 @@ export function CalibrationChart(props: {
   const xScale = scaleLinear().domain([0, 1]).range([0, width])
   const yScale = scaleLinear().domain([0, 1]).range([height, 0])
 
-  const tickVals = points.map((p) => p / 100)
+  const tickVals = CALIBRATION_POINTS.map((p) => p / 100)
 
   const format = (d: number) =>
     (d <= 0.9 || d === 0.99) && (d >= 0.1 || d === 0.01) ? formatPct(d) : ''

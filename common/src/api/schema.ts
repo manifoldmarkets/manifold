@@ -2141,6 +2141,47 @@ export const API = (_apiTypeCheck = {
       })
       .strict(),
   },
+  'get-user-calibration': {
+    method: 'GET',
+    visibility: 'public',
+    authed: false,
+    // Longer cache for this heavy endpoint (30s cache, 60s stale-while-revalidate)
+    cache: 'public, max-age=30, stale-while-revalidate=60',
+    returns: {} as {
+      calibration: {
+        yesPoints: { x: number; y: number }[]
+        noPoints: { x: number; y: number }[]
+        totalBets: number
+      }
+      performanceStats: {
+        totalProfit: number
+        totalVolume: number
+        roi: number
+        winRate: number
+        totalMarkets: number
+        resolvedMarkets: number
+        volatility: number
+        sharpeRatio: number
+        maxDrawdown: number
+      }
+      portfolioHistory: {
+        timestamp: number
+        value: number
+        profit: number
+      }[]
+      profitByTopic: {
+        topic: string
+        profit: number
+        volume: number
+        marketCount: number
+      }[]
+    },
+    props: z
+      .object({
+        userId: z.string(),
+      })
+      .strict(),
+  },
   'get-site-activity': {
     method: 'GET',
     visibility: 'public',
