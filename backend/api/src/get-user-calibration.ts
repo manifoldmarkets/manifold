@@ -6,17 +6,14 @@ import { SEARCH_TOPICS_TO_SUBTOPICS } from 'common/topics'
 
 const CALIBRATION_POINTS = [1, 3, 5, ...range(10, 100, 10), 95, 97, 99]
 
-// Map group IDs to topic names for easier lookup
-function getTopicGroupMapping() {
-  const groupToTopic: Record<string, string> = {}
-  for (const [topic, subtopics] of Object.entries(SEARCH_TOPICS_TO_SUBTOPICS)) {
-    for (const subtopic of subtopics) {
-      for (const groupId of subtopic.groupIds) {
-        groupToTopic[groupId] = topic
-      }
+// Map group IDs to topic names for easier lookup (cached at module level)
+const topicGroupMapping: Record<string, string> = {}
+for (const [topic, subtopics] of Object.entries(SEARCH_TOPICS_TO_SUBTOPICS)) {
+  for (const subtopic of subtopics) {
+    for (const groupId of subtopic.groupIds) {
+      topicGroupMapping[groupId] = topic
     }
   }
-  return groupToTopic
 }
 
 export const getUserCalibration: APIHandler<'get-user-calibration'> = async (
@@ -34,50 +31,138 @@ export const getUserCalibration: APIHandler<'get-user-calibration'> = async (
     throw new APIError(404, 'User not found')
   }
 
-  // Get user's bets on resolved binary markets with contract data
-  // Using direct columns where available, data jsonb for the rest
-  const betsData = await pg.manyOrNone<{
-    bet_id: string
-    contract_id: string
-    outcome: string
-    amount: number
-    shares: number
-    prob_after: number
-    created_time: number
-    resolution: string
-    loan_amount: number
-  }>(
-    `
-    SELECT 
-      cb.bet_id,
-      cb.contract_id,
-      cb.outcome,
-      cb.amount,
-      cb.shares,
-      cb.prob_after,
-      EXTRACT(EPOCH FROM cb.created_time)::bigint * 1000 as created_time,
-      c.resolution,
-      COALESCE(cb.loan_amount, 0) as loan_amount
-    FROM contract_bets cb
-    JOIN contracts c ON cb.contract_id = c.id
-    WHERE cb.user_id = $1
-      AND c.outcome_type = 'BINARY'
-      AND c.resolution IN ('YES', 'NO')
-      AND cb.amount > 0
-      AND (cb.is_redemption IS NOT TRUE OR cb.is_redemption IS NULL)
-    ORDER BY cb.created_time ASC
-    LIMIT 10000
-    `,
-    [userId]
-  )
+  // Run all independent queries in parallel for better performance
+  const [
+    betsData,
+    metrics,
+    portfolioHistory,
+    loanData,
+    netWorthResult,
+    volumeResult,
+  ] = await Promise.all([
+    // Query 1: Get user's bets on resolved binary markets (for calibration)
+    pg.manyOrNone<{
+      bet_id: string
+      contract_id: string
+      outcome: string
+      amount: number
+      shares: number
+      prob_after: number
+      created_time: number
+      resolution: string
+    }>(
+      `
+      SELECT 
+        cb.bet_id,
+        cb.contract_id,
+        cb.outcome,
+        cb.amount,
+        cb.shares,
+        cb.prob_after,
+        EXTRACT(EPOCH FROM cb.created_time)::bigint * 1000 as created_time,
+        c.resolution
+      FROM contract_bets cb
+      JOIN contracts c ON cb.contract_id = c.id
+      WHERE cb.user_id = $1
+        AND c.outcome_type = 'BINARY'
+        AND c.resolution IN ('YES', 'NO')
+        AND cb.amount > 0
+        AND (cb.is_redemption IS NOT TRUE OR cb.is_redemption IS NULL)
+      ORDER BY cb.created_time ASC
+      LIMIT 10000
+      `,
+      [userId]
+    ),
 
-  // Calculate calibration
+    // Query 2: Get contract metrics for performance stats
+    pg.manyOrNone<{
+      contract_id: string
+      profit: number
+    }>(
+      `
+      SELECT 
+        contract_id,
+        COALESCE(profit, 0) as profit
+      FROM user_contract_metrics
+      WHERE user_id = $1
+        AND answer_id IS NULL
+      `,
+      [userId]
+    ),
+
+    // Query 3: Get portfolio history (sampled for large datasets)
+    pg.manyOrNone<{
+      timestamp: number
+      balance: number
+      investment_value: number
+      total_deposits: number
+      spice_balance: number
+    }>(
+      `
+      WITH numbered AS (
+        SELECT 
+          EXTRACT(EPOCH FROM ts)::bigint * 1000 as timestamp,
+          COALESCE(balance, 0) as balance,
+          COALESCE(investment_value, 0) as investment_value,
+          COALESCE(total_deposits, 0) as total_deposits,
+          COALESCE(spice_balance, 0) as spice_balance,
+          ROW_NUMBER() OVER (ORDER BY ts ASC) as rn,
+          COUNT(*) OVER () as total_count
+        FROM user_portfolio_history
+        WHERE user_id = $1
+      )
+      SELECT timestamp, balance, investment_value, total_deposits, spice_balance
+      FROM numbered
+      WHERE 
+        -- Always include first and last points
+        rn = 1 OR rn = total_count
+        -- Sample evenly to get ~300 points max
+        OR (total_count <= 300 OR rn % GREATEST(1, total_count / 300) = 0)
+      ORDER BY timestamp ASC
+      `,
+      [userId]
+    ),
+
+    // Query 4: Get loan stats
+    pg.oneOrNone<{ loan_total: number }>(
+      `
+      SELECT COALESCE(loan_total, 0) as loan_total
+      FROM user_portfolio_history_latest
+      WHERE user_id = $1
+      `,
+      [userId]
+    ),
+
+    // Query 5: Get net worth for max loan calculation
+    pg.oneOrNone<{ net_worth: number }>(
+      `
+      SELECT 
+        COALESCE(u.balance, 0) + COALESCE(p.investment_value, 0) as net_worth
+      FROM users u
+      LEFT JOIN user_portfolio_history_latest p ON u.id = p.user_id
+      WHERE u.id = $1
+      `,
+      [userId]
+    ),
+
+    // Query 6: Get total volume
+    pg.oneOrNone<{ total_volume: number }>(
+      `
+      SELECT COALESCE(SUM(ABS(amount)), 0) as total_volume
+      FROM contract_bets
+      WHERE user_id = $1
+        AND (is_redemption IS NOT TRUE OR is_redemption IS NULL)
+      `,
+      [userId]
+    ),
+  ])
+
+  // Calculate calibration from bets data
   const yesProbBuckets: Dictionary<number> = {}
   const yesCountBuckets: Dictionary<number> = {}
   const noProbBuckets: Dictionary<number> = {}
   const noCountBuckets: Dictionary<number> = {}
 
-  // Group bets by contract to track positions
   const betsByContract = groupBy(betsData, 'contract_id')
 
   for (const [_contractId, bets] of Object.entries(betsByContract)) {
@@ -86,12 +171,10 @@ export const getUserCalibration: APIHandler<'get-user-calibration'> = async (
     const resolvedYES = resolution === 'YES'
 
     let currentPosition = 0
-    // Process bets in order
     for (const bet of bets) {
       const betSign = bet.outcome === 'YES' ? 1 : -1
       const nextPosition = currentPosition + bet.shares * betSign
 
-      // Skip if this is effectively a sale
       if (
         bet.amount < 0 ||
         (Math.sign(currentPosition) !== betSign &&
@@ -165,104 +248,73 @@ export const getUserCalibration: APIHandler<'get-user-calibration'> = async (
   const calibrationScore =
     n > 0 ? (-100 * Math.round((score / n) * 1e4)) / 1e4 : 0
 
-  // Get contract metrics for performance stats
-  const metrics = await pg.manyOrNone<{
-    contract_id: string
-    profit: number
-    has_yes_shares: boolean
-    has_no_shares: boolean
-    total_shares_yes: number
-    total_shares_no: number
-  }>(
-    `
-    SELECT 
-      contract_id,
-      COALESCE(profit, 0) as profit,
-      has_yes_shares,
-      has_no_shares,
-      COALESCE(total_shares_yes, 0) as total_shares_yes,
-      COALESCE(total_shares_no, 0) as total_shares_no
-    FROM user_contract_metrics
-    WHERE user_id = $1
-      AND answer_id IS NULL
-    `,
-    [userId]
-  )
-
-  // Get resolved status
-  const resolvedContractIds = await pg.manyOrNone<{ id: string }>(
-    `SELECT id FROM contracts WHERE id = ANY($1) AND resolution IS NOT NULL`,
-    [metrics.map((m) => m.contract_id)]
-  )
-  const resolvedSet = new Set(resolvedContractIds.map((r) => r.id))
-
+  // Calculate performance stats
+  const contractIds = metrics.map((m) => m.contract_id)
   const totalProfit = sumBy(metrics, 'profit')
   const profitableMarkets = metrics.filter((m) => m.profit > 0).length
-  const _unprofitableMarkets = metrics.filter((m) => m.profit < 0).length
   const totalMarkets = metrics.length
+  const totalVolume = volumeResult?.total_volume ?? 0
+  const roi = totalVolume > 0 ? (totalProfit / totalVolume) * 100 : 0
+
+  // Run second batch of queries that depend on first batch results
+  const [resolvedContractIds, contractGroups, contractVolumes, loanHistory] =
+    await Promise.all([
+      // Get resolved status for win rate calculation
+      contractIds.length > 0
+        ? pg.manyOrNone<{ id: string }>(
+            `SELECT id FROM contracts WHERE id = ANY($1) AND resolution IS NOT NULL`,
+            [contractIds]
+          )
+        : Promise.resolve([]),
+
+      // Get contract groups for topic breakdown
+      contractIds.length > 0
+        ? pg.manyOrNone<{ contract_id: string; group_id: string }>(
+            `SELECT contract_id, group_id FROM group_contracts WHERE contract_id = ANY($1)`,
+            [contractIds]
+          )
+        : Promise.resolve([]),
+
+      // Get volume per contract for topic stats
+      contractIds.length > 0
+        ? pg.manyOrNone<{ contract_id: string; volume: number }>(
+            `
+            SELECT contract_id, SUM(ABS(amount)) as volume
+            FROM contract_bets
+            WHERE user_id = $1 
+              AND contract_id = ANY($2)
+              AND (is_redemption IS NOT TRUE OR is_redemption IS NULL)
+            GROUP BY contract_id
+            `,
+            [userId, contractIds]
+          )
+        : Promise.resolve([]),
+
+      // Get loan history (last 30 days)
+      pg.manyOrNone<{ date: string; loan_total: number }>(
+        `
+        SELECT 
+          DATE(ts) as date,
+          AVG(COALESCE(loan_total, 0)) as loan_total
+        FROM user_portfolio_history
+        WHERE user_id = $1
+          AND ts > NOW() - INTERVAL '30 days'
+        GROUP BY DATE(ts)
+        ORDER BY date
+        `,
+        [userId]
+      ),
+    ])
+
+  // Calculate win rate
+  const resolvedSet = new Set(resolvedContractIds.map((r) => r.id))
   const resolvedMarkets = metrics.filter((m) =>
     resolvedSet.has(m.contract_id)
   ).length
   const winRate =
     resolvedMarkets > 0 ? (profitableMarkets / resolvedMarkets) * 100 : 0
 
-  // Get total volume using direct columns
-  const volumeResult = await pg.oneOrNone<{ total_volume: number }>(
-    `
-    SELECT COALESCE(SUM(ABS(amount)), 0) as total_volume
-    FROM contract_bets
-    WHERE user_id = $1
-      AND (is_redemption IS NOT TRUE OR is_redemption IS NULL)
-    `,
-    [userId]
-  )
-  const totalVolume = volumeResult?.total_volume ?? 0
-  const roi = totalVolume > 0 ? (totalProfit / totalVolume) * 100 : 0
-
-  // Get portfolio history for graphs
-  // user_portfolio_history has direct columns, not a data jsonb column
-  const portfolioHistory = await pg.manyOrNone<{
-    timestamp: number
-    balance: number
-    investment_value: number
-    total_deposits: number
-    spice_balance: number
-  }>(
-    `
-    SELECT 
-      EXTRACT(EPOCH FROM ts)::bigint * 1000 as timestamp,
-      COALESCE(balance, 0) as balance,
-      COALESCE(investment_value, 0) as investment_value,
-      COALESCE(total_deposits, 0) as total_deposits,
-      COALESCE(spice_balance, 0) as spice_balance
-    FROM user_portfolio_history
-    WHERE user_id = $1
-    ORDER BY ts ASC
-    `,
-    [userId]
-  )
-
-  const portfolioHistoryFormatted = portfolioHistory.map((h) => ({
-    timestamp: h.timestamp,
-    value: h.balance + h.investment_value + h.spice_balance,
-    profit: h.balance + h.investment_value + h.spice_balance - h.total_deposits,
-  }))
-
-  // Get profit by topic
-  const topicGroupMapping = getTopicGroupMapping()
-  const contractGroups = await pg.manyOrNone<{
-    contract_id: string
-    group_id: string
-  }>(
-    `
-    SELECT contract_id, group_id 
-    FROM group_contracts 
-    WHERE contract_id = ANY($1)
-    `,
-    [metrics.map((m) => m.contract_id)]
-  )
-
-  // Map contracts to topics
+  // Build topic stats
   const contractToTopics: Record<string, Set<string>> = {}
   for (const { contract_id, group_id } of contractGroups) {
     const topic = topicGroupMapping[group_id]
@@ -274,28 +326,10 @@ export const getUserCalibration: APIHandler<'get-user-calibration'> = async (
     }
   }
 
-  // Get amount invested per contract using direct columns
-  const contractVolumes = await pg.manyOrNone<{
-    contract_id: string
-    volume: number
-  }>(
-    `
-    SELECT 
-      contract_id,
-      SUM(ABS(amount)) as volume
-    FROM contract_bets
-    WHERE user_id = $1 
-      AND contract_id = ANY($2)
-      AND (is_redemption IS NOT TRUE OR is_redemption IS NULL)
-    GROUP BY contract_id
-    `,
-    [userId, metrics.map((m) => m.contract_id)]
-  )
   const volumeByContract = Object.fromEntries(
     contractVolumes.map((v) => [v.contract_id, v.volume])
   )
 
-  // Aggregate by topic
   const topicStats: Record<
     string,
     { profit: number; volume: number; marketCount: number }
@@ -324,53 +358,22 @@ export const getUserCalibration: APIHandler<'get-user-calibration'> = async (
     (t) => -Math.abs(t.profit)
   )
 
-  // Get loan stats from user_portfolio_history_latest (direct columns)
-  const loanData = await pg.oneOrNone<{ loan_total: number }>(
-    `
-    SELECT COALESCE(loan_total, 0) as loan_total
-    FROM user_portfolio_history_latest
-    WHERE user_id = $1
-    `,
-    [userId]
-  )
+  // Calculate loan stats
   const currentLoan = loanData?.loan_total ?? 0
-
-  // Calculate max loan based on net worth
-  const netWorthResult = await pg.oneOrNone<{ net_worth: number }>(
-    `
-    SELECT 
-      COALESCE(u.balance, 0) + COALESCE(p.investment_value, 0) as net_worth
-    FROM users u
-    LEFT JOIN user_portfolio_history_latest p ON u.id = p.user_id
-    WHERE u.id = $1
-    `,
-    [userId]
-  )
-  const maxLoan = (netWorthResult?.net_worth ?? 0) * 0.05 // 5% of net worth as max loan
+  const maxLoan = (netWorthResult?.net_worth ?? 0) * 0.05
   const utilizationRate = maxLoan > 0 ? (currentLoan / maxLoan) * 100 : 0
-
-  // Get historical loan data (last 30 days) - using direct columns
-  const loanHistory = await pg.manyOrNone<{
-    date: string
-    loan_total: number
-  }>(
-    `
-    SELECT 
-      DATE(ts) as date,
-      AVG(COALESCE(loan_total, 0)) as loan_total
-    FROM user_portfolio_history
-    WHERE user_id = $1
-      AND ts > NOW() - INTERVAL '30 days'
-    GROUP BY DATE(ts)
-    ORDER BY date
-    `,
-    [userId]
-  )
 
   const loanHistoryFormatted = loanHistory.map((h) => ({
     date: h.date,
     amount: h.loan_total,
     utilized: maxLoan > 0 ? (h.loan_total / maxLoan) * 100 : 0,
+  }))
+
+  // Format portfolio history
+  const portfolioHistoryFormatted = portfolioHistory.map((h) => ({
+    timestamp: h.timestamp,
+    value: h.balance + h.investment_value + h.spice_balance,
+    profit: h.balance + h.investment_value + h.spice_balance - h.total_deposits,
   }))
 
   return {

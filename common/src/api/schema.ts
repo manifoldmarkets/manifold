@@ -2145,7 +2145,8 @@ export const API = (_apiTypeCheck = {
     method: 'GET',
     visibility: 'public',
     authed: false,
-    cache: LIGHT_CACHE_STRATEGY,
+    // Longer cache for this heavy endpoint (30s cache, 60s stale-while-revalidate)
+    cache: 'public, max-age=30, stale-while-revalidate=60',
     returns: {} as {
       calibration: {
         yesPoints: { x: number; y: number }[]
