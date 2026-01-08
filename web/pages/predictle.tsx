@@ -769,6 +769,7 @@ export default function PredictlePage() {
         title="Predictle"
         description="A daily game where you arrange prediction markets by probability."
         url="/predictle"
+        image="https://manifold.markets/predictle-logo.png"
       />
       {/* Wrapper needed for iOS absolute positioning */}
       <div className={clsx(isIOS && 'relative min-h-screen w-full')}>
