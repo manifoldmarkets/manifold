@@ -419,20 +419,23 @@ function PurchaseForm(props: {
                   <ManaCoin />
                   <Input
                     type="number"
-                    min={0.1}
+                    min={1}
                     step={1}
-                    value={manaAmount}
-                    onChange={(e) =>
-                      setManaAmount(
-                        Math.max(0, parseFloat(e.target.value) || 0)
-                      )
-                    }
+                    value={manaAmount || ''}
+                    onChange={(e) => {
+                      const val = e.target.value
+                      if (val === '') {
+                        setManaAmount(0)
+                      } else {
+                        setManaAmount(Math.floor(parseInt(val) || 0))
+                      }
+                    }}
                     className="!border-0 !bg-transparent !p-0 !ring-0"
                   />
                 </Row>
               </Row>
-              <Row className="gap-1.5">
-                {[10, 100, 1000].map((n) => (
+              <Row className="flex-wrap gap-1.5">
+                {[100, 1000, 10000, 100000].map((n) => (
                   <button
                     key={n}
                     onClick={() => setManaAmount(n)}
