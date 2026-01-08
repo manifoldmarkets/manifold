@@ -6,9 +6,9 @@ import {
   MoonIcon,
   QuestionMarkCircleIcon,
   SearchIcon,
+  SparklesIcon,
   StarIcon,
   SunIcon,
-  SparklesIcon,
 } from '@heroicons/react/outline'
 // import { PiTelevisionSimple } from 'react-icons/pi'
 import clsx from 'clsx'
@@ -18,10 +18,10 @@ import TrophyIcon from 'web/lib/icons/trophy-icon.svg'
 import { buildArray } from 'common/util/array'
 import { DAY_MS } from 'common/util/time'
 import { AppRouterInstance } from 'next/dist/shared/lib/app-router-context.shared-runtime'
-import { usePathname, useRouter } from 'next/navigation'
-import { IoCompassOutline } from 'react-icons/io5'
-import { FaGem } from 'react-icons/fa6'
 import Link from 'next/link'
+import { usePathname, useRouter } from 'next/navigation'
+import { FaGem } from 'react-icons/fa6'
+import { IoCompassOutline } from 'react-icons/io5'
 import { AppBadgesOrGetAppButton } from 'web/components/buttons/app-badges-or-get-app-button'
 import { CreateQuestionButton } from 'web/components/buttons/create-question-button'
 import { NotificationsIcon } from 'web/components/notifications-icon'
@@ -40,7 +40,7 @@ import { useTVIsLive } from '../tv/tv-schedule'
 import { ManifoldLogo } from './manifold-logo'
 import { ProfileSummary } from './profile-summary'
 import { NavItem, SidebarItem } from './sidebar-item'
-
+export const SPEND_MANA_ENABLED = false
 export default function Sidebar(props: {
   className?: string
   isMobile?: boolean
@@ -98,7 +98,7 @@ export default function Sidebar(props: {
     />
   )
 
-  const spendManaButton = user && !isMobile && (
+  const spendManaButton = user && !isMobile && SPEND_MANA_ENABLED && (
     <Link
       href="/shop"
       className="group relative flex w-full items-center justify-center gap-2 rounded-md bg-gradient-to-r from-violet-500 to-purple-600 px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition-all hover:from-violet-600 hover:to-purple-700 hover:shadow-md"

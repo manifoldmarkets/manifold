@@ -1,28 +1,36 @@
-import { useState } from 'react'
-import { Col } from 'web/components/layout/col'
-import { Page } from 'web/components/layout/page'
-import { SEO } from 'web/components/SEO'
-import { useUser } from 'web/hooks/use-user'
-import { SHOP_ITEMS, getShopItem, isPurchaseActive } from 'common/shop/items'
-import { Card } from 'web/components/widgets/card'
-import { Row } from 'web/components/layout/row'
-import { formatMoney } from 'common/util/format'
-import { Button } from 'web/components/buttons/button'
+import {
+  SHOP_ITEMS,
+  ShopItem,
+  getShopItem,
+  isPurchaseActive,
+} from 'common/shop/items'
 import { User } from 'common/user'
-import { ShopItem } from 'common/shop/items'
-import { api } from 'web/lib/api/api'
+import { formatMoney } from 'common/util/format'
+import Link from 'next/link'
+import { useState } from 'react'
 import { toast } from 'react-hot-toast'
-import { Modal } from 'web/components/layout/modal'
-import { Avatar } from 'web/components/widgets/avatar'
-import { Tooltip } from 'web/components/widgets/tooltip'
 import { FaStar } from 'react-icons/fa'
 import { FaGem } from 'react-icons/fa6'
 import { LuCrown, LuGraduationCap } from 'react-icons/lu'
-import Link from 'next/link'
+import { Button } from 'web/components/buttons/button'
+import { Col } from 'web/components/layout/col'
+import { Modal } from 'web/components/layout/modal'
+import { Page } from 'web/components/layout/page'
+import { Row } from 'web/components/layout/row'
+import { SPEND_MANA_ENABLED } from 'web/components/nav/sidebar'
+import { SEO } from 'web/components/SEO'
+import { Avatar } from 'web/components/widgets/avatar'
+import { Card } from 'web/components/widgets/card'
+import { Tooltip } from 'web/components/widgets/tooltip'
+import { useUser } from 'web/hooks/use-user'
+import { api } from 'web/lib/api/api'
+import Custom404 from './404'
 
 export default function ShopPage() {
   const user = useUser()
-
+  if (!SPEND_MANA_ENABLED) {
+    return <Custom404 />
+  }
   // Get user's active purchases
   const ownedItemIds = new Set(
     user?.shopPurchases
