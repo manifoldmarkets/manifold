@@ -2,7 +2,6 @@ import clsx from 'clsx'
 import { range } from 'lodash'
 import { useState } from 'react'
 
-import { axisBottom, axisRight } from 'd3-axis'
 import { scaleLinear } from 'd3-scale'
 
 import { Col } from 'web/components/layout/col'
@@ -11,10 +10,13 @@ import { Title } from 'web/components/widgets/title'
 import { Page } from 'web/components/layout/page'
 import { SEO } from 'web/components/SEO'
 import { SizedContainer } from 'web/components/sized-container'
-import { SVGChart, formatPct } from 'web/components/charts/helpers'
 import { getFullUserByUsername } from 'web/lib/supabase/users'
 import { useAPIGetter } from 'web/hooks/use-api-getter'
-import { formatMoney, formatPercent, formatWithCommas } from 'common/util/format'
+import {
+  formatMoney,
+  formatPercent,
+  formatWithCommas,
+} from 'common/util/format'
 import Custom404 from '../404'
 import { User } from 'web/lib/firebase/users'
 import { Card } from 'web/components/widgets/card'
@@ -181,61 +183,81 @@ function UserCalibrationContent({ user }: { user: User }) {
           color={getScoreColor(data.calibration.score)}
           tooltip="Letter grade based on calibration score"
         />
-            </div>
+      </div>
 
       {/* Calibration Chart */}
       <Card className="overflow-hidden">
-        <div className="bg-canvas-50 border-ink-200 border-b p-4">
-          <h2 className="text-ink-900 text-lg font-semibold">
-            Calibration Chart
-          </h2>
+        <div className="border-ink-200 border-b bg-gradient-to-r from-indigo-500/10 via-purple-500/10 to-pink-500/10 p-5 dark:from-indigo-500/5 dark:via-purple-500/5 dark:to-pink-500/5">
+          <h2 className="text-ink-900 text-xl font-bold">Calibration Chart</h2>
           <p className="text-ink-500 mt-1 text-sm">
-            When you {TRADE_TERM} YES at X%, how often does the market resolve YES?
+            When you {TRADE_TERM} YES at X%, how often does the market resolve
+            YES?
           </p>
         </div>
         <div className="p-6">
           {data.calibration.totalBets > 0 ? (
             <>
-              <div className="bg-canvas-50 border-ink-100 relative w-full rounded-md border p-4 pr-12">
-            <div className="absolute bottom-0 right-4 top-0 flex items-center">
-              <span className="text-ink-800 text-sm [writing-mode:vertical-rl]">
-                Resolution probability
-              </span>
-            </div>
-                <SizedContainer className="aspect-square w-full max-w-[500px] pb-8 pr-8 mx-auto">
-              {(w, h) => (
-                    <UserCalibrationChart
-                      yesPoints={data.calibration.yesPoints}
-                      noPoints={data.calibration.noPoints}
-                  width={w}
-                  height={h}
-                />
-              )}
-            </SizedContainer>
-            <div className="text-ink-800 text-center text-sm">
-              Probability after {TRADE_TERM}
-            </div>
-          </div>
+              <div className="relative mx-auto max-w-[560px]">
+                {/* Chart container with nice background */}
+                <div className="rounded-2xl bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 p-6 shadow-xl">
+                  {/* Y-axis label */}
+                  <div className="absolute -left-2 top-1/2 -translate-y-1/2 -rotate-90">
+                    <span className="whitespace-nowrap text-xs font-medium uppercase tracking-wider text-slate-400">
+                      Resolved YES %
+                    </span>
+                  </div>
 
-              <div className="mt-4 flex gap-6 justify-center">
-                <Row className="items-center gap-2">
-                  <div className="h-3 w-3 rounded-full bg-teal-500" />
-                  <span className="text-ink-600 text-sm">YES {TRADE_TERM}s</span>
-                </Row>
-                <Row className="items-center gap-2">
-                  <div className="h-3 w-3 rounded-full bg-scarlet-500" />
-                  <span className="text-ink-600 text-sm">NO {TRADE_TERM}s</span>
-                </Row>
+                  <SizedContainer className="aspect-square w-full">
+                    {(w, h) => (
+                      <UserCalibrationChart
+                        yesPoints={data.calibration.yesPoints}
+                        noPoints={data.calibration.noPoints}
+                        width={w}
+                        height={h}
+                      />
+                    )}
+                  </SizedContainer>
+
+                  {/* X-axis label */}
+                  <div className="mt-2 text-center">
+                    <span className="text-xs font-medium uppercase tracking-wider text-slate-400">
+                      Predicted Probability
+                    </span>
+                  </div>
+                </div>
+
+                {/* Legend */}
+                <div className="mt-5 flex justify-center gap-8">
+                  <Row className="items-center gap-2.5">
+                    <div className="h-4 w-4 rounded-full bg-gradient-to-br from-emerald-400 to-teal-500 shadow-lg shadow-emerald-500/30" />
+                    <span className="text-ink-700 text-sm font-medium">
+                      YES {TRADE_TERM}s
+                    </span>
+                  </Row>
+                  <Row className="items-center gap-2.5">
+                    <div className="h-4 w-4 rounded-full bg-gradient-to-br from-rose-400 to-red-500 shadow-lg shadow-rose-500/30" />
+                    <span className="text-ink-700 text-sm font-medium">
+                      NO {TRADE_TERM}s
+                    </span>
+                  </Row>
+                </div>
               </div>
 
-              <div className="bg-primary-50 border-primary-100 mt-6 rounded-lg border p-4">
-                <p className="text-primary-800 text-sm">
-                  <strong>Interpretation:</strong> The green dots show when you bought YES at X%, what percentage of those markets resolved YES. For perfect calibration, green dots should be above the diagonal line, and red dots below. A score of 0 means perfect calibration.
+              <div className="mt-6 rounded-xl border border-indigo-200/50 bg-gradient-to-r from-indigo-50 to-purple-50 p-4 dark:border-indigo-800/30 dark:from-indigo-950/30 dark:to-purple-950/30">
+                <p className="text-sm leading-relaxed text-indigo-900 dark:text-indigo-200">
+                  <strong className="text-indigo-700 dark:text-indigo-300">
+                    How to read:
+                  </strong>{' '}
+                  Points above the diagonal line indicate profitable trading at
+                  that probability. Green dots should ideally be above the line
+                  (markets resolved YES more often than predicted), and red dots
+                  below (markets resolved YES less often than predicted).
                 </p>
               </div>
             </>
           ) : (
-            <div className="text-ink-500 py-8 text-center">
+            <div className="text-ink-500 py-12 text-center">
+              <div className="mb-3 text-4xl">📊</div>
               Not enough resolved {TRADE_TERM}s to calculate calibration
             </div>
           )}
@@ -299,7 +321,7 @@ function UserCalibrationContent({ user }: { user: User }) {
           </p>
         </div>
         <div className="p-6">
-          <div className="grid grid-cols-3 gap-4 mb-6">
+          <div className="mb-6 grid grid-cols-3 gap-4">
             <Col className="items-center">
               <span className="text-ink-500 text-sm">Current Loan</span>
               <span className="text-xl font-bold">
@@ -314,11 +336,16 @@ function UserCalibrationContent({ user }: { user: User }) {
             </Col>
             <Col className="items-center">
               <span className="text-ink-500 text-sm">Utilization</span>
-              <span className={clsx(
-                'text-xl font-bold',
-                data.loanStats.utilizationRate > 80 ? 'text-scarlet-500' : 
-                data.loanStats.utilizationRate > 50 ? 'text-amber-500' : 'text-teal-500'
-              )}>
+              <span
+                className={clsx(
+                  'text-xl font-bold',
+                  data.loanStats.utilizationRate > 80
+                    ? 'text-scarlet-500'
+                    : data.loanStats.utilizationRate > 50
+                    ? 'text-amber-500'
+                    : 'text-teal-500'
+                )}
+              >
                 {data.loanStats.utilizationRate.toFixed(1)}%
               </span>
             </Col>
@@ -326,14 +353,19 @@ function UserCalibrationContent({ user }: { user: User }) {
 
           {/* Utilization Bar */}
           <div className="mb-4">
-            <div className="bg-ink-200 h-4 w-full rounded-full overflow-hidden">
+            <div className="bg-ink-200 h-4 w-full overflow-hidden rounded-full">
               <div
                 className={clsx(
                   'h-full rounded-full transition-all',
-                  data.loanStats.utilizationRate > 80 ? 'bg-scarlet-500' :
-                  data.loanStats.utilizationRate > 50 ? 'bg-amber-500' : 'bg-teal-500'
+                  data.loanStats.utilizationRate > 80
+                    ? 'bg-scarlet-500'
+                    : data.loanStats.utilizationRate > 50
+                    ? 'bg-amber-500'
+                    : 'bg-teal-500'
                 )}
-                style={{ width: `${Math.min(data.loanStats.utilizationRate, 100)}%` }}
+                style={{
+                  width: `${Math.min(data.loanStats.utilizationRate, 100)}%`,
+                }}
               />
             </div>
           </div>
@@ -351,7 +383,7 @@ function UserCalibrationContent({ user }: { user: User }) {
           )}
         </div>
       </Card>
-        </Col>
+    </Col>
   )
 }
 
@@ -404,7 +436,7 @@ function TopicProfitRow({
 
   return (
     <div>
-      <Row className="items-center justify-between mb-1">
+      <Row className="mb-1 items-center justify-between">
         <span className="font-medium">{topic}</span>
         <span
           className={clsx(
@@ -416,7 +448,7 @@ function TopicProfitRow({
         </span>
       </Row>
       <Row className="items-center gap-2">
-        <div className="bg-ink-200 h-2 flex-1 rounded-full overflow-hidden">
+        <div className="bg-ink-200 h-2 flex-1 overflow-hidden rounded-full">
           <div
             className={clsx(
               'h-full rounded-full',
@@ -424,10 +456,10 @@ function TopicProfitRow({
             )}
             style={{ width: `${barWidth}%` }}
           />
-      </div>
+        </div>
         <span className="text-ink-400 w-24 text-right text-xs">
           {marketCount} markets
-                  </span>
+        </span>
       </Row>
     </div>
   )
@@ -447,70 +479,228 @@ function UserCalibrationChart({
   width: number
   height: number
 }) {
-  const xScale = scaleLinear().domain([0, 1]).range([0, width])
-  const yScale = scaleLinear().domain([0, 1]).range([height, 0])
+  const [hoveredPoint, setHoveredPoint] = useState<{
+    x: number
+    y: number
+    type: 'yes' | 'no'
+  } | null>(null)
 
-  const tickVals = CALIBRATION_POINTS.map((p) => p / 100)
+  const margin = { top: 20, right: 30, bottom: 40, left: 50 }
+  const innerWidth = width - margin.left - margin.right
+  const innerHeight = height - margin.top - margin.bottom
 
-  const format = (d: number) =>
-    (d <= 0.9 || d === 0.99) && (d >= 0.1 || d === 0.01) ? formatPct(d) : ''
-
-  const xAxis = axisBottom<number>(xScale)
-    .tickFormat(format)
-    .tickValues(tickVals)
-
-  const yAxis = axisRight<number>(yScale)
-    .tickFormat(format)
-    .tickValues(tickVals)
+  const xScale = scaleLinear().domain([0, 1]).range([0, innerWidth])
+  const yScale = scaleLinear().domain([0, 1]).range([innerHeight, 0])
 
   const px = (p: { x: number; y: number }) => xScale(p.x)
   const py = (p: { x: number; y: number }) => yScale(p.y)
 
-  const V3 = Math.sqrt(3)
+  // Grid lines
+  const gridLines = [0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9]
+  const axisLabels = [0, 0.25, 0.5, 0.75, 1]
 
   return (
-    <SVGChart w={width} h={height} xAxis={xAxis} yAxis={yAxis} noGridlines>
-      {/* Diagonal reference line */}
-      <line
-        x1={xScale(0)}
-        y1={yScale(0)}
-        x2={xScale(1)}
-        y2={yScale(1)}
-        stroke="rgb(99 102 241)"
-        strokeWidth={1.5}
-        strokeDasharray="4 8"
-      />
+    <svg width={width} height={height}>
+      <defs>
+        {/* Gradients for points */}
+        <radialGradient id="yesGradient" cx="30%" cy="30%">
+          <stop offset="0%" stopColor="#6ee7b7" />
+          <stop offset="100%" stopColor="#10b981" />
+        </radialGradient>
+        <radialGradient id="noGradient" cx="30%" cy="30%">
+          <stop offset="0%" stopColor="#fca5a5" />
+          <stop offset="100%" stopColor="#ef4444" />
+        </radialGradient>
+        {/* Glow filters */}
+        <filter id="yesGlow" x="-50%" y="-50%" width="200%" height="200%">
+          <feGaussianBlur stdDeviation="3" result="blur" />
+          <feFlood floodColor="#10b981" floodOpacity="0.5" />
+          <feComposite in2="blur" operator="in" />
+          <feMerge>
+            <feMergeNode />
+            <feMergeNode in="SourceGraphic" />
+          </feMerge>
+        </filter>
+        <filter id="noGlow" x="-50%" y="-50%" width="200%" height="200%">
+          <feGaussianBlur stdDeviation="3" result="blur" />
+          <feFlood floodColor="#ef4444" floodOpacity="0.5" />
+          <feComposite in2="blur" operator="in" />
+          <feMerge>
+            <feMergeNode />
+            <feMergeNode in="SourceGraphic" />
+          </feMerge>
+        </filter>
+      </defs>
 
-      {/* NO points (red triangles pointing down) */}
-      {noPoints.map((p, i) => (
-        <polygon
-          key={`no-${i}`}
-          points={`
-            ${px(p)},${py(p) + 6}
-            ${px(p) - 3 * V3},${py(p) - 3}
-            ${px(p) + 3 * V3},${py(p) - 3}
-          `}
-          fill="#ef4444"
-          stroke="#b91c1c"
-          strokeWidth={0.5}
-        />
-      ))}
+      <g transform={`translate(${margin.left}, ${margin.top})`}>
+        {/* Background grid */}
+        {gridLines.map((val) => (
+          <g key={val}>
+            <line
+              x1={0}
+              y1={yScale(val)}
+              x2={innerWidth}
+              y2={yScale(val)}
+              stroke="rgba(148, 163, 184, 0.15)"
+              strokeWidth={1}
+            />
+            <line
+              x1={xScale(val)}
+              y1={0}
+              x2={xScale(val)}
+              y2={innerHeight}
+              stroke="rgba(148, 163, 184, 0.15)"
+              strokeWidth={1}
+            />
+          </g>
+        ))}
 
-      {/* YES points (green triangles pointing up) */}
-      {yesPoints.map((p, i) => (
-        <polygon
-          key={`yes-${i}`}
-          points={`
-            ${px(p)},${py(p) - 6}
-            ${px(p) - 3 * V3},${py(p) + 3}
-            ${px(p) + 3 * V3},${py(p) + 3}
+        {/* Confidence band around diagonal */}
+        <path
+          d={`
+            M ${xScale(0)} ${yScale(0.1)}
+            L ${xScale(0.9)} ${yScale(1)}
+            L ${xScale(1)} ${yScale(1)}
+            L ${xScale(1)} ${yScale(0.9)}
+            L ${xScale(0.1)} ${yScale(0)}
+            L ${xScale(0)} ${yScale(0)}
+            Z
           `}
-          fill="#10b981"
-          stroke="#047857"
-          strokeWidth={0.5}
+          fill="rgba(99, 102, 241, 0.08)"
         />
-      ))}
-    </SVGChart>
+
+        {/* Diagonal reference line */}
+        <line
+          x1={xScale(0)}
+          y1={yScale(0)}
+          x2={xScale(1)}
+          y2={yScale(1)}
+          stroke="rgba(129, 140, 248, 0.6)"
+          strokeWidth={2}
+          strokeDasharray="8 4"
+        />
+
+        {/* Axis lines */}
+        <line
+          x1={0}
+          y1={innerHeight}
+          x2={innerWidth}
+          y2={innerHeight}
+          stroke="rgba(148, 163, 184, 0.4)"
+          strokeWidth={1}
+        />
+        <line
+          x1={0}
+          y1={0}
+          x2={0}
+          y2={innerHeight}
+          stroke="rgba(148, 163, 184, 0.4)"
+          strokeWidth={1}
+        />
+
+        {/* X-axis labels */}
+        {axisLabels.map((val) => (
+          <text
+            key={`x-${val}`}
+            x={xScale(val)}
+            y={innerHeight + 25}
+            textAnchor="middle"
+            fill="rgba(148, 163, 184, 0.8)"
+            fontSize={12}
+            fontWeight={500}
+          >
+            {Math.round(val * 100)}%
+          </text>
+        ))}
+
+        {/* Y-axis labels */}
+        {axisLabels.map((val) => (
+          <text
+            key={`y-${val}`}
+            x={-15}
+            y={yScale(val)}
+            textAnchor="middle"
+            dominantBaseline="middle"
+            fill="rgba(148, 163, 184, 0.8)"
+            fontSize={12}
+            fontWeight={500}
+          >
+            {Math.round(val * 100)}%
+          </text>
+        ))}
+
+        {/* NO points (red circles) */}
+        {noPoints.map((p, i) => (
+          <g key={`no-${i}`}>
+            <circle
+              cx={px(p)}
+              cy={py(p)}
+              r={
+                hoveredPoint?.x === p.x && hoveredPoint?.type === 'no' ? 10 : 8
+              }
+              fill="url(#noGradient)"
+              stroke="rgba(255,255,255,0.3)"
+              strokeWidth={2}
+              filter={
+                hoveredPoint?.x === p.x && hoveredPoint?.type === 'no'
+                  ? 'url(#noGlow)'
+                  : undefined
+              }
+              style={{ cursor: 'pointer', transition: 'r 0.15s ease' }}
+              onMouseEnter={() => setHoveredPoint({ ...p, type: 'no' })}
+              onMouseLeave={() => setHoveredPoint(null)}
+            />
+          </g>
+        ))}
+
+        {/* YES points (green circles) */}
+        {yesPoints.map((p, i) => (
+          <g key={`yes-${i}`}>
+            <circle
+              cx={px(p)}
+              cy={py(p)}
+              r={
+                hoveredPoint?.x === p.x && hoveredPoint?.type === 'yes' ? 10 : 8
+              }
+              fill="url(#yesGradient)"
+              stroke="rgba(255,255,255,0.3)"
+              strokeWidth={2}
+              filter={
+                hoveredPoint?.x === p.x && hoveredPoint?.type === 'yes'
+                  ? 'url(#yesGlow)'
+                  : undefined
+              }
+              style={{ cursor: 'pointer', transition: 'r 0.15s ease' }}
+              onMouseEnter={() => setHoveredPoint({ ...p, type: 'yes' })}
+              onMouseLeave={() => setHoveredPoint(null)}
+            />
+          </g>
+        ))}
+
+        {/* Tooltip */}
+        {hoveredPoint && (
+          <g transform={`translate(${px(hoveredPoint)}, ${py(hoveredPoint)})`}>
+            <rect
+              x={15}
+              y={-35}
+              width={120}
+              height={50}
+              rx={8}
+              fill="rgba(15, 23, 42, 0.95)"
+              stroke={hoveredPoint.type === 'yes' ? '#10b981' : '#ef4444'}
+              strokeWidth={1}
+            />
+            <text x={25} y={-15} fill="white" fontSize={11} fontWeight={600}>
+              {hoveredPoint.type === 'yes' ? 'YES' : 'NO'} at{' '}
+              {Math.round(hoveredPoint.x * 100)}%
+            </text>
+            <text x={25} y={5} fill="rgba(148, 163, 184, 0.9)" fontSize={11}>
+              Resolved YES: {Math.round(hoveredPoint.y * 100)}%
+            </text>
+          </g>
+        )}
+      </g>
+    </svg>
   )
 }
 
@@ -552,7 +742,9 @@ function PortfolioChart({
     .join(' ')
 
   // Create area path
-  const area = `${line} L ${xScale(data[data.length - 1].timestamp)} ${yScale(0)} L ${xScale(data[0].timestamp)} ${yScale(0)} Z`
+  const area = `${line} L ${xScale(data[data.length - 1].timestamp)} ${yScale(
+    0
+  )} L ${xScale(data[0].timestamp)} ${yScale(0)} Z`
 
   const zeroY = yScale(0)
   const lastProfit = data[data.length - 1].profit
@@ -574,7 +766,9 @@ function PortfolioChart({
         {/* Area fill */}
         <path
           d={area}
-          fill={isPositive ? 'rgba(20, 184, 166, 0.2)' : 'rgba(239, 68, 68, 0.2)'}
+          fill={
+            isPositive ? 'rgba(20, 184, 166, 0.2)' : 'rgba(239, 68, 68, 0.2)'
+          }
         />
 
         {/* Line */}
@@ -622,9 +816,13 @@ function LoanHistoryChart({
   const innerHeight = height - margin.top - margin.bottom
 
   const maxAmount = Math.max(...data.map((d) => d.amount))
-  
-  const xScale = scaleLinear().domain([0, data.length - 1]).range([0, innerWidth])
-  const yScale = scaleLinear().domain([0, maxAmount * 1.1]).range([innerHeight, 0])
+
+  const xScale = scaleLinear()
+    .domain([0, data.length - 1])
+    .range([0, innerWidth])
+  const yScale = scaleLinear()
+    .domain([0, maxAmount * 1.1])
+    .range([innerHeight, 0])
 
   const line = data
     .map((d, i) => {
@@ -639,7 +837,9 @@ function LoanHistoryChart({
       <g transform={`translate(${margin.left}, ${margin.top})`}>
         {/* Area fill */}
         <path
-          d={`${line} L ${xScale(data.length - 1)} ${yScale(0)} L ${xScale(0)} ${yScale(0)} Z`}
+          d={`${line} L ${xScale(data.length - 1)} ${yScale(0)} L ${xScale(
+            0
+          )} ${yScale(0)} Z`}
           fill="rgba(99, 102, 241, 0.2)"
         />
 
