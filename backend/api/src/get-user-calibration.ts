@@ -1,7 +1,7 @@
 import { APIHandler } from './helpers/endpoint'
 import { createSupabaseDirectClient } from 'shared/supabase/init'
 import { APIError } from 'common/api/utils'
-import { groupBy, range, sortBy, sumBy, Dictionary } from 'lodash'
+import { groupBy, range, sortBy, Dictionary } from 'lodash'
 import { SEARCH_TOPICS_TO_SUBTOPICS } from 'common/topics'
 import { DAY_MS } from 'common/util/time'
 
@@ -86,7 +86,7 @@ export const getUserCalibration: APIHandler<'get-user-calibration'> = async (
         [userId]
       ),
 
-      // Query 3: Get portfolio history (one point per day, last 1000 daily snapshots)
+      // Query 3: Get portfolio history (one point per day, last 365 daily snapshots)
       pg.manyOrNone<{
         timestamp: number
         balance: number
@@ -107,7 +107,7 @@ export const getUserCalibration: APIHandler<'get-user-calibration'> = async (
         ORDER BY DATE(ts), ts DESC
       ),
       recent AS (
-        SELECT * FROM daily ORDER BY timestamp DESC LIMIT 1000
+        SELECT * FROM daily ORDER BY timestamp DESC LIMIT 365
       )
       SELECT * FROM recent ORDER BY timestamp ASC
       `,
@@ -200,10 +200,8 @@ export const getUserCalibration: APIHandler<'get-user-calibration'> = async (
 
   // Calculate performance stats
   const contractIds = metrics.map((m) => m.contract_id)
-  const totalProfit = sumBy(metrics, 'profit')
   const totalMarkets = metrics.length
   const totalVolume = volumeResult?.total_volume ?? 0
-  const roi = totalVolume > 0 ? (totalProfit / totalVolume) * 100 : 0
 
   // Run second batch of queries that depend on first batch results
   const [resolvedContractIds, contractGroups, contractVolumes] =
@@ -299,6 +297,14 @@ export const getUserCalibration: APIHandler<'get-user-calibration'> = async (
     profit: h.balance + h.investment_value + h.spice_balance - h.total_deposits,
   }))
 
+  // Calculate total profit from portfolio history (current profit, consistent with profile page)
+  const firstPoint = portfolioHistoryFormatted[0]
+  const lastPoint =
+    portfolioHistoryFormatted[portfolioHistoryFormatted.length - 1]
+  const totalProfit = lastPoint?.profit ?? 0
+  // Profit over the 365-day window
+  const profit365 = (lastPoint?.profit ?? 0) - (firstPoint?.profit ?? 0)
+
   // Calculate volatility, Sharpe ratio, and max drawdown from portfolio history
   let volatility = 0
   let sharpeRatio = 0
@@ -367,8 +373,8 @@ export const getUserCalibration: APIHandler<'get-user-calibration'> = async (
     },
     performanceStats: {
       totalProfit,
+      profit365,
       totalVolume,
-      roi,
       winRate,
       totalMarkets,
       resolvedMarkets,

@@ -140,31 +140,31 @@ function UserCalibrationContent({ user }: { user: User }) {
           label="Total Profit"
           value={formatMoney(data.performanceStats.totalProfit, 'MANA')}
           color={data.performanceStats.totalProfit >= 0 ? 'teal' : 'scarlet'}
-          tooltip="Net profit across all resolved and unrealized positions"
+          tooltip="Current net profit (balance + investments − deposits)"
         />
         <StatCard
-          label="ROI"
-          value={formatPercent(data.performanceStats.roi / 100)}
-          color={data.performanceStats.roi >= 0 ? 'teal' : 'scarlet'}
-          tooltip="Return on investment (profit / volume)"
+          label="Total Volume"
+          value={formatMoney(data.performanceStats.totalVolume, 'MANA')}
+          tooltip="Total amount traded (all-time)"
         />
         <StatCard
           label="Win Rate"
           value={`${data.performanceStats.winRate.toFixed(1)}%`}
-          tooltip="Percentage of resolved markets with positive profit"
+          tooltip="Percentage of resolved markets with positive profit (all-time)"
         />
         <StatCard
           label="Markets Traded"
           value={formatWithCommas(data.performanceStats.totalMarkets)}
-          tooltip="Total unique markets you've traded on"
+          tooltip="Total unique markets traded (all-time)"
         />
       </div>
 
       <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
         <StatCard
-          label="Total Volume"
-          value={formatMoney(data.performanceStats.totalVolume, 'MANA')}
-          tooltip="Total amount traded (sum of absolute bet values)"
+          label="Profit (1Y)"
+          value={formatMoney(data.performanceStats.profit365, 'MANA')}
+          color={data.performanceStats.profit365 >= 0 ? 'teal' : 'scarlet'}
+          tooltip="Profit over the last year"
         />
         <StatCard
           label="Sharpe Ratio"
@@ -176,12 +176,12 @@ function UserCalibrationContent({ user }: { user: User }) {
               ? 'scarlet'
               : undefined
           }
-          tooltip="Annualized risk-adjusted return: (return − 5%) / volatility. Above 1 is good, above 2 is excellent"
+          tooltip="Risk-adjusted return over last year: (annualized return − 5%) / volatility"
         />
         <StatCard
           label="Volatility"
           value={`${data.performanceStats.volatility.toFixed(1)}%`}
-          tooltip="Annualized standard deviation of portfolio returns"
+          tooltip="Annualized volatility of daily returns (last year)"
         />
         <StatCard
           label="Max Drawdown"
@@ -193,7 +193,7 @@ function UserCalibrationContent({ user }: { user: User }) {
               ? 'teal'
               : undefined
           }
-          tooltip="Largest peak-to-trough decline in portfolio value"
+          tooltip="Largest peak-to-trough decline in portfolio value (last year)"
         />
       </div>
 

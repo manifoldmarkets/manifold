@@ -2155,8 +2155,8 @@ export const API = (_apiTypeCheck = {
       }
       performanceStats: {
         totalProfit: number
+        profit365: number
         totalVolume: number
-        roi: number
         winRate: number
         totalMarkets: number
         resolvedMarkets: number
