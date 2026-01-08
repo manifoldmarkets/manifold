@@ -182,6 +182,7 @@ import { getSeasonInfo } from './get-season-info'
 import { getSiteActivity } from './get-site-activity'
 import { getSportsGames } from './get-sports-games'
 import { getUserAchievements } from './get-user-achievements'
+import { getUserCalibration } from './get-user-calibration'
 import { getUserContractMetricsWithContracts } from './get-user-contract-metrics-with-contracts'
 import { getUserLastActiveTime } from './get-user-last-active-time'
 import { inferNumericUnit } from './infer-numeric-unit'
@@ -406,6 +407,7 @@ export const handlers: { [k in APIPath]: APIHandler<k> } = {
   'user-comments': getUserComments,
   'get-user-last-active-time': getUserLastActiveTime,
   'get-user-achievements': getUserAchievements,
+  'get-user-calibration': getUserCalibration,
   'get-monthly-bets-2025': getmonthlybets2025,
   'get-max-min-profit-2025': getmaxminprofit2025,
   'get-pending-clarifications': getPendingClarifications,

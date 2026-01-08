@@ -2141,6 +2141,50 @@ export const API = (_apiTypeCheck = {
       })
       .strict(),
   },
+  'get-user-calibration': {
+    method: 'GET',
+    visibility: 'public',
+    authed: false,
+    cache: LIGHT_CACHE_STRATEGY,
+    returns: {} as {
+      calibration: {
+        yesPoints: { x: number; y: number }[]
+        noPoints: { x: number; y: number }[]
+        score: number
+        totalBets: number
+      }
+      performanceStats: {
+        totalProfit: number
+        totalVolume: number
+        roi: number
+        winRate: number
+        totalMarkets: number
+        resolvedMarkets: number
+      }
+      portfolioHistory: {
+        timestamp: number
+        value: number
+        profit: number
+      }[]
+      profitByTopic: {
+        topic: string
+        profit: number
+        volume: number
+        marketCount: number
+      }[]
+      loanStats: {
+        currentLoan: number
+        maxLoan: number
+        utilizationRate: number
+        loanHistory: { date: string; amount: number; utilized: number }[]
+      }
+    },
+    props: z
+      .object({
+        userId: z.string(),
+      })
+      .strict(),
+  },
   'get-site-activity': {
     method: 'GET',
     visibility: 'public',
