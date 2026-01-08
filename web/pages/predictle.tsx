@@ -380,8 +380,8 @@ function PredicteGame(props: {
   return (
     <Col className="w-full max-w-xl gap-6">
       {/* Header */}
-      <Col className="items-center gap-3 text-center">
-        <div className="text-5xl">🔮</div>
+      <Col className="items-center gap-2 text-center">
+        <img src="/predictle-logo.png" alt="Predictle" className="h-20 w-20" />
         <h1 className="inline-block bg-gradient-to-r from-violet-600 via-fuchsia-500 to-pink-500 bg-clip-text text-4xl font-black tracking-tight text-transparent [-webkit-background-clip:text]">
           Predictle
         </h1>
@@ -796,7 +796,11 @@ export default function PredictlePage() {
         >
           {loading || !data ? (
             <Col className="items-center gap-4 py-12">
-              <div className="text-5xl">🔮</div>
+              <img
+                src="/predictle-logo.png"
+                alt="Predictle"
+                className="h-20 w-20 animate-pulse"
+              />
               <LoadingIndicator />
               <p className="text-slate-500 dark:text-slate-400">
                 Loading today's puzzle...

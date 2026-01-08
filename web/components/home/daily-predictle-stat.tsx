@@ -104,7 +104,19 @@ export const DailyPredictleStat = (props: { className?: string }) => {
         )}
       >
         <div className="whitespace-nowrap">
-          {completed ? (won ? `✅ ${attempts}` : '❌') : '🔮'}
+          {completed ? (
+            won ? (
+              `✅ ${attempts}`
+            ) : (
+              '❌'
+            )
+          ) : (
+            <img
+              src="/predictle-logo.png"
+              alt="Predictle"
+              className="h-6 w-6"
+            />
+          )}
         </div>
         <div className="text-ink-600 text-xs">Predictle</div>
       </Col>
