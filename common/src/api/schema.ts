@@ -2452,7 +2452,7 @@ export const API = (_apiTypeCheck = {
         utcOffset: z.number().optional(),
       })
       .strict(),
-    returns: {} as { closeTime: number },
+    returns: {} as { closeTime: number; confidence: number },
   },
   'refer-user': {
     method: 'POST',
