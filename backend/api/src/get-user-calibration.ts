@@ -32,27 +32,21 @@ export const getUserCalibration: APIHandler<'get-user-calibration'> = async (
   }
 
   // Run all independent queries in parallel for better performance
-  const [
-    betsData,
-    metrics,
-    portfolioHistory,
-    loanData,
-    netWorthResult,
-    volumeResult,
-  ] = await Promise.all([
-    // Query 1: Get user's bets on resolved binary markets (for calibration)
-    // Uses random sampling for performance and unbiased results
-    pg.manyOrNone<{
-      bet_id: string
-      contract_id: string
-      outcome: string
-      amount: number
-      shares: number
-      prob_after: number
-      created_time: number
-      resolution: string
-    }>(
-      `
+  const [betsData, metrics, portfolioHistory, volumeResult] = await Promise.all(
+    [
+      // Query 1: Get user's bets on resolved binary markets (for calibration)
+      // Uses random sampling for performance and unbiased results
+      pg.manyOrNone<{
+        bet_id: string
+        contract_id: string
+        outcome: string
+        amount: number
+        shares: number
+        prob_after: number
+        created_time: number
+        resolution: string
+      }>(
+        `
       SELECT 
         cb.bet_id,
         cb.contract_id,
@@ -72,15 +66,15 @@ export const getUserCalibration: APIHandler<'get-user-calibration'> = async (
       ORDER BY RANDOM()
       LIMIT 2000
       `,
-      [userId]
-    ),
+        [userId]
+      ),
 
-    // Query 2: Get contract metrics for performance stats
-    pg.manyOrNone<{
-      contract_id: string
-      profit: number
-    }>(
-      `
+      // Query 2: Get contract metrics for performance stats
+      pg.manyOrNone<{
+        contract_id: string
+        profit: number
+      }>(
+        `
       SELECT 
         contract_id,
         COALESCE(profit, 0) as profit
@@ -88,18 +82,18 @@ export const getUserCalibration: APIHandler<'get-user-calibration'> = async (
       WHERE user_id = $1
         AND answer_id IS NULL
       `,
-      [userId]
-    ),
+        [userId]
+      ),
 
-    // Query 3: Get portfolio history (sampled for large datasets)
-    pg.manyOrNone<{
-      timestamp: number
-      balance: number
-      investment_value: number
-      total_deposits: number
-      spice_balance: number
-    }>(
-      `
+      // Query 3: Get portfolio history (sampled for large datasets)
+      pg.manyOrNone<{
+        timestamp: number
+        balance: number
+        investment_value: number
+        total_deposits: number
+        spice_balance: number
+      }>(
+        `
       WITH numbered AS (
         SELECT 
           EXTRACT(EPOCH FROM ts)::bigint * 1000 as timestamp,
@@ -121,42 +115,21 @@ export const getUserCalibration: APIHandler<'get-user-calibration'> = async (
         OR (total_count <= 300 OR rn % GREATEST(1, total_count / 300) = 0)
       ORDER BY timestamp ASC
       `,
-      [userId]
-    ),
+        [userId]
+      ),
 
-    // Query 4: Get loan stats
-    pg.oneOrNone<{ loan_total: number }>(
-      `
-      SELECT COALESCE(loan_total, 0) as loan_total
-      FROM user_portfolio_history_latest
-      WHERE user_id = $1
-      `,
-      [userId]
-    ),
-
-    // Query 5: Get net worth for max loan calculation
-    pg.oneOrNone<{ net_worth: number }>(
-      `
-      SELECT 
-        COALESCE(u.balance, 0) + COALESCE(p.investment_value, 0) as net_worth
-      FROM users u
-      LEFT JOIN user_portfolio_history_latest p ON u.id = p.user_id
-      WHERE u.id = $1
-      `,
-      [userId]
-    ),
-
-    // Query 6: Get total volume
-    pg.oneOrNone<{ total_volume: number }>(
-      `
+      // Query 4: Get total volume
+      pg.oneOrNone<{ total_volume: number }>(
+        `
       SELECT COALESCE(SUM(ABS(amount)), 0) as total_volume
       FROM contract_bets
       WHERE user_id = $1
         AND (is_redemption IS NOT TRUE OR is_redemption IS NULL)
       `,
-      [userId]
-    ),
-  ])
+        [userId]
+      ),
+    ]
+  )
 
   // Calculate calibration from bets data
   const yesProbBuckets: Dictionary<number> = {}
@@ -238,7 +211,7 @@ export const getUserCalibration: APIHandler<'get-user-calibration'> = async (
   const roi = totalVolume > 0 ? (totalProfit / totalVolume) * 100 : 0
 
   // Run second batch of queries that depend on first batch results
-  const [resolvedContractIds, contractGroups, contractVolumes, loanHistory] =
+  const [resolvedContractIds, contractGroups, contractVolumes] =
     await Promise.all([
       // Get resolved status for win rate calculation
       contractIds.length > 0
@@ -270,21 +243,6 @@ export const getUserCalibration: APIHandler<'get-user-calibration'> = async (
             [userId, contractIds]
           )
         : Promise.resolve([]),
-
-      // Get loan history (last 30 days)
-      pg.manyOrNone<{ date: string; loan_total: number }>(
-        `
-        SELECT 
-          DATE(ts) as date,
-          AVG(COALESCE(loan_total, 0)) as loan_total
-        FROM user_portfolio_history
-        WHERE user_id = $1
-          AND ts > NOW() - INTERVAL '30 days'
-        GROUP BY DATE(ts)
-        ORDER BY date
-        `,
-        [userId]
-      ),
     ])
 
   // Calculate win rate
@@ -338,17 +296,6 @@ export const getUserCalibration: APIHandler<'get-user-calibration'> = async (
     })),
     (t) => -Math.abs(t.profit)
   )
-
-  // Calculate loan stats
-  const currentLoan = loanData?.loan_total ?? 0
-  const maxLoan = (netWorthResult?.net_worth ?? 0) * 0.05
-  const utilizationRate = maxLoan > 0 ? (currentLoan / maxLoan) * 100 : 0
-
-  const loanHistoryFormatted = loanHistory.map((h) => ({
-    date: h.date,
-    amount: h.loan_total,
-    utilized: maxLoan > 0 ? (h.loan_total / maxLoan) * 100 : 0,
-  }))
 
   // Format portfolio history and calculate returns
   const portfolioHistoryFormatted = portfolioHistory.map((h) => ({
@@ -425,11 +372,5 @@ export const getUserCalibration: APIHandler<'get-user-calibration'> = async (
     },
     portfolioHistory: portfolioHistoryFormatted,
     profitByTopic,
-    loanStats: {
-      currentLoan,
-      maxLoan,
-      utilizationRate,
-      loanHistory: loanHistoryFormatted,
-    },
   }
 }

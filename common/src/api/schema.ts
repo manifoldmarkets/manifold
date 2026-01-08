@@ -2175,12 +2175,6 @@ export const API = (_apiTypeCheck = {
         volume: number
         marketCount: number
       }[]
-      loanStats: {
-        currentLoan: number
-        maxLoan: number
-        utilizationRate: number
-        loanHistory: { date: string; amount: number; utilized: number }[]
-      }
     },
     props: z
       .object({
