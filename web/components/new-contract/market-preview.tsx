@@ -168,6 +168,7 @@ export function MarketPreview(props: {
   } = props
   const [isTopicsModalOpen, setIsTopicsModalOpen] = useState(false)
   const [dismissedSuggestion, setDismissedSuggestion] = useState(false)
+  const [dismissedDateWarning, setDismissedDateWarning] = useState(false)
   const [aiPollSuggestion, setAiPollSuggestion] = useState<{
     isSubjective: boolean
     confidence: number
@@ -586,31 +587,37 @@ export function MarketPreview(props: {
         )}
 
       {/* Ambiguous Date Warning */}
-      {isEditable && question && (() => {
-        const ambiguousDates = detectAmbiguousDates(question)
-        if (ambiguousDates.length === 0) return null
-        return (
-          <div className="rounded-lg border border-amber-300 bg-amber-50 p-3 text-sm dark:border-amber-800 dark:bg-amber-950">
-            <Row className="items-start gap-2">
-              <div className="flex-1">
-                <div className="mb-1 font-semibold">
-                  <span className="mr-1">📅</span> Ambiguous date format
-                </div>
-                {ambiguousDates.map((match, i) => (
-                  <p key={i} className="mb-1">
-                    "<span className="font-mono">{match.original}</span>" could mean{' '}
-                    <strong>{match.interpretation1}</strong> or{' '}
-                    <strong>{match.interpretation2}</strong>
+      {isEditable &&
+        question &&
+        !dismissedDateWarning &&
+        (() => {
+          const ambiguousDates = detectAmbiguousDates(question)
+          if (ambiguousDates.length === 0) return null
+          const firstMatch = ambiguousDates[0]
+          return (
+            <div className="relative rounded-lg border border-blue-300 bg-blue-50 p-3 text-sm dark:border-blue-800 dark:bg-blue-950">
+              <Row className="items-start gap-2">
+                <div className="flex-1">
+                  <div className="mb-1 font-semibold">📅 Suggestion:</div>
+                  <p className="mb-2">
+                    The date {firstMatch.original} is ambiguous. Change the
+                    format to avoid confusion.
                   </p>
-                ))}
-                <p className="text-ink-600 mt-2 text-xs italic">
-                  Consider writing the date as "4 January 2026" to avoid confusion.
-                </p>
-              </div>
-            </Row>
-          </div>
-        )
-      })()}
+                  <p className="text-ink-600 text-xs italic">
+                    Example: {firstMatch.interpretation2}
+                  </p>
+                </div>
+                <button
+                  onClick={() => setDismissedDateWarning(true)}
+                  className="hover:bg-ink-100 -mr-1 -mt-1 rounded p-1 transition-colors"
+                  aria-label="Dismiss"
+                >
+                  <XIcon className="h-4 w-4" />
+                </button>
+              </Row>
+            </div>
+          )
+        })()}
 
       {/* Market Type Suggestion Banner */}
       {isEditable && !dismissedSuggestion && onSwitchMarketType && question && (
@@ -2180,7 +2187,6 @@ export function MarketPreview(props: {
           </Col>
         </Modal>
       )}
-
     </Col>
   )
 }
