@@ -181,7 +181,7 @@ function UserCalibrationContent({ user }: { user: User }) {
         <StatCard
           label="Volatility"
           value={`${data.performanceStats.volatility.toFixed(1)}%`}
-          tooltip="Annualized volatility of portfolio returns, calculated from daily profit changes"
+          tooltip="Annualized standard deviation of portfolio returns"
         />
         <StatCard
           label="Max Drawdown"

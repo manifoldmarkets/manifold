@@ -86,7 +86,7 @@ export const getUserCalibration: APIHandler<'get-user-calibration'> = async (
         [userId]
       ),
 
-      // Query 3: Get portfolio history (sampled for large datasets)
+      // Query 3: Get portfolio history (one point per day, last 1000 daily snapshots)
       pg.manyOrNone<{
         timestamp: number
         balance: number
@@ -95,26 +95,21 @@ export const getUserCalibration: APIHandler<'get-user-calibration'> = async (
         spice_balance: number
       }>(
         `
-      WITH numbered AS (
-        SELECT 
+      WITH daily AS (
+        SELECT DISTINCT ON (DATE(ts))
           EXTRACT(EPOCH FROM ts)::bigint * 1000 as timestamp,
           COALESCE(balance, 0) as balance,
           COALESCE(investment_value, 0) as investment_value,
           COALESCE(total_deposits, 0) as total_deposits,
-          COALESCE(spice_balance, 0) as spice_balance,
-          ROW_NUMBER() OVER (ORDER BY ts ASC) as rn,
-          COUNT(*) OVER () as total_count
+          COALESCE(spice_balance, 0) as spice_balance
         FROM user_portfolio_history
         WHERE user_id = $1
+        ORDER BY DATE(ts), ts DESC
+      ),
+      recent AS (
+        SELECT * FROM daily ORDER BY timestamp DESC LIMIT 1000
       )
-      SELECT timestamp, balance, investment_value, total_deposits, spice_balance
-      FROM numbered
-      WHERE 
-        -- Always include first and last points
-        rn = 1 OR rn = total_count
-        -- Sample evenly to get ~300 points max
-        OR (total_count <= 300 OR rn % GREATEST(1, total_count / 300) = 0)
-      ORDER BY timestamp ASC
+      SELECT * FROM recent ORDER BY timestamp ASC
       `,
         [userId]
       ),
@@ -310,8 +305,8 @@ export const getUserCalibration: APIHandler<'get-user-calibration'> = async (
   let maxDrawdown = 0
 
   if (portfolioHistoryFormatted.length >= 2) {
-    // Calculate daily profit changes normalized by portfolio value and time elapsed
-    // This gives us the daily rate of return based on actual profit changes
+    // Calculate daily profit changes normalized by portfolio value
+    // Data is already sampled to one point per day, so each interval is ~1 day
     const dailyReturns: number[] = []
     for (let i = 1; i < portfolioHistoryFormatted.length; i++) {
       const prev = portfolioHistoryFormatted[i - 1]
@@ -320,8 +315,8 @@ export const getUserCalibration: APIHandler<'get-user-calibration'> = async (
       const avgValue = (curr.value + prev.value) / 2
       const daysBetween = (curr.timestamp - prev.timestamp) / DAY_MS
 
-      // Only include if we have valid data and reasonable time gap
-      if (avgValue > 0 && daysBetween > 0 && daysBetween < 30) {
+      // Only include if we have valid data and reasonable time gap (skip gaps > 7 days)
+      if (avgValue > 0 && daysBetween > 0 && daysBetween < 7) {
         // Normalize to daily return rate
         const dailyReturn = profitChange / avgValue / daysBetween
         dailyReturns.push(dailyReturn)
