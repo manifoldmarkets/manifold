@@ -99,7 +99,7 @@ export default function CalibrationPage(props: {
             Calibration
           </h1>
           <p className="text-ink-600 max-w-2xl text-lg leading-relaxed">
-            Explore how Manifold's predictions compare to real-world outcomes. 
+            Explore how Manifold's predictions compare to real-world outcomes.
             Our track record demonstrates the power of collective forecasting.
           </p>
         </div>
@@ -141,14 +141,19 @@ export default function CalibrationPage(props: {
               contract={gazaMarket}
               description={
                 <>
-                  Just 3 hours after initial local reports, this market was created. Within 1 hour it had already been pushed down to 6%, before settling between 6-20% as more news emerged. Meanwhile, major outlets still presented conflicting headlines, which led to the{' '}
+                  Just 3 hours after initial local reports, this market was
+                  created. Within 1 hour it had already been pushed down to 6%,
+                  before settling between 6-20% as more news emerged. Meanwhile,
+                  major outlets still presented conflicting headlines, which led
+                  to the{' '}
                   <a
-                    className="text-primary-600 dark:text-primary-400 underline decoration-primary-600/30 dark:decoration-primary-400/30 transition-colors hover:decoration-primary-600 dark:hover:decoration-primary-400"
+                    className="text-primary-600 dark:text-primary-400 decoration-primary-600/30 dark:decoration-primary-400/30 hover:decoration-primary-600 dark:hover:decoration-primary-400 underline transition-colors"
                     target="_blank"
                     href="https://www.theguardian.com/world/2023/oct/19/israel-accuses-bbc-of-modern-blood-libel-over-reporting-of-hospital-strike"
                   >
                     BBC conceding that a reporter had been wrong to speculate
-                  </a>.
+                  </a>
+                  .
                 </>
               }
             />
@@ -160,8 +165,8 @@ export default function CalibrationPage(props: {
             />
 
             {/* 2022 Midterms - Text Only */}
-            <div className="group relative overflow-hidden rounded-2xl border border-ink-200 dark:border-ink-300 bg-canvas-0 p-6 transition-all duration-300 hover:border-ink-300 dark:hover:border-ink-200 hover:shadow-lg hover:shadow-ink-900/5">
-              <div className="absolute inset-0 bg-gradient-to-br from-primary-50/50 via-transparent to-transparent dark:from-primary-900/20 opacity-0 transition-opacity duration-300 group-hover:opacity-100" />
+            <div className="border-ink-200 dark:border-ink-300 bg-canvas-0 hover:border-ink-300 dark:hover:border-ink-200 hover:shadow-ink-900/5 group relative overflow-hidden rounded-2xl border p-6 transition-all duration-300 hover:shadow-lg">
+              <div className="from-primary-50/50 dark:from-primary-900/20 absolute inset-0 bg-gradient-to-br via-transparent to-transparent opacity-0 transition-opacity duration-300 group-hover:opacity-100" />
               <div className="relative">
                 <h3 className="text-ink-900 mb-3 text-lg font-semibold">
                   2022 US Midterm Elections
@@ -169,13 +174,14 @@ export default function CalibrationPage(props: {
                 <p className="text-ink-600 text-sm leading-relaxed">
                   Manifold{' '}
                   <a
-                    className="text-primary-600 dark:text-primary-400 underline decoration-primary-600/30 dark:decoration-primary-400/30 transition-colors hover:decoration-primary-600 dark:hover:decoration-primary-400"
+                    className="text-primary-600 dark:text-primary-400 decoration-primary-600/30 dark:decoration-primary-400/30 hover:decoration-primary-600 dark:hover:decoration-primary-400 underline transition-colors"
                     target="_blank"
                     href="https://firstsigma.substack.com/p/midterm-elections-forecast-comparison-analysis"
                   >
                     outperformed real money prediction markets
                   </a>{' '}
-                  and was almost as accurate as FiveThirtyEight when forecasting the 2022 US midterm elections.
+                  and was almost as accurate as FiveThirtyEight when forecasting
+                  the 2022 US midterm elections.
                 </p>
               </div>
             </div>
@@ -184,8 +190,8 @@ export default function CalibrationPage(props: {
 
         {/* Resources Section */}
         <section>
-          <div className="group relative overflow-hidden rounded-2xl border border-ink-200 dark:border-ink-300 bg-gradient-to-br from-canvas-0 to-canvas-50 p-6 transition-all duration-300 hover:shadow-lg hover:shadow-ink-900/5">
-            <div className="absolute -right-8 -top-8 h-24 w-24 rounded-full bg-gradient-to-br from-primary-200/40 to-yes-200/40 dark:from-primary-800/20 dark:to-yes-800/20 blur-2xl transition-transform duration-300 group-hover:scale-150" />
+          <div className="border-ink-200 dark:border-ink-300 from-canvas-0 to-canvas-50 hover:shadow-ink-900/5 group relative overflow-hidden rounded-2xl border bg-gradient-to-br p-6 transition-all duration-300 hover:shadow-lg">
+            <div className="from-primary-200/40 to-yes-200/40 dark:from-primary-800/20 dark:to-yes-800/20 absolute -right-8 -top-8 h-24 w-24 rounded-full bg-gradient-to-br blur-2xl transition-transform duration-300 group-hover:scale-150" />
             <div className="relative">
               <h2 className="text-ink-900 mb-2 text-lg font-semibold">
                 Additional Resources
@@ -193,13 +199,14 @@ export default function CalibrationPage(props: {
               <p className="text-ink-600 text-sm leading-relaxed">
                 See more{' '}
                 <a
-                  className="text-primary-600 dark:text-primary-400 font-medium underline decoration-primary-600/30 dark:decoration-primary-400/30 transition-colors hover:decoration-primary-600 dark:hover:decoration-primary-400"
+                  className="text-primary-600 dark:text-primary-400 decoration-primary-600/30 dark:decoration-primary-400/30 hover:decoration-primary-600 dark:hover:decoration-primary-400 font-medium underline transition-colors"
                   target="_blank"
                   href="https://wasabipesto.com/manifold/markets/"
                 >
                   charts and analysis
                 </a>{' '}
-                courtesy of <Linkify text="@wasabipesto" /> from our data in 2022.
+                courtesy of <Linkify text="@wasabipesto" /> from our data in
+                2022.
               </p>
             </div>
           </div>
@@ -219,9 +226,9 @@ function CalibrationCard(props: {
   const { points, score, n, isMethodologyOpen, setIsMethodologyOpen } = props
 
   return (
-    <div className="relative overflow-hidden rounded-2xl border border-ink-200 dark:border-ink-300 bg-canvas-0 shadow-sm transition-shadow duration-300 hover:shadow-lg hover:shadow-ink-900/5">
+    <div className="border-ink-200 dark:border-ink-300 bg-canvas-0 hover:shadow-ink-900/5 relative overflow-hidden rounded-2xl border shadow-sm transition-shadow duration-300 hover:shadow-lg">
       {/* Card Header */}
-      <div className="border-b border-ink-100 dark:border-ink-200 bg-gradient-to-r from-canvas-0 via-canvas-0 to-primary-50/30 dark:to-primary-900/10 px-6 py-5">
+      <div className="border-ink-100 dark:border-ink-200 from-canvas-0 via-canvas-0 to-primary-50/30 dark:to-primary-900/10 border-b bg-gradient-to-r px-6 py-5">
         <Row className="items-center justify-between">
           <div>
             <h2 className="text-ink-900 text-xl font-semibold tracking-tight">
@@ -240,14 +247,15 @@ function CalibrationCard(props: {
         {/* Explanation */}
         <div className="text-ink-600 mb-6 text-sm leading-relaxed">
           <p>
-            This chart shows whether events happened as often as we predicted. 
-            The closer the blue dots are to the diagonal line, the better our calibration. 
-            A dot at 70% on the x-axis should appear at 70% on the y-axis if exactly 70% of those markets resolved yes.
+            This chart shows whether events happened as often as we predicted.
+            The closer the blue dots are to the diagonal line, the better our
+            calibration. A dot at 70% on the x-axis should appear at 70% on the
+            y-axis if exactly 70% of those markets resolved yes.
           </p>
         </div>
 
         {/* Chart Container */}
-        <div className="relative rounded-xl border border-ink-100 dark:border-ink-200 bg-gradient-to-br from-canvas-50/50 to-canvas-0 p-4 sm:p-6">
+        <div className="border-ink-100 dark:border-ink-200 from-canvas-50/50 to-canvas-0 relative rounded-xl border bg-gradient-to-br p-4 sm:p-6">
           {/* Y-axis label */}
           <div className="absolute -left-2 top-1/2 -translate-y-1/2 -rotate-90">
             <span className="text-ink-500 whitespace-nowrap text-xs font-medium uppercase tracking-wider">
@@ -276,7 +284,7 @@ function CalibrationCard(props: {
         <div className="mt-6">
           <button
             onClick={() => setIsMethodologyOpen(!isMethodologyOpen)}
-            className="group flex w-full items-center justify-between rounded-lg bg-canvas-50 px-4 py-3 text-left transition-colors hover:bg-ink-100"
+            className="bg-canvas-50 hover:bg-ink-100 group flex w-full items-center justify-between rounded-lg px-4 py-3 text-left transition-colors"
           >
             <span className="text-ink-700 text-sm font-medium">
               Methodology
@@ -302,30 +310,45 @@ function CalibrationCard(props: {
           <div
             className={clsx(
               'overflow-hidden transition-all duration-300 ease-in-out',
-              isMethodologyOpen ? 'mt-4 max-h-[600px] opacity-100' : 'max-h-0 opacity-0'
+              isMethodologyOpen
+                ? 'mt-4 max-h-[600px] opacity-100'
+                : 'max-h-0 opacity-0'
             )}
           >
-            <div className="rounded-lg border border-ink-100 dark:border-ink-200 bg-canvas-50 p-4">
+            <div className="border-ink-100 dark:border-ink-200 bg-canvas-50 rounded-lg border p-4">
               <ol className="text-ink-600 space-y-3 text-sm leading-relaxed">
                 <MethodologyStep number={1}>
-                  Every hour we sample {formatPct(SAMPLING_P)} of all past trades on resolved binary questions with {TRADER_THRESHOLD} or more traders. Current sample size: <span className="font-semibold text-ink-800">{formatLargeNumber(n)}</span> trades.
+                  Every hour we sample {formatPct(SAMPLING_P)} of all past
+                  trades on resolved binary questions with {TRADER_THRESHOLD} or
+                  more traders. Current sample size:{' '}
+                  <span className="text-ink-800 font-semibold">
+                    {formatLargeNumber(n)}
+                  </span>{' '}
+                  trades.
                 </MethodologyStep>
                 <MethodologyStep number={2}>
-                  For each sampled trade, we find the average probability between the start and end.
+                  For each sampled trade, we find the average probability
+                  between the start and end.
                 </MethodologyStep>
                 <MethodologyStep number={3}>
                   We group trades with similar probabilities together.
                 </MethodologyStep>
                 <MethodologyStep number={4}>
-                  Then, we check for trades that said there was e.g. a 60% chance, and how often those markets resolve yes. For perfect calibration, we expect 60% of them to have resolved yes.
+                  Then, we check for trades that said there was e.g. a 60%
+                  chance, and how often those markets resolve yes. For perfect
+                  calibration, we expect 60% of them to have resolved yes.
                 </MethodologyStep>
                 <MethodologyStep number={5}>
-                  We repeat this at each probability interval to plot the calibration curve.
+                  We repeat this at each probability interval to plot the
+                  calibration curve.
                 </MethodologyStep>
               </ol>
-              <div className="mt-4 rounded-md border border-amber-200 dark:border-amber-800/50 bg-amber-50 dark:bg-amber-900/20 p-3">
-                <p className="text-amber-800 dark:text-amber-200 text-xs leading-relaxed">
-                  <span className="font-semibold">Note:</span> This methodology uses trade-weighted rather than time-weighted calibration. Market accuracy may be better than reflected here, as large miscalibrated trades are usually corrected immediately.
+              <div className="mt-4 rounded-md border border-amber-200 bg-amber-50 p-3 dark:border-amber-800/50 dark:bg-amber-900/20">
+                <p className="text-xs leading-relaxed text-amber-800 dark:text-amber-200">
+                  <span className="font-semibold">Note:</span> This methodology
+                  uses trade-weighted rather than time-weighted calibration.
+                  Market accuracy may be better than reflected here, as large
+                  miscalibrated trades are usually corrected immediately.
                 </p>
               </div>
             </div>
@@ -351,8 +374,8 @@ function BrierScoreBadge(props: { score: number }) {
   const displayScore = Math.round(props.score * 1e5) / 1e5
 
   return (
-    <div className="flex items-center gap-2 rounded-full border border-yes-200 dark:border-yes-800/50 bg-yes-50 dark:bg-yes-900/20 px-3 py-1.5">
-      <div className="h-2 w-2 animate-pulse rounded-full bg-yes-500" />
+    <div className="border-yes-200 dark:border-yes-800/50 bg-yes-50 dark:bg-yes-900/20 flex items-center gap-2 rounded-full border px-3 py-1.5">
+      <div className="bg-yes-500 h-2 w-2 animate-pulse rounded-full" />
       <div className="flex items-center gap-1.5">
         <span className="text-yes-700 dark:text-yes-300 text-sm font-semibold">
           {displayScore}
@@ -378,24 +401,20 @@ function CaseStudyCard(props: {
   const { title, contract, description } = props
 
   return (
-    <div className="group relative overflow-hidden rounded-2xl border border-ink-200 dark:border-ink-300 bg-canvas-0 transition-all duration-300 hover:border-ink-300 dark:hover:border-ink-200 hover:shadow-lg hover:shadow-ink-900/5">
+    <div className="border-ink-200 dark:border-ink-300 bg-canvas-0 hover:border-ink-300 dark:hover:border-ink-200 hover:shadow-ink-900/5 group relative overflow-hidden rounded-2xl border transition-all duration-300 hover:shadow-lg">
       {/* Subtle gradient overlay on hover */}
-      <div className="absolute inset-0 bg-gradient-to-br from-primary-50/50 via-transparent to-transparent dark:from-primary-900/20 opacity-0 transition-opacity duration-300 group-hover:opacity-100" />
+      <div className="from-primary-50/50 dark:from-primary-900/20 absolute inset-0 bg-gradient-to-br via-transparent to-transparent opacity-0 transition-opacity duration-300 group-hover:opacity-100" />
 
       <div className="relative p-6">
-        <h3 className="text-ink-900 mb-4 text-lg font-semibold">
-          {title}
-        </h3>
+        <h3 className="text-ink-900 mb-4 text-lg font-semibold">{title}</h3>
 
         {/* Contract Card */}
-        <div className="mb-4 overflow-hidden rounded-xl border border-ink-100 dark:border-ink-200">
+        <div className="border-ink-100 dark:border-ink-200 mb-4 overflow-hidden rounded-xl border">
           <FeedContractCard contract={contract} showGraph={true} />
         </div>
 
         {/* Description */}
-        <p className="text-ink-600 text-sm leading-relaxed">
-          {description}
-        </p>
+        <p className="text-ink-600 text-sm leading-relaxed">{description}</p>
       </div>
     </div>
   )
@@ -427,7 +446,10 @@ function CalibrationChart(props: {
   const px = (p: { x: number; y: number }) => xScale(p.x)
   const py = (p: { x: number; y: number }) => yScale(p.y)
 
-  const [hoveredPoint, setHoveredPoint] = useState<{ x: number; y: number } | null>(null)
+  const [hoveredPoint, setHoveredPoint] = useState<{
+    x: number
+    y: number
+  } | null>(null)
 
   return (
     <SVGChart
@@ -435,16 +457,18 @@ function CalibrationChart(props: {
       h={height}
       xAxis={xAxis}
       yAxis={yAxis}
-      ttParams={hoveredPoint ? { x: px(hoveredPoint), y: py(hoveredPoint), point: hoveredPoint } : undefined}
+      ttParams={
+        hoveredPoint
+          ? { x: px(hoveredPoint), y: py(hoveredPoint), point: hoveredPoint }
+          : undefined
+      }
       Tooltip={({ point }) => (
         <div className="text-ink-900 text-sm">
-          <div className="mb-1 text-xs text-ink-500 uppercase tracking-wide">Calibration Point</div>
-          <div className="font-semibold">
-            Predicted: {formatPct(point.x)}
+          <div className="text-ink-500 mb-1 text-xs uppercase tracking-wide">
+            Calibration Point
           </div>
-          <div className="font-semibold">
-            Actual: {formatPct(point.y)}
-          </div>
+          <div className="font-semibold">Predicted: {formatPct(point.x)}</div>
+          <div className="font-semibold">Actual: {formatPct(point.y)}</div>
         </div>
       )}
     >
@@ -459,7 +483,12 @@ function CalibrationChart(props: {
           />
         </pattern>
       </defs>
-      <rect width={width} height={height} fill="url(#grid)" className="opacity-50" />
+      <rect
+        width={width}
+        height={height}
+        fill="url(#grid)"
+        className="opacity-50"
+      />
 
       {/* Perfect calibration diagonal */}
       <line
