@@ -76,6 +76,7 @@ export default function CharityLotteryPage() {
   const [hoveredCharityId, setHoveredCharityId] = useState<string | null>(null)
   const [manaAmount, setManaAmount] = useState<number>(100)
   const [isSubmitting, setIsSubmitting] = useState(false)
+  const [salesRefreshKey, setSalesRefreshKey] = useState(0)
 
   const previewCharityId = hoveredCharityId || selectedCharityId
 
@@ -149,6 +150,7 @@ export default function CharityLotteryPage() {
         )} tickets for ${formatMoney(result.manaSpent)}!`
       )
       refresh()
+      setSalesRefreshKey((k) => k + 1)
     } catch (e) {
       const msg =
         e instanceof APIError ? e.message : 'Failed to purchase tickets'
@@ -287,7 +289,10 @@ export default function CharityLotteryPage() {
         )}
 
         {/* Sales History */}
-        <SalesHistory lotteryNum={lottery.lotteryNum} />
+        <SalesHistory
+          lotteryNum={lottery.lotteryNum}
+          refreshKey={salesRefreshKey}
+        />
       </Col>
     </Page>
   )
@@ -792,12 +797,19 @@ function LotteryPieChart(props: {
   )
 }
 
-function SalesHistory(props: { lotteryNum: number }) {
-  const { lotteryNum } = props
-  const { data } = useAPIGetter('get-charity-lottery-sales', {
+function SalesHistory(props: { lotteryNum: number; refreshKey: number }) {
+  const { lotteryNum, refreshKey } = props
+  const { data, refresh } = useAPIGetter('get-charity-lottery-sales', {
     lotteryNum,
     limit: 50,
   })
+
+  // Refresh sales when refreshKey changes
+  useEffect(() => {
+    if (refreshKey > 0) {
+      refresh()
+    }
+  }, [refreshKey])
 
   const sales = data?.sales ?? []
 
