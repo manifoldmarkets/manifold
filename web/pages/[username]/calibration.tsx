@@ -210,11 +210,11 @@ function UserCalibrationContent({ user }: { user: User }) {
           {data.calibration.totalBets > 0 ? (
             <>
               <div className="relative mx-auto max-w-[560px]">
-                {/* Chart container with nice background */}
-                <div className="rounded-2xl bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 p-6 shadow-xl">
+                {/* Chart container - light/dark mode */}
+                <div className="rounded-2xl bg-gradient-to-br from-slate-100 via-slate-50 to-slate-100 p-6 shadow-lg dark:from-slate-900 dark:via-slate-800 dark:to-slate-900 dark:shadow-xl">
                   {/* Y-axis label */}
                   <div className="absolute -left-2 top-1/2 -translate-y-1/2 -rotate-90">
-                    <span className="whitespace-nowrap text-xs font-medium uppercase tracking-wider text-slate-400">
+                    <span className="text-ink-500 whitespace-nowrap text-xs font-medium uppercase tracking-wider">
                       Resolved YES %
                     </span>
                   </div>
@@ -232,7 +232,7 @@ function UserCalibrationContent({ user }: { user: User }) {
 
                   {/* X-axis label */}
                   <div className="mt-2 text-center">
-                    <span className="text-xs font-medium uppercase tracking-wider text-slate-400">
+                    <span className="text-ink-500 text-xs font-medium uppercase tracking-wider">
                       Predicted Probability
                     </span>
                   </div>
@@ -418,7 +418,7 @@ function UserCalibrationChart({
   const axisLabels = [0, 0.25, 0.5, 0.75, 1]
 
   return (
-    <svg width={width} height={height}>
+    <svg width={width} height={height} className="calibration-chart">
       <defs>
         {/* Gradients for points */}
         <radialGradient id="yesGradient" cx="30%" cy="30%">
@@ -459,7 +459,7 @@ function UserCalibrationChart({
               y1={yScale(val)}
               x2={innerWidth}
               y2={yScale(val)}
-              stroke="rgba(148, 163, 184, 0.15)"
+              className="stroke-ink-300/20 dark:stroke-slate-600/30"
               strokeWidth={1}
             />
             <line
@@ -467,7 +467,7 @@ function UserCalibrationChart({
               y1={0}
               x2={xScale(val)}
               y2={innerHeight}
-              stroke="rgba(148, 163, 184, 0.15)"
+              className="stroke-ink-300/20 dark:stroke-slate-600/30"
               strokeWidth={1}
             />
           </g>
@@ -484,7 +484,7 @@ function UserCalibrationChart({
             L ${xScale(0)} ${yScale(0)}
             Z
           `}
-          fill="rgba(99, 102, 241, 0.08)"
+          className="fill-indigo-500/10 dark:fill-indigo-500/10"
         />
 
         {/* Diagonal reference line */}
@@ -493,7 +493,7 @@ function UserCalibrationChart({
           y1={yScale(0)}
           x2={xScale(1)}
           y2={yScale(1)}
-          stroke="rgba(129, 140, 248, 0.6)"
+          className="stroke-indigo-400 dark:stroke-indigo-400/60"
           strokeWidth={2}
           strokeDasharray="8 4"
         />
@@ -504,7 +504,7 @@ function UserCalibrationChart({
           y1={innerHeight}
           x2={innerWidth}
           y2={innerHeight}
-          stroke="rgba(148, 163, 184, 0.4)"
+          className="stroke-ink-400/40 dark:stroke-slate-500/50"
           strokeWidth={1}
         />
         <line
@@ -512,7 +512,7 @@ function UserCalibrationChart({
           y1={0}
           x2={0}
           y2={innerHeight}
-          stroke="rgba(148, 163, 184, 0.4)"
+          className="stroke-ink-400/40 dark:stroke-slate-500/50"
           strokeWidth={1}
         />
 
@@ -523,7 +523,7 @@ function UserCalibrationChart({
             x={xScale(val)}
             y={innerHeight + 25}
             textAnchor="middle"
-            fill="rgba(148, 163, 184, 0.8)"
+            className="fill-ink-500 dark:fill-slate-400"
             fontSize={12}
             fontWeight={500}
           >
@@ -539,7 +539,7 @@ function UserCalibrationChart({
             y={yScale(val)}
             textAnchor="middle"
             dominantBaseline="middle"
-            fill="rgba(148, 163, 184, 0.8)"
+            className="fill-ink-500 dark:fill-slate-400"
             fontSize={12}
             fontWeight={500}
           >
@@ -557,7 +557,7 @@ function UserCalibrationChart({
                 hoveredPoint?.x === p.x && hoveredPoint?.type === 'no' ? 10 : 8
               }
               fill="url(#noGradient)"
-              stroke="rgba(255,255,255,0.3)"
+              className="stroke-white/30 dark:stroke-white/30"
               strokeWidth={2}
               filter={
                 hoveredPoint?.x === p.x && hoveredPoint?.type === 'no'
@@ -581,7 +581,7 @@ function UserCalibrationChart({
                 hoveredPoint?.x === p.x && hoveredPoint?.type === 'yes' ? 10 : 8
               }
               fill="url(#yesGradient)"
-              stroke="rgba(255,255,255,0.3)"
+              className="stroke-white/30 dark:stroke-white/30"
               strokeWidth={2}
               filter={
                 hoveredPoint?.x === p.x && hoveredPoint?.type === 'yes'
@@ -604,15 +604,26 @@ function UserCalibrationChart({
               width={120}
               height={50}
               rx={8}
-              fill="rgba(15, 23, 42, 0.95)"
+              className="fill-canvas-0 dark:fill-slate-900/95"
               stroke={hoveredPoint.type === 'yes' ? '#10b981' : '#ef4444'}
               strokeWidth={1}
             />
-            <text x={25} y={-15} fill="white" fontSize={11} fontWeight={600}>
+            <text
+              x={25}
+              y={-15}
+              className="fill-ink-900 dark:fill-white"
+              fontSize={11}
+              fontWeight={600}
+            >
               {hoveredPoint.type === 'yes' ? 'YES' : 'NO'} at{' '}
               {Math.round(hoveredPoint.x * 100)}%
             </text>
-            <text x={25} y={5} fill="rgba(148, 163, 184, 0.9)" fontSize={11}>
+            <text
+              x={25}
+              y={5}
+              className="fill-ink-500 dark:fill-slate-400"
+              fontSize={11}
+            >
               Resolved YES: {Math.round(hoveredPoint.y * 100)}%
             </text>
           </g>
