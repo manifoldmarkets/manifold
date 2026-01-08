@@ -255,16 +255,36 @@ function UserCalibrationContent({ user }: { user: User }) {
                 </div>
               </div>
 
-              <div className="mt-6 rounded-xl border border-indigo-200/50 bg-gradient-to-r from-indigo-50 to-purple-50 p-4 dark:border-indigo-800/30 dark:from-indigo-950/30 dark:to-purple-950/30">
-                <p className="text-sm leading-relaxed text-indigo-900 dark:text-indigo-200">
-                  <strong className="text-indigo-700 dark:text-indigo-300">
-                    How to read:
-                  </strong>{' '}
-                  Points above the diagonal line indicate profitable trading at
-                  that probability. Green dots should ideally be above the line
-                  (markets resolved YES more often than predicted), and red dots
-                  below (markets resolved YES less often than predicted).
+              <div className="mt-6 space-y-3 rounded-xl border border-indigo-200/50 bg-gradient-to-r from-indigo-50 to-purple-50 p-4 dark:border-indigo-800/30 dark:from-indigo-950/30 dark:to-purple-950/30">
+                <p className="text-sm font-semibold text-indigo-700 dark:text-indigo-300">
+                  How to read this chart
                 </p>
+                <div className="space-y-2 text-sm leading-relaxed text-indigo-900 dark:text-indigo-200">
+                  <p>
+                    Each dot represents your {TRADE_TERM}s at a specific
+                    probability. The <strong>X-axis</strong> shows the market
+                    probability when you placed your {TRADE_TERM}, and the{' '}
+                    <strong>Y-axis</strong> shows how often those markets
+                    actually resolved YES.
+                  </p>
+                  <p>
+                    <span className="inline-block h-2.5 w-2.5 rounded-full bg-emerald-500" />{' '}
+                    <strong>Green dots (YES {TRADE_TERM}s):</strong> You profit
+                    when these are <em>above</em> the diagonal — the market
+                    resolved YES more often than the price you paid.
+                  </p>
+                  <p>
+                    <span className="inline-block h-2.5 w-2.5 rounded-full bg-rose-500" />{' '}
+                    <strong>Red dots (NO {TRADE_TERM}s):</strong> You profit
+                    when these are <em>below</em> the diagonal — the market
+                    resolved YES less often than the price implied.
+                  </p>
+                  <p className="text-indigo-700 dark:text-indigo-300">
+                    <strong>Good trading</strong> = green dots above the line,
+                    red dots below. The further from the diagonal, the more edge
+                    you had at that probability.
+                  </p>
+                </div>
               </div>
             </>
           ) : (
