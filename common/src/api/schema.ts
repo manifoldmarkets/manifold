@@ -2775,6 +2775,21 @@ export const API = (_apiTypeCheck = {
       }
     },
   },
+  'get-predictle-percentile': {
+    method: 'GET',
+    visibility: 'undocumented',
+    authed: false,
+    props: z
+      .object({
+        puzzleNumber: z.coerce.number(),
+        attempts: z.coerce.number(),
+      })
+      .strict(),
+    returns: {} as {
+      percentile: number // 0-100, percentage of users you beat
+      totalUsers: number
+    },
+  },
   // Shop endpoints
   'get-shop-items': {
     method: 'GET',

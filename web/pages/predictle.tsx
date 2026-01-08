@@ -58,6 +58,11 @@ function PredicteGame(props: {
   const savedResultRef = useRef(false)
   const fetchedServerResultRef = useRef(false)
 
+  const [percentileData, setPercentileData] = useState<{
+    percentile: number
+    totalUsers: number
+  } | null>(null)
+
   const [gameState, setGameState, localReady] =
     usePersistentLocalState<GameState>(
       {
@@ -250,6 +255,26 @@ function PredicteGame(props: {
     puzzleNumber,
     dateString,
   ])
+
+  // Fetch percentile when user wins
+  useEffect(() => {
+    if (!gameState.completed || !gameState.won) {
+      setPercentileData(null)
+      return
+    }
+
+    const attemptCount = gameState.attempts[0]?.feedback.length || 0
+    if (attemptCount === 0) return
+
+    api('get-predictle-percentile', {
+      puzzleNumber,
+      attempts: attemptCount,
+    })
+      .then(setPercentileData)
+      .catch((e) => {
+        console.error('Failed to fetch percentile:', e)
+      })
+  }, [gameState.completed, gameState.won, gameState.attempts, puzzleNumber])
 
   // Check if a market is locked (correctly guessed)
   const isMarketLocked = (marketId: string): boolean => {
@@ -533,7 +558,9 @@ function PredicteGame(props: {
             </div>
             {gameState.won && (
               <div className="mt-1 text-sm opacity-90">
-                {attemptNumber === 1
+                {percentileData && percentileData.totalUsers > 1
+                  ? `You did better than ${percentileData.percentile}% of players today!`
+                  : attemptNumber === 1
                   ? 'Aced it on the first try!'
                   : attemptNumber === 2 || attemptNumber === 3
                   ? 'Great job!'
