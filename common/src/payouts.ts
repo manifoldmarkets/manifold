@@ -10,6 +10,7 @@ import {
 } from './contract'
 import { ContractMetric } from './contract-metric'
 import { LiquidityProvision } from './liquidity-provision'
+import { LOAN_DAILY_INTEREST_RATE, MS_PER_DAY } from './loans'
 import {
   getFixedCancelPayouts,
   getIndependentMultiMktPayouts,
@@ -24,6 +25,26 @@ export type Payout = {
   payout: number
   deposit?: number
 }
+
+// Calculate total loan repayment including interest
+const getLoanWithInterest = (metric: ContractMetric): number => {
+  const loan = metric.loan ?? 0
+  if (loan === 0) return 0
+
+  const now = Date.now()
+  const lastUpdate = metric.lastLoanUpdateTime ?? now
+  const daysSinceLastUpdate = (now - lastUpdate) / MS_PER_DAY
+
+  // Finalize the integral up to now
+  const finalIntegral =
+    (metric.loanDayIntegral ?? 0) + loan * daysSinceLastUpdate
+
+  // Interest = integral * daily rate
+  const interest = finalIntegral * LOAN_DAILY_INTEREST_RATE
+
+  return loan + interest
+}
+
 export const getLoanPayouts = (
   contractMetrics: ContractMetric[],
   answerId?: string
@@ -33,7 +54,7 @@ export const getLoanPayouts = (
     .filter((metric) => (answerId ? metric.answerId === answerId : true))
   const metricsByUser = groupBy(metricsWithLoans, (metric) => metric.userId)
   const loansByUser = mapValues(metricsByUser, (metrics) =>
-    sumBy(metrics, (metric) => -(metric.loan ?? 0))
+    sumBy(metrics, (metric) => -getLoanWithInterest(metric))
   )
   return Object.entries(loansByUser).map(([userId, payout]) => ({
     userId,

@@ -2,7 +2,11 @@ import { APIError, type APIHandler } from './helpers/endpoint'
 import { createSupabaseDirectClient } from 'shared/supabase/init'
 import { createLoanIncomeNotification } from 'shared/create-notification'
 import { getUser, log } from 'shared/utils'
-import { getUserLoanUpdates, isUserEligibleForLoan } from 'common/loans'
+import {
+  getUserLoanUpdates,
+  isUserEligibleForLoan,
+  MS_PER_DAY,
+} from 'common/loans'
 import * as dayjs from 'dayjs'
 import * as utc from 'dayjs/plugin/utc'
 import * as timezone from 'dayjs/plugin/timezone'
@@ -34,15 +38,25 @@ export const requestLoan: APIHandler<'request-loan'> = async (_, auth) => {
   if (payout < 1) {
     throw new APIError(400, `User ${auth.uid} is not eligible for a loan`)
   }
+  const now = Date.now()
   const updatedMetrics = filterDefined(
     updates.map((update) => {
       const metric = updatedMetricsByContract[update.contractId]?.find(
         (m) => m.answerId == update.answerId
       )
       if (!metric) return undefined
+
+      // Update loan-day integral before adding new loan
+      const lastUpdate = metric.lastLoanUpdateTime ?? now
+      const daysSinceLastUpdate = (now - lastUpdate) / MS_PER_DAY
+      const newIntegral =
+        (metric.loanDayIntegral ?? 0) + (metric.loan ?? 0) * daysSinceLastUpdate
+
       return {
         ...metric,
         loan: (metric.loan ?? 0) + update.newLoan,
+        loanDayIntegral: newIntegral,
+        lastLoanUpdateTime: now,
       }
     })
   )

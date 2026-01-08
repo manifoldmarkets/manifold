@@ -12,6 +12,8 @@ export type ContractMetric = {
   hasYesShares: boolean
   invested: number
   loan: number
+  loanDayIntegral: number // Cumulative (loan * days outstanding) for interest calculation
+  lastLoanUpdateTime: number // Timestamp of last integral update
   maxSharesOutcome: string | null
   totalShares: {
     [outcome: string]: number

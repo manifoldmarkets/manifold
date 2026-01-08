@@ -6,6 +6,8 @@ import { filterDefined } from './util/array'
 
 export const LOAN_DAILY_RATE = 0.02
 export const MAX_LOAN_NET_WORTH_PERCENT = 0.02
+export const LOAN_DAILY_INTEREST_RATE = 0.0005 // 0.05% per day (~18.25% annually)
+export const MS_PER_DAY = 24 * 60 * 60 * 1000
 
 const calculateNewLoan = (investedValue: number, loanTotal: number) => {
   const netValue = investedValue - loanTotal
