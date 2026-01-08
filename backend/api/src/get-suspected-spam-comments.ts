@@ -3,6 +3,7 @@ import { richTextToString } from 'common/util/parse'
 import { throwErrorIfNotMod } from 'shared/helpers/auth'
 import { aiModels, promptAI } from 'shared/helpers/prompt-ai'
 import { createSupabaseDirectClient } from 'shared/supabase/init'
+import { log } from 'shared/utils'
 import { type APIHandler } from './helpers/endpoint'
 
 // Manifold in the Wild user id to exclude
@@ -51,7 +52,7 @@ Respond with ONLY "yes" if this is spam, or "no" if it's a legitimate comment.`
     })
     return response.toLowerCase().trim() === 'yes'
   } catch (e) {
-    console.error('Error calling Gemini:', e)
+    log.error('Error calling Gemini:', e)
     return false
   }
 }
@@ -139,7 +140,7 @@ export const getSuspectedSpamComments: APIHandler<
         try {
           isSpam = await checkIfSpam(commentText, comment.marketTitle)
         } catch (e) {
-          console.error('Error checking spam:', e)
+          log.error('Error checking spam:', e)
         }
       }
 
