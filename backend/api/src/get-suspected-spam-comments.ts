@@ -52,7 +52,7 @@ Respond with ONLY "yes" if this is spam, or "no" if it's a legitimate comment.`
     })
     return response.toLowerCase().trim() === 'yes'
   } catch (e) {
-    log.error('Error calling Gemini:', e)
+    log.error('Error calling Gemini:', { error: e })
     return false
   }
 }
@@ -140,7 +140,7 @@ export const getSuspectedSpamComments: APIHandler<
         try {
           isSpam = await checkIfSpam(commentText, comment.marketTitle)
         } catch (e) {
-          log.error('Error checking spam:', e)
+          log.error('Error checking spam:', { error: e })
         }
       }
 
