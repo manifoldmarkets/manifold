@@ -20,6 +20,7 @@ import { ManaCoin } from 'web/public/custom-components/manaCoin'
 import { InfoTooltip } from 'web/components/widgets/info-tooltip'
 import toast from 'react-hot-toast'
 import clsx from 'clsx'
+import { track } from 'web/lib/service/analytics'
 
 import {
   calculateTicketsFromMana,
@@ -149,6 +150,14 @@ export default function CharityLotteryPage() {
           result.numTickets
         )} tickets for ${formatMoney(result.manaSpent)}!`
       )
+      track('charity lottery purchase', {
+        lotteryNum: lottery.lotteryNum,
+        charityId: selectedCharityId,
+        charityName: charities.find((c) => c.id === selectedCharityId)?.name,
+        numTickets: result.numTickets,
+        manaSpent: result.manaSpent,
+        ticketId: result.ticketId,
+      })
       refresh()
       setSalesRefreshKey((k) => k + 1)
     } catch (e) {
