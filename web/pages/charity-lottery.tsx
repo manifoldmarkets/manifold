@@ -220,8 +220,9 @@ export default function CharityLotteryPage() {
             </h1>
           </Row>
           <p className="text-ink-600 text-lg leading-relaxed">
-            Buy tickets for your favorite charity. At the end of February, one
-            ticket will be randomly selected—and Manifold will send them the{' '}
+            Support your favorite charity with lottery tickets. On March 1st,
+            one ticket will be randomly selected—and Manifold will send the
+            winning charity the{' '}
             <span className="font-semibold text-teal-600 dark:text-teal-400">
               ${lottery.prizeAmountUsd.toLocaleString()}
             </span>{' '}
