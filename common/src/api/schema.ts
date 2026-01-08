@@ -2161,6 +2161,9 @@ export const API = (_apiTypeCheck = {
         winRate: number
         totalMarkets: number
         resolvedMarkets: number
+        volatility: number
+        sharpeRatio: number
+        maxDrawdown: number
       }
       portfolioHistory: {
         timestamp: number

@@ -185,6 +185,39 @@ function UserCalibrationContent({ user }: { user: User }) {
         />
       </div>
 
+      {/* Advanced Risk Metrics */}
+      <div className="grid grid-cols-2 gap-4 md:grid-cols-3">
+        <StatCard
+          label="Sharpe Ratio"
+          value={data.performanceStats.sharpeRatio.toFixed(2)}
+          color={
+            data.performanceStats.sharpeRatio >= 1
+              ? 'teal'
+              : data.performanceStats.sharpeRatio < 0
+              ? 'scarlet'
+              : undefined
+          }
+          tooltip="Risk-adjusted return (annualized return / volatility). Above 1 is good, above 2 is excellent"
+        />
+        <StatCard
+          label="Volatility"
+          value={`${data.performanceStats.volatility.toFixed(1)}%`}
+          tooltip="Daily standard deviation of portfolio returns (higher = more variable returns)"
+        />
+        <StatCard
+          label="Max Drawdown"
+          value={`-${data.performanceStats.maxDrawdown.toFixed(1)}%`}
+          color={
+            data.performanceStats.maxDrawdown > 30
+              ? 'scarlet'
+              : data.performanceStats.maxDrawdown < 15
+              ? 'teal'
+              : undefined
+          }
+          tooltip="Largest peak-to-trough decline in portfolio value"
+        />
+      </div>
+
       {/* Calibration Chart */}
       <Card className="overflow-hidden">
         <div className="border-ink-200 border-b bg-gradient-to-r from-indigo-500/10 via-purple-500/10 to-pink-500/10 p-5 dark:from-indigo-500/5 dark:via-purple-500/5 dark:to-pink-500/5">

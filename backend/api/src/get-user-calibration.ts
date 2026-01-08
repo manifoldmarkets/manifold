@@ -369,12 +369,61 @@ export const getUserCalibration: APIHandler<'get-user-calibration'> = async (
     utilized: maxLoan > 0 ? (h.loan_total / maxLoan) * 100 : 0,
   }))
 
-  // Format portfolio history
+  // Format portfolio history and calculate returns
   const portfolioHistoryFormatted = portfolioHistory.map((h) => ({
     timestamp: h.timestamp,
     value: h.balance + h.investment_value + h.spice_balance,
     profit: h.balance + h.investment_value + h.spice_balance - h.total_deposits,
   }))
+
+  // Calculate volatility, Sharpe ratio, and max drawdown from portfolio history
+  let volatility = 0
+  let sharpeRatio = 0
+  let maxDrawdown = 0
+
+  if (portfolioHistoryFormatted.length >= 2) {
+    // Calculate daily returns (percentage change)
+    const returns: number[] = []
+    for (let i = 1; i < portfolioHistoryFormatted.length; i++) {
+      const prevValue = portfolioHistoryFormatted[i - 1].value
+      const currValue = portfolioHistoryFormatted[i].value
+      if (prevValue > 0) {
+        returns.push((currValue - prevValue) / prevValue)
+      }
+    }
+
+    if (returns.length > 0) {
+      // Calculate mean return
+      const meanReturn = returns.reduce((a, b) => a + b, 0) / returns.length
+
+      // Calculate standard deviation (volatility)
+      const squaredDiffs = returns.map((r) => Math.pow(r - meanReturn, 2))
+      const variance = squaredDiffs.reduce((a, b) => a + b, 0) / returns.length
+      volatility = Math.sqrt(variance) * 100 // Convert to percentage
+
+      // Annualized volatility (assuming daily data, ~365 days/year)
+      const annualizedVolatility = volatility * Math.sqrt(365)
+
+      // Sharpe ratio: (mean return - risk-free rate) / volatility
+      // Using 0% risk-free rate for simplicity (play money)
+      // Annualize mean return
+      const annualizedReturn = meanReturn * 365 * 100
+      sharpeRatio =
+        annualizedVolatility > 0 ? annualizedReturn / annualizedVolatility : 0
+    }
+
+    // Calculate maximum drawdown
+    let peak = portfolioHistoryFormatted[0].value
+    for (const point of portfolioHistoryFormatted) {
+      if (point.value > peak) {
+        peak = point.value
+      }
+      const drawdown = peak > 0 ? ((peak - point.value) / peak) * 100 : 0
+      if (drawdown > maxDrawdown) {
+        maxDrawdown = drawdown
+      }
+    }
+  }
 
   return {
     calibration: {
@@ -390,6 +439,9 @@ export const getUserCalibration: APIHandler<'get-user-calibration'> = async (
       winRate,
       totalMarkets,
       resolvedMarkets,
+      volatility: Math.round(volatility * 100) / 100,
+      sharpeRatio: Math.round(sharpeRatio * 100) / 100,
+      maxDrawdown: Math.round(maxDrawdown * 100) / 100,
     },
     portfolioHistory: portfolioHistoryFormatted,
     profitByTopic,
