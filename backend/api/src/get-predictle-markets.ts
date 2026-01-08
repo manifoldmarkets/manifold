@@ -92,6 +92,8 @@ async function fetchEligibleMarkets(
   )
 }
 
+const MIN_PROB_DIFFERENCE = 0.05 // Markets must be at least 5% apart
+
 // Select and prepare markets for today's puzzle
 function prepareMarkets(
   markets: Contract[],
@@ -100,9 +102,31 @@ function prepareMarkets(
   predictleMarkets: PredicleMarket[]
   correctOrder: Record<string, number>
 } {
-  // Shuffle with today's seed and pick 5
+  // Shuffle with today's seed
   const shuffled = shuffleWithSeed(markets, seed)
-  const selectedMarkets = shuffled.slice(0, MIN_MARKETS_REQUIRED)
+
+  // Select markets that are at least 5% apart from each other
+  const selectedMarkets: Contract[] = []
+  for (const market of shuffled) {
+    if (selectedMarkets.length >= MIN_MARKETS_REQUIRED) break
+
+    const prob = 'prob' in market ? market.prob : 0.5
+    const isFarEnough = selectedMarkets.every((selected) => {
+      const selectedProb = 'prob' in selected ? selected.prob : 0.5
+      return Math.abs(prob - selectedProb) >= MIN_PROB_DIFFERENCE
+    })
+
+    if (isFarEnough) {
+      selectedMarkets.push(market)
+    }
+  }
+
+  // If we couldn't find 5 markets that are 5% apart, throw an error
+  if (selectedMarkets.length < MIN_MARKETS_REQUIRED) {
+    throw new Error(
+      `Could not find ${MIN_MARKETS_REQUIRED} markets that are at least ${MIN_PROB_DIFFERENCE * 100}% apart. Found ${selectedMarkets.length}.`
+    )
+  }
 
   // Sort by probability for the correct order (high to low)
   const sortedByProb = [...selectedMarkets].sort((a, b) => {
