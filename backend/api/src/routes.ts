@@ -1,12 +1,12 @@
 import { createPublicChatMessage } from 'api/create-public-chat-message'
 import { createuser } from 'api/create-user'
+import { getActiveUserManaStats } from 'api/get-active-user-mana-stats'
 import { getBalanceChanges } from 'api/get-balance-changes'
 import { getBestComments } from 'api/get-best-comments'
 import { getBoostAnalytics } from 'api/get-boost-analytics'
 import { getFeed } from 'api/get-feed'
 import { getInterestingGroupsFromViews } from 'api/get-interesting-groups-from-views'
 import { getManaSummaryStats } from 'api/get-mana-summary-stats'
-import { getActiveUserManaStats } from 'api/get-active-user-mana-stats'
 import { getNotifications } from 'api/get-notifications'
 import {
   getChannelMemberships,
@@ -98,12 +98,11 @@ import { getMe } from './get-me'
 import { getModReports } from './get-mod-reports'
 import { getmonthlybets2025 } from './get-monthly-bets-2025'
 import { getNextLoanAmount } from './get-next-loan-amount'
-import { getPredictle } from './get-predictle-markets'
-import { savePredicleResult } from './save-predictle-result'
-import { getPredictleResult } from './get-predictle-result'
-import { getPredictlePercentile } from './get-predictle-percentile'
 import { getPartnerStats } from './get-partner-stats'
 import { getPositions } from './get-positions'
+import { getPredictle } from './get-predictle-markets'
+import { getPredictlePercentile } from './get-predictle-percentile'
+import { getPredictleResult } from './get-predictle-result'
 import { getRelatedMarkets } from './get-related-markets'
 import { getRelatedMarketsByGroup } from './get-related-markets-by-group'
 import { getTopicDashboards } from './get-topic-dashboards'
@@ -126,6 +125,7 @@ import { addOrRemoveReaction } from './reaction'
 import { refreshAllClients } from './refresh-all-clients'
 import { removeLiquidity } from './remove-liquidity'
 import { resolveMarket } from './resolve-market'
+import { savePredicleResult } from './save-predictle-result'
 import { saveTwitchCredentials } from './save-twitch-credentials'
 import {
   getRecentMarkets,
@@ -159,6 +159,7 @@ import { adminSearchUsersByEmail } from './admin-search-users-by-email'
 import { anonymizeUser } from './anonymize-user'
 import { createPost } from './create-post'
 import { createPostComment } from './create-post-comment'
+import { deleteSpamComments } from './delete-spam-comments'
 import { dismissUserReport } from './dismiss-user-report'
 import { editPostComment, updatePostComment } from './edit-post-comment'
 import { followPost } from './follow-post'
@@ -180,8 +181,10 @@ import { getMarketProps } from './get-market-props'
 import { getPosts } from './get-posts'
 import { getReactions } from './get-reactions'
 import { getSeasonInfo } from './get-season-info'
+import { getShopItems } from './get-shop-items'
 import { getSiteActivity } from './get-site-activity'
 import { getSportsGames } from './get-sports-games'
+import { getSuspectedSpamComments } from './get-suspected-spam-comments'
 import { getUserAchievements } from './get-user-achievements'
 import { getUserCalibration } from './get-user-calibration'
 import { getUserContractMetricsWithContracts } from './get-user-contract-metrics-with-contracts'
@@ -204,11 +207,10 @@ import {
 } from './pending-clarifications'
 import { purchaseContractBoost } from './purchase-boost'
 import { referUser } from './refer-user'
-import { updatePost } from './update-post'
-import { validateiap } from './validate-iap'
-import { getShopItems } from './get-shop-items'
 import { shopPurchase } from './shop-purchase'
 import { shopToggle } from './shop-toggle'
+import { updatePost } from './update-post'
+import { validateiap } from './validate-iap'
 
 export const handlers: { [k in APIPath]: APIHandler<k> } = {
   'refresh-all-clients': refreshAllClients,
@@ -421,4 +423,6 @@ export const handlers: { [k in APIPath]: APIHandler<k> } = {
   'get-shop-items': getShopItems,
   'shop-purchase': shopPurchase,
   'shop-toggle': shopToggle,
+  'get-suspected-spam-comments': getSuspectedSpamComments,
+  'delete-spam-comments': deleteSpamComments,
 } as const

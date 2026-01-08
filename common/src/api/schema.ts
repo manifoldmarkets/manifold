@@ -69,13 +69,13 @@ import { notification_preference } from 'common/user-notification-preferences'
 
 import { JSONContent } from '@tiptap/core'
 import { RanksType } from 'common/achievements'
-import { ShopItem } from 'common/shop/items'
-import { UserShopPurchase } from 'common/user'
 import { MarketDraft } from 'common/drafts'
 import { Reaction } from 'common/reaction'
+import { ShopItem } from 'common/shop/items'
 import { ChartAnnotation } from 'common/supabase/chart-annotations'
 import { Task, TaskCategory } from 'common/todo'
 import { TopLevelPost } from 'common/top-level-post'
+import { UserShopPurchase } from 'common/user'
 import { YEAR_MS } from 'common/util/time'
 import { Dictionary } from 'lodash'
 // mqp: very unscientific, just balancing our willingness to accept load
@@ -2820,6 +2820,48 @@ export const API = (_apiTypeCheck = {
       })
       .strict(),
     returns: {} as { success: boolean },
+  },
+  // Admin spam detection endpoints
+  'get-suspected-spam-comments': {
+    method: 'GET',
+    visibility: 'undocumented',
+    authed: true,
+    props: z
+      .object({
+        limit: z.coerce.number().min(1).max(1000).default(20),
+        offset: z.coerce.number().default(0),
+        ignoredIds: z.array(z.string()).optional(),
+      })
+      .strict(),
+    returns: {} as {
+      comments: {
+        commentId: string
+        contractId: string
+        content: JSONContent | null
+        commentText: string
+        marketTitle: string
+        marketSlug: string
+        creatorUsername: string
+        userId: string
+        userName: string
+        userUsername: string
+        userAvatarUrl: string | null
+        createdTime: number
+        isSpam: boolean | null
+      }[]
+      total: number
+    },
+  },
+  'delete-spam-comments': {
+    method: 'POST',
+    visibility: 'undocumented',
+    authed: true,
+    props: z
+      .object({
+        commentIds: z.array(z.string()),
+      })
+      .strict(),
+    returns: {} as { success: boolean; deletedCount: number },
   },
 } as const)
 
