@@ -660,19 +660,7 @@ function MarketCard(props: {
           {feedback.length > 0 && (
             <Row className="gap-1 text-xl">
               {feedback.map((f, i) => (
-                <span
-                  key={i}
-                  className={clsx(
-                    'transition-transform',
-                    i === feedback.length - 1 && 'animate-bounce'
-                  )}
-                  style={{
-                    animationDuration: '0.5s',
-                    animationIterationCount: 1,
-                  }}
-                >
-                  {getFeedbackEmoji(f)}
-                </span>
+                <span key={i}>{getFeedbackEmoji(f)}</span>
               ))}
             </Row>
           )}
