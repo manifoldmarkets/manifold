@@ -41,6 +41,7 @@ export const getUserCalibration: APIHandler<'get-user-calibration'> = async (
     volumeResult,
   ] = await Promise.all([
     // Query 1: Get user's bets on resolved binary markets (for calibration)
+    // Uses random sampling for performance and unbiased results
     pg.manyOrNone<{
       bet_id: string
       contract_id: string
@@ -68,8 +69,8 @@ export const getUserCalibration: APIHandler<'get-user-calibration'> = async (
         AND c.resolution IN ('YES', 'NO')
         AND cb.amount > 0
         AND (cb.is_redemption IS NOT TRUE OR cb.is_redemption IS NULL)
-      ORDER BY cb.created_time ASC
-      LIMIT 10000
+      ORDER BY RANDOM()
+      LIMIT 2000
       `,
       [userId]
     ),
