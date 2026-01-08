@@ -3,6 +3,7 @@ import { createSupabaseDirectClient } from 'shared/supabase/init'
 import { APIError } from 'common/api/utils'
 import { groupBy, range, sortBy, sumBy, Dictionary } from 'lodash'
 import { SEARCH_TOPICS_TO_SUBTOPICS } from 'common/topics'
+import { DAY_MS } from 'common/util/time'
 
 const CALIBRATION_POINTS = [1, 3, 5, ...range(10, 100, 10), 95, 97, 99]
 
@@ -309,34 +310,45 @@ export const getUserCalibration: APIHandler<'get-user-calibration'> = async (
   let maxDrawdown = 0
 
   if (portfolioHistoryFormatted.length >= 2) {
-    // Calculate daily returns (percentage change)
-    const returns: number[] = []
+    // Calculate daily profit changes normalized by portfolio value and time elapsed
+    // This gives us the daily rate of return based on actual profit changes
+    const dailyReturns: number[] = []
     for (let i = 1; i < portfolioHistoryFormatted.length; i++) {
-      const prevValue = portfolioHistoryFormatted[i - 1].value
-      const currValue = portfolioHistoryFormatted[i].value
-      if (prevValue > 0) {
-        returns.push((currValue - prevValue) / prevValue)
+      const prev = portfolioHistoryFormatted[i - 1]
+      const curr = portfolioHistoryFormatted[i]
+      const profitChange = curr.profit - prev.profit
+      const avgValue = (curr.value + prev.value) / 2
+      const daysBetween = (curr.timestamp - prev.timestamp) / DAY_MS
+
+      // Only include if we have valid data and reasonable time gap
+      if (avgValue > 0 && daysBetween > 0 && daysBetween < 30) {
+        // Normalize to daily return rate
+        const dailyReturn = profitChange / avgValue / daysBetween
+        dailyReturns.push(dailyReturn)
       }
     }
 
-    if (returns.length > 0) {
-      // Calculate mean return
-      const meanReturn = returns.reduce((a, b) => a + b, 0) / returns.length
+    if (dailyReturns.length > 0) {
+      // Calculate mean daily return
+      const meanDailyReturn =
+        dailyReturns.reduce((a, b) => a + b, 0) / dailyReturns.length
 
-      // Calculate standard deviation (volatility)
-      const squaredDiffs = returns.map((r) => Math.pow(r - meanReturn, 2))
-      const variance = squaredDiffs.reduce((a, b) => a + b, 0) / returns.length
-      volatility = Math.sqrt(variance) * 100 // Convert to percentage
+      // Calculate standard deviation of daily returns (volatility)
+      const squaredDiffs = dailyReturns.map((r) =>
+        Math.pow(r - meanDailyReturn, 2)
+      )
+      const variance =
+        squaredDiffs.reduce((a, b) => a + b, 0) / dailyReturns.length
+      const dailyVolatility = Math.sqrt(variance)
 
-      // Annualized volatility (assuming daily data, ~365 days/year)
-      const annualizedVolatility = volatility * Math.sqrt(365)
+      // Annualize: daily volatility * sqrt(365), convert to percentage
+      volatility = dailyVolatility * Math.sqrt(365) * 100
 
-      // Sharpe ratio: (mean return - risk-free rate) / volatility
-      // Using 0% risk-free rate for simplicity (play money)
-      // Annualize mean return
-      const annualizedReturn = meanReturn * 365 * 100
+      // Sharpe ratio: (annualized return - risk-free rate) / annualized volatility
+      const RISK_FREE_RATE = 5 // 5% annual risk-free rate
+      const annualizedReturn = meanDailyReturn * 365 * 100
       sharpeRatio =
-        annualizedVolatility > 0 ? annualizedReturn / annualizedVolatility : 0
+        volatility > 0 ? (annualizedReturn - RISK_FREE_RATE) / volatility : 0
     }
 
     // Calculate maximum drawdown

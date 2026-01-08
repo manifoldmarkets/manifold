@@ -176,12 +176,12 @@ function UserCalibrationContent({ user }: { user: User }) {
               ? 'scarlet'
               : undefined
           }
-          tooltip="Risk-adjusted return (annualized return / volatility). Above 1 is good, above 2 is excellent"
+          tooltip="Annualized risk-adjusted return: (return − 5%) / volatility. Above 1 is good, above 2 is excellent"
         />
         <StatCard
           label="Volatility"
           value={`${data.performanceStats.volatility.toFixed(1)}%`}
-          tooltip="Daily standard deviation of portfolio returns (higher = more variable returns)"
+          tooltip="Annualized volatility of portfolio returns, calculated from daily profit changes"
         />
         <StatCard
           label="Max Drawdown"
@@ -615,39 +615,52 @@ function UserCalibrationChart({
           </g>
         ))}
 
-        {/* Tooltip */}
-        {hoveredPoint && (
-          <g transform={`translate(${px(hoveredPoint)}, ${py(hoveredPoint)})`}>
-            <rect
-              x={15}
-              y={-35}
-              width={120}
-              height={50}
-              rx={8}
-              className="fill-canvas-0 dark:fill-slate-900/95"
-              stroke={hoveredPoint.type === 'yes' ? '#10b981' : '#ef4444'}
-              strokeWidth={1}
-            />
-            <text
-              x={25}
-              y={-15}
-              className="fill-ink-900 dark:fill-white"
-              fontSize={11}
-              fontWeight={600}
-            >
-              {hoveredPoint.type === 'yes' ? 'YES' : 'NO'} at{' '}
-              {Math.round(hoveredPoint.x * 100)}%
-            </text>
-            <text
-              x={25}
-              y={5}
-              className="fill-ink-500 dark:fill-slate-400"
-              fontSize={11}
-            >
-              Resolved YES: {Math.round(hoveredPoint.y * 100)}%
-            </text>
-          </g>
-        )}
+        {/* Tooltip - flips when near edges */}
+        {hoveredPoint &&
+          (() => {
+            const tooltipWidth = 130
+            const tooltipHeight = 50
+            const flipX = hoveredPoint.x > 0.7
+            const flipY = hoveredPoint.y > 0.7
+            const offsetX = flipX ? -tooltipWidth - 15 : 15
+            const offsetY = flipY ? 10 : -tooltipHeight + 15
+            return (
+              <g
+                transform={`translate(${px(hoveredPoint)}, ${py(
+                  hoveredPoint
+                )})`}
+              >
+                <rect
+                  x={offsetX}
+                  y={offsetY}
+                  width={tooltipWidth}
+                  height={tooltipHeight}
+                  rx={8}
+                  className="fill-canvas-0 dark:fill-slate-900/95"
+                  stroke={hoveredPoint.type === 'yes' ? '#10b981' : '#ef4444'}
+                  strokeWidth={1}
+                />
+                <text
+                  x={offsetX + 10}
+                  y={offsetY + 20}
+                  className="fill-ink-900 dark:fill-white"
+                  fontSize={11}
+                  fontWeight={600}
+                >
+                  {hoveredPoint.type === 'yes' ? 'YES' : 'NO'} at{' '}
+                  {Math.round(hoveredPoint.x * 100)}%
+                </text>
+                <text
+                  x={offsetX + 10}
+                  y={offsetY + 38}
+                  className="fill-ink-500 dark:fill-slate-400"
+                  fontSize={11}
+                >
+                  Resolved YES: {Math.round(hoveredPoint.y * 100)}%
+                </text>
+              </g>
+            )
+          })()}
       </g>
     </svg>
   )
