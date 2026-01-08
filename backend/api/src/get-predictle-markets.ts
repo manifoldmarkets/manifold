@@ -3,6 +3,8 @@ import { createSupabaseDirectClient } from 'shared/supabase/init'
 import { APIHandler } from 'api/helpers/endpoint'
 import { APIError } from 'common/api/utils'
 import { HIDE_FROM_NEW_USER_SLUGS } from 'common/envs/constants'
+import { promptAI, aiModels } from 'shared/helpers/prompt-ai'
+import { log } from 'shared/utils'
 
 type PredicleMarket = {
   id: string
@@ -19,6 +21,61 @@ type PredictleData = {
 }
 
 const MIN_MARKETS_REQUIRED = 5
+
+// Check if a market question is clear, objective, and easy to understand
+async function isMarketQuestionClear(question: string): Promise<boolean> {
+  try {
+    const prompt = `Is this prediction market question clear, not based on personal opinion, and potentially answered by a news article?
+
+Question: "${question}"
+
+Respond with ONLY "yes" or "no".`
+
+    const response = await promptAI(prompt, {
+      model: aiModels.flash,
+      thinkingLevel: 'minimal',
+    })
+
+    return response.toLowerCase().trim().startsWith('yes')
+  } catch (e) {
+    log.error('Error checking market question clarity:', { error: e })
+    // On error, assume the question is fine to avoid blocking
+    return true
+  }
+}
+
+// Filter markets for quality using LLM
+async function filterMarketsForQuality(
+  markets: Contract[]
+): Promise<Contract[]> {
+  // Check markets in batches for efficiency
+  const BATCH_SIZE = 10
+  const qualityMarkets: Contract[] = []
+
+  for (
+    let i = 0;
+    i < markets.length && qualityMarkets.length < 20;
+    i += BATCH_SIZE
+  ) {
+    const batch = markets.slice(i, i + BATCH_SIZE)
+    const results = await Promise.all(
+      batch.map(async (market) => ({
+        market,
+        isClear: await isMarketQuestionClear(market.question),
+      }))
+    )
+
+    for (const { market, isClear } of results) {
+      if (isClear) {
+        qualityMarkets.push(market)
+      } else {
+        log('Filtered out unclear market:', market.question)
+      }
+    }
+  }
+
+  return qualityMarkets
+}
 
 // Seeded random number generator for deterministic results
 function seededRandom(seed: number): number {
@@ -124,7 +181,9 @@ function prepareMarkets(
   // If we couldn't find 5 markets that are 5% apart, throw an error
   if (selectedMarkets.length < MIN_MARKETS_REQUIRED) {
     throw new Error(
-      `Could not find ${MIN_MARKETS_REQUIRED} markets that are at least ${MIN_PROB_DIFFERENCE * 100}% apart. Found ${selectedMarkets.length}.`
+      `Could not find ${MIN_MARKETS_REQUIRED} markets that are at least ${
+        MIN_PROB_DIFFERENCE * 100
+      }% apart. Found ${selectedMarkets.length}.`
     )
   }
 
@@ -171,12 +230,24 @@ export const getPredictle: APIHandler<'get-predictle-markets'> = async () => {
 
   // No cache - compute today's markets
   const seed = dateToSeed(todayDate)
-  const markets = await fetchEligibleMarkets(pg)
+  const rawMarkets = await fetchEligibleMarkets(pg)
+
+  if (rawMarkets.length < MIN_MARKETS_REQUIRED) {
+    throw new APIError(
+      500,
+      `Not enough markets available for today's puzzle. Found ${rawMarkets.length}, need ${MIN_MARKETS_REQUIRED}.`
+    )
+  }
+
+  // Filter markets for quality using LLM
+  log('Filtering markets for quality...')
+  const markets = await filterMarketsForQuality(rawMarkets)
+  log(`Filtered to ${markets.length} quality markets from ${rawMarkets.length}`)
 
   if (markets.length < MIN_MARKETS_REQUIRED) {
     throw new APIError(
       500,
-      `Not enough markets available for today's puzzle. Found ${markets.length}, need ${MIN_MARKETS_REQUIRED}.`
+      `Not enough quality markets for today's puzzle. Found ${markets.length} quality markets, need ${MIN_MARKETS_REQUIRED}.`
     )
   }
 
