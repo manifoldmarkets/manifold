@@ -39,7 +39,7 @@ export const getStaticProps = async (props: {
     props: {
       user,
     },
-    revalidate: 60 * 60, // Regenerate after an hour
+    revalidate: 60 * 60 * 24, // Regenerate after 24 hours
   }
 }
 
