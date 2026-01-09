@@ -14,6 +14,7 @@ import {
 } from 'common/contract'
 import { ContractMetric } from 'common/contract-metric'
 import { PROFIT_FEE_FRACTION } from 'common/economy'
+import { calculateInterestPayouts } from './calculate-interest'
 import { isAdminId, isModId } from 'common/envs/constants'
 import { LiquidityProvision } from 'common/liquidity-provision'
 import { getPayouts, groupPayoutsByUser, Payout } from 'common/payouts'
@@ -269,8 +270,24 @@ export const resolveMarketHelper = async (
       token === 'CASH'
         ? assessProfitFees(traderPayouts, updatedContractMetrics, answerId)
         : []
+
+    // Calculate interest payouts (MANA only)
+    const interestPayouts = await calculateInterestPayouts(
+      tx,
+      contractId,
+      resolutionTime,
+      answerId,
+      token
+    )
+    if (interestPayouts.length > 0) {
+      log('Interest payouts calculated', {
+        count: interestPayouts.length,
+        totalInterest: sumBy(interestPayouts, 'interest'),
+      })
+    }
+
     const { balanceUpdatesQuery, insertTxnsQuery, balanceUpdates } =
-      getPayUsersQueries(payouts, contractId, answerId, token, payoutFees)
+      getPayUsersQueries(payouts, contractId, answerId, token, payoutFees, interestPayouts)
     const contractUpdateQuery = updateDataQuery(
       'contracts',
       'id',
@@ -522,7 +539,8 @@ export const getPayUsersQueries = (
   contractId: string,
   answerId: string | undefined,
   token: ContractToken,
-  payoutFees: Payout[]
+  payoutFees: Payout[],
+  interestPayouts: { userId: string; answerId: string | null; interest: number; dollarDays: number }[] = []
 ) => {
   const payoutCash = token === 'CASH'
   const payoutToken = token === 'CASH' ? 'CASH' : 'M$'
@@ -593,6 +611,39 @@ export const getPayUsersQueries = (
         contractId,
         payoutStartTime,
         answerId,
+      }),
+    })
+  }
+
+  // Add interest payouts (MANA only)
+  for (const { userId, answerId: ansId, interest, dollarDays } of interestPayouts) {
+    if (interest <= 0) continue
+
+    const existingUpdate = balanceUpdates.find((b) => b.id === userId)
+    if (existingUpdate) {
+      existingUpdate.balance = (existingUpdate.balance ?? 0) + interest
+    } else {
+      balanceUpdates.push({
+        id: userId,
+        balance: interest,
+      })
+    }
+
+    txns.push({
+      category: 'INTEREST_PAYOUT',
+      fromType: 'BANK',
+      fromId: isProd()
+        ? HOUSE_LIQUIDITY_PROVIDER_ID
+        : DEV_HOUSE_LIQUIDITY_PROVIDER_ID,
+      toType: 'USER',
+      toId: userId,
+      amount: interest,
+      token: 'M$',
+      data: removeUndefinedProps({
+        contractId,
+        answerId: ansId,
+        dollarDays,
+        payoutStartTime,
       }),
     })
   }

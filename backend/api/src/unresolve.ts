@@ -1,5 +1,8 @@
 import { APIError, APIHandler } from 'api/helpers/endpoint'
-import { HOUSE_LIQUIDITY_PROVIDER_ID } from 'common/antes'
+import {
+  DEV_HOUSE_LIQUIDITY_PROVIDER_ID,
+  HOUSE_LIQUIDITY_PROVIDER_ID,
+} from 'common/antes'
 import { getCpmmProbability } from 'common/calculate-cpmm'
 import { Contract, MINUTES_ALLOWED_TO_UNRESOLVE } from 'common/contract'
 import { isAdminId, isModId } from 'common/envs/constants'
@@ -8,6 +11,7 @@ import { convertTxn } from 'common/supabase/txns'
 import {
   ContractOldResolutionPayoutTxn,
   ContractUndoOldResolutionPayoutTxn,
+  InterestPayoutTxn,
 } from 'common/txn'
 import { assert } from 'common/util/assert'
 import { removeUndefinedProps } from 'common/util/object'
@@ -224,6 +228,24 @@ const undoResolution = async (
     txns.push(txn)
   }
 
+  // Revert interest payout txns
+  const interestTxns = await pg.map(
+    `SELECT * FROM txns WHERE category = 'INTEREST_PAYOUT'
+      AND to_type = 'USER'
+      AND data->>'contractId' = $1
+      AND ($2::text IS NULL OR data->>'answerId' = $2)`,
+    [contractId, answerId ?? null],
+    (r) => convertTxn(r) as InterestPayoutTxn
+  )
+
+  log('Reverting interest txns ' + interestTxns.length)
+
+  for (const txnToRevert of interestTxns) {
+    const { balanceUpdate, txn } = getUndoInterestPayout(txnToRevert)
+    balanceUpdates.push(balanceUpdate as any)
+    txns.push(txn)
+  }
+
   // // Revert fee txns
   // for (const txnToRevert of feeTxns) {
   //   const { balanceUpdate, txn } = getUndoResolutionFee(txnToRevert)
@@ -396,6 +418,33 @@ export function getUndoOldContractPayout(
     token,
     description: `Undo contract resolution payout from contract ${fromId}`,
     data: { revertsTxnId: id },
+  }
+  return { balanceUpdate, txn }
+}
+
+export function getUndoInterestPayout(txnData: InterestPayoutTxn) {
+  const { amount, toId, data, id } = txnData
+  const { contractId } = data ?? {}
+
+  const balanceUpdate = {
+    balance: -amount,
+    totalDeposits: 0,
+    totalCashDeposits: 0,
+    id: toId,
+  }
+
+  const txn: TxnData = {
+    amount: amount,
+    toId: isProd()
+      ? HOUSE_LIQUIDITY_PROVIDER_ID
+      : DEV_HOUSE_LIQUIDITY_PROVIDER_ID,
+    fromType: 'USER',
+    fromId: toId,
+    toType: 'BANK',
+    category: 'INTEREST_UNDO_PAYOUT',
+    token: 'M$',
+    description: `Undo interest payout for contract ${contractId}`,
+    data: { revertsTxnId: id, contractId },
   }
   return { balanceUpdate, txn }
 }
