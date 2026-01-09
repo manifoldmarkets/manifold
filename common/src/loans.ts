@@ -17,7 +17,7 @@ export const LOAN_DAILY_RATE = 0.02 // Deprecated - no longer used for automatic
 export const MAX_LOAN_NET_WORTH_PERCENT = 0.8 // 80% max total for general loans
 export const DAILY_LOAN_NET_WORTH_PERCENT = 0.1 // 10% max per day for general loans
 export const MAX_MARKET_LOAN_NET_WORTH_PERCENT = 0.05 // 5% of net worth per market
-export const LOAN_DAILY_INTEREST_RATE = 0.0005 // 0.05% per day
+export const LOAN_DAILY_INTEREST_RATE = 0.0003 // 0.03% per day
 export const MS_PER_DAY = 24 * 60 * 60 * 1000
 
 // Market liquidity thresholds
