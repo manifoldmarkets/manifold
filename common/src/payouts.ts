@@ -24,6 +24,10 @@ export type Payout = {
   payout: number
   deposit?: number
 }
+
+// Returns loan principal payouts (negative values, as loans are deducted from payouts).
+// Note: Interest is calculated at resolution time using the separate user_contract_loans table,
+// not from ContractMetric fields. See getLoanPayoutsWithInterest in resolve-market-helpers.ts.
 export const getLoanPayouts = (
   contractMetrics: ContractMetric[],
   answerId?: string

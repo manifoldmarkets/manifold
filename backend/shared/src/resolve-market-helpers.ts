@@ -16,12 +16,9 @@ import { ContractMetric } from 'common/contract-metric'
 import { PROFIT_FEE_FRACTION } from 'common/economy'
 import { isAdminId, isModId } from 'common/envs/constants'
 import { LiquidityProvision } from 'common/liquidity-provision'
-import {
-  getLoanPayouts,
-  getPayouts,
-  groupPayoutsByUser,
-  Payout,
-} from 'common/payouts'
+import { getPayouts, groupPayoutsByUser, Payout } from 'common/payouts'
+import { LOAN_DAILY_INTEREST_RATE, MS_PER_DAY } from 'common/loans'
+import { getLoanTrackingForContract } from './helpers/user-contract-loans'
 import { convertTxn } from 'common/supabase/txns'
 import { CancelUniqueBettorBonusTxn, Txn } from 'common/txn'
 import { User } from 'common/user'
@@ -101,6 +98,13 @@ export const resolveMarketHelper = async (
       ? Math.min(closeTime, resolutionTime)
       : closeTime
 
+    // Fetch loan tracking data for interest calculation
+    const loanTracking = await getLoanTrackingForContract(
+      tx,
+      contractId,
+      answerId
+    )
+
     const {
       resolutionProbability,
       payouts,
@@ -113,7 +117,8 @@ export const resolveMarketHelper = async (
       probabilityInt,
       answerId,
       contractMetrics,
-      liquidities
+      liquidities,
+      loanTracking
     )
     // Keep MKT resolution prob for consistency's sake
     const probBeforeResolution =
@@ -351,7 +356,14 @@ export const getPayoutInfo = (
   probabilityInt: number | undefined,
   answerId: string | undefined,
   contractMetrics: ContractMetric[],
-  liquidities: LiquidityProvision[]
+  liquidities: LiquidityProvision[],
+  loanTracking?: {
+    user_id: string
+    contract_id: string
+    answer_id: string | null
+    loan_day_integral: number
+    last_loan_update_time: number
+  }[]
 ) => {
   const resolutionProbability =
     probabilityInt !== undefined ? probabilityInt / 100 : undefined
@@ -363,8 +375,12 @@ export const getPayoutInfo = (
       })()
     : undefined
 
-  // Calculate loan payouts from contract metrics
-  const loanPayouts = getLoanPayouts(contractMetrics, answerId)
+  // Calculate loan payouts with interest from loan tracking data
+  const loanPayouts = getLoanPayoutsWithInterest(
+    contractMetrics,
+    loanTracking ?? [],
+    answerId
+  )
 
   // Calculate payouts using contract metrics instead of bets
   const { traderPayouts, liquidityPayouts } = getPayouts(
@@ -404,6 +420,61 @@ export const getPayoutInfo = (
     payouts,
     traderPayouts,
   }
+}
+
+type LoanTrackingData = {
+  user_id: string
+  contract_id: string
+  answer_id: string | null
+  loan_day_integral: number
+  last_loan_update_time: number
+}
+
+const getLoanPayoutsWithInterest = (
+  contractMetrics: ContractMetric[],
+  loanTracking: LoanTrackingData[],
+  answerId?: string
+): Payout[] => {
+  const now = Date.now()
+  const metricsWithLoans = contractMetrics
+    .filter((metric) => metric.loan)
+    .filter((metric) => (answerId ? metric.answerId === answerId : true))
+
+  const trackingByKey = keyBy(
+    loanTracking,
+    (t) => `${t.user_id}-${t.answer_id ?? ''}`
+  )
+
+  const metricsByUser = groupBy(metricsWithLoans, (metric) => metric.userId)
+
+  const loansByUser = mapValues(metricsByUser, (metrics) =>
+    sumBy(metrics, (metric) => {
+      const loan = metric.loan ?? 0
+      if (loan === 0) return 0
+
+      const key = `${metric.userId}-${metric.answerId ?? ''}`
+      const tracking = trackingByKey[key]
+
+      // If no tracking data, just return the loan (no interest for legacy loans)
+      if (!tracking) return -loan
+
+      // Finalize the integral up to now
+      const daysSinceLastUpdate =
+        (now - tracking.last_loan_update_time) / MS_PER_DAY
+      const finalIntegral =
+        tracking.loan_day_integral + loan * daysSinceLastUpdate
+
+      // Calculate interest
+      const interest = finalIntegral * LOAN_DAILY_INTEREST_RATE
+
+      return -(loan + interest)
+    })
+  )
+
+  return Object.entries(loansByUser).map(([userId, payout]) => ({
+    userId,
+    payout,
+  }))
 }
 
 async function undoUniqueBettorRewardsIfCancelResolution(

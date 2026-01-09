@@ -2,7 +2,11 @@ import { Modal } from 'web/components/layout/modal'
 import { Col } from 'web/components/layout/col'
 import { PLURAL_BETS, User } from 'common/user'
 import { ENV_CONFIG, TRADE_TERM } from 'common/envs/constants'
-import { LOAN_DAILY_RATE, overLeveraged } from 'common/loans'
+import {
+  LOAN_DAILY_RATE,
+  LOAN_DAILY_INTEREST_RATE,
+  overLeveraged,
+} from 'common/loans'
 import { useHasReceivedLoanToday } from 'web/hooks/use-has-received-loan'
 import { useIsEligibleForLoans } from 'web/hooks/use-is-eligible-for-loans'
 import { useAPIGetter } from 'web/hooks/use-api-getter'
@@ -50,15 +54,23 @@ export function LoansModal(props: {
             • What are loans?
           </span>
           <span className={'ml-2'}>
-            Each day, get a 0% interest loan of {LOAN_DAILY_RATE * 100}% of your
-            investment value (max {formatPercent(MAX_LOAN_NET_WORTH_PERCENT)} of
-            net worth per market).
+            Each day, get a loan of {LOAN_DAILY_RATE * 100}% of your investment
+            value (max {formatPercent(MAX_LOAN_NET_WORTH_PERCENT)} of net worth
+            per market).
+          </span>
+          <span className={'text-primary-700 font-medium'}>
+            • Is there interest?
+          </span>
+          <span className={'ml-2'}>
+            Yes, {LOAN_DAILY_INTEREST_RATE * 100}% per day accrues on your
+            outstanding loan balance.
           </span>
           <span className={'text-primary-700 font-medium'}>
             • Do I have to pay back a loan?
           </span>
           <span className={'ml-2'}>
-            Yes, automatically when the question resolves or you sell.
+            Yes, principal + interest is automatically deducted when the
+            question resolves or you sell.
           </span>
           <span className={'text-primary-700 font-medium'}>• Example</span>
           <span className={'ml-2'}>
@@ -66,7 +78,7 @@ export function LoansModal(props: {
             {ENV_CONFIG.moneyMoniker}1000 → get {ENV_CONFIG.moneyMoniker}
             {LOAN_DAILY_RATE * 1000} back tomorrow, then{' '}
             {formatMoney(LOAN_DAILY_RATE * (1000 - LOAN_DAILY_RATE * 1000))} the
-            next day.
+            next day. Interest accrues daily on the total loan.
           </span>
         </Col>
       </Col>
