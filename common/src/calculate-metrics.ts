@@ -422,8 +422,6 @@ export const getDefaultMetric = (
   contractId,
   answerId,
   loan: 0,
-  loanDayIntegral: 0,
-  lastLoanUpdateTime: 0,
   invested: 0,
   totalShares: { NO: 0, YES: 0 },
   totalSpent: { NO: 0, YES: 0 },
