@@ -30,8 +30,8 @@ export const isUserEligibleForGeneralLoan = (
   netWorth: number,
   requestedAmount: number
 ): boolean => {
-  const { investmentValue, loanTotal } = portfolio
-  if (investmentValue <= 0) return false
+  const { loanTotal } = portfolio
+  if (netWorth <= 0) return false
 
   const maxLoan = calculateMaxGeneralLoanAmount(netWorth)
   const currentLoan = loanTotal ?? 0
