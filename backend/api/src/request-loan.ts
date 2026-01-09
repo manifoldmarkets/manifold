@@ -29,6 +29,10 @@ import {
   UserUpdate,
 } from 'shared/supabase/users'
 import { betsQueue } from 'shared/helpers/fn-queue'
+import {
+  getLoanTrackingRows,
+  upsertLoanTrackingQuery,
+} from 'shared/helpers/user-contract-loans'
 
 export const requestLoan: APIHandler<'request-loan'> = async (_, auth) => {
   const pg = createSupabaseDirectClient()
@@ -38,30 +42,60 @@ export const requestLoan: APIHandler<'request-loan'> = async (_, auth) => {
   if (payout < 1) {
     throw new APIError(400, `User ${auth.uid} is not eligible for a loan`)
   }
+
   const now = Date.now()
+
+  // Update contract metrics with new loan amounts
   const updatedMetrics = filterDefined(
     updates.map((update) => {
       const metric = updatedMetricsByContract[update.contractId]?.find(
         (m) => m.answerId == update.answerId
       )
       if (!metric) return undefined
-
-      // Update loan-day integral before adding new loan
-      const lastUpdate = metric.lastLoanUpdateTime ?? now
-      const daysSinceLastUpdate = (now - lastUpdate) / MS_PER_DAY
-      const newIntegral =
-        (metric.loanDayIntegral ?? 0) + (metric.loan ?? 0) * daysSinceLastUpdate
-
       return {
         ...metric,
         loan: (metric.loan ?? 0) + update.newLoan,
-        loanDayIntegral: newIntegral,
-        lastLoanUpdateTime: now,
       }
     })
   )
+
+  // Get existing loan tracking data
+  const contractIds = updates.map((u) => u.contractId)
+  const existingLoanTracking = await getLoanTrackingRows(
+    pg,
+    auth.uid,
+    contractIds
+  )
+  const trackingByKey = keyBy(
+    existingLoanTracking,
+    (t) => `${t.contract_id}-${t.answer_id ?? ''}`
+  )
+
+  // Build loan tracking upserts
+  const loanTrackingUpdates = updates.map((update) => {
+    const key = `${update.contractId}-${update.answerId ?? ''}`
+    const existing = trackingByKey[key]
+    const oldLoan =
+      updatedMetricsByContract[update.contractId]?.find(
+        (m) => m.answerId == update.answerId
+      )?.loan ?? 0
+    const lastUpdate = existing?.last_loan_update_time ?? now
+    const daysSinceLastUpdate = (now - lastUpdate) / MS_PER_DAY
+    const newIntegral =
+      (existing?.loan_day_integral ?? 0) + oldLoan * daysSinceLastUpdate
+
+    return {
+      user_id: update.userId,
+      contract_id: update.contractId,
+      answer_id: update.answerId,
+      loan_day_integral: newIntegral,
+      last_loan_update_time: now,
+    }
+  })
+
   const bulkUpdateContractMetricsQ =
     bulkUpdateContractMetricsQuery(updatedMetrics)
+  const loanTrackingQ = upsertLoanTrackingQuery(loanTrackingUpdates)
   const { txnQuery, balanceUpdateQuery } = payUserLoan(user.id, payout)
 
   const { userUpdates } = await betsQueue.enqueueFn(async () => {
@@ -86,7 +120,8 @@ export const requestLoan: APIHandler<'request-loan'> = async (_, auth) => {
       const res = await tx.multi(
         `${balanceUpdateQuery};
          ${txnQuery};
-         ${bulkUpdateContractMetricsQ}`
+         ${bulkUpdateContractMetricsQ};
+         ${loanTrackingQ}`
       )
       const userUpdates = res[0] as UserUpdate[]
       return { userUpdates }
