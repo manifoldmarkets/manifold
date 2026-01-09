@@ -1014,11 +1014,41 @@ export const API = (_apiTypeCheck = {
     props: z.object({ amount: z.number().positive().finite().safe() }).strict(),
   },
   'request-loan': {
+    method: 'POST',
+    visibility: 'undocumented',
+    authed: true,
+    props: z.object({
+      amount: z.number().positive(),
+      contractId: z.string().optional(),
+      answerId: z.string().optional(),
+    }),
+    returns: {} as {
+      success: boolean
+      amount: number
+      distributed: Array<{
+        contractId: string
+        answerId: string | null
+        loanAmount: number
+      }>
+    },
+  },
+  'repay-loan': {
+    method: 'POST',
+    visibility: 'undocumented',
+    authed: true,
+    props: z.object({
+      amount: z.number().positive(),
+      contractId: z.string().optional(),
+      answerId: z.string().optional(),
+    }),
+    returns: {} as { repaid: number; remainingLoan: number },
+  },
+  'get-total-loan-amount': {
     method: 'GET',
     visibility: 'undocumented',
     authed: true,
     props: z.object({}),
-    returns: {} as { payout: number },
+    returns: {} as { totalOwed: number },
   },
   // deprecated. use /txns instead
   managrams: {
@@ -2028,9 +2058,31 @@ export const API = (_apiTypeCheck = {
     visibility: 'undocumented',
     cache: DEFAULT_CACHE_STRATEGY,
     authed: false,
-    returns: {} as { amount: number },
+    returns: {} as {
+      maxGeneralLoan: number
+      currentLoan: number
+      available: number
+      dailyLimit: number
+      todayLoans: number
+      availableToday: number
+    },
     props: z.object({
       userId: z.string(),
+    }),
+  },
+  'get-market-loan-max': {
+    method: 'GET',
+    visibility: 'undocumented',
+    cache: DEFAULT_CACHE_STRATEGY,
+    authed: true,
+    returns: {} as {
+      maxLoan: number
+      currentLoan: number
+      available: number
+      isLiquid: boolean
+    },
+    props: z.object({
+      contractId: z.string(),
     }),
   },
   'create-task': {

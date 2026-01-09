@@ -1,18 +1,15 @@
 import { APIError, type APIHandler } from './helpers/endpoint'
 import { createSupabaseDirectClient } from 'shared/supabase/init'
-import { createLoanIncomeNotification } from 'shared/create-notification'
 import { getUser, log } from 'shared/utils'
 import {
-  getUserLoanUpdates,
-  isUserEligibleForLoan,
+  calculateMaxGeneralLoanAmount,
+  calculateDailyLoanLimit,
+  calculateMarketLoanMax,
+  distributeLoanProportionally,
+  isUserEligibleForGeneralLoan,
+  isUserEligibleForMarketLoan,
   MS_PER_DAY,
 } from 'common/loans'
-import * as dayjs from 'dayjs'
-import * as utc from 'dayjs/plugin/utc'
-import * as timezone from 'dayjs/plugin/timezone'
-import { bulkUpdateContractMetricsQuery } from 'shared/helpers/user-contract-metrics'
-dayjs.extend(utc)
-dayjs.extend(timezone)
 import { LoanTxn } from 'common/txn'
 import { txnToRow } from 'shared/txn/run-txn'
 import { filterDefined } from 'common/util/array'
@@ -32,38 +29,248 @@ import { betsQueue } from 'shared/helpers/fn-queue'
 import {
   getLoanTrackingRows,
   upsertLoanTrackingQuery,
+  LoanTrackingRow,
 } from 'shared/helpers/user-contract-loans'
+import { bulkUpdateContractMetricsQuery } from 'shared/helpers/user-contract-metrics'
+import { getContract } from 'shared/utils'
 
-export const requestLoan: APIHandler<'request-loan'> = async (_, auth) => {
+export const requestLoan: APIHandler<'request-loan'> = async (props, auth) => {
+  const { amount, contractId, answerId } = props
   const pg = createSupabaseDirectClient()
-  const { result, updatedMetricsByContract, user } =
-    await getNextLoanAmountResults(auth.uid)
-  const { updates, payout } = result
-  if (payout < 1) {
-    throw new APIError(400, `User ${auth.uid} is not eligible for a loan`)
+
+  if (amount <= 0) {
+    throw new APIError(400, 'Loan amount must be positive')
+  }
+
+  const user = await getUser(auth.uid)
+  if (!user) {
+    throw new APIError(404, `User ${auth.uid} not found`)
+  }
+
+  const portfolioMetric = await pg.oneOrNone(
+    `select *
+     from user_portfolio_history_latest
+     where user_id = $1`,
+    [auth.uid],
+    convertPortfolioHistory
+  )
+  if (!portfolioMetric) {
+    throw new APIError(404, `No portfolio found for user ${auth.uid}`)
   }
 
   const now = Date.now()
 
-  // Update contract metrics with new loan amounts
-  const updatedMetrics = filterDefined(
-    updates.map((update) => {
-      const metric = updatedMetricsByContract[update.contractId]?.find(
-        (m) => m.answerId == update.answerId
+  // Market-specific loan
+  if (contractId) {
+    const contract = await getContract(pg, contractId)
+    if (!contract) {
+      throw new APIError(404, `Contract ${contractId} not found`)
+    }
+
+    if (contract.isResolved || contract.token !== 'MANA') {
+      throw new APIError(400, 'Can only take loans on unresolved MANA markets')
+    }
+
+    // Type guard - ensure it's a MarketContract
+    if (!('mechanism' in contract)) {
+      throw new APIError(400, 'Contract must be a market contract')
+    }
+
+    // Get user's metric for this contract/answer and calculate net worth
+    const { metrics, contracts } =
+      await getUnresolvedContractMetricsContractsAnswers(pg, [user.id])
+    const contractsById = keyBy(contracts, 'id')
+    const { value } = getUnresolvedStatsForToken('MANA', metrics, contractsById)
+    const netWorth = user.balance + value
+
+    const metric = metrics.find(
+      (m) =>
+        m.contractId === contractId &&
+        (answerId ? m.answerId === answerId : m.answerId === null)
+    )
+
+    if (!metric) {
+      throw new APIError(
+        400,
+        'You must have a position in this market to take a loan'
       )
+    }
+
+    const currentMarketLoan = metric.loan ?? 0
+
+    if (!isUserEligibleForMarketLoan(currentMarketLoan, amount, netWorth)) {
+      const maxLoan = calculateMarketLoanMax(netWorth)
+      throw new APIError(
+        400,
+        `Loan amount exceeds maximum. Max loan for this market: ${maxLoan.toFixed(
+          2
+        )}`
+      )
+    }
+
+    // Add loan to this specific market
+    const updatedMetric = {
+      ...metric,
+      loan: currentMarketLoan + amount,
+    }
+
+    // Get existing loan tracking
+    const existingLoanTracking = await getLoanTrackingRows(pg, user.id, [
+      contractId,
+    ])
+    const tracking = existingLoanTracking.find(
+      (t) =>
+        t.contract_id === contractId &&
+        (answerId ? t.answer_id === answerId : t.answer_id === null)
+    )
+
+    const oldLoan = currentMarketLoan
+    const lastUpdate = tracking?.last_loan_update_time ?? now
+    const daysSinceLastUpdate = (now - lastUpdate) / MS_PER_DAY
+    const newIntegral =
+      (tracking?.loan_day_integral ?? 0) + oldLoan * daysSinceLastUpdate
+
+    const loanTrackingUpdate: Omit<LoanTrackingRow, 'id'> = {
+      user_id: user.id,
+      contract_id: contractId,
+      answer_id: answerId ?? null,
+      loan_day_integral: newIntegral,
+      last_loan_update_time: now,
+    }
+
+    const bulkUpdateContractMetricsQ = bulkUpdateContractMetricsQuery([
+      updatedMetric,
+    ])
+    const loanTrackingQ = upsertLoanTrackingQuery([loanTrackingUpdate])
+    const { txnQuery, balanceUpdateQuery } = payUserLoan(user.id, amount)
+
+    const { userUpdates } = await betsQueue.enqueueFn(async () => {
+      return pg.tx(async (tx) => {
+        const res = await tx.multi(
+          `${balanceUpdateQuery};
+           ${txnQuery};
+           ${bulkUpdateContractMetricsQ};
+           ${loanTrackingQ}`
+        )
+        const userUpdates = res[0] as UserUpdate[]
+        return { userUpdates }
+      })
+    }, [auth.uid])
+
+    broadcastUserUpdates(userUpdates)
+    log(
+      `User ${user.id} took market-specific loan of ${amount} on contract ${contractId}`
+    )
+
+    return {
+      success: true,
+      amount,
+      distributed: [
+        {
+          contractId,
+          answerId: answerId ?? null,
+          loanAmount: amount,
+        },
+      ],
+    }
+  }
+
+  // General loan - distribute proportionally across all markets
+  const { contracts, metrics } =
+    await getUnresolvedContractMetricsContractsAnswers(pg, [user.id])
+  const contractsById = keyBy(contracts, 'id')
+  const { value } = getUnresolvedStatsForToken('MANA', metrics, contractsById)
+  const netWorth = user.balance + value
+
+  // Check total loan limit
+  if (!isUserEligibleForGeneralLoan(portfolioMetric, netWorth, amount)) {
+    const maxLoan = calculateMaxGeneralLoanAmount(netWorth)
+    const currentLoan = portfolioMetric.loanTotal ?? 0
+    throw new APIError(
+      400,
+      `Loan amount exceeds maximum. Max loan: ${maxLoan.toFixed(
+        2
+      )}, current loan: ${currentLoan.toFixed(2)}, available: ${(
+        maxLoan - currentLoan
+      ).toFixed(2)}`
+    )
+  }
+
+  // Check daily loan limit (5% of net worth per day)
+  const dailyLimit = calculateDailyLoanLimit(netWorth)
+  const oneDayAgo = Date.now() - MS_PER_DAY
+  const todayLoansResult = await pg.oneOrNone<{ total: number }>(
+    `select coalesce(sum(amount), 0) as total
+     from txns
+     where to_id = $1
+     and category = 'LOAN'
+     and created_time >= $2`,
+    [user.id, new Date(oneDayAgo).toISOString()]
+  )
+  const todayLoans = todayLoansResult?.total ?? 0
+
+  if (todayLoans + amount > dailyLimit) {
+    const availableToday = Math.max(0, dailyLimit - todayLoans)
+    throw new APIError(
+      400,
+      `Daily loan limit exceeded. You can borrow up to ${dailyLimit.toFixed(
+        2
+      )} per day. You've already borrowed ${todayLoans.toFixed(
+        2
+      )} today. Available today: ${availableToday.toFixed(2)}`
+    )
+  }
+
+  // Filter to only unresolved MANA markets
+  const unresolvedManaMetrics = metrics.filter(
+    (m) =>
+      !contractsById[m.contractId]?.isResolved &&
+      contractsById[m.contractId]?.token === 'MANA'
+  )
+
+  if (unresolvedManaMetrics.length === 0) {
+    throw new APIError(
+      400,
+      'No unresolved MANA markets to distribute loan across'
+    )
+  }
+
+  // Distribute loan proportionally
+  const distributions = distributeLoanProportionally(
+    amount,
+    unresolvedManaMetrics
+  )
+
+  if (distributions.length === 0) {
+    throw new APIError(
+      400,
+      'No markets with investment to distribute loan across'
+    )
+  }
+
+  // Build updated metrics
+  const metricsById = keyBy(
+    metrics,
+    (m) => `${m.contractId}-${m.answerId ?? ''}`
+  )
+  const updatedMetrics = filterDefined(
+    distributions.map((dist) => {
+      const key = `${dist.contractId}-${dist.answerId ?? ''}`
+      const metric = metricsById[key]
       if (!metric) return undefined
+
       return {
         ...metric,
-        loan: (metric.loan ?? 0) + update.newLoan,
+        loan: (metric.loan ?? 0) + dist.loanAmount,
       }
     })
   )
 
   // Get existing loan tracking data
-  const contractIds = updates.map((u) => u.contractId)
+  const contractIds = [...new Set(distributions.map((d) => d.contractId))]
   const existingLoanTracking = await getLoanTrackingRows(
     pg,
-    auth.uid,
+    user.id,
     contractIds
   )
   const trackingByKey = keyBy(
@@ -71,51 +278,33 @@ export const requestLoan: APIHandler<'request-loan'> = async (_, auth) => {
     (t) => `${t.contract_id}-${t.answer_id ?? ''}`
   )
 
-  // Build loan tracking upserts
-  const loanTrackingUpdates = updates.map((update) => {
-    const key = `${update.contractId}-${update.answerId ?? ''}`
-    const existing = trackingByKey[key]
-    const oldLoan =
-      updatedMetricsByContract[update.contractId]?.find(
-        (m) => m.answerId == update.answerId
-      )?.loan ?? 0
-    const lastUpdate = existing?.last_loan_update_time ?? now
+  // Build loan tracking updates
+  const loanTrackingUpdates: Omit<LoanTrackingRow, 'id'>[] = []
+  for (const dist of distributions) {
+    const key = `${dist.contractId}-${dist.answerId ?? ''}`
+    const tracking = trackingByKey[key]
+    const metric = metricsById[key]
+    const oldLoan = metric?.loan ?? 0
+    const lastUpdate = tracking?.last_loan_update_time ?? now
     const daysSinceLastUpdate = (now - lastUpdate) / MS_PER_DAY
     const newIntegral =
-      (existing?.loan_day_integral ?? 0) + oldLoan * daysSinceLastUpdate
+      (tracking?.loan_day_integral ?? 0) + oldLoan * daysSinceLastUpdate
 
-    return {
-      user_id: update.userId,
-      contract_id: update.contractId,
-      answer_id: update.answerId,
+    loanTrackingUpdates.push({
+      user_id: user.id,
+      contract_id: dist.contractId,
+      answer_id: dist.answerId,
       loan_day_integral: newIntegral,
       last_loan_update_time: now,
-    }
-  })
+    })
+  }
 
   const bulkUpdateContractMetricsQ =
     bulkUpdateContractMetricsQuery(updatedMetrics)
   const loanTrackingQ = upsertLoanTrackingQuery(loanTrackingUpdates)
-  const { txnQuery, balanceUpdateQuery } = payUserLoan(user.id, payout)
+  const { txnQuery, balanceUpdateQuery } = payUserLoan(user.id, amount)
 
   const { userUpdates } = await betsQueue.enqueueFn(async () => {
-    const startOfDay = dayjs()
-      .tz('America/Los_Angeles')
-      .startOf('day')
-      .toISOString()
-
-    const res = await pg.oneOrNone(
-      `select 1 as count from txns
-      where to_id = $1
-      and category = 'LOAN'
-      and created_time >= $2
-      limit 1;
-    `,
-      [auth.uid, startOfDay]
-    )
-    if (res) {
-      throw new APIError(400, 'Already awarded loan today')
-    }
     return pg.tx(async (tx) => {
       const res = await tx.multi(
         `${balanceUpdateQuery};
@@ -127,10 +316,15 @@ export const requestLoan: APIHandler<'request-loan'> = async (_, auth) => {
       return { userUpdates }
     })
   }, [auth.uid])
+
   broadcastUserUpdates(userUpdates)
-  log(`Paid out ${payout} to user ${user.id}.`)
-  await createLoanIncomeNotification(user, payout)
-  return result
+  log(`User ${user.id} took general loan of ${amount}`)
+
+  return {
+    success: true,
+    amount,
+    distributed: distributions,
+  }
 }
 
 const payUserLoan = (userId: string, payout: number) => {
@@ -157,40 +351,4 @@ const payUserLoan = (userId: string, payout: number) => {
     txnQuery,
     balanceUpdateQuery,
   }
-}
-
-export const getNextLoanAmountResults = async (userId: string) => {
-  const pg = createSupabaseDirectClient()
-
-  const portfolioMetric = await pg.oneOrNone(
-    `select *
-     from user_portfolio_history_latest
-     where user_id = $1`,
-    [userId],
-    convertPortfolioHistory
-  )
-  if (!portfolioMetric) {
-    throw new APIError(404, `No portfolio found for user ${userId}`)
-  }
-
-  if (!isUserEligibleForLoan(portfolioMetric)) {
-    throw new APIError(400, `User ${userId} is not eligible for a loan`)
-  }
-
-  const user = await getUser(userId)
-  if (!user) {
-    throw new APIError(404, `User ${userId} not found`)
-  }
-
-  const { contracts, updatedMetricsByContract, metrics } =
-    await getUnresolvedContractMetricsContractsAnswers(pg, [user.id])
-  const contractsById = keyBy(contracts, 'id')
-  const { value } = getUnresolvedStatsForToken('MANA', metrics, contractsById)
-  const netWorth = user.balance + value
-  const result = getUserLoanUpdates(
-    updatedMetricsByContract,
-    contractsById,
-    netWorth
-  )
-  return { result, user, updatedMetricsByContract }
 }

@@ -4,13 +4,12 @@ import { LoansModal } from 'web/components/profile/loans-modal'
 import dayjs from 'dayjs'
 import timezone from 'dayjs/plugin/timezone'
 import utc from 'dayjs/plugin/utc'
-import { useHasReceivedLoanToday } from 'web/hooks/use-has-received-loan'
 import { Tooltip } from 'web/components/widgets/tooltip'
 import { Button } from 'web/components/buttons/button'
 import clsx from 'clsx'
 import { dailyStatsClass } from 'web/components/home/daily-stats'
 import { Row } from 'web/components/layout/row'
-import { GiOpenChest, GiTwoCoins } from 'react-icons/gi'
+import { GiOpenChest } from 'react-icons/gi'
 import { TRADE_TERM } from 'common/envs/constants'
 import { useAPIGetter } from 'web/hooks/use-api-getter'
 import { DAY_MS } from 'common/util/time'
@@ -27,11 +26,8 @@ export function DailyLoan(props: {
   const { user, showChest = true, refreshPortfolio, className } = props
 
   const [showLoansModal, setShowLoansModal] = useState(false)
-  const { receivedLoanToday: receivedTxnLoan } = useHasReceivedLoanToday(user)
   const { data } = useAPIGetter('get-next-loan-amount', { userId: user.id })
-  const notEligibleForLoan = (data?.amount ?? 0) < 1
-
-  const receivedLoanToday = receivedTxnLoan
+  const notEligibleForLoan = (data?.available ?? 0) < 1
 
   const handleButtonClick = () => {
     setShowLoansModal(true)
@@ -46,11 +42,9 @@ export function DailyLoan(props: {
       <>
         <Tooltip
           text={
-            receivedLoanToday
-              ? 'Loan already collected'
-              : notEligibleForLoan
+            notEligibleForLoan
               ? 'Not eligible for loan'
-              : `Collect a loan on your ${TRADE_TERM}s`
+              : `Request a loan on your ${TRADE_TERM}s`
           }
           placement={'bottom'}
         >
@@ -60,9 +54,7 @@ export function DailyLoan(props: {
               className,
               'items-center',
               dailyStatsClass,
-              receivedLoanToday || notEligibleForLoan
-                ? ''
-                : 'hover:bg-canvas-100'
+              notEligibleForLoan ? '' : 'hover:bg-canvas-100'
             )}
           >
             <Row
@@ -70,11 +62,7 @@ export function DailyLoan(props: {
                 'items-center justify-center whitespace-nowrap px-1'
               )}
             >
-              {receivedLoanToday || notEligibleForLoan ? (
-                <GiOpenChest className="h-6 w-6 text-yellow-900" />
-              ) : (
-                <GiTwoCoins className="h-6 w-6 text-yellow-300" />
-              )}
+              <GiOpenChest className="h-6 w-6 text-amber-900" />
             </Row>
             <div className="text-ink-600 text-xs">Loan</div>
           </button>
@@ -102,11 +90,9 @@ export function DailyLoan(props: {
     >
       <Tooltip
         text={
-          receivedLoanToday
-            ? 'Loan already collected'
-            : notEligibleForLoan
+          notEligibleForLoan
             ? 'Not eligible for loan'
-            : `Collect a loan on your ${TRADE_TERM}s`
+            : `Request a loan on your ${TRADE_TERM}s`
         }
         placement={'top'}
       >

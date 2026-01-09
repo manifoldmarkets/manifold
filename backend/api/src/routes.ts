@@ -35,6 +35,8 @@ import { recordCommentView } from 'api/record-comment-view'
 import { recordContractInteraction } from 'api/record-contract-interaction'
 import { recordContractView } from 'api/record-contract-view'
 import { requestLoan } from 'api/request-loan'
+import { repayLoan } from 'api/repay-loan'
+import { getTotalLoanAmount } from 'api/get-total-loan-amount'
 import { requestOTP } from 'api/request-phone-otp'
 import { searchContractPositions } from 'api/search-contract-positions'
 import { updateMarket } from 'api/update-market'
@@ -98,6 +100,7 @@ import { getMe } from './get-me'
 import { getModReports } from './get-mod-reports'
 import { getmonthlybets2025 } from './get-monthly-bets-2025'
 import { getNextLoanAmount } from './get-next-loan-amount'
+import { getMarketLoanMax } from './get-market-loan-max'
 import { getPartnerStats } from './get-partner-stats'
 import { getPositions } from './get-positions'
 import { getPredictle } from './get-predictle-markets'
@@ -313,6 +316,8 @@ export const handlers: { [k in APIPath]: APIHandler<k> } = {
   post: post,
   'fetch-link-preview': fetchLinkPreview,
   'request-loan': requestLoan,
+  'repay-loan': repayLoan,
+  'get-total-loan-amount': getTotalLoanAmount,
   'get-related-markets': getRelatedMarkets,
   'get-related-markets-by-group': getRelatedMarketsByGroup,
   'get-market-context': getMarketContext,
@@ -368,6 +373,7 @@ export const handlers: { [k in APIPath]: APIHandler<k> } = {
   'generate-ai-answers': generateAIAnswers,
   'check-poll-suggestion': checkPollSuggestion,
   'get-next-loan-amount': getNextLoanAmount,
+  'get-market-loan-max': getMarketLoanMax,
   'check-sports-event': checkSportsEvent,
   'create-task': createTask,
   'update-task': updateTask,

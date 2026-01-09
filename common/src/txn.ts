@@ -42,6 +42,7 @@ type AnyTxnType =
   | BountyCanceled
   | ManaPay
   | Loan
+  | LoanPayment
   | PushNotificationBonus
   | LikePurchase
   | ContractUndoOldResolutionPayout
@@ -482,6 +483,14 @@ type Loan = {
   token: 'M$'
 }
 
+type LoanPayment = {
+  category: 'LOAN_PAYMENT'
+  fromType: 'USER'
+  toType: 'BANK'
+  token: 'M$'
+  data?: { amountRepaid: number }
+}
+
 type PushNotificationBonus = {
   category: 'PUSH_NOTIFICATION_BONUS'
   fromType: 'BANK'
@@ -680,6 +689,7 @@ export type BountyAddedTxn = Txn & BountyAdded
 export type BountyCanceledTxn = Txn & BountyCanceled
 export type ManaPayTxn = Txn & ManaPay
 export type LoanTxn = Txn & Loan
+export type LoanPaymentTxn = Txn & LoanPayment
 export type PushNotificationBonusTxn = Txn & PushNotificationBonus
 export type LikePurchaseTxn = Txn & LikePurchase
 export type ReclaimManaTxn = Txn & ReclaimMana
