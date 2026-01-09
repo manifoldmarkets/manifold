@@ -193,7 +193,7 @@ function UserCalibrationContent({ user }: { user: User }) {
               ? 'teal'
               : undefined
           }
-          tooltip="Largest peak-to-trough decline in portfolio value (last year)"
+          tooltip="Largest profit drop from peak, as % of portfolio (last year)"
         />
       </div>
 

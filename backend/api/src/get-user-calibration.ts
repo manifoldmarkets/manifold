@@ -352,15 +352,21 @@ export const getUserCalibration: APIHandler<'get-user-calibration'> = async (
         volatility > 0 ? (annualizedReturn - RISK_FREE_RATE) / volatility : 0
     }
 
-    // Calculate maximum drawdown
-    let peak = portfolioHistoryFormatted[0].value
+    // Calculate maximum drawdown based on PROFIT (not portfolio value)
+    // This matches the profit graph shown to users
+    let peakProfit = portfolioHistoryFormatted[0].profit
+    let valueAtPeakProfit = portfolioHistoryFormatted[0].value
     for (const point of portfolioHistoryFormatted) {
-      if (point.value > peak) {
-        peak = point.value
+      if (point.profit > peakProfit) {
+        peakProfit = point.profit
+        valueAtPeakProfit = point.value
       }
-      const drawdown = peak > 0 ? ((peak - point.value) / peak) * 100 : 0
-      if (drawdown > maxDrawdown) {
-        maxDrawdown = drawdown
+      // Express drawdown as percentage of portfolio value at profit peak
+      if (valueAtPeakProfit > 0) {
+        const drawdown = ((peakProfit - point.profit) / valueAtPeakProfit) * 100
+        if (drawdown > maxDrawdown) {
+          maxDrawdown = drawdown
+        }
       }
     }
   }
