@@ -9,8 +9,6 @@ create table if not exists
     has_yes_shares boolean,
     id bigint primary key generated always as identity not null,
     loan numeric default 0 not null,
-    loan_day_integral numeric default 0 not null,
-    last_loan_update_time bigint,
     profit numeric,
     profit_adjustment numeric,
     total_shares_no numeric,
