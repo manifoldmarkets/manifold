@@ -101,6 +101,7 @@ pathMatchers:
           - pathTemplateMatch: /v0/check-sports-event
           - pathTemplateMatch: /v0/comment-reactions
           - pathTemplateMatch: /v0/get-season-info
+          - pathTemplateMatch: /v0/get-user-calibration
 # redeploy this by running:
 # gcloud compute url-maps import api-lb --source=url-map-config.yaml --project mantic-markets  --global
 # (or for dev, --project dev-mantic-markets)
