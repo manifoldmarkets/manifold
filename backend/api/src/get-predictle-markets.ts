@@ -25,11 +25,36 @@ const MIN_MARKETS_REQUIRED = 5
 // Check if a market question is clear, objective, and easy to understand
 async function isMarketQuestionClear(question: string): Promise<boolean> {
   try {
-    const prompt = `Is this prediction market question clear, not based on personal opinion, and potentially answered by a news article?
+    const prompt = `### Role
+You are an expert Prediction Market Quality Controller. Your task is to determine if a question is tradable.
 
-Question: "${question}"
+### Evaluation Criteria
+A question is tradable (Output: Yes) ONLY if it meets all three:
+1. **Objective:** Outcome depends on facts, not opinions.
+2. **Specific:** Includes a clear deadline and a specific metric/source.
+3. **Resolvable:** A stranger could look at a data source on the end date and give an indisputable answer.
 
-Respond with ONLY "yes" or "no".`
+A question is NOT tradable (Output: No) if it is Subjective, Vague, or lacks a clear timestamp/source.
+
+### Output Format
+Return ONLY the word "Yes" or "No". Do not include any other text, punctuation, or explanation.
+
+### Examples
+Input: "Will Venezuelans be better off at the end of 2026?"
+Output: No
+
+Input: "Will Trump finish his second term?"
+Output: Yes
+
+Input: "Will Elon Musk tweet something funny this week?"
+Output: No
+
+Input: "Bitcoin $95K in January?"
+Output: Yes
+
+### Evaluation Task
+Input: "${question}"
+Output: `
 
     const response = await promptAI(prompt, {
       model: aiModels.flash,
