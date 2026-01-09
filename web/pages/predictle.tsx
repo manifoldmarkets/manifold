@@ -760,6 +760,22 @@ export default function PredictlePage() {
     )
   }, [])
 
+  // Prevent pull-to-refresh on Android (at body level)
+  useEffect(() => {
+    if (typeof document === 'undefined') return
+
+    const originalStyle = document.body.style.overscrollBehaviorY
+    // Only apply on non-iOS to avoid conflicts
+    if (!isIOS) {
+      document.body.style.overscrollBehaviorY = 'none'
+    }
+
+    return () => {
+      // Restore original style on unmount
+      document.body.style.overscrollBehaviorY = originalStyle
+    }
+  }, [isIOS])
+
   // Use absolute positioning on iOS (fixed has rendering bugs), fixed elsewhere
   const bgPositionClass = isIOS ? 'absolute' : 'fixed'
 
@@ -772,7 +788,12 @@ export default function PredictlePage() {
         image="https://manifold.markets/predictle-logo.png"
       />
       {/* Wrapper needed for iOS absolute positioning */}
-      <div className={clsx(isIOS && 'relative min-h-screen w-full')}>
+      <div
+        className={clsx(
+          !isIOS && 'overscroll-y-none',
+          isIOS && 'relative min-h-screen w-full'
+        )}
+      >
         {/* Light mode gradient background */}
         <div
           className={clsx(
@@ -807,7 +828,7 @@ export default function PredictlePage() {
         />
 
         <Col
-          className="mx-auto w-full max-w-xl px-4 py-8"
+          className="mx-auto w-full max-w-xl overscroll-y-none px-4 py-8"
           style={{ paddingBottom: 'max(2rem, env(safe-area-inset-bottom))' }}
         >
           {loading || !data ? (
