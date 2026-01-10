@@ -1492,7 +1492,10 @@ export function NewContractPanel(props: {
           />
           <Button
             color="indigo"
-            onClick={() => setIsCloseDateModalOpen(false)}
+            onClick={() => {
+              setHasManuallyEditedCloseDate(true)
+              setIsCloseDateModalOpen(false)
+            }}
             className="mt-4"
           >
             Done
