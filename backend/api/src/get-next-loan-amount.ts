@@ -12,7 +12,6 @@ import {
 } from 'shared/update-user-portfolio-histories-core'
 import { keyBy } from 'lodash'
 import { convertPortfolioHistory } from 'common/supabase/portfolio-metrics'
-import { APIError } from './helpers/endpoint'
 
 export const getNextLoanAmount: APIHandler<'get-next-loan-amount'> = async ({
   userId,

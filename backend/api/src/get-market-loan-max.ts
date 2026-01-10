@@ -7,7 +7,6 @@ import {
   calculateDailyLoanLimit,
   MAX_MARKET_LOAN_NET_WORTH_PERCENT,
   MAX_MARKET_LOAN_POSITION_PERCENT,
-  MAX_LOAN_NET_WORTH_PERCENT,
   MS_PER_DAY,
   isMarketEligibleForLoan,
 } from 'common/loans'

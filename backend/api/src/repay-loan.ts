@@ -6,7 +6,6 @@ import {
   distributeRepaymentProportionally,
   LoanWithInterest,
   MS_PER_DAY,
-  LOAN_DAILY_INTEREST_RATE,
 } from 'common/loans'
 import { Txn } from 'common/txn'
 import { txnToRow } from 'shared/txn/run-txn'
