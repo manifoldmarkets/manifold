@@ -315,17 +315,25 @@ export const requestLoan: APIHandler<'request-loan'> = async (props, auth) => {
     )
   }
 
-  // Filter to only unresolved MANA markets
-  const unresolvedManaMetrics = metrics.filter(
-    (m) =>
-      !contractsById[m.contractId]?.isResolved &&
-      contractsById[m.contractId]?.token === 'MANA'
-  )
+  // Filter to only unresolved MANA markets that meet eligibility criteria
+  const unresolvedManaMetrics = metrics.filter((m) => {
+    const contract = contractsById[m.contractId]
+    if (!contract || contract.isResolved || contract.token !== 'MANA') {
+      return false
+    }
+    // Apply market eligibility criteria for new loans
+    return isMarketEligibleForLoan({
+      visibility: contract.visibility,
+      isRanked: contract.isRanked,
+      uniqueBettorCount: contract.uniqueBettorCount,
+      createdTime: contract.createdTime,
+    }).eligible
+  })
 
   if (unresolvedManaMetrics.length === 0) {
     throw new APIError(
       400,
-      'No unresolved MANA markets to distribute loan across'
+      'No eligible markets to distribute loan across. Markets must be listed, ranked, have >10 traders, and be at least 24 hours old.'
     )
   }
 

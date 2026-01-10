@@ -110,7 +110,7 @@ export function LoansModal(props: {
     contractId && marketLoanData && 'eligibilityReason' in marketLoanData
       ? marketLoanData.eligibilityReason
       : undefined
-  // Aggregate limits (80% of net worth across all markets)
+  // Aggregate limits (50% of net worth across all markets)
   const aggregateLimit =
     contractId && marketLoanData && 'aggregateLimit' in marketLoanData
       ? marketLoanData.aggregateLimit

@@ -126,6 +126,18 @@ export async function calculateInterestPayouts(
   // Only MANA markets earn interest
   if (token !== 'MANA') return []
 
+  // Check if market is eligible for interest (must be listed and ranked)
+  const contract = await pg.oneOrNone<{
+    visibility: string
+    is_ranked: boolean | null
+  }>(
+    `SELECT visibility, data->>'isRanked' as is_ranked FROM contracts WHERE id = $1`,
+    [contractId]
+  )
+  if (!contract) return []
+  if (contract.visibility !== 'public') return []
+  if (contract.is_ranked === false) return []
+
   const shareDaysResults = await calculateShareDays(
     pg,
     contractId,
@@ -175,6 +187,18 @@ export async function calculateInterestForSell(
 
   // Only MANA markets earn interest
   if (token !== 'MANA') return { interest: 0, yesShareDays: 0, noShareDays: 0 }
+
+  // Check if market is eligible for interest (must be listed and ranked)
+  const contract = await pg.oneOrNone<{
+    visibility: string
+    is_ranked: boolean | null
+  }>(
+    `SELECT visibility, data->>'isRanked' as is_ranked FROM contracts WHERE id = $1`,
+    [contractId]
+  )
+  if (!contract) return { interest: 0, yesShareDays: 0, noShareDays: 0 }
+  if (contract.visibility !== 'public') return { interest: 0, yesShareDays: 0, noShareDays: 0 }
+  if (contract.is_ranked === false) return { interest: 0, yesShareDays: 0, noShareDays: 0 }
 
   const sellTimestamp = new Date(sellTime).toISOString()
 
