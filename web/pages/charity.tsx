@@ -185,7 +185,7 @@ export default function CharityLotteryPage() {
         <SEO
           title="Charity Lottery"
           description="Buy lottery tickets for your favorite charity to win $1,000!"
-          url="/charity-lottery"
+          url="/charity"
         />
         <Col className="mx-auto w-full max-w-3xl items-center justify-center gap-6 px-4 py-20">
           <div className="text-ink-300 text-6xl">🎟️</div>
@@ -207,7 +207,7 @@ export default function CharityLotteryPage() {
       <SEO
         title="Manifold Charity Lottery"
         description="Buy lottery tickets for your favorite charity to win $1,000!"
-        url="/charity-lottery"
+        url="/charity"
       />
 
       <Col className="mx-auto w-full max-w-3xl gap-8 px-4 py-8 sm:px-6">

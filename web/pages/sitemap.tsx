@@ -53,7 +53,7 @@ export default function AboutPage() {
             <LabCard title="🏆 Leaderboards" href="/leaderboards" />
 
             {(!isNative || (isNative && platform !== 'ios')) && (
-              <LabCard title="🫀 Charity" href="/charity" />
+              <LabCard title="🫀 Charity" href="/old-charity" />
             )}
 
             <LabCard title="📺 TV" href="/tv" />
