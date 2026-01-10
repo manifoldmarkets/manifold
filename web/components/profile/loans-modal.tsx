@@ -452,7 +452,7 @@ export function LoansModal(props: {
             <div className="text-4xl">🏦</div>
             <Col className="gap-0.5">
               <h2 className="text-ink-900 text-xl font-semibold">
-                {isMarketSpecific ? 'Market loan' : 'Margin loans'}
+                Margin loans
               </h2>
               <p className="text-ink-600 text-sm">
                 {isMarketSpecific
@@ -602,13 +602,9 @@ export function LoansModal(props: {
                       Market-specific loans
                     </p>
                     <p>
-                      Borrow up to the lower of{' '}
-                      {formatPercent(MAX_MARKET_LOAN_NET_WORTH_PERCENT)} of your
-                      net worth or{' '}
-                      {formatPercent(MAX_MARKET_LOAN_POSITION_PERCENT)} of your
-                      position value on this market. Total borrowing across all
-                      markets is capped at{' '}
-                      {formatPercent(MAX_LOAN_NET_WORTH_PERCENT)} of net worth.
+                      Borrow up to {formatPercent(MAX_MARKET_LOAN_POSITION_PERCENT)} of your
+                      position value on this market. Total borrowing is capped at {formatPercent(MAX_MARKET_LOAN_NET_WORTH_PERCENT)} of your
+                      net worth on this market or {formatPercent(MAX_LOAN_NET_WORTH_PERCENT)} of your net worth across all markets.
                     </p>
                     {totalPositionValue > 0 && (
                       <p className="text-ink-500 mt-1 text-xs">
