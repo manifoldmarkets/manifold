@@ -266,3 +266,25 @@ export const CyberMondayBanner = () => {
     </Banner>
   )
 }
+
+export const CharityGiveawayBanner = () => {
+  const [showBanner, hideBanner] = useBanner('charity-giveaway-2026')
+  if (!showBanner) return null
+  return (
+    <Banner
+      className="bg-primary-100 hover:bg-primary-200 text-ink-700 hover:text-ink-900 items-center py-2 transition-colors"
+      link="/charity"
+      target="_self"
+      setShowBanner={hideBanner}
+    >
+      <Row className="items-center gap-2">
+        <span>🎟️</span>
+        <div>
+          <span className="font-semibold">Charity is back!</span> Buy tickets to
+          help your favorite charity win $1,000
+        </div>
+        <ArrowRightIcon className="ml-1 h-4 w-4" />
+      </Row>
+    </Banner>
+  )
+}
