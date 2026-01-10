@@ -58,7 +58,7 @@ export const getUserCalibration: APIHandler<'get-user-calibration'> = async (
           AND cb.amount > 0
           AND (cb.is_redemption IS NOT TRUE OR cb.is_redemption IS NULL)
         ORDER BY cb.created_time DESC
-        LIMIT 10000
+        LIMIT 5000
       ),
       bucketed AS (
         SELECT 
