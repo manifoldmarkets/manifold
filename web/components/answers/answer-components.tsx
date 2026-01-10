@@ -632,7 +632,9 @@ export function AnswerPosition(props: {
               }}
               className={clsx(
                 'hover:underline',
-                hasLoan ? 'text-amber-700 hover:text-amber-900' : 'text-ink-500 hover:text-ink-700'
+                hasLoan
+                  ? 'text-amber-700 hover:text-amber-900'
+                  : 'text-ink-500 hover:text-ink-700'
               )}
             >
               {hasLoan ? (
@@ -681,8 +683,10 @@ function AnswerLoanModal(props: {
 }) {
   const { user, contract, answerId, isOpen, setOpen } = props
   // Dynamically import LoansModal to avoid circular dependency
-  const [LoansModal, setLoansModal] = useState<React.ComponentType<any> | null>(null)
-  
+  const [LoansModal, setLoansModal] = useState<React.ComponentType<any> | null>(
+    null
+  )
+
   useEffect(() => {
     import('web/components/profile/loans-modal').then((mod) => {
       setLoansModal(() => mod.LoansModal)
