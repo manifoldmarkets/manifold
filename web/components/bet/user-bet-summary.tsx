@@ -197,6 +197,12 @@ export function BetsSummary(props: {
                     hideStatus={true}
                     className={'-mt-1'}
                   />
+                  {contract.token === 'MANA' && !contract.isResolved && (
+                    <LoanButton
+                      contractId={contract.id}
+                      user={includeSellButton}
+                    />
+                  )}
                 </Row>
               )}
           </Row>
@@ -245,10 +251,12 @@ export function BetsSummary(props: {
             <ProfitBadge profitPercent={profitPercent} round={true} />
           </div>
         </Col>
-        {/* Loan button for all MANA markets */}
+        {/* Loan button for multi-choice markets that don't have sell button next to payout */}
         {includeSellButton &&
           contract.token === 'MANA' &&
-          !contract.isResolved && (
+          !contract.isResolved &&
+          contract.mechanism === 'cpmm-multi-1' &&
+          !isBinaryMulti(contract) && (
             <LoanButton contractId={contract.id} user={includeSellButton} />
           )}
         {(contract.mechanism !== 'cpmm-multi-1' || isBinaryMulti(contract)) &&
