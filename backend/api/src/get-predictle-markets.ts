@@ -174,7 +174,7 @@ async function fetchEligibleMarkets(
   )
 }
 
-const MIN_PROB_DIFFERENCE = 0.05 // Markets must be at least 5% apart
+const MIN_PROB_DIFFERENCE = 0.05 // Markets must be at least this percentage apart
 
 // Select and prepare markets for today's puzzle
 function prepareMarkets(
