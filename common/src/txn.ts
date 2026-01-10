@@ -632,8 +632,11 @@ type InterestPayout = {
   data: {
     contractId: string
     answerId?: string
-    dollarDays: number
+    yesShareDays: number
+    noShareDays: number
     payoutStartTime: number
+    // For sell interest, includes the sell probability
+    sellProb?: number
   }
 }
 

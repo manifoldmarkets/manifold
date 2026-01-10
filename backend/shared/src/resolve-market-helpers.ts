@@ -272,17 +272,63 @@ export const resolveMarketHelper = async (
         : []
 
     // Calculate interest payouts (MANA only)
-    const interestPayouts = await calculateInterestPayouts(
+    // Determine resolution probability for interest valuation
+    const resolutionProb =
+      outcome === 'YES'
+        ? 1
+        : outcome === 'NO'
+        ? 0
+        : outcome === 'CANCEL'
+        ? 0.5 // CANCEL pays based on 50% value
+        : resolutionProbability ?? 0.5
+
+    // Query already-paid interest from sells
+    const alreadyPaidInterest = await tx.manyOrNone<{
+      user_id: string
+      answer_id: string | null
+      total_paid: number
+    }>(
+      `SELECT 
+        to_id as user_id,
+        data->>'answerId' as answer_id,
+        SUM(amount) as total_paid
+      FROM txns 
+      WHERE category = 'INTEREST_PAYOUT'
+        AND data->>'contractId' = $1
+        AND ($2::text IS NULL OR data->>'answerId' = $2)
+      GROUP BY to_id, data->>'answerId'`,
+      [contractId, answerId ?? null]
+    )
+    const paidInterestByUser = new Map(
+      alreadyPaidInterest.map((r) => [`${r.user_id}-${r.answer_id ?? ''}`, r.total_paid])
+    )
+
+    const rawInterestPayouts = await calculateInterestPayouts(
       tx,
       contractId,
       resolutionTime,
       answerId,
-      token
+      token,
+      resolutionProb
     )
+
+    // Subtract already-paid interest from sell transactions
+    const interestPayouts = rawInterestPayouts
+      .map((p) => {
+        const key = `${p.userId}-${p.answerId ?? ''}`
+        const alreadyPaid = paidInterestByUser.get(key) ?? 0
+        return {
+          ...p,
+          interest: Math.max(0, p.interest - alreadyPaid),
+        }
+      })
+      .filter((p) => p.interest > 0)
+
     if (interestPayouts.length > 0) {
       log('Interest payouts calculated', {
         count: interestPayouts.length,
         totalInterest: sumBy(interestPayouts, 'interest'),
+        alreadyPaid: sum(Array.from(paidInterestByUser.values())),
       })
     }
 
@@ -540,7 +586,7 @@ export const getPayUsersQueries = (
   answerId: string | undefined,
   token: ContractToken,
   payoutFees: Payout[],
-  interestPayouts: { userId: string; answerId: string | null; interest: number; dollarDays: number }[] = []
+  interestPayouts: { userId: string; answerId: string | null; interest: number; yesShareDays: number; noShareDays: number }[] = []
 ) => {
   const payoutCash = token === 'CASH'
   const payoutToken = token === 'CASH' ? 'CASH' : 'M$'
@@ -616,7 +662,7 @@ export const getPayUsersQueries = (
   }
 
   // Add interest payouts (MANA only)
-  for (const { userId, answerId: ansId, interest, dollarDays } of interestPayouts) {
+  for (const { userId, answerId: ansId, interest, yesShareDays, noShareDays } of interestPayouts) {
     if (interest <= 0) continue
 
     const existingUpdate = balanceUpdates.find((b) => b.id === userId)
@@ -642,7 +688,8 @@ export const getPayUsersQueries = (
       data: removeUndefinedProps({
         contractId,
         answerId: ansId,
-        dollarDays,
+        yesShareDays,
+        noShareDays,
         payoutStartTime,
       }),
     })
