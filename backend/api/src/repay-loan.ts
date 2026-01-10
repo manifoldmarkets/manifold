@@ -6,14 +6,11 @@ import {
   distributeRepaymentProportionally,
   LoanWithInterest,
   MS_PER_DAY,
-  LOAN_DAILY_INTEREST_RATE,
 } from 'common/loans'
 import { Txn } from 'common/txn'
 import { txnToRow } from 'shared/txn/run-txn'
 import { filterDefined } from 'common/util/array'
-import {
-  getUnresolvedContractMetricsContractsAnswers,
-} from 'shared/update-user-portfolio-histories-core'
+import { getUnresolvedContractMetricsContractsAnswers } from 'shared/update-user-portfolio-histories-core'
 import { keyBy } from 'lodash'
 import { getInsertQuery } from 'shared/supabase/utils'
 import {
@@ -48,9 +45,10 @@ export const repayLoan: APIHandler<'repay-loan'> = async (props, auth) => {
   const now = Date.now()
 
   // Get all user's contract metrics with loans
-  const { metrics, contracts } =
-    await getUnresolvedContractMetricsContractsAnswers(pg, [user.id])
-  
+  const { metrics } = await getUnresolvedContractMetricsContractsAnswers(pg, [
+    user.id,
+  ])
+
   // Market-specific repayment
   if (contractId) {
     const metric = metrics.find(
@@ -66,22 +64,25 @@ export const repayLoan: APIHandler<'repay-loan'> = async (props, auth) => {
     // Get loan tracking data
     const loanTracking = await getLoanTrackingRows(pg, user.id, [contractId])
     const tracking = loanTracking.find(
-      (t) => t.contract_id === contractId && (answerId ? t.answer_id === answerId : t.answer_id === null)
+      (t) =>
+        t.contract_id === contractId &&
+        (answerId ? t.answer_id === answerId : t.answer_id === null)
     )
 
     const loanWithInterest = calculateLoanWithInterest(metric, tracking, now)
     const totalOwed = loanWithInterest.total
 
     if (amount > totalOwed) {
-      throw new APIError(400, `Can only repay up to ${totalOwed.toFixed(2)} on this market`)
+      throw new APIError(
+        400,
+        `Can only repay up to ${totalOwed.toFixed(2)} on this market`
+      )
     }
 
     const repaymentAmount = amount
     const principalRatio = loanWithInterest.principal / loanWithInterest.total
-    const interestRatio = loanWithInterest.interest / loanWithInterest.total
 
     const principalRepaid = repaymentAmount * principalRatio
-    const interestRepaid = repaymentAmount * interestRatio
 
     // Update metric
     const updatedMetric = {
@@ -92,9 +93,11 @@ export const repayLoan: APIHandler<'repay-loan'> = async (props, auth) => {
     // Update loan tracking
     const loanTrackingUpdate: Omit<LoanTrackingRow, 'id'>[] = []
     if (tracking) {
-      const daysSinceLastUpdate = (now - tracking.last_loan_update_time) / MS_PER_DAY
+      const daysSinceLastUpdate =
+        (now - tracking.last_loan_update_time) / MS_PER_DAY
       const finalIntegral =
-        tracking.loan_day_integral + loanWithInterest.principal * daysSinceLastUpdate
+        tracking.loan_day_integral +
+        loanWithInterest.principal * daysSinceLastUpdate
       const repaymentRatio = repaymentAmount / loanWithInterest.total
       const newIntegral = finalIntegral * (1 - repaymentRatio)
 
@@ -134,8 +137,9 @@ export const repayLoan: APIHandler<'repay-loan'> = async (props, auth) => {
       balance: -repaymentAmount,
     }
 
-    const bulkUpdateContractMetricsQ =
-      bulkUpdateContractMetricsQuery([updatedMetric])
+    const bulkUpdateContractMetricsQ = bulkUpdateContractMetricsQuery([
+      updatedMetric,
+    ])
     const loanTrackingQ = upsertLoanTrackingQuery(loanTrackingUpdate)
     const balanceUpdateQuery = bulkIncrementBalancesQuery([balanceUpdate])
     const txnQuery = getInsertQuery('txns', txnToRow(loanPaymentTxn))
@@ -166,7 +170,7 @@ export const repayLoan: APIHandler<'repay-loan'> = async (props, auth) => {
 
   // General repayment - proportional distribution
   const metricsWithLoans = metrics.filter((m) => (m.loan ?? 0) > 0)
-  
+
   if (metricsWithLoans.length === 0) {
     throw new APIError(400, 'No outstanding loans to repay')
   }
@@ -196,10 +200,16 @@ export const repayLoan: APIHandler<'repay-loan'> = async (props, auth) => {
   }
 
   // Distribute repayment proportionally
-  const distributions = distributeRepaymentProportionally(repaymentAmount, loansWithInterest)
+  const distributions = distributeRepaymentProportionally(
+    repaymentAmount,
+    loansWithInterest
+  )
 
   // Build contract metric updates
-  const metricsById = keyBy(metrics, (m) => `${m.contractId}-${m.answerId ?? ''}`)
+  const metricsById = keyBy(
+    metrics,
+    (m) => `${m.contractId}-${m.answerId ?? ''}`
+  )
   const updatedMetrics = filterDefined(
     distributions.map((dist) => {
       const key = `${dist.contractId}-${dist.answerId ?? ''}`
@@ -227,7 +237,8 @@ export const repayLoan: APIHandler<'repay-loan'> = async (props, auth) => {
 
     if (tracking) {
       // Finalize integral up to now
-      const daysSinceLastUpdate = (now - tracking.last_loan_update_time) / MS_PER_DAY
+      const daysSinceLastUpdate =
+        (now - tracking.last_loan_update_time) / MS_PER_DAY
       const finalIntegral =
         tracking.loan_day_integral + loan.principal * daysSinceLastUpdate
 
