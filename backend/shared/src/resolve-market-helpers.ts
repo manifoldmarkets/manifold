@@ -300,7 +300,10 @@ export const resolveMarketHelper = async (
       [contractId, answerId ?? null]
     )
     const paidInterestByUser = new Map(
-      alreadyPaidInterest.map((r) => [`${r.user_id}-${r.answer_id ?? ''}`, r.total_paid])
+      alreadyPaidInterest.map((r) => [
+        `${r.user_id}-${r.answer_id ?? ''}`,
+        r.total_paid,
+      ])
     )
 
     const rawInterestPayouts = await calculateInterestPayouts(
@@ -333,7 +336,14 @@ export const resolveMarketHelper = async (
     }
 
     const { balanceUpdatesQuery, insertTxnsQuery, balanceUpdates } =
-      getPayUsersQueries(payouts, contractId, answerId, token, payoutFees, interestPayouts)
+      getPayUsersQueries(
+        payouts,
+        contractId,
+        answerId,
+        token,
+        payoutFees,
+        interestPayouts
+      )
     const contractUpdateQuery = updateDataQuery(
       'contracts',
       'id',
@@ -586,7 +596,13 @@ export const getPayUsersQueries = (
   answerId: string | undefined,
   token: ContractToken,
   payoutFees: Payout[],
-  interestPayouts: { userId: string; answerId: string | null; interest: number; yesShareDays: number; noShareDays: number }[] = []
+  interestPayouts: {
+    userId: string
+    answerId: string | null
+    interest: number
+    yesShareDays: number
+    noShareDays: number
+  }[] = []
 ) => {
   const payoutCash = token === 'CASH'
   const payoutToken = token === 'CASH' ? 'CASH' : 'M$'
@@ -662,7 +678,13 @@ export const getPayUsersQueries = (
   }
 
   // Add interest payouts (MANA only)
-  for (const { userId, answerId: ansId, interest, yesShareDays, noShareDays } of interestPayouts) {
+  for (const {
+    userId,
+    answerId: ansId,
+    interest,
+    yesShareDays,
+    noShareDays,
+  } of interestPayouts) {
     if (interest <= 0) continue
 
     const existingUpdate = balanceUpdates.find((b) => b.id === userId)

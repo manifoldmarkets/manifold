@@ -37,15 +37,16 @@ export async function payInterestOnSell(
   if (token !== 'MANA') return { interest: 0, yesShareDays: 0, noShareDays: 0 }
 
   // Calculate interest for this user's position up to the sell time
-  const { interest, yesShareDays, noShareDays } = await calculateInterestForSell(
-    tx,
-    contractId,
-    userId,
-    answerId,
-    sellTime,
-    currentProb,
-    token
-  )
+  const { interest, yesShareDays, noShareDays } =
+    await calculateInterestForSell(
+      tx,
+      contractId,
+      userId,
+      answerId,
+      sellTime,
+      currentProb,
+      token
+    )
 
   if (interest <= 0) {
     return { interest: 0, yesShareDays, noShareDays }

@@ -220,7 +220,7 @@ const sellSharesMain: APIHandler<'market/:contractId/sell'> = async (
       deterministic
     )
 
-    // Pay interest on sell 
+    // Pay interest on sell
     // Use the probability after the sell to value the shares
     const probAfterSell = betResult.newBet.probAfter
     const { interest } = await payInterestOnSell(
