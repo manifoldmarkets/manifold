@@ -187,22 +187,18 @@ export function BetsSummary(props: {
                 </div>
               </Col>
             )}
-            {includeSellButton && (
-              <Row className="items-center gap-2">
-                <SellRow
-                  contract={contract as CPMMContract}
-                  user={includeSellButton}
-                  hideStatus={true}
-                  className={'-mt-1'}
-                />
-                {contract.token === 'MANA' && !contract.isResolved && (
-                  <LoanButton
-                    contractId={contract.id}
+            {includeSellButton &&
+              (contract.mechanism !== 'cpmm-multi-1' ||
+                isBinaryMulti(contract)) && (
+                <Row className="items-center gap-2">
+                  <SellRow
+                    contract={contract as CPMMContract}
                     user={includeSellButton}
+                    hideStatus={true}
+                    className={'-mt-1'}
                   />
-                )}
-              </Row>
-            )}
+                </Row>
+              )}
           </Row>
         )}
 
@@ -249,6 +245,12 @@ export function BetsSummary(props: {
             <ProfitBadge profitPercent={profitPercent} round={true} />
           </div>
         </Col>
+        {/* Loan button for all MANA markets */}
+        {includeSellButton &&
+          contract.token === 'MANA' &&
+          !contract.isResolved && (
+            <LoanButton contractId={contract.id} user={includeSellButton} />
+          )}
         {(contract.mechanism !== 'cpmm-multi-1' || isBinaryMulti(contract)) &&
           maxSharesOutcome &&
           (yesWinnings > 1 || noWinnings > 1) &&

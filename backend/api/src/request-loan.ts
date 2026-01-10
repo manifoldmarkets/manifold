@@ -14,6 +14,7 @@ import {
 import { LoanTxn } from 'common/txn'
 import { txnToRow } from 'shared/txn/run-txn'
 import { filterDefined } from 'common/util/array'
+import { ContractMetric } from 'common/contract-metric'
 import {
   getUnresolvedContractMetricsContractsAnswers,
   getUnresolvedStatsForToken,
@@ -127,20 +128,7 @@ export const requestLoan: APIHandler<'request-loan'> = async (props, auth) => {
       0
     )
 
-    // Find the specific metric for this answer (or summary for non-multi markets)
-    const metric = metrics.find(
-      (m) =>
-        m.contractId === contractId &&
-        (answerId ? m.answerId === answerId : m.answerId === null)
-    )
-
-    if (!metric) {
-      throw new APIError(
-        400,
-        'You must have a position in this market to take a loan'
-      )
-    }
-
+    // Check loan limits
     if (
       !isUserEligibleForMarketLoan(
         totalMarketLoan,
@@ -201,41 +189,154 @@ export const requestLoan: APIHandler<'request-loan'> = async (props, auth) => {
       )
     }
 
-    // Add loan to this specific answer's metric
-    const currentAnswerLoan = metric.loan ?? 0
-    const updatedMetric = {
-      ...metric,
-      loan: currentAnswerLoan + amount,
-    }
-
-    // Get existing loan tracking
+    // Get existing loan tracking for this contract
     const existingLoanTracking = await getLoanTrackingRows(pg, user.id, [
       contractId,
     ])
-    const tracking = existingLoanTracking.find(
-      (t) =>
-        t.contract_id === contractId &&
-        (answerId ? t.answer_id === answerId : t.answer_id === null)
+    const trackingByKey = keyBy(
+      existingLoanTracking,
+      (t) => `${t.contract_id}-${t.answer_id ?? ''}`
     )
 
-    const oldLoan = currentAnswerLoan
-    const lastUpdate = tracking?.last_loan_update_time ?? now
-    const daysSinceLastUpdate = (now - lastUpdate) / MS_PER_DAY
-    const newIntegral =
-      (tracking?.loan_day_integral ?? 0) + oldLoan * daysSinceLastUpdate
+    // Determine if this is a multi-choice market
+    const isMultiChoice = contract.mechanism === 'cpmm-multi-1'
 
-    const loanTrackingUpdate: Omit<LoanTrackingRow, 'id'> = {
-      user_id: user.id,
-      contract_id: contractId,
-      answer_id: answerId ?? null,
-      loan_day_integral: newIntegral,
-      last_loan_update_time: now,
+    // If answerId is provided OR it's not a multi-choice market, apply to single metric
+    if (answerId || !isMultiChoice) {
+      const metric = metrics.find(
+        (m) =>
+          m.contractId === contractId &&
+          (answerId ? m.answerId === answerId : m.answerId === null)
+      )
+
+      if (!metric) {
+        throw new APIError(
+          400,
+          'You must have a position in this market to take a loan'
+        )
+      }
+
+      // Add loan to this specific answer's metric
+      const currentAnswerLoan = metric.loan ?? 0
+      const updatedMetric = {
+        ...metric,
+        loan: currentAnswerLoan + amount,
+      }
+
+      const key = `${contractId}-${answerId ?? ''}`
+      const tracking = trackingByKey[key]
+
+      const oldLoan = currentAnswerLoan
+      const lastUpdate = tracking?.last_loan_update_time ?? now
+      const daysSinceLastUpdate = (now - lastUpdate) / MS_PER_DAY
+      const newIntegral =
+        (tracking?.loan_day_integral ?? 0) + oldLoan * daysSinceLastUpdate
+
+      const loanTrackingUpdate: Omit<LoanTrackingRow, 'id'> = {
+        user_id: user.id,
+        contract_id: contractId,
+        answer_id: answerId ?? null,
+        loan_day_integral: newIntegral,
+        last_loan_update_time: now,
+      }
+
+      const bulkUpdateContractMetricsQ = bulkUpdateContractMetricsQuery([
+        updatedMetric,
+      ])
+      const loanTrackingQ = upsertLoanTrackingQuery([loanTrackingUpdate])
+      const { txnQuery, balanceUpdateQuery } = payUserLoan(user.id, amount)
+
+      const { userUpdates } = await betsQueue.enqueueFn(async () => {
+        return pg.tx(async (tx) => {
+          const res = await tx.multi(
+            `${balanceUpdateQuery};
+             ${txnQuery};
+             ${bulkUpdateContractMetricsQ};
+             ${loanTrackingQ}`
+          )
+          const userUpdates = res[0] as UserUpdate[]
+          return { userUpdates }
+        })
+      }, [auth.uid])
+
+      broadcastUserUpdates(userUpdates)
+      log(
+        `User ${user.id} took market-specific loan of ${amount} on contract ${contractId}${answerId ? ` answer ${answerId}` : ''}`
+      )
+
+      return {
+        success: true,
+        amount,
+        distributed: [
+          {
+            contractId,
+            answerId: answerId ?? null,
+            loanAmount: amount,
+          },
+        ],
+      }
     }
 
-    const bulkUpdateContractMetricsQ = bulkUpdateContractMetricsQuery([
-      updatedMetric,
-    ])
-    const loanTrackingQ = upsertLoanTrackingQuery([loanTrackingUpdate])
+    // Multi-choice market without answerId: distribute proportionally across all answers
+    const metricsWithInvestment = contractMetrics.filter(
+      (m) => (m.invested ?? 0) > 0 && m.answerId !== null
+    )
+
+    if (metricsWithInvestment.length === 0) {
+      throw new APIError(
+        400,
+        'You must have a position in this market to take a loan'
+      )
+    }
+
+    // Distribute loan proportionally based on invested amount
+    const totalInvestment = metricsWithInvestment.reduce(
+      (sum, m) => sum + (m.invested ?? 0),
+      0
+    )
+
+    const distributions: { contractId: string; answerId: string | null; loanAmount: number }[] = []
+    const updatedMetrics: ContractMetric[] = []
+    const loanTrackingUpdates: Omit<LoanTrackingRow, 'id'>[] = []
+
+    for (const metric of metricsWithInvestment) {
+      const investment = metric.invested ?? 0
+      const proportion = investment / totalInvestment
+      const loanForAnswer = amount * proportion
+
+      if (loanForAnswer > 0) {
+        distributions.push({
+          contractId,
+          answerId: metric.answerId,
+          loanAmount: loanForAnswer,
+        })
+
+        updatedMetrics.push({
+          ...metric,
+          loan: (metric.loan ?? 0) + loanForAnswer,
+        })
+
+        const key = `${contractId}-${metric.answerId ?? ''}`
+        const tracking = trackingByKey[key]
+        const oldLoan = metric.loan ?? 0
+        const lastUpdate = tracking?.last_loan_update_time ?? now
+        const daysSinceLastUpdate = (now - lastUpdate) / MS_PER_DAY
+        const newIntegral =
+          (tracking?.loan_day_integral ?? 0) + oldLoan * daysSinceLastUpdate
+
+        loanTrackingUpdates.push({
+          user_id: user.id,
+          contract_id: contractId,
+          answer_id: metric.answerId,
+          loan_day_integral: newIntegral,
+          last_loan_update_time: now,
+        })
+      }
+    }
+
+    const bulkUpdateContractMetricsQ =
+      bulkUpdateContractMetricsQuery(updatedMetrics)
+    const loanTrackingQ = upsertLoanTrackingQuery(loanTrackingUpdates)
     const { txnQuery, balanceUpdateQuery } = payUserLoan(user.id, amount)
 
     const { userUpdates } = await betsQueue.enqueueFn(async () => {
@@ -253,19 +354,13 @@ export const requestLoan: APIHandler<'request-loan'> = async (props, auth) => {
 
     broadcastUserUpdates(userUpdates)
     log(
-      `User ${user.id} took market-specific loan of ${amount} on contract ${contractId}`
+      `User ${user.id} took market-specific loan of ${amount} on multi-choice contract ${contractId}, distributed across ${distributions.length} answers`
     )
 
     return {
       success: true,
       amount,
-      distributed: [
-        {
-          contractId,
-          answerId: answerId ?? null,
-          loanAmount: amount,
-        },
-      ],
+      distributed: distributions,
     }
   }
 

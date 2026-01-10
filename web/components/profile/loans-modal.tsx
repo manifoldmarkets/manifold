@@ -62,7 +62,7 @@ export function LoansModal(props: {
   )
   const { data: marketLoanData, refresh: refetchMarketLoan } = useAPIGetter(
     'get-market-loan-max',
-    contractId ? { contractId } : undefined,
+    contractId ? { contractId, answerId } : undefined,
     undefined,
     undefined,
     !!contractId
@@ -602,9 +602,13 @@ export function LoansModal(props: {
                       Market-specific loans
                     </p>
                     <p>
-                      Borrow up to {formatPercent(MAX_MARKET_LOAN_POSITION_PERCENT)} of your
-                      position value on this market. Total borrowing is capped at {formatPercent(MAX_MARKET_LOAN_NET_WORTH_PERCENT)} of your
-                      net worth on this market or {formatPercent(MAX_LOAN_NET_WORTH_PERCENT)} of your net worth across all markets.
+                      Borrow up to{' '}
+                      {formatPercent(MAX_MARKET_LOAN_POSITION_PERCENT)} of your
+                      position value on this market. Total borrowing is capped
+                      at {formatPercent(MAX_MARKET_LOAN_NET_WORTH_PERCENT)} of
+                      your net worth on this market or{' '}
+                      {formatPercent(MAX_LOAN_NET_WORTH_PERCENT)} of your net
+                      worth across all markets.
                     </p>
                     {totalPositionValue > 0 && (
                       <p className="text-ink-500 mt-1 text-xs">

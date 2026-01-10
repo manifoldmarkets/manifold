@@ -23,7 +23,7 @@ export const getMarketLoanMax: APIHandler<'get-market-loan-max'> = async (
   props,
   auth
 ) => {
-  const { contractId } = props
+  const { contractId, answerId } = props
   const pg = createSupabaseDirectClient()
 
   const user = await getUser(auth.uid)
@@ -65,10 +65,17 @@ export const getMarketLoanMax: APIHandler<'get-market-loan-max'> = async (
   const { value } = getUnresolvedStatsForToken('MANA', metrics, contractsById)
   const netWorth = user.balance + value
 
-  // Sum loans across ALL answers for this contract (per-market limit)
+  // Get metrics for this contract
   const contractMetrics = metrics.filter((m) => m.contractId === contractId)
-  const currentLoan = sumBy(contractMetrics, (m) => m.loan ?? 0)
-  const totalPositionValue = sumBy(contractMetrics, (m) => m.payout ?? 0)
+
+  // If answerId is provided, filter to just that answer (for independent/set markets)
+  // Otherwise, aggregate all answers (for sums-to-one markets or market-level view)
+  const relevantMetrics = answerId
+    ? contractMetrics.filter((m) => m.answerId === answerId)
+    : contractMetrics
+
+  const currentLoan = sumBy(relevantMetrics, (m) => m.loan ?? 0)
+  const totalPositionValue = sumBy(relevantMetrics, (m) => m.payout ?? 0)
 
   // Calculate per-market limits
   const netWorthLimit = netWorth * MAX_MARKET_LOAN_NET_WORTH_PERCENT
@@ -102,6 +109,15 @@ export const getMarketLoanMax: APIHandler<'get-market-loan-max'> = async (
     ? Math.min(availableMarket, availableAggregate, availableToday)
     : 0
 
+  // Build per-answer loan breakdown for multi-choice markets
+  const answerLoans = contractMetrics
+    .filter((m) => m.answerId !== null && ((m.loan ?? 0) > 0 || (m.payout ?? 0) > 0))
+    .map((m) => ({
+      answerId: m.answerId!,
+      loan: m.loan ?? 0,
+      positionValue: m.payout ?? 0,
+    }))
+
   return {
     maxLoan,
     currentLoan,
@@ -119,5 +135,7 @@ export const getMarketLoanMax: APIHandler<'get-market-loan-max'> = async (
     dailyLimit,
     todayLoans,
     availableToday,
+    // Per-answer loan breakdown for multi-choice markets
+    answerLoans,
   }
 }

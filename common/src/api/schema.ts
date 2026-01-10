@@ -2092,9 +2092,16 @@ export const API = (_apiTypeCheck = {
       dailyLimit: number
       todayLoans: number
       availableToday: number
+      // Per-answer loan data (for multi-choice markets)
+      answerLoans?: Array<{
+        answerId: string
+        loan: number
+        positionValue: number
+      }>
     },
     props: z.object({
       contractId: z.string(),
+      answerId: z.string().optional(),
     }),
   },
   'create-task': {

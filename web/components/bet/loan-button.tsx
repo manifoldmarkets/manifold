@@ -12,10 +12,11 @@ import { Tooltip } from 'web/components/widgets/tooltip'
 export function LoanButton(props: {
   contractId: string
   user: User
+  answerId?: string
   className?: string
   refreshPortfolio?: () => void
 }) {
-  const { contractId, user, className, refreshPortfolio } = props
+  const { contractId, user, answerId, className, refreshPortfolio } = props
   const [showLoansModal, setShowLoansModal] = useState(false)
 
   const { data: marketLoanData, refresh: refetchMarketLoan } = useAPIGetter(
@@ -83,6 +84,7 @@ export function LoanButton(props: {
           isOpen={showLoansModal}
           setOpen={setShowLoansModal}
           contractId={contractId}
+          answerId={answerId}
           refreshPortfolio={() => {
             refetchMarketLoan()
             refreshPortfolio?.()
