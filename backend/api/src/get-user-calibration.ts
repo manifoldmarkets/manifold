@@ -1,11 +1,9 @@
 import { APIHandler } from './helpers/endpoint'
 import { createSupabaseDirectClient } from 'shared/supabase/init'
 import { APIError } from 'common/api/utils'
-import { groupBy, range, sortBy, Dictionary } from 'lodash'
+import { sortBy } from 'lodash'
 import { SEARCH_TOPICS_TO_SUBTOPICS } from 'common/topics'
 import { DAY_MS } from 'common/util/time'
-
-const CALIBRATION_POINTS = [1, 3, 5, ...range(10, 100, 10), 95, 97, 99]
 
 // Map group IDs to topic names for easier lookup (cached at module level)
 const topicGroupMapping: Record<string, string> = {}
@@ -33,39 +31,68 @@ export const getUserCalibration: APIHandler<'get-user-calibration'> = async (
   }
 
   // Run all independent queries in parallel for better performance
-  const [betsData, metrics, portfolioHistory, volumeResult] = await Promise.all(
-    [
-      // Query 1: Get user's bets on resolved binary markets (for calibration)
-      // Uses random sampling for performance and unbiased results
+  const [calibrationData, metrics, portfolioHistory, volumeResult] =
+    await Promise.all([
+      // Query 1: Calibration data - all aggregation done in SQL for performance
+      // Each bet is treated as an independent prediction, weighted by shares
+      // Limited to most recent 10k bets, aggregated in SQL (returns ~30 rows)
       pg.manyOrNone<{
-        bet_id: string
-        contract_id: string
+        prob_bucket: number
         outcome: string
-        amount: number
-        shares: number
-        prob_after: number
-        created_time: number
-        resolution: string
+        total_shares: number
+        yes_shares: number
+        bet_count: number
       }>(
         `
+      WITH bets AS (
+        SELECT 
+          cb.outcome,
+          cb.shares,
+          cb.prob_after,
+          c.resolution
+        FROM contract_bets cb
+        JOIN contracts c ON cb.contract_id = c.id
+        WHERE cb.user_id = $1
+          AND c.outcome_type = 'BINARY'
+          AND c.resolution IN ('YES', 'NO')
+          AND cb.amount > 0
+          AND (cb.is_redemption IS NOT TRUE OR cb.is_redemption IS NULL)
+        ORDER BY cb.created_time DESC
+        LIMIT 10000
+      ),
+      bucketed AS (
+        SELECT 
+          CASE 
+            WHEN prob_after < 0.02 THEN 0.01
+            WHEN prob_after < 0.04 THEN 0.03
+            WHEN prob_after < 0.075 THEN 0.05
+            WHEN prob_after < 0.15 THEN 0.10
+            WHEN prob_after < 0.25 THEN 0.20
+            WHEN prob_after < 0.35 THEN 0.30
+            WHEN prob_after < 0.45 THEN 0.40
+            WHEN prob_after < 0.55 THEN 0.50
+            WHEN prob_after < 0.65 THEN 0.60
+            WHEN prob_after < 0.75 THEN 0.70
+            WHEN prob_after < 0.85 THEN 0.80
+            WHEN prob_after < 0.925 THEN 0.90
+            WHEN prob_after < 0.96 THEN 0.95
+            WHEN prob_after < 0.98 THEN 0.97
+            ELSE 0.99
+          END as prob_bucket,
+          outcome,
+          shares,
+          resolution
+        FROM bets
+      )
       SELECT 
-        cb.bet_id,
-        cb.contract_id,
-        cb.outcome,
-        cb.amount,
-        cb.shares,
-        cb.prob_after,
-        EXTRACT(EPOCH FROM cb.created_time)::bigint * 1000 as created_time,
-        c.resolution
-      FROM contract_bets cb
-      JOIN contracts c ON cb.contract_id = c.id
-      WHERE cb.user_id = $1
-        AND c.outcome_type = 'BINARY'
-        AND c.resolution IN ('YES', 'NO')
-        AND cb.amount > 0
-        AND (cb.is_redemption IS NOT TRUE OR cb.is_redemption IS NULL)
-      ORDER BY RANDOM()
-      LIMIT 2000
+        prob_bucket,
+        outcome,
+        SUM(shares)::float as total_shares,
+        SUM(CASE WHEN resolution = 'YES' THEN shares ELSE 0 END)::float as yes_shares,
+        COUNT(*)::int as bet_count
+      FROM bucketed
+      GROUP BY prob_bucket, outcome
+      ORDER BY prob_bucket, outcome
       `,
         [userId]
       ),
@@ -124,79 +151,29 @@ export const getUserCalibration: APIHandler<'get-user-calibration'> = async (
       `,
         [userId]
       ),
-    ]
-  )
+    ])
 
-  // Calculate calibration from bets data
-  const yesProbBuckets: Dictionary<number> = {}
-  const yesCountBuckets: Dictionary<number> = {}
-  const noProbBuckets: Dictionary<number> = {}
-  const noCountBuckets: Dictionary<number> = {}
+  // Build calibration points from pre-aggregated SQL data
+  const yesPoints: { x: number; y: number }[] = []
+  const noPoints: { x: number; y: number }[] = []
+  let totalBets = 0
 
-  const betsByContract = groupBy(betsData, 'contract_id')
+  for (const row of calibrationData) {
+    totalBets += row.bet_count
+    const yesRate = row.total_shares > 0 ? row.yes_shares / row.total_shares : 0
 
-  for (const [_contractId, bets] of Object.entries(betsByContract)) {
-    const resolution = bets[0].resolution
-    if (resolution !== 'YES' && resolution !== 'NO') continue
-    const resolvedYES = resolution === 'YES'
-
-    let currentPosition = 0
-    for (const bet of bets) {
-      const betSign = bet.outcome === 'YES' ? 1 : -1
-      const nextPosition = currentPosition + bet.shares * betSign
-
-      if (
-        bet.amount < 0 ||
-        (Math.sign(currentPosition) !== betSign &&
-          Math.abs(currentPosition) >= Math.abs(bet.shares))
-      ) {
-        currentPosition = nextPosition
-        continue
-      }
-
-      let weight = bet.shares
-      if (
-        Math.sign(currentPosition) !== betSign &&
-        Math.abs(currentPosition) < Math.abs(bet.shares)
-      ) {
-        weight = Math.abs(nextPosition)
-      }
-
-      currentPosition = nextPosition
-
-      const rawP = bet.prob_after * 100
-      const p = CALIBRATION_POINTS.reduce((prev, curr) =>
-        Math.abs(curr - rawP) < Math.abs(prev - rawP) ? curr : prev
-      )
-
-      if (bet.outcome === 'YES') {
-        yesProbBuckets[p] =
-          (yesProbBuckets[p] ?? 0) + (resolvedYES ? weight : 0)
-        yesCountBuckets[p] = (yesCountBuckets[p] ?? 0) + weight
-      } else {
-        noProbBuckets[p] = (noProbBuckets[p] ?? 0) + (resolvedYES ? 0 : weight)
-        noCountBuckets[p] = (noCountBuckets[p] ?? 0) + weight
-      }
+    if (row.outcome === 'YES') {
+      // For YES bets: what % resolved YES?
+      yesPoints.push({ x: row.prob_bucket, y: yesRate })
+    } else {
+      // For NO bets: what % resolved YES? (should be on the diagonal if calibrated)
+      noPoints.push({ x: row.prob_bucket, y: yesRate })
     }
   }
 
-  // Calculate calibration points
-  for (const point of CALIBRATION_POINTS) {
-    if (yesCountBuckets[point]) {
-      yesProbBuckets[point] = yesProbBuckets[point] / yesCountBuckets[point]
-    }
-    if (noCountBuckets[point]) {
-      noProbBuckets[point] = 1 - noProbBuckets[point] / noCountBuckets[point]
-    }
-  }
-
-  const yesPoints = CALIBRATION_POINTS.filter(
-    (p) => yesProbBuckets[p] !== undefined && yesCountBuckets[p]
-  ).map((p) => ({ x: p / 100, y: yesProbBuckets[p] }))
-
-  const noPoints = CALIBRATION_POINTS.filter(
-    (p) => noProbBuckets[p] !== undefined && noCountBuckets[p]
-  ).map((p) => ({ x: p / 100, y: noProbBuckets[p] }))
+  // Sort by x for consistent display
+  yesPoints.sort((a, b) => a.x - b.x)
+  noPoints.sort((a, b) => a.x - b.x)
 
   // Calculate performance stats
   const contractIds = metrics.map((m) => m.contract_id)
@@ -375,7 +352,7 @@ export const getUserCalibration: APIHandler<'get-user-calibration'> = async (
     calibration: {
       yesPoints,
       noPoints,
-      totalBets: betsData.length,
+      totalBets,
     },
     performanceStats: {
       totalProfit,
