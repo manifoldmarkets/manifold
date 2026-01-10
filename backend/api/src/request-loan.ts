@@ -76,13 +76,32 @@ export const requestLoan: APIHandler<'request-loan'> = async (props, auth) => {
       throw new APIError(400, 'Contract must be a market contract')
     }
 
-    // Get user's metric for this contract/answer and calculate net worth
+    // Get user's metrics for this contract and calculate net worth
     const { metrics, contracts } =
       await getUnresolvedContractMetricsContractsAnswers(pg, [user.id])
     const contractsById = keyBy(contracts, 'id')
     const { value } = getUnresolvedStatsForToken('MANA', metrics, contractsById)
     const netWorth = user.balance + value
 
+    // Sum loans and position values across ALL answers for this contract (per-market limit)
+    const contractMetrics = metrics.filter((m) => m.contractId === contractId)
+    if (contractMetrics.length === 0) {
+      throw new APIError(
+        400,
+        'You must have a position in this market to take a loan'
+      )
+    }
+
+    const totalMarketLoan = contractMetrics.reduce(
+      (sum, m) => sum + (m.loan ?? 0),
+      0
+    )
+    const totalPositionValue = contractMetrics.reduce(
+      (sum, m) => sum + (m.payout ?? 0),
+      0
+    )
+
+    // Find the specific metric for this answer (or summary for non-multi markets)
     const metric = metrics.find(
       (m) =>
         m.contractId === contractId &&
@@ -96,22 +115,28 @@ export const requestLoan: APIHandler<'request-loan'> = async (props, auth) => {
       )
     }
 
-    const currentMarketLoan = metric.loan ?? 0
-
-    if (!isUserEligibleForMarketLoan(currentMarketLoan, amount, netWorth)) {
-      const maxLoan = calculateMarketLoanMax(netWorth)
+    if (
+      !isUserEligibleForMarketLoan(
+        totalMarketLoan,
+        amount,
+        netWorth,
+        totalPositionValue
+      )
+    ) {
+      const maxLoan = calculateMarketLoanMax(netWorth, totalPositionValue)
       throw new APIError(
         400,
         `Loan amount exceeds maximum. Max loan for this market: ${maxLoan.toFixed(
           2
-        )}`
+        )}, current total loan: ${totalMarketLoan.toFixed(2)}`
       )
     }
 
-    // Add loan to this specific market
+    // Add loan to this specific answer's metric
+    const currentAnswerLoan = metric.loan ?? 0
     const updatedMetric = {
       ...metric,
-      loan: currentMarketLoan + amount,
+      loan: currentAnswerLoan + amount,
     }
 
     // Get existing loan tracking
@@ -124,7 +149,7 @@ export const requestLoan: APIHandler<'request-loan'> = async (props, auth) => {
         (answerId ? t.answer_id === answerId : t.answer_id === null)
     )
 
-    const oldLoan = currentMarketLoan
+    const oldLoan = currentAnswerLoan
     const lastUpdate = tracking?.last_loan_update_time ?? now
     const daysSinceLastUpdate = (now - lastUpdate) / MS_PER_DAY
     const newIntegral =

@@ -18,6 +18,7 @@ import { LuShare } from 'react-icons/lu'
 import { BinaryMultiSellRow } from 'web/components/answers/answer-components'
 import { MultiNumericSellPanel } from 'web/components/answers/numeric-sell-panel'
 import { SellRow } from 'web/components/bet/sell-row'
+import { LoanButton } from 'web/components/bet/loan-button'
 import { useAdmin } from 'web/hooks/use-admin'
 import { useSavedContractMetrics } from 'web/hooks/use-saved-contract-metrics'
 import { useUser } from 'web/hooks/use-user'
@@ -187,12 +188,20 @@ export function BetsSummary(props: {
               </Col>
             )}
             {includeSellButton && (
-              <SellRow
-                contract={contract as CPMMContract}
-                user={includeSellButton}
-                hideStatus={true}
-                className={'-mt-1'}
-              />
+              <Row className="items-center gap-2">
+                <SellRow
+                  contract={contract as CPMMContract}
+                  user={includeSellButton}
+                  hideStatus={true}
+                  className={'-mt-1'}
+                />
+                {contract.token === 'MANA' && !contract.isResolved && (
+                  <LoanButton
+                    contractId={contract.id}
+                    user={includeSellButton}
+                  />
+                )}
+              </Row>
             )}
           </Row>
         )}

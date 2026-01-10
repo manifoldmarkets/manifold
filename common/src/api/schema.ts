@@ -2079,7 +2079,9 @@ export const API = (_apiTypeCheck = {
       maxLoan: number
       currentLoan: number
       available: number
-      isLiquid: boolean
+      netWorthLimit: number
+      positionLimit: number
+      totalPositionValue: number
     },
     props: z.object({
       contractId: z.string(),

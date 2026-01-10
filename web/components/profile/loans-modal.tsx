@@ -9,6 +9,8 @@ import {
   LOAN_DAILY_INTEREST_RATE,
   MAX_LOAN_NET_WORTH_PERCENT,
   DAILY_LOAN_NET_WORTH_PERCENT,
+  MAX_MARKET_LOAN_NET_WORTH_PERCENT,
+  MAX_MARKET_LOAN_POSITION_PERCENT,
 } from 'common/loans'
 import { ANNUAL_INTEREST_RATE } from 'common/economy'
 import { useIsEligibleForLoans } from 'web/hooks/use-is-eligible-for-loans'
@@ -88,10 +90,24 @@ export function LoansModal(props: {
     contractId && marketLoanData && 'available' in marketLoanData
       ? marketLoanData.available
       : 0
-  const isMarketLiquid =
-    contractId && marketLoanData && 'isLiquid' in marketLoanData
-      ? marketLoanData.isLiquid
-      : false
+  const netWorthLimit =
+    contractId && marketLoanData && 'netWorthLimit' in marketLoanData
+      ? marketLoanData.netWorthLimit
+      : 0
+  const positionLimit =
+    contractId && marketLoanData && 'positionLimit' in marketLoanData
+      ? marketLoanData.positionLimit
+      : 0
+  const totalPositionValue =
+    contractId && marketLoanData && 'totalPositionValue' in marketLoanData
+      ? marketLoanData.totalPositionValue
+      : 0
+
+  // Determine which limit is binding for market loans
+  const isNetWorthLimitBinding = netWorthLimit <= positionLimit
+  const bindingLimitReason = isNetWorthLimitBinding
+    ? `${formatPercent(MAX_MARKET_LOAN_NET_WORTH_PERCENT)} of net worth`
+    : `${formatPercent(MAX_MARKET_LOAN_POSITION_PERCENT)} of position value`
 
   const requestLoan = async (
     amountOverride?: number,
@@ -256,16 +272,36 @@ export function LoansModal(props: {
     !!latestPortfolio &&
     latestPortfolio.balance + latestPortfolio.investmentValue > 10000
 
+  // Market-specific loan max values
+  const marketLoanMaxActual = availableMarketLoan
+  const marketLoanMax = Math.floor(marketLoanMaxActual)
+
   // Create filtered slider values for request loan
   const requestLoanSliderValues =
     !isMarketSpecific && requestLoanMax > 0
       ? createFilteredSliderValues(requestLoanMax, !hasLotsOfMoney)
       : []
 
+  // Create filtered slider values for market-specific request loan
+  const marketRequestLoanSliderValues =
+    isMarketSpecific && marketLoanMax > 0
+      ? createFilteredSliderValues(marketLoanMax, !hasLotsOfMoney)
+      : []
+
   // Create filtered slider values for payback
   const paybackSliderValues =
     !isMarketSpecific && paybackMax > 0
       ? createFilteredSliderValues(paybackMax, !hasLotsOfMoney)
+      : []
+
+  // Market-specific payback max (repay up to current loan or balance)
+  const marketPaybackMaxActual = Math.min(currentMarketLoan, user.balance)
+  const marketPaybackMax = Math.floor(marketPaybackMaxActual)
+
+  // Create filtered slider values for market-specific payback
+  const marketPaybackSliderValues =
+    isMarketSpecific && marketPaybackMax > 0
+      ? createFilteredSliderValues(marketPaybackMax, !hasLotsOfMoney)
       : []
 
   // Get slider index for request loan
@@ -278,6 +314,16 @@ export function LoansModal(props: {
     return requestLoanSliderValues.findLastIndex((v) => amount >= v) || 0
   }
 
+  // Get slider index for market-specific request loan
+  const getMarketRequestLoanSliderIndex = (amount: number | undefined) => {
+    if (!amount || marketRequestLoanSliderValues.length === 0) return 0
+    // If amount is at or above the rounded max, show slider at max position
+    if (amount >= marketLoanMax) {
+      return marketRequestLoanSliderValues.length - 1
+    }
+    return marketRequestLoanSliderValues.findLastIndex((v) => amount >= v) || 0
+  }
+
   // Get slider index for payback
   const getPaybackSliderIndex = (amount: number | undefined) => {
     if (!amount || paybackSliderValues.length === 0) return 0
@@ -286,6 +332,16 @@ export function LoansModal(props: {
       return paybackSliderValues.length - 1
     }
     return paybackSliderValues.findLastIndex((v) => amount >= v) || 0
+  }
+
+  // Get slider index for market-specific payback
+  const getMarketPaybackSliderIndex = (amount: number | undefined) => {
+    if (!amount || marketPaybackSliderValues.length === 0) return 0
+    // If amount is at or above the rounded max, show slider at max position
+    if (amount >= marketPaybackMax) {
+      return marketPaybackSliderValues.length - 1
+    }
+    return marketPaybackSliderValues.findLastIndex((v) => amount >= v) || 0
   }
 
   // Create marks for slider (filtered labels)
@@ -313,10 +369,26 @@ export function LoansModal(props: {
         )
       : []
 
+  const marketRequestLoanSliderMarks =
+    marketRequestLoanSliderValues.length > 0
+      ? createSliderMarks(
+          marketRequestLoanSliderValues,
+          hasLotsOfMoney ? LARGE_SLIDER_VALUE_LABELS : SMALL_SLIDER_VALUE_LABELS
+        )
+      : []
+
   const paybackSliderMarks =
     paybackSliderValues.length > 0
       ? createSliderMarks(
           paybackSliderValues,
+          hasLotsOfMoney ? LARGE_SLIDER_VALUE_LABELS : SMALL_SLIDER_VALUE_LABELS
+        )
+      : []
+
+  const marketPaybackSliderMarks =
+    marketPaybackSliderValues.length > 0
+      ? createSliderMarks(
+          marketPaybackSliderValues,
           hasLotsOfMoney ? LARGE_SLIDER_VALUE_LABELS : SMALL_SLIDER_VALUE_LABELS
         )
       : []
@@ -377,7 +449,7 @@ export function LoansModal(props: {
             </span>
             {isMarketSpecific && currentMarketLoan > 0 && (
               <span className="text-ink-500 text-xs">
-                Max: {formatMoney(maxMarketLoan)} (5% of net worth)
+                Max: {formatMoney(maxMarketLoan)} ({bindingLimitReason})
               </span>
             )}
           </Col>
@@ -390,7 +462,7 @@ export function LoansModal(props: {
                 {formatMoney(availableMarketLoan)}
               </span>
               <span className="text-ink-500 text-xs">
-                Max: {formatMoney(maxMarketLoan)} (5% of net worth)
+                Max: {formatMoney(maxMarketLoan)} ({bindingLimitReason})
               </span>
             </Col>
           )}
@@ -466,7 +538,20 @@ export function LoansModal(props: {
                     <p className="text-ink-900 mb-1 font-medium">
                       Market-specific loans
                     </p>
-                    <p>Borrow up to 5% of your net worth on this market.</p>
+                    <p>
+                      Borrow up to the lower of{' '}
+                      {formatPercent(MAX_MARKET_LOAN_NET_WORTH_PERCENT)} of your
+                      net worth or{' '}
+                      {formatPercent(MAX_MARKET_LOAN_POSITION_PERCENT)} of your
+                      position value on this market.
+                    </p>
+                    {totalPositionValue > 0 && (
+                      <p className="text-ink-500 mt-1 text-xs">
+                        Your position: {formatMoney(totalPositionValue)} • Net
+                        worth limit: {formatMoney(netWorthLimit)} • Position
+                        limit: {formatMoney(positionLimit)}
+                      </p>
+                    )}
                   </div>
                 </>
               ) : (
@@ -573,6 +658,22 @@ export function LoansModal(props: {
                   marks={requestLoanSliderMarks}
                 />
               )}
+              {isMarketSpecific && marketRequestLoanSliderValues.length > 0 && (
+                <Slider
+                  className="mt-3"
+                  min={0}
+                  max={marketRequestLoanSliderValues.length - 1}
+                  amount={getMarketRequestLoanSliderIndex(loanAmount)}
+                  onChange={(index) => {
+                    const newAmount = marketRequestLoanSliderValues[index] ?? 0
+                    setLoanAmount(Math.floor(newAmount))
+                  }}
+                  step={1}
+                  disabled={loaning}
+                  color="green"
+                  marks={marketRequestLoanSliderMarks}
+                />
+              )}
               <Button
                 color="green"
                 size="xl"
@@ -588,7 +689,7 @@ export function LoansModal(props: {
         </div>
 
         {/* Repayment Section */}
-        {hasOutstandingLoan && (
+        {(isMarketSpecific ? currentMarketLoan > 0 : hasOutstandingLoan) && (
           <div className="border-ink-200 bg-canvas-50 border-t px-6 py-5">
             <Col className="gap-4">
               <div>
@@ -614,7 +715,9 @@ export function LoansModal(props: {
                     }
                     // Round to whole number
                     const roundedAmount = Math.floor(newAmount)
-                    const maxAvailable = paybackMaxActual
+                    const maxAvailable = isMarketSpecific
+                      ? marketPaybackMaxActual
+                      : paybackMaxActual
                     // Clamp to max available
                     if (roundedAmount > maxAvailable) {
                       setRepaymentAmount(Math.floor(maxAvailable))
@@ -625,7 +728,9 @@ export function LoansModal(props: {
                   error={repayLoanError}
                   setError={setRepayLoanError}
                   disabled={repaying}
-                  maximumAmount={paybackMaxActual}
+                  maximumAmount={
+                    isMarketSpecific ? marketPaybackMaxActual : paybackMaxActual
+                  }
                   showSlider={false}
                   token="M$"
                 />
@@ -645,6 +750,22 @@ export function LoansModal(props: {
                     disabled={repaying}
                     color="indigo"
                     marks={paybackSliderMarks}
+                  />
+                )}
+                {isMarketSpecific && marketPaybackSliderValues.length > 0 && (
+                  <Slider
+                    className="mt-3"
+                    min={0}
+                    max={marketPaybackSliderValues.length - 1}
+                    amount={getMarketPaybackSliderIndex(repaymentAmount)}
+                    onChange={(index) => {
+                      const newAmount = marketPaybackSliderValues[index] ?? 0
+                      setRepaymentAmount(Math.floor(newAmount))
+                    }}
+                    step={1}
+                    disabled={repaying}
+                    color="indigo"
+                    marks={marketPaybackSliderMarks}
                   />
                 )}
                 <Button
