@@ -102,10 +102,37 @@ export function LoansModal(props: {
     contractId && marketLoanData && 'totalPositionValue' in marketLoanData
       ? marketLoanData.totalPositionValue
       : 0
+  const marketEligible =
+    contractId && marketLoanData && 'eligible' in marketLoanData
+      ? marketLoanData.eligible
+      : true
+  const marketEligibilityReason =
+    contractId && marketLoanData && 'eligibilityReason' in marketLoanData
+      ? marketLoanData.eligibilityReason
+      : undefined
+  // Aggregate limits (80% of net worth across all markets)
+  const aggregateLimit =
+    contractId && marketLoanData && 'aggregateLimit' in marketLoanData
+      ? marketLoanData.aggregateLimit
+      : 0
+  const totalLoanAllMarkets =
+    contractId && marketLoanData && 'totalLoanAllMarkets' in marketLoanData
+      ? marketLoanData.totalLoanAllMarkets
+      : 0
+  const availableAggregate =
+    contractId && marketLoanData && 'availableAggregate' in marketLoanData
+      ? marketLoanData.availableAggregate
+      : 0
 
   // Determine which limit is binding for market loans
-  const isNetWorthLimitBinding = netWorthLimit <= positionLimit
-  const bindingLimitReason = isNetWorthLimitBinding
+  const availablePerMarket = Math.max(0, maxMarketLoan - currentMarketLoan)
+  const isAggregateLimitBinding =
+    availableAggregate < availablePerMarket && availableAggregate >= 0
+  const isNetWorthLimitBinding =
+    !isAggregateLimitBinding && netWorthLimit <= positionLimit
+  const bindingLimitReason = isAggregateLimitBinding
+    ? `${formatPercent(MAX_LOAN_NET_WORTH_PERCENT)} total borrowing limit`
+    : isNetWorthLimitBinding
     ? `${formatPercent(MAX_MARKET_LOAN_NET_WORTH_PERCENT)} of net worth`
     : `${formatPercent(MAX_MARKET_LOAN_POSITION_PERCENT)} of position value`
 
@@ -453,17 +480,30 @@ export function LoansModal(props: {
               </span>
             )}
           </Col>
-          {isMarketSpecific && availableMarketLoan > 0 && (
+          {isMarketSpecific && (
             <Col className="border-ink-200 flex-1 gap-1 border-l pl-3">
               <span className="text-ink-500 text-xs font-medium uppercase tracking-wide">
                 Available
               </span>
-              <span className="text-primary-600 text-2xl font-semibold">
-                {formatMoney(availableMarketLoan)}
-              </span>
-              <span className="text-ink-500 text-xs">
-                Max: {formatMoney(maxMarketLoan)} ({bindingLimitReason})
-              </span>
+              {marketEligible ? (
+                <>
+                  <span className="text-primary-600 text-2xl font-semibold">
+                    {formatMoney(availableMarketLoan)}
+                  </span>
+                  <span className="text-ink-500 text-xs">
+                    Max: {formatMoney(maxMarketLoan)} ({bindingLimitReason})
+                  </span>
+                </>
+              ) : (
+                <>
+                  <span className="text-lg font-semibold text-amber-600">
+                    Not eligible
+                  </span>
+                  <span className="text-ink-500 text-xs">
+                    {marketEligibilityReason ?? 'Market criteria not met'}
+                  </span>
+                </>
+              )}
             </Col>
           )}
         </Row>
@@ -543,13 +583,25 @@ export function LoansModal(props: {
                       {formatPercent(MAX_MARKET_LOAN_NET_WORTH_PERCENT)} of your
                       net worth or{' '}
                       {formatPercent(MAX_MARKET_LOAN_POSITION_PERCENT)} of your
-                      position value on this market.
+                      position value on this market. Total borrowing across all
+                      markets is capped at{' '}
+                      {formatPercent(MAX_LOAN_NET_WORTH_PERCENT)} of net worth.
                     </p>
                     {totalPositionValue > 0 && (
                       <p className="text-ink-500 mt-1 text-xs">
                         Your position: {formatMoney(totalPositionValue)} • Net
                         worth limit: {formatMoney(netWorthLimit)} • Position
                         limit: {formatMoney(positionLimit)}
+                        {isAggregateLimitBinding && (
+                          <>
+                            {' '}
+                            •{' '}
+                            <span className="text-amber-600">
+                              Aggregate limit reached (
+                              {formatMoney(availableAggregate)} remaining)
+                            </span>
+                          </>
+                        )}
                       </p>
                     )}
                   </div>
@@ -610,81 +662,97 @@ export function LoansModal(props: {
                   : 'Enter the amount you want to borrow. It will be distributed proportionally across your positions.'}
               </p>
             </div>
-            <Col className="gap-3">
-              <BuyAmountInput
-                parentClassName="max-w-full"
-                amount={loanAmount ? Math.floor(loanAmount) : undefined}
-                onChange={(newAmount) => {
-                  if (!newAmount || newAmount <= 0) {
-                    setLoanAmount(undefined)
-                    return
-                  }
-                  // Round to whole number
-                  const roundedAmount = Math.floor(newAmount)
-                  const maxAvailable = isMarketSpecific
-                    ? availableMarketLoan
-                    : requestLoanMaxActual
-                  // Clamp to max available
-                  if (roundedAmount > maxAvailable) {
-                    setLoanAmount(Math.floor(maxAvailable))
-                  } else {
-                    setLoanAmount(roundedAmount)
-                  }
-                }}
-                error={requestLoanError}
-                setError={setRequestLoanError}
-                disabled={loaning}
-                maximumAmount={
-                  isMarketSpecific ? availableMarketLoan : requestLoanMaxActual
-                }
-                showSlider={false}
-                token="M$"
-              />
-              {!isMarketSpecific && requestLoanSliderValues.length > 0 && (
-                <Slider
-                  className="mt-3"
-                  min={0}
-                  max={requestLoanSliderValues.length - 1}
-                  amount={getRequestLoanSliderIndex(loanAmount)}
-                  onChange={(index) => {
-                    const newAmount = requestLoanSliderValues[index] ?? 0
-                    // Store rounded amount for display
-                    // If user selects the max slider value (rounded max), we'll send actual max in API call
-                    setLoanAmount(Math.floor(newAmount))
+            {isMarketSpecific && !marketEligible ? (
+              <div className="rounded-lg border border-amber-200 bg-amber-50 p-4">
+                <p className="text-sm font-medium text-amber-800">
+                  This market is not eligible for new loans
+                </p>
+                <p className="mt-1 text-xs text-amber-700">
+                  {marketEligibilityReason ??
+                    'Market must be listed, ranked, have more than 10 traders, and be at least 24 hours old.'}
+                </p>
+              </div>
+            ) : (
+              <Col className="gap-3">
+                <BuyAmountInput
+                  parentClassName="max-w-full"
+                  amount={loanAmount ? Math.floor(loanAmount) : undefined}
+                  onChange={(newAmount) => {
+                    if (!newAmount || newAmount <= 0) {
+                      setLoanAmount(undefined)
+                      return
+                    }
+                    // Round to whole number
+                    const roundedAmount = Math.floor(newAmount)
+                    const maxAvailable = isMarketSpecific
+                      ? availableMarketLoan
+                      : requestLoanMaxActual
+                    // Clamp to max available
+                    if (roundedAmount > maxAvailable) {
+                      setLoanAmount(Math.floor(maxAvailable))
+                    } else {
+                      setLoanAmount(roundedAmount)
+                    }
                   }}
-                  step={1}
+                  error={requestLoanError}
+                  setError={setRequestLoanError}
                   disabled={loaning}
-                  color="green"
-                  marks={requestLoanSliderMarks}
+                  maximumAmount={
+                    isMarketSpecific
+                      ? availableMarketLoan
+                      : requestLoanMaxActual
+                  }
+                  showSlider={false}
+                  token="M$"
                 />
-              )}
-              {isMarketSpecific && marketRequestLoanSliderValues.length > 0 && (
-                <Slider
-                  className="mt-3"
-                  min={0}
-                  max={marketRequestLoanSliderValues.length - 1}
-                  amount={getMarketRequestLoanSliderIndex(loanAmount)}
-                  onChange={(index) => {
-                    const newAmount = marketRequestLoanSliderValues[index] ?? 0
-                    setLoanAmount(Math.floor(newAmount))
-                  }}
-                  step={1}
-                  disabled={loaning}
+                {!isMarketSpecific && requestLoanSliderValues.length > 0 && (
+                  <Slider
+                    className="mt-3"
+                    min={0}
+                    max={requestLoanSliderValues.length - 1}
+                    amount={getRequestLoanSliderIndex(loanAmount)}
+                    onChange={(index) => {
+                      const newAmount = requestLoanSliderValues[index] ?? 0
+                      // Store rounded amount for display
+                      // If user selects the max slider value (rounded max), we'll send actual max in API call
+                      setLoanAmount(Math.floor(newAmount))
+                    }}
+                    step={1}
+                    disabled={loaning}
+                    color="green"
+                    marks={requestLoanSliderMarks}
+                  />
+                )}
+                {isMarketSpecific &&
+                  marketRequestLoanSliderValues.length > 0 && (
+                    <Slider
+                      className="mt-3"
+                      min={0}
+                      max={marketRequestLoanSliderValues.length - 1}
+                      amount={getMarketRequestLoanSliderIndex(loanAmount)}
+                      onChange={(index) => {
+                        const newAmount =
+                          marketRequestLoanSliderValues[index] ?? 0
+                        setLoanAmount(Math.floor(newAmount))
+                      }}
+                      step={1}
+                      disabled={loaning}
+                      color="green"
+                      marks={marketRequestLoanSliderMarks}
+                    />
+                  )}
+                <Button
                   color="green"
-                  marks={marketRequestLoanSliderMarks}
-                />
-              )}
-              <Button
-                color="green"
-                size="xl"
-                loading={loaning}
-                disabled={loaning || !loanAmount || loanAmount <= 0}
-                onClick={() => requestLoan()}
-                className="w-full"
-              >
-                Request Loan
-              </Button>
-            </Col>
+                  size="xl"
+                  loading={loaning}
+                  disabled={loaning || !loanAmount || loanAmount <= 0}
+                  onClick={() => requestLoan()}
+                  className="w-full"
+                >
+                  Request Loan
+                </Button>
+              </Col>
+            )}
           </Col>
         </div>
 

@@ -2082,6 +2082,12 @@ export const API = (_apiTypeCheck = {
       netWorthLimit: number
       positionLimit: number
       totalPositionValue: number
+      eligible: boolean
+      eligibilityReason?: string
+      // Aggregate limits (80% of net worth across all markets)
+      aggregateLimit: number
+      totalLoanAllMarkets: number
+      availableAggregate: number
     },
     props: z.object({
       contractId: z.string(),

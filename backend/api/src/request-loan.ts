@@ -8,6 +8,7 @@ import {
   distributeLoanProportionally,
   isUserEligibleForGeneralLoan,
   isUserEligibleForMarketLoan,
+  isMarketEligibleForLoan,
   MS_PER_DAY,
 } from 'common/loans'
 import { LoanTxn } from 'common/txn'
@@ -76,6 +77,20 @@ export const requestLoan: APIHandler<'request-loan'> = async (props, auth) => {
       throw new APIError(400, 'Contract must be a market contract')
     }
 
+    // Check market eligibility for new loans
+    const eligibility = isMarketEligibleForLoan({
+      visibility: contract.visibility,
+      isRanked: contract.isRanked,
+      uniqueBettorCount: contract.uniqueBettorCount,
+      createdTime: contract.createdTime,
+    })
+    if (!eligibility.eligible) {
+      throw new APIError(
+        400,
+        `Market is not eligible for loans: ${eligibility.reason}`
+      )
+    }
+
     // Get user's metrics for this contract and calculate net worth
     const { metrics, contracts } =
       await getUnresolvedContractMetricsContractsAnswers(pg, [user.id])
@@ -129,6 +144,21 @@ export const requestLoan: APIHandler<'request-loan'> = async (props, auth) => {
         `Loan amount exceeds maximum. Max loan for this market: ${maxLoan.toFixed(
           2
         )}, current total loan: ${totalMarketLoan.toFixed(2)}`
+      )
+    }
+
+    // Check aggregate loan limit across ALL markets
+    const currentTotalLoan = portfolioMetric.loanTotal ?? 0
+    const maxAggregateLoan = calculateMaxGeneralLoanAmount(netWorth)
+    if (currentTotalLoan + amount > maxAggregateLoan) {
+      const availableAggregate = Math.max(0, maxAggregateLoan - currentTotalLoan)
+      throw new APIError(
+        400,
+        `Loan would exceed your total borrowing limit. Max total loan: ${maxAggregateLoan.toFixed(
+          2
+        )}, current total: ${currentTotalLoan.toFixed(
+          2
+        )}, available: ${availableAggregate.toFixed(2)}`
       )
     }
 

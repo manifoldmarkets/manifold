@@ -17,6 +17,55 @@ export const MAX_MARKET_LOAN_NET_WORTH_PERCENT = 0.05 // 5% of net worth per mar
 export const MAX_MARKET_LOAN_POSITION_PERCENT = 0.25 // 25% of position value per market
 export const LOAN_DAILY_INTEREST_RATE = 0.0003 // 0.03% per day
 export const MS_PER_DAY = 24 * 60 * 60 * 1000
+export const MIN_TRADERS_FOR_MARKET_LOAN = 10
+export const MIN_AGE_HOURS_FOR_MARKET_LOAN = 24
+
+export type MarketLoanEligibility = {
+  eligible: boolean
+  reason?: string
+}
+
+/**
+ * Check if a market is eligible for new loans.
+ * Criteria:
+ * - Market must be listed (visibility = 'public')
+ * - Market must be ranked (isRanked != false)
+ * - Market must have > 10 traders
+ * - Market must have existed for 24+ hours
+ */
+export const isMarketEligibleForLoan = (market: {
+  visibility: string
+  isRanked?: boolean
+  uniqueBettorCount: number
+  createdTime: number
+}): MarketLoanEligibility => {
+  const now = Date.now()
+  const ageHours = (now - market.createdTime) / (1000 * 60 * 60)
+
+  if (market.visibility !== 'public') {
+    return { eligible: false, reason: 'Market must be listed (public)' }
+  }
+
+  if (market.isRanked === false) {
+    return { eligible: false, reason: 'Market must be ranked' }
+  }
+
+  if (market.uniqueBettorCount <= MIN_TRADERS_FOR_MARKET_LOAN) {
+    return {
+      eligible: false,
+      reason: `Market must have more than ${MIN_TRADERS_FOR_MARKET_LOAN} traders`,
+    }
+  }
+
+  if (ageHours < MIN_AGE_HOURS_FOR_MARKET_LOAN) {
+    return {
+      eligible: false,
+      reason: `Market must be at least ${MIN_AGE_HOURS_FOR_MARKET_LOAN} hours old`,
+    }
+  }
+
+  return { eligible: true }
+}
 
 export const overLeveraged = (loanTotal: number, investmentValue: number) =>
   loanTotal / investmentValue >= 8

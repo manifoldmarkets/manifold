@@ -26,29 +26,40 @@ export function LoanButton(props: {
   const currentLoan = marketLoanData?.currentLoan ?? 0
   const available = marketLoanData?.available ?? 0
   const maxLoan = marketLoanData?.maxLoan ?? 0
+  const eligible = marketLoanData?.eligible ?? false
+  const eligibilityReason = marketLoanData?.eligibilityReason
 
   // Don't show if no loan available and no current loan
+  // But always show if there's a current loan (so users can repay)
   if (maxLoan <= 0 && currentLoan <= 0) {
     return null
   }
 
   const hasLoan = currentLoan > 0
-  const hasAvailable = available > 0
+  const hasAvailable = available > 0 && eligible
+
+  const getTooltipText = () => {
+    if (hasLoan) {
+      if (!eligible) {
+        return `Current loan: ${formatMoney(currentLoan)}. ${
+          eligibilityReason ?? 'Not eligible for more loans.'
+        }`
+      }
+      return `Current loan: ${formatMoney(currentLoan)}. ${
+        hasAvailable
+          ? `${formatMoney(available)} more available.`
+          : 'Max loan reached.'
+      }`
+    }
+    if (!eligible) {
+      return eligibilityReason ?? 'Market not eligible for loans'
+    }
+    return `Borrow up to ${formatMoney(available)} on this market`
+  }
 
   return (
     <>
-      <Tooltip
-        text={
-          hasLoan
-            ? `Current loan: ${formatMoney(currentLoan)}. ${
-                hasAvailable
-                  ? `${formatMoney(available)} more available.`
-                  : 'Max loan reached.'
-              }`
-            : `Borrow up to ${formatMoney(available)} on this market`
-        }
-        placement="top"
-      >
+      <Tooltip text={getTooltipText()} placement="top">
         <Button
           color={hasLoan ? 'amber-outline' : 'amber'}
           size="xs"
