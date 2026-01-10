@@ -123,14 +123,37 @@ export function LoansModal(props: {
     contractId && marketLoanData && 'availableAggregate' in marketLoanData
       ? marketLoanData.availableAggregate
       : 0
+  // Daily limits (10% of net worth per day)
+  const marketDailyLimit =
+    contractId && marketLoanData && 'dailyLimit' in marketLoanData
+      ? marketLoanData.dailyLimit
+      : 0
+  const marketTodayLoans =
+    contractId && marketLoanData && 'todayLoans' in marketLoanData
+      ? marketLoanData.todayLoans
+      : 0
+  const marketAvailableToday =
+    contractId && marketLoanData && 'availableToday' in marketLoanData
+      ? marketLoanData.availableToday
+      : 0
 
   // Determine which limit is binding for market loans
   const availablePerMarket = Math.max(0, maxMarketLoan - currentMarketLoan)
+  const isDailyLimitBinding =
+    marketAvailableToday < availablePerMarket &&
+    marketAvailableToday < availableAggregate &&
+    marketAvailableToday >= 0
   const isAggregateLimitBinding =
-    availableAggregate < availablePerMarket && availableAggregate >= 0
+    !isDailyLimitBinding &&
+    availableAggregate < availablePerMarket &&
+    availableAggregate >= 0
   const isNetWorthLimitBinding =
-    !isAggregateLimitBinding && netWorthLimit <= positionLimit
-  const bindingLimitReason = isAggregateLimitBinding
+    !isDailyLimitBinding &&
+    !isAggregateLimitBinding &&
+    netWorthLimit <= positionLimit
+  const bindingLimitReason = isDailyLimitBinding
+    ? `${formatPercent(DAILY_LOAN_NET_WORTH_PERCENT)} daily limit`
+    : isAggregateLimitBinding
     ? `${formatPercent(MAX_LOAN_NET_WORTH_PERCENT)} total borrowing limit`
     : isNetWorthLimitBinding
     ? `${formatPercent(MAX_MARKET_LOAN_NET_WORTH_PERCENT)} of net worth`

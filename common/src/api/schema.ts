@@ -2088,6 +2088,10 @@ export const API = (_apiTypeCheck = {
       aggregateLimit: number
       totalLoanAllMarkets: number
       availableAggregate: number
+      // Daily limits (10% of net worth per day)
+      dailyLimit: number
+      todayLoans: number
+      availableToday: number
     },
     props: z.object({
       contractId: z.string(),

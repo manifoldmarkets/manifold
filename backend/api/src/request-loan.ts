@@ -162,7 +162,10 @@ export const requestLoan: APIHandler<'request-loan'> = async (props, auth) => {
     const currentTotalLoan = portfolioMetric.loanTotal ?? 0
     const maxAggregateLoan = calculateMaxGeneralLoanAmount(netWorth)
     if (currentTotalLoan + amount > maxAggregateLoan) {
-      const availableAggregate = Math.max(0, maxAggregateLoan - currentTotalLoan)
+      const availableAggregate = Math.max(
+        0,
+        maxAggregateLoan - currentTotalLoan
+      )
       throw new APIError(
         400,
         `Loan would exceed your total borrowing limit. Max total loan: ${maxAggregateLoan.toFixed(
@@ -170,6 +173,31 @@ export const requestLoan: APIHandler<'request-loan'> = async (props, auth) => {
         )}, current total: ${currentTotalLoan.toFixed(
           2
         )}, available: ${availableAggregate.toFixed(2)}`
+      )
+    }
+
+    // Check daily loan limit (10% of net worth per day)
+    const dailyLimit = calculateDailyLoanLimit(netWorth)
+    const oneDayAgo = Date.now() - MS_PER_DAY
+    const todayLoansResult = await pg.oneOrNone<{ total: number }>(
+      `select coalesce(sum(amount), 0) as total
+       from txns
+       where to_id = $1
+       and category = 'LOAN'
+       and created_time >= $2`,
+      [user.id, new Date(oneDayAgo).toISOString()]
+    )
+    const todayLoans = todayLoansResult?.total ?? 0
+
+    if (todayLoans + amount > dailyLimit) {
+      const availableToday = Math.max(0, dailyLimit - todayLoans)
+      throw new APIError(
+        400,
+        `Daily loan limit exceeded. You can borrow up to ${dailyLimit.toFixed(
+          2
+        )} per day (10% of net worth). You've already borrowed ${todayLoans.toFixed(
+          2
+        )} today. Available today: ${availableToday.toFixed(2)}`
       )
     }
 

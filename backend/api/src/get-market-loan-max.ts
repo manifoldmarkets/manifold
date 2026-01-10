@@ -4,9 +4,11 @@ import { getUser, getContract } from 'shared/utils'
 import {
   calculateMarketLoanMax,
   calculateMaxGeneralLoanAmount,
+  calculateDailyLoanLimit,
   MAX_MARKET_LOAN_NET_WORTH_PERCENT,
   MAX_MARKET_LOAN_POSITION_PERCENT,
   MAX_LOAN_NET_WORTH_PERCENT,
+  MS_PER_DAY,
   isMarketEligibleForLoan,
 } from 'common/loans'
 import { convertPortfolioHistory } from 'common/supabase/portfolio-metrics'
@@ -77,12 +79,27 @@ export const getMarketLoanMax: APIHandler<'get-market-loan-max'> = async (
   const maxAggregateLoan = calculateMaxGeneralLoanAmount(netWorth)
   const availableAggregate = Math.max(0, maxAggregateLoan - totalLoanAllMarkets)
 
+  // Calculate daily limit (10% of net worth per day)
+  const dailyLimit = calculateDailyLoanLimit(netWorth)
+  const oneDayAgo = Date.now() - MS_PER_DAY
+  const todayLoansResult = await pg.oneOrNone<{ total: number }>(
+    `select coalesce(sum(amount), 0) as total
+     from txns
+     where to_id = $1
+     and category = 'LOAN'
+     and created_time >= $2`,
+    [auth.uid, new Date(oneDayAgo).toISOString()]
+  )
+  const todayLoans = todayLoansResult?.total ?? 0
+  const availableToday = Math.max(0, dailyLimit - todayLoans)
+
   // Available is the minimum of:
   // 1. Per-market limit minus current market loan
   // 2. Aggregate limit minus total loan across all markets
+  // 3. Daily limit minus today's loans
   const availableMarket = Math.max(0, maxLoan - currentLoan)
   const available = eligibility.eligible
-    ? Math.min(availableMarket, availableAggregate)
+    ? Math.min(availableMarket, availableAggregate, availableToday)
     : 0
 
   return {
@@ -98,5 +115,9 @@ export const getMarketLoanMax: APIHandler<'get-market-loan-max'> = async (
     aggregateLimit: maxAggregateLoan,
     totalLoanAllMarkets,
     availableAggregate,
+    // Include daily limit info
+    dailyLimit,
+    todayLoans,
+    availableToday,
   }
 }
