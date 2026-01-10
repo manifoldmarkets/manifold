@@ -471,7 +471,7 @@ export function LoansModal(props: {
                 Available today
               </span>
               <span className="text-primary-600 text-2xl font-semibold">
-                {formatMoney(availableToday)}
+                {formatMoney(requestLoanMax)}
               </span>
               <span className="text-ink-500 text-xs">
                 Daily limit: {formatMoney(dailyLimit)} • Total max:{' '}
