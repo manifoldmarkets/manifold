@@ -39,6 +39,17 @@ export const requestLoan: APIHandler<'request-loan'> = async (props, auth) => {
   const { amount, contractId, answerId } = props
   const pg = createSupabaseDirectClient()
 
+  // Check if loans are globally enabled
+  const loanStatus = await pg.oneOrNone<{ status: boolean }>(
+    `SELECT status FROM system_trading_status WHERE token = 'LOAN'`
+  )
+  if (loanStatus && !loanStatus.status) {
+    throw new APIError(
+      503,
+      'Loans are currently disabled. Please try again later.'
+    )
+  }
+
   if (amount <= 0) {
     throw new APIError(400, 'Loan amount must be positive')
   }

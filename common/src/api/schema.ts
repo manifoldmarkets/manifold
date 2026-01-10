@@ -118,7 +118,7 @@ export const API = (_apiTypeCheck = {
     authed: true,
     props: z
       .object({
-        token: z.enum(['MANA', 'CASH']),
+        token: z.enum(['MANA', 'CASH', 'LOAN']),
       })
       .strict(),
     returns: {} as { status: boolean },
