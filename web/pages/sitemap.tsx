@@ -53,7 +53,6 @@ export default function AboutPage() {
             <LabCard title="🏆 Leaderboards" href="/leaderboards" />
 
             <LabCard title="🎟️ Charity Giveaway" href="/charity" />
-           
 
             <LabCard title="📺 TV" href="/tv" />
             <LabCard title="️✨ Changelog" href="/posts?filter=changelog" />
