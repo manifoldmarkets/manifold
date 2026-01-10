@@ -1,7 +1,7 @@
-// Charity Lottery types
+// Charity Giveaway types
 
-export interface CharityLottery {
-  lotteryNum: number
+export interface CharityGiveaway {
+  giveawayNum: number
   name: string
   prizeAmountUsd: number
   closeTime: number
@@ -9,9 +9,9 @@ export interface CharityLottery {
   createdTime: number
 }
 
-export interface CharityLotteryTicket {
+export interface CharityGiveawayTicket {
   id: string
-  lotteryNum: number
+  giveawayNum: number
   charityId: string
   userId: string
   numTickets: number
@@ -19,32 +19,32 @@ export interface CharityLotteryTicket {
   createdTime: number
 }
 
-export interface CharityLotteryStats {
+export interface CharityGiveawayStats {
   charityId: string
   totalTickets: number
   totalManaSpent: number
 }
 
 // Bonding curve constants
-export const LOTTERY_BASE_PRICE = 0.1 // 0.10 mana per ticket to start
-export const LOTTERY_SCALE_FACTOR = 1000000 // Price doubles at 1,000,000 tickets
+export const GIVEAWAY_BASE_PRICE = 0.1 // 0.10 mana per ticket to start
+export const GIVEAWAY_SCALE_FACTOR = 1000000 // Price doubles at 1,000,000 tickets
 
 // Calculate the cost to buy numTickets starting from currentTickets
-export function calculateLotteryTicketCost(
+export function calculateGiveawayTicketCost(
   currentTickets: number,
   numTickets: number
 ): number {
   const n1 = currentTickets
   const n2 = currentTickets + numTickets
   return (
-    LOTTERY_BASE_PRICE *
-    (n2 - n1 + (n2 * n2 - n1 * n1) / (2 * LOTTERY_SCALE_FACTOR))
+    GIVEAWAY_BASE_PRICE *
+    (n2 - n1 + (n2 * n2 - n1 * n1) / (2 * GIVEAWAY_SCALE_FACTOR))
   )
 }
 
 // Get current price per ticket (for display)
-export function getCurrentLotteryTicketPrice(currentTickets: number): number {
-  return LOTTERY_BASE_PRICE * (1 + currentTickets / LOTTERY_SCALE_FACTOR)
+export function getCurrentGiveawayTicketPrice(currentTickets: number): number {
+  return GIVEAWAY_BASE_PRICE * (1 + currentTickets / GIVEAWAY_SCALE_FACTOR)
 }
 
 // Calculate how many tickets you can buy with a given amount of mana
@@ -55,8 +55,8 @@ export function calculateTicketsFromMana(
 ): number {
   if (mana <= 0) return 0
 
-  const S = LOTTERY_SCALE_FACTOR
-  const B = LOTTERY_BASE_PRICE
+  const S = GIVEAWAY_SCALE_FACTOR
+  const B = GIVEAWAY_BASE_PRICE
   const n = currentTickets
 
   // Solving: B * t + B * (2*n*t + t²) / (2*S) = mana

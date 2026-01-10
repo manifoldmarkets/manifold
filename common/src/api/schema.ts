@@ -2732,14 +2732,14 @@ export const API = (_apiTypeCheck = {
       }
     },
   },
-  'get-charity-lottery': {
+  'get-charity-giveaway': {
     method: 'GET',
     visibility: 'undocumented',
     authed: false,
-    props: z.object({ lotteryNum: z.coerce.number().optional() }).strict(),
+    props: z.object({ giveawayNum: z.coerce.number().optional() }).strict(),
     returns: {} as {
-      lottery?: {
-        lotteryNum: number
+      giveaway?: {
+        giveawayNum: number
         name: string
         prizeAmountUsd: number
         closeTime: number
@@ -2754,13 +2754,13 @@ export const API = (_apiTypeCheck = {
       totalTickets: number
     },
   },
-  'buy-charity-lottery-tickets': {
+  'buy-charity-giveaway-tickets': {
     method: 'POST',
     visibility: 'undocumented',
     authed: true,
     props: z
       .object({
-        lotteryNum: z.number(),
+        giveawayNum: z.number(),
         charityId: z.string(),
         numTickets: z.number().positive(),
       })
@@ -2771,13 +2771,13 @@ export const API = (_apiTypeCheck = {
       manaSpent: number
     },
   },
-  'get-charity-lottery-sales': {
+  'get-charity-giveaway-sales': {
     method: 'GET',
     visibility: 'undocumented',
     authed: false,
     props: z
       .object({
-        lotteryNum: z.coerce.number(),
+        giveawayNum: z.coerce.number(),
         limit: z.coerce.number().min(1).max(100).default(50),
         before: z.string().optional(),
       })
@@ -2786,7 +2786,7 @@ export const API = (_apiTypeCheck = {
     returns: {} as {
       sales: {
         id: string
-        lotteryNum: number
+        giveawayNum: number
         charityId: string
         userId: string
         numTickets: number

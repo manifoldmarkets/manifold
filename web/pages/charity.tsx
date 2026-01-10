@@ -24,8 +24,8 @@ import { track } from 'web/lib/service/analytics'
 
 import {
   calculateTicketsFromMana,
-  getCurrentLotteryTicketPrice,
-} from 'common/charity-lottery'
+  getCurrentGiveawayTicketPrice,
+} from 'common/charity-giveaway'
 
 // Format tickets with appropriate precision
 function formatTickets(tickets: number): string {
@@ -38,7 +38,7 @@ function formatTickets(tickets: number): string {
   }
 }
 
-// Horse charities to exclude from the lottery
+// Horse charities to exclude from the giveaway
 const EXCLUDED_CHARITY_IDS = [
   'new-vocations',
   'stable-recovery',
@@ -69,9 +69,9 @@ const COLORS = [
   '#d946ef', // fuchsia
 ]
 
-export default function CharityLotteryPage() {
+export default function CharityGiveawayPage() {
   const user = useUser()
-  const { data, refresh } = useAPIGetter('get-charity-lottery', {})
+  const { data, refresh } = useAPIGetter('get-charity-giveaway', {})
 
   const [selectedCharityId, setSelectedCharityId] = useState<string>('')
   const [hoveredCharityId, setHoveredCharityId] = useState<string | null>(null)
@@ -81,7 +81,7 @@ export default function CharityLotteryPage() {
 
   const previewCharityId = hoveredCharityId || selectedCharityId
 
-  const lottery = data ? data.lottery : undefined
+  const giveaway = data ? data.giveaway : undefined
   const charityStats = data ? data.charityStats : []
   const totalTickets = data ? data.totalTickets : 0
   const totalManaSpent = charityStats.reduce(
@@ -93,10 +93,10 @@ export default function CharityLotteryPage() {
   const [timeRemaining, setTimeRemaining] = useState<string>('')
   const [timeRemainingDetailed, setTimeRemainingDetailed] = useState<string>('')
   useEffect(() => {
-    if (!lottery) return
+    if (!giveaway) return
     const updateTime = () => {
       const now = Date.now()
-      const diff = lottery.closeTime - now
+      const diff = giveaway.closeTime - now
       if (diff <= 0) {
         setTimeRemaining('Ended')
         setTimeRemainingDetailed('Drawing complete')
@@ -121,7 +121,7 @@ export default function CharityLotteryPage() {
     updateTime()
     const interval = setInterval(updateTime, 60000)
     return () => clearInterval(interval)
-  }, [lottery?.closeTime])
+  }, [giveaway?.closeTime])
 
   const selectedCharityStats = charityStats.find(
     (s) => s.charityId === selectedCharityId
@@ -133,15 +133,15 @@ export default function CharityLotteryPage() {
     return calculateTicketsFromMana(totalTickets, manaAmount)
   }, [totalTickets, manaAmount])
 
-  const currentPrice = getCurrentLotteryTicketPrice(totalTickets)
-  const isClosed = lottery && lottery.closeTime <= Date.now()
+  const currentPrice = getCurrentGiveawayTicketPrice(totalTickets)
+  const isClosed = giveaway && giveaway.closeTime <= Date.now()
 
   const handleBuyTickets = async () => {
-    if (!lottery || !selectedCharityId || numTickets <= 0) return
+    if (!giveaway || !selectedCharityId || numTickets <= 0) return
     setIsSubmitting(true)
     try {
-      const result = await api('buy-charity-lottery-tickets', {
-        lotteryNum: lottery.lotteryNum,
+      const result = await api('buy-charity-giveaway-tickets', {
+        giveawayNum: giveaway.giveawayNum,
         charityId: selectedCharityId,
         numTickets,
       })
@@ -150,8 +150,8 @@ export default function CharityLotteryPage() {
           result.numTickets
         )} tickets for ${formatMoney(result.manaSpent)}!`
       )
-      track('charity lottery purchase', {
-        lotteryNum: lottery.lotteryNum,
+      track('charity giveaway purchase', {
+        giveawayNum: giveaway.giveawayNum,
         charityId: selectedCharityId,
         charityName: charities.find((c) => c.id === selectedCharityId)?.name,
         numTickets: result.numTickets,
@@ -171,7 +171,7 @@ export default function CharityLotteryPage() {
 
   if (data === undefined) {
     return (
-      <Page trackPageView={'charity lottery'}>
+      <Page trackPageView={'charity giveaway'}>
         <Col className="items-center justify-center py-20">
           <LoadingIndicator />
         </Col>
@@ -179,21 +179,21 @@ export default function CharityLotteryPage() {
     )
   }
 
-  if (!lottery) {
+  if (!giveaway) {
     return (
-      <Page trackPageView={'charity lottery'}>
+      <Page trackPageView={'charity giveaway'}>
         <SEO
-          title="Charity Lottery"
-          description="Buy lottery tickets for your favorite charity to win $1,000!"
+          title="Charity Giveaway"
+          description="Buy tickets for your favorite charity to win $1,000!"
           url="/charity"
         />
         <Col className="mx-auto w-full max-w-3xl items-center justify-center gap-6 px-4 py-20">
           <div className="text-ink-300 text-6xl">🎟️</div>
           <h1 className="text-ink-900 text-2xl font-semibold">
-            No Active Lottery
+            No Active Giveaway
           </h1>
           <p className="text-ink-500 text-center">
-            There's no lottery running at the moment.
+            There's no giveaway running at the moment.
             <br />
             Check back soon for the next drawing!
           </p>
@@ -203,10 +203,10 @@ export default function CharityLotteryPage() {
   }
 
   return (
-    <Page trackPageView={'charity lottery'}>
+    <Page trackPageView={'charity giveaway'}>
       <SEO
-        title="Manifold Charity Lottery"
-        description="Buy lottery tickets for your favorite charity to win $1,000!"
+        title="Manifold Charity Giveaway"
+        description="Buy tickets for your favorite charity to win $1,000!"
         url="/charity"
       />
 
@@ -216,17 +216,14 @@ export default function CharityLotteryPage() {
           <Row className="items-center gap-3">
             <span className="text-3xl">🎟️</span>
             <h1 className="text-ink-900 text-3xl font-bold tracking-tight">
-              Manifold Charity Lottery
+              Manifold Charity Giveaway
             </h1>
           </Row>
           <p className="text-ink-600 text-lg leading-relaxed">
-            Support your favorite charity with lottery tickets. On March 1st,
-            one ticket will be randomly selected—and Manifold will send the
-            winning charity the{' '}
-            <span className="font-semibold text-teal-600 dark:text-teal-400">
-              ${lottery.prizeAmountUsd.toLocaleString()}
-            </span>{' '}
-            prize.
+            Manifold is giving ${giveaway.prizeAmountUsd.toLocaleString()} to
+            charity—you decide which one. Buy tickets to boost a charity's odds,
+            and on March 1st, we'll draw one lucky ticket to determine the
+            winning charity.
           </p>
         </Col>
 
@@ -234,7 +231,7 @@ export default function CharityLotteryPage() {
         <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
           <StatCard
             label="Prize Pool"
-            value={`$${lottery.prizeAmountUsd.toLocaleString()}`}
+            value={`$${giveaway.prizeAmountUsd.toLocaleString()}`}
             color="teal"
           />
           <StatCard
@@ -256,7 +253,7 @@ export default function CharityLotteryPage() {
         </div>
 
         {/* Pie Chart */}
-        <LotteryPieChart
+        <GiveawayPieChart
           charityStats={charityStats}
           totalTickets={totalTickets}
           hoveredCharityId={hoveredCharityId}
@@ -289,9 +286,9 @@ export default function CharityLotteryPage() {
         {isClosed && (
           <div className="rounded-xl border border-amber-200 bg-amber-50 p-6 text-center dark:border-amber-800 dark:bg-amber-950/30">
             <div className="mb-2 text-2xl">🏆</div>
-            <h3 className="text-ink-900 font-semibold">Lottery Closed</h3>
+            <h3 className="text-ink-900 font-semibold">Giveaway Closed</h3>
             <p className="text-ink-600 mt-1 text-sm">
-              {lottery.winningTicketId
+              {giveaway.winningTicketId
                 ? 'A winner has been selected!'
                 : 'The winning ticket will be drawn soon.'}
             </p>
@@ -300,7 +297,7 @@ export default function CharityLotteryPage() {
 
         {/* Sales History */}
         <SalesHistory
-          lotteryNum={lottery.lotteryNum}
+          giveawayNum={giveaway.giveawayNum}
           refreshKey={salesRefreshKey}
         />
       </Col>
@@ -589,7 +586,7 @@ function SignInPrompt(props: { previewCharityId: string }) {
   )
 }
 
-function LotteryPieChart(props: {
+function GiveawayPieChart(props: {
   charityStats: {
     charityId: string
     totalTickets: number
@@ -807,10 +804,10 @@ function LotteryPieChart(props: {
   )
 }
 
-function SalesHistory(props: { lotteryNum: number; refreshKey: number }) {
-  const { lotteryNum, refreshKey } = props
-  const { data, refresh } = useAPIGetter('get-charity-lottery-sales', {
-    lotteryNum,
+function SalesHistory(props: { giveawayNum: number; refreshKey: number }) {
+  const { giveawayNum, refreshKey } = props
+  const { data, refresh } = useAPIGetter('get-charity-giveaway-sales', {
+    giveawayNum,
     limit: 50,
   })
 

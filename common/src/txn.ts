@@ -61,7 +61,7 @@ type AnyTxnType =
   | ProfitFee
   | UndoResolutionFee
   | ContractBoostPurchase
-  | CharityLotteryTicket
+  | CharityGiveawayTicket
 
 export type AnyTxnCategory = AnyTxnType['category']
 
@@ -603,13 +603,13 @@ type ContractBoostPurchase = {
   }
 }
 
-type CharityLotteryTicket = {
-  category: 'CHARITY_LOTTERY_TICKET'
+type CharityGiveawayTicket = {
+  category: 'CHARITY_GIVEAWAY_TICKET'
   fromType: 'USER'
   toType: 'BANK'
   token: 'M$'
   data: {
-    lotteryNum: number
+    giveawayNum: number
     charityId: string
     numTickets: number
     ticketId: string
@@ -672,4 +672,4 @@ export type ProfitFeeTxn = Txn & ProfitFee
 export type UndoResolutionFeeTxn = Txn & UndoResolutionFee
 export type AdminRewardTxn = Txn & AdminReward
 export type ContractBoostPurchaseTxn = Txn & ContractBoostPurchase
-export type CharityLotteryTicketTxn = Txn & CharityLotteryTicket
+export type CharityGiveawayTicketTxn = Txn & CharityGiveawayTicket
