@@ -12,16 +12,21 @@ import {
   CPMMMultiContract,
   MarketContract,
 } from 'common/contract'
+import { Bet } from 'common/bet'
 import { ContractMetric } from 'common/contract-metric'
+import { noFees } from 'common/fees'
 import { PROFIT_FEE_FRACTION } from 'common/economy'
+import {
+  calculatePoolInterestCpmm1,
+  calculatePoolInterestMulti,
+} from './calculate-pool-interest'
+import { calculateBulkInterestShares } from './calculate-interest-shares'
+import { bulkInsertBets } from './supabase/bets'
 import { isAdminId, isModId } from 'common/envs/constants'
 import { LiquidityProvision } from 'common/liquidity-provision'
-import {
-  getLoanPayouts,
-  getPayouts,
-  groupPayoutsByUser,
-  Payout,
-} from 'common/payouts'
+import { getPayouts, groupPayoutsByUser, Payout } from 'common/payouts'
+import { LOAN_DAILY_INTEREST_RATE, MS_PER_DAY } from 'common/loans'
+import { getLoanTrackingForContract } from './helpers/user-contract-loans'
 import { convertTxn } from 'common/supabase/txns'
 import { CancelUniqueBettorBonusTxn, Txn } from 'common/txn'
 import { User } from 'common/user'
@@ -101,6 +106,122 @@ export const resolveMarketHelper = async (
       ? Math.min(closeTime, resolutionTime)
       : closeTime
 
+    // Calculate pool with interest before calculating payouts
+    // This ensures LPs receive interest on their locked capital
+    if (unresolvedContract.mechanism === 'cpmm-1') {
+      const poolWithInterest = calculatePoolInterestCpmm1(unresolvedContract)
+      unresolvedContract.pool.YES = poolWithInterest.YES
+      unresolvedContract.pool.NO = poolWithInterest.NO
+    } else if (unresolvedContract.mechanism === 'cpmm-multi-1') {
+      const multiContract = unresolvedContract as CPMMMultiContract
+      const answers = multiContract.answers
+      const poolUpdates = calculatePoolInterestMulti(multiContract, answers)
+      const updateMap = new Map(poolUpdates.map((u) => [u.id, u]))
+      for (const answer of answers) {
+        const update = updateMap.get(answer.id)
+        if (update) {
+          answer.poolYes = update.poolYes
+          answer.poolNo = update.poolNo
+        }
+      }
+    }
+
+    // Fetch loan tracking data for interest calculation
+    const loanTracking = await getLoanTrackingForContract(
+      tx,
+      contractId,
+      answerId
+    )
+
+    // Bulk claim interest shares for all users with positions
+    // This ensures users receive their accrued interest as actual shares before payout calculation
+    const interestSharesResults = await calculateBulkInterestShares(
+      tx,
+      contractId,
+      answerId,
+      resolutionTime,
+      unresolvedContract.token
+    )
+
+    if (interestSharesResults.length > 0) {
+      // Get current probability for interest claim bets
+      let prob: number
+      if (unresolvedContract.mechanism === 'cpmm-1') {
+        prob = unresolvedContract.prob
+      } else if (unresolvedContract.mechanism === 'cpmm-multi-1' && answerId) {
+        const answer = unresolvedContract.answers?.find(
+          (a) => a.id === answerId
+        )
+        prob = answer?.prob ?? 0.5
+      } else {
+        prob = 0.5
+      }
+
+      // Create interest claim bets for all users
+      const interestClaimBets: Omit<Bet, 'id'>[] = []
+
+      for (const result of interestSharesResults) {
+        if (result.yesShares > 0) {
+          interestClaimBets.push(
+            removeUndefinedProps({
+              contractId,
+              userId: result.userId,
+              answerId,
+              createdTime: resolutionTime,
+              amount: 0,
+              shares: result.yesShares,
+              outcome: 'YES',
+              probBefore: prob,
+              probAfter: prob,
+              fees: noFees,
+              isRedemption: false,
+              isInterestClaim: true,
+            })
+          )
+        }
+
+        if (result.noShares > 0) {
+          interestClaimBets.push(
+            removeUndefinedProps({
+              contractId,
+              userId: result.userId,
+              answerId,
+              createdTime: resolutionTime,
+              amount: 0,
+              shares: result.noShares,
+              outcome: 'NO',
+              probBefore: prob,
+              probAfter: prob,
+              fees: noFees,
+              isRedemption: false,
+              isInterestClaim: true,
+            })
+          )
+        }
+
+        // Update contract metrics with claimed interest shares
+        const userMetric = contractMetrics.find(
+          (m) => m.userId === result.userId && m.answerId == answerId
+        )
+        if (userMetric) {
+          userMetric.totalShares['YES'] =
+            (userMetric.totalShares['YES'] ?? 0) + result.yesShares
+          userMetric.totalShares['NO'] =
+            (userMetric.totalShares['NO'] ?? 0) + result.noShares
+        }
+      }
+
+      // Insert all interest claim bets
+      if (interestClaimBets.length > 0) {
+        await bulkInsertBets(tx, interestClaimBets as Bet[], contractMetrics)
+        log('Bulk claimed interest shares for resolution', {
+          count: interestSharesResults.length,
+          totalYesShares: sumBy(interestSharesResults, 'yesShares'),
+          totalNoShares: sumBy(interestSharesResults, 'noShares'),
+        })
+      }
+    }
+
     const {
       resolutionProbability,
       payouts,
@@ -113,7 +234,8 @@ export const resolveMarketHelper = async (
       probabilityInt,
       answerId,
       contractMetrics,
-      liquidities
+      liquidities,
+      loanTracking
     )
     // Keep MKT resolution prob for consistency's sake
     const probBeforeResolution =
@@ -264,6 +386,7 @@ export const resolveMarketHelper = async (
       token === 'CASH'
         ? assessProfitFees(traderPayouts, updatedContractMetrics, answerId)
         : []
+
     const { balanceUpdatesQuery, insertTxnsQuery, balanceUpdates } =
       getPayUsersQueries(payouts, contractId, answerId, token, payoutFees)
     const contractUpdateQuery = updateDataQuery(
@@ -351,7 +474,14 @@ export const getPayoutInfo = (
   probabilityInt: number | undefined,
   answerId: string | undefined,
   contractMetrics: ContractMetric[],
-  liquidities: LiquidityProvision[]
+  liquidities: LiquidityProvision[],
+  loanTracking?: {
+    user_id: string
+    contract_id: string
+    answer_id: string | null
+    loan_day_integral: number
+    last_loan_update_time: number
+  }[]
 ) => {
   const resolutionProbability =
     probabilityInt !== undefined ? probabilityInt / 100 : undefined
@@ -363,8 +493,12 @@ export const getPayoutInfo = (
       })()
     : undefined
 
-  // Calculate loan payouts from contract metrics
-  const loanPayouts = getLoanPayouts(contractMetrics, answerId)
+  // Calculate loan payouts with interest from loan tracking data
+  const loanPayouts = getLoanPayoutsWithInterest(
+    contractMetrics,
+    loanTracking ?? [],
+    answerId
+  )
 
   // Calculate payouts using contract metrics instead of bets
   const { traderPayouts, liquidityPayouts } = getPayouts(
@@ -404,6 +538,61 @@ export const getPayoutInfo = (
     payouts,
     traderPayouts,
   }
+}
+
+type LoanTrackingData = {
+  user_id: string
+  contract_id: string
+  answer_id: string | null
+  loan_day_integral: number
+  last_loan_update_time: number
+}
+
+const getLoanPayoutsWithInterest = (
+  contractMetrics: ContractMetric[],
+  loanTracking: LoanTrackingData[],
+  answerId?: string
+): Payout[] => {
+  const now = Date.now()
+  const metricsWithLoans = contractMetrics
+    .filter((metric) => metric.loan)
+    .filter((metric) => (answerId ? metric.answerId === answerId : true))
+
+  const trackingByKey = keyBy(
+    loanTracking,
+    (t) => `${t.user_id}-${t.answer_id ?? ''}`
+  )
+
+  const metricsByUser = groupBy(metricsWithLoans, (metric) => metric.userId)
+
+  const loansByUser = mapValues(metricsByUser, (metrics) =>
+    sumBy(metrics, (metric) => {
+      const loan = metric.loan ?? 0
+      if (loan === 0) return 0
+
+      const key = `${metric.userId}-${metric.answerId ?? ''}`
+      const tracking = trackingByKey[key]
+
+      // If no tracking data, just return the loan (no interest for legacy loans)
+      if (!tracking) return -loan
+
+      // Finalize the integral up to now
+      const daysSinceLastUpdate =
+        (now - tracking.last_loan_update_time) / MS_PER_DAY
+      const finalIntegral =
+        tracking.loan_day_integral + loan * daysSinceLastUpdate
+
+      // Calculate interest
+      const interest = finalIntegral * LOAN_DAILY_INTEREST_RATE
+
+      return -(loan + interest)
+    })
+  )
+
+  return Object.entries(loansByUser).map(([userId, payout]) => ({
+    userId,
+    payout,
+  }))
 }
 
 async function undoUniqueBettorRewardsIfCancelResolution(

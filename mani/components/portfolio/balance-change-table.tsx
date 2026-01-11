@@ -157,7 +157,7 @@ const TxnBalanceChangeRow = (props: { change: TxnBalanceChange }) => {
     } else if (user?.username) {
       router.push(('/' + user.username) as any)
     } else if (charity?.slug) {
-      router.push(('/charity/' + charity.slug) as any)
+      router.push(('/old-charity/' + charity.slug) as any)
     }
   }
 

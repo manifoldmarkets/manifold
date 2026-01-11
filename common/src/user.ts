@@ -149,6 +149,17 @@ export type User = {
   isAdvancedTrader?: boolean
   purchasedMana?: boolean
   verifiedPhone?: boolean
+
+  // Shop purchases - digital goods owned by this user
+  shopPurchases?: UserShopPurchase[]
+}
+
+export type UserShopPurchase = {
+  itemId: string
+  purchasedAt: number // timestamp
+  expiresAt?: number // for time-limited items
+  enabled?: boolean // for toggleable items (default true)
+  txnId: string // reference to transaction
 }
 
 export type PrivateUser = {

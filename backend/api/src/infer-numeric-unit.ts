@@ -50,5 +50,5 @@ export const inferNumericUnit: APIHandler<'infer-numeric-unit'> =
         throw new APIError(500, 'Failed to infer unit from question')
       }
     },
-    { maxCalls: 60, windowMs: HOUR_MS }
+    { maxCalls: 100, windowMs: HOUR_MS }
   )

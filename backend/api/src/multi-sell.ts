@@ -1,11 +1,13 @@
 import { getUnfilledBetsAndUserBalances } from 'api/helpers/bets'
 import { onCreateBets } from 'api/on-create-bet'
 import { executeNewBetResult } from 'api/place-bet'
+import { CPMMMultiContract } from 'common/contract'
 import { isSummary } from 'common/contract-metric'
 import { getCpmmMultiSellSharesInfo } from 'common/sell-bet'
 import { convertBet } from 'common/supabase/bets'
 import * as crypto from 'crypto'
 import { groupBy, keyBy, mapValues, sumBy } from 'lodash'
+import { calculatePoolInterestMulti } from 'shared/calculate-pool-interest'
 import { betsQueue } from 'shared/helpers/fn-queue'
 import { getContractMetrics } from 'shared/helpers/user-contract-metrics'
 import { runTransactionWithRetries } from 'shared/transact-with-retries'
@@ -36,6 +38,20 @@ const multiSellMain: APIHandler<'multi-sell'> = async (props, auth) => {
     if (isResolved) throw new APIError(403, 'Market is resolved.')
     if (mechanism != 'cpmm-multi-1' || !('shouldAnswersSumToOne' in contract))
       throw new APIError(400, 'Contract type/mechanism not supported')
+
+    // Calculate pool with interest and update local objects before sell calculations
+    const poolUpdates = calculatePoolInterestMulti(
+      contract as CPMMMultiContract,
+      contract.answers
+    )
+    const updateMap = new Map(poolUpdates.map((u) => [u.id, u]))
+    for (const answer of contract.answers) {
+      const update = updateMap.get(answer.id)
+      if (update) {
+        answer.poolYes = update.poolYes
+        answer.poolNo = update.poolNo
+      }
+    }
 
     const answersToSell = contract.answers.filter((a) =>
       answerIds.includes(a.id)

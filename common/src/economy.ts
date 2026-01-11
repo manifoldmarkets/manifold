@@ -66,6 +66,10 @@ export const MAX_TRADERS_FOR_BONUS = 10000
 
 export const SUBSIDY_FEE = 0
 
+// Interest on positions - paid at resolution
+export const INTEREST_ENABLED = true
+export const ANNUAL_INTEREST_RATE = 0.05
+
 export const BETTING_STREAK_BONUS_AMOUNT = 5
 export const BETTING_STREAK_BONUS_MAX = 25
 

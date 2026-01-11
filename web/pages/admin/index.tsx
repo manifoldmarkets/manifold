@@ -18,6 +18,7 @@ export default function AdminPage() {
   const isAdmin = useAdmin()
   const [manaStatus, setManaStatus] = useState(true)
   const [cashStatus, setCashStatus] = useState(true)
+  const [loanStatus, setLoanStatus] = useState(true)
   const [togglesEnabled, setTogglesEnabled] = useState(false)
 
   const [isLoading, setIsLoading] = useState(false)
@@ -30,16 +31,19 @@ export default function AdminPage() {
         const statuses = result.data ?? []
         setManaStatus(statuses.find((s) => s.token === 'MANA')?.status ?? true)
         setCashStatus(statuses.find((s) => s.token === 'CASH')?.status ?? true)
+        setLoanStatus(statuses.find((s) => s.token === 'LOAN')?.status ?? true)
       })
   }, [])
 
-  const toggleStatus = async (token: 'MANA' | 'CASH') => {
+  const toggleStatus = async (token: 'MANA' | 'CASH' | 'LOAN') => {
     if (!togglesEnabled) return
     const result = await api('toggle-system-trading-status', { token })
     if (token === 'MANA') {
       setManaStatus(result.status)
-    } else {
+    } else if (token === 'CASH') {
       setCashStatus(result.status)
+    } else {
+      setLoanStatus(result.status)
     }
   }
 
@@ -67,6 +71,12 @@ export default function AdminPage() {
           <ShortToggle
             on={cashStatus}
             setOn={() => toggleStatus('CASH')}
+            disabled={!togglesEnabled}
+          />
+          <span>Loans: {loanStatus ? 'Enabled' : 'Disabled'}</span>
+          <ShortToggle
+            on={loanStatus}
+            setOn={() => toggleStatus('LOAN')}
             disabled={!togglesEnabled}
           />
         </Row>

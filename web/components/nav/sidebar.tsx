@@ -6,6 +6,7 @@ import {
   MoonIcon,
   QuestionMarkCircleIcon,
   SearchIcon,
+  SparklesIcon,
   StarIcon,
   SunIcon,
 } from '@heroicons/react/outline'
@@ -17,7 +18,9 @@ import TrophyIcon from 'web/lib/icons/trophy-icon.svg'
 import { buildArray } from 'common/util/array'
 import { DAY_MS } from 'common/util/time'
 import { AppRouterInstance } from 'next/dist/shared/lib/app-router-context.shared-runtime'
+import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
+import { FaGem } from 'react-icons/fa6'
 import { IoCompassOutline } from 'react-icons/io5'
 import { AppBadgesOrGetAppButton } from 'web/components/buttons/app-badges-or-get-app-button'
 import { CreateQuestionButton } from 'web/components/buttons/create-question-button'
@@ -37,7 +40,7 @@ import { useTVIsLive } from '../tv/tv-schedule'
 import { ManifoldLogo } from './manifold-logo'
 import { ProfileSummary } from './profile-summary'
 import { NavItem, SidebarItem } from './sidebar-item'
-
+export const SPEND_MANA_ENABLED = false
 export default function Sidebar(props: {
   className?: string
   isMobile?: boolean
@@ -95,6 +98,19 @@ export default function Sidebar(props: {
     />
   )
 
+  const spendManaButton = user && !isMobile && SPEND_MANA_ENABLED && (
+    <Link
+      href="/shop"
+      className="group relative flex w-full items-center justify-center gap-2 rounded-md bg-gradient-to-r from-violet-500 to-purple-600 px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition-all hover:from-violet-600 hover:to-purple-700 hover:shadow-md"
+    >
+      <FaGem className="h-4 w-4" />
+      Spend mana
+      <span className="absolute -right-1 -top-1 rounded-full bg-amber-400 px-1.5 py-0.5 text-[10px] font-bold text-amber-900 shadow-sm">
+        NEW
+      </span>
+    </Link>
+  )
+
   return (
     <nav
       aria-label="Sidebar"
@@ -120,6 +136,7 @@ export default function Sidebar(props: {
         <Col className="gap-2">
           {createMarketButton}
           {addFundsButton}
+          {spendManaButton}
         </Col>
       </div>
       <div
@@ -175,6 +192,7 @@ const getDesktopNav = (
 
   return buildArray(
     { name: 'Browse', href: '/', icon: SearchIcon },
+    { name: 'Predictle', href: '/predictle', icon: SparklesIcon },
     { name: 'About', href: '/about', icon: QuestionMarkCircleIcon },
     { name: 'App', onClick: openDownloadApp, icon: DeviceMobileIcon }
   )

@@ -4,7 +4,12 @@ import { Answer } from 'common/answer'
 import { APIError } from 'common/api/utils'
 import { LimitBet, maker } from 'common/bet'
 import { MarginalBet } from 'common/calculate-metrics'
-import { Contract, MarketContract } from 'common/contract'
+import {
+  Contract,
+  CPMMContract,
+  CPMMMultiContract,
+  MarketContract,
+} from 'common/contract'
 import { ContractMetric, isSummary } from 'common/contract-metric'
 import { getUniqueBettorBonusAmount } from 'common/economy'
 import {
@@ -31,6 +36,10 @@ import {
 import { getInsertQuery } from 'shared/supabase/utils'
 import { txnToRow } from 'shared/txn/run-txn'
 import { contractColumnsToSelect } from 'shared/utils'
+import {
+  calculatePoolInterestCpmm1,
+  calculatePoolInterestMulti,
+} from 'shared/calculate-pool-interest'
 
 export const fetchContractBetDataAndValidate = async (
   pgTrans: SupabaseTransaction | SupabaseDirectClient,
@@ -145,6 +154,37 @@ export const fetchContractBetDataAndValidate = async (
 
   if (contract.mechanism === 'cpmm-multi-1')
     contract.answers = uniqBy([...answers, ...contract.answers], 'id')
+
+  // Calculate pool with interest and update local objects before bet calculations
+  if (contract.mechanism === 'cpmm-1') {
+    const poolWithInterest = calculatePoolInterestCpmm1(
+      contract as CPMMContract
+    )
+    contract.pool.YES = poolWithInterest.YES
+    contract.pool.NO = poolWithInterest.NO
+  } else if (contract.mechanism === 'cpmm-multi-1') {
+    const poolUpdates = calculatePoolInterestMulti(
+      contract as CPMMMultiContract,
+      answers
+    )
+    const updateMap = new Map(poolUpdates.map((u) => [u.id, u]))
+    for (const answer of answers) {
+      const update = updateMap.get(answer.id)
+      if (update) {
+        answer.poolYes = update.poolYes
+        answer.poolNo = update.poolNo
+      }
+    }
+    if (contract.answers) {
+      for (const answer of contract.answers) {
+        const update = updateMap.get(answer.id)
+        if (update) {
+          answer.poolYes = update.poolYes
+          answer.poolNo = update.poolNo
+        }
+      }
+    }
+  }
 
   const { closeTime, isResolved } = contract
   if (closeTime && Date.now() > closeTime)

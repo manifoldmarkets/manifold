@@ -10,10 +10,13 @@ import { useAPIGetter } from 'web/hooks/use-api-getter'
 import { usePersistentLocalState } from 'web/hooks/use-persistent-local-state'
 import { Button } from 'web/components/buttons/button'
 import { contractPath } from 'common/contract'
+import { referralQuery } from 'common/util/share'
 import Link from 'next/link'
 import { LoadingIndicator } from 'web/components/widgets/loading-indicator'
 import { useUser } from 'web/hooks/use-user'
+import { useSaveReferral } from 'web/hooks/use-save-referral'
 import { api } from 'web/lib/api/api'
+import { track } from 'web/lib/service/analytics'
 
 type Market = {
   id: string
@@ -53,18 +56,76 @@ function PredicteGame(props: {
 
   const user = useUser()
   const savedResultRef = useRef(false)
+  const fetchedServerResultRef = useRef(false)
 
-  const [gameState, setGameState, ready] = usePersistentLocalState<GameState>(
-    {
-      dateString: '',
-      markets: [],
-      correctOrder: {},
-      attempts: [],
-      completed: false,
-      won: false,
-    },
-    'predictle-game-state'
-  )
+  const [percentileData, setPercentileData] = useState<{
+    percentile: number
+    totalUsers: number
+  } | null>(null)
+
+  const [gameState, setGameState, localReady] =
+    usePersistentLocalState<GameState>(
+      {
+        dateString: '',
+        markets: [],
+        correctOrder: {},
+        attempts: [],
+        completed: false,
+        won: false,
+      },
+      'predictle-game-state'
+    )
+
+  // Track whether we've finished checking server (starts false, set true when done)
+  const [serverResultLoaded, setServerResultLoaded] = useState(false)
+
+  // Fetch server result for logged-in users to check if already completed
+  useEffect(() => {
+    // If no user (logged out), mark server check as done
+    if (user === null) {
+      setServerResultLoaded(true)
+      return
+    }
+    // If user is undefined (still loading), wait
+    if (user === undefined) return
+
+    // User is logged in - fetch server result
+    if (fetchedServerResultRef.current || !localReady) return
+
+    fetchedServerResultRef.current = true
+    api('get-predictle-result', { puzzleNumber })
+      .then((response) => {
+        if (response.hasResult && response.result) {
+          // User already completed this puzzle on server - restore full game state
+          const serverGameState = response.result.gameState
+
+          // Reconstruct markets from orderedMarketIds
+          const orderedMarketsFromServer = serverGameState.orderedMarketIds
+            .map((id) => apiMarkets.find((m) => m.id === id))
+            .filter((m): m is Market => m !== undefined)
+
+          if (orderedMarketsFromServer.length === apiMarkets.length) {
+            setGameState({
+              dateString,
+              markets: orderedMarketsFromServer,
+              correctOrder: apiCorrectOrder,
+              attempts: serverGameState.attempts,
+              completed: true,
+              won: response.result.won,
+            })
+            setOrderedMarkets(orderedMarketsFromServer)
+            savedResultRef.current = true // Don't re-save
+          }
+        }
+        setServerResultLoaded(true)
+      })
+      .catch((e) => {
+        console.error('Failed to fetch predictle result:', e)
+        setServerResultLoaded(true)
+      })
+  }, [user, localReady, puzzleNumber, apiMarkets, apiCorrectOrder, dateString])
+
+  const ready = localReady && serverResultLoaded
 
   // Use stored markets if they exist for today, otherwise use API markets
   const markets =
@@ -100,6 +161,7 @@ function PredicteGame(props: {
         won: false,
       })
       setOrderedMarkets(apiMarkets)
+      fetchedServerResultRef.current = false // Allow re-fetch for new day
     }
   }, [
     ready,
@@ -122,29 +184,26 @@ function PredicteGame(props: {
     }
   }, [ready, gameState.dateString, dateString, gameState.markets])
 
-  // Save result to database when game is completed (for logged-in users)
+  // Track analytics when game is completed
+  const trackedCompletionRef = useRef(false)
   useEffect(() => {
-    // Reset savedResultRef when it's a new day
+    // Reset trackedCompletionRef when it's a new day
     if (gameState.dateString !== dateString) {
-      savedResultRef.current = false
+      trackedCompletionRef.current = false
     }
 
     if (
       ready &&
       gameState.completed &&
-      user &&
-      !savedResultRef.current &&
+      !trackedCompletionRef.current &&
       gameState.dateString === dateString
     ) {
-      savedResultRef.current = true
+      trackedCompletionRef.current = true
       const attemptCount = gameState.attempts[0]?.feedback.length || 0
-      api('save-predictle-result', {
+      track('predictle completed', {
         puzzleNumber,
         attempts: attemptCount,
         won: gameState.won,
-      }).catch((e) => {
-        console.error('Failed to save predictle result:', e)
-        savedResultRef.current = false // Allow retry on error
       })
     }
   }, [
@@ -153,10 +212,69 @@ function PredicteGame(props: {
     gameState.won,
     gameState.attempts,
     gameState.dateString,
-    user,
     puzzleNumber,
     dateString,
   ])
+
+  // Save result to server when game is completed (for logged-in users)
+  useEffect(() => {
+    // Reset savedResultRef for new day
+    if (gameState.dateString !== dateString) {
+      savedResultRef.current = false
+    }
+
+    if (
+      ready &&
+      user &&
+      gameState.completed &&
+      !savedResultRef.current &&
+      gameState.dateString === dateString
+    ) {
+      savedResultRef.current = true
+
+      api('save-predictle-result', {
+        puzzleNumber,
+        won: gameState.won,
+        gameState: {
+          orderedMarketIds: gameState.markets.map((m) => m.id),
+          attempts: gameState.attempts,
+        },
+      }).catch((e) => {
+        console.error('Failed to save predictle result:', e)
+        savedResultRef.current = false // Allow retry on error
+      })
+    }
+  }, [
+    ready,
+    user,
+    gameState.completed,
+    gameState.won,
+    gameState.attempts,
+    gameState.markets,
+    gameState.dateString,
+    puzzleNumber,
+    dateString,
+  ])
+
+  // Fetch percentile when user wins
+  useEffect(() => {
+    if (!gameState.completed || !gameState.won) {
+      setPercentileData(null)
+      return
+    }
+
+    const attemptCount = gameState.attempts[0]?.feedback.length || 0
+    if (attemptCount === 0) return
+
+    api('get-predictle-percentile', {
+      puzzleNumber,
+      attempts: attemptCount,
+    })
+      .then(setPercentileData)
+      .catch((e) => {
+        console.error('Failed to fetch percentile:', e)
+      })
+  }, [gameState.completed, gameState.won, gameState.attempts, puzzleNumber])
 
   // Check if a market is locked (correctly guessed)
   const isMarketLocked = (marketId: string): boolean => {
@@ -287,9 +405,9 @@ function PredicteGame(props: {
   return (
     <Col className="w-full max-w-xl gap-6">
       {/* Header */}
-      <Col className="items-center gap-3 text-center">
-        <div className="text-5xl">🔮</div>
-        <h1 className="bg-gradient-to-r from-violet-600 via-fuchsia-500 to-pink-500 bg-clip-text text-4xl font-black tracking-tight text-transparent">
+      <Col className="items-center gap-2 text-center">
+        <img src="/predictle-logo.png" alt="Predictle" className="h-20 w-20" />
+        <h1 className="inline-block bg-gradient-to-r from-violet-600 via-fuchsia-500 to-pink-500 bg-clip-text text-4xl font-black tracking-tight text-transparent [-webkit-background-clip:text]">
           Predictle
         </h1>
         <p className="max-w-sm text-sm text-slate-600 dark:text-slate-300">
@@ -299,7 +417,10 @@ function PredicteGame(props: {
 
         {/* Progress dots */}
         {!gameState.completed && (
-          <Row className="gap-2">
+          <Row className="items-center gap-2">
+            <span className="text-xs font-medium text-slate-500 dark:text-slate-400">
+              Guesses
+            </span>
             {[1, 2, 3, 4].map((i) => (
               <div
                 key={i}
@@ -307,7 +428,7 @@ function PredicteGame(props: {
                   'h-3 w-3 rounded-full transition-all',
                   i <= attemptNumber
                     ? 'bg-gradient-to-br from-violet-500 to-fuchsia-500 shadow-md shadow-violet-200 dark:shadow-violet-500/50'
-                    : 'bg-slate-200 dark:bg-slate-600'
+                    : 'bg-slate-300 dark:bg-slate-600'
                 )}
               />
             ))}
@@ -415,9 +536,7 @@ function PredicteGame(props: {
               : 'bg-gradient-to-r from-violet-600 via-fuchsia-500 to-pink-500 shadow-fuchsia-200 hover:scale-[1.02] hover:shadow-xl hover:shadow-fuchsia-200 active:scale-[0.98] dark:shadow-fuchsia-500/30 dark:hover:shadow-fuchsia-500/40'
           )}
         >
-          <span className="relative z-10">
-            🎯 Submit Guess ({4 - attemptNumber} left)
-          </span>
+          <span className="relative z-10">Submit Guess</span>
         </button>
       ) : (
         <Col className="gap-3">
@@ -439,11 +558,11 @@ function PredicteGame(props: {
             </div>
             {gameState.won && (
               <div className="mt-1 text-sm opacity-90">
-                {attemptNumber === 1
-                  ? 'Incredible! First try!'
-                  : attemptNumber === 2
-                  ? 'Amazing! So close to perfect!'
-                  : attemptNumber === 3
+                {percentileData && percentileData.totalUsers > 1
+                  ? `You did better than ${percentileData.percentile}% of players today!`
+                  : attemptNumber === 1
+                  ? 'Aced it on the first try!'
+                  : attemptNumber === 2 || attemptNumber === 3
                   ? 'Great job!'
                   : 'You made it!'}
               </div>
@@ -453,12 +572,16 @@ function PredicteGame(props: {
             attempts={gameState.attempts}
             puzzleNumber={puzzleNumber}
             markets={orderedMarkets}
+            username={user?.username}
           />
         </Col>
       )}
 
       {/* Footer */}
-      <p className="text-center text-xs text-slate-400 dark:text-slate-500">
+      <p
+        className="text-center text-xs text-slate-400 dark:text-slate-500"
+        style={{ paddingBottom: 'max(1rem, env(safe-area-inset-bottom))' }}
+      >
         Predictle #{puzzleNumber} • New puzzle daily at midnight PT
       </p>
     </Col>
@@ -518,7 +641,7 @@ function MarketCard(props: {
                 slug: market.slug,
               })}
               className={clsx(
-                'line-clamp-2 text-sm font-semibold transition-colors',
+                'text-sm font-semibold transition-colors',
                 isCorrect
                   ? 'text-emerald-800 hover:text-emerald-600 dark:text-emerald-300 dark:hover:text-emerald-200'
                   : 'text-slate-800 hover:text-fuchsia-600 dark:text-slate-200 dark:hover:text-fuchsia-400'
@@ -528,7 +651,7 @@ function MarketCard(props: {
               {market.question}
             </Link>
           ) : (
-            <span className="line-clamp-2 text-sm font-semibold text-slate-800 dark:text-slate-200">
+            <span className="text-sm font-semibold text-slate-800 dark:text-slate-200">
               {market.question}
             </span>
           )}
@@ -547,13 +670,13 @@ function MarketCard(props: {
               </div>
               <span
                 className={clsx(
-                  'text-xs font-bold',
+                  'whitespace-nowrap text-xs font-bold',
                   isCorrect
                     ? 'text-emerald-600 dark:text-emerald-400'
                     : 'text-fuchsia-600 dark:text-fuchsia-400'
                 )}
               >
-                {Math.round(market.prob * 100)}%
+                {Math.round(market.prob * 100)}% chance
               </span>
             </div>
           )}
@@ -564,19 +687,7 @@ function MarketCard(props: {
           {feedback.length > 0 && (
             <Row className="gap-1 text-xl">
               {feedback.map((f, i) => (
-                <span
-                  key={i}
-                  className={clsx(
-                    'transition-transform',
-                    i === feedback.length - 1 && 'animate-bounce'
-                  )}
-                  style={{
-                    animationDuration: '0.5s',
-                    animationIterationCount: 1,
-                  }}
-                >
-                  {getFeedbackEmoji(f)}
-                </span>
+                <span key={i}>{getFeedbackEmoji(f)}</span>
               ))}
             </Row>
           )}
@@ -590,8 +701,9 @@ function ShareButton(props: {
   attempts: { marketId: string; feedback: Feedback[] }[]
   puzzleNumber: number
   markets: Market[]
+  username?: string
 }) {
-  const { attempts, puzzleNumber, markets } = props
+  const { attempts, puzzleNumber, markets, username } = props
   const [copied, setCopied] = useState(false)
 
   const generateShareText = () => {
@@ -602,10 +714,14 @@ function ShareButton(props: {
       return marketAttempt.feedback.map(getFeedbackEmoji).join('')
     })
 
+    const url = `https://manifold.markets/predictle${
+      username ? referralQuery(username) : ''
+    }`
+
     return `Predictle #${puzzleNumber}
 ${feedbackLines.join('\n')}
 
-Play at https://manifold.markets/predictle`
+Play at ${url}`
   }
 
   const handleShare = async () => {
@@ -631,41 +747,112 @@ Play at https://manifold.markets/predictle`
 }
 
 export default function PredictlePage() {
+  const user = useUser()
+  useSaveReferral(user)
+
   const { data, loading } = useAPIGetter('get-predictle-markets', {})
+
+  // Detect iOS for background positioning workaround
+  const [isIOS, setIsIOS] = useState(false)
+  useEffect(() => {
+    setIsIOS(
+      /iPad|iPhone|iPod/.test(navigator.userAgent) && !(window as any).MSStream
+    )
+  }, [])
+
+  // Prevent pull-to-refresh on Android (at body level)
+  useEffect(() => {
+    if (typeof document === 'undefined') return
+
+    const originalStyle = document.body.style.overscrollBehaviorY
+    // Only apply on non-iOS to avoid conflicts
+    if (!isIOS) {
+      document.body.style.overscrollBehaviorY = 'none'
+    }
+
+    return () => {
+      // Restore original style on unmount
+      document.body.style.overscrollBehaviorY = originalStyle
+    }
+  }, [isIOS])
+
+  // Use absolute positioning on iOS (fixed has rendering bugs), fixed elsewhere
+  const bgPositionClass = isIOS ? 'absolute' : 'fixed'
 
   return (
     <Page trackPageView="predictle" hideFooter className="!bg-transparent">
       <SEO
         title="Predictle"
-        description="A daily game where you arrange prediction markets by probability. Can you guess the order?"
+        description="A daily game where you arrange prediction markets by probability."
         url="/predictle"
+        image="https://manifold.markets/predictle-logo.png"
       />
-      {/* Light mode gradient background */}
-      <div className="fixed inset-0 -z-10 bg-gradient-to-br from-violet-100 via-fuchsia-50 to-amber-50 dark:hidden" />
-      <div className="fixed inset-0 -z-10 bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-violet-200/30 via-transparent to-transparent dark:hidden" />
-      {/* Dark mode gradient background */}
-      <div className="fixed inset-0 -z-10 hidden bg-slate-900 dark:block" />
-      <div className="fixed inset-0 -z-10 hidden bg-gradient-to-br from-violet-900/30 via-slate-900 to-fuchsia-900/20 dark:block" />
-      <div className="fixed inset-0 -z-10 hidden bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-violet-800/20 via-transparent to-transparent dark:block" />
-
-      <Col className="mx-auto w-full max-w-xl px-4 py-8">
-        {loading || !data ? (
-          <Col className="items-center gap-4 py-12">
-            <div className="text-5xl">🔮</div>
-            <LoadingIndicator />
-            <p className="text-slate-500 dark:text-slate-400">
-              Loading today's puzzle...
-            </p>
-          </Col>
-        ) : (
-          <PredicteGame
-            markets={data.markets}
-            correctOrder={data.correctOrder}
-            dateString={data.dateString}
-            puzzleNumber={data.puzzleNumber}
-          />
+      {/* Wrapper needed for iOS absolute positioning */}
+      <div
+        className={clsx(
+          !isIOS && 'overscroll-y-none',
+          isIOS && 'relative min-h-screen w-full'
         )}
-      </Col>
+      >
+        {/* Light mode gradient background */}
+        <div
+          className={clsx(
+            'pointer-events-none inset-0 -z-10 bg-gradient-to-br from-violet-100 via-fuchsia-50 to-amber-50 dark:hidden',
+            bgPositionClass
+          )}
+        />
+        <div
+          className={clsx(
+            'pointer-events-none inset-0 -z-10 bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-violet-200/30 via-transparent to-transparent dark:hidden',
+            bgPositionClass
+          )}
+        />
+        {/* Dark mode gradient background */}
+        <div
+          className={clsx(
+            'pointer-events-none inset-0 -z-10 hidden bg-slate-900 dark:block',
+            bgPositionClass
+          )}
+        />
+        <div
+          className={clsx(
+            'pointer-events-none inset-0 -z-10 hidden bg-gradient-to-br from-violet-900/30 via-slate-900 to-fuchsia-900/20 dark:block',
+            bgPositionClass
+          )}
+        />
+        <div
+          className={clsx(
+            'pointer-events-none inset-0 -z-10 hidden bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-violet-800/20 via-transparent to-transparent dark:block',
+            bgPositionClass
+          )}
+        />
+
+        <Col
+          className="mx-auto w-full max-w-xl overscroll-y-none px-4 py-8"
+          style={{ paddingBottom: 'max(2rem, env(safe-area-inset-bottom))' }}
+        >
+          {loading || !data ? (
+            <Col className="items-center gap-4 py-12">
+              <img
+                src="/predictle-logo.png"
+                alt="Predictle"
+                className="h-20 w-20 animate-pulse"
+              />
+              <LoadingIndicator />
+              <p className="text-slate-500 dark:text-slate-400">
+                Loading today's puzzle...
+              </p>
+            </Col>
+          ) : (
+            <PredicteGame
+              markets={data.markets}
+              correctOrder={data.correctOrder}
+              dateString={data.dateString}
+              puzzleNumber={data.puzzleNumber}
+            />
+          )}
+        </Col>
+      </div>
     </Page>
   )
 }

@@ -336,14 +336,14 @@ async function getCloseTimestamp(
   outcomeType: OutcomeType,
   utcOffset?: number
 ): Promise<number | undefined> {
-  return closeTime
-    ? typeof closeTime === 'number'
-      ? closeTime
-      : closeTime.getTime()
-    : NO_CLOSE_TIME_TYPES.includes(outcomeType)
-    ? closeTime
-    : (await getCloseDate(question, utcOffset)) ??
-      Date.now() + 7 * 24 * 60 * 60 * 1000
+  if (closeTime) {
+    return typeof closeTime === 'number' ? closeTime : closeTime.getTime()
+  }
+  if (NO_CLOSE_TIME_TYPES.includes(outcomeType)) {
+    return closeTime
+  }
+  const aiResult = await getCloseDate(question, utcOffset)
+  return aiResult?.closeTime ?? Date.now() + 7 * 24 * 60 * 60 * 1000
 }
 
 const getSlug = (preexistingContract: boolean, proposedSlug: string) => {

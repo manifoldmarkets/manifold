@@ -24,8 +24,9 @@ import {
   formatWithToken,
 } from 'common/util/format'
 import { uniq } from 'lodash'
-import { useRef, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import toast from 'react-hot-toast'
+import { useClaimableInterest } from 'web/hooks/use-claimable-interest'
 import { useIsPageVisible } from 'web/hooks/use-page-visible'
 import { api } from 'web/lib/api/api'
 import { track } from 'web/lib/service/analytics'
@@ -89,6 +90,18 @@ export function SellPanel(props: {
       ? allUnfilledBets.filter((b) => b.answerId === answerId)
       : allUnfilledBets
 
+  // Fetch claimable interest shares (MANA only)
+  const { interest } = useClaimableInterest(
+    contract.id,
+    contract.token === 'MANA' ? user.id : undefined,
+    answerId
+  )
+  const interestShares =
+    sharesOutcome === 'YES'
+      ? (interest?.yesShares ?? 0)
+      : (interest?.noShares ?? 0)
+  const effectiveShares = shares + interestShares
+
   const [displayAmount, setDisplayAmount] = useState<number | undefined>(() => {
     const probChange = isMultiSumsToOne
       ? getSaleResultMultiSumsToOne(
@@ -118,6 +131,23 @@ export function SellPanel(props: {
       ? getSharesFromStonkShares(contract, displayAmount ?? 0, shares)
       : displayAmount
   )
+
+  // Update default amount to include interest when interest loads
+  const [hasSetInterestDefault, setHasSetInterestDefault] = useState(false)
+  useEffect(() => {
+    if (interestShares > 0.01 && !hasSetInterestDefault && displayAmount !== undefined) {
+      const newAmount = isStonk
+        ? getStonkDisplayShares(contract, effectiveShares)
+        : effectiveShares
+      setDisplayAmount(newAmount)
+      setAmount(
+        isStonk
+          ? getSharesFromStonkShares(contract, newAmount, effectiveShares)
+          : newAmount
+      )
+      setHasSetInterestDefault(true)
+    }
+  }, [interestShares, hasSetInterestDefault, displayAmount, effectiveShares, isStonk, contract])
 
   // just for the input TODO: actually display somewhere
   const [error, setError] = useState<string | undefined>()
@@ -237,10 +267,10 @@ export function SellPanel(props: {
       : displayAmount
     setAmount(realAmount)
 
-    // Check for errors.
-    if (realAmount !== undefined && realAmount > shares) {
+    // Check for errors - use effectiveShares (includes interest)
+    if (realAmount !== undefined && realAmount > effectiveShares) {
       setError(
-        `Maximum ${formatShares(Math.floor(shares), isCashContract)} shares`
+        `Maximum ${formatShares(Math.floor(effectiveShares), isCashContract)} shares`
       )
     } else {
       setError(undefined)
@@ -273,7 +303,9 @@ export function SellPanel(props: {
             )}
             onClick={() =>
               onAmountChange(
-                isStonk ? getStonkDisplayShares(contract, shares) : shares
+                isStonk
+                  ? getStonkDisplayShares(contract, effectiveShares)
+                  : effectiveShares
               )
             }
           >
@@ -282,6 +314,14 @@ export function SellPanel(props: {
         }
       />
       <div className="text-error mb-2 mt-1 h-1 text-xs">{error}</div>
+      {interestShares > 0.01 && (
+        <div className="text-ink-500 -mt-1 mb-1 text-xs">
+          Includes{' '}
+          <span className="font-medium text-indigo-600 dark:text-indigo-400">
+            +{formatShares(interestShares, isCashContract)} interest
+          </span>
+        </div>
+      )}
 
       <Col className="mt-3 w-full gap-3 text-sm">
         {!isStonk && (

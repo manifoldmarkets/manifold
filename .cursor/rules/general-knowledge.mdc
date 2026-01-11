@@ -498,6 +498,19 @@ export const getContractIdFromSlug = async (
 }
 ```
 
+### Database table conventions
+
+When adding a new database table, don't create one-off tables in TypeScript. Each table should have:
+
+1. Its own SQL file in `backend/supabase/` (e.g. `backend/supabase/my_table.sql`)
+2. Its own initialization script in `backend/scripts/` named `init-<table-name>.ts` (e.g. `backend/scripts/init-my-table.ts`)
+
+This ensures that database schema is properly versioned and can be reproduced consistently.
+
+**Row Level Security (RLS):** Be cautious about adding "public read" policies to tables. Only add public read access if the data genuinely needs to be accessible from the client. Tables that are only accessed by the backend (via service role) should have RLS enabled but no public policies. This follows the principle of least privilege.
+
+---
+
 ### Misc coding tips
 
 We have many useful hooks that should be reused rather than rewriting them again. For example, to get the live global bets, you should use

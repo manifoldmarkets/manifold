@@ -353,6 +353,7 @@ export function ContractPageContent(props: ContractParams) {
                   includeSellButton={
                     tradingAllowed(liveContract) &&
                     (outcomeType === 'NUMBER' ||
+                      outcomeType === 'MULTIPLE_CHOICE' ||
                       isBinaryMulti(liveContract) ||
                       outcomeType === 'BINARY' ||
                       outcomeType === 'PSEUDO_NUMERIC' ||

@@ -4,6 +4,7 @@
 <url><loc>https://manifold.markets/about</loc><changefreq>daily</changefreq><priority>0.8</priority></url>
 <url><loc>https://manifold.markets/browse</loc><changefreq>hourly</changefreq><priority>1.0</priority></url>
 <url><loc>https://manifold.markets/leagues</loc><changefreq>daily</changefreq><priority>0.2</priority></url>
+<url><loc>https://manifold.markets/predictle</loc><changefreq>daily</changefreq><priority>0.3</priority></url>
 <url><loc>https://manifold.markets/news</loc><changefreq>daily</changefreq><priority>0.2</priority></url>
 <url><loc>https://manifold.markets/charity</loc><changefreq>daily</changefreq><priority>0.2</priority></url>
 </urlset>

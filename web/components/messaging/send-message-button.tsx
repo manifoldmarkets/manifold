@@ -138,25 +138,6 @@ export const SendMessageButton = (props: {
               </div>
             )}
           </div>
-
-          {/* Footer */}
-          <div className="border-ink-200 dark:border-ink-300 bg-canvas-50 dark:bg-canvas-0 flex items-center justify-end gap-3 border-t px-6 py-4">
-            <Button
-              color="gray-white"
-              onClick={() => setOpenComposeModal(false)}
-              className="text-ink-600 hover:text-ink-900"
-            >
-              Cancel
-            </Button>
-            <Button
-              disabled={!editor || submitting}
-              loading={submitting}
-              onClick={sendMessage}
-              className="min-w-[80px] shadow-sm"
-            >
-              Send
-            </Button>
-          </div>
         </Col>
       </Modal>
     </>

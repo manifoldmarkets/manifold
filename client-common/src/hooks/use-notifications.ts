@@ -53,34 +53,30 @@ export function useNotifications(
       }
       api(params).then((newData) => {
         setNotifications((oldData) => {
-          // Merge server data with locally cached data.
-          // For boolean flags: true wins; otherwise prefer server value when present.
-          const combineFlag = (
-            a: boolean | undefined,
-            b: boolean | undefined
-          ): boolean | undefined => {
-            if (a === true || b === true) return true
-            if (a === false || b === false) return false
-            return undefined
-          }
-
           const byId = new Map<string, Notification>()
-          // Seed with server data
+
+          // Seed with server data (source of truth)
           for (const n of newData) byId.set(n.id, n)
-          // Merge in local data, preserving "seen/read" if they were set locally
+
+          // Merge in local data
           for (const o of oldData ?? []) {
             const existing = byId.get(o.id)
             if (existing) {
+              // Notification exists in both: use server's markedAsRead, merge isSeen
               byId.set(o.id, {
                 ...existing,
                 isSeen: existing.isSeen || o.isSeen,
-                markedAsRead: combineFlag(
-                  existing.markedAsRead,
-                  o.markedAsRead
-                ),
+                // Server is source of truth for markedAsRead (pinned status)
+                markedAsRead: existing.markedAsRead,
               })
             } else {
-              byId.set(o.id, o)
+              // Notification only in local cache (not returned by server)
+              // Clear markedAsRead: false since server didn't confirm it's pinned
+              byId.set(o.id, {
+                ...o,
+                markedAsRead:
+                  o.markedAsRead === false ? undefined : o.markedAsRead,
+              })
             }
           }
 

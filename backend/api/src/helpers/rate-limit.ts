@@ -1,9 +1,11 @@
-import { APIError, APIHandler } from 'api/helpers/endpoint'
-import { APIPath } from 'common/api/schema'
+import { APIError, APIHandler, AuthedUser } from 'api/helpers/endpoint'
+import { APIPath, APISchema, ValidatedAPIParams } from 'common/api/schema'
 import { HOUR_MS } from 'common/util/time'
-import { getUser } from 'shared/utils'
+import { Request } from 'express'
+import { getIp } from 'shared/analytics'
+import { getUser, log } from 'shared/utils'
 import { createSupabaseDirectClient } from 'shared/supabase/init'
-import { UserBan, BanType } from 'common/user'
+import { UserBan } from 'common/user'
 import {
   isUserBanned,
   getUserBanMessage,
@@ -25,12 +27,22 @@ export const rateLimitByUser = <N extends APIPath>(
   f: APIHandler<N>,
   options: RateLimitOptions = {}
 ) => {
-  const { maxCalls = 10, windowMs = HOUR_MS } = options
+  const { maxCalls = 25, windowMs = HOUR_MS } = options
 
   // Track rate limits by user ID and endpoint
   const rateLimits = new Map<string, Map<N, RateLimitData>>()
 
-  return async (props: any, auth: any, req: any) => {
+  return async (
+    props: ValidatedAPIParams<N>,
+    auth: APISchema<N> extends { authed: true }
+      ? AuthedUser
+      : AuthedUser | undefined,
+    req: Request
+  ) => {
+    if (!auth) {
+      log.error('Using rate limit by user without authentication')
+      return f(props, auth, req)
+    }
     const userId = auth.uid
     const endpoint = req.path as N
 
@@ -43,6 +55,61 @@ export const rateLimitByUser = <N extends APIPath>(
       userLimits.set(endpoint, { count: 0, timestamps: [] })
     }
     const limitData = userLimits.get(endpoint)!
+
+    const now = Date.now()
+
+    limitData.timestamps = limitData.timestamps.filter(
+      (time) => now - time < windowMs
+    )
+
+    if (limitData.timestamps.length >= maxCalls) {
+      const oldestCall = limitData.timestamps[0]
+      const timeToWait = Math.ceil((oldestCall + windowMs - now) / 1000)
+      throw new APIError(
+        429,
+        `Rate limit exceeded. Please wait ${timeToWait} seconds before trying again.`
+      )
+    }
+
+    limitData.timestamps.push(now)
+    limitData.count++
+
+    return f(props, auth, req)
+  }
+}
+
+export const rateLimitByIp = <N extends APIPath>(
+  f: APIHandler<N>,
+  options: RateLimitOptions = {}
+) => {
+  const { maxCalls = 25, windowMs = HOUR_MS } = options
+
+  // Track rate limits by IP address and endpoint
+  const rateLimits = new Map<string, Map<N, RateLimitData>>()
+
+  return async (
+    props: ValidatedAPIParams<N>,
+    auth: APISchema<N> extends { authed: true }
+      ? AuthedUser
+      : AuthedUser | undefined,
+    req: Request
+  ) => {
+    const ip = getIp(req) ?? 'unknown'
+    if (!ip) {
+      log.error('Using rate limit by IP without IP address')
+      return f(props, auth, req)
+    }
+    const endpoint = req.path as N
+
+    if (!rateLimits.has(ip)) {
+      rateLimits.set(ip, new Map())
+    }
+    const ipLimits = rateLimits.get(ip)!
+
+    if (!ipLimits.has(endpoint)) {
+      ipLimits.set(endpoint, { count: 0, timestamps: [] })
+    }
+    const limitData = ipLimits.get(endpoint)!
 
     const now = Date.now()
 

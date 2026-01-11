@@ -49,11 +49,10 @@ export default function AboutPage() {
             {user && <LabCard title="🤗‍ Refer a friend" href="/referrals" />}
 
             <LabCard title="🏁 Leagues" href="/leagues" />
+            <LabCard title="🔮 Predictle" href="/predictle" />
             <LabCard title="🏆 Leaderboards" href="/leaderboards" />
 
-            {(!isNative || (isNative && platform !== 'ios')) && (
-              <LabCard title="🫀 Charity" href="/charity" />
-            )}
+            <LabCard title="🎟️ Charity Giveaway" href="/charity" />
 
             <LabCard title="📺 TV" href="/tv" />
             <LabCard title="️✨ Changelog" href="/posts?filter=changelog" />

@@ -141,6 +141,8 @@ export function NewContractPanel(props: {
     useState(false)
   const [showResetConfirmation, setShowResetConfirmation] = useState(false)
   const [isCloseDateModalOpen, setIsCloseDateModalOpen] = useState(false)
+  const [hasLowConfidenceCloseDate, setHasLowConfidenceCloseDate] =
+    useState(false)
   const [triggerTopicsModalOpen, setTriggerTopicsModalOpen] = useState(false)
   const [drafts, setDrafts] = useState<MarketDraft[]>([])
   const [showDraftsModal, setShowDraftsModal] = useState(false)
@@ -484,6 +486,8 @@ export function NewContractPanel(props: {
         const time = dayjs(result.closeTime).format('HH:mm')
         updateField('closeDate', dateStr)
         updateField('closeHoursMinutes', time)
+        // Flag low confidence dates to prompt user confirmation on submit
+        setHasLowConfidenceCloseDate(result.confidence < 75)
       }
     } catch (e) {
       console.error('Error getting suggested close date:', e)
@@ -510,12 +514,42 @@ export function NewContractPanel(props: {
     }
   })
 
+  // Auto-infer numeric unit from question
+  // skipTypeCheck is used when calling from handleTypeChange where outcomeType hasn't updated yet
+  const inferNumericUnit = useEvent(
+    async (question: string, skipTypeCheck = false) => {
+      if (
+        !question ||
+        question.length < 10 ||
+        (!skipTypeCheck && formState.outcomeType !== 'MULTI_NUMERIC') ||
+        formState.unit // Don't overwrite if unit already set
+      ) {
+        return
+      }
+
+      try {
+        const result = await api('infer-numeric-unit', {
+          question,
+          description: descriptionEditor
+            ? richTextToString(descriptionEditor.getJSON())
+            : '',
+        })
+        if (result?.unit) {
+          updateField('unit', result.unit)
+        }
+      } catch (e) {
+        console.error('Error inferring numeric unit:', e)
+      }
+    }
+  )
+
   // Trigger auto-suggestions when question changes
   useEffect(() => {
     if (formState.question && formState.question.length >= 20) {
       const timer = setTimeout(() => {
         getAISuggestedCloseDate(formState.question)
         findTopicsAndSimilarQuestions(formState.question)
+        inferNumericUnit(formState.question)
       }, 1000) // Debounce for 1 second
 
       return () => clearTimeout(timer)
@@ -755,6 +789,11 @@ export function NewContractPanel(props: {
     // Clear all field errors when switching market types
     setFieldErrors({})
 
+    // Auto-infer unit when switching to MULTI_NUMERIC
+    if (newType === 'MULTI_NUMERIC' && formState.question) {
+      inferNumericUnit(formState.question, true)
+    }
+
     // Focus the question input after type change
     setTimeout(() => {
       const input = document.getElementById('market-preview-title-input')
@@ -801,6 +840,12 @@ export function NewContractPanel(props: {
       }
 
       scrollToFirstError(validation.errors)
+      return
+    }
+
+    // If close date was auto-suggested with low confidence, prompt user to confirm
+    if (hasLowConfidenceCloseDate && !hasManuallyEditedCloseDate) {
+      setIsCloseDateModalOpen(true)
       return
     }
 
@@ -1324,6 +1369,20 @@ export function NewContractPanel(props: {
           isGeneratingAnswers={isGeneratingAnswers}
         />
 
+        {/* Visibility Toggle */}
+        <Row className="items-center gap-2 px-4">
+          <span className="text-ink-700 text-sm font-semibold">
+            Publicly listed
+          </span>
+          <ShortToggle
+            on={formState.visibility === 'public'}
+            setOn={(on) =>
+              updateField('visibility', on ? 'public' : 'unlisted')
+            }
+          />
+          <InfoTooltip text="Unlisted markets are only discoverable via a direct link" />
+        </Row>
+
         {/* Desktop Action Bar - Floating below liquidity section */}
         <div className="hidden rounded-lg p-4 ring-1 ring-transparent lg:block">
           <ActionBar
@@ -1433,7 +1492,10 @@ export function NewContractPanel(props: {
           />
           <Button
             color="indigo"
-            onClick={() => setIsCloseDateModalOpen(false)}
+            onClick={() => {
+              setHasManuallyEditedCloseDate(true)
+              setIsCloseDateModalOpen(false)
+            }}
             className="mt-4"
           >
             Done

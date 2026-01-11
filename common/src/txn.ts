@@ -42,6 +42,7 @@ type AnyTxnType =
   | BountyCanceled
   | ManaPay
   | Loan
+  | LoanPayment
   | PushNotificationBonus
   | LikePurchase
   | ContractUndoOldResolutionPayout
@@ -61,6 +62,8 @@ type AnyTxnType =
   | ProfitFee
   | UndoResolutionFee
   | ContractBoostPurchase
+  | CharityGiveawayTicket
+  | ShopPurchase
 
 export type AnyTxnCategory = AnyTxnType['category']
 
@@ -479,6 +482,14 @@ type Loan = {
   token: 'M$'
 }
 
+type LoanPayment = {
+  category: 'LOAN_PAYMENT'
+  fromType: 'USER'
+  toType: 'BANK'
+  token: 'M$'
+  data?: { amountRepaid: number }
+}
+
 type PushNotificationBonus = {
   category: 'PUSH_NOTIFICATION_BONUS'
   fromType: 'BANK'
@@ -602,6 +613,29 @@ type ContractBoostPurchase = {
   }
 }
 
+type CharityGiveawayTicket = {
+  category: 'CHARITY_GIVEAWAY_TICKET'
+  fromType: 'USER'
+  toType: 'BANK'
+  token: 'M$'
+  data: {
+    giveawayNum: number
+    charityId: string
+    numTickets: number
+    ticketId: string
+  }
+}
+
+type ShopPurchase = {
+  category: 'SHOP_PURCHASE'
+  fromType: 'USER'
+  toType: 'BANK'
+  token: 'M$'
+  data: {
+    itemId: string
+  }
+}
+
 export type AddSubsidyTxn = Txn & AddSubsidy
 export type RemoveSubsidyTxn = Txn & RemoveSubsidy
 export type DonationTxn = Txn & Donation
@@ -643,6 +677,7 @@ export type BountyAddedTxn = Txn & BountyAdded
 export type BountyCanceledTxn = Txn & BountyCanceled
 export type ManaPayTxn = Txn & ManaPay
 export type LoanTxn = Txn & Loan
+export type LoanPaymentTxn = Txn & LoanPayment
 export type PushNotificationBonusTxn = Txn & PushNotificationBonus
 export type LikePurchaseTxn = Txn & LikePurchase
 export type ReclaimManaTxn = Txn & ReclaimMana
@@ -658,3 +693,5 @@ export type ProfitFeeTxn = Txn & ProfitFee
 export type UndoResolutionFeeTxn = Txn & UndoResolutionFee
 export type AdminRewardTxn = Txn & AdminReward
 export type ContractBoostPurchaseTxn = Txn & ContractBoostPurchase
+export type CharityGiveawayTicketTxn = Txn & CharityGiveawayTicket
+export type ShopPurchaseTxn = Txn & ShopPurchase

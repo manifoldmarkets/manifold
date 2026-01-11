@@ -80,7 +80,7 @@ export const generateAINumericRanges: APIHandler<'generate-ai-numeric-ranges'> =
         buckets,
       }
     },
-    { maxCalls: 60, windowMs: HOUR_MS }
+    { maxCalls: 100, windowMs: HOUR_MS }
   )
 
 export const regenerateNumericMidpoints: APIHandler<'regenerate-numeric-midpoints'> =
@@ -122,7 +122,7 @@ export const regenerateNumericMidpoints: APIHandler<'regenerate-numeric-midpoint
 
       return { midpoints: result }
     },
-    { maxCalls: 60, windowMs: HOUR_MS }
+    { maxCalls: 100, windowMs: HOUR_MS }
   )
 
 const thresholdExamples = `

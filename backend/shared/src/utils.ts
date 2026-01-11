@@ -98,7 +98,10 @@ export const revalidateStaticProps = async (
   }
 }
 
-export async function revalidateContractStaticProps(contract: Contract) {
+export async function revalidateContractStaticProps(contract: {
+  creatorUsername: string
+  slug: string
+}) {
   await Promise.all([
     revalidateStaticProps(contractPath(contract)),
     revalidateStaticProps(`/embed${contractPath(contract)}`),
