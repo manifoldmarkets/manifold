@@ -2,6 +2,8 @@ import { APIError, APIHandler } from 'api/helpers/endpoint'
 import { APIPath } from 'common/api/schema'
 import { HOUR_MS } from 'common/util/time'
 import { getUser } from 'shared/utils'
+import { createSupabaseDirectClient } from 'shared/supabase/init'
+import { UserBan, BanType } from 'common/user'
 import {
   isUserBanned,
   getUserBanMessage,
@@ -64,17 +66,32 @@ export const rateLimitByUser = <N extends APIPath>(
   }
 }
 
+// Get active bans for a user from the database
+export async function getActiveUserBans(userId: string): Promise<UserBan[]> {
+  const pg = createSupabaseDirectClient()
+  return pg.manyOrNone<UserBan>(
+    `SELECT * FROM user_bans
+     WHERE user_id = $1
+       AND ended_at IS NULL
+       AND (end_time IS NULL OR end_time > now())`,
+    [userId]
+  )
+}
+
 export const onlyUnbannedUsers = <N extends APIPath>(f: APIHandler<N>) => {
   return async (props: any, auth: any, req: any) => {
     const user = await getUser(auth.uid)
     if (!user) {
       throw new APIError(404, 'User not found')
     }
-    if (user.isBannedFromPosting) {
-      throw new APIError(403, 'You are banned from posting')
-    }
     if (user.userDeleted) {
       throw new APIError(403, 'Your account has been deleted')
+    }
+
+    // Check for any active bans in the database
+    const activeBans = await getActiveUserBans(auth.uid)
+    if (activeBans.length > 0) {
+      throw new APIError(403, 'You are banned from posting')
     }
 
     return f(props, auth, req)
@@ -120,11 +137,14 @@ export const onlyUsersWhoCanPerformAction = <N extends APIPath>(
       throw new APIError(403, 'Your account has been deleted')
     }
 
+    // Get active bans from database
+    const activeBans = await getActiveUserBans(auth.uid)
+
     // Check all relevant ban types for this action
     const banTypes = getBanTypesForAction(action)
     for (const banType of banTypes) {
-      if (isUserBanned(user, banType)) {
-        const message = getUserBanMessage(user, banType)
+      if (isUserBanned(activeBans, banType)) {
+        const message = getUserBanMessage(activeBans, banType)
         const displayName = getActionDisplayName(action)
         const errorMsg = message
           ? `You are banned from ${displayName}. Reason: ${message}`

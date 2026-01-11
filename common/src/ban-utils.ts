@@ -1,48 +1,60 @@
-import { User } from './user'
+import { BanType, UserBan } from './user'
 
-export type BanType = 'posting' | 'marketControl' | 'trading'
+export type { BanType } from './user'
 
-export function isUserBanned(user: User, banType: BanType): boolean {
-  // Check new granular ban system
-  const ban = user.bans?.[banType]
-  if (ban) {
-    // Check if temp ban has expired
-    if (ban.unbanTime && Date.now() > ban.unbanTime) {
-      return false  // Temp ban expired
-    }
-    return true  // Active ban
+// Check if a specific ban is currently active (not expired, not ended)
+export function isBanActive(ban: UserBan): boolean {
+  // Ban was manually ended
+  if (ban.ended_at) return false
+
+  // Check if temp ban has expired
+  if (ban.end_time) {
+    return new Date(ban.end_time).getTime() > Date.now()
   }
 
-  // Backward compatibility: check legacy ban for posting
-  if (banType === 'posting' && user.isBannedFromPosting) {
-    // Check if legacy temp ban expired
-    if (user.unbanTime && Date.now() > user.unbanTime) {
-      return false
-    }
-    return true
-  }
-
-  return false
+  // Permanent ban that hasn't been ended
+  return true
 }
 
-export function getUserBanMessage(user: User, banType: BanType): string | undefined {
-  return user.bans?.[banType]?.reason
+// Check if user has an active ban of a specific type
+export function isUserBanned(bans: UserBan[], banType: BanType): boolean {
+  return bans.some(ban => ban.ban_type === banType && isBanActive(ban))
 }
 
-export function getBanTimeRemaining(user: User, banType: BanType): number | undefined {
-  const ban = user.bans?.[banType]
-  if (!ban?.unbanTime) return undefined
+// Get the active ban for a specific type (if any)
+export function getActiveBan(bans: UserBan[], banType: BanType): UserBan | undefined {
+  return bans.find(ban => ban.ban_type === banType && isBanActive(ban))
+}
 
-  const remaining = ban.unbanTime - Date.now()
+// Get ban message/reason for a specific ban type
+export function getUserBanMessage(bans: UserBan[], banType: BanType): string | undefined {
+  const activeBan = getActiveBan(bans, banType)
+  return activeBan?.reason ?? undefined
+}
+
+// Get time remaining for a temp ban (in ms)
+export function getBanTimeRemaining(bans: UserBan[], banType: BanType): number | undefined {
+  const activeBan = getActiveBan(bans, banType)
+  if (!activeBan?.end_time) return undefined
+
+  const remaining = new Date(activeBan.end_time).getTime() - Date.now()
   return remaining > 0 ? remaining : 0
 }
 
-export function getActiveBans(user: User): BanType[] {
-  const bans: BanType[] = []
-  if (isUserBanned(user, 'posting')) bans.push('posting')
-  if (isUserBanned(user, 'marketControl')) bans.push('marketControl')
-  if (isUserBanned(user, 'trading')) bans.push('trading')
-  return bans
+// Get all active ban types for a user
+export function getActiveBans(bans: UserBan[]): BanType[] {
+  const activeBanTypes = new Set<BanType>()
+  for (const ban of bans) {
+    if (isBanActive(ban)) {
+      activeBanTypes.add(ban.ban_type)
+    }
+  }
+  return Array.from(activeBanTypes)
+}
+
+// Get all active ban records
+export function getActiveBanRecords(bans: UserBan[]): UserBan[] {
+  return bans.filter(isBanActive)
 }
 
 // Mapping: which ban types block which actions

@@ -46,6 +46,7 @@ import { addOrRemoveTopicFromContract } from './add-topic-to-market'
 import { addOrRemoveTopicFromTopic } from './add-topic-to-topic'
 import { awardBounty } from './award-bounty'
 import { banuser } from './ban-user'
+import { getUserBans } from './get-user-bans'
 import { blockGroup, unblockGroup } from './block-group'
 import { blockMarket, unblockMarket } from './block-market'
 import { blockUser, unblockUser } from './block-user'
@@ -313,6 +314,7 @@ export const handlers: { [k in APIPath]: APIHandler<k> } = {
   'ban-user': banuser,
   'dismiss-mod-alert': dismissmodalert,
   'super-ban-user': superBanUser,
+  'get-user-bans': getUserBans,
   'get-boost-analytics': getBoostAnalytics,
   'set-news': setnews,
   'search-groups': searchGroups,

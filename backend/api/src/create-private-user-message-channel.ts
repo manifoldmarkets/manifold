@@ -6,6 +6,7 @@ import { createPrivateUserMessageChannelMain } from 'shared/supabase/private-mes
 import { isAdminId } from 'common/envs/constants'
 import { isUserBanned } from 'common/ban-utils'
 import { getUser } from 'shared/utils'
+import { getActiveUserBans } from './helpers/rate-limit'
 
 const postSchema = z
   .object({
@@ -24,8 +25,9 @@ export const createprivateusermessagechannel = authEndpoint(
       throw new APIError(403, 'Your account has been deleted')
 
     // Check if user is banned from posting (legacy or granular)
+    const creatorBans = await getActiveUserBans(creator.id)
     const isBannedFromPosting =
-      creator.isBannedFromPosting || isUserBanned(creator, 'posting')
+      creator.isBannedFromPosting || isUserBanned(creatorBans, 'posting')
 
     if (isBannedFromPosting) {
       // Banned users can only create channels with admins

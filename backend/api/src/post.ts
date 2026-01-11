@@ -8,7 +8,7 @@ import { trackPublicEvent } from 'shared/analytics'
 import { getComment } from 'shared/supabase/contract-comments'
 import { createSupabaseDirectClient } from 'shared/supabase/init'
 import { getContractSupabase, getUser, log } from 'shared/utils'
-import { onlyUsersWhoCanPerformAction } from './helpers/rate-limit'
+import { onlyUsersWhoCanPerformAction, getActiveUserBans } from './helpers/rate-limit'
 
 export const post: APIHandler<'post'> = onlyUsersWhoCanPerformAction(
   'post',
@@ -50,8 +50,11 @@ export const post: APIHandler<'post'> = onlyUsersWhoCanPerformAction(
       const existingComment = await getComment(pg, commentId)
       if (existingComment.userId !== auth.uid) {
         const commenter = await getUser(existingComment.userId)
+        const commenterBans = commenter
+          ? await getActiveUserBans(commenter.id)
+          : []
         const commenterIsBanned = commenter
-          ? getActiveBans(commenter).length > 0 || commenter.isBannedFromPosting
+          ? getActiveBans(commenterBans).length > 0 || commenter.isBannedFromPosting
           : false
         if (commenterIsBanned || commenter?.userDeleted)
           throw new APIError(400, 'Cannot post deleted/banned user comments')

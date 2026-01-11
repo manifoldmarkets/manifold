@@ -7,6 +7,7 @@ import { FieldVal } from 'shared/supabase/utils'
 import { runTxnInBetQueue } from 'shared/txn/run-txn'
 import { getContract, getUser, log } from 'shared/utils'
 import { APIError, type APIHandler } from './helpers/endpoint'
+import { getActiveUserBans } from './helpers/rate-limit'
 import { getNewLiquidityProvision } from 'common/add-liquidity'
 import { convertLiquidity } from 'common/supabase/liquidity'
 import { insertLiquidity } from 'shared/supabase/liquidity'
@@ -23,7 +24,8 @@ export const removeLiquidity: APIHandler<
   if (!user) throw new APIError(404, 'User not found')
   if (user.userDeleted)
     throw new APIError(403, 'Your account has been deleted')
-  if (isUserBanned(user, 'trading'))
+  const userBans = await getActiveUserBans(auth.uid)
+  if (isUserBanned(userBans, 'trading'))
     throw new APIError(403, 'You are banned from trading, which includes removing liquidity')
   const liquidity = await runTransactionWithRetries(async (pgTrans) => {
     const contract = await getContract(pgTrans, contractId)

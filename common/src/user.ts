@@ -2,6 +2,28 @@ import { ENV_CONFIG } from './envs/constants'
 import { notification_preferences } from './user-notification-preferences'
 import { DAY_MS, HOUR_MS } from './util/time'
 
+// New normalized user_bans table schema
+export type BanType = 'posting' | 'marketControl' | 'trading'
+
+export type UserBan = {
+  id: number
+  user_id: string
+  ban_type: BanType
+  reason: string | null
+  created_at: string  // ISO timestamp
+  created_by: string | null  // mod user ID
+  end_time: string | null  // ISO timestamp, null = permanent
+  ended_by: string | null  // mod user ID who ended the ban
+  ended_at: string | null  // ISO timestamp when ban was ended
+}
+
+// Helper type for active bans (not ended)
+export type ActiveBan = UserBan & {
+  ended_at: null
+  ended_by: null
+}
+
+/** @deprecated Use UserBan instead - kept for migration compatibility */
 export type BanDetails = {
   bannedAt: number
   bannedBy: string     // mod user ID
@@ -9,6 +31,7 @@ export type BanDetails = {
   unbanTime?: number   // undefined = permanent, number = temp ban expiry
 }
 
+/** @deprecated Use UserBan instead - kept for migration compatibility */
 export type UnbanRecord = {
   banType: 'posting' | 'marketControl' | 'trading' | 'usernameChange'
   // Original ban info
@@ -93,16 +116,18 @@ export type User = {
   hasSeenLoanModal?: boolean
   hasSeenContractFollowModal?: boolean
   seenStreakModal?: boolean
+  /** @deprecated Use user_bans table instead */
   isBannedFromPosting?: boolean
-  /** @deprecated Not deprecated, only updated in native column though */
+  /** @deprecated Use user_bans table instead */
   unbanTime?: number
-
-  // NEW GRANULAR BAN SYSTEM
+  /** @deprecated Use user_bans table instead */
   bans?: {
     posting?: BanDetails
     marketControl?: BanDetails
     trading?: BanDetails
   }
+  /** @deprecated Use user_bans table instead */
+  banHistory?: UnbanRecord[]
 
   // MOD ALERTS (can exist without bans)
   modAlert?: {
@@ -111,9 +136,6 @@ export type User = {
     createdBy: string  // mod user ID
     dismissed?: boolean
   }
-
-  // BAN HISTORY (tracks past bans that were removed or expired)
-  banHistory?: UnbanRecord[]
 
   // USERNAME CHANGE RESTRICTION
   // When false, user cannot change their @username

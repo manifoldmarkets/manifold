@@ -1,7 +1,8 @@
-import { User } from 'common/user'
+import { User, UserBan } from 'common/user'
 import {
   BanType,
   getActiveBans,
+  getActiveBan,
   getBanTimeRemaining,
   getBanTypeDisplayName,
   getBanTypeDescription,
@@ -12,15 +13,15 @@ import { Col } from 'web/components/layout/col'
 import { api } from 'web/lib/api/api'
 import { useState } from 'react'
 
-export function BanBanner({ user }: { user: User }) {
+export function BanBanner({ user, bans }: { user: User; bans: UserBan[] }) {
   const [alertDismissed, setAlertDismissed] = useState(false)
-  const activeBans = getActiveBans(user)
+  const activeBanTypes = getActiveBans(bans)
   const modAlert = user.modAlert
   const showModAlert =
     modAlert && !modAlert.dismissed && !alertDismissed
 
   // Don't show if no bans and no alert (or alert already dismissed)
-  if (activeBans.length === 0 && !showModAlert) {
+  if (activeBanTypes.length === 0 && !showModAlert) {
     return null
   }
 
@@ -37,8 +38,8 @@ export function BanBanner({ user }: { user: User }) {
 
   // Group ban reasons - same reason may apply to multiple ban types
   const reasonToBanTypes: Map<string, BanType[]> = new Map()
-  for (const banType of activeBans) {
-    const ban = user.bans?.[banType]
+  for (const banType of activeBanTypes) {
+    const ban = getActiveBan(bans, banType)
     if (ban?.reason) {
       const existing = reasonToBanTypes.get(ban.reason) || []
       existing.push(banType)
@@ -53,16 +54,16 @@ export function BanBanner({ user }: { user: User }) {
   return (
     <Col className="mb-4 gap-3">
       {/* Ban section */}
-      {activeBans.length > 0 && (
+      {activeBanTypes.length > 0 && (
         <div className="rounded border-2 border-red-500 bg-red-100 p-4">
           <Col className="gap-2">
-            <h3 className="font-bold text-red-900">⛔ Account Restricted</h3>
+            <h3 className="font-bold text-red-900">Account Restricted</h3>
             <p className="text-red-800">You have been restricted from:</p>
             <ul className="list-inside list-disc space-y-1 text-red-800">
-              {activeBans.map((banType) => (
+              {activeBanTypes.map((banType) => (
                 <BanTypeDescription
                   key={banType}
-                  user={user}
+                  bans={bans}
                   banType={banType}
                 />
               ))}
@@ -93,7 +94,7 @@ export function BanBanner({ user }: { user: User }) {
         <div className="rounded border-2 border-yellow-500 bg-yellow-100 p-4">
           <Row className="items-start justify-between">
             <Col className="flex-1 gap-2">
-              <h3 className="font-bold text-yellow-900">⚠️ Moderator Alert</h3>
+              <h3 className="font-bold text-yellow-900">Moderator Alert</h3>
               <div className="border-ink-200 rounded border bg-white p-3">
                 <p className="text-yellow-900">{modAlert.message}</p>
               </div>
@@ -103,7 +104,7 @@ export function BanBanner({ user }: { user: User }) {
               className="text-yellow-700 hover:text-yellow-900 ml-2 text-xl"
               title="Dismiss alert"
             >
-              ✕
+              x
             </button>
           </Row>
         </div>
@@ -112,9 +113,9 @@ export function BanBanner({ user }: { user: User }) {
   )
 }
 
-function BanTypeDescription({ user, banType }: { user: User; banType: BanType }) {
-  const timeRemaining = getBanTimeRemaining(user, banType)
-  const ban = user.bans?.[banType]
+function BanTypeDescription({ bans, banType }: { bans: UserBan[]; banType: BanType }) {
+  const timeRemaining = getBanTimeRemaining(bans, banType)
+  const ban = getActiveBan(bans, banType)
 
   return (
     <li>
@@ -124,10 +125,10 @@ function BanTypeDescription({ user, banType }: { user: User; banType: BanType })
       {timeRemaining !== undefined && timeRemaining > 0 && (
         <span className="text-sm">
           {' '}
-          — Expires in {formatBanTimeRemaining(timeRemaining)}
+          - Expires in {formatBanTimeRemaining(timeRemaining)}
         </span>
       )}
-      {ban && !ban.unbanTime && <span className="text-sm"> — Permanent</span>}
+      {ban && !ban.end_time && <span className="text-sm"> - Permanent</span>}
     </li>
   )
 }

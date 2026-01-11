@@ -1,6 +1,7 @@
 import { getNewLiquidityProvision } from 'common/add-liquidity'
 import { isUserBanned } from 'common/ban-utils'
 import { APIError, type APIHandler } from './helpers/endpoint'
+import { getActiveUserBans } from './helpers/rate-limit'
 import { SUBSIDY_FEE } from 'common/economy'
 import { runTxnInBetQueue } from 'shared/txn/run-txn'
 import { createSupabaseDirectClient } from 'shared/supabase/init'
@@ -55,7 +56,8 @@ export const addContractLiquidity = async (
     if (!user) throw new APIError(401, 'Your account was not found')
     if (user.userDeleted)
       throw new APIError(403, 'Your account has been deleted')
-    if (isUserBanned(user, 'trading'))
+    const userBans = await getActiveUserBans(userId)
+    if (isUserBanned(userBans, 'trading'))
       throw new APIError(403, 'You are banned from trading, which includes adding liquidity')
 
     if (user.balance < amount) throw new APIError(403, 'Insufficient balance')

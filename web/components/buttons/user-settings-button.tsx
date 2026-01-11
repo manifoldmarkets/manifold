@@ -4,7 +4,7 @@ import {
   supabasePrivateUserConsolePath,
   supabaseUserConsolePath,
 } from 'common/envs/constants'
-import { User } from 'common/user'
+import { User, UserBan } from 'common/user'
 import { buildArray } from 'common/util/array'
 import { useRouter } from 'next/router'
 import { useEffect, useState } from 'react'
@@ -28,6 +28,7 @@ import { EditProfile } from '../profile/edit-profile'
 import { AccountSettings } from '../profile/settings'
 import SuperBanControl from '../SuperBanControl'
 import { BanModal } from '../moderation/ban-modal'
+import { api } from 'web/lib/api/api'
 
 export function UserSettingButton(props: { user: User }) {
   const { user } = props
@@ -36,6 +37,7 @@ export function UserSettingButton(props: { user: User }) {
   const [isModalOpen, setIsModalOpen] = useState(false)
   const [tabIndex, setTabIndex] = useState(0)
   const [showBanModal, setShowBanModal] = useState(false)
+  const [bans, setBans] = useState<UserBan[]>([])
   const isAdmin = useAdmin()
   const isTrusted = useTrusted()
   const numReferrals = useReferralCount(user)
@@ -59,6 +61,17 @@ export function UserSettingButton(props: { user: User }) {
       setTabIndex(index)
     }
   }, [router.query, currentPrivateUser, userId])
+
+  // Fetch bans when ban modal is opened
+  useEffect(() => {
+    if (showBanModal) {
+      api('get-user-bans', { userId }).then((res) => {
+        setBans(res.bans as UserBan[])
+      }).catch(() => {
+        // Ignore errors
+      })
+    }
+  }, [showBanModal, userId])
 
   if (!currentPrivateUser) return <div />
 
@@ -208,6 +221,7 @@ export function UserSettingButton(props: { user: User }) {
 
       <BanModal
         user={user}
+        bans={bans}
         isOpen={showBanModal}
         onClose={() => setShowBanModal(false)}
       />

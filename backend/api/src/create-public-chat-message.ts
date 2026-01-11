@@ -6,6 +6,7 @@ import { Json } from 'common/supabase/schema'
 import { APIError, APIHandler } from 'api/helpers/endpoint'
 import { convertPublicChatMessage } from 'common/chat-message'
 import { broadcast } from 'shared/websockets/server'
+import { getActiveUserBans } from './helpers/rate-limit'
 
 export const createPublicChatMessage: APIHandler<
   'create-public-chat-message'
@@ -14,7 +15,8 @@ export const createPublicChatMessage: APIHandler<
   const creator = await getUser(auth.uid)
   if (!creator) throw new APIError(401, 'Your account was not found')
   if (creator.userDeleted) throw new APIError(403, 'Your account is deleted')
-  if (isUserBanned(creator, 'posting') || creator.isBannedFromPosting)
+  const creatorBans = await getActiveUserBans(auth.uid)
+  if (isUserBanned(creatorBans, 'posting') || creator.isBannedFromPosting)
     throw new APIError(403, 'You are banned from posting')
 
   const chatMessage = removeUndefinedProps({

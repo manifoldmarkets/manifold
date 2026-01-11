@@ -1,6 +1,7 @@
 import { APIError, APIHandler } from './helpers/endpoint'
 import { isUserBanned } from 'common/ban-utils'
 import { PostComment } from 'common/comment'
+import { getActiveUserBans } from './helpers/rate-limit'
 import { createSupabaseDirectClient } from 'shared/supabase/init'
 import { getUser, getPrivateUser, revalidateStaticProps } from 'shared/utils'
 import { getPost } from 'shared/supabase/posts'
@@ -22,7 +23,8 @@ export const createPostComment: APIHandler<'create-post-comment'> = async (
   const creator = await getUser(auth.uid)
   if (!creator) throw new APIError(401, 'Your account was not found')
   if (creator.userDeleted) throw new APIError(403, 'Your account is deleted')
-  if (isUserBanned(creator, 'posting') || creator.isBannedFromPosting)
+  const creatorBans = await getActiveUserBans(auth.uid)
+  if (isUserBanned(creatorBans, 'posting') || creator.isBannedFromPosting)
     throw new APIError(403, 'You are banned from posting')
 
   const pg = createSupabaseDirectClient()

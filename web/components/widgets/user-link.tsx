@@ -27,7 +27,8 @@ import { GiBurningSkull } from 'react-icons/gi'
 import { HiOutlineBuildingLibrary } from 'react-icons/hi2'
 import { User } from 'common/user'
 import { LuSprout } from 'react-icons/lu'
-import { getActiveBans, getBanTypeDescription } from 'common/ban-utils'
+// Note: Granular bans are now in user_bans table, enforced server-side
+// Frontend uses legacy isBannedFromPosting for display purposes
 export const isFresh = (createdTime: number) =>
   createdTime > Date.now() - DAY_MS * 14
 
@@ -184,51 +185,25 @@ export function BannedBadge() {
   )
 }
 
-// Works with full User (for granular bans) or DisplayUser (legacy ban only)
+// Works with full User or DisplayUser - uses legacy isBannedFromPosting for display
+// Granular bans are enforced server-side via the user_bans table
 type RestrictedBadgeUser = {
   isBannedFromPosting?: boolean
-  bans?: User['bans']
 }
 
 export function RestrictedBadge({ user }: { user: RestrictedBadgeUser }) {
-  // Check granular bans if available (full User object)
-  const activeBans = user.bans ? getActiveBans(user as User) : []
-
-  // Also check legacy ban
-  const hasLegacyBan = user.isBannedFromPosting && activeBans.length === 0
-
-  if (activeBans.length === 0 && !hasLegacyBan) {
+  // Check legacy ban field for display purposes
+  // Actual ban enforcement happens server-side
+  if (!user.isBannedFromPosting) {
     return null
   }
 
-  // Check if permanently banned from all three ban types
-  const allBanTypes: ('posting' | 'marketControl' | 'trading')[] = [
-    'posting',
-    'marketControl',
-    'trading',
-  ]
-  const isPermanentlyBannedFromAll =
-    user.bans &&
-    allBanTypes.every((banType) => {
-      const ban = user.bans?.[banType]
-      return ban && !ban.unbanTime // Has ban and no unban time = permanent
-    })
-
-  // Build tooltip text showing what they're restricted from
-  let tooltipText: string
-  if (hasLegacyBan) {
-    tooltipText = "Can't create comments, messages, or questions"
-  } else {
-    const restrictions = activeBans.map((ban) => getBanTypeDescription(ban))
-    tooltipText = `Restricted from: ${restrictions.join('; ')}`
-  }
-
-  const badgeText = isPermanentlyBannedFromAll ? 'Banned' : 'Restricted'
+  const tooltipText = "Can't create comments, messages, or questions"
 
   return (
     <Tooltip text={tooltipText} placement="bottom">
       <span className="ml-1.5 rounded-full bg-yellow-100 px-2.5 py-0.5 text-xs font-medium text-yellow-800 dark:bg-yellow-700 dark:text-yellow-100">
-        {badgeText}
+        Banned
       </span>
     </Tooltip>
   )
@@ -369,8 +344,8 @@ export const StackedUserNames = (props: {
   usernameClassName?: string
 }) => {
   const { user, followsYou, usernameClassName, className } = props
-  const activeBans = getActiveBans(user)
-  const hasAnyBan = activeBans.length > 0 || user.isBannedFromPosting
+  // Use legacy field for display - granular bans enforced server-side
+  const hasAnyBan = !!user.isBannedFromPosting
 
   return (
     <Col>

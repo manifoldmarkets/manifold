@@ -9,6 +9,7 @@ import { createSupabaseDirectClient } from 'shared/supabase/init'
 import { getContract, getUser } from 'shared/utils'
 import { z } from 'zod'
 import { APIError, authEndpoint, validate } from './helpers/endpoint'
+import { getActiveUserBans } from './helpers/rate-limit'
 
 const bodySchema = z
   .object({
@@ -29,7 +30,8 @@ export const editanswercpmm = authEndpoint(async (req, auth) => {
   if (!user) throw new APIError(404, 'User not found')
   if (user.userDeleted)
     throw new APIError(403, 'Your account has been deleted')
-  if (isUserBanned(user, 'marketControl') || user.isBannedFromPosting)
+  const userBans = await getActiveUserBans(auth.uid)
+  if (isUserBanned(userBans, 'marketControl') || user.isBannedFromPosting)
     throw new APIError(403, 'You are banned from editing answers')
   const contract = await getContract(pg, contractId)
   if (!contract) throw new APIError(404, 'Contract not found')

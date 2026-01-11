@@ -7,6 +7,7 @@ import { createSupabaseDirectClient } from 'shared/supabase/init'
 import { createPrivateUserMessageMain } from 'shared/supabase/private-messages'
 import { getUser } from 'shared/utils'
 import { z } from 'zod'
+import { getActiveUserBans } from './helpers/rate-limit'
 
 const postSchema = z
   .object({
@@ -30,8 +31,9 @@ export const createprivateusermessage = authEndpoint(async (req, auth) => {
     throw new APIError(403, 'Your account has been deleted')
 
   // Check if user is banned from posting (legacy or granular)
+  const creatorBans = await getActiveUserBans(creator.id)
   const isBannedFromPosting =
-    creator.isBannedFromPosting || isUserBanned(creator, 'posting')
+    creator.isBannedFromPosting || isUserBanned(creatorBans, 'posting')
 
   if (isBannedFromPosting) {
     // Banned users can still message admins - check if all other members are admins

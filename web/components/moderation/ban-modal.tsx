@@ -5,12 +5,13 @@ import {
   ChevronUpIcon,
   InformationCircleIcon,
 } from '@heroicons/react/outline'
-import { User, UnbanRecord } from 'common/user'
+import { User, UserBan, BanType } from 'common/user'
 import {
-  BanType,
   formatBanTimeRemaining,
   getActiveBans,
+  getActiveBan,
   getBanTimeRemaining,
+  getActiveBanRecords,
 } from 'common/ban-utils'
 import { DAY_MS } from 'common/util/time'
 import { Button } from 'web/components/buttons/button'
@@ -25,10 +26,12 @@ import { getUserById } from 'web/lib/supabase/users'
 
 export function BanModal({
   user,
+  bans,
   isOpen,
   onClose,
 }: {
   user: User
+  bans: UserBan[]
   isOpen: boolean
   onClose: () => void
 }) {
@@ -54,21 +57,20 @@ export function BanModal({
   // Unban confirmation modal state
   const [unbanModalOpen, setUnbanModalOpen] = useState(false)
   const [unbanBanType, setUnbanBanType] = useState<BanType | null>(null)
-  const [unbanNote, setUnbanNote] = useState('')
 
   // Remove all bans modal state
   const [removeAllBansModalOpen, setRemoveAllBansModalOpen] = useState(false)
-  const [removeAllBansNote, setRemoveAllBansNote] = useState('')
 
   // Username change restriction - default to true (restrict) when any ban is selected
-  // undefined means use default behavior (restrict when banning)
   const [allowUsernameChange, setAllowUsernameChange] = useState<boolean | undefined>(undefined)
 
-  // Fetch mod names for current bans
-  const activeBans = getActiveBans(user)
+  // Get active and historical bans
+  const activeBanRecords = getActiveBanRecords(bans)
+  const activeBanTypes = getActiveBans(bans)
+  const historicalBans = bans.filter(b => b.ended_at !== null)
   const isUsernameChangeRestricted = user.canChangeUsername === false
   const hasCurrentBansOrAlerts =
-    activeBans.length > 0 ||
+    activeBanTypes.length > 0 ||
     (user.modAlert && !user.modAlert.dismissed) ||
     isUsernameChangeRestricted
 
@@ -76,20 +78,11 @@ export function BanModal({
     const modIds = new Set<string>()
 
     // Collect mod IDs from bans
-    if (user.bans?.posting?.bannedBy) modIds.add(user.bans.posting.bannedBy)
-    if (user.bans?.marketControl?.bannedBy)
-      modIds.add(user.bans.marketControl.bannedBy)
-    if (user.bans?.trading?.bannedBy) modIds.add(user.bans.trading.bannedBy)
-    if (user.modAlert?.createdBy) modIds.add(user.modAlert.createdBy)
-
-    // Collect mod IDs from ban history
-    if (user.banHistory) {
-      for (const record of user.banHistory) {
-        if (record.bannedBy) modIds.add(record.bannedBy)
-        if (record.unbannedBy && record.unbannedBy !== 'system')
-          modIds.add(record.unbannedBy)
-      }
+    for (const ban of bans) {
+      if (ban.created_by) modIds.add(ban.created_by)
+      if (ban.ended_by && ban.ended_by !== 'system') modIds.add(ban.ended_by)
     }
+    if (user.modAlert?.createdBy) modIds.add(user.modAlert.createdBy)
 
     // Fetch usernames for all mod IDs
     const fetchModNames = async () => {
@@ -110,7 +103,7 @@ export function BanModal({
     if (modIds.size > 0) {
       fetchModNames()
     }
-  }, [user])
+  }, [user, bans])
 
   const handleSubmit = async () => {
     if (!reason.trim()) {
@@ -132,8 +125,7 @@ export function BanModal({
         unbanTimes.trading = Date.now() + tempBanDays.trading * DAY_MS
       }
 
-      // Only send ban types that are being added (true), not the ones left unchecked
-      // This allows ban stacking - existing bans are preserved when adding new ones
+      // Only send ban types that are being added (true)
       const bansToSend: Record<string, boolean> = {}
       if (banTypes.posting) bansToSend.posting = true
       if (banTypes.marketControl) bansToSend.marketControl = true
@@ -144,15 +136,12 @@ export function BanModal({
         bans: modAlertOnly ? undefined : (Object.keys(bansToSend).length > 0 ? bansToSend : undefined),
         unbanTimes: modAlertOnly ? undefined : unbanTimes,
         reason: reason.trim(),
-        // Only send mod alert when "mod alert only" is checked, not when banning
         modAlert: modAlertOnly ? { message: reason.trim() } : undefined,
-        // Username change restriction - only send when not mod alert only
         allowUsernameChange: modAlertOnly ? undefined : allowUsernameChange,
       })
 
       toast.success(modAlertOnly ? 'Mod alert sent' : 'Ban updated successfully')
       onClose()
-      // Reload page to refresh user data
       window.location.reload()
     } catch (error) {
       toast.error('Failed to update ban: ' + (error as Error).message)
@@ -163,7 +152,6 @@ export function BanModal({
 
   const openUnbanModal = (banType: BanType) => {
     setUnbanBanType(banType)
-    setUnbanNote('')
     setUnbanModalOpen(true)
   }
 
@@ -174,7 +162,6 @@ export function BanModal({
       await api('ban-user', {
         userId: user.id,
         bans: { [unbanBanType]: false },
-        unbanNote: unbanNote.trim() || undefined,
       })
       toast.success(`Removed ${unbanBanType} ban`)
       setUnbanModalOpen(false)
@@ -221,7 +208,6 @@ export function BanModal({
       await api('ban-user', {
         userId: user.id,
         removeAllBans: true,
-        unbanNote: removeAllBansNote.trim() || undefined,
       })
       toast.success('All bans removed')
       setRemoveAllBansModalOpen(false)
@@ -249,8 +235,8 @@ export function BanModal({
                 onClick={() => setShowCurrentBans(!showCurrentBans)}
               >
                 <span className="font-semibold">
-                  Current Bans/Alerts ({activeBans.length} ban
-                  {activeBans.length !== 1 ? 's' : ''}
+                  Current Bans/Alerts ({activeBanTypes.length} ban
+                  {activeBanTypes.length !== 1 ? 's' : ''}
                   {user.modAlert && !user.modAlert.dismissed ? ', 1 alert' : ''})
                 </span>
                 {showCurrentBans ? (
@@ -259,14 +245,13 @@ export function BanModal({
                   <ChevronDownIcon className="h-5 w-5 shrink-0" />
                 )}
               </button>
-              {activeBans.length >= 1 && (
+              {activeBanTypes.length >= 1 && (
                 <Button
                   color="red-outline"
                   size="2xs"
                   className="shrink-0"
                   onClick={(e) => {
                     e.stopPropagation()
-                    setRemoveAllBansNote('')
                     setRemoveAllBansModalOpen(true)
                   }}
                 >
@@ -276,23 +261,21 @@ export function BanModal({
             </div>
             {showCurrentBans && (
               <div className="border-ink-200 space-y-3 border-t p-3">
-                {activeBans.map((banType) => {
-                  const ban = user.bans?.[banType]
-                  if (!ban) return null
-                  const timeRemaining = getBanTimeRemaining(user, banType)
-                  const modName = ban.bannedBy
-                    ? modNames[ban.bannedBy] || ban.bannedBy
+                {activeBanRecords.map((ban) => {
+                  const timeRemaining = getBanTimeRemaining(bans, ban.ban_type)
+                  const modName = ban.created_by
+                    ? modNames[ban.created_by] || ban.created_by
                     : 'Unknown'
                   return (
                     <div
-                      key={banType}
+                      key={ban.id}
                       className="rounded border border-red-300 bg-red-50 p-2"
                     >
                       <Row className="items-center justify-between">
                         <span className="font-medium text-red-900">
-                          {banType === 'posting'
+                          {ban.ban_type === 'posting'
                             ? 'Posting Ban'
-                            : banType === 'marketControl'
+                            : ban.ban_type === 'marketControl'
                               ? 'Market Control Ban'
                               : 'Trading Ban'}
                         </span>
@@ -305,18 +288,18 @@ export function BanModal({
                           <Button
                             color="gray-outline"
                             size="2xs"
-                            onClick={() => openUnbanModal(banType)}
+                            onClick={() => openUnbanModal(ban.ban_type)}
                           >
                             Remove
                           </Button>
                         </Row>
                       </Row>
                       <p className="mt-1 text-sm text-red-800">
-                        Reason: {ban.reason}
+                        Reason: {ban.reason || 'No reason provided'}
                       </p>
                       <p className="text-ink-500 mt-1 text-xs">
                         Banned by: @{modName} on{' '}
-                        {new Date(ban.bannedAt).toLocaleDateString()}
+                        {new Date(ban.created_at).toLocaleDateString()}
                       </p>
                     </div>
                   )
@@ -441,7 +424,7 @@ export function BanModal({
               />
             </div>
 
-            {/* Username Change Restriction Notice - only show if not already restricted */}
+            {/* Username Change Restriction Notice */}
             {anyBanSelected && !isUsernameChangeRestricted && (
               <div className="border-ink-200 rounded border bg-orange-50 p-3">
                 <Row className="items-center gap-2">
@@ -497,21 +480,21 @@ export function BanModal({
               tempBanDays={tempBanDays}
               reason={reason}
               modAlertOnly={modAlertOnly}
-              existingBans={user.bans}
+              existingBans={bans}
             />
           </div>
         )}
 
         {/* Ban History Section */}
-        {user.banHistory && user.banHistory.length > 0 && (
+        {historicalBans.length > 0 && (
           <div className="border-ink-200 rounded border">
             <button
               className="flex w-full items-center justify-between p-3 text-left"
               onClick={() => setShowBanHistory(!showBanHistory)}
             >
               <span className="font-semibold">
-                Ban History ({user.banHistory.length} record
-                {user.banHistory.length !== 1 ? 's' : ''})
+                Ban History ({historicalBans.length} record
+                {historicalBans.length !== 1 ? 's' : ''})
               </span>
               {showBanHistory ? (
                 <ChevronUpIcon className="h-5 w-5" />
@@ -521,9 +504,9 @@ export function BanModal({
             </button>
             {showBanHistory && (
               <div className="border-ink-200 space-y-3 border-t p-3">
-                {[...user.banHistory].reverse().map((record, idx) => (
+                {[...historicalBans].reverse().map((record) => (
                   <BanHistoryRecord
-                    key={idx}
+                    key={record.id}
                     record={record}
                     modNames={modNames}
                   />
@@ -564,17 +547,6 @@ export function BanModal({
             </strong>{' '}
             ban from {user.name}?
           </p>
-          <Col className="gap-2">
-            <label className="text-ink-700 text-sm font-medium">
-              Mod Note (optional, not shown to user)
-            </label>
-            <textarea
-              value={unbanNote}
-              onChange={(e) => setUnbanNote(e.target.value)}
-              placeholder="Write a note for future reference..."
-              className="border-ink-300 min-h-[80px] rounded border p-2 text-sm"
-            />
-          </Col>
           <Row className="gap-2">
             <Button
               color="green"
@@ -598,27 +570,16 @@ export function BanModal({
         <Col className="bg-canvas-0 gap-4 rounded-md p-6">
           <Title>Remove All Bans</Title>
           <p className="text-ink-700">
-            Remove all {activeBans.length} bans from {user.name}?
+            Remove all {activeBanTypes.length} bans from {user.name}?
           </p>
           <p className="text-ink-500 text-sm">
-            This will remove: {activeBans.join(', ')} bans.
+            This will remove: {activeBanTypes.join(', ')} bans.
             {isUsernameChangeRestricted && (
               <span className="block mt-1">
                 Note: @username change restriction will NOT be removed.
               </span>
             )}
           </p>
-          <Col className="gap-2">
-            <label className="text-ink-700 text-sm font-medium">
-              Mod Note (optional, not shown to user)
-            </label>
-            <textarea
-              value={removeAllBansNote}
-              onChange={(e) => setRemoveAllBansNote(e.target.value)}
-              placeholder="Write a note for future reference..."
-              className="border-ink-300 min-h-[80px] rounded border p-2 text-sm"
-            />
-          </Col>
           <Row className="gap-2">
             <Button
               color="green"
@@ -700,29 +661,22 @@ function BanBannerPreview({
   tempBanDays: Record<string, number | undefined>
   reason: string
   modAlertOnly: boolean
-  existingBans?: {
-    posting?: { reason: string; unbanTime?: number }
-    marketControl?: { reason: string; unbanTime?: number }
-    trading?: { reason: string; unbanTime?: number }
-  }
+  existingBans: UserBan[]
 }) {
   const newBans = Object.entries(banTypes).filter(([_, active]) => active)
+  const activeBanTypes = getActiveBans(existingBans)
 
   // Get existing bans that aren't being overwritten by new bans
-  const preservedBans: { type: BanType; reason: string; unbanTime?: number }[] = []
-  if (existingBans) {
-    for (const banType of ['posting', 'marketControl', 'trading'] as BanType[]) {
-      const existingBan = existingBans[banType]
-      // Only show if there's an existing ban AND we're not adding a new ban of this type
-      if (existingBan && !banTypes[banType]) {
-        // Check if ban is still active (not expired)
-        if (!existingBan.unbanTime || existingBan.unbanTime > Date.now()) {
-          preservedBans.push({
-            type: banType,
-            reason: existingBan.reason,
-            unbanTime: existingBan.unbanTime,
-          })
-        }
+  const preservedBans: { type: BanType; reason: string | null; endTime: string | null }[] = []
+  for (const banType of activeBanTypes) {
+    if (!banTypes[banType]) {
+      const ban = getActiveBan(existingBans, banType)
+      if (ban) {
+        preservedBans.push({
+          type: banType,
+          reason: ban.reason,
+          endTime: ban.end_time,
+        })
       }
     }
   }
@@ -732,7 +686,7 @@ function BanBannerPreview({
   return (
     <div className="rounded bg-white p-3">
       <h3 className="mb-2 font-bold text-red-900">
-        {modAlertOnly ? '⚠️ Moderator Alert' : '⛔ Account Restricted'}
+        {modAlertOnly ? 'Moderator Alert' : 'Account Restricted'}
       </h3>
 
       {!modAlertOnly && hasAnyBans && (
@@ -741,34 +695,32 @@ function BanBannerPreview({
             You have been restricted from:
           </p>
           <ul className="mb-3 list-inside list-disc space-y-1 text-red-800">
-            {/* Show new bans being added */}
             {newBans.map(([banType]) => (
               <li key={banType}>
                 <strong>{getBanTypeLabel(banType as BanType)}</strong>
                 {tempBanDays[banType] && (
                   <span className="text-sm">
                     {' '}
-                    — Expires in {tempBanDays[banType]} days
+                    - Expires in {tempBanDays[banType]} days
                   </span>
                 )}
                 {!tempBanDays[banType] && (
-                  <span className="text-sm"> — Permanent</span>
+                  <span className="text-sm"> - Permanent</span>
                 )}
                 <span className="ml-1 text-xs text-red-600">(new)</span>
               </li>
             ))}
-            {/* Show existing bans that will be preserved */}
-            {preservedBans.map(({ type, unbanTime }) => (
+            {preservedBans.map(({ type, endTime }) => (
               <li key={type} className="text-red-700">
                 <strong>{getBanTypeLabel(type)}</strong>
-                {unbanTime && (
+                {endTime && (
                   <span className="text-sm">
                     {' '}
-                    — Expires in {formatBanTimeRemaining(unbanTime - Date.now())}
+                    - Expires in {formatBanTimeRemaining(new Date(endTime).getTime() - Date.now())}
                   </span>
                 )}
-                {!unbanTime && (
-                  <span className="text-sm"> — Permanent</span>
+                {!endTime && (
+                  <span className="text-sm"> - Permanent</span>
                 )}
                 <span className="ml-1 text-xs text-gray-500">(existing)</span>
               </li>
@@ -789,7 +741,7 @@ function BanBannerPreview({
           <p className="mb-1 font-semibold text-orange-900">Previous reason(s):</p>
           {preservedBans.map(({ type, reason: existingReason }) => (
             <p key={type} className="text-orange-800 text-sm">
-              <span className="font-medium">{getBanTypeLabel(type).split(' (')[0]}:</span> {existingReason}
+              <span className="font-medium">{getBanTypeLabel(type).split(' (')[0]}:</span> {existingReason || 'No reason'}
             </p>
           ))}
         </div>
@@ -807,89 +759,50 @@ function getBanTypeLabel(banType: BanType): string {
   return labels[banType]
 }
 
-function getHistoryBanTypeDisplayName(banType: string): string {
-  // Handle combined ban types like "posting+trading+marketControl"
-  if (banType.includes('+')) {
-    const types = banType.split('+')
-    const names = types.map((t) => {
-      if (t === 'posting') return 'Posting'
-      if (t === 'marketControl') return 'Market Control'
-      if (t === 'trading') return 'Trading'
-      return t
-    })
-    return names.join(' + ') + ' Bans'
-  }
-
-  if (banType === 'posting') return 'Posting Ban'
-  if (banType === 'marketControl') return 'Market Control Ban'
-  if (banType === 'trading') return 'Trading Ban'
-  if (banType === 'usernameChange') return '@username Changes'
-  return banType
-}
-
 function BanHistoryRecord({
   record,
   modNames,
 }: {
-  record: UnbanRecord
+  record: UserBan
   modNames: Record<string, string>
 }) {
-  const bannedByName = modNames[record.bannedBy] || record.bannedBy
+  const bannedByName = record.created_by
+    ? modNames[record.created_by] || record.created_by
+    : 'Unknown'
   const unbannedByName =
-    record.unbannedBy === 'system'
+    record.ended_by === 'system'
       ? 'System (auto-expired)'
-      : modNames[record.unbannedBy] || record.unbannedBy
-
-  const isUsernameChangeRecord = record.banType === 'usernameChange'
-  const isCombinedRecord = record.banType.includes('+')
+      : record.ended_by
+        ? modNames[record.ended_by] || record.ended_by
+        : 'Unknown'
 
   return (
     <div className="bg-canvas-50 rounded border p-2">
       <Row className="items-center justify-between">
         <span className="font-medium">
-          {getHistoryBanTypeDisplayName(record.banType)}
+          {record.ban_type === 'posting'
+            ? 'Posting Ban'
+            : record.ban_type === 'marketControl'
+              ? 'Market Control Ban'
+              : 'Trading Ban'}
         </span>
-        {!isUsernameChangeRecord && !isCombinedRecord && (
-          <span className="text-ink-500 text-xs">
-            {record.wasTemporary ? 'Temporary' : 'Permanent'}
-          </span>
-        )}
-        {isCombinedRecord && (
-          <span className="text-ink-500 text-xs">Bulk removal</span>
-        )}
+        <span className="text-ink-500 text-xs">
+          {record.end_time ? 'Temporary' : 'Permanent'}
+        </span>
       </Row>
       <div className="text-ink-600 mt-1 space-y-1 text-xs">
-        {isUsernameChangeRecord ? (
-          <>
-            <p>
-              <strong>Re-enabled:</strong>{' '}
-              {new Date(record.unbannedAt).toLocaleDateString()} by {unbannedByName}
-            </p>
-            {record.unbanNote && (
-              <p className="text-ink-500 italic">
-                <strong>Mod note:</strong> {record.unbanNote}
-              </p>
-            )}
-          </>
-        ) : (
-          <>
-            <p>
-              <strong>Banned:</strong>{' '}
-              {new Date(record.bannedAt).toLocaleDateString()} by @{bannedByName}
-            </p>
-            <p>
-              <strong>Reason:</strong> {record.banReason}
-            </p>
-            <p>
-              <strong>Unbanned:</strong>{' '}
-              {new Date(record.unbannedAt).toLocaleDateString()} by {unbannedByName}
-            </p>
-            {record.unbanNote && (
-              <p className="text-ink-500 italic">
-                <strong>Mod note:</strong> {record.unbanNote}
-              </p>
-            )}
-          </>
+        <p>
+          <strong>Banned:</strong>{' '}
+          {new Date(record.created_at).toLocaleDateString()} by @{bannedByName}
+        </p>
+        <p>
+          <strong>Reason:</strong> {record.reason || 'No reason provided'}
+        </p>
+        {record.ended_at && (
+          <p>
+            <strong>Unbanned:</strong>{' '}
+            {new Date(record.ended_at).toLocaleDateString()} by {unbannedByName}
+          </p>
         )}
       </div>
     </div>

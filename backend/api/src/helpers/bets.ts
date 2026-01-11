@@ -172,8 +172,10 @@ export const fetchContractBetDataAndValidate = async (
   // Check new granular trading ban
   if (!isAdminTrade) {
     const { isUserBanned, getUserBanMessage } = await import('common/ban-utils')
-    if (isUserBanned(user, 'trading')) {
-      const message = getUserBanMessage(user, 'trading')
+    const { getActiveUserBans } = await import('./rate-limit')
+    const userBans = await getActiveUserBans(user.id)
+    if (isUserBanned(userBans, 'trading')) {
+      const message = getUserBanMessage(userBans, 'trading')
       const errorMsg = message
         ? `You are banned from trading. Reason: ${message}`
         : 'You are banned from trading'

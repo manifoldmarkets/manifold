@@ -1468,6 +1468,29 @@ export const API = (_apiTypeCheck = {
       })
       .strict(),
   },
+  'get-user-bans': {
+    method: 'GET',
+    visibility: 'undocumented',
+    authed: true,
+    props: z
+      .object({
+        userId: z.string(),
+      })
+      .strict(),
+    returns: {} as {
+      bans: {
+        id: number
+        user_id: string
+        ban_type: string
+        reason: string | null
+        created_at: string
+        created_by: string | null
+        end_time: string | null
+        ended_by: string | null
+        ended_at: string | null
+      }[]
+    },
+  },
   'get-boost-analytics': {
     method: 'POST',
     visibility: 'undocumented',

@@ -1,8 +1,8 @@
 import { isUserBanned } from './ban-utils'
 import { BANNED_TRADING_USER_IDS } from './envs/constants'
-import { User } from './user'
+import { User, UserBan } from './user'
 
-export async function canSendMana(user: User) {
+export async function canSendMana(user: User, bans: UserBan[]) {
   if (user.userDeleted) {
     return {
       canSend: false,
@@ -11,7 +11,7 @@ export async function canSendMana(user: User) {
   }
 
   // Check granular trading ban (or legacy hardcoded list)
-  if (isUserBanned(user, 'trading') || BANNED_TRADING_USER_IDS.includes(user.id)) {
+  if (isUserBanned(bans, 'trading') || BANNED_TRADING_USER_IDS.includes(user.id)) {
     return {
       canSend: false,
       message: 'You are banned from trading, which includes sending managrams.',
@@ -19,7 +19,7 @@ export async function canSendMana(user: User) {
   }
 
   // Check granular posting ban (or legacy isBannedFromPosting)
-  if (isUserBanned(user, 'posting') || user.isBannedFromPosting) {
+  if (isUserBanned(bans, 'posting') || user.isBannedFromPosting) {
     return {
       canSend: false,
       message: 'You are banned from posting, which includes sending managrams.',

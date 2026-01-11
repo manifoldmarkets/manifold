@@ -10,6 +10,7 @@ import { updateData } from 'shared/supabase/utils'
 import { APIError, type APIHandler } from './helpers/endpoint'
 import { trackPublicEvent } from 'shared/analytics'
 import { isUserBanned } from 'common/ban-utils'
+import { getActiveUserBans } from './helpers/rate-limit'
 
 export const hideComment: APIHandler<'hide-comment'> = async (
   { commentPath, action = 'hide' },
@@ -29,7 +30,8 @@ export const hideComment: APIHandler<'hide-comment'> = async (
   if (!user) throw new APIError(404, 'User not found')
   if (user.userDeleted)
     throw new APIError(403, 'Your account has been deleted')
-  if (user.isBannedFromPosting || isUserBanned(user, 'marketControl'))
+  const userBans = await getActiveUserBans(auth.uid)
+  if (user.isBannedFromPosting || isUserBanned(userBans, 'marketControl'))
     throw new APIError(
       403,
       'You are banned from hiding/unhiding comments on your markets'

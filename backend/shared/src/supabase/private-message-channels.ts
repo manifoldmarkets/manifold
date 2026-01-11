@@ -4,6 +4,7 @@ import { APIError } from 'common/api/utils'
 import { isUserBanned } from 'common/ban-utils'
 import { filterDefined } from 'common/util/array'
 import { addUsersToPrivateMessageChannel } from 'shared/supabase/private-messages'
+import { UserBan } from 'common/user'
 
 export const createPrivateUserMessageChannelMain = async (
   creatorId: string,
@@ -12,7 +13,14 @@ export const createPrivateUserMessageChannelMain = async (
 ) => {
   const creator = await getUser(creatorId)
   if (!creator) throw new APIError(401, 'Your account was not found')
-  if (isUserBanned(creator, 'posting') || creator.isBannedFromPosting)
+
+  // Fetch bans for the creator
+  const creatorBans = await pg.manyOrNone<UserBan>(
+    `SELECT * FROM user_bans WHERE user_id = $1 AND ended_at IS NULL AND (end_time IS NULL OR end_time > now())`,
+    [creatorId]
+  )
+
+  if (isUserBanned(creatorBans, 'posting') || creator.isBannedFromPosting)
     throw new APIError(403, 'You are banned from messaging')
   const creatorShouldJoinChannel = userIds.includes(creatorId)
   const toPrivateUsers = filterDefined(

@@ -12,6 +12,7 @@ import {
 } from 'shared/utils'
 import { z } from 'zod'
 import { APIError, authEndpoint, validate } from './helpers/endpoint'
+import { getActiveUserBans } from './helpers/rate-limit'
 
 // Schema supports all poll types:
 // - Single vote: { contractId, voteId }
@@ -49,10 +50,11 @@ export const castpollvote = authEndpoint(async (req, auth) => {
   }
 
   // Poll voting is blocked by all ban types
+  const userBans = await getActiveUserBans(auth.uid)
   const banTypes = getBanTypesForAction('pollVote')
   for (const banType of banTypes) {
-    if (isUserBanned(user, banType)) {
-      const reason = getUserBanMessage(user, banType)
+    if (isUserBanned(userBans, banType)) {
+      const reason = getUserBanMessage(userBans, banType)
       const errorMsg = reason
         ? `You are banned from voting in polls. Reason: ${reason}`
         : 'You are banned from voting in polls'

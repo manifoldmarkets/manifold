@@ -1,4 +1,5 @@
 import { APIError, APIHandler } from 'api/helpers/endpoint'
+import { getActiveUserBans } from 'api/helpers/rate-limit'
 import { isUserBanned } from 'common/ban-utils'
 import { HOUSE_LIQUIDITY_PROVIDER_ID } from 'common/antes'
 import { getCpmmProbability } from 'common/calculate-cpmm'
@@ -80,7 +81,8 @@ const verifyUserCanUnresolve = async (
   if (!user) throw new APIError(404, 'User not found')
   if (user.userDeleted)
     throw new APIError(403, 'Your account has been deleted')
-  if (isUserBanned(user, 'marketControl') || user.isBannedFromPosting)
+  const userBans = await getActiveUserBans(userId)
+  if (isUserBanned(userBans, 'marketControl') || user.isBannedFromPosting)
     throw new APIError(403, 'You are banned from unresolving markets')
 
   const { creatorId, mechanism, isSpicePayout, token } = contract

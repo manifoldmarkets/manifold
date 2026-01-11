@@ -5,6 +5,7 @@ import { runTxnInBetQueue } from 'shared/txn/run-txn'
 import { createSupabaseDirectClient } from 'shared/supabase/init'
 import { Row, tsToMillis } from 'common/supabase/utils'
 import { getUser } from 'shared/utils'
+import { UserBan } from 'common/user'
 
 const bodySchema = z.object({ slug: z.string() }).strict()
 
@@ -64,7 +65,13 @@ export const claimmanalink = authEndpoint(async (req, auth) => {
       throw new APIError(500, `User ${creator_id} not found`)
     }
 
-    const { canSend, message } = await canSendMana(fromUser)
+    // Fetch bans for the sender
+    const fromUserBans = await tx.manyOrNone<UserBan>(
+      `SELECT * FROM user_bans WHERE user_id = $1 AND ended_at IS NULL AND (end_time IS NULL OR end_time > now())`,
+      [creator_id]
+    )
+
+    const { canSend, message } = await canSendMana(fromUser, fromUserBans)
     if (!canSend) {
       throw new APIError(403, message)
     }
